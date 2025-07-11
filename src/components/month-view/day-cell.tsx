@@ -1,0 +1,126 @@
+import dayjs from "@/lib/dayjs-config";
+import { cn } from "@/lib/utils";
+import React from "react";
+import { useCalendarContext } from "../../contexts/calendar-context/context";
+import { DroppableCell } from "../droppable-cell/droppable-cell";
+import type { CalendarEvent } from "../types";
+import { AllEventDialog } from "./all-events-dialog";
+import type { SelectedDayEvents } from "./types";
+
+interface DayCellProps {
+  index: number; // Index of the day in the week (0-6)
+  day: dayjs.Dayjs;
+  dayMaxEvents?: number;
+  className?: string; // Optional className for custom styling
+}
+
+export const DayCell: React.FC<DayCellProps> = ({
+  index,
+  day,
+  className = "",
+}) => {
+  const allEventsDialogRef = React.useRef<{
+    open: () => void;
+    close: () => void;
+    setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void;
+  }>(null);
+  const {
+    events,
+    currentDate,
+    firstDayOfWeek,
+    dayMaxEvents = 0,
+  } = useCalendarContext();
+  const todayEvents = events.filter((e) => {
+    const startsToday = e.start.isSame(day, "day");
+    const endsToday = e.end.isSame(day, "day");
+    const spansToday =
+      e.start.isBefore(day, "day") && e.end.isAfter(day, "day");
+
+    return startsToday || endsToday || spansToday;
+  });
+
+  // Get start date for the current month view based on firstDayOfWeek
+  const firstDayOfMonth = currentDate.startOf("month");
+
+  // Calculate the first day of the calendar grid correctly
+  // Find the first day of week (e.g. Sunday or Monday) that comes before or on the first day of the month
+  let adjustedFirstDayOfCalendar = firstDayOfMonth.clone();
+  while (adjustedFirstDayOfCalendar.day() !== firstDayOfWeek) {
+    adjustedFirstDayOfCalendar = adjustedFirstDayOfCalendar.subtract(1, "day");
+  }
+
+  // Handler for showing all events in a dialog
+  const showAllEvents = (day: dayjs.Dayjs, events: CalendarEvent[]) => {
+    allEventsDialogRef.current?.setSelectedDayEvents({
+      day,
+      events,
+    });
+    allEventsDialogRef.current?.open();
+  };
+
+  const isToday = day.isSame(dayjs(), "day");
+  const isCurrentMonth = day.month() === currentDate.month();
+  const isLastColumn = index === 6; // Saturday is the last column in a week
+
+  const hiddenEventsCount = todayEvents.length - dayMaxEvents;
+  const hasHiddenEvents = hiddenEventsCount > 0;
+
+  return (
+    <>
+      <DroppableCell
+        id={`day-cell-${day.format("YYYY-MM-DD")}`}
+        type="day-cell"
+        date={day}
+        className={cn(
+          "cursor-pointer overflow-hidden p-1",
+          !isCurrentMonth &&
+            "bg-muted/75 dark:bg-gray-900/50 text-muted-foreground",
+          isToday && "bg-primary/10",
+          isLastColumn && "border-r-0",
+          className
+        )}
+      >
+        {/* Absolutely positioned multi-day bars (Google Calendar style) */}
+
+        {/* Single-day events container positioned below multi-day events */}
+        <div className="flex flex-col gap-1">
+          {/* Day number */}
+          <div
+            className={cn(
+              "flex h-5 w-5 items-center justify-center rounded-full text-xs sm:h-6 sm:w-6 sm:text-sm",
+              isToday && "bg-primary text-primary-foreground font-medium"
+            )}
+          >
+            {day.date()}
+          </div>
+
+          {/* Render placeholders for events that occur today so that the cell height is according to dayMaxEvents. */}
+          {todayEvents.slice(0, dayMaxEvents).map((event, rowIndex) => (
+            <div
+              key={`empty-${rowIndex}`}
+              className="h-[20px] w-full"
+              data-testid={event?.title}
+            />
+          ))}
+
+          {/* Show more events button with accurate count */}
+          {hasHiddenEvents && (
+            <div
+              className="text-muted-foreground hover:text-foreground cursor-pointer text-[10px] whitespace-nowrap sm:text-xs mt-1"
+              onClick={(e) => {
+                e.stopPropagation();
+
+                showAllEvents(day, todayEvents);
+              }}
+            >
+              +{hiddenEventsCount} more
+            </div>
+          )}
+        </div>
+      </DroppableCell>
+
+      {/* Dialog for showing all events */}
+      <AllEventDialog ref={allEventsDialogRef} />
+    </>
+  );
+};

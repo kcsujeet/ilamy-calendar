@@ -8,19 +8,18 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui";
+} from '@/components/ui'
 
 interface DemoUsageProps {
-  firstDayOfWeek: string;
-  currentView: string;
-  useCustomEventRenderer: boolean;
-  locale: string;
-  timezone: string;
+  firstDayOfWeek: string
+  currentView: string
+  useCustomEventRenderer: boolean
+  locale: string
+  timezone: string
 }
 
 export function DemoUsage({
   firstDayOfWeek,
-  currentView,
   useCustomEventRenderer,
   locale,
   timezone,
@@ -65,7 +64,7 @@ function MyCalendar() {
       onEventClick={handleEventClick}
       onDateClick={handleDateClick}
       onViewChange={handleViewChange}
-      ${useCustomEventRenderer ? "renderEvent={customRenderFunction}" : ""}
+      ${useCustomEventRenderer ? 'renderEvent={customRenderFunction}' : ''}
     />
   );
 }`}
@@ -97,7 +96,7 @@ function MyCalendar() {
       onEventClick={handleEventClick}
       onDateClick={handleDateClick}
       onViewChange={handleViewChange}
-      ${useCustomEventRenderer ? "renderEvent={customRenderFunction}" : ""}
+      ${useCustomEventRenderer ? 'renderEvent={customRenderFunction}' : ''}
     />
   );
 }
@@ -113,12 +112,12 @@ const customRenderFunction = (event: CalendarEvent) => {
     </div>
   );
 };`
-    : ""
+    : ''
 }`}
             </pre>
           </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
-  );
+  )
 }

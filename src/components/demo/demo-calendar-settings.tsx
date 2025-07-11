@@ -10,32 +10,32 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui";
-import type { WeekDays } from "../types";
+} from '@/components/ui'
+import type { WeekDays } from '../types'
 
 interface DemoCalendarSettingsProps {
-  firstDayOfWeek: WeekDays;
-  setFirstDayOfWeek: (value: WeekDays) => void;
-  useCustomEventRenderer: boolean;
-  setUseCustomEventRenderer: (value: boolean) => void;
-  locale: string;
-  setLocale: (value: string) => void;
-  timezone: string;
-  setTimezone: (value: string) => void;
-  disableDateClick: boolean;
-  setDisableDateClick: (value: boolean) => void;
-  disableEventClick: boolean;
-  setDisableEventClick: (value: boolean) => void;
-  disableDragAndDrop: boolean;
-  setDisableDragAndDrop: (value: boolean) => void;
-  useCustomOnDateClick: boolean;
-  setUseCustomOnDateClick: (value: boolean) => void;
-  useCustomOnEventClick: boolean;
-  setUseCustomOnEventClick: (value: boolean) => void;
-  calendarHeight: string;
-  setCalendarHeight: (value: string) => void;
-  dayMaxEvents: number;
-  setDayMaxEvents: (value: number) => void;
+  firstDayOfWeek: WeekDays
+  setFirstDayOfWeek: (value: WeekDays) => void
+  useCustomEventRenderer: boolean
+  setUseCustomEventRenderer: (value: boolean) => void
+  locale: string
+  setLocale: (value: string) => void
+  timezone: string
+  setTimezone: (value: string) => void
+  disableDateClick: boolean
+  setDisableDateClick: (value: boolean) => void
+  disableEventClick: boolean
+  setDisableEventClick: (value: boolean) => void
+  disableDragAndDrop: boolean
+  setDisableDragAndDrop: (value: boolean) => void
+  useCustomOnDateClick: boolean
+  setUseCustomOnDateClick: (value: boolean) => void
+  useCustomOnEventClick: boolean
+  setUseCustomOnEventClick: (value: boolean) => void
+  calendarHeight: string
+  setCalendarHeight: (value: string) => void
+  dayMaxEvents: number
+  setDayMaxEvents: (value: number) => void
 }
 
 export function DemoCalendarSettings({
@@ -122,7 +122,7 @@ export function DemoCalendarSettings({
               <SelectValue placeholder="Select timezone" />
             </SelectTrigger>
             <SelectContent>
-              {Intl.supportedValuesOf("timeZone").map((tz) => (
+              {Intl.supportedValuesOf('timeZone').map((tz) => (
                 <SelectItem key={tz} value={tz}>
                   {tz}
                 </SelectItem>
@@ -261,5 +261,5 @@ export function DemoCalendarSettings({
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }

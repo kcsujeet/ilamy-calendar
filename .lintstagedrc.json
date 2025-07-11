@@ -1,0 +1,3 @@
+{
+  "src/**/*.{ts,tsx}": ["bun lint:fix", "bun prettier:fix"]
+}

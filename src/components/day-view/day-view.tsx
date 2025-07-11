@@ -1,30 +1,30 @@
-import { ScrollArea } from "@/components/ui";
-import { useCalendarContext } from "@/contexts/calendar-context/context";
-import { cn } from "@/lib/utils";
-import dayjs from "dayjs";
-import { Fragment } from "react";
-import { DroppableCell } from "../droppable-cell/droppable-cell";
-import { DayAllDayRow } from "./day-all-day-row";
-import { DayEventsLayer } from "./day-events-layer";
-import { DayHeader } from "./day-header";
-import { DayTimeCol } from "./day-time-col";
+import { ScrollArea } from '@/components/ui'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { cn } from '@/lib/utils'
+import dayjs from 'dayjs'
+import { Fragment } from 'react'
+import { DroppableCell } from '../droppable-cell/droppable-cell'
+import { DayAllDayRow } from './day-all-day-row'
+import { DayEventsLayer } from './day-events-layer'
+import { DayHeader } from './day-header'
+import { DayTimeCol } from './day-time-col'
 
 const DayView = () => {
-  const { currentDate } = useCalendarContext();
+  const { currentDate } = useCalendarContext()
 
   // Hours to display (all 24 hours of the day)
   const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
-    return dayjs().hour(hour).minute(0);
-  });
+    return dayjs().hour(hour).minute(0)
+  })
 
   // For more granular time slots, we'll divide each hour into 15-minute segments
-  const timeSegments = [0, 15, 30, 45];
+  const timeSegments = [0, 15, 30, 45]
 
   // Get current day's events - this will refresh automatically when store updates
   // because getEventsForDate is a selector function from the store that runs whenever events change
 
-  const isToday = currentDate.isSame(dayjs(), "day");
-  const cellDate = currentDate.format("YYYY-MM-DD");
+  const isToday = currentDate.isSame(dayjs(), 'day')
+  const cellDate = currentDate.format('YYYY-MM-DD')
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -50,15 +50,15 @@ const DayView = () => {
             <div className="absolute inset-0 z-0">
               {hours.map((hour, index) => (
                 <div
-                  key={`bg-${currentDate.format("YYYY-MM-DD")}-${hour.format(
-                    "HH"
+                  key={`bg-${currentDate.format('YYYY-MM-DD')}-${hour.format(
+                    'HH'
                   )}`}
                   className="h-[60px] border-b"
                 >
                   {/* 15-minute marker lines */}
                   {timeSegments.slice(1).map((minutes) => (
                     <div
-                      key={`bg-${hour.format("HH")}-${minutes}`}
+                      key={`bg-${hour.format('HH')}-${minutes}`}
                       className="border-border absolute w-full border-t border-dashed"
                       style={{ top: `${index * 60 + minutes}px` }}
                     ></div>
@@ -70,22 +70,22 @@ const DayView = () => {
             {/* Interactive layer for time slots - middle layer with no borders */}
             <div className="pointer-events-auto absolute inset-0 z-20">
               {hours.map((time) => {
-                const hour = time.hour();
+                const hour = time.hour()
 
                 return (
-                  <Fragment key={`${cellDate}-${time.format("HH")}`}>
+                  <Fragment key={`${cellDate}-${time.format('HH')}`}>
                     <DroppableCell
-                      id={`time-cell-${cellDate}-${time.format("HH")}-00`}
+                      id={`time-cell-${cellDate}-${time.format('HH')}-00`}
                       type="time-cell"
                       date={currentDate}
                       hour={hour}
                       minute={0}
                       className={cn(
-                        "hover:bg-accent/5 h-[15px] cursor-pointer"
+                        'hover:bg-accent/5 h-[15px] cursor-pointer'
                       )}
                     />
                     <DroppableCell
-                      id={`time-cell-${cellDate}-${time.format("HH")}-15`}
+                      id={`time-cell-${cellDate}-${time.format('HH')}-15`}
                       type="time-cell"
                       date={currentDate}
                       hour={hour}
@@ -93,7 +93,7 @@ const DayView = () => {
                       className="hover:bg-accent/5 h-[15px] cursor-pointer"
                     />
                     <DroppableCell
-                      id={`time-cell-${cellDate}-${time.format("HH")}-30`}
+                      id={`time-cell-${cellDate}-${time.format('HH')}-30`}
                       type="time-cell"
                       date={currentDate}
                       hour={hour}
@@ -101,7 +101,7 @@ const DayView = () => {
                       className="hover:bg-accent/5 h-[15px] cursor-pointer"
                     />
                     <DroppableCell
-                      id={`time-cell-${cellDate}-${time.format("HH")}-45`}
+                      id={`time-cell-${cellDate}-${time.format('HH')}-45`}
                       type="time-cell"
                       date={currentDate}
                       hour={hour}
@@ -109,7 +109,7 @@ const DayView = () => {
                       className="hover:bg-accent/5 h-[15px] cursor-pointer"
                     />
                   </Fragment>
-                );
+                )
               })}
             </div>
 
@@ -131,7 +131,7 @@ const DayView = () => {
         </div>
       </ScrollArea>
     </div>
-  );
-};
+  )
+}
 
-export default DayView;
+export default DayView

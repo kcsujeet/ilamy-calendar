@@ -1,5 +1,5 @@
-import dayjs from "dayjs";
-import React, { useEffect, useState } from "react";
+import dayjs from 'dayjs'
+import React, { useEffect, useState } from 'react'
 
 import {
   Button,
@@ -17,34 +17,34 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui";
-import { cn } from "@/lib/utils";
-import type { CalendarEvent } from "../types";
+} from '@/components/ui'
+import { cn } from '@/lib/utils'
+import type { CalendarEvent } from '../types'
 
 const colorOptions = [
-  { value: "bg-blue-100 text-blue-800", label: "Blue" },
-  { value: "bg-green-100 text-green-800", label: "Green" },
-  { value: "bg-purple-100 text-purple-800", label: "Purple" },
-  { value: "bg-red-100 text-red-800", label: "Red" },
-  { value: "bg-yellow-100 text-yellow-800", label: "Yellow" },
-  { value: "bg-pink-100 text-pink-800", label: "Pink" },
-  { value: "bg-indigo-100 text-indigo-800", label: "Indigo" },
-  { value: "bg-amber-100 text-amber-800", label: "Amber" },
-  { value: "bg-emerald-100 text-emerald-800", label: "Emerald" },
-  { value: "bg-sky-100 text-sky-800", label: "Sky" },
-  { value: "bg-violet-100 text-violet-800", label: "Violet" },
-  { value: "bg-rose-100 text-rose-800", label: "Rose" },
-  { value: "bg-teal-100 text-teal-800", label: "Teal" },
-  { value: "bg-orange-100 text-orange-800", label: "Orange" },
-];
+  { value: 'bg-blue-100 text-blue-800', label: 'Blue' },
+  { value: 'bg-green-100 text-green-800', label: 'Green' },
+  { value: 'bg-purple-100 text-purple-800', label: 'Purple' },
+  { value: 'bg-red-100 text-red-800', label: 'Red' },
+  { value: 'bg-yellow-100 text-yellow-800', label: 'Yellow' },
+  { value: 'bg-pink-100 text-pink-800', label: 'Pink' },
+  { value: 'bg-indigo-100 text-indigo-800', label: 'Indigo' },
+  { value: 'bg-amber-100 text-amber-800', label: 'Amber' },
+  { value: 'bg-emerald-100 text-emerald-800', label: 'Emerald' },
+  { value: 'bg-sky-100 text-sky-800', label: 'Sky' },
+  { value: 'bg-violet-100 text-violet-800', label: 'Violet' },
+  { value: 'bg-rose-100 text-rose-800', label: 'Rose' },
+  { value: 'bg-teal-100 text-teal-800', label: 'Teal' },
+  { value: 'bg-orange-100 text-orange-800', label: 'Orange' },
+]
 
 interface EventFormProps {
-  selectedEvent?: CalendarEvent | null;
-  selectedDate?: dayjs.Dayjs | null;
-  onAdd?: (event: CalendarEvent) => void;
-  onUpdate?: (event: CalendarEvent) => void;
-  onDelete?: (event: CalendarEvent) => void;
-  onClose: () => void;
+  selectedEvent?: CalendarEvent | null
+  selectedDate?: dayjs.Dayjs | null
+  onAdd?: (event: CalendarEvent) => void
+  onUpdate?: (event: CalendarEvent) => void
+  onDelete?: (event: CalendarEvent) => void
+  onClose: () => void
 }
 
 export const EventForm: React.FC<EventFormProps> = ({
@@ -55,100 +55,100 @@ export const EventForm: React.FC<EventFormProps> = ({
   onDelete,
   onAdd,
 }) => {
-  const start = selectedEvent?.originalStart ?? selectedEvent?.start;
-  const end = selectedEvent?.originalEnd ?? selectedEvent?.end;
+  const start = selectedEvent?.originalStart ?? selectedEvent?.start
+  const end = selectedEvent?.originalEnd ?? selectedEvent?.end
 
   // Form default values
-  const defaultStartDate = selectedDate?.toDate() || new Date();
+  const defaultStartDate = selectedDate?.toDate() || new Date()
   const defaultEndDate =
-    selectedDate?.add(1, "hour").toDate() || dayjs().add(1, "hour").toDate();
+    selectedDate?.add(1, 'hour').toDate() || dayjs().add(1, 'hour').toDate()
 
   // Form state
   const [startDate, setStartDate] = useState(
     start?.toDate() || defaultStartDate
-  );
-  const [endDate, setEndDate] = useState(end?.toDate() || defaultEndDate);
-  const [isAllDay, setIsAllDay] = useState(selectedEvent?.all_day || false);
+  )
+  const [endDate, setEndDate] = useState(end?.toDate() || defaultEndDate)
+  const [isAllDay, setIsAllDay] = useState(selectedEvent?.all_day || false)
   const [selectedColor, setSelectedColor] = useState(
     selectedEvent?.color || colorOptions[0].value
-  );
+  )
 
   // Time state
   const [startTime, setStartTime] = useState(
     selectedEvent
-      ? selectedEvent.start.format("HH:mm")
-      : dayjs(defaultStartDate).format("HH:mm")
-  );
+      ? selectedEvent.start.format('HH:mm')
+      : dayjs(defaultStartDate).format('HH:mm')
+  )
   const [endTime, setEndTime] = useState(
     selectedEvent
-      ? selectedEvent.end.format("HH:mm")
-      : dayjs(defaultEndDate).format("HH:mm")
-  );
+      ? selectedEvent.end.format('HH:mm')
+      : dayjs(defaultEndDate).format('HH:mm')
+  )
 
   // Initialize form values from selected event or defaults
   const [formValues, setFormValues] = useState({
-    title: selectedEvent?.title || "",
-    description: selectedEvent?.description || "",
-    location: selectedEvent?.location || "",
-  });
+    title: selectedEvent?.title || '',
+    description: selectedEvent?.description || '',
+    location: selectedEvent?.location || '',
+  })
 
   // Create wrapper functions to fix TypeScript errors with DatePicker
   const handleStartDateChange = (date: Date | undefined) => {
-    if (date) setStartDate(date);
-  };
+    if (date) setStartDate(date)
+  }
 
   const handleEndDateChange = (date: Date | undefined) => {
-    if (date) setEndDate(date);
-  };
+    if (date) setEndDate(date)
+  }
 
   // Update form values when input changes
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value } = e.target;
-    setFormValues((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setFormValues((prev) => ({ ...prev, [name]: value }))
+  }
 
   // Handle time changes
   const handleTimeChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     isStart: boolean
   ) => {
-    const timeValue = e.target.value;
+    const timeValue = e.target.value
     if (isStart) {
-      setStartTime(timeValue);
+      setStartTime(timeValue)
     } else {
-      setEndTime(timeValue);
+      setEndTime(timeValue)
     }
-  };
+  }
 
   useEffect(() => {
     // Reset end time when all day is toggled to on
     if (isAllDay) {
-      setEndTime("23:59");
+      setEndTime('23:59')
     }
-  }, [isAllDay]);
+  }, [isAllDay])
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     // Create full datetime objects by combining date and time
-    const [startHours, startMinutes] = startTime.split(":").map(Number);
-    const [endHours, endMinutes] = endTime.split(":").map(Number);
+    const [startHours, startMinutes] = startTime.split(':').map(Number)
+    const [endHours, endMinutes] = endTime.split(':').map(Number)
 
-    let startDateTime = dayjs(startDate).hour(startHours).minute(startMinutes);
+    let startDateTime = dayjs(startDate).hour(startHours).minute(startMinutes)
 
-    let endDateTime = dayjs(endDate).hour(endHours).minute(endMinutes);
+    let endDateTime = dayjs(endDate).hour(endHours).minute(endMinutes)
 
     // For all-day events, set appropriate times
     if (isAllDay) {
-      startDateTime = startDateTime.hour(0).minute(0);
-      endDateTime = endDateTime.hour(23).minute(59);
+      startDateTime = startDateTime.hour(0).minute(0)
+      endDateTime = endDateTime.hour(23).minute(59)
     }
 
     const eventData: CalendarEvent = {
-      id: selectedEvent?.id || dayjs().format("YYYYMMDDHHmmss"),
+      id: selectedEvent?.id || dayjs().format('YYYYMMDDHHmmss'),
       title: formValues.title,
       start: startDateTime,
       end: endDateTime,
@@ -156,30 +156,30 @@ export const EventForm: React.FC<EventFormProps> = ({
       location: formValues.location,
       all_day: isAllDay,
       color: selectedColor,
-    };
-
-    if (selectedEvent) {
-      onUpdate?.(eventData);
-    } else {
-      onAdd?.(eventData);
     }
 
-    onClose();
-  };
+    if (selectedEvent) {
+      onUpdate?.(eventData)
+    } else {
+      onAdd?.(eventData)
+    }
+
+    onClose()
+  }
 
   const handleDelete = () => {
     if (selectedEvent) {
-      onDelete?.(selectedEvent);
-      onClose();
+      onDelete?.(selectedEvent)
+      onClose()
     }
-  };
+  }
 
   // Validate end date is not before start date
   useEffect(() => {
     if (dayjs(startDate).isAfter(dayjs(endDate))) {
-      setEndDate(startDate);
+      setEndDate(startDate)
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate])
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -187,12 +187,12 @@ export const EventForm: React.FC<EventFormProps> = ({
         <form onSubmit={handleSubmit}>
           <DialogHeader className="mb-2 sm:mb-4">
             <DialogTitle className="text-base sm:text-lg">
-              {selectedEvent ? "Edit Event" : "Create Event"}
+              {selectedEvent ? 'Edit Event' : 'Create Event'}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
               {selectedEvent
-                ? "Edit your event details"
-                : "Add a new event to your calendar"}
+                ? 'Edit your event details'
+                : 'Add a new event to your calendar'}
             </DialogDescription>
           </DialogHeader>
 
@@ -288,7 +288,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                           className={cn(
                             `${color.value} h-6 w-6 rounded-full sm:h-8 sm:w-8`,
                             selectedColor === color.value &&
-                              "ring-2 ring-black ring-offset-1 sm:ring-offset-2"
+                              'ring-2 ring-black ring-offset-1 sm:ring-offset-2'
                           )}
                           onClick={() => setSelectedColor(color.value)}
                           aria-label={color.label}
@@ -355,12 +355,12 @@ export const EventForm: React.FC<EventFormProps> = ({
                 Cancel
               </Button>
               <Button type="submit" className="flex-1 sm:flex-none" size="sm">
-                {selectedEvent ? "Update" : "Create"}
+                {selectedEvent ? 'Update' : 'Create'}
               </Button>
             </div>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}

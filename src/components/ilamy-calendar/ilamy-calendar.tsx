@@ -1,17 +1,17 @@
-import React from "react";
-import MonthView from "../month-view/month-view";
-import WeekView from "../week-view/week-view";
-import DayView from "../day-view/day-view";
-import { EventForm } from "../event-form/event-form";
-import { Header } from "../header";
-import YearView from "../year-view/year-view";
-import { AnimatePresence, motion } from "motion/react";
-import { CalendarDndContext } from "../../contexts/calendar-dnd-context";
-import { CalendarProvider } from "../../contexts/calendar-context/provider";
-import type { CalendarEvent, WeekDays } from "../types";
-import { useCalendarContext } from "@/contexts/calendar-context/context";
-import "@/lib/dayjs-config";
-import dayjs from "@/lib/dayjs-config";
+import React from 'react'
+import MonthView from '../month-view/month-view'
+import WeekView from '../week-view/week-view'
+import DayView from '../day-view/day-view'
+import { EventForm } from '../event-form/event-form'
+import { Header } from '../header'
+import YearView from '../year-view/year-view'
+import { AnimatePresence, motion } from 'motion/react'
+import { CalendarDndContext } from '../../contexts/calendar-dnd-context'
+import { CalendarProvider } from '../../contexts/calendar-context/provider'
+import type { CalendarEvent, WeekDays } from '../types'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
+import '@/lib/dayjs-config'
+import dayjs from '@/lib/dayjs-config'
 
 const CalendarContent: React.FC = () => {
   const {
@@ -24,22 +24,22 @@ const CalendarContent: React.FC = () => {
     updateEvent,
     deleteEvent,
     dayMaxEvents,
-  } = useCalendarContext();
+  } = useCalendarContext()
 
   const viewMap = {
     month: <MonthView key="month" dayMaxEvents={dayMaxEvents} />,
     week: <WeekView key="week" />,
     day: <DayView key="day" />,
     year: <YearView key="year" />,
-  };
+  }
 
   const handleOnUpdate = (event: CalendarEvent) => {
-    updateEvent(event.id, event);
-  };
+    updateEvent(event.id, event)
+  }
 
   const handleOnDelete = (event: CalendarEvent) => {
-    deleteEvent(event.id);
-  };
+    deleteEvent(event.id)
+  }
 
   return (
     <div className="bg-card flex flex-col w-full h-full">
@@ -54,7 +54,7 @@ const CalendarContent: React.FC = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.1, ease: "easeInOut" }}
+              transition={{ duration: 0.1, ease: 'easeInOut' }}
               className="h-full w-full overflow-auto"
             >
               {viewMap[view]}
@@ -75,22 +75,22 @@ const CalendarContent: React.FC = () => {
         />
       )}
     </div>
-  );
-};
+  )
+}
 
 interface CalendarProps {
-  events?: CalendarEvent[];
-  firstDayOfWeek?: WeekDays;
-  renderEvent?: (event: CalendarEvent) => React.ReactNode;
-  onEventClick?: (event: CalendarEvent) => void;
-  onDateClick?: (date: dayjs.Dayjs) => void;
-  onViewChange?: (view: "month" | "week" | "day" | "year") => void;
-  locale?: string;
-  timezone?: string;
-  disableDateClick?: boolean;
-  disableEventClick?: boolean;
-  disableDragAndDrop?: boolean;
-  dayMaxEvents?: number;
+  events?: CalendarEvent[]
+  firstDayOfWeek?: WeekDays
+  renderEvent?: (event: CalendarEvent) => React.ReactNode
+  onEventClick?: (event: CalendarEvent) => void
+  onDateClick?: (date: dayjs.Dayjs) => void
+  onViewChange?: (view: 'month' | 'week' | 'day' | 'year') => void
+  locale?: string
+  timezone?: string
+  disableDateClick?: boolean
+  disableEventClick?: boolean
+  disableDragAndDrop?: boolean
+  dayMaxEvents?: number
 }
 
 const dayNumberMap: Record<string, number> = {
@@ -101,12 +101,12 @@ const dayNumberMap: Record<string, number> = {
   thursday: 4,
   friday: 5,
   saturday: 6,
-};
+}
 
-const DEFAULT_DAY_MAX_EVENTS = 6;
+const DEFAULT_DAY_MAX_EVENTS = 6
 export const IlamyCalendar: React.FC<CalendarProps> = ({
   events,
-  firstDayOfWeek = "sunday",
+  firstDayOfWeek = 'sunday',
   renderEvent,
   onEventClick,
   onDateClick,
@@ -135,5 +135,5 @@ export const IlamyCalendar: React.FC<CalendarProps> = ({
     >
       <CalendarContent />
     </CalendarProvider>
-  );
-};
+  )
+}

@@ -1,52 +1,51 @@
-import dayjs from "@/lib/dayjs-config";
-import { cn } from "@/lib/utils";
-import React from "react";
-import { useCalendarContext } from "../../contexts/calendar-context/context";
-import { DroppableCell } from "../droppable-cell/droppable-cell";
-import type { CalendarEvent } from "../types";
-import { AllEventDialog } from "./all-events-dialog";
-import type { SelectedDayEvents } from "./types";
+import dayjs from '@/lib/dayjs-config'
+import { cn } from '@/lib/utils'
+import React from 'react'
+import { useCalendarContext } from '../../contexts/calendar-context/context'
+import { DroppableCell } from '../droppable-cell/droppable-cell'
+import type { CalendarEvent } from '../types'
+import { AllEventDialog } from './all-events-dialog'
+import type { SelectedDayEvents } from './types'
 
 interface DayCellProps {
-  index: number; // Index of the day in the week (0-6)
-  day: dayjs.Dayjs;
-  dayMaxEvents?: number;
-  className?: string; // Optional className for custom styling
+  index: number // Index of the day in the week (0-6)
+  day: dayjs.Dayjs
+  dayMaxEvents?: number
+  className?: string // Optional className for custom styling
 }
 
 export const DayCell: React.FC<DayCellProps> = ({
   index,
   day,
-  className = "",
+  className = '',
 }) => {
   const allEventsDialogRef = React.useRef<{
-    open: () => void;
-    close: () => void;
-    setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void;
-  }>(null);
+    open: () => void
+    close: () => void
+    setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void
+  }>(null)
   const {
     events,
     currentDate,
     firstDayOfWeek,
     dayMaxEvents = 0,
-  } = useCalendarContext();
+  } = useCalendarContext()
   const todayEvents = events.filter((e) => {
-    const startsToday = e.start.isSame(day, "day");
-    const endsToday = e.end.isSame(day, "day");
-    const spansToday =
-      e.start.isBefore(day, "day") && e.end.isAfter(day, "day");
+    const startsToday = e.start.isSame(day, 'day')
+    const endsToday = e.end.isSame(day, 'day')
+    const spansToday = e.start.isBefore(day, 'day') && e.end.isAfter(day, 'day')
 
-    return startsToday || endsToday || spansToday;
-  });
+    return startsToday || endsToday || spansToday
+  })
 
   // Get start date for the current month view based on firstDayOfWeek
-  const firstDayOfMonth = currentDate.startOf("month");
+  const firstDayOfMonth = currentDate.startOf('month')
 
   // Calculate the first day of the calendar grid correctly
   // Find the first day of week (e.g. Sunday or Monday) that comes before or on the first day of the month
-  let adjustedFirstDayOfCalendar = firstDayOfMonth.clone();
+  let adjustedFirstDayOfCalendar = firstDayOfMonth.clone()
   while (adjustedFirstDayOfCalendar.day() !== firstDayOfWeek) {
-    adjustedFirstDayOfCalendar = adjustedFirstDayOfCalendar.subtract(1, "day");
+    adjustedFirstDayOfCalendar = adjustedFirstDayOfCalendar.subtract(1, 'day')
   }
 
   // Handler for showing all events in a dialog
@@ -54,29 +53,29 @@ export const DayCell: React.FC<DayCellProps> = ({
     allEventsDialogRef.current?.setSelectedDayEvents({
       day,
       events,
-    });
-    allEventsDialogRef.current?.open();
-  };
+    })
+    allEventsDialogRef.current?.open()
+  }
 
-  const isToday = day.isSame(dayjs(), "day");
-  const isCurrentMonth = day.month() === currentDate.month();
-  const isLastColumn = index === 6; // Saturday is the last column in a week
+  const isToday = day.isSame(dayjs(), 'day')
+  const isCurrentMonth = day.month() === currentDate.month()
+  const isLastColumn = index === 6 // Saturday is the last column in a week
 
-  const hiddenEventsCount = todayEvents.length - dayMaxEvents;
-  const hasHiddenEvents = hiddenEventsCount > 0;
+  const hiddenEventsCount = todayEvents.length - dayMaxEvents
+  const hasHiddenEvents = hiddenEventsCount > 0
 
   return (
     <>
       <DroppableCell
-        id={`day-cell-${day.format("YYYY-MM-DD")}`}
+        id={`day-cell-${day.format('YYYY-MM-DD')}`}
         type="day-cell"
         date={day}
         className={cn(
-          "cursor-pointer overflow-hidden p-1",
+          'cursor-pointer overflow-hidden p-1',
           !isCurrentMonth &&
-            "bg-muted/75 dark:bg-gray-900/50 text-muted-foreground",
-          isToday && "bg-primary/10",
-          isLastColumn && "border-r-0",
+            'bg-muted/75 dark:bg-gray-900/50 text-muted-foreground',
+          isToday && 'bg-primary/10',
+          isLastColumn && 'border-r-0',
           className
         )}
       >
@@ -87,8 +86,8 @@ export const DayCell: React.FC<DayCellProps> = ({
           {/* Day number */}
           <div
             className={cn(
-              "flex h-5 w-5 items-center justify-center rounded-full text-xs sm:h-6 sm:w-6 sm:text-sm",
-              isToday && "bg-primary text-primary-foreground font-medium"
+              'flex h-5 w-5 items-center justify-center rounded-full text-xs sm:h-6 sm:w-6 sm:text-sm',
+              isToday && 'bg-primary text-primary-foreground font-medium'
             )}
           >
             {day.date()}
@@ -108,9 +107,9 @@ export const DayCell: React.FC<DayCellProps> = ({
             <div
               className="text-muted-foreground hover:text-foreground cursor-pointer text-[10px] whitespace-nowrap sm:text-xs mt-1"
               onClick={(e) => {
-                e.stopPropagation();
+                e.stopPropagation()
 
-                showAllEvents(day, todayEvents);
+                showAllEvents(day, todayEvents)
               }}
             >
               +{hiddenEventsCount} more
@@ -122,5 +121,5 @@ export const DayCell: React.FC<DayCellProps> = ({
       {/* Dialog for showing all events */}
       <AllEventDialog ref={allEventsDialogRef} />
     </>
-  );
-};
+  )
+}

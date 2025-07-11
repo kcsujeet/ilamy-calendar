@@ -1,20 +1,20 @@
-import { useProcessedDayEvents } from "@/hooks/useProcessedDayEvents";
-import DraggableEvent from "../draggable-event/draggable-event";
-import dayjs from "dayjs";
+import { useProcessedDayEvents } from '@/hooks/useProcessedDayEvents'
+import DraggableEvent from '../draggable-event/draggable-event'
+import dayjs from 'dayjs'
 
 interface DayEventsLayerProps {
-  day: dayjs.Dayjs; // The specific day this layer represents
+  day: dayjs.Dayjs // The specific day this layer represents
 }
 
 export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({ day }) => {
-  const todayEvents = useProcessedDayEvents({ day });
+  const todayEvents = useProcessedDayEvents({ day })
 
   return (
     <div className="pointer-events-none absolute inset-0 z-30">
       {todayEvents.map((event, index) => {
         const veryVeryUniqueKey = `event-${event.id}-${index}-${day.format(
-          "YYYY-MM-DD"
-        )}`;
+          'YYYY-MM-DD'
+        )}`
         return (
           <div
             key={`container-${veryVeryUniqueKey}`}
@@ -32,8 +32,8 @@ export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({ day }) => {
               className="pointer-events-auto absolute"
             />
           </div>
-        );
+        )
       })}
     </div>
-  );
-};
+  )
+}

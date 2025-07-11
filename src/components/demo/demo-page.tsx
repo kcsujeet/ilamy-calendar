@@ -1,67 +1,67 @@
-import dummyEvents from "@/lib/seed";
-import { cn } from "@/lib/utils";
-import type { CalendarEvent, WeekDays } from "@/components/types";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useState } from "react";
-import { DemoCalendarSettings } from "./demo-calendar-settings";
-import type dayjs from "dayjs";
-import { IlamyCalendar } from "@/components/ilamy-calendar/ilamy-calendar";
+import dummyEvents from '@/lib/seed'
+import { cn } from '@/lib/utils'
+import type { CalendarEvent, WeekDays } from '@/components/types'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { useState } from 'react'
+import { DemoCalendarSettings } from './demo-calendar-settings'
+import type dayjs from 'dayjs'
+import { IlamyCalendar } from '@/components/ilamy-calendar/ilamy-calendar'
 
 export function DemoPage() {
   // Calendar configuration state
-  const [calendarKey, setCalendarKey] = useState(0);
-  const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>("sunday");
-  const [customEvents] = useState<CalendarEvent[]>(dummyEvents);
-  const [useCustomEventRenderer, setUseCustomEventRenderer] = useState(false);
-  const [locale, setLocale] = useState("en");
+  const [calendarKey, setCalendarKey] = useState(0)
+  const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>('sunday')
+  const [customEvents] = useState<CalendarEvent[]>(dummyEvents)
+  const [useCustomEventRenderer, setUseCustomEventRenderer] = useState(false)
+  const [locale, setLocale] = useState('en')
   const [timezone, setTimezone] = useState(() => {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone;
-  });
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  })
 
   // Disable functionality state
-  const [disableDateClick, setDisableDateClick] = useState(false);
-  const [disableEventClick, setDisableEventClick] = useState(false);
-  const [disableDragAndDrop, setDisableDragAndDrop] = useState(false);
+  const [disableDateClick, setDisableDateClick] = useState(false)
+  const [disableEventClick, setDisableEventClick] = useState(false)
+  const [disableDragAndDrop, setDisableDragAndDrop] = useState(false)
 
   // Custom handler state
-  const [useCustomOnDateClick, setUseCustomOnDateClick] = useState(false);
-  const [useCustomOnEventClick, setUseCustomOnEventClick] = useState(false);
+  const [useCustomOnDateClick, setUseCustomOnDateClick] = useState(false)
+  const [useCustomOnEventClick, setUseCustomOnEventClick] = useState(false)
 
   // UI settings
-  const [calendarHeight, setCalendarHeight] = useState("auto");
-  const [dayMaxEvents, setDayMaxEvents] = useState(3);
+  const [calendarHeight, setCalendarHeight] = useState('auto')
+  const [dayMaxEvents, setDayMaxEvents] = useState(3)
 
   // Event handlers
   const handleEventClick = (event: CalendarEvent) => {
-    alert(`Event clicked: ${event.title}`);
-  };
+    alert(`Event clicked: ${event.title}`)
+  }
 
   const handleDateClick = (date: dayjs.Dayjs) => {
-    alert(`Date clicked: ${date.toISOString()}`);
-  };
+    alert(`Date clicked: ${date.toISOString()}`)
+  }
 
   const handleSetLocale = (newLocale: string) => {
-    setLocale(newLocale);
+    setLocale(newLocale)
     // wait for the uesEffect to complete
     setTimeout(() => {
       // Force re-render to apply locale changes
-      setCalendarKey((prev) => prev + 1);
-    }, 10);
-  };
+      setCalendarKey((prev) => prev + 1)
+    }, 10)
+  }
 
   // Custom event renderer function
   const renderEvent = (event: CalendarEvent) => {
     return (
       <div
         className={cn(
-          "border-primary bg-card border-1 border-l-2 px-2 truncate w-full h-full",
-          event.color || "bg-blue-100 text-blue-800"
+          'border-primary bg-card border-1 border-l-2 px-2 truncate w-full h-full',
+          event.color || 'bg-blue-100 text-blue-800'
         )}
       >
         {event.title}
       </div>
-    );
-  };
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 relative">
@@ -144,5 +144,5 @@ export function DemoPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

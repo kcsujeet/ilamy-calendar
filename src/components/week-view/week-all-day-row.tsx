@@ -1,32 +1,32 @@
-import { useCalendarContext } from "@/contexts/calendar-context/context";
-import dayjs from "dayjs";
-import React, { useMemo } from "react";
-import DraggableEvent from "../draggable-event/draggable-event";
-import { DroppableCell } from "../droppable-cell/droppable-cell";
-import { CalendarEvent, ProcessedCalendarEvent } from "../types";
+import { useCalendarContext } from '@/contexts/calendar-context/context'
+import dayjs from 'dayjs'
+import React, { useMemo } from 'react'
+import DraggableEvent from '../draggable-event/draggable-event'
+import { DroppableCell } from '../droppable-cell/droppable-cell'
+import { CalendarEvent, ProcessedCalendarEvent } from '../types'
 
 export const WeekAllDayRow: React.FC = () => {
   const { currentDate, getEventsForDateRange, firstDayOfWeek } =
-    useCalendarContext();
+    useCalendarContext()
 
   // Get start and end of current week based on firstDayOfWeek setting
-  const startOfWeek = currentDate.startOf("week").day(firstDayOfWeek);
+  const startOfWeek = currentDate.startOf('week').day(firstDayOfWeek)
   // If current date is before the start of week, move back one week
   const adjustedStartOfWeek = currentDate.isBefore(startOfWeek)
-    ? startOfWeek.subtract(1, "week")
-    : startOfWeek;
-  const endOfWeek = adjustedStartOfWeek.add(6, "day");
+    ? startOfWeek.subtract(1, 'week')
+    : startOfWeek
+  const endOfWeek = adjustedStartOfWeek.add(6, 'day')
 
   // Create an array of days for the current week
-  const weekDays = [];
+  const weekDays = []
   for (let i = 0; i < 7; i++) {
-    weekDays.push(adjustedStartOfWeek.add(i, "day"));
+    weekDays.push(adjustedStartOfWeek.add(i, 'day'))
   }
 
   // Get events that might overlap with this week (expand search range)
-  const expandedStartDate = adjustedStartOfWeek.subtract(6, "day"); // Look 6 days before week start
-  const expandedEndDate = endOfWeek.add(6, "day"); // Look 6 days after week end
-  const allEvents = getEventsForDateRange(expandedStartDate, expandedEndDate);
+  const expandedStartDate = adjustedStartOfWeek.subtract(6, 'day') // Look 6 days before week start
+  const expandedEndDate = endOfWeek.add(6, 'day') // Look 6 days after week end
+  const allEvents = getEventsForDateRange(expandedStartDate, expandedEndDate)
 
   // Filter events that actually overlap with the current week
   const weekEvents = allEvents.filter((event) => {
@@ -41,79 +41,76 @@ export const WeekAllDayRow: React.FC = () => {
       // Or the event spans the entire week (starts before and ends after)
       (event.start.isBefore(adjustedStartOfWeek) &&
         event.end.isAfter(endOfWeek))
-    );
-  });
+    )
+  })
 
   // Separate all-day events from regular events (including multi-day events)
-  const allDayEvents = weekEvents.filter((event) => event.all_day);
+  const allDayEvents = weekEvents.filter((event) => event.all_day)
 
   // Process and layout all-day events to avoid overlapping
   const { processedAllDayEvents } = useMemo(() => {
     // Sort all-day events by start date and then by duration (longer events first)
     const sortedEvents = [...allDayEvents].sort((a, b) => {
       // First compare by start date
-      const startDiff = a.start.diff(b.start);
-      if (startDiff !== 0) return startDiff;
+      const startDiff = a.start.diff(b.start)
+      if (startDiff !== 0) return startDiff
 
       // If start dates are the same, longer events come first
-      const aDuration = a.end.diff(a.start);
-      const bDuration = b.end.diff(b.start);
-      return bDuration - aDuration;
-    });
+      const aDuration = a.end.diff(a.start)
+      const bDuration = b.end.diff(b.start)
+      return bDuration - aDuration
+    })
 
     // Track positions in rows
-    const rows: { end: dayjs.Dayjs; event: CalendarEvent }[][] = [];
-    const processedEvents: ProcessedCalendarEvent[] = [];
+    const rows: { end: dayjs.Dayjs; event: CalendarEvent }[][] = []
+    const processedEvents: ProcessedCalendarEvent[] = []
 
     sortedEvents.forEach((event) => {
       // Calculate which days this event spans
       const eventStart = event.start.isBefore(adjustedStartOfWeek)
         ? adjustedStartOfWeek
-        : event.start;
-      const eventEnd = event.end.isAfter(endOfWeek) ? endOfWeek : event.end;
+        : event.start
+      const eventEnd = event.end.isAfter(endOfWeek) ? endOfWeek : event.end
 
       // Calculate position as percentage of the week width
       const startDayIndex = Math.max(
         0,
-        eventStart.diff(adjustedStartOfWeek, "day")
-      );
-      const endDayIndex = Math.min(
-        6,
-        eventEnd.diff(adjustedStartOfWeek, "day")
-      );
+        eventStart.diff(adjustedStartOfWeek, 'day')
+      )
+      const endDayIndex = Math.min(6, eventEnd.diff(adjustedStartOfWeek, 'day'))
 
-      const left = (startDayIndex / 7) * 100;
-      const width = ((endDayIndex - startDayIndex + 1) / 7) * 100;
+      const left = (startDayIndex / 7) * 100
+      const width = ((endDayIndex - startDayIndex + 1) / 7) * 100
 
       // Find a row where this event can fit
-      let rowIndex = 0;
-      let placed = false;
+      let rowIndex = 0
+      let placed = false
 
       while (!placed) {
         if (rowIndex >= rows.length) {
           // Create a new row if needed
-          rows.push([]);
-          placed = true;
+          rows.push([])
+          placed = true
         } else {
           // Check if this event can fit in the current row
-          const row = rows[rowIndex];
+          const row = rows[rowIndex]
           const canFit = row.every((item) => {
             return (
               eventStart.isAfter(item.end) ||
               eventEnd.isBefore(item.event.start)
-            );
-          });
+            )
+          })
 
           if (canFit) {
-            placed = true;
+            placed = true
           } else {
-            rowIndex++;
+            rowIndex++
           }
         }
       }
 
       // Add event to the row
-      rows[rowIndex].push({ end: eventEnd, event });
+      rows[rowIndex].push({ end: eventEnd, event })
 
       // Add processed event with correct positioning
       processedEvents.push({
@@ -123,14 +120,14 @@ export const WeekAllDayRow: React.FC = () => {
         top: rowIndex * 28,
         height: 24,
         all_day: true,
-      });
-    });
+      })
+    })
 
     return {
       processedAllDayEvents: processedEvents,
       allDayRowsCount: Math.max(1, rows.length), // At least 1 row, even if empty
-    };
-  }, [allDayEvents, adjustedStartOfWeek, endOfWeek]);
+    }
+  }, [allDayEvents, adjustedStartOfWeek, endOfWeek])
 
   return (
     <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1 relative">
@@ -144,8 +141,8 @@ export const WeekAllDayRow: React.FC = () => {
       {/* Droppable cells for each day */}
       {weekDays.map((day) => (
         <DroppableCell
-          key={`all-day-${day.format("YYYY-MM-DD")}`}
-          id={`all-day-cell-${day.format("YYYY-MM-DD")}`}
+          key={`all-day-${day.format('YYYY-MM-DD')}`}
+          id={`all-day-cell-${day.format('YYYY-MM-DD')}`}
           type="day-cell"
           date={day}
           hour={0}
@@ -177,5 +174,5 @@ export const WeekAllDayRow: React.FC = () => {
         ))}
       </div>
     </div>
-  );
-};
+  )
+}

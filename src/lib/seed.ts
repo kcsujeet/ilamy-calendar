@@ -1,7 +1,7 @@
-import dayjs from 'dayjs';
+import dayjs from 'dayjs'
 
 // Use a fixed month reference point for consistent display
-const baseDate = dayjs().startOf('month').date(1);
+const baseDate = dayjs().startOf('month').date(1)
 
 const dummyEvents = [
   // First week events
@@ -237,6 +237,6 @@ const dummyEvents = [
     color: 'bg-red-100 text-red-800',
     all_day: true,
   },
-];
+]
 
-export default dummyEvents;
+export default dummyEvents

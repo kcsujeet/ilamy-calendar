@@ -1,27 +1,27 @@
-import { AnimatePresence, motion } from 'motion/react';
-import React, { useMemo } from 'react';
-import { useCalendarContext } from '../../contexts/calendar-context/context';
-import dayjs from 'dayjs';
+import { AnimatePresence, motion } from 'motion/react'
+import React, { useMemo } from 'react'
+import { useCalendarContext } from '../../contexts/calendar-context/context'
+import dayjs from 'dayjs'
 
 export const MonthHeader: React.FC = () => {
-  const { firstDayOfWeek, currentLocale } = useCalendarContext();
+  const { firstDayOfWeek, currentLocale } = useCalendarContext()
 
   // Reorder week days based on firstDayOfWeek
   const weekDays = useMemo(() => {
-    const days = dayjs.weekdays().map((day) => day.toLowerCase());
-    const shortDays = dayjs.weekdaysShort().map((day) => day.toLowerCase());
+    const days = dayjs.weekdays().map((day) => day.toLowerCase())
+    const shortDays = dayjs.weekdaysShort().map((day) => day.toLowerCase())
 
     // Rotate the array based on firstDayOfWeek
     for (let i = 0; i < firstDayOfWeek; i++) {
-      const dayToMove = days.shift();
-      const shortDayToMove = shortDays.shift();
-      if (dayToMove) days.push(dayToMove);
-      if (shortDayToMove) shortDays.push(shortDayToMove);
+      const dayToMove = days.shift()
+      const shortDayToMove = shortDays.shift()
+      if (dayToMove) days.push(dayToMove)
+      if (shortDayToMove) shortDays.push(shortDayToMove)
     }
 
-    return { days, shortDays };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firstDayOfWeek, currentLocale]);
+    return { days, shortDays }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstDayOfWeek, currentLocale])
 
   return (
     <div className="bg-card sticky top-0 z-10 grid grid-cols-7 border-b">
@@ -47,5 +47,5 @@ export const MonthHeader: React.FC = () => {
         </AnimatePresence>
       ))}
     </div>
-  );
-};
+  )
+}

@@ -1,12 +1,12 @@
-import { ScrollArea } from "@/components/ui";
-import dayjs from "dayjs";
-import weekOfYear from "dayjs/plugin/weekOfYear";
-import React from "react";
-import { WeekAllDayRow } from "./week-all-day-row";
-import { WeekHeader } from "./week-header";
-import { WeekTimeGrid } from "./week-time-grid";
+import { ScrollArea } from '@/components/ui'
+import dayjs from 'dayjs'
+import weekOfYear from 'dayjs/plugin/weekOfYear'
+import React from 'react'
+import { WeekAllDayRow } from './week-all-day-row'
+import { WeekHeader } from './week-header'
+import { WeekTimeGrid } from './week-time-grid'
 // Add weekOfYear plugin to dayjs
-dayjs.extend(weekOfYear);
+dayjs.extend(weekOfYear)
 
 const WeekView: React.FC = () => {
   return (
@@ -22,7 +22,7 @@ const WeekView: React.FC = () => {
         <WeekTimeGrid />
       </ScrollArea>
     </div>
-  );
-};
+  )
+}
 
-export default WeekView;
+export default WeekView

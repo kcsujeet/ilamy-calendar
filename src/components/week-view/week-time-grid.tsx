@@ -1,33 +1,33 @@
-import { useCalendarContext } from "@/contexts/calendar-context/context";
-import dayjs from "dayjs";
-import React from "react";
-import { WeekDayCol } from "./week-day-col";
+import { useCalendarContext } from '@/contexts/calendar-context/context'
+import dayjs from 'dayjs'
+import React from 'react'
+import { WeekDayCol } from './week-day-col'
 
 const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) =>
   dayjs().hour(hour).minute(0)
-);
+)
 
 export const WeekTimeGrid: React.FC = () => {
-  const { currentDate, firstDayOfWeek } = useCalendarContext();
+  const { currentDate, firstDayOfWeek } = useCalendarContext()
 
   // Get start and end of current week based on firstDayOfWeek setting
-  const startOfWeek = currentDate.startOf("week").day(firstDayOfWeek);
+  const startOfWeek = currentDate.startOf('week').day(firstDayOfWeek)
   // If current date is before the start of week, move back one week
   const adjustedStartOfWeek = currentDate.isBefore(startOfWeek)
-    ? startOfWeek.subtract(1, "week")
-    : startOfWeek;
+    ? startOfWeek.subtract(1, 'week')
+    : startOfWeek
 
   // Create an array of days for the current week
-  const weekDays = [];
+  const weekDays = []
   for (let i = 0; i < 7; i++) {
-    weekDays.push(adjustedStartOfWeek.add(i, "day"));
+    weekDays.push(adjustedStartOfWeek.add(i, 'day'))
   }
 
   // Separate all-day events from regular events (including multi-day events)
 
   // Find if current day is in the displayed week
-  const todayIndex = weekDays.findIndex((day) => day.isSame(dayjs(), "day"));
-  const isCurrentWeek = todayIndex !== -1;
+  const todayIndex = weekDays.findIndex((day) => day.isSame(dayjs(), 'day'))
+  const isCurrentWeek = todayIndex !== -1
 
   return (
     <div className="relative h-full grid grid-cols-[auto_repeat(7,1fr)] grid-rows-[repeat(24,minmax(60px, 1fr))] overflow-hidden">
@@ -35,11 +35,11 @@ export const WeekTimeGrid: React.FC = () => {
       <div className="bg-card z-10 col-span-1 w-14 grid grid-rows-24 border-x">
         {hours.map((time) => (
           <div
-            key={time.format("HH:mm")}
+            key={time.format('HH:mm')}
             className="h-[60px] border-b text-right"
           >
             <span className="text-muted-foreground pr-2 text-right text-[10px] sm:text-xs">
-              {time.format("h A")}
+              {time.format('h A')}
             </span>
           </div>
         ))}
@@ -47,7 +47,7 @@ export const WeekTimeGrid: React.FC = () => {
 
       {/* Day columns with time slots */}
       {weekDays.map((day) => (
-        <WeekDayCol key={day.format("YYYY-MM-DD")} day={day} />
+        <WeekDayCol key={day.format('YYYY-MM-DD')} day={day} />
       ))}
 
       {/* Current time indicator */}
@@ -66,5 +66,5 @@ export const WeekTimeGrid: React.FC = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}

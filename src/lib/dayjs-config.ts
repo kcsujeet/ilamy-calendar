@@ -1,169 +1,169 @@
-import dayjs from 'dayjs';
-import weekday from 'dayjs/plugin/weekday';
-import weekOfYear from 'dayjs/plugin/weekOfYear';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-import isBetween from 'dayjs/plugin/isBetween';
-import minMax from 'dayjs/plugin/minMax';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
-import localeData from 'dayjs/plugin/localeData';
+import dayjs from 'dayjs'
+import weekday from 'dayjs/plugin/weekday'
+import weekOfYear from 'dayjs/plugin/weekOfYear'
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
+import isBetween from 'dayjs/plugin/isBetween'
+import minMax from 'dayjs/plugin/minMax'
+import timezone from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
+import localeData from 'dayjs/plugin/localeData'
 
 // Import all dayjs locales alphabetically
 // locale.json file: [{"key":"af","name":"Afrikaans"},{"key":"am","name":"Amharic"},{"key":"ar-dz","name":"Arabic (Algeria)"},{"key":"ar-iq","name":" Arabic (Iraq)"},{"key":"ar-kw","name":"Arabic (Kuwait)"},{"key":"ar-ly","name":"Arabic (Lybia)"},{"key":"ar-ma","name":"Arabic (Morocco)"},{"key":"ar-sa","name":"Arabic (Saudi Arabia)"},{"key":"ar-tn","name":" Arabic (Tunisia)"},{"key":"ar","name":"Arabic"},{"key":"az","name":"Azerbaijani"},{"key":"be","name":"Belarusian"},{"key":"bg","name":"Bulgarian"},{"key":"bi","name":"Bislama"},{"key":"bm","name":"Bambara"},{"key":"bn-bd","name":"Bengali (Bangladesh)"},{"key":"bn","name":"Bengali"},{"key":"bo","name":"Tibetan"},{"key":"br","name":"Breton"},{"key":"bs","name":"Bosnian"},{"key":"ca","name":"Catalan"},{"key":"cs","name":"Czech"},{"key":"cv","name":"Chuvash"},{"key":"cy","name":"Welsh"},{"key":"de-at","name":"German (Austria)"},{"key":"da","name":"Danish"},{"key":"de-ch","name":"German (Switzerland)"},{"key":"de","name":"German"},{"key":"dv","name":"Maldivian"},{"key":"el","name":"Greek"},{"key":"en-au","name":"English (Australia)"},{"key":"en-ca","name":"English (Canada)"},{"key":"en-gb","name":"English (United Kingdom)"},{"key":"en-ie","name":"English (Ireland)"},{"key":"en-il","name":"English (Israel)"},{"key":"en-in","name":"English (India)"},{"key":"en-nz","name":"English (New Zealand)"},{"key":"en-sg","name":"English (Singapore)"},{"key":"en-tt","name":"English (Trinidad & Tobago)"},{"key":"eo","name":"Esperanto"},{"key":"en","name":"English"},{"key":"es-do","name":"Spanish (Dominican Republic)"},{"key":"es-mx","name":"Spanish (Mexico)"},{"key":"es-pr","name":"Spanish (Puerto Rico)"},{"key":"es-us","name":"Spanish (United States)"},{"key":"et","name":"Estonian"},{"key":"es","name":"Spanish"},{"key":"eu","name":"Basque"},{"key":"fa","name":"Persian"},{"key":"fo","name":"Faroese"},{"key":"fi","name":"Finnish"},{"key":"fr-ca","name":"French (Canada)"},{"key":"fr-ch","name":"French (Switzerland)"},{"key":"fr","name":"French"},{"key":"fy","name":"Frisian"},{"key":"ga","name":"Irish or Irish Gaelic"},{"key":"gd","name":"Scottish Gaelic"},{"key":"gom-latn","name":"Konkani Latin script"},{"key":"gl","name":"Galician"},{"key":"gu","name":"Gujarati"},{"key":"he","name":"Hebrew"},{"key":"hi","name":"Hindi"},{"key":"hr","name":"Croatian"},{"key":"hu","name":"Hungarian"},{"key":"ht","name":"Haitian Creole (Haiti)"},{"key":"hy-am","name":"Armenian"},{"key":"id","name":"Indonesian"},{"key":"is","name":"Icelandic"},{"key":"it-ch","name":"Italian (Switzerland)"},{"key":"it","name":"Italian"},{"key":"ja","name":"Japanese"},{"key":"jv","name":"Javanese"},{"key":"ka","name":"Georgian"},{"key":"kk","name":"Kazakh"},{"key":"km","name":"Cambodian"},{"key":"kn","name":"Kannada"},{"key":"ko","name":"Korean"},{"key":"ku","name":"Kurdish"},{"key":"ky","name":"Kyrgyz"},{"key":"lb","name":"Luxembourgish"},{"key":"lo","name":"Lao"},{"key":"lt","name":"Lithuanian"},{"key":"lv","name":"Latvian"},{"key":"me","name":"Montenegrin"},{"key":"mi","name":"Maori"},{"key":"mk","name":"Macedonian"},{"key":"ml","name":"Malayalam"},{"key":"mn","name":"Mongolian"},{"key":"mr","name":"Marathi"},{"key":"ms-my","name":"Malay"},{"key":"ms","name":"Malay"},{"key":"mt","name":"Maltese (Malta)"},{"key":"my","name":"Burmese"},{"key":"nb","name":"Norwegian Bokmål"},{"key":"ne","name":"Nepalese"},{"key":"nl-be","name":"Dutch (Belgium)"},{"key":"nl","name":"Dutch"},{"key":"pl","name":"Polish"},{"key":"pt-br","name":"Portuguese (Brazil)"},{"key":"pt","name":"Portuguese"},{"key":"rn","name":"Kirundi"},{"key":"ro","name":"Romanian"},{"key":"ru","name":"Russian"},{"key":"rw","name":"Kinyarwanda (Rwanda)"},{"key":"sd","name":"Sindhi"},{"key":"se","name":"Northern Sami"},{"key":"si","name":"Sinhalese"},{"key":"sk","name":"Slovak"},{"key":"sl","name":"Slovenian"},{"key":"sq","name":"Albanian"},{"key":"sr-cyrl","name":"Serbian Cyrillic"},{"key":"ss","name":"siSwati"},{"key":"sv-fi","name":"Finland Swedish"},{"key":"sr","name":"Serbian"},{"key":"sv","name":"Swedish"},{"key":"sw","name":"Swahili"},{"key":"ta","name":"Tamil"},{"key":"te","name":"Telugu"},{"key":"tet","name":"Tetun Dili (East Timor)"},{"key":"tg","name":"Tajik"},{"key":"th","name":"Thai"},{"key":"tk","name":"Turkmen"},{"key":"tl-ph","name":"Tagalog (Philippines)"},{"key":"tlh","name":"Klingon"},{"key":"tr","name":"Turkish"},{"key":"tzl","name":"Talossan"},{"key":"tzm-latn","name":"Central Atlas Tamazight Latin"},{"key":"tzm","name":"Central Atlas Tamazight"},{"key":"ug-cn","name":"Uyghur (China)"},{"key":"uk","name":"Ukrainian"},{"key":"ur","name":"Urdu"},{"key":"uz-latn","name":"Uzbek Latin"},{"key":"uz","name":"Uzbek"},{"key":"vi","name":"Vietnamese"},{"key":"x-pseudo","name":"Pseudo"},{"key":"yo","name":"Yoruba Nigeria"},{"key":"zh-cn","name":"Chinese (China)"},{"key":"zh-hk","name":"Chinese (Hong Kong)"},{"key":"zh-tw","name":"Chinese (Taiwan)"},{"key":"zh","name":"Chinese"},{"key":"oc-lnc","name":"Occitan, lengadocian dialecte"},{"key":"nn","name":"Nynorsk"},{"key":"pa-in","name":"Punjabi (India)"}]
-import 'dayjs/locale/af';
-import 'dayjs/locale/am';
-import 'dayjs/locale/ar-dz';
-import 'dayjs/locale/ar-iq';
-import 'dayjs/locale/ar-kw';
-import 'dayjs/locale/ar-ly';
-import 'dayjs/locale/ar-ma';
-import 'dayjs/locale/ar-sa';
-import 'dayjs/locale/ar-tn';
-import 'dayjs/locale/ar';
-import 'dayjs/locale/az';
-import 'dayjs/locale/be';
-import 'dayjs/locale/bg';
-import 'dayjs/locale/bi';
-import 'dayjs/locale/bm';
-import 'dayjs/locale/bn-bd';
-import 'dayjs/locale/bn';
-import 'dayjs/locale/bo';
-import 'dayjs/locale/br';
-import 'dayjs/locale/bs';
-import 'dayjs/locale/ca';
-import 'dayjs/locale/cs';
-import 'dayjs/locale/cv';
-import 'dayjs/locale/cy';
-import 'dayjs/locale/da';
-import 'dayjs/locale/de-at';
-import 'dayjs/locale/de-ch';
-import 'dayjs/locale/de';
-import 'dayjs/locale/dv';
-import 'dayjs/locale/el';
-import 'dayjs/locale/en-au';
-import 'dayjs/locale/en-ca';
-import 'dayjs/locale/en-gb';
-import 'dayjs/locale/en-ie';
-import 'dayjs/locale/en-il';
-import 'dayjs/locale/en-in';
-import 'dayjs/locale/en-nz';
-import 'dayjs/locale/en-sg';
-import 'dayjs/locale/en-tt';
-import 'dayjs/locale/en';
-import 'dayjs/locale/eo';
-import 'dayjs/locale/es-do';
-import 'dayjs/locale/es-mx';
-import 'dayjs/locale/es-pr';
-import 'dayjs/locale/es-us';
-import 'dayjs/locale/es';
-import 'dayjs/locale/et';
-import 'dayjs/locale/eu';
-import 'dayjs/locale/fa';
-import 'dayjs/locale/fi';
-import 'dayjs/locale/fo';
-import 'dayjs/locale/fr-ca';
-import 'dayjs/locale/fr-ch';
-import 'dayjs/locale/fr';
-import 'dayjs/locale/fy';
-import 'dayjs/locale/ga';
-import 'dayjs/locale/gd';
-import 'dayjs/locale/gl';
-import 'dayjs/locale/gom-latn';
-import 'dayjs/locale/gu';
-import 'dayjs/locale/he';
-import 'dayjs/locale/hi';
-import 'dayjs/locale/hr';
-import 'dayjs/locale/ht';
-import 'dayjs/locale/hu';
-import 'dayjs/locale/hy-am';
-import 'dayjs/locale/id';
-import 'dayjs/locale/is';
-import 'dayjs/locale/it-ch';
-import 'dayjs/locale/it';
-import 'dayjs/locale/ja';
-import 'dayjs/locale/jv';
-import 'dayjs/locale/ka';
-import 'dayjs/locale/kk';
-import 'dayjs/locale/km';
-import 'dayjs/locale/kn';
-import 'dayjs/locale/ko';
-import 'dayjs/locale/ku';
-import 'dayjs/locale/ky';
-import 'dayjs/locale/lb';
-import 'dayjs/locale/lo';
-import 'dayjs/locale/lt';
-import 'dayjs/locale/lv';
-import 'dayjs/locale/me';
-import 'dayjs/locale/mi';
-import 'dayjs/locale/mk';
-import 'dayjs/locale/ml';
-import 'dayjs/locale/mn';
-import 'dayjs/locale/mr';
-import 'dayjs/locale/ms-my';
-import 'dayjs/locale/ms';
-import 'dayjs/locale/mt';
-import 'dayjs/locale/my';
-import 'dayjs/locale/nb';
-import 'dayjs/locale/ne';
-import 'dayjs/locale/nl-be';
-import 'dayjs/locale/nl';
-import 'dayjs/locale/nn';
-import 'dayjs/locale/oc-lnc';
-import 'dayjs/locale/pa-in';
-import 'dayjs/locale/pl';
-import 'dayjs/locale/pt-br';
-import 'dayjs/locale/pt';
-import 'dayjs/locale/rn';
-import 'dayjs/locale/ro';
-import 'dayjs/locale/ru';
-import 'dayjs/locale/rw';
-import 'dayjs/locale/sd';
-import 'dayjs/locale/se';
-import 'dayjs/locale/si';
-import 'dayjs/locale/sk';
-import 'dayjs/locale/sl';
-import 'dayjs/locale/sq';
-import 'dayjs/locale/sr-cyrl';
-import 'dayjs/locale/sr';
-import 'dayjs/locale/ss';
-import 'dayjs/locale/sv-fi';
-import 'dayjs/locale/sv';
-import 'dayjs/locale/sw';
-import 'dayjs/locale/ta';
-import 'dayjs/locale/te';
-import 'dayjs/locale/tet';
-import 'dayjs/locale/tg';
-import 'dayjs/locale/th';
-import 'dayjs/locale/tk';
-import 'dayjs/locale/tl-ph';
-import 'dayjs/locale/tlh';
-import 'dayjs/locale/tr';
-import 'dayjs/locale/tzl';
-import 'dayjs/locale/tzm-latn';
-import 'dayjs/locale/tzm';
-import 'dayjs/locale/ug-cn';
-import 'dayjs/locale/uk';
-import 'dayjs/locale/ur';
-import 'dayjs/locale/uz-latn';
-import 'dayjs/locale/uz';
-import 'dayjs/locale/vi';
-import 'dayjs/locale/x-pseudo';
-import 'dayjs/locale/yo';
-import 'dayjs/locale/zh-cn';
-import 'dayjs/locale/zh-hk';
-import 'dayjs/locale/zh-tw';
-import 'dayjs/locale/zh';
+import 'dayjs/locale/af'
+import 'dayjs/locale/am'
+import 'dayjs/locale/ar-dz'
+import 'dayjs/locale/ar-iq'
+import 'dayjs/locale/ar-kw'
+import 'dayjs/locale/ar-ly'
+import 'dayjs/locale/ar-ma'
+import 'dayjs/locale/ar-sa'
+import 'dayjs/locale/ar-tn'
+import 'dayjs/locale/ar'
+import 'dayjs/locale/az'
+import 'dayjs/locale/be'
+import 'dayjs/locale/bg'
+import 'dayjs/locale/bi'
+import 'dayjs/locale/bm'
+import 'dayjs/locale/bn-bd'
+import 'dayjs/locale/bn'
+import 'dayjs/locale/bo'
+import 'dayjs/locale/br'
+import 'dayjs/locale/bs'
+import 'dayjs/locale/ca'
+import 'dayjs/locale/cs'
+import 'dayjs/locale/cv'
+import 'dayjs/locale/cy'
+import 'dayjs/locale/da'
+import 'dayjs/locale/de-at'
+import 'dayjs/locale/de-ch'
+import 'dayjs/locale/de'
+import 'dayjs/locale/dv'
+import 'dayjs/locale/el'
+import 'dayjs/locale/en-au'
+import 'dayjs/locale/en-ca'
+import 'dayjs/locale/en-gb'
+import 'dayjs/locale/en-ie'
+import 'dayjs/locale/en-il'
+import 'dayjs/locale/en-in'
+import 'dayjs/locale/en-nz'
+import 'dayjs/locale/en-sg'
+import 'dayjs/locale/en-tt'
+import 'dayjs/locale/en'
+import 'dayjs/locale/eo'
+import 'dayjs/locale/es-do'
+import 'dayjs/locale/es-mx'
+import 'dayjs/locale/es-pr'
+import 'dayjs/locale/es-us'
+import 'dayjs/locale/es'
+import 'dayjs/locale/et'
+import 'dayjs/locale/eu'
+import 'dayjs/locale/fa'
+import 'dayjs/locale/fi'
+import 'dayjs/locale/fo'
+import 'dayjs/locale/fr-ca'
+import 'dayjs/locale/fr-ch'
+import 'dayjs/locale/fr'
+import 'dayjs/locale/fy'
+import 'dayjs/locale/ga'
+import 'dayjs/locale/gd'
+import 'dayjs/locale/gl'
+import 'dayjs/locale/gom-latn'
+import 'dayjs/locale/gu'
+import 'dayjs/locale/he'
+import 'dayjs/locale/hi'
+import 'dayjs/locale/hr'
+import 'dayjs/locale/ht'
+import 'dayjs/locale/hu'
+import 'dayjs/locale/hy-am'
+import 'dayjs/locale/id'
+import 'dayjs/locale/is'
+import 'dayjs/locale/it-ch'
+import 'dayjs/locale/it'
+import 'dayjs/locale/ja'
+import 'dayjs/locale/jv'
+import 'dayjs/locale/ka'
+import 'dayjs/locale/kk'
+import 'dayjs/locale/km'
+import 'dayjs/locale/kn'
+import 'dayjs/locale/ko'
+import 'dayjs/locale/ku'
+import 'dayjs/locale/ky'
+import 'dayjs/locale/lb'
+import 'dayjs/locale/lo'
+import 'dayjs/locale/lt'
+import 'dayjs/locale/lv'
+import 'dayjs/locale/me'
+import 'dayjs/locale/mi'
+import 'dayjs/locale/mk'
+import 'dayjs/locale/ml'
+import 'dayjs/locale/mn'
+import 'dayjs/locale/mr'
+import 'dayjs/locale/ms-my'
+import 'dayjs/locale/ms'
+import 'dayjs/locale/mt'
+import 'dayjs/locale/my'
+import 'dayjs/locale/nb'
+import 'dayjs/locale/ne'
+import 'dayjs/locale/nl-be'
+import 'dayjs/locale/nl'
+import 'dayjs/locale/nn'
+import 'dayjs/locale/oc-lnc'
+import 'dayjs/locale/pa-in'
+import 'dayjs/locale/pl'
+import 'dayjs/locale/pt-br'
+import 'dayjs/locale/pt'
+import 'dayjs/locale/rn'
+import 'dayjs/locale/ro'
+import 'dayjs/locale/ru'
+import 'dayjs/locale/rw'
+import 'dayjs/locale/sd'
+import 'dayjs/locale/se'
+import 'dayjs/locale/si'
+import 'dayjs/locale/sk'
+import 'dayjs/locale/sl'
+import 'dayjs/locale/sq'
+import 'dayjs/locale/sr-cyrl'
+import 'dayjs/locale/sr'
+import 'dayjs/locale/ss'
+import 'dayjs/locale/sv-fi'
+import 'dayjs/locale/sv'
+import 'dayjs/locale/sw'
+import 'dayjs/locale/ta'
+import 'dayjs/locale/te'
+import 'dayjs/locale/tet'
+import 'dayjs/locale/tg'
+import 'dayjs/locale/th'
+import 'dayjs/locale/tk'
+import 'dayjs/locale/tl-ph'
+import 'dayjs/locale/tlh'
+import 'dayjs/locale/tr'
+import 'dayjs/locale/tzl'
+import 'dayjs/locale/tzm-latn'
+import 'dayjs/locale/tzm'
+import 'dayjs/locale/ug-cn'
+import 'dayjs/locale/uk'
+import 'dayjs/locale/ur'
+import 'dayjs/locale/uz-latn'
+import 'dayjs/locale/uz'
+import 'dayjs/locale/vi'
+import 'dayjs/locale/x-pseudo'
+import 'dayjs/locale/yo'
+import 'dayjs/locale/zh-cn'
+import 'dayjs/locale/zh-hk'
+import 'dayjs/locale/zh-tw'
+import 'dayjs/locale/zh'
 
 // Extend dayjs with plugins
-dayjs.extend(weekday);
-dayjs.extend(weekOfYear);
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
-dayjs.extend(isBetween);
-dayjs.extend(minMax);
-dayjs.extend(timezone);
-dayjs.extend(utc);
-dayjs.extend(localeData);
+dayjs.extend(weekday)
+dayjs.extend(weekOfYear)
+dayjs.extend(isSameOrAfter)
+dayjs.extend(isSameOrBefore)
+dayjs.extend(isBetween)
+dayjs.extend(minMax)
+dayjs.extend(timezone)
+dayjs.extend(utc)
+dayjs.extend(localeData)
 
-export default dayjs;
+export default dayjs

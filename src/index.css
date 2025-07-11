@@ -1,4 +1,4 @@
-@import "../styles/globals.css";
+@import '../styles/globals.css';
 
 @layer base {
   :root {
@@ -12,7 +12,7 @@
 
 /* cool Bun background animation 😎 */
 body::before {
-  content: "";
+  content: '';
   position: fixed;
   inset: 0;
   z-index: -1;

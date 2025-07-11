@@ -3,14 +3,14 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui";
-import { useCalendarContext } from "@/contexts/calendar-context/context";
-import { Calendar as CalendarIcon, Menu, Plus } from "lucide-react";
-import React, { useCallback, useState } from "react";
-import TitleContent from "./title-content";
-import ViewControls from "./view-controls";
+} from '@/components/ui'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { Calendar as CalendarIcon, Menu, Plus } from 'lucide-react'
+import React, { useCallback, useState } from 'react'
+import TitleContent from './title-content'
+import ViewControls from './view-controls'
 
-type HeaderProps = object;
+type HeaderProps = object
 
 const Header: React.FC<HeaderProps> = () => {
   const {
@@ -21,37 +21,37 @@ const Header: React.FC<HeaderProps> = () => {
     prevPeriod,
     today,
     openEventForm,
-  } = useCalendarContext();
+  } = useCalendarContext()
 
   // State for mobile menu popover
-  const [mobilePopoverOpen, setMobilePopoverOpen] = useState(false);
+  const [mobilePopoverOpen, setMobilePopoverOpen] = useState(false)
 
   // Handle view change with optional popover closing
   const handleViewChange = (
-    newView: "day" | "week" | "month" | "year",
+    newView: 'day' | 'week' | 'month' | 'year',
     closePopover = false
   ) => {
-    setView(newView);
+    setView(newView)
     if (closePopover) {
-      setMobilePopoverOpen(false);
+      setMobilePopoverOpen(false)
     }
-  };
+  }
 
   // Callback for navigation that also closes the mobile popover
   const handleNavigation = {
     today: () => {
-      today();
-      setMobilePopoverOpen(false);
+      today()
+      setMobilePopoverOpen(false)
     },
     previous: () => {
-      prevPeriod();
-      setMobilePopoverOpen(false);
+      prevPeriod()
+      setMobilePopoverOpen(false)
     },
     next: () => {
-      nextPeriod();
-      setMobilePopoverOpen(false);
+      nextPeriod()
+      setMobilePopoverOpen(false)
     },
-  };
+  }
 
   const NewEventButton = useCallback(
     () => (
@@ -69,7 +69,7 @@ const Header: React.FC<HeaderProps> = () => {
       </div>
     ),
     [currentDate, openEventForm]
-  );
+  )
 
   return (
     <>
@@ -133,7 +133,7 @@ const Header: React.FC<HeaderProps> = () => {
         </div>
       </div>
     </>
-  );
-};
+  )
+}
 
-export default Header;
+export default Header

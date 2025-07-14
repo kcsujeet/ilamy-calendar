@@ -1,9 +1,9 @@
 import { useCalendarContext } from '@/contexts/calendar-context/context'
-import dayjs from 'dayjs'
+import type dayjs from 'dayjs'
 import React, { useMemo } from 'react'
 import DraggableEvent from '../draggable-event/draggable-event'
 import { DroppableCell } from '../droppable-cell/droppable-cell'
-import { CalendarEvent, ProcessedCalendarEvent } from '../types'
+import type { CalendarEvent, ProcessedCalendarEvent } from '../types'
 
 export const WeekAllDayRow: React.FC = () => {
   const { currentDate, getEventsForDateRange, firstDayOfWeek } =

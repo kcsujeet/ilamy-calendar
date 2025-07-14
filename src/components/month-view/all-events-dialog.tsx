@@ -7,7 +7,7 @@ import {
 import React, { useImperativeHandle, useState } from 'react'
 import DraggableEvent from '../draggable-event/draggable-event'
 import { useCalendarContext } from '../../contexts/calendar-context/context'
-import { SelectedDayEvents } from './types'
+import type { SelectedDayEvents } from './types'
 
 interface AllEventDialogProps {
   ref: React.Ref<{

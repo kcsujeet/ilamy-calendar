@@ -1,5 +1,5 @@
-import { CalendarEvent } from '../types'
-import dayjs from 'dayjs'
+import type { CalendarEvent } from '../types'
+import type dayjs from 'dayjs'
 
 // Interface for the selected day events state
 export interface SelectedDayEvents {

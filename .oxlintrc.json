@@ -13,6 +13,10 @@
     "import/no-cycle": "error",
     "no-console": "error",
     "no-unused-vars": "error",
+    "@typescript-eslint/consistent-type-imports": "error",
+    "unicorn/consistent-function-scoping": "error",
+    "react/no-leaked-conditional-rendering": "error",
+    "@typescript-eslint/no-explicit-any": "error",
     "react/self-closing-comp": [
       "error",
       {
@@ -22,10 +26,7 @@
   },
   "overrides": [
     {
-      "files": ["*.test.ts", "*.spec.ts"],
-      "rules": {
-        "@typescript-eslint/no-explicit-any": "off"
-      }
+      "files": ["*.test.ts", "*.spec.ts"]
     }
   ]
 }

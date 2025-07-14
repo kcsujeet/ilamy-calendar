@@ -1,5 +1,5 @@
-import { CalendarEvent } from '@/index'
-import dayjs from 'dayjs'
+import type { CalendarEvent } from '@/components/types'
+import type dayjs from 'dayjs'
 import { createContext, useContext } from 'react'
 
 export interface CalendarContextType {

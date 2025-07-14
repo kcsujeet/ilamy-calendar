@@ -7,6 +7,15 @@ import { DemoCalendarSettings } from './demo-calendar-settings'
 import type dayjs from 'dayjs'
 import { IlamyCalendar } from '@/components/ilamy-calendar/ilamy-calendar'
 
+// Event handlers moved outside component to avoid recreation
+const handleEventClick = (event: CalendarEvent) => {
+  alert(`Event clicked: ${event.title}`)
+}
+
+const handleDateClick = (date: dayjs.Dayjs) => {
+  alert(`Date clicked: ${date.toISOString()}`)
+}
+
 export function DemoPage() {
   // Calendar configuration state
   const [calendarKey, setCalendarKey] = useState(0)
@@ -30,15 +39,6 @@ export function DemoPage() {
   // UI settings
   const [calendarHeight, setCalendarHeight] = useState('auto')
   const [dayMaxEvents, setDayMaxEvents] = useState(3)
-
-  // Event handlers
-  const handleEventClick = (event: CalendarEvent) => {
-    alert(`Event clicked: ${event.title}`)
-  }
-
-  const handleDateClick = (date: dayjs.Dayjs) => {
-    alert(`Date clicked: ${date.toISOString()}`)
-  }
 
   const handleSetLocale = (newLocale: string) => {
     setLocale(newLocale)

@@ -42,7 +42,7 @@ const toCamelCase = (str: string): string => {
 }
 
 // Helper function to parse a value into appropriate type
-const parseValue = (value: string): any => {
+const parseValue = (value: string): unknown => {
   // Handle true/false strings
   if (value === 'true') return true
   if (value === 'false') return false
@@ -60,7 +60,7 @@ const parseValue = (value: string): any => {
 
 // Magical argument parser that converts CLI args to BuildConfig
 function parseArgs(): Partial<BuildConfig> {
-  const config: Record<string, any> = {}
+  const config: Record<string, unknown> = {}
   const args = process.argv.slice(2)
 
   for (let i = 0; i < args.length; i++) {

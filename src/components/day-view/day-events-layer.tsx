@@ -1,6 +1,6 @@
 import { useProcessedDayEvents } from '@/hooks/useProcessedDayEvents'
 import DraggableEvent from '../draggable-event/draggable-event'
-import dayjs from 'dayjs'
+import type dayjs from 'dayjs'
 
 interface DayEventsLayerProps {
   day: dayjs.Dayjs // The specific day this layer represents

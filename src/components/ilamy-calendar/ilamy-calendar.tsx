@@ -11,7 +11,7 @@ import { CalendarProvider } from '../../contexts/calendar-context/provider'
 import type { CalendarEvent, WeekDays } from '../types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import '@/lib/dayjs-config'
-import dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/dayjs-config'
 
 const CalendarContent: React.FC = () => {
   const {

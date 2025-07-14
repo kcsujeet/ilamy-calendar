@@ -24,7 +24,10 @@ export const MonthHeader: React.FC = () => {
   }, [firstDayOfWeek, currentLocale])
 
   return (
-    <div className="bg-card sticky top-0 z-10 grid grid-cols-7 border-b">
+    <div
+      className="bg-card sticky top-0 z-10 grid grid-cols-7 border-b"
+      data-testid="month-header"
+    >
       {weekDays.days.map((weekDay, index) => (
         <AnimatePresence key={weekDay} mode="wait">
           <motion.div
@@ -38,6 +41,7 @@ export const MonthHeader: React.FC = () => {
               delay: index * 0.05,
             }}
             className="py-2 text-center font-medium border-r first:border-l"
+            data-testid={`weekday-header-${weekDay}`}
           >
             <span className="hidden text-sm sm:inline">{weekDay}</span>
             <span className="text-xs sm:hidden">

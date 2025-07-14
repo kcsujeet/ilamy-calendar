@@ -15,7 +15,6 @@ import type { CalendarEvent } from '../components/types'
 import type {
   DragCancelEvent,
   DragEndEvent,
-  DragOverEvent,
   DragStartEvent,
 } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
@@ -170,10 +169,6 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
     setActiveEvent(null)
   }
 
-  const handleDragOver = (_event: DragOverEvent) => {
-    // Visual feedback can be implemented here if needed
-  }
-
   const handleDragCancel = (_event: DragCancelEvent) => {
     setActiveEvent(null)
   }
@@ -188,7 +183,6 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onDragOver={handleDragOver}
       onDragCancel={handleDragCancel}
       collisionDetection={pointerWithin}
     >

@@ -3,10 +3,10 @@ import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { AnimatePresence, motion } from 'motion/react'
 import { useDraggable } from '@dnd-kit/core'
 import { memo } from 'react'
-import type { CalendarEvent } from '../types'
+import type { CalendarEvent } from '@/components/types'
 import type { CSSProperties } from 'react'
 
-function DraggableEvent({
+function DraggableEventUnmemoized({
   elementId,
   event,
   className,
@@ -35,7 +35,7 @@ function DraggableEvent({
     <div
       className={cn(
         event.color || 'bg-blue-500 text-white',
-        'h-full w-full pl-1  border border-gray-400 rounded-md'
+        'h-full w-full pl-1  border border-gray-300 rounded-md'
       )}
     >
       <p className="truncate text-[10px] font-semibold sm:text-xs">
@@ -86,13 +86,16 @@ function DraggableEvent({
   )
 }
 
-export default memo(DraggableEvent, (prevProps, nextProps) => {
-  // Compare the essential props to prevent unnecessary re-renders
-  return (
-    prevProps.elementId === nextProps.elementId &&
-    prevProps.disableDrag === nextProps.disableDrag &&
-    prevProps.className === nextProps.className &&
-    prevProps.event.id === nextProps.event.id &&
-    prevProps.event.height === nextProps.event.height
-  )
-})
+export const DraggableEvent = memo(
+  DraggableEventUnmemoized,
+  (prevProps, nextProps) => {
+    // Compare the essential props to prevent unnecessary re-renders
+    return (
+      prevProps.elementId === nextProps.elementId &&
+      prevProps.disableDrag === nextProps.disableDrag &&
+      prevProps.className === nextProps.className &&
+      prevProps.event.id === nextProps.event.id &&
+      prevProps.event.height === nextProps.event.height
+    )
+  }
+)

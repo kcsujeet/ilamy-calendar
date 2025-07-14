@@ -11,13 +11,13 @@ import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { cn } from '@/lib/utils'
 import dayjs from 'dayjs'
 import React from 'react'
-import type { CalendarEvent } from '../components/types'
 import type {
   DragCancelEvent,
   DragEndEvent,
   DragStartEvent,
 } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
+import type { CalendarEvent } from '@/components/types'
 
 interface CalendarDndContextProps {
   children: React.ReactNode

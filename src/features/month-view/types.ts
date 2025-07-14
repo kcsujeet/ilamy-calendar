@@ -1,4 +1,4 @@
-import type { CalendarEvent } from '../types'
+import type { CalendarEvent } from '@/components'
 import type dayjs from 'dayjs'
 
 // Interface for the selected day events state

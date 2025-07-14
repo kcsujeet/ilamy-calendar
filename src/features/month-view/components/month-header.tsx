@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import React, { useMemo } from 'react'
-import { useCalendarContext } from '../../contexts/calendar-context/context'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
 import dayjs from 'dayjs'
 
 export const MonthHeader: React.FC = () => {

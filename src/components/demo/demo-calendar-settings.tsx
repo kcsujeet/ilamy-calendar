@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-import type { WeekDays } from '../types'
+import type { WeekDays } from '@/components/types'
 
 interface DemoCalendarSettingsProps {
   firstDayOfWeek: WeekDays

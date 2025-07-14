@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import type { CalendarEvent } from '../types'
+import type { CalendarEvent } from '@/components/types'
 
 const colorOptions = [
   { value: 'bg-blue-100 text-blue-800', label: 'Blue' },

@@ -1,11 +1,11 @@
 import dayjs from '@/lib/dayjs-config'
 import { cn } from '@/lib/utils'
 import React from 'react'
-import { useCalendarContext } from '../../contexts/calendar-context/context'
-import { DroppableCell } from '../droppable-cell/droppable-cell'
-import type { CalendarEvent } from '../types'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { DroppableCell } from '@/features/droppable-cell/droppable-cell'
 import { AllEventDialog } from './all-events-dialog'
-import type { SelectedDayEvents } from './types'
+import type { SelectedDayEvents } from '../types'
+import type { CalendarEvent } from '@/components/types'
 
 interface DayCellProps {
   index: number // Index of the day in the week (0-6)

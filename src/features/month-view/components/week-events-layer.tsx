@@ -1,7 +1,7 @@
 import type { CalendarEvent } from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import dayjs from '@/lib/dayjs-config'
-import DraggableEvent from '../draggable-event/draggable-event'
+import { DraggableEvent } from '@/features/draggable-event/draggable-event'
 
 // Constants for day number height and gap (adjust as needed for your design)
 const DAY_NUMBER_HEIGHT = 28 // px (sm:h-6)

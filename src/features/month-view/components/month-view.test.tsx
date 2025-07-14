@@ -1,9 +1,9 @@
 import { test, expect, describe } from 'bun:test'
 import { render, screen } from '@testing-library/react'
 import { MonthView } from './month-view'
-import { CalendarProvider } from '../../contexts/calendar-context/provider'
+import { CalendarProvider } from '@/contexts/calendar-context/provider'
 import dayjs from '@/lib/dayjs-config'
-import type { CalendarEvent } from '../types'
+import type { CalendarEvent } from '@/components/types'
 
 // Mock events for testing
 const mockEvents: CalendarEvent[] = [

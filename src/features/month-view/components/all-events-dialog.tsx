@@ -5,9 +5,9 @@ import {
   DialogTitle,
 } from '@/components/ui'
 import React, { useImperativeHandle, useState } from 'react'
-import DraggableEvent from '../draggable-event/draggable-event'
-import { useCalendarContext } from '../../contexts/calendar-context/context'
-import type { SelectedDayEvents } from './types'
+import { DraggableEvent } from '@/features/draggable-event/draggable-event'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
+import type { SelectedDayEvents } from '../types'
 
 interface AllEventDialogProps {
   ref: React.Ref<{

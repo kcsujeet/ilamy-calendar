@@ -69,6 +69,7 @@ export const DayCell: React.FC<DayCellProps> = ({
       <DroppableCell
         id={`day-cell-${day.format('YYYY-MM-DD')}`}
         type="day-cell"
+        data-testid={`day-cell-${day.format('YYYY-MM-DD')}`}
         date={day}
         className={cn(
           'cursor-pointer overflow-hidden p-1',

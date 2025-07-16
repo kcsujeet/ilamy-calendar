@@ -35,7 +35,7 @@ function DraggableEventUnmemoized({
     <div
       className={cn(
         event.color || 'bg-blue-500 text-white',
-        'h-full w-full pl-1  border border-gray-300 rounded-md'
+        'h-full w-full pl-1  border-2 border-card rounded-md'
       )}
     >
       <p className="truncate text-[10px] font-semibold sm:text-xs">

@@ -1,74 +1,50 @@
-import { test, expect, describe } from 'bun:test'
-import { render, screen } from '@testing-library/react'
-import { MonthView } from './month-view'
+import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/contexts/calendar-context/provider'
 import dayjs from '@/lib/dayjs-config'
-import type { CalendarEvent } from '@/components/types'
+import { generateMockEvents } from '@/lib/utils'
+import { cleanup, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, test } from 'bun:test'
+import { MonthView } from './month-view'
 
-// Mock events for testing
-const mockEvents: CalendarEvent[] = [
-  {
-    id: '1',
-    title: 'Test Event',
-    start: dayjs().date(15).hour(10),
-    end: dayjs().date(15).hour(11),
-    color: 'bg-blue-100 text-blue-800',
-  },
-  {
-    id: '2',
-    title: 'Multi-day Event',
-    start: dayjs().date(20).hour(9),
-    end: dayjs().date(22).hour(17),
-    color: 'bg-green-100 text-green-800',
-  },
+const weekDays: string[] = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
 ]
 
+// Mock events for testing
+const mockEvents: CalendarEvent[] = generateMockEvents()
+let firstDayOfWeek = 0 // Default to Sunday
+let dayMaxEvents = 3 // Default max events per day
+let locale = 'en' // Default locale
+const renderCalendar = (props = {}) => {
+  return render(
+    <CalendarProvider
+      firstDayOfWeek={firstDayOfWeek}
+      dayMaxEvents={dayMaxEvents}
+      initialEvents={mockEvents}
+      locale={locale}
+      {...props}
+    >
+      <MonthView />
+    </CalendarProvider>
+  )
+}
+
 describe('MonthView', () => {
-  test('renders MonthView with correct weekday headers starting from Sunday', () => {
-    const firstDayOfWeek = 0 // Sunday
+  beforeEach(() => {
+    // Reset the dayjs locale to default before each test
+    locale = 'en'
 
-    render(
-      <CalendarProvider firstDayOfWeek={firstDayOfWeek} dayMaxEvents={3}>
-        <MonthView />
-      </CalendarProvider>
-    )
-
-    // Check that all weekday headers are present using test IDs
-    expect(screen.getByTestId('weekday-header-sunday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-monday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-tuesday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-wednesday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-thursday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-friday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-saturday')).toBeInTheDocument()
-  })
-
-  test('renders MonthView with correct weekday headers starting from Monday', () => {
-    const firstDayOfWeek = 1 // Monday
-
-    render(
-      <CalendarProvider firstDayOfWeek={firstDayOfWeek} dayMaxEvents={3}>
-        <MonthView />
-      </CalendarProvider>
-    )
-
-    // When starting from Monday, all weekdays should still be present
-    expect(screen.getByTestId('weekday-header-monday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-sunday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-tuesday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-wednesday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-thursday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-friday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-saturday')).toBeInTheDocument()
+    // render the MonthView with default props
+    renderCalendar()
   })
 
   test('renders calendar structure with proper layout', () => {
-    render(
-      <CalendarProvider firstDayOfWeek={0} dayMaxEvents={3}>
-        <MonthView />
-      </CalendarProvider>
-    )
-
     // Should have the main container structure
     const container = screen.getByTestId('month-view')
     expect(container).toBeInTheDocument()
@@ -82,32 +58,35 @@ describe('MonthView', () => {
     expect(gridContainer).toBeInTheDocument()
   })
 
-  test('respects dayMaxEvents prop', () => {
-    const customMaxEvents = 5
+  test('renders MonthView with correct weekday headers starting from Sunday', () => {
+    // Check that all weekday headers are present using test IDs
+    weekDays.forEach((day) => {
+      expect(
+        screen.getByTestId(`weekday-header-${day.toLowerCase()}`)
+      ).toBeInTheDocument()
+    })
+  })
 
-    render(
-      <CalendarProvider
-        firstDayOfWeek={0}
-        dayMaxEvents={customMaxEvents}
-        initialEvents={mockEvents}
-      >
-        <MonthView dayMaxEvents={customMaxEvents} />
-      </CalendarProvider>
+  test('renders MonthView with correct weekday headers starting from Monday', () => {
+    cleanup() // Clean up previous renders
+    const { container } = renderCalendar({ firstDayOfWeek: 1 }) // Set Monday as first day of week
+
+    // When starting from Monday, all weekdays should still be present
+    weekDays.forEach((day) => {
+      expect(
+        screen.getByTestId(`weekday-header-${day.toLowerCase()}`)
+      ).toBeInTheDocument()
+    })
+
+    const monthHeader = container.querySelector('[data-testid="month-header"]')
+    // first day of week should be Monday
+    expect(monthHeader.firstChild).toHaveAttribute(
+      'data-testid',
+      'weekday-header-monday'
     )
-
-    // The component should be rendered with the custom max events setting
-    // This is more of a structural test since the actual event limiting
-    // behavior would need more complex event data to test properly
-    expect(screen.getByTestId('month-view')).toBeInTheDocument()
   })
 
   test('displays current month structure correctly', () => {
-    render(
-      <CalendarProvider firstDayOfWeek={0} dayMaxEvents={3}>
-        <MonthView />
-      </CalendarProvider>
-    )
-
     // Check that the current month's structure is displayed
     const currentMonth = dayjs()
     const firstDayOfMonth = currentMonth.startOf('month').date()
@@ -120,74 +99,5 @@ describe('MonthView', () => {
 
     expect(firstDayElements.length).toBeGreaterThan(0)
     expect(lastDayElements.length).toBeGreaterThan(0)
-  })
-
-  test('handles events display in calendar structure', () => {
-    render(
-      <CalendarProvider
-        firstDayOfWeek={0}
-        dayMaxEvents={3}
-        initialEvents={mockEvents}
-      >
-        <MonthView />
-      </CalendarProvider>
-    )
-
-    // Should render the calendar structure
-    expect(screen.getByTestId('month-view')).toBeInTheDocument()
-
-    // Should have the grid structure for days
-    expect(screen.getByTestId('month-calendar-grid')).toBeInTheDocument()
-  })
-
-  test('renders with proper component structure', () => {
-    render(
-      <CalendarProvider firstDayOfWeek={0} dayMaxEvents={3}>
-        <MonthView />
-      </CalendarProvider>
-    )
-
-    // Check for main calendar structure
-    const mainContainer = screen.getByTestId('month-view')
-    expect(mainContainer).toBeInTheDocument()
-
-    // Check for header structure
-    const headerContainer = screen.getByTestId('month-header')
-    expect(headerContainer).toBeInTheDocument()
-
-    // Check for calendar grid
-    const calendarGrid = screen.getByTestId('month-calendar-grid')
-    expect(calendarGrid).toBeInTheDocument()
-  })
-
-  test('handles different locale settings', () => {
-    render(
-      <CalendarProvider firstDayOfWeek={0} dayMaxEvents={3} locale="en">
-        <MonthView />
-      </CalendarProvider>
-    )
-
-    // Should render with English locale by default using test IDs
-    expect(screen.getByTestId('weekday-header-sunday')).toBeInTheDocument()
-    expect(screen.getByTestId('weekday-header-monday')).toBeInTheDocument()
-  })
-
-  test('renders calendar weeks structure', () => {
-    render(
-      <CalendarProvider firstDayOfWeek={0} dayMaxEvents={3}>
-        <MonthView />
-      </CalendarProvider>
-    )
-
-    // Should have 6 weeks structure (standard calendar layout)
-    const weekRow0 = screen.getByTestId('week-row-0')
-    expect(weekRow0).toBeInTheDocument()
-
-    // Check for multiple week rows
-    const weekRow1 = screen.getByTestId('week-row-1')
-    expect(weekRow1).toBeInTheDocument()
-
-    const weekRow5 = screen.getByTestId('week-row-5')
-    expect(weekRow5).toBeInTheDocument()
   })
 })

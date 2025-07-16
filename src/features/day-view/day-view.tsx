@@ -27,7 +27,10 @@ const DayView = () => {
   const cellDate = currentDate.format('YYYY-MM-DD')
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div
+      data-testid="day-view"
+      className="flex h-full flex-col overflow-hidden"
+    >
       {/* Day header */}
       <DayHeader />
 
@@ -35,9 +38,13 @@ const DayView = () => {
       <DayAllDayRow />
 
       {/* Time grid without scrollbar */}
-      <ScrollArea className="relative flex-1 overflow-y-auto">
+      <ScrollArea
+        data-testid="day-scroll-area"
+        className="relative flex-1 overflow-y-auto"
+      >
         {/* Set a fixed height container that matches exactly the total height of all hour blocks */}
         <div
+          data-testid="day-time-grid"
           className="grid grid-cols-8 divide-x border-x"
           style={{ height: `${hours.length * 60}px` }}
         >
@@ -45,9 +52,15 @@ const DayView = () => {
           <DayTimeCol className="bg-card sticky left-0 z-10 col-span-2 h-full md:col-span-1" />
 
           {/* Day column with events */}
-          <div className="relative col-span-6 h-full md:col-span-7">
+          <div
+            data-testid="day-events-column"
+            className="relative col-span-6 h-full md:col-span-7"
+          >
             {/* Background grid for time slots - lowest layer */}
-            <div className="absolute inset-0 z-0">
+            <div
+              data-testid="day-background-grid"
+              className="absolute inset-0 z-0"
+            >
               {hours.map((hour, index) => (
                 <div
                   key={`bg-${currentDate.format('YYYY-MM-DD')}-${hour.format(
@@ -68,7 +81,10 @@ const DayView = () => {
             </div>
 
             {/* Interactive layer for time slots - middle layer with no borders */}
-            <div className="pointer-events-auto absolute inset-0 z-20">
+            <div
+              data-testid="day-interactive-layer"
+              className="pointer-events-auto absolute inset-0 z-20"
+            >
               {hours.map((time) => {
                 const hour = time.hour()
 
@@ -119,6 +135,7 @@ const DayView = () => {
             {/* Current time indicator - top layer */}
             {isToday && (
               <div
+                data-testid="day-current-time-indicator"
                 className="absolute right-0 left-0 z-40 border-t border-red-500"
                 style={{
                   top: `${(dayjs().hour() + dayjs().minute() / 60) * 60}px`,

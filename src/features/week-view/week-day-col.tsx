@@ -14,7 +14,10 @@ interface WeekDayColProps {
 
 export const WeekDayCol: React.FC<WeekDayColProps> = ({ day }) => {
   return (
-    <div className="col-span-1 relative grid grid-rows-24 border-r">
+    <div
+      data-testid={`week-day-col-${day.format('YYYY-MM-DD')}`}
+      className="col-span-1 relative grid grid-rows-24 border-r"
+    >
       {hours.map((time) => {
         const hour = time.hour()
         const cellDate = day.format('YYYY-MM-DD')
@@ -27,6 +30,7 @@ export const WeekDayCol: React.FC<WeekDayColProps> = ({ day }) => {
             date={day}
             hour={hour}
             minute={0}
+            data-testid={`week-time-cell-${cellDate}-${time.format('HH')}`}
             className={cn(
               'hover:bg-accent/10 relative z-20 h-[60px] cursor-pointer border-b'
             )}
@@ -35,7 +39,10 @@ export const WeekDayCol: React.FC<WeekDayColProps> = ({ day }) => {
       })}
 
       {/* Event blocks layer */}
-      <DayEventsLayer day={day} />
+      <DayEventsLayer
+        data-testid={`week-day-events-${day.format('YYYY-MM-DD')}`}
+        day={day}
+      />
     </div>
   )
 }

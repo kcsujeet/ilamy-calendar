@@ -77,7 +77,10 @@ const YearView: React.FC = () => {
     })
 
     return (
-      <div className="grid grid-cols-7 gap-[1px] text-[0.6rem]">
+      <div
+        data-testid={`year-mini-calendar-${month.date.format('MM')}`}
+        className="grid grid-cols-7 gap-[1px] text-[0.6rem]"
+      >
         {/* Day names */}
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayName, i) => (
           <div
@@ -92,6 +95,7 @@ const YearView: React.FC = () => {
         {daysArray.map((dayInfo, i) => (
           <div
             key={`day-${i}`}
+            data-testid={`year-day-${dayInfo.day.format('YYYY-MM-DD')}`}
             onClick={(e) => handleDayClick(dayInfo.day, e)}
             className={cn(
               'relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center',
@@ -161,11 +165,15 @@ const YearView: React.FC = () => {
   }
 
   return (
-    <ScrollArea className="h-full">
-      <div className="grid auto-rows-fr grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+    <ScrollArea data-testid="year-view" className="h-full">
+      <div
+        data-testid="year-grid"
+        className="grid auto-rows-fr grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3"
+      >
         {monthsWithEventCount.map((month, index) => (
           <div
             key={month.name}
+            data-testid={`year-month-${month.date.format('MM')}`}
             onClick={() => handleMonthClick(month.date)}
             className="bg-card hover:border-primary flex cursor-pointer flex-col rounded-lg border p-3 transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
           >
@@ -182,9 +190,17 @@ const YearView: React.FC = () => {
                 }}
                 className="mb-2 flex items-center justify-between"
               >
-                <h3 className="text-lg font-medium">{month.name}</h3>
+                <h3
+                  data-testid={`year-month-title-${month.date.format('MM')}`}
+                  className="text-lg font-medium"
+                >
+                  {month.name}
+                </h3>
                 {month.eventCount > 0 && (
-                  <span className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs">
+                  <span
+                    data-testid={`year-month-event-count-${month.date.format('MM')}`}
+                    className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs"
+                  >
                     {month.eventCount}{' '}
                     {month.eventCount === 1 ? 'event' : 'events'}
                   </span>

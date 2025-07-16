@@ -4,13 +4,20 @@ import type dayjs from 'dayjs'
 
 interface DayEventsLayerProps {
   day: dayjs.Dayjs // The specific day this layer represents
+  'data-testid'?: string
 }
 
-export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({ day }) => {
+export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({
+  day,
+  'data-testid': dataTestId,
+}) => {
   const todayEvents = useProcessedDayEvents({ day })
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-30">
+    <div
+      data-testid={dataTestId}
+      className="pointer-events-none absolute inset-0 z-30"
+    >
       {todayEvents.map((event, index) => {
         const veryVeryUniqueKey = `event-${event.id}-${index}-${day.format(
           'YYYY-MM-DD'

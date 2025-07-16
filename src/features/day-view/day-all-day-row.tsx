@@ -69,7 +69,10 @@ export const DayAllDayRow = () => {
   }, [allDayEvents])
 
   return (
-    <div className="grid grid-cols-8 border-b border-x">
+    <div
+      data-testid="day-all-day-row"
+      className="grid grid-cols-8 border-b border-x"
+    >
       {/* Left label for all-day events */}
       <div className="bg-card sticky left-0 z-10 col-span-2 flex shrink-0 items-center justify-end border-r pr-2 md:col-span-1">
         <span className="text-muted-foreground text-[10px] whitespace-nowrap sm:text-xs">

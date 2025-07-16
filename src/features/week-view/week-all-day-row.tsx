@@ -130,7 +130,10 @@ export const WeekAllDayRow: React.FC = () => {
   }, [allDayEvents, adjustedStartOfWeek, endOfWeek])
 
   return (
-    <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1 relative">
+    <div
+      className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1 relative"
+      data-testid="week-all-day-row"
+    >
       {/* Left label for all-day events */}
       <div className="bg-card w-14 sticky left-0 z-10 flex shrink-0 items-center justify-end border-x border-b pr-2 min-h-16">
         <span className="text-muted-foreground text-[10px] whitespace-nowrap sm:text-xs">
@@ -160,7 +163,7 @@ export const WeekAllDayRow: React.FC = () => {
             style={{
               left: `${event.left}%`,
               width: `calc(${event.width}% - var(--spacing) * 2)`,
-              top: `calc(${event.top}% + var(--spacing) * ${index + 1})`,
+              top: `${event.top}%`,
               height: `${event.height}%`,
             }}
           >

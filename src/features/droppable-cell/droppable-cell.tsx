@@ -13,6 +13,7 @@ interface DroppableCellProps {
   children?: React.ReactNode
   className?: string
   style?: React.CSSProperties
+  'data-testid'?: string
 }
 
 export function DroppableCell({
@@ -24,6 +25,7 @@ export function DroppableCell({
   children,
   className,
   style,
+  'data-testid': dataTestId,
 }: DroppableCellProps) {
   const { onDateClick, disableDragAndDrop, disableDateClick } =
     useCalendarContext()
@@ -41,6 +43,7 @@ export function DroppableCell({
   return (
     <div
       ref={setNodeRef}
+      data-testid={dataTestId}
       className={cn(
         className,
         isOver && !disableDragAndDrop && 'bg-accent',

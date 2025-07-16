@@ -23,7 +23,10 @@ export const WeekHeader: React.FC = () => {
 
   return (
     // css grid header with lef corner cell shorter than the rest
-    <div className="bg-background sticky top-0 z-10 grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1">
+    <div
+      className="bg-background sticky top-0 z-10 grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1"
+      data-testid="week-header"
+    >
       {/* Corner cell with week number */}
       <div className="col-span-1 bg-card w-14 shrink-0 items-center justify-center border-x border-b p-2">
         <div className="flex flex-col items-center justify-center">
@@ -56,6 +59,7 @@ export const WeekHeader: React.FC = () => {
                 selectDate(day)
                 openEventForm(day)
               }}
+              data-testid={`week-day-header-${day.format('dddd').toLowerCase()}`}
             >
               <div className="text-xs sm:text-sm">{day.format('ddd')}</div>
               <div

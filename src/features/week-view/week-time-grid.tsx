@@ -30,12 +30,19 @@ export const WeekTimeGrid: React.FC = () => {
   const isCurrentWeek = todayIndex !== -1
 
   return (
-    <div className="relative h-full grid grid-cols-[auto_repeat(7,1fr)] grid-rows-[repeat(24,minmax(60px, 1fr))] overflow-hidden">
+    <div
+      data-testid="week-time-grid"
+      className="relative h-full grid grid-cols-[auto_repeat(7,1fr)] grid-rows-[repeat(24,minmax(60px, 1fr))] overflow-hidden"
+    >
       {/* Time labels column - fixed */}
-      <div className="bg-card z-10 col-span-1 w-14 grid grid-rows-24 border-x">
+      <div
+        data-testid="week-time-labels"
+        className="bg-card z-10 col-span-1 w-14 grid grid-rows-24 border-x"
+      >
         {hours.map((time) => (
           <div
             key={time.format('HH:mm')}
+            data-testid={`week-time-hour-${time.format('HH')}`}
             className="h-[60px] border-b text-right"
           >
             <span className="text-muted-foreground pr-2 text-right text-[10px] sm:text-xs">
@@ -53,6 +60,7 @@ export const WeekTimeGrid: React.FC = () => {
       {/* Current time indicator */}
       {isCurrentWeek && (
         <div
+          data-testid="week-current-time-indicator"
           className="pointer-events-none absolute z-20"
           style={{
             top: `${(dayjs().hour() + dayjs().minute() / 60) * 60}px`,

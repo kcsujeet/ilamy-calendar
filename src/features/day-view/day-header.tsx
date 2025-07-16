@@ -8,7 +8,10 @@ export const DayHeader = () => {
   const isToday = currentDate.isSame(dayjs(), 'day')
 
   return (
-    <div className="bg-card sticky top-0 z-10 flex items-center justify-center border-b p-2 border-x">
+    <div
+      data-testid="day-header"
+      className="bg-card sticky top-0 z-10 flex items-center justify-center border-b p-2 border-x"
+    >
       <AnimatePresence mode="wait">
         <motion.div
           key={currentDate.format('YYYY-MM-DD')}

@@ -1,3 +1,4 @@
+// oxlint-disable no-undef
 // oxlint-disable no-console
 
 import { build, type BuildConfig } from 'bun'

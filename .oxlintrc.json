@@ -17,6 +17,7 @@
     "unicorn/consistent-function-scoping": "error",
     "react/no-leaked-conditional-rendering": "error",
     "@typescript-eslint/no-explicit-any": "error",
+    "no-undef": "error",
     "react/self-closing-comp": [
       "error",
       {

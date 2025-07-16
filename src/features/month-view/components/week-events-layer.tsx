@@ -2,11 +2,11 @@ import type { CalendarEvent } from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import dayjs from '@/lib/dayjs-config'
 import { DraggableEvent } from '@/features/draggable-event/draggable-event'
-
-// Constants for day number height and gap (adjust as needed for your design)
-const DAY_NUMBER_HEIGHT = 28 // px (sm:h-6)
-const DAY_NUMBER_MARGIN = 4 // px (gap-1)
-const GAP_BETWEEN_ELEMENTS = 4 // px (gap-1)
+import {
+  DAY_NUMBER_HEIGHT,
+  EVENT_BAR_HEIGHT,
+  GAP_BETWEEN_ELEMENTS,
+} from '@/lib/constants'
 
 interface ProcessedEvent extends CalendarEvent {
   left: number // Left position in percentage
@@ -110,9 +110,9 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
         width: (spanDays / 7) * 100,
         top:
           DAY_NUMBER_HEIGHT +
-          DAY_NUMBER_MARGIN +
-          assignedRow * (20 + GAP_BETWEEN_ELEMENTS),
-        height: 20,
+          GAP_BETWEEN_ELEMENTS +
+          assignedRow * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
+        height: EVENT_BAR_HEIGHT,
         position: assignedRow,
         ...event,
       })
@@ -155,9 +155,9 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
             width: (truncatedSpanDays / 7) * 100,
             top:
               DAY_NUMBER_HEIGHT +
-              DAY_NUMBER_MARGIN +
-              truncatedAssignedRow * (20 + GAP_BETWEEN_ELEMENTS),
-            height: 20,
+              GAP_BETWEEN_ELEMENTS +
+              truncatedAssignedRow * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
+            height: EVENT_BAR_HEIGHT,
             position: truncatedAssignedRow,
             ...event,
           })
@@ -192,9 +192,9 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
         width: (1 / 7) * 100,
         top:
           DAY_NUMBER_HEIGHT +
-          DAY_NUMBER_MARGIN +
-          assignedRow * (20 + GAP_BETWEEN_ELEMENTS),
-        height: 20,
+          GAP_BETWEEN_ELEMENTS +
+          assignedRow * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
+        height: EVENT_BAR_HEIGHT,
         position: assignedRow,
         ...event,
       })
@@ -211,10 +211,10 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
             )}`}
             className="absolute z-10 pointer-events-auto overflow-hidden"
             style={{
-              left: `${event.left}%`,
-              width: `calc(${event.width}% - var(--spacing) * 2)`,
+              left: `calc(${event.left}% + var(--spacing) * 0.25)`,
+              width: `calc(${event.width}% - var(--spacing) * 1)`,
               top: `${event.top}px`,
-              height: '20px',
+              height: `${EVENT_BAR_HEIGHT}px`,
             }}
           >
             <DraggableEvent

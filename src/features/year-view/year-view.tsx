@@ -99,7 +99,7 @@ const YearView: React.FC = () => {
             onClick={(e) => handleDayClick(dayInfo.day, e)}
             className={cn(
               'relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center',
-              'hover:bg-accent/70 rounded-sm transition-colors duration-200',
+              'hover:bg-accent rounded-sm transition-colors duration-200',
               !dayInfo.isCurrentMonth && 'text-muted-foreground opacity-50',
               dayInfo.isToday &&
                 'bg-primary text-primary-foreground rounded-full',

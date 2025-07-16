@@ -1,10 +1,10 @@
-import { cn } from '@/lib/utils'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
-import { AnimatePresence, motion } from 'motion/react'
-import { useDraggable } from '@dnd-kit/core'
-import { memo } from 'react'
 import type { CalendarEvent } from '@/components/types'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { cn } from '@/lib/utils'
+import { useDraggable } from '@dnd-kit/core'
+import { AnimatePresence, motion } from 'motion/react'
 import type { CSSProperties } from 'react'
+import { memo } from 'react'
 
 function DraggableEventUnmemoized({
   elementId,
@@ -36,7 +36,7 @@ function DraggableEventUnmemoized({
       className={cn(
         event.backgroundColor || 'bg-blue-500',
         event.color || 'text-white',
-        'h-full w-full px-2  border-2 border-card rounded-md text-left flex justify-between overflow-hidden items-center'
+        'h-full w-full px-1 border-[1.5px] border-card rounded-md text-left overflow-hidden'
       )}
       style={{ backgroundColor: event.backgroundColor, color: event.color }}
     >
@@ -58,7 +58,7 @@ function DraggableEventUnmemoized({
         layoutId={elementId}
         transition={{ duration: 0.4, ease: 'easeInOut' }}
         className={cn(
-          'truncate  min-h-[20px] h-full w-full',
+          'truncate h-full w-full',
           disableDrag || disableDragAndDrop
             ? disableEventClick
               ? 'cursor-default'

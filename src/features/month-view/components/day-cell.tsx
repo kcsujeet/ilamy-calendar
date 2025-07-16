@@ -72,7 +72,7 @@ export const DayCell: React.FC<DayCellProps> = ({
         data-testid={`day-cell-${day.format('YYYY-MM-DD')}`}
         date={day}
         className={cn(
-          'cursor-pointer overflow-hidden p-1',
+          'cursor-pointer overflow-hidden p-1 hover:bg-accent',
           !isCurrentMonth && 'bg-secondary text-muted-foreground',
           isLastColumn && 'border-r-0',
           className

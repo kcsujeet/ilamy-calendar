@@ -34,8 +34,12 @@ const ViewControls: React.FC<ViewControlsProps> = ({
       // Special case for year button visibility on mobile
       viewType === 'year' ? (isGrid ? 'w-full' : 'hidden md:inline-flex') : '',
       // Active view styling
-      currentView === viewType && 'border-primary'
+      currentView === viewType && 'bg-primary/80'
     )
+  }
+
+  const getBtnVariant = (viewType: 'day' | 'week' | 'month' | 'year') => {
+    return currentView === viewType ? 'default' : 'outline'
   }
 
   return (
@@ -54,7 +58,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
 
       <Button
         onClick={() => onChange('day')}
-        variant="outline"
+        variant={getBtnVariant('day')}
         size={size}
         className={getButtonClassName('day')}
       >
@@ -62,7 +66,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
       </Button>
       <Button
         onClick={() => onChange('week')}
-        variant="outline"
+        variant={getBtnVariant('week')}
         size={size}
         className={getButtonClassName('week')}
       >
@@ -70,7 +74,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
       </Button>
       <Button
         onClick={() => onChange('month')}
-        variant="outline"
+        variant={getBtnVariant('month')}
         size={size}
         className={getButtonClassName('month')}
       >
@@ -78,7 +82,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
       </Button>
       <Button
         onClick={() => onChange('year')}
-        variant="outline"
+        variant={getBtnVariant('year')}
         size={size}
         className={getButtonClassName('year')}
       >

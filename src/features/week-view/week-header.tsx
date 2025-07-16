@@ -52,7 +52,7 @@ export const WeekHeader: React.FC = () => {
                 delay: index * 0.05,
               }}
               className={cn(
-                'hover:bg-accent/20 flex-1 cursor-pointer p-1 text-center sm:p-2 border-r border-b',
+                'hover:bg-accent flex-1 cursor-pointer p-1 text-center sm:p-2 border-r border-b',
                 isToday && 'bg-primary/10 font-bold'
               )}
               onClick={() => {

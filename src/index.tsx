@@ -9,6 +9,7 @@ const server = serve({
     '/*': index,
   },
 
+  // oxlint-disable-next-line no-undef
   development: process.env.NODE_ENV !== 'production' && {
     // Enable browser hot reloading in development
     hmr: true,

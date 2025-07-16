@@ -32,7 +32,7 @@ export const WeekDayCol: React.FC<WeekDayColProps> = ({ day }) => {
             minute={0}
             data-testid={`week-time-cell-${cellDate}-${time.format('HH')}`}
             className={cn(
-              'hover:bg-accent/10 relative z-20 h-[60px] cursor-pointer border-b'
+              'hover:bg-accent relative z-20 h-[60px] cursor-pointer border-b'
             )}
           />
         )

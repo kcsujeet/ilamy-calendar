@@ -4,6 +4,7 @@ import React, { useMemo } from 'react'
 import { DraggableEvent } from '../draggable-event/draggable-event'
 import { DroppableCell } from '../droppable-cell/droppable-cell'
 import type { CalendarEvent, ProcessedCalendarEvent } from '@/components/types'
+import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 
 export const WeekAllDayRow: React.FC = () => {
   const { currentDate, getEventsForDateRange, firstDayOfWeek } =
@@ -117,8 +118,8 @@ export const WeekAllDayRow: React.FC = () => {
         ...event,
         left,
         width,
-        top: rowIndex * 28,
-        height: 24,
+        top: rowIndex * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
+        height: EVENT_BAR_HEIGHT,
         all_day: true,
       })
     })
@@ -150,7 +151,7 @@ export const WeekAllDayRow: React.FC = () => {
           date={day}
           hour={0}
           minute={0}
-          className="hover:bg-accent/10 h-full flex-1 cursor-pointer border-r border-b"
+          className="hover:bg-accent h-full flex-1 cursor-pointer border-r border-b"
         />
       ))}
 
@@ -163,8 +164,8 @@ export const WeekAllDayRow: React.FC = () => {
             style={{
               left: `${event.left}%`,
               width: `calc(${event.width}% - var(--spacing) * 2)`,
-              top: `${event.top}%`,
-              height: `${event.height}%`,
+              top: `${event.top}px`,
+              height: `${event.height}px`,
             }}
           >
             <DraggableEvent

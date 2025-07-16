@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { DraggableEvent } from '../draggable-event/draggable-event'
 import { DroppableCell } from '../droppable-cell/droppable-cell'
 import type { CalendarEvent, ProcessedCalendarEvent } from '@/components/types'
+import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 
 export const DayAllDayRow = () => {
   const { currentDate, getEventsForDate } = useCalendarContext()
@@ -56,8 +57,8 @@ export const DayAllDayRow = () => {
         ...event,
         left: 0,
         width: 100,
-        top: rowIndex * 28,
-        height: 24,
+        top: rowIndex * EVENT_BAR_HEIGHT,
+        height: EVENT_BAR_HEIGHT,
         all_day: true,
       })
     })
@@ -88,17 +89,21 @@ export const DayAllDayRow = () => {
           date={currentDate}
           hour={0}
           minute={0}
-          className="hover:bg-accent/10 w-full cursor-pointer min-h-10 flex flex-col"
+          className="hover:bg-accent w-full cursor-pointer min-h-10 flex flex-col"
         >
           {processedAllDayEvents.map((event, index) => {
             return (
-              <DraggableEvent
+              <div
                 key={`all-day-${event.id}-${index}`}
-                elementId={`all-day-${event.id}-${index}`}
-                event={event}
-                className="overflow-hidden text-xs"
-                style={{ width: `calc(100% - var(--spacing) * 2)` }}
-              />
+                style={{ height: EVENT_BAR_HEIGHT + 'px' }}
+              >
+                <DraggableEvent
+                  elementId={`all-day-${event.id}-${index}`}
+                  event={event}
+                  className="overflow-hidden text-xs"
+                  style={{ width: `calc(100% - var(--spacing) * 2)` }}
+                />
+              </div>
             )
           })}
         </DroppableCell>

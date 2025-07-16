@@ -96,9 +96,7 @@ const DayView = () => {
                       date={currentDate}
                       hour={hour}
                       minute={0}
-                      className={cn(
-                        'hover:bg-accent/5 h-[15px] cursor-pointer'
-                      )}
+                      className={cn('hover:bg-accent h-[15px] cursor-pointer')}
                     />
                     <DroppableCell
                       id={`time-cell-${cellDate}-${time.format('HH')}-15`}
@@ -106,7 +104,7 @@ const DayView = () => {
                       date={currentDate}
                       hour={hour}
                       minute={15}
-                      className="hover:bg-accent/5 h-[15px] cursor-pointer"
+                      className="hover:bg-accent h-[15px] cursor-pointer"
                     />
                     <DroppableCell
                       id={`time-cell-${cellDate}-${time.format('HH')}-30`}
@@ -114,7 +112,7 @@ const DayView = () => {
                       date={currentDate}
                       hour={hour}
                       minute={30}
-                      className="hover:bg-accent/5 h-[15px] cursor-pointer"
+                      className="hover:bg-accent h-[15px] cursor-pointer"
                     />
                     <DroppableCell
                       id={`time-cell-${cellDate}-${time.format('HH')}-45`}
@@ -122,7 +120,7 @@ const DayView = () => {
                       date={currentDate}
                       hour={hour}
                       minute={45}
-                      className="hover:bg-accent/5 h-[15px] cursor-pointer"
+                      className="hover:bg-accent h-[15px] cursor-pointer"
                     />
                   </Fragment>
                 )

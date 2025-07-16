@@ -37,7 +37,7 @@ export const WeekTimeGrid: React.FC = () => {
       {/* Time labels column - fixed */}
       <div
         data-testid="week-time-labels"
-        className="bg-card z-10 col-span-1 w-14 grid grid-rows-24 border-x"
+        className="z-10 col-span-1 w-14 grid grid-rows-24 border-x"
       >
         {hours.map((time) => (
           <div

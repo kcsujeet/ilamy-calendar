@@ -51,12 +51,16 @@ export function DemoPage() {
 
   // Custom event renderer function
   const renderEvent = (event: CalendarEvent) => {
+    const backgroundColor = event.backgroundColor || 'bg-blue-500'
+    const color = event.color || 'text-blue-800'
     return (
       <div
         className={cn(
-          'border-primary bg-card border-1 border-l-2 px-2 truncate w-full h-full',
-          event.color || 'bg-blue-100 text-blue-800'
+          'border-primary border-1 border-l-2 px-2 truncate w-full h-full',
+          backgroundColor,
+          color
         )}
+        style={{ backgroundColor, color }}
       >
         {event.title}
       </div>
@@ -107,7 +111,7 @@ export function DemoPage() {
 
         {/* Calendar display */}
         <div className="lg:col-span-3">
-          <Card className="border border-white/20 dark:border-white/5 bg-white/40 dark:bg-black/20 backdrop-blur-md shadow-lg overflow-hidden relative p-2">
+          <Card className="border backdrop-blur-md shadow-lg overflow-hidden relative p-2 bg-background">
             <CardHeader>
               <div className="py-3 flex items-center">
                 <div className="flex space-x-1.5">

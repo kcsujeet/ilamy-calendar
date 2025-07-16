@@ -24,11 +24,11 @@ export const WeekHeader: React.FC = () => {
   return (
     // css grid header with lef corner cell shorter than the rest
     <div
-      className="bg-background sticky top-0 z-10 grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1"
+      className="sticky top-0 z-10 grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1"
       data-testid="week-header"
     >
       {/* Corner cell with week number */}
-      <div className="col-span-1 bg-card w-14 shrink-0 items-center justify-center border-x border-b p-2">
+      <div className="col-span-1 w-14 shrink-0 items-center justify-center border-x border-b p-2">
         <div className="flex flex-col items-center justify-center">
           <span className="text-muted-foreground text-xs">Week</span>
           <span className="font-medium">{currentDate.week()}</span>
@@ -52,7 +52,7 @@ export const WeekHeader: React.FC = () => {
                 delay: index * 0.05,
               }}
               className={cn(
-                'bg-card hover:bg-accent/20 flex-1 cursor-pointer p-1 text-center sm:p-2 border-r border-b',
+                'hover:bg-accent/20 flex-1 cursor-pointer p-1 text-center sm:p-2 border-r border-b',
                 isToday && 'bg-primary/10 font-bold'
               )}
               onClick={() => {

@@ -34,17 +34,13 @@ function DraggableEventUnmemoized({
   const DefaultEventContent = () => (
     <div
       className={cn(
-        event.color || 'bg-blue-500 text-white',
-        'h-full w-full pl-1  border-2 border-card rounded-md'
+        event.backgroundColor || 'bg-blue-500',
+        event.color || 'text-white',
+        'h-full w-full px-2  border-2 border-card rounded-md text-left flex justify-between overflow-hidden items-center'
       )}
+      style={{ backgroundColor: event.backgroundColor, color: event.color }}
     >
-      <p className="truncate text-[10px] font-semibold sm:text-xs">
-        {event.title}
-      </p>
-      <p className="xs:block hidden text-[8px] opacity-90 sm:text-xs">
-        {event.start.format('h:mm A')}
-        {event.end && ` - ${event.end.format('h:mm A')}`}
-      </p>
+      <p className="text-[10px] font-semibold sm:text-xs">{event.title}</p>
     </div>
   )
 
@@ -62,7 +58,7 @@ function DraggableEventUnmemoized({
         layoutId={elementId}
         transition={{ duration: 0.4, ease: 'easeInOut' }}
         className={cn(
-          'truncate text-[10px] sm:text-xs min-h-[20px] h-full w-full',
+          'truncate  min-h-[20px] h-full w-full',
           disableDrag || disableDragAndDrop
             ? disableEventClick
               ? 'cursor-default'

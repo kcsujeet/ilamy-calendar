@@ -73,9 +73,7 @@ export const DayCell: React.FC<DayCellProps> = ({
         date={day}
         className={cn(
           'cursor-pointer overflow-hidden p-1',
-          !isCurrentMonth &&
-            'bg-muted/75 dark:bg-gray-900/50 text-muted-foreground',
-          isToday && 'bg-primary/10',
+          !isCurrentMonth && 'bg-secondary text-muted-foreground',
           isLastColumn && 'border-r-0',
           className
         )}

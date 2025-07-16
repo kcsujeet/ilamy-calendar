@@ -49,7 +49,7 @@ const DayView = () => {
           style={{ height: `${hours.length * 60}px` }}
         >
           {/* Time labels column */}
-          <DayTimeCol className="bg-card sticky left-0 z-10 col-span-2 h-full md:col-span-1" />
+          <DayTimeCol className="sticky left-0 z-10 col-span-2 h-full md:col-span-1" />
 
           {/* Day column with events */}
           <div

@@ -175,7 +175,7 @@ const YearView: React.FC = () => {
             key={month.name}
             data-testid={`year-month-${month.date.format('MM')}`}
             onClick={() => handleMonthClick(month.date)}
-            className="bg-card hover:border-primary flex cursor-pointer flex-col rounded-lg border p-3 transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
+            className="hover:border-primary flex cursor-pointer flex-col rounded-lg border p-3 transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
           >
             <AnimatePresence mode="wait">
               <motion.div

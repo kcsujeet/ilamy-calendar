@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui'
 import type { WeekDays } from '@/components/types'
+import { ModeToggle } from './mode-toggle'
 
 interface DemoCalendarSettingsProps {
   firstDayOfWeek: WeekDays
@@ -63,7 +64,7 @@ export function DemoCalendarSettings({
   setDayMaxEvents,
 }: DemoCalendarSettingsProps) {
   return (
-    <Card className="border border-white/20 dark:border-white/5 bg-white/50 dark:bg-black/20 backdrop-blur-md shadow-lg overflow-hidden gap-0">
+    <Card className="border bg-background backdrop-blur-md shadow-lg overflow-hidden gap-0">
       <CardHeader className="border-b border-white/10 dark:border-white/5 p-4">
         <CardTitle className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
           Calendar Settings
@@ -71,6 +72,9 @@ export function DemoCalendarSettings({
         <CardDescription>Customize the calendar display</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 p-6">
+        <div>
+          <ModeToggle />
+        </div>
         <div>
           <label className="block text-sm font-medium mb-1">
             First Day of Week

@@ -29,14 +29,12 @@ const ViewControls: React.FC<ViewControlsProps> = ({
   // Extract common button className logic to a function
   const getButtonClassName = (viewType: 'day' | 'week' | 'month' | 'year') => {
     return cn(
-      'dark:hover:bg-indigo-700 dark:hover:text-indigo-100 hover:bg-indigo-100 hover:text-indigo-700',
       // Base width for grid layout
       isGrid ? 'w-full' : '',
       // Special case for year button visibility on mobile
       viewType === 'year' ? (isGrid ? 'w-full' : 'hidden md:inline-flex') : '',
       // Active view styling
-      currentView === viewType &&
-        'bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-700 dark:text-indigo-100 dark:border-indigo-600'
+      currentView === viewType && 'border-primary'
     )
   }
 

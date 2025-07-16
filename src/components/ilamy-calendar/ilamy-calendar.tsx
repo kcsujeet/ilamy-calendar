@@ -42,7 +42,7 @@ const CalendarContent: React.FC = () => {
   }
 
   return (
-    <div className="bg-card flex flex-col w-full h-full">
+    <div className="flex flex-col w-full h-full">
       <Header />
 
       {/* Calendar Body with AnimatePresence for view transitions */}

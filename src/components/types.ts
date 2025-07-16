@@ -8,6 +8,7 @@ export interface CalendarEvent {
   originalEnd?: dayjs.Dayjs
   end: dayjs.Dayjs
   color?: string
+  backgroundColor?: string
   description?: string
   location?: string
   height?: number // Height in pixels for rendering

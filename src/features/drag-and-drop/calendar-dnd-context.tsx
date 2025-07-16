@@ -192,7 +192,8 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
           <div
             className={cn(
               'cursor-grab truncate rounded bg-amber-200 p-2 text-[10px] shadow-lg sm:text-xs',
-              activeEvent.color || 'bg-blue-500 text-white'
+              activeEvent.backgroundColor || 'bg-blue-500',
+              activeEvent.color || 'text-white'
             )}
           >
             {activeEvent?.title}

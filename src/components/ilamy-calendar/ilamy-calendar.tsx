@@ -83,11 +83,11 @@ interface CalendarProps {
   firstDayOfWeek?: WeekDays
   renderEvent?: (event: CalendarEvent) => React.ReactNode
   onEventClick?: (event: CalendarEvent) => void
-  onDateClick?: (date: dayjs.Dayjs, hour?: number, minute?: number) => void
+  onCellClick?: (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => void
   onViewChange?: (view: 'month' | 'week' | 'day' | 'year') => void
   locale?: string
   timezone?: string
-  disableDateClick?: boolean
+  disableCellClick?: boolean
   disableEventClick?: boolean
   disableDragAndDrop?: boolean
   dayMaxEvents?: number
@@ -109,11 +109,11 @@ export const IlamyCalendar: React.FC<CalendarProps> = ({
   firstDayOfWeek = 'sunday',
   renderEvent,
   onEventClick,
-  onDateClick,
+  onCellClick,
   onViewChange,
   locale,
   timezone,
-  disableDateClick,
+  disableCellClick,
   disableEventClick,
   disableDragAndDrop,
   dayMaxEvents = DEFAULT_DAY_MAX_EVENTS,
@@ -124,11 +124,11 @@ export const IlamyCalendar: React.FC<CalendarProps> = ({
       firstDayOfWeek={dayNumberMap[firstDayOfWeek]}
       renderEvent={renderEvent}
       onEventClick={onEventClick}
-      onDateClick={onDateClick}
+      onCellClick={onCellClick}
       onViewChange={onViewChange}
       locale={locale}
       timezone={timezone}
-      disableDateClick={disableDateClick}
+      disableCellClick={disableCellClick}
       disableEventClick={disableEventClick}
       disableDragAndDrop={disableDragAndDrop}
       dayMaxEvents={dayMaxEvents}

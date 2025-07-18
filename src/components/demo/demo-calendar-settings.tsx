@@ -23,7 +23,7 @@ interface DemoCalendarSettingsProps {
   setLocale: (value: string) => void
   timezone: string
   setTimezone: (value: string) => void
-  disableDateClick: boolean
+  disableCellClick: boolean
   setDisableDateClick: (value: boolean) => void
   disableEventClick: boolean
   setDisableEventClick: (value: boolean) => void
@@ -48,7 +48,7 @@ export function DemoCalendarSettings({
   setLocale,
   timezone,
   setTimezone,
-  disableDateClick,
+  disableCellClick,
   setDisableDateClick,
   disableEventClick,
   setDisableEventClick,
@@ -202,7 +202,7 @@ export function DemoCalendarSettings({
             htmlFor="useCustomOnDateClick"
             className="text-sm font-medium leading-none cursor-pointer"
           >
-            Use custom onDateClick handler
+            Use custom onCellClick handler
           </label>
         </div>
 
@@ -224,12 +224,12 @@ export function DemoCalendarSettings({
 
         <div className="flex items-center space-x-2">
           <Checkbox
-            id="disableDateClick"
-            checked={disableDateClick}
-            onCheckedChange={() => setDisableDateClick(!disableDateClick)}
+            id="disableCellClick"
+            checked={disableCellClick}
+            onCheckedChange={() => setDisableDateClick(!disableCellClick)}
           />
           <label
-            htmlFor="disableDateClick"
+            htmlFor="disableCellClick"
             className="text-sm font-medium leading-none cursor-pointer"
           >
             Disable cell clicks

@@ -15,11 +15,11 @@ interface CalendarProviderProps {
   firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
   renderEvent?: (event: CalendarEvent) => ReactNode
   onEventClick?: (event: CalendarEvent) => void
-  onDateClick?: (date: dayjs.Dayjs, hour?: number, minute?: number) => void
+  onCellClick?: (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => void
   onViewChange?: (view: 'month' | 'week' | 'day' | 'year') => void
   locale?: string
   timezone?: string
-  disableDateClick?: boolean
+  disableCellClick?: boolean
   disableEventClick?: boolean
   disableDragAndDrop?: boolean
   dayMaxEvents: number
@@ -31,11 +31,11 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   firstDayOfWeek = 0, // Default to Sunday,
   renderEvent,
   onEventClick,
-  onDateClick,
+  onCellClick,
   onViewChange,
   locale,
   timezone,
-  disableDateClick,
+  disableCellClick,
   disableEventClick,
   disableDragAndDrop,
   dayMaxEvents,
@@ -157,38 +157,28 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
   const handleEventClick = useCallback(
     (event: CalendarEvent) => {
-      if (disableDateClick) return
+      if (disableCellClick) return
       if (onEventClick) {
         onEventClick(event)
       } else {
         editEvent(event)
       }
     },
-    [disableDateClick, onEventClick, editEvent]
+    [disableCellClick, onEventClick, editEvent]
   )
 
   const handleDateClick = useCallback(
-    (date: dayjs.Dayjs, hour?: number, minute?: number) => {
-      if (disableDateClick) return
+    (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => {
+      if (disableCellClick) return
 
-      if (onDateClick) {
-        onDateClick(date, hour, minute)
+      if (onCellClick) {
+        onCellClick(startDate, endDate)
       } else {
-        const selectedDate = date.hour(hour ?? 0).minute(minute ?? 0)
-        setSelectedDate(selectedDate)
-        const eventStart = selectedDate.clone()
-        let eventEnd = selectedDate.clone()
-        if (hour !== undefined && minute !== undefined) {
-          eventEnd = eventEnd.hour(hour).minute(minute + 15) // day view time slots are 15 minutes
-        } else if (hour !== undefined) {
-          eventEnd = eventEnd.hour(hour + 1).minute(0) // week view time slots are 1 hour
-        } else {
-          eventEnd = eventEnd.hour(23).minute(59) // month view full day
-        }
+        setSelectedDate(startDate)
         setSelectedEvent({
           title: `New Event`,
-          start: eventStart,
-          end: eventEnd,
+          start: startDate,
+          end: endDate,
           description: '',
           all_day: false,
           isRecurring: false,
@@ -198,7 +188,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
         setIsEventFormOpen(true)
       }
     },
-    [onDateClick, disableDateClick]
+    [onCellClick, disableCellClick]
   )
 
   // Helper function to get the next occurrence based on frequency
@@ -637,10 +627,10 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       createExceptionForRecurringEvent,
       renderEvent,
       onEventClick: handleEventClick,
-      onDateClick: handleDateClick,
+      onCellClick: handleDateClick,
       locale,
       timezone,
-      disableDateClick,
+      disableCellClick,
       disableEventClick,
       disableDragAndDrop,
       dayMaxEvents,
@@ -675,7 +665,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       handleDateClick,
       locale,
       timezone,
-      disableDateClick,
+      disableCellClick,
       disableEventClick,
       disableDragAndDrop,
       dayMaxEvents,

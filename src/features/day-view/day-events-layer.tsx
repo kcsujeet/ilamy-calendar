@@ -1,6 +1,7 @@
 import { useProcessedDayEvents } from '@/hooks/useProcessedDayEvents'
 import { DraggableEvent } from '../draggable-event/draggable-event'
 import type dayjs from 'dayjs'
+import { cn } from '@/lib/utils'
 
 interface DayEventsLayerProps {
   day: dayjs.Dayjs // The specific day this layer represents
@@ -22,6 +23,7 @@ export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({
         const veryVeryUniqueKey = `event-${event.id}-${index}-${day.format(
           'YYYY-MM-DD'
         )}`
+        const isShortEvent = event.end.diff(event.start, 'minute') <= 15
         return (
           <div
             key={`container-${veryVeryUniqueKey}`}
@@ -36,7 +38,9 @@ export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({
             <DraggableEvent
               elementId={`draggable-${veryVeryUniqueKey}`}
               event={event}
-              className="pointer-events-auto absolute"
+              className={cn('pointer-events-auto absolute', {
+                '[&_p]:text-[10px] [&_p]:mt-0': isShortEvent,
+              })}
             />
           </div>
         )

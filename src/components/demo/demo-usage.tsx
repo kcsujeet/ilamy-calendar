@@ -62,7 +62,7 @@ function MyCalendar() {
       locale="${locale}"
       timezone="${timezone}"
       onEventClick={handleEventClick}
-      onDateClick={handleDateClick}
+      onCellClick={handleDateClick}
       onViewChange={handleViewChange}
       ${useCustomEventRenderer ? 'renderEvent={customRenderFunction}' : ''}
     />
@@ -94,7 +94,7 @@ function MyCalendar() {
       locale="${locale}"
       timezone="${timezone}"
       onEventClick={handleEventClick}
-      onDateClick={handleDateClick}
+      onCellClick={handleDateClick}
       onViewChange={handleViewChange}
       ${useCustomEventRenderer ? 'renderEvent={customRenderFunction}' : ''}
     />

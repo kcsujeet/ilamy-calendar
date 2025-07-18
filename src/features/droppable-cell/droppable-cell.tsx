@@ -27,7 +27,7 @@ export function DroppableCell({
   style,
   'data-testid': dataTestId,
 }: DroppableCellProps) {
-  const { onDateClick, disableDragAndDrop, disableDateClick } =
+  const { onCellClick, disableDragAndDrop, disableCellClick } =
     useCalendarContext()
   const { isOver, setNodeRef } = useDroppable({
     id,
@@ -40,6 +40,23 @@ export function DroppableCell({
     disabled: disableDragAndDrop,
   })
 
+  const handleCellClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (disableCellClick) return
+
+    const startDate = date.hour(hour ?? 0).minute(minute ?? 0)
+    let endDate = startDate.clone()
+    if (hour !== undefined && minute !== undefined) {
+      endDate = endDate.hour(hour).minute(minute + 15) // day view time slots are 15 minutes
+    } else if (hour !== undefined) {
+      endDate = endDate.hour(hour + 1).minute(0) // week view time slots are 1 hour
+    } else {
+      endDate = endDate.hour(23).minute(59) // month view full day
+    }
+
+    onCellClick(startDate, endDate)
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -47,12 +64,9 @@ export function DroppableCell({
       className={cn(
         className,
         isOver && !disableDragAndDrop && 'bg-accent',
-        disableDateClick ? 'cursor-default' : 'cursor-pointer'
+        disableCellClick ? 'cursor-default' : 'cursor-pointer'
       )}
-      onClick={(e) => {
-        e.stopPropagation()
-        onDateClick(date, hour, minute)
-      }}
+      onClick={handleCellClick}
       style={style}
     >
       {children}

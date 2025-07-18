@@ -41,9 +41,9 @@ export interface CalendarContextType {
   createExceptionForRecurringEvent: (eventId: string, date: dayjs.Dayjs) => void
   renderEvent?: (event: CalendarEvent) => React.ReactNode
   onEventClick: (event: CalendarEvent) => void
-  onDateClick: (date: dayjs.Dayjs, hour?: number, minute?: number) => void
+  onCellClick: (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => void
   currentLocale?: string
-  disableDateClick?: boolean
+  disableCellClick?: boolean
   disableEventClick?: boolean
   disableDragAndDrop?: boolean
   dayMaxEvents: number

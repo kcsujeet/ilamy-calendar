@@ -40,7 +40,9 @@ function DraggableEventUnmemoized({
       )}
       style={{ backgroundColor: event.backgroundColor, color: event.color }}
     >
-      <p className="text-[10px] font-semibold sm:text-xs">{event.title}</p>
+      <p className="text-[10px] font-semibold sm:text-xs mt-0.5">
+        {event.title}
+      </p>
     </div>
   )
 

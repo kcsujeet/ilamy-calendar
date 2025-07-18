@@ -28,7 +28,7 @@ export function DemoPage() {
   })
 
   // Disable functionality state
-  const [disableDateClick, setDisableDateClick] = useState(false)
+  const [disableCellClick, setDisableDateClick] = useState(false)
   const [disableEventClick, setDisableEventClick] = useState(false)
   const [disableDragAndDrop, setDisableDragAndDrop] = useState(false)
 
@@ -92,7 +92,7 @@ export function DemoPage() {
             setLocale={handleSetLocale}
             timezone={timezone}
             setTimezone={setTimezone}
-            disableDateClick={disableDateClick}
+            disableCellClick={disableCellClick}
             setDisableDateClick={setDisableDateClick}
             disableEventClick={disableEventClick}
             setDisableEventClick={setDisableEventClick}
@@ -137,8 +137,8 @@ export function DemoPage() {
                 onEventClick={
                   useCustomOnEventClick ? handleEventClick : undefined
                 }
-                onDateClick={useCustomOnDateClick ? handleDateClick : undefined}
-                disableDateClick={disableDateClick}
+                onCellClick={useCustomOnDateClick ? handleDateClick : undefined}
+                disableCellClick={disableCellClick}
                 disableEventClick={disableEventClick}
                 disableDragAndDrop={disableDragAndDrop}
                 dayMaxEvents={dayMaxEvents}

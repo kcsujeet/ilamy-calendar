@@ -22,7 +22,6 @@ export interface CalendarContextType {
   openEventForm: (date?: dayjs.Dayjs, event?: CalendarEvent) => void
   closeEventForm: () => void
   getEventsForDate: (date: dayjs.Dayjs) => CalendarEvent[]
-  getEventsForWeek: (startOfWeek: dayjs.Dayjs) => CalendarEvent[]
   getEventsForDateRange: (
     start: dayjs.Dayjs,
     end: dayjs.Dayjs
@@ -42,7 +41,7 @@ export interface CalendarContextType {
   createExceptionForRecurringEvent: (eventId: string, date: dayjs.Dayjs) => void
   renderEvent?: (event: CalendarEvent) => React.ReactNode
   onEventClick: (event: CalendarEvent) => void
-  onDateClick: (date: dayjs.Dayjs) => void
+  onDateClick: (date: dayjs.Dayjs, hour?: number, minute?: number) => void
   currentLocale?: string
   disableDateClick?: boolean
   disableEventClick?: boolean

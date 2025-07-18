@@ -87,8 +87,6 @@ export const DayAllDayRow = () => {
           id={`all-day-${currentDate.format('YYYY-MM-DD')}`}
           type="day-cell"
           date={currentDate}
-          hour={0}
-          minute={0}
           className="hover:bg-accent w-full cursor-pointer min-h-10 flex flex-col"
         >
           {processedAllDayEvents.map((event, index) => {

@@ -51,7 +51,7 @@ export function DroppableCell({
       )}
       onClick={(e) => {
         e.stopPropagation()
-        onDateClick(date)
+        onDateClick(date, hour, minute)
       }}
       style={style}
     >

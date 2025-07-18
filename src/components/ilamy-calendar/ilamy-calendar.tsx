@@ -83,7 +83,7 @@ interface CalendarProps {
   firstDayOfWeek?: WeekDays
   renderEvent?: (event: CalendarEvent) => React.ReactNode
   onEventClick?: (event: CalendarEvent) => void
-  onDateClick?: (date: dayjs.Dayjs) => void
+  onDateClick?: (date: dayjs.Dayjs, hour?: number, minute?: number) => void
   onViewChange?: (view: 'month' | 'week' | 'day' | 'year') => void
   locale?: string
   timezone?: string

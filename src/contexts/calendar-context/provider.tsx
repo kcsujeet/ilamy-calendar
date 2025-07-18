@@ -15,7 +15,7 @@ interface CalendarProviderProps {
   firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
   renderEvent?: (event: CalendarEvent) => ReactNode
   onEventClick?: (event: CalendarEvent) => void
-  onDateClick?: (date: dayjs.Dayjs) => void
+  onDateClick?: (date: dayjs.Dayjs, hour?: number, minute?: number) => void
   onViewChange?: (view: 'month' | 'week' | 'day' | 'year') => void
   locale?: string
   timezone?: string
@@ -168,13 +168,33 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   )
 
   const handleDateClick = useCallback(
-    (date: dayjs.Dayjs) => {
+    (date: dayjs.Dayjs, hour?: number, minute?: number) => {
       if (disableDateClick) return
 
       if (onDateClick) {
-        onDateClick(date)
+        onDateClick(date, hour, minute)
       } else {
-        setSelectedDate(date)
+        const selectedDate = date.hour(hour ?? 0).minute(minute ?? 0)
+        setSelectedDate(selectedDate)
+        const eventStart = selectedDate.clone()
+        let eventEnd = selectedDate.clone()
+        if (hour !== undefined && minute !== undefined) {
+          eventEnd = eventEnd.hour(hour).minute(minute + 15) // day view time slots are 15 minutes
+        } else if (hour !== undefined) {
+          eventEnd = eventEnd.hour(hour + 1).minute(0) // week view time slots are 1 hour
+        } else {
+          eventEnd = eventEnd.hour(23).minute(59) // month view full day
+        }
+        setSelectedEvent({
+          title: `New Event`,
+          start: eventStart,
+          end: eventEnd,
+          description: '',
+          all_day: false,
+          isRecurring: false,
+          recurrence: null,
+          parentEventId: null,
+        } as CalendarEvent)
         setIsEventFormOpen(true)
       }
     },
@@ -429,14 +449,6 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
     [getEventsForDateRange]
   )
 
-  const getEventsForWeek = useCallback(
-    (startOfWeek: dayjs.Dayjs): CalendarEvent[] => {
-      const endOfWeek = startOfWeek.add(6, 'day').endOf('day')
-      return getEventsForDateRange(startOfWeek, endOfWeek)
-    },
-    [getEventsForDateRange]
-  )
-
   // Recurring event operations
   const addRecurringEvent = useCallback((event: CalendarEvent) => {
     setEvents((prevEvents) => [...prevEvents, event])
@@ -617,7 +629,6 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       openEventForm: () => setIsEventFormOpen(true),
       closeEventForm,
       getEventsForDate,
-      getEventsForWeek,
       getEventsForDateRange,
       expandRecurringEvent,
       addRecurringEvent,
@@ -653,7 +664,6 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       deleteEvent,
       closeEventForm,
       getEventsForDate,
-      getEventsForWeek,
       getEventsForDateRange,
       expandRecurringEvent,
       addRecurringEvent,

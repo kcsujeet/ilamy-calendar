@@ -65,7 +65,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
     }
 
     if (over.data.current?.type === 'time-cell') {
-      const { date, hour, minute = 0 } = over.data.current
+      const { date, hour = 0, minute = 0 } = over.data.current
 
       // Calculate the event duration in minutes
       const originalStart = activeEvent.originalStart ?? activeEvent.start

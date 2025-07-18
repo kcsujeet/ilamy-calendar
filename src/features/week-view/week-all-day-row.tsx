@@ -149,8 +149,6 @@ export const WeekAllDayRow: React.FC = () => {
           id={`all-day-cell-${day.format('YYYY-MM-DD')}`}
           type="day-cell"
           date={day}
-          hour={0}
-          minute={0}
           className="hover:bg-accent h-full flex-1 cursor-pointer border-r border-b"
         />
       ))}

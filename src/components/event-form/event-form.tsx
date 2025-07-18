@@ -158,7 +158,7 @@ export const EventForm: React.FC<EventFormProps> = ({
       color: selectedColor,
     }
 
-    if (selectedEvent) {
+    if (selectedEvent.id) {
       onUpdate?.(eventData)
     } else {
       onAdd?.(eventData)
@@ -168,7 +168,7 @@ export const EventForm: React.FC<EventFormProps> = ({
   }
 
   const handleDelete = () => {
-    if (selectedEvent) {
+    if (selectedEvent.id) {
       onDelete?.(selectedEvent)
       onClose()
     }
@@ -187,10 +187,10 @@ export const EventForm: React.FC<EventFormProps> = ({
         <form onSubmit={handleSubmit}>
           <DialogHeader className="mb-2 sm:mb-4">
             <DialogTitle className="text-base sm:text-lg">
-              {selectedEvent ? 'Edit Event' : 'Create Event'}
+              {selectedEvent.id ? 'Edit Event' : 'Create Event'}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              {selectedEvent
+              {selectedEvent.id
                 ? 'Edit your event details'
                 : 'Add a new event to your calendar'}
             </DialogDescription>
@@ -333,7 +333,7 @@ export const EventForm: React.FC<EventFormProps> = ({
           </div>
 
           <DialogFooter className="mt-2 flex flex-col-reverse gap-2 sm:mt-4 sm:flex-row sm:gap-0">
-            {selectedEvent && (
+            {selectedEvent.id && (
               <Button
                 type="button"
                 variant="destructive"
@@ -355,7 +355,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 Cancel
               </Button>
               <Button type="submit" className="flex-1 sm:flex-none" size="sm">
-                {selectedEvent ? 'Update' : 'Create'}
+                {selectedEvent.id ? 'Update' : 'Create'}
               </Button>
             </div>
           </DialogFooter>

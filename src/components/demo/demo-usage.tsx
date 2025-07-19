@@ -25,7 +25,7 @@ export function DemoUsage({
   timezone,
 }: DemoUsageProps) {
   return (
-    <Card className="border border-white/20 dark:border-white/5 bg-white/50 dark:bg-black/20 backdrop-blur-md shadow-lg overflow-hidden">
+    <Card className="border border-white/20 dark:border-white/5 bg-white/50 dark:bg-black/20 backdrop-blur-md shadow-lg overflow-clip">
       <CardHeader className="border-b border-white/10 dark:border-white/5 p-4">
         <CardTitle className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
           Usage

@@ -170,7 +170,7 @@ export const WeekAllDayRow: React.FC = () => {
               elementId={`all-day-${event.id}-${index}`}
               event={event}
               key={`all-day-${event.id}-${index}`}
-              className="h-full w-full overflow-hidden text-xs absolute"
+              className="h-full w-full overflow-clip text-xs absolute"
             />
           </div>
         ))}

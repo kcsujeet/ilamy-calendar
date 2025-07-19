@@ -46,22 +46,20 @@ const CalendarContent: React.FC = () => {
       <Header />
 
       {/* Calendar Body with AnimatePresence for view transitions */}
-      <div className="relative flex-1 overflow-hidden">
-        <CalendarDndContext>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={view}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.1, ease: 'easeInOut' }}
-              className="h-full w-full overflow-auto"
-            >
-              {viewMap[view]}
-            </motion.div>
-          </AnimatePresence>
-        </CalendarDndContext>
-      </div>
+      <CalendarDndContext>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={view}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.1, ease: 'easeInOut' }}
+            className="h-full w-full"
+          >
+            {viewMap[view]}
+          </motion.div>
+        </AnimatePresence>
+      </CalendarDndContext>
 
       {/* Event Form Dialog */}
       {isEventFormOpen && (

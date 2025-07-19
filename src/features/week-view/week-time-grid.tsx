@@ -32,7 +32,7 @@ export const WeekTimeGrid: React.FC = () => {
   return (
     <div
       data-testid="week-time-grid"
-      className="relative h-full grid grid-cols-[auto_repeat(7,1fr)] grid-rows-[repeat(24,minmax(60px, 1fr))] overflow-hidden"
+      className="relative h-full grid grid-cols-[auto_repeat(7,1fr)] grid-rows-[repeat(24,minmax(60px, 1fr))]"
     >
       {/* Time labels column - fixed */}
       <div

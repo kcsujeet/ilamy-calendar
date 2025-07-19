@@ -27,21 +27,18 @@ const DayView = () => {
   const cellDate = currentDate.format('YYYY-MM-DD')
 
   return (
-    <div
-      data-testid="day-view"
-      className="flex h-full flex-col overflow-hidden"
-    >
+    <div data-testid="day-view" className="flex h-full flex-col">
       {/* Day header */}
       <DayHeader />
-
-      {/* All-day events row */}
-      <DayAllDayRow />
 
       {/* Time grid without scrollbar */}
       <ScrollArea
         data-testid="day-scroll-area"
         className="relative flex-1 overflow-y-auto"
       >
+        {/* All-day events row */}
+        <DayAllDayRow />
+
         {/* Set a fixed height container that matches exactly the total height of all hour blocks */}
         <div
           data-testid="day-time-grid"

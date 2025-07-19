@@ -7,6 +7,7 @@ import { DayCell } from './day-cell'
 import type { MonthViewProps, SelectedDayEvents } from '../types'
 import { MonthHeader } from './month-header'
 import { WeekEventsLayer } from './week-events-layer'
+import { ScrollArea } from '@/components/ui'
 
 export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
   const allEventsDialogRef = React.useRef<{
@@ -43,52 +44,54 @@ export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
   }, [adjustedFirstDayOfCalendar])
 
   return (
-    <div
-      className="flex h-full flex-col overflow-hidden"
-      data-testid="month-view"
-    >
+    <div className="flex h-full flex-col" data-testid="month-view">
       {/* Week days header */}
       <MonthHeader />
 
       {/* Calendar grid - added fixed height */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentDate.format('YYYY-MM-DD')}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25, ease: 'easeInOut' }}
-          className="relative grid flex-1 grid-cols-7 grid-rows-6 overflow-hidden"
-          data-testid="month-calendar-grid"
-        >
-          {/* Day cells */}
-          {calendarDays.map((days, index) => {
-            return (
-              <div
-                key={`week-${index}`}
-                className="relative col-span-7 grid grid-cols-7"
-                data-testid={`week-row-${index}`}
-              >
-                {days.map((day, dayIndex) => {
-                  return (
-                    <DayCell
-                      index={dayIndex}
-                      day={day}
-                      dayMaxEvents={dayMaxEvents}
-                      key={day.format('YYYY-MM-DD')}
-                      className="border-r border-b first:border-l"
-                    />
-                  )
-                })}
+      <ScrollArea
+        className="flex-1 overflow-auto"
+        data-testid="month-scroll-area"
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentDate.format('YYYY-MM-DD')}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="relative grid flex-1 grid-cols-7 grid-rows-6 overflow-auto"
+            data-testid="month-calendar-grid"
+          >
+            {/* Day cells */}
+            {calendarDays.map((days, index) => {
+              return (
+                <div
+                  key={`week-${index}`}
+                  className="relative col-span-7 grid grid-cols-7"
+                  data-testid={`week-row-${index}`}
+                >
+                  {days.map((day, dayIndex) => {
+                    return (
+                      <DayCell
+                        index={dayIndex}
+                        day={day}
+                        dayMaxEvents={dayMaxEvents}
+                        key={day.format('YYYY-MM-DD')}
+                        className="border-r border-b first:border-l"
+                      />
+                    )
+                  })}
 
-                <div className="absolute inset-0 z-10 pointer-events-none">
-                  <WeekEventsLayer days={days} />
+                  <div className="absolute inset-0 z-10 pointer-events-none">
+                    <WeekEventsLayer days={days} />
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </motion.div>
-      </AnimatePresence>
+              )
+            })}
+          </motion.div>
+        </AnimatePresence>
+      </ScrollArea>
 
       {/* Dialog for showing all events */}
       <AllEventDialog ref={allEventsDialogRef} />

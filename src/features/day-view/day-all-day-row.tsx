@@ -98,7 +98,7 @@ export const DayAllDayRow = () => {
                 <DraggableEvent
                   elementId={`all-day-${event.id}-${index}`}
                   event={event}
-                  className="overflow-hidden text-xs"
+                  className="overflow-clip text-xs"
                   style={{ width: `calc(100% - var(--spacing) * 2)` }}
                 />
               </div>

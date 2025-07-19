@@ -10,7 +10,7 @@ export const DayHeader = () => {
   return (
     <div
       data-testid="day-header"
-      className="sticky top-0 z-10 flex items-center justify-center border-b p-2 border-x"
+      className="sticky top-0 z-100 flex items-center justify-center border-b p-2 border-x bg-background"
     >
       <AnimatePresence mode="wait">
         <motion.div

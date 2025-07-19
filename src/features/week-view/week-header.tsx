@@ -24,7 +24,7 @@ export const WeekHeader: React.FC = () => {
   return (
     // css grid header with lef corner cell shorter than the rest
     <div
-      className="sticky top-0 z-10 grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1"
+      className="sticky top-0 z-100 grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1 bg-background"
       data-testid="week-header"
     >
       {/* Corner cell with week number */}

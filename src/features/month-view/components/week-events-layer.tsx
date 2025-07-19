@@ -202,14 +202,14 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
   }
 
   return (
-    <div className="relative w-full h-full pointer-events-none z-20 overflow-hidden">
+    <div className="relative w-full h-full pointer-events-none z-20 overflow-clip">
       {eventPositions.map((event) => {
         return (
           <div
             key={`event-${event.id}-${event.position}-${weekStart.format(
               'YYYY-MM-DD'
             )}`}
-            className="absolute z-10 pointer-events-auto overflow-hidden"
+            className="absolute z-10 pointer-events-auto overflow-clip"
             style={{
               left: `calc(${event.left}% + var(--spacing) * 0.25)`,
               width: `calc(${event.width}% - var(--spacing) * 1)`,

@@ -10,21 +10,17 @@ dayjs.extend(weekOfYear)
 
 const WeekView: React.FC = () => {
   return (
-    <div
-      className="flex h-full flex-col overflow-hidden"
-      data-testid="week-view"
-    >
+    <div className="flex h-full flex-col" data-testid="week-view">
       {/* Week header row - fixed */}
       <WeekHeader />
-
-      {/* All-day events row - dynamic height based on content */}
-      <WeekAllDayRow />
 
       {/* Scrollable time grid */}
       <ScrollArea
         className="flex flex-1 overflow-auto"
         data-testid="week-scroll-area"
       >
+        {/* All-day events row - dynamic height based on content */}
+        <WeekAllDayRow />
         <WeekTimeGrid />
       </ScrollArea>
     </div>

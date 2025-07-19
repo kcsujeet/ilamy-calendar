@@ -25,7 +25,7 @@ export const MonthHeader: React.FC = () => {
 
   return (
     <div
-      className="sticky top-0 z-10 grid grid-cols-7 border-b"
+      className="sticky top-0 z-100 grid grid-cols-7 border-b bg-background"
       data-testid="month-header"
     >
       {weekDays.days.map((weekDay, index) => (

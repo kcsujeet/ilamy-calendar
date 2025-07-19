@@ -111,7 +111,7 @@ export function DemoPage() {
 
         {/* Calendar display */}
         <div className="lg:col-span-3">
-          <Card className="border backdrop-blur-md shadow-lg overflow-hidden relative p-2 bg-background">
+          <Card className="border backdrop-blur-md shadow-lg overflow-clip relative p-2 bg-background">
             <CardHeader>
               <div className="py-3 flex items-center">
                 <div className="flex space-x-1.5">
@@ -124,7 +124,7 @@ export function DemoPage() {
             </CardHeader>
 
             <CardContent
-              className="p-0 overflow-hidden relative z-10"
+              className="p-0 overflow-clip relative z-10"
               style={{ height: calendarHeight }}
             >
               <IlamyCalendar

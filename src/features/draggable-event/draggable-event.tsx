@@ -36,7 +36,7 @@ function DraggableEventUnmemoized({
       className={cn(
         event.backgroundColor || 'bg-blue-500',
         event.color || 'text-white',
-        'h-full w-full px-1 border-[1.5px] border-card rounded-md text-left overflow-hidden'
+        'h-full w-full px-1 border-[1.5px] border-card rounded-md text-left overflow-clip'
       )}
       style={{ backgroundColor: event.backgroundColor, color: event.color }}
     >

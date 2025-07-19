@@ -47,7 +47,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "dev": "bunup --watch",
+    "dev": "bun --hot src/index.tsx",
     "start": "NODE_ENV=production bun src/index.tsx",
     "build": "bunx bunup",
     "lint": "bunx oxlint@latest",

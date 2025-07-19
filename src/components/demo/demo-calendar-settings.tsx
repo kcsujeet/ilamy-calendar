@@ -48,8 +48,6 @@ export function DemoCalendarSettings({
   setUseCustomEventRenderer,
   locale,
   setLocale,
-  timezone,
-  setTimezone,
   disableCellClick,
   setDisableDateClick,
   disableEventClick,
@@ -80,7 +78,7 @@ export function DemoCalendarSettings({
           <ModeToggle />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-sm text-left font-medium mb-1">
             First Day of Week
           </label>
           <Select
@@ -103,7 +101,9 @@ export function DemoCalendarSettings({
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Locale</label>
+          <label className="block text-sm text-left font-medium mb-1">
+            Locale
+          </label>
           <Select value={locale} onValueChange={setLocale}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select locale" />
@@ -123,8 +123,8 @@ export function DemoCalendarSettings({
           </Select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Timezone</label>
+        {/* <div>
+          <label className="block text-sm text-left font-medium mb-1">Timezone</label>
           <Select value={timezone} onValueChange={setTimezone}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select timezone" />
@@ -137,10 +137,10 @@ export function DemoCalendarSettings({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
 
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-sm text-left font-medium mb-1">
             Calendar Height
           </label>
           <Select value={calendarHeight} onValueChange={setCalendarHeight}>
@@ -152,12 +152,13 @@ export function DemoCalendarSettings({
               <SelectItem value="400px">Small (400px)</SelectItem>
               <SelectItem value="600px">Medium (600px)</SelectItem>
               <SelectItem value="800px">Large (800px)</SelectItem>
+              <SelectItem value="1000px">Extra Large (1000px)</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-sm text-left font-medium mb-1">
             Max Events Per Day
           </label>
           <Select

@@ -1,15 +1,55 @@
 {
   "name": "@ilamy/calendar",
   "version": "0.1.0",
-  "private": true,
+  "description": "A full-featured React calendar component library built with Shadcn-Ui, Tailwind CSS, and TypeScript.",
+  "author": "Ilamy",
+  "license": "MIT",
+  "homepage": "https://calendar.ilamy.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kcsujeet/ilamy-calendar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kcsujeet/ilamy-calendar/issues"
+  },
+  "keywords": [
+    "react",
+    "calendar",
+    "typescript",
+    "tailwind",
+    "components",
+    "shadcn",
+    "radix-ui",
+    "dnd-kit",
+    "motion",
+    "events",
+    "scheduling",
+    "drag-and-drop",
+    "recurring-events"
+  ],
+  "private": false,
   "type": "module",
-  "main": "src/index.tsx",
-  "module": "src/index.tsx",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles": "./dist/styles.css"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "sideEffects": false,
   "scripts": {
-    "dev": "bun --hot src/index.tsx",
+    "dev": "bunup --watch",
     "start": "NODE_ENV=production bun src/index.tsx",
-    "build": "bun run build.ts",
+    "build": "bunx bunup",
     "lint": "bunx oxlint@latest",
     "lint:fix": "bunx oxlint@latest --fix --fix-suggestions",
     "prettier": "bunx prettier",
@@ -23,6 +63,10 @@
     "ci": "bun run lint && bun run prettier:check && bun run test && bun run build",
     "pre-commit": "bun run lint:fix && bun run prettier:fix",
     "prepare": "bunx husky"
+  },
+  "peerDependencies": {
+    "react": ">=19.1.0",
+    "react-dom": ">=19.1.0"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -45,9 +89,7 @@
     "dayjs": "^1.11.13",
     "lucide-react": "^0.475.0",
     "motion": "^12.23.6",
-    "react": "^19.1.0",
     "react-day-picker": "^9.8.0",
-    "react-dom": "^19.1.0",
     "react-hook-form": "^7.60.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11",
@@ -61,6 +103,7 @@
     "@types/bun": "latest",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "bunup": "^0.8.61",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
     "prettier": "3.6.2"

@@ -89,6 +89,7 @@ interface CalendarProps {
   disableEventClick?: boolean
   disableDragAndDrop?: boolean
   dayMaxEvents?: number
+  stickyHeader?: boolean
 }
 
 const dayNumberMap: Record<string, number> = {
@@ -115,6 +116,7 @@ export const IlamyCalendar: React.FC<CalendarProps> = ({
   disableEventClick,
   disableDragAndDrop,
   dayMaxEvents = DEFAULT_DAY_MAX_EVENTS,
+  stickyHeader = true,
 }) => {
   return (
     <CalendarProvider
@@ -130,6 +132,7 @@ export const IlamyCalendar: React.FC<CalendarProps> = ({
       disableEventClick={disableEventClick}
       disableDragAndDrop={disableDragAndDrop}
       dayMaxEvents={dayMaxEvents}
+      stickyHeader={stickyHeader}
     >
       <CalendarContent />
     </CalendarProvider>

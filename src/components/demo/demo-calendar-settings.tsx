@@ -37,6 +37,8 @@ interface DemoCalendarSettingsProps {
   setCalendarHeight: (value: string) => void
   dayMaxEvents: number
   setDayMaxEvents: (value: number) => void
+  stickyHeader?: boolean
+  setStickyHeader?: (value: boolean) => void
 }
 
 export function DemoCalendarSettings({
@@ -62,6 +64,8 @@ export function DemoCalendarSettings({
   setCalendarHeight,
   dayMaxEvents,
   setDayMaxEvents,
+  stickyHeader,
+  setStickyHeader,
 }: DemoCalendarSettingsProps) {
   return (
     <Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -172,6 +176,20 @@ export function DemoCalendarSettings({
               <SelectItem value="999">No limit</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="stickyHeader"
+            checked={stickyHeader}
+            onCheckedChange={() => setStickyHeader?.(!stickyHeader)}
+          />
+          <label
+            htmlFor="stickyHeader"
+            className="text-sm font-medium leading-none cursor-pointer ml-2"
+          >
+            Enable sticky header
+          </label>
         </div>
 
         <div className="flex items-center space-x-2">

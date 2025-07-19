@@ -47,6 +47,7 @@ export interface CalendarContextType {
   disableEventClick?: boolean
   disableDragAndDrop?: boolean
   dayMaxEvents: number
+  stickyHeader: boolean
 }
 
 export const CalendarContext = createContext<CalendarContextType | undefined>(

@@ -23,6 +23,7 @@ interface CalendarProviderProps {
   disableEventClick?: boolean
   disableDragAndDrop?: boolean
   dayMaxEvents: number
+  stickyHeader: boolean
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -39,6 +40,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   disableEventClick,
   disableDragAndDrop,
   dayMaxEvents,
+  stickyHeader,
 }) => {
   // State
   const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(dayjs())
@@ -634,6 +636,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       disableEventClick,
       disableDragAndDrop,
       dayMaxEvents,
+      stickyHeader,
     }),
     [
       currentDate,
@@ -669,6 +672,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       disableEventClick,
       disableDragAndDrop,
       dayMaxEvents,
+      stickyHeader,
     ]
   )
 

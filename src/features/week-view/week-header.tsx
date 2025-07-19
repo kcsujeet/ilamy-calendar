@@ -5,8 +5,13 @@ import { AnimatePresence, motion } from 'motion/react'
 import React from 'react'
 
 export const WeekHeader: React.FC = () => {
-  const { currentDate, selectDate, openEventForm, firstDayOfWeek } =
-    useCalendarContext()
+  const {
+    currentDate,
+    selectDate,
+    openEventForm,
+    firstDayOfWeek,
+    stickyHeader,
+  } = useCalendarContext()
 
   // Get start and end of current week based on firstDayOfWeek setting
   const startOfWeek = currentDate.startOf('week').day(firstDayOfWeek)
@@ -24,7 +29,10 @@ export const WeekHeader: React.FC = () => {
   return (
     // css grid header with lef corner cell shorter than the rest
     <div
-      className="sticky top-0 z-100 grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1 bg-background"
+      className={cn(
+        'grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1 bg-background',
+        stickyHeader && 'sticky top-0 z-100 shadow'
+      )}
       data-testid="week-header"
     >
       {/* Corner cell with week number */}

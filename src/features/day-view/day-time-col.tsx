@@ -13,7 +13,7 @@ export const DayTimeCol: React.FC<DayTimeColProps> = ({ className }) => {
   return (
     <div
       data-testid="day-time-col"
-      className={`sticky left-0 z-10 col-span-2 h-full md:col-span-1 ${className}`}
+      className={`col-span-2 h-full md:col-span-1 ${className}`}
     >
       {hours.map((time) => (
         <div

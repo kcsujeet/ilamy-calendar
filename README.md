@@ -38,7 +38,7 @@ import { IlamyCalendar, useIlamyCalendarContext } from '@ilamy/calendar'
 function App() {
   return (
     <div className="h-screen p-4">
-      <IlamyCalendar 
+      <IlamyCalendar
         initialView="month"
         dayMaxEvents={3}
         onEventClick={(event) => console.log('Event clicked:', event)}

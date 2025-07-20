@@ -1,6 +1,6 @@
 {
   "name": "@ilamy/calendar",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A full-featured React calendar component library built with Shadcn-Ui, Tailwind CSS, and TypeScript.",
   "author": "Ilamy",
   "license": "MIT",

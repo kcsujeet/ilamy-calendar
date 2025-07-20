@@ -53,7 +53,7 @@
   "scripts": {
     "dev": "bun --hot src/index.tsx",
     "start": "NODE_ENV=production bun src/index.tsx",
-    "build": "bunx bunup",
+    "build": "NODE_ENV=production bunx bunup",
     "lint": "bunx oxlint@latest",
     "lint:fix": "bunx oxlint@latest --fix --fix-suggestions",
     "prettier": "bunx prettier",

@@ -52,6 +52,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null)
   const [currentLocale, setCurrentLocale] = useState<string>(locale || 'en')
+  const [currentTimezone, setCurrentTimezone] = useState<string>(timezone || '')
 
   // Update events when initialEvents prop changes
   useEffect(() => {
@@ -71,7 +72,8 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   // Configure timezone for currentDate when timezone prop changes
   useEffect(() => {
     if (timezone) {
-      setCurrentDate((prevDate) => prevDate.tz(timezone))
+      setCurrentTimezone(timezone)
+      dayjs.tz.setDefault(timezone)
     }
   }, [timezone])
 
@@ -633,7 +635,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       onEventClick: handleEventClick,
       onCellClick: handleDateClick,
       locale,
-      timezone,
+      timezone: currentTimezone,
       disableCellClick,
       disableEventClick,
       disableDragAndDrop,
@@ -670,7 +672,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       handleEventClick,
       handleDateClick,
       locale,
-      timezone,
+      currentTimezone,
       disableCellClick,
       disableEventClick,
       disableDragAndDrop,

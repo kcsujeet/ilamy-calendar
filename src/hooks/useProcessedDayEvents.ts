@@ -26,7 +26,7 @@ export const useProcessedDayEvents = ({ day }: UseProcessedDayEventsProps) => {
 
     // Filter out all-day events and sort by start time
     eventsForDay = eventsForDay
-      .filter((e) => !e.all_day)
+      .filter((e) => !e.allDay)
       .toSorted((a, b) => a.start.diff(b.start))
 
     if (eventsForDay.length === 0) {

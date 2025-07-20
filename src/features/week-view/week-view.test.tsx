@@ -27,7 +27,7 @@ const renderCalendar = (props = {}) => {
     <CalendarProvider
       firstDayOfWeek={firstDayOfWeek}
       dayMaxEvents={dayMaxEvents}
-      initialEvents={mockEvents}
+      events={mockEvents}
       locale={locale}
       {...props}
     >

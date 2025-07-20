@@ -46,7 +46,7 @@ export const WeekAllDayRow: React.FC = () => {
   })
 
   // Separate all-day events from regular events (including multi-day events)
-  const allDayEvents = weekEvents.filter((event) => event.all_day)
+  const allDayEvents = weekEvents.filter((event) => event.allDay)
 
   // Process and layout all-day events to avoid overlapping
   const { processedAllDayEvents } = useMemo(() => {
@@ -120,7 +120,7 @@ export const WeekAllDayRow: React.FC = () => {
         width,
         top: rowIndex * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
         height: EVENT_BAR_HEIGHT,
-        all_day: true,
+        allDay: true,
       })
     })
 

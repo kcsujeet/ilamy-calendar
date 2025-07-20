@@ -5,8 +5,12 @@ import dayjs from '@/lib/dayjs-config'
 import { cn } from '@/lib/utils'
 
 export const MonthHeader: React.FC = () => {
-  const { firstDayOfWeek, currentLocale, stickyHeader, headerClassName } =
-    useCalendarContext()
+  const {
+    firstDayOfWeek,
+    currentLocale,
+    stickyViewHeader,
+    viewHeaderClassName,
+  } = useCalendarContext()
 
   // Reorder week days based on firstDayOfWeek
   const weekDays = useMemo(() => {
@@ -29,8 +33,8 @@ export const MonthHeader: React.FC = () => {
     <div
       className={cn(
         'grid grid-cols-7 border-b',
-        stickyHeader && 'sticky top-0 z-100',
-        headerClassName
+        stickyViewHeader && 'sticky top-0 z-100',
+        viewHeaderClassName
       )}
       data-testid="month-header"
     >

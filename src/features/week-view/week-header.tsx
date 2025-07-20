@@ -10,8 +10,8 @@ export const WeekHeader: React.FC = () => {
     selectDate,
     openEventForm,
     firstDayOfWeek,
-    stickyHeader,
-    headerClassName,
+    stickyViewHeader,
+    viewHeaderClassName,
   } = useCalendarContext()
 
   // Get start and end of current week based on firstDayOfWeek setting
@@ -32,8 +32,8 @@ export const WeekHeader: React.FC = () => {
     <div
       className={cn(
         'grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1',
-        stickyHeader && 'sticky top-0 z-100',
-        headerClassName
+        stickyViewHeader && 'sticky top-0 z-100',
+        viewHeaderClassName
       )}
       data-testid="week-header"
     >

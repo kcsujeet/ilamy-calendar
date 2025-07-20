@@ -14,11 +14,11 @@ export const DayAllDayRow = () => {
 
   // Separate all-day events from regular events
   const { allDayEvents } = useMemo(() => {
-    // Only events explicitly marked as all_day should be in the all-day section
-    const allDayEvts = dayEvents.filter((event) => event.all_day)
+    // Only events explicitly marked as allDay should be in the all-day section
+    const allDayEvts = dayEvents.filter((event) => event.allDay)
 
     // Regular events (including multi-day events)
-    const regularEvts = dayEvents.filter((event) => !event.all_day)
+    const regularEvts = dayEvents.filter((event) => !event.allDay)
 
     return { allDayEvents: allDayEvts, regularEvents: regularEvts }
   }, [dayEvents]) // Only depend on the dayEvents which is refreshed automatically
@@ -59,7 +59,7 @@ export const DayAllDayRow = () => {
         width: 100,
         top: rowIndex * EVENT_BAR_HEIGHT,
         height: EVENT_BAR_HEIGHT,
-        all_day: true,
+        allDay: true,
       })
     })
 

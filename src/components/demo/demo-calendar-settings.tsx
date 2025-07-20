@@ -37,7 +37,7 @@ interface DemoCalendarSettingsProps {
   setCalendarHeight: (value: string) => void
   dayMaxEvents: number
   setDayMaxEvents: (value: number) => void
-  stickyHeader?: boolean
+  stickyViewHeader?: boolean
   setStickyHeader?: (value: boolean) => void
 }
 
@@ -62,7 +62,7 @@ export function DemoCalendarSettings({
   setCalendarHeight,
   dayMaxEvents,
   setDayMaxEvents,
-  stickyHeader,
+  stickyViewHeader,
   setStickyHeader,
 }: DemoCalendarSettingsProps) {
   return (
@@ -181,12 +181,12 @@ export function DemoCalendarSettings({
 
         <div className="flex items-center space-x-2">
           <Checkbox
-            id="stickyHeader"
-            checked={stickyHeader}
-            onCheckedChange={() => setStickyHeader?.(!stickyHeader)}
+            id="stickyViewHeader"
+            checked={stickyViewHeader}
+            onCheckedChange={() => setStickyHeader?.(!stickyViewHeader)}
           />
           <label
-            htmlFor="stickyHeader"
+            htmlFor="stickyViewHeader"
             className="text-sm font-medium leading-none cursor-pointer ml-2"
           >
             Enable sticky header

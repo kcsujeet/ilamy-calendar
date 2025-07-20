@@ -68,7 +68,7 @@ export const EventForm: React.FC<EventFormProps> = ({
     start?.toDate() || defaultStartDate
   )
   const [endDate, setEndDate] = useState(end?.toDate() || defaultEndDate)
-  const [isAllDay, setIsAllDay] = useState(selectedEvent?.all_day || false)
+  const [isAllDay, setIsAllDay] = useState(selectedEvent?.allDay || false)
   const [selectedColor, setSelectedColor] = useState(
     selectedEvent?.color || colorOptions[0].value
   )
@@ -154,7 +154,7 @@ export const EventForm: React.FC<EventFormProps> = ({
       end: endDateTime,
       description: formValues.description,
       location: formValues.location,
-      all_day: isAllDay,
+      allDay: isAllDay,
       color: selectedColor,
     }
 
@@ -215,11 +215,11 @@ export const EventForm: React.FC<EventFormProps> = ({
 
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="all_day"
+                id="allDay"
                 checked={isAllDay}
                 onCheckedChange={(checked) => setIsAllDay(checked === true)}
               />
-              <Label htmlFor="all_day" className="text-xs sm:text-sm">
+              <Label htmlFor="allDay" className="text-xs sm:text-sm">
                 All day
               </Label>
             </div>

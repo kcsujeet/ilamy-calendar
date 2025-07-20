@@ -11,7 +11,7 @@ import type { CalendarEvent } from '@/components/types'
 
 interface CalendarProviderProps {
   children: ReactNode
-  initialEvents?: CalendarEvent[]
+  events?: CalendarEvent[]
   firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
   renderEvent?: (event: CalendarEvent) => ReactNode
   onEventClick?: (event: CalendarEvent) => void
@@ -23,13 +23,13 @@ interface CalendarProviderProps {
   disableEventClick?: boolean
   disableDragAndDrop?: boolean
   dayMaxEvents: number
-  stickyHeader: boolean
-  headerClassName: string
+  stickyViewHeader: boolean
+  viewHeaderClassName: string
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   children,
-  initialEvents = [],
+  events = [],
   firstDayOfWeek = 0, // Default to Sunday,
   renderEvent,
   onEventClick,
@@ -41,25 +41,25 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   disableEventClick,
   disableDragAndDrop,
   dayMaxEvents,
-  stickyHeader,
-  headerClassName,
+  stickyViewHeader,
+  viewHeaderClassName,
 }) => {
   // State
   const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(dayjs())
   const [view, setView] = useState<'month' | 'week' | 'day' | 'year'>('month')
-  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents)
+  const [currentEvents, setCurrentEvents] = useState<CalendarEvent[]>(events)
   const [isEventFormOpen, setIsEventFormOpen] = useState<boolean>(false)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null)
   const [currentLocale, setCurrentLocale] = useState<string>(locale || 'en')
   const [currentTimezone, setCurrentTimezone] = useState<string>(timezone || '')
 
-  // Update events when initialEvents prop changes
+  // Update events when events prop changes
   useEffect(() => {
-    if (initialEvents) {
-      setEvents(initialEvents)
+    if (events) {
+      setCurrentEvents(events)
     }
-  }, [initialEvents])
+  }, [events])
 
   // Configure locale when locale prop changes
   useEffect(() => {
@@ -121,12 +121,12 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   }, [])
 
   const addEvent = useCallback((event: CalendarEvent) => {
-    setEvents((prevEvents) => [...prevEvents, event])
+    setCurrentEvents((prevEvents) => [...prevEvents, event])
   }, [])
 
   const updateEvent = useCallback(
     (eventId: string, updatedEvent: Partial<CalendarEvent>) => {
-      setEvents((prevEvents) =>
+      setCurrentEvents((prevEvents) =>
         prevEvents.map((event) =>
           event.id === eventId ? { ...event, ...updatedEvent } : event
         )
@@ -136,7 +136,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   )
 
   const deleteEvent = useCallback((eventId: string) => {
-    setEvents((prevEvents) =>
+    setCurrentEvents((prevEvents) =>
       prevEvents.filter((event) => event.id !== eventId)
     )
   }, [])
@@ -186,7 +186,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
           start: startDate,
           end: endDate,
           description: '',
-          all_day: false,
+          allDay: false,
           isRecurring: false,
           recurrence: null,
           parentEventId: null,
@@ -447,12 +447,12 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
   // Recurring event operations
   const addRecurringEvent = useCallback((event: CalendarEvent) => {
-    setEvents((prevEvents) => [...prevEvents, event])
+    setCurrentEvents((prevEvents) => [...prevEvents, event])
   }, [])
 
   const deleteRecurringEvent = useCallback(
     (eventId: string, deleteAll: boolean) => {
-      setEvents((prevEvents) => {
+      setCurrentEvents((prevEvents) => {
         // Find the event by ID
         const event = prevEvents.find((e) => e.id === eventId)
         if (!event) return prevEvents
@@ -510,7 +510,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       updatedEvent: Partial<CalendarEvent>,
       updateAll: boolean
     ) => {
-      setEvents((prevEvents) => {
+      setCurrentEvents((prevEvents) => {
         // Find the event by ID
         const event = prevEvents.find((e) => e.id === eventId)
         if (!event) return prevEvents
@@ -576,7 +576,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
   const createExceptionForRecurringEvent = useCallback(
     (eventId: string, date: dayjs.Dayjs) => {
-      setEvents((prevEvents) => {
+      setCurrentEvents((prevEvents) => {
         // Find the event first
         const event = prevEvents.find((e) => e.id === eventId)
         if (!event || !event.recurrence) return prevEvents
@@ -607,7 +607,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
     () => ({
       currentDate,
       view,
-      events,
+      events: currentEvents,
       currentLocale,
       isEventFormOpen,
       selectedEvent,
@@ -640,13 +640,13 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       disableEventClick,
       disableDragAndDrop,
       dayMaxEvents,
-      stickyHeader,
-      headerClassName,
+      stickyViewHeader,
+      viewHeaderClassName,
     }),
     [
       currentDate,
       view,
-      events,
+      currentEvents,
       currentLocale,
       isEventFormOpen,
       selectedEvent,
@@ -677,8 +677,8 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       disableEventClick,
       disableDragAndDrop,
       dayMaxEvents,
-      stickyHeader,
-      headerClassName,
+      stickyViewHeader,
+      viewHeaderClassName,
     ]
   )
 

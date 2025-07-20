@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import dayjs from '@/lib/dayjs-config'
 
 export const DayHeader = () => {
-  const { currentDate, stickyHeader, headerClassName } = useCalendarContext()
+  const { currentDate, stickyViewHeader, viewHeaderClassName } =
+    useCalendarContext()
   const isToday = currentDate.isSame(dayjs(), 'day')
 
   return (
@@ -12,8 +13,8 @@ export const DayHeader = () => {
       data-testid="day-header"
       className={cn(
         'flex items-center justify-center border-b p-2 border-x',
-        stickyHeader && 'sticky top-0 z-100',
-        headerClassName
+        stickyViewHeader && 'sticky top-0 z-100',
+        viewHeaderClassName
       )}
     >
       <AnimatePresence mode="wait">

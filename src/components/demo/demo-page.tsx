@@ -26,7 +26,7 @@ export function DemoPage() {
   const [timezone, setTimezone] = useState(() => {
     return Intl.DateTimeFormat().resolvedOptions().timeZone
   })
-  const [stickyHeader, setStickyHeader] = useState(true)
+  const [stickyViewHeader, setStickyHeader] = useState(true)
 
   // Disable functionality state
   const [disableCellClick, setDisableCellClick] = useState(false)
@@ -107,7 +107,7 @@ export function DemoPage() {
             setCalendarHeight={setCalendarHeight}
             dayMaxEvents={dayMaxEvents}
             setDayMaxEvents={setDayMaxEvents}
-            stickyHeader={stickyHeader}
+            stickyViewHeader={stickyViewHeader}
             setStickyHeader={setStickyHeader}
           />
         </div>
@@ -145,7 +145,7 @@ export function DemoPage() {
                 disableEventClick={disableEventClick}
                 disableDragAndDrop={disableDragAndDrop}
                 dayMaxEvents={dayMaxEvents}
-                stickyHeader={stickyHeader}
+                stickyViewHeader={stickyViewHeader}
               />
             </CardContent>
           </Card>

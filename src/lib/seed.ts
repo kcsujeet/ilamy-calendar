@@ -177,7 +177,7 @@ const dummyEvents = [
     start: baseDate.date(3).startOf('day'),
     end: baseDate.date(3).endOf('day'),
     color: 'bg-teal-100 text-teal-800',
-    all_day: true,
+    allDay: true,
   },
   {
     id: '14',
@@ -186,7 +186,7 @@ const dummyEvents = [
     start: baseDate.date(7).startOf('day'),
     end: baseDate.date(7).endOf('day'),
     color: 'bg-orange-100 text-orange-800',
-    all_day: true,
+    allDay: true,
   },
   {
     id: '15',
@@ -195,7 +195,7 @@ const dummyEvents = [
     start: baseDate.add(6, 'day').startOf('day'),
     end: baseDate.add(8, 'day').endOf('day'),
     color: 'bg-purple-100 text-purple-800',
-    all_day: true,
+    allDay: true,
   },
 
   // All-day events
@@ -206,7 +206,7 @@ const dummyEvents = [
     start: baseDate.date(18).startOf('day'),
     end: baseDate.date(18).endOf('day'),
     color: 'bg-yellow-100 text-yellow-800',
-    all_day: true,
+    allDay: true,
   },
   {
     id: '17',
@@ -215,7 +215,7 @@ const dummyEvents = [
     start: baseDate.date(22).startOf('day'),
     end: baseDate.date(22).endOf('day'),
     color: 'bg-blue-100 text-blue-800',
-    all_day: true,
+    allDay: true,
   },
 
   // All-day events spanning multiple days
@@ -226,7 +226,7 @@ const dummyEvents = [
     start: baseDate.date(21).startOf('day'),
     end: baseDate.date(25).endOf('day'),
     color: 'bg-green-100 text-green-800',
-    all_day: true,
+    allDay: true,
   },
   {
     id: '19',
@@ -235,7 +235,7 @@ const dummyEvents = [
     start: baseDate.date(27).startOf('day'),
     end: baseDate.date(30).endOf('day'),
     color: 'bg-red-100 text-red-800',
-    all_day: true,
+    allDay: true,
   },
 ]
 

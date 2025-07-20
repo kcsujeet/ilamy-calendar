@@ -12,7 +12,7 @@ export interface CalendarEvent {
   description?: string
   location?: string
   height?: number // Height in pixels for rendering
-  all_day?: boolean
+  allDay?: boolean
   recurrence?: {
     frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
     interval: number // How often the event repeats (e.g., every 2 weeks)
@@ -24,6 +24,11 @@ export interface CalendarEvent {
   isRecurring?: boolean
   parentEventId?: string // For recurring event instances, references the original event
   isException?: boolean // For modified instances of recurring events
+  /**
+   * Custom data associated with the event
+   */
+  // oxlint-disable-next-line no-explicit-any
+  data?: Record<string, any>
 }
 
 export interface ProcessedCalendarEvent extends CalendarEvent {

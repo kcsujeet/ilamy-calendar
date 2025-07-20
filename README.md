@@ -39,10 +39,16 @@ function App() {
   return (
     <div className="h-screen p-4">
       <IlamyCalendar
-        initialView="month"
+        initialEvents=[
+            {
+                title: 'My Event',
+                start: '2025-01-20T19:57:55.476Z',
+                end: '2025-01-25T19:57:55.476Z'
+            }
+        ]
         dayMaxEvents={3}
         onEventClick={(event) => console.log('Event clicked:', event)}
-        onDateClick={(start, end) => console.log('Date clicked:', start, end)}
+        onCellClick={(start, end) => console.log('Date clicked:', start, end)}
       />
     </div>
   )

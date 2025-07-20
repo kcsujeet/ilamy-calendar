@@ -29,7 +29,7 @@ export function DemoPage() {
   const [stickyHeader, setStickyHeader] = useState(true)
 
   // Disable functionality state
-  const [disableCellClick, setDisableDateClick] = useState(false)
+  const [disableCellClick, setDisableCellClick] = useState(false)
   const [disableEventClick, setDisableEventClick] = useState(false)
   const [disableDragAndDrop, setDisableDragAndDrop] = useState(false)
 
@@ -94,7 +94,7 @@ export function DemoPage() {
             timezone={timezone}
             setTimezone={setTimezone}
             disableCellClick={disableCellClick}
-            setDisableDateClick={setDisableDateClick}
+            setDisableCellClick={setDisableCellClick}
             disableEventClick={disableEventClick}
             setDisableEventClick={setDisableEventClick}
             disableDragAndDrop={disableDragAndDrop}

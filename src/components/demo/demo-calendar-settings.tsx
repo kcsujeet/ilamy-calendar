@@ -24,7 +24,7 @@ interface DemoCalendarSettingsProps {
   timezone: string
   setTimezone: (value: string) => void
   disableCellClick: boolean
-  setDisableDateClick: (value: boolean) => void
+  setDisableCellClick: (value: boolean) => void
   disableEventClick: boolean
   setDisableEventClick: (value: boolean) => void
   disableDragAndDrop: boolean
@@ -49,7 +49,7 @@ export function DemoCalendarSettings({
   locale,
   setLocale,
   disableCellClick,
-  setDisableDateClick,
+  setDisableCellClick,
   disableEventClick,
   setDisableEventClick,
   disableDragAndDrop,
@@ -245,7 +245,7 @@ export function DemoCalendarSettings({
           <Checkbox
             id="disableCellClick"
             checked={disableCellClick}
-            onCheckedChange={() => setDisableDateClick(!disableCellClick)}
+            onCheckedChange={() => setDisableCellClick(!disableCellClick)}
           />
           <label
             htmlFor="disableCellClick"

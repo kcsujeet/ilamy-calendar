@@ -15,4 +15,4 @@ A powerful, full-featured React calendar component library built with TypeScript
 
 ## Documentation
 
-For comprehensive documentation, examples, and interactive demos, visit [calendar.ilamy.dev](https://calendar.ilamy.dev)
+For comprehensive documentation, examples, and interactive demos, visit [ilamy.dev](https://ilamy.dev)

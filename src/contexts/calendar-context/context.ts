@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@/components/types'
-import type dayjs from 'dayjs'
+import type dayjs from '@/lib/dayjs-config'
 import { createContext, useContext } from 'react'
 
 export interface CalendarContextType {
@@ -48,6 +48,7 @@ export interface CalendarContextType {
   disableDragAndDrop?: boolean
   dayMaxEvents: number
   stickyHeader: boolean
+  headerClassName: string
 }
 
 export const CalendarContext = createContext<CalendarContextType | undefined>(

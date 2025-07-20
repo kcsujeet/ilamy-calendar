@@ -6,7 +6,7 @@ import {
 } from '@/components/ui'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { cn } from '@/lib/utils'
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'

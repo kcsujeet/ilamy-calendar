@@ -1,18 +1,19 @@
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 
 export const DayHeader = () => {
-  const { currentDate, stickyHeader } = useCalendarContext()
+  const { currentDate, stickyHeader, headerClassName } = useCalendarContext()
   const isToday = currentDate.isSame(dayjs(), 'day')
 
   return (
     <div
       data-testid="day-header"
       className={cn(
-        'flex items-center justify-center border-b p-2 border-x bg-background',
-        stickyHeader && 'sticky top-0 z-100 shadow'
+        'flex items-center justify-center border-b p-2 border-x',
+        stickyHeader && 'sticky top-0 z-100',
+        headerClassName
       )}
     >
       <AnimatePresence mode="wait">

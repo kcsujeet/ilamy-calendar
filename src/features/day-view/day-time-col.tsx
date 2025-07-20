@@ -1,4 +1,4 @@
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 
 // Hours to display (all 24 hours of the day)
 const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {

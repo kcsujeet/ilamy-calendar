@@ -4,7 +4,7 @@ import type { CalendarEvent, WeekDays } from '@/components/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { useState } from 'react'
 import { DemoCalendarSettings } from './demo-calendar-settings'
-import type dayjs from 'dayjs'
+import type dayjs from '@/lib/dayjs-config'
 import { IlamyCalendar } from '@/components/ilamy-calendar/ilamy-calendar'
 
 // Event handlers moved outside component to avoid recreation

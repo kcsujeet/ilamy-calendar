@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from 'motion/react'
 import React, { useMemo } from 'react'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 import { cn } from '@/lib/utils'
 
 export const MonthHeader: React.FC = () => {
-  const { firstDayOfWeek, currentLocale, stickyHeader } = useCalendarContext()
+  const { firstDayOfWeek, currentLocale, stickyHeader, headerClassName } =
+    useCalendarContext()
 
   // Reorder week days based on firstDayOfWeek
   const weekDays = useMemo(() => {
@@ -27,8 +28,9 @@ export const MonthHeader: React.FC = () => {
   return (
     <div
       className={cn(
-        'grid grid-cols-7 border-b bg-background',
-        stickyHeader && 'sticky top-0 z-100 shadow'
+        'grid grid-cols-7 border-b',
+        stickyHeader && 'sticky top-0 z-100',
+        headerClassName
       )}
       data-testid="month-header"
     >

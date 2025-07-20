@@ -1,4 +1,4 @@
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 import React, {
   useCallback,
   useEffect,
@@ -24,6 +24,7 @@ interface CalendarProviderProps {
   disableDragAndDrop?: boolean
   dayMaxEvents: number
   stickyHeader: boolean
+  headerClassName: string
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -41,6 +42,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   disableDragAndDrop,
   dayMaxEvents,
   stickyHeader,
+  headerClassName,
 }) => {
   // State
   const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(dayjs())
@@ -637,6 +639,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       disableDragAndDrop,
       dayMaxEvents,
       stickyHeader,
+      headerClassName,
     }),
     [
       currentDate,
@@ -673,6 +676,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       disableDragAndDrop,
       dayMaxEvents,
       stickyHeader,
+      headerClassName,
     ]
   )
 

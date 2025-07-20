@@ -9,7 +9,7 @@ import {
 } from '@dnd-kit/core'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { cn } from '@/lib/utils'
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 import React from 'react'
 import type {
   DragCancelEvent,

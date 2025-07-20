@@ -1,4 +1,4 @@
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 
 // Use a fixed month reference point for consistent display
 const baseDate = dayjs().startOf('month').date(1)

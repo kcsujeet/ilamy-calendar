@@ -1,6 +1,6 @@
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { cn } from '@/lib/utils'
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 import { AnimatePresence, motion } from 'motion/react'
 import React from 'react'
 
@@ -11,6 +11,7 @@ export const WeekHeader: React.FC = () => {
     openEventForm,
     firstDayOfWeek,
     stickyHeader,
+    headerClassName,
   } = useCalendarContext()
 
   // Get start and end of current week based on firstDayOfWeek setting
@@ -30,8 +31,9 @@ export const WeekHeader: React.FC = () => {
     // css grid header with lef corner cell shorter than the rest
     <div
       className={cn(
-        'grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1 bg-background',
-        stickyHeader && 'sticky top-0 z-100 shadow'
+        'grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1',
+        stickyHeader && 'sticky top-0 z-100',
+        headerClassName
       )}
       data-testid="week-header"
     >

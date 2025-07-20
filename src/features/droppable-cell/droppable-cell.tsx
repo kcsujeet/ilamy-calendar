@@ -2,7 +2,7 @@ import React from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
-import type dayjs from 'dayjs'
+import type dayjs from '@/lib/dayjs-config'
 
 interface DroppableCellProps {
   id: string

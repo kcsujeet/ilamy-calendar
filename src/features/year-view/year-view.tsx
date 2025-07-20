@@ -1,5 +1,5 @@
 import React from 'react'
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 import { cn } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui'
 import { useCalendarContext } from '@/contexts/calendar-context/context'

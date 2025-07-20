@@ -1,5 +1,5 @@
 import { useCalendarContext } from '@/contexts/calendar-context/context'
-import type dayjs from 'dayjs'
+import type dayjs from '@/lib/dayjs-config'
 import React, { useMemo } from 'react'
 import { DraggableEvent } from '../draggable-event/draggable-event'
 import { DroppableCell } from '../droppable-cell/droppable-cell'

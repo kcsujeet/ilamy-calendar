@@ -1,4 +1,4 @@
-import type dayjs from 'dayjs'
+import type dayjs from '@/lib/dayjs-config'
 
 export interface CalendarEvent {
   id: string

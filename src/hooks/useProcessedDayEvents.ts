@@ -1,5 +1,5 @@
 import { useCalendarContext } from '@/contexts/calendar-context/context'
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 import { useMemo } from 'react'
 import type { CalendarEvent } from '@/components/types'
 

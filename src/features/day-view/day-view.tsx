@@ -1,7 +1,7 @@
 import { ScrollArea } from '@/components/ui'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { cn } from '@/lib/utils'
-import dayjs from 'dayjs'
+import dayjs from '@/lib/dayjs-config'
 import { Fragment } from 'react'
 import { DroppableCell } from '../droppable-cell/droppable-cell'
 import { DayAllDayRow } from './day-all-day-row'

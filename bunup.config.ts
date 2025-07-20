@@ -6,5 +6,5 @@ export default defineConfig({
   outDir: 'dist',
   clean: true,
   sourcemap: true,
-  external: ['react', 'react-dom']
+  external: ['react', 'react-dom'],
 })

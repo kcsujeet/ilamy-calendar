@@ -25,10 +25,7 @@
         "lucide-react": "^0.475.0",
         "motion": "^12.23.6",
         "react-day-picker": "^9.8.0",
-        "react-hook-form": "^7.60.0",
         "tailwind-merge": "^3.3.1",
-        "tailwindcss": "^4.1.11",
-        "tailwindcss-animate": "^1.0.7",
       },
       "devDependencies": {
         "@happy-dom/global-registrator": "^18.0.1",
@@ -44,8 +41,10 @@
         "prettier": "3.6.2",
       },
       "peerDependencies": {
-        "react": ">=19.1.0",
-        "react-dom": ">=19.1.0",
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0",
+        "tailwindcss": "^4.1.11",
+        "tailwindcss-animate": "^1.0.7",
       },
     },
   },
@@ -437,8 +436,6 @@
     "react-day-picker": ["react-day-picker@9.8.0", "", { "dependencies": { "@date-fns/tz": "1.2.0", "date-fns": "4.1.0", "date-fns-jalali": "4.1.0-0" }, "peerDependencies": { "react": ">=16.8.0" } }, "sha512-E0yhhg7R+pdgbl/2toTb0xBhsEAtmAx1l7qjIWYfcxOy8w4rTSVfbtBoSzVVhPwKP/5E9iL38LivzoE3AQDhCQ=="],
 
     "react-dom": ["react-dom@19.1.0", "", { "dependencies": { "scheduler": "^0.26.0" }, "peerDependencies": { "react": "^19.1.0" } }, "sha512-Xs1hdnE+DyKgeHJeJznQmYMIBG3TKIHJJT95Q58nHLSrElKlGQqDTR2HQ9fx5CN/Gk6Vh/kupBTDLU11/nDk/g=="],
-
-    "react-hook-form": ["react-hook-form@7.60.0", "", { "peerDependencies": { "react": "^16.8.0 || ^17 || ^18 || ^19" } }, "sha512-SBrYOvMbDB7cV8ZfNpaiLcgjH/a1c7aK0lK+aNigpf4xWLO8q+o4tcvVurv3c4EOyzn/3dCsYt4GKD42VvJ/+A=="],
 
     "react-is": ["react-is@17.0.2", "", {}, "sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w=="],
 

@@ -70,7 +70,9 @@
   },
   "peerDependencies": {
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "tailwindcss": "^4.1.11",
+    "tailwindcss-animate": "^1.0.7"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -89,15 +91,12 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "bun-plugin-tailwind": "^0.0.14",
     "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "lucide-react": "^0.475.0",
     "motion": "^12.23.6",
     "react-day-picker": "^9.8.0",
-    "react-hook-form": "^7.60.0",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^4.1.11",
-    "tailwindcss-animate": "^1.0.7"
+    "clsx": "^2.1.1"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^18.0.1",

@@ -102,6 +102,38 @@ export interface CalendarEvent {
   data?: Record<string, any>
 }
 
+export interface IlamyCalendarEventRecurrence
+  extends Omit<EventRecurrence, 'endDate'> {
+  /** How often the event repeats */
+  endDate?: dayjs.Dayjs | Date | string
+}
+
+export interface IlamyCalendarEvent
+  extends Omit<
+    CalendarEvent,
+    'start' | 'end' | 'recurrence' | 'originalStart' | 'originalEnd'
+  > {
+  /** Start date and time of the event */
+  start: dayjs.Dayjs | Date | string
+  /** End date and time of the event */
+  end: dayjs.Dayjs | Date | string
+  /**
+   * Original start date for recurring events (used for tracking modifications)
+   * @internal
+   */
+  originalStart?: dayjs.Dayjs | Date | string
+  /**
+   * Original end date for recurring events (used for tracking modifications)
+   * @internal
+   */
+  originalEnd?: dayjs.Dayjs | Date | string
+  /**
+   * Recurrence configuration for repeating events
+   * If present, this event will repeat according to the specified pattern
+   */
+  recurrence?: IlamyCalendarEventRecurrence
+}
+
 /**
  * Extended calendar event interface with calculated positioning properties.
  * Used internally by the calendar rendering engine to position events on the grid.

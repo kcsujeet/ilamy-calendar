@@ -10,27 +10,15 @@ import { CalendarDndContext } from '@/features/drag-and-drop/calendar-dnd-contex
 import { CalendarProvider } from '@/contexts/calendar-context/provider'
 import type {
   CalendarEvent,
-  EventRecurrence,
+  IlamyCalendarEvent,
   WeekDays,
 } from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import '@/lib/dayjs-config'
 import dayjs from '@/lib/dayjs-config'
 
-interface CalendarEvents
-  extends Omit<
-    CalendarEvent,
-    'start' | 'end' | 'recurrence' | 'originalStart' | 'originalEnd'
-  > {
-  start: dayjs.Dayjs | Date | string
-  end: dayjs.Dayjs | Date | string
-  originalStart?: dayjs.Dayjs | Date | string
-  originalEnd?: dayjs.Dayjs | Date | string
-  recurrence?: EventRecurrence
-}
-
-export function normalizeCalendarEvents(
-  events: CalendarEvents[]
+export function normalizePublicFacingCalendarEvent(
+  events: IlamyCalendarEvent[]
 ): CalendarEvent[] {
   return events.map((event) => {
     const recurrence = event.recurrence
@@ -57,7 +45,7 @@ export function normalizeCalendarEvents(
           : dayjs(event.originalEnd)
         : undefined,
       recurrence: recurrence,
-    }
+    } as CalendarEvent
   })
 }
 
@@ -128,7 +116,7 @@ interface CalendarProps {
   /**
    * Array of events to display in the calendar.
    */
-  events?: CalendarEvents[]
+  events?: IlamyCalendarEvent[]
   /**
    * The first day of the week to display in the calendar.
    * Can be 'sunday', 'monday', etc. Defaults to 'sunday'.
@@ -227,7 +215,7 @@ export const IlamyCalendar: React.FC<CalendarProps> = ({
 }) => {
   return (
     <CalendarProvider
-      events={normalizeCalendarEvents(events || [])}
+      events={normalizePublicFacingCalendarEvent(events || [])}
       firstDayOfWeek={dayNumberMap[firstDayOfWeek]}
       renderEvent={renderEvent}
       onEventClick={onEventClick}

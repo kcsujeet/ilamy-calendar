@@ -8,10 +8,54 @@ import YearView from '@/features/year-view/year-view'
 import { AnimatePresence, motion } from 'motion/react'
 import { CalendarDndContext } from '@/features/drag-and-drop/calendar-dnd-context'
 import { CalendarProvider } from '@/contexts/calendar-context/provider'
-import type { CalendarEvent, WeekDays } from '@/components/types'
+import type {
+  CalendarEvent,
+  EventRecurrence,
+  WeekDays,
+} from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import '@/lib/dayjs-config'
-import type dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/dayjs-config'
+
+interface CalendarEvents
+  extends Omit<
+    CalendarEvent,
+    'start' | 'end' | 'recurrence' | 'originalStart' | 'originalEnd'
+  > {
+  start: dayjs.Dayjs | Date | string
+  end: dayjs.Dayjs | Date | string
+  originalStart?: dayjs.Dayjs | Date | string
+  originalEnd?: dayjs.Dayjs | Date | string
+  recurrence?: EventRecurrence
+}
+
+export function normalizeCalendarEvents(
+  events: CalendarEvents[]
+): CalendarEvent[] {
+  return events.map((event) => {
+    const recurrence = event.recurrence
+    recurrence.endDate = recurrence.endDate
+      ? dayjs.isDayjs(recurrence.endDate)
+        ? recurrence.endDate
+        : dayjs(recurrence.endDate)
+      : undefined
+    return {
+      ...event,
+      start: dayjs.isDayjs(event.start) ? event.start : dayjs(event.start),
+      end: dayjs.isDayjs(event.end) ? event.end : dayjs(event.end),
+      originalStart: event.originalStart
+        ? dayjs.isDayjs(event.originalStart)
+          ? event.originalStart
+          : dayjs(event.originalStart)
+        : undefined,
+      originalEnd: event.originalEnd
+        ? dayjs.isDayjs(event.originalEnd)
+          ? event.originalEnd
+          : dayjs(event.originalEnd)
+        : undefined,
+    }
+  })
+}
 
 const CalendarContent: React.FC = () => {
   const {
@@ -80,7 +124,7 @@ interface CalendarProps {
   /**
    * Array of events to display in the calendar.
    */
-  events?: CalendarEvent[]
+  events?: CalendarEvents[]
   /**
    * The first day of the week to display in the calendar.
    * Can be 'sunday', 'monday', etc. Defaults to 'sunday'.
@@ -179,7 +223,7 @@ export const IlamyCalendar: React.FC<CalendarProps> = ({
 }) => {
   return (
     <CalendarProvider
-      events={events}
+      events={normalizeCalendarEvents(events || [])}
       firstDayOfWeek={dayNumberMap[firstDayOfWeek]}
       renderEvent={renderEvent}
       onEventClick={onEventClick}

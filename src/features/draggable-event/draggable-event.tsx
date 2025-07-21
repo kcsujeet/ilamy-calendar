@@ -92,8 +92,7 @@ export const DraggableEvent = memo(
       prevProps.elementId === nextProps.elementId &&
       prevProps.disableDrag === nextProps.disableDrag &&
       prevProps.className === nextProps.className &&
-      prevProps.event.id === nextProps.event.id &&
-      prevProps.event.height === nextProps.event.height
+      prevProps.event.id === nextProps.event.id
     )
   }
 )

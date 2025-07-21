@@ -9,14 +9,32 @@
   },
   "settings": {},
   "rules": {
+    "recommended": "error",
     "eqeqeq": "warn",
     "import/no-cycle": "error",
     "no-console": "error",
-    "no-unused-vars": "error",
-    "@typescript-eslint/consistent-type-imports": "error",
+    "consistent-type-imports": "error",
+    "no-unsafe-member-access": "error",
+    "no-unsafe-assignment": "error",
+    "no-unsafe-return": "error",
+    "no-unsafe-argument": "error",
+    "no-unsafe-call": "error",
+    "no-explicit-any": "error",
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ],
+    "import/no-unresolved": "error",
+    "import/named": "error",
+    "import/namespace": "error",
+    "import/default": "error",
+    "import/export": "error",
     "unicorn/consistent-function-scoping": "error",
     "react/no-leaked-conditional-rendering": "error",
-    "@typescript-eslint/no-explicit-any": "error",
     "no-undef": "error",
     "react/self-closing-comp": [
       "error",

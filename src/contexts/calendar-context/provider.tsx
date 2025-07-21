@@ -25,6 +25,7 @@ interface CalendarProviderProps {
   dayMaxEvents: number
   stickyViewHeader: boolean
   viewHeaderClassName: string
+  headerComponent?: ReactNode // Optional custom header component
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -43,6 +44,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   dayMaxEvents,
   stickyViewHeader,
   viewHeaderClassName,
+  headerComponent,
 }) => {
   // State
   const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(dayjs())
@@ -642,6 +644,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       dayMaxEvents,
       stickyViewHeader,
       viewHeaderClassName,
+      headerComponent,
     }),
     [
       currentDate,
@@ -679,6 +682,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       dayMaxEvents,
       stickyViewHeader,
       viewHeaderClassName,
+      headerComponent,
     ]
   )
 

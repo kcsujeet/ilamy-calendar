@@ -21,6 +21,7 @@ const Header: React.FC<HeaderProps> = () => {
     prevPeriod,
     today,
     openEventForm,
+    headerComponent,
   } = useCalendarContext()
 
   // State for mobile menu popover
@@ -70,6 +71,11 @@ const Header: React.FC<HeaderProps> = () => {
     ),
     [currentDate, openEventForm]
   )
+
+  if (headerComponent) {
+    // Render custom header component if provided
+    return headerComponent
+  }
 
   return (
     <>

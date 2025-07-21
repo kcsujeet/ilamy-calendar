@@ -49,6 +49,7 @@ export interface CalendarContextType {
   dayMaxEvents: number
   stickyViewHeader: boolean
   viewHeaderClassName: string
+  headerComponent?: React.ReactNode // Optional custom header component
 }
 
 export const CalendarContext = createContext<CalendarContextType | undefined>(

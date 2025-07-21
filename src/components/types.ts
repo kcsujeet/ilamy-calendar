@@ -3,10 +3,10 @@ import type dayjs from '@/lib/dayjs-config'
 export interface CalendarEvent {
   id: string
   title: string
-  start: dayjs.Dayjs
   originalStart?: dayjs.Dayjs
   originalEnd?: dayjs.Dayjs
-  end: dayjs.Dayjs
+  start: dayjs.Dayjs
+  end: dayjs.Dayjs // Allow string or Date for flexibility
   color?: string
   backgroundColor?: string
   description?: string

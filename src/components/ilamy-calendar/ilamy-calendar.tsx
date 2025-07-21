@@ -207,7 +207,7 @@ const dayNumberMap: Record<string, number> = {
   saturday: 6,
 }
 
-const DEFAULT_DAY_MAX_EVENTS = 6
+const DEFAULT_DAY_MAX_EVENTS = 4
 export const IlamyCalendar: React.FC<CalendarProps> = ({
   events,
   firstDayOfWeek = 'sunday',

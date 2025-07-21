@@ -2,6 +2,8 @@
 
 A powerful, full-featured React calendar component library built with TypeScript, Tailwind CSS, and modern React patterns. Features multiple calendar views, drag-and-drop support, recurring events, and comprehensive internationalization.
 
+<img width="1648" height="883" alt="Screenshot 2025-07-21 at 4 26 22 PM" src="https://github.com/user-attachments/assets/2fedaec6-bafc-4a29-b045-8b0c5117b486" />
+
 ## Features
 
 - 🗓️ **Multiple Views**: Month, Week, Day, and Year views

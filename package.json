@@ -62,7 +62,8 @@
     "type-check": "bunx tsc --noEmit",
     "ci": "bun run lint && bun run prettier:check && bun run test && bun run build",
     "pre-commit": "bun run lint:fix && bun run prettier:fix",
-    "prepare": "bunx husky"
+    "prepare": "bunx husky",
+    "version": "auto-changelog -p && git add CHANGELOG.md"
   },
   "peerDependencies": {
     "react": "^19.1.0",
@@ -102,6 +103,7 @@
     "@types/bun": "latest",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "auto-changelog": "^2.5.0",
     "bunup": "^0.8.61",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",

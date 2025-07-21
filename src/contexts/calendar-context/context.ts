@@ -19,7 +19,7 @@ export interface CalendarContextType {
   addEvent: (event: CalendarEvent) => void
   updateEvent: (eventId: string | number, event: Partial<CalendarEvent>) => void
   deleteEvent: (eventId: string | number) => void
-  openEventForm: (date?: dayjs.Dayjs, event?: CalendarEvent) => void
+  openEventForm: (date?: dayjs.Dayjs) => void
   closeEventForm: () => void
   getEventsForDate: (date: dayjs.Dayjs) => CalendarEvent[]
   getEventsForDateRange: (

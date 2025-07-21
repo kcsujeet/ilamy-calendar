@@ -14,7 +14,6 @@ type HeaderProps = object
 
 const Header: React.FC<HeaderProps> = () => {
   const {
-    currentDate,
     view,
     setView,
     nextPeriod,
@@ -58,7 +57,7 @@ const Header: React.FC<HeaderProps> = () => {
     () => (
       <div className="flex items-center gap-2">
         <Button
-          onClick={() => openEventForm(currentDate)}
+          onClick={() => openEventForm()}
           variant="default"
           size="sm"
           className="flex items-center gap-1"
@@ -69,7 +68,7 @@ const Header: React.FC<HeaderProps> = () => {
         </Button>
       </div>
     ),
-    [currentDate, openEventForm]
+    [openEventForm]
   )
 
   if (headerComponent) {

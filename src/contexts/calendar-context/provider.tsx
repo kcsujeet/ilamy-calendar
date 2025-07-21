@@ -199,6 +199,26 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
     [onCellClick, disableCellClick]
   )
 
+  const handleOpenEventForm = useCallback(
+    (date?: dayjs.Dayjs) => {
+      if (date) {
+        setSelectedDate(date)
+      }
+      setSelectedEvent({
+        title: `New Event`,
+        start: date ?? currentDate,
+        end: date ?? currentDate.add(1, 'hour'),
+        description: '',
+        allDay: false,
+        isRecurring: false,
+        recurrence: null,
+        parentEventId: null,
+      } as CalendarEvent)
+      setIsEventFormOpen(true)
+    },
+    [currentDate]
+  )
+
   // Helper function to get the next occurrence based on frequency
   const getNextOccurrence = useCallback(
     (
@@ -624,7 +644,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       addEvent,
       updateEvent,
       deleteEvent,
-      openEventForm: () => setIsEventFormOpen(true),
+      openEventForm: handleOpenEventForm,
       closeEventForm,
       getEventsForDate,
       getEventsForDateRange,
@@ -658,6 +678,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       selectDate,
       handleViewChange,
       nextPeriod,
+      handleOpenEventForm,
       prevPeriod,
       today,
       addEvent,

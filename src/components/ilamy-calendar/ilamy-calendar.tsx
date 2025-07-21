@@ -34,11 +34,14 @@ export function normalizeCalendarEvents(
 ): CalendarEvent[] {
   return events.map((event) => {
     const recurrence = event.recurrence
-    recurrence.endDate = recurrence.endDate
-      ? dayjs.isDayjs(recurrence.endDate)
-        ? recurrence.endDate
-        : dayjs(recurrence.endDate)
-      : undefined
+    if (recurrence) {
+      recurrence.endDate = recurrence?.endDate
+        ? dayjs.isDayjs(recurrence.endDate)
+          ? recurrence.endDate
+          : dayjs(recurrence.endDate)
+        : undefined
+    }
+
     return {
       ...event,
       start: dayjs.isDayjs(event.start) ? event.start : dayjs(event.start),
@@ -53,6 +56,7 @@ export function normalizeCalendarEvents(
           ? event.originalEnd
           : dayjs(event.originalEnd)
         : undefined,
+      recurrence: recurrence,
     }
   })
 }

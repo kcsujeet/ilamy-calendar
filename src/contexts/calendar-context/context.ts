@@ -64,10 +64,40 @@ export const useCalendarContext = () => {
   return context
 }
 
-export const usePublicCalendarContext = () => {
+/**
+ * Simplified calendar context type for external use
+ * Contains only the most commonly used calendar operations
+ */
+export type UseIlamyCalendarContextReturn = {
+  readonly currentDate: dayjs.Dayjs
+  readonly view: 'month' | 'week' | 'day' | 'year'
+  readonly events: CalendarEvent[]
+  readonly isEventFormOpen: boolean
+  readonly selectedEvent: CalendarEvent | null
+  readonly selectedDate: dayjs.Dayjs | null
+  readonly firstDayOfWeek: number
+  readonly setCurrentDate: (date: dayjs.Dayjs) => void
+  readonly selectDate: (date: dayjs.Dayjs) => void
+  readonly setView: (view: 'month' | 'week' | 'day' | 'year') => void
+  readonly nextPeriod: () => void
+  readonly prevPeriod: () => void
+  readonly today: () => void
+  readonly addEvent: (event: CalendarEvent) => void
+  readonly updateEvent: (
+    eventId: string | number,
+    event: Partial<CalendarEvent>
+  ) => void
+  readonly deleteEvent: (eventId: string | number) => void
+  readonly openEventForm: (date?: dayjs.Dayjs) => void
+  readonly closeEventForm: () => void
+}
+
+export const useIlamyCalendarContext = (): UseIlamyCalendarContextReturn => {
   const context = useContext(CalendarContext)
   if (context === undefined) {
-    throw new Error('useCalendarContext must be used within ilamy calendar')
+    throw new Error(
+      'useIlamyCalendarContext must be used within a CalendarProvider'
+    )
   }
   return {
     currentDate: context.currentDate,
@@ -88,5 +118,5 @@ export const usePublicCalendarContext = () => {
     deleteEvent: context.deleteEvent,
     openEventForm: context.openEventForm,
     closeEventForm: context.closeEventForm,
-  }
+  } as const
 }

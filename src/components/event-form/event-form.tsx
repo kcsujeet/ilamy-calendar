@@ -94,11 +94,15 @@ export const EventForm: React.FC<EventFormProps> = ({
 
   // Create wrapper functions to fix TypeScript errors with DatePicker
   const handleStartDateChange = (date: Date | undefined) => {
-    if (date) setStartDate(date)
+    if (date) {
+      setStartDate(date)
+    }
   }
 
   const handleEndDateChange = (date: Date | undefined) => {
-    if (date) setEndDate(date)
+    if (date) {
+      setEndDate(date)
+    }
   }
 
   // Update form values when input changes
@@ -208,7 +212,6 @@ export const EventForm: React.FC<EventFormProps> = ({
                 onChange={handleInputChange}
                 placeholder="Event title"
                 required
-                autoFocus
                 className="h-8 text-sm sm:h-9"
               />
             </div>

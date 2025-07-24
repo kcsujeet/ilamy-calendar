@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@/components'
-import { type ClassValue, clsx } from 'clsx'
+import type { ClassValue } from 'clsx'
+import { clsx } from 'clsx'
 import dayjs from '@/lib/dayjs-config'
 import { twMerge } from 'tailwind-merge'
 

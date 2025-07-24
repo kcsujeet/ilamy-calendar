@@ -14,6 +14,7 @@ import type {
   WeekDays,
 } from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
+// oxlint-disable-next-line no-duplicates
 import '@/lib/dayjs-config'
 import dayjs from '@/lib/dayjs-config'
 

@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import React from 'react'
 
-type ViewControlsProps = {
+interface ViewControlsProps {
   currentView: 'day' | 'week' | 'month' | 'year'
   onChange: (view: 'day' | 'week' | 'month' | 'year') => void
   onToday?: () => void

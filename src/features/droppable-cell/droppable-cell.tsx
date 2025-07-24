@@ -42,7 +42,9 @@ export function DroppableCell({
 
   const handleCellClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (disableCellClick) return
+    if (disableCellClick) {
+      return
+    }
 
     const startDate = date.hour(hour ?? 0).minute(minute ?? 0)
     let endDate = startDate.clone()

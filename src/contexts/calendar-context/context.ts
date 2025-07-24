@@ -67,7 +67,7 @@ export const useCalendarContext = (): CalendarContextType => {
  * Simplified calendar context type for external use
  * Contains only the most commonly used calendar operations
  */
-export type UseIlamyCalendarContextReturn = {
+export interface UseIlamyCalendarContextReturn {
   readonly currentDate: dayjs.Dayjs
   readonly view: 'month' | 'week' | 'day' | 'year'
   readonly events: CalendarEvent[]

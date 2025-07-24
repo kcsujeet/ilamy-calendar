@@ -11,7 +11,9 @@ export function ModeToggle() {
 
   useEffect(() => {
     const saved = localStorage.getItem(storageKey) as Theme
-    if (saved) setTheme(saved)
+    if (saved) {
+      setTheme(saved)
+    }
   }, [])
 
   const toggleTheme = () => {

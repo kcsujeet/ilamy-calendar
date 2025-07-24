@@ -54,7 +54,9 @@ export const WeekAllDayRow: React.FC = () => {
     const sortedEvents = [...allDayEvents].sort((a, b) => {
       // First compare by start date
       const startDiff = a.start.diff(b.start)
-      if (startDiff !== 0) return startDiff
+      if (startDiff !== 0) {
+        return startDiff
+      }
 
       // If start dates are the same, longer events come first
       const aDuration = a.end.diff(a.start)

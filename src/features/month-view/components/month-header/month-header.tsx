@@ -21,8 +21,12 @@ export const MonthHeader: React.FC = () => {
     for (let i = 0; i < firstDayOfWeek; i++) {
       const dayToMove = days.shift()
       const shortDayToMove = shortDays.shift()
-      if (dayToMove) days.push(dayToMove)
-      if (shortDayToMove) shortDays.push(shortDayToMove)
+      if (dayToMove) {
+        days.push(dayToMove)
+      }
+      if (shortDayToMove) {
+        shortDays.push(shortDayToMove)
+      }
     }
 
     return { days, shortDays }

@@ -163,7 +163,7 @@ export function DemoCalendarSettings({
           </label>
           <Select
             value={dayMaxEvents?.toString()}
-            onValueChange={(value) => setDayMaxEvents(parseInt(value))}
+            onValueChange={(value) => setDayMaxEvents(Number.parseInt(value))}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select max events" />

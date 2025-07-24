@@ -52,7 +52,9 @@ export const useProcessedWeekEvents = ({
   // Sort multi-day events by start date, then by duration
   const sortedMultiDay = [...multiDayEvents].sort((a, b) => {
     const startDiff = a.start.diff(b.start)
-    if (startDiff !== 0) return startDiff
+    if (startDiff !== 0) {
+      return startDiff
+    }
     return b.end.diff(b.start) - a.end.diff(a.start) // Longer events first
   })
 
@@ -62,7 +64,7 @@ export const useProcessedWeekEvents = ({
   )
 
   // Create 7 x dayMaxEvents grid with flags
-  const grid: Array<Array<{ taken: boolean; event: CalendarEvent | null }>> = []
+  const grid: { taken: boolean; event: CalendarEvent | null }[][] = []
   for (let row = 0; row < dayMaxEvents; row++) {
     grid[row] = []
     for (let col = 0; col < 7; col++) {

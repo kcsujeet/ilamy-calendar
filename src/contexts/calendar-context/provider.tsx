@@ -1,11 +1,6 @@
 import dayjs from '@/lib/dayjs-config'
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { CalendarContext } from './context'
 import type { CalendarEvent } from '@/components/types'
 
@@ -165,7 +160,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
   const handleEventClick = useCallback(
     (event: CalendarEvent) => {
-      if (disableCellClick) return
+      if (disableCellClick) {
+        return
+      }
       if (onEventClick) {
         onEventClick(event)
       } else {
@@ -177,7 +174,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
   const handleDateClick = useCallback(
     (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => {
-      if (disableCellClick) return
+      if (disableCellClick) {
+        return
+      }
 
       if (onCellClick) {
         onCellClick(startDate, endDate)
@@ -247,10 +246,10 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
             // If we couldn't find the next day, just add the interval weeks
             return date.add(int, 'week')
-          } else {
-            // Otherwise, just add the interval weeks
-            return date.add(int, 'week')
           }
+          // Otherwise, just add the interval weeks
+          return date.add(int, 'week')
+
         case 'monthly':
           return date.add(int, 'month')
         case 'yearly':
@@ -268,7 +267,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       endDate: dayjs.Dayjs
     ): CalendarEvent[] => {
       const expandedEvents: CalendarEvent[] = []
-      if (!baseEvent.recurrence) return [baseEvent]
+      if (!baseEvent.recurrence) {
+        return [baseEvent]
+      }
 
       const {
         frequency,
@@ -477,7 +478,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       setCurrentEvents((prevEvents) => {
         // Find the event by ID
         const event = prevEvents.find((e) => e.id === eventId)
-        if (!event) return prevEvents
+        if (!event) {
+          return prevEvents
+        }
 
         if (event.parentEventId && !deleteAll) {
           // This is a recurring instance, and we only want to delete this instance
@@ -486,7 +489,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
           const parentEvent = prevEvents.find(
             (e) => e.id === event.parentEventId
           )
-          if (!parentEvent || !parentEvent.recurrence) return prevEvents
+          if (!parentEvent || !parentEvent.recurrence) {
+            return prevEvents
+          }
 
           // Add this date to the exceptions list
           return prevEvents.map((e) => {
@@ -517,10 +522,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
           return prevEvents.filter(
             (e) => e.id !== event.id && e.parentEventId !== event.id
           )
-        } else {
-          // Regular event, just delete it
-          return prevEvents.filter((e) => e.id !== event.id)
         }
+        // Regular event, just delete it
+        return prevEvents.filter((e) => e.id !== event.id)
       })
     },
     []
@@ -535,7 +539,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       setCurrentEvents((prevEvents) => {
         // Find the event by ID
         const event = prevEvents.find((e) => e.id === eventId)
-        if (!event) return prevEvents
+        if (!event) {
+          return prevEvents
+        }
 
         if (event.parentEventId && !updateAll) {
           // This is a recurring instance being updated individually
@@ -582,15 +588,14 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
             }
             return e
           })
-        } else {
-          // Regular event, just update it
-          return prevEvents.map((e) => {
-            if (e.id === event.id) {
-              return { ...e, ...updatedEvent }
-            }
-            return e
-          })
         }
+        // Regular event, just update it
+        return prevEvents.map((e) => {
+          if (e.id === event.id) {
+            return { ...e, ...updatedEvent }
+          }
+          return e
+        })
       })
     },
     []
@@ -601,7 +606,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       setCurrentEvents((prevEvents) => {
         // Find the event first
         const event = prevEvents.find((e) => e.id === eventId)
-        if (!event || !event.recurrence) return prevEvents
+        if (!event || !event.recurrence) {
+          return prevEvents
+        }
 
         // Add the date to exceptions
         return prevEvents.map((e) => {

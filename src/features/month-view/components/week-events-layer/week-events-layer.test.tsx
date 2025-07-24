@@ -197,10 +197,10 @@ describe('WeekEventsLayer', () => {
     )
 
     // Check actual positioning values
-    const sundayWednesdayTop = parseInt(sundayWednesdayEvent.style.top)
-    const tuesdaySaturdayTop = parseInt(tuesdaySaturdayEvent.style.top)
-    const fridaySaturdayTop = parseInt(fridaySaturdayEvent.style.top)
-    const thursdayTop = parseInt(thursdayEvent.style.top)
+    const sundayWednesdayTop = Number.parseInt(sundayWednesdayEvent.style.top)
+    const tuesdaySaturdayTop = Number.parseInt(tuesdaySaturdayEvent.style.top)
+    const fridaySaturdayTop = Number.parseInt(fridaySaturdayEvent.style.top)
+    const thursdayTop = Number.parseInt(thursdayEvent.style.top)
 
     // Key test: Gap-filling behavior
     // Thursday event should fill the gap in row 0 (same as Sunday-Wednesday)

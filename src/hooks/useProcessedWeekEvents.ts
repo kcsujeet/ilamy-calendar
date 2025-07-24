@@ -1,12 +1,11 @@
 import type { CalendarEvent } from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
-import dayjs from '@/lib/dayjs-config'
-import { DraggableEvent } from '@/features/draggable-event/draggable-event'
 import {
   DAY_NUMBER_HEIGHT,
   EVENT_BAR_HEIGHT,
   GAP_BETWEEN_ELEMENTS,
 } from '@/lib/constants'
+import dayjs from '@/lib/dayjs-config'
 
 interface ProcessedEvent extends CalendarEvent {
   left: number // Left position in percentage
@@ -16,11 +15,13 @@ interface ProcessedEvent extends CalendarEvent {
   position: number // Position in the row (0 for first, 1 for second, etc.)
 }
 
-interface WeekEventsLayerProps {
+interface UseProcessedWeekEventsProps {
   days: dayjs.Dayjs[]
 }
 
-export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
+export const useProcessedWeekEvents = ({
+  days,
+}: UseProcessedWeekEventsProps) => {
   const { events, dayMaxEvents } = useCalendarContext()
 
   const weekStart = days[0]
@@ -69,7 +70,7 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
     }
   }
 
-  const eventPositions: ProcessedEvent[] = []
+  const processedEvents: ProcessedEvent[] = []
 
   // Step 1: Assign positions to multi-day events first
   for (const event of sortedMultiDay) {
@@ -105,7 +106,7 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
 
       // Create position data for rendering
       const spanDays = endCol - startCol + 1
-      eventPositions.push({
+      processedEvents.push({
         left: (startCol / 7) * 100,
         width: (spanDays / 7) * 100,
         top:
@@ -150,7 +151,7 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
 
           // Create position data for the truncated rendering
           const truncatedSpanDays = endCol - tryStartCol + 1
-          eventPositions.push({
+          processedEvents.push({
             left: (tryStartCol / 7) * 100,
             width: (truncatedSpanDays / 7) * 100,
             top:
@@ -187,7 +188,7 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
       grid[assignedRow][col] = { taken: true, event }
 
       // Create position data for rendering
-      eventPositions.push({
+      processedEvents.push({
         left: (col / 7) * 100,
         width: (1 / 7) * 100,
         top:
@@ -201,32 +202,5 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
     }
   }
 
-  return (
-    <div className="relative w-full h-full pointer-events-none z-20 overflow-clip">
-      {eventPositions.map((event) => {
-        return (
-          <div
-            key={`event-${event.id}-${event.position}-${weekStart.format(
-              'YYYY-MM-DD'
-            )}`}
-            className="absolute z-10 pointer-events-auto overflow-clip"
-            style={{
-              left: `calc(${event.left}% + var(--spacing) * 0.25)`,
-              width: `calc(${event.width}% - var(--spacing) * 1)`,
-              top: `${event.top}px`,
-              height: `${EVENT_BAR_HEIGHT}px`,
-            }}
-          >
-            <DraggableEvent
-              elementId={`event-${event.id}-${
-                event.position
-              }-${weekStart.format('YYYY-MM-DD')}`}
-              event={event}
-              className="h-full w-full shadow"
-            />
-          </div>
-        )
-      })}
-    </div>
-  )
+  return processedEvents
 }

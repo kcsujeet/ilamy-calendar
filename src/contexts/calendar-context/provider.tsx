@@ -23,8 +23,8 @@ interface CalendarProviderProps {
   disableEventClick?: boolean
   disableDragAndDrop?: boolean
   dayMaxEvents: number
-  stickyViewHeader: boolean
-  viewHeaderClassName: string
+  stickyViewHeader?: boolean
+  viewHeaderClassName?: string
   headerComponent?: ReactNode // Optional custom header component
 }
 
@@ -42,8 +42,8 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   disableEventClick,
   disableDragAndDrop,
   dayMaxEvents,
-  stickyViewHeader,
-  viewHeaderClassName,
+  stickyViewHeader = true,
+  viewHeaderClassName = '',
   headerComponent,
 }) => {
   // State

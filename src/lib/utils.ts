@@ -13,8 +13,8 @@ export function generateMockEvents({ count = 5 } = {}) {
     events.push({
       id: i.toString(),
       title: `Mock Event ${i + 1}`,
-      start: dayjs().add(i, 'day').startOf('day'),
-      end: dayjs().add(i, 'day').endOf('day'),
+      start: dayjs().startOf('week').add(i, 'day').startOf('day'),
+      end: dayjs().startOf('week').add(i, 'day').endOf('day'),
       color: 'bg-gray-100 text-gray-800',
     })
   }

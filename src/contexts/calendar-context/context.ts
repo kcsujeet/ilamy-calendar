@@ -52,11 +52,10 @@ export interface CalendarContextType {
   headerComponent?: React.ReactNode // Optional custom header component
 }
 
-export const CalendarContext = createContext<CalendarContextType | undefined>(
-  undefined
-)
+export const CalendarContext: React.Context<CalendarContextType | undefined> =
+  createContext<CalendarContextType | undefined>(undefined)
 
-export const useCalendarContext = () => {
+export const useCalendarContext = (): CalendarContextType => {
   const context = useContext(CalendarContext)
   if (context === undefined) {
     throw new Error('useCalendarContext must be used within a CalendarProvider')

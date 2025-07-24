@@ -109,7 +109,6 @@ import type { CalendarEvent } from '@/components/types'
 - `@dnd-kit/core` for drag and drop (configured in dnd-context)
 - `dayjs` for date manipulation (extensive plugin configuration)
 - `@radix-ui` components via shadcn/ui
-- `react-hook-form` + `zod` for form validation
 - `motion` (framer-motion) for view transitions
 
 ### Data Flow

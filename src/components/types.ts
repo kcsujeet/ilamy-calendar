@@ -9,24 +9,28 @@ export interface EventRecurrence {
    */
   interval: number
   /**
-   * Optional end date for the recurrence pattern
-   * If not provided, the event repeats indefinitely
+   * How the recurrence should end
+   */
+  endType: 'never' | 'on' | 'after'
+  /**
+   * End date for the recurrence pattern (when endType is 'on')
+   * Accepts dayjs objects, Date objects, or ISO date strings
    */
   endDate?: dayjs.Dayjs
   /**
-   * Optional maximum number of occurrences
-   * If provided, takes precedence over endDate
+   * Maximum number of occurrences (when endType is 'after')
    */
   count?: number
   /**
-   * Days of the week for weekly recurrence (0 = Sunday, 6 = Saturday)
-   * Only used when frequency is 'weekly'
-   * @example [1, 3, 5] for Monday, Wednesday, Friday
+   * Days of the week for weekly recurrence
+   * Uses semantic day names for better readability
+   * @example ['monday', 'wednesday', 'friday'] for Mon/Wed/Fri
    */
-  daysOfWeek?: number[]
+  daysOfWeek?: WeekDays[]
   /**
    * Specific dates to exclude from the recurrence pattern
    * Useful for holidays or one-off cancellations
+   * Accepts dayjs objects, Date objects, or ISO date strings
    */
   exceptions?: dayjs.Dayjs[]
 }
@@ -103,9 +107,11 @@ export interface CalendarEvent {
 }
 
 export interface IlamyCalendarEventRecurrence
-  extends Omit<EventRecurrence, 'endDate'> {
+  extends Omit<EventRecurrence, 'endDate' | 'exceptions'> {
   /** How often the event repeats */
   endDate?: dayjs.Dayjs | Date | string
+  /** Specific dates to exclude from the recurrence pattern */
+  exceptions?: (dayjs.Dayjs | Date | string)[]
 }
 
 export interface IlamyCalendarEvent

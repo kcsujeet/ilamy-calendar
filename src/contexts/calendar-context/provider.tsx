@@ -3,6 +3,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { CalendarContext } from './context'
 import type { CalendarEvent } from '@/components/types'
+import { RecurrenceHandler } from '@/lib/recurrence-handler/recurrence-handler'
+import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 
 interface CalendarProviderProps {
   children: ReactNode
@@ -50,6 +52,33 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null)
   const [currentLocale, setCurrentLocale] = useState<string>(locale || 'en')
   const [currentTimezone, setCurrentTimezone] = useState<string>(timezone || '')
+
+  // Process events to include recurring instances
+  const processedEvents = useMemo(() => {
+    const allEvents: CalendarEvent[] = []
+
+    // Calculate a reasonable range for generating recurring events
+    // Generate events for ±2 years from current date to cover most views
+    const rangeStart = currentDate.subtract(2, 'year').startOf('year')
+    const rangeEnd = currentDate.add(2, 'year').endOf('year')
+
+    for (const event of currentEvents) {
+      if (event.recurrence) {
+        // Generate recurring instances
+        const recurringEvents = RecurrenceHandler.generateRecurringEvents(
+          event,
+          rangeStart,
+          rangeEnd
+        )
+        allEvents.push(...recurringEvents)
+      } else {
+        // Add non-recurring events as-is
+        allEvents.push(event)
+      }
+    }
+
+    return allEvents
+  }, [currentEvents, currentDate])
 
   // Update events when events prop changes
   useEffect(() => {
@@ -127,6 +156,33 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
         prevEvents.map((event) =>
           event.id === eventId ? { ...event, ...updatedEvent } : event
         )
+      )
+    },
+    []
+  )
+
+  const updateRecurringEvent = useCallback(
+    (
+      event: CalendarEvent,
+      updates: Partial<CalendarEvent>,
+      options: RecurrenceEditOptions
+    ) => {
+      setCurrentEvents((prevEvents) =>
+        RecurrenceHandler.updateRecurringEvent(
+          prevEvents,
+          event,
+          updates,
+          options
+        )
+      )
+    },
+    []
+  )
+
+  const deleteRecurringEvent = useCallback(
+    (event: CalendarEvent, options: RecurrenceEditOptions) => {
+      setCurrentEvents((prevEvents) =>
+        RecurrenceHandler.deleteRecurringEvent(prevEvents, event, options)
       )
     },
     []
@@ -224,7 +280,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       const startDate = start.startOf('day')
       const endDate = end.endOf('day')
 
-      return currentEvents.filter((event) => {
+      return processedEvents.filter((event) => {
         return (
           // Case 1: Event starts within the range
           ((event.start.isAfter(startDate) || event.start.isSame(startDate)) &&
@@ -237,7 +293,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
         )
       })
     },
-    [currentEvents]
+    [processedEvents]
   )
 
   const getEventsForDate = useCallback(
@@ -254,7 +310,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
     () => ({
       currentDate,
       view,
-      events: currentEvents,
+      events: processedEvents,
       currentLocale,
       isEventFormOpen,
       selectedEvent,
@@ -268,7 +324,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       today,
       addEvent,
       updateEvent,
+      updateRecurringEvent,
       deleteEvent,
+      deleteRecurringEvent,
       openEventForm: handleOpenEventForm,
       closeEventForm,
       getEventsForDate,
@@ -289,7 +347,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
     [
       currentDate,
       view,
-      currentEvents,
+      processedEvents,
       currentLocale,
       isEventFormOpen,
       selectedEvent,
@@ -303,7 +361,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       today,
       addEvent,
       updateEvent,
+      updateRecurringEvent,
       deleteEvent,
+      deleteRecurringEvent,
       closeEventForm,
       getEventsForDate,
       getEventsForDateRange,

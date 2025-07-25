@@ -42,21 +42,109 @@ DnD implemented via `@dnd-kit/core` in `src/contexts/calendar-dnd-context.tsx`:
 - Uses sensors for mouse/touch with reduced activation constraints
 - Updates events through context after successful drops
 
+## Project Structure & Organization
+
+### Bullet-Proof React Project Structure
+
+**ALWAYS follow the bullet-proof React project structure** for maintainability, scalability, and team collaboration:
+
+#### Component Organization
+
+- **One component per folder** with dedicated files for logic, types, and tests
+- **Co-located files**: Keep related files together (component.tsx, component.test.tsx, types.ts, utils.ts)
+- **Index files**: Each component folder exports through an index.ts file
+- **Feature-based grouping**: Group components by calendar features (month-view/, week-view/, event-form/)
+
+#### File Naming Conventions
+
+- **Components**: PascalCase (`EventForm.tsx`, `MonthView.tsx`)
+- **Hooks**: camelCase with `use` prefix (`useCalendarContext.ts`, `useRecurringEventActions.ts`)
+- **Utilities**: camelCase (`utils.ts`, `dayjs-config.ts`)
+- **Types**: camelCase with descriptive names (`types.ts`, `calendar-types.ts`)
+- **Tests**: Match component name with `.test.tsx` suffix
+
+#### Folder Structure Rules
+
+```
+project-root/
+├── docs/                # Documentation files
+│   ├── RECURRENCE.md    # Feature-specific documentation
+├── src/
+│   ├── components/      # Reusable UI components
+│   │   ├── ui/          # Base UI components (shadcn/ui)
+│   │   ├── [feature-name]/  # Feature-specific components
+│   │   │   ├── index.ts     # Barrel exports
+│   │   │   ├── component.tsx
+│   │   │   ├── component.test.tsx
+│   │   │   ├── types.ts     # Component-specific types
+│   │   │   └── utils.ts     # Component-specific utilities
+│   ├── contexts/        # React contexts and providers
+│   ├── hooks/           # Custom React hooks
+│   ├── lib/             # Utilities, configurations, and helpers
+│   ├── types/           # Global TypeScript definitions
+│   └── features/        # Large feature modules (if needed)
+├── styles/              # Global styles and themes
+├── .github/             # GitHub workflows and templates
+└── README.md            # Main project documentation
+```
+
+#### Import Organization
+
+- **Absolute imports**: Always use `@/` alias for internal imports
+- **Import grouping**: External dependencies → Internal modules → Relative imports
+- **Type imports**: Use `import type` for TypeScript types
+- **Barrel exports**: Use index.ts files to create clean import paths
+
+#### Component Architecture
+
+- **Single Responsibility**: Each component should have one clear purpose
+- **Composition over Inheritance**: Prefer component composition patterns
+- **Props Interface**: Define clear TypeScript interfaces for all props
+- **Error Boundaries**: Implement error handling at appropriate component levels
+- **Accessibility**: Follow ARIA standards and semantic HTML
+
+#### Documentation Organization
+
+- **docs/ folder**: All feature documentation goes in dedicated docs folder
+- **Feature docs**: Create specific documentation for major features (e.g., docs/RECURRENCE.md)
+- **API documentation**: Maintain API docs in docs/API.md
+- **Changelog**: Keep version history in docs/CHANGELOG.md
+- **README**: Project overview stays in root, detailed docs in docs/
+
+This structure ensures code remains maintainable, testable, and scalable as the project grows.
+
 ## Development Workflow
 
 ### Build System (Bun-First)
 
 - **Always use Bun** instead of npm/node/vite (see `.cursor/rules/`)
+- **Always assume dev server is already running** - don't start/stop servers unless explicitly requested
 - Dev server: `bun dev` (hot reloading enabled)
 - Build: `bun run build.ts` (custom build script with CLI options)
 - Production: `bun start`
 
+### Test-Driven Development (TDD)
+
+- **Write tests FIRST** before implementing any new functionality
+- **All new code must have meaningful tests** - no exceptions
+- Test files should be co-located with components: `component.test.tsx`
+- Use `bun test` for running tests (no Jest/Vitest)
+- Test structure:
+  - Unit tests for utilities and pure functions
+  - Component tests for UI behavior and interactions
+  - Integration tests for context and provider logic
+- Follow the Red-Green-Refactor cycle:
+  1. **Red**: Write failing test that describes desired behavior
+  2. **Green**: Write minimal code to make test pass
+  3. **Refactor**: Improve code while keeping tests green
+
 ### Component Development
 
-1. New components go in `src/components/[component-name]/`
-2. Export from component's index file and `src/components/index.ts`
-3. UI components use shadcn/ui pattern in `src/components/ui/`
-4. All components import dayjs from `@/lib/dayjs-config` (pre-configured with plugins)
+1. **Start with tests** - define expected behavior before coding
+2. New components go in `src/components/[component-name]/`
+3. Export from component's index file and `src/components/index.ts`
+4. UI components use shadcn/ui pattern in `src/components/ui/`
+5. All components import dayjs from `@/lib/dayjs-config` (pre-configured with plugins)
 
 ### Styling & UI
 
@@ -71,6 +159,15 @@ DnD implemented via `@dnd-kit/core` in `src/contexts/calendar-dnd-context.tsx`:
 - Locale switching via calendar context
 - Week start day configurable (Sunday/Monday)
 - Timezone support built-in
+
+### Date Handling & Timezone Safety
+
+- **CRITICAL**: Never use `YYYY-MM-DD` format for date serialization
+- **Always use full ISO strings** (`toISOString()`) when storing/transmitting dates
+- `YYYY-MM-DD` format causes timezone shifts (day-before bugs) in western timezones
+- Use `dayjs().toISOString()` instead of `dayjs().format('YYYY-MM-DD')`
+- This applies to: form inputs, API calls, localStorage, database storage, URL params
+- Exception: Only use `YYYY-MM-DD` for display purposes in UI components
 
 ## Key Conventions
 
@@ -121,7 +218,12 @@ import type { CalendarEvent } from '@/components/types'
 
 ## Testing & Debugging
 
+- **Test-First Development**: Always write tests before implementation
 - Use `bun test` for testing (no Jest/Vitest)
+- **Mandatory test coverage**: Every new function, component, and feature must have tests
+- Test file naming: `component.test.tsx` or `utility.test.ts`
+- Focus on testing behavior, not implementation details
+- Mock external dependencies and focus on unit isolation
 - Console logs echo from browser to server in development
 - Hot reloading enabled for rapid development
 - Build script supports sourcemaps and various output formats

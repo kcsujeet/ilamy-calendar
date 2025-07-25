@@ -19,7 +19,13 @@ import {
   TooltipTrigger,
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import type { CalendarEvent } from '@/components/types'
+import type { CalendarEvent, EventRecurrence } from '@/components/types'
+import { RecurrenceEditor } from '../../features/recurrence/components/recurrence-editor/recurrence-editor'
+import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
+import {
+  useRecurringEventActions,
+  isRecurringEvent,
+} from '@/features/recurrence/hooks/useRecurringEventActions'
 
 const colorOptions = [
   { value: 'bg-blue-100 text-blue-800', label: 'Blue' },
@@ -55,6 +61,14 @@ export const EventForm: React.FC<EventFormProps> = ({
   onDelete,
   onAdd,
 }) => {
+  const {
+    dialogState,
+    openEditDialog,
+    openDeleteDialog,
+    closeDialog,
+    handleConfirm,
+  } = useRecurringEventActions(onClose)
+
   const start = selectedEvent?.originalStart ?? selectedEvent?.start
   const end = selectedEvent?.originalEnd ?? selectedEvent?.end
 
@@ -91,6 +105,11 @@ export const EventForm: React.FC<EventFormProps> = ({
     description: selectedEvent?.description || '',
     location: selectedEvent?.location || '',
   })
+
+  // Recurrence state
+  const [recurrence, setRecurrence] = useState<EventRecurrence | undefined>(
+    selectedEvent?.recurrence
+  )
 
   // Create wrapper functions to fix TypeScript errors with DatePicker
   const handleStartDateChange = (date: Date | undefined) => {
@@ -160,9 +179,25 @@ export const EventForm: React.FC<EventFormProps> = ({
       location: formValues.location,
       allDay: isAllDay,
       color: selectedColor,
+      recurrence,
     }
 
-    if (selectedEvent.id) {
+    if (selectedEvent?.id) {
+      // Check if this is a recurring event
+      if (isRecurringEvent(selectedEvent)) {
+        // Show recurring event edit dialog
+        openEditDialog(selectedEvent, {
+          title: formValues.title,
+          start: startDateTime,
+          end: endDateTime,
+          description: formValues.description,
+          location: formValues.location,
+          allDay: isAllDay,
+          color: selectedColor,
+          recurrence,
+        })
+        return // Don't close the form yet, let the dialog handle it
+      }
       onUpdate?.(eventData)
     } else {
       onAdd?.(eventData)
@@ -172,7 +207,13 @@ export const EventForm: React.FC<EventFormProps> = ({
   }
 
   const handleDelete = () => {
-    if (selectedEvent.id) {
+    if (selectedEvent?.id) {
+      // Check if this is a recurring event
+      if (isRecurringEvent(selectedEvent)) {
+        // Show recurring event delete dialog
+        openDeleteDialog(selectedEvent)
+        return // Don't close the form yet, let the dialog handle it
+      }
       onDelete?.(selectedEvent)
       onClose()
     }
@@ -186,184 +227,198 @@ export const EventForm: React.FC<EventFormProps> = ({
   }, [startDate, endDate])
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="w-[90vw] max-w-[500px] p-4 sm:p-6">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader className="mb-2 sm:mb-4">
-            <DialogTitle className="text-base sm:text-lg">
-              {selectedEvent.id ? 'Edit Event' : 'Create Event'}
-            </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
-              {selectedEvent.id
-                ? 'Edit your event details'
-                : 'Add a new event to your calendar'}
-            </DialogDescription>
-          </DialogHeader>
+    <>
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="w-[90vw] max-w-[500px] p-4 sm:p-6">
+          <form onSubmit={handleSubmit}>
+            <DialogHeader className="mb-2 sm:mb-4">
+              <DialogTitle className="text-base sm:text-lg">
+                {selectedEvent.id ? 'Edit Event' : 'Create Event'}
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
+                {selectedEvent.id
+                  ? 'Edit your event details'
+                  : 'Add a new event to your calendar'}
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="grid gap-3 py-2 sm:gap-4 sm:py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title" className="text-xs sm:text-sm">
-                Title
-              </Label>
-              <Input
-                id="title"
-                name="title"
-                value={formValues.title}
-                onChange={handleInputChange}
-                placeholder="Event title"
-                required
-                className="h-8 text-sm sm:h-9"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="allDay"
-                checked={isAllDay}
-                onCheckedChange={(checked) => setIsAllDay(checked === true)}
-              />
-              <Label htmlFor="allDay" className="text-xs sm:text-sm">
-                All day
-              </Label>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 sm:gap-4">
-              <div>
-                <Label className="text-xs sm:text-sm">Start Date</Label>
-                <DatePicker
-                  date={startDate}
-                  setDate={handleStartDateChange}
-                  className="mt-1"
-                  closeOnSelect
+            <div className="grid gap-3 py-2 sm:gap-4 sm:py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="title" className="text-xs sm:text-sm">
+                  Title
+                </Label>
+                <Input
+                  id="title"
+                  name="title"
+                  value={formValues.title}
+                  onChange={handleInputChange}
+                  placeholder="Event title"
+                  required
+                  className="h-8 text-sm sm:h-9"
                 />
               </div>
-              <div>
-                <Label className="text-xs sm:text-sm">End Date</Label>
-                <DatePicker
-                  date={endDate}
-                  setDate={handleEndDateChange}
-                  className="mt-1"
-                  closeOnSelect
-                />
-              </div>
-            </div>
 
-            {!isAllDay && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="allDay"
+                  checked={isAllDay}
+                  onCheckedChange={(checked) => setIsAllDay(checked === true)}
+                />
+                <Label htmlFor="allDay" className="text-xs sm:text-sm">
+                  All day
+                </Label>
+              </div>
+
               <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 <div>
-                  <Label htmlFor="start-time" className="text-xs sm:text-sm">
-                    Start Time
-                  </Label>
-                  <Input
-                    id="start-time"
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => handleTimeChange(e, true)}
-                    className="mt-1 h-8 text-sm sm:h-9"
+                  <Label className="text-xs sm:text-sm">Start Date</Label>
+                  <DatePicker
+                    date={startDate}
+                    setDate={handleStartDateChange}
+                    className="mt-1"
+                    closeOnSelect
                   />
                 </div>
                 <div>
-                  <Label htmlFor="end-time" className="text-xs sm:text-sm">
-                    End Time
-                  </Label>
-                  <Input
-                    id="end-time"
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => handleTimeChange(e, false)}
-                    className="mt-1 h-8 text-sm sm:h-9"
+                  <Label className="text-xs sm:text-sm">End Date</Label>
+                  <DatePicker
+                    date={endDate}
+                    setDate={handleEndDateChange}
+                    className="mt-1"
+                    closeOnSelect
                   />
                 </div>
               </div>
-            )}
 
-            <div className="grid gap-1 sm:gap-2">
-              <Label className="text-xs sm:text-sm">Color</Label>
-              <div className="flex flex-wrap gap-2">
-                <TooltipProvider>
-                  {colorOptions.map((color) => (
-                    <Tooltip key={color.value}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          key={color.value}
-                          type="button"
-                          className={cn(
-                            `${color.value} h-6 w-6 rounded-full sm:h-8 sm:w-8`,
-                            selectedColor === color.value &&
-                              'ring-2 ring-black ring-offset-1 sm:ring-offset-2'
-                          )}
-                          onClick={() => setSelectedColor(color.value)}
-                          aria-label={color.label}
-                        />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs sm:text-sm">{color.label}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                </TooltipProvider>
+              {!isAllDay && (
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                  <div>
+                    <Label htmlFor="start-time" className="text-xs sm:text-sm">
+                      Start Time
+                    </Label>
+                    <Input
+                      id="start-time"
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => handleTimeChange(e, true)}
+                      className="mt-1 h-8 text-sm sm:h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="end-time" className="text-xs sm:text-sm">
+                      End Time
+                    </Label>
+                    <Input
+                      id="end-time"
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => handleTimeChange(e, false)}
+                      className="mt-1 h-8 text-sm sm:h-9"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-1 sm:gap-2">
+                <Label className="text-xs sm:text-sm">Color</Label>
+                <div className="flex flex-wrap gap-2">
+                  <TooltipProvider>
+                    {colorOptions.map((color) => (
+                      <Tooltip key={color.value}>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            key={color.value}
+                            type="button"
+                            className={cn(
+                              `${color.value} h-6 w-6 rounded-full sm:h-8 sm:w-8`,
+                              selectedColor === color.value &&
+                                'ring-2 ring-black ring-offset-1 sm:ring-offset-2'
+                            )}
+                            onClick={() => setSelectedColor(color.value)}
+                            aria-label={color.label}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs sm:text-sm">{color.label}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </TooltipProvider>
+                </div>
+              </div>
+
+              <div className="grid gap-1 sm:gap-2">
+                <Label htmlFor="location" className="text-xs sm:text-sm">
+                  Location
+                </Label>
+                <Input
+                  id="location"
+                  name="location"
+                  value={formValues.location}
+                  onChange={handleInputChange}
+                  placeholder="Event location (optional)"
+                  className="h-8 text-sm sm:h-9"
+                />
+              </div>
+
+              {/* Recurrence Section */}
+              <RecurrenceEditor value={recurrence} onChange={setRecurrence} />
+
+              <div className="grid gap-1 sm:gap-2">
+                <Label htmlFor="description" className="text-xs sm:text-sm">
+                  Description
+                </Label>
+                <Input
+                  id="description"
+                  name="description"
+                  value={formValues.description}
+                  onChange={handleInputChange}
+                  placeholder="Event description (optional)"
+                  className="h-8 text-sm sm:h-9"
+                />
               </div>
             </div>
 
-            <div className="grid gap-1 sm:gap-2">
-              <Label htmlFor="location" className="text-xs sm:text-sm">
-                Location
-              </Label>
-              <Input
-                id="location"
-                name="location"
-                value={formValues.location}
-                onChange={handleInputChange}
-                placeholder="Event location (optional)"
-                className="h-8 text-sm sm:h-9"
-              />
-            </div>
+            <DialogFooter className="mt-2 flex flex-col-reverse gap-2 sm:mt-4 sm:flex-row sm:gap-0">
+              {selectedEvent.id && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDelete}
+                  className="w-full sm:mr-auto sm:w-auto"
+                  size="sm"
+                >
+                  Delete
+                </Button>
+              )}
+              <div className="flex w-full gap-2 sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  className="flex-1 sm:flex-none"
+                  size="sm"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1 sm:flex-none" size="sm">
+                  {selectedEvent.id ? 'Update' : 'Create'}
+                </Button>
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-            <div className="grid gap-1 sm:gap-2">
-              <Label htmlFor="description" className="text-xs sm:text-sm">
-                Description
-              </Label>
-              <Input
-                id="description"
-                name="description"
-                value={formValues.description}
-                onChange={handleInputChange}
-                placeholder="Event description (optional)"
-                className="h-8 text-sm sm:h-9"
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="mt-2 flex flex-col-reverse gap-2 sm:mt-4 sm:flex-row sm:gap-0">
-            {selectedEvent.id && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={handleDelete}
-                className="w-full sm:mr-auto sm:w-auto"
-                size="sm"
-              >
-                Delete
-              </Button>
-            )}
-            <div className="flex w-full gap-2 sm:w-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="flex-1 sm:flex-none"
-                size="sm"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" className="flex-1 sm:flex-none" size="sm">
-                {selectedEvent.id ? 'Update' : 'Create'}
-              </Button>
-            </div>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      {/* Recurring Event Edit Dialog */}
+      <RecurrenceEditDialog
+        isOpen={dialogState.isOpen}
+        onClose={closeDialog}
+        onConfirm={handleConfirm}
+        operationType={dialogState.operationType}
+        eventTitle={dialogState.event?.title || ''}
+      />
+    </>
   )
 }

@@ -2,11 +2,11 @@ import type dayjs from '@/lib/dayjs-config'
 import { AnimatePresence, motion } from 'motion/react'
 import React, { useMemo } from 'react'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
-import { AllEventDialog } from './all-events-dialog'
-import { DayCell } from './day-cell'
-import type { MonthViewProps, SelectedDayEvents } from '../types'
-import { MonthHeader } from './month-header/month-header'
-import { WeekEventsLayer } from './week-events-layer/week-events-layer'
+import { AllEventDialog } from '../all-events-dialog'
+import { DayCell } from '../day-cell'
+import type { MonthViewProps, SelectedDayEvents } from '../../types'
+import { MonthHeader } from '../month-header/month-header'
+import { WeekEventsLayer } from '../week-events-layer/week-events-layer'
 
 export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
   const allEventsDialogRef = React.useRef<{

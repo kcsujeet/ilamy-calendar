@@ -1,4 +1,5 @@
 import type { CalendarEvent } from '@/components/types'
+import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type dayjs from '@/lib/dayjs-config'
 import { createContext, useContext } from 'react'
 
@@ -18,7 +19,16 @@ export interface CalendarContextType {
   today: () => void
   addEvent: (event: CalendarEvent) => void
   updateEvent: (eventId: string | number, event: Partial<CalendarEvent>) => void
+  updateRecurringEvent: (
+    event: CalendarEvent,
+    updates: Partial<CalendarEvent>,
+    options: RecurrenceEditOptions
+  ) => void
   deleteEvent: (eventId: string | number) => void
+  deleteRecurringEvent: (
+    event: CalendarEvent,
+    options: RecurrenceEditOptions
+  ) => void
   openEventForm: (date?: dayjs.Dayjs) => void
   closeEventForm: () => void
   getEventsForDate: (date: dayjs.Dayjs) => CalendarEvent[]

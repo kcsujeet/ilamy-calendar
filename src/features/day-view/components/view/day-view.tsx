@@ -3,11 +3,11 @@ import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { cn } from '@/lib/utils'
 import dayjs from '@/lib/dayjs-config'
 import { Fragment } from 'react'
-import { DroppableCell } from '../droppable-cell/droppable-cell'
-import { DayAllDayRow } from './day-all-day-row'
-import { DayEventsLayer } from './day-events-layer'
-import { DayHeader } from './day-header'
-import { DayTimeCol } from './day-time-col'
+import { DroppableCell } from '@/features/droppable-cell/droppable-cell'
+import { DayAllDayRow } from '../day-all-day-row'
+import { DayEventsLayer } from '../day-events-layer'
+import { DayHeader } from '../day-header'
+import { DayTimeCol } from '../day-time-col'
 
 const DayView = () => {
   const { currentDate } = useCalendarContext()

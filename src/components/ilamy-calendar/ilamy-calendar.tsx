@@ -1,7 +1,7 @@
 import React from 'react'
-import { MonthView } from '@/features/month-view/components/month-view'
+import { MonthView } from '@/features/month-view/components/view/month-view'
 import WeekView from '@/features/week-view/week-view'
-import DayView from '@/features/day-view/day-view'
+import DayView from '@/features/day-view/components/view/day-view'
 import { EventForm } from '../event-form/event-form'
 import { Header } from '../header'
 import YearView from '@/features/year-view/year-view'
@@ -17,6 +17,7 @@ import { useCalendarContext } from '@/contexts/calendar-context/context'
 // oxlint-disable-next-line no-duplicates
 import '@/lib/dayjs-config'
 import dayjs from '@/lib/dayjs-config'
+import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 
 export function normalizePublicFacingCalendarEvent(
   events: IlamyCalendarEvent[]
@@ -29,6 +30,9 @@ export function normalizePublicFacingCalendarEvent(
           ? recurrence.endDate
           : dayjs(recurrence.endDate)
         : undefined
+      recurrence.exceptions = recurrence?.exceptions?.map((e) =>
+        dayjs.isDayjs(e) ? e : dayjs(e)
+      )
     }
 
     return {
@@ -186,16 +190,6 @@ interface CalendarProps {
   headerComponent?: React.ReactNode
 }
 
-const dayNumberMap: Record<string, number> = {
-  sunday: 0,
-  monday: 1,
-  tuesday: 2,
-  wednesday: 3,
-  thursday: 4,
-  friday: 5,
-  saturday: 6,
-}
-
 const DEFAULT_DAY_MAX_EVENTS = 4
 export const IlamyCalendar: React.FC<CalendarProps> = ({
   events,
@@ -217,7 +211,7 @@ export const IlamyCalendar: React.FC<CalendarProps> = ({
   return (
     <CalendarProvider
       events={normalizePublicFacingCalendarEvent(events || [])}
-      firstDayOfWeek={dayNumberMap[firstDayOfWeek]}
+      firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
       renderEvent={renderEvent}
       onEventClick={onEventClick}
       onCellClick={onCellClick}

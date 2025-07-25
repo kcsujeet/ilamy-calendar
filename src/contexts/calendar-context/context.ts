@@ -26,19 +26,6 @@ export interface CalendarContextType {
     start: dayjs.Dayjs,
     end: dayjs.Dayjs
   ) => CalendarEvent[]
-  expandRecurringEvent: (
-    baseEvent: CalendarEvent,
-    startDate: dayjs.Dayjs,
-    endDate: dayjs.Dayjs
-  ) => CalendarEvent[]
-  addRecurringEvent: (event: CalendarEvent) => void
-  deleteRecurringEvent: (eventId: string, deleteAll: boolean) => void
-  updateRecurringEvent: (
-    eventId: string,
-    updatedEvent: Partial<CalendarEvent>,
-    updateAll: boolean
-  ) => void
-  createExceptionForRecurringEvent: (eventId: string, date: dayjs.Dayjs) => void
   renderEvent?: (event: CalendarEvent) => React.ReactNode
   onEventClick: (event: CalendarEvent) => void
   onCellClick: (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => void

@@ -67,8 +67,6 @@ DnD implemented via `@dnd-kit/core` in `src/contexts/calendar-dnd-context.tsx`:
 
 ```
 project-root/
-├── docs/                # Documentation files
-│   ├── RECURRENCE.md    # Feature-specific documentation
 ├── src/
 │   ├── components/      # Reusable UI components
 │   │   ├── ui/          # Base UI components (shadcn/ui)
@@ -105,11 +103,8 @@ project-root/
 
 #### Documentation Organization
 
-- **docs/ folder**: All feature documentation goes in dedicated docs folder
-- **Feature docs**: Create specific documentation for major features (e.g., docs/RECURRENCE.md)
-- **API documentation**: Maintain API docs in docs/API.md
-- **Changelog**: Keep version history in docs/CHANGELOG.md
-- **README**: Project overview stays in root, detailed docs in docs/
+- **Changelog**: Keep version history in CHANGELOG.md
+- **README**: Project overview stays in root
 
 This structure ensures code remains maintainable, testable, and scalable as the project grows.
 

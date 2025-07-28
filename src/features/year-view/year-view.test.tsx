@@ -126,13 +126,13 @@ describe('YearView', () => {
     renderCalendar({ initialDate: testDate.toDate() })
 
     // Check for some specific days in January 2025 using getAllByTestId for duplicate dates
-    const jan1Elements = screen.getAllByTestId('year-day-2025-01-01')
+    const jan1Elements = screen.getAllByTestId('year-day-2025-01-2025-01-01')
     expect(jan1Elements.length).toBeGreaterThan(0)
 
-    const jan15Elements = screen.getAllByTestId('year-day-2025-01-15')
+    const jan15Elements = screen.getAllByTestId('year-day-2025-01-2025-01-15')
     expect(jan15Elements.length).toBeGreaterThan(0)
 
-    const jan31Elements = screen.getAllByTestId('year-day-2025-01-31')
+    const jan31Elements = screen.getAllByTestId('year-day-2025-01-2025-01-31')
     expect(jan31Elements.length).toBeGreaterThan(0)
   })
 
@@ -142,7 +142,7 @@ describe('YearView', () => {
 
     // Today should be highlighted in its mini calendar
     const todayElement = screen.getByTestId(
-      `year-day-${today.format('YYYY-MM-DD')}`
+      `year-day-${today.format('YYYY-MM')}-${today.format('YYYY-MM-DD')}`
     )
     expect(todayElement).toBeInTheDocument()
   })

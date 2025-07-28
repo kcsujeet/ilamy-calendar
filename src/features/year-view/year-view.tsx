@@ -95,7 +95,7 @@ const YearView: React.FC = () => {
         {daysArray.map((dayInfo, i) => (
           <div
             key={`day-${i}`}
-            data-testid={`year-day-${dayInfo.day.format('YYYY-MM-DD')}`}
+            data-testid={`year-day-${month.date.format('YYYY-MM')}-${dayInfo.day.format('YYYY-MM-DD')}`}
             onClick={(e) => handleDayClick(dayInfo.day, e)}
             className={cn(
               'relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center',

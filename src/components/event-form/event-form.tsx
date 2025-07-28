@@ -89,14 +89,10 @@ export const EventForm: React.FC<EventFormProps> = ({
 
   // Time state
   const [startTime, setStartTime] = useState(
-    selectedEvent
-      ? selectedEvent.start.format('HH:mm')
-      : dayjs(defaultStartDate).format('HH:mm')
+    start ? start.format('HH:mm') : dayjs(defaultStartDate).format('HH:mm')
   )
   const [endTime, setEndTime] = useState(
-    selectedEvent
-      ? selectedEvent.end.format('HH:mm')
-      : dayjs(defaultEndDate).format('HH:mm')
+    end ? end.format('HH:mm') : dayjs(defaultEndDate).format('HH:mm')
   )
 
   // Initialize form values from selected event or defaults
@@ -233,10 +229,10 @@ export const EventForm: React.FC<EventFormProps> = ({
           <form onSubmit={handleSubmit}>
             <DialogHeader className="mb-2 sm:mb-4">
               <DialogTitle className="text-base sm:text-lg">
-                {selectedEvent.id ? 'Edit Event' : 'Create Event'}
+                {selectedEvent?.id ? 'Edit Event' : 'Create Event'}
               </DialogTitle>
               <DialogDescription className="text-xs sm:text-sm">
-                {selectedEvent.id
+                {selectedEvent?.id
                   ? 'Edit your event details'
                   : 'Add a new event to your calendar'}
               </DialogDescription>
@@ -254,6 +250,20 @@ export const EventForm: React.FC<EventFormProps> = ({
                   onChange={handleInputChange}
                   placeholder="Event title"
                   required
+                  className="h-8 text-sm sm:h-9"
+                />
+              </div>
+
+              <div className="grid gap-1 sm:gap-2">
+                <Label htmlFor="description" className="text-xs sm:text-sm">
+                  Description
+                </Label>
+                <Input
+                  id="description"
+                  name="description"
+                  value={formValues.description}
+                  onChange={handleInputChange}
+                  placeholder="Event description (optional)"
                   className="h-8 text-sm sm:h-9"
                 />
               </div>
@@ -364,24 +374,10 @@ export const EventForm: React.FC<EventFormProps> = ({
 
               {/* Recurrence Section */}
               <RecurrenceEditor value={recurrence} onChange={setRecurrence} />
-
-              <div className="grid gap-1 sm:gap-2">
-                <Label htmlFor="description" className="text-xs sm:text-sm">
-                  Description
-                </Label>
-                <Input
-                  id="description"
-                  name="description"
-                  value={formValues.description}
-                  onChange={handleInputChange}
-                  placeholder="Event description (optional)"
-                  className="h-8 text-sm sm:h-9"
-                />
-              </div>
             </div>
 
             <DialogFooter className="mt-2 flex flex-col-reverse gap-2 sm:mt-4 sm:flex-row sm:gap-0">
-              {selectedEvent.id && (
+              {selectedEvent?.id && (
                 <Button
                   type="button"
                   variant="destructive"
@@ -403,7 +399,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   Cancel
                 </Button>
                 <Button type="submit" className="flex-1 sm:flex-none" size="sm">
-                  {selectedEvent.id ? 'Update' : 'Create'}
+                  {selectedEvent?.id ? 'Update' : 'Create'}
                 </Button>
               </div>
             </DialogFooter>

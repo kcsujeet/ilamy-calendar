@@ -1,5 +1,9 @@
 # Ilamy Calendar - AI Coding Instructions
 
+## 🚨 CRITICAL RULE: NEVER START/STOP DEV SERVER
+
+**The development server is ALWAYS running. NEVER run `bun dev` or any server start/stop commands. Always assume hot reloading is active.**
+
 ## Project Overview
 
 A full-featured React calendar component library built with Bun, TypeScript, and modern React patterns. The project uses a component-based architecture with multiple calendar views (month, week, day, year) and advanced features like drag-and-drop, recurring events, and internationalization.
@@ -110,11 +114,16 @@ This structure ensures code remains maintainable, testable, and scalable as the 
 
 ## Development Workflow
 
+### ⚠️ CRITICAL: Never Start/Stop Dev Server
+
+**NEVER RUN `bun dev` OR START/STOP THE DEVELOPMENT SERVER** - The dev server is already running and should remain running. Only use existing terminal sessions and assume hot reloading is active.
+
 ### Build System (Bun-First)
 
 - **Always use Bun** instead of npm/node/vite (see `.cursor/rules/`)
-- **Always assume dev server is already running** - don't start/stop servers unless explicitly requested
-- Dev server: `bun dev` (hot reloading enabled)
+- **🚨 NEVER start dev server** - it's already running with hot reloading enabled
+- **🚨 NEVER stop dev server** - assume it's always available
+- Dev server: `bun dev` (hot reloading enabled) - ⚠️ DO NOT RUN THIS
 - Build: `bun run build.ts` (custom build script with CLI options)
 - Production: `bun start`
 

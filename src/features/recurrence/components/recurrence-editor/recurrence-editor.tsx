@@ -184,7 +184,7 @@ export function RecurrenceEditor({
     : 'No recurrence'
 
   return (
-    <Card>
+    <Card data-testid="recurrence-editor">
       <CardHeader>
         <CardTitle>Recurrence</CardTitle>
       </CardHeader>
@@ -195,6 +195,7 @@ export function RecurrenceEditor({
             id="recurrence-enabled"
             checked={enabled}
             onCheckedChange={handleEnabledChange}
+            data-testid="toggle-recurrence"
           />
           <Label htmlFor="recurrence-enabled">Repeat event</Label>
         </div>

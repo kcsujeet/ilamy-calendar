@@ -1,8 +1,30 @@
 # Ilamy Calendar - AI Coding Instructions
 
-## 🚨 CRITICAL RULE: NEVER START/STOP DEV SERVER
+## 🚨 CRITICAL RULES
+
+### NEVER START/STOP DEV SERVER
 
 **The development server is ALWAYS running. NEVER run `bun dev` or any server start/stop commands. Always assume hot reloading is active.**
+
+### NEVER USE YYYY-MM-DD DATE FORMAT
+
+**CRITICAL**: Never use `YYYY-MM-DD` format for date serialization, storage, or transmission. This format causes timezone shifts and day-before bugs in western timezones.
+
+**ALWAYS use full ISO strings** (`toISOString()`) when:
+
+- Storing dates in state, localStorage, or databases
+- Transmitting dates via API calls or URL params
+- Serializing dates in form inputs or data structures
+- Comparing dates or performing date operations
+- Testing date values in test files
+
+**ONLY exception**: Use `YYYY-MM-DD` format exclusively for display purposes in UI components.
+
+**Examples:**
+
+- ✅ CORRECT: `dayjs().toISOString()` → `"2025-01-06T09:00:00.000Z"`
+- ❌ WRONG: `dayjs().format('YYYY-MM-DD')` → `"2025-01-06"` (causes timezone bugs)
+- ✅ DISPLAY ONLY: `dayjs().format('YYYY-MM-DD')` → Only for showing dates to users
 
 ## Project Overview
 
@@ -166,12 +188,13 @@ This structure ensures code remains maintainable, testable, and scalable as the 
 
 ### Date Handling & Timezone Safety
 
-- **CRITICAL**: Never use `YYYY-MM-DD` format for date serialization
-- **Always use full ISO strings** (`toISOString()`) when storing/transmitting dates
+- **🚨 CRITICAL**: NEVER use `YYYY-MM-DD` format for date serialization, storage, or transmission
+- **ALWAYS use full ISO strings** (`toISOString()`) when storing/transmitting dates
 - `YYYY-MM-DD` format causes timezone shifts (day-before bugs) in western timezones
 - Use `dayjs().toISOString()` instead of `dayjs().format('YYYY-MM-DD')`
-- This applies to: form inputs, API calls, localStorage, database storage, URL params
-- Exception: Only use `YYYY-MM-DD` for display purposes in UI components
+- This applies to: form inputs, API calls, localStorage, database storage, URL params, test assertions
+- **ONLY exception**: Use `YYYY-MM-DD` exclusively for display purposes in UI components
+- **In tests**: Always use `toISOString()` for date comparisons and assertions
 
 ## Key Conventions
 

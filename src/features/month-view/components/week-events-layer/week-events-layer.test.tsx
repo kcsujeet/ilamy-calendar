@@ -385,7 +385,11 @@ describe('WeekEventsLayer', () => {
           endType: 'never',
           daysOfWeek: ['monday'],
           exceptions: [
-            dayjs().startOf('week').add(8, 'day'), // Skip next Monday
+            {
+              date: dayjs().startOf('week').add(8, 'day'), // Skip next Monday
+              type: 'this' as const,
+              createdAt: dayjs(),
+            },
           ],
         },
       }

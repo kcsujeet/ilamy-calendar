@@ -17,7 +17,11 @@ import {
   DatePicker,
   Button,
 } from '@/components/ui'
-import type { EventRecurrence, WeekDays } from '@/components/types'
+import type {
+  EventRecurrence,
+  WeekDays,
+  RecurrenceException,
+} from '@/components/types'
 import { RecurrenceHandler } from '@/lib/recurrence-handler/recurrence-handler'
 
 interface RecurrenceEditorProps {
@@ -33,7 +37,7 @@ interface RecurrenceFormData {
   endDate?: string
   count?: number
   daysOfWeek: boolean[]
-  exceptions: string[]
+  exceptions: RecurrenceException[]
 }
 
 const WEEK_DAYS: { value: WeekDays; label: string; short: string }[] = [
@@ -61,12 +65,12 @@ function initializeDaysOfWeek(selectedDays?: WeekDays[]): boolean[] {
 }
 
 function formatExceptionsForInput(
-  exceptions?: (dayjs.Dayjs | Date | string)[]
-): string[] {
+  exceptions?: RecurrenceException[]
+): RecurrenceException[] {
   if (!exceptions) {
     return []
   }
-  return exceptions.map((exception) => dayjs(exception).toISOString())
+  return exceptions
 }
 
 function convertFormDataToRecurrence(
@@ -86,10 +90,7 @@ function convertFormDataToRecurrence(
       data.frequency === 'weekly' && selectedDays.length > 0
         ? selectedDays
         : undefined,
-    exceptions:
-      data.exceptions.length > 0
-        ? data.exceptions.map((dateStr) => dayjs(dateStr))
-        : undefined,
+    exceptions: data.exceptions.length > 0 ? data.exceptions : undefined,
   }
 }
 
@@ -156,24 +157,38 @@ export function RecurrenceEditor({
 
   const addException = () => {
     const currentExceptions = formData.exceptions || []
-    const newException = eventStart || dayjs()
-    const dateStr = newException.toISOString()
+    const newException: RecurrenceException = {
+      date: eventStart || dayjs(),
+      type: 'this', // Default to 'this' for single occurrence exception
+      createdAt: dayjs(),
+    }
 
-    if (!currentExceptions.includes(dateStr)) {
-      const newExceptions = [...currentExceptions, dateStr]
+    // Check if an exception for this date already exists
+    const existingException = currentExceptions.find((exc) =>
+      exc.date.isSame(newException.date, 'day')
+    )
+
+    if (!existingException) {
+      const newExceptions = [...currentExceptions, newException]
       handleFormChange('exceptions', newExceptions)
     }
   }
 
-  const removeException = (dateStr: string) => {
-    const newExceptions = formData.exceptions.filter((d) => d !== dateStr)
+  const removeException = (exception: RecurrenceException) => {
+    const newExceptions = formData.exceptions.filter(
+      (exc) =>
+        !exc.date.isSame(exception.date, 'day') || exc.type !== exception.type
+    )
     handleFormChange('exceptions', newExceptions)
   }
 
   const updateException = (index: number, date: string) => {
     const currentExceptions = formData.exceptions || []
     const newExceptions = [...currentExceptions]
-    newExceptions[index] = date
+    newExceptions[index] = {
+      ...newExceptions[index],
+      date: dayjs(date),
+    }
     handleFormChange('exceptions', newExceptions)
   }
 
@@ -340,28 +355,28 @@ export function RecurrenceEditor({
               {formData.exceptions && formData.exceptions.length > 0 && (
                 <div className="space-y-2">
                   {formData.exceptions
-                    .map((dateStr) => ({ dateStr, date: dayjs(dateStr) }))
                     .sort((a, b) => a.date.valueOf() - b.date.valueOf())
-                    .map(({ dateStr, date }, index) => (
+                    .map((exception, index) => (
                       <div
-                        key={dateStr}
+                        key={`${exception.date.toISOString()}-${exception.type}`}
                         className="flex items-center space-x-2"
                       >
                         <DatePicker
-                          date={new Date(dateStr)}
+                          date={exception.date.toDate()}
                           setDate={(newDate) =>
                             newDate &&
                             updateException(index, dayjs(newDate).toISOString())
                           }
                         />
                         <span className="text-sm text-muted-foreground">
-                          {date.format('MMM D, YYYY')}
+                          {exception.date.format('MMM D, YYYY')} (
+                          {exception.type})
                         </span>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => removeException(dateStr)}
+                          onClick={() => removeException(exception)}
                         >
                           <XIcon className="h-4 w-4" />
                         </Button>

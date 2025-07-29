@@ -363,7 +363,13 @@ describe('RecurrenceEditor', () => {
 
       expect(mockOnChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          exceptions: [testEventStart],
+          exceptions: [
+            expect.objectContaining({
+              date: testEventStart,
+              type: 'this',
+              createdAt: expect.any(Object),
+            }),
+          ],
         })
       )
     })
@@ -385,9 +391,21 @@ describe('RecurrenceEditor', () => {
         interval: 1,
         endType: 'never',
         exceptions: [
-          dayjs('2025-07-30'),
-          dayjs('2025-07-25'),
-          dayjs('2025-07-28'),
+          {
+            date: dayjs('2025-07-30'),
+            type: 'this' as const,
+            createdAt: dayjs('2025-07-29'),
+          },
+          {
+            date: dayjs('2025-07-25'),
+            type: 'this' as const,
+            createdAt: dayjs('2025-07-29'),
+          },
+          {
+            date: dayjs('2025-07-28'),
+            type: 'this' as const,
+            createdAt: dayjs('2025-07-29'),
+          },
         ],
       }
 
@@ -405,9 +423,9 @@ describe('RecurrenceEditor', () => {
         )
 
       expect(exceptionTexts).toHaveLength(3)
-      expect(exceptionTexts[0].textContent).toBe('Jul 25, 2025')
-      expect(exceptionTexts[1].textContent).toBe('Jul 28, 2025')
-      expect(exceptionTexts[2].textContent).toBe('Jul 30, 2025')
+      expect(exceptionTexts[0].textContent).toBe('Jul 25, 2025 (this)')
+      expect(exceptionTexts[1].textContent).toBe('Jul 28, 2025 (this)')
+      expect(exceptionTexts[2].textContent).toBe('Jul 30, 2025 (this)')
     })
   })
 
@@ -451,7 +469,13 @@ describe('RecurrenceEditor', () => {
 
       expect(mockOnChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          exceptions: [customEventStart],
+          exceptions: [
+            expect.objectContaining({
+              date: customEventStart,
+              type: 'this',
+              createdAt: expect.any(Object),
+            }),
+          ],
         })
       )
     })
@@ -504,7 +528,13 @@ describe('RecurrenceEditor', () => {
         frequency: 'daily' as const,
         interval: 1,
         endType: 'never' as const,
-        exceptions: [dayjs('2025-07-30')],
+        exceptions: [
+          {
+            date: dayjs('2025-07-30'),
+            type: 'this' as const,
+            createdAt: dayjs('2025-07-29'),
+          },
+        ],
       }
 
       render(
@@ -571,7 +601,13 @@ describe('RecurrenceEditor', () => {
           endType: 'after',
           count: 10,
           daysOfWeek: ['monday', 'friday'],
-          exceptions: [testEventStart],
+          exceptions: [
+            expect.objectContaining({
+              date: testEventStart,
+              type: 'this',
+              createdAt: expect.any(Object),
+            }),
+          ],
         })
       )
     })

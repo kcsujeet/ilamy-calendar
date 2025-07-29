@@ -32,6 +32,45 @@ describe('RecurrenceHandler', () => {
       expect(result[0]).toEqual(baseEvent)
     })
 
+    it('should return non-recurring event when it falls within the range', () => {
+      const eventInRange = {
+        ...baseEvent,
+        start: dayjs('2025-01-05'),
+        end: dayjs('2025-01-05').add(1, 'hour'),
+      }
+
+      const startDate = dayjs('2025-01-01')
+      const endDate = dayjs('2025-01-31')
+
+      const result = RecurrenceHandler.generateRecurringEvents(
+        eventInRange,
+        startDate,
+        endDate
+      )
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toEqual(eventInRange)
+    })
+
+    it('should return empty array when non-recurring event is outside range', () => {
+      const eventOutsideRange = {
+        ...baseEvent,
+        start: dayjs('2024-12-25'), // Outside the range
+        end: dayjs('2024-12-25').add(1, 'hour'),
+      }
+
+      const startDate = dayjs('2025-01-01')
+      const endDate = dayjs('2025-01-31')
+
+      const result = RecurrenceHandler.generateRecurringEvents(
+        eventOutsideRange,
+        startDate,
+        endDate
+      )
+
+      expect(result).toHaveLength(0)
+    })
+
     it('should generate daily recurring events correctly', () => {
       const recurrence: EventRecurrence = {
         frequency: 'daily',
@@ -51,9 +90,9 @@ describe('RecurrenceHandler', () => {
       )
 
       expect(result).toHaveLength(5)
-      expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06') // Original start
-      expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-07') // Next day
-      expect(result[4].start.format('YYYY-MM-DD')).toBe('2025-01-10') // 5th occurrence
+      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z') // Original start
+      expect(result[1].start.toISOString()).toBe('2025-01-07T09:00:00.000Z') // Next day
+      expect(result[4].start.toISOString()).toBe('2025-01-10T09:00:00.000Z') // 5th occurrence
 
       // Verify all events have correct properties
       result.forEach((event, index) => {
@@ -93,10 +132,10 @@ describe('RecurrenceHandler', () => {
       })
 
       // Verify sequence: Mon 6th, Wed 8th, Fri 10th, Mon 13th, Wed 15th, Fri 17th
-      expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06') // Monday
-      expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-08') // Wednesday
-      expect(result[2].start.format('YYYY-MM-DD')).toBe('2025-01-10') // Friday
-      expect(result[3].start.format('YYYY-MM-DD')).toBe('2025-01-13') // Monday
+      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z') // Monday
+      expect(result[1].start.toISOString()).toBe('2025-01-08T09:00:00.000Z') // Wednesday
+      expect(result[2].start.toISOString()).toBe('2025-01-10T09:00:00.000Z') // Friday
+      expect(result[3].start.toISOString()).toBe('2025-01-13T09:00:00.000Z') // Monday
     })
 
     it('should handle every-2-weeks pattern correctly', () => {
@@ -119,10 +158,10 @@ describe('RecurrenceHandler', () => {
       )
 
       expect(result).toHaveLength(4)
-      expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06') // Week 1 Monday
-      expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-20') // Week 3 Monday (skip week 2)
-      expect(result[2].start.format('YYYY-MM-DD')).toBe('2025-02-03') // Week 5 Monday
-      expect(result[3].start.format('YYYY-MM-DD')).toBe('2025-02-17') // Week 7 Monday
+      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z') // Week 1 Monday
+      expect(result[1].start.toISOString()).toBe('2025-01-20T09:00:00.000Z') // Week 3 Monday (skip week 2)
+      expect(result[2].start.toISOString()).toBe('2025-02-03T09:00:00.000Z') // Week 5 Monday
+      expect(result[3].start.toISOString()).toBe('2025-02-17T09:00:00.000Z') // Week 7 Monday
     })
 
     it('should stop at end date when endType is "on"', () => {
@@ -145,15 +184,23 @@ describe('RecurrenceHandler', () => {
 
       // Should generate from Jan 6-10 (5 days)
       expect(result).toHaveLength(5)
-      expect(result[result.length - 1].start.format('YYYY-MM-DD')).toBe(
-        '2025-01-10'
+      expect(result[result.length - 1].start.toISOString()).toBe(
+        '2025-01-10T09:00:00.000Z'
       )
     })
 
     it('should respect exceptions in recurrence pattern', () => {
       const exceptions = [
-        dayjs('2025-01-07'), // Skip Tuesday
-        dayjs('2025-01-09'), // Skip Thursday
+        {
+          date: dayjs('2025-01-07'), // Skip Tuesday
+          type: 'this' as const,
+          createdAt: dayjs(),
+        },
+        {
+          date: dayjs('2025-01-09'), // Skip Thursday
+          type: 'this' as const,
+          createdAt: dayjs(),
+        },
       ]
 
       const recurrence: EventRecurrence = {
@@ -177,11 +224,9 @@ describe('RecurrenceHandler', () => {
       // Should have 10 occurrences but skip the exception dates
       expect(result).toHaveLength(10)
 
-      const resultDates = result.map((event) =>
-        event.start.format('YYYY-MM-DD')
-      )
-      expect(resultDates).not.toContain('2025-01-07')
-      expect(resultDates).not.toContain('2025-01-09')
+      const resultDates = result.map((event) => event.start.toISOString())
+      expect(resultDates).not.toContain('2025-01-07T09:00:00.000Z')
+      expect(resultDates).not.toContain('2025-01-09T09:00:00.000Z')
     })
 
     it('should handle monthly recurrence correctly', () => {
@@ -203,9 +248,9 @@ describe('RecurrenceHandler', () => {
       )
 
       expect(result).toHaveLength(3)
-      expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06') // January 6th
-      expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-02-06') // February 6th
-      expect(result[2].start.format('YYYY-MM-DD')).toBe('2025-03-06') // March 6th
+      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z') // January 6th
+      expect(result[1].start.toISOString()).toBe('2025-02-06T09:00:00.000Z') // February 6th
+      expect(result[2].start.toISOString()).toBe('2025-03-06T09:00:00.000Z') // March 6th
     })
 
     it('should handle yearly recurrence correctly', () => {
@@ -227,9 +272,9 @@ describe('RecurrenceHandler', () => {
       )
 
       expect(result).toHaveLength(3)
-      expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06') // 2025
-      expect(result[1].start.format('YYYY-MM-DD')).toBe('2026-01-06') // 2026
-      expect(result[2].start.format('YYYY-MM-DD')).toBe('2027-01-06') // 2027
+      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z') // 2025
+      expect(result[1].start.toISOString()).toBe('2026-01-06T09:00:00.000Z') // 2026
+      expect(result[2].start.toISOString()).toBe('2027-01-06T09:00:00.000Z') // 2027
     })
 
     it('should preserve event duration across all instances', () => {
@@ -412,9 +457,9 @@ describe('RecurrenceHandler', () => {
 
       // Should fall back to weekly without specific days
       expect(result).toHaveLength(3)
-      expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06')
-      expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-13')
-      expect(result[2].start.format('YYYY-MM-DD')).toBe('2025-01-20')
+      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z')
+      expect(result[1].start.toISOString()).toBe('2025-01-13T09:00:00.000Z')
+      expect(result[2].start.toISOString()).toBe('2025-01-20T09:00:00.000Z')
     })
 
     it('should handle events that start before the generation range', () => {

@@ -1,4 +1,8 @@
-import type { CalendarEvent, EventRecurrence } from '@/components/types'
+import type {
+  CalendarEvent,
+  EventRecurrence,
+  RecurrenceException,
+} from '@/components/types'
 import type dayjs from '@/lib/dayjs-config'
 import { DAY_NUMBER_TO_WEEK_DAYS, WEEK_DAYS_NUMBER_MAP } from '../constants'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
@@ -11,6 +15,7 @@ export class RecurrenceHandler {
   /**
    * Generates recurring event instances based on recurrence pattern
    * Similar to Google Calendar's recurrence logic
+   * For non-recurring events, returns the event if it falls within the range
    */
   static generateRecurringEvents(
     baseEvent: CalendarEvent,
@@ -18,7 +23,14 @@ export class RecurrenceHandler {
     endDate: dayjs.Dayjs
   ): CalendarEvent[] {
     if (!baseEvent.recurrence) {
-      return [baseEvent]
+      // Check if the base event falls within the range
+      if (
+        baseEvent.start.isSameOrAfter(startDate) &&
+        baseEvent.start.isSameOrBefore(endDate)
+      ) {
+        return [baseEvent]
+      }
+      return []
     }
 
     const events: CalendarEvent[] = []
@@ -58,7 +70,7 @@ export class RecurrenceHandler {
       ) {
         // Skip if this date is in exceptions
         const isException = recurrence.exceptions?.some((exception) =>
-          currentDate.isSame(exception, 'day')
+          this.isDateExcluded(currentDate, exception)
         )
 
         if (!isException) {
@@ -90,6 +102,33 @@ export class RecurrenceHandler {
     }
 
     return events
+  }
+
+  /**
+   * Checks if a date should be excluded based on recurrence exceptions
+   */
+  private static isDateExcluded(
+    date: dayjs.Dayjs,
+    exception: RecurrenceException
+  ): boolean {
+    const exceptionDate = exception.date
+
+    switch (exception.type) {
+      case 'this':
+        // Exclude only the specific date
+        return date.isSame(exceptionDate, 'day')
+
+      case 'following':
+        // Exclude this date and all following dates
+        return date.isSameOrAfter(exceptionDate, 'day')
+
+      case 'all':
+        // This would exclude the entire series, should be handled at a higher level
+        return true
+
+      default:
+        return false
+    }
   }
 
   /**
@@ -282,7 +321,51 @@ export class RecurrenceHandler {
   }
 
   /**
+   * Handles deleting recurring events using the enhanced exception system
+   * Instead of actually removing events, adds appropriate exceptions
+   */
+  static deleteRecurringEventWithExceptions(
+    events: CalendarEvent[],
+    targetEvent: CalendarEvent,
+    options: RecurrenceEditOptions
+  ): CalendarEvent[] {
+    const { scope, eventDate } = options
+    const parentId = targetEvent.parentEventId || targetEvent.id
+
+    // Find the base recurring event
+    const baseEvent = events.find((e) => e.id === parentId)
+    if (!baseEvent || !baseEvent.recurrence) {
+      return events
+    }
+
+    // Create the exception
+    const exception: RecurrenceException = {
+      date: eventDate,
+      type: scope,
+      createdAt: eventDate, // Using eventDate as createdAt for simplicity
+    }
+
+    // Update the base event with the new exception
+    const updatedEvents = events.map((event) => {
+      if (event.id === parentId) {
+        const currentExceptions = event.recurrence?.exceptions || []
+        return {
+          ...event,
+          recurrence: {
+            ...event.recurrence!,
+            exceptions: [...currentExceptions, exception],
+          },
+        }
+      }
+      return event
+    })
+
+    return updatedEvents
+  }
+
+  /**
    * Handles deleting recurring events based on Google Calendar-style edit scope
+   * @deprecated Use deleteRecurringEventWithExceptions for better performance
    */
   static deleteRecurringEvent(
     events: CalendarEvent[],

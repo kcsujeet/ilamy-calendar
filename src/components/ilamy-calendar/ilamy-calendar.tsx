@@ -12,6 +12,7 @@ import type {
   CalendarEvent,
   IlamyCalendarEvent,
   WeekDays,
+  EventRecurrence,
 } from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 // oxlint-disable-next-line no-duplicates
@@ -23,16 +24,26 @@ export function normalizePublicFacingCalendarEvent(
   events: IlamyCalendarEvent[]
 ): CalendarEvent[] {
   return events.map((event) => {
-    const recurrence = event.recurrence
-    if (recurrence) {
-      recurrence.endDate = recurrence?.endDate
-        ? dayjs.isDayjs(recurrence.endDate)
-          ? recurrence.endDate
-          : dayjs(recurrence.endDate)
-        : undefined
-      recurrence.exceptions = recurrence?.exceptions?.map((e) =>
-        dayjs.isDayjs(e) ? e : dayjs(e)
-      )
+    let normalizedRecurrence: EventRecurrence | undefined = undefined
+
+    if (event.recurrence) {
+      normalizedRecurrence = {
+        ...event.recurrence,
+        endDate: event.recurrence?.endDate
+          ? dayjs.isDayjs(event.recurrence.endDate)
+            ? event.recurrence.endDate
+            : dayjs(event.recurrence.endDate)
+          : undefined,
+        // Convert old format exceptions (simple dates) to new RecurrenceException format
+        exceptions:
+          event.recurrence?.exceptions?.map((e) => {
+            return {
+              date: dayjs.isDayjs(e) ? e : dayjs(e),
+              type: 'this' as const,
+              createdAt: dayjs(),
+            }
+          }) || [],
+      }
     }
 
     return {
@@ -49,7 +60,7 @@ export function normalizePublicFacingCalendarEvent(
           ? event.originalEnd
           : dayjs(event.originalEnd)
         : undefined,
-      recurrence: recurrence,
+      recurrence: normalizedRecurrence,
     } as CalendarEvent
   })
 }

@@ -53,32 +53,87 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [currentLocale, setCurrentLocale] = useState<string>(locale || 'en')
   const [currentTimezone, setCurrentTimezone] = useState<string>(timezone || '')
 
-  // Process events to include recurring instances
-  const processedEvents = useMemo(() => {
-    const allEvents: CalendarEvent[] = []
+  // Helper function to get events for a specific date range (on-demand generation)
+  const getEventsForRange = useCallback(
+    (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs): CalendarEvent[] => {
+      const allEvents: CalendarEvent[] = []
 
-    // Calculate a reasonable range for generating recurring events
-    // Generate events for ±2 years from current date to cover most views
-    const rangeStart = currentDate.subtract(2, 'year').startOf('year')
-    const rangeEnd = currentDate.add(2, 'year').endOf('year')
+      for (const event of currentEvents) {
+        if (event.recurrence) {
+          // Check if the entire series is excluded by 'all' type exceptions
+          const hasAllException = event.recurrence.exceptions?.some(
+            (exception) => exception.type === 'all'
+          )
 
-    for (const event of currentEvents) {
-      if (event.recurrence) {
-        // Generate recurring instances
-        const recurringEvents = RecurrenceHandler.generateRecurringEvents(
-          event,
-          rangeStart,
-          rangeEnd
-        )
-        allEvents.push(...recurringEvents)
-      } else {
-        // Add non-recurring events as-is
-        allEvents.push(event)
+          if (!hasAllException) {
+            // Generate recurring instances for the specific range
+            const recurringEvents = RecurrenceHandler.generateRecurringEvents(
+              event,
+              startDate,
+              endDate
+            )
+            allEvents.push(...recurringEvents)
+          }
+        } else if (
+          event.start.isSameOrAfter(startDate) &&
+          event.start.isSameOrBefore(endDate)
+        ) {
+          // Add non-recurring events if they fall within the range
+          allEvents.push(event)
+        }
       }
-    }
 
-    return allEvents
-  }, [currentEvents, currentDate])
+      return allEvents
+    },
+    [currentEvents]
+  )
+
+  // Get the current view's date range for on-demand event generation
+  const getCurrentViewRange = useCallback(() => {
+    switch (view) {
+      case 'day':
+        return {
+          start: currentDate.startOf('day'),
+          end: currentDate.endOf('day'),
+        }
+      case 'week':
+        return {
+          start: currentDate
+            .startOf('week')
+            .subtract(firstDayOfWeek === 1 ? 1 : 0, 'day'),
+          end: currentDate
+            .endOf('week')
+            .add(firstDayOfWeek === 1 ? 1 : 0, 'day'),
+        }
+      case 'month':
+        return {
+          start: currentDate
+            .startOf('month')
+            .startOf('week')
+            .subtract(firstDayOfWeek === 1 ? 1 : 0, 'day'),
+          end: currentDate
+            .endOf('month')
+            .endOf('week')
+            .add(firstDayOfWeek === 1 ? 1 : 0, 'day'),
+        }
+      case 'year':
+        return {
+          start: currentDate.startOf('year'),
+          end: currentDate.endOf('year'),
+        }
+      default:
+        return {
+          start: currentDate.startOf('month'),
+          end: currentDate.endOf('month'),
+        }
+    }
+  }, [currentDate, view, firstDayOfWeek])
+
+  // Get processed events for the current view (on-demand)
+  const processedEvents = useMemo(() => {
+    const { start, end } = getCurrentViewRange()
+    return getEventsForRange(start, end)
+  }, [getEventsForRange, getCurrentViewRange])
 
   // Update events when events prop changes
   useEffect(() => {
@@ -182,7 +237,11 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const deleteRecurringEvent = useCallback(
     (event: CalendarEvent, options: RecurrenceEditOptions) => {
       setCurrentEvents((prevEvents) =>
-        RecurrenceHandler.deleteRecurringEvent(prevEvents, event, options)
+        RecurrenceHandler.deleteRecurringEventWithExceptions(
+          prevEvents,
+          event,
+          options
+        )
       )
     },
     []
@@ -277,10 +336,11 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   // Event query functions
   const getEventsForDateRange = useCallback(
     (start: dayjs.Dayjs, end: dayjs.Dayjs): CalendarEvent[] => {
-      const startDate = start.startOf('day')
-      const endDate = end.endOf('day')
+      // Use on-demand generation for the requested range
+      return getEventsForRange(start, end).filter((event) => {
+        const startDate = start.startOf('day')
+        const endDate = end.endOf('day')
 
-      return processedEvents.filter((event) => {
         return (
           // Case 1: Event starts within the range
           ((event.start.isAfter(startDate) || event.start.isSame(startDate)) &&
@@ -293,7 +353,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
         )
       })
     },
-    [processedEvents]
+    [getEventsForRange]
   )
 
   const getEventsForDate = useCallback(

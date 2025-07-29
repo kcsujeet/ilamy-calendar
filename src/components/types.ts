@@ -28,11 +28,22 @@ export interface EventRecurrence {
    */
   daysOfWeek?: WeekDays[]
   /**
-   * Specific dates to exclude from the recurrence pattern
-   * Useful for holidays or one-off cancellations
-   * Accepts dayjs objects, Date objects, or ISO date strings
+   * Enhanced exceptions that support different delete operations
+   * Can be simple dates (backwards compatibility) or enhanced exception objects
    */
-  exceptions?: dayjs.Dayjs[]
+  exceptions?: RecurrenceException[]
+}
+
+/**
+ * Enhanced exception for recurring events that supports different delete operations
+ */
+export interface RecurrenceException {
+  /** The date of the exception */
+  date: dayjs.Dayjs
+  /** The type of exception operation */
+  type: 'this' | 'following' | 'all'
+  /** When this exception was created (for tracking order) */
+  createdAt: dayjs.Dayjs
 }
 
 /**

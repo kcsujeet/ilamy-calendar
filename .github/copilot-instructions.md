@@ -232,6 +232,53 @@ import type { CalendarEvent } from '@/components/types'
 - Hot reloading enabled for rapid development
 - Build script supports sourcemaps and various output formats
 
+### 🚨 CRITICAL: Strict Test Assertion Guidelines
+
+**NEVER use weak assertions in tests - always be precise and exact:**
+
+- ❌ **NEVER** use `toBeGreaterThan(0)` for count checks
+- ✅ **ALWAYS** use exact counts: `toHaveLength(3)`, `toHaveLength(5)`, etc.
+- ❌ **NEVER** use vague assertions like "should render something"
+- ✅ **ALWAYS** verify exact behavior: specific elements, exact positioning, precise values
+- ❌ **AVOID** complex style matching that can break due to testing library issues
+- ✅ **PREFER** direct property checks: `instance.style.position`, `instance.getAttribute()`
+- ❌ **NEVER** assume implementation details - test observable behavior
+- ✅ **ALWAYS** test with exact test ID patterns and specific DOM queries
+
+**Examples of Good vs Bad Assertions:**
+
+```tsx
+// ❌ BAD - Weak assertion
+expect(screen.getAllByTestId(/event-/).length).toBeGreaterThan(0)
+
+// ✅ GOOD - Exact assertion
+expect(screen.getAllByTestId(/event-/)).toHaveLength(3)
+
+// ❌ BAD - Vague check
+expect(eventInstances.length).toBeGreaterThan(0)
+
+// ✅ GOOD - Specific validation
+expect(eventInstances).toHaveLength(5)
+eventInstances.forEach((instance) => {
+  expect(instance.getAttribute('data-testid')).toMatch(/event-id-\d+/)
+  expect(instance).toBeInTheDocument()
+})
+
+// ❌ BAD - Fragile style testing
+expect(instance).toHaveStyle({ position: 'absolute' })
+
+// ✅ GOOD - Direct property check
+expect(instance.style.position).toBe('absolute')
+```
+
+**Apply strict assertions to all test scenarios:**
+
+- Recurring event counts: exact instances, not "greater than 0"
+- Element positioning: specific coordinates or property values
+- Component rendering: exact elements and their properties
+- Data validation: precise values, not ranges
+- User interactions: exact state changes and side effects
+
 ## Common Patterns to Follow
 
 - Always destructure what you need from `useCalendarContext()`

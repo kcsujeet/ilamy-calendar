@@ -247,11 +247,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const deleteRecurringEvent = useCallback(
     (event: CalendarEvent, options: RecurrenceEditOptions) => {
       setCurrentEvents((prevEvents) =>
-        RecurrenceHandler.deleteRecurringEventWithExceptions(
-          prevEvents,
-          event,
-          options
-        )
+        RecurrenceHandler.deleteRecurringEvent(prevEvents, event, options)
       )
     },
     []

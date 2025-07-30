@@ -26,6 +26,51 @@
 - ❌ WRONG: `dayjs().format('YYYY-MM-DD')` → `"2025-01-06"` (causes timezone bugs)
 - ✅ DISPLAY ONLY: `dayjs().format('YYYY-MM-DD')` → Only for showing dates to users
 
+### 🚨 CRITICAL: TEST-DRIVEN DEVELOPMENT (TDD) IS MANDATORY
+
+**TDD IS NON-NEGOTIABLE. NEVER WRITE CODE BEFORE WRITING TESTS.**
+
+**ALWAYS follow the Red-Green-Refactor cycle:**
+
+1. **🔴 RED**: Write a failing test that describes the desired behavior FIRST
+2. **🟢 GREEN**: Write the minimal code to make the test pass
+3. **🔵 REFACTOR**: Improve the code while keeping tests green
+
+**CRITICAL TDD RULES:**
+
+- **NEVER implement any function, component, or feature without writing tests first**
+- **NEVER create new files - always update existing test files when adding tests**
+- **NEVER create new functions - always replace or update existing implementations**
+- **ALL code changes must start with failing tests**
+- **Tests must use exact assertions - NEVER use weak checks like `toBeGreaterThan(0)`**
+- **Always use precise counts: `toHaveLength(3)`, `toBe('exact-value')`, etc.**
+- **Test behavior, not implementation details**
+- **Co-locate tests with components: `component.test.tsx`**
+
+**Examples of TDD Violations (NEVER DO THIS):**
+
+- ❌ Writing implementation code before tests
+- ❌ Creating new test files instead of updating existing ones
+- ❌ Creating new functions instead of replacing existing ones
+- ❌ Using weak assertions like `expect(result.length).toBeGreaterThan(0)`
+- ❌ Skipping tests for "quick fixes"
+
+**TDD SUCCESS PATTERN:**
+
+```typescript
+// 1. RED: Write failing test first
+it('should update only this recurring event instance', () => {
+  const result = updateRecurringEvent(events, target, updates, {
+    scope: 'this',
+  })
+  expect(result[0].recurrence?.updates).toHaveLength(1) // Exact assertion
+  expect(result[0].recurrence?.updates?.[0].type).toBe('this') // Precise check
+})
+
+// 2. GREEN: Implement minimal code to pass
+// 3. REFACTOR: Improve while keeping tests green
+```
+
 ## Project Overview
 
 A full-featured React calendar component library built with Bun, TypeScript, and modern React patterns. The project uses a component-based architecture with multiple calendar views (month, week, day, year) and advanced features like drag-and-drop, recurring events, and internationalization.
@@ -151,18 +196,29 @@ This structure ensures code remains maintainable, testable, and scalable as the 
 
 ### Test-Driven Development (TDD)
 
+**⚠️ CRITICAL: TDD IS MANDATORY - NO EXCEPTIONS**
+
 - **Write tests FIRST** before implementing any new functionality
 - **All new code must have meaningful tests** - no exceptions
+- **NEVER create new files - always update existing test files when adding tests**
+- **NEVER create new functions - always replace or update existing implementations**
 - Test files should be co-located with components: `component.test.tsx`
 - Use `bun test` for running tests (no Jest/Vitest)
 - Test structure:
   - Unit tests for utilities and pure functions
   - Component tests for UI behavior and interactions
   - Integration tests for context and provider logic
-- Follow the Red-Green-Refactor cycle:
-  1. **Red**: Write failing test that describes desired behavior
-  2. **Green**: Write minimal code to make test pass
-  3. **Refactor**: Improve code while keeping tests green
+- **Mandatory Red-Green-Refactor cycle:**
+  1. **🔴 Red**: Write failing test that describes desired behavior FIRST
+  2. **🟢 Green**: Write minimal code to make test pass
+  3. **🔵 Refactor**: Improve code while keeping tests green
+
+**STRICT TEST ASSERTION RULES:**
+
+- **NEVER use weak assertions** like `toBeGreaterThan(0)` for count checks
+- **ALWAYS use exact counts**: `toHaveLength(3)`, `toBe('exact-value')`, etc.
+- **Test behavior, not implementation details**
+- **Use precise assertions for every expectation**
 
 ### Component Development
 
@@ -246,8 +302,11 @@ import type { CalendarEvent } from '@/components/types'
 ## Testing & Debugging
 
 - **Test-First Development**: Always write tests before implementation
+- **🚨 CRITICAL: TDD IS MANDATORY** - Never implement code without tests first
 - Use `bun test` for testing (no Jest/Vitest)
 - **Mandatory test coverage**: Every new function, component, and feature must have tests
+- **NEVER create new test files - always update existing test files when adding tests**
+- **NEVER create new functions - always replace or update existing implementations**
 - Test file naming: `component.test.tsx` or `utility.test.ts`
 - Focus on testing behavior, not implementation details
 - Mock external dependencies and focus on unit isolation

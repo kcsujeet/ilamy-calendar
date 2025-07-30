@@ -32,6 +32,11 @@ export interface EventRecurrence {
    * Can be simple dates (backwards compatibility) or enhanced exception objects
    */
   exceptions?: RecurrenceException[]
+  /**
+   * Enhanced updates that support different update operations
+   * Stores modifications to specific instances of recurring events
+   */
+  updates?: RecurrenceUpdate[]
 }
 
 /**
@@ -43,6 +48,20 @@ export interface RecurrenceException {
   /** The type of exception operation */
   type: 'this' | 'following' | 'all'
   /** When this exception was created (for tracking order) */
+  createdAt: dayjs.Dayjs
+}
+
+/**
+ * Enhanced update for recurring events that supports different update operations
+ */
+export interface RecurrenceUpdate {
+  /** The date of the update */
+  date: dayjs.Dayjs
+  /** The type of update operation */
+  type: 'this' | 'following' | 'all'
+  /** The updates to apply to the event */
+  updates: Partial<CalendarEvent>
+  /** When this update was created (for tracking order) */
   createdAt: dayjs.Dayjs
 }
 
@@ -108,6 +127,11 @@ export interface CalendarEvent {
    * @internal Used to track exceptions in recurring series
    */
   isException?: boolean
+  /**
+   * Whether this instance has been modified from the original recurring event
+   * @internal Used to track updates in recurring series
+   */
+  isModified?: boolean
   /**
    * Custom data associated with the event
    * Use this to store additional metadata specific to your application

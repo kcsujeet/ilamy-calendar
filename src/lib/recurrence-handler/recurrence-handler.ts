@@ -2,6 +2,7 @@ import type {
   CalendarEvent,
   EventRecurrence,
   RecurrenceException,
+  RecurrenceUpdate,
 } from '@/components/types'
 import type dayjs from '@/lib/dayjs-config'
 import { DAY_NUMBER_TO_WEEK_DAYS, WEEK_DAYS_NUMBER_MAP } from '../constants'
@@ -77,7 +78,13 @@ export class RecurrenceHandler {
           const eventStart = currentDate.clone()
           const eventEnd = eventStart.add(eventDuration, 'millisecond')
 
-          events.push({
+          // Check if there's an update for this specific date
+          const updateForDate = recurrence.updates?.find(
+            (update) =>
+              update.date.isSame(currentDate, 'day') && update.type === 'this'
+          )
+
+          const eventInstance = {
             ...baseEvent,
             id: `${baseEvent.id}_${currentDate.toISOString()}`,
             start: eventStart,
@@ -86,7 +93,15 @@ export class RecurrenceHandler {
             parentEventId: baseEvent.id,
             originalStart: baseEvent.start,
             originalEnd: baseEvent.end,
-          })
+          }
+
+          // Apply any updates for this specific date
+          if (updateForDate) {
+            Object.assign(eventInstance, updateForDate.updates)
+            eventInstance.isModified = true
+          }
+
+          events.push(eventInstance)
 
           occurrenceCount++
         }
@@ -293,7 +308,7 @@ export class RecurrenceHandler {
   }
 
   /**
-   * Handles updating recurring events based on Google Calendar-style edit scope
+   * Handles updating recurring events using the enhanced updates system
    */
   static updateRecurringEvent(
     events: CalendarEvent[],
@@ -302,6 +317,13 @@ export class RecurrenceHandler {
     options: RecurrenceEditOptions
   ): CalendarEvent[] {
     const { scope, eventDate } = options
+    const parentId = String(targetEvent.parentEventId || targetEvent.id)
+
+    // Find the base recurring event
+    const baseEvent = events.find((e) => e.id === parentId)
+    if (!baseEvent || !baseEvent.recurrence) {
+      return events
+    }
 
     switch (scope) {
       case 'this':
@@ -324,7 +346,7 @@ export class RecurrenceHandler {
    * Handles deleting recurring events using the enhanced exception system
    * Instead of actually removing events, adds appropriate exceptions
    */
-  static deleteRecurringEventWithExceptions(
+  static deleteRecurringEvent(
     events: CalendarEvent[],
     targetEvent: CalendarEvent,
     options: RecurrenceEditOptions
@@ -364,30 +386,7 @@ export class RecurrenceHandler {
   }
 
   /**
-   * Handles deleting recurring events based on Google Calendar-style edit scope
-   * @deprecated Use deleteRecurringEventWithExceptions for better performance
-   */
-  static deleteRecurringEvent(
-    events: CalendarEvent[],
-    targetEvent: CalendarEvent,
-    options: RecurrenceEditOptions
-  ): CalendarEvent[] {
-    const { scope, eventDate } = options
-
-    switch (scope) {
-      case 'this':
-        return this.deleteThisEvent(events, targetEvent, eventDate)
-      case 'following':
-        return this.deleteFollowingEvents(events, targetEvent, eventDate)
-      case 'all':
-        return this.deleteAllEvents(events, targetEvent)
-      default:
-        return events
-    }
-  }
-
-  /**
-   * Update only this specific event instance
+   * Update only this specific event instance by storing the update in the recurrence pattern
    */
   private static updateThisEvent(
     events: CalendarEvent[],
@@ -395,22 +394,40 @@ export class RecurrenceHandler {
     updates: Partial<CalendarEvent>,
     eventDate: dayjs.Dayjs
   ): CalendarEvent[] {
-    const parentId = targetEvent.parentEventId || targetEvent.id
+    const parentId = String(targetEvent.parentEventId || targetEvent.id)
 
+    // Create a recurrence update for this specific date
+    const recurrenceUpdate: RecurrenceUpdate = {
+      date: eventDate,
+      type: 'this',
+      updates: updates,
+      createdAt: eventDate,
+    }
+
+    // Add the update to the base event's recurrence pattern
     return events.map((event) => {
-      // Find the specific recurring instance for this date
-      if (
-        (event.parentEventId === parentId || event.id === parentId) &&
-        event.start.isSame(eventDate, 'day')
-      ) {
-        return { ...event, ...updates }
+      if (event.id === parentId) {
+        const currentUpdates = event.recurrence?.updates || []
+
+        // Remove any existing update for this date to avoid duplicates
+        const filteredUpdates = currentUpdates.filter(
+          (update) => !update.date.isSame(eventDate, 'day')
+        )
+
+        return {
+          ...event,
+          recurrence: {
+            ...event.recurrence!,
+            updates: [...filteredUpdates, recurrenceUpdate],
+          },
+        }
       }
       return event
     })
   }
 
   /**
-   * Update this and all following events in the series
+   * Update this and all following events by creating modified overrides
    */
   private static updateFollowingEvents(
     events: CalendarEvent[],
@@ -418,32 +435,70 @@ export class RecurrenceHandler {
     updates: Partial<CalendarEvent>,
     eventDate: dayjs.Dayjs
   ): CalendarEvent[] {
-    const parentId = targetEvent.parentEventId || targetEvent.id
+    const parentId = String(targetEvent.parentEventId || targetEvent.id)
 
-    return events.map((event) => {
-      // Update the parent event and all instances on or after the target date
-      if (
-        (event.parentEventId === parentId || event.id === parentId) &&
-        (event.start.isSameOrAfter(eventDate, 'day') || event.id === parentId)
-      ) {
-        return { ...event, ...updates }
+    // Find the base recurring event
+    const baseEvent = events.find((e) => e.id === parentId)
+    if (!baseEvent || !baseEvent.recurrence) {
+      return events
+    }
+
+    // Create a new recurring event with the updates, starting from the target date
+    const newRecurringEvent: CalendarEvent = {
+      ...baseEvent,
+      ...updates,
+      id: `${parentId}_following_${eventDate.toISOString()}`,
+      start: updates.start || eventDate,
+      end:
+        updates.end ||
+        eventDate.add(baseEvent.end.diff(baseEvent.start), 'millisecond'),
+      recurrence: {
+        ...baseEvent.recurrence,
+        exceptions: [], // New series starts clean
+        updates: [], // New series starts clean
+      },
+      parentEventId: undefined,
+      originalStart: updates.start || eventDate,
+      originalEnd:
+        updates.end ||
+        eventDate.add(baseEvent.end.diff(baseEvent.start), 'millisecond'),
+    }
+
+    // Terminate the original series by setting an end date just before the target date
+    const terminationDate = eventDate.subtract(1, 'day')
+
+    const updatedEvents = events.map((event) => {
+      if (event.id === parentId) {
+        return {
+          ...event,
+          recurrence: {
+            ...event.recurrence!,
+            endType: 'on' as const,
+            endDate: terminationDate,
+            count: undefined, // Clear count when using end date
+          },
+        }
       }
       return event
     })
+
+    // Add the new recurring series
+    return [...updatedEvents, newRecurringEvent]
   }
 
   /**
-   * Update all events in the recurring series
+   * Update all events in the recurring series by modifying the base event
    */
   private static updateAllEvents(
     events: CalendarEvent[],
     targetEvent: CalendarEvent,
     updates: Partial<CalendarEvent>
   ): CalendarEvent[] {
-    const parentId = targetEvent.parentEventId || targetEvent.id
+    const parentId = String(targetEvent.parentEventId || targetEvent.id)
 
+    // For "all" updates, we can safely update the base event since we want all instances to change
     return events.map((event) => {
-      if (event.parentEventId === parentId || event.id === parentId) {
+      if (event.id === parentId) {
         return { ...event, ...updates }
       }
       return event

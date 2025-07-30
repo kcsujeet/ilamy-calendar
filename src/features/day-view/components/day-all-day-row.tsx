@@ -6,11 +6,14 @@ import type { CalendarEvent, ProcessedCalendarEvent } from '@/components/types'
 import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 
 export const DayAllDayRow = () => {
-  const { currentDate, getEventsForDate } = useCalendarContext()
+  const { currentDate, getEventsForDateRange } = useCalendarContext()
 
   // Get current day's events - this will refresh automatically when store updates
-  // because getEventsForDate is a selector function from the store that runs whenever events change
-  const dayEvents = getEventsForDate(currentDate)
+  // because getEventsForDateRange is a selector function from the store that runs whenever events change
+  const dayEvents = getEventsForDateRange(
+    currentDate.startOf('day'),
+    currentDate.endOf('day')
+  )
 
   // Separate all-day events from regular events
   const { allDayEvents } = useMemo(() => {

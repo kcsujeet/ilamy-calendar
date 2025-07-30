@@ -12,7 +12,7 @@ let firstDayOfWeek = 0 // Default to Sunday
 let dayMaxEvents = 3 // Default max events per day
 let locale = 'en' // Default locale
 
-const renderCalendar = (props = {}) => {
+const renderDayView = (props = {}) => {
   return render(
     <CalendarProvider
       firstDayOfWeek={firstDayOfWeek}
@@ -34,7 +34,7 @@ describe('DayView', () => {
   })
 
   test('renders day view structure with proper layout', () => {
-    renderCalendar()
+    renderDayView()
 
     // Should have the main container structure
     const container = screen.getByTestId('day-view')
@@ -58,7 +58,7 @@ describe('DayView', () => {
   })
 
   test('renders time column with 24 hour slots', () => {
-    renderCalendar()
+    renderDayView()
 
     const timeCol = screen.getByTestId('day-time-col')
     expect(timeCol).toBeInTheDocument()
@@ -70,7 +70,7 @@ describe('DayView', () => {
   })
 
   test('renders events column structure', () => {
-    renderCalendar()
+    renderDayView()
 
     const eventsColumn = screen.getByTestId('day-events-column')
     expect(eventsColumn).toBeInTheDocument()
@@ -85,7 +85,7 @@ describe('DayView', () => {
   test('displays current date correctly in header', () => {
     // Use today's actual date since the component might be defaulting to current date
     const today = dayjs()
-    renderCalendar()
+    renderDayView()
 
     const header = screen.getByTestId('day-header')
     expect(header).toBeInTheDocument()
@@ -101,7 +101,7 @@ describe('DayView', () => {
   test('shows today indicator for current day', () => {
     // Set the current date to today to ensure today indicator appears
     const today = dayjs()
-    renderCalendar({ initialDate: today.toDate() })
+    renderDayView({ initialDate: today.toDate() })
 
     // Today indicator should be present if viewing today
     const timeIndicator = screen.queryByTestId('day-current-time-indicator')
@@ -115,7 +115,7 @@ describe('DayView', () => {
   //   test('does not show today indicator for other days', () => {
   //     // Set the date to a different day
   //     const otherDay = dayjs().add(1, 'day')
-  //     renderCalendar({ initialDate: otherDay.toDate() })
+  //     renderDayView({ initialDate: otherDay.toDate() })
 
   //     // Today indicator should not be present
   //     const timeIndicator = screen.queryByTestId('day-current-time-indicator')
@@ -123,7 +123,7 @@ describe('DayView', () => {
   //   })
 
   test('renders all-day events section', () => {
-    renderCalendar()
+    renderDayView()
 
     const allDayRow = screen.getByTestId('day-all-day-row')
     expect(allDayRow).toBeInTheDocument()
@@ -133,7 +133,7 @@ describe('DayView', () => {
   })
 
   test('handles different locale settings', () => {
-    renderCalendar({ locale: 'en' })
+    renderDayView({ locale: 'en' })
 
     // Should render with English locale
     const header = screen.getByTestId('day-header')
@@ -141,7 +141,7 @@ describe('DayView', () => {
   })
 
   test('renders time grid with proper height calculation', () => {
-    renderCalendar()
+    renderDayView()
 
     const timeGrid = screen.getByTestId('day-time-grid')
     expect(timeGrid).toBeInTheDocument()
@@ -152,7 +152,7 @@ describe('DayView', () => {
 
   test('shows today badge in header when viewing current day', () => {
     const today = dayjs()
-    renderCalendar({ initialDate: today.toDate() })
+    renderDayView({ initialDate: today.toDate() })
 
     // Should show "Today" badge when viewing current day
     if (today.isSame(dayjs(), 'day')) {
@@ -162,14 +162,14 @@ describe('DayView', () => {
 
   //   test('does not show today badge when viewing other days', () => {
   //     const otherDay = dayjs().add(1, 'day')
-  //     renderCalendar({ initialDate: otherDay.toDate() })
+  //     renderDayView({ initialDate: otherDay.toDate() })
 
   //     // Should not show "Today" badge for other days
   //     expect(screen.queryByText('Today')).toBeNull()
   //   })
 
   test('renders with proper scrollable structure', () => {
-    renderCalendar()
+    renderDayView()
 
     // Check for scrollable container
     const scrollArea = screen.getByTestId('day-scroll-area')

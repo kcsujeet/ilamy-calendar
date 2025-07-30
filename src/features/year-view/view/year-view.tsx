@@ -6,7 +6,7 @@ import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { AnimatePresence, motion } from 'motion/react'
 
 const YearView: React.FC = () => {
-  const { currentDate, selectDate, events, setView, getEventsForDate } =
+  const { currentDate, selectDate, events, setView, getEventsForDateRange } =
     useCalendarContext()
   const year = currentDate.year()
 
@@ -61,7 +61,10 @@ const YearView: React.FC = () => {
       const isCurrentDate = day.isSame(currentDate, 'day')
 
       // Get events for this day
-      const dayEvents = getEventsForDate(day)
+      const dayEvents = getEventsForDateRange(
+        day.startOf('day'),
+        day.endOf('day')
+      )
       const hasEvents = dayEvents.length > 0
 
       return {

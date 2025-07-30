@@ -28,7 +28,7 @@ let firstDayOfWeek = 0 // Default to Sunday
 let dayMaxEvents = 3 // Default max events per day
 let locale = 'en' // Default locale
 
-const renderCalendar = (props = {}) => {
+const renderYearView = (props = {}) => {
   return render(
     <CalendarProvider
       firstDayOfWeek={firstDayOfWeek}
@@ -50,7 +50,7 @@ describe('YearView', () => {
   })
 
   test('renders year view structure with proper layout', () => {
-    renderCalendar()
+    renderYearView()
 
     // Should have the main container structure
     const container = screen.getByTestId('year-view')
@@ -62,7 +62,7 @@ describe('YearView', () => {
   })
 
   test('renders all 12 months of the year', () => {
-    renderCalendar()
+    renderYearView()
 
     // Check that all 12 month containers are present
     for (let month = 1; month <= 12; month++) {
@@ -72,7 +72,7 @@ describe('YearView', () => {
   })
 
   test('renders month titles correctly', () => {
-    renderCalendar()
+    renderYearView()
 
     // Check that all month titles are present
     monthNames.forEach((monthName, index) => {
@@ -85,7 +85,7 @@ describe('YearView', () => {
   })
 
   test('renders mini calendars for each month', () => {
-    renderCalendar()
+    renderYearView()
 
     // Check that all 12 mini calendars are present
     for (let month = 1; month <= 12; month++) {
@@ -99,7 +99,7 @@ describe('YearView', () => {
   test('displays current year correctly', () => {
     const testYear = 2025
     const testDate = dayjs().year(testYear).month(5) // June 2025
-    renderCalendar({ initialDate: testDate.toDate() })
+    renderYearView({ initialDate: testDate.toDate() })
 
     // All months should be for the test year
     for (let month = 1; month <= 12; month++) {
@@ -109,7 +109,7 @@ describe('YearView', () => {
   })
 
   test('shows event counts for months with events', () => {
-    renderCalendar()
+    renderYearView()
 
     // Look for months that might have events
     // Since we're using mock events, we check if event count badges exist
@@ -123,7 +123,7 @@ describe('YearView', () => {
 
   test('renders day cells in mini calendars', () => {
     const testDate = dayjs('2025-01-15') // Use 2025 to match the current year
-    renderCalendar({ initialDate: testDate.toDate() })
+    renderYearView({ initialDate: testDate.toDate() })
 
     // Check for some specific days in January 2025 using getAllByTestId for duplicate dates
     const jan1Elements = screen.getAllByTestId('year-day-2025-01-2025-01-01')
@@ -138,7 +138,7 @@ describe('YearView', () => {
 
   test('highlights today in mini calendars', () => {
     const today = dayjs()
-    renderCalendar({ initialDate: today.toDate() })
+    renderYearView({ initialDate: today.toDate() })
 
     // Today should be highlighted in its mini calendar
     const todayElement = screen.getByTestId(
@@ -148,7 +148,7 @@ describe('YearView', () => {
   })
 
   test('shows weekday headers in mini calendars', () => {
-    renderCalendar()
+    renderYearView()
 
     // Should show weekday abbreviations (S, M, T, W, T, F, S)
     const weekdayHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -161,7 +161,7 @@ describe('YearView', () => {
 
   test('handles different year navigation', () => {
     const futureYear = dayjs().add(1, 'year')
-    renderCalendar({ initialDate: futureYear.toDate() })
+    renderYearView({ initialDate: futureYear.toDate() })
 
     // Should render all 12 months for the future year
     for (let month = 1; month <= 12; month++) {
@@ -171,7 +171,7 @@ describe('YearView', () => {
   })
 
   test('renders with proper scrollable structure', () => {
-    renderCalendar()
+    renderYearView()
 
     // Check for scrollable container
     const yearView = screen.getByTestId('year-view')
@@ -183,7 +183,7 @@ describe('YearView', () => {
   })
 
   test('handles locale settings', () => {
-    renderCalendar({ locale: 'en' })
+    renderYearView({ locale: 'en' })
 
     // Should render with English locale (month names in English)
     expect(screen.getByText('January')).toBeInTheDocument()
@@ -191,7 +191,7 @@ describe('YearView', () => {
   })
 
   test('displays proper grid layout for months', () => {
-    renderCalendar()
+    renderYearView()
 
     const yearGrid = screen.getByTestId('year-grid')
     expect(yearGrid).toBeInTheDocument()
@@ -206,7 +206,7 @@ describe('YearView', () => {
   })
 
   test('shows event indicators in day cells', () => {
-    renderCalendar()
+    renderYearView()
 
     // With mock events, some days should have event indicators
     // We check if the structure exists even if no specific events are guaranteed

@@ -31,7 +31,6 @@ export interface CalendarContextType {
   ) => void
   openEventForm: (date?: dayjs.Dayjs) => void
   closeEventForm: () => void
-  getEventsForDate: (date: dayjs.Dayjs) => CalendarEvent[]
   getEventsForDateRange: (
     start: dayjs.Dayjs,
     end: dayjs.Dayjs

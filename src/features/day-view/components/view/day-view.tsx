@@ -9,19 +9,16 @@ import { DayEventsLayer } from '../day-events-layer'
 import { DayHeader } from '../day-header'
 import { DayTimeCol } from '../day-time-col'
 
+// For more granular time slots, we'll divide each hour into 15-minute segments
+const timeSegments = [0, 15, 30, 45]
+
+// Hours to display (all 24 hours of the day)
+const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
+  return dayjs().hour(hour).minute(0)
+})
+
 const DayView = () => {
   const { currentDate } = useCalendarContext()
-
-  // Hours to display (all 24 hours of the day)
-  const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
-    return dayjs().hour(hour).minute(0)
-  })
-
-  // For more granular time slots, we'll divide each hour into 15-minute segments
-  const timeSegments = [0, 15, 30, 45]
-
-  // Get current day's events - this will refresh automatically when store updates
-  // because getEventsForDate is a selector function from the store that runs whenever events change
 
   const isToday = currentDate.isSame(dayjs(), 'day')
   const cellDate = currentDate.format('YYYY-MM-DD')

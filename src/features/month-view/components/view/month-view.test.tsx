@@ -21,7 +21,7 @@ const mockEvents: CalendarEvent[] = generateMockEvents()
 let firstDayOfWeek = 0 // Default to Sunday
 let dayMaxEvents = 3 // Default max events per day
 let locale = 'en' // Default locale
-const renderCalendar = (props = {}) => {
+const renderMonthView = (props = {}) => {
   return render(
     <CalendarProvider
       firstDayOfWeek={firstDayOfWeek}
@@ -41,7 +41,7 @@ describe('MonthView', () => {
     locale = 'en'
 
     // render the MonthView with default props
-    renderCalendar()
+    renderMonthView()
   })
 
   test('renders calendar structure with proper layout', () => {
@@ -69,7 +69,7 @@ describe('MonthView', () => {
 
   test('renders MonthView with correct weekday headers starting from Monday', () => {
     cleanup() // Clean up previous renders
-    const { container } = renderCalendar({ firstDayOfWeek: 1 }) // Set Monday as first day of week
+    const { container } = renderMonthView({ firstDayOfWeek: 1 }) // Set Monday as first day of week
 
     // When starting from Monday, all weekdays should still be present
     weekDays.forEach((day) => {

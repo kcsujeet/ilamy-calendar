@@ -13,7 +13,7 @@ const days = Array.from({ length: 7 }).map((_, i) =>
 // Mock events for testing
 const mockEvents: CalendarEvent[] = generateMockEvents({ count: 10 })
 let dayMaxEvents = 5 // Default max events per day
-const renderCalendar = (props = {}) => {
+const renderWeekEventsLayer = (props = {}) => {
   return render(
     <CalendarProvider
       dayMaxEvents={dayMaxEvents}
@@ -27,7 +27,7 @@ const renderCalendar = (props = {}) => {
 
 describe('WeekEventsLayer', () => {
   test('renders events for each day', () => {
-    renderCalendar()
+    renderWeekEventsLayer()
 
     expect(screen.getAllByRole('button')).toHaveLength(7) // 7 days in the week
   })
@@ -38,7 +38,7 @@ describe('WeekEventsLayer', () => {
       event.start = dayjs().startOf('day').add(1, 'hour')
       event.end = dayjs().startOf('day').add(2, 'hour')
     })
-    renderCalendar()
+    renderWeekEventsLayer()
     // should render only the max number of events per day
     expect(screen.getAllByRole('button').length).toBeLessThanOrEqual(
       dayMaxEvents
@@ -55,7 +55,7 @@ describe('WeekEventsLayer', () => {
       color: 'blue',
     }
 
-    renderCalendar({ events: [multiDayEvent] })
+    renderWeekEventsLayer({ events: [multiDayEvent] })
 
     const eventElement = screen.getByTestId(
       'week-event-layer-event-multi-day-1'
@@ -80,7 +80,7 @@ describe('WeekEventsLayer', () => {
       color: 'green',
     }
 
-    renderCalendar({ events: [wednesdayEvent] })
+    renderWeekEventsLayer({ events: [wednesdayEvent] })
 
     const eventElement = screen.getByTestId(
       'week-event-layer-event-wednesday-event'
@@ -122,7 +122,7 @@ describe('WeekEventsLayer', () => {
 
     const allEvents = [...mondayTuesdayEvents, shorterEvent]
 
-    renderCalendar({ events: allEvents, dayMaxEvents })
+    renderWeekEventsLayer({ events: allEvents, dayMaxEvents })
 
     // The shorter event should be rendered, but starting from Tuesday (not Monday)
     const shorterEventElement = screen.getByTestId(
@@ -180,7 +180,7 @@ describe('WeekEventsLayer', () => {
       },
     ]
 
-    renderCalendar({ events })
+    renderWeekEventsLayer({ events })
 
     // Get the positioned events
     const sundayWednesdayEvent = screen.getByTestId(
@@ -247,7 +247,7 @@ describe('WeekEventsLayer', () => {
         },
       }
 
-      renderCalendar({ events: [weeklyRecurringEvent] })
+      renderWeekEventsLayer({ events: [weeklyRecurringEvent] })
 
       // Should render exactly 3 instances (Monday, Wednesday, Friday)
       const recurringEventInstances = screen.getAllByTestId(
@@ -282,7 +282,7 @@ describe('WeekEventsLayer', () => {
         },
       }
 
-      renderCalendar({ events: [dailyRecurringEvent] })
+      renderWeekEventsLayer({ events: [dailyRecurringEvent] })
 
       // Should render exactly 5 instances (count: 5)
       const dailyEventInstances = screen.getAllByTestId(
@@ -335,7 +335,7 @@ describe('WeekEventsLayer', () => {
         },
       ]
 
-      renderCalendar({ events })
+      renderWeekEventsLayer({ events })
 
       // All events should be rendered with exact counts
       expect(
@@ -394,7 +394,7 @@ describe('WeekEventsLayer', () => {
         },
       }
 
-      renderCalendar({ events: [weeklyWithException] })
+      renderWeekEventsLayer({ events: [weeklyWithException] })
 
       // Should render exactly 1 instance (only this Monday, not the exception Monday)
       const mondayEventInstances = screen.getAllByTestId(
@@ -460,7 +460,7 @@ describe('WeekEventsLayer', () => {
         },
       ]
 
-      renderCalendar({ events })
+      renderWeekEventsLayer({ events })
 
       // Should render exact counts for each recurring event type
       const dailyEventInstances = screen.getAllByTestId(
@@ -535,7 +535,7 @@ describe('WeekEventsLayer', () => {
         },
       ]
 
-      renderCalendar({ events })
+      renderWeekEventsLayer({ events })
 
       // Should render exactly 1 base recurring instance (the one not modified) and 1 modified instance
       const originalEventInstances = screen.getAllByTestId(
@@ -579,7 +579,7 @@ describe('WeekEventsLayer', () => {
         },
       }
 
-      renderCalendar({ events: [biWeeklyEvent] })
+      renderWeekEventsLayer({ events: [biWeeklyEvent] })
 
       // Should render exactly 1 event instance (only current week's Thursday)
       const thursdayEventInstances = screen.getAllByTestId(
@@ -612,7 +612,7 @@ describe('WeekEventsLayer', () => {
         },
       }
 
-      renderCalendar({ events: [weeklyMultiDay] })
+      renderWeekEventsLayer({ events: [weeklyMultiDay] })
 
       // Should render exactly 2 multi-day recurring event instances (one for Friday, one for Saturday)
       const weekendEventInstances = screen.getAllByTestId(

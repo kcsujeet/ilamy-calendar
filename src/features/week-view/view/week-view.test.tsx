@@ -22,7 +22,7 @@ let firstDayOfWeek = 0 // Default to Sunday
 let dayMaxEvents = 3 // Default max events per day
 let locale = 'en' // Default locale
 
-const renderCalendar = (props = {}) => {
+const renderWeekView = (props = {}) => {
   return render(
     <CalendarProvider
       firstDayOfWeek={firstDayOfWeek}
@@ -42,7 +42,7 @@ describe('WeekView', () => {
     locale = 'en'
 
     // render the WeekView with default props
-    renderCalendar()
+    renderWeekView()
   })
 
   test('renders week view structure with proper layout', () => {
@@ -74,7 +74,7 @@ describe('WeekView', () => {
 
   test('renders WeekView with correct weekday headers starting from Monday', () => {
     cleanup() // Clean up previous renders
-    renderCalendar({ firstDayOfWeek: 1 }) // Set Monday as first day of week
+    renderWeekView({ firstDayOfWeek: 1 }) // Set Monday as first day of week
 
     // When starting from Monday, all weekdays should still be present
     weekDays.forEach((day) => {
@@ -121,7 +121,7 @@ describe('WeekView', () => {
 
   test('respects firstDayOfWeek prop', () => {
     cleanup() // Clean up previous renders
-    renderCalendar({ firstDayOfWeek: 1 }) // Set Monday as first day
+    renderWeekView({ firstDayOfWeek: 1 }) // Set Monday as first day
 
     // Check that Monday header is present (order will be handled by component logic)
     expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
@@ -130,7 +130,7 @@ describe('WeekView', () => {
 
   test('handles different locale settings', () => {
     cleanup() // Clean up previous renders
-    renderCalendar({ locale: 'en' })
+    renderWeekView({ locale: 'en' })
 
     // Should render with English locale by default using test IDs
     expect(screen.getByTestId('week-day-header-sunday')).toBeInTheDocument()

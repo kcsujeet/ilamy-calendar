@@ -54,7 +54,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [currentTimezone, setCurrentTimezone] = useState<string>(timezone || '')
 
   // Helper function to get events for a specific date range (on-demand generation)
-  const getEventsForRange = useCallback(
+  const getEventsForDateRange = useCallback(
     (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs): CalendarEvent[] => {
       const allEvents: CalendarEvent[] = []
 
@@ -74,12 +74,22 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
             )
             allEvents.push(...recurringEvents)
           }
-        } else if (
-          event.start.isSameOrAfter(startDate) &&
-          event.start.isSameOrBefore(endDate)
-        ) {
-          // Add non-recurring events if they fall within the range
-          allEvents.push(event)
+        } else {
+          // Add non-recurring events with comprehensive range checking
+          const eventStartsInRange =
+            event.start.isSameOrAfter(startDate) &&
+            event.start.isSameOrBefore(endDate)
+
+          const eventEndsInRange =
+            event.end.isSameOrAfter(startDate) &&
+            event.end.isSameOrBefore(endDate)
+
+          const eventSpansRange =
+            event.start.isBefore(startDate) && event.end.isAfter(endDate)
+
+          if (eventStartsInRange || eventEndsInRange || eventSpansRange) {
+            allEvents.push(event)
+          }
         }
       }
 
@@ -132,8 +142,8 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   // Get processed events for the current view (on-demand)
   const processedEvents = useMemo(() => {
     const { start, end } = getCurrentViewRange()
-    return getEventsForRange(start, end)
-  }, [getEventsForRange, getCurrentViewRange])
+    return getEventsForDateRange(start, end)
+  }, [getEventsForDateRange, getCurrentViewRange])
 
   // Update events when events prop changes
   useEffect(() => {
@@ -333,38 +343,6 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
     [currentDate]
   )
 
-  // Event query functions
-  const getEventsForDateRange = useCallback(
-    (start: dayjs.Dayjs, end: dayjs.Dayjs): CalendarEvent[] => {
-      // Use on-demand generation for the requested range
-      return getEventsForRange(start, end).filter((event) => {
-        const startDate = start.startOf('day')
-        const endDate = end.endOf('day')
-
-        return (
-          // Case 1: Event starts within the range
-          ((event.start.isAfter(startDate) || event.start.isSame(startDate)) &&
-            (event.start.isBefore(endDate) || event.start.isSame(endDate))) ||
-          // Case 2: Event ends within the range
-          ((event.end.isAfter(startDate) || event.end.isSame(startDate)) &&
-            (event.end.isBefore(endDate) || event.end.isSame(endDate))) ||
-          // Case 3: Event spans across the entire range
-          (event.start.isBefore(startDate) && event.end.isAfter(endDate))
-        )
-      })
-    },
-    [getEventsForRange]
-  )
-
-  const getEventsForDate = useCallback(
-    (date: dayjs.Dayjs): CalendarEvent[] => {
-      const day = date.startOf('day')
-      const nextDay = day.add(1, 'day')
-      return getEventsForDateRange(day, nextDay)
-    },
-    [getEventsForDateRange]
-  )
-
   // Create the context value
   const contextValue = useMemo(
     () => ({
@@ -389,7 +367,6 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       deleteRecurringEvent,
       openEventForm: handleOpenEventForm,
       closeEventForm,
-      getEventsForDate,
       getEventsForDateRange,
       renderEvent,
       onEventClick: handleEventClick,
@@ -425,7 +402,6 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       deleteEvent,
       deleteRecurringEvent,
       closeEventForm,
-      getEventsForDate,
       getEventsForDateRange,
       renderEvent,
       handleEventClick,

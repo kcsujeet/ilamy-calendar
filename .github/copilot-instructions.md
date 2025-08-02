@@ -608,8 +608,7 @@ isRecurringEvent(event) // Returns true for base event OR instances
 // Specific type checking (if needed)
 const isBase = !!(event.rrule && !event.recurrenceId)
 const isModified = !!event.recurrenceId
-const isGenerated =
-  !event.rrule && !event.recurrenceId && event.uid
+const isGenerated = !event.rrule && !event.recurrenceId && event.uid
 ```
 
 **Important Note:** Regular generated instances have NO `recurrenceId` - this field is only present for modified instances. To identify generated instances, check the ID pattern (`originalId_number`) and UID sharing with a base event.

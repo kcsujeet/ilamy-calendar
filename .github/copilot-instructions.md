@@ -2,9 +2,147 @@
 
 ## 🚨 CRITICAL RULES
 
+### 🚨 CRITICAL: ALWAYS WRITE HUMAN-READABLE CODE
+
+**ABSOLUTE REQUIREMENT**: ALL code must be extremely readable and maintainable. NO EXCEPTIONS.
+
+**MANDATORY Code Readability Standards:**
+
+- **Extract complex operations into descriptive variables** - Never use inline calculations or nested operations
+- **Use meaningful variable names** - `targetEventStartISO` instead of `targetEvent.start.toISOString()`
+- **Break down complex expressions** - Separate date calculations, object creation, and conditional logic
+- **One operation per line** - Avoid chaining multiple operations in a single statement
+- **Descriptive intermediate variables** - `existingExdates`, `updatedExdates`, `dayBeforeTarget`, `terminationDate`
+
+**Examples of GOOD vs BAD code:**
+
+```typescript
+// ❌ BAD - Unreadable inline operations
+const updatedBaseEvent = {
+  ...baseEvent,
+  exdates: [...(baseEvent.exdates || []), targetEvent.start.toISOString()],
+}
+
+// ✅ GOOD - Readable with extracted variables
+const targetEventStartISO = targetEvent.start.toISOString()
+const existingExdates = baseEvent.exdates || []
+const updatedExdates = [...existingExdates, targetEventStartISO]
+const updatedBaseEvent = {
+  ...baseEvent,
+  exdates: updatedExdates,
+}
+```
+
+**STRICT ENFORCEMENT:**
+
+- **NEVER write complex inline expressions** - Always extract to variables first
+- **NEVER chain multiple operations** without intermediate variables
+- **ALWAYS use descriptive variable names** that explain the purpose
+- **ALWAYS separate logical steps** into individual, readable operations
+
 ### NEVER START/STOP DEV SERVER
 
 **The development server is ALWAYS running. NEVER run `bun dev` or any server start/stop commands. Always assume hot reloading is active.**
+
+### 🚨 CRITICAL: SHORT AND INFORMATIVE COMMIT MESSAGES
+
+**ABSOLUTE REQUIREMENT**: ALL commit messages must be short and informative. NO LONG, VERBOSE COMMIT MESSAGES.
+
+**MANDATORY Commit Message Standards:**
+
+- **Keep it concise** - Maximum 100 characters for the subject line
+- **Use present tense** - "Fix bug" not "Fixed bug" or "Fixes bug"
+- **Be specific** - Describe what was changed, not why
+- **No redundant words** - Avoid "update", "modify", "change" when the action is clear
+
+**Examples:**
+
+- ✅ GOOD: `Fix recurring event deletion scope`
+- ✅ GOOD: `Add recurrenceId validation to EventForm`
+- ✅ GOOD: `Remove unused RecurrenceHandler class refs`
+- ❌ BAD: `Update the copilot instructions file to fix the conflicting information about recurrenceId usage`
+- ❌ BAD: `Fixed an issue where the recurring event deletion was not working properly`
+
+**CONVENTIONAL COMMIT TYPES:**
+
+Use conventional commit prefixes for consistency and automated tooling:
+
+- **feat**: New feature or functionality
+  - `feat: Add drag-and-drop for recurring events`
+  - `feat: Implement weekly view navigation`
+
+- **fix**: Bug fix or correction
+  - `fix: Resolve timezone shift in EXDATE handling`
+  - `fix: Prevent infinite loop in RecurrenceEditor`
+
+- **docs**: Documentation changes
+  - `docs: Update RFC 5545 compliance guidelines`
+  - `docs: Add recurring event examples`
+
+- **refactor**: Code restructuring without behavior change
+  - `refactor: Extract event validation logic`
+  - `refactor: Simplify RRULE parsing functions`
+
+- **test**: Adding or updating tests
+  - `test: Add recurring event edge case coverage`
+  - `test: Fix RecurrenceEditor test assertions`
+
+- **style**: Code formatting, linting fixes
+  - `style: Fix ESLint violations in EventForm`
+  - `style: Apply Prettier formatting`
+
+- **chore**: Build, tooling, dependency updates
+  - `chore: Update rrule.js to latest version`
+  - `chore: Configure TypeScript strict mode`
+
+**STRICT ENFORCEMENT:**
+
+- **NEVER write commit messages longer than 100 characters**
+- **NEVER use past tense** - always present tense
+- **NEVER explain the why** - focus on the what
+- **ALWAYS be direct and actionable**
+- **ALWAYS use conventional commit prefixes** - feat, fix, docs, refactor, test, style, chore
+
+### 🚨 CRITICAL: STRICT iCALENDAR (RFC 5545) COMPLIANCE
+
+**ABSOLUTE REQUIREMENT**: ALL calendar functionality MUST strictly adhere to iCalendar RFC 5545 standards. NO EXCEPTIONS, NO FALLBACKS, NO SHORTCUTS.
+
+**MANDATORY iCalendar Standards:**
+
+- **RECURRENCE-ID**: Use `recurrenceId` field ONLY for modified recurring event instances
+- **UID**: Every event must have a globally unique `uid` field - all instances share same UID
+- **RRULE**: Use RFC 5545 compliant RRULE patterns (FREQ, INTERVAL, COUNT, UNTIL, BYDAY)
+- **EXDATE**: Exclude instances using ISO string dates in `exdates` array
+- **NO CUSTOM SCHEMES**: Never create custom ID parsing or fallback mechanisms
+
+**STRICT ENFORCEMENT:**
+
+```typescript
+// ✅ CORRECT: Strict iCalendar compliance for modified instances
+if (targetEvent.recurrenceId) {
+  // This is a modified instance - handle accordingly
+  console.log('Processing modified recurring instance')
+}
+
+// Find base event by UID and RRULE presence (with fallback UID generation)
+const targetUID =
+  targetEvent.uid || `${targetEvent.id.toString().split('_')[0]}@ilamy.calendar`
+const baseEvent = events.find(
+  (e) => (e.uid || `${e.id}@ilamy.calendar`) === targetUID && e.rrule
+)
+```
+
+**Generated Event Instances (Regular) Must Have:**
+
+- ✅ `uid`: Same UID as base event (iCalendar standard)
+- ✅ ID pattern: `originalId_number` format
+- ❌ NO `recurrenceId`: Regular instances don't have this field
+
+**Modified Event Instances Must Have:**
+
+- ✅ `recurrenceId`: ISO string of original occurrence date
+- ✅ `uid`: Same UID as base event (iCalendar standard)
+- ❌ NO `rrule`: Modified instances are standalone
 
 ### NEVER USE YYYY-MM-DD DATE FORMAT
 
@@ -60,11 +198,19 @@
 ```typescript
 // 1. RED: Write failing test first
 it('should update only this recurring event instance', () => {
-  const result = updateRecurringEvent(events, target, updates, {
+  const result = updateRecurringEvent({
+    targetEvent,
+    updates,
+    currentEvents: events,
     scope: 'this',
   })
-  expect(result[0].recurrence?.updates).toHaveLength(1) // Exact assertion
-  expect(result[0].recurrence?.updates?.[0].type).toBe('this') // Precise check
+  expect(result).toHaveLength(2) // Exact assertion: base event + standalone modified event
+
+  const baseEvent = result.find((e) => e.id === targetEvent.id)
+  const standaloneEvent = result.find((e) => e.id !== targetEvent.id)
+
+  expect(baseEvent?.exdates).toHaveLength(1) // Precise check: EXDATE exclusion
+  expect(standaloneEvent?.rrule).toBeUndefined() // Standalone event has no rrule
 })
 
 // 2. GREEN: Implement minimal code to pass
@@ -95,14 +241,16 @@ Calendar views are separate components in dedicated folders:
 - Views are switched via AnimatePresence for smooth transitions
 - Main calendar component (`ilamy-calendar.tsx`) orchestrates view rendering
 
-### 3. Event System with Recurring Support
+### 3. Event System with RRULE Recurring Support
 
-Events use a sophisticated model defined in `src/components/types.ts`:
+Events use RFC 5545 compliant RRULE system defined in `src/components/types.ts`:
 
-- Base `CalendarEvent` interface with optional recurrence patterns
-- `ProcessedCalendarEvent` extends base with positioning data (left, width)
-- Recurring events expand into individual instances with parent tracking
+- Base `CalendarEvent` interface with optional `rrule` patterns (RFC 5545 standard)
+- Google Calendar-style recurring event operations: "this", "following", "all" scopes
+- EXDATE exclusions for individual instance modifications
+- Clean "exclude + add standalone" approach instead of complex modification tracking
 - Event positioning calculated in view-specific components
+- Full timezone safety with ISO string date handling
 
 ### 4. Drag & Drop Integration
 
@@ -176,6 +324,8 @@ project-root/
 
 - **Changelog**: Keep version history in CHANGELOG.md
 - **README**: Project overview stays in root
+- **RFC 5545 Documentation**: Complete iCalendar specification reference at `docs/rfc-5545.md` - **MANDATORY reference for all calendar standards compliance**
+- **RRULE Documentation**: Complete rrule.js API reference at `docs/rrule.js.md` - **MANDATORY reference for all RRULE work**
 
 This structure ensures code remains maintainable, testable, and scalable as the project grows.
 
@@ -251,6 +401,230 @@ This structure ensures code remains maintainable, testable, and scalable as the 
 - This applies to: form inputs, API calls, localStorage, database storage, URL params, test assertions
 - **ONLY exception**: Use `YYYY-MM-DD` exclusively for display purposes in UI components
 - **In tests**: Always use `toISOString()` for date comparisons and assertions
+- **🚨 CRITICAL**: NEVER import `datetime` from rrule - ALWAYS use dayjs for consistency
+- **Date library consistency**: Stick with dayjs throughout the project - it's pre-configured with all needed plugins
+
+### RRULE Recurring Events System with rrule.js
+
+**STRICT RFC 5545 iCalendar Standard Compliance** using **rrule.js library** and Google Calendar-Style operations:
+
+#### 🚨 CRITICAL: ALWAYS CHECK RRULE AND RFC 5545 DOCUMENTATION
+
+**MANDATORY**: Before working with any RRULE functionality, patterns, or recurring calendar events, **ALWAYS check both comprehensive documentation references:**
+
+1. **RFC 5545 Standard**: `docs/rfc-5545.md` - Official iCalendar specification
+2. **rrule.js Library**: `docs/rrule.js.md` - Implementation-specific API reference
+
+**RFC 5545 Documentation (`docs/rfc-5545.md`) includes:**
+
+- Official iCalendar specification standards
+- Calendar component definitions (VEVENT, VCALENDAR, etc.)
+- Property specifications (UID, DTSTART, DTEND, RRULE, EXDATE, RECURRENCE-ID)
+- Date-time format standards and timezone handling
+- Recurrence rule (RRULE) official specification
+- Exception dates (EXDATE) standards
+- Recurrence-ID usage for instance modifications
+- Status property handling (CANCELLED events)
+- Complete RFC 5545 compliance examples
+
+**rrule.js Documentation (`docs/rrule.js.md`) includes:**
+
+- Complete rrule.js API reference with examples
+- RFC 5545 compliance guidelines and differences
+- Natural language conversion methods (`toText()`, `fromText()`)
+- iCalendar string methods (`toString()`, `fromString()`)
+- RRule constructor options and instance properties
+- RRuleSet for complex recurrence patterns
+- Timezone support and UTC date handling
+- All occurrence retrieval methods (`all()`, `between()`, `before()`, `after()`)
+
+**When to reference both documents:**
+
+- Creating or parsing RRULE strings
+- Converting between RRULE objects and strings
+- Working with recurring event generation
+- Implementing natural language descriptions
+- Debugging RRULE patterns or timezone issues
+- Adding new recurrence features or validations
+- Ensuring RFC 5545 standard compliance
+- Understanding UID, RECURRENCE-ID, and EXDATE behavior
+
+#### Core Components:
+
+- **`rrule.js`** library for robust RFC 5545 RRULE parsing and generation
+- **Recurring Event Functions** in `src/lib/recurrence-handler/index.ts` for Google Calendar operations:
+  - `isRecurringEvent()` - Identifies base events, instances, and modified instances
+  - `generateRecurringEvents()` - Creates event instances using rrule.js
+  - `updateRecurringEvent()` - Google Calendar-style "this/following/all" updates
+  - `deleteRecurringEvent()` - Google Calendar-style "this/following/all" deletions
+- **EXDATE exclusions** for individual instance modifications using ISO strings
+- **RecurrenceEditOptions** with `scope: 'this' | 'following' | 'all'` and `eventDate`
+- **STRICT VALIDATION**: All recurring operations REQUIRE proper UID and event identification
+
+#### rrule.js Integration:
+
+```typescript
+import { RRule } from 'rrule'
+import dayjs from '@/lib/dayjs-config'
+
+// Convert RRULE string to RRule object for event generation
+const rruleObj = RRule.fromString(event.rrule) // e.g., "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR"
+const occurrences = rruleObj.between(startDate, endDate, true)
+
+// Generate CalendarEvent instances with proper iCalendar fields
+occurrences.forEach((date) => {
+  // Each instance has same UID as base event, proper timezone handling
+  // Use dayjs for date manipulation instead of rrule's datetime helper
+})
+
+// CRITICAL: Use dayjs instead of rrule's datetime() helper
+// ✅ CORRECT: Use dayjs for date creation and manipulation
+const startDate = dayjs().toDate()
+const endDate = dayjs(formData.endDate).endOf('day').toDate()
+
+// ❌ AVOID: Don't mix rrule's datetime helper with dayjs
+// import { datetime } from 'rrule' // Don't do this
+```
+
+#### Date Handling Best Practices:
+
+- **ALWAYS use dayjs** for date creation, parsing, and manipulation
+- **NEVER import `datetime` from rrule** - stick with dayjs for consistency
+- **Convert dayjs to Date objects** when needed for RRule constructor: `dayjs().toDate()`
+- **Use ISO strings** for date serialization: `dayjs().toISOString()`
+- **Avoid mixing date libraries** - dayjs is pre-configured with all needed plugins
+
+````
+
+#### Google Calendar-Style Update Operations:
+
+```typescript
+// CRITICAL: Modified target event has recurrenceId and uid
+const targetEvent = {
+  id: 'recurring-event_1',
+  recurrenceId: '2025-01-07T09:00:00.000Z', // Original occurrence date (ISO)
+  uid: 'recurring-event@ilamy.calendar', // Same UID as base event
+  // ... other properties
+}
+
+// "This event only" - Exclude + add standalone event
+updateRecurringEvent({
+  targetEvent,
+  updates,
+  currentEvents: events,
+  scope: 'this',
+})
+// Result: Base event gets EXDATE + new standalone modified event
+
+// "This and following" - Terminate original + create new series
+updateRecurringEvent({
+  targetEvent,
+  updates,
+  currentEvents: events,
+  scope: 'following',
+})
+// Result: Original series ends before target + new series starts from target
+
+// "All events" - Update base event properties
+updateRecurringEvent({
+  targetEvent,
+  updates,
+  currentEvents: events,
+  scope: 'all',
+})
+// Result: Base recurring event updated
+````
+
+#### Google Calendar-Style Delete Operations:
+
+```typescript
+// "This event only" - Add EXDATE exclusion
+deleteRecurringEvent({
+  targetEvent,
+  currentEvents: events,
+  scope: 'this',
+})
+
+// "This and following" - Terminate series with UNTIL
+deleteRecurringEvent({
+  targetEvent,
+  currentEvents: events,
+  scope: 'following',
+})
+
+// "All events" - Remove entire series
+deleteRecurringEvent({
+  targetEvent,
+  currentEvents: events,
+  scope: 'all',
+})
+```
+
+#### rrule.js RRULE Generation:
+
+- **`rrule.js`** handles all RFC 5545 RRULE parsing, validation, and occurrence generation
+- **`generateRecurringEvents()`** uses rrule.js for reliable event instances
+- **Automatic EXDATE handling** - excluded dates filtered after rrule.js generation
+- **Full RFC 5545 support** - UNTIL, COUNT, BYDAY, BYMONTH, complex patterns via proven library
+- **Timezone-safe** - rrule.js handles timezone complexities, we use ISO strings for consistency
+- **Performance optimized** - rrule.js is battle-tested for large recurring series
+
+#### rrule.js Integration Benefits:
+
+- ✅ **Battle-tested library** - Used by major calendar applications worldwide
+- ✅ **Full RFC 5545 compliance** - Complete RRULE specification support
+- ✅ **Complex pattern support** - BYSETPOS, BYWEEKNO, advanced recurrence rules
+- ✅ **Performance optimized** - Efficient occurrence generation for large date ranges
+- ✅ **Robust parsing** - Handles malformed RRULE strings gracefully
+- ✅ **Timezone aware** - Proper handling of DST and timezone transitions
+
+#### Recurring Event Identification:
+
+**CRITICAL: Understanding the Three Types of Recurring Events**
+
+According to RFC 5545, there are **three distinct types** of calendar events in a recurring series:
+
+1. **Base Recurring Event**: Has `rrule` property, no `recurrenceId`
+   - Contains the RRULE pattern that defines the recurrence
+   - Serves as the "template" for generating instances
+   - Example: `{ id: 'meeting-1', rrule: 'FREQ=WEEKLY;BYDAY=MO', uid: 'meeting-1@calendar' }`
+
+2. **Generated Instance**: No `rrule`, no `recurrenceId`, shares same `UID` as base event
+   - Created by `generateRecurringEvents()` function using rrule.js
+   - Has ID pattern like `originalId_number` (e.g., `meeting-1_0`, `meeting-1_1`)
+   - Same UID as base event for proper iCalendar grouping
+   - Example: `{ id: 'meeting-1_2', uid: 'meeting-1@calendar', start: '2025-01-20T09:00:00' }`
+
+3. **Modified Instance**: Has `recurrenceId`, no `rrule`, created when user modifies a specific occurrence
+   - Contains the original occurrence date in `recurrenceId` field
+   - Same UID as base event but different properties (time, title, etc.)
+   - Example: `{ id: 'meeting-1_modified', recurrenceId: '2025-01-20T09:00:00.000Z', uid: 'meeting-1@calendar' }`
+
+**Identification Functions:**
+
+```typescript
+// Check if event is part of recurring series (any type)
+isRecurringEvent(event) // Returns true for base event OR instances
+
+// Specific type checking (if needed)
+const isBase = !!(event.rrule && !event.recurrenceId)
+const isModified = !!event.recurrenceId
+const isGenerated =
+  !event.rrule && !event.recurrenceId && /_\d+$/.test(event.id.toString())
+```
+
+**Important Note:** Regular generated instances have NO `recurrenceId` - this field is only present for modified instances. To identify generated instances, check the ID pattern (`originalId_number`) and UID sharing with a base event.
+
+#### Key Principles:
+
+- ✅ **rrule.js for all RRULE operations** - No custom RRULE parsing or generation
+- ✅ **STRICT RFC 5545 compliance** - rrule.js ensures standard compliance
+- ✅ **Proper event identification** - Base events (RRULE), generated instances (ID pattern + UID), modified instances (RECURRENCE-ID)
+- ✅ **Google Calendar UX** - Same "this/following/all" scope patterns users expect
+- ✅ **Clean separation** - rrule.js for generation, recurrence functions for operations
+- ✅ **EXDATE + standalone pattern** - Simple approach for modifications
+- ✅ **Timezone safe** - ISO strings prevent western timezone day-before bugs
+- ✅ **Error on violations** - Throw errors when iCalendar standards are not met
 
 ## Key Conventions
 
@@ -266,8 +640,10 @@ import type { CalendarEvent } from '@/components/types'
 ### Event Handling
 
 - Events flow through context methods: `addEvent`, `updateEvent`, `deleteEvent`
+- **Recurring events** use `updateRecurringEvent`, `deleteRecurringEvent` with scope options
 - Form state managed via `isEventFormOpen`, `selectedEvent`, `selectedDate`
 - Date selection triggers `selectDate` and optionally opens event form
+- **RRULE events** generate instances automatically via `generateRecurringEvents()`
 
 ### Component Composition
 

@@ -8,12 +8,7 @@ import YearView from '@/features/year-view/view/year-view'
 import { AnimatePresence, motion } from 'motion/react'
 import { CalendarDndContext } from '@/features/drag-and-drop/calendar-dnd-context'
 import { CalendarProvider } from '@/contexts/calendar-context/provider'
-import type {
-  CalendarEvent,
-  IlamyCalendarEvent,
-  WeekDays,
-  EventRecurrence,
-} from '@/components/types'
+import type { CalendarEvent, WeekDays } from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 // oxlint-disable-next-line no-duplicates
 import '@/lib/dayjs-config'
@@ -21,31 +16,10 @@ import dayjs from '@/lib/dayjs-config'
 import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 
 export function normalizePublicFacingCalendarEvent(
-  events: IlamyCalendarEvent[]
+  events: CalendarEvent[]
 ): CalendarEvent[] {
   return events.map((event) => {
-    let normalizedRecurrence: EventRecurrence | undefined = undefined
-
-    if (event.recurrence) {
-      normalizedRecurrence = {
-        ...event.recurrence,
-        endDate: event.recurrence?.endDate
-          ? dayjs.isDayjs(event.recurrence.endDate)
-            ? event.recurrence.endDate
-            : dayjs(event.recurrence.endDate)
-          : undefined,
-        // Convert old format exceptions (simple dates) to new RecurrenceException format
-        exceptions:
-          event.recurrence?.exceptions?.map((e) => {
-            return {
-              date: dayjs.isDayjs(e) ? e : dayjs(e),
-              type: 'this' as const,
-              createdAt: dayjs(),
-            }
-          }) || [],
-      }
-    }
-
+    // Events are already in the correct format with RRULE strings
     return {
       ...event,
       start: dayjs.isDayjs(event.start) ? event.start : dayjs(event.start),
@@ -60,7 +34,6 @@ export function normalizePublicFacingCalendarEvent(
           ? event.originalEnd
           : dayjs(event.originalEnd)
         : undefined,
-      recurrence: normalizedRecurrence,
     } as CalendarEvent
   })
 }
@@ -132,7 +105,7 @@ interface CalendarProps {
   /**
    * Array of events to display in the calendar.
    */
-  events?: IlamyCalendarEvent[]
+  events?: CalendarEvent[]
   /**
    * The first day of the week to display in the calendar.
    * Can be 'sunday', 'monday', etc. Defaults to 'sunday'.

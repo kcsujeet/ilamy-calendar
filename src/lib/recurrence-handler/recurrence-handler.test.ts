@@ -1,514 +1,683 @@
-import { describe, it, expect, beforeEach } from 'bun:test'
+import { describe, it, expect } from 'bun:test'
 import dayjs from '@/lib/dayjs-config'
-import { RecurrenceHandler } from './recurrence-handler'
-import type { CalendarEvent, EventRecurrence } from '@/components/types'
+import type { CalendarEvent } from '@/components'
+import {
+  generateRecurringEvents,
+  updateRecurringEvent,
+  deleteRecurringEvent,
+  isRecurringEvent,
+} from './index'
 
-describe('RecurrenceHandler', () => {
-  let baseEvent: CalendarEvent
+// Test helper to create a base recurring event
+const createBaseRecurringEvent = (
+  overrides: Partial<CalendarEvent> = {}
+): CalendarEvent => ({
+  id: 'recurring-1',
+  title: 'Weekly Meeting',
+  start: dayjs('2025-01-06T09:00:00'),
+  end: dayjs('2025-01-06T10:00:00'),
+  rrule: 'FREQ=WEEKLY;BYDAY=MO',
+  uid: 'recurring-1@calendar.test',
+  ...overrides,
+})
 
-  beforeEach(() => {
-    // Create a consistent base event for testing
-    baseEvent = {
-      id: 'test-event-1',
-      title: 'Test Meeting',
-      start: dayjs('2025-01-06').hour(9).minute(0), // Monday 9 AM
-      end: dayjs('2025-01-06').hour(10).minute(0), // Monday 10 AM
-      color: 'blue',
-    }
+// Test helper to create a target event instance
+const createTargetEvent = (
+  overrides: Partial<CalendarEvent> = {}
+): CalendarEvent => ({
+  id: 'recurring-1_2',
+  title: 'Weekly Meeting',
+  start: dayjs('2025-01-20T09:00:00'),
+  end: dayjs('2025-01-20T10:00:00'),
+  uid: 'recurring-1@calendar.test',
+  ...overrides,
+})
+
+describe('isRecurringEvent', () => {
+  it('should identify events with rrule as recurring', () => {
+    const event = createBaseRecurringEvent()
+    expect(isRecurringEvent(event)).toBeTruthy()
   })
 
-  describe('generateRecurringEvents', () => {
-    it('should return original event when no recurrence is specified', () => {
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-01-31')
+  it('should identify events with recurrenceId as recurring', () => {
+    const event = createTargetEvent({
+      recurrenceId: '2025-01-20T09:00:00.000Z',
+    })
+    expect(isRecurringEvent(event)).toBeTruthy()
+  })
 
-      const result = RecurrenceHandler.generateRecurringEvents(
-        baseEvent,
-        startDate,
-        endDate
-      )
+  it('should not identify regular events as recurring', () => {
+    const event = {
+      ...createBaseRecurringEvent(),
+      rrule: undefined,
+      recurrenceId: undefined,
+      uid: undefined,
+    }
+    expect(isRecurringEvent(event)).toBeFalsy()
+  })
+})
 
-      expect(result).toHaveLength(1)
-      expect(result[0]).toEqual(baseEvent)
+describe('generateRecurringEvents', () => {
+  it('should generate weekly recurring events correctly', () => {
+    const baseEvent = createBaseRecurringEvent()
+    const startDate = dayjs('2025-01-01')
+    const endDate = dayjs('2025-01-31')
+
+    const result = generateRecurringEvents({
+      event: baseEvent,
+      currentEvents: [],
+      startDate,
+      endDate,
     })
 
-    it('should return non-recurring event when it falls within the range', () => {
-      const eventInRange = {
-        ...baseEvent,
-        start: dayjs('2025-01-05'),
-        end: dayjs('2025-01-05').add(1, 'hour'),
-      }
+    expect(result).toHaveLength(4) // 4 Mondays in January 2025
+    expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06')
+    expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-13')
+    expect(result[2].start.format('YYYY-MM-DD')).toBe('2025-01-20')
+    expect(result[3].start.format('YYYY-MM-DD')).toBe('2025-01-27')
 
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-01-31')
+    // Each instance should have unique ID and no rrule
+    result.forEach((event, index) => {
+      expect(event.id).toBe(`recurring-1_${index}`)
+      expect(event.rrule).toBeUndefined()
+      expect(event.uid).toBe('recurring-1@calendar.test')
+    })
+  })
 
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventInRange,
-        startDate,
-        endDate
-      )
+  it('should exclude EXDATE events correctly', () => {
+    const baseEvent = createBaseRecurringEvent({
+      exdates: ['2025-01-13T09:00:00.000Z', '2025-01-27T09:00:00.000Z'],
+    })
+    const startDate = dayjs('2025-01-01')
+    const endDate = dayjs('2025-01-31')
 
-      expect(result).toHaveLength(1)
-      expect(result[0]).toEqual(eventInRange)
+    const result = generateRecurringEvents({
+      event: baseEvent,
+      currentEvents: [],
+      startDate,
+      endDate,
     })
 
-    it('should return empty array when non-recurring event is outside range', () => {
-      const eventOutsideRange = {
-        ...baseEvent,
-        start: dayjs('2024-12-25'), // Outside the range
-        end: dayjs('2024-12-25').add(1, 'hour'),
+    expect(result).toHaveLength(2) // 4 Mondays - 2 excluded = 2
+    expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06')
+    expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-20')
+  })
+
+  it('should handle overrides correctly', () => {
+    const baseEvent = createBaseRecurringEvent()
+    const overrideEvent: CalendarEvent = {
+      ...createTargetEvent(),
+      recurrenceId: '2025-01-13T09:00:00.000Z',
+      title: 'Modified Meeting',
+      start: dayjs('2025-01-13T14:00:00'),
+      end: dayjs('2025-01-13T15:00:00'),
+    }
+
+    const result = generateRecurringEvents({
+      event: baseEvent,
+      currentEvents: [overrideEvent],
+      startDate: dayjs('2025-01-01'),
+      endDate: dayjs('2025-01-31'),
+    })
+
+    expect(result).toHaveLength(4)
+
+    // Find the overridden event
+    const modifiedEvent = result.find((e) =>
+      e.start.isSame(dayjs('2025-01-13T14:00:00'))
+    )
+    expect(modifiedEvent).toBeDefined()
+    expect(modifiedEvent?.title).toBe('Modified Meeting')
+  })
+
+  it('should return empty array for non-recurring events', () => {
+    const regularEvent = { ...createBaseRecurringEvent(), rrule: undefined }
+
+    const result = generateRecurringEvents({
+      event: regularEvent,
+      currentEvents: [],
+      startDate: dayjs('2025-01-01'),
+      endDate: dayjs('2025-01-31'),
+    })
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('should throw error for invalid RRULE strings', () => {
+    const invalidEvent = createBaseRecurringEvent({ rrule: 'INVALID_RRULE' })
+
+    expect(() => {
+      generateRecurringEvents({
+        event: invalidEvent,
+        currentEvents: [],
+        startDate: dayjs('2025-01-01'),
+        endDate: dayjs('2025-01-31'),
+      })
+    }).toThrow('Invalid RRULE string')
+  })
+})
+
+describe('updateRecurringEvent', () => {
+  describe('scope: "this"', () => {
+    it('should update only the target event instance', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
+      const updates = {
+        title: 'Modified Meeting',
+        start: dayjs('2025-01-20T14:00:00'),
       }
 
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-01-31')
+      const result = updateRecurringEvent({
+        targetEvent,
+        updates,
+        currentEvents,
+        scope: 'this',
+      })
 
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventOutsideRange,
-        startDate,
-        endDate
+      expect(result).toHaveLength(2) // base event + modified standalone event
+
+      // Base event should have EXDATE
+      const updatedBaseEvent = result.find((e) => e.id === baseEvent.id)
+      expect(updatedBaseEvent?.exdates).toHaveLength(1)
+      expect(updatedBaseEvent?.exdates).toContain('2025-01-20T09:00:00.000Z')
+
+      // Should have new standalone modified event
+      const modifiedEvent = result.find((e) => e.id !== baseEvent.id)
+      expect(modifiedEvent?.title).toBe('Modified Meeting')
+      expect(modifiedEvent?.recurrenceId).toBe('2025-01-20T09:00:00.000Z')
+      expect(modifiedEvent?.uid).toBe(baseEvent.uid)
+      expect(modifiedEvent?.rrule).toBeUndefined()
+    })
+
+    it('should preserve existing EXDATES when adding new one', () => {
+      const baseEvent = createBaseRecurringEvent({
+        exdates: ['2025-01-13T09:00:00.000Z'],
+      })
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
+
+      const result = updateRecurringEvent({
+        targetEvent,
+        updates: { title: 'Modified' },
+        currentEvents,
+        scope: 'this',
+      })
+
+      const updatedBaseEvent = result.find((e) => e.id === baseEvent.id)
+      expect(updatedBaseEvent?.exdates).toHaveLength(2)
+      expect(updatedBaseEvent?.exdates).toContain('2025-01-13T09:00:00.000Z')
+      expect(updatedBaseEvent?.exdates).toContain('2025-01-20T09:00:00.000Z')
+    })
+  })
+
+  describe('scope: "following"', () => {
+    it('should terminate original series and create new series', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
+      const updates = {
+        title: 'Modified Series',
+        start: dayjs('2025-01-20T14:00:00'),
+      }
+
+      const result = updateRecurringEvent({
+        targetEvent,
+        updates,
+        currentEvents,
+        scope: 'following',
+      })
+
+      expect(result).toHaveLength(2) // terminated original + new series
+
+      // Original series should be terminated with UNTIL
+      const terminatedEvent = result.find((e) => e.id === baseEvent.id)
+      expect(terminatedEvent?.rrule).toContain('UNTIL=20250119T')
+
+      // New series should start from target date
+      const newSeries = result.find((e) => e.id !== baseEvent.id)
+      expect(newSeries?.title).toBe('Modified Series')
+      expect(newSeries?.start.isSame(dayjs('2025-01-20T14:00:00'))).toEqual(
+        true
       )
+      expect(newSeries?.uid).toBe('recurring-1@calendar.test_following')
+      expect(newSeries?.recurrenceId).toBeUndefined()
+    })
+
+    it('should handle edge case when target is first occurrence', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const firstOccurrence = {
+        ...createTargetEvent(),
+        start: dayjs('2025-01-06T09:00:00'),
+      }
+      const currentEvents = [baseEvent]
+
+      const result = updateRecurringEvent({
+        targetEvent: firstOccurrence,
+        updates: { title: 'New Series' },
+        currentEvents,
+        scope: 'following',
+      })
+
+      expect(result).toHaveLength(2)
+
+      // Original should terminate before first occurrence (effectively making it empty)
+      const terminatedEvent = result.find((e) => e.id === baseEvent.id)
+      expect(terminatedEvent?.rrule).toContain('UNTIL=20250105T')
+    })
+  })
+
+  describe('scope: "all"', () => {
+    it('should update the base recurring event', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
+      const updates = { title: 'Updated All Events', rrule: 'FREQ=DAILY' }
+
+      const result = updateRecurringEvent({
+        targetEvent,
+        updates,
+        currentEvents,
+        scope: 'all',
+      })
+
+      expect(result).toHaveLength(1)
+
+      const updatedEvent = result[0]
+      expect(updatedEvent.title).toBe('Updated All Events')
+      expect(updatedEvent.rrule).toBe('FREQ=DAILY')
+      expect(updatedEvent.id).toBe(baseEvent.id)
+    })
+
+    it('should preserve other events in the array', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const otherEvent = createBaseRecurringEvent({
+        id: 'other-event',
+        uid: 'other@test',
+      })
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent, otherEvent]
+
+      const result = updateRecurringEvent({
+        targetEvent,
+        updates: { title: 'Updated' },
+        currentEvents,
+        scope: 'all',
+      })
+
+      expect(result).toHaveLength(2)
+      expect(result.find((e) => e.id === 'other-event')).toBeDefined()
+    })
+  })
+
+  describe('error handling', () => {
+    it('should throw error when base recurring event not found', () => {
+      const targetEvent = createTargetEvent()
+      const currentEvents: CalendarEvent[] = []
+
+      expect(() => {
+        updateRecurringEvent({
+          targetEvent,
+          updates: { title: 'Test' },
+          currentEvents,
+          scope: 'this',
+        })
+      }).toThrow('Base recurring event not found')
+    })
+
+    it('should throw error for invalid scope', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
+
+      expect(() => {
+        updateRecurringEvent({
+          targetEvent,
+          updates: { title: 'Test' },
+          currentEvents,
+          scope: 'invalid' as unknown as 'this',
+        })
+      }).toThrow(
+        "Invalid scope: invalid. Must be 'this', 'following', or 'all'"
+      )
+    })
+  })
+})
+
+describe('deleteRecurringEvent', () => {
+  describe('scope: "this"', () => {
+    it('should add EXDATE to exclude only target occurrence', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
+
+      const result = deleteRecurringEvent({
+        targetEvent,
+        currentEvents,
+        scope: 'this',
+      })
+
+      expect(result).toHaveLength(1)
+
+      const updatedEvent = result[0]
+      expect(updatedEvent.exdates).toHaveLength(1)
+      expect(updatedEvent.exdates).toContain('2025-01-20T09:00:00.000Z')
+      expect(updatedEvent.id).toBe(baseEvent.id)
+    })
+
+    it('should preserve existing EXDATES when adding new exclusion', () => {
+      const baseEvent = createBaseRecurringEvent({
+        exdates: ['2025-01-13T09:00:00.000Z', '2025-01-27T09:00:00.000Z'],
+      })
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
+
+      const result = deleteRecurringEvent({
+        targetEvent,
+        currentEvents,
+        scope: 'this',
+      })
+
+      const updatedEvent = result[0]
+      expect(updatedEvent.exdates).toHaveLength(3)
+      expect(updatedEvent.exdates).toContain('2025-01-13T09:00:00.000Z')
+      expect(updatedEvent.exdates).toContain('2025-01-27T09:00:00.000Z')
+      expect(updatedEvent.exdates).toContain('2025-01-20T09:00:00.000Z')
+    })
+  })
+
+  describe('scope: "following"', () => {
+    it('should terminate series with UNTIL before target date', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
+
+      const result = deleteRecurringEvent({
+        targetEvent,
+        currentEvents,
+        scope: 'following',
+      })
+
+      expect(result).toHaveLength(1)
+
+      const terminatedEvent = result[0]
+      expect(terminatedEvent.rrule).toBe(
+        'FREQ=WEEKLY;BYDAY=MO;UNTIL=20250119T090000Z'
+      )
+      expect(terminatedEvent.id).toBe(baseEvent.id)
+    })
+
+    it('should handle deletion from first occurrence correctly', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const firstOccurrence = {
+        ...createTargetEvent(),
+        start: dayjs('2025-01-06T09:00:00'),
+      }
+      const currentEvents = [baseEvent]
+
+      const result = deleteRecurringEvent({
+        targetEvent: firstOccurrence,
+        currentEvents,
+        scope: 'following',
+      })
+
+      const terminatedEvent = result[0]
+      expect(terminatedEvent.rrule).toContain('UNTIL=20250105T')
+    })
+
+    it('should handle existing UNTIL in RRULE correctly', () => {
+      const baseEvent = createBaseRecurringEvent({
+        rrule: 'FREQ=WEEKLY;BYDAY=MO;UNTIL=20251231T000000Z',
+      })
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
+
+      const result = deleteRecurringEvent({
+        targetEvent,
+        currentEvents,
+        scope: 'following',
+      })
+
+      const terminatedEvent = result[0]
+      // Should replace existing UNTIL with earlier termination date
+      expect(terminatedEvent.rrule).toBe(
+        'FREQ=WEEKLY;BYDAY=MO;UNTIL=20251231T000000Z;UNTIL=20250119T090000Z'
+      )
+    })
+  })
+
+  describe('scope: "all"', () => {
+    it('should remove entire recurring series', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const otherEvent = createBaseRecurringEvent({
+        id: 'other',
+        uid: 'other@test',
+      })
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent, otherEvent]
+
+      const result = deleteRecurringEvent({
+        targetEvent,
+        currentEvents,
+        scope: 'all',
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('other')
+      expect(
+        result.find((e) => e.uid === 'recurring-1@calendar.test')
+      ).toBeUndefined()
+    })
+
+    it('should handle empty result when only target series exists', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
+
+      const result = deleteRecurringEvent({
+        targetEvent,
+        currentEvents,
+        scope: 'all',
+      })
 
       expect(result).toHaveLength(0)
     })
 
-    it('should generate daily recurring events correctly', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'daily',
-        interval: 1,
-        endType: 'after',
-        count: 5,
+    it('should remove all events with same UID including overrides', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const override1 = {
+        ...createTargetEvent(),
+        id: 'override1',
+        recurrenceId: '2025-01-13T09:00:00.000Z',
       }
-
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-01-31')
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-
-      expect(result).toHaveLength(5)
-      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z') // Original start
-      expect(result[1].start.toISOString()).toBe('2025-01-07T09:00:00.000Z') // Next day
-      expect(result[4].start.toISOString()).toBe('2025-01-10T09:00:00.000Z') // 5th occurrence
-
-      // Verify all events have correct properties
-      result.forEach((event, index) => {
-        expect(event.isRecurring).toBe(true)
-        expect(event.parentEventId).toBe(baseEvent.id)
-        expect(event.id).toBe(
-          `${baseEvent.id}_${result[index].start.toISOString()}`
-        )
+      const override2 = {
+        ...createTargetEvent(),
+        id: 'override2',
+        recurrenceId: '2025-01-20T09:00:00.000Z',
+      }
+      const otherEvent = createBaseRecurringEvent({
+        id: 'other',
+        uid: 'other@test',
       })
-    })
+      const currentEvents = [baseEvent, override1, override2, otherEvent]
+      const targetEvent = createTargetEvent()
 
-    it('should generate weekly recurring events with specific days', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'weekly',
-        interval: 1,
-        endType: 'after',
-        count: 6,
-        daysOfWeek: ['monday', 'wednesday', 'friday'], // Monday, Wednesday, Friday
-      }
-
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-01-31')
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-
-      expect(result).toHaveLength(6)
-
-      // Check that all events fall on correct days of week
-      result.forEach((event) => {
-        const dayOfWeek = event.start.day()
-        expect([1, 3, 5]).toContain(dayOfWeek)
+      const result = deleteRecurringEvent({
+        targetEvent,
+        currentEvents,
+        scope: 'all',
       })
 
-      // Verify sequence: Mon 6th, Wed 8th, Fri 10th, Mon 13th, Wed 15th, Fri 17th
-      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z') // Monday
-      expect(result[1].start.toISOString()).toBe('2025-01-08T09:00:00.000Z') // Wednesday
-      expect(result[2].start.toISOString()).toBe('2025-01-10T09:00:00.000Z') // Friday
-      expect(result[3].start.toISOString()).toBe('2025-01-13T09:00:00.000Z') // Monday
-    })
-
-    it('should handle every-2-weeks pattern correctly', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'weekly',
-        interval: 2, // Every 2 weeks
-        endType: 'after',
-        count: 4,
-        daysOfWeek: ['monday'], // Mondays only
-      }
-
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-03-01')
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-
-      expect(result).toHaveLength(4)
-      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z') // Week 1 Monday
-      expect(result[1].start.toISOString()).toBe('2025-01-20T09:00:00.000Z') // Week 3 Monday (skip week 2)
-      expect(result[2].start.toISOString()).toBe('2025-02-03T09:00:00.000Z') // Week 5 Monday
-      expect(result[3].start.toISOString()).toBe('2025-02-17T09:00:00.000Z') // Week 7 Monday
-    })
-
-    it('should stop at end date when endType is "on"', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'daily',
-        interval: 1,
-        endType: 'on',
-        endDate: dayjs('2025-01-10'),
-      }
-
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-01-31')
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-
-      // Should generate from Jan 6-10 (5 days)
-      expect(result).toHaveLength(5)
-      expect(result[result.length - 1].start.toISOString()).toBe(
-        '2025-01-10T09:00:00.000Z'
-      )
-    })
-
-    it('should respect exceptions in recurrence pattern', () => {
-      const exceptions = [
-        {
-          date: dayjs('2025-01-07'), // Skip Tuesday
-          type: 'this' as const,
-          createdAt: dayjs(),
-        },
-        {
-          date: dayjs('2025-01-09'), // Skip Thursday
-          type: 'this' as const,
-          createdAt: dayjs(),
-        },
-      ]
-
-      const recurrence: EventRecurrence = {
-        frequency: 'daily',
-        interval: 1,
-        endType: 'after',
-        count: 10,
-        exceptions,
-      }
-
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-01-31')
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-
-      // Should have 10 occurrences but skip the exception dates
-      expect(result).toHaveLength(10)
-
-      const resultDates = result.map((event) => event.start.toISOString())
-      expect(resultDates).not.toContain('2025-01-07T09:00:00.000Z')
-      expect(resultDates).not.toContain('2025-01-09T09:00:00.000Z')
-    })
-
-    it('should handle monthly recurrence correctly', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'monthly',
-        interval: 1,
-        endType: 'after',
-        count: 3,
-      }
-
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-12-31')
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-
-      expect(result).toHaveLength(3)
-      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z') // January 6th
-      expect(result[1].start.toISOString()).toBe('2025-02-06T09:00:00.000Z') // February 6th
-      expect(result[2].start.toISOString()).toBe('2025-03-06T09:00:00.000Z') // March 6th
-    })
-
-    it('should handle yearly recurrence correctly', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'yearly',
-        interval: 1,
-        endType: 'after',
-        count: 3,
-      }
-
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2027-12-31')
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-
-      expect(result).toHaveLength(3)
-      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z') // 2025
-      expect(result[1].start.toISOString()).toBe('2026-01-06T09:00:00.000Z') // 2026
-      expect(result[2].start.toISOString()).toBe('2027-01-06T09:00:00.000Z') // 2027
-    })
-
-    it('should preserve event duration across all instances', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'daily',
-        interval: 1,
-        endType: 'after',
-        count: 3,
-      }
-
-      // 2-hour event
-      const longEvent = {
-        ...baseEvent,
-        end: baseEvent.start.add(2, 'hour'),
-        recurrence,
-      }
-
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-01-31')
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        longEvent,
-        startDate,
-        endDate
-      )
-
-      result.forEach((event) => {
-        const duration = event.end.diff(event.start, 'hour')
-        expect(duration).toBe(2)
-      })
-    })
-
-    it('should prevent infinite loops with safety limit', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'daily',
-        interval: 1,
-        endType: 'never', // This could theoretically go forever
-      }
-
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2030-12-31') // Very large range
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-
-      // Should stop at safety limit of 1000 occurrences
-      expect(result.length).toBeLessThanOrEqual(1000)
-    })
-
-    it('should only generate events within the specified date range', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'daily',
-        interval: 1,
-        endType: 'never',
-      }
-
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-08') // Start after the base event
-      const endDate = dayjs('2025-01-12') // Limited range
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-
-      result.forEach((event) => {
-        expect(event.start.isSameOrAfter(startDate, 'day')).toBe(true)
-        expect(event.start.isSameOrBefore(endDate, 'day')).toBe(true)
-      })
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('other')
     })
   })
 
-  describe('getRecurrenceDescription', () => {
-    it('should generate correct description for daily recurrence', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'daily',
-        interval: 1,
-        endType: 'never',
-      }
+  describe('error handling', () => {
+    it('should throw error when base recurring event not found', () => {
+      const targetEvent = createTargetEvent()
+      const currentEvents: CalendarEvent[] = []
 
-      const description = RecurrenceHandler.getRecurrenceDescription(recurrence)
-      expect(description).toBe('Daily')
+      expect(() => {
+        deleteRecurringEvent({
+          targetEvent,
+          currentEvents,
+          scope: 'this',
+        })
+      }).toThrow('Base recurring event not found')
     })
 
-    it('should generate correct description for every N days', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'daily',
-        interval: 3,
-        endType: 'never',
-      }
+    it('should throw error for invalid scope', () => {
+      const baseEvent = createBaseRecurringEvent()
+      const targetEvent = createTargetEvent()
+      const currentEvents = [baseEvent]
 
-      const description = RecurrenceHandler.getRecurrenceDescription(recurrence)
-      expect(description).toBe('Every 3 days')
-    })
-
-    it('should generate correct description for weekly with specific days', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'weekly',
-        interval: 1,
-        endType: 'never',
-        daysOfWeek: ['monday', 'wednesday', 'friday'], // Monday, Wednesday, Friday
-      }
-
-      const description = RecurrenceHandler.getRecurrenceDescription(recurrence)
-      expect(description).toBe('Weekly on monday, wednesday, friday')
-    })
-
-    it('should generate correct description with end date', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'weekly',
-        interval: 1,
-        endType: 'on',
-        endDate: dayjs('2025-12-31'),
-      }
-
-      const description = RecurrenceHandler.getRecurrenceDescription(recurrence)
-      expect(description).toBe('Weekly, until Dec 31, 2025')
-    })
-
-    it('should generate correct description with occurrence count', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'monthly',
-        interval: 2,
-        endType: 'after',
-        count: 5,
-      }
-
-      const description = RecurrenceHandler.getRecurrenceDescription(recurrence)
-      expect(description).toBe('Every 2 months, 5 times')
-    })
-
-    it('should handle singular vs plural correctly in descriptions', () => {
-      const singleRecurrence: EventRecurrence = {
-        frequency: 'yearly',
-        interval: 1,
-        endType: 'after',
-        count: 1,
-      }
-
-      const pluralRecurrence: EventRecurrence = {
-        frequency: 'yearly',
-        interval: 1,
-        endType: 'after',
-        count: 3,
-      }
-
-      expect(RecurrenceHandler.getRecurrenceDescription(singleRecurrence)).toBe(
-        'Yearly, 1 time'
-      )
-      expect(RecurrenceHandler.getRecurrenceDescription(pluralRecurrence)).toBe(
-        'Yearly, 3 times'
+      expect(() => {
+        deleteRecurringEvent({
+          targetEvent,
+          currentEvents,
+          scope: 'invalid' as unknown as 'this',
+        })
+      }).toThrow(
+        "Invalid scope: invalid. Must be 'this', 'following', or 'all'"
       )
     })
   })
+})
 
-  describe('edge cases and error handling', () => {
-    it('should handle empty daysOfWeek array gracefully', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'weekly',
-        interval: 1,
-        endType: 'after',
-        count: 3,
-        daysOfWeek: [], // Empty array
-      }
-
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-01-31')
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-
-      // Should fall back to weekly without specific days
-      expect(result).toHaveLength(3)
-      expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z')
-      expect(result[1].start.toISOString()).toBe('2025-01-13T09:00:00.000Z')
-      expect(result[2].start.toISOString()).toBe('2025-01-20T09:00:00.000Z')
+describe('Edge cases and stress tests', () => {
+  it('should handle complex RRULE with COUNT limit', () => {
+    const baseEvent = createBaseRecurringEvent({
+      rrule: 'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=10',
     })
 
-    it('should handle events that start before the generation range', () => {
-      const pastEvent = {
-        ...baseEvent,
-        start: dayjs('2024-12-30').hour(9),
-        end: dayjs('2024-12-30').hour(10),
-        recurrence: {
-          frequency: 'daily' as const,
-          interval: 1,
-          endType: 'after' as const,
-          count: 10,
-        },
-      }
-
-      const startDate = dayjs('2025-01-05') // After base event
-      const endDate = dayjs('2025-01-15')
-
-      const result = RecurrenceHandler.generateRecurringEvents(
-        pastEvent,
-        startDate,
-        endDate
-      )
-
-      // Should only include events within the range
-      result.forEach((event) => {
-        expect(event.start.isSameOrAfter(startDate)).toBe(true)
-      })
+    const result = generateRecurringEvents({
+      event: baseEvent,
+      currentEvents: [],
+      startDate: dayjs('2025-01-01'),
+      endDate: dayjs('2025-02-28'),
     })
 
-    it('should handle zero or negative intervals gracefully', () => {
-      const recurrence: EventRecurrence = {
-        frequency: 'daily',
-        interval: 0, // Invalid interval
-        endType: 'after',
-        count: 3,
-      }
+    expect(result).toHaveLength(10)
+  })
 
-      const eventWithRecurrence = { ...baseEvent, recurrence }
-      const startDate = dayjs('2025-01-01')
-      const endDate = dayjs('2025-01-31')
-
-      // This should not crash or create infinite loops
-      const result = RecurrenceHandler.generateRecurringEvents(
-        eventWithRecurrence,
-        startDate,
-        endDate
-      )
-      expect(Array.isArray(result)).toBe(true)
+  it('should handle daily recurring event with interval', () => {
+    const baseEvent = createBaseRecurringEvent({
+      rrule: 'FREQ=DAILY;INTERVAL=3',
     })
+
+    const result = generateRecurringEvents({
+      event: baseEvent,
+      currentEvents: [],
+      startDate: dayjs('2025-01-06'),
+      endDate: dayjs('2025-01-20'),
+    })
+
+    expect(result).toHaveLength(5) // Every 3 days: 6, 9, 12, 15, 18
+    expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06')
+    expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-09')
+    expect(result[2].start.format('YYYY-MM-DD')).toBe('2025-01-12')
+  })
+
+  it('should handle monthly recurring event', () => {
+    const baseEvent = createBaseRecurringEvent({
+      rrule: 'FREQ=MONTHLY;BYMONTHDAY=15',
+    })
+
+    const result = generateRecurringEvents({
+      event: baseEvent,
+      currentEvents: [],
+      startDate: dayjs('2025-01-01'),
+      endDate: dayjs('2025-06-30'),
+    })
+
+    expect(result).toHaveLength(6) // Jan 15, Feb 15, Mar 15, Apr 15, May 15, Jun 15
+  })
+
+  it('should handle updating and then deleting same event', () => {
+    const baseEvent = createBaseRecurringEvent()
+    const targetEvent = createTargetEvent()
+    let currentEvents = [baseEvent]
+
+    // First update "this" event
+    currentEvents = updateRecurringEvent({
+      targetEvent,
+      updates: { title: 'Modified' },
+      currentEvents,
+      scope: 'this',
+    })
+
+    expect(currentEvents).toHaveLength(2) // base + modified
+
+    // Then delete the same occurrence
+    const finalResult = deleteRecurringEvent({
+      targetEvent,
+      currentEvents,
+      scope: 'this',
+    })
+
+    // Should have base event with 2 EXDATES (one from update, one from delete)
+    const baseEventResult = finalResult.find((e) => e.rrule)
+    expect(baseEventResult?.exdates).toHaveLength(2)
+    expect(
+      baseEventResult?.exdates?.filter((d) => d === '2025-01-20T09:00:00.000Z')
+    ).toHaveLength(2)
+  })
+
+  it('should handle multiple "following" updates creating series chain', () => {
+    const baseEvent = createBaseRecurringEvent()
+    let currentEvents = [baseEvent]
+
+    // Update "following" from first occurrence
+    const firstTarget = {
+      ...createTargetEvent(),
+      start: dayjs('2025-01-06T09:00:00'),
+    }
+    currentEvents = updateRecurringEvent({
+      targetEvent: firstTarget,
+      updates: { title: 'First Split' },
+      currentEvents,
+      scope: 'following',
+    })
+
+    expect(currentEvents).toHaveLength(2) // terminated original + new series
+
+    // Update "following" from later occurrence in new series
+    const secondTarget = {
+      ...createTargetEvent(),
+      start: dayjs('2025-01-20T09:00:00'),
+      uid: 'recurring-1@calendar.test_following',
+    }
+    currentEvents = updateRecurringEvent({
+      targetEvent: secondTarget,
+      updates: { title: 'Second Split' },
+      currentEvents,
+      scope: 'following',
+    })
+
+    expect(currentEvents).toHaveLength(3) // original terminated + first series terminated + second series
+  })
+
+  it('should preserve duration when creating new series in "following" scope', () => {
+    const baseEvent = createBaseRecurringEvent({
+      start: dayjs('2025-01-06T09:00:00'),
+      end: dayjs('2025-01-06T11:30:00'), // 2.5 hour duration
+    })
+    const targetEvent = {
+      ...createTargetEvent(),
+      start: dayjs('2025-01-20T09:00:00'),
+      end: dayjs('2025-01-20T11:30:00'),
+    }
+
+    const result = updateRecurringEvent({
+      targetEvent,
+      updates: { start: dayjs('2025-01-20T14:00:00') }, // Change start time
+      currentEvents: [baseEvent],
+      scope: 'following',
+    })
+
+    const newSeries = result.find((e) => e.uid?.includes('_following'))
+    expect(newSeries?.start.format('HH:mm')).toBe('14:00')
+    expect(newSeries?.end.format('HH:mm')).toBe('16:30') // Should preserve 2.5 hour duration
   })
 })

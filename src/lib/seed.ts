@@ -237,6 +237,17 @@ const dummyEvents = [
     color: 'bg-red-100 text-red-800',
     allDay: true,
   },
+
+  {
+    id: '20',
+    title: 'Daily Standup',
+    description: 'Daily team sync meeting',
+    start: baseDate.add(1, 'month').date(2).hour(10),
+    end: baseDate.add(1, 'month').date(2).hour(11),
+    color: 'bg-cyan-100 text-cyan-800',
+    rrule: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR',
+    exdates: [],
+  },
 ]
 
 export default dummyEvents

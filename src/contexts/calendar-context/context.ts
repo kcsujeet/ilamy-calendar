@@ -35,6 +35,7 @@ export interface CalendarContextType {
     start: dayjs.Dayjs,
     end: dayjs.Dayjs
   ) => CalendarEvent[]
+  findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
   renderEvent?: (event: CalendarEvent) => React.ReactNode
   onEventClick: (event: CalendarEvent) => void
   onCellClick: (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => void

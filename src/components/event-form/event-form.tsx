@@ -19,13 +19,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import type { CalendarEvent, EventRecurrence } from '@/components/types'
-import { RecurrenceEditor } from '../../features/recurrence/components/recurrence-editor/recurrence-editor'
+import type { CalendarEvent } from '@/components/types'
+import { isRecurringEvent } from '@/lib/recurrence-handler'
+import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-editor/recurrence-editor'
 import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
-import {
-  useRecurringEventActions,
-  isRecurringEvent,
-} from '@/features/recurrence/hooks/useRecurringEventActions'
+import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
 
 const colorOptions = [
   { value: 'bg-blue-100 text-blue-800', label: 'Blue' },
@@ -69,8 +68,15 @@ export const EventForm: React.FC<EventFormProps> = ({
     handleConfirm,
   } = useRecurringEventActions(onClose)
 
+  const { findParentRecurringEvent } = useCalendarContext()
+
   const start = selectedEvent?.originalStart ?? selectedEvent?.start
   const end = selectedEvent?.originalEnd ?? selectedEvent?.end
+
+  // Find parent event if this is a recurring event instance
+  const parentEvent = selectedEvent
+    ? findParentRecurringEvent(selectedEvent)
+    : null
 
   // Form default values
   const defaultStartDate = selectedDate?.toDate() || new Date()
@@ -102,9 +108,9 @@ export const EventForm: React.FC<EventFormProps> = ({
     location: selectedEvent?.location || '',
   })
 
-  // Recurrence state
-  const [recurrence, setRecurrence] = useState<EventRecurrence | undefined>(
-    selectedEvent?.recurrence
+  // Recurrence state - pull RRULE from parent if this is an instance
+  const [rrule, setRrule] = useState<string | undefined>(
+    selectedEvent?.rrule || parentEvent?.rrule
   )
 
   // Create wrapper functions to fix TypeScript errors with DatePicker
@@ -177,7 +183,7 @@ export const EventForm: React.FC<EventFormProps> = ({
       location: formValues.location,
       allDay: isAllDay,
       color: selectedColor,
-      recurrence,
+      rrule: rrule,
     }
 
     if (selectedEvent?.id) {
@@ -194,7 +200,7 @@ export const EventForm: React.FC<EventFormProps> = ({
           location: formValues.location,
           allDay: isAllDay,
           color: selectedColor,
-          recurrence,
+          rrule: rrule,
         })
         return // Don't close the form yet, let the dialog handle it
       }
@@ -377,7 +383,7 @@ export const EventForm: React.FC<EventFormProps> = ({
               </div>
 
               {/* Recurrence Section */}
-              <RecurrenceEditor value={recurrence} onChange={setRecurrence} />
+              <RecurrenceEditor value={rrule} onChange={setRrule} />
             </div>
 
             <DialogFooter className="mt-2 flex flex-col-reverse gap-2 sm:mt-4 sm:flex-row sm:gap-0">

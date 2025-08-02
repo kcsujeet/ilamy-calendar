@@ -3,7 +3,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { CalendarContext } from './context'
 import type { CalendarEvent } from '@/components/types'
-import { RecurrenceHandler } from '@/lib/recurrence-handler/recurrence-handler'
+import {
+  generateRecurringEvents,
+  updateRecurringEvent as updateRecurringEventImpl,
+  deleteRecurringEvent as deleteRecurringEventImpl,
+} from '@/lib/recurrence-handler'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 
 interface CalendarProviderProps {
@@ -59,21 +63,15 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       const allEvents: CalendarEvent[] = []
 
       for (const event of currentEvents) {
-        if (event.recurrence) {
-          // Check if the entire series is excluded by 'all' type exceptions
-          const hasAllException = event.recurrence.exceptions?.some(
-            (exception) => exception.type === 'all'
-          )
-
-          if (!hasAllException) {
-            // Generate recurring instances for the specific range
-            const recurringEvents = RecurrenceHandler.generateRecurringEvents(
-              event,
-              startDate,
-              endDate
-            )
-            allEvents.push(...recurringEvents)
-          }
+        if (event.rrule) {
+          // Generate recurring instances for the specific range
+          const recurringEvents = generateRecurringEvents({
+            event,
+            currentEvents,
+            startDate,
+            endDate,
+          })
+          allEvents.push(...recurringEvents)
         } else {
           // Add non-recurring events with comprehensive range checking
           const eventStartsInRange =
@@ -232,25 +230,31 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       updates: Partial<CalendarEvent>,
       options: RecurrenceEditOptions
     ) => {
-      setCurrentEvents((prevEvents) =>
-        RecurrenceHandler.updateRecurringEvent(
-          prevEvents,
-          event,
-          updates,
-          options
-        )
-      )
+      // Use our implemented recurring event update function
+      const updatedEvents = updateRecurringEventImpl({
+        targetEvent: event,
+        updates,
+        currentEvents,
+        scope: options.scope,
+      })
+
+      setCurrentEvents(updatedEvents)
     },
-    []
+    [currentEvents]
   )
 
   const deleteRecurringEvent = useCallback(
     (event: CalendarEvent, options: RecurrenceEditOptions) => {
-      setCurrentEvents((prevEvents) =>
-        RecurrenceHandler.deleteRecurringEvent(prevEvents, event, options)
-      )
+      // Use our implemented recurring event delete function
+      const updatedEvents = deleteRecurringEventImpl({
+        targetEvent: event,
+        currentEvents,
+        scope: options.scope,
+      })
+
+      setCurrentEvents(updatedEvents)
     },
-    []
+    [currentEvents]
   )
 
   const deleteEvent = useCallback((eventId: string) => {
@@ -309,9 +313,6 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
           end: endDate,
           description: '',
           allDay: false,
-          isRecurring: false,
-          recurrence: null,
-          parentEventId: null,
         } as CalendarEvent)
         setIsEventFormOpen(true)
       }
@@ -330,13 +331,27 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
         end: date ?? currentDate.add(1, 'hour'),
         description: '',
         allDay: false,
-        isRecurring: false,
-        recurrence: null,
-        parentEventId: null,
       } as CalendarEvent)
       setIsEventFormOpen(true)
     },
     [currentDate]
+  )
+
+  // Find parent recurring event for a given event instance
+  const findParentRecurringEvent = useCallback(
+    (event: CalendarEvent): CalendarEvent | null => {
+      // Generate UID if missing (following RFC 5545 compliance)
+      const targetUID =
+        event.uid || `${event.id.toString().split('_')[0]}@ilamy.calendar`
+
+      const parentEvent = currentEvents.find((e) => {
+        const parentUID = e.uid || `${e.id}@ilamy.calendar`
+        return parentUID === targetUID && e.rrule
+      })
+
+      return parentEvent || null
+    },
+    [currentEvents]
   )
 
   // Create the context value
@@ -364,6 +379,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       openEventForm: handleOpenEventForm,
       closeEventForm,
       getEventsForDateRange,
+      findParentRecurringEvent,
       renderEvent,
       onEventClick: handleEventClick,
       onCellClick: handleDateClick,
@@ -399,6 +415,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       deleteRecurringEvent,
       closeEventForm,
       getEventsForDateRange,
+      findParentRecurringEvent,
       renderEvent,
       handleEventClick,
       handleDateClick,

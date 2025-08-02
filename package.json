@@ -88,12 +88,13 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "bun-plugin-tailwind": "^0.0.14",
     "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "lucide-react": "^0.475.0",
     "motion": "^12.23.11",
     "react-day-picker": "^9.8.1",
-    "tailwind-merge": "^3.3.1",
-    "clsx": "^2.1.1"
+    "rrule": "^2.8.1",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^18.0.1",
@@ -103,6 +104,7 @@
     "@types/bun": "latest",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@types/rrule": "^2.2.9",
     "auto-changelog": "^2.5.0",
     "bunup": "^0.8.72",
     "husky": "^9.1.7",

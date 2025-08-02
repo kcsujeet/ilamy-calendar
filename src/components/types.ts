@@ -1,70 +1,5 @@
 import type dayjs from '@/lib/dayjs-config'
 
-export interface EventRecurrence {
-  /** How often the event repeats */
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
-  /**
-   * Interval between repetitions (e.g., every 2 weeks = interval: 2, frequency: 'weekly')
-   * @default 1
-   */
-  interval: number
-  /**
-   * How the recurrence should end
-   */
-  endType: 'never' | 'on' | 'after'
-  /**
-   * End date for the recurrence pattern (when endType is 'on')
-   * Accepts dayjs objects, Date objects, or ISO date strings
-   */
-  endDate?: dayjs.Dayjs
-  /**
-   * Maximum number of occurrences (when endType is 'after')
-   */
-  count?: number
-  /**
-   * Days of the week for weekly recurrence
-   * Uses semantic day names for better readability
-   * @example ['monday', 'wednesday', 'friday'] for Mon/Wed/Fri
-   */
-  daysOfWeek?: WeekDays[]
-  /**
-   * Enhanced exceptions that support different delete operations
-   * Can be simple dates (backwards compatibility) or enhanced exception objects
-   */
-  exceptions?: RecurrenceException[]
-  /**
-   * Enhanced updates that support different update operations
-   * Stores modifications to specific instances of recurring events
-   */
-  updates?: RecurrenceUpdate[]
-}
-
-/**
- * Enhanced exception for recurring events that supports different delete operations
- */
-export interface RecurrenceException {
-  /** The date of the exception */
-  date: dayjs.Dayjs
-  /** The type of exception operation */
-  type: 'this' | 'following' | 'all'
-  /** When this exception was created (for tracking order) */
-  createdAt: dayjs.Dayjs
-}
-
-/**
- * Enhanced update for recurring events that supports different update operations
- */
-export interface RecurrenceUpdate {
-  /** The date of the update */
-  date: dayjs.Dayjs
-  /** The type of update operation */
-  type: 'this' | 'following' | 'all'
-  /** The updates to apply to the event */
-  updates: Partial<CalendarEvent>
-  /** When this update was created (for tracking order) */
-  createdAt: dayjs.Dayjs
-}
-
 /**
  * Core calendar event interface representing a single calendar event.
  * This is the primary data structure for calendar events.
@@ -108,30 +43,29 @@ export interface CalendarEvent {
    */
   allDay?: boolean
   /**
-   * Recurrence configuration for repeating events
-   * If present, this event will repeat according to the specified pattern
+   * iCalendar RRULE string for recurring events (RFC 5545 standard)
+   * @example "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR"
+   * @example "FREQ=DAILY;INTERVAL=1;COUNT=10"
+   * @example "FREQ=MONTHLY;INTERVAL=1;UNTIL=20251231T235959Z"
    */
-  recurrence?: EventRecurrence
+  rrule?: string
   /**
-   * Whether this event is part of a recurring series
-   * @internal Set automatically by the calendar system
+   * Exception dates (EXDATE) - dates to exclude from recurrence
+   * Uses ISO string format for storage and transmission
+   * @example ['2025-01-15T09:00:00.000Z', '2025-01-22T09:00:00.000Z']
    */
-  isRecurring?: boolean
+  exdates?: string[]
   /**
-   * Reference to the parent event ID for recurring event instances
-   * @internal Used to link recurring instances to their parent
+   * Recurrence ID (RECURRENCE-ID) - identifies modified instances
+   * Points to the original occurrence date this event modifies
+   * Used for events that are modifications of recurring instances
    */
-  parentEventId?: string | number
+  recurrenceId?: string
   /**
-   * Whether this is a modified instance of a recurring event
-   * @internal Used to track exceptions in recurring series
+   * UID for iCalendar compatibility
+   * Unique identifier across calendar systems
    */
-  isException?: boolean
-  /**
-   * Whether this instance has been modified from the original recurring event
-   * @internal Used to track updates in recurring series
-   */
-  isModified?: boolean
+  uid?: string
   /**
    * Custom data associated with the event
    * Use this to store additional metadata specific to your application
@@ -139,40 +73,6 @@ export interface CalendarEvent {
    */
   // oxlint-disable-next-line no-explicit-any
   data?: Record<string, any>
-}
-
-export interface IlamyCalendarEventRecurrence
-  extends Omit<EventRecurrence, 'endDate' | 'exceptions'> {
-  /** How often the event repeats */
-  endDate?: dayjs.Dayjs | Date | string
-  /** Specific dates to exclude from the recurrence pattern */
-  exceptions?: (dayjs.Dayjs | Date | string)[]
-}
-
-export interface IlamyCalendarEvent
-  extends Omit<
-    CalendarEvent,
-    'start' | 'end' | 'recurrence' | 'originalStart' | 'originalEnd'
-  > {
-  /** Start date and time of the event */
-  start: dayjs.Dayjs | Date | string
-  /** End date and time of the event */
-  end: dayjs.Dayjs | Date | string
-  /**
-   * Original start date for recurring events (used for tracking modifications)
-   * @internal
-   */
-  originalStart?: dayjs.Dayjs | Date | string
-  /**
-   * Original end date for recurring events (used for tracking modifications)
-   * @internal
-   */
-  originalEnd?: dayjs.Dayjs | Date | string
-  /**
-   * Recurrence configuration for repeating events
-   * If present, this event will repeat according to the specified pattern
-   */
-  recurrence?: IlamyCalendarEventRecurrence
 }
 
 /**

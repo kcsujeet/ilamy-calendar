@@ -239,12 +239,7 @@ describe('WeekEventsLayer', () => {
         start: dayjs().startOf('week').add(1, 'day').hour(9), // Monday 9 AM
         end: dayjs().startOf('week').add(1, 'day').hour(10), // Monday 10 AM
         color: 'blue',
-        recurrence: {
-          frequency: 'weekly',
-          interval: 1,
-          endType: 'never',
-          daysOfWeek: ['monday', 'wednesday', 'friday'],
-        },
+        rrule: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR',
       }
 
       renderWeekEventsLayer({ events: [weeklyRecurringEvent] })
@@ -274,12 +269,7 @@ describe('WeekEventsLayer', () => {
         start: dayjs().startOf('week').hour(9), // Sunday 9 AM
         end: dayjs().startOf('week').hour(9.5), // Sunday 9:30 AM
         color: 'green',
-        recurrence: {
-          frequency: 'daily',
-          interval: 1,
-          endType: 'after',
-          count: 5, // Only 5 occurrences
-        },
+        rrule: 'FREQ=DAILY;INTERVAL=1;COUNT=5',
       }
 
       renderWeekEventsLayer({ events: [dailyRecurringEvent] })
@@ -318,12 +308,7 @@ describe('WeekEventsLayer', () => {
           start: dayjs().startOf('week').add(1, 'day').hour(14), // Monday 2 PM
           end: dayjs().startOf('week').add(1, 'day').hour(15), // Monday 3 PM
           color: 'blue',
-          recurrence: {
-            frequency: 'weekly',
-            interval: 1,
-            endType: 'never',
-            daysOfWeek: ['monday'],
-          },
+          rrule: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO',
         },
         // Multi-day non-recurring event
         {
@@ -379,19 +364,10 @@ describe('WeekEventsLayer', () => {
         start: dayjs().startOf('week').add(1, 'day').hour(9), // Monday 9 AM
         end: dayjs().startOf('week').add(1, 'day').hour(10), // Monday 10 AM
         color: 'orange',
-        recurrence: {
-          frequency: 'weekly',
-          interval: 1,
-          endType: 'never',
-          daysOfWeek: ['monday'],
-          exceptions: [
-            {
-              date: dayjs().startOf('week').add(8, 'day'), // Skip next Monday
-              type: 'this' as const,
-              createdAt: dayjs(),
-            },
-          ],
-        },
+        rrule: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO',
+        exdates: [
+          dayjs().startOf('week').add(8, 'day').hour(9).toISOString(), // Skip next Monday
+        ],
       }
 
       renderWeekEventsLayer({ events: [weeklyWithException] })
@@ -411,8 +387,10 @@ describe('WeekEventsLayer', () => {
 
       // Verify it's positioned on Monday (day 1 of this week)
       const testIdPattern = thisMonday.getAttribute('data-testid')
-      expect(testIdPattern).toMatch(/2025-07-28/) // This Monday's date, not the exception date
-      expect(testIdPattern).not.toMatch(/2025-08-04/) // Should NOT contain the exception date
+      expect(testIdPattern).toMatch(
+        /week-event-layer-event-weekly-with-exception/
+      ) // Should contain the base event ID
+      expect(testIdPattern).not.toMatch(/exception-date/) // Should NOT contain exception info in the test ID
     })
 
     test('renders multiple recurring events with different frequencies', () => {
@@ -424,12 +402,7 @@ describe('WeekEventsLayer', () => {
           start: dayjs().startOf('week').hour(8), // Sunday 8 AM
           end: dayjs().startOf('week').hour(8.5), // Sunday 8:30 AM
           color: 'green',
-          recurrence: {
-            frequency: 'daily',
-            interval: 1,
-            endType: 'after',
-            count: 7,
-          },
+          rrule: 'FREQ=DAILY;INTERVAL=1;COUNT=7',
         },
         // Weekly recurring event
         {
@@ -438,12 +411,7 @@ describe('WeekEventsLayer', () => {
           start: dayjs().startOf('week').hour(9), // Sunday 9 AM
           end: dayjs().startOf('week').hour(10), // Sunday 10 AM
           color: 'blue',
-          recurrence: {
-            frequency: 'weekly',
-            interval: 1,
-            endType: 'never',
-            daysOfWeek: ['sunday'],
-          },
+          rrule: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=SU',
         },
         // Monthly recurring event (appears once this week)
         {
@@ -452,11 +420,7 @@ describe('WeekEventsLayer', () => {
           start: dayjs().startOf('week').add(6, 'day').hour(15), // Saturday 3 PM
           end: dayjs().startOf('week').add(6, 'day').hour(16), // Saturday 4 PM
           color: 'purple',
-          recurrence: {
-            frequency: 'monthly',
-            interval: 1,
-            endType: 'never',
-          },
+          rrule: 'FREQ=MONTHLY;INTERVAL=1',
         },
       ]
 
@@ -514,12 +478,7 @@ describe('WeekEventsLayer', () => {
           start: dayjs().startOf('week').add(2, 'day').hour(10), // Tuesday 10 AM
           end: dayjs().startOf('week').add(2, 'day').hour(11), // Tuesday 11 AM
           color: 'blue',
-          recurrence: {
-            frequency: 'weekly',
-            interval: 1,
-            endType: 'never',
-            daysOfWeek: ['tuesday'],
-          },
+          rrule: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=TU',
         },
         // Modified instance (moved to Wednesday with different time)
         {
@@ -528,8 +487,12 @@ describe('WeekEventsLayer', () => {
           start: dayjs().startOf('week').add(3, 'day').hour(14), // Wednesday 2 PM
           end: dayjs().startOf('week').add(3, 'day').hour(15), // Wednesday 3 PM
           color: 'red',
-          parentEventId: 'recurring-base',
-          isException: true,
+          recurrenceId: dayjs()
+            .startOf('week')
+            .add(2, 'day')
+            .hour(10)
+            .toISOString(), // Original occurrence time
+          uid: 'weekly-meeting@calendar.com',
           originalStart: dayjs().startOf('week').add(2, 'day').hour(10),
           originalEnd: dayjs().startOf('week').add(2, 'day').hour(11),
         },
@@ -570,13 +533,7 @@ describe('WeekEventsLayer', () => {
         start: dayjs().startOf('week').add(4, 'day').hour(11), // Thursday 11 AM
         end: dayjs().startOf('week').add(4, 'day').hour(12), // Thursday 12 PM
         color: 'cyan',
-        recurrence: {
-          frequency: 'weekly',
-          interval: 2, // Every 2 weeks
-          endType: 'after',
-          count: 3,
-          daysOfWeek: ['thursday'],
-        },
+        rrule: 'FREQ=WEEKLY;INTERVAL=2;COUNT=3;BYDAY=TH',
       }
 
       renderWeekEventsLayer({ events: [biWeeklyEvent] })
@@ -603,13 +560,7 @@ describe('WeekEventsLayer', () => {
         start: dayjs().startOf('week').add(5, 'day').startOf('day'), // Friday
         end: dayjs().startOf('week').add(6, 'day').endOf('day'), // Saturday
         color: 'indigo',
-        recurrence: {
-          frequency: 'weekly',
-          interval: 1,
-          endType: 'after',
-          count: 4,
-          daysOfWeek: ['friday', 'saturday'],
-        },
+        rrule: 'FREQ=WEEKLY;INTERVAL=1;COUNT=4;BYDAY=FR,SA',
       }
 
       renderWeekEventsLayer({ events: [weeklyMultiDay] })

@@ -383,11 +383,7 @@ describe('EventForm', () => {
         expect(mockOnAdd).toHaveBeenCalledWith(
           expect.objectContaining({
             title: 'Recurring Event',
-            recurrence: expect.objectContaining({
-              frequency: 'daily',
-              interval: 1,
-              endType: 'never',
-            }),
+            rrule: expect.stringMatching(/^FREQ=DAILY;INTERVAL=1$/),
           })
         )
       })
@@ -454,7 +450,7 @@ describe('EventForm', () => {
         ...testEvent,
         originalStart: dayjs('2025-08-15T09:00:00'),
         originalEnd: dayjs('2025-08-15T10:00:00'),
-        recurrence: { frequency: 'daily', interval: 1, endType: 'never' },
+        rrule: 'FREQ=DAILY;INTERVAL=1',
       }
 
       renderEventForm({ ...defaultProps, selectedEvent: recurringEvent })
@@ -466,6 +462,45 @@ describe('EventForm', () => {
       const endTimeInput = screen.getByLabelText('End Time') as HTMLInputElement
       expect(startTimeInput.value).toBe('09:00')
       expect(endTimeInput.value).toBe('10:00')
+    })
+  })
+
+  describe('Recurring Event Instance Editing', () => {
+    it('should pull RRULE from parent when editing an instance', () => {
+      const parentEvent: CalendarEvent = {
+        id: 'recurring-1',
+        uid: 'recurring-1@ilamy.calendar',
+        title: 'Weekly Meeting',
+        start: dayjs('2025-08-15T10:00:00'),
+        end: dayjs('2025-08-15T11:00:00'),
+        rrule: 'FREQ=WEEKLY;BYDAY=MO,WE,FR',
+        allDay: false,
+        color: 'bg-blue-100 text-blue-800',
+      }
+
+      const instanceEvent: CalendarEvent = {
+        id: 'recurring-1_1',
+        uid: 'recurring-1@ilamy.calendar',
+        title: 'Weekly Meeting',
+        start: dayjs('2025-08-17T10:00:00'), // Wednesday instance
+        end: dayjs('2025-08-17T11:00:00'),
+        rrule: undefined, // Instance has no RRULE
+        allDay: false,
+        color: 'bg-blue-100 text-blue-800',
+      }
+
+      // Mock the calendar context to provide both parent and instance
+      const mockEvents = [parentEvent, instanceEvent]
+
+      renderEventForm(
+        { ...defaultProps, selectedEvent: instanceEvent },
+        { events: mockEvents }
+      )
+
+      // RecurrenceEditor should show as enabled (checkbox checked)
+      // because it found the parent's RRULE
+      const toggleButton = screen.getByTestId('toggle-recurrence')
+      expect(toggleButton).toBeChecked() // ❌ FAILS: Currently unchecked because instance.rrule is undefined
     })
   })
 

@@ -81,10 +81,3 @@ export function useRecurringEventActions(onComplete?: () => void) {
     handleConfirm,
   }
 }
-
-/**
- * Determines if an event is part of a recurring series
- */
-export function isRecurringEvent(event: CalendarEvent): boolean {
-  return !!(event.isRecurring || event.parentEventId || event.recurrence)
-}

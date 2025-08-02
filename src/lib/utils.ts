@@ -21,3 +21,12 @@ export function generateMockEvents({ count = 5 } = {}) {
   }
   return events
 }
+
+export function safeDate(date: dayjs.Dayjs | Date | string): dayjs.Dayjs {
+  if (dayjs.isDayjs(date)) {
+    return date
+  }
+
+  const parsedDate = dayjs(date)
+  return parsedDate.isValid() ? parsedDate : dayjs()
+}

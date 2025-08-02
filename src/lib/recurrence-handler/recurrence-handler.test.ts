@@ -240,7 +240,7 @@ describe('updateRecurringEvent', () => {
       expect(newSeries?.start.isSame(dayjs('2025-01-20T14:00:00'))).toEqual(
         true
       )
-      expect(newSeries?.uid).toBe('recurring-1@calendar.test_following')
+      expect(newSeries?.uid).toBe('recurring-1_following@ilamy.calendar')
       expect(newSeries?.recurrenceId).toBeUndefined()
     })
 
@@ -646,7 +646,7 @@ describe('Edge cases and stress tests', () => {
     const secondTarget = {
       ...createTargetEvent(),
       start: dayjs('2025-01-20T09:00:00'),
-      uid: 'recurring-1@calendar.test_following',
+      uid: 'recurring-1_following@ilamy.calendar',
     }
     currentEvents = updateRecurringEvent({
       targetEvent: secondTarget,

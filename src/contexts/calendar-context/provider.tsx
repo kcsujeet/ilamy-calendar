@@ -72,9 +72,8 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
             endDate,
           })
           allEvents.push(...recurringEvents)
-        } else if (!event.recurrenceId) {
+        } else {
           // Add non-recurring events with comprehensive range checking
-          // Exclude events with recurrenceId as they're handled by generateRecurringEvents
           const eventStartsInRange =
             event.start.isSameOrAfter(startDate) &&
             event.start.isSameOrBefore(endDate)
@@ -342,8 +341,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const findParentRecurringEvent = useCallback(
     (event: CalendarEvent): CalendarEvent | null => {
       // Generate UID if missing (following RFC 5545 compliance)
-      const targetUID =
-        event.uid || `${event.id.toString().split('_')[0]}@ilamy.calendar`
+      const targetUID = event.uid
 
       const parentEvent = currentEvents.find((e) => {
         const parentUID = e.uid || `${e.id}@ilamy.calendar`

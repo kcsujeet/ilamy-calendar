@@ -125,8 +125,7 @@ if (targetEvent.recurrenceId) {
 }
 
 // Find base event by UID and RRULE presence (with fallback UID generation)
-const targetUID =
-  targetEvent.uid || `${targetEvent.id.toString().split('_')[0]}@ilamy.calendar`
+const targetUID = targetEvent.uid
 const baseEvent = events.find(
   (e) => (e.uid || `${e.id}@ilamy.calendar`) === targetUID && e.rrule
 )
@@ -610,7 +609,7 @@ isRecurringEvent(event) // Returns true for base event OR instances
 const isBase = !!(event.rrule && !event.recurrenceId)
 const isModified = !!event.recurrenceId
 const isGenerated =
-  !event.rrule && !event.recurrenceId && /_\d+$/.test(event.id.toString())
+  !event.rrule && !event.recurrenceId && event.uid
 ```
 
 **Important Note:** Regular generated instances have NO `recurrenceId` - this field is only present for modified instances. To identify generated instances, check the ID pattern (`originalId_number`) and UID sharing with a base event.

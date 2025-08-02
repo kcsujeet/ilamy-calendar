@@ -1,7 +1,7 @@
 import type { CalendarEvent } from '@/components'
 import dayjs from '@/lib/dayjs-config'
 import { RRule } from 'rrule'
-import { safeDate } from '../utils'
+import { omitKeys, safeDate } from '../utils'
 
 export const isRecurringEvent = (event: CalendarEvent) => {
   return Boolean(event.rrule || event.recurrenceId || event.uid)
@@ -137,13 +137,14 @@ export const updateRecurringEvent = ({
       // Create standalone modified event with recurrenceId
       const modifiedEventId = `${targetEvent.id}_modified_${Date.now()}`
       const modifiedEvent: CalendarEvent = {
-        ...targetEvent,
+        // @ts-expect-error TODO: fix the types
+        ...omitKeys(targetEvent, ['width', 'height', 'top', 'left', 'right']),
         ...updates,
         id: modifiedEventId,
         recurrenceId: targetEventStartISO, // This marks it as a modified instance
-        uid: baseEvent.uid, // Keep same UID as base event (iCalendar standard)
+        uid: baseEvent.uid || `${baseEvent.id}@ilamy.calendar`, // Keep same UID as base event (iCalendar standard)
         rrule: undefined, // Standalone events don't have RRULE
-      }
+      } as CalendarEvent
       updatedEvents.push(modifiedEvent)
       break
     }
@@ -171,8 +172,8 @@ export const updateRecurringEvent = ({
       const newSeriesStartTime = updates.start || targetEvent.start
       const newSeriesEndTime =
         updates.end || newSeriesStartTime.add(originalDuration)
-      const newSeriesId = `${baseEvent.id}_following_${Date.now()}`
-      const newSeriesUID = `${baseEvent.uid}_following`
+      const newSeriesId = `${baseEvent.id}_following`
+      const newSeriesUID = `${newSeriesId}@ilamy.calendar`
 
       const newSeriesEvent: CalendarEvent = {
         ...baseEvent,

@@ -10,7 +10,7 @@ import {
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { cn } from '@/lib/utils'
 import dayjs from '@/lib/dayjs-config'
-import React from 'react'
+import React, { useState } from 'react'
 import type {
   DragCancelEvent,
   DragEndEvent,
@@ -18,16 +18,31 @@ import type {
 } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import type { CalendarEvent } from '@/components/types'
+import { isRecurringEvent } from '@/lib/recurrence-handler'
+import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
+import type { RecurrenceEditScope } from '@/features/recurrence/types'
 
 interface CalendarDndContextProps {
   children: React.ReactNode
 }
 
 export function CalendarDndContext({ children }: CalendarDndContextProps) {
-  const { updateEvent, view, disableDragAndDrop } = useCalendarContext()
+  const { updateEvent, updateRecurringEvent, view, disableDragAndDrop } =
+    useCalendarContext()
   const [activeEvent, setActiveEvent] = React.useState<CalendarEvent | null>(
     null
   )
+
+  // State for recurring event dialog
+  const [recurringDialog, setRecurringDialog] = useState<{
+    isOpen: boolean
+    event: CalendarEvent | null
+    updates: Partial<CalendarEvent> | null
+  }>({
+    isOpen: false,
+    event: null,
+    updates: null,
+  })
 
   // Configure sensors with reduced activation constraints for easier dragging
   const mouseSensor = useSensor(MouseSensor, {
@@ -46,6 +61,57 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
   })
 
   const sensors = useSensors(mouseSensor, touchSensor)
+
+  // Helper function to perform the actual event update
+  const performEventUpdate = (
+    event: CalendarEvent,
+    updates: Partial<CalendarEvent>
+  ) => {
+    // Validate inputs
+    if (!event || !event.id) {
+      return
+    }
+
+    if (!updates || Object.keys(updates).length === 0) {
+      return
+    }
+
+    if (isRecurringEvent(event)) {
+      // Show dialog for recurring events
+      setRecurringDialog({
+        isOpen: true,
+        event,
+        updates,
+      })
+    } else {
+      // Directly update regular events
+      updateEvent(event.id, updates)
+    }
+  }
+
+  // Handle recurring event dialog confirmation
+  const handleRecurringEventConfirm = (scope: RecurrenceEditScope) => {
+    if (!recurringDialog.event || !recurringDialog.updates) {
+      setRecurringDialog({ isOpen: false, event: null, updates: null })
+      return
+    }
+
+    try {
+      updateRecurringEvent(recurringDialog.event, recurringDialog.updates, {
+        scope,
+        eventDate: recurringDialog.event.start,
+      })
+    } catch {
+      // Silently handle error and reset dialog state
+    } finally {
+      setRecurringDialog({ isOpen: false, event: null, updates: null })
+    }
+  }
+
+  // Handle recurring event dialog close
+  const handleRecurringEventClose = () => {
+    setRecurringDialog({ isOpen: false, event: null, updates: null })
+  }
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event
@@ -85,7 +151,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
       }
 
       // Update the event with new times
-      updateEvent(activeEvent.id, {
+      performEventUpdate(activeEvent, {
         start: newStart,
         end: newEnd,
       })
@@ -119,7 +185,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
             .hour(endHour)
             .minute(endMinute)
 
-          updateEvent(activeEvent.id, {
+          performEventUpdate(activeEvent, {
             start: newStart,
             end: newEnd,
             originalStart: undefined,
@@ -137,7 +203,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
           const newStart = originalStart.add(daysDifference, 'day')
           const newEnd = originalEnd.add(daysDifference, 'day')
 
-          updateEvent(activeEvent.id, {
+          performEventUpdate(activeEvent, {
             start: newStart,
             end: newEnd,
             originalStart: undefined,
@@ -157,7 +223,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
         )
         const newEnd = newStart.add(durationMinutes, 'minute')
 
-        updateEvent(activeEvent.id, {
+        performEventUpdate(activeEvent, {
           start: newStart,
           end: newEnd,
           originalStart: undefined,
@@ -179,27 +245,38 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
-      collisionDetection={pointerWithin}
-    >
-      {children}
-      <DragOverlay modifiers={[snapCenterToCursor]}>
-        {activeEvent && (
-          <div
-            className={cn(
-              'cursor-grab truncate rounded bg-amber-200 p-2 text-[10px] shadow-lg sm:text-xs',
-              activeEvent.backgroundColor || 'bg-blue-500',
-              activeEvent.color || 'text-white'
-            )}
-          >
-            {activeEvent?.title}
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+    <>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+        collisionDetection={pointerWithin}
+      >
+        {children}
+        <DragOverlay modifiers={[snapCenterToCursor]}>
+          {activeEvent && (
+            <div
+              className={cn(
+                'cursor-grab truncate rounded bg-amber-200 p-2 text-[10px] shadow-lg sm:text-xs',
+                activeEvent.backgroundColor || 'bg-blue-500',
+                activeEvent.color || 'text-white'
+              )}
+            >
+              {activeEvent?.title}
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
+
+      {/* Recurring event edit dialog */}
+      <RecurrenceEditDialog
+        isOpen={recurringDialog.isOpen}
+        onClose={handleRecurringEventClose}
+        onConfirm={handleRecurringEventConfirm}
+        operationType="edit"
+        eventTitle={recurringDialog.event?.title || ''}
+      />
+    </>
   )
 }

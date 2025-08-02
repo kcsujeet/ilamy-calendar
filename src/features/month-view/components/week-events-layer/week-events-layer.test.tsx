@@ -471,7 +471,7 @@ describe('WeekEventsLayer', () => {
 
     test('handles recurring events with modified instances', () => {
       const events: CalendarEvent[] = [
-        // Original recurring event
+        // Base recurring event with EXDATE to exclude the modified occurrence
         {
           id: 'recurring-base',
           title: 'Weekly Meeting',
@@ -479,6 +479,10 @@ describe('WeekEventsLayer', () => {
           end: dayjs().startOf('week').add(2, 'day').hour(11), // Tuesday 11 AM
           color: 'blue',
           rrule: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=TU',
+          uid: 'weekly-meeting@calendar.com',
+          exdates: [
+            dayjs().startOf('week').add(2, 'day').hour(10).toISOString(), // Exclude the original Tuesday occurrence
+          ],
         },
         // Modified instance (moved to Wednesday with different time)
         {
@@ -500,26 +504,18 @@ describe('WeekEventsLayer', () => {
 
       renderWeekEventsLayer({ events })
 
-      // Should render exactly 1 base recurring instance (the one not modified) and 1 modified instance
-      const originalEventInstances = screen.getAllByTestId(
-        /week-event-layer-event-recurring-base/
-      )
-      expect(originalEventInstances).toHaveLength(1)
+      // The base recurring event should not generate any instances in the current week due to EXDATE
+      // The modified instance should be returned through generateRecurringEvents override logic
+      const allEventElements = screen.getAllByRole('button')
 
-      expect(
-        screen.getByTestId('week-event-layer-event-recurring-modified')
-      ).toBeInTheDocument()
+      // Should find exactly 1 event (the modified instance returned by generateRecurringEvents)
+      expect(allEventElements).toHaveLength(1)
 
-      // Original should be on Tuesday
-      const originalEvent = originalEventInstances[0]
-      expect(originalEvent).toHaveStyle({
-        left: expect.stringContaining('28.5'), // Tuesday position: (2/7) * 100
-      })
-
-      // Modified instance should be on Wednesday
+      // The event should be the modified instance on Wednesday
       const modifiedEvent = screen.getByTestId(
         'week-event-layer-event-recurring-modified'
       )
+      expect(modifiedEvent).toBeInTheDocument()
       expect(modifiedEvent).toHaveStyle({
         left: expect.stringContaining('42.8'), // Wednesday position: (3/7) * 100
       })

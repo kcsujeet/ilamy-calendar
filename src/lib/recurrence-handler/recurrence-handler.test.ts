@@ -402,7 +402,7 @@ describe('deleteRecurringEvent', () => {
 
       const terminatedEvent = result[0]
       expect(terminatedEvent.rrule).toBe(
-        'FREQ=WEEKLY;BYDAY=MO;UNTIL=20250119T090000Z'
+        'FREQ=WEEKLY;BYDAY=MO;UNTIL=20250119T235959Z'
       )
       expect(terminatedEvent.id).toBe(baseEvent.id)
     })
@@ -441,7 +441,7 @@ describe('deleteRecurringEvent', () => {
       const terminatedEvent = result[0]
       // Should replace existing UNTIL with earlier termination date
       expect(terminatedEvent.rrule).toBe(
-        'FREQ=WEEKLY;BYDAY=MO;UNTIL=20251231T000000Z;UNTIL=20250119T090000Z'
+        'FREQ=WEEKLY;BYDAY=MO;UNTIL=20251231T000000Z;UNTIL=20250119T235959Z'
       )
     })
   })

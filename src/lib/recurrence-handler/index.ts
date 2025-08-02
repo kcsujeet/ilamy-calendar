@@ -150,8 +150,13 @@ export const updateRecurringEvent = ({
 
     case 'following': {
       // "This and following" - Terminate original series and create new series
+
+      // Calculate the termination date: day before target with end of day time
+      // This ensures the last occurrence before target is included in the terminated series
       const dayBeforeTarget = targetEvent.start.subtract(1, 'day')
-      const terminationDate = dayBeforeTarget.format('YYYYMMDD[T]HHmmss[Z]')
+      const terminationDate = dayBeforeTarget
+        .endOf('day')
+        .format('YYYYMMDD[T]HHmmss[Z]')
       const terminatedRRule = `${baseEvent.rrule};UNTIL=${terminationDate}`
 
       // Update original series with UNTIL to end before target date
@@ -240,8 +245,13 @@ export const deleteRecurringEvent = ({
 
     case 'following': {
       // "This and following" - Terminate series with UNTIL before target date
+
+      // Calculate the termination date: day before target with end of day time
+      // This ensures the last occurrence before target is included in the terminated series
       const dayBeforeTarget = targetEvent.start.subtract(1, 'day')
-      const terminationDate = dayBeforeTarget.format('YYYYMMDD[T]HHmmss[Z]')
+      const terminationDate = dayBeforeTarget
+        .endOf('day')
+        .format('YYYYMMDD[T]HHmmss[Z]')
       const terminatedRRule = `${baseEvent.rrule};UNTIL=${terminationDate}`
 
       const terminatedEvent = {

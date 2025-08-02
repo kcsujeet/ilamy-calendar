@@ -225,4 +225,72 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       'FREQ=DAILY;INTERVAL=1'
     )
   })
+
+  it('should not create duplicate events when recurring events are modified', () => {
+    // Create a base recurring event
+    const baseEvent: CalendarEvent = {
+      id: 'daily-standup',
+      title: 'Daily Standup',
+      start: dayjs('2025-01-01T09:00:00'),
+      end: dayjs('2025-01-01T09:30:00'),
+      rrule: 'FREQ=DAILY',
+      uid: 'daily-standup@calendar',
+    }
+
+    // Create a modified instance (what gets created when user drags/edits an occurrence)
+    const modifiedInstance: CalendarEvent = {
+      id: 'daily-standup_modified_123',
+      title: 'Daily Standup',
+      start: dayjs('2025-01-03T10:00:00'), // Moved to different time
+      end: dayjs('2025-01-03T10:30:00'),
+      recurrenceId: '2025-01-03T09:00:00.000Z', // Original occurrence time
+      uid: 'daily-standup@calendar', // Same UID as base
+    }
+
+    // Update base event with EXDATE to exclude the modified occurrence
+    const baseEventWithExdate: CalendarEvent = {
+      ...baseEvent,
+      exdates: ['2025-01-03T09:00:00.000Z'],
+    }
+
+    const events = [baseEventWithExdate, modifiedInstance]
+
+    function TestNoDuplicates() {
+      const { getEventsForDateRange } = useCalendarContext()
+
+      // Get events for a range that includes the modified date
+      const rangeEvents = getEventsForDateRange(
+        dayjs('2025-01-01'),
+        dayjs('2025-01-05')
+      )
+
+      // Count events on the modified date (Jan 3rd)
+      const jan3Events = rangeEvents.filter((event) =>
+        event.start.isSame(dayjs('2025-01-03'), 'day')
+      )
+
+      return (
+        <div>
+          <div data-testid="jan3-event-count">{jan3Events.length}</div>
+          <div data-testid="jan3-event-hour">
+            {jan3Events[0]?.start.hour() || 'none'}
+          </div>
+          <div data-testid="jan3-event-id">{jan3Events[0]?.id || 'none'}</div>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(
+      <CalendarProvider events={events} dayMaxEvents={5} firstDayOfWeek={0}>
+        <TestNoDuplicates />
+      </CalendarProvider>
+    )
+
+    // Should only have 1 event on Jan 3rd (the modified one), not 2
+    expect(getByTestId('jan3-event-count').textContent).toBe('1')
+    expect(getByTestId('jan3-event-hour').textContent).toBe('10') // Should be the modified time (10:00), not original (09:00)
+    expect(getByTestId('jan3-event-id').textContent).toBe(
+      'daily-standup_modified_123'
+    )
+  })
 })

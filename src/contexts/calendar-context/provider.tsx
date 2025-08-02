@@ -72,8 +72,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
             endDate,
           })
           allEvents.push(...recurringEvents)
-        } else {
+        } else if (!event.recurrenceId) {
           // Add non-recurring events with comprehensive range checking
+          // Exclude events with recurrenceId as they're handled by generateRecurringEvents
           const eventStartsInRange =
             event.start.isSameOrAfter(startDate) &&
             event.start.isSameOrBefore(endDate)

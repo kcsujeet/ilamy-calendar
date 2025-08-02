@@ -6,46 +6,6 @@ const baseDate = dayjs().startOf('month').date(1)
 const dummyEvents = [
   // First week events
   {
-    id: '1',
-    title: 'Team Meeting',
-    description: 'Weekly team sync',
-    start: baseDate.date(2).hour(10).minute(30),
-    end: baseDate.date(2).hour(11).minute(30),
-    color: 'bg-blue-100 text-blue-800',
-  },
-  {
-    id: '2',
-    title: 'Lunch with Client',
-    description: 'Discuss new project requirements',
-    start: baseDate.date(4).hour(12),
-    end: baseDate.date(4).hour(13),
-    color: 'bg-green-100 text-green-800',
-  },
-  {
-    id: '3',
-    title: 'Product Demo',
-    description: 'Show new features to stakeholders',
-    start: baseDate.date(6).hour(14),
-    end: baseDate.date(6).hour(15),
-    color: 'bg-purple-100 text-purple-800',
-  },
-  {
-    id: '4',
-    title: 'Project Deadline',
-    description: 'Submit final deliverables',
-    start: baseDate.date(8).hour(9),
-    end: baseDate.date(8).hour(17),
-    color: 'bg-red-100 text-red-800',
-  },
-  {
-    id: '5',
-    title: 'Conference Call',
-    description: 'International partners sync',
-    start: baseDate.date(10).hour(16),
-    end: baseDate.date(10).hour(17).minute(30),
-    color: 'bg-yellow-100 text-yellow-800',
-  },
-  {
     id: '5.1',
     title: 'Weekly Review',
     description: 'Review team performance and goals',
@@ -86,22 +46,6 @@ const dummyEvents = [
     end: baseDate.date(12).hour(12),
     color: 'bg-amber-100 text-amber-800',
   },
-  {
-    id: '5.6',
-    title: 'Team Workshop',
-    description: 'Skill development workshop',
-    start: baseDate.date(12).hour(8),
-    end: baseDate.date(12).hour(11),
-    color: 'bg-emerald-100 text-emerald-800',
-  },
-  {
-    id: '5.7',
-    title: 'Team 2',
-    description: 'Skill development workshop',
-    start: baseDate.date(12).hour(8),
-    end: baseDate.date(12).hour(11),
-    color: 'bg-blue-100 text-blue-800',
-  },
 
   // Multi-day events (within same month)
   {
@@ -111,14 +55,6 @@ const dummyEvents = [
     start: baseDate.date(12).hour(9),
     end: baseDate.date(16).hour(17),
     color: 'bg-pink-100 text-pink-800',
-  },
-  {
-    id: '7',
-    title: 'Training Session',
-    description: 'New tool onboarding',
-    start: baseDate.date(14).hour(13),
-    end: baseDate.date(14).hour(16),
-    color: 'bg-indigo-100 text-indigo-800',
   },
 
   // Multi-week event
@@ -170,24 +106,6 @@ const dummyEvents = [
   },
 
   // All-day events
-  {
-    id: '13',
-    title: 'Company Holiday',
-    description: 'Office closed for holiday',
-    start: baseDate.date(3).startOf('day'),
-    end: baseDate.date(3).endOf('day'),
-    color: 'bg-teal-100 text-teal-800',
-    allDay: true,
-  },
-  {
-    id: '14',
-    title: 'Team Building',
-    description: 'Offsite team building activity',
-    start: baseDate.date(7).startOf('day'),
-    end: baseDate.date(7).endOf('day'),
-    color: 'bg-orange-100 text-orange-800',
-    allDay: true,
-  },
   {
     id: '15',
     title: 'Conference',
@@ -242,8 +160,8 @@ const dummyEvents = [
     id: '20',
     title: 'Daily Standup',
     description: 'Daily team sync meeting',
-    start: baseDate.add(1, 'month').date(2).hour(10),
-    end: baseDate.add(1, 'month').date(2).hour(11),
+    start: baseDate.date(2).hour(10),
+    end: baseDate.date(2).hour(11),
     color: 'bg-cyan-100 text-cyan-800',
     rrule: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR',
     exdates: [],

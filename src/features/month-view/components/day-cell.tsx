@@ -25,18 +25,15 @@ export const DayCell: React.FC<DayCellProps> = ({
     setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void
   }>(null)
   const {
-    events,
+    getEventsForDateRange,
     currentDate,
     firstDayOfWeek,
     dayMaxEvents = 0,
   } = useCalendarContext()
-  const todayEvents = events.filter((e) => {
-    const startsToday = e.start.isSame(day, 'day')
-    const endsToday = e.end.isSame(day, 'day')
-    const spansToday = e.start.isBefore(day, 'day') && e.end.isAfter(day, 'day')
-
-    return startsToday || endsToday || spansToday
-  })
+  const todayEvents = getEventsForDateRange(
+    day.startOf('day'),
+    day.endOf('day')
+  )
 
   // Get start date for the current month view based on firstDayOfWeek
   const firstDayOfMonth = currentDate.startOf('month')

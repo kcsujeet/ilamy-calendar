@@ -27,23 +27,7 @@ export const WeekAllDayRow: React.FC = () => {
   // Get events that might overlap with this week (expand search range)
   const expandedStartDate = adjustedStartOfWeek.subtract(6, 'day') // Look 6 days before week start
   const expandedEndDate = endOfWeek.add(6, 'day') // Look 6 days after week end
-  const allEvents = getEventsForDateRange(expandedStartDate, expandedEndDate)
-
-  // Filter events that actually overlap with the current week
-  const weekEvents = allEvents.filter((event) => {
-    // Fixed logic: An event overlaps with this week if:
-    return (
-      // Either the event starts during this week
-      (event.start.isSameOrAfter(adjustedStartOfWeek) &&
-        event.start.isSameOrBefore(endOfWeek)) ||
-      // Or the event ends during this week
-      (event.end.isSameOrAfter(adjustedStartOfWeek) &&
-        event.end.isSameOrBefore(endOfWeek)) ||
-      // Or the event spans the entire week (starts before and ends after)
-      (event.start.isBefore(adjustedStartOfWeek) &&
-        event.end.isAfter(endOfWeek))
-    )
-  })
+  const weekEvents = getEventsForDateRange(expandedStartDate, expandedEndDate)
 
   // Separate all-day events from regular events (including multi-day events)
   const allDayEvents = weekEvents.filter((event) => event.allDay)

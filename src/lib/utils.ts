@@ -41,3 +41,22 @@ export const omitKeys = <T extends object, K extends keyof T>(
   }
   return result
 }
+
+export function normalizePublicFacingCalendarEvent(
+  events: CalendarEvent[]
+): CalendarEvent[] {
+  if (!events || !events.length) {
+    return []
+  }
+
+  return events.map((event) => {
+    // Events are already in the correct format with RRULE strings
+    return {
+      ...event,
+      start: dayjs.isDayjs(event.start) ? event.start : dayjs(event.start),
+      end: dayjs.isDayjs(event.end) ? event.end : dayjs(event.end),
+      originalStart: safeDate(event.originalStart),
+      originalEnd: safeDate(event.originalEnd),
+    } as CalendarEvent
+  })
+}

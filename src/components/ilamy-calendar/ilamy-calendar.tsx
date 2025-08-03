@@ -12,31 +12,9 @@ import type { CalendarEvent, WeekDays } from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 // oxlint-disable-next-line no-duplicates
 import '@/lib/dayjs-config'
-import dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/dayjs-config'
 import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
-
-export function normalizePublicFacingCalendarEvent(
-  events: CalendarEvent[]
-): CalendarEvent[] {
-  return events.map((event) => {
-    // Events are already in the correct format with RRULE strings
-    return {
-      ...event,
-      start: dayjs.isDayjs(event.start) ? event.start : dayjs(event.start),
-      end: dayjs.isDayjs(event.end) ? event.end : dayjs(event.end),
-      originalStart: event.originalStart
-        ? dayjs.isDayjs(event.originalStart)
-          ? event.originalStart
-          : dayjs(event.originalStart)
-        : undefined,
-      originalEnd: event.originalEnd
-        ? dayjs.isDayjs(event.originalEnd)
-          ? event.originalEnd
-          : dayjs(event.originalEnd)
-        : undefined,
-    } as CalendarEvent
-  })
-}
+import { normalizePublicFacingCalendarEvent } from '@/lib'
 
 const CalendarContent: React.FC = () => {
   const {
@@ -194,7 +172,7 @@ export const IlamyCalendar: React.FC<CalendarProps> = ({
 }) => {
   return (
     <CalendarProvider
-      events={normalizePublicFacingCalendarEvent(events || [])}
+      events={normalizePublicFacingCalendarEvent(events)}
       firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
       renderEvent={renderEvent}
       onEventClick={onEventClick}

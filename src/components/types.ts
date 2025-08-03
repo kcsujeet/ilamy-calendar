@@ -10,12 +10,12 @@ export interface CalendarEvent {
   /** Display title of the event */
   title: string
   /**
-   * Original start date for recurring events (used for tracking modifications)
+   * Original start date (used for tracking modifications)
    * @internal
    */
   originalStart?: dayjs.Dayjs
   /**
-   * Original end date for recurring events (used for tracking modifications)
+   * Original end date (used for tracking modifications)
    * @internal
    */
   originalEnd?: dayjs.Dayjs

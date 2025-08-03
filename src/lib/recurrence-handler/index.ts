@@ -3,7 +3,7 @@ import dayjs from '@/lib/dayjs-config'
 import { RRule } from 'rrule'
 import { omitKeys, safeDate } from '../utils'
 
-export const isRecurringEvent = (event: CalendarEvent) => {
+export const isRecurringEvent = (event: CalendarEvent): boolean => {
   return Boolean(event.rrule || event.recurrenceId || event.uid)
 }
 

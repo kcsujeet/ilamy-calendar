@@ -22,24 +22,13 @@ interface UseProcessedWeekEventsProps {
 export const useProcessedWeekEvents = ({
   days,
 }: UseProcessedWeekEventsProps) => {
-  const { events, dayMaxEvents } = useCalendarContext()
+  const { getEventsForDateRange, dayMaxEvents } = useCalendarContext()
 
   const weekStart = days[0]
   const weekEnd = days[6]
 
   // Get all events that intersect with this week
-  const weekEvents = events.filter((e) => {
-    const startsInWeek =
-      e.start.isSameOrAfter(weekStart.startOf('day')) &&
-      e.start.isSameOrBefore(weekEnd.endOf('day'))
-    const endsInWeek =
-      e.end.isSameOrAfter(weekStart.startOf('day')) &&
-      e.end.isSameOrBefore(weekEnd.endOf('day'))
-    const spansWeek =
-      e.start.isBefore(weekStart.startOf('day')) &&
-      e.end.isAfter(weekEnd.endOf('day'))
-    return startsInWeek || endsInWeek || spansWeek
-  })
+  const weekEvents = getEventsForDateRange(weekStart, weekEnd)
 
   // Separate multi-day and single-day events
   const multiDayEvents = weekEvents.filter(

@@ -134,9 +134,9 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
       const { date, hour = 0, minute = 0 } = over.data.current
 
       // Calculate the event duration in minutes
-      const originalStart = activeEvent.originalStart ?? activeEvent.start
-      const originalEnd = activeEvent.originalEnd ?? activeEvent.end
-      const durationMinutes = originalEnd.diff(originalStart, 'minute')
+      const start = activeEvent.start
+      const end = activeEvent.end
+      const durationMinutes = end.diff(start, 'minute')
 
       // Create new start time based on the drop target
       const newStart = dayjs(date)
@@ -161,19 +161,19 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 
       // For multi-day events, we need to preserve the duration in days
       const isMultiDayEvent = !activeEvent.start.isSame(activeEvent.end, 'day')
-      const originalStart = activeEvent.originalStart ?? activeEvent.start
-      const originalEnd = activeEvent.originalEnd ?? activeEvent.end
+      const start = activeEvent.start
+      const end = activeEvent.end
 
       if (isMultiDayEvent) {
         if (view === 'week') {
           // Get time components to preserve
-          const startHour = originalStart.hour()
-          const startMinute = originalStart.minute()
-          const endHour = originalEnd.hour()
-          const endMinute = originalEnd.minute()
+          const startHour = start.hour()
+          const startMinute = start.minute()
+          const endHour = end.hour()
+          const endMinute = end.minute()
 
           // Calculate duration in days to preserve
-          const durationDays = originalEnd.diff(originalStart, 'day')
+          const durationDays = end.diff(start, 'day')
 
           // Create new start and end dates
           const newStart = newDate
@@ -188,26 +188,19 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
           performEventUpdate(activeEvent, {
             start: newStart,
             end: newEnd,
-            originalStart: undefined,
-            originalEnd: undefined,
           })
         } else {
           // For other views like month view
           // Calculate the date shift (how many days we're moving the event)
-          const daysDifference = newDate.diff(
-            originalStart.startOf('day'),
-            'day'
-          )
+          const daysDifference = newDate.diff(start.startOf('day'), 'day')
 
           // Calculate new start and end while preserving time components
-          const newStart = originalStart.add(daysDifference, 'day')
-          const newEnd = originalEnd.add(daysDifference, 'day')
+          const newStart = start.add(daysDifference, 'day')
+          const newEnd = end.add(daysDifference, 'day')
 
           performEventUpdate(activeEvent, {
             start: newStart,
             end: newEnd,
-            originalStart: undefined,
-            originalEnd: undefined,
           })
         }
       } else {
@@ -226,8 +219,6 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
         performEventUpdate(activeEvent, {
           start: newStart,
           end: newEnd,
-          originalStart: undefined,
-          originalEnd: undefined,
         })
       }
     }

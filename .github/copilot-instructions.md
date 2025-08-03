@@ -409,10 +409,12 @@ This structure ensures code remains maintainable, testable, and scalable as the 
 
 #### 🚨 CRITICAL: ALWAYS CHECK RRULE AND RFC 5545 DOCUMENTATION
 
-**MANDATORY**: Before working with any RRULE functionality, patterns, or recurring calendar events, **ALWAYS check both comprehensive documentation references:**
+**MANDATORY**: Before working with any RRULE functionality, patterns, or recurring calendar events, **ALWAYS check both comprehensive documentation references FIRST:**
 
 1. **RFC 5545 Standard**: `docs/rfc-5545.md` - Official iCalendar specification
 2. **rrule.js Library**: `docs/rrule.js.md` - Implementation-specific API reference
+
+**NEVER work with RRULE or RFC 5545 standards without consulting these docs first. This prevents reinventing the wheel and ensures proper implementation.**
 
 **RFC 5545 Documentation (`docs/rfc-5545.md`) includes:**
 

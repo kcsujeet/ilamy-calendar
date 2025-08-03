@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { isRecurringEvent } from '@/lib/recurrence-handler'
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/dayjs-config'
+import { RRule } from 'rrule'
 import { CalendarDndContext } from './calendar-dnd-context'
 import { CalendarProvider } from '@/contexts/calendar-context/provider'
 
@@ -49,7 +50,12 @@ describe('CalendarDndContext - Recurring Events', () => {
     start: dayjs('2025-01-15T09:00:00'),
     end: dayjs('2025-01-15T10:00:00'),
     color: 'bg-green-500',
-    rrule: 'FREQ=WEEKLY;BYDAY=MO',
+    rrule: {
+      freq: RRule.WEEKLY,
+      byweekday: [RRule.MO],
+      interval: 1,
+      dtstart: dayjs('2025-01-15T00:00:00').toDate(),
+    },
     uid: 'recurring-event-1@calendar',
   })
 

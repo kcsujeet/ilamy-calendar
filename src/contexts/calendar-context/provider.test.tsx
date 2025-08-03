@@ -3,6 +3,7 @@ import { render } from '@testing-library/react'
 import { CalendarProvider } from './provider'
 import { useCalendarContext } from './context'
 import dayjs from '@/lib/dayjs-config'
+import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
 
 // Test component to access context
@@ -33,7 +34,9 @@ function TestComponent() {
       <div data-testid="total-events">{events.length}</div>
       <div data-testid="range-events">{rangeEvents.length}</div>
       <div data-testid="parent-found">{parentEvent ? 'true' : 'false'}</div>
-      <div data-testid="parent-rrule">{parentEvent?.rrule || 'none'}</div>
+      <div data-testid="parent-rrule">
+        {parentEvent?.rrule ? JSON.stringify(parentEvent.rrule) : 'none'}
+      </div>
     </div>
   )
 }
@@ -45,7 +48,11 @@ describe('CalendarProvider - On-Demand Generation', () => {
       title: 'Daily Meeting',
       start: dayjs('2025-07-01').hour(9),
       end: dayjs('2025-07-01').hour(10),
-      rrule: 'FREQ=DAILY;INTERVAL=1',
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        dtstart: dayjs('2025-07-01').hour(9).toDate(),
+      },
       uid: 'test-recurring@calendar.test',
     }
 
@@ -89,7 +96,11 @@ describe('CalendarProvider - On-Demand Generation', () => {
       title: 'Meeting with Exclusions',
       start: dayjs('2025-07-01').hour(9),
       end: dayjs('2025-07-01').hour(10),
-      rrule: 'FREQ=DAILY;INTERVAL=1',
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        dtstart: dayjs('2025-07-01').hour(9).toDate(),
+      },
       uid: 'test-excluded@calendar.test',
       exdates: [
         '2025-07-01T09:00:00.000Z',
@@ -123,7 +134,11 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       title: 'Daily Meeting',
       start: dayjs('2025-07-01').hour(9),
       end: dayjs('2025-07-01').hour(10),
-      rrule: 'FREQ=DAILY;INTERVAL=1',
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        dtstart: dayjs('2025-07-01').hour(9).toDate(),
+      },
       uid: 'test-recurring@calendar.test',
     }
 
@@ -134,9 +149,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
     )
 
     expect(getByTestId('parent-found').textContent).toBe('true')
-    expect(getByTestId('parent-rrule').textContent).toBe(
-      'FREQ=DAILY;INTERVAL=1'
-    )
+    expect(getByTestId('parent-rrule').textContent).toContain('"freq":3') // Check for RRule.DAILY (3)
   })
 
   it('should return null for non-recurring event instance', () => {
@@ -185,7 +198,11 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       title: 'Daily Meeting',
       start: dayjs('2025-07-01').hour(9),
       end: dayjs('2025-07-01').hour(10),
-      rrule: 'FREQ=DAILY;INTERVAL=1',
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        dtstart: dayjs('2025-07-01').hour(9).toDate(),
+      },
       // No UID - should auto-generate
     }
 
@@ -208,7 +225,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
             {parentEvent ? 'true' : 'false'}
           </div>
           <div data-testid="uid-match-rrule">
-            {parentEvent?.rrule || 'none'}
+            {parentEvent?.rrule ? JSON.stringify(parentEvent.rrule) : 'none'}
           </div>
         </div>
       )
@@ -231,7 +248,11 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       title: 'Daily Standup',
       start: dayjs('2025-01-01T09:00:00'),
       end: dayjs('2025-01-01T09:30:00'),
-      rrule: 'FREQ=DAILY',
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        dtstart: dayjs('2025-01-01T09:00:00').toDate(),
+      },
       uid: 'daily-standup@calendar',
     }
 

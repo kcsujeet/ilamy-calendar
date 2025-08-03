@@ -1,4 +1,5 @@
 import dayjs from '@/lib/dayjs-config'
+import { RRule } from 'rrule'
 
 // Use a fixed month reference point for consistent display
 const baseDate = dayjs().startOf('month').date(1)
@@ -160,10 +161,14 @@ const dummyEvents = [
     id: '20',
     title: 'Daily Standup',
     description: 'Daily team sync meeting',
-    start: baseDate.date(2).hour(10),
-    end: baseDate.date(2).hour(11),
+    start: baseDate.hour(10),
+    end: baseDate.hour(11),
     color: 'bg-cyan-100 text-cyan-800',
-    rrule: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR',
+    rrule: {
+      freq: RRule.WEEKLY,
+      interval: 1,
+      byweekday: [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR],
+    },
     exdates: [],
   },
 ]

@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'bun:test'
 import dayjs from '@/lib/dayjs-config'
+import { RRule } from 'rrule'
 import { generateRecurringEvents } from './index'
 import type { CalendarEvent } from '@/components/types'
+import type { RRuleOptions } from './types'
 
 describe('generateRecurringEvents - Calendar Provider Integration', () => {
   const baseEvent: CalendarEvent = {
@@ -10,7 +12,12 @@ describe('generateRecurringEvents - Calendar Provider Integration', () => {
     title: 'Weekly Meeting',
     start: dayjs('2025-01-06T09:00:00.000Z'), // Monday
     end: dayjs('2025-01-06T10:00:00.000Z'),
-    rrule: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR',
+    rrule: {
+      freq: RRule.WEEKLY,
+      interval: 1,
+      byweekday: [RRule.MO, RRule.WE, RRule.FR],
+      dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(), // Match event start time
+    },
     exdates: [],
   }
 
@@ -51,8 +58,16 @@ describe('generateRecurringEvents - Calendar Provider Integration', () => {
 
   it('should generate UID for parent when missing and use same UID for all instances', () => {
     const eventWithoutUID: CalendarEvent = {
-      ...baseEvent,
-      uid: undefined, // No UID provided
+      id: 'recurring-2',
+      title: 'Daily Standup',
+      start: dayjs('2025-01-06T09:00:00.000Z'),
+      end: dayjs('2025-01-06T09:30:00.000Z'),
+      rrule: {
+        freq: RRule.WEEKLY,
+        interval: 1,
+        byweekday: [RRule.MO, RRule.WE, RRule.FR],
+        dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(), // Match event start time
+      },
     }
 
     const result = generateRecurringEvents({
@@ -109,7 +124,11 @@ describe('generateRecurringEvents - Calendar Provider Integration', () => {
       title: 'Daily Standup',
       start: dayjs('2025-01-06T09:00:00.000Z'),
       end: dayjs('2025-01-06T09:30:00.000Z'),
-      rrule: 'FREQ=DAILY;INTERVAL=1',
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(), // Match event start time
+      },
       exdates: [],
     }
 
@@ -144,7 +163,11 @@ describe('Monthly and Complex Patterns', () => {
       title: 'Monthly Review',
       start: dayjs('2025-01-06T14:00:00.000Z'),
       end: dayjs('2025-01-06T15:00:00.000Z'),
-      rrule: 'FREQ=MONTHLY;INTERVAL=1',
+      rrule: {
+        freq: RRule.MONTHLY,
+        interval: 1,
+        dtstart: dayjs('2025-01-06T14:00:00.000Z').toDate(), // Match event start time
+      },
       exdates: [],
     }
 
@@ -184,7 +207,12 @@ describe('Monthly and Complex Patterns', () => {
       title: 'Limited Series',
       start: dayjs('2025-01-06T09:00:00.000Z'),
       end: dayjs('2025-01-06T10:00:00.000Z'),
-      rrule: 'FREQ=DAILY;INTERVAL=1;COUNT=3',
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        count: 3,
+        dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(), // Match event start time
+      },
       exdates: [],
     }
 
@@ -213,7 +241,12 @@ describe('Monthly and Complex Patterns', () => {
       title: 'Until Series',
       start: dayjs('2025-01-06T09:00:00.000Z'),
       end: dayjs('2025-01-06T10:00:00.000Z'),
-      rrule: 'FREQ=DAILY;INTERVAL=1;UNTIL=20250108T090000Z',
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        until: dayjs('2025-01-08T09:00:00.000Z').toDate(),
+        dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(), // Match event start time
+      },
       exdates: [],
     }
 
@@ -254,18 +287,20 @@ describe('Monthly and Complex Patterns', () => {
     expect(result).toHaveLength(0)
   })
 
-  it('should handle malformed RRULE strings gracefully', () => {
+  it('should handle invalid RRULE options gracefully', () => {
     const malformedEvent: CalendarEvent = {
       id: 'malformed-1',
       uid: 'malformed-1@ilamy.calendar',
-      title: 'Malformed RRULE',
+      title: 'Invalid RRULE',
       start: dayjs('2025-01-06T09:00:00.000Z'),
       end: dayjs('2025-01-06T10:00:00.000Z'),
-      rrule: 'INVALID_RRULE_STRING',
+      rrule: {
+        freq: 'INVALID_FREQUENCY',
+      } as unknown as RRuleOptions,
       exdates: [],
     }
 
-    // Should throw an error for malformed RRULE
+    // Should throw an error for invalid RRULE options
     expect(() => {
       generateRecurringEvents({
         event: malformedEvent,

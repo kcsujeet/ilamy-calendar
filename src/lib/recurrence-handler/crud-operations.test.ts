@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import dayjs from '@/lib/dayjs-config'
+import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components'
 import {
   generateRecurringEvents,
@@ -16,7 +17,12 @@ const createBaseRecurringEvent = (
   title: 'Weekly Meeting',
   start: dayjs('2025-01-06T09:00:00'),
   end: dayjs('2025-01-06T10:00:00'),
-  rrule: 'FREQ=WEEKLY;BYDAY=MO',
+  rrule: {
+    freq: RRule.WEEKLY,
+    byweekday: [RRule.MO],
+    interval: 1,
+    dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+  },
   uid: 'recurring-1@calendar.test',
   ...overrides,
 })
@@ -142,19 +148,6 @@ describe('generateRecurringEvents', () => {
 
     expect(result).toHaveLength(0)
   })
-
-  it('should throw error for invalid RRULE strings', () => {
-    const invalidEvent = createBaseRecurringEvent({ rrule: 'INVALID_RRULE' })
-
-    expect(() => {
-      generateRecurringEvents({
-        event: invalidEvent,
-        currentEvents: [],
-        startDate: dayjs('2025-01-01'),
-        endDate: dayjs('2025-01-31'),
-      })
-    }).toThrow('Invalid RRULE string')
-  })
 })
 
 describe('updateRecurringEvent', () => {
@@ -232,7 +225,9 @@ describe('updateRecurringEvent', () => {
 
       // Original series should be terminated with UNTIL
       const terminatedEvent = result.find((e) => e.id === baseEvent.id)
-      expect(terminatedEvent?.rrule).toContain('UNTIL=20250119T')
+      expect(terminatedEvent?.rrule.until).toEqual(
+        dayjs('2025-01-19T23:59:59.999Z').toDate()
+      )
 
       // New series should start from target date
       const newSeries = result.find((e) => e.id !== baseEvent.id)
@@ -263,7 +258,9 @@ describe('updateRecurringEvent', () => {
 
       // Original should terminate before first occurrence (effectively making it empty)
       const terminatedEvent = result.find((e) => e.id === baseEvent.id)
-      expect(terminatedEvent?.rrule).toContain('UNTIL=20250105T')
+      expect(terminatedEvent?.rrule.until).toEqual(
+        dayjs('2025-01-05T23:59:59.999Z').toDate()
+      )
     })
   })
 
@@ -272,7 +269,14 @@ describe('updateRecurringEvent', () => {
       const baseEvent = createBaseRecurringEvent()
       const targetEvent = createTargetEvent()
       const currentEvents = [baseEvent]
-      const updates = { title: 'Updated All Events', rrule: 'FREQ=DAILY' }
+      const updates = {
+        title: 'Updated All Events',
+        rrule: {
+          freq: RRule.DAILY,
+          interval: 1,
+          dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+        },
+      }
 
       const result = updateRecurringEvent({
         targetEvent,
@@ -285,7 +289,7 @@ describe('updateRecurringEvent', () => {
 
       const updatedEvent = result[0]
       expect(updatedEvent.title).toBe('Updated All Events')
-      expect(updatedEvent.rrule).toBe('FREQ=DAILY')
+      expect(updatedEvent.rrule.freq).toBe(RRule.DAILY)
       expect(updatedEvent.id).toBe(baseEvent.id)
     })
 
@@ -401,8 +405,8 @@ describe('deleteRecurringEvent', () => {
       expect(result).toHaveLength(1)
 
       const terminatedEvent = result[0]
-      expect(terminatedEvent.rrule).toBe(
-        'FREQ=WEEKLY;BYDAY=MO;UNTIL=20250119T235959Z'
+      expect(terminatedEvent.rrule.until).toEqual(
+        dayjs('2025-01-19T23:59:59.999Z').toDate()
       )
       expect(terminatedEvent.id).toBe(baseEvent.id)
     })
@@ -422,12 +426,20 @@ describe('deleteRecurringEvent', () => {
       })
 
       const terminatedEvent = result[0]
-      expect(terminatedEvent.rrule).toContain('UNTIL=20250105T')
+      expect(terminatedEvent.rrule.until).toEqual(
+        dayjs('2025-01-05T23:59:59.999Z').toDate()
+      )
     })
 
     it('should handle existing UNTIL in RRULE correctly', () => {
       const baseEvent = createBaseRecurringEvent({
-        rrule: 'FREQ=WEEKLY;BYDAY=MO;UNTIL=20251231T000000Z',
+        rrule: {
+          freq: RRule.WEEKLY,
+          byweekday: [RRule.MO],
+          until: dayjs('2025-12-31T00:00:00Z').toDate(),
+          interval: 1,
+          dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+        },
       })
       const targetEvent = createTargetEvent()
       const currentEvents = [baseEvent]
@@ -440,8 +452,8 @@ describe('deleteRecurringEvent', () => {
 
       const terminatedEvent = result[0]
       // Should replace existing UNTIL with earlier termination date
-      expect(terminatedEvent.rrule).toBe(
-        'FREQ=WEEKLY;BYDAY=MO;UNTIL=20251231T000000Z;UNTIL=20250119T235959Z'
+      expect(terminatedEvent.rrule.until).toEqual(
+        dayjs('2025-01-19T23:59:59.999Z').toDate()
       )
     })
   })
@@ -548,7 +560,13 @@ describe('deleteRecurringEvent', () => {
 describe('Edge cases and stress tests', () => {
   it('should handle complex RRULE with COUNT limit', () => {
     const baseEvent = createBaseRecurringEvent({
-      rrule: 'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=10',
+      rrule: {
+        freq: RRule.WEEKLY,
+        byweekday: [RRule.MO, RRule.WE, RRule.FR],
+        count: 10,
+        interval: 1,
+        dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+      },
     })
 
     const result = generateRecurringEvents({
@@ -563,7 +581,11 @@ describe('Edge cases and stress tests', () => {
 
   it('should handle daily recurring event with interval', () => {
     const baseEvent = createBaseRecurringEvent({
-      rrule: 'FREQ=DAILY;INTERVAL=3',
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 3,
+        dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+      },
     })
 
     const result = generateRecurringEvents({
@@ -581,7 +603,12 @@ describe('Edge cases and stress tests', () => {
 
   it('should handle monthly recurring event', () => {
     const baseEvent = createBaseRecurringEvent({
-      rrule: 'FREQ=MONTHLY;BYMONTHDAY=15',
+      rrule: {
+        freq: RRule.MONTHLY,
+        bymonthday: [15],
+        interval: 1,
+        dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+      },
     })
 
     const result = generateRecurringEvents({

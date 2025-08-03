@@ -20,6 +20,7 @@ import {
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import type { CalendarEvent } from '@/components/types'
+import type { RRuleOptions } from '@/lib/recurrence-handler/types'
 import { isRecurringEvent } from '@/lib/recurrence-handler'
 import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-editor/recurrence-editor'
 import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
@@ -70,8 +71,8 @@ export const EventForm: React.FC<EventFormProps> = ({
 
   const { findParentRecurringEvent } = useCalendarContext()
 
-  const start = selectedEvent?.originalStart ?? selectedEvent?.start
-  const end = selectedEvent?.originalEnd ?? selectedEvent?.end
+  const start = selectedEvent?.start
+  const end = selectedEvent?.end
 
   // Find parent event if this is a recurring event instance
   const parentEvent = selectedEvent
@@ -109,9 +110,10 @@ export const EventForm: React.FC<EventFormProps> = ({
   })
 
   // Recurrence state - pull RRULE from parent if this is an instance
-  const [rrule, setRrule] = useState<string | undefined>(
-    selectedEvent?.rrule || parentEvent?.rrule
-  )
+  const [rrule, setRrule] = useState<RRuleOptions | null>(() => {
+    const eventRrule = selectedEvent?.rrule || parentEvent?.rrule
+    return eventRrule || null
+  })
 
   // Create wrapper functions to fix TypeScript errors with DatePicker
   const handleStartDateChange = (date: Date | undefined) => {
@@ -176,14 +178,12 @@ export const EventForm: React.FC<EventFormProps> = ({
       id: selectedEvent?.id || dayjs().format('YYYYMMDDHHmmss'),
       title: formValues.title,
       start: startDateTime,
-      originalStart: startDateTime,
       end: endDateTime,
-      originalEnd: endDateTime,
       description: formValues.description,
       location: formValues.location,
       allDay: isAllDay,
       color: selectedColor,
-      rrule: rrule,
+      rrule: rrule || undefined,
     }
 
     if (selectedEvent?.id) {
@@ -193,14 +193,12 @@ export const EventForm: React.FC<EventFormProps> = ({
         openEditDialog(selectedEvent, {
           title: formValues.title,
           start: startDateTime,
-          originalStart: startDateTime,
           end: endDateTime,
-          originalEnd: endDateTime,
           description: formValues.description,
           location: formValues.location,
           allDay: isAllDay,
           color: selectedColor,
-          rrule: rrule,
+          rrule: rrule || undefined,
         })
         return // Don't close the form yet, let the dialog handle it
       }
@@ -222,6 +220,27 @@ export const EventForm: React.FC<EventFormProps> = ({
       }
       onDelete?.(selectedEvent)
       onClose()
+    }
+  }
+
+  const handleRRuleChange = (newRRule: RRuleOptions | null) => {
+    if (newRRule) {
+      // Create dtstart with the same logic as in handleSubmit
+      const [startHours, startMinutes] = startTime.split(':').map(Number)
+      let startDateTime = dayjs(startDate).hour(startHours).minute(startMinutes)
+
+      if (isAllDay) {
+        startDateTime = startDateTime.hour(0).minute(0)
+      }
+
+      // Ensure dtstart is always included in RRuleOptions as a Date object
+      const completeRrule: RRuleOptions = {
+        ...newRRule,
+        dtstart: startDateTime.toDate(), // Convert dayjs to Date
+      }
+      setRrule(completeRrule)
+    } else {
+      setRrule(null)
     }
   }
 
@@ -383,7 +402,7 @@ export const EventForm: React.FC<EventFormProps> = ({
               </div>
 
               {/* Recurrence Section */}
-              <RecurrenceEditor value={rrule} onChange={setRrule} />
+              <RecurrenceEditor value={rrule} onChange={handleRRuleChange} />
             </div>
 
             <DialogFooter className="mt-2 flex flex-col-reverse gap-2 sm:mt-4 sm:flex-row sm:gap-0">

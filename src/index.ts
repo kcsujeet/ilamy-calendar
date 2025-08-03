@@ -9,12 +9,12 @@ export {
   generateRecurringEvents,
   isRecurringEvent,
 } from './lib/recurrence-handler'
-export type {
-  RRuleFrequency,
-  RRuleWeekday,
-} from './lib/recurrence-handler/types'
 
 // Export types
+export type { RRuleOptions } from './lib/recurrence-handler/types'
 export type { CalendarEvent } from './components/types'
 export type { WeekDays } from './components/types'
 export type { UseIlamyCalendarContextReturn } from './contexts/calendar-context/context'
+// Re-export rrule.js types for convenience
+export type { Frequency, Weekday } from 'rrule'
+export { RRule } from 'rrule'

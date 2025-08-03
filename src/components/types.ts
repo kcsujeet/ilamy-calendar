@@ -1,4 +1,5 @@
 import type dayjs from '@/lib/dayjs-config'
+import type { RRuleOptions } from '@/lib/recurrence-handler/types'
 
 /**
  * Core calendar event interface representing a single calendar event.
@@ -9,16 +10,6 @@ export interface CalendarEvent {
   id: string | number
   /** Display title of the event */
   title: string
-  /**
-   * Original start date (used for tracking modifications)
-   * @internal
-   */
-  originalStart?: dayjs.Dayjs
-  /**
-   * Original end date (used for tracking modifications)
-   * @internal
-   */
-  originalEnd?: dayjs.Dayjs
   /** Start date and time of the event */
   start: dayjs.Dayjs
   /** End date and time of the event */
@@ -43,12 +34,16 @@ export interface CalendarEvent {
    */
   allDay?: boolean
   /**
-   * iCalendar RRULE string for recurring events (RFC 5545 standard)
-   * @example "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR"
-   * @example "FREQ=DAILY;INTERVAL=1;COUNT=10"
-   * @example "FREQ=MONTHLY;INTERVAL=1;UNTIL=20251231T235959Z"
+   * Recurrence rule for recurring events (RFC 5545 standard)
+   *
+   * Uses TypeScript interface for better readability, type safety, and IDE support
+   * compared to RRULE string format. Converted to rrule.js format internally.
+   *
+   * @example { freq: 'WEEKLY', interval: 1, byweekday: ['MO', 'WE', 'FR'] }
+   * @example { freq: 'DAILY', interval: 1, count: 10 }
+   * @example { freq: 'MONTHLY', interval: 1, until: new Date('2025-12-31') }
    */
-  rrule?: string
+  rrule?: RRuleOptions
   /**
    * Exception dates (EXDATE) - dates to exclude from recurrence
    * Uses ISO string format for storage and transmission

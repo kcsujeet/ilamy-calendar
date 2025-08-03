@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
 import dayjs from '@/lib/dayjs-config'
+import { RRule } from 'rrule'
 import { EventForm } from './event-form'
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/contexts/calendar-context/provider'
@@ -383,7 +384,11 @@ describe('EventForm', () => {
         expect(mockOnAdd).toHaveBeenCalledWith(
           expect.objectContaining({
             title: 'Recurring Event',
-            rrule: expect.stringMatching(/^FREQ=DAILY;INTERVAL=1$/),
+            rrule: expect.objectContaining({
+              freq: RRule.DAILY,
+              interval: 1,
+              dtstart: expect.any(Date),
+            }),
           })
         )
       })
@@ -444,25 +449,6 @@ describe('EventForm', () => {
         screen.getByPlaceholderText('Event location (optional)')
       ).toHaveValue('')
     })
-
-    it('should handle originalStart and originalEnd for recurring events', () => {
-      const recurringEvent: CalendarEvent = {
-        ...testEvent,
-        originalStart: dayjs('2025-08-15T09:00:00'),
-        originalEnd: dayjs('2025-08-15T10:00:00'),
-        rrule: 'FREQ=DAILY;INTERVAL=1',
-      }
-
-      renderEventForm({ ...defaultProps, selectedEvent: recurringEvent })
-
-      // Should use originalStart/originalEnd times (use getByLabelText for more specific queries)
-      const startTimeInput = screen.getByLabelText(
-        'Start Time'
-      ) as HTMLInputElement
-      const endTimeInput = screen.getByLabelText('End Time') as HTMLInputElement
-      expect(startTimeInput.value).toBe('09:00')
-      expect(endTimeInput.value).toBe('10:00')
-    })
   })
 
   describe('Recurring Event Instance Editing', () => {
@@ -473,7 +459,12 @@ describe('EventForm', () => {
         title: 'Weekly Meeting',
         start: dayjs('2025-08-15T10:00:00'),
         end: dayjs('2025-08-15T11:00:00'),
-        rrule: 'FREQ=WEEKLY;BYDAY=MO,WE,FR',
+        rrule: {
+          freq: RRule.WEEKLY,
+          byweekday: [RRule.MO, RRule.WE, RRule.FR],
+          interval: 1,
+          dtstart: dayjs('2025-08-15T10:00:00').toDate(),
+        },
         allDay: false,
         color: 'bg-blue-100 text-blue-800',
       }

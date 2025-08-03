@@ -55,8 +55,6 @@ export function normalizePublicFacingCalendarEvent(
       ...event,
       start: dayjs.isDayjs(event.start) ? event.start : dayjs(event.start),
       end: dayjs.isDayjs(event.end) ? event.end : dayjs(event.end),
-      originalStart: safeDate(event.originalStart),
-      originalEnd: safeDate(event.originalEnd),
     } as CalendarEvent
   })
 }

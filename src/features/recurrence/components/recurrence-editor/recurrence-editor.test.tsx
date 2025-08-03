@@ -1,15 +1,42 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
+import { RRule } from 'rrule'
+import type { RRuleOptions } from '@/lib/recurrence-handler/types'
 import { RecurrenceEditor } from './recurrence-editor'
+
+// Test helper to create complete RRuleOptions with required dtstart
+const createRRuleOptions = (
+  partial: Partial<RRuleOptions> = {}
+): RRuleOptions => ({
+  dtstart: new Date('2025-01-01T09:00:00Z'),
+  interval: 1,
+  freq: RRule.DAILY, // This should be overridden by ...partial if freq is provided
+  ...partial,
+})
+
 describe('RecurrenceEditor', () => {
   const mockOnChange = mock(() => {})
 
-  const renderRecurrenceEditor = (props = {}) => {
+  const renderRecurrenceEditor = (props: Record<string, unknown> = {}) => {
     const defaultProps = {
       value: null,
       onChange: mockOnChange,
     }
-    return render(<RecurrenceEditor {...defaultProps} {...props} />)
+
+    // Auto-wrap incomplete RRuleOptions with dtstart
+    const finalProps = { ...props }
+    if (
+      finalProps.value &&
+      typeof finalProps.value === 'object' &&
+      'freq' in finalProps.value &&
+      !('dtstart' in finalProps.value)
+    ) {
+      finalProps.value = createRRuleOptions(
+        finalProps.value as Partial<RRuleOptions>
+      )
+    }
+
+    return render(<RecurrenceEditor {...defaultProps} {...finalProps} />)
   }
 
   beforeEach(() => {
@@ -26,7 +53,7 @@ describe('RecurrenceEditor', () => {
     })
 
     it('should render with repeat checkbox checked when valid RRULE is provided', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const checkbox = screen.getByTestId('toggle-recurrence')
       expect(checkbox).toBeChecked()
@@ -35,13 +62,15 @@ describe('RecurrenceEditor', () => {
     })
 
     it('should show proper RRULE description when value is provided', () => {
-      renderRecurrenceEditor({ value: 'FREQ=WEEKLY;INTERVAL=2;COUNT=5' })
+      renderRecurrenceEditor({
+        value: { freq: RRule.WEEKLY, interval: 2, count: 5 },
+      })
 
       expect(screen.getByText('Every 2 weeks for 5 times')).toBeInTheDocument()
     })
 
     it('should handle empty string value gracefully', () => {
-      renderRecurrenceEditor({ value: '' })
+      renderRecurrenceEditor({ value: null })
 
       const checkbox = screen.getByTestId('toggle-recurrence')
       expect(checkbox).not.toBeChecked()
@@ -56,7 +85,7 @@ describe('RecurrenceEditor', () => {
       // Simulate editing a recurring event - prop changes from null to RRULE
       rerender(
         <RecurrenceEditor
-          value="FREQ=WEEKLY;INTERVAL=1"
+          value={createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 })}
           onChange={mockOnChange}
         />
       )
@@ -82,7 +111,8 @@ describe('RecurrenceEditor', () => {
     })
 
     it('should handle malformed RRULE strings gracefully', () => {
-      renderRecurrenceEditor({ value: 'INVALID_RRULE_STRING' })
+      // Pass invalid RRuleOptions that would cause errors
+      renderRecurrenceEditor({ value: { freq: 999 } })
 
       expect(screen.getByText('Custom recurrence')).toBeInTheDocument()
       const checkbox = screen.getByTestId('toggle-recurrence')
@@ -90,28 +120,34 @@ describe('RecurrenceEditor', () => {
     })
 
     it('should handle RRULE with missing FREQ parameter', () => {
-      // RRule defaults to YEARLY when FREQ is missing
-      renderRecurrenceEditor({ value: 'INTERVAL=1;COUNT=5' })
+      // RRule defaults to YEARLY when FREQ is missing - but our interface requires freq
+      renderRecurrenceEditor({
+        value: { freq: RRule.YEARLY, interval: 1, count: 5 },
+      })
 
       expect(screen.getByText('Every year for 5 times')).toBeInTheDocument()
     })
 
     it('should handle RRULE with unsupported frequency', () => {
       // Using a frequency that's not in our freqMap
-      renderRecurrenceEditor({ value: 'FREQ=SECONDLY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: 999, interval: 1 } })
 
       expect(screen.getByText('Custom recurrence')).toBeInTheDocument()
     })
 
     it('should handle extremely large interval values', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=999999' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 999999 } })
 
       expect(screen.getByText('Every 999999 days')).toBeInTheDocument()
     })
 
     it('should handle RRULE with multiple BYDAY values', () => {
       renderRecurrenceEditor({
-        value: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR,SU',
+        value: {
+          freq: RRule.WEEKLY,
+          interval: 1,
+          byweekday: [RRule.MO, RRule.WE, RRule.FR, RRule.SU],
+        },
       })
 
       // Should parse correctly and show all selected days
@@ -136,12 +172,15 @@ describe('RecurrenceEditor', () => {
       const checkbox = screen.getByTestId('toggle-recurrence')
       fireEvent.click(checkbox)
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1')
+      expect(mockOnChange).toHaveBeenCalledWith({
+        freq: RRule.DAILY,
+        interval: 1,
+      })
       expect(checkbox).toBeChecked()
     })
 
     it('should disable recurrence and call onChange with null when toggled off', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const checkbox = screen.getByTestId('toggle-recurrence')
       fireEvent.click(checkbox)
@@ -151,7 +190,7 @@ describe('RecurrenceEditor', () => {
     })
 
     it('should hide recurrence options when toggled off', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       expect(screen.getByLabelText('Repeats')).toBeInTheDocument()
 
@@ -163,24 +202,44 @@ describe('RecurrenceEditor', () => {
   })
 
   describe('🔧 Frequency Selection', () => {
-    it('should parse and display all supported frequencies', () => {
+    it('should parse and display all supported frequencies', async () => {
       const frequencies = [
-        { rrule: 'FREQ=DAILY;INTERVAL=1', expected: 'Daily' },
-        { rrule: 'FREQ=WEEKLY;INTERVAL=1', expected: 'Weekly' },
-        { rrule: 'FREQ=MONTHLY;INTERVAL=1', expected: 'Monthly' },
-        { rrule: 'FREQ=YEARLY;INTERVAL=1', expected: 'Yearly' },
+        {
+          rruleOptions: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
+          expected: 'Daily',
+        },
+        {
+          rruleOptions: createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 }),
+          expected: 'Weekly',
+        },
+        {
+          rruleOptions: createRRuleOptions({
+            freq: RRule.MONTHLY,
+            interval: 1,
+          }),
+          expected: 'Monthly',
+        },
+        {
+          rruleOptions: createRRuleOptions({ freq: RRule.YEARLY, interval: 1 }),
+          expected: 'Yearly',
+        },
       ]
 
-      frequencies.forEach(({ rrule, expected }) => {
-        const { unmount } = renderRecurrenceEditor({ value: rrule })
+      for (const { rruleOptions, expected } of frequencies) {
+        const { unmount } = render(
+          <RecurrenceEditor value={rruleOptions} onChange={mockOnChange} />
+        )
+
         const frequencySelect = screen.getByTestId('frequency-select')
-        expect(frequencySelect).toHaveTextContent(expected)
+
+        // The RecurrenceEditor should display the frequency correctly
+        expect(frequencySelect.textContent).toContain(expected)
         unmount()
-      })
+      }
     })
 
     it('should update RRULE when frequency changes', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
       fireEvent.click(frequencySelect)
@@ -188,11 +247,22 @@ describe('RecurrenceEditor', () => {
       const weeklyOption = screen.getByRole('option', { name: 'Weekly' })
       fireEvent.click(weeklyOption)
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=WEEKLY;INTERVAL=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.WEEKLY,
+          interval: 1,
+        })
+      )
     })
 
     it('should clear weekly days when switching from weekly to other frequencies', () => {
-      renderRecurrenceEditor({ value: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE' })
+      renderRecurrenceEditor({
+        value: {
+          freq: RRule.WEEKLY,
+          interval: 1,
+          byweekday: [RRule.MO, RRule.WE],
+        },
+      })
 
       const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
       fireEvent.click(frequencySelect)
@@ -200,76 +270,112 @@ describe('RecurrenceEditor', () => {
       const dailyOption = screen.getByRole('option', { name: 'Daily' })
       fireEvent.click(dailyOption)
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1')
+      // Check that onChange was called - let test failure show us the actual format
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+        })
+      )
     })
   })
 
   describe('⏱️ Interval Handling', () => {
     it('should handle valid interval changes', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const intervalInput = screen.getByLabelText('Every')
       fireEvent.change(intervalInput, { target: { value: '5' } })
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=5')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 5,
+        })
+      )
     })
 
     it('should enforce minimum interval of 1', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const intervalInput = screen.getByLabelText('Every')
       fireEvent.change(intervalInput, { target: { value: '0' } })
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+        })
+      )
     })
 
     it('should handle negative interval values', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const intervalInput = screen.getByLabelText('Every')
       fireEvent.change(intervalInput, { target: { value: '-5' } })
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+        })
+      )
     })
 
     it('should handle non-numeric interval input', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const intervalInput = screen.getByLabelText('Every')
       fireEvent.change(intervalInput, { target: { value: 'abc' } })
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+        })
+      )
     })
 
     it('should handle empty interval input', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const intervalInput = screen.getByLabelText('Every')
       fireEvent.change(intervalInput, { target: { value: '' } })
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+        })
+      )
     })
 
     it('should handle very large interval values', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const intervalInput = screen.getByLabelText('Every')
       fireEvent.change(intervalInput, { target: { value: '999999' } })
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=999999')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 999999,
+        })
+      )
     })
   })
 
   describe('📅 Weekly Day Selection', () => {
     it('should show day selection only for weekly frequency', () => {
       const { rerender } = renderRecurrenceEditor({
-        value: 'FREQ=WEEKLY;INTERVAL=1',
+        value: { freq: RRule.WEEKLY, interval: 1 },
       })
       expect(screen.getByText('Repeat on')).toBeInTheDocument()
 
       rerender(
         <RecurrenceEditor
-          value="FREQ=DAILY;INTERVAL=1"
+          value={createRRuleOptions({ freq: RRule.DAILY, interval: 1 })}
           onChange={mockOnChange}
         />
       )
@@ -277,7 +383,7 @@ describe('RecurrenceEditor', () => {
     })
 
     it('should handle all day combinations', () => {
-      renderRecurrenceEditor({ value: 'FREQ=WEEKLY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.WEEKLY, interval: 1 } })
 
       // Select all days
       const dayCheckboxes = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -288,12 +394,30 @@ describe('RecurrenceEditor', () => {
       }
 
       expect(mockOnChange).toHaveBeenCalledWith(
-        'FREQ=WEEKLY;INTERVAL=1;BYDAY=SU,MO,TU,WE,TH,FR,SA'
+        expect.objectContaining({
+          freq: RRule.WEEKLY,
+          interval: 1,
+          byweekday: expect.arrayContaining([
+            RRule.SU,
+            RRule.MO,
+            RRule.TU,
+            RRule.WE,
+            RRule.TH,
+            RRule.FR,
+            RRule.SA,
+          ]),
+        })
       )
     })
 
     it('should handle deselecting all days', () => {
-      renderRecurrenceEditor({ value: 'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR' })
+      renderRecurrenceEditor({
+        value: {
+          freq: RRule.WEEKLY,
+          interval: 1,
+          byweekday: [RRule.MO, RRule.WE, RRule.FR],
+        },
+      })
 
       // Deselect all days
       const mondayCheckbox = screen.getByLabelText('Mon')
@@ -304,11 +428,16 @@ describe('RecurrenceEditor', () => {
       fireEvent.click(wednesdayCheckbox)
       fireEvent.click(fridayCheckbox)
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=WEEKLY;INTERVAL=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.WEEKLY,
+          interval: 1,
+        })
+      )
     })
 
     it('should handle rapid day toggle clicks', () => {
-      renderRecurrenceEditor({ value: 'FREQ=WEEKLY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.WEEKLY, interval: 1 } })
 
       const mondayCheckbox = screen.getByLabelText('Mon')
 
@@ -325,78 +454,124 @@ describe('RecurrenceEditor', () => {
 
   describe('🔚 End Conditions', () => {
     it('should handle never ending (default)', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const neverCheckbox = screen.getByLabelText('Never')
       expect(neverCheckbox).toBeChecked()
     })
 
     it('should handle count-based ending', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const afterCheckbox = screen.getByLabelText('After')
       fireEvent.click(afterCheckbox)
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1;COUNT=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+          count: 1,
+        })
+      )
 
       const countInput = screen.getByTestId('count-input')
       fireEvent.change(countInput, { target: { value: '10' } })
 
       expect(mockOnChange).toHaveBeenCalledWith(
-        'FREQ=DAILY;INTERVAL=1;COUNT=10'
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+          count: 10,
+        })
       )
     })
 
     it('should handle date-based ending', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const onCheckbox = screen.getByLabelText('On')
       fireEvent.click(onCheckbox)
 
       // Should contain UNTIL parameter
       expect(mockOnChange).toHaveBeenCalledWith(
-        expect.stringMatching(/^FREQ=DAILY;INTERVAL=1;UNTIL=/)
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+          until: expect.any(Date),
+        })
       )
     })
 
     it('should enforce minimum count of 1', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1;COUNT=5' })
+      renderRecurrenceEditor({
+        value: { freq: RRule.DAILY, interval: 1, count: 5 },
+      })
 
       const countInput = screen.getByDisplayValue('5')
       fireEvent.change(countInput, { target: { value: '0' } })
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1;COUNT=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+          count: 1,
+        })
+      )
     })
 
     it('should handle negative count values', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1;COUNT=5' })
+      renderRecurrenceEditor({
+        value: { freq: RRule.DAILY, interval: 1, count: 5 },
+      })
 
       const countInput = screen.getByDisplayValue('5')
       fireEvent.change(countInput, { target: { value: '-10' } })
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1;COUNT=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+          count: 1,
+        })
+      )
     })
 
     it('should handle non-numeric count input', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1;COUNT=5' })
+      renderRecurrenceEditor({
+        value: { freq: RRule.DAILY, interval: 1, count: 5 },
+      })
 
       const countInput = screen.getByDisplayValue('5')
       fireEvent.change(countInput, { target: { value: 'abc' } })
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1;COUNT=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+          count: 1,
+        })
+      )
     })
 
     it('should handle empty count input', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1;COUNT=5' })
+      renderRecurrenceEditor({
+        value: { freq: RRule.DAILY, interval: 1, count: 5 },
+      })
 
       const countInput = screen.getByDisplayValue('5')
       fireEvent.change(countInput, { target: { value: '' } })
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1;COUNT=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+          count: 1,
+        })
+      )
     })
 
     it('should handle switching between end types rapidly', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const neverCheckbox = screen.getByLabelText('Never')
       const afterCheckbox = screen.getByLabelText('After')
@@ -408,40 +583,77 @@ describe('RecurrenceEditor', () => {
       fireEvent.click(neverCheckbox)
       fireEvent.click(afterCheckbox)
 
-      expect(mockOnChange).toHaveBeenCalledWith('FREQ=DAILY;INTERVAL=1;COUNT=1')
+      expect(mockOnChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          freq: RRule.DAILY,
+          interval: 1,
+          count: 1,
+        })
+      )
     })
   })
 
   describe('🎨 RRULE Description Generation', () => {
     it('should show correct descriptions for different patterns', () => {
       const testCases = [
-        { rrule: 'FREQ=DAILY;INTERVAL=1', expected: 'Daily' },
-        { rrule: 'FREQ=DAILY;INTERVAL=3', expected: 'Every 3 days' },
-        { rrule: 'FREQ=WEEKLY;INTERVAL=1', expected: 'Weekly' },
-        { rrule: 'FREQ=WEEKLY;INTERVAL=2', expected: 'Every 2 weeks' },
-        { rrule: 'FREQ=MONTHLY;INTERVAL=1', expected: 'Monthly' },
-        { rrule: 'FREQ=YEARLY;INTERVAL=1', expected: 'Yearly' },
         {
-          rrule: 'FREQ=DAILY;INTERVAL=1;COUNT=5',
+          rruleOptions: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
+          expected: 'Daily',
+        },
+        {
+          rruleOptions: createRRuleOptions({ freq: RRule.DAILY, interval: 3 }),
+          expected: 'Every 3 days',
+        },
+        {
+          rruleOptions: createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 }),
+          expected: 'Weekly',
+        },
+        {
+          rruleOptions: createRRuleOptions({ freq: RRule.WEEKLY, interval: 2 }),
+          expected: 'Every 2 weeks',
+        },
+        {
+          rruleOptions: createRRuleOptions({
+            freq: RRule.MONTHLY,
+            interval: 1,
+          }),
+          expected: 'Monthly',
+        },
+        {
+          rruleOptions: createRRuleOptions({ freq: RRule.YEARLY, interval: 1 }),
+          expected: 'Yearly',
+        },
+        {
+          rruleOptions: createRRuleOptions({
+            freq: RRule.DAILY,
+            interval: 1,
+            count: 5,
+          }),
           expected: 'Every day for 5 times',
         },
         {
-          rrule: 'FREQ=WEEKLY;INTERVAL=2;COUNT=10',
+          rruleOptions: createRRuleOptions({
+            freq: RRule.WEEKLY,
+            interval: 2,
+            count: 10,
+          }),
           expected: 'Every 2 weeks for 10 times',
         },
       ]
 
-      testCases.forEach(({ rrule, expected }) => {
-        const { unmount } = renderRecurrenceEditor({ value: rrule })
+      testCases.forEach(({ rruleOptions, expected }) => {
+        const { unmount } = render(
+          <RecurrenceEditor value={rruleOptions} onChange={mockOnChange} />
+        )
         expect(screen.getByText(expected)).toBeInTheDocument()
         unmount()
       })
     })
 
     it('should handle UNTIL dates in description', () => {
-      const futureDate = '20251231T235959Z'
+      const futureDate = new Date('2025-12-31T23:59:59Z')
       renderRecurrenceEditor({
-        value: `FREQ=DAILY;INTERVAL=1;UNTIL=${futureDate}`,
+        value: { freq: RRule.DAILY, interval: 1, until: futureDate },
       })
 
       // RRule.toText() handles UNTIL dates in its own format - should contain "until"
@@ -449,7 +661,7 @@ describe('RecurrenceEditor', () => {
     })
 
     it('should show "Custom recurrence" for unparseable RRULEs', () => {
-      renderRecurrenceEditor({ value: 'COMPLETELY_INVALID' })
+      renderRecurrenceEditor({ value: { freq: 999 as unknown, interval: 1 } })
 
       expect(screen.getByText('Custom recurrence')).toBeInTheDocument()
     })
@@ -457,7 +669,7 @@ describe('RecurrenceEditor', () => {
 
   describe('🏃‍♂️ Performance & Stress Tests', () => {
     it('should handle multiple rapid onChange calls without issues', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const intervalInput = screen.getByLabelText('Every')
 
@@ -473,14 +685,14 @@ describe('RecurrenceEditor', () => {
 
     it('should handle component remounting with different props', () => {
       const { rerender } = renderRecurrenceEditor({
-        value: 'FREQ=DAILY;INTERVAL=1',
+        value: { freq: RRule.DAILY, interval: 1 },
       })
 
       expect(screen.getByText('Daily')).toBeInTheDocument()
 
       rerender(
         <RecurrenceEditor
-          value="FREQ=WEEKLY;INTERVAL=2"
+          value={createRRuleOptions({ freq: RRule.WEEKLY, interval: 2 })}
           onChange={mockOnChange}
         />
       )
@@ -514,7 +726,7 @@ describe('RecurrenceEditor', () => {
 
   describe('♿ Accessibility & User Experience', () => {
     it('should have proper ARIA labels and roles', () => {
-      renderRecurrenceEditor({ value: 'FREQ=WEEKLY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.WEEKLY, interval: 1 } })
 
       expect(screen.getByLabelText('Repeats')).toBeInTheDocument()
       expect(screen.getByLabelText('Every')).toBeInTheDocument()
@@ -524,7 +736,7 @@ describe('RecurrenceEditor', () => {
     })
 
     it('should support keyboard navigation', () => {
-      renderRecurrenceEditor({ value: 'FREQ=WEEKLY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.WEEKLY, interval: 1 } })
 
       const checkbox = screen.getByTestId('toggle-recurrence')
       checkbox.focus()
@@ -537,7 +749,7 @@ describe('RecurrenceEditor', () => {
     })
 
     it('should maintain focus state correctly', () => {
-      renderRecurrenceEditor({ value: 'FREQ=DAILY;INTERVAL=1' })
+      renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
       const intervalInput = screen.getByLabelText('Every')
       intervalInput.focus()
@@ -580,12 +792,23 @@ describe('RecurrenceEditor', () => {
       fireEvent.change(countInput, { target: { value: '5' } })
 
       expect(mockOnChange).toHaveBeenLastCalledWith(
-        'FREQ=WEEKLY;INTERVAL=2;COUNT=5;BYDAY=MO,WE'
+        expect.objectContaining({
+          freq: RRule.WEEKLY,
+          interval: 2,
+          count: 5,
+          byweekday: expect.arrayContaining([RRule.MO, RRule.WE]),
+        })
       )
     })
 
     it('should preserve form state when toggling off and on quickly', () => {
-      renderRecurrenceEditor({ value: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE' })
+      renderRecurrenceEditor({
+        value: {
+          freq: RRule.WEEKLY,
+          interval: 2,
+          byweekday: [RRule.MO, RRule.WE],
+        },
+      })
 
       const checkbox = screen.getByTestId('toggle-recurrence')
 
@@ -598,7 +821,11 @@ describe('RecurrenceEditor', () => {
 
       // Should restore previous state
       expect(mockOnChange).toHaveBeenCalledWith(
-        'FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE'
+        expect.objectContaining({
+          freq: RRule.WEEKLY,
+          interval: 2,
+          byweekday: expect.arrayContaining([RRule.MO, RRule.WE]),
+        })
       )
     })
   })

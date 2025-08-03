@@ -2,6 +2,7 @@ import type { CalendarEvent } from '@/components'
 import dayjs from '@/lib/dayjs-config'
 import { RRule } from 'rrule'
 import { omitKeys, safeDate } from '../utils'
+import type { RRuleOptions } from './types'
 
 export const isRecurringEvent = (event: CalendarEvent): boolean => {
   return Boolean(event.rrule || event.recurrenceId || event.uid)
@@ -26,12 +27,13 @@ export const generateRecurringEvents = ({
   }
 
   try {
-    // Parse RRULE string and create rule with proper dtstart
-    const baseRule = RRule.fromString(event.rrule)
-    const rule = new RRule({
-      ...baseRule.origOptions,
-      dtstart: event.start.toDate(),
-    })
+    // Create rule from RRuleOptions ensuring dtstart is always provided
+    // If dtstart is missing from the RRULE, use the event's start time as fallback
+    const ruleOptions: RRuleOptions = {
+      ...event.rrule,
+      dtstart: event.rrule.dtstart || event.start.toDate(),
+    }
+    const rule = new RRule(ruleOptions)
 
     const overrides = currentEvents.filter(
       (e) => e.recurrenceId && e.uid === event.uid
@@ -87,9 +89,9 @@ export const generateRecurringEvents = ({
 
     return recurringEvents
   } catch (error) {
-    // Handle malformed RRULE strings
+    // Handle invalid RRULE options
     throw new Error(
-      `Invalid RRULE string: ${event.rrule}. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Invalid RRULE options: ${JSON.stringify(event.rrule)}. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
     )
   }
 }
@@ -155,15 +157,15 @@ export const updateRecurringEvent = ({
       // Calculate the termination date: day before target with end of day time
       // This ensures the last occurrence before target is included in the terminated series
       const dayBeforeTarget = targetEvent.start.subtract(1, 'day')
-      const terminationDate = dayBeforeTarget
-        .endOf('day')
-        .format('YYYYMMDD[T]HHmmss[Z]')
-      const terminatedRRule = `${baseEvent.rrule};UNTIL=${terminationDate}`
+      const terminationDate = dayBeforeTarget.endOf('day').toDate()
 
       // Update original series with UNTIL to end before target date
       const terminatedEvent = {
         ...baseEvent,
-        rrule: terminatedRRule,
+        rrule: {
+          ...baseEvent.rrule,
+          until: terminationDate,
+        },
       }
       updatedEvents[baseEventIndex] = terminatedEvent
 
@@ -178,6 +180,11 @@ export const updateRecurringEvent = ({
       const newSeriesEvent: CalendarEvent = {
         ...baseEvent,
         ...updates,
+        rrule: {
+          ...baseEvent.rrule,
+          ...updates.rrule,
+          dtstart: newSeriesStartTime.toDate(),
+        },
         id: newSeriesId,
         uid: newSeriesUID, // New UID for new series
         start: newSeriesStartTime,
@@ -250,14 +257,14 @@ export const deleteRecurringEvent = ({
       // Calculate the termination date: day before target with end of day time
       // This ensures the last occurrence before target is included in the terminated series
       const dayBeforeTarget = targetEvent.start.subtract(1, 'day')
-      const terminationDate = dayBeforeTarget
-        .endOf('day')
-        .format('YYYYMMDD[T]HHmmss[Z]')
-      const terminatedRRule = `${baseEvent.rrule};UNTIL=${terminationDate}`
+      const terminationDate = dayBeforeTarget.endOf('day').toDate()
 
       const terminatedEvent = {
         ...baseEvent,
-        rrule: terminatedRRule,
+        rrule: {
+          ...baseEvent.rrule,
+          until: terminationDate,
+        },
       }
       updatedEvents[baseEventIndex] = terminatedEvent
       break

@@ -24,8 +24,8 @@ export const useProcessedWeekEvents = ({
 }: UseProcessedWeekEventsProps) => {
   const { getEventsForDateRange, dayMaxEvents } = useCalendarContext()
 
-  const weekStart = days[0]
-  const weekEnd = days[6]
+  const weekStart = days[0].startOf('day')
+  const weekEnd = days[6].endOf('day')
 
   // Get all events that intersect with this week
   const weekEvents = getEventsForDateRange(weekStart, weekEnd)

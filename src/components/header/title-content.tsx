@@ -66,7 +66,7 @@ const TitleContent = () => {
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-1 px-2 font-semibold"
+              className="flex items-center gap-1 px-1! font-semibold"
             >
               <AnimatePresence mode="wait">
                 <motion.span
@@ -107,7 +107,7 @@ const TitleContent = () => {
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center gap-1 px-2 font-semibold"
+            className="flex items-center gap-1 px-1! font-semibold"
           >
             <AnimatePresence mode="wait">
               <motion.span
@@ -149,7 +149,7 @@ const TitleContent = () => {
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-1 px-2 font-semibold"
+              className="flex items-center gap-1 px-1! font-semibold"
             >
               <AnimatePresence mode="wait">
                 <motion.span
@@ -216,7 +216,7 @@ const TitleContent = () => {
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-1 px-2 font-semibold"
+              className="flex items-center gap-1 px-1! font-semibold"
             >
               <AnimatePresence mode="wait">
                 <motion.span
@@ -263,7 +263,7 @@ const TitleContent = () => {
                       <div className="flex w-full items-center justify-between">
                         <span>{dayDate.format('dddd, MMM D')}</span>
                         {isToday && (
-                          <span className="bg-primary text-primary-foreground rounded-sm px-1 text-xs">
+                          <span className="bg-primary text-primary-foreground rounded-sm px-1! text-xs">
                             Today
                           </span>
                         )}

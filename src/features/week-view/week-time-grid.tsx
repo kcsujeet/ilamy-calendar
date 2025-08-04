@@ -65,7 +65,7 @@ export const WeekTimeGrid: React.FC = () => {
       {isCurrentWeek && (
         <div
           data-testid="week-current-time-indicator"
-          className="pointer-events-none absolute z-20"
+          className="pointer-events-none absolute z-40"
           style={{
             top: `${(dayjs().hour() + dayjs().minute() / 60) * 60}px`,
             left: `${todayIndex * (100 / 7)}%`,

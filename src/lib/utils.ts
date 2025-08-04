@@ -3,6 +3,7 @@ import type { ClassValue } from 'clsx'
 import { clsx } from 'clsx'
 import dayjs from '@/lib/dayjs-config'
 import { twMerge } from 'tailwind-merge'
+import type { IlamyCalendarPropEvent } from '@/components/ilamy-calendar/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -43,7 +44,7 @@ export const omitKeys = <T extends object, K extends keyof T>(
 }
 
 export function normalizePublicFacingCalendarEvent(
-  events: CalendarEvent[]
+  events: IlamyCalendarPropEvent[]
 ): CalendarEvent[] {
   if (!events || !events.length) {
     return []

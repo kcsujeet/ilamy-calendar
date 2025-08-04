@@ -92,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
       {/* Calendar Header with grid layout */}
       <div
         className={cn(
-          '@container flex justify-center 2xl:justify-between flex-wrap items-center gap-2 border-b',
+          '@container flex justify-center lg:justify-between flex-wrap items-center gap-2 border-b',
           className
         )}
         data-testid="calendar-header"

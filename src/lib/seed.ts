@@ -168,6 +168,7 @@ const dummyEvents = [
       freq: RRule.WEEKLY,
       interval: 1,
       byweekday: [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR],
+      dtstart: baseDate.hour(10).toDate(), // Required dtstart field
     },
     exdates: [],
   },

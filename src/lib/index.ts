@@ -1,4 +1,5 @@
 export * from './recurrence-handler'
 export * from './recurrence-handler/types'
 export * from './utils'
+export * from './export-ical'
 export { default as dayjs } from './dayjs-config'

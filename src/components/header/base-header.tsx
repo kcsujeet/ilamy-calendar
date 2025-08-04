@@ -5,7 +5,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
-import { Calendar as CalendarIcon, Menu, Plus } from 'lucide-react'
+import { downloadICalendar } from '@/lib/export-ical'
+import { Calendar as CalendarIcon, Download, Menu, Plus } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import TitleContent from './title-content'
 import ViewControls from './view-controls'
@@ -24,6 +25,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
     today,
     openEventForm,
     headerComponent,
+    rawEvents,
   } = useCalendarContext()
 
   // State for mobile menu popover
@@ -39,6 +41,13 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
       setMobilePopoverOpen(false)
     }
   }
+
+  // Handle iCalendar export
+  const handleExport = useCallback(() => {
+    const filename = `ilamy-calendar-${new Date().toISOString().split('T')[0]}.ics`
+    downloadICalendar(rawEvents, filename, 'ilamy Calendar')
+    setMobilePopoverOpen(false)
+  }, [rawEvents])
 
   // Callback for navigation that also closes the mobile popover
   const handleNavigation = {
@@ -84,7 +93,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
       {/* Calendar Header with grid layout */}
       <div
         className={cn(
-          '@container grid grid-cols-12 items-center gap-2 border-b p-2 sm:p-4',
+          '@container grid grid-cols-12 items-center gap-2 border-b',
           className
         )}
         data-testid="calendar-header"
@@ -98,7 +107,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         {/* New event button - Mobile & Desktop */}
         <div className="col-span-12 flex flex-wrap justify-center gap-1 2xl:col-span-7 2xl:justify-end">
           {/* Desktop controls - centralized */}
-          <div className="hidden items-center justify-center 2xl:justify-end gap-1 sm:flex w-full overflow-x-auto">
+          <div className="hidden items-center justify-start lg:justify-center 2xl:justify-end gap-1 sm:flex w-full overflow-x-auto">
             <ViewControls
               currentView={view}
               onChange={setView}
@@ -111,6 +120,17 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
             {/* New event button - Desktop */}
             <NewEventButton />
+
+            {/* Export button - Desktop */}
+            <Button
+              onClick={handleExport}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden lg:inline">Export</span>
+            </Button>
           </div>
 
           {/* Mobile navigation menu button - Right aligned */}
@@ -140,6 +160,19 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                     onPrevious={handleNavigation.previous}
                     variant="grid"
                   />
+
+                  {/* Export button - Mobile */}
+                  <div className="pt-2 border-t">
+                    <Button
+                      onClick={handleExport}
+                      variant="outline"
+                      size="sm"
+                      className="w-full flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Export Calendar (.ics)
+                    </Button>
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>

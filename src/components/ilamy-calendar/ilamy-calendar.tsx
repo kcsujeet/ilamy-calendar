@@ -46,7 +46,7 @@ const CalendarContent: React.FC = () => {
 
   return (
     <div className="flex flex-col w-full h-full">
-      <Header className="2xl:h-[5rem]" />
+      <Header className="2xl:h-[3.5rem] p-1" />
 
       {/* Calendar Body with AnimatePresence for view transitions */}
       <CalendarDndContext>
@@ -57,7 +57,7 @@ const CalendarContent: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.1, ease: 'easeInOut' }}
-            className="w-full h-[calc(100%-5rem)]"
+            className="w-full h-[calc(100%-3.5rem)]"
           >
             {viewMap[view]}
           </motion.div>

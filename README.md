@@ -1,4 +1,4 @@
-# Ilamy Calendar
+# ilamy Calendar
 
 A powerful, full-featured React calendar component library built with TypeScript, Tailwind CSS, and modern React patterns. Features multiple calendar views, drag-and-drop support, recurring events, and comprehensive internationalization.
 

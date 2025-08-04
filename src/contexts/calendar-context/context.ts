@@ -7,6 +7,7 @@ export interface CalendarContextType {
   currentDate: dayjs.Dayjs
   view: 'month' | 'week' | 'day' | 'year'
   events: CalendarEvent[]
+  rawEvents: CalendarEvent[] // Unprocessed events for export
   isEventFormOpen: boolean
   selectedEvent: CalendarEvent | null
   selectedDate: dayjs.Dayjs | null
@@ -32,8 +33,8 @@ export interface CalendarContextType {
   openEventForm: (date?: dayjs.Dayjs) => void
   closeEventForm: () => void
   getEventsForDateRange: (
-    start: dayjs.Dayjs,
-    end: dayjs.Dayjs
+    startDate: dayjs.Dayjs,
+    endDate: dayjs.Dayjs
   ) => CalendarEvent[]
   findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
   renderEvent?: (event: CalendarEvent) => React.ReactNode

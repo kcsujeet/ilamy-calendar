@@ -1,4 +1,4 @@
-# Ilamy Calendar - AI Coding Instructions
+# ilamy Calendar - AI Coding Instructions
 
 ## 🚨 CRITICAL RULES
 

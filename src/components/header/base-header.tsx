@@ -9,10 +9,13 @@ import { Calendar as CalendarIcon, Menu, Plus } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import TitleContent from './title-content'
 import ViewControls from './view-controls'
+import { cn } from '@/lib'
 
-type HeaderProps = object
+interface HeaderProps {
+  className?: string
+}
 
-const Header: React.FC<HeaderProps> = () => {
+const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const {
     view,
     setView,
@@ -63,8 +66,8 @@ const Header: React.FC<HeaderProps> = () => {
           className="flex items-center gap-1"
         >
           <Plus className="h-4 w-4" />
-          <span className="hidden md:inline">New Event</span>
-          <span className="md:hidden">New</span>
+          <span className="hidden lg:inline">New Event</span>
+          <span className="lg:hidden">New</span>
         </Button>
       </div>
     ),
@@ -79,17 +82,23 @@ const Header: React.FC<HeaderProps> = () => {
   return (
     <>
       {/* Calendar Header with grid layout */}
-      <div className="@container grid grid-cols-12 items-center gap-2 border-b p-2 sm:p-4">
+      <div
+        className={cn(
+          '@container grid grid-cols-12 items-center gap-2 border-b p-2 sm:p-4',
+          className
+        )}
+        data-testid="calendar-header"
+      >
         {/* Title area - Left section */}
-        <div className="col-span-12 flex flex-wrap items-center justify-center gap-2 @4xl:col-span-5 @4xl:justify-start">
+        <div className="col-span-12 flex flex-wrap items-center justify-center gap-1 2xl:col-span-5 2xl:justify-start">
           <CalendarIcon className="h-5 w-5" />
           <TitleContent />
         </div>
 
         {/* New event button - Mobile & Desktop */}
-        <div className="col-span-12 flex flex-wrap justify-center gap-1 @4xl:col-span-7 @4xl:justify-end">
+        <div className="col-span-12 flex flex-wrap justify-center gap-1 2xl:col-span-7 2xl:justify-end">
           {/* Desktop controls - centralized */}
-          <div className="hidden items-center justify-end gap-1 sm:flex">
+          <div className="hidden items-center justify-center 2xl:justify-end gap-1 sm:flex w-full overflow-x-auto">
             <ViewControls
               currentView={view}
               onChange={setView}

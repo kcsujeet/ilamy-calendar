@@ -69,7 +69,7 @@ export const DayCell: React.FC<DayCellProps> = ({
         data-testid={`day-cell-${day.format('YYYY-MM-DD')}`}
         date={day}
         className={cn(
-          'cursor-pointer overflow-clip p-1 hover:bg-accent',
+          'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px]',
           !isCurrentMonth && 'bg-secondary text-muted-foreground',
           isLastColumn && 'border-r-0',
           className
@@ -107,6 +107,16 @@ export const DayCell: React.FC<DayCellProps> = ({
 
                 showAllEvents(day, todayEvents)
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  showAllEvents(day, todayEvents)
+                }
+              }}
+              tabIndex={0}
+              // oxlint-disable-next-line prefer-tag-over-role
+              role="button"
             >
               +{hiddenEventsCount} more
             </div>

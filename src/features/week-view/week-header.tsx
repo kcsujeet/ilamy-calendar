@@ -4,7 +4,11 @@ import dayjs from '@/lib/dayjs-config'
 import { AnimatePresence, motion } from 'motion/react'
 import React from 'react'
 
-export const WeekHeader: React.FC = () => {
+interface WeekHeaderProps {
+  className?: string
+}
+
+export const WeekHeader: React.FC<WeekHeaderProps> = ({ className }) => {
   const {
     currentDate,
     selectDate,
@@ -33,7 +37,8 @@ export const WeekHeader: React.FC = () => {
       className={cn(
         'grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1',
         stickyViewHeader && 'sticky top-0 z-100',
-        viewHeaderClassName
+        viewHeaderClassName,
+        className
       )}
       data-testid="week-header"
     >

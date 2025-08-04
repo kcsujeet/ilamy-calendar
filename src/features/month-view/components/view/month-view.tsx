@@ -7,6 +7,7 @@ import { DayCell } from '../day-cell'
 import type { MonthViewProps, SelectedDayEvents } from '../../types'
 import { MonthHeader } from '../month-header/month-header'
 import { WeekEventsLayer } from '../week-events-layer/week-events-layer'
+import { ScrollArea } from '@/components/ui'
 
 export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
   const allEventsDialogRef = React.useRef<{
@@ -45,12 +46,13 @@ export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
   return (
     <div className="flex h-full flex-col" data-testid="month-view">
       {/* Week days header */}
-      <MonthHeader />
+      <MonthHeader className="h-[3rem]" />
 
       {/* Calendar grid - added fixed height */}
-      <div
-        className="flex-1 overflow-auto h-full"
+      <ScrollArea
+        className="overflow-auto h-[calc(100%-3rem)]"
         data-testid="month-scroll-area"
+        viewPortProps={{ className: '*:flex! *:flex-col *:min-h-full' }}
       >
         <AnimatePresence mode="wait">
           <motion.div
@@ -59,7 +61,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="relative grid h-full grid-cols-7 grid-rows-6 overflow-auto"
+            className="relative grid h-full grid-cols-7 grid-rows-6 overflow-auto flex-1"
             data-testid="month-calendar-grid"
           >
             {/* Day cells */}
@@ -90,7 +92,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
             })}
           </motion.div>
         </AnimatePresence>
-      </div>
+      </ScrollArea>
 
       {/* Dialog for showing all events */}
       <AllEventDialog ref={allEventsDialogRef} />

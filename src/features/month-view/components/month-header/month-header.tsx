@@ -4,7 +4,11 @@ import { useCalendarContext } from '@/contexts/calendar-context/context'
 import dayjs from '@/lib/dayjs-config'
 import { cn } from '@/lib/utils'
 
-export const MonthHeader: React.FC = () => {
+interface MonthHeaderProps {
+  className?: string
+}
+
+export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
   const {
     firstDayOfWeek,
     currentLocale,
@@ -38,7 +42,8 @@ export const MonthHeader: React.FC = () => {
       className={cn(
         'grid grid-cols-7 border-b',
         stickyViewHeader && 'sticky top-0 z-100',
-        viewHeaderClassName
+        viewHeaderClassName,
+        className
       )}
       data-testid="month-header"
     >

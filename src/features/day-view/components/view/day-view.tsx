@@ -26,12 +26,12 @@ const DayView = () => {
   return (
     <div data-testid="day-view" className="flex h-full flex-col">
       {/* Day header */}
-      <DayHeader />
+      <DayHeader className="h-[3rem]" />
 
       {/* Time grid without scrollbar */}
       <ScrollArea
         data-testid="day-scroll-area"
-        className="relative flex-1 overflow-y-auto"
+        className="relative overflow-y-auto h-[calc(100%-3rem)]"
       >
         {/* All-day events row */}
         <DayAllDayRow />

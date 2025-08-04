@@ -75,8 +75,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           className="flex items-center gap-1"
         >
           <Plus className="h-4 w-4" />
-          <span className="hidden lg:inline">New Event</span>
-          <span className="lg:hidden">New</span>
+          <span className="hidden lg:inline">New</span>
         </Button>
       </div>
     ),
@@ -93,19 +92,19 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
       {/* Calendar Header with grid layout */}
       <div
         className={cn(
-          '@container grid grid-cols-12 items-center gap-2 border-b',
+          '@container flex justify-center 2xl:justify-between flex-wrap items-center gap-2 border-b',
           className
         )}
         data-testid="calendar-header"
       >
         {/* Title area - Left section */}
-        <div className="col-span-12 flex flex-wrap items-center justify-center gap-1 2xl:col-span-5 2xl:justify-start">
+        <div className="flex flex-wrap items-center justify-center gap-1 2xl:col-span-5 2xl:justify-start">
           <CalendarIcon className="h-5 w-5" />
           <TitleContent />
         </div>
 
         {/* New event button - Mobile & Desktop */}
-        <div className="col-span-12 flex flex-wrap justify-center gap-1 2xl:col-span-7 2xl:justify-end">
+        <div className="flex flex-wrap justify-center gap-1 2xl:col-span-7 2xl:justify-end">
           {/* Desktop controls - centralized */}
           <div className="hidden items-center justify-start lg:justify-center 2xl:justify-end gap-1 sm:flex w-full overflow-x-auto">
             <ViewControls

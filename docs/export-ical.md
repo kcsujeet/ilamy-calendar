@@ -21,10 +21,12 @@ The calendar now supports exporting events to iCalendar (.ics) format, which is 
 ## Usage
 
 ### Desktop
+
 1. Look for the "Export" button in the top-right corner of the calendar header
 2. Click the button to download the `.ics` file
 
 ### Mobile
+
 1. Tap the menu button (☰) in the top-right corner
 2. Select "Export Calendar (.ics)" from the dropdown menu
 3. The file will be downloaded to your device
@@ -32,6 +34,7 @@ The calendar now supports exporting events to iCalendar (.ics) format, which is 
 ## Technical Implementation
 
 ### Core Files
+
 - `/src/lib/export-ical.ts` - Main export functionality
 - `/src/components/header/base-header.tsx` - UI integration
 - `/src/lib/export-ical.test.ts` - Comprehensive tests
@@ -39,6 +42,7 @@ The calendar now supports exporting events to iCalendar (.ics) format, which is 
 ### Key Functions
 
 #### `exportToICalendar(events, calendarName)`
+
 Converts an array of CalendarEvent objects to RFC 5545 compliant iCalendar format.
 
 ```typescript
@@ -46,6 +50,7 @@ const icalContent = exportToICalendar(events, 'My Calendar')
 ```
 
 #### `downloadICalendar(events, filename, calendarName)`
+
 Exports events and triggers download in the browser.
 
 ```typescript
@@ -55,6 +60,7 @@ downloadICalendar(events, 'my-calendar.ics', 'My Calendar')
 ## Supported Event Properties
 
 ### Basic Properties
+
 - `title` → `SUMMARY`
 - `description` → `DESCRIPTION`
 - `location` → `LOCATION`
@@ -64,11 +70,13 @@ downloadICalendar(events, 'my-calendar.ics', 'My Calendar')
 - `allDay` → Date format handling
 
 ### Recurring Events
+
 - `rrule` → `RRULE` (converted via rrule.js)
 - `exdates` → `EXDATE`
 - `recurrenceId` → `RECURRENCE-ID`
 
 ### Generated Properties
+
 - `DTSTAMP` - Current timestamp
 - `CREATED` - Current timestamp
 - `LAST-MODIFIED` - Current timestamp
@@ -79,6 +87,7 @@ downloadICalendar(events, 'my-calendar.ics', 'My Calendar')
 ## Compatibility
 
 The exported `.ics` files are compatible with:
+
 - ✅ Google Calendar
 - ✅ Apple Calendar (macOS/iOS)
 - ✅ Microsoft Outlook
@@ -89,6 +98,7 @@ The exported `.ics` files are compatible with:
 ## Character Escaping
 
 Special characters in event text are properly escaped according to RFC 5545:
+
 - Backslashes (`\`) → `\\`
 - Semicolons (`;`) → `\;`
 - Commas (`,`) → `\,`
@@ -104,6 +114,7 @@ Special characters in event text are properly escaped according to RFC 5545:
 ## Testing
 
 The export functionality includes comprehensive tests covering:
+
 - Basic event export
 - Recurring event patterns
 - All-day events
@@ -114,6 +125,7 @@ The export functionality includes comprehensive tests covering:
 - Header/footer generation
 
 Run tests with:
+
 ```bash
 bun test src/lib/export-ical.test.ts
 ```
@@ -121,6 +133,7 @@ bun test src/lib/export-ical.test.ts
 ## Future Enhancements
 
 Potential improvements for future versions:
+
 - Custom timezone support
 - Selective export (date range, specific calendars)
 - Import functionality

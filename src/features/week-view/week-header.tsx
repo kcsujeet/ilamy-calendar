@@ -11,6 +11,7 @@ interface WeekHeaderProps {
 export const WeekHeader: React.FC<WeekHeaderProps> = ({ className }) => {
   const {
     currentDate,
+    currentLocale,
     selectDate,
     openEventForm,
     firstDayOfWeek,
@@ -83,7 +84,9 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ className }) => {
                   isToday && 'bg-primary text-primary-foreground'
                 )}
               >
-                {day.date()}
+                {Intl.DateTimeFormat(currentLocale, { day: 'numeric' }).format(
+                  day.toDate()
+                )}
               </div>
             </motion.div>
           </AnimatePresence>

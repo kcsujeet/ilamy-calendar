@@ -1,3 +1,4 @@
+import { useCalendarContext } from '@/contexts/calendar-context/context'
 import dayjs from '@/lib/dayjs-config'
 
 // Hours to display (all 24 hours of the day)
@@ -10,6 +11,8 @@ interface DayTimeColProps {
 }
 
 export const DayTimeCol: React.FC<DayTimeColProps> = ({ className }) => {
+  const { currentLocale } = useCalendarContext()
+
   return (
     <div
       data-testid="day-time-col"
@@ -22,7 +25,11 @@ export const DayTimeCol: React.FC<DayTimeColProps> = ({ className }) => {
           className="h-[60px] border-b text-right"
         >
           <span className="text-muted-foreground pr-2 text-right text-[10px] sm:text-xs">
-            {time.format('h A')}
+            {Intl.DateTimeFormat(currentLocale, {
+              hour: 'numeric',
+              minute: 'numeric',
+              hour12: true,
+            }).format(time.toDate())}
           </span>
         </div>
       ))}

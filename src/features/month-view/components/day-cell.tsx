@@ -25,6 +25,7 @@ export const DayCell: React.FC<DayCellProps> = ({
     setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void
   }>(null)
   const {
+    currentLocale,
     getEventsForDateRange,
     currentDate,
     firstDayOfWeek,
@@ -82,11 +83,13 @@ export const DayCell: React.FC<DayCellProps> = ({
           {/* Day number */}
           <div
             className={cn(
-              'flex h-5 w-5 items-center justify-center rounded-full text-xs sm:h-6 sm:w-6 sm:text-sm',
+              'flex h-5 w-5 items-center justify-center rounded-full text-xs sm:h-6 sm:w-6',
               isToday && 'bg-primary text-primary-foreground font-medium'
             )}
           >
-            {day.date()}
+            {Intl.DateTimeFormat(currentLocale, { day: 'numeric' }).format(
+              day.toDate()
+            )}
           </div>
 
           {/* Render placeholders for events that occur today so that the cell height is according to dayMaxEvents. */}

@@ -8,7 +8,7 @@ const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) =>
 )
 
 export const WeekTimeGrid: React.FC = () => {
-  const { currentDate, firstDayOfWeek } = useCalendarContext()
+  const { currentDate, firstDayOfWeek, currentLocale } = useCalendarContext()
 
   // Get start and end of current week based on firstDayOfWeek setting
   const startOfWeek = currentDate.startOf('week').day(firstDayOfWeek)
@@ -46,7 +46,11 @@ export const WeekTimeGrid: React.FC = () => {
             className="h-[60px] border-b text-right"
           >
             <span className="text-muted-foreground pr-2 text-right text-[10px] sm:text-xs">
-              {time.format('h A')}
+              {Intl.DateTimeFormat(currentLocale, {
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true,
+              }).format(time.toDate())}
             </span>
           </div>
         ))}

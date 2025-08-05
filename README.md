@@ -6,14 +6,34 @@ A powerful, full-featured React calendar component library built with TypeScript
 
 ## Features
 
-- 🗓️ **Multiple Views**: Month, Week, Day, and Year views
-- 🎯 **Drag & Drop**: Move events between dates and time slots
-- 🔄 **Recurring Events**: Support for complex recurring patterns
-- 🌍 **Internationalization**: 100+ locales with dayjs
-- 🎨 **Customizable**: Flexible styling with Tailwind CSS
-- ⚡ **Performance**: Optimized rendering with React patterns
-- 📱 **Responsive**: Works seamlessly across devices
-- 🔧 **TypeScript**: Full type safety and IntelliSense support
+- 🗓️ **Multiple Views**: Month, Week, Day, and Year views with smooth transitions
+- 🎯 **Drag & Drop**: Move events between dates and time slots with collision detection
+- 🔄 **RFC 5545 Recurring Events**: Full RRULE support with Google Calendar-style operations
+  - **RRULE Patterns**: Daily, Weekly, Monthly, Yearly with complex frequencies
+  - **Smart Operations**: Edit "this event", "this and following", or "all events"
+  - **Exception Handling**: EXDATE exclusions and modified instance support
+  - **rrule.js Integration**: Battle-tested library for robust recurrence generation
+- 📤 **iCalendar Export**: RFC 5545 compliant .ics file export with proper recurring event handling
+- 🌍 **Internationalization**: 100+ locales with dayjs and configurable week start days
+- 🎨 **Customizable Styling**: 
+  - Flexible theming with Tailwind CSS and CSS variables
+  - Custom event rendering with render props
+  - Configurable colors, fonts, and spacing
+- ⚡ **Performance Optimized**: 
+  - On-demand recurring event generation
+  - Efficient date range calculations
+  - Minimal re-renders with optimized React patterns
+- 📱 **Responsive Design**: Adaptive layouts for desktop, tablet, and mobile
+- 🔧 **Developer Experience**:
+  - Full TypeScript support with comprehensive type definitions
+  - IntelliSense and autocompletion
+  - Extensive JSDoc documentation
+  - Test-driven development with 100% test coverage
+- 🎛️ **Advanced Event Management**:
+  - All-day events with proper timezone handling
+  - Multi-day events with smart positioning
+  - Event validation and error handling
+  - Bulk operations and batch updates
 
 ## Documentation
 

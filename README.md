@@ -15,11 +15,11 @@ A powerful, full-featured React calendar component library built with TypeScript
   - **rrule.js Integration**: Battle-tested library for robust recurrence generation
 - 📤 **iCalendar Export**: RFC 5545 compliant .ics file export with proper recurring event handling
 - 🌍 **Internationalization**: 100+ locales with dayjs and configurable week start days
-- 🎨 **Customizable Styling**: 
+- 🎨 **Customizable Styling**:
   - Flexible theming with Tailwind CSS and CSS variables
   - Custom event rendering with render props
   - Configurable colors, fonts, and spacing
-- ⚡ **Performance Optimized**: 
+- ⚡ **Performance Optimized**:
   - On-demand recurring event generation
   - Efficient date range calculations
   - Minimal re-renders with optimized React patterns

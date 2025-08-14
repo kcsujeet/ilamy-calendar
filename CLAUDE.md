@@ -86,7 +86,11 @@ bun run ci                 # Full CI pipeline (lint + prettier + test + build)
 - **Human-readable code**: Extract complex operations into descriptive variables
 - **One operation per line**: Avoid chaining multiple operations
 - **Meaningful variable names**: `targetEventStartISO` instead of `targetEvent.start.toISOString()`
+
+### Git Commit Guidelines
 - **Short commit messages**: Max 100 characters, use conventional commit prefixes (feat, fix, docs, etc.)
+- **No co-author attribution**: Never add Claude or AI as co-author in commits
+- **Branch workflow**: Create feature branches for new work, don't commit directly to main
 
 ### iCalendar (RFC 5545) Compliance
 - **Strict RFC 5545 adherence**: No shortcuts or fallbacks

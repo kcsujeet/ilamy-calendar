@@ -12,7 +12,7 @@ bun test                    # Run all tests
 bun test --coverage         # Run tests with coverage
 bun test --coverage --reporter=html  # Coverage report
 
-# Linting & Formatting  
+# Linting & Formatting
 bun run lint               # Check code with oxlint
 bun run lint:fix           # Fix linting issues
 bun run prettier:check     # Check formatting
@@ -31,18 +31,21 @@ bun run ci                 # Full CI pipeline (lint + prettier + test + build)
 ## Project Architecture
 
 ### Component Library Structure
+
 - **Main Export**: `IlamyCalendar` component with full calendar functionality
 - **Context-First**: `CalendarProvider` manages all state, wrapped by `CalendarDndContext` for drag-and-drop
 - **View-Based Architecture**: Separate components for `month-view/`, `week-view/`, `day-view/`, `year-view/`
 - **Feature Organization**: Components grouped by functionality (`drag-and-drop/`, `recurrence/`, `event-form/`)
 
 ### State Management
+
 - **CalendarProvider** (`src/contexts/calendar-context/`) centralizes all calendar state
 - **useCalendarContext** hook provides access to events, view state, and operations
 - All CRUD operations flow through context methods: `addEvent`, `updateEvent`, `deleteEvent`
 - Recurring events use specialized functions: `updateRecurringEvent`, `deleteRecurringEvent`
 
 ### Recurring Events System
+
 - **RFC 5545 Compliant**: Full iCalendar standard compliance using `rrule.js` library
 - **Google Calendar UX**: "this/following/all" scope operations for recurring events
 - **Core Functions** in `src/lib/recurrence-handler/`:
@@ -56,6 +59,7 @@ bun run ci                 # Full CI pipeline (lint + prettier + test + build)
   3. Modified instances (have `recurrenceId`, no `rrule`)
 
 ### Drag & Drop Integration
+
 - **@dnd-kit/core** integration via `CalendarDndContext`
 - Handles event dragging between dates and time slots
 - Updates events through calendar context after successful drops
@@ -63,12 +67,14 @@ bun run ci                 # Full CI pipeline (lint + prettier + test + build)
 ## Important Development Rules
 
 ### Bun-First Workflow
+
 - **Always use Bun** instead of npm/node/vite (see `.cursor/rules/use-bun-instead-of-node-vite-npm-pnpm.mdc`)
 - Use `bun test` instead of Jest/Vitest
 - Use `bun install` for dependencies
 - Use `bun run <script>` for package scripts
 
 ### Test-Driven Development (TDD)
+
 - **Mandatory TDD**: Always write tests FIRST before implementing features
 - **Red-Green-Refactor**: Write failing test → minimal implementation → refactor
 - **Never create new test files** - always update existing `component.test.tsx` files
@@ -76,6 +82,7 @@ bun run ci                 # Full CI pipeline (lint + prettier + test + build)
 - **Exact assertions**: Use `toHaveLength(3)`, `toBe('exact-value')` instead of weak checks like `toBeGreaterThan(0)`
 
 ### Date Handling Standards
+
 - **Never use YYYY-MM-DD format** for storage/transmission (causes timezone bugs)
 - **Always use ISO strings**: `dayjs().toISOString()` for serialization
 - **Use YYYY-MM-DD only for display** in UI components
@@ -83,16 +90,19 @@ bun run ci                 # Full CI pipeline (lint + prettier + test + build)
 - **Never import `datetime` from rrule** - stick with dayjs for consistency
 
 ### Code Quality Requirements
+
 - **Human-readable code**: Extract complex operations into descriptive variables
 - **One operation per line**: Avoid chaining multiple operations
 - **Meaningful variable names**: `targetEventStartISO` instead of `targetEvent.start.toISOString()`
 
 ### Git Commit Guidelines
+
 - **Short commit messages**: Max 100 characters, use conventional commit prefixes (feat, fix, docs, etc.)
 - **No co-author attribution**: Never add Claude or AI as co-author in commits
 - **Branch workflow**: Create feature branches for new work, don't commit directly to main
 
 ### iCalendar (RFC 5545) Compliance
+
 - **Strict RFC 5545 adherence**: No shortcuts or fallbacks
 - **Required fields**: Every event must have globally unique `uid`
 - **RECURRENCE-ID**: Only for modified recurring instances
@@ -116,8 +126,7 @@ bun run ci                 # Full CI pipeline (lint + prettier + test + build)
 ```tsx
 // Basic calendar integration
 import { IlamyCalendar } from '@ilamy/calendar'
-
-<IlamyCalendar
+;<IlamyCalendar
   events={events}
   firstDayOfWeek="sunday"
   onEventClick={handleEventClick}
@@ -127,7 +136,8 @@ import { IlamyCalendar } from '@ilamy/calendar'
 // Context access for advanced integrations
 import { useIlamyCalendarContext } from '@ilamy/calendar'
 
-const { addEvent, updateEvent, deleteEvent, view, currentDate } = useIlamyCalendarContext()
+const { addEvent, updateEvent, deleteEvent, view, currentDate } =
+  useIlamyCalendarContext()
 ```
 
 ## Testing Strategy

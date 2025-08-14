@@ -39,10 +39,18 @@ export const generateRecurringEvents = ({
       (e) => e.recurrenceId && e.uid === event.uid
     )
 
-    // Generate occurrences within the date range
-    const startDateTime = startDate.toDate()
+    // Calculate event duration to expand search window for events that span the range
+    const eventDuration = event.end.diff(event.start)
+
+    // Expand search window backward by event duration to catch events that start before
+    // the range but span into it
+    const expandedStartDateTime = startDate
+      .subtract(eventDuration, 'millisecond')
+      .toDate()
     const endDateTime = endDate.toDate()
-    const occurrences = rule.between(startDateTime, endDateTime, true)
+
+    // Get all occurrences in the expanded range
+    const occurrences = rule.between(expandedStartDateTime, endDateTime, true)
 
     // Convert occurrences to CalendarEvent instances
     const recurringEvents: CalendarEvent[] = occurrences
@@ -78,13 +86,22 @@ export const generateRecurringEvents = ({
       .filter((recurringEvent) => {
         // Filter out EXDATE exclusions
         const hasExdates = event.exdates && event.exdates.length > 0
-        if (!hasExdates) {
-          return true
+        if (hasExdates) {
+          const eventStartISO = recurringEvent.start.toISOString()
+          const isExcluded = event.exdates.includes(eventStartISO)
+          if (isExcluded) {
+            return false
+          }
         }
 
-        const eventStartISO = recurringEvent.start.toISOString()
-        const isExcluded = event.exdates.includes(eventStartISO)
-        return !isExcluded
+        // Filter to only include events that span through the original requested date range
+        // An event spans the range if: event_start < range_end AND event_end > range_start
+        // Use isSameOrBefore/isSameOrAfter to include boundary cases
+        const eventSpansRange =
+          recurringEvent.start.isSameOrBefore(endDate) &&
+          recurringEvent.end.isSameOrAfter(startDate)
+
+        return eventSpansRange
       })
 
     return recurringEvents

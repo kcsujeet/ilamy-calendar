@@ -70,6 +70,10 @@ export const useProcessedWeekEvents = ({
     const startCol = Math.max(0, eventStart.diff(weekStart, 'day'))
     const endCol = Math.min(6, eventEnd.diff(weekStart, 'day'))
 
+    // Detect if event is truncated at the boundaries
+    const isTruncatedStart = event.start.startOf('day').isBefore(weekStart)
+    const isTruncatedEnd = event.end.startOf('day').isAfter(weekEnd)
+
     // Try to place the event starting from its original start column
     let placedSuccessfully = false
 
@@ -107,7 +111,9 @@ export const useProcessedWeekEvents = ({
         height: EVENT_BAR_HEIGHT,
         position: assignedRow,
         ...event,
-      })
+        isTruncatedStart,
+        isTruncatedEnd,
+      } as ProcessedEvent)
       placedSuccessfully = true
     }
 
@@ -152,7 +158,9 @@ export const useProcessedWeekEvents = ({
             height: EVENT_BAR_HEIGHT,
             position: truncatedAssignedRow,
             ...event,
-          })
+            isTruncatedStart: true, // Always truncated at start when using this fallback logic
+            isTruncatedEnd,
+          } as ProcessedEvent)
           placedSuccessfully = true
           break // Successfully placed, stop trying other start positions
         }
@@ -164,6 +172,10 @@ export const useProcessedWeekEvents = ({
   for (const event of sortedSingleDay) {
     const eventStart = dayjs.max(event.start.startOf('day'), weekStart)
     const col = Math.max(0, eventStart.diff(weekStart, 'day'))
+
+    // Single-day events are not truncated by definition
+    const isTruncatedStart = false
+    const isTruncatedEnd = false
 
     // Find the first available row in this column
     let assignedRow = -1
@@ -189,7 +201,9 @@ export const useProcessedWeekEvents = ({
         height: EVENT_BAR_HEIGHT,
         position: assignedRow,
         ...event,
-      })
+        isTruncatedStart,
+        isTruncatedEnd,
+      } as ProcessedEvent)
     }
   }
 

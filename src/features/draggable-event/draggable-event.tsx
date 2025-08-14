@@ -31,20 +31,56 @@ function DraggableEventUnmemoized({
   })
 
   // Default event content to render if custom renderEvent is not provided
-  const DefaultEventContent = () => (
-    <div
-      className={cn(
-        event.backgroundColor || 'bg-blue-500',
-        event.color || 'text-white',
-        'h-full w-full px-1 border-[1.5px] border-card rounded-md text-left overflow-clip'
-      )}
-      style={{ backgroundColor: event.backgroundColor, color: event.color }}
-    >
-      <p className="text-[10px] font-semibold sm:text-xs mt-0.5">
-        {event.title}
-      </p>
-    </div>
-  )
+  const DefaultEventContent = () => {
+    // Check if this event has truncation information
+    const enhancedEvent = event as unknown as {
+      isTruncatedStart?: boolean
+      isTruncatedEnd?: boolean
+    }
+    const isTruncatedStart = enhancedEvent.isTruncatedStart
+    const isTruncatedEnd = enhancedEvent.isTruncatedEnd
+
+    return (
+      <div
+        className={cn(
+          event.backgroundColor || 'bg-blue-500',
+          event.color || 'text-white',
+          'h-full w-full px-1 border-[1.5px] border-card text-left overflow-clip relative',
+          // Adjust border radius based on truncation to show continuation
+          isTruncatedStart && isTruncatedEnd
+            ? 'rounded-none'
+            : isTruncatedStart
+              ? 'rounded-r-md rounded-l-none'
+              : isTruncatedEnd
+                ? 'rounded-l-md rounded-r-none'
+                : 'rounded-md'
+        )}
+        style={{ backgroundColor: event.backgroundColor, color: event.color }}
+      >
+        {/* Left continuation indicator */}
+        {isTruncatedStart && (
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-black/30"></div>
+        )}
+
+        {/* Event title */}
+        <p
+          className={cn(
+            'text-[10px] font-semibold sm:text-xs mt-0.5',
+            // Add slight padding to avoid overlap with indicators
+            isTruncatedStart && 'pl-1',
+            isTruncatedEnd && 'pr-1'
+          )}
+        >
+          {event.title}
+        </p>
+
+        {/* Right continuation indicator */}
+        {isTruncatedEnd && (
+          <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-black/30"></div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <AnimatePresence mode="wait">

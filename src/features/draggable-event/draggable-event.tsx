@@ -6,6 +6,22 @@ import { AnimatePresence, motion } from 'motion/react'
 import type { CSSProperties } from 'react'
 import { memo } from 'react'
 
+const getBorderRadiusClass = (
+  isTruncatedStart: boolean,
+  isTruncatedEnd: boolean
+) => {
+  if (isTruncatedStart && isTruncatedEnd) {
+    return 'rounded-none'
+  }
+  if (isTruncatedStart) {
+    return 'rounded-r-md rounded-l-none'
+  }
+  if (isTruncatedEnd) {
+    return 'rounded-l-md rounded-r-none'
+  }
+  return 'rounded-md'
+}
+
 function DraggableEventUnmemoized({
   elementId,
   event,
@@ -46,20 +62,13 @@ function DraggableEventUnmemoized({
           event.backgroundColor || 'bg-blue-500',
           event.color || 'text-white',
           'h-full w-full px-1 border-[1.5px] border-card text-left overflow-clip relative',
-          // Adjust border radius based on truncation to show continuation
-          isTruncatedStart && isTruncatedEnd
-            ? 'rounded-none'
-            : isTruncatedStart
-              ? 'rounded-r-md rounded-l-none'
-              : isTruncatedEnd
-                ? 'rounded-l-md rounded-r-none'
-                : 'rounded-md'
+          getBorderRadiusClass(isTruncatedStart, isTruncatedEnd)
         )}
         style={{ backgroundColor: event.backgroundColor, color: event.color }}
       >
         {/* Left continuation indicator */}
         {isTruncatedStart && (
-          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-black/30"></div>
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-foreground/25"></div>
         )}
 
         {/* Event title */}
@@ -76,7 +85,7 @@ function DraggableEventUnmemoized({
 
         {/* Right continuation indicator */}
         {isTruncatedEnd && (
-          <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-black/30"></div>
+          <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-foreground/25"></div>
         )}
       </div>
     )

@@ -75,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           className="flex items-center gap-1"
         >
           <Plus className="h-4 w-4" />
-          <span className="hidden lg:inline">New</span>
+          <span className="hidden @4xl:inline">New</span>
         </Button>
       </div>
     ),
@@ -90,91 +90,92 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   return (
     <>
       {/* Calendar Header with grid layout */}
-      <div
-        className={cn(
-          '@container flex justify-center lg:justify-between flex-wrap items-center gap-2 border-b',
-          className
-        )}
-        data-testid="calendar-header"
-      >
-        {/* Title area - Left section */}
-        <div className="flex flex-wrap items-center justify-center gap-1 2xl:col-span-5 2xl:justify-start">
-          <CalendarIcon className="h-5 w-5" />
-          <TitleContent />
-        </div>
-
-        {/* New event button - Mobile & Desktop */}
-        <div className="flex flex-wrap justify-center gap-1 2xl:col-span-7 2xl:justify-end">
-          {/* Desktop controls - centralized */}
-          <div className="hidden items-center justify-start lg:justify-center 2xl:justify-end gap-1 sm:flex w-full overflow-x-auto">
-            <ViewControls
-              currentView={view}
-              onChange={setView}
-              onToday={today}
-              onNext={nextPeriod}
-              onPrevious={prevPeriod}
-              variant="default"
-              className="justify-end"
-            />
-
-            {/* New event button - Desktop */}
-            <NewEventButton />
-
-            {/* Export button - Desktop */}
-            <Button
-              onClick={handleExport}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-            >
-              <Download className="h-4 w-4" />
-              <span className="hidden lg:inline">Export</span>
-            </Button>
+      <div className="@container" data-testid="calendar-header">
+        <div
+          className={cn(
+            'flex justify-center @2xl:justify-between flex-wrap items-center gap-2 border-b',
+            className
+          )}
+        >
+          {/* Title area - Left section */}
+          <div className="flex flex-wrap items-center justify-center gap-1 @2xl:justify-start">
+            <CalendarIcon className="h-5 w-5" />
+            <TitleContent />
           </div>
 
-          {/* Mobile navigation menu button - Right aligned */}
-          <div className="flex items-center justify-end gap-1 sm:hidden">
-            {/* New event button - Mobile */}
-            <NewEventButton />
+          {/* New event button - Mobile & Desktop */}
+          <div className="flex flex-wrap justify-start @xl:justify-center gap-1 @4xl:justify-end overflow-x-auto">
+            {/* Desktop controls - centralized */}
+            <div className="hidden @sm:flex items-center justify-start gap-1">
+              <ViewControls
+                currentView={view}
+                onChange={setView}
+                onToday={today}
+                onNext={nextPeriod}
+                onPrevious={prevPeriod}
+                variant="default"
+                className="justify-end"
+              />
 
-            <Popover
-              open={mobilePopoverOpen}
-              onOpenChange={setMobilePopoverOpen}
-            >
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-[240px] p-2">
-                <div className="space-y-2">
-                  <h3 className="mb-1 text-sm font-medium">
-                    View & Navigation
-                  </h3>
-                  <ViewControls
-                    currentView={view}
-                    onChange={(newView) => handleViewChange(newView, true)}
-                    onToday={handleNavigation.today}
-                    onNext={handleNavigation.next}
-                    onPrevious={handleNavigation.previous}
-                    variant="grid"
-                  />
+              {/* New event button - Desktop */}
+              <NewEventButton />
 
-                  {/* Export button - Mobile */}
-                  <div className="pt-2 border-t">
-                    <Button
-                      onClick={handleExport}
-                      variant="outline"
-                      size="sm"
-                      className="w-full flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Export Calendar (.ics)
-                    </Button>
+              {/* Export button - Desktop */}
+              <Button
+                onClick={handleExport}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden @4xl:inline">Export</span>
+              </Button>
+            </div>
+
+            {/* Mobile navigation menu button - Right aligned */}
+            <div className="flex items-center justify-end gap-1 @sm:hidden">
+              {/* New event button - Mobile */}
+              <NewEventButton />
+
+              <Popover
+                open={mobilePopoverOpen}
+                onOpenChange={setMobilePopoverOpen}
+              >
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-[240px] p-2">
+                  <div className="space-y-2">
+                    <h3 className="mb-1 text-sm font-medium">
+                      View & Navigation
+                    </h3>
+                    <ViewControls
+                      currentView={view}
+                      onChange={(newView) => handleViewChange(newView, true)}
+                      onToday={handleNavigation.today}
+                      onNext={handleNavigation.next}
+                      onPrevious={handleNavigation.previous}
+                      variant="grid"
+                    />
+
+                    {/* Export button - Mobile */}
+                    <div className="pt-2 border-t">
+                      <Button
+                        onClick={handleExport}
+                        variant="outline"
+                        size="sm"
+                        className="w-full flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Export Calendar (.ics)
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </div>
       </div>

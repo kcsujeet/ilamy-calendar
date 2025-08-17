@@ -94,6 +94,7 @@ bun run ci                 # Full CI pipeline (lint + prettier + test + build)
 - **Human-readable code**: Extract complex operations into descriptive variables
 - **One operation per line**: Avoid chaining multiple operations
 - **Meaningful variable names**: `targetEventStartISO` instead of `targetEvent.start.toISOString()`
+- **Design System Compliance**: Strictly follow the design system - DO NOT override button heights, spacing, or other design tokens unless absolutely necessary. Use the design system's predefined sizes (sm, default, lg) instead of custom h-8, h-9 values.
 
 ### Git Commit Guidelines
 

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, mock } from 'bun:test'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from '@/lib/recurrence-handler/types'
 import { RecurrenceEditor } from './recurrence-editor'
+import { CalendarProvider } from '@/contexts/calendar-context/provider'
 
 // Test helper to create complete RRuleOptions with required dtstart
 const createRRuleOptions = (
@@ -36,7 +37,11 @@ describe('RecurrenceEditor', () => {
       )
     }
 
-    return render(<RecurrenceEditor {...defaultProps} {...finalProps} />)
+    return render(
+      <CalendarProvider events={[]} dayMaxEvents={5} firstDayOfWeek={0}>
+        <RecurrenceEditor {...defaultProps} {...finalProps} />
+      </CalendarProvider>
+    )
   }
 
   beforeEach(() => {
@@ -84,10 +89,12 @@ describe('RecurrenceEditor', () => {
 
       // Simulate editing a recurring event - prop changes from null to RRULE
       rerender(
-        <RecurrenceEditor
-          value={createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 })}
-          onChange={mockOnChange}
-        />
+        <CalendarProvider events={[]} dayMaxEvents={5} firstDayOfWeek={0}>
+          <RecurrenceEditor
+            value={createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 })}
+            onChange={mockOnChange}
+          />
+        </CalendarProvider>
       )
 
       expect(checkbox).toBeChecked()
@@ -227,7 +234,9 @@ describe('RecurrenceEditor', () => {
 
       for (const { rruleOptions, expected } of frequencies) {
         const { unmount } = render(
-          <RecurrenceEditor value={rruleOptions} onChange={mockOnChange} />
+          <CalendarProvider events={[]} dayMaxEvents={5} firstDayOfWeek={0}>
+            <RecurrenceEditor value={rruleOptions} onChange={mockOnChange} />
+          </CalendarProvider>
         )
 
         const frequencySelect = screen.getByTestId('frequency-select')
@@ -374,10 +383,12 @@ describe('RecurrenceEditor', () => {
       expect(screen.getByText('Repeat on')).toBeInTheDocument()
 
       rerender(
-        <RecurrenceEditor
-          value={createRRuleOptions({ freq: RRule.DAILY, interval: 1 })}
-          onChange={mockOnChange}
-        />
+        <CalendarProvider events={[]} dayMaxEvents={5} firstDayOfWeek={0}>
+          <RecurrenceEditor
+            value={createRRuleOptions({ freq: RRule.DAILY, interval: 1 })}
+            onChange={mockOnChange}
+          />
+        </CalendarProvider>
       )
       expect(screen.queryByText('Repeat on')).toBe(null)
     })
@@ -643,7 +654,9 @@ describe('RecurrenceEditor', () => {
 
       testCases.forEach(({ rruleOptions, expected }) => {
         const { unmount } = render(
-          <RecurrenceEditor value={rruleOptions} onChange={mockOnChange} />
+          <CalendarProvider events={[]} dayMaxEvents={5} firstDayOfWeek={0}>
+            <RecurrenceEditor value={rruleOptions} onChange={mockOnChange} />
+          </CalendarProvider>
         )
         expect(screen.getByText(expected)).toBeInTheDocument()
         unmount()
@@ -691,10 +704,12 @@ describe('RecurrenceEditor', () => {
       expect(screen.getByText('Daily')).toBeInTheDocument()
 
       rerender(
-        <RecurrenceEditor
-          value={createRRuleOptions({ freq: RRule.WEEKLY, interval: 2 })}
-          onChange={mockOnChange}
-        />
+        <CalendarProvider events={[]} dayMaxEvents={5} firstDayOfWeek={0}>
+          <RecurrenceEditor
+            value={createRRuleOptions({ freq: RRule.WEEKLY, interval: 2 })}
+            onChange={mockOnChange}
+          />
+        </CalendarProvider>
       )
 
       expect(screen.getByText('Weekly')).toBeInTheDocument()

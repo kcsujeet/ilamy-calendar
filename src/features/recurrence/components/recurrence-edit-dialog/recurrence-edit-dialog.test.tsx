@@ -1,17 +1,28 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
 import { RecurrenceEditDialog } from './recurrence-edit-dialog'
+import { CalendarProvider } from '@/contexts/calendar-context/provider'
 
 describe('RecurrenceEditDialog', () => {
   const mockOnClose = mock(() => {})
   const mockOnConfirm = mock(() => {})
 
-  const defaultProps = {
-    isOpen: true,
-    onClose: mockOnClose,
-    onConfirm: mockOnConfirm,
-    operationType: 'edit' as const,
-    eventTitle: 'Test Recurring Event',
+  const renderWithProvider = (props = {}) => {
+    const defaultProps = {
+      isOpen: true,
+      onClose: mockOnClose,
+      onConfirm: mockOnConfirm,
+      operationType: 'edit',
+      eventTitle: 'Test Recurring Event',
+      ...props,
+      // oxlint-disable-next-line no-explicit-any
+    } as any
+
+    return render(
+      <CalendarProvider events={[]} dayMaxEvents={5} firstDayOfWeek={0}>
+        <RecurrenceEditDialog {...defaultProps} />
+      </CalendarProvider>
+    )
   }
 
   beforeEach(() => {
@@ -21,19 +32,19 @@ describe('RecurrenceEditDialog', () => {
 
   describe('Edit Operation', () => {
     it('should render edit dialog with correct title and description', () => {
-      render(<RecurrenceEditDialog {...defaultProps} />)
+      renderWithProvider()
 
       expect(screen.getByText(/Edit.*recurring event/)).toBeInTheDocument()
       expect(
         screen.getByText(/Test Recurring Event.*is a recurring event/)
       ).toBeInTheDocument()
       expect(
-        screen.getByText(/How would you like to.*change.*it/)
+        screen.getByText(/How would you like to.*edit.*it/)
       ).toBeInTheDocument()
     })
 
     it('should display all three edit options', () => {
-      render(<RecurrenceEditDialog {...defaultProps} />)
+      renderWithProvider()
 
       expect(screen.getByText('This event')).toBeInTheDocument()
       expect(screen.getByText('This and following events')).toBeInTheDocument()
@@ -41,21 +52,21 @@ describe('RecurrenceEditDialog', () => {
     })
 
     it('should show correct descriptions for edit options', () => {
-      render(<RecurrenceEditDialog {...defaultProps} />)
+      renderWithProvider()
 
       expect(
         screen.getByText(/Only.*change.*this specific occurrence/)
       ).toBeInTheDocument()
       expect(
-        screen.getByText(/Edit.*this and all future occurrences/)
+        screen.getByText(/Change.*this and all future occurrences/)
       ).toBeInTheDocument()
       expect(
-        screen.getByText(/Edit.*the entire recurring series/)
+        screen.getByText(/Change.*the entire recurring series/)
       ).toBeInTheDocument()
     })
 
     it('should call onConfirm with "this" scope when first option is clicked', () => {
-      render(<RecurrenceEditDialog {...defaultProps} />)
+      renderWithProvider()
 
       const thisEventButton = screen.getByText('This event')
       fireEvent.click(thisEventButton)
@@ -65,7 +76,7 @@ describe('RecurrenceEditDialog', () => {
     })
 
     it('should call onConfirm with "following" scope when second option is clicked', () => {
-      render(<RecurrenceEditDialog {...defaultProps} />)
+      renderWithProvider()
 
       const followingEventsButton = screen.getByText(
         'This and following events'
@@ -77,7 +88,7 @@ describe('RecurrenceEditDialog', () => {
     })
 
     it('should call onConfirm with "all" scope when third option is clicked', () => {
-      render(<RecurrenceEditDialog {...defaultProps} />)
+      renderWithProvider()
 
       const allEventsButton = screen.getByText('All events')
       fireEvent.click(allEventsButton)
@@ -88,13 +99,8 @@ describe('RecurrenceEditDialog', () => {
   })
 
   describe('Delete Operation', () => {
-    const deleteProps = {
-      ...defaultProps,
-      operationType: 'delete' as const,
-    }
-
     it('should render delete dialog with correct title and description', () => {
-      render(<RecurrenceEditDialog {...deleteProps} />)
+      renderWithProvider({ operationType: 'delete' })
 
       expect(screen.getByText(/Delete.*recurring event/)).toBeInTheDocument()
       expect(
@@ -106,7 +112,7 @@ describe('RecurrenceEditDialog', () => {
     })
 
     it('should show correct descriptions for delete options', () => {
-      render(<RecurrenceEditDialog {...deleteProps} />)
+      renderWithProvider({ operationType: 'delete' })
 
       expect(
         screen.getByText(/Only.*delete.*this specific occurrence/)
@@ -120,7 +126,7 @@ describe('RecurrenceEditDialog', () => {
     })
 
     it('should call onConfirm with correct scope for delete operations', () => {
-      render(<RecurrenceEditDialog {...deleteProps} />)
+      renderWithProvider({ operationType: 'delete' })
 
       const thisEventButton = screen.getByText('This event')
       fireEvent.click(thisEventButton)
@@ -131,13 +137,13 @@ describe('RecurrenceEditDialog', () => {
 
   describe('Dialog Behavior', () => {
     it('should not render when isOpen is false', () => {
-      render(<RecurrenceEditDialog {...defaultProps} isOpen={false} />)
+      renderWithProvider({ isOpen: false })
 
       expect(screen.queryByText('Edit Recurring Event')).not.toBeInTheDocument()
     })
 
     it('should call onClose when cancel button is clicked', () => {
-      render(<RecurrenceEditDialog {...defaultProps} />)
+      renderWithProvider()
 
       const cancelButton = screen.getByText('Cancel')
       fireEvent.click(cancelButton)
@@ -146,14 +152,14 @@ describe('RecurrenceEditDialog', () => {
     })
 
     it('should handle empty event title gracefully', () => {
-      render(<RecurrenceEditDialog {...defaultProps} eventTitle="" />)
+      renderWithProvider({ eventTitle: '' })
 
       // Should still render the dialog with empty quotes
       expect(screen.getByText(/is a recurring event/)).toBeInTheDocument()
     })
 
     it('should render with proper dialog structure and accessibility', () => {
-      render(<RecurrenceEditDialog {...defaultProps} />)
+      renderWithProvider()
 
       // Check for dialog role
       expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -166,7 +172,7 @@ describe('RecurrenceEditDialog', () => {
   describe('Edge Cases', () => {
     it('should handle very long event titles', () => {
       const longTitle = 'A'.repeat(100)
-      render(<RecurrenceEditDialog {...defaultProps} eventTitle={longTitle} />)
+      renderWithProvider({ eventTitle: longTitle })
 
       expect(
         screen.getByText(new RegExp(longTitle.slice(0, 50)))
@@ -175,9 +181,7 @@ describe('RecurrenceEditDialog', () => {
 
     it('should handle special characters in event title', () => {
       const specialTitle = 'Event with "quotes" & <tags>'
-      render(
-        <RecurrenceEditDialog {...defaultProps} eventTitle={specialTitle} />
-      )
+      renderWithProvider({ eventTitle: specialTitle })
 
       expect(
         screen.getByText(new RegExp('Event with "quotes"'))
@@ -185,7 +189,7 @@ describe('RecurrenceEditDialog', () => {
     })
 
     it('should maintain button focus after keyboard navigation', () => {
-      render(<RecurrenceEditDialog {...defaultProps} />)
+      renderWithProvider()
 
       const firstButton = screen.getByText('This event')
       firstButton.focus()

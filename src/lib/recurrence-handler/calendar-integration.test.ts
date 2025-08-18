@@ -268,6 +268,72 @@ describe('Monthly and Complex Patterns', () => {
     expect(result[2].start.toISOString()).toBe('2025-01-08T09:00:00.000Z')
   })
 
+  it('should include events that span through the date range even if they start before it', () => {
+    // Long duration event (4 hours) that occurs daily
+    const longDurationEvent: CalendarEvent = {
+      id: 'long-duration-1',
+      uid: 'long-duration-1@ilamy.calendar',
+      title: 'Long Meeting',
+      start: dayjs('2025-01-06T08:00:00.000Z'), // Starts at 8 AM
+      end: dayjs('2025-01-06T12:00:00.000Z'), // Ends at 12 PM (4 hour duration)
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        dtstart: dayjs('2025-01-06T08:00:00.000Z').toDate(),
+      },
+      exdates: [],
+    }
+
+    // Query range: 10 AM to 2 PM on a specific day
+    // The event starts before the range (8 AM) but spans into it (ends at 12 PM)
+    const queryStart = dayjs('2025-01-07T10:00:00.000Z') // 10 AM next day
+    const queryEnd = dayjs('2025-01-07T14:00:00.000Z') // 2 PM next day
+
+    const result = generateRecurringEvents({
+      event: longDurationEvent,
+      currentEvents: [],
+      startDate: queryStart,
+      endDate: queryEnd,
+    })
+
+    // Should include the Jan 7 event that spans through the query range
+    expect(result).toHaveLength(1)
+    expect(result[0].start.toISOString()).toBe('2025-01-07T08:00:00.000Z')
+    expect(result[0].end.toISOString()).toBe('2025-01-07T12:00:00.000Z')
+  })
+
+  it('should not include events that end before the date range starts', () => {
+    // Short event that ends before our query range
+    const shortEvent: CalendarEvent = {
+      id: 'short-1',
+      uid: 'short-1@ilamy.calendar',
+      title: 'Short Meeting',
+      start: dayjs('2025-01-06T08:00:00.000Z'), // 8 AM
+      end: dayjs('2025-01-06T09:00:00.000Z'), // 9 AM (1 hour duration)
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        dtstart: dayjs('2025-01-06T08:00:00.000Z').toDate(),
+      },
+      exdates: [],
+    }
+
+    // Query range: 10 AM to 2 PM
+    // The event ends at 9 AM, so it doesn't span into the range
+    const queryStart = dayjs('2025-01-07T10:00:00.000Z')
+    const queryEnd = dayjs('2025-01-07T14:00:00.000Z')
+
+    const result = generateRecurringEvents({
+      event: shortEvent,
+      currentEvents: [],
+      startDate: queryStart,
+      endDate: queryEnd,
+    })
+
+    // Should not include any events since they don't span the query range
+    expect(result).toHaveLength(0)
+  })
+
   it('should return empty array for events without RRULE', () => {
     const nonRecurringEvent: CalendarEvent = {
       id: 'single-1',

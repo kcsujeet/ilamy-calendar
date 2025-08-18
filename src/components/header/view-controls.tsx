@@ -31,8 +31,6 @@ const ViewControls: React.FC<ViewControlsProps> = ({
     return cn(
       // Base width for grid layout
       isGrid ? 'w-full' : '',
-      // Special case for year button visibility on mobile
-      viewType === 'year' ? (isGrid ? 'w-full' : 'hidden md:inline-flex') : '',
       // Active view styling
       currentView === viewType && 'bg-primary/80'
     )

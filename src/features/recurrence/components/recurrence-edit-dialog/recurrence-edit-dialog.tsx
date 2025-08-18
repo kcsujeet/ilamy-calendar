@@ -8,6 +8,7 @@ import {
   Button,
 } from '@/components/ui'
 import type { RecurrenceEditScope } from '@/features/recurrence/types'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
 
 interface RecurrenceEditDialogProps {
   isOpen: boolean
@@ -24,22 +25,27 @@ export function RecurrenceEditDialog({
   operationType,
   eventTitle,
 }: RecurrenceEditDialogProps) {
+  const { t } = useCalendarContext()
+
   const handleScopeSelect = (scope: RecurrenceEditScope) => {
     onConfirm(scope)
     onClose()
   }
 
-  const actionText = operationType === 'edit' ? 'change' : 'delete'
-  const actionVerb = operationType === 'edit' ? 'Edit' : 'Delete'
+  const isEdit = operationType === 'edit'
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{actionVerb} recurring event</DialogTitle>
+          <DialogTitle>
+            {isEdit ? t('editRecurringEvent') : t('deleteRecurringEvent')}
+          </DialogTitle>
           <DialogDescription>
-            "{eventTitle}" is a recurring event. How would you like to{' '}
-            {actionText} it?
+            "{eventTitle}"{' '}
+            {isEdit
+              ? t('editRecurringEventQuestion')
+              : t('deleteRecurringEventQuestion')}
           </DialogDescription>
         </DialogHeader>
 
@@ -50,9 +56,9 @@ export function RecurrenceEditDialog({
             onClick={() => handleScopeSelect('this')}
           >
             <div className="text-left">
-              <div className="font-medium">This event</div>
+              <div className="font-medium">{t('thisEvent')}</div>
               <div className="text-sm text-muted-foreground">
-                Only {actionText} this specific occurrence
+                {isEdit ? t('onlyChangeThis') : t('onlyDeleteThis')}
               </div>
             </div>
           </Button>
@@ -63,9 +69,9 @@ export function RecurrenceEditDialog({
             onClick={() => handleScopeSelect('following')}
           >
             <div className="text-left">
-              <div className="font-medium">This and following events</div>
+              <div className="font-medium">{t('thisAndFollowingEvents')}</div>
               <div className="text-sm text-muted-foreground">
-                {actionVerb} this and all future occurrences
+                {isEdit ? t('changeThisAndFuture') : t('deleteThisAndFuture')}
               </div>
             </div>
           </Button>
@@ -76,9 +82,9 @@ export function RecurrenceEditDialog({
             onClick={() => handleScopeSelect('all')}
           >
             <div className="text-left">
-              <div className="font-medium">All events</div>
+              <div className="font-medium">{t('allEvents')}</div>
               <div className="text-sm text-muted-foreground">
-                {actionVerb} the entire recurring series
+                {isEdit ? t('changeEntireSeries') : t('deleteEntireSeries')}
               </div>
             </div>
           </Button>
@@ -86,7 +92,7 @@ export function RecurrenceEditDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t('cancel')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,6 +2,7 @@ import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import React from 'react'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
 
 interface ViewControlsProps {
   currentView: 'day' | 'week' | 'month' | 'year'
@@ -24,6 +25,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
   onNext,
   onPrevious,
 }) => {
+  const { t } = useCalendarContext()
   const isGrid = variant === 'grid'
 
   // Extract common button className logic to a function
@@ -60,7 +62,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
         size={size}
         className={getButtonClassName('day')}
       >
-        Day
+        {t('day')}
       </Button>
       <Button
         onClick={() => onChange('week')}
@@ -68,7 +70,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
         size={size}
         className={getButtonClassName('week')}
       >
-        Week
+        {t('week')}
       </Button>
       <Button
         onClick={() => onChange('month')}
@@ -76,7 +78,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
         size={size}
         className={getButtonClassName('month')}
       >
-        Month
+        {t('month')}
       </Button>
       <Button
         onClick={() => onChange('year')}
@@ -84,11 +86,11 @@ const ViewControls: React.FC<ViewControlsProps> = ({
         size={size}
         className={getButtonClassName('year')}
       >
-        Year
+        {t('year')}
       </Button>
 
       <Button onClick={onToday} variant="outline" size={size}>
-        Today
+        {t('today')}
       </Button>
     </div>
   )

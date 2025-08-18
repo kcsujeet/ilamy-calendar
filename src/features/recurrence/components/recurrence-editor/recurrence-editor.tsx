@@ -15,14 +15,18 @@ import {
 } from '@/components/ui'
 import dayjs from '@/lib/dayjs-config'
 import type { RRuleOptions } from '@/lib/recurrence-handler/types'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { RRule } from 'rrule'
 import type { Weekday } from 'rrule'
+import { useCalendarContext } from '@/contexts/calendar-context/context'
 
 // Natural language description function using RRule's built-in helper methods
-function getRRuleDescription(rruleOptions: RRuleOptions | null): string {
+function getRRuleDescription(
+  rruleOptions: RRuleOptions | null,
+  t: (key: string) => string
+): string {
   if (!rruleOptions) {
-    return 'Custom recurrence'
+    return t('customRecurrence')
   }
 
   try {
@@ -39,14 +43,14 @@ function getRRuleDescription(rruleOptions: RRuleOptions | null): string {
       naturalText.includes('Unable to fully convert') ||
       naturalText.toLowerCase().includes('error')
     ) {
-      return 'Custom recurrence'
+      return t('customRecurrence')
     }
 
     // Capitalize first letter for consistent formatting
     return naturalText.charAt(0).toUpperCase() + naturalText.slice(1)
   } catch {
     // If parsing fails, return fallback
-    return 'Custom recurrence'
+    return t('customRecurrence')
   }
 }
 
@@ -55,21 +59,26 @@ interface RecurrenceEditorProps {
   onChange: (rruleOptions: RRuleOptions | null) => void
 }
 
-const WEEK_DAYS: { value: Weekday; label: string; short: string }[] = [
-  { value: RRule.SU, label: 'Sunday', short: 'Sun' },
-  { value: RRule.MO, label: 'Monday', short: 'Mon' },
-  { value: RRule.TU, label: 'Tuesday', short: 'Tue' },
-  { value: RRule.WE, label: 'Wednesday', short: 'Wed' },
-  { value: RRule.TH, label: 'Thursday', short: 'Thu' },
-  { value: RRule.FR, label: 'Friday', short: 'Fri' },
-  { value: RRule.SA, label: 'Saturday', short: 'Sat' },
-]
-
 export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
   value,
   onChange,
 }) => {
+  const { t } = useCalendarContext()
   const [showRecurrence, setShowRecurrence] = useState(!!value)
+
+  // Create WEEK_DAYS array with translations
+  const WEEK_DAYS = useMemo(
+    () => [
+      { value: RRule.SU, label: t('sunday'), short: t('sun') },
+      { value: RRule.MO, label: t('monday'), short: t('mon') },
+      { value: RRule.TU, label: t('tuesday'), short: t('tue') },
+      { value: RRule.WE, label: t('wednesday'), short: t('wed') },
+      { value: RRule.TH, label: t('thursday'), short: t('thu') },
+      { value: RRule.FR, label: t('friday'), short: t('fri') },
+      { value: RRule.SA, label: t('saturday'), short: t('sat') },
+    ],
+    [t]
+  )
 
   // Helper function to convert RRule frequency to string
   const getFrequencyString = (freq: RRuleOptions['freq']): string => {
@@ -225,11 +234,11 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
             onCheckedChange={handleRecurrenceToggle}
             data-testid="toggle-recurrence"
           />
-          <CardTitle className="text-sm">Repeat</CardTitle>
+          <CardTitle className="text-sm">{t('repeat')}</CardTitle>
         </div>
         {showRecurrence && value && (
           <p className="text-xs text-muted-foreground">
-            {getRRuleDescription(value)}
+            {getRRuleDescription(value, t)}
           </p>
         )}
       </CardHeader>
@@ -241,7 +250,7 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="frequency" className="text-xs">
-                  Repeats
+                  {t('repeats')}
                 </Label>
                 <Select
                   value={getFrequencyString(rruleOptions?.freq ?? RRule.DAILY)}
@@ -255,17 +264,17 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="DAILY">Daily</SelectItem>
-                    <SelectItem value="WEEKLY">Weekly</SelectItem>
-                    <SelectItem value="MONTHLY">Monthly</SelectItem>
-                    <SelectItem value="YEARLY">Yearly</SelectItem>
+                    <SelectItem value="DAILY">{t('daily')}</SelectItem>
+                    <SelectItem value="WEEKLY">{t('weekly')}</SelectItem>
+                    <SelectItem value="MONTHLY">{t('monthly')}</SelectItem>
+                    <SelectItem value="YEARLY">{t('yearly')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
                 <Label htmlFor="interval" className="text-xs">
-                  Every
+                  {t('every')}
                 </Label>
                 <Input
                   id="interval"
@@ -281,7 +290,7 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
             {/* Weekly Day Selection */}
             {rruleOptions?.freq === RRule.WEEKLY && (
               <div>
-                <Label className="text-xs">Repeat on</Label>
+                <Label className="text-xs">{t('repeatOn')}</Label>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {WEEK_DAYS.map((day, index) => {
                     const byweekdayArray = Array.isArray(
@@ -317,7 +326,7 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
 
             {/* End Condition */}
             <div>
-              <Label className="text-xs">Ends</Label>
+              <Label className="text-xs">{t('ends')}</Label>
               <div className="space-y-2 mt-1">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -326,7 +335,7 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
                     onCheckedChange={() => handleEndTypeChange('never')}
                   />
                   <Label htmlFor="never" className="text-xs">
-                    Never
+                    {t('never')}
                   </Label>
                 </div>
 
@@ -337,7 +346,7 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
                     onCheckedChange={() => handleEndTypeChange('count')}
                   />
                   <Label htmlFor="after" className="text-xs">
-                    After
+                    {t('after')}
                   </Label>
                   {getEndType() === 'count' && (
                     <Input
@@ -349,7 +358,7 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
                       data-testid="count-input"
                     />
                   )}
-                  <span className="text-xs">occurrences</span>
+                  <span className="text-xs">{t('occurrences')}</span>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -359,7 +368,7 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
                     onCheckedChange={() => handleEndTypeChange('until')}
                   />
                   <Label htmlFor="on" className="text-xs">
-                    On
+                    {t('on')}
                   </Label>
                   {getEndType() === 'until' && (
                     <DatePicker

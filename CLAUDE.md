@@ -122,6 +122,103 @@ bun run ci                 # Full CI pipeline (lint + prettier + test + build)
 - `docs/rrule.js.md` - Complete rrule.js API reference
 - `.github/copilot-instructions.md` - Comprehensive development guidelines
 
+## Internationalization (i18n)
+
+The calendar is fully internationalized with support for both translation objects and translator functions.
+
+### Basic Translation Usage
+
+```tsx
+// Using custom translations object
+const customTranslations = {
+  today: 'Today',
+  create: 'Create',
+  // ... all required translation keys
+}
+
+<IlamyCalendar 
+  events={events}
+  translations={customTranslations}
+/>
+```
+
+### i18next Integration
+
+```tsx
+// With i18next translator function
+import { useTranslation } from 'react-i18next'
+
+const Calendar = () => {
+  const { t } = useTranslation('calendar')
+  
+  return (
+    <IlamyCalendar 
+      events={events}
+      translator={(key) => t(key)}
+    />
+  )
+}
+
+// With namespace support
+const CalendarWithNamespace = () => {
+  const { t } = useTranslation()
+  
+  return (
+    <IlamyCalendar 
+      events={events}
+      translator={(key) => t(`calendar.${key}`)}
+    />
+  )
+}
+```
+
+### Translation Architecture
+
+The translation system is integrated into the **CalendarProvider** without additional providers:
+
+- **Translation props**: `translations?: Translations` OR `translator?: TranslatorFunction`
+- **Fallback**: Defaults to English translations if no custom translations provided
+- **Context access**: All components use `useIlamyCalendarContext().t()` for translations
+- **Dynamic arrays**: Month names and weekdays are generated dynamically using translations
+
+```tsx
+// CalendarProvider creates translation function
+const t = useMemo(() => {
+  if (translator) return translator
+  if (translations) return (key) => translations[key] || key
+  return (key) => defaultTranslations[key] || key
+}, [translations, translator])
+```
+
+### Translation Keys
+
+The calendar includes **94 translation keys** covering:
+- **Actions**: today, create, edit, update, delete, cancel, more
+- **Event form**: titles, descriptions, dates, times, colors, allDay
+- **Recurrence**: frequencies, intervals, weekdays, end conditions
+- **Views**: month, week, day, year navigation
+- **Days/Months**: Full and abbreviated names (sunday/sun, january/jan, etc.)
+- **Dialog interactions**: Edit/delete recurring event scopes and descriptions
+
+### Custom Component Translation Access
+
+All components within the calendar can access translations:
+
+```tsx
+import { useIlamyCalendarContext } from '@ilamy/calendar'
+
+const CustomComponent = () => {
+  const { t } = useIlamyCalendarContext()
+  
+  return (
+    <div>
+      <button>{t('today')}</button>
+      <span>{t('events')}</span>
+    </div>
+  )
+}
+```
+
 ## Integration Patterns
 
 ```tsx
@@ -132,12 +229,13 @@ import { IlamyCalendar } from '@ilamy/calendar'
   firstDayOfWeek="sunday"
   onEventClick={handleEventClick}
   onCellClick={handleCellClick}
+  translations={customTranslations} // Optional i18n
 />
 
 // Context access for advanced integrations
 import { useIlamyCalendarContext } from '@ilamy/calendar'
 
-const { addEvent, updateEvent, deleteEvent, view, currentDate } =
+const { addEvent, updateEvent, deleteEvent, view, currentDate, t } =
   useIlamyCalendarContext()
 ```
 

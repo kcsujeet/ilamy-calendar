@@ -9,23 +9,9 @@ import { cn } from '@/lib/utils'
 import dayjs from '@/lib/dayjs-config'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
-// Create arrays for month and year options
-const months = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
+// Months array is now created dynamically in the component using translations
 
 // Animation variants for number transitions
 const animationVariants = {
@@ -35,7 +21,26 @@ const animationVariants = {
 }
 
 const TitleContent = () => {
-  const { currentDate, view, setCurrentDate } = useCalendarContext()
+  const { currentDate, view, setCurrentDate, t } = useCalendarContext()
+
+  // Create months array using translations
+  const months = useMemo(
+    () => [
+      t('january'),
+      t('february'),
+      t('march'),
+      t('april'),
+      t('may'),
+      t('june'),
+      t('july'),
+      t('august'),
+      t('september'),
+      t('october'),
+      t('november'),
+      t('december'),
+    ],
+    [t]
+  )
 
   // State for mobile menu and popovers
   const [monthPopoverOpen, setMonthPopoverOpen] = useState(false)
@@ -264,7 +269,7 @@ const TitleContent = () => {
                         <span>{dayDate.format('dddd, MMM D')}</span>
                         {isToday && (
                           <span className="bg-primary text-primary-foreground rounded-sm px-1! text-xs">
-                            Today
+                            {t('today')}
                           </span>
                         )}
                       </div>

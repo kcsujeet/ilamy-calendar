@@ -9,6 +9,8 @@ import {
   deleteRecurringEvent as deleteRecurringEventImpl,
 } from '@/lib/recurrence-handler'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
+import type { Translations, TranslatorFunction } from '@/lib/translations/types'
+import { defaultTranslations } from '@/lib/translations/default'
 
 interface CalendarProviderProps {
   children: ReactNode
@@ -27,6 +29,9 @@ interface CalendarProviderProps {
   stickyViewHeader?: boolean
   viewHeaderClassName?: string
   headerComponent?: ReactNode // Optional custom header component
+  // Translation options - provide either translations object OR translator function
+  translations?: Translations
+  translator?: TranslatorFunction
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -46,6 +51,8 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   stickyViewHeader = true,
   viewHeaderClassName = '',
   headerComponent,
+  translations,
+  translator,
 }) => {
   // State
   const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(dayjs())
@@ -56,6 +63,21 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null)
   const [currentLocale, setCurrentLocale] = useState<string>(locale || 'en')
   const [currentTimezone, setCurrentTimezone] = useState<string>(timezone || '')
+
+  // Create translation function
+  const t = useMemo(() => {
+    if (translator) {
+      // Use provided translator function
+      return translator
+    }
+
+    if (translations) {
+      // Use provided translations object
+      return (key: keyof Translations) => translations[key] || key
+    }
+    // Use default translations
+    return (key: keyof Translations) => defaultTranslations[key] || key
+  }, [translations, translator])
 
   // Helper function to get events for a specific date range (on-demand generation)
   const getEventsForDateRange = useCallback(
@@ -308,7 +330,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       } else {
         setSelectedDate(startDate)
         setSelectedEvent({
-          title: `New Event`,
+          title: t('newEvent'),
           start: startDate,
           end: endDate,
           description: '',
@@ -317,7 +339,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
         setIsEventFormOpen(true)
       }
     },
-    [onCellClick, disableCellClick]
+    [onCellClick, disableCellClick, t]
   )
 
   const handleOpenEventForm = useCallback(
@@ -326,7 +348,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
         setSelectedDate(date)
       }
       setSelectedEvent({
-        title: `New Event`,
+        title: t('newEvent'),
         start: date ?? currentDate,
         end: date ?? currentDate.add(1, 'hour'),
         description: '',
@@ -334,7 +356,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       } as CalendarEvent)
       setIsEventFormOpen(true)
     },
-    [currentDate]
+    [currentDate, t]
   )
 
   // Find parent recurring event for a given event instance
@@ -392,6 +414,8 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       stickyViewHeader,
       viewHeaderClassName,
       headerComponent,
+      // Translation function
+      t,
     }),
     [
       currentDate,
@@ -429,6 +453,8 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       stickyViewHeader,
       viewHeaderClassName,
       headerComponent,
+      // Translation dependencies
+      t,
     ]
   )
 

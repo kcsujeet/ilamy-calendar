@@ -88,6 +88,8 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   onCellClick,
   onViewChange,
   locale,
+  translations,
+  translator,
   timezone,
   disableCellClick,
   disableEventClick,
@@ -106,6 +108,8 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
       onCellClick={onCellClick}
       onViewChange={onViewChange}
       locale={locale}
+      translations={translations}
+      translator={translator}
       timezone={timezone}
       disableCellClick={disableCellClick}
       disableEventClick={disableEventClick}

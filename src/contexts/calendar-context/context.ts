@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '@/components/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type dayjs from '@/lib/dayjs-config'
+import type { TranslationKey } from '@/lib/translations/types'
 import { createContext, useContext } from 'react'
 
 export interface CalendarContextType {
@@ -48,6 +49,8 @@ export interface CalendarContextType {
   stickyViewHeader: boolean
   viewHeaderClassName: string
   headerComponent?: React.ReactNode // Optional custom header component
+  // Translation function
+  t: (key: TranslationKey) => string
 }
 
 export const CalendarContext: React.Context<CalendarContextType | undefined> =

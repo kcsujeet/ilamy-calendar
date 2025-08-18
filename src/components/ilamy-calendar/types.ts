@@ -1,6 +1,7 @@
 import type { CalendarEvent, WeekDays } from '@/components/types'
 import React from 'react'
 import type dayjs from '@/lib/dayjs-config'
+import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 
 /**
  * This interface extends the base CalendarEvent but allows more flexible date types
@@ -51,6 +52,16 @@ export interface IlamyCalendarProps {
    * If not provided, the default locale will be used.
    */
   locale?: string
+  /**
+   * Translations object for internationalization.
+   * Provide either this OR translator function, not both.
+   */
+  translations?: Translations
+  /**
+   * Translator function for internationalization.
+   * Provide either this OR translations object, not both.
+   */
+  translator?: TranslatorFunction
   /**
    * Timezone to use for displaying dates and times.
    * If not provided, the local timezone will be used.

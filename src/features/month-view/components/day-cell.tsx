@@ -30,6 +30,7 @@ export const DayCell: React.FC<DayCellProps> = ({
     currentDate,
     firstDayOfWeek,
     dayMaxEvents = 0,
+    t,
   } = useCalendarContext()
   const todayEvents = getEventsForDateRange(
     day.startOf('day'),
@@ -121,7 +122,7 @@ export const DayCell: React.FC<DayCellProps> = ({
               // oxlint-disable-next-line prefer-tag-over-role
               role="button"
             >
-              +{hiddenEventsCount} more
+              +{hiddenEventsCount} {t('more')}
             </div>
           )}
         </div>

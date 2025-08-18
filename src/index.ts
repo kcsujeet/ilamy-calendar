@@ -19,3 +19,11 @@ export type { UseIlamyCalendarContextReturn } from './contexts/calendar-context/
 // Re-export rrule.js types for convenience
 export type { Frequency, Weekday } from 'rrule'
 export { RRule } from 'rrule'
+
+// Translation system
+export type {
+  Translations,
+  TranslationKey,
+  TranslatorFunction,
+} from './lib/translations/types'
+export { defaultTranslations } from './lib/translations/default'

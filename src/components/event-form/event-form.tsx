@@ -69,7 +69,7 @@ export const EventForm: React.FC<EventFormProps> = ({
     handleConfirm,
   } = useRecurringEventActions(onClose)
 
-  const { findParentRecurringEvent } = useCalendarContext()
+  const { findParentRecurringEvent, t } = useCalendarContext()
 
   const start = selectedEvent?.start
   const end = selectedEvent?.end
@@ -258,26 +258,24 @@ export const EventForm: React.FC<EventFormProps> = ({
           <form onSubmit={handleSubmit}>
             <DialogHeader className="mb-2 sm:mb-4">
               <DialogTitle className="text-base sm:text-lg">
-                {selectedEvent?.id ? 'Edit Event' : 'Create Event'}
+                {selectedEvent?.id ? t('editEvent') : t('createEvent')}
               </DialogTitle>
               <DialogDescription className="text-xs sm:text-sm">
-                {selectedEvent?.id
-                  ? 'Edit your event details'
-                  : 'Add a new event to your calendar'}
+                {selectedEvent?.id ? t('editEventDetails') : t('addNewEvent')}
               </DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-3 py-2 sm:gap-4 sm:py-4">
               <div className="grid gap-2">
                 <Label htmlFor="title" className="text-xs sm:text-sm">
-                  Title
+                  {t('title')}
                 </Label>
                 <Input
                   id="title"
                   name="title"
                   value={formValues.title}
                   onChange={handleInputChange}
-                  placeholder="Event title"
+                  placeholder={t('eventTitlePlaceholder')}
                   required
                   className="h-8 text-sm sm:h-9"
                 />
@@ -285,14 +283,14 @@ export const EventForm: React.FC<EventFormProps> = ({
 
               <div className="grid gap-1 sm:gap-2">
                 <Label htmlFor="description" className="text-xs sm:text-sm">
-                  Description
+                  {t('description')}
                 </Label>
                 <Input
                   id="description"
                   name="description"
                   value={formValues.description}
                   onChange={handleInputChange}
-                  placeholder="Event description (optional)"
+                  placeholder={t('eventDescriptionPlaceholder')}
                   className="h-8 text-sm sm:h-9"
                 />
               </div>
@@ -304,13 +302,13 @@ export const EventForm: React.FC<EventFormProps> = ({
                   onCheckedChange={(checked) => setIsAllDay(checked === true)}
                 />
                 <Label htmlFor="allDay" className="text-xs sm:text-sm">
-                  All day
+                  {t('allDay')}
                 </Label>
               </div>
 
               <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 <div>
-                  <Label className="text-xs sm:text-sm">Start Date</Label>
+                  <Label className="text-xs sm:text-sm">{t('startDate')}</Label>
                   <DatePicker
                     date={startDate}
                     setDate={handleStartDateChange}
@@ -319,7 +317,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   />
                 </div>
                 <div>
-                  <Label className="text-xs sm:text-sm">End Date</Label>
+                  <Label className="text-xs sm:text-sm">{t('endDate')}</Label>
                   <DatePicker
                     date={endDate}
                     setDate={handleEndDateChange}
@@ -333,7 +331,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   <div>
                     <Label htmlFor="start-time" className="text-xs sm:text-sm">
-                      Start Time
+                      {t('startTime')}
                     </Label>
                     <Input
                       id="start-time"
@@ -345,7 +343,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   </div>
                   <div>
                     <Label htmlFor="end-time" className="text-xs sm:text-sm">
-                      End Time
+                      {t('endTime')}
                     </Label>
                     <Input
                       id="end-time"
@@ -359,7 +357,7 @@ export const EventForm: React.FC<EventFormProps> = ({
               )}
 
               <div className="grid gap-1 sm:gap-2">
-                <Label className="text-xs sm:text-sm">Color</Label>
+                <Label className="text-xs sm:text-sm">{t('color')}</Label>
                 <div className="flex flex-wrap gap-2">
                   <TooltipProvider>
                     {colorOptions.map((color) => (
@@ -389,14 +387,14 @@ export const EventForm: React.FC<EventFormProps> = ({
 
               <div className="grid gap-1 sm:gap-2">
                 <Label htmlFor="location" className="text-xs sm:text-sm">
-                  Location
+                  {t('location')}
                 </Label>
                 <Input
                   id="location"
                   name="location"
                   value={formValues.location}
                   onChange={handleInputChange}
-                  placeholder="Event location (optional)"
+                  placeholder={t('eventLocationPlaceholder')}
                   className="h-8 text-sm sm:h-9"
                 />
               </div>
@@ -414,7 +412,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                   className="w-full sm:mr-auto sm:w-auto"
                   size="sm"
                 >
-                  Delete
+                  {t('delete')}
                 </Button>
               )}
               <div className="flex w-full gap-2 sm:w-auto">
@@ -425,10 +423,10 @@ export const EventForm: React.FC<EventFormProps> = ({
                   className="flex-1 sm:flex-none"
                   size="sm"
                 >
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button type="submit" className="flex-1 sm:flex-none" size="sm">
-                  {selectedEvent?.id ? 'Update' : 'Create'}
+                  {selectedEvent?.id ? t('update') : t('create')}
                 </Button>
               </div>
             </DialogFooter>

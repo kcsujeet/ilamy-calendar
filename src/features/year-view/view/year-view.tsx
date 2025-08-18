@@ -6,7 +6,7 @@ import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { AnimatePresence, motion } from 'motion/react'
 
 const YearView: React.FC = () => {
-  const { currentDate, selectDate, events, setView, getEventsForDateRange } =
+  const { currentDate, selectDate, events, setView, getEventsForDateRange, t } =
     useCalendarContext()
   const year = currentDate.year()
 
@@ -205,7 +205,7 @@ const YearView: React.FC = () => {
                     className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs"
                   >
                     {month.eventCount}{' '}
-                    {month.eventCount === 1 ? 'event' : 'events'}
+                    {month.eventCount === 1 ? t('event') : t('events')}
                   </span>
                 )}
               </motion.div>

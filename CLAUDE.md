@@ -136,7 +136,7 @@ const customTranslations = {
   // ... all required translation keys
 }
 
-<IlamyCalendar 
+<IlamyCalendar
   events={events}
   translations={customTranslations}
 />
@@ -150,24 +150,16 @@ import { useTranslation } from 'react-i18next'
 
 const Calendar = () => {
   const { t } = useTranslation('calendar')
-  
-  return (
-    <IlamyCalendar 
-      events={events}
-      translator={(key) => t(key)}
-    />
-  )
+
+  return <IlamyCalendar events={events} translator={(key) => t(key)} />
 }
 
 // With namespace support
 const CalendarWithNamespace = () => {
   const { t } = useTranslation()
-  
+
   return (
-    <IlamyCalendar 
-      events={events}
-      translator={(key) => t(`calendar.${key}`)}
-    />
+    <IlamyCalendar events={events} translator={(key) => t(`calendar.${key}`)} />
   )
 }
 ```
@@ -193,6 +185,7 @@ const t = useMemo(() => {
 ### Translation Keys
 
 The calendar includes **94 translation keys** covering:
+
 - **Actions**: today, create, edit, update, delete, cancel, more
 - **Event form**: titles, descriptions, dates, times, colors, allDay
 - **Recurrence**: frequencies, intervals, weekdays, end conditions
@@ -209,7 +202,7 @@ import { useIlamyCalendarContext } from '@ilamy/calendar'
 
 const CustomComponent = () => {
   const { t } = useIlamyCalendarContext()
-  
+
   return (
     <div>
       <button>{t('today')}</button>

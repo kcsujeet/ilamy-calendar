@@ -523,4 +523,39 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       end: dayjs('2025-01-06T11:00:00'),
     })
   })
+
+  it('should initialize with the specified initial view', () => {
+    const TestInitialView = () => {
+      const { view } = useCalendarContext()
+      return <div data-testid="current-view">{view}</div>
+    }
+
+    const { getByTestId } = render(
+      <CalendarProvider
+        events={[]}
+        dayMaxEvents={5}
+        firstDayOfWeek={0}
+        initialView="week"
+      >
+        <TestInitialView />
+      </CalendarProvider>
+    )
+
+    expect(getByTestId('current-view').textContent).toBe('week')
+  })
+
+  it('should default to month view when no initialView is provided', () => {
+    const TestDefaultView = () => {
+      const { view } = useCalendarContext()
+      return <div data-testid="current-view">{view}</div>
+    }
+
+    const { getByTestId } = render(
+      <CalendarProvider events={[]} dayMaxEvents={5} firstDayOfWeek={0}>
+        <TestDefaultView />
+      </CalendarProvider>
+    )
+
+    expect(getByTestId('current-view').textContent).toBe('month')
+  })
 })

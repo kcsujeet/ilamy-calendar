@@ -83,6 +83,7 @@ const DEFAULT_DAY_MAX_EVENTS = 4
 export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   events,
   firstDayOfWeek = 'sunday',
+  initialView = 'month',
   renderEvent,
   onEventClick,
   onCellClick,
@@ -107,6 +108,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
     <CalendarProvider
       events={normalizePublicFacingCalendarEvent(events)}
       firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
+      initialView={initialView}
       renderEvent={renderEvent}
       onEventClick={onEventClick}
       onCellClick={onCellClick}

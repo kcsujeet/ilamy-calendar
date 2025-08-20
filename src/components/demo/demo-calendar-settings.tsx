@@ -17,6 +17,8 @@ import { ModeToggle } from './mode-toggle'
 interface DemoCalendarSettingsProps {
   firstDayOfWeek: WeekDays
   setFirstDayOfWeek: (value: WeekDays) => void
+  initialView: 'month' | 'week' | 'day' | 'year'
+  setInitialView: (value: 'month' | 'week' | 'day' | 'year') => void
   useCustomEventRenderer: boolean
   setUseCustomEventRenderer: (value: boolean) => void
   locale: string
@@ -44,6 +46,8 @@ interface DemoCalendarSettingsProps {
 export function DemoCalendarSettings({
   firstDayOfWeek,
   setFirstDayOfWeek,
+  initialView,
+  setInitialView,
   useCustomEventRenderer,
   setUseCustomEventRenderer,
   locale,
@@ -96,6 +100,27 @@ export function DemoCalendarSettings({
               <SelectItem value="thursday">Thursday</SelectItem>
               <SelectItem value="friday">Friday</SelectItem>
               <SelectItem value="saturday">Saturday</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="block text-sm text-left font-medium mb-1">
+            Initial View
+          </label>
+          <Select
+            value={initialView}
+            onValueChange={(value) =>
+              setInitialView(value as 'month' | 'week' | 'day' | 'year')
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select initial view" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="month">Month</SelectItem>
+              <SelectItem value="week">Week</SelectItem>
+              <SelectItem value="day">Day</SelectItem>
+              <SelectItem value="year">Year</SelectItem>
             </SelectContent>
           </Select>
         </div>

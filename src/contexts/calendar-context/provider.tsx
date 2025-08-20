@@ -16,6 +16,7 @@ interface CalendarProviderProps {
   children: ReactNode
   events?: CalendarEvent[]
   firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
+  initialView?: 'month' | 'week' | 'day' | 'year'
   renderEvent?: (event: CalendarEvent) => ReactNode
   onEventClick?: (event: CalendarEvent) => void
   onCellClick?: (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => void
@@ -42,6 +43,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   children,
   events = [],
   firstDayOfWeek = 0, // Default to Sunday,
+  initialView = 'month',
   renderEvent,
   onEventClick,
   onCellClick,
@@ -64,7 +66,9 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 }) => {
   // State
   const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(dayjs())
-  const [view, setView] = useState<'month' | 'week' | 'day' | 'year'>('month')
+  const [view, setView] = useState<'month' | 'week' | 'day' | 'year'>(
+    initialView
+  )
   const [currentEvents, setCurrentEvents] = useState<CalendarEvent[]>(events)
   const [isEventFormOpen, setIsEventFormOpen] = useState<boolean>(false)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)

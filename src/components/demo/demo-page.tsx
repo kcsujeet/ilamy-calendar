@@ -37,6 +37,9 @@ export function DemoPage() {
   // Calendar configuration state
   const [calendarKey, setCalendarKey] = useState(0)
   const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>('sunday')
+  const [initialView, setInitialView] = useState<
+    'month' | 'week' | 'day' | 'year'
+  >('month')
   const [customEvents] = useState<CalendarEvent[]>(dummyEvents)
   const [useCustomEventRenderer, setUseCustomEventRenderer] = useState(false)
   const [locale, setLocale] = useState('en')
@@ -104,6 +107,8 @@ export function DemoPage() {
           <DemoCalendarSettings
             firstDayOfWeek={firstDayOfWeek}
             setFirstDayOfWeek={setFirstDayOfWeek}
+            initialView={initialView}
+            setInitialView={setInitialView}
             useCustomEventRenderer={useCustomEventRenderer}
             setUseCustomEventRenderer={setUseCustomEventRenderer}
             locale={locale}
@@ -150,6 +155,7 @@ export function DemoPage() {
               <IlamyCalendar
                 key={calendarKey}
                 firstDayOfWeek={firstDayOfWeek}
+                initialView={initialView}
                 events={customEvents}
                 locale={locale}
                 timezone={timezone}

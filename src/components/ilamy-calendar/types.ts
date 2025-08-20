@@ -28,6 +28,11 @@ export interface IlamyCalendarProps {
    */
   firstDayOfWeek?: WeekDays
   /**
+   * The initial view to display when the calendar loads.
+   * Defaults to 'month'.
+   */
+  initialView?: 'month' | 'week' | 'day' | 'year'
+  /**
    * Custom render function for calendar events.
    * If provided, it will override the default event rendering.
    */

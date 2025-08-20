@@ -20,6 +20,10 @@ interface CalendarProviderProps {
   onEventClick?: (event: CalendarEvent) => void
   onCellClick?: (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => void
   onViewChange?: (view: 'month' | 'week' | 'day' | 'year') => void
+  onEventAdd?: (event: CalendarEvent) => void
+  onEventUpdate?: (event: CalendarEvent) => void
+  onEventDelete?: (event: CalendarEvent) => void
+  onDateChange?: (date: dayjs.Dayjs) => void
   locale?: string
   timezone?: string
   disableCellClick?: boolean
@@ -42,6 +46,10 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   onEventClick,
   onCellClick,
   onViewChange,
+  onEventAdd,
+  onEventUpdate,
+  onEventDelete,
+  onDateChange,
   locale,
   timezone,
   disableCellClick,
@@ -189,61 +197,109 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   }, [timezone])
 
   // Handlers
-  const selectDate = useCallback((date: dayjs.Dayjs) => {
-    setCurrentDate(date)
-  }, [])
+  const selectDate = useCallback(
+    (date: dayjs.Dayjs) => {
+      setCurrentDate(date)
+      onDateChange?.(date)
+    },
+    [onDateChange]
+  )
 
   const nextPeriod = useCallback(() => {
     switch (view) {
       case 'month':
-        setCurrentDate((currentDate) => currentDate.add(1, 'month'))
+        setCurrentDate((currentDate) => {
+          const newDate = currentDate.add(1, 'month')
+          onDateChange?.(newDate)
+          return newDate
+        })
         break
       case 'week':
-        setCurrentDate((currentDate) => currentDate.add(1, 'week'))
+        setCurrentDate((currentDate) => {
+          const newDate = currentDate.add(1, 'week')
+          onDateChange?.(newDate)
+          return newDate
+        })
         break
       case 'day':
-        setCurrentDate((currentDate) => currentDate.add(1, 'day'))
+        setCurrentDate((currentDate) => {
+          const newDate = currentDate.add(1, 'day')
+          onDateChange?.(newDate)
+          return newDate
+        })
         break
       case 'year':
-        setCurrentDate((currentDate) => currentDate.add(1, 'year'))
+        setCurrentDate((currentDate) => {
+          const newDate = currentDate.add(1, 'year')
+          onDateChange?.(newDate)
+          return newDate
+        })
         break
     }
-  }, [view])
+  }, [view, onDateChange])
 
   const prevPeriod = useCallback(() => {
     switch (view) {
       case 'month':
-        setCurrentDate((currentDate) => currentDate.subtract(1, 'month'))
+        setCurrentDate((currentDate) => {
+          const newDate = currentDate.subtract(1, 'month')
+          onDateChange?.(newDate)
+          return newDate
+        })
         break
       case 'week':
-        setCurrentDate((currentDate) => currentDate.subtract(1, 'week'))
+        setCurrentDate((currentDate) => {
+          const newDate = currentDate.subtract(1, 'week')
+          onDateChange?.(newDate)
+          return newDate
+        })
         break
       case 'day':
-        setCurrentDate((currentDate) => currentDate.subtract(1, 'day'))
+        setCurrentDate((currentDate) => {
+          const newDate = currentDate.subtract(1, 'day')
+          onDateChange?.(newDate)
+          return newDate
+        })
         break
       case 'year':
-        setCurrentDate((currentDate) => currentDate.subtract(1, 'year'))
+        setCurrentDate((currentDate) => {
+          const newDate = currentDate.subtract(1, 'year')
+          onDateChange?.(newDate)
+          return newDate
+        })
         break
     }
-  }, [view])
+  }, [view, onDateChange])
 
   const today = useCallback(() => {
-    setCurrentDate(dayjs())
-  }, [])
+    const newDate = dayjs()
+    setCurrentDate(newDate)
+    onDateChange?.(newDate)
+  }, [onDateChange])
 
-  const addEvent = useCallback((event: CalendarEvent) => {
-    setCurrentEvents((prevEvents) => [...prevEvents, event])
-  }, [])
+  const addEvent = useCallback(
+    (event: CalendarEvent) => {
+      setCurrentEvents((prevEvents) => [...prevEvents, event])
+      onEventAdd?.(event)
+    },
+    [onEventAdd]
+  )
 
   const updateEvent = useCallback(
     (eventId: string, updatedEvent: Partial<CalendarEvent>) => {
-      setCurrentEvents((prevEvents) =>
-        prevEvents.map((event) =>
-          event.id === eventId ? { ...event, ...updatedEvent } : event
-        )
-      )
+      setCurrentEvents((prevEvents) => {
+        const updated = prevEvents.map((event) => {
+          if (event.id === eventId) {
+            const newEvent = { ...event, ...updatedEvent }
+            onEventUpdate?.(newEvent)
+            return newEvent
+          }
+          return event
+        })
+        return updated
+      })
     },
-    []
+    [onEventUpdate]
   )
 
   const updateRecurringEvent = useCallback(
@@ -252,6 +308,12 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       updates: Partial<CalendarEvent>,
       options: RecurrenceEditOptions
     ) => {
+      // Create the updated event with the updates applied
+      const updatedEvent = { ...event, ...updates }
+
+      // Call the regular update callback with the updated event
+      onEventUpdate?.(updatedEvent)
+
       // Use our implemented recurring event update function
       const updatedEvents = updateRecurringEventImpl({
         targetEvent: event,
@@ -262,11 +324,14 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
       setCurrentEvents(updatedEvents)
     },
-    [currentEvents]
+    [currentEvents, onEventUpdate]
   )
 
   const deleteRecurringEvent = useCallback(
     (event: CalendarEvent, options: RecurrenceEditOptions) => {
+      // Call the regular delete callback with the event being deleted
+      onEventDelete?.(event)
+
       // Use our implemented recurring event delete function
       const updatedEvents = deleteRecurringEventImpl({
         targetEvent: event,
@@ -276,14 +341,21 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 
       setCurrentEvents(updatedEvents)
     },
-    [currentEvents]
+    [currentEvents, onEventDelete]
   )
 
-  const deleteEvent = useCallback((eventId: string) => {
-    setCurrentEvents((prevEvents) =>
-      prevEvents.filter((event) => event.id !== eventId)
-    )
-  }, [])
+  const deleteEvent = useCallback(
+    (eventId: string) => {
+      setCurrentEvents((prevEvents) => {
+        const eventToDelete = prevEvents.find((event) => event.id === eventId)
+        if (eventToDelete) {
+          onEventDelete?.(eventToDelete)
+        }
+        return prevEvents.filter((event) => event.id !== eventId)
+      })
+    },
+    [onEventDelete]
+  )
 
   const editEvent = useCallback((event: CalendarEvent) => {
     setSelectedEvent(event)

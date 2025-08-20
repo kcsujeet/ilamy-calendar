@@ -48,6 +48,26 @@ export interface IlamyCalendarProps {
    */
   onViewChange?: (view: 'month' | 'week' | 'day' | 'year') => void
   /**
+   * Callback when a new event is added to the calendar.
+   * Provides the newly created event object.
+   */
+  onEventAdd?: (event: CalendarEvent) => void
+  /**
+   * Callback when an existing event is updated.
+   * Provides the updated event object.
+   */
+  onEventUpdate?: (event: CalendarEvent) => void
+  /**
+   * Callback when an event is deleted from the calendar.
+   * Provides the deleted event object.
+   */
+  onEventDelete?: (event: CalendarEvent) => void
+  /**
+   * Callback when the current date changes (navigation).
+   * Provides the new current date.
+   */
+  onDateChange?: (date: dayjs.Dayjs) => void
+  /**
    * Locale to use for formatting dates and times.
    * If not provided, the default locale will be used.
    */

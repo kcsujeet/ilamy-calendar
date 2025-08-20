@@ -87,6 +87,10 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   onEventClick,
   onCellClick,
   onViewChange,
+  onEventAdd,
+  onEventUpdate,
+  onEventDelete,
+  onDateChange,
   locale,
   translations,
   translator,
@@ -107,6 +111,10 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
       onEventClick={onEventClick}
       onCellClick={onCellClick}
       onViewChange={onViewChange}
+      onEventAdd={onEventAdd}
+      onEventUpdate={onEventUpdate}
+      onEventDelete={onEventDelete}
+      onDateChange={onDateChange}
       locale={locale}
       translations={translations}
       translator={translator}

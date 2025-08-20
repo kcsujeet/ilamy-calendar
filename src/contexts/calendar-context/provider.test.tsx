@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test'
+import { describe, it, expect, mock } from 'bun:test'
 import { render } from '@testing-library/react'
 import { CalendarProvider } from './provider'
 import { useCalendarContext } from './context'
@@ -311,5 +311,216 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
     expect(getByTestId('jan3-event-id').textContent).toBe(
       'daily-standup_modified_123'
     )
+  })
+
+  it('should call regular callbacks for recurring event operations', () => {
+    const onEventUpdate = mock(() => {})
+    const onEventDelete = mock(() => {})
+
+    const recurringEvent: CalendarEvent = {
+      id: 'weekly-meeting',
+      uid: 'weekly-meeting@ilamy.calendar',
+      title: 'Weekly Meeting',
+      start: dayjs('2025-01-06T10:00:00'),
+      end: dayjs('2025-01-06T11:00:00'),
+      rrule: {
+        freq: RRule.WEEKLY,
+        interval: 1,
+        byweekday: [RRule.MO],
+        dtstart: dayjs('2025-01-06T10:00:00').toDate(),
+      },
+      exdates: [],
+    }
+
+    const TestRecurringCallbacks = () => {
+      const { updateRecurringEvent, deleteRecurringEvent } =
+        useCalendarContext()
+
+      const handleUpdateRecurring = () => {
+        updateRecurringEvent(
+          recurringEvent,
+          { title: 'Updated Weekly Meeting' },
+          { scope: 'this', eventDate: recurringEvent.start }
+        )
+      }
+
+      const handleDeleteRecurring = () => {
+        deleteRecurringEvent(recurringEvent, {
+          scope: 'this',
+          eventDate: recurringEvent.start,
+        })
+      }
+
+      return (
+        <div>
+          <button
+            data-testid="update-recurring"
+            onClick={handleUpdateRecurring}
+          >
+            Update Recurring
+          </button>
+          <button
+            data-testid="delete-recurring"
+            onClick={handleDeleteRecurring}
+          >
+            Delete Recurring
+          </button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(
+      <CalendarProvider
+        events={[recurringEvent]}
+        dayMaxEvents={5}
+        firstDayOfWeek={0}
+        onEventUpdate={onEventUpdate}
+        onEventDelete={onEventDelete}
+      >
+        <TestRecurringCallbacks />
+      </CalendarProvider>
+    )
+
+    // Test updating recurring event - should call onEventUpdate with the updated event
+    getByTestId('update-recurring').click()
+    expect(onEventUpdate).toHaveBeenCalledWith({
+      ...recurringEvent,
+      title: 'Updated Weekly Meeting',
+    })
+
+    // Test deleting recurring event - should call onEventDelete with the event
+    getByTestId('delete-recurring').click()
+    expect(onEventDelete).toHaveBeenCalledWith(recurringEvent)
+  })
+
+  it('should call onEventUpdate for rrule changes', () => {
+    const onEventUpdate = mock(() => {})
+
+    const recurringEvent: CalendarEvent = {
+      id: 'daily-standup',
+      uid: 'daily-standup@ilamy.calendar',
+      title: 'Daily Standup',
+      start: dayjs('2025-01-06T09:00:00'),
+      end: dayjs('2025-01-06T09:30:00'),
+      rrule: {
+        freq: RRule.DAILY,
+        interval: 1,
+        dtstart: dayjs('2025-01-06T09:00:00').toDate(),
+      },
+      exdates: [],
+    }
+
+    const TestRruleUpdate = () => {
+      const { updateRecurringEvent } = useCalendarContext()
+
+      const handleUpdateRrule = () => {
+        // Change from daily to weekly
+        updateRecurringEvent(
+          recurringEvent,
+          {
+            rrule: {
+              freq: RRule.WEEKLY,
+              interval: 1,
+              byweekday: [RRule.MO],
+              dtstart: dayjs('2025-01-06T09:00:00').toDate(),
+            },
+          },
+          { scope: 'all', eventDate: recurringEvent.start }
+        )
+      }
+
+      return (
+        <div>
+          <button data-testid="update-rrule" onClick={handleUpdateRrule}>
+            Update Rrule
+          </button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(
+      <CalendarProvider
+        events={[recurringEvent]}
+        dayMaxEvents={5}
+        firstDayOfWeek={0}
+        onEventUpdate={onEventUpdate}
+      >
+        <TestRruleUpdate />
+      </CalendarProvider>
+    )
+
+    // Test updating rrule - should call onEventUpdate with the new rrule
+    getByTestId('update-rrule').click()
+    expect(onEventUpdate).toHaveBeenCalledWith({
+      ...recurringEvent,
+      rrule: {
+        freq: RRule.WEEKLY,
+        interval: 1,
+        byweekday: [RRule.MO],
+        dtstart: dayjs('2025-01-06T09:00:00').toDate(),
+      },
+    })
+  })
+
+  it('should call onEventUpdate for time/date changes in recurring events', () => {
+    const onEventUpdate = mock(() => {})
+
+    const recurringEvent: CalendarEvent = {
+      id: 'team-meeting',
+      uid: 'team-meeting@ilamy.calendar',
+      title: 'Team Meeting',
+      start: dayjs('2025-01-06T14:00:00'),
+      end: dayjs('2025-01-06T15:00:00'),
+      rrule: {
+        freq: RRule.WEEKLY,
+        interval: 1,
+        byweekday: [RRule.MO],
+        dtstart: dayjs('2025-01-06T14:00:00').toDate(),
+      },
+      exdates: [],
+    }
+
+    const TestTimeUpdate = () => {
+      const { updateRecurringEvent } = useCalendarContext()
+
+      const handleUpdateTime = () => {
+        // Change time from 2pm-3pm to 10am-11am
+        updateRecurringEvent(
+          recurringEvent,
+          {
+            start: dayjs('2025-01-06T10:00:00'),
+            end: dayjs('2025-01-06T11:00:00'),
+          },
+          { scope: 'all', eventDate: recurringEvent.start }
+        )
+      }
+
+      return (
+        <div>
+          <button data-testid="update-time" onClick={handleUpdateTime}>
+            Update Time
+          </button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(
+      <CalendarProvider
+        events={[recurringEvent]}
+        dayMaxEvents={5}
+        firstDayOfWeek={0}
+        onEventUpdate={onEventUpdate}
+      >
+        <TestTimeUpdate />
+      </CalendarProvider>
+    )
+
+    // Test updating time - should call onEventUpdate with new start/end times
+    getByTestId('update-time').click()
+    expect(onEventUpdate).toHaveBeenCalledWith({
+      ...recurringEvent,
+      start: dayjs('2025-01-06T10:00:00'),
+      end: dayjs('2025-01-06T11:00:00'),
+    })
   })
 })

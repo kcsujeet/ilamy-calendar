@@ -16,6 +16,23 @@ const handleDateClick = (date: dayjs.Dayjs) => {
   alert(`Date clicked: ${date.toISOString()}`)
 }
 
+const handleEventAdd = (event: CalendarEvent) => {
+  alert(`Event added: ${event.title}`)
+}
+
+const handleEventUpdate = (event: CalendarEvent) => {
+  alert(`Event updated: ${event.title}`)
+}
+
+const handleEventDelete = (event: CalendarEvent) => {
+  alert(`Event deleted: ${event.title}`)
+}
+
+const handleDateChange = (date: dayjs.Dayjs) => {
+  // Date navigation - could trigger other state updates in real apps
+  void date
+}
+
 export function DemoPage() {
   // Calendar configuration state
   const [calendarKey, setCalendarKey] = useState(0)
@@ -141,6 +158,10 @@ export function DemoPage() {
                   useCustomOnEventClick ? handleEventClick : undefined
                 }
                 onCellClick={useCustomOnDateClick ? handleDateClick : undefined}
+                onEventAdd={handleEventAdd}
+                onEventUpdate={handleEventUpdate}
+                onEventDelete={handleEventDelete}
+                onDateChange={handleDateChange}
                 disableCellClick={disableCellClick}
                 disableEventClick={disableEventClick}
                 disableDragAndDrop={disableDragAndDrop}

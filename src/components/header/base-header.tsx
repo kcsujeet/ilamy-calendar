@@ -25,6 +25,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
     today,
     openEventForm,
     headerComponent,
+    headerClassName,
     rawEvents,
   } = useCalendarContext()
 
@@ -94,7 +95,8 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         <div
           className={cn(
             'flex justify-center @2xl:justify-between flex-wrap items-center gap-2 border-b',
-            className
+            className,
+            headerClassName
           )}
         >
           {/* Title area - Left section */}

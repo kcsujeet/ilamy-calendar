@@ -34,6 +34,7 @@ interface CalendarProviderProps {
   stickyViewHeader?: boolean
   viewHeaderClassName?: string
   headerComponent?: ReactNode // Optional custom header component
+  headerClassName?: string // Optional custom header class
   // Translation options - provide either translations object OR translator function
   translations?: Translations
   translator?: TranslatorFunction
@@ -61,6 +62,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   stickyViewHeader = true,
   viewHeaderClassName = '',
   headerComponent,
+  headerClassName,
   translations,
   translator,
 }) => {
@@ -490,6 +492,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       stickyViewHeader,
       viewHeaderClassName,
       headerComponent,
+      headerClassName,
       // Translation function
       t,
     }),
@@ -529,6 +532,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       stickyViewHeader,
       viewHeaderClassName,
       headerComponent,
+      headerClassName,
       // Translation dependencies
       t,
     ]

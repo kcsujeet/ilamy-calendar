@@ -123,4 +123,9 @@ export interface IlamyCalendarProps {
    * Useful for adding custom branding or additional controls.
    */
   headerComponent?: React.ReactNode
+  /**
+   * Custom class name for the calendar header.
+   * Useful for applying custom styles to the header.
+   */
+  headerClassName?: string
 }

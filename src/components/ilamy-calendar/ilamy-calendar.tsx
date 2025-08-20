@@ -103,6 +103,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   stickyViewHeader = true,
   viewHeaderClassName = '',
   headerComponent,
+  headerClassName,
 }) => {
   return (
     <CalendarProvider
@@ -128,6 +129,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
       stickyViewHeader={stickyViewHeader}
       viewHeaderClassName={viewHeaderClassName}
       headerComponent={headerComponent}
+      headerClassName={headerClassName}
     >
       <CalendarContent />
     </CalendarProvider>

@@ -12,7 +12,7 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
   const processedWeekEvents = useProcessedWeekEvents({ days })
 
   return (
-    <div className="relative w-full h-full pointer-events-none z-20 overflow-clip">
+    <div className="relative w-full h-full pointer-events-none z-10 overflow-clip">
       {processedWeekEvents.map((event) => {
         return (
           <div

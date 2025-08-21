@@ -17,7 +17,7 @@ export const DayHeader: React.FC<DayHeaderProps> = ({ className }) => {
       data-testid="day-header"
       className={cn(
         'flex items-center justify-center border-b p-2 border-x',
-        stickyViewHeader && 'sticky top-0 z-100',
+        stickyViewHeader && 'sticky top-0 z-20',
         viewHeaderClassName,
         className
       )}

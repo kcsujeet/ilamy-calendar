@@ -77,7 +77,7 @@ const DayView = () => {
             {/* Interactive layer for time slots - middle layer with no borders */}
             <div
               data-testid="day-interactive-layer"
-              className="pointer-events-auto absolute inset-0 z-20"
+              className="pointer-events-auto absolute inset-0 z-10"
             >
               {hours.map((time) => {
                 const hour = time.hour()

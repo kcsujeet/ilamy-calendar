@@ -37,7 +37,7 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ className }) => {
     <div
       className={cn(
         'grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] grid-rows-1',
-        stickyViewHeader && 'sticky top-0 z-100',
+        stickyViewHeader && 'sticky top-0 z-20',
         viewHeaderClassName,
         className
       )}

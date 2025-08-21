@@ -17,7 +17,7 @@ export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({
   return (
     <div
       data-testid={dataTestId}
-      className="pointer-events-none absolute inset-0 z-30"
+      className="pointer-events-none absolute inset-0 z-10"
     >
       {todayEvents.map((event, index) => {
         const veryVeryUniqueKey = `event-${event.id}-${index}-${day.format(

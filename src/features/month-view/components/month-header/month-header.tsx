@@ -41,7 +41,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
     <div
       className={cn(
         'grid grid-cols-7 border-b',
-        stickyViewHeader && 'sticky top-0 z-100',
+        stickyViewHeader && 'sticky top-0 z-20',
         viewHeaderClassName,
         className
       )}

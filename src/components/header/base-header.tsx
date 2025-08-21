@@ -91,24 +91,27 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   return (
     <>
       {/* Calendar Header with grid layout */}
-      <div className="@container" data-testid="calendar-header">
+      <div
+        className="@container/base-header w-full"
+        data-testid="calendar-header"
+      >
         <div
           className={cn(
-            'flex justify-center @2xl:justify-between flex-wrap items-center gap-2 border-b',
+            'flex justify-center @2xl/base-header:justify-between flex-wrap items-center gap-2 border-b',
             className,
             headerClassName
           )}
         >
           {/* Title area - Left section */}
-          <div className="flex flex-wrap items-center justify-center gap-1 @2xl:justify-start">
+          <div className="flex flex-wrap items-center justify-center gap-1 @2xl/base-header:justify-start">
             <CalendarIcon className="h-5 w-5" />
             <TitleContent />
           </div>
 
           {/* New event button - Mobile & Desktop */}
-          <div className="flex flex-wrap justify-start @xl:justify-center gap-1 @4xl:justify-end overflow-x-auto">
+          <div className="flex flex-wrap justify-start @xl/base-header:justify-center gap-1 @4xl/base-header:justify-end overflow-x-auto">
             {/* Desktop controls - centralized */}
-            <div className="hidden @sm:flex items-center justify-start gap-1">
+            <div className="hidden @md/base-header:flex items-center justify-start gap-1">
               <ViewControls
                 currentView={view}
                 onChange={setView}
@@ -130,12 +133,12 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                 className="flex items-center gap-1"
               >
                 <Download className="h-4 w-4" />
-                <span className="hidden @4xl:inline">Export</span>
+                <span className="hidden @4xl/base-header:inline">Export</span>
               </Button>
             </div>
 
             {/* Mobile navigation menu button - Right aligned */}
-            <div className="flex items-center justify-end gap-1 @sm:hidden">
+            <div className="flex items-center justify-end gap-1 @md/base-header:hidden">
               {/* New event button - Mobile */}
               <NewEventButton />
 

@@ -4,9 +4,11 @@ export const defaultTranslations: Translations = {
   // Common actions
   today: 'Today',
   create: 'Create',
+  new: 'New',
   update: 'Update',
   delete: 'Delete',
   cancel: 'Cancel',
+  export: 'Export',
 
   // Event related
   event: 'Event',

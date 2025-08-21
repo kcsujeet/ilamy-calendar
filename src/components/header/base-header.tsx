@@ -27,6 +27,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
     headerComponent,
     headerClassName,
     rawEvents,
+    t,
   } = useCalendarContext()
 
   // State for mobile menu popover
@@ -76,11 +77,11 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           className="flex items-center gap-1"
         >
           <Plus className="h-4 w-4" />
-          <span className="hidden @4xl:inline">New</span>
+          <span className="hidden @4xl:inline">{t('new')}</span>
         </Button>
       </div>
     ),
-    [openEventForm]
+    [openEventForm, t]
   )
 
   if (headerComponent) {
@@ -133,7 +134,9 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                 className="flex items-center gap-1"
               >
                 <Download className="h-4 w-4" />
-                <span className="hidden @4xl/base-header:inline">Export</span>
+                <span className="hidden @4xl/base-header:inline">
+                  {t('export')}
+                </span>
               </Button>
             </div>
 
@@ -174,7 +177,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                         className="w-full flex items-center gap-2"
                       >
                         <Download className="h-4 w-4" />
-                        Export Calendar (.ics)
+                        {t('export')} Calendar (.ics)
                       </Button>
                     </div>
                   </div>

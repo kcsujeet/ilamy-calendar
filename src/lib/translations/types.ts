@@ -2,9 +2,11 @@ export interface Translations {
   // Common actions
   today: string
   create: string
+  new: string
   update: string
   delete: string
   cancel: string
+  export: string
 
   // Event related
   event: string

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import React from 'react'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
 
 interface ViewControlsProps {
   currentView: 'day' | 'week' | 'month' | 'year'
@@ -25,7 +25,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
   onNext,
   onPrevious,
 }) => {
-  const { t } = useCalendarContext()
+  const { t } = useSmartCalendarContext((context) => ({ t: context.t }))
   const isGrid = variant === 'grid'
 
   // Extract common button className logic to a function

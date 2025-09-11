@@ -4,7 +4,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 import dayjs from '@/lib/dayjs-config'
 import { AnimatePresence, motion } from 'motion/react'
@@ -21,7 +21,14 @@ const animationVariants = {
 }
 
 const TitleContent = () => {
-  const { currentDate, view, setCurrentDate, t } = useCalendarContext()
+  const { currentDate, view, setCurrentDate, t } = useSmartCalendarContext(
+    (context) => ({
+      currentDate: context.currentDate,
+      view: context.view,
+      setCurrentDate: context.setCurrentDate,
+      t: context.t,
+    })
+  )
 
   // Create months array using translations
   const months = useMemo(

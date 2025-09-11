@@ -7,7 +7,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 import dayjs from '@/lib/dayjs-config'
 import React, { useState } from 'react'
@@ -28,7 +28,12 @@ interface CalendarDndContextProps {
 
 export function CalendarDndContext({ children }: CalendarDndContextProps) {
   const { updateEvent, updateRecurringEvent, view, disableDragAndDrop } =
-    useCalendarContext()
+    useSmartCalendarContext((context) => ({
+      updateEvent: context.updateEvent,
+      updateRecurringEvent: context.updateRecurringEvent,
+      view: context.view,
+      disableDragAndDrop: context.disableDragAndDrop,
+    }))
   const [activeEvent, setActiveEvent] = React.useState<CalendarEvent | null>(
     null
   )

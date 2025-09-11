@@ -1,5 +1,5 @@
 import { defineConfig } from 'bunup'
-import { unused } from 'bunup/plugins';
+import { unused } from 'bunup/plugins'
 
 export default defineConfig({
   plugins: [unused()],

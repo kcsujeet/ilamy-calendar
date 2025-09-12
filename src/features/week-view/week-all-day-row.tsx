@@ -7,7 +7,7 @@ import type { CalendarEvent, ProcessedCalendarEvent } from '@/components/types'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 
 export const WeekAllDayRow: React.FC = () => {
-  const { currentDate, getEventsForDateRange, firstDayOfWeek } =
+  const { currentDate, getEventsForDateRange, firstDayOfWeek, t } =
     useCalendarContext()
 
   // Get start and end of current week based on firstDayOfWeek setting
@@ -124,7 +124,7 @@ export const WeekAllDayRow: React.FC = () => {
       {/* Left label for all-day events */}
       <div className="w-16 flex shrink-0 items-center justify-end border-x border-b px-1 min-h-16">
         <span className="text-muted-foreground text-[10px] whitespace-nowrap sm:text-xs">
-          All-day
+          {t('allDay')}
         </span>
       </div>
 

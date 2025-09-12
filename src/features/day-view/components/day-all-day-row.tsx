@@ -6,7 +6,7 @@ import type { CalendarEvent, ProcessedCalendarEvent } from '@/components/types'
 import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 
 export const DayAllDayRow = () => {
-  const { currentDate, getEventsForDateRange } = useCalendarContext()
+  const { currentDate, getEventsForDateRange, t } = useCalendarContext()
 
   // Get current day's events - this will refresh automatically when store updates
   // because getEventsForDateRange is a selector function from the store that runs whenever events change
@@ -80,7 +80,7 @@ export const DayAllDayRow = () => {
       {/* Left label for all-day events */}
       <div className="col-span-2 flex shrink-0 items-center justify-end border-r pr-2 md:col-span-1">
         <span className="text-muted-foreground text-[10px] whitespace-nowrap sm:text-xs">
-          All-day
+          {t('allDay')}
         </span>
       </div>
 

@@ -129,7 +129,7 @@ describe('DayView', () => {
     expect(allDayRow).toBeInTheDocument()
 
     // Should have "All-day" label
-    expect(screen.getByText('All-day')).toBeInTheDocument()
+    expect(screen.getByText('All day')).toBeInTheDocument()
   })
 
   test('handles different locale settings', () => {

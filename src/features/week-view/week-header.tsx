@@ -44,7 +44,7 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ className }) => {
       data-testid="week-header"
     >
       {/* Corner cell with week number */}
-      <div className="col-span-1 w-14 shrink-0 items-center justify-center border-x border-b p-2">
+      <div className="col-span-1 w-16 shrink-0 items-center justify-center border-x border-b p-2">
         <div className="flex flex-col items-center justify-center">
           <span className="text-muted-foreground text-xs">Week</span>
           <span className="font-medium">{currentDate.week()}</span>

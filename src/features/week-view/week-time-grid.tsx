@@ -37,7 +37,7 @@ export const WeekTimeGrid: React.FC = () => {
       {/* Time labels column - fixed */}
       <div
         data-testid="week-time-labels"
-        className="z-10 col-span-1 w-14 grid grid-rows-24 border-x"
+        className="z-10 col-span-1 w-16 grid grid-rows-24 border-x"
       >
         {hours.map((time) => (
           <div
@@ -45,7 +45,7 @@ export const WeekTimeGrid: React.FC = () => {
             data-testid={`week-time-hour-${time.format('HH')}`}
             className="h-[60px] border-b text-right"
           >
-            <span className="text-muted-foreground pr-2 text-right text-[10px] sm:text-xs">
+            <span className="text-muted-foreground px-1 text-right text-[10px] sm:text-xs">
               {Intl.DateTimeFormat(currentLocale, {
                 hour: 'numeric',
                 minute: 'numeric',
@@ -68,8 +68,8 @@ export const WeekTimeGrid: React.FC = () => {
           className="pointer-events-none absolute z-40"
           style={{
             top: `${(dayjs().hour() + dayjs().minute() / 60) * 60}px`,
-            left: `${todayIndex * (100 / 7)}%`,
-            width: `${100 / 7}%`,
+            left: `calc(var(--spacing) * 16 + ${todayIndex} * (100% - var(--spacing) * 16) / 7)`,
+            width: `calc((100% - var(--spacing) * 16) / 7)`,
           }}
         >
           <div className="w-full border-t border-red-500">

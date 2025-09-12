@@ -122,7 +122,7 @@ export const WeekAllDayRow: React.FC = () => {
       data-testid="week-all-day-row"
     >
       {/* Left label for all-day events */}
-      <div className="w-14 flex shrink-0 items-center justify-end border-x border-b pr-2 min-h-16">
+      <div className="w-16 flex shrink-0 items-center justify-end border-x border-b px-1 min-h-16">
         <span className="text-muted-foreground text-[10px] whitespace-nowrap sm:text-xs">
           All-day
         </span>

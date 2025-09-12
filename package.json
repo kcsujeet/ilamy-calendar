@@ -113,5 +113,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "auto-changelog": {
+    "startingVersion": "0.3.3"
   }
 }

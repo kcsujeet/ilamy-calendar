@@ -62,8 +62,10 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
             className="py-2 text-center font-medium border-r first:border-l"
             data-testid={`weekday-header-${weekDay}`}
           >
-            <span className="hidden text-sm sm:inline">{weekDay}</span>
-            <span className="text-xs sm:hidden">
+            <span className="hidden text-sm sm:inline capitalize">
+              {weekDay}
+            </span>
+            <span className="text-xs sm:hidden capitalize">
               {weekDays.shortDays[index]}
             </span>
           </motion.div>

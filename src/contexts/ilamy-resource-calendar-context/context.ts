@@ -2,7 +2,6 @@ import type { CalendarEngineReturn } from '@/lib/calendar-engine/use-calendar-en
 import type {
   Resource,
   ResourceCalendarEvent,
-  ResourceOrientation,
   ResourceView,
 } from '@/components/ilamy-resource-calendar/types'
 import type dayjs from '@/lib/dayjs-config'
@@ -23,7 +22,6 @@ export interface ResourceCalendarContextType
 
   // Resource-specific state
   resources: Resource[]
-  orientation: ResourceOrientation
   visibleResources: Set<string | number>
 
   // Resource actions
@@ -33,7 +31,6 @@ export interface ResourceCalendarContextType
     resource: Partial<Resource>
   ) => void
   deleteResource: (resourceId: string | number) => void
-  setOrientation: (orientation: ResourceOrientation) => void
   toggleResourceVisibility: (resourceId: string | number) => void
   showResource: (resourceId: string | number) => void
   hideResource: (resourceId: string | number) => void
@@ -85,11 +82,11 @@ export interface UseIlamyResourceCalendarContextReturn {
   readonly view: ResourceView
   readonly events: ResourceCalendarEvent[]
   readonly resources: Resource[]
-  readonly orientation: ResourceOrientation
   readonly isEventFormOpen: boolean
   readonly selectedEvent: ResourceCalendarEvent | null
   readonly selectedDate: dayjs.Dayjs | null
   readonly firstDayOfWeek: number
+  readonly dayMaxEvents: number
   readonly setCurrentDate: (date: dayjs.Dayjs) => void
   readonly selectDate: (date: dayjs.Dayjs) => void
   readonly setView: (view: ResourceView) => void
@@ -108,7 +105,6 @@ export interface UseIlamyResourceCalendarContextReturn {
     resource: Partial<Resource>
   ) => void
   readonly deleteResource: (resourceId: string | number) => void
-  readonly setOrientation: (orientation: ResourceOrientation) => void
   readonly openEventForm: (date?: dayjs.Dayjs) => void
   readonly closeEventForm: () => void
   readonly getEventsForResource: (
@@ -129,11 +125,11 @@ export const useIlamyResourceCalendarContext =
       view: context.view,
       events: context.events,
       resources: context.resources,
-      orientation: context.orientation,
       isEventFormOpen: context.isEventFormOpen,
       selectedEvent: context.selectedEvent,
       selectedDate: context.selectedDate,
       firstDayOfWeek: context.firstDayOfWeek,
+      dayMaxEvents: context.dayMaxEvents,
       setCurrentDate: context.setCurrentDate,
       selectDate: context.selectDate,
       setView: context.setView,
@@ -146,7 +142,6 @@ export const useIlamyResourceCalendarContext =
       addResource: context.addResource,
       updateResource: context.updateResource,
       deleteResource: context.deleteResource,
-      setOrientation: context.setOrientation,
       openEventForm: context.openEventForm,
       closeEventForm: context.closeEventForm,
       getEventsForResource: context.getEventsForResource,

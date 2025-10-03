@@ -1,23 +1,27 @@
-import dayjs from '@/lib/dayjs-config'
+import type { CalendarEvent } from '@/components/types'
+import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
+import type dayjs from '@/lib/dayjs-config'
 import { cn } from '@/lib/utils'
 import React from 'react'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
-import { DroppableCell } from '@/features/droppable-cell/droppable-cell'
-import { AllEventDialog } from '@/components/all-events-dialog'
-import type { SelectedDayEvents } from '../types'
-import type { CalendarEvent } from '@/components/types'
+import { AllEventDialog } from '../shared/all-events-dialog'
+import type { SelectedDayEvents } from '../shared/all-events-dialog'
+import { DroppableCell } from '../shared/droppable-cell'
 
 interface DayCellProps {
   index: number // Index of the day in the week (0-6)
   day: dayjs.Dayjs
   dayMaxEvents?: number
   className?: string // Optional className for custom styling
+  resourceId?: string | number // Optional resource ID for resource-specific day cells
 }
+
+const dayMaxEvents = 3
 
 export const DayCell: React.FC<DayCellProps> = ({
   index,
   day,
   className = '',
+  resourceId,
 }) => {
   const allEventsDialogRef = React.useRef<{
     open: () => void
@@ -25,16 +29,18 @@ export const DayCell: React.FC<DayCellProps> = ({
     setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void
   }>(null)
   const {
-    currentLocale,
     getEventsForDateRange,
     currentDate,
     firstDayOfWeek,
-    dayMaxEvents = 0,
     t,
-  } = useCalendarContext()
+    getEventsForResource,
+  } = useResourceCalendarContext()
+  const resourceEvents = getEventsForResource(resourceId)
   const todayEvents = getEventsForDateRange(
     day.startOf('day'),
     day.endOf('day')
+  ).filter((event) =>
+    resourceEvents.some((re) => String(re.id) === String(event.id))
   )
 
   // Get start date for the current month view based on firstDayOfWeek
@@ -56,7 +62,6 @@ export const DayCell: React.FC<DayCellProps> = ({
     allEventsDialogRef.current?.open()
   }
 
-  const isToday = day.isSame(dayjs(), 'day')
   const isCurrentMonth = day.month() === currentDate.month()
   const isLastColumn = index === 6 // Saturday is the last column in a week
 
@@ -81,18 +86,6 @@ export const DayCell: React.FC<DayCellProps> = ({
 
         {/* Single-day events container positioned below multi-day events */}
         <div className="flex flex-col gap-1">
-          {/* Day number */}
-          <div
-            className={cn(
-              'flex h-5 w-5 items-center justify-center rounded-full text-xs sm:h-6 sm:w-6',
-              isToday && 'bg-primary text-primary-foreground font-medium'
-            )}
-          >
-            {Intl.DateTimeFormat(currentLocale, { day: 'numeric' }).format(
-              day.toDate()
-            )}
-          </div>
-
           {/* Render placeholders for events that occur today so that the cell height is according to dayMaxEvents. */}
           {todayEvents.slice(0, dayMaxEvents).map((event, rowIndex) => (
             <div

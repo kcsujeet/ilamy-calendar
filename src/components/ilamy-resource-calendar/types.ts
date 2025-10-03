@@ -33,11 +33,6 @@ export interface ResourceCalendarEvent extends CalendarEvent {
 }
 
 /**
- * Resource orientation for layout
- */
-export type ResourceOrientation = 'vertical' | 'horizontal'
-
-/**
  * Resource view types (excluding year view as requested)
  */
 export type ResourceView = 'month' | 'week' | 'day'

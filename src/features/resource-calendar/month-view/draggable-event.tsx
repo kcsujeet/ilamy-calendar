@@ -1,10 +1,10 @@
 import type { CalendarEvent } from '@/components/types'
+import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
 import { cn } from '@/lib/utils'
 import { useDraggable } from '@dnd-kit/core'
 import { AnimatePresence, motion } from 'motion/react'
 import type { CSSProperties } from 'react'
 import { memo } from 'react'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
 
 const getBorderRadiusClass = (
   isTruncatedStart: boolean,
@@ -35,21 +35,14 @@ function DraggableEventUnmemoized({
   event: CalendarEvent
   disableDrag?: boolean
 }) {
-  const { onEventClick, renderEvent, disableEventClick, disableDragAndDrop } =
-    useSmartCalendarContext((state) => ({
-      onEventClick: state.onEventClick,
-      renderEvent: state.renderEvent,
-      disableEventClick: state.disableEventClick,
-      disableDragAndDrop: state.disableDragAndDrop,
-    }))
-
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const { onEventClick } = useResourceCalendarContext()
+  const { attributes, listeners, setNodeRef } = useDraggable({
     id: elementId,
     data: {
       event,
       type: 'calendar-event',
     },
-    disabled: disableDrag || disableDragAndDrop,
+    disabled: disableDrag,
   })
 
   // Default event content to render if custom renderEvent is not provided
@@ -112,14 +105,7 @@ function DraggableEventUnmemoized({
         transition={{ duration: 0.4, ease: 'easeInOut' }}
         className={cn(
           'truncate h-full w-full',
-          disableDrag || disableDragAndDrop
-            ? disableEventClick
-              ? 'cursor-default'
-              : 'cursor-pointer'
-            : 'cursor-grab',
-          isDragging &&
-            !(disableDrag || disableDragAndDrop) &&
-            'cursor-grabbing shadow-lg',
+
           className
         )}
         style={style}
@@ -129,7 +115,7 @@ function DraggableEventUnmemoized({
         }}
       >
         {/* Use custom renderEvent from context if available, otherwise use default */}
-        {renderEvent ? renderEvent(event) : <DefaultEventContent />}
+        {<DefaultEventContent />}
       </motion.div>
     </AnimatePresence>
   )

@@ -9,6 +9,7 @@ import {
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { defaultTranslations } from '@/lib/translations/default'
+import { DAY_MAX_EVENTS_DEFAULT } from '../constants'
 
 export interface CalendarEngineConfig {
   events: CalendarEvent[]
@@ -35,6 +36,7 @@ export interface CalendarEngineReturn {
   selectedEvent: CalendarEvent | null
   selectedDate: dayjs.Dayjs | null
   firstDayOfWeek: number
+  dayMaxEvents: number
   currentLocale: string
 
   // Actions
@@ -438,6 +440,7 @@ export const useCalendarEngine = (
     selectedEvent,
     selectedDate,
     firstDayOfWeek,
+    dayMaxEvents: DAY_MAX_EVENTS_DEFAULT,
     currentLocale,
 
     // Actions

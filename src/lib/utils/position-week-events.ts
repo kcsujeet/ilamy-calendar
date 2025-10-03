@@ -1,5 +1,4 @@
 import type { CalendarEvent } from '@/components/types'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
 import {
   DAY_NUMBER_HEIGHT,
   EVENT_BAR_HEIGHT,
@@ -15,28 +14,29 @@ interface PositionedEvent extends CalendarEvent {
   position: number // Position in the row (0 for first, 1 for second, etc.)
 }
 
-interface UseProcessedWeekEventsProps {
+interface GetPositionedEventsProps {
   days: dayjs.Dayjs[]
+  events: CalendarEvent[]
+  dayMaxEvents: number
+  dayNumberHeight?: number
+  gridType?: 'day' | 'hour' // Future use for different grid types
 }
 
-export const useProcessedWeekEvents = ({
+export const getPositionedEvents = ({
   days,
-}: UseProcessedWeekEventsProps) => {
-  const { getEventsForDateRange, dayMaxEvents } = useCalendarContext()
-
-  const weekStart = days[0].startOf('day')
-  const weekEnd = days[6].endOf('day')
+  events,
+  dayMaxEvents,
+  dayNumberHeight = DAY_NUMBER_HEIGHT,
+  gridType = 'day',
+}: GetPositionedEventsProps) => {
+  const firstDay = days[0].startOf('day')
+  const lastDay = days.at(-1).endOf('day')
   const dayCount = days.length
 
-  // Get all events that intersect with this week
-  const weekEvents = getEventsForDateRange(weekStart, weekEnd)
-
   // Separate multi-day and single-day events
-  const multiDayEvents = weekEvents.filter(
-    (e) => e.end.diff(e.start, 'day') > 0
-  )
-  const singleDayEvents = weekEvents.filter(
-    (e) => e.end.diff(e.start, 'day') === 0
+  const multiDayEvents = events.filter((e) => e.end.diff(e.start, gridType) > 0)
+  const singleDayEvents = events.filter(
+    (e) => e.end.diff(e.start, gridType) === 0
   )
 
   // Sort multi-day events by start date, then by duration
@@ -66,14 +66,16 @@ export const useProcessedWeekEvents = ({
 
   // Step 1: Assign positions to multi-day events first
   for (const event of sortedMultiDay) {
-    const eventStart = dayjs.max(event.start.startOf('day'), weekStart)
-    const eventEnd = dayjs.min(event.end.startOf('day'), weekEnd)
-    const startCol = Math.max(0, eventStart.diff(weekStart, 'day'))
-    const endCol = Math.min(6, eventEnd.diff(weekStart, 'day'))
+    const eventStart = dayjs.max(event.start.startOf(gridType), firstDay)
+    const adjustedEnd =
+      gridType === 'hour' ? event.end.subtract(1, 'minute') : event.end
+    const eventEnd = dayjs.min(adjustedEnd.startOf(gridType), lastDay)
+    const startCol = Math.max(0, eventStart.diff(firstDay, gridType))
+    const endCol = Math.min(dayCount - 1, eventEnd.diff(firstDay, gridType))
 
     // Detect if event is truncated at the boundaries
-    const isTruncatedStart = event.start.startOf('day').isBefore(weekStart)
-    const isTruncatedEnd = event.end.startOf('day').isAfter(weekEnd)
+    const isTruncatedStart = event.start.startOf(gridType).isBefore(firstDay)
+    const isTruncatedEnd = event.end.startOf(gridType).isAfter(lastDay)
 
     // Try to place the event starting from its original start column
     let placedSuccessfully = false
@@ -106,7 +108,7 @@ export const useProcessedWeekEvents = ({
         left: (startCol / dayCount) * 100,
         width: (spanDays / dayCount) * 100,
         top:
-          DAY_NUMBER_HEIGHT +
+          dayNumberHeight +
           GAP_BETWEEN_ELEMENTS +
           assignedRow * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
         height: EVENT_BAR_HEIGHT,
@@ -153,7 +155,7 @@ export const useProcessedWeekEvents = ({
             left: (tryStartCol / dayCount) * 100,
             width: (truncatedSpanDays / dayCount) * 100,
             top:
-              DAY_NUMBER_HEIGHT +
+              dayNumberHeight +
               GAP_BETWEEN_ELEMENTS +
               truncatedAssignedRow * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
             height: EVENT_BAR_HEIGHT,
@@ -171,8 +173,8 @@ export const useProcessedWeekEvents = ({
 
   // Step 2: Fill gaps with single-day events
   for (const event of sortedSingleDay) {
-    const eventStart = dayjs.max(event.start.startOf('day'), weekStart)
-    const col = Math.max(0, eventStart.diff(weekStart, 'day'))
+    const eventStart = dayjs.max(event.start.startOf(gridType), firstDay)
+    const col = Math.max(0, eventStart.diff(firstDay, gridType))
 
     // Single-day events are not truncated by definition
     const isTruncatedStart = false
@@ -196,7 +198,7 @@ export const useProcessedWeekEvents = ({
         left: (col / dayCount) * 100,
         width: (1 / dayCount) * 100,
         top:
-          DAY_NUMBER_HEIGHT +
+          dayNumberHeight +
           GAP_BETWEEN_ELEMENTS +
           assignedRow * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
         height: EVENT_BAR_HEIGHT,

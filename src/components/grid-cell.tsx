@@ -1,23 +1,27 @@
-import dayjs from '@/lib/dayjs-config'
-import { cn } from '@/lib/utils'
-import React from 'react'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
-import { DroppableCell } from '@/features/droppable-cell/droppable-cell'
-import { AllEventDialog } from '@/components/all-events-dialog'
-import type { SelectedDayEvents } from '../types'
 import type { CalendarEvent } from '@/components/types'
+import type dayjs from '@/lib/dayjs-config'
+import { cn } from '@/lib/utils'
+import React, { useMemo } from 'react'
+import { AllEventDialog } from './all-events-dialog'
+import type { SelectedDayEvents } from './all-events-dialog'
+import { DroppableCell } from './droppable-cell'
+import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
 
-interface DayCellProps {
+interface GridProps {
   index: number // Index of the day in the week (0-6)
   day: dayjs.Dayjs
   dayMaxEvents?: number
   className?: string // Optional className for custom styling
+  resourceId?: string | number // Optional resource ID for resource-specific day cells
+  gridType?: 'day' | 'hour' // Future use for different grid types
 }
 
-export const DayCell: React.FC<DayCellProps> = ({
+export const GridCell: React.FC<GridProps> = ({
   index,
   day,
   className = '',
+  resourceId,
+  gridType = 'day',
 }) => {
   const allEventsDialogRef = React.useRef<{
     open: () => void
@@ -25,17 +29,36 @@ export const DayCell: React.FC<DayCellProps> = ({
     setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void
   }>(null)
   const {
-    currentLocale,
+    dayMaxEvents = 0,
     getEventsForDateRange,
     currentDate,
     firstDayOfWeek,
-    dayMaxEvents = 0,
     t,
-  } = useCalendarContext()
-  const todayEvents = getEventsForDateRange(
-    day.startOf('day'),
-    day.endOf('day')
-  )
+    getEventsForResource,
+  } = useSmartCalendarContext((state) => ({
+    dayMaxEvents: state.dayMaxEvents,
+    getEventsForDateRange: state.getEventsForDateRange,
+    currentDate: state.currentDate,
+    firstDayOfWeek: state.firstDayOfWeek,
+    t: state.t,
+    getEventsForResource: state.getEventsForResource,
+  }))
+
+  const todayEvents = useMemo(() => {
+    const resourceEvents = resourceId ? getEventsForResource(resourceId) : []
+    const todayEvents = getEventsForDateRange(
+      day.startOf(gridType),
+      day.endOf(gridType)
+    )
+
+    if (resourceEvents.length) {
+      return todayEvents.filter((event) =>
+        resourceEvents.some((re) => String(re.id) === String(event.id))
+      )
+    }
+
+    return todayEvents
+  }, [day, resourceId, getEventsForDateRange, getEventsForResource, gridType])
 
   // Get start date for the current month view based on firstDayOfWeek
   const firstDayOfMonth = currentDate.startOf('month')
@@ -56,7 +79,6 @@ export const DayCell: React.FC<DayCellProps> = ({
     allEventsDialogRef.current?.open()
   }
 
-  const isToday = day.isSame(dayjs(), 'day')
   const isCurrentMonth = day.month() === currentDate.month()
   const isLastColumn = index === 6 // Saturday is the last column in a week
 
@@ -66,9 +88,9 @@ export const DayCell: React.FC<DayCellProps> = ({
   return (
     <>
       <DroppableCell
-        id={`day-cell-${day.format('YYYY-MM-DD')}`}
+        id={`day-cell-${day.toISOString()}`}
         type="day-cell"
-        data-testid={`day-cell-${day.format('YYYY-MM-DD')}`}
+        data-testid={`day-cell-${day.toISOString()}`}
         date={day}
         className={cn(
           'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px]',
@@ -81,18 +103,6 @@ export const DayCell: React.FC<DayCellProps> = ({
 
         {/* Single-day events container positioned below multi-day events */}
         <div className="flex flex-col gap-1">
-          {/* Day number */}
-          <div
-            className={cn(
-              'flex h-5 w-5 items-center justify-center rounded-full text-xs sm:h-6 sm:w-6',
-              isToday && 'bg-primary text-primary-foreground font-medium'
-            )}
-          >
-            {Intl.DateTimeFormat(currentLocale, { day: 'numeric' }).format(
-              day.toDate()
-            )}
-          </div>
-
           {/* Render placeholders for events that occur today so that the cell height is according to dayMaxEvents. */}
           {todayEvents.slice(0, dayMaxEvents).map((event, rowIndex) => (
             <div

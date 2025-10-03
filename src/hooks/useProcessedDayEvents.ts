@@ -3,7 +3,7 @@ import dayjs from '@/lib/dayjs-config'
 import { useMemo } from 'react'
 import type { CalendarEvent } from '@/components/types'
 
-interface ProcessedEvent extends CalendarEvent {
+interface PositionedEvent extends CalendarEvent {
   left: number // Left position in percentage
   width: number // Width in percentage
   top: number // Top position in percentage
@@ -18,7 +18,7 @@ interface UseProcessedDayEventsProps {
 export const useProcessedDayEvents = ({ day }: UseProcessedDayEventsProps) => {
   const { getEventsForDateRange } = useCalendarContext()
 
-  const todayEvents = useMemo<ProcessedEvent[]>(() => {
+  const todayEvents = useMemo<PositionedEvent[]>(() => {
     let eventsForDay = getEventsForDateRange(
       day.startOf('day'),
       day.endOf('day')
@@ -54,7 +54,7 @@ export const useProcessedDayEvents = ({ day }: UseProcessedDayEventsProps) => {
     }
 
     // Step 2: For each cluster, use a more intelligent column assignment
-    const processedEvents: ProcessedEvent[] = []
+    const processedEvents: PositionedEvent[] = []
     for (const cluster of clusters) {
       if (cluster.length === 1) {
         // Single event takes full width

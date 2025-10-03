@@ -1,13 +1,18 @@
+import type { CalendarEvent } from '@/components'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui'
-import React, { useImperativeHandle, useState } from 'react'
 import { DraggableEvent } from '@/features/draggable-event/draggable-event'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
-import type { SelectedDayEvents } from '../types'
+import type dayjs from '@/lib/dayjs-config'
+import React, { useImperativeHandle, useState } from 'react'
+import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+export interface SelectedDayEvents {
+  day: dayjs.Dayjs
+  events: CalendarEvent[]
+}
 
 interface AllEventDialogProps {
   ref: React.Ref<{
@@ -21,7 +26,10 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedDayEvents, setSelectedDayEvents] =
     useState<SelectedDayEvents | null>(null)
-  const { currentDate, firstDayOfWeek } = useCalendarContext()
+  const { currentDate, firstDayOfWeek } = useSmartCalendarContext((state) => ({
+    currentDate: state.currentDate,
+    firstDayOfWeek: state.firstDayOfWeek,
+  }))
 
   useImperativeHandle(ref, () => ({
     open: () => setDialogOpen(true),

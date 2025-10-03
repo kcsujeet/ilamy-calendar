@@ -113,17 +113,6 @@ describe('IlamyResourceCalendar', () => {
     expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
   })
 
-  it('should handle initialOrientation prop', () => {
-    render(
-      <IlamyResourceCalendar
-        initialOrientation="horizontal"
-        resources={mockResources}
-      />
-    )
-
-    expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
-  })
-
   it('should render custom header when provided', () => {
     const customHeader = <div data-testid="custom-header">Custom Header</div>
 
@@ -158,7 +147,6 @@ describe('IlamyResourceCalendar', () => {
     const onResourceAdd = mock()
     const onResourceUpdate = mock()
     const onResourceDelete = mock()
-    const onOrientationChange = mock()
 
     render(
       <IlamyResourceCalendar
@@ -174,7 +162,6 @@ describe('IlamyResourceCalendar', () => {
         onResourceAdd={onResourceAdd}
         onResourceUpdate={onResourceUpdate}
         onResourceDelete={onResourceDelete}
-        onOrientationChange={onOrientationChange}
       />
     )
 
@@ -329,27 +316,6 @@ describe('IlamyResourceCalendar', () => {
         initialView="day"
         resources={mockResources}
         events={mockEvents}
-      />
-    )
-
-    expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
-  })
-
-  it('should handle resource orientation toggle', () => {
-    const { rerender } = render(
-      <IlamyResourceCalendar
-        initialOrientation="vertical"
-        resources={mockResources}
-      />
-    )
-
-    expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
-
-    // Test switching to horizontal
-    rerender(
-      <IlamyResourceCalendar
-        initialOrientation="horizontal"
-        resources={mockResources}
       />
     )
 

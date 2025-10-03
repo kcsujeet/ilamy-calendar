@@ -2,12 +2,7 @@ import React from 'react'
 import type { ReactNode } from 'react'
 import { CalendarDndContext } from '@/features/drag-and-drop/calendar-dnd-context'
 import { ResourceCalendarProvider } from '@/contexts/ilamy-resource-calendar-context'
-import type {
-  Resource,
-  ResourceCalendarEvent,
-  ResourceOrientation,
-  ResourceView,
-} from './types'
+import type { Resource, ResourceCalendarEvent, ResourceView } from './types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { ResourceCalendarBody } from './resource-calendar-body'
 import { cn } from '@/lib/utils'
@@ -22,8 +17,6 @@ export interface IlamyResourceCalendarProps {
   firstDayOfWeek?: 'sunday' | 'monday'
   /** Initial view to display */
   initialView?: ResourceView
-  /** Initial orientation for resource layout */
-  initialOrientation?: ResourceOrientation
   /** Custom event renderer */
   renderEvent?: (event: ResourceCalendarEvent) => ReactNode
   /** Callback when an event is clicked */
@@ -50,8 +43,6 @@ export interface IlamyResourceCalendarProps {
   onResourceUpdate?: (resource: Resource) => void
   /** Callback when a resource is deleted */
   onResourceDelete?: (resource: Resource) => void
-  /** Callback when orientation changes */
-  onOrientationChange?: (orientation: ResourceOrientation) => void
   /** Locale for internationalization */
   locale?: string
   /** Timezone for date handling */
@@ -85,7 +76,6 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   resources = [],
   firstDayOfWeek = 'sunday',
   initialView = 'month',
-  initialOrientation = 'vertical',
   renderEvent,
   onEventClick,
   onCellClick,
@@ -97,7 +87,6 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   onResourceAdd,
   onResourceUpdate,
   onResourceDelete,
-  onOrientationChange,
   locale,
   timezone,
   disableCellClick,
@@ -121,7 +110,6 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
         resources={resources}
         firstDayOfWeek={firstDayOfWeekNumber}
         initialView={initialView}
-        initialOrientation={initialOrientation}
         renderEvent={renderEvent}
         onEventClick={onEventClick}
         onCellClick={onCellClick}
@@ -133,7 +121,6 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
         onResourceAdd={onResourceAdd}
         onResourceUpdate={onResourceUpdate}
         onResourceDelete={onResourceDelete}
-        onOrientationChange={onOrientationChange}
         locale={locale}
         timezone={timezone}
         disableCellClick={disableCellClick}

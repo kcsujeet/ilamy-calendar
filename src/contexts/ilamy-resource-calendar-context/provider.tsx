@@ -4,7 +4,6 @@ import { ResourceCalendarContext } from './context'
 import type {
   Resource,
   ResourceCalendarEvent,
-  ResourceOrientation,
   ResourceView,
 } from '@/components/ilamy-resource-calendar/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
@@ -29,7 +28,6 @@ interface ResourceCalendarProviderProps {
   resources?: Resource[]
   firstDayOfWeek?: number
   initialView?: ResourceView
-  initialOrientation?: ResourceOrientation
   renderEvent?: (event: ResourceCalendarEvent) => ReactNode
   onEventClick?: (event: ResourceCalendarEvent) => void
   onCellClick?: (
@@ -45,7 +43,6 @@ interface ResourceCalendarProviderProps {
   onResourceAdd?: (resource: Resource) => void
   onResourceUpdate?: (resource: Resource) => void
   onResourceDelete?: (resource: Resource) => void
-  onOrientationChange?: (orientation: ResourceOrientation) => void
   locale?: string
   timezone?: string
   disableCellClick?: boolean
@@ -68,7 +65,6 @@ export const ResourceCalendarProvider: React.FC<
   resources = [],
   firstDayOfWeek = 0,
   initialView = 'month',
-  initialOrientation = 'vertical',
   renderEvent,
   onEventClick,
   onCellClick,
@@ -80,7 +76,6 @@ export const ResourceCalendarProvider: React.FC<
   onResourceAdd,
   onResourceUpdate,
   onResourceDelete,
-  onOrientationChange,
   locale,
   timezone,
   disableCellClick,
@@ -97,8 +92,6 @@ export const ResourceCalendarProvider: React.FC<
   // Resource-specific state
   const [currentResources, setCurrentResources] =
     useState<Resource[]>(resources)
-  const [orientation, setOrientation] =
-    useState<ResourceOrientation>(initialOrientation)
   const [visibleResources, setVisibleResources] = useState<
     Set<string | number>
   >(new Set(resources.map((r) => r.id)))
@@ -163,14 +156,6 @@ export const ResourceCalendarProvider: React.FC<
       })
     },
     [onResourceDelete]
-  )
-
-  const handleOrientationChange = useCallback(
-    (newOrientation: ResourceOrientation) => {
-      setOrientation(newOrientation)
-      onOrientationChange?.(newOrientation)
-    },
-    [onOrientationChange]
   )
 
   // Resource visibility
@@ -320,14 +305,12 @@ export const ResourceCalendarProvider: React.FC<
 
       // Resource-specific state
       resources: currentResources,
-      orientation,
       visibleResources,
 
       // Resource actions
       addResource,
       updateResource,
       deleteResource,
-      setOrientation: handleOrientationChange,
       toggleResourceVisibility,
       showResource,
       hideResource,
@@ -366,12 +349,10 @@ export const ResourceCalendarProvider: React.FC<
     [
       calendarEngine,
       currentResources,
-      orientation,
       visibleResources,
       addResource,
       updateResource,
       deleteResource,
-      handleOrientationChange,
       toggleResourceVisibility,
       showResource,
       hideResource,

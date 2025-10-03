@@ -3,7 +3,6 @@ import { IlamyResourceCalendar } from '@/components/ilamy-resource-calendar/ilam
 import type {
   Resource,
   ResourceCalendarEvent,
-  ResourceOrientation,
 } from '@/components/ilamy-resource-calendar/types'
 import type { CalendarEvent, WeekDays } from '@/components/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -134,10 +133,6 @@ export function DemoPage() {
   })
   const [stickyViewHeader, setStickyHeader] = useState(true)
 
-  // Resource calendar specific state
-  const [resourceOrientation, setResourceOrientation] =
-    useState<ResourceOrientation>('vertical')
-
   // Disable functionality state
   const [disableCellClick, setDisableCellClick] = useState(false)
   const [disableEventClick, setDisableEventClick] = useState(false)
@@ -227,8 +222,6 @@ export function DemoPage() {
             setStickyHeader={setStickyHeader}
             // Resource calendar specific props
             isResourceCalendar={calendarType === 'resource'}
-            resourceOrientation={resourceOrientation}
-            setResourceOrientation={setResourceOrientation}
           />
 
           {/* Resource info card */}
@@ -306,7 +299,6 @@ export function DemoPage() {
                     firstDayOfWeek === 'sunday' ? 'sunday' : 'monday'
                   }
                   initialView={initialView === 'year' ? 'month' : initialView} // No year view for resource calendar
-                  initialOrientation={resourceOrientation}
                   locale={locale}
                   timezone={timezone}
                   onEventClick={
@@ -318,7 +310,6 @@ export function DemoPage() {
                   onResourceAdd={handleResourceAdd}
                   onResourceUpdate={handleResourceUpdate}
                   onResourceDelete={handleResourceDelete}
-                  onOrientationChange={setResourceOrientation}
                   onDateChange={handleDateChange}
                   disableCellClick={disableCellClick}
                   disableEventClick={disableEventClick}

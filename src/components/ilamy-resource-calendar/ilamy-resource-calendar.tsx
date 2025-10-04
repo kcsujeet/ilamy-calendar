@@ -1,74 +1,15 @@
-import React from 'react'
-import type { ReactNode } from 'react'
-import { CalendarDndContext } from '@/features/drag-and-drop/calendar-dnd-context'
 import { ResourceCalendarProvider } from '@/contexts/ilamy-resource-calendar-context'
-import type { Resource, ResourceCalendarEvent, ResourceView } from './types'
-import type { Translations, TranslatorFunction } from '@/lib/translations/types'
-import { ResourceCalendarBody } from './resource-calendar-body'
 import { cn } from '@/lib/utils'
-import type dayjs from '@/lib/dayjs-config'
+import React from 'react'
+import type { IlamyCalendarProps } from '../ilamy-calendar/types'
+import { ResourceCalendarBody } from './resource-calendar-body'
+import type { Resource, ResourceCalendarEvent } from './types'
 
-export interface IlamyResourceCalendarProps {
+export interface IlamyResourceCalendarProps extends IlamyCalendarProps {
   /** Array of events to display */
   events?: ResourceCalendarEvent[]
   /** Array of resources */
   resources?: Resource[]
-  /** First day of the week (0 = Sunday, 1 = Monday) */
-  firstDayOfWeek?: 'sunday' | 'monday'
-  /** Initial view to display */
-  initialView?: ResourceView
-  /** Custom event renderer */
-  renderEvent?: (event: ResourceCalendarEvent) => ReactNode
-  /** Callback when an event is clicked */
-  onEventClick?: (event: ResourceCalendarEvent) => void
-  /** Callback when a cell is clicked */
-  onCellClick?: (
-    startDate: dayjs.Dayjs,
-    endDate: dayjs.Dayjs,
-    resourceId?: string | number
-  ) => void
-  /** Callback when the view changes */
-  onViewChange?: (view: ResourceView) => void
-  /** Callback when an event is added */
-  onEventAdd?: (event: ResourceCalendarEvent) => void
-  /** Callback when an event is updated */
-  onEventUpdate?: (event: ResourceCalendarEvent) => void
-  /** Callback when an event is deleted */
-  onEventDelete?: (event: ResourceCalendarEvent) => void
-  /** Callback when the current date changes */
-  onDateChange?: (date: dayjs.Dayjs) => void
-  /** Callback when a resource is added */
-  onResourceAdd?: (resource: Resource) => void
-  /** Callback when a resource is updated */
-  onResourceUpdate?: (resource: Resource) => void
-  /** Callback when a resource is deleted */
-  onResourceDelete?: (resource: Resource) => void
-  /** Locale for internationalization */
-  locale?: string
-  /** Timezone for date handling */
-  timezone?: string
-  /** Disable cell click interactions */
-  disableCellClick?: boolean
-  /** Disable event click interactions */
-  disableEventClick?: boolean
-  /** Disable drag and drop functionality */
-  disableDragAndDrop?: boolean
-  /** Maximum number of events to show per day in month view */
-  dayMaxEvents?: number
-  /** Make view header sticky */
-  stickyViewHeader?: boolean
-  /** CSS class for view header */
-  viewHeaderClassName?: string
-  /** Custom header component */
-  headerComponent?: ReactNode
-  /** CSS class for header */
-  headerClassName?: string
-  /** Translation object for i18n */
-  translations?: Translations
-  /** Translation function for i18n (alternative to translations object) */
-  translator?: TranslatorFunction
-  /** CSS class name for the calendar container */
-  className?: string
 }
 
 export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
@@ -84,9 +25,6 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   onEventUpdate,
   onEventDelete,
   onDateChange,
-  onResourceAdd,
-  onResourceUpdate,
-  onResourceDelete,
   locale,
   timezone,
   disableCellClick,
@@ -99,12 +37,11 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   headerClassName,
   translations,
   translator,
-  className,
 }) => {
   const firstDayOfWeekNumber = firstDayOfWeek === 'monday' ? 1 : 0
 
   return (
-    <div className={cn('h-full', className)}>
+    <div className={cn('h-full')}>
       <ResourceCalendarProvider
         events={events}
         resources={resources}
@@ -118,9 +55,6 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
         onEventUpdate={onEventUpdate}
         onEventDelete={onEventDelete}
         onDateChange={onDateChange}
-        onResourceAdd={onResourceAdd}
-        onResourceUpdate={onResourceUpdate}
-        onResourceDelete={onResourceDelete}
         locale={locale}
         timezone={timezone}
         disableCellClick={disableCellClick}
@@ -134,9 +68,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
         translations={translations}
         translator={translator}
       >
-        <CalendarDndContext>
-          <ResourceCalendarBody />
-        </CalendarDndContext>
+        <ResourceCalendarBody />
       </ResourceCalendarProvider>
     </div>
   )

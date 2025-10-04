@@ -6,7 +6,7 @@ import type { CalendarEvent } from '@/components/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { useCalendarEngine } from '@/lib/calendar-engine/use-calendar-engine'
 
-interface CalendarProviderProps {
+export interface CalendarProviderProps {
   children: ReactNode
   events?: CalendarEvent[]
   firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.

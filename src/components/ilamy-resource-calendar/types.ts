@@ -18,8 +18,8 @@ export interface Resource {
    * @example "#dbeafe", "blue-100", "rgba(59, 130, 246, 0.1)"
    */
   backgroundColor?: string
-  /** Optional order for resource display */
-  order?: number
+  /** Optional position for resource display */
+  position?: number
 }
 
 /**
@@ -31,8 +31,3 @@ export interface ResourceCalendarEvent extends CalendarEvent {
   /** Multiple resource assignment (cross-resource events) */
   resourceIds?: (string | number)[]
 }
-
-/**
- * Resource view types (excluding year view as requested)
- */
-export type ResourceView = 'month' | 'week' | 'day'

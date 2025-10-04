@@ -9,19 +9,14 @@ import { Calendar as CalendarIcon, Download, Menu, Plus } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import TitleContent from './title-content'
 import ViewControls from './view-controls'
-import { ResourceViewControls } from './resource-view-controls'
 import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
 import { cn } from '@/lib'
 
 interface HeaderProps {
   className?: string
-  showResourceControls?: boolean
 }
 
-const Header: React.FC<HeaderProps> = ({
-  className = '',
-  showResourceControls = false,
-}) => {
+const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const {
     view,
     setView,
@@ -139,9 +134,6 @@ const Header: React.FC<HeaderProps> = ({
                 className="justify-end"
               />
 
-              {/* Resource controls - Desktop */}
-              {showResourceControls && <ResourceViewControls />}
-
               {/* New event button - Desktop */}
               <NewEventButton />
 
@@ -186,16 +178,6 @@ const Header: React.FC<HeaderProps> = ({
                       onPrevious={handleNavigation.previous}
                       variant="grid"
                     />
-
-                    {/* Resource controls - Mobile */}
-                    {showResourceControls && (
-                      <div className="pt-2 border-t">
-                        <h3 className="mb-2 text-sm font-medium">
-                          Resource View
-                        </h3>
-                        <ResourceViewControls />
-                      </div>
-                    )}
 
                     {/* Export button - Mobile */}
                     <div className="pt-2 border-t">

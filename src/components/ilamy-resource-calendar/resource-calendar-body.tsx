@@ -1,35 +1,71 @@
 import React from 'react'
 import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
-import { BaseHeader } from '@/components/header'
-import { ResourceEventForm } from '@/components/event-form/resource-event-form'
+import { Header } from '@/components/header'
 import { ResourceMonthView } from '@/features/resource-calendar/month-view'
 import { ResourceWeekView } from '@/features/resource-calendar/week-view'
 import { ResourceDayView } from '@/features/resource-calendar/day-view'
+import { CalendarDndContext } from '@/features/drag-and-drop/calendar-dnd-context'
+import { AnimatePresence, motion } from 'motion/react'
+import { EventForm } from '../event-form/event-form'
+import type { CalendarEvent } from '../types'
 
 export const ResourceCalendarBody: React.FC = () => {
-  const { view, headerComponent, headerClassName } =
-    useResourceCalendarContext()
+  const {
+    view,
+    isEventFormOpen,
+    closeEventForm,
+    selectedEvent,
+    selectedDate,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+  } = useResourceCalendarContext()
 
-  const renderCurrentView = () => {
-    switch (view) {
-      case 'month':
-        return <ResourceMonthView />
-      case 'week':
-        return <ResourceWeekView />
-      case 'day':
-        return <ResourceDayView />
-      default:
-        return <ResourceMonthView />
-    }
+  const viewMap = {
+    month: <ResourceMonthView key="month" />,
+    week: <ResourceWeekView key="week" />,
+    day: <ResourceDayView key="day" />,
+  }
+
+  const handleOnUpdate = (event: CalendarEvent) => {
+    updateEvent(event.id, event)
+  }
+
+  const handleOnDelete = (event: CalendarEvent) => {
+    deleteEvent(event.id)
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {headerComponent || (
-        <BaseHeader className={headerClassName} showResourceControls={true} />
+    <div className="flex flex-col w-full h-full">
+      <Header className="p-1" />
+
+      {/* Calendar Body with AnimatePresence for view transitions */}
+      <CalendarDndContext>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={view}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.1, ease: 'easeInOut' }}
+            className="w-full h-[calc(100%-3.5rem)]"
+          >
+            {viewMap[view]}
+          </motion.div>
+        </AnimatePresence>
+      </CalendarDndContext>
+
+      {/* Event Form Dialog */}
+      {isEventFormOpen && (
+        <EventForm
+          onClose={closeEventForm}
+          selectedEvent={selectedEvent}
+          selectedDate={selectedDate}
+          onAdd={addEvent}
+          onUpdate={handleOnUpdate}
+          onDelete={handleOnDelete}
+        />
       )}
-      <div className="flex-1 min-h-0">{renderCurrentView()}</div>
-      <ResourceEventForm />
     </div>
   )
 }

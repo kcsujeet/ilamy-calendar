@@ -25,7 +25,6 @@ export type { UseIlamyResourceCalendarContextReturn } from './contexts/ilamy-res
 export type {
   Resource,
   ResourceCalendarEvent,
-  ResourceView,
 } from './components/ilamy-resource-calendar/types'
 // Re-export rrule.js types for convenience
 export type { Frequency, Weekday } from 'rrule'

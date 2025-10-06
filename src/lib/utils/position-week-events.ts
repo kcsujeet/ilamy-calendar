@@ -174,7 +174,11 @@ export const getPositionedEvents = ({
   // Step 2: Fill gaps with single-day events
   for (const event of sortedSingleDay) {
     const eventStart = dayjs.max(event.start.startOf(gridType), firstDay)
-    const col = Math.max(0, eventStart.diff(firstDay, gridType))
+    // Clamp col to valid grid bounds to prevent accessing undefined grid positions
+    const col = Math.max(
+      0,
+      Math.min(dayCount - 1, eventStart.diff(firstDay, gridType))
+    )
 
     // Single-day events are not truncated by definition
     const isTruncatedStart = false

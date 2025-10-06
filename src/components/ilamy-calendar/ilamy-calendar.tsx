@@ -12,7 +12,7 @@ import type { CalendarEvent } from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 // oxlint-disable-next-line no-duplicates
 import '@/lib/dayjs-config'
-import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
+import { DAY_MAX_EVENTS_DEFAULT, WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 import { normalizePublicFacingCalendarEvent } from '@/lib'
 import type { IlamyCalendarProps } from './types'
 
@@ -79,7 +79,6 @@ const CalendarContent: React.FC = () => {
   )
 }
 
-const DEFAULT_DAY_MAX_EVENTS = 4
 export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   events,
   firstDayOfWeek = 'sunday',
@@ -99,7 +98,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   disableCellClick,
   disableEventClick,
   disableDragAndDrop,
-  dayMaxEvents = DEFAULT_DAY_MAX_EVENTS,
+  dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
   stickyViewHeader = true,
   viewHeaderClassName = '',
   headerComponent,

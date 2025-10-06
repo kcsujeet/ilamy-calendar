@@ -4,6 +4,7 @@ import React from 'react'
 import type { IlamyCalendarProps } from '../ilamy-calendar/types'
 import { ResourceCalendarBody } from './resource-calendar-body'
 import type { Resource, ResourceCalendarEvent } from './types'
+import { DAY_MAX_EVENTS_DEFAULT } from '@/lib/constants'
 
 export interface IlamyResourceCalendarProps extends IlamyCalendarProps {
   /** Array of events to display */
@@ -30,7 +31,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   disableCellClick,
   disableEventClick,
   disableDragAndDrop = false,
-  dayMaxEvents = 3,
+  dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
   stickyViewHeader,
   viewHeaderClassName,
   headerComponent,

@@ -3,7 +3,7 @@ import React from 'react'
 import type { IlamyCalendarProps } from '../ilamy-calendar/types'
 import { ResourceCalendarBody } from './resource-calendar-body'
 import type { Resource, ResourceCalendarEvent } from './types'
-import { DAY_MAX_EVENTS_DEFAULT } from '@/lib/constants'
+import { DAY_MAX_EVENTS_DEFAULT, WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 
 export interface IlamyResourceCalendarProps extends IlamyCalendarProps {
   /** Array of events to display */
@@ -38,13 +38,11 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   translations,
   translator,
 }) => {
-  const firstDayOfWeekNumber = firstDayOfWeek === 'monday' ? 1 : 0
-
   return (
     <ResourceCalendarProvider
       events={events}
       resources={resources}
-      firstDayOfWeek={firstDayOfWeekNumber}
+      firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
       initialView={initialView}
       renderEvent={renderEvent}
       onEventClick={onEventClick}

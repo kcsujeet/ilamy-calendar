@@ -22,21 +22,21 @@ describe('IlamyResourceCalendar', () => {
       title: 'Conference Room A',
       color: '#3B82F6',
       backgroundColor: '#EFF6FF',
-      order: 1,
+      position: 1,
     },
     {
       id: 'resource-2',
       title: 'Conference Room B',
       color: '#EF4444',
       backgroundColor: '#FEF2F2',
-      order: 2,
+      position: 2,
     },
     {
       id: 'resource-3',
       title: 'Meeting Room C',
       color: '#10B981',
       backgroundColor: '#ECFDF5',
-      order: 3,
+      position: 3,
     },
   ]
 
@@ -127,15 +127,6 @@ describe('IlamyResourceCalendar', () => {
     expect(screen.getByText('Custom Header')).toBeInTheDocument()
   })
 
-  it('should apply custom className', () => {
-    const { container } = render(
-      <IlamyResourceCalendar className="custom-calendar-class" />
-    )
-
-    const calendarContainer = container.firstChild as HTMLElement
-    expect(calendarContainer).toHaveClass('custom-calendar-class')
-  })
-
   it('should handle event callbacks', async () => {
     const onEventClick = mock()
     const onCellClick = mock()
@@ -144,9 +135,6 @@ describe('IlamyResourceCalendar', () => {
     const onEventDelete = mock()
     const onViewChange = mock()
     const onDateChange = mock()
-    const onResourceAdd = mock()
-    const onResourceUpdate = mock()
-    const onResourceDelete = mock()
 
     render(
       <IlamyResourceCalendar
@@ -159,9 +147,6 @@ describe('IlamyResourceCalendar', () => {
         onEventDelete={onEventDelete}
         onViewChange={onViewChange}
         onDateChange={onDateChange}
-        onResourceAdd={onResourceAdd}
-        onResourceUpdate={onResourceUpdate}
-        onResourceDelete={onResourceDelete}
       />
     )
 

@@ -1,5 +1,4 @@
 import { ResourceCalendarProvider } from '@/contexts/ilamy-resource-calendar-context'
-import { cn } from '@/lib/utils'
 import React from 'react'
 import type { IlamyCalendarProps } from '../ilamy-calendar/types'
 import { ResourceCalendarBody } from './resource-calendar-body'
@@ -42,35 +41,33 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   const firstDayOfWeekNumber = firstDayOfWeek === 'monday' ? 1 : 0
 
   return (
-    <div className={cn('h-full')}>
-      <ResourceCalendarProvider
-        events={events}
-        resources={resources}
-        firstDayOfWeek={firstDayOfWeekNumber}
-        initialView={initialView}
-        renderEvent={renderEvent}
-        onEventClick={onEventClick}
-        onCellClick={onCellClick}
-        onViewChange={onViewChange}
-        onEventAdd={onEventAdd}
-        onEventUpdate={onEventUpdate}
-        onEventDelete={onEventDelete}
-        onDateChange={onDateChange}
-        locale={locale}
-        timezone={timezone}
-        disableCellClick={disableCellClick}
-        disableEventClick={disableEventClick}
-        disableDragAndDrop={disableDragAndDrop}
-        dayMaxEvents={dayMaxEvents}
-        stickyViewHeader={stickyViewHeader}
-        viewHeaderClassName={viewHeaderClassName}
-        headerComponent={headerComponent}
-        headerClassName={headerClassName}
-        translations={translations}
-        translator={translator}
-      >
-        <ResourceCalendarBody />
-      </ResourceCalendarProvider>
-    </div>
+    <ResourceCalendarProvider
+      events={events}
+      resources={resources}
+      firstDayOfWeek={firstDayOfWeekNumber}
+      initialView={initialView}
+      renderEvent={renderEvent}
+      onEventClick={onEventClick}
+      onCellClick={onCellClick}
+      onViewChange={onViewChange}
+      onEventAdd={onEventAdd}
+      onEventUpdate={onEventUpdate}
+      onEventDelete={onEventDelete}
+      onDateChange={onDateChange}
+      locale={locale}
+      timezone={timezone}
+      disableCellClick={disableCellClick}
+      disableEventClick={disableEventClick}
+      disableDragAndDrop={disableDragAndDrop}
+      dayMaxEvents={dayMaxEvents}
+      stickyViewHeader={stickyViewHeader}
+      viewHeaderClassName={viewHeaderClassName}
+      headerComponent={headerComponent}
+      headerClassName={headerClassName}
+      translations={translations}
+      translator={translator}
+    >
+      <ResourceCalendarBody />
+    </ResourceCalendarProvider>
   )
 }

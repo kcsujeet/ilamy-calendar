@@ -2,9 +2,9 @@ import { ScrollArea } from '@/components/ui'
 import dayjs from '@/lib/dayjs-config'
 import weekOfYear from 'dayjs/plugin/weekOfYear'
 import React from 'react'
-import { WeekAllDayRow } from '../week-all-day-row'
-import { WeekHeader } from '../week-header'
-import { WeekTimeGrid } from '../week-time-grid'
+import { WeekAllDayRow } from './week-all-day-row'
+import { WeekHeader } from './week-header'
+import { WeekTimeGrid } from './week-time-grid'
 // Add weekOfYear plugin to dayjs
 dayjs.extend(weekOfYear)
 

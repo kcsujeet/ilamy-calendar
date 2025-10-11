@@ -4,10 +4,10 @@ import { cn } from '@/lib/utils'
 import dayjs from '@/lib/dayjs-config'
 import { Fragment } from 'react'
 import { DroppableCell } from '@/features/droppable-cell/droppable-cell'
-import { DayAllDayRow } from '../day-all-day-row'
-import { DayEventsLayer } from '../day-events-layer'
-import { DayHeader } from '../day-header'
-import { DayTimeCol } from '../day-time-col'
+import { DayAllDayRow } from './day-all-day-row'
+import { DayEventsLayer } from './day-events-layer'
+import { DayHeader } from './day-header'
+import { DayTimeCol } from './day-time-col'
 
 // For more granular time slots, we'll divide each hour into 15-minute segments
 const timeSegments = [0, 15, 30, 45]

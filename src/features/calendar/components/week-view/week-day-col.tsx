@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
 import dayjs from '@/lib/dayjs-config'
 import React from 'react'
-import { DayEventsLayer } from '../day-view/components/day-events-layer'
-import { DroppableCell } from '../droppable-cell/droppable-cell'
+import { DayEventsLayer } from '../day-view/day-events-layer'
+import { DroppableCell } from '../../../droppable-cell/droppable-cell'
 
 const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) =>
   dayjs().hour(hour).minute(0)

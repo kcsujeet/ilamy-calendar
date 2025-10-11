@@ -1,4 +1,4 @@
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import type dayjs from '@/lib/configs/dayjs-config'
 import React, { useMemo } from 'react'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'

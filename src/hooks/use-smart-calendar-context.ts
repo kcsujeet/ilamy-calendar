@@ -1,6 +1,6 @@
 import { useContext } from 'react'
-import { CalendarContext } from '@/contexts/calendar-context/context'
-import { ResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
+import { CalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { ResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 
 /**
  * Generic hook that detects which calendar context is available and returns selected properties

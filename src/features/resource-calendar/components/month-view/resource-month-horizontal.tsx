@@ -1,4 +1,4 @@
-import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
+import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
 import React, { useMemo } from 'react'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'

@@ -1,4 +1,4 @@
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { useMemo } from 'react'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { DroppableCell } from '@/features/calendar/components/droppable-cell/droppable-cell'

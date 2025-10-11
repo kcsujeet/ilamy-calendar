@@ -1,5 +1,5 @@
 import { ScrollArea, ScrollBar } from '@/components/ui'
-import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
+import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { AnimatePresence, motion } from 'motion/react'
 import { ResourceEventsLayer } from './resource-events-layer'

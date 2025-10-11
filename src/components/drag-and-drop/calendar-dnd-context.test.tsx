@@ -5,7 +5,7 @@ import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { RRule } from 'rrule'
 import { CalendarDndContext } from './calendar-dnd-context'
-import { CalendarProvider } from '@/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 
 // Custom render function that wraps components in CalendarProvider
 const renderWithCalendarProvider = (

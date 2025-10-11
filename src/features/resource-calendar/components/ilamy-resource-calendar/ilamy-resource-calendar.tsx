@@ -1,4 +1,4 @@
-import { ResourceCalendarProvider } from '@/contexts/ilamy-resource-calendar-context'
+import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import React from 'react'
 import { ResourceCalendarBody } from './resource-calendar-body'
 import type { IlamyResourceCalendarProps } from '@/features/resource-calendar/types'

@@ -1,4 +1,4 @@
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import dayjs from '@/lib/configs/dayjs-config'
 import React from 'react'
 import { WeekDayCol } from './week-day-col'

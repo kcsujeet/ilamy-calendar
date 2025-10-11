@@ -1,5 +1,5 @@
 import React from 'react'
-import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
+import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type {
   ResourceCalendarEvent,
   Resource,

@@ -1,6 +1,6 @@
 import React from 'react'
 import { EventForm } from './event-form'
-import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
+import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 
 export const ResourceEventForm: React.FC = () => {
   const {

@@ -1,7 +1,7 @@
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import React from 'react'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { DroppableCell } from '@/features/calendar/components/droppable-cell/droppable-cell'
 import { AllEventDialog } from '@/components/all-events-dialog'
 import type { SelectedDayEvents } from './types'

@@ -7,7 +7,7 @@ import { createContext, useContext } from 'react'
 import type {
   CalendarContextType,
   UseIlamyCalendarContextReturn,
-} from '../calendar-context/context'
+} from '@/features/calendar/contexts/calendar-context/context'
 
 export interface ResourceCalendarContextType extends CalendarContextType {
   // Resource-specific state

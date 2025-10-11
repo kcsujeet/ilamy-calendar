@@ -1,5 +1,5 @@
 import React from 'react'
-import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
+import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import { Header } from '@/components/header'
 import { ResourceMonthView } from '@/features/resource-calendar/components/month-view'
 import { ResourceWeekView } from '@/features/resource-calendar/components/week-view'

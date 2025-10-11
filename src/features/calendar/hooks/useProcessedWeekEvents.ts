@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@/components/types'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import {
   DAY_NUMBER_HEIGHT,
   EVENT_BAR_HEIGHT,

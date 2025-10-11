@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@/components/types'
-import { CalendarProvider } from '@/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils'
 import { render, screen } from '@testing-library/react'

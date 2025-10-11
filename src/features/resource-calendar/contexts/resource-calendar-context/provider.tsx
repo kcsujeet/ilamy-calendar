@@ -6,7 +6,7 @@ import type {
 } from '@/features/resource-calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type dayjs from '@/lib/configs/dayjs-config'
-import type { CalendarProviderProps } from '../calendar-context/provider'
+import type { CalendarProviderProps } from '@/features/calendar/contexts/calendar-context/provider'
 
 const getEventResourceIds = (
   event: ResourceCalendarEvent

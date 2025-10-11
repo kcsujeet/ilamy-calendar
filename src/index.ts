@@ -3,7 +3,7 @@ export { IlamyCalendar } from './features/calendar/components/ilamy-calendar'
 export { IlamyResourceCalendar } from './features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 
 // Public calendar context hooks
-export { useIlamyCalendarContext } from './contexts/calendar-context/context'
+export { useIlamyCalendarContext } from './features/calendar/contexts/calendar-context/context'
 export { useIlamyResourceCalendarContext } from './contexts/ilamy-resource-calendar-context/context'
 
 // RRULE-based recurrence system
@@ -18,7 +18,7 @@ export type { CalendarEvent } from './components/types'
 export type { IlamyCalendarProps } from './features/calendar/types'
 export type { IlamyResourceCalendarProps } from './features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 export type { WeekDays } from './components/types'
-export type { UseIlamyCalendarContextReturn } from './contexts/calendar-context/context'
+export type { UseIlamyCalendarContextReturn } from './features/calendar/contexts/calendar-context/context'
 export type { UseIlamyResourceCalendarContextReturn } from './contexts/ilamy-resource-calendar-context/context'
 
 // Resource calendar types

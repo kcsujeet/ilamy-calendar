@@ -3,7 +3,7 @@ import dayjs from '@/lib/dayjs-config'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, mock } from 'bun:test'
 import { IlamyResourceCalendar } from './ilamy-resource-calendar'
-import type { Resource, ResourceCalendarEvent } from './types'
+import type { Resource, ResourceCalendarEvent } from '../../types'
 
 const translator = (key: string) => `Translated: ${key}`
 const customRenderEvent = (event: ResourceCalendarEvent) => (

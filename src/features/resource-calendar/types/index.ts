@@ -1,4 +1,12 @@
 import type { CalendarEvent } from '@/components/types'
+import type { IlamyCalendarProps } from '@/features/calendar/types'
+
+export interface IlamyResourceCalendarProps extends IlamyCalendarProps {
+  /** Array of events to display */
+  events?: ResourceCalendarEvent[]
+  /** Array of resources */
+  resources?: Resource[]
+}
 
 /**
  * Resource interface representing a calendar resource (person, room, equipment, etc.)

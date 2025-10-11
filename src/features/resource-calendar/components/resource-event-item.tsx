@@ -3,7 +3,7 @@ import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-c
 import type {
   ResourceCalendarEvent,
   Resource,
-} from '@/features/resource-calendar/components/ilamy-resource-calendar/types'
+} from '@/features/resource-calendar/types'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 

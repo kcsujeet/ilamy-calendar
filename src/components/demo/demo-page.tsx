@@ -3,7 +3,7 @@ import { IlamyResourceCalendar } from '@/features/resource-calendar/components/i
 import type {
   Resource,
   ResourceCalendarEvent,
-} from '@/features/resource-calendar/components/ilamy-resource-calendar/types'
+} from '@/features/resource-calendar/types'
 import type { CalendarEvent, WeekDays } from '@/components/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type dayjs from '@/lib/dayjs-config'

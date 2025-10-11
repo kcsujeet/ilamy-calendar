@@ -5,7 +5,13 @@ import dayjs from '@/lib/dayjs-config'
 import { cn } from '@/lib/utils'
 
 export const ResourceWeekHorizontal: React.FC = () => {
-  const { currentDate, firstDayOfWeek, t } = useResourceCalendarContext()
+  const {
+    currentDate,
+    firstDayOfWeek,
+    t,
+    stickyViewHeader,
+    viewHeaderClassName,
+  } = useResourceCalendarContext()
 
   // Generate week days
   const weekDays = useMemo(() => {
@@ -26,14 +32,20 @@ export const ResourceWeekHorizontal: React.FC = () => {
   return (
     <div className="flex h-full flex-col">
       <ResourceEventGrid days={weekHours} gridType="hour">
-        <div className="flex h-24">
-          <div className="w-40 border-b border-r flex-shrink-0 flex justify-center items-center">
+        <div
+          className={cn(
+            'flex h-24 w-fit',
+            stickyViewHeader && 'sticky top-0 z-21 bg-background', // Z-index above the left sticky resource column
+            viewHeaderClassName
+          )}
+        >
+          <div className="w-40 border-b border-r flex-shrink-0 flex justify-center items-center sticky top-0 left-0 bg-background z-20">
             <div className="text-sm">{t('resources')}</div>
           </div>
 
           <div className="flex-1 border-b border-r flex flex-col">
             {/* Day header row */}
-            <div className="flex h-12 border-b sticky top-0 z-20 bg-background">
+            <div className="flex h-12 border-b">
               {weekDays.map((day) => {
                 const isToday = day.isSame(dayjs(), 'day')
 
@@ -41,11 +53,11 @@ export const ResourceWeekHorizontal: React.FC = () => {
                   <div
                     key={day.format('YYYY-MM-DD')}
                     className={cn(
-                      'flex-shrink-0 border-r flex items-center justify-center text-center font-medium w-[calc(24*var(--spacing)*20)]',
+                      'flex-shrink-0 border-r flex items-center text-center font-medium w-[calc(24*var(--spacing)*20)]',
                       isToday && 'bg-blue-50 text-blue-600'
                     )}
                   >
-                    <div>
+                    <div className="sticky left-1/2">
                       <div className="text-sm">{day.format('ddd')}</div>
                       <div className="text-xs text-muted-foreground">
                         {day.format('M/D')}
@@ -57,7 +69,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
             </div>
 
             {/* Time header row */}
-            <div className="flex h-12 border-b sticky top-10 z-10 bg-background">
+            <div className="flex h-12 border-b">
               {weekHours.map((col) => {
                 const isNowHour = col.isSame(dayjs(), 'hour')
 

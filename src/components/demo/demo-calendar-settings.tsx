@@ -204,6 +204,7 @@ export function DemoCalendarSettings({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="auto">Auto</SelectItem>
+              <SelectItem value="300px">Extra Small (300px)</SelectItem>
               <SelectItem value="400px">Small (400px)</SelectItem>
               <SelectItem value="600px">Medium (600px)</SelectItem>
               <SelectItem value="800px">Large (800px)</SelectItem>

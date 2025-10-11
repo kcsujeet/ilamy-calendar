@@ -26,16 +26,10 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
   gridType = 'day',
   children,
 }) => {
-  const { currentDate, getVisibleResources, t, dayMaxEvents } =
+  const { currentDate, getVisibleResources, dayMaxEvents } =
     useResourceCalendarContext()
 
   const visibleResources = getVisibleResources()
-
-  const columns = days.map((day) => ({
-    label: day.format('D'),
-    id: day.format('YYYY-MM-DD'),
-    value: day,
-  }))
 
   const rows = visibleResources.map((resource) => ({
     id: resource.id,
@@ -50,33 +44,15 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 
   return (
     <ScrollArea
-      className="overflow-auto h-full"
+      className="h-full"
       data-testid="month-scroll-area"
       viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
     >
       {/* header row */}
-      {children ?? (
-        <div className="flex h-12">
-          <div className="w-40 border-b border-r flex-shrink-0 flex justify-center items-center">
-            <div className="text-sm">{t('resources')}</div>
-          </div>
-
-          {columns.map((column) => (
-            <div
-              key={column.id}
-              className="w-20 border-b border-r flex-shrink-0 flex items-center justify-center flex-col"
-            >
-              <div className="text-xs font-medium">{column.label}</div>
-              <div className="text-xs text-muted-foreground">
-                {column.value.format('ddd')}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {children}
 
       {/* Calendar area with scroll */}
-      <div className="flex flex-1 h-[calc(100%-3rem)] ">
+      <div className="flex flex-1 h-[calc(100%-3rem)] w-fit">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentDate.format('YYYY-MM')}
@@ -88,7 +64,7 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
           >
             {rows.map((row) => (
               <div key={row.id} className="flex flex-1 relative min-h-[60px] ">
-                <div className="w-40 border-b border-r p-2 flex flex-shrink-0">
+                <div className="w-40 border-b border-r p-2 flex flex-shrink-0 sticky left-0 bg-background z-20">
                   <div className="break-words text-sm">{row.title}</div>
                 </div>
 

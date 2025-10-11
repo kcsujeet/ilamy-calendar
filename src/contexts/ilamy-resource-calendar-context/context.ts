@@ -1,7 +1,7 @@
 import type {
   Resource,
   ResourceCalendarEvent,
-} from '@/components/ilamy-resource-calendar/types'
+} from '@/features/resource-calendar/components/ilamy-resource-calendar/types'
 import type dayjs from '@/lib/dayjs-config'
 import { createContext, useContext } from 'react'
 import type {

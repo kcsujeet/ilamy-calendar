@@ -3,7 +3,7 @@ import { ResourceCalendarContext } from './context'
 import type {
   Resource,
   ResourceCalendarEvent,
-} from '@/components/ilamy-resource-calendar/types'
+} from '@/features/resource-calendar/components/ilamy-resource-calendar/types'
 import { useCalendarEngine } from '@/lib/calendar-engine/use-calendar-engine'
 import type dayjs from '@/lib/dayjs-config'
 import type { CalendarProviderProps } from '../calendar-context/provider'

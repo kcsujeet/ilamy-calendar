@@ -1,13 +1,13 @@
 import React from 'react'
 import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
 import { Header } from '@/components/header'
-import { ResourceMonthView } from '@/features/resource-calendar/month-view'
-import { ResourceWeekView } from '@/features/resource-calendar/week-view'
-import { ResourceDayView } from '@/features/resource-calendar/day-view'
+import { ResourceMonthView } from '@/features/resource-calendar/components/month-view'
+import { ResourceWeekView } from '@/features/resource-calendar/components/week-view'
+import { ResourceDayView } from '@/features/resource-calendar/components/day-view'
 import { CalendarDndContext } from '@/features/drag-and-drop/calendar-dnd-context'
 import { AnimatePresence, motion } from 'motion/react'
-import { EventForm } from '../../../../components/event-form/event-form'
-import type { CalendarEvent } from '../../../../components/types'
+import { EventForm } from '@/components/event-form/event-form'
+import type { CalendarEvent } from '@/components/types'
 
 export const ResourceCalendarBody: React.FC = () => {
   const {

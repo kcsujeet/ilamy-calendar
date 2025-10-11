@@ -1,9 +1,9 @@
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
-import { IlamyResourceCalendar } from '@/components/ilamy-resource-calendar/ilamy-resource-calendar'
+import { IlamyResourceCalendar } from '@/features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 import type {
   Resource,
   ResourceCalendarEvent,
-} from '@/components/ilamy-resource-calendar/types'
+} from '@/features/resource-calendar/components/ilamy-resource-calendar/types'
 import type { CalendarEvent, WeekDays } from '@/components/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type dayjs from '@/lib/dayjs-config'

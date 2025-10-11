@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import { RRule } from 'rrule'
 import { EventForm } from './event-form'
 import type { CalendarEvent } from '@/components/types'

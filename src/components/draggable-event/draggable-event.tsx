@@ -4,7 +4,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { AnimatePresence, motion } from 'motion/react'
 import type { CSSProperties } from 'react'
 import { memo } from 'react'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 const getBorderRadiusClass = (
   isTruncatedStart: boolean,

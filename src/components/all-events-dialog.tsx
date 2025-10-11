@@ -6,9 +6,9 @@ import {
   DialogTitle,
 } from '@/components/ui'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import React, { useImperativeHandle, useState } from 'react'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 export interface SelectedDayEvents {
   day: dayjs.Dayjs
   events: CalendarEvent[]

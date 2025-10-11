@@ -1,7 +1,7 @@
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 
 interface DayHeaderProps {
   className?: string

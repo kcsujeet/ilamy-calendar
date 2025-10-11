@@ -1,4 +1,4 @@
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import {
@@ -9,7 +9,7 @@ import {
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { defaultTranslations } from '@/lib/translations/default'
-import { DAY_MAX_EVENTS_DEFAULT } from '../constants'
+import { DAY_MAX_EVENTS_DEFAULT } from '../lib/constants'
 
 export interface CalendarEngineConfig {
   events: CalendarEvent[]

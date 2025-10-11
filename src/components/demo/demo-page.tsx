@@ -6,7 +6,7 @@ import type {
 } from '@/features/resource-calendar/types'
 import type { CalendarEvent, WeekDays } from '@/components/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import dummyEvents from '@/lib/seed'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'

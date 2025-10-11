@@ -5,7 +5,7 @@ import {
   EVENT_BAR_HEIGHT,
   GAP_BETWEEN_ELEMENTS,
 } from '@/lib/constants'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 
 interface PositionedEvent extends CalendarEvent {
   left: number // Left position in percentage

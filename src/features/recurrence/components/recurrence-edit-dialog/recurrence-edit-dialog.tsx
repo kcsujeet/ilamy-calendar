@@ -8,7 +8,7 @@ import {
   Button,
 } from '@/components/ui'
 import type { RecurrenceEditScope } from '@/features/recurrence/types'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 interface RecurrenceEditDialogProps {
   isOpen: boolean

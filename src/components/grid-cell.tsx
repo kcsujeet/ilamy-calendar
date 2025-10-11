@@ -1,11 +1,11 @@
 import type { CalendarEvent } from '@/components/types'
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import React, { useMemo } from 'react'
 import { AllEventDialog } from './all-events-dialog'
 import type { SelectedDayEvents } from './all-events-dialog'
 import { DroppableCell } from './droppable-cell'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 interface GridProps {
   index: number // Index of the day in the week (0-6)

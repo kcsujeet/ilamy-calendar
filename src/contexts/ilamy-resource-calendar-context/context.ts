@@ -2,7 +2,7 @@ import type {
   Resource,
   ResourceCalendarEvent,
 } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import { createContext, useContext } from 'react'
 import type {
   CalendarContextType,

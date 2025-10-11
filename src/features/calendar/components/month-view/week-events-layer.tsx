@@ -1,7 +1,7 @@
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWeekEvents'
 import { EVENT_BAR_HEIGHT } from '@/lib/constants'
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 
 interface WeekEventsLayerProps {
   days: dayjs.Dayjs[]

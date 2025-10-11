@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import type { CalendarEvent } from '@/components/types'
 import { RRule } from 'rrule'
 import { exportToICalendar } from './export-ical'

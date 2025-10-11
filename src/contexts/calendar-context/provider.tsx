@@ -1,10 +1,10 @@
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import React, { useCallback, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { CalendarContext } from './context'
 import type { CalendarEvent } from '@/components/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
-import { useCalendarEngine } from '@/lib/calendar-engine/use-calendar-engine'
+import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 
 export interface CalendarProviderProps {
   children: ReactNode

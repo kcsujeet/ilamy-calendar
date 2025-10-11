@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@/components'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import { RRule } from 'rrule'
 import { omitKeys, safeDate } from '@/lib/utils'
 import type { RRuleOptions } from '@/features/recurrence/types'

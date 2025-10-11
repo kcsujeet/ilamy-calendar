@@ -1,4 +1,4 @@
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import React, { useEffect, useState } from 'react'
 
 import {
@@ -25,7 +25,7 @@ import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler
 import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-editor/recurrence-editor'
 import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
 import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 const colorOptions = [
   { value: 'bg-blue-100 text-blue-800', label: 'Blue' },

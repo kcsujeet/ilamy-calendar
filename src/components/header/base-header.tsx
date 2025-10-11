@@ -4,12 +4,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui'
-import { downloadICalendar } from '@/lib/export-ical'
+import { downloadICalendar } from '@/lib/utils/export-ical'
 import { Calendar as CalendarIcon, Download, Menu, Plus } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import TitleContent from './title-content'
 import ViewControls from './view-controls'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib'
 
 interface HeaderProps {

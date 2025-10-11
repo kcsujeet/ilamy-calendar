@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/contexts/calendar-context/provider'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils'
 import { cleanup, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, test } from 'bun:test'

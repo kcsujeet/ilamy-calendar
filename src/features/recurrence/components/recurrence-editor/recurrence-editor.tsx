@@ -13,12 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import type { RRuleOptions } from '@/lib/recurrence-handler/types'
 import { useState, useEffect, useMemo } from 'react'
 import { RRule } from 'rrule'
 import type { Weekday } from 'rrule'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 // Natural language description function using RRule's built-in helper methods
 function getRRuleDescription(

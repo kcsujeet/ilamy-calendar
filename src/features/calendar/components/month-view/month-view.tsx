@@ -1,4 +1,4 @@
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import { AnimatePresence, motion } from 'motion/react'
 import React, { useMemo } from 'react'
 import { useCalendarContext } from '@/contexts/calendar-context/context'

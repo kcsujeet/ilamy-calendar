@@ -3,7 +3,7 @@ import { describe, expect, it, mock } from 'bun:test'
 import Header from './base-header'
 import { CalendarProvider } from '@/contexts/calendar-context/provider'
 import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 
 // Custom render function that wraps Header in CalendarProvider
 const renderHeader = (events: CalendarEvent[] = [], providerProps = {}) => {
@@ -74,7 +74,7 @@ describe('Header with Export Button', () => {
   })
 
   it('should call downloadICalendar when export button is clicked', async () => {
-    const { downloadICalendar } = await import('@/lib/export-ical')
+    const { downloadICalendar } = await import('@/lib/utils/export-ical')
     const mockDownload = downloadICalendar as unknown as ReturnType<typeof mock>
 
     renderHeader(testEvents)

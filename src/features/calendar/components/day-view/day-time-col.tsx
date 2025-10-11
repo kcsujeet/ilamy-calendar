@@ -1,5 +1,5 @@
 import { useCalendarContext } from '@/contexts/calendar-context/context'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 
 // Hours to display (all 24 hours of the day)
 const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {

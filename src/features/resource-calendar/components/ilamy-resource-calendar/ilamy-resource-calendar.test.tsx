@@ -1,5 +1,5 @@
 // No mocking - test the real CalendarDndContext
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, mock } from 'bun:test'
 import { IlamyResourceCalendar } from './ilamy-resource-calendar'

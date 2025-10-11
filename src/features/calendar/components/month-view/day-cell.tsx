@@ -1,4 +1,4 @@
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import React from 'react'
 import { useCalendarContext } from '@/contexts/calendar-context/context'

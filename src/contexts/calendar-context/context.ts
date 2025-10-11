@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@/components/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import type { TranslationKey } from '@/lib/translations/types'
 import { createContext, useContext } from 'react'
 

@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import { RRule } from 'rrule'
 
 /**

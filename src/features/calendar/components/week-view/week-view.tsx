@@ -1,5 +1,5 @@
 import { ScrollArea } from '@/components/ui'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import weekOfYear from 'dayjs/plugin/weekOfYear'
 import React from 'react'
 import { WeekAllDayRow } from './week-all-day-row'

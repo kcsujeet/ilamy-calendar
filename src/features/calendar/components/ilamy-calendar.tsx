@@ -11,7 +11,7 @@ import { CalendarProvider } from '@/contexts/calendar-context/provider'
 import type { CalendarEvent } from '@/components/types'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 // oxlint-disable-next-line no-duplicates
-import '@/lib/dayjs-config'
+import '@/lib/configs/dayjs-config'
 import { DAY_MAX_EVENTS_DEFAULT, WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 import { normalizePublicFacingCalendarEvent } from '@/lib'
 import type { IlamyCalendarProps } from '@/features/calendar/types'

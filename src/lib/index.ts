@@ -1,3 +1,3 @@
 export * from './utils'
-export * from './export-ical'
-export { default as dayjs } from './dayjs-config'
+export * from './utils/export-ical'
+export { default as dayjs } from './configs/dayjs-config'

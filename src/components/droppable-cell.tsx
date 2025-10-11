@@ -1,9 +1,9 @@
 // oxlint-disable no-negated-condition
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { useDroppable } from '@dnd-kit/core'
 import React from 'react'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 interface DroppableCellProps {
   id: string

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import React from 'react'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 interface ViewControlsProps {
   currentView: 'day' | 'week' | 'month' | 'year'

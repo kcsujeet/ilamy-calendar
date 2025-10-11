@@ -7,9 +7,9 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import React, { useState } from 'react'
 import type {
   DragCancelEvent,

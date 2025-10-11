@@ -1,7 +1,7 @@
 import type { CalendarEvent } from '@/components'
 import type { ClassValue } from 'clsx'
 import { clsx } from 'clsx'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import { twMerge } from 'tailwind-merge'
 import type { IlamyCalendarPropEvent } from '@/features/calendar/types'
 

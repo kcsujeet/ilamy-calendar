@@ -1,5 +1,5 @@
 import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import { getPositionedEvents } from '@/lib/utils/position-week-events'
 
 interface UseProcessedResourceWeekEventsProps {

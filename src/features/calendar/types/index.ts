@@ -1,6 +1,6 @@
 import type { CalendarEvent, WeekDays } from '@/components/types'
 import React from 'react'
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 
 /**

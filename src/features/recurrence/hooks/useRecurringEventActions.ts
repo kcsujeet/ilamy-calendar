@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import type { CalendarEvent } from '@/components/types'
-import { useSmartCalendarContext } from '@/lib/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { RecurrenceEditScope } from '@/features/recurrence/types'
 
 export function useRecurringEventActions(onComplete?: () => void) {

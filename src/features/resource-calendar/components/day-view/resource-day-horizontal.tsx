@@ -1,7 +1,7 @@
 import { useResourceCalendarContext } from '@/contexts/ilamy-resource-calendar-context'
 import React, { useMemo } from 'react'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
 export const ResourceDayHorizontal: React.FC = () => {

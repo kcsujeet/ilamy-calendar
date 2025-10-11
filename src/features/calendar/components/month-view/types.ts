@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@/components'
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 
 // Interface for the selected day events state
 export interface SelectedDayEvents {

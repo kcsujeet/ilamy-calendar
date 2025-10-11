@@ -1,6 +1,6 @@
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
-import type dayjs from '@/lib/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
 interface DayEventsLayerProps {

@@ -4,7 +4,7 @@ import React from 'react'
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { DroppableCell } from '@/features/calendar/components/droppable-cell/droppable-cell'
 import { AllEventDialog } from '@/components/all-events-dialog'
-import type { SelectedDayEvents } from '../types'
+import type { SelectedDayEvents } from './types'
 import type { CalendarEvent } from '@/components/types'
 
 interface DayCellProps {

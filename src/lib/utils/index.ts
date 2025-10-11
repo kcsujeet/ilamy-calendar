@@ -3,7 +3,7 @@ import type { ClassValue } from 'clsx'
 import { clsx } from 'clsx'
 import dayjs from '@/lib/dayjs-config'
 import { twMerge } from 'tailwind-merge'
-import type { IlamyCalendarPropEvent } from '@/components/ilamy-calendar/types'
+import type { IlamyCalendarPropEvent } from '@/features/calendar/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

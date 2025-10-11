@@ -1,5 +1,5 @@
 // Main calendar components
-export { IlamyCalendar } from './components/ilamy-calendar/ilamy-calendar'
+export { IlamyCalendar } from './features/calendar/components/ilamy-calendar'
 export { IlamyResourceCalendar } from './components/ilamy-resource-calendar/ilamy-resource-calendar'
 
 // Public calendar context hooks
@@ -15,7 +15,7 @@ export {
 // Export types
 export type { RRuleOptions } from './lib/recurrence-handler/types'
 export type { CalendarEvent } from './components/types'
-export type { IlamyCalendarProps } from './components/ilamy-calendar/types'
+export type { IlamyCalendarProps } from './features/calendar/types'
 export type { IlamyResourceCalendarProps } from './components/ilamy-resource-calendar/ilamy-resource-calendar'
 export type { WeekDays } from './components/types'
 export type { UseIlamyCalendarContextReturn } from './contexts/calendar-context/context'

@@ -1,6 +1,6 @@
 import { ResourceCalendarProvider } from '@/contexts/ilamy-resource-calendar-context'
 import React from 'react'
-import type { IlamyCalendarProps } from '../ilamy-calendar/types'
+import type { IlamyCalendarProps } from '@/features/calendar/types'
 import { ResourceCalendarBody } from './resource-calendar-body'
 import type { Resource, ResourceCalendarEvent } from './types'
 import { DAY_MAX_EVENTS_DEFAULT, WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'

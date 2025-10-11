@@ -1,4 +1,4 @@
-import { IlamyCalendar } from '@/components/ilamy-calendar/ilamy-calendar'
+import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
 import { IlamyResourceCalendar } from '@/components/ilamy-resource-calendar/ilamy-resource-calendar'
 import type {
   Resource,

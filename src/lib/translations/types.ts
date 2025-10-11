@@ -77,8 +77,6 @@ export interface Translations {
   // Resource calendar
   resources: string
   resource: string
-  vertical: string
-  horizontal: string
   time: string
   date: string
   noResourcesVisible: string

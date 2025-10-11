@@ -81,8 +81,6 @@ export const defaultTranslations: Translations = {
   // Resource calendar
   resources: 'Resources',
   resource: 'Resource',
-  vertical: 'Vertical',
-  horizontal: 'Horizontal',
   time: 'Time',
   date: 'Date',
   noResourcesVisible: 'No resources visible',

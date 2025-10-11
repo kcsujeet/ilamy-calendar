@@ -18,22 +18,17 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 
   // Reorder week days based on firstDayOfWeek
   const weekDays = useMemo(() => {
-    const days = dayjs.weekdays().map((day) => day.toLowerCase())
-    const shortDays = dayjs.weekdaysShort().map((day) => day.toLowerCase())
+    const days = dayjs.weekdaysShort().map((day) => day.toLowerCase())
 
     // Rotate the array based on firstDayOfWeek
     for (let i = 0; i < firstDayOfWeek; i++) {
       const dayToMove = days.shift()
-      const shortDayToMove = shortDays.shift()
       if (dayToMove) {
         days.push(dayToMove)
       }
-      if (shortDayToMove) {
-        shortDays.push(shortDayToMove)
-      }
     }
 
-    return { days, shortDays }
+    return { days }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstDayOfWeek, currentLocale])
 
@@ -62,12 +57,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
             className="py-2 text-center font-medium border-r first:border-l"
             data-testid={`weekday-header-${weekDay}`}
           >
-            <span className="hidden text-sm sm:inline capitalize">
-              {weekDay}
-            </span>
-            <span className="text-xs sm:hidden capitalize">
-              {weekDays.shortDays[index]}
-            </span>
+            <span className="text-sm capitalize">{weekDay}</span>
           </motion.div>
         </AnimatePresence>
       ))}

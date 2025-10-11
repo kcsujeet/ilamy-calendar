@@ -6,15 +6,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { MonthView } from './month-view'
 
-const weekDays: string[] = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-]
+const weekDays: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 // Mock events for testing
 const mockEvents: CalendarEvent[] = generateMockEvents()
@@ -82,7 +74,7 @@ describe('MonthView', () => {
     // first day of week should be Monday
     expect(monthHeader.firstChild).toHaveAttribute(
       'data-testid',
-      'weekday-header-monday'
+      'weekday-header-mon'
     )
   })
 

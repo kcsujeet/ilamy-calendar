@@ -91,8 +91,8 @@
     "clsx": "^2.1.1",
     "dayjs": "^1.11.18",
     "lucide-react": "^0.475.0",
-    "motion": "^12.23.22",
-    "react-day-picker": "^9.11.0",
+    "motion": "^12.23.24",
+    "react-day-picker": "^9.11.1",
     "rrule": "^2.8.1",
     "tailwind-merge": "^3.3.1"
   },
@@ -102,13 +102,13 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/bun": "latest",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
     "@types/rrule": "^2.2.9",
     "auto-changelog": "^2.5.0",
     "bunup": "^0.8.72",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.3",
+    "lint-staged": "^16.2.4",
     "prettier": "3.6.2"
   },
   "publishConfig": {

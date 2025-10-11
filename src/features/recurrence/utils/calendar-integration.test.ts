@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'bun:test'
 import dayjs from '@/lib/dayjs-config'
 import { RRule } from 'rrule'
-import { generateRecurringEvents } from './index'
+import { generateRecurringEvents } from './recurrence-handler'
 import type { CalendarEvent } from '@/components/types'
-import type { RRuleOptions } from './types'
+import type { RRuleOptions } from '@/features/recurrence/types'
 
 describe('generateRecurringEvents - Calendar Provider Integration', () => {
   const baseEvent: CalendarEvent = {

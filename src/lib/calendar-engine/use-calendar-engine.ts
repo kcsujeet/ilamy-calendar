@@ -5,7 +5,7 @@ import {
   generateRecurringEvents,
   updateRecurringEvent as updateRecurringEventImpl,
   deleteRecurringEvent as deleteRecurringEventImpl,
-} from '@/lib/recurrence-handler'
+} from '@/features/recurrence/utils/recurrence-handler'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { defaultTranslations } from '@/lib/translations/default'

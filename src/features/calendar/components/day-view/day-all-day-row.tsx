@@ -1,6 +1,6 @@
 import { useCalendarContext } from '@/contexts/calendar-context/context'
 import { useMemo } from 'react'
-import { DraggableEvent } from '@/features/draggable-event/draggable-event'
+import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { DroppableCell } from '@/features/calendar/components/droppable-cell/droppable-cell'
 import type { CalendarEvent, ProcessedCalendarEvent } from '@/components/types'
 import { EVENT_BAR_HEIGHT } from '@/lib/constants'

@@ -1,8 +1,8 @@
 import type { CalendarEvent } from '@/components'
 import dayjs from '@/lib/dayjs-config'
 import { RRule } from 'rrule'
-import { omitKeys, safeDate } from '../utils'
-import type { RRuleOptions } from './types'
+import { omitKeys, safeDate } from '@/lib/utils'
+import type { RRuleOptions } from '@/features/recurrence/types'
 
 export const isRecurringEvent = (event: CalendarEvent): boolean => {
   return Boolean(event.rrule || event.recurrenceId || event.uid)

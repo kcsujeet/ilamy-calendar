@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
 import { render, screen } from '@testing-library/react'
-import { isRecurringEvent } from '@/lib/recurrence-handler'
+import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler'
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/dayjs-config'
 import { RRule } from 'rrule'

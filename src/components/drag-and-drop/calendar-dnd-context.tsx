@@ -18,7 +18,7 @@ import type {
 } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import type { CalendarEvent } from '@/components/types'
-import { isRecurringEvent } from '@/lib/recurrence-handler'
+import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler'
 import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
 import type { RecurrenceEditScope } from '@/features/recurrence/types'
 

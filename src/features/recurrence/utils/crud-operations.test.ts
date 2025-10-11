@@ -7,7 +7,7 @@ import {
   updateRecurringEvent,
   deleteRecurringEvent,
   isRecurringEvent,
-} from './index'
+} from './recurrence-handler'
 
 // Test helper to create a base recurring event
 const createBaseRecurringEvent = (

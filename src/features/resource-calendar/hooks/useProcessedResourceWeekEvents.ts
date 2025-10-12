@@ -5,17 +5,15 @@ import { getPositionedEvents } from '@/lib/utils/position-week-events'
 interface UseProcessedResourceWeekEventsProps {
   days: dayjs.Dayjs[]
   gridType?: 'day' | 'hour'
-  maxEventsPerResource?: number
   resourceId: string | number
 }
 
 export const useProcessedResourceWeekEvents = ({
   days,
   gridType = 'day',
-  maxEventsPerResource = 3,
   resourceId,
 }: UseProcessedResourceWeekEventsProps) => {
-  const { getEventsForResource, getEventsForDateRange } =
+  const { getEventsForResource, getEventsForDateRange, dayMaxEvents } =
     useResourceCalendarContext()
 
   const startDate = days[0].startOf('day')
@@ -28,7 +26,7 @@ export const useProcessedResourceWeekEvents = ({
     events: resourceEvents.filter((event) =>
       visibleEvents.some((e) => e.id === event.id)
     ),
-    dayMaxEvents: maxEventsPerResource,
+    dayMaxEvents,
     dayNumberHeight: 0,
     gridType,
   })

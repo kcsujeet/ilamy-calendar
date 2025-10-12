@@ -30,10 +30,14 @@ export function DroppableCell({
   style,
   'data-testid': dataTestId,
 }: DroppableCellProps) {
-  const { onCellClick } = useSmartCalendarContext((state) => ({
-    onCellClick: state.onCellClick,
-  }))
-  const { setNodeRef } = useDroppable({
+  const { onCellClick, disableDragAndDrop, disableCellClick } =
+    useSmartCalendarContext((state) => ({
+      onCellClick: state.onCellClick,
+      disableDragAndDrop: state.disableDragAndDrop,
+      disableCellClick: state.disableCellClick,
+    }))
+
+  const { isOver, setNodeRef } = useDroppable({
     id,
     data: {
       type,
@@ -46,6 +50,10 @@ export function DroppableCell({
 
   const handleCellClick = (e: React.MouseEvent) => {
     e.stopPropagation()
+
+    if (disableCellClick) {
+      return
+    }
 
     const startDate = date.hour(hour ?? 0).minute(minute ?? 0)
     let endDate = startDate.clone()
@@ -65,7 +73,11 @@ export function DroppableCell({
     <div
       ref={setNodeRef}
       data-testid={dataTestId}
-      className={cn(className)}
+      className={cn(
+        className,
+        isOver && !disableDragAndDrop && 'bg-accent',
+        disableCellClick ? 'cursor-default' : 'cursor-pointer'
+      )}
       onClick={handleCellClick}
       style={style}
     >

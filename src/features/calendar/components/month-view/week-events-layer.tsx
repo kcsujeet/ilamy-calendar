@@ -14,11 +14,11 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
   return (
     <div className="relative w-full h-full pointer-events-none z-10 overflow-clip">
       {processedWeekEvents.map((event) => {
+        const eventKey = `${event.id}-${event.position}-${weekStart.toISOString()}`
+
         return (
           <div
-            key={`event-${event.id}-${event.position}-${weekStart.format(
-              'YYYY-MM-DD'
-            )}`}
+            key={`${eventKey}-wrapper`}
             className="absolute z-10 pointer-events-auto overflow-clip"
             style={{
               left: `calc(${event.left}% + var(--spacing) * 0.25)`,
@@ -29,9 +29,7 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
             data-testid={`week-event-layer-event-${event.id}`}
           >
             <DraggableEvent
-              elementId={`event-${event.id}-${
-                event.position
-              }-${weekStart.format('YYYY-MM-DD')}`}
+              elementId={eventKey}
               event={event}
               className="h-full w-full shadow"
             />

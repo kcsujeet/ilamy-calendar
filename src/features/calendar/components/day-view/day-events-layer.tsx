@@ -20,13 +20,12 @@ export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({
       className="pointer-events-none absolute inset-0 z-10"
     >
       {todayEvents.map((event, index) => {
-        const veryVeryUniqueKey = `event-${event.id}-${index}-${day.format(
-          'YYYY-MM-DD'
-        )}`
+        const eventKey = `event-${event.id}-${index}-${day.toISOString()}`
         const isShortEvent = event.end.diff(event.start, 'minute') <= 15
+
         return (
           <div
-            key={`container-${veryVeryUniqueKey}`}
+            key={`${eventKey}-wrapper`}
             className="absolute"
             style={{
               left: `${event.left}%`,
@@ -36,7 +35,7 @@ export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({
             }}
           >
             <DraggableEvent
-              elementId={`draggable-${veryVeryUniqueKey}`}
+              elementId={eventKey}
               event={event}
               className={cn('pointer-events-auto absolute', {
                 '[&_p]:text-[10px] [&_p]:mt-0': isShortEvent,

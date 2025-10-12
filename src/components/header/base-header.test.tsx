@@ -19,9 +19,10 @@ const renderHeader = (events: CalendarEvent[] = [], providerProps = {}) => {
   )
 }
 
-// Mock the export function
-mock.module('@/lib/export-ical', () => ({
-  downloadICalendar: mock(),
+const mockDownloadICalendar = mock()
+
+mock.module('@/lib/utils/export-ical', () => ({
+  downloadICalendar: mockDownloadICalendar,
 }))
 
 describe('Header with Export Button', () => {
@@ -73,16 +74,13 @@ describe('Header with Export Button', () => {
     expect(mobileExportButton).toHaveTextContent('Export Calendar (.ics)')
   })
 
-  it('should call downloadICalendar when export button is clicked', async () => {
-    const { downloadICalendar } = await import('@/lib/utils/export-ical')
-    const mockDownload = downloadICalendar as unknown as ReturnType<typeof mock>
-
+  it('should call downloadICalendar when export button is clicked', () => {
     renderHeader(testEvents)
 
     const exportButton = screen.getByRole('button', { name: /export/i })
     fireEvent.click(exportButton)
 
-    expect(mockDownload).toHaveBeenCalledWith(
+    expect(mockDownloadICalendar).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
           id: 'test-1',

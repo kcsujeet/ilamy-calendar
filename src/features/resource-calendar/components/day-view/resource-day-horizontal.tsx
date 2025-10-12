@@ -3,6 +3,7 @@ import React, { useMemo } from 'react'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { AnimatePresence, motion } from 'motion/react'
 
 export const ResourceDayHorizontal: React.FC = () => {
   const { currentDate, t, stickyViewHeader, viewHeaderClassName } =
@@ -32,19 +33,30 @@ export const ResourceDayHorizontal: React.FC = () => {
           <div className="flex-1 border-b border-r flex flex-col">
             {/* Time header row */}
             <div className="flex h-12 border-b">
-              {dayHours.map((col) => {
+              {dayHours.map((col, index) => {
                 const isNowHour = col.isSame(dayjs(), 'hour')
+                const key = `resource-day-header-${col.toISOString()}`
 
                 return (
-                  <div
-                    key={col.format('YYYY-MM-DD-HH')}
-                    className={cn(
-                      'w-20 border-r flex items-center justify-center text-xs flex-shrink-0',
-                      isNowHour && 'bg-blue-50 text-blue-600 font-medium'
-                    )}
-                  >
-                    {col.format('ha')}
-                  </div>
+                  <AnimatePresence key={`${key}-presence`} mode="wait">
+                    <motion.div
+                      key={`${key}-motion`}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{
+                        duration: 0.25,
+                        ease: 'easeInOut',
+                        delay: index * 0.05,
+                      }}
+                      className={cn(
+                        'w-20 border-r flex items-center justify-center text-xs flex-shrink-0',
+                        isNowHour && 'bg-blue-50 text-blue-600 font-medium'
+                      )}
+                    >
+                      {col.format('ha')}
+                    </motion.div>
+                  </AnimatePresence>
                 )
               })}
             </div>

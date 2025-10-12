@@ -26,7 +26,7 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
   gridType = 'day',
   children,
 }) => {
-  const { currentDate, getVisibleResources, dayMaxEvents } =
+  const { currentDate, getVisibleResources, dayMaxEvents, renderResource } =
     useResourceCalendarContext()
 
   const visibleResources = getVisibleResources()
@@ -65,7 +65,11 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
             {rows.map((row) => (
               <div key={row.id} className="flex flex-1 relative min-h-[60px] ">
                 <div className="w-40 border-b border-r p-2 flex flex-shrink-0 sticky left-0 bg-background z-20">
-                  <div className="break-words text-sm">{row.title}</div>
+                  {renderResource ? (
+                    renderResource(row.resource)
+                  ) : (
+                    <div className="break-words text-sm">{row.title}</div>
+                  )}
                 </div>
 
                 <div className="relative flex-1 flex">

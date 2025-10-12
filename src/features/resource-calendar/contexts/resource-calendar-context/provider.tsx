@@ -28,6 +28,7 @@ interface ResourceCalendarProviderProps extends CalendarProviderProps {
     endDate: dayjs.Dayjs,
     resourceId?: string | number
   ) => void
+  renderResource?: (resource: Resource) => React.ReactNode
 }
 
 export const ResourceCalendarProvider: React.FC<

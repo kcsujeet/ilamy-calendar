@@ -107,6 +107,11 @@ export interface IlamyCalendarProps {
    * Useful for read-only views or when drag-and-drop is not needed.
    */
   disableDragAndDrop?: boolean
+  /**
+   * Maximum number of events to display per day in month view.
+   * Additional events will be hidden and can be viewed via a "more" link.
+   * Defaults to 3 if not specified.
+   */
   dayMaxEvents?: number
   /**
    * Whether to stick the view header to the top of the calendar.

@@ -6,6 +6,8 @@ export interface IlamyResourceCalendarProps extends IlamyCalendarProps {
   events?: ResourceCalendarEvent[]
   /** Array of resources */
   resources?: Resource[]
+  /** Custom render function for resources */
+  renderResource?: (resource: Resource) => React.ReactNode
 }
 
 /**

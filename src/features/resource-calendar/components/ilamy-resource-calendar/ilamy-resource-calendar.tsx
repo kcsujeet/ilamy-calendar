@@ -29,6 +29,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   headerClassName,
   translations,
   translator,
+  renderResource,
 }) => {
   return (
     <ResourceCalendarProvider
@@ -37,6 +38,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
       firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
       initialView={initialView}
       renderEvent={renderEvent}
+      renderResource={renderResource}
       onEventClick={onEventClick}
       onCellClick={onCellClick}
       onViewChange={onViewChange}

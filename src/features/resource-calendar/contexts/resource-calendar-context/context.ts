@@ -33,8 +33,7 @@ export interface ResourceCalendarContextType extends CalendarContextType {
     endDate: dayjs.Dayjs,
     resourceId?: string | number
   ) => void
-  headerComponent?: React.ReactNode
-  headerClassName?: string
+  renderResource?: (resource: Resource) => React.ReactNode
 }
 
 export const ResourceCalendarContext: React.Context<

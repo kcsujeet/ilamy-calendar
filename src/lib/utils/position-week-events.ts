@@ -12,6 +12,8 @@ interface PositionedEvent extends CalendarEvent {
   top: number // Top position in percentage
   height: number // Height in percentage
   position: number // Position in the row (0 for first, 1 for second, etc.)
+  isTruncatedStart: boolean // Whether the event is truncated at the start
+  isTruncatedEnd: boolean // Whether the event is truncated at the end
 }
 
 interface GetPositionedEventsProps {

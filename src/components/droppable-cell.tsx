@@ -46,6 +46,7 @@ export function DroppableCell({
       minute,
       resourceId,
     },
+    disabled: disableDragAndDrop,
   })
 
   const handleCellClick = (e: React.MouseEvent) => {

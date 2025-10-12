@@ -4,6 +4,7 @@ import type dayjs from '@/lib/configs/dayjs-config'
 import { AnimatePresence, motion } from 'motion/react'
 import { ResourceEventsLayer } from './resource-events-layer'
 import { GridCell } from '@/components/grid-cell'
+import { cn } from '@/lib'
 
 interface ResourceEventGridProps {
   /**
@@ -64,7 +65,17 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
           >
             {rows.map((row) => (
               <div key={row.id} className="flex flex-1 relative min-h-[60px] ">
-                <div className="w-40 border-b border-r p-2 flex flex-shrink-0 sticky left-0 bg-background z-20">
+                <div
+                  className={cn(
+                    'w-40 border-b border-r p-2 flex flex-shrink-0 sticky left-0 z-20',
+                    row.resource.color || '',
+                    row.resource.backgroundColor || 'bg-background'
+                  )}
+                  style={{
+                    color: row.resource.color,
+                    backgroundColor: row.resource.backgroundColor,
+                  }}
+                >
                   {renderResource ? (
                     renderResource(row.resource)
                   ) : (

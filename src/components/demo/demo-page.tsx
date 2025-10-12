@@ -45,28 +45,28 @@ const demoResources: Resource[] = [
     title: 'Conference Room A',
     color: '#1e40af',
     backgroundColor: '#dbeafe',
-    order: 1,
+    position: 1,
   },
   {
     id: 'room-b',
     title: 'Conference Room B',
     color: '#059669',
     backgroundColor: '#d1fae5',
-    order: 2,
+    position: 2,
   },
   {
     id: 'room-c',
     title: 'Meeting Room C',
     color: '#7c2d12',
     backgroundColor: '#fed7aa',
-    order: 3,
+    position: 3,
   },
   {
     id: 'equipment-1',
     title: 'Projector #1',
     color: '#7c3aed',
     backgroundColor: '#ede9fe',
-    order: 4,
+    position: 4,
   },
 ]
 
@@ -96,18 +96,6 @@ const handleResourceEventClick = (event: ResourceCalendarEvent) => {
     ? event.resourceIds.join(', ')
     : event.resourceId
   alert(`Resource Event clicked: ${event.title} (Resources: ${resources})`)
-}
-
-const handleResourceAdd = (resource: Resource) => {
-  alert(`Resource added: ${resource.title}`)
-}
-
-const handleResourceUpdate = (resource: Resource) => {
-  alert(`Resource updated: ${resource.title}`)
-}
-
-const handleResourceDelete = (resource: Resource) => {
-  alert(`Resource deleted: ${resource.title}`)
 }
 
 export function DemoPage() {
@@ -307,9 +295,6 @@ export function DemoPage() {
                   onEventAdd={handleEventAdd}
                   onEventUpdate={handleEventUpdate}
                   onEventDelete={handleEventDelete}
-                  onResourceAdd={handleResourceAdd}
-                  onResourceUpdate={handleResourceUpdate}
-                  onResourceDelete={handleResourceDelete}
                   onDateChange={handleDateChange}
                   disableCellClick={disableCellClick}
                   disableEventClick={disableEventClick}

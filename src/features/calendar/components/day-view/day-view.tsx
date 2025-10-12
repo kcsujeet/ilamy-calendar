@@ -3,7 +3,7 @@ import { useCalendarContext } from '@/features/calendar/contexts/calendar-contex
 import { cn } from '@/lib/utils'
 import dayjs from '@/lib/configs/dayjs-config'
 import { Fragment } from 'react'
-import { DroppableCell } from '@/features/calendar/components/droppable-cell/droppable-cell'
+import { DroppableCell } from '@/components/droppable-cell'
 import { DayAllDayRow } from './day-all-day-row'
 import { DayEventsLayer } from './day-events-layer'
 import { DayHeader } from './day-header'

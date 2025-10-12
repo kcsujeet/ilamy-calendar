@@ -2,7 +2,7 @@ import { useCalendarContext } from '@/features/calendar/contexts/calendar-contex
 import type dayjs from '@/lib/configs/dayjs-config'
 import React, { useMemo } from 'react'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
-import { DroppableCell } from '@/features/calendar/components/droppable-cell/droppable-cell'
+import { DroppableCell } from '@/components/droppable-cell'
 import type { CalendarEvent, ProcessedCalendarEvent } from '@/components/types'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 

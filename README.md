@@ -7,6 +7,7 @@ A powerful, full-featured React calendar component library built with TypeScript
 ## Features
 
 - 🗓️ **Multiple Views**: Month, Week, Day, and Year views with smooth transitions
+- 📊 **Resource Calendar**: Visualize and manage events across multiple resources with timeline layout
 - 🎯 **Drag & Drop**: Move events between dates and time slots with collision detection
 - 🔄 **RFC 5545 Recurring Events**: Full RRULE support with Google Calendar-style operations
   - **RRULE Patterns**: Daily, Weekly, Monthly, Yearly with complex frequencies

@@ -11,6 +11,7 @@ interface DroppableCellProps {
   date: dayjs.Dayjs
   hour?: number
   minute?: number
+  resourceId?: string | number
   children?: React.ReactNode
   className?: string
   style?: React.CSSProperties
@@ -23,6 +24,7 @@ export function DroppableCell({
   date,
   hour,
   minute,
+  resourceId,
   children,
   className,
   style,
@@ -38,6 +40,7 @@ export function DroppableCell({
       date,
       hour,
       minute,
+      resourceId,
     },
   })
 

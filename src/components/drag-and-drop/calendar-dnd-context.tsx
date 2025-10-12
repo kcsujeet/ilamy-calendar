@@ -136,7 +136,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
     }
 
     if (over.data.current?.type === 'time-cell') {
-      const { date, hour = 0, minute = 0 } = over.data.current
+      const { date, hour = 0, minute = 0, resourceId } = over.data.current
 
       // Calculate the event duration in minutes
       const start = activeEvent.start
@@ -155,13 +155,20 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
         newEnd = newEnd.subtract(1, 'day').endOf('day')
       }
 
-      // Update the event with new times
-      performEventUpdate(activeEvent, {
-        start: newStart,
-        end: newEnd,
-      })
+      // Update the event with new times and resource if changed
+      const updates: Partial<CalendarEvent> & { resourceId?: string | number } =
+        {
+          start: newStart,
+          end: newEnd,
+        }
+
+      if (resourceId !== undefined) {
+        updates.resourceId = resourceId
+      }
+
+      performEventUpdate(activeEvent, updates)
     } else if (over.data.current?.type === 'day-cell') {
-      const { date } = over.data.current
+      const { date, resourceId } = over.data.current
       const newDate = dayjs(date)
 
       // For multi-day events, we need to preserve the duration in days
@@ -190,10 +197,18 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
             .hour(endHour)
             .minute(endMinute)
 
-          performEventUpdate(activeEvent, {
+          const updates: Partial<CalendarEvent> & {
+            resourceId?: string | number
+          } = {
             start: newStart,
             end: newEnd,
-          })
+          }
+
+          if (resourceId !== undefined) {
+            updates.resourceId = resourceId
+          }
+
+          performEventUpdate(activeEvent, updates)
         } else {
           // For other views like month view
           // Calculate the date shift (how many days we're moving the event)
@@ -203,10 +218,18 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
           const newStart = start.add(daysDifference, 'day')
           const newEnd = end.add(daysDifference, 'day')
 
-          performEventUpdate(activeEvent, {
+          const updates: Partial<CalendarEvent> & {
+            resourceId?: string | number
+          } = {
             start: newStart,
             end: newEnd,
-          })
+          }
+
+          if (resourceId !== undefined) {
+            updates.resourceId = resourceId
+          }
+
+          performEventUpdate(activeEvent, updates)
         }
       } else {
         // For single-day events, maintain the time but change the date
@@ -221,10 +244,18 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
         )
         const newEnd = newStart.add(durationMinutes, 'minute')
 
-        performEventUpdate(activeEvent, {
+        const updates: Partial<CalendarEvent> & {
+          resourceId?: string | number
+        } = {
           start: newStart,
           end: newEnd,
-        })
+        }
+
+        if (resourceId !== undefined) {
+          updates.resourceId = resourceId
+        }
+
+        performEventUpdate(activeEvent, updates)
       }
     }
 
@@ -254,7 +285,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
           {activeEvent && (
             <div
               className={cn(
-                'cursor-grab truncate rounded bg-amber-200 p-2 text-[10px] shadow-lg sm:text-xs',
+                'cursor-grab truncate rounded bg-amber-200 p-2 text-[10px] shadow-lg sm:text-xs w-20',
                 activeEvent.backgroundColor || 'bg-blue-500',
                 activeEvent.color || 'text-white'
               )}

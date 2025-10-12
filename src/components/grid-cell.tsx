@@ -88,10 +88,11 @@ export const GridCell: React.FC<GridProps> = ({
   return (
     <>
       <DroppableCell
-        id={`day-cell-${day.toISOString()}`}
+        id={`day-cell-${day.toISOString()}${resourceId ? `-resource-${resourceId}` : ''}`}
         type="day-cell"
         data-testid={`day-cell-${day.toISOString()}`}
         date={day}
+        resourceId={resourceId}
         className={cn(
           'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px]',
           !isCurrentMonth && 'bg-secondary text-muted-foreground',

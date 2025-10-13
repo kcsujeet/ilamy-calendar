@@ -31,7 +31,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
   }, [weekDays])
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col border">
       <ResourceEventGrid days={weekHours} gridType="hour">
         <div
           className={cn(

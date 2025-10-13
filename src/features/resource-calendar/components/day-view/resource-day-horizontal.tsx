@@ -17,7 +17,7 @@ export const ResourceDayHorizontal: React.FC = () => {
   }, [currentDate])
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col border">
       <ResourceEventGrid days={dayHours} gridType="hour">
         <div
           className={cn(

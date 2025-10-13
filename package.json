@@ -115,6 +115,6 @@
     "access": "public"
   },
   "auto-changelog": {
-    "startingVersion": "0.3.4"
+    "startingVersion": "1.0.0"
   }
 }

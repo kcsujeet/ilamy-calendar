@@ -1,5 +1,6 @@
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import dayjs from '@/lib/configs/dayjs-config'
+import { getWeekDays } from '@/lib/utils/date-utils'
 import React from 'react'
 import { WeekDayCol } from './week-day-col'
 
@@ -10,18 +11,7 @@ const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) =>
 export const WeekTimeGrid: React.FC = () => {
   const { currentDate, firstDayOfWeek, currentLocale } = useCalendarContext()
 
-  // Get start and end of current week based on firstDayOfWeek setting
-  const startOfWeek = currentDate.startOf('week').day(firstDayOfWeek)
-  // If current date is before the start of week, move back one week
-  const adjustedStartOfWeek = currentDate.isBefore(startOfWeek)
-    ? startOfWeek.subtract(1, 'week')
-    : startOfWeek
-
-  // Create an array of days for the current week
-  const weekDays = []
-  for (let i = 0; i < 7; i++) {
-    weekDays.push(adjustedStartOfWeek.add(i, 'day'))
-  }
+  const weekDays = getWeekDays(currentDate, firstDayOfWeek)
 
   // Separate all-day events from regular events (including multi-day events)
 

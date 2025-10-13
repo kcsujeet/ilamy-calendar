@@ -3,6 +3,7 @@ import React, { useMemo } from 'react'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { getWeekDays } from '@/lib/utils/date-utils'
 import { AnimatePresence, motion } from 'motion/react'
 
 export const ResourceWeekHorizontal: React.FC = () => {
@@ -15,13 +16,10 @@ export const ResourceWeekHorizontal: React.FC = () => {
   } = useResourceCalendarContext()
 
   // Generate week days
-  const weekDays = useMemo(() => {
-    const dayjsStartOfWeek = currentDate.startOf('week')
-    const offset =
-      firstDayOfWeek === 0 ? 0 : firstDayOfWeek - dayjsStartOfWeek.day()
-    const adjustedStart = dayjsStartOfWeek.add(offset, 'day')
-    return Array.from({ length: 7 }, (_, i) => adjustedStart.add(i, 'day'))
-  }, [currentDate, firstDayOfWeek])
+  const weekDays = useMemo(
+    () => getWeekDays(currentDate, firstDayOfWeek),
+    [currentDate, firstDayOfWeek]
+  )
 
   // Generate time columns (hourly slots)
   const weekHours = useMemo(() => {

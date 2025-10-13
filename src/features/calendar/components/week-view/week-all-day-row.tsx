@@ -5,24 +5,15 @@ import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { DroppableCell } from '@/components/droppable-cell'
 import type { CalendarEvent, ProcessedCalendarEvent } from '@/components/types'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
+import { getWeekDays } from '@/lib/utils/date-utils'
 
 export const WeekAllDayRow: React.FC = () => {
   const { currentDate, getEventsForDateRange, firstDayOfWeek, t } =
     useCalendarContext()
 
-  // Get start and end of current week based on firstDayOfWeek setting
-  const startOfWeek = currentDate.startOf('week').day(firstDayOfWeek)
-  // If current date is before the start of week, move back one week
-  const adjustedStartOfWeek = currentDate.isBefore(startOfWeek)
-    ? startOfWeek.subtract(1, 'week')
-    : startOfWeek
-  const endOfWeek = adjustedStartOfWeek.add(6, 'day')
-
-  // Create an array of days for the current week
-  const weekDays = []
-  for (let i = 0; i < 7; i++) {
-    weekDays.push(adjustedStartOfWeek.add(i, 'day'))
-  }
+  const weekDays = getWeekDays(currentDate, firstDayOfWeek)
+  const adjustedStartOfWeek = weekDays[0]
+  const endOfWeek = weekDays[6]
 
   // Get events that might overlap with this week (expand search range)
   const expandedStartDate = adjustedStartOfWeek.subtract(6, 'day') // Look 6 days before week start

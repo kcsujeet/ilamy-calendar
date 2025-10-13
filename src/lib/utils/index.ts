@@ -9,6 +9,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export { getWeekDays } from './date-utils'
+
 export function generateMockEvents({ count = 5 } = {}) {
   const events: CalendarEvent[] = []
   for (let i = 0; i < count; i++) {

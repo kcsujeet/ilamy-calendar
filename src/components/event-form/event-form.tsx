@@ -1,4 +1,4 @@
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import React, { useEffect, useState } from 'react'
 
 import {
@@ -20,12 +20,12 @@ import {
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import type { CalendarEvent } from '@/components/types'
-import type { RRuleOptions } from '@/lib/recurrence-handler/types'
-import { isRecurringEvent } from '@/lib/recurrence-handler'
+import type { RRuleOptions } from '@/features/recurrence/types'
+import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler'
 import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-editor/recurrence-editor'
 import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
 import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 const colorOptions = [
   { value: 'bg-blue-100 text-blue-800', label: 'Blue' },
@@ -69,7 +69,12 @@ export const EventForm: React.FC<EventFormProps> = ({
     handleConfirm,
   } = useRecurringEventActions(onClose)
 
-  const { findParentRecurringEvent, t } = useCalendarContext()
+  const { findParentRecurringEvent, t } = useSmartCalendarContext(
+    (context) => ({
+      findParentRecurringEvent: context.findParentRecurringEvent,
+      t: context.t,
+    })
+  )
 
   const start = selectedEvent?.start
   const end = selectedEvent?.end

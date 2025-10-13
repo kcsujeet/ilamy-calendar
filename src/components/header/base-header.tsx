@@ -4,12 +4,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
-import { downloadICalendar } from '@/lib/export-ical'
+import { downloadICalendar } from '@/lib/utils/export-ical'
 import { Calendar as CalendarIcon, Download, Menu, Plus } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import TitleContent from './title-content'
 import ViewControls from './view-controls'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib'
 
 interface HeaderProps {
@@ -28,7 +28,18 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
     headerClassName,
     rawEvents,
     t,
-  } = useCalendarContext()
+  } = useSmartCalendarContext((context) => ({
+    view: context.view,
+    setView: context.setView,
+    nextPeriod: context.nextPeriod,
+    prevPeriod: context.prevPeriod,
+    today: context.today,
+    openEventForm: context.openEventForm,
+    headerComponent: context.headerComponent,
+    headerClassName: context.headerClassName,
+    rawEvents: context.rawEvents,
+    t: context.t,
+  }))
 
   // State for mobile menu popover
   const [mobilePopoverOpen, setMobilePopoverOpen] = useState(false)

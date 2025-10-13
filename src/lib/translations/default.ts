@@ -78,6 +78,14 @@ export const defaultTranslations: Translations = {
   year: 'Year',
   more: 'more',
 
+  // Resource calendar
+  resources: 'Resources',
+  resource: 'Resource',
+  time: 'Time',
+  date: 'Date',
+  noResourcesVisible: 'No resources visible',
+  addResourcesOrShowExisting: 'Add resources or show existing ones',
+
   // Days of week
   sunday: 'Sunday',
   monday: 'Monday',

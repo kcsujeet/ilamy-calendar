@@ -1,6 +1,6 @@
 {
   "name": "@ilamy/calendar",
-  "version": "0.3.3",
+  "version": "1.0.0",
   "description": "A full-featured React calendar component library built with Shadcn-Ui, Tailwind CSS, and TypeScript.",
   "author": "Sujeet Kc",
   "license": "MIT",
@@ -89,32 +89,32 @@
     "bun-plugin-tailwind": "^0.0.14",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.18",
     "lucide-react": "^0.475.0",
-    "motion": "^12.23.12",
-    "react-day-picker": "^9.9.0",
+    "motion": "^12.23.24",
+    "react-day-picker": "^9.11.1",
     "rrule": "^2.8.1",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^18.0.1",
     "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/bun": "latest",
-    "@types/react": "^19.1.10",
-    "@types/react-dom": "^19.1.7",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
     "@types/rrule": "^2.2.9",
     "auto-changelog": "^2.5.0",
     "bunup": "^0.8.72",
     "husky": "^9.1.7",
-    "lint-staged": "^16.1.5",
+    "lint-staged": "^16.2.4",
     "prettier": "3.6.2"
   },
   "publishConfig": {
     "access": "public"
   },
   "auto-changelog": {
-    "startingVersion": "0.3.4"
+    "startingVersion": "1.0.0"
   }
 }

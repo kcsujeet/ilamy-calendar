@@ -83,11 +83,13 @@ bun run ci                 # Full CI pipeline (lint + prettier + test + build)
 
 ### Date Handling Standards
 
+- **CRITICAL: Always use ISO date strings** - This is non-negotiable
 - **Never use YYYY-MM-DD format** for storage/transmission (causes timezone bugs)
 - **Always use ISO strings**: `dayjs().toISOString()` for serialization
 - **Use YYYY-MM-DD only for display** in UI components
 - **Always import dayjs from `@/lib/dayjs-config`** (pre-configured with plugins)
 - **Never import `datetime` from rrule** - stick with dayjs for consistency
+- **In tests**: Always use ISO strings like `'2025-10-13T00:00:00.000Z'` or `dayjs().toISOString()`, never `'2025-10-13'`
 
 ### Code Quality Requirements
 

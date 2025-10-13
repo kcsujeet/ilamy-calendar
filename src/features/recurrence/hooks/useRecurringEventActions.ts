@@ -1,10 +1,14 @@
 import { useState, useCallback } from 'react'
 import type { CalendarEvent } from '@/components/types'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { RecurrenceEditScope } from '@/features/recurrence/types'
 
 export function useRecurringEventActions(onComplete?: () => void) {
-  const { updateRecurringEvent, deleteRecurringEvent } = useCalendarContext()
+  const { updateRecurringEvent, deleteRecurringEvent } =
+    useSmartCalendarContext((context) => ({
+      updateRecurringEvent: context.updateRecurringEvent,
+      deleteRecurringEvent: context.deleteRecurringEvent,
+    }))
 
   const [dialogState, setDialogState] = useState<{
     isOpen: boolean

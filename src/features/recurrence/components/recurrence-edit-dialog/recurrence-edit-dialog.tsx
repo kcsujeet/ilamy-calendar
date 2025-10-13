@@ -8,7 +8,7 @@ import {
   Button,
 } from '@/components/ui'
 import type { RecurrenceEditScope } from '@/features/recurrence/types'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 interface RecurrenceEditDialogProps {
   isOpen: boolean
@@ -25,7 +25,7 @@ export function RecurrenceEditDialog({
   operationType,
   eventTitle,
 }: RecurrenceEditDialogProps) {
-  const { t } = useCalendarContext()
+  const { t } = useSmartCalendarContext((context) => ({ t: context.t }))
 
   const handleScopeSelect = (scope: RecurrenceEditScope) => {
     onConfirm(scope)

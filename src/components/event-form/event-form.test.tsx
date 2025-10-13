@@ -1,10 +1,10 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import { RRule } from 'rrule'
 import { EventForm } from './event-form'
 import type { CalendarEvent } from '@/components/types'
-import { CalendarProvider } from '@/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 
 // Custom render function that wraps components in CalendarProvider
 const renderEventForm = (

@@ -15,6 +15,9 @@ import type { WeekDays } from '@/components/types'
 import { ModeToggle } from './mode-toggle'
 
 interface DemoCalendarSettingsProps {
+  // Calendar type
+  calendarType: 'regular' | 'resource'
+  setCalendarType: (value: 'regular' | 'resource') => void
   firstDayOfWeek: WeekDays
   setFirstDayOfWeek: (value: WeekDays) => void
   initialView: 'month' | 'week' | 'day' | 'year'
@@ -41,9 +44,13 @@ interface DemoCalendarSettingsProps {
   setDayMaxEvents: (value: number) => void
   stickyViewHeader?: boolean
   setStickyHeader?: (value: boolean) => void
+  // Resource calendar specific props
+  isResourceCalendar?: boolean
 }
 
 export function DemoCalendarSettings({
+  calendarType,
+  setCalendarType,
   firstDayOfWeek,
   setFirstDayOfWeek,
   initialView,
@@ -68,6 +75,8 @@ export function DemoCalendarSettings({
   setDayMaxEvents,
   stickyViewHeader,
   setStickyHeader,
+  // Resource calendar props
+  isResourceCalendar,
 }: DemoCalendarSettingsProps) {
   return (
     <Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -80,6 +89,25 @@ export function DemoCalendarSettings({
       <CardContent className="space-y-4 p-6">
         <div>
           <ModeToggle />
+        </div>
+        <div>
+          <label className="block text-sm text-left font-medium mb-1">
+            Calendar Type
+          </label>
+          <Select
+            value={calendarType}
+            onValueChange={(value) =>
+              setCalendarType(value as 'regular' | 'resource')
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select calendar type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="regular">Regular Calendar</SelectItem>
+              <SelectItem value="resource">Resource Calendar</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <label className="block text-sm text-left font-medium mb-1">
@@ -120,7 +148,9 @@ export function DemoCalendarSettings({
               <SelectItem value="month">Month</SelectItem>
               <SelectItem value="week">Week</SelectItem>
               <SelectItem value="day">Day</SelectItem>
-              <SelectItem value="year">Year</SelectItem>
+              {!isResourceCalendar && (
+                <SelectItem value="year">Year</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -174,6 +204,7 @@ export function DemoCalendarSettings({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="auto">Auto</SelectItem>
+              <SelectItem value="300px">Extra Small (300px)</SelectItem>
               <SelectItem value="400px">Small (400px)</SelectItem>
               <SelectItem value="600px">Medium (600px)</SelectItem>
               <SelectItem value="800px">Large (800px)</SelectItem>

@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
 import { RecurrenceEditDialog } from './recurrence-edit-dialog'
-import { CalendarProvider } from '@/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 
 describe('RecurrenceEditDialog', () => {
   const mockOnClose = mock(() => {})

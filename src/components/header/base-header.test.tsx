@@ -1,9 +1,9 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, expect, it, mock } from 'bun:test'
 import Header from './base-header'
-import { CalendarProvider } from '@/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 
 // Custom render function that wraps Header in CalendarProvider
 const renderHeader = (events: CalendarEvent[] = [], providerProps = {}) => {
@@ -19,9 +19,10 @@ const renderHeader = (events: CalendarEvent[] = [], providerProps = {}) => {
   )
 }
 
-// Mock the export function
-mock.module('@/lib/export-ical', () => ({
-  downloadICalendar: mock(),
+const mockDownloadICalendar = mock()
+
+mock.module('@/lib/utils/export-ical', () => ({
+  downloadICalendar: mockDownloadICalendar,
 }))
 
 describe('Header with Export Button', () => {
@@ -73,16 +74,13 @@ describe('Header with Export Button', () => {
     expect(mobileExportButton).toHaveTextContent('Export Calendar (.ics)')
   })
 
-  it('should call downloadICalendar when export button is clicked', async () => {
-    const { downloadICalendar } = await import('@/lib/export-ical')
-    const mockDownload = downloadICalendar as unknown as ReturnType<typeof mock>
-
+  it('should call downloadICalendar when export button is clicked', () => {
     renderHeader(testEvents)
 
     const exportButton = screen.getByRole('button', { name: /export/i })
     fireEvent.click(exportButton)
 
-    expect(mockDownload).toHaveBeenCalledWith(
+    expect(mockDownloadICalendar).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
           id: 'test-1',

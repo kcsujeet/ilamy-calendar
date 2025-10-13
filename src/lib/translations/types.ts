@@ -74,6 +74,14 @@ export interface Translations {
   year: string
   more: string
 
+  // Resource calendar
+  resources: string
+  resource: string
+  time: string
+  date: string
+  noResourcesVisible: string
+  addResourcesOrShowExisting: string
+
   // Days of week
   sunday: string
   monday: string

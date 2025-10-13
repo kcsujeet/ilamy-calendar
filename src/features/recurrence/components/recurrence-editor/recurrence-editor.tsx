@@ -13,12 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-import dayjs from '@/lib/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 import type { RRuleOptions } from '@/lib/recurrence-handler/types'
 import { useState, useEffect, useMemo } from 'react'
 import { RRule } from 'rrule'
 import type { Weekday } from 'rrule'
-import { useCalendarContext } from '@/contexts/calendar-context/context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 // Natural language description function using RRule's built-in helper methods
 function getRRuleDescription(
@@ -63,7 +63,7 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
   value,
   onChange,
 }) => {
-  const { t } = useCalendarContext()
+  const { t } = useSmartCalendarContext((context) => ({ t: context.t }))
   const [showRecurrence, setShowRecurrence] = useState(!!value)
 
   // Create WEEK_DAYS array with translations

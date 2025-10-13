@@ -194,19 +194,19 @@ interface IlamyResourceCalendarProps extends IlamyCalendarProps {
 
 ### Key Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `resources` | `Resource[]` | `[]` | Array of resources to display |
-| `events` | `ResourceCalendarEvent[]` | `[]` | Array of events with resource assignments |
-| `renderResource` | `(resource: Resource) => ReactNode` | `undefined` | Custom resource rendering function |
-| `initialView` | `'month' \| 'week' \| 'day'` | `'month'` | Initial view mode |
-| `firstDayOfWeek` | `'sunday' \| 'monday'` | `'sunday'` | First day of the week |
-| `disableDragAndDrop` | `boolean` | `false` | Disable event drag-and-drop |
-| `onEventClick` | `(event: ResourceCalendarEvent) => void` | `undefined` | Event click handler |
-| `onCellClick` | `(start: Dayjs, end: Dayjs, resourceId?: string \| number) => void` | `undefined` | Cell click handler with optional resource ID |
-| `onEventAdd` | `(event: ResourceCalendarEvent) => void` | `undefined` | Event add callback |
-| `onEventUpdate` | `(event: ResourceCalendarEvent) => void` | `undefined` | Event update callback |
-| `onEventDelete` | `(eventId: string) => void` | `undefined` | Event delete callback |
+| Prop                 | Type                                                                | Default     | Description                                  |
+| -------------------- | ------------------------------------------------------------------- | ----------- | -------------------------------------------- |
+| `resources`          | `Resource[]`                                                        | `[]`        | Array of resources to display                |
+| `events`             | `ResourceCalendarEvent[]`                                           | `[]`        | Array of events with resource assignments    |
+| `renderResource`     | `(resource: Resource) => ReactNode`                                 | `undefined` | Custom resource rendering function           |
+| `initialView`        | `'month' \| 'week' \| 'day'`                                        | `'month'`   | Initial view mode                            |
+| `firstDayOfWeek`     | `'sunday' \| 'monday'`                                              | `'sunday'`  | First day of the week                        |
+| `disableDragAndDrop` | `boolean`                                                           | `false`     | Disable event drag-and-drop                  |
+| `onEventClick`       | `(event: ResourceCalendarEvent) => void`                            | `undefined` | Event click handler                          |
+| `onCellClick`        | `(start: Dayjs, end: Dayjs, resourceId?: string \| number) => void` | `undefined` | Cell click handler with optional resource ID |
+| `onEventAdd`         | `(event: ResourceCalendarEvent) => void`                            | `undefined` | Event add callback                           |
+| `onEventUpdate`      | `(event: ResourceCalendarEvent) => void`                            | `undefined` | Event update callback                        |
+| `onEventDelete`      | `(eventId: string) => void`                                         | `undefined` | Event delete callback                        |
 
 For all inherited props, see the [standard calendar documentation](https://ilamy.dev/docs/calendar).
 
@@ -265,7 +265,10 @@ interface UseIlamyResourceCalendarContextReturn {
 
   // Event management methods
   addEvent: (event: ResourceCalendarEvent) => void
-  updateEvent: (eventId: string, updates: Partial<ResourceCalendarEvent>) => void
+  updateEvent: (
+    eventId: string,
+    updates: Partial<ResourceCalendarEvent>
+  ) => void
   deleteEvent: (eventId: string) => void
   openEventForm: (event?: ResourceCalendarEvent, date?: Dayjs) => void
   closeEventForm: () => void
@@ -292,6 +295,7 @@ Timeline view showing resources as rows and days as columns:
 ```
 
 Features:
+
 - Full month overview with resource rows
 - Compact event display
 - Scroll to see all resources
@@ -310,6 +314,7 @@ Detailed timeline with hourly time slots:
 ```
 
 Features:
+
 - 7-day view with resource rows
 - Hourly time slots (24-hour format)
 - Precise event positioning
@@ -329,6 +334,7 @@ Focused single-day view with maximum detail:
 ```
 
 Features:
+
 - Single day with all resources
 - Full hourly breakdown
 - Maximum event detail
@@ -472,14 +478,13 @@ const IconResourceRenderer = (resource: Resource) => {
 
   return (
     <div className="flex items-center gap-2 p-2">
-      <div style={{ color: resource.color }}>{getResourceIcon(resource.id)}</div>
+      <div style={{ color: resource.color }}>
+        {getResourceIcon(resource.id)}
+      </div>
       <div className="flex flex-col">
         <span className="font-medium">{resource.title}</span>
         {resource.backgroundColor && (
-          <span
-            className="text-xs"
-            style={{ color: resource.color }}
-          >
+          <span className="text-xs" style={{ color: resource.color }}>
             Available
           </span>
         )}
@@ -546,7 +551,7 @@ const CustomEventRenderer = (event: ResourceCalendarEvent) => {
   )
 }
 
-<IlamyResourceCalendar
+;<IlamyResourceCalendar
   resources={resources}
   events={events}
   renderEvent={CustomEventRenderer}
@@ -610,9 +615,7 @@ const RoomBookingCalendar = () => {
   }
 
   const handleEventUpdate = (event: ResourceCalendarEvent) => {
-    setEvents((prev) =>
-      prev.map((e) => (e.id === event.id ? event : e))
-    )
+    setEvents((prev) => prev.map((e) => (e.id === event.id ? event : e)))
   }
 
   return (
@@ -959,9 +962,7 @@ Ensure event `resourceId` or `resourceIds` match existing resource IDs:
 ```tsx
 // Check if event resources exist
 const eventResources = event.resourceIds || [event.resourceId]
-const validResources = resources.filter((r) =>
-  eventResources.includes(r.id)
-)
+const validResources = resources.filter((r) => eventResources.includes(r.id))
 
 if (validResources.length === 0) {
   console.warn('Event has no valid resources:', event)
@@ -989,9 +990,7 @@ const [visibleResourceIds, setVisibleResourceIds] = useState<Set<string>>(
   new Set(resources.slice(0, 10).map((r) => r.id))
 )
 
-const visibleResources = resources.filter((r) =>
-  visibleResourceIds.has(r.id)
-)
+const visibleResources = resources.filter((r) => visibleResourceIds.has(r.id))
 ```
 
 ## Related Documentation

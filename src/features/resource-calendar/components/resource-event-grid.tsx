@@ -1,7 +1,6 @@
 import { ScrollArea, ScrollBar } from '@/components/ui'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
-import { AnimatePresence, motion } from 'motion/react'
 import { ResourceEventsLayer } from './resource-events-layer'
 import { GridCell } from '@/components/grid-cell'
 import { cn } from '@/lib'
@@ -54,61 +53,55 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 
       {/* Calendar area with scroll */}
       <div className="flex flex-1 h-[calc(100%-3rem)] w-fit">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentDate.format('YYYY-MM')}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="relative w-full flex flex-col"
-          >
-            {rows.map((row) => (
-              <div key={row.id} className="flex flex-1 relative min-h-[60px] ">
-                <div
-                  className={cn(
-                    'w-40 border-b border-r p-2 flex flex-shrink-0 sticky left-0 z-20',
-                    row.resource.color || '',
-                    row.resource.backgroundColor || 'bg-background'
-                  )}
-                  style={{
-                    color: row.resource.color,
-                    backgroundColor: row.resource.backgroundColor,
-                  }}
-                >
-                  {renderResource ? (
-                    renderResource(row.resource)
-                  ) : (
-                    <div className="break-words text-sm">{row.title}</div>
-                  )}
-                </div>
+        <div
+          key={currentDate.format('YYYY-MM')}
+          className="relative w-full flex flex-col"
+        >
+          {rows.map((row) => (
+            <div key={row.id} className="flex flex-1 relative min-h-[60px] ">
+              <div
+                className={cn(
+                  'w-40 border-b border-r p-2 flex flex-shrink-0 sticky left-0 z-20',
+                  row.resource.color || '',
+                  row.resource.backgroundColor || 'bg-background'
+                )}
+                style={{
+                  color: row.resource.color,
+                  backgroundColor: row.resource.backgroundColor,
+                }}
+              >
+                {renderResource ? (
+                  renderResource(row.resource)
+                ) : (
+                  <div className="break-words text-sm">{row.title}</div>
+                )}
+              </div>
 
-                <div className="relative flex-1 flex">
-                  {row.cells.map((cell) => (
-                    <GridCell
-                      key={cell.id}
-                      index={cell.value.day()}
-                      day={cell.value}
-                      resourceId={row.id}
-                      dayMaxEvents={dayMaxEvents}
-                      gridType={gridType}
-                      className="border-r border-b w-20"
-                    />
-                  ))}
+              <div className="relative flex-1 flex">
+                {row.cells.map((cell) => (
+                  <GridCell
+                    key={cell.id}
+                    index={cell.value.day()}
+                    day={cell.value}
+                    resourceId={row.id}
+                    dayMaxEvents={dayMaxEvents}
+                    gridType={gridType}
+                    className="border-r border-b w-20"
+                  />
+                ))}
 
-                  {/* Events layer positioned absolutely over the resource row */}
-                  <div className="absolute inset-0 z-10 pointer-events-none">
-                    <ResourceEventsLayer
-                      days={days}
-                      resourceId={row.id}
-                      gridType={gridType}
-                    />
-                  </div>
+                {/* Events layer positioned absolutely over the resource row */}
+                <div className="absolute inset-0 z-10 pointer-events-none">
+                  <ResourceEventsLayer
+                    days={days}
+                    resourceId={row.id}
+                    gridType={gridType}
+                  />
                 </div>
               </div>
-            ))}
-          </motion.div>
-        </AnimatePresence>
+            </div>
+          ))}
+        </div>
       </div>
       <ScrollBar orientation="horizontal" />
     </ScrollArea>

@@ -4,6 +4,8 @@ A powerful, full-featured React calendar component library built with TypeScript
 
 <img width="1643" height="873" alt="Screenshot 2025-08-05 at 9 46 41 AM" src="https://github.com/user-attachments/assets/d289f034-0d26-4a1c-a997-dfa1ad26aa7a" />
 
+<img width="1663" height="872" alt="Screenshot 2025-10-13 at 4 24 29 PM" src="https://github.com/user-attachments/assets/ba0aa27e-373c-40ba-98c6-2d6fd767cb66" />
+
 ## Features
 
 - 🗓️ **Multiple Views**: Month, Week, Day, and Year views with smooth transitions

@@ -20,16 +20,17 @@ export const WeekDayCol: React.FC<WeekDayColProps> = ({ day }) => {
     >
       {hours.map((time) => {
         const hour = time.hour()
-        const cellDate = day.format('YYYY-MM-DD')
+        const hourStr = time.format('HH')
+        const dateStr = day.format('YYYY-MM-DD')
 
         return (
           <DroppableCell
-            key={`${cellDate}-${time.format('HH')}`}
-            id={`time-cell-${cellDate}-${time.format('HH')}`}
+            key={`${dateStr}-${hourStr}`}
+            id={`week-time-cell-${dateStr}-${hourStr}`}
             type="time-cell"
             date={day}
             hour={hour}
-            data-testid={`week-time-cell-${cellDate}-${time.format('HH')}`}
+            data-testid={`week-time-cell-${dateStr}-${hourStr}`}
             className={cn(
               'hover:bg-accent relative z-10 h-[60px] cursor-pointer border-b'
             )}

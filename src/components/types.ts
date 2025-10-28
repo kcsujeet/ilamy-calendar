@@ -1,5 +1,5 @@
 import type dayjs from '@/lib/configs/dayjs-config'
-import type { RRuleOptions } from '@/lib/recurrence-handler/types'
+import type { RRuleOptions } from '@/features/recurrence/types'
 
 /**
  * Core calendar event interface representing a single calendar event.

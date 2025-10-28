@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui'
 import dayjs from '@/lib/configs/dayjs-config'
-import type { RRuleOptions } from '@/lib/recurrence-handler/types'
+import type { RRuleOptions } from '@/features/recurrence/types'
 import { useState, useEffect, useMemo } from 'react'
 import { RRule } from 'rrule'
 import type { Weekday } from 'rrule'

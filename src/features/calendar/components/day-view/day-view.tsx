@@ -21,7 +21,7 @@ const DayView = () => {
   const { currentDate } = useCalendarContext()
 
   const isToday = currentDate.isSame(dayjs(), 'day')
-  const cellDate = currentDate.format('YYYY-MM-DD')
+  const dateStr = currentDate.format('YYYY-MM-DD')
 
   return (
     <div data-testid="day-view" className="flex h-full flex-col">
@@ -55,23 +55,28 @@ const DayView = () => {
               data-testid="day-background-grid"
               className="absolute inset-0 z-0"
             >
-              {hours.map((hour, index) => (
-                <div
-                  key={`bg-${currentDate.format('YYYY-MM-DD')}-${hour.format(
-                    'HH'
-                  )}`}
-                  className="h-[60px] border-b"
-                >
-                  {/* 15-minute marker lines */}
-                  {timeSegments.slice(1).map((minutes) => (
-                    <div
-                      key={`bg-${hour.format('HH')}-${minutes}`}
-                      className="border-border absolute w-full border-t border-dashed"
-                      style={{ top: `${index * 60 + minutes}px` }}
-                    ></div>
-                  ))}
-                </div>
-              ))}
+              {hours.map((hour, index) => {
+                const hourStr = hour.format('HH')
+                const dateStr = currentDate.format('YYYY-MM-DD')
+
+                return (
+                  <div
+                    key={`bg-${dateStr}-${hourStr}`}
+                    className="h-[60px] border-b"
+                    data-testid={`day-bg-hour-${hourStr}`}
+                  >
+                    {/* 15-minute marker lines */}
+                    {timeSegments.slice(1).map((minutes) => (
+                      <div
+                        key={`bg-${hourStr}-${minutes}`}
+                        data-testid={`day-bg-hour-${hourStr}-${minutes}`}
+                        className="border-border absolute w-full border-t border-dashed"
+                        style={{ top: `${index * 60 + minutes}px` }}
+                      ></div>
+                    ))}
+                  </div>
+                )
+              })}
             </div>
 
             {/* Interactive layer for time slots - middle layer with no borders */}
@@ -81,11 +86,13 @@ const DayView = () => {
             >
               {hours.map((time) => {
                 const hour = time.hour()
+                const hourStr = time.format('HH')
 
                 return (
-                  <Fragment key={`${cellDate}-${time.format('HH')}`}>
+                  <Fragment key={`${dateStr}-${hourStr}`}>
                     <DroppableCell
-                      id={`time-cell-${cellDate}-${time.format('HH')}-00`}
+                      id={`day-time-cell-${dateStr}-${hourStr}-00`}
+                      data-testid={`day-time-cell-${hourStr}-00`}
                       type="time-cell"
                       date={currentDate}
                       hour={hour}
@@ -93,7 +100,8 @@ const DayView = () => {
                       className={cn('hover:bg-accent h-[15px] cursor-pointer')}
                     />
                     <DroppableCell
-                      id={`time-cell-${cellDate}-${time.format('HH')}-15`}
+                      id={`day-time-cell-${dateStr}-${hourStr}-15`}
+                      data-testid={`day-time-cell-${hourStr}-15`}
                       type="time-cell"
                       date={currentDate}
                       hour={hour}
@@ -101,7 +109,8 @@ const DayView = () => {
                       className="hover:bg-accent h-[15px] cursor-pointer"
                     />
                     <DroppableCell
-                      id={`time-cell-${cellDate}-${time.format('HH')}-30`}
+                      id={`day-time-cell-${dateStr}-${hourStr}-30`}
+                      data-testid={`day-time-cell-${hourStr}-30`}
                       type="time-cell"
                       date={currentDate}
                       hour={hour}
@@ -109,7 +118,8 @@ const DayView = () => {
                       className="hover:bg-accent h-[15px] cursor-pointer"
                     />
                     <DroppableCell
-                      id={`time-cell-${cellDate}-${time.format('HH')}-45`}
+                      id={`day-time-cell-${dateStr}-${hourStr}-45`}
+                      data-testid={`day-time-cell-${hourStr}-45`}
                       type="time-cell"
                       date={currentDate}
                       hour={hour}

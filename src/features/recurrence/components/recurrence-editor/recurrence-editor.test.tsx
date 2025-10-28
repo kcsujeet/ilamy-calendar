@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
 import { RRule } from 'rrule'
-import type { RRuleOptions } from '@/lib/recurrence-handler/types'
+import type { RRuleOptions } from '@/features/recurrence/types'
 import { RecurrenceEditor } from './recurrence-editor'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 

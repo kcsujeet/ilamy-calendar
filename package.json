@@ -60,7 +60,7 @@
     "test:coverage:report": "bun test --coverage --reporter=html",
     "format": "bunx prettier --write .",
     "type-check": "bunx tsc --noEmit",
-    "ci": "bun run lint && bun run prettier:check && bun run test && bun run build",
+    "ci": "bun run lint && bun run type-check && bun run prettier:check && bun run test && bun run build",
     "pre-commit": "bun run lint:fix && bun run prettier:fix",
     "prepare": "bunx husky",
     "version": "auto-changelog -p && git add CHANGELOG.md"
@@ -103,12 +103,12 @@
     "@testing-library/react": "^16.3.0",
     "@types/bun": "latest",
     "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.1",
+    "@types/react-dom": "^19.2.2",
     "@types/rrule": "^2.2.9",
     "auto-changelog": "^2.5.0",
-    "bunup": "^0.8.72",
+    "bunup": "^0.15.12",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.4",
+    "lint-staged": "^16.2.6",
     "prettier": "3.6.2"
   },
   "publishConfig": {

@@ -616,3 +616,138 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
     )
   })
 })
+
+describe('firstDayOfWeek functionality', () => {
+  it('should calculate correct week range when firstDayOfWeek is Monday', () => {
+    const TestComponent = () => {
+      const { getEventsForDateRange } = useCalendarContext()
+
+      // Test date: Wednesday Oct 15, 2025
+      const testDate = dayjs('2025-10-15')
+
+      // Calculate week range - should be Mon Oct 13 to Sun Oct 19
+      const currentDay = testDate.day()
+      const diff = (currentDay - 1 + 7) % 7 // firstDayOfWeek = 1 (Monday)
+      const expectedStart = testDate.subtract(diff, 'day').startOf('day')
+      const expectedEnd = expectedStart.add(6, 'day').endOf('day')
+
+      const weekEvents = getEventsForDateRange(expectedStart, expectedEnd)
+
+      return (
+        <div>
+          <div data-testid="week-start-day">{expectedStart.format('dddd')}</div>
+          <div data-testid="week-start-date">{expectedStart.format('D')}</div>
+          <div data-testid="week-end-day">{expectedEnd.format('dddd')}</div>
+          <div data-testid="week-end-date">{expectedEnd.format('D')}</div>
+          <div data-testid="events-count">{weekEvents.length}</div>
+        </div>
+      )
+    }
+
+    const testEvent: CalendarEvent = {
+      id: 'test-1',
+      title: 'Test Event',
+      start: dayjs('2025-10-14T10:00:00.000Z'), // Tuesday
+      end: dayjs('2025-10-14T11:00:00.000Z'),
+      uid: 'test-1@test.com',
+    }
+
+    const { getByTestId } = renderProvider(<TestComponent />, {
+      events: [testEvent],
+      firstDayOfWeek: 1, // Monday
+      initialDate: dayjs('2025-10-15'), // Wednesday
+    })
+
+    // Verify week starts on Monday
+    expect(getByTestId('week-start-day').textContent).toBe('Monday')
+    expect(getByTestId('week-start-date').textContent).toBe('13')
+
+    // Verify week ends on Sunday
+    expect(getByTestId('week-end-day').textContent).toBe('Sunday')
+    expect(getByTestId('week-end-date').textContent).toBe('19')
+
+    // Verify event is included in the week range
+    expect(getByTestId('events-count').textContent).toBe('1')
+  })
+
+  it('should calculate correct week range when current date is Sunday and firstDayOfWeek is Monday', () => {
+    const TestComponent = () => {
+      // Test date: Sunday Oct 12, 2025
+      const testDate = dayjs('2025-10-12')
+
+      // Calculate week range - should be Mon Oct 6 to Sun Oct 12
+      const currentDay = testDate.day()
+      const diff = (currentDay - 1 + 7) % 7 // firstDayOfWeek = 1 (Monday)
+      const expectedStart = testDate.subtract(diff, 'day').startOf('day')
+      const expectedEnd = expectedStart.add(6, 'day').endOf('day')
+
+      return (
+        <div>
+          <div data-testid="week-start-day">{expectedStart.format('dddd')}</div>
+          <div data-testid="week-start-date">{expectedStart.format('D')}</div>
+          <div data-testid="week-end-day">{expectedEnd.format('dddd')}</div>
+          <div data-testid="week-end-date">{expectedEnd.format('D')}</div>
+        </div>
+      )
+    }
+
+    const { getByTestId } = renderProvider(<TestComponent />, {
+      firstDayOfWeek: 1, // Monday
+      initialDate: dayjs('2025-10-12'), // Sunday
+    })
+
+    // Verify week starts on Monday (6 days before Sunday)
+    expect(getByTestId('week-start-day').textContent).toBe('Monday')
+    expect(getByTestId('week-start-date').textContent).toBe('6')
+
+    // Verify week ends on Sunday (current date)
+    expect(getByTestId('week-end-day').textContent).toBe('Sunday')
+    expect(getByTestId('week-end-date').textContent).toBe('12')
+  })
+
+  it('should calculate correct month range when firstDayOfWeek is Monday', () => {
+    const TestComponent = () => {
+      // October 2025 starts on Wednesday Oct 1
+      const oct1 = dayjs('2025-10-01')
+
+      // For month view with Monday as first day:
+      // Should start on Monday Sep 29 (to complete the first week)
+      // Should end on Sunday Nov 2 (to complete the last week)
+      const monthStart = oct1.startOf('month')
+      const monthStartDay = monthStart.day()
+      const startDiff = (monthStartDay - 1 + 7) % 7
+      const expectedStart = monthStart.subtract(startDiff, 'day').startOf('day')
+
+      const monthEnd = oct1.endOf('month')
+      const monthEndDay = monthEnd.day()
+      const endDiff = 6 - ((monthEndDay - 1 + 7) % 7)
+      const expectedEnd = monthEnd.add(endDiff, 'day').endOf('day')
+
+      return (
+        <div>
+          <div data-testid="month-start-day">
+            {expectedStart.format('dddd')}
+          </div>
+          <div data-testid="month-start-date">
+            {expectedStart.format('MMM D')}
+          </div>
+          <div data-testid="month-end-day">{expectedEnd.format('dddd')}</div>
+          <div data-testid="month-end-date">{expectedEnd.format('MMM D')}</div>
+        </div>
+      )
+    }
+
+    const { getByTestId } = renderProvider(<TestComponent />, {
+      firstDayOfWeek: 1, // Monday
+      initialDate: dayjs('2025-10-01'),
+    })
+
+    // Verify month grid starts on Monday
+    expect(getByTestId('month-start-day').textContent).toBe('Monday')
+    expect(getByTestId('month-start-date').textContent).toBe('Sep 29')
+
+    // Verify month grid ends on Sunday
+    expect(getByTestId('month-end-day').textContent).toBe('Sunday')
+    expect(getByTestId('month-end-date').textContent).toBe('Nov 2')
+  })
+})

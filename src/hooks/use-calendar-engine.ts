@@ -166,26 +166,38 @@ export const useCalendarEngine = (
           start: currentDate.startOf('day'),
           end: currentDate.endOf('day'),
         }
-      case 'week':
+      case 'week': {
+        // Calculate the start of the week based on firstDayOfWeek setting
+        const currentDay = currentDate.day()
+        const diff = (currentDay - firstDayOfWeek + 7) % 7
+        const weekStart = currentDate.subtract(diff, 'day').startOf('day')
+        const weekEnd = weekStart.add(6, 'day').endOf('day')
+
         return {
-          start: currentDate
-            .startOf('week')
-            .subtract(firstDayOfWeek === 1 ? 1 : 0, 'day'),
-          end: currentDate
-            .endOf('week')
-            .add(firstDayOfWeek === 1 ? 1 : 0, 'day'),
+          start: weekStart,
+          end: weekEnd,
         }
-      case 'month':
+      }
+      case 'month': {
+        // Calculate start: First day of month, then back to firstDayOfWeek
+        const monthStart = currentDate.startOf('month')
+        const monthStartDay = monthStart.day()
+        const startDiff = (monthStartDay - firstDayOfWeek + 7) % 7
+        const calendarStart = monthStart
+          .subtract(startDiff, 'day')
+          .startOf('day')
+
+        // Calculate end: Last day of month, then forward to complete the week
+        const monthEnd = currentDate.endOf('month')
+        const monthEndDay = monthEnd.day()
+        const endDiff = 6 - ((monthEndDay - firstDayOfWeek + 7) % 7)
+        const calendarEnd = monthEnd.add(endDiff, 'day').endOf('day')
+
         return {
-          start: currentDate
-            .startOf('month')
-            .startOf('week')
-            .subtract(firstDayOfWeek === 1 ? 1 : 0, 'day'),
-          end: currentDate
-            .endOf('month')
-            .endOf('week')
-            .add(firstDayOfWeek === 1 ? 1 : 0, 'day'),
+          start: calendarStart,
+          end: calendarEnd,
         }
+      }
       case 'year':
         return {
           start: currentDate.startOf('year'),

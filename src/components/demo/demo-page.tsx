@@ -102,7 +102,7 @@ const handleResourceEventClick = (event: ResourceCalendarEvent) => {
 export function DemoPage() {
   // Calendar type state
   const [calendarType, setCalendarType] = useState<'regular' | 'resource'>(
-    'resource'
+    'regular'
   )
 
   // Calendar configuration state

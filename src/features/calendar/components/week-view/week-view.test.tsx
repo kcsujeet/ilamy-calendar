@@ -280,4 +280,67 @@ describe('WeekView', () => {
     )
     expect(todayEvents).toBeInTheDocument()
   })
+
+  test('all-day event ending on Sunday should not appear on Monday when firstDayOfWeek is Monday', () => {
+    cleanup()
+
+    // Create all-day event from Nov 17 to Nov 23 (Sunday)
+    const allDayEvent: CalendarEvent = {
+      id: 'all-day-event-nov-17-23',
+      title: 'Week-long Event',
+      start: dayjs('2025-11-17T00:00:00.000Z'), // Monday Nov 17
+      end: dayjs('2025-11-23T23:59:59.999Z'), // Sunday Nov 23
+      allDay: true,
+      color: 'blue',
+    }
+
+    // Set current date to Nov 24 (Monday) to view the week containing Nov 23
+    const currentDate = dayjs('2025-11-24T00:00:00.000Z')
+
+    renderWeekView({
+      firstDayOfWeek: 1, // Monday as first day
+      initialDate: currentDate,
+      events: [allDayEvent],
+    })
+
+    // The week starting Nov 24 (Monday) should be: Nov 24-30
+    // The event ends on Nov 23 (Sunday), which is in the PREVIOUS week (Nov 17-23)
+    // Therefore, the event should NOT appear in this week view
+
+    // Check that the all-day row exists
+    const allDayRow = screen.getByTestId('week-all-day-row')
+    expect(allDayRow).toBeInTheDocument()
+
+    // The event should not be rendered because it ends before this week starts
+    const eventElement = screen.queryByText('Week-long Event')
+    expect(eventElement).not.toBeInTheDocument()
+  })
+
+  test('all-day event spanning the exact week should render correctly when firstDayOfWeek is Monday', () => {
+    cleanup()
+
+    // Create all-day event from Monday to Sunday of the same week
+    const allDayEvent: CalendarEvent = {
+      id: 'all-day-event-full-week',
+      title: 'Full Week Event',
+      start: dayjs('2025-11-17T00:00:00.000Z'), // Monday Nov 17
+      end: dayjs('2025-11-23T23:59:59.999Z'), // Sunday Nov 23
+      allDay: true,
+      color: 'green',
+    }
+
+    // Set current date to Nov 20 (Thursday) to view the week containing this event
+    const currentDate = dayjs('2025-11-20T00:00:00.000Z')
+
+    renderWeekView({
+      firstDayOfWeek: 1, // Monday as first day
+      initialDate: currentDate,
+      events: [allDayEvent],
+    })
+
+    // The week should be Nov 17-23 (Monday to Sunday)
+    // The event should span the entire week
+    const eventElement = screen.getByText('Full Week Event')
+    expect(eventElement).toBeInTheDocument()
+  })
 })

@@ -185,7 +185,9 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
           const endMinute = end.minute()
 
           // Calculate duration in days to preserve
-          const durationDays = end.diff(start, 'day')
+          const durationDays = end
+            .endOf('day')
+            .diff(start.startOf('day'), 'day')
 
           // Create new start and end dates
           const newStart = newDate

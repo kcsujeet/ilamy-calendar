@@ -10,16 +10,18 @@ import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { defaultTranslations } from '@/lib/translations/default'
 import { DAY_MAX_EVENTS_DEFAULT } from '../lib/constants'
+import type { CalendarView } from '@/types'
 
 export interface CalendarEngineConfig {
   events: CalendarEvent[]
   firstDayOfWeek: number
-  initialView?: 'month' | 'week' | 'day' | 'year'
+  initialView?: CalendarView
+  initialDate?: dayjs.Dayjs
   onEventAdd?: (event: CalendarEvent) => void
   onEventUpdate?: (event: CalendarEvent) => void
   onEventDelete?: (event: CalendarEvent) => void
   onDateChange?: (date: dayjs.Dayjs) => void
-  onViewChange?: (view: 'month' | 'week' | 'day' | 'year') => void
+  onViewChange?: (view: CalendarView) => void
   locale?: string
   timezone?: string
   translations?: Translations
@@ -29,7 +31,7 @@ export interface CalendarEngineConfig {
 export interface CalendarEngineReturn {
   // State
   currentDate: dayjs.Dayjs
-  view: 'month' | 'week' | 'day' | 'year'
+  view: CalendarView
   events: CalendarEvent[]
   rawEvents: CalendarEvent[]
   isEventFormOpen: boolean
@@ -42,7 +44,7 @@ export interface CalendarEngineReturn {
   // Actions
   setCurrentDate: (date: dayjs.Dayjs) => void
   selectDate: (date: dayjs.Dayjs) => void
-  setView: (view: 'month' | 'week' | 'day' | 'year') => void
+  setView: (view: CalendarView) => void
   nextPeriod: () => void
   prevPeriod: () => void
   today: () => void
@@ -87,6 +89,7 @@ export const useCalendarEngine = (
     events = [],
     firstDayOfWeek = 0,
     initialView = 'month',
+    initialDate = dayjs(),
     onEventAdd,
     onEventUpdate,
     onEventDelete,
@@ -99,10 +102,8 @@ export const useCalendarEngine = (
   } = config
 
   // State
-  const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(dayjs())
-  const [view, setView] = useState<'month' | 'week' | 'day' | 'year'>(
-    initialView
-  )
+  const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(initialDate)
+  const [view, setView] = useState<CalendarView>(initialView)
   const [currentEvents, setCurrentEvents] = useState<CalendarEvent[]>(events)
   const [isEventFormOpen, setIsEventFormOpen] = useState<boolean>(false)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
@@ -408,7 +409,7 @@ export const useCalendarEngine = (
 
   // View management
   const handleViewChange = useCallback(
-    (newView: 'month' | 'week' | 'day' | 'year') => {
+    (newView: CalendarView) => {
       setView(newView)
       onViewChange?.(newView)
     },

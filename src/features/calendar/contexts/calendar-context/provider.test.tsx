@@ -1,10 +1,56 @@
 import { describe, it, expect, mock } from 'bun:test'
 import { render } from '@testing-library/react'
 import { CalendarProvider } from './provider'
+import type { CalendarProviderProps } from './provider'
 import { useCalendarContext } from './context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
+import type React from 'react'
+
+// Default test props
+const defaultProps = {
+  events: [] as CalendarEvent[],
+  dayMaxEvents: 5,
+  firstDayOfWeek: 0,
+}
+
+// Test component to capture context values
+const TestWrapper = ({
+  children,
+  testId,
+}: {
+  children: React.ReactNode
+  testId?: string
+}) => {
+  const { currentDate } = useCalendarContext()
+
+  if (!testId) {
+    return <>{children}</>
+  }
+
+  return (
+    <>
+      <div data-testid={`${testId}-year`}>{currentDate.year()}</div>
+      <div data-testid={`${testId}-month`}>{currentDate.month()}</div>
+      <div data-testid={`${testId}-date`}>{currentDate.date()}</div>
+      {children}
+    </>
+  )
+}
+
+// Render helper function
+const renderProvider = (
+  children: React.ReactNode,
+  props: Partial<CalendarProviderProps> = {},
+  testId?: string
+) => {
+  return render(
+    <CalendarProvider {...defaultProps} {...props}>
+      <TestWrapper testId={testId}>{children}</TestWrapper>
+    </CalendarProvider>
+  )
+}
 
 // Test component to access context
 function TestComponent() {
@@ -56,11 +102,10 @@ describe('CalendarProvider - On-Demand Generation', () => {
       uid: 'test-recurring@calendar.test',
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider events={[recurringEvent]} dayMaxEvents={3}>
-        <TestComponent />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestComponent />, {
+      events: [recurringEvent],
+      dayMaxEvents: 3,
+    })
 
     // Should generate events for the current view range (7 days from July 1-7)
     const rangeEventsCount = Number.parseInt(
@@ -77,11 +122,10 @@ describe('CalendarProvider - On-Demand Generation', () => {
       end: dayjs('2025-07-03').hour(10),
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider events={[nonRecurringEvent]} dayMaxEvents={3}>
-        <TestComponent />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestComponent />, {
+      events: [nonRecurringEvent],
+      dayMaxEvents: 3,
+    })
 
     // Should include the single event in range
     const rangeEventsCount = Number.parseInt(
@@ -113,11 +157,10 @@ describe('CalendarProvider - On-Demand Generation', () => {
       ], // Exclude all dates in range
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider events={[recurringEventWithExdates]} dayMaxEvents={3}>
-        <TestComponent />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestComponent />, {
+      events: [recurringEventWithExdates],
+      dayMaxEvents: 3,
+    })
 
     // Should not generate any events for excluded dates
     const rangeEventsCount = Number.parseInt(
@@ -142,11 +185,10 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       uid: 'test-recurring@calendar.test',
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider events={[parentEvent]} dayMaxEvents={3}>
-        <TestComponent />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestComponent />, {
+      events: [parentEvent],
+      dayMaxEvents: 3,
+    })
 
     expect(getByTestId('parent-found').textContent).toBe('true')
     expect(getByTestId('parent-rrule').textContent).toContain('"freq":3') // Check for RRule.DAILY (3)
@@ -183,11 +225,10 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       )
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider events={[nonRecurringEvent]} dayMaxEvents={3}>
-        <TestStandalone />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestStandalone />, {
+      events: [nonRecurringEvent],
+      dayMaxEvents: 3,
+    })
 
     expect(getByTestId('standalone-parent-found').textContent).toBe('false')
   })
@@ -231,11 +272,10 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       )
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider events={[parentEvent]} dayMaxEvents={3}>
-        <TestUIDGeneration />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestUIDGeneration />, {
+      events: [parentEvent],
+      dayMaxEvents: 3,
+    })
 
     expect(getByTestId('uid-match-found').textContent).toBe('false')
     expect(getByTestId('uid-match-rrule').textContent).toBe('none')
@@ -299,11 +339,10 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       )
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider events={events} dayMaxEvents={5} firstDayOfWeek={0}>
-        <TestNoDuplicates />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestNoDuplicates />, {
+      events: events,
+      dayMaxEvents: 5,
+    })
 
     // Should have 2 events on Jan 3rd (the base event generates one instance, and the modified instance is also present)
     expect(getByTestId('jan3-event-count').textContent).toBe('2')
@@ -369,17 +408,12 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       )
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider
-        events={[recurringEvent]}
-        dayMaxEvents={5}
-        firstDayOfWeek={0}
-        onEventUpdate={onEventUpdate}
-        onEventDelete={onEventDelete}
-      >
-        <TestRecurringCallbacks />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestRecurringCallbacks />, {
+      events: [recurringEvent],
+      dayMaxEvents: 5,
+      onEventUpdate: onEventUpdate,
+      onEventDelete: onEventDelete,
+    })
 
     // Test updating recurring event - should call onEventUpdate with the updated event
     getByTestId('update-recurring').click()
@@ -438,16 +472,11 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       )
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider
-        events={[recurringEvent]}
-        dayMaxEvents={5}
-        firstDayOfWeek={0}
-        onEventUpdate={onEventUpdate}
-      >
-        <TestRruleUpdate />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestRruleUpdate />, {
+      events: [recurringEvent],
+      dayMaxEvents: 5,
+      onEventUpdate: onEventUpdate,
+    })
 
     // Test updating rrule - should call onEventUpdate with the new rrule
     getByTestId('update-rrule').click()
@@ -504,16 +533,11 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       )
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider
-        events={[recurringEvent]}
-        dayMaxEvents={5}
-        firstDayOfWeek={0}
-        onEventUpdate={onEventUpdate}
-      >
-        <TestTimeUpdate />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestTimeUpdate />, {
+      events: [recurringEvent],
+      dayMaxEvents: 5,
+      onEventUpdate: onEventUpdate,
+    })
 
     // Test updating time - should call onEventUpdate with new start/end times
     getByTestId('update-time').click()
@@ -530,16 +554,10 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       return <div data-testid="current-view">{view}</div>
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider
-        events={[]}
-        dayMaxEvents={5}
-        firstDayOfWeek={0}
-        initialView="week"
-      >
-        <TestInitialView />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestInitialView />, {
+      dayMaxEvents: 5,
+      initialView: 'week',
+    })
 
     expect(getByTestId('current-view').textContent).toBe('week')
   })
@@ -550,12 +568,51 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       return <div data-testid="current-view">{view}</div>
     }
 
-    const { getByTestId } = render(
-      <CalendarProvider events={[]} dayMaxEvents={5} firstDayOfWeek={0}>
-        <TestDefaultView />
-      </CalendarProvider>
-    )
+    const { getByTestId } = renderProvider(<TestDefaultView />, {
+      dayMaxEvents: 5,
+    })
 
     expect(getByTestId('current-view').textContent).toBe('month')
+  })
+
+  it('should initialize with the specified initial date', () => {
+    const initialDate = dayjs('2025-06-15T10:00:00.000Z')
+
+    const { getByTestId } = renderProvider(
+      <div />,
+      {
+        dayMaxEvents: 5,
+        initialDate: initialDate,
+      },
+      'current-date'
+    )
+
+    // Verify the calendar initializes with the specified date
+    expect(getByTestId('current-date-year').textContent).toBe('2025')
+    expect(getByTestId('current-date-month').textContent).toBe('5') // June is month 5 (0-indexed)
+    expect(getByTestId('current-date-date').textContent).toBe('15')
+  })
+
+  it('should default to today when no initialDate is provided', () => {
+    const today = dayjs()
+
+    const { getByTestId } = renderProvider(
+      <div />,
+      {
+        dayMaxEvents: 5,
+      },
+      'current-date'
+    )
+
+    // Verify the calendar defaults to today's date
+    expect(getByTestId('current-date-year').textContent).toBe(
+      today.year().toString()
+    )
+    expect(getByTestId('current-date-month').textContent).toBe(
+      today.month().toString()
+    )
+    expect(getByTestId('current-date-date').textContent).toBe(
+      today.date().toString()
+    )
   })
 })

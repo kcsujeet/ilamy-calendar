@@ -5,16 +5,18 @@ import { CalendarContext } from './context'
 import type { CalendarEvent } from '@/components/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
+import type { CalendarView } from '@/types'
 
 export interface CalendarProviderProps {
   children: ReactNode
   events?: CalendarEvent[]
   firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
-  initialView?: 'month' | 'week' | 'day' | 'year'
+  initialView?: CalendarView
+  initialDate?: dayjs.Dayjs
   renderEvent?: (event: CalendarEvent) => ReactNode
   onEventClick?: (event: CalendarEvent) => void
   onCellClick?: (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => void
-  onViewChange?: (view: 'month' | 'week' | 'day' | 'year') => void
+  onViewChange?: (view: CalendarView) => void
   onEventAdd?: (event: CalendarEvent) => void
   onEventUpdate?: (event: CalendarEvent) => void
   onEventDelete?: (event: CalendarEvent) => void
@@ -39,6 +41,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   events = [],
   firstDayOfWeek = 0,
   initialView = 'month',
+  initialDate,
   renderEvent,
   onEventClick,
   onCellClick,
@@ -65,6 +68,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
     events,
     firstDayOfWeek,
     initialView,
+    initialDate,
     onEventAdd,
     onEventUpdate,
     onEventDelete,

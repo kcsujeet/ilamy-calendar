@@ -79,6 +79,7 @@ const TitleContent = () => {
             <Button
               variant="ghost"
               className="flex items-center gap-1 px-1! font-semibold"
+              data-testid="calendar-month-button"
             >
               <AnimatePresence mode="wait">
                 <motion.span
@@ -88,6 +89,7 @@ const TitleContent = () => {
                   exit="exit"
                   variants={animationVariants}
                   transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  data-testid="calendar-month-display"
                 >
                   {currentDate.format('MMMM')}
                 </motion.span>
@@ -120,6 +122,7 @@ const TitleContent = () => {
           <Button
             variant="ghost"
             className="flex items-center gap-1 px-1! font-semibold"
+            data-testid="calendar-year-button"
           >
             <AnimatePresence mode="wait">
               <motion.span
@@ -129,6 +132,7 @@ const TitleContent = () => {
                 exit="exit"
                 variants={animationVariants}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
+                data-testid="calendar-year-display"
               >
                 {currentDate.format('YYYY')}
               </motion.span>
@@ -162,6 +166,7 @@ const TitleContent = () => {
             <Button
               variant="ghost"
               className="flex items-center gap-1 px-1! font-semibold"
+              data-testid="calendar-week-button"
             >
               <AnimatePresence mode="wait">
                 <motion.span
@@ -171,6 +176,7 @@ const TitleContent = () => {
                   exit="exit"
                   variants={animationVariants}
                   transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  data-testid="calendar-week-display"
                 >
                   {`${currentDate
                     .startOf('week')
@@ -229,6 +235,7 @@ const TitleContent = () => {
             <Button
               variant="ghost"
               className="flex items-center gap-1 px-1! font-semibold"
+              data-testid="calendar-day-button"
             >
               <AnimatePresence mode="wait">
                 <motion.span
@@ -238,6 +245,7 @@ const TitleContent = () => {
                   exit="exit"
                   variants={animationVariants}
                   transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  data-testid="calendar-day-display"
                 >
                   {currentDate.format('dddd, D')}
                 </motion.span>

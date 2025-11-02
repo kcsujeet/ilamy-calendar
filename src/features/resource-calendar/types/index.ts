@@ -1,9 +1,28 @@
 import type { CalendarEvent } from '@/components/types'
-import type { IlamyCalendarProps } from '@/features/calendar/types'
+import type {
+  IlamyCalendarProps,
+  IlamyCalendarPropEvent,
+} from '@/features/calendar/types'
 
-export interface IlamyResourceCalendarProps extends IlamyCalendarProps {
+/**
+ * Public-facing resource calendar event interface with flexible date types.
+ * Similar to IlamyCalendarPropEvent but with resource assignment fields.
+ * Dates can be provided as dayjs.Dayjs, Date, or string and will be normalized internally.
+ *
+ * @interface IlamyResourceCalendarPropEvent
+ * @extends {IlamyCalendarPropEvent}
+ */
+export interface IlamyResourceCalendarPropEvent extends IlamyCalendarPropEvent {
+  /** Single resource assignment */
+  resourceId?: string | number
+  /** Multiple resource assignment (cross-resource events) */
+  resourceIds?: (string | number)[]
+}
+
+export interface IlamyResourceCalendarProps
+  extends Omit<IlamyCalendarProps, 'events'> {
   /** Array of events to display */
-  events?: ResourceCalendarEvent[]
+  events?: IlamyResourceCalendarPropEvent[]
   /** Array of resources */
   resources?: Resource[]
   /** Custom render function for resources */

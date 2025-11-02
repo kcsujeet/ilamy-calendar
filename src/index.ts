@@ -20,6 +20,7 @@ export type { IlamyResourceCalendarProps } from './features/resource-calendar/co
 export type { WeekDays } from './components/types'
 export type { UseIlamyCalendarContextReturn } from './features/calendar/contexts/calendar-context/context'
 export type { UseIlamyResourceCalendarContextReturn } from './features/resource-calendar/contexts/resource-calendar-context/context'
+export type { CalendarView } from './types'
 
 // Resource calendar types
 export type {

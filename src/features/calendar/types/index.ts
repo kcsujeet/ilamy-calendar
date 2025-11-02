@@ -2,6 +2,7 @@ import type { CalendarEvent, WeekDays } from '@/components/types'
 import React from 'react'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
+import type { CalendarView } from '@/types'
 
 /**
  * This interface extends the base CalendarEvent but allows more flexible date types
@@ -31,7 +32,12 @@ export interface IlamyCalendarProps {
    * The initial view to display when the calendar loads.
    * Defaults to 'month'.
    */
-  initialView?: 'month' | 'week' | 'day' | 'year'
+  initialView?: CalendarView
+  /**
+   * The initial date to display when the calendar loads.
+   * If not provided, the calendar will default to today's date.
+   */
+  initialDate?: dayjs.Dayjs | Date | string
   /**
    * Custom render function for calendar events.
    * If provided, it will override the default event rendering.
@@ -51,7 +57,7 @@ export interface IlamyCalendarProps {
    * Callback when the calendar view changes (month, week, day, year).
    * Useful for syncing with external state or analytics.
    */
-  onViewChange?: (view: 'month' | 'week' | 'day' | 'year') => void
+  onViewChange?: (view: CalendarView) => void
   /**
    * Callback when a new event is added to the calendar.
    * Provides the newly created event object.

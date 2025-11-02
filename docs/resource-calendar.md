@@ -194,19 +194,19 @@ interface IlamyResourceCalendarProps extends IlamyCalendarProps {
 
 ### Key Props
 
-| Prop                 | Type                                                                | Default     | Description                                  |
-| -------------------- | ------------------------------------------------------------------- | ----------- | -------------------------------------------- |
-| `resources`          | `Resource[]`                                                        | `[]`        | Array of resources to display                |
-| `events`             | `ResourceCalendarEvent[]`                                           | `[]`        | Array of events with resource assignments    |
-| `renderResource`     | `(resource: Resource) => ReactNode`                                 | `undefined` | Custom resource rendering function           |
-| `initialView`        | `'month' \| 'week' \| 'day'`                                        | `'month'`   | Initial view mode                            |
-| `firstDayOfWeek`     | `'sunday' \| 'monday'`                                              | `'sunday'`  | First day of the week                        |
-| `disableDragAndDrop` | `boolean`                                                           | `false`     | Disable event drag-and-drop                  |
-| `onEventClick`       | `(event: ResourceCalendarEvent) => void`                            | `undefined` | Event click handler                          |
-| `onCellClick`        | `(start: Dayjs, end: Dayjs, resourceId?: string \| number) => void` | `undefined` | Cell click handler with optional resource ID |
-| `onEventAdd`         | `(event: ResourceCalendarEvent) => void`                            | `undefined` | Event add callback                           |
-| `onEventUpdate`      | `(event: ResourceCalendarEvent) => void`                            | `undefined` | Event update callback                        |
-| `onEventDelete`      | `(eventId: string) => void`                                         | `undefined` | Event delete callback                        |
+| Prop                 | Type                                                                | Default     | Description                                                          |
+| -------------------- | ------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------- |
+| `resources`          | `Resource[]`                                                        | `[]`        | Array of resources to display                                        |
+| `events`             | `ResourceCalendarEvent[]`                                           | `[]`        | Array of events with resource assignments                            |
+| `renderResource`     | `(resource: Resource) => ReactNode`                                 | `undefined` | Custom resource rendering function                                   |
+| `initialView`        | `CalendarView`                                                      | `'month'`   | Initial view mode (Note: 'year' view is not supported for resources) |
+| `firstDayOfWeek`     | `'sunday' \| 'monday'`                                              | `'sunday'`  | First day of the week                                                |
+| `disableDragAndDrop` | `boolean`                                                           | `false`     | Disable event drag-and-drop                                          |
+| `onEventClick`       | `(event: ResourceCalendarEvent) => void`                            | `undefined` | Event click handler                                                  |
+| `onCellClick`        | `(start: Dayjs, end: Dayjs, resourceId?: string \| number) => void` | `undefined` | Cell click handler with optional resource ID                         |
+| `onEventAdd`         | `(event: ResourceCalendarEvent) => void`                            | `undefined` | Event add callback                                                   |
+| `onEventUpdate`      | `(event: ResourceCalendarEvent) => void`                            | `undefined` | Event update callback                                                |
+| `onEventDelete`      | `(eventId: string) => void`                                         | `undefined` | Event delete callback                                                |
 
 For all inherited props, see the [standard calendar documentation](https://ilamy.dev/docs/calendar).
 
@@ -245,7 +245,7 @@ function CustomComponent() {
 interface UseIlamyResourceCalendarContextReturn {
   // Standard calendar properties
   readonly currentDate: Dayjs
-  readonly view: 'month' | 'week' | 'day'
+  readonly view: CalendarView
   readonly events: ResourceCalendarEvent[]
   readonly isEventFormOpen: boolean
   readonly selectedEvent: ResourceCalendarEvent | null
@@ -258,7 +258,7 @@ interface UseIlamyResourceCalendarContextReturn {
   // Navigation methods
   setCurrentDate: (date: Dayjs) => void
   selectDate: (date: Dayjs) => void
-  setView: (view: 'month' | 'week' | 'day') => void
+  setView: (view: CalendarView) => void
   nextPeriod: () => void
   prevPeriod: () => void
   today: () => void

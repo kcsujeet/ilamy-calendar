@@ -23,6 +23,7 @@ export const DayAllDayRow = () => {
           id={`all-day-${currentDate.format('YYYY-MM-DD')}`}
           type="day-cell"
           date={currentDate}
+          allDay={true}
           className="hover:bg-accent w-full cursor-pointer min-h-10 flex flex-col relative"
         >
           <div className="absolute inset-0 z-10 pr-2">

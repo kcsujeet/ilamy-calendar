@@ -12,6 +12,7 @@ interface DroppableCellProps {
   hour?: number
   minute?: number
   resourceId?: string | number
+  allDay?: boolean
   children?: React.ReactNode
   className?: string
   style?: React.CSSProperties
@@ -25,6 +26,7 @@ export function DroppableCell({
   hour,
   minute,
   resourceId,
+  allDay,
   children,
   className,
   style,
@@ -45,6 +47,7 @@ export function DroppableCell({
       hour,
       minute,
       resourceId,
+      allDay,
     },
     disabled: disableDragAndDrop,
   })

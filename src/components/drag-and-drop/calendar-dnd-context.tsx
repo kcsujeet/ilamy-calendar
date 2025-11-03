@@ -150,6 +150,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 
       // Create new end time by adding the original duration
       let newEnd = newStart.add(durationMinutes, 'minute')
+
       if (newEnd.isSame(newEnd.startOf('day'))) {
         // If the new end time is at midnight, set it to 24 hours of partial day
         newEnd = newEnd.subtract(1, 'day').endOf('day')
@@ -160,6 +161,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
         {
           start: newStart,
           end: newEnd,
+          allDay: false, // Converting to timed event
         }
 
       if (resourceId !== undefined) {
@@ -168,8 +170,37 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 
       performEventUpdate(activeEvent, updates)
     } else if (over.data.current?.type === 'day-cell') {
-      const { date, resourceId } = over.data.current
+      const { date, resourceId, allDay: isAllDayCell } = over.data.current
       const newDate = dayjs(date)
+
+      // Handle conversion to all-day event when dropped on all-day cell
+      if (isAllDayCell) {
+        // Calculate the date shift (how many days we're moving the event)
+        const daysDifference = newDate.diff(
+          activeEvent.start.startOf('day'),
+          'day'
+        )
+
+        // Preserve time components, just shift the date and set allDay flag
+        const newStart = activeEvent.start.add(daysDifference, 'day')
+        const newEnd = activeEvent.end.add(daysDifference, 'day')
+
+        const updates: Partial<CalendarEvent> & {
+          resourceId?: string | number
+        } = {
+          start: newStart,
+          end: newEnd,
+          allDay: true, // Converting to all-day event
+        }
+
+        if (resourceId !== undefined) {
+          updates.resourceId = resourceId
+        }
+
+        performEventUpdate(activeEvent, updates)
+        setActiveEvent(null)
+        return
+      }
 
       // For multi-day events, we need to preserve the duration in days
       const isMultiDayEvent = !activeEvent.start.isSame(activeEvent.end, 'day')
@@ -204,6 +235,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
           } = {
             start: newStart,
             end: newEnd,
+            allDay: false, // Regular day-cell, not all-day
           }
 
           if (resourceId !== undefined) {
@@ -225,6 +257,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
           } = {
             start: newStart,
             end: newEnd,
+            allDay: false, // Regular day-cell, not all-day
           }
 
           if (resourceId !== undefined) {
@@ -251,6 +284,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
         } = {
           start: newStart,
           end: newEnd,
+          allDay: false, // Regular day-cell, not all-day
         }
 
         if (resourceId !== undefined) {

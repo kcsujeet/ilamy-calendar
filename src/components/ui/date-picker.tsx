@@ -8,12 +8,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PopoverClose } from '@radix-ui/react-popover'
 
 interface DatePickerProps {
   date: Date | undefined
-  setDate: (date: Date | undefined) => void
+  onChange?: (date: Date | undefined) => void
   label?: string
   className?: string
   closeOnSelect?: boolean
@@ -22,17 +22,24 @@ interface DatePickerProps {
 export function DatePicker({
   date,
   closeOnSelect,
-  setDate,
+  onChange,
   label = 'Pick a date',
   className,
 }: DatePickerProps) {
   const popOverRef = useRef<HTMLButtonElement | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(date)
 
-  const onSelect = (date: Date | undefined) => {
-    setDate(date)
+  // Sync date state with date prop
+  useEffect(() => {
+    setSelectedDate(date)
+  }, [date])
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date)
     if (closeOnSelect) {
       popOverRef.current?.click()
     }
+    onChange?.(date)
   }
 
   return (
@@ -41,23 +48,27 @@ export function DatePicker({
         <PopoverTrigger asChild>
           <Button
             variant="outline"
+            data-empty={!date}
             className={cn(
-              'w-full justify-start text-left font-normal',
-              !date && 'text-muted-foreground'
+              'data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal'
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? dayjs(date).format('MMM D, YYYY') : <span>{label}</span>}
+            <CalendarIcon />
+            {selectedDate ? (
+              dayjs(selectedDate).format('MMM D, YYYY')
+            ) : (
+              <span>{label}</span>
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <PopoverClose ref={popOverRef} />
           <Calendar
             mode="single"
-            selected={date}
-            onSelect={onSelect}
-            month={date}
-            initialFocus
+            selected={selectedDate}
+            defaultMonth={selectedDate}
+            onSelect={handleDateSelect}
+            captionLayout="dropdown"
           />
         </PopoverContent>
       </Popover>

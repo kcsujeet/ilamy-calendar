@@ -373,7 +373,7 @@ export const RecurrenceEditor: React.FC<RecurrenceEditorProps> = ({
                   {getEndType() === 'until' && (
                     <DatePicker
                       date={rruleOptions?.until}
-                      setDate={handleEndDateChange}
+                      onChange={handleEndDateChange}
                       className="h-6"
                     />
                   )}

@@ -8,7 +8,12 @@ interface ScrollAreaProps
   viewPortProps?: React.ComponentProps<typeof ScrollAreaPrimitive.Viewport>
 }
 
-function ScrollArea({ className, children, ...props }: ScrollAreaProps) {
+function ScrollArea({
+  className,
+  children,
+  viewPortProps,
+  ...props
+}: ScrollAreaProps) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -16,11 +21,11 @@ function ScrollArea({ className, children, ...props }: ScrollAreaProps) {
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
-        {...props.viewPortProps}
+        {...viewPortProps}
         data-slot="scroll-area-viewport"
         className={cn(
           'focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1',
-          props.viewPortProps?.className
+          viewPortProps?.className
         )}
       >
         {children}

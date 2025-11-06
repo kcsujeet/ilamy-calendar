@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils'
 import { cleanup, render, screen } from '@testing-library/react'
@@ -22,7 +23,27 @@ let firstDayOfWeek = 0 // Default to Sunday
 let dayMaxEvents = 3 // Default max events per day
 let locale = 'en' // Default locale
 
+// Test component to capture context values
+const TestWrapper = ({
+  children,
+  testId,
+}: {
+  children: React.ReactNode
+  testId: string
+}) => {
+  const { currentDate } = useCalendarContext()
+  return (
+    <>
+      <div data-testid={`${testId}-year`}>{currentDate.year()}</div>
+      <div data-testid={`${testId}-month`}>{currentDate.month()}</div>
+      <div data-testid={`${testId}-date`}>{currentDate.date()}</div>
+      {children}
+    </>
+  )
+}
+
 const renderWeekView = (props = {}) => {
+  const testId = 'current-date'
   return render(
     <CalendarProvider
       firstDayOfWeek={firstDayOfWeek}
@@ -31,7 +52,9 @@ const renderWeekView = (props = {}) => {
       locale={locale}
       {...props}
     >
-      <WeekView />
+      <TestWrapper testId={testId}>
+        <WeekView />
+      </TestWrapper>
     </CalendarProvider>
   )
 }
@@ -188,5 +211,136 @@ describe('WeekView', () => {
       const eventsTestId = `week-day-events-${dayDate.format('YYYY-MM-DD')}`
       expect(screen.getByTestId(eventsTestId)).toBeInTheDocument()
     }
+  })
+
+  test('initializes with specified initial date - different week', () => {
+    cleanup()
+    const initialDate = dayjs('2025-06-15T10:00:00.000Z')
+    renderWeekView({ initialDate })
+
+    // Should have currentDate set to June 2025 (month 5, 0-indexed)
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent('2025')
+    expect(screen.getByTestId('current-date-month')).toHaveTextContent('5')
+    expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
+
+    // Should have the specific date for June 15, 2025
+    const june15Events = screen.getByTestId('week-day-events-2025-06-15')
+    expect(june15Events).toBeInTheDocument()
+  })
+
+  test('initializes with specified initial date - past date', () => {
+    cleanup()
+    const initialDate = dayjs('2020-01-15T10:00:00.000Z')
+    renderWeekView({ initialDate })
+
+    // Should have currentDate set to January 2020 (month 0)
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent('2020')
+    expect(screen.getByTestId('current-date-month')).toHaveTextContent('0')
+    expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
+
+    // Should have the specific date for January 15, 2020
+    const jan15Events = screen.getByTestId('week-day-events-2020-01-15')
+    expect(jan15Events).toBeInTheDocument()
+  })
+
+  test('initializes with specified initial date - future date', () => {
+    cleanup()
+    const initialDate = dayjs('2030-12-25T10:00:00.000Z')
+    renderWeekView({ initialDate })
+
+    // Should have currentDate set to December 2030 (month 11)
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent('2030')
+    expect(screen.getByTestId('current-date-month')).toHaveTextContent('11')
+    expect(screen.getByTestId('current-date-date')).toHaveTextContent('25')
+
+    // Should have the specific date for December 25, 2030
+    const dec25Events = screen.getByTestId('week-day-events-2030-12-25')
+    expect(dec25Events).toBeInTheDocument()
+  })
+
+  test('defaults to current week when no initial date provided', () => {
+    cleanup()
+    const today = dayjs()
+    renderWeekView()
+
+    // Should have currentDate set to today
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent(
+      today.year().toString()
+    )
+    expect(screen.getByTestId('current-date-month')).toHaveTextContent(
+      today.month().toString()
+    )
+    expect(screen.getByTestId('current-date-date')).toHaveTextContent(
+      today.date().toString()
+    )
+
+    // Should have events container for today
+    const todayEvents = screen.getByTestId(
+      `week-day-events-${today.format('YYYY-MM-DD')}`
+    )
+    expect(todayEvents).toBeInTheDocument()
+  })
+
+  test('all-day event ending on Sunday should not appear on Monday when firstDayOfWeek is Monday', () => {
+    cleanup()
+
+    // Create all-day event from Nov 17 to Nov 23 (Sunday)
+    const allDayEvent: CalendarEvent = {
+      id: 'all-day-event-nov-17-23',
+      title: 'Week-long Event',
+      start: dayjs('2025-11-17T00:00:00.000Z'), // Monday Nov 17
+      end: dayjs('2025-11-23T23:59:59.999Z'), // Sunday Nov 23
+      allDay: true,
+      color: 'blue',
+    }
+
+    // Set current date to Nov 24 (Monday) to view the week containing Nov 23
+    const currentDate = dayjs('2025-11-24T00:00:00.000Z')
+
+    renderWeekView({
+      firstDayOfWeek: 1, // Monday as first day
+      initialDate: currentDate,
+      events: [allDayEvent],
+    })
+
+    // The week starting Nov 24 (Monday) should be: Nov 24-30
+    // The event ends on Nov 23 (Sunday), which is in the PREVIOUS week (Nov 17-23)
+    // Therefore, the event should NOT appear in this week view
+
+    // Check that the all-day row exists
+    const allDayRow = screen.getByTestId('week-all-day-row')
+    expect(allDayRow).toBeInTheDocument()
+
+    // The event should not be rendered because it ends before this week starts
+    const eventElement = screen.queryByText('Week-long Event')
+    expect(eventElement).not.toBeInTheDocument()
+  })
+
+  test('all-day event spanning the exact week should render correctly when firstDayOfWeek is Monday', () => {
+    cleanup()
+
+    // Create all-day event from Monday to Sunday of the same week
+    const allDayEvent: CalendarEvent = {
+      id: 'all-day-event-full-week',
+      title: 'Full Week Event',
+      start: dayjs('2025-11-17T00:00:00.000Z'), // Monday Nov 17
+      end: dayjs('2025-11-23T23:59:59.999Z'), // Sunday Nov 23
+      allDay: true,
+      color: 'green',
+    }
+
+    // Set current date to Nov 20 (Thursday) to view the week containing this event
+    const currentDate = dayjs('2025-11-20T00:00:00.000Z')
+
+    renderWeekView({
+      firstDayOfWeek: 1, // Monday as first day
+      initialDate: currentDate,
+      events: [allDayEvent],
+    })
+
+    // The week should be Nov 17-23 (Monday to Sunday)
+    // The event should span the entire week
+    const eventElement = screen.getByText('Full Week Event')
+    expect(eventElement).toBeInTheDocument()
   })
 })

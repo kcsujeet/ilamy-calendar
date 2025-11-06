@@ -5,6 +5,7 @@ import type {
   ResourceCalendarEvent,
 } from '@/features/resource-calendar/types'
 import type { CalendarEvent, WeekDays } from '@/components/types'
+import type { CalendarView } from '@/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type dayjs from '@/lib/configs/dayjs-config'
 import dummyEvents from '@/lib/seed'
@@ -101,15 +102,15 @@ const handleResourceEventClick = (event: ResourceCalendarEvent) => {
 export function DemoPage() {
   // Calendar type state
   const [calendarType, setCalendarType] = useState<'regular' | 'resource'>(
-    'resource'
+    'regular'
   )
 
   // Calendar configuration state
-  const [calendarKey, setCalendarKey] = useState(0)
   const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>('sunday')
-  const [initialView, setInitialView] = useState<
-    'month' | 'week' | 'day' | 'year'
-  >('month')
+  const [initialView, setInitialView] = useState<CalendarView>('month')
+  const [initialDate, setInitialDate] = useState<dayjs.Dayjs | undefined>(
+    undefined
+  )
   const [customEvents] = useState<CalendarEvent[]>(dummyEvents)
   const [resourceEvents] = useState<ResourceCalendarEvent[]>(
     createResourceEvents()
@@ -134,14 +135,7 @@ export function DemoPage() {
   const [calendarHeight, setCalendarHeight] = useState('600px')
   const [dayMaxEvents, setDayMaxEvents] = useState(3)
 
-  const handleSetLocale = (newLocale: string) => {
-    setLocale(newLocale)
-    // wait for the uesEffect to complete
-    setTimeout(() => {
-      // Force re-render to apply locale changes
-      setCalendarKey((prev) => prev + 1)
-    }, 10)
-  }
+  const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}`
 
   // Custom event renderer function
   const renderEvent = (event: CalendarEvent) => {
@@ -186,10 +180,12 @@ export function DemoPage() {
             setFirstDayOfWeek={setFirstDayOfWeek}
             initialView={initialView}
             setInitialView={setInitialView}
+            initialDate={initialDate}
+            setInitialDate={setInitialDate}
             useCustomEventRenderer={useCustomEventRenderer}
             setUseCustomEventRenderer={setUseCustomEventRenderer}
             locale={locale}
-            setLocale={handleSetLocale}
+            setLocale={setLocale}
             timezone={timezone}
             setTimezone={setTimezone}
             disableCellClick={disableCellClick}
@@ -258,6 +254,7 @@ export function DemoPage() {
                   key={calendarKey}
                   firstDayOfWeek={firstDayOfWeek}
                   initialView={initialView}
+                  initialDate={initialDate}
                   events={customEvents}
                   locale={locale}
                   timezone={timezone}
@@ -287,6 +284,7 @@ export function DemoPage() {
                     firstDayOfWeek === 'sunday' ? 'sunday' : 'monday'
                   }
                   initialView={initialView === 'year' ? 'month' : initialView} // No year view for resource calendar
+                  initialDate={initialDate}
                   locale={locale}
                   timezone={timezone}
                   onEventClick={

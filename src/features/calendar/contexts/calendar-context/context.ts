@@ -2,11 +2,12 @@ import type { CalendarEvent } from '@/components/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { TranslationKey } from '@/lib/translations/types'
+import type { CalendarView } from '@/types'
 import { createContext, useContext } from 'react'
 
 export interface CalendarContextType {
   currentDate: dayjs.Dayjs
-  view: 'month' | 'week' | 'day' | 'year'
+  view: CalendarView
   events: CalendarEvent[]
   rawEvents: CalendarEvent[] // Unprocessed events for export
   isEventFormOpen: boolean
@@ -15,7 +16,7 @@ export interface CalendarContextType {
   firstDayOfWeek: number // 0 for Sunday, 1 for Monday, etc.
   setCurrentDate: (date: dayjs.Dayjs) => void
   selectDate: (date: dayjs.Dayjs) => void
-  setView: (view: 'month' | 'week' | 'day' | 'year') => void
+  setView: (view: CalendarView) => void
   nextPeriod: () => void
   prevPeriod: () => void
   today: () => void
@@ -71,7 +72,7 @@ export const useCalendarContext = (): CalendarContextType => {
  */
 export interface UseIlamyCalendarContextReturn {
   readonly currentDate: dayjs.Dayjs
-  readonly view: 'month' | 'week' | 'day' | 'year'
+  readonly view: CalendarView
   readonly events: CalendarEvent[]
   readonly isEventFormOpen: boolean
   readonly selectedEvent: CalendarEvent | null
@@ -79,7 +80,7 @@ export interface UseIlamyCalendarContextReturn {
   readonly firstDayOfWeek: number
   readonly setCurrentDate: (date: dayjs.Dayjs) => void
   readonly selectDate: (date: dayjs.Dayjs) => void
-  readonly setView: (view: 'month' | 'week' | 'day' | 'year') => void
+  readonly setView: (view: CalendarView) => void
   readonly nextPeriod: () => void
   readonly prevPeriod: () => void
   readonly today: () => void

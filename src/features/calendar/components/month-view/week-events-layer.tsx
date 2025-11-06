@@ -2,14 +2,25 @@ import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWeekEvents'
 import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 import type dayjs from '@/lib/configs/dayjs-config'
+import { memo } from 'react'
 
 interface WeekEventsLayerProps {
   days: dayjs.Dayjs[]
+  allDay?: boolean
+  dayNumberHeight?: number
 }
 
-export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
+const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({
+  days,
+  allDay,
+  dayNumberHeight,
+}) => {
   const weekStart = days[0]
-  const processedWeekEvents = useProcessedWeekEvents({ days })
+  const processedWeekEvents = useProcessedWeekEvents({
+    days,
+    allDay,
+    dayNumberHeight,
+  })
 
   return (
     <div className="relative w-full h-full pointer-events-none z-10 overflow-clip">
@@ -39,3 +50,6 @@ export const WeekEventsLayer: React.FC<WeekEventsLayerProps> = ({ days }) => {
     </div>
   )
 }
+
+const memoizedWeekEventsLayer = memo(WeekEventsLayer)
+export { memoizedWeekEventsLayer as WeekEventsLayer }

@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from '@/components/ui'
 import type { WeekDays } from '@/components/types'
+import type { CalendarView } from '@/types'
+import dayjs from '@/lib/configs/dayjs-config'
 import { ModeToggle } from './mode-toggle'
 
 interface DemoCalendarSettingsProps {
@@ -20,8 +22,10 @@ interface DemoCalendarSettingsProps {
   setCalendarType: (value: 'regular' | 'resource') => void
   firstDayOfWeek: WeekDays
   setFirstDayOfWeek: (value: WeekDays) => void
-  initialView: 'month' | 'week' | 'day' | 'year'
-  setInitialView: (value: 'month' | 'week' | 'day' | 'year') => void
+  initialView: CalendarView
+  setInitialView: (value: CalendarView) => void
+  initialDate: dayjs.Dayjs | undefined
+  setInitialDate: (value: dayjs.Dayjs | undefined) => void
   useCustomEventRenderer: boolean
   setUseCustomEventRenderer: (value: boolean) => void
   locale: string
@@ -55,6 +59,8 @@ export function DemoCalendarSettings({
   setFirstDayOfWeek,
   initialView,
   setInitialView,
+  initialDate,
+  setInitialDate,
   useCustomEventRenderer,
   setUseCustomEventRenderer,
   locale,
@@ -137,9 +143,7 @@ export function DemoCalendarSettings({
           </label>
           <Select
             value={initialView}
-            onValueChange={(value) =>
-              setInitialView(value as 'month' | 'week' | 'day' | 'year')
-            }
+            onValueChange={(value) => setInitialView(value as CalendarView)}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select initial view" />
@@ -151,6 +155,46 @@ export function DemoCalendarSettings({
               {!isResourceCalendar && (
                 <SelectItem value="year">Year</SelectItem>
               )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <label className="block text-sm text-left font-medium mb-1">
+            Initial Date
+          </label>
+          <Select
+            value={
+              initialDate === undefined
+                ? 'today'
+                : initialDate.isSame(dayjs().startOf('month'), 'day')
+                  ? 'start-of-month'
+                  : initialDate.isSame(dayjs().startOf('year'), 'day')
+                    ? 'start-of-year'
+                    : initialDate.isSame(dayjs().add(1, 'month'), 'month')
+                      ? 'next-month'
+                      : 'custom'
+            }
+            onValueChange={(value) => {
+              if (value === 'today') {
+                setInitialDate(undefined)
+              } else if (value === 'start-of-month') {
+                setInitialDate(dayjs().startOf('month'))
+              } else if (value === 'start-of-year') {
+                setInitialDate(dayjs().startOf('year'))
+              } else if (value === 'next-month') {
+                setInitialDate(dayjs().add(1, 'month').startOf('month'))
+              }
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select initial date" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today (Default)</SelectItem>
+              <SelectItem value="start-of-month">Start of Month</SelectItem>
+              <SelectItem value="start-of-year">Start of Year</SelectItem>
+              <SelectItem value="next-month">Next Month</SelectItem>
             </SelectContent>
           </Select>
         </div>

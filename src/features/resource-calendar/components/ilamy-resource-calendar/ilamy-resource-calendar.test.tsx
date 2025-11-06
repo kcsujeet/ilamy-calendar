@@ -113,6 +113,48 @@ describe('IlamyResourceCalendar', () => {
     expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
   })
 
+  it('should handle initialDate prop with dayjs', () => {
+    const initialDate = dayjs('2025-06-15T10:00:00.000Z')
+
+    render(
+      <IlamyResourceCalendar
+        initialDate={initialDate}
+        resources={mockResources}
+        events={mockEvents}
+      />
+    )
+
+    expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
+  })
+
+  it('should handle initialDate prop with Date object', () => {
+    const initialDate = new Date('2025-06-15T10:00:00.000Z')
+
+    render(
+      <IlamyResourceCalendar
+        initialDate={initialDate}
+        resources={mockResources}
+        events={mockEvents}
+      />
+    )
+
+    expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
+  })
+
+  it('should handle initialDate prop with ISO string', () => {
+    const initialDate = '2025-06-15T10:00:00.000Z'
+
+    render(
+      <IlamyResourceCalendar
+        initialDate={initialDate}
+        resources={mockResources}
+        events={mockEvents}
+      />
+    )
+
+    expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
+  })
+
   it('should render custom header when provided', () => {
     const customHeader = <div data-testid="custom-header">Custom Header</div>
 

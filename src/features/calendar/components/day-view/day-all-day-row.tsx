@@ -1,76 +1,9 @@
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
-import { useMemo } from 'react'
-import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { DroppableCell } from '@/components/droppable-cell'
-import type { CalendarEvent, ProcessedCalendarEvent } from '@/components/types'
-import { EVENT_BAR_HEIGHT } from '@/lib/constants'
+import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { WeekEventsLayer } from '../month-view/week-events-layer'
 
 export const DayAllDayRow = () => {
-  const { currentDate, getEventsForDateRange, t } = useCalendarContext()
-
-  // Get current day's events - this will refresh automatically when store updates
-  // because getEventsForDateRange is a selector function from the store that runs whenever events change
-  const dayEvents = getEventsForDateRange(
-    currentDate.startOf('day'),
-    currentDate.endOf('day')
-  )
-
-  // Separate all-day events from regular events
-  const { allDayEvents } = useMemo(() => {
-    // Only events explicitly marked as allDay should be in the all-day section
-    const allDayEvts = dayEvents.filter((event) => event.allDay)
-
-    // Regular events (including multi-day events)
-    const regularEvts = dayEvents.filter((event) => !event.allDay)
-
-    return { allDayEvents: allDayEvts, regularEvents: regularEvts }
-  }, [dayEvents]) // Only depend on the dayEvents which is refreshed automatically
-
-  // Process all-day events for display
-  const { processedAllDayEvents } = useMemo(() => {
-    // Sort all-day events (if needed)
-    const sortedEvents = [...allDayEvents].sort((a, b) => {
-      return a.start.diff(b.start)
-    })
-
-    // Track positions in rows for stacking
-    const rows: { event: CalendarEvent }[][] = []
-    const processedEvents: ProcessedCalendarEvent[] = []
-
-    sortedEvents.forEach((event, rowIndex) => {
-      let placed = false
-
-      while (!placed) {
-        if (rowIndex >= rows.length) {
-          // Create a new row if needed
-          rows.push([])
-          placed = true
-        } else {
-          // In day view, we can place one event per row as they don't overlap horizontally
-          // This is simpler than week view where we needed to check for overlaps
-          placed = true
-        }
-      }
-
-      // Add event to the row
-      rows[rowIndex].push({ event })
-
-      // Add processed event with correct positioning
-      processedEvents.push({
-        ...event,
-        left: 0,
-        width: 100,
-        top: rowIndex * EVENT_BAR_HEIGHT,
-        height: EVENT_BAR_HEIGHT,
-        allDay: true,
-      })
-    })
-
-    return {
-      processedAllDayEvents: processedEvents,
-      allDayRowsCount: Math.max(1, rows.length), // At least 1 row, even if empty
-    }
-  }, [allDayEvents])
+  const { currentDate, t } = useCalendarContext()
 
   return (
     <div
@@ -90,23 +23,12 @@ export const DayAllDayRow = () => {
           id={`all-day-${currentDate.format('YYYY-MM-DD')}`}
           type="day-cell"
           date={currentDate}
-          className="hover:bg-accent w-full cursor-pointer min-h-10 flex flex-col"
+          allDay={true}
+          className="hover:bg-accent w-full cursor-pointer min-h-10 flex flex-col relative"
         >
-          {processedAllDayEvents.map((event, index) => {
-            return (
-              <div
-                key={`all-day-${event.id}-${index}`}
-                style={{ height: EVENT_BAR_HEIGHT + 'px' }}
-              >
-                <DraggableEvent
-                  elementId={`all-day-${event.id}-${index}`}
-                  event={event}
-                  className="overflow-clip text-xs"
-                  style={{ width: `calc(100% - var(--spacing) * 2)` }}
-                />
-              </div>
-            )
-          })}
+          <div className="absolute inset-0 z-10 pr-2">
+            <WeekEventsLayer days={[currentDate]} dayNumberHeight={0} allDay />
+          </div>
         </DroppableCell>
       </div>
     </div>

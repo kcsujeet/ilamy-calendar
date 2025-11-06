@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils'
 import { cleanup, render, screen } from '@testing-library/react'
@@ -28,7 +29,27 @@ let firstDayOfWeek = 0 // Default to Sunday
 let dayMaxEvents = 3 // Default max events per day
 let locale = 'en' // Default locale
 
+// Test component to capture context values
+const TestWrapper = ({
+  children,
+  testId,
+}: {
+  children: React.ReactNode
+  testId: string
+}) => {
+  const { currentDate } = useCalendarContext()
+  return (
+    <>
+      <div data-testid={`${testId}-year`}>{currentDate.year()}</div>
+      <div data-testid={`${testId}-month`}>{currentDate.month()}</div>
+      <div data-testid={`${testId}-date`}>{currentDate.date()}</div>
+      {children}
+    </>
+  )
+}
+
 const renderYearView = (props = {}) => {
+  const testId = 'current-date'
   return render(
     <CalendarProvider
       firstDayOfWeek={firstDayOfWeek}
@@ -37,7 +58,9 @@ const renderYearView = (props = {}) => {
       locale={locale}
       {...props}
     >
-      <YearView />
+      <TestWrapper testId={testId}>
+        <YearView />
+      </TestWrapper>
     </CalendarProvider>
   )
 }
@@ -99,7 +122,11 @@ describe('YearView', () => {
   test('displays current year correctly', () => {
     const testYear = 2025
     const testDate = dayjs().year(testYear).month(5) // June 2025
-    renderYearView({ initialDate: testDate.toDate() })
+    renderYearView({ initialDate: testDate })
+
+    // Should have currentDate set to June 2025 (month 5, 0-indexed)
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent('2025')
+    expect(screen.getByTestId('current-date-month')).toHaveTextContent('5')
 
     // All months should be for the test year
     for (let month = 1; month <= 12; month++) {
@@ -123,7 +150,12 @@ describe('YearView', () => {
 
   test('renders day cells in mini calendars', () => {
     const testDate = dayjs('2025-01-15') // Use 2025 to match the current year
-    renderYearView({ initialDate: testDate.toDate() })
+    renderYearView({ initialDate: testDate })
+
+    // Should have currentDate set to January 2025
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent('2025')
+    expect(screen.getByTestId('current-date-month')).toHaveTextContent('0')
+    expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
 
     // Check for some specific days in January 2025 using getAllByTestId for duplicate dates
     const jan1Elements = screen.getAllByTestId('year-day-2025-01-2025-01-01')
@@ -138,7 +170,18 @@ describe('YearView', () => {
 
   test('highlights today in mini calendars', () => {
     const today = dayjs()
-    renderYearView({ initialDate: today.toDate() })
+    renderYearView({ initialDate: today })
+
+    // Should have currentDate set to today
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent(
+      today.year().toString()
+    )
+    expect(screen.getByTestId('current-date-month')).toHaveTextContent(
+      today.month().toString()
+    )
+    expect(screen.getByTestId('current-date-date')).toHaveTextContent(
+      today.date().toString()
+    )
 
     // Today should be highlighted in its mini calendar
     const todayElement = screen.getByTestId(
@@ -161,9 +204,71 @@ describe('YearView', () => {
 
   test('handles different year navigation', () => {
     const futureYear = dayjs().add(1, 'year')
-    renderYearView({ initialDate: futureYear.toDate() })
+    renderYearView({ initialDate: futureYear })
+
+    // Should have currentDate year set to future year
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent(
+      futureYear.year().toString()
+    )
 
     // Should render all 12 months for the future year
+    for (let month = 1; month <= 12; month++) {
+      const monthId = month.toString().padStart(2, '0')
+      expect(screen.getByTestId(`year-month-${monthId}`)).toBeInTheDocument()
+    }
+  })
+
+  test('initializes with specified initial date - past year', () => {
+    cleanup()
+    const initialDate = dayjs('2020-06-15T10:00:00.000Z')
+    renderYearView({ initialDate })
+
+    // Should have currentDate set to June 2020 (month 5, 0-indexed)
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent('2020')
+    expect(screen.getByTestId('current-date-month')).toHaveTextContent('5')
+    expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
+
+    // Should have all 12 months for 2020
+    for (let month = 1; month <= 12; month++) {
+      const monthId = month.toString().padStart(2, '0')
+      expect(screen.getByTestId(`year-month-${monthId}`)).toBeInTheDocument()
+    }
+  })
+
+  test('initializes with specified initial date - future year', () => {
+    cleanup()
+    const initialDate = dayjs('2030-12-25T10:00:00.000Z')
+    renderYearView({ initialDate })
+
+    // Should have currentDate set to December 2030 (month 11)
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent('2030')
+    expect(screen.getByTestId('current-date-month')).toHaveTextContent('11')
+    expect(screen.getByTestId('current-date-date')).toHaveTextContent('25')
+
+    // Should have all 12 months for 2030
+    for (let month = 1; month <= 12; month++) {
+      const monthId = month.toString().padStart(2, '0')
+      expect(screen.getByTestId(`year-month-${monthId}`)).toBeInTheDocument()
+    }
+  })
+
+  test('defaults to current year when no initial date provided', () => {
+    cleanup()
+    const today = dayjs()
+    renderYearView()
+
+    // Should have currentDate set to today
+    expect(screen.getByTestId('current-date-year')).toHaveTextContent(
+      today.year().toString()
+    )
+    expect(screen.getByTestId('current-date-month')).toHaveTextContent(
+      today.month().toString()
+    )
+    expect(screen.getByTestId('current-date-date')).toHaveTextContent(
+      today.date().toString()
+    )
+
+    // Should have all 12 months
     for (let month = 1; month <= 12; month++) {
       const monthId = month.toString().padStart(2, '0')
       expect(screen.getByTestId(`year-month-${monthId}`)).toBeInTheDocument()

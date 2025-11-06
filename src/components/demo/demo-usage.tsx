@@ -83,7 +83,7 @@ function MyCalendar() {
     console.log('Date clicked:', date);
   };
 
-  const handleViewChange = (view: 'month' | 'week' | 'day' | 'year') => {
+  const handleViewChange = (view: CalendarView) => {
     console.log('View changed:', view);
   };
 

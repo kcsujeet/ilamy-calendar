@@ -5,10 +5,12 @@ All notable changes to this project will be documented in this file. Dates are d
 #### [v1.0.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.0.1...v1.0.2)
 
 ##### Features
+
 - feat: add initialDate prop [`0709260`](https://github.com/kcsujeet/ilamy-calendar/commit/0709260)
 - feat: enhance drag-and-drop functionality for calendar events with all-day and timed event conversions [`85fe985`](https://github.com/kcsujeet/ilamy-calendar/commit/85fe985)
 
 ##### Fixes
+
 - fix: update package versions and improve ScrollArea component props handling [`63988c2`](https://github.com/kcsujeet/ilamy-calendar/commit/63988c2)
 - fix: correct week/month range calculation for firstDayOfWeek [`576d79e`](https://github.com/kcsujeet/ilamy-calendar/commit/576d79e)
 - fix: add month state management to DatePicker for dropdown navigation

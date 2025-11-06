@@ -1,6 +1,6 @@
 {
   "name": "@ilamy/calendar",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A full-featured React calendar component library built with Shadcn-Ui, Tailwind CSS, and TypeScript.",
   "author": "Sujeet Kc",
   "license": "MIT",
@@ -62,8 +62,7 @@
     "type-check": "bunx tsc --noEmit",
     "ci": "bun run lint && bun run type-check && bun run prettier:check && bun run test && bun run build",
     "pre-commit": "bun run lint:fix && bun run prettier:fix",
-    "prepare": "bunx husky",
-    "version": "auto-changelog -p && git add CHANGELOG.md"
+    "prepare": "bunx husky"
   },
   "peerDependencies": {
     "react": "^19.1.0",
@@ -106,7 +105,6 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@types/rrule": "^2.2.9",
-    "auto-changelog": "^2.5.0",
     "bunup": "^0.15.13",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.6",
@@ -114,8 +112,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "auto-changelog": {
-    "startingVersion": "1.0.1"
   }
 }

@@ -209,6 +209,7 @@ export function DemoCalendarSettings({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="en">English</SelectItem>
+              <SelectItem value="cs">Čeština</SelectItem>
               <SelectItem value="es">Español</SelectItem>
               <SelectItem value="fr">Français</SelectItem>
               <SelectItem value="de">Deutsch</SelectItem>

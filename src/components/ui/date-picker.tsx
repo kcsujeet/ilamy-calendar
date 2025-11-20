@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/popover'
 import { useEffect, useRef, useState } from 'react'
 import { PopoverClose } from '@radix-ui/react-popover'
+import type { Matcher } from 'react-day-picker'
 
 interface DatePickerProps {
   date: Date | undefined
@@ -17,6 +18,7 @@ interface DatePickerProps {
   label?: string
   className?: string
   closeOnSelect?: boolean
+  disabled?: Matcher | Matcher[]
 }
 
 export function DatePicker({
@@ -25,6 +27,7 @@ export function DatePicker({
   onChange,
   label = 'Pick a date',
   className,
+  disabled,
 }: DatePickerProps) {
   const popOverRef = useRef<HTMLButtonElement | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(date)
@@ -69,6 +72,7 @@ export function DatePicker({
             defaultMonth={selectedDate}
             onSelect={handleDateSelect}
             captionLayout="dropdown"
+            disabled={disabled}
           />
         </PopoverContent>
       </Popover>

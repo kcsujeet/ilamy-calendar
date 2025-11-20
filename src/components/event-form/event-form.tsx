@@ -70,12 +70,12 @@ export const EventForm: React.FC<EventFormProps> = ({
     handleConfirm,
   } = useRecurringEventActions(onClose)
 
-  const { findParentRecurringEvent, t } = useSmartCalendarContext(
-    (context) => ({
+  const { findParentRecurringEvent, t, businessHours } =
+    useSmartCalendarContext((context) => ({
       findParentRecurringEvent: context.findParentRecurringEvent,
       t: context.t,
-    })
-  )
+      businessHours: context.businessHours,
+    }))
 
   const start = selectedEvent?.start
   const end = selectedEvent?.end
@@ -252,6 +252,35 @@ export const EventForm: React.FC<EventFormProps> = ({
     }
   }
 
+  // Create disabled date matcher for business hours
+  const disabledDateMatcher = (date: Date) => {
+    if (!businessHours) {
+      return false
+    }
+
+    const dayOfWeek = dayjs(date).format('dddd').toLowerCase()
+    return !businessHours.daysOfWeek.includes(
+      dayOfWeek as (typeof businessHours.daysOfWeek)[number]
+    )
+  }
+
+  // Get min and max time based on business hours
+  const getTimeConstraints = () => {
+    if (!businessHours) {
+      return { minTime: '00:00', maxTime: '23:59' }
+    }
+
+    const startHour = businessHours.startTime.toString().padStart(2, '0')
+    const endHour = (businessHours.endTime - 1).toString().padStart(2, '0')
+
+    return {
+      minTime: `${startHour}:00`,
+      maxTime: `${endHour}:45`, // 45 minutes allows up to :45 of the last hour
+    }
+  }
+
+  const { minTime, maxTime } = getTimeConstraints()
+
   return (
     <>
       <Dialog open={true} onOpenChange={onClose}>
@@ -321,6 +350,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                       onChange={handleStartDateChange}
                       className="mt-1"
                       closeOnSelect
+                      disabled={businessHours ? disabledDateMatcher : undefined}
                     />
                   </div>
                   <div>
@@ -330,6 +360,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                       onChange={handleEndDateChange}
                       className="mt-1"
                       closeOnSelect
+                      disabled={businessHours ? disabledDateMatcher : undefined}
                     />
                   </div>
                 </div>
@@ -342,6 +373,11 @@ export const EventForm: React.FC<EventFormProps> = ({
                         className="text-xs sm:text-sm"
                       >
                         {t('startTime')}
+                        {businessHours && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            ({minTime} - {maxTime})
+                          </span>
+                        )}
                       </Label>
                       <Input
                         id="start-time"
@@ -349,11 +385,18 @@ export const EventForm: React.FC<EventFormProps> = ({
                         value={startTime}
                         onChange={(e) => handleTimeChange(e, true)}
                         className="mt-1 h-8 text-sm sm:h-9"
+                        min={businessHours ? minTime : undefined}
+                        max={businessHours ? maxTime : undefined}
                       />
                     </div>
                     <div>
                       <Label htmlFor="end-time" className="text-xs sm:text-sm">
                         {t('endTime')}
+                        {businessHours && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            ({minTime} - {maxTime})
+                          </span>
+                        )}
                       </Label>
                       <Input
                         id="end-time"
@@ -361,6 +404,8 @@ export const EventForm: React.FC<EventFormProps> = ({
                         value={endTime}
                         onChange={(e) => handleTimeChange(e, false)}
                         className="mt-1 h-8 text-sm sm:h-9"
+                        min={businessHours ? minTime : undefined}
+                        max={businessHours ? maxTime : undefined}
                       />
                     </div>
                   </div>

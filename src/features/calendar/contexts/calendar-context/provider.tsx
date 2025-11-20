@@ -2,7 +2,7 @@ import type dayjs from '@/lib/configs/dayjs-config'
 import React, { useCallback, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { CalendarContext } from './context'
-import type { CalendarEvent } from '@/components/types'
+import type { CalendarEvent, BusinessHours } from '@/components/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type { CalendarView } from '@/types'
@@ -31,6 +31,7 @@ export interface CalendarProviderProps {
   viewHeaderClassName?: string
   headerComponent?: ReactNode // Optional custom header component
   headerClassName?: string // Optional custom header class
+  businessHours?: BusinessHours
   // Translation options - provide either translations object OR translator function
   translations?: Translations
   translator?: TranslatorFunction
@@ -60,6 +61,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   viewHeaderClassName = '',
   headerComponent,
   headerClassName,
+  businessHours,
   translations,
   translator,
 }) => {
@@ -69,6 +71,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
     firstDayOfWeek,
     initialView,
     initialDate,
+    businessHours,
     onEventAdd,
     onEventUpdate,
     onEventDelete,
@@ -158,6 +161,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       viewHeaderClassName,
       headerComponent,
       headerClassName,
+      businessHours,
       t: calendarEngine.t,
     }),
     [
@@ -175,6 +179,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       viewHeaderClassName,
       headerComponent,
       headerClassName,
+      businessHours,
     ]
   )
 

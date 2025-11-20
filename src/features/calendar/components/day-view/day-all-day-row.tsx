@@ -1,9 +1,11 @@
 import { DroppableCell } from '@/components/droppable-cell'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { WeekEventsLayer } from '../month-view/week-events-layer'
 
 export const DayAllDayRow = () => {
-  const { currentDate, t } = useCalendarContext()
+  const { currentDate, t, businessHours } = useCalendarContext()
+  const isBusiness = isBusinessHour({ date: currentDate, businessHours })
 
   return (
     <div
@@ -25,6 +27,7 @@ export const DayAllDayRow = () => {
           date={currentDate}
           allDay={true}
           className="hover:bg-accent w-full cursor-pointer min-h-10 flex flex-col relative"
+          disabled={!isBusiness}
         >
           <div className="absolute inset-0 z-10 pr-2">
             <WeekEventsLayer days={[currentDate]} dayNumberHeight={0} allDay />

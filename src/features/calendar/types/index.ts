@@ -1,4 +1,4 @@
-import type { CalendarEvent, WeekDays } from '@/components/types'
+import type { CalendarEvent, WeekDays, BusinessHours } from '@/components/types'
 import React from 'react'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
@@ -139,4 +139,9 @@ export interface IlamyCalendarProps {
    * Useful for applying custom styles to the header.
    */
   headerClassName?: string
+  /**
+   * Configuration for business hours.
+   * Defines the working hours to be highlighted on the calendar.
+   */
+  businessHours?: BusinessHours
 }

@@ -8,9 +8,7 @@ import { DayAllDayRow } from './day-all-day-row'
 import { DayEventsLayer } from './day-events-layer'
 import { DayHeader } from './day-header'
 import { DayTimeCol } from './day-time-col'
-
-// For more granular time slots, we'll divide each hour into 15-minute segments
-const timeSegments = [0, 15, 30, 45]
+import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 
 // Hours to display (all 24 hours of the day)
 const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
@@ -18,7 +16,7 @@ const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
 })
 
 const DayView = () => {
-  const { currentDate } = useCalendarContext()
+  const { currentDate, businessHours } = useCalendarContext()
 
   const isToday = currentDate.isSame(dayjs(), 'day')
   const dateStr = currentDate.format('YYYY-MM-DD')
@@ -50,86 +48,49 @@ const DayView = () => {
             data-testid="day-events-column"
             className="relative col-span-6 h-full md:col-span-7"
           >
-            {/* Background grid for time slots - lowest layer */}
-            <div
-              data-testid="day-background-grid"
-              className="absolute inset-0 z-0"
-            >
-              {hours.map((hour, index) => {
-                const hourStr = hour.format('HH')
-                const dateStr = currentDate.format('YYYY-MM-DD')
+            {hours.map((time) => {
+              const hour = time.hour()
+              const hourStr = time.format('HH')
 
-                return (
-                  <div
-                    key={`bg-${dateStr}-${hourStr}`}
-                    className="h-[60px] border-b"
-                    data-testid={`day-bg-hour-${hourStr}`}
-                  >
-                    {/* 15-minute marker lines */}
-                    {timeSegments.slice(1).map((minutes) => (
-                      <div
-                        key={`bg-${hourStr}-${minutes}`}
-                        data-testid={`day-bg-hour-${hourStr}-${minutes}`}
-                        className="border-border absolute w-full border-t border-dashed"
-                        style={{ top: `${index * 60 + minutes}px` }}
-                      ></div>
-                    ))}
-                  </div>
-                )
-              })}
-            </div>
+              const checkBusiness = (minute: number) =>
+                isBusinessHour({
+                  date: currentDate,
+                  hour,
+                  minute,
+                  businessHours,
+                })
 
-            {/* Interactive layer for time slots - middle layer with no borders */}
-            <div
-              data-testid="day-interactive-layer"
-              className="pointer-events-auto absolute inset-0 z-10"
-            >
-              {hours.map((time) => {
-                const hour = time.hour()
-                const hourStr = time.format('HH')
+              return (
+                <Fragment key={`${dateStr}-${hourStr}`}>
+                  {[0, 15, 30, 45].map((minute) => {
+                    const isBusiness = checkBusiness(minute)
+                    const isLastSlot = minute === 45
+                    const minuteStr = minute.toString().padStart(2, '0')
 
-                return (
-                  <Fragment key={`${dateStr}-${hourStr}`}>
-                    <DroppableCell
-                      id={`day-time-cell-${dateStr}-${hourStr}-00`}
-                      data-testid={`day-time-cell-${hourStr}-00`}
-                      type="time-cell"
-                      date={currentDate}
-                      hour={hour}
-                      minute={0}
-                      className={cn('hover:bg-accent h-[15px] cursor-pointer')}
-                    />
-                    <DroppableCell
-                      id={`day-time-cell-${dateStr}-${hourStr}-15`}
-                      data-testid={`day-time-cell-${hourStr}-15`}
-                      type="time-cell"
-                      date={currentDate}
-                      hour={hour}
-                      minute={15}
-                      className="hover:bg-accent h-[15px] cursor-pointer"
-                    />
-                    <DroppableCell
-                      id={`day-time-cell-${dateStr}-${hourStr}-30`}
-                      data-testid={`day-time-cell-${hourStr}-30`}
-                      type="time-cell"
-                      date={currentDate}
-                      hour={hour}
-                      minute={30}
-                      className="hover:bg-accent h-[15px] cursor-pointer"
-                    />
-                    <DroppableCell
-                      id={`day-time-cell-${dateStr}-${hourStr}-45`}
-                      data-testid={`day-time-cell-${hourStr}-45`}
-                      type="time-cell"
-                      date={currentDate}
-                      hour={hour}
-                      minute={45}
-                      className="hover:bg-accent h-[15px] cursor-pointer"
-                    />
-                  </Fragment>
-                )
-              })}
-            </div>
+                    const borderClass = isLastSlot
+                      ? 'border-border'
+                      : 'border-dashed'
+
+                    return (
+                      <DroppableCell
+                        key={minute}
+                        id={`day-time-cell-${dateStr}-${hourStr}-${minuteStr}`}
+                        data-testid={`day-time-cell-${hourStr}-${minuteStr}`}
+                        type="time-cell"
+                        date={currentDate}
+                        hour={hour}
+                        minute={minute}
+                        disabled={!isBusiness}
+                        className={cn(
+                          'h-[15px] border-b hover:bg-accent',
+                          borderClass
+                        )}
+                      />
+                    )
+                  })}
+                </Fragment>
+              )
+            })}
 
             {/* Events layer - middle-top layer */}
             <DayEventsLayer day={currentDate} />

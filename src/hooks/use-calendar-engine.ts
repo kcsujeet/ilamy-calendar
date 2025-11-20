@@ -1,6 +1,6 @@
 import dayjs from '@/lib/configs/dayjs-config'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { CalendarEvent } from '@/components/types'
+import type { CalendarEvent, BusinessHours } from '@/components/types'
 import {
   generateRecurringEvents,
   updateRecurringEvent as updateRecurringEventImpl,
@@ -17,6 +17,7 @@ export interface CalendarEngineConfig {
   firstDayOfWeek: number
   initialView?: CalendarView
   initialDate?: dayjs.Dayjs
+  businessHours?: BusinessHours
   onEventAdd?: (event: CalendarEvent) => void
   onEventUpdate?: (event: CalendarEvent) => void
   onEventDelete?: (event: CalendarEvent) => void
@@ -40,6 +41,7 @@ export interface CalendarEngineReturn {
   firstDayOfWeek: number
   dayMaxEvents: number
   currentLocale: string
+  businessHours?: BusinessHours
 
   // Actions
   setCurrentDate: (date: dayjs.Dayjs) => void
@@ -90,6 +92,7 @@ export const useCalendarEngine = (
     firstDayOfWeek = 0,
     initialView = 'month',
     initialDate = dayjs(),
+    businessHours,
     onEventAdd,
     onEventUpdate,
     onEventDelete,
@@ -455,6 +458,7 @@ export const useCalendarEngine = (
     firstDayOfWeek,
     dayMaxEvents: DAY_MAX_EVENTS_DEFAULT,
     currentLocale,
+    businessHours,
 
     // Actions
     setCurrentDate,

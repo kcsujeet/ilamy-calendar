@@ -1,11 +1,12 @@
 import { DroppableCell } from '@/components/droppable-cell'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { getWeekDays } from '@/lib/utils/date-utils'
 import React from 'react'
 import { WeekEventsLayer } from '../month-view/week-events-layer'
 
 export const WeekAllDayRow: React.FC = () => {
-  const { currentDate, firstDayOfWeek, t } = useCalendarContext()
+  const { currentDate, firstDayOfWeek, t, businessHours } = useCalendarContext()
 
   const weekDays = getWeekDays(currentDate, firstDayOfWeek)
 
@@ -22,16 +23,21 @@ export const WeekAllDayRow: React.FC = () => {
       </div>
 
       {/* Droppable cells for each day */}
-      {weekDays.map((day) => (
-        <DroppableCell
-          key={`all-day-${day.format('YYYY-MM-DD')}`}
-          id={`all-day-cell-${day.format('YYYY-MM-DD')}`}
-          type="day-cell"
-          date={day}
-          allDay={true}
-          className="hover:bg-accent h-full flex-1 cursor-pointer border-r border-b"
-        />
-      ))}
+      {weekDays.map((day) => {
+        const isBusiness = isBusinessHour({ date: day, businessHours })
+
+        return (
+          <DroppableCell
+            key={`all-day-${day.format('YYYY-MM-DD')}`}
+            id={`all-day-cell-${day.format('YYYY-MM-DD')}`}
+            type="day-cell"
+            date={day}
+            allDay={true}
+            disabled={!isBusiness}
+            className="hover:bg-accent h-full flex-1 cursor-pointer border-r border-b"
+          />
+        )
+      })}
 
       {/* All-day event blocks */}
       <div className="absolute inset-0 z-10 col-span-7 col-start-2">

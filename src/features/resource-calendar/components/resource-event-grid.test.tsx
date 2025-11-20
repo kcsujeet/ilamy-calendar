@@ -7,6 +7,7 @@ import type {
   Resource,
   ResourceCalendarEvent,
 } from '@/features/resource-calendar/types'
+import type { BusinessHours, WeekDays } from '@/components/types'
 
 const mockResources: Resource[] = [
   {
@@ -27,13 +28,17 @@ const mockEvents: ResourceCalendarEvent[] = [
   {
     id: 'event-1',
     title: 'Meeting',
-    start: dayjs('2025-01-13T10:00:00'),
-    end: dayjs('2025-01-13T11:00:00'),
+    start: dayjs('2025-01-13T10:00:00.000Z'),
+    end: dayjs('2025-01-13T11:00:00.000Z'),
     resourceId: 'res-1',
   },
 ]
 
-const mockDays = [dayjs('2025-01-13'), dayjs('2025-01-14'), dayjs('2025-01-15')]
+const mockDays = [
+  dayjs('2025-01-13T00:00:00.000Z'),
+  dayjs('2025-01-14T00:00:00.000Z'),
+  dayjs('2025-01-15T00:00:00.000Z'),
+]
 
 const renderWithProvider = (
   ui: React.ReactElement,
@@ -140,5 +145,82 @@ describe('ResourceEventGrid', () => {
 
     const cells = screen.getAllByTestId(/^day-cell-/)
     expect(cells.length).toBe(3)
+  })
+
+  describe('Business Hours Styling', () => {
+    const businessHours: BusinessHours = {
+      daysOfWeek: [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+      ] as WeekDays[],
+      startTime: 9,
+      endTime: 17,
+    }
+
+    it('applies styling correctly in day grid (Month View)', () => {
+      // Monday (Business Day) and Sunday (Non-Business Day)
+      const days = [
+        dayjs('2025-01-13T00:00:00.000Z'), // Monday
+        dayjs('2025-01-12T00:00:00.000Z'), // Sunday
+      ]
+
+      renderWithProvider(<ResourceEventGrid days={days} gridType="day" />, {
+        resources: [mockResources[0]],
+        businessHours,
+      })
+
+      const mondayCell = screen.getByTestId(`day-cell-${days[0].toISOString()}`)
+      const sundayCell = screen.getByTestId(`day-cell-${days[1].toISOString()}`)
+
+      // Monday is a business day -> No disabled styling
+      expect(mondayCell.className).not.toContain('pointer-events-none')
+
+      // Sunday is NOT a business day -> Disabled styling applied
+      expect(sundayCell.className).toContain('bg-secondary')
+      expect(sundayCell.className).toContain('text-muted-foreground')
+      expect(sundayCell.className).toContain('pointer-events-none')
+    })
+
+    it('applies styling correctly in hour grid (Week/Day View)', () => {
+      const monday = dayjs('2025-01-13T00:00:00.000Z') // Monday
+      const sunday = dayjs('2025-01-12T00:00:00.000Z') // Sunday
+
+      const hours = [
+        monday.hour(10), // Monday 10am (Business Hour)
+        monday.hour(20), // Monday 8pm (Non-Business Hour)
+        sunday.hour(10), // Sunday 10am (Non-Business Day)
+      ]
+
+      renderWithProvider(<ResourceEventGrid days={hours} gridType="hour" />, {
+        resources: [mockResources[0]],
+        businessHours,
+      })
+
+      const businessHourCell = screen.getByTestId(
+        `day-cell-${hours[0].toISOString()}`
+      )
+      const nonBusinessHourCell = screen.getByTestId(
+        `day-cell-${hours[1].toISOString()}`
+      )
+      const nonBusinessDayCell = screen.getByTestId(
+        `day-cell-${hours[2].toISOString()}`
+      )
+
+      // Monday 10am -> Business -> No disabled styling
+      expect(businessHourCell.className).not.toContain('pointer-events-none')
+
+      // Monday 8pm -> Non-Business Time -> Disabled styling applied
+      expect(nonBusinessHourCell.className).toContain('bg-secondary')
+      expect(nonBusinessHourCell.className).toContain('text-muted-foreground')
+      expect(nonBusinessHourCell.className).toContain('pointer-events-none')
+
+      // Sunday 10am -> Non-Business Day -> Disabled styling applied
+      expect(nonBusinessDayCell.className).toContain('bg-secondary')
+      expect(nonBusinessDayCell.className).toContain('text-muted-foreground')
+      expect(nonBusinessDayCell.className).toContain('pointer-events-none')
+    })
   })
 })

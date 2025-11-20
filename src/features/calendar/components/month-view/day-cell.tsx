@@ -6,6 +6,7 @@ import { DroppableCell } from '@/components/droppable-cell'
 import { AllEventDialog } from '@/components/all-events-dialog'
 import type { SelectedDayEvents } from './types'
 import type { CalendarEvent } from '@/components/types'
+import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 
 interface DayCellProps {
   index: number // Index of the day in the week (0-6)
@@ -31,6 +32,7 @@ export const DayCell: React.FC<DayCellProps> = ({
     firstDayOfWeek,
     dayMaxEvents = 0,
     t,
+    businessHours,
   } = useCalendarContext()
   const todayEvents = getEventsForDateRange(
     day.startOf('day'),
@@ -63,6 +65,11 @@ export const DayCell: React.FC<DayCellProps> = ({
   const hiddenEventsCount = todayEvents.length - dayMaxEvents
   const hasHiddenEvents = hiddenEventsCount > 0
 
+  const isBusiness = isBusinessHour({
+    date: day,
+    businessHours,
+  })
+
   return (
     <>
       <DroppableCell
@@ -76,6 +83,7 @@ export const DayCell: React.FC<DayCellProps> = ({
           isLastColumn && 'border-r-0',
           className
         )}
+        disabled={!isBusiness}
       >
         {/* Absolutely positioned multi-day bars (Google Calendar style) */}
 

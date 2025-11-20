@@ -5,7 +5,7 @@ import type { CalendarProviderProps } from './provider'
 import { useCalendarContext } from './context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { RRule } from 'rrule'
-import type { CalendarEvent } from '@/components/types'
+import type { CalendarEvent, BusinessHours, WeekDays } from '@/components/types'
 import type React from 'react'
 
 // Default test props
@@ -286,12 +286,12 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
     const baseEvent: CalendarEvent = {
       id: 'daily-standup',
       title: 'Daily Standup',
-      start: dayjs('2025-01-01T09:00:00'),
-      end: dayjs('2025-01-01T09:30:00'),
+      start: dayjs('2025-01-01T09:00:00.000Z'),
+      end: dayjs('2025-01-01T09:30:00.000Z'),
       rrule: {
         freq: RRule.DAILY,
         interval: 1,
-        dtstart: dayjs('2025-01-01T09:00:00').toDate(),
+        dtstart: dayjs('2025-01-01T09:00:00.000Z').toDate(),
       },
       uid: 'daily-standup@calendar',
     }
@@ -300,8 +300,8 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
     const modifiedInstance: CalendarEvent = {
       id: 'daily-standup_modified_123',
       title: 'Daily Standup',
-      start: dayjs('2025-01-03T10:00:00'), // Moved to different time
-      end: dayjs('2025-01-03T10:30:00'),
+      start: dayjs('2025-01-03T10:00:00.000Z'), // Moved to different time
+      end: dayjs('2025-01-03T10:30:00.000Z'),
       recurrenceId: '2025-01-03T09:00:00.000Z', // Original occurrence time
       uid: 'daily-standup@calendar', // Same UID as base
     }
@@ -319,13 +319,13 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 
       // Get events for a range that includes the modified date
       const rangeEvents = getEventsForDateRange(
-        dayjs('2025-01-01'),
-        dayjs('2025-01-05')
+        dayjs('2025-01-01T00:00:00.000Z'),
+        dayjs('2025-01-05T00:00:00.000Z')
       )
 
       // Count events on the modified date (Jan 3rd)
       const jan3Events = rangeEvents.filter((event) =>
-        event.start.isSame(dayjs('2025-01-03'), 'day')
+        event.start.isSame(dayjs('2025-01-03T00:00:00.000Z'), 'day')
       )
 
       return (
@@ -360,13 +360,13 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       id: 'weekly-meeting',
       uid: 'weekly-meeting@ilamy.calendar',
       title: 'Weekly Meeting',
-      start: dayjs('2025-01-06T10:00:00'),
-      end: dayjs('2025-01-06T11:00:00'),
+      start: dayjs('2025-01-06T10:00:00.000Z'),
+      end: dayjs('2025-01-06T11:00:00.000Z'),
       rrule: {
         freq: RRule.WEEKLY,
         interval: 1,
         byweekday: [RRule.MO],
-        dtstart: dayjs('2025-01-06T10:00:00').toDate(),
+        dtstart: dayjs('2025-01-06T10:00:00.000Z').toDate(),
       },
       exdates: [],
     }
@@ -434,12 +434,12 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       id: 'daily-standup',
       uid: 'daily-standup@ilamy.calendar',
       title: 'Daily Standup',
-      start: dayjs('2025-01-06T09:00:00'),
-      end: dayjs('2025-01-06T09:30:00'),
+      start: dayjs('2025-01-06T09:00:00.000Z'),
+      end: dayjs('2025-01-06T09:30:00.000Z'),
       rrule: {
         freq: RRule.DAILY,
         interval: 1,
-        dtstart: dayjs('2025-01-06T09:00:00').toDate(),
+        dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
       },
       exdates: [],
     }
@@ -456,7 +456,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
               freq: RRule.WEEKLY,
               interval: 1,
               byweekday: [RRule.MO],
-              dtstart: dayjs('2025-01-06T09:00:00').toDate(),
+              dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
             },
           },
           { scope: 'all', eventDate: recurringEvent.start }
@@ -486,7 +486,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
         freq: RRule.WEEKLY,
         interval: 1,
         byweekday: [RRule.MO],
-        dtstart: dayjs('2025-01-06T09:00:00').toDate(),
+        dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
       },
     })
   })
@@ -498,13 +498,13 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
       id: 'team-meeting',
       uid: 'team-meeting@ilamy.calendar',
       title: 'Team Meeting',
-      start: dayjs('2025-01-06T14:00:00'),
-      end: dayjs('2025-01-06T15:00:00'),
+      start: dayjs('2025-01-06T14:00:00.000Z'),
+      end: dayjs('2025-01-06T15:00:00.000Z'),
       rrule: {
         freq: RRule.WEEKLY,
         interval: 1,
         byweekday: [RRule.MO],
-        dtstart: dayjs('2025-01-06T14:00:00').toDate(),
+        dtstart: dayjs('2025-01-06T14:00:00.000Z').toDate(),
       },
       exdates: [],
     }
@@ -517,8 +517,8 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
         updateRecurringEvent(
           recurringEvent,
           {
-            start: dayjs('2025-01-06T10:00:00'),
-            end: dayjs('2025-01-06T11:00:00'),
+            start: dayjs('2025-01-06T10:00:00.000Z'),
+            end: dayjs('2025-01-06T11:00:00.000Z'),
           },
           { scope: 'all', eventDate: recurringEvent.start }
         )
@@ -543,8 +543,8 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
     getByTestId('update-time').click()
     expect(onEventUpdate).toHaveBeenCalledWith({
       ...recurringEvent,
-      start: dayjs('2025-01-06T10:00:00'),
-      end: dayjs('2025-01-06T11:00:00'),
+      start: dayjs('2025-01-06T10:00:00.000Z'),
+      end: dayjs('2025-01-06T11:00:00.000Z'),
     })
   })
 
@@ -617,13 +617,43 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
   })
 })
 
+describe('CalendarProvider - Business Hours', () => {
+  it('should provide businessHours in context', () => {
+    const businessHours: BusinessHours = {
+      daysOfWeek: [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+      ] as WeekDays[],
+      startTime: 9,
+      endTime: 17,
+    }
+
+    const TestComponent = () => {
+      const { businessHours } = useCalendarContext()
+      return (
+        <div data-testid="business-hours">{JSON.stringify(businessHours)}</div>
+      )
+    }
+
+    const { getByTestId } = renderProvider(<TestComponent />, {
+      businessHours,
+    })
+
+    const content = getByTestId('business-hours').textContent
+    expect(content).toBe(JSON.stringify(businessHours))
+  })
+})
+
 describe('firstDayOfWeek functionality', () => {
   it('should calculate correct week range when firstDayOfWeek is Monday', () => {
     const TestComponent = () => {
       const { getEventsForDateRange } = useCalendarContext()
 
       // Test date: Wednesday Oct 15, 2025
-      const testDate = dayjs('2025-10-15')
+      const testDate = dayjs('2025-10-15T00:00:00.000Z')
 
       // Calculate week range - should be Mon Oct 13 to Sun Oct 19
       const currentDay = testDate.day()
@@ -655,7 +685,7 @@ describe('firstDayOfWeek functionality', () => {
     const { getByTestId } = renderProvider(<TestComponent />, {
       events: [testEvent],
       firstDayOfWeek: 1, // Monday
-      initialDate: dayjs('2025-10-15'), // Wednesday
+      initialDate: dayjs('2025-10-15T00:00:00.000Z'), // Wednesday
     })
 
     // Verify week starts on Monday
@@ -673,7 +703,7 @@ describe('firstDayOfWeek functionality', () => {
   it('should calculate correct week range when current date is Sunday and firstDayOfWeek is Monday', () => {
     const TestComponent = () => {
       // Test date: Sunday Oct 12, 2025
-      const testDate = dayjs('2025-10-12')
+      const testDate = dayjs('2025-10-12T00:00:00.000Z')
 
       // Calculate week range - should be Mon Oct 6 to Sun Oct 12
       const currentDay = testDate.day()
@@ -693,7 +723,7 @@ describe('firstDayOfWeek functionality', () => {
 
     const { getByTestId } = renderProvider(<TestComponent />, {
       firstDayOfWeek: 1, // Monday
-      initialDate: dayjs('2025-10-12'), // Sunday
+      initialDate: dayjs('2025-10-12T00:00:00.000Z'), // Sunday
     })
 
     // Verify week starts on Monday (6 days before Sunday)
@@ -708,7 +738,7 @@ describe('firstDayOfWeek functionality', () => {
   it('should calculate correct month range when firstDayOfWeek is Monday', () => {
     const TestComponent = () => {
       // October 2025 starts on Wednesday Oct 1
-      const oct1 = dayjs('2025-10-01')
+      const oct1 = dayjs('2025-10-01T00:00:00.000Z')
 
       // For month view with Monday as first day:
       // Should start on Monday Sep 29 (to complete the first week)
@@ -739,7 +769,7 @@ describe('firstDayOfWeek functionality', () => {
 
     const { getByTestId } = renderProvider(<TestComponent />, {
       firstDayOfWeek: 1, // Monday
-      initialDate: dayjs('2025-10-01'),
+      initialDate: dayjs('2025-10-01T00:00:00.000Z'),
     })
 
     // Verify month grid starts on Monday

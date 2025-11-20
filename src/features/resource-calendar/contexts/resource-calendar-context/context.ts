@@ -91,5 +91,6 @@ export const useIlamyResourceCalendarContext =
       openEventForm: context.openEventForm,
       closeEventForm: context.closeEventForm,
       getEventsForResource: context.getEventsForResource,
+      businessHours: context.businessHours,
     } as const
   }

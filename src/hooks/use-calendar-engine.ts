@@ -229,6 +229,7 @@ export const useCalendarEngine = (
     if (locale) {
       setCurrentLocale(locale)
       dayjs.locale(locale)
+      setCurrentDate((prevDate) => prevDate.locale(locale))
     }
   }, [locale])
 

@@ -51,25 +51,6 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
     closeMobileMenu()
   }
 
-  const mobileNav = {
-    today: () => {
-      today()
-      closeMobileMenu()
-    },
-    prev: () => {
-      prevPeriod()
-      closeMobileMenu()
-    },
-    next: () => {
-      nextPeriod()
-      closeMobileMenu()
-    },
-    setView: (v: 'day' | 'week' | 'month' | 'year') => {
-      setView(v)
-      closeMobileMenu()
-    },
-  }
-
   const NewEventButton = () => (
     <Button
       onClick={() => openEventForm()}
@@ -146,10 +127,22 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                 <div className="space-y-2">
                   <ViewControls
                     currentView={view}
-                    onChange={mobileNav.setView}
-                    onToday={mobileNav.today}
-                    onNext={mobileNav.next}
-                    onPrevious={mobileNav.prev}
+                    onChange={(v) => {
+                      setView(v)
+                      closeMobileMenu()
+                    }}
+                    onToday={() => {
+                      today()
+                      closeMobileMenu()
+                    }}
+                    onNext={() => {
+                      nextPeriod()
+                      closeMobileMenu()
+                    }}
+                    onPrevious={() => {
+                      prevPeriod()
+                      closeMobileMenu()
+                    }}
                     variant="grid"
                   />
                   <div className="pt-2 border-t">

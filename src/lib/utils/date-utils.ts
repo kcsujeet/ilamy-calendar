@@ -36,3 +36,19 @@ export function getWeekDays(
     adjustedStartOfWeek.add(dayIndex, 'day')
   )
 }
+
+/**
+ * Generates 6 weeks of days for a month calendar view.
+ * Always returns 42 days (6 weeks × 7 days).
+ */
+export function getMonthWeeks(
+  monthDate: dayjs.Dayjs,
+  firstDayOfWeek: number
+): dayjs.Dayjs[][] {
+  const firstWeek = getWeekDays(monthDate.startOf('month'), firstDayOfWeek)
+
+  return Array.from({ length: 6 }, (_, weekIndex) => {
+    const weekStart = firstWeek[0].add(weekIndex, 'week')
+    return getWeekDays(weekStart, firstDayOfWeek)
+  })
+}

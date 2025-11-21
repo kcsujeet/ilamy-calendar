@@ -1,4 +1,4 @@
-import { ScrollArea } from '@/components/ui'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import dayjs from '@/lib/configs/dayjs-config'
 import weekOfYear from 'dayjs/plugin/weekOfYear'
 import React from 'react'

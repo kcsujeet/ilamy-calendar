@@ -2,7 +2,7 @@ import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import dayjs from '@/lib/configs/dayjs-config'
-import { generateMockEvents } from '@/lib/utils'
+import { generateMockEvents } from '@/lib/utils/generator'
 import { cleanup, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, test } from 'bun:test'
 import WeekView from './week-view'
@@ -342,5 +342,296 @@ describe('WeekView', () => {
     // The event should span the entire week
     const eventElement = screen.getByText('Full Week Event')
     expect(eventElement).toBeInTheDocument()
+  })
+
+  test('applies business hours styling correctly', () => {
+    cleanup()
+    const monday = dayjs('2025-01-06T00:00:00.000Z') // Monday
+    const businessHours = {
+      daysOfWeek: ['monday'],
+      startTime: 9,
+      endTime: 17,
+    }
+
+    renderWeekView({
+      initialDate: monday,
+      businessHours,
+    })
+
+    // Monday 10am should be business hour (hover:bg-accent)
+    const businessCell = screen.getByTestId(
+      `week-time-cell-${monday.format('YYYY-MM-DD')}-10`
+    )
+    expect(businessCell.className).toContain('hover:bg-accent')
+    expect(businessCell.className).not.toContain('bg-muted/30')
+    expect(businessCell.className).toContain('cursor-pointer')
+
+    // Monday 8am should be non-business hour (bg-secondary)
+    const nonBusinessCell = screen.getByTestId(
+      `week-time-cell-${monday.format('YYYY-MM-DD')}-08`
+    )
+    expect(nonBusinessCell.className).toContain('bg-secondary')
+    expect(nonBusinessCell.className).toContain('text-muted-foreground')
+    expect(nonBusinessCell.className).not.toContain('hover:bg-muted/50')
+    expect(nonBusinessCell.className).toContain('cursor-default')
+
+    // Sunday should be non-business day
+    const sunday = monday.subtract(1, 'day')
+    const sundayCell = screen.getByTestId(
+      `week-time-cell-${sunday.format('YYYY-MM-DD')}-10`
+    )
+    expect(sundayCell.className).toContain('bg-secondary')
+    expect(sundayCell.className).toContain('text-muted-foreground')
+    expect(sundayCell.className).toContain('cursor-default')
+  })
+
+  test('applies styling at exact boundary times (9am start, 5pm end)', () => {
+    cleanup()
+    const monday = dayjs('2025-01-06T00:00:00.000Z') // Monday
+    const businessHours = {
+      daysOfWeek: ['monday'],
+      startTime: 9,
+      endTime: 17,
+    }
+
+    renderWeekView({
+      initialDate: monday,
+      businessHours,
+    })
+
+    // Exactly at 9am (startTime) - Should be business hour
+    const startBoundaryCell = screen.getByTestId(
+      `week-time-cell-${monday.format('YYYY-MM-DD')}-09`
+    )
+    expect(startBoundaryCell.className).toContain('hover:bg-accent')
+    expect(startBoundaryCell.className).not.toContain('bg-secondary')
+    expect(startBoundaryCell.className).toContain('cursor-pointer')
+
+    // Exactly at 5pm (endTime) - Should be non-business hour (endTime is exclusive)
+    const endBoundaryCell = screen.getByTestId(
+      `week-time-cell-${monday.format('YYYY-MM-DD')}-17`
+    )
+    expect(endBoundaryCell.className).toContain('bg-secondary')
+    expect(endBoundaryCell.className).toContain('text-muted-foreground')
+    expect(endBoundaryCell.className).toContain('cursor-default')
+
+    // 4pm (one hour before endTime) - Should be business hour
+    const beforeEndCell = screen.getByTestId(
+      `week-time-cell-${monday.format('YYYY-MM-DD')}-16`
+    )
+    expect(beforeEndCell.className).toContain('hover:bg-accent')
+    expect(beforeEndCell.className).not.toContain('bg-secondary')
+    expect(beforeEndCell.className).toContain('cursor-pointer')
+
+    // 8am (one hour before startTime) - Should be non-business hour
+    const beforeStartCell = screen.getByTestId(
+      `week-time-cell-${monday.format('YYYY-MM-DD')}-08`
+    )
+    expect(beforeStartCell.className).toContain('bg-secondary')
+    expect(beforeStartCell.className).toContain('text-muted-foreground')
+    expect(beforeStartCell.className).toContain('cursor-default')
+  })
+
+  test('respects businessHours with firstDayOfWeek=Monday', () => {
+    cleanup()
+    const monday = dayjs('2025-01-06T00:00:00.000Z') // Monday
+    const businessHours = {
+      daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+      startTime: 9,
+      endTime: 17,
+    }
+
+    renderWeekView({
+      initialDate: monday,
+      firstDayOfWeek: 1, // Monday
+      businessHours,
+    })
+
+    // Monday 10am - Business hour
+    const mondayCell = screen.getByTestId(
+      `week-time-cell-${monday.format('YYYY-MM-DD')}-10`
+    )
+    expect(mondayCell.className).toContain('hover:bg-accent')
+    expect(mondayCell.className).not.toContain('bg-secondary')
+
+    // Friday 10am - Business hour
+    const friday = monday.add(4, 'day')
+    const fridayCell = screen.getByTestId(
+      `week-time-cell-${friday.format('YYYY-MM-DD')}-10`
+    )
+    expect(fridayCell.className).toContain('hover:bg-accent')
+    expect(fridayCell.className).not.toContain('bg-secondary')
+
+    // Saturday 10am - Non-business day
+    const saturday = monday.add(5, 'day')
+    const saturdayCell = screen.getByTestId(
+      `week-time-cell-${saturday.format('YYYY-MM-DD')}-10`
+    )
+    expect(saturdayCell.className).toContain('bg-secondary')
+    expect(saturdayCell.className).toContain('text-muted-foreground')
+
+    // Sunday 10am - Non-business day
+    const sunday = monday.add(6, 'day')
+    const sundayCell = screen.getByTestId(
+      `week-time-cell-${sunday.format('YYYY-MM-DD')}-10`
+    )
+    expect(sundayCell.className).toContain('bg-secondary')
+    expect(sundayCell.className).toContain('text-muted-foreground')
+  })
+
+  test('respects businessHours with firstDayOfWeek=Sunday', () => {
+    cleanup()
+    const sunday = dayjs('2025-01-05T00:00:00.000Z') // Sunday
+    const businessHours = {
+      daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+      startTime: 9,
+      endTime: 17,
+    }
+
+    renderWeekView({
+      initialDate: sunday,
+      firstDayOfWeek: 0, // Sunday
+      businessHours,
+    })
+
+    // Sunday 10am - Non-business day (even though it's first day of week)
+    const sundayCell = screen.getByTestId(
+      `week-time-cell-${sunday.format('YYYY-MM-DD')}-10`
+    )
+    expect(sundayCell.className).toContain('bg-secondary')
+    expect(sundayCell.className).toContain('text-muted-foreground')
+
+    // Monday 10am - Business hour
+    const monday = sunday.add(1, 'day')
+    const mondayCell = screen.getByTestId(
+      `week-time-cell-${monday.format('YYYY-MM-DD')}-10`
+    )
+    expect(mondayCell.className).toContain('hover:bg-accent')
+    expect(mondayCell.className).not.toContain('bg-secondary')
+
+    // Saturday 10am - Non-business day
+    const saturday = sunday.add(6, 'day')
+    const saturdayCell = screen.getByTestId(
+      `week-time-cell-${saturday.format('YYYY-MM-DD')}-10`
+    )
+    expect(saturdayCell.className).toContain('bg-secondary')
+    expect(saturdayCell.className).toContain('text-muted-foreground')
+  })
+
+  test('handles custom business hours (Tuesday-Thursday, 10am-3pm)', () => {
+    cleanup()
+    const tuesday = dayjs('2025-01-07T00:00:00.000Z') // Tuesday
+    const businessHours = {
+      daysOfWeek: ['tuesday', 'wednesday', 'thursday'],
+      startTime: 10,
+      endTime: 15, // 3pm
+    }
+
+    renderWeekView({
+      initialDate: tuesday,
+      businessHours,
+    })
+
+    // Tuesday 11am - Business hour
+    const tuesdayBusinessCell = screen.getByTestId(
+      `week-time-cell-${tuesday.format('YYYY-MM-DD')}-11`
+    )
+    expect(tuesdayBusinessCell.className).toContain('hover:bg-accent')
+    expect(tuesdayBusinessCell.className).not.toContain('bg-secondary')
+
+    // Tuesday 9am - Non-business hour (before start)
+    const tuesdayEarlyCell = screen.getByTestId(
+      `week-time-cell-${tuesday.format('YYYY-MM-DD')}-09`
+    )
+    expect(tuesdayEarlyCell.className).toContain('bg-secondary')
+    expect(tuesdayEarlyCell.className).toContain('text-muted-foreground')
+
+    // Tuesday 4pm - Non-business hour (after end)
+    const tuesdayLateCell = screen.getByTestId(
+      `week-time-cell-${tuesday.format('YYYY-MM-DD')}-16`
+    )
+    expect(tuesdayLateCell.className).toContain('bg-secondary')
+    expect(tuesdayLateCell.className).toContain('text-muted-foreground')
+
+    // Monday 11am - Non-business day
+    const monday = tuesday.subtract(1, 'day')
+    const mondayCell = screen.getByTestId(
+      `week-time-cell-${monday.format('YYYY-MM-DD')}-11`
+    )
+    expect(mondayCell.className).toContain('bg-secondary')
+    expect(mondayCell.className).toContain('text-muted-foreground')
+
+    // Friday 11am - Non-business day
+    const friday = tuesday.add(3, 'day')
+    const fridayCell = screen.getByTestId(
+      `week-time-cell-${friday.format('YYYY-MM-DD')}-11`
+    )
+    expect(fridayCell.className).toContain('bg-secondary')
+    expect(fridayCell.className).toContain('text-muted-foreground')
+  })
+
+  test('handles edge case: businessHours with single day', () => {
+    cleanup()
+    const wednesday = dayjs('2025-01-08T00:00:00.000Z') // Wednesday
+    const businessHours = {
+      daysOfWeek: ['wednesday'],
+      startTime: 9,
+      endTime: 17,
+    }
+
+    renderWeekView({
+      initialDate: wednesday,
+      businessHours,
+    })
+
+    // Wednesday 10am - Business hour
+    const wednesdayCell = screen.getByTestId(
+      `week-time-cell-${wednesday.format('YYYY-MM-DD')}-10`
+    )
+    expect(wednesdayCell.className).toContain('hover:bg-accent')
+    expect(wednesdayCell.className).not.toContain('bg-secondary')
+
+    // Tuesday 10am - Non-business day
+    const tuesday = wednesday.subtract(1, 'day')
+    const tuesdayCell = screen.getByTestId(
+      `week-time-cell-${tuesday.format('YYYY-MM-DD')}-10`
+    )
+    expect(tuesdayCell.className).toContain('bg-secondary')
+    expect(tuesdayCell.className).toContain('text-muted-foreground')
+
+    // Thursday 10am - Non-business day
+    const thursday = wednesday.add(1, 'day')
+    const thursdayCell = screen.getByTestId(
+      `week-time-cell-${thursday.format('YYYY-MM-DD')}-10`
+    )
+    expect(thursdayCell.className).toContain('bg-secondary')
+    expect(thursdayCell.className).toContain('text-muted-foreground')
+  })
+
+  test('handles no businessHours prop (all times are clickable)', () => {
+    cleanup()
+    const monday = dayjs('2025-01-06T00:00:00.000Z') // Monday
+
+    renderWeekView({
+      initialDate: monday,
+      // No businessHours prop
+    })
+
+    // Monday 10am - Should be clickable (no business hours restriction)
+    const mondayCell = screen.getByTestId(
+      `week-time-cell-${monday.format('YYYY-MM-DD')}-10`
+    )
+    expect(mondayCell.className).toContain('hover:bg-accent')
+    expect(mondayCell.className).not.toContain('bg-secondary')
+    expect(mondayCell.className).toContain('cursor-pointer')
+
+    // Sunday 10am - Should be clickable (no business hours restriction)
+    const sunday = monday.subtract(1, 'day')
+    const sundayCell = screen.getByTestId(
+      `week-time-cell-${sunday.format('YYYY-MM-DD')}-10`
+    )
+    expect(sundayCell.className).toContain('hover:bg-accent')
+    expect(sundayCell.className).not.toContain('bg-secondary')
+    expect(sundayCell.className).toContain('cursor-pointer')
   })
 })

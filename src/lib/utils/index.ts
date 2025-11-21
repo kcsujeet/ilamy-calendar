@@ -1,4 +1,3 @@
-import type { CalendarEvent } from '@/components'
 import dayjs from '@/lib/configs/dayjs-config'
 import type { ClassValue } from 'clsx'
 import { clsx } from 'clsx'
@@ -8,51 +7,19 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export { getWeekDays } from './date-utils'
+export { getWeekDays, getMonthWeeks } from './date-utils'
 
-export function generateMockEvents({ count = 5 } = {}) {
-  const events: CalendarEvent[] = []
-  for (let i = 0; i < count; i++) {
-    events.push({
-      id: i.toString(),
-      title: `Mock Event ${i + 1}`,
-      start: dayjs().startOf('week').add(i, 'day').startOf('day'),
-      end: dayjs().startOf('week').add(i, 'day').endOf('day'),
-      color: 'bg-gray-100 text-gray-800',
-    })
-  }
-  return events
-}
-
-export function safeDate(date: dayjs.Dayjs | Date | string): dayjs.Dayjs {
-  if (dayjs.isDayjs(date)) {
-    return date
-  }
-
-  const parsedDate = dayjs(date)
-  return parsedDate.isValid() ? parsedDate : dayjs()
-}
-
-/**
- * Normalizes optional date input (dayjs, Date, or string) to a dayjs object.
- * Returns undefined if the input is undefined, allowing for optional date handling.
- * This is particularly useful for props like initialDate where undefined means "use default behavior".
- *
- * @param date - Optional date input in various formats
- * @returns Normalized dayjs object or undefined
- */
-export function normalizeInitialDate(
+export function safeDate(
   date: dayjs.Dayjs | Date | string | undefined
 ): dayjs.Dayjs | undefined {
   if (date === undefined) {
     return undefined
   }
-
   if (dayjs.isDayjs(date)) {
     return date
   }
-
-  return dayjs(date)
+  const parsedDate = dayjs(date)
+  return parsedDate.isValid() ? parsedDate : undefined
 }
 
 export const omitKeys = <T extends object, K extends keyof T>(

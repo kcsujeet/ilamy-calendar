@@ -6,6 +6,7 @@ import { AllEventDialog } from './all-events-dialog'
 import type { SelectedDayEvents } from './all-events-dialog'
 import { DroppableCell } from './droppable-cell'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 
 interface GridProps {
   index: number // Index of the day in the week (0-6)
@@ -35,6 +36,7 @@ export const GridCell: React.FC<GridProps> = ({
     firstDayOfWeek,
     t,
     getEventsForResource,
+    businessHours,
   } = useSmartCalendarContext((state) => ({
     dayMaxEvents: state.dayMaxEvents,
     getEventsForDateRange: state.getEventsForDateRange,
@@ -42,6 +44,7 @@ export const GridCell: React.FC<GridProps> = ({
     firstDayOfWeek: state.firstDayOfWeek,
     t: state.t,
     getEventsForResource: state.getEventsForResource,
+    businessHours: state.businessHours,
   }))
 
   const todayEvents = useMemo(() => {
@@ -85,6 +88,12 @@ export const GridCell: React.FC<GridProps> = ({
   const hiddenEventsCount = todayEvents.length - dayMaxEvents
   const hasHiddenEvents = hiddenEventsCount > 0
 
+  const isBusiness = isBusinessHour({
+    date: day,
+    hour: gridType === 'hour' ? day.hour() : undefined,
+    businessHours,
+  })
+
   return (
     <>
       <DroppableCell
@@ -93,6 +102,7 @@ export const GridCell: React.FC<GridProps> = ({
         data-testid={`day-cell-${day.toISOString()}`}
         date={day}
         resourceId={resourceId}
+        disabled={!isBusiness}
         className={cn(
           'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px]',
           !isCurrentMonth && 'bg-secondary text-muted-foreground',

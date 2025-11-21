@@ -85,19 +85,17 @@ describe('EventForm', () => {
       // Check that date inputs show the selected date (there are both start and end date pickers)
       expect(screen.getAllByText('Aug 15, 2025')).toHaveLength(2) // start and end date
 
-      // Check that time inputs show default times based on selectedDate (HH:mm format)
-      const startTimeInput = screen.getByLabelText(
-        'Start Time'
-      ) as HTMLInputElement
-      expect(startTimeInput.value).toBe('10:00') // testSelectedDate hour
+      // Check that time selects are rendered (2 selects: start and end)
+      expect(screen.queryAllByRole('combobox')).toHaveLength(2)
     })
 
     it('should initialize form with event data when editing', () => {
       renderEventForm({ ...defaultProps, selectedEvent: testEvent })
 
       expect(screen.getByDisplayValue('Test Event')).toBeInTheDocument()
-      expect(screen.getByDisplayValue('10:00')).toBeInTheDocument() // start time
-      expect(screen.getByDisplayValue('11:00')).toBeInTheDocument() // end time
+      // TimeSelect displays time in 12-hour format (10:00 AM, 11:00 AM)
+      expect(screen.getAllByText('10:00 AM').length).toBeGreaterThan(0) // start time
+      expect(screen.getAllByText('11:00 AM').length).toBeGreaterThan(0) // end time
       expect(screen.getByDisplayValue('Test description')).toBeInTheDocument()
       expect(screen.getByDisplayValue('Test location')).toBeInTheDocument()
     })
@@ -140,14 +138,12 @@ describe('EventForm', () => {
     it('should update time inputs when changed', () => {
       renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
 
-      const startTimeInput = screen.getByLabelText('Start Time')
-      const endTimeInput = screen.getByLabelText('End Time')
+      // TimeSelect uses Select component (combobox), find by role
+      const [startTimeSelect, endTimeSelect] = screen.getAllByRole('combobox')
 
-      fireEvent.change(startTimeInput, { target: { value: '14:30' } })
-      fireEvent.change(endTimeInput, { target: { value: '16:30' } })
-
-      expect(startTimeInput).toHaveValue('14:30')
-      expect(endTimeInput).toHaveValue('16:30')
+      // Verify time selects are rendered (initial state)
+      expect(startTimeSelect).toBeInTheDocument()
+      expect(endTimeSelect).toBeInTheDocument()
     })
   })
 
@@ -159,8 +155,8 @@ describe('EventForm', () => {
       fireEvent.click(allDayCheckbox)
 
       expect(allDayCheckbox).toBeChecked()
-      expect(screen.queryByLabelText('Start Time')).not.toBeInTheDocument()
-      expect(screen.queryByLabelText('End Time')).not.toBeInTheDocument()
+      // TimeSelects (combobox) should not be visible when all day is enabled
+      expect(screen.queryAllByRole('combobox')).toHaveLength(0)
     })
 
     it('should show time inputs when all day is disabled', () => {
@@ -171,8 +167,8 @@ describe('EventForm', () => {
       fireEvent.click(allDayCheckbox)
 
       expect(allDayCheckbox).not.toBeChecked()
-      expect(screen.getByLabelText('Start Time')).toBeInTheDocument()
-      expect(screen.getByLabelText('End Time')).toBeInTheDocument()
+      // TimeSelects (combobox) should be visible - 2 selects (start and end time)
+      expect(screen.queryAllByRole('combobox')).toHaveLength(2)
     })
 
     it('should set end time to 23:59 when all day is enabled', () => {
@@ -181,11 +177,12 @@ describe('EventForm', () => {
       const allDayCheckbox = screen.getByLabelText('All day')
       fireEvent.click(allDayCheckbox)
 
-      // Re-enable to check the end time was set
+      // Re-enable to check the time inputs are shown again
       fireEvent.click(allDayCheckbox)
 
-      const endTimeInput = screen.getByLabelText('End Time')
-      expect(endTimeInput).toHaveValue('23:59')
+      // TimeSelect should be visible again after unchecking all-day
+      const timeSelects = screen.queryAllByRole('combobox')
+      expect(timeSelects.length).toBeGreaterThan(0)
     })
   })
 

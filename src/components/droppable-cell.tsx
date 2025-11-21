@@ -17,6 +17,7 @@ interface DroppableCellProps {
   className?: string
   style?: React.CSSProperties
   'data-testid'?: string
+  disabled?: boolean
 }
 
 export function DroppableCell({
@@ -31,6 +32,7 @@ export function DroppableCell({
   className,
   style,
   'data-testid': dataTestId,
+  disabled = false,
 }: DroppableCellProps) {
   const { onCellClick, disableDragAndDrop, disableCellClick } =
     useSmartCalendarContext((state) => ({
@@ -49,13 +51,13 @@ export function DroppableCell({
       resourceId,
       allDay,
     },
-    disabled: disableDragAndDrop,
+    disabled: disableDragAndDrop || disabled,
   })
 
   const handleCellClick = (e: React.MouseEvent) => {
     e.stopPropagation()
 
-    if (disableCellClick) {
+    if (disableCellClick || disabled) {
       return
     }
 
@@ -79,8 +81,9 @@ export function DroppableCell({
       data-testid={dataTestId}
       className={cn(
         className,
-        isOver && !disableDragAndDrop && 'bg-accent',
-        disableCellClick ? 'cursor-default' : 'cursor-pointer'
+        isOver && !disableDragAndDrop && !disabled && 'bg-accent',
+        disableCellClick || disabled ? 'cursor-default' : 'cursor-pointer',
+        disabled && 'bg-secondary text-muted-foreground pointer-events-none'
       )}
       onClick={handleCellClick}
       style={style}

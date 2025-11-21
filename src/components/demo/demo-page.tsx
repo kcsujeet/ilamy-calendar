@@ -274,6 +274,17 @@ export function DemoPage() {
                   disableDragAndDrop={disableDragAndDrop}
                   dayMaxEvents={dayMaxEvents}
                   stickyViewHeader={stickyViewHeader}
+                  businessHours={{
+                    daysOfWeek: [
+                      // 'monday',
+                      'tuesday',
+                      // 'wednesday',
+                      // 'thursday',
+                      'friday',
+                    ],
+                    startTime: 9,
+                    endTime: 17,
+                  }}
                 />
               ) : (
                 <IlamyResourceCalendar
@@ -299,6 +310,17 @@ export function DemoPage() {
                   disableDragAndDrop={disableDragAndDrop}
                   dayMaxEvents={dayMaxEvents}
                   stickyViewHeader={stickyViewHeader}
+                  businessHours={{
+                    daysOfWeek: [
+                      // 'monday',
+                      'tuesday',
+                      // 'wednesday',
+                      // 'thursday',
+                      'friday',
+                    ],
+                    startTime: 9,
+                    endTime: 17,
+                  }}
                 />
               )}
             </CardContent>

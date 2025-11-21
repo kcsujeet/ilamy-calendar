@@ -1,171 +1,127 @@
-import React from 'react'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { ScrollArea } from '@/components/ui'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { AnimatePresence, motion } from 'motion/react'
 
-const YearView: React.FC = () => {
+const DAY_HEADER_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
+const DAYS_IN_MINI_CALENDAR = 42
+
+const getDayTooltip = (eventCount: number): string => {
+  if (eventCount === 0) {
+    return ''
+  }
+  const plural = eventCount > 1 ? 's' : ''
+  return `${eventCount} event${plural}`
+}
+
+interface MonthData {
+  date: dayjs.Dayjs
+  name: string
+  eventCount: number
+  monthKey: string
+}
+
+interface DayData {
+  date: dayjs.Dayjs
+  dayKey: string
+  isInCurrentMonth: boolean
+  isToday: boolean
+  isSelected: boolean
+  eventCount: number
+}
+
+const YearView = () => {
   const { currentDate, selectDate, events, setView, getEventsForDateRange, t } =
     useCalendarContext()
-  const year = currentDate.year()
+  const currentYear = currentDate.year()
 
-  // Generate an array of 12 months for the current year
-  const months = Array.from({ length: 12 }, (_, i) => {
-    const monthDate = dayjs().year(year).month(i).startOf('month')
-    return {
-      date: monthDate,
-      name: monthDate.format('MMMM'),
-      daysInMonth: monthDate.daysInMonth(),
-      firstDayOfMonth: monthDate.startOf('month').day(), // 0-6, 0 is Sunday
-    }
-  })
-
-  // Calculate events for each month
-  const monthsWithEventCount = months.map((month) => {
-    const eventsInMonth = events.filter(
-      (event) =>
-        event.start.year() === year &&
-        event.start.month() === month.date.month()
-    )
-
-    return {
-      ...month,
-      eventCount: eventsInMonth.length,
-    }
-  })
-
-  // Handle month click to navigate to month view
-  const handleMonthClick = (date: dayjs.Dayjs) => {
-    selectDate(date)
-    setView('month')
-  }
-
-  // Handle day click within the mini calendar
-  const handleDayClick = (date: dayjs.Dayjs, event: React.MouseEvent) => {
-    event.stopPropagation() // Prevent triggering the month click
-    selectDate(date)
-    setView('day') // Navigate directly to day view when clicking on a specific day
-  }
-
-  // Generate days for mini calendar in each month
-  const renderMiniCalendar = (month: (typeof monthsWithEventCount)[0]) => {
-    // Get the first day of the month's calendar (which could be in the previous month)
-    const firstDayOfCalendar = month.date.startOf('month').startOf('week')
-
-    // Create 42 days (6 rows of 7 days) for consistency
-    const daysArray = Array.from({ length: 42 }, (_, i) => {
-      const day = firstDayOfCalendar.add(i, 'day')
-      const isCurrentMonth = day.month() === month.date.month()
-      const isToday = day.isSame(dayjs(), 'day')
-      const isCurrentDate = day.isSame(currentDate, 'day')
-
-      // Get events for this day
-      const dayEvents = getEventsForDateRange(
-        day.startOf('day'),
-        day.endOf('day')
+  const generateMonthsData = (): MonthData[] => {
+    return Array.from({ length: 12 }, (_, monthIndex) => {
+      const monthDate = dayjs()
+        .year(currentYear)
+        .month(monthIndex)
+        .startOf('month')
+      const eventsInMonth = events.filter(
+        (event) =>
+          event.start.year() === currentYear &&
+          event.start.month() === monthIndex
       )
-      const hasEvents = dayEvents.length > 0
 
       return {
-        day,
-        isCurrentMonth,
-        isToday,
-        isCurrentDate,
-        hasEvents,
-        eventCount: dayEvents.length,
-        // Group events by their categories to show different colors
-        events: dayEvents,
+        date: monthDate,
+        name: monthDate.format('MMMM'),
+        eventCount: eventsInMonth.length,
+        monthKey: monthDate.format('MM'),
       }
     })
+  }
 
-    return (
-      <div
-        data-testid={`year-mini-calendar-${month.date.format('MM')}`}
-        className="grid grid-cols-7 gap-[1px] text-[0.6rem]"
-      >
-        {/* Day names */}
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayName, i) => (
-          <div
-            key={`header-${i}`}
-            className="text-muted-foreground h-3 text-center"
-          >
-            {dayName}
-          </div>
-        ))}
+  const generateDaysForMonth = (monthDate: dayjs.Dayjs): DayData[] => {
+    const firstDayOfCalendar = monthDate.startOf('month').startOf('week')
 
-        {/* Calendar days */}
-        {daysArray.map((dayInfo, i) => (
-          <div
-            key={`day-${i}`}
-            data-testid={`year-day-${month.date.format('YYYY-MM')}-${dayInfo.day.format('YYYY-MM-DD')}`}
-            onClick={(e) => handleDayClick(dayInfo.day, e)}
-            className={cn(
-              'relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center',
-              'hover:bg-accent rounded-sm transition-colors duration-200',
-              !dayInfo.isCurrentMonth && 'text-muted-foreground opacity-50',
-              dayInfo.isToday &&
-                'bg-primary text-primary-foreground rounded-full',
-              dayInfo.isCurrentDate &&
-                !dayInfo.isToday &&
-                'bg-muted rounded-full font-bold',
-              dayInfo.hasEvents &&
-                !dayInfo.isToday &&
-                !dayInfo.isCurrentDate &&
-                'font-medium'
-            )}
-            title={
-              dayInfo.hasEvents
-                ? `${dayInfo.eventCount} event${
-                    dayInfo.eventCount > 1 ? 's' : ''
-                  }`
-                : ''
-            }
-          >
-            <span className="text-center leading-none">
-              {dayInfo.day.date()}
-            </span>
+    return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) => {
+      const dayDate = firstDayOfCalendar.add(dayIndex, 'day')
+      const dayStart = dayDate.startOf('day')
+      const dayEnd = dayDate.endOf('day')
+      const eventsOnDay = getEventsForDateRange(dayStart, dayEnd)
 
-            {/* Enhanced event indicator - show multiple colored dots for different event types */}
-            {dayInfo.hasEvents && (
-              <div
-                className={cn(
-                  'absolute bottom-0 flex w-full justify-center space-x-[1px]',
-                  dayInfo.isToday ? 'bottom-[1px]' : ''
-                )}
-              >
-                {/* Show up to 3 event dots with different colors if available */}
-                {dayInfo.eventCount > 0 && (
-                  <span
-                    className={cn(
-                      'h-[3px] w-[3px] rounded-full',
-                      dayInfo.isToday ? 'bg-primary-foreground' : 'bg-primary'
-                    )}
-                  />
-                )}
-                {dayInfo.eventCount > 1 && (
-                  <span
-                    className={cn(
-                      'h-[3px] w-[3px] rounded-full',
-                      dayInfo.isToday ? 'bg-primary-foreground' : 'bg-blue-500'
-                    )}
-                  />
-                )}
-                {dayInfo.eventCount > 2 && (
-                  <span
-                    className={cn(
-                      'h-[3px] w-[3px] rounded-full',
-                      dayInfo.isToday ? 'bg-primary-foreground' : 'bg-green-500'
-                    )}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      return {
+        date: dayDate,
+        dayKey: dayDate.format('YYYY-MM-DD'),
+        isInCurrentMonth: dayDate.month() === monthDate.month(),
+        isToday: dayDate.isSame(dayjs(), 'day'),
+        isSelected: dayDate.isSame(currentDate, 'day'),
+        eventCount: eventsOnDay.length,
+      }
+    })
+  }
+
+  const navigateToDate = (
+    date: dayjs.Dayjs,
+    view: 'month' | 'day',
+    event?: React.MouseEvent
+  ) => {
+    event?.stopPropagation()
+    selectDate(date)
+    setView(view)
+  }
+
+  const getEventCountLabel = (count: number): string => {
+    const eventWord = count === 1 ? t('event') : t('events')
+    return `${count} ${eventWord}`
+  }
+
+  const getDayClassName = (day: DayData): string => {
+    const baseClass =
+      'relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center hover:bg-accent rounded-sm transition-colors duration-200'
+    const outsideMonthClass = day.isInCurrentMonth
+      ? ''
+      : 'text-muted-foreground opacity-50'
+    const todayClass = day.isToday
+      ? 'bg-primary text-primary-foreground rounded-full'
+      : ''
+    const selectedClass =
+      day.isSelected && !day.isToday ? 'bg-muted rounded-full font-bold' : ''
+    const hasEventsClass =
+      day.eventCount > 0 && !day.isToday && !day.isSelected ? 'font-medium' : ''
+
+    return cn(
+      baseClass,
+      outsideMonthClass,
+      todayClass,
+      selectedClass,
+      hasEventsClass
     )
   }
+
+  const getEventDotClassName = (color: string, isToday: boolean): string => {
+    const dotColor = isToday ? 'bg-primary-foreground' : color
+    return cn('h-[3px] w-[3px] rounded-full', dotColor)
+  }
+
+  const monthsData = generateMonthsData()
 
   return (
     <ScrollArea data-testid="year-view" className="h-full">
@@ -173,47 +129,109 @@ const YearView: React.FC = () => {
         data-testid="year-grid"
         className="grid auto-rows-fr grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3"
       >
-        {monthsWithEventCount.map((month, index) => (
-          <div
-            key={month.name}
-            data-testid={`year-month-${month.date.format('MM')}`}
-            onClick={() => handleMonthClick(month.date)}
-            className="hover:border-primary flex cursor-pointer flex-col rounded-lg border p-3 transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`month-${index}`}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{
-                  duration: 0.25,
-                  ease: 'easeInOut',
-                  delay: index * 0.05,
-                }}
-                className="mb-2 flex items-center justify-between"
-              >
-                <h3
-                  data-testid={`year-month-title-${month.date.format('MM')}`}
-                  className="text-lg font-medium"
-                >
-                  {month.name}
-                </h3>
-                {month.eventCount > 0 && (
-                  <span
-                    data-testid={`year-month-event-count-${month.date.format('MM')}`}
-                    className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs"
-                  >
-                    {month.eventCount}{' '}
-                    {month.eventCount === 1 ? t('event') : t('events')}
-                  </span>
-                )}
-              </motion.div>
-            </AnimatePresence>
+        {monthsData.map((month, monthIndex) => {
+          const daysInMonth = generateDaysForMonth(month.date)
+          const animationDelay = monthIndex * 0.05
 
-            {renderMiniCalendar(month)}
-          </div>
-        ))}
+          return (
+            <div
+              key={month.monthKey}
+              data-testid={`year-month-${month.monthKey}`}
+              className="hover:border-primary flex flex-col rounded-lg border p-3 text-left transition-all duration-200 hover:shadow-md"
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`month-${monthIndex}`}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{
+                    duration: 0.25,
+                    ease: 'easeInOut',
+                    delay: animationDelay,
+                  }}
+                  className="mb-2 flex items-center justify-between"
+                >
+                  <button
+                    type="button"
+                    onClick={() => navigateToDate(month.date, 'month')}
+                    data-testid={`year-month-title-${month.monthKey}`}
+                    className="text-lg font-medium hover:underline cursor-pointer"
+                  >
+                    {month.name}
+                  </button>
+
+                  {month.eventCount > 0 && (
+                    <span
+                      data-testid={`year-month-event-count-${month.monthKey}`}
+                      className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs"
+                    >
+                      {getEventCountLabel(month.eventCount)}
+                    </span>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+
+              <div
+                data-testid={`year-mini-calendar-${month.monthKey}`}
+                className="grid grid-cols-7 gap-[1px] text-[0.6rem]"
+              >
+                {DAY_HEADER_NAMES.map((dayName, headerIndex) => (
+                  <div
+                    key={`header-${headerIndex}`}
+                    className="text-muted-foreground h-3 text-center"
+                  >
+                    {dayName}
+                  </div>
+                ))}
+
+                {daysInMonth.map((day) => {
+                  const dayTestId = `year-day-${month.date.format('YYYY-MM')}-${day.dayKey}`
+                  const hasEvents = day.eventCount > 0
+                  const visibleDotCount = Math.min(day.eventCount, 3)
+                  const visibleDotColors = EVENT_DOT_COLORS.slice(
+                    0,
+                    visibleDotCount
+                  )
+
+                  return (
+                    <button
+                      type="button"
+                      key={day.dayKey}
+                      data-testid={dayTestId}
+                      onClick={(e) => navigateToDate(day.date, 'day', e)}
+                      title={getDayTooltip(day.eventCount)}
+                      className={getDayClassName(day)}
+                    >
+                      <span className="text-center leading-none">
+                        {day.date.date()}
+                      </span>
+
+                      {hasEvents && (
+                        <div
+                          className={cn(
+                            'absolute bottom-0 flex w-full justify-center space-x-[1px]',
+                            day.isToday && 'bottom-[1px]'
+                          )}
+                        >
+                          {visibleDotColors.map((dotColor) => (
+                            <span
+                              key={dotColor}
+                              className={getEventDotClassName(
+                                dotColor,
+                                day.isToday
+                              )}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </ScrollArea>
   )

@@ -1,4 +1,4 @@
-import type { CalendarEvent } from '@/components/types'
+import type { CalendarEvent, BusinessHours } from '@/components/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { TranslationKey } from '@/lib/translations/types'
@@ -51,6 +51,7 @@ export interface CalendarContextType {
   viewHeaderClassName: string
   headerComponent?: React.ReactNode // Optional custom header component
   headerClassName?: string // Optional custom header class
+  businessHours?: BusinessHours
   // Translation function
   t: (key: TranslationKey) => string
 }
@@ -92,6 +93,7 @@ export interface UseIlamyCalendarContextReturn {
   readonly deleteEvent: (eventId: string | number) => void
   readonly openEventForm: (date?: dayjs.Dayjs) => void
   readonly closeEventForm: () => void
+  readonly businessHours?: BusinessHours
 }
 
 export const useIlamyCalendarContext = (): UseIlamyCalendarContextReturn => {
@@ -120,5 +122,6 @@ export const useIlamyCalendarContext = (): UseIlamyCalendarContextReturn => {
     deleteEvent: context.deleteEvent,
     openEventForm: context.openEventForm,
     closeEventForm: context.closeEventForm,
+    businessHours: context.businessHours,
   } as const
 }

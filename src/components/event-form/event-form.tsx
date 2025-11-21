@@ -1,25 +1,21 @@
 import dayjs from '@/lib/configs/dayjs-config'
 import React, { useEffect, useState } from 'react'
-
 import type { CalendarEvent } from '@/components/types'
 import {
-  Button,
-  Checkbox,
-  DatePicker,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Input,
-  Label,
-  ScrollArea,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui'
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { DatePicker } from '@/components/ui/date-picker'
+import { TimePicker } from '@/components/ui/time-picker'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
 import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-editor/recurrence-editor'
 import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
@@ -28,22 +24,47 @@ import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 
-const colorOptions = [
-  { value: 'bg-blue-100 text-blue-800', label: 'Blue' },
-  { value: 'bg-green-100 text-green-800', label: 'Green' },
-  { value: 'bg-purple-100 text-purple-800', label: 'Purple' },
-  { value: 'bg-red-100 text-red-800', label: 'Red' },
-  { value: 'bg-yellow-100 text-yellow-800', label: 'Yellow' },
-  { value: 'bg-pink-100 text-pink-800', label: 'Pink' },
-  { value: 'bg-indigo-100 text-indigo-800', label: 'Indigo' },
-  { value: 'bg-amber-100 text-amber-800', label: 'Amber' },
-  { value: 'bg-emerald-100 text-emerald-800', label: 'Emerald' },
-  { value: 'bg-sky-100 text-sky-800', label: 'Sky' },
-  { value: 'bg-violet-100 text-violet-800', label: 'Violet' },
-  { value: 'bg-rose-100 text-rose-800', label: 'Rose' },
-  { value: 'bg-teal-100 text-teal-800', label: 'Teal' },
-  { value: 'bg-orange-100 text-orange-800', label: 'Orange' },
-]
+const COLOR_NAMES = [
+  'blue',
+  'green',
+  'purple',
+  'red',
+  'yellow',
+  'pink',
+  'indigo',
+  'amber',
+  'emerald',
+  'sky',
+  'violet',
+  'rose',
+  'teal',
+  'orange',
+] as const
+
+const COLOR_OPTIONS = COLOR_NAMES.map((color) => ({
+  value: `bg-${color}-100 text-${color}-800`,
+  label: color.charAt(0).toUpperCase() + color.slice(1),
+}))
+
+const buildDateTime = (
+  date: Date,
+  time: string,
+  isAllDay: boolean
+): dayjs.Dayjs => {
+  const [hours, minutes] = time.split(':').map(Number)
+  const base = dayjs(date).hour(hours).minute(minutes)
+  return isAllDay ? base.hour(0).minute(0) : base
+}
+
+const buildEndDateTime = (
+  date: Date,
+  time: string,
+  isAllDay: boolean
+): dayjs.Dayjs => {
+  const [hours, minutes] = time.split(':').map(Number)
+  const base = dayjs(date).hour(hours).minute(minutes)
+  return isAllDay ? base.hour(23).minute(59) : base
+}
 
 interface EventFormProps {
   selectedEvent?: CalendarEvent | null
@@ -70,12 +91,12 @@ export const EventForm: React.FC<EventFormProps> = ({
     handleConfirm,
   } = useRecurringEventActions(onClose)
 
-  const { findParentRecurringEvent, t } = useSmartCalendarContext(
-    (context) => ({
+  const { findParentRecurringEvent, t, businessHours } =
+    useSmartCalendarContext((context) => ({
       findParentRecurringEvent: context.findParentRecurringEvent,
       t: context.t,
-    })
-  )
+      businessHours: context.businessHours,
+    }))
 
   const start = selectedEvent?.start
   const end = selectedEvent?.end
@@ -97,7 +118,7 @@ export const EventForm: React.FC<EventFormProps> = ({
   const [endDate, setEndDate] = useState(end?.toDate() || defaultEndDate)
   const [isAllDay, setIsAllDay] = useState(selectedEvent?.allDay || false)
   const [selectedColor, setSelectedColor] = useState(
-    selectedEvent?.color || colorOptions[0].value
+    selectedEvent?.color || COLOR_OPTIONS[0].value
   )
 
   // Time state
@@ -136,25 +157,29 @@ export const EventForm: React.FC<EventFormProps> = ({
     }
   }
 
+  // Time validation handlers - only validate when dates are the same
+  const handleStartTimeChange = (time: string) => {
+    setStartTime(time)
+    // Only validate if same day
+    if (dayjs(startDate).isSame(dayjs(endDate), 'day') && time > endTime) {
+      setEndTime(time)
+    }
+  }
+
+  const handleEndTimeChange = (time: string) => {
+    setEndTime(time)
+    // Only validate if same day
+    if (dayjs(startDate).isSame(dayjs(endDate), 'day') && time < startTime) {
+      setStartTime(time)
+    }
+  }
+
   // Update form values when input changes
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
     setFormValues((prev) => ({ ...prev, [name]: value }))
-  }
-
-  // Handle time changes
-  const handleTimeChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    isStart: boolean
-  ) => {
-    const timeValue = e.target.value
-    if (isStart) {
-      setStartTime(timeValue)
-    } else {
-      setEndTime(timeValue)
-    }
   }
 
   useEffect(() => {
@@ -164,23 +189,11 @@ export const EventForm: React.FC<EventFormProps> = ({
     }
   }, [isAllDay])
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Create full datetime objects by combining date and time
-    const [startHours, startMinutes] = startTime.split(':').map(Number)
-    const [endHours, endMinutes] = endTime.split(':').map(Number)
-
-    let startDateTime = dayjs(startDate).hour(startHours).minute(startMinutes)
-
-    let endDateTime = dayjs(endDate).hour(endHours).minute(endMinutes)
-
-    // For all-day events, set appropriate times
-    if (isAllDay) {
-      startDateTime = startDateTime.hour(0).minute(0)
-      endDateTime = endDateTime.hour(23).minute(59)
-    }
+    const startDateTime = buildDateTime(startDate, startTime, isAllDay)
+    const endDateTime = buildEndDateTime(endDate, endTime, isAllDay)
 
     const eventData: CalendarEvent = {
       id: selectedEvent?.id || dayjs().format('YYYYMMDDHHmmss'),
@@ -194,27 +207,25 @@ export const EventForm: React.FC<EventFormProps> = ({
       rrule: rrule || undefined,
     }
 
+    if (selectedEvent?.id && isRecurringEvent(selectedEvent)) {
+      openEditDialog(selectedEvent, {
+        title: formValues.title,
+        start: startDateTime,
+        end: endDateTime,
+        description: formValues.description,
+        location: formValues.location,
+        allDay: isAllDay,
+        color: selectedColor,
+        rrule: rrule || undefined,
+      })
+      return
+    }
+
     if (selectedEvent?.id) {
-      // Check if this is a recurring event
-      if (isRecurringEvent(selectedEvent)) {
-        // Show recurring event edit dialog
-        openEditDialog(selectedEvent, {
-          title: formValues.title,
-          start: startDateTime,
-          end: endDateTime,
-          description: formValues.description,
-          location: formValues.location,
-          allDay: isAllDay,
-          color: selectedColor,
-          rrule: rrule || undefined,
-        })
-        return // Don't close the form yet, let the dialog handle it
-      }
       onUpdate?.(eventData)
     } else {
       onAdd?.(eventData)
     }
-
     onClose()
   }
 
@@ -232,25 +243,29 @@ export const EventForm: React.FC<EventFormProps> = ({
   }
 
   const handleRRuleChange = (newRRule: RRuleOptions | null) => {
-    if (newRRule) {
-      // Create dtstart with the same logic as in handleSubmit
-      const [startHours, startMinutes] = startTime.split(':').map(Number)
-      let startDateTime = dayjs(startDate).hour(startHours).minute(startMinutes)
-
-      if (isAllDay) {
-        startDateTime = startDateTime.hour(0).minute(0)
-      }
-
-      // Ensure dtstart is always included in RRuleOptions as a Date object
-      const completeRrule: RRuleOptions = {
-        ...newRRule,
-        dtstart: startDateTime.toDate(), // Convert dayjs to Date
-      }
-      setRrule(completeRrule)
-    } else {
+    if (!newRRule) {
       setRrule(null)
+      return
     }
+    const startDateTime = buildDateTime(startDate, startTime, isAllDay)
+    setRrule({ ...newRRule, dtstart: startDateTime.toDate() })
   }
+
+  const disabledDateMatcher = businessHours
+    ? (date: Date) => {
+        const dayOfWeek = dayjs(date).format('dddd').toLowerCase()
+        return !businessHours.daysOfWeek.includes(
+          dayOfWeek as (typeof businessHours.daysOfWeek)[number]
+        )
+      }
+    : undefined
+
+  const minTime = businessHours
+    ? `${businessHours.startTime.toString().padStart(2, '0')}:00`
+    : '00:00'
+  const maxTime = businessHours
+    ? `${(businessHours.endTime - 1).toString().padStart(2, '0')}:45`
+    : '23:59'
 
   return (
     <>
@@ -321,6 +336,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                       onChange={handleStartDateChange}
                       className="mt-1"
                       closeOnSelect
+                      disabled={disabledDateMatcher}
                     />
                   </div>
                   <div>
@@ -330,6 +346,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                       onChange={handleEndDateChange}
                       className="mt-1"
                       closeOnSelect
+                      disabled={disabledDateMatcher}
                     />
                   </div>
                 </div>
@@ -337,29 +354,26 @@ export const EventForm: React.FC<EventFormProps> = ({
                 {!isAllDay && (
                   <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     <div>
-                      <Label
-                        htmlFor="start-time"
-                        className="text-xs sm:text-sm"
-                      >
+                      <Label className="text-xs sm:text-sm">
                         {t('startTime')}
                       </Label>
-                      <Input
-                        id="start-time"
-                        type="time"
+                      <TimePicker
                         value={startTime}
-                        onChange={(e) => handleTimeChange(e, true)}
+                        onChange={handleStartTimeChange}
+                        minTime={minTime}
+                        maxTime={maxTime}
                         className="mt-1 h-8 text-sm sm:h-9"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="end-time" className="text-xs sm:text-sm">
+                      <Label className="text-xs sm:text-sm">
                         {t('endTime')}
                       </Label>
-                      <Input
-                        id="end-time"
-                        type="time"
+                      <TimePicker
                         value={endTime}
-                        onChange={(e) => handleTimeChange(e, false)}
+                        onChange={handleEndTimeChange}
+                        minTime={minTime}
+                        maxTime={maxTime}
                         className="mt-1 h-8 text-sm sm:h-9"
                       />
                     </div>
@@ -369,29 +383,20 @@ export const EventForm: React.FC<EventFormProps> = ({
                 <div className="grid gap-1 sm:gap-2">
                   <Label className="text-xs sm:text-sm">{t('color')}</Label>
                   <div className="flex flex-wrap gap-2">
-                    <TooltipProvider>
-                      {colorOptions.map((color) => (
-                        <Tooltip key={color.value}>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              key={color.value}
-                              type="button"
-                              className={cn(
-                                `${color.value} h-6 w-6 rounded-full sm:h-8 sm:w-8`,
-                                selectedColor === color.value &&
-                                  'ring-2 ring-black ring-offset-1 sm:ring-offset-2'
-                              )}
-                              onClick={() => setSelectedColor(color.value)}
-                              aria-label={color.label}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs sm:text-sm">{color.label}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ))}
-                    </TooltipProvider>
+                    {COLOR_OPTIONS.map((color) => (
+                      <Button
+                        key={color.value}
+                        variant="ghost"
+                        type="button"
+                        className={cn(
+                          `${color.value} h-6 w-6 rounded-full sm:h-8 sm:w-8`,
+                          selectedColor === color.value &&
+                            'ring-2 ring-black ring-offset-1 sm:ring-offset-2'
+                        )}
+                        onClick={() => setSelectedColor(color.value)}
+                        aria-label={color.label}
+                      />
+                    ))}
                   </div>
                 </div>
 

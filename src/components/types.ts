@@ -99,3 +99,25 @@ export type WeekDays =
   | 'thursday'
   | 'friday'
   | 'saturday'
+
+/**
+ * Configuration for business hours.
+ * Defines the working hours to be highlighted on the calendar.
+ */
+export interface BusinessHours {
+  /**
+   * Days of the week to apply business hours to.
+   * @default ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+   */
+  daysOfWeek?: WeekDays[]
+  /**
+   * Start time for business hours in 24-hour format (0-24).
+   * @default 9
+   */
+  startTime?: number
+  /**
+   * End time for business hours in 24-hour format (0-24).
+   * @default 17
+   */
+  endTime?: number
+}

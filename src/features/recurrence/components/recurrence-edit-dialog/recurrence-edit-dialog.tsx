@@ -5,8 +5,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Button,
-} from '@/components/ui'
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import type { RecurrenceEditScope } from '@/features/recurrence/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 

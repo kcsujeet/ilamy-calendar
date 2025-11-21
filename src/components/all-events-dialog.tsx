@@ -4,7 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui'
+} from '@/components/ui/dialog'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import type dayjs from '@/lib/configs/dayjs-config'
 import React, { useImperativeHandle, useState } from 'react'

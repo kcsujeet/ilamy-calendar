@@ -61,6 +61,7 @@ export const ResourceCalendarProvider: React.FC<
   translations,
   translator,
   renderResource,
+  businessHours,
 }) => {
   // Resource-specific state
   const [currentResources] = useState<Resource[]>(resources)
@@ -74,6 +75,7 @@ export const ResourceCalendarProvider: React.FC<
     firstDayOfWeek,
     initialView,
     initialDate,
+    businessHours,
     onEventAdd,
     onEventUpdate,
     onEventDelete,
@@ -268,6 +270,7 @@ export const ResourceCalendarProvider: React.FC<
       dayMaxEvents,
       stickyViewHeader,
       viewHeaderClassName,
+      businessHours,
     }),
     [
       calendarEngine,
@@ -297,6 +300,7 @@ export const ResourceCalendarProvider: React.FC<
       viewHeaderClassName,
       headerComponent,
       headerClassName,
+      businessHours,
     ]
   )
 

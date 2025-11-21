@@ -57,7 +57,7 @@ export const generateRecurringEvents = ({
       .map((occurrence, index) => {
         const occurrenceDate = dayjs(occurrence)
         const existingOverride = overrides.find((e) =>
-          safeDate(e.recurrenceId).isSame(occurrenceDate)
+          safeDate(e.recurrenceId)?.isSame(occurrenceDate)
         )
 
         // If there's an override, use it

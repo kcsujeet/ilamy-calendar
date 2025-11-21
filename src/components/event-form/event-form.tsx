@@ -1,6 +1,5 @@
 import dayjs from '@/lib/configs/dayjs-config'
 import React, { useEffect, useState } from 'react'
-
 import type { CalendarEvent } from '@/components/types'
 import {
   Dialog,
@@ -25,7 +24,7 @@ import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 
-const colorOptions = [
+const COLOR_NAMES = [
   'blue',
   'green',
   'purple',
@@ -40,10 +39,32 @@ const colorOptions = [
   'rose',
   'teal',
   'orange',
-].map((color) => ({
+] as const
+
+const COLOR_OPTIONS = COLOR_NAMES.map((color) => ({
   value: `bg-${color}-100 text-${color}-800`,
   label: color.charAt(0).toUpperCase() + color.slice(1),
 }))
+
+const buildDateTime = (
+  date: Date,
+  time: string,
+  isAllDay: boolean
+): dayjs.Dayjs => {
+  const [hours, minutes] = time.split(':').map(Number)
+  const base = dayjs(date).hour(hours).minute(minutes)
+  return isAllDay ? base.hour(0).minute(0) : base
+}
+
+const buildEndDateTime = (
+  date: Date,
+  time: string,
+  isAllDay: boolean
+): dayjs.Dayjs => {
+  const [hours, minutes] = time.split(':').map(Number)
+  const base = dayjs(date).hour(hours).minute(minutes)
+  return isAllDay ? base.hour(23).minute(59) : base
+}
 
 interface EventFormProps {
   selectedEvent?: CalendarEvent | null
@@ -97,7 +118,7 @@ export const EventForm: React.FC<EventFormProps> = ({
   const [endDate, setEndDate] = useState(end?.toDate() || defaultEndDate)
   const [isAllDay, setIsAllDay] = useState(selectedEvent?.allDay || false)
   const [selectedColor, setSelectedColor] = useState(
-    selectedEvent?.color || colorOptions[0].value
+    selectedEvent?.color || COLOR_OPTIONS[0].value
   )
 
   // Time state
@@ -168,23 +189,11 @@ export const EventForm: React.FC<EventFormProps> = ({
     }
   }, [isAllDay])
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Create full datetime objects by combining date and time
-    const [startHours, startMinutes] = startTime.split(':').map(Number)
-    const [endHours, endMinutes] = endTime.split(':').map(Number)
-
-    let startDateTime = dayjs(startDate).hour(startHours).minute(startMinutes)
-
-    let endDateTime = dayjs(endDate).hour(endHours).minute(endMinutes)
-
-    // For all-day events, set appropriate times
-    if (isAllDay) {
-      startDateTime = startDateTime.hour(0).minute(0)
-      endDateTime = endDateTime.hour(23).minute(59)
-    }
+    const startDateTime = buildDateTime(startDate, startTime, isAllDay)
+    const endDateTime = buildEndDateTime(endDate, endTime, isAllDay)
 
     const eventData: CalendarEvent = {
       id: selectedEvent?.id || dayjs().format('YYYYMMDDHHmmss'),
@@ -198,27 +207,25 @@ export const EventForm: React.FC<EventFormProps> = ({
       rrule: rrule || undefined,
     }
 
+    if (selectedEvent?.id && isRecurringEvent(selectedEvent)) {
+      openEditDialog(selectedEvent, {
+        title: formValues.title,
+        start: startDateTime,
+        end: endDateTime,
+        description: formValues.description,
+        location: formValues.location,
+        allDay: isAllDay,
+        color: selectedColor,
+        rrule: rrule || undefined,
+      })
+      return
+    }
+
     if (selectedEvent?.id) {
-      // Check if this is a recurring event
-      if (isRecurringEvent(selectedEvent)) {
-        // Show recurring event edit dialog
-        openEditDialog(selectedEvent, {
-          title: formValues.title,
-          start: startDateTime,
-          end: endDateTime,
-          description: formValues.description,
-          location: formValues.location,
-          allDay: isAllDay,
-          color: selectedColor,
-          rrule: rrule || undefined,
-        })
-        return // Don't close the form yet, let the dialog handle it
-      }
       onUpdate?.(eventData)
     } else {
       onAdd?.(eventData)
     }
-
     onClose()
   }
 
@@ -236,54 +243,29 @@ export const EventForm: React.FC<EventFormProps> = ({
   }
 
   const handleRRuleChange = (newRRule: RRuleOptions | null) => {
-    if (newRRule) {
-      // Create dtstart with the same logic as in handleSubmit
-      const [startHours, startMinutes] = startTime.split(':').map(Number)
-      let startDateTime = dayjs(startDate).hour(startHours).minute(startMinutes)
-
-      if (isAllDay) {
-        startDateTime = startDateTime.hour(0).minute(0)
-      }
-
-      // Ensure dtstart is always included in RRuleOptions as a Date object
-      const completeRrule: RRuleOptions = {
-        ...newRRule,
-        dtstart: startDateTime.toDate(), // Convert dayjs to Date
-      }
-      setRrule(completeRrule)
-    } else {
+    if (!newRRule) {
       setRrule(null)
+      return
     }
+    const startDateTime = buildDateTime(startDate, startTime, isAllDay)
+    setRrule({ ...newRRule, dtstart: startDateTime.toDate() })
   }
 
-  // Create disabled date matcher for business hours
-  const disabledDateMatcher = (date: Date) => {
-    if (!businessHours) {
-      return false
-    }
+  const disabledDateMatcher = businessHours
+    ? (date: Date) => {
+        const dayOfWeek = dayjs(date).format('dddd').toLowerCase()
+        return !businessHours.daysOfWeek.includes(
+          dayOfWeek as (typeof businessHours.daysOfWeek)[number]
+        )
+      }
+    : undefined
 
-    const dayOfWeek = dayjs(date).format('dddd').toLowerCase()
-    return !businessHours.daysOfWeek.includes(
-      dayOfWeek as (typeof businessHours.daysOfWeek)[number]
-    )
-  }
-
-  // Get min and max time based on business hours
-  const getTimeConstraints = () => {
-    if (!businessHours) {
-      return { minTime: '00:00', maxTime: '23:59' }
-    }
-
-    const startHour = businessHours.startTime.toString().padStart(2, '0')
-    const endHour = (businessHours.endTime - 1).toString().padStart(2, '0')
-
-    return {
-      minTime: `${startHour}:00`,
-      maxTime: `${endHour}:45`, // 45 minutes allows up to :45 of the last hour
-    }
-  }
-
-  const { minTime, maxTime } = getTimeConstraints()
+  const minTime = businessHours
+    ? `${businessHours.startTime.toString().padStart(2, '0')}:00`
+    : '00:00'
+  const maxTime = businessHours
+    ? `${(businessHours.endTime - 1).toString().padStart(2, '0')}:45`
+    : '23:59'
 
   return (
     <>
@@ -354,7 +336,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                       onChange={handleStartDateChange}
                       className="mt-1"
                       closeOnSelect
-                      disabled={businessHours ? disabledDateMatcher : undefined}
+                      disabled={disabledDateMatcher}
                     />
                   </div>
                   <div>
@@ -364,7 +346,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                       onChange={handleEndDateChange}
                       className="mt-1"
                       closeOnSelect
-                      disabled={businessHours ? disabledDateMatcher : undefined}
+                      disabled={disabledDateMatcher}
                     />
                   </div>
                 </div>
@@ -401,7 +383,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                 <div className="grid gap-1 sm:gap-2">
                   <Label className="text-xs sm:text-sm">{t('color')}</Label>
                   <div className="flex flex-wrap gap-2">
-                    {colorOptions.map((color) => (
+                    {COLOR_OPTIONS.map((color) => (
                       <Button
                         key={color.value}
                         variant="ghost"

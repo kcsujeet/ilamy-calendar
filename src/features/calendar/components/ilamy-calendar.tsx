@@ -13,7 +13,7 @@ import { useCalendarContext } from '@/features/calendar/contexts/calendar-contex
 // oxlint-disable-next-line no-duplicates
 import '@/lib/configs/dayjs-config'
 import { DAY_MAX_EVENTS_DEFAULT, WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
-import { normalizeEvents, normalizeInitialDate } from '@/lib'
+import { normalizeEvents, safeDate } from '@/lib'
 import type {
   IlamyCalendarProps,
   IlamyCalendarPropEvent,
@@ -114,7 +114,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
       events={normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events)}
       firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
       initialView={initialView}
-      initialDate={normalizeInitialDate(initialDate)}
+      initialDate={safeDate(initialDate)}
       renderEvent={renderEvent}
       onEventClick={onEventClick}
       onCellClick={onCellClick}

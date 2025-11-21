@@ -3,23 +3,20 @@ import React, { useEffect, useState } from 'react'
 
 import type { CalendarEvent } from '@/components/types'
 import {
-  Button,
-  Checkbox,
-  DatePicker,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Input,
-  Label,
-  ScrollArea,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui'
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { DatePicker } from '@/components/ui/date-picker'
+import { TimePicker } from '@/components/ui/time-picker'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
 import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-editor/recurrence-editor'
 import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
@@ -29,21 +26,24 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 
 const colorOptions = [
-  { value: 'bg-blue-100 text-blue-800', label: 'Blue' },
-  { value: 'bg-green-100 text-green-800', label: 'Green' },
-  { value: 'bg-purple-100 text-purple-800', label: 'Purple' },
-  { value: 'bg-red-100 text-red-800', label: 'Red' },
-  { value: 'bg-yellow-100 text-yellow-800', label: 'Yellow' },
-  { value: 'bg-pink-100 text-pink-800', label: 'Pink' },
-  { value: 'bg-indigo-100 text-indigo-800', label: 'Indigo' },
-  { value: 'bg-amber-100 text-amber-800', label: 'Amber' },
-  { value: 'bg-emerald-100 text-emerald-800', label: 'Emerald' },
-  { value: 'bg-sky-100 text-sky-800', label: 'Sky' },
-  { value: 'bg-violet-100 text-violet-800', label: 'Violet' },
-  { value: 'bg-rose-100 text-rose-800', label: 'Rose' },
-  { value: 'bg-teal-100 text-teal-800', label: 'Teal' },
-  { value: 'bg-orange-100 text-orange-800', label: 'Orange' },
-]
+  'blue',
+  'green',
+  'purple',
+  'red',
+  'yellow',
+  'pink',
+  'indigo',
+  'amber',
+  'emerald',
+  'sky',
+  'violet',
+  'rose',
+  'teal',
+  'orange',
+].map((color) => ({
+  value: `bg-${color}-100 text-${color}-800`,
+  label: color.charAt(0).toUpperCase() + color.slice(1),
+}))
 
 interface EventFormProps {
   selectedEvent?: CalendarEvent | null
@@ -136,25 +136,29 @@ export const EventForm: React.FC<EventFormProps> = ({
     }
   }
 
+  // Time validation handlers - only validate when dates are the same
+  const handleStartTimeChange = (time: string) => {
+    setStartTime(time)
+    // Only validate if same day
+    if (dayjs(startDate).isSame(dayjs(endDate), 'day') && time > endTime) {
+      setEndTime(time)
+    }
+  }
+
+  const handleEndTimeChange = (time: string) => {
+    setEndTime(time)
+    // Only validate if same day
+    if (dayjs(startDate).isSame(dayjs(endDate), 'day') && time < startTime) {
+      setStartTime(time)
+    }
+  }
+
   // Update form values when input changes
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
     setFormValues((prev) => ({ ...prev, [name]: value }))
-  }
-
-  // Handle time changes
-  const handleTimeChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    isStart: boolean
-  ) => {
-    const timeValue = e.target.value
-    if (isStart) {
-      setStartTime(timeValue)
-    } else {
-      setEndTime(timeValue)
-    }
   }
 
   useEffect(() => {
@@ -368,44 +372,27 @@ export const EventForm: React.FC<EventFormProps> = ({
                 {!isAllDay && (
                   <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     <div>
-                      <Label
-                        htmlFor="start-time"
-                        className="text-xs sm:text-sm"
-                      >
+                      <Label className="text-xs sm:text-sm">
                         {t('startTime')}
-                        {businessHours && (
-                          <span className="text-xs text-muted-foreground ml-1">
-                            ({minTime} - {maxTime})
-                          </span>
-                        )}
                       </Label>
-                      <Input
-                        id="start-time"
-                        type="time"
+                      <TimePicker
                         value={startTime}
-                        onChange={(e) => handleTimeChange(e, true)}
+                        onChange={handleStartTimeChange}
+                        minTime={minTime}
+                        maxTime={maxTime}
                         className="mt-1 h-8 text-sm sm:h-9"
-                        min={businessHours ? minTime : undefined}
-                        max={businessHours ? maxTime : undefined}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="end-time" className="text-xs sm:text-sm">
+                      <Label className="text-xs sm:text-sm">
                         {t('endTime')}
-                        {businessHours && (
-                          <span className="text-xs text-muted-foreground ml-1">
-                            ({minTime} - {maxTime})
-                          </span>
-                        )}
                       </Label>
-                      <Input
-                        id="end-time"
-                        type="time"
+                      <TimePicker
                         value={endTime}
-                        onChange={(e) => handleTimeChange(e, false)}
+                        onChange={handleEndTimeChange}
+                        minTime={minTime}
+                        maxTime={maxTime}
                         className="mt-1 h-8 text-sm sm:h-9"
-                        min={businessHours ? minTime : undefined}
-                        max={businessHours ? maxTime : undefined}
                       />
                     </div>
                   </div>
@@ -414,29 +401,20 @@ export const EventForm: React.FC<EventFormProps> = ({
                 <div className="grid gap-1 sm:gap-2">
                   <Label className="text-xs sm:text-sm">{t('color')}</Label>
                   <div className="flex flex-wrap gap-2">
-                    <TooltipProvider>
-                      {colorOptions.map((color) => (
-                        <Tooltip key={color.value}>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              key={color.value}
-                              type="button"
-                              className={cn(
-                                `${color.value} h-6 w-6 rounded-full sm:h-8 sm:w-8`,
-                                selectedColor === color.value &&
-                                  'ring-2 ring-black ring-offset-1 sm:ring-offset-2'
-                              )}
-                              onClick={() => setSelectedColor(color.value)}
-                              aria-label={color.label}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs sm:text-sm">{color.label}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ))}
-                    </TooltipProvider>
+                    {colorOptions.map((color) => (
+                      <Button
+                        key={color.value}
+                        variant="ghost"
+                        type="button"
+                        className={cn(
+                          `${color.value} h-6 w-6 rounded-full sm:h-8 sm:w-8`,
+                          selectedColor === color.value &&
+                            'ring-2 ring-black ring-offset-1 sm:ring-offset-2'
+                        )}
+                        onClick={() => setSelectedColor(color.value)}
+                        aria-label={color.label}
+                      />
+                    ))}
                   </div>
                 </div>
 

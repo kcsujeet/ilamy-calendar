@@ -1,12 +1,14 @@
-import { Button } from '@/components/ui'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import React from 'react'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
+type ViewType = 'day' | 'week' | 'month' | 'year'
+
 interface ViewControlsProps {
-  currentView: 'day' | 'week' | 'month' | 'year'
-  onChange: (view: 'day' | 'week' | 'month' | 'year') => void
+  currentView: ViewType
+  onChange: (view: ViewType) => void
   onToday?: () => void
   onNext?: () => void
   onPrevious?: () => void
@@ -29,7 +31,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
   const isGrid = variant === 'grid'
 
   // Extract common button className logic to a function
-  const getButtonClassName = (viewType: 'day' | 'week' | 'month' | 'year') => {
+  const getButtonClassName = (viewType: ViewType) => {
     return cn(
       // Base width for grid layout
       isGrid ? 'w-full' : '',
@@ -38,7 +40,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
     )
   }
 
-  const getBtnVariant = (viewType: 'day' | 'week' | 'month' | 'year') => {
+  const getBtnVariant = (viewType: ViewType) => {
     return currentView === viewType ? 'default' : 'outline'
   }
 
@@ -56,38 +58,19 @@ const ViewControls: React.FC<ViewControlsProps> = ({
         <ChevronRight className="h-4 w-4" />
       </Button>
 
-      <Button
-        onClick={() => onChange('day')}
-        variant={getBtnVariant('day')}
-        size={size}
-        className={getButtonClassName('day')}
-      >
-        {t('day')}
-      </Button>
-      <Button
-        onClick={() => onChange('week')}
-        variant={getBtnVariant('week')}
-        size={size}
-        className={getButtonClassName('week')}
-      >
-        {t('week')}
-      </Button>
-      <Button
-        onClick={() => onChange('month')}
-        variant={getBtnVariant('month')}
-        size={size}
-        className={getButtonClassName('month')}
-      >
-        {t('month')}
-      </Button>
-      <Button
-        onClick={() => onChange('year')}
-        variant={getBtnVariant('year')}
-        size={size}
-        className={getButtonClassName('year')}
-      >
-        {t('year')}
-      </Button>
+      {['day', 'week', 'month', 'year'].map((type: ViewType) => {
+        return (
+          <Button
+            key={type}
+            onClick={() => onChange(type)}
+            variant={getBtnVariant(type)}
+            size={size}
+            className={getButtonClassName(type)}
+          >
+            {t(type)}
+          </Button>
+        )
+      })}
 
       <Button onClick={onToday} variant="outline" size={size}>
         {t('today')}

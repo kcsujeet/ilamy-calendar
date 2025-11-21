@@ -1,14 +1,11 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui'
+} from '@/components/ui/card'
 
 interface DemoUsageProps {
   firstDayOfWeek: string

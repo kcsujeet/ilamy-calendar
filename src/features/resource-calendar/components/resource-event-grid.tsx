@@ -1,4 +1,4 @@
-import { ScrollArea, ScrollBar } from '@/components/ui'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { ResourceEventsLayer } from './resource-events-layer'

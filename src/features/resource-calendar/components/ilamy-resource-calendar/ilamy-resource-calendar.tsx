@@ -7,7 +7,7 @@ import type {
   ResourceCalendarEvent,
 } from '@/features/resource-calendar/types'
 import { DAY_MAX_EVENTS_DEFAULT, WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
-import { normalizeInitialDate, normalizeEvents } from '@/lib/utils'
+import { safeDate, normalizeEvents } from '@/lib/utils'
 
 export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   events = [],
@@ -47,7 +47,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
       resources={resources}
       firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
       initialView={initialView}
-      initialDate={normalizeInitialDate(initialDate)}
+      initialDate={safeDate(initialDate)}
       renderEvent={renderEvent}
       renderResource={renderResource}
       onEventClick={onEventClick}

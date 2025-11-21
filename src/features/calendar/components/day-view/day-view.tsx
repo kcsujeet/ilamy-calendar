@@ -1,4 +1,4 @@
-import { ScrollArea } from '@/components/ui'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { cn } from '@/lib/utils'
 import dayjs from '@/lib/configs/dayjs-config'

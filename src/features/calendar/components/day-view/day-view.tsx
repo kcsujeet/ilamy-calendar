@@ -16,7 +16,7 @@ const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
 })
 
 const DayView = () => {
-  const { currentDate, businessHours } = useCalendarContext()
+  const { currentDate, businessHours, is24Hour } = useCalendarContext()
 
   const isToday = currentDate.isSame(dayjs(), 'day')
   const dateStr = currentDate.format('YYYY-MM-DD')
@@ -41,7 +41,10 @@ const DayView = () => {
           style={{ height: `${hours.length * 60}px` }}
         >
           {/* Time labels column */}
-          <DayTimeCol className="col-span-2 h-full md:col-span-1" />
+          <DayTimeCol
+            className="col-span-2 h-full md:col-span-1"
+            is24Hour={is24Hour}
+          />
 
           {/* Day column with events */}
           <div

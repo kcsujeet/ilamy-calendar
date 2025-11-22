@@ -3,6 +3,7 @@ import React, { useCallback, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { CalendarContext } from './context'
 import type { CalendarEvent, BusinessHours } from '@/components/types'
+import type { EventFormProps } from '@/components/event-form/event-form'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type { CalendarView } from '@/types'
@@ -32,6 +33,7 @@ export interface CalendarProviderProps {
   headerComponent?: ReactNode // Optional custom header component
   headerClassName?: string // Optional custom header class
   businessHours?: BusinessHours
+  renderEventForm?: (props: EventFormProps) => ReactNode
   // Translation options - provide either translations object OR translator function
   translations?: Translations
   translator?: TranslatorFunction
@@ -62,6 +64,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   headerComponent,
   headerClassName,
   businessHours,
+  renderEventForm,
   translations,
   translator,
 }) => {
@@ -162,6 +165,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       headerComponent,
       headerClassName,
       businessHours,
+      renderEventForm,
       t: calendarEngine.t,
     }),
     [
@@ -180,6 +184,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       headerComponent,
       headerClassName,
       businessHours,
+      renderEventForm,
     ]
   )
 

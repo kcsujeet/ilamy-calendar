@@ -25,11 +25,11 @@ const CalendarContent: React.FC = () => {
     isEventFormOpen,
     closeEventForm,
     selectedEvent,
-    selectedDate,
     addEvent,
     updateEvent,
     deleteEvent,
     dayMaxEvents,
+    renderEventForm,
   } = useCalendarContext()
 
   const viewMap = {
@@ -45,6 +45,15 @@ const CalendarContent: React.FC = () => {
 
   const handleOnDelete = (event: CalendarEvent) => {
     deleteEvent(event.id)
+  }
+
+  const eventFormProps = {
+    open: isEventFormOpen,
+    onClose: closeEventForm,
+    selectedEvent,
+    onAdd: addEvent,
+    onUpdate: handleOnUpdate,
+    onDelete: handleOnDelete,
   }
 
   return (
@@ -68,16 +77,9 @@ const CalendarContent: React.FC = () => {
       </CalendarDndContext>
 
       {/* Event Form Dialog */}
-      {isEventFormOpen && (
-        <EventForm
-          onClose={closeEventForm}
-          selectedEvent={selectedEvent}
-          selectedDate={selectedDate}
-          onAdd={addEvent}
-          onUpdate={handleOnUpdate}
-          onDelete={handleOnDelete}
-        />
-      )}
+      {renderEventForm
+        ? renderEventForm(eventFormProps)
+        : isEventFormOpen && <EventForm {...eventFormProps} />}
     </div>
   )
 }
@@ -88,6 +90,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   initialView = 'month',
   initialDate,
   renderEvent,
+  renderEventForm,
   onEventClick,
   onCellClick,
   onViewChange,
@@ -116,6 +119,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
       initialView={initialView}
       initialDate={safeDate(initialDate)}
       renderEvent={renderEvent}
+      renderEventForm={renderEventForm}
       onEventClick={onEventClick}
       onCellClick={onCellClick}
       onViewChange={onViewChange}

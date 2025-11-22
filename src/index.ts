@@ -15,6 +15,7 @@ export {
 // Export types
 export type { RRuleOptions } from '@/features/recurrence/types'
 export type { CalendarEvent } from './components/types'
+export type { EventFormProps } from './components/event-form/event-form'
 export type { IlamyCalendarProps } from './features/calendar/types'
 export type { IlamyResourceCalendarProps } from './features/resource-calendar/components/ilamy-resource-calendar'
 export type { WeekDays } from './components/types'

@@ -1,4 +1,5 @@
 import type { CalendarEvent, BusinessHours } from '@/components/types'
+import type { EventFormProps } from '@/components/event-form/event-form'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { TranslationKey } from '@/lib/translations/types'
@@ -52,6 +53,7 @@ export interface CalendarContextType {
   headerComponent?: React.ReactNode // Optional custom header component
   headerClassName?: string // Optional custom header class
   businessHours?: BusinessHours
+  renderEventForm?: (props: EventFormProps) => React.ReactNode
   // Translation function
   t: (key: TranslationKey) => string
 }

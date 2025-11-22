@@ -61,6 +61,7 @@ export const ResourceCalendarProvider: React.FC<
   translations,
   translator,
   renderResource,
+  renderEventForm,
   businessHours,
 }) => {
   // Resource-specific state
@@ -262,6 +263,7 @@ export const ResourceCalendarProvider: React.FC<
       // Pass through other props
       renderEvent,
       renderResource,
+      renderEventForm,
       locale,
       timezone,
       disableCellClick,
@@ -290,6 +292,7 @@ export const ResourceCalendarProvider: React.FC<
       handleDateClick,
       renderEvent,
       renderResource,
+      renderEventForm,
       locale,
       timezone,
       disableCellClick,

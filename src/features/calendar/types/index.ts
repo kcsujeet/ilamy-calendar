@@ -1,4 +1,5 @@
 import type { CalendarEvent, WeekDays, BusinessHours } from '@/components/types'
+import type { EventFormProps } from '@/components/event-form/event-form'
 import React from 'react'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
@@ -144,4 +145,10 @@ export interface IlamyCalendarProps {
    * Defines the working hours to be highlighted on the calendar.
    */
   businessHours?: BusinessHours
+  /**
+   * Custom render function for the event form.
+   * If provided, it will override the default event form component.
+   * The function receives EventFormProps and should return a React node.
+   */
+  renderEventForm?: (props: EventFormProps) => React.ReactNode
 }

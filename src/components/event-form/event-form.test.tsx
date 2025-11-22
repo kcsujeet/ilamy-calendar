@@ -36,7 +36,14 @@ describe('EventForm', () => {
     onClose: mockOnClose,
   }
 
-  const testSelectedDate = dayjs('2025-08-15T10:00:00')
+  const testNewEvent: CalendarEvent = {
+    id: undefined as unknown as string,
+    title: '',
+    start: dayjs('2025-08-15T10:00:00'),
+    end: dayjs('2025-08-15T11:00:00'),
+    description: '',
+    allDay: false,
+  }
   const testEvent: CalendarEvent = {
     id: 'test-event-1',
     title: 'Test Event',
@@ -57,7 +64,7 @@ describe('EventForm', () => {
 
   describe('Initial State', () => {
     it('should render create event form with default values', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       expect(screen.getByText('Create Event')).toBeInTheDocument()
       expect(
@@ -80,7 +87,7 @@ describe('EventForm', () => {
     })
 
     it('should initialize form with selectedDate when creating new event', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       // Check that date inputs show the selected date (there are both start and end date pickers)
       expect(screen.getAllByText('Aug 15, 2025')).toHaveLength(2) // start and end date
@@ -103,7 +110,7 @@ describe('EventForm', () => {
 
   describe('Form Input Handling', () => {
     it('should update title when input changes', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       const titleInput = screen.getByPlaceholderText('Event title')
       fireEvent.change(titleInput, { target: { value: 'New Event Title' } })
@@ -112,7 +119,7 @@ describe('EventForm', () => {
     })
 
     it('should update description when input changes', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       const descriptionInput = screen.getByPlaceholderText(
         'Event description (optional)'
@@ -125,7 +132,7 @@ describe('EventForm', () => {
     })
 
     it('should update location when input changes', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       const locationInput = screen.getByPlaceholderText(
         'Event location (optional)'
@@ -136,7 +143,7 @@ describe('EventForm', () => {
     })
 
     it('should update time inputs when changed', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       // TimeSelect uses Select component (combobox), find by role
       const [startTimeSelect, endTimeSelect] = screen.getAllByRole('combobox')
@@ -149,7 +156,7 @@ describe('EventForm', () => {
 
   describe('All Day Toggle', () => {
     it('should hide time inputs when all day is enabled', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       const allDayCheckbox = screen.getByLabelText('All day')
       fireEvent.click(allDayCheckbox)
@@ -172,7 +179,7 @@ describe('EventForm', () => {
     })
 
     it('should set end time to 23:59 when all day is enabled', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       const allDayCheckbox = screen.getByLabelText('All day')
       fireEvent.click(allDayCheckbox)
@@ -188,7 +195,7 @@ describe('EventForm', () => {
 
   describe('Color Selection', () => {
     it('should render color options', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       // Check that multiple color options are rendered
       const colorButtons = screen
@@ -204,7 +211,7 @@ describe('EventForm', () => {
     })
 
     it('should select a color when clicked', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       const redColorButton = screen.getByLabelText('Red')
       fireEvent.click(redColorButton)
@@ -216,7 +223,7 @@ describe('EventForm', () => {
 
   describe('Date Validation', () => {
     it('should update end date when start date is after end date', async () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       // Get the date picker buttons
       const startDatePicker = screen
@@ -232,7 +239,7 @@ describe('EventForm', () => {
 
   describe('Form Submission', () => {
     it('should call onAdd with correct data when creating new event', async () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       // Fill in form data
       fireEvent.change(screen.getByPlaceholderText('Event title'), {
@@ -294,7 +301,7 @@ describe('EventForm', () => {
     })
 
     it('should handle all-day events correctly in submission', async () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       // Enable all day
       fireEvent.click(screen.getByLabelText('All day'))
@@ -318,7 +325,7 @@ describe('EventForm', () => {
     })
 
     it('should require title field', async () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       // Try to submit without title
       const submitButton = screen.getByRole('button', { name: 'Create' })
@@ -342,7 +349,7 @@ describe('EventForm', () => {
     })
 
     it('should not show delete button for new events', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       expect(screen.queryByText('Delete')).not.toBeInTheDocument()
     })
@@ -350,13 +357,13 @@ describe('EventForm', () => {
 
   describe('Recurrence Integration', () => {
     it('should render recurrence editor', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       expect(screen.getByTestId('recurrence-editor')).toBeInTheDocument()
     })
 
     it('should handle recurrence changes', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       const toggleButton = screen.getByTestId('toggle-recurrence')
       fireEvent.click(toggleButton)
@@ -365,7 +372,7 @@ describe('EventForm', () => {
     })
 
     it('should include recurrence in form submission', async () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       // Enable recurrence
       fireEvent.click(screen.getByTestId('toggle-recurrence'))
@@ -394,7 +401,7 @@ describe('EventForm', () => {
 
   describe('Form Cancellation', () => {
     it('should call onClose when cancel button is clicked', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       const cancelButton = screen.getByRole('button', { name: 'Cancel' })
       fireEvent.click(cancelButton)
@@ -403,7 +410,7 @@ describe('EventForm', () => {
     })
 
     it('should call onClose when dialog is closed', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       // The dialog has onOpenChange that should call onClose
       // This tests the dialog integration
@@ -419,8 +426,8 @@ describe('EventForm', () => {
       expect(screen.getByPlaceholderText('Event title')).toHaveValue('')
     })
 
-    it('should handle undefined selectedDate gracefully', () => {
-      renderEventForm({ ...defaultProps, selectedDate: undefined })
+    it('should handle undefined selectedEvent gracefully', () => {
+      renderEventForm({ ...defaultProps, selectedEvent: undefined })
 
       expect(screen.getByText('Create Event')).toBeInTheDocument()
       // Should use current date as default
@@ -494,7 +501,7 @@ describe('EventForm', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA labels and roles', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       expect(screen.getByRole('dialog')).toBeInTheDocument()
       expect(screen.getByLabelText('Title')).toBeInTheDocument()
@@ -504,7 +511,7 @@ describe('EventForm', () => {
     })
 
     it('should support keyboard navigation', () => {
-      renderEventForm({ ...defaultProps, selectedDate: testSelectedDate })
+      renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
       const titleInput = screen.getByPlaceholderText('Event title')
       titleInput.focus()

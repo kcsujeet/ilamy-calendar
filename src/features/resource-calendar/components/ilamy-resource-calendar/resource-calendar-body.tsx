@@ -15,10 +15,10 @@ export const ResourceCalendarBody: React.FC = () => {
     isEventFormOpen,
     closeEventForm,
     selectedEvent,
-    selectedDate,
     addEvent,
     updateEvent,
     deleteEvent,
+    renderEventForm,
   } = useResourceCalendarContext()
 
   const viewMap = {
@@ -33,6 +33,15 @@ export const ResourceCalendarBody: React.FC = () => {
 
   const handleOnDelete = (event: CalendarEvent) => {
     deleteEvent(event.id)
+  }
+
+  const eventFormProps = {
+    open: isEventFormOpen,
+    onClose: closeEventForm,
+    selectedEvent,
+    onAdd: addEvent,
+    onUpdate: handleOnUpdate,
+    onDelete: handleOnDelete,
   }
 
   return (
@@ -56,16 +65,9 @@ export const ResourceCalendarBody: React.FC = () => {
       </CalendarDndContext>
 
       {/* Event Form Dialog */}
-      {isEventFormOpen && (
-        <EventForm
-          onClose={closeEventForm}
-          selectedEvent={selectedEvent}
-          selectedDate={selectedDate}
-          onAdd={addEvent}
-          onUpdate={handleOnUpdate}
-          onDelete={handleOnDelete}
-        />
-      )}
+      {renderEventForm
+        ? renderEventForm(eventFormProps)
+        : isEventFormOpen && <EventForm {...eventFormProps} />}
     </div>
   )
 }

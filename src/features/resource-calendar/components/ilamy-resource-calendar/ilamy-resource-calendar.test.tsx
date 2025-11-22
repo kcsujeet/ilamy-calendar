@@ -1,14 +1,91 @@
 // No mocking - test the real CalendarDndContext
 import dayjs from '@/lib/configs/dayjs-config'
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, mock } from 'bun:test'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, expect, it, mock, beforeEach } from 'bun:test'
 import { IlamyResourceCalendar } from './ilamy-resource-calendar'
 import type { Resource, ResourceCalendarEvent } from '../../types'
+import type { EventFormProps } from '@/components/event-form/event-form'
 
 const translator = (key: string) => `Translated: ${key}`
 const customRenderEvent = (event: ResourceCalendarEvent) => (
   <div data-testid={`custom-event-${event.id}`}>Custom: {event.title}</div>
 )
+
+const CustomResourceEventForm = (props: EventFormProps) => {
+  const event = props.selectedEvent as ResourceCalendarEvent | null
+  return (
+    <div data-testid="custom-event-form">
+      <span data-testid="form-open">{props.open ? 'open' : 'closed'}</span>
+      <span data-testid="selected-event-title">{event?.title || 'none'}</span>
+      <span data-testid="selected-event-id">{event?.id || 'no-id'}</span>
+      <span data-testid="selected-event-resource-id">
+        {event?.resourceId || 'no-resource'}
+      </span>
+      <span data-testid="selected-event-resource-ids">
+        {event?.resourceIds?.join(',') || 'no-resources'}
+      </span>
+      <button
+        data-testid="add-event-btn"
+        onClick={() =>
+          props.onAdd?.({
+            id: 'new-resource-event-1',
+            title: 'New Resource Event',
+            start: dayjs('2025-08-04T14:00:00.000Z'),
+            end: dayjs('2025-08-04T15:00:00.000Z'),
+            resourceId: 'resource-1',
+          } as ResourceCalendarEvent)
+        }
+      >
+        Add Event
+      </button>
+      <button
+        data-testid="add-cross-resource-event-btn"
+        onClick={() =>
+          props.onAdd?.({
+            id: 'cross-resource-event-1',
+            title: 'Cross Resource Event',
+            start: dayjs('2025-08-04T14:00:00.000Z'),
+            end: dayjs('2025-08-04T15:00:00.000Z'),
+            resourceIds: ['resource-1', 'resource-2'],
+          } as ResourceCalendarEvent)
+        }
+      >
+        Add Cross Resource Event
+      </button>
+      <button
+        data-testid="update-event-btn"
+        onClick={() =>
+          props.onUpdate?.({
+            ...props.selectedEvent!,
+            title: 'Updated Resource Event',
+          })
+        }
+      >
+        Update Event
+      </button>
+      <button
+        data-testid="update-event-resource-btn"
+        onClick={() =>
+          props.onUpdate?.({
+            ...props.selectedEvent!,
+            resourceId: 'resource-2',
+          } as ResourceCalendarEvent)
+        }
+      >
+        Move to Resource 2
+      </button>
+      <button
+        data-testid="delete-event-btn"
+        onClick={() => props.onDelete?.(props.selectedEvent!)}
+      >
+        Delete Event
+      </button>
+      <button data-testid="close-form-btn" onClick={props.onClose}>
+        Close
+      </button>
+    </div>
+  )
+}
 
 // Mock the export function
 mock.module('@/lib/export-ical', () => ({
@@ -347,5 +424,322 @@ describe('IlamyResourceCalendar', () => {
     )
 
     expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
+  })
+
+  describe('renderEventForm', () => {
+    const mockOnEventAdd = mock(() => {})
+    const mockOnEventUpdate = mock(() => {})
+    const mockOnEventDelete = mock(() => {})
+
+    beforeEach(() => {
+      mockOnEventAdd.mockClear()
+      mockOnEventUpdate.mockClear()
+      mockOnEventDelete.mockClear()
+    })
+
+    it('should render custom event form when renderEventForm is provided', () => {
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={[]}
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+        />
+      )
+
+      expect(screen.getByTestId('custom-event-form')).toBeInTheDocument()
+      expect(screen.getByTestId('form-open')).toHaveTextContent('closed')
+    })
+
+    it('should pass selectedEvent with resourceId when resource event is clicked', async () => {
+      const resourceEvent: ResourceCalendarEvent = {
+        id: 'resource-event-1',
+        title: 'Resource Event',
+        start: dayjs('2025-08-04T10:00:00.000Z'),
+        end: dayjs('2025-08-04T11:00:00.000Z'),
+        uid: 'resource-event-1@test',
+        resourceId: 'resource-1',
+      }
+
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={[resourceEvent]}
+          initialView="month"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+        />
+      )
+
+      // Click on the event
+      const eventElement = screen.getByText('Resource Event')
+      fireEvent.click(eventElement)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('form-open')).toHaveTextContent('open')
+      })
+
+      expect(screen.getByTestId('selected-event-title')).toHaveTextContent(
+        'Resource Event'
+      )
+      expect(
+        screen.getByTestId('selected-event-resource-id')
+      ).toHaveTextContent('resource-1')
+    })
+
+    it('should pass selectedEvent with resourceIds for cross-resource events', async () => {
+      const crossResourceEvent: ResourceCalendarEvent = {
+        id: 'cross-event-1',
+        title: 'Cross Resource Meeting',
+        start: dayjs('2025-08-04T10:00:00.000Z'),
+        end: dayjs('2025-08-04T11:00:00.000Z'),
+        uid: 'cross-event-1@test',
+        resourceIds: ['resource-1', 'resource-2'],
+      }
+
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={[crossResourceEvent]}
+          initialView="month"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+        />
+      )
+
+      // Cross-resource events appear in multiple places, click the first one
+      const eventElements = screen.getAllByText('Cross Resource Meeting')
+      fireEvent.click(eventElements[0])
+
+      await waitFor(() => {
+        expect(screen.getByTestId('form-open')).toHaveTextContent('open')
+      })
+
+      expect(
+        screen.getByTestId('selected-event-resource-ids')
+      ).toHaveTextContent('resource-1,resource-2')
+    })
+
+    it('should add event with resourceId via onAdd callback', async () => {
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={[]}
+          initialView="month"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+          onEventAdd={mockOnEventAdd}
+        />
+      )
+
+      // Click add event button
+      fireEvent.click(screen.getByTestId('add-event-btn'))
+
+      await waitFor(() => {
+        expect(mockOnEventAdd).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockOnEventAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'new-resource-event-1',
+          title: 'New Resource Event',
+          resourceId: 'resource-1',
+        })
+      )
+
+      // Event should appear on calendar
+      await waitFor(() => {
+        expect(screen.getByText('New Resource Event')).toBeInTheDocument()
+      })
+    })
+
+    it('should add cross-resource event with resourceIds via onAdd callback', async () => {
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={[]}
+          initialView="month"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+          onEventAdd={mockOnEventAdd}
+        />
+      )
+
+      // Click add cross-resource event button
+      fireEvent.click(screen.getByTestId('add-cross-resource-event-btn'))
+
+      await waitFor(() => {
+        expect(mockOnEventAdd).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockOnEventAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'cross-resource-event-1',
+          title: 'Cross Resource Event',
+          resourceIds: ['resource-1', 'resource-2'],
+        })
+      )
+    })
+
+    it('should update event and preserve resourceId via onUpdate callback', async () => {
+      const resourceEvent: ResourceCalendarEvent = {
+        id: 'update-event-1',
+        title: 'Event to Update',
+        start: dayjs('2025-08-04T10:00:00.000Z'),
+        end: dayjs('2025-08-04T11:00:00.000Z'),
+        uid: 'update-event-1@test',
+        resourceId: 'resource-1',
+      }
+
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={[resourceEvent]}
+          initialView="month"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+          onEventUpdate={mockOnEventUpdate}
+        />
+      )
+
+      // Click event to open form
+      fireEvent.click(screen.getByText('Event to Update'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('form-open')).toHaveTextContent('open')
+      })
+
+      // Update event title
+      fireEvent.click(screen.getByTestId('update-event-btn'))
+
+      await waitFor(() => {
+        expect(mockOnEventUpdate).toHaveBeenCalledTimes(1)
+      })
+
+      // Should preserve resourceId while updating title
+      expect(mockOnEventUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'update-event-1',
+          title: 'Updated Resource Event',
+          resourceId: 'resource-1',
+        })
+      )
+    })
+
+    it('should move event to different resource via onUpdate callback', async () => {
+      const resourceEvent: ResourceCalendarEvent = {
+        id: 'move-event-1',
+        title: 'Event to Move',
+        start: dayjs('2025-08-04T10:00:00.000Z'),
+        end: dayjs('2025-08-04T11:00:00.000Z'),
+        uid: 'move-event-1@test',
+        resourceId: 'resource-1',
+      }
+
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={[resourceEvent]}
+          initialView="month"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+          onEventUpdate={mockOnEventUpdate}
+        />
+      )
+
+      // Click event to open form
+      fireEvent.click(screen.getByText('Event to Move'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('form-open')).toHaveTextContent('open')
+        expect(
+          screen.getByTestId('selected-event-resource-id')
+        ).toHaveTextContent('resource-1')
+      })
+
+      // Move to different resource
+      fireEvent.click(screen.getByTestId('update-event-resource-btn'))
+
+      await waitFor(() => {
+        expect(mockOnEventUpdate).toHaveBeenCalledTimes(1)
+      })
+
+      // Should have new resourceId
+      expect(mockOnEventUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'move-event-1',
+          resourceId: 'resource-2',
+        })
+      )
+    })
+
+    it('should delete resource event via onDelete callback', async () => {
+      const resourceEvent: ResourceCalendarEvent = {
+        id: 'delete-event-1',
+        title: 'Event to Delete',
+        start: dayjs('2025-08-04T10:00:00.000Z'),
+        end: dayjs('2025-08-04T11:00:00.000Z'),
+        uid: 'delete-event-1@test',
+        resourceId: 'resource-1',
+      }
+
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={[resourceEvent]}
+          initialView="month"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+          onEventDelete={mockOnEventDelete}
+        />
+      )
+
+      // Event should be visible
+      expect(screen.getByText('Event to Delete')).toBeInTheDocument()
+
+      // Click event to open form
+      fireEvent.click(screen.getByText('Event to Delete'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('form-open')).toHaveTextContent('open')
+      })
+
+      // Delete event
+      fireEvent.click(screen.getByTestId('delete-event-btn'))
+
+      await waitFor(() => {
+        expect(mockOnEventDelete).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockOnEventDelete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'delete-event-1',
+          title: 'Event to Delete',
+          resourceId: 'resource-1',
+        })
+      )
+    })
+
+    it('should use default EventForm when renderEventForm is not provided', async () => {
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={mockEvents}
+          initialView="month"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+        />
+      )
+
+      // Custom form should not be present
+      expect(screen.queryByTestId('custom-event-form')).not.toBeInTheDocument()
+
+      // Click on an event to open default form
+      fireEvent.click(screen.getByText('Team Meeting'))
+
+      // Default form should appear
+      await waitFor(() => {
+        expect(screen.getByText('Edit Event')).toBeInTheDocument()
+      })
+    })
   })
 })

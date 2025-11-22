@@ -66,9 +66,9 @@ const buildEndDateTime = (
   return isAllDay ? base.hour(23).minute(59) : base
 }
 
-interface EventFormProps {
+export interface EventFormProps {
+  open?: boolean
   selectedEvent?: CalendarEvent | null
-  selectedDate?: dayjs.Dayjs | null
   onAdd?: (event: CalendarEvent) => void
   onUpdate?: (event: CalendarEvent) => void
   onDelete?: (event: CalendarEvent) => void
@@ -77,7 +77,6 @@ interface EventFormProps {
 
 export const EventForm: React.FC<EventFormProps> = ({
   selectedEvent,
-  selectedDate,
   onClose,
   onUpdate,
   onDelete,
@@ -98,36 +97,25 @@ export const EventForm: React.FC<EventFormProps> = ({
       businessHours: context.businessHours,
     }))
 
-  const start = selectedEvent?.start
-  const end = selectedEvent?.end
+  const start = selectedEvent?.start ?? dayjs()
+  const end = selectedEvent?.end ?? dayjs().add(1, 'hour')
 
   // Find parent event if this is a recurring event instance
   const parentEvent = selectedEvent
     ? findParentRecurringEvent(selectedEvent)
     : null
 
-  // Form default values
-  const defaultStartDate = selectedDate?.toDate() || new Date()
-  const defaultEndDate =
-    selectedDate?.add(1, 'hour').toDate() || dayjs().add(1, 'hour').toDate()
-
   // Form state
-  const [startDate, setStartDate] = useState(
-    start?.toDate() || defaultStartDate
-  )
-  const [endDate, setEndDate] = useState(end?.toDate() || defaultEndDate)
+  const [startDate, setStartDate] = useState(start.toDate())
+  const [endDate, setEndDate] = useState(end.toDate())
   const [isAllDay, setIsAllDay] = useState(selectedEvent?.allDay || false)
   const [selectedColor, setSelectedColor] = useState(
     selectedEvent?.color || COLOR_OPTIONS[0].value
   )
 
   // Time state
-  const [startTime, setStartTime] = useState(
-    start ? start.format('HH:mm') : dayjs(defaultStartDate).format('HH:mm')
-  )
-  const [endTime, setEndTime] = useState(
-    end ? end.format('HH:mm') : dayjs(defaultEndDate).format('HH:mm')
-  )
+  const [startTime, setStartTime] = useState(start.format('HH:mm'))
+  const [endTime, setEndTime] = useState(end.format('HH:mm'))
 
   // Initialize form values from selected event or defaults
   const [formValues, setFormValues] = useState({

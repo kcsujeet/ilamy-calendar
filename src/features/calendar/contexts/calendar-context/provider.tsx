@@ -37,6 +37,7 @@ export interface CalendarProviderProps {
   // Translation options - provide either translations object OR translator function
   translations?: Translations
   translator?: TranslatorFunction
+  is24Hour?: boolean
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -67,6 +68,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   renderEventForm,
   translations,
   translator,
+  is24Hour = false,
 }) => {
   // Use the calendar engine
   const calendarEngine = useCalendarEngine({
@@ -167,6 +169,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       businessHours,
       renderEventForm,
       t: calendarEngine.t,
+      is24Hour,
     }),
     [
       calendarEngine,
@@ -185,6 +188,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       headerClassName,
       businessHours,
       renderEventForm,
+      is24Hour,
     ]
   )
 

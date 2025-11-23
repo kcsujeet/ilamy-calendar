@@ -23,6 +23,24 @@ const renderEventForm = (
   )
 }
 
+// Helper function for rerender with new provider props
+const rerenderEventForm = (
+  rerender: ReturnType<typeof render>['rerender'],
+  props: Parameters<typeof EventForm>[0],
+  providerProps = {}
+) => {
+  rerender(
+    <CalendarProvider
+      events={[]}
+      dayMaxEvents={5}
+      firstDayOfWeek={0}
+      {...providerProps}
+    >
+      <EventForm {...props} />
+    </CalendarProvider>
+  )
+}
+
 describe('EventForm', () => {
   const mockOnAdd = mock(() => {})
   const mockOnUpdate = mock(() => {})
@@ -517,6 +535,96 @@ describe('EventForm', () => {
       titleInput.focus()
 
       expect(document.activeElement).toBe(titleInput)
+    })
+  })
+
+  describe('24-Hour Time Format', () => {
+    it('should display time pickers in 24-hour format when is24Hour is true', () => {
+      renderEventForm(
+        { ...defaultProps, selectedEvent: testEvent },
+        { is24Hour: true }
+      )
+
+      // Get the TimePicker comboboxes (they show the formatted time)
+      const timePickerComboboxes = screen.getAllByRole('combobox')
+
+      // Should have 2 time pickers (start and end time)
+      expect(timePickerComboboxes.length).toBeGreaterThanOrEqual(2)
+
+      // Check that times are displayed in 24-hour format (no AM/PM)
+      timePickerComboboxes.forEach((combobox) => {
+        const comboboxText = combobox.textContent || ''
+        // In 24-hour format, should not contain AM/PM
+        expect(comboboxText).not.toMatch(/AM|PM/i)
+        // Should contain time format like "10:00" or "11:00"
+        expect(comboboxText).toMatch(/\d{1,2}:\d{2}/)
+      })
+    })
+
+    it('should display time pickers in 12-hour format when is24Hour is false', () => {
+      renderEventForm(
+        { ...defaultProps, selectedEvent: testEvent },
+        { is24Hour: false }
+      )
+
+      // Get the TimePicker comboboxes
+      const timePickerComboboxes = screen.getAllByRole('combobox')
+
+      // Should have 2 time pickers (start and end time)
+      expect(timePickerComboboxes.length).toBeGreaterThanOrEqual(2)
+
+      // At least one time picker should show AM/PM (12-hour format)
+      const hasAMPM = timePickerComboboxes.some((combobox) => {
+        const comboboxText = combobox.textContent || ''
+        return /AM|PM/i.test(comboboxText)
+      })
+      expect(hasAMPM).toBe(true)
+    })
+
+    it('should default to 12-hour format when is24Hour is not provided', () => {
+      renderEventForm({ ...defaultProps, selectedEvent: testEvent })
+
+      // Get the TimePicker comboboxes
+      const timePickerComboboxes = screen.getAllByRole('combobox')
+
+      // Should have 2 time pickers (start and end time)
+      expect(timePickerComboboxes.length).toBeGreaterThanOrEqual(2)
+
+      // Should default to 12-hour format
+      const hasAMPM = timePickerComboboxes.some((combobox) => {
+        const comboboxText = combobox.textContent || ''
+        return /AM|PM/i.test(comboboxText)
+      })
+      expect(hasAMPM).toBe(true)
+    })
+
+    it('should update time picker format when is24Hour changes', () => {
+      const { rerender } = renderEventForm(
+        { ...defaultProps, selectedEvent: testEvent },
+        { is24Hour: false }
+      )
+
+      // Initially should show 12-hour format
+      let timePickerComboboxes = screen.getAllByRole('combobox')
+      let hasAMPM = timePickerComboboxes.some((combobox) => {
+        const comboboxText = combobox.textContent || ''
+        return /AM|PM/i.test(comboboxText)
+      })
+      expect(hasAMPM).toBe(true)
+
+      // Rerender with 24-hour format
+      rerenderEventForm(
+        rerender,
+        { ...defaultProps, selectedEvent: testEvent },
+        { is24Hour: true }
+      )
+
+      // Now should show 24-hour format
+      timePickerComboboxes = screen.getAllByRole('combobox')
+      timePickerComboboxes.forEach((combobox) => {
+        const comboboxText = combobox.textContent || ''
+        expect(comboboxText).not.toMatch(/AM|PM/i)
+      })
     })
   })
 })

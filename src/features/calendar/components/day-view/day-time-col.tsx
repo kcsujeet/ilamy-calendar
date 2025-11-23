@@ -8,14 +8,10 @@ const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
 
 interface DayTimeColProps {
   className?: string
-  is24Hour?: boolean
 }
 
-export const DayTimeCol: React.FC<DayTimeColProps> = ({
-  className,
-  is24Hour = false,
-}) => {
-  const { currentLocale } = useCalendarContext()
+export const DayTimeCol: React.FC<DayTimeColProps> = ({ className }) => {
+  const { currentLocale, is24Hour } = useCalendarContext()
 
   return (
     <div

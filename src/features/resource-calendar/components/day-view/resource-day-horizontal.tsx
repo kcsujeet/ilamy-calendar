@@ -6,8 +6,14 @@ import { cn } from '@/lib/utils'
 import { AnimatePresence, motion } from 'motion/react'
 
 export const ResourceDayHorizontal: React.FC = () => {
-  const { currentDate, t, stickyViewHeader, viewHeaderClassName } =
-    useResourceCalendarContext()
+  const {
+    currentDate,
+    t,
+    stickyViewHeader,
+    viewHeaderClassName,
+    currentLocale,
+    is24Hour,
+  } = useResourceCalendarContext()
 
   // Generate time columns (hourly slots)
   const dayHours = useMemo(() => {
@@ -54,7 +60,11 @@ export const ResourceDayHorizontal: React.FC = () => {
                         isNowHour && 'bg-blue-50 text-blue-600 font-medium'
                       )}
                     >
-                      {col.format('ha')}
+                      {Intl.DateTimeFormat(currentLocale, {
+                        hour: 'numeric',
+                        minute: 'numeric',
+                        hour12: !is24Hour,
+                      }).format(col.toDate())}
                     </motion.div>
                   </AnimatePresence>
                 )

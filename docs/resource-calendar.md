@@ -116,10 +116,12 @@ const resources: Resource[] = [
 
 ## Resource Calendar Events
 
-Resource calendar events extend the standard `CalendarEvent` interface with resource assignment fields.
+The standard `CalendarEvent` interface includes optional resource assignment fields for use with resource calendars.
 
 ```typescript
-interface CalendarEvent extends CalendarEvent {
+interface CalendarEvent {
+  // ... standard event properties (id, title, start, end, etc.)
+
   /** Single resource assignment */
   resourceId?: string | number
 
@@ -203,7 +205,7 @@ interface IlamyResourceCalendarProps extends IlamyCalendarProps {
 | `firstDayOfWeek`     | `'sunday' \| 'monday'`                                              | `'sunday'`  | First day of the week                                                |
 | `disableDragAndDrop` | `boolean`                                                           | `false`     | Disable event drag-and-drop                                          |
 | `onEventClick`       | `(event: CalendarEvent) => void`                                    | `undefined` | Event click handler                                                  |
-| `onCellClick`        | `(start: Dayjs, end: Dayjs, resourceId?: string \| number) => void` | `undefined` | Cell click handler with optional resource ID                         |
+| `onCellClick`        | `(info: CellClickInfo) => void`                                      | `undefined` | Cell click handler with `start`, `end`, and optional `resourceId`    |
 | `onEventAdd`         | `(event: CalendarEvent) => void`                                    | `undefined` | Event add callback                                                   |
 | `onEventUpdate`      | `(event: CalendarEvent) => void`                                    | `undefined` | Event update callback                                                |
 | `onEventDelete`      | `(eventId: string) => void`                                         | `undefined` | Event delete callback                                                |
@@ -267,7 +269,7 @@ interface UseIlamyResourceCalendarContextReturn {
   addEvent: (event: CalendarEvent) => void
   updateEvent: (eventId: string, updates: Partial<CalendarEvent>) => void
   deleteEvent: (eventId: string) => void
-  openEventForm: (event?: CalendarEvent, date?: Dayjs) => void
+  openEventForm: (eventData?: Partial<CalendarEvent>) => void
   closeEventForm: () => void
 
   // Resource-specific methods
@@ -561,6 +563,7 @@ const CustomEventRenderer = (event: CalendarEvent) => {
 
 ```tsx
 import { IlamyResourceCalendar } from '@ilamy/calendar'
+import type { CalendarEvent, CellClickInfo, Resource } from '@ilamy/calendar'
 import { useState } from 'react'
 import dayjs from 'dayjs'
 
@@ -591,11 +594,8 @@ const RoomBookingCalendar = () => {
     },
   ]
 
-  const handleCellClick = (
-    start: dayjs.Dayjs,
-    end: dayjs.Dayjs,
-    resourceId?: string | number
-  ) => {
+  const handleCellClick = (info: CellClickInfo) => {
+    const { start, end, resourceId } = info
     if (!resourceId) return
 
     const newEvent: CalendarEvent = {
@@ -927,6 +927,7 @@ The Resource Calendar is fully typed with comprehensive TypeScript definitions:
 import type {
   Resource,
   CalendarEvent,
+  CellClickInfo,
   IlamyResourceCalendarProps,
   UseIlamyResourceCalendarContextReturn,
 } from '@ilamy/calendar'
@@ -947,6 +948,12 @@ const typedEvent: CalendarEvent = {
   end: dayjs().add(1, 'hour'),
   uid: 'meeting-1@company.com',
   resourceId: 'room-a',
+}
+
+// Type-safe cell click handler
+const handleCellClick = (info: CellClickInfo) => {
+  // CellClickInfo contains: { start: Dayjs, end: Dayjs, resourceId?: string | number }
+  console.log('Clicked:', info.start, info.end, info.resourceId)
 }
 ```
 

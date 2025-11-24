@@ -19,6 +19,19 @@ export interface IlamyCalendarPropEvent
   end: dayjs.Dayjs | Date | string
 }
 
+/**
+ * Information passed to the onCellClick callback.
+ * Uses named properties for extensibility.
+ */
+export interface CellClickInfo {
+  /** Start date/time of the clicked cell */
+  start: dayjs.Dayjs
+  /** End date/time of the clicked cell */
+  end: dayjs.Dayjs
+  /** Resource ID if clicking on a resource calendar cell (optional) */
+  resourceId?: string | number
+}
+
 export interface IlamyCalendarProps {
   /**
    * Array of events to display in the calendar.
@@ -51,9 +64,9 @@ export interface IlamyCalendarProps {
   onEventClick?: (event: CalendarEvent) => void
   /**
    * Callback when a calendar cell is clicked.
-   * Provides the start and end date of the clicked cell.
+   * Provides cell information including start/end dates and optional resourceId.
    */
-  onCellClick?: (start: dayjs.Dayjs, end: dayjs.Dayjs) => void
+  onCellClick?: (info: CellClickInfo) => void
   /**
    * Callback when the calendar view changes (month, week, day, year).
    * Useful for syncing with external state or analytics.

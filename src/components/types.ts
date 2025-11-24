@@ -61,6 +61,10 @@ export interface CalendarEvent {
    * Unique identifier across calendar systems
    */
   uid?: string
+  /** Single resource assignment */
+  resourceId?: string | number
+  /** Multiple resource assignment (cross-resource events) */
+  resourceIds?: (string | number)[]
   /**
    * Custom data associated with the event
    * Use this to store additional metadata specific to your application

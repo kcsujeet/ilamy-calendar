@@ -1,5 +1,6 @@
 import type { CalendarEvent, BusinessHours } from '@/components/types'
 import type { EventFormProps } from '@/components/event-form/event-form'
+import type { CellClickInfo } from '@/features/calendar/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { TranslationKey } from '@/lib/translations/types'
@@ -33,7 +34,7 @@ export interface CalendarContextType {
     event: CalendarEvent,
     options: RecurrenceEditOptions
   ) => void
-  openEventForm: (date?: dayjs.Dayjs) => void
+  openEventForm: (eventData?: Partial<CalendarEvent>) => void
   closeEventForm: () => void
   getEventsForDateRange: (
     startDate: dayjs.Dayjs,
@@ -42,7 +43,7 @@ export interface CalendarContextType {
   findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
   renderEvent?: (event: CalendarEvent) => React.ReactNode
   onEventClick: (event: CalendarEvent) => void
-  onCellClick: (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => void
+  onCellClick: (info: CellClickInfo) => void
   currentLocale?: string
   disableCellClick?: boolean
   disableEventClick?: boolean
@@ -93,7 +94,7 @@ export interface UseIlamyCalendarContextReturn {
     event: Partial<CalendarEvent>
   ) => void
   readonly deleteEvent: (eventId: string | number) => void
-  readonly openEventForm: (date?: dayjs.Dayjs) => void
+  readonly openEventForm: (eventData?: Partial<CalendarEvent>) => void
   readonly closeEventForm: () => void
   readonly businessHours?: BusinessHours
 }

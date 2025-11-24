@@ -188,6 +188,7 @@ export const EventForm: React.FC<EventFormProps> = ({
       title: formValues.title,
       start: startDateTime,
       end: endDateTime,
+      resourceId: selectedEvent?.resourceId,
       description: formValues.description,
       location: formValues.location,
       allDay: isAllDay,

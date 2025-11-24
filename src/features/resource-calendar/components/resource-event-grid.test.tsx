@@ -3,11 +3,8 @@ import { describe, expect, it } from 'bun:test'
 import { ResourceEventGrid } from './resource-event-grid'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
-import type {
-  Resource,
-  ResourceCalendarEvent,
-} from '@/features/resource-calendar/types'
-import type { BusinessHours, WeekDays } from '@/components/types'
+import type { Resource } from '@/features/resource-calendar/types'
+import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
 
 const mockResources: Resource[] = [
   {
@@ -24,7 +21,7 @@ const mockResources: Resource[] = [
   },
 ]
 
-const mockEvents: ResourceCalendarEvent[] = [
+const mockEvents: CalendarEvent[] = [
   {
     id: 'event-1',
     title: 'Meeting',
@@ -48,7 +45,7 @@ const renderWithProvider = (
     ...props
   }: {
     resources?: Resource[]
-    events?: ResourceCalendarEvent[]
+    events?: CalendarEvent[]
     [key: string]: unknown
   } = {}
 ) => {

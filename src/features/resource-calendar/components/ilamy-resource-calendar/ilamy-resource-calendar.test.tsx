@@ -3,16 +3,17 @@ import dayjs from '@/lib/configs/dayjs-config'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, expect, it, mock, beforeEach } from 'bun:test'
 import { IlamyResourceCalendar } from './ilamy-resource-calendar'
-import type { Resource, ResourceCalendarEvent } from '../../types'
 import type { EventFormProps } from '@/components/event-form/event-form'
+import type { CalendarEvent } from '@/components/types'
+import type { Resource } from '../../types'
 
 const translator = (key: string) => `Translated: ${key}`
-const customRenderEvent = (event: ResourceCalendarEvent) => (
+const customRenderEvent = (event: CalendarEvent) => (
   <div data-testid={`custom-event-${event.id}`}>Custom: {event.title}</div>
 )
 
 const CustomResourceEventForm = (props: EventFormProps) => {
-  const event = props.selectedEvent as ResourceCalendarEvent | null
+  const event = props.selectedEvent as CalendarEvent | null
   return (
     <div data-testid="custom-event-form">
       <span data-testid="form-open">{props.open ? 'open' : 'closed'}</span>
@@ -33,7 +34,7 @@ const CustomResourceEventForm = (props: EventFormProps) => {
             start: dayjs('2025-08-04T14:00:00.000Z'),
             end: dayjs('2025-08-04T15:00:00.000Z'),
             resourceId: 'resource-1',
-          } as ResourceCalendarEvent)
+          } as CalendarEvent)
         }
       >
         Add Event
@@ -47,7 +48,7 @@ const CustomResourceEventForm = (props: EventFormProps) => {
             start: dayjs('2025-08-04T14:00:00.000Z'),
             end: dayjs('2025-08-04T15:00:00.000Z'),
             resourceIds: ['resource-1', 'resource-2'],
-          } as ResourceCalendarEvent)
+          } as CalendarEvent)
         }
       >
         Add Cross Resource Event
@@ -69,7 +70,7 @@ const CustomResourceEventForm = (props: EventFormProps) => {
           props.onUpdate?.({
             ...props.selectedEvent!,
             resourceId: 'resource-2',
-          } as ResourceCalendarEvent)
+          } as CalendarEvent)
         }
       >
         Move to Resource 2
@@ -117,7 +118,7 @@ describe('IlamyResourceCalendar', () => {
     },
   ]
 
-  const mockEvents: ResourceCalendarEvent[] = [
+  const mockEvents: CalendarEvent[] = [
     {
       id: 'event-1',
       title: 'Team Meeting',
@@ -334,7 +335,7 @@ describe('IlamyResourceCalendar', () => {
   })
 
   it('should handle cross-resource events', () => {
-    const crossResourceEvent: ResourceCalendarEvent = {
+    const crossResourceEvent: CalendarEvent = {
       id: 'cross-resource-event',
       title: 'All Hands Meeting',
       start: dayjs('2025-08-04T16:00:00.000Z'),
@@ -361,7 +362,7 @@ describe('IlamyResourceCalendar', () => {
   })
 
   it('should handle events without resource assignments', () => {
-    const eventWithoutResource: ResourceCalendarEvent = {
+    const eventWithoutResource: CalendarEvent = {
       id: 'no-resource-event',
       title: 'Floating Event',
       start: dayjs('2025-08-04T12:00:00.000Z'),
@@ -452,7 +453,7 @@ describe('IlamyResourceCalendar', () => {
     })
 
     it('should pass selectedEvent with resourceId when resource event is clicked', async () => {
-      const resourceEvent: ResourceCalendarEvent = {
+      const resourceEvent: CalendarEvent = {
         id: 'resource-event-1',
         title: 'Resource Event',
         start: dayjs('2025-08-04T10:00:00.000Z'),
@@ -488,7 +489,7 @@ describe('IlamyResourceCalendar', () => {
     })
 
     it('should pass selectedEvent with resourceIds for cross-resource events', async () => {
-      const crossResourceEvent: ResourceCalendarEvent = {
+      const crossResourceEvent: CalendarEvent = {
         id: 'cross-event-1',
         title: 'Cross Resource Meeting',
         start: dayjs('2025-08-04T10:00:00.000Z'),
@@ -582,7 +583,7 @@ describe('IlamyResourceCalendar', () => {
     })
 
     it('should update event and preserve resourceId via onUpdate callback', async () => {
-      const resourceEvent: ResourceCalendarEvent = {
+      const resourceEvent: CalendarEvent = {
         id: 'update-event-1',
         title: 'Event to Update',
         start: dayjs('2025-08-04T10:00:00.000Z'),
@@ -627,7 +628,7 @@ describe('IlamyResourceCalendar', () => {
     })
 
     it('should move event to different resource via onUpdate callback', async () => {
-      const resourceEvent: ResourceCalendarEvent = {
+      const resourceEvent: CalendarEvent = {
         id: 'move-event-1',
         title: 'Event to Move',
         start: dayjs('2025-08-04T10:00:00.000Z'),
@@ -674,7 +675,7 @@ describe('IlamyResourceCalendar', () => {
     })
 
     it('should delete resource event via onDelete callback', async () => {
-      const resourceEvent: ResourceCalendarEvent = {
+      const resourceEvent: CalendarEvent = {
         id: 'delete-event-1',
         title: 'Event to Delete',
         start: dayjs('2025-08-04T10:00:00.000Z'),

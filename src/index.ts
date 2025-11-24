@@ -16,7 +16,10 @@ export {
 export type { RRuleOptions } from '@/features/recurrence/types'
 export type { CalendarEvent } from './components/types'
 export type { EventFormProps } from './components/event-form/event-form'
-export type { IlamyCalendarProps } from './features/calendar/types'
+export type {
+  IlamyCalendarProps,
+  CellClickInfo,
+} from './features/calendar/types'
 export type { IlamyResourceCalendarProps } from './features/resource-calendar/components/ilamy-resource-calendar'
 export type { WeekDays } from './components/types'
 export type { UseIlamyCalendarContextReturn } from './features/calendar/contexts/calendar-context/context'
@@ -24,10 +27,7 @@ export type { UseIlamyResourceCalendarContextReturn } from './features/resource-
 export type { CalendarView } from './types'
 
 // Resource calendar types
-export type {
-  Resource,
-  ResourceCalendarEvent,
-} from './features/resource-calendar/types'
+export type { Resource } from './features/resource-calendar/types'
 // Re-export rrule.js types for convenience
 export type { Frequency, Weekday } from 'rrule'
 export { RRule } from 'rrule'

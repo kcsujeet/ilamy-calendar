@@ -60,7 +60,7 @@ export interface CalendarEngineReturn {
     event: CalendarEvent,
     options: RecurrenceEditOptions
   ) => void
-  openEventForm: (date?: dayjs.Dayjs) => void
+  openEventForm: (eventData?: Partial<CalendarEvent>) => void
   closeEventForm: () => void
   setSelectedEvent: React.Dispatch<React.SetStateAction<CalendarEvent | null>>
   setIsEventFormOpen: React.Dispatch<React.SetStateAction<boolean>>
@@ -301,14 +301,16 @@ export const useCalendarEngine = (
   )
 
   const openEventForm = useCallback(
-    (date?: dayjs.Dayjs) => {
-      if (date) {
-        setSelectedDate(date)
+    (eventData?: Partial<CalendarEvent>) => {
+      if (eventData?.start) {
+        setSelectedDate(eventData.start)
       }
+      const start = eventData?.start ?? currentDate
       setSelectedEvent({
         title: t('newEvent'),
-        start: date ?? currentDate,
-        end: (date ?? currentDate).add(1, 'hour'),
+        start,
+        end: eventData?.end ?? start.add(1, 'hour'),
+        resourceId: eventData?.resourceId,
         description: '',
         allDay: false,
       } as CalendarEvent)

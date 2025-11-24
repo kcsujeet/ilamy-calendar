@@ -1,4 +1,3 @@
-import type { CalendarEvent } from '@/components/types'
 import type {
   IlamyCalendarProps,
   IlamyCalendarPropEvent,
@@ -49,14 +48,4 @@ export interface Resource {
   backgroundColor?: string
   /** Optional position for resource display */
   position?: number
-}
-
-/**
- * Resource calendar event interface extending CalendarEvent with resource assignment
- */
-export interface ResourceCalendarEvent extends CalendarEvent {
-  /** Single resource assignment */
-  resourceId?: string | number
-  /** Multiple resource assignment (cross-resource events) */
-  resourceIds?: (string | number)[]
 }

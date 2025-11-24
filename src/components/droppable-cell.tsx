@@ -61,17 +61,17 @@ export function DroppableCell({
       return
     }
 
-    const startDate = date.hour(hour ?? 0).minute(minute ?? 0)
-    let endDate = startDate.clone()
+    const start = date.hour(hour ?? 0).minute(minute ?? 0)
+    let end = start.clone()
     if (hour !== undefined && minute !== undefined) {
-      endDate = endDate.hour(hour).minute(minute + 15) // day view time slots are 15 minutes
+      end = end.hour(hour).minute(minute + 15) // day view time slots are 15 minutes
     } else if (hour !== undefined) {
-      endDate = endDate.hour(hour + 1).minute(0) // week view time slots are 1 hour
+      end = end.hour(hour + 1).minute(0) // week view time slots are 1 hour
     } else {
-      endDate = endDate.hour(23).minute(59) // month view full day
+      end = end.hour(23).minute(59) // month view full day
     }
 
-    onCellClick(startDate, endDate)
+    onCellClick({ start, end, resourceId })
   }
 
   return (

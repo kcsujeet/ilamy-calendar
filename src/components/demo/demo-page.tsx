@@ -1,10 +1,8 @@
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
 import { IlamyResourceCalendar } from '@/features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
-import type {
-  Resource,
-  ResourceCalendarEvent,
-} from '@/features/resource-calendar/types'
+import type { Resource } from '@/features/resource-calendar/types'
 import type { CalendarEvent, WeekDays } from '@/components/types'
+import type { CellClickInfo } from '@/features/calendar/types'
 import type { CalendarView } from '@/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type dayjs from '@/lib/configs/dayjs-config'
@@ -18,8 +16,11 @@ const handleEventClick = (event: CalendarEvent) => {
   alert(`Event clicked: ${event.title}`)
 }
 
-const handleDateClick = (date: dayjs.Dayjs) => {
-  alert(`Date clicked: ${date.toISOString()}`)
+const handleDateClick = (info: CellClickInfo) => {
+  const message = info.resourceId
+    ? `Date clicked: ${info.start.toISOString()} (Resource: ${info.resourceId})`
+    : `Date clicked: ${info.start.toISOString()}`
+  alert(message)
 }
 
 const handleEventAdd = (event: CalendarEvent) => {
@@ -72,11 +73,11 @@ const demoResources: Resource[] = [
 ]
 
 // Convert regular events to resource events
-const createResourceEvents = (): ResourceCalendarEvent[] => {
+const createResourceEvents = (): CalendarEvent[] => {
   const resourceIds = demoResources.map((r) => r.id)
 
   return dummyEvents.map((event, index) => {
-    const resourceEvent: ResourceCalendarEvent = { ...event }
+    const resourceEvent: CalendarEvent = { ...event }
 
     // Assign events to resources
     if (index % 4 === 0) {
@@ -92,7 +93,7 @@ const createResourceEvents = (): ResourceCalendarEvent[] => {
 }
 
 // Resource event handlers
-const handleResourceEventClick = (event: ResourceCalendarEvent) => {
+const handleResourceEventClick = (event: CalendarEvent) => {
   const resources = event.resourceIds
     ? event.resourceIds.join(', ')
     : event.resourceId
@@ -112,9 +113,7 @@ export function DemoPage() {
     undefined
   )
   const [customEvents] = useState<CalendarEvent[]>(dummyEvents)
-  const [resourceEvents] = useState<ResourceCalendarEvent[]>(
-    createResourceEvents()
-  )
+  const [resourceEvents] = useState<CalendarEvent[]>(createResourceEvents())
   const [useCustomEventRenderer, setUseCustomEventRenderer] = useState(false)
   const [locale, setLocale] = useState('en')
   const [timezone, setTimezone] = useState(() => {

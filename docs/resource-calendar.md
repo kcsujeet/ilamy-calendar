@@ -196,19 +196,19 @@ interface IlamyResourceCalendarProps extends IlamyCalendarProps {
 
 ### Key Props
 
-| Prop                 | Type                                                                | Default     | Description                                                          |
-| -------------------- | ------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------- |
-| `resources`          | `Resource[]`                                                        | `[]`        | Array of resources to display                                        |
-| `events`             | `CalendarEvent[]`                                                   | `[]`        | Array of events with resource assignments                            |
-| `renderResource`     | `(resource: Resource) => ReactNode`                                 | `undefined` | Custom resource rendering function                                   |
-| `initialView`        | `CalendarView`                                                      | `'month'`   | Initial view mode (Note: 'year' view is not supported for resources) |
-| `firstDayOfWeek`     | `'sunday' \| 'monday'`                                              | `'sunday'`  | First day of the week                                                |
-| `disableDragAndDrop` | `boolean`                                                           | `false`     | Disable event drag-and-drop                                          |
-| `onEventClick`       | `(event: CalendarEvent) => void`                                    | `undefined` | Event click handler                                                  |
-| `onCellClick`        | `(info: CellClickInfo) => void`                                      | `undefined` | Cell click handler with `start`, `end`, and optional `resourceId`    |
-| `onEventAdd`         | `(event: CalendarEvent) => void`                                    | `undefined` | Event add callback                                                   |
-| `onEventUpdate`      | `(event: CalendarEvent) => void`                                    | `undefined` | Event update callback                                                |
-| `onEventDelete`      | `(eventId: string) => void`                                         | `undefined` | Event delete callback                                                |
+| Prop                 | Type                                | Default     | Description                                                          |
+| -------------------- | ----------------------------------- | ----------- | -------------------------------------------------------------------- |
+| `resources`          | `Resource[]`                        | `[]`        | Array of resources to display                                        |
+| `events`             | `CalendarEvent[]`                   | `[]`        | Array of events with resource assignments                            |
+| `renderResource`     | `(resource: Resource) => ReactNode` | `undefined` | Custom resource rendering function                                   |
+| `initialView`        | `CalendarView`                      | `'month'`   | Initial view mode (Note: 'year' view is not supported for resources) |
+| `firstDayOfWeek`     | `'sunday' \| 'monday'`              | `'sunday'`  | First day of the week                                                |
+| `disableDragAndDrop` | `boolean`                           | `false`     | Disable event drag-and-drop                                          |
+| `onEventClick`       | `(event: CalendarEvent) => void`    | `undefined` | Event click handler                                                  |
+| `onCellClick`        | `(info: CellClickInfo) => void`     | `undefined` | Cell click handler with `start`, `end`, and optional `resourceId`    |
+| `onEventAdd`         | `(event: CalendarEvent) => void`    | `undefined` | Event add callback                                                   |
+| `onEventUpdate`      | `(event: CalendarEvent) => void`    | `undefined` | Event update callback                                                |
+| `onEventDelete`      | `(eventId: string) => void`         | `undefined` | Event delete callback                                                |
 
 For all inherited props, see the [standard calendar documentation](https://ilamy.dev/docs/calendar).
 

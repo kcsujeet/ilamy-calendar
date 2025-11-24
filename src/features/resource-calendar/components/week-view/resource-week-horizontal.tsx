@@ -90,6 +90,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
                   <AnimatePresence key={`${key}-presence`} mode="wait">
                     <motion.div
                       key={`${key}-motion`}
+                      data-testid={`resource-week-time-label-${col.format('HH')}`}
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}

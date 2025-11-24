@@ -353,6 +353,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                         maxTime={maxTime}
                         is24Hour={is24Hour}
                         className="mt-1 h-8 text-sm sm:h-9"
+                        name="start-time"
                       />
                     </div>
                     <div>
@@ -366,6 +367,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                         maxTime={maxTime}
                         is24Hour={is24Hour}
                         className="mt-1 h-8 text-sm sm:h-9"
+                        name="end-time"
                       />
                     </div>
                   </div>

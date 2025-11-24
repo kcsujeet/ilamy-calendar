@@ -753,17 +753,10 @@ describe('IlamyResourceCalendar', () => {
         />
       )
 
-      // Find time labels in day view - they should be in the header
-      // Time labels are rendered as text content in divs
-      const timeLabels = Array.from(
-        document.querySelectorAll('.text-xs')
-      ).filter((el) => {
-        const text = el.textContent || ''
-        // Match time patterns like "00:00", "12:00", "13:00", "23:00" or "12:00 AM", "1:00 PM"
-        return /\d{1,2}:\d{2}/.test(text)
-      })
+      // Find time labels in day view using data-testid
+      const timeLabels = screen.getAllByTestId(/^resource-day-time-label-/)
 
-      // Should have time labels
+      // Should have time labels (24 hours)
       expect(timeLabels.length).toBeGreaterThan(0)
 
       // All time labels should not contain AM/PM in 24-hour format
@@ -786,15 +779,10 @@ describe('IlamyResourceCalendar', () => {
         />
       )
 
-      // Find time labels in day view
-      const timeLabels = Array.from(
-        document.querySelectorAll('.text-xs')
-      ).filter((el) => {
-        const text = el.textContent || ''
-        return /\d{1,2}:\d{2}/.test(text)
-      })
+      // Find time labels in day view using data-testid
+      const timeLabels = screen.getAllByTestId(/^resource-day-time-label-/)
 
-      // Should have time labels
+      // Should have time labels (24 hours)
       expect(timeLabels.length).toBeGreaterThan(0)
 
       // At least some time labels should contain AM/PM in 12-hour format
@@ -816,15 +804,10 @@ describe('IlamyResourceCalendar', () => {
         />
       )
 
-      // Find time labels in week view
-      const timeLabels = Array.from(
-        document.querySelectorAll('.text-xs')
-      ).filter((el) => {
-        const text = el.textContent || ''
-        return /\d{1,2}:\d{2}/.test(text)
-      })
+      // Find time labels in week view using data-testid
+      const timeLabels = screen.getAllByTestId(/^resource-week-time-label-/)
 
-      // Should have time labels
+      // Should have time labels (24 hours * 7 days = 168)
       expect(timeLabels.length).toBeGreaterThan(0)
 
       // All time labels should not contain AM/PM in 24-hour format
@@ -847,15 +830,10 @@ describe('IlamyResourceCalendar', () => {
         />
       )
 
-      // Find time labels in week view
-      const timeLabels = Array.from(
-        document.querySelectorAll('.text-xs')
-      ).filter((el) => {
-        const text = el.textContent || ''
-        return /\d{1,2}:\d{2}/.test(text)
-      })
+      // Find time labels in week view using data-testid
+      const timeLabels = screen.getAllByTestId(/^resource-week-time-label-/)
 
-      // Should have time labels
+      // Should have time labels (24 hours * 7 days = 168)
       expect(timeLabels.length).toBeGreaterThan(0)
 
       // At least some time labels should contain AM/PM in 12-hour format
@@ -876,13 +854,8 @@ describe('IlamyResourceCalendar', () => {
         />
       )
 
-      // Find time labels
-      const timeLabels = Array.from(
-        document.querySelectorAll('.text-xs')
-      ).filter((el) => {
-        const text = el.textContent || ''
-        return /\d{1,2}:\d{2}/.test(text)
-      })
+      // Find time labels using data-testid
+      const timeLabels = screen.getAllByTestId(/^resource-day-time-label-/)
 
       // Should have time labels
       expect(timeLabels.length).toBeGreaterThan(0)

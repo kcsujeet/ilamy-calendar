@@ -11,7 +11,7 @@ interface DayTimeColProps {
 }
 
 export const DayTimeCol: React.FC<DayTimeColProps> = ({ className }) => {
-  const { currentLocale } = useCalendarContext()
+  const { currentLocale, is24Hour } = useCalendarContext()
 
   return (
     <div
@@ -28,7 +28,7 @@ export const DayTimeCol: React.FC<DayTimeColProps> = ({ className }) => {
             {Intl.DateTimeFormat(currentLocale, {
               hour: 'numeric',
               minute: 'numeric',
-              hour12: true,
+              hour12: !is24Hour,
             }).format(time.toDate())}
           </span>
         </div>

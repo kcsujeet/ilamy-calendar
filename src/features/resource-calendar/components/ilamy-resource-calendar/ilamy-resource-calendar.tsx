@@ -38,6 +38,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   renderResource,
   renderEventForm,
   businessHours,
+  is24Hour = false,
 }) => {
   return (
     <ResourceCalendarProvider
@@ -72,6 +73,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
       translator={translator}
       renderEventForm={renderEventForm}
       businessHours={businessHours}
+      is24Hour={is24Hour}
     >
       <ResourceCalendarBody />
     </ResourceCalendarProvider>

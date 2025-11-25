@@ -741,5 +741,181 @@ describe('IlamyResourceCalendar', () => {
         expect(screen.getByText('Edit Event')).toBeInTheDocument()
       })
     })
+
+    it('should display time in 24-hour format in day view when is24Hour is true', () => {
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={mockEvents}
+          initialView="day"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          is24Hour={true}
+        />
+      )
+
+      // Find time labels in day view using data-testid
+      const timeLabels = screen.getAllByTestId(/^resource-day-time-label-/)
+
+      // Should have time labels (24 hours)
+      expect(timeLabels.length).toBeGreaterThan(0)
+
+      // All time labels should not contain AM/PM in 24-hour format
+      timeLabels.forEach((label) => {
+        const text = label.textContent || ''
+        expect(text).not.toMatch(/AM|PM/i)
+        // Should contain time format
+        expect(text).toMatch(/\d{1,2}:\d{2}/)
+      })
+    })
+
+    it('should display time in 12-hour format in day view when is24Hour is false', () => {
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={mockEvents}
+          initialView="day"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          is24Hour={false}
+        />
+      )
+
+      // Find time labels in day view using data-testid
+      const timeLabels = screen.getAllByTestId(/^resource-day-time-label-/)
+
+      // Should have time labels (24 hours)
+      expect(timeLabels.length).toBeGreaterThan(0)
+
+      // At least some time labels should contain AM/PM in 12-hour format
+      const hasAMPM = timeLabels.some((label) => {
+        const text = label.textContent || ''
+        return /AM|PM/i.test(text)
+      })
+      expect(hasAMPM).toBe(true)
+    })
+
+    it('should display time in 24-hour format in week view when is24Hour is true', () => {
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={mockEvents}
+          initialView="week"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          is24Hour={true}
+        />
+      )
+
+      // Find time labels in week view using data-testid
+      const timeLabels = screen.getAllByTestId(/^resource-week-time-label-/)
+
+      // Should have time labels (24 hours * 7 days = 168)
+      expect(timeLabels.length).toBeGreaterThan(0)
+
+      // All time labels should not contain AM/PM in 24-hour format
+      timeLabels.forEach((label) => {
+        const text = label.textContent || ''
+        expect(text).not.toMatch(/AM|PM/i)
+        // Should contain time format
+        expect(text).toMatch(/\d{1,2}:\d{2}/)
+      })
+    })
+
+    it('should display time in 12-hour format in week view when is24Hour is false', () => {
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={mockEvents}
+          initialView="week"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          is24Hour={false}
+        />
+      )
+
+      // Find time labels in week view using data-testid
+      const timeLabels = screen.getAllByTestId(/^resource-week-time-label-/)
+
+      // Should have time labels (24 hours * 7 days = 168)
+      expect(timeLabels.length).toBeGreaterThan(0)
+
+      // At least some time labels should contain AM/PM in 12-hour format
+      const hasAMPM = timeLabels.some((label) => {
+        const text = label.textContent || ''
+        return /AM|PM/i.test(text)
+      })
+      expect(hasAMPM).toBe(true)
+    })
+
+    it('should default to 12-hour format when is24Hour is not provided', () => {
+      render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={mockEvents}
+          initialView="day"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+        />
+      )
+
+      // Find time labels using data-testid
+      const timeLabels = screen.getAllByTestId(/^resource-day-time-label-/)
+
+      // Should have time labels
+      expect(timeLabels.length).toBeGreaterThan(0)
+
+      // Should default to 12-hour format
+      const hasAMPM = timeLabels.some((label) => {
+        const text = label.textContent || ''
+        return /AM|PM/i.test(text)
+      })
+      expect(hasAMPM).toBe(true)
+    })
+
+    it('should update time format when is24Hour changes', () => {
+      const { rerender } = render(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={mockEvents}
+          initialView="day"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          is24Hour={false}
+        />
+      )
+
+      // Initially should show 12-hour format
+      let timeLabels = Array.from(document.querySelectorAll('.text-xs')).filter(
+        (el) => {
+          const text = el.textContent || ''
+          return /\d{1,2}:\d{2}/.test(text)
+        }
+      )
+
+      let hasAMPM = timeLabels.some((label) => {
+        const text = label.textContent || ''
+        return /AM|PM/i.test(text)
+      })
+      expect(hasAMPM).toBe(true)
+
+      // Rerender with 24-hour format
+      rerender(
+        <IlamyResourceCalendar
+          resources={mockResources}
+          events={mockEvents}
+          initialView="day"
+          initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+          is24Hour={true}
+        />
+      )
+
+      // Now should show 24-hour format
+      timeLabels = Array.from(document.querySelectorAll('.text-xs')).filter(
+        (el) => {
+          const text = el.textContent || ''
+          return /\d{1,2}:\d{2}/.test(text)
+        }
+      )
+
+      timeLabels.forEach((label) => {
+        const text = label.textContent || ''
+        expect(text).not.toMatch(/AM|PM/i)
+      })
+    })
   })
 })

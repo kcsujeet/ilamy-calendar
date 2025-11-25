@@ -151,4 +151,10 @@ export interface IlamyCalendarProps {
    * The function receives EventFormProps and should return a React node.
    */
   renderEventForm?: (props: EventFormProps) => React.ReactNode
+  /**
+   * Whether to display time in 24-hour format.
+   * If true, times will be displayed as "13:00" instead of "1:00 PM".
+   * Defaults to false (12-hour format).
+   */
+  is24Hour?: boolean
 }

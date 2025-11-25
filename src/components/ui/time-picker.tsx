@@ -25,6 +25,7 @@ interface TimePickerProps {
   placeholder?: string
   className?: string
   disabled?: boolean
+  name?: string
 }
 
 export function TimePicker({
@@ -36,6 +37,7 @@ export function TimePicker({
   placeholder = 'Select time...',
   className,
   disabled = false,
+  name,
 }: TimePickerProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -86,6 +88,7 @@ export function TimePicker({
           aria-expanded={open}
           className={cn('w-full justify-start', className)}
           disabled={disabled}
+          data-testid={`time-picker-${name}`}
         >
           <Clock className="mr-2 h-4 w-4" />
           {currentTimeString}

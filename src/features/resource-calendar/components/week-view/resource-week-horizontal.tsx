@@ -13,6 +13,8 @@ export const ResourceWeekHorizontal: React.FC = () => {
     t,
     stickyViewHeader,
     viewHeaderClassName,
+    currentLocale,
+    is24Hour,
   } = useResourceCalendarContext()
 
   // Generate week days
@@ -88,6 +90,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
                   <AnimatePresence key={`${key}-presence`} mode="wait">
                     <motion.div
                       key={`${key}-motion`}
+                      data-testid={`resource-week-time-label-${col.format('HH')}`}
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
@@ -101,7 +104,11 @@ export const ResourceWeekHorizontal: React.FC = () => {
                         isNowHour && 'bg-blue-50 text-blue-600 font-medium'
                       )}
                     >
-                      {col.format('ha')}
+                      {Intl.DateTimeFormat(currentLocale, {
+                        hour: 'numeric',
+                        minute: 'numeric',
+                        hour12: !is24Hour,
+                      }).format(col.toDate())}
                     </motion.div>
                   </AnimatePresence>
                 )

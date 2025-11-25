@@ -519,4 +519,78 @@ describe('EventForm', () => {
       expect(document.activeElement).toBe(titleInput)
     })
   })
+
+  describe('24-Hour Time Format', () => {
+    it('should display time pickers in 24-hour format when is24Hour is true', () => {
+      renderEventForm(
+        { ...defaultProps, selectedEvent: testEvent },
+        { is24Hour: true }
+      )
+
+      // Get the TimePicker components by testid
+      const startTimePicker = screen.getByTestId('time-picker-start-time')
+      const endTimePicker = screen.getByTestId('time-picker-end-time')
+
+      // Check that times are displayed in 24-hour format (no AM/PM)
+      const startText = startTimePicker.textContent || ''
+      const endText = endTimePicker.textContent || ''
+
+      expect(startText).not.toMatch(/AM|PM/i)
+      expect(endText).not.toMatch(/AM|PM/i)
+      expect(startText).toMatch(/\d{1,2}:\d{2}/)
+      expect(endText).toMatch(/\d{1,2}:\d{2}/)
+    })
+
+    it('should display time pickers in 12-hour format when is24Hour is false', () => {
+      renderEventForm(
+        { ...defaultProps, selectedEvent: testEvent },
+        { is24Hour: false }
+      )
+
+      // Get the TimePicker components by testid
+      const startTimePicker = screen.getByTestId('time-picker-start-time')
+      const endTimePicker = screen.getByTestId('time-picker-end-time')
+
+      // At least one time picker should show AM/PM (12-hour format)
+      const startText = startTimePicker.textContent || ''
+      const endText = endTimePicker.textContent || ''
+      const hasAMPM = /AM|PM/i.test(startText) || /AM|PM/i.test(endText)
+
+      expect(hasAMPM).toBe(true)
+    })
+
+    it('should default to 12-hour format when is24Hour is not provided', () => {
+      renderEventForm({ ...defaultProps, selectedEvent: testEvent })
+
+      // Get the TimePicker components by testid
+      const startTimePicker = screen.getByTestId('time-picker-start-time')
+      const endTimePicker = screen.getByTestId('time-picker-end-time')
+
+      // Should default to 12-hour format
+      const startText = startTimePicker.textContent || ''
+      const endText = endTimePicker.textContent || ''
+      const hasAMPM = /AM|PM/i.test(startText) || /AM|PM/i.test(endText)
+
+      expect(hasAMPM).toBe(true)
+    })
+
+    it('should update time picker format when is24Hour changes from false to true', () => {
+      renderEventForm(
+        { ...defaultProps, selectedEvent: testEvent },
+        { is24Hour: true }
+      )
+
+      // Should show 24-hour format
+      const startTimePicker = screen.getByTestId('time-picker-start-time')
+      const endTimePicker = screen.getByTestId('time-picker-end-time')
+
+      const startText = startTimePicker.textContent || ''
+      const endText = endTimePicker.textContent || ''
+
+      expect(startText).not.toMatch(/AM|PM/i)
+      expect(endText).not.toMatch(/AM|PM/i)
+      expect(startText).toMatch(/\d{1,2}:\d{2}/)
+      expect(endText).toMatch(/\d{1,2}:\d{2}/)
+    })
+  })
 })

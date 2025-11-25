@@ -9,7 +9,8 @@ const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) =>
 )
 
 export const WeekTimeGrid: React.FC = () => {
-  const { currentDate, firstDayOfWeek, currentLocale } = useCalendarContext()
+  const { currentDate, firstDayOfWeek, currentLocale, is24Hour } =
+    useCalendarContext()
 
   const weekDays = getWeekDays(currentDate, firstDayOfWeek)
 
@@ -39,7 +40,7 @@ export const WeekTimeGrid: React.FC = () => {
               {Intl.DateTimeFormat(currentLocale, {
                 hour: 'numeric',
                 minute: 'numeric',
-                hour12: true,
+                hour12: !is24Hour,
               }).format(time.toDate())}
             </span>
           </div>

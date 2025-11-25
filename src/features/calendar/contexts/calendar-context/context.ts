@@ -57,6 +57,7 @@ export interface CalendarContextType {
   renderEventForm?: (props: EventFormProps) => React.ReactNode
   // Translation function
   t: (key: TranslationKey) => string
+  is24Hour: boolean
 }
 
 export const CalendarContext: React.Context<CalendarContextType | undefined> =

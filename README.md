@@ -41,3 +41,7 @@ A powerful, full-featured React calendar component library built with TypeScript
 ## Documentation
 
 For comprehensive documentation, examples, and interactive demos, visit [ilamy.dev](https://ilamy.dev)
+
+## Code Example
+
+https://codesandbox.io/p/devbox/dry-thunder-fvsgz6

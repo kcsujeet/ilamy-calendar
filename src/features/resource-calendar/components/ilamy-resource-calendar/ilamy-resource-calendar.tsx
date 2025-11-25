@@ -4,10 +4,10 @@ import { ResourceCalendarBody } from './resource-calendar-body'
 import type {
   IlamyResourceCalendarProps,
   IlamyResourceCalendarPropEvent,
-  ResourceCalendarEvent,
 } from '@/features/resource-calendar/types'
 import { DAY_MAX_EVENTS_DEFAULT, WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 import { safeDate, normalizeEvents } from '@/lib/utils'
+import type { CalendarEvent } from '@/components/types'
 
 export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   events = [],
@@ -38,14 +38,13 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   renderResource,
   renderEventForm,
   businessHours,
-  is24Hour = false,
+  timeFormat = '12-hour',
 }) => {
   return (
     <ResourceCalendarProvider
-      events={normalizeEvents<
-        IlamyResourceCalendarPropEvent,
-        ResourceCalendarEvent
-      >(events)}
+      events={normalizeEvents<IlamyResourceCalendarPropEvent, CalendarEvent>(
+        events
+      )}
       resources={resources}
       firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
       initialView={initialView}
@@ -73,7 +72,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
       translator={translator}
       renderEventForm={renderEventForm}
       businessHours={businessHours}
-      is24Hour={is24Hour}
+      timeFormat={timeFormat}
     >
       <ResourceCalendarBody />
     </ResourceCalendarProvider>

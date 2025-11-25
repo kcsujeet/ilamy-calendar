@@ -3,7 +3,7 @@ import type { EventFormProps } from '@/components/event-form/event-form'
 import React from 'react'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
-import type { CalendarView } from '@/types'
+import type { CalendarView, TimeFormat } from '@/types'
 
 /**
  * This interface extends the base CalendarEvent but allows more flexible date types
@@ -17,6 +17,19 @@ export interface IlamyCalendarPropEvent
   extends Omit<CalendarEvent, 'start' | 'end'> {
   start: dayjs.Dayjs | Date | string
   end: dayjs.Dayjs | Date | string
+}
+
+/**
+ * Information passed to the onCellClick callback.
+ * Uses named properties for extensibility.
+ */
+export interface CellClickInfo {
+  /** Start date/time of the clicked cell */
+  start: dayjs.Dayjs
+  /** End date/time of the clicked cell */
+  end: dayjs.Dayjs
+  /** Resource ID if clicking on a resource calendar cell (optional) */
+  resourceId?: string | number
 }
 
 export interface IlamyCalendarProps {
@@ -51,9 +64,9 @@ export interface IlamyCalendarProps {
   onEventClick?: (event: CalendarEvent) => void
   /**
    * Callback when a calendar cell is clicked.
-   * Provides the start and end date of the clicked cell.
+   * Provides cell information including start/end dates and optional resourceId.
    */
-  onCellClick?: (start: dayjs.Dayjs, end: dayjs.Dayjs) => void
+  onCellClick?: (info: CellClickInfo) => void
   /**
    * Callback when the calendar view changes (month, week, day, year).
    * Useful for syncing with external state or analytics.
@@ -152,9 +165,9 @@ export interface IlamyCalendarProps {
    */
   renderEventForm?: (props: EventFormProps) => React.ReactNode
   /**
-   * Whether to display time in 24-hour format.
-   * If true, times will be displayed as "13:00" instead of "1:00 PM".
-   * Defaults to false (12-hour format).
+   * Time format for displaying times in the calendar.
+   * - "12-hour": Times displayed as "1:00 PM" (default)
+   * - "24-hour": Times displayed as "13:00"
    */
-  is24Hour?: boolean
+  timeFormat?: TimeFormat
 }

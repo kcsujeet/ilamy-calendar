@@ -521,10 +521,10 @@ describe('EventForm', () => {
   })
 
   describe('24-Hour Time Format', () => {
-    it('should display time pickers in 24-hour format when is24Hour is true', () => {
+    it('should display time pickers in 24-hour format when timeFormat is 24-hour', () => {
       renderEventForm(
         { ...defaultProps, selectedEvent: testEvent },
-        { is24Hour: true }
+        { timeFormat: '24-hour' }
       )
 
       // Get the TimePicker components by testid
@@ -541,10 +541,10 @@ describe('EventForm', () => {
       expect(endText).toMatch(/\d{1,2}:\d{2}/)
     })
 
-    it('should display time pickers in 12-hour format when is24Hour is false', () => {
+    it('should display time pickers in 12-hour format when timeFormat is 12-hour', () => {
       renderEventForm(
         { ...defaultProps, selectedEvent: testEvent },
-        { is24Hour: false }
+        { timeFormat: '12-hour' }
       )
 
       // Get the TimePicker components by testid
@@ -559,7 +559,7 @@ describe('EventForm', () => {
       expect(hasAMPM).toBe(true)
     })
 
-    it('should default to 12-hour format when is24Hour is not provided', () => {
+    it('should default to 12-hour format when timeFormat is not provided', () => {
       renderEventForm({ ...defaultProps, selectedEvent: testEvent })
 
       // Get the TimePicker components by testid
@@ -574,10 +574,10 @@ describe('EventForm', () => {
       expect(hasAMPM).toBe(true)
     })
 
-    it('should update time picker format when is24Hour changes from false to true', () => {
+    it('should update time picker format when timeFormat changes from 12-hour to 24-hour', () => {
       renderEventForm(
         { ...defaultProps, selectedEvent: testEvent },
-        { is24Hour: true }
+        { timeFormat: '24-hour' }
       )
 
       // Should show 24-hour format

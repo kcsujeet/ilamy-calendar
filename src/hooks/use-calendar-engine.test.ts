@@ -359,7 +359,7 @@ describe('useCalendarEngine', () => {
       const { result } = renderHook(() => useCalendarEngine(defaultConfig))
 
       const date = dayjs('2025-03-15T14:00:00.000Z')
-      act(() => result.current.openEventForm(date))
+      act(() => result.current.openEventForm({ start: date }))
 
       expect(result.current.isEventFormOpen).toBe(true)
       expect(result.current.selectedDate?.format('YYYY-MM-DD')).toBe(

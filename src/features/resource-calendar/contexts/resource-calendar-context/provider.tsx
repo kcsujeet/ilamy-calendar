@@ -1,16 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { ResourceCalendarContext } from './context'
-import type {
-  Resource,
-  ResourceCalendarEvent,
-} from '@/features/resource-calendar/types'
+import type { Resource } from '@/features/resource-calendar/types'
+import type { CellClickInfo } from '@/features/calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
-import type dayjs from '@/lib/configs/dayjs-config'
 import type { CalendarProviderProps } from '@/features/calendar/contexts/calendar-context/provider'
+import type { CalendarEvent } from '@/components/types'
 
-const getEventResourceIds = (
-  event: ResourceCalendarEvent
-): (string | number)[] => {
+const getEventResourceIds = (event: CalendarEvent): (string | number)[] => {
   if (event.resourceIds) {
     return event.resourceIds
   }
@@ -21,13 +17,8 @@ const getEventResourceIds = (
 }
 
 interface ResourceCalendarProviderProps extends CalendarProviderProps {
-  events?: ResourceCalendarEvent[]
+  events?: CalendarEvent[]
   resources?: Resource[]
-  onCellClick?: (
-    startDate: dayjs.Dayjs,
-    endDate: dayjs.Dayjs,
-    resourceId?: string | number
-  ) => void
   renderResource?: (resource: Resource) => React.ReactNode
 }
 
@@ -63,7 +54,7 @@ export const ResourceCalendarProvider: React.FC<
   renderResource,
   renderEventForm,
   businessHours,
-  is24Hour = false,
+  timeFormat = '12-hour',
 }) => {
   // Resource-specific state
   const [currentResources] = useState<Resource[]>(resources)
@@ -127,8 +118,8 @@ export const ResourceCalendarProvider: React.FC<
 
   // Event utilities
   const getEventsForResource = useCallback(
-    (resourceId: string | number): ResourceCalendarEvent[] => {
-      return calendarEngine.events.filter((event: ResourceCalendarEvent) => {
+    (resourceId: string | number): CalendarEvent[] => {
+      return calendarEngine.events.filter((event: CalendarEvent) => {
         if (event.resourceIds) {
           return event.resourceIds.includes(resourceId)
         }
@@ -139,8 +130,8 @@ export const ResourceCalendarProvider: React.FC<
   )
 
   const getEventsForResources = useCallback(
-    (resourceIds: (string | number)[]): ResourceCalendarEvent[] => {
-      return calendarEngine.events.filter((event: ResourceCalendarEvent) => {
+    (resourceIds: (string | number)[]): CalendarEvent[] => {
+      return calendarEngine.events.filter((event: CalendarEvent) => {
         const eventResourceIds = getEventResourceIds(event)
         return eventResourceIds.some((id) => resourceIds.includes(id))
       })
@@ -162,16 +153,13 @@ export const ResourceCalendarProvider: React.FC<
   }, [currentResources, visibleResources])
 
   // Cross-resource event utilities
-  const isEventCrossResource = useCallback(
-    (event: ResourceCalendarEvent): boolean => {
-      return Boolean(event.resourceIds && event.resourceIds.length > 1)
-    },
-    []
-  )
+  const isEventCrossResource = useCallback((event: CalendarEvent): boolean => {
+    return Boolean(event.resourceIds && event.resourceIds.length > 1)
+  }, [])
 
   // Custom handlers
   const editEvent = useCallback(
-    (event: ResourceCalendarEvent) => {
+    (event: CalendarEvent) => {
       calendarEngine.setSelectedEvent(event)
       calendarEngine.setIsEventFormOpen(true)
     },
@@ -179,7 +167,7 @@ export const ResourceCalendarProvider: React.FC<
   )
 
   const handleEventClick = useCallback(
-    (event: ResourceCalendarEvent) => {
+    (event: CalendarEvent) => {
       if (disableEventClick) {
         return
       }
@@ -193,32 +181,28 @@ export const ResourceCalendarProvider: React.FC<
   )
 
   const handleDateClick = useCallback(
-    (
-      startDate: dayjs.Dayjs,
-      endDate: dayjs.Dayjs,
-      resourceId?: string | number
-    ) => {
+    (info: CellClickInfo) => {
       if (disableCellClick) {
         return
       }
 
       if (onCellClick) {
-        onCellClick(startDate, endDate, resourceId)
+        onCellClick(info)
       } else {
-        const newEvent: ResourceCalendarEvent = {
+        const newEvent: CalendarEvent = {
           title: calendarEngine.t('newEvent'),
-          start: startDate,
-          end: endDate,
+          start: info.start,
+          end: info.end,
           description: '',
           allDay: false,
-        } as ResourceCalendarEvent
+        } as CalendarEvent
 
-        if (resourceId !== undefined) {
-          newEvent.resourceId = resourceId
+        if (info.resourceId !== undefined) {
+          newEvent.resourceId = info.resourceId
         }
 
         calendarEngine.setSelectedEvent(newEvent)
-        calendarEngine.setSelectedDate(startDate)
+        calendarEngine.setSelectedDate(info.start)
         calendarEngine.setIsEventFormOpen(true)
       }
     },
@@ -274,7 +258,7 @@ export const ResourceCalendarProvider: React.FC<
       stickyViewHeader,
       viewHeaderClassName,
       businessHours,
-      is24Hour,
+      timeFormat,
     }),
     [
       calendarEngine,
@@ -306,7 +290,7 @@ export const ResourceCalendarProvider: React.FC<
       headerComponent,
       headerClassName,
       businessHours,
-      is24Hour,
+      timeFormat,
     ]
   )
 

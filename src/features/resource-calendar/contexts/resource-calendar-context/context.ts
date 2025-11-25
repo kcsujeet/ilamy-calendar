@@ -1,13 +1,11 @@
-import type {
-  Resource,
-  ResourceCalendarEvent,
-} from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Resource } from '@/features/resource-calendar/types'
+import type { CellClickInfo } from '@/features/calendar/types'
 import { createContext, useContext } from 'react'
 import type {
   CalendarContextType,
   UseIlamyCalendarContextReturn,
 } from '@/features/calendar/contexts/calendar-context/context'
+import type { CalendarEvent } from '@/components/types'
 
 export interface ResourceCalendarContextType extends CalendarContextType {
   // Resource-specific state
@@ -15,24 +13,18 @@ export interface ResourceCalendarContextType extends CalendarContextType {
   visibleResources: Set<string | number>
 
   // Resource utilities
-  getEventsForResource: (resourceId: string | number) => ResourceCalendarEvent[]
-  getEventsForResources: (
-    resourceIds: (string | number)[]
-  ) => ResourceCalendarEvent[]
+  getEventsForResource: (resourceId: string | number) => CalendarEvent[]
+  getEventsForResources: (resourceIds: (string | number)[]) => CalendarEvent[]
   getResourceById: (resourceId: string | number) => Resource | undefined
   getVisibleResources: () => Resource[]
 
   // Cross-resource event utilities
-  isEventCrossResource: (event: ResourceCalendarEvent) => boolean
-  getEventResourceIds: (event: ResourceCalendarEvent) => (string | number)[]
+  isEventCrossResource: (event: CalendarEvent) => boolean
+  getEventResourceIds: (event: CalendarEvent) => (string | number)[]
 
   // Additional properties from calendar context
-  onEventClick: (event: ResourceCalendarEvent) => void
-  onCellClick: (
-    startDate: dayjs.Dayjs,
-    endDate: dayjs.Dayjs,
-    resourceId?: string | number
-  ) => void
+  onEventClick: (event: CalendarEvent) => void
+  onCellClick: (info: CellClickInfo) => void
   renderResource?: (resource: Resource) => React.ReactNode
 }
 
@@ -55,11 +47,11 @@ export const useResourceCalendarContext = (): ResourceCalendarContextType => {
  */
 export interface UseIlamyResourceCalendarContextReturn
   extends UseIlamyCalendarContextReturn {
-  readonly events: ResourceCalendarEvent[]
+  readonly events: CalendarEvent[]
   readonly resources: Resource[]
   readonly getEventsForResource: (
     resourceId: string | number
-  ) => ResourceCalendarEvent[]
+  ) => CalendarEvent[]
 }
 
 export const useIlamyResourceCalendarContext =

@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.1.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.0.2...v1.1.0)
+
+##### Features
+
+- feat: add `renderEventForm` prop for custom event form support [`#24`](https://github.com/kcsujeet/ilamy-calendar/pull/24)
+- feat: add `businessHours` prop for restricting calendar interactions [`#23`](https://github.com/kcsujeet/ilamy-calendar/pull/23)
+- feat: add `timeFormat` prop to configure 12-hour or 24-hour time display [`#25`](https://github.com/kcsujeet/ilamy-calendar/pull/25) - Thanks [@git-ari](https://github.com/git-ari)!
+
+##### Breaking Changes
+
+- **BREAKING:** `onCellClick` callback signature changed from `(start, end) => void` to `(info: CellClickInfo) => void`. The new `CellClickInfo` type includes `{ start, end, resourceId }` for better extensibility and resource calendar support.
+- **BREAKING:** `openEventForm` now accepts `Partial<CalendarEvent>` as argument instead of just a date string, enabling pre-populated event form fields.
+- **BREAKING:** `ResourceCalendarEvent` type has been removed. `CalendarEvent` now includes `resourceId` and `resourceIds` properties directly.
+
+##### Fixes
+
+- fix: resolve stale current date issue [`#22`](https://github.com/kcsujeet/ilamy-calendar/pull/22)
+
 #### [v1.0.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.0.1...v1.0.2)
 
 ##### Features

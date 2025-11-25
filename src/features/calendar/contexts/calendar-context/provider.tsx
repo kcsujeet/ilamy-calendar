@@ -4,9 +4,10 @@ import type { ReactNode } from 'react'
 import { CalendarContext } from './context'
 import type { CalendarEvent, BusinessHours } from '@/components/types'
 import type { EventFormProps } from '@/components/event-form/event-form'
+import type { CellClickInfo } from '@/features/calendar/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
-import type { CalendarView } from '@/types'
+import type { CalendarView, TimeFormat } from '@/types'
 
 export interface CalendarProviderProps {
   children: ReactNode
@@ -16,7 +17,7 @@ export interface CalendarProviderProps {
   initialDate?: dayjs.Dayjs
   renderEvent?: (event: CalendarEvent) => ReactNode
   onEventClick?: (event: CalendarEvent) => void
-  onCellClick?: (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => void
+  onCellClick?: (info: CellClickInfo) => void
   onViewChange?: (view: CalendarView) => void
   onEventAdd?: (event: CalendarEvent) => void
   onEventUpdate?: (event: CalendarEvent) => void
@@ -37,7 +38,7 @@ export interface CalendarProviderProps {
   // Translation options - provide either translations object OR translator function
   translations?: Translations
   translator?: TranslatorFunction
-  is24Hour?: boolean
+  timeFormat?: TimeFormat
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -68,7 +69,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   renderEventForm,
   translations,
   translator,
-  is24Hour = false,
+  timeFormat = '12-hour',
 }) => {
   // Use the calendar engine
   const calendarEngine = useCalendarEngine({
@@ -112,15 +113,15 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   )
 
   const handleDateClick = useCallback(
-    (startDate: dayjs.Dayjs, endDate: dayjs.Dayjs) => {
+    (info: CellClickInfo) => {
       if (disableCellClick) {
         return
       }
 
       if (onCellClick) {
-        onCellClick(startDate, endDate)
+        onCellClick(info)
       } else {
-        calendarEngine.openEventForm(startDate)
+        calendarEngine.openEventForm(info)
       }
     },
     [onCellClick, disableCellClick, calendarEngine]
@@ -169,7 +170,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       businessHours,
       renderEventForm,
       t: calendarEngine.t,
-      is24Hour,
+      timeFormat,
     }),
     [
       calendarEngine,
@@ -188,7 +189,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       headerClassName,
       businessHours,
       renderEventForm,
-      is24Hour,
+      timeFormat,
     ]
   )
 

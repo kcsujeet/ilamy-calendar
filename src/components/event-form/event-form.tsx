@@ -90,12 +90,12 @@ export const EventForm: React.FC<EventFormProps> = ({
     handleConfirm,
   } = useRecurringEventActions(onClose)
 
-  const { findParentRecurringEvent, t, businessHours, is24Hour } =
+  const { findParentRecurringEvent, t, businessHours, timeFormat } =
     useSmartCalendarContext((context) => ({
       findParentRecurringEvent: context.findParentRecurringEvent,
       t: context.t,
       businessHours: context.businessHours,
-      is24Hour: context.is24Hour,
+      timeFormat: context.timeFormat,
     }))
 
   const start = selectedEvent?.start ?? dayjs()
@@ -189,6 +189,7 @@ export const EventForm: React.FC<EventFormProps> = ({
       title: formValues.title,
       start: startDateTime,
       end: endDateTime,
+      resourceId: selectedEvent?.resourceId,
       description: formValues.description,
       location: formValues.location,
       allDay: isAllDay,
@@ -351,7 +352,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                         onChange={handleStartTimeChange}
                         minTime={minTime}
                         maxTime={maxTime}
-                        is24Hour={is24Hour}
+                        timeFormat={timeFormat}
                         className="mt-1 h-8 text-sm sm:h-9"
                         name="start-time"
                       />
@@ -365,7 +366,7 @@ export const EventForm: React.FC<EventFormProps> = ({
                         onChange={handleEndTimeChange}
                         minTime={minTime}
                         maxTime={maxTime}
-                        is24Hour={is24Hour}
+                        timeFormat={timeFormat}
                         className="mt-1 h-8 text-sm sm:h-9"
                         name="end-time"
                       />

@@ -64,7 +64,7 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ className }) => {
               )}
               onClick={() => {
                 selectDate(day)
-                openEventForm(day)
+                openEventForm({ start: day })
               }}
               data-testid={`week-day-header-${day.format('dddd').toLowerCase()}`}
             >

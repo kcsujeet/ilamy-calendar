@@ -1,13 +1,14 @@
 import { useMemo } from 'react'
+import type { TimeFormat } from '@/types'
 
 interface UseAutocompleteTimepickerProps {
-  is24Hour?: boolean
+  timeFormat?: TimeFormat
   minTime?: string
   maxTime?: string
 }
 
 export function useAutocompleteTimepicker({
-  is24Hour = false,
+  timeFormat = '12-hour',
   minTime = '00:00',
   maxTime = '23:45',
 }: UseAutocompleteTimepickerProps) {
@@ -40,7 +41,7 @@ export function useAutocompleteTimepicker({
     const period = hours >= 12 ? 'PM' : 'AM'
     const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
 
-    if (is24Hour) {
+    if (timeFormat === '24-hour') {
       return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
     }
 

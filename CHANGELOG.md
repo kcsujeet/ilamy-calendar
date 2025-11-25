@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file. Dates are d
 
 ##### Fixes
 
-- fix: resolve stale current date issue [`#22`](https://github.com/kcsujeet/ilamy-calendar/pull/22)
+- fix: resolve stale current date issue [`#22`](https://github.com/kcsujeet/ilamy-calendar/pull/22) - Thanks [@WhiteLady1](https://github.com/WhiteLady1)!
 
 #### [v1.0.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.0.1...v1.0.2)
 

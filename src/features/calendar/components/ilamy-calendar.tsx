@@ -111,7 +111,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   headerComponent,
   headerClassName,
   businessHours,
-  is24Hour = false,
+  timeFormat = '12-hour',
 }) => {
   return (
     <CalendarProvider
@@ -141,7 +141,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
       headerComponent={headerComponent}
       headerClassName={headerClassName}
       businessHours={businessHours}
-      is24Hour={is24Hour}
+      timeFormat={timeFormat}
     >
       <CalendarContent />
     </CalendarProvider>

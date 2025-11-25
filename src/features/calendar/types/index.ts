@@ -3,7 +3,7 @@ import type { EventFormProps } from '@/components/event-form/event-form'
 import React from 'react'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
-import type { CalendarView } from '@/types'
+import type { CalendarView, TimeFormat } from '@/types'
 
 /**
  * This interface extends the base CalendarEvent but allows more flexible date types
@@ -165,9 +165,9 @@ export interface IlamyCalendarProps {
    */
   renderEventForm?: (props: EventFormProps) => React.ReactNode
   /**
-   * Whether to display time in 24-hour format.
-   * If true, times will be displayed as "13:00" instead of "1:00 PM".
-   * Defaults to false (12-hour format).
+   * Time format for displaying times in the calendar.
+   * - "12-hour": Times displayed as "1:00 PM" (default)
+   * - "24-hour": Times displayed as "13:00"
    */
-  is24Hour?: boolean
+  timeFormat?: TimeFormat
 }

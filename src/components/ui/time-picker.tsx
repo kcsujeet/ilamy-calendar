@@ -10,6 +10,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAutocompleteTimepicker } from '@/hooks/use-autocomplete-timepicker'
+import type { TimeFormat } from '@/types'
 
 const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
   // Prevent event from bubbling to prevent Popover from closing
@@ -21,7 +22,7 @@ interface TimePickerProps {
   onChange: (value: string) => void
   minTime?: string
   maxTime?: string
-  is24Hour?: boolean
+  timeFormat?: TimeFormat
   placeholder?: string
   className?: string
   disabled?: boolean
@@ -33,7 +34,7 @@ export function TimePicker({
   onChange,
   minTime = '00:00',
   maxTime = '23:45',
-  is24Hour = false,
+  timeFormat = '12-hour',
   placeholder = 'Select time...',
   className,
   disabled = false,
@@ -46,7 +47,7 @@ export function TimePicker({
   const [triggerWidth, setTriggerWidth] = useState<number>(0)
 
   const { timeOptions, formatTime } = useAutocompleteTimepicker({
-    is24Hour,
+    timeFormat,
     minTime,
     maxTime,
   })

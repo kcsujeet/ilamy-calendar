@@ -3,7 +3,7 @@ import { IlamyResourceCalendar } from '@/features/resource-calendar/components/i
 import type { Resource } from '@/features/resource-calendar/types'
 import type { CalendarEvent, WeekDays } from '@/components/types'
 import type { CellClickInfo } from '@/features/calendar/types'
-import type { CalendarView } from '@/types'
+import type { CalendarView, TimeFormat } from '@/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type dayjs from '@/lib/configs/dayjs-config'
 import dummyEvents from '@/lib/seed'
@@ -133,8 +133,9 @@ export function DemoPage() {
   // UI settings
   const [calendarHeight, setCalendarHeight] = useState('600px')
   const [dayMaxEvents, setDayMaxEvents] = useState(3)
+  const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour')
 
-  const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}`
+  const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}`
 
   // Custom event renderer function
   const renderEvent = (event: CalendarEvent) => {
@@ -203,6 +204,8 @@ export function DemoPage() {
             setDayMaxEvents={setDayMaxEvents}
             stickyViewHeader={stickyViewHeader}
             setStickyHeader={setStickyHeader}
+            timeFormat={timeFormat}
+            setTimeFormat={setTimeFormat}
             // Resource calendar specific props
             isResourceCalendar={calendarType === 'resource'}
           />
@@ -273,6 +276,7 @@ export function DemoPage() {
                   disableDragAndDrop={disableDragAndDrop}
                   dayMaxEvents={dayMaxEvents}
                   stickyViewHeader={stickyViewHeader}
+                  timeFormat={timeFormat}
                   businessHours={{
                     daysOfWeek: [
                       // 'monday',
@@ -309,6 +313,7 @@ export function DemoPage() {
                   disableDragAndDrop={disableDragAndDrop}
                   dayMaxEvents={dayMaxEvents}
                   stickyViewHeader={stickyViewHeader}
+                  timeFormat={timeFormat}
                   businessHours={{
                     daysOfWeek: [
                       // 'monday',

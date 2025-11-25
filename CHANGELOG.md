@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file. Dates are d
 
 - feat: add `renderEventForm` prop for custom event form support [`#24`](https://github.com/kcsujeet/ilamy-calendar/pull/24)
 - feat: add `businessHours` prop for restricting calendar interactions [`#23`](https://github.com/kcsujeet/ilamy-calendar/pull/23)
+- feat: add `timeFormat` prop to configure 12-hour or 24-hour time display [`#25`](https://github.com/kcsujeet/ilamy-calendar/pull/25) - Thanks [@git-ari](https://github.com/git-ari)!
 
 ##### Breaking Changes
 

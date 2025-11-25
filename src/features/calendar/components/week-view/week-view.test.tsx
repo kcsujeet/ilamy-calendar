@@ -635,65 +635,65 @@ describe('WeekView', () => {
     expect(sundayCell.className).toContain('cursor-pointer')
   })
 
-  test('displays time labels in 24-hour format when is24Hour is true', () => {
+  test('displays time labels in 24-hour format when timeFormat is 24-hour', () => {
     cleanup()
-    renderWeekView({ is24Hour: true })
+    renderWeekView({ timeFormat: '24-hour' })
 
     // Check that times are displayed in 24-hour format
-    // 00:00 should show as "00:00" or "0:00" in 24-hour format
+    // 00:00 should show as "0" or "00" in 24-hour format (no minutes for on-the-hour)
     const midnightHour = screen.getByTestId('week-time-hour-00')
     const midnightText = midnightHour.textContent || ''
     // In 24-hour format, should not contain AM/PM
     expect(midnightText).not.toMatch(/AM|PM/i)
 
-    // 12:00 should show as "12:00" in 24-hour format (noon)
+    // 12:00 should show as "12" in 24-hour format (noon)
     const noonHour = screen.getByTestId('week-time-hour-12')
     const noonText = noonHour.textContent || ''
     expect(noonText).not.toMatch(/AM|PM/i)
 
-    // 13:00 should show as "13:00" in 24-hour format
+    // 13:00 should show as "13" in 24-hour format
     const afternoonHour = screen.getByTestId('week-time-hour-13')
     const afternoonText = afternoonHour.textContent || ''
     expect(afternoonText).not.toMatch(/AM|PM/i)
 
-    // 23:00 should show as "23:00" in 24-hour format
+    // 23:00 should show as "23" in 24-hour format
     const lateHour = screen.getByTestId('week-time-hour-23')
     const lateText = lateHour.textContent || ''
     expect(lateText).not.toMatch(/AM|PM/i)
   })
 
-  test('displays time labels in 12-hour format when is24Hour is false', () => {
+  test('displays time labels in 12-hour format when timeFormat is 12-hour', () => {
     cleanup()
-    renderWeekView({ is24Hour: false })
+    renderWeekView({ timeFormat: '12-hour' })
 
     // Check that times are displayed in 12-hour format
-    // 00:00 should show as "12:00 AM" in 12-hour format
+    // 00:00 should show as "12 AM" in 12-hour format (no minutes for on-the-hour)
     const midnightHour = screen.getByTestId('week-time-hour-00')
     const midnightText = midnightHour.textContent || ''
     // In 12-hour format, should contain AM or PM
     expect(midnightText).toMatch(/AM|PM/i)
 
-    // 12:00 should show as "12:00 PM" in 12-hour format (noon)
+    // 12:00 should show as "12 PM" in 12-hour format (noon)
     const noonHour = screen.getByTestId('week-time-hour-12')
     const noonText = noonHour.textContent || ''
     expect(noonText).toMatch(/AM|PM/i)
 
-    // 13:00 should show as "1:00 PM" in 12-hour format
+    // 13:00 should show as "1 PM" in 12-hour format
     const afternoonHour = screen.getByTestId('week-time-hour-13')
     const afternoonText = afternoonHour.textContent || ''
     expect(afternoonText).toMatch(/AM|PM/i)
 
-    // 23:00 should show as "11:00 PM" in 12-hour format
+    // 23:00 should show as "11 PM" in 12-hour format
     const lateHour = screen.getByTestId('week-time-hour-23')
     const lateText = lateHour.textContent || ''
     expect(lateText).toMatch(/AM|PM/i)
   })
 
-  test('defaults to 12-hour format when is24Hour is not provided', () => {
+  test('defaults to 12-hour format when timeFormat is not provided', () => {
     cleanup()
     renderWeekView()
 
-    // Should default to 12-hour format (is24Hour defaults to false)
+    // Should default to 12-hour format (timeFormat defaults to '12-hour')
     const midnightHour = screen.getByTestId('week-time-hour-00')
     const midnightText = midnightHour.textContent || ''
     expect(midnightText).toMatch(/AM|PM/i)

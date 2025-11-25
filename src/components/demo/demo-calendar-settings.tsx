@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import type { WeekDays } from '@/components/types'
-import type { CalendarView } from '@/types'
+import type { CalendarView, TimeFormat } from '@/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { ModeToggle } from './mode-toggle'
 
@@ -50,6 +50,8 @@ interface DemoCalendarSettingsProps {
   setDayMaxEvents: (value: number) => void
   stickyViewHeader?: boolean
   setStickyHeader?: (value: boolean) => void
+  timeFormat: TimeFormat
+  setTimeFormat: (value: TimeFormat) => void
   // Resource calendar specific props
   isResourceCalendar?: boolean
 }
@@ -83,6 +85,8 @@ export function DemoCalendarSettings({
   setDayMaxEvents,
   stickyViewHeader,
   setStickyHeader,
+  timeFormat,
+  setTimeFormat,
   // Resource calendar props
   isResourceCalendar,
 }: DemoCalendarSettingsProps) {
@@ -278,6 +282,21 @@ export function DemoCalendarSettings({
               <SelectItem value="4">4 events</SelectItem>
               <SelectItem value="5">5 events</SelectItem>
               <SelectItem value="999">No limit</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <label className="block text-sm text-left font-medium mb-1">
+            Time Format
+          </label>
+          <Select value={timeFormat} onValueChange={setTimeFormat}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select time format" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="12-hour">12-hour (1:00 PM)</SelectItem>
+              <SelectItem value="24-hour">24-hour (13:00)</SelectItem>
             </SelectContent>
           </Select>
         </div>

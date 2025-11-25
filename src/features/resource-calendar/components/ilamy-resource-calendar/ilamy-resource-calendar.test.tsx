@@ -743,14 +743,14 @@ describe('IlamyResourceCalendar', () => {
       })
     })
 
-    it('should display time in 24-hour format in day view when is24Hour is true', () => {
+    it('should display time in 24-hour format in day view when timeFormat is 24-hour', () => {
       render(
         <IlamyResourceCalendar
           resources={mockResources}
           events={mockEvents}
           initialView="day"
           initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-          is24Hour={true}
+          timeFormat="24-hour"
         />
       )
 
@@ -764,19 +764,19 @@ describe('IlamyResourceCalendar', () => {
       timeLabels.forEach((label) => {
         const text = label.textContent || ''
         expect(text).not.toMatch(/AM|PM/i)
-        // Should contain time format
-        expect(text).toMatch(/\d{1,2}:\d{2}/)
+        // Should contain time format (with or without :00 for on-the-hour)
+        expect(text).toMatch(/\d{1,2}(?::\d{2})?/)
       })
     })
 
-    it('should display time in 12-hour format in day view when is24Hour is false', () => {
+    it('should display time in 12-hour format in day view when timeFormat is 12-hour', () => {
       render(
         <IlamyResourceCalendar
           resources={mockResources}
           events={mockEvents}
           initialView="day"
           initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-          is24Hour={false}
+          timeFormat="12-hour"
         />
       )
 
@@ -794,14 +794,14 @@ describe('IlamyResourceCalendar', () => {
       expect(hasAMPM).toBe(true)
     })
 
-    it('should display time in 24-hour format in week view when is24Hour is true', () => {
+    it('should display time in 24-hour format in week view when timeFormat is 24-hour', () => {
       render(
         <IlamyResourceCalendar
           resources={mockResources}
           events={mockEvents}
           initialView="week"
           initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-          is24Hour={true}
+          timeFormat="24-hour"
         />
       )
 
@@ -815,19 +815,19 @@ describe('IlamyResourceCalendar', () => {
       timeLabels.forEach((label) => {
         const text = label.textContent || ''
         expect(text).not.toMatch(/AM|PM/i)
-        // Should contain time format
-        expect(text).toMatch(/\d{1,2}:\d{2}/)
+        // Should contain time format (with or without :00 for on-the-hour)
+        expect(text).toMatch(/\d{1,2}(?::\d{2})?/)
       })
     })
 
-    it('should display time in 12-hour format in week view when is24Hour is false', () => {
+    it('should display time in 12-hour format in week view when timeFormat is 12-hour', () => {
       render(
         <IlamyResourceCalendar
           resources={mockResources}
           events={mockEvents}
           initialView="week"
           initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-          is24Hour={false}
+          timeFormat="12-hour"
         />
       )
 
@@ -845,7 +845,7 @@ describe('IlamyResourceCalendar', () => {
       expect(hasAMPM).toBe(true)
     })
 
-    it('should default to 12-hour format when is24Hour is not provided', () => {
+    it('should default to 12-hour format when timeFormat is not provided', () => {
       render(
         <IlamyResourceCalendar
           resources={mockResources}
@@ -869,14 +869,14 @@ describe('IlamyResourceCalendar', () => {
       expect(hasAMPM).toBe(true)
     })
 
-    it('should update time format when is24Hour changes', () => {
+    it('should update time format when timeFormat changes', () => {
       const { rerender } = render(
         <IlamyResourceCalendar
           resources={mockResources}
           events={mockEvents}
           initialView="day"
           initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-          is24Hour={false}
+          timeFormat="12-hour"
         />
       )
 
@@ -884,7 +884,7 @@ describe('IlamyResourceCalendar', () => {
       let timeLabels = Array.from(document.querySelectorAll('.text-xs')).filter(
         (el) => {
           const text = el.textContent || ''
-          return /\d{1,2}:\d{2}/.test(text)
+          return /\d{1,2}(?::\d{2})?/.test(text)
         }
       )
 
@@ -901,7 +901,7 @@ describe('IlamyResourceCalendar', () => {
           events={mockEvents}
           initialView="day"
           initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-          is24Hour={true}
+          timeFormat="24-hour"
         />
       )
 
@@ -909,7 +909,7 @@ describe('IlamyResourceCalendar', () => {
       timeLabels = Array.from(document.querySelectorAll('.text-xs')).filter(
         (el) => {
           const text = el.textContent || ''
-          return /\d{1,2}:\d{2}/.test(text)
+          return /\d{1,2}(?::\d{2})?/.test(text)
         }
       )
 

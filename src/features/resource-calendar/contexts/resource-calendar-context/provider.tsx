@@ -54,7 +54,7 @@ export const ResourceCalendarProvider: React.FC<
   renderResource,
   renderEventForm,
   businessHours,
-  is24Hour = false,
+  timeFormat = '12-hour',
 }) => {
   // Resource-specific state
   const [currentResources] = useState<Resource[]>(resources)
@@ -258,7 +258,7 @@ export const ResourceCalendarProvider: React.FC<
       stickyViewHeader,
       viewHeaderClassName,
       businessHours,
-      is24Hour,
+      timeFormat,
     }),
     [
       calendarEngine,
@@ -290,7 +290,7 @@ export const ResourceCalendarProvider: React.FC<
       headerComponent,
       headerClassName,
       businessHours,
-      is24Hour,
+      timeFormat,
     ]
   )
 

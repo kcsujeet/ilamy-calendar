@@ -7,7 +7,7 @@ import type { EventFormProps } from '@/components/event-form/event-form'
 import type { CellClickInfo } from '@/features/calendar/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
-import type { CalendarView } from '@/types'
+import type { CalendarView, TimeFormat } from '@/types'
 
 export interface CalendarProviderProps {
   children: ReactNode
@@ -38,7 +38,7 @@ export interface CalendarProviderProps {
   // Translation options - provide either translations object OR translator function
   translations?: Translations
   translator?: TranslatorFunction
-  is24Hour?: boolean
+  timeFormat?: TimeFormat
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -69,7 +69,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   renderEventForm,
   translations,
   translator,
-  is24Hour = false,
+  timeFormat = '12-hour',
 }) => {
   // Use the calendar engine
   const calendarEngine = useCalendarEngine({
@@ -170,7 +170,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       businessHours,
       renderEventForm,
       t: calendarEngine.t,
-      is24Hour,
+      timeFormat,
     }),
     [
       calendarEngine,
@@ -189,7 +189,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       headerClassName,
       businessHours,
       renderEventForm,
-      is24Hour,
+      timeFormat,
     ]
   )
 

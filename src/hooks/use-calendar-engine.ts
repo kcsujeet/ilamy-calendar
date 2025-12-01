@@ -18,7 +18,7 @@ export interface CalendarEngineConfig {
   firstDayOfWeek: number
   initialView?: CalendarView
   initialDate?: dayjs.Dayjs
-  businessHours?: BusinessHours
+  businessHours?: BusinessHours | BusinessHours[]
   onEventAdd?: (event: CalendarEvent) => void
   onEventUpdate?: (event: CalendarEvent) => void
   onEventDelete?: (event: CalendarEvent) => void
@@ -41,7 +41,7 @@ export interface CalendarEngineReturn {
   firstDayOfWeek: number
   dayMaxEvents: number
   currentLocale: string
-  businessHours?: BusinessHours
+  businessHours?: BusinessHours | BusinessHours[]
   setCurrentDate: (date: dayjs.Dayjs) => void
   selectDate: (date: dayjs.Dayjs) => void
   setView: (view: CalendarView) => void

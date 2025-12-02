@@ -277,17 +277,18 @@ export function DemoPage() {
                   dayMaxEvents={dayMaxEvents}
                   stickyViewHeader={stickyViewHeader}
                   timeFormat={timeFormat}
-                  businessHours={{
-                    daysOfWeek: [
-                      // 'monday',
-                      'tuesday',
-                      // 'wednesday',
-                      // 'thursday',
-                      'friday',
-                    ],
-                    startTime: 9,
-                    endTime: 17,
-                  }}
+                  businessHours={[
+                    {
+                      daysOfWeek: ['monday', 'wednesday', 'friday'],
+                      startTime: 9,
+                      endTime: 17,
+                    },
+                    {
+                      daysOfWeek: ['tuesday', 'thursday'],
+                      startTime: 10,
+                      endTime: 18,
+                    },
+                  ]}
                 />
               ) : (
                 <IlamyResourceCalendar

@@ -4,8 +4,8 @@ import { isBusinessHour } from './business-hours'
 import type { BusinessHours } from '@/components/types'
 
 describe('isBusinessHour', () => {
-  const monday = dayjs('2025-01-06') // Monday
-  const sunday = dayjs('2025-01-05') // Sunday
+  const monday = dayjs('2025-01-06T00:00:00.000Z') // Monday
+  const sunday = dayjs('2025-01-05T00:00:00.000Z') // Sunday
 
   it('should return true when businessHours is undefined', () => {
     expect(isBusinessHour({ date: monday, hour: 10, minute: 0 })).toBe(true)
@@ -108,8 +108,8 @@ describe('isBusinessHour', () => {
     // We simulate this by checking a Sunday and a Monday.
     // Sunday is day 0, Monday is day 1 in dayjs.
 
-    const sundayDate = dayjs('2025-01-05') // Sunday
-    const mondayDate = dayjs('2025-01-06') // Monday
+    const sundayDate = dayjs('2025-01-05T00:00:00.000Z') // Sunday
+    const mondayDate = dayjs('2025-01-06T00:00:00.000Z') // Monday
 
     const config: BusinessHours = {
       daysOfWeek: ['monday'], // Only Monday is business day
@@ -173,13 +173,13 @@ describe('isBusinessHour', () => {
   })
 
   describe('Array of BusinessHours', () => {
-    const monday = dayjs('2025-01-06')
-    const tuesday = dayjs('2025-01-07')
-    const wednesday = dayjs('2025-01-08')
-    const thursday = dayjs('2025-01-09')
-    const friday = dayjs('2025-01-10')
-    const saturday = dayjs('2025-01-11')
-    const sunday = dayjs('2025-01-05')
+    const monday = dayjs('2025-01-06T00:00:00.000Z')
+    const tuesday = dayjs('2025-01-07T00:00:00.000Z')
+    const wednesday = dayjs('2025-01-08T00:00:00.000Z')
+    const thursday = dayjs('2025-01-09T00:00:00.000Z')
+    const friday = dayjs('2025-01-10T00:00:00.000Z')
+    const saturday = dayjs('2025-01-11T00:00:00.000Z')
+    const sunday = dayjs('2025-01-05T00:00:00.000Z')
 
     it('should handle array with different hours for different days', () => {
       const configs: BusinessHours[] = [

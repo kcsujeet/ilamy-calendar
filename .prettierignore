@@ -1,0 +1,7 @@
+dist
+node_modules
+.next
+.astro
+.output
+coverage
+.bun

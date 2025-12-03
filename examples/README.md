@@ -5,9 +5,11 @@ This directory contains integration examples for using ilamy Calendar with popul
 ## Available Examples
 
 ### [Next.js](./nextjs)
+
 Complete example showing how to integrate ilamy Calendar with Next.js 15 using the App Router.
 
 **Key features:**
+
 - Uses `'use client'` directive for client-side rendering
 - Tailwind CSS v4 configuration
 - TypeScript support
@@ -16,9 +18,11 @@ Complete example showing how to integrate ilamy Calendar with Next.js 15 using t
 [View Next.js Example →](./nextjs)
 
 ### [Astro](./astro)
+
 Complete example showing how to integrate ilamy Calendar with Astro 5+ using React integration.
 
 **Key features:**
+
 - Uses `client:only="react"` directive (required)
 - Astro React integration with Vite
 - Tailwind CSS v4 via `@tailwindcss/vite` plugin
@@ -75,11 +79,13 @@ dayjs.extend(isSameOrBefore)
 ## Framework-Specific Notes
 
 ### Next.js
+
 - Calendar components must use `'use client'` directive
 - Compatible with both App Router (Next.js 13+) and Pages Router
 - Server components can pass props to client calendar components
 
 ### Astro
+
 - **Must use `client:only="react"`** - other directives like `client:load` or `client:idle` will not work
 - Requires `@astrojs/react` integration
 - Uses Vite-based Tailwind CSS setup with `@tailwindcss/vite` plugin

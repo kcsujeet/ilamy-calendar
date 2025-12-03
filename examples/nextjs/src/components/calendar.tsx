@@ -41,7 +41,11 @@ const sampleEvents: IlamyCalendarProps['events'] = [
 export default function Calendar() {
   return (
     <div className="w-full">
-      <IlamyCalendar events={sampleEvents} firstDayOfWeek="sunday" dayMaxEvents={3} />
+      <IlamyCalendar
+        events={sampleEvents}
+        firstDayOfWeek="sunday"
+        dayMaxEvents={3}
+      />
     </div>
   )
 }

@@ -1,0 +1,28 @@
+{
+  "name": "nextjs-ilamy-calendar-example",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bunx next dev",
+    "build": "bunx next build",
+    "start": "bunx next start",
+    "lint": "bunx next lint"
+  },
+  "dependencies": {
+    "@ilamy/calendar": "^1.1.0",
+    "@tailwindcss/postcss": "^4.1.17",
+    "dayjs": "^1.11.19",
+    "next": "^16.0.6",
+    "postcss": "^8.5.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^4.1.17",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3"
+  }
+}

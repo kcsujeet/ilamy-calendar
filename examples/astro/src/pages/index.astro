@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Calendar from '../components/Calendar'
+---
+
+<Layout title="Astro + ilamy Calendar">
+  <main class="min-h-screen p-8">
+    <div class="max-w-7xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Astro + ilamy Calendar Example</h1>
+      <Calendar client:only="react" />
+    </div>
+  </main>
+</Layout>

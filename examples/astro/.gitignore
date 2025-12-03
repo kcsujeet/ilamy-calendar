@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+.bun-cache/
+
+# build output
+dist/
+.astro/
+
+# environment
+.env
+.env.production
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

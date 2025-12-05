@@ -14,7 +14,8 @@ export const useProcessedWeekEvents = ({
   allDay,
   dayNumberHeight,
 }: UseProcessedWeekEventsProps) => {
-  const { getEventsForDateRange, dayMaxEvents } = useCalendarContext()
+  const { getEventsForDateRange, dayMaxEvents, eventSpacing } =
+    useCalendarContext()
 
   const weekStart = days[0].startOf('day')
   const weekEnd = days.at(-1).endOf('day')
@@ -31,6 +32,7 @@ export const useProcessedWeekEvents = ({
       events,
       dayMaxEvents,
       dayNumberHeight,
+      eventSpacing,
     })
   }, [
     getEventsForDateRange,
@@ -40,6 +42,7 @@ export const useProcessedWeekEvents = ({
     days,
     dayMaxEvents,
     dayNumberHeight,
+    eventSpacing,
   ])
 
   return positionedEvents

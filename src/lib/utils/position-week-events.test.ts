@@ -369,4 +369,78 @@ describe('getPositionedEvents', () => {
       expect(result[0].top).toBe(expectedTop)
     })
   })
+
+  describe('Custom Event Spacing', () => {
+    it('uses custom eventSpacing in vertical positioning', () => {
+      const customSpacing = 4
+
+      const eventOne: CalendarEvent = {
+        id: 'event-1',
+        title: 'First Event',
+        start: dayjs('2025-01-13T10:00:00.000Z'),
+        end: dayjs('2025-01-13T11:00:00.000Z'),
+      }
+
+      const eventTwo: CalendarEvent = {
+        id: 'event-2',
+        title: 'Second Event',
+        start: dayjs('2025-01-13T12:00:00.000Z'),
+        end: dayjs('2025-01-13T13:00:00.000Z'),
+      }
+
+      const result = getPositionedEvents({
+        days,
+        events: [eventOne, eventTwo],
+        dayMaxEvents: 4,
+        eventSpacing: customSpacing,
+      })
+
+      expect(result).toHaveLength(2)
+
+      const firstEventTop =
+        DAY_NUMBER_HEIGHT +
+        customSpacing +
+        0 * (EVENT_BAR_HEIGHT + customSpacing)
+      const secondEventTop =
+        DAY_NUMBER_HEIGHT +
+        customSpacing +
+        1 * (EVENT_BAR_HEIGHT + customSpacing)
+
+      expect(result[0].top).toBe(firstEventTop)
+      expect(result[1].top).toBe(secondEventTop)
+    })
+
+    it('falls back to GAP_BETWEEN_ELEMENTS when eventSpacing is not provided', () => {
+      const result = getPositionedEvents({
+        days,
+        events: [singleDayEvent],
+        dayMaxEvents: 4,
+      })
+
+      const expectedTop =
+        DAY_NUMBER_HEIGHT +
+        GAP_BETWEEN_ELEMENTS +
+        0 * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS)
+      expect(result[0].top).toBe(expectedTop)
+    })
+
+    it('applies custom eventSpacing to multi-day events', () => {
+      const customSpacing = 8
+
+      const result = getPositionedEvents({
+        days,
+        events: [multiDayEvent],
+        dayMaxEvents: 4,
+        eventSpacing: customSpacing,
+      })
+
+      expect(result).toHaveLength(1)
+
+      const expectedTop =
+        DAY_NUMBER_HEIGHT +
+        customSpacing +
+        0 * (EVENT_BAR_HEIGHT + customSpacing)
+      expect(result[0].top).toBe(expectedTop)
+    })
+  })
 })

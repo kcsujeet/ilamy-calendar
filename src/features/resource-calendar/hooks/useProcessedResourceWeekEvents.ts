@@ -13,8 +13,12 @@ export const useProcessedResourceWeekEvents = ({
   gridType = 'day',
   resourceId,
 }: UseProcessedResourceWeekEventsProps) => {
-  const { getEventsForResource, getEventsForDateRange, dayMaxEvents } =
-    useResourceCalendarContext()
+  const {
+    getEventsForResource,
+    getEventsForDateRange,
+    dayMaxEvents,
+    eventSpacing,
+  } = useResourceCalendarContext()
 
   const startDate = days[0].startOf('day')
   const endDate = days.at(-1).endOf('day')
@@ -29,5 +33,6 @@ export const useProcessedResourceWeekEvents = ({
     dayMaxEvents,
     dayNumberHeight: 0,
     gridType,
+    eventSpacing,
   })
 }

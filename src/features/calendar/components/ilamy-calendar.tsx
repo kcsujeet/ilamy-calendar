@@ -106,6 +106,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   disableEventClick,
   disableDragAndDrop,
   dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
+  eventSpacing,
   stickyViewHeader = true,
   viewHeaderClassName = '',
   headerComponent,
@@ -136,6 +137,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
       disableEventClick={disableEventClick}
       disableDragAndDrop={disableDragAndDrop}
       dayMaxEvents={dayMaxEvents}
+      eventSpacing={eventSpacing}
       stickyViewHeader={stickyViewHeader}
       viewHeaderClassName={viewHeaderClassName}
       headerComponent={headerComponent}

@@ -19,31 +19,11 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   firstDayOfWeek = 'sunday',
   initialView = 'month',
   initialDate,
-  renderEvent,
-  onEventClick,
-  onCellClick,
-  onViewChange,
-  onEventAdd,
-  onEventUpdate,
-  onEventDelete,
-  onDateChange,
-  locale,
-  timezone,
-  disableCellClick,
-  disableEventClick,
   disableDragAndDrop = false,
   dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
-  eventSpacing = GAP_BETWEEN_ELEMENTS,
-  stickyViewHeader,
-  viewHeaderClassName,
-  headerComponent,
-  headerClassName,
-  translations,
-  translator,
-  renderResource,
-  renderEventForm,
-  businessHours,
   timeFormat = '12-hour',
+  eventSpacing = GAP_BETWEEN_ELEMENTS,
+  ...props
 }) => {
   return (
     <ResourceCalendarProvider
@@ -54,31 +34,11 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
       firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
       initialView={initialView}
       initialDate={safeDate(initialDate)}
-      renderEvent={renderEvent}
-      renderResource={renderResource}
-      onEventClick={onEventClick}
-      onCellClick={onCellClick}
-      onViewChange={onViewChange}
-      onEventAdd={onEventAdd}
-      onEventUpdate={onEventUpdate}
-      onEventDelete={onEventDelete}
-      onDateChange={onDateChange}
-      locale={locale}
-      timezone={timezone}
-      disableCellClick={disableCellClick}
-      disableEventClick={disableEventClick}
       disableDragAndDrop={disableDragAndDrop}
       dayMaxEvents={dayMaxEvents}
-      eventSpacing={eventSpacing}
-      stickyViewHeader={stickyViewHeader}
-      viewHeaderClassName={viewHeaderClassName}
-      headerComponent={headerComponent}
-      headerClassName={headerClassName}
-      translations={translations}
-      translator={translator}
-      renderEventForm={renderEventForm}
-      businessHours={businessHours}
       timeFormat={timeFormat}
+      eventSpacing={eventSpacing}
+      {...props}
     >
       <ResourceCalendarBody />
     </ResourceCalendarProvider>

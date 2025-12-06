@@ -4,7 +4,10 @@ import type { ReactNode } from 'react'
 import { CalendarContext } from './context'
 import type { CalendarEvent, BusinessHours } from '@/components/types'
 import type { EventFormProps } from '@/components/event-form/event-form'
-import type { CellClickInfo } from '@/features/calendar/types'
+import type {
+  CellClickInfo,
+  CalendarClassesOverride,
+} from '@/features/calendar/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type { CalendarView, TimeFormat } from '@/types'
@@ -41,6 +44,7 @@ export interface CalendarProviderProps {
   translations?: Translations
   translator?: TranslatorFunction
   timeFormat?: TimeFormat
+  classesOverride?: CalendarClassesOverride
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -73,6 +77,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   translations,
   translator,
   timeFormat = '12-hour',
+  classesOverride,
 }) => {
   // Use the calendar engine
   const calendarEngine = useCalendarEngine({
@@ -175,6 +180,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       renderEventForm,
       t: calendarEngine.t,
       timeFormat,
+      classesOverride,
     }),
     [
       calendarEngine,
@@ -195,6 +201,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       businessHours,
       renderEventForm,
       timeFormat,
+      classesOverride,
     ]
   )
 

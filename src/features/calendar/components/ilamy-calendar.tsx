@@ -93,30 +93,12 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   firstDayOfWeek = 'sunday',
   initialView = 'month',
   initialDate,
-  renderEvent,
-  renderEventForm,
-  onEventClick,
-  onCellClick,
-  onViewChange,
-  onEventAdd,
-  onEventUpdate,
-  onEventDelete,
-  onDateChange,
-  locale,
-  translations,
-  translator,
-  timezone,
-  disableCellClick,
-  disableEventClick,
-  disableDragAndDrop,
   dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
   eventSpacing = GAP_BETWEEN_ELEMENTS,
   stickyViewHeader = true,
   viewHeaderClassName = '',
-  headerComponent,
-  headerClassName,
-  businessHours,
   timeFormat = '12-hour',
+  ...props
 }) => {
   return (
     <CalendarProvider
@@ -124,30 +106,12 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
       firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
       initialView={initialView}
       initialDate={safeDate(initialDate)}
-      renderEvent={renderEvent}
-      renderEventForm={renderEventForm}
-      onEventClick={onEventClick}
-      onCellClick={onCellClick}
-      onViewChange={onViewChange}
-      onEventAdd={onEventAdd}
-      onEventUpdate={onEventUpdate}
-      onEventDelete={onEventDelete}
-      onDateChange={onDateChange}
-      locale={locale}
-      translations={translations}
-      translator={translator}
-      timezone={timezone}
-      disableCellClick={disableCellClick}
-      disableEventClick={disableEventClick}
-      disableDragAndDrop={disableDragAndDrop}
       dayMaxEvents={dayMaxEvents}
       eventSpacing={eventSpacing}
       stickyViewHeader={stickyViewHeader}
       viewHeaderClassName={viewHeaderClassName}
-      headerComponent={headerComponent}
-      headerClassName={headerClassName}
-      businessHours={businessHours}
       timeFormat={timeFormat}
+      {...props}
     >
       <CalendarContent />
     </CalendarProvider>

@@ -6,6 +6,20 @@ import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
 /**
+ * Custom class names for calendar styling.
+ * Allows users to override default styles for various calendar elements.
+ */
+export interface CalendarClassesOverride {
+  /**
+   * Class name for disabled cells (non-business hours).
+   * Replaces the DISABLED_CELL_CLASSNAME constant.
+   * @default "bg-secondary text-muted-foreground pointer-events-none"
+   * @example "bg-gray-100 text-gray-400 cursor-not-allowed"
+   */
+  disabledCell?: string
+}
+
+/**
  * This interface extends the base CalendarEvent but allows more flexible date types
  * for the start and end properties. The component will automatically convert these
  * to dayjs objects internally for consistent date handling.
@@ -179,4 +193,10 @@ export interface IlamyCalendarProps {
    * - "24-hour": Times displayed as "13:00"
    */
   timeFormat?: TimeFormat
+  /**
+   * Custom class names for overriding default calendar element styles.
+   * Allows fine-grained control over the appearance of different calendar elements.
+   * @example { disabledCell: "bg-gray-100 text-gray-400" }
+   */
+  classesOverride?: CalendarClassesOverride
 }

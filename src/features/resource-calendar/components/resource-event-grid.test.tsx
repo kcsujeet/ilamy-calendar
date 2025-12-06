@@ -167,6 +167,7 @@ describe('ResourceEventGrid', () => {
       renderWithProvider(<ResourceEventGrid days={days} gridType="day" />, {
         resources: [mockResources[0]],
         businessHours,
+        initialDate: days[0],
       })
 
       const mondayCell = screen.getByTestId(`day-cell-${days[0].toISOString()}`)
@@ -194,6 +195,7 @@ describe('ResourceEventGrid', () => {
       renderWithProvider(<ResourceEventGrid days={hours} gridType="hour" />, {
         resources: [mockResources[0]],
         businessHours,
+        initialDate: monday,
       })
 
       const businessHourCell = screen.getByTestId(

@@ -77,13 +77,12 @@ export const DayCell: React.FC<DayCellProps> = ({
         type="day-cell"
         data-testid={`day-cell-${day.format('YYYY-MM-DD')}`}
         date={day}
+        disabled={!isBusiness || !isCurrentMonth}
         className={cn(
           'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px]',
-          !isCurrentMonth && 'bg-secondary text-muted-foreground',
           isLastColumn && 'border-r-0',
           className
         )}
-        disabled={!isBusiness}
       >
         {/* Absolutely positioned multi-day bars (Google Calendar style) */}
 

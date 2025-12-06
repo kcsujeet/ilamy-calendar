@@ -1,7 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { ResourceCalendarContext } from './context'
 import type { Resource } from '@/features/resource-calendar/types'
-import type { CellClickInfo } from '@/features/calendar/types'
+import type {
+  CellClickInfo,
+  CalendarClassesOverride,
+} from '@/features/calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type { CalendarProviderProps } from '@/features/calendar/contexts/calendar-context/provider'
 import type { CalendarEvent } from '@/components/types'
@@ -20,6 +23,7 @@ interface ResourceCalendarProviderProps extends CalendarProviderProps {
   events?: CalendarEvent[]
   resources?: Resource[]
   renderResource?: (resource: Resource) => React.ReactNode
+  classesOverride?: CalendarClassesOverride
 }
 
 export const ResourceCalendarProvider: React.FC<
@@ -55,6 +59,7 @@ export const ResourceCalendarProvider: React.FC<
   renderEventForm,
   businessHours,
   timeFormat = '12-hour',
+  classesOverride,
 }) => {
   // Resource-specific state
   const [currentResources] = useState<Resource[]>(resources)
@@ -259,6 +264,7 @@ export const ResourceCalendarProvider: React.FC<
       viewHeaderClassName,
       businessHours,
       timeFormat,
+      classesOverride,
     }),
     [
       calendarEngine,
@@ -291,6 +297,7 @@ export const ResourceCalendarProvider: React.FC<
       headerClassName,
       businessHours,
       timeFormat,
+      classesOverride,
     ]
   )
 

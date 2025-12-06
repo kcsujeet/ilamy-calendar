@@ -1,6 +1,9 @@
 import type { CalendarEvent, BusinessHours } from '@/components/types'
 import type { EventFormProps } from '@/components/event-form/event-form'
-import type { CellClickInfo } from '@/features/calendar/types'
+import type {
+  CellClickInfo,
+  CalendarClassesOverride,
+} from '@/features/calendar/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { TranslationKey } from '@/lib/translations/types'
@@ -58,6 +61,7 @@ export interface CalendarContextType {
   // Translation function
   t: (key: TranslationKey) => string
   timeFormat: TimeFormat
+  classesOverride?: CalendarClassesOverride
 }
 
 export const CalendarContext: React.Context<CalendarContextType | undefined> =

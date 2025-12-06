@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.1.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.1.0...v1.1.1)
+
+> 6 December 2025
+
+##### Features
+
+- feat: add `eventSpacing` prop for customizable event spacing in calendar views [`#32`](https://github.com/kcsujeet/ilamy-calendar/pull/32) - Thanks [@owyndevz](https://github.com/owyndevz)!
+- feat: add `classesOverride` prop for custom disabled cell styling [`#33`](https://github.com/kcsujeet/ilamy-calendar/pull/33)
+- feat: support `BusinessHours` array for different hours per day [`#29`](https://github.com/kcsujeet/ilamy-calendar/pull/29) - Thanks [@okejminja](https://github.com/okejminja)!
+
+##### Tooling & Infrastructure
+
+- chore: migrate from oxlint + Prettier to Biome for unified linting and formatting [`#34`](https://github.com/kcsujeet/ilamy-calendar/pull/34)
+  - Replaced oxlint and Prettier with Biome v2.3.8
+  - Faster linting and formatting with Rust-based tooling
+  - Unified configuration for consistent code style
+
+##### Fixes
+
+- fix: scrollbar hidden behind sticky resource column and events [`#35`](https://github.com/kcsujeet/ilamy-calendar/pull/35)
+  - Added `z-30` to horizontal scrollbars in all calendar views (Month, Week, Day, Year)
+  - Ensures scrollbars appear above sticky resource columns (`z-20`) and event layers (`z-10`)
+  - Fixes issue where horizontal scrollbar was invisible in Resource Calendar views
+
 #### [v1.1.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.0.2...v1.1.0)
 
 ##### Features

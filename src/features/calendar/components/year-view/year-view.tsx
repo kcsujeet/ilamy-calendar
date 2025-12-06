@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
@@ -233,6 +233,7 @@ const YearView = () => {
 					)
 				})}
 			</div>
+			<ScrollBar className="z-30" />
 		</ScrollArea>
 	)
 }

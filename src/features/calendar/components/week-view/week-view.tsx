@@ -1,6 +1,6 @@
 import weekOfYear from 'dayjs/plugin/weekOfYear'
 import type React from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import dayjs from '@/lib/configs/dayjs-config'
 import { WeekAllDayRow } from './week-all-day-row'
 import { WeekHeader } from './week-header'
@@ -23,6 +23,7 @@ const WeekView: React.FC = () => {
 				{/* All-day events row - dynamic height based on content */}
 				<WeekAllDayRow />
 				<WeekTimeGrid />
+				<ScrollBar className="z-30" />
 			</ScrollArea>
 		</div>
 	)

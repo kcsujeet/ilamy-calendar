@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import { DroppableCell } from '@/components/droppable-cell'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import dayjs from '@/lib/configs/dayjs-config'
@@ -109,6 +109,7 @@ const DayView = () => {
 						)}
 					</div>
 				</div>
+				<ScrollBar className="z-30" />
 			</ScrollArea>
 		</div>
 	)

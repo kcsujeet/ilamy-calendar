@@ -65,7 +65,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
 						))}
 					</motion.div>
 				</AnimatePresence>
-				<ScrollBar orientation="horizontal" className="z-30" />
+				<ScrollBar className="z-30" />
 			</ScrollArea>
 
 			<AllEventDialog ref={allEventsDialogRef} />

@@ -50,7 +50,6 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 		>
 			{/* header row */}
 			{children}
-
 			{/* Calendar area with scroll */}
 			<div className="flex flex-1 h-[calc(100%-3rem)] w-fit">
 				<div
@@ -103,7 +102,9 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 					))}
 				</div>
 			</div>
-			<ScrollBar orientation="horizontal" className="z-30" />
+			<ScrollBar className="z-30" /> {/* vertical scrollbar */}
+			<ScrollBar orientation="horizontal" className="z-30" />{' '}
+			{/* horizontal scrollbar */}
 		</ScrollArea>
 	)
 }

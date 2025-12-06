@@ -45,6 +45,6 @@ body::before {
   *,
   ::before,
   ::after {
-    animation: none !important;
+    animation: none;
   }
 }

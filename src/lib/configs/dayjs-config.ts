@@ -1,13 +1,13 @@
 import dayjs from 'dayjs'
-import weekday from 'dayjs/plugin/weekday.js'
-import weekOfYear from 'dayjs/plugin/weekOfYear.js'
+import isBetween from 'dayjs/plugin/isBetween.js'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js'
-import isBetween from 'dayjs/plugin/isBetween.js'
+import localeData from 'dayjs/plugin/localeData.js'
 import minMax from 'dayjs/plugin/minMax.js'
 import timezone from 'dayjs/plugin/timezone.js'
 import utc from 'dayjs/plugin/utc.js'
-import localeData from 'dayjs/plugin/localeData.js'
+import weekday from 'dayjs/plugin/weekday.js'
+import weekOfYear from 'dayjs/plugin/weekOfYear.js'
 
 // Extend dayjs with plugins
 dayjs.extend(weekday)

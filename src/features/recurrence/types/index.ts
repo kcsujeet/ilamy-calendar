@@ -6,16 +6,16 @@ import type { Options } from 'rrule'
  * Determines how many events in a recurring series should be affected
  */
 export type RecurrenceEditScope =
-  | 'this' // Only this specific event instance
-  | 'following' // This event and all following events in the series
-  | 'all' // All events in the recurring series
+	| 'this' // Only this specific event instance
+	| 'following' // This event and all following events in the series
+	| 'all' // All events in the recurring series
 
 /**
  * Options for editing recurring events
  */
 export interface RecurrenceEditOptions {
-  scope: RecurrenceEditScope
-  eventDate: dayjs.Dayjs // The date of the specific event being edited
+	scope: RecurrenceEditScope
+	eventDate: dayjs.Dayjs // The date of the specific event being edited
 }
 
 /**
@@ -27,14 +27,14 @@ export interface RecurrenceEditOptions {
  * @see https://github.com/jakubroztocil/rrule - rrule.js library documentation
  */
 export type RRuleOptions = {
-  /**
-   * The frequency of the event. Must be one of the following: DAILY, WEEKLY, MONTHLY, etc.
-   */
-  freq: Options['freq'] // Required: DAILY, WEEKLY, MONTHLY, etc.
-  /**
-   * The start date of the recurrence rule. This defines when the recurrence pattern begins.
-   * Required for proper RRULE functionality according to RFC 5545.
-   * @important Same as the event start date.
-   */
-  dtstart: Date
+	/**
+	 * The frequency of the event. Must be one of the following: DAILY, WEEKLY, MONTHLY, etc.
+	 */
+	freq: Options['freq'] // Required: DAILY, WEEKLY, MONTHLY, etc.
+	/**
+	 * The start date of the recurrence rule. This defines when the recurrence pattern begins.
+	 * Required for proper RRULE functionality according to RFC 5545.
+	 * @important Same as the event start date.
+	 */
+	dtstart: Date
 } & Partial<Omit<Options, 'freq' | 'dtstart'>> // All other properties optional

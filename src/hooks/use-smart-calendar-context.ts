@@ -6,20 +6,20 @@ import { ResourceCalendarContext } from '@/features/resource-calendar/contexts/r
  * Generic hook that detects which calendar context is available and returns selected properties
  */
 export function useSmartCalendarContext<T>(selector: (context) => T): T {
-  // Check both contexts using useContext directly (no hooks)
-  const resourceContext = useContext(ResourceCalendarContext)
-  const regularContext = useContext(CalendarContext)
+	// Check both contexts using useContext directly (no hooks)
+	const resourceContext = useContext(ResourceCalendarContext)
+	const regularContext = useContext(CalendarContext)
 
-  if (resourceContext) {
-    return selector(resourceContext)
-  }
+	if (resourceContext) {
+		return selector(resourceContext)
+	}
 
-  if (regularContext) {
-    return selector(regularContext)
-  }
+	if (regularContext) {
+		return selector(regularContext)
+	}
 
-  // If neither context is available, throw an error
-  throw new Error(
-    'useSmartCalendarContext must be used within a CalendarProvider or ResourceCalendarProvider'
-  )
+	// If neither context is available, throw an error
+	throw new Error(
+		'useSmartCalendarContext must be used within a CalendarProvider or ResourceCalendarProvider'
+	)
 }

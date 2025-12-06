@@ -21,20 +21,20 @@ import type dayjs from '@/lib/configs/dayjs-config'
  * // Returns: [Wed Oct 8, Thu Oct 9, ..., Tue Oct 14] (includes Monday Oct 13)
  */
 export function getWeekDays(
-  currentDate: dayjs.Dayjs,
-  firstDayOfWeek: number
+	currentDate: dayjs.Dayjs,
+	firstDayOfWeek: number
 ): dayjs.Dayjs[] {
-  const startOfWeekFromCurrentDate = currentDate
-    .startOf('week')
-    .day(firstDayOfWeek)
+	const startOfWeekFromCurrentDate = currentDate
+		.startOf('week')
+		.day(firstDayOfWeek)
 
-  const adjustedStartOfWeek = currentDate.isBefore(startOfWeekFromCurrentDate)
-    ? startOfWeekFromCurrentDate.subtract(1, 'week')
-    : startOfWeekFromCurrentDate
+	const adjustedStartOfWeek = currentDate.isBefore(startOfWeekFromCurrentDate)
+		? startOfWeekFromCurrentDate.subtract(1, 'week')
+		: startOfWeekFromCurrentDate
 
-  return Array.from({ length: 7 }, (_, dayIndex) =>
-    adjustedStartOfWeek.add(dayIndex, 'day')
-  )
+	return Array.from({ length: 7 }, (_, dayIndex) =>
+		adjustedStartOfWeek.add(dayIndex, 'day')
+	)
 }
 
 /**
@@ -42,13 +42,13 @@ export function getWeekDays(
  * Always returns 42 days (6 weeks × 7 days).
  */
 export function getMonthWeeks(
-  monthDate: dayjs.Dayjs,
-  firstDayOfWeek: number
+	monthDate: dayjs.Dayjs,
+	firstDayOfWeek: number
 ): dayjs.Dayjs[][] {
-  const firstWeek = getWeekDays(monthDate.startOf('month'), firstDayOfWeek)
+	const firstWeek = getWeekDays(monthDate.startOf('month'), firstDayOfWeek)
 
-  return Array.from({ length: 6 }, (_, weekIndex) => {
-    const weekStart = firstWeek[0].add(weekIndex, 'week')
-    return getWeekDays(weekStart, firstDayOfWeek)
-  })
+	return Array.from({ length: 6 }, (_, weekIndex) => {
+		const weekStart = firstWeek[0].add(weekIndex, 'week')
+		return getWeekDays(weekStart, firstDayOfWeek)
+	})
 }

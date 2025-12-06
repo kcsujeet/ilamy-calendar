@@ -1,6 +1,6 @@
 import type {
-  IlamyCalendarProps,
-  IlamyCalendarPropEvent,
+	IlamyCalendarPropEvent,
+	IlamyCalendarProps,
 } from '@/features/calendar/types'
 
 /**
@@ -12,40 +12,40 @@ import type {
  * @extends {IlamyCalendarPropEvent}
  */
 export interface IlamyResourceCalendarPropEvent extends IlamyCalendarPropEvent {
-  /** Single resource assignment */
-  resourceId?: string | number
-  /** Multiple resource assignment (cross-resource events) */
-  resourceIds?: (string | number)[]
+	/** Single resource assignment */
+	resourceId?: string | number
+	/** Multiple resource assignment (cross-resource events) */
+	resourceIds?: (string | number)[]
 }
 
 export interface IlamyResourceCalendarProps
-  extends Omit<IlamyCalendarProps, 'events'> {
-  /** Array of events to display */
-  events?: IlamyResourceCalendarPropEvent[]
-  /** Array of resources */
-  resources?: Resource[]
-  /** Custom render function for resources */
-  renderResource?: (resource: Resource) => React.ReactNode
+	extends Omit<IlamyCalendarProps, 'events'> {
+	/** Array of events to display */
+	events?: IlamyResourceCalendarPropEvent[]
+	/** Array of resources */
+	resources?: Resource[]
+	/** Custom render function for resources */
+	renderResource?: (resource: Resource) => React.ReactNode
 }
 
 /**
  * Resource interface representing a calendar resource (person, room, equipment, etc.)
  */
 export interface Resource {
-  /** Unique identifier for the resource */
-  id: string | number
-  /** Display title of the resource */
-  title: string
-  /**
-   * Color for the resource (supports CSS color values, hex, rgb, hsl, or CSS class names)
-   * @example "#3b82f6", "blue-500", "rgb(59, 130, 246)"
-   */
-  color?: string
-  /**
-   * Background color for the resource (supports CSS color values, hex, rgb, hsl, or CSS class names)
-   * @example "#dbeafe", "blue-100", "rgba(59, 130, 246, 0.1)"
-   */
-  backgroundColor?: string
-  /** Optional position for resource display */
-  position?: number
+	/** Unique identifier for the resource */
+	id: string | number
+	/** Display title of the resource */
+	title: string
+	/**
+	 * Color for the resource (supports CSS color values, hex, rgb, hsl, or CSS class names)
+	 * @example "#3b82f6", "blue-500", "rgb(59, 130, 246)"
+	 */
+	color?: string
+	/**
+	 * Background color for the resource (supports CSS color values, hex, rgb, hsl, or CSS class names)
+	 * @example "#dbeafe", "blue-100", "rgba(59, 130, 246, 0.1)"
+	 */
+	backgroundColor?: string
+	/** Optional position for resource display */
+	position?: number
 }

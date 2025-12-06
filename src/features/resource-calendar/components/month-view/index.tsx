@@ -1,6 +1,6 @@
-import React from 'react'
+import type React from 'react'
 import { ResourceMonthHorizontal } from './resource-month-horizontal'
 
 export const ResourceMonthView: React.FC = () => {
-  return <ResourceMonthHorizontal />
+	return <ResourceMonthHorizontal />
 }

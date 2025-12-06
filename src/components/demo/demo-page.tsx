@@ -134,7 +134,6 @@ export function DemoPage() {
   const [calendarHeight, setCalendarHeight] = useState('600px')
   const [dayMaxEvents, setDayMaxEvents] = useState(3)
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour')
-  const [useCustomClasses, setUseCustomClasses] = useState(false)
 
   const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}`
 
@@ -157,10 +156,7 @@ export function DemoPage() {
   }
 
   return (
-    <div
-      data-testid="demo-page"
-      className="container mx-auto px-4 py-8 relative"
-    >
+    <div className="container mx-auto px-4 py-8 relative">
       {/* Decorative background elements */}
       <div className="fixed top-20 right-20 -z-10 w-96 h-96 bg-blue-500/10 rounded-full filter blur-3xl animate-pulse-slow"></div>
       <div className="fixed bottom-20 left-10 -z-10 w-80 h-80 bg-indigo-500/10 rounded-full filter blur-3xl animate-pulse"></div>
@@ -210,8 +206,6 @@ export function DemoPage() {
             setStickyHeader={setStickyHeader}
             timeFormat={timeFormat}
             setTimeFormat={setTimeFormat}
-            useCustomClasses={useCustomClasses}
-            setUseCustomClasses={setUseCustomClasses}
             // Resource calendar specific props
             isResourceCalendar={calendarType === 'resource'}
           />
@@ -283,14 +277,6 @@ export function DemoPage() {
                   dayMaxEvents={dayMaxEvents}
                   stickyViewHeader={stickyViewHeader}
                   timeFormat={timeFormat}
-                  classesOverride={
-                    useCustomClasses
-                      ? {
-                          disabledCell:
-                            'bg-red-50 dark:bg-red-950 text-red-400 dark:text-red-600 pointer-events-none opacity-50',
-                        }
-                      : undefined
-                  }
                   businessHours={{
                     daysOfWeek: [
                       // 'monday',
@@ -328,14 +314,6 @@ export function DemoPage() {
                   dayMaxEvents={dayMaxEvents}
                   stickyViewHeader={stickyViewHeader}
                   timeFormat={timeFormat}
-                  classesOverride={
-                    useCustomClasses
-                      ? {
-                          disabledCell:
-                            'bg-red-50 dark:bg-red-950 text-red-400 dark:text-red-600 pointer-events-none opacity-50',
-                        }
-                      : undefined
-                  }
                   businessHours={{
                     daysOfWeek: [
                       // 'monday',

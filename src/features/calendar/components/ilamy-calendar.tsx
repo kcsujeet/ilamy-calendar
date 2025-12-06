@@ -112,7 +112,6 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
   headerClassName,
   businessHours,
   timeFormat = '12-hour',
-  classesOverride,
 }) => {
   return (
     <CalendarProvider
@@ -143,7 +142,6 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
       headerClassName={headerClassName}
       businessHours={businessHours}
       timeFormat={timeFormat}
-      classesOverride={classesOverride}
     >
       <CalendarContent />
     </CalendarProvider>

@@ -52,8 +52,6 @@ interface DemoCalendarSettingsProps {
   setStickyHeader?: (value: boolean) => void
   timeFormat: TimeFormat
   setTimeFormat: (value: TimeFormat) => void
-  useCustomClasses: boolean
-  setUseCustomClasses: (value: boolean) => void
   // Resource calendar specific props
   isResourceCalendar?: boolean
 }
@@ -89,8 +87,6 @@ export function DemoCalendarSettings({
   setStickyHeader,
   timeFormat,
   setTimeFormat,
-  useCustomClasses,
-  setUseCustomClasses,
   // Resource calendar props
   isResourceCalendar,
 }: DemoCalendarSettingsProps) {
@@ -406,20 +402,6 @@ export function DemoCalendarSettings({
             className="text-sm font-medium leading-none cursor-pointer"
           >
             Disable drag & drop
-          </label>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="useCustomClasses"
-            checked={useCustomClasses}
-            onCheckedChange={() => setUseCustomClasses(!useCustomClasses)}
-          />
-          <label
-            htmlFor="useCustomClasses"
-            className="text-sm font-medium leading-none cursor-pointer"
-          >
-            Use custom disabled cell styles
           </label>
         </div>
       </CardContent>

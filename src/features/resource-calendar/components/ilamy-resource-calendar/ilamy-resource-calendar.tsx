@@ -5,7 +5,11 @@ import type {
   IlamyResourceCalendarProps,
   IlamyResourceCalendarPropEvent,
 } from '@/features/resource-calendar/types'
-import { DAY_MAX_EVENTS_DEFAULT, WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
+import {
+  DAY_MAX_EVENTS_DEFAULT,
+  GAP_BETWEEN_ELEMENTS,
+  WEEK_DAYS_NUMBER_MAP,
+} from '@/lib/constants'
 import { safeDate, normalizeEvents } from '@/lib/utils'
 import type { CalendarEvent } from '@/components/types'
 
@@ -29,6 +33,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
   disableEventClick,
   disableDragAndDrop = false,
   dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
+  eventSpacing = GAP_BETWEEN_ELEMENTS,
   stickyViewHeader,
   viewHeaderClassName,
   headerComponent,
@@ -64,6 +69,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
       disableEventClick={disableEventClick}
       disableDragAndDrop={disableDragAndDrop}
       dayMaxEvents={dayMaxEvents}
+      eventSpacing={eventSpacing}
       stickyViewHeader={stickyViewHeader}
       viewHeaderClassName={viewHeaderClassName}
       headerComponent={headerComponent}

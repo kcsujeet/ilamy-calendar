@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { useDroppable } from '@dnd-kit/core'
 import React from 'react'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 
 interface DroppableCellProps {
   id: string
@@ -34,11 +35,12 @@ export function DroppableCell({
   'data-testid': dataTestId,
   disabled = false,
 }: DroppableCellProps) {
-  const { onCellClick, disableDragAndDrop, disableCellClick } =
+  const { onCellClick, disableDragAndDrop, disableCellClick, classesOverride } =
     useSmartCalendarContext((state) => ({
       onCellClick: state.onCellClick,
       disableDragAndDrop: state.disableDragAndDrop,
       disableCellClick: state.disableCellClick,
+      classesOverride: state.classesOverride,
     }))
 
   const { isOver, setNodeRef } = useDroppable({
@@ -83,7 +85,7 @@ export function DroppableCell({
         className,
         isOver && !disableDragAndDrop && !disabled && 'bg-accent',
         disableCellClick || disabled ? 'cursor-default' : 'cursor-pointer',
-        disabled && 'bg-secondary text-muted-foreground pointer-events-none'
+        disabled && (classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME)
       )}
       onClick={handleCellClick}
       style={style}

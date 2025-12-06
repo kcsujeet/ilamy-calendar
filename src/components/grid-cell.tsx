@@ -102,10 +102,9 @@ export const GridCell: React.FC<GridProps> = ({
         data-testid={`day-cell-${day.toISOString()}`}
         date={day}
         resourceId={resourceId}
-        disabled={!isBusiness}
+        disabled={!isBusiness || !isCurrentMonth}
         className={cn(
           'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px]',
-          !isCurrentMonth && 'bg-secondary text-muted-foreground',
           isLastColumn && 'border-r-0',
           className
         )}

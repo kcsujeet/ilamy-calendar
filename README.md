@@ -44,4 +44,7 @@ For comprehensive documentation, examples, and interactive demos, visit [ilamy.d
 
 ## Code Example
 
-https://codesandbox.io/p/devbox/dry-thunder-fvsgz6
+Check out the [examples directory](./examples) for complete project setups:
+
+- [Next.js Example](./examples/nextjs) - Full-featured Next.js integration
+- [Astro Example](./examples/astro) - Static site integration with Astro

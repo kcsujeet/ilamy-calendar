@@ -7,17 +7,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": [
-			"src/**",
-			"scripts/**",
-			"*.ts",
-			"*.tsx",
-			"*.js",
-			"*.jsx",
-			"*.json",
-			"!examples",
-			"!**/*.css"
-		]
+		"includes": ["**", "!examples", "!**/*.css"]
 	},
 	"formatter": {
 		"enabled": true,

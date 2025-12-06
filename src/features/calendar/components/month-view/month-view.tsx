@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import React, { useMemo } from 'react'
 import { AllEventDialog } from '@/components/all-events-dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { getMonthWeeks } from '@/lib/utils/date-utils'
 import { DayCell } from './day-cell'
@@ -28,7 +28,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
 			<MonthHeader className="h-[3rem]" />
 
 			<ScrollArea
-				className="overflow-auto h-[calc(100%-3rem)]"
+				className="overflow-auto h-[calc(100%-3rem)] z-30"
 				data-testid="month-scroll-area"
 				viewPortProps={{ className: '*:flex! *:flex-col *:min-h-full' }}
 			>
@@ -65,6 +65,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
 						))}
 					</motion.div>
 				</AnimatePresence>
+				<ScrollBar orientation="horizontal" className="z-30" />
 			</ScrollArea>
 
 			<AllEventDialog ref={allEventsDialogRef} />

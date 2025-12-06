@@ -103,7 +103,7 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 					))}
 				</div>
 			</div>
-			<ScrollBar orientation="horizontal" />
+			<ScrollBar orientation="horizontal" className="z-30" />
 		</ScrollArea>
 	)
 }

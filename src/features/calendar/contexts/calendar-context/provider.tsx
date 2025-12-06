@@ -8,6 +8,7 @@ import type { CellClickInfo } from '@/features/calendar/types'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type { CalendarView, TimeFormat } from '@/types'
+import { GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 
 export interface CalendarProviderProps {
   children: ReactNode
@@ -29,6 +30,7 @@ export interface CalendarProviderProps {
   disableEventClick?: boolean
   disableDragAndDrop?: boolean
   dayMaxEvents: number
+  eventSpacing?: number
   stickyViewHeader?: boolean
   viewHeaderClassName?: string
   headerComponent?: ReactNode // Optional custom header component
@@ -61,6 +63,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
   disableEventClick,
   disableDragAndDrop,
   dayMaxEvents,
+  eventSpacing = GAP_BETWEEN_ELEMENTS,
   stickyViewHeader = true,
   viewHeaderClassName = '',
   headerComponent,
@@ -163,6 +166,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       disableEventClick,
       disableDragAndDrop,
       dayMaxEvents,
+      eventSpacing,
       stickyViewHeader,
       viewHeaderClassName,
       headerComponent,
@@ -183,6 +187,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
       disableEventClick,
       disableDragAndDrop,
       dayMaxEvents,
+      eventSpacing,
       stickyViewHeader,
       viewHeaderClassName,
       headerComponent,

@@ -134,6 +134,13 @@ export interface IlamyCalendarProps {
    */
   dayMaxEvents?: number
   /**
+   * Vertical spacing between stacked events in pixels.
+   * Controls the gap between events when multiple events are displayed in the same view.
+   * Defaults to 1 pixel if not specified.
+   * Recommended range: 1-8 pixels for optimal readability.
+   */
+  eventSpacing?: number
+  /**
    * Whether to stick the view header to the top of the calendar.
    * Useful for keeping the header visible while scrolling.
    */

@@ -22,6 +22,7 @@ interface GetPositionedEventsProps {
   dayMaxEvents: number
   dayNumberHeight?: number
   gridType?: 'day' | 'hour' // Future use for different grid types
+  eventSpacing?: number // Custom vertical spacing between events (defaults to GAP_BETWEEN_ELEMENTS)
 }
 
 export const getPositionedEvents = ({
@@ -30,6 +31,7 @@ export const getPositionedEvents = ({
   dayMaxEvents,
   dayNumberHeight = DAY_NUMBER_HEIGHT,
   gridType = 'day',
+  eventSpacing = GAP_BETWEEN_ELEMENTS,
 }: GetPositionedEventsProps) => {
   const firstDay = days[0].startOf('day')
   const lastDay = days.at(-1).endOf('day')
@@ -111,8 +113,8 @@ export const getPositionedEvents = ({
         width: (spanDays / dayCount) * 100,
         top:
           dayNumberHeight +
-          GAP_BETWEEN_ELEMENTS +
-          assignedRow * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
+          eventSpacing +
+          assignedRow * (EVENT_BAR_HEIGHT + eventSpacing),
         height: EVENT_BAR_HEIGHT,
         position: assignedRow,
         ...event,
@@ -158,8 +160,8 @@ export const getPositionedEvents = ({
             width: (truncatedSpanDays / dayCount) * 100,
             top:
               dayNumberHeight +
-              GAP_BETWEEN_ELEMENTS +
-              truncatedAssignedRow * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
+              eventSpacing +
+              truncatedAssignedRow * (EVENT_BAR_HEIGHT + eventSpacing),
             height: EVENT_BAR_HEIGHT,
             position: truncatedAssignedRow,
             ...event,
@@ -205,8 +207,8 @@ export const getPositionedEvents = ({
         width: (1 / dayCount) * 100,
         top:
           dayNumberHeight +
-          GAP_BETWEEN_ELEMENTS +
-          assignedRow * (EVENT_BAR_HEIGHT + GAP_BETWEEN_ELEMENTS),
+          eventSpacing +
+          assignedRow * (EVENT_BAR_HEIGHT + eventSpacing),
         height: EVENT_BAR_HEIGHT,
         position: assignedRow,
         ...event,

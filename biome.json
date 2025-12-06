@@ -7,7 +7,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!examples", "!**/*.css"]
+		"includes": ["**", "!examples", "!dist", "!**/*.css"]
 	},
 	"formatter": {
 		"enabled": true,

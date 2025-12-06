@@ -12,23 +12,60 @@ const DAY_TO_NUMBER: Record<WeekDays, number> = {
 }
 
 /**
+ * Finds the appropriate business hours configuration for a given date.
+ * If businessHours is an array, finds the first config that includes the date's day of week.
+ * If businessHours is a single object, returns it as-is.
+ *
+ * @param date The date to find business hours for
+ * @param businessHours The business hours configuration (single or array)
+ * @returns The matching BusinessHours config or undefined if no match found
+ */
+const getBusinessHoursForDate = (
+  date: dayjs.Dayjs,
+  businessHours?: BusinessHours | BusinessHours[]
+): BusinessHours | undefined => {
+  if (!businessHours) {
+    return undefined
+  }
+
+  // If single object, return it
+  if (!Array.isArray(businessHours)) {
+    return businessHours
+  }
+
+  // If array, find the config that applies to this day
+  const dayOfWeek = date.day()
+  return businessHours.find((config) => {
+    if (!config.daysOfWeek) {
+      return false
+    }
+    return config.daysOfWeek.some((d) => DAY_TO_NUMBER[d] === dayOfWeek)
+  })
+}
+
+/**
  * Checks if a specific date is a business day.
  *
  * @param date The date to check
- * @param businessHours The business hours configuration
+ * @param businessHours The business hours configuration (single or array)
  * @returns true if the date is a business day, false otherwise
  */
 export const isBusinessDay = (
   date: dayjs.Dayjs,
-  businessHours?: BusinessHours
+  businessHours?: BusinessHours | BusinessHours[]
 ): boolean => {
   if (!businessHours) {
     return true
   }
 
+  const config = getBusinessHoursForDate(date, businessHours)
+  if (!config) {
+    return false
+  }
+
   // Check day of week
-  if (businessHours.daysOfWeek) {
-    return businessHours.daysOfWeek.some((d) => DAY_TO_NUMBER[d] === date.day())
+  if (config.daysOfWeek) {
+    return config.daysOfWeek.some((d) => DAY_TO_NUMBER[d] === date.day())
   }
 
   return true
@@ -38,7 +75,7 @@ export interface IsBusinessHourOptions {
   date: dayjs.Dayjs
   hour?: number
   minute?: number
-  businessHours?: BusinessHours
+  businessHours?: BusinessHours | BusinessHours[]
 }
 
 /**
@@ -69,7 +106,10 @@ export const isBusinessHour = ({
     return true
   }
 
-  const config = businessHours
+  const config = getBusinessHoursForDate(date, businessHours)
+  if (!config) {
+    return false
+  }
 
   // Check time
   // startTime and endTime are numbers (0-24)

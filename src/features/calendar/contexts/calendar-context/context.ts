@@ -53,7 +53,7 @@ export interface CalendarContextType {
   viewHeaderClassName: string
   headerComponent?: React.ReactNode // Optional custom header component
   headerClassName?: string // Optional custom header class
-  businessHours?: BusinessHours
+  businessHours?: BusinessHours | BusinessHours[]
   renderEventForm?: (props: EventFormProps) => React.ReactNode
   // Translation function
   t: (key: TranslationKey) => string
@@ -97,7 +97,7 @@ export interface UseIlamyCalendarContextReturn {
   readonly deleteEvent: (eventId: string | number) => void
   readonly openEventForm: (eventData?: Partial<CalendarEvent>) => void
   readonly closeEventForm: () => void
-  readonly businessHours?: BusinessHours
+  readonly businessHours?: BusinessHours | BusinessHours[]
 }
 
 export const useIlamyCalendarContext = (): UseIlamyCalendarContextReturn => {

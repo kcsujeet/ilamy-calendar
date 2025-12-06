@@ -4,8 +4,8 @@ import { isBusinessHour } from './business-hours'
 import type { BusinessHours } from '@/components/types'
 
 describe('isBusinessHour', () => {
-  const monday = dayjs('2025-01-06') // Monday
-  const sunday = dayjs('2025-01-05') // Sunday
+  const monday = dayjs('2025-01-06T00:00:00.000Z') // Monday
+  const sunday = dayjs('2025-01-05T00:00:00.000Z') // Sunday
 
   it('should return true when businessHours is undefined', () => {
     expect(isBusinessHour({ date: monday, hour: 10, minute: 0 })).toBe(true)
@@ -108,8 +108,8 @@ describe('isBusinessHour', () => {
     // We simulate this by checking a Sunday and a Monday.
     // Sunday is day 0, Monday is day 1 in dayjs.
 
-    const sundayDate = dayjs('2025-01-05') // Sunday
-    const mondayDate = dayjs('2025-01-06') // Monday
+    const sundayDate = dayjs('2025-01-05T00:00:00.000Z') // Sunday
+    const mondayDate = dayjs('2025-01-06T00:00:00.000Z') // Monday
 
     const config: BusinessHours = {
       daysOfWeek: ['monday'], // Only Monday is business day
@@ -170,5 +170,224 @@ describe('isBusinessHour', () => {
 
     // Sunday is not a business day -> false
     expect(isBusinessHour({ date: sunday, businessHours: config })).toBe(false)
+  })
+
+  describe('Array of BusinessHours', () => {
+    const monday = dayjs('2025-01-06T00:00:00.000Z')
+    const tuesday = dayjs('2025-01-07T00:00:00.000Z')
+    const wednesday = dayjs('2025-01-08T00:00:00.000Z')
+    const thursday = dayjs('2025-01-09T00:00:00.000Z')
+    const friday = dayjs('2025-01-10T00:00:00.000Z')
+    const saturday = dayjs('2025-01-11T00:00:00.000Z')
+    const sunday = dayjs('2025-01-05T00:00:00.000Z')
+
+    it('should handle array with different hours for different days', () => {
+      const configs: BusinessHours[] = [
+        {
+          daysOfWeek: ['monday', 'wednesday', 'friday'],
+          startTime: 9,
+          endTime: 17,
+        },
+        {
+          daysOfWeek: ['tuesday', 'thursday'],
+          startTime: 10,
+          endTime: 18,
+        },
+      ]
+
+      // Monday: 9-17
+      expect(
+        isBusinessHour({
+          date: monday,
+          hour: 9,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(true)
+      expect(
+        isBusinessHour({
+          date: monday,
+          hour: 17,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(false)
+      expect(
+        isBusinessHour({
+          date: monday,
+          hour: 8,
+          minute: 59,
+          businessHours: configs,
+        })
+      ).toBe(false)
+
+      // Tuesday: 10-18
+      expect(
+        isBusinessHour({
+          date: tuesday,
+          hour: 10,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(true)
+      expect(
+        isBusinessHour({
+          date: tuesday,
+          hour: 9,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(false)
+      expect(
+        isBusinessHour({
+          date: tuesday,
+          hour: 17,
+          minute: 30,
+          businessHours: configs,
+        })
+      ).toBe(true)
+      expect(
+        isBusinessHour({
+          date: tuesday,
+          hour: 18,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(false)
+
+      // Wednesday: 9-17
+      expect(
+        isBusinessHour({
+          date: wednesday,
+          hour: 12,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(true)
+
+      // Thursday: 10-18
+      expect(
+        isBusinessHour({
+          date: thursday,
+          hour: 16,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(true)
+
+      // Friday: 9-17
+      expect(
+        isBusinessHour({
+          date: friday,
+          hour: 14,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(true)
+    })
+
+    it('should return false for days not in any config', () => {
+      const configs: BusinessHours[] = [
+        {
+          daysOfWeek: ['monday', 'wednesday', 'friday'],
+          startTime: 9,
+          endTime: 17,
+        },
+        {
+          daysOfWeek: ['tuesday', 'thursday'],
+          startTime: 10,
+          endTime: 18,
+        },
+      ]
+
+      // Saturday and Sunday not in any config
+      expect(
+        isBusinessHour({
+          date: saturday,
+          hour: 12,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(false)
+      expect(
+        isBusinessHour({
+          date: sunday,
+          hour: 12,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(false)
+    })
+
+    it('should check only day if hour is undefined with array', () => {
+      const configs: BusinessHours[] = [
+        {
+          daysOfWeek: ['monday'],
+          startTime: 9,
+          endTime: 17,
+        },
+        {
+          daysOfWeek: ['tuesday'],
+          startTime: 10,
+          endTime: 18,
+        },
+      ]
+
+      // Monday is a business day
+      expect(isBusinessHour({ date: monday, businessHours: configs })).toBe(
+        true
+      )
+
+      // Tuesday is a business day
+      expect(isBusinessHour({ date: tuesday, businessHours: configs })).toBe(
+        true
+      )
+
+      // Sunday is not a business day
+      expect(isBusinessHour({ date: sunday, businessHours: configs })).toBe(
+        false
+      )
+    })
+
+    it('should handle empty array', () => {
+      const configs: BusinessHours[] = []
+
+      // Empty array means no business hours configured
+      expect(
+        isBusinessHour({
+          date: monday,
+          hour: 12,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(false)
+    })
+
+    it('should work with single-element array', () => {
+      const configs: BusinessHours[] = [
+        {
+          daysOfWeek: ['monday'],
+          startTime: 9,
+          endTime: 17,
+        },
+      ]
+
+      expect(
+        isBusinessHour({
+          date: monday,
+          hour: 12,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(true)
+      expect(
+        isBusinessHour({
+          date: tuesday,
+          hour: 12,
+          minute: 0,
+          businessHours: configs,
+        })
+      ).toBe(false)
+    })
   })
 })

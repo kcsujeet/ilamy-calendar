@@ -33,7 +33,7 @@ export interface CalendarProviderProps {
   viewHeaderClassName?: string
   headerComponent?: ReactNode // Optional custom header component
   headerClassName?: string // Optional custom header class
-  businessHours?: BusinessHours
+  businessHours?: BusinessHours | BusinessHours[]
   renderEventForm?: (props: EventFormProps) => ReactNode
   // Translation options - provide either translations object OR translator function
   translations?: Translations

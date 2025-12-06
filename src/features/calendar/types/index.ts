@@ -156,8 +156,10 @@ export interface IlamyCalendarProps {
   /**
    * Configuration for business hours.
    * Defines the working hours to be highlighted on the calendar.
+   * Can be a single BusinessHours object (applies to all specified days)
+   * or an array of BusinessHours objects (for different hours on different days).
    */
-  businessHours?: BusinessHours
+  businessHours?: BusinessHours | BusinessHours[]
   /**
    * Custom render function for the event form.
    * If provided, it will override the default event form component.

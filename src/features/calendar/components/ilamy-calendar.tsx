@@ -98,6 +98,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	stickyViewHeader = true,
 	viewHeaderClassName = '',
 	timeFormat = '12-hour',
+	showCurrentTimeLabel = false,
 	...props
 }) => {
 	return (
@@ -111,6 +112,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			stickyViewHeader={stickyViewHeader}
 			viewHeaderClassName={viewHeaderClassName}
 			timeFormat={timeFormat}
+			showCurrentTimeLabel={showCurrentTimeLabel}
 			{...props}
 		>
 			<CalendarContent />

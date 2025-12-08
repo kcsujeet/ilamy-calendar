@@ -702,4 +702,81 @@ describe('WeekView', () => {
 		const noonText = noonHour.textContent || ''
 		expect(noonText).toMatch(/AM|PM/i)
 	})
+
+	test('does not show current time label by default', () => {
+		cleanup()
+		const today = dayjs()
+		renderWeekView({ initialDate: today })
+
+		const timeIndicator = screen.queryByTestId('week-current-time-indicator')
+		// Only shows if current week
+		if (timeIndicator) {
+			// Label should not be present when showCurrentTimeLabel is false (default)
+			const timeLabel = screen.queryByTestId('week-current-time-label')
+			expect(timeLabel).not.toBeInTheDocument()
+		}
+	})
+
+	test('shows current time label when showCurrentTimeLabel is enabled with 12-hour format', () => {
+		cleanup()
+		const today = dayjs()
+		renderWeekView({
+			initialDate: today,
+			showCurrentTimeLabel: true,
+			timeFormat: '12-hour',
+		})
+
+		const timeIndicator = screen.queryByTestId('week-current-time-indicator')
+		// Only shows if current week
+		if (timeIndicator) {
+			// Label should be present
+			const timeLabel = screen.getByTestId('week-current-time-label')
+			expect(timeLabel).toBeInTheDocument()
+
+			// Should contain AM or PM
+			const labelText = timeLabel.textContent || ''
+			expect(labelText).toMatch(/AM|PM/i)
+
+			// Should contain colon (time separator)
+			expect(labelText).toContain(':')
+		}
+	})
+
+	test('shows current time label in 24-hour format when configured', () => {
+		cleanup()
+		const today = dayjs()
+		renderWeekView({
+			initialDate: today,
+			showCurrentTimeLabel: true,
+			timeFormat: '24-hour',
+		})
+
+		const timeIndicator = screen.queryByTestId('week-current-time-indicator')
+		// Only shows if current week
+		if (timeIndicator) {
+			const timeLabel = screen.getByTestId('week-current-time-label')
+			expect(timeLabel).toBeInTheDocument()
+
+			// Should NOT contain AM or PM in 24-hour format
+			const labelText = timeLabel.textContent || ''
+			expect(labelText).not.toMatch(/AM|PM/i)
+
+			// Should contain colon (time separator)
+			expect(labelText).toContain(':')
+		}
+	})
+
+	test('does not show current time label for non-current weeks', () => {
+		cleanup()
+		const nextWeek = dayjs().add(1, 'week')
+		renderWeekView({ initialDate: nextWeek, showCurrentTimeLabel: true })
+
+		// Time indicator should not be present for non-current weeks
+		const timeIndicator = screen.queryByTestId('week-current-time-indicator')
+		expect(timeIndicator).not.toBeInTheDocument()
+
+		// Label should also not be present
+		const timeLabel = screen.queryByTestId('week-current-time-label')
+		expect(timeLabel).not.toBeInTheDocument()
+	})
 })

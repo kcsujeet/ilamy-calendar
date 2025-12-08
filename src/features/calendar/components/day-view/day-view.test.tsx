@@ -602,4 +602,71 @@ describe('DayView', () => {
 			expect(hourText).not.toMatch(/AM|PM/i)
 		}
 	})
+
+	test('does not show current time label by default', () => {
+		const today = dayjs()
+		renderDayView({ initialDate: today })
+
+		const timeIndicator = screen.queryByTestId('day-current-time-indicator')
+		expect(timeIndicator).toBeInTheDocument()
+
+		// Label should not be present when showCurrentTimeLabel is false (default)
+		const timeLabel = screen.queryByTestId('day-current-time-label')
+		expect(timeLabel).not.toBeInTheDocument()
+	})
+
+	test('shows current time label when showCurrentTimeLabel is enabled with 12-hour format', () => {
+		const today = dayjs()
+		renderDayView({
+			initialDate: today,
+			showCurrentTimeLabel: true,
+			timeFormat: '12-hour',
+		})
+
+		const timeIndicator = screen.queryByTestId('day-current-time-indicator')
+		expect(timeIndicator).toBeInTheDocument()
+
+		// Label should be present
+		const timeLabel = screen.getByTestId('day-current-time-label')
+		expect(timeLabel).toBeInTheDocument()
+
+		// Should contain AM or PM
+		const labelText = timeLabel.textContent || ''
+		expect(labelText).toMatch(/AM|PM/i)
+
+		// Should contain colon (time separator)
+		expect(labelText).toContain(':')
+	})
+
+	test('shows current time label in 24-hour format when configured', () => {
+		const today = dayjs()
+		renderDayView({
+			initialDate: today,
+			showCurrentTimeLabel: true,
+			timeFormat: '24-hour',
+		})
+
+		const timeLabel = screen.getByTestId('day-current-time-label')
+		expect(timeLabel).toBeInTheDocument()
+
+		// Should NOT contain AM or PM in 24-hour format
+		const labelText = timeLabel.textContent || ''
+		expect(labelText).not.toMatch(/AM|PM/i)
+
+		// Should contain colon (time separator)
+		expect(labelText).toContain(':')
+	})
+
+	test('does not show current time label for non-today dates', () => {
+		const otherDay = dayjs().add(1, 'day')
+		renderDayView({ initialDate: otherDay, showCurrentTimeLabel: true })
+
+		// Time indicator should not be present for non-today dates
+		const timeIndicator = screen.queryByTestId('day-current-time-indicator')
+		expect(timeIndicator).not.toBeInTheDocument()
+
+		// Label should also not be present
+		const timeLabel = screen.queryByTestId('day-current-time-label')
+		expect(timeLabel).not.toBeInTheDocument()
+	})
 })

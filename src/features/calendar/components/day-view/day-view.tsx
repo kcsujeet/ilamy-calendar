@@ -16,10 +16,23 @@ const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
 })
 
 const DayView = () => {
-	const { currentDate, businessHours } = useCalendarContext()
+	const {
+		currentDate,
+		businessHours,
+		currentLocale,
+		timeFormat,
+		showCurrentTimeLabel,
+	} = useCalendarContext()
 
 	const isToday = currentDate.isSame(dayjs(), 'day')
 	const dateStr = currentDate.format('YYYY-MM-DD')
+
+	// Format current time for label
+	const currentTimeFormatted = Intl.DateTimeFormat(currentLocale, {
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: timeFormat === '12-hour',
+	}).format(dayjs().toDate())
 
 	return (
 		<div data-testid="day-view" className="flex h-full flex-col">
@@ -105,6 +118,14 @@ const DayView = () => {
 								}}
 							>
 								<div className="-mt-1 -ml-1 h-2 w-2 rounded-full bg-red-500"></div>
+								{showCurrentTimeLabel && (
+									<div
+										data-testid="day-current-time-label"
+										className="absolute right-3 top-1/2 -translate-y-1/2 -mt-0.75 bg-red-500 text-white text-[10px] px-1 py-0.5 rounded-sm whitespace-nowrap"
+									>
+										{currentTimeFormatted}
+									</div>
+								)}
 							</div>
 						)}
 					</div>

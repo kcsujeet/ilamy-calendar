@@ -134,9 +134,10 @@ export function DemoPage() {
 	const [calendarHeight, setCalendarHeight] = useState('600px')
 	const [dayMaxEvents, setDayMaxEvents] = useState(3)
 	const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour')
+	const [showCurrentTimeLabel, setShowCurrentTimeLabel] = useState(false)
 	const [useCustomClasses, setUseCustomClasses] = useState(false)
 
-	const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}`
+	const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}-${showCurrentTimeLabel}`
 
 	// Custom event renderer function
 	const renderEvent = (event: CalendarEvent) => {
@@ -210,6 +211,8 @@ export function DemoPage() {
 						setStickyHeader={setStickyHeader}
 						timeFormat={timeFormat}
 						setTimeFormat={setTimeFormat}
+						showCurrentTimeLabel={showCurrentTimeLabel}
+						setShowCurrentTimeLabel={setShowCurrentTimeLabel}
 						useCustomClasses={useCustomClasses}
 						setUseCustomClasses={setUseCustomClasses}
 						// Resource calendar specific props
@@ -283,6 +286,7 @@ export function DemoPage() {
 									dayMaxEvents={dayMaxEvents}
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}
+									showCurrentTimeLabel={showCurrentTimeLabel}
 									classesOverride={
 										useCustomClasses
 											? {
@@ -329,6 +333,7 @@ export function DemoPage() {
 									dayMaxEvents={dayMaxEvents}
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}
+									showCurrentTimeLabel={showCurrentTimeLabel}
 									classesOverride={
 										useCustomClasses
 											? {

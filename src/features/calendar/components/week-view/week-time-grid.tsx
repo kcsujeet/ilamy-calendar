@@ -9,8 +9,13 @@ const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) =>
 )
 
 export const WeekTimeGrid: React.FC = () => {
-	const { currentDate, firstDayOfWeek, currentLocale, timeFormat } =
-		useCalendarContext()
+	const {
+		currentDate,
+		firstDayOfWeek,
+		currentLocale,
+		timeFormat,
+		showCurrentTimeLabel,
+	} = useCalendarContext()
 
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
 
@@ -19,6 +24,13 @@ export const WeekTimeGrid: React.FC = () => {
 	// Find if current day is in the displayed week
 	const todayIndex = weekDays.findIndex((day) => day.isSame(dayjs(), 'day'))
 	const isCurrentWeek = todayIndex !== -1
+
+	// Format current time for label
+	const currentTimeFormatted = Intl.DateTimeFormat(currentLocale, {
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: timeFormat === '12-hour',
+	}).format(dayjs().toDate())
 
 	return (
 		<div
@@ -53,19 +65,39 @@ export const WeekTimeGrid: React.FC = () => {
 
 			{/* Current time indicator */}
 			{isCurrentWeek && (
-				<div
-					data-testid="week-current-time-indicator"
-					className="pointer-events-none absolute z-40"
-					style={{
-						top: `${(dayjs().hour() + dayjs().minute() / 60) * 60}px`,
-						left: `calc(var(--spacing) * 16 + ${todayIndex} * (100% - var(--spacing) * 16) / 7)`,
-						width: `calc((100% - var(--spacing) * 16) / 7)`,
-					}}
-				>
-					<div className="w-full border-t border-red-500">
-						<div className="-mt-1 ml-1 h-2 w-2 rounded-full bg-red-500"></div>
+				<>
+					{/* Time label in the time column */}
+					{showCurrentTimeLabel && (
+						<div
+							data-testid="week-current-time-label"
+							className="pointer-events-none absolute z-40"
+							style={{
+								top: `${(dayjs().hour() + dayjs().minute() / 60) * 60}px`,
+								left: '3px',
+							}}
+						>
+							<div className="flex justify-center -mt-3">
+								<span className="bg-red-500 text-white text-[10px] px-1 py-0.5 rounded-sm whitespace-nowrap">
+									{currentTimeFormatted}
+								</span>
+							</div>
+						</div>
+					)}
+					{/* Red line and dot indicator */}
+					<div
+						data-testid="week-current-time-indicator"
+						className="pointer-events-none absolute z-40"
+						style={{
+							top: `${(dayjs().hour() + dayjs().minute() / 60) * 60}px`,
+							left: `calc(var(--spacing) * 16 + ${todayIndex} * (100% - var(--spacing) * 16) / 7)`,
+							width: `calc((100% - var(--spacing) * 16) / 7)`,
+						}}
+					>
+						<div className="w-full border-t border-red-500">
+							<div className="-mt-1 ml-1 h-2 w-2 rounded-full bg-red-500"></div>
+						</div>
 					</div>
-				</div>
+				</>
 			)}
 		</div>
 	)

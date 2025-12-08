@@ -62,6 +62,7 @@ export interface CalendarContextType {
 	// Translation function
 	t: (key: TranslationKey) => string
 	timeFormat: TimeFormat
+	showCurrentTimeLabel: boolean
 	classesOverride?: CalendarClassesOverride
 }
 

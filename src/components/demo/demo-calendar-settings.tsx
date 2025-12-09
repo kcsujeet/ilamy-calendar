@@ -52,6 +52,8 @@ interface DemoCalendarSettingsProps {
 	setStickyHeader?: (value: boolean) => void
 	timeFormat: TimeFormat
 	setTimeFormat: (value: TimeFormat) => void
+	showCurrentTimeLabel: boolean
+	setShowCurrentTimeLabel: (value: boolean) => void
 	useCustomClasses: boolean
 	setUseCustomClasses: (value: boolean) => void
 	// Resource calendar specific props
@@ -89,6 +91,8 @@ export function DemoCalendarSettings({
 	setStickyHeader,
 	timeFormat,
 	setTimeFormat,
+	showCurrentTimeLabel,
+	setShowCurrentTimeLabel,
 	useCustomClasses,
 	setUseCustomClasses,
 	// Resource calendar props
@@ -305,6 +309,22 @@ export function DemoCalendarSettings({
 							<SelectItem value="24-hour">24-hour (13:00)</SelectItem>
 						</SelectContent>
 					</Select>
+				</div>
+
+				<div className="flex items-center space-x-2">
+					<Checkbox
+						id="showCurrentTimeLabel"
+						checked={showCurrentTimeLabel}
+						onCheckedChange={() =>
+							setShowCurrentTimeLabel(!showCurrentTimeLabel)
+						}
+					/>
+					<label
+						htmlFor="showCurrentTimeLabel"
+						className="text-sm font-medium leading-none cursor-pointer ml-2"
+					>
+						Show current time label
+					</label>
 				</div>
 
 				<div className="flex items-center space-x-2">

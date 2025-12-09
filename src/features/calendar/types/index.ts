@@ -194,6 +194,13 @@ export interface IlamyCalendarProps {
 	 */
 	timeFormat?: TimeFormat
 	/**
+	 * Whether to display the current time as text next to the time indicator in day and week views.
+	 * When enabled, shows the formatted time (e.g., "3:42 PM" or "15:42") next to the red indicator line.
+	 * The format respects the timeFormat, locale, and timezone props.
+	 * @default false
+	 */
+	showCurrentTimeLabel?: boolean
+	/**
 	 * Custom class names for overriding default calendar element styles.
 	 * Allows fine-grained control over the appearance of different calendar elements.
 	 * @example { disabledCell: "bg-gray-100 text-gray-400" }

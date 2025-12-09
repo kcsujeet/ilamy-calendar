@@ -61,6 +61,7 @@ export const ResourceCalendarProvider: React.FC<
 	renderEventForm,
 	businessHours,
 	timeFormat = '12-hour',
+	showCurrentTimeLabel = false,
 	classesOverride,
 }) => {
 	// Resource-specific state
@@ -267,6 +268,7 @@ export const ResourceCalendarProvider: React.FC<
 			viewHeaderClassName,
 			businessHours,
 			timeFormat,
+			showCurrentTimeLabel,
 			classesOverride,
 		}),
 		[
@@ -301,6 +303,7 @@ export const ResourceCalendarProvider: React.FC<
 			headerClassName,
 			businessHours,
 			timeFormat,
+			showCurrentTimeLabel,
 			classesOverride,
 		]
 	)

@@ -1,4 +1,4 @@
-import type dayjs from '@/lib/configs/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 
 /**
  * Calculates the week days for a given date and first day of week setting.
@@ -51,4 +51,18 @@ export function getMonthWeeks(
 		const weekStart = firstWeek[0].add(weekIndex, 'week')
 		return getWeekDays(weekStart, firstDayOfWeek)
 	})
+}
+
+interface GetDayHoursOptions {
+	referenceDate?: dayjs.Dayjs // Reference date to set the hours on (default is today)
+	length?: number // Number of hours in the day (default is 24)
+}
+
+export function getDayHours({
+	referenceDate = dayjs(),
+	length = 24,
+}: GetDayHoursOptions = {}): dayjs.Dayjs[] {
+	return Array.from({ length }, (_, i) =>
+		referenceDate.hour(i).minute(0).second(0)
+	)
 }

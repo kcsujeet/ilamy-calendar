@@ -79,34 +79,34 @@ export function TimePicker({
 	const currentTimeString = value ? formatTime(value) : placeholder
 
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
+		<Popover onOpenChange={setOpen} open={open}>
 			<PopoverTrigger asChild>
 				<Button
-					ref={triggerRef}
-					variant="outline"
-					role="combobox"
 					aria-controls="time-picker-listbox"
 					aria-expanded={open}
 					className={cn('w-full justify-start', className)}
-					disabled={disabled}
 					data-testid={`time-picker-${name}`}
+					disabled={disabled}
+					ref={triggerRef}
+					role="combobox"
+					variant="outline"
 				>
 					<Clock className="mr-2 h-4 w-4" />
 					{currentTimeString}
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent
-				className="p-0"
 				align="start"
+				className="p-0"
 				style={{ width: triggerWidth }}
 			>
 				<div className="p-2 border-b">
 					<Input
-						ref={inputRef}
-						placeholder="Search time..."
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
 						className="h-8"
+						onChange={(e) => setSearch(e.target.value)}
+						placeholder="Search time..."
+						ref={inputRef}
+						value={search}
 					/>
 				</div>
 				<ScrollArea className="h-[200px]" onWheel={handleWheel}>
@@ -121,13 +121,13 @@ export function TimePicker({
 								const isSelected = time === value
 								return (
 									<button
-										key={time}
-										type="button"
-										onClick={() => handleSelect(time)}
 										className={cn(
 											'relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground',
 											isSelected && 'bg-accent text-accent-foreground'
 										)}
+										key={time}
+										onClick={() => handleSelect(time)}
+										type="button"
 									>
 										{timeString}
 									</button>

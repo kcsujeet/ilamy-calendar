@@ -50,11 +50,11 @@ export function DatePicker({
 			<Popover>
 				<PopoverTrigger asChild>
 					<Button
-						variant="outline"
-						data-empty={!date}
 						className={cn(
 							'data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal'
 						)}
+						data-empty={!date}
+						variant="outline"
 					>
 						<CalendarIcon />
 						{selectedDate ? (
@@ -64,15 +64,15 @@ export function DatePicker({
 						)}
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent className="w-auto p-0" align="start">
+				<PopoverContent align="start" className="w-auto p-0">
 					<PopoverClose ref={popOverRef} />
 					<Calendar
-						mode="single"
-						selected={selectedDate}
-						defaultMonth={selectedDate}
-						onSelect={handleDateSelect}
 						captionLayout="dropdown"
+						defaultMonth={selectedDate}
 						disabled={disabled}
+						mode="single"
+						onSelect={handleDateSelect}
+						selected={selectedDate}
 					/>
 				</PopoverContent>
 			</Popover>

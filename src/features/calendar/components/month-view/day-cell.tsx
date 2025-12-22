@@ -73,16 +73,16 @@ export const DayCell: React.FC<DayCellProps> = ({
 	return (
 		<>
 			<DroppableCell
-				id={`day-cell-${day.format('YYYY-MM-DD')}`}
-				type="day-cell"
-				data-testid={`day-cell-${day.format('YYYY-MM-DD')}`}
-				date={day}
-				disabled={!isBusiness || !isCurrentMonth}
 				className={cn(
 					'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px]',
 					isLastColumn && 'border-r-0',
 					className
 				)}
+				data-testid={`day-cell-${day.format('YYYY-MM-DD')}`}
+				date={day}
+				disabled={!isBusiness || !isCurrentMonth}
+				id={`day-cell-${day.format('YYYY-MM-DD')}`}
+				type="day-cell"
 			>
 				{/* Absolutely positioned multi-day bars (Google Calendar style) */}
 
@@ -103,9 +103,9 @@ export const DayCell: React.FC<DayCellProps> = ({
 					{/* Render placeholders for events that occur today so that the cell height is according to dayMaxEvents. */}
 					{todayEvents.slice(0, dayMaxEvents).map((event, rowIndex) => (
 						<div
-							key={`empty-${rowIndex}`}
 							className="h-[20px] w-full"
 							data-testid={event?.title}
+							key={`empty-${rowIndex}`}
 						/>
 					))}
 
@@ -125,9 +125,9 @@ export const DayCell: React.FC<DayCellProps> = ({
 									showAllEvents(day, todayEvents)
 								}
 							}}
-							tabIndex={0}
-							// oxlint-disable-next-line prefer-tag-over-role
 							role="button"
+							// oxlint-disable-next-line prefer-tag-over-role
+							tabIndex={0}
 						>
 							+{hiddenEventsCount} {t('more')}
 						</div>

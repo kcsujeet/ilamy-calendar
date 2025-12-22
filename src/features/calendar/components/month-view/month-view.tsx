@@ -34,27 +34,27 @@ export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
 			>
 				<AnimatePresence mode="wait">
 					<motion.div
-						key={currentDate.format('YYYY-MM-DD')}
-						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						transition={{ duration: 0.25, ease: 'easeInOut' }}
 						className="relative grid h-full grid-cols-7 grid-rows-6 overflow-auto flex-1"
 						data-testid="month-calendar-grid"
+						exit={{ opacity: 0 }}
+						initial={{ opacity: 0 }}
+						key={currentDate.format('YYYY-MM-DD')}
+						transition={{ duration: 0.25, ease: 'easeInOut' }}
 					>
 						{weeks.map((days, weekIndex) => (
 							<div
-								key={`week-${weekIndex}`}
 								className="relative col-span-7 grid grid-cols-7"
 								data-testid={`week-row-${weekIndex}`}
+								key={`week-${weekIndex}`}
 							>
 								{days.map((day, dayIndex) => (
 									<DayCell
-										key={day.format('YYYY-MM-DD')}
-										index={dayIndex}
+										className="border-r border-b first:border-l"
 										day={day}
 										dayMaxEvents={dayMaxEvents}
-										className="border-r border-b first:border-l"
+										index={dayIndex}
+										key={day.format('YYYY-MM-DD')}
 									/>
 								))}
 

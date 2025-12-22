@@ -46,17 +46,17 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 			{weekDays.days.map((weekDay, index) => (
 				<AnimatePresence key={weekDay} mode="wait">
 					<motion.div
-						key={weekDay}
-						initial={{ opacity: 0, y: -10 }}
 						animate={{ opacity: 1, y: 0 }}
+						className="py-2 text-center font-medium border-r first:border-l"
+						data-testid={`weekday-header-${weekDay}`}
 						exit={{ opacity: 0, y: -10 }}
+						initial={{ opacity: 0, y: -10 }}
+						key={weekDay}
 						transition={{
 							duration: 0.25,
 							ease: 'easeInOut',
 							delay: index * 0.05,
 						}}
-						className="py-2 text-center font-medium border-r first:border-l"
-						data-testid={`weekday-header-${weekDay}`}
 					>
 						<span className="text-sm capitalize">{weekDay}</span>
 					</motion.div>

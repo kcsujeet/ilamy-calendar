@@ -1,32 +1,37 @@
+import { memo } from 'react'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
-interface DayEventsLayerProps {
-	day: dayjs.Dayjs // The specific day this layer represents
+interface VerticalGridEventsLayerProps {
+	gridType?: 'day' | 'hour'
+	days: dayjs.Dayjs[] // The specific day this layer represents
+	resourceId?: string | number
 	'data-testid'?: string
 }
 
-export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({
-	day,
+const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
+	days,
+	gridType = 'hour',
+	resourceId,
 	'data-testid': dataTestId,
 }) => {
-	const todayEvents = useProcessedDayEvents({ day })
+	const todayEvents = useProcessedDayEvents({ days, gridType, resourceId })
 
 	return (
 		<div
+			className="relative w-full h-full pointer-events-none z-10 overflow-clip"
 			data-testid={dataTestId}
-			className="pointer-events-none absolute inset-0 z-10"
 		>
 			{todayEvents.map((event, index) => {
-				const eventKey = `event-${event.id}-${index}-${day.toISOString()}`
+				const eventKey = `event-${event.id}-${index}-${days.at(0).toISOString()}-${resourceId ?? 'no-resource'}`
 				const isShortEvent = event.end.diff(event.start, 'minute') <= 15
 
 				return (
 					<div
-						key={`${eventKey}-wrapper`}
 						className="absolute"
+						key={`${eventKey}-wrapper`}
 						style={{
 							left: `${event.left}%`,
 							width: `calc(${event.width}% - var(--spacing) * 2)`,
@@ -35,11 +40,11 @@ export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({
 						}}
 					>
 						<DraggableEvent
-							elementId={eventKey}
-							event={event}
 							className={cn('pointer-events-auto absolute', {
 								'[&_p]:text-[10px] [&_p]:mt-0': isShortEvent,
 							})}
+							elementId={eventKey}
+							event={event}
 						/>
 					</div>
 				)
@@ -47,3 +52,5 @@ export const DayEventsLayer: React.FC<DayEventsLayerProps> = ({
 		</div>
 	)
 }
+
+export const VerticalGridEventsLayer = memo(NoMemoVerticalGridEventsLayer)

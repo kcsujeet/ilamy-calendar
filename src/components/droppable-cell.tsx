@@ -59,6 +59,14 @@ export function DroppableCell({
 
 	const handleCellClick = (e: React.MouseEvent) => {
 		e.stopPropagation()
+		console.log('DroppableCell clicked:', {
+			disableCellClick,
+			disabled,
+			date: date.toISOString(),
+			hour,
+			minute,
+			resourceId,
+		})
 
 		if (disableCellClick || disabled) {
 			return
@@ -74,21 +82,22 @@ export function DroppableCell({
 			end = end.hour(23).minute(59) // month view full day
 		}
 
-		onCellClick({ start, end, resourceId })
+		onCellClick({ start, end, resourceId, allDay })
 	}
 
 	return (
 		// oxlint-disable-next-line click-events-have-key-events
 		<div
-			ref={setNodeRef}
-			data-testid={dataTestId}
 			className={cn(
+				'droppable-cell',
 				className,
 				isOver && !disableDragAndDrop && !disabled && 'bg-accent',
 				disableCellClick || disabled ? 'cursor-default' : 'cursor-pointer',
 				disabled && (classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME)
 			)}
+			data-testid={dataTestId}
 			onClick={handleCellClick}
+			ref={setNodeRef}
 			style={style}
 		>
 			{children}

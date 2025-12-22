@@ -124,10 +124,10 @@ const YearView = () => {
 	const monthsData = generateMonthsData()
 
 	return (
-		<ScrollArea data-testid="year-view" className="h-full">
+		<ScrollArea className="h-full" data-testid="year-view">
 			<div
-				data-testid="year-grid"
 				className="grid auto-rows-fr grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3"
+				data-testid="year-grid"
 			>
 				{monthsData.map((month, monthIndex) => {
 					const daysInMonth = generateDaysForMonth(month.date)
@@ -135,36 +135,36 @@ const YearView = () => {
 
 					return (
 						<div
-							key={month.monthKey}
-							data-testid={`year-month-${month.monthKey}`}
 							className="hover:border-primary flex flex-col rounded-lg border p-3 text-left transition-all duration-200 hover:shadow-md"
+							data-testid={`year-month-${month.monthKey}`}
+							key={month.monthKey}
 						>
 							<AnimatePresence mode="wait">
 								<motion.div
-									key={`month-${monthIndex}`}
-									initial={{ opacity: 0, y: -10 }}
 									animate={{ opacity: 1, y: 0 }}
+									className="mb-2 flex items-center justify-between"
 									exit={{ opacity: 0, y: -10 }}
+									initial={{ opacity: 0, y: -10 }}
+									key={`month-${monthIndex}`}
 									transition={{
 										duration: 0.25,
 										ease: 'easeInOut',
 										delay: animationDelay,
 									}}
-									className="mb-2 flex items-center justify-between"
 								>
 									<button
-										type="button"
-										onClick={() => navigateToDate(month.date, 'month')}
-										data-testid={`year-month-title-${month.monthKey}`}
 										className="text-lg font-medium hover:underline cursor-pointer"
+										data-testid={`year-month-title-${month.monthKey}`}
+										onClick={() => navigateToDate(month.date, 'month')}
+										type="button"
 									>
 										{month.name}
 									</button>
 
 									{month.eventCount > 0 && (
 										<span
-											data-testid={`year-month-event-count-${month.monthKey}`}
 											className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs"
+											data-testid={`year-month-event-count-${month.monthKey}`}
 										>
 											{getEventCountLabel(month.eventCount)}
 										</span>
@@ -173,13 +173,13 @@ const YearView = () => {
 							</AnimatePresence>
 
 							<div
-								data-testid={`year-mini-calendar-${month.monthKey}`}
 								className="grid grid-cols-7 gap-[1px] text-[0.6rem]"
+								data-testid={`year-mini-calendar-${month.monthKey}`}
 							>
 								{DAY_HEADER_NAMES.map((dayName, headerIndex) => (
 									<div
-										key={`header-${headerIndex}`}
 										className="text-muted-foreground h-3 text-center"
+										key={`header-${headerIndex}`}
 									>
 										{dayName}
 									</div>
@@ -196,12 +196,12 @@ const YearView = () => {
 
 									return (
 										<button
-											type="button"
-											key={day.dayKey}
+											className={getDayClassName(day)}
 											data-testid={dayTestId}
+											key={day.dayKey}
 											onClick={(e) => navigateToDate(day.date, 'day', e)}
 											title={getDayTooltip(day.eventCount)}
-											className={getDayClassName(day)}
+											type="button"
 										>
 											<span className="text-center leading-none">
 												{day.date.date()}
@@ -216,11 +216,11 @@ const YearView = () => {
 												>
 													{visibleDotColors.map((dotColor) => (
 														<span
-															key={dotColor}
 															className={getEventDotClassName(
 																dotColor,
 																day.isToday
 															)}
+															key={dotColor}
 														/>
 													))}
 												</div>

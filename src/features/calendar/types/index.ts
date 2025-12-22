@@ -44,6 +44,8 @@ export interface CellClickInfo {
 	end: dayjs.Dayjs
 	/** Resource ID if clicking on a resource calendar cell (optional) */
 	resourceId?: string | number
+	/** Whether the clicked cell is an all-day cell (optional) */
+	allDay?: boolean
 }
 
 export interface IlamyCalendarProps {

@@ -1,8 +1,9 @@
 import { GridCell } from '@/components/grid-cell'
+import { ResourceCell } from '@/components/resource-cell'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import { cn } from '@/lib'
 import type dayjs from '@/lib/configs/dayjs-config'
+import { cn } from '@/lib/utils'
 import { ResourceEventsLayer } from './resource-events-layer'
 
 interface ResourceEventGridProps {
@@ -19,15 +20,23 @@ interface ResourceEventGridProps {
 	 * (e.g., for day names in month view)
 	 */
 	children?: React.ReactNode
+	classes?: { header?: string; cell?: string }
 }
 
 export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 	days,
 	gridType = 'day',
 	children,
+	classes,
 }) => {
-	const { currentDate, getVisibleResources, dayMaxEvents, renderResource } =
-		useResourceCalendarContext()
+	const {
+		currentDate,
+		getVisibleResources,
+		dayMaxEvents,
+		renderResource,
+		stickyViewHeader,
+		viewHeaderClassName,
+	} = useResourceCalendarContext()
 
 	const visibleResources = getVisibleResources()
 
@@ -49,43 +58,44 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 			viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
 		>
 			{/* header row */}
-			{children}
+			<div
+				className={cn(
+					'flex h-12 w-fit',
+					stickyViewHeader && 'sticky top-0 z-21 bg-background', // Z-index above the left sticky resource column
+					classes?.header,
+					viewHeaderClassName
+				)}
+			>
+				{children}
+			</div>
 			{/* Calendar area with scroll */}
 			<div className="flex flex-1 h-[calc(100%-3rem)] w-fit">
 				<div
-					key={currentDate.format('YYYY-MM')}
 					className="relative w-full flex flex-col"
+					key={currentDate.format('YYYY-MM')}
 				>
 					{rows.map((row) => (
-						<div key={row.id} className="flex flex-1 relative min-h-[60px] ">
-							<div
-								className={cn(
-									'w-40 border-b border-r p-2 flex flex-shrink-0 sticky left-0 z-20',
-									row.resource.color || '',
-									row.resource.backgroundColor || 'bg-background'
-								)}
-								style={{
-									color: row.resource.color,
-									backgroundColor: row.resource.backgroundColor,
-								}}
+						<div className="flex flex-1 relative min-h-[60px] " key={row.id}>
+							<ResourceCell
+								className="w-40 sticky left-0 z-20 shrink-0"
+								resource={row.resource}
 							>
 								{renderResource ? (
 									renderResource(row.resource)
 								) : (
-									<div className="break-words text-sm">{row.title}</div>
+									<div className="wrap-break-word text-sm">{row.title}</div>
 								)}
-							</div>
-
+							</ResourceCell>
 							<div className="relative flex-1 flex">
 								{row.cells.map((cell) => (
 									<GridCell
-										key={cell.id}
-										index={cell.value.day()}
+										className="border-r border-b w-20"
 										day={cell.value}
-										resourceId={row.id}
 										dayMaxEvents={dayMaxEvents}
 										gridType={gridType}
-										className="border-r border-b w-20"
+										index={cell.value.day()}
+										key={cell.id}
+										resourceId={row.id}
 									/>
 								))}
 
@@ -93,8 +103,8 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 								<div className="absolute inset-0 z-10 pointer-events-none">
 									<ResourceEventsLayer
 										days={days}
-										resourceId={row.id}
 										gridType={gridType}
+										resourceId={row.id}
 									/>
 								</div>
 							</div>
@@ -103,7 +113,7 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 				</div>
 			</div>
 			<ScrollBar className="z-30" /> {/* vertical scrollbar */}
-			<ScrollBar orientation="horizontal" className="z-30" />{' '}
+			<ScrollBar className="z-30" orientation="horizontal" />{' '}
 			{/* horizontal scrollbar */}
 		</ScrollArea>
 	)

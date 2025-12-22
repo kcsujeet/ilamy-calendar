@@ -51,10 +51,10 @@ const renderWithProvider = (
 ) => {
 	return render(
 		<ResourceCalendarProvider
-			resources={resources}
+			dayMaxEvents={4}
 			events={events}
 			firstDayOfWeek={0}
-			dayMaxEvents={4}
+			resources={resources}
 			{...props}
 		>
 			{ui}

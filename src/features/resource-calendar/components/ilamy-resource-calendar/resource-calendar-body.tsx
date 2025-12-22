@@ -52,12 +52,12 @@ export const ResourceCalendarBody: React.FC = () => {
 			<CalendarDndContext>
 				<AnimatePresence mode="wait">
 					<motion.div
-						key={view}
-						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
+						className="w-full h-[calc(100%-3.5rem)] @container/calendar-body"
 						exit={{ opacity: 0, x: -20 }}
+						initial={{ opacity: 0, x: 20 }}
+						key={view}
 						transition={{ duration: 0.1, ease: 'easeInOut' }}
-						className="w-full h-[calc(100%-3.5rem)]"
 					>
 						{viewMap[view]}
 					</motion.div>

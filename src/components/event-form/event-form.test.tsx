@@ -13,8 +13,8 @@ const renderEventForm = (
 ) => {
 	return render(
 		<CalendarProvider
-			events={[]}
 			dayMaxEvents={5}
+			events={[]}
 			firstDayOfWeek={0}
 			{...providerProps}
 		>

@@ -17,7 +17,8 @@
 	"assist": {
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"organizeImports": "on",
+				"useSortedAttributes": "on"
 			}
 		}
 	},

@@ -8,7 +8,7 @@ import {
 	PopoverTrigger,
 } from '@/components/ui/popover'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import { cn } from '@/lib'
+import { cn } from '@/lib/utils'
 import { downloadICalendar } from '@/lib/utils/export-ical'
 import TitleContent from './title-content'
 import ViewControls from './view-controls'
@@ -54,10 +54,10 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
 	const NewEventButton = () => (
 		<Button
-			onClick={() => openEventForm()}
-			variant="default"
-			size="sm"
 			className="flex items-center gap-1"
+			onClick={() => openEventForm()}
+			size="sm"
+			variant="default"
 		>
 			<Plus className="h-4 w-4" />
 			<span className="hidden @4xl:inline">{t('new')}</span>
@@ -66,10 +66,10 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
 	const ExportButton = ({ fullWidth = false }: { fullWidth?: boolean }) => (
 		<Button
-			onClick={handleExport}
-			variant="outline"
-			size="sm"
 			className={cn('flex items-center gap-1', fullWidth && 'w-full gap-2')}
+			onClick={handleExport}
+			size="sm"
+			variant="outline"
 		>
 			<Download className="h-4 w-4" />
 			{fullWidth ? (
@@ -104,13 +104,13 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 				<div className="flex flex-wrap justify-start @xl/base-header:justify-center gap-1 @4xl/base-header:justify-end overflow-x-auto">
 					<div className="hidden @md/base-header:flex items-center justify-start gap-1">
 						<ViewControls
+							className="justify-end"
 							currentView={view}
 							onChange={setView}
-							onToday={today}
 							onNext={nextPeriod}
 							onPrevious={prevPeriod}
+							onToday={today}
 							variant="default"
-							className="justify-end"
 						/>
 						<NewEventButton />
 						<ExportButton />
@@ -118,9 +118,9 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
 					<div className="flex items-center justify-end gap-1 @md/base-header:hidden">
 						<NewEventButton />
-						<Popover open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+						<Popover onOpenChange={setMobileMenuOpen} open={mobileMenuOpen}>
 							<PopoverTrigger asChild>
-								<Button variant="outline" size="sm">
+								<Button size="sm" variant="outline">
 									<Menu className="h-4 w-4" />
 								</Button>
 							</PopoverTrigger>
@@ -132,16 +132,16 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 											setView(v)
 											closeMobileMenu()
 										}}
-										onToday={() => {
-											today()
-											closeMobileMenu()
-										}}
 										onNext={() => {
 											nextPeriod()
 											closeMobileMenu()
 										}}
 										onPrevious={() => {
 											prevPeriod()
+											closeMobileMenu()
+										}}
+										onToday={() => {
+											today()
 											closeMobileMenu()
 										}}
 										variant="grid"

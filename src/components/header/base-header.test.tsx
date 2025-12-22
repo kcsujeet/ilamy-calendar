@@ -9,8 +9,8 @@ import Header from './base-header'
 const renderHeader = (events: CalendarEvent[] = [], providerProps = {}) => {
 	return render(
 		<CalendarProvider
-			events={events}
 			dayMaxEvents={3}
+			events={events}
 			firstDayOfWeek={0}
 			{...providerProps}
 		>

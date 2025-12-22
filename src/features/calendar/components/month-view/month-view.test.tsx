@@ -38,9 +38,9 @@ const renderMonthView = (props = {}) => {
 	const testId = 'current-date'
 	return render(
 		<CalendarProvider
-			firstDayOfWeek={firstDayOfWeek}
 			dayMaxEvents={dayMaxEvents}
 			events={mockEvents}
+			firstDayOfWeek={firstDayOfWeek}
 			locale={locale}
 			{...props}
 		>

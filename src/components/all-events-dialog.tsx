@@ -50,7 +50,7 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 	}
 
 	return (
-		<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+		<Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
 			<DialogContent className="max-h-[80vh] max-w-md overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>
@@ -61,10 +61,10 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 					{selectedDayEvents?.events.map((event) => {
 						return (
 							<DraggableEvent
-								elementId={`all-events-dialog-event-$${event.id}`} // Use event ID for unique identification
-								key={event.id}
+								className="relative my-1 h-[30px]" // Use event ID for unique identification
+								elementId={`all-events-dialog-event-$${event.id}`}
 								event={event}
-								className="relative my-1 h-[30px]"
+								key={event.id}
 							/>
 						)
 					})}

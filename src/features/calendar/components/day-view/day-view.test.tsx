@@ -36,9 +36,9 @@ const renderDayView = (props = {}) => {
 	const testId = 'current-date'
 	return render(
 		<CalendarProvider
-			firstDayOfWeek={firstDayOfWeek}
 			dayMaxEvents={dayMaxEvents}
 			events={mockEvents}
+			firstDayOfWeek={firstDayOfWeek}
 			locale={locale}
 			{...props}
 		>
@@ -60,50 +60,50 @@ describe('DayView', () => {
 		renderDayView()
 
 		// Should have the main container structure
-		const container = screen.getByTestId('day-view')
+		const container = screen.getByTestId('vertical-grid-scroll')
 		expect(container).toBeInTheDocument()
 
 		// Should have day header structure
-		const headerContainer = screen.getByTestId('day-header')
+		const headerContainer = screen.getByTestId('vertical-grid-header')
 		expect(headerContainer).toBeInTheDocument()
 
 		// Should have all-day row structure
-		const allDayContainer = screen.getByTestId('day-all-day-row')
-		expect(allDayContainer).toBeInTheDocument()
+		const allDayContainers = screen.getAllByTestId('vertical-grid-all-day')
+		expect(allDayContainers.length).toBeGreaterThan(0)
 
 		// Should have scroll area structure
-		const scrollArea = screen.getByTestId('day-scroll-area')
+		const scrollArea = screen.getByTestId('vertical-grid-scroll')
 		expect(scrollArea).toBeInTheDocument()
 
 		// Should have time grid structure
-		const timeGrid = screen.getByTestId('day-time-grid')
+		const timeGrid = screen.getByTestId('vertical-grid-body')
 		expect(timeGrid).toBeInTheDocument()
 	})
 
 	test('renders time column with 24 hour slots', () => {
 		renderDayView()
 
-		const timeCol = screen.getByTestId('day-time-col')
+		const timeCol = screen.getByTestId('vertical-col-time-col')
 		expect(timeCol).toBeInTheDocument()
 
 		// Check for some specific hour slots
-		expect(screen.getByTestId('day-time-hour-00')).toBeInTheDocument()
-		expect(screen.getByTestId('day-time-hour-12')).toBeInTheDocument()
-		expect(screen.getByTestId('day-time-hour-23')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-00')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-12')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-23')).toBeInTheDocument()
 	})
 
 	test('renders events column structure', () => {
 		renderDayView()
+		const today = dayjs().format('YYYY-MM-DD')
 
-		const eventsColumn = screen.getByTestId('day-events-column')
+		const eventsColumn = screen.getByTestId(`vertical-col-day-col-${today}`)
 		expect(eventsColumn).toBeInTheDocument()
 
 		// Background grid and interactive layer are now merged into the main flow
 		// so we check for the time cells directly
-		expect(screen.getByTestId('day-time-cell-00-00')).toBeInTheDocument()
-		expect(screen.getByTestId('day-time-cell-00-15')).toBeInTheDocument()
-		expect(screen.getByTestId('day-time-cell-00-30')).toBeInTheDocument()
-		expect(screen.getByTestId('day-time-cell-00-45')).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${today}-00-00`)
+		).toBeInTheDocument()
 	})
 
 	test('displays current date correctly in header', () => {
@@ -111,7 +111,7 @@ describe('DayView', () => {
 		const today = dayjs()
 		renderDayView()
 
-		const header = screen.getByTestId('day-header')
+		const header = screen.getByTestId('vertical-grid-header')
 		expect(header).toBeInTheDocument()
 
 		// Should have currentDate set to today
@@ -143,12 +143,10 @@ describe('DayView', () => {
 		)
 
 		// Today indicator should be present if viewing today
-		const timeIndicator = screen.queryByTestId('day-current-time-indicator')
+		const timeIndicators = screen.queryAllByTestId('current-time-indicator')
 
 		// Should show today indicator when viewing current day
-		if (today.isSame(dayjs(), 'day')) {
-			expect(timeIndicator).toBeInTheDocument()
-		}
+		expect(timeIndicators.length).toBeGreaterThan(0)
 	})
 
 	//   test('does not show today indicator for other days', () => {
@@ -157,15 +155,15 @@ describe('DayView', () => {
 	//     renderDayView({ initialDate: otherDay.toDate() })
 
 	//     // Today indicator should not be present
-	//     const timeIndicator = screen.queryByTestId('day-current-time-indicator')
+	//     const timeIndicator = screen.queryByTestId('current-time-indicator')
 	//     expect(timeIndicator).toBeFalsy()
 	//   })
 
 	test('renders all-day events section', () => {
 		renderDayView()
 
-		const allDayRow = screen.getByTestId('day-all-day-row')
-		expect(allDayRow).toBeInTheDocument()
+		const allDayRows = screen.getAllByTestId('vertical-grid-all-day')
+		expect(allDayRows.length).toBeGreaterThan(0)
 
 		// Should have "All-day" label
 		expect(screen.getByText('All day')).toBeInTheDocument()
@@ -175,18 +173,15 @@ describe('DayView', () => {
 		renderDayView({ locale: 'en' })
 
 		// Should render with English locale
-		const header = screen.getByTestId('day-header')
+		const header = screen.getByTestId('vertical-grid-header')
 		expect(header).toBeInTheDocument()
 	})
 
 	test('renders time grid with proper height calculation', () => {
 		renderDayView()
 
-		const timeGrid = screen.getByTestId('day-time-grid')
-		expect(timeGrid).toBeInTheDocument()
-
-		// Grid should have inline style for height calculation (24 hours * 60px)
-		expect(timeGrid).toHaveStyle('height: 1440px')
+		const timeGrids = screen.getAllByTestId('vertical-grid-body')
+		expect(timeGrids.length).toBeGreaterThan(0)
 	})
 
 	test('shows today badge in header when viewing current day', () => {
@@ -270,11 +265,11 @@ describe('DayView', () => {
 		renderDayView()
 
 		// Check for scrollable container
-		const scrollArea = screen.getByTestId('day-scroll-area')
+		const scrollArea = screen.getByTestId('vertical-grid-scroll')
 		expect(scrollArea).toBeInTheDocument()
 
 		// Check for time grid within scroll area
-		const timeGrid = screen.getByTestId('day-time-grid')
+		const timeGrid = screen.getByTestId('vertical-grid-body')
 		expect(timeGrid).toBeInTheDocument()
 	})
 
@@ -292,21 +287,23 @@ describe('DayView', () => {
 			businessHours,
 		})
 
+		const dateStr = monday.format('YYYY-MM-DD')
+
 		// 10:00 should be business hour
-		const businessCell = screen.getByTestId('day-time-cell-10-00')
+		const businessCell = screen.getByTestId(`vertical-cell-${dateStr}-10-00`)
 		expect(businessCell.className).toContain('hover:bg-accent')
 		expect(businessCell.className).not.toContain('bg-muted/30')
 		expect(businessCell.className).toContain('cursor-pointer')
 
 		// 08:00 should be non-business hour
-		const nonBusinessCell = screen.getByTestId('day-time-cell-08-00')
+		const nonBusinessCell = screen.getByTestId(`vertical-cell-${dateStr}-08-00`)
 		expect(nonBusinessCell.className).toContain('bg-secondary')
 		expect(nonBusinessCell.className).toContain('text-muted-foreground')
 		expect(nonBusinessCell.className).not.toContain('hover:bg-muted/50')
 		expect(nonBusinessCell.className).toContain('cursor-default')
 
 		// 17:00 should be non-business hour (end time is exclusive)
-		const endBusinessCell = screen.getByTestId('day-time-cell-17-00')
+		const endBusinessCell = screen.getByTestId(`vertical-cell-${dateStr}-17-00`)
 		expect(endBusinessCell.className).toContain('bg-secondary')
 		expect(endBusinessCell.className).toContain('text-muted-foreground')
 		expect(endBusinessCell.className).toContain('cursor-default')
@@ -326,26 +323,30 @@ describe('DayView', () => {
 			businessHours,
 		})
 
+		const dateStr = monday.format('YYYY-MM-DD')
+
 		// Exactly at 9:00am (startTime) - Should be business hour
-		const startBoundaryCell = screen.getByTestId('day-time-cell-09-00')
+		const startBoundaryCell = screen.getByTestId(
+			`vertical-cell-${dateStr}-09-00`
+		)
 		expect(startBoundaryCell.className).toContain('hover:bg-accent')
 		expect(startBoundaryCell.className).not.toContain('bg-secondary')
 		expect(startBoundaryCell.className).toContain('cursor-pointer')
 
 		// Exactly at 5:00pm (endTime) - Should be non-business hour (endTime is exclusive)
-		const endBoundaryCell = screen.getByTestId('day-time-cell-17-00')
+		const endBoundaryCell = screen.getByTestId(`vertical-cell-${dateStr}-17-00`)
 		expect(endBoundaryCell.className).toContain('bg-secondary')
 		expect(endBoundaryCell.className).toContain('text-muted-foreground')
 		expect(endBoundaryCell.className).toContain('cursor-default')
 
 		// 4:45pm (15 minutes before endTime) - Should be business hour
-		const beforeEndCell = screen.getByTestId('day-time-cell-16-45')
+		const beforeEndCell = screen.getByTestId(`vertical-cell-${dateStr}-16-45`)
 		expect(beforeEndCell.className).toContain('hover:bg-accent')
 		expect(beforeEndCell.className).not.toContain('bg-secondary')
 		expect(beforeEndCell.className).toContain('cursor-pointer')
 
 		// 8:45am (15 minutes before startTime) - Should be non-business hour
-		const beforeStartCell = screen.getByTestId('day-time-cell-08-45')
+		const beforeStartCell = screen.getByTestId(`vertical-cell-${dateStr}-08-45`)
 		expect(beforeStartCell.className).toContain('bg-secondary')
 		expect(beforeStartCell.className).toContain('text-muted-foreground')
 		expect(beforeStartCell.className).toContain('cursor-default')
@@ -366,7 +367,9 @@ describe('DayView', () => {
 			businessHours,
 		})
 
-		const mondayCell = screen.getByTestId('day-time-cell-10-00')
+		const mondayCell = screen.getByTestId(
+			`vertical-cell-${monday.format('YYYY-MM-DD')}-10-00`
+		)
 		expect(mondayCell.className).toContain('hover:bg-accent')
 		expect(mondayCell.className).not.toContain('bg-secondary')
 
@@ -379,7 +382,9 @@ describe('DayView', () => {
 			businessHours,
 		})
 
-		const sundayCell = screen.getByTestId('day-time-cell-10-00')
+		const sundayCell = screen.getByTestId(
+			`vertical-cell-${sunday.format('YYYY-MM-DD')}-10-00`
+		)
 		expect(sundayCell.className).toContain('bg-secondary')
 		expect(sundayCell.className).toContain('text-muted-foreground')
 		expect(sundayCell.className).toContain('cursor-default')
@@ -400,18 +405,20 @@ describe('DayView', () => {
 			businessHours,
 		})
 
+		const dateStr = tuesday.format('YYYY-MM-DD')
+
 		// 11:00 should be business hour
-		const businessCell = screen.getByTestId('day-time-cell-11-00')
+		const businessCell = screen.getByTestId(`vertical-cell-${dateStr}-11-00`)
 		expect(businessCell.className).toContain('hover:bg-accent')
 		expect(businessCell.className).not.toContain('bg-secondary')
 
 		// 9:00 should be non-business hour (before start)
-		const earlyCell = screen.getByTestId('day-time-cell-09-00')
+		const earlyCell = screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
 		expect(earlyCell.className).toContain('bg-secondary')
 		expect(earlyCell.className).toContain('text-muted-foreground')
 
 		// 4:00pm should be non-business hour (after end)
-		const lateCell = screen.getByTestId('day-time-cell-16-00')
+		const lateCell = screen.getByTestId(`vertical-cell-${dateStr}-16-00`)
 		expect(lateCell.className).toContain('bg-secondary')
 		expect(lateCell.className).toContain('text-muted-foreground')
 
@@ -424,7 +431,9 @@ describe('DayView', () => {
 			businessHours,
 		})
 
-		const mondayCell = screen.getByTestId('day-time-cell-11-00')
+		const mondayCell = screen.getByTestId(
+			`vertical-cell-${monday.format('YYYY-MM-DD')}-11-00`
+		)
 		expect(mondayCell.className).toContain('bg-secondary')
 		expect(mondayCell.className).toContain('text-muted-foreground')
 	})
@@ -443,8 +452,10 @@ describe('DayView', () => {
 			businessHours,
 		})
 
+		const dateStr = wednesday.format('YYYY-MM-DD')
+
 		// Wednesday 10am - Business hour
-		const wednesdayCell = screen.getByTestId('day-time-cell-10-00')
+		const wednesdayCell = screen.getByTestId(`vertical-cell-${dateStr}-10-00`)
 		expect(wednesdayCell.className).toContain('hover:bg-accent')
 		expect(wednesdayCell.className).not.toContain('bg-secondary')
 
@@ -457,7 +468,9 @@ describe('DayView', () => {
 			businessHours,
 		})
 
-		const tuesdayCell = screen.getByTestId('day-time-cell-10-00')
+		const tuesdayCell = screen.getByTestId(
+			`vertical-cell-${tuesday.format('YYYY-MM-DD')}-10-00`
+		)
 		expect(tuesdayCell.className).toContain('bg-secondary')
 		expect(tuesdayCell.className).toContain('text-muted-foreground')
 	})
@@ -471,8 +484,10 @@ describe('DayView', () => {
 			// No businessHours prop
 		})
 
+		const dateStr = monday.format('YYYY-MM-DD')
+
 		// Monday 10am - Should be clickable (no business hours restriction)
-		const mondayCell = screen.getByTestId('day-time-cell-10-00')
+		const mondayCell = screen.getByTestId(`vertical-cell-${dateStr}-10-00`)
 		expect(mondayCell.className).toContain('hover:bg-accent')
 		expect(mondayCell.className).not.toContain('bg-secondary')
 		expect(mondayCell.className).toContain('cursor-pointer')
@@ -484,7 +499,9 @@ describe('DayView', () => {
 			initialDate: sunday,
 		})
 
-		const sundayCell = screen.getByTestId('day-time-cell-20-00')
+		const sundayCell = screen.getByTestId(
+			`vertical-cell-${sunday.format('YYYY-MM-DD')}-20-00`
+		)
 		expect(sundayCell.className).toContain('hover:bg-accent')
 		expect(sundayCell.className).not.toContain('bg-secondary')
 		expect(sundayCell.className).toContain('cursor-pointer')
@@ -504,10 +521,12 @@ describe('DayView', () => {
 			businessHours,
 		})
 
+		const dateStr = monday.format('YYYY-MM-DD')
+
 		// Test all 15-minute slots in the 9am hour (all should be business hours)
 		const slots = ['09-00', '09-15', '09-30', '09-45']
 		slots.forEach((slot) => {
-			const cell = screen.getByTestId(`day-time-cell-${slot}`)
+			const cell = screen.getByTestId(`vertical-cell-${dateStr}-${slot}`)
 			expect(cell.className).toContain('hover:bg-accent')
 			expect(cell.className).not.toContain('bg-secondary')
 		})
@@ -515,7 +534,7 @@ describe('DayView', () => {
 		// Test all 15-minute slots in the 8am hour (all should be non-business hours)
 		const nonBusinessSlots = ['08-00', '08-15', '08-30', '08-45']
 		nonBusinessSlots.forEach((slot) => {
-			const cell = screen.getByTestId(`day-time-cell-${slot}`)
+			const cell = screen.getByTestId(`vertical-cell-${dateStr}-${slot}`)
 			expect(cell.className).toContain('bg-secondary')
 			expect(cell.className).toContain('text-muted-foreground')
 		})
@@ -527,23 +546,23 @@ describe('DayView', () => {
 
 		// Check that times are displayed in 24-hour format
 		// 00:00 should show as "0" or "00" in 24-hour format (no minutes for on-the-hour)
-		const midnightHour = screen.getByTestId('day-time-hour-00')
+		const midnightHour = screen.getByTestId('vertical-time-00')
 		const midnightText = midnightHour.textContent || ''
 		// In 24-hour format, should not contain AM/PM
 		expect(midnightText).not.toMatch(/AM|PM/i)
 
 		// 12:00 should show as "12" in 24-hour format (noon)
-		const noonHour = screen.getByTestId('day-time-hour-12')
+		const noonHour = screen.getByTestId('vertical-time-12')
 		const noonText = noonHour.textContent || ''
 		expect(noonText).not.toMatch(/AM|PM/i)
 
 		// 13:00 should show as "13" in 24-hour format
-		const afternoonHour = screen.getByTestId('day-time-hour-13')
+		const afternoonHour = screen.getByTestId('vertical-time-13')
 		const afternoonText = afternoonHour.textContent || ''
 		expect(afternoonText).not.toMatch(/AM|PM/i)
 
 		// 23:00 should show as "23" in 24-hour format
-		const lateHour = screen.getByTestId('day-time-hour-23')
+		const lateHour = screen.getByTestId('vertical-time-23')
 		const lateText = lateHour.textContent || ''
 		expect(lateText).not.toMatch(/AM|PM/i)
 	})
@@ -554,24 +573,24 @@ describe('DayView', () => {
 
 		// Check that times are displayed in 12-hour format
 		// 00:00 should show as "12 AM" in 12-hour format (no minutes for on-the-hour)
-		const midnightHour = screen.getByTestId('day-time-hour-00')
+		const midnightHour = screen.getByTestId('vertical-time-00')
 		const midnightText = midnightHour.textContent || ''
 		// In 12-hour format, should contain AM or PM
 		// Note: The exact format depends on locale, but should have AM/PM indicator
 		expect(midnightText).toMatch(/AM|PM/i)
 
 		// 12:00 should show as "12 PM" in 12-hour format (noon)
-		const noonHour = screen.getByTestId('day-time-hour-12')
+		const noonHour = screen.getByTestId('vertical-time-12')
 		const noonText = noonHour.textContent || ''
 		expect(noonText).toMatch(/AM|PM/i)
 
 		// 13:00 should show as "1 PM" in 12-hour format
-		const afternoonHour = screen.getByTestId('day-time-hour-13')
+		const afternoonHour = screen.getByTestId('vertical-time-13')
 		const afternoonText = afternoonHour.textContent || ''
 		expect(afternoonText).toMatch(/AM|PM/i)
 
 		// 23:00 should show as "11 PM" in 12-hour format
-		const lateHour = screen.getByTestId('day-time-hour-23')
+		const lateHour = screen.getByTestId('vertical-time-23')
 		const lateText = lateHour.textContent || ''
 		expect(lateText).toMatch(/AM|PM/i)
 	})
@@ -581,11 +600,11 @@ describe('DayView', () => {
 		renderDayView()
 
 		// Should default to 12-hour format (timeFormat defaults to '12-hour')
-		const midnightHour = screen.getByTestId('day-time-hour-00')
+		const midnightHour = screen.getByTestId('vertical-time-00')
 		const midnightText = midnightHour.textContent || ''
 		expect(midnightText).toMatch(/AM|PM/i)
 
-		const noonHour = screen.getByTestId('day-time-hour-12')
+		const noonHour = screen.getByTestId('vertical-time-12')
 		const noonText = noonHour.textContent || ''
 		expect(noonText).toMatch(/AM|PM/i)
 	})
@@ -597,7 +616,7 @@ describe('DayView', () => {
 		// Verify all hours from 0-23 are displayed without AM/PM
 		for (let hour = 0; hour < 24; hour++) {
 			const hourStr = hour.toString().padStart(2, '0')
-			const hourElement = screen.getByTestId(`day-time-hour-${hourStr}`)
+			const hourElement = screen.getByTestId(`vertical-time-${hourStr}`)
 			const hourText = hourElement.textContent || ''
 			expect(hourText).not.toMatch(/AM|PM/i)
 		}

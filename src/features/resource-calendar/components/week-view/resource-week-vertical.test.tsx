@@ -56,9 +56,27 @@ describe('ResourceWeekVertical', () => {
 
 		// Check for some day columns
 		// Format: vertical-col-day-col-{date}-resource-{id}
+		const dateStr = initialDate.format('YYYY-MM-DD')
 		const col1 = screen.getByTestId(
-			`vertical-col-day-col-${initialDate.format('YYYY-MM-DD')}-resource-1`
+			`vertical-col-day-col-${dateStr}-resource-1`
 		)
 		expect(col1).toBeInTheDocument()
+	})
+
+	test('renders all-day row for each resource', () => {
+		renderResourceWeekVertical()
+		const allDayRows = screen.getAllByTestId('all-day-row')
+		// 1 for Resource 1, 1 for Resource 2
+		expect(allDayRows.length).toBe(2)
+	})
+
+	test('renders dates header row', () => {
+		renderResourceWeekVertical()
+		// Initial date is Wednesday Jan 1, 2025.
+		// Default firstDayOfWeek is Sunday, so week starts Dec 29, 2024.
+		// Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday
+		// Appears multiple times because of multiple resources
+		expect(screen.getAllByText('Sun').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('Sat').length).toBeGreaterThan(0)
 	})
 })

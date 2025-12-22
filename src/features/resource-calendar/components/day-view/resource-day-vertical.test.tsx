@@ -68,4 +68,30 @@ describe('ResourceDayVertical', () => {
 		const resource1Cell = screen.getByTestId(`vertical-cell-${dateStr}-09-00-1`)
 		expect(resource1Cell).toBeInTheDocument()
 	})
+
+	test('renders all day cells for each resource', () => {
+		renderResourceDayVertical()
+		const allDayRows = screen.getAllByTestId('all-day-row')
+		// 1 for Resource 1, 1 for Resource 2
+		expect(allDayRows.length).toBe(2)
+	})
+
+	test('renders 15-minute slots by default in Day View', () => {
+		renderResourceDayVertical()
+		const dateStr = initialDate.format('YYYY-MM-DD')
+
+		// Should have 00, 15, 30, 45 slots
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-00-1`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-15-1`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-30-1`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-45-1`)
+		).toBeInTheDocument()
+	})
 })

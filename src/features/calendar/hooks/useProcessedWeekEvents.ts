@@ -42,7 +42,7 @@ export const useProcessedWeekEvents = ({
 			)
 		}
 
-		if (allDay !== undefined) {
+		if (allDay) {
 			weekEvents = weekEvents.filter((e) => !!e.allDay === allDay)
 		}
 

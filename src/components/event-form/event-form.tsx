@@ -16,6 +16,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { TimePicker } from '@/components/ui/time-picker'
+import { isBusinessDay } from '@/features/calendar/utils/business-hours'
+import {
+	buildDateTime,
+	buildEndDateTime,
+	getTimeConstraints,
+} from '@/features/calendar/utils/event-form-utils'
 import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
 import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-editor/recurrence-editor'
 import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
@@ -47,26 +53,6 @@ const COLOR_OPTIONS = COLOR_NAMES.map((color) => ({
 	label: color.charAt(0).toUpperCase() + color.slice(1),
 }))
 
-const buildDateTime = (
-	date: Date,
-	time: string,
-	isAllDay: boolean
-): dayjs.Dayjs => {
-	const [hours, minutes] = time.split(':').map(Number)
-	const base = dayjs(date).hour(hours).minute(minutes)
-	return isAllDay ? base.hour(0).minute(0) : base
-}
-
-const buildEndDateTime = (
-	date: Date,
-	time: string,
-	isAllDay: boolean
-): dayjs.Dayjs => {
-	const [hours, minutes] = time.split(':').map(Number)
-	const base = dayjs(date).hour(hours).minute(minutes)
-	return isAllDay ? base.hour(23).minute(59) : base
-}
-
 export interface EventFormProps {
 	open?: boolean
 	selectedEvent?: CalendarEvent | null
@@ -91,13 +77,13 @@ export const EventForm: React.FC<EventFormProps> = ({
 		handleConfirm,
 	} = useRecurringEventActions(onClose)
 
-	const { findParentRecurringEvent, t, timeFormat } = useSmartCalendarContext(
-		(context) => ({
+	const { findParentRecurringEvent, t, businessHours, timeFormat } =
+		useSmartCalendarContext((context) => ({
 			findParentRecurringEvent: context.findParentRecurringEvent,
 			t: context.t,
+			businessHours: context.businessHours,
 			timeFormat: context.timeFormat,
-		})
-	)
+		}))
 
 	const start = selectedEvent?.start ?? dayjs()
 	const end = selectedEvent?.end ?? dayjs().add(1, 'hour')
@@ -242,6 +228,13 @@ export const EventForm: React.FC<EventFormProps> = ({
 		setRrule({ ...newRRule, dtstart: startDateTime.toDate() })
 	}
 
+	const disabledDateMatcher = businessHours
+		? (date: Date) => !isBusinessDay(dayjs(date), businessHours)
+		: undefined
+
+	const startConstraints = getTimeConstraints(startDate, businessHours)
+	const endConstraints = getTimeConstraints(endDate, businessHours)
+
 	return (
 		<>
 			<Dialog onOpenChange={onClose} open={true}>
@@ -310,6 +303,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 											className="mt-1"
 											closeOnSelect
 											date={startDate}
+											disabled={disabledDateMatcher}
 											onChange={handleStartDateChange}
 										/>
 									</div>
@@ -319,6 +313,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 											className="mt-1"
 											closeOnSelect
 											date={endDate}
+											disabled={disabledDateMatcher}
 											onChange={handleEndDateChange}
 										/>
 									</div>
@@ -332,6 +327,8 @@ export const EventForm: React.FC<EventFormProps> = ({
 											</Label>
 											<TimePicker
 												className="mt-1 h-8 text-sm sm:h-9"
+												maxTime={startConstraints.max}
+												minTime={startConstraints.min}
 												name="start-time"
 												onChange={handleStartTimeChange}
 												timeFormat={timeFormat}
@@ -344,6 +341,8 @@ export const EventForm: React.FC<EventFormProps> = ({
 											</Label>
 											<TimePicker
 												className="mt-1 h-8 text-sm sm:h-9"
+												maxTime={endConstraints.max}
+												minTime={endConstraints.min}
 												name="end-time"
 												onChange={handleEndTimeChange}
 												timeFormat={timeFormat}

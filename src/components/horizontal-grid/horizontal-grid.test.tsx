@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
+import type { Resource } from '@/features/resource-calendar/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { HorizontalGrid } from './horizontal-grid'
 
@@ -14,7 +15,9 @@ const mockRows = [
 		columns: [
 			{
 				id: 'label-col',
-				renderCell: ({ resource }: any) => (
+				day: dayjs(),
+				gridType: 'day' as const,
+				renderCell: ({ resource }: { resource?: Resource }) => (
 					<div data-testid={`horizontal-row-label-${resource.id}`}>
 						{resource.title}
 					</div>

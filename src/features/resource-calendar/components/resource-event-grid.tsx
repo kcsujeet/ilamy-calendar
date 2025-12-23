@@ -3,7 +3,7 @@ import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
 import type { HorizontalGridRowProps } from '@/components/horizontal-grid/horizontal-grid-row'
 import { ResourceCell } from '@/components/resource-cell'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 
 interface ResourceEventGridProps {
 	/**
@@ -34,12 +34,10 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 
 	const firstCol = {
 		id: 'resource-col',
-		days: [],
-		day: undefined,
+		day: days[0] || dayjs(),
 		className:
 			'shrink-0 w-40 min-w-40 max-w-40 sticky left-0 bg-background z-20 h-full',
 		gridType: gridType,
-		noEvents: true,
 		renderCell: (row: HorizontalGridRowProps) => {
 			return (
 				<ResourceCell

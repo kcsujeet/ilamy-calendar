@@ -1,9 +1,8 @@
 import type dayjs from 'dayjs'
 import { memo } from 'react'
+import { HorizontalGridRow } from '@/components/horizontal-grid/horizontal-grid-row'
 import type { Resource } from '@/features/resource-calendar/types'
 import { cn } from '@/lib/utils'
-import { GridCell } from '../grid-cell'
-import { HorizontalGridEventsLayer } from '../horizontal-grid/horizontal-grid-events-layer'
 import { AllDayCell } from './all-day-cell'
 
 interface AllDayRowProps {
@@ -19,39 +18,28 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 	resource,
 	showSpacer = true,
 }) => {
+	const columns = days.map((day, index) => ({
+		id: `allday-col-${day.toISOString()}-${index}`,
+		day,
+		gridType: 'day' as const,
+		className: cn('h-full min-h-12 border-r last:border-r-0', classes?.cell),
+	}))
+
 	return (
 		<div className={cn('flex w-full', classes?.row)} data-testid="all-day-row">
 			{/* Time col spacer */}
 			{showSpacer && <AllDayCell className={classes?.spacer} />}
 
 			{/* Day all day cell */}
-			<div className="relative flex flex-1">
-				<div className="flex w-full">
-					{days.map((day, index) => (
-						<GridCell
-							allDay
-							className={cn(
-								'h-full min-h-12 border-r last:border-r-0 w-full',
-								classes?.cell
-							)}
-							day={day}
-							gridType="day"
-							index={0}
-							key={`allday-cell-${day.toISOString()}-${index}`}
-							resourceId={resource?.id}
-						/>
-					))}
-				</div>
-
-				<div className="absolute inset-0 pointer-events-none">
-					<HorizontalGridEventsLayer
-						allDay
-						days={days}
-						gridType="day"
-						resourceId={resource?.id}
-					/>
-				</div>
-			</div>
+			<HorizontalGridRow
+				allDay
+				className="flex-1 min-h-fit"
+				columns={columns}
+				gridType="day"
+				id={`all-day-row-${resource?.id ?? 'main'}`}
+				isLastRow
+				resource={resource}
+			/>
 		</div>
 	)
 }

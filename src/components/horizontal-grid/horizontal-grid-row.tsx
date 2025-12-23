@@ -45,7 +45,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 					{columns.map((col) => {
 						if (col.renderCell) {
 							return (
-								<div className={col.className}>
+								<div className={col.className} key={col.id}>
 									{col.renderCell({ resource } as HorizontalGridRowProps)}
 								</div>
 							)

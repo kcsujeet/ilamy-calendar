@@ -22,11 +22,5 @@
 	},
 	"[jsonc]": {
 		"editor.defaultFormatter": "biomejs.biome"
-	},
-	"[css]": {
-		"editor.defaultFormatter": "biomejs.biome"
-	},
-	"[scss]": {
-		"editor.defaultFormatter": "biomejs.biome"
 	}
 }

@@ -24,13 +24,26 @@ export const useProcessedDayEvents = ({
 		}))
 	const dayStart = days.at(0).startOf('day')
 	const dayEnd = days.at(-1).endOf('day')
-	let events = getEventsForDateRange(dayStart, dayEnd)
-	if (resourceId) {
-		const resourceEvents = getEventsForResource(resourceId)
-		events = events.filter((event) =>
-			resourceEvents.some((e) => String(e.id) === String(event.id))
-		)
-	}
+
+	const events = useMemo(() => {
+		let dayEvents = getEventsForDateRange(dayStart, dayEnd)
+		if (resourceId) {
+			const resourceEvents = getEventsForResource(resourceId)
+			dayEvents = dayEvents.filter((event) =>
+				resourceEvents.some((re) => String(re.id) === String(event.id))
+			)
+		}
+
+		// Vertical grids (Day/Week/Resource Vertical) never render all-day events
+		// as those are handled by the all-day-row or are not appropriate for the time grid.
+		return dayEvents.filter((e) => !e.allDay)
+	}, [
+		dayStart,
+		dayEnd,
+		getEventsForDateRange,
+		resourceId,
+		getEventsForResource,
+	])
 
 	const todayEvents = useMemo<PositionedEvent[]>(() => {
 		return getPositionedDayEvents({

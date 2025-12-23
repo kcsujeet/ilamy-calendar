@@ -487,8 +487,9 @@ describe('IlamyCalendar', () => {
 					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
-				await waitFor(() => {
-					expect(screen.getByText('Week View Event')).toBeInTheDocument()
+				await waitFor(async () => {
+					const events = await screen.findAllByText('Week View Event')
+					expect(events.length).toBeGreaterThan(0)
 				})
 			})
 
@@ -520,8 +521,9 @@ describe('IlamyCalendar', () => {
 					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
-				await waitFor(() => {
-					expect(screen.getByText('Day View Event')).toBeInTheDocument()
+				await waitFor(async () => {
+					const events = await screen.findAllByText('Day View Event')
+					expect(events.length).toBeGreaterThan(0)
 				})
 			})
 
@@ -553,8 +555,9 @@ describe('IlamyCalendar', () => {
 					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
-				await waitFor(() => {
-					expect(screen.getByText('Persistent Event')).toBeInTheDocument()
+				await waitFor(async () => {
+					const events = await screen.findAllByText('Persistent Event')
+					expect(events.length).toBeGreaterThan(0)
 				})
 
 				// Get all buttons and find the exact "Week" button
@@ -566,7 +569,10 @@ describe('IlamyCalendar', () => {
 				})
 
 				// Event should still be visible
-				expect(screen.getByText('Persistent Event')).toBeInTheDocument()
+				await waitFor(async () => {
+					const events = await screen.findAllByText('Persistent Event')
+					expect(events.length).toBeGreaterThan(0)
+				})
 
 				// Find exact "Day" button
 				const dayButtons = screen.getAllByRole('button', { name: /^day$/i })
@@ -577,7 +583,10 @@ describe('IlamyCalendar', () => {
 				})
 
 				// Event should still be visible
-				expect(screen.getByText('Persistent Event')).toBeInTheDocument()
+				await waitFor(async () => {
+					const events = await screen.findAllByText('Persistent Event')
+					expect(events.length).toBeGreaterThan(0)
+				})
 			})
 		})
 

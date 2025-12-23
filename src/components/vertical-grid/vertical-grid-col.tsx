@@ -33,6 +33,13 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	noEvents,
 	cellSlots = [60], // Default to full hour slots
 }) => {
+	const slotDuration =
+		gridType === 'day'
+			? 24 * 60
+			: cellSlots.length > 1
+				? cellSlots[1] - cellSlots[0]
+				: 60
+
 	return (
 		<div
 			className={cn(
@@ -81,6 +88,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 								)}
 								data-testid={testId}
 								day={day.minute(m)}
+								duration={slotDuration}
 								gridType={gridType}
 								hour={day.hour()}
 								index={index}

@@ -41,9 +41,11 @@ export const useProcessedWeekEvents = ({
 				resourceEvents.some((e) => String(e.id) === String(event.id))
 			)
 		}
-		if (allDay) {
-			weekEvents = weekEvents.filter((e) => e.allDay)
+
+		if (allDay !== undefined) {
+			weekEvents = weekEvents.filter((e) => !!e.allDay === allDay)
 		}
+
 		return weekEvents
 	}, [
 		getEventsForDateRange,

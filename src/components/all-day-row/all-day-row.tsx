@@ -1,9 +1,9 @@
 import type dayjs from 'dayjs'
 import { memo } from 'react'
-import { WeekEventsLayer } from '@/features/calendar/components/month-view/week-events-layer'
 import type { Resource } from '@/features/resource-calendar/types'
 import { cn } from '@/lib/utils'
 import { GridCell } from '../grid-cell'
+import { HorizontalGridEventsLayer } from '../horizontal-grid/horizontal-grid-events-layer'
 import { AllDayCell } from './all-day-cell'
 
 interface AllDayRowProps {
@@ -42,10 +42,9 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 				))}
 
 				<div className="absolute inset-0 pointer-events-none">
-					<WeekEventsLayer
-						allDay
-						dayNumberHeight={0}
+					<HorizontalGridEventsLayer
 						days={days}
+						gridType="day"
 						resourceId={resource?.id}
 					/>
 				</div>

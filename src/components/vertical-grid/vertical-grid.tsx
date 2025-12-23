@@ -77,6 +77,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 					<VerticalGridCol
 						key={`${column.id}-${index}`}
 						{...column}
+						allDay={allDayRow ? false : undefined}
 						cellSlots={cellSlots}
 						gridType={gridType}
 					/>

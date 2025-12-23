@@ -5,12 +5,14 @@ interface ResourceCellProps {
 	resource: Resource
 	className?: string
 	children?: React.ReactNode
+	'data-testid'?: string
 }
 
 export const ResourceCell: React.FC<ResourceCellProps> = ({
 	resource,
 	className,
 	children,
+	'data-testid': dataTestId,
 }) => {
 	return (
 		<div
@@ -18,6 +20,7 @@ export const ResourceCell: React.FC<ResourceCellProps> = ({
 				'flex items-center justify-center border-r p-2 flex-1',
 				className
 			)}
+			data-testid={dataTestId}
 			style={{
 				color: resource.color,
 				backgroundColor: resource.backgroundColor,

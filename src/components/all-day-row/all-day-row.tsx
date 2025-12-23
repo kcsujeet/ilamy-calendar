@@ -43,6 +43,7 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 
 				<div className="absolute inset-0 pointer-events-none">
 					<HorizontalGridEventsLayer
+						allDay
 						days={days}
 						gridType="day"
 						resourceId={resource?.id}

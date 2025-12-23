@@ -1,4 +1,5 @@
 import React, { memo, useMemo } from 'react'
+import { DayNumber } from '@/components/day-number'
 import type { CalendarEvent } from '@/components/types'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
@@ -19,6 +20,8 @@ interface GridProps {
 	gridType?: 'day' | 'hour' // Future use for different grid types
 	shouldRenderEvents?: boolean // Flag to determine if events should be rendered
 	allDay?: boolean // Flag to indicate if this is an all-day cell
+	showDayNumber?: boolean // Flag to show or hide the day number
+	children?: React.ReactNode
 	'data-testid'?: string
 }
 
@@ -33,6 +36,8 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	shouldRenderEvents = true,
 	allDay = false,
 	'data-testid': dataTestId,
+	showDayNumber = false,
+	children,
 }) => {
 	const allEventsDialogRef = React.useRef<{
 		open: () => void
@@ -43,10 +48,10 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		dayMaxEvents = 0,
 		getEventsForDateRange,
 		currentDate,
-		firstDayOfWeek,
 		t,
 		getEventsForResource,
 		businessHours,
+		currentLocale,
 	} = useSmartCalendarContext((state) => ({
 		dayMaxEvents: state.dayMaxEvents,
 		getEventsForDateRange: state.getEventsForDateRange,
@@ -55,6 +60,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		t: state.t,
 		getEventsForResource: state.getEventsForResource,
 		businessHours: state.businessHours,
+		currentLocale: state.currentLocale,
 	}))
 
 	const todayEvents = useMemo(() => {
@@ -89,16 +95,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		allDay,
 	])
 
-	// Get start date for the current month view based on firstDayOfWeek
-	const firstDayOfMonth = currentDate.startOf('month')
-
-	// Calculate the first day of the calendar grid correctly
-	// Find the first day of week (e.g. Sunday or Monday) that comes before or on the first day of the month
-	let adjustedFirstDayOfCalendar = firstDayOfMonth.clone()
-	while (adjustedFirstDayOfCalendar.day() !== firstDayOfWeek) {
-		adjustedFirstDayOfCalendar = adjustedFirstDayOfCalendar.subtract(1, 'day')
-	}
-
 	// Handler for showing all events in a dialog
 	const showAllEvents = (day: dayjs.Dayjs, events: CalendarEvent[]) => {
 		allEventsDialogRef.current?.setSelectedDayEvents({
@@ -120,6 +116,13 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		businessHours,
 	})
 
+	const hourStr = day.format('HH')
+	const mm = day.format('mm')
+	const dateTestIdBase =
+		gridType === 'hour'
+			? `day-cell-${day.format('YYYY-MM-DD')}-${hourStr}-${mm}`
+			: `day-cell-${day.format('YYYY-MM-DD')}`
+
 	return (
 		<>
 			<DroppableCell
@@ -129,7 +132,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 					isLastColumn && 'border-r-0',
 					className
 				)}
-				data-testid={dataTestId || `day-cell-${day.toISOString()}`}
+				data-testid={dataTestId || dateTestIdBase}
 				date={day}
 				disabled={!isBusiness || !isCurrentMonth}
 				hour={hour}
@@ -138,10 +141,11 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				resourceId={resourceId}
 				type="day-cell"
 			>
-				{shouldRenderEvents && (
-					<>
-						{/* Single-day events container positioned below multi-day events */}
-						<div className="flex flex-col gap-1">
+				<div className="flex flex-col gap-1 h-full w-full">
+					{showDayNumber && <DayNumber date={day} locale={currentLocale} />}
+
+					{shouldRenderEvents && (
+						<>
 							{/* Render placeholders for events that occur today so that the cell height is according to dayMaxEvents. */}
 							{todayEvents.slice(0, dayMaxEvents).map((event, rowIndex) => (
 								<div
@@ -174,9 +178,10 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 									+{hiddenEventsCount} {t('more')}
 								</div>
 							)}
-						</div>
-					</>
-				)}
+						</>
+					)}
+					{children}
+				</div>
 			</DroppableCell>
 
 			{/* Dialog for showing all events */}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
 import type { Resource } from '@/features/resource-calendar/types'
@@ -170,8 +170,13 @@ describe('ResourceEventGrid', () => {
 				initialDate: days[0],
 			})
 
-			const mondayCell = screen.getByTestId(`day-cell-${days[0].toISOString()}`)
-			const sundayCell = screen.getByTestId(`day-cell-${days[1].toISOString()}`)
+			const row = screen.getByTestId('horizontal-row-res-1')
+			const mondayCell = within(row).getByTestId(
+				`day-cell-${days[0].format('YYYY-MM-DD')}`
+			)
+			const sundayCell = within(row).getByTestId(
+				`day-cell-${days[1].format('YYYY-MM-DD')}`
+			)
 
 			// Monday is a business day -> No disabled styling
 			expect(mondayCell.className).not.toContain('pointer-events-none')
@@ -186,26 +191,28 @@ describe('ResourceEventGrid', () => {
 			const monday = dayjs('2025-01-13T00:00:00.000Z') // Monday
 			const sunday = dayjs('2025-01-12T00:00:00.000Z') // Sunday
 
-			const hours = [
-				monday.hour(10), // Monday 10am (Business Hour)
-				monday.hour(20), // Monday 8pm (Non-Business Hour)
-				sunday.hour(10), // Sunday 10am (Non-Business Day)
-			]
+			const h1 = monday.hour(10) // Monday 10am (Business Hour)
+			const h2 = monday.hour(20) // Monday 8pm (Non-Business Hour)
+			const h3 = sunday.hour(10) // Sunday 10am (Non-Business Day)
 
-			renderWithProvider(<ResourceEventGrid days={hours} gridType="hour" />, {
-				resources: [mockResources[0]],
-				businessHours,
-				initialDate: monday,
-			})
+			renderWithProvider(
+				<ResourceEventGrid days={[h1, h2, h3]} gridType="hour" />,
+				{
+					resources: [mockResources[0]],
+					businessHours,
+					initialDate: monday,
+				}
+			)
 
-			const businessHourCell = screen.getByTestId(
-				`day-cell-${hours[0].toISOString()}`
+			const row = screen.getByTestId('horizontal-row-res-1')
+			const businessHourCell = within(row).getByTestId(
+				`day-cell-${h1.format('YYYY-MM-DD-HH-mm')}`
 			)
-			const nonBusinessHourCell = screen.getByTestId(
-				`day-cell-${hours[1].toISOString()}`
+			const nonBusinessHourCell = within(row).getByTestId(
+				`day-cell-${h2.format('YYYY-MM-DD-HH-mm')}`
 			)
-			const nonBusinessDayCell = screen.getByTestId(
-				`day-cell-${hours[2].toISOString()}`
+			const nonBusinessDayCell = within(row).getByTestId(
+				`day-cell-${h3.format('YYYY-MM-DD-HH-mm')}`
 			)
 
 			// Monday 10am -> Business -> No disabled styling

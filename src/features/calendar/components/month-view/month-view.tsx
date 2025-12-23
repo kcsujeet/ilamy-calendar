@@ -3,9 +3,9 @@ import React, { useMemo } from 'react'
 import { AllEventDialog } from '@/components/all-events-dialog'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
+import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
 import { getMonthWeeks } from '@/lib/utils/date-utils'
-import { DayCell } from './day-cell'
 import { MonthHeader } from './month-header'
 import type { MonthViewProps, SelectedDayEvents } from './types'
 
@@ -28,15 +28,9 @@ export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
 		rowTestId: `week-row-${weekIndex}`,
 		days,
 		hideLabel: true,
-		dayNumberHeight: 24, // Height of the day number in DayCell
-		renderCell: (day: dayjs.Dayjs, dayIndex: number) => (
-			<DayCell
-				className="border-r border-b first:border-l h-full"
-				day={day}
-				dayMaxEvents={dayMaxEvents}
-				index={dayIndex}
-			/>
-		),
+		dayNumberHeight: DAY_NUMBER_HEIGHT, // Height of the day number in GridCell
+		className: 'flex-1',
+		showDayNumber: true,
 	}))
 
 	return (
@@ -52,7 +46,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ dayMaxEvents = 3 }) => {
 				>
 					<HorizontalGrid
 						bodyTestId="month-calendar-grid"
-						classes={{ body: 'grid-rows-6' }}
+						classes={{ body: 'flex-1' }}
 						rows={rows}
 					>
 						<MonthHeader className="h-[3rem]" />

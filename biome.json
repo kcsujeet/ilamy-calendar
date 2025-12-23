@@ -7,7 +7,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!examples", "!dist", "!**/*.css"]
+		"includes": ["**", "!examples", "!dist"]
 	},
 	"formatter": {
 		"enabled": true,
@@ -57,7 +57,7 @@
 			"allowWrongLineComments": true
 		},
 		"formatter": {
-			"enabled": false
+			"enabled": true
 		}
 	},
 	"overrides": [

@@ -2,7 +2,7 @@ import React, { memo, useMemo } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import type { SelectedDayEvents } from './all-events-dialog'
 import { AllEventDialog } from './all-events-dialog'
@@ -18,7 +18,6 @@ interface GridProps {
 	resourceId?: string | number // Optional resource ID for resource-specific day cells
 	gridType?: 'day' | 'hour' // Future use for different grid types
 	shouldRenderEvents?: boolean // Flag to determine if events should be rendered
-	showCurrentTimeIndicator?: boolean // Flag to show current time indicator
 	allDay?: boolean // Flag to indicate if this is an all-day cell
 	'data-testid'?: string
 }
@@ -32,7 +31,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	resourceId,
 	gridType = 'day',
 	shouldRenderEvents = true,
-	showCurrentTimeIndicator = false,
 	allDay = false,
 	'data-testid': dataTestId,
 }) => {
@@ -178,15 +176,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 							)}
 						</div>
 					</>
-				)}
-				{showCurrentTimeIndicator && day.isSame(dayjs(), gridType) && (
-					<div
-						className="absolute left-0 right-0 h-0.5 bg-red-500"
-						data-testid="current-time-indicator"
-						style={{
-							top: `${((day.hour() * 60 + day.minute()) / (24 * 60)) * 100}%`,
-						}}
-					/>
 				)}
 			</DroppableCell>
 

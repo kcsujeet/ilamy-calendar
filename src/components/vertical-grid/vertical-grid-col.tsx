@@ -1,8 +1,7 @@
 import type React from 'react'
 import { memo } from 'react'
-import dayjs from '@/lib/configs/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { CurrentTimeIndicator } from '../current-time-indicator'
 import { GridCell } from '../grid-cell'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
@@ -34,8 +33,6 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	noEvents,
 	cellSlots = [60], // Default to full hour slots
 }) => {
-	const isToday = days.length > 0 && days[0].isSame(dayjs(), 'day')
-
 	return (
 		<div
 			className={cn(
@@ -95,13 +92,6 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 						)
 					})
 				})}
-
-				{/* Current time indicator layer */}
-				{isToday && !renderCell && (
-					<div className="absolute inset-0 z-20 pointer-events-none">
-						<CurrentTimeIndicator day={days[0]} />
-					</div>
-				)}
 
 				{/* Event blocks layer */}
 				{!noEvents && (

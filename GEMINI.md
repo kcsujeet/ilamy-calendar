@@ -29,6 +29,11 @@ It features standard calendar views (Month, Week, Day, Year) and a Resource Cale
 - **RFC 5545**: Strictly adhered to.
 - **Storage**: `rrule` object + `exdates` array.
 
+### Test IDs
+- **Convention**: Use hardcoded `data-testid` attributes in components.
+- **Prohibition**: Do not pass `data-testid` as a prop.
+- **Testing**: Update tests to select by these hardcoded IDs.
+
 ## Memory Bank
 - **User Preference**: The user prefers strict adherence to `CLAUDE.md` and explicitly asked to be consulted before commits.
 - **Recent Changes**: Refactored `getPositionedDayEvents` to be adaptive to grid size and type.

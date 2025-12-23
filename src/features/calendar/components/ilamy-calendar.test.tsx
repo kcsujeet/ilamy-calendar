@@ -452,7 +452,7 @@ describe('IlamyCalendar', () => {
 
 				await waitFor(() => {
 					// After closing form, the event text should not appear anywhere
-					const monthView = screen.getByTestId('month-view')
+					const monthView = screen.getByTestId('horizontal-grid-scroll')
 					expect(monthView).not.toHaveTextContent('DeleteMe')
 				})
 			})
@@ -639,7 +639,7 @@ describe('IlamyCalendar', () => {
 			)
 
 			await waitFor(() => {
-				expect(screen.getByTestId('month-view')).toBeInTheDocument()
+				expect(screen.getByTestId('horizontal-grid-scroll')).toBeInTheDocument()
 			})
 
 			// Find a Saturday cell (non-business day) - should have default disabled styling
@@ -672,7 +672,7 @@ describe('IlamyCalendar', () => {
 			)
 
 			await waitFor(() => {
-				expect(screen.getByTestId('month-view')).toBeInTheDocument()
+				expect(screen.getByTestId('horizontal-grid-scroll')).toBeInTheDocument()
 			})
 
 			// Find a Saturday cell (non-business day)

@@ -1,4 +1,5 @@
 import type { WeekDays } from '@/components/types'
+import { Button } from '@/components/ui/button'
 import {
 	Card,
 	CardContent,
@@ -114,20 +115,34 @@ export function DemoCalendarSettings({
 					<label className="block text-sm text-left font-medium mb-1">
 						Calendar Type
 					</label>
-					<Select
-						onValueChange={(value) =>
-							setCalendarType(value as 'regular' | 'resource')
-						}
-						value={calendarType}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select calendar type" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="regular">Regular Calendar</SelectItem>
-							<SelectItem value="resource">Resource Calendar</SelectItem>
-						</SelectContent>
-					</Select>
+					<div className="flex gap-1">
+						<Button
+							className={
+								calendarType === 'regular'
+									? 'bg-primary/80 text-primary-foreground'
+									: ''
+							}
+							onClick={() => {
+								setCalendarType('regular')
+							}}
+							variant="secondary"
+						>
+							Regular
+						</Button>
+						<Button
+							className={
+								calendarType === 'resource'
+									? 'bg-primary/80 text-primary-foreground'
+									: ''
+							}
+							onClick={() => {
+								setCalendarType('resource')
+							}}
+							variant="secondary"
+						>
+							Resource
+						</Button>
+					</div>
 				</div>
 				<div>
 					<label className="block text-sm text-left font-medium mb-1">

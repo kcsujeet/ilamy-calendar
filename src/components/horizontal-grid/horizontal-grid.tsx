@@ -8,45 +8,30 @@ import {
 } from './horizontal-grid-row'
 
 interface HorizontalGridProps {
-	/** Default days for all rows if row doesn't provide its own */
-	days?: HorizontalGridRowProps['days']
-	rows: (Omit<
-		HorizontalGridRowProps,
-		'days' | 'gridType' | 'dayMaxEvents' | 'allDay' | 'showDayNumber'
-	> & {
-		days?: HorizontalGridRowProps['days']
-		allDay?: boolean
-		showDayNumber?: boolean
-	})[]
-	gridType?: HorizontalGridRowProps['gridType']
+	rows: HorizontalGridRowProps[]
 	children?: React.ReactNode
 	classes?: { header?: string; body?: string; scroll?: string }
-	bodyTestId?: string
 	allDay?: boolean
-	showDayNumber?: boolean
+	gridType?: 'day' | 'hour'
 }
 
 export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 	rows,
-	days: topLevelDays,
-	gridType = 'day',
 	children,
 	classes,
-	bodyTestId = 'horizontal-grid-body',
 	allDay: topLevelAllDay,
-	showDayNumber: topLevelShowDayNumber,
+	gridType,
 }) => {
-	const { stickyViewHeader, viewHeaderClassName, dayMaxEvents, currentDate } =
+	const { stickyViewHeader, viewHeaderClassName, currentDate } =
 		useSmartCalendarContext((state) => ({
 			stickyViewHeader: state.stickyViewHeader,
 			viewHeaderClassName: state.viewHeaderClassName,
-			dayMaxEvents: state.dayMaxEvents,
 			currentDate: state.currentDate,
 		}))
 
 	return (
 		<ScrollArea
-			className={cn('h-full', classes?.scroll)}
+			className={cn('h-full border', classes?.scroll)}
 			data-testid="horizontal-grid-scroll"
 			viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
 		>
@@ -68,20 +53,18 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 			{/* Calendar area with scroll */}
 			<div
 				className={cn('flex flex-1 h-[calc(100%-3rem)] w-fit', classes?.body)}
-				data-testid={bodyTestId}
+				data-testid="horizontal-grid-body"
 			>
 				<div
 					className="relative w-full flex flex-col flex-1"
 					key={currentDate.format('YYYY-MM')}
 				>
-					{rows.map((row) => (
+					{rows.map((row, index) => (
 						<HorizontalGridRow
 							allDay={row.allDay ?? topLevelAllDay}
-							dayMaxEvents={dayMaxEvents}
-							days={row.days || topLevelDays || []}
 							gridType={gridType}
+							isLastRow={index === rows.length - 1}
 							key={row.id}
-							showDayNumber={row.showDayNumber ?? topLevelShowDayNumber}
 							{...row}
 						/>
 					))}

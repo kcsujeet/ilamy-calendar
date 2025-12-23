@@ -53,6 +53,13 @@ export function getMonthWeeks(
 	})
 }
 
+export function getMonthDays(monthDate: dayjs.Dayjs): dayjs.Dayjs[] {
+	const daysInMonth = monthDate.daysInMonth()
+	return Array.from({ length: daysInMonth }, (_, i) =>
+		monthDate.startOf('month').add(i, 'day')
+	)
+}
+
 interface GetDayHoursOptions {
 	referenceDate?: dayjs.Dayjs // Reference date to set the hours on (default is today)
 	length?: number // Number of hours in the day (default is 24)

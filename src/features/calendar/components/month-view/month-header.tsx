@@ -1,64 +1,46 @@
 import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
-import { useMemo } from 'react'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
-import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { getWeekDays } from '@/lib/utils/date-utils'
 
 interface MonthHeaderProps {
 	className?: string
 }
 
 export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
-	const {
-		firstDayOfWeek,
-		currentLocale,
-		stickyViewHeader,
-		viewHeaderClassName,
-	} = useCalendarContext()
+	const { firstDayOfWeek, stickyViewHeader, viewHeaderClassName, currentDate } =
+		useCalendarContext()
 
 	// Reorder week days based on firstDayOfWeek
-	const weekDays = useMemo(() => {
-		const days = dayjs.weekdaysShort().map((day) => day.toLowerCase())
-
-		// Rotate the array based on firstDayOfWeek
-		for (let i = 0; i < firstDayOfWeek; i++) {
-			const dayToMove = days.shift()
-			if (dayToMove) {
-				days.push(dayToMove)
-			}
-		}
-
-		return { days }
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [firstDayOfWeek])
+	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
 
 	return (
 		<div
 			className={cn(
-				'grid grid-cols-7 border-b',
+				'flex w-full',
 				stickyViewHeader && 'sticky top-0 z-20',
 				viewHeaderClassName,
 				className
 			)}
 			data-testid="month-header"
 		>
-			{weekDays.days.map((weekDay, index) => (
-				<AnimatePresence key={weekDay} mode="wait">
+			{weekDays.map((weekDay, index) => (
+				<AnimatePresence key={weekDay.toISOString()} mode="wait">
 					<motion.div
 						animate={{ opacity: 1, y: 0 }}
-						className="py-2 text-center font-medium border-r first:border-l"
-						data-testid={`weekday-header-${weekDay}`}
+						className="py-2 text-center font-medium border-r last:border-r-0 border-b flex-1"
+						data-testid={`weekday-header-${weekDay.format('ddd').toLowerCase()}`}
 						exit={{ opacity: 0, y: -10 }}
 						initial={{ opacity: 0, y: -10 }}
-						key={weekDay}
+						key={weekDay.toISOString()}
 						transition={{
 							duration: 0.25,
 							ease: 'easeInOut',
 							delay: index * 0.05,
 						}}
 					>
-						<span className="text-sm capitalize">{weekDay}</span>
+						<span className="text-sm capitalize">{weekDay.format('ddd')}</span>
 					</motion.div>
 				</AnimatePresence>
 			))}

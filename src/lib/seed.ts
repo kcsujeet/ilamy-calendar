@@ -174,4 +174,4 @@ const dummyEvents = [
 	},
 ]
 
-export default dummyEvents
+export default [dummyEvents]

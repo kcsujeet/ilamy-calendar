@@ -91,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		>
 			<div
 				className={cn(
-					'flex justify-center @2xl/base-header:justify-between flex-wrap items-center gap-2 border-b',
+					'flex justify-center @2xl/base-header:justify-between flex-wrap items-center gap-2',
 					className,
 					headerClassName
 				)}

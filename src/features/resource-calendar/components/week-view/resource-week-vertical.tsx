@@ -17,7 +17,6 @@ export const ResourceWeekVertical: React.FC = () => {
 		firstDayOfWeek,
 		currentLocale,
 		timeFormat,
-		t,
 	} = useResourceCalendarContext()
 
 	const resources = getVisibleResources()
@@ -82,9 +81,9 @@ export const ResourceWeekVertical: React.FC = () => {
 			data-testid="resource-week"
 			gridType="hour"
 		>
-			<div className="flex-1 border-b border-r flex flex-col">
-				{/* Day header row */}
-				<div className="flex h-12 border-b">
+			<div className="flex-1 flex flex-col">
+				{/* Resource header row */}
+				<div className="flex h-12">
 					<div className="shrink-0 w-16 border-r z-20 bg-background sticky left-0" />
 					{resources.map((resource, index) => {
 						const key = `resource-week-header-${resource.id}-day`
@@ -94,7 +93,7 @@ export const ResourceWeekVertical: React.FC = () => {
 								<motion.div
 									animate={{ opacity: 1, y: 0 }}
 									className={cn(
-										'shrink-0 border-r flex items-center text-center font-medium w-[calc(7*var(--spacing)*50)]'
+										'shrink-0 border-r last:border-r-0 border-b flex items-center text-center font-medium w-[calc(7*var(--spacing)*50)]'
 									)}
 									exit={{ opacity: 0, y: -10 }}
 									initial={{ opacity: 0, y: -10 }}
@@ -117,8 +116,8 @@ export const ResourceWeekVertical: React.FC = () => {
 				</div>
 
 				{/* Date header row */}
-				<div className="flex h-12 border-b">
-					<div className="shrink-0 w-16 border-r z-20 bg-background sticky left-0" />
+				<div className="flex h-12">
+					<div className="shrink-0 w-16 border-r border-b z-20 bg-background sticky left-0" />
 					{columns.map((col, index) => {
 						const day = col.day
 						const key = `resource-week-header-${day.toISOString()}-hour-${col.resourceId}`
@@ -128,7 +127,7 @@ export const ResourceWeekVertical: React.FC = () => {
 								<motion.div
 									animate={{ opacity: 1, y: 0 }}
 									className={cn(
-										'w-50 border-r flex flex-col items-center justify-center text-xs shrink-0'
+										'w-50 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
 									)}
 									data-testid={`resource-week-time-label-${day.format('HH')}`}
 									exit={{ opacity: 0, y: -10 }}

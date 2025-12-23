@@ -34,7 +34,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 
 	return (
 		<ScrollArea
-			className="h-full"
+			className="h-full border"
 			data-testid="vertical-grid-scroll"
 			viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
 		>
@@ -46,7 +46,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 			>
 				<div
 					className={cn(
-						'flex justify-center items-center h-12 w-fit',
+						'flex justify-center items-center h-12 border-b w-fit',
 						classes?.header,
 						viewHeaderClassName
 					)}
@@ -79,6 +79,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 						{...column}
 						cellSlots={cellSlots}
 						gridType={gridType}
+						isLastColumn={index === columns.length - 1}
 					/>
 				))}
 			</div>

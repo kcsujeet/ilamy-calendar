@@ -152,7 +152,7 @@ export function DemoPage() {
 
 	// Resource calendar settings
 	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
-		'vertical'
+		'horizontal'
 	)
 
 	const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}`

@@ -1,5 +1,7 @@
 import type React from 'react'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
+import type { HorizontalGridRowProps } from '@/components/horizontal-grid/horizontal-grid-row'
+import { ResourceCell } from '@/components/resource-cell'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
 
@@ -17,7 +19,7 @@ interface ResourceEventGridProps {
 	 * (e.g., for day names in month view)
 	 */
 	children?: React.ReactNode
-	classes?: { header?: string; cell?: string }
+	classes?: { header?: string; body?: string; scroll?: string }
 }
 
 export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
@@ -30,20 +32,46 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 
 	const visibleResources = getVisibleResources()
 
+	const firstCol = {
+		id: 'resource-col',
+		days: [],
+		day: undefined,
+		className:
+			'shrink-0 w-40 min-w-40 max-w-40 sticky left-0 bg-background z-20 h-full',
+		gridType: gridType,
+		noEvents: true,
+		renderCell: (row: HorizontalGridRowProps) => {
+			return (
+				<ResourceCell
+					className="h-full"
+					data-testid={`horizontal-row-label-${row.resource.id}`}
+					resource={row.resource}
+				>
+					{renderResource ? (
+						renderResource(row.resource)
+					) : (
+						<div className="wrap-break-word text-sm">{row.resource.title}</div>
+					)}
+				</ResourceCell>
+			)
+		},
+	}
+
+	const columns = days.map((day) => ({
+		id: `col-${day.toISOString()}`,
+		day,
+		gridType,
+	}))
+
 	const rows = visibleResources.map((resource) => ({
 		id: resource.id,
 		title: resource.title,
 		resource: resource,
-		renderResource: renderResource,
+		columns: [firstCol, ...columns],
 	}))
 
 	return (
-		<HorizontalGrid
-			classes={{ header: classes?.header }}
-			days={days}
-			gridType={gridType}
-			rows={rows}
-		>
+		<HorizontalGrid classes={classes} gridType={gridType} rows={rows}>
 			{children}
 		</HorizontalGrid>
 	)

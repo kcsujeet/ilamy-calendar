@@ -62,7 +62,7 @@ describe('MonthView', () => {
 
 	test('renders calendar structure with proper layout', () => {
 		// Should have the main container structure
-		const container = screen.getByTestId('month-view')
+		const container = screen.getByTestId('horizontal-grid-scroll')
 		expect(container).toBeInTheDocument()
 
 		// Should have weekday header structure
@@ -70,7 +70,7 @@ describe('MonthView', () => {
 		expect(headerContainer).toBeInTheDocument()
 
 		// Should have calendar grid structure
-		const gridContainer = screen.getByTestId('month-calendar-grid')
+		const gridContainer = screen.getByTestId('horizontal-grid-body')
 		expect(gridContainer).toBeInTheDocument()
 	})
 

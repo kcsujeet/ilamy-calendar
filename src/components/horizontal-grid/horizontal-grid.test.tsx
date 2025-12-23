@@ -11,6 +11,21 @@ const mockRows = [
 		id: 'res-1',
 		title: 'Resource 1',
 		resource: { id: 'res-1', title: 'Resource 1', color: 'blue' },
+		columns: [
+			{
+				id: 'label-col',
+				renderCell: ({ resource }: any) => (
+					<div data-testid={`horizontal-row-label-${resource.id}`}>
+						{resource.title}
+					</div>
+				),
+			},
+			...mockDays.map((day) => ({
+				id: `col-${day.toISOString()}`,
+				day,
+				gridType: 'day' as const,
+			})),
+		],
 	},
 ]
 
@@ -22,7 +37,7 @@ const renderHorizontalGrid = (props = {}) => {
 			initialDate={initialDate}
 			resources={[]}
 		>
-			<HorizontalGrid days={mockDays} rows={mockRows} {...props}>
+			<HorizontalGrid rows={mockRows} {...props}>
 				<div data-testid="grid-children">Header Content</div>
 			</HorizontalGrid>
 		</ResourceCalendarProvider>

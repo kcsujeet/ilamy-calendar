@@ -19,11 +19,11 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	days,
 	gridType = 'day',
 	resourceId,
-	dayNumberHeight = 0,
+	dayNumberHeight,
 	'data-testid': dataTestId,
 	allDay,
 }) => {
-	const weekStart = days[0]
+	const weekStart = days.at(0).startOf('day')
 
 	const processedWeekEvents = useProcessedWeekEvents({
 		days,

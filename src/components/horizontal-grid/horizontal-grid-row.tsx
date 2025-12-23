@@ -1,108 +1,83 @@
 import type React from 'react'
 import { memo } from 'react'
+import type { Resource } from '@/features/resource-calendar/types'
 import type dayjs from '@/lib/configs/dayjs-config'
-import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { GridCell } from '../grid-cell'
-import { ResourceCell } from '../resource-cell'
 import { HorizontalGridEventsLayer } from './horizontal-grid-events-layer'
+
+interface HorizontalGridColumn {
+	id: string
+	day: dayjs.Dayjs
+	gridType: 'day' | 'hour'
+	className?: string
+	renderCell?: (row: HorizontalGridRowProps) => React.ReactNode
+}
 
 export interface HorizontalGridRowProps {
 	id: string | number
-	title?: string
-	resource?: any
-	days: dayjs.Dayjs[]
+	resource?: Resource
 	gridType?: 'day' | 'hour'
-	dayMaxEvents?: number
 	className?: string
-	renderResource?: (resource: any) => React.ReactNode
-	renderCell?: (day: dayjs.Dayjs, index: number) => React.ReactNode
-	'data-testid'?: string
-	rowTestId?: string
-	hideLabel?: boolean
-	dayNumberHeight?: number
+	columns?: HorizontalGridColumn[]
 	allDay?: boolean
 	showDayNumber?: boolean
+	isLastRow?: boolean
 }
 
 const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	id,
-	title,
 	resource,
-	days,
 	gridType = 'day',
-	dayMaxEvents,
 	className,
-	renderResource,
-	renderCell,
-	'data-testid': dataTestId,
-	rowTestId,
-	hideLabel = false,
-	dayNumberHeight = DAY_NUMBER_HEIGHT,
+	columns = [],
 	allDay,
 	showDayNumber = false,
+	isLastRow = false,
 }) => {
 	return (
 		<div
 			className={cn('flex flex-1 relative min-h-[60px]', className)}
-			data-testid={dataTestId || rowTestId || `horizontal-row-${id}`}
+			data-testid={`horizontal-row-${id}`}
 		>
-			{/* Label column (e.g., Resource name or Date) */}
-			{!hideLabel && (
-				<div className="w-40 sticky left-0 z-20 shrink-0 border-r bg-background flex items-center">
-					{resource ? (
-						<ResourceCell
-							className="h-full w-full"
-							data-testid={`horizontal-row-label-${id}`}
-							resource={resource}
-						>
-							{renderResource ? renderResource(resource) : null}
-						</ResourceCell>
-					) : (
-						<div
-							className="p-2 wrap-break-word text-sm font-medium"
-							data-testid={`horizontal-row-label-${id}`}
-						>
-							{title || id}
-						</div>
-					)}
-				</div>
-			)}
-
 			<div className="relative flex-1 flex">
-				{days.map((day, index) => {
-					if (renderCell) {
-						return (
-							<div className="relative flex-1" key={day.toISOString()}>
-								{renderCell(day, index)}
-							</div>
-						)
-					}
+				<div className="flex w-full">
+					{columns.map((col) => {
+						if (col.renderCell) {
+							return (
+								<div className={col.className}>
+									{col.renderCell({ resource } as HorizontalGridRowProps)}
+								</div>
+							)
+						}
 
-					return (
-						<GridCell
-							allDay={allDay}
-							className="border-r border-b flex-1"
-							day={day}
-							dayMaxEvents={dayMaxEvents}
-							gridType={gridType}
-							index={day.day()}
-							key={day.toISOString()}
-							resourceId={resource ? id : undefined}
-							showDayNumber={showDayNumber}
-						/>
-					)
-				})}
+						return (
+							<GridCell
+								allDay={allDay}
+								className={cn(
+									'flex-1 w-20',
+									isLastRow && 'border-b-0',
+									col.className
+								)}
+								day={col.day}
+								gridType={gridType}
+								index={col.day.day()}
+								key={col.day.toISOString()}
+								resourceId={resource?.id}
+								showDayNumber={showDayNumber}
+							/>
+						)
+					})}
+				</div>
 
 				{/* Events layer positioned absolutely over the row */}
 				<div className="absolute inset-0 z-10 pointer-events-none">
 					<HorizontalGridEventsLayer
 						allDay={allDay}
 						data-testid={`horizontal-events-${id}`}
-						dayNumberHeight={dayNumberHeight}
-						days={days}
+						days={columns.map((col) => col.day).filter(Boolean)}
 						gridType={gridType}
-						resourceId={resource ? id : undefined}
+						resourceId={resource?.id}
 					/>
 				</div>
 			</div>

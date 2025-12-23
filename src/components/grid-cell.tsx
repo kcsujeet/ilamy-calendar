@@ -105,7 +105,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	}
 
 	const isCurrentMonth = day.month() === currentDate.month()
-	const isLastColumn = index === 6 // Saturday is the last column in a week
 
 	const hiddenEventsCount = todayEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
@@ -128,8 +127,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 			<DroppableCell
 				allDay={allDay}
 				className={cn(
-					'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px] relative',
-					isLastColumn && 'border-r-0',
+					'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px] relative border-r last:border-r-0 border-b',
 					className
 				)}
 				data-testid={dataTestId || dateTestIdBase}

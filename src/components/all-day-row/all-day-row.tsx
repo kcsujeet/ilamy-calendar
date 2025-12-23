@@ -25,21 +25,23 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 			{showSpacer && <AllDayCell className={classes?.spacer} />}
 
 			{/* Day all day cell */}
-			<div className="w-full relative flex">
-				{days.map((day, index) => (
-					<GridCell
-						allDay
-						className={cn(
-							'h-full min-h-12 border-r last:border-r-0 w-full',
-							classes?.cell
-						)}
-						day={day}
-						gridType="day"
-						index={0}
-						key={`allday-cell-${day.toISOString()}-${index}`}
-						resourceId={resource?.id}
-					/>
-				))}
+			<div className="relative flex flex-1">
+				<div className="flex w-full">
+					{days.map((day, index) => (
+						<GridCell
+							allDay
+							className={cn(
+								'h-full min-h-12 border-r last:border-r-0 w-full',
+								classes?.cell
+							)}
+							day={day}
+							gridType="day"
+							index={0}
+							key={`allday-cell-${day.toISOString()}-${index}`}
+							resourceId={resource?.id}
+						/>
+					))}
+				</div>
 
 				<div className="absolute inset-0 pointer-events-none">
 					<HorizontalGridEventsLayer

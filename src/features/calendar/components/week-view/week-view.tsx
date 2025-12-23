@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { getDayHours, getWeekDays } from '@/lib/utils/date-utils'
 
 const CELL_CLASS = 'w-[calc((100%-4rem)/7)] min-w-[calc((100%-4rem)/7)] flex-1'
+const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
 
 const WeekView: React.FC = () => {
 	const {
@@ -30,8 +31,7 @@ const WeekView: React.FC = () => {
 		id: 'time-col',
 		days: getDayHours({ referenceDate: currentDate }),
 		day: undefined,
-		className:
-			'shrink-0 w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16 sticky left-0 bg-background z-20',
+		className: `shrink-0 ${LEFT_COL_WIDTH} sticky left-0 bg-background z-20`,
 		gridType: 'hour' as const,
 		noEvents: true,
 		renderCell: (date: dayjs.Dayjs) => (
@@ -58,13 +58,18 @@ const WeekView: React.FC = () => {
 
 	return (
 		<VerticalGrid
-			allDayRow={<AllDayRow classes={{ cell: CELL_CLASS }} days={weekDays} />}
+			allDayRow={
+				<AllDayRow
+					classes={{ cell: CELL_CLASS, spacer: LEFT_COL_WIDTH }}
+					days={weekDays}
+				/>
+			}
 			classes={{ header: 'h-18 w-full', body: 'h-[calc(100%-4.5rem)] w-full' }}
 			columns={[firstCol, ...columns]}
 			gridType="hour"
 		>
 			{/* Corner cell with week number */}
-			<div className="w-10 sm:w-16 h-full shrink-0 items-center justify-center border-x border-b p-2 flex">
+			<div className="w-10 sm:w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
 				<div className="flex flex-col items-center justify-center">
 					<span className="text-muted-foreground text-xs">{t('week')}</span>
 					<span className="font-medium">{currentDate.week()}</span>
@@ -81,7 +86,7 @@ const WeekView: React.FC = () => {
 						<motion.div
 							animate={{ opacity: 1, y: 0 }}
 							className={cn(
-								'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r border-b w-50 h-full',
+								'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-50 h-full',
 								isToday && 'bg-primary/10 font-bold'
 							)}
 							data-testid={`week-day-header-${day.format('dddd').toLowerCase()}`}

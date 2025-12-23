@@ -20,6 +20,8 @@ export interface VerticalGridColProps {
 	 * e.g., [0, 15, 30, 45] for quarter-hour slots
 	 */
 	cellSlots?: number[]
+	/** Whether this is the last column in the grid */
+	isLastColumn?: boolean
 }
 
 const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
@@ -32,18 +34,12 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	renderCell,
 	noEvents,
 	cellSlots = [60], // Default to full hour slots
+	isLastColumn,
 }) => {
-	const slotDuration =
-		gridType === 'day'
-			? 24 * 60
-			: cellSlots.length > 1
-				? cellSlots[1] - cellSlots[0]
-				: 60
-
 	return (
 		<div
 			className={cn(
-				'flex flex-col flex-1 items-center justify-center border-r min-w-50 bg-background relative',
+				'flex flex-col flex-1 items-center justify-center min-w-50 bg-background relative',
 				className
 			)}
 			data-testid={dataTestId || `vertical-col-${id}`}
@@ -66,7 +62,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 								: `vertical-cell-${dateStr}-${hourStr}-00${resourceId ? `-${resourceId}` : ''}`
 						return (
 							<div
-								className="h-[60px] border-b"
+								className="h-[60px] border-b border-r"
 								data-testid={testId}
 								key={`${dateStr}-${hourStr}`}
 							>
@@ -84,11 +80,11 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 							<GridCell
 								className={cn(
 									'hover:bg-accent relative z-10 h-[60px] cursor-pointer border-b',
-									minute === 60 ? '' : 'border-dashed h-[15px] min-h-[15px]'
+									minute === 60 ? '' : 'border-dashed h-[15px] min-h-[15px]',
+									isLastColumn ? 'border-r-0' : 'border-r'
 								)}
 								data-testid={testId}
 								day={day.minute(m)}
-								duration={slotDuration}
 								gridType={gridType}
 								hour={day.hour()}
 								index={index}

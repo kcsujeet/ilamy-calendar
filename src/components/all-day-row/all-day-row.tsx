@@ -35,6 +35,7 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 				allDay
 				className="flex-1 min-h-fit"
 				columns={columns}
+				dayNumberHeight={0}
 				gridType="day"
 				id={`all-day-row-${resource?.id ?? 'main'}`}
 				isLastRow

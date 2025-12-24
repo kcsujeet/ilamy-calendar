@@ -2,7 +2,6 @@ import type React from 'react'
 import { useMemo } from 'react'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
-import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
 import { getMonthWeeks } from '@/lib/utils/date-utils'
 import { MonthHeader } from './month-header'
 import type { MonthViewProps } from './types'
@@ -29,7 +28,6 @@ export const MonthView: React.FC<MonthViewProps> = () => {
 	return (
 		<HorizontalGrid
 			classes={{ body: 'w-full', header: 'w-full' }}
-			dayNumberHeight={DAY_NUMBER_HEIGHT}
 			rows={rows}
 			variant="regular"
 		>

@@ -4,61 +4,47 @@ import { useMemo } from 'react'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
+import { getMonthDays } from '@/lib/utils/date-utils'
 
 export const ResourceMonthHorizontal: React.FC = () => {
-	const { currentDate, t, stickyViewHeader, viewHeaderClassName } =
-		useResourceCalendarContext()
+	const { currentDate, t } = useResourceCalendarContext()
 
 	// Generate calendar grid - days of the month
 	const monthDays = useMemo<dayjs.Dayjs[]>(() => {
-		const daysInMonth = currentDate.daysInMonth()
-		return Array.from({ length: daysInMonth }, (_, i) =>
-			currentDate.startOf('month').add(i, 'day')
-		)
+		return getMonthDays(currentDate)
 	}, [currentDate])
 
 	return (
-		<div className="flex flex-col h-full border">
-			<ResourceEventGrid days={monthDays}>
-				<div
-					className={cn(
-						'flex h-12 w-fit',
-						stickyViewHeader && 'sticky top-0 z-21 bg-background', // Z-index above the left sticky resource column
-						viewHeaderClassName
-					)}
-				>
-					<div className="w-40 border-b border-r flex-shrink-0 flex justify-center items-center sticky top-0 left-0 bg-background z-20">
-						<div className="text-sm">{t('resources')}</div>
-					</div>
+		<ResourceEventGrid classes={{ body: 'w-full' }} days={monthDays}>
+			<div className="w-40 border-b border-r shrink-0 flex justify-center items-center sticky top-0 left-0 bg-background z-20">
+				<div className="text-sm">{t('resources')}</div>
+			</div>
 
-					{monthDays.map((day, index) => {
-						const key = `resource-month-header-${day.toISOString()}`
+			{monthDays.map((day, index) => {
+				const key = `resource-month-header-${day.toISOString()}`
 
-						return (
-							<AnimatePresence key={`${key}-presence`} mode="wait">
-								<motion.div
-									key={`${key}-motion`}
-									initial={{ opacity: 0, y: -10 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: -10 }}
-									transition={{
-										duration: 0.25,
-										ease: 'easeInOut',
-										delay: index * 0.05,
-									}}
-									className="w-20 border-b border-r flex-shrink-0 flex items-center justify-center flex-col"
-								>
-									<div className="text-xs font-medium">{day.format('D')}</div>
-									<div className="text-xs text-muted-foreground">
-										{day.format('ddd')}
-									</div>
-								</motion.div>
-							</AnimatePresence>
-						)
-					})}
-				</div>
-			</ResourceEventGrid>
-		</div>
+				return (
+					<AnimatePresence key={`${key}-presence`} mode="wait">
+						<motion.div
+							animate={{ opacity: 1, y: 0 }}
+							className="w-20 border-b border-r shrink-0 flex items-center justify-center flex-col"
+							exit={{ opacity: 0, y: -10 }}
+							initial={{ opacity: 0, y: -10 }}
+							key={`${key}-motion`}
+							transition={{
+								duration: 0.25,
+								ease: 'easeInOut',
+								delay: index * 0.05,
+							}}
+						>
+							<div className="text-xs font-medium">{day.format('D')}</div>
+							<div className="text-xs text-muted-foreground">
+								{day.format('ddd')}
+							</div>
+						</motion.div>
+					</AnimatePresence>
+				)
+			})}
+		</ResourceEventGrid>
 	)
 }

@@ -26,6 +26,12 @@ export interface IlamyResourceCalendarProps
 	resources?: Resource[]
 	/** Custom render function for resources */
 	renderResource?: (resource: Resource) => React.ReactNode
+	/**
+	 * Orientation of the resource view.
+	 * - "horizontal": Resources are rows, time is columns (default)
+	 * - "vertical": Resources are columns, time is rows
+	 */
+	orientation?: 'horizontal' | 'vertical'
 }
 
 /**

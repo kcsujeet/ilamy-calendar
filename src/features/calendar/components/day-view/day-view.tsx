@@ -1,117 +1,75 @@
-import { Fragment } from 'react'
-import { DroppableCell } from '@/components/droppable-cell'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { AnimatePresence, motion } from 'motion/react'
+import { AllDayRow } from '@/components/all-day-row/all-day-row'
+import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
-import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { DayAllDayRow } from './day-all-day-row'
-import { DayEventsLayer } from './day-events-layer'
-import { DayHeader } from './day-header'
-import { DayTimeCol } from './day-time-col'
-
-// Hours to display (all 24 hours of the day)
-const hours = Array.from({ length: 24 }, (_, i) => i).map((hour) => {
-	return dayjs().hour(hour).minute(0)
-})
+import { getDayHours } from '@/lib/utils/date-utils'
 
 const DayView = () => {
-	const { currentDate, businessHours } = useCalendarContext()
-
+	const { currentDate, currentLocale, timeFormat, t } = useCalendarContext()
 	const isToday = currentDate.isSame(dayjs(), 'day')
-	const dateStr = currentDate.format('YYYY-MM-DD')
+	const hours = getDayHours({ referenceDate: currentDate })
+
+	const firstCol = {
+		id: 'time-col',
+		day: undefined,
+		days: hours,
+		className:
+			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
+		gridType: 'hour' as const,
+		noEvents: true,
+		renderCell: (date: dayjs.Dayjs) => (
+			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+				{Intl.DateTimeFormat(currentLocale, {
+					hour: 'numeric',
+					hour12: timeFormat === '12-hour',
+				}).format(date.toDate())}
+			</div>
+		),
+	}
+
+	const columns = {
+		id: `day-col-${currentDate.format('YYYY-MM-DD')}`,
+		day: currentDate,
+		days: hours,
+		className: 'w-[calc(100%-4rem)] flex-1',
+		gridType: 'hour' as const,
+	}
 
 	return (
-		<div data-testid="day-view" className="flex h-full flex-col">
-			{/* Day header */}
-			<DayHeader className="h-[3rem]" />
-
-			{/* Time grid without scrollbar */}
-			<ScrollArea
-				data-testid="day-scroll-area"
-				className="relative overflow-y-auto h-[calc(100%-3rem)]"
-			>
-				{/* All-day events row */}
-				<DayAllDayRow />
-
-				{/* Set a fixed height container that matches exactly the total height of all hour blocks */}
-				<div
-					data-testid="day-time-grid"
-					className="grid grid-cols-8 divide-x border-x"
-					style={{ height: `${hours.length * 60}px` }}
+		<VerticalGrid
+			allDayRow={<AllDayRow days={[currentDate]} />}
+			cellSlots={[0, 15, 30, 45]}
+			classes={{ header: 'w-full', body: 'w-full', allDay: 'w-full' }}
+			columns={[firstCol, columns]}
+			gridType="hour"
+		>
+			{/* Header */}
+			<AnimatePresence mode="wait">
+				<motion.div
+					animate={{ opacity: 1, y: 0 }}
+					className={cn(
+						'flex justify-center items-center text-center text-base font-semibold sm:text-xl',
+						isToday && 'text-primary'
+					)}
+					exit={{ opacity: 0, y: -10 }}
+					initial={{ opacity: 0, y: -10 }}
+					key={currentDate.format('YYYY-MM-DD')}
+					transition={{ duration: 0.25, ease: 'easeInOut' }}
 				>
-					{/* Time labels column */}
-					<DayTimeCol className="col-span-2 h-full md:col-span-1" />
-
-					{/* Day column with events */}
-					<div
-						data-testid="day-events-column"
-						className="relative col-span-6 h-full md:col-span-7"
-					>
-						{hours.map((time) => {
-							const hour = time.hour()
-							const hourStr = time.format('HH')
-
-							const checkBusiness = (minute: number) =>
-								isBusinessHour({
-									date: currentDate,
-									hour,
-									minute,
-									businessHours,
-								})
-
-							return (
-								<Fragment key={`${dateStr}-${hourStr}`}>
-									{[0, 15, 30, 45].map((minute) => {
-										const isBusiness = checkBusiness(minute)
-										const isLastSlot = minute === 45
-										const minuteStr = minute.toString().padStart(2, '0')
-
-										const borderClass = isLastSlot
-											? 'border-border'
-											: 'border-dashed'
-
-										return (
-											<DroppableCell
-												key={minute}
-												id={`day-time-cell-${dateStr}-${hourStr}-${minuteStr}`}
-												data-testid={`day-time-cell-${hourStr}-${minuteStr}`}
-												type="time-cell"
-												date={currentDate}
-												hour={hour}
-												minute={minute}
-												disabled={!isBusiness}
-												className={cn(
-													'h-[15px] border-b hover:bg-accent',
-													borderClass
-												)}
-											/>
-										)
-									})}
-								</Fragment>
-							)
-						})}
-
-						{/* Events layer - middle-top layer */}
-						<DayEventsLayer day={currentDate} />
-
-						{/* Current time indicator - top layer */}
-						{isToday && (
-							<div
-								data-testid="day-current-time-indicator"
-								className="absolute right-0 left-0 z-40 border-t border-red-500"
-								style={{
-									top: `${(dayjs().hour() + dayjs().minute() / 60) * 60}px`,
-								}}
-							>
-								<div className="-mt-1 -ml-1 h-2 w-2 rounded-full bg-red-500"></div>
-							</div>
-						)}
-					</div>
-				</div>
-				<ScrollBar className="z-30" />
-			</ScrollArea>
-		</div>
+					<span className="xs:inline hidden">
+						{currentDate.format('dddd, ')}
+					</span>
+					{currentDate.format('MMMM D, YYYY')}
+					{isToday && (
+						<span className="bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm">
+							{t('today')}
+						</span>
+					)}
+				</motion.div>
+			</AnimatePresence>
+		</VerticalGrid>
 	)
 }
 

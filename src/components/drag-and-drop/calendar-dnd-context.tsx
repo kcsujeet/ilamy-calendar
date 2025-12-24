@@ -152,11 +152,11 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	return (
 		<>
 			<DndContext
-				sensors={sensors}
-				onDragStart={handleDragStart}
-				onDragEnd={handleDragEnd}
-				onDragCancel={handleDragCancel}
 				collisionDetection={pointerWithin}
+				onDragCancel={handleDragCancel}
+				onDragEnd={handleDragEnd}
+				onDragStart={handleDragStart}
+				sensors={sensors}
 			>
 				{children}
 				<EventDragOverlay ref={dragOverlayRef} />
@@ -164,11 +164,11 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 
 			{/* Recurring event edit dialog */}
 			<RecurrenceEditDialog
+				eventTitle={recurringDialog.event?.title || ''}
 				isOpen={recurringDialog.isOpen}
 				onClose={handleRecurringEventClose}
 				onConfirm={handleRecurringEventConfirm}
 				operationType="edit"
-				eventTitle={recurringDialog.event?.title || ''}
 			/>
 		</>
 	)

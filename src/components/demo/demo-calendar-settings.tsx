@@ -1,4 +1,5 @@
 import type { WeekDays } from '@/components/types'
+import { Button } from '@/components/ui/button'
 import {
 	Card,
 	CardContent,
@@ -56,6 +57,8 @@ interface DemoCalendarSettingsProps {
 	setUseCustomClasses: (value: boolean) => void
 	// Resource calendar specific props
 	isResourceCalendar?: boolean
+	orientation?: 'horizontal' | 'vertical'
+	setOrientation?: (value: 'horizontal' | 'vertical') => void
 }
 
 export function DemoCalendarSettings({
@@ -93,6 +96,8 @@ export function DemoCalendarSettings({
 	setUseCustomClasses,
 	// Resource calendar props
 	isResourceCalendar,
+	orientation,
+	setOrientation,
 }: DemoCalendarSettingsProps) {
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -110,28 +115,42 @@ export function DemoCalendarSettings({
 					<label className="block text-sm text-left font-medium mb-1">
 						Calendar Type
 					</label>
-					<Select
-						value={calendarType}
-						onValueChange={(value) =>
-							setCalendarType(value as 'regular' | 'resource')
-						}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select calendar type" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="regular">Regular Calendar</SelectItem>
-							<SelectItem value="resource">Resource Calendar</SelectItem>
-						</SelectContent>
-					</Select>
+					<div className="flex gap-1">
+						<Button
+							className={
+								calendarType === 'regular'
+									? 'bg-primary/80 text-primary-foreground'
+									: ''
+							}
+							onClick={() => {
+								setCalendarType('regular')
+							}}
+							variant="secondary"
+						>
+							Regular
+						</Button>
+						<Button
+							className={
+								calendarType === 'resource'
+									? 'bg-primary/80 text-primary-foreground'
+									: ''
+							}
+							onClick={() => {
+								setCalendarType('resource')
+							}}
+							variant="secondary"
+						>
+							Resource
+						</Button>
+					</div>
 				</div>
 				<div>
 					<label className="block text-sm text-left font-medium mb-1">
 						First Day of Week
 					</label>
 					<Select
-						value={firstDayOfWeek}
 						onValueChange={(value) => setFirstDayOfWeek(value as WeekDays)}
+						value={firstDayOfWeek}
 					>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select first day of week" />
@@ -152,8 +171,8 @@ export function DemoCalendarSettings({
 						Initial View
 					</label>
 					<Select
-						value={initialView}
 						onValueChange={(value) => setInitialView(value as CalendarView)}
+						value={initialView}
 					>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select initial view" />
@@ -174,17 +193,6 @@ export function DemoCalendarSettings({
 						Initial Date
 					</label>
 					<Select
-						value={
-							initialDate === undefined
-								? 'today'
-								: initialDate.isSame(dayjs().startOf('month'), 'day')
-									? 'start-of-month'
-									: initialDate.isSame(dayjs().startOf('year'), 'day')
-										? 'start-of-year'
-										: initialDate.isSame(dayjs().add(1, 'month'), 'month')
-											? 'next-month'
-											: 'custom'
-						}
 						onValueChange={(value) => {
 							if (value === 'today') {
 								setInitialDate(undefined)
@@ -196,6 +204,17 @@ export function DemoCalendarSettings({
 								setInitialDate(dayjs().add(1, 'month').startOf('month'))
 							}
 						}}
+						value={
+							initialDate === undefined
+								? 'today'
+								: initialDate.isSame(dayjs().startOf('month'), 'day')
+									? 'start-of-month'
+									: initialDate.isSame(dayjs().startOf('year'), 'day')
+										? 'start-of-year'
+										: initialDate.isSame(dayjs().add(1, 'month'), 'month')
+											? 'next-month'
+											: 'custom'
+						}
 					>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select initial date" />
@@ -213,7 +232,7 @@ export function DemoCalendarSettings({
 					<label className="block text-sm text-left font-medium mb-1">
 						Locale
 					</label>
-					<Select value={locale} onValueChange={setLocale}>
+					<Select onValueChange={setLocale} value={locale}>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select locale" />
 						</SelectTrigger>
@@ -253,7 +272,7 @@ export function DemoCalendarSettings({
 					<label className="block text-sm text-left font-medium mb-1">
 						Calendar Height
 					</label>
-					<Select value={calendarHeight} onValueChange={setCalendarHeight}>
+					<Select onValueChange={setCalendarHeight} value={calendarHeight}>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select height" />
 						</SelectTrigger>
@@ -273,10 +292,10 @@ export function DemoCalendarSettings({
 						Max Events Per Day
 					</label>
 					<Select
-						value={dayMaxEvents?.toString()}
 						onValueChange={(value) =>
 							setDayMaxEvents(Number.parseInt(value, 10))
 						}
+						value={dayMaxEvents?.toString()}
 					>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select max events" />
@@ -296,7 +315,7 @@ export function DemoCalendarSettings({
 					<label className="block text-sm text-left font-medium mb-1">
 						Time Format
 					</label>
-					<Select value={timeFormat} onValueChange={setTimeFormat}>
+					<Select onValueChange={setTimeFormat} value={timeFormat}>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select time format" />
 						</SelectTrigger>
@@ -307,15 +326,32 @@ export function DemoCalendarSettings({
 					</Select>
 				</div>
 
+				{isResourceCalendar && (
+					<div>
+						<label className="block text-sm text-left font-medium mb-1">
+							Orientation
+						</label>
+						<Select onValueChange={setOrientation} value={orientation}>
+							<SelectTrigger className="w-full">
+								<SelectValue placeholder="Select orientation" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="horizontal">Horizontal</SelectItem>
+								<SelectItem value="vertical">Vertical</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+				)}
+
 				<div className="flex items-center space-x-2">
 					<Checkbox
-						id="stickyViewHeader"
 						checked={stickyViewHeader}
+						id="stickyViewHeader"
 						onCheckedChange={() => setStickyHeader?.(!stickyViewHeader)}
 					/>
 					<label
-						htmlFor="stickyViewHeader"
 						className="text-sm font-medium leading-none cursor-pointer ml-2"
+						htmlFor="stickyViewHeader"
 					>
 						Enable sticky header
 					</label>
@@ -323,15 +359,15 @@ export function DemoCalendarSettings({
 
 				<div className="flex items-center space-x-2">
 					<Checkbox
-						id="customRenderer"
 						checked={useCustomEventRenderer}
+						id="customRenderer"
 						onCheckedChange={() =>
 							setUseCustomEventRenderer(!useCustomEventRenderer)
 						}
 					/>
 					<label
-						htmlFor="customRenderer"
 						className="text-sm font-medium leading-none cursor-pointer"
+						htmlFor="customRenderer"
 					>
 						Use custom event renderer
 					</label>
@@ -339,15 +375,15 @@ export function DemoCalendarSettings({
 
 				<div className="flex items-center space-x-2">
 					<Checkbox
-						id="useCustomOnDateClick"
 						checked={useCustomOnDateClick}
+						id="useCustomOnDateClick"
 						onCheckedChange={() =>
 							setUseCustomOnDateClick(!useCustomOnDateClick)
 						}
 					/>
 					<label
-						htmlFor="useCustomOnDateClick"
 						className="text-sm font-medium leading-none cursor-pointer"
+						htmlFor="useCustomOnDateClick"
 					>
 						Use custom onCellClick handler
 					</label>
@@ -355,15 +391,15 @@ export function DemoCalendarSettings({
 
 				<div className="flex items-center space-x-2">
 					<Checkbox
-						id="useCustomOnEventClick"
 						checked={useCustomOnEventClick}
+						id="useCustomOnEventClick"
 						onCheckedChange={() =>
 							setUseCustomOnEventClick(!useCustomOnEventClick)
 						}
 					/>
 					<label
-						htmlFor="useCustomOnEventClick"
 						className="text-sm font-medium leading-none cursor-pointer"
+						htmlFor="useCustomOnEventClick"
 					>
 						Use custom onEventClick handler
 					</label>
@@ -371,13 +407,13 @@ export function DemoCalendarSettings({
 
 				<div className="flex items-center space-x-2">
 					<Checkbox
-						id="disableCellClick"
 						checked={disableCellClick}
+						id="disableCellClick"
 						onCheckedChange={() => setDisableCellClick(!disableCellClick)}
 					/>
 					<label
-						htmlFor="disableCellClick"
 						className="text-sm font-medium leading-none cursor-pointer"
+						htmlFor="disableCellClick"
 					>
 						Disable cell clicks
 					</label>
@@ -385,13 +421,13 @@ export function DemoCalendarSettings({
 
 				<div className="flex items-center space-x-2">
 					<Checkbox
-						id="disableEventClick"
 						checked={disableEventClick}
+						id="disableEventClick"
 						onCheckedChange={() => setDisableEventClick(!disableEventClick)}
 					/>
 					<label
-						htmlFor="disableEventClick"
 						className="text-sm font-medium leading-none cursor-pointer"
+						htmlFor="disableEventClick"
 					>
 						Disable event clicks
 					</label>
@@ -399,13 +435,13 @@ export function DemoCalendarSettings({
 
 				<div className="flex items-center space-x-2">
 					<Checkbox
-						id="disableDragAndDrop"
 						checked={disableDragAndDrop}
+						id="disableDragAndDrop"
 						onCheckedChange={() => setDisableDragAndDrop(!disableDragAndDrop)}
 					/>
 					<label
-						htmlFor="disableDragAndDrop"
 						className="text-sm font-medium leading-none cursor-pointer"
+						htmlFor="disableDragAndDrop"
 					>
 						Disable drag & drop
 					</label>
@@ -413,13 +449,13 @@ export function DemoCalendarSettings({
 
 				<div className="flex items-center space-x-2">
 					<Checkbox
-						id="useCustomClasses"
 						checked={useCustomClasses}
+						id="useCustomClasses"
 						onCheckedChange={() => setUseCustomClasses(!useCustomClasses)}
 					/>
 					<label
-						htmlFor="useCustomClasses"
 						className="text-sm font-medium leading-none cursor-pointer"
+						htmlFor="useCustomClasses"
 					>
 						Use custom disabled cell styles
 					</label>

@@ -104,8 +104,8 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialView="month"
 						renderEventForm={(props) => <CustomEventForm {...props} />}
 					/>
 				)
@@ -135,8 +135,8 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[existingEvent]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialView="month"
 						renderEventForm={(props) => <CustomEventForm {...props} />}
 					/>
 				)
@@ -161,8 +161,8 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialView="month"
 						renderEventForm={(props) => <CustomEventForm {...props} />}
 					/>
 				)
@@ -189,10 +189,10 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
-						renderEventForm={(props) => <CustomEventForm {...props} />}
+						initialView="month"
 						onEventAdd={mockOnEventAdd}
+						renderEventForm={(props) => <CustomEventForm {...props} />}
 					/>
 				)
 
@@ -230,8 +230,8 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialView="month"
 						renderEventForm={(props) => {
 							addEventFn = props.onAdd
 							return <CustomEventForm {...props} />
@@ -282,10 +282,10 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[existingEvent]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
-						renderEventForm={(props) => <CustomEventForm {...props} />}
+						initialView="month"
 						onEventUpdate={mockOnEventUpdate}
+						renderEventForm={(props) => <CustomEventForm {...props} />}
 					/>
 				)
 
@@ -336,13 +336,13 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[existingEvent]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialView="month"
+						onEventUpdate={mockOnEventUpdate}
 						renderEventForm={(props) => {
 							updateFn = props.onUpdate
 							return <CustomEventForm {...props} />
 						}}
-						onEventUpdate={mockOnEventUpdate}
 					/>
 				)
 
@@ -386,10 +386,10 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[existingEvent]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
-						renderEventForm={(props) => <CustomEventForm {...props} />}
+						initialView="month"
 						onEventDelete={mockOnEventDelete}
+						renderEventForm={(props) => <CustomEventForm {...props} />}
 					/>
 				)
 
@@ -427,8 +427,8 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[existingEvent]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialView="month"
 						renderEventForm={(props) => <CustomEventForm {...props} />}
 					/>
 				)
@@ -452,7 +452,7 @@ describe('IlamyCalendar', () => {
 
 				await waitFor(() => {
 					// After closing form, the event text should not appear anywhere
-					const monthView = screen.getByTestId('month-view')
+					const monthView = screen.getByTestId('horizontal-grid-scroll')
 					expect(monthView).not.toHaveTextContent('DeleteMe')
 				})
 			})
@@ -465,8 +465,8 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialView="week"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialView="week"
 						renderEventForm={(props) => {
 							addEventFn = props.onAdd
 							return <CustomEventForm {...props} />
@@ -476,7 +476,7 @@ describe('IlamyCalendar', () => {
 
 				// Wait for week view to render
 				await waitFor(() => {
-					expect(screen.getByTestId('week-view')).toBeInTheDocument()
+					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
 				})
 
 				// Add event directly via captured function
@@ -487,8 +487,9 @@ describe('IlamyCalendar', () => {
 					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
-				await waitFor(() => {
-					expect(screen.getByText('Week View Event')).toBeInTheDocument()
+				await waitFor(async () => {
+					const events = await screen.findAllByText('Week View Event')
+					expect(events.length).toBeGreaterThan(0)
 				})
 			})
 
@@ -498,8 +499,8 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialView="day"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialView="day"
 						renderEventForm={(props) => {
 							addEventFn = props.onAdd
 							return <CustomEventForm {...props} />
@@ -509,7 +510,7 @@ describe('IlamyCalendar', () => {
 
 				// Wait for day view to render
 				await waitFor(() => {
-					expect(screen.getByTestId('day-view')).toBeInTheDocument()
+					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
 				})
 
 				// Add event directly
@@ -520,8 +521,9 @@ describe('IlamyCalendar', () => {
 					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
-				await waitFor(() => {
-					expect(screen.getByText('Day View Event')).toBeInTheDocument()
+				await waitFor(async () => {
+					const events = await screen.findAllByText('Day View Event')
+					expect(events.length).toBeGreaterThan(0)
 				})
 			})
 
@@ -531,8 +533,8 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialView="month"
 						renderEventForm={(props) => {
 							addEventFn = props.onAdd
 							return <CustomEventForm {...props} />
@@ -553,8 +555,9 @@ describe('IlamyCalendar', () => {
 					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
-				await waitFor(() => {
-					expect(screen.getByText('Persistent Event')).toBeInTheDocument()
+				await waitFor(async () => {
+					const events = await screen.findAllByText('Persistent Event')
+					expect(events.length).toBeGreaterThan(0)
 				})
 
 				// Get all buttons and find the exact "Week" button
@@ -562,22 +565,28 @@ describe('IlamyCalendar', () => {
 				fireEvent.click(weekButtons[0])
 
 				await waitFor(() => {
-					expect(screen.getByTestId('week-view')).toBeInTheDocument()
+					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
 				})
 
 				// Event should still be visible
-				expect(screen.getByText('Persistent Event')).toBeInTheDocument()
+				await waitFor(async () => {
+					const events = await screen.findAllByText('Persistent Event')
+					expect(events.length).toBeGreaterThan(0)
+				})
 
 				// Find exact "Day" button
 				const dayButtons = screen.getAllByRole('button', { name: /^day$/i })
 				fireEvent.click(dayButtons[0])
 
 				await waitFor(() => {
-					expect(screen.getByTestId('day-view')).toBeInTheDocument()
+					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
 				})
 
 				// Event should still be visible
-				expect(screen.getByText('Persistent Event')).toBeInTheDocument()
+				await waitFor(async () => {
+					const events = await screen.findAllByText('Persistent Event')
+					expect(events.length).toBeGreaterThan(0)
+				})
 			})
 		})
 
@@ -586,8 +595,8 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialView="month"
 						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialView="month"
 					/>
 				)
 
@@ -612,9 +621,6 @@ describe('IlamyCalendar', () => {
 		it('should apply default disabled state classes when no custom className is provided', async () => {
 			render(
 				<IlamyCalendar
-					events={[]}
-					initialView="month"
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
 					businessHours={{
 						daysOfWeek: [
 							'monday',
@@ -626,11 +632,14 @@ describe('IlamyCalendar', () => {
 						startTime: 9,
 						endTime: 17,
 					}}
+					events={[]}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialView="month"
 				/>
 			)
 
 			await waitFor(() => {
-				expect(screen.getByTestId('month-view')).toBeInTheDocument()
+				expect(screen.getByTestId('horizontal-grid-scroll')).toBeInTheDocument()
 			})
 
 			// Find a Saturday cell (non-business day) - should have default disabled styling
@@ -642,9 +651,6 @@ describe('IlamyCalendar', () => {
 		it('should apply custom disabledCell className when provided', async () => {
 			render(
 				<IlamyCalendar
-					events={[]}
-					initialView="month"
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
 					businessHours={{
 						daysOfWeek: [
 							'monday',
@@ -659,11 +665,14 @@ describe('IlamyCalendar', () => {
 					classesOverride={{
 						disabledCell: 'bg-gray-100 text-gray-400 cursor-not-allowed',
 					}}
+					events={[]}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialView="month"
 				/>
 			)
 
 			await waitFor(() => {
-				expect(screen.getByTestId('month-view')).toBeInTheDocument()
+				expect(screen.getByTestId('horizontal-grid-scroll')).toBeInTheDocument()
 			})
 
 			// Find a Saturday cell (non-business day)
@@ -677,11 +686,9 @@ describe('IlamyCalendar', () => {
 		})
 
 		it('should apply custom disabledCell className in week view', async () => {
+			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
 			render(
 				<IlamyCalendar
-					events={[]}
-					initialView="week"
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
 					businessHours={{
 						daysOfWeek: [
 							'monday',
@@ -696,17 +703,21 @@ describe('IlamyCalendar', () => {
 					classesOverride={{
 						disabledCell: 'bg-red-50 text-red-300',
 					}}
+					events={[]}
+					initialDate={initialDate}
+					initialView="week"
 				/>
 			)
 
 			await waitFor(() => {
-				expect(screen.getByTestId('week-view')).toBeInTheDocument()
+				expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
 			})
 
 			// Find a time cell outside business hours (e.g., 8 AM)
-			// Week view uses time cells with format: week-time-cell-{date}-{hour}
+			// Week view uses time cells with format: vertical-cell-{date}-{hour}-{minute}
+			const dateStr = initialDate.format('YYYY-MM-DD')
 			const nonBusinessTimeCell = screen.getByTestId(
-				'week-time-cell-2025-01-13-08'
+				`vertical-cell-${dateStr}-08-00`
 			)
 			expect(nonBusinessTimeCell).toHaveClass('bg-red-50')
 			expect(nonBusinessTimeCell).toHaveClass('text-red-300')
@@ -716,11 +727,9 @@ describe('IlamyCalendar', () => {
 		})
 
 		it('should apply custom disabledCell className in day view', async () => {
+			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
 			render(
 				<IlamyCalendar
-					events={[]}
-					initialView="day"
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
 					businessHours={{
 						daysOfWeek: [
 							'monday',
@@ -735,16 +744,22 @@ describe('IlamyCalendar', () => {
 					classesOverride={{
 						disabledCell: 'bg-yellow-50 text-yellow-300',
 					}}
+					events={[]}
+					initialDate={initialDate}
+					initialView="day"
 				/>
 			)
 
 			await waitFor(() => {
-				expect(screen.getByTestId('day-view')).toBeInTheDocument()
+				expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
 			})
 
 			// Find a time cell outside business hours (e.g., 8:00 AM)
-			// Day view uses time cells with format: day-time-cell-{hour}-{minute}
-			const nonBusinessTimeCell = screen.getByTestId('day-time-cell-08-00')
+			// Day view uses time cells with format: vertical-cell-{date}-{hour}-{minute}
+			const dateStr = initialDate.format('YYYY-MM-DD')
+			const nonBusinessTimeCell = screen.getByTestId(
+				`vertical-cell-${dateStr}-08-00`
+			)
 			expect(nonBusinessTimeCell).toHaveClass('bg-yellow-50')
 			expect(nonBusinessTimeCell).toHaveClass('text-yellow-300')
 			// Should NOT have default classes

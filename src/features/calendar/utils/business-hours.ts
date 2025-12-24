@@ -20,7 +20,7 @@ const DAY_TO_NUMBER: Record<WeekDays, number> = {
  * @param businessHours The business hours configuration (single or array)
  * @returns The matching BusinessHours config or undefined if no match found
  */
-const getBusinessHoursForDate = (
+export const getBusinessHoursForDate = (
 	date: dayjs.Dayjs,
 	businessHours?: BusinessHours | BusinessHours[]
 ): BusinessHours | undefined => {

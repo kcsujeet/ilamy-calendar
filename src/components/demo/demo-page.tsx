@@ -70,6 +70,20 @@ const demoResources: Resource[] = [
 		backgroundColor: '#ede9fe',
 		position: 4,
 	},
+	{
+		id: 'equipment-2',
+		title: 'Laptop Cart',
+		color: '#b45309',
+		backgroundColor: '#fef3c7',
+		position: 5,
+	},
+	{
+		id: 'vehicle-1',
+		title: 'Company Van',
+		color: '#d97706',
+		backgroundColor: '#ffedd5',
+		position: 6,
+	},
 ]
 
 // Convert regular events to resource events
@@ -103,12 +117,12 @@ const handleResourceEventClick = (event: CalendarEvent) => {
 export function DemoPage() {
 	// Calendar type state
 	const [calendarType, setCalendarType] = useState<'regular' | 'resource'>(
-		'regular'
+		'resource'
 	)
 
 	// Calendar configuration state
 	const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>('sunday')
-	const [initialView, setInitialView] = useState<CalendarView>('month')
+	const [initialView, setInitialView] = useState<CalendarView>('week')
 	const [initialDate, setInitialDate] = useState<dayjs.Dayjs | undefined>(
 		undefined
 	)
@@ -136,6 +150,11 @@ export function DemoPage() {
 	const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour')
 	const [useCustomClasses, setUseCustomClasses] = useState(false)
 
+	// Resource calendar settings
+	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
+		'horizontal'
+	)
+
 	const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}`
 
 	// Custom event renderer function
@@ -158,8 +177,8 @@ export function DemoPage() {
 
 	return (
 		<div
-			data-testid="demo-page"
 			className="container mx-auto px-4 py-8 relative"
+			data-testid="demo-page"
 		>
 			{/* Decorative background elements */}
 			<div className="fixed top-20 right-20 -z-10 w-96 h-96 bg-blue-500/10 rounded-full filter blur-3xl animate-pulse-slow"></div>
@@ -178,42 +197,44 @@ export function DemoPage() {
 				{/* Calendar settings sidebar */}
 				<div className="lg:col-span-1 space-y-6">
 					<DemoCalendarSettings
-						calendarType={calendarType}
-						setCalendarType={setCalendarType}
-						firstDayOfWeek={firstDayOfWeek}
-						setFirstDayOfWeek={setFirstDayOfWeek}
-						initialView={initialView}
-						setInitialView={setInitialView}
-						initialDate={initialDate}
-						setInitialDate={setInitialDate}
-						useCustomEventRenderer={useCustomEventRenderer}
-						setUseCustomEventRenderer={setUseCustomEventRenderer}
-						locale={locale}
-						setLocale={setLocale}
-						timezone={timezone}
-						setTimezone={setTimezone}
-						disableCellClick={disableCellClick}
-						setDisableCellClick={setDisableCellClick}
-						disableEventClick={disableEventClick}
-						setDisableEventClick={setDisableEventClick}
-						disableDragAndDrop={disableDragAndDrop}
-						setDisableDragAndDrop={setDisableDragAndDrop}
-						useCustomOnDateClick={useCustomOnDateClick}
-						setUseCustomOnDateClick={setUseCustomOnDateClick}
-						useCustomOnEventClick={useCustomOnEventClick}
-						setUseCustomOnEventClick={setUseCustomOnEventClick}
 						calendarHeight={calendarHeight}
-						setCalendarHeight={setCalendarHeight}
+						calendarType={calendarType}
 						dayMaxEvents={dayMaxEvents}
-						setDayMaxEvents={setDayMaxEvents}
-						stickyViewHeader={stickyViewHeader}
-						setStickyHeader={setStickyHeader}
-						timeFormat={timeFormat}
-						setTimeFormat={setTimeFormat}
-						useCustomClasses={useCustomClasses}
-						setUseCustomClasses={setUseCustomClasses}
-						// Resource calendar specific props
+						disableCellClick={disableCellClick}
+						disableDragAndDrop={disableDragAndDrop}
+						disableEventClick={disableEventClick}
+						firstDayOfWeek={firstDayOfWeek}
+						initialDate={initialDate}
+						initialView={initialView}
 						isResourceCalendar={calendarType === 'resource'}
+						locale={locale}
+						orientation={orientation}
+						setCalendarHeight={setCalendarHeight}
+						setCalendarType={setCalendarType}
+						setDayMaxEvents={setDayMaxEvents}
+						setDisableCellClick={setDisableCellClick}
+						setDisableDragAndDrop={setDisableDragAndDrop}
+						setDisableEventClick={setDisableEventClick}
+						setFirstDayOfWeek={setFirstDayOfWeek}
+						setInitialDate={setInitialDate}
+						setInitialView={setInitialView}
+						setLocale={setLocale}
+						setOrientation={setOrientation}
+						setStickyHeader={setStickyHeader}
+						setTimeFormat={setTimeFormat}
+						setTimezone={setTimezone}
+						setUseCustomClasses={setUseCustomClasses}
+						setUseCustomEventRenderer={setUseCustomEventRenderer}
+						setUseCustomOnDateClick={setUseCustomOnDateClick}
+						setUseCustomOnEventClick={setUseCustomOnEventClick}
+						stickyViewHeader={stickyViewHeader}
+						timeFormat={timeFormat}
+						timezone={timezone}
+						useCustomClasses={useCustomClasses}
+						// Resource calendar specific props
+						useCustomEventRenderer={useCustomEventRenderer}
+						useCustomOnDateClick={useCustomOnDateClick}
+						useCustomOnEventClick={useCustomOnEventClick}
 					/>
 
 					{/* Resource info card */}
@@ -222,7 +243,7 @@ export function DemoPage() {
 							<h3 className="font-semibold mb-3">Demo Resources</h3>
 							<div className="space-y-2 text-sm">
 								{demoResources.map((resource) => (
-									<div key={resource.id} className="flex items-center gap-2">
+									<div className="flex items-center gap-2" key={resource.id}>
 										<div
 											className="w-3 h-3 rounded"
 											style={{ backgroundColor: resource.color }}
@@ -259,76 +280,13 @@ export function DemoPage() {
 						>
 							{calendarType === 'regular' ? (
 								<IlamyCalendar
-									key={calendarKey}
-									firstDayOfWeek={firstDayOfWeek}
-									initialView={initialView}
-									initialDate={initialDate}
-									events={customEvents}
-									locale={locale}
-									timezone={timezone}
-									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
-									onEventClick={
-										useCustomOnEventClick ? handleEventClick : undefined
-									}
-									onCellClick={
-										useCustomOnDateClick ? handleDateClick : undefined
-									}
-									onEventAdd={handleEventAdd}
-									onEventUpdate={handleEventUpdate}
-									onEventDelete={handleEventDelete}
-									onDateChange={handleDateChange}
-									disableCellClick={disableCellClick}
-									disableEventClick={disableEventClick}
-									disableDragAndDrop={disableDragAndDrop}
-									dayMaxEvents={dayMaxEvents}
-									stickyViewHeader={stickyViewHeader}
-									timeFormat={timeFormat}
-									classesOverride={
-										useCustomClasses
-											? {
-													disabledCell:
-														'bg-red-50 dark:bg-red-950 text-red-400 dark:text-red-600 pointer-events-none opacity-50',
-												}
-											: undefined
-									}
 									businessHours={[
 										{
-											daysOfWeek: ['monday', 'wednesday', 'friday'],
+											daysOfWeek: ['tuesday', 'friday'],
 											startTime: 9,
 											endTime: 17,
 										},
-										{
-											daysOfWeek: ['tuesday', 'thursday'],
-											startTime: 10,
-											endTime: 18,
-										},
 									]}
-								/>
-							) : (
-								<IlamyResourceCalendar
-									key={`resource-${calendarKey}`}
-									resources={demoResources}
-									events={resourceEvents}
-									firstDayOfWeek={
-										firstDayOfWeek === 'sunday' ? 'sunday' : 'monday'
-									}
-									initialView={initialView === 'year' ? 'month' : initialView} // No year view for resource calendar
-									initialDate={initialDate}
-									locale={locale}
-									timezone={timezone}
-									onEventClick={
-										useCustomOnEventClick ? handleResourceEventClick : undefined
-									}
-									onEventAdd={handleEventAdd}
-									onEventUpdate={handleEventUpdate}
-									onEventDelete={handleEventDelete}
-									onDateChange={handleDateChange}
-									disableCellClick={disableCellClick}
-									disableEventClick={disableEventClick}
-									disableDragAndDrop={disableDragAndDrop}
-									dayMaxEvents={dayMaxEvents}
-									stickyViewHeader={stickyViewHeader}
-									timeFormat={timeFormat}
 									classesOverride={
 										useCustomClasses
 											? {
@@ -337,6 +295,33 @@ export function DemoPage() {
 												}
 											: undefined
 									}
+									dayMaxEvents={dayMaxEvents}
+									disableCellClick={disableCellClick}
+									disableDragAndDrop={disableDragAndDrop}
+									disableEventClick={disableEventClick}
+									events={customEvents}
+									firstDayOfWeek={firstDayOfWeek}
+									initialDate={initialDate}
+									initialView={initialView}
+									key={calendarKey}
+									locale={locale}
+									onCellClick={
+										useCustomOnDateClick ? handleDateClick : undefined
+									}
+									onDateChange={handleDateChange}
+									onEventAdd={handleEventAdd}
+									onEventClick={
+										useCustomOnEventClick ? handleEventClick : undefined
+									}
+									onEventDelete={handleEventDelete}
+									onEventUpdate={handleEventUpdate}
+									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
+									stickyViewHeader={stickyViewHeader}
+									timeFormat={timeFormat}
+									timezone={timezone}
+								/>
+							) : (
+								<IlamyResourceCalendar
 									businessHours={{
 										daysOfWeek: [
 											// 'monday',
@@ -348,6 +333,36 @@ export function DemoPage() {
 										startTime: 9,
 										endTime: 17,
 									}}
+									classesOverride={
+										useCustomClasses
+											? {
+													disabledCell:
+														'bg-red-50 dark:bg-red-950 text-red-400 dark:text-red-600 pointer-events-none opacity-50',
+												}
+											: undefined
+									}
+									dayMaxEvents={dayMaxEvents}
+									disableCellClick={disableCellClick}
+									disableDragAndDrop={disableDragAndDrop} // No year view for resource calendar
+									disableEventClick={disableEventClick}
+									events={resourceEvents}
+									firstDayOfWeek={firstDayOfWeek}
+									initialDate={initialDate}
+									initialView={initialView === 'year' ? 'month' : initialView}
+									key={`resource-${calendarKey}-${orientation}`}
+									locale={locale}
+									onDateChange={handleDateChange}
+									onEventAdd={handleEventAdd}
+									onEventClick={
+										useCustomOnEventClick ? handleResourceEventClick : undefined
+									}
+									onEventDelete={handleEventDelete}
+									onEventUpdate={handleEventUpdate}
+									orientation={orientation}
+									resources={demoResources}
+									stickyViewHeader={stickyViewHeader}
+									timeFormat={timeFormat}
+									timezone={timezone}
 								/>
 							)}
 						</CardContent>

@@ -18,3 +18,5 @@ const _server = serve({
 		console: true,
 	},
 })
+
+console.log(`Server running at ${_server.url}`)

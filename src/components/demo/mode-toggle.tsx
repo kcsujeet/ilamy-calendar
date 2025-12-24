@@ -40,11 +40,11 @@ export function ModeToggle() {
 
 	return (
 		<Button
-			variant="outline"
-			size="icon"
-			onClick={toggleTheme}
 			aria-label="Toggle theme"
 			className="bg-white/20 dark:bg-white/10 border-white/20 dark:border-white/10 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-white/20 p-1.5 rounded-full h-auto w-auto"
+			onClick={toggleTheme}
+			size="icon"
+			variant="outline"
 		>
 			{getThemeIcon()}
 			<span className="sr-only">Toggle theme</span>

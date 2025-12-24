@@ -5,6 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 **Critical**: NEVER start/stop the dev server. It's already running with hot reloading enabled.
+**Critical**: NEVER commit changes without asking first.
+**Critical**: NEVER forget to write tests.
 
 ```bash
 # Testing

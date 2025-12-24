@@ -16,12 +16,12 @@ import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
-import { normalizeEvents, safeDate } from '@/lib'
 import {
 	DAY_MAX_EVENTS_DEFAULT,
 	GAP_BETWEEN_ELEMENTS,
 	WEEK_DAYS_NUMBER_MAP,
 } from '@/lib/constants'
+import { normalizeEvents, safeDate } from '@/lib/utils'
 
 const CalendarContent: React.FC = () => {
 	const {
@@ -37,7 +37,7 @@ const CalendarContent: React.FC = () => {
 	} = useCalendarContext()
 
 	const viewMap = {
-		month: <MonthView key="month" dayMaxEvents={dayMaxEvents} />,
+		month: <MonthView dayMaxEvents={dayMaxEvents} key="month" />,
 		week: <WeekView key="week" />,
 		day: <DayView key="day" />,
 		year: <YearView key="year" />,
@@ -68,12 +68,12 @@ const CalendarContent: React.FC = () => {
 			<CalendarDndContext>
 				<AnimatePresence mode="wait">
 					<motion.div
-						key={view}
-						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
-						exit={{ opacity: 0, x: -20 }}
-						transition={{ duration: 0.1, ease: 'easeInOut' }}
 						className="w-full h-[calc(100%-3.5rem)]"
+						exit={{ opacity: 0, x: -20 }}
+						initial={{ opacity: 0, x: 20 }}
+						key={view}
+						transition={{ duration: 0.1, ease: 'easeInOut' }}
 					>
 						{viewMap[view]}
 					</motion.div>
@@ -102,15 +102,15 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 }) => {
 	return (
 		<CalendarProvider
-			events={normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events)}
-			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
-			initialView={initialView}
-			initialDate={safeDate(initialDate)}
 			dayMaxEvents={dayMaxEvents}
 			eventSpacing={eventSpacing}
+			events={normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events)}
+			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
+			initialDate={safeDate(initialDate)}
+			initialView={initialView}
 			stickyViewHeader={stickyViewHeader}
-			viewHeaderClassName={viewHeaderClassName}
 			timeFormat={timeFormat}
+			viewHeaderClassName={viewHeaderClassName}
 			{...props}
 		>
 			<CalendarContent />

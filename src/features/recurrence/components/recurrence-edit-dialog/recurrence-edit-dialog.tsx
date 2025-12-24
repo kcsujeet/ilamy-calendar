@@ -35,7 +35,7 @@ export function RecurrenceEditDialog({
 	const isEdit = operationType === 'edit'
 
 	return (
-		<Dialog open={isOpen} onOpenChange={onClose}>
+		<Dialog onOpenChange={onClose} open={isOpen}>
 			<DialogContent className="max-w-md">
 				<DialogHeader>
 					<DialogTitle>
@@ -51,9 +51,9 @@ export function RecurrenceEditDialog({
 
 				<div className="space-y-3">
 					<Button
-						variant="outline"
 						className="w-full justify-start h-auto p-4"
 						onClick={() => handleScopeSelect('this')}
+						variant="outline"
 					>
 						<div className="text-left">
 							<div className="font-medium">{t('thisEvent')}</div>
@@ -64,9 +64,9 @@ export function RecurrenceEditDialog({
 					</Button>
 
 					<Button
-						variant="outline"
 						className="w-full justify-start h-auto p-4"
 						onClick={() => handleScopeSelect('following')}
+						variant="outline"
 					>
 						<div className="text-left">
 							<div className="font-medium">{t('thisAndFollowingEvents')}</div>
@@ -77,9 +77,9 @@ export function RecurrenceEditDialog({
 					</Button>
 
 					<Button
-						variant="outline"
 						className="w-full justify-start h-auto p-4"
 						onClick={() => handleScopeSelect('all')}
+						variant="outline"
 					>
 						<div className="text-left">
 							<div className="font-medium">{t('allEvents')}</div>
@@ -91,7 +91,7 @@ export function RecurrenceEditDialog({
 				</div>
 
 				<DialogFooter>
-					<Button variant="outline" onClick={onClose}>
+					<Button onClick={onClose} variant="outline">
 						{t('cancel')}
 					</Button>
 				</DialogFooter>

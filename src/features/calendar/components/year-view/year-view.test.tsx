@@ -125,9 +125,9 @@ const TestWrapper = ({
 const renderYearView = (props: Record<string, unknown> = {}) => {
 	return render(
 		<CalendarProvider
-			firstDayOfWeek={0}
 			dayMaxEvents={3}
 			events={[]}
+			firstDayOfWeek={0}
 			locale="en"
 			{...props}
 		>

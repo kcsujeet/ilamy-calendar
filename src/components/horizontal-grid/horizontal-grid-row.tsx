@@ -3,6 +3,7 @@ import { memo } from 'react'
 import type { Resource } from '@/features/resource-calendar/types'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { ids } from '@/lib/utils/ids'
 import { GridCell } from '../grid-cell'
 import { HorizontalGridEventsLayer } from './horizontal-grid-events-layer'
 
@@ -38,7 +39,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	return (
 		<div
 			className={cn('flex flex-1 relative min-h-[60px]', className)}
-			data-testid={`horizontal-row-${id}`}
+			data-testid={ids.resourceRow(id)}
 		>
 			<div className="relative flex-1 flex">
 				<div className="flex w-full">
@@ -69,17 +70,15 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 						)
 					})}
 				</div>
-
 				{/* Events layer positioned absolutely over the row */}
 				<div className="absolute inset-0 z-10 pointer-events-none">
 					<HorizontalGridEventsLayer
 						allDay={allDay}
-						data-testid={`horizontal-events-${id}`}
-						days={columns.map((col) => col.day).filter(Boolean)}
+						days={columns.map((c) => c.day)}
 						gridType={gridType}
-						resourceId={resource?.id}
+						resourceId={id}
 					/>
-				</div>
+				</div>{' '}
 			</div>
 		</div>
 	)

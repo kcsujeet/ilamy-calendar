@@ -3,6 +3,7 @@ import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids'
 
 export const ResourceMonthVertical: React.FC = () => {
 	const { currentDate, getVisibleResources } = useResourceCalendarContext()
@@ -41,10 +42,13 @@ export const ResourceMonthVertical: React.FC = () => {
 	return (
 		<VerticalGrid
 			columns={[firstCol, ...columns]}
-			data-testid="resource-month-vertical-grid"
+			data-testid={ids.resourceView.month}
 		>
 			{/* Header */}
-			<div className={'flex border-b h-12'} data-testid="resource-month-header">
+			<div
+				className={'flex border-b h-12'}
+				data-testid={ids.resourceView.monthHeader}
+			>
 				<div className="shrink-0 border-r w-16 sticky top-0 left-0 bg-background z-20" />
 				{resources.map((resource) => (
 					<ResourceCell

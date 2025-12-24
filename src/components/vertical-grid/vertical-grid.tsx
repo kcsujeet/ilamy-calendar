@@ -2,6 +2,7 @@ import type React from 'react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
+import { ids } from '@/lib/utils/ids'
 import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
 
 interface VerticalGridProps {
@@ -35,7 +36,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	return (
 		<ScrollArea
 			className="h-full border"
-			data-testid="vertical-grid-scroll"
+			data-testid={ids.verticalGrid.scroll}
 			viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
 		>
 			{/* header row */}
@@ -50,7 +51,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 						classes?.header,
 						viewHeaderClassName
 					)}
-					data-testid="vertical-grid-header"
+					data-testid={ids.verticalGrid.header}
 				>
 					{children}
 				</div>
@@ -61,7 +62,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 							'flex w-full border-b min-h-12 h-full',
 							classes?.allDay
 						)}
-						data-testid="vertical-grid-all-day"
+						data-testid={ids.verticalGrid.allDay}
 					>
 						{allDayRow}
 					</div>
@@ -70,7 +71,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 			{/* Calendar area with scroll */}
 			<div
 				className={cn('flex flex-1 h-[calc(100%-3rem)] w-fit', classes?.body)}
-				data-testid="vertical-grid-body"
+				data-testid={ids.verticalGrid.body}
 			>
 				{/* Day columns with time slots */}
 				{columns.map((column, index) => (

@@ -101,9 +101,7 @@ describe('DayView', () => {
 
 		// Background grid and interactive layer are now merged into the main flow
 		// so we check for the time cells directly
-		expect(
-			screen.getByTestId(`vertical-cell-${today}-00-00`)
-		).toBeInTheDocument()
+		expect(screen.getByTestId(`day-cell-${today}-00-00`)).toBeInTheDocument()
 	})
 
 	test('displays current date correctly in header', () => {
@@ -290,20 +288,20 @@ describe('DayView', () => {
 		const dateStr = monday.format('YYYY-MM-DD')
 
 		// 10:00 should be business hour
-		const businessCell = screen.getByTestId(`vertical-cell-${dateStr}-10-00`)
+		const businessCell = screen.getByTestId(`day-cell-${dateStr}-10-00`)
 		expect(businessCell.className).toContain('hover:bg-accent')
 		expect(businessCell.className).not.toContain('bg-muted/30')
 		expect(businessCell.className).toContain('cursor-pointer')
 
 		// 08:00 should be non-business hour
-		const nonBusinessCell = screen.getByTestId(`vertical-cell-${dateStr}-08-00`)
+		const nonBusinessCell = screen.getByTestId(`day-cell-${dateStr}-08-00`)
 		expect(nonBusinessCell.className).toContain('bg-secondary')
 		expect(nonBusinessCell.className).toContain('text-muted-foreground')
 		expect(nonBusinessCell.className).not.toContain('hover:bg-muted/50')
 		expect(nonBusinessCell.className).toContain('cursor-default')
 
 		// 17:00 should be non-business hour (end time is exclusive)
-		const endBusinessCell = screen.getByTestId(`vertical-cell-${dateStr}-17-00`)
+		const endBusinessCell = screen.getByTestId(`day-cell-${dateStr}-17-00`)
 		expect(endBusinessCell.className).toContain('bg-secondary')
 		expect(endBusinessCell.className).toContain('text-muted-foreground')
 		expect(endBusinessCell.className).toContain('cursor-default')
@@ -326,27 +324,25 @@ describe('DayView', () => {
 		const dateStr = monday.format('YYYY-MM-DD')
 
 		// Exactly at 9:00am (startTime) - Should be business hour
-		const startBoundaryCell = screen.getByTestId(
-			`vertical-cell-${dateStr}-09-00`
-		)
+		const startBoundaryCell = screen.getByTestId(`day-cell-${dateStr}-09-00`)
 		expect(startBoundaryCell.className).toContain('hover:bg-accent')
 		expect(startBoundaryCell.className).not.toContain('bg-secondary')
 		expect(startBoundaryCell.className).toContain('cursor-pointer')
 
 		// Exactly at 5:00pm (endTime) - Should be non-business hour (endTime is exclusive)
-		const endBoundaryCell = screen.getByTestId(`vertical-cell-${dateStr}-17-00`)
+		const endBoundaryCell = screen.getByTestId(`day-cell-${dateStr}-17-00`)
 		expect(endBoundaryCell.className).toContain('bg-secondary')
 		expect(endBoundaryCell.className).toContain('text-muted-foreground')
 		expect(endBoundaryCell.className).toContain('cursor-default')
 
 		// 4:45pm (15 minutes before endTime) - Should be business hour
-		const beforeEndCell = screen.getByTestId(`vertical-cell-${dateStr}-16-45`)
+		const beforeEndCell = screen.getByTestId(`day-cell-${dateStr}-16-45`)
 		expect(beforeEndCell.className).toContain('hover:bg-accent')
 		expect(beforeEndCell.className).not.toContain('bg-secondary')
 		expect(beforeEndCell.className).toContain('cursor-pointer')
 
 		// 8:45am (15 minutes before startTime) - Should be non-business hour
-		const beforeStartCell = screen.getByTestId(`vertical-cell-${dateStr}-08-45`)
+		const beforeStartCell = screen.getByTestId(`day-cell-${dateStr}-08-45`)
 		expect(beforeStartCell.className).toContain('bg-secondary')
 		expect(beforeStartCell.className).toContain('text-muted-foreground')
 		expect(beforeStartCell.className).toContain('cursor-default')
@@ -368,7 +364,7 @@ describe('DayView', () => {
 		})
 
 		const mondayCell = screen.getByTestId(
-			`vertical-cell-${monday.format('YYYY-MM-DD')}-10-00`
+			`day-cell-${monday.format('YYYY-MM-DD')}-10-00`
 		)
 		expect(mondayCell.className).toContain('hover:bg-accent')
 		expect(mondayCell.className).not.toContain('bg-secondary')
@@ -383,7 +379,7 @@ describe('DayView', () => {
 		})
 
 		const sundayCell = screen.getByTestId(
-			`vertical-cell-${sunday.format('YYYY-MM-DD')}-10-00`
+			`day-cell-${sunday.format('YYYY-MM-DD')}-10-00`
 		)
 		expect(sundayCell.className).toContain('bg-secondary')
 		expect(sundayCell.className).toContain('text-muted-foreground')
@@ -408,17 +404,17 @@ describe('DayView', () => {
 		const dateStr = tuesday.format('YYYY-MM-DD')
 
 		// 11:00 should be business hour
-		const businessCell = screen.getByTestId(`vertical-cell-${dateStr}-11-00`)
+		const businessCell = screen.getByTestId(`day-cell-${dateStr}-11-00`)
 		expect(businessCell.className).toContain('hover:bg-accent')
 		expect(businessCell.className).not.toContain('bg-secondary')
 
 		// 9:00 should be non-business hour (before start)
-		const earlyCell = screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
+		const earlyCell = screen.getByTestId(`day-cell-${dateStr}-09-00`)
 		expect(earlyCell.className).toContain('bg-secondary')
 		expect(earlyCell.className).toContain('text-muted-foreground')
 
 		// 4:00pm should be non-business hour (after end)
-		const lateCell = screen.getByTestId(`vertical-cell-${dateStr}-16-00`)
+		const lateCell = screen.getByTestId(`day-cell-${dateStr}-16-00`)
 		expect(lateCell.className).toContain('bg-secondary')
 		expect(lateCell.className).toContain('text-muted-foreground')
 
@@ -432,7 +428,7 @@ describe('DayView', () => {
 		})
 
 		const mondayCell = screen.getByTestId(
-			`vertical-cell-${monday.format('YYYY-MM-DD')}-11-00`
+			`day-cell-${monday.format('YYYY-MM-DD')}-11-00`
 		)
 		expect(mondayCell.className).toContain('bg-secondary')
 		expect(mondayCell.className).toContain('text-muted-foreground')
@@ -455,7 +451,7 @@ describe('DayView', () => {
 		const dateStr = wednesday.format('YYYY-MM-DD')
 
 		// Wednesday 10am - Business hour
-		const wednesdayCell = screen.getByTestId(`vertical-cell-${dateStr}-10-00`)
+		const wednesdayCell = screen.getByTestId(`day-cell-${dateStr}-10-00`)
 		expect(wednesdayCell.className).toContain('hover:bg-accent')
 		expect(wednesdayCell.className).not.toContain('bg-secondary')
 
@@ -469,7 +465,7 @@ describe('DayView', () => {
 		})
 
 		const tuesdayCell = screen.getByTestId(
-			`vertical-cell-${tuesday.format('YYYY-MM-DD')}-10-00`
+			`day-cell-${tuesday.format('YYYY-MM-DD')}-10-00`
 		)
 		expect(tuesdayCell.className).toContain('bg-secondary')
 		expect(tuesdayCell.className).toContain('text-muted-foreground')
@@ -487,7 +483,7 @@ describe('DayView', () => {
 		const dateStr = monday.format('YYYY-MM-DD')
 
 		// Monday 10am - Should be clickable (no business hours restriction)
-		const mondayCell = screen.getByTestId(`vertical-cell-${dateStr}-10-00`)
+		const mondayCell = screen.getByTestId(`day-cell-${dateStr}-10-00`)
 		expect(mondayCell.className).toContain('hover:bg-accent')
 		expect(mondayCell.className).not.toContain('bg-secondary')
 		expect(mondayCell.className).toContain('cursor-pointer')
@@ -500,7 +496,7 @@ describe('DayView', () => {
 		})
 
 		const sundayCell = screen.getByTestId(
-			`vertical-cell-${sunday.format('YYYY-MM-DD')}-20-00`
+			`day-cell-${sunday.format('YYYY-MM-DD')}-20-00`
 		)
 		expect(sundayCell.className).toContain('hover:bg-accent')
 		expect(sundayCell.className).not.toContain('bg-secondary')
@@ -526,7 +522,7 @@ describe('DayView', () => {
 		// Test all 15-minute slots in the 9am hour (all should be business hours)
 		const slots = ['09-00', '09-15', '09-30', '09-45']
 		slots.forEach((slot) => {
-			const cell = screen.getByTestId(`vertical-cell-${dateStr}-${slot}`)
+			const cell = screen.getByTestId(`day-cell-${dateStr}-${slot}`)
 			expect(cell.className).toContain('hover:bg-accent')
 			expect(cell.className).not.toContain('bg-secondary')
 		})
@@ -534,7 +530,7 @@ describe('DayView', () => {
 		// Test all 15-minute slots in the 8am hour (all should be non-business hours)
 		const nonBusinessSlots = ['08-00', '08-15', '08-30', '08-45']
 		nonBusinessSlots.forEach((slot) => {
-			const cell = screen.getByTestId(`vertical-cell-${dateStr}-${slot}`)
+			const cell = screen.getByTestId(`day-cell-${dateStr}-${slot}`)
 			expect(cell.className).toContain('bg-secondary')
 			expect(cell.className).toContain('text-muted-foreground')
 		})

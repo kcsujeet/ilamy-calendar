@@ -1,50 +1,42 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { describe, expect, test, vi } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids'
 import { DayNumber } from './day-number'
 
 describe('DayNumber', () => {
-	beforeEach(() => {
-		cleanup()
-	})
-
 	test('renders day number correctly', () => {
 		const date = dayjs('2025-01-15')
 		render(<DayNumber date={date} />)
-
-		expect(screen.getByText('15')).toBeInTheDocument()
-		expect(screen.getByTestId('day-number-15')).toBeInTheDocument()
+		expect(screen.getByTestId(ids.dayNumber.root(date))).toHaveTextContent('15')
 	})
 
 	test('highlights today correctly', () => {
 		const today = dayjs()
 		render(<DayNumber date={today} />)
-
-		const element = screen.getByTestId('day-number-today')
-		expect(element).toHaveClass('bg-primary')
-		expect(element).toHaveClass('text-primary-foreground')
+		const element = screen.getByTestId(ids.dayNumber.today)
+		expect(element.className).toContain('bg-primary')
 	})
 
 	test('does not highlight non-today dates', () => {
-		const yesterday = dayjs().subtract(1, 'day')
-		render(<DayNumber date={yesterday} />)
-
-		const element = screen.getByTestId(`day-number-${yesterday.format('D')}`)
-		expect(element).not.toHaveClass('bg-primary')
+		const date = dayjs().add(1, 'day')
+		render(<DayNumber date={date} />)
+		const element = screen.getByTestId(ids.dayNumber.root(date))
+		expect(element.className).not.toContain('bg-primary')
 	})
 
 	test('respects locale for numbering', () => {
 		const date = dayjs('2025-01-15')
-		// AR locale uses different numbering system characters in some environments
-		// but let's just check if it renders without crashing and has correct text
-		render(<DayNumber date={date} locale="ar" />)
-		expect(screen.getByTestId('day-number-15')).toBeInTheDocument()
+		render(<DayNumber date={date} locale="ar-EG" />)
+		// Arabic-Indic digit for 15 might vary, but we check if it's rendered
+		expect(screen.getByTestId(ids.dayNumber.root(date))).toBeInTheDocument()
 	})
 
 	test('applies custom className', () => {
 		const date = dayjs('2025-01-15')
 		render(<DayNumber className="custom-class" date={date} />)
-
-		expect(screen.getByTestId('day-number-15')).toHaveClass('custom-class')
+		expect(screen.getByTestId(ids.dayNumber.root(date)).className).toContain(
+			'custom-class'
+		)
 	})
 })

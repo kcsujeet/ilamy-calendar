@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dialog'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids'
+
 export interface SelectedDayEvents {
 	day: dayjs.Dayjs
 	events: CalendarEvent[]
@@ -62,7 +64,7 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 						return (
 							<DraggableEvent
 								className="relative my-1 h-[30px]" // Use event ID for unique identification
-								elementId={`all-events-dialog-event-$${event.id}`}
+								elementId={ids.allEventsDialog.event(event.id)}
 								event={event}
 								key={event.id}
 							/>

@@ -1,6 +1,7 @@
 import type React from 'react'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { ids } from '@/lib/utils/ids'
 
 interface DayNumberProps {
 	date: dayjs.Dayjs
@@ -25,9 +26,7 @@ export const DayNumber: React.FC<DayNumberProps> = ({
 				isToday && 'bg-primary text-primary-foreground font-medium',
 				className
 			)}
-			data-testid={
-				isToday ? 'day-number-today' : `day-number-${date.format('D')}`
-			}
+			data-testid={isToday ? ids.dayNumber.today : ids.dayNumber.root(date)}
 		>
 			{Intl.DateTimeFormat(locale, { day: 'numeric' }).format(date.toDate())}
 		</div>

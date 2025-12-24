@@ -5,6 +5,7 @@ import type { CalendarEvent } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type { Resource } from '@/features/resource-calendar/types'
 import dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids'
 import { ResourceMonthVertical } from './resource-month-vertical'
 
 const mockResources: Resource[] = [
@@ -59,36 +60,30 @@ describe('ResourceMonthVertical', () => {
 
 		// Check for some day cells
 
-		// VerticalGridCol uses vertical-cell-{date}-{hour}-{minute}-{resourceId}
-
-		const firstDay = initialDate.format('YYYY-MM-DD')
+		// VerticalGridCol uses day-cell-{date}-{hour}-{minute}-{resourceId}
 
 		expect(
-			screen.getByTestId(`vertical-cell-${firstDay}-00-00-1`)
+			screen.getByTestId(
+				ids.dayCell(initialDate.date(1), undefined, mockResources[0].id)
+			)
 		).toBeInTheDocument()
-
 		expect(
-			screen.getByTestId(`vertical-cell-${firstDay}-00-00-2`)
+			screen.getByTestId(
+				ids.dayCell(initialDate.date(1), undefined, mockResources[1].id)
+			)
 		).toBeInTheDocument()
 	})
 
 	test('renders correct number of cells based on days in month', () => {
 		renderResourceMonthVertical()
+		const dayCellsForResource1 = screen.getAllByTestId(
+			new RegExp(`^day-cell-.*-resource-${mockResources[0].id}`)
+		)
+		expect(dayCellsForResource1.length).toBe(31)
 
-		const firstDay = initialDate.format('YYYY-MM-DD')
-
-		const lastDay = initialDate.endOf('month').format('YYYY-MM-DD')
-
-		expect(
-			screen.getByTestId(`vertical-cell-${firstDay}-00-00-1`)
-		).toBeInTheDocument()
-
-		expect(
-			screen.getByTestId(`vertical-cell-${lastDay}-00-00-1`)
-		).toBeInTheDocument()
-
-		// If Jan 2025 has 31 days, there should be 31 cells for each resource in the body
-
-		// but let's just check the boundaries for now.
+		const dayCellsForResource2 = screen.getAllByTestId(
+			new RegExp(`^day-cell-.*-resource-${mockResources[1].id}`)
+		)
+		expect(dayCellsForResource2.length).toBe(31)
 	})
 })

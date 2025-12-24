@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import type { CalendarEvent } from '@/components/types'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils/generator'
+import { ids } from '@/lib/utils/ids'
 import WeekView from './week-view'
 
 const weekDays: string[] = [
@@ -65,12 +66,11 @@ describe('WeekView', () => {
 	beforeEach(() => {
 		// Reset the dayjs locale to default before each test
 		locale = 'en'
-
-		// render the WeekView with default props
-		renderWeekView()
+		cleanup()
 	})
 
 	test('renders week view structure with proper layout', () => {
+		renderWeekView()
 		// Should have the main container structure
 		const container = screen.getByTestId('vertical-grid-scroll')
 		expect(container).toBeInTheDocument()
@@ -89,6 +89,7 @@ describe('WeekView', () => {
 	})
 
 	test('renders WeekView with correct weekday headers starting from Sunday', () => {
+		renderWeekView()
 		// Check that all weekday headers are present using test IDs
 		weekDays.forEach((day) => {
 			expect(
@@ -110,6 +111,7 @@ describe('WeekView', () => {
 	})
 
 	test('displays current week dates correctly', () => {
+		renderWeekView()
 		// Get the current week's start and end dates
 		const currentWeek = initialDate.startOf('week')
 		const weekStart = currentWeek.date()
@@ -124,6 +126,7 @@ describe('WeekView', () => {
 	})
 
 	test('handles events display in week structure', () => {
+		renderWeekView()
 		// Should render the week structure
 		expect(screen.getByTestId('vertical-grid-scroll')).toBeInTheDocument()
 
@@ -137,6 +140,7 @@ describe('WeekView', () => {
 	})
 
 	test('renders with proper scrollable time grid', () => {
+		renderWeekView()
 		// Check for scrollable container
 		const scrollArea = screen.getByTestId('vertical-grid-scroll')
 		expect(scrollArea).toBeInTheDocument()
@@ -165,18 +169,25 @@ describe('WeekView', () => {
 	})
 
 	test('renders time slots structure', () => {
+		renderWeekView()
 		// Should have time grid for the day
 		const timeGrid = screen.getByTestId('vertical-grid-body')
 		expect(timeGrid).toBeInTheDocument()
 
 		// Should have time labels column
-		const timeLabels = screen.getByTestId('vertical-col-time-col')
+		const timeLabels = screen.getByTestId(ids.verticalColumn('time-col'))
 		expect(timeLabels).toBeInTheDocument()
 
 		// Should have specific hour slots
-		expect(screen.getByTestId('vertical-time-00')).toBeInTheDocument()
-		expect(screen.getByTestId('vertical-time-12')).toBeInTheDocument()
-		expect(screen.getByTestId('vertical-time-23')).toBeInTheDocument()
+		expect(
+			within(timeLabels).getByTestId(ids.timeColumnLabel('00'))
+		).toBeInTheDocument()
+		expect(
+			within(timeLabels).getByTestId(ids.timeColumnLabel('12'))
+		).toBeInTheDocument()
+		expect(
+			within(timeLabels).getByTestId(ids.timeColumnLabel('23'))
+		).toBeInTheDocument()
 	})
 
 	test('renders day columns for the week', () => {
@@ -194,17 +205,23 @@ describe('WeekView', () => {
 	})
 
 	test('renders time cells for each day', () => {
+		renderWeekView()
 		const startOfWeek = initialDate.startOf('week')
-		const firstDay = startOfWeek.format('YYYY-MM-DD')
-		const testIdPrefix = `vertical-cell-${firstDay}`
 
 		// Check for some time cells on the first day
-		expect(screen.getByTestId(`${testIdPrefix}-00-00`)).toBeInTheDocument()
-		expect(screen.getByTestId(`${testIdPrefix}-12-00`)).toBeInTheDocument()
-		expect(screen.getByTestId(`${testIdPrefix}-23-00`)).toBeInTheDocument()
+		expect(
+			screen.getByTestId(ids.dayCell(startOfWeek, { hour: 0, minute: 0 }))
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(ids.dayCell(startOfWeek, { hour: 12, minute: 0 }))
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(ids.dayCell(startOfWeek, { hour: 23, minute: 0 }))
+		).toBeInTheDocument()
 	})
 
 	test('renders event layers for each day', () => {
+		renderWeekView()
 		const startOfWeek = initialDate.startOf('week')
 
 		for (let i = 0; i < 7; i++) {
@@ -363,7 +380,7 @@ describe('WeekView', () => {
 
 		// Monday 10am should be business hour (hover:bg-accent)
 		const businessCell = screen.getByTestId(
-			`vertical-cell-${monday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(monday, { hour: 10, minute: 0 })
 		)
 		expect(businessCell.className).toContain('hover:bg-accent')
 		expect(businessCell.className).not.toContain('bg-muted/30')
@@ -371,7 +388,7 @@ describe('WeekView', () => {
 
 		// Monday 8am should be non-business hour (bg-secondary)
 		const nonBusinessCell = screen.getByTestId(
-			`vertical-cell-${monday.format('YYYY-MM-DD')}-08-00`
+			ids.dayCell(monday, { hour: 8, minute: 0 })
 		)
 		expect(nonBusinessCell.className).toContain('bg-secondary')
 		expect(nonBusinessCell.className).toContain('text-muted-foreground')
@@ -381,7 +398,7 @@ describe('WeekView', () => {
 		// Sunday should be non-business day
 		const sunday = monday.subtract(1, 'day')
 		const sundayCell = screen.getByTestId(
-			`vertical-cell-${sunday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(sunday, { hour: 10, minute: 0 })
 		)
 		expect(sundayCell.className).toContain('bg-secondary')
 		expect(sundayCell.className).toContain('text-muted-foreground')
@@ -391,7 +408,6 @@ describe('WeekView', () => {
 	test('applies styling at exact boundary times (9am start, 5pm end)', () => {
 		cleanup()
 		const monday = dayjs('2025-01-06T00:00:00.000Z') // Monday
-		const testIdPrefix = `vertical-cell-${monday.format('YYYY-MM-DD')}`
 		const businessHours = {
 			daysOfWeek: ['monday'],
 			startTime: 9,
@@ -404,25 +420,33 @@ describe('WeekView', () => {
 		})
 
 		// Exactly at 9am (startTime) - Should be business hour
-		const startBoundaryCell = screen.getByTestId(`${testIdPrefix}-09-00`)
+		const startBoundaryCell = screen.getByTestId(
+			ids.dayCell(monday, { hour: 9, minute: 0 })
+		)
 		expect(startBoundaryCell.className).toContain('hover:bg-accent')
 		expect(startBoundaryCell.className).not.toContain('bg-secondary')
 		expect(startBoundaryCell.className).toContain('cursor-pointer')
 
 		// Exactly at 5pm (endTime) - Should be non-business hour (endTime is exclusive)
-		const endBoundaryCell = screen.getByTestId(`${testIdPrefix}-17-00`)
+		const endBoundaryCell = screen.getByTestId(
+			ids.dayCell(monday, { hour: 17, minute: 0 })
+		)
 		expect(endBoundaryCell.className).toContain('bg-secondary')
 		expect(endBoundaryCell.className).toContain('text-muted-foreground')
 		expect(endBoundaryCell.className).toContain('cursor-default')
 
 		// 4pm (one hour before endTime) - Should be business hour
-		const beforeEndCell = screen.getByTestId(`${testIdPrefix}-16-00`)
+		const beforeEndCell = screen.getByTestId(
+			ids.dayCell(monday, { hour: 16, minute: 0 })
+		)
 		expect(beforeEndCell.className).toContain('hover:bg-accent')
 		expect(beforeEndCell.className).not.toContain('bg-secondary')
 		expect(beforeEndCell.className).toContain('cursor-pointer')
 
 		// 8am (one hour before startTime) - Should be non-business hour
-		const beforeStartCell = screen.getByTestId(`${testIdPrefix}-08-00`)
+		const beforeStartCell = screen.getByTestId(
+			ids.dayCell(monday, { hour: 8, minute: 0 })
+		)
 		expect(beforeStartCell.className).toContain('bg-secondary')
 		expect(beforeStartCell.className).toContain('text-muted-foreground')
 		expect(beforeStartCell.className).toContain('cursor-default')
@@ -431,7 +455,6 @@ describe('WeekView', () => {
 	test('respects businessHours with firstDayOfWeek=Monday', () => {
 		cleanup()
 		const monday = dayjs('2025-01-06T00:00:00.000Z') // Monday
-		const testIdPrefix = `vertical-cell`
 		const businessHours = {
 			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
 			startTime: 9,
@@ -446,7 +469,7 @@ describe('WeekView', () => {
 
 		// Monday 10am - Business hour
 		const mondayCell = screen.getByTestId(
-			`${testIdPrefix}-${monday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(monday, { hour: 10, minute: 0 })
 		)
 		expect(mondayCell.className).toContain('hover:bg-accent')
 		expect(mondayCell.className).not.toContain('bg-secondary')
@@ -454,7 +477,7 @@ describe('WeekView', () => {
 		// Friday 10am - Business hour
 		const friday = monday.add(4, 'day')
 		const fridayCell = screen.getByTestId(
-			`${testIdPrefix}-${friday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(friday, { hour: 10, minute: 0 })
 		)
 		expect(fridayCell.className).toContain('hover:bg-accent')
 		expect(fridayCell.className).not.toContain('bg-secondary')
@@ -462,7 +485,7 @@ describe('WeekView', () => {
 		// Saturday 10am - Non-business day
 		const saturday = monday.add(5, 'day')
 		const saturdayCell = screen.getByTestId(
-			`${testIdPrefix}-${saturday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(saturday, { hour: 10, minute: 0 })
 		)
 		expect(saturdayCell.className).toContain('bg-secondary')
 		expect(saturdayCell.className).toContain('text-muted-foreground')
@@ -470,7 +493,7 @@ describe('WeekView', () => {
 		// Sunday 10am - Non-business day
 		const sunday = monday.add(6, 'day')
 		const sundayCell = screen.getByTestId(
-			`${testIdPrefix}-${sunday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(sunday, { hour: 10, minute: 0 })
 		)
 		expect(sundayCell.className).toContain('bg-secondary')
 		expect(sundayCell.className).toContain('text-muted-foreground')
@@ -479,7 +502,6 @@ describe('WeekView', () => {
 	test('respects businessHours with firstDayOfWeek=Sunday', () => {
 		cleanup()
 		const sunday = dayjs('2025-01-05T00:00:00.000Z') // Sunday
-		const testIdPrefix = `vertical-cell`
 		const businessHours = {
 			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
 			startTime: 9,
@@ -494,7 +516,7 @@ describe('WeekView', () => {
 
 		// Sunday 10am - Non-business day (even though it's first day of week)
 		const sundayCell = screen.getByTestId(
-			`${testIdPrefix}-${sunday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(sunday, { hour: 10, minute: 0 })
 		)
 		expect(sundayCell.className).toContain('bg-secondary')
 		expect(sundayCell.className).toContain('text-muted-foreground')
@@ -502,7 +524,7 @@ describe('WeekView', () => {
 		// Monday 10am - Business hour
 		const monday = sunday.add(1, 'day')
 		const mondayCell = screen.getByTestId(
-			`${testIdPrefix}-${monday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(monday, { hour: 10, minute: 0 })
 		)
 		expect(mondayCell.className).toContain('hover:bg-accent')
 		expect(mondayCell.className).not.toContain('bg-secondary')
@@ -510,7 +532,7 @@ describe('WeekView', () => {
 		// Saturday 10am - Non-business day
 		const saturday = sunday.add(6, 'day')
 		const saturdayCell = screen.getByTestId(
-			`${testIdPrefix}-${saturday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(saturday, { hour: 10, minute: 0 })
 		)
 		expect(saturdayCell.className).toContain('bg-secondary')
 		expect(saturdayCell.className).toContain('text-muted-foreground')
@@ -519,7 +541,6 @@ describe('WeekView', () => {
 	test('handles custom business hours (Tuesday-Thursday, 10am-3pm)', () => {
 		cleanup()
 		const tuesday = dayjs('2025-01-07T00:00:00.000Z') // Tuesday
-		const testIdPrefix = `vertical-cell`
 		const businessHours = {
 			daysOfWeek: ['tuesday', 'wednesday', 'thursday'],
 			startTime: 10,
@@ -532,25 +553,30 @@ describe('WeekView', () => {
 		})
 
 		// Tuesday 11am - Business hour
-		const tuesdayTestId = `${testIdPrefix}-${tuesday.format('YYYY-MM-DD')}`
-		const tuesdayBusinessCell = screen.getByTestId(`${tuesdayTestId}-11-00`)
+		const tuesdayBusinessCell = screen.getByTestId(
+			ids.dayCell(tuesday, { hour: 11, minute: 0 })
+		)
 		expect(tuesdayBusinessCell.className).toContain('hover:bg-accent')
 		expect(tuesdayBusinessCell.className).not.toContain('bg-secondary')
 
 		// Tuesday 9am - Non-business hour (before start)
-		const tuesdayEarlyCell = screen.getByTestId(`${tuesdayTestId}-09-00`)
+		const tuesdayEarlyCell = screen.getByTestId(
+			ids.dayCell(tuesday, { hour: 9, minute: 0 })
+		)
 		expect(tuesdayEarlyCell.className).toContain('bg-secondary')
 		expect(tuesdayEarlyCell.className).toContain('text-muted-foreground')
 
 		// Tuesday 4pm - Non-business hour (after end)
-		const tuesdayLateCell = screen.getByTestId(`${tuesdayTestId}-16-00`)
+		const tuesdayLateCell = screen.getByTestId(
+			ids.dayCell(tuesday, { hour: 16, minute: 0 })
+		)
 		expect(tuesdayLateCell.className).toContain('bg-secondary')
 		expect(tuesdayLateCell.className).toContain('text-muted-foreground')
 
 		// Monday 11am - Non-business day
 		const monday = tuesday.subtract(1, 'day')
 		const mondayCell = screen.getByTestId(
-			`${testIdPrefix}-${monday.format('YYYY-MM-DD')}-11-00`
+			ids.dayCell(monday, { hour: 11, minute: 0 })
 		)
 		expect(mondayCell.className).toContain('bg-secondary')
 		expect(mondayCell.className).toContain('text-muted-foreground')
@@ -558,7 +584,7 @@ describe('WeekView', () => {
 		// Friday 11am - Non-business day
 		const friday = tuesday.add(3, 'day')
 		const fridayCell = screen.getByTestId(
-			`${testIdPrefix}-${friday.format('YYYY-MM-DD')}-11-00`
+			ids.dayCell(friday, { hour: 11, minute: 0 })
 		)
 		expect(fridayCell.className).toContain('bg-secondary')
 		expect(fridayCell.className).toContain('text-muted-foreground')
@@ -567,7 +593,6 @@ describe('WeekView', () => {
 	test('handles edge case: businessHours with single day', () => {
 		cleanup()
 		const wednesday = dayjs('2025-01-08T00:00:00.000Z') // Wednesday
-		const testIdPrefix = `vertical-cell`
 		const businessHours = {
 			daysOfWeek: ['wednesday'],
 			startTime: 9,
@@ -580,22 +605,25 @@ describe('WeekView', () => {
 		})
 
 		// Wednesday 10am - Business hour
-		const wednesdayTestId = `${testIdPrefix}-${wednesday.format('YYYY-MM-DD')}`
-		const wednesdayCell = screen.getByTestId(`${wednesdayTestId}-10-00`)
+		const wednesdayCell = screen.getByTestId(
+			ids.dayCell(wednesday, { hour: 10, minute: 0 })
+		)
 		expect(wednesdayCell.className).toContain('hover:bg-accent')
 		expect(wednesdayCell.className).not.toContain('bg-secondary')
 
 		// Tuesday 10am - Non-business day
 		const tuesday = wednesday.subtract(1, 'day')
-		const tuesdayTestId = `${testIdPrefix}-${tuesday.format('YYYY-MM-DD')}`
-		const tuesdayCell = screen.getByTestId(`${tuesdayTestId}-10-00`)
+		const tuesdayCell = screen.getByTestId(
+			ids.dayCell(tuesday, { hour: 10, minute: 0 })
+		)
 		expect(tuesdayCell.className).toContain('bg-secondary')
 		expect(tuesdayCell.className).toContain('text-muted-foreground')
 
 		// Thursday 10am - Non-business day
 		const thursday = wednesday.add(1, 'day')
-		const thursdayTestId = `${testIdPrefix}-${thursday.format('YYYY-MM-DD')}`
-		const thursdayCell = screen.getByTestId(`${thursdayTestId}-10-00`)
+		const thursdayCell = screen.getByTestId(
+			ids.dayCell(thursday, { hour: 10, minute: 0 })
+		)
 		expect(thursdayCell.className).toContain('bg-secondary')
 		expect(thursdayCell.className).toContain('text-muted-foreground')
 	})
@@ -611,7 +639,7 @@ describe('WeekView', () => {
 
 		// Monday 10am - Should be clickable (no business hours restriction)
 		const mondayCell = screen.getByTestId(
-			`vertical-cell-${monday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(monday, { hour: 10, minute: 0 })
 		)
 		expect(mondayCell.className).toContain('hover:bg-accent')
 		expect(mondayCell.className).not.toContain('bg-secondary')
@@ -620,7 +648,7 @@ describe('WeekView', () => {
 		// Sunday 10am - Should be clickable (no business hours restriction)
 		const sunday = monday.subtract(1, 'day')
 		const sundayCell = screen.getByTestId(
-			`vertical-cell-${sunday.format('YYYY-MM-DD')}-10-00`
+			ids.dayCell(sunday, { hour: 10, minute: 0 })
 		)
 		expect(sundayCell.className).toContain('hover:bg-accent')
 		expect(sundayCell.className).not.toContain('bg-secondary')
@@ -632,23 +660,23 @@ describe('WeekView', () => {
 		renderWeekView({ timeFormat: '24-hour' })
 
 		// Check that times are displayed in 24-hour format
-		const midnightHour = screen.getByTestId('vertical-time-00')
+		const midnightHour = screen.getByTestId(ids.timeColumnLabel('00'))
 		const midnightText = midnightHour.textContent || ''
 		// In 24-hour format, should not contain AM/PM
 		expect(midnightText).not.toMatch(/AM|PM/i)
 
 		// 12:00 should show as "12" in 24-hour format (noon)
-		const noonHour = screen.getByTestId('vertical-time-12')
+		const noonHour = screen.getByTestId(ids.timeColumnLabel('12'))
 		const noonText = noonHour.textContent || ''
 		expect(noonText).not.toMatch(/AM|PM/i)
 
 		// 13:00 should show as "13" in 24-hour format
-		const afternoonHour = screen.getByTestId('vertical-time-13')
+		const afternoonHour = screen.getByTestId(ids.timeColumnLabel('13'))
 		const afternoonText = afternoonHour.textContent || ''
 		expect(afternoonText).not.toMatch(/AM|PM/i)
 
 		// 23:00 should show as "23" in 24-hour format
-		const lateHour = screen.getByTestId('vertical-time-23')
+		const lateHour = screen.getByTestId(ids.timeColumnLabel('23'))
 		const lateText = lateHour.textContent || ''
 		expect(lateText).not.toMatch(/AM|PM/i)
 	})
@@ -658,23 +686,23 @@ describe('WeekView', () => {
 		renderWeekView({ timeFormat: '12-hour' })
 
 		// Check that times are displayed in 12-hour format
-		const midnightHour = screen.getByTestId('vertical-time-00')
+		const midnightHour = screen.getByTestId(ids.timeColumnLabel('00'))
 		const midnightText = midnightHour.textContent || ''
 		// In 12-hour format, should contain AM or PM
 		expect(midnightText).toMatch(/AM|PM/i)
 
 		// 12:00 should show as "12 PM" in 12-hour format (noon)
-		const noonHour = screen.getByTestId('vertical-time-12')
+		const noonHour = screen.getByTestId(ids.timeColumnLabel('12'))
 		const noonText = noonHour.textContent || ''
 		expect(noonText).toMatch(/AM|PM/i)
 
 		// 13:00 should show as "1 PM" in 12-hour format
-		const afternoonHour = screen.getByTestId('vertical-time-13')
+		const afternoonHour = screen.getByTestId(ids.timeColumnLabel('13'))
 		const afternoonText = afternoonHour.textContent || ''
 		expect(afternoonText).toMatch(/AM|PM/i)
 
 		// 23:00 should show as "11 PM" in 12-hour format
-		const lateHour = screen.getByTestId('vertical-time-23')
+		const lateHour = screen.getByTestId(ids.timeColumnLabel('23'))
 		const lateText = lateHour.textContent || ''
 		expect(lateText).toMatch(/AM|PM/i)
 	})
@@ -684,11 +712,11 @@ describe('WeekView', () => {
 		renderWeekView()
 
 		// Should default to 12-hour format (timeFormat defaults to '12-hour')
-		const midnightHour = screen.getByTestId('vertical-time-00')
+		const midnightHour = screen.getByTestId(ids.timeColumnLabel('00'))
 		const midnightText = midnightHour.textContent || ''
 		expect(midnightText).toMatch(/AM|PM/i)
 
-		const noonHour = screen.getByTestId('vertical-time-12')
+		const noonHour = screen.getByTestId(ids.timeColumnLabel('12'))
 		const noonText = noonHour.textContent || ''
 		expect(noonText).toMatch(/AM|PM/i)
 	})

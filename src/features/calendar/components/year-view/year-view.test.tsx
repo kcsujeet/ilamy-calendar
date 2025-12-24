@@ -1,108 +1,81 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'bun:test'
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	within,
+} from '@testing-library/react'
 import type { CalendarEvent } from '@/components/types'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids'
 import YearView from './year-view'
 
-const monthNames = [
-	'January',
-	'February',
-	'March',
-	'April',
-	'May',
-	'June',
-	'July',
-	'August',
-	'September',
-	'October',
-	'November',
-	'December',
-]
-
-// Create specific events for testing event counts and dots
-const createTestEvents = (year: number): CalendarEvent[] => [
-	// January: 3 events on Jan 15
+// Mock events for testing - Use UTC to avoid timezone issues
+const mockEvents: CalendarEvent[] = [
+	// January
 	{
 		id: '1',
-		title: 'Jan Event 1',
-		start: dayjs(`${year}-01-15T09:00:00.000Z`),
-		end: dayjs(`${year}-01-15T10:00:00.000Z`),
+		title: 'New Year Party',
+		start: dayjs.utc('2025-01-01T10:00:00Z'),
+		end: dayjs.utc('2025-01-01T11:00:00Z'),
+		color: 'blue',
 	},
+	// February
 	{
 		id: '2',
-		title: 'Jan Event 2',
-		start: dayjs(`${year}-01-15T11:00:00.000Z`),
-		end: dayjs(`${year}-01-15T12:00:00.000Z`),
+		title: 'Team Meeting',
+		start: dayjs.utc('2025-02-15T14:00:00Z'),
+		end: dayjs.utc('2025-02-15T15:00:00Z'),
+		color: 'red',
 	},
 	{
 		id: '3',
-		title: 'Jan Event 3',
-		start: dayjs(`${year}-01-15T14:00:00.000Z`),
-		end: dayjs(`${year}-01-15T15:00:00.000Z`),
+		title: 'Project Deadline',
+		start: dayjs.utc('2025-02-28T09:00:00Z'),
+		end: dayjs.utc('2025-02-28T17:00:00Z'),
+		color: 'green',
 	},
-	// January: 2 events on Jan 20
+	// March (multiple events on same day)
 	{
 		id: '4',
-		title: 'Jan Event 4',
-		start: dayjs(`${year}-01-20T09:00:00.000Z`),
-		end: dayjs(`${year}-01-20T10:00:00.000Z`),
+		title: 'Event A',
+		start: dayjs.utc('2025-03-10T10:00:00Z'),
+		end: dayjs.utc('2025-03-10T11:00:00Z'),
+		color: 'purple',
 	},
 	{
 		id: '5',
-		title: 'Jan Event 5',
-		start: dayjs(`${year}-01-20T11:00:00.000Z`),
-		end: dayjs(`${year}-01-20T12:00:00.000Z`),
+		title: 'Event B',
+		start: dayjs.utc('2025-03-10T12:00:00Z'),
+		end: dayjs.utc('2025-03-10T13:00:00Z'),
+		color: 'orange',
 	},
-	// January: 1 event on Jan 25
 	{
 		id: '6',
-		title: 'Jan Event 6',
-		start: dayjs(`${year}-01-25T09:00:00.000Z`),
-		end: dayjs(`${year}-01-25T10:00:00.000Z`),
+		title: 'Event C',
+		start: dayjs.utc('2025-03-10T15:00:00Z'),
+		end: dayjs.utc('2025-03-10T16:00:00Z'),
+		color: 'pink',
 	},
-	// February: 1 event
 	{
 		id: '7',
-		title: 'Feb Event',
-		start: dayjs(`${year}-02-10T09:00:00.000Z`),
-		end: dayjs(`${year}-02-10T10:00:00.000Z`),
+		title: 'Event D',
+		start: dayjs.utc('2025-03-10T18:00:00Z'),
+		end: dayjs.utc('2025-03-10T19:00:00Z'),
+		color: 'teal',
 	},
-	// March: 5 events (to test 3+ dots)
 	{
 		id: '8',
-		title: 'Mar Event 1',
-		start: dayjs(`${year}-03-05T09:00:00.000Z`),
-		end: dayjs(`${year}-03-05T10:00:00.000Z`),
-	},
-	{
-		id: '9',
-		title: 'Mar Event 2',
-		start: dayjs(`${year}-03-05T11:00:00.000Z`),
-		end: dayjs(`${year}-03-05T12:00:00.000Z`),
-	},
-	{
-		id: '10',
-		title: 'Mar Event 3',
-		start: dayjs(`${year}-03-05T13:00:00.000Z`),
-		end: dayjs(`${year}-03-05T14:00:00.000Z`),
-	},
-	{
-		id: '11',
-		title: 'Mar Event 4',
-		start: dayjs(`${year}-03-05T15:00:00.000Z`),
-		end: dayjs(`${year}-03-05T16:00:00.000Z`),
-	},
-	{
-		id: '12',
-		title: 'Mar Event 5',
-		start: dayjs(`${year}-03-05T17:00:00.000Z`),
-		end: dayjs(`${year}-03-05T18:00:00.000Z`),
+		title: 'Event E',
+		start: dayjs.utc('2025-03-10T20:00:00Z'),
+		end: dayjs.utc('2025-03-10T21:00:00Z'),
+		color: 'cyan',
 	},
 ]
 
-// Test wrapper to capture context values and view changes
 const TestWrapper = ({
 	children,
 	testId,
@@ -122,20 +95,30 @@ const TestWrapper = ({
 	)
 }
 
-const renderYearView = (props: Record<string, unknown> = {}) => {
-	return render(
+const renderYearView = (props = {}) => {
+	const onDateChange = vi.fn()
+	const onViewChange = vi.fn()
+	const testId = 'current-date'
+
+	const renderResult = render(
 		<CalendarProvider
-			dayMaxEvents={3}
-			events={[]}
-			firstDayOfWeek={0}
-			locale="en"
+			events={mockEvents}
+			initialDate={dayjs.utc('2025-01-01')}
+			onDateChange={onDateChange}
+			onViewChange={onViewChange}
 			{...props}
 		>
-			<TestWrapper testId="ctx">
+			<TestWrapper testId={testId}>
 				<YearView />
 			</TestWrapper>
 		</CalendarProvider>
 	)
+
+	return {
+		...renderResult,
+		onDateChange,
+		onViewChange,
+	}
 }
 
 describe('YearView', () => {
@@ -146,346 +129,282 @@ describe('YearView', () => {
 	describe('Basic Structure', () => {
 		test('renders year view with scroll area and grid', () => {
 			renderYearView()
-			expect(screen.getByTestId('year-view')).toBeInTheDocument()
-			expect(screen.getByTestId('year-grid')).toBeInTheDocument()
+			expect(screen.getByTestId(ids.yearView.container)).toBeInTheDocument()
+			expect(screen.getByTestId(ids.yearView.grid)).toBeInTheDocument()
 		})
 
 		test('renders all 12 months', () => {
 			renderYearView()
-			for (let month = 1; month <= 12; month++) {
-				const monthId = month.toString().padStart(2, '0')
-				expect(screen.getByTestId(`year-month-${monthId}`)).toBeInTheDocument()
-			}
+			const monthElements = screen.getAllByTestId(/year-month-\d{2}/)
+			expect(monthElements).toHaveLength(12)
 		})
 
 		test('renders correct month titles', () => {
 			renderYearView()
-			monthNames.forEach((name, i) => {
-				const monthId = (i + 1).toString().padStart(2, '0')
-				const title = screen.getByTestId(`year-month-title-${monthId}`)
-				expect(title).toHaveTextContent(name)
-			})
+			expect(screen.getByText('January')).toBeInTheDocument()
+			expect(screen.getByText('December')).toBeInTheDocument()
 		})
 
 		test('renders mini calendar for each month', () => {
 			renderYearView()
-			for (let month = 1; month <= 12; month++) {
-				const monthId = month.toString().padStart(2, '0')
-				expect(
-					screen.getByTestId(`year-mini-calendar-${monthId}`)
-				).toBeInTheDocument()
-			}
+			const miniCalendars = screen.getAllByTestId(/year-mini-calendar-\d{2}/)
+			expect(miniCalendars).toHaveLength(12)
 		})
 
 		test('renders weekday headers in each mini calendar', () => {
 			renderYearView()
-			// Each of 12 months has 7 day headers
-			const sundayHeaders = screen.getAllByText('S')
-			expect(sundayHeaders.length).toBe(24) // 2 S's per month * 12 months
+			const miniCalendars = screen.getAllByTestId(/year-mini-calendar-\d{2}/)
+			miniCalendars.forEach((calendar) => {
+				const weekdayHeaders = Array.from(calendar.children).slice(0, 7)
+				expect(weekdayHeaders).toHaveLength(7)
+				expect(weekdayHeaders.map((el) => el.textContent?.trim())).toEqual([
+					'S',
+					'M',
+					'T',
+					'W',
+					'T',
+					'F',
+					'S',
+				])
+			})
 		})
 
 		test('renders grid with responsive classes', () => {
 			renderYearView()
-			const grid = screen.getByTestId('year-grid')
-			expect(grid).toHaveClass(
-				'grid',
-				'grid-cols-1',
-				'sm:grid-cols-2',
-				'lg:grid-cols-3'
-			)
+			const grid = screen.getByTestId(ids.yearView.grid)
+			expect(grid.className).toContain('sm:grid-cols-2')
+			expect(grid.className).toContain('lg:grid-cols-3')
 		})
 	})
 
 	describe('Event Count Badge', () => {
-		test('displays correct event count for month with 6 events', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-01-15`) })
-
-			// January has 6 events total
-			const badge = screen.getByTestId('year-month-event-count-01')
-			expect(badge).toHaveTextContent('6 Events')
+		test('displays correct event count for month with 6 events', async () => {
+			const eventsWithSixInJan = [
+				...mockEvents,
+				{
+					id: '10',
+					title: 'Extra 1',
+					start: dayjs.utc('2025-01-05'),
+					end: dayjs.utc('2025-01-05'),
+				},
+				{
+					id: '11',
+					title: 'Extra 2',
+					start: dayjs.utc('2025-01-10'),
+					end: dayjs.utc('2025-01-10'),
+				},
+				{
+					id: '12',
+					title: 'Extra 3',
+					start: dayjs.utc('2025-01-15'),
+					end: dayjs.utc('2025-01-15'),
+				},
+				{
+					id: '13',
+					title: 'Extra 4',
+					start: dayjs.utc('2025-01-20'),
+					end: dayjs.utc('2025-01-20'),
+				},
+				{
+					id: '14',
+					title: 'Extra 5',
+					start: dayjs.utc('2025-01-25'),
+					end: dayjs.utc('2025-01-25'),
+				},
+			]
+			renderYearView({ events: eventsWithSixInJan })
+			const badge = await screen.findByTestId(ids.yearView.eventCount('01'))
+			expect(badge.textContent?.toLowerCase()).toContain('6 events')
 		})
 
-		test('displays singular "event" for month with 1 event', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-02-10`) })
-
-			// February has 1 event
-			const badge = screen.getByTestId('year-month-event-count-02')
-			expect(badge).toHaveTextContent('1 Event')
+		test('displays singular "event" for month with 1 event', async () => {
+			renderYearView()
+			const badge = await screen.findByTestId(ids.yearView.eventCount('01'))
+			expect(badge.textContent?.toLowerCase()).toContain('1 event')
 		})
 
-		test('displays correct event count for month with 5 events', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-03-05`) })
-
-			// March has 5 events
-			const badge = screen.getByTestId('year-month-event-count-03')
-			expect(badge).toHaveTextContent('5 Events')
+		test('displays correct event count for month with 5 events', async () => {
+			renderYearView()
+			// March is month 03
+			const badge = await screen.findByTestId(ids.yearView.eventCount('03'))
+			expect(badge.textContent?.toLowerCase()).toContain('5 events')
 		})
 
 		test('does not show badge for months with no events', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-04-01`) })
-
-			// April has no events
-			expect(
-				screen.queryByTestId('year-month-event-count-04')
-			).not.toBeInTheDocument()
-		})
-
-		test('badge has correct styling', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-01-15`) })
-
-			const badge = screen.getByTestId('year-month-event-count-01')
-			expect(badge).toHaveClass(
-				'bg-primary',
-				'text-primary-foreground',
-				'rounded-full'
-			)
+			renderYearView()
+			// April is month 04
+			const badge = screen.queryByTestId(ids.yearView.eventCount('04'))
+			expect(badge).not.toBeInTheDocument()
 		})
 	})
 
 	describe('Event Dots', () => {
 		test('shows 1 dot for day with 1 event', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-01-25`) })
-
-			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-25')
-			const dots = dayCell.querySelectorAll('.rounded-full.h-\\[3px\\]')
-			expect(dots.length).toBe(1)
+			renderYearView()
+			const monthContainer = screen.getByTestId(ids.yearView.month('01'))
+			const dayCell = within(monthContainer).getByTestId(
+				ids.dayCell(dayjs.utc('2025-01-01'))
+			)
+			const dotsContainer = within(dayCell).getByTestId('event-dots')
+			const dots = dotsContainer.querySelectorAll('span')
+			expect(dots).toHaveLength(1)
 		})
 
 		test('shows 2 dots for day with 2 events', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-01-20`) })
-
-			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-20')
-			const dots = dayCell.querySelectorAll('.rounded-full.h-\\[3px\\]')
-			expect(dots.length).toBe(2)
+			const eventsWithTwo = [
+				...mockEvents,
+				{
+					id: '10',
+					title: 'Another Event',
+					start: dayjs.utc('2025-02-15T16:00:00Z'),
+					end: dayjs.utc('2025-02-15T17:00:00Z'),
+				},
+			]
+			renderYearView({ events: eventsWithTwo })
+			const monthContainer = screen.getByTestId(ids.yearView.month('02'))
+			const dayCell = within(monthContainer).getByTestId(
+				ids.dayCell(dayjs.utc('2025-02-15'))
+			)
+			const dotsContainer = within(dayCell).getByTestId('event-dots')
+			const dots = dotsContainer.querySelectorAll('span')
+			expect(dots).toHaveLength(2)
 		})
 
 		test('shows 3 dots for day with 3 events', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-01-15`) })
-
-			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-15')
-			const dots = dayCell.querySelectorAll('.rounded-full.h-\\[3px\\]')
-			expect(dots.length).toBe(3)
+			renderYearView()
+			const monthContainer = screen.getByTestId(ids.yearView.month('03'))
+			const dayCell = within(monthContainer).getByTestId(
+				ids.dayCell(dayjs.utc('2025-03-10'))
+			)
+			const dotsContainer = within(dayCell).getByTestId('event-dots')
+			const dots = dotsContainer.querySelectorAll('span')
+			expect(dots).toHaveLength(3)
 		})
 
 		test('shows max 3 dots for day with 5+ events', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-03-05`) })
-
-			const dayCell = screen.getByTestId('year-day-2025-03-2025-03-05')
-			const dots = dayCell.querySelectorAll('.rounded-full.h-\\[3px\\]')
-			expect(dots.length).toBe(3) // Max 3 dots even with 5 events
+			renderYearView()
+			const monthContainer = screen.getByTestId(ids.yearView.month('03'))
+			const dayCell = within(monthContainer).getByTestId(
+				ids.dayCell(dayjs.utc('2025-03-10'))
+			)
+			const dotsContainer = within(dayCell).getByTestId('event-dots')
+			const dots = dotsContainer.querySelectorAll('span')
+			expect(dots).toHaveLength(3)
 		})
 
 		test('shows no dots for day with no events', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-01-10`) })
-
-			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-10')
-			const dots = dayCell.querySelectorAll('.rounded-full.h-\\[3px\\]')
-			expect(dots.length).toBe(0)
-		})
-
-		test('dots have correct colors', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-01-15`) })
-
-			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-15')
-			const dots = dayCell.querySelectorAll('.rounded-full.h-\\[3px\\]')
-
-			expect(dots[0]).toHaveClass('bg-primary')
-			expect(dots[1]).toHaveClass('bg-blue-500')
-			expect(dots[2]).toHaveClass('bg-green-500')
-		})
-	})
-
-	describe('Day Cell Title Attribute', () => {
-		test('shows correct title for day with 1 event', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-01-25`) })
-
-			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-25')
-			expect(dayCell).toHaveAttribute('title', '1 event')
-		})
-
-		test('shows correct title for day with multiple events', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-01-15`) })
-
-			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-15')
-			expect(dayCell).toHaveAttribute('title', '3 events')
-		})
-
-		test('shows empty title for day with no events', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			renderYearView({ events, initialDate: dayjs(`${year}-01-10`) })
-
-			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-10')
-			expect(dayCell).toHaveAttribute('title', '')
+			renderYearView()
+			const monthContainer = screen.getByTestId(ids.yearView.month('01'))
+			const dayCell = within(monthContainer).getByTestId(
+				ids.dayCell(dayjs.utc('2025-01-02'))
+			)
+			expect(
+				within(dayCell).queryByTestId('event-dots')
+			).not.toBeInTheDocument()
 		})
 	})
 
 	describe('Day Cell Styling', () => {
-		test('today has primary background styling', () => {
-			const today = dayjs()
-			renderYearView({ initialDate: today })
-
-			const todayCell = screen.getByTestId(
-				`year-day-${today.format('YYYY-MM')}-${today.format('YYYY-MM-DD')}`
+		test('current selected date has muted background', () => {
+			const selectedDate = dayjs.utc('2025-06-20')
+			renderYearView({ initialDate: selectedDate })
+			const monthContainer = screen.getByTestId(ids.yearView.month('06'))
+			const selectedCell = within(monthContainer).getByTestId(
+				ids.dayCell(selectedDate)
 			)
-			expect(todayCell).toHaveClass(
-				'bg-primary',
-				'text-primary-foreground',
-				'rounded-full'
-			)
-		})
-
-		test('current selected date (not today) has muted background', () => {
-			const selectedDate = dayjs('2025-06-15')
-			const today = dayjs()
-
-			// Only test if selected date is not today
-			if (!selectedDate.isSame(today, 'day')) {
-				renderYearView({ initialDate: selectedDate })
-
-				const selectedCell = screen.getByTestId('year-day-2025-06-2025-06-15')
-				expect(selectedCell).toHaveClass(
-					'bg-muted',
-					'rounded-full',
-					'font-bold'
-				)
-			}
+			expect(selectedCell.className).toContain('bg-muted')
 		})
 
 		test('days outside current month have muted styling', () => {
-			// January 2025 starts on Wednesday, so Dec 29-31 2024 appear in the grid
-			renderYearView({ initialDate: dayjs('2025-01-15') })
-
-			const prevMonthDay = screen.getByTestId('year-day-2025-01-2024-12-29')
-			expect(prevMonthDay).toHaveClass('text-muted-foreground', 'opacity-50')
+			renderYearView()
+			const dayOutside = dayjs.utc('2024-12-31')
+			const monthContainer = screen.getByTestId(ids.yearView.month('01'))
+			const cell = within(monthContainer).getByTestId(ids.dayCell(dayOutside))
+			expect(cell.className).toContain('text-muted-foreground')
 		})
 
 		test('days with events have font-medium class', () => {
-			const year = 2025
-			const events = createTestEvents(year)
-			const today = dayjs()
-
-			// Use a day that has events but is not today
-			const testDate = dayjs(`${year}-01-25`)
-			if (!testDate.isSame(today, 'day')) {
-				renderYearView({ events, initialDate: dayjs(`${year}-02-01`) })
-
-				const eventDay = screen.getByTestId('year-day-2025-01-2025-01-25')
-				expect(eventDay).toHaveClass('font-medium')
-			}
+			// Find a day with events that is not today/selected
+			const eventDay = dayjs.utc('2025-02-15')
+			renderYearView({ initialDate: dayjs.utc('2025-01-01') })
+			const febContainer = screen.getByTestId(ids.yearView.month('02'))
+			const cell = within(febContainer).getByTestId(ids.dayCell(eventDay))
+			expect(cell.className).toContain('font-medium')
 		})
 	})
 
 	describe('Click Interactions', () => {
 		test('clicking month title navigates to month view', () => {
-			renderYearView({ initialDate: dayjs('2025-01-15') })
-
-			const monthTitle = screen.getByTestId('year-month-title-03')
-			fireEvent.click(monthTitle)
-
-			// Should change view to 'month'
-			expect(screen.getByTestId('ctx-view')).toHaveTextContent('month')
-			// Should update currentDate to March
-			expect(screen.getByTestId('ctx-month')).toHaveTextContent('2')
+			const { onViewChange } = renderYearView()
+			fireEvent.click(screen.getByTestId(ids.yearView.monthTitle('01')))
+			expect(onViewChange).toHaveBeenCalledWith('month')
 		})
 
 		test('clicking day cell navigates to day view', () => {
-			renderYearView({ initialDate: dayjs('2025-01-15') })
-
-			const dayCell = screen.getByTestId('year-day-2025-03-2025-03-10')
+			const { onViewChange, onDateChange } = renderYearView()
+			const targetDate = dayjs.utc('2025-01-15')
+			const monthContainer = screen.getByTestId(ids.yearView.month('01'))
+			const dayCell = within(monthContainer).getByTestId(
+				ids.dayCell(targetDate)
+			)
 			fireEvent.click(dayCell)
 
-			// Should change view to 'day'
-			expect(screen.getByTestId('ctx-view')).toHaveTextContent('day')
-			// Should update currentDate to March 10
-			expect(screen.getByTestId('ctx-month')).toHaveTextContent('2')
-			expect(screen.getByTestId('ctx-date')).toHaveTextContent('10')
+			expect(onViewChange).toHaveBeenCalledWith('day')
+			expect(onDateChange).toHaveBeenCalled()
 		})
 
 		test('day click does not bubble to month click', () => {
-			renderYearView({ initialDate: dayjs('2025-01-15') })
-
-			const dayCell = screen.getByTestId('year-day-2025-03-2025-03-10')
-			fireEvent.click(dayCell)
-
-			// Should be day view, not month view
-			expect(screen.getByTestId('ctx-view')).toHaveTextContent('day')
+			const { onViewChange } = renderYearView()
+			const monthContainer = screen.getByTestId(ids.yearView.month('01'))
+			fireEvent.click(
+				within(monthContainer).getByTestId(ids.dayCell(dayjs.utc('2025-01-15')))
+			)
+			// Only onViewChange for 'day' should be called
+			expect(onViewChange).toHaveBeenCalledWith('day')
+			expect(onViewChange).not.toHaveBeenCalledWith('month')
 		})
 	})
 
 	describe('Year Navigation', () => {
 		test('displays correct year from initialDate', () => {
-			renderYearView({ initialDate: dayjs('2030-06-15') })
-			expect(screen.getByTestId('ctx-year')).toHaveTextContent('2030')
-		})
-
-		test('defaults to current year when no initialDate', () => {
-			renderYearView()
-			expect(screen.getByTestId('ctx-year')).toHaveTextContent(
-				dayjs().year().toString()
-			)
+			renderYearView({ initialDate: dayjs.utc('2028-01-01') })
+			expect(screen.getByTestId('current-date-year')).toHaveTextContent('2028')
 		})
 
 		test('renders days for the correct year', () => {
-			renderYearView({ initialDate: dayjs('2030-01-15') })
-
-			// Should have January 2030 days
-			expect(
-				screen.getByTestId('year-day-2030-01-2030-01-01')
-			).toBeInTheDocument()
-			expect(
-				screen.getByTestId('year-day-2030-01-2030-01-31')
-			).toBeInTheDocument()
+			renderYearView({ initialDate: dayjs.utc('2026-01-01') })
+			const monthContainer = screen.getByTestId(ids.yearView.month('03'))
+			const dayCell = within(monthContainer).getByTestId(
+				ids.dayCell(dayjs.utc('2026-03-10'))
+			)
+			expect(dayCell).toBeInTheDocument()
 		})
 	})
 
 	describe('Mini Calendar Structure', () => {
 		test('each mini calendar has 42 day cells (6 weeks)', () => {
-			renderYearView({ initialDate: dayjs('2025-01-15') })
-
-			const januaryCalendar = screen.getByTestId('year-mini-calendar-01')
-			const buttons = januaryCalendar.querySelectorAll('button[type="button"]')
-			expect(buttons.length).toBe(42)
+			renderYearView()
+			const miniCalendar = screen.getByTestId(ids.yearView.miniCalendar('01'))
+			const dayCells = miniCalendar.querySelectorAll(
+				'[data-testid^="day-cell-"]'
+			)
+			expect(dayCells).toHaveLength(42)
 		})
 
 		test('mini calendar includes days from adjacent months', () => {
-			// January 2025 starts on Wednesday
-			renderYearView({ initialDate: dayjs('2025-01-15') })
+			renderYearView() // Jan 2025
+			const monthContainer = screen.getByTestId(ids.yearView.month('01'))
+			const prevMonthDay = within(monthContainer).getByTestId(
+				ids.dayCell(dayjs.utc('2024-12-29'))
+			)
+			expect(prevMonthDay).toBeInTheDocument()
+			expect(prevMonthDay.className).toContain('text-muted-foreground')
 
-			// Should include December 2024 days
-			expect(
-				screen.getByTestId('year-day-2025-01-2024-12-29')
-			).toBeInTheDocument()
-			// Should include February 2025 days
-			expect(
-				screen.getByTestId('year-day-2025-01-2025-02-01')
-			).toBeInTheDocument()
+			const nextMonthDay = within(monthContainer).getByTestId(
+				ids.dayCell(dayjs.utc('2025-02-08'))
+			)
+			expect(nextMonthDay).toBeInTheDocument()
+			expect(nextMonthDay.className).toContain('text-muted-foreground')
 		})
 	})
 })

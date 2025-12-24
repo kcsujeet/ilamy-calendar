@@ -5,6 +5,7 @@ import { useCalendarContext } from '@/features/calendar/contexts/calendar-contex
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getDayHours } from '@/lib/utils/date-utils'
+import { ids } from '@/lib/utils/ids'
 
 const DayView = () => {
 	const { currentDate, currentLocale, timeFormat, t } = useCalendarContext()
@@ -20,7 +21,10 @@ const DayView = () => {
 		gridType: 'hour' as const,
 		noEvents: true,
 		renderCell: (date: dayjs.Dayjs) => (
-			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+			<div
+				className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center"
+				data-testid={ids.timeColumnLabel(date.format('HH'))}
+			>
 				{Intl.DateTimeFormat(currentLocale, {
 					hour: 'numeric',
 					hour12: timeFormat === '12-hour',

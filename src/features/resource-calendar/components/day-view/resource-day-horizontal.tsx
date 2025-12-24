@@ -5,6 +5,7 @@ import { useResourceCalendarContext } from '@/features/resource-calendar/context
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getDayHours } from '@/lib/utils/date-utils'
+import { ids } from '@/lib/utils/ids'
 
 export const ResourceDayHorizontal: React.FC = () => {
 	const { currentDate, t, currentLocale, timeFormat } =
@@ -34,7 +35,7 @@ export const ResourceDayHorizontal: React.FC = () => {
 										'w-20 border-b border-r last:border-r-0 flex items-center justify-center text-xs shrink-0',
 										isNowHour && 'bg-blue-50 text-blue-600 font-medium'
 									)}
-									data-testid={`resource-day-time-label-${col.format('HH')}`}
+									data-testid={ids.resourceView.timeLabel(col.format('HH'))}
 									exit={{ opacity: 0, y: -10 }}
 									initial={{ opacity: 0, y: -10 }}
 									key={`${key}-motion`}

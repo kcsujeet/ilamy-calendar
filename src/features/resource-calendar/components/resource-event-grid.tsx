@@ -40,11 +40,7 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 		gridType: gridType,
 		renderCell: (row: HorizontalGridRowProps) => {
 			return (
-				<ResourceCell
-					className="h-full"
-					data-testid={`horizontal-row-label-${row.resource.id}`}
-					resource={row.resource}
-				>
+				<ResourceCell className="h-full" resource={row.resource}>
 					{renderResource ? (
 						renderResource(row.resource)
 					) : (

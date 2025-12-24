@@ -27,7 +27,9 @@ export const useProcessedWeekEvents = ({
 		getEventsForDateRange: state.getEventsForDateRange,
 		dayMaxEvents: state.dayMaxEvents,
 		eventSpacing: state.eventSpacing,
-		getEventsForResource: state.getEventsForResource,
+		getEventsForResource: state.getEventsForResource as
+			| ((id: string | number) => any[])
+			| undefined,
 	}))
 
 	const weekStart = days.at(0).startOf('day')
@@ -35,7 +37,7 @@ export const useProcessedWeekEvents = ({
 
 	const events = useMemo(() => {
 		let weekEvents = getEventsForDateRange(weekStart, weekEnd)
-		if (resourceId) {
+		if (resourceId && getEventsForResource) {
 			const resourceEvents = getEventsForResource(resourceId)
 			weekEvents = weekEvents.filter((event) =>
 				resourceEvents.some((e) => String(e.id) === String(event.id))

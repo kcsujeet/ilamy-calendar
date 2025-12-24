@@ -5,6 +5,7 @@ import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { ids } from '@/lib/utils/ids'
 import type { SelectedDayEvents } from './all-events-dialog'
 import { AllEventDialog } from './all-events-dialog'
 import { DroppableCell } from './droppable-cell'
@@ -22,11 +23,9 @@ interface GridProps {
 	allDay?: boolean // Flag to indicate if this is an all-day cell
 	showDayNumber?: boolean // Flag to show or hide the day number
 	children?: React.ReactNode
-	'data-testid'?: string
 }
 
 const NoMemoGridCell: React.FC<GridProps> = ({
-	index,
 	day,
 	hour,
 	minute,
@@ -35,7 +34,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	gridType = 'day',
 	shouldRenderEvents = true,
 	allDay = false,
-	'data-testid': dataTestId,
 	showDayNumber = false,
 	children,
 }) => {
@@ -115,12 +113,13 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		businessHours,
 	})
 
-	const hourStr = day.format('HH')
-	const mm = day.format('mm')
-	const dateTestIdBase =
+	const dateTestIdBase = ids.dayCell(
+		day,
 		gridType === 'hour'
-			? `day-cell-${day.format('YYYY-MM-DD')}-${hourStr}-${mm}`
-			: `day-cell-${day.format('YYYY-MM-DD')}`
+			? { hour: day.hour(), minute: day.minute() }
+			: undefined,
+		resourceId
+	)
 
 	return (
 		<>
@@ -130,7 +129,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 					'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px] relative border-r last:border-r-0 border-b',
 					className
 				)}
-				data-testid={dataTestId || dateTestIdBase}
+				data-testid={dateTestIdBase}
 				date={day}
 				disabled={!isBusiness || !isCurrentMonth}
 				hour={hour}

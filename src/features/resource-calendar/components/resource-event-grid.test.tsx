@@ -4,6 +4,7 @@ import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
 import type { Resource } from '@/features/resource-calendar/types'
 import dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids' // Add this line
 import { ResourceEventGrid } from './resource-event-grid'
 
 const mockResources: Resource[] = [
@@ -170,12 +171,12 @@ describe('ResourceEventGrid', () => {
 				initialDate: days[0],
 			})
 
-			const row = screen.getByTestId('horizontal-row-res-1')
+			const row = screen.getByTestId(ids.resourceRow('res-1'))
 			const mondayCell = within(row).getByTestId(
-				`day-cell-${days[0].format('YYYY-MM-DD')}`
+				ids.dayCell(days[0], undefined, 'res-1')
 			)
 			const sundayCell = within(row).getByTestId(
-				`day-cell-${days[1].format('YYYY-MM-DD')}`
+				ids.dayCell(days[1], undefined, 'res-1')
 			)
 
 			// Monday is a business day -> No disabled styling
@@ -204,15 +205,15 @@ describe('ResourceEventGrid', () => {
 				}
 			)
 
-			const row = screen.getByTestId('horizontal-row-res-1')
+			const row = screen.getByTestId(ids.resourceRow('res-1'))
 			const businessHourCell = within(row).getByTestId(
-				`day-cell-${h1.format('YYYY-MM-DD-HH-mm')}`
+				ids.dayCell(h1, { hour: h1.hour(), minute: h1.minute() }, 'res-1')
 			)
 			const nonBusinessHourCell = within(row).getByTestId(
-				`day-cell-${h2.format('YYYY-MM-DD-HH-mm')}`
+				ids.dayCell(h2, { hour: h2.hour(), minute: h2.minute() }, 'res-1')
 			)
 			const nonBusinessDayCell = within(row).getByTestId(
-				`day-cell-${h3.format('YYYY-MM-DD-HH-mm')}`
+				ids.dayCell(h3, { hour: h3.hour(), minute: h3.minute() }, 'res-1')
 			)
 
 			// Monday 10am -> Business -> No disabled styling

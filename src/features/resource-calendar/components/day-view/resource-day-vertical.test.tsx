@@ -5,6 +5,7 @@ import type { CalendarEvent } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type { Resource } from '@/features/resource-calendar/types'
 import dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids'
 import { ResourceDayVertical } from './resource-day-vertical'
 
 const mockResources: Resource[] = [
@@ -59,13 +60,15 @@ describe('ResourceDayVertical', () => {
 		// VerticalGridCol uses vertical-col-{id}
 		const dateStr = initialDate.format('YYYY-MM-DD')
 		const col1 = screen.getByTestId(
-			`vertical-col-day-col-${dateStr}-resource-1`
+			ids.verticalColumn(`day-col-${dateStr}-resource-1`)
 		)
 		expect(col1).toBeInTheDocument()
 
 		// Find cell for Resource 1 at 09:00 using data-testid
-		// VerticalGridCol uses vertical-cell-{date}-{hour}-{minute}-{resourceId}
-		const resource1Cell = screen.getByTestId(`vertical-cell-${dateStr}-09-00-1`)
+		// VerticalGridCol uses day-cell-{date}-{hour}-{minute}-{resourceId}
+		const resource1Cell = screen.getByTestId(
+			ids.dayCell(initialDate, { hour: 9, minute: 0 }, '1')
+		)
 		expect(resource1Cell).toBeInTheDocument()
 	})
 
@@ -78,20 +81,19 @@ describe('ResourceDayVertical', () => {
 
 	test('renders 15-minute slots by default in Day View', () => {
 		renderResourceDayVertical()
-		const dateStr = initialDate.format('YYYY-MM-DD')
 
 		// Should have 00, 15, 30, 45 slots
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-00-1`)
+			screen.getByTestId(ids.dayCell(initialDate, { hour: 9, minute: 0 }, '1'))
 		).toBeInTheDocument()
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-15-1`)
+			screen.getByTestId(ids.dayCell(initialDate, { hour: 9, minute: 15 }, '1'))
 		).toBeInTheDocument()
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-30-1`)
+			screen.getByTestId(ids.dayCell(initialDate, { hour: 9, minute: 30 }, '1'))
 		).toBeInTheDocument()
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-45-1`)
+			screen.getByTestId(ids.dayCell(initialDate, { hour: 9, minute: 45 }, '1'))
 		).toBeInTheDocument()
 	})
 })

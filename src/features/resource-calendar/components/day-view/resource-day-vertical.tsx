@@ -6,6 +6,7 @@ import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { getDayHours } from '@/lib/utils/date-utils'
+import { ids } from '@/lib/utils/ids'
 
 export const ResourceDayVertical: React.FC = () => {
 	const { currentDate, getVisibleResources, currentLocale, timeFormat } =
@@ -23,7 +24,10 @@ export const ResourceDayVertical: React.FC = () => {
 		gridType: 'hour' as const,
 		noEvents: true,
 		renderCell: (date: dayjs.Dayjs) => (
-			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+			<div
+				className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center"
+				data-testid={ids.resourceView.timeLabel(date.format('HH'))}
+			>
 				{Intl.DateTimeFormat(currentLocale, {
 					hour: 'numeric',
 					hour12: timeFormat === '12-hour',
@@ -58,11 +62,14 @@ export const ResourceDayVertical: React.FC = () => {
 			}
 			cellSlots={[0, 15, 30, 45]}
 			columns={[firstCol, ...columns]}
-			data-testid="resource-day"
+			data-testid={ids.resourceView.day}
 			gridType="hour"
 		>
 			{/* Header */}
-			<div className={'flex border-b h-12'} data-testid="resource-month-header">
+			<div
+				className={'flex border-b h-12'}
+				data-testid={ids.resourceView.monthHeader}
+			>
 				<div className="shrink-0 border-r w-16 sticky top-0 left-0 bg-background z-20" />
 				{resources.map((resource) => (
 					<ResourceCell

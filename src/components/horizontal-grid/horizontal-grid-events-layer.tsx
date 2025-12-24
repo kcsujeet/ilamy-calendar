@@ -3,26 +3,19 @@ import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWeekEvents'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { EVENT_BAR_HEIGHT } from '@/lib/constants'
+import { ids } from '@/lib/utils/ids'
 
 export interface HorizontalGridEventsLayerProps {
 	days: dayjs.Dayjs[]
 	gridType?: 'day' | 'hour'
 	resourceId?: string | number
 	dayNumberHeight?: number
-	'data-testid'?: string
 	allDay?: boolean
 }
 
 const NoMemoHorizontalGridEventsLayer: React.FC<
 	HorizontalGridEventsLayerProps
-> = ({
-	days,
-	gridType = 'day',
-	resourceId,
-	dayNumberHeight,
-	'data-testid': dataTestId,
-	allDay,
-}) => {
+> = ({ days, gridType = 'day', resourceId, dayNumberHeight, allDay }) => {
 	const weekStart = days.at(0).startOf('day')
 
 	const processedWeekEvents = useProcessedWeekEvents({
@@ -36,10 +29,15 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	return (
 		<div
 			className="relative w-full h-full pointer-events-none z-10 overflow-clip"
-			data-testid={dataTestId}
+			data-testid={ids.horizontalEvents(resourceId || '')}
 		>
 			{processedWeekEvents.map((event) => {
-				const eventKey = `${event.id}-${event.position}-${weekStart.toISOString()}-${resourceId ?? 'no-resource'}`
+				const eventKey = ids.draggableEventWrapper(
+					event.id,
+					event.position,
+					weekStart.toISOString(),
+					resourceId
+				)
 
 				return (
 					<div

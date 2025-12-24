@@ -2,6 +2,7 @@ import type React from 'react'
 import { memo } from 'react'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { ids } from '@/lib/utils/ids'
 import { GridCell } from '../grid-cell'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
@@ -11,12 +12,12 @@ export interface VerticalGridColProps {
 	resourceId?: string | number
 	days: dayjs.Dayjs[] // The specific day this column represents
 	className?: string
-	'data-testid'?: string
 	gridType?: 'day' | 'hour'
 	renderHeader?: () => React.ReactNode
 	renderCell?: (date: dayjs.Dayjs) => React.ReactNode
 	noEvents?: boolean
-	/** Optional array of minute slots by which the hour is divided
+	/**
+	 * Custom time slots configuration
 	 * e.g., [0, 15, 30, 45] for quarter-hour slots
 	 */
 	cellSlots?: number[]
@@ -28,7 +29,6 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	id,
 	days,
 	resourceId,
-	'data-testid': dataTestId,
 	gridType,
 	className,
 	renderCell,
@@ -42,7 +42,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 				'flex flex-col flex-1 items-center justify-center min-w-50 bg-background relative',
 				className
 			)}
-			data-testid={dataTestId || `vertical-col-${id}`}
+			data-testid={ids.verticalColumn(id)}
 		>
 			{/* Time slots */}
 			<div
@@ -56,14 +56,9 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 					const dateStr = day.format('YYYY-MM-DD')
 
 					if (renderCell) {
-						const testId =
-							id === 'time-col'
-								? `vertical-time-${hourStr}`
-								: `vertical-cell-${dateStr}-${hourStr}-00${resourceId ? `-${resourceId}` : ''}`
 						return (
 							<div
 								className="h-[60px] border-b border-r"
-								data-testid={testId}
 								key={`${dateStr}-${hourStr}`}
 							>
 								{renderCell(day)}
@@ -73,9 +68,6 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 
 					return cellSlots.map((minute) => {
 						const m = minute === 60 ? 0 : minute
-						const mm = String(m).padStart(2, '0')
-						const testId = `vertical-cell-${dateStr}-${hourStr}-${mm}${resourceId ? `-${resourceId}` : ''}`
-
 						return (
 							<GridCell
 								className={cn(
@@ -83,12 +75,11 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 									minute === 60 ? '' : 'border-dashed h-[15px] min-h-[15px]',
 									isLastColumn ? 'border-r-0' : 'border-r'
 								)}
-								data-testid={testId}
 								day={day.minute(m)}
 								gridType={gridType}
 								hour={day.hour()}
 								index={index}
-								key={`${dateStr}-${hourStr}-${mm}-${resourceId || 'no-resource'}`}
+								key={`${dateStr}-${hourStr}-${m}-${resourceId || 'no-resource'}`}
 								minute={m}
 								resourceId={resourceId} // Events are rendered in a separate layer
 								shouldRenderEvents={false}
@@ -96,18 +87,17 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 						)
 					})
 				})}
-
 				{/* Event blocks layer */}
 				{!noEvents && (
 					<div className="absolute inset-0 z-10 pointer-events-none">
 						<VerticalGridEventsLayer
-							data-testid={`vertical-events-${id}`}
+							columnId={id}
 							days={days}
 							gridType={gridType}
 							resourceId={resourceId}
 						/>
 					</div>
-				)}
+				)}{' '}
 			</div>
 		</div>
 	)

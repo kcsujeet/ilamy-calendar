@@ -6,6 +6,7 @@ import { useResourceCalendarContext } from '@/features/resource-calendar/context
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getDayHours, getWeekDays } from '@/lib/utils/date-utils'
+import { ids } from '@/lib/utils/ids'
 
 export const ResourceWeekHorizontal: React.FC = () => {
 	const { currentDate, firstDayOfWeek, t, currentLocale, timeFormat } =
@@ -82,7 +83,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 										'w-20 border-r flex items-center justify-center text-xs shrink-0',
 										isNowHour && 'bg-blue-50 text-blue-600 font-medium'
 									)}
-									data-testid={`resource-week-time-label-${col.format('HH')}`}
+									data-testid={ids.resourceView.timeLabel(col.format('HH'))}
 									exit={{ opacity: 0, y: -10 }}
 									initial={{ opacity: 0, y: -10 }}
 									key={`${key}-motion`}

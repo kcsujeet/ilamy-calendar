@@ -4,19 +4,20 @@ import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { ids } from '@/lib/utils/ids'
 
 interface VerticalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
 	days: dayjs.Dayjs[] // The specific day this layer represents
 	resourceId?: string | number
-	'data-testid'?: string
+	columnId?: string
 }
 
 const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	days,
 	gridType = 'hour',
 	resourceId,
-	'data-testid': dataTestId,
+	columnId,
 }) => {
 	const todayEvents = useProcessedDayEvents({ days, gridType, resourceId })
 	const rangeStart = days.at(0)
@@ -25,13 +26,18 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	return (
 		<div
 			className="relative w-full h-full pointer-events-none z-10 overflow-clip"
-			data-testid={dataTestId}
+			data-testid={columnId ? ids.verticalEvents(columnId) : undefined}
 		>
 			{rangeStart && rangeEnd && (
 				<CurrentTimeIndicator rangeEnd={rangeEnd} rangeStart={rangeStart} />
 			)}
 			{todayEvents.map((event, index) => {
-				const eventKey = `event-${event.id}-${index}-${days.at(0).toISOString()}-${resourceId ?? 'no-resource'}`
+				const eventKey = ids.draggableEventWrapper(
+					event.id,
+					index,
+					days.at(0)!.toISOString(),
+					resourceId
+				)
 				const isShortEvent = event.end.diff(event.start, 'minute') <= 15
 
 				return (

@@ -9,6 +9,7 @@ import { useResourceCalendarContext } from '@/features/resource-calendar/context
 import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getDayHours, getWeekDays } from '@/lib/utils/date-utils'
+import { ids } from '@/lib/utils/ids'
 
 export const ResourceWeekVertical: React.FC = () => {
 	const {
@@ -78,7 +79,7 @@ export const ResourceWeekVertical: React.FC = () => {
 			}
 			classes={{ header: 'h-24' }}
 			columns={[firstCol, ...columns]}
-			data-testid="resource-week"
+			data-testid={ids.resourceView.week}
 			gridType="hour"
 		>
 			<div className="flex-1 flex flex-col">
@@ -129,7 +130,7 @@ export const ResourceWeekVertical: React.FC = () => {
 									className={cn(
 										'w-50 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
 									)}
-									data-testid={`resource-week-time-label-${day.format('HH')}`}
+									data-testid={ids.resourceView.timeLabel(day.format('HH'))}
 									exit={{ opacity: 0, y: -10 }}
 									initial={{ opacity: 0, y: -10 }}
 									key={`${key}-motion`}

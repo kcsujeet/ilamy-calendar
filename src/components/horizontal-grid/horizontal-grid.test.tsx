@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
 import type { Resource } from '@/features/resource-calendar/types'
 import dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids'
 import { HorizontalGrid } from './horizontal-grid'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -18,8 +19,8 @@ const mockRows = [
 				day: dayjs(),
 				gridType: 'day' as const,
 				renderCell: ({ resource }: { resource?: Resource }) => (
-					<div data-testid={`horizontal-row-label-${resource.id}`}>
-						{resource.title}
+					<div data-testid={ids.resourceCell(resource?.id || '')}>
+						{resource?.title}
 					</div>
 				),
 			},
@@ -55,9 +56,9 @@ describe('HorizontalGrid', () => {
 	test('renders base structure correctly', () => {
 		renderHorizontalGrid()
 
-		expect(screen.getByTestId('horizontal-grid-scroll')).toBeInTheDocument()
-		expect(screen.getByTestId('horizontal-grid-header')).toBeInTheDocument()
-		expect(screen.getByTestId('horizontal-grid-body')).toBeInTheDocument()
+		expect(screen.getByTestId(ids.horizontalGrid.scroll)).toBeInTheDocument()
+		expect(screen.getByTestId(ids.horizontalGrid.header)).toBeInTheDocument()
+		expect(screen.getByTestId(ids.horizontalGrid.body)).toBeInTheDocument()
 		expect(screen.getByTestId('grid-children')).toHaveTextContent(
 			'Header Content'
 		)
@@ -65,8 +66,8 @@ describe('HorizontalGrid', () => {
 
 	test('renders rows and labels', () => {
 		renderHorizontalGrid()
-		expect(screen.getByTestId('horizontal-row-res-1')).toBeInTheDocument()
-		expect(screen.getByTestId('horizontal-row-label-res-1')).toHaveTextContent(
+		expect(screen.getByTestId(ids.resourceRow('res-1'))).toBeInTheDocument()
+		expect(screen.getByTestId(ids.resourceCell('res-1'))).toHaveTextContent(
 			'Resource 1'
 		)
 	})
@@ -77,11 +78,11 @@ describe('HorizontalGrid', () => {
 		// GridCell by default has data-testid="day-cell-{YYYY-MM-DD}"
 
 		expect(
-			screen.getByTestId(`day-cell-${mockDays[0].format('YYYY-MM-DD')}`)
+			screen.getByTestId(ids.dayCell(mockDays[0], undefined, 'res-1'))
 		).toBeInTheDocument()
 
 		expect(
-			screen.getByTestId(`day-cell-${mockDays[1].format('YYYY-MM-DD')}`)
+			screen.getByTestId(ids.dayCell(mockDays[1], undefined, 'res-1'))
 		).toBeInTheDocument()
 	})
 
@@ -93,10 +94,10 @@ describe('HorizontalGrid', () => {
 			},
 		})
 
-		expect(screen.getByTestId('horizontal-grid-header')).toHaveClass(
+		expect(screen.getByTestId(ids.horizontalGrid.header)).toHaveClass(
 			'custom-header-class'
 		)
-		expect(screen.getByTestId('horizontal-grid-body')).toHaveClass(
+		expect(screen.getByTestId(ids.horizontalGrid.body)).toHaveClass(
 			'custom-body-class'
 		)
 	})

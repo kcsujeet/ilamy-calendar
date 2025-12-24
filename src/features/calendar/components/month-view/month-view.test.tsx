@@ -5,6 +5,7 @@ import { useCalendarContext } from '@/features/calendar/contexts/calendar-contex
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils/generator'
+import { ids } from '@/lib/utils/ids'
 import { MonthView } from './month-view'
 
 const weekDays: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -62,24 +63,22 @@ describe('MonthView', () => {
 
 	test('renders calendar structure with proper layout', () => {
 		// Should have the main container structure
-		const container = screen.getByTestId('horizontal-grid-scroll')
+		const container = screen.getByTestId(ids.horizontalGrid.scroll)
 		expect(container).toBeInTheDocument()
 
 		// Should have weekday header structure
-		const headerContainer = screen.getByTestId('month-header')
+		const headerContainer = screen.getByTestId(ids.monthHeader)
 		expect(headerContainer).toBeInTheDocument()
 
 		// Should have calendar grid structure
-		const gridContainer = screen.getByTestId('horizontal-grid-body')
+		const gridContainer = screen.getByTestId(ids.horizontalGrid.body)
 		expect(gridContainer).toBeInTheDocument()
 	})
 
 	test('renders MonthView with correct weekday headers starting from Sunday', () => {
 		// Check that all weekday headers are present using test IDs
 		weekDays.forEach((day) => {
-			expect(
-				screen.getByTestId(`weekday-header-${day.toLowerCase()}`)
-			).toBeInTheDocument()
+			expect(screen.getByTestId(ids.weekdayHeader(day))).toBeInTheDocument()
 		})
 	})
 
@@ -89,16 +88,16 @@ describe('MonthView', () => {
 
 		// When starting from Monday, all weekdays should still be present
 		weekDays.forEach((day) => {
-			expect(
-				screen.getByTestId(`weekday-header-${day.toLowerCase()}`)
-			).toBeInTheDocument()
+			expect(screen.getByTestId(ids.weekdayHeader(day))).toBeInTheDocument()
 		})
 
-		const monthHeader = container.querySelector('[data-testid="month-header"]')
+		const monthHeader = container.querySelector(
+			`[data-testid="${ids.monthHeader}"]`
+		)
 		// first day of week should be Monday
 		expect(monthHeader.firstChild).toHaveAttribute(
 			'data-testid',
-			'weekday-header-mon'
+			ids.weekdayHeader('Mon')
 		)
 	})
 
@@ -128,7 +127,7 @@ describe('MonthView', () => {
 		expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
 
 		// Should have the specific date cell for June 15, 2025
-		const june15Cell = screen.getByTestId('day-cell-2025-06-15')
+		const june15Cell = screen.getByTestId(ids.dayCell(dayjs('2025-06-15')))
 		expect(june15Cell).toBeInTheDocument()
 	})
 
@@ -143,7 +142,7 @@ describe('MonthView', () => {
 		expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
 
 		// Should have the specific date cell for January 15, 2020
-		const jan15Cell = screen.getByTestId('day-cell-2020-01-15')
+		const jan15Cell = screen.getByTestId(ids.dayCell(dayjs('2020-01-15')))
 		expect(jan15Cell).toBeInTheDocument()
 	})
 
@@ -158,7 +157,7 @@ describe('MonthView', () => {
 		expect(screen.getByTestId('current-date-date')).toHaveTextContent('25')
 
 		// Should have the specific date cell for December 25, 2030
-		const dec25Cell = screen.getByTestId('day-cell-2030-12-25')
+		const dec25Cell = screen.getByTestId(ids.dayCell(dayjs('2030-12-25')))
 		expect(dec25Cell).toBeInTheDocument()
 	})
 
@@ -179,9 +178,7 @@ describe('MonthView', () => {
 		)
 
 		// Should have the specific date cell for today
-		const todayCell = screen.getByTestId(
-			`day-cell-${today.format('YYYY-MM-DD')}`
-		)
+		const todayCell = screen.getByTestId(ids.dayCell(today))
 		expect(todayCell).toBeInTheDocument()
 	})
 })

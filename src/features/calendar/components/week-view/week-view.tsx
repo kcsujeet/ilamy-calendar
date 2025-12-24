@@ -7,6 +7,7 @@ import { useCalendarContext } from '@/features/calendar/contexts/calendar-contex
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getDayHours, getWeekDays } from '@/lib/utils/date-utils'
+import { ids } from '@/lib/utils/ids'
 
 const CELL_CLASS = 'w-[calc((100%-4rem)/7)] min-w-[calc((100%-4rem)/7)] flex-1'
 const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
@@ -35,7 +36,10 @@ const WeekView: React.FC = () => {
 		gridType: 'hour' as const,
 		noEvents: true,
 		renderCell: (date: dayjs.Dayjs) => (
-			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+			<div
+				className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center"
+				data-testid={ids.timeColumnLabel(date.format('HH'))}
+			>
 				{Intl.DateTimeFormat(currentLocale, {
 					hour: 'numeric',
 					hour12: timeFormat === '12-hour',

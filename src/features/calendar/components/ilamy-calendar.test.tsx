@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids'
 import { IlamyCalendar } from './ilamy-calendar'
 
 const CustomEventForm = (props: EventFormProps) => {
@@ -111,7 +112,9 @@ describe('IlamyCalendar', () => {
 				)
 
 				// Click on a specific day cell using correct testid format
-				const dayCell = screen.getByTestId('day-cell-2025-01-15')
+				const dayCell = screen.getByTestId(
+					ids.dayCell(dayjs('2025-01-15T00:00:00.000Z'))
+				)
 				fireEvent.click(dayCell)
 
 				await waitFor(() => {
@@ -168,7 +171,9 @@ describe('IlamyCalendar', () => {
 				)
 
 				// Open form by clicking a cell
-				const dayCell = screen.getByTestId('day-cell-2025-01-15')
+				const dayCell = screen.getByTestId(
+					ids.dayCell(dayjs('2025-01-15T00:00:00.000Z'))
+				)
 				fireEvent.click(dayCell)
 
 				await waitFor(() => {
@@ -197,7 +202,9 @@ describe('IlamyCalendar', () => {
 				)
 
 				// Open form
-				const dayCell = screen.getByTestId('day-cell-2025-01-15')
+				const dayCell = screen.getByTestId(
+					ids.dayCell(dayjs('2025-01-15T00:00:00.000Z'))
+				)
 				fireEvent.click(dayCell)
 
 				await waitFor(() => {
@@ -240,7 +247,9 @@ describe('IlamyCalendar', () => {
 				)
 
 				// Open form
-				const dayCell = screen.getByTestId('day-cell-2025-01-15')
+				const dayCell = screen.getByTestId(
+					ids.dayCell(dayjs('2025-01-15T00:00:00.000Z'))
+				)
 				fireEvent.click(dayCell)
 
 				await waitFor(() => {
@@ -452,7 +461,7 @@ describe('IlamyCalendar', () => {
 
 				await waitFor(() => {
 					// After closing form, the event text should not appear anywhere
-					const monthView = screen.getByTestId('horizontal-grid-scroll')
+					const monthView = screen.getByTestId(ids.horizontalGrid.scroll)
 					expect(monthView).not.toHaveTextContent('DeleteMe')
 				})
 			})
@@ -476,7 +485,7 @@ describe('IlamyCalendar', () => {
 
 				// Wait for week view to render
 				await waitFor(() => {
-					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
+					expect(screen.getByTestId(ids.verticalGrid.body)).toBeInTheDocument()
 				})
 
 				// Add event directly via captured function
@@ -510,7 +519,7 @@ describe('IlamyCalendar', () => {
 
 				// Wait for day view to render
 				await waitFor(() => {
-					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
+					expect(screen.getByTestId(ids.verticalGrid.body)).toBeInTheDocument()
 				})
 
 				// Add event directly
@@ -565,7 +574,7 @@ describe('IlamyCalendar', () => {
 				fireEvent.click(weekButtons[0])
 
 				await waitFor(() => {
-					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
+					expect(screen.getByTestId(ids.verticalGrid.body)).toBeInTheDocument()
 				})
 
 				// Event should still be visible
@@ -579,7 +588,7 @@ describe('IlamyCalendar', () => {
 				fireEvent.click(dayButtons[0])
 
 				await waitFor(() => {
-					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
+					expect(screen.getByTestId(ids.verticalGrid.body)).toBeInTheDocument()
 				})
 
 				// Event should still be visible
@@ -606,7 +615,9 @@ describe('IlamyCalendar', () => {
 				).not.toBeInTheDocument()
 
 				// Click a cell to open form
-				const dayCell = screen.getByTestId('day-cell-2025-01-15')
+				const dayCell = screen.getByTestId(
+					ids.dayCell(dayjs('2025-01-15T00:00:00.000Z'))
+				)
 				fireEvent.click(dayCell)
 
 				// Default form should appear (has "Create Event" title)
@@ -639,11 +650,15 @@ describe('IlamyCalendar', () => {
 			)
 
 			await waitFor(() => {
-				expect(screen.getByTestId('horizontal-grid-scroll')).toBeInTheDocument()
+				expect(
+					screen.getByTestId(ids.horizontalGrid.scroll)
+				).toBeInTheDocument()
 			})
 
 			// Find a Saturday cell (non-business day) - should have default disabled styling
-			const saturdayCell = screen.getByTestId('day-cell-2025-01-18')
+			const saturdayCell = screen.getByTestId(
+				ids.dayCell(dayjs('2025-01-18T00:00:00.000Z'))
+			)
 			expect(saturdayCell).toHaveClass('bg-secondary')
 			expect(saturdayCell).toHaveClass('text-muted-foreground')
 		})
@@ -672,11 +687,15 @@ describe('IlamyCalendar', () => {
 			)
 
 			await waitFor(() => {
-				expect(screen.getByTestId('horizontal-grid-scroll')).toBeInTheDocument()
+				expect(
+					screen.getByTestId(ids.horizontalGrid.scroll)
+				).toBeInTheDocument()
 			})
 
 			// Find a Saturday cell (non-business day)
-			const saturdayCell = screen.getByTestId('day-cell-2025-01-18')
+			const saturdayCell = screen.getByTestId(
+				ids.dayCell(dayjs('2025-01-18T00:00:00.000Z'))
+			)
 			expect(saturdayCell).toHaveClass('bg-gray-100')
 			expect(saturdayCell).toHaveClass('text-gray-400')
 			expect(saturdayCell).toHaveClass('cursor-not-allowed')
@@ -710,14 +729,13 @@ describe('IlamyCalendar', () => {
 			)
 
 			await waitFor(() => {
-				expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
+				expect(screen.getByTestId(ids.verticalGrid.body)).toBeInTheDocument()
 			})
 
 			// Find a time cell outside business hours (e.g., 8 AM)
-			// Week view uses time cells with format: vertical-cell-{date}-{hour}-{minute}
-			const dateStr = initialDate.format('YYYY-MM-DD')
+			// Week view uses time cells with format: day-cell-{date}-{hour}-{minute}
 			const nonBusinessTimeCell = screen.getByTestId(
-				`vertical-cell-${dateStr}-08-00`
+				ids.dayCell(initialDate.hour(8).minute(0), { hour: 8, minute: 0 })
 			)
 			expect(nonBusinessTimeCell).toHaveClass('bg-red-50')
 			expect(nonBusinessTimeCell).toHaveClass('text-red-300')
@@ -751,14 +769,13 @@ describe('IlamyCalendar', () => {
 			)
 
 			await waitFor(() => {
-				expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
+				expect(screen.getByTestId(ids.verticalGrid.body)).toBeInTheDocument()
 			})
 
 			// Find a time cell outside business hours (e.g., 8:00 AM)
-			// Day view uses time cells with format: vertical-cell-{date}-{hour}-{minute}
-			const dateStr = initialDate.format('YYYY-MM-DD')
+			// Day view uses time cells with format: day-cell-{date}-{hour}-{minute}
 			const nonBusinessTimeCell = screen.getByTestId(
-				`vertical-cell-${dateStr}-08-00`
+				ids.dayCell(initialDate.hour(8).minute(0), { hour: 8, minute: 0 })
 			)
 			expect(nonBusinessTimeCell).toHaveClass('bg-yellow-50')
 			expect(nonBusinessTimeCell).toHaveClass('text-yellow-300')

@@ -20,14 +20,16 @@ export const useProcessedDayEvents = ({
 	const { getEventsForDateRange, getEventsForResource } =
 		useSmartCalendarContext((state) => ({
 			getEventsForDateRange: state.getEventsForDateRange,
-			getEventsForResource: state.getEventsForResource,
+			getEventsForResource: state.getEventsForResource as
+				| ((id: string | number) => any[])
+				| undefined,
 		}))
 	const dayStart = days.at(0).startOf('day')
 	const dayEnd = days.at(-1).endOf('day')
 
 	const events = useMemo(() => {
 		let dayEvents = getEventsForDateRange(dayStart, dayEnd)
-		if (resourceId) {
+		if (resourceId && getEventsForResource) {
 			const resourceEvents = getEventsForResource(resourceId)
 			dayEvents = dayEvents.filter((event) =>
 				resourceEvents.some((re) => String(re.id) === String(event.id))

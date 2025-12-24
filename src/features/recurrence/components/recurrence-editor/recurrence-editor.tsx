@@ -16,6 +16,7 @@ import {
 import type { RRuleOptions } from '@/features/recurrence/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids'
 
 const FREQ_MAP = {
 	DAILY: RRule.DAILY,
@@ -130,12 +131,12 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 			: []
 
 	return (
-		<Card data-testid="recurrence-editor">
+		<Card data-testid={ids.recurrence.editor}>
 			<CardHeader className="pb-3">
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={show}
-						data-testid="toggle-recurrence"
+						data-testid={ids.recurrence.toggle}
 						id="recurring"
 						onCheckedChange={toggle}
 					/>
@@ -164,7 +165,7 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 								>
 									<SelectTrigger
 										className="h-8"
-										data-testid="frequency-select"
+										data-testid={ids.recurrence.frequencySelect}
 										id="frequency"
 									>
 										<SelectValue />
@@ -243,7 +244,7 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 									{endType === 'count' && (
 										<Input
 											className="h-6 w-16 text-xs"
-											data-testid="count-input"
+											data-testid={ids.recurrence.countInput}
 											min="1"
 											onChange={(e) =>
 												update({ count: parseNum(e.target.value) })

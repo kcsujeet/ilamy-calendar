@@ -5,6 +5,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
+import { ids } from '@/lib/utils/ids'
 import type { Resource } from '../../types'
 import { IlamyResourceCalendar } from './ilamy-resource-calendar'
 
@@ -756,7 +757,10 @@ describe('IlamyResourceCalendar', () => {
 			)
 
 			// Find time labels in day view using data-testid
-			const timeLabels = screen.getAllByTestId(/^resource-day-time-label-/)
+			const timeLabelPrefix = ids.resourceView.timeLabel('').replace(/-$/, '')
+			const timeLabels = screen.getAllByTestId(
+				new RegExp(`^${timeLabelPrefix}-`)
+			)
 
 			// Should have time labels (24 hours)
 			expect(timeLabels.length).toBeGreaterThan(0)
@@ -782,7 +786,10 @@ describe('IlamyResourceCalendar', () => {
 			)
 
 			// Find time labels in day view using data-testid
-			const timeLabels = screen.getAllByTestId(/^resource-day-time-label-/)
+			const timeLabelPrefix = ids.resourceView.timeLabel('').replace(/-$/, '')
+			const timeLabels = screen.getAllByTestId(
+				new RegExp(`^${timeLabelPrefix}-`)
+			)
 
 			// Should have time labels (24 hours)
 			expect(timeLabels.length).toBeGreaterThan(0)
@@ -807,7 +814,10 @@ describe('IlamyResourceCalendar', () => {
 			)
 
 			// Find time labels in week view using data-testid
-			const timeLabels = screen.getAllByTestId(/^resource-week-time-label-/)
+			const timeLabelPrefix = ids.resourceView.timeLabel('').replace(/-$/, '')
+			const timeLabels = screen.getAllByTestId(
+				new RegExp(`^${timeLabelPrefix}-`)
+			)
 
 			// Should have time labels (24 hours * 7 days = 168)
 			expect(timeLabels.length).toBeGreaterThan(0)
@@ -833,7 +843,10 @@ describe('IlamyResourceCalendar', () => {
 			)
 
 			// Find time labels in week view using data-testid
-			const timeLabels = screen.getAllByTestId(/^resource-week-time-label-/)
+			const timeLabelPrefix = ids.resourceView.timeLabel('').replace(/-$/, '')
+			const timeLabels = screen.getAllByTestId(
+				new RegExp(`^${timeLabelPrefix}-`)
+			)
 
 			// Should have time labels (24 hours * 7 days = 168)
 			expect(timeLabels.length).toBeGreaterThan(0)
@@ -857,7 +870,10 @@ describe('IlamyResourceCalendar', () => {
 			)
 
 			// Find time labels using data-testid
-			const timeLabels = screen.getAllByTestId(/^resource-day-time-label-/)
+			const timeLabelPrefix = ids.resourceView.timeLabel('').replace(/-$/, '')
+			const timeLabels = screen.getAllByTestId(
+				new RegExp(`^${timeLabelPrefix}-`)
+			)
 
 			// Should have time labels
 			expect(timeLabels.length).toBeGreaterThan(0)

@@ -2,6 +2,7 @@ import type React from 'react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
+import { ids } from '@/lib/utils/ids'
 import {
 	HorizontalGridRow,
 	type HorizontalGridRowProps,
@@ -32,7 +33,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 	return (
 		<ScrollArea
 			className={cn('h-full border', classes?.scroll)}
-			data-testid="horizontal-grid-scroll"
+			data-testid={ids.horizontalGrid.scroll}
 			viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
 		>
 			{/* header row */}
@@ -44,7 +45,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 						classes?.header,
 						viewHeaderClassName
 					)}
-					data-testid="horizontal-grid-header"
+					data-testid={ids.horizontalGrid.header}
 				>
 					{children}
 				</div>
@@ -53,7 +54,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 			{/* Calendar area with scroll */}
 			<div
 				className={cn('flex flex-1 h-[calc(100%-3rem)] w-fit', classes?.body)}
-				data-testid="horizontal-grid-body"
+				data-testid={ids.horizontalGrid.body}
 			>
 				<div
 					className="relative w-full flex flex-col flex-1"

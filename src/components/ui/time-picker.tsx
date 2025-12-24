@@ -10,6 +10,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAutocompleteTimepicker } from '@/hooks/use-autocomplete-timepicker'
 import { cn } from '@/lib/utils'
+import { ids } from '@/lib/utils/ids'
 import type { TimeFormat } from '@/types'
 
 const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
@@ -85,7 +86,7 @@ export function TimePicker({
 					aria-controls="time-picker-listbox"
 					aria-expanded={open}
 					className={cn('w-full justify-start', className)}
-					data-testid={`time-picker-${name}`}
+					data-testid={ids.timePicker(name || '')}
 					disabled={disabled}
 					ref={triggerRef}
 					role="combobox"

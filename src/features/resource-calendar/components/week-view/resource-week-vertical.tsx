@@ -17,6 +17,7 @@ export const ResourceWeekVertical: React.FC = () => {
 		firstDayOfWeek,
 		currentLocale,
 		timeFormat,
+		t,
 	} = useResourceCalendarContext()
 
 	const resources = getVisibleResources()
@@ -84,7 +85,11 @@ export const ResourceWeekVertical: React.FC = () => {
 			<div className="flex-1 flex flex-col">
 				{/* Resource header row */}
 				<div className="flex h-12">
-					<div className="shrink-0 w-16 border-r z-20 bg-background sticky left-0" />
+					<div className="shrink-0 w-16 border-r z-20 bg-background sticky left-0">
+						<span className="px-2 h-full w-full flex justify-center items-end text-xs text-muted-foreground">
+							{t('week')}
+						</span>
+					</div>
 					{resources.map((resource, index) => {
 						const key = `resource-week-header-${resource.id}-day`
 
@@ -117,7 +122,11 @@ export const ResourceWeekVertical: React.FC = () => {
 
 				{/* Date header row */}
 				<div className="flex h-12">
-					<div className="shrink-0 w-16 border-r border-b z-20 bg-background sticky left-0" />
+					<div className="shrink-0 w-16 border-r border-b z-20 bg-background sticky left-0">
+						<span className="px-2 h-full w-full flex justify-center items-start font-medium">
+							{currentDate.week()}
+						</span>
+					</div>
 					{columns.map((col, index) => {
 						const day = col.day
 						const key = `resource-week-header-${day.toISOString()}-hour-${col.resourceId}`

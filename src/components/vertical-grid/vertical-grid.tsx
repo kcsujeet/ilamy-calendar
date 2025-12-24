@@ -1,13 +1,16 @@
 import type React from 'react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
+import { VerticalGridHeaderContainer } from './vertical-grid-header-container'
+
+const BODY_HEIGHT = 'h-[calc(100%-3rem)]'
 
 interface VerticalGridProps {
 	columns: VerticalGridColProps[]
 	children?: React.ReactNode
 	gridType?: 'day' | 'hour'
+	variant?: 'regular' | 'resource'
 	classes?: { header?: string; body?: string; allDay?: string }
 	allDayRow?: React.ReactNode
 	/**
@@ -21,71 +24,63 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	columns,
 	children,
 	gridType = 'day',
+	variant = 'resource',
 	classes,
 	allDayRow,
 	cellSlots,
 }) => {
-	const { stickyViewHeader, viewHeaderClassName } = useSmartCalendarContext(
-		(state) => ({
-			stickyViewHeader: state.stickyViewHeader,
-			viewHeaderClassName: state.viewHeaderClassName,
-		})
+	const isResourceCalendar = variant === 'resource'
+	const isRegularCalendar = !isResourceCalendar
+
+	const header = children && (
+		<VerticalGridHeaderContainer
+			allDayRow={allDayRow}
+			classes={{ header: classes?.header, allDay: classes?.allDay }}
+		>
+			{children}
+		</VerticalGridHeaderContainer>
 	)
 
 	return (
-		<ScrollArea
-			className="h-full border"
-			data-testid="vertical-grid-scroll"
-			viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
-		>
+		<div className="h-full border">
 			{/* header row */}
-			<div
+			{isRegularCalendar && header}
+
+			<ScrollArea
 				className={cn(
-					stickyViewHeader && 'sticky top-0 z-21 bg-background' // Z-index above the left sticky resource column
+					'h-full',
+					isRegularCalendar && 'overflow-auto',
+					isRegularCalendar && BODY_HEIGHT // scroll area becomes body in regular calendar
 				)}
+				data-testid="vertical-grid-scroll"
+				viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
 			>
+				{/* header row for resource calendar inside scroll area */}
+				{isResourceCalendar && header}
+				{/* Calendar area with scroll */}
 				<div
 					className={cn(
-						'flex justify-center items-center h-12 border-b w-fit',
-						classes?.header,
-						viewHeaderClassName
+						'flex flex-1 w-fit',
+						isResourceCalendar && BODY_HEIGHT,
+						classes?.body
 					)}
-					data-testid="vertical-grid-header"
+					data-testid="vertical-grid-body"
 				>
-					{children}
+					{/* Day columns with time slots */}
+					{columns.map((column, index) => (
+						<VerticalGridCol
+							key={`${column.id}-${index}`}
+							{...column}
+							cellSlots={cellSlots}
+							gridType={gridType}
+							isLastColumn={index === columns.length - 1}
+						/>
+					))}
 				</div>
-				{/* All-day row */}
-				{allDayRow && (
-					<div
-						className={cn(
-							'flex w-full border-b min-h-12 h-full',
-							classes?.allDay
-						)}
-						data-testid="vertical-grid-all-day"
-					>
-						{allDayRow}
-					</div>
-				)}
-			</div>
-			{/* Calendar area with scroll */}
-			<div
-				className={cn('flex flex-1 h-[calc(100%-3rem)] w-fit', classes?.body)}
-				data-testid="vertical-grid-body"
-			>
-				{/* Day columns with time slots */}
-				{columns.map((column, index) => (
-					<VerticalGridCol
-						key={`${column.id}-${index}`}
-						{...column}
-						cellSlots={cellSlots}
-						gridType={gridType}
-						isLastColumn={index === columns.length - 1}
-					/>
-				))}
-			</div>
-			<ScrollBar className="z-30" /> {/* vertical scrollbar */}
-			<ScrollBar className="z-30" orientation="horizontal" />{' '}
-			{/* horizontal scrollbar */}
-		</ScrollArea>
+				<ScrollBar className="z-30" /> {/* vertical scrollbar */}
+				<ScrollBar className="z-30" orientation="horizontal" />{' '}
+				{/* horizontal scrollbar */}
+			</ScrollArea>
+		</div>
 	)
 }

@@ -40,11 +40,15 @@ export const ResourceMonthVertical: React.FC = () => {
 
 	return (
 		<VerticalGrid
+			classes={{ header: 'w-full', body: 'w-full' }}
 			columns={[firstCol, ...columns]}
 			data-testid="resource-month-vertical-grid"
 		>
 			{/* Header */}
-			<div className={'flex border-b h-12'} data-testid="resource-month-header">
+			<div
+				className={'flex border-b h-12 flex-1'}
+				data-testid="resource-month-header"
+			>
 				<div className="shrink-0 border-r w-16 sticky top-0 left-0 bg-background z-20" />
 				{resources.map((resource) => (
 					<ResourceCell

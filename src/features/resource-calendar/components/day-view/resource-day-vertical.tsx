@@ -43,7 +43,7 @@ export const ResourceDayVertical: React.FC = () => {
 	return (
 		<VerticalGrid
 			allDayRow={
-				<div className="flex">
+				<div className="flex w-full">
 					<AllDayCell />
 					{resources.map((resource) => (
 						<AllDayRow
@@ -57,12 +57,16 @@ export const ResourceDayVertical: React.FC = () => {
 				</div>
 			}
 			cellSlots={[0, 15, 30, 45]}
+			classes={{ body: 'w-full', header: 'w-full' }}
 			columns={[firstCol, ...columns]}
 			data-testid="resource-day"
 			gridType="hour"
 		>
 			{/* Header */}
-			<div className={'flex border-b h-12'} data-testid="resource-month-header">
+			<div
+				className={'flex border-b h-12 flex-1'}
+				data-testid="resource-month-header"
+			>
 				<div className="shrink-0 border-r w-16 sticky top-0 left-0 bg-background z-20" />
 				{resources.map((resource) => (
 					<ResourceCell

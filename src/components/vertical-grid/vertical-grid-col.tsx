@@ -51,7 +51,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 					gridTemplateRows: `repeat(${days.length}, minmax(0, 1fr))`,
 				}}
 			>
-				{days.map((day, index) => {
+				{days.map((day) => {
 					const hourStr = day.format('HH')
 					const dateStr = day.format('YYYY-MM-DD')
 

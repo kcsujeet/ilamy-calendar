@@ -48,7 +48,7 @@ const DayView = () => {
 		>
 			{/* Header */}
 			<div
-				className={'flex border-b h-full flex-1 justify-center items-center'}
+				className={'flex h-full flex-1 justify-center items-center'}
 				data-testid="day-view-header"
 			>
 				<AnimatePresence mode="wait">

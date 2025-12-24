@@ -5,6 +5,7 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 
 type ViewType = 'day' | 'week' | 'month' | 'year'
+const AVAILABLE_VIEWS: ViewType[] = ['day', 'week', 'month', 'year']
 
 interface ViewControlsProps {
 	currentView: ViewType
@@ -27,8 +28,12 @@ const ViewControls: React.FC<ViewControlsProps> = ({
 	onNext,
 	onPrevious,
 }) => {
-	const { t } = useSmartCalendarContext((context) => ({ t: context.t }))
+	const { t, resources } = useSmartCalendarContext((context) => ({
+		t: context.t,
+		resources: context.resources,
+	}))
 	const isGrid = variant === 'grid'
+	const isResourceCalendar = resources && resources.length > 0
 
 	// Extract common button className logic to a function
 	const getButtonClassName = (viewType: ViewType) => {
@@ -58,7 +63,11 @@ const ViewControls: React.FC<ViewControlsProps> = ({
 				<ChevronRight className="h-4 w-4" />
 			</Button>
 
-			{['day', 'week', 'month', 'year'].map((type: ViewType) => {
+			{AVAILABLE_VIEWS.map((type: ViewType) => {
+				if (isResourceCalendar && type === 'year') {
+					return null
+				}
+
 				return (
 					<Button
 						className={getButtonClassName(type)}

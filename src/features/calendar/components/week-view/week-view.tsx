@@ -69,10 +69,7 @@ const WeekView: React.FC = () => {
 			gridType="hour"
 			variant="regular"
 		>
-			<div
-				className={'flex border-b h-full flex-1'}
-				data-testid="week-view-header"
-			>
+			<div className={'flex h-full flex-1'} data-testid="week-view-header">
 				{/* Corner cell with week number */}
 				<div className="w-10 sm:w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
 					<div className="flex flex-col items-center justify-center">

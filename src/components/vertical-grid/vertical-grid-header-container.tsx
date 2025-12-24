@@ -22,15 +22,12 @@ const NoMemoVerticalGridHeaderContainer: React.FC<
 	return (
 		<div
 			className={cn(
-				stickyViewHeader && 'sticky top-0 z-21 bg-background' // Z-index above the left sticky resource column
+				stickyViewHeader && 'sticky top-0 z-21 bg-background', // Z-index above the left sticky resource column
+				viewHeaderClassName
 			)}
 		>
 			<div
-				className={cn(
-					'h-12 border-b w-fit',
-					classes?.header,
-					viewHeaderClassName
-				)}
+				className={cn('h-12 border-b w-fit', classes?.header)}
 				data-testid="vertical-grid-header"
 			>
 				{children}

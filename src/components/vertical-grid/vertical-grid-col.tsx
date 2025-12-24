@@ -87,7 +87,6 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 								day={day.minute(m)}
 								gridType={gridType}
 								hour={day.hour()}
-								index={index}
 								key={`${dateStr}-${hourStr}-${mm}-${resourceId || 'no-resource'}`}
 								minute={m}
 								resourceId={resourceId} // Events are rendered in a separate layer

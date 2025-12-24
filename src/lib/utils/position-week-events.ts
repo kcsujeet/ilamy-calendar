@@ -1,10 +1,6 @@
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
-import {
-	DAY_NUMBER_HEIGHT,
-	EVENT_BAR_HEIGHT,
-	GAP_BETWEEN_ELEMENTS,
-} from '@/lib/constants'
+import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 
 interface PositionedEvent extends CalendarEvent {
 	left: number // Left position in percentage
@@ -29,7 +25,7 @@ export const getPositionedEvents = ({
 	days,
 	events,
 	dayMaxEvents,
-	dayNumberHeight = DAY_NUMBER_HEIGHT,
+	dayNumberHeight = 0,
 	gridType = 'day',
 	eventSpacing = GAP_BETWEEN_ELEMENTS,
 }: GetPositionedEventsProps) => {

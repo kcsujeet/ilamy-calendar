@@ -13,6 +13,8 @@ interface HorizontalGridProps {
 	classes?: { header?: string; body?: string; scroll?: string }
 	allDay?: boolean
 	gridType?: 'day' | 'hour'
+	variant?: 'regular' | 'resource'
+	dayNumberHeight?: number
 }
 
 export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
@@ -21,6 +23,8 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 	classes,
 	allDay: topLevelAllDay,
 	gridType,
+	variant = 'resource',
+	dayNumberHeight,
 }) => {
 	const { stickyViewHeader, viewHeaderClassName, currentDate } =
 		useSmartCalendarContext((state) => ({
@@ -62,9 +66,11 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 					{rows.map((row, index) => (
 						<HorizontalGridRow
 							allDay={row.allDay ?? topLevelAllDay}
+							dayNumberHeight={dayNumberHeight}
 							gridType={gridType}
 							isLastRow={index === rows.length - 1}
 							key={row.id}
+							variant={variant}
 							{...row}
 						/>
 					))}

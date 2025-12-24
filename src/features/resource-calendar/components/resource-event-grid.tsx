@@ -1,9 +1,7 @@
 import type React from 'react'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
-import type { HorizontalGridRowProps } from '@/components/horizontal-grid/horizontal-grid-row'
-import { ResourceCell } from '@/components/resource-cell'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import type dayjs from '@/lib/configs/dayjs-config'
 
 interface ResourceEventGridProps {
 	/**
@@ -28,32 +26,9 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 	children,
 	classes,
 }) => {
-	const { getVisibleResources, renderResource } = useResourceCalendarContext()
+	const { getVisibleResources } = useResourceCalendarContext()
 
 	const visibleResources = getVisibleResources()
-
-	const firstCol = {
-		id: 'resource-col',
-		day: days[0] || dayjs(),
-		className:
-			'shrink-0 w-40 min-w-40 max-w-40 sticky left-0 bg-background z-20 h-full',
-		gridType: gridType,
-		renderCell: (row: HorizontalGridRowProps) => {
-			return (
-				<ResourceCell
-					className="h-full"
-					data-testid={`horizontal-row-label-${row.resource.id}`}
-					resource={row.resource}
-				>
-					{renderResource ? (
-						renderResource(row.resource)
-					) : (
-						<div className="wrap-break-word text-sm">{row.resource.title}</div>
-					)}
-				</ResourceCell>
-			)
-		},
-	}
 
 	const columns = days.map((day) => ({
 		id: `col-${day.toISOString()}`,
@@ -65,7 +40,7 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 		id: resource.id,
 		title: resource.title,
 		resource: resource,
-		columns: [firstCol, ...columns],
+		columns,
 	}))
 
 	return (

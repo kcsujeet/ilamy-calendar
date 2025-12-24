@@ -59,14 +59,6 @@ export function DroppableCell({
 
 	const handleCellClick = (e: React.MouseEvent) => {
 		e.stopPropagation()
-		console.log('DroppableCell clicked:', {
-			disableCellClick,
-			disabled,
-			date: date.toISOString(),
-			hour,
-			minute,
-			resourceId,
-		})
 
 		if (disableCellClick || disabled) {
 			return

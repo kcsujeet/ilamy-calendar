@@ -10,7 +10,6 @@ import { AllEventDialog } from './all-events-dialog'
 import { DroppableCell } from './droppable-cell'
 
 interface GridProps {
-	index: number // Index of the day in the week (0-6)
 	day: dayjs.Dayjs
 	hour?: number // Optional hour for hour-based grids
 	minute?: number // Optional minute for more granular time slots
@@ -26,7 +25,6 @@ interface GridProps {
 }
 
 const NoMemoGridCell: React.FC<GridProps> = ({
-	index,
 	day,
 	hour,
 	minute,
@@ -68,7 +66,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 			return []
 		}
 
-		const resourceEvents = resourceId ? getEventsForResource(resourceId) : []
 		let todayEvents = getEventsForDateRange(
 			day.startOf(gridType),
 			day.endOf(gridType)
@@ -78,7 +75,9 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 			todayEvents = todayEvents.filter((e) => e.allDay)
 		}
 
-		if (resourceEvents.length) {
+		if (resourceId) {
+			const resourceEvents = getEventsForResource(resourceId) ?? []
+
 			return todayEvents.filter((event) =>
 				resourceEvents.some((re) => String(re.id) === String(event.id))
 			)

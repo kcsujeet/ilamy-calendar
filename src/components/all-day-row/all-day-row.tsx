@@ -39,6 +39,7 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 				id={`all-day-row-${resource?.id ?? 'main'}`}
 				isLastRow
 				resource={resource}
+				variant="regular"
 			/>
 		</div>
 	)

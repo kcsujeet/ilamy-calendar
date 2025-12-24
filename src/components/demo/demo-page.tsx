@@ -351,6 +351,9 @@ export function DemoPage() {
 									initialView={initialView === 'year' ? 'month' : initialView}
 									key={`resource-${calendarKey}-${orientation}`}
 									locale={locale}
+									onCellClick={
+										useCustomOnDateClick ? handleDateClick : undefined
+									}
 									onDateChange={handleDateChange}
 									onEventAdd={handleEventAdd}
 									onEventClick={

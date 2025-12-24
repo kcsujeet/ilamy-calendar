@@ -42,7 +42,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	)
 
 	return (
-		<div className="h-full border">
+		<div className="h-full" data-testid="vertical-grid-container">
 			{/* header row */}
 			{isRegularCalendar && header}
 

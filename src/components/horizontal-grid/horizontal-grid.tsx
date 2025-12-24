@@ -43,7 +43,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 	)
 
 	return (
-		<div className="h-full border">
+		<div className="h-full" data-testid="horizontal-grid-container">
 			{/**
 			 * header row is rendered outside scroll area for regular calendar
 			 */}

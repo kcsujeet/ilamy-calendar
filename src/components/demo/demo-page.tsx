@@ -359,6 +359,7 @@ export function DemoPage() {
 									onEventDelete={handleEventDelete}
 									onEventUpdate={handleEventUpdate}
 									orientation={orientation}
+									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
 									resources={demoResources}
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}

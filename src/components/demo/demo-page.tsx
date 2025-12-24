@@ -17,10 +17,7 @@ const handleEventClick = (event: CalendarEvent) => {
 }
 
 const handleDateClick = (info: CellClickInfo) => {
-	const message = info.resourceId
-		? `Date clicked: ${info.start.toISOString()} (Resource: ${info.resourceId})`
-		: `Date clicked: ${info.start.toISOString()}`
-	alert(message)
+	alert(JSON.stringify(info))
 }
 
 const handleEventAdd = (event: CalendarEvent) => {

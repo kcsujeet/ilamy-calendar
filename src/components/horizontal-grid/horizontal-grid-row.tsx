@@ -78,6 +78,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								)}
 								day={col.day}
 								gridType={gridType}
+								hour={gridType === 'hour' ? col.day.hour() : undefined}
 								key={col.day.toISOString()}
 								resourceId={resource?.id}
 								showDayNumber={showDayNumber}

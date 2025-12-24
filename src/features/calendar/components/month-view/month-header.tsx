@@ -9,13 +9,8 @@ interface MonthHeaderProps {
 }
 
 export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
-	const {
-		firstDayOfWeek,
-		stickyViewHeader,
-		viewHeaderClassName,
-		currentDate,
-		t,
-	} = useCalendarContext()
+	const { firstDayOfWeek, stickyViewHeader, viewHeaderClassName, currentDate } =
+		useCalendarContext()
 
 	// Reorder week days based on firstDayOfWeek
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
@@ -45,10 +40,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 							delay: index * 0.05,
 						}}
 					>
-						<span className="text-sm capitalize">
-							{weekDay.format('ddd')}
-							{t(weekDay.format('ddd').toLowerCase() as keyof typeof t)}
-						</span>
+						<span className="text-sm capitalize">{weekDay.format('ddd')}</span>
 					</motion.div>
 				</AnimatePresence>
 			))}

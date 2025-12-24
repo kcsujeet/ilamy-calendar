@@ -1,7 +1,13 @@
 // No mocking - test the real CalendarDndContext
 
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from '@testing-library/react'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
@@ -426,6 +432,72 @@ describe('IlamyResourceCalendar', () => {
 		)
 
 		expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
+	})
+
+	describe('onCellClick', () => {
+		const mockOnCellClick = mock(() => {})
+
+		beforeEach(() => {
+			mockOnCellClick.mockClear()
+		})
+
+		it('should call onCellClick with correct arguments in day view', async () => {
+			const initialDate = dayjs('2025-08-04T00:00:00.000Z')
+			render(
+				<IlamyResourceCalendar
+					events={[]}
+					initialDate={initialDate}
+					initialView="day"
+					onCellClick={mockOnCellClick}
+					resources={mockResources}
+				/>
+			)
+
+			const dateStr = initialDate.format('YYYY-MM-DD')
+			const resourceId = 'resource-1'
+			// In Resource calendar, day view actually uses HorizontalGrid with gridType='hour'
+			// which renders day-cell-{date}-{hour}-{minute} inside a row
+			const row = screen.getByTestId(`horizontal-row-${resourceId}`)
+			const cell = within(row).getByTestId(`day-cell-${dateStr}-10-00`)
+			fireEvent.click(cell)
+
+			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
+			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
+			expect(callArgs.start.toISOString()).toBe('2025-08-04T10:00:00.000Z')
+			// Resource Horizontal day view uses 1 hour slots (minute is undefined)
+			expect(callArgs.end.toISOString()).toBe('2025-08-04T11:00:00.000Z')
+			expect(callArgs.allDay).toBe(false)
+			expect(callArgs.resourceId).toBe(resourceId)
+		})
+
+		it('should call onCellClick with correct arguments in month view', async () => {
+			const initialDate = dayjs('2025-08-04T00:00:00.000Z')
+			render(
+				<IlamyResourceCalendar
+					events={[]}
+					initialDate={initialDate}
+					initialView="month"
+					onCellClick={mockOnCellClick}
+					resources={mockResources}
+				/>
+			)
+
+			const dateStr = initialDate.format('YYYY-MM-DD')
+			const resourceId = 'resource-2'
+			// Resource month vertical uses day-cell-{date} and is inside a row with resourceId
+			const row = screen.getByTestId(`horizontal-row-${resourceId}`)
+			const cell = within(row).getByTestId(`day-cell-${dateStr}`)
+			fireEvent.click(cell)
+
+			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
+			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
+			expect(callArgs.start.toISOString()).toBe('2025-08-04T00:00:00.000Z')
+			// Month view full day (hour and minute are undefined)
+			expect(callArgs.end.hour()).toBe(23)
+			expect(callArgs.end.minute()).toBe(59)
+			expect(callArgs.allDay).toBe(false)
+			expect(callArgs.resourceId).toBe(resourceId)
+		})
 	})
 
 	describe('renderEventForm', () => {

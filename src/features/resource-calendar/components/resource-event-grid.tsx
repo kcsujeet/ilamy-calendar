@@ -44,7 +44,12 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 	}))
 
 	return (
-		<HorizontalGrid classes={classes} gridType={gridType} rows={rows}>
+		<HorizontalGrid
+			classes={classes}
+			dayNumberHeight={0}
+			gridType={gridType}
+			rows={rows}
+		>
 			{children}
 		</HorizontalGrid>
 	)

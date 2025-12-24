@@ -72,8 +72,8 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 					}
 
 					return cellSlots.map((minute) => {
-						const m = minute === 60 ? 0 : minute
-						const mm = String(m).padStart(2, '0')
+						const m = minute === 60 ? undefined : minute
+						const mm = m === undefined ? '00' : String(m).padStart(2, '0')
 						const testId = `vertical-cell-${dateStr}-${hourStr}-${mm}${resourceId ? `-${resourceId}` : ''}`
 
 						return (
@@ -84,7 +84,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 									isLastColumn ? 'border-r-0' : 'border-r'
 								)}
 								data-testid={testId}
-								day={day.minute(m)}
+								day={m ? day.minute(m) : day}
 								gridType={gridType}
 								hour={day.hour()}
 								key={`${dateStr}-${hourStr}-${mm}-${resourceId || 'no-resource'}`}

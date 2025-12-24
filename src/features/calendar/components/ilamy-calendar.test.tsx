@@ -617,6 +617,86 @@ describe('IlamyCalendar', () => {
 		})
 	})
 
+	describe('onCellClick', () => {
+		const mockOnCellClick = mock(() => {})
+
+		beforeEach(() => {
+			mockOnCellClick.mockClear()
+		})
+
+		it('should call onCellClick with correct arguments in month view', async () => {
+			render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialView="month"
+					onCellClick={mockOnCellClick}
+				/>
+			)
+
+			const dayCell = screen.getByTestId('day-cell-2025-01-15')
+			fireEvent.click(dayCell)
+
+			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
+			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
+			expect(callArgs.start.toISOString()).toBe('2025-01-15T00:00:00.000Z')
+			// Month view full day (hour and minute are undefined)
+			expect(callArgs.end.hour()).toBe(23)
+			expect(callArgs.end.minute()).toBe(59)
+			expect(callArgs.allDay).toBe(false)
+			expect(callArgs.resourceId).toBeUndefined()
+		})
+
+		it('should call onCellClick with correct hour in week view', async () => {
+			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
+			render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={initialDate}
+					initialView="week"
+					onCellClick={mockOnCellClick}
+				/>
+			)
+
+			const dateStr = initialDate.format('YYYY-MM-DD')
+			const timeCell = screen.getByTestId(`vertical-cell-${dateStr}-10-00`)
+			fireEvent.click(timeCell)
+
+			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
+			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
+			expect(callArgs.start.toISOString()).toBe('2025-01-15T10:00:00.000Z')
+			// Week view time slots are 1 hour (minute is undefined)
+			expect(callArgs.end.toISOString()).toBe('2025-01-15T11:00:00.000Z')
+			expect(callArgs.allDay).toBe(false)
+			expect(callArgs.resourceId).toBeUndefined()
+		})
+
+		it('should call onCellClick with correct arguments in day view', async () => {
+			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
+			render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={initialDate}
+					initialView="day"
+					onCellClick={mockOnCellClick}
+				/>
+			)
+
+			const dateStr = initialDate.format('YYYY-MM-DD')
+			// Day view uses VerticalGrid with time cells
+			const timeCell = screen.getByTestId(`vertical-cell-${dateStr}-14-00`)
+			fireEvent.click(timeCell)
+
+			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
+			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
+			expect(callArgs.start.toISOString()).toBe('2025-01-15T14:00:00.000Z')
+			// Day view time slots are 15 minutes (minute is 0)
+			expect(callArgs.end.toISOString()).toBe('2025-01-15T14:15:00.000Z')
+			expect(callArgs.allDay).toBe(false)
+			expect(callArgs.resourceId).toBeUndefined()
+		})
+	})
+
 	describe('custom disabled state classesOverride', () => {
 		it('should apply default disabled state classes when no custom className is provided', async () => {
 			render(

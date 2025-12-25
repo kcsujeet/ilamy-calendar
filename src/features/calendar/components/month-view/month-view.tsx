@@ -19,6 +19,7 @@ export const MonthView: React.FC<MonthViewProps> = () => {
 		columns: days.map((day) => ({
 			id: `col-${day.toISOString()}`,
 			day,
+			className: 'w-auto',
 			gridType: 'day' as const,
 		})),
 		className: 'flex-1',

@@ -25,27 +25,64 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
-const COLOR_NAMES = [
-	'blue',
-	'green',
-	'purple',
-	'red',
-	'yellow',
-	'pink',
-	'indigo',
-	'amber',
-	'emerald',
-	'sky',
-	'violet',
-	'rose',
-	'teal',
-	'orange',
-] as const
-
-const COLOR_OPTIONS = COLOR_NAMES.map((color) => ({
-	value: `bg-${color}-100 text-${color}-800`,
-	label: color.charAt(0).toUpperCase() + color.slice(1),
-}))
+const COLOR_OPTIONS = [
+	{
+		value: `bg-blue-100 text-blue-800`,
+		label: 'Blue',
+	},
+	{
+		value: `bg-green-100 text-green-800`,
+		label: 'Green',
+	},
+	{
+		value: `bg-purple-100 text-purple-800`,
+		label: 'Purple',
+	},
+	{
+		value: `bg-red-100 text-red-800`,
+		label: 'Red',
+	},
+	{
+		value: `bg-yellow-100 text-yellow-800`,
+		label: 'Yellow',
+	},
+	{
+		value: `bg-pink-100 text-pink-800`,
+		label: 'Pink',
+	},
+	{
+		value: `bg-indigo-100 text-indigo-800`,
+		label: 'Indigo',
+	},
+	{
+		value: `bg-amber-100 text-amber-800`,
+		label: 'Amber',
+	},
+	{
+		value: `bg-emerald-100 text-emerald-800`,
+		label: 'Emerald',
+	},
+	{
+		value: `bg-sky-100 text-sky-800`,
+		label: 'Sky',
+	},
+	{
+		value: `bg-violet-100 text-violet-800`,
+		label: 'Violet',
+	},
+	{
+		value: `bg-rose-100 text-rose-800`,
+		label: 'Rose',
+	},
+	{
+		value: `bg-teal-100 text-teal-800`,
+		label: 'Teal',
+	},
+	{
+		value: `bg-orange-100 text-orange-800`,
+		label: 'Orange',
+	},
+]
 
 const buildDateTime = (
 	date: Date,

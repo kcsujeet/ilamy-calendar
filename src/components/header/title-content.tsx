@@ -59,13 +59,13 @@ const TitleContent = () => {
 		<>
 			{months.map((month, index) => (
 				<Button
-					key={month}
-					variant="ghost"
 					className={cn(
 						'justify-start font-normal',
 						currentDate.month() === index && 'bg-primary/10'
 					)}
+					key={month}
 					onClick={() => selectDate(currentDate.month(index))}
+					variant="ghost"
 				>
 					{month}
 				</Button>
@@ -77,13 +77,13 @@ const TitleContent = () => {
 		<>
 			{years.map((year) => (
 				<Button
-					key={year}
-					variant="ghost"
 					className={cn(
 						'justify-start font-normal',
 						currentDate.year() === year && 'bg-primary/10'
 					)}
+					key={year}
 					onClick={() => selectDate(currentDate.year(year))}
+					variant="ghost"
 				>
 					{year}
 				</Button>
@@ -103,13 +103,13 @@ const TitleContent = () => {
 
 				return (
 					<Button
-						key={start.format('YYYY-MM-DD')}
-						variant="ghost"
 						className={cn(
 							'justify-start font-normal',
 							isCurrentWeek && 'bg-primary/10'
 						)}
+						key={start.format('YYYY-MM-DD')}
 						onClick={() => selectDate(start)}
+						variant="ghost"
 					>
 						<div className="flex w-full items-center justify-between">
 							<span>{`${start.format('MMM D')} - ${end.format('D')}`}</span>
@@ -136,13 +136,13 @@ const TitleContent = () => {
 
 					return (
 						<Button
-							key={day.format('YYYY-MM-DD')}
-							variant="ghost"
 							className={cn(
 								'justify-start font-normal',
 								isCurrentDay && 'bg-primary/10'
 							)}
+							key={day.format('YYYY-MM-DD')}
 							onClick={() => selectDate(day)}
+							variant="ghost"
 						>
 							<div className="flex w-full items-center justify-between">
 								<span>{day.format('dddd, MMM D')}</span>
@@ -191,24 +191,24 @@ const TitleContent = () => {
 		.map((popover) => (
 			<Popover
 				key={popover.id}
-				open={openPopover === popover.id}
 				onOpenChange={(open) => setOpenPopover(open ? popover.id : null)}
+				open={openPopover === popover.id}
 			>
 				<PopoverTrigger asChild>
 					<Button
-						variant="ghost"
 						className="flex items-center gap-1 px-1! font-semibold"
 						data-testid="calendar-month-button"
+						variant="ghost"
 					>
 						<AnimatePresence mode="wait">
 							<motion.span
-								key={`${popover.id}-${currentDate.format('YYYY-MM-DD')}`}
-								initial="initial"
 								animate="animate"
-								exit="exit"
-								variants={animation}
-								transition={{ duration: 0.25, ease: 'easeInOut' }}
 								data-testid="calendar-month-display"
+								exit="exit"
+								initial="initial"
+								key={`${popover.id}-${currentDate.format('YYYY-MM-DD')}`}
+								transition={{ duration: 0.25, ease: 'easeInOut' }}
+								variants={animation}
 							>
 								{popover.title}
 							</motion.span>

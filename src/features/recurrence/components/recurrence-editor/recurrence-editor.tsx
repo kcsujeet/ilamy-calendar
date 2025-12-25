@@ -134,10 +134,10 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 			<CardHeader className="pb-3">
 				<div className="flex items-center space-x-2">
 					<Checkbox
-						id="recurring"
 						checked={show}
-						onCheckedChange={toggle}
 						data-testid="toggle-recurrence"
+						id="recurring"
+						onCheckedChange={toggle}
 					/>
 					<CardTitle className="text-sm">{t('repeat')}</CardTitle>
 				</div>
@@ -153,19 +153,19 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 					<div className="space-y-4">
 						<div className="grid grid-cols-2 gap-4">
 							<div>
-								<Label htmlFor="frequency" className="text-xs">
+								<Label className="text-xs" htmlFor="frequency">
 									{t('repeats')}
 								</Label>
 								<Select
-									value={freq}
 									onValueChange={(f) =>
 										update({ freq: FREQ_MAP[f as keyof typeof FREQ_MAP] })
 									}
+									value={freq}
 								>
 									<SelectTrigger
-										id="frequency"
 										className="h-8"
 										data-testid="frequency-select"
+										id="frequency"
 									>
 										<SelectValue />
 									</SelectTrigger>
@@ -179,18 +179,18 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 								</Select>
 							</div>
 							<div>
-								<Label htmlFor="interval" className="text-xs">
+								<Label className="text-xs" htmlFor="interval">
 									{t('every')}
 								</Label>
 								<Input
+									className="h-8"
 									id="interval"
-									type="number"
 									min="1"
-									value={opts?.interval || 1}
 									onChange={(e) =>
 										update({ interval: parseNum(e.target.value) })
 									}
-									className="h-8"
+									type="number"
+									value={opts?.interval || 1}
 								/>
 							</div>
 						</div>
@@ -200,15 +200,15 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 								<Label className="text-xs">{t('repeatOn')}</Label>
 								<div className="flex flex-wrap gap-1 mt-1">
 									{weekDays.map((d, i) => (
-										<div key={d.label} className="flex items-center space-x-1">
+										<div className="flex items-center space-x-1" key={d.label}>
 											<Checkbox
-												id={`day-${i}`}
 												checked={byweekday.includes(d.value)}
+												id={`day-${i}`}
 												onCheckedChange={() => toggleDay(i)}
 											/>
 											<Label
-												htmlFor={`day-${i}`}
 												className="text-xs cursor-pointer"
+												htmlFor={`day-${i}`}
 											>
 												{d.label}
 											</Label>
@@ -223,55 +223,55 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 							<div className="space-y-2 mt-1">
 								<div className="flex items-center space-x-2">
 									<Checkbox
-										id="never"
 										checked={endType === 'never'}
+										id="never"
 										onCheckedChange={() => setEndType('never')}
 									/>
-									<Label htmlFor="never" className="text-xs">
+									<Label className="text-xs" htmlFor="never">
 										{t('never')}
 									</Label>
 								</div>
 								<div className="flex items-center space-x-2">
 									<Checkbox
-										id="after"
 										checked={endType === 'count'}
+										id="after"
 										onCheckedChange={() => setEndType('count')}
 									/>
-									<Label htmlFor="after" className="text-xs">
+									<Label className="text-xs" htmlFor="after">
 										{t('after')}
 									</Label>
 									{endType === 'count' && (
 										<Input
-											type="number"
+											className="h-6 w-16 text-xs"
+											data-testid="count-input"
 											min="1"
-											value={opts?.count || 1}
 											onChange={(e) =>
 												update({ count: parseNum(e.target.value) })
 											}
-											className="h-6 w-16 text-xs"
-											data-testid="count-input"
+											type="number"
+											value={opts?.count || 1}
 										/>
 									)}
 									<span className="text-xs">{t('occurrences')}</span>
 								</div>
 								<div className="flex items-center space-x-2">
 									<Checkbox
-										id="on"
 										checked={endType === 'until'}
+										id="on"
 										onCheckedChange={() => setEndType('until')}
 									/>
-									<Label htmlFor="on" className="text-xs">
+									<Label className="text-xs" htmlFor="on">
 										{t('on')}
 									</Label>
 									{endType === 'until' && (
 										<DatePicker
+											className="h-6"
 											date={opts?.until}
 											onChange={(d) =>
 												update({
 													until: d ? dayjs(d).endOf('day').toDate() : undefined,
 												})
 											}
-											className="h-6"
 										/>
 									)}
 								</div>

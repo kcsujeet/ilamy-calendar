@@ -27,10 +27,10 @@ describe('CalendarDndContext', () => {
 	const renderWithCalendarProvider = (providerProps = {}) => {
 		return render(
 			<CalendarProvider
-				events={[]}
 				dayMaxEvents={5}
-				firstDayOfWeek={0}
 				disableDragAndDrop={false}
+				events={[]}
+				firstDayOfWeek={0}
 				{...providerProps}
 			>
 				<CalendarDndContext>

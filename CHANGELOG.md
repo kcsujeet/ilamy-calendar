@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.2.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.2.0...v1.2.1)
+
+> 24 December 2025
+
+##### Breaking Changes
+
+- **BREAKING:** Removed default `dayjs` locale imports from the library bundle. Users are now responsible for importing the necessary `dayjs` locales in their application to reduce bundle size.
+
+##### Fixes
+
+- fix: resolve sticky-header issues and update dependencies
+- fix: remove borders from day and week view headers for a cleaner appearance
+- fix: update border styles in `GridCell` and refactor available views in `ViewControls`
+
+#### [v1.2.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.1.1...v1.2.0)
+
+> 24 December 2025
+
+##### Features
+
+- feat: implement vertical resource view for Resource Calendar [`#42`](https://github.com/kcsujeet/ilamy-calendar/pull/42)
+- feat: implement generic horizontal grid and refine calendar architecture [`#42`](https://github.com/kcsujeet/ilamy-calendar/pull/42)
+- feat: migrate MonthView to HorizontalGrid and refine all-day event filtering [`#42`](https://github.com/kcsujeet/ilamy-calendar/pull/42)
+- feat: improve cell click info and fix hour/minute passing in resource calendar [`#46`](https://github.com/kcsujeet/ilamy-calendar/pull/46)
+- feat: enhance grid components with `variant` and `dayNumberHeight` props
+
+##### Tooling & Infrastructure
+
+- docs: update README with examples directory and demo link
+
 #### [v1.1.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.1.0...v1.1.1)
 
 > 6 December 2025

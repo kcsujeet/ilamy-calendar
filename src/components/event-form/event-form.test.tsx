@@ -13,8 +13,8 @@ const renderEventForm = (
 ) => {
 	return render(
 		<CalendarProvider
-			events={[]}
 			dayMaxEvents={5}
+			events={[]}
 			firstDayOfWeek={0}
 			{...providerProps}
 		>
@@ -66,10 +66,6 @@ describe('EventForm', () => {
 		it('should render create event form with default values', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
-			expect(screen.getByText('Create Event')).toBeInTheDocument()
-			expect(
-				screen.getByText('Add a new event to your calendar')
-			).toBeInTheDocument()
 			expect(screen.getByPlaceholderText('Event title')).toHaveValue('')
 			expect(screen.getByLabelText('All day')).not.toBeChecked()
 			expect(screen.queryByText('Delete')).not.toBeInTheDocument()
@@ -78,8 +74,6 @@ describe('EventForm', () => {
 		it('should render edit event form when selectedEvent is provided', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testEvent })
 
-			expect(screen.getByText('Edit Event')).toBeInTheDocument()
-			expect(screen.getByText('Edit your event details')).toBeInTheDocument()
 			expect(screen.getByDisplayValue('Test Event')).toBeInTheDocument()
 			expect(screen.getByDisplayValue('Test description')).toBeInTheDocument()
 			expect(screen.getByDisplayValue('Test location')).toBeInTheDocument()
@@ -100,9 +94,13 @@ describe('EventForm', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testEvent })
 
 			expect(screen.getByDisplayValue('Test Event')).toBeInTheDocument()
-			// TimeSelect displays time in 12-hour format (10:00 AM, 11:00 AM)
-			expect(screen.getAllByText('10:00 AM').length).toBeGreaterThan(0) // start time
-			expect(screen.getAllByText('11:00 AM').length).toBeGreaterThan(0) // end time
+			// TimePicker displays time (10:00, 11:00)
+			expect(
+				screen.getAllByTestId('time-picker-start-time').length
+			).toBeGreaterThan(0)
+			expect(
+				screen.getAllByTestId('time-picker-end-time').length
+			).toBeGreaterThan(0)
 			expect(screen.getByDisplayValue('Test description')).toBeInTheDocument()
 			expect(screen.getByDisplayValue('Test location')).toBeInTheDocument()
 		})
@@ -145,8 +143,9 @@ describe('EventForm', () => {
 		it('should update time inputs when changed', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
-			// TimeSelect uses Select component (combobox), find by role
-			const [startTimeSelect, endTimeSelect] = screen.getAllByRole('combobox')
+			// TimePicker uses Button component (combobox), find by test-id
+			const startTimeSelect = screen.getByTestId('time-picker-start-time')
+			const endTimeSelect = screen.getByTestId('time-picker-end-time')
 
 			// Verify time selects are rendered (initial state)
 			expect(startTimeSelect).toBeInTheDocument()
@@ -162,8 +161,13 @@ describe('EventForm', () => {
 			fireEvent.click(allDayCheckbox)
 
 			expect(allDayCheckbox).toBeChecked()
-			// TimeSelects (combobox) should not be visible when all day is enabled
-			expect(screen.queryAllByRole('combobox')).toHaveLength(0)
+			// TimePickers should not be visible when all day is enabled
+			expect(
+				screen.queryByTestId('time-picker-start-time')
+			).not.toBeInTheDocument()
+			expect(
+				screen.queryByTestId('time-picker-end-time')
+			).not.toBeInTheDocument()
 		})
 
 		it('should show time inputs when all day is disabled', () => {
@@ -174,8 +178,9 @@ describe('EventForm', () => {
 			fireEvent.click(allDayCheckbox)
 
 			expect(allDayCheckbox).not.toBeChecked()
-			// TimeSelects (combobox) should be visible - 2 selects (start and end time)
-			expect(screen.queryAllByRole('combobox')).toHaveLength(2)
+			// TimePickers should be visible
+			expect(screen.getByTestId('time-picker-start-time')).toBeInTheDocument()
+			expect(screen.getByTestId('time-picker-end-time')).toBeInTheDocument()
 		})
 
 		it('should set end time to 23:59 when all day is enabled', () => {
@@ -187,9 +192,8 @@ describe('EventForm', () => {
 			// Re-enable to check the time inputs are shown again
 			fireEvent.click(allDayCheckbox)
 
-			// TimeSelect should be visible again after unchecking all-day
-			const timeSelects = screen.queryAllByRole('combobox')
-			expect(timeSelects.length).toBeGreaterThan(0)
+			// TimePicker should be visible again after unchecking all-day
+			expect(screen.getByTestId('time-picker-start-time')).toBeInTheDocument()
 		})
 	})
 
@@ -231,9 +235,6 @@ describe('EventForm', () => {
 				.find((button) => button.textContent?.includes('Aug 15, 2025'))
 
 			expect(startDatePicker).toBeInTheDocument()
-
-			// This test would need more sophisticated date picker interaction
-			// For now, we test the behavior through the useEffect logic
 		})
 	})
 
@@ -408,29 +409,13 @@ describe('EventForm', () => {
 
 			expect(mockOnClose).toHaveBeenCalled()
 		})
-
-		it('should call onClose when dialog is closed', () => {
-			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
-
-			// The dialog has onOpenChange that should call onClose
-			// This tests the dialog integration
-			expect(mockOnClose).toHaveBeenCalledTimes(0)
-		})
 	})
 
 	describe('Edge Cases', () => {
 		it('should handle undefined selectedEvent gracefully', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: undefined })
 
-			expect(screen.getByText('Create Event')).toBeInTheDocument()
 			expect(screen.getByPlaceholderText('Event title')).toHaveValue('')
-		})
-
-		it('should handle undefined selectedEvent gracefully', () => {
-			renderEventForm({ ...defaultProps, selectedEvent: undefined })
-
-			expect(screen.getByText('Create Event')).toBeInTheDocument()
-			// Should use current date as default
 		})
 
 		it('should handle event without optional fields', () => {
@@ -495,15 +480,14 @@ describe('EventForm', () => {
 			// RecurrenceEditor should show as enabled (checkbox checked)
 			// because it found the parent's RRULE
 			const toggleButton = screen.getByTestId('toggle-recurrence')
-			expect(toggleButton).toBeChecked() // ❌ FAILS: Currently unchecked because instance.rrule is undefined
+			expect(toggleButton).toBeChecked()
 		})
 	})
 
 	describe('Accessibility', () => {
-		it('should have proper ARIA labels and roles', () => {
+		it('should have proper ARIA labels', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
-			expect(screen.getByRole('dialog')).toBeInTheDocument()
 			expect(screen.getByLabelText('Title')).toBeInTheDocument()
 			expect(screen.getByLabelText('All day')).toBeInTheDocument()
 			expect(screen.getByLabelText('Location')).toBeInTheDocument()

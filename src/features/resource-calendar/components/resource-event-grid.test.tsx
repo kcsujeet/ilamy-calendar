@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test'
-import { render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, test } from 'bun:test'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
 import type { Resource } from '@/features/resource-calendar/types'
@@ -37,59 +37,54 @@ const mockDays = [
 	dayjs('2025-01-15T00:00:00.000Z'),
 ]
 
-const renderWithProvider = (
-	ui: React.ReactElement,
-	{
-		resources = mockResources,
-		events = mockEvents,
-		...props
-	}: {
-		resources?: Resource[]
-		events?: CalendarEvent[]
-		[key: string]: unknown
-	} = {}
-) => {
+const renderResourceEventGrid = (props = {}) => {
 	return render(
 		<ResourceCalendarProvider
-			resources={resources}
-			events={events}
-			firstDayOfWeek={0}
 			dayMaxEvents={4}
+			events={mockEvents}
+			firstDayOfWeek={0}
+			resources={mockResources}
 			{...props}
 		>
-			{ui}
+			<ResourceEventGrid days={mockDays} {...props} />
 		</ResourceCalendarProvider>
 	)
 }
 
 describe('ResourceEventGrid', () => {
-	it('renders visible resources as rows', () => {
-		renderWithProvider(<ResourceEventGrid days={mockDays} />)
+	beforeEach(() => {
+		cleanup()
+	})
+
+	test('renders visible resources as rows', () => {
+		renderResourceEventGrid()
 
 		expect(screen.getByText('Room A')).toBeInTheDocument()
 		expect(screen.getByText('Room B')).toBeInTheDocument()
 	})
 
-	it('passes resourceId to GridCell components', () => {
-		renderWithProvider(<ResourceEventGrid days={mockDays} gridType="day" />, {
+	test('passes resourceId to GridCell components', () => {
+		renderResourceEventGrid({
 			resources: [mockResources[0]],
+			gridType: 'day',
 		})
 
 		const cells = screen.getAllByTestId(/^day-cell-/)
 		expect(cells.length).toBe(3)
 	})
 
-	it('passes gridType prop to child components', () => {
-		renderWithProvider(<ResourceEventGrid days={mockDays} gridType="hour" />, {
+	test('passes gridType prop to child components', () => {
+		renderResourceEventGrid({
 			resources: [mockResources[0]],
+			gridType: 'hour',
 		})
 
 		const cells = screen.getAllByTestId(/^day-cell-/)
 		expect(cells.length).toBeGreaterThan(0)
 	})
 
-	it('creates correct number of grid cells per resource', () => {
-		renderWithProvider(<ResourceEventGrid days={mockDays} />, {
+	test('creates correct number of grid cells per resource', () => {
+		renderResourceEventGrid({
 			resources: [mockResources[0]],
 		})
 
@@ -97,51 +92,56 @@ describe('ResourceEventGrid', () => {
 		expect(cells).toHaveLength(3)
 	})
 
-	it('renders all visible resources', () => {
-		renderWithProvider(<ResourceEventGrid days={mockDays} />)
+	test('renders all visible resources', () => {
+		renderResourceEventGrid()
 
 		expect(screen.getByText('Room A')).toBeInTheDocument()
 		expect(screen.getByText('Room B')).toBeInTheDocument()
 	})
 
-	it('renders default resource label when no custom renderer', () => {
-		renderWithProvider(<ResourceEventGrid days={mockDays} />, {
+	test('renders default resource label when no custom renderer', () => {
+		renderResourceEventGrid({
 			resources: [mockResources[0]],
 		})
 
 		expect(screen.getByText('Room A')).toBeInTheDocument()
 	})
 
-	it('applies resource color styles to resource label', () => {
-		const { container } = renderWithProvider(
-			<ResourceEventGrid days={mockDays} />,
-			{
-				resources: [mockResources[0]],
-			}
-		)
+	test('applies resource color styles to resource label', () => {
+		const { container } = renderResourceEventGrid({
+			resources: [mockResources[0]],
+		})
 
 		const resourceLabel = container.querySelector('[style*="#3B82F6"]')
 		expect(resourceLabel).toBeInTheDocument()
 	})
 
-	it('renders children as header', () => {
-		renderWithProvider(
-			<ResourceEventGrid days={mockDays}>
-				<div data-testid="custom-header">Header Content</div>
-			</ResourceEventGrid>,
-			{ resources: [] }
-		)
+	test('renders children as header', () => {
+		renderResourceEventGrid({
+			resources: [],
+			children: <div data-testid="custom-header">Header Content</div>,
+		})
 
 		expect(screen.getByTestId('custom-header')).toBeInTheDocument()
 	})
 
-	it('defaults gridType to day when not provided', () => {
-		renderWithProvider(<ResourceEventGrid days={mockDays} />, {
+	test('defaults gridType to day when not provided', () => {
+		renderResourceEventGrid({
 			resources: [mockResources[0]],
 		})
 
 		const cells = screen.getAllByTestId(/^day-cell-/)
 		expect(cells.length).toBe(3)
+	})
+
+	test('does not render day numbers in cells', () => {
+		renderResourceEventGrid({
+			resources: [mockResources[0]],
+		})
+
+		// Day numbers are rendered with test-id "day-number-{date}"
+		const dayNumbers = screen.queryAllByTestId(/^day-number-/)
+		expect(dayNumbers).toHaveLength(0)
 	})
 
 	describe('Business Hours Styling', () => {
@@ -157,21 +157,28 @@ describe('ResourceEventGrid', () => {
 			endTime: 17,
 		}
 
-		it('applies styling correctly in day grid (Month View)', () => {
+		test('applies styling correctly in day grid (Month View)', () => {
 			// Monday (Business Day) and Sunday (Non-Business Day)
 			const days = [
 				dayjs('2025-01-13T00:00:00.000Z'), // Monday
 				dayjs('2025-01-12T00:00:00.000Z'), // Sunday
 			]
 
-			renderWithProvider(<ResourceEventGrid days={days} gridType="day" />, {
+			renderResourceEventGrid({
+				days,
+				gridType: 'day',
 				resources: [mockResources[0]],
 				businessHours,
 				initialDate: days[0],
 			})
 
-			const mondayCell = screen.getByTestId(`day-cell-${days[0].toISOString()}`)
-			const sundayCell = screen.getByTestId(`day-cell-${days[1].toISOString()}`)
+			const row = screen.getByTestId('horizontal-row-res-1')
+			const mondayCell = within(row).getByTestId(
+				`day-cell-${days[0].format('YYYY-MM-DD')}`
+			)
+			const sundayCell = within(row).getByTestId(
+				`day-cell-${days[1].format('YYYY-MM-DD')}`
+			)
 
 			// Monday is a business day -> No disabled styling
 			expect(mondayCell.className).not.toContain('pointer-events-none')
@@ -182,30 +189,31 @@ describe('ResourceEventGrid', () => {
 			expect(sundayCell.className).toContain('pointer-events-none')
 		})
 
-		it('applies styling correctly in hour grid (Week/Day View)', () => {
+		test('applies styling correctly in hour grid (Week/Day View)', () => {
 			const monday = dayjs('2025-01-13T00:00:00.000Z') // Monday
 			const sunday = dayjs('2025-01-12T00:00:00.000Z') // Sunday
 
-			const hours = [
-				monday.hour(10), // Monday 10am (Business Hour)
-				monday.hour(20), // Monday 8pm (Non-Business Hour)
-				sunday.hour(10), // Sunday 10am (Non-Business Day)
-			]
+			const h1 = monday.hour(10) // Monday 10am (Business Hour)
+			const h2 = monday.hour(20) // Monday 8pm (Non-Business Hour)
+			const h3 = sunday.hour(10) // Sunday 10am (Non-Business Day)
 
-			renderWithProvider(<ResourceEventGrid days={hours} gridType="hour" />, {
+			renderResourceEventGrid({
+				days: [h1, h2, h3],
+				gridType: 'hour',
 				resources: [mockResources[0]],
 				businessHours,
 				initialDate: monday,
 			})
 
-			const businessHourCell = screen.getByTestId(
-				`day-cell-${hours[0].toISOString()}`
+			const row = screen.getByTestId('horizontal-row-res-1')
+			const businessHourCell = within(row).getByTestId(
+				`day-cell-${h1.format('YYYY-MM-DD-HH-mm')}`
 			)
-			const nonBusinessHourCell = screen.getByTestId(
-				`day-cell-${hours[1].toISOString()}`
+			const nonBusinessHourCell = within(row).getByTestId(
+				`day-cell-${h2.format('YYYY-MM-DD-HH-mm')}`
 			)
-			const nonBusinessDayCell = screen.getByTestId(
-				`day-cell-${hours[2].toISOString()}`
+			const nonBusinessDayCell = within(row).getByTestId(
+				`day-cell-${h3.format('YYYY-MM-DD-HH-mm')}`
 			)
 
 			// Monday 10am -> Business -> No disabled styling

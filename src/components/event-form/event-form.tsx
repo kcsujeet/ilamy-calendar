@@ -4,18 +4,17 @@ import type { CalendarEvent } from '@/components/types'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DatePicker } from '@/components/ui/date-picker'
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from '@/components/ui/dialog'
+import { DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { TimePicker } from '@/components/ui/time-picker'
+import { isBusinessDay } from '@/features/calendar/utils/business-hours'
+import {
+	buildDateTime,
+	buildEndDateTime,
+	getTimeConstraints,
+} from '@/features/calendar/utils/event-form-utils'
 import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
 import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-editor/recurrence-editor'
 import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
@@ -83,26 +82,6 @@ const COLOR_OPTIONS = [
 		label: 'Orange',
 	},
 ]
-
-const buildDateTime = (
-	date: Date,
-	time: string,
-	isAllDay: boolean
-): dayjs.Dayjs => {
-	const [hours, minutes] = time.split(':').map(Number)
-	const base = dayjs(date).hour(hours).minute(minutes)
-	return isAllDay ? base.hour(0).minute(0) : base
-}
-
-const buildEndDateTime = (
-	date: Date,
-	time: string,
-	isAllDay: boolean
-): dayjs.Dayjs => {
-	const [hours, minutes] = time.split(':').map(Number)
-	const base = dayjs(date).hour(hours).minute(minutes)
-	return isAllDay ? base.hour(23).minute(59) : base
-}
 
 export interface EventFormProps {
 	open?: boolean
@@ -280,215 +259,184 @@ export const EventForm: React.FC<EventFormProps> = ({
 	}
 
 	const disabledDateMatcher = businessHours
-		? (date: Date) => {
-				const dayOfWeek = dayjs(date).format('dddd').toLowerCase()
-				return !businessHours.daysOfWeek.includes(
-					dayOfWeek as (typeof businessHours.daysOfWeek)[number]
-				)
-			}
+		? (date: Date) => !isBusinessDay(dayjs(date), businessHours)
 		: undefined
 
-	const minTime = businessHours
-		? `${businessHours.startTime.toString().padStart(2, '0')}:00`
-		: '00:00'
-	const maxTime = businessHours
-		? `${(businessHours.endTime - 1).toString().padStart(2, '0')}:45`
-		: '23:59'
+	const startConstraints = getTimeConstraints(startDate, businessHours)
+	const endConstraints = getTimeConstraints(endDate, businessHours)
 
 	return (
 		<>
-			<Dialog open={true} onOpenChange={onClose}>
-				<DialogContent className="flex flex-col h-[90vh] w-[90vw] max-w-[500px] p-4 sm:p-6 overflow-hidden gap-0">
-					<DialogHeader className="mb-2 sm:mb-4 shrink-0">
-						<DialogTitle className="text-base sm:text-lg">
-							{selectedEvent?.id ? t('editEvent') : t('createEvent')}
-						</DialogTitle>
-						<DialogDescription className="text-xs sm:text-sm">
-							{selectedEvent?.id ? t('editEventDetails') : t('addNewEvent')}
-						</DialogDescription>
-					</DialogHeader>
+			<form className="flex flex-col flex-1 min-h-0" onSubmit={handleSubmit}>
+				<ScrollArea className="flex-1 min-h-0">
+					<div className="grid gap-3 sm:gap-4 p-1">
+						<div className="grid gap-2">
+							<Label className="text-xs sm:text-sm" htmlFor="title">
+								{t('title')}
+							</Label>
+							<Input
+								className="h-8 text-sm sm:h-9"
+								id="title"
+								name="title"
+								onChange={handleInputChange}
+								placeholder={t('eventTitlePlaceholder')}
+								required
+								value={formValues.title}
+							/>
+						</div>
 
-					<form
-						onSubmit={handleSubmit}
-						className="flex flex-col flex-1 min-h-0"
-					>
-						<ScrollArea className="flex-1 min-h-0">
-							<div className="grid gap-3 sm:gap-4 p-1">
-								<div className="grid gap-2">
-									<Label htmlFor="title" className="text-xs sm:text-sm">
-										{t('title')}
-									</Label>
-									<Input
-										id="title"
-										name="title"
-										value={formValues.title}
-										onChange={handleInputChange}
-										placeholder={t('eventTitlePlaceholder')}
-										required
-										className="h-8 text-sm sm:h-9"
-									/>
-								</div>
+						<div className="grid gap-1 sm:gap-2">
+							<Label className="text-xs sm:text-sm" htmlFor="description">
+								{t('description')}
+							</Label>
+							<Input
+								className="h-8 text-sm sm:h-9"
+								id="description"
+								name="description"
+								onChange={handleInputChange}
+								placeholder={t('eventDescriptionPlaceholder')}
+								value={formValues.description}
+							/>
+						</div>
 
-								<div className="grid gap-1 sm:gap-2">
-									<Label htmlFor="description" className="text-xs sm:text-sm">
-										{t('description')}
-									</Label>
-									<Input
-										id="description"
-										name="description"
-										value={formValues.description}
-										onChange={handleInputChange}
-										placeholder={t('eventDescriptionPlaceholder')}
-										className="h-8 text-sm sm:h-9"
-									/>
-								</div>
+						<div className="flex items-center space-x-2">
+							<Checkbox
+								checked={isAllDay}
+								id="allDay"
+								onCheckedChange={(checked) => setIsAllDay(checked === true)}
+							/>
+							<Label className="text-xs sm:text-sm" htmlFor="allDay">
+								{t('allDay')}
+							</Label>
+						</div>
 
-								<div className="flex items-center space-x-2">
-									<Checkbox
-										id="allDay"
-										checked={isAllDay}
-										onCheckedChange={(checked) => setIsAllDay(checked === true)}
-									/>
-									<Label htmlFor="allDay" className="text-xs sm:text-sm">
-										{t('allDay')}
-									</Label>
-								</div>
-
-								<div className="grid grid-cols-2 gap-2 sm:gap-4">
-									<div>
-										<Label className="text-xs sm:text-sm">
-											{t('startDate')}
-										</Label>
-										<DatePicker
-											date={startDate}
-											onChange={handleStartDateChange}
-											className="mt-1"
-											closeOnSelect
-											disabled={disabledDateMatcher}
-										/>
-									</div>
-									<div>
-										<Label className="text-xs sm:text-sm">{t('endDate')}</Label>
-										<DatePicker
-											date={endDate}
-											onChange={handleEndDateChange}
-											className="mt-1"
-											closeOnSelect
-											disabled={disabledDateMatcher}
-										/>
-									</div>
-								</div>
-
-								{!isAllDay && (
-									<div className="grid grid-cols-2 gap-2 sm:gap-4">
-										<div>
-											<Label className="text-xs sm:text-sm">
-												{t('startTime')}
-											</Label>
-											<TimePicker
-												value={startTime}
-												onChange={handleStartTimeChange}
-												minTime={minTime}
-												maxTime={maxTime}
-												timeFormat={timeFormat}
-												className="mt-1 h-8 text-sm sm:h-9"
-												name="start-time"
-											/>
-										</div>
-										<div>
-											<Label className="text-xs sm:text-sm">
-												{t('endTime')}
-											</Label>
-											<TimePicker
-												value={endTime}
-												onChange={handleEndTimeChange}
-												minTime={minTime}
-												maxTime={maxTime}
-												timeFormat={timeFormat}
-												className="mt-1 h-8 text-sm sm:h-9"
-												name="end-time"
-											/>
-										</div>
-									</div>
-								)}
-
-								<div className="grid gap-1 sm:gap-2">
-									<Label className="text-xs sm:text-sm">{t('color')}</Label>
-									<div className="flex flex-wrap gap-2">
-										{COLOR_OPTIONS.map((color) => (
-											<Button
-												key={color.value}
-												variant="ghost"
-												type="button"
-												className={cn(
-													`${color.value} h-6 w-6 rounded-full sm:h-8 sm:w-8`,
-													selectedColor === color.value &&
-														'ring-2 ring-black ring-offset-1 sm:ring-offset-2'
-												)}
-												onClick={() => setSelectedColor(color.value)}
-												aria-label={color.label}
-											/>
-										))}
-									</div>
-								</div>
-
-								<div className="grid gap-1 sm:gap-2">
-									<Label htmlFor="location" className="text-xs sm:text-sm">
-										{t('location')}
-									</Label>
-									<Input
-										id="location"
-										name="location"
-										value={formValues.location}
-										onChange={handleInputChange}
-										placeholder={t('eventLocationPlaceholder')}
-										className="h-8 text-sm sm:h-9"
-									/>
-								</div>
-
-								{/* Recurrence Section */}
-								<RecurrenceEditor value={rrule} onChange={handleRRuleChange} />
+						<div className="grid grid-cols-2 gap-2 sm:gap-4">
+							<div>
+								<Label className="text-xs sm:text-sm">{t('startDate')}</Label>
+								<DatePicker
+									className="mt-1"
+									closeOnSelect
+									date={startDate}
+									disabled={disabledDateMatcher}
+									onChange={handleStartDateChange}
+								/>
 							</div>
-						</ScrollArea>
-
-						<DialogFooter className="mt-4 shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:gap-0">
-							{selectedEvent?.id && (
-								<Button
-									type="button"
-									variant="destructive"
-									onClick={handleDelete}
-									className="w-full sm:mr-auto sm:w-auto"
-									size="sm"
-								>
-									{t('delete')}
-								</Button>
-							)}
-							<div className="flex w-full gap-2 sm:w-auto">
-								<Button
-									type="button"
-									variant="outline"
-									onClick={onClose}
-									className="flex-1 sm:flex-none"
-									size="sm"
-								>
-									{t('cancel')}
-								</Button>
-								<Button type="submit" className="flex-1 sm:flex-none" size="sm">
-									{selectedEvent?.id ? t('update') : t('create')}
-								</Button>
+							<div>
+								<Label className="text-xs sm:text-sm">{t('endDate')}</Label>
+								<DatePicker
+									className="mt-1"
+									closeOnSelect
+									date={endDate}
+									disabled={disabledDateMatcher}
+									onChange={handleEndDateChange}
+								/>
 							</div>
-						</DialogFooter>
-					</form>
-				</DialogContent>
-			</Dialog>
+						</div>
+
+						{!isAllDay && (
+							<div className="grid grid-cols-2 gap-2 sm:gap-4">
+								<div>
+									<Label className="text-xs sm:text-sm">{t('startTime')}</Label>
+									<TimePicker
+										className="mt-1 h-8 text-sm sm:h-9"
+										maxTime={startConstraints.max}
+										minTime={startConstraints.min}
+										name="start-time"
+										onChange={handleStartTimeChange}
+										timeFormat={timeFormat}
+										value={startTime}
+									/>
+								</div>
+								<div>
+									<Label className="text-xs sm:text-sm">{t('endTime')}</Label>
+									<TimePicker
+										className="mt-1 h-8 text-sm sm:h-9"
+										maxTime={endConstraints.max}
+										minTime={endConstraints.min}
+										name="end-time"
+										onChange={handleEndTimeChange}
+										timeFormat={timeFormat}
+										value={endTime}
+									/>
+								</div>
+							</div>
+						)}
+
+						<div className="grid gap-1 sm:gap-2">
+							<Label className="text-xs sm:text-sm">{t('color')}</Label>
+							<div className="flex flex-wrap gap-2">
+								{COLOR_OPTIONS.map((color) => (
+									<Button
+										aria-label={color.label}
+										className={cn(
+											`${color.value} h-6 w-6 rounded-full sm:h-8 sm:w-8`,
+											selectedColor === color.value &&
+												'ring-2 ring-black ring-offset-1 sm:ring-offset-2'
+										)}
+										key={color.value}
+										onClick={() => setSelectedColor(color.value)}
+										type="button"
+										variant="ghost"
+									/>
+								))}
+							</div>
+						</div>
+
+						<div className="grid gap-1 sm:gap-2">
+							<Label className="text-xs sm:text-sm" htmlFor="location">
+								{t('location')}
+							</Label>
+							<Input
+								className="h-8 text-sm sm:h-9"
+								id="location"
+								name="location"
+								onChange={handleInputChange}
+								placeholder={t('eventLocationPlaceholder')}
+								value={formValues.location}
+							/>
+						</div>
+
+						{/* Recurrence Section */}
+						<RecurrenceEditor onChange={handleRRuleChange} value={rrule} />
+					</div>
+				</ScrollArea>
+
+				<DialogFooter className="mt-4 shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:gap-0">
+					{selectedEvent?.id && (
+						<Button
+							className="w-full sm:mr-auto sm:w-auto"
+							onClick={handleDelete}
+							size="sm"
+							type="button"
+							variant="destructive"
+						>
+							{t('delete')}
+						</Button>
+					)}
+					<div className="flex w-full gap-2 sm:w-auto">
+						<Button
+							className="flex-1 sm:flex-none"
+							onClick={onClose}
+							size="sm"
+							type="button"
+							variant="outline"
+						>
+							{t('cancel')}
+						</Button>
+						<Button className="flex-1 sm:flex-none" size="sm" type="submit">
+							{selectedEvent?.id ? t('update') : t('create')}
+						</Button>
+					</div>
+				</DialogFooter>
+			</form>
 
 			{/* Recurring Event Edit Dialog */}
 			<RecurrenceEditDialog
+				eventTitle={dialogState.event?.title || ''}
 				isOpen={dialogState.isOpen}
 				onClose={closeDialog}
 				onConfirm={handleConfirm}
 				operationType={dialogState.operationType}
-				eventTitle={dialogState.event?.title || ''}
 			/>
 		</>
 	)

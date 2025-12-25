@@ -104,12 +104,7 @@ function DraggableEventUnmemoized({
 				ref={setNodeRef}
 				{...attributes}
 				{...listeners}
-				initial={{ opacity: 0, y: -50 }}
 				animate={{ opacity: 1, y: 0 }}
-				exit={{ opacity: 0, y: -50 }}
-				layout
-				layoutId={elementId}
-				transition={{ duration: 0.4, ease: 'easeInOut' }}
 				className={cn(
 					'truncate h-full w-full',
 					disableDrag || disableDragAndDrop
@@ -122,11 +117,16 @@ function DraggableEventUnmemoized({
 						'cursor-grabbing shadow-lg',
 					className
 				)}
-				style={style}
+				exit={{ opacity: 0, y: -50 }}
+				initial={{ opacity: 0, y: -50 }}
+				layout
+				layoutId={elementId}
 				onClick={(e) => {
 					e.stopPropagation()
 					onEventClick(event)
 				}}
+				style={style}
+				transition={{ duration: 0.4, ease: 'easeInOut' }}
 			>
 				{/* Use custom renderEvent from context if available, otherwise use default */}
 				{renderEvent ? renderEvent(event) : <DefaultEventContent />}

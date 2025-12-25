@@ -26,6 +26,7 @@ export interface ResourceCalendarContextType extends CalendarContextType {
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellClickInfo) => void
 	renderResource?: (resource: Resource) => React.ReactNode
+	orientation: 'horizontal' | 'vertical'
 }
 
 export const ResourceCalendarContext: React.Context<

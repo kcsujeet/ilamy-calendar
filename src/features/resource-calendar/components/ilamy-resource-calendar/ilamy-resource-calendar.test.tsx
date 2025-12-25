@@ -1,7 +1,13 @@
 // No mocking - test the real CalendarDndContext
 
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from '@testing-library/react'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
@@ -155,7 +161,7 @@ describe('IlamyResourceCalendar', () => {
 
 	it('should render with resources and events', () => {
 		render(
-			<IlamyResourceCalendar resources={mockResources} events={mockEvents} />
+			<IlamyResourceCalendar events={mockEvents} resources={mockResources} />
 		)
 
 		// Should render the calendar header
@@ -197,9 +203,9 @@ describe('IlamyResourceCalendar', () => {
 
 		render(
 			<IlamyResourceCalendar
+				events={mockEvents}
 				initialDate={initialDate}
 				resources={mockResources}
-				events={mockEvents}
 			/>
 		)
 
@@ -211,9 +217,9 @@ describe('IlamyResourceCalendar', () => {
 
 		render(
 			<IlamyResourceCalendar
+				events={mockEvents}
 				initialDate={initialDate}
 				resources={mockResources}
-				events={mockEvents}
 			/>
 		)
 
@@ -225,9 +231,9 @@ describe('IlamyResourceCalendar', () => {
 
 		render(
 			<IlamyResourceCalendar
+				events={mockEvents}
 				initialDate={initialDate}
 				resources={mockResources}
-				events={mockEvents}
 			/>
 		)
 
@@ -259,15 +265,15 @@ describe('IlamyResourceCalendar', () => {
 
 		render(
 			<IlamyResourceCalendar
-				resources={mockResources}
 				events={mockEvents}
-				onEventClick={onEventClick}
 				onCellClick={onCellClick}
-				onEventAdd={onEventAdd}
-				onEventUpdate={onEventUpdate}
-				onEventDelete={onEventDelete}
-				onViewChange={onViewChange}
 				onDateChange={onDateChange}
+				onEventAdd={onEventAdd}
+				onEventClick={onEventClick}
+				onEventDelete={onEventDelete}
+				onEventUpdate={onEventUpdate}
+				onViewChange={onViewChange}
+				resources={mockResources}
 			/>
 		)
 
@@ -279,10 +285,10 @@ describe('IlamyResourceCalendar', () => {
 		render(
 			<IlamyResourceCalendar
 				disableCellClick={true}
-				disableEventClick={true}
 				disableDragAndDrop={true}
-				resources={mockResources}
+				disableEventClick={true}
 				events={mockEvents}
+				resources={mockResources}
 			/>
 		)
 
@@ -293,8 +299,8 @@ describe('IlamyResourceCalendar', () => {
 		render(
 			<IlamyResourceCalendar
 				dayMaxEvents={5}
-				resources={mockResources}
 				events={mockEvents}
+				resources={mockResources}
 			/>
 		)
 
@@ -304,9 +310,9 @@ describe('IlamyResourceCalendar', () => {
 	it('should handle sticky view header', () => {
 		render(
 			<IlamyResourceCalendar
+				resources={mockResources}
 				stickyViewHeader={true}
 				viewHeaderClassName="custom-view-header"
-				resources={mockResources}
 			/>
 		)
 
@@ -316,10 +322,10 @@ describe('IlamyResourceCalendar', () => {
 	it('should handle internationalization props', () => {
 		render(
 			<IlamyResourceCalendar
-				translator={translator}
 				locale="en"
-				timezone="America/New_York"
 				resources={mockResources}
+				timezone="America/New_York"
+				translator={translator}
 			/>
 		)
 
@@ -328,7 +334,7 @@ describe('IlamyResourceCalendar', () => {
 
 	it('should handle resource-specific events correctly', () => {
 		render(
-			<IlamyResourceCalendar resources={mockResources} events={mockEvents} />
+			<IlamyResourceCalendar events={mockEvents} resources={mockResources} />
 		)
 
 		// Should render without errors when events have resourceId and resourceIds
@@ -347,8 +353,8 @@ describe('IlamyResourceCalendar', () => {
 
 		render(
 			<IlamyResourceCalendar
-				resources={mockResources}
 				events={[...mockEvents, crossResourceEvent]}
+				resources={mockResources}
 			/>
 		)
 
@@ -356,7 +362,7 @@ describe('IlamyResourceCalendar', () => {
 	})
 
 	it('should handle empty resources gracefully', () => {
-		render(<IlamyResourceCalendar resources={[]} events={mockEvents} />)
+		render(<IlamyResourceCalendar events={mockEvents} resources={[]} />)
 
 		// Should still render even with no resources
 		expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
@@ -374,8 +380,8 @@ describe('IlamyResourceCalendar', () => {
 
 		render(
 			<IlamyResourceCalendar
-				resources={mockResources}
 				events={[...mockEvents, eventWithoutResource]}
+				resources={mockResources}
 			/>
 		)
 
@@ -385,9 +391,9 @@ describe('IlamyResourceCalendar', () => {
 	it('should support custom renderEvent function', () => {
 		render(
 			<IlamyResourceCalendar
-				resources={mockResources}
 				events={mockEvents}
 				renderEvent={customRenderEvent}
+				resources={mockResources}
 			/>
 		)
 
@@ -397,9 +403,9 @@ describe('IlamyResourceCalendar', () => {
 	it('should handle view changes between different resource views', () => {
 		const { rerender } = render(
 			<IlamyResourceCalendar
+				events={mockEvents}
 				initialView="month"
 				resources={mockResources}
-				events={mockEvents}
 			/>
 		)
 
@@ -408,9 +414,9 @@ describe('IlamyResourceCalendar', () => {
 		// Test switching to week view
 		rerender(
 			<IlamyResourceCalendar
+				events={mockEvents}
 				initialView="week"
 				resources={mockResources}
-				events={mockEvents}
 			/>
 		)
 
@@ -419,13 +425,79 @@ describe('IlamyResourceCalendar', () => {
 		// Test switching to day view
 		rerender(
 			<IlamyResourceCalendar
+				events={mockEvents}
 				initialView="day"
 				resources={mockResources}
-				events={mockEvents}
 			/>
 		)
 
 		expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
+	})
+
+	describe('onCellClick', () => {
+		const mockOnCellClick = mock(() => {})
+
+		beforeEach(() => {
+			mockOnCellClick.mockClear()
+		})
+
+		it('should call onCellClick with correct arguments in day view', async () => {
+			const initialDate = dayjs('2025-08-04T00:00:00.000Z')
+			render(
+				<IlamyResourceCalendar
+					events={[]}
+					initialDate={initialDate}
+					initialView="day"
+					onCellClick={mockOnCellClick}
+					resources={mockResources}
+				/>
+			)
+
+			const dateStr = initialDate.format('YYYY-MM-DD')
+			const resourceId = 'resource-1'
+			// In Resource calendar, day view actually uses HorizontalGrid with gridType='hour'
+			// which renders day-cell-{date}-{hour}-{minute} inside a row
+			const row = screen.getByTestId(`horizontal-row-${resourceId}`)
+			const cell = within(row).getByTestId(`day-cell-${dateStr}-10-00`)
+			fireEvent.click(cell)
+
+			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
+			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
+			expect(callArgs.start.toISOString()).toBe('2025-08-04T10:00:00.000Z')
+			// Resource Horizontal day view uses 1 hour slots (minute is undefined)
+			expect(callArgs.end.toISOString()).toBe('2025-08-04T11:00:00.000Z')
+			expect(callArgs.allDay).toBe(false)
+			expect(callArgs.resourceId).toBe(resourceId)
+		})
+
+		it('should call onCellClick with correct arguments in month view', async () => {
+			const initialDate = dayjs('2025-08-04T00:00:00.000Z')
+			render(
+				<IlamyResourceCalendar
+					events={[]}
+					initialDate={initialDate}
+					initialView="month"
+					onCellClick={mockOnCellClick}
+					resources={mockResources}
+				/>
+			)
+
+			const dateStr = initialDate.format('YYYY-MM-DD')
+			const resourceId = 'resource-2'
+			// Resource month vertical uses day-cell-{date} and is inside a row with resourceId
+			const row = screen.getByTestId(`horizontal-row-${resourceId}`)
+			const cell = within(row).getByTestId(`day-cell-${dateStr}`)
+			fireEvent.click(cell)
+
+			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
+			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
+			expect(callArgs.start.toISOString()).toBe('2025-08-04T00:00:00.000Z')
+			// Month view full day (hour and minute are undefined)
+			expect(callArgs.end.hour()).toBe(23)
+			expect(callArgs.end.minute()).toBe(59)
+			expect(callArgs.allDay).toBe(false)
+			expect(callArgs.resourceId).toBe(resourceId)
+		})
 	})
 
 	describe('renderEventForm', () => {
@@ -442,10 +514,10 @@ describe('IlamyResourceCalendar', () => {
 		it('should render custom event form when renderEventForm is provided', () => {
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={[]}
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
 					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					resources={mockResources}
 				/>
 			)
 
@@ -465,11 +537,11 @@ describe('IlamyResourceCalendar', () => {
 
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={[resourceEvent]}
-					initialView="month"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="month"
 					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					resources={mockResources}
 				/>
 			)
 
@@ -501,11 +573,11 @@ describe('IlamyResourceCalendar', () => {
 
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={[crossResourceEvent]}
-					initialView="month"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="month"
 					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					resources={mockResources}
 				/>
 			)
 
@@ -525,12 +597,12 @@ describe('IlamyResourceCalendar', () => {
 		it('should add event with resourceId via onAdd callback', async () => {
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={[]}
-					initialView="month"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					initialView="month"
 					onEventAdd={mockOnEventAdd}
+					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					resources={mockResources}
 				/>
 			)
 
@@ -558,12 +630,12 @@ describe('IlamyResourceCalendar', () => {
 		it('should add cross-resource event with resourceIds via onAdd callback', async () => {
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={[]}
-					initialView="month"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					initialView="month"
 					onEventAdd={mockOnEventAdd}
+					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					resources={mockResources}
 				/>
 			)
 
@@ -595,12 +667,12 @@ describe('IlamyResourceCalendar', () => {
 
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={[resourceEvent]}
-					initialView="month"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					initialView="month"
 					onEventUpdate={mockOnEventUpdate}
+					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					resources={mockResources}
 				/>
 			)
 
@@ -640,12 +712,12 @@ describe('IlamyResourceCalendar', () => {
 
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={[resourceEvent]}
-					initialView="month"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					initialView="month"
 					onEventUpdate={mockOnEventUpdate}
+					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					resources={mockResources}
 				/>
 			)
 
@@ -687,12 +759,12 @@ describe('IlamyResourceCalendar', () => {
 
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={[resourceEvent]}
-					initialView="month"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					initialView="month"
 					onEventDelete={mockOnEventDelete}
+					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					resources={mockResources}
 				/>
 			)
 
@@ -725,10 +797,10 @@ describe('IlamyResourceCalendar', () => {
 		it('should use default EventForm when renderEventForm is not provided', async () => {
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={mockEvents}
-					initialView="month"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="month"
+					resources={mockResources}
 				/>
 			)
 
@@ -747,10 +819,10 @@ describe('IlamyResourceCalendar', () => {
 		it('should display time in 24-hour format in day view when timeFormat is 24-hour', () => {
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={mockEvents}
-					initialView="day"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="day"
+					resources={mockResources}
 					timeFormat="24-hour"
 				/>
 			)
@@ -773,10 +845,10 @@ describe('IlamyResourceCalendar', () => {
 		it('should display time in 12-hour format in day view when timeFormat is 12-hour', () => {
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={mockEvents}
-					initialView="day"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="day"
+					resources={mockResources}
 					timeFormat="12-hour"
 				/>
 			)
@@ -798,10 +870,10 @@ describe('IlamyResourceCalendar', () => {
 		it('should display time in 24-hour format in week view when timeFormat is 24-hour', () => {
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={mockEvents}
-					initialView="week"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="week"
+					resources={mockResources}
 					timeFormat="24-hour"
 				/>
 			)
@@ -824,10 +896,10 @@ describe('IlamyResourceCalendar', () => {
 		it('should display time in 12-hour format in week view when timeFormat is 12-hour', () => {
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={mockEvents}
-					initialView="week"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="week"
+					resources={mockResources}
 					timeFormat="12-hour"
 				/>
 			)
@@ -849,10 +921,10 @@ describe('IlamyResourceCalendar', () => {
 		it('should default to 12-hour format when timeFormat is not provided', () => {
 			render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={mockEvents}
-					initialView="day"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="day"
+					resources={mockResources}
 				/>
 			)
 
@@ -873,10 +945,10 @@ describe('IlamyResourceCalendar', () => {
 		it('should update time format when timeFormat changes', () => {
 			const { rerender } = render(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={mockEvents}
-					initialView="day"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="day"
+					resources={mockResources}
 					timeFormat="12-hour"
 				/>
 			)
@@ -898,10 +970,10 @@ describe('IlamyResourceCalendar', () => {
 			// Rerender with 24-hour format
 			rerender(
 				<IlamyResourceCalendar
-					resources={mockResources}
 					events={mockEvents}
-					initialView="day"
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="day"
+					resources={mockResources}
 					timeFormat="24-hour"
 				/>
 			)

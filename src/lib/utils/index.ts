@@ -7,8 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs))
 }
 
-export { getMonthWeeks, getWeekDays } from './date-utils'
-
 export function safeDate(
 	date: dayjs.Dayjs | Date | string | undefined
 ): dayjs.Dayjs | undefined {

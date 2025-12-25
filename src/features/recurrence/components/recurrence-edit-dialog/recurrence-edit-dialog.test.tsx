@@ -19,7 +19,7 @@ describe('RecurrenceEditDialog', () => {
 		} as any
 
 		return render(
-			<CalendarProvider events={[]} dayMaxEvents={5} firstDayOfWeek={0}>
+			<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
 				<RecurrenceEditDialog {...defaultProps} />
 			</CalendarProvider>
 		)

@@ -312,7 +312,7 @@ export const useCalendarEngine = (
 				end: eventData?.end ?? start.add(1, 'hour'),
 				resourceId: eventData?.resourceId,
 				description: '',
-				allDay: false,
+				allDay: eventData?.allDay ?? false,
 			} as CalendarEvent)
 			setIsEventFormOpen(true)
 		},

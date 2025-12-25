@@ -28,7 +28,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 			days={weekHours}
 			gridType="hour"
 		>
-			<div className="w-40 border-b border-r shrink-0 flex justify-center items-center sticky top-0 left-0 bg-background z-20">
+			<div className="w-20 sm:w-40 border-b border-r shrink-0 flex justify-center items-center sticky top-0 left-0 bg-background z-20">
 				<div className="text-sm">{t('resources')}</div>
 			</div>
 

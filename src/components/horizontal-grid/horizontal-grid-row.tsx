@@ -54,7 +54,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 		>
 			{isResourceCalendar && (
 				<ResourceCell
-					className="w-40 min-w-40 max-w-40 sticky left-0 bg-background z-20 h-full"
+					className="w-20 sm:w-40 sticky left-0 bg-background z-20 h-full"
 					data-testid={`horizontal-row-label-${resource?.id}`}
 					resource={resource}
 				>

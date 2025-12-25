@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.2.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.2.1...v1.2.2)
+
+> 25 December 2025
+
+##### Fixes
+
+- fix: improve responsiveness in month view and resource components [`#48`](https://github.com/kcsujeet/ilamy-calendar/pull/48)
+- fix(tailwind): explicitly declare form color option classes [`#47`](https://github.com/kcsujeet/ilamy-calendar/pull/47) - Thanks [@habovh](https://github.com/habovh)!
+
 #### [v1.2.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.2.0...v1.2.1)
 
 > 24 December 2025

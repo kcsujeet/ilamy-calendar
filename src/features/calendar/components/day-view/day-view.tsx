@@ -2,14 +2,25 @@ import { AnimatePresence, motion } from 'motion/react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getDayHours } from '@/lib/utils/date-utils'
 
 const DayView = () => {
-	const { currentDate, currentLocale, timeFormat, t } = useCalendarContext()
+	const {
+		currentDate,
+		currentLocale,
+		timeFormat,
+		t,
+		businessHours,
+		hideNonBusinessHours,
+	} = useCalendarContext()
 	const isToday = currentDate.isSame(dayjs(), 'day')
-	const hours = getDayHours({ referenceDate: currentDate })
+	const hours = getViewHours({
+		referenceDate: currentDate,
+		businessHours,
+		hideNonBusinessHours,
+	})
 
 	const firstCol = {
 		id: 'time-col',

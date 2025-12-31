@@ -444,6 +444,7 @@ export function DemoPage() {
 									disableEventClick={disableEventClick}
 									events={customEvents}
 									firstDayOfWeek={firstDayOfWeek}
+									hideNonBusinessHours
 									initialDate={initialDate}
 									initialView={initialView}
 									key={calendarKey}

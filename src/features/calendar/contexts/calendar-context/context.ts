@@ -63,6 +63,7 @@ export interface CalendarContextType {
 	t: (key: TranslationKey) => string
 	timeFormat: TimeFormat
 	classesOverride?: CalendarClassesOverride
+	hideNonBusinessHours?: boolean
 }
 
 export const CalendarContext: React.Context<CalendarContextType | undefined> =

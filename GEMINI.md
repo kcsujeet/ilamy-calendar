@@ -34,6 +34,23 @@ It features standard calendar views (Month, Week, Day, Year) and a Resource Cale
 - **Prohibition**: Do not pass `data-testid` as a prop.
 - **Testing**: Update tests to select by these hardcoded IDs.
 
+## Testing Patterns
+
+### Isolated Component Testing
+When testing components in isolation that rely on `useSmartCalendarContext`, use a minimal `CalendarContext.Provider` wrapper instead of the full `CalendarProvider`.
+- **Reason**: The full `CalendarProvider` has complex internal `useEffect` hooks and engine logic that can trigger infinite re-render loops when the component under test is rendered in isolation.
+- **Implementation**: Provide only the minimal properties required by the component to the provider's `value`.
+
+### Consistent Helper Usage
+For components that require re-rendering (e.g., testing date boundaries), use a helper component that wraps the component with its necessary providers.
+- **Consistency**: This ensures that `render` and `rerender` calls use the exact same provider setup.
+- **Conciseness**: Removes boilerplate from individual test cases.
+
+### Mutable Test State
+Use `let` variables for mock functions or test data that need to be captured or modified across tests.
+- **Cleanup**: Always reset these variables in `beforeEach` to ensure test isolation.
+- **Verification**: Capture props passed to custom render functions in these variables for precise assertions.
+
 ## Memory Bank
 - **User Preference**: The user prefers strict adherence to `CLAUDE.md` and explicitly asked to be consulted before commits.
 - **Recent Changes**: Refactored `getPositionedDayEvents` to be adaptive to grid size and type.

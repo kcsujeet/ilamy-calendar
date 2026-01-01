@@ -5,6 +5,7 @@ import type { CalendarProviderProps } from '@/features/calendar/contexts/calenda
 import type {
 	CalendarClassesOverride,
 	CellClickInfo,
+	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import type { Resource } from '@/features/resource-calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
@@ -26,6 +27,9 @@ interface ResourceCalendarProviderProps extends CalendarProviderProps {
 	renderResource?: (resource: Resource) => React.ReactNode
 	classesOverride?: CalendarClassesOverride
 	orientation?: 'horizontal' | 'vertical'
+	renderCurrentTimeIndicator?: (
+		props: RenderCurrentTimeIndicatorProps
+	) => React.ReactNode
 }
 
 export const ResourceCalendarProvider: React.FC<
@@ -64,6 +68,7 @@ export const ResourceCalendarProvider: React.FC<
 	timeFormat = '12-hour',
 	classesOverride,
 	orientation = 'horizontal',
+	renderCurrentTimeIndicator,
 }) => {
 	// Resource-specific state
 	const [currentResources] = useState<Resource[]>(resources)
@@ -271,6 +276,7 @@ export const ResourceCalendarProvider: React.FC<
 			timeFormat,
 			classesOverride,
 			orientation,
+			renderCurrentTimeIndicator,
 		}),
 		[
 			calendarEngine,
@@ -306,6 +312,7 @@ export const ResourceCalendarProvider: React.FC<
 			timeFormat,
 			classesOverride,
 			orientation,
+			renderCurrentTimeIndicator,
 		]
 	)
 

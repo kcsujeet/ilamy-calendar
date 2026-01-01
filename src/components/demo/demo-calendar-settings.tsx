@@ -55,6 +55,8 @@ interface DemoCalendarSettingsProps {
 	setTimeFormat: (value: TimeFormat) => void
 	useCustomClasses: boolean
 	setUseCustomClasses: (value: boolean) => void
+	useCustomTimeIndicator: boolean
+	setUseCustomTimeIndicator: (value: boolean) => void
 	// Resource calendar specific props
 	isResourceCalendar?: boolean
 	orientation?: 'horizontal' | 'vertical'
@@ -94,6 +96,8 @@ export function DemoCalendarSettings({
 	setTimeFormat,
 	useCustomClasses,
 	setUseCustomClasses,
+	useCustomTimeIndicator,
+	setUseCustomTimeIndicator,
 	// Resource calendar props
 	isResourceCalendar,
 	orientation,
@@ -144,6 +148,38 @@ export function DemoCalendarSettings({
 						</Button>
 					</div>
 				</div>
+
+				{isResourceCalendar && (
+					<div>
+						<label className="block text-sm text-left font-medium mb-1">
+							Orientation
+						</label>
+						<div className="flex gap-1">
+							<Button
+								className={
+									orientation === 'horizontal'
+										? 'bg-primary/80 text-primary-foreground'
+										: ''
+								}
+								onClick={() => setOrientation?.('horizontal')}
+								variant="secondary"
+							>
+								Horizontal
+							</Button>
+							<Button
+								className={
+									orientation === 'vertical'
+										? 'bg-primary/80 text-primary-foreground'
+										: ''
+								}
+								onClick={() => setOrientation?.('vertical')}
+								variant="secondary"
+							>
+								Vertical
+							</Button>
+						</div>
+					</div>
+				)}
 				<div>
 					<label className="block text-sm text-left font-medium mb-1">
 						First Day of Week
@@ -326,23 +362,6 @@ export function DemoCalendarSettings({
 					</Select>
 				</div>
 
-				{isResourceCalendar && (
-					<div>
-						<label className="block text-sm text-left font-medium mb-1">
-							Orientation
-						</label>
-						<Select onValueChange={setOrientation} value={orientation}>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select orientation" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="horizontal">Horizontal</SelectItem>
-								<SelectItem value="vertical">Vertical</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-				)}
-
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={stickyViewHeader}
@@ -370,6 +389,22 @@ export function DemoCalendarSettings({
 						htmlFor="customRenderer"
 					>
 						Use custom event renderer
+					</label>
+				</div>
+
+				<div className="flex items-center space-x-2">
+					<Checkbox
+						checked={useCustomTimeIndicator}
+						id="customTimeIndicator"
+						onCheckedChange={() =>
+							setUseCustomTimeIndicator(!useCustomTimeIndicator)
+						}
+					/>
+					<label
+						className="text-sm font-medium leading-none cursor-pointer"
+						htmlFor="customTimeIndicator"
+					>
+						Use custom time indicator
 					</label>
 				</div>
 

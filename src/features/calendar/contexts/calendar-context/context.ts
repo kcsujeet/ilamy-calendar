@@ -4,6 +4,7 @@ import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type {
 	CalendarClassesOverride,
 	CellClickInfo,
+	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type dayjs from '@/lib/configs/dayjs-config'
@@ -63,6 +64,9 @@ export interface CalendarContextType {
 	t: (key: TranslationKey) => string
 	timeFormat: TimeFormat
 	classesOverride?: CalendarClassesOverride
+	renderCurrentTimeIndicator?: (
+		props: RenderCurrentTimeIndicatorProps
+	) => React.ReactNode
 }
 
 export const CalendarContext: React.Context<CalendarContextType | undefined> =

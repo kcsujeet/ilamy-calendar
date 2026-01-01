@@ -1,5 +1,6 @@
 import type React from 'react'
 import { memo } from 'react'
+import type { Resource } from '@/features/resource-calendar/types'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { GridCell } from '../grid-cell'
@@ -9,6 +10,7 @@ export interface VerticalGridColProps {
 	id: string
 	day: dayjs.Dayjs
 	resourceId?: string | number
+	resource?: Resource
 	days: dayjs.Dayjs[] // The specific day this column represents
 	className?: string
 	'data-testid'?: string
@@ -28,6 +30,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	id,
 	days,
 	resourceId,
+	resource,
 	'data-testid': dataTestId,
 	gridType,
 	className,
@@ -103,6 +106,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 							data-testid={`vertical-events-${id}`}
 							days={days}
 							gridType={gridType}
+							resource={resource}
 							resourceId={resourceId}
 						/>
 					</div>

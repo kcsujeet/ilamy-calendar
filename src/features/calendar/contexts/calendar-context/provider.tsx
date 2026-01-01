@@ -6,6 +6,7 @@ import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type {
 	CalendarClassesOverride,
 	CellClickInfo,
+	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type dayjs from '@/lib/configs/dayjs-config'
@@ -46,6 +47,9 @@ export interface CalendarProviderProps {
 	translator?: TranslatorFunction
 	timeFormat?: TimeFormat
 	classesOverride?: CalendarClassesOverride
+	renderCurrentTimeIndicator?: (
+		props: RenderCurrentTimeIndicatorProps
+	) => ReactNode
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -79,6 +83,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	translator,
 	timeFormat = '12-hour',
 	classesOverride,
+	renderCurrentTimeIndicator,
 }) => {
 	// Use the calendar engine
 	const calendarEngine = useCalendarEngine({
@@ -182,6 +187,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			t: calendarEngine.t,
 			timeFormat,
 			classesOverride,
+			renderCurrentTimeIndicator,
 		}),
 		[
 			calendarEngine,
@@ -203,6 +209,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			renderEventForm,
 			timeFormat,
 			classesOverride,
+			renderCurrentTimeIndicator,
 		]
 	)
 

@@ -138,7 +138,10 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				resourceId={resourceId}
 				type="day-cell"
 			>
-				<div className="flex flex-col gap-1 h-full w-full">
+				<div
+					className="flex flex-col gap-1 h-full w-full"
+					data-testid="grid-cell-content"
+				>
 					{showDayNumber && <DayNumber date={day} locale={currentLocale} />}
 
 					{shouldRenderEvents && (
@@ -146,7 +149,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 							{/* Render placeholders for events that occur today so that the cell height is according to dayMaxEvents. */}
 							{todayEvents.slice(0, dayMaxEvents).map((event, rowIndex) => (
 								<div
-									className="h-5 w-full"
+									className="h-5 w-full shrink-0"
 									data-testid={event?.title}
 									key={`empty-${rowIndex}-${event.id}`}
 								/>
@@ -155,7 +158,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 							{/* Show more events button with accurate count */}
 							{hasHiddenEvents && (
 								<div
-									className="text-muted-foreground hover:text-foreground cursor-pointer text-[10px] whitespace-nowrap sm:text-xs mt-1"
+									className="text-muted-foreground hover:text-foreground cursor-pointer text-[10px] whitespace-nowrap sm:text-xs shrink-0"
 									onClick={(e) => {
 										e.stopPropagation()
 

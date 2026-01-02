@@ -49,7 +49,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 
 	return (
 		<div
-			className={cn('flex flex-1 relative min-h-[60px]', className)}
+			className={cn('flex flex-1 relative', className)}
 			data-testid={`horizontal-row-${id}`}
 		>
 			{isResourceCalendar && (

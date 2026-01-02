@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { CurrentTimeIndicator } from '@/components/current-time-indicator'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
+import type { Resource } from '@/features/resource-calendar/types'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
@@ -9,6 +10,7 @@ interface VerticalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
 	days: dayjs.Dayjs[] // The specific day this layer represents
 	resourceId?: string | number
+	resource?: Resource
 	'data-testid'?: string
 }
 
@@ -16,6 +18,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	days,
 	gridType = 'hour',
 	resourceId,
+	resource,
 	'data-testid': dataTestId,
 }) => {
 	const todayEvents = useProcessedDayEvents({ days, gridType, resourceId })
@@ -28,7 +31,11 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 			data-testid={dataTestId}
 		>
 			{rangeStart && rangeEnd && (
-				<CurrentTimeIndicator rangeEnd={rangeEnd} rangeStart={rangeStart} />
+				<CurrentTimeIndicator
+					rangeEnd={rangeEnd}
+					rangeStart={rangeStart}
+					resource={resource}
+				/>
 			)}
 			{todayEvents.map((event, index) => {
 				const eventKey = `event-${event.id}-${index}-${days.at(0).toISOString()}-${resourceId ?? 'no-resource'}`

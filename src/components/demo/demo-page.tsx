@@ -2,7 +2,10 @@ import { useState } from 'react'
 import type { CalendarEvent, WeekDays } from '@/components/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
-import type { CellClickInfo } from '@/features/calendar/types'
+import type {
+	CellClickInfo,
+	RenderCurrentTimeIndicatorProps,
+} from '@/features/calendar/types'
 import { IlamyResourceCalendar } from '@/features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 import type { Resource } from '@/features/resource-calendar/types'
 import type dayjs from '@/lib/configs/dayjs-config'
@@ -292,13 +295,14 @@ export function DemoPage() {
 	const [dayMaxEvents, setDayMaxEvents] = useState(3)
 	const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour')
 	const [useCustomClasses, setUseCustomClasses] = useState(false)
+	const [useCustomTimeIndicator, setUseCustomTimeIndicator] = useState(false)
 
 	// Resource calendar settings
 	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
 		'horizontal'
 	)
 
-	const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}`
+	const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}-${useCustomTimeIndicator}`
 
 	// Custom event renderer function
 	const renderEvent = (event: CalendarEvent) => {
@@ -314,6 +318,34 @@ export function DemoPage() {
 				style={{ backgroundColor, color }}
 			>
 				{event.title}
+			</div>
+		)
+	}
+
+	// Custom current time indicator renderer
+	const renderCurrentTimeIndicator = ({
+		currentTime,
+		progress,
+		resource,
+		view,
+	}: RenderCurrentTimeIndicatorProps) => {
+		// In resource day view (view === 'day' with resources), ONLY show the badge for the first resource
+		// to avoid cluttering the horizontal line with multiple identical time badges.
+		const isPrimaryResource = !resource || resource.id === 'room-a'
+		const showBadge = view === 'day' ? isPrimaryResource : true
+
+		return (
+			<div
+				className="absolute left-0 right-0 z-50 pointer-events-none h-0.5 flex"
+				style={{ top: `${progress}%` }}
+			>
+				{showBadge && (
+					<div className="absolute left-0 top-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] sm:text-xs px-1.5 py-0.5 rounded-r-md font-medium shadow-sm whitespace-nowrap z-10">
+						{currentTime.format('h:mm A')} {view} {resource?.id}
+					</div>
+				)}
+				{/* Red line extends across all columns */}
+				<div className="flex-1 bg-red-500" />
 			</div>
 		)
 	}
@@ -370,6 +402,7 @@ export function DemoPage() {
 						setUseCustomEventRenderer={setUseCustomEventRenderer}
 						setUseCustomOnDateClick={setUseCustomOnDateClick}
 						setUseCustomOnEventClick={setUseCustomOnEventClick}
+						setUseCustomTimeIndicator={setUseCustomTimeIndicator}
 						stickyViewHeader={stickyViewHeader}
 						timeFormat={timeFormat}
 						timezone={timezone}
@@ -378,6 +411,7 @@ export function DemoPage() {
 						useCustomEventRenderer={useCustomEventRenderer}
 						useCustomOnDateClick={useCustomOnDateClick}
 						useCustomOnEventClick={useCustomOnEventClick}
+						useCustomTimeIndicator={useCustomTimeIndicator}
 					/>
 
 					{/* Resource info card */}
@@ -458,6 +492,11 @@ export function DemoPage() {
 									}
 									onEventDelete={handleEventDelete}
 									onEventUpdate={handleEventUpdate}
+									renderCurrentTimeIndicator={
+										useCustomTimeIndicator
+											? renderCurrentTimeIndicator
+											: undefined
+									}
 									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}
@@ -505,6 +544,11 @@ export function DemoPage() {
 									onEventDelete={handleEventDelete}
 									onEventUpdate={handleEventUpdate}
 									orientation={orientation}
+									renderCurrentTimeIndicator={
+										useCustomTimeIndicator
+											? renderCurrentTimeIndicator
+											: undefined
+									}
 									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
 									resources={demoResources}
 									stickyViewHeader={stickyViewHeader}

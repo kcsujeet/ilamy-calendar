@@ -54,6 +54,7 @@ export const ResourceWeekVertical: React.FC = () => {
 				weekDays.map((day) => ({
 					id: `day-col-${day.format('YYYY-MM-DD')}-resource-${resource.id}`,
 					resourceId: resource.id,
+					resource,
 					day,
 					days: getDayHours({ referenceDate: day }),
 					gridType: 'hour' as const,

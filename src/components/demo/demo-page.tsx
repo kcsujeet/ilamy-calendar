@@ -260,12 +260,12 @@ const handleResourceEventClick = (event: CalendarEvent) => {
 export function DemoPage() {
 	// Calendar type state
 	const [calendarType, setCalendarType] = useState<'regular' | 'resource'>(
-		'resource'
+		'regular'
 	)
 
 	// Calendar configuration state
 	const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>('sunday')
-	const [initialView, setInitialView] = useState<CalendarView>('week')
+	const [initialView, setInitialView] = useState<CalendarView>('month')
 	const [initialDate, setInitialDate] = useState<dayjs.Dayjs | undefined>(
 		undefined
 	)

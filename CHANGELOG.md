@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.2.3](https://github.com/kcsujeet/ilamy-calendar/compare/v1.2.2...v1.2.3)
+
+> 2 January 2026
+
+##### Fixes
+
+- fix: resolve Month View height expansion and clickability issues [`#54`](https://github.com/kcsujeet/ilamy-calendar/pull/54)
+- feat: add layout regression tests for grid components
+
+
 #### [v1.2.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.2.1...v1.2.2)
 
 > 25 December 2025

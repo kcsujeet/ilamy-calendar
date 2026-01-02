@@ -3,16 +3,26 @@ import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
-import { getDayHours } from '@/lib/utils/date-utils'
 
 export const ResourceDayVertical: React.FC = () => {
-	const { currentDate, getVisibleResources, currentLocale, timeFormat } =
-		useResourceCalendarContext()
+	const {
+		currentDate,
+		getVisibleResources,
+		currentLocale,
+		timeFormat,
+		businessHours,
+		hideNonBusinessHours,
+	} = useResourceCalendarContext()
 
 	const resources = getVisibleResources()
-	const hours = getDayHours({ referenceDate: currentDate })
+	const hours = getViewHours({
+		referenceDate: currentDate,
+		businessHours,
+		hideNonBusinessHours,
+	})
 
 	const firstCol = {
 		id: 'time-col',

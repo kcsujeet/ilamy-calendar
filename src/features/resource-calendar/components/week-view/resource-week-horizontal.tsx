@@ -1,15 +1,23 @@
 import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
 import { useMemo } from 'react'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getDayHours, getWeekDays } from '@/lib/utils/date-utils'
+import { getWeekDays } from '@/lib/utils/date-utils'
 
 export const ResourceWeekHorizontal: React.FC = () => {
-	const { currentDate, firstDayOfWeek, t, currentLocale, timeFormat } =
-		useResourceCalendarContext()
+	const {
+		currentDate,
+		firstDayOfWeek,
+		t,
+		currentLocale,
+		timeFormat,
+		businessHours,
+		hideNonBusinessHours,
+	} = useResourceCalendarContext()
 
 	// Generate week days
 	const weekDays = useMemo(
@@ -19,8 +27,14 @@ export const ResourceWeekHorizontal: React.FC = () => {
 
 	// Generate time columns (hourly slots)
 	const weekHours = useMemo(() => {
-		return weekDays.flatMap((day) => getDayHours({ referenceDate: day }))
-	}, [weekDays])
+		return weekDays.flatMap((day) =>
+			getViewHours({
+				referenceDate: day,
+				businessHours,
+				hideNonBusinessHours,
+			})
+		)
+	}, [weekDays, businessHours, hideNonBusinessHours])
 
 	return (
 		<ResourceEventGrid

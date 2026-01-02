@@ -1,17 +1,27 @@
 import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getDayHours } from '@/lib/utils/date-utils'
 
 export const ResourceDayHorizontal: React.FC = () => {
-	const { currentDate, t, currentLocale, timeFormat } =
-		useResourceCalendarContext()
+	const {
+		currentDate,
+		t,
+		currentLocale,
+		timeFormat,
+		businessHours,
+		hideNonBusinessHours,
+	} = useResourceCalendarContext()
 
 	// Generate time columns (hourly slots)
-	const dayHours = getDayHours({ referenceDate: currentDate })
+	const dayHours = getViewHours({
+		referenceDate: currentDate,
+		businessHours,
+		hideNonBusinessHours,
+	})
 
 	return (
 		<ResourceEventGrid days={dayHours} gridType="hour">

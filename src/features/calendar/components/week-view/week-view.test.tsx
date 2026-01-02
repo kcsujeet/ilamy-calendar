@@ -692,4 +692,223 @@ describe('WeekView', () => {
 		const noonText = noonHour.textContent || ''
 		expect(noonText).toMatch(/AM|PM/i)
 	})
+
+	test('hides non-business hours based on weekly range in WeekView', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const businessHours = [
+			{ daysOfWeek: ['monday'], startTime: 8, endTime: 12 },
+			{ daysOfWeek: ['tuesday'], startTime: 14, endTime: 18 },
+		]
+
+		renderWeekView({
+			initialDate: monday,
+			businessHours,
+			hideNonBusinessHours: true,
+		})
+
+		// The visible range should be [8, 18)
+		// 8:00 should be the first hour
+		expect(screen.getByTestId('vertical-time-08')).toBeInTheDocument()
+		// 17:00 should be the last hour
+		expect(screen.getByTestId('vertical-time-17')).toBeInTheDocument()
+
+		// Hours outside the union should not be present
+		expect(screen.queryByTestId('vertical-time-07')).not.toBeInTheDocument()
+		expect(screen.queryByTestId('vertical-time-18')).not.toBeInTheDocument()
+		expect(screen.queryByTestId('vertical-time-23')).not.toBeInTheDocument()
+
+		// Hours between 12 and 14 should still be present because they are within the [min, max] range
+		expect(screen.getByTestId('vertical-time-12')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-13')).toBeInTheDocument()
+	})
+
+	// Backwards compatibility tests
+	test('shows all 24 hours when hideNonBusinessHours is false (default behavior)', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const businessHours = {
+			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+			startTime: 9,
+			endTime: 17,
+		}
+
+		renderWeekView({
+			initialDate: monday,
+			businessHours,
+			hideNonBusinessHours: false, // Explicitly false
+		})
+
+		// All 24 hours should be present
+		expect(screen.getByTestId('vertical-time-00')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-08')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-09')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-16')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-17')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-23')).toBeInTheDocument()
+	})
+
+	test('shows all 24 hours when hideNonBusinessHours is not provided (backwards compatibility)', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const businessHours = {
+			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+			startTime: 9,
+			endTime: 17,
+		}
+
+		renderWeekView({
+			initialDate: monday,
+			businessHours,
+			// hideNonBusinessHours is NOT provided - should default to false
+		})
+
+		// All 24 hours should be present (backwards compatible behavior)
+		expect(screen.getByTestId('vertical-time-00')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-08')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-09')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-16')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-17')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-23')).toBeInTheDocument()
+	})
+
+	test('still applies business hours styling when hideNonBusinessHours is false', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const businessHours = {
+			daysOfWeek: ['monday'],
+			startTime: 9,
+			endTime: 17,
+		}
+
+		renderWeekView({
+			initialDate: monday,
+			businessHours,
+			hideNonBusinessHours: false,
+		})
+
+		// Business hour cell should have business styling
+		const businessCell = screen.getByTestId(
+			`vertical-cell-${monday.format('YYYY-MM-DD')}-10-00`
+		)
+		expect(businessCell.className).toContain('hover:bg-accent')
+		expect(businessCell.className).toContain('cursor-pointer')
+
+		// Non-business hour cell should have non-business styling
+		const nonBusinessCell = screen.getByTestId(
+			`vertical-cell-${monday.format('YYYY-MM-DD')}-08-00`
+		)
+		expect(nonBusinessCell.className).toContain('bg-secondary')
+		expect(nonBusinessCell.className).toContain('cursor-default')
+	})
+
+	// Event positioning tests - CRITICAL for hideNonBusinessHours
+	test('positions event at 0% top when event starts at business hour start with hideNonBusinessHours true', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const businessHours = {
+			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+			startTime: 9,
+			endTime: 17,
+		}
+		// Create an event that starts at 9am (business start)
+		const testEvent: CalendarEvent = {
+			id: 'test-event-9am-week',
+			title: 'Week Morning Meeting',
+			start: dayjs('2025-01-06T09:00:00.000Z'),
+			end: dayjs('2025-01-06T10:00:00.000Z'),
+		}
+
+		renderWeekView({
+			initialDate: monday,
+			businessHours,
+			hideNonBusinessHours: true,
+			events: [testEvent],
+		})
+
+		// Event should be rendered
+		const eventElement = screen.getByText('Week Morning Meeting')
+		expect(eventElement).toBeInTheDocument()
+
+		// Find the event wrapper with positioning
+		const eventWrapper = eventElement.closest('[style*="top"]')
+		expect(eventWrapper).not.toBeNull()
+
+		// Event starting at 9am should be at top: 0%
+		const style = eventWrapper?.getAttribute('style') || ''
+		expect(style).toContain('top: 0%')
+	})
+
+	test('positions event correctly when hideNonBusinessHours is false in WeekView', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const businessHours = {
+			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+			startTime: 9,
+			endTime: 17,
+		}
+		// Create an event that starts at 9am
+		const testEvent: CalendarEvent = {
+			id: 'test-event-9am-week-full',
+			title: 'Week Morning Full',
+			start: dayjs('2025-01-06T09:00:00.000Z'),
+			end: dayjs('2025-01-06T10:00:00.000Z'),
+		}
+
+		renderWeekView({
+			initialDate: monday,
+			businessHours,
+			hideNonBusinessHours: false,
+			events: [testEvent],
+		})
+
+		// Event should be rendered
+		const eventElement = screen.getByText('Week Morning Full')
+		expect(eventElement).toBeInTheDocument()
+
+		// Find the event wrapper with positioning
+		const eventWrapper = eventElement.closest('[style*="top"]')
+		expect(eventWrapper).not.toBeNull()
+
+		// Event starting at 9am in a 24-hour grid should NOT be at top 0%
+		const style = eventWrapper?.getAttribute('style') || ''
+		expect(style).not.toContain('top: 0%')
+	})
+
+	test('positions event at correct percentage when event is in middle of business hours in WeekView', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const businessHours = {
+			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+			startTime: 9,
+			endTime: 17,
+		}
+		// Create an event that starts at 1pm (13:00), which is 4 hours after 9am
+		// With 8 business hours (9-17), 1pm should be at 50% (4/8 * 100)
+		const testEvent: CalendarEvent = {
+			id: 'test-event-1pm-week',
+			title: 'Week Afternoon Meeting',
+			start: dayjs('2025-01-06T13:00:00.000Z'),
+			end: dayjs('2025-01-06T14:00:00.000Z'),
+		}
+
+		renderWeekView({
+			initialDate: monday,
+			businessHours,
+			hideNonBusinessHours: true,
+			events: [testEvent],
+		})
+
+		// Event should be rendered
+		const eventElement = screen.getByText('Week Afternoon Meeting')
+		expect(eventElement).toBeInTheDocument()
+
+		// Find the event wrapper with positioning
+		const eventWrapper = eventElement.closest('[style*="top"]')
+		expect(eventWrapper).not.toBeNull()
+
+		// Event starting at 1pm (4 hours into 8-hour grid) should be at 50%
+		const style = eventWrapper?.getAttribute('style') || ''
+		expect(style).toContain('top: 50%')
+	})
 })

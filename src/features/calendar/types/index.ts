@@ -196,6 +196,12 @@ export interface IlamyCalendarProps {
 	 */
 	timeFormat?: TimeFormat
 	/**
+	 * Whether to hide non-business hours in Day and Week views.
+	 * Requires businessHours to be configured.
+	 * @default false
+	 */
+	hideNonBusinessHours?: boolean
+	/**
 	 * Custom class names for overriding default calendar element styles.
 	 * Allows fine-grained control over the appearance of different calendar elements.
 	 * @example { disabledCell: "bg-gray-100 text-gray-400" }

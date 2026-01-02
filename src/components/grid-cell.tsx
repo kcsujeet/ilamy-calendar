@@ -4,6 +4,7 @@ import type { CalendarEvent } from '@/components/types'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
+import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import type { SelectedDayEvents } from './all-events-dialog'
 import { AllEventDialog } from './all-events-dialog'
@@ -50,6 +51,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		getEventsForResource,
 		businessHours,
 		currentLocale,
+		eventSpacing,
 	} = useSmartCalendarContext((state) => ({
 		dayMaxEvents: state.dayMaxEvents,
 		getEventsForDateRange: state.getEventsForDateRange,
@@ -59,6 +61,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		getEventsForResource: state.getEventsForResource,
 		businessHours: state.businessHours,
 		currentLocale: state.currentLocale,
+		eventSpacing: state.eventSpacing,
 	}))
 
 	const todayEvents = useMemo(() => {
@@ -139,8 +142,9 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				type="day-cell"
 			>
 				<div
-					className="flex flex-col gap-1 h-full w-full"
+					className="flex flex-col h-full w-full"
 					data-testid="grid-cell-content"
+					style={{ gap: `${eventSpacing}px` }}
 				>
 					{showDayNumber && <DayNumber date={day} locale={currentLocale} />}
 
@@ -149,9 +153,10 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 							{/* Render placeholders for events that occur today so that the cell height is according to dayMaxEvents. */}
 							{todayEvents.slice(0, dayMaxEvents).map((event, rowIndex) => (
 								<div
-									className="h-5 w-full shrink-0"
+									className="w-full shrink-0"
 									data-testid={event?.title}
 									key={`empty-${rowIndex}-${event.id}`}
+									style={{ height: `${EVENT_BAR_HEIGHT}px` }}
 								/>
 							))}
 

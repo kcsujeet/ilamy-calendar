@@ -163,7 +163,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 							{/* Show more events button with accurate count */}
 							{hasHiddenEvents && (
 								<div
-									className="text-muted-foreground hover:text-foreground cursor-pointer text-[10px] whitespace-nowrap sm:text-xs shrink-0"
+									className="text-muted-foreground hover:text-foreground cursor-pointer text-[10px] whitespace-nowrap sm:text-xs shrink-0 mt-1"
 									onClick={(e) => {
 										e.stopPropagation()
 

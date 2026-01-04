@@ -19,6 +19,7 @@ export { useIlamyCalendarContext } from './features/calendar/contexts/calendar-c
 export type {
 	CellClickInfo,
 	IlamyCalendarProps,
+	RenderCurrentTimeIndicatorProps,
 } from './features/calendar/types'
 export type { IlamyResourceCalendarProps } from './features/resource-calendar/components/ilamy-resource-calendar'
 export { IlamyResourceCalendar } from './features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
@@ -27,7 +28,6 @@ export { useIlamyResourceCalendarContext } from './features/resource-calendar/co
 // Resource calendar types
 export type { Resource } from './features/resource-calendar/types'
 export { defaultTranslations } from './lib/translations/default'
-
 // Translation system
 export type {
 	TranslationKey,

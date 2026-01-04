@@ -5,10 +5,11 @@ import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getDayHours, getWeekDays } from '@/lib/utils/date-utils'
+import { getWeekDays } from '@/lib/utils/date-utils'
 
 export const ResourceWeekVertical: React.FC = () => {
 	const {
@@ -18,6 +19,8 @@ export const ResourceWeekVertical: React.FC = () => {
 		currentLocale,
 		timeFormat,
 		t,
+		businessHours,
+		hideNonBusinessHours,
 	} = useResourceCalendarContext()
 
 	const resources = getVisibleResources()
@@ -27,10 +30,21 @@ export const ResourceWeekVertical: React.FC = () => {
 		[currentDate, firstDayOfWeek]
 	)
 
+	const hours = useMemo(
+		() =>
+			getViewHours({
+				referenceDate: currentDate,
+				businessHours,
+				hideNonBusinessHours,
+				allDates: weekDays,
+			}),
+		[currentDate, businessHours, hideNonBusinessHours, weekDays]
+	)
+
 	const firstCol = useMemo(
 		() => ({
 			id: 'time-col',
-			days: getDayHours({ referenceDate: currentDate }),
+			days: hours,
 			day: undefined,
 			className:
 				'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
@@ -45,7 +59,7 @@ export const ResourceWeekVertical: React.FC = () => {
 				</div>
 			),
 		}),
-		[currentDate, currentLocale, timeFormat]
+		[hours, currentLocale, timeFormat]
 	)
 
 	const columns = useMemo(
@@ -55,11 +69,13 @@ export const ResourceWeekVertical: React.FC = () => {
 					id: `day-col-${day.format('YYYY-MM-DD')}-resource-${resource.id}`,
 					resourceId: resource.id,
 					day,
-					days: getDayHours({ referenceDate: day }),
+					days: hours.map((h) =>
+						day.hour(h.hour()).minute(0).second(0).millisecond(0)
+					),
 					gridType: 'hour' as const,
 				}))
 			),
-		[resources, weekDays]
+		[resources, weekDays, hours]
 	)
 	return (
 		<VerticalGrid
@@ -109,7 +125,7 @@ export const ResourceWeekVertical: React.FC = () => {
 										delay: index * 0.05,
 									}}
 								>
-									<ResourceCell className="h-full" resource={resource}>
+									<ResourceCell className="h-full w-full" resource={resource}>
 										<div className="sticky left-1/2 text-sm font-medium truncate">
 											{resource.title}
 										</div>

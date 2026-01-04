@@ -1,20 +1,39 @@
 import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getDayHours } from '@/lib/utils/date-utils'
 
 export const ResourceDayHorizontal: React.FC = () => {
-	const { currentDate, t, currentLocale, timeFormat } =
-		useResourceCalendarContext()
+	const {
+		currentDate,
+		t,
+		currentLocale,
+		timeFormat,
+		businessHours,
+		hideNonBusinessHours,
+	} = useResourceCalendarContext()
 
 	// Generate time columns (hourly slots)
-	const dayHours = getDayHours({ referenceDate: currentDate })
+	const dayHours = getViewHours({
+		referenceDate: currentDate,
+		businessHours,
+		hideNonBusinessHours,
+		allDates: [currentDate],
+	})
 
 	return (
-		<ResourceEventGrid days={dayHours} gridType="hour">
+		<ResourceEventGrid
+			classes={{
+				header: 'min-w-full',
+				body: 'min-w-full',
+				cell: 'min-w-20 flex-1',
+			}}
+			days={dayHours}
+			gridType="hour"
+		>
 			<div className="w-20 sm:w-40 border-b border-r shrink-0 flex justify-center items-center sticky top-0 left-0 bg-background z-20">
 				<div className="text-sm">{t('resources')}</div>
 			</div>
@@ -31,7 +50,7 @@ export const ResourceDayHorizontal: React.FC = () => {
 								<motion.div
 									animate={{ opacity: 1, y: 0 }}
 									className={cn(
-										'w-20 border-b border-r last:border-r-0 flex items-center justify-center text-xs shrink-0',
+										'min-w-20 flex-1 border-b border-r last:border-r-0 flex items-center justify-center text-xs shrink-0',
 										isNowHour && 'bg-blue-50 text-blue-600 font-medium'
 									)}
 									data-testid={`resource-day-time-label-${col.format('HH')}`}

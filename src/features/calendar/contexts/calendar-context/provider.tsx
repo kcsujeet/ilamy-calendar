@@ -46,6 +46,7 @@ export interface CalendarProviderProps {
 	translator?: TranslatorFunction
 	timeFormat?: TimeFormat
 	classesOverride?: CalendarClassesOverride
+	hideNonBusinessHours?: boolean
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -79,6 +80,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	translator,
 	timeFormat = '12-hour',
 	classesOverride,
+	hideNonBusinessHours = false,
 }) => {
 	// Use the calendar engine
 	const calendarEngine = useCalendarEngine({
@@ -182,6 +184,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			t: calendarEngine.t,
 			timeFormat,
 			classesOverride,
+			hideNonBusinessHours,
 		}),
 		[
 			calendarEngine,
@@ -203,6 +206,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			renderEventForm,
 			timeFormat,
 			classesOverride,
+			hideNonBusinessHours,
 		]
 	)
 

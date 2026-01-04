@@ -1,15 +1,23 @@
 import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
 import { useMemo } from 'react'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getDayHours, getWeekDays } from '@/lib/utils/date-utils'
+import { getWeekDays } from '@/lib/utils/date-utils'
 
 export const ResourceWeekHorizontal: React.FC = () => {
-	const { currentDate, firstDayOfWeek, t, currentLocale, timeFormat } =
-		useResourceCalendarContext()
+	const {
+		currentDate,
+		firstDayOfWeek,
+		t,
+		currentLocale,
+		timeFormat,
+		businessHours,
+		hideNonBusinessHours,
+	} = useResourceCalendarContext()
 
 	// Generate week days
 	const weekDays = useMemo(
@@ -19,12 +27,22 @@ export const ResourceWeekHorizontal: React.FC = () => {
 
 	// Generate time columns (hourly slots)
 	const weekHours = useMemo(() => {
-		return weekDays.flatMap((day) => getDayHours({ referenceDate: day }))
-	}, [weekDays])
+		return weekDays.map((day) =>
+			getViewHours({
+				referenceDate: day,
+				businessHours,
+				hideNonBusinessHours,
+			})
+		)
+	}, [weekDays, businessHours, hideNonBusinessHours])
 
 	return (
 		<ResourceEventGrid
-			classes={{ header: 'h-24' }}
+			classes={{
+				header: 'h-24 min-w-full',
+				body: 'min-w-full',
+				cell: 'min-w-20 flex-1',
+			}}
 			days={weekHours}
 			gridType="hour"
 		>
@@ -44,16 +62,16 @@ export const ResourceWeekHorizontal: React.FC = () => {
 								<motion.div
 									animate={{ opacity: 1, y: 0 }}
 									className={cn(
-										'shrink-0 border-r last:border-r-0 border-b flex items-center text-center font-medium w-[calc(24*var(--spacing)*20)]',
+										'shrink-0 border-r last:border-r-0 border-b flex-1 flex items-center text-center font-medium',
 										isToday && 'bg-blue-50 text-blue-600'
 									)}
+									data-testid="resource-week-day-header"
 									exit={{ opacity: 0, y: -10 }}
 									initial={{ opacity: 0, y: -10 }}
 									key={`${key}-motion`}
 									transition={{
-										duration: 0.25,
+										duration: 0.2,
 										ease: 'easeInOut',
-										delay: index * 0.05,
 									}}
 								>
 									<div className="sticky left-1/2">
@@ -70,7 +88,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 
 				{/* Time header row */}
 				<div className="flex h-12 border-b">
-					{weekHours.map((col, index) => {
+					{weekHours.flat().map((col, index) => {
 						const isNowHour = col.isSame(dayjs(), 'hour')
 						const key = `resource-week-header-${col.toISOString()}-hour`
 
@@ -79,7 +97,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 								<motion.div
 									animate={{ opacity: 1, y: 0 }}
 									className={cn(
-										'w-20 border-r flex items-center justify-center text-xs shrink-0',
+										'min-w-20 flex-1 border-r flex items-center justify-center text-xs shrink-0',
 										isNowHour && 'bg-blue-50 text-blue-600 font-medium'
 									)}
 									data-testid={`resource-week-time-label-${col.format('HH')}`}
@@ -87,9 +105,8 @@ export const ResourceWeekHorizontal: React.FC = () => {
 									initial={{ opacity: 0, y: -10 }}
 									key={`${key}-motion`}
 									transition={{
-										duration: 0.25,
+										duration: 0.2,
 										ease: 'easeInOut',
-										delay: index * 0.05,
 									}}
 								>
 									{Intl.DateTimeFormat(currentLocale, {

@@ -4,9 +4,10 @@ import { useMemo } from 'react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getDayHours, getWeekDays } from '@/lib/utils/date-utils'
+import { getWeekDays } from '@/lib/utils/date-utils'
 
 const CELL_CLASS = 'w-[calc((100%-4rem)/7)] min-w-[calc((100%-4rem)/7)] flex-1'
 const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
@@ -20,6 +21,8 @@ const WeekView: React.FC = () => {
 		openEventForm,
 		currentLocale,
 		timeFormat,
+		businessHours,
+		hideNonBusinessHours,
 	} = useCalendarContext()
 
 	const weekDays = useMemo(
@@ -27,9 +30,20 @@ const WeekView: React.FC = () => {
 		[currentDate, firstDayOfWeek]
 	)
 
+	const hours = useMemo(
+		() =>
+			getViewHours({
+				referenceDate: currentDate,
+				businessHours,
+				hideNonBusinessHours,
+				allDates: weekDays,
+			}),
+		[currentDate, businessHours, hideNonBusinessHours, weekDays]
+	)
+
 	const firstCol = {
 		id: 'time-col',
-		days: getDayHours({ referenceDate: currentDate }),
+		days: hours,
 		day: undefined,
 		className: `shrink-0 ${LEFT_COL_WIDTH} sticky left-0 bg-background z-20`,
 		gridType: 'hour' as const,
@@ -51,10 +65,12 @@ const WeekView: React.FC = () => {
 			day,
 			label: day.format('D'),
 			className: CELL_CLASS,
-			days: getDayHours({ referenceDate: day }),
+			days: hours.map((h) =>
+				day.hour(h.hour()).minute(0).second(0).millisecond(0)
+			),
 			value: day,
 		}))
-	}, [weekDays])
+	}, [weekDays, hours])
 
 	return (
 		<VerticalGrid

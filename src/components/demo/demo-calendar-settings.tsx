@@ -59,6 +59,13 @@ interface DemoCalendarSettingsProps {
 	isResourceCalendar?: boolean
 	orientation?: 'horizontal' | 'vertical'
 	setOrientation?: (value: 'horizontal' | 'vertical') => void
+	// Business hours settings
+	hideNonBusinessHours: boolean
+	setHideNonBusinessHours: (value: boolean) => void
+	businessStartTime: number
+	setBusinessStartTime: (value: number) => void
+	businessEndTime: number
+	setBusinessEndTime: (value: number) => void
 }
 
 export function DemoCalendarSettings({
@@ -98,6 +105,12 @@ export function DemoCalendarSettings({
 	isResourceCalendar,
 	orientation,
 	setOrientation,
+	hideNonBusinessHours,
+	setHideNonBusinessHours,
+	businessStartTime,
+	setBusinessStartTime,
+	businessEndTime,
+	setBusinessEndTime,
 }: DemoCalendarSettingsProps) {
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -187,7 +200,6 @@ export function DemoCalendarSettings({
 						</SelectContent>
 					</Select>
 				</div>
-
 				<div>
 					<label className="block text-sm text-left font-medium mb-1">
 						Initial Date
@@ -227,7 +239,6 @@ export function DemoCalendarSettings({
 						</SelectContent>
 					</Select>
 				</div>
-
 				<div>
 					<label className="block text-sm text-left font-medium mb-1">
 						Locale
@@ -251,7 +262,6 @@ export function DemoCalendarSettings({
 						</SelectContent>
 					</Select>
 				</div>
-
 				{/* <div>
           <label className="block text-sm text-left font-medium mb-1">Timezone</label>
           <Select value={timezone} onValueChange={setTimezone}>
@@ -267,7 +277,6 @@ export function DemoCalendarSettings({
             </SelectContent>
           </Select>
         </div> */}
-
 				<div>
 					<label className="block text-sm text-left font-medium mb-1">
 						Calendar Height
@@ -286,7 +295,6 @@ export function DemoCalendarSettings({
 						</SelectContent>
 					</Select>
 				</div>
-
 				<div>
 					<label className="block text-sm text-left font-medium mb-1">
 						Max Events Per Day
@@ -310,7 +318,6 @@ export function DemoCalendarSettings({
 						</SelectContent>
 					</Select>
 				</div>
-
 				<div>
 					<label className="block text-sm text-left font-medium mb-1">
 						Time Format
@@ -325,7 +332,6 @@ export function DemoCalendarSettings({
 						</SelectContent>
 					</Select>
 				</div>
-
 				{isResourceCalendar && (
 					<div>
 						<label className="block text-sm text-left font-medium mb-1">
@@ -342,7 +348,6 @@ export function DemoCalendarSettings({
 						</Select>
 					</div>
 				)}
-
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={stickyViewHeader}
@@ -356,7 +361,64 @@ export function DemoCalendarSettings({
 						Enable sticky header
 					</label>
 				</div>
+				<div className="flex items-center space-x-2">
+					<Checkbox
+						checked={hideNonBusinessHours}
+						id="hideNonBusinessHours"
+						onCheckedChange={() =>
+							setHideNonBusinessHours(!hideNonBusinessHours)
+						}
+					/>
+					<label
+						className="text-sm font-medium leading-none cursor-pointer ml-2"
+						htmlFor="hideNonBusinessHours"
+					>
+						Hide non-business hours
+					</label>
+				</div>
 
+				<div className="grid grid-cols-2 gap-4">
+					<div>
+						<label className="block text-sm text-left font-medium mb-1">
+							Business Start
+						</label>
+						<Select
+							onValueChange={(value) => setBusinessStartTime(Number(value))}
+							value={businessStartTime.toString()}
+						>
+							<SelectTrigger className="w-full">
+								<SelectValue placeholder="Start" />
+							</SelectTrigger>
+							<SelectContent>
+								{Array.from({ length: 24 }).map((_, i) => (
+									<SelectItem key={i} value={i.toString()}>
+										{i}:00
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					<div>
+						<label className="block text-sm text-left font-medium mb-1">
+							Business End
+						</label>
+						<Select
+							onValueChange={(value) => setBusinessEndTime(Number(value))}
+							value={businessEndTime.toString()}
+						>
+							<SelectTrigger className="w-full">
+								<SelectValue placeholder="End" />
+							</SelectTrigger>
+							<SelectContent>
+								{Array.from({ length: 24 }).map((_, i) => (
+									<SelectItem key={i} value={i.toString()}>
+										{i}:00
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+				</div>
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={useCustomEventRenderer}
@@ -372,7 +434,6 @@ export function DemoCalendarSettings({
 						Use custom event renderer
 					</label>
 				</div>
-
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={useCustomOnDateClick}
@@ -388,7 +449,6 @@ export function DemoCalendarSettings({
 						Use custom onCellClick handler
 					</label>
 				</div>
-
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={useCustomOnEventClick}
@@ -404,7 +464,6 @@ export function DemoCalendarSettings({
 						Use custom onEventClick handler
 					</label>
 				</div>
-
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={disableCellClick}
@@ -418,7 +477,6 @@ export function DemoCalendarSettings({
 						Disable cell clicks
 					</label>
 				</div>
-
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={disableEventClick}
@@ -432,7 +490,6 @@ export function DemoCalendarSettings({
 						Disable event clicks
 					</label>
 				</div>
-
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={disableDragAndDrop}
@@ -446,7 +503,6 @@ export function DemoCalendarSettings({
 						Disable drag & drop
 					</label>
 				</div>
-
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={useCustomClasses}

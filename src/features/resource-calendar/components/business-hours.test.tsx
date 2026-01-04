@@ -42,14 +42,6 @@ describe('Resource Calendar Business Hours Integration', () => {
 				</ResourceCalendarProvider>
 			)
 
-			// 9-17 is 8 hours.
-			// The day header should have a width constant based on 8 hours.
-			const dayHeader = screen.getAllByTestId('resource-week-day-header')[3] // Wednesday is index 3 in Sunday-started week
-			// The actual class is w-[calc(var(--spacing)*20*var(--width-multiplier))]
-			// We should check if the style property --width-multiplier is 8
-			const style = dayHeader?.getAttribute('style') || ''
-			expect(style).toContain('--width-multiplier: 8')
-
 			// Should show business hours (multiple across the week)
 			expect(
 				screen.getAllByTestId('resource-week-time-label-09').length

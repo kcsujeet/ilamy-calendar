@@ -62,7 +62,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 								<motion.div
 									animate={{ opacity: 1, y: 0 }}
 									className={cn(
-										'shrink-0 border-r last:border-r-0 border-b flex-1 flex items-center text-center font-medium w-[calc(var(--spacing)*20*var(--width-multiplier))]',
+										'shrink-0 border-r last:border-r-0 border-b flex-1 flex items-center text-center font-medium',
 										isToday && 'bg-blue-50 text-blue-600'
 									)}
 									data-testid="resource-week-day-header"

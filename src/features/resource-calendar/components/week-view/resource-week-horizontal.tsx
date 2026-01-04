@@ -70,9 +70,8 @@ export const ResourceWeekHorizontal: React.FC = () => {
 									initial={{ opacity: 0, y: -10 }}
 									key={`${key}-motion`}
 									transition={{
-										duration: 0.25,
+										duration: 0.2,
 										ease: 'easeInOut',
-										delay: index * 0.05,
 									}}
 								>
 									<div className="sticky left-1/2">
@@ -106,9 +105,8 @@ export const ResourceWeekHorizontal: React.FC = () => {
 									initial={{ opacity: 0, y: -10 }}
 									key={`${key}-motion`}
 									transition={{
-										duration: 0.25,
+										duration: 0.2,
 										ease: 'easeInOut',
-										delay: index * 0.05,
 									}}
 								>
 									{Intl.DateTimeFormat(currentLocale, {

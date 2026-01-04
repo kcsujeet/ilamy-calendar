@@ -35,8 +35,10 @@ export const getPositionedEvents = ({
 }: GetPositionedEventsProps) => {
 	// For hour-based grids, use actual first/last hours from days array
 	// For day-based grids, use start/end of day to capture all events
-	const firstDay = gridType === 'hour' ? days.at(0) : days.at(0).startOf('day')
-	const lastDay = gridType === 'hour' ? days.at(-1) : days.at(-1).endOf('day')
+	const firstDay =
+		gridType === 'hour' ? days.at(0).startOf('hour') : days.at(0).startOf('day')
+	const lastDay =
+		gridType === 'hour' ? days.at(-1).endOf('hour') : days.at(-1).endOf('day')
 	const dayCount = days.length
 
 	// Separate multi-day and single-day events

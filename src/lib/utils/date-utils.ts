@@ -70,6 +70,6 @@ export function getDayHours({
 	length = 24,
 }: GetDayHoursOptions = {}): dayjs.Dayjs[] {
 	return Array.from({ length }, (_, i) =>
-		referenceDate.hour(i).minute(0).second(0)
+		referenceDate.hour(i).minute(0).second(0).millisecond(0)
 	)
 }

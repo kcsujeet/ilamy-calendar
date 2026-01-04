@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.3.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.2.3...v1.3.0)
+
+> 4 January 2026
+
+##### Features
+
+- feat: implement `hideNonBusinessHours` support to collapse non-working hours in the view [`#51`](https://github.com/kcsujeet/ilamy-calendar/pull/51)
+- feat: add `renderCurrentTimeIndicator` prop for custom current time indicator rendering [`#53`](https://github.com/kcsujeet/ilamy-calendar/pull/53)
+- feat: add `eventSpacing` prop to `GridCell` for more granular event layout control [`#55`](https://github.com/kcsujeet/ilamy-calendar/pull/55)
+
+
 #### [v1.2.3](https://github.com/kcsujeet/ilamy-calendar/compare/v1.2.2...v1.2.3)
 
 > 2 January 2026

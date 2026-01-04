@@ -1,6 +1,7 @@
 import type React from 'react'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
+import type { Resource } from '@/features/resource-calendar/types'
 import type dayjs from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
@@ -46,6 +47,28 @@ export interface CellClickInfo {
 	resourceId?: string | number
 	/** Whether the clicked cell is an all-day cell (optional) */
 	allDay?: boolean
+}
+
+/**
+ * Props passed to the custom render function for the current time indicator.
+ * Allows users to customize how the current time indicator is displayed.
+ */
+export interface RenderCurrentTimeIndicatorProps {
+	/** The current time as a dayjs object */
+	currentTime: dayjs.Dayjs
+	/** The start of the visible time range */
+	rangeStart: dayjs.Dayjs
+	/** The end of the visible time range */
+	rangeEnd: dayjs.Dayjs
+	/** Progress percentage (0-100) representing position in the range */
+	progress: number
+	/**
+	 * The resource associated with this column (if in a resource-based view).
+	 * Pass this to conditionally render custom indicators for specific resources.
+	 */
+	resource?: Resource
+	/** The current calendar view (e.g. 'day', 'week') */
+	view: CalendarView
 }
 
 export interface IlamyCalendarProps {
@@ -207,4 +230,32 @@ export interface IlamyCalendarProps {
 	 * @example { disabledCell: "bg-gray-100 text-gray-400" }
 	 */
 	classesOverride?: CalendarClassesOverride
+	/**
+	 * Custom render function for the current time indicator.
+	 * If provided, replaces the default red line indicator.
+	 * Useful for adding custom time labels or styling.
+	 *
+	 * @example
+	 * ```tsx
+	 * renderCurrentTimeIndicator={({ currentTime, progress, resource, view }) => {
+	 *   // Only show the time badge for the first resource in Day view (to avoid repetition)
+	 *   const isPrimary = !resource || resource.id === 'room-a'
+	 *   const showBadge = view === 'day' ? isPrimary : true
+	 *
+	 *   return (
+	 *     <div style={{ top: `${progress}%` }} className="absolute left-0 right-0">
+	 *       <div className="h-0.5 bg-red-500" />
+	 *       {showBadge && (
+	 *         <span className="absolute left-0 bg-red-500 text-white text-[10px] px-1 rounded-r-sm">
+	 *           {currentTime.format('h:mm A')}
+	 *         </span>
+	 *       )}
+	 *     </div>
+	 *   )
+	 * }}
+	 * ```
+	 */
+	renderCurrentTimeIndicator?: (
+		props: RenderCurrentTimeIndicatorProps
+	) => React.ReactNode
 }

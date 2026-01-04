@@ -46,6 +46,7 @@ export const ResourceDayVertical: React.FC = () => {
 	const columns = resources.map((resource) => ({
 		id: `day-col-${currentDate.format('YYYY-MM-DD')}-resource-${resource.id}`,
 		resourceId: resource.id,
+		resource,
 		days: hours,
 		day: currentDate,
 		gridType: 'hour' as const,

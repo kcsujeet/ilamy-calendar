@@ -70,4 +70,20 @@ describe('getViewHours', () => {
 		expect(hours[0].hour()).toBe(9)
 		expect(hours[7].hour()).toBe(16)
 	})
+
+	test('falls back to global business hours range if no config found for the specific date', () => {
+		const sunday = dayjs('2025-01-05T00:00:00.000Z')
+		const businessHours = [
+			{ daysOfWeek: ['monday'] as WeekDays[], startTime: 10, endTime: 18 },
+		]
+		const hours = getViewHours({
+			referenceDate: sunday,
+			businessHours,
+			hideNonBusinessHours: true,
+		})
+		// Should use the 10-18 range from Monday since Sunday has no config
+		expect(hours.length).toBe(8)
+		expect(hours[0].hour()).toBe(10)
+		expect(hours[7].hour()).toBe(17)
+	})
 })

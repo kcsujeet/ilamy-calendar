@@ -44,7 +44,10 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 				return (
 					<div
 						className="absolute z-10 pointer-events-auto overflow-clip"
+						data-left={event.left}
 						data-testid={`horizontal-event-${event.id}`}
+						data-top={event.top}
+						data-width={event.width}
 						key={`${eventKey}-wrapper`}
 						style={{
 							left: `calc(${event.left}% + var(--spacing) * 0.25)`,

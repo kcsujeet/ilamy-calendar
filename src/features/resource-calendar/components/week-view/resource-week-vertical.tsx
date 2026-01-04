@@ -125,7 +125,7 @@ export const ResourceWeekVertical: React.FC = () => {
 										delay: index * 0.05,
 									}}
 								>
-									<ResourceCell className="h-full" resource={resource}>
+									<ResourceCell className="h-full w-full" resource={resource}>
 										<div className="sticky left-1/2 text-sm font-medium truncate">
 											{resource.title}
 										</div>

@@ -20,6 +20,7 @@ const DayView = () => {
 		referenceDate: currentDate,
 		businessHours,
 		hideNonBusinessHours,
+		allDates: [currentDate],
 	})
 
 	const firstCol = {

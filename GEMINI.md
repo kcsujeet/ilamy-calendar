@@ -34,6 +34,24 @@ It features standard calendar views (Month, Week, Day, Year) and a Resource Cale
 - **Prohibition**: Do not pass `data-testid` as a prop.
 - **Testing**: Update tests to select by these hardcoded IDs.
 
+### JSDOM and CSS `calc()` with Variables
+- **Issue**: JSDOM drops `calc()` expressions containing CSS variables (e.g., `calc(50% + var(--spacing) * 0.25)`).
+- **Solution**: Use `data-*` attributes to expose positioning values for testing:
+  ```tsx
+  <div
+    data-left={event.left}
+    data-width={event.width}
+    data-top={event.top}
+    style={{
+      left: `calc(${event.left}% + var(--spacing) * 0.25)`,
+      ...
+    }}
+  >
+  ```
+- **Testing**: Use `getAttribute('data-left')` instead of parsing style strings.
+- **Example**: See `horizontal-grid-events-layer.tsx` and `resource-week-horizontal.test.tsx`.
+
 ## Memory Bank
 - **User Preference**: The user prefers strict adherence to `CLAUDE.md` and explicitly asked to be consulted before commits.
 - **Recent Changes**: Refactored `getPositionedDayEvents` to be adaptive to grid size and type.
+

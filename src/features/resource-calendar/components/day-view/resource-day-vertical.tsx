@@ -22,6 +22,7 @@ export const ResourceDayVertical: React.FC = () => {
 		referenceDate: currentDate,
 		businessHours,
 		hideNonBusinessHours,
+		allDates: [currentDate],
 	})
 
 	const firstCol = {

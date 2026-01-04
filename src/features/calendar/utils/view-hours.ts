@@ -44,13 +44,34 @@ export function getViewHours({
 		}
 	}
 
-	// If no business hours are defined for any of the dates, fallback to full day
+	// If no business hours are defined for any of the dates
 	if (!hasBusinessHours) {
-		return allHours
+		if (hideNonBusinessHours) {
+			// If hiding non-business hours, try to find a global range from ALL business hours
+			if (Array.isArray(businessHours)) {
+				for (const config of businessHours) {
+					minStart = Math.min(minStart, config.startTime ?? 9)
+					maxEnd = Math.max(maxEnd, config.endTime ?? 17)
+					hasBusinessHours = true
+				}
+			} else if (businessHours) {
+				minStart = businessHours.startTime ?? 9
+				maxEnd = businessHours.endTime ?? 17
+				hasBusinessHours = true
+			}
+
+			// If still no business hours (though unlikely if businessHours exists), fallback to default
+			if (!hasBusinessHours) {
+				minStart = 9
+				maxEnd = 17
+			}
+		} else {
+			// Not hiding, show full day
+			return allHours
+		}
 	}
 
 	// Return hours within the range [minStart, maxEnd)
-	// We use maxEnd for the last hour to ensure we show the full duration of the last business hour
 	return allHours.filter((h) => {
 		const hour = h.hour()
 		return hour >= minStart && hour < maxEnd

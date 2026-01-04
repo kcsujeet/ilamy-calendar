@@ -277,6 +277,23 @@ export function DemoPage() {
 		return Intl.DateTimeFormat().resolvedOptions().timeZone
 	})
 	const [stickyViewHeader, setStickyHeader] = useState(true)
+	const [hideNonBusinessHours, setHideNonBusinessHours] = useState(true)
+	const [businessStartTime, setBusinessStartTime] = useState(9)
+	const [businessEndTime, setBusinessEndTime] = useState(17)
+
+	const businessHours = [
+		{
+			daysOfWeek: [
+				'monday',
+				'tuesday',
+				'wednesday',
+				'thursday',
+				'friday',
+			] as WeekDays[],
+			startTime: businessStartTime,
+			endTime: businessEndTime,
+		},
+	]
 
 	// Disable functionality state
 	const [disableCellClick, setDisableCellClick] = useState(false)
@@ -340,6 +357,8 @@ export function DemoPage() {
 				{/* Calendar settings sidebar */}
 				<div className="lg:col-span-1 space-y-6">
 					<DemoCalendarSettings
+						businessEndTime={businessEndTime}
+						businessStartTime={businessStartTime}
 						calendarHeight={calendarHeight}
 						calendarType={calendarType}
 						dayMaxEvents={dayMaxEvents}
@@ -347,11 +366,14 @@ export function DemoPage() {
 						disableDragAndDrop={disableDragAndDrop}
 						disableEventClick={disableEventClick}
 						firstDayOfWeek={firstDayOfWeek}
+						hideNonBusinessHours={hideNonBusinessHours}
 						initialDate={initialDate}
 						initialView={initialView}
 						isResourceCalendar={calendarType === 'resource'}
 						locale={locale}
 						orientation={orientation}
+						setBusinessEndTime={setBusinessEndTime}
+						setBusinessStartTime={setBusinessStartTime}
 						setCalendarHeight={setCalendarHeight}
 						setCalendarType={setCalendarType}
 						setDayMaxEvents={setDayMaxEvents}
@@ -359,6 +381,7 @@ export function DemoPage() {
 						setDisableDragAndDrop={setDisableDragAndDrop}
 						setDisableEventClick={setDisableEventClick}
 						setFirstDayOfWeek={setFirstDayOfWeek}
+						setHideNonBusinessHours={setHideNonBusinessHours}
 						setInitialDate={setInitialDate}
 						setInitialView={setInitialView}
 						setLocale={setLocale}
@@ -423,13 +446,7 @@ export function DemoPage() {
 						>
 							{calendarType === 'regular' ? (
 								<IlamyCalendar
-									businessHours={[
-										{
-											daysOfWeek: ['tuesday', 'friday'],
-											startTime: 9,
-											endTime: 17,
-										},
-									]}
+									businessHours={businessHours}
 									classesOverride={
 										useCustomClasses
 											? {
@@ -444,7 +461,7 @@ export function DemoPage() {
 									disableEventClick={disableEventClick}
 									events={customEvents}
 									firstDayOfWeek={firstDayOfWeek}
-									hideNonBusinessHours
+									hideNonBusinessHours={hideNonBusinessHours}
 									initialDate={initialDate}
 									initialView={initialView}
 									key={calendarKey}
@@ -466,17 +483,7 @@ export function DemoPage() {
 								/>
 							) : (
 								<IlamyResourceCalendar
-									businessHours={{
-										daysOfWeek: [
-											// 'monday',
-											'tuesday',
-											// 'wednesday',
-											// 'thursday',
-											'friday',
-										],
-										startTime: 9,
-										endTime: 17,
-									}}
+									businessHours={businessHours}
 									classesOverride={
 										useCustomClasses
 											? {
@@ -491,6 +498,7 @@ export function DemoPage() {
 									disableEventClick={disableEventClick}
 									events={resourceEvents}
 									firstDayOfWeek={firstDayOfWeek}
+									hideNonBusinessHours={hideNonBusinessHours}
 									initialDate={initialDate}
 									initialView={initialView === 'year' ? 'month' : initialView}
 									key={`resource-${calendarKey}-${orientation}`}

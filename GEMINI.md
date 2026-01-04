@@ -50,7 +50,24 @@ For components that require re-rendering (e.g., testing date boundaries), use a 
 Use `let` variables for mock functions or test data that need to be captured or modified across tests.
 - **Cleanup**: Always reset these variables in `beforeEach` to ensure test isolation.
 - **Verification**: Capture props passed to custom render functions in these variables for precise assertions.
+### JSDOM and CSS `calc()` with Variables
+- **Issue**: JSDOM drops `calc()` expressions containing CSS variables (e.g., `calc(50% + var(--spacing) * 0.25)`).
+- **Solution**: Use `data-*` attributes to expose positioning values for testing:
+  ```tsx
+  <div
+    data-left={event.left}
+    data-width={event.width}
+    data-top={event.top}
+    style={{
+      left: `calc(${event.left}% + var(--spacing) * 0.25)`,
+      ...
+    }}
+  >
+  ```
+- **Testing**: Use `getAttribute('data-left')` instead of parsing style strings.
+- **Example**: See `horizontal-grid-events-layer.tsx` and `resource-week-horizontal.test.tsx`.
 
 ## Memory Bank
 - **User Preference**: The user prefers strict adherence to `CLAUDE.md` and explicitly asked to be consulted before commits.
 - **Recent Changes**: Refactored `getPositionedDayEvents` to be adaptive to grid size and type.
+

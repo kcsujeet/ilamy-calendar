@@ -7,7 +7,7 @@ interface ResourceEventGridProps {
 	/**
 	 * Array of days to display in the grid
 	 */
-	days: dayjs.Dayjs[]
+	days: dayjs.Dayjs[] | dayjs.Dayjs[][]
 	/** The type of grid to display - 'day' for day view, 'hour' for week view
 	 * (affects event positioning logic)
 	 */
@@ -17,7 +17,7 @@ interface ResourceEventGridProps {
 	 * (e.g., for day names in month view)
 	 */
 	children?: React.ReactNode
-	classes?: { header?: string; body?: string; scroll?: string }
+	classes?: { header?: string; body?: string; scroll?: string; cell?: string }
 }
 
 export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
@@ -30,11 +30,16 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 
 	const visibleResources = getVisibleResources()
 
-	const columns = days.map((day) => ({
-		id: `col-${day.toISOString()}`,
-		day,
-		gridType,
-	}))
+	const columns = days.map((day) => {
+		const isArray = Array.isArray(day)
+		return {
+			id: `col-${isArray ? day[0]?.format('YYYY-MM-DD') : day.toISOString()}`,
+			day: isArray ? undefined : day,
+			days: isArray ? day : undefined,
+			className: classes?.cell,
+			gridType,
+		}
+	})
 
 	const rows = visibleResources.map((resource) => ({
 		id: resource.id,

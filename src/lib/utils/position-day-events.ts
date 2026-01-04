@@ -32,7 +32,7 @@ export const getPositionedDayEvents = ({
 	// Determine grid boundaries and metrics
 	// Use explicit startOf to ensure we are anchored to the grid unit boundaries
 	// This prevents offsets if the grid days are not normalized
-	const gridStart = days.at(0)?.startOf('day') || dayjs()
+	const gridStart = days.at(0) || dayjs()
 	const totalUnits = days.length
 	const isDiscrete = gridType === 'day'
 

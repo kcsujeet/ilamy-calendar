@@ -4,7 +4,10 @@ import type {
 	CalendarContextType,
 	UseIlamyCalendarContextReturn,
 } from '@/features/calendar/contexts/calendar-context/context'
-import type { CellClickInfo } from '@/features/calendar/types'
+import type {
+	CellClickInfo,
+	HiddenHeaderButtons,
+} from '@/features/calendar/types'
 import type { Resource } from '@/features/resource-calendar/types'
 
 export interface ResourceCalendarContextType extends CalendarContextType {
@@ -27,6 +30,10 @@ export interface ResourceCalendarContextType extends CalendarContextType {
 	onCellClick: (info: CellClickInfo) => void
 	renderResource?: (resource: Resource) => React.ReactNode
 	orientation: 'horizontal' | 'vertical'
+	hiddenHeaderButtons?: HiddenHeaderButtons
+	setHiddenHeaderButtons?: React.Dispatch<
+		React.SetStateAction<HiddenHeaderButtons>
+	>
 }
 
 export const ResourceCalendarContext: React.Context<
@@ -53,6 +60,10 @@ export interface UseIlamyResourceCalendarContextReturn
 	readonly getEventsForResource: (
 		resourceId: string | number
 	) => CalendarEvent[]
+	readonly hiddenHeaderButtons?: HiddenHeaderButtons
+	readonly setHiddenHeaderButtons?: React.Dispatch<
+		React.SetStateAction<HiddenHeaderButtons>
+	>
 }
 
 export const useIlamyResourceCalendarContext =
@@ -85,5 +96,7 @@ export const useIlamyResourceCalendarContext =
 			closeEventForm: context.closeEventForm,
 			getEventsForResource: context.getEventsForResource,
 			businessHours: context.businessHours,
+			hiddenHeaderButtons: context.hiddenHeaderButtons,
+			setHiddenHeaderButtons: context.setHiddenHeaderButtons,
 		} as const
 	}

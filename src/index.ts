@@ -18,6 +18,7 @@ export type { UseIlamyCalendarContextReturn } from './features/calendar/contexts
 export { useIlamyCalendarContext } from './features/calendar/contexts/calendar-context/context'
 export type {
 	CellClickInfo,
+	HiddenHeaderButtons,
 	IlamyCalendarProps,
 	RenderCurrentTimeIndicatorProps,
 } from './features/calendar/types'

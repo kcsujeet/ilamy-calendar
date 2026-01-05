@@ -313,7 +313,11 @@ export function DemoPage() {
 	const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour')
 	const [useCustomClasses, setUseCustomClasses] = useState(false)
 	const [useCustomTimeIndicator, setUseCustomTimeIndicator] = useState(false)
-
+	const [hiddenHeaderButtons, setHiddenHeaderButtons] = useState({
+		export: false,
+		newEvent: false,
+		viewControls: false,
+	})
 	// Resource calendar settings
 	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
 		'horizontal'
@@ -398,6 +402,7 @@ export function DemoPage() {
 						disableDragAndDrop={disableDragAndDrop}
 						disableEventClick={disableEventClick}
 						firstDayOfWeek={firstDayOfWeek}
+						hiddenHeaderButtons={hiddenHeaderButtons}
 						hideNonBusinessHours={hideNonBusinessHours}
 						initialDate={initialDate}
 						initialView={initialView}
@@ -413,6 +418,7 @@ export function DemoPage() {
 						setDisableDragAndDrop={setDisableDragAndDrop}
 						setDisableEventClick={setDisableEventClick}
 						setFirstDayOfWeek={setFirstDayOfWeek}
+						setHiddenHeaderButtons={setHiddenHeaderButtons}
 						setHideNonBusinessHours={setHideNonBusinessHours}
 						setInitialDate={setInitialDate}
 						setInitialView={setInitialView}
@@ -428,9 +434,9 @@ export function DemoPage() {
 						setUseCustomTimeIndicator={setUseCustomTimeIndicator}
 						stickyViewHeader={stickyViewHeader}
 						timeFormat={timeFormat}
+						// Resource calendar specific props
 						timezone={timezone}
 						useCustomClasses={useCustomClasses}
-						// Resource calendar specific props
 						useCustomEventRenderer={useCustomEventRenderer}
 						useCustomOnDateClick={useCustomOnDateClick}
 						useCustomOnEventClick={useCustomOnEventClick}
@@ -495,6 +501,7 @@ export function DemoPage() {
 									disableEventClick={disableEventClick}
 									events={customEvents}
 									firstDayOfWeek={firstDayOfWeek}
+									hiddenHeaderButtons={hiddenHeaderButtons}
 									hideNonBusinessHours={hideNonBusinessHours}
 									initialDate={initialDate}
 									initialView={initialView}
@@ -537,6 +544,7 @@ export function DemoPage() {
 									disableEventClick={disableEventClick}
 									events={resourceEvents}
 									firstDayOfWeek={firstDayOfWeek}
+									hiddenHeaderButtons={hiddenHeaderButtons}
 									hideNonBusinessHours={hideNonBusinessHours}
 									initialDate={initialDate}
 									initialView={initialView === 'year' ? 'month' : initialView}

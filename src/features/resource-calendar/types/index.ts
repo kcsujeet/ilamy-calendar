@@ -1,4 +1,5 @@
 import type {
+	HiddenHeaderButtons,
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
@@ -32,6 +33,11 @@ export interface IlamyResourceCalendarProps
 	 * - "vertical": Resources are columns, time is rows
 	 */
 	orientation?: 'horizontal' | 'vertical'
+	/**
+	 * Configuration for hiding header buttons in the calendar.
+	 * Allows users to selectively hide export, new event, and view control buttons.
+	 */
+	hiddenHeaderButtons?: HiddenHeaderButtons
 }
 
 /**

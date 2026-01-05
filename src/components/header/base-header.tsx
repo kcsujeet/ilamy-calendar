@@ -29,6 +29,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		headerClassName,
 		rawEvents,
 		t,
+		hiddenHeaderButtons,
 	} = useSmartCalendarContext((ctx) => ({
 		view: ctx.view,
 		setView: ctx.setView,
@@ -40,6 +41,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		headerClassName: ctx.headerClassName,
 		rawEvents: ctx.rawEvents,
 		t: ctx.t,
+		hiddenHeaderButtons: ctx.hiddenHeaderButtons,
 	}))
 
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -103,17 +105,19 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
 				<div className="flex flex-wrap justify-start @xl/base-header:justify-center gap-1 @4xl/base-header:justify-end overflow-x-auto">
 					<div className="hidden @md/base-header:flex items-center justify-start gap-1">
-						<ViewControls
-							className="justify-end"
-							currentView={view}
-							onChange={setView}
-							onNext={nextPeriod}
-							onPrevious={prevPeriod}
-							onToday={today}
-							variant="default"
-						/>
-						<NewEventButton />
-						<ExportButton />
+						{!hiddenHeaderButtons?.viewControls && (
+							<ViewControls
+								className="justify-end"
+								currentView={view}
+								onChange={setView}
+								onNext={nextPeriod}
+								onPrevious={prevPeriod}
+								onToday={today}
+								variant="default"
+							/>
+						)}
+						{!hiddenHeaderButtons?.newEvent && <NewEventButton />}
+						{!hiddenHeaderButtons?.export && <ExportButton />}
 					</div>
 
 					<div className="flex items-center justify-end gap-1 @md/base-header:hidden">

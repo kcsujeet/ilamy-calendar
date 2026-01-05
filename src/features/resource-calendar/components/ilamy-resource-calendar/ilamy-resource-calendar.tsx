@@ -23,6 +23,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
 	dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
 	timeFormat = '12-hour',
 	eventSpacing = GAP_BETWEEN_ELEMENTS,
+	hiddenHeaderButtons,
 	...props
 }) => {
 	return (
@@ -34,6 +35,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
 				events
 			)}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
+			hiddenHeaderButtons={hiddenHeaderButtons}
 			initialDate={safeDate(initialDate)}
 			initialView={initialView}
 			resources={resources}

@@ -5,6 +5,7 @@ import type { CalendarProviderProps } from '@/features/calendar/contexts/calenda
 import type {
 	CalendarClassesOverride,
 	CellClickInfo,
+	HiddenHeaderButtons,
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import type { Resource } from '@/features/resource-calendar/types'
@@ -31,6 +32,7 @@ interface ResourceCalendarProviderProps extends CalendarProviderProps {
 		props: RenderCurrentTimeIndicatorProps
 	) => React.ReactNode
 	hideNonBusinessHours?: boolean
+	hiddenHeaderButtons?: HiddenHeaderButtons
 }
 
 export const ResourceCalendarProvider: React.FC<
@@ -71,6 +73,7 @@ export const ResourceCalendarProvider: React.FC<
 	orientation = 'horizontal',
 	renderCurrentTimeIndicator,
 	hideNonBusinessHours = false,
+	hiddenHeaderButtons,
 }) => {
 	// Resource-specific state
 	const [currentResources] = useState<Resource[]>(resources)
@@ -280,6 +283,7 @@ export const ResourceCalendarProvider: React.FC<
 			orientation,
 			renderCurrentTimeIndicator,
 			hideNonBusinessHours,
+			hiddenHeaderButtons: hiddenHeaderButtons,
 		}),
 		[
 			calendarEngine,
@@ -317,6 +321,7 @@ export const ResourceCalendarProvider: React.FC<
 			orientation,
 			renderCurrentTimeIndicator,
 			hideNonBusinessHours,
+			hiddenHeaderButtons,
 		]
 	)
 

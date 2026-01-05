@@ -15,6 +15,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select'
+import type { HiddenHeaderButtons } from '@/features/calendar/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import type { CalendarView, TimeFormat } from '@/types'
 import { ModeToggle } from './mode-toggle'
@@ -68,6 +69,10 @@ interface DemoCalendarSettingsProps {
 	setBusinessStartTime: (value: number) => void
 	businessEndTime: number
 	setBusinessEndTime: (value: number) => void
+	hiddenHeaderButtons: HiddenHeaderButtons
+	setHiddenHeaderButtons: React.Dispatch<
+		React.SetStateAction<HiddenHeaderButtons>
+	>
 }
 
 export function DemoCalendarSettings({
@@ -115,6 +120,8 @@ export function DemoCalendarSettings({
 	setBusinessStartTime,
 	businessEndTime,
 	setBusinessEndTime,
+	hiddenHeaderButtons,
+	setHiddenHeaderButtons,
 }: DemoCalendarSettingsProps) {
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -449,7 +456,7 @@ export function DemoCalendarSettings({
 						}
 					/>
 					<label
-						className="text-sm font-medium leading-none cursor-pointer"
+						className="text-sm text-left font-medium leading-none cursor-pointer"
 						htmlFor="customRenderer"
 					>
 						Use custom event renderer
@@ -464,7 +471,7 @@ export function DemoCalendarSettings({
 						}
 					/>
 					<label
-						className="text-sm font-medium leading-none cursor-pointer"
+						className="text-sm text-left font-medium leading-none cursor-pointer"
 						htmlFor="customTimeIndicator"
 					>
 						Use custom time indicator
@@ -480,7 +487,7 @@ export function DemoCalendarSettings({
 						}
 					/>
 					<label
-						className="text-sm font-medium leading-none cursor-pointer"
+						className="text-sm text-left font-medium leading-none cursor-pointer"
 						htmlFor="useCustomOnDateClick"
 					>
 						Use custom onCellClick handler
@@ -495,7 +502,7 @@ export function DemoCalendarSettings({
 						}
 					/>
 					<label
-						className="text-sm font-medium leading-none cursor-pointer"
+						className="text-sm text-left font-medium leading-none cursor-pointer"
 						htmlFor="useCustomOnEventClick"
 					>
 						Use custom onEventClick handler
@@ -508,7 +515,7 @@ export function DemoCalendarSettings({
 						onCheckedChange={() => setDisableCellClick(!disableCellClick)}
 					/>
 					<label
-						className="text-sm font-medium leading-none cursor-pointer"
+						className="text-sm text-left font-medium leading-none cursor-pointer"
 						htmlFor="disableCellClick"
 					>
 						Disable cell clicks
@@ -521,7 +528,7 @@ export function DemoCalendarSettings({
 						onCheckedChange={() => setDisableEventClick(!disableEventClick)}
 					/>
 					<label
-						className="text-sm font-medium leading-none cursor-pointer"
+						className="text-sm text-left font-medium leading-none cursor-pointer"
 						htmlFor="disableEventClick"
 					>
 						Disable event clicks
@@ -534,7 +541,7 @@ export function DemoCalendarSettings({
 						onCheckedChange={() => setDisableDragAndDrop(!disableDragAndDrop)}
 					/>
 					<label
-						className="text-sm font-medium leading-none cursor-pointer"
+						className="text-sm text-left font-medium leading-none cursor-pointer"
 						htmlFor="disableDragAndDrop"
 					>
 						Disable drag & drop
@@ -547,10 +554,68 @@ export function DemoCalendarSettings({
 						onCheckedChange={() => setUseCustomClasses(!useCustomClasses)}
 					/>
 					<label
-						className="text-sm font-medium leading-none cursor-pointer"
+						className="text-sm text-left font-medium leading-none cursor-pointer"
 						htmlFor="useCustomClasses"
 					>
 						Use custom disabled cell styles
+					</label>
+				</div>
+				<div className="h-px bg-gray-200 dark:bg-gray-800 my-4"></div>
+				<div className="text-sm text-left font-medium mb-1">
+					Header Settings
+				</div>
+				<div className="flex items-center space-x-2">
+					<Checkbox
+						checked={hiddenHeaderButtons.export}
+						id="hideHeaderButtonsExport"
+						onCheckedChange={() =>
+							setHiddenHeaderButtons({
+								...hiddenHeaderButtons,
+								export: !hiddenHeaderButtons.export,
+							})
+						}
+					/>
+					<label
+						className="text-sm text-left font-medium leading-none cursor-pointer"
+						htmlFor="hideHeaderButtonsExport"
+					>
+						Hide export button
+					</label>
+				</div>
+				<div className="flex items-center space-x-2">
+					<Checkbox
+						checked={hiddenHeaderButtons.newEvent}
+						id="hideHeaderButtonsNewEvent"
+						onCheckedChange={() =>
+							setHiddenHeaderButtons({
+								...hiddenHeaderButtons,
+								newEvent: !hiddenHeaderButtons.newEvent,
+							})
+						}
+					/>
+					<label
+						className="text-sm text-left font-medium leading-none cursor-pointer"
+						htmlFor="hideHeaderButtonsNewEvent"
+					>
+						Hide new event button
+					</label>
+				</div>
+				<div className="flex items-center space-x-2">
+					<Checkbox
+						checked={hiddenHeaderButtons.viewControls}
+						id="hideHeaderButtonsViewControls"
+						onCheckedChange={() =>
+							setHiddenHeaderButtons({
+								...hiddenHeaderButtons,
+								viewControls: !hiddenHeaderButtons.viewControls,
+							})
+						}
+					/>
+					<label
+						className="text-sm text-left font-medium leading-none cursor-pointer"
+						htmlFor="hideHeaderButtonsViewControls"
+					>
+						Hide view controls button
 					</label>
 				</div>
 			</CardContent>

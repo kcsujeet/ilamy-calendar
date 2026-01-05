@@ -10,7 +10,6 @@ import { useResourceCalendarContext } from '@/features/resource-calendar/context
 
 export const ResourceCalendarBody: React.FC = () => {
 	const { view } = useResourceCalendarContext()
-
 	const viewMap = {
 		month: <ResourceMonthView key="month" />,
 		week: <ResourceWeekView key="week" />,

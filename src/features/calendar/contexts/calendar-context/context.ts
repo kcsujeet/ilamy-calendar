@@ -4,6 +4,7 @@ import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type {
 	CalendarClassesOverride,
 	CellClickInfo,
+	HiddenHeaderButtons,
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
@@ -68,6 +69,7 @@ export interface CalendarContextType {
 		props: RenderCurrentTimeIndicatorProps
 	) => React.ReactNode
 	hideNonBusinessHours?: boolean
+	hiddenHeaderButtons?: HiddenHeaderButtons
 }
 
 export const CalendarContext: React.Context<CalendarContextType | undefined> =

@@ -21,6 +21,19 @@ export interface CalendarClassesOverride {
 }
 
 /**
+ * Configuration for hiding header buttons in the calendar.
+ * Allows users to selectively hide export, new event, and view control buttons.
+ */
+export interface HiddenHeaderButtons {
+	/** Whether to hide the export button */
+	export?: boolean
+	/** Whether to hide the new event button */
+	newEvent?: boolean
+	/** Whether to hide the view controls button */
+	viewControls?: boolean
+}
+
+/**
  * This interface extends the base CalendarEvent but allows more flexible date types
  * for the start and end properties. The component will automatically convert these
  * to dayjs objects internally for consistent date handling.
@@ -258,4 +271,10 @@ export interface IlamyCalendarProps {
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
 	) => React.ReactNode
+
+	/**
+	 * Configuration for hiding header buttons in the calendar.
+	 * Allows users to selectively hide export, new event, and view control buttons.
+	 */
+	hiddenHeaderButtons?: HiddenHeaderButtons
 }

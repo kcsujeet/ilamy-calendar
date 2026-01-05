@@ -6,6 +6,7 @@ import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type {
 	CalendarClassesOverride,
 	CellClickInfo,
+	HiddenHeaderButtons,
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
@@ -51,6 +52,7 @@ export interface CalendarProviderProps {
 		props: RenderCurrentTimeIndicatorProps
 	) => ReactNode
 	hideNonBusinessHours?: boolean
+	hiddenHeaderButtons?: HiddenHeaderButtons
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -86,6 +88,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	classesOverride,
 	renderCurrentTimeIndicator,
 	hideNonBusinessHours = false,
+	hiddenHeaderButtons,
 }) => {
 	// Use the calendar engine
 	const calendarEngine = useCalendarEngine({
@@ -191,6 +194,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			classesOverride,
 			renderCurrentTimeIndicator,
 			hideNonBusinessHours,
+			hiddenHeaderButtons,
 		}),
 		[
 			calendarEngine,
@@ -214,6 +218,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			classesOverride,
 			renderCurrentTimeIndicator,
 			hideNonBusinessHours,
+			hiddenHeaderButtons,
 		]
 	)
 

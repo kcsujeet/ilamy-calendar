@@ -69,6 +69,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	viewHeaderClassName = '',
 	timeFormat = '12-hour',
 	hideNonBusinessHours = false,
+	hiddenHeaderButtons,
 	...props
 }) => {
 	return (
@@ -77,6 +78,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			eventSpacing={eventSpacing}
 			events={normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events)}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
+			hiddenHeaderButtons={hiddenHeaderButtons}
 			hideNonBusinessHours={hideNonBusinessHours}
 			initialDate={safeDate(initialDate)}
 			initialView={initialView}

@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, useState } from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { Button } from '@/components/ui/button'
 import {
 	Popover,
@@ -26,12 +26,6 @@ const MONTH_KEYS = [
 	'november',
 	'december',
 ] as const
-
-const animation = {
-	initial: { opacity: 0, y: 10 },
-	animate: { opacity: 1, y: 0 },
-	exit: { opacity: 0, y: -10 },
-}
 
 const TitleContent = () => {
 	const { currentDate, view, setCurrentDate, t, firstDayOfWeek } =
@@ -200,19 +194,13 @@ const TitleContent = () => {
 						data-testid="calendar-month-button"
 						variant="ghost"
 					>
-						<AnimatePresence mode="wait">
-							<motion.span
-								animate="animate"
-								data-testid="calendar-month-display"
-								exit="exit"
-								initial="initial"
-								key={`${popover.id}-${currentDate.format('YYYY-MM-DD')}`}
-								transition={{ duration: 0.25, ease: 'easeInOut' }}
-								variants={animation}
-							>
-								{popover.title}
-							</motion.span>
-						</AnimatePresence>
+						<AnimatedSection
+							className="flex items-center gap-1 px-1! font-semibold"
+							data-testid="calendar-month-button"
+							transitionKey={`${popover.id}-${currentDate.format('YYYY-MM-DD')}`}
+						>
+							{popover.title}
+						</AnimatedSection>
 						<ChevronDown className="h-4 w-4" />
 					</Button>
 				</PopoverTrigger>

@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import dayjs from '@/lib/configs/dayjs-config'
@@ -139,38 +139,30 @@ const YearView = () => {
 							data-testid={`year-month-${month.monthKey}`}
 							key={month.monthKey}
 						>
-							<AnimatePresence mode="wait">
-								<motion.div
-									animate={{ opacity: 1, y: 0 }}
-									className="mb-2 flex items-center justify-between"
-									exit={{ opacity: 0, y: -10 }}
-									initial={{ opacity: 0, y: -10 }}
-									key={`month-${monthIndex}`}
-									transition={{
-										duration: 0.25,
-										ease: 'easeInOut',
-										delay: animationDelay,
-									}}
+							<AnimatedSection
+								className="mb-2 flex items-center justify-between"
+								delay={animationDelay}
+								key={`month-${monthIndex}`}
+								transitionKey={`month-${monthIndex}`}
+							>
+								<button
+									className="text-lg font-medium hover:underline cursor-pointer"
+									data-testid={`year-month-title-${month.monthKey}`}
+									onClick={() => navigateToDate(month.date, 'month')}
+									type="button"
 								>
-									<button
-										className="text-lg font-medium hover:underline cursor-pointer"
-										data-testid={`year-month-title-${month.monthKey}`}
-										onClick={() => navigateToDate(month.date, 'month')}
-										type="button"
-									>
-										{month.name}
-									</button>
+									{month.name}
+								</button>
 
-									{month.eventCount > 0 && (
-										<span
-											className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs"
-											data-testid={`year-month-event-count-${month.monthKey}`}
-										>
-											{getEventCountLabel(month.eventCount)}
-										</span>
-									)}
-								</motion.div>
-							</AnimatePresence>
+								{month.eventCount > 0 && (
+									<span
+										className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs"
+										data-testid={`year-month-event-count-${month.monthKey}`}
+									>
+										{getEventCountLabel(month.eventCount)}
+									</span>
+								)}
+							</AnimatedSection>
 
 							<div
 								className="grid grid-cols-7 gap-[1px] text-[0.6rem]"

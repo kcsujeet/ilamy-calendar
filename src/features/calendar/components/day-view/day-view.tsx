@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from 'motion/react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
@@ -63,29 +63,23 @@ const DayView = () => {
 				className={'flex h-full flex-1 justify-center items-center'}
 				data-testid="day-view-header"
 			>
-				<AnimatePresence mode="wait">
-					<motion.div
-						animate={{ opacity: 1, y: 0 }}
-						className={cn(
-							'flex justify-center items-center text-center text-base font-semibold sm:text-xl',
-							isToday && 'text-primary'
-						)}
-						exit={{ opacity: 0, y: -10 }}
-						initial={{ opacity: 0, y: -10 }}
-						key={currentDate.format('YYYY-MM-DD')}
-						transition={{ duration: 0.25, ease: 'easeInOut' }}
-					>
-						<span className="xs:inline hidden">
-							{currentDate.format('dddd, ')}
+				<AnimatedSection
+					className={cn(
+						'flex justify-center items-center text-center text-base font-semibold sm:text-xl',
+						isToday && 'text-primary'
+					)}
+					transitionKey={currentDate.format('YYYY-MM-DD')}
+				>
+					<span className="xs:inline hidden">
+						{currentDate.format('dddd, ')}
+					</span>
+					{currentDate.format('MMMM D, YYYY')}
+					{isToday && (
+						<span className="bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm">
+							{t('today')}
 						</span>
-						{currentDate.format('MMMM D, YYYY')}
-						{isToday && (
-							<span className="bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm">
-								{t('today')}
-							</span>
-						)}
-					</motion.div>
-				</AnimatePresence>
+					)}
+				</AnimatedSection>
 			</div>
 		</VerticalGrid>
 	)

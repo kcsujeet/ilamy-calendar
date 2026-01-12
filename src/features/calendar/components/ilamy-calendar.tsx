@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import { EventFormDialog } from '@/components/event-form/event-form-dialog'
 import { Header } from '@/components/header'
@@ -38,20 +38,15 @@ const CalendarContent: React.FC = () => {
 			<Header className="p-1" />
 			{/* Calendar Body with AnimatePresence for view transitions */}
 			<CalendarDndContext>
-				<AnimatePresence mode="wait">
-					<motion.div
-						animate={{ opacity: 1, x: 0 }}
-						className="w-full h-[calc(100%-3.5rem)]"
-						exit={{ opacity: 0, x: -20 }}
-						initial={{ opacity: 0, x: 20 }}
-						key={view}
-						transition={{ duration: 0.1, ease: 'easeInOut' }}
-					>
-						<div className="border h-full w-full" data-testid="calendar-body">
-							{viewMap[view]}
-						</div>
-					</motion.div>
-				</AnimatePresence>
+				<AnimatedSection
+					className="w-full h-[calc(100%-3.5rem)]"
+					direction="horizontal"
+					transitionKey={view}
+				>
+					<div className="border h-full w-full" data-testid="calendar-body">
+						{viewMap[view]}
+					</div>
+				</AnimatedSection>
 			</CalendarDndContext>
 			<EventFormDialog />
 		</div>

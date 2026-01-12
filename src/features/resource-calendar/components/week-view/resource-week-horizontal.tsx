@@ -1,6 +1,6 @@
-import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
 import { useMemo } from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
@@ -58,30 +58,23 @@ export const ResourceWeekHorizontal: React.FC = () => {
 						const key = `resource-week-header-${day.toISOString()}-day`
 
 						return (
-							<AnimatePresence key={`${key}-presence`} mode="wait">
-								<motion.div
-									animate={{ opacity: 1, y: 0 }}
-									className={cn(
-										'shrink-0 border-r last:border-r-0 border-b flex-1 flex items-center text-center font-medium',
-										isToday && 'bg-blue-50 text-blue-600'
-									)}
-									data-testid="resource-week-day-header"
-									exit={{ opacity: 0, y: -10 }}
-									initial={{ opacity: 0, y: -10 }}
-									key={`${key}-motion`}
-									transition={{
-										duration: 0.2,
-										ease: 'easeInOut',
-									}}
-								>
-									<div className="sticky left-1/2">
-										<div className="text-sm">{day.format('ddd')}</div>
-										<div className="text-xs text-muted-foreground">
-											{day.format('M/D')}
-										</div>
+							<AnimatedSection
+								className={cn(
+									'shrink-0 border-r last:border-r-0 border-b flex-1 flex items-center text-center font-medium',
+									isToday && 'bg-blue-50 text-blue-600'
+								)}
+								data-testid="resource-week-day-header"
+								delay={index * 0.05}
+								key={`${key}-animated`}
+								transitionKey={`${key}-motion`}
+							>
+								<div className="sticky left-1/2">
+									<div className="text-sm">{day.format('ddd')}</div>
+									<div className="text-xs text-muted-foreground">
+										{day.format('M/D')}
 									</div>
-								</motion.div>
-							</AnimatePresence>
+								</div>
+							</AnimatedSection>
 						)
 					})}
 				</div>
@@ -93,28 +86,21 @@ export const ResourceWeekHorizontal: React.FC = () => {
 						const key = `resource-week-header-${col.toISOString()}-hour`
 
 						return (
-							<AnimatePresence key={`${key}-presence`} mode="wait">
-								<motion.div
-									animate={{ opacity: 1, y: 0 }}
-									className={cn(
-										'min-w-20 flex-1 border-r flex items-center justify-center text-xs shrink-0',
-										isNowHour && 'bg-blue-50 text-blue-600 font-medium'
-									)}
-									data-testid={`resource-week-time-label-${col.format('HH')}`}
-									exit={{ opacity: 0, y: -10 }}
-									initial={{ opacity: 0, y: -10 }}
-									key={`${key}-motion`}
-									transition={{
-										duration: 0.2,
-										ease: 'easeInOut',
-									}}
-								>
-									{Intl.DateTimeFormat(currentLocale, {
-										hour: 'numeric',
-										hour12: timeFormat === '12-hour',
-									}).format(col.toDate())}
-								</motion.div>
-							</AnimatePresence>
+							<AnimatedSection
+								className={cn(
+									'min-w-20 flex-1 border-r flex items-center justify-center text-xs shrink-0',
+									isNowHour && 'bg-blue-50 text-blue-600 font-medium'
+								)}
+								data-testid={`resource-week-time-label-${col.format('HH')}`}
+								delay={index * 0.005}
+								key={`${key}-animated`}
+								transitionKey={`${key}-motion`}
+							>
+								{Intl.DateTimeFormat(currentLocale, {
+									hour: 'numeric',
+									hour12: timeFormat === '12-hour',
+								}).format(col.toDate())}
+							</AnimatedSection>
 						)
 					})}
 				</div>

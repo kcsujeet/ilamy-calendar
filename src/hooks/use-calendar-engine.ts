@@ -238,21 +238,22 @@ export const useCalendarEngine = (
 		[onEventAdd]
 	)
 
-  const updateEvent = useCallback(
-    (eventId: string | number, updates: Partial<CalendarEvent>) => {
-      const index = currentEvents.findIndex((e) => e.id === eventId)
-      if (index !== -1) {
-        const eventToUpdate = currentEvents[index]
-        const newEvent = { ...eventToUpdate, ...updates }
-        onEventUpdate?.(newEvent)
-        setCurrentEvents([...currentEvents.slice(0, index),
-          newEvent,
-          ...currentEvents.slice(index + 1)])
-      }
-
-    },
-    [currentEvents, onEventUpdate],
-  )
+	const updateEvent = useCallback(
+		(eventId: string | number, updates: Partial<CalendarEvent>) => {
+			const index = currentEvents.findIndex((e) => e.id === eventId)
+			if (index !== -1) {
+				const eventToUpdate = currentEvents[index]
+				const newEvent = { ...eventToUpdate, ...updates }
+				onEventUpdate?.(newEvent)
+				setCurrentEvents([
+					...currentEvents.slice(0, index),
+					newEvent,
+					...currentEvents.slice(index + 1),
+				])
+			}
+		},
+		[currentEvents, onEventUpdate]
+	)
 
 	const updateRecurringEvent = useCallback(
 		(
@@ -287,18 +288,18 @@ export const useCalendarEngine = (
 		[currentEvents, onEventDelete]
 	)
 
-  const deleteEvent = useCallback(
-    (eventId: string | number) => {
-      const eventToDelete = currentEvents.find((e) => e.id === eventId)
-      if (eventToDelete) {
-        const calendarEvents = currentEvents.filter((e) => e.id !== eventId)
-        //fire event before changing state (historic)
-        onEventDelete?.(eventToDelete)
-        setCurrentEvents(calendarEvents)
-      }
-    },
-    [currentEvents, onEventDelete],
-  )
+	const deleteEvent = useCallback(
+		(eventId: string | number) => {
+			const eventToDelete = currentEvents.find((e) => e.id === eventId)
+			if (eventToDelete) {
+				const calendarEvents = currentEvents.filter((e) => e.id !== eventId)
+				//fire event before changing state (historic)
+				onEventDelete?.(eventToDelete)
+				setCurrentEvents(calendarEvents)
+			}
+		},
+		[currentEvents, onEventDelete]
+	)
 
 	const openEventForm = useCallback(
 		(eventData?: Partial<CalendarEvent>) => {

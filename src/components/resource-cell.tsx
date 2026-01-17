@@ -1,3 +1,4 @@
+import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type { Resource } from '@/features/resource-calendar/types'
 import { cn } from '@/lib/utils'
 
@@ -11,11 +12,12 @@ interface ResourceCellProps {
 
 export const ResourceCell: React.FC<ResourceCellProps> = ({
 	resource,
-	renderResource,
 	className,
 	children,
 	'data-testid': dataTestId,
 }) => {
+	const { renderResource } = useResourceCalendarContext()
+
 	return (
 		<div
 			className={cn(
@@ -31,7 +33,7 @@ export const ResourceCell: React.FC<ResourceCellProps> = ({
 			{renderResource
 				? renderResource(resource)
 				: (children ?? (
-						<div className="ext-sm font-medium truncate">{resource.title}</div>
+						<div className="text-sm font-medium truncate">{resource.title}</div>
 					))}
 		</div>
 	)

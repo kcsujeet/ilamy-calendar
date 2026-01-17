@@ -85,7 +85,11 @@ export const ResourceDayVertical: React.FC = () => {
 						className="min-w-50 flex-1"
 						key={`resource-cell-${resource.id}`}
 						resource={resource}
-					/>
+					>
+						<div className="text-sm font-medium truncate">
+							{resource?.title}
+						</div>
+					</ResourceCell>
 				))}
 			</div>
 		</VerticalGrid>

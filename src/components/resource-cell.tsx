@@ -2,6 +2,7 @@ import type { Resource } from '@/features/resource-calendar/types'
 import { cn } from '@/lib/utils'
 
 interface ResourceCellProps {
+	renderResource?: (resource: Resource) => React.ReactNode
 	resource: Resource
 	className?: string
 	children?: React.ReactNode
@@ -10,6 +11,7 @@ interface ResourceCellProps {
 
 export const ResourceCell: React.FC<ResourceCellProps> = ({
 	resource,
+	renderResource,
 	className,
 	children,
 	'data-testid': dataTestId,
@@ -26,9 +28,11 @@ export const ResourceCell: React.FC<ResourceCellProps> = ({
 				backgroundColor: resource.backgroundColor,
 			}}
 		>
-			{children ?? (
-				<div className="text-sm font-medium truncate">{resource.title}</div>
-			)}
+			{renderResource
+				? renderResource(resource)
+				: (children ?? (
+						<div className="ext-sm font-medium truncate">{resource.title}</div>
+					))}
 		</div>
 	)
 }

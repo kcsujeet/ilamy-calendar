@@ -21,6 +21,7 @@ export const ResourceWeekVertical: React.FC = () => {
 		t,
 		businessHours,
 		hideNonBusinessHours,
+		renderResource,
 	} = useResourceCalendarContext()
 
 	const resources = getVisibleResources()
@@ -61,6 +62,10 @@ export const ResourceWeekVertical: React.FC = () => {
 		}),
 		[hours, currentLocale, timeFormat]
 	)
+
+	//const { renderResource } = user((state) => ({
+	//	renderResource: state.renderResource,
+	//}))
 
 	const columns = useMemo(
 		() =>
@@ -128,10 +133,11 @@ export const ResourceWeekVertical: React.FC = () => {
 								>
 									<ResourceCell
 										className="h-full w-full flex-1"
+										renderResource={renderResource}
 										resource={resource}
 									>
 										<div className="sticky left-1/2 text-sm font-medium truncate">
-											{resource.title}
+											{resource?.title}
 										</div>
 									</ResourceCell>
 								</motion.div>

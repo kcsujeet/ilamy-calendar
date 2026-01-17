@@ -15,6 +15,7 @@ export const ResourceDayVertical: React.FC = () => {
 		timeFormat,
 		businessHours,
 		hideNonBusinessHours,
+		renderResource,
 	} = useResourceCalendarContext()
 
 	const resources = getVisibleResources()
@@ -84,8 +85,11 @@ export const ResourceDayVertical: React.FC = () => {
 					<ResourceCell
 						className="min-w-50 flex-1"
 						key={`resource-cell-${resource.id}`}
+						renderResource={renderResource}
 						resource={resource}
-					/>
+					>
+						<div className="ext-sm font-medium truncate">{resource?.title}</div>
+					</ResourceCell>
 				))}
 			</div>
 		</VerticalGrid>

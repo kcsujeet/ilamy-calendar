@@ -5,7 +5,8 @@ import { useResourceCalendarContext } from '@/features/resource-calendar/context
 import type dayjs from '@/lib/configs/dayjs-config'
 
 export const ResourceMonthVertical: React.FC = () => {
-	const { currentDate, getVisibleResources } = useResourceCalendarContext()
+	const { currentDate, getVisibleResources, renderResource } =
+		useResourceCalendarContext()
 
 	const resources = getVisibleResources()
 	const startOfMonth = currentDate.startOf('month')
@@ -54,6 +55,7 @@ export const ResourceMonthVertical: React.FC = () => {
 					<ResourceCell
 						className="min-w-50 flex-1"
 						key={`resource-cell-${resource.id}`}
+						renderResource={renderResource}
 						resource={resource}
 					/>
 				))}

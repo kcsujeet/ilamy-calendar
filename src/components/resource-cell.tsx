@@ -3,7 +3,6 @@ import type { Resource } from '@/features/resource-calendar/types'
 import { cn } from '@/lib/utils'
 
 interface ResourceCellProps {
-	renderResource?: (resource: Resource) => React.ReactNode
 	resource: Resource
 	className?: string
 	children?: React.ReactNode

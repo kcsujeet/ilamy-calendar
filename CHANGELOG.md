@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.3.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.0...v1.3.1)
+
+> 20 January 2026
+
+##### Features
+
+- feat: standardize animations with `AnimatedSection` component and remove unused dependencies [`#60`](https://github.com/kcsujeet/ilamy-calendar/pull/60)
+
+##### Fixes
+
+- fix: resolve vertical resource grid cell rendering [`#68`](https://github.com/kcsujeet/ilamy-calendar/pull/68) - Thanks [@sfradel](https://github.com/sfradel)!
+- fix: export `BusinessHours` type from main entry point [`#69`](https://github.com/kcsujeet/ilamy-calendar/pull/69)
+
 #### [v1.3.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.2.3...v1.3.0)
 
 > 4 January 2026

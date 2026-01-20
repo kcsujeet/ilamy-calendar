@@ -11,7 +11,7 @@ export {
 	isRecurringEvent,
 } from '@/features/recurrence/utils/recurrence-handler'
 export type { EventFormProps } from './components/event-form/event-form'
-export type { CalendarEvent, WeekDays } from './components/types'
+export type { BusinessHours, CalendarEvent, WeekDays } from './components/types'
 export { IlamyCalendar } from './features/calendar/components/ilamy-calendar'
 export type { UseIlamyCalendarContextReturn } from './features/calendar/contexts/calendar-context/context'
 // Public calendar context hooks

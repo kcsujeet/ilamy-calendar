@@ -131,7 +131,7 @@ export const ResourceWeekVertical: React.FC = () => {
 										resource={resource}
 									>
 										<div className="sticky left-1/2 text-sm font-medium truncate">
-											{resource.title}
+											{resource?.title}
 										</div>
 									</ResourceCell>
 								</motion.div>

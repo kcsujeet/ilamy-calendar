@@ -1,6 +1,6 @@
-import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
 import { useMemo } from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
@@ -24,25 +24,17 @@ export const ResourceMonthHorizontal: React.FC = () => {
 				const key = `resource-month-header-${day.toISOString()}`
 
 				return (
-					<AnimatePresence key={`${key}-presence`} mode="wait">
-						<motion.div
-							animate={{ opacity: 1, y: 0 }}
-							className="w-20 border-b border-r shrink-0 flex items-center justify-center flex-col"
-							exit={{ opacity: 0, y: -10 }}
-							initial={{ opacity: 0, y: -10 }}
-							key={`${key}-motion`}
-							transition={{
-								duration: 0.25,
-								ease: 'easeInOut',
-								delay: index * 0.05,
-							}}
-						>
-							<div className="text-xs font-medium">{day.format('D')}</div>
-							<div className="text-xs text-muted-foreground">
-								{day.format('ddd')}
-							</div>
-						</motion.div>
-					</AnimatePresence>
+					<AnimatedSection
+						className="w-20 border-b border-r shrink-0 flex items-center justify-center flex-col"
+						delay={index * 0.05}
+						key={`${key}-animated`}
+						transitionKey={`${key}-motion`}
+					>
+						<div className="text-xs font-medium">{day.format('D')}</div>
+						<div className="text-xs text-muted-foreground">
+							{day.format('ddd')}
+						</div>
+					</AnimatedSection>
 				)
 			})}
 		</ResourceEventGrid>

@@ -1,8 +1,8 @@
-import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
 import { useMemo } from 'react'
 import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
@@ -111,31 +111,23 @@ export const ResourceWeekVertical: React.FC = () => {
 						const key = `resource-week-header-${resource.id}-day`
 
 						return (
-							<AnimatePresence key={`${key}-presence`} mode="wait">
-								<motion.div
-									animate={{ opacity: 1, y: 0 }}
-									className={cn(
-										'shrink-0 border-r last:border-r-0 border-b flex items-center text-center font-medium w-[calc(7*var(--spacing)*50)]'
-									)}
-									exit={{ opacity: 0, y: -10 }}
-									initial={{ opacity: 0, y: -10 }}
-									key={`${key}-motion`}
-									transition={{
-										duration: 0.25,
-										ease: 'easeInOut',
-										delay: index * 0.05,
-									}}
+							<AnimatedSection
+								className={cn(
+									'shrink-0 border-r last:border-r-0 border-b flex items-center text-center font-medium w-[calc(7*var(--spacing)*50)]'
+								)}
+								delay={index * 0.05}
+								key={`${key}-animated`}
+								transitionKey={`${key}-motion`}
+							>
+								<ResourceCell
+									className="h-full w-full flex-1"
+									resource={resource}
 								>
-									<ResourceCell
-										className="h-full w-full flex-1"
-										resource={resource}
-									>
-										<div className="sticky left-1/2 text-sm font-medium truncate">
-											{resource?.title}
-										</div>
-									</ResourceCell>
-								</motion.div>
-							</AnimatePresence>
+									<div className="sticky left-1/2 text-sm font-medium truncate">
+										{resource.title}
+									</div>
+								</ResourceCell>
+							</AnimatedSection>
 						)
 					})}
 				</div>
@@ -152,28 +144,20 @@ export const ResourceWeekVertical: React.FC = () => {
 						const key = `resource-week-header-${day.toISOString()}-hour-${col.resourceId}`
 
 						return (
-							<AnimatePresence key={`${key}-presence`} mode="wait">
-								<motion.div
-									animate={{ opacity: 1, y: 0 }}
-									className={cn(
-										'w-50 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
-									)}
-									data-testid={`resource-week-time-label-${day.format('HH')}`}
-									exit={{ opacity: 0, y: -10 }}
-									initial={{ opacity: 0, y: -10 }}
-									key={`${key}-motion`}
-									transition={{
-										duration: 0.25,
-										ease: 'easeInOut',
-										delay: index * 0.05,
-									}}
-								>
-									<div className="text-sm">{day.format('ddd')}</div>
-									<div className="text-xs text-muted-foreground">
-										{day.format('M/D')}
-									</div>
-								</motion.div>
-							</AnimatePresence>
+							<AnimatedSection
+								className={cn(
+									'w-50 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
+								)}
+								data-testid={`resource-week-time-label-${day.format('HH')}`}
+								delay={index * 0.05}
+								key={`${key}-animated`}
+								transitionKey={`${key}-motion`}
+							>
+								<div className="text-sm">{day.format('ddd')}</div>
+								<div className="text-xs text-muted-foreground">
+									{day.format('M/D')}
+								</div>
+							</AnimatedSection>
 						)
 					})}
 				</div>

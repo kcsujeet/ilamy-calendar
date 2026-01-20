@@ -1,7 +1,7 @@
-import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
 import { useMemo } from 'react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
@@ -100,39 +100,32 @@ const WeekView: React.FC = () => {
 					const key = `week-day-header-${day.toISOString()}`
 
 					return (
-						<AnimatePresence key={key} mode="wait">
-							<motion.div
-								animate={{ opacity: 1, y: 0 }}
+						<AnimatedSection
+							className={cn(
+								'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-50 h-full',
+								isToday && 'bg-primary/10 font-bold'
+							)}
+							data-testid={`week-day-header-${day.format('dddd').toLowerCase()}`}
+							delay={index * 0.05}
+							key={key}
+							onClick={() => {
+								selectDate(day)
+								openEventForm({ start: day })
+							}}
+							transitionKey={key}
+						>
+							<div className="text-xs sm:text-sm">{day.format('ddd')}</div>
+							<div
 								className={cn(
-									'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-50 h-full',
-									isToday && 'bg-primary/10 font-bold'
+									'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
+									isToday && 'bg-primary text-primary-foreground'
 								)}
-								data-testid={`week-day-header-${day.format('dddd').toLowerCase()}`}
-								exit={{ opacity: 0, y: -10 }}
-								initial={{ opacity: 0, y: -10 }}
-								onClick={() => {
-									selectDate(day)
-									openEventForm({ start: day })
-								}}
-								transition={{
-									duration: 0.25,
-									ease: 'easeInOut',
-									delay: index * 0.05,
-								}}
 							>
-								<div className="text-xs sm:text-sm">{day.format('ddd')}</div>
-								<div
-									className={cn(
-										'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
-										isToday && 'bg-primary text-primary-foreground'
-									)}
-								>
-									{Intl.DateTimeFormat(currentLocale, {
-										day: 'numeric',
-									}).format(day.toDate())}
-								</div>
-							</motion.div>
-						</AnimatePresence>
+								{Intl.DateTimeFormat(currentLocale, {
+									day: 'numeric',
+								}).format(day.toDate())}
+							</div>
+						</AnimatedSection>
 					)
 				})}
 			</div>

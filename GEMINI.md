@@ -28,11 +28,6 @@ It features standard calendar views (Month, Week, Day, Year) and a Resource Cale
 ### Recurring Events
 - **RFC 5545**: Strictly adhered to.
 - **Storage**: `rrule` object + `exdates` array.
-- **Timezone Handling (Floating Time)**:
-  - Human-scheduled recurring events (e.g., "Every Wednesday at 4 PM") are evaluated in **Floating Time**.
-  - **Pattern**: Dates are converted to a "floating" UTC representation (preserving local year/month/day/hour) before RRule processing, then mapped back to the user's local timezone.
-  - **Reason**: Ensures events stay on the correct local day regardless of UTC day shifts (important for evening events in negative offsets like PST).
-  - **Implementation**: See `generateRecurringEvents` in `recurrence-handler.ts`.
 
 ### Test IDs
 - **Convention**: Use hardcoded `data-testid` attributes in components.
@@ -74,7 +69,5 @@ Use `let` variables for mock functions or test data that need to be captured or 
 
 ## Memory Bank
 - **User Preference**: The user prefers strict adherence to `CLAUDE.md` and explicitly asked to be consulted before commits.
-- **Recent Changes**: 
-  - Refactored `getPositionedDayEvents` to be adaptive to grid size and type.
-  - Implemented **Floating Time** evaluation for recurring events to fix timezone day-shift bugs.
+- **Recent Changes**: Refactored `getPositionedDayEvents` to be adaptive to grid size and type.
 

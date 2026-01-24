@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.3.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.1...v1.3.2)
+
+> 24 January 2026
+
+##### Fixes
+
+- fix: resolve recurring event timezone day-shift bug ([`#70`](https://github.com/kcsujeet/ilamy-calendar/issues/70))
+  - Implemented Floating Time evaluation for recurring events to ensure events stay on the correct local day regardless of UTC day boundaries.
+  - Added permanent test suite in `recurrence-timezone.test.ts` and updated demo seed data.
+
 #### [v1.3.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.0...v1.3.1)
 
 > 20 January 2026

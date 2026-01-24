@@ -4,6 +4,45 @@ import type { RRuleOptions } from '@/features/recurrence/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { omitKeys, safeDate } from '@/lib/utils'
 
+/**
+ * Converts a Dayjs object to a "Floating Time" Date representation.
+ * In Floating Time, we use a UTC Date object but set its UTC components
+ * to match the local components of the user's date.
+ *
+ * This is essential for RRule evaluation because it ensures that a rule
+ * like "Every Wednesday" refers to the user's local Wednesday, even if
+ * that time falls on a Thursday in actual UTC.
+ */
+const toFloatingDate = (d: dayjs.Dayjs): Date => {
+	return new Date(
+		Date.UTC(
+			d.year(),
+			d.month(),
+			d.date(),
+			d.hour(),
+			d.minute(),
+			d.second(),
+			d.millisecond()
+		)
+	)
+}
+
+/**
+ * Converts a "Floating Time" Date back to a Dayjs object in the original context.
+ * It takes the YMDHMS components from the UTC Date and applies them to the
+ * reference Dayjs object (preserving its timezone/locale).
+ */
+const fromFloatingDate = (date: Date, reference: dayjs.Dayjs): dayjs.Dayjs => {
+	return reference
+		.year(date.getUTCFullYear())
+		.month(date.getUTCMonth())
+		.date(date.getUTCDate())
+		.hour(date.getUTCHours())
+		.minute(date.getUTCMinutes())
+		.second(date.getUTCSeconds())
+		.millisecond(date.getUTCMilliseconds())
+}
+
 export const isRecurringEvent = (event: CalendarEvent): boolean => {
 	return Boolean(event.rrule || event.recurrenceId || event.uid)
 }
@@ -27,11 +66,18 @@ export const generateRecurringEvents = ({
 	}
 
 	try {
-		// Create rule from RRuleOptions ensuring dtstart is always provided
-		// If dtstart is missing from the RRULE, use the event's start time as fallback
+		// DTSTART and SEARCH WINDOW TRANSFORMATION
+		// Transform all dates to "floating time" (UTC with local components)
+		// This ensures RRule evaluates "Wednesday" as the user's local Wednesday
+		const floatingStart = toFloatingDate(event.start)
+		const floatingUntil = event.rrule.until
+			? toFloatingDate(dayjs(event.rrule.until))
+			: undefined
+
 		const ruleOptions: RRuleOptions = {
 			...event.rrule,
-			dtstart: event.rrule.dtstart || event.start.toDate(),
+			dtstart: floatingStart,
+			until: floatingUntil,
 		}
 		const rule = new RRule(ruleOptions)
 
@@ -44,10 +90,10 @@ export const generateRecurringEvents = ({
 
 		// Expand search window backward by event duration to catch events that start before
 		// the range but span into it
-		const expandedStartDateTime = startDate
-			.subtract(eventDuration, 'millisecond')
-			.toDate()
-		const endDateTime = endDate.toDate()
+		const expandedStartDateTime = toFloatingDate(
+			startDate.subtract(eventDuration, 'millisecond')
+		)
+		const endDateTime = toFloatingDate(endDate)
 
 		// Get all occurrences in the expanded range
 		const occurrences = rule.between(expandedStartDateTime, endDateTime, true)
@@ -55,7 +101,7 @@ export const generateRecurringEvents = ({
 		// Convert occurrences to CalendarEvent instances
 		const recurringEvents: CalendarEvent[] = occurrences
 			.map((occurrence, index) => {
-				const occurrenceDate = dayjs(occurrence)
+				const occurrenceDate = fromFloatingDate(occurrence, event.start)
 				const existingOverride = overrides.find((e) =>
 					safeDate(e.recurrenceId)?.isSame(occurrenceDate)
 				)

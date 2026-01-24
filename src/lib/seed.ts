@@ -172,6 +172,22 @@ const dummyEvents = [
 		},
 		exdates: [],
 	},
+	{
+		id: '21',
+		title: 'PST Evening Sync (UTC Boundary)',
+		description:
+			'Recurring Wednesday at 4 PM PST. This event crosses the UTC day boundary (00:00 UTC) but stays on Wednesday thanks to Floating Time.',
+		start: baseDate.add(1, 'week').day(3).hour(16).minute(0),
+		end: baseDate.add(1, 'week').day(3).hour(17).minute(0),
+		color: 'bg-indigo-200 text-indigo-900',
+		rrule: {
+			freq: RRule.WEEKLY,
+			interval: 1,
+			byweekday: [RRule.WE],
+			dtstart: baseDate.add(1, 'week').day(3).hour(16).minute(0).toDate(),
+		},
+		exdates: [],
+	},
 ]
 
 export default dummyEvents

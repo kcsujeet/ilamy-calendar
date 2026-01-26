@@ -21,6 +21,7 @@ export const defaultTranslations: Translations = {
 	startDate: 'Start Date',
 	endDate: 'End Date',
 	startTime: 'Start Time',
+	searchTime: 'Search time...',
 	endTime: 'End Time',
 	color: 'Color',
 

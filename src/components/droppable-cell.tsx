@@ -78,7 +78,8 @@ export function DroppableCell({
 	}
 
 	return (
-		// oxlint-disable-next-line click-events-have-key-events
+		// biome-ignore lint/a11y/noStaticElementInteractions: The cell is interactive for event creation
+		// biome-ignore lint/a11y/useKeyWithClickEvents: Key events are handled by parent components
 		<div
 			className={cn(
 				'droppable-cell',
@@ -87,6 +88,7 @@ export function DroppableCell({
 				disableCellClick || disabled ? 'cursor-default' : 'cursor-pointer',
 				disabled && (classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME)
 			)}
+			data-disabled={disabled.toString()}
 			data-testid={dataTestId}
 			onClick={handleCellClick}
 			ref={setNodeRef}

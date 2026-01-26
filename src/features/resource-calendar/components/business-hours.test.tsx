@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import type { WeekDays } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type { Resource } from '@/features/resource-calendar/types'
@@ -167,14 +167,13 @@ describe('Resource Calendar Business Hours Integration', () => {
 
 			// 2. Verify Precedence/Availability:
 			// Resource A at 17:00 should be disabled
-			const cellA17 = screen.getByTestId('day-cell-2025-01-01-17-00')
+			const rowA = screen.getByTestId('horizontal-row-A')
+			const cellA17 = within(rowA).getByTestId('day-cell-2025-01-01-17-00')
 			expect(cellA17.getAttribute('data-disabled')).toBe('true')
 
 			// Resource B at 17:00 should be enabled
-			// Note: The ID for resource cells includes the resource ID
-			const cellB17 = screen.getByTestId('day-cell-2025-01-01-17-00-resource-B')
-			// If it's enabled, data-disabled should be false or null (in this implementation it seems to be 'false')
-			// Let's check how DroppableCell sets it
+			const rowB = screen.getByTestId('horizontal-row-B')
+			const cellB17 = within(rowB).getByTestId('day-cell-2025-01-01-17-00')
 			expect(cellB17.getAttribute('data-disabled')).toBe('false')
 		})
 	})

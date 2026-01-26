@@ -33,7 +33,7 @@ export const getTimeConstraints = (
 	const { minStart, maxEnd, hasBusinessHours } = calculateBusinessHoursRange({
 		allDates: [dayjsDate],
 		businessHours,
-		hideNonBusinessHours: true,
+		hideNonBusinessHours: false,
 	})
 
 	if (!hasBusinessHours) {

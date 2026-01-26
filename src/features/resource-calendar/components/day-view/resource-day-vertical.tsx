@@ -1,7 +1,7 @@
-import type React from 'react'
 import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { ResourceCell } from '@/components/resource-cell'
+import type { BusinessHours } from '@/components/types'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
@@ -23,6 +23,9 @@ export const ResourceDayVertical: React.FC = () => {
 		businessHours,
 		hideNonBusinessHours,
 		allDates: [currentDate],
+		resourceBusinessHours: resources
+			.map((r) => r.businessHours)
+			.filter(Boolean) as (BusinessHours | BusinessHours[])[],
 	})
 
 	const firstCol = {

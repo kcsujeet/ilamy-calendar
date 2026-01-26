@@ -130,4 +130,52 @@ describe('Resource Calendar Business Hours Integration', () => {
 			).not.toBeInTheDocument()
 		})
 	})
+	describe('Resource Business Hours Union and Precedence', () => {
+		test('renders union of business hours and respects resource-specific availability', () => {
+			const initialDate = dayjs('2025-01-01T00:00:00.000Z') // Wednesday
+			const resources: Resource[] = [
+				{
+					id: 'A',
+					title: 'Resource A',
+					businessHours: { startTime: 9, endTime: 17 },
+				},
+				{
+					id: 'B',
+					title: 'Resource B',
+					businessHours: { startTime: 9, endTime: 18 },
+				},
+			]
+
+			render(
+				<ResourceCalendarProvider
+					dayMaxEvents={3}
+					hideNonBusinessHours={true}
+					initialDate={initialDate}
+					resources={resources}
+				>
+					<ResourceDayHorizontal />
+				</ResourceCalendarProvider>
+			)
+
+			// 1. Verify Union: Should show up to 18:00 (last label 17:00 because it covers 17-18)
+			expect(
+				screen.getByTestId('resource-day-time-label-17')
+			).toBeInTheDocument()
+			expect(
+				screen.queryByTestId('resource-day-time-label-18')
+			).not.toBeInTheDocument()
+
+			// 2. Verify Precedence/Availability:
+			// Resource A at 17:00 should be disabled
+			const cellA17 = screen.getByTestId('day-cell-2025-01-01-17-00')
+			expect(cellA17.getAttribute('data-disabled')).toBe('true')
+
+			// Resource B at 17:00 should be enabled
+			// Note: The ID for resource cells includes the resource ID
+			const cellB17 = screen.getByTestId('day-cell-2025-01-01-17-00-resource-B')
+			// If it's enabled, data-disabled should be false or null (in this implementation it seems to be 'false')
+			// Let's check how DroppableCell sets it
+			expect(cellB17.getAttribute('data-disabled')).toBe('false')
+		})
+	})
 })

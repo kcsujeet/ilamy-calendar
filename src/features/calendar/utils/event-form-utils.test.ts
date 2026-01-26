@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test'
 import type { BusinessHours } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
 import {
 	buildDateTime,
 	buildEndDateTime,
@@ -86,6 +85,24 @@ describe('event-form-utils', () => {
 			}
 			const result = getTimeConstraints(testDate, businessHours)
 			expect(result).toEqual({ min: '09:00', max: '16:45' })
+		})
+
+		test('handles multiple rules for the same day (split shifts)', () => {
+			const businessHours: BusinessHours[] = [
+				{
+					daysOfWeek: ['wednesday'],
+					startTime: 10,
+					endTime: 12,
+				},
+				{
+					daysOfWeek: ['wednesday'],
+					startTime: 14,
+					endTime: 16,
+				},
+			]
+			const result = getTimeConstraints(testDate, businessHours)
+			// Should take earliest start (10) and latest end (16 -> max 15:45)
+			expect(result).toEqual({ min: '10:00', max: '15:45' })
 		})
 	})
 })

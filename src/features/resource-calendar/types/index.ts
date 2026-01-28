@@ -1,3 +1,4 @@
+import type { BusinessHours } from '@/components/types'
 import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
@@ -54,4 +55,9 @@ export interface Resource {
 	backgroundColor?: string
 	/** Optional position for resource display */
 	position?: number
+	/**
+	 * Configuration for resource-specific business hours.
+	 * If provided, these will be used instead of the global business hours for this resource.
+	 */
+	businessHours?: BusinessHours | BusinessHours[]
 }

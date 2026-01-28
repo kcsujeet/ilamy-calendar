@@ -36,13 +36,19 @@ export function DroppableCell({
 	'data-testid': dataTestId,
 	disabled = false,
 }: DroppableCellProps) {
-	const { onCellClick, disableDragAndDrop, disableCellClick, classesOverride } =
-		useSmartCalendarContext((state) => ({
-			onCellClick: state.onCellClick,
-			disableDragAndDrop: state.disableDragAndDrop,
-			disableCellClick: state.disableCellClick,
-			classesOverride: state.classesOverride,
-		}))
+	const {
+		onCellClick,
+		disableDragAndDrop,
+		disableCellClick,
+		classesOverride,
+		view,
+	} = useSmartCalendarContext((state) => ({
+		onCellClick: state.onCellClick,
+		disableDragAndDrop: state.disableDragAndDrop,
+		disableCellClick: state.disableCellClick,
+		classesOverride: state.classesOverride,
+		view: state.view,
+	}))
 
 	const { isOver, setNodeRef } = useDroppable({
 		id,
@@ -78,7 +84,6 @@ export function DroppableCell({
 	}
 
 	return (
-		// oxlint-disable-next-line click-events-have-key-events
 		<div
 			className={cn(
 				'droppable-cell',
@@ -88,6 +93,7 @@ export function DroppableCell({
 				disabled && (classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME)
 			)}
 			data-testid={dataTestId}
+			data-view={view}
 			onClick={handleCellClick}
 			ref={setNodeRef}
 			style={style}

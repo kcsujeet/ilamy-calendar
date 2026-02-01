@@ -534,6 +534,28 @@ describe('useCalendarEngine', () => {
 			expect(result.current.rawEvents).toHaveLength(0)
 		})
 
+		it('should delete recurring event with scope all even if uid is missing', () => {
+			const onEventDelete = vi.fn()
+			const baseEvent = createRecurringEvent({ uid: undefined })
+			const events = [baseEvent]
+			const { result } = renderHook(() =>
+				useCalendarEngine({ ...defaultConfig, events, onEventDelete })
+			)
+
+			// Get an instance from the engine (it will have a generated UID)
+			const instances = result.current.events
+			const targetInstance = instances[0]
+
+			act(() =>
+				result.current.deleteRecurringEvent(targetInstance, {
+					scope: 'all',
+					eventDate: targetInstance.start,
+				})
+			)
+
+			expect(onEventDelete).toHaveBeenCalledTimes(1)
+			expect(result.current.rawEvents).toHaveLength(0)
+		})
 		it('should find parent recurring event', () => {
 			const baseEvent = createRecurringEvent()
 			const events = [baseEvent]

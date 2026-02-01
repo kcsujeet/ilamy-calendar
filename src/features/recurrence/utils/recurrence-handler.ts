@@ -47,6 +47,14 @@ export const isRecurringEvent = (event: CalendarEvent): boolean => {
 	return Boolean(event.rrule || event.recurrenceId || event.uid)
 }
 
+/**
+ * Consistently derives a parent UID from an event.
+ * Uses the explicit `uid` if available, otherwise falls back to `${id}@ilamy.calendar`.
+ */
+const getEventParentUID = (event: CalendarEvent): string => {
+	return event.uid || `${event.id}@ilamy.calendar`
+}
+
 interface GenerateRecurringEventsProps {
 	event: CalendarEvent
 	currentEvents: CalendarEvent[]
@@ -81,8 +89,9 @@ export const generateRecurringEvents = ({
 		}
 		const rule = new RRule(ruleOptions)
 
+		const parentUid = getEventParentUID(event)
 		const overrides = currentEvents.filter(
-			(e) => e.recurrenceId && e.uid === event.uid
+			(e) => e.recurrenceId && getEventParentUID(e) === parentUid
 		)
 
 		// Calculate event duration to expand search window for events that span the range
@@ -115,7 +124,7 @@ export const generateRecurringEvents = ({
 				const originalDuration = event.end.diff(event.start)
 				const newEndTime = occurrenceDate.add(originalDuration, 'millisecond')
 				const recurringEventId = `${event.id}_${index}`
-				const parentUID = event.uid || `${event.id}@ilamy.calendar`
+				const parentUID = getEventParentUID(event)
 
 				// Create the recurring event instance
 				const recurringEvent: CalendarEvent = {
@@ -175,9 +184,9 @@ export const updateRecurringEvent = ({
 	const updatedEvents = [...currentEvents]
 
 	// Find the base recurring event
+	const targetUid = getEventParentUID(targetEvent)
 	const baseEventIndex = updatedEvents.findIndex((e) => {
-		const parentUid = e.uid || `${e.id}@ilamy.calendar`
-		return parentUid === targetEvent.uid && e.rrule && !e.recurrenceId
+		return getEventParentUID(e) === targetUid && e.rrule && !e.recurrenceId
 	})
 
 	if (baseEventIndex === -1) {
@@ -207,7 +216,7 @@ export const updateRecurringEvent = ({
 				...updates,
 				id: modifiedEventId,
 				recurrenceId: targetEventStartISO, // This marks it as a modified instance
-				uid: baseEvent.uid || `${baseEvent.id}@ilamy.calendar`, // Keep same UID as base event (iCalendar standard)
+				uid: getEventParentUID(baseEvent), // Keep same UID as base event (iCalendar standard)
 				rrule: undefined, // Standalone events don't have RRULE
 			} as CalendarEvent
 			updatedEvents.push(modifiedEvent)
@@ -291,9 +300,9 @@ export const deleteRecurringEvent = ({
 	const updatedEvents = [...currentEvents]
 
 	// Find the base recurring event
+	const targetUid = getEventParentUID(targetEvent)
 	const baseEventIndex = updatedEvents.findIndex((e) => {
-		const parentUid = e.uid || `${e.id}@ilamy.calendar`
-		return parentUid === targetEvent.uid && e.rrule && !e.recurrenceId
+		return getEventParentUID(e) === targetUid && e.rrule && !e.recurrenceId
 	})
 
 	if (baseEventIndex === -1) {
@@ -335,8 +344,9 @@ export const deleteRecurringEvent = ({
 
 		case 'all': {
 			// "All events" - Remove the entire recurring series
+			const targetUid = getEventParentUID(targetEvent)
 			const eventsWithoutTargetSeries = updatedEvents.filter(
-				(e) => e.uid !== targetEvent.uid
+				(e) => getEventParentUID(e) !== targetUid
 			)
 			return eventsWithoutTargetSeries
 		}

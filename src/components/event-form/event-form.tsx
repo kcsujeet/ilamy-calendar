@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -107,13 +107,19 @@ export const EventForm: React.FC<EventFormProps> = ({
 		handleConfirm,
 	} = useRecurringEventActions(onClose)
 
-	const { findParentRecurringEvent, t, businessHours, timeFormat } =
-		useSmartCalendarContext((context) => ({
-			findParentRecurringEvent: context.findParentRecurringEvent,
-			t: context.t,
-			businessHours: context.businessHours,
-			timeFormat: context.timeFormat,
-		}))
+	const {
+		findParentRecurringEvent,
+		t,
+		businessHours,
+		timeFormat,
+		getResourceById,
+	} = useSmartCalendarContext((context) => ({
+		findParentRecurringEvent: context.findParentRecurringEvent,
+		t: context.t,
+		businessHours: context.businessHours,
+		timeFormat: context.timeFormat,
+		getResourceById: context.getResourceById,
+	}))
 
 	const start = selectedEvent?.start ?? dayjs()
 	const end = selectedEvent?.end ?? dayjs().add(1, 'hour')
@@ -258,12 +264,24 @@ export const EventForm: React.FC<EventFormProps> = ({
 		setRrule({ ...newRRule, dtstart: startDateTime.toDate() })
 	}
 
-	const disabledDateMatcher = businessHours
-		? (date: Date) => !isBusinessDay(dayjs(date), businessHours)
+	// Use resource-specific business hours if available, otherwise fallback to global
+	const effectiveBusinessHours = useMemo(() => {
+		const resourceId = selectedEvent?.resourceId
+		if (resourceId && getResourceById) {
+			const resource = getResourceById(resourceId)
+			if (resource?.businessHours) {
+				return resource.businessHours
+			}
+		}
+		return businessHours
+	}, [selectedEvent?.resourceId, getResourceById, businessHours])
+
+	const disabledDateMatcher = effectiveBusinessHours
+		? (date: Date) => !isBusinessDay(dayjs(date), effectiveBusinessHours)
 		: undefined
 
-	const startConstraints = getTimeConstraints(startDate, businessHours)
-	const endConstraints = getTimeConstraints(endDate, businessHours)
+	const startConstraints = getTimeConstraints(startDate, effectiveBusinessHours)
+	const endConstraints = getTimeConstraints(endDate, effectiveBusinessHours)
 
 	return (
 		<>

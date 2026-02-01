@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.3.3](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.2...v1.3.3)
+
+> 31 January 2026
+
+##### Features
+
+- feat: implement resource-specific business hours in `EventForm` and grid views ([`#73`](https://github.com/kcsujeet/ilamy-calendar/issues/73))
+- feat: support multiple business hour ranges (split shifts) per day
+- feat: add automated verification suite for resource business hours in `EventForm`
+
+##### Fixes
+
+- fix: resolve recurring event series deletion failure when `uid` is missing ([`#61`](https://github.com/kcsujeet/ilamy-calendar/issues/61))
+- fix: unify UID derivation in `recurrence-handler` to ensure consistent parent-child matching for recurring events
+- fix: ensure proper test coverage for `recurrence-handler` utilities
+
+
 #### [v1.3.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.1...v1.3.2)
 
 > 24 January 2026

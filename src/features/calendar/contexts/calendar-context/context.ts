@@ -8,7 +8,7 @@ import type {
 } from '@/features/calendar/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type dayjs from '@/lib/configs/dayjs-config'
-import type { TranslationKey } from '@/lib/translations/types'
+import type { TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
 export interface CalendarContextType {
@@ -61,7 +61,7 @@ export interface CalendarContextType {
 	businessHours?: BusinessHours | BusinessHours[]
 	renderEventForm?: (props: EventFormProps) => React.ReactNode
 	// Translation function
-	t: (key: TranslationKey) => string
+	t: TranslatorFunction
 	timeFormat: TimeFormat
 	classesOverride?: CalendarClassesOverride
 	renderCurrentTimeIndicator?: (

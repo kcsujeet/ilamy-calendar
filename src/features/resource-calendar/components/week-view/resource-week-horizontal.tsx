@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
-import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
@@ -17,7 +17,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 		timeFormat,
 		businessHours,
 		hideNonBusinessHours,
-	} = useResourceCalendarContext()
+	} = useSmartCalendarContext()
 
 	// Generate week days
 	const weekDays = useMemo(

@@ -4,7 +4,7 @@ import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
-import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
 
 export const ResourceDayVertical: React.FC = () => {
@@ -15,7 +15,7 @@ export const ResourceDayVertical: React.FC = () => {
 		timeFormat,
 		businessHours,
 		hideNonBusinessHours,
-	} = useResourceCalendarContext()
+	} = useSmartCalendarContext()
 
 	const resources = getVisibleResources()
 	const hours = getViewHours({

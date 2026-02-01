@@ -1,5 +1,5 @@
-import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type { Resource } from '@/features/resource-calendar/types'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 
 interface ResourceCellProps {
@@ -15,7 +15,7 @@ export const ResourceCell: React.FC<ResourceCellProps> = ({
 	children,
 	'data-testid': dataTestId,
 }) => {
-	const { renderResource } = useResourceCalendarContext()
+	const { renderResource } = useSmartCalendarContext()
 
 	return (
 		<div

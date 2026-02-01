@@ -13,9 +13,6 @@ export {
 export type { EventFormProps } from './components/event-form/event-form'
 export type { BusinessHours, CalendarEvent, WeekDays } from './components/types'
 export { IlamyCalendar } from './features/calendar/components/ilamy-calendar'
-export type { UseIlamyCalendarContextReturn } from './features/calendar/contexts/calendar-context/context'
-// Public calendar context hooks
-export { useIlamyCalendarContext } from './features/calendar/contexts/calendar-context/context'
 export type {
 	CellClickInfo,
 	IlamyCalendarProps,
@@ -23,10 +20,13 @@ export type {
 } from './features/calendar/types'
 export type { IlamyResourceCalendarProps } from './features/resource-calendar/components/ilamy-resource-calendar'
 export { IlamyResourceCalendar } from './features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
-export type { UseIlamyResourceCalendarContextReturn } from './features/resource-calendar/contexts/resource-calendar-context/context'
-export { useIlamyResourceCalendarContext } from './features/resource-calendar/contexts/resource-calendar-context/context'
 // Resource calendar types
 export type { Resource } from './features/resource-calendar/types'
+// Public calendar context hooks
+export {
+	type UseIlamyCalendarContextReturn,
+	useIlamyCalendarContext,
+} from './hooks/use-smart-calendar-context'
 export { defaultTranslations } from './lib/translations/default'
 // Translation system
 export type {

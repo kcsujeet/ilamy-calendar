@@ -1,6 +1,6 @@
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -10,7 +10,7 @@ interface MonthHeaderProps {
 
 export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 	const { firstDayOfWeek, stickyViewHeader, viewHeaderClassName, currentDate } =
-		useCalendarContext()
+		useSmartCalendarContext()
 
 	// Reorder week days based on firstDayOfWeek
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)

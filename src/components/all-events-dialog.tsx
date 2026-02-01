@@ -27,10 +27,7 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [selectedDayEvents, setSelectedDayEvents] =
 		useState<SelectedDayEvents | null>(null)
-	const { currentDate, firstDayOfWeek } = useSmartCalendarContext((state) => ({
-		currentDate: state.currentDate,
-		firstDayOfWeek: state.firstDayOfWeek,
-	}))
+	const { currentDate, firstDayOfWeek } = useSmartCalendarContext()
 
 	useImperativeHandle(ref, () => ({
 		open: () => setDialogOpen(true),

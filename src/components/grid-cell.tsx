@@ -52,17 +52,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		businessHours,
 		currentLocale,
 		eventSpacing,
-	} = useSmartCalendarContext((state) => ({
-		dayMaxEvents: state.dayMaxEvents,
-		getEventsForDateRange: state.getEventsForDateRange,
-		currentDate: state.currentDate,
-		firstDayOfWeek: state.firstDayOfWeek,
-		t: state.t,
-		getEventsForResource: state.getEventsForResource,
-		businessHours: state.businessHours,
-		currentLocale: state.currentLocale,
-		eventSpacing: state.eventSpacing,
-	}))
+	} = useSmartCalendarContext()
 
 	const todayEvents = useMemo(() => {
 		if (!shouldRenderEvents) {
@@ -162,6 +152,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 
 							{/* Show more events button with accurate count */}
 							{hasHiddenEvents && (
+								// biome-ignore lint/a11y/useSemanticElements: Using div as button
 								<div
 									className="text-muted-foreground hover:text-foreground cursor-pointer text-[10px] whitespace-nowrap sm:text-xs shrink-0 mt-1"
 									onClick={(e) => {
@@ -177,7 +168,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 										}
 									}}
 									role="button"
-									// oxlint-disable-next-line prefer-tag-over-role
 									tabIndex={0}
 								>
 									+{hiddenEventsCount} {t('more')}

@@ -1,13 +1,13 @@
 import type React from 'react'
 import { useMemo } from 'react'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { getMonthWeeks } from '@/lib/utils/date-utils'
 import { MonthHeader } from './month-header'
 import type { MonthViewProps } from './types'
 
 export const MonthView: React.FC<MonthViewProps> = () => {
-	const { currentDate, firstDayOfWeek } = useCalendarContext()
+	const { currentDate, firstDayOfWeek } = useSmartCalendarContext()
 
 	const weeks = useMemo(
 		() => getMonthWeeks(currentDate, firstDayOfWeek),

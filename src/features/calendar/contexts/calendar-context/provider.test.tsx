@@ -3,8 +3,8 @@ import { render } from '@testing-library/react'
 import type React from 'react'
 import { RRule } from 'rrule'
 import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
-import { useCalendarContext } from './context'
 import type { CalendarProviderProps } from './provider'
 import { CalendarProvider } from './provider'
 
@@ -23,7 +23,7 @@ const TestWrapper = ({
 	children: React.ReactNode
 	testId?: string
 }) => {
-	const { currentDate } = useCalendarContext()
+	const { currentDate } = useSmartCalendarContext()
 
 	if (!testId) {
 		return <>{children}</>
@@ -55,7 +55,7 @@ const renderProvider = (
 // Test component to access context
 function TestComponent() {
 	const { events, getEventsForDateRange, findParentRecurringEvent } =
-		useCalendarContext()
+		useSmartCalendarContext()
 
 	// Test on-demand generation for a specific range
 	const rangeEvents = getEventsForDateRange(
@@ -216,7 +216,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 		}
 
 		function TestStandalone() {
-			const { findParentRecurringEvent } = useCalendarContext()
+			const { findParentRecurringEvent } = useSmartCalendarContext()
 			const parentEvent = findParentRecurringEvent(standaloneInstance)
 
 			return (
@@ -260,7 +260,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 		}
 
 		function TestUIDGeneration() {
-			const { findParentRecurringEvent } = useCalendarContext()
+			const { findParentRecurringEvent } = useSmartCalendarContext()
 			const parentEvent = findParentRecurringEvent(instanceWithoutUID)
 
 			return (
@@ -318,7 +318,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 		const events = [baseEventWithExdate, modifiedInstance]
 
 		function TestNoDuplicates() {
-			const { getEventsForDateRange } = useCalendarContext()
+			const { getEventsForDateRange } = useSmartCalendarContext()
 
 			// Get events for a range that includes the modified date
 			const rangeEvents = getEventsForDateRange(
@@ -376,7 +376,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 
 		const TestRecurringCallbacks = () => {
 			const { updateRecurringEvent, deleteRecurringEvent } =
-				useCalendarContext()
+				useSmartCalendarContext()
 
 			const handleUpdateRecurring = () => {
 				updateRecurringEvent(
@@ -398,12 +398,14 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 					<button
 						data-testid="update-recurring"
 						onClick={handleUpdateRecurring}
+						type="button"
 					>
 						Update Recurring
 					</button>
 					<button
 						data-testid="delete-recurring"
 						onClick={handleDeleteRecurring}
+						type="button"
 					>
 						Delete Recurring
 					</button>
@@ -448,7 +450,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 		}
 
 		const TestRruleUpdate = () => {
-			const { updateRecurringEvent } = useCalendarContext()
+			const { updateRecurringEvent } = useSmartCalendarContext()
 
 			const handleUpdateRrule = () => {
 				// Change from daily to weekly
@@ -468,7 +470,11 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 
 			return (
 				<div>
-					<button data-testid="update-rrule" onClick={handleUpdateRrule}>
+					<button
+						data-testid="update-rrule"
+						onClick={handleUpdateRrule}
+						type="button"
+					>
 						Update Rrule
 					</button>
 				</div>
@@ -513,7 +519,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 		}
 
 		const TestTimeUpdate = () => {
-			const { updateRecurringEvent } = useCalendarContext()
+			const { updateRecurringEvent } = useSmartCalendarContext()
 
 			const handleUpdateTime = () => {
 				// Change time from 2pm-3pm to 10am-11am
@@ -529,7 +535,11 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 
 			return (
 				<div>
-					<button data-testid="update-time" onClick={handleUpdateTime}>
+					<button
+						data-testid="update-time"
+						onClick={handleUpdateTime}
+						type="button"
+					>
 						Update Time
 					</button>
 				</div>
@@ -553,7 +563,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 
 	it('should initialize with the specified initial view', () => {
 		const TestInitialView = () => {
-			const { view } = useCalendarContext()
+			const { view } = useSmartCalendarContext()
 			return <div data-testid="current-view">{view}</div>
 		}
 
@@ -567,7 +577,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 
 	it('should default to month view when no initialView is provided', () => {
 		const TestDefaultView = () => {
-			const { view } = useCalendarContext()
+			const { view } = useSmartCalendarContext()
 			return <div data-testid="current-view">{view}</div>
 		}
 
@@ -635,7 +645,7 @@ describe('CalendarProvider - Business Hours', () => {
 		}
 
 		const TestComponent = () => {
-			const { businessHours } = useCalendarContext()
+			const { businessHours } = useSmartCalendarContext()
 			return (
 				<div data-testid="business-hours">{JSON.stringify(businessHours)}</div>
 			)
@@ -653,7 +663,7 @@ describe('CalendarProvider - Business Hours', () => {
 describe('firstDayOfWeek functionality', () => {
 	it('should calculate correct week range when firstDayOfWeek is Monday', () => {
 		const TestComponent = () => {
-			const { getEventsForDateRange } = useCalendarContext()
+			const { getEventsForDateRange } = useSmartCalendarContext()
 
 			// Test date: Wednesday Oct 15, 2025
 			const testDate = dayjs('2025-10-15T00:00:00.000Z')

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import type { CalendarEvent } from '@/components/types'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils/generator'
-import WeekView from './week-view'
+import { WeekView } from './week-view'
 
 const weekDays: string[] = [
 	'Sunday',
@@ -32,7 +32,7 @@ const TestWrapper = ({
 	children: React.ReactNode
 	testId: string
 }) => {
-	const { currentDate } = useCalendarContext()
+	const { currentDate } = useSmartCalendarContext()
 	return (
 		<>
 			<div data-testid={`${testId}-year`}>{currentDate.year()}</div>

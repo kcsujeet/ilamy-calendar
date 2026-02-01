@@ -36,12 +36,7 @@ function DraggableEventUnmemoized({
 	disableDrag?: boolean
 }) {
 	const { onEventClick, renderEvent, disableEventClick, disableDragAndDrop } =
-		useSmartCalendarContext((state) => ({
-			onEventClick: state.onEventClick,
-			renderEvent: state.renderEvent,
-			disableEventClick: state.disableEventClick,
-			disableDragAndDrop: state.disableDragAndDrop,
-		}))
+		useSmartCalendarContext()
 
 	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
 		id: elementId,

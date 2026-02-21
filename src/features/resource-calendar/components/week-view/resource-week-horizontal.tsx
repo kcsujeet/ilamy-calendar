@@ -1,6 +1,7 @@
 import type React from 'react'
 import { useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
+import type { BusinessHours } from '@/components/types'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
@@ -17,12 +18,25 @@ export const ResourceWeekHorizontal: React.FC = () => {
 		timeFormat,
 		businessHours,
 		hideNonBusinessHours,
+		getVisibleResources,
 	} = useSmartCalendarContext()
+
+	const resources = getVisibleResources()
 
 	// Generate week days
 	const weekDays = useMemo(
 		() => getWeekDays(currentDate, firstDayOfWeek),
 		[currentDate, firstDayOfWeek]
+	)
+
+	// Resource-specific business hours combined
+	const resourceBusinessHours = useMemo(
+		() =>
+			resources.map((r) => r.businessHours).filter(Boolean) as (
+				| BusinessHours
+				| BusinessHours[]
+			)[],
+		[resources]
 	)
 
 	// Generate time columns (hourly slots)
@@ -32,9 +46,10 @@ export const ResourceWeekHorizontal: React.FC = () => {
 				referenceDate: day,
 				businessHours,
 				hideNonBusinessHours,
+				resourceBusinessHours,
 			})
 		)
-	}, [weekDays, businessHours, hideNonBusinessHours])
+	}, [weekDays, businessHours, hideNonBusinessHours, resourceBusinessHours])
 
 	return (
 		<ResourceEventGrid

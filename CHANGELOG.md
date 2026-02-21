@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.3.3](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.2...v1.3.3)
+
+> 31 January 2026
+
+##### Features
+
+- feat: implement resource-specific business hours with split shifts support ([`#74`](https://github.com/kcsujeet/ilamy-calendar/pull/74))
+- feat: implement resource-aware validation in `EventForm` ([`#74`](https://github.com/kcsujeet/ilamy-calendar/pull/74))
+- feat: add `data-view` attribute to `DroppableCell` ([`#76`](https://github.com/kcsujeet/ilamy-calendar/pull/76))
+
+##### Fixes
+
+- fix: resolve recurring series deletion failure when `uid` is missing ([`#78`](https://github.com/kcsujeet/ilamy-calendar/pull/78))
+
+
 #### [v1.3.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.1...v1.3.2)
 
 > 24 January 2026

@@ -1,5 +1,6 @@
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
+import type { BusinessHours } from '@/components/types'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
@@ -14,7 +15,10 @@ export const ResourceDayHorizontal: React.FC = () => {
 		timeFormat,
 		businessHours,
 		hideNonBusinessHours,
+		getVisibleResources,
 	} = useSmartCalendarContext()
+
+	const resources = getVisibleResources()
 
 	// Generate time columns (hourly slots)
 	const dayHours = getViewHours({
@@ -22,6 +26,9 @@ export const ResourceDayHorizontal: React.FC = () => {
 		businessHours,
 		hideNonBusinessHours,
 		allDates: [currentDate],
+		resourceBusinessHours: resources
+			.map((r) => r.businessHours)
+			.filter(Boolean) as (BusinessHours | BusinessHours[])[],
 	})
 
 	return (

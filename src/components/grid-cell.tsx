@@ -52,6 +52,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		businessHours,
 		currentLocale,
 		eventSpacing,
+		getResourceById,
 	} = useSmartCalendarContext()
 
 	const todayEvents = useMemo(() => {
@@ -101,10 +102,21 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	const hiddenEventsCount = todayEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
 
+	// Use resource-specific business hours if available, otherwise fallback to global
+	const effectiveBusinessHours = useMemo(() => {
+		if (resourceId && getResourceById) {
+			const resource = getResourceById(resourceId)
+			if (resource?.businessHours) {
+				return resource.businessHours
+			}
+		}
+		return businessHours
+	}, [resourceId, getResourceById, businessHours])
+
 	const isBusiness = isBusinessHour({
 		date: day,
 		hour: gridType === 'hour' ? day.hour() : undefined,
-		businessHours,
+		businessHours: effectiveBusinessHours,
 	})
 
 	const hourStr = day.format('HH')

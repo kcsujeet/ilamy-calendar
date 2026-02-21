@@ -4,6 +4,7 @@ import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { ResourceCell } from '@/components/resource-cell'
+import type { BusinessHours } from '@/components/types'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
@@ -37,8 +38,11 @@ export const ResourceWeekVertical: React.FC = () => {
 				businessHours,
 				hideNonBusinessHours,
 				allDates: weekDays,
+				resourceBusinessHours: resources
+					.map((r) => r.businessHours)
+					.filter(Boolean) as (BusinessHours | BusinessHours[])[],
 			}),
-		[currentDate, businessHours, hideNonBusinessHours, weekDays]
+		[currentDate, businessHours, hideNonBusinessHours, weekDays, resources]
 	)
 
 	const firstCol = useMemo(

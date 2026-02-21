@@ -1,47 +1,6 @@
-import type { BusinessHours, WeekDays } from '@/components/types'
+import type { BusinessHours } from '@/components/types'
 import type dayjs from '@/lib/configs/dayjs-config'
-
-const DAY_TO_NUMBER: Record<WeekDays, number> = {
-	sunday: 0,
-	monday: 1,
-	tuesday: 2,
-	wednesday: 3,
-	thursday: 4,
-	friday: 5,
-	saturday: 6,
-}
-
-/**
- * Finds the appropriate business hours configuration for a given date.
- * If businessHours is an array, finds the first config that includes the date's day of week.
- * If businessHours is a single object, returns it as-is.
- *
- * @param date The date to find business hours for
- * @param businessHours The business hours configuration (single or array)
- * @returns The matching BusinessHours config or undefined if no match found
- */
-export const getBusinessHoursForDate = (
-	date: dayjs.Dayjs,
-	businessHours?: BusinessHours | BusinessHours[]
-): BusinessHours | undefined => {
-	if (!businessHours) {
-		return undefined
-	}
-
-	// If single object, return it
-	if (!Array.isArray(businessHours)) {
-		return businessHours
-	}
-
-	// If array, find the config that applies to this day
-	const dayOfWeek = date.day()
-	return businessHours.find((config) => {
-		if (!config.daysOfWeek) {
-			return false
-		}
-		return config.daysOfWeek.some((d) => DAY_TO_NUMBER[d] === dayOfWeek)
-	})
-}
+import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 
 /**
  * Checks if a specific date is a business day.
@@ -58,17 +17,15 @@ export const isBusinessDay = (
 		return true
 	}
 
-	const config = getBusinessHoursForDate(date, businessHours)
-	if (!config) {
-		return false
-	}
+	let hasMatch = false
+	processBusinessHours(businessHours, {
+		date,
+		onMatch: () => {
+			hasMatch = true
+		},
+	})
 
-	// Check day of week
-	if (config.daysOfWeek) {
-		return config.daysOfWeek.some((d) => DAY_TO_NUMBER[d] === date.day())
-	}
-
-	return true
+	return hasMatch
 }
 
 export interface IsBusinessHourOptions {
@@ -90,40 +47,122 @@ export const isBusinessHour = ({
 	minute = 0,
 	businessHours,
 }: IsBusinessHourOptions): boolean => {
-	// First check if it's a business day
-	if (!isBusinessDay(date, businessHours)) {
-		return false
-	}
-
 	// If business hours are not configured, consider everything as "business hours"
 	if (!businessHours) {
 		return true
 	}
 
 	// If hour is not provided, we assume the user only cares about the day
-	// Since we already passed isBusinessDay check, we return true
 	if (hour === undefined) {
-		return true
+		return isBusinessDay(date, businessHours)
 	}
 
-	const config = getBusinessHoursForDate(date, businessHours)
-	if (!config) {
-		return false
-	}
-
-	// Check time
-	// startTime and endTime are numbers (0-24)
-	// We treat them as exact hours. e.g. 9 means 09:00.
-	const startH = config.startTime ?? 9
-	const endH = config.endTime ?? 17
-
+	let isInBusinessHour = false
 	const currentMinutes = hour * 60 + minute
-	const startMinutes = startH * 60
-	const endMinutes = endH * 60
 
-	if (currentMinutes < startMinutes || currentMinutes >= endMinutes) {
-		return false
+	processBusinessHours(businessHours, {
+		date,
+		onMatch: (config) => {
+			// Check time against this specific config
+			// startTime and endTime are numbers (0-24)
+			const startH = config.startTime ?? 9
+			const endH = config.endTime ?? 17
+
+			const startMinutes = startH * 60
+			const endMinutes = endH * 60
+
+			if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+				isInBusinessHour = true
+			}
+		},
+	})
+
+	return isInBusinessHour
+}
+
+/**
+ * Helper to process a business hours configuration and update the range.
+ */
+export const processBusinessHours = (
+	bh: BusinessHours | BusinessHours[] | undefined,
+	options: {
+		date?: dayjs.Dayjs
+		onMatch: (config: BusinessHours) => void
+	}
+) => {
+	const { date, onMatch } = options
+	if (!bh) return
+
+	const configs = Array.isArray(bh) ? bh : [bh]
+
+	for (const config of configs) {
+		if (date && config.daysOfWeek) {
+			const dayOfWeek = date.day()
+			if (
+				config.daysOfWeek.some((d) => WEEK_DAYS_NUMBER_MAP[d] === dayOfWeek)
+			) {
+				onMatch(config)
+			}
+		} else {
+			onMatch(config)
+		}
+	}
+}
+
+export interface BusinessHoursRange {
+	minStart: number
+	maxEnd: number
+	hasBusinessHours: boolean
+}
+
+/**
+ * Calculates the union of business hours ranges across multiple dates and/or resource configurations.
+ */
+export const calculateBusinessHoursRange = (options: {
+	allDates: dayjs.Dayjs[]
+	businessHours?: BusinessHours | BusinessHours[]
+	resourceBusinessHours?: (BusinessHours | BusinessHours[])[]
+	hideNonBusinessHours?: boolean
+}): BusinessHoursRange => {
+	const {
+		allDates,
+		businessHours,
+		resourceBusinessHours = [],
+		hideNonBusinessHours,
+	} = options
+
+	let minStart = 24
+	let maxEnd = 0
+	let hasBusinessHours = false
+
+	const onMatch = (config: BusinessHours) => {
+		hasBusinessHours = true
+		minStart = Math.min(minStart, config.startTime ?? 9)
+		maxEnd = Math.max(maxEnd, config.endTime ?? 17)
 	}
 
-	return true
+	// Process global and resource business hours for each date
+	for (const date of allDates) {
+		processBusinessHours(businessHours, { date, onMatch })
+		for (const rbh of resourceBusinessHours) {
+			processBusinessHours(rbh, { date, onMatch })
+		}
+	}
+
+	// Fallback logic if no business hours found for specific dates
+	if (!hasBusinessHours && hideNonBusinessHours) {
+		processBusinessHours(businessHours, { onMatch })
+		for (const rbh of resourceBusinessHours) {
+			processBusinessHours(rbh, { onMatch })
+		}
+
+		// Final fallback to default 9-17 if still nothing
+		if (!hasBusinessHours) {
+			minStart = 9
+			maxEnd = 17
+			hasBusinessHours = true
+		}
+	}
+
+	return { minStart, maxEnd, hasBusinessHours }
 }

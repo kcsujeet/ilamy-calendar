@@ -1,6 +1,6 @@
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
@@ -32,9 +32,9 @@ interface DayData {
 	eventCount: number
 }
 
-const YearView = () => {
+export const YearView = () => {
 	const { currentDate, selectDate, events, setView, getEventsForDateRange, t } =
-		useCalendarContext()
+		useSmartCalendarContext()
 	const currentYear = currentDate.year()
 
 	const generateMonthsData = (): MonthData[] => {
@@ -142,8 +142,8 @@ const YearView = () => {
 							<AnimatedSection
 								className="mb-2 flex items-center justify-between"
 								delay={animationDelay}
-								key={`month-${monthIndex}`}
-								transitionKey={`month-${monthIndex}`}
+								key={`month-${month.monthKey}`}
+								transitionKey={`month-${month.monthKey}`}
 							>
 								<button
 									className="text-lg font-medium hover:underline cursor-pointer"
@@ -168,10 +168,10 @@ const YearView = () => {
 								className="grid grid-cols-7 gap-[1px] text-[0.6rem]"
 								data-testid={`year-mini-calendar-${month.monthKey}`}
 							>
-								{DAY_HEADER_NAMES.map((dayName, headerIndex) => (
+								{DAY_HEADER_NAMES.map((dayName) => (
 									<div
 										className="text-muted-foreground h-3 text-center"
-										key={`header-${headerIndex}`}
+										key={`header-${dayName}`}
 									>
 										{dayName}
 									</div>
@@ -229,5 +229,3 @@ const YearView = () => {
 		</ScrollArea>
 	)
 }
-
-export default YearView

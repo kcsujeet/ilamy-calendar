@@ -29,9 +29,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 	variant = 'resource',
 	dayNumberHeight,
 }) => {
-	const { currentDate } = useSmartCalendarContext((state) => ({
-		currentDate: state.currentDate,
-	}))
+	const { currentDate } = useSmartCalendarContext()
 
 	const isResourceCalendar = variant === 'resource'
 	const isRegularCalendar = !isResourceCalendar

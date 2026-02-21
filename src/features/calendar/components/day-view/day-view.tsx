@@ -1,12 +1,12 @@
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
-const DayView = () => {
+export const DayView = () => {
 	const {
 		currentDate,
 		currentLocale,
@@ -14,7 +14,7 @@ const DayView = () => {
 		t,
 		businessHours,
 		hideNonBusinessHours,
-	} = useCalendarContext()
+	} = useSmartCalendarContext()
 	const isToday = currentDate.isSame(dayjs(), 'day')
 	const hours = getViewHours({
 		referenceDate: currentDate,
@@ -84,5 +84,3 @@ const DayView = () => {
 		</VerticalGrid>
 	)
 }
-
-export default DayView

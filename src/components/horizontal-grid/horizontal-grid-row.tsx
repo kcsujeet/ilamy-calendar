@@ -42,9 +42,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	showDayNumber = false,
 	isLastRow = false,
 }) => {
-	const { renderResource } = useSmartCalendarContext((state) => ({
-		renderResource: state.renderResource,
-	}))
+	const { renderResource } = useSmartCalendarContext()
 
 	const isResourceCalendar = variant === 'resource'
 	const isGrouped = columns.some((col) => col.days)

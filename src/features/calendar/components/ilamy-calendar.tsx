@@ -4,12 +4,12 @@ import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-cont
 import { EventFormDialog } from '@/components/event-form/event-form-dialog'
 import { Header } from '@/components/header'
 import type { CalendarEvent } from '@/components/types'
-import DayView from '@/features/calendar/components/day-view/day-view'
+import { DayView } from '@/features/calendar/components/day-view/day-view'
 import { MonthView } from '@/features/calendar/components/month-view/month-view'
-import WeekView from '@/features/calendar/components/week-view/week-view'
-import YearView from '@/features/calendar/components/year-view/year-view'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { WeekView } from '@/features/calendar/components/week-view/week-view'
+import { YearView } from '@/features/calendar/components/year-view/year-view'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 // oxlint-disable-next-line no-duplicates
 import '@/lib/configs/dayjs-config'
 import type {
@@ -24,7 +24,7 @@ import {
 import { normalizeEvents, safeDate } from '@/lib/utils'
 
 const CalendarContent: React.FC = () => {
-	const { view, dayMaxEvents } = useCalendarContext()
+	const { view, dayMaxEvents } = useSmartCalendarContext()
 
 	const viewMap = {
 		month: <MonthView dayMaxEvents={dayMaxEvents} key="month" />,

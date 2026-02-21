@@ -2,12 +2,12 @@ import type React from 'react'
 import { useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
-import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { getMonthDays } from '@/lib/utils/date-utils'
 
 export const ResourceMonthHorizontal: React.FC = () => {
-	const { currentDate, t } = useResourceCalendarContext()
+	const { currentDate, t } = useSmartCalendarContext()
 
 	// Generate calendar grid - days of the month
 	const monthDays = useMemo<dayjs.Dayjs[]>(() => {

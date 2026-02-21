@@ -3,8 +3,8 @@ import { useMemo } from 'react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
@@ -12,7 +12,7 @@ import { getWeekDays } from '@/lib/utils/date-utils'
 const CELL_CLASS = 'w-[calc((100%-4rem)/7)] min-w-[calc((100%-4rem)/7)] flex-1'
 const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
 
-const WeekView: React.FC = () => {
+export const WeekView: React.FC = () => {
 	const {
 		t,
 		currentDate,
@@ -23,7 +23,7 @@ const WeekView: React.FC = () => {
 		timeFormat,
 		businessHours,
 		hideNonBusinessHours,
-	} = useCalendarContext()
+	} = useSmartCalendarContext()
 
 	const weekDays = useMemo(
 		() => getWeekDays(currentDate, firstDayOfWeek),
@@ -132,5 +132,3 @@ const WeekView: React.FC = () => {
 		</VerticalGrid>
 	)
 }
-
-export default WeekView

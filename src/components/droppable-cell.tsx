@@ -42,13 +42,7 @@ export function DroppableCell({
 		disableCellClick,
 		classesOverride,
 		view,
-	} = useSmartCalendarContext((state) => ({
-		onCellClick: state.onCellClick,
-		disableDragAndDrop: state.disableDragAndDrop,
-		disableCellClick: state.disableCellClick,
-		classesOverride: state.classesOverride,
-		view: state.view,
-	}))
+	} = useSmartCalendarContext()
 
 	const { isOver, setNodeRef } = useDroppable({
 		id,

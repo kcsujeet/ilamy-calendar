@@ -18,10 +18,7 @@ export const useProcessedDayEvents = ({
 	resourceId,
 }: UseProcessedDayEventsProps) => {
 	const { getEventsForDateRange, getEventsForResource } =
-		useSmartCalendarContext((state) => ({
-			getEventsForDateRange: state.getEventsForDateRange,
-			getEventsForResource: state.getEventsForResource,
-		}))
+		useSmartCalendarContext()
 	const dayStart = days.at(0).startOf('day')
 	const dayEnd = days.at(-1).endOf('day')
 

@@ -23,12 +23,7 @@ export const useProcessedWeekEvents = ({
 		dayMaxEvents,
 		eventSpacing,
 		getEventsForResource,
-	} = useSmartCalendarContext((state) => ({
-		getEventsForDateRange: state.getEventsForDateRange,
-		dayMaxEvents: state.dayMaxEvents,
-		eventSpacing: state.eventSpacing,
-		getEventsForResource: state.getEventsForResource,
-	}))
+	} = useSmartCalendarContext()
 
 	const weekStart = days.at(0).startOf('day')
 	const weekEnd = days.at(-1).endOf('day')

@@ -6,10 +6,10 @@ import { Header } from '@/components/header'
 import { ResourceDayView } from '@/features/resource-calendar/components/day-view'
 import { ResourceMonthView } from '@/features/resource-calendar/components/month-view'
 import { ResourceWeekView } from '@/features/resource-calendar/components/week-view'
-import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 export const ResourceCalendarBody: React.FC = () => {
-	const { view } = useResourceCalendarContext()
+	const { view } = useSmartCalendarContext()
 
 	const viewMap = {
 		month: <ResourceMonthView key="month" />,

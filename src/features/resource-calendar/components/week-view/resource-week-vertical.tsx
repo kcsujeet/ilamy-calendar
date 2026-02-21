@@ -7,7 +7,7 @@ import { ResourceCell } from '@/components/resource-cell'
 import type { BusinessHours } from '@/components/types'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
-import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
@@ -22,7 +22,7 @@ export const ResourceWeekVertical: React.FC = () => {
 		t,
 		businessHours,
 		hideNonBusinessHours,
-	} = useResourceCalendarContext()
+	} = useSmartCalendarContext()
 
 	const resources = getVisibleResources()
 	// Generate week days

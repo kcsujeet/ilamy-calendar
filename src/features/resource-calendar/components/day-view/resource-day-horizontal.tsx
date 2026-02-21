@@ -3,7 +3,7 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import type { BusinessHours } from '@/components/types'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
-import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
@@ -16,7 +16,7 @@ export const ResourceDayHorizontal: React.FC = () => {
 		businessHours,
 		hideNonBusinessHours,
 		getVisibleResources,
-	} = useResourceCalendarContext()
+	} = useSmartCalendarContext()
 
 	const resources = getVisibleResources()
 

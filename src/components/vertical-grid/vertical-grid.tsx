@@ -18,6 +18,7 @@ interface VerticalGridProps {
 	 * e.g., [0, 15, 30, 45] for quarter-hour slots
 	 */
 	cellSlots?: number[]
+	style?: React.CSSProperties
 }
 
 export const VerticalGrid: React.FC<VerticalGridProps> = ({
@@ -28,6 +29,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	classes,
 	allDayRow,
 	cellSlots,
+	style,
 }) => {
 	const isResourceCalendar = variant === 'resource'
 	const isRegularCalendar = !isResourceCalendar
@@ -42,7 +44,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	)
 
 	return (
-		<div className="h-full" data-testid="vertical-grid-container">
+		<div className="h-full" data-testid="vertical-grid-container" style={style}>
 			{/* header row */}
 			{isRegularCalendar && header}
 

@@ -87,67 +87,66 @@ export const WeekView: React.FC = () => {
 	} as React.CSSProperties
 
 	return (
-		<div className="h-full" style={cssVars}>
-			<VerticalGrid
-				allDayRow={
-					<AllDayRow
-						classes={{ cell: CELL_CLASS, spacer: LEFT_COL_WIDTH }}
-						days={visibleDays}
-					/>
-				}
-				classes={{
-					header: 'w-full h-18',
-					body: 'h-[calc(100%-4.5rem)] w-full',
-				}}
-				columns={[firstCol, ...columns]}
-				gridType="hour"
-				variant="regular"
-			>
-				<div className={'flex h-full flex-1'} data-testid="week-view-header">
-					{/* Corner cell with week number */}
-					<div className="w-10 sm:w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
-						<div className="flex flex-col items-center justify-center">
-							<span className="text-muted-foreground text-xs">{t('week')}</span>
-							<span className="font-medium">{currentDate.week()}</span>
-						</div>
+		<VerticalGrid
+			allDayRow={
+				<AllDayRow
+					classes={{ cell: CELL_CLASS, spacer: LEFT_COL_WIDTH }}
+					days={visibleDays}
+				/>
+			}
+			classes={{
+				header: 'w-full h-18',
+				body: 'h-[calc(100%-4.5rem)] w-full',
+			}}
+			columns={[firstCol, ...columns]}
+			gridType="hour"
+			style={cssVars}
+			variant="regular"
+		>
+			<div className={'flex h-full flex-1'} data-testid="week-view-header">
+				{/* Corner cell with week number */}
+				<div className="w-10 sm:w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
+					<div className="flex flex-col items-center justify-center">
+						<span className="text-muted-foreground text-xs">{t('week')}</span>
+						<span className="font-medium">{currentDate.week()}</span>
 					</div>
-
-					{/* Day header cells */}
-					{visibleDays.map((day, index) => {
-						const isToday = day.isSame(dayjs(), 'day')
-						const key = `week-day-header-${day.toISOString()}`
-
-						return (
-							<AnimatedSection
-								className={cn(
-									'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-50 h-full',
-									isToday && 'bg-primary/10 font-bold'
-								)}
-								data-testid={`week-day-header-${day.format('dddd').toLowerCase()}`}
-								delay={index * 0.05}
-								key={key}
-								onClick={() => {
-									selectDate(day)
-									openEventForm({ start: day })
-								}}
-								transitionKey={key}
-							>
-								<div className="text-xs sm:text-sm">{day.format('ddd')}</div>
-								<div
-									className={cn(
-										'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
-										isToday && 'bg-primary text-primary-foreground'
-									)}
-								>
-									{Intl.DateTimeFormat(currentLocale, {
-										day: 'numeric',
-									}).format(day.toDate())}
-								</div>
-							</AnimatedSection>
-						)
-					})}
 				</div>
-			</VerticalGrid>
-		</div>
+
+				{/* Day header cells */}
+				{visibleDays.map((day, index) => {
+					const isToday = day.isSame(dayjs(), 'day')
+					const key = `week-day-header-${day.toISOString()}`
+
+					return (
+						<AnimatedSection
+							className={cn(
+								'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-50 h-full',
+								isToday && 'bg-primary/10 font-bold'
+							)}
+							data-testid={`week-day-header-${day.format('dddd').toLowerCase()}`}
+							delay={index * 0.05}
+							key={key}
+							onClick={() => {
+								selectDate(day)
+								openEventForm({ start: day })
+							}}
+							transitionKey={key}
+						>
+							<div className="text-xs sm:text-sm">{day.format('ddd')}</div>
+							<div
+								className={cn(
+									'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
+									isToday && 'bg-primary text-primary-foreground'
+								)}
+							>
+								{Intl.DateTimeFormat(currentLocale, {
+									day: 'numeric',
+								}).format(day.toDate())}
+							</div>
+						</AnimatedSection>
+					)
+				})}
+			</div>
+		</VerticalGrid>
 	)
 }

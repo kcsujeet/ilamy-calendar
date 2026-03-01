@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.4.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.3...v1.4.0)
+
+> 1 March 2026
+
+##### Features
+
+- feat: add `hiddenDays` prop to hide specific weekdays from the week view ([`#85`](https://github.com/kcsujeet/ilamy-calendar/pull/85))
+
+##### Fixes
+
+- fix: resolve scroll overflow in fixed-height calendar and DST grid corruption ([`#84`](https://github.com/kcsujeet/ilamy-calendar/pull/84))
+- fix: resolve translation type errors in recurrence editor
+
+##### Refactors
+
+- refactor: unify context hook API and restrict public access ([`#77`](https://github.com/kcsujeet/ilamy-calendar/pull/77))
+
 #### [v1.3.3](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.2...v1.3.3)
 
 > 31 January 2026

@@ -772,6 +772,18 @@ describe('WeekView', () => {
 		expect(screen.getByTestId('vertical-time-23')).toBeInTheDocument()
 	})
 
+	test('scroll area uses flex column container for scroll containment', () => {
+		cleanup()
+		renderWeekView()
+
+		const container = screen.getByTestId('vertical-grid-container')
+		expect(container.className).toContain('flex')
+		expect(container.className).toContain('flex-col')
+
+		const scrollArea = screen.getByTestId('vertical-grid-scroll')
+		expect(scrollArea).toBeInTheDocument()
+	})
+
 	test('still applies business hours styling when hideNonBusinessHours is false', () => {
 		cleanup()
 		const monday = dayjs('2025-01-06T00:00:00.000Z')

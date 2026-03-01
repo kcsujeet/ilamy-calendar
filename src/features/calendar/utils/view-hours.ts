@@ -31,14 +31,14 @@ export function getViewHours({
 	allDates = [referenceDate],
 	resourceBusinessHours = [],
 }: GetViewHoursOptions): dayjs.Dayjs[] {
-	const allHours = getDayHours({ referenceDate })
+	const hours = getDayHours({ referenceDate })
 
-	if (
-		!hideNonBusinessHours ||
-		(!businessHours && resourceBusinessHours.length === 0)
-	) {
-		return allHours
-	}
+	const hasBusinessHoursConfig =
+		!!businessHours || resourceBusinessHours.length > 0
+	const shouldFilterByBusinessHours =
+		hideNonBusinessHours && hasBusinessHoursConfig
+
+	if (!shouldFilterByBusinessHours) return hours
 
 	const { minStart, maxEnd, hasBusinessHours } = calculateBusinessHoursRange({
 		allDates,
@@ -47,12 +47,9 @@ export function getViewHours({
 		hideNonBusinessHours,
 	})
 
-	if (!hasBusinessHours) {
-		return allHours
-	}
+	if (!hasBusinessHours) return hours
 
-	// Return hours within the range [minStart, maxEnd)
-	return allHours.filter((h) => {
+	return hours.filter((h) => {
 		const hour = h.hour()
 		return hour >= minStart && hour < maxEnd
 	})

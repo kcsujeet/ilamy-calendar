@@ -74,13 +74,19 @@ export const ResourceWeekVertical: React.FC = () => {
 					resourceId: resource.id,
 					resource,
 					day,
-					days: hours.map((h) =>
-						day.hour(h.hour()).minute(0).second(0).millisecond(0)
-					),
+					days: getViewHours({
+						referenceDate: day,
+						businessHours,
+						hideNonBusinessHours,
+						allDates: weekDays,
+						resourceBusinessHours: resources
+							.map((r) => r.businessHours)
+							.filter(Boolean) as (BusinessHours | BusinessHours[])[],
+					}),
 					gridType: 'hour' as const,
 				}))
 			),
-		[resources, weekDays, hours]
+		[resources, weekDays, businessHours, hideNonBusinessHours]
 	)
 	return (
 		<VerticalGrid

@@ -121,10 +121,13 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 
 	const hourStr = day.format('HH')
 	const mm = day.format('mm')
-	const dateTestIdBase =
-		gridType === 'hour'
-			? `day-cell-${day.format('YYYY-MM-DD')}-${hourStr}-${mm}`
-			: `day-cell-${day.format('YYYY-MM-DD')}`
+	const baseTestId = `day-cell-${day.format('YYYY-MM-DD')}`
+	const testId =
+		gridType === 'hour' ? `${baseTestId}-${hourStr}-${mm}` : baseTestId
+	// Droppable ID must use toISOString() (not YYYY-MM-DD) so each time slot
+	// gets a unique ID in @dnd-kit's registry. YYYY-MM-DD strips the time,
+	// causing all cells on the same day to collide.
+	const droppableId = `day-cell-${day.toISOString()}${allDay ? '-allday' : ''}${resourceId ? `-resource-${resourceId}` : ''}`
 
 	return (
 		<>
@@ -134,11 +137,11 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 					'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px] relative border-r last:border-r-0 only:border-r border-b',
 					className
 				)}
-				data-testid={dataTestId || dateTestIdBase}
+				data-testid={dataTestId || testId}
 				date={day}
 				disabled={!isBusiness || !isCurrentMonth}
 				hour={hour}
-				id={`day-cell-${day.toISOString()}${resourceId ? `-resource-${resourceId}` : ''}`}
+				id={droppableId}
 				minute={minute}
 				resourceId={resourceId}
 				type="day-cell"

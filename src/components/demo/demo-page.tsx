@@ -280,7 +280,7 @@ export function DemoPage() {
 		return Intl.DateTimeFormat().resolvedOptions().timeZone
 	})
 	const [stickyViewHeader, setStickyHeader] = useState(true)
-	const [hideNonBusinessHours, setHideNonBusinessHours] = useState(true)
+	const [hideNonBusinessHours, setHideNonBusinessHours] = useState(false)
 	const [businessStartTime, setBusinessStartTime] = useState(9)
 	const [businessEndTime, setBusinessEndTime] = useState(17)
 

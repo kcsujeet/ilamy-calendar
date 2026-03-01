@@ -53,14 +53,18 @@ export const DayView = () => {
 		<VerticalGrid
 			allDayRow={<AllDayRow days={[currentDate]} />}
 			cellSlots={[0, 15, 30, 45]}
-			classes={{ header: 'w-full', body: 'w-full', allDay: 'w-full' }}
+			classes={{
+				header: 'w-full',
+				body: 'w-full',
+				allDay: 'w-full',
+			}}
 			columns={[firstCol, columns]}
 			gridType="hour"
 			variant="regular"
 		>
 			{/* Header */}
 			<div
-				className={'flex h-full flex-1 justify-center items-center'}
+				className={'flex flex-1 justify-center items-center min-h-12'}
 				data-testid="day-view-header"
 			>
 				<AnimatedSection

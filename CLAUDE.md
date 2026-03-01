@@ -117,6 +117,7 @@ docs/
   export-ical.md                               # iCal export guide
   resource-calendar.md                         # Resource calendar docs
   translation-usage.md                         # i18n guide
+  time-grid.md                                 # Time grid architecture & DST handling
   logs/                                        # Daily dev logs (see Development Logs)
 ```
 

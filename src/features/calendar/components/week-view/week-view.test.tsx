@@ -887,6 +887,108 @@ describe('WeekView', () => {
 		expect(style).not.toContain('top: 0%')
 	})
 
+	test('hiddenDays hides specified day columns (hide saturday/sunday shows 5 columns)', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z') // Monday
+		const hiddenDays = new Set([0, 6]) // Sunday=0, Saturday=6
+
+		renderWeekView({
+			initialDate: monday,
+			firstDayOfWeek: 0,
+			hiddenDays,
+		})
+
+		// Should have 5 day columns (Mon-Fri), not 7
+		const startOfWeek = monday.startOf('week') // Sunday
+		for (let i = 0; i < 7; i++) {
+			const dayDate = startOfWeek.add(i, 'day')
+			const dayColTestId = `vertical-col-day-col-${dayDate.format('YYYY-MM-DD')}`
+			const dayNumber = dayDate.day()
+
+			if (dayNumber === 0 || dayNumber === 6) {
+				// Sunday and Saturday should NOT be rendered
+				expect(screen.queryByTestId(dayColTestId)).not.toBeInTheDocument()
+			} else {
+				// Monday-Friday should be rendered
+				expect(screen.getByTestId(dayColTestId)).toBeInTheDocument()
+			}
+		}
+	})
+
+	test('hiddenDays filters day header cells', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const hiddenDays = new Set([0, 6]) // Hide Sunday and Saturday
+
+		renderWeekView({
+			initialDate: monday,
+			firstDayOfWeek: 0,
+			hiddenDays,
+		})
+
+		// Saturday and Sunday headers should not be present
+		expect(
+			screen.queryByTestId('week-day-header-saturday')
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByTestId('week-day-header-sunday')
+		).not.toBeInTheDocument()
+
+		// Monday-Friday headers should be present
+		expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-day-header-friday')).toBeInTheDocument()
+	})
+
+	test('empty hiddenDays shows all 7 days (default behavior)', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+
+		renderWeekView({
+			initialDate: monday,
+			// No hiddenDays prop
+		})
+
+		// All 7 weekday headers should be present
+		weekDays.forEach((day) => {
+			expect(
+				screen.getByTestId(`week-day-header-${day.toLowerCase()}`)
+			).toBeInTheDocument()
+		})
+
+		// All 7 day columns should be present
+		const startOfWeek = monday.startOf('week')
+		for (let i = 0; i < 7; i++) {
+			const dayDate = startOfWeek.add(i, 'day')
+			const dayColTestId = `vertical-col-day-col-${dayDate.format('YYYY-MM-DD')}`
+			expect(screen.getByTestId(dayColTestId)).toBeInTheDocument()
+		}
+	})
+
+	test('hiddenDays with single hidden day works correctly', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const hiddenDays = new Set([3]) // Hide Wednesday
+
+		renderWeekView({
+			initialDate: monday,
+			firstDayOfWeek: 0,
+			hiddenDays,
+		})
+
+		// Wednesday header should not be present
+		expect(
+			screen.queryByTestId('week-day-header-wednesday')
+		).not.toBeInTheDocument()
+
+		// Other 6 days should be present
+		expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-day-header-tuesday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-day-header-thursday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-day-header-friday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-day-header-saturday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-day-header-sunday')).toBeInTheDocument()
+	})
+
 	test('positions event at correct percentage when event is in middle of business hours in WeekView', () => {
 		cleanup()
 		const monday = dayjs('2025-01-06T00:00:00.000Z')

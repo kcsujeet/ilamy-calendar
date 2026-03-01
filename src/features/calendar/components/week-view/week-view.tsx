@@ -9,7 +9,8 @@ import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
-const CELL_CLASS = 'w-[calc((100%-4rem)/7)] min-w-[calc((100%-4rem)/7)] flex-1'
+const CELL_CLASS =
+	'w-[calc((100%-4rem)/var(--visible-days))] min-w-[calc((100%-4rem)/var(--visible-days))] flex-1'
 const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
 
 export const WeekView: React.FC = () => {
@@ -23,11 +24,20 @@ export const WeekView: React.FC = () => {
 		timeFormat,
 		businessHours,
 		hideNonBusinessHours,
+		hiddenDays,
 	} = useSmartCalendarContext()
 
 	const weekDays = useMemo(
 		() => getWeekDays(currentDate, firstDayOfWeek),
 		[currentDate, firstDayOfWeek]
+	)
+
+	const visibleDays = useMemo(
+		() =>
+			hiddenDays
+				? weekDays.filter((day) => !hiddenDays.has(day.day()))
+				: weekDays,
+		[weekDays, hiddenDays]
 	)
 
 	const hours = useMemo(
@@ -60,7 +70,7 @@ export const WeekView: React.FC = () => {
 
 	// Generate week days — each column gets its own hours on the correct date
 	const columns = useMemo(() => {
-		return weekDays.map((day) => ({
+		return visibleDays.map((day) => ({
 			id: `day-col-${day.format('YYYY-MM-DD')}`,
 			day,
 			label: day.format('D'),
@@ -73,19 +83,24 @@ export const WeekView: React.FC = () => {
 			}),
 			value: day,
 		}))
-	}, [weekDays, businessHours, hideNonBusinessHours])
+	}, [weekDays, businessHours, hideNonBusinessHours, visibleDays.map])
+
+	const cssVars = {
+		'--visible-days': visibleDays.length,
+	} as React.CSSProperties
 
 	return (
 		<VerticalGrid
 			allDayRow={
 				<AllDayRow
 					classes={{ cell: CELL_CLASS, spacer: LEFT_COL_WIDTH }}
-					days={weekDays}
+					days={visibleDays}
 				/>
 			}
 			classes={{ header: 'w-full h-18', body: 'w-full' }}
 			columns={[firstCol, ...columns]}
 			gridType="hour"
+			style={cssVars}
 			variant="regular"
 		>
 			<div className={'flex h-full flex-1'} data-testid="week-view-header">
@@ -98,7 +113,7 @@ export const WeekView: React.FC = () => {
 				</div>
 
 				{/* Day header cells */}
-				{weekDays.map((day, index) => {
+				{visibleDays.map((day, index) => {
 					const isToday = day.isSame(dayjs(), 'day')
 					const key = `week-day-header-${day.toISOString()}`
 

@@ -22,6 +22,7 @@ export const ResourceWeekVertical: React.FC = () => {
 		t,
 		businessHours,
 		hideNonBusinessHours,
+		hiddenDays,
 	} = useSmartCalendarContext()
 
 	const resources = getVisibleResources()
@@ -29,6 +30,14 @@ export const ResourceWeekVertical: React.FC = () => {
 	const weekDays = useMemo(
 		() => getWeekDays(currentDate, firstDayOfWeek),
 		[currentDate, firstDayOfWeek]
+	)
+
+	const visibleDays = useMemo(
+		() =>
+			hiddenDays
+				? weekDays.filter((day) => !hiddenDays.has(day.day()))
+				: weekDays,
+		[weekDays, hiddenDays]
 	)
 
 	const hours = useMemo(
@@ -69,7 +78,7 @@ export const ResourceWeekVertical: React.FC = () => {
 	const columns = useMemo(
 		() =>
 			resources.flatMap((resource) =>
-				weekDays.map((day) => ({
+				visibleDays.map((day) => ({
 					id: `day-col-${day.format('YYYY-MM-DD')}-resource-${resource.id}`,
 					resourceId: resource.id,
 					resource,
@@ -86,8 +95,9 @@ export const ResourceWeekVertical: React.FC = () => {
 					gridType: 'hour' as const,
 				}))
 			),
-		[resources, weekDays, businessHours, hideNonBusinessHours]
+		[resources, weekDays, businessHours, hideNonBusinessHours, visibleDays.map]
 	)
+
 	return (
 		<VerticalGrid
 			allDayRow={
@@ -96,7 +106,7 @@ export const ResourceWeekVertical: React.FC = () => {
 					{resources.map((resource) => (
 						<AllDayRow
 							classes={{ cell: 'min-w-50' }}
-							days={weekDays}
+							days={visibleDays}
 							key={`resource-week-allday-row-${resource.id}`}
 							resource={resource}
 							showSpacer={false}
@@ -123,10 +133,13 @@ export const ResourceWeekVertical: React.FC = () => {
 						return (
 							<AnimatedSection
 								className={cn(
-									'shrink-0 border-r last:border-r-0 border-b flex items-center text-center font-medium w-[calc(7*var(--spacing)*50)]'
+									'shrink-0 border-r last:border-r-0 border-b flex items-center text-center font-medium'
 								)}
 								delay={index * 0.05}
 								key={`${key}-animated`}
+								style={{
+									width: `calc(${visibleDays.length} * var(--spacing) * 50)`,
+								}}
 								transitionKey={`${key}-motion`}
 							>
 								<ResourceCell

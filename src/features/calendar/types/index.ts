@@ -258,4 +258,13 @@ export interface IlamyCalendarProps {
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
 	) => React.ReactNode
+	/**
+	 * Days of the week to hide from the week view.
+	 * Hidden days won't render as columns, giving remaining days more space.
+	 * Only applies to vertical week views (regular and resource vertical).
+	 * Does not affect month, day, year, or resource horizontal week views.
+	 * @default []
+	 * @example ['saturday', 'sunday'] // Hide weekends
+	 */
+	hiddenDays?: WeekDays[]
 }

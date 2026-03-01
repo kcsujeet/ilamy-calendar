@@ -12,6 +12,7 @@ import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 // oxlint-disable-next-line no-duplicates
 import '@/lib/configs/dayjs-config'
+import type { WeekDays } from '@/components/types'
 import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
@@ -53,6 +54,11 @@ const CalendarContent: React.FC = () => {
 	)
 }
 
+const toHiddenDaysSet = (hiddenDays?: WeekDays[]): Set<number> | undefined => {
+	if (!hiddenDays || hiddenDays.length === 0) return undefined
+	return new Set(hiddenDays.map((day) => WEEK_DAYS_NUMBER_MAP[day]))
+}
+
 export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	events,
 	firstDayOfWeek = 'sunday',
@@ -64,6 +70,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	viewHeaderClassName = '',
 	timeFormat = '12-hour',
 	hideNonBusinessHours = false,
+	hiddenDays,
 	...props
 }) => {
 	return (
@@ -72,6 +79,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			eventSpacing={eventSpacing}
 			events={normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events)}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
+			hiddenDays={toHiddenDaysSet(hiddenDays)}
 			hideNonBusinessHours={hideNonBusinessHours}
 			initialDate={safeDate(initialDate)}
 			initialView={initialView}

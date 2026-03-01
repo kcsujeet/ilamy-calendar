@@ -13,6 +13,35 @@ These are non-negotiable. Violating any of these is a bug.
 - NEVER import `datetime` from rrule. Use dayjs.
 - NEVER add Claude/AI as co-author in commits.
 - NEVER commit directly to main. Use feature branches.
+- ALWAYS update the dev log (`docs/logs/`) after making any codebase changes. This is mandatory — not optional. See "Development Logs" section below.
+
+## Development Logs (MANDATORY)
+
+Daily logs in `docs/logs/` track changes across sessions. **Update the log after every task that modifies the codebase.**
+
+- **Check logs** at session start to understand recent changes
+- **Update logs** after making any codebase changes — do this BEFORE reporting completion to the user
+- **Naming**: `YYYY-MM-DD.md`
+- **Max 10 files**: delete oldest when exceeded
+- **One file per day**: append if today's log exists
+
+### Log Format
+
+```markdown
+# Development Log - YYYY-MM-DD
+
+## Changes
+
+- **[area]**: What changed and why
+
+## Files Modified
+
+- `path/to/file.ts` - What was changed
+
+## Notes
+
+Context, decisions, things to watch out for.
+```
 
 ## Session Start
 
@@ -166,30 +195,3 @@ docs/
 6. Commit with conventional prefix (`feat:`, `fix:`, `docs:`, etc.), max 100 chars
 7. Ask before pushing
 
-## Development Logs
-
-Daily logs in `docs/logs/` track changes across sessions.
-
-- **Check logs** at session start to understand recent changes
-- **Update logs** after making any codebase changes
-- **Naming**: `YYYY-MM-DD.md`
-- **Max 10 files**: delete oldest when exceeded
-- **One file per day**: append if today's log exists
-
-### Log Format
-
-```markdown
-# Development Log - YYYY-MM-DD
-
-## Changes
-
-- **[area]**: What changed and why
-
-## Files Modified
-
-- `path/to/file.ts` - What was changed
-
-## Notes
-
-Context, decisions, things to watch out for.
-```

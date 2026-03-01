@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file. Dates are d
 
 > 1 March 2026
 
+##### Breaking Changes
+
+- **Context Hook API**: The internal context hooks have been unified into `useSmartCalendarContext` (internal only). The **sole public-facing hook is now `useIlamyCalendarContext`**. If you were importing any other context hooks directly, you must migrate to `useIlamyCalendarContext`. ([`#77`](https://github.com/kcsujeet/ilamy-calendar/pull/77))
+
 ##### Features
 
 - feat: add `hiddenDays` prop to hide specific weekdays from the week view ([`#85`](https://github.com/kcsujeet/ilamy-calendar/pull/85))
@@ -14,10 +18,6 @@ All notable changes to this project will be documented in this file. Dates are d
 
 - fix: resolve scroll overflow in fixed-height calendar and DST grid corruption ([`#84`](https://github.com/kcsujeet/ilamy-calendar/pull/84))
 - fix: resolve translation type errors in recurrence editor
-
-##### Refactors
-
-- refactor: unify context hook API and restrict public access ([`#77`](https://github.com/kcsujeet/ilamy-calendar/pull/77))
 
 #### [v1.3.3](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.2...v1.3.3)
 

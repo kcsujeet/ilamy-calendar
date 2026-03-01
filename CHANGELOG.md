@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file. Dates are d
 
 ##### Breaking Changes
 
-- **Context Hook API**: The internal context hooks have been unified into `useSmartCalendarContext` (internal only). The **sole public-facing hook is now `useIlamyCalendarContext`**. If you were importing any other context hooks directly, you must migrate to `useIlamyCalendarContext`. ([`#77`](https://github.com/kcsujeet/ilamy-calendar/pull/77))
+- **Context Hook API**: The **sole public-facing hook is now `useIlamyCalendarContext`**. If you were importing any other context hooks directly, you must migrate to `useIlamyCalendarContext`. Internally, hooks have been unified into `useSmartCalendarContext`. ([`#77`](https://github.com/kcsujeet/ilamy-calendar/pull/77))
 
 ##### Features
 

@@ -4,8 +4,6 @@ import { cn } from '@/lib/utils'
 import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
 import { VerticalGridHeaderContainer } from './vertical-grid-header-container'
 
-const BODY_HEIGHT = 'h-[calc(100%-3rem)]'
-
 interface VerticalGridProps {
 	columns: VerticalGridColProps[]
 	children?: React.ReactNode
@@ -44,16 +42,16 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	)
 
 	return (
-		<div className="h-full" data-testid="vertical-grid-container" style={style}>
+		<div
+			className="h-full flex flex-col"
+			data-testid="vertical-grid-container"
+			style={style}
+		>
 			{/* header row */}
 			{isRegularCalendar && header}
 
 			<ScrollArea
-				className={cn(
-					'h-full',
-					isRegularCalendar && 'overflow-auto',
-					isRegularCalendar && BODY_HEIGHT // scroll area becomes body in regular calendar
-				)}
+				className={cn('h-full', isRegularCalendar && 'overflow-auto')}
 				data-testid="vertical-grid-scroll"
 				viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
 			>
@@ -61,11 +59,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 				{isResourceCalendar && header}
 				{/* Calendar area with scroll */}
 				<div
-					className={cn(
-						'flex flex-1 w-fit',
-						isResourceCalendar && BODY_HEIGHT,
-						classes?.body
-					)}
+					className={cn('flex flex-1 w-fit', classes?.body)}
 					data-testid="vertical-grid-body"
 				>
 					{/* Day columns with time slots */}

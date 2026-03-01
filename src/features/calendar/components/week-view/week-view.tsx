@@ -68,19 +68,22 @@ export const WeekView: React.FC = () => {
 		),
 	}
 
-	// Generate week days
+	// Generate week days — each column gets its own hours on the correct date
 	const columns = useMemo(() => {
 		return visibleDays.map((day) => ({
 			id: `day-col-${day.format('YYYY-MM-DD')}`,
 			day,
 			label: day.format('D'),
 			className: CELL_CLASS,
-			days: hours.map((h) =>
-				day.hour(h.hour()).minute(0).second(0).millisecond(0)
-			),
+			days: getViewHours({
+				referenceDate: day,
+				businessHours,
+				hideNonBusinessHours,
+				allDates: weekDays,
+			}),
 			value: day,
 		}))
-	}, [visibleDays, hours])
+	}, [weekDays, businessHours, hideNonBusinessHours, visibleDays.map])
 
 	const cssVars = {
 		'--visible-days': visibleDays.length,
@@ -94,10 +97,7 @@ export const WeekView: React.FC = () => {
 					days={visibleDays}
 				/>
 			}
-			classes={{
-				header: 'w-full h-18',
-				body: 'h-[calc(100%-4.5rem)] w-full',
-			}}
+			classes={{ header: 'w-full h-18', body: 'w-full' }}
 			columns={[firstCol, ...columns]}
 			gridType="hour"
 			style={cssVars}

@@ -54,7 +54,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 					gridTemplateRows: `repeat(${days.length}, minmax(0, 1fr))`,
 				}}
 			>
-				{days.map((day) => {
+				{days.map((day, dayIndex) => {
 					const hourStr = day.format('HH')
 					const dateStr = day.format('YYYY-MM-DD')
 
@@ -67,7 +67,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 							<div
 								className="h-[60px] border-b border-r"
 								data-testid={testId}
-								key={`${dateStr}-${hourStr}`}
+								key={`${id}-${dayIndex}-${hourStr}`}
 							>
 								{renderCell(day)}
 							</div>
@@ -90,7 +90,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 								day={m ? day.minute(m) : day}
 								gridType={gridType}
 								hour={day.hour()}
-								key={`${dateStr}-${hourStr}-${mm}-${resourceId || 'no-resource'}`}
+								key={`${id}-${dayIndex}-${mm}`}
 								minute={m}
 								resourceId={resourceId} // Events are rendered in a separate layer
 								shouldRenderEvents={false}

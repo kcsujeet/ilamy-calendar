@@ -147,6 +147,9 @@ docs/
   resource-calendar.md                         # Resource calendar docs
   translation-usage.md                         # i18n guide
   time-grid.md                                 # Time grid architecture & DST handling
+  testing-guide.md                             # Test patterns, wrappers, mocking
+  types-and-interfaces.md                      # Type catalog and relationships
+  hooks-and-context.md                         # Hook architecture, context system
   logs/                                        # Daily dev logs (see Development Logs)
 ```
 

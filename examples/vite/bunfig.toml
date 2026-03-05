@@ -1,0 +1,3 @@
+# Bun configuration
+[install]
+exact = true

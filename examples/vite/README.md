@@ -24,10 +24,22 @@ Add `@source` pointing at the ilamy dist folder so Tailwind v4 scans and generat
 ```css
 /* src/index.css */
 @import 'tailwindcss';
-@source "../../node_modules/@ilamy/calendar/dist";
+@source "../node_modules/@ilamy/calendar/dist";
 ```
 
-> **Note:** The path is relative to your CSS file. Adjust accordingly if your project structure differs.
+> [!IMPORTANT]
+> The `@source` path is **relative to your CSS file**, not the project root.
+> The correct depth depends on where your CSS lives:
+>
+> ```css
+> /* CSS at src/index.css — one level deep */
+> @source "../node_modules/@ilamy/calendar/dist";
+>
+> /* CSS at src/styles/global.css — two levels deep */
+> @source "../../node_modules/@ilamy/calendar/dist";
+> ```
+>
+> A wrong depth silently points at a non-existent directory and Tailwind generates no classes.
 
 ### 3. Import CSS in your entry point
 

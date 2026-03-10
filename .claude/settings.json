@@ -1,0 +1,25 @@
+{
+	"permissions": {
+		"allow": [
+			"WebFetch(domain:docs.anthropic.com)",
+			"Bash(bun test:*)",
+			"Bash(node:*)",
+			"Bash(bun run:*)",
+			"Bash(grep:*)",
+			"WebSearch",
+			"WebFetch(domain:fullcalendar.io)",
+			"Bash(mkdir:*)",
+			"Bash(rm:*)",
+			"Bash(bunx tsc:*)",
+			"WebFetch(domain:github.com)",
+			"Bash(mv:*)",
+			"Bash(true)",
+			"Bash(cp:*)",
+			"Bash(bunx esbuild-visualizer:*)",
+			"Bash(cat:*)"
+		],
+		"deny": [],
+		"ask": ["git commit"],
+		"defaultMode": "acceptEdits"
+	}
+}

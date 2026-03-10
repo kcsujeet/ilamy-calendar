@@ -73,4 +73,28 @@ describe('VerticalGrid', () => {
 			'custom-allday-class'
 		)
 	})
+
+	test('container uses flex column layout for scroll containment', () => {
+		renderVerticalGrid()
+
+		const container = screen.getByTestId('vertical-grid-container')
+		expect(container.className).toContain('flex')
+		expect(container.className).toContain('flex-col')
+	})
+
+	test('scroll area is present for regular variant', () => {
+		renderVerticalGrid({ variant: 'regular' })
+
+		const scrollArea = screen.getByTestId('vertical-grid-scroll')
+		expect(scrollArea).toBeInTheDocument()
+	})
+
+	test('all-day row container has minimum height', () => {
+		renderVerticalGrid({
+			allDayRow: <div data-testid="mock-all-day">All Day</div>,
+		})
+
+		const allDayContainer = screen.getByTestId('vertical-grid-all-day')
+		expect(allDayContainer.className).toContain('min-h-12')
+	})
 })

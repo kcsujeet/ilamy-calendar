@@ -71,6 +71,7 @@ export const ResourceCalendarProvider: React.FC<
 	orientation = 'horizontal',
 	renderCurrentTimeIndicator,
 	hideNonBusinessHours = false,
+	hiddenDays,
 }) => {
 	// Resource-specific state
 	const [currentResources] = useState<Resource[]>(resources)
@@ -280,6 +281,7 @@ export const ResourceCalendarProvider: React.FC<
 			orientation,
 			renderCurrentTimeIndicator,
 			hideNonBusinessHours,
+			hiddenDays,
 		}),
 		[
 			calendarEngine,
@@ -317,6 +319,7 @@ export const ResourceCalendarProvider: React.FC<
 			orientation,
 			renderCurrentTimeIndicator,
 			hideNonBusinessHours,
+			hiddenDays,
 		]
 	)
 

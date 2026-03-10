@@ -1,6 +1,47 @@
 import { describe, expect, it } from 'bun:test'
 import dayjs from '@/lib/configs/dayjs-config'
-import { getWeekDays } from './date-utils'
+import { getDayHours, getWeekDays } from './date-utils'
+
+describe('getDayHours', () => {
+	it('should return exactly 24 hours by default', () => {
+		const hours = getDayHours()
+		expect(hours).toHaveLength(24)
+	})
+
+	it('should return hours with sequential .hour() values 0-23', () => {
+		const hours = getDayHours()
+		hours.forEach((h, i) => {
+			expect(h.hour()).toBe(i)
+		})
+	})
+
+	it('should return hours on the reference date', () => {
+		const referenceDate = dayjs('2025-06-15T00:00:00.000Z')
+		const hours = getDayHours({ referenceDate })
+
+		expect(hours).toHaveLength(24)
+		hours.forEach((h, i) => {
+			expect(h.hour()).toBe(i)
+			expect(h.format('YYYY-MM-DD')).toBe('2025-06-15')
+		})
+	})
+
+	it('should produce unique timestamps (each entry is a distinct moment)', () => {
+		const hours = getDayHours()
+
+		const timestamps = hours.map((h) => h.valueOf())
+		const uniqueTimestamps = new Set(timestamps)
+		expect(uniqueTimestamps.size).toBe(24)
+	})
+
+	it('should respect custom length', () => {
+		const hours = getDayHours({ length: 12 })
+		expect(hours).toHaveLength(12)
+		hours.forEach((h, i) => {
+			expect(h.hour()).toBe(i)
+		})
+	})
+})
 
 describe('getWeekDays', () => {
 	describe('Sunday as first day of week (0)', () => {

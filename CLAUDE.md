@@ -1,247 +1,201 @@
-# CLAUDE.md
+# CLAUDE.md — @ilamy/calendar
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Hard Rules
 
-## Development Commands
+These are non-negotiable. Violating any of these is a bug.
 
-**Critical**: NEVER start/stop the dev server. It's already running with hot reloading enabled.
-**Critical**: NEVER commit changes without asking first.
-**Critical**: NEVER forget to write tests.
+- NEVER start/stop the dev server. It's already running with hot reload.
+- NEVER commit or push without explicit user approval.
+- NEVER skip writing tests. TDD is mandatory.
+- NEVER use npm/node/vite/pnpm. Always use `bun`.
+- NEVER use `YYYY-MM-DD` format for storage/transmission. Always use ISO strings.
+- NEVER import dayjs directly. Always import from `@/lib/dayjs-config`.
+- NEVER import `datetime` from rrule. Use dayjs.
+- NEVER add Claude/AI as co-author in commits.
+- NEVER commit directly to main. Use feature branches.
+- ALWAYS update the dev log (`docs/logs/`) after making any codebase changes. This is mandatory — not optional. See "Development Logs" section below.
+
+## Development Logs (MANDATORY)
+
+Daily logs in `docs/logs/` track changes across sessions. **Update the log after every task that modifies the codebase.**
+
+- **Check logs** at session start to understand recent changes
+- **Update logs** after making any codebase changes — do this BEFORE reporting completion to the user
+- **Naming**: `YYYY-MM-DD.md`
+- **Max 10 files**: delete oldest when exceeded
+- **One file per day**: append if today's log exists
+
+### Log Format
+
+```markdown
+# Development Log - YYYY-MM-DD
+
+## Changes
+
+- **[area]**: What changed and why
+
+## Files Modified
+
+- `path/to/file.ts` - What was changed
+
+## Notes
+
+Context, decisions, things to watch out for.
+```
+
+## Session Start
+
+Run `/project:load-context` to load the full codebase map, rules, and recent dev logs before starting work.
+
+## Commands
 
 ```bash
-# Testing
-bun test                    # Run all tests
-bun test --coverage         # Run tests with coverage
-bun test --coverage --reporter=html  # Coverage report
-
-# Linting & Formatting
-bun run lint               # Check code with oxlint
-bun run lint:fix           # Fix linting issues
-bun run prettier:check     # Check formatting
-bun run prettier:fix       # Fix formatting
-bun run pre-commit         # Run lint:fix + prettier:fix
-
-# Build & Type Check
-bun run build              # Production build using bunup
-bun run type-check         # TypeScript type checking
-bun run ci                 # Full CI pipeline (lint + prettier + test + build)
-
-# Development (DO NOT RUN - already running)
-# bun dev                  # Development server with hot reload
+bun test                           # Run all tests
+bun test --coverage                # Tests with coverage
+bun run lint                       # Lint (oxlint)
+bun run lint:fix                   # Fix lint issues
+bun run prettier:check             # Check formatting
+bun run prettier:fix               # Fix formatting
+bun run pre-commit                 # lint:fix + prettier:fix
+bun run build                      # Production build (bunup)
+bun run type-check                 # TypeScript check
+bun run ci                         # Full CI: lint + prettier + test + build
 ```
 
-## Project Architecture
+## Architecture
 
-### Component Library Structure
+React calendar component library. TypeScript, Shadcn-UI, Tailwind CSS, @dnd-kit, rrule.js.
 
-- **Main Export**: `IlamyCalendar` component with full calendar functionality
-- **Context-First**: `CalendarProvider` manages all state, wrapped by `CalendarDndContext` for drag-and-drop
-- **View-Based Architecture**: Separate components for `month-view/`, `week-view/`, `day-view/`, `year-view/`
-- **Feature Organization**: Components grouped by functionality (`drag-and-drop/`, `recurrence/`, `event-form/`)
+### Data Flow
 
-### State Management
-
-- **CalendarProvider** (`src/contexts/calendar-context/`) centralizes all calendar state
-- **useCalendarContext** hook provides access to events, view state, and operations
-- All CRUD operations flow through context methods: `addEvent`, `updateEvent`, `deleteEvent`
-- Recurring events use specialized functions: `updateRecurringEvent`, `deleteRecurringEvent`
-
-### Recurring Events System
-
-- **RFC 5545 Compliant**: Full iCalendar standard compliance using `rrule.js` library
-- **Google Calendar UX**: "this/following/all" scope operations for recurring events
-- **Core Functions** in `src/lib/recurrence-handler/`:
-  - `generateRecurringEvents()` - Creates instances using rrule.js
-  - `updateRecurringEvent()` - Handles scoped updates with EXDATE exclusions
-  - `deleteRecurringEvent()` - Handles scoped deletions
-  - `isRecurringEvent()` - Identifies base events vs instances
-- **Three Event Types**:
-  1. Base events (have `rrule`, no `recurrenceId`)
-  2. Generated instances (no `rrule`, no `recurrenceId`, ID pattern `originalId_number`)
-  3. Modified instances (have `recurrenceId`, no `rrule`)
-
-### Drag & Drop Integration
-
-- **@dnd-kit/core** integration via `CalendarDndContext`
-- Handles event dragging between dates and time slots
-- Updates events through calendar context after successful drops
-
-## Important Development Rules
-
-### Bun-First Workflow
-
-- **Always use Bun** instead of npm/node/vite (see `.cursor/rules/use-bun-instead-of-node-vite-npm-pnpm.mdc`)
-- Use `bun test` instead of Jest/Vitest
-- Use `bun install` for dependencies
-- Use `bun run <script>` for package scripts
-
-### Test-Driven Development (TDD)
-
-- **Mandatory TDD**: Always write tests FIRST before implementing features
-- **Red-Green-Refactor**: Write failing test → minimal implementation → refactor
-- **Never create new test files** - always update existing `component.test.tsx` files
-- **Never create new functions** - always replace/update existing implementations
-- **Exact assertions**: Use `toHaveLength(3)`, `toBe('exact-value')` instead of weak checks like `toBeGreaterThan(0)`
-
-### Date Handling Standards
-
-- **CRITICAL: Always use ISO date strings** - This is non-negotiable
-- **Never use YYYY-MM-DD format** for storage/transmission (causes timezone bugs)
-- **Always use ISO strings**: `dayjs().toISOString()` for serialization
-- **Use YYYY-MM-DD only for display** in UI components
-- **Always import dayjs from `@/lib/dayjs-config`** (pre-configured with plugins)
-- **Never import `datetime` from rrule** - stick with dayjs for consistency
-- **In tests**: Always use ISO strings like `'2025-10-13T00:00:00.000Z'` or `dayjs().toISOString()`, never `'2025-10-13'`
-
-### Code Quality Requirements
-
-- **Human-readable code**: Extract complex operations into descriptive variables
-- **One operation per line**: Avoid chaining multiple operations
-- **Meaningful variable names**: `targetEventStartISO` instead of `targetEvent.start.toISOString()`
-- **Design System Compliance**: Strictly follow the design system - DO NOT override button heights, spacing, or other design tokens unless absolutely necessary. Use the design system's predefined sizes (sm, default, lg) instead of custom h-8, h-9 values.
-
-### Git Commit Guidelines
-
-- **ALWAYS ASK BEFORE COMMITTING**: Never commit or push changes without explicit user approval
-- **Workflow**: Make changes → Run tests → Ask user to review → Wait for approval → Commit → Ask before pushing
-- **Short commit messages**: Max 100 characters, use conventional commit prefixes (feat, fix, docs, etc.)
-- **No co-author attribution**: Never add Claude or AI as co-author in commits
-- **Branch workflow**: Create feature branches for new work, don't commit directly to main
-
-### iCalendar (RFC 5545) Compliance
-
-- **Strict RFC 5545 adherence**: No shortcuts or fallbacks
-- **Required fields**: Every event must have globally unique `uid`
-- **RECURRENCE-ID**: Only for modified recurring instances
-- **RRULE**: Use RFC 5545 compliant patterns
-- **EXDATE**: ISO string dates in `exdates` array for exclusions
-
-## Key Files & Directories
-
-- `src/index.ts` - Main library exports
-- `src/components/ilamy-calendar/ilamy-calendar.tsx` - Main calendar component
-- `src/contexts/calendar-context/` - Calendar state management
-- `src/lib/recurrence-handler/` - Recurring events logic with rrule.js
-- `src/features/` - View-specific components (month, week, day, year)
-- `src/components/event-form/` - Event creation/editing UI
-- `docs/rfc-5545.md` - Complete iCalendar specification reference
-- `docs/rrule.js.md` - Complete rrule.js API reference
-- `.github/copilot-instructions.md` - Comprehensive development guidelines
-
-## Internationalization (i18n)
-
-The calendar is fully internationalized with support for both translation objects and translator functions.
-
-### Basic Translation Usage
-
-```tsx
-// Using custom translations object
-const customTranslations = {
-  today: 'Today',
-  create: 'Create',
-  // ... all required translation keys
-}
-
-<IlamyCalendar
-  events={events}
-  translations={customTranslations}
-/>
+```
+IlamyCalendar
+  -> CalendarProvider (all state: events, view, date, translations, CRUD)
+    -> CalendarDndContext (@dnd-kit wrapper)
+      -> View components (month/week/day/year)
 ```
 
-### i18next Integration
+All CRUD flows through context: `addEvent`, `updateEvent`, `deleteEvent`.
+Recurring events: `updateRecurringEvent`, `deleteRecurringEvent`.
+Hook access: `useIlamyCalendarContext()`.
 
-```tsx
-// With i18next translator function
-import { useTranslation } from 'react-i18next'
+### Recurring Events (RFC 5545)
 
-const Calendar = () => {
-  const { t } = useTranslation('calendar')
+Uses `rrule.js` with strict RFC 5545 compliance. Three event types:
 
-  return <IlamyCalendar events={events} translator={(key) => t(key)} />
-}
+| Type | Has `rrule` | Has `recurrenceId` | ID pattern |
+|---|---|---|---|
+| Base event | yes | no | any |
+| Generated instance | no | no | `originalId_number` |
+| Modified instance | no | yes | any |
 
-// With namespace support
-const CalendarWithNamespace = () => {
-  const { t } = useTranslation()
+Core logic in `src/features/recurrence/utils/recurrence-handler.ts`:
+- `generateRecurringEvents()` — create instances from rrule
+- `updateRecurringEvent()` — scoped updates (this/following/all) with EXDATE
+- `deleteRecurringEvent()` — scoped deletions
+- `isRecurringEvent()` — identify base vs instance
 
-  return (
-    <IlamyCalendar events={events} translator={(key) => t(`calendar.${key}`)} />
-  )
-}
+Every event must have a globally unique `uid`. EXDATE uses ISO strings in `exdates[]`.
+
+### i18n
+
+`CalendarProvider` handles translations. Props: `translations?: Translations` or `translator?: TranslatorFunction`. Falls back to English. All components access via `useIlamyCalendarContext().t()`. 94 translation keys. See `docs/translation-usage.md` for full details.
+
+## Key Paths
+
+```
+src/
+  index.ts                                    # Public API exports
+  features/
+    calendar/
+      ilamy-calendar.tsx                       # Main component
+      day-view/ week-view/ month-view/ year-view/  # View components
+      contexts/calendar-context/               # CalendarProvider, all state
+      hooks/                                   # useProcessedDayEvents, useProcessedWeekEvents
+      utils/                                   # business-hours, view-hours, event-form-utils
+    recurrence/
+      utils/recurrence-handler.ts              # Core recurring event logic
+      components/recurrence-editor/            # Recurrence rule builder UI
+      components/recurrence-edit-dialog/       # Edit/delete scope dialog
+      hooks/useRecurringEventActions.ts        # Recurring CRUD hook
+    resource-calendar/
+      ilamy-resource-calendar/                 # Resource calendar component
+      contexts/resource-calendar-context/      # ResourceCalendarProvider
+      day-view/ week-view/ month-view/         # Resource view variants
+  components/
+    types.ts                                   # CalendarEvent, ProcessedCalendarEvent, WeekDays, BusinessHours
+    ui/                                        # Shadcn design system (button, dialog, input, etc.)
+    event-form/                                # Event creation/editing forms
+    drag-and-drop/                             # @dnd-kit integration
+    header/                                    # Calendar header, title, view controls
+    vertical-grid/                             # Time-based grid (day/week views)
+    horizontal-grid/                           # Date-based grid (month view)
+    all-day-row/                               # All-day event bar
+  hooks/
+    use-calendar-engine.ts                     # Main calendar engine
+    use-smart-calendar-context.ts              # Type-safe context access
+  lib/
+    configs/dayjs-config.ts                    # Pre-configured dayjs (ALWAYS import from here)
+    translations/                              # Default translations, types
+    utils/                                     # date-utils, position-*-events, export-ical
+    constants.ts                               # Global constants
+
+docs/
+  rfc-5545.md                                  # iCalendar spec reference
+  rrule.js.md                                  # rrule.js API reference
+  export-ical.md                               # iCal export guide
+  resource-calendar.md                         # Resource calendar docs
+  translation-usage.md                         # i18n guide
+  time-grid.md                                 # Time grid architecture & DST handling
+  testing-guide.md                             # Test patterns, wrappers, mocking
+  types-and-interfaces.md                      # Type catalog and relationships
+  hooks-and-context.md                         # Hook architecture, context system
+  logs/                                        # Daily dev logs (see Development Logs)
 ```
 
-### Translation Architecture
+### Public API (`src/index.ts`)
 
-The translation system is integrated into the **CalendarProvider** without additional providers:
+**Components**: `IlamyCalendar`, `IlamyResourceCalendar`
+**Hooks**: `useIlamyCalendarContext()`
+**Recurrence**: `generateRecurringEvents()`, `isRecurringEvent()`, `RRule`
+**Types**: `CalendarEvent`, `CalendarView`, `TimeFormat`, `BusinessHours`, `WeekDays`, `RRuleOptions`, `Resource`, `Translations`, `TranslatorFunction`, `CellClickInfo`, `IlamyCalendarProps`
 
-- **Translation props**: `translations?: Translations` OR `translator?: TranslatorFunction`
-- **Fallback**: Defaults to English translations if no custom translations provided
-- **Context access**: All components use `useIlamyCalendarContext().t()` for translations
-- **Dynamic arrays**: Month names and weekdays are generated dynamically using translations
+## Code Rules
 
-```tsx
-// CalendarProvider creates translation function
-const t = useMemo(() => {
-  if (translator) return translator
-  if (translations) return (key) => translations[key] || key
-  return (key) => defaultTranslations[key] || key
-}, [translations, translator])
-```
+### Dates
 
-### Translation Keys
+- Storage/transmission: `dayjs().toISOString()` — always ISO strings
+- Display only: `YYYY-MM-DD` format is acceptable in UI
+- Tests: use `'2025-10-13T00:00:00.000Z'` or `dayjs().toISOString()`, never `'2025-10-13'`
 
-The calendar includes **94 translation keys** covering:
+### Code Quality
 
-- **Actions**: today, create, edit, update, delete, cancel, more
-- **Event form**: titles, descriptions, dates, times, colors, allDay
-- **Recurrence**: frequencies, intervals, weekdays, end conditions
-- **Views**: month, week, day, year navigation
-- **Days/Months**: Full and abbreviated names (sunday/sun, january/jan, etc.)
-- **Dialog interactions**: Edit/delete recurring event scopes and descriptions
+- Extract complex operations into descriptive variables
+- One operation per line, no long chains
+- Meaningful names: `targetEventStartISO` not `targetEvent.start.toISOString()`
+- Follow the Shadcn design system. Use predefined sizes (sm, default, lg). Don't override design tokens (h-8, h-9, custom spacing) unless absolutely necessary.
 
-### Custom Component Translation Access
+### TDD
 
-All components within the calendar can access translations:
+- Write tests FIRST, then implement (red-green-refactor)
+- Never create new test files — update existing `component.test.tsx` files
+- Never create new functions — replace/update existing implementations
+- Exact assertions: `toHaveLength(3)`, `toBe('exact-value')` — not `toBeGreaterThan(0)`
 
-```tsx
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+### Testing
 
-const CustomComponent = () => {
-  const { t } = useIlamyCalendarContext()
+- Co-located: `component.test.tsx` next to component files
+- Integration focus: test through context and user interactions
+- Recurring events: verify RFC 5545 compliance
+- ~45 test files across components, recurrence, utilities, context/hooks
 
-  return (
-    <div>
-      <button>{t('today')}</button>
-      <span>{t('events')}</span>
-    </div>
-  )
-}
-```
+## Git Workflow
 
-## Integration Patterns
+1. Create a feature branch
+2. Make changes
+3. Run tests (`bun test`)
+4. Ask user to review
+5. Wait for explicit approval
+6. Commit with conventional prefix (`feat:`, `fix:`, `docs:`, etc.), max 100 chars
+7. Ask before pushing
 
-```tsx
-// Basic calendar integration
-import { IlamyCalendar } from '@ilamy/calendar'
-;<IlamyCalendar
-  events={events}
-  firstDayOfWeek="sunday"
-  onEventClick={handleEventClick}
-  onCellClick={handleCellClick}
-  translations={customTranslations} // Optional i18n
-/>
-
-// Context access for advanced integrations
-import { useIlamyCalendarContext } from '@ilamy/calendar'
-
-const { addEvent, updateEvent, deleteEvent, view, currentDate, t } =
-  useIlamyCalendarContext()
-```
-
-## Testing Strategy
-
-- **Co-located tests**: `component.test.tsx` files alongside components
-- **Integration focus**: Test calendar behavior through context and user interactions
-- **Recurring event testing**: Verify RFC 5545 compliance and rrule.js integration
-- **Drag & drop testing**: Test event movement and position updates
-- **View switching**: Test AnimatePresence transitions and state persistence

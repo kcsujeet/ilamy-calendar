@@ -280,7 +280,7 @@ export function DemoPage() {
 		return Intl.DateTimeFormat().resolvedOptions().timeZone
 	})
 	const [stickyViewHeader, setStickyHeader] = useState(true)
-	const [hideNonBusinessHours, setHideNonBusinessHours] = useState(true)
+	const [hideNonBusinessHours, setHideNonBusinessHours] = useState(false)
 	const [businessStartTime, setBusinessStartTime] = useState(9)
 	const [businessEndTime, setBusinessEndTime] = useState(17)
 
@@ -313,6 +313,7 @@ export function DemoPage() {
 	const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour')
 	const [useCustomClasses, setUseCustomClasses] = useState(false)
 	const [useCustomTimeIndicator, setUseCustomTimeIndicator] = useState(false)
+	const [hiddenDays, setHiddenDays] = useState<WeekDays[]>([])
 
 	// Resource calendar settings
 	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
@@ -398,6 +399,7 @@ export function DemoPage() {
 						disableDragAndDrop={disableDragAndDrop}
 						disableEventClick={disableEventClick}
 						firstDayOfWeek={firstDayOfWeek}
+						hiddenDays={hiddenDays}
 						hideNonBusinessHours={hideNonBusinessHours}
 						initialDate={initialDate}
 						initialView={initialView}
@@ -413,6 +415,7 @@ export function DemoPage() {
 						setDisableDragAndDrop={setDisableDragAndDrop}
 						setDisableEventClick={setDisableEventClick}
 						setFirstDayOfWeek={setFirstDayOfWeek}
+						setHiddenDays={setHiddenDays}
 						setHideNonBusinessHours={setHideNonBusinessHours}
 						setInitialDate={setInitialDate}
 						setInitialView={setInitialView}
@@ -495,6 +498,7 @@ export function DemoPage() {
 									disableEventClick={disableEventClick}
 									events={customEvents}
 									firstDayOfWeek={firstDayOfWeek}
+									hiddenDays={hiddenDays}
 									hideNonBusinessHours={hideNonBusinessHours}
 									initialDate={initialDate}
 									initialView={initialView}
@@ -537,6 +541,7 @@ export function DemoPage() {
 									disableEventClick={disableEventClick}
 									events={resourceEvents}
 									firstDayOfWeek={firstDayOfWeek}
+									hiddenDays={hiddenDays}
 									hideNonBusinessHours={hideNonBusinessHours}
 									initialDate={initialDate}
 									initialView={initialView === 'year' ? 'month' : initialView}

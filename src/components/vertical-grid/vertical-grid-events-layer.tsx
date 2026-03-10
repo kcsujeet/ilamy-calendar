@@ -53,7 +53,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 						}}
 					>
 						<DraggableEvent
-							className={cn('pointer-events-auto absolute', {
+							className={cn('pointer-events-auto', {
 								'[&_p]:text-[10px] [&_p]:mt-0': isShortEvent,
 							})}
 							elementId={eventKey}

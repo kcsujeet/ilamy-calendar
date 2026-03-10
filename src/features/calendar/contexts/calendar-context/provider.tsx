@@ -51,6 +51,7 @@ export interface CalendarProviderProps {
 		props: RenderCurrentTimeIndicatorProps
 	) => ReactNode
 	hideNonBusinessHours?: boolean
+	hiddenDays?: Set<number>
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -86,6 +87,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	classesOverride,
 	renderCurrentTimeIndicator,
 	hideNonBusinessHours = false,
+	hiddenDays,
 }) => {
 	// Use the calendar engine
 	const calendarEngine = useCalendarEngine({
@@ -191,6 +193,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			classesOverride,
 			renderCurrentTimeIndicator,
 			hideNonBusinessHours,
+			hiddenDays,
 		}),
 		[
 			calendarEngine,
@@ -214,6 +217,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			classesOverride,
 			renderCurrentTimeIndicator,
 			hideNonBusinessHours,
+			hiddenDays,
 		]
 	)
 

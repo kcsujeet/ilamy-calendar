@@ -61,15 +61,23 @@ export function getMonthDays(monthDate: dayjs.Dayjs): dayjs.Dayjs[] {
 }
 
 interface GetDayHoursOptions {
-	referenceDate?: dayjs.Dayjs // Reference date to set the hours on (default is today)
-	length?: number // Number of hours in the day (default is 24)
+	referenceDate?: dayjs.Dayjs
+	length?: number
 }
 
+/**
+ * Generates an array of 24 dayjs objects representing hourly slots for a day.
+ * Uses .hour(i) so each row maps to "the hour labeled i" — keeping grid rows
+ * aligned across columns in week views. On DST spring-forward, .hour(2) returns
+ * 3 AM (the non-existent hour is collapsed), but the grid key fix (dayIndex)
+ * and per-day generation in views handle this correctly.
+ */
 export function getDayHours({
 	referenceDate = dayjs(),
 	length = 24,
 }: GetDayHoursOptions = {}): dayjs.Dayjs[] {
+	const startOfDay = referenceDate.startOf('day')
 	return Array.from({ length }, (_, i) =>
-		referenceDate.hour(i).minute(0).second(0).millisecond(0)
+		startOfDay.hour(i).minute(0).second(0).millisecond(0)
 	)
 }

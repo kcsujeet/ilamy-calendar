@@ -8,8 +8,6 @@ import {
 	type HorizontalGridRowProps,
 } from './horizontal-grid-row'
 
-const BODY_HEIGHT = 'h-[calc(100%-3rem)]'
-
 interface HorizontalGridProps {
 	rows: HorizontalGridRowProps[]
 	children?: React.ReactNode
@@ -41,18 +39,17 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 	)
 
 	return (
-		<div className="h-full" data-testid="horizontal-grid-container">
+		<div
+			className="h-full flex flex-col"
+			data-testid="horizontal-grid-container"
+		>
 			{/**
 			 * header row is rendered outside scroll area for regular calendar
 			 */}
 			{isRegularCalendar && header}
 
 			<ScrollArea
-				className={cn(
-					'h-full',
-					isRegularCalendar && 'overflow-auto',
-					isRegularCalendar && BODY_HEIGHT // scroll area becomes body in regular calendar
-				)}
+				className={cn('h-full', isRegularCalendar && 'overflow-auto')}
 				data-testid="horizontal-grid-scroll"
 				viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
 			>
@@ -63,11 +60,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 
 				{/* Calendar area with scroll */}
 				<div
-					className={cn(
-						'flex flex-1 w-fit',
-						isResourceCalendar && BODY_HEIGHT, // this becomes body in resource calendar
-						classes?.body
-					)}
+					className={cn('flex flex-1 w-fit', classes?.body)}
 					data-testid="horizontal-grid-body"
 				>
 					<div

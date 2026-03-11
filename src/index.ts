@@ -18,10 +18,6 @@ export { EventForm } from './components/event-form/event-form'
 export { EventFormDialog } from './components/event-form/event-form-dialog'
 export { RecurrenceEditor } from './features/recurrence/components/recurrence-editor'
 
-// Export Context Providers for standalone component usage
-export { CalendarProvider } from './features/calendar/contexts/calendar-context/provider'
-export { ResourceCalendarProvider } from './features/resource-calendar/contexts/resource-calendar-context'
-
 export type { BusinessHours, CalendarEvent, WeekDays } from './components/types'
 export { IlamyCalendar } from './features/calendar/components/ilamy-calendar'
 export type {

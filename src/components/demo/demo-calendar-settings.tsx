@@ -86,6 +86,8 @@ export function DemoCalendarSettings({
 	setUseCustomEventRenderer,
 	locale,
 	setLocale,
+	timezone,
+	setTimezone,
 	disableCellClick,
 	setDisableCellClick,
 	disableEventClick,
@@ -303,21 +305,23 @@ export function DemoCalendarSettings({
 						</SelectContent>
 					</Select>
 				</div>
-				{/* <div>
-          <label className="block text-sm text-left font-medium mb-1">Timezone</label>
-          <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select timezone" />
-            </SelectTrigger>
-            <SelectContent>
-              {Intl.supportedValuesOf('timeZone').map((tz) => (
-                <SelectItem key={tz} value={tz}>
-                  {tz}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div> */}
+				<div>
+					<label className="block text-sm text-left font-medium mb-1">
+						Timezone
+					</label>
+					<Select onValueChange={setTimezone} value={timezone}>
+						<SelectTrigger className="w-full">
+							<SelectValue placeholder="Select timezone" />
+						</SelectTrigger>
+						<SelectContent>
+							{Intl.supportedValuesOf('timeZone').map((tz) => (
+								<SelectItem key={tz} value={tz}>
+									{tz}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
 				<div>
 					<label className="block text-sm text-left font-medium mb-1">
 						Calendar Height

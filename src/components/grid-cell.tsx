@@ -3,7 +3,7 @@ import { DayNumber } from '@/components/day-number'
 import type { CalendarEvent } from '@/components/types'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import type { SelectedDayEvents } from './all-events-dialog'
@@ -11,7 +11,7 @@ import { AllEventDialog } from './all-events-dialog'
 import { DroppableCell } from './droppable-cell'
 
 interface GridProps {
-	day: dayjs.Dayjs
+	day: Dayjs
 	hour?: number // Optional hour for hour-based grids
 	minute?: number // Optional minute for more granular time slots
 	dayMaxEvents?: number
@@ -89,7 +89,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	])
 
 	// Handler for showing all events in a dialog
-	const showAllEvents = (day: dayjs.Dayjs, events: CalendarEvent[]) => {
+	const showAllEvents = (day: Dayjs, events: CalendarEvent[]) => {
 		allEventsDialogRef.current?.setSelectedDayEvents({
 			day,
 			events,

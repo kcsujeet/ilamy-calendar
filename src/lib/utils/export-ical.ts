@@ -1,6 +1,6 @@
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 
 const CRLF = '\r\n'
 
@@ -25,7 +25,7 @@ const escapeText = (text: string): string => {
 		.replaceAll('\r', '')
 }
 
-const formatDate = (date: dayjs.Dayjs, isAllDay = false): string => {
+const formatDate = (date: Dayjs, isAllDay = false): string => {
 	return isAllDay
 		? date.format('YYYYMMDD')
 		: date.utc().format('YYYYMMDD[T]HHmmss[Z]')

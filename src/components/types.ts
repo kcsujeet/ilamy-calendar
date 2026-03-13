@@ -1,5 +1,5 @@
 import type { RRuleOptions } from '@/features/recurrence/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 
 /**
  * Core calendar event interface representing a single calendar event.
@@ -11,9 +11,9 @@ export interface CalendarEvent {
 	/** Display title of the event */
 	title: string
 	/** Start date and time of the event */
-	start: dayjs.Dayjs
+	start: Dayjs
 	/** End date and time of the event */
-	end: dayjs.Dayjs
+	end: Dayjs
 	/**
 	 * Color for the event (supports CSS color values, hex, rgb, hsl, or CSS class names)
 	 * @example "#3b82f6", "blue-500", "rgb(59, 130, 246)"

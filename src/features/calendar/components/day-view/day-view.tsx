@@ -3,7 +3,7 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
 export const DayView = () => {
@@ -31,7 +31,7 @@ export const DayView = () => {
 			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
 		gridType: 'hour' as const,
 		noEvents: true,
-		renderCell: (date: dayjs.Dayjs) => (
+		renderCell: (date: Dayjs) => (
 			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
 				{Intl.DateTimeFormat(currentLocale, {
 					hour: 'numeric',

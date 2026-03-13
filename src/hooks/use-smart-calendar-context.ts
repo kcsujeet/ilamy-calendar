@@ -4,7 +4,7 @@ import { CalendarContext } from '@/features/calendar/contexts/calendar-context/c
 import { ResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type { ResourceCalendarContextType } from '@/features/resource-calendar/contexts/resource-calendar-context/context'
 import type { Resource } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { CalendarView } from '@/types'
 
 /**
@@ -16,16 +16,16 @@ export type SmartCalendarContextType = ResourceCalendarContextType
  * Publicly exposed calendar context properties.
  */
 export interface UseIlamyCalendarContextReturn {
-	readonly currentDate: dayjs.Dayjs
+	readonly currentDate: Dayjs
 	readonly view: CalendarView
 	readonly events: CalendarEvent[]
 	readonly isEventFormOpen: boolean
 	readonly selectedEvent: CalendarEvent | null
-	readonly selectedDate: dayjs.Dayjs | null
+	readonly selectedDate: Dayjs | null
 	readonly firstDayOfWeek: number
 	readonly resources: Resource[]
-	readonly setCurrentDate: (date: dayjs.Dayjs) => void
-	readonly selectDate: (date: dayjs.Dayjs) => void
+	readonly setCurrentDate: (date: Dayjs) => void
+	readonly selectDate: (date: Dayjs) => void
 	readonly setView: (view: CalendarView) => void
 	readonly nextPeriod: () => void
 	readonly prevPeriod: () => void

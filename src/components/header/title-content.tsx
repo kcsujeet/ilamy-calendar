@@ -8,7 +8,7 @@ import {
 	PopoverTrigger,
 } from '@/components/ui/popover'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -44,7 +44,7 @@ const TitleContent = () => {
 	const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
 
-	const selectDate = (date: dayjs.Dayjs) => {
+	const selectDate = (date: Dayjs) => {
 		setCurrentDate(date)
 		setOpenPopover(null)
 	}

@@ -3,14 +3,14 @@ import { useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { getMonthDays } from '@/lib/utils/date-utils'
 
 export const ResourceMonthHorizontal: React.FC = () => {
 	const { currentDate, t } = useSmartCalendarContext()
 
 	// Generate calendar grid - days of the month
-	const monthDays = useMemo<dayjs.Dayjs[]>(() => {
+	const monthDays = useMemo<Dayjs[]>(() => {
 		return getMonthDays(currentDate)
 	}, [currentDate])
 

@@ -1,5 +1,5 @@
 import type { DragEndEvent } from '@dnd-kit/core'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { CalendarEvent } from '../types'
 
 export const getUpdatedEvent = (
@@ -14,7 +14,7 @@ export const getUpdatedEvent = (
 
 	const isTimeCell = over.data.current?.type === 'time-cell'
 	const { resourceId, allDay } = over.data.current || {}
-	let newStart
+	let newStart: Dayjs
 
 	if (isTimeCell) {
 		const { date, hour = 0, minute = 0 } = over.data.current

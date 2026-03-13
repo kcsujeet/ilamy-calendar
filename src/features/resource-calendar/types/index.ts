@@ -7,7 +7,7 @@ import type {
 /**
  * Public-facing resource calendar event interface with flexible date types.
  * Similar to IlamyCalendarPropEvent but with resource assignment fields.
- * Dates can be provided as dayjs.Dayjs, Date, or string and will be normalized internally.
+ * Dates can be provided as Dayjs, Date, or string and will be normalized internally.
  *
  * @interface IlamyResourceCalendarPropEvent
  * @extends {IlamyCalendarPropEvent}

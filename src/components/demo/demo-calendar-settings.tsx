@@ -15,7 +15,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { CalendarView, TimeFormat } from '@/types'
 import { ModeToggle } from './mode-toggle'
 
@@ -27,8 +27,8 @@ interface DemoCalendarSettingsProps {
 	setFirstDayOfWeek: (value: WeekDays) => void
 	initialView: CalendarView
 	setInitialView: (value: CalendarView) => void
-	initialDate: dayjs.Dayjs | undefined
-	setInitialDate: (value: dayjs.Dayjs | undefined) => void
+	initialDate: Dayjs | undefined
+	setInitialDate: (value: Dayjs | undefined) => void
 	useCustomEventRenderer: boolean
 	setUseCustomEventRenderer: (value: boolean) => void
 	locale: string

@@ -9,7 +9,7 @@ import type {
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
@@ -20,7 +20,7 @@ export interface CalendarProviderProps {
 	events?: CalendarEvent[]
 	firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
 	initialView?: CalendarView
-	initialDate?: dayjs.Dayjs
+	initialDate?: Dayjs
 	renderEvent?: (event: CalendarEvent) => ReactNode
 	onEventClick?: (event: CalendarEvent) => void
 	onCellClick?: (info: CellClickInfo) => void
@@ -28,7 +28,7 @@ export interface CalendarProviderProps {
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
 	onEventDelete?: (event: CalendarEvent) => void
-	onDateChange?: (date: dayjs.Dayjs) => void
+	onDateChange?: (date: Dayjs) => void
 	locale?: string
 	timezone?: string
 	disableCellClick?: boolean

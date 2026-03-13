@@ -1,15 +1,15 @@
 import type { ClassValue } from 'clsx'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs))
 }
 
 export function safeDate(
-	date: dayjs.Dayjs | Date | string | undefined
-): dayjs.Dayjs | undefined {
+	date: Dayjs | Date | string | undefined
+): Dayjs | undefined {
 	if (date === undefined) {
 		return undefined
 	}
@@ -47,8 +47,8 @@ export const omitKeys = <T extends object, K extends keyof T>(
  */
 export function normalizeEvents<
 	TInput extends {
-		start: dayjs.Dayjs | Date | string
-		end: dayjs.Dayjs | Date | string
+		start: Dayjs | Date | string
+		end: Dayjs | Date | string
 	},
 	TOutput,
 >(events: TInput[] | undefined): TOutput[] {

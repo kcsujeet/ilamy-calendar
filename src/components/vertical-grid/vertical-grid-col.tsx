@@ -1,22 +1,22 @@
 import type React from 'react'
 import { memo } from 'react'
 import type { Resource } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { GridCell } from '../grid-cell'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
 export interface VerticalGridColProps {
 	id: string
-	day: dayjs.Dayjs
+	day: Dayjs
 	resourceId?: string | number
 	resource?: Resource
-	days: dayjs.Dayjs[] // The specific day this column represents
+	days: Dayjs[] // The specific day this column represents
 	className?: string
 	'data-testid'?: string
 	gridType?: 'day' | 'hour'
 	renderHeader?: () => React.ReactNode
-	renderCell?: (date: dayjs.Dayjs) => React.ReactNode
+	renderCell?: (date: Dayjs) => React.ReactNode
 	noEvents?: boolean
 	/** Optional array of minute slots by which the hour is divided
 	 * e.g., [0, 15, 30, 45] for quarter-hour slots

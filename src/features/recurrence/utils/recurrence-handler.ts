@@ -1,7 +1,7 @@
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components'
 import type { RRuleOptions } from '@/features/recurrence/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { omitKeys, safeDate } from '@/lib/utils'
 
 /**
@@ -13,7 +13,7 @@ import { omitKeys, safeDate } from '@/lib/utils'
  * like "Every Wednesday" refers to the user's local Wednesday, even if
  * that time falls on a Thursday in actual UTC.
  */
-const toFloatingDate = (d: dayjs.Dayjs): Date => {
+const toFloatingDate = (d: Dayjs): Date => {
 	return new Date(
 		Date.UTC(
 			d.year(),
@@ -32,7 +32,7 @@ const toFloatingDate = (d: dayjs.Dayjs): Date => {
  * It takes the YMDHMS components from the UTC Date and applies them to the
  * reference Dayjs object (preserving its timezone/locale).
  */
-const fromFloatingDate = (date: Date, reference: dayjs.Dayjs): dayjs.Dayjs => {
+const fromFloatingDate = (date: Date, reference: Dayjs): Dayjs => {
 	return reference
 		.year(date.getUTCFullYear())
 		.month(date.getUTCMonth())
@@ -58,8 +58,8 @@ const getEventParentUID = (event: CalendarEvent): string => {
 interface GenerateRecurringEventsProps {
 	event: CalendarEvent
 	currentEvents: CalendarEvent[]
-	startDate: dayjs.Dayjs
-	endDate: dayjs.Dayjs
+	startDate: Dayjs
+	endDate: Dayjs
 }
 
 export const generateRecurringEvents = ({

@@ -1,7 +1,7 @@
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
 const DAY_HEADER_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -17,14 +17,14 @@ const getDayTooltip = (eventCount: number): string => {
 }
 
 interface MonthData {
-	date: dayjs.Dayjs
+	date: Dayjs
 	name: string
 	eventCount: number
 	monthKey: string
 }
 
 interface DayData {
-	date: dayjs.Dayjs
+	date: Dayjs
 	dayKey: string
 	isInCurrentMonth: boolean
 	isToday: boolean
@@ -58,7 +58,7 @@ export const YearView = () => {
 		})
 	}
 
-	const generateDaysForMonth = (monthDate: dayjs.Dayjs): DayData[] => {
+	const generateDaysForMonth = (monthDate: Dayjs): DayData[] => {
 		const firstDayOfCalendar = monthDate.startOf('month').startOf('week')
 
 		return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) => {
@@ -79,7 +79,7 @@ export const YearView = () => {
 	}
 
 	const navigateToDate = (
-		date: dayjs.Dayjs,
+		date: Dayjs,
 		view: 'month' | 'day',
 		event?: React.MouseEvent
 	) => {

@@ -68,6 +68,9 @@ interface DemoCalendarSettingsProps {
 	setBusinessStartTime: (value: number) => void
 	businessEndTime: number
 	setBusinessEndTime: (value: number) => void
+	// Hidden days
+	hiddenDays: WeekDays[]
+	setHiddenDays: (value: WeekDays[]) => void
 }
 
 export function DemoCalendarSettings({
@@ -115,6 +118,8 @@ export function DemoCalendarSettings({
 	setBusinessStartTime,
 	businessEndTime,
 	setBusinessEndTime,
+	hiddenDays,
+	setHiddenDays,
 }: DemoCalendarSettingsProps) {
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -438,6 +443,44 @@ export function DemoCalendarSettings({
 								))}
 							</SelectContent>
 						</Select>
+					</div>
+				</div>
+				<div>
+					<label className="block text-sm text-left font-medium mb-1">
+						Hidden Days (Week View)
+					</label>
+					<div className="space-y-1">
+						{(
+							[
+								'sunday',
+								'monday',
+								'tuesday',
+								'wednesday',
+								'thursday',
+								'friday',
+								'saturday',
+							] as WeekDays[]
+						).map((day) => (
+							<div className="flex items-center space-x-2" key={day}>
+								<Checkbox
+									checked={hiddenDays.includes(day)}
+									id={`hidden-day-${day}`}
+									onCheckedChange={(checked) => {
+										if (checked) {
+											setHiddenDays([...hiddenDays, day])
+										} else {
+											setHiddenDays(hiddenDays.filter((d) => d !== day))
+										}
+									}}
+								/>
+								<label
+									className="text-sm leading-none cursor-pointer capitalize"
+									htmlFor={`hidden-day-${day}`}
+								>
+									{day}
+								</label>
+							</div>
+						))}
 					</div>
 				</div>
 				<div className="flex items-center space-x-2">

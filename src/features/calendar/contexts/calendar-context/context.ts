@@ -68,6 +68,7 @@ export interface CalendarContextType {
 		props: RenderCurrentTimeIndicatorProps
 	) => React.ReactNode
 	hideNonBusinessHours?: boolean
+	hiddenDays?: Set<number>
 }
 
 // CalendarContext is kept for internal Provider usage

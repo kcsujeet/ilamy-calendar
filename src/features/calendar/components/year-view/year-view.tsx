@@ -4,7 +4,15 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
-const DAY_HEADER_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const DAY_HEADER_NAMES = [
+	{ id: 'sun', label: 'S' },
+	{ id: 'mon', label: 'M' },
+	{ id: 'tue', label: 'T' },
+	{ id: 'wed', label: 'W' },
+	{ id: 'thu', label: 'T' },
+	{ id: 'fri', label: 'F' },
+	{ id: 'sat', label: 'S' },
+]
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
 const DAYS_IN_MINI_CALENDAR = 42
 
@@ -168,12 +176,12 @@ export const YearView = () => {
 								className="grid grid-cols-7 gap-[1px] text-[0.6rem]"
 								data-testid={`year-mini-calendar-${month.monthKey}`}
 							>
-								{DAY_HEADER_NAMES.map((dayName) => (
+								{DAY_HEADER_NAMES.map((day) => (
 									<div
 										className="text-muted-foreground h-3 text-center"
-										key={`header-${dayName}`}
+										key={`header-${month.monthKey}-${day.id}`}
 									>
-										{dayName}
+										{day.label}
 									</div>
 								))}
 

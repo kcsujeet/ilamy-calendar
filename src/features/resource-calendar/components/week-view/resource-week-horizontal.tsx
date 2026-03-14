@@ -98,7 +98,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 				<div className="flex h-12 border-b">
 					{weekHours.flat().map((col, index) => {
 						const isNowHour = col.isSame(dayjs(), 'hour')
-						const key = `resource-week-header-${col.toISOString()}-hour`
+						const key = `resource-week-header-${index}`
 
 						return (
 							<AnimatedSection

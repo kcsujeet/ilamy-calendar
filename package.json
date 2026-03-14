@@ -71,7 +71,7 @@
 	"peerDependencies": {
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
-		"tailwindcss": "^4.1.11",
+		"tailwindcss": "^4.2.1",
 		"tailwindcss-animate": "^1.0.7"
 	},
 	"dependencies": {
@@ -107,7 +107,7 @@
 		"bun-plugin-tailwind": "^0.1.2",
 		"bunup": "^0.16.31",
 		"husky": "^9.1.7",
-		"lint-staged": "^16.3.3"
+		"lint-staged": "^16.4.0"
 	},
 	"publishConfig": {
 		"access": "public"

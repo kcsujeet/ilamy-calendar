@@ -20,4 +20,20 @@ dayjs.extend(timezone)
 dayjs.extend(utc)
 dayjs.extend(localeData)
 
-export default dayjs
+// Custom dayjs constructor that automatically uses .tz() for all instances.
+// This ensures that dayjs() calls throughout the codebase honor the default
+// timezone set via dayjs.tz.setDefault().
+const timezoneAwareDayjs = (...args: unknown[]) => {
+	return (dayjs as unknown as { tz: (...a: unknown[]) => dayjs.Dayjs }).tz(
+		...args
+	)
+}
+
+// Attach all static methods and properties from the original dayjs to our wrapper.
+// This allows the wrapper to be used as a drop-in replacement.
+Object.assign(timezoneAwareDayjs, dayjs)
+
+// Export the Dayjs type separately for use as a type in other files.
+// Files should use 'import dayjs, { type Dayjs } from "@/lib/configs/dayjs-config"'
+export type { Dayjs, ManipulateType, OpUnitType } from 'dayjs'
+export default timezoneAwareDayjs as typeof dayjs

@@ -23,5 +23,13 @@
 	},
 	"[jsonc]": {
 		"editor.defaultFormatter": "biomejs.biome"
-	}
+	},
+	"typescript.preferences.autoImportFileExcludePatterns": [
+		"dayjs",
+		"!**/src/lib/configs/dayjs-config.ts"
+	],
+	"javascript.preferences.autoImportFileExcludePatterns": [
+		"dayjs",
+		"!**/src/lib/configs/dayjs-config.ts"
+	]
 }

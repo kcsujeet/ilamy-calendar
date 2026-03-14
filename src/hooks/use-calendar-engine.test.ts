@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import { act, renderHook } from '@testing-library/react'
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
@@ -681,6 +681,78 @@ describe('useCalendarEngine', () => {
 			// Only January event should be in processed events
 			expect(result.current.events.some((e) => e.id === '1')).toBe(true)
 			expect(result.current.events.some((e) => e.id === '2')).toBe(false)
+		})
+	})
+
+	describe('timezone support', () => {
+		const originalTz = dayjs.tz.guess()
+
+		beforeEach(() => {
+			dayjs.tz.setDefault('UTC')
+		})
+
+		afterEach(() => {
+			dayjs.tz.setDefault(originalTz)
+		})
+
+		it('should automatically use the default timezone for new dayjs() instances', () => {
+			dayjs.tz.setDefault('America/New_York')
+			const now = dayjs()
+			expect(['-05:00', '-04:00']).toContain(now.format('Z'))
+		})
+
+		it('should reactive update currentDate when timezone prop changes', () => {
+			const initialDate = dayjs('2025-01-15T12:00:00Z') // 12:00 UTC
+			const initialEvents: CalendarEvent[] = []
+			const { result, rerender } = renderHook(
+				({ timezone }) =>
+					useCalendarEngine({
+						...defaultConfig,
+						events: initialEvents,
+						initialDate,
+						timezone,
+					}),
+				{ initialProps: { timezone: 'UTC' } }
+			)
+
+			expect(result.current.currentDate.format('HH:mm')).toBe('12:00')
+
+			// Change to New York (UTC-5)
+			act(() => {
+				rerender({ timezone: 'America/New_York' })
+			})
+
+			// 12:00 UTC should now be 07:00 AM in New York
+			expect(result.current.currentDate.format('HH:mm')).toBe('07:00')
+			expect(result.current.currentDate.format('Z')).toBe('-05:00')
+		})
+
+		it('should reactive update event times when timezone prop changes', () => {
+			const event = createEvent({
+				start: dayjs('2025-01-15T10:00:00Z'),
+				end: dayjs('2025-01-15T11:00:00Z'),
+			})
+			const events = [event]
+			const { result, rerender } = renderHook(
+				({ timezone }) =>
+					useCalendarEngine({
+						...defaultConfig,
+						events,
+						timezone,
+					}),
+				{ initialProps: { timezone: 'UTC' } }
+			)
+
+			expect(result.current.rawEvents[0].start.format('HH:mm')).toBe('10:00')
+
+			// Change to Tokyo (UTC+9)
+			act(() => {
+				rerender({ timezone: 'Asia/Tokyo' })
+			})
+
+			// 10:00 UTC should now be 19:00 in Tokyo
+			expect(result.current.rawEvents[0].start.format('HH:mm')).toBe('19:00')
+			expect(result.current.rawEvents[0].start.format('Z')).toBe('+09:00')
 		})
 	})
 })

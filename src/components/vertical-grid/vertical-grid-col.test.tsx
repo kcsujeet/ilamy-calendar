@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { VerticalGridCol } from './vertical-grid-col'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -44,7 +44,7 @@ describe('VerticalGridCol', () => {
 	test('renders time labels when id is time-col', () => {
 		renderVerticalGridCol({
 			id: 'time-col',
-			renderCell: (date: dayjs.Dayjs) => <span>{date.format('HH:mm')}</span>,
+			renderCell: (date: Dayjs) => <span>{date.format('HH:mm')}</span>,
 		})
 
 		expect(screen.getByTestId('vertical-time-09')).toHaveTextContent('09:00')

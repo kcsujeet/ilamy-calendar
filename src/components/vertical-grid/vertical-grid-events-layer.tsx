@@ -3,12 +3,12 @@ import { CurrentTimeIndicator } from '@/components/current-time-indicator'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
 import type { Resource } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
 interface VerticalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
-	days: dayjs.Dayjs[] // The specific day this layer represents
+	days: Dayjs[] // The specific day this layer represents
 	resourceId?: string | number
 	resource?: Resource
 	'data-testid'?: string

@@ -2,7 +2,7 @@ import type React from 'react'
 import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 
 export const ResourceMonthVertical: React.FC = () => {
 	const { currentDate, getVisibleResources } = useSmartCalendarContext()
@@ -22,7 +22,7 @@ export const ResourceMonthVertical: React.FC = () => {
 			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
 		gridType: 'day' as const,
 		noEvents: true,
-		renderCell: (date: dayjs.Dayjs) => (
+		renderCell: (date: Dayjs) => (
 			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
 				<span>{date.format('D')}</span>
 				<span>{date.format('ddd')}</span>

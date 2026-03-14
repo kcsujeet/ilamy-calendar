@@ -1,13 +1,13 @@
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import {
 	getPositionedDayEvents,
 	type PositionedEvent,
 } from '@/lib/utils/position-day-events'
 
 interface UseProcessedDayEventsProps {
-	days: dayjs.Dayjs[] // The specific day this column represents
+	days: Dayjs[] // The specific day this column represents
 	gridType?: 'day' | 'hour'
 	resourceId?: string | number
 }

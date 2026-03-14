@@ -1,12 +1,12 @@
-import type dayjs from 'dayjs'
 import { memo } from 'react'
 import { HorizontalGridRow } from '@/components/horizontal-grid/horizontal-grid-row'
 import type { Resource } from '@/features/resource-calendar/types'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { AllDayCell } from './all-day-cell'
 
 interface AllDayRowProps {
-	days: dayjs.Dayjs[]
+	days: Dayjs[]
 	classes?: { row?: string; cell?: string; spacer?: string }
 	resource?: Resource
 	showSpacer?: boolean

@@ -7,21 +7,21 @@ import type {
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
 export interface CalendarContextType {
-	currentDate: dayjs.Dayjs
+	currentDate: Dayjs
 	view: CalendarView
 	events: CalendarEvent[]
 	rawEvents: CalendarEvent[] // Unprocessed events for export
 	isEventFormOpen: boolean
 	selectedEvent: CalendarEvent | null
-	selectedDate: dayjs.Dayjs | null
+	selectedDate: Dayjs | null
 	firstDayOfWeek: number // 0 for Sunday, 1 for Monday, etc.
-	setCurrentDate: (date: dayjs.Dayjs) => void
-	selectDate: (date: dayjs.Dayjs) => void
+	setCurrentDate: (date: Dayjs) => void
+	selectDate: (date: Dayjs) => void
 	setView: (view: CalendarView) => void
 	nextPeriod: () => void
 	prevPeriod: () => void
@@ -40,10 +40,7 @@ export interface CalendarContextType {
 	) => void
 	openEventForm: (eventData?: Partial<CalendarEvent>) => void
 	closeEventForm: () => void
-	getEventsForDateRange: (
-		startDate: dayjs.Dayjs,
-		endDate: dayjs.Dayjs
-	) => CalendarEvent[]
+	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
 	renderEvent?: (event: CalendarEvent) => React.ReactNode
 	onEventClick: (event: CalendarEvent) => void

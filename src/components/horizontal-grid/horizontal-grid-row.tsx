@@ -2,7 +2,7 @@ import type React from 'react'
 import { memo, useCallback } from 'react'
 import type { Resource } from '@/features/resource-calendar/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { GridCell } from '../grid-cell'
 import { ResourceCell } from '../resource-cell'
@@ -10,8 +10,8 @@ import { HorizontalGridEventsLayer } from './horizontal-grid-events-layer'
 
 interface HorizontalGridColumn {
 	id: string
-	day?: dayjs.Dayjs
-	days?: dayjs.Dayjs[]
+	day?: Dayjs
+	days?: Dayjs[]
 	gridType: 'day' | 'hour'
 	className?: string
 	renderCell?: (row: HorizontalGridRowProps) => React.ReactNode
@@ -48,7 +48,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	const isGrouped = columns.some((col) => col.days)
 
 	const renderEventsLayer = useCallback(
-		(days: dayjs.Dayjs[]) => {
+		(days: Dayjs[]) => {
 			return (
 				<div className="absolute inset-0 z-10 pointer-events-none">
 					<HorizontalGridEventsLayer

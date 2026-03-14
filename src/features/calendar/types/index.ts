@@ -2,7 +2,7 @@ import type React from 'react'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
 import type { Resource } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
@@ -30,8 +30,8 @@ export interface CalendarClassesOverride {
  */
 export interface IlamyCalendarPropEvent
 	extends Omit<CalendarEvent, 'start' | 'end'> {
-	start: dayjs.Dayjs | Date | string
-	end: dayjs.Dayjs | Date | string
+	start: Dayjs | Date | string
+	end: Dayjs | Date | string
 }
 
 /**
@@ -40,9 +40,9 @@ export interface IlamyCalendarPropEvent
  */
 export interface CellClickInfo {
 	/** Start date/time of the clicked cell */
-	start: dayjs.Dayjs
+	start: Dayjs
 	/** End date/time of the clicked cell */
-	end: dayjs.Dayjs
+	end: Dayjs
 	/** Resource ID if clicking on a resource calendar cell (optional) */
 	resourceId?: string | number
 	/** Whether the clicked cell is an all-day cell (optional) */
@@ -55,11 +55,11 @@ export interface CellClickInfo {
  */
 export interface RenderCurrentTimeIndicatorProps {
 	/** The current time as a dayjs object */
-	currentTime: dayjs.Dayjs
+	currentTime: Dayjs
 	/** The start of the visible time range */
-	rangeStart: dayjs.Dayjs
+	rangeStart: Dayjs
 	/** The end of the visible time range */
-	rangeEnd: dayjs.Dayjs
+	rangeEnd: Dayjs
 	/** Progress percentage (0-100) representing position in the range */
 	progress: number
 	/**
@@ -90,7 +90,7 @@ export interface IlamyCalendarProps {
 	 * The initial date to display when the calendar loads.
 	 * If not provided, the calendar will default to today's date.
 	 */
-	initialDate?: dayjs.Dayjs | Date | string
+	initialDate?: Dayjs | Date | string
 	/**
 	 * Custom render function for calendar events.
 	 * If provided, it will override the default event rendering.
@@ -130,7 +130,7 @@ export interface IlamyCalendarProps {
 	 * Callback when the current date changes (navigation).
 	 * Provides the new current date.
 	 */
-	onDateChange?: (date: dayjs.Dayjs) => void
+	onDateChange?: (date: Dayjs) => void
 	/**
 	 * Locale to use for formatting dates and times.
 	 * If not provided, the default locale will be used.

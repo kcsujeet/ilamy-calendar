@@ -1,4 +1,4 @@
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 
 /**
  * Calculates the week days for a given date and first day of week setting.
@@ -21,9 +21,9 @@ import dayjs from '@/lib/configs/dayjs-config'
  * // Returns: [Wed Oct 8, Thu Oct 9, ..., Tue Oct 14] (includes Monday Oct 13)
  */
 export function getWeekDays(
-	currentDate: dayjs.Dayjs,
+	currentDate: Dayjs,
 	firstDayOfWeek: number
-): dayjs.Dayjs[] {
+): Dayjs[] {
 	const startOfWeekFromCurrentDate = currentDate
 		.startOf('week')
 		.day(firstDayOfWeek)
@@ -42,9 +42,9 @@ export function getWeekDays(
  * Always returns 42 days (6 weeks × 7 days).
  */
 export function getMonthWeeks(
-	monthDate: dayjs.Dayjs,
+	monthDate: Dayjs,
 	firstDayOfWeek: number
-): dayjs.Dayjs[][] {
+): Dayjs[][] {
 	const firstWeek = getWeekDays(monthDate.startOf('month'), firstDayOfWeek)
 
 	return Array.from({ length: 6 }, (_, weekIndex) => {
@@ -53,7 +53,7 @@ export function getMonthWeeks(
 	})
 }
 
-export function getMonthDays(monthDate: dayjs.Dayjs): dayjs.Dayjs[] {
+export function getMonthDays(monthDate: Dayjs): Dayjs[] {
 	const daysInMonth = monthDate.daysInMonth()
 	return Array.from({ length: daysInMonth }, (_, i) =>
 		monthDate.startOf('month').add(i, 'day')
@@ -61,7 +61,7 @@ export function getMonthDays(monthDate: dayjs.Dayjs): dayjs.Dayjs[] {
 }
 
 interface GetDayHoursOptions {
-	referenceDate?: dayjs.Dayjs
+	referenceDate?: Dayjs
 	length?: number
 }
 
@@ -75,7 +75,7 @@ interface GetDayHoursOptions {
 export function getDayHours({
 	referenceDate = dayjs(),
 	length = 24,
-}: GetDayHoursOptions = {}): dayjs.Dayjs[] {
+}: GetDayHoursOptions = {}): Dayjs[] {
 	const startOfDay = referenceDate.startOf('day')
 	return Array.from({ length }, (_, i) =>
 		startOfDay.hour(i).minute(0).second(0).millisecond(0)

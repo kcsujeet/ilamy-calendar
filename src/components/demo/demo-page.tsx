@@ -8,7 +8,7 @@ import type {
 } from '@/features/calendar/types'
 import { IlamyResourceCalendar } from '@/features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 import type { Resource } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import dummyEvents from '@/lib/seed'
 import { cn } from '@/lib/utils'
 import type { CalendarView, TimeFormat } from '@/types'
@@ -181,7 +181,7 @@ const handleEventDelete = (event: CalendarEvent) => {
 	alert(`Event deleted: ${event.title}`)
 }
 
-const handleDateChange = (date: dayjs.Dayjs) => {
+const handleDateChange = (date: Dayjs) => {
 	// Date navigation - could trigger other state updates in real apps
 	void date
 }
@@ -269,9 +269,7 @@ export function DemoPage() {
 	// Calendar configuration state
 	const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>('sunday')
 	const [initialView, setInitialView] = useState<CalendarView>('month')
-	const [initialDate, setInitialDate] = useState<dayjs.Dayjs | undefined>(
-		undefined
-	)
+	const [initialDate, setInitialDate] = useState<Dayjs | undefined>(undefined)
 	const [customEvents] = useState<CalendarEvent[]>(dummyEvents)
 	const [resourceEvents] = useState<CalendarEvent[]>(createResourceEvents())
 	const [useCustomEventRenderer, setUseCustomEventRenderer] = useState(false)

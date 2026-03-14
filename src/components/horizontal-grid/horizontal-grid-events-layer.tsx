@@ -1,11 +1,11 @@
 import { memo } from 'react'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWeekEvents'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 
 export interface HorizontalGridEventsLayerProps {
-	days: dayjs.Dayjs[]
+	days: Dayjs[]
 	gridType?: 'day' | 'hour'
 	resourceId?: string | number
 	dayNumberHeight?: number

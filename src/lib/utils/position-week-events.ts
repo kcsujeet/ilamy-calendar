@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import {
 	DAY_NUMBER_HEIGHT,
 	EVENT_BAR_HEIGHT,
@@ -17,7 +17,7 @@ interface PositionedEvent extends CalendarEvent {
 }
 
 interface GetPositionedEventsProps {
-	days: dayjs.Dayjs[]
+	days: Dayjs[]
 	events: CalendarEvent[]
 	dayMaxEvents: number
 	dayNumberHeight?: number

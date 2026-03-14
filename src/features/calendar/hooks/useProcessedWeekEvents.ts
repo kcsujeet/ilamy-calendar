@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { getPositionedEvents } from '@/lib/utils/position-week-events'
 
 interface UseProcessedWeekEventsProps {
-	days: dayjs.Dayjs[]
+	days: Dayjs[]
 	allDay?: boolean
 	dayNumberHeight?: number
 	resourceId?: string | number

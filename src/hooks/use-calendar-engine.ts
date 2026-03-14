@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import {
@@ -6,10 +6,14 @@ import {
 	generateRecurringEvents,
 	updateRecurringEvent as updateRecurringEventImpl,
 } from '@/features/recurrence/utils/recurrence-handler'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, {
+	type Dayjs,
+	type ManipulateType,
+} from '@/lib/configs/dayjs-config'
 import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
+import { isDeepEqual } from '@/lib/utils/deep-equal'
 import type { CalendarView } from '@/types'
 import { DAY_MAX_EVENTS_DEFAULT } from '../lib/constants'
 
@@ -17,12 +21,12 @@ export interface CalendarEngineConfig {
 	events: CalendarEvent[]
 	firstDayOfWeek: number
 	initialView?: CalendarView
-	initialDate?: dayjs.Dayjs
+	initialDate?: Dayjs
 	businessHours?: BusinessHours | BusinessHours[]
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
 	onEventDelete?: (event: CalendarEvent) => void
-	onDateChange?: (date: dayjs.Dayjs) => void
+	onDateChange?: (date: Dayjs) => void
 	onViewChange?: (view: CalendarView) => void
 	locale?: string
 	timezone?: string
@@ -31,19 +35,19 @@ export interface CalendarEngineConfig {
 }
 
 export interface CalendarEngineReturn {
-	currentDate: dayjs.Dayjs
+	currentDate: Dayjs
 	view: CalendarView
 	events: CalendarEvent[]
 	rawEvents: CalendarEvent[]
 	isEventFormOpen: boolean
 	selectedEvent: CalendarEvent | null
-	selectedDate: dayjs.Dayjs | null
+	selectedDate: Dayjs | null
 	firstDayOfWeek: number
 	dayMaxEvents: number
 	currentLocale: string
 	businessHours?: BusinessHours | BusinessHours[]
-	setCurrentDate: (date: dayjs.Dayjs) => void
-	selectDate: (date: dayjs.Dayjs) => void
+	setCurrentDate: (date: Dayjs) => void
+	selectDate: (date: Dayjs) => void
 	setView: (view: CalendarView) => void
 	nextPeriod: () => void
 	prevPeriod: () => void
@@ -64,16 +68,13 @@ export interface CalendarEngineReturn {
 	closeEventForm: () => void
 	setSelectedEvent: React.Dispatch<React.SetStateAction<CalendarEvent | null>>
 	setIsEventFormOpen: React.Dispatch<React.SetStateAction<boolean>>
-	setSelectedDate: React.Dispatch<React.SetStateAction<dayjs.Dayjs | null>>
-	getEventsForDateRange: (
-		startDate: dayjs.Dayjs,
-		endDate: dayjs.Dayjs
-	) => CalendarEvent[]
+	setSelectedDate: React.Dispatch<React.SetStateAction<Dayjs | null>>
+	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
 	t: (key: keyof Translations) => string
 }
 
-const VIEW_UNITS: Record<CalendarView, dayjs.ManipulateType> = {
+const VIEW_UNITS: Record<CalendarView, ManipulateType> = {
 	day: 'day',
 	week: 'week',
 	month: 'month',
@@ -100,13 +101,16 @@ export const useCalendarEngine = (
 		translator,
 	} = config
 
-	const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(initialDate)
+	const [currentDate, setCurrentDate] = useState<Dayjs>(
+		dayjs.isDayjs(initialDate) ? initialDate : dayjs(initialDate)
+	)
 	const [view, setView] = useState<CalendarView>(initialView)
 	const [currentEvents, setCurrentEvents] = useState<CalendarEvent[]>(events)
 	const [isEventFormOpen, setIsEventFormOpen] = useState(false)
 	const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
-	const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null)
+	const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null)
 	const [currentLocale, setCurrentLocale] = useState(locale || 'en')
+	const lastEventsProp = useRef(events)
 
 	const t = useMemo(() => {
 		if (translator) {
@@ -119,7 +123,7 @@ export const useCalendarEngine = (
 	}, [translations, translator])
 
 	const getEventsForDateRange = useCallback(
-		(startDate: dayjs.Dayjs, endDate: dayjs.Dayjs): CalendarEvent[] => {
+		(startDate: Dayjs, endDate: Dayjs): CalendarEvent[] => {
 			const allEvents: CalendarEvent[] = []
 
 			for (const event of currentEvents) {
@@ -182,10 +186,13 @@ export const useCalendarEngine = (
 	}, [getEventsForDateRange, getCurrentViewRange])
 
 	useEffect(() => {
-		if (events) {
-			setCurrentEvents(events)
+		if (events !== lastEventsProp.current) {
+			if (!isDeepEqual(events, currentEvents)) {
+				setCurrentEvents(events)
+			}
+			lastEventsProp.current = events
 		}
-	}, [events])
+	}, [events, currentEvents])
 	useEffect(() => {
 		if (locale) {
 			setCurrentLocale(locale)
@@ -196,11 +203,20 @@ export const useCalendarEngine = (
 	useEffect(() => {
 		if (timezone) {
 			dayjs.tz.setDefault(timezone)
+			// Update currentDate and currentEvents to the new timezone
+			setCurrentDate((prev) => prev.tz(timezone))
+			setCurrentEvents((prev) =>
+				prev.map((e) => ({
+					...e,
+					start: e.start.tz(timezone),
+					end: e.end.tz(timezone),
+				}))
+			)
 		}
 	}, [timezone])
 
 	const selectDate = useCallback(
-		(date: dayjs.Dayjs) => {
+		(date: Dayjs) => {
 			setCurrentDate(date)
 			onDateChange?.(date)
 		},

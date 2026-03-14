@@ -1,9 +1,9 @@
 import type React from 'react'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
 interface DayNumberProps {
-	date: dayjs.Dayjs
+	date: Dayjs
 	locale?: string
 	className?: string
 }

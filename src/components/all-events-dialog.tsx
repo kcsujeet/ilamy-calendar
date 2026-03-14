@@ -9,9 +9,9 @@ import {
 	DialogTitle,
 } from '@/components/ui/dialog'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 export interface SelectedDayEvents {
-	day: dayjs.Dayjs
+	day: Dayjs
 	events: CalendarEvent[]
 }
 

@@ -1,10 +1,18 @@
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
-const DAY_HEADER_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const DAY_HEADER_NAMES = [
+	{ id: 'sun', label: 'S' },
+	{ id: 'mon', label: 'M' },
+	{ id: 'tue', label: 'T' },
+	{ id: 'wed', label: 'W' },
+	{ id: 'thu', label: 'T' },
+	{ id: 'fri', label: 'F' },
+	{ id: 'sat', label: 'S' },
+]
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
 const DAYS_IN_MINI_CALENDAR = 42
 
@@ -17,14 +25,14 @@ const getDayTooltip = (eventCount: number): string => {
 }
 
 interface MonthData {
-	date: dayjs.Dayjs
+	date: Dayjs
 	name: string
 	eventCount: number
 	monthKey: string
 }
 
 interface DayData {
-	date: dayjs.Dayjs
+	date: Dayjs
 	dayKey: string
 	isInCurrentMonth: boolean
 	isToday: boolean
@@ -58,7 +66,7 @@ export const YearView = () => {
 		})
 	}
 
-	const generateDaysForMonth = (monthDate: dayjs.Dayjs): DayData[] => {
+	const generateDaysForMonth = (monthDate: Dayjs): DayData[] => {
 		const firstDayOfCalendar = monthDate.startOf('month').startOf('week')
 
 		return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) => {
@@ -79,7 +87,7 @@ export const YearView = () => {
 	}
 
 	const navigateToDate = (
-		date: dayjs.Dayjs,
+		date: Dayjs,
 		view: 'month' | 'day',
 		event?: React.MouseEvent
 	) => {
@@ -168,12 +176,12 @@ export const YearView = () => {
 								className="grid grid-cols-7 gap-[1px] text-[0.6rem]"
 								data-testid={`year-mini-calendar-${month.monthKey}`}
 							>
-								{DAY_HEADER_NAMES.map((dayName) => (
+								{DAY_HEADER_NAMES.map((day) => (
 									<div
 										className="text-muted-foreground h-3 text-center"
-										key={`header-${dayName}`}
+										key={`header-${month.monthKey}-${day.id}`}
 									>
-										{dayName}
+										{day.label}
 									</div>
 								))}
 

@@ -8,14 +8,6 @@ const DAY_HEADER_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
 const DAYS_IN_MINI_CALENDAR = 42
 
-const getDayTooltip = (eventCount: number): string => {
-	if (eventCount === 0) {
-		return ''
-	}
-	const plural = eventCount > 1 ? 's' : ''
-	return `${eventCount} event${plural}`
-}
-
 interface MonthData {
 	date: dayjs.Dayjs
 	name: string
@@ -122,6 +114,13 @@ export const YearView = () => {
 	}
 
 	const monthsData = generateMonthsData()
+
+	const getDayTooltip = (eventCount: number): string => {
+		if (eventCount === 0) {
+			return ''
+		}
+		return getEventCountLabel(eventCount)
+	}
 
 	return (
 		<ScrollArea className="h-full" data-testid="year-view">

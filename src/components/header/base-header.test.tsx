@@ -1,5 +1,6 @@
 import { describe, expect, it, mock } from 'bun:test'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
@@ -24,6 +25,29 @@ const mockDownloadICalendar = mock()
 mock.module('@/lib/utils/export-ical', () => ({
 	downloadICalendar: mockDownloadICalendar,
 }))
+
+const HeaderWithParentDateState = ({
+	initialDate,
+}: {
+	initialDate: dayjs.Dayjs
+}) => {
+	const [currentDate, setCurrentDate] = useState(initialDate)
+
+	return (
+		<>
+			<div data-testid="selected-date">{currentDate.format('YYYY-MM-DD')}</div>
+			<CalendarProvider
+				dayMaxEvents={3}
+				events={[]}
+				firstDayOfWeek={0}
+				initialDate={currentDate}
+				onDateChange={(date) => setCurrentDate(date)}
+			>
+				<Header />
+			</CalendarProvider>
+		</>
+	)
+}
 
 describe('Header with Export Button', () => {
 	const testEvents: CalendarEvent[] = [
@@ -94,5 +118,44 @@ describe('Header with Export Button', () => {
 			expect.stringMatching(/calendar-\d{4}-\d{2}-\d{2}\.ics/),
 			'ilamy Calendar'
 		)
+	})
+	it('should not warn when prev/next navigation updates parent-owned date state', async () => {
+		const originalConsoleError = console.error
+		const consoleError = mock((..._args: unknown[]) => {})
+		console.error = consoleError as typeof console.error
+
+		try {
+			render(
+				<HeaderWithParentDateState
+					initialDate={dayjs('2025-08-04T09:00:00.000Z')}
+				/>
+			)
+
+			const nextButton = screen
+				.getAllByRole('button')
+				.find((button) => button.querySelector('svg.lucide-chevron-right'))
+
+			if (!nextButton) {
+				throw new Error('Next button not found')
+			}
+
+			await act(async () => {
+				fireEvent.click(nextButton)
+			})
+
+			await waitFor(() => {
+				expect(screen.getByTestId('selected-date')).toHaveTextContent(
+					'2025-09-04'
+				)
+			})
+
+			expect(
+				consoleError.mock.calls.some((args) =>
+					String(args[0]).includes('Cannot update a component')
+				)
+			).toBe(false)
+		} finally {
+			console.error = originalConsoleError
+		}
 	})
 })

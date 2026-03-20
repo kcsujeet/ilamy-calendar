@@ -209,16 +209,15 @@ export const useCalendarEngine = (
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {
-			setCurrentDate((prev) => {
-				const newDate =
-					direction === 1
-						? prev.add(1, VIEW_UNITS[view])
-						: prev.subtract(1, VIEW_UNITS[view])
-				onDateChange?.(newDate)
-				return newDate
-			})
+			const newDate =
+				direction === 1
+					? currentDate.add(1, VIEW_UNITS[view])
+					: currentDate.subtract(1, VIEW_UNITS[view])
+
+			setCurrentDate(newDate)
+			onDateChange?.(newDate)
 		},
-		[view, onDateChange]
+		[currentDate, view, onDateChange]
 	)
 
 	const nextPeriod = useCallback(() => navigatePeriod(1), [navigatePeriod])

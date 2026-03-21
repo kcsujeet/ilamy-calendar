@@ -1,3 +1,4 @@
+import type React from 'react'
 import {
 	Dialog,
 	DialogContent,
@@ -9,7 +10,7 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { CalendarEvent } from '../types'
 import { EventForm } from './event-form'
 
-export const EventFormDialog = () => {
+export const EventFormDialog: React.FC = () => {
 	const {
 		t,
 		selectedEvent,

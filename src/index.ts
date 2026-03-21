@@ -10,7 +10,12 @@ export {
 	generateRecurringEvents,
 	isRecurringEvent,
 } from '@/features/recurrence/utils/recurrence-handler'
+
 export type { EventFormProps } from './components/event-form/event-form'
+
+// Export Event Form Components
+export { EventForm } from './components/event-form/event-form'
+export { EventFormDialog } from './components/event-form/event-form-dialog'
 export type { BusinessHours, CalendarEvent, WeekDays } from './components/types'
 export { IlamyCalendar } from './features/calendar/components/ilamy-calendar'
 export type {
@@ -18,6 +23,7 @@ export type {
 	IlamyCalendarProps,
 	RenderCurrentTimeIndicatorProps,
 } from './features/calendar/types'
+export { RecurrenceEditor } from './features/recurrence/components/recurrence-editor'
 export type { IlamyResourceCalendarProps } from './features/resource-calendar/components/ilamy-resource-calendar'
 export { IlamyResourceCalendar } from './features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 // Resource calendar types

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import {
@@ -199,36 +199,38 @@ export const useCalendarEngine = (
 		}
 	}, [timezone])
 
-	const selectDate = useCallback(
-		(date: dayjs.Dayjs) => {
-			setCurrentDate(date)
-			onDateChange?.(date)
-		},
-		[onDateChange]
-	)
+	// Fire onDateChange after any navigation that updates currentDate.
+	// Using a ref + effect keeps the callback out of state updaters,
+	// avoiding the "Cannot update a component while rendering" warning.
+	const prevDateRef = useRef(currentDate)
+	useEffect(() => {
+		if (!currentDate.isSame(prevDateRef.current)) {
+			prevDateRef.current = currentDate
+			onDateChange?.(currentDate)
+		}
+	}, [currentDate, onDateChange])
+
+	const selectDate = useCallback((date: dayjs.Dayjs) => {
+		setCurrentDate(date)
+	}, [])
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {
 			setCurrentDate((prev) => {
-				const newDate =
-					direction === 1
-						? prev.add(1, VIEW_UNITS[view])
-						: prev.subtract(1, VIEW_UNITS[view])
-				onDateChange?.(newDate)
-				return newDate
+				return direction === 1
+					? prev.add(1, VIEW_UNITS[view])
+					: prev.subtract(1, VIEW_UNITS[view])
 			})
 		},
-		[view, onDateChange]
+		[view]
 	)
 
 	const nextPeriod = useCallback(() => navigatePeriod(1), [navigatePeriod])
 	const prevPeriod = useCallback(() => navigatePeriod(-1), [navigatePeriod])
 
 	const today = useCallback(() => {
-		const newDate = dayjs()
-		setCurrentDate(newDate)
-		onDateChange?.(newDate)
-	}, [onDateChange])
+		setCurrentDate(dayjs())
+	}, [])
 
 	const addEvent = useCallback(
 		(event: CalendarEvent) => {

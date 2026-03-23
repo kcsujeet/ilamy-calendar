@@ -28,11 +28,11 @@ const MONTH_KEYS = [
 ] as const
 
 const TitleContent = () => {
-	const { currentDate, view, setCurrentDate, t, firstDayOfWeek } =
+	const { currentDate, view, selectDate, t, firstDayOfWeek } =
 		useSmartCalendarContext((ctx) => ({
 			currentDate: ctx.currentDate,
 			view: ctx.view,
-			setCurrentDate: ctx.setCurrentDate,
+			selectDate: ctx.selectDate,
 			t: ctx.t,
 			firstDayOfWeek: ctx.firstDayOfWeek,
 		}))
@@ -44,8 +44,8 @@ const TitleContent = () => {
 	const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
 
-	const selectDate = (date: dayjs.Dayjs) => {
-		setCurrentDate(date)
+	const handleSelectDate = (date: dayjs.Dayjs) => {
+		selectDate(date)
 		setOpenPopover(null)
 	}
 
@@ -58,7 +58,7 @@ const TitleContent = () => {
 						currentDate.month() === index && 'bg-primary/10'
 					)}
 					key={month}
-					onClick={() => selectDate(currentDate.month(index))}
+					onClick={() => handleSelectDate(currentDate.month(index))}
 					variant="ghost"
 				>
 					{month}
@@ -76,7 +76,7 @@ const TitleContent = () => {
 						currentDate.year() === year && 'bg-primary/10'
 					)}
 					key={year}
-					onClick={() => selectDate(currentDate.year(year))}
+					onClick={() => handleSelectDate(currentDate.year(year))}
 					variant="ghost"
 				>
 					{year}
@@ -102,7 +102,7 @@ const TitleContent = () => {
 							isCurrentWeek && 'bg-primary/10'
 						)}
 						key={start.format('YYYY-MM-DD')}
-						onClick={() => selectDate(start)}
+						onClick={() => handleSelectDate(start)}
 						variant="ghost"
 					>
 						<div className="flex w-full items-center justify-between">
@@ -135,7 +135,7 @@ const TitleContent = () => {
 								isCurrentDay && 'bg-primary/10'
 							)}
 							key={day.format('YYYY-MM-DD')}
-							onClick={() => selectDate(day)}
+							onClick={() => handleSelectDate(day)}
 							variant="ghost"
 						>
 							<div className="flex w-full items-center justify-between">

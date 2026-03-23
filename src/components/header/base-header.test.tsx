@@ -158,4 +158,30 @@ describe('Header with Export Button', () => {
 			console.error = originalConsoleError
 		}
 	})
+
+	it('should call onDateChange when selecting a month from the built-in header dropdown', async () => {
+		const onDateChange = mock()
+
+		renderHeader([], {
+			initialDate: dayjs('2025-08-04T09:00:00.000Z'),
+			onDateChange,
+		})
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: 'August' }))
+		})
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: 'September' }))
+		})
+
+		await waitFor(() => {
+			expect(onDateChange).toHaveBeenCalledTimes(1)
+		})
+
+		const calledDate = onDateChange.mock.calls[0][0]
+		expect(dayjs.isDayjs(calledDate)).toBe(true)
+		expect(calledDate.month()).toBe(8)
+		expect(calledDate.year()).toBe(2025)
+	})
 })

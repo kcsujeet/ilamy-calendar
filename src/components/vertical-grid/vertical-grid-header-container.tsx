@@ -7,11 +7,12 @@ interface VerticalGridHeaderContainerProps {
 	children?: React.ReactNode
 	classes?: { header?: string; allDay?: string }
 	allDayRow?: React.ReactNode
+	expandAllDayRow?: boolean
 }
 
 const NoMemoVerticalGridHeaderContainer: React.FC<
 	VerticalGridHeaderContainerProps
-> = ({ children, classes, allDayRow }) => {
+> = ({ children, classes, allDayRow, expandAllDayRow = false }) => {
 	const { stickyViewHeader, viewHeaderClassName } = useSmartCalendarContext(
 		(state) => ({
 			stickyViewHeader: state.stickyViewHeader,
@@ -22,6 +23,7 @@ const NoMemoVerticalGridHeaderContainer: React.FC<
 	return (
 		<div
 			className={cn(
+				expandAllDayRow && 'flex h-full flex-col',
 				stickyViewHeader && 'sticky top-0 z-21 bg-background', // Z-index above the left sticky resource column
 				viewHeaderClassName
 			)}
@@ -35,7 +37,11 @@ const NoMemoVerticalGridHeaderContainer: React.FC<
 			{/* All-day row */}
 			{allDayRow && (
 				<div
-					className={cn('flex w-full border-b min-h-12', classes?.allDay)}
+					className={cn(
+						'flex w-full border-b min-h-12',
+						expandAllDayRow && 'flex-1 overflow-hidden',
+						classes?.allDay
+					)}
 					data-testid="vertical-grid-all-day"
 				>
 					{allDayRow}

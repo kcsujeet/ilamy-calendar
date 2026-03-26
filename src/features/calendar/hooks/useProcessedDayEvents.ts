@@ -19,10 +19,12 @@ export const useProcessedDayEvents = ({
 }: UseProcessedDayEventsProps) => {
 	const { getEventsForDateRange, getEventsForResource } =
 		useSmartCalendarContext()
-	const dayStart = days.at(0).startOf('day')
-	const dayEnd = days.at(-1).endOf('day')
+	const dayStart = days.at(0)?.startOf('day')
+	const dayEnd = days.at(-1)?.endOf('day')
 
 	const events = useMemo(() => {
+		if (!dayStart || !dayEnd) return []
+
 		let dayEvents = getEventsForDateRange(dayStart, dayEnd)
 		if (resourceId) {
 			const resourceEvents = getEventsForResource(resourceId)

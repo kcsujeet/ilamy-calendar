@@ -25,10 +25,12 @@ export const useProcessedWeekEvents = ({
 		getEventsForResource,
 	} = useSmartCalendarContext()
 
-	const weekStart = days.at(0).startOf('day')
-	const weekEnd = days.at(-1).endOf('day')
+	const weekStart = days.at(0)?.startOf('day')
+	const weekEnd = days.at(-1)?.endOf('day')
 
 	const events = useMemo(() => {
+		if (!weekStart || !weekEnd) return []
+
 		let weekEvents = getEventsForDateRange(weekStart, weekEnd)
 		if (resourceId) {
 			const resourceEvents = getEventsForResource(resourceId)

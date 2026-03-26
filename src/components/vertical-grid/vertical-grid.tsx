@@ -11,6 +11,7 @@ interface VerticalGridProps {
 	variant?: 'regular' | 'resource'
 	classes?: { header?: string; body?: string; allDay?: string }
 	allDayRow?: React.ReactNode
+	expandAllDayRow?: boolean
 	/**
 	 * Optional array of minute slots by which the hour is divided
 	 * e.g., [0, 15, 30, 45] for quarter-hour slots
@@ -26,6 +27,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	variant = 'resource',
 	classes,
 	allDayRow,
+	expandAllDayRow = false,
 	cellSlots,
 	style,
 }) => {
@@ -36,10 +38,23 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 		<VerticalGridHeaderContainer
 			allDayRow={allDayRow}
 			classes={{ header: classes?.header, allDay: classes?.allDay }}
+			expandAllDayRow={expandAllDayRow}
 		>
 			{children}
 		</VerticalGridHeaderContainer>
 	)
+
+	if (isRegularCalendar && expandAllDayRow && header) {
+		return (
+			<div
+				className="h-full flex flex-col"
+				data-testid="vertical-grid-container"
+				style={style}
+			>
+				{header}
+			</div>
+		)
+	}
 
 	return (
 		<div

@@ -88,6 +88,7 @@ export const WeekView: React.FC = () => {
 	const cssVars = {
 		'--visible-days': visibleDays.length,
 	} as React.CSSProperties
+	const shouldExpandAllDayRow = hideNonBusinessHours && hours.length === 0
 
 	return (
 		<VerticalGrid
@@ -99,6 +100,7 @@ export const WeekView: React.FC = () => {
 			}
 			classes={{ header: 'w-full h-18', body: 'w-full' }}
 			columns={[firstCol, ...columns]}
+			expandAllDayRow={shouldExpandAllDayRow}
 			gridType="hour"
 			style={cssVars}
 			variant="regular"

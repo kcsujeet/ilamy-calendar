@@ -723,6 +723,27 @@ describe('WeekView', () => {
 		expect(screen.getByTestId('vertical-time-13')).toBeInTheDocument()
 	})
 
+	test('does not crash when hideNonBusinessHours produces an empty hour range', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+
+		renderWeekView({
+			initialDate: monday,
+			businessHours: {
+				daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+				startTime: 0,
+				endTime: 0,
+			},
+			hideNonBusinessHours: true,
+		})
+
+		const allDayContainer = screen.getByTestId('vertical-grid-all-day')
+		expect(allDayContainer).toHaveClass('flex-1')
+		expect(screen.queryByTestId('vertical-grid-scroll')).not.toBeInTheDocument()
+		expect(screen.queryByTestId('vertical-time-00')).not.toBeInTheDocument()
+		expect(screen.queryByTestId('vertical-time-12')).not.toBeInTheDocument()
+	})
+
 	// Backwards compatibility tests
 	test('shows all 24 hours when hideNonBusinessHours is false (default behavior)', () => {
 		cleanup()

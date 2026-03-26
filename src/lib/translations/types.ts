@@ -19,6 +19,7 @@ export interface Translations {
 	startDate: string
 	endDate: string
 	startTime: string
+	searchTime: string
 	endTime: string
 	color: string
 

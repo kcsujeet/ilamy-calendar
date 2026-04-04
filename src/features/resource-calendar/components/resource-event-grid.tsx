@@ -1,7 +1,7 @@
 import type React from 'react'
-import { memo, useMemo, useRef } from 'react'
+import { memo, useMemo } from 'react'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
-import type { Resource } from '@/features/resource-calendar/types'
+import { useStableResources } from '@/features/resource-calendar/hooks/use-stable-resources'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 
@@ -29,17 +29,7 @@ const NoMemoResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 	classes,
 }) => {
 	const { getVisibleResources } = useSmartCalendarContext()
-
-	const rawVisibleResources = getVisibleResources()
-	// Stabilize the array reference — getVisibleResources() returns a new array
-	// on every call even when the contents haven't changed.
-	const resourcesRef = useRef<Resource[]>(rawVisibleResources)
-	const prevIds = resourcesRef.current.map((r) => r.id).join(',')
-	const nextIds = rawVisibleResources.map((r) => r.id).join(',')
-	if (prevIds !== nextIds) {
-		resourcesRef.current = rawVisibleResources
-	}
-	const visibleResources = resourcesRef.current
+	const visibleResources = useStableResources(getVisibleResources())
 
 	const columns = useMemo(
 		() =>

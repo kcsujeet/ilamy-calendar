@@ -2,13 +2,10 @@ import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import {
-	HEADER_ANIMATION,
-	TIME_COLUMN,
-	TIME_COLUMN_CELL,
-} from '@/lib/constants'
+import dayjs from '@/lib/configs/dayjs-config'
+import { HEADER_ANIMATION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+import { createTimeColumn } from '@/lib/utils/create-time-column'
 
 export const DayView = () => {
 	const { currentDate, timeFormat, t, businessHours, hideNonBusinessHours } =
@@ -21,19 +18,7 @@ export const DayView = () => {
 		allDates: [currentDate],
 	})
 
-	const firstCol = {
-		id: 'time-col',
-		day: undefined,
-		days: hours,
-		className: TIME_COLUMN,
-		gridType: 'hour' as const,
-		noEvents: true,
-		renderCell: (date: Dayjs) => (
-			<div className={TIME_COLUMN_CELL}>
-				{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
-			</div>
-		),
-	}
+	const firstCol = createTimeColumn(hours, timeFormat)
 
 	const columns = {
 		id: `day-col-${currentDate.format('YYYY-MM-DD')}`,

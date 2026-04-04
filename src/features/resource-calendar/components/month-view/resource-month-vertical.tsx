@@ -1,7 +1,7 @@
 import type React from 'react'
 import { memo } from 'react'
-import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
+import { ResourceVerticalHeader } from '@/features/resource-calendar/components/shared'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import {
@@ -53,20 +53,10 @@ const NoMemoResourceMonthVertical: React.FC = () => {
 			columns={[firstCol, ...columns]}
 			data-testid="resource-month-vertical-grid"
 		>
-			{/* Header */}
-			<div
-				className={'flex border-b h-12 flex-1'}
+			<ResourceVerticalHeader
 				data-testid="resource-month-header"
-			>
-				<div className="shrink-0 border-r w-16 sticky top-0 left-0 bg-background z-20" />
-				{resources.map((resource) => (
-					<ResourceCell
-						className="min-w-50 flex-1"
-						key={`resource-cell-${resource.id}`}
-						resource={resource}
-					/>
-				))}
-			</div>
+				resources={resources}
+			/>
 		</VerticalGrid>
 	)
 }

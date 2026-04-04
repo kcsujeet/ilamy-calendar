@@ -1,9 +1,5 @@
 import type React from 'react'
-import { useCallback, useMemo, useRef, useState } from 'react'
-import {
-	AllEventDialog,
-	type AllEventsDialogHandle,
-} from '@/components/all-events-dialog'
+import { useCallback, useMemo, useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import type { CalendarProviderProps } from '@/features/calendar/contexts/calendar-context/provider'
 import type {
@@ -13,7 +9,10 @@ import type {
 } from '@/features/calendar/types'
 import type { Resource } from '@/features/resource-calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
+import {
+	useAllEventsDialog,
+	useCalendarHandlers,
+} from '@/hooks/use-calendar-handlers'
 import { ResourceCalendarContext } from './context'
 
 const getEventResourceIds = (event: CalendarEvent): (string | number)[] => {
@@ -60,7 +59,6 @@ export const ResourceCalendarProvider: React.FC<
 	disableCellClick,
 	disableEventClick,
 	disableDragAndDrop,
-	dayMaxEvents,
 	eventSpacing = 1,
 	stickyViewHeader = true,
 	viewHeaderClassName = '',
@@ -132,17 +130,12 @@ export const ResourceCalendarProvider: React.FC<
 		translator,
 	})
 
-	// All-events dialog — ref stays internal to provider
-	const allEventsDialogRef = useRef<AllEventsDialogHandle>(null)
-	const openAllEventsDialog = useCallback(
-		(day: Dayjs, events: CalendarEvent[]) => {
-			allEventsDialogRef.current?.open(day, events)
-		},
-		[]
-	)
-	const closeAllEventsDialog = useCallback(() => {
-		allEventsDialogRef.current?.close()
-	}, [])
+	const {
+		allEventsDialogRef,
+		openAllEventsDialog,
+		closeAllEventsDialog,
+		AllEventDialog,
+	} = useAllEventsDialog()
 
 	// Resource visibility
 	const toggleResourceVisibility = useCallback(
@@ -221,28 +214,15 @@ export const ResourceCalendarProvider: React.FC<
 		return Boolean(event.resourceIds && event.resourceIds.length > 1)
 	}, [])
 
-	// Custom handlers
-	const editEvent = useCallback(
-		(event: CalendarEvent) => {
-			setSelectedEvent(event)
-			setIsEventFormOpen(true)
-		},
-		[setSelectedEvent, setIsEventFormOpen]
-	)
-
-	const handleEventClick = useCallback(
-		(event: CalendarEvent) => {
-			if (disableEventClick) {
-				return
-			}
-			if (onEventClick) {
-				onEventClick(event)
-			} else {
-				editEvent(event)
-			}
-		},
-		[disableEventClick, onEventClick, editEvent]
-	)
+	const { handleEventClick } = useCalendarHandlers({
+		setSelectedEvent,
+		setIsEventFormOpen,
+		disableEventClick,
+		onEventClick,
+		disableCellClick,
+		onCellClick,
+		openEventForm,
+	})
 
 	const handleDateClick = useCallback(
 		(info: CellClickInfo) => {

@@ -1,19 +1,14 @@
 import type React from 'react'
 import { useMemo } from 'react'
-import { AllDayCell } from '@/components/all-day-row/all-day-cell'
-import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { ResourceCell } from '@/components/resource-cell'
-import type { BusinessHours } from '@/components/types'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
+import { ResourceAllDaySection } from '@/features/resource-calendar/components/shared'
+import { getResourceBusinessHours } from '@/features/resource-calendar/hooks/use-stable-resources'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import {
-	HEADER_ANIMATION,
-	TIME_COLUMN,
-	TIME_COLUMN_CELL,
-} from '@/lib/constants'
+import { HEADER_ANIMATION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+import { createTimeColumn } from '@/lib/utils/create-time-column'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
 export const ResourceWeekVertical: React.FC = () => {
@@ -50,27 +45,13 @@ export const ResourceWeekVertical: React.FC = () => {
 				businessHours,
 				hideNonBusinessHours,
 				allDates: weekDays,
-				resourceBusinessHours: resources
-					.map((r) => r.businessHours)
-					.filter(Boolean) as (BusinessHours | BusinessHours[])[],
+				resourceBusinessHours: getResourceBusinessHours(resources),
 			}),
 		[currentDate, businessHours, hideNonBusinessHours, weekDays, resources]
 	)
 
 	const firstCol = useMemo(
-		() => ({
-			id: 'time-col',
-			days: hours,
-			day: undefined,
-			className: TIME_COLUMN,
-			gridType: 'hour' as const,
-			noEvents: true,
-			renderCell: (date: Dayjs) => (
-				<div className={TIME_COLUMN_CELL}>
-					{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
-				</div>
-			),
-		}),
+		() => createTimeColumn(hours, timeFormat),
 		[hours, timeFormat]
 	)
 
@@ -87,9 +68,7 @@ export const ResourceWeekVertical: React.FC = () => {
 						businessHours,
 						hideNonBusinessHours,
 						allDates: weekDays,
-						resourceBusinessHours: resources
-							.map((r) => r.businessHours)
-							.filter(Boolean) as (BusinessHours | BusinessHours[])[],
+						resourceBusinessHours: getResourceBusinessHours(resources),
 					}),
 					gridType: 'hour' as const,
 				}))
@@ -100,18 +79,7 @@ export const ResourceWeekVertical: React.FC = () => {
 	return (
 		<VerticalGrid
 			allDayRow={
-				<div className="flex">
-					<AllDayCell />
-					{resources.map((resource) => (
-						<AllDayRow
-							classes={{ cell: 'min-w-50' }}
-							days={visibleDays}
-							key={`resource-week-allday-row-${resource.id}`}
-							resource={resource}
-							showSpacer={false}
-						/>
-					))}
-				</div>
+				<ResourceAllDaySection days={visibleDays} resources={resources} />
 			}
 			classes={{ header: 'h-24' }}
 			columns={[firstCol, ...columns]}

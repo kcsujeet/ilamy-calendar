@@ -1,13 +1,12 @@
-import { AllDayCell } from '@/components/all-day-row/all-day-cell'
-import { AllDayRow } from '@/components/all-day-row/all-day-row'
-import { ResourceCell } from '@/components/resource-cell'
-import type { BusinessHours } from '@/components/types'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
+import {
+	ResourceAllDaySection,
+	ResourceVerticalHeader,
+} from '@/features/resource-calendar/components/shared'
+import { getResourceBusinessHours } from '@/features/resource-calendar/hooks/use-stable-resources'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { TIME_COLUMN, TIME_COLUMN_CELL } from '@/lib/constants'
-import { cn } from '@/lib/utils'
+import { createTimeColumn } from '@/lib/utils/create-time-column'
 
 export const ResourceDayVertical: React.FC = () => {
 	const {
@@ -24,24 +23,10 @@ export const ResourceDayVertical: React.FC = () => {
 		businessHours,
 		hideNonBusinessHours,
 		allDates: [currentDate],
-		resourceBusinessHours: resources
-			.map((r) => r.businessHours)
-			.filter(Boolean) as (BusinessHours | BusinessHours[])[],
+		resourceBusinessHours: getResourceBusinessHours(resources),
 	})
 
-	const firstCol = {
-		id: 'time-col',
-		day: undefined,
-		days: hours,
-		className: TIME_COLUMN,
-		gridType: 'hour' as const,
-		noEvents: true,
-		renderCell: (date: Dayjs) => (
-			<div className={TIME_COLUMN_CELL}>
-				{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
-			</div>
-		),
-	}
+	const firstCol = createTimeColumn(hours, timeFormat)
 
 	const columns = resources.map((resource) => ({
 		id: `day-col-${currentDate.format('YYYY-MM-DD')}-resource-${resource.id}`,
@@ -55,18 +40,7 @@ export const ResourceDayVertical: React.FC = () => {
 	return (
 		<VerticalGrid
 			allDayRow={
-				<div className="flex w-full">
-					<AllDayCell />
-					{resources.map((resource) => (
-						<AllDayRow
-							classes={{ cell: 'min-w-50' }}
-							days={[currentDate]}
-							key={`resource-allday-row-${resource.id}`}
-							resource={resource}
-							showSpacer={false}
-						/>
-					))}
-				</div>
+				<ResourceAllDaySection days={[currentDate]} resources={resources} />
 			}
 			cellSlots={[0, 15, 30, 45]}
 			classes={{ body: 'w-full', header: 'w-full' }}
@@ -74,20 +48,7 @@ export const ResourceDayVertical: React.FC = () => {
 			data-testid="resource-day"
 			gridType="hour"
 		>
-			{/* Header */}
-			<div
-				className={'flex border-b h-12 flex-1'}
-				data-testid="resource-month-header"
-			>
-				<div className="shrink-0 border-r w-16 sticky top-0 left-0 bg-background z-20" />
-				{resources.map((resource) => (
-					<ResourceCell
-						className="min-w-50 flex-1"
-						key={`resource-cell-${resource.id}`}
-						resource={resource}
-					/>
-				))}
-			</div>
+			<ResourceVerticalHeader resources={resources} />
 		</VerticalGrid>
 	)
 }

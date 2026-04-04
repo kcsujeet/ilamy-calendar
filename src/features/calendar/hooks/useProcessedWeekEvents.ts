@@ -3,6 +3,7 @@ import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { useStableDays } from '@/hooks/use-stable-days'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { isEventInRange } from '@/lib/utils/date-utils'
 import { getPositionedEvents } from '@/lib/utils/position-week-events'
 
 interface UseProcessedWeekEventsProps {
@@ -59,14 +60,9 @@ export const useProcessedWeekEvents = ({
 			const key = day.format('YYYY-MM-DD')
 			const dayStart = day.startOf('day')
 			const dayEnd = day.endOf('day')
-			const dayEvents = events.filter((e) => {
-				const startsInDay =
-					e.start.isSameOrAfter(dayStart) && e.start.isSameOrBefore(dayEnd)
-				const endsInDay =
-					e.end.isSameOrAfter(dayStart) && e.end.isSameOrBefore(dayEnd)
-				const spansDay = e.start.isBefore(dayStart) && e.end.isAfter(dayEnd)
-				return startsInDay || endsInDay || spansDay
-			})
+			const dayEvents = events.filter((e) =>
+				isEventInRange(e, dayStart, dayEnd)
+			)
 			map.set(key, dayEvents)
 		}
 		return map

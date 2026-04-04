@@ -1,8 +1,12 @@
 import type React from 'react'
-import { useMemo, useRef } from 'react'
-import type { BusinessHours } from '@/components/types'
+import { useMemo } from 'react'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
+import { TimeHeaderRow } from '@/features/resource-calendar/components/shared'
+import {
+	getResourceBusinessHours,
+	useStableResources,
+} from '@/features/resource-calendar/hooks/use-stable-resources'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import {
@@ -24,16 +28,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 		getVisibleResources,
 	} = useSmartCalendarContext()
 
-	const allVisibleResources = getVisibleResources()
-	// Stabilize the array reference — getVisibleResources() returns a new array
-	// on every call even when the contents haven't changed.
-	const resourcesRef = useRef(allVisibleResources)
-	const prevIds = resourcesRef.current.map((r) => r.id).join(',')
-	const nextIds = allVisibleResources.map((r) => r.id).join(',')
-	if (prevIds !== nextIds) {
-		resourcesRef.current = allVisibleResources
-	}
-	const resources = resourcesRef.current
+	const resources = useStableResources(getVisibleResources())
 
 	// Generate week days
 	const weekDays = useMemo(
@@ -43,11 +38,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 
 	// Resource-specific business hours combined
 	const resourceBusinessHours = useMemo(
-		() =>
-			resources.map((r) => r.businessHours).filter(Boolean) as (
-				| BusinessHours
-				| BusinessHours[]
-			)[],
+		() => getResourceBusinessHours(resources),
 		[resources]
 	)
 
@@ -111,25 +102,12 @@ export const ResourceWeekHorizontal: React.FC = () => {
 					})}
 				</div>
 
-				{/* Time header row */}
-				<div className="flex h-12 border-b">
-					{weekHours.flat().map((col) => {
-						const isNowHour = col.isSame(dayjs(), 'hour')
-
-						return (
-							<div
-								className={cn(
-									'min-w-20 flex-1 border-r flex items-center justify-center text-xs shrink-0',
-									isNowHour && `${TODAY_HIGHLIGHT} font-medium`
-								)}
-								data-testid={`resource-week-time-label-${col.format('HH')}`}
-								key={`resource-week-header-${col.toISOString()}`}
-							>
-								{col.format(timeFormat === '12-hour' ? 'h A' : 'H')}
-							</div>
-						)
-					})}
-				</div>
+				<TimeHeaderRow
+					className="border-b"
+					hours={weekHours.flat()}
+					testIdPrefix="resource-week"
+					timeFormat={timeFormat}
+				/>
 			</div>
 		</ResourceEventGrid>
 	)

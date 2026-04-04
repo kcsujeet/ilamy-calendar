@@ -4,9 +4,10 @@ import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import { HEADER_ANIMATION, TIME_COLUMN_CELL } from '@/lib/constants'
+import dayjs from '@/lib/configs/dayjs-config'
+import { HEADER_ANIMATION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+import { createTimeColumn } from '@/lib/utils/create-time-column'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
 const WEEK_COL_CLASS =
@@ -52,17 +53,8 @@ export const WeekView: React.FC = () => {
 
 	const firstCol = useMemo(
 		() => ({
-			id: 'time-col',
-			days: hours,
-			day: undefined,
+			...createTimeColumn(hours, timeFormat),
 			className: `shrink-0 ${LEFT_COL_WIDTH} sticky left-0 bg-background z-20`,
-			gridType: 'hour' as const,
-			noEvents: true,
-			renderCell: (date: Dayjs) => (
-				<div className={TIME_COLUMN_CELL}>
-					{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
-				</div>
-			),
 		}),
 		[hours, timeFormat]
 	)

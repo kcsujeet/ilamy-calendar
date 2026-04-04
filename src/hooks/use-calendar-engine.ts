@@ -12,7 +12,11 @@ import dayjs, {
 } from '@/lib/configs/dayjs-config'
 import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
-import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
+import {
+	getMonthWeeks,
+	getWeekDays,
+	isEventInRange,
+} from '@/lib/utils/date-utils'
 import { isDeepEqual } from '@/lib/utils/deep-equal'
 import type { CalendarView } from '@/types'
 import { DAY_MAX_EVENTS_DEFAULT } from '../lib/constants'
@@ -190,15 +194,8 @@ export const useCalendarEngine = (
 						endDate: end,
 					})
 				)
-			} else {
-				const startsInRange =
-					event.start.isSameOrAfter(start) && event.start.isSameOrBefore(end)
-				const endsInRange =
-					event.end.isSameOrAfter(start) && event.end.isSameOrBefore(end)
-				const spansRange = event.start.isBefore(start) && event.end.isAfter(end)
-				if (startsInRange || endsInRange || spansRange) {
-					allEvents.push(event)
-				}
+			} else if (isEventInRange(event, start, end)) {
+				allEvents.push(event)
 			}
 		}
 		return allEvents
@@ -219,17 +216,9 @@ export const useCalendarEngine = (
 
 			if (withinView) {
 				// Fast path — just filter the pre-expanded list
-				return processedEvents.filter((event) => {
-					const startsInRange =
-						event.start.isSameOrAfter(startDate) &&
-						event.start.isSameOrBefore(endDate)
-					const endsInRange =
-						event.end.isSameOrAfter(startDate) &&
-						event.end.isSameOrBefore(endDate)
-					const spansRange =
-						event.start.isBefore(startDate) && event.end.isAfter(endDate)
-					return startsInRange || endsInRange || spansRange
-				})
+				return processedEvents.filter((event) =>
+					isEventInRange(event, startDate, endDate)
+				)
 			}
 
 			// Slow path — query extends beyond view range, need full expansion
@@ -244,18 +233,8 @@ export const useCalendarEngine = (
 							endDate,
 						})
 					)
-				} else {
-					const startsInRange =
-						event.start.isSameOrAfter(startDate) &&
-						event.start.isSameOrBefore(endDate)
-					const endsInRange =
-						event.end.isSameOrAfter(startDate) &&
-						event.end.isSameOrBefore(endDate)
-					const spansRange =
-						event.start.isBefore(startDate) && event.end.isAfter(endDate)
-					if (startsInRange || endsInRange || spansRange) {
-						allEvents.push(event)
-					}
+				} else if (isEventInRange(event, startDate, endDate)) {
+					allEvents.push(event)
 				}
 			}
 			return allEvents

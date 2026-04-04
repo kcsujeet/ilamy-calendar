@@ -82,3 +82,15 @@ export function getDayHours({
 		startOfDay.hour(i).minute(0).second(0).millisecond(0)
 	)
 }
+
+export const isEventInRange = (
+	event: { start: Dayjs; end: Dayjs },
+	start: Dayjs,
+	end: Dayjs
+): boolean => {
+	return (
+		(event.start.isSameOrAfter(start) && event.start.isSameOrBefore(end)) ||
+		(event.end.isSameOrAfter(start) && event.end.isSameOrBefore(end)) ||
+		(event.start.isBefore(start) && event.end.isAfter(end))
+	)
+}

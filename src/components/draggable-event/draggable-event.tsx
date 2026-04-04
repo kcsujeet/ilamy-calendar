@@ -1,7 +1,6 @@
 import { useDraggable } from '@dnd-kit/core'
 import type { CSSProperties } from 'react'
 import { memo } from 'react'
-import { AnimatedSection } from '@/components/animations/animated-section'
 import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
@@ -49,7 +48,6 @@ function DraggableEventUnmemoized({
 
 	// Default event content to render if custom renderEvent is not provided
 	const DefaultEventContent = () => {
-		// Check if this event has truncation information
 		const enhancedEvent = event as unknown as {
 			isTruncatedStart?: boolean
 			isTruncatedEnd?: boolean
@@ -70,16 +68,13 @@ function DraggableEventUnmemoized({
 				)}
 				style={{ backgroundColor: event.backgroundColor, color: event.color }}
 			>
-				{/* Left continuation indicator */}
 				{isTruncatedStart && (
 					<div className="absolute left-0 top-0 bottom-0 w-0.5 bg-foreground/25"></div>
 				)}
 
-				{/* Event title */}
 				<p
 					className={cn(
 						'text-[10px] font-semibold sm:text-xs mt-0.5',
-						// Add slight padding to avoid overlap with indicators
 						isTruncatedStart && 'pl-1',
 						isTruncatedEnd && 'pr-1'
 					)}
@@ -87,7 +82,6 @@ function DraggableEventUnmemoized({
 					{event.title}
 				</p>
 
-				{/* Right continuation indicator */}
 				{isTruncatedEnd && (
 					<div className="absolute right-0 top-0 bottom-0 w-0.5 bg-foreground/25"></div>
 				)}
@@ -96,9 +90,9 @@ function DraggableEventUnmemoized({
 	}
 
 	return (
-		<AnimatedSection
+		<div
 			className={cn(
-				'truncate h-full w-full',
+				'truncate h-full w-full animate-in fade-in zoom-in-95 duration-800 ease-in-out',
 				disableDrag || disableDragAndDrop
 					? disableEventClick
 						? 'cursor-default'
@@ -109,28 +103,23 @@ function DraggableEventUnmemoized({
 					'cursor-grabbing shadow-lg',
 				className
 			)}
-			layout={true}
-			layoutId={elementId}
 			onClick={(e) => {
 				e.stopPropagation()
 				onEventClick(event)
 			}}
 			ref={setNodeRef}
 			style={style}
-			transitionKey={elementId}
 			{...attributes}
 			{...listeners}
 		>
-			{/* Use custom renderEvent from context if available, otherwise use default */}
 			{renderEvent ? renderEvent(event) : <DefaultEventContent />}
-		</AnimatedSection>
+		</div>
 	)
 }
 
 export const DraggableEvent = memo(
 	DraggableEventUnmemoized,
 	(prevProps, nextProps) => {
-		// Compare the essential props to prevent unnecessary re-renders
 		return (
 			prevProps.elementId === nextProps.elementId &&
 			prevProps.disableDrag === nextProps.disableDrag &&

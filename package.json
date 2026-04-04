@@ -91,7 +91,6 @@
 		"clsx": "^2.1.1",
 		"dayjs": "^1.11.20",
 		"lucide-react": "^0.475.0",
-		"motion": "^12.36.0",
 		"radix-ui": "^1.4.3",
 		"react-day-picker": "^9.14.0",
 		"rrule": "^2.8.1",

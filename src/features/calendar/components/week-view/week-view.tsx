@@ -1,11 +1,11 @@
 import type React from 'react'
 import { useMemo } from 'react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
-import { HEADER_ANIMATION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { createTimeColumn } from '@/lib/utils/create-time-column'
 import { getWeekDays } from '@/lib/utils/date-utils'
@@ -121,19 +121,21 @@ export const WeekView: React.FC = () => {
 								openEventForm({ start: day })
 							}}
 						>
-							<div className={'text-xs sm:text-sm'} key={key}>
+							<AnimatedSection
+								className="text-xs sm:text-sm"
+								transitionKey={key}
+							>
 								{day.format('ddd')}
-							</div>
-							<div
+							</AnimatedSection>
+							<AnimatedSection
 								className={cn(
 									'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
-									HEADER_ANIMATION,
 									isToday && 'bg-primary text-primary-foreground'
 								)}
-								key={`${key}-num`}
+								transitionKey={`${key}-num`}
 							>
 								{day.format('D')}
-							</div>
+							</AnimatedSection>
 						</div>
 					)
 				})}

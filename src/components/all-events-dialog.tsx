@@ -1,5 +1,5 @@
 import { useImperativeHandle, useState } from 'react'
-import { DraggableEvent } from '@/components/draggable-event/draggable-event'
+import { EventContent } from '@/components/event-content'
 import type { CalendarEvent } from '@/components/types'
 import {
 	Dialog,
@@ -7,6 +7,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 
 export interface SelectedDayEvents {
@@ -24,6 +25,8 @@ interface AllEventDialogProps {
 }
 
 export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
+	const { onEventClick, renderEvent, disableEventClick } =
+		useSmartCalendarContext()
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [selectedDayEvents, setSelectedDayEvents] =
 		useState<SelectedDayEvents | null>(null)
@@ -55,13 +58,14 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 						{selectedDayEvents?.day.format('MMMM D, YYYY')}
 					</DialogTitle>
 				</DialogHeader>
-				<div className="mt-4 space-y-3">
+				<div className="mt-4 space-y-2">
 					{selectedDayEvents?.events.map((event) => (
-						<DraggableEvent
-							className="relative my-1 h-[30px]"
-							elementId={`all-events-dialog-event-${event.id}`}
+						<EventContent
+							className="h-[30px] hover:opacity-80"
 							event={event}
 							key={event.id}
+							onClick={disableEventClick ? undefined : onEventClick}
+							renderEvent={renderEvent}
 						/>
 					))}
 				</div>

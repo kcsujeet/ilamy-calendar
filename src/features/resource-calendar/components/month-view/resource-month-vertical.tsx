@@ -1,15 +1,11 @@
 import type React from 'react'
 import { memo } from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { ResourceVerticalHeader } from '@/features/resource-calendar/components/shared'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
-import {
-	HEADER_ANIMATION,
-	TIME_COLUMN,
-	TIME_COLUMN_CELL,
-} from '@/lib/constants'
-import { cn } from '@/lib/utils'
+import { TIME_COLUMN, TIME_COLUMN_CELL } from '@/lib/constants'
 
 const NoMemoResourceMonthVertical: React.FC = () => {
 	const { currentDate, getVisibleResources } = useSmartCalendarContext()
@@ -29,13 +25,13 @@ const NoMemoResourceMonthVertical: React.FC = () => {
 		gridType: 'day' as const,
 		noEvents: true,
 		renderCell: (date: Dayjs) => (
-			<div
-				className={cn(HEADER_ANIMATION, TIME_COLUMN_CELL)}
-				key={date.toISOString()}
+			<AnimatedSection
+				className={TIME_COLUMN_CELL}
+				transitionKey={date.toISOString()}
 			>
 				<span>{date.format('D')}</span>
 				<span>{date.format('ddd')}</span>
-			</div>
+			</AnimatedSection>
 		),
 	}
 

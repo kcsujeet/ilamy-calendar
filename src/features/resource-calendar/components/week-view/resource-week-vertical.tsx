@@ -1,12 +1,12 @@
 import type React from 'react'
 import { useMemo } from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceAllDaySection } from '@/features/resource-calendar/components/shared'
 import { getResourceBusinessHours } from '@/features/resource-calendar/hooks/use-stable-resources'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import { HEADER_ANIMATION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { createTimeColumn } from '@/lib/utils/create-time-column'
 import { getWeekDays } from '@/lib/utils/date-utils'
@@ -119,15 +119,12 @@ export const ResourceWeekVertical: React.FC = () => {
 				{/* Date header row */}
 				<div className="flex h-12">
 					<div className="shrink-0 w-16 border-r border-b z-20 bg-background sticky left-0">
-						<span
-							className={cn(
-								HEADER_ANIMATION,
-								'px-2 h-full w-full flex justify-center items-start font-medium'
-							)}
-							key={currentDate.week()}
+						<AnimatedSection
+							className="px-2 h-full w-full flex justify-center items-start font-medium"
+							transitionKey={`week-${currentDate.week()}`}
 						>
 							{currentDate.week()}
-						</span>
+						</AnimatedSection>
 					</div>
 					{columns.map((col) => {
 						const day = col.day
@@ -141,14 +138,12 @@ export const ResourceWeekVertical: React.FC = () => {
 								key={`resource-week-header-${day.toISOString()}-hour-${col.resourceId}`}
 							>
 								<div className={'text-sm'}>{day.format('ddd')}</div>
-								<div
-									className={cn(
-										HEADER_ANIMATION,
-										'text-xs text-muted-foreground'
-									)}
+								<AnimatedSection
+									className="text-xs text-muted-foreground"
+									transitionKey={`${day.toISOString()}-date`}
 								>
 									{day.format('M/D')}
-								</div>
+								</AnimatedSection>
 							</div>
 						)
 					})}

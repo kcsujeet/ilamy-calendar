@@ -38,7 +38,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 				/>
 			)}
 			{todayEvents.map((event, index) => {
-				const eventKey = `event-${event.id}-${index}-${days.at(0)?.toISOString()}-${resourceId ?? 'no-resource'}`
+				const eventKey = `event-${event.id}-${resourceId ?? 'no-resource'}`
 				const isShortEvent = event.end.diff(event.start, 'minute') <= 15
 
 				return (

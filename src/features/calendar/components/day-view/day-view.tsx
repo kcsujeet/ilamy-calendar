@@ -1,9 +1,9 @@
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
-import { HEADER_ANIMATION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { createTimeColumn } from '@/lib/utils/create-time-column'
 
@@ -52,27 +52,24 @@ export const DayView = () => {
 						isToday && 'text-primary'
 					)}
 				>
-					<span
-						className={cn('xs:inline hidden', HEADER_ANIMATION)}
-						key={currentDate.format('YYYY-MM-DD')}
+					<AnimatedSection
+						className="xs:inline hidden"
+						transitionKey={currentDate.format('YYYY-MM-DD')}
 					>
 						{currentDate.format('dddd, ')}
-					</span>
-					<span
-						className={HEADER_ANIMATION}
-						key={`${currentDate.format('YYYY-MM-DD')}-date`}
+					</AnimatedSection>
+					<AnimatedSection
+						transitionKey={`${currentDate.format('YYYY-MM-DD')}-date`}
 					>
 						{currentDate.format('MMMM D, YYYY')}
-					</span>
+					</AnimatedSection>
 					{isToday && (
-						<span
-							className={cn(
-								HEADER_ANIMATION,
-								'bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm'
-							)}
+						<AnimatedSection
+							className="bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm"
+							transitionKey="today-badge"
 						>
 							{t('today')}
-						</span>
+						</AnimatedSection>
 					)}
 				</div>
 			</div>

@@ -12,6 +12,7 @@ import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 // oxlint-disable-next-line no-duplicates
 import '@/lib/configs/dayjs-config'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import type { WeekDays } from '@/components/types'
 import type {
 	IlamyCalendarPropEvent,
@@ -38,11 +39,15 @@ const CalendarContent: React.FC = () => {
 		<div className="flex flex-col w-full h-full" data-testid="ilamy-calendar">
 			<Header className="p-1" />
 			<CalendarDndContext>
-				<div className="w-full h-[calc(100%-3.5rem)]">
+				<AnimatedSection
+					className="w-full h-[calc(100%-3.5rem)]"
+					direction="horizontal"
+					transitionKey={view}
+				>
 					<div className="border h-full w-full" data-testid="calendar-body">
 						{viewMap[view]}
 					</div>
-				</div>
+				</AnimatedSection>
 			</CalendarDndContext>
 			<EventFormDialog />
 		</div>

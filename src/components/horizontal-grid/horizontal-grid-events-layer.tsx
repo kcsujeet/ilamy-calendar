@@ -23,11 +23,11 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 			data-testid={dataTestId}
 		>
 			{positionedEvents.map((event) => {
-				const eventKey = `${event.id}-${event.position}-${weekStart?.toISOString()}-${resourceId ?? 'no-resource'}`
+				const eventKey = `${event.id}-${resourceId ?? 'no-resource'}`
 
 				return (
 					<div
-						className="absolute z-10 pointer-events-auto overflow-clip"
+						className="absolute z-10 pointer-events-auto overflow-clip transition-all duration-300 ease-out"
 						data-left={event.left}
 						data-testid={`horizontal-event-${event.id}`}
 						data-top={event.top}

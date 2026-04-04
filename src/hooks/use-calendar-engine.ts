@@ -1,11 +1,4 @@
-import {
-	startTransition,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import {
@@ -291,9 +284,7 @@ export const useCalendarEngine = (
 
 	const selectDate = useCallback(
 		(date: Dayjs) => {
-			startTransition(() => {
-				setCurrentDate(date)
-			})
+			setCurrentDate(date)
 			const range = calculateViewRange(date, view, firstDayOfWeek)
 			onDateChange?.(date, range)
 		},
@@ -302,16 +293,14 @@ export const useCalendarEngine = (
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {
-			startTransition(() => {
-				setCurrentDate((prev) => {
-					const newDate =
-						direction === 1
-							? prev.add(1, VIEW_UNITS[view])
-							: prev.subtract(1, VIEW_UNITS[view])
-					const range = calculateViewRange(newDate, view, firstDayOfWeek)
-					onDateChange?.(newDate, range)
-					return newDate
-				})
+			setCurrentDate((prev) => {
+				const newDate =
+					direction === 1
+						? prev.add(1, VIEW_UNITS[view])
+						: prev.subtract(1, VIEW_UNITS[view])
+				const range = calculateViewRange(newDate, view, firstDayOfWeek)
+				onDateChange?.(newDate, range)
+				return newDate
 			})
 		},
 		[view, onDateChange, firstDayOfWeek]
@@ -322,7 +311,7 @@ export const useCalendarEngine = (
 
 	const today = useCallback(() => {
 		const newDate = dayjs()
-		startTransition(() => setCurrentDate(newDate))
+		setCurrentDate(newDate)
 		const range = calculateViewRange(newDate, view, firstDayOfWeek)
 		onDateChange?.(newDate, range)
 	}, [onDateChange, view, firstDayOfWeek])
@@ -424,7 +413,7 @@ export const useCalendarEngine = (
 
 	const handleViewChange = useCallback(
 		(newView: CalendarView) => {
-			startTransition(() => setView(newView))
+			setView(newView)
 			onViewChange?.(newView)
 		},
 		[onViewChange]

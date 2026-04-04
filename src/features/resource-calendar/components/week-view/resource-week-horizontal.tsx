@@ -1,5 +1,6 @@
 import type React from 'react'
 import { useMemo } from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { TimeHeaderRow } from '@/features/resource-calendar/components/shared'
@@ -9,11 +10,7 @@ import {
 } from '@/features/resource-calendar/hooks/use-stable-resources'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
-import {
-	HEADER_ANIMATION,
-	RESOURCE_CORNER,
-	TODAY_HIGHLIGHT,
-} from '@/lib/constants'
+import { RESOURCE_CORNER, TODAY_HIGHLIGHT } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -87,15 +84,12 @@ export const ResourceWeekHorizontal: React.FC = () => {
 									<div className={'text-sm'} key={day.toISOString()}>
 										{day.format('ddd')}
 									</div>
-									<div
-										className={cn(
-											'text-xs text-muted-foreground',
-											HEADER_ANIMATION
-										)}
-										key={`${day.toISOString()}-date`}
+									<AnimatedSection
+										className="text-xs text-muted-foreground"
+										transitionKey={`${day.toISOString()}-date`}
 									>
 										{day.format('M/D')}
-									</div>
+									</AnimatedSection>
 								</div>
 							</div>
 						)

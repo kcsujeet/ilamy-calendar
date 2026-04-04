@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react'
+import { memo, useMemo, useRef } from 'react'
 import { DayNumber } from '@/components/day-number'
 import type { CalendarEvent } from '@/components/types'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
@@ -6,31 +6,33 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import type { SelectedDayEvents } from './all-events-dialog'
-import { AllEventDialog } from './all-events-dialog'
 import { DroppableCell } from './droppable-cell'
+
+const CELL_CLASS =
+	'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px] relative border-r last:border-r-0 only:border-r border-b'
 
 interface GridProps {
 	day: Dayjs
-	hour?: number // Optional hour for hour-based grids
-	minute?: number // Optional minute for more granular time slots
-	dayMaxEvents?: number
-	className?: string // Optional className for custom styling
-	resourceId?: string | number // Optional resource ID for resource-specific day cells
-	gridType?: 'day' | 'hour' // Future use for different grid types
-	shouldRenderEvents?: boolean // Flag to determine if events should be rendered
-	allDay?: boolean // Flag to indicate if this is an all-day cell
-	showDayNumber?: boolean // Flag to show or hide the day number
+	hour?: number
+	minute?: number
+	className?: string
+	resourceId?: string | number
+	gridType?: 'day' | 'hour'
+	shouldRenderEvents?: boolean
+	allDay?: boolean
+	showDayNumber?: boolean
 	children?: React.ReactNode
 	'data-testid'?: string
+	precomputedEvents?: CalendarEvent[]
 }
 
 const NoMemoGridCell: React.FC<GridProps> = ({
-	day,
+	day: rawDay,
 	hour,
 	minute,
 	className = '',
 	resourceId,
+	precomputedEvents,
 	gridType = 'day',
 	shouldRenderEvents = true,
 	allDay = false,
@@ -38,114 +40,65 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	showDayNumber = false,
 	children,
 }) => {
-	const allEventsDialogRef = React.useRef<{
-		open: () => void
-		close: () => void
-		setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void
-	}>(null)
+	const stableDayRef = useRef(rawDay)
+	if (stableDayRef.current.valueOf() !== rawDay.valueOf()) {
+		stableDayRef.current = rawDay
+	}
+	const day = stableDayRef.current
+
 	const {
-		dayMaxEvents = 0,
-		getEventsForDateRange,
 		currentDate,
-		t,
-		getEventsForResource,
 		businessHours,
+		getResourceById,
+		dayMaxEvents = 0,
+		t,
 		currentLocale,
 		eventSpacing,
-		getResourceById,
+		openAllEventsDialog,
 	} = useSmartCalendarContext()
 
-	const todayEvents = useMemo(() => {
-		if (!shouldRenderEvents) {
-			return []
-		}
-
-		let todayEvents = getEventsForDateRange(
-			day.startOf(gridType),
-			day.endOf(gridType)
-		)
-
-		if (allDay) {
-			todayEvents = todayEvents.filter((e) => e.allDay)
-		}
-
-		if (resourceId) {
-			const resourceEvents = getEventsForResource(resourceId) ?? []
-
-			return todayEvents.filter((event) =>
-				resourceEvents.some((re) => String(re.id) === String(event.id))
-			)
-		}
-
-		return todayEvents
-	}, [
-		day,
-		resourceId,
-		getEventsForDateRange,
-		getEventsForResource,
-		gridType,
-		shouldRenderEvents,
-		allDay,
-	])
-
-	// Handler for showing all events in a dialog
-	const showAllEvents = (day: Dayjs, events: CalendarEvent[]) => {
-		allEventsDialogRef.current?.setSelectedDayEvents({
-			day,
-			events,
-		})
-		allEventsDialogRef.current?.open()
-	}
-
-	const isCurrentMonth = day.month() === currentDate.month()
-
-	const hiddenEventsCount = todayEvents.length - dayMaxEvents
-	const hasHiddenEvents = hiddenEventsCount > 0
-
-	// Use resource-specific business hours if available, otherwise fallback to global
-	const effectiveBusinessHours = useMemo(() => {
+	const { isCurrentMonth, isBusiness } = useMemo(() => {
+		let effectiveBH = businessHours
 		if (resourceId && getResourceById) {
 			const resource = getResourceById(resourceId)
 			if (resource?.businessHours) {
-				return resource.businessHours
+				effectiveBH = resource.businessHours
 			}
 		}
-		return businessHours
-	}, [resourceId, getResourceById, businessHours])
 
-	const isBusiness = isBusinessHour({
-		date: day,
-		hour: gridType === 'hour' ? day.hour() : undefined,
-		businessHours: effectiveBusinessHours,
-	})
+		return {
+			isCurrentMonth: day.month() === currentDate.month(),
+			isBusiness: isBusinessHour({
+				date: day,
+				hour: gridType === 'hour' ? day.hour() : undefined,
+				businessHours: effectiveBH,
+			}),
+		}
+	}, [day, currentDate, gridType, businessHours, resourceId, getResourceById])
 
-	const hourStr = day.format('HH')
-	const mm = day.format('mm')
 	const baseTestId = `day-cell-${day.format('YYYY-MM-DD')}`
 	const testId =
-		gridType === 'hour' ? `${baseTestId}-${hourStr}-${mm}` : baseTestId
-	// Droppable ID must use toISOString() (not YYYY-MM-DD) so each time slot
-	// gets a unique ID in @dnd-kit's registry. YYYY-MM-DD strips the time,
-	// causing all cells on the same day to collide.
-	const droppableId = `day-cell-${day.toISOString()}${allDay ? '-allday' : ''}${resourceId ? `-resource-${resourceId}` : ''}`
+		gridType === 'hour'
+			? `${baseTestId}-${day.format('HH')}-${day.format('mm')}`
+			: baseTestId
+
+	const todayEvents = precomputedEvents ?? []
+	const hiddenEventsCount = todayEvents.length - dayMaxEvents
+	const hasHiddenEvents = shouldRenderEvents && hiddenEventsCount > 0
 
 	return (
-		<>
-			<DroppableCell
-				allDay={allDay}
-				className={cn(
-					'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px] relative border-r last:border-r-0 only:border-r border-b',
-					className
-				)}
-				data-testid={dataTestId || testId}
-				date={day}
-				disabled={!isBusiness || !isCurrentMonth}
-				hour={hour}
-				id={droppableId}
-				minute={minute}
-				resourceId={resourceId}
-				type="day-cell"
-			>
+		<DroppableCell
+			allDay={allDay}
+			className={cn(CELL_CLASS, className)}
+			data-testid={dataTestId || testId}
+			date={day}
+			disabled={!isBusiness || !isCurrentMonth}
+			hour={hour}
+			minute={minute}
+			resourceId={resourceId}
+			type="day-cell"
+		>
+			{shouldRenderEvents ? (
 				<div
 					className="flex flex-col h-full w-full"
 					data-testid="grid-cell-content"
@@ -153,50 +106,42 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				>
 					{showDayNumber && <DayNumber date={day} locale={currentLocale} />}
 
-					{shouldRenderEvents && (
-						<>
-							{/* Render placeholders for events that occur today so that the cell height is according to dayMaxEvents. */}
-							{todayEvents.slice(0, dayMaxEvents).map((event, rowIndex) => (
-								<div
-									className="w-full shrink-0"
-									data-testid={event?.title}
-									key={`empty-${rowIndex}-${event.id}`}
-									style={{ height: `${EVENT_BAR_HEIGHT}px` }}
-								/>
-							))}
+					{todayEvents.slice(0, dayMaxEvents).map((event, rowIndex) => (
+						<div
+							className="w-full shrink-0"
+							data-testid={event?.title}
+							key={`empty-${rowIndex}-${event.id}`}
+							style={{ height: `${EVENT_BAR_HEIGHT}px` }}
+						/>
+					))}
 
-							{/* Show more events button with accurate count */}
-							{hasHiddenEvents && (
-								// biome-ignore lint/a11y/useSemanticElements: Using div as button
-								<div
-									className="text-muted-foreground hover:text-foreground cursor-pointer text-[10px] whitespace-nowrap sm:text-xs shrink-0 mt-1"
-									onClick={(e) => {
-										e.stopPropagation()
-
-										showAllEvents(day, todayEvents)
-									}}
-									onKeyDown={(e) => {
-										if (e.key === 'Enter' || e.key === ' ') {
-											e.preventDefault()
-											e.stopPropagation()
-											showAllEvents(day, todayEvents)
-										}
-									}}
-									role="button"
-									tabIndex={0}
-								>
-									+{hiddenEventsCount} {t('more')}
-								</div>
-							)}
-						</>
+					{hasHiddenEvents && (
+						// biome-ignore lint/a11y/useSemanticElements: Using div as button
+						<div
+							className="text-muted-foreground hover:text-foreground cursor-pointer text-[10px] whitespace-nowrap sm:text-xs shrink-0 mt-1"
+							onClick={(e) => {
+								e.stopPropagation()
+								openAllEventsDialog(day, todayEvents)
+							}}
+							onKeyDown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault()
+									e.stopPropagation()
+									openAllEventsDialog(day, todayEvents)
+								}
+							}}
+							role="button"
+							tabIndex={0}
+						>
+							+{hiddenEventsCount} {t('more')}
+						</div>
 					)}
 					{children}
 				</div>
-			</DroppableCell>
-
-			{/* Dialog for showing all events */}
-			<AllEventDialog ref={allEventsDialogRef} />
-		</>
+			) : (
+				children
+			)}
+		</DroppableCell>
 	)
 }
 

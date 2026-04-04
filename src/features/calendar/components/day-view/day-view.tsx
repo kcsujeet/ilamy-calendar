@@ -1,9 +1,9 @@
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
-import { AnimatedSection } from '@/components/animations/animated-section'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import { classes } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 export const DayView = () => {
@@ -58,23 +58,35 @@ export const DayView = () => {
 				className={'flex flex-1 justify-center items-center min-h-12'}
 				data-testid="day-view-header"
 			>
-				<AnimatedSection
+				<div
 					className={cn(
 						'flex justify-center items-center text-center text-base font-semibold sm:text-xl',
 						isToday && 'text-primary'
 					)}
-					transitionKey={currentDate.format('YYYY-MM-DD')}
 				>
-					<span className="xs:inline hidden">
+					<span
+						className={cn('xs:inline hidden', classes.headerAnimation)}
+						key={currentDate.format('YYYY-MM-DD')}
+					>
 						{currentDate.format('dddd, ')}
 					</span>
-					{currentDate.format('MMMM D, YYYY')}
+					<span
+						className={classes.headerAnimation}
+						key={`${currentDate.format('YYYY-MM-DD')}-date`}
+					>
+						{currentDate.format('MMMM D, YYYY')}
+					</span>
 					{isToday && (
-						<span className="bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm">
+						<span
+							className={cn(
+								classes.headerAnimation,
+								'bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm'
+							)}
+						>
 							{t('today')}
 						</span>
 					)}
-				</AnimatedSection>
+				</div>
 			</div>
 		</VerticalGrid>
 	)

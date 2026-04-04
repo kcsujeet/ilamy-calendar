@@ -1,6 +1,5 @@
 import { ChevronDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { AnimatedSection } from '@/components/animations/animated-section'
 import { Button } from '@/components/ui/button'
 import {
 	Popover,
@@ -9,6 +8,7 @@ import {
 } from '@/components/ui/popover'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import { classes } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -194,13 +194,16 @@ const TitleContent = () => {
 						data-testid="calendar-month-button"
 						variant="ghost"
 					>
-						<AnimatedSection
-							className="flex items-center gap-1 px-1! font-semibold"
+						<span
+							className={cn(
+								'flex items-center gap-1 px-1! font-semibold',
+								classes.headerAnimation
+							)}
 							data-testid="calendar-month-button"
-							transitionKey={`${popover.id}-${currentDate.format('YYYY-MM-DD')}`}
+							key={`${popover.id}-${currentDate.format('YYYY-MM-DD')}`}
 						>
 							{popover.title}
-						</AnimatedSection>
+						</span>
 						<ChevronDown className="h-4 w-4" />
 					</Button>
 				</PopoverTrigger>

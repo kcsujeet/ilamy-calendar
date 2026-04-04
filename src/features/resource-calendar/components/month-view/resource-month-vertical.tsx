@@ -1,10 +1,13 @@
 import type React from 'react'
+import { memo } from 'react'
 import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { classes } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 
-export const ResourceMonthVertical: React.FC = () => {
+const NoMemoResourceMonthVertical: React.FC = () => {
 	const { currentDate, getVisibleResources } = useSmartCalendarContext()
 
 	const resources = getVisibleResources()
@@ -23,7 +26,13 @@ export const ResourceMonthVertical: React.FC = () => {
 		gridType: 'day' as const,
 		noEvents: true,
 		renderCell: (date: Dayjs) => (
-			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+			<div
+				className={cn(
+					classes.headerAnimation,
+					'text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center'
+				)}
+				key={date.toISOString()}
+			>
 				<span>{date.format('D')}</span>
 				<span>{date.format('ddd')}</span>
 			</div>
@@ -61,3 +70,5 @@ export const ResourceMonthVertical: React.FC = () => {
 		</VerticalGrid>
 	)
 }
+
+export const ResourceMonthVertical = memo(NoMemoResourceMonthVertical)

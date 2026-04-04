@@ -59,13 +59,15 @@ describe('HorizontalGrid Layout Regression', () => {
 		expect(cell.className).toContain('min-h-[60px]')
 	})
 
-	test('GridCell content container should match parent dimensions (h-full w-full)', () => {
+	test('GridCell should render with correct structure in resource calendar', () => {
 		renderGrid()
-		const content = screen.getByTestId('grid-cell-content')
+		const cell = screen.getByTestId(
+			`day-cell-${initialDate.format('YYYY-MM-DD')}`
+		)
 
-		// This ensures the content fills the potentially expanded row height and matches parent width.
-		expect(content.className).toContain('h-full')
-		expect(content.className).toContain('w-full')
+		// In resource calendar, events are rendered by the overlay layer,
+		// so GridCell is lightweight without a content wrapper.
+		expect(cell.className).toContain('min-h-[60px]')
 	})
 
 	test('ResourceCell should have h-full to stretch with row expansion', () => {

@@ -1,11 +1,11 @@
 import type React from 'react'
-import { useMemo } from 'react'
-import { AnimatedSection } from '@/components/animations/animated-section'
+import { useMemo, useRef } from 'react'
 import type { BusinessHours } from '@/components/types'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
+import { classes } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -20,7 +20,16 @@ export const ResourceWeekHorizontal: React.FC = () => {
 		getVisibleResources,
 	} = useSmartCalendarContext()
 
-	const resources = getVisibleResources()
+	const allVisibleResources = getVisibleResources()
+	// Stabilize the array reference — getVisibleResources() returns a new array
+	// on every call even when the contents haven't changed.
+	const resourcesRef = useRef(allVisibleResources)
+	const prevIds = resourcesRef.current.map((r) => r.id).join(',')
+	const nextIds = allVisibleResources.map((r) => r.id).join(',')
+	if (prevIds !== nextIds) {
+		resourcesRef.current = allVisibleResources
+	}
+	const resources = resourcesRef.current
 
 	// Generate week days
 	const weekDays = useMemo(
@@ -67,51 +76,53 @@ export const ResourceWeekHorizontal: React.FC = () => {
 			<div className="flex-1 flex flex-col">
 				{/* Day header row */}
 				<div className="flex h-12">
-					{weekDays.map((day, index) => {
+					{weekDays.map((day) => {
 						const isToday = day.isSame(dayjs(), 'day')
-						const key = `resource-week-header-${day.toISOString()}-day`
 
 						return (
-							<AnimatedSection
+							<div
 								className={cn(
 									'shrink-0 border-r last:border-r-0 border-b flex-1 flex items-center text-center font-medium',
 									isToday && 'bg-blue-50 text-blue-600'
 								)}
 								data-testid="resource-week-day-header"
-								delay={index * 0.05}
-								key={`${key}-animated`}
-								transitionKey={`${key}-motion`}
+								key={`resource-week-header-${day.toISOString()}-day`}
 							>
 								<div className="sticky left-1/2">
-									<div className="text-sm">{day.format('ddd')}</div>
-									<div className="text-xs text-muted-foreground">
+									<div className={'text-sm'} key={day.toISOString()}>
+										{day.format('ddd')}
+									</div>
+									<div
+										className={cn(
+											'text-xs text-muted-foreground',
+											classes.headerAnimation
+										)}
+										key={`${day.toISOString()}-date`}
+									>
 										{day.format('M/D')}
 									</div>
 								</div>
-							</AnimatedSection>
+							</div>
 						)
 					})}
 				</div>
 
 				{/* Time header row */}
 				<div className="flex h-12 border-b">
-					{weekHours.flat().map((col, index) => {
+					{weekHours.flat().map((col) => {
 						const isNowHour = col.isSame(dayjs(), 'hour')
-						const key = `resource-week-header-${col.toISOString()}-hour-${index}`
 
 						return (
-							<AnimatedSection
+							<div
 								className={cn(
 									'min-w-20 flex-1 border-r flex items-center justify-center text-xs shrink-0',
 									isNowHour && 'bg-blue-50 text-blue-600 font-medium'
 								)}
 								data-testid={`resource-week-time-label-${col.format('HH')}`}
-								delay={index * 0.005}
-								key={`${key}-animated`}
-								transitionKey={`${key}-motion`}
+								key={`resource-week-header-${col.toISOString()}`}
 							>
 								{col.format(timeFormat === '12-hour' ? 'h A' : 'H')}
-							</AnimatedSection>
+							</div>
 						)
 					})}
 				</div>

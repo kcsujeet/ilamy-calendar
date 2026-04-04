@@ -1,4 +1,5 @@
 import type React from 'react'
+import { useMemo } from 'react'
 import type { CalendarEvent, WeekDays } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type {
@@ -31,14 +32,18 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
 	hiddenDays,
 	...props
 }) => {
+	const normalizedEvents = useMemo(
+		() =>
+			normalizeEvents<IlamyResourceCalendarPropEvent, CalendarEvent>(events),
+		[events]
+	)
+
 	return (
 		<ResourceCalendarProvider
 			dayMaxEvents={dayMaxEvents}
 			disableDragAndDrop={disableDragAndDrop}
 			eventSpacing={eventSpacing}
-			events={normalizeEvents<IlamyResourceCalendarPropEvent, CalendarEvent>(
-				events
-			)}
+			events={normalizedEvents}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
 			hiddenDays={toHiddenDaysSet(hiddenDays)}
 			initialDate={safeDate(initialDate)}

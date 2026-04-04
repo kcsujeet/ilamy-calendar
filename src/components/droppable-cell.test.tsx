@@ -17,7 +17,6 @@ const renderDroppableCellWithView = (view: CalendarView) => {
 			<DroppableCell
 				data-testid="test-droppable-cell"
 				date={initialDate}
-				id="test-cell"
 				type="day-cell"
 			/>
 		</CalendarProvider>

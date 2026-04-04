@@ -1,4 +1,3 @@
-import { AnimatedSection } from '@/components/animations/animated-section'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
@@ -137,9 +136,8 @@ export const YearView = () => {
 				className="grid auto-rows-fr grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3"
 				data-testid="year-grid"
 			>
-				{monthsData.map((month, monthIndex) => {
+				{monthsData.map((month) => {
 					const daysInMonth = generateDaysForMonth(month.date)
-					const animationDelay = monthIndex * 0.05
 
 					return (
 						<div
@@ -147,11 +145,9 @@ export const YearView = () => {
 							data-testid={`year-month-${month.monthKey}`}
 							key={month.monthKey}
 						>
-							<AnimatedSection
+							<div
 								className="mb-2 flex items-center justify-between"
-								delay={animationDelay}
 								key={`month-${month.monthKey}`}
-								transitionKey={`month-${month.monthKey}`}
 							>
 								<button
 									className="text-lg font-medium hover:underline cursor-pointer"
@@ -170,10 +166,10 @@ export const YearView = () => {
 										{getEventCountLabel(month.eventCount)}
 									</span>
 								)}
-							</AnimatedSection>
+							</div>
 
 							<div
-								className="grid grid-cols-7 gap-[1px] text-[0.6rem]"
+								className="grid grid-cols-7 gap-px text-[0.6rem]"
 								data-testid={`year-mini-calendar-${month.monthKey}`}
 							>
 								{DAY_HEADER_NAMES.map((day) => (
@@ -210,8 +206,8 @@ export const YearView = () => {
 											{hasEvents && (
 												<div
 													className={cn(
-														'absolute bottom-0 flex w-full justify-center space-x-[1px]',
-														day.isToday && 'bottom-[1px]'
+														'absolute bottom-0 flex w-full justify-center space-x-px',
+														day.isToday && 'bottom-px'
 													)}
 												>
 													{visibleDotColors.map((dotColor) => (

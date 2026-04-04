@@ -1,6 +1,10 @@
 import type React from 'react'
 import type { ReactNode } from 'react'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
+import {
+	AllEventDialog,
+	type AllEventsDialogHandle,
+} from '@/components/all-events-dialog'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type {
@@ -90,8 +94,36 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	hideNonBusinessHours = false,
 	hiddenDays,
 }) => {
-	// Use the calendar engine
-	const calendarEngine = useCalendarEngine({
+	// Use the calendar engine — destructure to get stable references for useMemo deps
+	const {
+		currentDate,
+		view,
+		events: processedEvents,
+		rawEvents,
+		currentLocale,
+		isEventFormOpen,
+		selectedEvent,
+		selectedDate,
+		firstDayOfWeek: engineFirstDayOfWeek,
+		setCurrentDate,
+		selectDate,
+		setView,
+		nextPeriod,
+		prevPeriod,
+		today,
+		addEvent,
+		updateEvent,
+		updateRecurringEvent,
+		deleteEvent,
+		deleteRecurringEvent,
+		openEventForm,
+		closeEventForm,
+		setSelectedEvent,
+		setIsEventFormOpen,
+		getEventsForDateRange,
+		findParentRecurringEvent,
+		t,
+	} = useCalendarEngine({
 		events,
 		firstDayOfWeek,
 		initialView,
@@ -108,12 +140,24 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 		translator,
 	})
 
+	// All-events dialog — ref stays internal to provider, callbacks are stable
+	const allEventsDialogRef = useRef<AllEventsDialogHandle>(null)
+	const openAllEventsDialog = useCallback(
+		(day: Dayjs, events: CalendarEvent[]) => {
+			allEventsDialogRef.current?.open(day, events)
+		},
+		[]
+	)
+	const closeAllEventsDialog = useCallback(() => {
+		allEventsDialogRef.current?.close()
+	}, [])
+
 	const editEvent = useCallback(
 		(event: CalendarEvent) => {
-			calendarEngine.setSelectedEvent(event)
-			calendarEngine.setIsEventFormOpen(true)
+			setSelectedEvent(event)
+			setIsEventFormOpen(true)
 		},
-		[calendarEngine]
+		[setSelectedEvent, setIsEventFormOpen]
 	)
 
 	// Custom handlers that call external callbacks
@@ -140,39 +184,39 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			if (onCellClick) {
 				onCellClick(info)
 			} else {
-				calendarEngine.openEventForm(info)
+				openEventForm(info)
 			}
 		},
-		[onCellClick, disableCellClick, calendarEngine]
+		[onCellClick, disableCellClick, openEventForm]
 	)
 
 	// Create the context value
 	const contextValue = useMemo(
 		() => ({
-			currentDate: calendarEngine.currentDate,
-			view: calendarEngine.view,
-			events: calendarEngine.events,
-			rawEvents: calendarEngine.rawEvents,
-			currentLocale: calendarEngine.currentLocale,
-			isEventFormOpen: calendarEngine.isEventFormOpen,
-			selectedEvent: calendarEngine.selectedEvent,
-			selectedDate: calendarEngine.selectedDate,
-			firstDayOfWeek: calendarEngine.firstDayOfWeek,
-			setCurrentDate: calendarEngine.setCurrentDate,
-			selectDate: calendarEngine.selectDate,
-			setView: calendarEngine.setView,
-			nextPeriod: calendarEngine.nextPeriod,
-			prevPeriod: calendarEngine.prevPeriod,
-			today: calendarEngine.today,
-			addEvent: calendarEngine.addEvent,
-			updateEvent: calendarEngine.updateEvent,
-			updateRecurringEvent: calendarEngine.updateRecurringEvent,
-			deleteEvent: calendarEngine.deleteEvent,
-			deleteRecurringEvent: calendarEngine.deleteRecurringEvent,
-			openEventForm: calendarEngine.openEventForm,
-			closeEventForm: calendarEngine.closeEventForm,
-			getEventsForDateRange: calendarEngine.getEventsForDateRange,
-			findParentRecurringEvent: calendarEngine.findParentRecurringEvent,
+			currentDate,
+			view,
+			events: processedEvents,
+			rawEvents,
+			currentLocale,
+			isEventFormOpen,
+			selectedEvent,
+			selectedDate,
+			firstDayOfWeek: engineFirstDayOfWeek,
+			setCurrentDate,
+			selectDate,
+			setView,
+			nextPeriod,
+			prevPeriod,
+			today,
+			addEvent,
+			updateEvent,
+			updateRecurringEvent,
+			deleteEvent,
+			deleteRecurringEvent,
+			openEventForm,
+			closeEventForm,
+			getEventsForDateRange,
+			findParentRecurringEvent,
 			renderEvent,
 			onEventClick: handleEventClick,
 			onCellClick: handleDateClick,
@@ -189,15 +233,42 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			headerClassName,
 			businessHours,
 			renderEventForm,
-			t: calendarEngine.t,
+			t,
 			timeFormat,
 			classesOverride,
 			renderCurrentTimeIndicator,
 			hideNonBusinessHours,
 			hiddenDays,
+			openAllEventsDialog,
+			closeAllEventsDialog,
 		}),
 		[
-			calendarEngine,
+			openAllEventsDialog,
+			closeAllEventsDialog,
+			currentDate,
+			view,
+			processedEvents,
+			rawEvents,
+			currentLocale,
+			isEventFormOpen,
+			selectedEvent,
+			selectedDate,
+			engineFirstDayOfWeek,
+			setCurrentDate,
+			selectDate,
+			setView,
+			nextPeriod,
+			prevPeriod,
+			today,
+			addEvent,
+			updateEvent,
+			updateRecurringEvent,
+			deleteEvent,
+			deleteRecurringEvent,
+			openEventForm,
+			closeEventForm,
+			getEventsForDateRange,
+			findParentRecurringEvent,
 			renderEvent,
 			handleEventClick,
 			handleDateClick,
@@ -214,6 +285,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			headerClassName,
 			businessHours,
 			renderEventForm,
+			t,
 			timeFormat,
 			classesOverride,
 			renderCurrentTimeIndicator,
@@ -225,6 +297,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	return (
 		<CalendarContext.Provider value={contextValue}>
 			{children}
+			<AllEventDialog ref={allEventsDialogRef} />
 		</CalendarContext.Provider>
 	)
 }

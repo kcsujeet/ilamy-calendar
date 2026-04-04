@@ -35,7 +35,7 @@ const variants: Variants = {
 		opacity: 0,
 		x: direction === 'horizontal' ? -10 : 0,
 		y: direction === 'vertical' ? -10 : 0,
-		transition: { duration: 0.15 },
+		transition: { duration: 0.08 },
 	}),
 }
 

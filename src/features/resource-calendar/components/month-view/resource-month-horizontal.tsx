@@ -1,12 +1,13 @@
 import type React from 'react'
-import { useMemo } from 'react'
-import { AnimatedSection } from '@/components/animations/animated-section'
+import { memo, useMemo } from 'react'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { classes } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 import { getMonthDays } from '@/lib/utils/date-utils'
 
-export const ResourceMonthHorizontal: React.FC = () => {
+const NoMemoResourceMonthHorizontal: React.FC = () => {
 	const { currentDate, t } = useSmartCalendarContext()
 
 	// Generate calendar grid - days of the month
@@ -20,23 +21,30 @@ export const ResourceMonthHorizontal: React.FC = () => {
 				<div className="text-sm">{t('resources')}</div>
 			</div>
 
-			{monthDays.map((day, index) => {
-				const key = `resource-month-header-${day.toISOString()}`
-
-				return (
-					<AnimatedSection
-						className="w-20 border-b border-r shrink-0 flex items-center justify-center flex-col"
-						delay={index * 0.05}
-						key={`${key}-animated`}
-						transitionKey={`${key}-motion`}
+			{monthDays.map((day) => (
+				<div
+					className="w-20 border-b border-r shrink-0 flex items-center justify-center flex-col"
+					key={`resource-month-header-${day.toISOString()}`}
+				>
+					<div
+						className={cn('text-xs font-medium', classes.headerAnimation)}
+						key={day.toISOString()}
 					>
-						<div className="text-xs font-medium">{day.format('D')}</div>
-						<div className="text-xs text-muted-foreground">
-							{day.format('ddd')}
-						</div>
-					</AnimatedSection>
-				)
-			})}
+						{day.format('D')}
+					</div>
+					<div
+						className={cn(
+							'text-xs text-muted-foreground',
+							classes.headerAnimation
+						)}
+						key={`${day.toISOString()}-day`}
+					>
+						{day.format('ddd')}
+					</div>
+				</div>
+			))}
 		</ResourceEventGrid>
 	)
 }
+
+export const ResourceMonthHorizontal = memo(NoMemoResourceMonthHorizontal)

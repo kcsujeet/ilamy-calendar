@@ -14,17 +14,21 @@ export const MonthView: React.FC<MonthViewProps> = () => {
 		[currentDate, firstDayOfWeek]
 	)
 
-	const rows = weeks.map((days, weekIndex) => ({
-		id: `week-${weekIndex}`,
-		columns: days.map((day) => ({
-			id: `col-${day.toISOString()}`,
-			day,
-			className: 'w-auto',
-			gridType: 'day' as const,
-		})),
-		className: 'flex-1',
-		showDayNumber: true,
-	}))
+	const rows = useMemo(
+		() =>
+			weeks.map((days, weekIndex) => ({
+				id: `week-${weekIndex}`,
+				columns: days.map((day) => ({
+					id: `col-${day.toISOString()}`,
+					day,
+					className: 'w-auto',
+					gridType: 'day' as const,
+				})),
+				className: 'flex-1',
+				showDayNumber: true,
+			})),
+		[weeks]
+	)
 
 	return (
 		<HorizontalGrid

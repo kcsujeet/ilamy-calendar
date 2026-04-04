@@ -1,5 +1,7 @@
 import type React from 'react'
+import { memo, useMemo, useRef } from 'react'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
+import type { Resource } from '@/features/resource-calendar/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 
@@ -20,7 +22,7 @@ interface ResourceEventGridProps {
 	classes?: { header?: string; body?: string; scroll?: string; cell?: string }
 }
 
-export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
+const NoMemoResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 	days,
 	gridType = 'day',
 	children,
@@ -28,25 +30,42 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 }) => {
 	const { getVisibleResources } = useSmartCalendarContext()
 
-	const visibleResources = getVisibleResources()
+	const rawVisibleResources = getVisibleResources()
+	// Stabilize the array reference — getVisibleResources() returns a new array
+	// on every call even when the contents haven't changed.
+	const resourcesRef = useRef<Resource[]>(rawVisibleResources)
+	const prevIds = resourcesRef.current.map((r) => r.id).join(',')
+	const nextIds = rawVisibleResources.map((r) => r.id).join(',')
+	if (prevIds !== nextIds) {
+		resourcesRef.current = rawVisibleResources
+	}
+	const visibleResources = resourcesRef.current
 
-	const columns = days.map((day) => {
-		const isArray = Array.isArray(day)
-		return {
-			id: `col-${isArray ? day[0]?.format('YYYY-MM-DD') : day.toISOString()}`,
-			day: isArray ? undefined : day,
-			days: isArray ? day : undefined,
-			className: classes?.cell,
-			gridType,
-		}
-	})
+	const columns = useMemo(
+		() =>
+			days.map((day) => {
+				const isArray = Array.isArray(day)
+				return {
+					id: `col-${isArray ? day[0]?.format('YYYY-MM-DD') : day.toISOString()}`,
+					day: isArray ? undefined : day,
+					days: isArray ? day : undefined,
+					className: classes?.cell,
+					gridType,
+				}
+			}),
+		[days, classes?.cell, gridType]
+	)
 
-	const rows = visibleResources.map((resource) => ({
-		id: resource.id,
-		title: resource.title,
-		resource: resource,
-		columns,
-	}))
+	const rows = useMemo(
+		() =>
+			visibleResources.map((resource) => ({
+				id: resource.id,
+				title: resource.title,
+				resource: resource,
+				columns,
+			})),
+		[visibleResources, columns]
+	)
 
 	return (
 		<HorizontalGrid
@@ -59,3 +78,5 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 		</HorizontalGrid>
 	)
 }
+
+export const ResourceEventGrid = memo(NoMemoResourceEventGrid)

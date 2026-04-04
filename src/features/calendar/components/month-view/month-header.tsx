@@ -1,6 +1,6 @@
 import type React from 'react'
-import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { classes } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -25,16 +25,19 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 			)}
 			data-testid="month-header"
 		>
-			{weekDays.map((weekDay, index) => (
-				<AnimatedSection
+			{weekDays.map((weekDay) => (
+				<div
 					className="py-2 text-center font-medium border-r last:border-r-0 border-b flex-1"
 					data-testid={`weekday-header-${weekDay.format('ddd').toLowerCase()}`}
-					delay={index * 0.05}
 					key={weekDay.toISOString()}
-					transitionKey={weekDay.toISOString()}
 				>
-					<span className="text-sm capitalize">{weekDay.format('ddd')}</span>
-				</AnimatedSection>
+					<span
+						className={cn('text-sm capitalize', classes.headerAnimation)}
+						key={weekDay.toISOString()}
+					>
+						{weekDay.format('ddd')}
+					</span>
+				</div>
 			))}
 		</div>
 	)

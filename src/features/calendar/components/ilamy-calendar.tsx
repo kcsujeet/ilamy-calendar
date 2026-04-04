@@ -1,5 +1,5 @@
 import type React from 'react'
-import { AnimatedSection } from '@/components/animations/animated-section'
+import { useMemo } from 'react'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import { EventFormDialog } from '@/components/event-form/event-form-dialog'
 import { Header } from '@/components/header'
@@ -37,17 +37,12 @@ const CalendarContent: React.FC = () => {
 	return (
 		<div className="flex flex-col w-full h-full" data-testid="ilamy-calendar">
 			<Header className="p-1" />
-			{/* Calendar Body with AnimatePresence for view transitions */}
 			<CalendarDndContext>
-				<AnimatedSection
-					className="w-full h-[calc(100%-3.5rem)]"
-					direction="horizontal"
-					transitionKey={view}
-				>
+				<div className="w-full h-[calc(100%-3.5rem)]">
 					<div className="border h-full w-full" data-testid="calendar-body">
 						{viewMap[view]}
 					</div>
-				</AnimatedSection>
+				</div>
 			</CalendarDndContext>
 			<EventFormDialog />
 		</div>
@@ -73,11 +68,16 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	hiddenDays,
 	...props
 }) => {
+	const normalizedEvents = useMemo(
+		() => normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events),
+		[events]
+	)
+
 	return (
 		<CalendarProvider
 			dayMaxEvents={dayMaxEvents}
 			eventSpacing={eventSpacing}
-			events={normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events)}
+			events={normalizedEvents}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
 			hiddenDays={toHiddenDaysSet(hiddenDays)}
 			hideNonBusinessHours={hideNonBusinessHours}

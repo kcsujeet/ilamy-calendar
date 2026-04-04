@@ -1,5 +1,9 @@
 import type React from 'react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import {
+	AllEventDialog,
+	type AllEventsDialogHandle,
+} from '@/components/all-events-dialog'
 import type { CalendarEvent } from '@/components/types'
 import type { CalendarProviderProps } from '@/features/calendar/contexts/calendar-context/provider'
 import type {
@@ -9,6 +13,7 @@ import type {
 } from '@/features/calendar/types'
 import type { Resource } from '@/features/resource-calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { ResourceCalendarContext } from './context'
 
 const getEventResourceIds = (event: CalendarEvent): (string | number)[] => {
@@ -79,8 +84,38 @@ export const ResourceCalendarProvider: React.FC<
 		Set<string | number>
 	>(new Set(resources.map((r) => r.id)))
 
-	// Use the calendar engine
-	const calendarEngine = useCalendarEngine({
+	// Use the calendar engine — destructure to get stable references for useMemo deps
+	const {
+		currentDate,
+		view,
+		events: processedEvents,
+		rawEvents,
+		currentLocale,
+		isEventFormOpen,
+		selectedEvent,
+		selectedDate,
+		firstDayOfWeek: engineFirstDayOfWeek,
+		dayMaxEvents: engineDayMaxEvents,
+		setCurrentDate,
+		selectDate,
+		setView,
+		nextPeriod,
+		prevPeriod,
+		today,
+		addEvent,
+		updateEvent,
+		updateRecurringEvent,
+		deleteEvent,
+		deleteRecurringEvent,
+		openEventForm,
+		closeEventForm,
+		setSelectedEvent,
+		setIsEventFormOpen,
+		setSelectedDate,
+		getEventsForDateRange,
+		findParentRecurringEvent,
+		t,
+	} = useCalendarEngine({
 		events,
 		firstDayOfWeek,
 		initialView,
@@ -96,6 +131,18 @@ export const ResourceCalendarProvider: React.FC<
 		translations,
 		translator,
 	})
+
+	// All-events dialog — ref stays internal to provider
+	const allEventsDialogRef = useRef<AllEventsDialogHandle>(null)
+	const openAllEventsDialog = useCallback(
+		(day: Dayjs, events: CalendarEvent[]) => {
+			allEventsDialogRef.current?.open(day, events)
+		},
+		[]
+	)
+	const closeAllEventsDialog = useCallback(() => {
+		allEventsDialogRef.current?.close()
+	}, [])
 
 	// Resource visibility
 	const toggleResourceVisibility = useCallback(
@@ -136,24 +183,24 @@ export const ResourceCalendarProvider: React.FC<
 	// Event utilities
 	const getEventsForResource = useCallback(
 		(resourceId: string | number): CalendarEvent[] => {
-			return calendarEngine.events.filter((event: CalendarEvent) => {
+			return processedEvents.filter((event: CalendarEvent) => {
 				if (event.resourceIds) {
 					return event.resourceIds.includes(resourceId)
 				}
 				return event.resourceId === resourceId
 			})
 		},
-		[calendarEngine.events]
+		[processedEvents]
 	)
 
 	const getEventsForResources = useCallback(
 		(resourceIds: (string | number)[]): CalendarEvent[] => {
-			return calendarEngine.events.filter((event: CalendarEvent) => {
+			return processedEvents.filter((event: CalendarEvent) => {
 				const eventResourceIds = getEventResourceIds(event)
 				return eventResourceIds.some((id) => resourceIds.includes(id))
 			})
 		},
-		[calendarEngine.events]
+		[processedEvents]
 	)
 
 	const getResourceById = useCallback(
@@ -177,10 +224,10 @@ export const ResourceCalendarProvider: React.FC<
 	// Custom handlers
 	const editEvent = useCallback(
 		(event: CalendarEvent) => {
-			calendarEngine.setSelectedEvent(event)
-			calendarEngine.setIsEventFormOpen(true)
+			setSelectedEvent(event)
+			setIsEventFormOpen(true)
 		},
-		[calendarEngine]
+		[setSelectedEvent, setIsEventFormOpen]
 	)
 
 	const handleEventClick = useCallback(
@@ -207,7 +254,7 @@ export const ResourceCalendarProvider: React.FC<
 				onCellClick(info)
 			} else {
 				const newEvent: CalendarEvent = {
-					title: calendarEngine.t('newEvent'),
+					title: t('newEvent'),
 					start: info.start,
 					end: info.end,
 					description: '',
@@ -218,22 +265,53 @@ export const ResourceCalendarProvider: React.FC<
 					newEvent.resourceId = info.resourceId
 				}
 
-				calendarEngine.setSelectedEvent(newEvent)
-				calendarEngine.setSelectedDate(info.start)
-				calendarEngine.setIsEventFormOpen(true)
+				setSelectedEvent(newEvent)
+				setSelectedDate(info.start)
+				setIsEventFormOpen(true)
 			}
 		},
-		[onCellClick, disableCellClick, calendarEngine]
+		[
+			onCellClick,
+			disableCellClick,
+			t,
+			setSelectedEvent,
+			setSelectedDate,
+			setIsEventFormOpen,
+		]
 	)
 
 	// Create the context value
 	const contextValue = useMemo(
 		() => ({
-			...calendarEngine,
-			view: calendarEngine.view,
-			setView: calendarEngine.setView,
-			events: calendarEngine.events,
-			rawEvents: calendarEngine.rawEvents,
+			// Engine state
+			currentDate,
+			view,
+			events: processedEvents,
+			rawEvents,
+			currentLocale,
+			isEventFormOpen,
+			selectedEvent,
+			selectedDate,
+			firstDayOfWeek: engineFirstDayOfWeek,
+			dayMaxEvents: engineDayMaxEvents,
+
+			// Engine actions
+			setCurrentDate,
+			selectDate,
+			setView,
+			nextPeriod,
+			prevPeriod,
+			today,
+			addEvent,
+			updateEvent,
+			updateRecurringEvent,
+			deleteEvent,
+			deleteRecurringEvent,
+			openEventForm,
+			closeEventForm,
+			getEventsForDateRange,
+			findParentRecurringEvent,
+			t,
 
 			// Resource-specific state
 			resources: currentResources,
@@ -271,7 +349,6 @@ export const ResourceCalendarProvider: React.FC<
 			disableCellClick,
 			disableEventClick,
 			disableDragAndDrop,
-			dayMaxEvents,
 			eventSpacing,
 			stickyViewHeader,
 			viewHeaderClassName,
@@ -282,9 +359,38 @@ export const ResourceCalendarProvider: React.FC<
 			renderCurrentTimeIndicator,
 			hideNonBusinessHours,
 			hiddenDays,
+			openAllEventsDialog,
+			closeAllEventsDialog,
 		}),
 		[
-			calendarEngine,
+			openAllEventsDialog,
+			closeAllEventsDialog,
+			currentDate,
+			view,
+			processedEvents,
+			rawEvents,
+			currentLocale,
+			isEventFormOpen,
+			selectedEvent,
+			selectedDate,
+			engineFirstDayOfWeek,
+			engineDayMaxEvents,
+			setCurrentDate,
+			selectDate,
+			setView,
+			nextPeriod,
+			prevPeriod,
+			today,
+			addEvent,
+			updateEvent,
+			updateRecurringEvent,
+			deleteEvent,
+			deleteRecurringEvent,
+			openEventForm,
+			closeEventForm,
+			getEventsForDateRange,
+			findParentRecurringEvent,
+			t,
 			currentResources,
 			visibleResources,
 			toggleResourceVisibility,
@@ -307,7 +413,6 @@ export const ResourceCalendarProvider: React.FC<
 			disableCellClick,
 			disableEventClick,
 			disableDragAndDrop,
-			dayMaxEvents,
 			eventSpacing,
 			stickyViewHeader,
 			viewHeaderClassName,
@@ -326,6 +431,7 @@ export const ResourceCalendarProvider: React.FC<
 	return (
 		<ResourceCalendarContext.Provider value={contextValue}>
 			{children}
+			<AllEventDialog ref={allEventsDialogRef} />
 		</ResourceCalendarContext.Provider>
 	)
 }

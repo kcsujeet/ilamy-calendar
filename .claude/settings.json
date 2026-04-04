@@ -19,7 +19,7 @@
 			"Bash(cat:*)"
 		],
 		"deny": [],
-		"ask": ["git commit"],
+		"ask": ["Bash(git commit *)"],
 		"defaultMode": "acceptEdits"
 	}
 }

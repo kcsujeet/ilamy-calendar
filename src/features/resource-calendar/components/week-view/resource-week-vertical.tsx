@@ -2,13 +2,13 @@ import type React from 'react'
 import { useMemo } from 'react'
 import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
-import { AnimatedSection } from '@/components/animations/animated-section'
 import { ResourceCell } from '@/components/resource-cell'
 import type { BusinessHours } from '@/components/types'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { classes } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -63,7 +63,11 @@ export const ResourceWeekVertical: React.FC = () => {
 			gridType: 'hour' as const,
 			noEvents: true,
 			renderCell: (date: Dayjs) => (
-				<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+				<div
+					className={
+						'text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center'
+					}
+				>
 					{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
 				</div>
 			),
@@ -123,60 +127,62 @@ export const ResourceWeekVertical: React.FC = () => {
 							{t('week')}
 						</span>
 					</div>
-					{resources.map((resource, index) => {
-						const key = `resource-week-header-${resource.id}-day`
-
-						return (
-							<AnimatedSection
-								className={cn(
-									'shrink-0 border-r last:border-r-0 border-b flex items-center text-center font-medium'
-								)}
-								delay={index * 0.05}
-								key={`${key}-animated`}
-								style={{
-									width: `calc(${visibleDays.length} * var(--spacing) * 50)`,
-								}}
-								transitionKey={`${key}-motion`}
+					{resources.map((resource) => (
+						<div
+							className={cn(
+								'shrink-0 border-r last:border-r-0 border-b flex items-center text-center font-medium'
+							)}
+							key={`resource-week-header-${resource.id}-day`}
+							style={{
+								width: `calc(${visibleDays.length} * var(--spacing) * 50)`,
+							}}
+						>
+							<ResourceCell
+								className="h-full w-full flex-1"
+								resource={resource}
 							>
-								<ResourceCell
-									className="h-full w-full flex-1"
-									resource={resource}
-								>
-									<div className="sticky left-1/2 text-sm font-medium truncate">
-										{resource.title}
-									</div>
-								</ResourceCell>
-							</AnimatedSection>
-						)
-					})}
+								<div className="sticky left-1/2 text-sm font-medium truncate">
+									{resource.title}
+								</div>
+							</ResourceCell>
+						</div>
+					))}
 				</div>
 
 				{/* Date header row */}
 				<div className="flex h-12">
 					<div className="shrink-0 w-16 border-r border-b z-20 bg-background sticky left-0">
-						<span className="px-2 h-full w-full flex justify-center items-start font-medium">
+						<span
+							className={cn(
+								classes.headerAnimation,
+								'px-2 h-full w-full flex justify-center items-start font-medium'
+							)}
+							key={currentDate.week()}
+						>
 							{currentDate.week()}
 						</span>
 					</div>
-					{columns.map((col, index) => {
+					{columns.map((col) => {
 						const day = col.day
-						const key = `resource-week-header-${day.toISOString()}-hour-${col.resourceId}`
 
 						return (
-							<AnimatedSection
+							<div
 								className={cn(
 									'w-50 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
 								)}
 								data-testid={`resource-week-time-label-${day.format('HH')}`}
-								delay={index * 0.05}
-								key={`${key}-animated`}
-								transitionKey={`${key}-motion`}
+								key={`resource-week-header-${day.toISOString()}-hour-${col.resourceId}`}
 							>
-								<div className="text-sm">{day.format('ddd')}</div>
-								<div className="text-xs text-muted-foreground">
+								<div className={'text-sm'}>{day.format('ddd')}</div>
+								<div
+									className={cn(
+										classes.headerAnimation,
+										'text-xs text-muted-foreground'
+									)}
+								>
 									{day.format('M/D')}
 								</div>
-							</AnimatedSection>
+							</div>
 						)
 					})}
 				</div>

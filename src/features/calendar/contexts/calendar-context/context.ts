@@ -66,6 +66,8 @@ export interface CalendarContextType {
 	) => React.ReactNode
 	hideNonBusinessHours?: boolean
 	hiddenDays?: Set<number>
+	openAllEventsDialog: (day: Dayjs, events: CalendarEvent[]) => void
+	closeAllEventsDialog: () => void
 }
 
 // CalendarContext is kept for internal Provider usage

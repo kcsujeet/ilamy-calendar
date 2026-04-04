@@ -22,14 +22,26 @@ interface DayjsInternal extends dayjs.Dayjs {
 }
 
 let defaultTimezone: string | undefined
+// When the default tz matches the system tz, dayjs.tz() is pure overhead —
+// plain dayjs() already returns the correct local time.
+const systemTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+let needsTzWrapper = false
 
 const fixTimezoneOffset: PluginFunc = (_option, dayjsClass, dayjsFactory) => {
 	const proto = dayjsClass.prototype
 
-	// Intercept setDefault to track the configured timezone
+	// Cache offset lookups to avoid expensive dayjs.tz() construction on every call.
+	// Key: "YYYY-MM-DDTHH:mm:ss|timezone" → expected UTC offset in minutes.
+	const offsetCache = new Map<string, number>()
+	const CACHE_MAX_SIZE = 500
+
+	// Intercept setDefault to track the configured timezone and clear caches
 	const originalSetDefault = dayjsFactory.tz.setDefault
 	dayjsFactory.tz.setDefault = (timezone?: string) => {
 		defaultTimezone = timezone
+		needsTzWrapper = Boolean(timezone) && timezone !== systemTimezone
+		offsetCache.clear()
+		cachedNow = undefined
 		return originalSetDefault(timezone)
 	}
 
@@ -43,10 +55,27 @@ const fixTimezoneOffset: PluginFunc = (_option, dayjsClass, dayjsFactory) => {
 	): dayjs.Dayjs {
 		const tz = (instance as DayjsInternal).$x?.$timezone || defaultTimezone
 		if (!tz) return result
+		// When tz matches system timezone, dayjs already uses the correct offsets
+		if (tz === systemTimezone) return result
 
-		const expectedOffset = dayjsFactory
-			.tz(result.format('YYYY-MM-DDTHH:mm:ss'), tz)
-			.utcOffset()
+		const localTime = result.format('YYYY-MM-DDTHH:mm:ss')
+		const cacheKey = `${localTime}|${tz}`
+		let expectedOffset = offsetCache.get(cacheKey)
+		if (expectedOffset === undefined) {
+			expectedOffset = dayjsFactory.tz(localTime, tz).utcOffset()
+			if (offsetCache.size >= CACHE_MAX_SIZE) {
+				// Evict oldest entries (first quarter of the cache)
+				const keysToDelete = [...offsetCache.keys()].slice(
+					0,
+					CACHE_MAX_SIZE >> 2
+				)
+				for (const key of keysToDelete) {
+					offsetCache.delete(key)
+				}
+			}
+			offsetCache.set(cacheKey, expectedOffset)
+		}
+
 		if (result.utcOffset() !== expectedOffset) {
 			return result.tz(tz, true)
 		}
@@ -76,10 +105,32 @@ dayjs.extend(utc)
 dayjs.extend(localeData)
 dayjs.extend(fixTimezoneOffset)
 
-// Custom dayjs constructor that automatically uses .tz() for all instances.
-// This ensures that dayjs() calls throughout the codebase honor the default
-// timezone set via dayjs.tz.setDefault().
+// dayjs.tz() is ~600x slower than dayjs() due to IANA timezone lookups.
+// Cache "now" results briefly so dozens of dayjs() calls within a single
+// synchronous render frame share one expensive .tz() call.
+let cachedNow: dayjs.Dayjs | undefined
+let cachedNowTs = 0
+const NOW_CACHE_TTL = 50 // ms — well within a single render frame
+
+// dayjs.tz() is ~600x slower than plain dayjs() due to IANA timezone lookups.
+// Only use .tz() when the configured timezone differs from the system timezone.
+// When they match, plain dayjs() already returns correct local times.
 const timezoneAwareDayjs = (...args: unknown[]) => {
+	if (!needsTzWrapper) {
+		return (dayjs as unknown as (...a: unknown[]) => dayjs.Dayjs)(...args)
+	}
+	// No-arg call = "now" — cache within a render frame
+	if (args.length === 0 || args[0] === undefined) {
+		const now = Date.now()
+		if (cachedNow && now - cachedNowTs < NOW_CACHE_TTL) {
+			return cachedNow
+		}
+		cachedNow = (
+			dayjs as unknown as { tz: (...a: unknown[]) => dayjs.Dayjs }
+		).tz()
+		cachedNowTs = now
+		return cachedNow
+	}
 	return (dayjs as unknown as { tz: (...a: unknown[]) => dayjs.Dayjs }).tz(
 		...args
 	)

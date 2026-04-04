@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { CalendarEvent, WeekDays } from '@/components/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
@@ -282,19 +282,22 @@ export function DemoPage() {
 	const [businessStartTime, setBusinessStartTime] = useState(9)
 	const [businessEndTime, setBusinessEndTime] = useState(17)
 
-	const businessHours = [
-		{
-			daysOfWeek: [
-				'monday',
-				'tuesday',
-				'wednesday',
-				'thursday',
-				'friday',
-			] as WeekDays[],
-			startTime: businessStartTime,
-			endTime: businessEndTime,
-		},
-	]
+	const businessHours = useMemo(
+		() => [
+			{
+				daysOfWeek: [
+					'monday',
+					'tuesday',
+					'wednesday',
+					'thursday',
+					'friday',
+				] as WeekDays[],
+				startTime: businessStartTime,
+				endTime: businessEndTime,
+			},
+		],
+		[businessStartTime, businessEndTime]
+	)
 
 	// Disable functionality state
 	const [disableCellClick, setDisableCellClick] = useState(false)
@@ -320,8 +323,19 @@ export function DemoPage() {
 
 	const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}-${useCustomTimeIndicator}`
 
+	const classesOverride = useMemo(
+		() =>
+			useCustomClasses
+				? {
+						disabledCell:
+							'bg-red-50 dark:bg-red-950 text-red-400 dark:text-red-600 pointer-events-none opacity-50',
+					}
+				: undefined,
+		[useCustomClasses]
+	)
+
 	// Custom event renderer function
-	const renderEvent = (event: CalendarEvent) => {
+	const renderEvent = useCallback((event: CalendarEvent) => {
 		const backgroundColor = event.backgroundColor || 'bg-blue-500'
 		const color = event.color || 'text-blue-800'
 		return (
@@ -336,35 +350,38 @@ export function DemoPage() {
 				{event.title}
 			</div>
 		)
-	}
+	}, [])
 
 	// Custom current time indicator renderer
-	const renderCurrentTimeIndicator = ({
-		currentTime,
-		progress,
-		resource,
-		view,
-	}: RenderCurrentTimeIndicatorProps) => {
-		// In resource day view (view === 'day' with resources), ONLY show the badge for the first resource
-		// to avoid cluttering the horizontal line with multiple identical time badges.
-		const isPrimaryResource = !resource || resource.id === 'room-a'
-		const showBadge = view === 'day' ? isPrimaryResource : true
+	const renderCurrentTimeIndicator = useCallback(
+		({
+			currentTime,
+			progress,
+			resource,
+			view,
+		}: RenderCurrentTimeIndicatorProps) => {
+			// In resource day view (view === 'day' with resources), ONLY show the badge for the first resource
+			// to avoid cluttering the horizontal line with multiple identical time badges.
+			const isPrimaryResource = !resource || resource.id === 'room-a'
+			const showBadge = view === 'day' ? isPrimaryResource : true
 
-		return (
-			<div
-				className="absolute left-0 right-0 z-50 pointer-events-none h-0.5 flex"
-				style={{ top: `${progress}%` }}
-			>
-				{showBadge && (
-					<div className="absolute left-0 top-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] sm:text-xs px-1.5 py-0.5 rounded-r-md font-medium shadow-sm whitespace-nowrap z-10">
-						{currentTime.format('h:mm A')} {view} {resource?.id}
-					</div>
-				)}
-				{/* Red line extends across all columns */}
-				<div className="flex-1 bg-red-500" />
-			</div>
-		)
-	}
+			return (
+				<div
+					className="absolute left-0 right-0 z-50 pointer-events-none h-0.5 flex"
+					style={{ top: `${progress}%` }}
+				>
+					{showBadge && (
+						<div className="absolute left-0 top-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] sm:text-xs px-1.5 py-0.5 rounded-r-md font-medium shadow-sm whitespace-nowrap z-10">
+							{currentTime.format('h:mm A')} {view} {resource?.id}
+						</div>
+					)}
+					{/* Red line extends across all columns */}
+					<div className="flex-1 bg-red-500" />
+				</div>
+			)
+		},
+		[]
+	)
 
 	return (
 		<div
@@ -482,14 +499,7 @@ export function DemoPage() {
 							{calendarType === 'regular' ? (
 								<IlamyCalendar
 									businessHours={businessHours}
-									classesOverride={
-										useCustomClasses
-											? {
-													disabledCell:
-														'bg-red-50 dark:bg-red-950 text-red-400 dark:text-red-600 pointer-events-none opacity-50',
-												}
-											: undefined
-									}
+									classesOverride={classesOverride}
 									dayMaxEvents={dayMaxEvents}
 									disableCellClick={disableCellClick}
 									disableDragAndDrop={disableDragAndDrop}
@@ -525,14 +535,7 @@ export function DemoPage() {
 							) : (
 								<IlamyResourceCalendar
 									businessHours={businessHours}
-									classesOverride={
-										useCustomClasses
-											? {
-													disabledCell:
-														'bg-red-50 dark:bg-red-950 text-red-400 dark:text-red-600 pointer-events-none opacity-50',
-												}
-											: undefined
-									}
+									classesOverride={classesOverride}
 									dayMaxEvents={dayMaxEvents}
 									disableCellClick={disableCellClick}
 									disableDragAndDrop={disableDragAndDrop} // No year view for resource calendar

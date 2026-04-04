@@ -1,11 +1,11 @@
 import type React from 'react'
 import { useMemo } from 'react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
-import { AnimatedSection } from '@/components/animations/animated-section'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import { classes } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -50,19 +50,22 @@ export const WeekView: React.FC = () => {
 		[currentDate, businessHours, hideNonBusinessHours, weekDays]
 	)
 
-	const firstCol = {
-		id: 'time-col',
-		days: hours,
-		day: undefined,
-		className: `shrink-0 ${LEFT_COL_WIDTH} sticky left-0 bg-background z-20`,
-		gridType: 'hour' as const,
-		noEvents: true,
-		renderCell: (date: Dayjs) => (
-			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
-				{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
-			</div>
-		),
-	}
+	const firstCol = useMemo(
+		() => ({
+			id: 'time-col',
+			days: hours,
+			day: undefined,
+			className: `shrink-0 ${LEFT_COL_WIDTH} sticky left-0 bg-background z-20`,
+			gridType: 'hour' as const,
+			noEvents: true,
+			renderCell: (date: Dayjs) => (
+				<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+					{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
+				</div>
+			),
+		}),
+		[hours, timeFormat]
+	)
 
 	// Generate week days — each column gets its own hours on the correct date
 	const columns = useMemo(() => {
@@ -79,7 +82,7 @@ export const WeekView: React.FC = () => {
 			}),
 			value: day,
 		}))
-	}, [weekDays, businessHours, hideNonBusinessHours, visibleDays.map])
+	}, [visibleDays, weekDays, businessHours, hideNonBusinessHours])
 
 	const cssVars = {
 		'--visible-days': visibleDays.length,
@@ -109,35 +112,37 @@ export const WeekView: React.FC = () => {
 				</div>
 
 				{/* Day header cells */}
-				{visibleDays.map((day, index) => {
+				{visibleDays.map((day) => {
 					const isToday = day.isSame(dayjs(), 'day')
 					const key = `week-day-header-${day.toISOString()}`
 
 					return (
-						<AnimatedSection
+						<div
 							className={cn(
 								'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-50 h-full',
 								isToday && 'bg-primary/10 font-bold'
 							)}
 							data-testid={`week-day-header-${day.format('dddd').toLowerCase()}`}
-							delay={index * 0.05}
 							key={key}
 							onClick={() => {
 								selectDate(day)
 								openEventForm({ start: day })
 							}}
-							transitionKey={key}
 						>
-							<div className="text-xs sm:text-sm">{day.format('ddd')}</div>
+							<div className={'text-xs sm:text-sm'} key={key}>
+								{day.format('ddd')}
+							</div>
 							<div
 								className={cn(
 									'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
+									classes.headerAnimation,
 									isToday && 'bg-primary text-primary-foreground'
 								)}
+								key={`${key}-num`}
 							>
 								{day.format('D')}
 							</div>
-						</AnimatedSection>
+						</div>
 					)
 				})}
 			</div>

@@ -30,7 +30,11 @@ const renderGridCell = (eventSpacing?: number) => {
 			events={mockEvents}
 			initialDate={initialDate}
 		>
-			<GridCell day={initialDate} shouldRenderEvents={true} />
+			<GridCell
+				day={initialDate}
+				precomputedEvents={mockEvents}
+				shouldRenderEvents={true}
+			/>
 		</CalendarProvider>
 	)
 }

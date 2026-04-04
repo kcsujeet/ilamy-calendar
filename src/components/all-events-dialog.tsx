@@ -1,53 +1,54 @@
-import type React from 'react'
 import { useImperativeHandle, useState } from 'react'
-import type { CalendarEvent } from '@/components'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
+import type { CalendarEvent } from '@/components/types'
 import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+
 export interface SelectedDayEvents {
 	day: Dayjs
 	events: CalendarEvent[]
 }
 
+export interface AllEventsDialogHandle {
+	open: (day: Dayjs, events: CalendarEvent[]) => void
+	close: () => void
+}
+
 interface AllEventDialogProps {
-	ref: React.Ref<{
-		open: () => void
-		close: () => void
-		setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void
-	}>
+	ref: React.Ref<AllEventsDialogHandle>
 }
 
 export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [selectedDayEvents, setSelectedDayEvents] =
 		useState<SelectedDayEvents | null>(null)
-	const { currentDate, firstDayOfWeek } = useSmartCalendarContext()
 
 	useImperativeHandle(ref, () => ({
-		open: () => setDialogOpen(true),
-		close: () => setDialogOpen(false),
-		setSelectedDayEvents: (dayEvents: SelectedDayEvents) =>
-			setSelectedDayEvents(dayEvents),
+		open: (day: Dayjs, events: CalendarEvent[]) => {
+			setSelectedDayEvents({ day, events })
+			setDialogOpen(true)
+		},
+		close: () => {
+			setDialogOpen(false)
+			setSelectedDayEvents(null)
+		},
 	}))
 
-	// Get start date for the current month view based on firstDayOfWeek
-	const firstDayOfMonth = currentDate.startOf('month')
-
-	// Calculate the first day of the calendar grid correctly
-	// Find the first day of week (e.g. Sunday or Monday) that comes before or on the first day of the month
-	let adjustedFirstDayOfCalendar = firstDayOfMonth.clone()
-	while (adjustedFirstDayOfCalendar.day() !== firstDayOfWeek) {
-		adjustedFirstDayOfCalendar = adjustedFirstDayOfCalendar.subtract(1, 'day')
-	}
-
 	return (
-		<Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
+		<Dialog
+			onOpenChange={(open) => {
+				if (!open) {
+					setDialogOpen(false)
+					setSelectedDayEvents(null)
+				}
+			}}
+			open={dialogOpen}
+		>
 			<DialogContent className="max-h-[80vh] max-w-md overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>
@@ -55,16 +56,14 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 					</DialogTitle>
 				</DialogHeader>
 				<div className="mt-4 space-y-3">
-					{selectedDayEvents?.events.map((event) => {
-						return (
-							<DraggableEvent
-								className="relative my-1 h-[30px]" // Use event ID for unique identification
-								elementId={`all-events-dialog-event-$${event.id}`}
-								event={event}
-								key={event.id}
-							/>
-						)
-					})}
+					{selectedDayEvents?.events.map((event) => (
+						<DraggableEvent
+							className="relative my-1 h-[30px]"
+							elementId={`all-events-dialog-event-${event.id}`}
+							event={event}
+							key={event.id}
+						/>
+					))}
 				</div>
 			</DialogContent>
 		</Dialog>

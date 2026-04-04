@@ -1,6 +1,6 @@
 import type React from 'react'
+import { memo } from 'react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 import { HorizontalGridHeaderContainer } from './horizontal-grid-header-container'
 import {
@@ -18,7 +18,7 @@ interface HorizontalGridProps {
 	dayNumberHeight?: number
 }
 
-export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
+const NoMemoHorizontalGrid: React.FC<HorizontalGridProps> = ({
 	rows,
 	children,
 	classes,
@@ -27,8 +27,6 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 	variant = 'resource',
 	dayNumberHeight,
 }) => {
-	const { currentDate } = useSmartCalendarContext()
-
 	const isResourceCalendar = variant === 'resource'
 	const isRegularCalendar = !isResourceCalendar
 
@@ -63,10 +61,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 					className={cn('flex flex-1 w-fit', classes?.body)}
 					data-testid="horizontal-grid-body"
 				>
-					<div
-						className="relative w-full flex flex-col flex-1"
-						key={currentDate.format('YYYY-MM')}
-					>
+					<div className="relative w-full flex flex-col flex-1">
 						{rows.map((row, index) => (
 							<HorizontalGridRow
 								allDay={row.allDay ?? topLevelAllDay}
@@ -87,3 +82,5 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 		</div>
 	)
 }
+
+export const HorizontalGrid = memo(NoMemoHorizontalGrid)

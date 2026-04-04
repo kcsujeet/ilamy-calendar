@@ -17,11 +17,15 @@ export const EventDragOverlay: React.FC<EventDragOverlayProps> = ({ ref }) => {
 	}))
 
 	return (
-		<DragOverlay modifiers={[snapCenterToCursor]}>
+		<DragOverlay
+			dropAnimation={null}
+			modifiers={[snapCenterToCursor]}
+			style={{ pointerEvents: 'none' }}
+		>
 			{activeEvent && (
 				<div
 					className={cn(
-						'cursor-grab truncate rounded bg-amber-200 p-2 text-[10px] shadow-lg sm:text-xs w-20',
+						'cursor-grab truncate rounded bg-amber-200 p-2 text-[10px] shadow-lg sm:text-xs w-20 pointer-events-none',
 						activeEvent.backgroundColor || 'bg-blue-500',
 						activeEvent.color || 'text-white'
 					)}

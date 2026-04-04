@@ -6,6 +6,8 @@ import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { classes } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 
 export const ResourceDayVertical: React.FC = () => {
 	const {
@@ -36,7 +38,11 @@ export const ResourceDayVertical: React.FC = () => {
 		gridType: 'hour' as const,
 		noEvents: true,
 		renderCell: (date: Dayjs) => (
-			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+			<div
+				className={
+					'text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center'
+				}
+			>
 				{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
 			</div>
 		),

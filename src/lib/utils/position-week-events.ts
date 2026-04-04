@@ -6,7 +6,7 @@ import {
 	GAP_BETWEEN_ELEMENTS,
 } from '@/lib/constants'
 
-interface PositionedEvent extends CalendarEvent {
+export interface PositionedEvent extends CalendarEvent {
 	left: number // Left position in percentage
 	width: number // Width in percentage
 	top: number // Top position in percentage

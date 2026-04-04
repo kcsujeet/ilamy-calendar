@@ -130,11 +130,29 @@ export const useCalendarEngine = (
 		translator,
 	} = config
 
-	const [currentDate, setCurrentDate] = useState<Dayjs>(
-		dayjs.isDayjs(initialDate) ? initialDate : dayjs(initialDate)
-	)
+	const [currentDate, setCurrentDate] = useState<Dayjs>(() => {
+		let date = dayjs.isDayjs(initialDate) ? initialDate : dayjs(initialDate)
+		if (timezone) {
+			dayjs.tz.setDefault(timezone)
+			date = date.tz(timezone)
+		}
+		if (locale) {
+			dayjs.locale(locale)
+			date = date.locale(locale)
+		}
+		return date
+	})
 	const [view, setView] = useState<CalendarView>(initialView)
-	const [currentEvents, setCurrentEvents] = useState<CalendarEvent[]>(events)
+	const [currentEvents, setCurrentEvents] = useState<CalendarEvent[]>(() => {
+		if (timezone) {
+			return events.map((e) => ({
+				...e,
+				start: e.start.tz(timezone),
+				end: e.end.tz(timezone),
+			}))
+		}
+		return events
+	})
 	const [isEventFormOpen, setIsEventFormOpen] = useState(false)
 	const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
 	const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null)
@@ -152,10 +170,70 @@ export const useCalendarEngine = (
 			defaultTranslations[key as keyof Translations] || key
 	}, [translations, translator])
 
+	const getCurrentViewRange = useCallback(() => {
+		return calculateViewRange(currentDate, view, firstDayOfWeek)
+	}, [currentDate, view, firstDayOfWeek])
+
+	// Expand recurring events once for the entire view range.
+	// This is the expensive step (rrule evaluation) — do it once, not per cell.
+	const processedEvents = useMemo(() => {
+		const { start, end } = getCurrentViewRange()
+		const allEvents: CalendarEvent[] = []
+
+		for (const event of currentEvents) {
+			if (event.rrule) {
+				allEvents.push(
+					...generateRecurringEvents({
+						event,
+						currentEvents,
+						startDate: start,
+						endDate: end,
+					})
+				)
+			} else {
+				const startsInRange =
+					event.start.isSameOrAfter(start) && event.start.isSameOrBefore(end)
+				const endsInRange =
+					event.end.isSameOrAfter(start) && event.end.isSameOrBefore(end)
+				const spansRange = event.start.isBefore(start) && event.end.isAfter(end)
+				if (startsInRange || endsInRange || spansRange) {
+					allEvents.push(event)
+				}
+			}
+		}
+		return allEvents
+	}, [currentEvents, getCurrentViewRange])
+
+	// Fast filter over the already-expanded processedEvents when the query
+	// falls within the current view range; full rrule expansion otherwise.
+	const viewRangeRef = useRef<{ start: Dayjs; end: Dayjs } | null>(null)
+	viewRangeRef.current = getCurrentViewRange()
+
 	const getEventsForDateRange = useCallback(
 		(startDate: Dayjs, endDate: Dayjs): CalendarEvent[] => {
-			const allEvents: CalendarEvent[] = []
+			const vr = viewRangeRef.current
+			const withinView =
+				vr &&
+				startDate.isSameOrAfter(vr.start) &&
+				endDate.isSameOrBefore(vr.end)
 
+			if (withinView) {
+				// Fast path — just filter the pre-expanded list
+				return processedEvents.filter((event) => {
+					const startsInRange =
+						event.start.isSameOrAfter(startDate) &&
+						event.start.isSameOrBefore(endDate)
+					const endsInRange =
+						event.end.isSameOrAfter(startDate) &&
+						event.end.isSameOrBefore(endDate)
+					const spansRange =
+						event.start.isBefore(startDate) && event.end.isAfter(endDate)
+					return startsInRange || endsInRange || spansRange
+				})
+			}
+
+			// Slow path — query extends beyond view range, need full expansion
+			const allEvents: CalendarEvent[] = []
 			for (const event of currentEvents) {
 				if (event.rrule) {
 					allEvents.push(
@@ -182,19 +260,15 @@ export const useCalendarEngine = (
 			}
 			return allEvents
 		},
-		[currentEvents]
+		[processedEvents, currentEvents]
 	)
 
-	const getCurrentViewRange = useCallback(() => {
-		return calculateViewRange(currentDate, view, firstDayOfWeek)
-	}, [currentDate, view, firstDayOfWeek])
-
-	const processedEvents = useMemo(() => {
-		const { start, end } = getCurrentViewRange()
-		return getEventsForDateRange(start, end)
-	}, [getEventsForDateRange, getCurrentViewRange])
-
+	const isInitialMount = useRef(true)
 	useEffect(() => {
+		if (isInitialMount.current) {
+			isInitialMount.current = false
+			return
+		}
 		if (events !== lastEventsProp.current) {
 			if (!isDeepEqual(events, currentEvents)) {
 				setCurrentEvents(events)
@@ -202,17 +276,22 @@ export const useCalendarEngine = (
 			lastEventsProp.current = events
 		}
 	}, [events, currentEvents])
+
+	const prevLocale = useRef(locale)
 	useEffect(() => {
-		if (locale) {
+		if (locale && locale !== prevLocale.current) {
+			prevLocale.current = locale
 			setCurrentLocale(locale)
 			dayjs.locale(locale)
 			setCurrentDate((prevDate) => prevDate.locale(locale))
 		}
 	}, [locale])
+
+	const prevTimezone = useRef(timezone)
 	useEffect(() => {
-		if (timezone) {
+		if (timezone && timezone !== prevTimezone.current) {
+			prevTimezone.current = timezone
 			dayjs.tz.setDefault(timezone)
-			// Update currentDate and currentEvents to the new timezone
 			setCurrentDate((prev) => prev.tz(timezone))
 			setCurrentEvents((prev) =>
 				prev.map((e) => ({

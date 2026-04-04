@@ -4,7 +4,11 @@ import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { classes } from '@/lib/constants'
+import {
+	HEADER_ANIMATION,
+	TIME_COLUMN,
+	TIME_COLUMN_CELL,
+} from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 const NoMemoResourceMonthVertical: React.FC = () => {
@@ -21,16 +25,12 @@ const NoMemoResourceMonthVertical: React.FC = () => {
 		id: 'date-col',
 		days: daysInMonth,
 		day: undefined,
-		className:
-			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
+		className: TIME_COLUMN,
 		gridType: 'day' as const,
 		noEvents: true,
 		renderCell: (date: Dayjs) => (
 			<div
-				className={cn(
-					classes.headerAnimation,
-					'text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center'
-				)}
+				className={cn(HEADER_ANIMATION, TIME_COLUMN_CELL)}
 				key={date.toISOString()}
 			>
 				<span>{date.format('D')}</span>

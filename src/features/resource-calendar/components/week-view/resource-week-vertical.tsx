@@ -8,7 +8,11 @@ import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { classes } from '@/lib/constants'
+import {
+	HEADER_ANIMATION,
+	TIME_COLUMN,
+	TIME_COLUMN_CELL,
+} from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -58,16 +62,11 @@ export const ResourceWeekVertical: React.FC = () => {
 			id: 'time-col',
 			days: hours,
 			day: undefined,
-			className:
-				'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
+			className: TIME_COLUMN,
 			gridType: 'hour' as const,
 			noEvents: true,
 			renderCell: (date: Dayjs) => (
-				<div
-					className={
-						'text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center'
-					}
-				>
+				<div className={TIME_COLUMN_CELL}>
 					{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
 				</div>
 			),
@@ -154,7 +153,7 @@ export const ResourceWeekVertical: React.FC = () => {
 					<div className="shrink-0 w-16 border-r border-b z-20 bg-background sticky left-0">
 						<span
 							className={cn(
-								classes.headerAnimation,
+								HEADER_ANIMATION,
 								'px-2 h-full w-full flex justify-center items-start font-medium'
 							)}
 							key={currentDate.week()}
@@ -176,7 +175,7 @@ export const ResourceWeekVertical: React.FC = () => {
 								<div className={'text-sm'}>{day.format('ddd')}</div>
 								<div
 									className={cn(
-										classes.headerAnimation,
+										HEADER_ANIMATION,
 										'text-xs text-muted-foreground'
 									)}
 								>

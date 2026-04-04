@@ -5,6 +5,7 @@ import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWe
 import type { Resource } from '@/features/resource-calendar/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { RESOURCE_ROW_LABEL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { GridCell } from '../grid-cell'
 import { ResourceCell } from '../resource-cell'
@@ -73,7 +74,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 		>
 			{isResourceCalendar && resource && (
 				<ResourceCell
-					className="w-20 sm:w-40 sticky left-0 bg-background z-20 h-full"
+					className={RESOURCE_ROW_LABEL}
 					data-testid={`horizontal-row-label-${resource.id}`}
 					resource={resource}
 				>

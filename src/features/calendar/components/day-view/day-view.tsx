@@ -3,7 +3,11 @@ import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import { classes } from '@/lib/constants'
+import {
+	HEADER_ANIMATION,
+	TIME_COLUMN,
+	TIME_COLUMN_CELL,
+} from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 export const DayView = () => {
@@ -21,12 +25,11 @@ export const DayView = () => {
 		id: 'time-col',
 		day: undefined,
 		days: hours,
-		className:
-			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
+		className: TIME_COLUMN,
 		gridType: 'hour' as const,
 		noEvents: true,
 		renderCell: (date: Dayjs) => (
-			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+			<div className={TIME_COLUMN_CELL}>
 				{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
 			</div>
 		),
@@ -65,13 +68,13 @@ export const DayView = () => {
 					)}
 				>
 					<span
-						className={cn('xs:inline hidden', classes.headerAnimation)}
+						className={cn('xs:inline hidden', HEADER_ANIMATION)}
 						key={currentDate.format('YYYY-MM-DD')}
 					>
 						{currentDate.format('dddd, ')}
 					</span>
 					<span
-						className={classes.headerAnimation}
+						className={HEADER_ANIMATION}
 						key={`${currentDate.format('YYYY-MM-DD')}-date`}
 					>
 						{currentDate.format('MMMM D, YYYY')}
@@ -79,7 +82,7 @@ export const DayView = () => {
 					{isToday && (
 						<span
 							className={cn(
-								classes.headerAnimation,
+								HEADER_ANIMATION,
 								'bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm'
 							)}
 						>

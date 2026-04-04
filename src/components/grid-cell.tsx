@@ -4,12 +4,9 @@ import type { CalendarEvent } from '@/components/types'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { EVENT_BAR_HEIGHT } from '@/lib/constants'
+import { CELL_CLASS, EVENT_BAR_HEIGHT } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { DroppableCell } from './droppable-cell'
-
-const CELL_CLASS =
-	'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px] relative border-r last:border-r-0 only:border-r border-b'
 
 interface GridProps {
 	day: Dayjs

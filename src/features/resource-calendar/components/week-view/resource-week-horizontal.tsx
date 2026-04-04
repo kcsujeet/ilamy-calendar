@@ -5,7 +5,11 @@ import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
-import { classes } from '@/lib/constants'
+import {
+	HEADER_ANIMATION,
+	RESOURCE_CORNER,
+	TODAY_HIGHLIGHT,
+} from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -69,7 +73,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 			days={weekHours}
 			gridType="hour"
 		>
-			<div className="w-20 sm:w-40 border-b border-r shrink-0 flex justify-center items-center sticky top-0 left-0 bg-background z-20">
+			<div className={RESOURCE_CORNER}>
 				<div className="text-sm">{t('resources')}</div>
 			</div>
 
@@ -83,7 +87,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 							<div
 								className={cn(
 									'shrink-0 border-r last:border-r-0 border-b flex-1 flex items-center text-center font-medium',
-									isToday && 'bg-blue-50 text-blue-600'
+									isToday && TODAY_HIGHLIGHT
 								)}
 								data-testid="resource-week-day-header"
 								key={`resource-week-header-${day.toISOString()}-day`}
@@ -95,7 +99,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 									<div
 										className={cn(
 											'text-xs text-muted-foreground',
-											classes.headerAnimation
+											HEADER_ANIMATION
 										)}
 										key={`${day.toISOString()}-date`}
 									>
@@ -116,7 +120,7 @@ export const ResourceWeekHorizontal: React.FC = () => {
 							<div
 								className={cn(
 									'min-w-20 flex-1 border-r flex items-center justify-center text-xs shrink-0',
-									isNowHour && 'bg-blue-50 text-blue-600 font-medium'
+									isNowHour && `${TODAY_HIGHLIGHT} font-medium`
 								)}
 								data-testid={`resource-week-time-label-${col.format('HH')}`}
 								key={`resource-week-header-${col.toISOString()}`}

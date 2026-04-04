@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import { classes } from '@/lib/constants'
+import { HEADER_ANIMATION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -32,7 +32,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 					key={weekDay.toISOString()}
 				>
 					<span
-						className={cn('text-sm capitalize', classes.headerAnimation)}
+						className={cn('text-sm capitalize', HEADER_ANIMATION)}
 						key={weekDay.toISOString()}
 					>
 						{weekDay.format('ddd')}

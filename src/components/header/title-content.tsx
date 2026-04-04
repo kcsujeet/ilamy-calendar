@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/popover'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import { classes } from '@/lib/constants'
+import { HEADER_ANIMATION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -197,7 +197,7 @@ const TitleContent = () => {
 						<span
 							className={cn(
 								'flex items-center gap-1 px-1! font-semibold',
-								classes.headerAnimation
+								HEADER_ANIMATION
 							)}
 							data-testid="calendar-month-button"
 							key={`${popover.id}-${currentDate.format('YYYY-MM-DD')}`}

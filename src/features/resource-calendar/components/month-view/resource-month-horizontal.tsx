@@ -3,7 +3,7 @@ import { memo, useMemo } from 'react'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { classes } from '@/lib/constants'
+import { HEADER_ANIMATION, RESOURCE_CORNER } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getMonthDays } from '@/lib/utils/date-utils'
 
@@ -17,7 +17,7 @@ const NoMemoResourceMonthHorizontal: React.FC = () => {
 
 	return (
 		<ResourceEventGrid days={monthDays}>
-			<div className="w-20 sm:w-40 border-b border-r shrink-0 flex justify-center items-center sticky top-0 left-0 bg-background z-20">
+			<div className={RESOURCE_CORNER}>
 				<div className="text-sm">{t('resources')}</div>
 			</div>
 
@@ -27,16 +27,13 @@ const NoMemoResourceMonthHorizontal: React.FC = () => {
 					key={`resource-month-header-${day.toISOString()}`}
 				>
 					<div
-						className={cn('text-xs font-medium', classes.headerAnimation)}
+						className={cn('text-xs font-medium', HEADER_ANIMATION)}
 						key={day.toISOString()}
 					>
 						{day.format('D')}
 					</div>
 					<div
-						className={cn(
-							'text-xs text-muted-foreground',
-							classes.headerAnimation
-						)}
+						className={cn('text-xs text-muted-foreground', HEADER_ANIMATION)}
 						key={`${day.toISOString()}-day`}
 					>
 						{day.format('ddd')}

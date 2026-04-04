@@ -5,11 +5,11 @@ import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import { classes } from '@/lib/constants'
+import { HEADER_ANIMATION, TIME_COLUMN_CELL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
-const CELL_CLASS =
+const WEEK_COL_CLASS =
 	'w-[calc((100%-4rem)/var(--visible-days))] min-w-[calc((100%-4rem)/var(--visible-days))] flex-1'
 const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
 
@@ -59,7 +59,7 @@ export const WeekView: React.FC = () => {
 			gridType: 'hour' as const,
 			noEvents: true,
 			renderCell: (date: Dayjs) => (
-				<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+				<div className={TIME_COLUMN_CELL}>
 					{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}
 				</div>
 			),
@@ -73,7 +73,7 @@ export const WeekView: React.FC = () => {
 			id: `day-col-${day.format('YYYY-MM-DD')}`,
 			day,
 			label: day.format('D'),
-			className: CELL_CLASS,
+			className: WEEK_COL_CLASS,
 			days: getViewHours({
 				referenceDate: day,
 				businessHours,
@@ -92,7 +92,7 @@ export const WeekView: React.FC = () => {
 		<VerticalGrid
 			allDayRow={
 				<AllDayRow
-					classes={{ cell: CELL_CLASS, spacer: LEFT_COL_WIDTH }}
+					classes={{ cell: WEEK_COL_CLASS, spacer: LEFT_COL_WIDTH }}
 					days={visibleDays}
 				/>
 			}
@@ -135,7 +135,7 @@ export const WeekView: React.FC = () => {
 							<div
 								className={cn(
 									'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
-									classes.headerAnimation,
+									HEADER_ANIMATION,
 									isToday && 'bg-primary text-primary-foreground'
 								)}
 								key={`${key}-num`}

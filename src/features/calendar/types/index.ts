@@ -273,8 +273,18 @@ export interface IlamyCalendarProps {
 	/**
 	 * Days of the week to hide from the week view.
 	 * Hidden days won't render as columns, giving remaining days more space.
-	 * Only applies to vertical week views (regular and resource vertical).
-	 * Does not affect month, day, year, or resource horizontal week views.
+	 *
+	 * Applies to:
+	 * - Regular vertical week view (always)
+	 * - Resource vertical week view in hourly granularity
+	 *
+	 * Does NOT apply to:
+	 * - Resource horizontal week view (layout is days-as-rows)
+	 * - Resource vertical week view in daily granularity
+	 *   (`weekViewGranularity: 'daily'`) — non-contiguous visible days would
+	 *   break multi-day event positioning
+	 * - Month, day, and year views
+	 *
 	 * @default []
 	 * @example ['saturday', 'sunday'] // Hide weekends
 	 */

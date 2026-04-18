@@ -29,6 +29,7 @@ interface ResourceCalendarProviderProps extends CalendarProviderProps {
 	renderResource?: (resource: Resource) => React.ReactNode
 	classesOverride?: CalendarClassesOverride
 	orientation?: 'horizontal' | 'vertical'
+	weekViewGranularity?: 'hourly' | 'daily'
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
 	) => React.ReactNode
@@ -77,6 +78,7 @@ export const ResourceCalendarProvider: React.FC<
 	renderHour,
 	hideNonBusinessHours = false,
 	hiddenDays,
+	weekViewGranularity = 'hourly',
 }) => {
 	// Resource-specific state
 	const [currentResources] = useState<Resource[]>(resources)
@@ -289,6 +291,7 @@ export const ResourceCalendarProvider: React.FC<
 			renderHour,
 			hideNonBusinessHours,
 			hiddenDays,
+			weekViewGranularity,
 		}),
 		[
 			calendarEngine,
@@ -329,6 +332,7 @@ export const ResourceCalendarProvider: React.FC<
 			renderHour,
 			hideNonBusinessHours,
 			hiddenDays,
+			weekViewGranularity,
 		]
 	)
 

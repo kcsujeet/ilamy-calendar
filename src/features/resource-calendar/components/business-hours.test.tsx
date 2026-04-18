@@ -6,7 +6,7 @@ import type { Resource } from '@/features/resource-calendar/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { ResourceDayHorizontal } from './day-view/resource-day-horizontal'
 import { ResourceDayVertical } from './day-view/resource-day-vertical'
-import { ResourceWeekHorizontal } from './week-view/resource-week-horizontal'
+import { ResourceWeekHorizontal } from './week-view/horizontal/resource-week-horizontal'
 
 const mockResources: Resource[] = [{ id: '1', title: 'Resource 1' }]
 

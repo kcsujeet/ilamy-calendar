@@ -75,7 +75,9 @@ interface DemoCalendarSettingsProps {
 	// Resource calendar specific props
 	isResourceCalendar?: boolean
 	orientation?: 'horizontal' | 'vertical'
+	weekViewGranularity?: 'hourly' | 'daily'
 	setOrientation?: (value: 'horizontal' | 'vertical') => void
+	setWeekViewGranularity?: (value: 'hourly' | 'daily') => void
 	// Business hours settings
 	hideNonBusinessHours: boolean
 	setHideNonBusinessHours: (value: boolean) => void
@@ -133,6 +135,8 @@ export function DemoCalendarSettings({
 	isResourceCalendar,
 	orientation,
 	setOrientation,
+	weekViewGranularity,
+	setWeekViewGranularity,
 	hideNonBusinessHours,
 	setHideNonBusinessHours,
 	businessStartTime,
@@ -215,6 +219,37 @@ export function DemoCalendarSettings({
 								variant="secondary"
 							>
 								Vertical
+							</Button>
+						</div>
+					</div>
+				)}
+				{isResourceCalendar && (
+					<div>
+						<label className="block text-sm text-left font-medium mb-1">
+							Week View Granularity
+						</label>
+						<div className="flex gap-1">
+							<Button
+								className={
+									weekViewGranularity === 'hourly'
+										? 'bg-primary/80 text-primary-foreground'
+										: ''
+								}
+								onClick={() => setWeekViewGranularity?.('hourly')}
+								variant="secondary"
+							>
+								Hourly
+							</Button>
+							<Button
+								className={
+									weekViewGranularity === 'daily'
+										? 'bg-primary/80 text-primary-foreground'
+										: ''
+								}
+								onClick={() => setWeekViewGranularity?.('daily')}
+								variant="secondary"
+							>
+								Daily
 							</Button>
 						</div>
 					</div>

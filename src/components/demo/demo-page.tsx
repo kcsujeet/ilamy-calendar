@@ -320,6 +320,10 @@ export function DemoPage() {
 		'horizontal'
 	)
 
+	const [weekViewGranularity, setWeekViewGranularity] = useState<
+		'hourly' | 'daily'
+	>('hourly')
+
 	const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}-${useCustomTimeIndicator}`
 
 	// Custom event renderer function — adapts to eventHeight
@@ -463,6 +467,7 @@ export function DemoPage() {
 						setUseCustomOnDateClick={setUseCustomOnDateClick}
 						setUseCustomOnEventClick={setUseCustomOnEventClick}
 						setUseCustomTimeIndicator={setUseCustomTimeIndicator}
+						setWeekViewGranularity={setWeekViewGranularity}
 						stickyViewHeader={stickyViewHeader}
 						timeFormat={timeFormat}
 						timezone={timezone}
@@ -473,6 +478,7 @@ export function DemoPage() {
 						useCustomOnDateClick={useCustomOnDateClick}
 						useCustomOnEventClick={useCustomOnEventClick}
 						useCustomTimeIndicator={useCustomTimeIndicator}
+						weekViewGranularity={weekViewGranularity}
 					/>
 
 					{/* Resource info card */}
@@ -607,6 +613,7 @@ export function DemoPage() {
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}
 									timezone={timezone}
+									weekViewGranularity={weekViewGranularity}
 								/>
 							)}
 						</CardContent>

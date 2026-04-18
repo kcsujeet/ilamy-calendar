@@ -107,7 +107,7 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `timeFormat` | `TimeFormat` | `'12-hour'` | Time display format |
 | `businessHours` | `BusinessHours \| BusinessHours[]` | — | Working hours config |
 | `hideNonBusinessHours` | `boolean` | `false` | Hide off-hours in day/week views |
-| `hiddenDays` | `WeekDays[]` | `[]` | Days to hide from week view |
+| `hiddenDays` | `WeekDays[]` | `[]` | Days to hide from vertical week view. Ignored in resource vertical week view with daily granularity (`weekViewGranularity: 'daily'`) — non-contiguous days would break multi-day event positioning. |
 | `disableCellClick` | `boolean` | — | Disable cell clicks |
 | `disableEventClick` | `boolean` | — | Disable event clicks |
 | `disableDragAndDrop` | `boolean` | — | Disable DnD |

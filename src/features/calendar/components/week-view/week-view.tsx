@@ -6,9 +6,10 @@ import { HourLabel } from '@/components/hour-label/hour-label'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getWeekDays } from '@/lib/utils/date-utils'
+import { getWeekDays, isToday } from '@/lib/utils/date-utils'
+import { keys } from '@/lib/utils/keys'
 
 const CELL_CLASS =
 	'w-[calc((100%-4rem)/var(--visible-days))] min-w-[calc((100%-4rem)/var(--visible-days))] flex-1'
@@ -51,7 +52,7 @@ export const WeekView: React.FC = () => {
 	)
 
 	const firstCol = {
-		id: 'time-col',
+		id: keys.col.time,
 		days: hours,
 		day: undefined,
 		className: `shrink-0 ${LEFT_COL_WIDTH} sticky left-0 bg-background z-20`,
@@ -67,7 +68,7 @@ export const WeekView: React.FC = () => {
 	// Generate week days — each column gets its own hours on the correct date
 	const columns = useMemo(() => {
 		return visibleDays.map((day) => ({
-			id: `day-col-${day.format('YYYY-MM-DD')}`,
+			id: keys.col.day(day),
 			day,
 			label: day.format('D'),
 			className: CELL_CLASS,
@@ -110,16 +111,16 @@ export const WeekView: React.FC = () => {
 
 				{/* Day header cells */}
 				{visibleDays.map((day, index) => {
-					const isToday = day.isSame(dayjs(), 'day')
-					const key = `week-day-header-${day.toISOString()}`
+					const today = isToday(day)
+					const key = keys.header.week.day(day)
 
 					return (
 						<AnimatedSection
 							className={cn(
 								'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-50 h-full',
-								isToday && 'bg-primary/10 font-bold'
+								today && 'bg-primary/10 font-bold'
 							)}
-							data-testid={`week-day-header-${day.format('dddd').toLowerCase()}`}
+							data-testid={keys.header.weekday('week', day.format('dddd'))}
 							delay={index * 0.05}
 							key={key}
 							onClick={() => {
@@ -132,7 +133,7 @@ export const WeekView: React.FC = () => {
 							<div
 								className={cn(
 									'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
-									isToday && 'bg-primary text-primary-foreground'
+									today && 'bg-primary text-primary-foreground'
 								)}
 							>
 								{day.format('D')}

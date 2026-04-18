@@ -3,6 +3,7 @@ import { HorizontalGridRow } from '@/components/horizontal-grid/horizontal-grid-
 import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { keys } from '@/lib/utils/keys'
 import { AllDayCell } from './all-day-cell'
 
 interface AllDayRowProps {
@@ -19,7 +20,7 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 	showSpacer = true,
 }) => {
 	const columns = days.map((day, index) => ({
-		id: `allday-col-${day.toISOString()}-${index}`,
+		id: keys.col.allDay(day, index),
 		day,
 		gridType: 'day' as const,
 		className: cn('h-full min-h-12 border-r last:border-r-0', classes?.cell),
@@ -37,7 +38,7 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 				columns={columns}
 				dayNumberHeight={0}
 				gridType="day"
-				id={`all-day-row-${resource?.id ?? 'main'}`}
+				id={keys.allDayRow(resource?.id)}
 				isLastRow
 				resource={resource}
 				variant="regular"

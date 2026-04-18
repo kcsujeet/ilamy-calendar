@@ -2,6 +2,7 @@ import type React from 'react'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { keys } from '@/lib/utils/keys'
 
 interface ResourceEventGridProps {
 	/**
@@ -32,8 +33,9 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 
 	const columns = days.map((day) => {
 		const isArray = Array.isArray(day)
+		const refDay = isArray ? day[0] : day
 		return {
-			id: `col-${isArray ? day[0]?.format('YYYY-MM-DD') : day.toISOString()}`,
+			id: refDay ? keys.col.day(refDay) : 'day-col-unknown',
 			day: isArray ? undefined : day,
 			days: isArray ? day : undefined,
 			className: classes?.cell,

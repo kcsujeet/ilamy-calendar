@@ -1,6 +1,43 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 import dayjs from '@/lib/configs/dayjs-config'
-import { getDayHours, getMonthWeeks, getWeekDays } from './date-utils'
+import {
+	getDayHours,
+	getDayKey,
+	getMonthWeeks,
+	getWeekDays,
+	isToday,
+} from './date-utils'
+
+describe('isToday', () => {
+	it('should return true when the date is today', () => {
+		expect(isToday(dayjs())).toBe(true)
+	})
+
+	it('should return false when the date is yesterday', () => {
+		expect(isToday(dayjs().subtract(1, 'day'))).toBe(false)
+	})
+
+	it('should return false when the date is tomorrow', () => {
+		expect(isToday(dayjs().add(1, 'day'))).toBe(false)
+	})
+
+	it('should return true for different times on today', () => {
+		expect(isToday(dayjs().hour(0).minute(0))).toBe(true)
+		expect(isToday(dayjs().hour(23).minute(59))).toBe(true)
+	})
+})
+
+describe('getDayKey', () => {
+	it('should format a date as YYYY-MM-DD', () => {
+		expect(getDayKey(dayjs('2025-10-13T00:00:00.000Z'))).toBe('2025-10-13')
+	})
+
+	it('should ignore time-of-day', () => {
+		const morning = dayjs('2025-10-13T08:15:30.000Z')
+		const evening = dayjs('2025-10-13T22:45:00.000Z')
+		expect(getDayKey(morning)).toBe(getDayKey(evening))
+	})
+})
 
 describe('getDayHours', () => {
 	it('should return exactly 24 hours by default', () => {

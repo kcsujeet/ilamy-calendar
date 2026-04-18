@@ -16,6 +16,7 @@ import {
 import type { RRuleOptions } from '@/features/recurrence/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
+import { keys } from '@/lib/utils/keys'
 
 const FREQ_MAP = {
 	DAILY: RRule.DAILY,
@@ -203,12 +204,12 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 										<div className="flex items-center space-x-1" key={d.label}>
 											<Checkbox
 												checked={byweekday.includes(d.value)}
-												id={`day-${i}`}
+												id={keys.listKey('day', i)}
 												onCheckedChange={() => toggleDay(i)}
 											/>
 											<Label
 												className="text-xs cursor-pointer"
-												htmlFor={`day-${i}`}
+												htmlFor={keys.listKey('day', i)}
 											>
 												{d.label}
 											</Label>

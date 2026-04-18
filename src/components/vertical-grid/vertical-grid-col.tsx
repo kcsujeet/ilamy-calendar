@@ -3,6 +3,7 @@ import { memo } from 'react'
 import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
@@ -45,7 +46,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 				'flex flex-col flex-1 items-center justify-center min-w-50 bg-background relative',
 				className
 			)}
-			data-testid={dataTestId || `vertical-col-${id}`}
+			data-testid={dataTestId || keys.container.vertical.col(id)}
 		>
 			{/* Time slots */}
 			<div
@@ -56,19 +57,17 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 			>
 				{days.map((day, dayIndex) => {
 					const hourStr = day.format('HH')
-					const dateStr = day.format('YYYY-MM-DD')
 
 					if (renderCell) {
 						const testId =
-							id === 'time-col'
-								? `vertical-time-${hourStr}`
-								: `vertical-cell-${dateStr}-${hourStr}-00${resourceId ? `-${resourceId}` : ''}`
+							id === keys.col.time
+								? keys.cell.verticalTime(hourStr)
+								: keys.cell.vertical(day, hourStr, '00', resourceId)
 						return (
 							<div
 								className="min-h-[60px] border-b border-r"
 								data-testid={testId}
-								// biome-ignore lint/suspicious/noArrayIndexKey: false positive
-								key={`${id}-${dayIndex}-${hourStr}`}
+								key={keys.listKey(id, dayIndex, hourStr)}
 							>
 								{renderCell(day)}
 							</div>
@@ -78,7 +77,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 					return cellSlots.map((minute) => {
 						const m = minute === 60 ? undefined : minute
 						const mm = m === undefined ? '00' : String(m).padStart(2, '0')
-						const testId = `vertical-cell-${dateStr}-${hourStr}-${mm}${resourceId ? `-${resourceId}` : ''}`
+						const testId = keys.cell.vertical(day, hourStr, mm, resourceId)
 
 						return (
 							<GridCell
@@ -91,8 +90,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 								day={m ? day.minute(m) : day}
 								gridType={gridType}
 								hour={day.hour()}
-								// biome-ignore lint/suspicious/noArrayIndexKey: false positive
-								key={`${id}-${dayIndex}-${mm}`}
+								key={keys.listKey(id, dayIndex, mm)}
 								minute={m}
 								resourceId={resourceId} // Events are rendered in a separate layer
 								shouldRenderEvents={false}
@@ -105,7 +103,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 				{!noEvents && (
 					<div className="absolute inset-0 z-10 pointer-events-none">
 						<VerticalGridEventsLayer
-							data-testid={`vertical-events-${id}`}
+							data-testid={keys.container.eventsLayer('vertical', id)}
 							days={days}
 							gridType={gridType}
 							resource={resource}

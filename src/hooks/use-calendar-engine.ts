@@ -13,6 +13,7 @@ import dayjs, {
 import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
+import { eventOverlapsRange } from '@/lib/utils/event-utils'
 import type { CalendarView } from '@/types'
 import { DAY_MAX_EVENTS_DEFAULT } from '../lib/constants'
 
@@ -167,18 +168,8 @@ export const useCalendarEngine = (
 							endDate,
 						})
 					)
-				} else {
-					const startsInRange =
-						event.start.isSameOrAfter(startDate) &&
-						event.start.isSameOrBefore(endDate)
-					const endsInRange =
-						event.end.isSameOrAfter(startDate) &&
-						event.end.isSameOrBefore(endDate)
-					const spansRange =
-						event.start.isBefore(startDate) && event.end.isAfter(endDate)
-					if (startsInRange || endsInRange || spansRange) {
-						allEvents.push(event)
-					}
+				} else if (eventOverlapsRange(event, startDate, endDate)) {
+					allEvents.push(event)
 				}
 			}
 			return allEvents

@@ -1,5 +1,5 @@
 // Re-export rrule.js types for convenience
-export type { Frequency, Weekday } from 'rrule'
+export type { Weekday } from 'rrule'
 export { RRule } from 'rrule'
 export type { EventFormProps } from './components/event-form/event-form'
 export type { BusinessHours, CalendarEvent, WeekDays } from './components/types'

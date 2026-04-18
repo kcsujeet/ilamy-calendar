@@ -1,8 +1,10 @@
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { isToday } from '@/lib/utils/date-utils'
+import { keys } from '@/lib/utils/keys'
 
 interface ResourceWeekHorizontalDayHeaderProps {
 	days: Dayjs[]
@@ -17,19 +19,19 @@ export const ResourceWeekHorizontalDayHeader: React.FC<
 	return (
 		<div className="flex h-12">
 			{days.map((day, index) => {
-				const isToday = day.isSame(dayjs(), 'day')
-				const key = `resource-week-header-${day.toISOString()}-day`
+				const today = isToday(day)
+				const key = keys.header.week.day(day)
 
 				return (
 					<AnimatedSection
 						className={cn(
 							'shrink-0 border-r last:border-r-0 border-b flex-1 flex items-center text-center font-medium min-w-20',
-							isToday && 'bg-blue-50 text-blue-600'
+							today && 'bg-blue-50 text-blue-600'
 						)}
-						data-testid="resource-week-day-header"
+						data-testid={keys.header.resource.weekDay}
 						delay={index * 0.05}
-						key={`${key}-animated`}
-						transitionKey={`${key}-motion`}
+						key={keys.listKey(key, 'animated')}
+						transitionKey={keys.listKey(key, 'motion')}
 					>
 						<div
 							className={cn(

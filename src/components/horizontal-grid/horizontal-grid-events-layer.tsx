@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { keys } from '@/lib/utils/keys'
 import type { PositionedEvent } from '@/lib/utils/position-week-events'
 
 export interface HorizontalGridEventsLayerProps {
@@ -29,10 +30,10 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 					<div
 						className="absolute z-10 pointer-events-auto overflow-clip"
 						data-left={event.left}
-						data-testid={`horizontal-event-${event.id}`}
+						data-testid={keys.container.horizontal.event(event.id)}
 						data-top={event.top}
 						data-width={event.width}
-						key={`${eventKey}-wrapper`}
+						key={keys.listKey(eventKey, 'wrapper')}
 						style={{
 							left: `calc(${event.left}% + var(--spacing) * 0.25)`,
 							width: `calc(${event.width}% - var(--spacing) * 1)`,

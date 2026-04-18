@@ -7,6 +7,7 @@ import { ResourceEventGrid } from '@/features/resource-calendar/components/resou
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { keys } from '@/lib/utils/keys'
 
 export const ResourceDayHorizontal: React.FC = () => {
 	const {
@@ -54,10 +55,13 @@ export const ResourceDayHorizontal: React.FC = () => {
 									'min-w-20 flex-1 border-b border-r last:border-r-0 flex items-center justify-center text-xs shrink-0',
 									isNowHour && 'bg-blue-50 text-blue-600 font-medium'
 								)}
-								data-testid={`resource-day-time-label-${col.format('HH')}`}
+								data-testid={keys.header.resource.timeLabel(
+									'day',
+									col.format('HH')
+								)}
 								delay={index * 0.05}
-								key={`${key}-animated`}
-								transitionKey={`${key}-motion`}
+								key={keys.listKey(key, 'animated')}
+								transitionKey={keys.listKey(key, 'motion')}
 							>
 								<HourLabel date={col} />
 							</AnimatedSection>

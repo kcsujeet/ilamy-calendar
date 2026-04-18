@@ -2,6 +2,11 @@ import { useMemo } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { getDayKey } from '@/lib/utils/date-utils'
+import {
+	eventOverlapsRange,
+	filterEventsByResource,
+} from '@/lib/utils/event-utils'
 import {
 	getPositionedEvents,
 	type PositionedEvent,
@@ -44,9 +49,9 @@ export const useProcessedWeekEvents = ({
 		if (!weekStart || !weekEnd) return []
 		let weekEvents = getEventsForDateRange(weekStart, weekEnd)
 		if (resourceId) {
-			const resourceEvents = getEventsForResource(resourceId)
-			weekEvents = weekEvents.filter((event) =>
-				resourceEvents.some((e) => String(e.id) === String(event.id))
+			weekEvents = filterEventsByResource(
+				weekEvents,
+				getEventsForResource(resourceId)
 			)
 		}
 
@@ -67,17 +72,12 @@ export const useProcessedWeekEvents = ({
 	const dayEventsMap = useMemo(() => {
 		const map = new Map<string, CalendarEvent[]>()
 		for (const day of days) {
-			const key = day.format('YYYY-MM-DD')
+			const key = getDayKey(day)
 			const dayStart = day.startOf('day')
 			const dayEnd = day.endOf('day')
-			const dayEvents = events.filter((e) => {
-				const startsInDay =
-					e.start.isSameOrAfter(dayStart) && e.start.isSameOrBefore(dayEnd)
-				const endsInDay =
-					e.end.isSameOrAfter(dayStart) && e.end.isSameOrBefore(dayEnd)
-				const spansDay = e.start.isBefore(dayStart) && e.end.isAfter(dayEnd)
-				return startsInDay || endsInDay || spansDay
-			})
+			const dayEvents = events.filter((e) =>
+				eventOverlapsRange(e, dayStart, dayEnd)
+			)
 			map.set(key, dayEvents)
 		}
 		return map

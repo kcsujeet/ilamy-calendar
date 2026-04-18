@@ -3,6 +3,8 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { getDayKey, isToday } from '@/lib/utils/date-utils'
+import { keys } from '@/lib/utils/keys'
 
 const DAY_HEADER_NAMES = [
 	{ id: 'sun', label: 'S' },
@@ -69,9 +71,9 @@ export const YearView = () => {
 
 			return {
 				date: dayDate,
-				dayKey: dayDate.format('YYYY-MM-DD'),
+				dayKey: getDayKey(dayDate),
 				isInCurrentMonth: dayDate.month() === monthDate.month(),
-				isToday: dayDate.isSame(dayjs(), 'day'),
+				isToday: isToday(dayDate),
 				isSelected: dayDate.isSame(currentDate, 'day'),
 				eventCount: eventsOnDay.length,
 			}
@@ -143,18 +145,18 @@ export const YearView = () => {
 					return (
 						<div
 							className="hover:border-primary flex flex-col rounded-lg border p-3 text-left transition-all duration-200 hover:shadow-md"
-							data-testid={`year-month-${month.monthKey}`}
+							data-testid={keys.header.year.month(month.monthKey)}
 							key={month.monthKey}
 						>
 							<AnimatedSection
 								className="mb-2 flex items-center justify-between"
 								delay={animationDelay}
-								key={`month-${month.monthKey}`}
-								transitionKey={`month-${month.monthKey}`}
+								key={keys.listKey('month', month.monthKey)}
+								transitionKey={keys.listKey('month', month.monthKey)}
 							>
 								<button
 									className="text-lg font-medium hover:underline cursor-pointer"
-									data-testid={`year-month-title-${month.monthKey}`}
+									data-testid={keys.header.year.month(month.monthKey, 'title')}
 									onClick={() => navigateToDate(month.date, 'month')}
 									type="button"
 								>
@@ -164,7 +166,10 @@ export const YearView = () => {
 								{month.eventCount > 0 && (
 									<span
 										className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs"
-										data-testid={`year-month-event-count-${month.monthKey}`}
+										data-testid={keys.header.year.month(
+											month.monthKey,
+											'count'
+										)}
 									>
 										{getEventCountLabel(month.eventCount)}
 									</span>
@@ -172,20 +177,23 @@ export const YearView = () => {
 							</AnimatedSection>
 
 							<div
-								className="grid grid-cols-7 gap-[1px] text-[0.6rem]"
-								data-testid={`year-mini-calendar-${month.monthKey}`}
+								className="grid grid-cols-7 gap-px text-[0.6rem]"
+								data-testid={keys.header.year.month(month.monthKey, 'mini')}
 							>
 								{DAY_HEADER_NAMES.map((day) => (
 									<div
 										className="text-muted-foreground h-3 text-center"
-										key={`header-${month.monthKey}-${day.id}`}
+										key={keys.listKey('header', month.monthKey, day.id)}
 									>
 										{day.label}
 									</div>
 								))}
 
 								{daysInMonth.map((day) => {
-									const dayTestId = `year-day-${month.date.format('YYYY-MM')}-${day.dayKey}`
+									const dayTestId = keys.header.year.day(
+										month.date.format('YYYY-MM'),
+										day.dayKey
+									)
 									const hasEvents = day.eventCount > 0
 									const visibleDotCount = Math.min(day.eventCount, 3)
 									const visibleDotColors = EVENT_DOT_COLORS.slice(
@@ -209,8 +217,8 @@ export const YearView = () => {
 											{hasEvents && (
 												<div
 													className={cn(
-														'absolute bottom-0 flex w-full justify-center space-x-[1px]',
-														day.isToday && 'bottom-[1px]'
+														'absolute bottom-0 flex w-full justify-center space-x-px',
+														day.isToday && 'bottom-px'
 													)}
 												>
 													{visibleDotColors.map((dotColor) => (

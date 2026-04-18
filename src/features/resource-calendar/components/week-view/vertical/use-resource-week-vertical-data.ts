@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { keys } from '@/lib/utils/keys'
 import { useResourceWeekViewData } from '../use-resource-week-view-data'
 
 export function useResourceWeekVerticalData() {
@@ -33,7 +34,7 @@ export function useResourceWeekVerticalData() {
 		() =>
 			resources.flatMap((resource) =>
 				visibleDays.map((day) => ({
-					id: `day-col-${day.format('YYYY-MM-DD')}-resource-${resource.id}`,
+					id: keys.col.day(day, resource.id),
 					resourceId: resource.id,
 					resource,
 					day,
@@ -50,7 +51,7 @@ export function useResourceWeekVerticalData() {
 	const dailyColumns = useMemo(
 		() =>
 			resources.map((resource) => ({
-				id: `week-col-resource-${resource.id}`,
+				id: keys.col.resource('week', resource.id),
 				day: undefined,
 				resourceId: resource.id,
 				resource,

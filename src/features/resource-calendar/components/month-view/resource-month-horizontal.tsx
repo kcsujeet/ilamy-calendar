@@ -5,6 +5,7 @@ import { ResourceEventGrid } from '@/features/resource-calendar/components/resou
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { getMonthDays } from '@/lib/utils/date-utils'
+import { keys } from '@/lib/utils/keys'
 
 export const ResourceMonthHorizontal: React.FC = () => {
 	const { currentDate, t } = useSmartCalendarContext()
@@ -27,8 +28,8 @@ export const ResourceMonthHorizontal: React.FC = () => {
 					<AnimatedSection
 						className="w-20 border-b border-r shrink-0 flex items-center justify-center flex-col"
 						delay={index * 0.05}
-						key={`${key}-animated`}
-						transitionKey={`${key}-motion`}
+						key={keys.listKey(key, 'animated')}
+						transitionKey={keys.listKey(key, 'motion')}
 					>
 						<div className="text-xs font-medium">{day.format('D')}</div>
 						<div className="text-xs text-muted-foreground">

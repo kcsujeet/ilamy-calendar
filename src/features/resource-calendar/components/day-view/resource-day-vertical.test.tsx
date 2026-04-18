@@ -64,8 +64,10 @@ describe('ResourceDayVertical', () => {
 		expect(col1).toBeInTheDocument()
 
 		// Find cell for Resource 1 at 09:00 using data-testid
-		// VerticalGridCol uses vertical-cell-{date}-{hour}-{minute}-{resourceId}
-		const resource1Cell = screen.getByTestId(`vertical-cell-${dateStr}-09-00-1`)
+		// VerticalGridCol uses vertical-cell-{date}-{hour}-{minute}-resource-{resourceId}
+		const resource1Cell = screen.getByTestId(
+			`vertical-cell-${dateStr}-09-00-resource-1`
+		)
 		expect(resource1Cell).toBeInTheDocument()
 	})
 
@@ -82,16 +84,16 @@ describe('ResourceDayVertical', () => {
 
 		// Should have 00, 15, 30, 45 slots
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-00-1`)
+			screen.getByTestId(`vertical-cell-${dateStr}-09-00-resource-1`)
 		).toBeInTheDocument()
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-15-1`)
+			screen.getByTestId(`vertical-cell-${dateStr}-09-15-resource-1`)
 		).toBeInTheDocument()
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-30-1`)
+			screen.getByTestId(`vertical-cell-${dateStr}-09-30-resource-1`)
 		).toBeInTheDocument()
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-45-1`)
+			screen.getByTestId(`vertical-cell-${dateStr}-09-45-resource-1`)
 		).toBeInTheDocument()
 	})
 

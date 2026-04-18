@@ -5,6 +5,8 @@ import type { Resource } from '@/features/resource-calendar/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { getDayKey } from '@/lib/utils/date-utils'
+import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
 import { ResourceCell } from '../resource-cell'
 import { HorizontalGridEventsLayer } from './horizontal-grid-events-layer'
@@ -68,12 +70,12 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	return (
 		<div
 			className={cn('flex flex-1 relative', className)}
-			data-testid={`horizontal-row-${id}`}
+			data-testid={keys.container.horizontal.row(id)}
 		>
 			{isResourceCalendar && resource && (
 				<ResourceCell
 					className="w-20 sm:w-40 sticky left-0 bg-background z-20 h-full"
-					data-testid={`horizontal-row-label-${resource.id}`}
+					data-testid={keys.container.horizontal.rowLabel(resource.id)}
 					resource={resource}
 				>
 					{renderResource ? (
@@ -115,9 +117,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								gridType={gridType}
 								hour={gridType === 'hour' ? col.day.hour() : undefined}
 								key={col.day.toISOString()}
-								precomputedEvents={dayEventsMap.get(
-									col.day.format('YYYY-MM-DD')
-								)}
+								precomputedEvents={dayEventsMap.get(getDayKey(col.day))}
 								resourceId={resource?.id}
 								showDayNumber={showDayNumber}
 							/>
@@ -129,7 +129,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 				{!isGrouped && (
 					<div className="absolute inset-0 z-10 pointer-events-none">
 						<HorizontalGridEventsLayer
-							data-testid={`horizontal-events-${id}`}
+							data-testid={keys.container.eventsLayer('horizontal', id)}
 							days={flatDays}
 							positionedEvents={positionedEvents}
 							resourceId={resource?.id}
@@ -200,7 +200,7 @@ const GroupedColumn = memo(
 
 				<div className="absolute inset-0 z-10 pointer-events-none">
 					<HorizontalGridEventsLayer
-						data-testid={`horizontal-events-${id}`}
+						data-testid={keys.container.eventsLayer('horizontal', id)}
 						days={days}
 						positionedEvents={positionedEvents}
 						resourceId={resourceId}

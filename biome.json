@@ -98,6 +98,17 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": [
+				"**",
+				"!**/*.test.ts",
+				"!**/*.test.tsx",
+				"!**/*.spec.ts",
+				"!**/*.spec.tsx",
+				"!src/components/demo/**"
+			],
+			"plugins": ["./biome-plugins/no-inline-template-keys.grit"]
 		}
 	]
 }

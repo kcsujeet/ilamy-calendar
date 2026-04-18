@@ -324,7 +324,7 @@ describe('YearView', () => {
 			renderYearView({ events, initialDate: dayjs(`${year}-01-25`) })
 
 			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-25')
-			expect(dayCell).toHaveAttribute('title', '1 event')
+			expect(dayCell).toHaveAttribute('title', '1 Event')
 		})
 
 		test('shows correct title for day with multiple events', () => {
@@ -333,7 +333,7 @@ describe('YearView', () => {
 			renderYearView({ events, initialDate: dayjs(`${year}-01-15`) })
 
 			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-15')
-			expect(dayCell).toHaveAttribute('title', '3 events')
+			expect(dayCell).toHaveAttribute('title', '3 Events')
 		})
 
 		test('shows empty title for day with no events', () => {

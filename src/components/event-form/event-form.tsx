@@ -363,6 +363,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 										minTime={startConstraints.min}
 										name="start-time"
 										onChange={handleStartTimeChange}
+										placeholder={t('searchTime')}
 										timeFormat={timeFormat}
 										value={startTime}
 									/>
@@ -375,6 +376,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 										minTime={endConstraints.min}
 										name="end-time"
 										onChange={handleEndTimeChange}
+										placeholder={t('searchTime')}
 										timeFormat={timeFormat}
 										value={endTime}
 									/>

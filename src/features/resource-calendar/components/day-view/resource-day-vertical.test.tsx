@@ -4,7 +4,7 @@ import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-cont
 import type { CalendarEvent } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type { Resource } from '@/features/resource-calendar/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { ResourceDayVertical } from './resource-day-vertical'
 
 const mockResources: Resource[] = [
@@ -266,5 +266,29 @@ describe('ResourceDayVertical', () => {
 		// Event starting at 1pm (4 hours into 8-hour grid) should be at 50%
 		const style = eventWrapper?.getAttribute('style') || ''
 		expect(style).toContain('top: 50%')
+	})
+
+	test('customizes hour rendering when renderHour prop is provided', () => {
+		cleanup()
+		const renderHour = (date: Dayjs) => (
+			<span data-testid={`custom-hour-${date.format('HH')}`}>
+				{date.format('HH:mm')}
+			</span>
+		)
+
+		renderResourceDayVertical({ renderHour })
+
+		// Check that the custom rendering is used
+		const customMidnight = screen.getByTestId('custom-hour-00')
+		expect(customMidnight).toBeInTheDocument()
+		expect(customMidnight).toHaveTextContent('00:00')
+
+		const customNoon = screen.getByTestId('custom-hour-12')
+		expect(customNoon).toBeInTheDocument()
+		expect(customNoon).toHaveTextContent('12:00')
+
+		const customLastHour = screen.getByTestId('custom-hour-23')
+		expect(customLastHour).toBeInTheDocument()
+		expect(customLastHour).toHaveTextContent('23:00')
 	})
 })

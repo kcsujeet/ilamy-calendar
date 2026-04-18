@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, useState } from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { Button } from '@/components/ui/button'
 import {
 	Popover,
@@ -8,7 +8,7 @@ import {
 	PopoverTrigger,
 } from '@/components/ui/popover'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -27,18 +27,12 @@ const MONTH_KEYS = [
 	'december',
 ] as const
 
-const animation = {
-	initial: { opacity: 0, y: 10 },
-	animate: { opacity: 1, y: 0 },
-	exit: { opacity: 0, y: -10 },
-}
-
 const TitleContent = () => {
-	const { currentDate, view, setCurrentDate, t, firstDayOfWeek } =
+	const { currentDate, view, selectDate, t, firstDayOfWeek } =
 		useSmartCalendarContext((ctx) => ({
 			currentDate: ctx.currentDate,
 			view: ctx.view,
-			setCurrentDate: ctx.setCurrentDate,
+			selectDate: ctx.selectDate,
 			t: ctx.t,
 			firstDayOfWeek: ctx.firstDayOfWeek,
 		}))
@@ -50,8 +44,8 @@ const TitleContent = () => {
 	const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
 
-	const selectDate = (date: dayjs.Dayjs) => {
-		setCurrentDate(date)
+	const handleSelectDate = (date: Dayjs) => {
+		selectDate(date)
 		setOpenPopover(null)
 	}
 
@@ -64,7 +58,7 @@ const TitleContent = () => {
 						currentDate.month() === index && 'bg-primary/10'
 					)}
 					key={month}
-					onClick={() => selectDate(currentDate.month(index))}
+					onClick={() => handleSelectDate(currentDate.month(index))}
 					variant="ghost"
 				>
 					{month}
@@ -82,7 +76,7 @@ const TitleContent = () => {
 						currentDate.year() === year && 'bg-primary/10'
 					)}
 					key={year}
-					onClick={() => selectDate(currentDate.year(year))}
+					onClick={() => handleSelectDate(currentDate.year(year))}
 					variant="ghost"
 				>
 					{year}
@@ -108,7 +102,7 @@ const TitleContent = () => {
 							isCurrentWeek && 'bg-primary/10'
 						)}
 						key={start.format('YYYY-MM-DD')}
-						onClick={() => selectDate(start)}
+						onClick={() => handleSelectDate(start)}
 						variant="ghost"
 					>
 						<div className="flex w-full items-center justify-between">
@@ -141,7 +135,7 @@ const TitleContent = () => {
 								isCurrentDay && 'bg-primary/10'
 							)}
 							key={day.format('YYYY-MM-DD')}
-							onClick={() => selectDate(day)}
+							onClick={() => handleSelectDate(day)}
 							variant="ghost"
 						>
 							<div className="flex w-full items-center justify-between">
@@ -200,19 +194,13 @@ const TitleContent = () => {
 						data-testid="calendar-month-button"
 						variant="ghost"
 					>
-						<AnimatePresence mode="wait">
-							<motion.span
-								animate="animate"
-								data-testid="calendar-month-display"
-								exit="exit"
-								initial="initial"
-								key={`${popover.id}-${currentDate.format('YYYY-MM-DD')}`}
-								transition={{ duration: 0.25, ease: 'easeInOut' }}
-								variants={animation}
-							>
-								{popover.title}
-							</motion.span>
-						</AnimatePresence>
+						<AnimatedSection
+							className="flex items-center gap-1 px-1! font-semibold"
+							data-testid="calendar-month-button"
+							transitionKey={`${popover.id}-${currentDate.format('YYYY-MM-DD')}`}
+						>
+							{popover.title}
+						</AnimatedSection>
 						<ChevronDown className="h-4 w-4" />
 					</Button>
 				</PopoverTrigger>

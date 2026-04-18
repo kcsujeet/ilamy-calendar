@@ -7,7 +7,15 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!examples", "!dist", "!**/*.css"]
+		"includes": [
+			"**",
+			"!examples",
+			"!dist",
+			"!dist-*",
+			"!coverage",
+			"!out",
+			"!**/*.css"
+		]
 	},
 	"formatter": {
 		"enabled": true,
@@ -41,6 +49,16 @@
 			},
 			"correctness": {
 				"noUnusedVariables": "warn"
+			},
+			"style": {
+				"noRestrictedImports": {
+					"level": "error",
+					"options": {
+						"paths": {
+							"dayjs": "Please use '@/lib/configs/dayjs-config' instead to ensure timezone consistency."
+						}
+					}
+				}
 			}
 		}
 	},
@@ -67,6 +85,16 @@
 				"rules": {
 					"suspicious": {
 						"noConsole": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["src/lib/configs/dayjs-config.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": "off"
 					}
 				}
 			}

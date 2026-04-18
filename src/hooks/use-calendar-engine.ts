@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import {
@@ -6,7 +6,10 @@ import {
 	generateRecurringEvents,
 	updateRecurringEvent as updateRecurringEventImpl,
 } from '@/features/recurrence/utils/recurrence-handler'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, {
+	type Dayjs,
+	type ManipulateType,
+} from '@/lib/configs/dayjs-config'
 import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
@@ -17,12 +20,12 @@ export interface CalendarEngineConfig {
 	events: CalendarEvent[]
 	firstDayOfWeek: number
 	initialView?: CalendarView
-	initialDate?: dayjs.Dayjs
+	initialDate?: Dayjs
 	businessHours?: BusinessHours | BusinessHours[]
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
 	onEventDelete?: (event: CalendarEvent) => void
-	onDateChange?: (date: dayjs.Dayjs) => void
+	onDateChange?: (date: Dayjs, range: { start: Dayjs; end: Dayjs }) => void
 	onViewChange?: (view: CalendarView) => void
 	locale?: string
 	timezone?: string
@@ -31,19 +34,19 @@ export interface CalendarEngineConfig {
 }
 
 export interface CalendarEngineReturn {
-	currentDate: dayjs.Dayjs
+	currentDate: Dayjs
 	view: CalendarView
 	events: CalendarEvent[]
 	rawEvents: CalendarEvent[]
 	isEventFormOpen: boolean
 	selectedEvent: CalendarEvent | null
-	selectedDate: dayjs.Dayjs | null
+	selectedDate: Dayjs | null
 	firstDayOfWeek: number
 	dayMaxEvents: number
 	currentLocale: string
 	businessHours?: BusinessHours | BusinessHours[]
-	setCurrentDate: (date: dayjs.Dayjs) => void
-	selectDate: (date: dayjs.Dayjs) => void
+	setCurrentDate: (date: Dayjs) => void
+	selectDate: (date: Dayjs) => void
 	setView: (view: CalendarView) => void
 	nextPeriod: () => void
 	prevPeriod: () => void
@@ -64,20 +67,46 @@ export interface CalendarEngineReturn {
 	closeEventForm: () => void
 	setSelectedEvent: React.Dispatch<React.SetStateAction<CalendarEvent | null>>
 	setIsEventFormOpen: React.Dispatch<React.SetStateAction<boolean>>
-	setSelectedDate: React.Dispatch<React.SetStateAction<dayjs.Dayjs | null>>
-	getEventsForDateRange: (
-		startDate: dayjs.Dayjs,
-		endDate: dayjs.Dayjs
-	) => CalendarEvent[]
+	setSelectedDate: React.Dispatch<React.SetStateAction<Dayjs | null>>
+	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
-	t: (key: keyof Translations) => string
+	t: TranslatorFunction
 }
 
-const VIEW_UNITS: Record<CalendarView, dayjs.ManipulateType> = {
+const VIEW_UNITS: Record<CalendarView, ManipulateType> = {
 	day: 'day',
 	week: 'week',
 	month: 'month',
 	year: 'year',
+}
+
+export const calculateViewRange = (
+	date: Dayjs,
+	view: CalendarView,
+	firstDayOfWeek: number
+): { start: Dayjs; end: Dayjs } => {
+	if (view === 'day') {
+		return {
+			start: date.startOf('day'),
+			end: date.endOf('day'),
+		}
+	}
+	if (view === 'year') {
+		return {
+			start: date.startOf('year'),
+			end: date.endOf('year'),
+		}
+	}
+	if (view === 'week') {
+		const weekDays = getWeekDays(date, firstDayOfWeek)
+		return {
+			start: weekDays[0].startOf('day'),
+			end: weekDays[6].endOf('day'),
+		}
+	}
+	// month view
+	const weeks = getMonthWeeks(date, firstDayOfWeek)
+	return { start: weeks[0][0].startOf('day'), end: weeks[5][6].endOf('day') }
 }
 
 export const useCalendarEngine = (
@@ -100,26 +129,32 @@ export const useCalendarEngine = (
 		translator,
 	} = config
 
-	const [currentDate, setCurrentDate] = useState<dayjs.Dayjs>(initialDate)
+	const [currentDate, setCurrentDate] = useState<Dayjs>(
+		dayjs.isDayjs(initialDate) ? initialDate : dayjs(initialDate)
+	)
 	const [view, setView] = useState<CalendarView>(initialView)
 	const [currentEvents, setCurrentEvents] = useState<CalendarEvent[]>(events)
 	const [isEventFormOpen, setIsEventFormOpen] = useState(false)
 	const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
-	const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null)
+	const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null)
 	const [currentLocale, setCurrentLocale] = useState(locale || 'en')
+	const lastEventsProp = useRef(events)
+	const lastTimezoneProp = useRef(timezone)
+	const lastLocaleProp = useRef(locale)
 
-	const t = useMemo(() => {
+	const t: TranslatorFunction = useMemo(() => {
 		if (translator) {
 			return translator
 		}
 		if (translations) {
-			return (key: keyof Translations) => translations[key] || key
+			return (key: string) => translations[key as keyof Translations] || key
 		}
-		return (key: keyof Translations) => defaultTranslations[key] || key
+		return (key: string) =>
+			defaultTranslations[key as keyof Translations] || key
 	}, [translations, translator])
 
 	const getEventsForDateRange = useCallback(
-		(startDate: dayjs.Dayjs, endDate: dayjs.Dayjs): CalendarEvent[] => {
+		(startDate: Dayjs, endDate: Dayjs): CalendarEvent[] => {
 			const allEvents: CalendarEvent[] = []
 
 			for (const event of currentEvents) {
@@ -152,28 +187,7 @@ export const useCalendarEngine = (
 	)
 
 	const getCurrentViewRange = useCallback(() => {
-		if (view === 'day') {
-			return {
-				start: currentDate.startOf('day'),
-				end: currentDate.endOf('day'),
-			}
-		}
-		if (view === 'year') {
-			return {
-				start: currentDate.startOf('year'),
-				end: currentDate.endOf('year'),
-			}
-		}
-		if (view === 'week') {
-			const weekDays = getWeekDays(currentDate, firstDayOfWeek)
-			return {
-				start: weekDays[0].startOf('day'),
-				end: weekDays[6].endOf('day'),
-			}
-		}
-		// month view
-		const weeks = getMonthWeeks(currentDate, firstDayOfWeek)
-		return { start: weeks[0][0].startOf('day'), end: weeks[5][6].endOf('day') }
+		return calculateViewRange(currentDate, view, firstDayOfWeek)
 	}, [currentDate, view, firstDayOfWeek])
 
 	const processedEvents = useMemo(() => {
@@ -182,53 +196,68 @@ export const useCalendarEngine = (
 	}, [getEventsForDateRange, getCurrentViewRange])
 
 	useEffect(() => {
-		if (events) {
+		if (events !== lastEventsProp.current) {
 			setCurrentEvents(events)
+			lastEventsProp.current = events
 		}
 	}, [events])
+
 	useEffect(() => {
-		if (locale) {
+		if (locale && locale !== lastLocaleProp.current) {
 			setCurrentLocale(locale)
 			dayjs.locale(locale)
 			setCurrentDate((prevDate) => prevDate.locale(locale))
+			lastLocaleProp.current = locale
 		}
 	}, [locale])
+
 	useEffect(() => {
-		if (timezone) {
+		if (timezone && timezone !== lastTimezoneProp.current) {
 			dayjs.tz.setDefault(timezone)
+			setCurrentDate((prev) => prev.tz(timezone))
+			setCurrentEvents((prev) =>
+				prev.map((e) => ({
+					...e,
+					start: e.start.tz(timezone),
+					end: e.end.tz(timezone),
+				}))
+			)
+			lastTimezoneProp.current = timezone
 		}
 	}, [timezone])
 
-	const selectDate = useCallback(
-		(date: dayjs.Dayjs) => {
-			setCurrentDate(date)
-			onDateChange?.(date)
+	const updateDateAndNotify = useCallback(
+		(newDate: Dayjs) => {
+			setCurrentDate(newDate)
+			const range = calculateViewRange(newDate, view, firstDayOfWeek)
+			onDateChange?.(newDate, range)
 		},
-		[onDateChange]
+		[onDateChange, view, firstDayOfWeek]
+	)
+
+	const selectDate = useCallback(
+		(date: Dayjs) => updateDateAndNotify(date),
+		[updateDateAndNotify]
 	)
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {
-			setCurrentDate((prev) => {
-				const newDate =
-					direction === 1
-						? prev.add(1, VIEW_UNITS[view])
-						: prev.subtract(1, VIEW_UNITS[view])
-				onDateChange?.(newDate)
-				return newDate
-			})
+			const newDate =
+				direction === 1
+					? currentDate.add(1, VIEW_UNITS[view])
+					: currentDate.subtract(1, VIEW_UNITS[view])
+			updateDateAndNotify(newDate)
 		},
-		[view, onDateChange]
+		[currentDate, view, updateDateAndNotify]
 	)
 
 	const nextPeriod = useCallback(() => navigatePeriod(1), [navigatePeriod])
 	const prevPeriod = useCallback(() => navigatePeriod(-1), [navigatePeriod])
 
-	const today = useCallback(() => {
-		const newDate = dayjs()
-		setCurrentDate(newDate)
-		onDateChange?.(newDate)
-	}, [onDateChange])
+	const today = useCallback(
+		() => updateDateAndNotify(dayjs()),
+		[updateDateAndNotify]
+	)
 
 	const addEvent = useCallback(
 		(event: CalendarEvent) => {
@@ -240,18 +269,18 @@ export const useCalendarEngine = (
 
 	const updateEvent = useCallback(
 		(eventId: string | number, updates: Partial<CalendarEvent>) => {
+			const eventToUpdate = currentEvents.find((event) => event.id === eventId)
+			if (!eventToUpdate) {
+				return
+			}
+
+			const newEvent = { ...eventToUpdate, ...updates }
 			setCurrentEvents((prev) =>
-				prev.map((event) => {
-					if (event.id !== eventId) {
-						return event
-					}
-					const newEvent = { ...event, ...updates }
-					onEventUpdate?.(newEvent)
-					return newEvent
-				})
+				prev.map((event) => (event.id === eventId ? newEvent : event))
 			)
+			onEventUpdate?.(newEvent)
 		},
-		[onEventUpdate]
+		[currentEvents, onEventUpdate]
 	)
 
 	const updateRecurringEvent = useCallback(
@@ -289,15 +318,15 @@ export const useCalendarEngine = (
 
 	const deleteEvent = useCallback(
 		(eventId: string | number) => {
-			setCurrentEvents((prev) => {
-				const eventToDelete = prev.find((e) => e.id === eventId)
-				if (eventToDelete) {
-					onEventDelete?.(eventToDelete)
-				}
-				return prev.filter((e) => e.id !== eventId)
-			})
+			const eventToDelete = currentEvents.find((e) => e.id === eventId)
+			if (!eventToDelete) {
+				return
+			}
+
+			setCurrentEvents((prev) => prev.filter((e) => e.id !== eventId))
+			onEventDelete?.(eventToDelete)
 		},
-		[onEventDelete]
+		[currentEvents, onEventDelete]
 	)
 
 	const openEventForm = useCallback(
@@ -329,8 +358,11 @@ export const useCalendarEngine = (
 		(newView: CalendarView) => {
 			setView(newView)
 			onViewChange?.(newView)
+			// View change affects visible range — notify consumers
+			const range = calculateViewRange(currentDate, newView, firstDayOfWeek)
+			onDateChange?.(currentDate, range)
 		},
-		[onViewChange]
+		[onViewChange, onDateChange, currentDate, firstDayOfWeek]
 	)
 
 	const findParentRecurringEvent = useCallback(

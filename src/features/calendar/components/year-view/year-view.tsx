@@ -1,22 +1,30 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
-import dayjs from '@/lib/configs/dayjs-config'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
-const DAY_HEADER_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const DAY_HEADER_NAMES = [
+	{ id: 'sun', label: 'S' },
+	{ id: 'mon', label: 'M' },
+	{ id: 'tue', label: 'T' },
+	{ id: 'wed', label: 'W' },
+	{ id: 'thu', label: 'T' },
+	{ id: 'fri', label: 'F' },
+	{ id: 'sat', label: 'S' },
+]
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
 const DAYS_IN_MINI_CALENDAR = 42
 
 interface MonthData {
-	date: dayjs.Dayjs
+	date: Dayjs
 	name: string
 	eventCount: number
 	monthKey: string
 }
 
 interface DayData {
-	date: dayjs.Dayjs
+	date: Dayjs
 	dayKey: string
 	isInCurrentMonth: boolean
 	isToday: boolean
@@ -24,9 +32,9 @@ interface DayData {
 	eventCount: number
 }
 
-const YearView = () => {
+export const YearView = () => {
 	const { currentDate, selectDate, events, setView, getEventsForDateRange, t } =
-		useCalendarContext()
+		useSmartCalendarContext()
 	const currentYear = currentDate.year()
 
 	const generateMonthsData = (): MonthData[] => {
@@ -50,7 +58,7 @@ const YearView = () => {
 		})
 	}
 
-	const generateDaysForMonth = (monthDate: dayjs.Dayjs): DayData[] => {
+	const generateDaysForMonth = (monthDate: Dayjs): DayData[] => {
 		const firstDayOfCalendar = monthDate.startOf('month').startOf('week')
 
 		return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) => {
@@ -71,7 +79,7 @@ const YearView = () => {
 	}
 
 	const navigateToDate = (
-		date: dayjs.Dayjs,
+		date: Dayjs,
 		view: 'month' | 'day',
 		event?: React.MouseEvent
 	) => {
@@ -138,49 +146,41 @@ const YearView = () => {
 							data-testid={`year-month-${month.monthKey}`}
 							key={month.monthKey}
 						>
-							<AnimatePresence mode="wait">
-								<motion.div
-									animate={{ opacity: 1, y: 0 }}
-									className="mb-2 flex items-center justify-between"
-									exit={{ opacity: 0, y: -10 }}
-									initial={{ opacity: 0, y: -10 }}
-									key={`month-${monthIndex}`}
-									transition={{
-										duration: 0.25,
-										ease: 'easeInOut',
-										delay: animationDelay,
-									}}
+							<AnimatedSection
+								className="mb-2 flex items-center justify-between"
+								delay={animationDelay}
+								key={`month-${month.monthKey}`}
+								transitionKey={`month-${month.monthKey}`}
+							>
+								<button
+									className="text-lg font-medium hover:underline cursor-pointer"
+									data-testid={`year-month-title-${month.monthKey}`}
+									onClick={() => navigateToDate(month.date, 'month')}
+									type="button"
 								>
-									<button
-										className="text-lg font-medium hover:underline cursor-pointer"
-										data-testid={`year-month-title-${month.monthKey}`}
-										onClick={() => navigateToDate(month.date, 'month')}
-										type="button"
-									>
-										{month.name}
-									</button>
+									{month.name}
+								</button>
 
-									{month.eventCount > 0 && (
-										<span
-											className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs"
-											data-testid={`year-month-event-count-${month.monthKey}`}
-										>
-											{getEventCountLabel(month.eventCount)}
-										</span>
-									)}
-								</motion.div>
-							</AnimatePresence>
+								{month.eventCount > 0 && (
+									<span
+										className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs"
+										data-testid={`year-month-event-count-${month.monthKey}`}
+									>
+										{getEventCountLabel(month.eventCount)}
+									</span>
+								)}
+							</AnimatedSection>
 
 							<div
 								className="grid grid-cols-7 gap-[1px] text-[0.6rem]"
 								data-testid={`year-mini-calendar-${month.monthKey}`}
 							>
-								{DAY_HEADER_NAMES.map((dayName, headerIndex) => (
+								{DAY_HEADER_NAMES.map((day) => (
 									<div
 										className="text-muted-foreground h-3 text-center"
-										key={`header-${headerIndex}`}
+										key={`header-${month.monthKey}-${day.id}`}
 									>
-										{dayName}
+										{day.label}
 									</div>
 								))}
 
@@ -236,5 +236,3 @@ const YearView = () => {
 		</ScrollArea>
 	)
 }
-
-export default YearView

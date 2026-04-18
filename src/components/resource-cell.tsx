@@ -1,4 +1,5 @@
 import type { Resource } from '@/features/resource-calendar/types'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 
 interface ResourceCellProps {
@@ -14,6 +15,8 @@ export const ResourceCell: React.FC<ResourceCellProps> = ({
 	children,
 	'data-testid': dataTestId,
 }) => {
+	const { renderResource } = useSmartCalendarContext()
+
 	return (
 		<div
 			className={cn(
@@ -26,9 +29,11 @@ export const ResourceCell: React.FC<ResourceCellProps> = ({
 				backgroundColor: resource.backgroundColor,
 			}}
 		>
-			{children ?? (
-				<div className="text-sm font-medium truncate">{resource.title}</div>
-			)}
+			{renderResource
+				? renderResource(resource)
+				: (children ?? (
+						<div className="text-sm font-medium truncate">{resource.title}</div>
+					))}
 		</div>
 	)
 }

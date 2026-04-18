@@ -1,4 +1,4 @@
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 
 /**
  * Calculates the week days for a given date and first day of week setting.
@@ -21,9 +21,9 @@ import dayjs from '@/lib/configs/dayjs-config'
  * // Returns: [Wed Oct 8, Thu Oct 9, ..., Tue Oct 14] (includes Monday Oct 13)
  */
 export function getWeekDays(
-	currentDate: dayjs.Dayjs,
+	currentDate: Dayjs,
 	firstDayOfWeek: number
-): dayjs.Dayjs[] {
+): Dayjs[] {
 	const startOfWeekFromCurrentDate = currentDate
 		.startOf('week')
 		.day(firstDayOfWeek)
@@ -42,9 +42,9 @@ export function getWeekDays(
  * Always returns 42 days (6 weeks × 7 days).
  */
 export function getMonthWeeks(
-	monthDate: dayjs.Dayjs,
+	monthDate: Dayjs,
 	firstDayOfWeek: number
-): dayjs.Dayjs[][] {
+): Dayjs[][] {
 	const firstWeek = getWeekDays(monthDate.startOf('month'), firstDayOfWeek)
 
 	return Array.from({ length: 6 }, (_, weekIndex) => {
@@ -53,23 +53,32 @@ export function getMonthWeeks(
 	})
 }
 
-export function getMonthDays(monthDate: dayjs.Dayjs): dayjs.Dayjs[] {
+export function getMonthDays(monthDate: Dayjs): Dayjs[] {
 	const daysInMonth = monthDate.daysInMonth()
+	const startOfMonth = monthDate.startOf('month')
 	return Array.from({ length: daysInMonth }, (_, i) =>
-		monthDate.startOf('month').add(i, 'day')
+		startOfMonth.add(i, 'day')
 	)
 }
 
 interface GetDayHoursOptions {
-	referenceDate?: dayjs.Dayjs // Reference date to set the hours on (default is today)
-	length?: number // Number of hours in the day (default is 24)
+	referenceDate?: Dayjs
+	length?: number
 }
 
+/**
+ * Generates an array of 24 dayjs objects representing hourly slots for a day.
+ * Uses .hour(i) so each row maps to "the hour labeled i" — keeping grid rows
+ * aligned across columns in week views. On DST spring-forward, .hour(2) returns
+ * 3 AM (the non-existent hour is collapsed), but the grid key fix (dayIndex)
+ * and per-day generation in views handle this correctly.
+ */
 export function getDayHours({
 	referenceDate = dayjs(),
 	length = 24,
-}: GetDayHoursOptions = {}): dayjs.Dayjs[] {
+}: GetDayHoursOptions = {}): Dayjs[] {
+	const startOfDay = referenceDate.startOf('day')
 	return Array.from({ length }, (_, i) =>
-		referenceDate.hour(i).minute(0).second(0).millisecond(0)
+		startOfDay.hour(i).minute(0).second(0).millisecond(0)
 	)
 }

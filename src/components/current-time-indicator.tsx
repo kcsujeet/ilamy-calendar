@@ -1,15 +1,16 @@
-import dayjs from 'dayjs'
 import { memo } from 'react'
 import type { Resource } from '@/features/resource-calendar/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
+import dayjs from '@/lib/configs/dayjs-config'
 
 interface CurrentTimeIndicatorProps {
 	/** The start date/time of the container's timeline (e.g., top of the column) */
-	rangeStart: dayjs.Dayjs
+	rangeStart: Dayjs
 	/** The end date/time of the container's timeline (e.g., bottom of the column) */
-	rangeEnd: dayjs.Dayjs
+	rangeEnd: Dayjs
 	/** Optional reference time for "now" (useful for testing) */
-	now?: dayjs.Dayjs
+	now?: Dayjs
 	/** The resource associated with this column (optional) */
 	resource?: Resource
 }

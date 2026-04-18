@@ -1,17 +1,22 @@
 import type { BusinessHours } from '@/components/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { getDayHours } from '@/lib/utils/date-utils'
-import { getBusinessHoursForDate } from './business-hours'
+import { calculateBusinessHoursRange } from './business-hours'
 
 interface GetViewHoursOptions {
-	referenceDate: dayjs.Dayjs
+	referenceDate: Dayjs
 	businessHours?: BusinessHours | BusinessHours[]
 	hideNonBusinessHours?: boolean
 	/**
 	 * For views with multiple days (like WeekView), we might want to show
 	 * the union of all business hours across those days.
 	 */
-	allDates?: dayjs.Dayjs[]
+	allDates?: Dayjs[]
+	/**
+	 * Optional additional business hours configurations (e.g., from resources).
+	 * These will be merged with the global businessHours when calculating the visible range.
+	 */
+	resourceBusinessHours?: (BusinessHours | BusinessHours[])[]
 }
 
 /**
@@ -24,55 +29,27 @@ export function getViewHours({
 	businessHours,
 	hideNonBusinessHours,
 	allDates = [referenceDate],
-}: GetViewHoursOptions): dayjs.Dayjs[] {
-	const allHours = getDayHours({ referenceDate })
+	resourceBusinessHours = [],
+}: GetViewHoursOptions): Dayjs[] {
+	const hours = getDayHours({ referenceDate })
 
-	if (!hideNonBusinessHours || !businessHours) {
-		return allHours
-	}
+	const hasBusinessHoursConfig =
+		!!businessHours || resourceBusinessHours.length > 0
+	const shouldFilterByBusinessHours =
+		hideNonBusinessHours && hasBusinessHoursConfig
 
-	let minStart = 24
-	let maxEnd = 0
-	let hasBusinessHours = false
+	if (!shouldFilterByBusinessHours) return hours
 
-	for (const date of allDates) {
-		const config = getBusinessHoursForDate(date, businessHours)
-		if (config) {
-			hasBusinessHours = true
-			minStart = Math.min(minStart, config.startTime ?? 9)
-			maxEnd = Math.max(maxEnd, config.endTime ?? 17)
-		}
-	}
+	const { minStart, maxEnd, hasBusinessHours } = calculateBusinessHoursRange({
+		allDates,
+		businessHours,
+		resourceBusinessHours,
+		hideNonBusinessHours,
+	})
 
-	// If no business hours are defined for any of the dates
-	if (!hasBusinessHours) {
-		if (hideNonBusinessHours) {
-			// If hiding non-business hours, try to find a global range from ALL business hours
-			if (Array.isArray(businessHours)) {
-				for (const config of businessHours) {
-					minStart = Math.min(minStart, config.startTime ?? 9)
-					maxEnd = Math.max(maxEnd, config.endTime ?? 17)
-					hasBusinessHours = true
-				}
-			} else if (businessHours) {
-				minStart = businessHours.startTime ?? 9
-				maxEnd = businessHours.endTime ?? 17
-				hasBusinessHours = true
-			}
+	if (!hasBusinessHours) return hours
 
-			// If still no business hours (though unlikely if businessHours exists), fallback to default
-			if (!hasBusinessHours) {
-				minStart = 9
-				maxEnd = 17
-			}
-		} else {
-			// Not hiding, show full day
-			return allHours
-		}
-	}
-
-	// Return hours within the range [minStart, maxEnd)
-	return allHours.filter((h) => {
+	return hours.filter((h) => {
 		const hour = h.hour()
 		return hour >= minStart && hour < maxEnd
 	})

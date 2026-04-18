@@ -2,7 +2,7 @@ import type React from 'react'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
 import type { Resource } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
@@ -30,19 +30,24 @@ export interface CalendarClassesOverride {
  */
 export interface IlamyCalendarPropEvent
 	extends Omit<CalendarEvent, 'start' | 'end'> {
-	start: dayjs.Dayjs | Date | string
-	end: dayjs.Dayjs | Date | string
+	start: Dayjs | Date | string
+	end: Dayjs | Date | string
 }
 
 /**
  * Information passed to the onCellClick callback.
  * Uses named properties for extensibility.
  */
+export interface DateRange {
+	start: Dayjs
+	end: Dayjs
+}
+
 export interface CellClickInfo {
 	/** Start date/time of the clicked cell */
-	start: dayjs.Dayjs
+	start: Dayjs
 	/** End date/time of the clicked cell */
-	end: dayjs.Dayjs
+	end: Dayjs
 	/** Resource ID if clicking on a resource calendar cell (optional) */
 	resourceId?: string | number
 	/** Whether the clicked cell is an all-day cell (optional) */
@@ -55,11 +60,11 @@ export interface CellClickInfo {
  */
 export interface RenderCurrentTimeIndicatorProps {
 	/** The current time as a dayjs object */
-	currentTime: dayjs.Dayjs
+	currentTime: Dayjs
 	/** The start of the visible time range */
-	rangeStart: dayjs.Dayjs
+	rangeStart: Dayjs
 	/** The end of the visible time range */
-	rangeEnd: dayjs.Dayjs
+	rangeEnd: Dayjs
 	/** Progress percentage (0-100) representing position in the range */
 	progress: number
 	/**
@@ -90,7 +95,7 @@ export interface IlamyCalendarProps {
 	 * The initial date to display when the calendar loads.
 	 * If not provided, the calendar will default to today's date.
 	 */
-	initialDate?: dayjs.Dayjs | Date | string
+	initialDate?: Dayjs | Date | string
 	/**
 	 * Custom render function for calendar events.
 	 * If provided, it will override the default event rendering.
@@ -128,9 +133,9 @@ export interface IlamyCalendarProps {
 	onEventDelete?: (event: CalendarEvent) => void
 	/**
 	 * Callback when the current date changes (navigation).
-	 * Provides the new current date.
+	 * Provides the new current date and the current visible range.
 	 */
-	onDateChange?: (date: dayjs.Dayjs) => void
+	onDateChange?: (date: Dayjs, range: DateRange) => void
 	/**
 	 * Locale to use for formatting dates and times.
 	 * If not provided, the default locale will be used.
@@ -179,6 +184,13 @@ export interface IlamyCalendarProps {
 	 * Recommended range: 1-8 pixels for optimal readability.
 	 */
 	eventSpacing?: number
+	/**
+	 * Height of event bars in horizontal grid views (month view, resource month, resource week horizontal) in pixels.
+	 * Increase this to show more content per event (e.g., title + time on separate lines).
+	 * Does not affect day/week views, which use percentage-based heights that scale with event duration.
+	 * Defaults to 24 pixels if not specified.
+	 */
+	eventHeight?: number
 	/**
 	 * Whether to stick the view header to the top of the calendar.
 	 * Useful for keeping the header visible while scrolling.
@@ -258,4 +270,28 @@ export interface IlamyCalendarProps {
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
 	) => React.ReactNode
+	/**
+	 * Days of the week to hide from the week view.
+	 * Hidden days won't render as columns, giving remaining days more space.
+	 *
+	 * Applies to:
+	 * - Regular vertical week view (always)
+	 * - Resource vertical week view in hourly granularity
+	 *
+	 * Does NOT apply to:
+	 * - Resource horizontal week view (layout is days-as-rows)
+	 * - Resource vertical week view in daily granularity
+	 *   (`weekViewGranularity: 'daily'`) — non-contiguous visible days would
+	 *   break multi-day event positioning
+	 * - Month, day, and year views
+	 *
+	 * @default []
+	 * @example ['saturday', 'sunday'] // Hide weekends
+	 */
+	hiddenDays?: WeekDays[]
+	/**
+	 * Custom render function for the hour labels in the gutter/header.
+	 * Receives a Dayjs object for the hour and should return a React node.
+	 */
+	renderHour?: (date: Dayjs) => React.ReactNode
 }

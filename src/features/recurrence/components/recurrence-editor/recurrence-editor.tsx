@@ -266,7 +266,7 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 									{endType === 'until' && (
 										<DatePicker
 											className="h-6"
-											date={opts?.until}
+											date={opts?.until ?? undefined}
 											onChange={(d) =>
 												update({
 													until: d ? dayjs(d).endOf('day').toDate() : undefined,

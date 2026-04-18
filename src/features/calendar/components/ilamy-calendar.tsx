@@ -1,30 +1,32 @@
-import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import { EventFormDialog } from '@/components/event-form/event-form-dialog'
 import { Header } from '@/components/header'
 import type { CalendarEvent } from '@/components/types'
-import DayView from '@/features/calendar/components/day-view/day-view'
+import { DayView } from '@/features/calendar/components/day-view/day-view'
 import { MonthView } from '@/features/calendar/components/month-view/month-view'
-import WeekView from '@/features/calendar/components/week-view/week-view'
-import YearView from '@/features/calendar/components/year-view/year-view'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { WeekView } from '@/features/calendar/components/week-view/week-view'
+import { YearView } from '@/features/calendar/components/year-view/year-view'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 // oxlint-disable-next-line no-duplicates
 import '@/lib/configs/dayjs-config'
+import type { WeekDays } from '@/components/types'
 import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
 import {
 	DAY_MAX_EVENTS_DEFAULT,
+	EVENT_BAR_HEIGHT,
 	GAP_BETWEEN_ELEMENTS,
 	WEEK_DAYS_NUMBER_MAP,
 } from '@/lib/constants'
 import { normalizeEvents, safeDate } from '@/lib/utils'
 
 const CalendarContent: React.FC = () => {
-	const { view, dayMaxEvents } = useCalendarContext()
+	const { view, dayMaxEvents } = useSmartCalendarContext()
 
 	const viewMap = {
 		month: <MonthView dayMaxEvents={dayMaxEvents} key="month" />,
@@ -38,24 +40,24 @@ const CalendarContent: React.FC = () => {
 			<Header className="p-1" />
 			{/* Calendar Body with AnimatePresence for view transitions */}
 			<CalendarDndContext>
-				<AnimatePresence mode="wait">
-					<motion.div
-						animate={{ opacity: 1, x: 0 }}
-						className="w-full h-[calc(100%-3.5rem)]"
-						exit={{ opacity: 0, x: -20 }}
-						initial={{ opacity: 0, x: 20 }}
-						key={view}
-						transition={{ duration: 0.1, ease: 'easeInOut' }}
-					>
-						<div className="border h-full w-full" data-testid="calendar-body">
-							{viewMap[view]}
-						</div>
-					</motion.div>
-				</AnimatePresence>
+				<AnimatedSection
+					className="w-full h-[calc(100%-3.5rem)]"
+					direction="horizontal"
+					transitionKey={view}
+				>
+					<div className="border h-full w-full" data-testid="calendar-body">
+						{viewMap[view]}
+					</div>
+				</AnimatedSection>
 			</CalendarDndContext>
 			<EventFormDialog />
 		</div>
 	)
+}
+
+const toHiddenDaysSet = (hiddenDays?: WeekDays[]): Set<number> | undefined => {
+	if (!hiddenDays || hiddenDays.length === 0) return undefined
+	return new Set(hiddenDays.map((day) => WEEK_DAYS_NUMBER_MAP[day]))
 }
 
 export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
@@ -65,18 +67,22 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	initialDate,
 	dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
 	eventSpacing = GAP_BETWEEN_ELEMENTS,
+	eventHeight = EVENT_BAR_HEIGHT,
 	stickyViewHeader = true,
 	viewHeaderClassName = '',
 	timeFormat = '12-hour',
 	hideNonBusinessHours = false,
+	hiddenDays,
 	...props
 }) => {
 	return (
 		<CalendarProvider
 			dayMaxEvents={dayMaxEvents}
+			eventHeight={eventHeight}
 			eventSpacing={eventSpacing}
 			events={normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events)}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
+			hiddenDays={toHiddenDaysSet(hiddenDays)}
 			hideNonBusinessHours={hideNonBusinessHours}
 			initialDate={safeDate(initialDate)}
 			initialView={initialView}

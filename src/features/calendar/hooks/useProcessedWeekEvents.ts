@@ -1,14 +1,23 @@
 import { useMemo } from 'react'
+import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
-import { getPositionedEvents } from '@/lib/utils/position-week-events'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
+import {
+	getPositionedEvents,
+	type PositionedEvent,
+} from '@/lib/utils/position-week-events'
 
 interface UseProcessedWeekEventsProps {
-	days: dayjs.Dayjs[]
+	days: Dayjs[]
 	allDay?: boolean
 	dayNumberHeight?: number
 	resourceId?: string | number
 	gridType?: 'day' | 'hour'
+}
+
+export interface ProcessedWeekEventsResult {
+	positionedEvents: PositionedEvent[]
+	dayEventsMap: Map<string, CalendarEvent[]>
 }
 
 export const useProcessedWeekEvents = ({
@@ -17,23 +26,22 @@ export const useProcessedWeekEvents = ({
 	dayNumberHeight,
 	resourceId,
 	gridType,
-}: UseProcessedWeekEventsProps) => {
+}: UseProcessedWeekEventsProps): ProcessedWeekEventsResult => {
 	const {
 		getEventsForDateRange,
 		dayMaxEvents,
 		eventSpacing,
+		eventHeight,
 		getEventsForResource,
-	} = useSmartCalendarContext((state) => ({
-		getEventsForDateRange: state.getEventsForDateRange,
-		dayMaxEvents: state.dayMaxEvents,
-		eventSpacing: state.eventSpacing,
-		getEventsForResource: state.getEventsForResource,
-	}))
+	} = useSmartCalendarContext()
 
-	const weekStart = days.at(0).startOf('day')
-	const weekEnd = days.at(-1).endOf('day')
+	const first = days.at(0)
+	const last = days.at(-1)
+	const weekStart = first?.startOf('day')
+	const weekEnd = last?.endOf('day')
 
 	const events = useMemo(() => {
+		if (!weekStart || !weekEnd) return []
 		let weekEvents = getEventsForDateRange(weekStart, weekEnd)
 		if (resourceId) {
 			const resourceEvents = getEventsForResource(resourceId)
@@ -56,7 +64,25 @@ export const useProcessedWeekEvents = ({
 		allDay,
 	])
 
-	// Get all events that intersect with this week
+	const dayEventsMap = useMemo(() => {
+		const map = new Map<string, CalendarEvent[]>()
+		for (const day of days) {
+			const key = day.format('YYYY-MM-DD')
+			const dayStart = day.startOf('day')
+			const dayEnd = day.endOf('day')
+			const dayEvents = events.filter((e) => {
+				const startsInDay =
+					e.start.isSameOrAfter(dayStart) && e.start.isSameOrBefore(dayEnd)
+				const endsInDay =
+					e.end.isSameOrAfter(dayStart) && e.end.isSameOrBefore(dayEnd)
+				const spansDay = e.start.isBefore(dayStart) && e.end.isAfter(dayEnd)
+				return startsInDay || endsInDay || spansDay
+			})
+			map.set(key, dayEvents)
+		}
+		return map
+	}, [days, events])
+
 	const positionedEvents = useMemo(() => {
 		return getPositionedEvents({
 			days,
@@ -64,9 +90,18 @@ export const useProcessedWeekEvents = ({
 			dayMaxEvents,
 			dayNumberHeight,
 			eventSpacing,
+			eventBarHeight: eventHeight,
 			gridType,
 		})
-	}, [days, dayMaxEvents, dayNumberHeight, eventSpacing, events, gridType])
+	}, [
+		days,
+		dayMaxEvents,
+		dayNumberHeight,
+		eventSpacing,
+		eventHeight,
+		events,
+		gridType,
+	])
 
-	return positionedEvents
+	return { positionedEvents, dayEventsMap }
 }

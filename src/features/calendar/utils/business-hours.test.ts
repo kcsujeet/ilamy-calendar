@@ -389,5 +389,50 @@ describe('isBusinessHour', () => {
 				})
 			).toBe(false)
 		})
+
+		it('should handle multiple overlapping or separate rules for the same day', () => {
+			const configs: BusinessHours[] = [
+				{
+					daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+					startTime: 10,
+					endTime: 12,
+				},
+				{
+					daysOfWeek: ['tuesday'],
+					startTime: 14,
+					endTime: 16,
+				},
+			]
+
+			// Tuesday 11:00 should be true (Rule 1)
+			expect(
+				isBusinessHour({
+					date: tuesday,
+					hour: 11,
+					minute: 0,
+					businessHours: configs,
+				})
+			).toBe(true)
+
+			// Tuesday 15:00 should be true (Rule 2)
+			expect(
+				isBusinessHour({
+					date: tuesday,
+					hour: 15,
+					minute: 0,
+					businessHours: configs,
+				})
+			).toBe(true)
+
+			// Tuesday 13:00 should be false (Gap between rules)
+			expect(
+				isBusinessHour({
+					date: tuesday,
+					hour: 13,
+					minute: 0,
+					businessHours: configs,
+				})
+			).toBe(false)
+		})
 	})
 })

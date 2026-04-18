@@ -7,7 +7,7 @@ interface AllDayCellProps {
 }
 
 const NoMemoAllDayCell: React.FC<AllDayCellProps> = ({ className }) => {
-	const { t } = useSmartCalendarContext((state) => ({ t: state.t }))
+	const { t } = useSmartCalendarContext()
 	return (
 		<div
 			className={cn(

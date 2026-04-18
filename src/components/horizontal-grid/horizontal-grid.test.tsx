@@ -18,8 +18,8 @@ const mockRows = [
 				day: dayjs(),
 				gridType: 'day' as const,
 				renderCell: ({ resource }: { resource?: Resource }) => (
-					<div data-testid={`horizontal-row-label-${resource.id}`}>
-						{resource.title}
+					<div data-testid={`horizontal-row-label-${resource?.id}`}>
+						{resource?.title}
 					</div>
 				),
 			},

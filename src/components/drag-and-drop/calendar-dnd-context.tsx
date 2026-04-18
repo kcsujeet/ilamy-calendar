@@ -28,7 +28,7 @@ interface CalendarDndContextProps {
 export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	const activeEventRef = useRef<CalendarEvent>(null)
 	const dragOverlayRef = useRef<{
-		setActiveEvent: (event: CalendarEvent) => void
+		setActiveEvent: (event: CalendarEvent | null) => void
 	}>(null)
 
 	const { updateEvent, updateRecurringEvent, disableDragAndDrop } =

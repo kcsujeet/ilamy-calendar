@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 
 export interface PositionedEvent extends CalendarEvent {
 	left: number // Left position in percentage
@@ -10,7 +10,7 @@ export interface PositionedEvent extends CalendarEvent {
 }
 
 interface GetPositionedDayEventsParams {
-	days: dayjs.Dayjs[]
+	days: Dayjs[]
 	gridType?: 'day' | 'hour' | 'minute'
 	events: CalendarEvent[]
 }
@@ -39,7 +39,7 @@ export const getPositionedDayEvents = ({
 	// Step 1: Group events into clusters of overlapping events
 	const clusters: CalendarEvent[][] = []
 	let currentCluster: CalendarEvent[] = []
-	let lastEventEnd: dayjs.Dayjs | null = null
+	let lastEventEnd: Dayjs | null = null
 	for (const event of sortedEvents) {
 		if (lastEventEnd && event.start.isSameOrAfter(lastEventEnd)) {
 			if (currentCluster.length > 0) {

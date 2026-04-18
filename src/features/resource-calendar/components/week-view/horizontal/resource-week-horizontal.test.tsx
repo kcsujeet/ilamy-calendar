@@ -505,4 +505,118 @@ describe('ResourceWeekHorizontal', () => {
 			expect(row1).not.toBe(row2)
 		})
 	})
+
+	describe('weekViewGranularity', () => {
+		describe('default hourly mode behavior preserved', () => {
+			test('renders time header row with hour labels when weekViewGranularity is hourly', () => {
+				renderResourceWeekHorizontal({ weekViewGranularity: 'hourly' })
+
+				// Time labels should be present – one per hour per day (24 x 7 = 168)
+				const allTimeLabels = screen.getAllByTestId(/resource-week-time-label-/)
+				expect(allTimeLabels).toHaveLength(7 * 24)
+			})
+
+			test('renders 7 day headers in hourly mode', () => {
+				renderResourceWeekHorizontal({ weekViewGranularity: 'hourly' })
+
+				const dayHeaders = screen.getAllByTestId('resource-week-day-header')
+				expect(dayHeaders).toHaveLength(7)
+			})
+		})
+
+		describe('daily mode renders correctly', () => {
+			test('does not render time header row when weekViewGranularity is daily', () => {
+				renderResourceWeekHorizontal({ weekViewGranularity: 'daily' })
+
+				const timeLabels = screen.queryAllByTestId(/resource-week-time-label-/)
+				expect(timeLabels).toHaveLength(0)
+			})
+
+			test('still renders 7 day headers in daily mode', () => {
+				renderResourceWeekHorizontal({ weekViewGranularity: 'daily' })
+
+				const dayHeaders = screen.getAllByTestId('resource-week-day-header')
+				expect(dayHeaders).toHaveLength(7)
+			})
+
+			test('day headers use full-width centering in daily mode (not sticky)', () => {
+				renderResourceWeekHorizontal({ weekViewGranularity: 'daily' })
+
+				const dayHeaders = screen.getAllByTestId('resource-week-day-header')
+				const firstHeaderInner = dayHeaders.at(0)?.querySelector('div')
+
+				expect(firstHeaderInner?.className).toContain('w-full text-center')
+				expect(firstHeaderInner?.className).not.toContain('sticky')
+			})
+
+			test('still renders resource labels in daily mode', () => {
+				renderResourceWeekHorizontal({ weekViewGranularity: 'daily' })
+
+				expect(screen.getByText('Resource 1')).toBeInTheDocument()
+				expect(screen.getByText('Resource 2')).toBeInTheDocument()
+			})
+
+			test('highlights today in the day header row in daily mode', () => {
+				// Verifies the extracted ResourceWeekHorizontalDayHeader applies
+				// the today-highlight className in daily mode, same as hourly.
+				const today = dayjs()
+				renderResourceWeekHorizontal({
+					initialDate: today,
+					weekViewGranularity: 'daily',
+				})
+
+				const dayHeaders = screen.getAllByTestId('resource-week-day-header')
+				const todayHeader = dayHeaders.find(
+					(header) =>
+						header.classList.contains('bg-blue-50') &&
+						header.classList.contains('text-blue-600')
+				)
+				expect(todayHeader).toBeDefined()
+			})
+		})
+
+		describe('header structure differences', () => {
+			test('hourly mode produces an expanded header containing a time row', () => {
+				renderResourceWeekHorizontal({ weekViewGranularity: 'hourly' })
+
+				// The time row is only rendered in hourly mode
+				expect(screen.getAllByTestId(/resource-week-time-label-/).length).toBe(
+					7 * 24
+				)
+			})
+
+			test('daily mode produces a compact header with no time row', () => {
+				renderResourceWeekHorizontal({ weekViewGranularity: 'daily' })
+
+				// No time labels at all – grid is day-based not hour-based
+				expect(
+					screen.queryAllByTestId(/resource-week-time-label-/).length
+				).toBe(0)
+
+				// Day headers are still present
+				expect(screen.getAllByTestId('resource-week-day-header').length).toBe(7)
+			})
+
+			test('day header inner layout differs between daily and hourly mode', () => {
+				const { unmount } = renderResourceWeekHorizontal({
+					weekViewGranularity: 'hourly',
+				})
+				const hourlyHeaders = screen.getAllByTestId('resource-week-day-header')
+				const hourlyInner = hourlyHeaders.at(0)?.querySelector('div')
+				const hourlyClassName = hourlyInner?.className ?? ''
+
+				unmount()
+
+				renderResourceWeekHorizontal({ weekViewGranularity: 'daily' })
+				const dailyHeaders = screen.getAllByTestId('resource-week-day-header')
+				const dailyInner = dailyHeaders.at(0)?.querySelector('div')
+				const dailyClassName = dailyInner?.className ?? ''
+
+				// Hourly places the label via sticky positioning; daily centres it
+				expect(hourlyClassName).toContain('sticky')
+				expect(dailyClassName).toContain('w-full text-center')
+				expect(dailyClassName).not.toContain('sticky')
+			})
+		})
+	})
 })

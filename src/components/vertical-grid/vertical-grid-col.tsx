@@ -1,22 +1,22 @@
 import type React from 'react'
 import { memo } from 'react'
 import type { Resource } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { GridCell } from '../grid-cell'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
 export interface VerticalGridColProps {
 	id: string
-	day: dayjs.Dayjs
+	day?: Dayjs
 	resourceId?: string | number
 	resource?: Resource
-	days: dayjs.Dayjs[] // The specific day this column represents
+	days: Dayjs[] // The specific day this column represents
 	className?: string
 	'data-testid'?: string
 	gridType?: 'day' | 'hour'
 	renderHeader?: () => React.ReactNode
-	renderCell?: (date: dayjs.Dayjs) => React.ReactNode
+	renderCell?: (date: Dayjs) => React.ReactNode
 	noEvents?: boolean
 	/** Optional array of minute slots by which the hour is divided
 	 * e.g., [0, 15, 30, 45] for quarter-hour slots
@@ -49,12 +49,12 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 		>
 			{/* Time slots */}
 			<div
-				className="w-full relative grid"
+				className="w-full h-full relative grid"
 				style={{
 					gridTemplateRows: `repeat(${days.length}, minmax(0, 1fr))`,
 				}}
 			>
-				{days.map((day) => {
+				{days.map((day, dayIndex) => {
 					const hourStr = day.format('HH')
 					const dateStr = day.format('YYYY-MM-DD')
 
@@ -65,9 +65,10 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 								: `vertical-cell-${dateStr}-${hourStr}-00${resourceId ? `-${resourceId}` : ''}`
 						return (
 							<div
-								className="h-[60px] border-b border-r"
+								className="min-h-[60px] border-b border-r"
 								data-testid={testId}
-								key={`${dateStr}-${hourStr}`}
+								// biome-ignore lint/suspicious/noArrayIndexKey: false positive
+								key={`${id}-${dayIndex}-${hourStr}`}
 							>
 								{renderCell(day)}
 							</div>
@@ -82,7 +83,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 						return (
 							<GridCell
 								className={cn(
-									'hover:bg-accent relative z-10 h-[60px] cursor-pointer border-b',
+									'hover:bg-accent relative z-10 min-h-[60px] cursor-pointer border-b',
 									minute === 60 ? '' : 'border-dashed h-[15px] min-h-[15px]',
 									isLastColumn ? 'border-r-0' : 'border-r'
 								)}
@@ -90,7 +91,8 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 								day={m ? day.minute(m) : day}
 								gridType={gridType}
 								hour={day.hour()}
-								key={`${dateStr}-${hourStr}-${mm}-${resourceId || 'no-resource'}`}
+								// biome-ignore lint/suspicious/noArrayIndexKey: false positive
+								key={`${id}-${dayIndex}-${mm}`}
 								minute={m}
 								resourceId={resourceId} // Events are rendered in a separate layer
 								shouldRenderEvents={false}

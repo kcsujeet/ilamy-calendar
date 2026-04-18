@@ -1,0 +1,4 @@
+- Prefer `.at()` over `[]` for array access (e.g. `days.at(0)` not `days[0]`, `days.at(-1)` not `days[days.length - 1]`).
+- Never use non-null assertions (`!`). Use proper guards, type narrowing, or optional chaining instead.
+- Prefer `Boolean(variable)` over `!!variable` or `!variable` for boolean coercion.
+- Never use `any`. Use proper types, `unknown`, or type predicates instead.

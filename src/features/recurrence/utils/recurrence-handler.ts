@@ -1,18 +1,65 @@
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components'
 import type { RRuleOptions } from '@/features/recurrence/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { omitKeys, safeDate } from '@/lib/utils'
+
+/**
+ * Converts a Dayjs object to a "Floating Time" Date representation.
+ * In Floating Time, we use a UTC Date object but set its UTC components
+ * to match the local components of the user's date.
+ *
+ * This is essential for RRule evaluation because it ensures that a rule
+ * like "Every Wednesday" refers to the user's local Wednesday, even if
+ * that time falls on a Thursday in actual UTC.
+ */
+const toFloatingDate = (d: Dayjs): Date => {
+	return new Date(
+		Date.UTC(
+			d.year(),
+			d.month(),
+			d.date(),
+			d.hour(),
+			d.minute(),
+			d.second(),
+			d.millisecond()
+		)
+	)
+}
+
+/**
+ * Converts a "Floating Time" Date back to a Dayjs object in the original context.
+ * It takes the YMDHMS components from the UTC Date and applies them to the
+ * reference Dayjs object (preserving its timezone/locale).
+ */
+const fromFloatingDate = (date: Date, reference: Dayjs): Dayjs => {
+	return reference
+		.year(date.getUTCFullYear())
+		.month(date.getUTCMonth())
+		.date(date.getUTCDate())
+		.hour(date.getUTCHours())
+		.minute(date.getUTCMinutes())
+		.second(date.getUTCSeconds())
+		.millisecond(date.getUTCMilliseconds())
+}
 
 export const isRecurringEvent = (event: CalendarEvent): boolean => {
 	return Boolean(event.rrule || event.recurrenceId || event.uid)
 }
 
+/**
+ * Consistently derives a parent UID from an event.
+ * Uses the explicit `uid` if available, otherwise falls back to `${id}@ilamy.calendar`.
+ */
+const getEventParentUID = (event: CalendarEvent): string => {
+	return event.uid || `${event.id}@ilamy.calendar`
+}
+
 interface GenerateRecurringEventsProps {
 	event: CalendarEvent
 	currentEvents: CalendarEvent[]
-	startDate: dayjs.Dayjs
-	endDate: dayjs.Dayjs
+	startDate: Dayjs
+	endDate: Dayjs
 }
 
 export const generateRecurringEvents = ({
@@ -27,16 +74,24 @@ export const generateRecurringEvents = ({
 	}
 
 	try {
-		// Create rule from RRuleOptions ensuring dtstart is always provided
-		// If dtstart is missing from the RRULE, use the event's start time as fallback
+		// DTSTART and SEARCH WINDOW TRANSFORMATION
+		// Transform all dates to "floating time" (UTC with local components)
+		// This ensures RRule evaluates "Wednesday" as the user's local Wednesday
+		const floatingStart = toFloatingDate(event.start)
+		const floatingUntil = event.rrule.until
+			? toFloatingDate(dayjs(event.rrule.until))
+			: undefined
+
 		const ruleOptions: RRuleOptions = {
 			...event.rrule,
-			dtstart: event.rrule.dtstart || event.start.toDate(),
+			dtstart: floatingStart,
+			until: floatingUntil,
 		}
 		const rule = new RRule(ruleOptions)
 
+		const parentUid = getEventParentUID(event)
 		const overrides = currentEvents.filter(
-			(e) => e.recurrenceId && e.uid === event.uid
+			(e) => e.recurrenceId && getEventParentUID(e) === parentUid
 		)
 
 		// Calculate event duration to expand search window for events that span the range
@@ -44,10 +99,10 @@ export const generateRecurringEvents = ({
 
 		// Expand search window backward by event duration to catch events that start before
 		// the range but span into it
-		const expandedStartDateTime = startDate
-			.subtract(eventDuration, 'millisecond')
-			.toDate()
-		const endDateTime = endDate.toDate()
+		const expandedStartDateTime = toFloatingDate(
+			startDate.subtract(eventDuration, 'millisecond')
+		)
+		const endDateTime = toFloatingDate(endDate)
 
 		// Get all occurrences in the expanded range
 		const occurrences = rule.between(expandedStartDateTime, endDateTime, true)
@@ -55,7 +110,7 @@ export const generateRecurringEvents = ({
 		// Convert occurrences to CalendarEvent instances
 		const recurringEvents: CalendarEvent[] = occurrences
 			.map((occurrence, index) => {
-				const occurrenceDate = dayjs(occurrence)
+				const occurrenceDate = fromFloatingDate(occurrence, event.start)
 				const existingOverride = overrides.find((e) =>
 					safeDate(e.recurrenceId)?.isSame(occurrenceDate)
 				)
@@ -69,7 +124,7 @@ export const generateRecurringEvents = ({
 				const originalDuration = event.end.diff(event.start)
 				const newEndTime = occurrenceDate.add(originalDuration, 'millisecond')
 				const recurringEventId = `${event.id}_${index}`
-				const parentUID = event.uid || `${event.id}@ilamy.calendar`
+				const parentUID = getEventParentUID(event)
 
 				// Create the recurring event instance
 				const recurringEvent: CalendarEvent = {
@@ -88,7 +143,7 @@ export const generateRecurringEvents = ({
 				const hasExdates = event.exdates && event.exdates.length > 0
 				if (hasExdates) {
 					const eventStartISO = recurringEvent.start.toISOString()
-					const isExcluded = event.exdates.includes(eventStartISO)
+					const isExcluded = event.exdates?.includes(eventStartISO)
 					if (isExcluded) {
 						return false
 					}
@@ -129,9 +184,9 @@ export const updateRecurringEvent = ({
 	const updatedEvents = [...currentEvents]
 
 	// Find the base recurring event
+	const targetUid = getEventParentUID(targetEvent)
 	const baseEventIndex = updatedEvents.findIndex((e) => {
-		const parentUid = e.uid || `${e.id}@ilamy.calendar`
-		return parentUid === targetEvent.uid && e.rrule && !e.recurrenceId
+		return getEventParentUID(e) === targetUid && e.rrule && !e.recurrenceId
 	})
 
 	if (baseEventIndex === -1) {
@@ -161,7 +216,7 @@ export const updateRecurringEvent = ({
 				...updates,
 				id: modifiedEventId,
 				recurrenceId: targetEventStartISO, // This marks it as a modified instance
-				uid: baseEvent.uid || `${baseEvent.id}@ilamy.calendar`, // Keep same UID as base event (iCalendar standard)
+				uid: getEventParentUID(baseEvent), // Keep same UID as base event (iCalendar standard)
 				rrule: undefined, // Standalone events don't have RRULE
 			} as CalendarEvent
 			updatedEvents.push(modifiedEvent)
@@ -182,7 +237,7 @@ export const updateRecurringEvent = ({
 				rrule: {
 					...baseEvent.rrule,
 					until: terminationDate,
-				},
+				} as RRuleOptions,
 			}
 			updatedEvents[baseEventIndex] = terminatedEvent
 
@@ -201,7 +256,7 @@ export const updateRecurringEvent = ({
 					...baseEvent.rrule,
 					...updates.rrule,
 					dtstart: newSeriesStartTime.toDate(),
-				},
+				} as RRuleOptions,
 				id: newSeriesId,
 				uid: newSeriesUID, // New UID for new series
 				start: newSeriesStartTime,
@@ -245,9 +300,9 @@ export const deleteRecurringEvent = ({
 	const updatedEvents = [...currentEvents]
 
 	// Find the base recurring event
+	const targetUid = getEventParentUID(targetEvent)
 	const baseEventIndex = updatedEvents.findIndex((e) => {
-		const parentUid = e.uid || `${e.id}@ilamy.calendar`
-		return parentUid === targetEvent.uid && e.rrule && !e.recurrenceId
+		return getEventParentUID(e) === targetUid && e.rrule && !e.recurrenceId
 	})
 
 	if (baseEventIndex === -1) {
@@ -281,7 +336,7 @@ export const deleteRecurringEvent = ({
 				rrule: {
 					...baseEvent.rrule,
 					until: terminationDate,
-				},
+				} as RRuleOptions,
 			}
 			updatedEvents[baseEventIndex] = terminatedEvent
 			break
@@ -289,8 +344,9 @@ export const deleteRecurringEvent = ({
 
 		case 'all': {
 			// "All events" - Remove the entire recurring series
+			const targetUid = getEventParentUID(targetEvent)
 			const eventsWithoutTargetSeries = updatedEvents.filter(
-				(e) => e.uid !== targetEvent.uid
+				(e) => getEventParentUID(e) !== targetUid
 			)
 			return eventsWithoutTargetSeries
 		}

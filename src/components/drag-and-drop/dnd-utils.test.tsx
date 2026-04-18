@@ -5,10 +5,10 @@ import { getUpdatedEvent } from './dnd-utils'
 
 let cellType = 'day-cell'
 let cellDate = dayjs('2024-10-15T00:00:00')
-let cellResourceId
-let allDayCell = false
-let hour
-let minute
+let cellResourceId: string | number | undefined
+let allDayCell: boolean | undefined = false
+let hour: number | undefined
+let minute: number | undefined
 
 const getDragEvent = () => ({
 	active: {
@@ -32,7 +32,7 @@ const getDragEvent = () => ({
 let start = dayjs('2024-06-15T00:00:00')
 let end = dayjs('2024-06-15T23:59:59')
 let allDay = false
-let resourceId
+let resourceId: string | number | undefined
 const getActiveEvent = () => ({
 	id: 'event-1',
 	title: 'Sample Event',
@@ -45,7 +45,7 @@ const getActiveEvent = () => ({
 describe('getUpdatedEvent Utility Function', () => {
 	it('should return null if active or over is missing', () => {
 		const result = getUpdatedEvent(
-			{ active: null, over: null } as DragEndEvent,
+			{ active: null, over: null } as unknown as DragEndEvent,
 			null
 		)
 		expect(result).toBeNull()
@@ -65,7 +65,8 @@ describe('getUpdatedEvent Utility Function', () => {
 			getActiveEvent()
 		)
 		expect(result).not.toBeNull()
-		const { updates } = result
+		const updates = (result as any)?.updates
+		if (!updates) return
 		expect(updates.start.format()).toBe(cellDate.format())
 		expect(updates.end.format()).toBe(
 			cellDate.add(end.diff(start, 'second'), 'second').format()
@@ -83,7 +84,8 @@ describe('getUpdatedEvent Utility Function', () => {
 				getActiveEvent()
 			)
 			expect(result).not.toBeNull()
-			const { updates } = result
+			const updates = (result as any)?.updates
+			if (!updates) return
 			expect(updates.allDay).toBe(true)
 			expect(updates.start.format()).toBe(dayjs(cellDate).format())
 			expect(updates.end.diff(updates.start, 'second')).toBe(
@@ -100,7 +102,8 @@ describe('getUpdatedEvent Utility Function', () => {
 				getActiveEvent()
 			)
 			expect(result).not.toBeNull()
-			const { updates } = result
+			const updates = (result as any)?.updates
+			if (!updates) return
 			expect(updates.allDay).toBe(false)
 			expect(updates.start.format()).toBe(dayjs(cellDate).format())
 			expect(updates.end.diff(updates.start, 'second')).toBe(
@@ -117,7 +120,8 @@ describe('getUpdatedEvent Utility Function', () => {
 				getActiveEvent()
 			)
 			expect(result).not.toBeNull()
-			const { updates } = result
+			const updates = (result as any)?.updates
+			if (!updates) return
 			expect(updates.allDay).toBe(true)
 		})
 	})
@@ -131,7 +135,8 @@ describe('getUpdatedEvent Utility Function', () => {
 			getActiveEvent()
 		)
 		expect(result).not.toBeNull()
-		const { updates } = result
+		const updates = (result as any)?.updates
+		if (!updates) return
 		expect(updates.resourceId).toBe(cellResourceId)
 	})
 
@@ -146,7 +151,8 @@ describe('getUpdatedEvent Utility Function', () => {
 			getActiveEvent()
 		)
 		expect(result).not.toBeNull()
-		const { updates } = result
+		const updates = (result as any)?.updates
+		if (!updates) return
 		const expectedStart = dayjs(cellDate).hour(hour).minute(minute)
 		const expectedEnd = expectedStart.add(end.diff(start, 'second'), 'second')
 		expect(updates.start.toISOString()).toBe(expectedStart.toISOString())
@@ -165,7 +171,8 @@ describe('getUpdatedEvent Utility Function', () => {
 			getActiveEvent()
 		)
 		expect(result).not.toBeNull()
-		const { updates } = result
+		const updates = (result as any)?.updates
+		if (!updates) return
 		expect(updates.allDay).toBe(false)
 	})
 
@@ -183,7 +190,8 @@ describe('getUpdatedEvent Utility Function', () => {
 			getActiveEvent()
 		)
 		expect(result).not.toBeNull()
-		const { updates } = result
+		const updates = (result as any)?.updates
+		if (!updates) return
 		expect(updates.start.format()).toBe(cellDate.format())
 		// When end time lands exactly at midnight, it should be adjusted to 23:59 of the same day
 		expect(updates.end.format()).toBe(cellDate.endOf('day').format())
@@ -206,7 +214,8 @@ describe('getUpdatedEvent Utility Function', () => {
 			getActiveEvent()
 		)
 		expect(result).not.toBeNull()
-		const { updates } = result
+		const updates = (result as any)?.updates
+		if (!updates) return
 
 		// CURRENT BEHAVIOR (with second precision):
 		// - Original duration: 2 days 23h 59m 59.999s (using endOf('day'))

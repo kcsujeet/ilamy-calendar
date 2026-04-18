@@ -9,15 +9,26 @@ import {
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+	Combobox,
+	ComboboxCollection,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxInput,
+	ComboboxItem,
+	ComboboxList,
+} from '@/components/ui/combobox'
+import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { CalendarView, TimeFormat } from '@/types'
 import { ModeToggle } from './mode-toggle'
+
+const ALL_TIMEZONES = Intl.supportedValuesOf('timeZone')
 
 interface DemoCalendarSettingsProps {
 	// Calendar type
@@ -27,8 +38,8 @@ interface DemoCalendarSettingsProps {
 	setFirstDayOfWeek: (value: WeekDays) => void
 	initialView: CalendarView
 	setInitialView: (value: CalendarView) => void
-	initialDate: dayjs.Dayjs | undefined
-	setInitialDate: (value: dayjs.Dayjs | undefined) => void
+	initialDate: Dayjs | undefined
+	setInitialDate: (value: Dayjs | undefined) => void
 	useCustomEventRenderer: boolean
 	setUseCustomEventRenderer: (value: boolean) => void
 	locale: string
@@ -49,6 +60,8 @@ interface DemoCalendarSettingsProps {
 	setCalendarHeight: (value: string) => void
 	dayMaxEvents: number
 	setDayMaxEvents: (value: number) => void
+	eventHeight: number
+	setEventHeight: (value: number) => void
 	stickyViewHeader?: boolean
 	setStickyHeader?: (value: boolean) => void
 	timeFormat: TimeFormat
@@ -57,10 +70,14 @@ interface DemoCalendarSettingsProps {
 	setUseCustomClasses: (value: boolean) => void
 	useCustomTimeIndicator: boolean
 	setUseCustomTimeIndicator: (value: boolean) => void
+	useCustomHourRenderer: boolean
+	setUseCustomHourRenderer: (value: boolean) => void
 	// Resource calendar specific props
 	isResourceCalendar?: boolean
 	orientation?: 'horizontal' | 'vertical'
+	weekViewGranularity?: 'hourly' | 'daily'
 	setOrientation?: (value: 'horizontal' | 'vertical') => void
+	setWeekViewGranularity?: (value: 'hourly' | 'daily') => void
 	// Business hours settings
 	hideNonBusinessHours: boolean
 	setHideNonBusinessHours: (value: boolean) => void
@@ -68,6 +85,9 @@ interface DemoCalendarSettingsProps {
 	setBusinessStartTime: (value: number) => void
 	businessEndTime: number
 	setBusinessEndTime: (value: number) => void
+	// Hidden days
+	hiddenDays: WeekDays[]
+	setHiddenDays: (value: WeekDays[]) => void
 }
 
 export function DemoCalendarSettings({
@@ -83,6 +103,8 @@ export function DemoCalendarSettings({
 	setUseCustomEventRenderer,
 	locale,
 	setLocale,
+	timezone,
+	setTimezone,
 	disableCellClick,
 	setDisableCellClick,
 	disableEventClick,
@@ -97,6 +119,8 @@ export function DemoCalendarSettings({
 	setCalendarHeight,
 	dayMaxEvents,
 	setDayMaxEvents,
+	eventHeight,
+	setEventHeight,
 	stickyViewHeader,
 	setStickyHeader,
 	timeFormat,
@@ -105,16 +129,22 @@ export function DemoCalendarSettings({
 	setUseCustomClasses,
 	useCustomTimeIndicator,
 	setUseCustomTimeIndicator,
+	useCustomHourRenderer,
+	setUseCustomHourRenderer,
 	// Resource calendar props
 	isResourceCalendar,
 	orientation,
 	setOrientation,
+	weekViewGranularity,
+	setWeekViewGranularity,
 	hideNonBusinessHours,
 	setHideNonBusinessHours,
 	businessStartTime,
 	setBusinessStartTime,
 	businessEndTime,
 	setBusinessEndTime,
+	hiddenDays,
+	setHiddenDays,
 }: DemoCalendarSettingsProps) {
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -189,6 +219,37 @@ export function DemoCalendarSettings({
 								variant="secondary"
 							>
 								Vertical
+							</Button>
+						</div>
+					</div>
+				)}
+				{isResourceCalendar && (
+					<div>
+						<label className="block text-sm text-left font-medium mb-1">
+							Week View Granularity
+						</label>
+						<div className="flex gap-1">
+							<Button
+								className={
+									weekViewGranularity === 'hourly'
+										? 'bg-primary/80 text-primary-foreground'
+										: ''
+								}
+								onClick={() => setWeekViewGranularity?.('hourly')}
+								variant="secondary"
+							>
+								Hourly
+							</Button>
+							<Button
+								className={
+									weekViewGranularity === 'daily'
+										? 'bg-primary/80 text-primary-foreground'
+										: ''
+								}
+								onClick={() => setWeekViewGranularity?.('daily')}
+								variant="secondary"
+							>
+								Daily
 							</Button>
 						</div>
 					</div>
@@ -298,21 +359,32 @@ export function DemoCalendarSettings({
 						</SelectContent>
 					</Select>
 				</div>
-				{/* <div>
-          <label className="block text-sm text-left font-medium mb-1">Timezone</label>
-          <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select timezone" />
-            </SelectTrigger>
-            <SelectContent>
-              {Intl.supportedValuesOf('timeZone').map((tz) => (
-                <SelectItem key={tz} value={tz}>
-                  {tz}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div> */}
+				<div>
+					<label className="block text-sm text-left font-medium mb-1">
+						Timezone
+					</label>
+					<Combobox
+						items={ALL_TIMEZONES}
+						onValueChange={(val) => {
+							if (val) setTimezone(val)
+						}}
+						value={timezone}
+					>
+						<ComboboxInput placeholder="Search timezones..." />
+						<ComboboxContent>
+							<ComboboxEmpty>No timezones found.</ComboboxEmpty>
+							<ComboboxList>
+								<ComboboxCollection>
+									{(tz) => (
+										<ComboboxItem key={tz} value={tz}>
+											{tz}
+										</ComboboxItem>
+									)}
+								</ComboboxCollection>
+							</ComboboxList>
+						</ComboboxContent>
+					</Combobox>
+				</div>
 				<div>
 					<label className="block text-sm text-left font-medium mb-1">
 						Calendar Height
@@ -351,6 +423,27 @@ export function DemoCalendarSettings({
 							<SelectItem value="4">4 events</SelectItem>
 							<SelectItem value="5">5 events</SelectItem>
 							<SelectItem value="999">No limit</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+				<div>
+					<label className="block text-sm text-left font-medium mb-1">
+						Event Bar Height
+					</label>
+					<Select
+						onValueChange={(value) =>
+							setEventHeight(Number.parseInt(value, 10))
+						}
+						value={eventHeight.toString()}
+					>
+						<SelectTrigger className="w-full">
+							<SelectValue placeholder="Select event height" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="20">20px (compact)</SelectItem>
+							<SelectItem value="24">24px (default)</SelectItem>
+							<SelectItem value="36">36px</SelectItem>
+							<SelectItem value="48">48px (two lines)</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
@@ -440,6 +533,44 @@ export function DemoCalendarSettings({
 						</Select>
 					</div>
 				</div>
+				<div>
+					<label className="block text-sm text-left font-medium mb-1">
+						Hidden Days (Week View)
+					</label>
+					<div className="space-y-1">
+						{(
+							[
+								'sunday',
+								'monday',
+								'tuesday',
+								'wednesday',
+								'thursday',
+								'friday',
+								'saturday',
+							] as WeekDays[]
+						).map((day) => (
+							<div className="flex items-center space-x-2" key={day}>
+								<Checkbox
+									checked={hiddenDays.includes(day)}
+									id={`hidden-day-${day}`}
+									onCheckedChange={(checked) => {
+										if (checked) {
+											setHiddenDays([...hiddenDays, day])
+										} else {
+											setHiddenDays(hiddenDays.filter((d) => d !== day))
+										}
+									}}
+								/>
+								<label
+									className="text-sm leading-none cursor-pointer capitalize"
+									htmlFor={`hidden-day-${day}`}
+								>
+									{day}
+								</label>
+							</div>
+						))}
+					</div>
+				</div>
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={useCustomEventRenderer}
@@ -468,6 +599,21 @@ export function DemoCalendarSettings({
 						htmlFor="customTimeIndicator"
 					>
 						Use custom time indicator
+					</label>
+				</div>
+				<div className="flex items-center space-x-2">
+					<Checkbox
+						checked={useCustomHourRenderer}
+						id="customHourRenderer"
+						onCheckedChange={() =>
+							setUseCustomHourRenderer(!useCustomHourRenderer)
+						}
+					/>
+					<label
+						className="text-sm font-medium leading-none cursor-pointer"
+						htmlFor="customHourRenderer"
+					>
+						Use custom hour renderer
 					</label>
 				</div>
 

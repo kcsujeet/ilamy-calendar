@@ -9,9 +9,9 @@ import {
 	DialogTitle,
 } from '@/components/ui/dialog'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 export interface SelectedDayEvents {
-	day: dayjs.Dayjs
+	day: Dayjs
 	events: CalendarEvent[]
 }
 
@@ -27,10 +27,7 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [selectedDayEvents, setSelectedDayEvents] =
 		useState<SelectedDayEvents | null>(null)
-	const { currentDate, firstDayOfWeek } = useSmartCalendarContext((state) => ({
-		currentDate: state.currentDate,
-		firstDayOfWeek: state.firstDayOfWeek,
-	}))
+	const { currentDate, firstDayOfWeek, eventHeight } = useSmartCalendarContext()
 
 	useImperativeHandle(ref, () => ({
 		open: () => setDialogOpen(true),
@@ -61,10 +58,11 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 					{selectedDayEvents?.events.map((event) => {
 						return (
 							<DraggableEvent
-								className="relative my-1 h-[30px]" // Use event ID for unique identification
+								className="relative my-1" // Use event ID for unique identification
 								elementId={`all-events-dialog-event-$${event.id}`}
 								event={event}
 								key={event.id}
+								style={{ height: `${eventHeight}px` }}
 							/>
 						)
 					})}

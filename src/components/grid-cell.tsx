@@ -3,15 +3,14 @@ import { DayNumber } from '@/components/day-number'
 import type { CalendarEvent } from '@/components/types'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
-import { EVENT_BAR_HEIGHT } from '@/lib/constants'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import type { SelectedDayEvents } from './all-events-dialog'
 import { AllEventDialog } from './all-events-dialog'
 import { DroppableCell } from './droppable-cell'
 
 interface GridProps {
-	day: dayjs.Dayjs
+	day: Dayjs
 	hour?: number // Optional hour for hour-based grids
 	minute?: number // Optional minute for more granular time slots
 	dayMaxEvents?: number
@@ -23,6 +22,7 @@ interface GridProps {
 	showDayNumber?: boolean // Flag to show or hide the day number
 	children?: React.ReactNode
 	'data-testid'?: string
+	precomputedEvents?: CalendarEvent[]
 }
 
 const NoMemoGridCell: React.FC<GridProps> = ({
@@ -34,6 +34,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	gridType = 'day',
 	shouldRenderEvents = true,
 	allDay = false,
+	precomputedEvents,
 	'data-testid': dataTestId,
 	showDayNumber = false,
 	children,
@@ -52,21 +53,18 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		businessHours,
 		currentLocale,
 		eventSpacing,
-	} = useSmartCalendarContext((state) => ({
-		dayMaxEvents: state.dayMaxEvents,
-		getEventsForDateRange: state.getEventsForDateRange,
-		currentDate: state.currentDate,
-		firstDayOfWeek: state.firstDayOfWeek,
-		t: state.t,
-		getEventsForResource: state.getEventsForResource,
-		businessHours: state.businessHours,
-		currentLocale: state.currentLocale,
-		eventSpacing: state.eventSpacing,
-	}))
+		eventHeight,
+		getResourceById,
+	} = useSmartCalendarContext()
 
 	const todayEvents = useMemo(() => {
 		if (!shouldRenderEvents) {
 			return []
+		}
+
+		// Use pre-computed events from the row level when available
+		if (precomputedEvents) {
+			return precomputedEvents
 		}
 
 		let todayEvents = getEventsForDateRange(
@@ -88,6 +86,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 
 		return todayEvents
 	}, [
+		precomputedEvents,
 		day,
 		resourceId,
 		getEventsForDateRange,
@@ -98,7 +97,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	])
 
 	// Handler for showing all events in a dialog
-	const showAllEvents = (day: dayjs.Dayjs, events: CalendarEvent[]) => {
+	const showAllEvents = (day: Dayjs, events: CalendarEvent[]) => {
 		allEventsDialogRef.current?.setSelectedDayEvents({
 			day,
 			events,
@@ -111,18 +110,32 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	const hiddenEventsCount = todayEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
 
+	// Use resource-specific business hours if available, otherwise fallback to global
+	const effectiveBusinessHours = useMemo(() => {
+		if (resourceId && getResourceById) {
+			const resource = getResourceById(resourceId)
+			if (resource?.businessHours) {
+				return resource.businessHours
+			}
+		}
+		return businessHours
+	}, [resourceId, getResourceById, businessHours])
+
 	const isBusiness = isBusinessHour({
 		date: day,
 		hour: gridType === 'hour' ? day.hour() : undefined,
-		businessHours,
+		businessHours: effectiveBusinessHours,
 	})
 
 	const hourStr = day.format('HH')
 	const mm = day.format('mm')
-	const dateTestIdBase =
-		gridType === 'hour'
-			? `day-cell-${day.format('YYYY-MM-DD')}-${hourStr}-${mm}`
-			: `day-cell-${day.format('YYYY-MM-DD')}`
+	const baseTestId = `day-cell-${day.format('YYYY-MM-DD')}`
+	const testId =
+		gridType === 'hour' ? `${baseTestId}-${hourStr}-${mm}` : baseTestId
+	// Droppable ID must use toISOString() (not YYYY-MM-DD) so each time slot
+	// gets a unique ID in @dnd-kit's registry. YYYY-MM-DD strips the time,
+	// causing all cells on the same day to collide.
+	const droppableId = `day-cell-${day.toISOString()}${allDay ? '-allday' : ''}${resourceId ? `-resource-${resourceId}` : ''}`
 
 	return (
 		<>
@@ -132,11 +145,11 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 					'cursor-pointer overflow-clip p-1 hover:bg-accent min-h-[60px] relative border-r last:border-r-0 only:border-r border-b',
 					className
 				)}
-				data-testid={dataTestId || dateTestIdBase}
+				data-testid={dataTestId || testId}
 				date={day}
 				disabled={!isBusiness || !isCurrentMonth}
 				hour={hour}
-				id={`day-cell-${day.toISOString()}${resourceId ? `-resource-${resourceId}` : ''}`}
+				id={droppableId}
 				minute={minute}
 				resourceId={resourceId}
 				type="day-cell"
@@ -156,12 +169,13 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 									className="w-full shrink-0"
 									data-testid={event?.title}
 									key={`empty-${rowIndex}-${event.id}`}
-									style={{ height: `${EVENT_BAR_HEIGHT}px` }}
+									style={{ height: `${eventHeight}px` }}
 								/>
 							))}
 
 							{/* Show more events button with accurate count */}
 							{hasHiddenEvents && (
+								// biome-ignore lint/a11y/useSemanticElements: Using div as button
 								<div
 									className="text-muted-foreground hover:text-foreground cursor-pointer text-[10px] whitespace-nowrap sm:text-xs shrink-0 mt-1"
 									onClick={(e) => {
@@ -177,7 +191,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 										}
 									}}
 									role="button"
-									// oxlint-disable-next-line prefer-tag-over-role
 									tabIndex={0}
 								>
 									+{hiddenEventsCount} {t('more')}

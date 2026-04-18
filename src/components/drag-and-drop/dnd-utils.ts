@@ -1,6 +1,15 @@
 import type { DragEndEvent } from '@dnd-kit/core'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { CalendarEvent } from '../types'
+
+interface DropCellData {
+	type?: string
+	date?: string
+	hour?: number
+	minute?: number
+	resourceId?: string
+	allDay?: boolean
+}
 
 export const getUpdatedEvent = (
 	event: DragEndEvent,
@@ -12,17 +21,18 @@ export const getUpdatedEvent = (
 		return null
 	}
 
-	const isTimeCell = over.data.current?.type === 'time-cell'
-	const { resourceId, allDay } = over.data.current || {}
-	let newStart
+	const data = (over.data.current || {}) as DropCellData
+	const isTimeCell = data.type === 'time-cell'
+	const { resourceId, allDay } = data
+	let newStart: Dayjs
 
 	if (isTimeCell) {
-		const { date, hour = 0, minute = 0 } = over.data.current
+		const { date, hour = 0, minute = 0 } = data
 
 		// Create new start time based on the drop target
 		newStart = dayjs(date).hour(hour).minute(minute)
 	} else {
-		const { date } = over.data.current
+		const { date } = data
 
 		newStart = dayjs(date)
 	}

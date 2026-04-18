@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import { act, renderHook } from '@testing-library/react'
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import type { Translations } from '@/lib/translations/types'
+import { getMonthWeeks } from '@/lib/utils/date-utils'
 import { useCalendarEngine } from './use-calendar-engine'
 
 const createEvent = (
@@ -219,8 +220,30 @@ describe('useCalendarEngine', () => {
 			act(() => result.current.nextPeriod())
 
 			expect(onDateChange).toHaveBeenCalledTimes(1)
-			const calledDate = onDateChange.mock.calls[0][0]
+			const [calledDate, range] = onDateChange.mock.calls[0]
 			expect(calledDate.format('YYYY-MM-DD')).toBe('2025-02-15')
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-26')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-03-08')
+		})
+
+		it('should call onDateChange with correct range in day view', () => {
+			const onDateChange = vi.fn()
+			const initialDate = dayjs('2025-01-15')
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate,
+					onDateChange,
+					initialView: 'day',
+				})
+			)
+
+			act(() => result.current.nextPeriod())
+
+			const [calledDate, range] = onDateChange.mock.calls[0]
+			expect(calledDate.format('YYYY-MM-DD')).toBe('2025-01-16')
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-16')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-01-16')
 		})
 
 		it('should select a specific date', () => {
@@ -233,7 +256,10 @@ describe('useCalendarEngine', () => {
 			act(() => result.current.selectDate(newDate))
 
 			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-06-20')
-			expect(onDateChange).toHaveBeenCalledWith(newDate)
+			const [calledDate, range] = onDateChange.mock.calls[0]
+			expect(calledDate).toEqual(newDate)
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-06-01')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-07-12')
 		})
 	})
 
@@ -534,6 +560,28 @@ describe('useCalendarEngine', () => {
 			expect(result.current.rawEvents).toHaveLength(0)
 		})
 
+		it('should delete recurring event with scope all even if uid is missing', () => {
+			const onEventDelete = vi.fn()
+			const baseEvent = createRecurringEvent({ uid: undefined })
+			const events = [baseEvent]
+			const { result } = renderHook(() =>
+				useCalendarEngine({ ...defaultConfig, events, onEventDelete })
+			)
+
+			// Get an instance from the engine (it will have a generated UID)
+			const instances = result.current.events
+			const targetInstance = instances[0]
+
+			act(() =>
+				result.current.deleteRecurringEvent(targetInstance, {
+					scope: 'all',
+					eventDate: targetInstance.start,
+				})
+			)
+
+			expect(onEventDelete).toHaveBeenCalledTimes(1)
+			expect(result.current.rawEvents).toHaveLength(0)
+		})
 		it('should find parent recurring event', () => {
 			const baseEvent = createRecurringEvent()
 			const events = [baseEvent]
@@ -659,6 +707,259 @@ describe('useCalendarEngine', () => {
 			// Only January event should be in processed events
 			expect(result.current.events.some((e) => e.id === '1')).toBe(true)
 			expect(result.current.events.some((e) => e.id === '2')).toBe(false)
+		})
+	})
+
+	describe('timezone support', () => {
+		const originalTz = dayjs.tz.guess()
+
+		beforeEach(() => {
+			dayjs.tz.setDefault('UTC')
+		})
+
+		afterEach(() => {
+			dayjs.tz.setDefault(originalTz)
+		})
+
+		it('should automatically use the default timezone for new dayjs() instances', () => {
+			dayjs.tz.setDefault('America/New_York')
+			const now = dayjs()
+			expect(['-05:00', '-04:00']).toContain(now.format('Z'))
+		})
+
+		it('should reactive update currentDate when timezone prop changes', () => {
+			const initialDate = dayjs('2025-01-15T12:00:00Z') // 12:00 UTC
+			const initialEvents: CalendarEvent[] = []
+			const { result, rerender } = renderHook(
+				({ timezone }) =>
+					useCalendarEngine({
+						...defaultConfig,
+						events: initialEvents,
+						initialDate,
+						timezone,
+					}),
+				{ initialProps: { timezone: 'UTC' } }
+			)
+
+			expect(result.current.currentDate.format('HH:mm')).toBe('12:00')
+
+			// Change to New York (UTC-5)
+			act(() => {
+				rerender({ timezone: 'America/New_York' })
+			})
+
+			// 12:00 UTC should now be 07:00 AM in New York
+			expect(result.current.currentDate.format('HH:mm')).toBe('07:00')
+			expect(result.current.currentDate.format('Z')).toBe('-05:00')
+		})
+
+		it('should reactive update event times when timezone prop changes', () => {
+			const event = createEvent({
+				start: dayjs('2025-01-15T10:00:00Z'),
+				end: dayjs('2025-01-15T11:00:00Z'),
+			})
+			const events = [event]
+			const { result, rerender } = renderHook(
+				({ timezone }) =>
+					useCalendarEngine({
+						...defaultConfig,
+						events,
+						timezone,
+					}),
+				{ initialProps: { timezone: 'UTC' } }
+			)
+
+			expect(result.current.rawEvents[0].start.format('HH:mm')).toBe('10:00')
+
+			// Change to Tokyo (UTC+9)
+			act(() => {
+				rerender({ timezone: 'Asia/Tokyo' })
+			})
+
+			// 10:00 UTC should now be 19:00 in Tokyo
+			expect(result.current.rawEvents[0].start.format('HH:mm')).toBe('19:00')
+			expect(result.current.rawEvents[0].start.format('Z')).toBe('+09:00')
+		})
+	})
+
+	describe('onDateChange range reporting (Strict Analysis)', () => {
+		const onDateChange = vi.fn()
+		const initialDate = dayjs('2025-01-15T12:00:00Z') // A Wednesday
+
+		beforeEach(() => {
+			onDateChange.mockClear()
+		})
+
+		it('should report correct 42-day range in month view (Jan 2025, Sunday start)', () => {
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate,
+					initialView: 'month',
+					firstDayOfWeek: 0,
+					onDateChange,
+				})
+			)
+
+			act(() => result.current.nextPeriod()) // Move to Feb
+
+			const [_date, range] = onDateChange.mock.calls[0]
+			// Feb 2025 starts on Saturday.
+			// Month view with Sunday start (0):
+			// Week 1 starts on Jan 26 (Sunday)
+			// Jan 26 + 42 days = March 8
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-26')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-03-08')
+
+			const daysDiff = range.end.diff(range.start, 'day') + 1
+			expect(daysDiff).toBe(42) // Strict 6-week check
+		})
+
+		it('should report correct 7-day range in week view (Sunday start)', () => {
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate,
+					initialView: 'week',
+					firstDayOfWeek: 0,
+					onDateChange,
+				})
+			)
+
+			act(() => result.current.nextPeriod()) // Jan 15 -> Jan 22
+
+			const [_date, range] = onDateChange.mock.calls[0]
+			// Jan 22 is Wednesday. Week starts Sunday Jan 19, ends Saturday Jan 25
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-19')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-01-25')
+		})
+
+		it('should report correct 7-day range in week view (Monday start)', () => {
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate,
+					initialView: 'week',
+					firstDayOfWeek: 1, // Monday
+					onDateChange,
+				})
+			)
+
+			act(() => result.current.nextPeriod()) // Jan 15 -> Jan 22
+
+			const [_date, range] = onDateChange.mock.calls[0]
+			// Jan 22 is Wednesday. Week starts Monday Jan 20, ends Sunday Jan 26
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-20')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-01-26')
+		})
+
+		it('should report correct single-day range in day view', () => {
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate,
+					initialView: 'day',
+					onDateChange,
+				})
+			)
+
+			act(() => result.current.nextPeriod()) // Jan 15 -> Jan 16
+
+			const [_date, range] = onDateChange.mock.calls[0]
+			expect(range.start.format('YYYY-MM-DD HH:mm:ss')).toBe(
+				'2025-01-16 00:00:00'
+			)
+			expect(range.end.format('YYYY-MM-DD HH:mm:ss')).toBe(
+				'2025-01-16 23:59:59'
+			)
+		})
+
+		it('should report correct full-year range in year view', () => {
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate,
+					initialView: 'year',
+					onDateChange,
+				})
+			)
+
+			act(() => result.current.nextPeriod()) // 2025 -> 2026
+
+			const [_date, range] = onDateChange.mock.calls[0]
+			expect(range.start.format('YYYY-MM-DD')).toBe('2026-01-01')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2026-12-31')
+		})
+
+		it('should report correct range when using today()', () => {
+			const pastDate = dayjs('2020-01-01T12:00:00Z')
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate: pastDate,
+					initialView: 'month',
+					onDateChange,
+				})
+			)
+
+			act(() => result.current.today())
+
+			const [_date, range] = onDateChange.mock.calls[0]
+			const today = dayjs()
+			const expectedMonthWeeks = getMonthWeeks(today, 0)
+
+			expect(range.start.format('YYYY-MM-DD')).toBe(
+				expectedMonthWeeks[0][0].format('YYYY-MM-DD')
+			)
+			expect(range.end.format('YYYY-MM-DD')).toBe(
+				expectedMonthWeeks[5][6].format('YYYY-MM-DD')
+			)
+		})
+
+		it('should report correct range when using selectDate()', () => {
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate,
+					initialView: 'week',
+					firstDayOfWeek: 0,
+					onDateChange,
+				})
+			)
+
+			const targetDate = dayjs('2025-12-25T12:00:00Z') // Christmas 2025 (Thursday)
+			act(() => result.current.selectDate(targetDate))
+
+			const [_date, range] = onDateChange.mock.calls[0]
+			// Dec 25 2025 is Thursday. Week starts Sunday Dec 21, ends Saturday Dec 27
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-12-21')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-12-27')
+		})
+
+		it('should fire onDateChange when view changes (month → week)', () => {
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate, // Jan 15, 2025 (Wednesday)
+					initialView: 'month',
+					firstDayOfWeek: 0,
+					onDateChange,
+				})
+			)
+
+			// Switch from month to week — visible range changes from 42 days to 7 days
+			act(() => result.current.setView('week'))
+
+			expect(onDateChange).toHaveBeenCalledTimes(1)
+			const [date, range] = onDateChange.mock.calls[0]
+
+			// Date should be the same (Jan 15)
+			expect(date.format('YYYY-MM-DD')).toBe('2025-01-15')
+
+			// Range should be the week containing Jan 15 (Sunday start)
+			// Jan 12 (Sun) to Jan 18 (Sat)
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-12')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-01-18')
 		})
 	})
 })

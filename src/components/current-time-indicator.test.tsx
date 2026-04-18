@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import type { RenderCurrentTimeIndicatorProps } from '@/features/calendar/types'
 import type { Resource } from '@/features/resource-calendar/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { CalendarView } from '@/types'
 import { CurrentTimeIndicator } from './current-time-indicator'
 
@@ -51,9 +51,9 @@ const TestWrapper: React.FC<{
 )
 
 interface IndicatorProps {
-	rangeStart: dayjs.Dayjs
-	rangeEnd: dayjs.Dayjs
-	now?: dayjs.Dayjs
+	rangeStart: Dayjs
+	rangeEnd: Dayjs
+	now?: Dayjs
 	resource?: Resource
 	view?: CalendarView
 }
@@ -207,12 +207,13 @@ describe('CurrentTimeIndicator', () => {
 
 		renderIndicator({ rangeStart, rangeEnd, now, resource, view })
 
-		expect(receivedProps).not.toBeNull()
-		expect(receivedProps?.currentTime.isSame(now)).toBe(true)
-		expect(receivedProps?.rangeStart.isSame(rangeStart)).toBe(true)
-		expect(receivedProps?.rangeEnd.isSame(rangeEnd)).toBe(true)
-		expect(receivedProps?.progress).toBe(50)
-		expect(receivedProps?.resource).toEqual(resource)
-		expect(receivedProps?.view).toBe(view)
+		const props = receivedProps as RenderCurrentTimeIndicatorProps | null
+		expect(props).not.toBeNull()
+		expect(props?.currentTime.isSame(now)).toBe(true)
+		expect(props?.rangeStart.isSame(rangeStart)).toBe(true)
+		expect(props?.rangeEnd.isSame(rangeEnd)).toBe(true)
+		expect(props?.progress).toBe(50)
+		expect(props?.resource).toEqual(resource)
+		expect(props?.view).toBe(view)
 	})
 })

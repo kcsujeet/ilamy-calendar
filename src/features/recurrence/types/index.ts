@@ -1,5 +1,5 @@
-import type dayjs from 'dayjs'
 import type { Options } from 'rrule'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 
 /**
  * Scope options for recurring event operations (Google Calendar style)
@@ -15,7 +15,7 @@ export type RecurrenceEditScope =
  */
 export interface RecurrenceEditOptions {
 	scope: RecurrenceEditScope
-	eventDate: dayjs.Dayjs // The date of the specific event being edited
+	eventDate: Dayjs // The date of the specific event being edited
 }
 
 /**

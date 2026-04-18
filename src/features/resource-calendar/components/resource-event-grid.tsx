@@ -1,13 +1,13 @@
 import type React from 'react'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
-import { useResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 
 interface ResourceEventGridProps {
 	/**
 	 * Array of days to display in the grid
 	 */
-	days: dayjs.Dayjs[] | dayjs.Dayjs[][]
+	days: Dayjs[] | Dayjs[][]
 	/** The type of grid to display - 'day' for day view, 'hour' for week view
 	 * (affects event positioning logic)
 	 */
@@ -26,7 +26,7 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 	children,
 	classes,
 }) => {
-	const { getVisibleResources } = useResourceCalendarContext()
+	const { getVisibleResources } = useSmartCalendarContext()
 
 	const visibleResources = getVisibleResources()
 

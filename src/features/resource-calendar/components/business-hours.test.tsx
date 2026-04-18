@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import type { WeekDays } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type { Resource } from '@/features/resource-calendar/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { ResourceDayHorizontal } from './day-view/resource-day-horizontal'
 import { ResourceDayVertical } from './day-view/resource-day-vertical'
-import { ResourceWeekHorizontal } from './week-view/resource-week-horizontal'
+import { ResourceWeekHorizontal } from './week-view/horizontal/resource-week-horizontal'
 
 const mockResources: Resource[] = [{ id: '1', title: 'Resource 1' }]
 
@@ -128,6 +128,53 @@ describe('Resource Calendar Business Hours Integration', () => {
 			expect(
 				screen.queryByTestId('resource-day-time-label-18')
 			).not.toBeInTheDocument()
+		})
+	})
+	describe('Resource Business Hours Union and Precedence', () => {
+		test('renders union of business hours and respects resource-specific availability', () => {
+			const initialDate = dayjs('2025-01-01T00:00:00.000Z') // Wednesday
+			const resources: Resource[] = [
+				{
+					id: 'A',
+					title: 'Resource A',
+					businessHours: { startTime: 9, endTime: 17 },
+				},
+				{
+					id: 'B',
+					title: 'Resource B',
+					businessHours: { startTime: 9, endTime: 18 },
+				},
+			]
+
+			render(
+				<ResourceCalendarProvider
+					dayMaxEvents={3}
+					hideNonBusinessHours={true}
+					initialDate={initialDate}
+					resources={resources}
+				>
+					<ResourceDayHorizontal />
+				</ResourceCalendarProvider>
+			)
+
+			// 1. Verify Union: Should show up to 18:00 (last label 17:00 because it covers 17-18)
+			expect(
+				screen.getByTestId('resource-day-time-label-17')
+			).toBeInTheDocument()
+			expect(
+				screen.queryByTestId('resource-day-time-label-18')
+			).not.toBeInTheDocument()
+
+			// 2. Verify Precedence/Availability:
+			// Resource A at 17:00 should be disabled
+			const rowA = screen.getByTestId('horizontal-row-A')
+			const cellA17 = within(rowA).getByTestId('day-cell-2025-01-01-17-00')
+			expect(cellA17.getAttribute('data-disabled')).toBe('true')
+
+			// Resource B at 17:00 should be enabled
+			const rowB = screen.getByTestId('horizontal-row-B')
+			const cellB17 = within(rowB).getByTestId('day-cell-2025-01-01-17-00')
+			expect(cellB17.getAttribute('data-disabled')).toBe('false')
 		})
 	})
 })

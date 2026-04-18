@@ -225,7 +225,9 @@ describe('updateRecurringEvent', () => {
 
 			// Original series should be terminated with UNTIL
 			const terminatedEvent = result.find((e) => e.id === baseEvent.id)
-			expect(terminatedEvent?.rrule.until).toEqual(
+			if (!terminatedEvent?.rrule)
+				throw new Error('terminatedEvent.rrule missing')
+			expect(terminatedEvent.rrule.until).toEqual(
 				dayjs('2025-01-19T23:59:59.999Z').toDate()
 			)
 
@@ -258,7 +260,9 @@ describe('updateRecurringEvent', () => {
 
 			// Original should terminate before first occurrence (effectively making it empty)
 			const terminatedEvent = result.find((e) => e.id === baseEvent.id)
-			expect(terminatedEvent?.rrule.until).toEqual(
+			if (!terminatedEvent?.rrule)
+				throw new Error('terminatedEvent.rrule missing')
+			expect(terminatedEvent.rrule.until).toEqual(
 				dayjs('2025-01-05T23:59:59.999Z').toDate()
 			)
 		})
@@ -289,6 +293,7 @@ describe('updateRecurringEvent', () => {
 
 			const updatedEvent = result[0]
 			expect(updatedEvent.title).toBe('Updated All Events')
+			if (!updatedEvent.rrule) throw new Error('updatedEvent.rrule missing')
 			expect(updatedEvent.rrule.freq).toBe(RRule.DAILY)
 			expect(updatedEvent.id).toBe(baseEvent.id)
 		})
@@ -405,6 +410,7 @@ describe('deleteRecurringEvent', () => {
 			expect(result).toHaveLength(1)
 
 			const terminatedEvent = result[0]
+			if (!terminatedEvent.rrule) throw new Error('rrule missing')
 			expect(terminatedEvent.rrule.until).toEqual(
 				dayjs('2025-01-19T23:59:59.999Z').toDate()
 			)
@@ -426,6 +432,7 @@ describe('deleteRecurringEvent', () => {
 			})
 
 			const terminatedEvent = result[0]
+			if (!terminatedEvent.rrule) throw new Error('rrule missing')
 			expect(terminatedEvent.rrule.until).toEqual(
 				dayjs('2025-01-05T23:59:59.999Z').toDate()
 			)
@@ -452,6 +459,7 @@ describe('deleteRecurringEvent', () => {
 
 			const terminatedEvent = result[0]
 			// Should replace existing UNTIL with earlier termination date
+			if (!terminatedEvent.rrule) throw new Error('rrule missing')
 			expect(terminatedEvent.rrule.until).toEqual(
 				dayjs('2025-01-19T23:59:59.999Z').toDate()
 			)

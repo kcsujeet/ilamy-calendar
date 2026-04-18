@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import type { CalendarEvent } from '@/components/types'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils/generator'
-import DayView from './day-view'
+import { DayView } from './day-view'
 
 // Mock events for testing
 const mockEvents: CalendarEvent[] = generateMockEvents()
@@ -21,7 +21,7 @@ const TestWrapper = ({
 	children: React.ReactNode
 	testId: string
 }) => {
-	const { currentDate } = useCalendarContext()
+	const { currentDate } = useSmartCalendarContext()
 	return (
 		<>
 			<div data-testid={`${testId}-year`}>{currentDate.year()}</div>
@@ -709,6 +709,18 @@ describe('DayView', () => {
 		expect(screen.getByTestId('vertical-time-23')).toBeInTheDocument()
 	})
 
+	test('scroll area uses flex column container for scroll containment', () => {
+		cleanup()
+		renderDayView()
+
+		const container = screen.getByTestId('vertical-grid-container')
+		expect(container.className).toContain('flex')
+		expect(container.className).toContain('flex-col')
+
+		const scrollArea = screen.getByTestId('vertical-grid-scroll')
+		expect(scrollArea).toBeInTheDocument()
+	})
+
 	test('still applies business hours styling when hideNonBusinessHours is false', () => {
 		cleanup()
 		const monday = dayjs('2025-01-06T00:00:00.000Z')
@@ -848,5 +860,29 @@ describe('DayView', () => {
 		// Event starting at 1pm (4 hours into 8-hour grid) should be at 50%
 		const style = eventWrapper?.getAttribute('style') || ''
 		expect(style).toContain('top: 50%')
+	})
+
+	test('customizes hour rendering when renderHour prop is provided', () => {
+		cleanup()
+		const renderHour = (date: Dayjs) => (
+			<span data-testid={`custom-hour-${date.format('HH')}`}>
+				{date.format('HH:mm')}
+			</span>
+		)
+
+		renderDayView({ renderHour })
+
+		// Check that the custom rendering is used
+		const customMidnight = screen.getByTestId('custom-hour-00')
+		expect(customMidnight).toBeInTheDocument()
+		expect(customMidnight).toHaveTextContent('00:00')
+
+		const customNoon = screen.getByTestId('custom-hour-12')
+		expect(customNoon).toBeInTheDocument()
+		expect(customNoon).toHaveTextContent('12:00')
+
+		const customLastHour = screen.getByTestId('custom-hour-23')
+		expect(customLastHour).toBeInTheDocument()
+		expect(customLastHour).toHaveTextContent('23:00')
 	})
 })

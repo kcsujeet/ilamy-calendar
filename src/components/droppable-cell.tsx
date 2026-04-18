@@ -3,14 +3,14 @@
 import { useDroppable } from '@dnd-kit/core'
 import type React from 'react'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 interface DroppableCellProps {
 	id: string
 	type: 'day-cell' | 'time-cell'
-	date: dayjs.Dayjs
+	date: Dayjs
 	hour?: number
 	minute?: number
 	resourceId?: string | number
@@ -36,13 +36,13 @@ export function DroppableCell({
 	'data-testid': dataTestId,
 	disabled = false,
 }: DroppableCellProps) {
-	const { onCellClick, disableDragAndDrop, disableCellClick, classesOverride } =
-		useSmartCalendarContext((state) => ({
-			onCellClick: state.onCellClick,
-			disableDragAndDrop: state.disableDragAndDrop,
-			disableCellClick: state.disableCellClick,
-			classesOverride: state.classesOverride,
-		}))
+	const {
+		onCellClick,
+		disableDragAndDrop,
+		disableCellClick,
+		classesOverride,
+		view,
+	} = useSmartCalendarContext()
 
 	const { isOver, setNodeRef } = useDroppable({
 		id,
@@ -78,7 +78,8 @@ export function DroppableCell({
 	}
 
 	return (
-		// oxlint-disable-next-line click-events-have-key-events
+		// biome-ignore lint/a11y/noStaticElementInteractions: The cell is interactive for event creation
+		// biome-ignore lint/a11y/useKeyWithClickEvents: Key events are handled by parent components
 		<div
 			className={cn(
 				'droppable-cell',
@@ -87,7 +88,9 @@ export function DroppableCell({
 				disableCellClick || disabled ? 'cursor-default' : 'cursor-pointer',
 				disabled && (classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME)
 			)}
+			data-disabled={disabled.toString()}
 			data-testid={dataTestId}
+			data-view={view}
 			onClick={handleCellClick}
 			ref={setNodeRef}
 			style={style}

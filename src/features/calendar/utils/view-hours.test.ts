@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { WeekDays } from '@/components/types'
+import type { BusinessHours, WeekDays } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { getViewHours } from './view-hours'
 
@@ -85,5 +85,57 @@ describe('getViewHours', () => {
 		expect(hours.length).toBe(8)
 		expect(hours[0].hour()).toBe(10)
 		expect(hours[7].hour()).toBe(17)
+	})
+
+	test('merges global and resource-specific business hours', () => {
+		const globalBH = { startTime: 10, endTime: 16 }
+		const resourceBH = [
+			{
+				daysOfWeek: ['wednesday'] as WeekDays[],
+				startTime: 8,
+				endTime: 12,
+			},
+			{
+				daysOfWeek: ['wednesday'] as WeekDays[],
+				startTime: 14,
+				endTime: 18,
+			},
+		]
+		const hours = getViewHours({
+			referenceDate,
+			businessHours: globalBH,
+			resourceBusinessHours: [resourceBH],
+			hideNonBusinessHours: true,
+		})
+		// Earliest start: 8, Latest end: 18
+		expect(hours[0].hour()).toBe(8)
+		expect(hours[hours.length - 1].hour()).toBe(17)
+		expect(hours.length).toBe(10)
+	})
+
+	test('handles multiple overlapping or separate rules (user-reported split shifts)', () => {
+		const businessHours: BusinessHours[] = [
+			{
+				daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+				startTime: 10,
+				endTime: 12,
+			},
+			{
+				daysOfWeek: ['tuesday'],
+				startTime: 14,
+				endTime: 16,
+			},
+		]
+
+		const hours = getViewHours({
+			referenceDate: dayjs('2025-01-07T00:00:00.000Z'), // Tuesday
+			businessHours,
+			hideNonBusinessHours: true,
+		})
+
+		// Should show range from earliest start (10) to latest end (16)
+		expect(hours[0].hour()).toBe(10)
+		expect(hours[hours.length - 1].hour()).toBe(15)
+		expect(hours.length).toBe(6) // 10, 11, 12, 13, 14, 15
 	})
 })

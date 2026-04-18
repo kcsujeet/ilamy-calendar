@@ -9,6 +9,8 @@ import type {
 } from '@/features/calendar/types'
 import type { Resource } from '@/features/resource-calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 import { ResourceCalendarContext } from './context'
 
 const getEventResourceIds = (event: CalendarEvent): (string | number)[] => {
@@ -27,9 +29,11 @@ interface ResourceCalendarProviderProps extends CalendarProviderProps {
 	renderResource?: (resource: Resource) => React.ReactNode
 	classesOverride?: CalendarClassesOverride
 	orientation?: 'horizontal' | 'vertical'
+	weekViewGranularity?: 'hourly' | 'daily'
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
 	) => React.ReactNode
+	renderHour?: (date: Dayjs) => React.ReactNode
 	hideNonBusinessHours?: boolean
 }
 
@@ -56,7 +60,8 @@ export const ResourceCalendarProvider: React.FC<
 	disableEventClick,
 	disableDragAndDrop,
 	dayMaxEvents,
-	eventSpacing,
+	eventSpacing = 1,
+	eventHeight = EVENT_BAR_HEIGHT,
 	stickyViewHeader = true,
 	viewHeaderClassName = '',
 	headerComponent,
@@ -70,7 +75,10 @@ export const ResourceCalendarProvider: React.FC<
 	classesOverride,
 	orientation = 'horizontal',
 	renderCurrentTimeIndicator,
+	renderHour,
 	hideNonBusinessHours = false,
+	hiddenDays,
+	weekViewGranularity = 'hourly',
 }) => {
 	// Resource-specific state
 	const [currentResources] = useState<Resource[]>(resources)
@@ -272,6 +280,7 @@ export const ResourceCalendarProvider: React.FC<
 			disableDragAndDrop,
 			dayMaxEvents,
 			eventSpacing,
+			eventHeight,
 			stickyViewHeader,
 			viewHeaderClassName,
 			businessHours,
@@ -279,7 +288,10 @@ export const ResourceCalendarProvider: React.FC<
 			classesOverride,
 			orientation,
 			renderCurrentTimeIndicator,
+			renderHour,
 			hideNonBusinessHours,
+			hiddenDays,
+			weekViewGranularity,
 		}),
 		[
 			calendarEngine,
@@ -307,6 +319,7 @@ export const ResourceCalendarProvider: React.FC<
 			disableDragAndDrop,
 			dayMaxEvents,
 			eventSpacing,
+			eventHeight,
 			stickyViewHeader,
 			viewHeaderClassName,
 			headerComponent,
@@ -316,7 +329,10 @@ export const ResourceCalendarProvider: React.FC<
 			classesOverride,
 			orientation,
 			renderCurrentTimeIndicator,
+			renderHour,
 			hideNonBusinessHours,
+			hiddenDays,
+			weekViewGranularity,
 		]
 	)
 

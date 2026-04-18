@@ -1,3 +1,4 @@
+import type { BusinessHours } from '@/components/types'
 import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
@@ -6,7 +7,7 @@ import type {
 /**
  * Public-facing resource calendar event interface with flexible date types.
  * Similar to IlamyCalendarPropEvent but with resource assignment fields.
- * Dates can be provided as dayjs.Dayjs, Date, or string and will be normalized internally.
+ * Dates can be provided as Dayjs, Date, or string and will be normalized internally.
  *
  * @interface IlamyResourceCalendarPropEvent
  * @extends {IlamyCalendarPropEvent}
@@ -32,6 +33,12 @@ export interface IlamyResourceCalendarProps
 	 * - "vertical": Resources are columns, time is rows
 	 */
 	orientation?: 'horizontal' | 'vertical'
+	/**
+	 * Granularity of time slots in the week view.
+	 * - "hourly": Time slots are 1 hour (default)
+	 * - "daily": Time slots are 1 day
+	 */
+	weekViewGranularity?: 'hourly' | 'daily'
 }
 
 /**
@@ -54,4 +61,17 @@ export interface Resource {
 	backgroundColor?: string
 	/** Optional position for resource display */
 	position?: number
+	/**
+	 * Configuration for resource-specific business hours.
+	 * If provided, these will be used instead of the global business hours for this resource.
+	 */
+	businessHours?: BusinessHours | BusinessHours[]
+	/**
+	 * Custom data associated with the resource
+	 * Use this to store additional metadata specific to your application
+	 * @example { avatar: 'https://example.com/avatar.png', role: 'admin' }
+	 */
+	// oxlint-disable-next-line no-explicit-any
+	// biome-ignore lint/suspicious/noExplicitAny: Metadata can be anything
+	data?: Record<string, any>
 }

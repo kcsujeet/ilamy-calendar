@@ -1,7 +1,7 @@
 import { useDraggable } from '@dnd-kit/core'
-import { AnimatePresence, motion } from 'motion/react'
 import type { CSSProperties } from 'react'
 import { memo } from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
@@ -36,12 +36,7 @@ function DraggableEventUnmemoized({
 	disableDrag?: boolean
 }) {
 	const { onEventClick, renderEvent, disableEventClick, disableDragAndDrop } =
-		useSmartCalendarContext((state) => ({
-			onEventClick: state.onEventClick,
-			renderEvent: state.renderEvent,
-			disableEventClick: state.disableEventClick,
-			disableDragAndDrop: state.disableDragAndDrop,
-		}))
+		useSmartCalendarContext()
 
 	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
 		id: elementId,
@@ -68,7 +63,10 @@ function DraggableEventUnmemoized({
 					event.backgroundColor || 'bg-blue-500',
 					event.color || 'text-white',
 					'h-full w-full px-1 border-[1.5px] border-card text-left overflow-clip relative',
-					getBorderRadiusClass(isTruncatedStart, isTruncatedEnd)
+					getBorderRadiusClass(
+						Boolean(isTruncatedStart),
+						Boolean(isTruncatedEnd)
+					)
 				)}
 				style={{ backgroundColor: event.backgroundColor, color: event.color }}
 			>
@@ -98,40 +96,34 @@ function DraggableEventUnmemoized({
 	}
 
 	return (
-		<AnimatePresence mode="wait">
-			<motion.div
-				key={elementId}
-				ref={setNodeRef}
-				{...attributes}
-				{...listeners}
-				animate={{ opacity: 1, y: 0 }}
-				className={cn(
-					'truncate h-full w-full',
-					disableDrag || disableDragAndDrop
-						? disableEventClick
-							? 'cursor-default'
-							: 'cursor-pointer'
-						: 'cursor-grab',
-					isDragging &&
-						!(disableDrag || disableDragAndDrop) &&
-						'cursor-grabbing shadow-lg',
-					className
-				)}
-				exit={{ opacity: 0, y: -50 }}
-				initial={{ opacity: 0, y: -50 }}
-				layout
-				layoutId={elementId}
-				onClick={(e) => {
-					e.stopPropagation()
-					onEventClick(event)
-				}}
-				style={style}
-				transition={{ duration: 0.4, ease: 'easeInOut' }}
-			>
-				{/* Use custom renderEvent from context if available, otherwise use default */}
-				{renderEvent ? renderEvent(event) : <DefaultEventContent />}
-			</motion.div>
-		</AnimatePresence>
+		<AnimatedSection
+			className={cn(
+				'truncate h-full w-full',
+				disableDrag || disableDragAndDrop
+					? disableEventClick
+						? 'cursor-default'
+						: 'cursor-pointer'
+					: 'cursor-grab',
+				isDragging &&
+					!(disableDrag || disableDragAndDrop) &&
+					'cursor-grabbing shadow-lg',
+				className
+			)}
+			layout={true}
+			layoutId={elementId}
+			onClick={(e) => {
+				e.stopPropagation()
+				onEventClick(event)
+			}}
+			ref={setNodeRef}
+			style={style}
+			transitionKey={elementId}
+			{...attributes}
+			{...listeners}
+		>
+			{/* Use custom renderEvent from context if available, otherwise use default */}
+			{renderEvent ? renderEvent(event) : <DefaultEventContent />}
+		</AnimatedSection>
 	)
 }
 

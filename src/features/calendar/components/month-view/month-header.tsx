@@ -1,6 +1,6 @@
-import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
-import { useCalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { AnimatedSection } from '@/components/animations/animated-section'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
@@ -10,7 +10,7 @@ interface MonthHeaderProps {
 
 export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 	const { firstDayOfWeek, stickyViewHeader, viewHeaderClassName, currentDate } =
-		useCalendarContext()
+		useSmartCalendarContext()
 
 	// Reorder week days based on firstDayOfWeek
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
@@ -26,23 +26,15 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 			data-testid="month-header"
 		>
 			{weekDays.map((weekDay, index) => (
-				<AnimatePresence key={weekDay.toISOString()} mode="wait">
-					<motion.div
-						animate={{ opacity: 1, y: 0 }}
-						className="py-2 text-center font-medium border-r last:border-r-0 border-b flex-1"
-						data-testid={`weekday-header-${weekDay.format('ddd').toLowerCase()}`}
-						exit={{ opacity: 0, y: -10 }}
-						initial={{ opacity: 0, y: -10 }}
-						key={weekDay.toISOString()}
-						transition={{
-							duration: 0.25,
-							ease: 'easeInOut',
-							delay: index * 0.05,
-						}}
-					>
-						<span className="text-sm capitalize">{weekDay.format('ddd')}</span>
-					</motion.div>
-				</AnimatePresence>
+				<AnimatedSection
+					className="py-2 text-center font-medium border-r last:border-r-0 border-b flex-1"
+					data-testid={`weekday-header-${weekDay.format('ddd').toLowerCase()}`}
+					delay={index * 0.05}
+					key={weekDay.toISOString()}
+					transitionKey={weekDay.toISOString()}
+				>
+					<span className="text-sm capitalize">{weekDay.format('ddd')}</span>
+				</AnimatedSection>
 			))}
 		</div>
 	)

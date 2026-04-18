@@ -3,8 +3,8 @@ import { cleanup, render, screen } from '@testing-library/react'
 import type { WeekDays } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
-import DayView from './day-view/day-view'
-import WeekView from './week-view/week-view'
+import { DayView } from './day-view/day-view'
+import { WeekView } from './week-view/week-view'
 
 describe('Regular Calendar Business Hours Integration', () => {
 	beforeEach(() => {

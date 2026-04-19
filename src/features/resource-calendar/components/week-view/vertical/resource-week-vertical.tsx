@@ -48,7 +48,7 @@ export const ResourceWeekVertical: React.FC = () => {
 				<AllDayCell />
 				{resources.map((resource) => (
 					<AllDayRow
-						classes={{ cell: 'min-w-50' }}
+						classes={{ cell: 'min-w-20' }}
 						days={visibleDays}
 						key={keys.allDayRow(resource.id)}
 						resource={resource}
@@ -62,7 +62,10 @@ export const ResourceWeekVertical: React.FC = () => {
 	return (
 		<VerticalGrid
 			allDayRow={allDayRow}
-			classes={{ header: isHourly ? 'h-24' : 'h-12' }}
+			classes={{
+				header: isHourly ? 'h-24' : 'h-12 w-full',
+				body: isHourly ? 'w-fit' : 'w-full',
+			}}
 			columns={[firstCol, ...columns]}
 			data-testid="resource-week"
 			gridType={isHourly ? 'hour' : 'day'}

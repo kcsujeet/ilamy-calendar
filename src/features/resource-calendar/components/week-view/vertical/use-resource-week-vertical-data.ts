@@ -35,6 +35,7 @@ export function useResourceWeekVerticalData() {
 			resources.flatMap((resource) =>
 				visibleDays.map((day) => ({
 					id: keys.col.day(day, resource.id),
+					className: 'min-w-20 flex-1',
 					resourceId: resource.id,
 					resource,
 					day,
@@ -52,6 +53,7 @@ export function useResourceWeekVerticalData() {
 		() =>
 			resources.map((resource) => ({
 				id: keys.col.resource('week', resource.id),
+				className: 'min-w-20 flex-1',
 				day: undefined,
 				resourceId: resource.id,
 				resource,

@@ -43,7 +43,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	return (
 		<div
 			className={cn(
-				'flex flex-col flex-1 items-center justify-center min-w-50 bg-background relative',
+				'flex flex-col flex-1 items-center justify-center min-w-20 bg-background relative',
 				className
 			)}
 			data-testid={dataTestId || keys.container.vertical.col(id)}

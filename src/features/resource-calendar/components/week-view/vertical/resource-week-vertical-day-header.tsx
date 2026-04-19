@@ -29,7 +29,7 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 				return (
 					<AnimatedSection
 						className={cn(
-							'w-50 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
+							'w-20 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
 						)}
 						data-testid={keys.header.resource.timeLabel(
 							'week',

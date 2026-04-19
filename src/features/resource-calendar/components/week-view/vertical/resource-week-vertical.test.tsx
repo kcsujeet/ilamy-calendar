@@ -343,10 +343,10 @@ describe('ResourceWeekVertical', () => {
 			test('shows week number in the header in daily mode', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'daily' })
 
-				// Span renders "{t('week')} {week()}", e.g. "Week 1"
+				// Header renders "Week" label and week number as separate spans
 				const weekNumber = initialDate.week()
-				const weekLabel = `Week ${weekNumber}`
-				expect(screen.getByText(weekLabel)).toBeInTheDocument()
+				expect(screen.getByText('Week')).toBeInTheDocument()
+				expect(screen.getByText(String(weekNumber))).toBeInTheDocument()
 			})
 
 			test('firstCol (date-col) shows day name + date for each day of the week', () => {

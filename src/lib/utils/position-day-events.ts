@@ -54,123 +54,65 @@ export const getPositionedDayEvents = ({
 		clusters.push(currentCluster)
 	}
 
-	// Step 2: For each cluster, use a more intelligent column assignment
+	// Compute top/height percentages for an event, clamped to grid; null if outside.
+	const computeTopHeight = (
+		event: CalendarEvent
+	): { top: number; height: number } | null => {
+		let startTime = event.start.diff(gridStart, gridType, true)
+		let endTime = event.end.diff(gridStart, gridType, true)
+		if (isDiscrete) {
+			startTime = Math.floor(startTime)
+			endTime = Math.ceil(endTime)
+			if (endTime <= startTime) endTime = startTime + 1
+		}
+		if (startTime < 0) startTime = 0
+		if (endTime > totalUnits) endTime = totalUnits
+		const duration = Math.max(0, endTime - startTime)
+		if (duration === 0) return null
+		return {
+			top: (startTime / totalUnits) * 100,
+			height: (duration / totalUnits) * 100,
+		}
+	}
+
+	// Max cluster offset by event count (2 events → 25%, etc.)
+	const maxOffsetByCount = (n: number) =>
+		n === 2 ? 25 : n === 3 ? 50 : n === 4 ? 60 : 70
+
+	// Step 2: For each cluster, compute positions
 	const processedEvents: PositionedEvent[] = []
 	for (const cluster of clusters) {
 		if (cluster.length === 1) {
-			// Single event takes full width
 			const event = cluster[0]
-
-			let startTime = event.start.diff(gridStart, gridType, true)
-			let endTime = event.end.diff(gridStart, gridType, true)
-
-			if (isDiscrete) {
-				startTime = Math.floor(startTime)
-				endTime = Math.ceil(endTime)
-				// Ensure at least 1 unit duration for discrete events
-				if (endTime <= startTime) {
-					endTime = startTime + 1
-				}
-			}
-
-			// Clamp to grid boundaries
-			if (startTime < 0) startTime = 0
-			if (endTime > totalUnits) endTime = totalUnits
-
-			const totalDuration = Math.max(0, endTime - startTime)
-
-			// Skip events that are completely outside the grid
-			if (totalDuration === 0) continue
-
-			const top = (startTime / totalUnits) * 100
-			const height = (totalDuration / totalUnits) * 100
-
-			processedEvents.push({ ...event, left: 0, width: 100, top, height })
+			const pos = computeTopHeight(event)
+			if (!pos) continue
+			processedEvents.push({ ...event, left: 0, width: 100, ...pos })
 			continue
 		}
 
-		// Multiple events - use layered positioning approach
-		// Sort by duration (longest first), then by start time
+		// Multiple events — layered positioning. Longest duration first, tie-break
+		// by earliest start.
 		const sortedCluster = [...cluster].sort((a, b) => {
-			const aDuration = a.end.diff(a.start, 'minute')
-			const bDuration = b.end.diff(b.start, 'minute')
-
-			// Longer events first
-			if (aDuration !== bDuration) {
-				return bDuration - aDuration
-			}
-
-			// If same duration, earlier start time first
-			return a.start.diff(b.start)
+			const durDiff =
+				b.end.diff(b.start, 'minute') - a.end.diff(a.start, 'minute')
+			return durDiff !== 0 ? durDiff : a.start.diff(b.start)
 		})
 
-		// Process events with layered positioning
-		const totalEvents = sortedCluster.length
+		const n = sortedCluster.length
+		const offsetPerEvent = n > 1 ? maxOffsetByCount(n) / (n - 1) : 0
 
-		// Calculate dynamic offset based on number of overlapping events
-		// Fewer events = larger individual offsets, more events = smaller offsets
-		let maxOffset: number
-		if (totalEvents === 2) {
-			maxOffset = 25 // 25% offset for 2 events
-		} else if (totalEvents === 3) {
-			maxOffset = 50 // 50% total for 3 events (25% each)
-		} else if (totalEvents === 4) {
-			maxOffset = 60 // 60% total for 4 events (20% each)
-		} else {
-			maxOffset = 70 // 70% total for 5+ events
-		}
-
-		const offsetPerEvent = totalEvents > 1 ? maxOffset / (totalEvents - 1) : 0
-
-		for (let i = 0; i < sortedCluster.length; i++) {
+		for (let i = 0; i < n; i++) {
 			const event = sortedCluster[i]
-
-			let startTime = event.start.diff(gridStart, gridType, true)
-			let endTime = event.end.diff(gridStart, gridType, true)
-
-			if (isDiscrete) {
-				startTime = Math.floor(startTime)
-				endTime = Math.ceil(endTime)
-				if (endTime <= startTime) {
-					endTime = startTime + 1
-				}
-			}
-
-			// Clamp to grid boundaries
-			if (startTime < 0) startTime = 0
-			if (endTime > totalUnits) endTime = totalUnits
-
-			const totalDuration = Math.max(0, endTime - startTime)
-
-			if (totalDuration === 0) continue
-
-			const top = (startTime / totalUnits) * 100
-			const height = (totalDuration / totalUnits) * 100
-
-			// Calculate positioning based on layer and total events
-			let left: number
-			let width: number
-			let zIndex: number
-
-			if (i === 0) {
-				// First event (longest) takes full width at bottom
-				left = 0
-				width = 100
-				zIndex = 1
-			} else {
-				// Subsequent events are offset dynamically based on total event count
-				left = offsetPerEvent * i
-				width = 100 - left // Remaining width
-				zIndex = i + 1 // Higher z-index for events on top
-			}
-
+			const pos = computeTopHeight(event)
+			if (!pos) continue
+			// First event (longest) takes full width; later events are offset.
+			const left = i === 0 ? 0 : offsetPerEvent * i
 			processedEvents.push({
 				...event,
+				...pos,
 				left,
-				width,
-				top,
-				height,
-				zIndex,
+				width: 100 - left,
+				zIndex: i + 1,
 			})
 		}
 	}

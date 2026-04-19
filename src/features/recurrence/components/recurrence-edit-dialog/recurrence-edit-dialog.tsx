@@ -10,6 +10,27 @@ import {
 import type { RecurrenceEditScope } from '@/features/recurrence/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
+const SCOPES = [
+	{
+		scope: 'this',
+		title: 'thisEvent',
+		editKey: 'onlyChangeThis',
+		deleteKey: 'onlyDeleteThis',
+	},
+	{
+		scope: 'following',
+		title: 'thisAndFollowingEvents',
+		editKey: 'changeThisAndFuture',
+		deleteKey: 'deleteThisAndFuture',
+	},
+	{
+		scope: 'all',
+		title: 'allEvents',
+		editKey: 'changeEntireSeries',
+		deleteKey: 'deleteEntireSeries',
+	},
+] as const
+
 interface RecurrenceEditDialogProps {
 	isOpen: boolean
 	onClose: () => void
@@ -50,44 +71,21 @@ export function RecurrenceEditDialog({
 				</DialogHeader>
 
 				<div className="space-y-3">
-					<Button
-						className="w-full justify-start h-auto p-4"
-						onClick={() => handleScopeSelect('this')}
-						variant="outline"
-					>
-						<div className="text-left">
-							<div className="font-medium">{t('thisEvent')}</div>
-							<div className="text-sm text-muted-foreground">
-								{isEdit ? t('onlyChangeThis') : t('onlyDeleteThis')}
+					{SCOPES.map(({ scope, title, editKey, deleteKey }) => (
+						<Button
+							className="w-full justify-start h-auto p-4"
+							key={scope}
+							onClick={() => handleScopeSelect(scope)}
+							variant="outline"
+						>
+							<div className="text-left">
+								<div className="font-medium">{t(title)}</div>
+								<div className="text-sm text-muted-foreground">
+									{t(isEdit ? editKey : deleteKey)}
+								</div>
 							</div>
-						</div>
-					</Button>
-
-					<Button
-						className="w-full justify-start h-auto p-4"
-						onClick={() => handleScopeSelect('following')}
-						variant="outline"
-					>
-						<div className="text-left">
-							<div className="font-medium">{t('thisAndFollowingEvents')}</div>
-							<div className="text-sm text-muted-foreground">
-								{isEdit ? t('changeThisAndFuture') : t('deleteThisAndFuture')}
-							</div>
-						</div>
-					</Button>
-
-					<Button
-						className="w-full justify-start h-auto p-4"
-						onClick={() => handleScopeSelect('all')}
-						variant="outline"
-					>
-						<div className="text-left">
-							<div className="font-medium">{t('allEvents')}</div>
-							<div className="text-sm text-muted-foreground">
-								{isEdit ? t('changeEntireSeries') : t('deleteEntireSeries')}
-							</div>
-						</div>
-					</Button>
+						</Button>
+					))}
 				</div>
 
 				<DialogFooter>

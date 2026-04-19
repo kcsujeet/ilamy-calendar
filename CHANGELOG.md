@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.6.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.6.0...v1.6.1)
+
+> 19 April 2026
+
+##### Fixes
+
+- fix: vertical grid layout now reliably fills the full container width — added `min-w-full` on the body and header so narrow content (few resources / hidden days) no longer leaves dead space on the right
+
+#### [v1.6.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.5.2...v1.6.0)
+
+> 19 April 2026
+
+##### Features
+
+- feat: `weekViewGranularity` prop on `IlamyResourceCalendar` — render the week view as one column per resource for the full week instead of an hour grid (`'hourly'` default, `'daily'` opts in) ([`#113`](https://github.com/kcsujeet/ilamy-calendar/pull/113)) — Thanks [@sebvg](https://github.com/sebvg)!
+
+##### Fixes
+
+- fix: tooltips now use localized labels ([`#66`](https://github.com/kcsujeet/ilamy-calendar/pull/66)) — Thanks [@tg-freigmbh](https://github.com/tg-freigmbh)!
+- fix: sticky header horizontal positioning in hourly `ResourceWeekVertical` no longer drifts during horizontal scroll ([`#118`](https://github.com/kcsujeet/ilamy-calendar/pull/118))
+
+##### Performance
+
+- perf: bundle size reduced by ~14 KB raw (~2.3%) vs v1.5.2 ([`#117`](https://github.com/kcsujeet/ilamy-calendar/pull/117))
+  - Removed 4 unused dependencies (`@base-ui/react`, `@radix-ui/react-tabs`, `radix-ui`, `react-day-picker`) — ~19 MB install footprint saved
+  - Replaced `react-day-picker` with a lightweight internal `Calendar` component
+  - Algorithm-level dedup in event-positioning utilities + calendar engine + context providers
+- perf: simplified `ResourceWeekVerticalResourceHeader` and related vertical-week subcomponents ([`#118`](https://github.com/kcsujeet/ilamy-calendar/pull/118))
+
+##### Internal
+
+- chore: Tailwind upgraded to v4.2.2
+- chore: consolidated Claude Code config under `.agents/`, added dev-log and TDD hooks ([`#116`](https://github.com/kcsujeet/ilamy-calendar/pull/116))
+
 #### [v1.5.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.5.1...v1.5.2)
 
 > 12 April 2026

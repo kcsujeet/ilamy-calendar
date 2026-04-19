@@ -243,6 +243,34 @@ export const EventForm: React.FC<EventFormProps> = ({
 	const startConstraints = getTimeConstraints(startDate, effectiveBusinessHours)
 	const endConstraints = getTimeConstraints(endDate, effectiveBusinessHours)
 
+	// Local component for title / description / location text inputs.
+	// They share identical markup; only label/placeholder/value differ.
+	type TextFieldName = 'title' | 'description' | 'location'
+	const TextField = ({
+		name,
+		placeholder,
+		required = false,
+	}: {
+		name: TextFieldName
+		placeholder: string
+		required?: boolean
+	}) => (
+		<div className="grid gap-1 sm:gap-2">
+			<Label className="text-xs sm:text-sm" htmlFor={name}>
+				{t(name)}
+			</Label>
+			<Input
+				className="h-8 text-sm sm:h-9"
+				id={name}
+				name={name}
+				onChange={handleInputChange}
+				placeholder={placeholder}
+				required={required}
+				value={formValues[name]}
+			/>
+		</div>
+	)
+
 	const dateFields = [
 		['startDate', startDate, handleStartDateChange],
 		['endDate', endDate, handleEndDateChange],
@@ -264,34 +292,15 @@ export const EventForm: React.FC<EventFormProps> = ({
 			<form className="flex flex-col flex-1 min-h-0" onSubmit={handleSubmit}>
 				<ScrollArea className="flex-1 min-h-0">
 					<div className="grid gap-3 sm:gap-4 p-1">
-						<div className="grid gap-2">
-							<Label className="text-xs sm:text-sm" htmlFor="title">
-								{t('title')}
-							</Label>
-							<Input
-								className="h-8 text-sm sm:h-9"
-								id="title"
-								name="title"
-								onChange={handleInputChange}
-								placeholder={t('eventTitlePlaceholder')}
-								required
-								value={formValues.title}
-							/>
-						</div>
-
-						<div className="grid gap-1 sm:gap-2">
-							<Label className="text-xs sm:text-sm" htmlFor="description">
-								{t('description')}
-							</Label>
-							<Input
-								className="h-8 text-sm sm:h-9"
-								id="description"
-								name="description"
-								onChange={handleInputChange}
-								placeholder={t('eventDescriptionPlaceholder')}
-								value={formValues.description}
-							/>
-						</div>
+						<TextField
+							name="title"
+							placeholder={t('eventTitlePlaceholder')}
+							required
+						/>
+						<TextField
+							name="description"
+							placeholder={t('eventDescriptionPlaceholder')}
+						/>
 
 						<div className="flex items-center space-x-2">
 							<Checkbox
@@ -359,19 +368,10 @@ export const EventForm: React.FC<EventFormProps> = ({
 							</div>
 						</div>
 
-						<div className="grid gap-1 sm:gap-2">
-							<Label className="text-xs sm:text-sm" htmlFor="location">
-								{t('location')}
-							</Label>
-							<Input
-								className="h-8 text-sm sm:h-9"
-								id="location"
-								name="location"
-								onChange={handleInputChange}
-								placeholder={t('eventLocationPlaceholder')}
-								value={formValues.location}
-							/>
-						</div>
+						<TextField
+							name="location"
+							placeholder={t('eventLocationPlaceholder')}
+						/>
 
 						{/* Recurrence Section */}
 						<RecurrenceEditor onChange={handleRRuleChange} value={rrule} />

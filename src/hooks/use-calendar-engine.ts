@@ -86,26 +86,14 @@ export const calculateViewRange = (
 	view: CalendarView,
 	firstDayOfWeek: number
 ): { start: Dayjs; end: Dayjs } => {
-	if (view === 'day') {
-		return {
-			start: date.startOf('day'),
-			end: date.endOf('day'),
-		}
-	}
-	if (view === 'year') {
-		return {
-			start: date.startOf('year'),
-			end: date.endOf('year'),
-		}
+	if (view === 'day' || view === 'year') {
+		return { start: date.startOf(view), end: date.endOf(view) }
 	}
 	if (view === 'week') {
-		const weekDays = getWeekDays(date, firstDayOfWeek)
-		return {
-			start: weekDays[0].startOf('day'),
-			end: weekDays[6].endOf('day'),
-		}
+		const days = getWeekDays(date, firstDayOfWeek)
+		return { start: days[0].startOf('day'), end: days[6].endOf('day') }
 	}
-	// month view
+	// month view: 6 weeks × 7 days
 	const weeks = getMonthWeeks(date, firstDayOfWeek)
 	return { start: weeks[0][0].startOf('day'), end: weeks[5][6].endOf('day') }
 }
@@ -226,10 +214,7 @@ export const useCalendarEngine = (
 		[onDateChange, view, firstDayOfWeek]
 	)
 
-	const selectDate = useCallback(
-		(date: Dayjs) => updateDateAndNotify(date),
-		[updateDateAndNotify]
-	)
+	const selectDate = updateDateAndNotify
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {

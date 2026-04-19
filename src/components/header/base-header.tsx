@@ -46,6 +46,14 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
 	const closeMobileMenu = () => setMobileMenuOpen(false)
 
+	// Wrap any handler so it also closes the mobile menu after firing.
+	const withClose =
+		<Args extends unknown[]>(fn: (...args: Args) => void) =>
+		(...args: Args) => {
+			fn(...args)
+			closeMobileMenu()
+		}
+
 	const handleExport = () => {
 		const filename = `ilamy-calendar-${new Date().toISOString().split('T')[0]}.ics`
 		downloadICalendar(rawEvents, filename, 'ilamy Calendar')
@@ -128,22 +136,10 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 								<div className="space-y-2">
 									<ViewControls
 										currentView={view}
-										onChange={(v) => {
-											setView(v)
-											closeMobileMenu()
-										}}
-										onNext={() => {
-											nextPeriod()
-											closeMobileMenu()
-										}}
-										onPrevious={() => {
-											prevPeriod()
-											closeMobileMenu()
-										}}
-										onToday={() => {
-											today()
-											closeMobileMenu()
-										}}
+										onChange={withClose(setView)}
+										onNext={withClose(nextPeriod)}
+										onPrevious={withClose(prevPeriod)}
+										onToday={withClose(today)}
 										variant="grid"
 									/>
 									<div className="pt-2 border-t">

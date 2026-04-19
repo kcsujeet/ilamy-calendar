@@ -33,7 +33,7 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 			{resources.map((resource) => {
 				return (
 					<ResourceCell
-						className="min-w-20 flex-1"
+						className="min-w-20 flex-1 border-b"
 						key={keys.listKey('resource-cell', resource.id)}
 						resource={resource}
 					>

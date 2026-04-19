@@ -27,7 +27,7 @@ const NoMemoVerticalGridHeaderContainer: React.FC<
 			)}
 		>
 			<div
-				className={cn('h-12 border-b w-fit', classes?.header)}
+				className={cn('h-12 border-b min-w-full w-fit', classes?.header)}
 				data-testid="vertical-grid-header"
 			>
 				{children}

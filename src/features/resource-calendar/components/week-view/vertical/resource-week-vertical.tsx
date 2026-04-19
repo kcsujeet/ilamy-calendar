@@ -44,11 +44,11 @@ export const ResourceWeekVertical: React.FC = () => {
 	const allDayRow = useMemo(() => {
 		if (!isHourly) return undefined
 		return (
-			<div className="flex">
+			<div className="flex w-full">
 				<AllDayCell />
 				{resources.map((resource) => (
 					<AllDayRow
-						classes={{ cell: 'min-w-20 border-r!' }}
+						classes={{ cell: 'min-w-20 flex-1 border-r!' }}
 						days={visibleDays}
 						key={keys.allDayRow(resource.id)}
 						resource={resource}
@@ -62,10 +62,7 @@ export const ResourceWeekVertical: React.FC = () => {
 	return (
 		<VerticalGrid
 			allDayRow={allDayRow}
-			classes={{
-				header: isHourly ? 'h-24' : 'h-12 w-full',
-				body: isHourly ? 'w-fit' : 'w-full',
-			}}
+			classes={{ header: isHourly ? 'h-24' : 'h-12' }}
 			columns={[firstCol, ...columns]}
 			data-testid="resource-week"
 			gridType={isHourly ? 'hour' : 'day'}

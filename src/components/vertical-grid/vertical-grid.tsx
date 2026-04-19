@@ -60,7 +60,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 				{isResourceCalendar && header}
 				{/* Calendar area with scroll */}
 				<div
-					className={cn('flex flex-1 w-fit', classes?.body)}
+					className={cn('flex flex-1 min-w-full w-fit', classes?.body)}
 					data-testid="vertical-grid-body"
 				>
 					{/* Day columns with time slots */}

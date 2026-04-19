@@ -78,7 +78,7 @@ describe('MonthView', () => {
 		// Check that all weekday headers are present using test IDs
 		weekDays.forEach((day) => {
 			expect(
-				screen.getByTestId(`weekday-header-${day.toLowerCase()}`)
+				screen.getByTestId(`month-header-weekday-${day.toLowerCase()}`)
 			).toBeInTheDocument()
 		})
 	})
@@ -90,7 +90,7 @@ describe('MonthView', () => {
 		// When starting from Monday, all weekdays should still be present
 		weekDays.forEach((day) => {
 			expect(
-				screen.getByTestId(`weekday-header-${day.toLowerCase()}`)
+				screen.getByTestId(`month-header-weekday-${day.toLowerCase()}`)
 			).toBeInTheDocument()
 		})
 
@@ -99,7 +99,7 @@ describe('MonthView', () => {
 		if (!monthHeader) throw new Error('monthHeader not found')
 		expect(monthHeader.firstChild).toHaveAttribute(
 			'data-testid',
-			'weekday-header-mon'
+			'month-header-weekday-mon'
 		)
 	})
 

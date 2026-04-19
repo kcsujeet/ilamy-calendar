@@ -520,7 +520,7 @@ Apply custom styles using Tailwind CSS or custom CSS:
 <IlamyResourceCalendar
   resources={resources}
   events={events}
-  viewHeaderClassName="bg-gradient-to-r from-blue-500 to-purple-500"
+  viewHeaderClassName="bg-linear-to-r from-blue-500 to-purple-500"
   headerClassName="border-b-4 border-blue-500"
 />
 ```

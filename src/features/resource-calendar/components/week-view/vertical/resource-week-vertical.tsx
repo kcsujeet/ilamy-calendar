@@ -5,6 +5,7 @@ import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { HourLabel } from '@/components/hour-label/hour-label'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { keys } from '@/lib/utils/keys'
 import { useResourceWeekViewData } from '../use-resource-week-view-data'
 import { ResourceWeekVerticalDayHeader } from './resource-week-vertical-day-header'
 import { ResourceWeekVerticalResourceHeader } from './resource-week-vertical-resource-header'
@@ -17,7 +18,7 @@ export const ResourceWeekVertical: React.FC = () => {
 
 	const firstCol = useMemo(
 		() => ({
-			id: isHourly ? 'time-col' : 'date-col',
+			id: isHourly ? keys.col.time : keys.col.date,
 			days: isHourly ? hours : weekDays,
 			day: undefined,
 			className:
@@ -49,7 +50,7 @@ export const ResourceWeekVertical: React.FC = () => {
 					<AllDayRow
 						classes={{ cell: 'min-w-50' }}
 						days={visibleDays}
-						key={`resource-week-allday-row-${resource.id}`}
+						key={keys.allDayRow(resource.id)}
 						resource={resource}
 						showSpacer={false}
 					/>

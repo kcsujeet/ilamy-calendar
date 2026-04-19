@@ -3,6 +3,7 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { keys } from '@/lib/utils/keys'
 
 interface ResourceWeekVerticalDayHeaderProps {
 	columns: Array<{ day?: Dayjs; resourceId?: string | number }>
@@ -23,17 +24,20 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 			{columns.map((col, index) => {
 				const day = col.day
 				if (!day) return null
-				const key = `resource-week-header-${day.toISOString()}-hour-${col.resourceId}`
+				const key = keys.header.week.hour(day, col.resourceId ?? '')
 
 				return (
 					<AnimatedSection
 						className={cn(
 							'w-50 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
 						)}
-						data-testid={`resource-week-time-label-${day.format('HH')}`}
+						data-testid={keys.header.resource.timeLabel(
+							'week',
+							day.format('HH')
+						)}
 						delay={index * 0.05}
-						key={`${key}-animated`}
-						transitionKey={`${key}-motion`}
+						key={keys.listKey(key, 'animated')}
+						transitionKey={keys.listKey(key, 'motion')}
 					>
 						<div className="text-sm">{day.format('ddd')}</div>
 						<div className="text-xs text-muted-foreground">

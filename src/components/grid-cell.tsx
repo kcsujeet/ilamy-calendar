@@ -2,9 +2,12 @@ import React, { memo, useMemo } from 'react'
 import { DayNumber } from '@/components/day-number'
 import type { CalendarEvent } from '@/components/types'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
+import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { filterEventsByResource } from '@/lib/utils/event-utils'
+import { keys } from '@/lib/utils/keys'
 import type { SelectedDayEvents } from './all-events-dialog'
 import { AllEventDialog } from './all-events-dialog'
 import { DroppableCell } from './droppable-cell'
@@ -50,12 +53,11 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		currentDate,
 		t,
 		getEventsForResource,
-		businessHours,
 		currentLocale,
 		eventSpacing,
 		eventHeight,
-		getResourceById,
 	} = useSmartCalendarContext()
+	const effectiveBusinessHours = useEffectiveBusinessHours(resourceId)
 
 	const todayEvents = useMemo(() => {
 		if (!shouldRenderEvents) {
@@ -77,10 +79,9 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		}
 
 		if (resourceId) {
-			const resourceEvents = getEventsForResource(resourceId) ?? []
-
-			return todayEvents.filter((event) =>
-				resourceEvents.some((re) => String(re.id) === String(event.id))
+			return filterEventsByResource(
+				todayEvents,
+				getEventsForResource(resourceId) ?? []
 			)
 		}
 
@@ -110,32 +111,17 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	const hiddenEventsCount = todayEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
 
-	// Use resource-specific business hours if available, otherwise fallback to global
-	const effectiveBusinessHours = useMemo(() => {
-		if (resourceId && getResourceById) {
-			const resource = getResourceById(resourceId)
-			if (resource?.businessHours) {
-				return resource.businessHours
-			}
-		}
-		return businessHours
-	}, [resourceId, getResourceById, businessHours])
-
 	const isBusiness = isBusinessHour({
 		date: day,
 		hour: gridType === 'hour' ? day.hour() : undefined,
 		businessHours: effectiveBusinessHours,
 	})
 
-	const hourStr = day.format('HH')
-	const mm = day.format('mm')
-	const baseTestId = `day-cell-${day.format('YYYY-MM-DD')}`
 	const testId =
-		gridType === 'hour' ? `${baseTestId}-${hourStr}-${mm}` : baseTestId
-	// Droppable ID must use toISOString() (not YYYY-MM-DD) so each time slot
-	// gets a unique ID in @dnd-kit's registry. YYYY-MM-DD strips the time,
-	// causing all cells on the same day to collide.
-	const droppableId = `day-cell-${day.toISOString()}${allDay ? '-allday' : ''}${resourceId ? `-resource-${resourceId}` : ''}`
+		gridType === 'hour'
+			? keys.cell.day(day, day.format('HH'), day.format('mm'))
+			: keys.cell.day(day)
+	const droppableId = keys.droppable.dayCell(day, { allDay, resourceId })
 
 	return (
 		<>
@@ -168,7 +154,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 								<div
 									className="w-full shrink-0"
 									data-testid={event?.title}
-									key={`empty-${rowIndex}-${event.id}`}
+									key={keys.listKey('empty', rowIndex, event.id)}
 									style={{ height: `${eventHeight}px` }}
 								/>
 							))}

@@ -1,5 +1,15 @@
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 
+/** Whether the given date falls on today (calendar day, respecting timezone). */
+export function isToday(date: Dayjs): boolean {
+	return date.isSame(dayjs(), 'day')
+}
+
+/** `YYYY-MM-DD` string used as a stable per-day key across the codebase. */
+export function getDayKey(date: Dayjs): string {
+	return date.format('YYYY-MM-DD')
+}
+
 /**
  * Calculates the week days for a given date and first day of week setting.
  *

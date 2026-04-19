@@ -92,7 +92,7 @@ describe('WeekView', () => {
 		// Check that all weekday headers are present using test IDs
 		weekDays.forEach((day) => {
 			expect(
-				screen.getByTestId(`week-day-header-${day.toLowerCase()}`)
+				screen.getByTestId(`week-header-weekday-${day.toLowerCase()}`)
 			).toBeInTheDocument()
 		})
 	})
@@ -104,7 +104,7 @@ describe('WeekView', () => {
 		// When starting from Monday, all weekdays should still be present
 		weekDays.forEach((day) => {
 			expect(
-				screen.getByTestId(`week-day-header-${day.toLowerCase()}`)
+				screen.getByTestId(`week-header-weekday-${day.toLowerCase()}`)
 			).toBeInTheDocument()
 		})
 	})
@@ -151,8 +151,8 @@ describe('WeekView', () => {
 		renderWeekView({ firstDayOfWeek: 1 }) // Set Monday as first day
 
 		// Check that Monday header is present (order will be handled by component logic)
-		expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-sunday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-monday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-sunday')).toBeInTheDocument()
 	})
 
 	test('handles different locale settings', () => {
@@ -160,8 +160,8 @@ describe('WeekView', () => {
 		renderWeekView({ locale: 'en' })
 
 		// Should render with English locale by default using test IDs
-		expect(screen.getByTestId('week-day-header-sunday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-sunday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-monday')).toBeInTheDocument()
 	})
 
 	test('renders time slots structure', () => {
@@ -928,15 +928,15 @@ describe('WeekView', () => {
 
 		// Saturday and Sunday headers should not be present
 		expect(
-			screen.queryByTestId('week-day-header-saturday')
+			screen.queryByTestId('week-header-weekday-saturday')
 		).not.toBeInTheDocument()
 		expect(
-			screen.queryByTestId('week-day-header-sunday')
+			screen.queryByTestId('week-header-weekday-sunday')
 		).not.toBeInTheDocument()
 
 		// Monday-Friday headers should be present
-		expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-friday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-monday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-friday')).toBeInTheDocument()
 	})
 
 	test('empty hiddenDays shows all 7 days (default behavior)', () => {
@@ -951,7 +951,7 @@ describe('WeekView', () => {
 		// All 7 weekday headers should be present
 		weekDays.forEach((day) => {
 			expect(
-				screen.getByTestId(`week-day-header-${day.toLowerCase()}`)
+				screen.getByTestId(`week-header-weekday-${day.toLowerCase()}`)
 			).toBeInTheDocument()
 		})
 
@@ -977,16 +977,22 @@ describe('WeekView', () => {
 
 		// Wednesday header should not be present
 		expect(
-			screen.queryByTestId('week-day-header-wednesday')
+			screen.queryByTestId('week-header-weekday-wednesday')
 		).not.toBeInTheDocument()
 
 		// Other 6 days should be present
-		expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-tuesday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-thursday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-friday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-saturday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-sunday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-monday')).toBeInTheDocument()
+		expect(
+			screen.getByTestId('week-header-weekday-tuesday')
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId('week-header-weekday-thursday')
+		).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-friday')).toBeInTheDocument()
+		expect(
+			screen.getByTestId('week-header-weekday-saturday')
+		).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-sunday')).toBeInTheDocument()
 	})
 
 	test('positions event at correct percentage when event is in middle of business hours in WeekView', () => {

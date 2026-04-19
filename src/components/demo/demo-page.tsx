@@ -413,7 +413,7 @@ export function DemoPage() {
 			<div className="fixed bottom-20 left-10 -z-10 w-80 h-80 bg-indigo-500/10 rounded-full filter blur-3xl animate-pulse"></div>
 
 			<div className="mb-8">
-				<h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-400 dark:to-indigo-500">
+				<h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-linear-to-br from-blue-600 to-indigo-700 dark:from-blue-400 dark:to-indigo-500">
 					Interactive Demo
 				</h1>
 				<p className="text-muted-foreground">

@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { getMonthWeeks } from '@/lib/utils/date-utils'
+import { keys } from '@/lib/utils/keys'
 import { MonthHeader } from './month-header'
 import type { MonthViewProps } from './types'
 
@@ -15,9 +16,9 @@ export const MonthView: React.FC<MonthViewProps> = () => {
 	)
 
 	const rows = weeks.map((days, weekIndex) => ({
-		id: `week-${weekIndex}`,
+		id: keys.listKey('week', weekIndex),
 		columns: days.map((day) => ({
-			id: `col-${day.toISOString()}`,
+			id: keys.col.day(day),
 			day,
 			className: 'w-auto',
 			gridType: 'day' as const,

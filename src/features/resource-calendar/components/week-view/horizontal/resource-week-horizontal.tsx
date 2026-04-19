@@ -1,10 +1,10 @@
 import type React from 'react'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
+import { TimeHeaderRow } from '@/features/resource-calendar/components/time-header-row'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 import { useResourceWeekViewData } from '../use-resource-week-view-data'
 import { ResourceWeekHorizontalDayHeader } from './resource-week-horizontal-day-header'
-import { ResourceWeekHorizontalTimeHeader } from './resource-week-horizontal-time-header'
 import { useResourceWeekHorizontalData } from './use-resource-week-horizontal-data'
 
 export const ResourceWeekHorizontal: React.FC = () => {
@@ -29,7 +29,11 @@ export const ResourceWeekHorizontal: React.FC = () => {
 			<div className="flex-1 flex flex-col">
 				<ResourceWeekHorizontalDayHeader days={weekDays} />
 				{isHourly && (
-					<ResourceWeekHorizontalTimeHeader hours={weekHours.flat()} />
+					<TimeHeaderRow
+						delayStep={0.005}
+						hours={weekHours.flat()}
+						view="week"
+					/>
 				)}
 			</div>
 		</ResourceEventGrid>

@@ -55,6 +55,33 @@ const getEventParentUID = (event: CalendarEvent): string => {
 	return event.uid || `${event.id}@ilamy.calendar`
 }
 
+/**
+ * Finds the base recurring event (the one with rrule and no recurrenceId)
+ * that shares the same parent UID as the target event.
+ * Throws if not found — callers assume the series exists.
+ */
+const findBaseEventIndex = (
+	events: CalendarEvent[],
+	targetEvent: CalendarEvent
+): number => {
+	const targetUid = getEventParentUID(targetEvent)
+	const index = events.findIndex(
+		(e) => getEventParentUID(e) === targetUid && e.rrule && !e.recurrenceId
+	)
+	if (index === -1) {
+		throw new Error('Base recurring event not found')
+	}
+	return index
+}
+
+/**
+ * For the "following" scope: the UNTIL date that terminates the original
+ * series is the end of the day BEFORE the target event's start. This keeps
+ * the last pre-target occurrence in the terminated series.
+ */
+const getSeriesTerminationDate = (targetEvent: CalendarEvent): Date =>
+	targetEvent.start.subtract(1, 'day').endOf('day').toDate()
+
 interface GenerateRecurringEventsProps {
 	event: CalendarEvent
 	currentEvents: CalendarEvent[]
@@ -182,17 +209,7 @@ export const updateRecurringEvent = ({
 	scope,
 }: UpdateRecurringEventProps): CalendarEvent[] => {
 	const updatedEvents = [...currentEvents]
-
-	// Find the base recurring event
-	const targetUid = getEventParentUID(targetEvent)
-	const baseEventIndex = updatedEvents.findIndex((e) => {
-		return getEventParentUID(e) === targetUid && e.rrule && !e.recurrenceId
-	})
-
-	if (baseEventIndex === -1) {
-		throw new Error('Base recurring event not found')
-	}
-
+	const baseEventIndex = findBaseEventIndex(updatedEvents, targetEvent)
 	const baseEvent = updatedEvents[baseEventIndex]
 
 	switch (scope) {
@@ -225,11 +242,7 @@ export const updateRecurringEvent = ({
 
 		case 'following': {
 			// "This and following" - Terminate original series and create new series
-
-			// Calculate the termination date: day before target with end of day time
-			// This ensures the last occurrence before target is included in the terminated series
-			const dayBeforeTarget = targetEvent.start.subtract(1, 'day')
-			const terminationDate = dayBeforeTarget.endOf('day').toDate()
+			const terminationDate = getSeriesTerminationDate(targetEvent)
 
 			// Update original series with UNTIL to end before target date
 			const terminatedEvent = {
@@ -298,17 +311,7 @@ export const deleteRecurringEvent = ({
 	scope,
 }: DeleteRecurringEventProps): CalendarEvent[] => {
 	const updatedEvents = [...currentEvents]
-
-	// Find the base recurring event
-	const targetUid = getEventParentUID(targetEvent)
-	const baseEventIndex = updatedEvents.findIndex((e) => {
-		return getEventParentUID(e) === targetUid && e.rrule && !e.recurrenceId
-	})
-
-	if (baseEventIndex === -1) {
-		throw new Error('Base recurring event not found')
-	}
-
+	const baseEventIndex = findBaseEventIndex(updatedEvents, targetEvent)
 	const baseEvent = updatedEvents[baseEventIndex]
 
 	switch (scope) {
@@ -325,17 +328,11 @@ export const deleteRecurringEvent = ({
 
 		case 'following': {
 			// "This and following" - Terminate series with UNTIL before target date
-
-			// Calculate the termination date: day before target with end of day time
-			// This ensures the last occurrence before target is included in the terminated series
-			const dayBeforeTarget = targetEvent.start.subtract(1, 'day')
-			const terminationDate = dayBeforeTarget.endOf('day').toDate()
-
 			const terminatedEvent = {
 				...baseEvent,
 				rrule: {
 					...baseEvent.rrule,
-					until: terminationDate,
+					until: getSeriesTerminationDate(targetEvent),
 				} as RRuleOptions,
 			}
 			updatedEvents[baseEventIndex] = terminatedEvent

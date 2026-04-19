@@ -8,9 +8,10 @@ import {
 	PopoverTrigger,
 } from '@/components/ui/popover'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getWeekDays } from '@/lib/utils/date-utils'
+import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
+import { keys } from '@/lib/utils/keys'
 
 const MONTH_KEYS = [
 	'january',
@@ -101,7 +102,7 @@ const TitleContent = () => {
 							'justify-start font-normal',
 							isCurrentWeek && 'bg-primary/10'
 						)}
-						key={start.format('YYYY-MM-DD')}
+						key={getDayKey(start)}
 						onClick={() => handleSelectDate(start)}
 						variant="ghost"
 					>
@@ -126,7 +127,7 @@ const TitleContent = () => {
 				{Array.from({ length: daysInMonth }, (_, i) => {
 					const day = firstDay.date(i + 1)
 					const isCurrentDay = day.isSame(currentDate, 'day')
-					const isToday = day.isSame(dayjs(), 'day')
+					const today = isToday(day)
 
 					return (
 						<Button
@@ -134,13 +135,13 @@ const TitleContent = () => {
 								'justify-start font-normal',
 								isCurrentDay && 'bg-primary/10'
 							)}
-							key={day.format('YYYY-MM-DD')}
+							key={getDayKey(day)}
 							onClick={() => handleSelectDate(day)}
 							variant="ghost"
 						>
 							<div className="flex w-full items-center justify-between">
 								<span>{day.format('dddd, MMM D')}</span>
-								{isToday && (
+								{today && (
 									<span className="bg-primary text-primary-foreground rounded-sm px-1! text-xs">
 										{t('today')}
 									</span>
@@ -197,7 +198,7 @@ const TitleContent = () => {
 						<AnimatedSection
 							className="flex items-center gap-1 px-1! font-semibold"
 							data-testid="calendar-month-button"
-							transitionKey={`${popover.id}-${currentDate.format('YYYY-MM-DD')}`}
+							transitionKey={keys.listKey(popover.id, getDayKey(currentDate))}
 						>
 							{popover.title}
 						</AnimatedSection>

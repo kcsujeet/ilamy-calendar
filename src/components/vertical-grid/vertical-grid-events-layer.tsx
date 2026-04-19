@@ -5,6 +5,7 @@ import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDay
 import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { keys } from '@/lib/utils/keys'
 
 interface VerticalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
@@ -44,7 +45,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 				return (
 					<div
 						className="absolute"
-						key={`${eventKey}-wrapper`}
+						key={keys.listKey(eventKey, 'wrapper')}
 						style={{
 							left: `${event.left}%`,
 							width: `calc(${event.width}% - var(--spacing) * 2)`,

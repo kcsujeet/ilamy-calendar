@@ -13,6 +13,7 @@ import dayjs, {
 import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
+import { eventOverlapsRange } from '@/lib/utils/event-utils'
 import type { CalendarView } from '@/types'
 import { DAY_MAX_EVENTS_DEFAULT } from '../lib/constants'
 
@@ -85,26 +86,14 @@ export const calculateViewRange = (
 	view: CalendarView,
 	firstDayOfWeek: number
 ): { start: Dayjs; end: Dayjs } => {
-	if (view === 'day') {
-		return {
-			start: date.startOf('day'),
-			end: date.endOf('day'),
-		}
-	}
-	if (view === 'year') {
-		return {
-			start: date.startOf('year'),
-			end: date.endOf('year'),
-		}
+	if (view === 'day' || view === 'year') {
+		return { start: date.startOf(view), end: date.endOf(view) }
 	}
 	if (view === 'week') {
-		const weekDays = getWeekDays(date, firstDayOfWeek)
-		return {
-			start: weekDays[0].startOf('day'),
-			end: weekDays[6].endOf('day'),
-		}
+		const days = getWeekDays(date, firstDayOfWeek)
+		return { start: days[0].startOf('day'), end: days[6].endOf('day') }
 	}
-	// month view
+	// month view: 6 weeks × 7 days
 	const weeks = getMonthWeeks(date, firstDayOfWeek)
 	return { start: weeks[0][0].startOf('day'), end: weeks[5][6].endOf('day') }
 }
@@ -143,14 +132,9 @@ export const useCalendarEngine = (
 	const lastLocaleProp = useRef(locale)
 
 	const t: TranslatorFunction = useMemo(() => {
-		if (translator) {
-			return translator
-		}
-		if (translations) {
-			return (key: string) => translations[key as keyof Translations] || key
-		}
-		return (key: string) =>
-			defaultTranslations[key as keyof Translations] || key
+		if (translator) return translator
+		const dict = translations || defaultTranslations
+		return (key: string) => dict[key as keyof Translations] || key
 	}, [translations, translator])
 
 	const getEventsForDateRange = useCallback(
@@ -167,18 +151,8 @@ export const useCalendarEngine = (
 							endDate,
 						})
 					)
-				} else {
-					const startsInRange =
-						event.start.isSameOrAfter(startDate) &&
-						event.start.isSameOrBefore(endDate)
-					const endsInRange =
-						event.end.isSameOrAfter(startDate) &&
-						event.end.isSameOrBefore(endDate)
-					const spansRange =
-						event.start.isBefore(startDate) && event.end.isAfter(endDate)
-					if (startsInRange || endsInRange || spansRange) {
-						allEvents.push(event)
-					}
+				} else if (eventOverlapsRange(event, startDate, endDate)) {
+					allEvents.push(event)
 				}
 			}
 			return allEvents
@@ -235,10 +209,7 @@ export const useCalendarEngine = (
 		[onDateChange, view, firstDayOfWeek]
 	)
 
-	const selectDate = useCallback(
-		(date: Dayjs) => updateDateAndNotify(date),
-		[updateDateAndNotify]
-	)
+	const selectDate = updateDateAndNotify
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {

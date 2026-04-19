@@ -7,6 +7,7 @@ import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { keys } from '@/lib/utils/keys'
 
 export const ResourceDayVertical: React.FC = () => {
 	const {
@@ -28,7 +29,7 @@ export const ResourceDayVertical: React.FC = () => {
 	})
 
 	const firstCol = {
-		id: 'time-col',
+		id: keys.col.time,
 		day: undefined,
 		days: hours,
 		className:
@@ -43,7 +44,7 @@ export const ResourceDayVertical: React.FC = () => {
 	}
 
 	const columns = resources.map((resource) => ({
-		id: `day-col-${currentDate.format('YYYY-MM-DD')}-resource-${resource.id}`,
+		id: keys.col.day(currentDate, resource.id),
 		resourceId: resource.id,
 		resource,
 		days: hours,
@@ -60,7 +61,7 @@ export const ResourceDayVertical: React.FC = () => {
 						<AllDayRow
 							classes={{ cell: 'min-w-50' }}
 							days={[currentDate]}
-							key={`resource-allday-row-${resource.id}`}
+							key={keys.allDayRow(resource.id)}
 							resource={resource}
 							showSpacer={false}
 						/>
@@ -82,7 +83,7 @@ export const ResourceDayVertical: React.FC = () => {
 				{resources.map((resource) => (
 					<ResourceCell
 						className="min-w-50 flex-1"
-						key={`resource-cell-${resource.id}`}
+						key={keys.listKey('resource-cell', resource.id)}
 						resource={resource}
 					/>
 				))}

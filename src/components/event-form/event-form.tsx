@@ -20,67 +20,26 @@ import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-ed
 import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
 import type { RRuleOptions } from '@/features/recurrence/types'
 import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler'
+import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
 const COLOR_OPTIONS = [
-	{
-		value: `bg-blue-100 text-blue-800`,
-		label: 'Blue',
-	},
-	{
-		value: `bg-green-100 text-green-800`,
-		label: 'Green',
-	},
-	{
-		value: `bg-purple-100 text-purple-800`,
-		label: 'Purple',
-	},
-	{
-		value: `bg-red-100 text-red-800`,
-		label: 'Red',
-	},
-	{
-		value: `bg-yellow-100 text-yellow-800`,
-		label: 'Yellow',
-	},
-	{
-		value: `bg-pink-100 text-pink-800`,
-		label: 'Pink',
-	},
-	{
-		value: `bg-indigo-100 text-indigo-800`,
-		label: 'Indigo',
-	},
-	{
-		value: `bg-amber-100 text-amber-800`,
-		label: 'Amber',
-	},
-	{
-		value: `bg-emerald-100 text-emerald-800`,
-		label: 'Emerald',
-	},
-	{
-		value: `bg-sky-100 text-sky-800`,
-		label: 'Sky',
-	},
-	{
-		value: `bg-violet-100 text-violet-800`,
-		label: 'Violet',
-	},
-	{
-		value: `bg-rose-100 text-rose-800`,
-		label: 'Rose',
-	},
-	{
-		value: `bg-teal-100 text-teal-800`,
-		label: 'Teal',
-	},
-	{
-		value: `bg-orange-100 text-orange-800`,
-		label: 'Orange',
-	},
+	{ value: 'bg-blue-100 text-blue-800', label: 'Blue' },
+	{ value: 'bg-green-100 text-green-800', label: 'Green' },
+	{ value: 'bg-purple-100 text-purple-800', label: 'Purple' },
+	{ value: 'bg-red-100 text-red-800', label: 'Red' },
+	{ value: 'bg-yellow-100 text-yellow-800', label: 'Yellow' },
+	{ value: 'bg-pink-100 text-pink-800', label: 'Pink' },
+	{ value: 'bg-indigo-100 text-indigo-800', label: 'Indigo' },
+	{ value: 'bg-amber-100 text-amber-800', label: 'Amber' },
+	{ value: 'bg-emerald-100 text-emerald-800', label: 'Emerald' },
+	{ value: 'bg-sky-100 text-sky-800', label: 'Sky' },
+	{ value: 'bg-violet-100 text-violet-800', label: 'Violet' },
+	{ value: 'bg-rose-100 text-rose-800', label: 'Rose' },
+	{ value: 'bg-teal-100 text-teal-800', label: 'Teal' },
+	{ value: 'bg-orange-100 text-orange-800', label: 'Orange' },
 ]
 
 export interface EventFormProps {
@@ -107,19 +66,16 @@ export const EventForm: React.FC<EventFormProps> = ({
 		handleConfirm,
 	} = useRecurringEventActions(onClose)
 
-	const {
-		findParentRecurringEvent,
-		t,
-		businessHours,
-		timeFormat,
-		getResourceById,
-	} = useSmartCalendarContext((context) => ({
-		findParentRecurringEvent: context.findParentRecurringEvent,
-		t: context.t,
-		businessHours: context.businessHours,
-		timeFormat: context.timeFormat,
-		getResourceById: context.getResourceById,
-	}))
+	const { findParentRecurringEvent, t, timeFormat } = useSmartCalendarContext(
+		(context) => ({
+			findParentRecurringEvent: context.findParentRecurringEvent,
+			t: context.t,
+			timeFormat: context.timeFormat,
+		})
+	)
+	const effectiveBusinessHours = useEffectiveBusinessHours(
+		selectedEvent?.resourceId
+	)
 
 	const start = selectedEvent?.start ?? dayjs()
 	const end = selectedEvent?.end ?? dayjs().add(1, 'hour')
@@ -266,18 +222,6 @@ export const EventForm: React.FC<EventFormProps> = ({
 		setRrule({ ...newRRule, dtstart: startDateTime.toDate() })
 	}
 
-	// Use resource-specific business hours if available, otherwise fallback to global
-	const effectiveBusinessHours = useMemo(() => {
-		const resourceId = selectedEvent?.resourceId
-		if (resourceId && getResourceById) {
-			const resource = getResourceById(resourceId)
-			if (resource?.businessHours) {
-				return resource.businessHours
-			}
-		}
-		return businessHours
-	}, [selectedEvent?.resourceId, getResourceById, businessHours])
-
 	const disabledDateMatcher = effectiveBusinessHours
 		? (date: Date) => !isBusinessDay(dayjs(date), effectiveBusinessHours)
 		: undefined
@@ -285,39 +229,64 @@ export const EventForm: React.FC<EventFormProps> = ({
 	const startConstraints = getTimeConstraints(startDate, effectiveBusinessHours)
 	const endConstraints = getTimeConstraints(endDate, effectiveBusinessHours)
 
+	// Local component for title / description / location text inputs.
+	// They share identical markup; only label/placeholder/value differ.
+	type TextFieldName = 'title' | 'description' | 'location'
+	const TextField = ({
+		name,
+		placeholder,
+		required = false,
+	}: {
+		name: TextFieldName
+		placeholder: string
+		required?: boolean
+	}) => (
+		<div className="grid gap-1 sm:gap-2">
+			<Label className="text-xs sm:text-sm" htmlFor={name}>
+				{t(name)}
+			</Label>
+			<Input
+				className="h-8 text-sm sm:h-9"
+				id={name}
+				name={name}
+				onChange={handleInputChange}
+				placeholder={placeholder}
+				required={required}
+				value={formValues[name]}
+			/>
+		</div>
+	)
+
+	const dateFields = [
+		['startDate', startDate, handleStartDateChange],
+		['endDate', endDate, handleEndDateChange],
+	] as const
+
+	const timeFields = [
+		[
+			'startTime',
+			'start-time',
+			startTime,
+			handleStartTimeChange,
+			startConstraints,
+		],
+		['endTime', 'end-time', endTime, handleEndTimeChange, endConstraints],
+	] as const
+
 	return (
 		<>
 			<form className="flex flex-col flex-1 min-h-0" onSubmit={handleSubmit}>
 				<ScrollArea className="flex-1 min-h-0">
 					<div className="grid gap-3 sm:gap-4 p-1">
-						<div className="grid gap-2">
-							<Label className="text-xs sm:text-sm" htmlFor="title">
-								{t('title')}
-							</Label>
-							<Input
-								className="h-8 text-sm sm:h-9"
-								id="title"
-								name="title"
-								onChange={handleInputChange}
-								placeholder={t('eventTitlePlaceholder')}
-								required
-								value={formValues.title}
-							/>
-						</div>
-
-						<div className="grid gap-1 sm:gap-2">
-							<Label className="text-xs sm:text-sm" htmlFor="description">
-								{t('description')}
-							</Label>
-							<Input
-								className="h-8 text-sm sm:h-9"
-								id="description"
-								name="description"
-								onChange={handleInputChange}
-								placeholder={t('eventDescriptionPlaceholder')}
-								value={formValues.description}
-							/>
-						</div>
+						<TextField
+							name="title"
+							placeholder={t('eventTitlePlaceholder')}
+							required
+						/>
+						<TextField
+							name="description"
+							placeholder={t('eventDescriptionPlaceholder')}
+						/>
 
 						<div className="flex items-center space-x-2">
 							<Checkbox
@@ -331,56 +300,37 @@ export const EventForm: React.FC<EventFormProps> = ({
 						</div>
 
 						<div className="grid grid-cols-2 gap-2 sm:gap-4">
-							<div>
-								<Label className="text-xs sm:text-sm">{t('startDate')}</Label>
-								<DatePicker
-									className="mt-1"
-									closeOnSelect
-									date={startDate}
-									disabled={disabledDateMatcher}
-									onChange={handleStartDateChange}
-								/>
-							</div>
-							<div>
-								<Label className="text-xs sm:text-sm">{t('endDate')}</Label>
-								<DatePicker
-									className="mt-1"
-									closeOnSelect
-									date={endDate}
-									disabled={disabledDateMatcher}
-									onChange={handleEndDateChange}
-								/>
-							</div>
+							{dateFields.map(([label, date, onChange]) => (
+								<div key={label}>
+									<Label className="text-xs sm:text-sm">{t(label)}</Label>
+									<DatePicker
+										className="mt-1"
+										closeOnSelect
+										date={date}
+										disabled={disabledDateMatcher}
+										onChange={onChange}
+									/>
+								</div>
+							))}
 						</div>
 
 						{!isAllDay && (
 							<div className="grid grid-cols-2 gap-2 sm:gap-4">
-								<div>
-									<Label className="text-xs sm:text-sm">{t('startTime')}</Label>
-									<TimePicker
-										className="mt-1 h-8 text-sm sm:h-9"
-										maxTime={startConstraints.max}
-										minTime={startConstraints.min}
-										name="start-time"
-										onChange={handleStartTimeChange}
-										placeholder={t('searchTime')}
-										timeFormat={timeFormat}
-										value={startTime}
-									/>
-								</div>
-								<div>
-									<Label className="text-xs sm:text-sm">{t('endTime')}</Label>
-									<TimePicker
-										className="mt-1 h-8 text-sm sm:h-9"
-										maxTime={endConstraints.max}
-										minTime={endConstraints.min}
-										name="end-time"
-										onChange={handleEndTimeChange}
-										placeholder={t('searchTime')}
-										timeFormat={timeFormat}
-										value={endTime}
-									/>
-								</div>
+								{timeFields.map(([label, name, value, onChange, c]) => (
+									<div key={label}>
+										<Label className="text-xs sm:text-sm">{t(label)}</Label>
+										<TimePicker
+											className="mt-1 h-8 text-sm sm:h-9"
+											maxTime={c.max}
+											minTime={c.min}
+											name={name}
+											onChange={onChange}
+											placeholder={t('searchTime')}
+											timeFormat={timeFormat}
+											value={value}
+										/>
+									</div>
+								))}
 							</div>
 						)}
 
@@ -404,19 +354,10 @@ export const EventForm: React.FC<EventFormProps> = ({
 							</div>
 						</div>
 
-						<div className="grid gap-1 sm:gap-2">
-							<Label className="text-xs sm:text-sm" htmlFor="location">
-								{t('location')}
-							</Label>
-							<Input
-								className="h-8 text-sm sm:h-9"
-								id="location"
-								name="location"
-								onChange={handleInputChange}
-								placeholder={t('eventLocationPlaceholder')}
-								value={formValues.location}
-							/>
-						</div>
+						<TextField
+							name="location"
+							placeholder={t('eventLocationPlaceholder')}
+						/>
 
 						{/* Recurrence Section */}
 						<RecurrenceEditor onChange={handleRRuleChange} value={rrule} />

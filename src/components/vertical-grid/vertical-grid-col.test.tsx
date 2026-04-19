@@ -68,7 +68,7 @@ describe('VerticalGridCol', () => {
 		renderVerticalGridCol({ resourceId: 'res-1' })
 
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-00-res-1`)
+			screen.getByTestId(`vertical-cell-${dateStr}-09-00-resource-res-1`)
 		).toBeInTheDocument()
 	})
 

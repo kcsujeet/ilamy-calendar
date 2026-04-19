@@ -5,6 +5,7 @@ import type { Resource } from '@/features/resource-calendar/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { keys } from '@/lib/utils/keys'
 
 interface ResourceWeekVerticalResourceHeaderProps {
 	resources: Resource[]
@@ -32,7 +33,7 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 			</div>
 
 			{resources.map((resource, index) => {
-				const key = `resource-week-header-${resource.id}-day`
+				const key = keys.header.week.resource(resource.id)
 
 				return (
 					<AnimatedSection
@@ -40,13 +41,13 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 							'shrink-0 border-r last:border-r-0 border-b flex items-center text-center font-medium'
 						)}
 						delay={index * 0.05}
-						key={`${key}-animated`}
+						key={keys.listKey(key, 'animated')}
 						style={{
 							width: isHourly
 								? `calc(${visibleDays.length} * var(--spacing) * 50)`
 								: 'calc(var(--spacing) * 50)',
 						}}
-						transitionKey={`${key}-motion`}
+						transitionKey={keys.listKey(key, 'motion')}
 					>
 						<ResourceCell className="h-full w-full flex-1" resource={resource}>
 							<div

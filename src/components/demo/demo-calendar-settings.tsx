@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: demo component */
 import type { WeekDays } from '@/components/types'
 import { Button } from '@/components/ui/button'
 import {
@@ -8,15 +9,6 @@ import {
 	CardTitle,
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-	Combobox,
-	ComboboxCollection,
-	ComboboxContent,
-	ComboboxEmpty,
-	ComboboxInput,
-	ComboboxItem,
-	ComboboxList,
-} from '@/components/ui/combobox'
 import {
 	Select,
 	SelectContent,
@@ -149,7 +141,7 @@ export function DemoCalendarSettings({
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
 			<CardHeader className="border-b border-white/10 dark:border-white/5 p-4">
-				<CardTitle className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+				<CardTitle className="bg-clip-text text-transparent bg-linear-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
 					Calendar Settings
 				</CardTitle>
 				<CardDescription>Customize the calendar display</CardDescription>
@@ -158,10 +150,8 @@ export function DemoCalendarSettings({
 				<div>
 					<ModeToggle />
 				</div>
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						Calendar Type
-					</label>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Calendar Type</span>
 					<div className="flex gap-1">
 						<Button
 							className={
@@ -190,13 +180,11 @@ export function DemoCalendarSettings({
 							Resource
 						</Button>
 					</div>
-				</div>
+				</label>
 
 				{isResourceCalendar && (
-					<div>
-						<label className="block text-sm text-left font-medium mb-1">
-							Orientation
-						</label>
+					<label className="block text-sm text-left font-medium mb-1">
+						<span>Orientation</span>
 						<div className="flex gap-1">
 							<Button
 								className={
@@ -221,13 +209,11 @@ export function DemoCalendarSettings({
 								Vertical
 							</Button>
 						</div>
-					</div>
+					</label>
 				)}
 				{isResourceCalendar && (
-					<div>
-						<label className="block text-sm text-left font-medium mb-1">
-							Week View Granularity
-						</label>
+					<label className="block text-sm text-left font-medium mb-1">
+						<span>Week View Granularity</span>
 						<div className="flex gap-1">
 							<Button
 								className={
@@ -252,12 +238,10 @@ export function DemoCalendarSettings({
 								Daily
 							</Button>
 						</div>
-					</div>
-				)}
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						First Day of Week
 					</label>
+				)}
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>First Day of Week</span>
 					<Select
 						onValueChange={(value) => setFirstDayOfWeek(value as WeekDays)}
 						value={firstDayOfWeek}
@@ -275,11 +259,9 @@ export function DemoCalendarSettings({
 							<SelectItem value="saturday">Saturday</SelectItem>
 						</SelectContent>
 					</Select>
-				</div>
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						Initial View
-					</label>
+				</label>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Initial View</span>
 					<Select
 						onValueChange={(value) => setInitialView(value as CalendarView)}
 						value={initialView}
@@ -296,11 +278,9 @@ export function DemoCalendarSettings({
 							)}
 						</SelectContent>
 					</Select>
-				</div>
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						Initial Date
-					</label>
+				</label>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Initial Date</span>
 					<Select
 						onValueChange={(value) => {
 							if (value === 'today') {
@@ -335,11 +315,9 @@ export function DemoCalendarSettings({
 							<SelectItem value="next-month">Next Month</SelectItem>
 						</SelectContent>
 					</Select>
-				</div>
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						Locale
-					</label>
+				</label>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Locale</span>
 					<Select onValueChange={setLocale} value={locale}>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select locale" />
@@ -358,37 +336,24 @@ export function DemoCalendarSettings({
 							<SelectItem value="ko">한국어</SelectItem>
 						</SelectContent>
 					</Select>
-				</div>
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						Timezone
-					</label>
-					<Combobox
-						items={ALL_TIMEZONES}
-						onValueChange={(val) => {
-							if (val) setTimezone(val)
-						}}
-						value={timezone}
-					>
-						<ComboboxInput placeholder="Search timezones..." />
-						<ComboboxContent>
-							<ComboboxEmpty>No timezones found.</ComboboxEmpty>
-							<ComboboxList>
-								<ComboboxCollection>
-									{(tz) => (
-										<ComboboxItem key={tz} value={tz}>
-											{tz}
-										</ComboboxItem>
-									)}
-								</ComboboxCollection>
-							</ComboboxList>
-						</ComboboxContent>
-					</Combobox>
-				</div>
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						Calendar Height
-					</label>
+				</label>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Timezone</span>
+					<Select onValueChange={setTimezone} value={timezone}>
+						<SelectTrigger className="w-full">
+							<SelectValue placeholder="Select timezone" />
+						</SelectTrigger>
+						<SelectContent>
+							{ALL_TIMEZONES.map((tz) => (
+								<SelectItem key={tz} value={tz}>
+									{tz}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</label>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Calendar Height</span>
 					<Select onValueChange={setCalendarHeight} value={calendarHeight}>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select height" />
@@ -402,11 +367,9 @@ export function DemoCalendarSettings({
 							<SelectItem value="1000px">Extra Large (1000px)</SelectItem>
 						</SelectContent>
 					</Select>
-				</div>
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						Max Events Per Day
-					</label>
+				</label>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Max Events Per Day</span>
 					<Select
 						onValueChange={(value) =>
 							setDayMaxEvents(Number.parseInt(value, 10))
@@ -425,11 +388,9 @@ export function DemoCalendarSettings({
 							<SelectItem value="999">No limit</SelectItem>
 						</SelectContent>
 					</Select>
-				</div>
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						Event Bar Height
-					</label>
+				</label>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Event Bar Height</span>
 					<Select
 						onValueChange={(value) =>
 							setEventHeight(Number.parseInt(value, 10))
@@ -446,11 +407,9 @@ export function DemoCalendarSettings({
 							<SelectItem value="48">48px (two lines)</SelectItem>
 						</SelectContent>
 					</Select>
-				</div>
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						Time Format
-					</label>
+				</label>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Time Format</span>
 					<Select onValueChange={setTimeFormat} value={timeFormat}>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select time format" />
@@ -460,7 +419,7 @@ export function DemoCalendarSettings({
 							<SelectItem value="24-hour">24-hour (13:00)</SelectItem>
 						</SelectContent>
 					</Select>
-				</div>
+				</label>
 
 				<div className="flex items-center space-x-2">
 					<Checkbox
@@ -492,10 +451,8 @@ export function DemoCalendarSettings({
 				</div>
 
 				<div className="grid grid-cols-2 gap-4">
-					<div>
-						<label className="block text-sm text-left font-medium mb-1">
-							Business Start
-						</label>
+					<label className="block text-sm text-left font-medium mb-1">
+						<span>Business Start</span>
 						<Select
 							onValueChange={(value) => setBusinessStartTime(Number(value))}
 							value={businessStartTime.toString()}
@@ -511,11 +468,9 @@ export function DemoCalendarSettings({
 								))}
 							</SelectContent>
 						</Select>
-					</div>
-					<div>
-						<label className="block text-sm text-left font-medium mb-1">
-							Business End
-						</label>
+					</label>
+					<label className="block text-sm text-left font-medium mb-1">
+						<span>Business End</span>
 						<Select
 							onValueChange={(value) => setBusinessEndTime(Number(value))}
 							value={businessEndTime.toString()}
@@ -531,12 +486,10 @@ export function DemoCalendarSettings({
 								))}
 							</SelectContent>
 						</Select>
-					</div>
-				</div>
-				<div>
-					<label className="block text-sm text-left font-medium mb-1">
-						Hidden Days (Week View)
 					</label>
+				</div>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Hidden Days (Week View)</span>
 					<div className="space-y-1">
 						{(
 							[
@@ -570,7 +523,7 @@ export function DemoCalendarSettings({
 							</div>
 						))}
 					</div>
-				</div>
+				</label>
 				<div className="flex items-center space-x-2">
 					<Checkbox
 						checked={useCustomEventRenderer}

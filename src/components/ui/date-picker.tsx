@@ -1,7 +1,6 @@
 import { PopoverClose } from '@radix-ui/react-popover'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import type { Matcher } from 'react-day-picker'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -18,7 +17,7 @@ interface DatePickerProps {
 	label?: string
 	className?: string
 	closeOnSelect?: boolean
-	disabled?: Matcher | Matcher[]
+	disabled?: (date: Date) => boolean
 }
 
 export function DatePicker({
@@ -32,7 +31,6 @@ export function DatePicker({
 	const popOverRef = useRef<HTMLButtonElement | null>(null)
 	const [selectedDate, setSelectedDate] = useState<Date | undefined>(date)
 
-	// Sync date state with date prop
 	useEffect(() => {
 		setSelectedDate(date)
 	}, [date])
@@ -65,12 +63,10 @@ export function DatePicker({
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-auto p-0">
-					<PopoverClose ref={popOverRef} />
+					<PopoverClose ref={popOverRef} style={{ display: 'none' }} />
 					<Calendar
-						captionLayout="dropdown"
 						defaultMonth={selectedDate}
 						disabled={disabled}
-						mode="single"
 						onSelect={handleDateSelect}
 						selected={selectedDate}
 					/>

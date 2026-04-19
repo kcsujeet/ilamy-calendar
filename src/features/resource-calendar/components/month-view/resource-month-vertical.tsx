@@ -53,7 +53,7 @@ export const ResourceMonthVertical: React.FC = () => {
 				<div className="shrink-0 border-r w-16 sticky top-0 left-0 bg-background z-20" />
 				{resources.map((resource) => (
 					<ResourceCell
-						className="min-w-50 flex-1"
+						className="min-w-20 flex-1"
 						key={keys.listKey('resource-cell', resource.id)}
 						resource={resource}
 					/>

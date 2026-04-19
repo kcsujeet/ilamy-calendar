@@ -117,7 +117,7 @@ export const WeekView: React.FC = () => {
 					return (
 						<AnimatedSection
 							className={cn(
-								'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-50 h-full',
+								'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-20 h-full',
 								today && 'bg-primary/10 font-bold'
 							)}
 							data-testid={keys.header.weekday('week', day.format('dddd'))}

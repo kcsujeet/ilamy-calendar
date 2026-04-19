@@ -1,5 +1,4 @@
 import type React from 'react'
-import { AnimatedSection } from '@/components/animations/animated-section'
 import { ResourceCell } from '@/components/resource-cell'
 import type { Resource } from '@/features/resource-calendar/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
@@ -14,7 +13,7 @@ interface ResourceWeekVerticalResourceHeaderProps {
 
 export const ResourceWeekVerticalResourceHeader: React.FC<
 	ResourceWeekVerticalResourceHeaderProps
-> = ({ resources, visibleDays }) => {
+> = ({ resources }) => {
 	const { weekViewGranularity, t, currentDate } = useSmartCalendarContext()
 	const isHourly = weekViewGranularity === 'hourly'
 
@@ -23,43 +22,35 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 			<div className="shrink-0 w-16 border-r z-20 bg-background sticky left-0">
 				<span
 					className={cn(
-						'px-2 h-full w-full flex justify-center text-xs text-muted-foreground',
-						isHourly ? 'items-end' : 'items-center border-b'
+						'px-2 h-full w-full flex flex-col justify-center text-xs text-muted-foreground text-center',
+						isHourly ? 'justify-end' : 'justify-center border-b'
 					)}
 				>
 					{t('week')}
-					{!isHourly && ` ${currentDate.week()}`}
+					{!isHourly && (
+						<span className="font-medium text-foreground">
+							{currentDate.week()}
+						</span>
+					)}
 				</span>
 			</div>
 
-			{resources.map((resource, index) => {
-				const key = keys.header.week.resource(resource.id)
-
+			{resources.map((resource) => {
 				return (
-					<AnimatedSection
-						className={cn(
-							'shrink-0 border-r last:border-r-0 border-b flex items-center text-center font-medium'
-						)}
-						delay={index * 0.05}
-						key={keys.listKey(key, 'animated')}
-						style={{
-							width: isHourly
-								? `calc(${visibleDays.length} * var(--spacing) * 50)`
-								: 'calc(var(--spacing) * 50)',
-						}}
-						transitionKey={keys.listKey(key, 'motion')}
+					<ResourceCell
+						className="min-w-20 flex-1 border-b"
+						key={keys.listKey('resource-cell', resource.id)}
+						resource={resource}
 					>
-						<ResourceCell className="h-full w-full flex-1" resource={resource}>
-							<div
-								className={cn(
-									'sticky text-sm font-medium truncate',
-									isHourly ? 'left-1/2' : 'left-1'
-								)}
-							>
-								{resource.title}
-							</div>
-						</ResourceCell>
-					</AnimatedSection>
+						<div
+							className={cn(
+								'sticky text-sm font-medium truncate',
+								isHourly ? 'left-1/4' : 'left-1'
+							)}
+						>
+							{resource.title}
+						</div>
+					</ResourceCell>
 				)
 			})}
 		</div>

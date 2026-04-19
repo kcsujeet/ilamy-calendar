@@ -48,7 +48,7 @@ export const ResourceWeekVertical: React.FC = () => {
 				<AllDayCell />
 				{resources.map((resource) => (
 					<AllDayRow
-						classes={{ cell: 'min-w-20' }}
+						classes={{ cell: 'min-w-20 border-r!' }}
 						days={visibleDays}
 						key={keys.allDayRow(resource.id)}
 						resource={resource}

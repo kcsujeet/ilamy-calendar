@@ -22,11 +22,16 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 			<div className="shrink-0 w-16 border-r z-20 bg-background sticky left-0">
 				<span
 					className={cn(
-						'px-2 h-full w-full flex justify-center text-xs text-muted-foreground items-center text-center border-b'
+						'px-2 h-full w-full flex flex-col justify-center text-xs text-muted-foreground text-center',
+						isHourly ? 'justify-end' : 'justify-center border-b'
 					)}
 				>
 					{t('week')}
-					{!isHourly && ` ${currentDate.week()}`}
+					{!isHourly && (
+						<span className="font-medium text-foreground">
+							{currentDate.week()}
+						</span>
+					)}
 				</span>
 			</div>
 

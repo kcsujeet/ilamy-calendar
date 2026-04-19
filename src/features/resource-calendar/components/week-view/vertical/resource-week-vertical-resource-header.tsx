@@ -40,7 +40,7 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 						<div
 							className={cn(
 								'sticky text-sm font-medium truncate',
-								isHourly ? 'left-1/2' : 'left-1'
+								isHourly ? 'left-1/4' : 'left-1'
 							)}
 						>
 							{resource.title}

@@ -134,26 +134,21 @@ export const ResourceCalendarProvider: React.FC<
 	)
 	const hideAllResources = useCallback(() => setVisibleResources(new Set()), [])
 
-	// Event utilities
+	// Event utilities — both filters go through getEventResourceIds so single
+	// and multi-resource events are handled uniformly.
 	const getEventsForResource = useCallback(
-		(resourceId: string | number): CalendarEvent[] => {
-			return calendarEngine.events.filter((event: CalendarEvent) => {
-				if (event.resourceIds) {
-					return event.resourceIds.includes(resourceId)
-				}
-				return event.resourceId === resourceId
-			})
-		},
+		(resourceId: string | number): CalendarEvent[] =>
+			calendarEngine.events.filter((e) =>
+				getEventResourceIds(e).includes(resourceId)
+			),
 		[calendarEngine.events]
 	)
 
 	const getEventsForResources = useCallback(
-		(resourceIds: (string | number)[]): CalendarEvent[] => {
-			return calendarEngine.events.filter((event: CalendarEvent) => {
-				const eventResourceIds = getEventResourceIds(event)
-				return eventResourceIds.some((id) => resourceIds.includes(id))
-			})
-		},
+		(resourceIds: (string | number)[]): CalendarEvent[] =>
+			calendarEngine.events.filter((e) =>
+				getEventResourceIds(e).some((id) => resourceIds.includes(id))
+			),
 		[calendarEngine.events]
 	)
 

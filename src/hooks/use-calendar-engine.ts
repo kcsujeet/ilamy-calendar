@@ -132,14 +132,9 @@ export const useCalendarEngine = (
 	const lastLocaleProp = useRef(locale)
 
 	const t: TranslatorFunction = useMemo(() => {
-		if (translator) {
-			return translator
-		}
-		if (translations) {
-			return (key: string) => translations[key as keyof Translations] || key
-		}
-		return (key: string) =>
-			defaultTranslations[key as keyof Translations] || key
+		if (translator) return translator
+		const dict = translations || defaultTranslations
+		return (key: string) => dict[key as keyof Translations] || key
 	}, [translations, translator])
 
 	const getEventsForDateRange = useCallback(

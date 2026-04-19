@@ -20,6 +20,7 @@ import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-ed
 import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
 import type { RRuleOptions } from '@/features/recurrence/types'
 import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler'
+import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
@@ -65,19 +66,16 @@ export const EventForm: React.FC<EventFormProps> = ({
 		handleConfirm,
 	} = useRecurringEventActions(onClose)
 
-	const {
-		findParentRecurringEvent,
-		t,
-		businessHours,
-		timeFormat,
-		getResourceById,
-	} = useSmartCalendarContext((context) => ({
-		findParentRecurringEvent: context.findParentRecurringEvent,
-		t: context.t,
-		businessHours: context.businessHours,
-		timeFormat: context.timeFormat,
-		getResourceById: context.getResourceById,
-	}))
+	const { findParentRecurringEvent, t, timeFormat } = useSmartCalendarContext(
+		(context) => ({
+			findParentRecurringEvent: context.findParentRecurringEvent,
+			t: context.t,
+			timeFormat: context.timeFormat,
+		})
+	)
+	const effectiveBusinessHours = useEffectiveBusinessHours(
+		selectedEvent?.resourceId
+	)
 
 	const start = selectedEvent?.start ?? dayjs()
 	const end = selectedEvent?.end ?? dayjs().add(1, 'hour')
@@ -223,18 +221,6 @@ export const EventForm: React.FC<EventFormProps> = ({
 		const startDateTime = buildDateTime(startDate, startTime, isAllDay)
 		setRrule({ ...newRRule, dtstart: startDateTime.toDate() })
 	}
-
-	// Use resource-specific business hours if available, otherwise fallback to global
-	const effectiveBusinessHours = useMemo(() => {
-		const resourceId = selectedEvent?.resourceId
-		if (resourceId && getResourceById) {
-			const resource = getResourceById(resourceId)
-			if (resource?.businessHours) {
-				return resource.businessHours
-			}
-		}
-		return businessHours
-	}, [selectedEvent?.resourceId, getResourceById, businessHours])
 
 	const disabledDateMatcher = effectiveBusinessHours
 		? (date: Date) => !isBusinessDay(dayjs(date), effectiveBusinessHours)

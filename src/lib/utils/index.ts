@@ -1,10 +1,23 @@
 import type { ClassValue } from 'clsx'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import type { WeekDays } from '@/components/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs))
+}
+
+/**
+ * Converts an optional WeekDays[] list into a Set<number> of day indices
+ * (0 = Sunday, 1 = Monday, ...), or undefined if the list is empty.
+ */
+export const toHiddenDaysSet = (
+	hiddenDays?: WeekDays[]
+): Set<number> | undefined => {
+	if (!hiddenDays || hiddenDays.length === 0) return undefined
+	return new Set(hiddenDays.map((day) => WEEK_DAYS_NUMBER_MAP[day]))
 }
 
 export function safeDate(

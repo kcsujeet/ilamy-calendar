@@ -141,22 +141,20 @@ export const calculateBusinessHoursRange = (options: {
 		maxEnd = Math.max(maxEnd, config.endTime ?? 17)
 	}
 
-	// Process global and resource business hours for each date
-	for (const date of allDates) {
+	// Invoke processBusinessHours for the global config and every resource
+	// config, optionally scoped to a specific date.
+	const processAll = (date?: Dayjs) => {
 		processBusinessHours(businessHours, { date, onMatch })
 		for (const rbh of resourceBusinessHours) {
 			processBusinessHours(rbh, { date, onMatch })
 		}
 	}
 
-	// Fallback logic if no business hours found for specific dates
-	if (!hasBusinessHours && hideNonBusinessHours) {
-		processBusinessHours(businessHours, { onMatch })
-		for (const rbh of resourceBusinessHours) {
-			processBusinessHours(rbh, { onMatch })
-		}
+	for (const date of allDates) processAll(date)
 
-		// Final fallback to default 9-17 if still nothing
+	// Fallback: retry without date scoping, then default to 9-17 if still empty.
+	if (!hasBusinessHours && hideNonBusinessHours) {
+		processAll()
 		if (!hasBusinessHours) {
 			minStart = 9
 			maxEnd = 17

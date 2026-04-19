@@ -23,7 +23,7 @@ import {
 	GAP_BETWEEN_ELEMENTS,
 	WEEK_DAYS_NUMBER_MAP,
 } from '@/lib/constants'
-import { normalizeEvents, safeDate } from '@/lib/utils'
+import { normalizeEvents, safeDate, toHiddenDaysSet } from '@/lib/utils'
 
 const CalendarContent: React.FC = () => {
 	const { view, dayMaxEvents } = useSmartCalendarContext()
@@ -53,11 +53,6 @@ const CalendarContent: React.FC = () => {
 			<EventFormDialog />
 		</div>
 	)
-}
-
-const toHiddenDaysSet = (hiddenDays?: WeekDays[]): Set<number> | undefined => {
-	if (!hiddenDays || hiddenDays.length === 0) return undefined
-	return new Set(hiddenDays.map((day) => WEEK_DAYS_NUMBER_MAP[day]))
 }
 
 export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({

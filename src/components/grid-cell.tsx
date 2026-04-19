@@ -2,6 +2,7 @@ import React, { memo, useMemo } from 'react'
 import { DayNumber } from '@/components/day-number'
 import type { CalendarEvent } from '@/components/types'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
+import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
@@ -52,12 +53,11 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		currentDate,
 		t,
 		getEventsForResource,
-		businessHours,
 		currentLocale,
 		eventSpacing,
 		eventHeight,
-		getResourceById,
 	} = useSmartCalendarContext()
+	const effectiveBusinessHours = useEffectiveBusinessHours(resourceId)
 
 	const todayEvents = useMemo(() => {
 		if (!shouldRenderEvents) {
@@ -110,17 +110,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 
 	const hiddenEventsCount = todayEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
-
-	// Use resource-specific business hours if available, otherwise fallback to global
-	const effectiveBusinessHours = useMemo(() => {
-		if (resourceId && getResourceById) {
-			const resource = getResourceById(resourceId)
-			if (resource?.businessHours) {
-				return resource.businessHours
-			}
-		}
-		return businessHours
-	}, [resourceId, getResourceById, businessHours])
 
 	const isBusiness = isBusinessHour({
 		date: day,

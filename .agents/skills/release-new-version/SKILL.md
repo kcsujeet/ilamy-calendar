@@ -1,6 +1,6 @@
 ---
 name: release-new-version
-description: Cut a new release of @ilamy/calendar — analyze commits since the last tag, suggest a semver bump, draft a CHANGELOG entry in the project's existing style, run the CI gate, commit, tag, push to origin, and create the GitHub release page (marked as `latest`). Stops before `npm publish` so the user can log in interactively. Use whenever the user says "release a new version", "cut a release", "ship v1.x", "bump the version", "prep a release", "publish the next version", or anything that implies a new version should go out — even if they don't mention publish, changelog, or GitHub release.
+description: Cut a new release of @ilamy/calendar — analyze commits since the last tag, suggest a semver bump, draft a CHANGELOG entry in the project's existing style, run the CI gate, commit, tag, push to origin, and create the GitHub release page (marked as `latest`). Pauses for the user to run `npm publish` interactively, then (on their signal) comments on every issue closed by the release and closes any still open. Use whenever the user says "release a new version", "cut a release", "ship v1.x", "bump the version", "prep a release", "publish the next version", "I just published X", "close the released issues", or anything that implies a new version should go out or a shipped version needs its issue follow-ups.
 ---
 
 # Release a new version of @ilamy/calendar
@@ -156,9 +156,9 @@ Turn the pushed tag into a published release page on GitHub, marked as `latest`.
    - No `--draft`. The user already approved the body in step 3; publishing a draft just means they have to click "Publish" again.
 5. **Report the release URL** from `gh`'s output so the user can open it.
 
-## Phase 8 — Hand off to the user
+## Phase 8 — Hand off for `npm publish`
 
-Only one manual step is left:
+Only one manual step is left before the issue follow-ups:
 
 ```
 Released vX.Y.Z. Remaining (manual):
@@ -166,9 +166,81 @@ Released vX.Y.Z. Remaining (manual):
   npm publish --access public
 
   (needs interactive npm login — that's why this skill stops here)
+
+Once published, say "published" (or similar) and I'll notify the issues
+this release closes.
 ```
 
-Do not offer to run `npm publish` yourself — it requires credentials you don't have. That's the only thing the user does by hand.
+Do not offer to run `npm publish` yourself — it requires credentials you don't have. **Pause here.** Do not proceed to Phase 9 until the user confirms the publish landed; commenting "fixed in vX.Y.Z" on an issue before the package is on npm would be a lie to the reporter.
+
+## Phase 9 — Notify closed issues
+
+Triggered when the user confirms `npm publish` succeeded (phrases like "published", "it's on npm", "done", "pushed to npm"). Comment on every issue that this release closes and close any still open — in a single approval gate, not per-issue.
+
+### Find the issues
+
+Collect issue numbers from two sources and deduplicate:
+
+1. **The new CHANGELOG entry** — scan the block you wrote in Phase 3 for `Closes [`#N`](…/issues/N)` patterns. This is the canonical list.
+2. **The commit range `<prev-tag>..<new-tag>`** — `git log <prev>..<new> --pretty=format:"%B"` then grep for `(Closes|Fixes|Resolves|closes|fixes|resolves) #\d+` in commit messages **and** in each referenced PR's body (`gh pr view <N> --json body`). Catches issues closed via a PR description that didn't make it verbatim into the changelog bullet.
+
+For each number, check state with `gh issue view <N> --json state,title,number`:
+
+- `CLOSED` (auto-closed when the PR merged): comment only, don't re-close.
+- `OPEN` (PR reference didn't auto-link, or the fix landed via a commit not a PR): comment and close.
+
+Skip numbers that resolve to pull requests, not issues. `gh issue view` on a PR number errors loudly — catch that and drop it.
+
+### Comment template
+
+Keep it short and human. No marketing copy, no emoji, no changelog repetition — the reporter can click through to the release page for details.
+
+```
+Fixed in vX.Y.Z — https://github.com/kcsujeet/ilamy-calendar/releases/tag/vX.Y.Z
+
+Thanks for trying ilamy calendar! Feel free to open more issues any time.
+```
+
+The release URL must match the one `gh release create` printed in Phase 7 — don't reconstruct it manually and risk a typo.
+
+### Single approval gate
+
+Present the full plan in one message (issues + bodies + actions) and ask once. Example:
+
+```
+Ready to post on these 2 issues:
+
+  #119 "Vertical ResourceCalendar: quarter-hour gridlines..." (currently CLOSED) — comment only
+  #66  "Tooltips not localized" (currently OPEN) — comment + close
+
+Comment body (same on all):
+
+  Fixed in v1.6.2 — https://github.com/kcsujeet/ilamy-calendar/releases/tag/v1.6.2
+
+  Thanks for trying ilamy calendar! Feel free to open more issues any time.
+
+Post?
+```
+
+The project's workflow rule (`.agents/rules/workflow.md`) requires explicit approval before any public-facing post — one approval for the batch is fine since the body is identical and the user has seen the full list.
+
+### Post on approval
+
+For each issue, in sequence (small set, no benefit to parallel):
+
+```
+gh issue comment <N> --repo kcsujeet/ilamy-calendar --body "<template>"
+# then, if the issue was OPEN:
+gh issue close <N> --repo kcsujeet/ilamy-calendar
+```
+
+If `gh issue close` reports "already closed" (the auto-close landed between your state check and the close call), that's fine — keep going. If `gh issue comment` fails for a specific issue (e.g., the reporter deleted their account and the issue got locked), surface that one failure to the user and continue with the rest; don't abort the whole batch.
+
+After the batch, report what landed:
+
+```
+Posted on #119, #66. Closed #66. All done.
+```
 
 ## Failure modes to watch for
 

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.6.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.6.1...v1.6.2)
+
+> 22 April 2026
+
+##### Fixes
+
+- fix: quarter-hour gridlines in the vertical day view now subdivide each hour evenly at 25/50/75/100% instead of bunching at the bottom — affects both `IlamyCalendar` and `IlamyResourceCalendar`. Also keeps the column separator continuous across hour boundaries in vertical resource views ([`#120`](https://github.com/kcsujeet/ilamy-calendar/pull/120)) — Closes [`#119`](https://github.com/kcsujeet/ilamy-calendar/issues/119)
+
 #### [v1.6.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.6.0...v1.6.1)
 
 > 19 April 2026

@@ -56,6 +56,25 @@ describe('GridCell Event Spacing', () => {
 		expect(placeholders[0].style.height).toBe(`${EVENT_BAR_HEIGHT}px`)
 		expect(placeholders[1].style.height).toBe(`${EVENT_BAR_HEIGHT}px`)
 	})
+
+	test('event placeholders should use custom eventHeight when provided', () => {
+		const customHeight = 48
+		render(
+			<CalendarProvider
+				dayMaxEvents={3}
+				eventHeight={customHeight}
+				events={mockEvents}
+				initialDate={initialDate}
+			>
+				<GridCell day={initialDate} shouldRenderEvents={true} />
+			</CalendarProvider>
+		)
+		const placeholders = screen.queryAllByTestId(/Event/i)
+
+		expect(placeholders.length).toBe(2)
+		expect(placeholders[0].style.height).toBe(`${customHeight}px`)
+		expect(placeholders[1].style.height).toBe(`${customHeight}px`)
+	})
 })
 
 describe('GridCell droppable ID uniqueness', () => {

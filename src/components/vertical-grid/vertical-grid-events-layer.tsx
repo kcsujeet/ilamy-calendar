@@ -3,12 +3,13 @@ import { CurrentTimeIndicator } from '@/components/current-time-indicator'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
 import type { Resource } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { keys } from '@/lib/utils/keys'
 
 interface VerticalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
-	days: dayjs.Dayjs[] // The specific day this layer represents
+	days: Dayjs[] // The specific day this layer represents
 	resourceId?: string | number
 	resource?: Resource
 	'data-testid'?: string
@@ -38,13 +39,13 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 				/>
 			)}
 			{todayEvents.map((event, index) => {
-				const eventKey = `event-${event.id}-${index}-${days.at(0).toISOString()}-${resourceId ?? 'no-resource'}`
+				const eventKey = `event-${event.id}-${index}-${days.at(0)?.toISOString()}-${resourceId ?? 'no-resource'}`
 				const isShortEvent = event.end.diff(event.start, 'minute') <= 15
 
 				return (
 					<div
 						className="absolute"
-						key={`${eventKey}-wrapper`}
+						key={keys.listKey(eventKey, 'wrapper')}
 						style={{
 							left: `${event.left}%`,
 							width: `calc(${event.width}% - var(--spacing) * 2)`,

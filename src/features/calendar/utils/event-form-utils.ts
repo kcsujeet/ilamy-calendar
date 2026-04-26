@@ -1,12 +1,12 @@
 import type { BusinessHours } from '@/components/types'
 import { calculateBusinessHoursRange } from '@/features/calendar/utils/business-hours'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 
 export const buildDateTime = (
 	date: Date,
 	time: string,
 	isAllDay: boolean
-): dayjs.Dayjs => {
+): Dayjs => {
 	const [hours, minutes] = time.split(':').map(Number)
 	const base = dayjs(date).hour(hours).minute(minutes)
 	return isAllDay ? base.hour(0).minute(0) : base
@@ -16,7 +16,7 @@ export const buildEndDateTime = (
 	date: Date,
 	time: string,
 	isAllDay: boolean
-): dayjs.Dayjs => {
+): Dayjs => {
 	const [hours, minutes] = time.split(':').map(Number)
 	const base = dayjs(date).hour(hours).minute(minutes)
 	return isAllDay ? base.hour(23).minute(59) : base

@@ -25,10 +25,16 @@ interface CalendarDndContextProps {
 	children: React.ReactNode
 }
 
+const CLOSED_DIALOG = {
+	isOpen: false,
+	event: null,
+	updates: null,
+} as const
+
 export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	const activeEventRef = useRef<CalendarEvent>(null)
 	const dragOverlayRef = useRef<{
-		setActiveEvent: (event: CalendarEvent) => void
+		setActiveEvent: (event: CalendarEvent | null) => void
 	}>(null)
 
 	const { updateEvent, updateRecurringEvent, disableDragAndDrop } =
@@ -72,24 +78,14 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		event: CalendarEvent,
 		updates: Partial<CalendarEvent>
 	) => {
-		// Validate inputs
-		if (!event || !event.id) {
-			return
-		}
-
-		if (!updates || Object.keys(updates).length === 0) {
+		if (!event?.id || !updates || Object.keys(updates).length === 0) {
 			return
 		}
 
 		if (isRecurringEvent(event)) {
-			// Show dialog for recurring events
-			setRecurringDialog({
-				isOpen: true,
-				event,
-				updates,
-			})
+			// Recurring events: prompt the user via dialog before applying.
+			setRecurringDialog({ isOpen: true, event, updates })
 		} else {
-			// Directly update regular events
 			updateEvent(event.id, updates)
 		}
 	}
@@ -97,7 +93,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	// Handle recurring event dialog confirmation
 	const handleRecurringEventConfirm = (scope: RecurrenceEditScope) => {
 		if (!recurringDialog.event || !recurringDialog.updates) {
-			setRecurringDialog({ isOpen: false, event: null, updates: null })
+			setRecurringDialog(CLOSED_DIALOG)
 			return
 		}
 
@@ -109,13 +105,13 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		} catch {
 			// Silently handle error and reset dialog state
 		} finally {
-			setRecurringDialog({ isOpen: false, event: null, updates: null })
+			setRecurringDialog(CLOSED_DIALOG)
 		}
 	}
 
 	// Handle recurring event dialog close
 	const handleRecurringEventClose = () => {
-		setRecurringDialog({ isOpen: false, event: null, updates: null })
+		setRecurringDialog(CLOSED_DIALOG)
 	}
 
 	const handleDragStart = (event: DragStartEvent) => {

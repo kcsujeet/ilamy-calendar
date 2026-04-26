@@ -1,0 +1,20 @@
+// Flag inline template literals in id / key / data-testid / htmlFor /
+// transitionKey JSX attributes. The project uses a central `keys.*` factory
+// (src/lib/utils/keys.ts) for all such strings — enforce it so new code
+// doesn't drift back to ad-hoc template literals.
+//
+// Correct:   data-testid={keys.cell.day(day)}
+//            key={keys.listKey('empty', i, id)}
+// Incorrect: data-testid={`day-cell-${day.format('YYYY-MM-DD')}`}
+//            key={`item-${i}`}
+
+or {
+	`id={$expr}`,
+	`key={$expr}`,
+	`data-testid={$expr}`,
+	`htmlFor={$expr}`,
+	`transitionKey={$expr}`
+} as $match where {
+	$expr <: r"`.*`",
+	register_diagnostic(span=$match, message="Use the `keys.*` factory from '@/lib/utils/keys' instead of an inline template literal for id/key/data-testid/htmlFor/transitionKey.")
+}

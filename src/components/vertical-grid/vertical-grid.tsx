@@ -1,6 +1,7 @@
 import type React from 'react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import { keys } from '@/lib/utils/keys'
 import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
 import { VerticalGridHeaderContainer } from './vertical-grid-header-container'
 
@@ -74,13 +75,13 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 				{isResourceCalendar && header}
 				{/* Calendar area with scroll */}
 				<div
-					className={cn('flex flex-1 w-fit', classes?.body)}
+					className={cn('flex flex-1 min-w-full w-fit', classes?.body)}
 					data-testid="vertical-grid-body"
 				>
 					{/* Day columns with time slots */}
 					{columns.map((column, index) => (
 						<VerticalGridCol
-							key={`${column.id}-${index}`}
+							key={keys.listKey(column.id, index)}
 							{...column}
 							cellSlots={cellSlots}
 							gridType={gridType}

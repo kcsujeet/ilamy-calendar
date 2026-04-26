@@ -1,22 +1,23 @@
 import type React from 'react'
 import { memo } from 'react'
 import type { Resource } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
 export interface VerticalGridColProps {
 	id: string
-	day: dayjs.Dayjs
+	day?: Dayjs
 	resourceId?: string | number
 	resource?: Resource
-	days: dayjs.Dayjs[] // The specific day this column represents
+	days: Dayjs[] // The specific day this column represents
 	className?: string
 	'data-testid'?: string
 	gridType?: 'day' | 'hour'
 	renderHeader?: () => React.ReactNode
-	renderCell?: (date: dayjs.Dayjs) => React.ReactNode
+	renderCell?: (date: Dayjs) => React.ReactNode
 	noEvents?: boolean
 	/** Optional array of minute slots by which the hour is divided
 	 * e.g., [0, 15, 30, 45] for quarter-hour slots
@@ -42,68 +43,77 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	return (
 		<div
 			className={cn(
-				'flex flex-col flex-1 items-center justify-center min-w-50 bg-background relative',
+				'flex flex-col flex-1 items-center justify-center min-w-20 bg-background relative',
 				className
 			)}
-			data-testid={dataTestId || `vertical-col-${id}`}
+			data-testid={dataTestId || keys.container.vertical.col(id)}
 		>
 			{/* Time slots */}
 			<div
-				className="w-full relative grid"
+				className="w-full h-full relative grid"
 				style={{
 					gridTemplateRows: `repeat(${days.length}, minmax(0, 1fr))`,
 				}}
 			>
 				{days.map((day, dayIndex) => {
 					const hourStr = day.format('HH')
-					const dateStr = day.format('YYYY-MM-DD')
 
 					if (renderCell) {
 						const testId =
-							id === 'time-col'
-								? `vertical-time-${hourStr}`
-								: `vertical-cell-${dateStr}-${hourStr}-00${resourceId ? `-${resourceId}` : ''}`
+							id === keys.col.time
+								? keys.cell.verticalTime(hourStr)
+								: keys.cell.vertical(day, hourStr, '00', resourceId)
 						return (
 							<div
-								className="h-[60px] border-b border-r"
+								className="min-h-[60px] border-b border-r"
 								data-testid={testId}
-								key={`${id}-${dayIndex}-${hourStr}`}
+								key={keys.listKey(id, dayIndex, hourStr)}
 							>
 								{renderCell(day)}
 							</div>
 						)
 					}
 
-					return cellSlots.map((minute) => {
-						const m = minute === 60 ? undefined : minute
-						const mm = m === undefined ? '00' : String(m).padStart(2, '0')
-						const testId = `vertical-cell-${dateStr}-${hourStr}-${mm}${resourceId ? `-${resourceId}` : ''}`
+					return (
+						<div
+							className={cn(
+								'flex flex-col min-h-[60px]',
+								isLastColumn ? 'border-r-0' : 'border-r'
+							)}
+							key={keys.listKey(id, dayIndex, hourStr)}
+						>
+							{cellSlots.map((minute) => {
+								const m = minute === 60 ? undefined : minute
+								const mm = m === undefined ? '00' : String(m).padStart(2, '0')
+								const testId = keys.cell.vertical(day, hourStr, mm, resourceId)
+								const isQuarter = minute !== 60
 
-						return (
-							<GridCell
-								className={cn(
-									'hover:bg-accent relative z-10 h-[60px] cursor-pointer border-b',
-									minute === 60 ? '' : 'border-dashed h-[15px] min-h-[15px]',
-									isLastColumn ? 'border-r-0' : 'border-r'
-								)}
-								data-testid={testId}
-								day={m ? day.minute(m) : day}
-								gridType={gridType}
-								hour={day.hour()}
-								key={`${id}-${dayIndex}-${mm}`}
-								minute={m}
-								resourceId={resourceId} // Events are rendered in a separate layer
-								shouldRenderEvents={false}
-							/>
-						)
-					})
+								return (
+									<GridCell
+										className={cn(
+											'hover:bg-accent relative z-10 flex-1 min-h-0 cursor-pointer border-b border-r-0',
+											isQuarter && 'border-dashed'
+										)}
+										data-testid={testId}
+										day={m ? day.minute(m) : day}
+										gridType={gridType}
+										hour={day.hour()}
+										key={keys.listKey(id, dayIndex, mm)}
+										minute={m}
+										resourceId={resourceId} // Events are rendered in a separate layer
+										shouldRenderEvents={false}
+									/>
+								)
+							})}
+						</div>
+					)
 				})}
 
 				{/* Event blocks layer */}
 				{!noEvents && (
 					<div className="absolute inset-0 z-10 pointer-events-none">
 						<VerticalGridEventsLayer
-							data-testid={`vertical-events-${id}`}
+							data-testid={keys.container.eventsLayer('vertical', id)}
 							days={days}
 							gridType={gridType}
 							resource={resource}

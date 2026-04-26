@@ -6,11 +6,12 @@ import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type {
 	CalendarClassesOverride,
 	CellClickInfo,
+	DateRange,
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
-import type dayjs from '@/lib/configs/dayjs-config'
-import { GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 import { CalendarContext } from './context'
@@ -20,7 +21,7 @@ export interface CalendarProviderProps {
 	events?: CalendarEvent[]
 	firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
 	initialView?: CalendarView
-	initialDate?: dayjs.Dayjs
+	initialDate?: Dayjs
 	renderEvent?: (event: CalendarEvent) => ReactNode
 	onEventClick?: (event: CalendarEvent) => void
 	onCellClick?: (info: CellClickInfo) => void
@@ -28,7 +29,7 @@ export interface CalendarProviderProps {
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
 	onEventDelete?: (event: CalendarEvent) => void
-	onDateChange?: (date: dayjs.Dayjs) => void
+	onDateChange?: (date: Dayjs, range: DateRange) => void
 	locale?: string
 	timezone?: string
 	disableCellClick?: boolean
@@ -36,6 +37,7 @@ export interface CalendarProviderProps {
 	disableDragAndDrop?: boolean
 	dayMaxEvents: number
 	eventSpacing?: number
+	eventHeight?: number
 	stickyViewHeader?: boolean
 	viewHeaderClassName?: string
 	headerComponent?: ReactNode // Optional custom header component
@@ -50,6 +52,7 @@ export interface CalendarProviderProps {
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
 	) => ReactNode
+	renderHour?: (date: Dayjs) => ReactNode
 	hideNonBusinessHours?: boolean
 	hiddenDays?: Set<number>
 }
@@ -75,6 +78,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	disableDragAndDrop,
 	dayMaxEvents,
 	eventSpacing = GAP_BETWEEN_ELEMENTS,
+	eventHeight = EVENT_BAR_HEIGHT,
 	stickyViewHeader = true,
 	viewHeaderClassName = '',
 	headerComponent,
@@ -86,6 +90,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	timeFormat = '12-hour',
 	classesOverride,
 	renderCurrentTimeIndicator,
+	renderHour,
 	hideNonBusinessHours = false,
 	hiddenDays,
 }) => {
@@ -148,30 +153,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	// Create the context value
 	const contextValue = useMemo(
 		() => ({
-			currentDate: calendarEngine.currentDate,
-			view: calendarEngine.view,
-			events: calendarEngine.events,
-			rawEvents: calendarEngine.rawEvents,
-			currentLocale: calendarEngine.currentLocale,
-			isEventFormOpen: calendarEngine.isEventFormOpen,
-			selectedEvent: calendarEngine.selectedEvent,
-			selectedDate: calendarEngine.selectedDate,
-			firstDayOfWeek: calendarEngine.firstDayOfWeek,
-			setCurrentDate: calendarEngine.setCurrentDate,
-			selectDate: calendarEngine.selectDate,
-			setView: calendarEngine.setView,
-			nextPeriod: calendarEngine.nextPeriod,
-			prevPeriod: calendarEngine.prevPeriod,
-			today: calendarEngine.today,
-			addEvent: calendarEngine.addEvent,
-			updateEvent: calendarEngine.updateEvent,
-			updateRecurringEvent: calendarEngine.updateRecurringEvent,
-			deleteEvent: calendarEngine.deleteEvent,
-			deleteRecurringEvent: calendarEngine.deleteRecurringEvent,
-			openEventForm: calendarEngine.openEventForm,
-			closeEventForm: calendarEngine.closeEventForm,
-			getEventsForDateRange: calendarEngine.getEventsForDateRange,
-			findParentRecurringEvent: calendarEngine.findParentRecurringEvent,
+			...calendarEngine,
 			renderEvent,
 			onEventClick: handleEventClick,
 			onCellClick: handleDateClick,
@@ -182,16 +164,17 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			disableDragAndDrop,
 			dayMaxEvents,
 			eventSpacing,
+			eventHeight,
 			stickyViewHeader,
 			viewHeaderClassName,
 			headerComponent,
 			headerClassName,
 			businessHours,
 			renderEventForm,
-			t: calendarEngine.t,
 			timeFormat,
 			classesOverride,
 			renderCurrentTimeIndicator,
+			renderHour,
 			hideNonBusinessHours,
 			hiddenDays,
 		}),
@@ -207,6 +190,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			disableDragAndDrop,
 			dayMaxEvents,
 			eventSpacing,
+			eventHeight,
 			stickyViewHeader,
 			viewHeaderClassName,
 			headerComponent,
@@ -216,6 +200,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			timeFormat,
 			classesOverride,
 			renderCurrentTimeIndicator,
+			renderHour,
 			hideNonBusinessHours,
 			hiddenDays,
 		]

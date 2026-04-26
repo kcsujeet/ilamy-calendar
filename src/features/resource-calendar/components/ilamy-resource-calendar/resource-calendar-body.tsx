@@ -11,7 +11,7 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 export const ResourceCalendarBody: React.FC = () => {
 	const { view } = useSmartCalendarContext()
 
-	const viewMap = {
+	const viewMap: Record<string, React.ReactNode> = {
 		month: <ResourceMonthView key="month" />,
 		week: <ResourceWeekView key="week" />,
 		day: <ResourceDayView key="day" />,

@@ -1,18 +1,18 @@
 import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
+import { HourLabel } from '@/components/hour-label/hour-label'
 import { ResourceCell } from '@/components/resource-cell'
 import type { BusinessHours } from '@/components/types'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { keys } from '@/lib/utils/keys'
 
 export const ResourceDayVertical: React.FC = () => {
 	const {
 		currentDate,
 		getVisibleResources,
-		currentLocale,
-		timeFormat,
 		businessHours,
 		hideNonBusinessHours,
 	} = useSmartCalendarContext()
@@ -29,25 +29,22 @@ export const ResourceDayVertical: React.FC = () => {
 	})
 
 	const firstCol = {
-		id: 'time-col',
+		id: keys.col.time,
 		day: undefined,
 		days: hours,
 		className:
 			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
 		gridType: 'hour' as const,
 		noEvents: true,
-		renderCell: (date: dayjs.Dayjs) => (
+		renderCell: (date: Dayjs) => (
 			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
-				{Intl.DateTimeFormat(currentLocale, {
-					hour: 'numeric',
-					hour12: timeFormat === '12-hour',
-				}).format(date.toDate())}
+				<HourLabel date={date} />
 			</div>
 		),
 	}
 
 	const columns = resources.map((resource) => ({
-		id: `day-col-${currentDate.format('YYYY-MM-DD')}-resource-${resource.id}`,
+		id: keys.col.day(currentDate, resource.id),
 		resourceId: resource.id,
 		resource,
 		days: hours,
@@ -62,9 +59,9 @@ export const ResourceDayVertical: React.FC = () => {
 					<AllDayCell />
 					{resources.map((resource) => (
 						<AllDayRow
-							classes={{ cell: 'min-w-50' }}
+							classes={{ cell: 'min-w-20' }}
 							days={[currentDate]}
-							key={`resource-allday-row-${resource.id}`}
+							key={keys.allDayRow(resource.id)}
 							resource={resource}
 							showSpacer={false}
 						/>
@@ -85,8 +82,8 @@ export const ResourceDayVertical: React.FC = () => {
 				<div className="shrink-0 border-r w-16 sticky top-0 left-0 bg-background z-20" />
 				{resources.map((resource) => (
 					<ResourceCell
-						className="min-w-50 flex-1"
-						key={`resource-cell-${resource.id}`}
+						className="min-w-20 flex-1"
+						key={keys.listKey('resource-cell', resource.id)}
 						resource={resource}
 					/>
 				))}

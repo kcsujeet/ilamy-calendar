@@ -7,7 +7,15 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!examples", "!dist", "!**/*.css"]
+		"includes": [
+			"**",
+			"!examples",
+			"!dist",
+			"!dist-*",
+			"!coverage",
+			"!out",
+			"!**/*.css"
+		]
 	},
 	"formatter": {
 		"enabled": true,
@@ -41,6 +49,16 @@
 			},
 			"correctness": {
 				"noUnusedVariables": "warn"
+			},
+			"style": {
+				"noRestrictedImports": {
+					"level": "error",
+					"options": {
+						"paths": {
+							"dayjs": "Please use '@/lib/configs/dayjs-config' instead to ensure timezone consistency."
+						}
+					}
+				}
 			}
 		}
 	},
@@ -70,6 +88,37 @@
 					}
 				}
 			}
+		},
+		{
+			"includes": ["src/lib/configs/dayjs-config.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["src/components/demo/**"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"noLabelWithoutControl": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"**",
+				"!**/*.test.ts",
+				"!**/*.test.tsx",
+				"!**/*.spec.ts",
+				"!**/*.spec.tsx",
+				"!src/components/demo/**"
+			],
+			"plugins": ["./biome-plugins/no-inline-template-keys.grit"]
 		}
 	]
 }

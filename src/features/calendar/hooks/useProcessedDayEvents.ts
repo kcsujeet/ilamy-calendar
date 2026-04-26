@@ -1,13 +1,14 @@
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { filterEventsByResource } from '@/lib/utils/event-utils'
 import {
 	getPositionedDayEvents,
 	type PositionedEvent,
 } from '@/lib/utils/position-day-events'
 
 interface UseProcessedDayEventsProps {
-	days: dayjs.Dayjs[] // The specific day this column represents
+	days: Dayjs[] // The specific day this column represents
 	gridType?: 'day' | 'hour'
 	resourceId?: string | number
 }
@@ -19,17 +20,19 @@ export const useProcessedDayEvents = ({
 }: UseProcessedDayEventsProps) => {
 	const { getEventsForDateRange, getEventsForResource } =
 		useSmartCalendarContext()
-	const dayStart = days.at(0)?.startOf('day')
-	const dayEnd = days.at(-1)?.endOf('day')
+	const first = days.at(0)
+	const last = days.at(-1)
+	const dayStart = first?.startOf('day')
+	const dayEnd = last?.endOf('day')
 
 	const events = useMemo(() => {
 		if (!dayStart || !dayEnd) return []
 
 		let dayEvents = getEventsForDateRange(dayStart, dayEnd)
 		if (resourceId) {
-			const resourceEvents = getEventsForResource(resourceId)
-			dayEvents = dayEvents.filter((event) =>
-				resourceEvents.some((re) => String(re.id) === String(event.id))
+			dayEvents = filterEventsByResource(
+				dayEvents,
+				getEventsForResource(resourceId)
 			)
 		}
 

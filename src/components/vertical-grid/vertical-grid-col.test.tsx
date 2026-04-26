@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { VerticalGridCol } from './vertical-grid-col'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -44,7 +44,7 @@ describe('VerticalGridCol', () => {
 	test('renders time labels when id is time-col', () => {
 		renderVerticalGridCol({
 			id: 'time-col',
-			renderCell: (date: dayjs.Dayjs) => <span>{date.format('HH:mm')}</span>,
+			renderCell: (date: Dayjs) => <span>{date.format('HH:mm')}</span>,
 		})
 
 		expect(screen.getByTestId('vertical-time-09')).toHaveTextContent('09:00')
@@ -68,7 +68,7 @@ describe('VerticalGridCol', () => {
 		renderVerticalGridCol({ resourceId: 'res-1' })
 
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-00-res-1`)
+			screen.getByTestId(`vertical-cell-${dateStr}-09-00-resource-res-1`)
 		).toBeInTheDocument()
 	})
 
@@ -90,6 +90,36 @@ describe('VerticalGridCol', () => {
 		expect(
 			screen.getByTestId(`vertical-cell-${dateStr}-10-30`)
 		).toBeInTheDocument()
+	})
+
+	test('groups quarter-hour cells under one hour wrapper that shares the row equally', () => {
+		const dateStr = initialDate.format('YYYY-MM-DD')
+		renderVerticalGridCol({
+			cellSlots: [0, 15, 30, 45],
+		})
+
+		const nineZero = screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
+		const nineFifteen = screen.getByTestId(`vertical-cell-${dateStr}-09-15`)
+		const nineThirty = screen.getByTestId(`vertical-cell-${dateStr}-09-30`)
+		const nineFortyFive = screen.getByTestId(`vertical-cell-${dateStr}-09-45`)
+
+		// All 4 quarter-hour cells for 09:00 must share the same direct parent
+		// so CSS Grid treats them as one row, not four scattered children.
+		const wrapper = nineZero.parentElement
+		expect(wrapper).not.toBeNull()
+		expect(nineFifteen.parentElement).toBe(wrapper)
+		expect(nineThirty.parentElement).toBe(wrapper)
+		expect(nineFortyFive.parentElement).toBe(wrapper)
+
+		// The wrapper must be a flex column so the 4 cells split the hour evenly.
+		expect(wrapper?.className).toMatch(/\bflex-col\b/)
+
+		// Each quarter-hour cell must use flex-1 (1/N share) and NOT a fixed
+		// h-[15px] that would bunch cells at the bottom of taller rows.
+		for (const cell of [nineZero, nineFifteen, nineThirty, nineFortyFive]) {
+			expect(cell.className).toMatch(/\bflex-1\b/)
+			expect(cell.className).not.toMatch(/\bh-\[15px\]\b/)
+		}
 	})
 
 	test('renders events layer by default', () => {

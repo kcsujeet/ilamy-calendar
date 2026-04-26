@@ -1,21 +1,18 @@
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { AnimatedSection } from '@/components/animations/animated-section'
+import { HourLabel } from '@/components/hour-label/hour-label'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { getDayKey, isToday } from '@/lib/utils/date-utils'
+import { keys } from '@/lib/utils/keys'
 
 export const DayView = () => {
-	const {
-		currentDate,
-		currentLocale,
-		timeFormat,
-		t,
-		businessHours,
-		hideNonBusinessHours,
-	} = useSmartCalendarContext()
-	const isToday = currentDate.isSame(dayjs(), 'day')
+	const { currentDate, t, businessHours, hideNonBusinessHours } =
+		useSmartCalendarContext()
+	const today = isToday(currentDate)
 	const hours = getViewHours({
 		referenceDate: currentDate,
 		businessHours,
@@ -24,25 +21,22 @@ export const DayView = () => {
 	})
 
 	const firstCol = {
-		id: 'time-col',
+		id: keys.col.time,
 		day: undefined,
 		days: hours,
 		className:
 			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
 		gridType: 'hour' as const,
 		noEvents: true,
-		renderCell: (date: dayjs.Dayjs) => (
+		renderCell: (date: Dayjs) => (
 			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
-				{Intl.DateTimeFormat(currentLocale, {
-					hour: 'numeric',
-					hour12: timeFormat === '12-hour',
-				}).format(date.toDate())}
+				<HourLabel date={date} />
 			</div>
 		),
 	}
 
 	const columns = {
-		id: `day-col-${currentDate.format('YYYY-MM-DD')}`,
+		id: keys.col.day(currentDate),
 		day: currentDate,
 		days: hours,
 		className: 'w-[calc(100%-4rem)] flex-1',
@@ -70,15 +64,15 @@ export const DayView = () => {
 				<AnimatedSection
 					className={cn(
 						'flex justify-center items-center text-center text-base font-semibold sm:text-xl',
-						isToday && 'text-primary'
+						today && 'text-primary'
 					)}
-					transitionKey={currentDate.format('YYYY-MM-DD')}
+					transitionKey={getDayKey(currentDate)}
 				>
 					<span className="xs:inline hidden">
 						{currentDate.format('dddd, ')}
 					</span>
 					{currentDate.format('MMMM D, YYYY')}
-					{isToday && (
+					{today && (
 						<span className="bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm">
 							{t('today')}
 						</span>

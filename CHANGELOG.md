@@ -2,6 +2,104 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.6.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.6.1...v1.6.2)
+
+> 22 April 2026
+
+##### Fixes
+
+- fix: quarter-hour gridlines in the vertical day view now subdivide each hour evenly at 25/50/75/100% instead of bunching at the bottom — affects both `IlamyCalendar` and `IlamyResourceCalendar`. Also keeps the column separator continuous across hour boundaries in vertical resource views ([`#120`](https://github.com/kcsujeet/ilamy-calendar/pull/120)) — Closes [`#119`](https://github.com/kcsujeet/ilamy-calendar/issues/119)
+
+#### [v1.6.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.6.0...v1.6.1)
+
+> 19 April 2026
+
+##### Fixes
+
+- fix: vertical grid layout now reliably fills the full container width — added `min-w-full` on the body and header so narrow content (few resources / hidden days) no longer leaves dead space on the right
+
+#### [v1.6.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.5.2...v1.6.0)
+
+> 19 April 2026
+
+##### Features
+
+- feat: `weekViewGranularity` prop on `IlamyResourceCalendar` — render the week view as one column per resource for the full week instead of an hour grid (`'hourly'` default, `'daily'` opts in) ([`#113`](https://github.com/kcsujeet/ilamy-calendar/pull/113)) — Thanks [@sebvg](https://github.com/sebvg)!
+
+##### Fixes
+
+- fix: tooltips now use localized labels ([`#66`](https://github.com/kcsujeet/ilamy-calendar/pull/66)) — Thanks [@tg-freigmbh](https://github.com/tg-freigmbh)!
+- fix: sticky header horizontal positioning in hourly `ResourceWeekVertical` no longer drifts during horizontal scroll ([`#118`](https://github.com/kcsujeet/ilamy-calendar/pull/118))
+
+##### Performance
+
+- perf: bundle size reduced by ~14 KB raw (~2.3%) vs v1.5.2 ([`#117`](https://github.com/kcsujeet/ilamy-calendar/pull/117))
+  - Removed 4 unused dependencies (`@base-ui/react`, `@radix-ui/react-tabs`, `radix-ui`, `react-day-picker`) — ~19 MB install footprint saved
+  - Replaced `react-day-picker` with a lightweight internal `Calendar` component
+  - Algorithm-level dedup in event-positioning utilities + calendar engine + context providers
+- perf: simplified `ResourceWeekVerticalResourceHeader` and related vertical-week subcomponents ([`#118`](https://github.com/kcsujeet/ilamy-calendar/pull/118))
+
+##### Internal
+
+- chore: Tailwind upgraded to v4.2.2
+- chore: consolidated Claude Code config under `.agents/`, added dev-log and TDD hooks ([`#116`](https://github.com/kcsujeet/ilamy-calendar/pull/116))
+
+#### [v1.5.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.5.1...v1.5.2)
+
+> 12 April 2026
+
+##### Features
+
+- feat: add `eventHeight` prop for configurable event bar height in horizontal grid views (month, resource month, resource week horizontal) ([`#115`](https://github.com/kcsujeet/ilamy-calendar/pull/115)) — Closes [`#114`](https://github.com/kcsujeet/ilamy-calendar/issues/114)
+  - Defaults to 24px for backward compatibility
+  - Enables multi-line event content (e.g., title + booking times on separate lines)
+  - Available on both `IlamyCalendar` and `IlamyResourceCalendar`
+
+#### [v1.5.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.5.0...v1.5.1)
+
+> 10 April 2026
+
+##### Features
+
+- feat: fire `onDateChange` when view changes — ensures the callback fires on view switches so consumers can re-fetch events for the new visible range ([`#106`](https://github.com/kcsujeet/ilamy-calendar/pull/106))
+- feat: add `renderHour` prop for custom hour formatting in day/week time grids ([`#109`](https://github.com/kcsujeet/ilamy-calendar/pull/109))
+
+##### Fixes
+
+- fix: move side-effect callbacks out of state updaters in `useCalendarEngine` — prevents cascading re-renders caused by calling `onDateChange`/`onViewChange` inside `setState` ([`#110`](https://github.com/kcsujeet/ilamy-calendar/pull/110))
+
+##### Docs
+
+- docs: add API parity checklist vs FullCalendar
+
+#### [v1.5.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.4.0...v1.5.0)
+
+> 4 April 2026
+
+##### Breaking Changes
+
+- ⚠️ **`onDateChange` signature changed**: Now receives `(date: Dayjs, range: { start: Dayjs; end: Dayjs })` instead of `(date: Dayjs)`. Update your handler to accept the second argument, or ignore it if not needed. ([`#103`](https://github.com/kcsujeet/ilamy-calendar/pull/103))
+
+##### Features
+
+- feat: add full timezone support — `timezone` prop enables timezone-aware rendering via `dayjs.tz`, with automatic conversion of `currentDate` and event times when timezone changes ([`#92`](https://github.com/kcsujeet/ilamy-calendar/pull/92))
+- feat: add `fixTimezoneOffset` dayjs plugin to preserve correct UTC offsets across `.startOf()`/`.endOf()` calls during DST transitions ([`#92`](https://github.com/kcsujeet/ilamy-calendar/pull/92))
+- feat: replace timezone Select with searchable Combobox and add InputGroup/Textarea UI components ([`#92`](https://github.com/kcsujeet/ilamy-calendar/pull/92))
+- feat: add `data` field to `Resource` interface for custom metadata ([`#102`](https://github.com/kcsujeet/ilamy-calendar/pull/102))
+- feat: add visible date range to `onDateChange` callback — enables efficient backend fetching of events for the currently visible period ([`#103`](https://github.com/kcsujeet/ilamy-calendar/pull/103))
+
+##### Performance
+
+- perf: row-level event computation sharing — `useProcessedWeekEvents` lifted to row level, reducing 48 filter passes to 6 per render ([`#105`](https://github.com/kcsujeet/ilamy-calendar/pull/105))
+- perf: remove `isDeepEqual` from events sync effect, guard locale/timezone effects with refs to skip redundant mount-time updates ([`#105`](https://github.com/kcsujeet/ilamy-calendar/pull/105))
+
+##### Fixes
+
+- fix: resolve timezone-related date shifts where `.startOf()`/`.endOf()` dropped timezone info near DST boundaries ([`#92`](https://github.com/kcsujeet/ilamy-calendar/pull/92))
+- fix: resolve 52 TypeScript errors after stricter type checking ([`#92`](https://github.com/kcsujeet/ilamy-calendar/pull/92))
+- fix: header dropdown date sync ([`#95`](https://github.com/kcsujeet/ilamy-calendar/pull/95)) - Thanks [@sumanthneerumalla](https://github.com/sumanthneerumalla)!
+- fix: resource horizontal view bugs ([`#88`](https://github.com/kcsujeet/ilamy-calendar/pull/88)) - Thanks [@sumanthneerumalla](https://github.com/sumanthneerumalla)!
+
 #### [v1.4.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.3.3...v1.4.0)
 
 > 1 March 2026

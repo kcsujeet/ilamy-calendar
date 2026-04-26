@@ -9,6 +9,8 @@ import type {
 } from '@/features/calendar/types'
 import type { Resource } from '@/features/resource-calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 import { ResourceCalendarContext } from './context'
 
 const getEventResourceIds = (event: CalendarEvent): (string | number)[] => {
@@ -27,9 +29,11 @@ interface ResourceCalendarProviderProps extends CalendarProviderProps {
 	renderResource?: (resource: Resource) => React.ReactNode
 	classesOverride?: CalendarClassesOverride
 	orientation?: 'horizontal' | 'vertical'
+	weekViewGranularity?: 'hourly' | 'daily'
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
 	) => React.ReactNode
+	renderHour?: (date: Dayjs) => React.ReactNode
 	hideNonBusinessHours?: boolean
 }
 
@@ -56,7 +60,8 @@ export const ResourceCalendarProvider: React.FC<
 	disableEventClick,
 	disableDragAndDrop,
 	dayMaxEvents,
-	eventSpacing,
+	eventSpacing = 1,
+	eventHeight = EVENT_BAR_HEIGHT,
 	stickyViewHeader = true,
 	viewHeaderClassName = '',
 	headerComponent,
@@ -70,8 +75,10 @@ export const ResourceCalendarProvider: React.FC<
 	classesOverride,
 	orientation = 'horizontal',
 	renderCurrentTimeIndicator,
+	renderHour,
 	hideNonBusinessHours = false,
 	hiddenDays,
+	weekViewGranularity = 'hourly',
 }) => {
 	// Resource-specific state
 	const [currentResources] = useState<Resource[]>(resources)
@@ -97,62 +104,51 @@ export const ResourceCalendarProvider: React.FC<
 		translator,
 	})
 
-	// Resource visibility
-	const toggleResourceVisibility = useCallback(
-		(resourceId: string | number) => {
+	// Resource visibility — all mutations go through a single updater.
+	const mutateVisibility = useCallback(
+		(op: 'show' | 'hide' | 'toggle', id: string | number) => {
 			setVisibleResources((prev) => {
-				const newSet = new Set(prev)
-				if (newSet.has(resourceId)) {
-					newSet.delete(resourceId)
-				} else {
-					newSet.add(resourceId)
-				}
-				return newSet
+				const next = new Set(prev)
+				if (op === 'show' || (op === 'toggle' && !next.has(id))) next.add(id)
+				else next.delete(id)
+				return next
 			})
 		},
 		[]
 	)
+	const showResource = useCallback(
+		(id: string | number) => mutateVisibility('show', id),
+		[mutateVisibility]
+	)
+	const hideResource = useCallback(
+		(id: string | number) => mutateVisibility('hide', id),
+		[mutateVisibility]
+	)
+	const toggleResourceVisibility = useCallback(
+		(id: string | number) => mutateVisibility('toggle', id),
+		[mutateVisibility]
+	)
+	const showAllResources = useCallback(
+		() => setVisibleResources(new Set(currentResources.map((r) => r.id))),
+		[currentResources]
+	)
+	const hideAllResources = useCallback(() => setVisibleResources(new Set()), [])
 
-	const showResource = useCallback((resourceId: string | number) => {
-		setVisibleResources((prev) => new Set(prev).add(resourceId))
-	}, [])
-
-	const hideResource = useCallback((resourceId: string | number) => {
-		setVisibleResources((prev) => {
-			const newSet = new Set(prev)
-			newSet.delete(resourceId)
-			return newSet
-		})
-	}, [])
-
-	const showAllResources = useCallback(() => {
-		setVisibleResources(new Set(currentResources.map((r) => r.id)))
-	}, [currentResources])
-
-	const hideAllResources = useCallback(() => {
-		setVisibleResources(new Set())
-	}, [])
-
-	// Event utilities
+	// Event utilities — both filters go through getEventResourceIds so single
+	// and multi-resource events are handled uniformly.
 	const getEventsForResource = useCallback(
-		(resourceId: string | number): CalendarEvent[] => {
-			return calendarEngine.events.filter((event: CalendarEvent) => {
-				if (event.resourceIds) {
-					return event.resourceIds.includes(resourceId)
-				}
-				return event.resourceId === resourceId
-			})
-		},
+		(resourceId: string | number): CalendarEvent[] =>
+			calendarEngine.events.filter((e) =>
+				getEventResourceIds(e).includes(resourceId)
+			),
 		[calendarEngine.events]
 	)
 
 	const getEventsForResources = useCallback(
-		(resourceIds: (string | number)[]): CalendarEvent[] => {
-			return calendarEngine.events.filter((event: CalendarEvent) => {
-				const eventResourceIds = getEventResourceIds(event)
-				return eventResourceIds.some((id) => resourceIds.includes(id))
-			})
-		},
+		(resourceIds: (string | number)[]): CalendarEvent[] =>
+			calendarEngine.events.filter((e) =>
+				getEventResourceIds(e).some((id) => resourceIds.includes(id))
+			),
 		[calendarEngine.events]
 	)
 
@@ -230,11 +226,6 @@ export const ResourceCalendarProvider: React.FC<
 	const contextValue = useMemo(
 		() => ({
 			...calendarEngine,
-			view: calendarEngine.view,
-			setView: calendarEngine.setView,
-			events: calendarEngine.events,
-			rawEvents: calendarEngine.rawEvents,
-
 			// Resource-specific state
 			resources: currentResources,
 			visibleResources,
@@ -243,29 +234,22 @@ export const ResourceCalendarProvider: React.FC<
 			hideResource,
 			showAllResources,
 			hideAllResources,
-
 			// Resource utilities
 			getEventsForResource,
 			getEventsForResources,
 			getResourceById,
 			getVisibleResources,
-
-			// Cross-resource event utilities
 			isEventCrossResource,
 			getEventResourceIds,
-
 			// Override handlers
 			onEventClick: handleEventClick,
 			onCellClick: handleDateClick,
-
-			// Pass through header props
-			headerComponent,
-			headerClassName,
-
-			// Pass through other props
+			// Pass-through props
 			renderEvent,
 			renderResource,
 			renderEventForm,
+			headerComponent,
+			headerClassName,
 			locale,
 			timezone,
 			disableCellClick,
@@ -273,6 +257,7 @@ export const ResourceCalendarProvider: React.FC<
 			disableDragAndDrop,
 			dayMaxEvents,
 			eventSpacing,
+			eventHeight,
 			stickyViewHeader,
 			viewHeaderClassName,
 			businessHours,
@@ -280,8 +265,10 @@ export const ResourceCalendarProvider: React.FC<
 			classesOverride,
 			orientation,
 			renderCurrentTimeIndicator,
+			renderHour,
 			hideNonBusinessHours,
 			hiddenDays,
+			weekViewGranularity,
 		}),
 		[
 			calendarEngine,
@@ -309,6 +296,7 @@ export const ResourceCalendarProvider: React.FC<
 			disableDragAndDrop,
 			dayMaxEvents,
 			eventSpacing,
+			eventHeight,
 			stickyViewHeader,
 			viewHeaderClassName,
 			headerComponent,
@@ -318,8 +306,10 @@ export const ResourceCalendarProvider: React.FC<
 			classesOverride,
 			orientation,
 			renderCurrentTimeIndicator,
+			renderHour,
 			hideNonBusinessHours,
 			hiddenDays,
+			weekViewGranularity,
 		]
 	)
 

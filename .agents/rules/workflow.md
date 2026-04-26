@@ -1,0 +1,1 @@
+- Never post PR reviews, comments, or any public-facing content without explicit user approval. Always present the draft to the user first and wait for confirmation before posting.

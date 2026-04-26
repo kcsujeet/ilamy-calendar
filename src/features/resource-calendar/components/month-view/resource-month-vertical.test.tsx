@@ -59,16 +59,16 @@ describe('ResourceMonthVertical', () => {
 
 		// Check for some day cells
 
-		// VerticalGridCol uses vertical-cell-{date}-{hour}-{minute}-{resourceId}
+		// VerticalGridCol uses vertical-cell-{date}-{hour}-{minute}-resource-{resourceId}
 
 		const firstDay = initialDate.format('YYYY-MM-DD')
 
 		expect(
-			screen.getByTestId(`vertical-cell-${firstDay}-00-00-1`)
+			screen.getByTestId(`vertical-cell-${firstDay}-00-00-resource-1`)
 		).toBeInTheDocument()
 
 		expect(
-			screen.getByTestId(`vertical-cell-${firstDay}-00-00-2`)
+			screen.getByTestId(`vertical-cell-${firstDay}-00-00-resource-2`)
 		).toBeInTheDocument()
 	})
 
@@ -80,11 +80,11 @@ describe('ResourceMonthVertical', () => {
 		const lastDay = initialDate.endOf('month').format('YYYY-MM-DD')
 
 		expect(
-			screen.getByTestId(`vertical-cell-${firstDay}-00-00-1`)
+			screen.getByTestId(`vertical-cell-${firstDay}-00-00-resource-1`)
 		).toBeInTheDocument()
 
 		expect(
-			screen.getByTestId(`vertical-cell-${lastDay}-00-00-1`)
+			screen.getByTestId(`vertical-cell-${lastDay}-00-00-resource-1`)
 		).toBeInTheDocument()
 
 		// If Jan 2025 has 31 days, there should be 31 cells for each resource in the body

@@ -1,9 +1,11 @@
 import type React from 'react'
-import dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { isToday } from '@/lib/utils/date-utils'
+import { keys } from '@/lib/utils/keys'
 
 interface DayNumberProps {
-	date: dayjs.Dayjs
+	date: Dayjs
 	locale?: string
 	className?: string
 }
@@ -11,25 +13,19 @@ interface DayNumberProps {
 /**
  * Renders the day number for a calendar cell, highlighting 'today' with a primary background.
  */
-export const DayNumber: React.FC<DayNumberProps> = ({
-	date,
-	locale = 'en',
-	className,
-}) => {
-	const isToday = date.isSame(dayjs(), 'day')
+export const DayNumber: React.FC<DayNumberProps> = ({ date, className }) => {
+	const today = isToday(date)
 
 	return (
 		<div
 			className={cn(
 				'flex h-5 w-5 items-center justify-center rounded-full text-xs shrink-0',
-				isToday && 'bg-primary text-primary-foreground font-medium',
+				today && 'bg-primary text-primary-foreground font-medium',
 				className
 			)}
-			data-testid={
-				isToday ? 'day-number-today' : `day-number-${date.format('D')}`
-			}
+			data-testid={keys.dayNumber(date)}
 		>
-			{Intl.DateTimeFormat(locale, { day: 'numeric' }).format(date.toDate())}
+			{date.format('D')}
 		</div>
 	)
 }

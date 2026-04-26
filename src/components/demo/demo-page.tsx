@@ -8,7 +8,7 @@ import type {
 } from '@/features/calendar/types'
 import { IlamyResourceCalendar } from '@/features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 import type { Resource } from '@/features/resource-calendar/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import dummyEvents from '@/lib/seed'
 import { cn } from '@/lib/utils'
 import type { CalendarView, TimeFormat } from '@/types'
@@ -181,7 +181,7 @@ const handleEventDelete = (event: CalendarEvent) => {
 	alert(`Event deleted: ${event.title}`)
 }
 
-const handleDateChange = (date: dayjs.Dayjs) => {
+const handleDateChange = (date: Dayjs) => {
 	// Date navigation - could trigger other state updates in real apps
 	void date
 }
@@ -269,9 +269,7 @@ export function DemoPage() {
 	// Calendar configuration state
 	const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>('sunday')
 	const [initialView, setInitialView] = useState<CalendarView>('month')
-	const [initialDate, setInitialDate] = useState<dayjs.Dayjs | undefined>(
-		undefined
-	)
+	const [initialDate, setInitialDate] = useState<Dayjs | undefined>(undefined)
 	const [customEvents] = useState<CalendarEvent[]>(dummyEvents)
 	const [resourceEvents] = useState<CalendarEvent[]>(createResourceEvents())
 	const [useCustomEventRenderer, setUseCustomEventRenderer] = useState(false)
@@ -313,33 +311,58 @@ export function DemoPage() {
 	const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour')
 	const [useCustomClasses, setUseCustomClasses] = useState(false)
 	const [useCustomTimeIndicator, setUseCustomTimeIndicator] = useState(false)
+	const [useCustomHourRenderer, setUseCustomHourRenderer] = useState(false)
 	const [hiddenDays, setHiddenDays] = useState<WeekDays[]>([])
+	const [eventHeight, setEventHeight] = useState(24)
 
 	// Resource calendar settings
 	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
 		'horizontal'
 	)
 
+	const [weekViewGranularity, setWeekViewGranularity] = useState<
+		'hourly' | 'daily'
+	>('hourly')
+
 	const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}-${useCustomTimeIndicator}`
 
-	// Custom event renderer function
+	// Custom event renderer function — adapts to eventHeight
 	const renderEvent = (event: CalendarEvent) => {
 		const backgroundColor = event.backgroundColor || 'bg-blue-500'
 		const color = event.color || 'text-blue-800'
+		const isCompact = eventHeight <= 24
+		const isLarge = eventHeight >= 36
+
 		return (
 			<div
 				className={cn(
-					'border-primary border-1 border-l-2 px-2 truncate w-full h-full',
+					'border-primary border border-l-2 px-2 w-full h-full overflow-clip',
 					backgroundColor,
 					color
 				)}
 				style={{ backgroundColor, color }}
 			>
-				{event.title}
+				<p
+					className={cn(
+						'font-semibold truncate leading-tight',
+						isLarge ? 'text-xs' : 'text-[10px]'
+					)}
+				>
+					{event.title}
+				</p>
+				{!isCompact && (
+					<p
+						className={cn(
+							'truncate opacity-80 leading-tight',
+							isLarge ? 'text-[10px]' : 'text-[8px]'
+						)}
+					>
+						{event.start.format('h:mm A')} - {event.end.format('h:mm A')}
+					</p>
+				)}
 			</div>
 		)
 	}
-
 	// Custom current time indicator renderer
 	const renderCurrentTimeIndicator = ({
 		currentTime,
@@ -368,6 +391,18 @@ export function DemoPage() {
 		)
 	}
 
+	// Custom hour renderer function
+	const renderHour = (date: Dayjs) => {
+		return (
+			<div className="flex flex-col items-center leading-tight">
+				<span className="font-bold text-sm">{date.format('h')}</span>
+				<span className="text-[10px] opacity-60 uppercase font-medium">
+					{date.format('A')}
+				</span>
+			</div>
+		)
+	}
+
 	return (
 		<div
 			className="container mx-auto px-4 py-8 relative"
@@ -378,7 +413,7 @@ export function DemoPage() {
 			<div className="fixed bottom-20 left-10 -z-10 w-80 h-80 bg-indigo-500/10 rounded-full filter blur-3xl animate-pulse"></div>
 
 			<div className="mb-8">
-				<h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-400 dark:to-indigo-500">
+				<h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-linear-to-br from-blue-600 to-indigo-700 dark:from-blue-400 dark:to-indigo-500">
 					Interactive Demo
 				</h1>
 				<p className="text-muted-foreground">
@@ -398,6 +433,7 @@ export function DemoPage() {
 						disableCellClick={disableCellClick}
 						disableDragAndDrop={disableDragAndDrop}
 						disableEventClick={disableEventClick}
+						eventHeight={eventHeight}
 						firstDayOfWeek={firstDayOfWeek}
 						hiddenDays={hiddenDays}
 						hideNonBusinessHours={hideNonBusinessHours}
@@ -414,6 +450,7 @@ export function DemoPage() {
 						setDisableCellClick={setDisableCellClick}
 						setDisableDragAndDrop={setDisableDragAndDrop}
 						setDisableEventClick={setDisableEventClick}
+						setEventHeight={setEventHeight}
 						setFirstDayOfWeek={setFirstDayOfWeek}
 						setHiddenDays={setHiddenDays}
 						setHideNonBusinessHours={setHideNonBusinessHours}
@@ -426,18 +463,22 @@ export function DemoPage() {
 						setTimezone={setTimezone}
 						setUseCustomClasses={setUseCustomClasses}
 						setUseCustomEventRenderer={setUseCustomEventRenderer}
+						setUseCustomHourRenderer={setUseCustomHourRenderer}
 						setUseCustomOnDateClick={setUseCustomOnDateClick}
 						setUseCustomOnEventClick={setUseCustomOnEventClick}
 						setUseCustomTimeIndicator={setUseCustomTimeIndicator}
+						setWeekViewGranularity={setWeekViewGranularity}
 						stickyViewHeader={stickyViewHeader}
 						timeFormat={timeFormat}
 						timezone={timezone}
 						useCustomClasses={useCustomClasses}
 						// Resource calendar specific props
 						useCustomEventRenderer={useCustomEventRenderer}
+						useCustomHourRenderer={useCustomHourRenderer}
 						useCustomOnDateClick={useCustomOnDateClick}
 						useCustomOnEventClick={useCustomOnEventClick}
 						useCustomTimeIndicator={useCustomTimeIndicator}
+						weekViewGranularity={weekViewGranularity}
 					/>
 
 					{/* Resource info card */}
@@ -496,6 +537,7 @@ export function DemoPage() {
 									disableCellClick={disableCellClick}
 									disableDragAndDrop={disableDragAndDrop}
 									disableEventClick={disableEventClick}
+									eventHeight={eventHeight}
 									events={customEvents}
 									firstDayOfWeek={firstDayOfWeek}
 									hiddenDays={hiddenDays}
@@ -520,6 +562,7 @@ export function DemoPage() {
 											: undefined
 									}
 									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
+									renderHour={useCustomHourRenderer ? renderHour : undefined}
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}
 									timezone={timezone}
@@ -539,6 +582,7 @@ export function DemoPage() {
 									disableCellClick={disableCellClick}
 									disableDragAndDrop={disableDragAndDrop} // No year view for resource calendar
 									disableEventClick={disableEventClick}
+									eventHeight={eventHeight}
 									events={resourceEvents}
 									firstDayOfWeek={firstDayOfWeek}
 									hiddenDays={hiddenDays}
@@ -564,10 +608,12 @@ export function DemoPage() {
 											: undefined
 									}
 									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
+									renderHour={useCustomHourRenderer ? renderHour : undefined}
 									resources={demoResources}
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}
 									timezone={timezone}
+									weekViewGranularity={weekViewGranularity}
 								/>
 							)}
 						</CardContent>

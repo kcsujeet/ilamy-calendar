@@ -77,7 +77,8 @@ Public-facing event type that accepts flexible date inputs. Extends `CalendarEve
 | `color` | `string` | no | Resource color |
 | `backgroundColor` | `string` | no | Resource background color |
 | `position` | `number` | no | Display order |
-| `businessHours` | `BusinessHours \| BusinessHours[]` | no | Resource-specific business hours (overrides global) |
+| `businessHours` | `BusinessHours | BusinessHours[]` | no | Resource-specific business hours (overrides global) |
+| `data` | `Record<string, any>` | no | Custom resource metadata |
 
 ## IlamyCalendarProps
 
@@ -98,7 +99,7 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `onEventAdd` | `(event) => void` | — | Event add callback |
 | `onEventUpdate` | `(event) => void` | — | Event update callback |
 | `onEventDelete` | `(event) => void` | — | Event delete callback |
-| `onDateChange` | `(date) => void` | — | Date navigation callback |
+| `onDateChange` | `(date: Dayjs, range: { start: Dayjs; end: Dayjs }) => void` | — | Date navigation callback |
 | `locale` | `string` | — | dayjs locale |
 | `timezone` | `string` | — | dayjs timezone |
 | `translations` | `Translations` | — | Translation object |
@@ -106,7 +107,7 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `timeFormat` | `TimeFormat` | `'12-hour'` | Time display format |
 | `businessHours` | `BusinessHours \| BusinessHours[]` | — | Working hours config |
 | `hideNonBusinessHours` | `boolean` | `false` | Hide off-hours in day/week views |
-| `hiddenDays` | `WeekDays[]` | `[]` | Days to hide from week view |
+| `hiddenDays` | `WeekDays[]` | `[]` | Days to hide from vertical week view. Ignored in resource vertical week view with daily granularity (`weekViewGranularity: 'daily'`) — non-contiguous days would break multi-day event positioning. |
 | `disableCellClick` | `boolean` | — | Disable cell clicks |
 | `disableEventClick` | `boolean` | — | Disable event clicks |
 | `disableDragAndDrop` | `boolean` | — | Disable DnD |

@@ -172,7 +172,7 @@ describe('YearView', () => {
 			for (let month = 1; month <= 12; month++) {
 				const monthId = month.toString().padStart(2, '0')
 				expect(
-					screen.getByTestId(`year-mini-calendar-${monthId}`)
+					screen.getByTestId(`year-month-mini-${monthId}`)
 				).toBeInTheDocument()
 			}
 		})
@@ -203,7 +203,7 @@ describe('YearView', () => {
 			renderYearView({ events, initialDate: dayjs(`${year}-01-15`) })
 
 			// January has 6 events total
-			const badge = screen.getByTestId('year-month-event-count-01')
+			const badge = screen.getByTestId('year-month-count-01')
 			expect(badge).toHaveTextContent('6 Events')
 		})
 
@@ -213,7 +213,7 @@ describe('YearView', () => {
 			renderYearView({ events, initialDate: dayjs(`${year}-02-10`) })
 
 			// February has 1 event
-			const badge = screen.getByTestId('year-month-event-count-02')
+			const badge = screen.getByTestId('year-month-count-02')
 			expect(badge).toHaveTextContent('1 Event')
 		})
 
@@ -223,7 +223,7 @@ describe('YearView', () => {
 			renderYearView({ events, initialDate: dayjs(`${year}-03-05`) })
 
 			// March has 5 events
-			const badge = screen.getByTestId('year-month-event-count-03')
+			const badge = screen.getByTestId('year-month-count-03')
 			expect(badge).toHaveTextContent('5 Events')
 		})
 
@@ -234,7 +234,7 @@ describe('YearView', () => {
 
 			// April has no events
 			expect(
-				screen.queryByTestId('year-month-event-count-04')
+				screen.queryByTestId('year-month-count-04')
 			).not.toBeInTheDocument()
 		})
 
@@ -243,7 +243,7 @@ describe('YearView', () => {
 			const events = createTestEvents(year)
 			renderYearView({ events, initialDate: dayjs(`${year}-01-15`) })
 
-			const badge = screen.getByTestId('year-month-event-count-01')
+			const badge = screen.getByTestId('year-month-count-01')
 			expect(badge).toHaveClass(
 				'bg-primary',
 				'text-primary-foreground',
@@ -324,7 +324,7 @@ describe('YearView', () => {
 			renderYearView({ events, initialDate: dayjs(`${year}-01-25`) })
 
 			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-25')
-			expect(dayCell).toHaveAttribute('title', '1 event')
+			expect(dayCell).toHaveAttribute('title', '1 Event')
 		})
 
 		test('shows correct title for day with multiple events', () => {
@@ -333,7 +333,7 @@ describe('YearView', () => {
 			renderYearView({ events, initialDate: dayjs(`${year}-01-15`) })
 
 			const dayCell = screen.getByTestId('year-day-2025-01-2025-01-15')
-			expect(dayCell).toHaveAttribute('title', '3 events')
+			expect(dayCell).toHaveAttribute('title', '3 Events')
 		})
 
 		test('shows empty title for day with no events', () => {
@@ -469,7 +469,7 @@ describe('YearView', () => {
 		test('each mini calendar has 42 day cells (6 weeks)', () => {
 			renderYearView({ initialDate: dayjs('2025-01-15') })
 
-			const januaryCalendar = screen.getByTestId('year-mini-calendar-01')
+			const januaryCalendar = screen.getByTestId('year-month-mini-01')
 			const buttons = januaryCalendar.querySelectorAll('button[type="button"]')
 			expect(buttons.length).toBe(42)
 		})

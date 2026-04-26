@@ -1,5 +1,5 @@
 import type { BusinessHours } from '@/components/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 
 /**
@@ -10,7 +10,7 @@ import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
  * @returns true if the date is a business day, false otherwise
  */
 export const isBusinessDay = (
-	date: dayjs.Dayjs,
+	date: Dayjs,
 	businessHours?: BusinessHours | BusinessHours[]
 ): boolean => {
 	if (!businessHours) {
@@ -29,7 +29,7 @@ export const isBusinessDay = (
 }
 
 export interface IsBusinessHourOptions {
-	date: dayjs.Dayjs
+	date: Dayjs
 	hour?: number
 	minute?: number
 	businessHours?: BusinessHours | BusinessHours[]
@@ -86,7 +86,7 @@ export const isBusinessHour = ({
 export const processBusinessHours = (
 	bh: BusinessHours | BusinessHours[] | undefined,
 	options: {
-		date?: dayjs.Dayjs
+		date?: Dayjs
 		onMatch: (config: BusinessHours) => void
 	}
 ) => {
@@ -119,7 +119,7 @@ export interface BusinessHoursRange {
  * Calculates the union of business hours ranges across multiple dates and/or resource configurations.
  */
 export const calculateBusinessHoursRange = (options: {
-	allDates: dayjs.Dayjs[]
+	allDates: Dayjs[]
 	businessHours?: BusinessHours | BusinessHours[]
 	resourceBusinessHours?: (BusinessHours | BusinessHours[])[]
 	hideNonBusinessHours?: boolean
@@ -141,22 +141,20 @@ export const calculateBusinessHoursRange = (options: {
 		maxEnd = Math.max(maxEnd, config.endTime ?? 17)
 	}
 
-	// Process global and resource business hours for each date
-	for (const date of allDates) {
+	// Invoke processBusinessHours for the global config and every resource
+	// config, optionally scoped to a specific date.
+	const processAll = (date?: Dayjs) => {
 		processBusinessHours(businessHours, { date, onMatch })
 		for (const rbh of resourceBusinessHours) {
 			processBusinessHours(rbh, { date, onMatch })
 		}
 	}
 
-	// Fallback logic if no business hours found for specific dates
-	if (!hasBusinessHours && hideNonBusinessHours) {
-		processBusinessHours(businessHours, { onMatch })
-		for (const rbh of resourceBusinessHours) {
-			processBusinessHours(rbh, { onMatch })
-		}
+	for (const date of allDates) processAll(date)
 
-		// Final fallback to default 9-17 if still nothing
+	// Fallback: retry without date scoping, then default to 9-17 if still empty.
+	if (!hasBusinessHours && hideNonBusinessHours) {
+		processAll()
 		if (!hasBusinessHours) {
 			minStart = 9
 			maxEnd = 17

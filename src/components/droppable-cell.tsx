@@ -3,14 +3,14 @@
 import { useDroppable } from '@dnd-kit/core'
 import type React from 'react'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 interface DroppableCellProps {
 	id: string
 	type: 'day-cell' | 'time-cell'
-	date: dayjs.Dayjs
+	date: Dayjs
 	hour?: number
 	minute?: number
 	resourceId?: string | number

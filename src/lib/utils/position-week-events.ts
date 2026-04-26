@@ -1,12 +1,12 @@
 import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import {
 	DAY_NUMBER_HEIGHT,
 	EVENT_BAR_HEIGHT,
 	GAP_BETWEEN_ELEMENTS,
 } from '@/lib/constants'
 
-interface PositionedEvent extends CalendarEvent {
+export interface PositionedEvent extends CalendarEvent {
 	left: number // Left position in percentage
 	width: number // Width in percentage
 	top: number // Top position in percentage
@@ -17,12 +17,13 @@ interface PositionedEvent extends CalendarEvent {
 }
 
 interface GetPositionedEventsProps {
-	days: dayjs.Dayjs[]
+	days: Dayjs[]
 	events: CalendarEvent[]
 	dayMaxEvents: number
 	dayNumberHeight?: number
 	gridType?: 'day' | 'hour' // Future use for different grid types
 	eventSpacing?: number // Custom vertical spacing between events (defaults to GAP_BETWEEN_ELEMENTS)
+	eventBarHeight?: number // Custom height for event bars in pixels (defaults to EVENT_BAR_HEIGHT)
 }
 
 export const getPositionedEvents = ({
@@ -32,13 +33,17 @@ export const getPositionedEvents = ({
 	dayNumberHeight = DAY_NUMBER_HEIGHT,
 	gridType = 'day',
 	eventSpacing = GAP_BETWEEN_ELEMENTS,
+	eventBarHeight = EVENT_BAR_HEIGHT,
 }: GetPositionedEventsProps) => {
 	// For hour-based grids, use actual first/last hours from days array
 	// For day-based grids, use start/end of day to capture all events
+	const first = days.at(0)
+	const last = days.at(-1)
+	if (!first || !last) return []
+
 	const firstDay =
-		gridType === 'hour' ? days.at(0).startOf('hour') : days.at(0).startOf('day')
-	const lastDay =
-		gridType === 'hour' ? days.at(-1).endOf('hour') : days.at(-1).endOf('day')
+		gridType === 'hour' ? first.startOf('hour') : first.startOf('day')
+	const lastDay = gridType === 'hour' ? last.endOf('hour') : last.endOf('day')
 	const dayCount = days.length
 
 	// Separate multi-day and single-day events
@@ -62,15 +67,53 @@ export const getPositionedEvents = ({
 	)
 
 	// Create dayCount x dayMaxEvents grid with flags
-	const grid: { taken: boolean; event: CalendarEvent | null }[][] = []
-	for (let row = 0; row < dayMaxEvents; row++) {
-		grid[row] = []
-		for (let col = 0; col < dayCount; col++) {
-			grid[row][col] = { taken: false, event: null }
-		}
-	}
+	const grid: { taken: boolean; event: CalendarEvent | null }[][] = Array.from(
+		{ length: dayMaxEvents },
+		() =>
+			Array.from({ length: dayCount }, () => ({ taken: false, event: null }))
+	)
 
 	const processedEvents: PositionedEvent[] = []
+
+	// Find the first row where every column from startCol..endCol is free; -1 if none.
+	const findAvailableRow = (startCol: number, endCol: number): number => {
+		for (let row = 0; row < dayMaxEvents; row++) {
+			let canPlace = true
+			for (let col = startCol; col <= endCol; col++) {
+				if (grid[row][col].taken) {
+					canPlace = false
+					break
+				}
+			}
+			if (canPlace) return row
+		}
+		return -1
+	}
+
+	const place = (
+		row: number,
+		startCol: number,
+		endCol: number,
+		event: CalendarEvent,
+		isTruncatedStart: boolean,
+		isTruncatedEnd: boolean
+	) => {
+		for (let col = startCol; col <= endCol; col++) {
+			grid[row][col] = { taken: true, event }
+		}
+		const spanDays = endCol - startCol + 1
+		processedEvents.push({
+			left: (startCol / dayCount) * 100,
+			width: (spanDays / dayCount) * 100,
+			top:
+				dayNumberHeight + eventSpacing + row * (eventBarHeight + eventSpacing),
+			height: eventBarHeight,
+			position: row,
+			...event,
+			isTruncatedStart,
+			isTruncatedEnd,
+		} as PositionedEvent)
+	}
 
 	// Step 1: Assign positions to multi-day events first
 	for (const event of sortedMultiDay) {
@@ -81,100 +124,22 @@ export const getPositionedEvents = ({
 		const startCol = Math.max(0, eventStart.diff(firstDay, gridType))
 		const endCol = Math.min(dayCount - 1, eventEnd.diff(firstDay, gridType))
 
-		// Detect if event is truncated at the boundaries
 		const isTruncatedStart = event.start.startOf(gridType).isBefore(firstDay)
 		const isTruncatedEnd = event.end.startOf(gridType).isAfter(lastDay)
 
-		// Try to place the event starting from its original start column
-		let placedSuccessfully = false
-
 		// First try: place from original start position
-		let assignedRow = -1
-		for (let row = 0; row < dayMaxEvents; row++) {
-			let canPlace = true
-			for (let col = startCol; col <= endCol; col++) {
-				if (grid[row][col].taken) {
-					canPlace = false
-					break
-				}
-			}
-			if (canPlace) {
-				assignedRow = row
+		const row = findAvailableRow(startCol, endCol)
+		if (row !== -1) {
+			place(row, startCol, endCol, event, isTruncatedStart, isTruncatedEnd)
+			continue
+		}
+
+		// Fallback: try truncated versions starting from later days
+		for (let tryStart = startCol + 1; tryStart <= endCol; tryStart++) {
+			const truncRow = findAvailableRow(tryStart, endCol)
+			if (truncRow !== -1) {
+				place(truncRow, tryStart, endCol, event, true, isTruncatedEnd)
 				break
-			}
-		}
-
-		// If we found a row, assign the event to all its columns
-		if (assignedRow !== -1) {
-			for (let col = startCol; col <= endCol; col++) {
-				grid[assignedRow][col] = { taken: true, event }
-			}
-
-			// Create position data for rendering
-			const spanDays = endCol - startCol + 1
-			processedEvents.push({
-				left: (startCol / dayCount) * 100,
-				width: (spanDays / dayCount) * 100,
-				top:
-					dayNumberHeight +
-					eventSpacing +
-					assignedRow * (EVENT_BAR_HEIGHT + eventSpacing),
-				height: EVENT_BAR_HEIGHT,
-				position: assignedRow,
-				...event,
-				isTruncatedStart,
-				isTruncatedEnd,
-			} as PositionedEvent)
-			placedSuccessfully = true
-		}
-
-		// If couldn't place at original position, try truncated versions starting from later days
-		if (!placedSuccessfully) {
-			for (
-				let tryStartCol = startCol + 1;
-				tryStartCol <= endCol;
-				tryStartCol++
-			) {
-				// Try to place the truncated event starting from this column
-				let truncatedAssignedRow = -1
-				for (let row = 0; row < dayMaxEvents; row++) {
-					let canPlace = true
-					for (let col = tryStartCol; col <= endCol; col++) {
-						if (grid[row][col].taken) {
-							canPlace = false
-							break
-						}
-					}
-					if (canPlace) {
-						truncatedAssignedRow = row
-						break
-					}
-				}
-
-				// If we found a row for the truncated version, place it
-				if (truncatedAssignedRow !== -1) {
-					for (let col = tryStartCol; col <= endCol; col++) {
-						grid[truncatedAssignedRow][col] = { taken: true, event }
-					}
-
-					// Create position data for the truncated rendering
-					const truncatedSpanDays = endCol - tryStartCol + 1
-					processedEvents.push({
-						left: (tryStartCol / dayCount) * 100,
-						width: (truncatedSpanDays / dayCount) * 100,
-						top:
-							dayNumberHeight +
-							eventSpacing +
-							truncatedAssignedRow * (EVENT_BAR_HEIGHT + eventSpacing),
-						height: EVENT_BAR_HEIGHT,
-						position: truncatedAssignedRow,
-						...event,
-						isTruncatedStart: true, // Always truncated at start when using this fallback logic
-						isTruncatedEnd,
-					} as PositionedEvent)
-					placedSuccessfully = true
-					break // Successfully placed, stop trying other start positions
-				}
 			}
 		}
 	}
@@ -182,43 +147,13 @@ export const getPositionedEvents = ({
 	// Step 2: Fill gaps with single-day events
 	for (const event of sortedSingleDay) {
 		const eventStart = dayjs.max(event.start.startOf(gridType), firstDay)
-		// Clamp col to valid grid bounds to prevent accessing undefined grid positions
 		const col = Math.max(
 			0,
 			Math.min(dayCount - 1, eventStart.diff(firstDay, gridType))
 		)
-
-		// Single-day events are not truncated by definition
-		const isTruncatedStart = false
-		const isTruncatedEnd = false
-
-		// Find the first available row in this column
-		let assignedRow = -1
-		for (let row = 0; row < dayMaxEvents; row++) {
-			if (!grid[row][col].taken) {
-				assignedRow = row
-				break
-			}
-		}
-
-		// If we found a row, assign the event
-		if (assignedRow !== -1) {
-			grid[assignedRow][col] = { taken: true, event }
-
-			// Create position data for rendering
-			processedEvents.push({
-				left: (col / dayCount) * 100,
-				width: (1 / dayCount) * 100,
-				top:
-					dayNumberHeight +
-					eventSpacing +
-					assignedRow * (EVENT_BAR_HEIGHT + eventSpacing),
-				height: EVENT_BAR_HEIGHT,
-				position: assignedRow,
-				...event,
-				isTruncatedStart,
-				isTruncatedEnd,
-			} as PositionedEvent)
+		const row = findAvailableRow(col, col)
+		if (row !== -1) {
+			place(row, col, col, event, false, false)
 		}
 	}
 

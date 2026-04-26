@@ -370,6 +370,108 @@ describe('getPositionedEvents', () => {
 		})
 	})
 
+	describe('Custom Event Bar Height', () => {
+		it('uses custom eventBarHeight in top and height calculation', () => {
+			const customHeight = 40
+
+			const result = getPositionedEvents({
+				days,
+				events: [singleDayEvent],
+				dayMaxEvents: 4,
+				eventBarHeight: customHeight,
+			})
+
+			expect(result).toHaveLength(1)
+			const expectedTop =
+				DAY_NUMBER_HEIGHT +
+				GAP_BETWEEN_ELEMENTS +
+				0 * (customHeight + GAP_BETWEEN_ELEMENTS)
+			expect(result[0].top).toBe(expectedTop)
+			expect(result[0].height).toBe(customHeight)
+		})
+
+		it('uses custom eventBarHeight for stacked events', () => {
+			const customHeight = 48
+
+			const result = getPositionedEvents({
+				days,
+				events: [
+					singleDayEvent,
+					{
+						...singleDayEvent,
+						id: 'single-2',
+						start: dayjs('2025-01-13T12:00:00.000Z'),
+						end: dayjs('2025-01-13T13:00:00.000Z'),
+					},
+				],
+				dayMaxEvents: 4,
+				eventBarHeight: customHeight,
+			})
+
+			expect(result).toHaveLength(2)
+			const firstTop =
+				DAY_NUMBER_HEIGHT +
+				GAP_BETWEEN_ELEMENTS +
+				0 * (customHeight + GAP_BETWEEN_ELEMENTS)
+			const secondTop =
+				DAY_NUMBER_HEIGHT +
+				GAP_BETWEEN_ELEMENTS +
+				1 * (customHeight + GAP_BETWEEN_ELEMENTS)
+			expect(result[0].top).toBe(firstTop)
+			expect(result[0].height).toBe(customHeight)
+			expect(result[1].top).toBe(secondTop)
+			expect(result[1].height).toBe(customHeight)
+		})
+
+		it('uses custom eventBarHeight with custom eventSpacing', () => {
+			const customHeight = 36
+			const customSpacing = 4
+
+			const result = getPositionedEvents({
+				days,
+				events: [singleDayEvent],
+				dayMaxEvents: 4,
+				eventBarHeight: customHeight,
+				eventSpacing: customSpacing,
+			})
+
+			expect(result).toHaveLength(1)
+			const expectedTop =
+				DAY_NUMBER_HEIGHT + customSpacing + 0 * (customHeight + customSpacing)
+			expect(result[0].top).toBe(expectedTop)
+			expect(result[0].height).toBe(customHeight)
+		})
+
+		it('defaults to EVENT_BAR_HEIGHT when eventBarHeight is not provided', () => {
+			const result = getPositionedEvents({
+				days,
+				events: [singleDayEvent],
+				dayMaxEvents: 4,
+			})
+
+			expect(result[0].height).toBe(EVENT_BAR_HEIGHT)
+		})
+
+		it('uses custom eventBarHeight for multi-day events', () => {
+			const customHeight = 32
+
+			const result = getPositionedEvents({
+				days,
+				events: [multiDayEvent],
+				dayMaxEvents: 4,
+				eventBarHeight: customHeight,
+			})
+
+			expect(result).toHaveLength(1)
+			const expectedTop =
+				DAY_NUMBER_HEIGHT +
+				GAP_BETWEEN_ELEMENTS +
+				0 * (customHeight + GAP_BETWEEN_ELEMENTS)
+			expect(result[0].top).toBe(expectedTop)
+			expect(result[0].height).toBe(customHeight)
+		})
+	})
+
 	describe('Custom Event Spacing', () => {
 		it('uses custom eventSpacing in vertical positioning', () => {
 			const customSpacing = 4

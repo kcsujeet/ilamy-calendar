@@ -1,12 +1,13 @@
-import type dayjs from 'dayjs'
 import { memo } from 'react'
 import { HorizontalGridRow } from '@/components/horizontal-grid/horizontal-grid-row'
 import type { Resource } from '@/features/resource-calendar/types'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { keys } from '@/lib/utils/keys'
 import { AllDayCell } from './all-day-cell'
 
 interface AllDayRowProps {
-	days: dayjs.Dayjs[]
+	days: Dayjs[]
 	classes?: { row?: string; cell?: string; spacer?: string }
 	resource?: Resource
 	showSpacer?: boolean
@@ -19,25 +20,28 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 	showSpacer = true,
 }) => {
 	const columns = days.map((day, index) => ({
-		id: `allday-col-${day.toISOString()}-${index}`,
+		id: keys.col.allDay(day, index),
 		day,
 		gridType: 'day' as const,
 		className: cn('h-full min-h-12 border-r last:border-r-0', classes?.cell),
 	}))
 
 	return (
-		<div className={cn('flex w-full', classes?.row)} data-testid="all-day-row">
+		<div
+			className={cn('flex w-full bg-background', classes?.row)}
+			data-testid="all-day-row"
+		>
 			{/* Time col spacer */}
 			{showSpacer && <AllDayCell className={classes?.spacer} />}
 
 			{/* Day all day cell */}
 			<HorizontalGridRow
 				allDay
-				className="flex-1 min-h-fit"
+				className="flex-1 min-h-fit border-b"
 				columns={columns}
 				dayNumberHeight={0}
 				gridType="day"
-				id={`all-day-row-${resource?.id ?? 'main'}`}
+				id={keys.allDayRow(resource?.id)}
 				isLastRow
 				resource={resource}
 				variant="regular"

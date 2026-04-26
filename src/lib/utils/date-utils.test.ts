@@ -1,6 +1,43 @@
-import { describe, expect, it } from 'bun:test'
+import { afterEach, describe, expect, it } from 'bun:test'
 import dayjs from '@/lib/configs/dayjs-config'
-import { getDayHours, getWeekDays } from './date-utils'
+import {
+	getDayHours,
+	getDayKey,
+	getMonthWeeks,
+	getWeekDays,
+	isToday,
+} from './date-utils'
+
+describe('isToday', () => {
+	it('should return true when the date is today', () => {
+		expect(isToday(dayjs())).toBe(true)
+	})
+
+	it('should return false when the date is yesterday', () => {
+		expect(isToday(dayjs().subtract(1, 'day'))).toBe(false)
+	})
+
+	it('should return false when the date is tomorrow', () => {
+		expect(isToday(dayjs().add(1, 'day'))).toBe(false)
+	})
+
+	it('should return true for different times on today', () => {
+		expect(isToday(dayjs().hour(0).minute(0))).toBe(true)
+		expect(isToday(dayjs().hour(23).minute(59))).toBe(true)
+	})
+})
+
+describe('getDayKey', () => {
+	it('should format a date as YYYY-MM-DD', () => {
+		expect(getDayKey(dayjs('2025-10-13T00:00:00.000Z'))).toBe('2025-10-13')
+	})
+
+	it('should ignore time-of-day', () => {
+		const morning = dayjs('2025-10-13T08:15:30.000Z')
+		const evening = dayjs('2025-10-13T22:45:00.000Z')
+		expect(getDayKey(morning)).toBe(getDayKey(evening))
+	})
+})
 
 describe('getDayHours', () => {
 	it('should return exactly 24 hours by default', () => {
@@ -427,6 +464,274 @@ describe('getWeekDays', () => {
 			)
 			expect(mondayIndex).toBeGreaterThanOrEqual(0)
 			expect(weekDays[mondayIndex].format('YYYY-MM-DD')).toBe('2025-10-13')
+		})
+	})
+
+	describe('timezone preservation', () => {
+		const TOKYO_OFFSET = 540 // +09:00
+
+		afterEach(() => {
+			dayjs.tz.setDefault()
+		})
+
+		it('should preserve timezone offset on all generated days', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const currentDate = dayjs('2026-03-12').tz('Asia/Tokyo')
+			const weekDays = getWeekDays(currentDate, 0)
+
+			weekDays.forEach((day) => {
+				expect(day.utcOffset()).toBe(TOKYO_OFFSET)
+			})
+		})
+
+		it('should preserve timezone offset during DST transition week', () => {
+			// March 8, 2026 is when NA DST starts — dayjs startOf('week') bug
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const currentDate = dayjs('2026-03-08').tz('Asia/Tokyo')
+			const weekDays = getWeekDays(currentDate, 0)
+
+			weekDays.forEach((day) => {
+				expect(day.utcOffset()).toBe(TOKYO_OFFSET)
+			})
+		})
+	})
+})
+
+describe('getMonthWeeks', () => {
+	describe('timezone preservation', () => {
+		const TOKYO_OFFSET = 540
+
+		afterEach(() => {
+			dayjs.tz.setDefault()
+		})
+
+		it('should preserve timezone offset on all generated days', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const currentDate = dayjs('2026-03-15').tz('Asia/Tokyo')
+			const weeks = getMonthWeeks(currentDate, 0)
+
+			weeks.flat().forEach((day) => {
+				expect(day.utcOffset()).toBe(TOKYO_OFFSET)
+			})
+		})
+	})
+})
+
+describe('fixTimezoneOffset plugin', () => {
+	const TOKYO_OFFSET = 540 // +09:00
+	// March 8, 2026 is when NA DST starts (spring forward).
+	// This date triggers the dayjs bug where startOf/endOf lose timezone info
+	// when the system timezone observes DST near that date.
+	const DST_DATE = '2026-03-08'
+
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	describe('startOf', () => {
+		it('should preserve timezone offset for startOf(day)', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const result = d.startOf('day')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+			expect(result.format('YYYY-MM-DD')).toBe(DST_DATE)
+			expect(result.hour()).toBe(0)
+			expect(result.minute()).toBe(0)
+			expect(result.second()).toBe(0)
+		})
+
+		it('should preserve timezone offset for startOf(week)', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const result = d.startOf('week')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+			expect(result.hour()).toBe(0)
+		})
+
+		it('should preserve timezone offset for startOf(month)', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const result = d.startOf('month')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+			expect(result.date()).toBe(1)
+			expect(result.hour()).toBe(0)
+		})
+
+		it('should preserve timezone offset for startOf(hour)', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo').hour(14).minute(30)
+			const result = d.startOf('hour')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+			expect(result.hour()).toBe(14)
+			expect(result.minute()).toBe(0)
+		})
+
+		it('should not alter dates when no timezone is set', () => {
+			const d = dayjs('2026-06-15T10:30:00.000Z')
+			const result = d.startOf('day')
+			const offset = result.utcOffset()
+
+			// Without setDefault, should behave normally
+			expect(result.hour()).toBe(0)
+			expect(result.utcOffset()).toBe(offset)
+		})
+	})
+
+	describe('endOf', () => {
+		it('should preserve timezone offset for endOf(day)', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const result = d.endOf('day')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+			expect(result.format('YYYY-MM-DD')).toBe(DST_DATE)
+			expect(result.hour()).toBe(23)
+			expect(result.minute()).toBe(59)
+			expect(result.second()).toBe(59)
+		})
+
+		it('should preserve timezone offset for endOf(week)', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const result = d.endOf('week')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+			expect(result.hour()).toBe(23)
+			expect(result.minute()).toBe(59)
+		})
+
+		it('should preserve timezone offset for endOf(month)', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const result = d.endOf('month')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+			expect(result.date()).toBe(31) // March has 31 days
+			expect(result.hour()).toBe(23)
+			expect(result.minute()).toBe(59)
+		})
+
+		it('should preserve timezone offset for endOf(hour)', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo').hour(14).minute(30)
+			const result = d.endOf('hour')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+			expect(result.hour()).toBe(14)
+			expect(result.minute()).toBe(59)
+			expect(result.second()).toBe(59)
+		})
+	})
+
+	describe('chained operations', () => {
+		it('should preserve offset through startOf().add() chains', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const result = d.startOf('week').add(4, 'day')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+		})
+
+		it('should preserve offset through startOf().day() chains', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const result = d.startOf('week').day(3)
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+		})
+
+		it('should preserve offset through startOf().startOf() chains', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const result = d.startOf('week').add(4, 'day').startOf('day')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+			expect(result.hour()).toBe(0)
+		})
+	})
+
+	describe('isSame / comparison correctness', () => {
+		it('should return true for isSame(dayjs(), day) on today', () => {
+			const today = dayjs()
+			expect(today.isSame(dayjs(), 'day')).toBe(true)
+		})
+
+		it('should return true for isSame with same day in timezone', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const a = dayjs(DST_DATE).tz('Asia/Tokyo').hour(9)
+			const b = dayjs(DST_DATE).tz('Asia/Tokyo').hour(21)
+
+			expect(a.isSame(b, 'day')).toBe(true)
+		})
+
+		it('should return false for isSame with different days', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const a = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const b = dayjs('2026-03-09').tz('Asia/Tokyo')
+
+			expect(a.isSame(b, 'day')).toBe(false)
+		})
+	})
+
+	describe('unix timestamp preservation', () => {
+		it('startOf should not change the represented moment beyond rounding', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo').hour(14)
+			const startOfDay = d.startOf('day')
+
+			// Start of day in Tokyo should be midnight Tokyo time
+			const expectedUnix = dayjs.tz(`${DST_DATE}T00:00:00`, 'Asia/Tokyo').unix()
+			expect(startOfDay.unix()).toBe(expectedUnix)
+		})
+
+		it('endOf should represent end of day in the correct timezone', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs(DST_DATE).tz('Asia/Tokyo')
+			const endOfDay = d.endOf('day')
+
+			const expectedUnix = dayjs.tz(`${DST_DATE}T23:59:59`, 'Asia/Tokyo').unix()
+			expect(endOfDay.unix()).toBe(expectedUnix)
+		})
+	})
+
+	describe('non-DST dates', () => {
+		it('should work correctly for dates far from DST transitions', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d = dayjs('2026-06-15').tz('Asia/Tokyo')
+
+			expect(d.startOf('day').utcOffset()).toBe(TOKYO_OFFSET)
+			expect(d.endOf('day').utcOffset()).toBe(TOKYO_OFFSET)
+			expect(d.startOf('week').utcOffset()).toBe(TOKYO_OFFSET)
+			expect(d.endOf('day').hour()).toBe(23)
+			expect(d.endOf('day').minute()).toBe(59)
+		})
+	})
+
+	describe('default timezone via setDefault', () => {
+		it('should apply fix using setDefault timezone even without explicit .tz()', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			// Create date via the timezone-aware constructor (no explicit .tz())
+			const d = dayjs(DST_DATE)
+			const result = d.startOf('day')
+
+			expect(result.utcOffset()).toBe(TOKYO_OFFSET)
+		})
+
+		it('should stop applying fix after setDefault is cleared', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const d1 = dayjs(DST_DATE).tz('Asia/Tokyo')
+			expect(d1.startOf('day').utcOffset()).toBe(TOKYO_OFFSET)
+
+			dayjs.tz.setDefault()
+			// After clearing, the plugin should not force any timezone
+			const d2 = dayjs('2026-06-15')
+			const result = d2.startOf('day')
+			// Should not force Tokyo offset
+			expect(result.format('HH:mm')).toBe('00:00')
 		})
 	})
 })

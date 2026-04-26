@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import type { RenderCurrentTimeIndicatorProps } from '@/features/calendar/types'
 import type { Resource } from '@/features/resource-calendar/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { CalendarView } from '@/types'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
@@ -41,7 +41,7 @@ const TestWrapper: React.FC<{
 )
 
 const renderEventsLayer = (props: {
-	days: dayjs.Dayjs[]
+	days: Dayjs[]
 	resource?: Resource
 	view?: CalendarView
 	'data-testid'?: string

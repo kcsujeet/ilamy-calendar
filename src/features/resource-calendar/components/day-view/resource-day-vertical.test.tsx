@@ -4,7 +4,7 @@ import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-cont
 import type { CalendarEvent } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type { Resource } from '@/features/resource-calendar/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { ResourceDayVertical } from './resource-day-vertical'
 
 const mockResources: Resource[] = [
@@ -64,8 +64,10 @@ describe('ResourceDayVertical', () => {
 		expect(col1).toBeInTheDocument()
 
 		// Find cell for Resource 1 at 09:00 using data-testid
-		// VerticalGridCol uses vertical-cell-{date}-{hour}-{minute}-{resourceId}
-		const resource1Cell = screen.getByTestId(`vertical-cell-${dateStr}-09-00-1`)
+		// VerticalGridCol uses vertical-cell-{date}-{hour}-{minute}-resource-{resourceId}
+		const resource1Cell = screen.getByTestId(
+			`vertical-cell-${dateStr}-09-00-resource-1`
+		)
 		expect(resource1Cell).toBeInTheDocument()
 	})
 
@@ -82,16 +84,16 @@ describe('ResourceDayVertical', () => {
 
 		// Should have 00, 15, 30, 45 slots
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-00-1`)
+			screen.getByTestId(`vertical-cell-${dateStr}-09-00-resource-1`)
 		).toBeInTheDocument()
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-15-1`)
+			screen.getByTestId(`vertical-cell-${dateStr}-09-15-resource-1`)
 		).toBeInTheDocument()
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-30-1`)
+			screen.getByTestId(`vertical-cell-${dateStr}-09-30-resource-1`)
 		).toBeInTheDocument()
 		expect(
-			screen.getByTestId(`vertical-cell-${dateStr}-09-45-1`)
+			screen.getByTestId(`vertical-cell-${dateStr}-09-45-resource-1`)
 		).toBeInTheDocument()
 	})
 
@@ -266,5 +268,29 @@ describe('ResourceDayVertical', () => {
 		// Event starting at 1pm (4 hours into 8-hour grid) should be at 50%
 		const style = eventWrapper?.getAttribute('style') || ''
 		expect(style).toContain('top: 50%')
+	})
+
+	test('customizes hour rendering when renderHour prop is provided', () => {
+		cleanup()
+		const renderHour = (date: Dayjs) => (
+			<span data-testid={`custom-hour-${date.format('HH')}`}>
+				{date.format('HH:mm')}
+			</span>
+		)
+
+		renderResourceDayVertical({ renderHour })
+
+		// Check that the custom rendering is used
+		const customMidnight = screen.getByTestId('custom-hour-00')
+		expect(customMidnight).toBeInTheDocument()
+		expect(customMidnight).toHaveTextContent('00:00')
+
+		const customNoon = screen.getByTestId('custom-hour-12')
+		expect(customNoon).toBeInTheDocument()
+		expect(customNoon).toHaveTextContent('12:00')
+
+		const customLastHour = screen.getByTestId('custom-hour-23')
+		expect(customLastHour).toBeInTheDocument()
+		expect(customLastHour).toHaveTextContent('23:00')
 	})
 })

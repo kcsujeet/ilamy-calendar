@@ -2,7 +2,8 @@ import type React from 'react'
 import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { keys } from '@/lib/utils/keys'
 
 export const ResourceMonthVertical: React.FC = () => {
 	const { currentDate, getVisibleResources } = useSmartCalendarContext()
@@ -15,14 +16,14 @@ export const ResourceMonthVertical: React.FC = () => {
 	)
 
 	const firstCol = {
-		id: 'date-col',
+		id: keys.col.date,
 		days: daysInMonth,
 		day: undefined,
 		className:
 			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
 		gridType: 'day' as const,
 		noEvents: true,
-		renderCell: (date: dayjs.Dayjs) => (
+		renderCell: (date: Dayjs) => (
 			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
 				<span>{date.format('D')}</span>
 				<span>{date.format('ddd')}</span>
@@ -31,7 +32,7 @@ export const ResourceMonthVertical: React.FC = () => {
 	}
 
 	const columns = resources.map((resource) => ({
-		id: `month-col-resource-${resource.id}`,
+		id: keys.col.resource('month', resource.id),
 		day: undefined,
 		resourceId: resource.id,
 		days: daysInMonth,
@@ -52,8 +53,8 @@ export const ResourceMonthVertical: React.FC = () => {
 				<div className="shrink-0 border-r w-16 sticky top-0 left-0 bg-background z-20" />
 				{resources.map((resource) => (
 					<ResourceCell
-						className="min-w-50 flex-1"
-						key={`resource-cell-${resource.id}`}
+						className="min-w-20 flex-1"
+						key={keys.listKey('resource-cell', resource.id)}
 						resource={resource}
 					/>
 				))}

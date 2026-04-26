@@ -16,6 +16,7 @@ import {
 import type { RRuleOptions } from '@/features/recurrence/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
+import { keys } from '@/lib/utils/keys'
 
 const FREQ_MAP = {
 	DAILY: RRule.DAILY,
@@ -36,6 +37,11 @@ const WEEKDAYS = [
 	RRule.SA,
 ]
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+const END_TYPES = [
+	{ type: 'never', id: 'never', labelKey: 'never' },
+	{ type: 'count', id: 'after', labelKey: 'after' },
+	{ type: 'until', id: 'on', labelKey: 'on' },
+] as const
 const parseNum = (v: string) => Math.max(1, Number.parseInt(v, 10) || 1)
 
 const getDescription = (
@@ -203,12 +209,12 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 										<div className="flex items-center space-x-1" key={d.label}>
 											<Checkbox
 												checked={byweekday.includes(d.value)}
-												id={`day-${i}`}
+												id={keys.listKey('day', i)}
 												onCheckedChange={() => toggleDay(i)}
 											/>
 											<Label
 												className="text-xs cursor-pointer"
-												htmlFor={`day-${i}`}
+												htmlFor={keys.listKey('day', i)}
 											>
 												{d.label}
 											</Label>
@@ -221,60 +227,46 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 						<div>
 							<Label className="text-xs">{t('ends')}</Label>
 							<div className="space-y-2 mt-1">
-								<div className="flex items-center space-x-2">
-									<Checkbox
-										checked={endType === 'never'}
-										id="never"
-										onCheckedChange={() => setEndType('never')}
-									/>
-									<Label className="text-xs" htmlFor="never">
-										{t('never')}
-									</Label>
-								</div>
-								<div className="flex items-center space-x-2">
-									<Checkbox
-										checked={endType === 'count'}
-										id="after"
-										onCheckedChange={() => setEndType('count')}
-									/>
-									<Label className="text-xs" htmlFor="after">
-										{t('after')}
-									</Label>
-									{endType === 'count' && (
-										<Input
-											className="h-6 w-16 text-xs"
-											data-testid="count-input"
-											min="1"
-											onChange={(e) =>
-												update({ count: parseNum(e.target.value) })
-											}
-											type="number"
-											value={opts?.count || 1}
+								{END_TYPES.map(({ type, id, labelKey }) => (
+									<div className="flex items-center space-x-2" key={type}>
+										<Checkbox
+											checked={endType === type}
+											id={id}
+											onCheckedChange={() => setEndType(type)}
 										/>
-									)}
-									<span className="text-xs">{t('occurrences')}</span>
-								</div>
-								<div className="flex items-center space-x-2">
-									<Checkbox
-										checked={endType === 'until'}
-										id="on"
-										onCheckedChange={() => setEndType('until')}
-									/>
-									<Label className="text-xs" htmlFor="on">
-										{t('on')}
-									</Label>
-									{endType === 'until' && (
-										<DatePicker
-											className="h-6"
-											date={opts?.until}
-											onChange={(d) =>
-												update({
-													until: d ? dayjs(d).endOf('day').toDate() : undefined,
-												})
-											}
-										/>
-									)}
-								</div>
+										<Label className="text-xs" htmlFor={id}>
+											{t(labelKey)}
+										</Label>
+										{type === 'count' && endType === 'count' && (
+											<>
+												<Input
+													className="h-6 w-16 text-xs"
+													data-testid="count-input"
+													min="1"
+													onChange={(e) =>
+														update({ count: parseNum(e.target.value) })
+													}
+													type="number"
+													value={opts?.count || 1}
+												/>
+												<span className="text-xs">{t('occurrences')}</span>
+											</>
+										)}
+										{type === 'until' && endType === 'until' && (
+											<DatePicker
+												className="h-6"
+												date={opts?.until ?? undefined}
+												onChange={(d) =>
+													update({
+														until: d
+															? dayjs(d).endOf('day').toDate()
+															: undefined,
+													})
+												}
+											/>
+										)}
+									</div>
+								))}
 							</div>
 						</div>
 					</div>

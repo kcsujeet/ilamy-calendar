@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils/generator'
 import { WeekView } from './week-view'
 
@@ -92,7 +92,7 @@ describe('WeekView', () => {
 		// Check that all weekday headers are present using test IDs
 		weekDays.forEach((day) => {
 			expect(
-				screen.getByTestId(`week-day-header-${day.toLowerCase()}`)
+				screen.getByTestId(`week-header-weekday-${day.toLowerCase()}`)
 			).toBeInTheDocument()
 		})
 	})
@@ -104,7 +104,7 @@ describe('WeekView', () => {
 		// When starting from Monday, all weekdays should still be present
 		weekDays.forEach((day) => {
 			expect(
-				screen.getByTestId(`week-day-header-${day.toLowerCase()}`)
+				screen.getByTestId(`week-header-weekday-${day.toLowerCase()}`)
 			).toBeInTheDocument()
 		})
 	})
@@ -151,8 +151,8 @@ describe('WeekView', () => {
 		renderWeekView({ firstDayOfWeek: 1 }) // Set Monday as first day
 
 		// Check that Monday header is present (order will be handled by component logic)
-		expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-sunday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-monday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-sunday')).toBeInTheDocument()
 	})
 
 	test('handles different locale settings', () => {
@@ -160,8 +160,8 @@ describe('WeekView', () => {
 		renderWeekView({ locale: 'en' })
 
 		// Should render with English locale by default using test IDs
-		expect(screen.getByTestId('week-day-header-sunday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-sunday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-monday')).toBeInTheDocument()
 	})
 
 	test('renders time slots structure', () => {
@@ -949,15 +949,15 @@ describe('WeekView', () => {
 
 		// Saturday and Sunday headers should not be present
 		expect(
-			screen.queryByTestId('week-day-header-saturday')
+			screen.queryByTestId('week-header-weekday-saturday')
 		).not.toBeInTheDocument()
 		expect(
-			screen.queryByTestId('week-day-header-sunday')
+			screen.queryByTestId('week-header-weekday-sunday')
 		).not.toBeInTheDocument()
 
 		// Monday-Friday headers should be present
-		expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-friday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-monday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-friday')).toBeInTheDocument()
 	})
 
 	test('empty hiddenDays shows all 7 days (default behavior)', () => {
@@ -972,7 +972,7 @@ describe('WeekView', () => {
 		// All 7 weekday headers should be present
 		weekDays.forEach((day) => {
 			expect(
-				screen.getByTestId(`week-day-header-${day.toLowerCase()}`)
+				screen.getByTestId(`week-header-weekday-${day.toLowerCase()}`)
 			).toBeInTheDocument()
 		})
 
@@ -998,16 +998,22 @@ describe('WeekView', () => {
 
 		// Wednesday header should not be present
 		expect(
-			screen.queryByTestId('week-day-header-wednesday')
+			screen.queryByTestId('week-header-weekday-wednesday')
 		).not.toBeInTheDocument()
 
 		// Other 6 days should be present
-		expect(screen.getByTestId('week-day-header-monday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-tuesday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-thursday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-friday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-saturday')).toBeInTheDocument()
-		expect(screen.getByTestId('week-day-header-sunday')).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-monday')).toBeInTheDocument()
+		expect(
+			screen.getByTestId('week-header-weekday-tuesday')
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId('week-header-weekday-thursday')
+		).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-friday')).toBeInTheDocument()
+		expect(
+			screen.getByTestId('week-header-weekday-saturday')
+		).toBeInTheDocument()
+		expect(screen.getByTestId('week-header-weekday-sunday')).toBeInTheDocument()
 	})
 
 	test('positions event at correct percentage when event is in middle of business hours in WeekView', () => {
@@ -1045,5 +1051,29 @@ describe('WeekView', () => {
 		// Event starting at 1pm (4 hours into 8-hour grid) should be at 50%
 		const style = eventWrapper?.getAttribute('style') || ''
 		expect(style).toContain('top: 50%')
+	})
+
+	test('customizes hour rendering when renderHour prop is provided', () => {
+		cleanup()
+		const renderHour = (date: Dayjs) => (
+			<span data-testid={`custom-hour-${date.format('HH')}`}>
+				{date.format('HH:mm')}
+			</span>
+		)
+
+		renderWeekView({ renderHour })
+
+		// Check that the custom rendering is used
+		const customMidnights = screen.getAllByTestId('custom-hour-00')
+		expect(customMidnights.length).toBe(1) // In WeekView, it's only in the time column
+		expect(customMidnights[0]).toHaveTextContent('00:00')
+
+		const customNoons = screen.getAllByTestId('custom-hour-12')
+		expect(customNoons.length).toBe(1)
+		expect(customNoons[0]).toHaveTextContent('12:00')
+
+		const customLastHours = screen.getAllByTestId('custom-hour-23')
+		expect(customLastHours.length).toBe(1)
+		expect(customLastHours[0]).toHaveTextContent('23:00')
 	})
 })

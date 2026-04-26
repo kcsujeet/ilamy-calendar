@@ -63,7 +63,10 @@ function DraggableEventUnmemoized({
 					event.backgroundColor || 'bg-blue-500',
 					event.color || 'text-white',
 					'h-full w-full px-1 border-[1.5px] border-card text-left overflow-clip relative',
-					getBorderRadiusClass(isTruncatedStart, isTruncatedEnd)
+					getBorderRadiusClass(
+						Boolean(isTruncatedStart),
+						Boolean(isTruncatedEnd)
+					)
 				)}
 				style={{ backgroundColor: event.backgroundColor, color: event.color }}
 			>

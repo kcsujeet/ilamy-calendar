@@ -1,17 +1,17 @@
 import type { BusinessHours } from '@/components/types'
-import type dayjs from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { getDayHours } from '@/lib/utils/date-utils'
 import { calculateBusinessHoursRange } from './business-hours'
 
 interface GetViewHoursOptions {
-	referenceDate: dayjs.Dayjs
+	referenceDate: Dayjs
 	businessHours?: BusinessHours | BusinessHours[]
 	hideNonBusinessHours?: boolean
 	/**
 	 * For views with multiple days (like WeekView), we might want to show
 	 * the union of all business hours across those days.
 	 */
-	allDates?: dayjs.Dayjs[]
+	allDates?: Dayjs[]
 	/**
 	 * Optional additional business hours configurations (e.g., from resources).
 	 * These will be merged with the global businessHours when calculating the visible range.
@@ -30,7 +30,7 @@ export function getViewHours({
 	hideNonBusinessHours,
 	allDates = [referenceDate],
 	resourceBusinessHours = [],
-}: GetViewHoursOptions): dayjs.Dayjs[] {
+}: GetViewHoursOptions): Dayjs[] {
 	const hours = getDayHours({ referenceDate })
 
 	const hasBusinessHoursConfig =

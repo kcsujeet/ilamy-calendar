@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.6.3](https://github.com/kcsujeet/ilamy-calendar/compare/v1.6.2...v1.6.3)
+
+> 26 April 2026
+
+##### Features
+
+- feat: `hideNonBusinessHours` now collapses the time grid entirely when business hours produce an empty hour range (e.g. `startTime: 0`, `endTime: 0`) — the all-day section expands to fill the available vertical space instead of leaving an empty grid below it. Applies to both `IlamyCalendar` (day/week views) and the vertical variants of `IlamyResourceCalendar` ([`#98`](https://github.com/kcsujeet/ilamy-calendar/pull/98)) — Thanks [@mark-tutton](https://github.com/mark-tutton)! — Closes [`#86`](https://github.com/kcsujeet/ilamy-calendar/issues/86)
+
 #### [v1.6.2](https://github.com/kcsujeet/ilamy-calendar/compare/v1.6.1...v1.6.2)
 
 > 22 April 2026

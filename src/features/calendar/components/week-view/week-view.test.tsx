@@ -737,9 +737,8 @@ describe('WeekView', () => {
 			hideNonBusinessHours: true,
 		})
 
-		const allDayContainer = screen.getByTestId('vertical-grid-all-day')
-		expect(allDayContainer).toHaveClass('flex-1')
-		expect(screen.queryByTestId('vertical-grid-scroll')).not.toBeInTheDocument()
+		expect(screen.getByTestId('vertical-grid-all-day')).toBeInTheDocument()
+		expect(screen.queryByTestId('vertical-grid-body')).not.toBeInTheDocument()
 		expect(screen.queryByTestId('vertical-time-00')).not.toBeInTheDocument()
 		expect(screen.queryByTestId('vertical-time-12')).not.toBeInTheDocument()
 	})

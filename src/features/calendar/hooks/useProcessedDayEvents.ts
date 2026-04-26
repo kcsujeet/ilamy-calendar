@@ -27,6 +27,7 @@ export const useProcessedDayEvents = ({
 
 	const events = useMemo(() => {
 		if (!dayStart || !dayEnd) return []
+
 		let dayEvents = getEventsForDateRange(dayStart, dayEnd)
 		if (resourceId) {
 			dayEvents = filterEventsByResource(

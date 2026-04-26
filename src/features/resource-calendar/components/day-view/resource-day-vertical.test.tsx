@@ -140,6 +140,24 @@ describe('ResourceDayVertical', () => {
 		expect(screen.getByTestId('vertical-time-23')).toBeInTheDocument()
 	})
 
+	test('does not crash when hideNonBusinessHours produces an empty hour range', () => {
+		cleanup()
+
+		renderResourceDayVertical({
+			businessHours: {
+				daysOfWeek: ['wednesday'],
+				startTime: 0,
+				endTime: 0,
+			},
+			hideNonBusinessHours: true,
+		})
+
+		expect(screen.getByTestId('vertical-grid-all-day')).toBeInTheDocument()
+		expect(screen.queryByTestId('vertical-grid-body')).not.toBeInTheDocument()
+		expect(screen.queryByTestId('vertical-time-00')).not.toBeInTheDocument()
+		expect(screen.queryByTestId('vertical-time-12')).not.toBeInTheDocument()
+	})
+
 	test('hides non-business hours when hideNonBusinessHours is true', () => {
 		cleanup()
 		const businessHours = {

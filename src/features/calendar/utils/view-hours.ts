@@ -49,6 +49,8 @@ export function getViewHours({
 
 	if (!hasBusinessHours) return hours
 
+	if (minStart >= maxEnd) return []
+
 	return hours.filter((h) => {
 		const hour = h.hour()
 		return hour >= minStart && hour < maxEnd

@@ -138,4 +138,20 @@ describe('getViewHours', () => {
 		expect(hours[hours.length - 1].hour()).toBe(15)
 		expect(hours.length).toBe(6) // 10, 11, 12, 13, 14, 15
 	})
+
+	test('returns no hours when business range is empty', () => {
+		const businessHours: BusinessHours = {
+			daysOfWeek: ['wednesday'],
+			startTime: 0,
+			endTime: 0,
+		}
+
+		const hours = getViewHours({
+			referenceDate,
+			businessHours,
+			hideNonBusinessHours: true,
+		})
+
+		expect(hours).toHaveLength(0)
+	})
 })

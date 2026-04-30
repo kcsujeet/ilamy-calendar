@@ -1,50 +1,131 @@
 # ilamy Calendar
 
-A powerful, full-featured React calendar component library built with TypeScript, Tailwind CSS, and modern React patterns. Features multiple calendar views, drag-and-drop support, recurring events, and comprehensive internationalization.
+[![NPM Version](https://img.shields.io/npm/v/@ilamy/calendar?style=flat-square&color=black)](https://www.npmjs.com/package/@ilamy/calendar)
+[![License](https://img.shields.io/npm/l/@ilamy/calendar?style=flat-square&color=black)](https://github.com/kcsujeet/ilamy-calendar/blob/main/LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/kcsujeet/ilamy-calendar/ci.yml?branch=main&style=flat-square)](https://github.com/kcsujeet/ilamy-calendar/actions)
 
-<img width="1643" height="873" alt="Screenshot 2025-08-05 at 9 46 41 AM" src="https://github.com/user-attachments/assets/d289f034-0d26-4a1c-a997-dfa1ad26aa7a" />
+A powerful, full-featured React calendar component library built with **TypeScript**, **Tailwind CSS 4**, and **Shadcn UI**. Designed for high-performance scheduling applications with full support for RFC 5545 recurring events, resource management, and drag-and-drop interactions.
 
-<img width="1663" height="872" alt="Screenshot 2025-10-13 at 4 24 29 PM" src="https://github.com/user-attachments/assets/ba0aa27e-373c-40ba-98c6-2d6fd767cb66" />
+<div align="center">
+  <img width="1643" height="873" alt="ilamy Calendar Month View" src="https://github.com/user-attachments/assets/d289f034-0d26-4a1c-a997-dfa1ad26aa7a" />
+  <p align="center"><i>Elegant month view with seamless event transitions</i></p>
+</div>
+
+---
 
 ## Features
 
-- 🗓️ **Multiple Views**: Month, Week, Day, and Year views with smooth transitions
-- 📊 **Resource Calendar**: Visualize and manage events across multiple resources with timeline layout
-- 🎯 **Drag & Drop**: Move events between dates and time slots with collision detection
-- 🔄 **RFC 5545 Recurring Events**: Full RRULE support with Google Calendar-style operations
-  - **RRULE Patterns**: Daily, Weekly, Monthly, Yearly with complex frequencies
-  - **Smart Operations**: Edit "this event", "this and following", or "all events"
-  - **Exception Handling**: EXDATE exclusions and modified instance support
-  - **rrule.js Integration**: Battle-tested library for robust recurrence generation
-- 📤 **iCalendar Export**: RFC 5545 compliant .ics file export with proper recurring event handling
-- 🌍 **Internationalization**: 100+ locales with dayjs and configurable week start days
-- 🎨 **Customizable Styling**:
-  - Flexible theming with Tailwind CSS and CSS variables
-  - Custom event rendering with render props
-  - Configurable colors, fonts, and spacing
-- ⚡ **Performance Optimized**:
-  - On-demand recurring event generation
-  - Efficient date range calculations
-  - Minimal re-renders with optimized React patterns
-- 📱 **Responsive Design**: Adaptive layouts for desktop, tablet, and mobile
-- 🔧 **Developer Experience**:
-  - Full TypeScript support with comprehensive type definitions
-  - IntelliSense and autocompletion
-  - Extensive JSDoc documentation
-  - Test-driven development with 100% test coverage
-- 🎛️ **Advanced Event Management**:
-  - All-day events with proper timezone handling
-  - Multi-day events with smart positioning
-  - Event validation and error handling
-  - Bulk operations and batch updates
+### Core Views
+- **Multiple Perspectives**: Month, Week, Day, and Year views.
+- **Fluid Navigation**: Smooth transitions between dates and views.
+- **Business Hours**: Customizable working hours with support for split shifts.
+
+### Resource Management
+- **Resource Timeline**: Visualize and manage events across multiple resources (rooms, people, equipment).
+- **Vertical & Horizontal Layouts**: Flexible resource views to fit any application design.
+- **Resource-Aware Validation**: Ensure events are correctly assigned and don't overlap where prohibited.
+
+### Recurring Events (RFC 5545)
+- **Full RRULE Support**: Daily, Weekly, Monthly, Yearly patterns with complex frequencies.
+- **Smart CRUD**: Google Calendar-style operations—edit "this event", "this and following", or "all events".
+- **Exclusion Dates**: Robust handling of EXDATE and modified instances within a series.
+- **iCalendar Export**: Export events to `.ics` files with strict RFC 5545 compliance.
+
+### Interactions & Globalization
+- **Timezones**: Full timezone support via `dayjs.tz` with automatic DST handling.
+- **Internationalization**: Support for 100+ locales with configurable week start days.
+- **Drag & Drop**: Move and resize events with precision using `@dnd-kit`.
+- **Responsive**: Adaptive layouts designed for desktop, tablet, and mobile.
+
+### Developer Experience
+- **Type Safety**: Written in TypeScript with comprehensive type definitions and IntelliSense support.
+- **Reliability**: 100% test coverage for all mission-critical date and recurrence logic.
+- **Theming**: Built on Tailwind CSS 4 variables for effortless branding and customization.
+- **Modern Stack**: Zero-config integration with React 19 and modern build tools.
+
+---
+
+## Installation
+
+Install the library and its peer dependencies using your preferred package manager:
+
+```bash
+# npm
+npm install @ilamy/calendar
+
+# bun
+bun add @ilamy/calendar
+
+# pnpm
+pnpm add @ilamy/calendar
+```
+
+> **Note**: This library requires **React 19+** and **Tailwind CSS 4+**.
+
+---
+
+## Quick Start
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar';
+import '@ilamy/calendar/dist/index.css'; // Import base styles
+
+const MyApp = () => {
+  const events = [
+    {
+      id: '1',
+      title: 'Project Kickoff',
+      start: '2026-05-01T10:00:00Z',
+      end: '2026-05-01T11:30:00Z',
+      color: 'blue'
+    }
+  ];
+
+  return (
+    <div style={{ height: '800px' }}>
+      <IlamyCalendar 
+        events={events}
+        initialView="week"
+        onEventClick={(event) => console.log('Clicked:', event)}
+      />
+    </div>
+  );
+};
+```
+
+---
+
+## Examples
+
+Explore the [examples directory](./examples) for complete implementation patterns:
+
+- [Next.js](./examples/nextjs) - Integration with Next.js and Tailwind CSS.
+- [Astro](./examples/astro) - Static site integration with Astro.
+- [Vite](./examples/vite) - Fast, minimal setup using Vite.
+
+---
+
+## Tech Stack
+
+- **Framework**: [React 19](https://react.dev/)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
+- **Interactions**: [@dnd-kit](https://dndkit.com/) & [Framer Motion](https://www.framer.com/motion/)
+- **Date Engine**: [Day.js](https://day.js.org/)
+- **Recurrence**: [rrule.js](https://github.com/jakubroztocil/rrule)
+
+---
 
 ## Documentation
 
-For comprehensive documentation, examples, and interactive demos, visit [ilamy.dev](https://ilamy.dev)
+For comprehensive guides, API references, and interactive demos, visit [ilamy.dev](https://ilamy.dev).
 
-## Code Example
+- [Getting Started Guide](https://ilamy.dev/docs/getting-started)
+- [Resource Calendar Documentation](./docs/resource-calendar.md)
+- [Recurrence Deep Dive](./docs/rfc-5545.md)
+- [Contributing Guidelines](./CONTRIBUTING.md)
 
-Check out the [examples directory](./examples) for complete project setups:
+---
 
-- [Next.js Example](./examples/nextjs) - Full-featured Next.js integration
-- [Astro Example](./examples/astro) - Static site integration with Astro
+## License
+
+MIT © [Sujeet Kc](https://github.com/kcsujeet)

@@ -105,16 +105,6 @@ Explore the [examples directory](./examples) for complete implementation pattern
 
 ---
 
-## Tech Stack
-
-- **Framework**: [React 19](https://react.dev/)
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
-- **Interactions**: [@dnd-kit](https://dndkit.com/) & [Framer Motion](https://www.framer.com/motion/)
-- **Date Engine**: [Day.js](https://day.js.org/)
-- **Recurrence**: [rrule.js](https://github.com/jakubroztocil/rrule)
-
----
-
 ## Documentation
 
 For comprehensive guides, API references, and interactive demos, visit [ilamy.dev](https://ilamy.dev).

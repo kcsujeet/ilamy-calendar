@@ -119,11 +119,6 @@ Explore the [examples directory](./examples) for complete implementation pattern
 
 For comprehensive guides, API references, and interactive demos, visit [ilamy.dev](https://ilamy.dev).
 
-- [Getting Started Guide](https://ilamy.dev/docs/getting-started)
-- [Resource Calendar Documentation](./docs/resource-calendar.md)
-- [Recurrence Deep Dive](./docs/rfc-5545.md)
-- [Contributing Guidelines](./CONTRIBUTING.md)
-
 ---
 
 ## License

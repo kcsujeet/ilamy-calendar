@@ -56,6 +56,7 @@ interface IndicatorProps {
 	now?: Dayjs
 	resource?: Resource
 	view?: CalendarView
+	axis?: 'vertical' | 'horizontal'
 }
 
 /**
@@ -215,5 +216,69 @@ describe('CurrentTimeIndicator', () => {
 		expect(props?.progress).toBe(50)
 		expect(props?.resource).toEqual(resource)
 		expect(props?.view).toBe(view)
+	})
+
+	test('renders horizontally positioned default indicator when axis="horizontal"', () => {
+		const rangeStart = dayjs('2025-01-01T10:00:00.000Z')
+		const rangeEnd = rangeStart.add(1, 'hour')
+		const now = dayjs('2025-01-01T10:30:00.000Z')
+
+		renderIndicator({ rangeStart, rangeEnd, now, axis: 'horizontal' })
+
+		const indicator = screen.getByTestId('current-time-indicator')
+		expect(indicator).toBeInTheDocument()
+		expect(indicator.style.left).toBe('50%')
+		expect(indicator.style.top).toBe('')
+		expect(indicator.className).toContain('w-0.5')
+		expect(indicator.className).not.toContain('h-0.5')
+	})
+
+	test('does not render with axis="horizontal" if now is outside range', () => {
+		const rangeStart = dayjs('2025-01-01T10:00:00.000Z')
+		const rangeEnd = rangeStart.add(1, 'hour')
+		const now = dayjs('2025-01-01T11:00:00.000Z')
+
+		renderIndicator({ rangeStart, rangeEnd, now, axis: 'horizontal' })
+
+		expect(
+			screen.queryByTestId('current-time-indicator')
+		).not.toBeInTheDocument()
+	})
+
+	test('forwards axis="horizontal" to custom render function', () => {
+		let receivedProps: RenderCurrentTimeIndicatorProps | null = null
+
+		customRenderFn = (props) => {
+			receivedProps = props
+			return TEST_CUSTOM_RENDER(props)
+		}
+
+		const rangeStart = dayjs('2025-01-01T10:00:00.000Z')
+		const rangeEnd = rangeStart.add(1, 'hour')
+		const now = dayjs('2025-01-01T10:30:00.000Z')
+
+		renderIndicator({ rangeStart, rangeEnd, now, axis: 'horizontal' })
+
+		const props = receivedProps as RenderCurrentTimeIndicatorProps | null
+		expect(props?.axis).toBe('horizontal')
+		expect(props?.progress).toBe(50)
+	})
+
+	test('forwards axis="vertical" to custom render function when axis prop is omitted', () => {
+		let receivedProps: RenderCurrentTimeIndicatorProps | null = null
+
+		customRenderFn = (props) => {
+			receivedProps = props
+			return TEST_CUSTOM_RENDER(props)
+		}
+
+		const rangeStart = dayjs('2025-01-01T10:00:00.000Z')
+		const rangeEnd = rangeStart.add(1, 'hour')
+		const now = dayjs('2025-01-01T10:30:00.000Z')
+
+		renderIndicator({ rangeStart, rangeEnd, now })
+
+		const props = receivedProps as RenderCurrentTimeIndicatorProps | null
+		expect(props?.axis).toBe('vertical')
 	})
 })

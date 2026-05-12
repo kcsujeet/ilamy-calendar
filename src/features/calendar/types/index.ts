@@ -68,6 +68,14 @@ export interface RenderCurrentTimeIndicatorProps {
 	/** Progress percentage (0-100) representing position in the range */
 	progress: number
 	/**
+	 * Layout axis the indicator is rendered along.
+	 * - `'vertical'`: `progress` maps to a `top` offset (day/week vertical grids).
+	 * - `'horizontal'`: `progress` maps to a `left` offset (horizontal resource hour grids).
+	 *
+	 * Lets a single render function position correctly across orientations.
+	 */
+	axis: 'vertical' | 'horizontal'
+	/**
 	 * The resource associated with this column (if in a resource-based view).
 	 * Pass this to conditionally render custom indicators for specific resources.
 	 */

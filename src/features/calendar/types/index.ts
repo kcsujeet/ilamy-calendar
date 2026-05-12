@@ -72,7 +72,11 @@ export interface RenderCurrentTimeIndicatorProps {
 	 * - `'vertical'`: `progress` maps to a `top` offset (day/week vertical grids).
 	 * - `'horizontal'`: `progress` maps to a `left` offset (horizontal resource hour grids).
 	 *
-	 * Lets a single render function position correctly across orientations.
+	 * Lets a single render function position correctly across both grid layouts.
+	 *
+	 * Note: distinct from the `orientation` prop on `IlamyResourceCalendar`.
+	 * `orientation` chooses which view component renders the calendar; `axis` tells
+	 * your render function which dimension `progress` maps to inside that view.
 	 */
 	axis: 'vertical' | 'horizontal'
 	/**
@@ -255,12 +259,24 @@ export interface IlamyCalendarProps {
 	 * If provided, replaces the default red line indicator.
 	 * Useful for adding custom time labels or styling.
 	 *
+	 * Branch on `axis` to position correctly across vertical day/week grids
+	 * (`axis === 'vertical'` → use `top`) and horizontal resource hour grids
+	 * (`axis === 'horizontal'` → use `left`).
+	 *
 	 * @example
 	 * ```tsx
-	 * renderCurrentTimeIndicator={({ currentTime, progress, resource, view }) => {
+	 * renderCurrentTimeIndicator={({ currentTime, progress, resource, view, axis }) => {
 	 *   // Only show the time badge for the first resource in Day view (to avoid repetition)
 	 *   const isPrimary = !resource || resource.id === 'room-a'
 	 *   const showBadge = view === 'day' ? isPrimary : true
+	 *
+	 *   if (axis === 'horizontal') {
+	 *     return (
+	 *       <div style={{ left: `${progress}%` }} className="absolute top-0 bottom-0">
+	 *         <div className="w-0.5 h-full bg-red-500" />
+	 *       </div>
+	 *     )
+	 *   }
 	 *
 	 *   return (
 	 *     <div style={{ top: `${progress}%` }} className="absolute left-0 right-0">

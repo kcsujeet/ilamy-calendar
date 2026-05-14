@@ -114,6 +114,20 @@ export interface Translations {
 	october: string
 	november: string
 	december: string
+
+	// Months short
+	jan: string
+	feb: string
+	mar: string
+	apr: string
+	mayShort: string
+	jun: string
+	jul: string
+	aug: string
+	sep: string
+	oct: string
+	nov: string
+	dec: string
 }
 
 export type TranslationKey = keyof Translations

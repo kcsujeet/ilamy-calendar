@@ -118,4 +118,18 @@ export const defaultTranslations: Translations = {
 	october: 'October',
 	november: 'November',
 	december: 'December',
+
+	// Months short
+	jan: 'Jan',
+	feb: 'Feb',
+	mar: 'Mar',
+	apr: 'Apr',
+	mayShort: 'May',
+	jun: 'Jun',
+	jul: 'Jul',
+	aug: 'Aug',
+	sep: 'Sep',
+	oct: 'Oct',
+	nov: 'Nov',
+	dec: 'Dec',
 }

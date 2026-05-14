@@ -98,10 +98,18 @@ describe('Header with Export Button', () => {
 
 	it('should call onDateChange when selecting a month from the built-in header dropdown', async () => {
 		const onDateChange = mock()
+		const translator = (key: string) => {
+			const dict: Record<string, string> = {
+				august: 'August',
+				september: 'September',
+			}
+			return dict[key] ?? key
+		}
 
 		renderHeader([], {
 			initialDate: dayjs('2025-08-04T09:00:00.000Z'),
 			onDateChange,
+			translator,
 		})
 
 		await act(async () => {
@@ -120,5 +128,25 @@ describe('Header with Export Button', () => {
 		expect(dayjs.isDayjs(calledDate)).toBe(true)
 		expect(calledDate.month()).toBe(8)
 		expect(calledDate.year()).toBe(2025)
+	})
+
+	it('should render day view title with translated weekday and numeric day', () => {
+		const translator = (key: string) => {
+			const dict: Record<string, string> = {
+				monday: 'Lundi',
+			}
+			return dict[key] ?? key
+		}
+
+		renderHeader([], {
+			initialDate: dayjs('2025-05-05T09:00:00.000Z'),
+			initialView: 'day',
+			locale: 'fr',
+			translator,
+		})
+
+		expect(
+			screen.getByRole('button', { name: /Lundi,\s*5/i })
+		).toBeInTheDocument()
 	})
 })

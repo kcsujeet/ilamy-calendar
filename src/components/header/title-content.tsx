@@ -28,10 +28,36 @@ const MONTH_KEYS = [
 	'december',
 ] as const
 
+const MONTH_SHORT_KEYS = [
+	'jan',
+	'feb',
+	'mar',
+	'apr',
+	'mayShort',
+	'jun',
+	'jul',
+	'aug',
+	'sep',
+	'oct',
+	'nov',
+	'dec',
+] as const
+
+const WEEKDAY_KEYS = [
+	'sunday',
+	'monday',
+	'tuesday',
+	'wednesday',
+	'thursday',
+	'friday',
+	'saturday',
+] as const
+
 const TitleContent = () => {
-	const { currentDate, view, selectDate, t, firstDayOfWeek } =
+	const { currentDate, currentLocale, view, selectDate, t, firstDayOfWeek } =
 		useSmartCalendarContext((ctx) => ({
 			currentDate: ctx.currentDate,
+			currentLocale: ctx.currentLocale,
 			view: ctx.view,
 			selectDate: ctx.selectDate,
 			t: ctx.t,
@@ -44,6 +70,21 @@ const TitleContent = () => {
 	const currentYear = currentDate.year()
 	const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
+	const dateOrderParts = new Intl.DateTimeFormat(
+		currentLocale || currentDate.locale(),
+		{
+			day: 'numeric',
+			month: 'numeric',
+		}
+	).formatToParts(currentDate.toDate())
+	const dayPartIndex = dateOrderParts.findIndex((part) => part.type === 'day')
+	const monthPartIndex = dateOrderParts.findIndex(
+		(part) => part.type === 'month'
+	)
+	const isDayFirstLocale =
+		dayPartIndex !== -1 &&
+		monthPartIndex !== -1 &&
+		dayPartIndex < monthPartIndex
 
 	const handleSelectDate = (date: Dayjs) => {
 		selectDate(date)
@@ -106,10 +147,14 @@ const TitleContent = () => {
 						onClick={() => handleSelectDate(start)}
 						variant="ghost"
 					>
-						<div className="flex w-full items-center justify-between">
-							<span>{`${start.format('MMM D')} - ${end.format('D')}`}</span>
+						<div className="flex w-full items-center justify-between capitalize">
+							<span>
+								{isDayFirstLocale
+									? `${start.format('D')} ${t(MONTH_SHORT_KEYS[start.month()] ?? 'jan')} - ${end.format('D')} ${t(MONTH_SHORT_KEYS[end.month()] ?? 'jan')}`
+									: `${t(MONTH_SHORT_KEYS[start.month()] ?? 'jan')} ${start.format('D')} - ${end.format('D')}`}
+							</span>
 							{crossesMonth && (
-								<span className="ml-0.5 text-xs opacity-70">{`${start.format('MMM')}-${end.format('MMM')}`}</span>
+								<span className="ml-0.5 text-xs opacity-70">{`${t(MONTH_SHORT_KEYS[start.month()] ?? 'jan')}-${t(MONTH_SHORT_KEYS[end.month()] ?? 'jan')}`}</span>
 							)}
 						</div>
 					</Button>
@@ -140,7 +185,11 @@ const TitleContent = () => {
 							variant="ghost"
 						>
 							<div className="flex w-full items-center justify-between">
-								<span>{day.format('dddd, MMM D')}</span>
+								<span>
+									{isDayFirstLocale
+										? `${t(WEEKDAY_KEYS[day.day()] ?? 'sunday')} ${day.format('D')} ${t(MONTH_SHORT_KEYS[day.month()] ?? 'jan')}`
+										: `${t(WEEKDAY_KEYS[day.day()] ?? 'sunday')}, ${t(MONTH_SHORT_KEYS[day.month()] ?? 'jan')} ${day.format('D')}`}
+								</span>
 								{today && (
 									<span className="bg-primary text-primary-foreground rounded-sm px-1! text-xs">
 										{t('today')}
@@ -170,13 +219,15 @@ const TitleContent = () => {
 		{
 			id: 'week',
 			hidden: view !== 'week',
-			title: `${weekDays[0].format('MMM D')} - ${weekDays[6].format('MMM D')}`,
+			title: isDayFirstLocale
+				? `${weekDays[0].format('D')} ${t(MONTH_SHORT_KEYS[weekDays[0].month()] ?? 'jan')} - ${weekDays[6].format('D')} ${t(MONTH_SHORT_KEYS[weekDays[6].month()] ?? 'jan')}`
+				: `${t(MONTH_SHORT_KEYS[weekDays[0].month()] ?? 'jan')} ${weekDays[0].format('D')} - ${t(MONTH_SHORT_KEYS[weekDays[6].month()] ?? 'jan')} ${weekDays[6].format('D')}`,
 			render: renderWeekContent,
 		},
 		{
 			id: 'day',
 			hidden: view !== 'day',
-			title: currentDate.format('dddd, D'),
+			title: `${t(WEEKDAY_KEYS[currentDate.day()] ?? 'sunday')}, ${currentDate.format('D')}`,
 			render: renderDayContent,
 		},
 	]
@@ -196,7 +247,7 @@ const TitleContent = () => {
 						variant="ghost"
 					>
 						<AnimatedSection
-							className="flex items-center gap-1 px-1! font-semibold"
+							className="flex items-center gap-1 px-1! font-semibold capitalize"
 							data-testid="calendar-month-button"
 							transitionKey={keys.listKey(popover.id, getDayKey(currentDate))}
 						>

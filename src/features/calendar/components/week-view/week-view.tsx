@@ -14,6 +14,15 @@ import { keys } from '@/lib/utils/keys'
 const CELL_CLASS =
 	'w-[calc((100%-4rem)/var(--visible-days))] min-w-[calc((100%-4rem)/var(--visible-days))] flex-1'
 const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
+const WEEKDAY_SHORT_TRANSLATION_KEYS = [
+	'sun',
+	'mon',
+	'tue',
+	'wed',
+	'thu',
+	'fri',
+	'sat',
+] as const
 
 export const WeekView: React.FC = () => {
 	const {
@@ -113,7 +122,9 @@ export const WeekView: React.FC = () => {
 				{visibleDays.map((day, index) => {
 					const today = isToday(day)
 					const key = keys.header.week.day(day)
-
+					const translatedWeekday = t(
+						WEEKDAY_SHORT_TRANSLATION_KEYS[day.day()] ?? 'Sun'
+					)
 					return (
 						<AnimatedSection
 							className={cn(
@@ -129,7 +140,9 @@ export const WeekView: React.FC = () => {
 							}}
 							transitionKey={key}
 						>
-							<div className="text-xs sm:text-sm">{day.format('ddd')}</div>
+							<div className="text-xs sm:text-sm capitalize">
+								{translatedWeekday}
+							</div>
 							<div
 								className={cn(
 									'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',

@@ -158,7 +158,7 @@ const TitleContent = () => {
 		{
 			id: 'month',
 			hidden: view === 'year',
-			title: currentDate.format('MMMM'),
+			title: t(MONTH_KEYS[currentDate.month()] ?? 'january'),
 			render: renderMonthContent,
 		},
 		{

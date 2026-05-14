@@ -9,9 +9,24 @@ interface MonthHeaderProps {
 	className?: string
 }
 
+const WEEKDAY_SHORT_TRANSLATION_KEYS = [
+	'sun',
+	'mon',
+	'tue',
+	'wed',
+	'thu',
+	'fri',
+	'sat',
+] as const
+
 export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
-	const { firstDayOfWeek, stickyViewHeader, viewHeaderClassName, currentDate } =
-		useSmartCalendarContext()
+	const {
+		t,
+		firstDayOfWeek,
+		stickyViewHeader,
+		viewHeaderClassName,
+		currentDate,
+	} = useSmartCalendarContext()
 
 	// Reorder week days based on firstDayOfWeek
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
@@ -34,7 +49,9 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 					key={weekDay.toISOString()}
 					transitionKey={weekDay.toISOString()}
 				>
-					<span className="text-sm capitalize">{weekDay.format('ddd')}</span>
+					<span className="text-sm capitalize">
+						{t(WEEKDAY_SHORT_TRANSLATION_KEYS[weekDay.day()] ?? 'sun')}
+					</span>
 				</AnimatedSection>
 			))}
 		</div>

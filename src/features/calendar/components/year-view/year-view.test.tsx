@@ -179,9 +179,60 @@ describe('YearView', () => {
 
 		test('renders weekday headers in each mini calendar', () => {
 			renderYearView()
-			// Each of 12 months has 7 day headers
+			// Each of 12 months has 7 day headers (Sun/Sat -> S)
 			const sundayHeaders = screen.getAllByText('S')
 			expect(sundayHeaders.length).toBe(24) // 2 S's per month * 12 months
+		})
+
+		test('uses translator-provided month names', () => {
+			cleanup()
+			const customMonths = {
+				january: 'Janvier',
+				february: 'Février',
+				march: 'Mars',
+				april: 'Avril',
+				may: 'Mai',
+				june: 'Juin',
+				july: 'Juillet',
+				august: 'Août',
+				september: 'Septembre',
+				october: 'Octobre',
+				november: 'Novembre',
+				december: 'Décembre',
+			}
+			const translator = (key: string) =>
+				(customMonths as Record<string, string>)[key] ?? key
+
+			renderYearView({ translator })
+
+			Object.values(customMonths).forEach((name) => {
+				expect(screen.getByText(name)).toBeInTheDocument()
+			})
+		})
+
+		test('uses first uppercase letter of translator weekday labels', () => {
+			cleanup()
+			const customLabels = {
+				sun: 'dim',
+				mon: 'lun',
+				tue: 'mar',
+				wed: 'mer',
+				thu: 'jeu',
+				fri: 'ven',
+				sat: 'sam',
+			}
+			const translator = (key: string) =>
+				(customLabels as Record<string, string>)[key] ?? key
+
+			renderYearView({ translator })
+
+			// 12 months × 7 headers (first letter of each French short label)
+			expect(screen.getAllByText('D').length).toBe(12)
+			expect(screen.getAllByText('L').length).toBe(12)
+			expect(screen.getAllByText('M').length).toBe(24)
+			expect(screen.getAllByText('J').length).toBe(12)
+			expect(screen.getAllByText('V').length).toBe(12)
+			expect(screen.getAllByText('S').length).toBe(12)
 		})
 
 		test('renders grid with responsive classes', () => {

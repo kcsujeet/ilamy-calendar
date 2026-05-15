@@ -2,19 +2,43 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import type { TranslationKey } from '@/lib/translations/types'
 import { cn } from '@/lib/utils'
 import { getDayKey, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
-const DAY_HEADER_NAMES = [
-	{ id: 'sun', label: 'S' },
-	{ id: 'mon', label: 'M' },
-	{ id: 'tue', label: 'T' },
-	{ id: 'wed', label: 'W' },
-	{ id: 'thu', label: 'T' },
-	{ id: 'fri', label: 'F' },
-	{ id: 'sat', label: 'S' },
-]
+const MONTH_KEYS = [
+	'january',
+	'february',
+	'march',
+	'april',
+	'may',
+	'june',
+	'july',
+	'august',
+	'september',
+	'october',
+	'november',
+	'december',
+] as const
+
+const WEEKDAY_SHORT_TRANSLATION_KEYS = [
+	'sun',
+	'mon',
+	'tue',
+	'wed',
+	'thu',
+	'fri',
+	'sat',
+] as const
+
+// Returns the first character of a translated label, uppercased.
+const getTranslatedFirstLetter = (label: string): string => {
+	if (!label) {
+		return ''
+	}
+	return label.charAt(0).toLocaleUpperCase()
+}
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
 const DAYS_IN_MINI_CALENDAR = 42
 
@@ -53,7 +77,7 @@ export const YearView = () => {
 
 			return {
 				date: monthDate,
-				name: monthDate.format('MMMM'),
+				name: t(MONTH_KEYS[monthIndex] ?? 'january'),
 				eventCount: eventsInMonth.length,
 				monthKey: monthDate.format('MM'),
 			}
@@ -180,12 +204,12 @@ export const YearView = () => {
 								className="grid grid-cols-7 gap-px text-[0.6rem]"
 								data-testid={keys.header.year.month(month.monthKey, 'mini')}
 							>
-								{DAY_HEADER_NAMES.map((day) => (
+								{WEEKDAY_SHORT_TRANSLATION_KEYS.map((dayKey) => (
 									<div
 										className="text-muted-foreground h-3 text-center"
-										key={keys.listKey('header', month.monthKey, day.id)}
+										key={keys.listKey('header', month.monthKey, dayKey)}
 									>
-										{day.label}
+										{getTranslatedFirstLetter(t(dayKey as TranslationKey))}
 									</div>
 								))}
 

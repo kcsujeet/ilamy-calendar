@@ -516,6 +516,30 @@ describe('YearView', () => {
 		})
 	})
 
+	describe('firstDayOfWeek', () => {
+		test('mini calendar grid starts on Monday when firstDayOfWeek is 1', () => {
+			renderYearView({ initialDate: dayjs('2025-01-15'), firstDayOfWeek: 1 })
+
+			expect(
+				screen.getByTestId('year-day-2025-01-2024-12-30')
+			).toBeInTheDocument()
+			expect(
+				screen.queryByTestId('year-day-2025-01-2024-12-29')
+			).not.toBeInTheDocument()
+		})
+
+		test('weekday headers start with Monday when firstDayOfWeek is 1', () => {
+			renderYearView({ initialDate: dayjs('2025-01-15'), firstDayOfWeek: 1 })
+
+			const januaryMini = screen.getByTestId('year-month-mini-01')
+			const headerCells = januaryMini.querySelectorAll(
+				'.text-muted-foreground.h-3'
+			)
+			expect(headerCells[0]?.textContent).toBe('M')
+			expect(headerCells[6]?.textContent).toBe('S')
+		})
+	})
+
 	describe('Mini Calendar Structure', () => {
 		test('each mini calendar has 42 day cells (6 weeks)', () => {
 			renderYearView({ initialDate: dayjs('2025-01-15') })
@@ -526,10 +550,12 @@ describe('YearView', () => {
 		})
 
 		test('mini calendar includes days from adjacent months', () => {
-			// January 2025 starts on Wednesday
-			renderYearView({ initialDate: dayjs('2025-01-15') })
+			// January 2025 starts on Wednesday; Sunday week start includes Dec 29
+			renderYearView({
+				initialDate: dayjs('2025-01-15'),
+				firstDayOfWeek: 0,
+			})
 
-			// Should include December 2024 days
 			expect(
 				screen.getByTestId('year-day-2025-01-2024-12-29')
 			).toBeInTheDocument()

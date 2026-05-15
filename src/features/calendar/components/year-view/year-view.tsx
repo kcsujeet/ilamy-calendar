@@ -1,10 +1,11 @@
+import { useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { TranslationKey } from '@/lib/translations/types'
 import { cn } from '@/lib/utils'
-import { getDayKey, isToday } from '@/lib/utils/date-utils'
+import { getDayKey, getMonthWeeks, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
 const MONTH_KEYS = [
@@ -39,8 +40,16 @@ const getTranslatedFirstLetter = (label: string): string => {
 	}
 	return label.charAt(0).toLocaleUpperCase()
 }
+
+// Reorders short weekday translation keys so the grid starts on firstDayOfWeek.
+const getOrderedWeekdayKeys = (
+	firstDayOfWeek: number
+): readonly TranslationKey[] =>
+	Array.from({ length: 7 }, (_, index) => {
+		const dayIndex = (firstDayOfWeek + index) % 7
+		return WEEKDAY_SHORT_TRANSLATION_KEYS[dayIndex] as TranslationKey
+	})
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
-const DAYS_IN_MINI_CALENDAR = 42
 
 interface MonthData {
 	date: Dayjs
@@ -59,9 +68,20 @@ interface DayData {
 }
 
 export const YearView = () => {
-	const { currentDate, selectDate, events, setView, getEventsForDateRange, t } =
-		useSmartCalendarContext()
+	const {
+		currentDate,
+		selectDate,
+		events,
+		setView,
+		getEventsForDateRange,
+		t,
+		firstDayOfWeek,
+	} = useSmartCalendarContext()
 	const currentYear = currentDate.year()
+	const weekdayHeaderKeys = useMemo(
+		() => getOrderedWeekdayKeys(firstDayOfWeek),
+		[firstDayOfWeek]
+	)
 
 	const generateMonthsData = (): MonthData[] => {
 		return Array.from({ length: 12 }, (_, monthIndex) => {
@@ -85,23 +105,22 @@ export const YearView = () => {
 	}
 
 	const generateDaysForMonth = (monthDate: Dayjs): DayData[] => {
-		const firstDayOfCalendar = monthDate.startOf('month').startOf('week')
+		return getMonthWeeks(monthDate, firstDayOfWeek)
+			.flat()
+			.map((dayDate) => {
+				const dayStart = dayDate.startOf('day')
+				const dayEnd = dayDate.endOf('day')
+				const eventsOnDay = getEventsForDateRange(dayStart, dayEnd)
 
-		return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) => {
-			const dayDate = firstDayOfCalendar.add(dayIndex, 'day')
-			const dayStart = dayDate.startOf('day')
-			const dayEnd = dayDate.endOf('day')
-			const eventsOnDay = getEventsForDateRange(dayStart, dayEnd)
-
-			return {
-				date: dayDate,
-				dayKey: getDayKey(dayDate),
-				isInCurrentMonth: dayDate.month() === monthDate.month(),
-				isToday: isToday(dayDate),
-				isSelected: dayDate.isSame(currentDate, 'day'),
-				eventCount: eventsOnDay.length,
-			}
-		})
+				return {
+					date: dayDate,
+					dayKey: getDayKey(dayDate),
+					isInCurrentMonth: dayDate.month() === monthDate.month(),
+					isToday: isToday(dayDate),
+					isSelected: dayDate.isSame(currentDate, 'day'),
+					eventCount: eventsOnDay.length,
+				}
+			})
 	}
 
 	const navigateToDate = (
@@ -204,12 +223,12 @@ export const YearView = () => {
 								className="grid grid-cols-7 gap-px text-[0.6rem]"
 								data-testid={keys.header.year.month(month.monthKey, 'mini')}
 							>
-								{WEEKDAY_SHORT_TRANSLATION_KEYS.map((dayKey) => (
+								{weekdayHeaderKeys.map((dayKey) => (
 									<div
 										className="text-muted-foreground h-3 text-center"
 										key={keys.listKey('header', month.monthKey, dayKey)}
 									>
-										{getTranslatedFirstLetter(t(dayKey as TranslationKey))}
+										{getTranslatedFirstLetter(t(dayKey))}
 									</div>
 								))}
 

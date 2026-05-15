@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
+import { keys } from '@/lib/utils/keys'
+import { scrollToCurrentTime } from './scroll-to-current-time'
 import { VerticalGrid } from './vertical-grid'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -96,5 +98,50 @@ describe('VerticalGrid', () => {
 
 		const allDayContainer = screen.getByTestId('vertical-grid-all-day')
 		expect(allDayContainer.className).toContain('min-h-12')
+	})
+})
+
+describe('scrollToCurrentTime', () => {
+	test('centers the matching hour row in the viewport', () => {
+		const reference = dayjs('2026-05-15T10:00:00.000Z')
+		const hours = [reference.startOf('day').hour(10)]
+		const viewport = {
+			scrollHeight: 1000,
+			clientHeight: 200,
+			scrollTop: 0,
+			getBoundingClientRect: () => ({
+				top: 0,
+				left: 0,
+				right: 0,
+				bottom: 200,
+				width: 0,
+				height: 200,
+				x: 0,
+				y: 0,
+				toJSON: () => ({}),
+			}),
+			querySelector: (selector: string) => {
+				if (selector === `[data-testid="${keys.cell.verticalTime('10')}"]`) {
+					return {
+						getBoundingClientRect: () => ({
+							top: 500,
+							left: 0,
+							right: 0,
+							bottom: 560,
+							width: 0,
+							height: 60,
+							x: 0,
+							y: 500,
+							toJSON: () => ({}),
+						}),
+					}
+				}
+				return null
+			},
+		} as unknown as HTMLElement
+
+		scrollToCurrentTime(viewport, hours, reference)
+
+		expect(viewport.scrollTop).toBe(430)
 	})
 })

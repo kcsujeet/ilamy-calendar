@@ -6,12 +6,14 @@ import { cn } from '@/lib/utils'
 interface ScrollAreaProps
 	extends React.ComponentProps<typeof ScrollAreaPrimitive.Root> {
 	viewPortProps?: React.ComponentProps<typeof ScrollAreaPrimitive.Viewport>
+	viewportRef?: React.Ref<HTMLDivElement>
 }
 
 function ScrollArea({
 	className,
 	children,
 	viewPortProps,
+	viewportRef,
 	...props
 }: ScrollAreaProps) {
 	return (
@@ -21,6 +23,7 @@ function ScrollArea({
 			{...props}
 		>
 			<ScrollAreaPrimitive.Viewport
+				ref={viewportRef}
 				{...viewPortProps}
 				className={cn(
 					'focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1',

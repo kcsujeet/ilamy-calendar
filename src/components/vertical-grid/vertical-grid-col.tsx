@@ -2,6 +2,7 @@ import type React from 'react'
 import { memo } from 'react'
 import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { HOUR_ROW_HEIGHT_PX } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
@@ -46,11 +47,16 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	isLastColumn,
 	gridCell = false,
 }) => {
+	const isHourGrid = gridType === 'hour'
+
 	return (
 		<div
 			className={cn(
 				gridCell
-					? 'relative box-border flex h-full min-h-0 w-full max-w-full flex-col overflow-x-clip bg-background'
+					? cn(
+							'relative box-border flex w-full max-w-full flex-col overflow-x-clip bg-background',
+							isHourGrid ? 'h-auto' : 'h-full min-h-0'
+						)
 					: 'relative box-border flex min-h-0 max-w-full min-w-20 flex-1 flex-col items-stretch justify-start overflow-x-clip bg-background',
 				className
 			)}
@@ -58,9 +64,14 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 		>
 			{/* Time slots */}
 			<div
-				className="relative grid h-full min-h-0 w-full max-w-full min-w-0 overflow-x-clip"
+				className={cn(
+					'relative grid w-full max-w-full min-w-0 overflow-x-clip',
+					isHourGrid ? 'h-auto' : 'h-full min-h-0'
+				)}
 				style={{
-					gridTemplateRows: `repeat(${days.length}, minmax(0, 1fr))`,
+					gridTemplateRows: isHourGrid
+						? `repeat(${days.length}, ${HOUR_ROW_HEIGHT_PX}px)`
+						: `repeat(${days.length}, minmax(0, 1fr))`,
 				}}
 			>
 				{days.map((day, dayIndex) => {

@@ -25,8 +25,8 @@
 - **[week view / column alignment]**: Shared `weekColumnTemplate` across header, all-day row, and `vertical-grid-body` (`bodyColumnTemplate`, `gridCell`, all-day inner grid).
 - **[week view / gutter fix]**: First grid track uses fixed `minmax` (not plain `rem`, which expands via `minmax(auto, …)`). Tracks: `2.5rem` below `sm`, `7rem` at `sm+` (`WEEK_GUTTER_WIDTH_*` in `constants.ts`) for long i18n gutter labels (e.g. FR "Toute la journée").
 - **[scope trim]**: Reverted scrollbar geometry, `ScrollArea` API extensions, sticky header-in-scroll, `CALENDAR_*_REGION` constants, shell flex rewrites, and unrelated grid/year scrollbar refactors — scroll behavior unchanged.
+- **[demo / perf]**: Removed `animate-pulse` / `animate-pulse-slow` from demo page decorative blur orbs (GPU spike).
 - **[day/week view / scroll-to-now]**: Day/week views scroll to center the **current clock time** on enter (any date range). `scroll-to-current-time.ts` + `useScrollToCurrentTime` (`buildScrollEffectKey` includes view/date/hour range; double rAF + 100/300 ms retries). **Layout fix**: `60px` hour rows (`HOUR_ROW_HEIGHT_PX`), explicit body `height`, columns `h-auto`, `ScrollArea type="always"` + `viewportRef`. Trimmed over-engineered fallbacks after validation; `bun run ci` green (865 tests).
-- **[week view / gutter alignment fix]**: MediWay overlap: `--spacing: 0.3rem` → `sm:w-16` = 4.8rem vs explicit `rem` tracks. Gutter cells use `WEEK_GUTTER_CELL_CLASS`; `AllDayCell` `gridGutter` on `columnTemplate` rows. Gutter width via `--week-gutter-width` + `WEEK_GRID_GUTTER_VARS_CLASS` (`2.5rem` / `sm:7rem`) and `getWeekColumnTemplate()` — removed `useWeekGridGutterTrack` (`matchMedia`) to fix Next.js hydration mismatch (server stuck at `2.5rem`, client at `7rem`).
 
 ## Files Modified
 
@@ -47,7 +47,7 @@
 - `src/components/event-form/event-form.tsx` — `referenceDate` prop
 - `src/lib/translations/default.ts`, `types.ts` — recurrence editor keys
 - `src/lib/seed.ts` — five recurring exemplars with aligned starts
-- `src/components/demo/demo-page.tsx` — `initialView` default `week`
+- `src/components/demo/demo-page.tsx` — `initialView` default `week`; removed pulse on blur backgrounds
 - `src/features/calendar/components/year-view/year-view.tsx` — `MONTH_KEYS`, translated weekday header letters, `firstDayOfWeek` on mini calendars
 - `src/features/calendar/components/year-view/year-view.test.tsx` — translator month names, weekday letters, `firstDayOfWeek`
 - `src/features/calendar/components/week-view/week-view.tsx` — `getWeekColumnTemplate`, `WEEK_GRID_GUTTER_VARS_CLASS` on header/body/all-day grids; no `matchMedia`
@@ -55,6 +55,15 @@
 - `src/features/calendar/components/week-view/week-view.test.tsx` — gutter `2.5rem`/`7rem` tracks, `w-full` gutter cells (no `w-16`)
 - `src/components/vertical-grid/vertical-grid-col.tsx` — `gridCell` + hour grids: `60px` rows, column `h-auto` (not `h-full`)
 - `src/lib/constants.ts` — `HOUR_ROW_HEIGHT_PX`; `WEEK_GUTTER_*`; `WEEK_GRID_GUTTER_VARS_CLASS`; `getWeekColumnTemplate`
+- `src/features/calendar/components/week-view/week-view.tsx` — `gutterTrack` with fixed `minmax`, `LEFT_COL_WIDTH` on time column, shared grid template
+- `src/features/calendar/components/week-view/week-view.test.tsx` — gutter track lock + time column width classes; header layout assertions
+- `src/components/vertical-grid/vertical-grid.tsx` — `bodyColumnTemplate`, fixed body height, `type="always"` scroll, scroll hook + viewport ref
+- `src/components/vertical-grid/scroll-to-current-time.ts` — `getTimeColumnHours`, `scrollToCurrentTime` (DOM center on time gutter)
+- `src/hooks/use-scroll-to-current-time.ts` — scroll on day/week enter; `buildScrollEffectKey`, `columnsRef`, rAF + delayed retries
+- `src/components/ui/scroll-area.tsx` — `viewportRef` prop
+- `src/components/vertical-grid/vertical-grid.test.tsx` — `scrollToCurrentTime` unit test
+- `src/components/vertical-grid/vertical-grid-col.tsx` — `gridCell` + hour grids: `60px` rows, column `h-auto` (not `h-full`)
+- `src/lib/constants.ts` — `HOUR_ROW_HEIGHT_PX` (60)
 - `src/components/vertical-grid/vertical-grid-header-container.tsx` — header `w-full min-w-0`
 - `src/components/all-day-row/all-day-row.tsx` — `columnTemplate` grid branch; `AllDayCell gridGutter`
 - `src/components/all-day-row/all-day-cell.tsx` — `gridGutter` mode uses `WEEK_GUTTER_CELL_CLASS`; flex/resource mode keeps `w-10`/`sm:w-16`
@@ -78,3 +87,4 @@
 - Oldest `docs/logs/*.md` files pruned earlier to stay within the 10-file cap.
 - Test helpers use `queryByTestId('frequency-select')` for customize panel visibility; interval tests use `getByLabelText('Every')` via `aria-label` on the interval input.
 - `daily` / `weekly` / `monthly` / `yearly` keys remain for other UI; customize frequency select uses `day` / `week` / `month` / `year`.
+- Scroll-to-now: `1fr` + `h-full` compressed all hours into the viewport (`scrollHeight === clientHeight`, stuck at 12 AM). Fixed with `60px` rows + body `height`. A single rAF or scroll-key skip caused silent failures after trim — restored double rAF + 100/300 ms retries; effect key now built in hook (`view|date|hour range`).

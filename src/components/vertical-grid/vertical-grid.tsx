@@ -1,5 +1,9 @@
 import type React from 'react'
+import { useRef } from 'react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { getTimeColumnHours } from '@/components/vertical-grid/scroll-to-current-time'
+import { useScrollToCurrentTime } from '@/hooks/use-scroll-to-current-time'
+import { HOUR_ROW_HEIGHT_PX } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
 import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
@@ -33,6 +37,17 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	style,
 	bodyColumnTemplate,
 }) => {
+	const viewportRef = useRef<HTMLDivElement>(null)
+	const hourRowCount = getTimeColumnHours(columns)?.length ?? 0
+	const bodyHeightStyle =
+		hourRowCount > 0
+			? { height: `${hourRowCount * HOUR_ROW_HEIGHT_PX}px` }
+			: undefined
+	useScrollToCurrentTime({
+		viewportRef,
+		columns,
+		gridType,
+	})
 	const isResourceCalendar = variant === 'resource'
 	const isRegularCalendar = !isResourceCalendar
 	// Triggered when `hideNonBusinessHours` filters every column to zero hours
@@ -78,9 +93,11 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 			{isRegularCalendar && header}
 
 			<ScrollArea
-				className={cn('h-full', isRegularCalendar && 'overflow-auto')}
+				className="h-full min-h-0"
 				data-testid="vertical-grid-scroll"
-				viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
+				type="always"
+				viewPortProps={{ className: 'min-h-0' }}
+				viewportRef={viewportRef}
 			>
 				{/* header row for resource calendar inside scroll area */}
 				{isResourceCalendar && header}
@@ -88,16 +105,17 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 				<div
 					className={cn(
 						bodyColumnTemplate
-							? 'grid min-h-0 min-w-0 w-full flex-1 items-stretch'
-							: 'flex flex-1 min-w-full w-fit',
+							? 'grid min-h-0 min-w-0 w-full shrink-0 items-stretch'
+							: 'flex min-w-full w-fit shrink-0',
 						classes?.body
 					)}
 					data-testid="vertical-grid-body"
-					style={
-						bodyColumnTemplate
+					style={{
+						...bodyHeightStyle,
+						...(bodyColumnTemplate
 							? { gridTemplateColumns: bodyColumnTemplate }
-							: undefined
-					}
+							: undefined),
+					}}
 				>
 					{columns.map((column, index) => (
 						<VerticalGridCol

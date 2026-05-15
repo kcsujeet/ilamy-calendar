@@ -146,10 +146,12 @@ Renders the grid structure: header, optional all-day row, and scrollable body wi
 Week view uses one template for every horizontal band so the time gutter and day columns line up:
 
 ```
-`${gutter} repeat(${visibleDays.length}, minmax(0, 1fr))`
+`${gutterTrack} repeat(${visibleDays.length}, minmax(0, 1fr))`
 ```
 
-- `gutter` matches the time column / `AllDayCell` width (`2.5rem` / `4rem` at `sm`).
+- `gutterTrack` uses `minmax(2.5rem, 2.5rem)` / `minmax(4rem, 4rem)` at `sm` (not plain `4rem`, which allows
+  `minmax(auto, …)` expansion from header/all-day content).
+- Matches the time column / `AllDayCell` Tailwind widths (`w-10` / `sm:w-16`).
 - `week-view-header` and `AllDayRow` (`columnTemplate`) use this template directly.
 - `VerticalGrid` passes the same string as `bodyColumnTemplate`; each `VerticalGridCol` sets `gridCell` so width comes from the grid track, not `flex-1` / `min-w-20`.
 - All-day day cells use `dayCellsGridTemplate` inside the spanned grid cell (`repeat(N, minmax(0, 1fr))`).

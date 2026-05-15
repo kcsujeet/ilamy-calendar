@@ -167,6 +167,26 @@ describe('WeekView', () => {
 		expect(screen.getByTestId('week-header-weekday-monday')).toBeInTheDocument()
 	})
 
+	test('locks gutter grid track and applies gutter width classes to time column', () => {
+		const weekHeader = screen.getByTestId('week-view-header')
+		expect(weekHeader.style.gridTemplateColumns).toMatch(
+			/^minmax\((2\.5rem|4rem), (2\.5rem|4rem)\) repeat\(/
+		)
+
+		const timeGrid = screen.getByTestId('vertical-grid-body')
+		expect(timeGrid.style.gridTemplateColumns).toBe(
+			weekHeader.style.gridTemplateColumns
+		)
+
+		const timeLabels = screen.getByTestId('vertical-col-time-col')
+		expect(timeLabels.className).toContain('w-10')
+		expect(timeLabels.className).toContain('min-w-10')
+		expect(timeLabels.className).toContain('max-w-10')
+		expect(timeLabels.className).toContain('sm:w-16')
+		expect(timeLabels.className).toContain('sm:min-w-16')
+		expect(timeLabels.className).toContain('sm:max-w-16')
+	})
+
 	test('renders time slots structure', () => {
 		// Should have time grid for the day
 		const timeGrid = screen.getByTestId('vertical-grid-body')

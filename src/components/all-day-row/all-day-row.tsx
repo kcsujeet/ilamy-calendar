@@ -65,7 +65,7 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 
 	return (
 		<div
-			className={cn('flex w-full bg-background', classes?.row)}
+			className={cn('flex w-full bg-background border-b', classes?.row)}
 			data-testid="all-day-row"
 		>
 			{/* Time col spacer */}
@@ -74,7 +74,7 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 			{/* Day all day cell */}
 			<HorizontalGridRow
 				allDay
-				className="flex-1 min-h-fit border-b"
+				className="flex-1 min-h-fit"
 				columns={columns}
 				dayNumberHeight={0}
 				gridType="day"

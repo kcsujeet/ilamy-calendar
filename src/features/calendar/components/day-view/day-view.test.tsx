@@ -214,6 +214,28 @@ describe('DayView', () => {
 		expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
 	})
 
+	test('formats day-view header with day before month for day-first locales', () => {
+		cleanup()
+		const initialDate = dayjs('2025-05-15T12:00:00.000Z')
+		const translator = (key: string) => {
+			const labels: Record<string, string> = {
+				thursday: 'jeudi',
+				may: 'mai',
+			}
+			return labels[key] ?? key
+		}
+
+		renderDayView({
+			initialDate,
+			locale: 'fr-FR',
+			translator,
+		})
+
+		expect(screen.getByTestId('day-view-header')).toHaveTextContent(
+			'jeudi 15 mai 2025'
+		)
+	})
+
 	test('initializes with specified initial date - past date', () => {
 		cleanup()
 		const initialDate = dayjs('2020-01-15T10:00:00.000Z')

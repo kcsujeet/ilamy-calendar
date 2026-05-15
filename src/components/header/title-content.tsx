@@ -10,48 +10,14 @@ import {
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import {
+	isDayFirstLocale,
+	MONTH_KEYS,
+	MONTH_SHORT_KEYS,
+	WEEKDAY_KEYS,
+} from '@/lib/utils/date-locale-format'
 import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
-
-const MONTH_KEYS = [
-	'january',
-	'february',
-	'march',
-	'april',
-	'may',
-	'june',
-	'july',
-	'august',
-	'september',
-	'october',
-	'november',
-	'december',
-] as const
-
-const MONTH_SHORT_KEYS = [
-	'jan',
-	'feb',
-	'mar',
-	'apr',
-	'mayShort',
-	'jun',
-	'jul',
-	'aug',
-	'sep',
-	'oct',
-	'nov',
-	'dec',
-] as const
-
-const WEEKDAY_KEYS = [
-	'sunday',
-	'monday',
-	'tuesday',
-	'wednesday',
-	'thursday',
-	'friday',
-	'saturday',
-] as const
 
 const TitleContent = () => {
 	const { currentDate, currentLocale, view, selectDate, t, firstDayOfWeek } =
@@ -70,21 +36,8 @@ const TitleContent = () => {
 	const currentYear = currentDate.year()
 	const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
-	const dateOrderParts = new Intl.DateTimeFormat(
-		currentLocale || currentDate.locale(),
-		{
-			day: 'numeric',
-			month: 'numeric',
-		}
-	).formatToParts(currentDate.toDate())
-	const dayPartIndex = dateOrderParts.findIndex((part) => part.type === 'day')
-	const monthPartIndex = dateOrderParts.findIndex(
-		(part) => part.type === 'month'
-	)
-	const isDayFirstLocale =
-		dayPartIndex !== -1 &&
-		monthPartIndex !== -1 &&
-		dayPartIndex < monthPartIndex
+	const locale = currentLocale || currentDate.locale()
+	const isDayFirst = isDayFirstLocale(locale, currentDate.toDate())
 
 	const handleSelectDate = (date: Dayjs) => {
 		selectDate(date)
@@ -149,7 +102,7 @@ const TitleContent = () => {
 					>
 						<div className="flex w-full items-center justify-between capitalize">
 							<span>
-								{isDayFirstLocale
+								{isDayFirst
 									? `${start.format('D')} ${t(MONTH_SHORT_KEYS[start.month()] ?? 'jan')} - ${end.format('D')} ${t(MONTH_SHORT_KEYS[end.month()] ?? 'jan')}`
 									: `${t(MONTH_SHORT_KEYS[start.month()] ?? 'jan')} ${start.format('D')} - ${end.format('D')}`}
 							</span>
@@ -186,7 +139,7 @@ const TitleContent = () => {
 						>
 							<div className="flex w-full items-center justify-between">
 								<span>
-									{isDayFirstLocale
+									{isDayFirst
 										? `${t(WEEKDAY_KEYS[day.day()] ?? 'sunday')} ${day.format('D')} ${t(MONTH_SHORT_KEYS[day.month()] ?? 'jan')}`
 										: `${t(WEEKDAY_KEYS[day.day()] ?? 'sunday')}, ${t(MONTH_SHORT_KEYS[day.month()] ?? 'jan')} ${day.format('D')}`}
 								</span>
@@ -219,7 +172,7 @@ const TitleContent = () => {
 		{
 			id: 'week',
 			hidden: view !== 'week',
-			title: isDayFirstLocale
+			title: isDayFirst
 				? `${weekDays[0].format('D')} ${t(MONTH_SHORT_KEYS[weekDays[0].month()] ?? 'jan')} - ${weekDays[6].format('D')} ${t(MONTH_SHORT_KEYS[weekDays[6].month()] ?? 'jan')}`
 				: `${t(MONTH_SHORT_KEYS[weekDays[0].month()] ?? 'jan')} ${weekDays[0].format('D')} - ${t(MONTH_SHORT_KEYS[weekDays[6].month()] ?? 'jan')} ${weekDays[6].format('D')}`,
 			render: renderWeekContent,

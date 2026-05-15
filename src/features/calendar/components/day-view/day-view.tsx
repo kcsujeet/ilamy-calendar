@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { HourLabel } from '@/components/hour-label/hour-label'
@@ -6,13 +7,34 @@ import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import {
+	formatDayViewHeaderDate,
+	isDayFirstLocale,
+	MONTH_KEYS,
+	WEEKDAY_KEYS,
+} from '@/lib/utils/date-locale-format'
 import { getDayKey, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
 export const DayView = () => {
-	const { currentDate, t, businessHours, hideNonBusinessHours } =
+	const { currentDate, t, currentLocale, businessHours, hideNonBusinessHours } =
 		useSmartCalendarContext()
 	const today = isToday(currentDate)
+	const locale = currentLocale || currentDate.locale()
+
+	const headerDateLabel = useMemo(() => {
+		const isDayFirst = isDayFirstLocale(locale, currentDate.toDate())
+		const weekdayLabel = t(WEEKDAY_KEYS[currentDate.day()] ?? 'sunday')
+		const monthLabel = t(MONTH_KEYS[currentDate.month()] ?? 'january')
+
+		return formatDayViewHeaderDate({
+			date: currentDate,
+			isDayFirst,
+			monthLabel,
+			weekdayLabel,
+		})
+	}, [currentDate, locale, t])
+
 	const hours = getViewHours({
 		referenceDate: currentDate,
 		businessHours,
@@ -63,15 +85,12 @@ export const DayView = () => {
 			>
 				<AnimatedSection
 					className={cn(
-						'flex justify-center items-center text-center text-base font-semibold sm:text-xl',
+						'flex justify-center items-center text-center text-base font-semibold capitalize sm:text-xl',
 						today && 'text-primary'
 					)}
 					transitionKey={getDayKey(currentDate)}
 				>
-					<span className="xs:inline hidden">
-						{currentDate.format('dddd, ')}
-					</span>
-					{currentDate.format('MMMM D, YYYY')}
+					{headerDateLabel}
 					{today && (
 						<span className="bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm">
 							{t('today')}

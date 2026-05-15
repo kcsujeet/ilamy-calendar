@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { HourLabel } from '@/components/hour-label/hour-label'
@@ -7,6 +7,11 @@ import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import {
+	getWeekColumnTemplate,
+	WEEK_GRID_GUTTER_VARS_CLASS,
+	WEEK_GUTTER_CELL_CLASS,
+} from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { formatLocaleDate } from '@/lib/utils/date-locale-format'
 import { getWeekDays, isToday } from '@/lib/utils/date-utils'
@@ -14,27 +19,8 @@ import { keys } from '@/lib/utils/keys'
 
 // All-day row cells still use flex inside a spanned grid cell; `min-w-0 flex-1` splits that span like the body grid.
 const WEEK_DAY_COLUMN_CLASS = 'min-w-0 flex-1'
-const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
-
-// Fixed min+max (not plain `4rem`) so header/all-day content cannot widen the gutter via `minmax(auto, …)`.
-const WEEK_GUTTER_TRACK_NARROW = 'minmax(2.5rem, 2.5rem)'
-const WEEK_GUTTER_TRACK_WIDE = 'minmax(4rem, 4rem)'
-
-// Matches Tailwind `w-10` / `sm:w-16` for the first grid track (AllDayCell + time column).
-const useWeekGridGutterTrack = () => {
-	const [wide, setWide] = useState(false)
-	useEffect(() => {
-		const mq = window.matchMedia('(min-width: 640px)')
-		const sync = () => setWide(mq.matches)
-		sync()
-		mq.addEventListener('change', sync)
-		return () => mq.removeEventListener('change', sync)
-	}, [])
-	return wide ? WEEK_GUTTER_TRACK_WIDE : WEEK_GUTTER_TRACK_NARROW
-}
 
 export const WeekView: React.FC = () => {
-	const gutterTrack = useWeekGridGutterTrack()
 	const {
 		t,
 		currentDate,
@@ -62,8 +48,8 @@ export const WeekView: React.FC = () => {
 	)
 
 	const weekColumnTemplate = useMemo(
-		() => `${gutterTrack} repeat(${visibleDays.length}, minmax(0, 1fr))`,
-		[gutterTrack, visibleDays.length]
+		() => getWeekColumnTemplate(visibleDays.length),
+		[visibleDays.length]
 	)
 
 	const hours = useMemo(
@@ -81,10 +67,7 @@ export const WeekView: React.FC = () => {
 		id: keys.col.time,
 		days: hours,
 		day: undefined,
-		className: cn(
-			LEFT_COL_WIDTH,
-			'shrink-0 overflow-x-clip sticky left-0 bg-background z-20'
-		),
+		className: cn(WEEK_GUTTER_CELL_CLASS, 'sticky left-0 bg-background z-20'),
 		gridType: 'hour' as const,
 		noEvents: true,
 		renderCell: (date: Dayjs) => (
@@ -116,7 +99,8 @@ export const WeekView: React.FC = () => {
 				<AllDayRow
 					classes={{
 						cell: WEEK_DAY_COLUMN_CLASS,
-						spacer: LEFT_COL_WIDTH,
+						row: WEEK_GRID_GUTTER_VARS_CLASS,
+						spacer: WEEK_GUTTER_CELL_CLASS,
 					}}
 					columnTemplate={weekColumnTemplate}
 					days={visibleDays}
@@ -124,6 +108,7 @@ export const WeekView: React.FC = () => {
 			}
 			bodyColumnTemplate={weekColumnTemplate}
 			classes={{
+				body: WEEK_GRID_GUTTER_VARS_CLASS,
 				header: 'h-18',
 			}}
 			columns={[firstCol, ...columns]}
@@ -131,15 +116,18 @@ export const WeekView: React.FC = () => {
 			variant="regular"
 		>
 			<div
-				className="grid h-full min-w-0 w-full items-stretch"
+				className={cn(
+					'grid h-full min-w-0 w-full items-stretch',
+					WEEK_GRID_GUTTER_VARS_CLASS
+				)}
 				data-testid="week-view-header"
 				style={{ gridTemplateColumns: weekColumnTemplate }}
 			>
 				{/* Corner cell with week number */}
 				<div
 					className={cn(
-						'flex h-full shrink-0 items-center justify-center border-r p-2',
-						LEFT_COL_WIDTH
+						'flex h-full items-center justify-center border-r p-2 text-center',
+						WEEK_GUTTER_CELL_CLASS
 					)}
 				>
 					<div className="flex flex-col items-center justify-center">

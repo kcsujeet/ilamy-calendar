@@ -41,7 +41,7 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 				data-testid="all-day-row"
 				style={{ gridTemplateColumns: columnTemplate }}
 			>
-				<AllDayCell className={classes?.spacer} />
+				<AllDayCell className={classes?.spacer} gridGutter />
 				<div
 					className="relative min-h-12 min-w-0"
 					style={{ gridColumn: '2 / -1' }}

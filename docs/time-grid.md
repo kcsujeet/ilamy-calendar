@@ -149,9 +149,8 @@ Week view uses one template for every horizontal band so the time gutter and day
 `${gutterTrack} repeat(${visibleDays.length}, minmax(0, 1fr))`
 ```
 
-- `gutterTrack` uses `minmax(2.5rem, 2.5rem)` / `minmax(4rem, 4rem)` at `sm` (not plain `4rem`, which allows
-  `minmax(auto, …)` expansion from header/all-day content).
-- Matches the time column / `AllDayCell` Tailwind widths (`w-10` / `sm:w-16`).
+- Gutter width uses CSS variable `--week-gutter-width` (`2.5rem` / `7rem` at `sm` via `WEEK_GRID_GUTTER_VARS_CLASS`), not React `matchMedia` (avoids Next.js hydration mismatches). Template: `getWeekColumnTemplate(N)` → `minmax(var(--week-gutter-width), …) repeat(N, …)`.
+- Gutter **cells** use `w-full min-w-0` so width comes only from the grid track (not `w-10` / `w-16`, which follow the consumer `--spacing` scale and can disagree with explicit `rem` tracks).
 - `week-view-header` and `AllDayRow` (`columnTemplate`) use this template directly.
 - `VerticalGrid` passes the same string as `bodyColumnTemplate`; each `VerticalGridCol` sets `gridCell` so width comes from the grid track, not `flex-1` / `min-w-20`.
 - All-day day cells use `dayCellsGridTemplate` inside the spanned grid cell (`repeat(N, minmax(0, 1fr))`).

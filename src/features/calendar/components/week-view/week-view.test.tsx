@@ -170,8 +170,10 @@ describe('WeekView', () => {
 	test('locks gutter grid track and applies gutter width classes to time column', () => {
 		const weekHeader = screen.getByTestId('week-view-header')
 		expect(weekHeader.style.gridTemplateColumns).toMatch(
-			/^minmax\((2\.5rem|4rem), (2\.5rem|4rem)\) repeat\(/
+			/^minmax\(var\(--week-gutter-width\), var\(--week-gutter-width\)\) repeat\(/
 		)
+		expect(weekHeader.className).toContain('--week-gutter-width:2.5rem')
+		expect(weekHeader.className).toContain('sm:[--week-gutter-width:7rem]')
 
 		const timeGrid = screen.getByTestId('vertical-grid-body')
 		expect(timeGrid.style.gridTemplateColumns).toBe(
@@ -179,12 +181,10 @@ describe('WeekView', () => {
 		)
 
 		const timeLabels = screen.getByTestId('vertical-col-time-col')
-		expect(timeLabels.className).toContain('w-10')
-		expect(timeLabels.className).toContain('min-w-10')
-		expect(timeLabels.className).toContain('max-w-10')
-		expect(timeLabels.className).toContain('sm:w-16')
-		expect(timeLabels.className).toContain('sm:min-w-16')
-		expect(timeLabels.className).toContain('sm:max-w-16')
+		expect(timeLabels.className).toContain('w-full')
+		expect(timeLabels.className).toContain('min-w-0')
+		expect(timeLabels.className).toContain('max-w-full')
+		expect(timeLabels.className).not.toContain('w-16')
 	})
 
 	test('renders time slots structure', () => {

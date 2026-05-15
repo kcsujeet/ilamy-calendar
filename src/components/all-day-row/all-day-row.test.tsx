@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import { render, screen } from '@testing-library/react'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
+import { getWeekColumnTemplate } from '@/lib/constants'
 import { AllDayRow } from './all-day-row'
 
 const mockDays = [
@@ -40,5 +41,17 @@ describe('AllDayRow', () => {
 		// Day numbers are rendered with test-id "day-number-{date}"
 		const dayNumbers = screen.queryAllByTestId(/^day-number-/)
 		expect(dayNumbers).toHaveLength(0)
+	})
+
+	it('uses grid gutter cell width when columnTemplate is set', () => {
+		const columnTemplate = getWeekColumnTemplate(2)
+		const { container } = renderAllDayRow({ columnTemplate })
+		const row = screen.getByTestId('all-day-row')
+		expect(row.style.gridTemplateColumns).toBe(columnTemplate)
+
+		const gutter = container.querySelector('.border-r.sticky')
+		expect(gutter?.className).toContain('w-full')
+		expect(gutter?.className).toContain('min-w-0')
+		expect(gutter?.className).not.toContain('w-16')
 	})
 })

@@ -33,7 +33,7 @@ export const getDateForWeekdayIndex = (dayIndex: number): Date => {
 export const formatLocaleWeekday = (
 	dayIndex: number,
 	locale: string,
-	style: 'short' | 'narrow' = 'short'
+	style: 'long' | 'short' | 'narrow' = 'short'
 ): string =>
 	formatLocaleDate(getDateForWeekdayIndex(dayIndex), locale, { weekday: style })
 
@@ -55,3 +55,43 @@ export const getOrderedWeekdayInitials = (
 		const dayIndex = (firstDayOfWeek + index) % 7
 		return formatLocaleWeekdayInitial(dayIndex, locale)
 	})
+
+// Formats a calendar month name (month is 1–12).
+export const formatLocaleMonth = (
+	month: number,
+	locale: string,
+	style: 'long' | 'short' = 'long'
+): string =>
+	formatLocaleDate(new Date(2025, month - 1, 1), locale, { month: style })
+
+const ON_THE_DAY_WEEKDAY_INDEX: Record<string, number> = {
+	MO: 1,
+	TU: 2,
+	WE: 3,
+	TH: 4,
+	FR: 5,
+	SA: 6,
+	SU: 0,
+}
+
+// Resolves the label for monthly/yearly "on the" weekday select values.
+export const getOnTheDaySelectionLabel = (
+	value: string,
+	locale: string,
+	t: (key: string) => string
+): string => {
+	if (value === 'DAY') {
+		return t('recurrenceDay')
+	}
+	if (value === 'WEEKDAY') {
+		return t('recurrenceWeekday')
+	}
+	if (value === 'WEEKEND') {
+		return t('recurrenceWeekend')
+	}
+	const dayIndex = ON_THE_DAY_WEEKDAY_INDEX[value]
+	if (dayIndex !== undefined) {
+		return formatLocaleWeekday(dayIndex, locale, 'long')
+	}
+	return value
+}

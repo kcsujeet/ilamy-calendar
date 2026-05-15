@@ -2,8 +2,10 @@ import { describe, expect, test } from 'bun:test'
 import {
 	formatLocaleDate,
 	formatLocaleDateRange,
+	formatLocaleMonth,
 	formatLocaleWeekday,
 	formatLocaleWeekdayInitial,
+	getOnTheDaySelectionLabel,
 	getOrderedWeekdayInitials,
 } from './date-locale-format'
 
@@ -69,5 +71,23 @@ describe('getOrderedWeekdayInitials', () => {
 
 	test('formats French narrow initial for Sunday', () => {
 		expect(formatLocaleWeekdayInitial(0, 'fr-FR')).toBe('D')
+	})
+})
+
+describe('formatLocaleMonth', () => {
+	test('formats long month for en-US', () => {
+		expect(formatLocaleMonth(5, 'en-US')).toMatch(/May/i)
+	})
+})
+
+describe('getOnTheDaySelectionLabel', () => {
+	const t = (key: string) => key
+
+	test('returns translation for abstract day types', () => {
+		expect(getOnTheDaySelectionLabel('DAY', 'en-US', t)).toBe('recurrenceDay')
+	})
+
+	test('returns locale weekday for MO', () => {
+		expect(getOnTheDaySelectionLabel('MO', 'en-US', t)).toMatch(/Mon/i)
 	})
 })

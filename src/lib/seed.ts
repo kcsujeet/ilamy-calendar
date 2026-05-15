@@ -4,6 +4,26 @@ import dayjs from '@/lib/configs/dayjs-config'
 // Use a fixed month reference point for consistent display
 const baseDate = dayjs().startOf('month').date(1)
 
+// Last Friday of the anchor month — must match MONTHLY + FR.nth(-1)
+let lastFridayOfMonth = baseDate.endOf('month').startOf('day')
+while (lastFridayOfMonth.day() !== 5) {
+	lastFridayOfMonth = lastFridayOfMonth.subtract(1, 'day')
+}
+const monthlyOnTheStart = lastFridayOfMonth.hour(16).minute(0)
+const monthlyOnDayStart = baseDate.date(15).hour(14).minute(0)
+const yearlyStart = baseDate
+	.month(baseDate.month())
+	.date(baseDate.date())
+	.hour(11)
+	.minute(0)
+
+// Next Wednesday on or after baseDate for weekly UTC-boundary demo
+let nextWednesday = baseDate.startOf('day')
+while (nextWednesday.day() !== 3) {
+	nextWednesday = nextWednesday.add(1, 'day')
+}
+const weeklySyncStart = nextWednesday.hour(16).minute(0)
+
 const dummyEvents = [
 	// First week events
 	{
@@ -159,16 +179,15 @@ const dummyEvents = [
 
 	{
 		id: '20',
-		title: 'Daily Standup',
+		title: 'Daily Check-in',
 		description: 'Daily team sync meeting',
-		start: baseDate.hour(10),
-		end: baseDate.hour(11),
+		start: baseDate.hour(9),
+		end: baseDate.hour(9).minute(30),
 		color: 'bg-cyan-100 text-cyan-800',
 		rrule: {
-			freq: RRule.WEEKLY,
+			freq: RRule.DAILY,
 			interval: 1,
-			byweekday: [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR],
-			dtstart: baseDate.hour(10).toDate(), // Required dtstart field
+			dtstart: baseDate.hour(9).toDate(),
 		},
 		exdates: [],
 	},
@@ -177,14 +196,63 @@ const dummyEvents = [
 		title: 'PST Evening Sync (UTC Boundary)',
 		description:
 			'Recurring Wednesday at 4 PM PST. This event crosses the UTC day boundary (00:00 UTC) but stays on Wednesday thanks to Floating Time.',
-		start: baseDate.add(1, 'week').day(3).hour(16).minute(0),
-		end: baseDate.add(1, 'week').day(3).hour(17).minute(0),
+		start: weeklySyncStart,
+		end: weeklySyncStart.add(1, 'hour'),
 		color: 'bg-indigo-200 text-indigo-900',
 		rrule: {
 			freq: RRule.WEEKLY,
 			interval: 1,
 			byweekday: [RRule.WE],
-			dtstart: baseDate.add(1, 'week').day(3).hour(16).minute(0).toDate(),
+			dtstart: weeklySyncStart.toDate(),
+		},
+		exdates: [],
+	},
+	{
+		id: '22',
+		title: 'Monthly Sync (UTC Boundary)',
+		description:
+			'Recurring monthly on the last Friday of the month at 4 PM PST. This event crosses the UTC day boundary (00:00 UTC) but stays on Friday thanks to Floating Time.',
+		start: monthlyOnTheStart,
+		end: monthlyOnTheStart.add(1, 'hour'),
+		color: 'bg-indigo-200 text-indigo-900',
+		rrule: {
+			freq: RRule.MONTHLY,
+			byweekday: [RRule.FR.nth(-1)],
+			dtstart: monthlyOnTheStart.toDate(),
+			count: 12,
+		},
+		exdates: [],
+	},
+	{
+		id: '23',
+		title: 'Monthly Review (on day 15)',
+		description: 'Recurring on the 15th of each month',
+		start: monthlyOnDayStart,
+		end: monthlyOnDayStart.add(1, 'hour'),
+		color: 'bg-violet-200 text-violet-900',
+		rrule: {
+			freq: RRule.MONTHLY,
+			bymonthday: [15],
+			interval: 1,
+			dtstart: monthlyOnDayStart.toDate(),
+			count: 12,
+		},
+		exdates: [],
+	},
+	{
+		id: '24',
+		title: 'Annual Planning',
+		description: 'Yearly planning session on the 1st of the month',
+		start: yearlyStart,
+		end: yearlyStart.add(2, 'hour'),
+		color: 'bg-emerald-200 text-emerald-900',
+		rrule: {
+			freq: RRule.YEARLY,
+			bymonth: [baseDate.month() + 1],
+			bymonthday: [baseDate.date()],
+			interval: 1,
+			dtstart: yearlyStart.toDate(),
+			count: 5,
 		},
 		exdates: [],
 	},

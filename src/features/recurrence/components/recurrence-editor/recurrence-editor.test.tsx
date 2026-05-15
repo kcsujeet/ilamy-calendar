@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { RRule } from 'rrule'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import type { RRuleOptions } from '@/features/recurrence/types'
+import type { RecurrencePreset } from '@/features/recurrence/utils/recurrence-preset-utils'
 import { RecurrenceEditor } from './recurrence-editor'
 
 // Test helper to create complete RRuleOptions with required dtstart
@@ -19,6 +20,47 @@ const createRRuleOptions = (
 const getLastCallArg = (mockFn: ReturnType<typeof mock>) => {
 	const calls = mockFn.mock.calls
 	return calls[calls.length - 1]?.[0]
+}
+
+const REFERENCE_DATE = new Date('2025-05-16T09:00:00.000Z')
+
+const PRESET_OPTION_NAMES: Record<RecurrencePreset, string | RegExp> = {
+	once: 'Once',
+	daily: 'Every day',
+	weekdays: /Every weekday/i,
+	weeklyOnDay: /Every week on/,
+	monthlyOnDay: /Every month on day/,
+	monthlyOnWeekday: /Every month on the/,
+	customize: 'Customize',
+}
+
+const getPresetSelect = () => screen.getByTestId('recurrence-preset-select')
+
+const expectPresetLabel = (label: string | RegExp) => {
+	const text = getPresetSelect().textContent ?? ''
+	if (typeof label === 'string') {
+		expect(text).toContain(label)
+		return
+	}
+	expect(text).toMatch(label)
+}
+
+const selectRecurrencePreset = (preset: RecurrencePreset) => {
+	fireEvent.click(getPresetSelect())
+	const name = PRESET_OPTION_NAMES[preset]
+	fireEvent.click(screen.getByRole('option', { name }))
+}
+
+const enableCustomizeMode = () => selectRecurrencePreset('customize')
+
+const queryCustomizeDetails = () => screen.queryByTestId('frequency-select')
+
+const expectDetailsHidden = () => {
+	expect(queryCustomizeDetails()).toBeNull()
+}
+
+const expectDetailsVisible = () => {
+	expect(queryCustomizeDetails()).toBeInTheDocument()
 }
 
 describe('RecurrenceEditor', () => {
@@ -55,103 +97,132 @@ describe('RecurrenceEditor', () => {
 	})
 
 	describe('🧪 Initial State & Basic Rendering', () => {
-		it('should render with repeat checkbox unchecked by default', () => {
-			renderRecurrenceEditor()
+		it('should default to Once preset with details hidden', () => {
+			renderRecurrenceEditor({ referenceDate: REFERENCE_DATE })
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			expect(checkbox).not.toBeChecked()
-			expect(screen.queryByText('Daily')).not.toBeInTheDocument()
+			expectPresetLabel('Once')
+			expectDetailsHidden()
 		})
 
-		it('should render with repeat checkbox checked when valid RRULE is provided', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
-
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			expect(checkbox).toBeChecked()
-			// Look for text in the description area instead of display value
-			expect(screen.getByText('Daily')).toBeInTheDocument()
-		})
-
-		it('should show proper RRULE description when value is provided', () => {
+		it('should select daily preset when a simple daily RRULE is provided', () => {
 			renderRecurrenceEditor({
-				value: { freq: RRule.WEEKLY, interval: 2, count: 5 },
+				value: { freq: RRule.DAILY, interval: 1, dtstart: REFERENCE_DATE },
+				referenceDate: REFERENCE_DATE,
 			})
 
-			expect(screen.getByText('Every 2 weeks for 5 times')).toBeInTheDocument()
+			expectPresetLabel('Every day')
+			expectDetailsHidden()
 		})
 
-		it('should handle empty string value gracefully', () => {
-			renderRecurrenceEditor({ value: null })
+		it('should select customize preset for non-preset RRULE patterns', () => {
+			renderRecurrenceEditor({
+				value: {
+					freq: RRule.WEEKLY,
+					interval: 2,
+					count: 5,
+					dtstart: REFERENCE_DATE,
+				},
+				referenceDate: REFERENCE_DATE,
+			})
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			expect(checkbox).not.toBeChecked()
+			expectPresetLabel('Customize')
+			expectDetailsVisible()
 		})
 
-		it('should update checkbox state when value prop changes from null to RRULE', () => {
-			const { rerender } = renderRecurrenceEditor({ value: null })
+		it('should handle null value as Once preset', () => {
+			renderRecurrenceEditor({ value: null, referenceDate: REFERENCE_DATE })
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			expect(checkbox).not.toBeChecked()
+			expectPresetLabel('Once')
+		})
 
-			// Simulate editing a recurring event - prop changes from null to RRULE
+		it('should update preset when value prop changes from null to RRULE', () => {
+			const { rerender } = renderRecurrenceEditor({
+				value: null,
+				referenceDate: REFERENCE_DATE,
+			})
+
+			expectPresetLabel('Once')
+
 			rerender(
 				<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
 					<RecurrenceEditor
 						onChange={mockOnChange}
-						value={createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 })}
+						referenceDate={REFERENCE_DATE}
+						value={createRRuleOptions({
+							freq: RRule.WEEKLY,
+							interval: 1,
+							byweekday: [RRule.FR],
+							dtstart: REFERENCE_DATE,
+						})}
 					/>
 				</CalendarProvider>
 			)
 
-			expect(checkbox).toBeChecked()
-			expect(screen.getByText('Weekly')).toBeInTheDocument()
+			expectPresetLabel(/Every week on/)
+			expectDetailsHidden()
 		})
 	})
 
 	describe('🔥 Edge Cases & Error Handling', () => {
 		it('should handle null value without crashing', () => {
-			expect(() => renderRecurrenceEditor({ value: null })).not.toThrow()
+			expect(() =>
+				renderRecurrenceEditor({ value: null, referenceDate: REFERENCE_DATE })
+			).not.toThrow()
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			expect(checkbox).not.toBeChecked()
+			expectPresetLabel('Once')
 		})
 
 		it('should handle undefined value without crashing', () => {
-			expect(() => renderRecurrenceEditor({ value: undefined })).not.toThrow()
+			expect(() =>
+				renderRecurrenceEditor({
+					value: undefined,
+					referenceDate: REFERENCE_DATE,
+				})
+			).not.toThrow()
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			expect(checkbox).not.toBeChecked()
+			expectPresetLabel('Once')
 		})
 
 		it('should handle malformed RRULE strings gracefully', () => {
-			// Pass invalid RRuleOptions that would cause errors
-			renderRecurrenceEditor({ value: { freq: 999 } })
-
-			expect(screen.getByText('Custom recurrence')).toBeInTheDocument()
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			expect(checkbox).toBeChecked()
-		})
-
-		it('should handle RRULE with missing FREQ parameter', () => {
-			// RRule defaults to YEARLY when FREQ is missing - but our interface requires freq
 			renderRecurrenceEditor({
-				value: { freq: RRule.YEARLY, interval: 1, count: 5 },
+				value: { freq: 999, interval: 1, dtstart: REFERENCE_DATE },
+				referenceDate: REFERENCE_DATE,
 			})
 
-			expect(screen.getByText('Every year for 5 times')).toBeInTheDocument()
+			expectPresetLabel('Customize')
+		})
+
+		it('should handle RRULE with count as customize preset', () => {
+			renderRecurrenceEditor({
+				value: createRRuleOptions({
+					freq: RRule.YEARLY,
+					interval: 1,
+					count: 5,
+				}),
+				referenceDate: REFERENCE_DATE,
+			})
+
+			expectPresetLabel('Customize')
+			expect(screen.getByTestId('count-input')).toHaveValue(5)
 		})
 
 		it('should handle RRULE with unsupported frequency', () => {
-			// Using a frequency that's not in our freqMap
-			renderRecurrenceEditor({ value: { freq: 999, interval: 1 } })
+			renderRecurrenceEditor({
+				value: { freq: 999, interval: 1, dtstart: REFERENCE_DATE },
+				referenceDate: REFERENCE_DATE,
+			})
 
-			expect(screen.getByText('Custom recurrence')).toBeInTheDocument()
+			expectPresetLabel('Customize')
 		})
 
 		it('should handle extremely large interval values', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 999999 } })
+			renderRecurrenceEditor({
+				value: { freq: RRule.DAILY, interval: 999999, dtstart: REFERENCE_DATE },
+				referenceDate: REFERENCE_DATE,
+			})
 
-			expect(screen.getByText('Every 999999 days')).toBeInTheDocument()
+			expectPresetLabel('Customize')
+			expect(screen.getByLabelText('Every')).toHaveValue(999999)
 		})
 
 		it('should handle RRULE with multiple BYDAY values', () => {
@@ -178,39 +249,109 @@ describe('RecurrenceEditor', () => {
 		})
 	})
 
-	describe('🎯 Recurrence Toggle Behavior', () => {
-		it('should enable recurrence and call onChange with default RRULE when toggled on', () => {
-			renderRecurrenceEditor()
+	describe('🎯 Recurrence preset selection', () => {
+		it('should enable daily recurrence when daily preset is selected', () => {
+			renderRecurrenceEditor({ referenceDate: REFERENCE_DATE })
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			fireEvent.click(checkbox)
+			selectRecurrencePreset('daily')
 
-			expect(mockOnChange).toHaveBeenCalledWith({
-				freq: RRule.DAILY,
-				interval: 1,
-			})
-			expect(checkbox).toBeChecked()
+			expect(mockOnChange).toHaveBeenCalledWith(
+				expect.objectContaining({
+					freq: RRule.DAILY,
+					interval: 1,
+					dtstart: REFERENCE_DATE,
+				})
+			)
+			expectPresetLabel('Every day')
+			expectDetailsHidden()
 		})
 
-		it('should disable recurrence and call onChange with null when toggled off', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+		it('should disable recurrence when Once preset is selected', () => {
+			renderRecurrenceEditor({
+				value: { freq: RRule.DAILY, interval: 1, dtstart: REFERENCE_DATE },
+				referenceDate: REFERENCE_DATE,
+			})
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			fireEvent.click(checkbox)
+			selectRecurrencePreset('once')
 
 			expect(mockOnChange).toHaveBeenCalledWith(null)
-			expect(checkbox).not.toBeChecked()
+			expectPresetLabel('Once')
 		})
 
-		it('should hide recurrence options when toggled off', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+		it('should hide detail fields when a preset other than customize is selected', () => {
+			renderRecurrenceEditor({
+				value: { freq: RRule.DAILY, interval: 1, dtstart: REFERENCE_DATE },
+				referenceDate: REFERENCE_DATE,
+			})
 
-			expect(screen.getByLabelText('Repeats')).toBeInTheDocument()
+			enableCustomizeMode()
+			expectDetailsVisible()
+			selectRecurrencePreset('once')
+			expectDetailsHidden()
+		})
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			fireEvent.click(checkbox)
+		it('should show detail fields in customize mode', () => {
+			renderRecurrenceEditor({ referenceDate: REFERENCE_DATE })
 
-			expect(screen.queryByLabelText('Repeats')).not.toBeInTheDocument()
+			selectRecurrencePreset('customize')
+
+			expectDetailsVisible()
+			expectPresetLabel('Customize')
+			expect(mockOnChange).toHaveBeenCalledWith(
+				expect.objectContaining({ freq: RRule.DAILY, interval: 1 })
+			)
+
+			const intervalInput = screen.getByLabelText('Every')
+			fireEvent.change(intervalInput, { target: { value: '3' } })
+			expect(mockOnChange).toHaveBeenLastCalledWith(
+				expect.objectContaining({ interval: 3 })
+			)
+		})
+
+		it('should keep customize mode after parent re-renders with daily RRULE', () => {
+			const { rerender } = renderRecurrenceEditor({
+				value: null,
+				referenceDate: REFERENCE_DATE,
+			})
+
+			selectRecurrencePreset('customize')
+
+			rerender(
+				<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
+					<RecurrenceEditor
+						onChange={mockOnChange}
+						referenceDate={REFERENCE_DATE}
+						value={createRRuleOptions({ freq: RRule.DAILY, interval: 1 })}
+					/>
+				</CalendarProvider>
+			)
+
+			expectPresetLabel('Customize')
+			expectDetailsVisible()
+		})
+
+		it('should order weekly day checkboxes from firstDayOfWeek', () => {
+			render(
+				<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={1}>
+					<RecurrenceEditor
+						onChange={mockOnChange}
+						referenceDate={REFERENCE_DATE}
+						value={createRRuleOptions({
+							freq: RRule.WEEKLY,
+							interval: 1,
+							byweekday: [RRule.MO],
+						})}
+					/>
+				</CalendarProvider>
+			)
+			enableCustomizeMode()
+			mockOnChange.mockClear()
+
+			const labels = screen
+				.getAllByText(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)$/)
+				.map((node) => node.textContent)
+			expect(labels[0]).toBe('Mon')
+			expect(labels.at(-1)).toBe('Sun')
 		})
 	})
 
@@ -219,29 +360,33 @@ describe('RecurrenceEditor', () => {
 			const frequencies = [
 				{
 					rruleOptions: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
-					expected: 'Daily',
+					expected: 'day',
 				},
 				{
 					rruleOptions: createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 }),
-					expected: 'Weekly',
+					expected: 'week',
 				},
 				{
 					rruleOptions: createRRuleOptions({
 						freq: RRule.MONTHLY,
 						interval: 1,
 					}),
-					expected: 'Monthly',
+					expected: 'month',
 				},
 				{
 					rruleOptions: createRRuleOptions({ freq: RRule.YEARLY, interval: 1 }),
-					expected: 'Yearly',
+					expected: 'year',
 				},
 			]
 
 			for (const { rruleOptions, expected } of frequencies) {
 				const { unmount } = render(
 					<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
-						<RecurrenceEditor onChange={mockOnChange} value={rruleOptions} />
+						<RecurrenceEditor
+							onChange={mockOnChange}
+							referenceDate={REFERENCE_DATE}
+							value={{ ...rruleOptions, interval: 2 }}
+						/>
 					</CalendarProvider>
 				)
 
@@ -254,12 +399,17 @@ describe('RecurrenceEditor', () => {
 		})
 
 		it('should update RRULE when frequency changes', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: { freq: RRule.DAILY, interval: 1, dtstart: REFERENCE_DATE },
+				referenceDate: REFERENCE_DATE,
+			})
+			enableCustomizeMode()
+			mockOnChange.mockClear()
 
 			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
 			fireEvent.click(frequencySelect)
 
-			const weeklyOption = screen.getByRole('option', { name: 'Weekly' })
+			const weeklyOption = screen.getByRole('option', { name: 'week' })
 			fireEvent.click(weeklyOption)
 
 			expect(mockOnChange).toHaveBeenCalledWith(
@@ -276,13 +426,17 @@ describe('RecurrenceEditor', () => {
 					freq: RRule.WEEKLY,
 					interval: 1,
 					byweekday: [RRule.MO, RRule.WE],
+					dtstart: REFERENCE_DATE,
 				},
+				referenceDate: REFERENCE_DATE,
 			})
+			enableCustomizeMode()
+			mockOnChange.mockClear()
 
 			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
 			fireEvent.click(frequencySelect)
 
-			const dailyOption = screen.getByRole('option', { name: 'Daily' })
+			const dailyOption = screen.getByRole('option', { name: 'day' })
 			fireEvent.click(dailyOption)
 
 			// Check that onChange was called - let test failure show us the actual format
@@ -297,7 +451,10 @@ describe('RecurrenceEditor', () => {
 
 	describe('⏱️ Interval Handling', () => {
 		it('should handle valid interval changes', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '5' } })
@@ -311,7 +468,10 @@ describe('RecurrenceEditor', () => {
 		})
 
 		it('should enforce minimum interval of 1', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '0' } })
@@ -325,7 +485,10 @@ describe('RecurrenceEditor', () => {
 		})
 
 		it('should handle negative interval values', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '-5' } })
@@ -339,7 +502,10 @@ describe('RecurrenceEditor', () => {
 		})
 
 		it('should handle non-numeric interval input', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: 'abc' } })
@@ -353,7 +519,10 @@ describe('RecurrenceEditor', () => {
 		})
 
 		it('should handle empty interval input', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '' } })
@@ -367,7 +536,10 @@ describe('RecurrenceEditor', () => {
 		})
 
 		it('should handle very large interval values', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '999999' } })
@@ -400,41 +572,38 @@ describe('RecurrenceEditor', () => {
 		})
 
 		it('should handle all day combinations', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.WEEKLY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({
+					freq: RRule.WEEKLY,
+					interval: 1,
+				}),
+				referenceDate: REFERENCE_DATE,
+			})
+			enableCustomizeMode()
+			mockOnChange.mockClear()
 
-			// Select all days
 			const dayCheckboxes = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 			for (const day of dayCheckboxes) {
-				const checkbox = screen.getByLabelText(day)
-				fireEvent.click(checkbox)
+				fireEvent.click(screen.getByLabelText(day))
 			}
 
-			expect(mockOnChange).toHaveBeenCalledWith(
-				expect.objectContaining({
-					freq: RRule.WEEKLY,
-					interval: 1,
-					byweekday: expect.arrayContaining([
-						RRule.SU,
-						RRule.MO,
-						RRule.TU,
-						RRule.WE,
-						RRule.TH,
-						RRule.FR,
-						RRule.SA,
-					]),
-				})
-			)
+			const result = getLastCallArg(mockOnChange)
+			expect(result.freq).toBe(RRule.WEEKLY)
+			expect(result.byweekday).toHaveLength(7)
 		})
 
 		it('should handle deselecting all days', () => {
 			renderRecurrenceEditor({
-				value: {
+				value: createRRuleOptions({
 					freq: RRule.WEEKLY,
 					interval: 1,
 					byweekday: [RRule.MO, RRule.WE, RRule.FR],
-				},
+				}),
+				referenceDate: REFERENCE_DATE,
 			})
+			enableCustomizeMode()
+			mockOnChange.mockClear()
 
 			// Deselect all days
 			const mondayCheckbox = screen.getByLabelText('Mon')
@@ -454,7 +623,11 @@ describe('RecurrenceEditor', () => {
 		})
 
 		it('should handle rapid day toggle clicks', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.WEEKLY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 }),
+				referenceDate: REFERENCE_DATE,
+			})
+			enableCustomizeMode()
 
 			const mondayCheckbox = screen.getByLabelText('Mon')
 
@@ -471,22 +644,28 @@ describe('RecurrenceEditor', () => {
 
 	describe('🔚 End Conditions', () => {
 		it('should handle never ending (default)', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: { freq: RRule.DAILY, interval: 2, dtstart: REFERENCE_DATE },
+				referenceDate: REFERENCE_DATE,
+			})
 
-			const neverCheckbox = screen.getByLabelText('Never')
-			expect(neverCheckbox).toBeChecked()
+			const neverRadio = screen.getByRole('radio', { name: 'Never' })
+			expect(neverRadio).toBeChecked()
 		})
 
 		it('should handle count-based ending', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
-			const afterCheckbox = screen.getByLabelText('After')
-			fireEvent.click(afterCheckbox)
+			const afterRadio = screen.getByRole('radio', { name: 'After' })
+			fireEvent.click(afterRadio)
 
 			expect(mockOnChange).toHaveBeenCalledWith(
 				expect.objectContaining({
 					freq: RRule.DAILY,
-					interval: 1,
+					interval: 2,
 					count: 1,
 				})
 			)
@@ -497,23 +676,25 @@ describe('RecurrenceEditor', () => {
 			expect(mockOnChange).toHaveBeenCalledWith(
 				expect.objectContaining({
 					freq: RRule.DAILY,
-					interval: 1,
+					interval: 2,
 					count: 10,
 				})
 			)
 		})
 
 		it('should handle date-based ending', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
-			const onCheckbox = screen.getByLabelText('On')
-			fireEvent.click(onCheckbox)
+			const onRadio = screen.getByRole('radio', { name: 'On' })
+			fireEvent.click(onRadio)
 
-			// Should contain UNTIL parameter
 			expect(mockOnChange).toHaveBeenCalledWith(
 				expect.objectContaining({
 					freq: RRule.DAILY,
-					interval: 1,
+					interval: 2,
 					until: expect.any(Date),
 				})
 			)
@@ -588,137 +769,248 @@ describe('RecurrenceEditor', () => {
 		})
 
 		it('should handle switching between end types rapidly', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
-			const neverCheckbox = screen.getByLabelText('Never')
-			const afterCheckbox = screen.getByLabelText('After')
-			const onCheckbox = screen.getByLabelText('On')
+			const neverRadio = screen.getByRole('radio', { name: 'Never' })
+			const afterRadio = screen.getByRole('radio', { name: 'After' })
+			const onRadio = screen.getByRole('radio', { name: 'On' })
 
-			// Rapid switching
-			fireEvent.click(afterCheckbox)
-			fireEvent.click(onCheckbox)
-			fireEvent.click(neverCheckbox)
-			fireEvent.click(afterCheckbox)
+			fireEvent.click(afterRadio)
+			fireEvent.click(onRadio)
+			fireEvent.click(neverRadio)
+			fireEvent.click(afterRadio)
 
 			expect(mockOnChange).toHaveBeenCalledWith(
 				expect.objectContaining({
 					freq: RRule.DAILY,
-					interval: 1,
+					interval: 2,
 					count: 1,
 				})
 			)
 		})
 	})
 
-	describe('🎨 RRULE Description Generation', () => {
-		it('should show correct descriptions for different patterns', () => {
+	describe('🎨 Preset detection from RRULE', () => {
+		it('should map common RRULE patterns to the expected preset', () => {
 			const testCases = [
 				{
 					rruleOptions: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
-					expected: 'Daily',
+					expected: 'Every day',
 				},
 				{
 					rruleOptions: createRRuleOptions({ freq: RRule.DAILY, interval: 3 }),
-					expected: 'Every 3 days',
-				},
-				{
-					rruleOptions: createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 }),
-					expected: 'Weekly',
-				},
-				{
-					rruleOptions: createRRuleOptions({ freq: RRule.WEEKLY, interval: 2 }),
-					expected: 'Every 2 weeks',
-				},
-				{
-					rruleOptions: createRRuleOptions({
-						freq: RRule.MONTHLY,
-						interval: 1,
-					}),
-					expected: 'Monthly',
-				},
-				{
-					rruleOptions: createRRuleOptions({ freq: RRule.YEARLY, interval: 1 }),
-					expected: 'Yearly',
-				},
-				{
-					rruleOptions: createRRuleOptions({
-						freq: RRule.DAILY,
-						interval: 1,
-						count: 5,
-					}),
-					expected: 'Every day for 5 times',
+					expected: 'Customize',
 				},
 				{
 					rruleOptions: createRRuleOptions({
 						freq: RRule.WEEKLY,
-						interval: 2,
-						count: 10,
+						interval: 1,
+						byweekday: [RRule.FR],
+						dtstart: REFERENCE_DATE,
 					}),
-					expected: 'Every 2 weeks for 10 times',
+					expected: /Every week on/,
+					referenceDate: REFERENCE_DATE,
+				},
+				{
+					rruleOptions: createRRuleOptions({ freq: RRule.YEARLY, interval: 1 }),
+					expected: 'Customize',
 				},
 			]
 
-			testCases.forEach(({ rruleOptions, expected }) => {
+			testCases.forEach(({ rruleOptions, expected, referenceDate }) => {
 				const { unmount } = render(
 					<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
-						<RecurrenceEditor onChange={mockOnChange} value={rruleOptions} />
+						<RecurrenceEditor
+							onChange={mockOnChange}
+							referenceDate={referenceDate}
+							value={rruleOptions}
+						/>
 					</CalendarProvider>
 				)
-				expect(screen.getByText(expected)).toBeInTheDocument()
+				expectPresetLabel(expected)
 				unmount()
 			})
 		})
 
-		it('should handle UNTIL dates in description', () => {
+		it('should select customize preset when UNTIL is set', () => {
 			const futureDate = new Date('2025-12-31T23:59:59Z')
 			renderRecurrenceEditor({
-				value: { freq: RRule.DAILY, interval: 1, until: futureDate },
+				value: createRRuleOptions({
+					freq: RRule.DAILY,
+					interval: 1,
+					until: futureDate,
+				}),
+				referenceDate: REFERENCE_DATE,
 			})
 
-			// RRule.toText() handles UNTIL dates in its own format - should contain "until"
-			expect(screen.getByText(/until/i)).toBeInTheDocument()
+			expectPresetLabel('Customize')
 		})
 
-		it('should show "Custom recurrence" for unparseable RRULEs', () => {
-			renderRecurrenceEditor({ value: { freq: 999 as unknown, interval: 1 } })
+		it('should select customize preset for unparseable frequencies', () => {
+			renderRecurrenceEditor({
+				value: { freq: 999 as unknown, interval: 1, dtstart: REFERENCE_DATE },
+				referenceDate: REFERENCE_DATE,
+			})
 
-			expect(screen.getByText('Custom recurrence')).toBeInTheDocument()
+			expectPresetLabel('Customize')
+		})
+	})
+
+	describe('Monthly and yearly patterns', () => {
+		it('should show monthly on day controls when freq is MONTHLY', () => {
+			renderRecurrenceEditor({
+				value: createRRuleOptions({
+					freq: RRule.MONTHLY,
+					bymonthday: [15],
+					interval: 2,
+				}),
+				referenceDate: REFERENCE_DATE,
+			})
+
+			expect(screen.getByTestId('monthly-mode-day')).toBeInTheDocument()
+			expect(screen.getByTestId('monthly-day-of-month')).toHaveValue(15)
+		})
+
+		it('should show monthly on the controls for byweekday nth', () => {
+			renderRecurrenceEditor({
+				value: createRRuleOptions({
+					freq: RRule.MONTHLY,
+					byweekday: [RRule.FR.nth(-1)],
+				}),
+			})
+
+			expect(screen.getByTestId('monthly-mode-the')).toBeChecked()
+			expect(screen.getByTestId('monthly-position')).toBeInTheDocument()
+		})
+
+		it('should emit bymonthday when switching monthly to on day', () => {
+			renderRecurrenceEditor({
+				value: createRRuleOptions({
+					freq: RRule.MONTHLY,
+					byweekday: [RRule.FR.nth(-1)],
+					count: 12,
+				}),
+				referenceDate: REFERENCE_DATE,
+			})
+			enableCustomizeMode()
+			mockOnChange.mockClear()
+
+			fireEvent.click(screen.getByTestId('monthly-mode-day'))
+
+			expect(mockOnChange).toHaveBeenCalledWith(
+				expect.objectContaining({
+					freq: RRule.MONTHLY,
+					bymonthday: expect.any(Array),
+					byweekday: undefined,
+				})
+			)
+		})
+
+		it('should show yearly month in freq row and on day / on the fields below', () => {
+			renderRecurrenceEditor({
+				value: createRRuleOptions({
+					freq: RRule.YEARLY,
+					bymonth: [6],
+					bymonthday: [15],
+				}),
+			})
+
+			expect(screen.getByTestId('yearly-on-month-select')).toBeInTheDocument()
+			expect(screen.getByTestId('yearly-mode-day')).toBeInTheDocument()
+			expect(screen.getByTestId('yearly-day-of-month')).toHaveValue(15)
+			expect(screen.queryByTestId('yearly-on-the-month-select')).toBeNull()
+		})
+
+		it('should preload event 22 last Friday monthly rule without crashing', () => {
+			const event22Rrule = createRRuleOptions({
+				freq: RRule.MONTHLY,
+				byweekday: [RRule.FR.nth(-1)],
+				count: 12,
+			})
+
+			renderRecurrenceEditor({ value: event22Rrule })
+
+			expect(screen.getByTestId('monthly-mode-the')).toBeChecked()
+			expect(screen.getByTestId('monthly-position')).toBeInTheDocument()
+			expect(screen.getByTestId('monthly-on-the-day')).toBeInTheDocument()
+
+			mockOnChange.mockClear()
+
+			fireEvent.click(screen.getByTestId('monthly-position'))
+			fireEvent.click(screen.getByRole('option', { name: 'First' }))
+			fireEvent.click(screen.getByTestId('monthly-position'))
+			fireEvent.click(screen.getByRole('option', { name: 'Last' }))
+
+			const lastCall = getLastCallArg(mockOnChange)
+			expect(lastCall.freq).toBe(RRule.MONTHLY)
+			expect(lastCall.byweekday).toEqual([RRule.FR.nth(-1)])
+		})
+
+		it('should expand WEEKDAY when selecting weekday on the', () => {
+			renderRecurrenceEditor({
+				value: createRRuleOptions({
+					freq: RRule.MONTHLY,
+					byweekday: [RRule.MO.nth(2)],
+				}),
+				referenceDate: new Date('2025-05-15T10:00:00.000Z'),
+			})
+
+			fireEvent.click(screen.getByTestId('monthly-mode-the'))
+
+			const daySelect = screen.getByTestId('monthly-on-the-day')
+			fireEvent.click(daySelect)
+			const weekdayOption = screen.getByRole('option', { name: 'Weekday' })
+			fireEvent.click(weekdayOption)
+
+			const lastCall = getLastCallArg(mockOnChange)
+			expect(lastCall.byweekday).toHaveLength(5)
 		})
 	})
 
 	describe('🏃‍♂️ Performance & Stress Tests', () => {
 		it('should handle multiple rapid onChange calls without issues', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
 			const intervalInput = screen.getByLabelText('Every')
 
 			// Rapid input changes with different values
-			const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11']
+			const values = ['3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
 			for (const value of values) {
 				fireEvent.change(intervalInput, { target: { value } })
 			}
 
-			// Should have been called for each unique change
 			expect(mockOnChange).toHaveBeenCalledTimes(values.length)
 		})
 
 		it('should handle component remounting with different props', () => {
 			const { rerender } = renderRecurrenceEditor({
-				value: { freq: RRule.DAILY, interval: 1 },
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
 			})
 
-			expect(screen.getByText('Daily')).toBeInTheDocument()
+			expect(screen.getByTestId('frequency-select').textContent).toContain(
+				'day'
+			)
 
 			rerender(
 				<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
 					<RecurrenceEditor
 						onChange={mockOnChange}
+						referenceDate={REFERENCE_DATE}
 						value={createRRuleOptions({ freq: RRule.WEEKLY, interval: 2 })}
 					/>
 				</CalendarProvider>
 			)
 
-			expect(screen.getByText('Weekly')).toBeInTheDocument()
+			expect(screen.getByTestId('frequency-select').textContent).toContain(
+				'week'
+			)
 			expect(screen.getByDisplayValue('2')).toBeInTheDocument()
 		})
 
@@ -727,50 +1019,49 @@ describe('RecurrenceEditor', () => {
 				throw new Error('onChange error')
 			})
 
-			// Should not crash the component during initial render
 			expect(() =>
-				renderRecurrenceEditor({ onChange: errorOnChange })
+				renderRecurrenceEditor({
+					onChange: errorOnChange,
+					referenceDate: REFERENCE_DATE,
+				})
 			).not.toThrow()
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
-
-			// In React, errors thrown by event handlers propagate, but the component stays functional
-			// We'll test that the error is thrown but the component doesn't unmount
 			expect(() => {
-				fireEvent.click(checkbox)
+				selectRecurrencePreset('daily')
 			}).toThrow('onChange error')
 
-			// Component should still be rendered after the error
-			expect(screen.getByTestId('toggle-recurrence')).toBeInTheDocument()
+			expect(screen.getByTestId('recurrence-preset-select')).toBeInTheDocument()
 		})
 	})
 
 	describe('♿ Accessibility & User Experience', () => {
 		it('should have proper ARIA labels and roles', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.WEEKLY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: { freq: RRule.WEEKLY, interval: 2, count: 5 },
+				referenceDate: REFERENCE_DATE,
+			})
 
-			expect(screen.getByLabelText('Repeats')).toBeInTheDocument()
-			expect(screen.getByLabelText('Every')).toBeInTheDocument()
+			expect(screen.getByLabelText('Repeats every')).toBeInTheDocument()
 			expect(screen.getByLabelText('Never')).toBeInTheDocument()
 			expect(screen.getByLabelText('After')).toBeInTheDocument()
 			expect(screen.getByLabelText('On')).toBeInTheDocument()
 		})
 
-		it('should support keyboard navigation', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.WEEKLY, interval: 1 } })
+		it('should support selecting Once from the preset combobox', () => {
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			checkbox.focus()
-
-			// Should be able to toggle with Enter key (more standard for checkboxes)
-			fireEvent.keyDown(checkbox, { key: 'Enter', code: 'Enter' })
-			// Since the keyDown might not directly trigger onChange, let's click instead
-			fireEvent.click(checkbox)
+			selectRecurrencePreset('once')
 			expect(mockOnChange).toHaveBeenCalledWith(null)
 		})
 
 		it('should maintain focus state correctly', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
 			const intervalInput = screen.getByLabelText('Every')
 			intervalInput.focus()
@@ -779,23 +1070,20 @@ describe('RecurrenceEditor', () => {
 
 			fireEvent.change(intervalInput, { target: { value: '5' } })
 
-			// Focus should remain on input
 			expect(document.activeElement).toBe(intervalInput)
 		})
 	})
 
 	describe('🔄 Complex State Transitions', () => {
 		it('should handle complex state transitions correctly', () => {
-			renderRecurrenceEditor()
-
-			// Enable recurrence
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			fireEvent.click(checkbox)
+			renderRecurrenceEditor({ referenceDate: REFERENCE_DATE })
+			enableCustomizeMode()
+			mockOnChange.mockClear()
 
 			// Change to weekly
 			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
 			fireEvent.click(frequencySelect)
-			fireEvent.click(screen.getByRole('option', { name: 'Weekly' }))
+			fireEvent.click(screen.getByRole('option', { name: 'week' }))
 
 			// Select some days
 			fireEvent.click(screen.getByLabelText('Mon'))
@@ -806,8 +1094,8 @@ describe('RecurrenceEditor', () => {
 			fireEvent.change(intervalInput, { target: { value: '2' } })
 
 			// Set end condition to count
-			const afterCheckbox = screen.getByLabelText('After')
-			fireEvent.click(afterCheckbox)
+			const afterRadio = screen.getByRole('radio', { name: 'After' })
+			fireEvent.click(afterRadio)
 
 			const countInput = screen.getByDisplayValue('1')
 			fireEvent.change(countInput, { target: { value: '5' } })
@@ -822,30 +1110,24 @@ describe('RecurrenceEditor', () => {
 			)
 		})
 
-		it('should preserve form state when toggling off and on quickly', () => {
+		it('should enable editing after selecting customize from once', () => {
 			renderRecurrenceEditor({
-				value: {
-					freq: RRule.WEEKLY,
-					interval: 2,
-					byweekday: [RRule.MO, RRule.WE],
-				},
+				value: null,
+				referenceDate: REFERENCE_DATE,
 			})
 
-			const checkbox = screen.getByTestId('toggle-recurrence')
+			expectDetailsHidden()
 
-			// Toggle off
-			fireEvent.click(checkbox)
-			expect(mockOnChange).toHaveBeenCalledWith(null)
+			selectRecurrencePreset('customize')
+			expectDetailsVisible()
 
-			// Toggle back on
-			fireEvent.click(checkbox)
+			const intervalInput = screen.getByLabelText('Every')
+			fireEvent.change(intervalInput, { target: { value: '4' } })
 
-			// Should restore previous state
-			expect(mockOnChange).toHaveBeenCalledWith(
+			expect(mockOnChange).toHaveBeenLastCalledWith(
 				expect.objectContaining({
-					freq: RRule.WEEKLY,
-					interval: 2,
-					byweekday: expect.arrayContaining([RRule.MO, RRule.WE]),
+					freq: RRule.DAILY,
+					interval: 4,
 				})
 			)
 		})
@@ -853,21 +1135,22 @@ describe('RecurrenceEditor', () => {
 
 	describe('📊 Data Integrity & Exact Value Verification', () => {
 		it('should produce valid RRule that can be instantiated', () => {
-			renderRecurrenceEditor()
-
-			const checkbox = screen.getByTestId('toggle-recurrence')
-			fireEvent.click(checkbox)
+			renderRecurrenceEditor({ referenceDate: REFERENCE_DATE })
+			selectRecurrencePreset('daily')
 
 			const result = getLastCallArg(mockOnChange)
 			expect(() => new RRule(result)).not.toThrow()
 		})
 
 		it('should produce RRule with exact frequency value', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
+			})
 
 			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
 			fireEvent.click(frequencySelect)
-			fireEvent.click(screen.getByRole('option', { name: 'Monthly' }))
+			fireEvent.click(screen.getByRole('option', { name: 'month' }))
 
 			const result = getLastCallArg(mockOnChange)
 			expect(result.freq).toBe(RRule.MONTHLY)
@@ -877,8 +1160,15 @@ describe('RecurrenceEditor', () => {
 
 		it('should set byweekday to undefined when no days selected', () => {
 			renderRecurrenceEditor({
-				value: { freq: RRule.WEEKLY, interval: 1, byweekday: [RRule.MO] },
+				value: createRRuleOptions({
+					freq: RRule.WEEKLY,
+					interval: 1,
+					byweekday: [RRule.MO],
+				}),
+				referenceDate: REFERENCE_DATE,
 			})
+			enableCustomizeMode()
+			mockOnChange.mockClear()
 
 			const mondayCheckbox = screen.getByLabelText('Mon')
 			fireEvent.click(mondayCheckbox) // Deselect
@@ -906,8 +1196,8 @@ describe('RecurrenceEditor', () => {
 				value: { freq: RRule.DAILY, interval: 1, until: futureDate },
 			})
 
-			const afterCheckbox = screen.getByLabelText('After')
-			fireEvent.click(afterCheckbox)
+			const afterRadio = screen.getByRole('radio', { name: 'After' })
+			fireEvent.click(afterRadio)
 
 			const result = getLastCallArg(mockOnChange)
 			expect(result.until).toBeUndefined()
@@ -917,7 +1207,8 @@ describe('RecurrenceEditor', () => {
 		it('should preserve dtstart when updating other fields', () => {
 			const dtstart = new Date('2025-06-15T10:00:00Z')
 			renderRecurrenceEditor({
-				value: createRRuleOptions({ freq: RRule.DAILY, interval: 1, dtstart }),
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2, dtstart }),
+				referenceDate: REFERENCE_DATE,
 			})
 
 			const intervalInput = screen.getByLabelText('Every')
@@ -928,7 +1219,12 @@ describe('RecurrenceEditor', () => {
 		})
 
 		it('should have exactly the expected weekdays, no more no less', () => {
-			renderRecurrenceEditor({ value: { freq: RRule.WEEKLY, interval: 1 } })
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.WEEKLY, interval: 1 }),
+				referenceDate: REFERENCE_DATE,
+			})
+			enableCustomizeMode()
+			mockOnChange.mockClear()
 
 			fireEvent.click(screen.getByLabelText('Mon'))
 			fireEvent.click(screen.getByLabelText('Wed'))
@@ -947,35 +1243,39 @@ describe('RecurrenceEditor', () => {
 	describe('🖥️ UI State Reflects Data Correctly', () => {
 		it('should display correct frequency in select after prop change', () => {
 			const { rerender } = renderRecurrenceEditor({
-				value: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
 			})
 
 			const frequencySelect = screen.getByTestId('frequency-select')
-			expect(frequencySelect).toHaveTextContent('Daily')
+			expect(frequencySelect).toHaveTextContent('day')
 
 			rerender(
 				<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
 					<RecurrenceEditor
 						onChange={mockOnChange}
-						value={createRRuleOptions({ freq: RRule.MONTHLY, interval: 1 })}
+						referenceDate={REFERENCE_DATE}
+						value={createRRuleOptions({ freq: RRule.MONTHLY, interval: 2 })}
 					/>
 				</CalendarProvider>
 			)
 
-			expect(frequencySelect).toHaveTextContent('Monthly')
+			expect(frequencySelect).toHaveTextContent('month')
 		})
 
 		it('should display correct interval value after prop change', () => {
 			const { rerender } = renderRecurrenceEditor({
-				value: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
 			})
 
-			expect(screen.getByDisplayValue('1')).toBeInTheDocument()
+			expect(screen.getByDisplayValue('2')).toBeInTheDocument()
 
 			rerender(
 				<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
 					<RecurrenceEditor
 						onChange={mockOnChange}
+						referenceDate={REFERENCE_DATE}
 						value={createRRuleOptions({ freq: RRule.DAILY, interval: 7 })}
 					/>
 				</CalendarProvider>
@@ -1004,7 +1304,8 @@ describe('RecurrenceEditor', () => {
 
 		it('should show count input only when count end type is selected', () => {
 			renderRecurrenceEditor({
-				value: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
 			})
 
 			// Initially "Never" is selected, no count input
@@ -1032,69 +1333,71 @@ describe('RecurrenceEditor', () => {
 			expect(countInput).toHaveValue(15)
 		})
 
-		it('should update description text when frequency changes', () => {
+		it('should update frequency select when frequency changes in customize mode', () => {
 			renderRecurrenceEditor({
-				value: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
 			})
 
-			expect(screen.getByText('Daily')).toBeInTheDocument()
+			expect(screen.getByTestId('frequency-select').textContent).toContain(
+				'day'
+			)
 
 			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
 			fireEvent.click(frequencySelect)
-			fireEvent.click(screen.getByRole('option', { name: 'Weekly' }))
+			fireEvent.click(screen.getByRole('option', { name: 'week' }))
 
-			expect(screen.getByText('Weekly')).toBeInTheDocument()
+			expect(screen.getByTestId('frequency-select').textContent).toContain(
+				'week'
+			)
 		})
 
-		it('should update description when interval changes (after parent re-renders with new value)', () => {
+		it('should update interval when parent re-renders with new value', () => {
 			const { rerender } = renderRecurrenceEditor({
-				value: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
 			})
-
-			expect(screen.getByText('Daily')).toBeInTheDocument()
 
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '3' } })
 
-			// Component is controlled - verify onChange was called correctly
 			const result = getLastCallArg(mockOnChange)
 			expect(result.interval).toBe(3)
 
-			// Simulate parent updating the value with the new interval
 			rerender(
 				<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
 					<RecurrenceEditor
 						onChange={mockOnChange}
+						referenceDate={REFERENCE_DATE}
 						value={createRRuleOptions({ freq: RRule.DAILY, interval: 3 })}
 					/>
 				</CalendarProvider>
 			)
 
-			expect(screen.getByText('Every 3 days')).toBeInTheDocument()
+			expect(screen.getByDisplayValue('3')).toBeInTheDocument()
+			expectPresetLabel('Customize')
 		})
 
-		it('should update description when count is added (after parent re-renders with new value)', () => {
+		it('should update count input when parent re-renders with count', () => {
 			const { rerender } = renderRecurrenceEditor({
 				value: createRRuleOptions({ freq: RRule.WEEKLY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
 			})
-
-			expect(screen.getByText('Every 2 weeks')).toBeInTheDocument()
 
 			fireEvent.click(screen.getByLabelText('After'))
 			const countInput = screen.getByTestId('count-input')
 			fireEvent.change(countInput, { target: { value: '5' } })
 
-			// Component is controlled - verify onChange was called correctly
 			const result = getLastCallArg(mockOnChange)
 			expect(result.count).toBe(5)
 			expect(result.interval).toBe(2)
 			expect(result.freq).toBe(RRule.WEEKLY)
 
-			// Simulate parent updating the value with the new count
 			rerender(
 				<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
 					<RecurrenceEditor
 						onChange={mockOnChange}
+						referenceDate={REFERENCE_DATE}
 						value={createRRuleOptions({
 							freq: RRule.WEEKLY,
 							interval: 2,
@@ -1104,42 +1407,40 @@ describe('RecurrenceEditor', () => {
 				</CalendarProvider>
 			)
 
-			expect(screen.getByText('Every 2 weeks for 5 times')).toBeInTheDocument()
+			expect(screen.getByTestId('count-input')).toHaveValue(5)
+			expectPresetLabel('Customize')
 		})
 	})
 
 	describe('🔒 End Type Mutual Exclusivity', () => {
 		it('should only have one end type checked at a time', () => {
 			renderRecurrenceEditor({
-				value: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
+				value: createRRuleOptions({ freq: RRule.DAILY, interval: 2 }),
+				referenceDate: REFERENCE_DATE,
 			})
 
-			const neverCheckbox = screen.getByLabelText('Never')
-			const afterCheckbox = screen.getByLabelText('After')
-			const onCheckbox = screen.getByLabelText('On')
+			const neverRadio = screen.getByRole('radio', { name: 'Never' })
+			const afterRadio = screen.getByRole('radio', { name: 'After' })
+			const onRadio = screen.getByRole('radio', { name: 'On' })
 
-			// Initially "Never" is checked
-			expect(neverCheckbox).toBeChecked()
-			expect(afterCheckbox).not.toBeChecked()
-			expect(onCheckbox).not.toBeChecked()
+			expect(neverRadio).toBeChecked()
+			expect(afterRadio).not.toBeChecked()
+			expect(onRadio).not.toBeChecked()
 
-			// Click "After"
-			fireEvent.click(afterCheckbox)
-			expect(neverCheckbox).not.toBeChecked()
-			expect(afterCheckbox).toBeChecked()
-			expect(onCheckbox).not.toBeChecked()
+			fireEvent.click(afterRadio)
+			expect(neverRadio).not.toBeChecked()
+			expect(afterRadio).toBeChecked()
+			expect(onRadio).not.toBeChecked()
 
-			// Click "On"
-			fireEvent.click(onCheckbox)
-			expect(neverCheckbox).not.toBeChecked()
-			expect(afterCheckbox).not.toBeChecked()
-			expect(onCheckbox).toBeChecked()
+			fireEvent.click(onRadio)
+			expect(neverRadio).not.toBeChecked()
+			expect(afterRadio).not.toBeChecked()
+			expect(onRadio).toBeChecked()
 
-			// Click "Never"
-			fireEvent.click(neverCheckbox)
-			expect(neverCheckbox).toBeChecked()
-			expect(afterCheckbox).not.toBeChecked()
-			expect(onCheckbox).not.toBeChecked()
+			fireEvent.click(neverRadio)
+			expect(neverRadio).toBeChecked()
+			expect(afterRadio).not.toBeChecked()
+			expect(onRadio).not.toBeChecked()
 		})
 	})
 
@@ -1148,9 +1449,10 @@ describe('RecurrenceEditor', () => {
 			renderRecurrenceEditor({
 				value: createRRuleOptions({
 					freq: RRule.WEEKLY,
-					interval: 1,
+					interval: 2,
 					byweekday: [RRule.MO, RRule.WE],
 				}),
+				referenceDate: REFERENCE_DATE,
 			})
 
 			// Change interval
@@ -1166,14 +1468,15 @@ describe('RecurrenceEditor', () => {
 			renderRecurrenceEditor({
 				value: createRRuleOptions({
 					freq: RRule.WEEKLY,
-					interval: 1,
+					interval: 2,
 					byweekday: [RRule.MO, RRule.WE],
 				}),
+				referenceDate: REFERENCE_DATE,
 			})
 
 			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
 			fireEvent.click(frequencySelect)
-			fireEvent.click(screen.getByRole('option', { name: 'Daily' }))
+			fireEvent.click(screen.getByRole('option', { name: 'day' }))
 
 			// Byweekday is kept in data (parent form should handle clearing if needed)
 			const result = getLastCallArg(mockOnChange)

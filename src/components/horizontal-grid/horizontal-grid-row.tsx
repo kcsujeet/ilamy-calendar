@@ -31,6 +31,11 @@ export interface HorizontalGridRowProps {
 	allDay?: boolean
 	showDayNumber?: boolean
 	isLastRow?: boolean
+	/**
+	 * When set with `allDay`, the flat day cells use this inner `grid-template-columns` so each cell
+	 * matches the week header/body `repeat(N, minmax(0, 1fr))` day tracks inside a spanned gutter row.
+	 */
+	dayCellsGridTemplate?: string
 }
 
 const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
@@ -44,6 +49,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	allDay,
 	showDayNumber = false,
 	isLastRow = false,
+	dayCellsGridTemplate,
 }) => {
 	const { renderResource } = useSmartCalendarContext()
 
@@ -51,6 +57,13 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	// Flat columns: each column has col.day (regular month, resource month)
 	// Grouped columns: each column has col.days[] (resource week horizontal)
 	const isGrouped = columns.some((col) => col.days)
+	// All-day rows pass equal flex widths (e.g. week `WEEK_DAY_COLUMN_CLASS`); omit
+	// default `w-20` so consumer classes and `min-w-0` control layout.
+	const flatCellLayoutClass = allDay
+		? dayCellsGridTemplate && !isGrouped
+			? 'min-w-0 h-full'
+			: 'min-w-0 flex-1'
+		: 'flex-1 w-20'
 
 	// Collect all days for flat rows
 	const flatDays = useMemo(() => {
@@ -85,8 +98,19 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 					)}
 				</ResourceCell>
 			)}
-			<div className="relative flex-1 flex">
-				<div className="flex w-full">
+			<div className={cn('relative flex flex-1', allDay && 'min-w-0 w-full')}>
+				<div
+					className={cn(
+						dayCellsGridTemplate && !isGrouped
+							? 'grid h-full min-h-12 min-w-0 w-full'
+							: cn('flex w-full', allDay && 'min-w-0')
+					)}
+					style={
+						dayCellsGridTemplate && !isGrouped
+							? { gridTemplateColumns: dayCellsGridTemplate }
+							: undefined
+					}
+				>
 					{columns.map((col, index) => {
 						if (col.days) {
 							return (
@@ -109,7 +133,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 							<GridCell
 								allDay={allDay}
 								className={cn(
-									'flex-1 w-20',
+									flatCellLayoutClass,
 									isLastRow && 'border-b-0',
 									col.className
 								)}
@@ -176,14 +200,16 @@ const GroupedColumn = memo(
 			allDay,
 		})
 
+		const groupedCellLayoutClass = allDay ? 'min-w-0 flex-1' : 'flex-1 w-20'
+
 		return (
-			<div className="flex relative w-full">
-				<div className="flex w-full">
+			<div className={cn('relative flex w-full', allDay && 'min-w-0')}>
+				<div className={cn('flex w-full', allDay && 'min-w-0')}>
 					{days.map((day) => (
 						<GridCell
 							allDay={allDay}
 							className={cn(
-								'flex-1 w-20',
+								groupedCellLayoutClass,
 								isLastRow && 'border-b-0',
 								!isLastCol && 'border-r!',
 								col.className

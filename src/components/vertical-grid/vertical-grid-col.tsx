@@ -25,6 +25,11 @@ export interface VerticalGridColProps {
 	cellSlots?: number[]
 	/** Whether this is the last column in the grid */
 	isLastColumn?: boolean
+	/**
+	 * When the parent `vertical-grid-body` uses CSS Grid tracks, omit `flex-1`/`min-w-20` so width
+	 * comes only from the grid template (week view).
+	 */
+	gridCell?: boolean
 }
 
 const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
@@ -39,18 +44,21 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	noEvents,
 	cellSlots = [60], // Default to full hour slots
 	isLastColumn,
+	gridCell = false,
 }) => {
 	return (
 		<div
 			className={cn(
-				'flex flex-col flex-1 items-center justify-center min-w-20 bg-background relative',
+				gridCell
+					? 'relative box-border flex h-full min-h-0 w-full max-w-full flex-col overflow-x-clip bg-background'
+					: 'relative box-border flex min-h-0 max-w-full min-w-20 flex-1 flex-col items-stretch justify-start overflow-x-clip bg-background',
 				className
 			)}
 			data-testid={dataTestId || keys.container.vertical.col(id)}
 		>
 			{/* Time slots */}
 			<div
-				className="w-full h-full relative grid"
+				className="relative grid h-full min-h-0 w-full max-w-full min-w-0 overflow-x-clip"
 				style={{
 					gridTemplateRows: `repeat(${days.length}, minmax(0, 1fr))`,
 				}}
@@ -65,7 +73,10 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 								: keys.cell.vertical(day, hourStr, '00', resourceId)
 						return (
 							<div
-								className="min-h-[60px] border-b border-r"
+								className={cn(
+									'min-h-[60px] min-w-0 max-w-full w-full border-b box-border',
+									isLastColumn ? 'border-r-0' : 'border-r'
+								)}
 								data-testid={testId}
 								key={keys.listKey(id, dayIndex, hourStr)}
 							>
@@ -77,7 +88,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 					return (
 						<div
 							className={cn(
-								'flex flex-col min-h-[60px]',
+								'flex min-h-[60px] min-w-0 max-w-full w-full flex-col overflow-x-clip',
 								isLastColumn ? 'border-r-0' : 'border-r'
 							)}
 							key={keys.listKey(id, dayIndex, hourStr)}

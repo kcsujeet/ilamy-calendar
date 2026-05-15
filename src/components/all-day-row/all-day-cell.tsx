@@ -11,7 +11,7 @@ const NoMemoAllDayCell: React.FC<AllDayCellProps> = ({ className }) => {
 	return (
 		<div
 			className={cn(
-				'w-16 border-r shrink-0 sticky left-0 bg-background z-20 flex border-b items-center justify-center sm:text-xs text-muted-foreground',
+				'flex shrink-0 items-center justify-center border-b border-r bg-background text-muted-foreground sm:text-xs sticky left-0 z-20 w-10 min-w-10 max-w-10 sm:w-16 sm:min-w-16 sm:max-w-16',
 				className
 			)}
 		>

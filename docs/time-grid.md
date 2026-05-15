@@ -139,6 +139,20 @@ Renders the grid structure: header, optional all-day row, and scrollable body wi
 - `cellSlots`: Sub-hour divisions (e.g., `[0, 15, 30, 45]` for 15-min slots).
 - `allDayRow`: Optional all-day event row rendered above the grid.
 - `variant`: `'regular'` for standard calendar, omit for resource calendar.
+- `bodyColumnTemplate`: Optional CSS `grid-template-columns` shared by week header, all-day row, and `vertical-grid-body` (week view only).
+
+### Week view column alignment
+
+Week view uses one template for every horizontal band so the time gutter and day columns line up:
+
+```
+`${gutter} repeat(${visibleDays.length}, minmax(0, 1fr))`
+```
+
+- `gutter` matches the time column / `AllDayCell` width (`2.5rem` / `4rem` at `sm`).
+- `week-view-header` and `AllDayRow` (`columnTemplate`) use this template directly.
+- `VerticalGrid` passes the same string as `bodyColumnTemplate`; each `VerticalGridCol` sets `gridCell` so width comes from the grid track, not `flex-1` / `min-w-20`.
+- All-day day cells use `dayCellsGridTemplate` inside the spanned grid cell (`repeat(N, minmax(0, 1fr))`).
 
 ### Column Definition
 

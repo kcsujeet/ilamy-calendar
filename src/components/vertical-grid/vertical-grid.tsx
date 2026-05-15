@@ -18,6 +18,8 @@ interface VerticalGridProps {
 	 */
 	cellSlots?: number[]
 	style?: React.CSSProperties
+	/** When set, `vertical-grid-body` uses this `grid-template-columns` (same as week header / all-day). */
+	bodyColumnTemplate?: string
 }
 
 export const VerticalGrid: React.FC<VerticalGridProps> = ({
@@ -29,6 +31,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	allDayRow,
 	cellSlots,
 	style,
+	bodyColumnTemplate,
 }) => {
 	const isResourceCalendar = variant === 'resource'
 	const isRegularCalendar = !isResourceCalendar
@@ -83,23 +86,32 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 				{isResourceCalendar && header}
 				{/* Calendar area with scroll */}
 				<div
-					className={cn('flex flex-1 min-w-full w-fit', classes?.body)}
+					className={cn(
+						bodyColumnTemplate
+							? 'grid min-h-0 min-w-0 w-full flex-1 items-stretch'
+							: 'flex flex-1 min-w-full w-fit',
+						classes?.body
+					)}
 					data-testid="vertical-grid-body"
+					style={
+						bodyColumnTemplate
+							? { gridTemplateColumns: bodyColumnTemplate }
+							: undefined
+					}
 				>
-					{/* Day columns with time slots */}
 					{columns.map((column, index) => (
 						<VerticalGridCol
 							key={keys.listKey(column.id, index)}
 							{...column}
 							cellSlots={cellSlots}
+							gridCell={Boolean(bodyColumnTemplate)}
 							gridType={gridType}
 							isLastColumn={index === columns.length - 1}
 						/>
 					))}
 				</div>
-				<ScrollBar className="z-30" /> {/* vertical scrollbar */}
-				<ScrollBar className="z-30" orientation="horizontal" />{' '}
-				{/* horizontal scrollbar */}
+				<ScrollBar className="z-30" />
+				<ScrollBar className="z-30" orientation="horizontal" />
 			</ScrollArea>
 		</div>
 	)

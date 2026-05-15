@@ -11,6 +11,8 @@ interface AllDayRowProps {
 	classes?: { row?: string; cell?: string; spacer?: string }
 	resource?: Resource
 	showSpacer?: boolean
+	/** When set with `showSpacer`, row uses CSS Grid so day cells align with the week time grid. */
+	columnTemplate?: string
 }
 
 const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
@@ -18,6 +20,7 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 	classes,
 	resource,
 	showSpacer = true,
+	columnTemplate,
 }) => {
 	const columns = days.map((day, index) => ({
 		id: keys.col.allDay(day, index),
@@ -25,6 +28,40 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 		gridType: 'day' as const,
 		className: cn('h-full min-h-12 border-r last:border-r-0', classes?.cell),
 	}))
+
+	if (columnTemplate && showSpacer) {
+		const dayBandTemplate = `repeat(${days.length}, minmax(0, 1fr))`
+
+		return (
+			<div
+				className={cn(
+					'grid min-h-12 w-full min-w-0 border-b bg-background',
+					classes?.row
+				)}
+				data-testid="all-day-row"
+				style={{ gridTemplateColumns: columnTemplate }}
+			>
+				<AllDayCell className={classes?.spacer} />
+				<div
+					className="relative min-h-12 min-w-0"
+					style={{ gridColumn: '2 / -1' }}
+				>
+					<HorizontalGridRow
+						allDay
+						className="flex h-full min-h-12 min-w-0 w-full flex-none border-0"
+						columns={columns}
+						dayCellsGridTemplate={dayBandTemplate}
+						dayNumberHeight={0}
+						gridType="day"
+						id={keys.allDayRow(resource?.id)}
+						isLastRow
+						resource={resource}
+						variant="regular"
+					/>
+				</div>
+			</div>
+		)
+	}
 
 	return (
 		<div

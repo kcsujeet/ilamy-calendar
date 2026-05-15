@@ -96,6 +96,30 @@ describe('HorizontalGridRow', () => {
 			)
 			expect(cell).toHaveClass('border-b-0')
 		})
+
+		test('all-day flat cells omit default w-20 so column className widths apply', () => {
+			const columns = [
+				{
+					id: 'col-1',
+					day: initialDate,
+					gridType: 'day' as const,
+					className: 'min-w-0 flex-1',
+				},
+			]
+
+			renderHorizontalGridRow({
+				allDay: true,
+				columns,
+				variant: 'regular',
+			})
+
+			const cell = screen.getByTestId(
+				`day-cell-${initialDate.format('YYYY-MM-DD')}`
+			)
+			expect(cell).not.toHaveClass('w-20')
+			expect(cell.className).toContain('min-w-0')
+			expect(cell.className).toContain('flex-1')
+		})
 	})
 
 	describe('grouped columns (multiple days per column - week view)', () => {

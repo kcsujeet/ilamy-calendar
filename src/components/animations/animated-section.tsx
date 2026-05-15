@@ -54,7 +54,7 @@ export const AnimatedSection: React.FC<AnimatedSectionProps> = ({
 	<AnimatePresence mode="wait">
 		<motion.div
 			animate="visible"
-			className={cn('inline-block w-full', className)}
+			className={cn('min-w-0', className)}
 			custom={{ delay, direction }}
 			data-testid={testId}
 			exit="exit"

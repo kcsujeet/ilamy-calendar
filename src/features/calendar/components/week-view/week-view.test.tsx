@@ -78,6 +78,9 @@ describe('WeekView', () => {
 		// Should have week header structure
 		const headerContainer = screen.getByTestId('vertical-grid-header')
 		expect(headerContainer).toBeInTheDocument()
+		const weekHeader = screen.getByTestId('week-view-header')
+		expect(weekHeader).toHaveClass('w-full')
+		expect(weekHeader).toHaveClass('min-w-0')
 
 		// Should have all-day row structure
 		const allDayContainers = screen.getAllByTestId('vertical-grid-all-day')

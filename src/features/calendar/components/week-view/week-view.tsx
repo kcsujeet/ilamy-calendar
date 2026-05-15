@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { HourLabel } from '@/components/hour-label/hour-label'
@@ -12,11 +12,25 @@ import { formatLocaleDate } from '@/lib/utils/date-locale-format'
 import { getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
-const CELL_CLASS =
-	'w-[calc((100%-4rem)/var(--visible-days))] min-w-[calc((100%-4rem)/var(--visible-days))] flex-1'
+// All-day row cells still use flex inside a spanned grid cell; `min-w-0 flex-1` splits that span like the body grid.
+const WEEK_DAY_COLUMN_CLASS = 'min-w-0 flex-1'
 const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
 
+// Matches Tailwind `w-10` / `sm:w-16` so the first grid track matches `AllDayCell` and the time gutter.
+const useWeekGridGutterWidth = () => {
+	const [wide, setWide] = useState(false)
+	useEffect(() => {
+		const mq = window.matchMedia('(min-width: 640px)')
+		const sync = () => setWide(mq.matches)
+		sync()
+		mq.addEventListener('change', sync)
+		return () => mq.removeEventListener('change', sync)
+	}, [])
+	return wide ? '4rem' : '2.5rem'
+}
+
 export const WeekView: React.FC = () => {
+	const gutter = useWeekGridGutterWidth()
 	const {
 		t,
 		currentDate,
@@ -43,6 +57,11 @@ export const WeekView: React.FC = () => {
 		[weekDays, hiddenDays]
 	)
 
+	const weekColumnTemplate = useMemo(
+		() => `${gutter} repeat(${visibleDays.length}, minmax(0, 1fr))`,
+		[gutter, visibleDays.length]
+	)
+
 	const hours = useMemo(
 		() =>
 			getViewHours({
@@ -58,7 +77,8 @@ export const WeekView: React.FC = () => {
 		id: keys.col.time,
 		days: hours,
 		day: undefined,
-		className: `shrink-0 ${LEFT_COL_WIDTH} sticky left-0 bg-background z-20`,
+		className:
+			'min-w-0 w-full max-w-full shrink-0 overflow-x-clip sticky left-0 bg-background z-20',
 		gridType: 'hour' as const,
 		noEvents: true,
 		renderCell: (date: Dayjs) => (
@@ -68,13 +88,12 @@ export const WeekView: React.FC = () => {
 		),
 	}
 
-	// Generate week days — each column gets its own hours on the correct date
 	const columns = useMemo(() => {
 		return visibleDays.map((day) => ({
 			id: keys.col.day(day),
 			day,
 			label: day.format('D'),
-			className: CELL_CLASS,
+			className: 'min-w-0',
 			days: getViewHours({
 				referenceDate: day,
 				businessHours,
@@ -83,29 +102,40 @@ export const WeekView: React.FC = () => {
 			}),
 			value: day,
 		}))
-	}, [weekDays, businessHours, hideNonBusinessHours, visibleDays.map])
-
-	const cssVars = {
-		'--visible-days': visibleDays.length,
-	} as React.CSSProperties
+	}, [weekDays, businessHours, hideNonBusinessHours, visibleDays])
 
 	return (
 		<VerticalGrid
 			allDayRow={
 				<AllDayRow
-					classes={{ cell: CELL_CLASS, spacer: LEFT_COL_WIDTH }}
+					classes={{
+						cell: WEEK_DAY_COLUMN_CLASS,
+						spacer: LEFT_COL_WIDTH,
+					}}
+					columnTemplate={weekColumnTemplate}
 					days={visibleDays}
 				/>
 			}
-			classes={{ header: 'w-full h-18', body: 'w-full' }}
+			bodyColumnTemplate={weekColumnTemplate}
+			classes={{
+				header: 'h-18',
+			}}
 			columns={[firstCol, ...columns]}
 			gridType="hour"
-			style={cssVars}
 			variant="regular"
 		>
-			<div className={'flex h-full flex-1'} data-testid="week-view-header">
+			<div
+				className="grid h-full min-w-0 w-full items-stretch"
+				data-testid="week-view-header"
+				style={{ gridTemplateColumns: weekColumnTemplate }}
+			>
 				{/* Corner cell with week number */}
-				<div className="w-10 sm:w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
+				<div
+					className={cn(
+						'flex h-full shrink-0 items-center justify-center border-r p-2',
+						LEFT_COL_WIDTH
+					)}
+				>
 					<div className="flex flex-col items-center justify-center">
 						<span className="text-muted-foreground text-xs">{t('week')}</span>
 						<span className="font-medium">{currentDate.week()}</span>
@@ -119,10 +149,12 @@ export const WeekView: React.FC = () => {
 					const weekdayLabel = formatLocaleDate(day.toDate(), locale, {
 						weekday: 'short',
 					})
+					const isLast = index === visibleDays.length - 1
 					return (
 						<AnimatedSection
 							className={cn(
-								'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-20 h-full',
+								'hover:bg-accent flex h-full min-w-0 flex-col justify-center cursor-pointer overflow-x-clip border-r p-1 text-center sm:p-2',
+								isLast && 'border-r-0',
 								today && 'bg-primary/10 font-bold'
 							)}
 							data-testid={keys.header.weekday('week', day.format('dddd'))}

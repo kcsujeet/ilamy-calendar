@@ -87,6 +87,45 @@ const findBaseEventIndex = (
 const getSeriesTerminationDate = (targetEvent: CalendarEvent): Date =>
 	targetEvent.start.subtract(1, 'day').endOf('day').toDate()
 
+/**
+ * For scope "all": apply the delta between the edited instance and the submitted
+ * start/end to the base event anchor — avoids shifting the whole series to the
+ * instance's calendar day when the form is opened on e.g. Friday of a Mon–Fri rule.
+ */
+const applyAllScopeUpdates = (
+	baseEvent: CalendarEvent,
+	targetEvent: CalendarEvent,
+	updates: Partial<CalendarEvent>
+): { start: Dayjs; end: Dayjs; rrule: RRuleOptions | undefined } => {
+	const baseStart = baseEvent.start
+	const baseEnd = baseEvent.end
+
+	if (!updates.start) {
+		const rrule = updates.rrule ?? baseEvent.rrule
+		const syncedRrule = rrule
+			? ({
+					...rrule,
+					dtstart: rrule.dtstart ?? baseStart.toDate(),
+				} as RRuleOptions)
+			: undefined
+		return { start: baseStart, end: baseEnd, rrule: syncedRrule }
+	}
+
+	const deltaMs = updates.start.diff(targetEvent.start)
+	const newStart = baseStart.add(deltaMs, 'millisecond')
+	const updatedEndAnchor =
+		updates.end ?? updates.start.add(baseEnd.diff(baseStart))
+	const endDeltaMs = updatedEndAnchor.diff(updates.start)
+	const newEnd = newStart.add(endDeltaMs, 'millisecond')
+
+	const mergedRrule = updates.rrule ?? baseEvent.rrule
+	const syncedRrule = mergedRrule
+		? ({ ...mergedRrule, dtstart: newStart.toDate() } as RRuleOptions)
+		: undefined
+
+	return { start: newStart, end: newEnd, rrule: syncedRrule }
+}
+
 interface GenerateRecurringEventsProps {
 	event: CalendarEvent
 	currentEvents: CalendarEvent[]
@@ -286,10 +325,20 @@ export const updateRecurringEvent = ({
 		}
 
 		case 'all': {
-			// "All events" - Update the base recurring event
+			// "All events" - Update the base recurring event (anchor dates, not instance day)
+			const anchored = applyAllScopeUpdates(baseEvent, targetEvent, updates)
+			const {
+				start: _start,
+				end: _end,
+				rrule: _rrule,
+				...nonDateUpdates
+			} = updates
 			const updatedBaseEvent = {
 				...baseEvent,
-				...updates,
+				...nonDateUpdates,
+				start: anchored.start,
+				end: anchored.end,
+				rrule: anchored.rrule,
 			}
 			updatedEvents[baseEventIndex] = updatedBaseEvent
 			break

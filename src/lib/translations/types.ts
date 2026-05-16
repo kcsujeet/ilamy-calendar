@@ -83,16 +83,7 @@ export interface Translations {
 	noResourcesVisible: string
 	addResourcesOrShowExisting: string
 
-	// Days of week
-	sunday: string
-	monday: string
-	tuesday: string
-	wednesday: string
-	thursday: string
-	friday: string
-	saturday: string
-
-	// Days short
+	// Days short (weekday column headers; full names use Intl + locale)
 	sun: string
 	mon: string
 	tue: string
@@ -100,34 +91,6 @@ export interface Translations {
 	thu: string
 	fri: string
 	sat: string
-
-	// Months
-	january: string
-	february: string
-	march: string
-	april: string
-	may: string
-	june: string
-	july: string
-	august: string
-	september: string
-	october: string
-	november: string
-	december: string
-
-	// Months short
-	jan: string
-	feb: string
-	mar: string
-	apr: string
-	mayShort: string
-	jun: string
-	jul: string
-	aug: string
-	sep: string
-	oct: string
-	nov: string
-	dec: string
 }
 
 export type TranslationKey = keyof Translations

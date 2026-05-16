@@ -98,26 +98,26 @@ describe('Header with Export Button', () => {
 
 	it('should call onDateChange when selecting a month from the built-in header dropdown', async () => {
 		const onDateChange = mock()
-		const translator = (key: string) => {
-			const dict: Record<string, string> = {
-				august: 'August',
-				september: 'September',
-			}
-			return dict[key] ?? key
-		}
+		const locale = 'en-US'
+		const augustLabel = new Intl.DateTimeFormat(locale, {
+			month: 'long',
+		}).format(new Date(2025, 7, 1))
+		const septemberLabel = new Intl.DateTimeFormat(locale, {
+			month: 'long',
+		}).format(new Date(2025, 8, 1))
 
 		renderHeader([], {
 			initialDate: dayjs('2025-08-04T09:00:00.000Z'),
+			locale,
 			onDateChange,
-			translator,
 		})
 
 		await act(async () => {
-			fireEvent.click(screen.getByRole('button', { name: 'August' }))
+			fireEvent.click(screen.getByRole('button', { name: augustLabel }))
 		})
 
 		await act(async () => {
-			fireEvent.click(screen.getByRole('button', { name: 'September' }))
+			fireEvent.click(screen.getByRole('button', { name: septemberLabel }))
 		})
 
 		await waitFor(() => {

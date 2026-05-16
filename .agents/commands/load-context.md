@@ -145,7 +145,7 @@ Multi-resource calendar views:
 #### Library (`src/lib/`)
 
 - `configs/dayjs-config.ts` - Pre-configured dayjs (always import from here)
-- `translations/default.ts` - Default English translations (94 keys)
+- `translations/default.ts` - Default English translations (77 keys)
 - `translations/types.ts` - Translation types
 - `utils/date-utils.ts` - Date manipulation
 - `utils/position-day-events.ts` - Day view event positioning

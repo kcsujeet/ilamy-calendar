@@ -188,7 +188,7 @@ export const YearView = () => {
 								transitionKey={keys.listKey('month', month.monthKey)}
 							>
 								<button
-									className="text-lg font-medium hover:underline cursor-pointer"
+									className="text-lg font-medium hover:underline cursor-pointer capitalize"
 									data-testid={keys.header.year.month(month.monthKey, 'title')}
 									onClick={() => navigateToDate(month.date, 'month')}
 									type="button"

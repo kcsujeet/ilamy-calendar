@@ -82,15 +82,6 @@ export interface Translations {
 	date: string
 	noResourcesVisible: string
 	addResourcesOrShowExisting: string
-
-	// Days short (weekday column headers; full names use Intl + locale)
-	sun: string
-	mon: string
-	tue: string
-	wed: string
-	thu: string
-	fri: string
-	sat: string
 }
 
 export type TranslationKey = keyof Translations

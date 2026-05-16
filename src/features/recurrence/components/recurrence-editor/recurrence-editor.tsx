@@ -16,6 +16,7 @@ import {
 import type { RRuleOptions } from '@/features/recurrence/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
+import { formatLocaleWeekday } from '@/lib/utils/date-locale-format'
 import { keys } from '@/lib/utils/keys'
 
 const FREQ_MAP = {
@@ -36,7 +37,6 @@ const WEEKDAYS = [
 	RRule.FR,
 	RRule.SA,
 ]
-const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 const END_TYPES = [
 	{ type: 'never', id: 'never', labelKey: 'never' },
 	{ type: 'count', id: 'after', labelKey: 'after' },
@@ -67,13 +67,22 @@ interface Props {
 }
 
 export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
-	const { t } = useSmartCalendarContext((ctx) => ({ t: ctx.t }))
+	const { t, currentLocale, currentDate } = useSmartCalendarContext((ctx) => ({
+		t: ctx.t,
+		currentLocale: ctx.currentLocale,
+		currentDate: ctx.currentDate,
+	}))
+	const locale = currentLocale || currentDate.locale()
 	const [show, setShow] = useState(!!value)
 	const [opts, setOpts] = useState<RRuleOptions | null>(() => value || null)
 
 	const weekDays = useMemo(
-		() => DAY_KEYS.map((k, i) => ({ value: WEEKDAYS[i], label: t(k) })),
-		[t]
+		() =>
+			WEEKDAYS.map((value, dayIndex) => ({
+				value,
+				label: formatLocaleWeekday(dayIndex, locale, 'short'),
+			})),
+		[locale]
 	)
 
 	useEffect(() => {

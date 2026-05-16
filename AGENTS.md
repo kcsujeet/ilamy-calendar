@@ -111,7 +111,7 @@ Every event must have a globally unique `uid`. EXDATE uses ISO strings in `exdat
 
 ### i18n
 
-`CalendarProvider` handles translations. Props: `translations?: Translations` or `translator?: TranslatorFunction`. Falls back to English. All components access via `useIlamyCalendarContext().t()`. 77 translation keys. See `docs/translation-usage.md` for full details.
+`CalendarProvider` handles translations. Props: `translations?: Translations` or `translator?: TranslatorFunction`. Falls back to English. All components access via `useIlamyCalendarContext().t()`. 70 translation keys. See `docs/translation-usage.md` for full details.
 
 ## Key Paths
 

@@ -2,6 +2,7 @@ import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
+import { formatLocaleDate } from '@/lib/utils/date-locale-format'
 import { getWeekDays } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
@@ -9,26 +10,16 @@ interface MonthHeaderProps {
 	className?: string
 }
 
-const WEEKDAY_SHORT_TRANSLATION_KEYS = [
-	'sun',
-	'mon',
-	'tue',
-	'wed',
-	'thu',
-	'fri',
-	'sat',
-] as const
-
 export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 	const {
-		t,
+		currentDate,
+		currentLocale,
 		firstDayOfWeek,
 		stickyViewHeader,
 		viewHeaderClassName,
-		currentDate,
 	} = useSmartCalendarContext()
+	const locale = currentLocale || currentDate.locale()
 
-	// Reorder week days based on firstDayOfWeek
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
 
 	return (
@@ -50,7 +41,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 					transitionKey={weekDay.toISOString()}
 				>
 					<span className="text-sm capitalize">
-						{t(WEEKDAY_SHORT_TRANSLATION_KEYS[weekDay.day()] ?? 'sun')}
+						{formatLocaleDate(weekDay.toDate(), locale, { weekday: 'short' })}
 					</span>
 				</AnimatedSection>
 			))}

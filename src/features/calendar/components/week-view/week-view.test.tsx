@@ -261,29 +261,24 @@ describe('WeekView', () => {
 		expect(dec25Events).toBeInTheDocument()
 	})
 
-	test('uses translator-provided short weekday labels in header', () => {
+	test('uses locale-formatted short weekday labels in header', () => {
 		cleanup()
 		const initialDate = dayjs('2025-01-08T10:00:00.000Z') // Wednesday
-		const customLabels = {
-			sun: 'S0',
-			mon: 'M1',
-			tue: 'T2',
-			wed: 'W3',
-			thu: 'T4',
-			fri: 'F5',
-			sat: 'S6',
-		}
-		const translator = (key: string) =>
-			(customLabels as Record<string, string>)[key] ?? key
+		const locale = 'en-US'
+		const labels = Array.from({ length: 7 }, (_, dayIndex) =>
+			new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(
+				new Date(2025, 0, 5 + dayIndex)
+			)
+		)
 
 		renderWeekView({
 			initialDate,
-			translator,
+			locale,
 		})
 
-		Object.values(customLabels).forEach((label) => {
+		for (const label of labels) {
 			expect(screen.getByText(label)).toBeInTheDocument()
-		})
+		}
 	})
 
 	test('defaults to current week when no initial date provided', () => {

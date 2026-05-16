@@ -3,38 +3,14 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import type { TranslationKey } from '@/lib/translations/types'
 import { cn } from '@/lib/utils'
-import { formatLocaleDate } from '@/lib/utils/date-locale-format'
+import {
+	formatLocaleDate,
+	getOrderedWeekdayInitials,
+} from '@/lib/utils/date-locale-format'
 import { getDayKey, getMonthWeeks, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
-const WEEKDAY_SHORT_TRANSLATION_KEYS = [
-	'sun',
-	'mon',
-	'tue',
-	'wed',
-	'thu',
-	'fri',
-	'sat',
-] as const
-
-// Returns the first character of a translated label, uppercased.
-const getTranslatedFirstLetter = (label: string): string => {
-	if (!label) {
-		return ''
-	}
-	return label.charAt(0).toLocaleUpperCase()
-}
-
-// Reorders short weekday translation keys so the grid starts on firstDayOfWeek.
-const getOrderedWeekdayKeys = (
-	firstDayOfWeek: number
-): readonly TranslationKey[] =>
-	Array.from({ length: 7 }, (_, index) => {
-		const dayIndex = (firstDayOfWeek + index) % 7
-		return WEEKDAY_SHORT_TRANSLATION_KEYS[dayIndex] as TranslationKey
-	})
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
 
 interface MonthData {
@@ -66,9 +42,9 @@ export const YearView = () => {
 	} = useSmartCalendarContext()
 	const locale = currentLocale || currentDate.locale()
 	const currentYear = currentDate.year()
-	const weekdayHeaderKeys = useMemo(
-		() => getOrderedWeekdayKeys(firstDayOfWeek),
-		[firstDayOfWeek]
+	const weekdayHeaderLetters = useMemo(
+		() => getOrderedWeekdayInitials(firstDayOfWeek, locale),
+		[firstDayOfWeek, locale]
 	)
 
 	const generateMonthsData = (): MonthData[] => {
@@ -213,12 +189,16 @@ export const YearView = () => {
 								className="grid grid-cols-7 gap-px text-[0.6rem]"
 								data-testid={keys.header.year.month(month.monthKey, 'mini')}
 							>
-								{weekdayHeaderKeys.map((dayKey) => (
+								{weekdayHeaderLetters.map((letter, dayIndex) => (
 									<div
 										className="text-muted-foreground h-3 text-center"
-										key={keys.listKey('header', month.monthKey, dayKey)}
+										key={keys.listKey(
+											'header',
+											month.monthKey,
+											String(dayIndex)
+										)}
 									>
-										{getTranslatedFirstLetter(t(dayKey))}
+										{letter}
 									</div>
 								))}
 

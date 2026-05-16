@@ -186,24 +186,19 @@ describe('MonthView', () => {
 		expect(todayCell).toBeInTheDocument()
 	})
 
-	test('uses translator-provided lowercase weekday labels in month header', () => {
+	test('uses locale-formatted short weekday labels in month header', () => {
 		cleanup()
-		const customLabels = {
-			sun: 's0',
-			mon: 'm1',
-			tue: 't2',
-			wed: 'w3',
-			thu: 't4',
-			fri: 'f5',
-			sat: 's6',
-		}
-		const translator = (key: string) =>
-			(customLabels as Record<string, string>)[key] ?? key
+		const locale = 'en-US'
+		const labels = Array.from({ length: 7 }, (_, dayIndex) =>
+			new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(
+				new Date(2025, 0, 5 + dayIndex)
+			)
+		)
 
-		renderMonthView({ translator })
+		renderMonthView({ locale })
 
-		Object.values(customLabels).forEach((label) => {
+		for (const label of labels) {
 			expect(screen.getByText(label)).toBeInTheDocument()
-		})
+		}
 	})
 })

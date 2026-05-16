@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { formatLocaleDate, formatLocaleDateRange } from './date-locale-format'
+import {
+	formatLocaleDate,
+	formatLocaleDateRange,
+	formatLocaleWeekday,
+	formatLocaleWeekdayInitial,
+	getOrderedWeekdayInitials,
+} from './date-locale-format'
 
 describe('formatLocaleDate', () => {
 	test('formats weekday, short month, and day for fr', () => {
@@ -45,5 +51,23 @@ describe('formatLocaleDateRange', () => {
 		expect(label).toMatch(/May/)
 		expect(label).toMatch(/5/)
 		expect(label).toMatch(/11/)
+	})
+})
+
+describe('formatLocaleWeekday', () => {
+	test('formats short weekday for en-US', () => {
+		expect(formatLocaleWeekday(1, 'en-US', 'short')).toMatch(/Mon/i)
+	})
+})
+
+describe('getOrderedWeekdayInitials', () => {
+	test('starts on Monday when firstDayOfWeek is 1', () => {
+		const initials = getOrderedWeekdayInitials(1, 'en-US')
+		expect(initials[0]).toBe('M')
+		expect(initials[6]).toBe('S')
+	})
+
+	test('formats French narrow initial for Sunday', () => {
+		expect(formatLocaleWeekdayInitial(0, 'fr-FR')).toBe('D')
 	})
 })

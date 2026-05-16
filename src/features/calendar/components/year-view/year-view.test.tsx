@@ -4,6 +4,7 @@ import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
+import { getOrderedWeekdayInitials } from '@/lib/utils/date-locale-format'
 import { YearView } from './year-view'
 
 const monthNames = [
@@ -200,29 +201,19 @@ describe('YearView', () => {
 			}
 		})
 
-		test('uses first uppercase letter of translator weekday labels', () => {
+		test('uses locale-formatted weekday initials in mini calendars', () => {
 			cleanup()
-			const customLabels = {
-				sun: 'dim',
-				mon: 'lun',
-				tue: 'mar',
-				wed: 'mer',
-				thu: 'jeu',
-				fri: 'ven',
-				sat: 'sam',
+			const locale = 'fr-FR'
+			const initials = getOrderedWeekdayInitials(0, locale)
+
+			renderYearView({ locale })
+
+			for (const letter of new Set(initials)) {
+				const countPerMonth = initials.filter(
+					(value) => value === letter
+				).length
+				expect(screen.getAllByText(letter).length).toBe(countPerMonth * 12)
 			}
-			const translator = (key: string) =>
-				(customLabels as Record<string, string>)[key] ?? key
-
-			renderYearView({ translator })
-
-			// 12 months × 7 headers (first letter of each French short label)
-			expect(screen.getAllByText('D').length).toBe(12)
-			expect(screen.getAllByText('L').length).toBe(12)
-			expect(screen.getAllByText('M').length).toBe(24)
-			expect(screen.getAllByText('J').length).toBe(12)
-			expect(screen.getAllByText('V').length).toBe(12)
-			expect(screen.getAllByText('S').length).toBe(12)
 		})
 
 		test('renders grid with responsive classes', () => {

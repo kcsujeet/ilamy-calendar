@@ -86,13 +86,4 @@ export const defaultTranslations: Translations = {
 	date: 'Date',
 	noResourcesVisible: 'No resources visible',
 	addResourcesOrShowExisting: 'Add resources or show existing ones',
-
-	// Days short (weekday column headers; full names use Intl + locale)
-	sun: 'Sun',
-	mon: 'Mon',
-	tue: 'Tue',
-	wed: 'Wed',
-	thu: 'Thu',
-	fri: 'Fri',
-	sat: 'Sat',
 }

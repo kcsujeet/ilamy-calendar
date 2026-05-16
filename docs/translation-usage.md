@@ -140,7 +140,6 @@ All required translation keys are defined in the `Translations` type:
 - **Actions**: `today`, `create`, `edit`, `update`, `delete`, `cancel`, `save`
 - **Event Form**: `createEvent`, `editEvent`, `eventTitlePlaceholder`, etc.
 - **Views**: `month`, `week`, `day`, `year`
-- **Days**: `sun`–`sat` (short labels for column headers and recurrence UI)
 - **Dates in UI**: month and weekday names in headers, pickers, and views use the
   calendar `locale` prop with `Intl.DateTimeFormat`, not translation keys.
 

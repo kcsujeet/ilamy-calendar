@@ -8,26 +8,19 @@ import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { formatLocaleDate } from '@/lib/utils/date-locale-format'
 import { getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
 const CELL_CLASS =
 	'w-[calc((100%-4rem)/var(--visible-days))] min-w-[calc((100%-4rem)/var(--visible-days))] flex-1'
 const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
-const WEEKDAY_SHORT_TRANSLATION_KEYS = [
-	'sun',
-	'mon',
-	'tue',
-	'wed',
-	'thu',
-	'fri',
-	'sat',
-] as const
 
 export const WeekView: React.FC = () => {
 	const {
 		t,
 		currentDate,
+		currentLocale,
 		firstDayOfWeek,
 		selectDate,
 		openEventForm,
@@ -35,6 +28,7 @@ export const WeekView: React.FC = () => {
 		hideNonBusinessHours,
 		hiddenDays,
 	} = useSmartCalendarContext()
+	const locale = currentLocale || currentDate.locale()
 
 	const weekDays = useMemo(
 		() => getWeekDays(currentDate, firstDayOfWeek),
@@ -122,9 +116,9 @@ export const WeekView: React.FC = () => {
 				{visibleDays.map((day, index) => {
 					const today = isToday(day)
 					const key = keys.header.week.day(day)
-					const translatedWeekday = t(
-						WEEKDAY_SHORT_TRANSLATION_KEYS[day.day()] ?? 'Sun'
-					)
+					const weekdayLabel = formatLocaleDate(day.toDate(), locale, {
+						weekday: 'short',
+					})
 					return (
 						<AnimatedSection
 							className={cn(
@@ -141,7 +135,7 @@ export const WeekView: React.FC = () => {
 							transitionKey={key}
 						>
 							<div className="text-xs sm:text-sm capitalize">
-								{translatedWeekday}
+								{weekdayLabel}
 							</div>
 							<div
 								className={cn(

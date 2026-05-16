@@ -8,8 +8,9 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@/components/ui/popover'
-import dayjs from '@/lib/configs/dayjs-config'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
+import { formatLocaleDate } from '@/lib/utils/date-locale-format'
 
 interface DatePickerProps {
 	date: Date | undefined
@@ -18,16 +19,32 @@ interface DatePickerProps {
 	className?: string
 	closeOnSelect?: boolean
 	disabled?: (date: Date) => boolean
+	locale?: string
+	firstDayOfWeek?: number
 }
 
 export function DatePicker({
 	date,
 	closeOnSelect,
 	onChange,
-	label = 'Pick a date',
+	label,
 	className,
 	disabled,
+	locale: localeProp,
+	firstDayOfWeek: firstDayOfWeekProp,
 }: DatePickerProps) {
+	const { currentLocale, firstDayOfWeek, t, currentDate } =
+		useSmartCalendarContext((ctx) => ({
+			currentLocale: ctx.currentLocale,
+			firstDayOfWeek: ctx.firstDayOfWeek,
+			t: ctx.t,
+			currentDate: ctx.currentDate,
+		}))
+
+	const locale = localeProp ?? currentLocale ?? currentDate.locale()
+	const weekStart = firstDayOfWeekProp ?? firstDayOfWeek ?? 0
+	const emptyLabel = label ?? t('pickADate')
+
 	const popOverRef = useRef<HTMLButtonElement | null>(null)
 	const [selectedDate, setSelectedDate] = useState<Date | undefined>(date)
 
@@ -35,13 +52,21 @@ export function DatePicker({
 		setSelectedDate(date)
 	}, [date])
 
-	const handleDateSelect = (date: Date | undefined) => {
-		setSelectedDate(date)
+	const handleDateSelect = (nextDate: Date | undefined) => {
+		setSelectedDate(nextDate)
 		if (closeOnSelect) {
 			popOverRef.current?.click()
 		}
-		onChange?.(date)
+		onChange?.(nextDate)
 	}
+
+	const formattedDate = selectedDate
+		? formatLocaleDate(selectedDate, locale, {
+				month: 'short',
+				day: 'numeric',
+				year: 'numeric',
+			})
+		: null
 
 	return (
 		<div className={className}>
@@ -55,10 +80,10 @@ export function DatePicker({
 						variant="outline"
 					>
 						<CalendarIcon />
-						{selectedDate ? (
-							dayjs(selectedDate).format('MMM D, YYYY')
+						{formattedDate ? (
+							<span>{formattedDate}</span>
 						) : (
-							<span>{label}</span>
+							<span>{emptyLabel}</span>
 						)}
 					</Button>
 				</PopoverTrigger>
@@ -67,7 +92,11 @@ export function DatePicker({
 					<Calendar
 						defaultMonth={selectedDate}
 						disabled={disabled}
+						firstDayOfWeek={weekStart}
+						locale={locale}
+						nextMonthLabel={t('nextMonth')}
 						onSelect={handleDateSelect}
+						previousMonthLabel={t('previousMonth')}
 						selected={selectedDate}
 					/>
 				</PopoverContent>

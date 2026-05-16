@@ -1,9 +1,10 @@
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getMonthWeeks, isToday } from '@/lib/utils/date-utils'
+import { formatLocaleDate } from '@/lib/utils/date-locale-format'
+import { getMonthWeeks, getWeekDays, isToday } from '@/lib/utils/date-utils'
 
 interface CalendarProps {
 	selected?: Date
@@ -11,10 +12,11 @@ interface CalendarProps {
 	onSelect?: (date: Date | undefined) => void
 	disabled?: (date: Date) => boolean
 	firstDayOfWeek?: number
+	locale?: string
+	previousMonthLabel?: string
+	nextMonthLabel?: string
 	className?: string
 }
-
-const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
 export function Calendar({
 	selected,
@@ -22,6 +24,9 @@ export function Calendar({
 	onSelect,
 	disabled,
 	firstDayOfWeek = 0,
+	locale = 'en',
+	previousMonthLabel = 'Previous month',
+	nextMonthLabel = 'Next month',
 	className,
 }: CalendarProps) {
 	const [viewMonth, setViewMonth] = useState<Dayjs>(() =>
@@ -32,10 +37,19 @@ export function Calendar({
 	const selectedKey = selected
 		? dayjs(selected).format('YYYY-MM-DD')
 		: undefined
-	const weekdayHeaders = Array.from(
-		{ length: 7 },
-		(_, i) => WEEKDAY_LABELS[(firstDayOfWeek + i) % 7]
+
+	const weekdayHeaders = useMemo(
+		() =>
+			getWeekDays(viewMonth, firstDayOfWeek).map((day) =>
+				formatLocaleDate(day.toDate(), locale, { weekday: 'short' })
+			),
+		[viewMonth, firstDayOfWeek, locale]
 	)
+
+	const monthCaption = formatLocaleDate(viewMonth.toDate(), locale, {
+		month: 'long',
+		year: 'numeric',
+	})
 
 	return (
 		<div
@@ -44,18 +58,18 @@ export function Calendar({
 		>
 			<div className="flex items-center justify-between mb-2">
 				<Button
-					aria-label="Previous month"
+					aria-label={previousMonthLabel}
 					onClick={() => setViewMonth((m) => m.subtract(1, 'month'))}
 					size="icon"
 					variant="ghost"
 				>
 					<ChevronLeftIcon className="size-4" />
 				</Button>
-				<div className="text-sm font-medium select-none">
-					{viewMonth.format('MMMM YYYY')}
+				<div className="text-sm font-medium select-none capitalize">
+					{monthCaption}
 				</div>
 				<Button
-					aria-label="Next month"
+					aria-label={nextMonthLabel}
 					onClick={() => setViewMonth((m) => m.add(1, 'month'))}
 					size="icon"
 					variant="ghost"
@@ -73,7 +87,7 @@ export function Calendar({
 					<tr>
 						{weekdayHeaders.map((label, i) => (
 							<th
-								className="text-muted-foreground text-xs font-medium select-none py-1"
+								className="text-muted-foreground text-xs font-medium select-none py-1 capitalize"
 								// biome-ignore lint/suspicious/noArrayIndexKey: weekday header order is stable
 								key={i}
 							>

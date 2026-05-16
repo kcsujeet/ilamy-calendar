@@ -86,4 +86,9 @@ export const defaultTranslations: Translations = {
 	date: 'Date',
 	noResourcesVisible: 'No resources visible',
 	addResourcesOrShowExisting: 'Add resources or show existing ones',
+
+	// Date picker
+	pickADate: 'Pick a date',
+	previousMonth: 'Previous month',
+	nextMonth: 'Next month',
 }

@@ -82,6 +82,11 @@ export interface Translations {
 	date: string
 	noResourcesVisible: string
 	addResourcesOrShowExisting: string
+
+	// Date picker
+	pickADate: string
+	previousMonth: string
+	nextMonth: string
 }
 
 export type TranslationKey = keyof Translations

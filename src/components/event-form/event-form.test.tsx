@@ -90,6 +90,21 @@ describe('EventForm', () => {
 			expect(screen.queryAllByRole('combobox')).toHaveLength(2)
 		})
 
+		it('formats date picker labels with the calendar locale', () => {
+			const frenchLabel = new Intl.DateTimeFormat('fr-FR', {
+				month: 'short',
+				day: 'numeric',
+				year: 'numeric',
+			}).format(new Date('2025-08-15T12:00:00.000Z'))
+
+			renderEventForm(
+				{ ...defaultProps, selectedEvent: testNewEvent },
+				{ locale: 'fr-FR' }
+			)
+
+			expect(screen.getAllByText(frenchLabel)).toHaveLength(2)
+		})
+
 		it('should initialize form with event data when editing', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testEvent })
 

@@ -114,8 +114,9 @@ describe('recurrence-handler utility tests', () => {
 				scope: 'all',
 			})
 
-			expect(result).toHaveLength(1)
-			expect(result[0].title).toBe('New Title')
+			expect(result.events).toHaveLength(1)
+			expect(result.updated[0].title).toBe('New Title')
+			expect(result.added).toHaveLength(0)
 		})
 	})
 

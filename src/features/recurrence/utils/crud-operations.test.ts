@@ -169,15 +169,18 @@ describe('updateRecurringEvent', () => {
 				scope: 'this',
 			})
 
-			expect(result).toHaveLength(2) // base event + modified standalone event
+			expect(result.events).toHaveLength(2) // base event + modified standalone event
+			expect(result.updated).toHaveLength(1)
+			expect(result.added).toHaveLength(1)
 
 			// Base event should have EXDATE
-			const updatedBaseEvent = result.find((e) => e.id === baseEvent.id)
-			expect(updatedBaseEvent?.exdates).toHaveLength(1)
-			expect(updatedBaseEvent?.exdates).toContain('2025-01-20T09:00:00.000Z')
+			const updatedBaseEvent = result.updated[0]
+			expect(updatedBaseEvent.id).toBe(baseEvent.id)
+			expect(updatedBaseEvent.exdates).toHaveLength(1)
+			expect(updatedBaseEvent.exdates).toContain('2025-01-20T09:00:00.000Z')
 
 			// Should have new standalone modified event
-			const modifiedEvent = result.find((e) => e.id !== baseEvent.id)
+			const modifiedEvent = result.added[0]
 			expect(modifiedEvent?.title).toBe('Modified Meeting')
 			expect(modifiedEvent?.recurrenceId).toBe('2025-01-20T09:00:00.000Z')
 			expect(modifiedEvent?.uid).toBe(baseEvent.uid)
@@ -199,10 +202,10 @@ describe('updateRecurringEvent', () => {
 				scope: 'this',
 			})
 
-			const updatedBaseEvent = result.find((e) => e.id === baseEvent.id)
-			expect(updatedBaseEvent?.exdates).toHaveLength(2)
-			expect(updatedBaseEvent?.exdates).toContain('2025-01-13T09:00:00.000Z')
-			expect(updatedBaseEvent?.exdates).toContain('2025-01-20T09:00:00.000Z')
+			expect(result.updated).toHaveLength(1)
+			expect(result.updated[0].exdates).toHaveLength(2)
+			expect(result.updated[0].exdates).toContain('2025-01-13T09:00:00.000Z')
+			expect(result.updated[0].exdates).toContain('2025-01-20T09:00:00.000Z')
 		})
 	})
 
@@ -223,10 +226,12 @@ describe('updateRecurringEvent', () => {
 				scope: 'following',
 			})
 
-			expect(result).toHaveLength(2) // terminated original + new series
+			expect(result.events).toHaveLength(2) // terminated original + new series
+			expect(result.updated).toHaveLength(1)
+			expect(result.added).toHaveLength(1)
 
 			// Original series should be terminated with UNTIL
-			const terminatedEvent = result.find((e) => e.id === baseEvent.id)
+			const terminatedEvent = result.updated[0]
 			if (!terminatedEvent?.rrule)
 				throw new Error('terminatedEvent.rrule missing')
 			expect(terminatedEvent.rrule.until).toEqual(
@@ -234,7 +239,7 @@ describe('updateRecurringEvent', () => {
 			)
 
 			// New series should start from target date
-			const newSeries = result.find((e) => e.id !== baseEvent.id)
+			const newSeries = result.added[0]
 			expect(newSeries?.title).toBe('Modified Series')
 			expect(newSeries?.start.isSame(dayjs('2025-01-20T14:00:00'))).toEqual(
 				true
@@ -258,10 +263,10 @@ describe('updateRecurringEvent', () => {
 				scope: 'following',
 			})
 
-			expect(result).toHaveLength(2)
+			expect(result.events).toHaveLength(2)
 
 			// Original should terminate before first occurrence (effectively making it empty)
-			const terminatedEvent = result.find((e) => e.id === baseEvent.id)
+			const terminatedEvent = result.updated[0]
 			if (!terminatedEvent?.rrule)
 				throw new Error('terminatedEvent.rrule missing')
 			expect(terminatedEvent.rrule.until).toEqual(
@@ -291,9 +296,11 @@ describe('updateRecurringEvent', () => {
 				scope: 'all',
 			})
 
-			expect(result).toHaveLength(1)
+			expect(result.events).toHaveLength(1)
+			expect(result.updated).toHaveLength(1)
+			expect(result.added).toHaveLength(0)
 
-			const updatedEvent = result[0]
+			const updatedEvent = result.updated[0]
 			expect(updatedEvent.title).toBe('Updated All Events')
 			if (!updatedEvent.rrule) throw new Error('updatedEvent.rrule missing')
 			expect(updatedEvent.rrule.freq).toBe(RRule.DAILY)
@@ -316,8 +323,8 @@ describe('updateRecurringEvent', () => {
 				scope: 'all',
 			})
 
-			expect(result).toHaveLength(2)
-			expect(result.find((e) => e.id === 'other-event')).toBeDefined()
+			expect(result.events).toHaveLength(2)
+			expect(result.events.find((e) => e.id === 'other-event')).toBeDefined()
 		})
 
 		it('should keep base series anchor when editing a later instance (scope: all)', () => {
@@ -356,7 +363,7 @@ describe('updateRecurringEvent', () => {
 				scope: 'all',
 			})
 
-			const updatedBase = result[0]
+			const updatedBase = result.updated[0]
 			expect(updatedBase.title).toBe('Updated Weekdays')
 			expect(updatedBase.start.toISOString()).toBe(mondayStartISO)
 			if (!updatedBase.rrule) throw new Error('updatedBase.rrule missing')
@@ -364,7 +371,7 @@ describe('updateRecurringEvent', () => {
 
 			const instances = generateRecurringEvents({
 				event: updatedBase,
-				currentEvents: result,
+				currentEvents: result.events,
 				startDate: dayjs('2025-01-06T00:00:00.000Z'),
 				endDate: dayjs('2025-01-12T23:59:59.999Z'),
 			})
@@ -394,8 +401,12 @@ describe('updateRecurringEvent', () => {
 				scope: 'all',
 			})
 
-			expect(result[0].start.toISOString()).toBe('2025-01-06T11:00:00.000Z')
-			expect(result[0].end.toISOString()).toBe('2025-01-06T12:00:00.000Z')
+			expect(result.updated[0].start.toISOString()).toBe(
+				'2025-01-06T11:00:00.000Z'
+			)
+			expect(result.updated[0].end.toISOString()).toBe(
+				'2025-01-06T12:00:00.000Z'
+			)
 		})
 	})
 
@@ -720,7 +731,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { title: 'Modified' },
 			currentEvents,
 			scope: 'this',
-		})
+		}).events
 
 		expect(currentEvents).toHaveLength(2) // base + modified
 
@@ -753,7 +764,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { title: 'First Split' },
 			currentEvents,
 			scope: 'following',
-		})
+		}).events
 
 		expect(currentEvents).toHaveLength(2) // terminated original + new series
 
@@ -768,7 +779,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { title: 'Second Split' },
 			currentEvents,
 			scope: 'following',
-		})
+		}).events
 
 		expect(currentEvents).toHaveLength(3) // original terminated + first series terminated + second series
 	})
@@ -791,7 +802,7 @@ describe('Edge cases and stress tests', () => {
 			scope: 'following',
 		})
 
-		const newSeries = result.find((e) => e.uid?.includes('_following'))
+		const newSeries = result.added[0]
 		expect(newSeries?.start.format('HH:mm')).toBe('14:00')
 		expect(newSeries?.end.format('HH:mm')).toBe('16:30') // Should preserve 2.5 hour duration
 	})

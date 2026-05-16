@@ -15,6 +15,7 @@ export type { RRuleOptions } from './features/recurrence/types'
 export {
 	generateRecurringEvents,
 	isRecurringEvent,
+	type RecurringUpdateResult,
 } from './features/recurrence/utils/recurrence-handler'
 export type { IlamyResourceCalendarProps } from './features/resource-calendar/components/ilamy-resource-calendar'
 export { IlamyResourceCalendar } from './features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'

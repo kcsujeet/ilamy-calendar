@@ -357,6 +357,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 
 	it('should call regular callbacks for recurring event operations', () => {
 		const onEventUpdate = mock(() => {})
+		const onEventAdd = mock(() => {})
 		const onEventDelete = mock(() => {})
 
 		const recurringEvent: CalendarEvent = {
@@ -416,16 +417,22 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 		const { getByTestId } = renderProvider(<TestRecurringCallbacks />, {
 			events: [recurringEvent],
 			dayMaxEvents: 5,
+			onEventAdd: onEventAdd,
 			onEventUpdate: onEventUpdate,
 			onEventDelete: onEventDelete,
 		})
 
-		// Test updating recurring event - should call onEventUpdate with the updated event
+		// scope "this": update parent (EXDATE) + add detached override
 		getByTestId('update-recurring').click()
-		expect(onEventUpdate).toHaveBeenCalledWith({
-			...recurringEvent,
-			title: 'Updated Weekly Meeting',
-		})
+		expect(onEventUpdate).toHaveBeenCalledTimes(1)
+		const updatedParent = onEventUpdate.mock.calls[0][0]
+		expect(updatedParent.id).toBe('weekly-meeting')
+		expect(updatedParent.title).toBe('Weekly Meeting')
+		expect(updatedParent.exdates).toContain('2025-01-06T10:00:00.000Z')
+		expect(onEventAdd).toHaveBeenCalledTimes(1)
+		const addedOverride = onEventAdd.mock.calls[0][0]
+		expect(addedOverride.title).toBe('Updated Weekly Meeting')
+		expect(addedOverride.recurrenceId).toBe('2025-01-06T10:00:00.000Z')
 
 		// Test deleting recurring event - should call onEventDelete with the event
 		getByTestId('delete-recurring').click()

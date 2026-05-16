@@ -246,12 +246,21 @@ interface UpdateRecurringEventProps {
 	scope: 'this' | 'following' | 'all'
 }
 
+/** Stored events changed by `updateRecurringEvent` — for persistence callbacks. */
+export interface RecurringUpdateResult {
+	events: CalendarEvent[]
+	/** Existing rows to persist via `onEventUpdate` (e.g. base + EXDATE). */
+	updated: CalendarEvent[]
+	/** New rows to persist via `onEventAdd` (e.g. detached override, split series). */
+	added: CalendarEvent[]
+}
+
 export const updateRecurringEvent = ({
 	targetEvent,
 	updates,
 	currentEvents,
 	scope,
-}: UpdateRecurringEventProps): CalendarEvent[] => {
+}: UpdateRecurringEventProps): RecurringUpdateResult => {
 	const updatedEvents = [...currentEvents]
 	const baseEventIndex = findBaseEventIndex(updatedEvents, targetEvent)
 	const baseEvent = updatedEvents[baseEventIndex]
@@ -281,7 +290,11 @@ export const updateRecurringEvent = ({
 				rrule: undefined, // Standalone events don't have RRULE
 			} as CalendarEvent
 			updatedEvents.push(modifiedEvent)
-			break
+			return {
+				events: updatedEvents,
+				updated: [updatedBaseEvent],
+				added: [modifiedEvent],
+			}
 		}
 
 		case 'following': {
@@ -321,7 +334,11 @@ export const updateRecurringEvent = ({
 				recurrenceId: undefined, // This is a new base event, not an instance
 			}
 			updatedEvents.push(newSeriesEvent)
-			break
+			return {
+				events: updatedEvents,
+				updated: [terminatedEvent],
+				added: [newSeriesEvent],
+			}
 		}
 
 		case 'all': {
@@ -341,7 +358,11 @@ export const updateRecurringEvent = ({
 				rrule: anchored.rrule,
 			}
 			updatedEvents[baseEventIndex] = updatedBaseEvent
-			break
+			return {
+				events: updatedEvents,
+				updated: [updatedBaseEvent],
+				added: [],
+			}
 		}
 
 		default:
@@ -349,8 +370,6 @@ export const updateRecurringEvent = ({
 				`Invalid scope: ${scope}. Must be 'this', 'following', or 'all'`
 			)
 	}
-
-	return updatedEvents
 }
 
 interface DeleteRecurringEventProps {

@@ -260,17 +260,21 @@ export const useCalendarEngine = (
 			updates: Partial<CalendarEvent>,
 			options: RecurrenceEditOptions
 		) => {
-			onEventUpdate?.({ ...event, ...updates })
-			setCurrentEvents(
-				updateRecurringEventImpl({
-					targetEvent: event,
-					updates,
-					currentEvents,
-					scope: options.scope,
-				})
-			)
+			const { events, updated, added } = updateRecurringEventImpl({
+				targetEvent: event,
+				updates,
+				currentEvents,
+				scope: options.scope,
+			})
+			for (const storedEvent of updated) {
+				onEventUpdate?.(storedEvent)
+			}
+			for (const storedEvent of added) {
+				onEventAdd?.(storedEvent)
+			}
+			setCurrentEvents(events)
 		},
-		[currentEvents, onEventUpdate]
+		[currentEvents, onEventUpdate, onEventAdd]
 	)
 
 	const deleteRecurringEvent = useCallback(

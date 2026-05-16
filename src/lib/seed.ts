@@ -189,6 +189,7 @@ const dummyEvents = [
 			interval: 1,
 			dtstart: baseDate.hour(9).toDate(),
 		},
+		uid: 'daily-check-in@ilamy&Max.calendar',
 		exdates: [],
 	},
 	{

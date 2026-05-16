@@ -198,11 +198,36 @@ describe('updateRecurringEvent', () => {
 
 			// Should have new standalone modified event
 			const modifiedEvent = result.added[0]
-			expect(modifiedEvent?.title).toBe('Modified Meeting')
-			expect(modifiedEvent?.recurrenceId).toBe('2025-01-20T09:00:00.000Z')
-			expect(modifiedEvent?.uid).toBe(baseEvent.uid)
-			expect(modifiedEvent?.rrule).toBeUndefined()
-			expect(isRecurringEvent(modifiedEvent!)).toBeFalsy()
+			expect(
+				String(modifiedEvent.id).startsWith(`${baseEvent.id}_modified_`)
+			).toBe(true)
+			expect(modifiedEvent.id).not.toContain('recurring-1_2')
+			expect(modifiedEvent.title).toBe('Modified Meeting')
+			expect(modifiedEvent.recurrenceId).toBe('2025-01-20T09:00:00.000Z')
+			expect(modifiedEvent.uid).toBe(baseEvent.uid)
+			expect(updatedBaseEvent.uid).toBe(baseEvent.uid)
+			expect(updatedBaseEvent.uid).not.toBe('recurring-1@ilamy.calendar')
+			expect(modifiedEvent.rrule).toBeUndefined()
+			expect(isRecurringEvent(modifiedEvent)).toBeFalsy()
+		})
+
+		it('should use base id and assign shared uid when parent has no uid', () => {
+			const baseEvent = createBaseRecurringEvent({ uid: undefined })
+			const targetEvent = createTargetEvent({ uid: undefined })
+
+			const result = updateRecurringEvent({
+				targetEvent,
+				updates: { title: 'Modified' },
+				currentEvents: [baseEvent],
+				scope: 'this',
+			})
+
+			const expectedUid = 'recurring-1@ilamy.calendar'
+			expect(result.updated[0].uid).toBe(expectedUid)
+			expect(result.added[0].uid).toBe(expectedUid)
+			expect(
+				String(result.added[0].id).startsWith('recurring-1_modified_')
+			).toBe(true)
 		})
 
 		it('should preserve existing EXDATES when adding new one', () => {

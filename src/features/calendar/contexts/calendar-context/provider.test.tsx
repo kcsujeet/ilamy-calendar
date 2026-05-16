@@ -347,8 +347,8 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 			dayMaxEvents: 5,
 		})
 
-		// Should have 2 events on Jan 3rd (the base event generates one instance, and the modified instance is also present)
-		expect(getByTestId('jan3-event-count').textContent).toBe('2')
+		// EXDATE suppresses the generated occurrence; only the detached override is shown
+		expect(getByTestId('jan3-event-count').textContent).toBe('1')
 		expect(getByTestId('jan3-event-hour').textContent).toBe('10') // Should be the modified time (10:00), not original (09:00)
 		expect(getByTestId('jan3-event-id').textContent).toBe(
 			'daily-standup_modified_123'
@@ -356,9 +356,9 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 	})
 
 	it('should call regular callbacks for recurring event operations', () => {
-		const onEventUpdate = mock(() => {})
-		const onEventAdd = mock(() => {})
-		const onEventDelete = mock(() => {})
+		const onEventUpdate = mock((_event: CalendarEvent) => {})
+		const onEventAdd = mock((_event: CalendarEvent) => {})
+		const onEventDelete = mock((_event: CalendarEvent) => {})
 
 		const recurringEvent: CalendarEvent = {
 			id: 'weekly-meeting',
@@ -559,12 +559,16 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 			onEventUpdate: onEventUpdate,
 		})
 
-		// Test updating time - should call onEventUpdate with new start/end times
+		// Test updating time - should call onEventUpdate with new start/end and rrule.dtstart
 		getByTestId('update-time').click()
 		expect(onEventUpdate).toHaveBeenCalledWith({
 			...recurringEvent,
 			start: dayjs('2025-01-06T10:00:00.000Z'),
 			end: dayjs('2025-01-06T11:00:00.000Z'),
+			rrule: {
+				...recurringEvent.rrule,
+				dtstart: dayjs('2025-01-06T10:00:00.000Z').toDate(),
+			},
 		})
 	})
 

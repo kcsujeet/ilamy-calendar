@@ -61,6 +61,22 @@ const getEventParentUID = (event: CalendarEvent): string => {
 }
 
 /**
+ * Derives the base series event id from a generated instance or detached override id.
+ */
+const getSeriesParentIdFromEventId = (eventId: string): string | null => {
+	const modifiedMarker = '_modified_'
+	const modifiedIndex = eventId.indexOf(modifiedMarker)
+	if (modifiedIndex !== -1) {
+		return eventId.slice(0, modifiedIndex)
+	}
+	const instanceMatch = eventId.match(/^(.+)_(\d+)$/)
+	if (instanceMatch) {
+		return instanceMatch[1]
+	}
+	return null
+}
+
+/**
  * Finds the base recurring event (the one with rrule and no recurrenceId)
  * that shares the same parent UID as the target event.
  * Throws if not found — callers assume the series exists.
@@ -70,9 +86,21 @@ const findBaseEventIndex = (
 	targetEvent: CalendarEvent
 ): number => {
 	const targetUid = getEventParentUID(targetEvent)
-	const index = events.findIndex(
+	let index = events.findIndex(
 		(e) => getEventParentUID(e) === targetUid && e.rrule && !e.recurrenceId
 	)
+
+	if (index === -1) {
+		const parentIdFromTargetId = getSeriesParentIdFromEventId(
+			String(targetEvent.id)
+		)
+		if (parentIdFromTargetId) {
+			index = events.findIndex(
+				(e) => e.id === parentIdFromTargetId && e.rrule && !e.recurrenceId
+			)
+		}
+	}
+
 	if (index === -1) {
 		throw new Error('Base recurring event not found')
 	}
@@ -299,22 +327,22 @@ export const updateRecurringEvent = ({
 			const targetEventStartISO = targetEvent.start.toISOString()
 			const existingExdates = baseEvent.exdates || []
 			const updatedExdates = [...existingExdates, targetEventStartISO]
+			const seriesUid = baseEvent.uid ?? `${baseEvent.id}@ilamy.calendar`
 
-			const updatedBaseEvent = {
-				...baseEvent,
-				exdates: updatedExdates,
-			}
+			const updatedBaseEvent = baseEvent.uid
+				? { ...baseEvent, exdates: updatedExdates }
+				: { ...baseEvent, exdates: updatedExdates, uid: seriesUid }
 			updatedEvents[baseEventIndex] = updatedBaseEvent
 
 			// Create standalone modified event with recurrenceId
-			const modifiedEventId = `${targetEvent.id}_modified_${Date.now()}`
+			const modifiedEventId = `${baseEvent.id}_modified_${Date.now()}`
 			const modifiedEvent: CalendarEvent = {
 				// @ts-expect-error TODO: fix the types
 				...omitKeys(targetEvent, ['width', 'height', 'top', 'left', 'right']),
 				...updates,
 				id: modifiedEventId,
 				recurrenceId: targetEventStartISO, // This marks it as a modified instance
-				uid: getEventParentUID(baseEvent), // Keep same UID as base event (iCalendar standard)
+				uid: seriesUid, // Same series uid as parent (existing or newly assigned)
 				rrule: undefined, // Standalone events don't have RRULE
 			} as CalendarEvent
 			updatedEvents.push(modifiedEvent)

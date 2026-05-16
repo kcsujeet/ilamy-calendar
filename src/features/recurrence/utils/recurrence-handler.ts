@@ -44,7 +44,12 @@ const fromFloatingDate = (date: Date, reference: Dayjs): Dayjs => {
 }
 
 export const isRecurringEvent = (event: CalendarEvent): boolean => {
-	return Boolean(event.rrule || event.recurrenceId || event.uid)
+	// Detached overrides (scope: "this") are stored with recurrenceId but behave
+	// as standalone events for CRUD — use updateEvent/deleteEvent, not scope dialogs.
+	if (event.recurrenceId && !event.rrule) {
+		return false
+	}
+	return Boolean(event.rrule || event.uid)
 }
 
 /**

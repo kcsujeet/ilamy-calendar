@@ -96,7 +96,7 @@ describe('CalendarDndContext', () => {
 			expect(instance.uid).toBe('recurring@calendar')
 		})
 
-		it('should return true for events with recurrenceId', () => {
+		it('should return false for detached modified instances (recurrenceId only)', () => {
 			const modifiedInstance: CalendarEvent = {
 				id: 'modified',
 				title: 'Modified',
@@ -107,7 +107,7 @@ describe('CalendarDndContext', () => {
 				allDay: false,
 			}
 
-			expect(isRecurringEvent(modifiedInstance)).toBe(true)
+			expect(isRecurringEvent(modifiedInstance)).toBe(false)
 			expect(modifiedInstance.recurrenceId).toBe('2025-01-15T09:00:00.000Z')
 		})
 	})

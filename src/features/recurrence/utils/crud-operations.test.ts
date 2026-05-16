@@ -45,11 +45,12 @@ describe('isRecurringEvent', () => {
 		expect(isRecurringEvent(event)).toBeTruthy()
 	})
 
-	it('should identify events with recurrenceId as recurring', () => {
+	it('should not identify detached modified instances as recurring', () => {
 		const event = createTargetEvent({
 			recurrenceId: '2025-01-20T09:00:00.000Z',
+			rrule: undefined,
 		})
-		expect(isRecurringEvent(event)).toBeTruthy()
+		expect(isRecurringEvent(event)).toBeFalsy()
 	})
 
 	it('should not identify regular events as recurring', () => {
@@ -181,6 +182,7 @@ describe('updateRecurringEvent', () => {
 			expect(modifiedEvent?.recurrenceId).toBe('2025-01-20T09:00:00.000Z')
 			expect(modifiedEvent?.uid).toBe(baseEvent.uid)
 			expect(modifiedEvent?.rrule).toBeUndefined()
+			expect(isRecurringEvent(modifiedEvent!)).toBeFalsy()
 		})
 
 		it('should preserve existing EXDATES when adding new one', () => {

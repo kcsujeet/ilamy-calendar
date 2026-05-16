@@ -76,6 +76,25 @@ describe('EventForm', () => {
 			expect(screen.queryByText('Delete')).not.toBeInTheDocument()
 		})
 
+		it('keeps text field focus while typing multiple characters', () => {
+			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
+
+			const titleInput = screen.getByPlaceholderText('Event title')
+			titleInput.focus()
+			expect(document.activeElement).toBe(titleInput)
+
+			fireEvent.change(titleInput, {
+				target: { name: 'title', value: 'a' },
+			})
+			expect(document.activeElement).toBe(titleInput)
+
+			fireEvent.change(titleInput, {
+				target: { name: 'title', value: 'ab' },
+			})
+			expect(titleInput).toHaveValue('ab')
+			expect(document.activeElement).toBe(titleInput)
+		})
+
 		it('should render edit event form when selectedEvent is provided', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testEvent })
 

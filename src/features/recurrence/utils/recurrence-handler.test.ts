@@ -121,7 +121,7 @@ describe('recurrence-handler utility tests', () => {
 	})
 
 	describe('generateRecurringEvents', () => {
-		it('should respect overrides when uid is missing from base but present in override', () => {
+		it('should not duplicate detached overrides in generated instances', () => {
 			const baseEvent = createBaseRecurringEvent({ id: 'series-5' })
 			const overrideDate = baseEvent.start.add(1, 'week')
 			const overrideEvent: CalendarEvent = {
@@ -132,6 +132,7 @@ describe('recurrence-handler utility tests', () => {
 				title: 'Overridden Title',
 				uid: 'series-5@ilamy.calendar',
 				recurrenceId: overrideDate.toISOString(),
+				rrule: undefined,
 			}
 
 			const currentEvents = [baseEvent, overrideEvent]
@@ -143,7 +144,7 @@ describe('recurrence-handler utility tests', () => {
 			})
 
 			const overridden = generated.find((e) => e.start.isSame(overrideDate))
-			expect(overridden?.title).toBe('Overridden Title')
+			expect(overridden).toBeUndefined()
 		})
 	})
 })

@@ -110,7 +110,7 @@ describe('generateRecurringEvents', () => {
 		expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-20')
 	})
 
-	it('should handle overrides correctly', () => {
+	it('should omit detached overrides from generated instances', () => {
 		const baseEvent = createBaseRecurringEvent()
 		const overrideEvent: CalendarEvent = {
 			...createTargetEvent(),
@@ -118,23 +118,40 @@ describe('generateRecurringEvents', () => {
 			title: 'Modified Meeting',
 			start: dayjs('2025-01-13T14:00:00'),
 			end: dayjs('2025-01-13T15:00:00'),
+			rrule: undefined,
 		}
 
 		const result = generateRecurringEvents({
 			event: baseEvent,
-			currentEvents: [overrideEvent],
+			currentEvents: [baseEvent, overrideEvent],
 			startDate: dayjs('2025-01-01'),
 			endDate: dayjs('2025-01-31'),
 		})
 
-		expect(result).toHaveLength(4)
+		expect(result).toHaveLength(3)
 
-		// Find the overridden event
-		const modifiedEvent = result.find((e) =>
+		const modifiedInGenerated = result.find((e) =>
 			e.start.isSame(dayjs('2025-01-13T14:00:00'))
 		)
-		expect(modifiedEvent).toBeDefined()
-		expect(modifiedEvent?.title).toBe('Modified Meeting')
+		expect(modifiedInGenerated).toBeUndefined()
+	})
+
+	it('should omit EXDATE occurrences from generated instances', () => {
+		const baseEvent = createBaseRecurringEvent({
+			exdates: ['2025-01-13T09:00:00.000Z'],
+		})
+
+		const result = generateRecurringEvents({
+			event: baseEvent,
+			currentEvents: [baseEvent],
+			startDate: dayjs('2025-01-01'),
+			endDate: dayjs('2025-01-31'),
+		})
+
+		expect(result).toHaveLength(3)
+		expect(
+			result.some((e) => e.start.toISOString() === '2025-01-13T09:00:00.000Z')
+		).toBe(false)
 	})
 
 	it('should return empty array for non-recurring events', () => {
@@ -276,6 +293,122 @@ describe('updateRecurringEvent', () => {
 	})
 
 	describe('scope: "all"', () => {
+		it('should not duplicate detached override when editing series after scope this', () => {
+			const dayThreeISO = '2025-01-08T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				id: 'daily-1',
+				rrule: {
+					freq: RRule.DAILY,
+					interval: 1,
+					dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+				},
+				start: dayjs('2025-01-06T09:00:00.000Z'),
+				end: dayjs('2025-01-06T10:00:00.000Z'),
+			})
+			const dayThreeInstance: CalendarEvent = {
+				...baseEvent,
+				id: 'daily-1_2',
+				start: dayjs(dayThreeISO),
+				end: dayjs('2025-01-08T10:00:00.000Z'),
+				rrule: undefined,
+			}
+
+			let currentEvents = updateRecurringEvent({
+				targetEvent: dayThreeInstance,
+				updates: { title: 'Modified day' },
+				currentEvents: [baseEvent],
+				scope: 'this',
+			}).events
+
+			currentEvents = updateRecurringEvent({
+				targetEvent: dayThreeInstance,
+				updates: { title: 'All daily' },
+				currentEvents,
+				scope: 'all',
+			}).events
+
+			const storedBase = currentEvents.find((e) => e.rrule)
+			if (!storedBase?.rrule) throw new Error('storedBase.rrule missing')
+
+			const generated = generateRecurringEvents({
+				event: storedBase,
+				currentEvents,
+				startDate: dayjs('2025-01-06T00:00:00.000Z'),
+				endDate: dayjs('2025-01-10T23:59:59.999Z'),
+			})
+			const detachedOverrides = currentEvents.filter(
+				(e) => e.recurrenceId && !e.rrule
+			)
+			const onModifiedDay = [...generated, ...detachedOverrides].filter((e) =>
+				e.start.isSame(dayjs(dayThreeISO), 'day')
+			)
+
+			expect(onModifiedDay).toHaveLength(1)
+			expect(onModifiedDay[0].title).toBe('All daily')
+			expect(
+				generated.some((e) => e.start.isSame(dayjs(dayThreeISO), 'day'))
+			).toBe(false)
+		})
+
+		it('should not duplicate when scope all shifts series time on an excluded day', () => {
+			const dayThreeISO = '2025-01-08T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				id: 'daily-1',
+				rrule: {
+					freq: RRule.DAILY,
+					interval: 1,
+					dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+				},
+				start: dayjs('2025-01-06T09:00:00.000Z'),
+				end: dayjs('2025-01-06T10:00:00.000Z'),
+			})
+			const dayThreeInstance: CalendarEvent = {
+				...baseEvent,
+				id: 'daily-1_2',
+				start: dayjs(dayThreeISO),
+				end: dayjs('2025-01-08T10:00:00.000Z'),
+				rrule: undefined,
+			}
+
+			let currentEvents = updateRecurringEvent({
+				targetEvent: dayThreeInstance,
+				updates: { title: 'Modified day' },
+				currentEvents: [baseEvent],
+				scope: 'this',
+			}).events
+
+			currentEvents = updateRecurringEvent({
+				targetEvent: dayThreeInstance,
+				updates: {
+					title: 'All daily',
+					start: dayjs('2025-01-08T11:00:00.000Z'),
+					end: dayjs('2025-01-08T12:00:00.000Z'),
+				},
+				currentEvents,
+				scope: 'all',
+			}).events
+
+			const storedBase = currentEvents.find((e) => e.rrule)
+			if (!storedBase?.rrule) throw new Error('storedBase.rrule missing')
+
+			const generated = generateRecurringEvents({
+				event: storedBase,
+				currentEvents,
+				startDate: dayjs('2025-01-08T00:00:00.000Z'),
+				endDate: dayjs('2025-01-08T23:59:59.999Z'),
+			})
+			const detachedOverrides = currentEvents.filter(
+				(e) => e.recurrenceId && !e.rrule
+			)
+			const onModifiedDay = [...generated, ...detachedOverrides].filter((e) =>
+				e.start.isSame(dayjs(dayThreeISO), 'day')
+			)
+
+			expect(generated).toHaveLength(0)
+			expect(onModifiedDay).toHaveLength(1)
+			expect(onModifiedDay[0].title).toBe('All daily')
+		})
+
 		it('should update the base recurring event', () => {
 			const baseEvent = createBaseRecurringEvent()
 			const targetEvent = createTargetEvent()

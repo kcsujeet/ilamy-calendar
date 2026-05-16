@@ -88,6 +88,43 @@ const getSeriesTerminationDate = (targetEvent: CalendarEvent): Date =>
 	targetEvent.start.subtract(1, 'day').endOf('day').toDate()
 
 /**
+ * True when a generated occurrence is already represented by EXDATE or a detached
+ * override in storage. Uses calendar-day matching so a series time change (scope
+ * "all") does not leave EXDATE/recurrenceId at the old instant while RRule emits
+ * a new time on the same day.
+ */
+const isOccurrenceExcludedFromSeries = (
+	occurrenceDate: Dayjs,
+	event: CalendarEvent,
+	overrides: CalendarEvent[]
+): boolean => {
+	const excludedByExdate = event.exdates?.some((ex) => {
+		const excludedAt = safeDate(ex)
+		if (!excludedAt) {
+			return false
+		}
+		return (
+			excludedAt.isSame(occurrenceDate) ||
+			excludedAt.isSame(occurrenceDate, 'day')
+		)
+	})
+	if (excludedByExdate) {
+		return true
+	}
+
+	return overrides.some((override) => {
+		const recurrenceAt = safeDate(override.recurrenceId)
+		if (recurrenceAt?.isSame(occurrenceDate)) {
+			return true
+		}
+		if (recurrenceAt?.isSame(occurrenceDate, 'day')) {
+			return true
+		}
+		return override.start.isSame(occurrenceDate, 'day')
+	})
+}
+
+/**
  * For scope "all": apply the delta between the edited instance and the submitted
  * start/end to the base event anchor — avoids shifting the whole series to the
  * instance's calendar day when the form is opened on e.g. Friday of a Mon–Fri rule.
@@ -182,13 +219,10 @@ export const generateRecurringEvents = ({
 		const recurringEvents: CalendarEvent[] = occurrences
 			.map((occurrence, index) => {
 				const occurrenceDate = fromFloatingDate(occurrence, event.start)
-				const existingOverride = overrides.find((e) =>
-					safeDate(e.recurrenceId)?.isSame(occurrenceDate)
-				)
 
-				// If there's an override, use it
-				if (existingOverride) {
-					return { ...event, ...existingOverride }
+				// EXDATE + detached overrides are rendered from currentEvents — skip slot.
+				if (isOccurrenceExcludedFromSeries(occurrenceDate, event, overrides)) {
+					return null
 				}
 
 				// Calculate the duration from the original event
@@ -209,15 +243,9 @@ export const generateRecurringEvents = ({
 
 				return recurringEvent
 			})
-			.filter((recurringEvent) => {
-				// Filter out EXDATE exclusions
-				const hasExdates = event.exdates && event.exdates.length > 0
-				if (hasExdates) {
-					const eventStartISO = recurringEvent.start.toISOString()
-					const isExcluded = event.exdates?.includes(eventStartISO)
-					if (isExcluded) {
-						return false
-					}
+			.filter((recurringEvent): recurringEvent is CalendarEvent => {
+				if (recurringEvent === null) {
+					return false
 				}
 
 				// Filter to only include events that span through the original requested date range
@@ -358,9 +386,34 @@ export const updateRecurringEvent = ({
 				rrule: anchored.rrule,
 			}
 			updatedEvents[baseEventIndex] = updatedBaseEvent
+
+			const parentUid = getEventParentUID(baseEvent)
+			const updatedOverrides: CalendarEvent[] = []
+			for (let index = 0; index < updatedEvents.length; index += 1) {
+				const storedEvent = updatedEvents[index]
+				if (
+					storedEvent.recurrenceId &&
+					!storedEvent.rrule &&
+					getEventParentUID(storedEvent) === parentUid
+				) {
+					const updatedOverride: CalendarEvent = {
+						...storedEvent,
+						...nonDateUpdates,
+						id: storedEvent.id,
+						start: storedEvent.start,
+						end: storedEvent.end,
+						recurrenceId: storedEvent.recurrenceId,
+						uid: storedEvent.uid,
+						rrule: undefined,
+					}
+					updatedEvents[index] = updatedOverride
+					updatedOverrides.push(updatedOverride)
+				}
+			}
+
 			return {
 				events: updatedEvents,
-				updated: [updatedBaseEvent],
+				updated: [updatedBaseEvent, ...updatedOverrides],
 				added: [],
 			}
 		}

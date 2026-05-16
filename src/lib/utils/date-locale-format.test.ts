@@ -1,39 +1,49 @@
 import { describe, expect, test } from 'bun:test'
-import dayjs from '@/lib/configs/dayjs-config'
-import { formatDayViewHeaderDate, isDayFirstLocale } from './date-locale-format'
+import { formatLocaleDate, formatLocaleDateRange } from './date-locale-format'
 
-describe('isDayFirstLocale', () => {
-	test('returns true for fr-FR (day before month)', () => {
-		expect(isDayFirstLocale('fr-FR', new Date(2025, 4, 15))).toBe(true)
+describe('formatLocaleDate', () => {
+	test('formats weekday, short month, and day for fr', () => {
+		const label = formatLocaleDate(new Date(2025, 4, 5), 'fr', {
+			weekday: 'long',
+			month: 'short',
+			day: 'numeric',
+		})
+		expect(label).toContain('lundi')
+		expect(label).toContain('5')
+		expect(label).toContain('mai')
 	})
 
-	test('returns false for en-US (month before day)', () => {
-		expect(isDayFirstLocale('en-US', new Date(2025, 4, 15))).toBe(false)
+	test('formats day-view header with long weekday, month, day, and year for fr-FR', () => {
+		const label = formatLocaleDate(new Date(2025, 4, 15), 'fr-FR', {
+			weekday: 'long',
+			month: 'long',
+			day: 'numeric',
+			year: 'numeric',
+		})
+		expect(label).toContain('jeudi')
+		expect(label).toContain('15')
+		expect(label).toContain('mai')
+		expect(label).toContain('2025')
+	})
+
+	test('formats long month name for year view', () => {
+		const label = formatLocaleDate(new Date(2025, 0, 1), 'fr-FR', {
+			month: 'long',
+		})
+		expect(label).toMatch(/janvier/i)
 	})
 })
 
-describe('formatDayViewHeaderDate', () => {
-	const date = dayjs('2025-05-15T12:00:00.000Z')
-
-	test('uses day-first order when locale is day-first', () => {
-		expect(
-			formatDayViewHeaderDate({
-				date,
-				weekdayLabel: 'jeudi',
-				monthLabel: 'mai',
-				isDayFirst: true,
-			})
-		).toBe('jeudi 15 mai 2025')
-	})
-
-	test('uses month-first order when locale is month-first', () => {
-		expect(
-			formatDayViewHeaderDate({
-				date,
-				weekdayLabel: 'Thursday',
-				monthLabel: 'May',
-				isDayFirst: false,
-			})
-		).toBe('Thursday, May 15, 2025')
+describe('formatLocaleDateRange', () => {
+	test('formats a week span for en-US', () => {
+		const start = new Date(2025, 4, 5)
+		const end = new Date(2025, 4, 11)
+		const label = formatLocaleDateRange(start, end, 'en-US', {
+			month: 'short',
+			day: 'numeric',
+		})
+		expect(label).toMatch(/May/)
+		expect(label).toMatch(/5/)
+		expect(label).toMatch(/11/)
 	})
 })

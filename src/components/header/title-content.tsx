@@ -11,10 +11,8 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import {
-	isDayFirstLocale,
-	MONTH_KEYS,
-	MONTH_SHORT_KEYS,
-	WEEKDAY_KEYS,
+	formatLocaleDate,
+	formatLocaleDateRange,
 } from '@/lib/utils/date-locale-format'
 import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
@@ -32,12 +30,20 @@ const TitleContent = () => {
 
 	const [openPopover, setOpenPopover] = useState<string | null>(null)
 
-	const months = useMemo(() => MONTH_KEYS.map((key) => t(key)), [t])
+	const locale = currentLocale || currentDate.locale()
 	const currentYear = currentDate.year()
 	const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
-	const locale = currentLocale || currentDate.locale()
-	const isDayFirst = isDayFirstLocale(locale, currentDate.toDate())
+
+	const months = useMemo(
+		() =>
+			Array.from({ length: 12 }, (_, index) =>
+				formatLocaleDate(new Date(currentYear, index, 1), locale, {
+					month: 'long',
+				})
+			),
+		[currentYear, locale]
+	)
 
 	const handleSelectDate = (date: Dayjs) => {
 		selectDate(date)
@@ -102,12 +108,17 @@ const TitleContent = () => {
 					>
 						<div className="flex w-full items-center justify-between capitalize">
 							<span>
-								{isDayFirst
-									? `${start.format('D')} ${t(MONTH_SHORT_KEYS[start.month()] ?? 'jan')} - ${end.format('D')} ${t(MONTH_SHORT_KEYS[end.month()] ?? 'jan')}`
-									: `${t(MONTH_SHORT_KEYS[start.month()] ?? 'jan')} ${start.format('D')} - ${end.format('D')}`}
+								{formatLocaleDateRange(start.toDate(), end.toDate(), locale, {
+									month: 'short',
+									day: 'numeric',
+								})}
 							</span>
 							{crossesMonth && (
-								<span className="ml-0.5 text-xs opacity-70">{`${t(MONTH_SHORT_KEYS[start.month()] ?? 'jan')}-${t(MONTH_SHORT_KEYS[end.month()] ?? 'jan')}`}</span>
+								<span className="ml-0.5 text-xs opacity-70">
+									{formatLocaleDateRange(start.toDate(), end.toDate(), locale, {
+										month: 'short',
+									})}
+								</span>
 							)}
 						</div>
 					</Button>
@@ -139,9 +150,11 @@ const TitleContent = () => {
 						>
 							<div className="flex w-full items-center justify-between">
 								<span>
-									{isDayFirst
-										? `${t(WEEKDAY_KEYS[day.day()] ?? 'sunday')} ${day.format('D')} ${t(MONTH_SHORT_KEYS[day.month()] ?? 'jan')}`
-										: `${t(WEEKDAY_KEYS[day.day()] ?? 'sunday')}, ${t(MONTH_SHORT_KEYS[day.month()] ?? 'jan')} ${day.format('D')}`}
+									{formatLocaleDate(day.toDate(), locale, {
+										weekday: 'long',
+										month: 'short',
+										day: 'numeric',
+									})}
 								</span>
 								{today && (
 									<span className="bg-primary text-primary-foreground rounded-sm px-1! text-xs">
@@ -160,7 +173,11 @@ const TitleContent = () => {
 		{
 			id: 'month',
 			hidden: view === 'year',
-			title: t(MONTH_KEYS[currentDate.month()] ?? 'january'),
+			title: formatLocaleDate(
+				new Date(currentYear, currentDate.month(), 1),
+				locale,
+				{ month: 'long' }
+			),
 			render: renderMonthContent,
 		},
 		{
@@ -172,15 +189,21 @@ const TitleContent = () => {
 		{
 			id: 'week',
 			hidden: view !== 'week',
-			title: isDayFirst
-				? `${weekDays[0].format('D')} ${t(MONTH_SHORT_KEYS[weekDays[0].month()] ?? 'jan')} - ${weekDays[6].format('D')} ${t(MONTH_SHORT_KEYS[weekDays[6].month()] ?? 'jan')}`
-				: `${t(MONTH_SHORT_KEYS[weekDays[0].month()] ?? 'jan')} ${weekDays[0].format('D')} - ${t(MONTH_SHORT_KEYS[weekDays[6].month()] ?? 'jan')} ${weekDays[6].format('D')}`,
+			title: formatLocaleDateRange(
+				weekDays[0].toDate(),
+				weekDays[6].toDate(),
+				locale,
+				{ month: 'short', day: 'numeric' }
+			),
 			render: renderWeekContent,
 		},
 		{
 			id: 'day',
 			hidden: view !== 'day',
-			title: `${t(WEEKDAY_KEYS[currentDate.day()] ?? 'sunday')}, ${currentDate.format('D')}`,
+			title: formatLocaleDate(currentDate.toDate(), locale, {
+				weekday: 'long',
+				day: 'numeric',
+			}),
 			render: renderDayContent,
 		},
 	]

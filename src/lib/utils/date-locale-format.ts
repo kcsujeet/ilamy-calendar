@@ -1,82 +1,22 @@
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-
-export const MONTH_KEYS = [
-	'january',
-	'february',
-	'march',
-	'april',
-	'may',
-	'june',
-	'july',
-	'august',
-	'september',
-	'october',
-	'november',
-	'december',
-] as const
-
-export const MONTH_SHORT_KEYS = [
-	'jan',
-	'feb',
-	'mar',
-	'apr',
-	'mayShort',
-	'jun',
-	'jul',
-	'aug',
-	'sep',
-	'oct',
-	'nov',
-	'dec',
-] as const
-
-export const WEEKDAY_KEYS = [
-	'sunday',
-	'monday',
-	'tuesday',
-	'wednesday',
-	'thursday',
-	'friday',
-	'saturday',
-] as const
-
-// Returns whether the locale typically places the day before the month (e.g. fr-FR).
-export const isDayFirstLocale = (
+// Formats a date with the browser Intl API (locale-aware labels and ordering).
+export const formatLocaleDate = (
+	date: Date,
 	locale: string,
-	referenceDate: Date
-): boolean => {
-	const parts = new Intl.DateTimeFormat(locale, {
-		day: 'numeric',
-		month: 'numeric',
-	}).formatToParts(referenceDate)
-	const dayPartIndex = parts.findIndex((part) => part.type === 'day')
-	const monthPartIndex = parts.findIndex((part) => part.type === 'month')
+	options: Intl.DateTimeFormatOptions
+): string => new Intl.DateTimeFormat(locale, options).format(date)
 
-	return (
-		dayPartIndex !== -1 &&
-		monthPartIndex !== -1 &&
-		dayPartIndex < monthPartIndex
-	)
-}
-
-// Builds the day-view header date string with weekday, month, day, and year in locale order.
-export const formatDayViewHeaderDate = ({
-	date,
-	weekdayLabel,
-	monthLabel,
-	isDayFirst,
-}: {
-	date: Dayjs
-	weekdayLabel: string
-	monthLabel: string
-	isDayFirst: boolean
-}): string => {
-	const day = date.format('D')
-	const year = date.format('YYYY')
-
-	if (isDayFirst) {
-		return `${weekdayLabel} ${day} ${monthLabel} ${year}`
+// Formats a date range with Intl when formatRange is available.
+export const formatLocaleDateRange = (
+	start: Date,
+	end: Date,
+	locale: string,
+	options: Intl.DateTimeFormatOptions
+): string => {
+	const formatter = new Intl.DateTimeFormat(locale, options)
+	if (typeof formatter.formatRange === 'function') {
+		return formatter.formatRange(start, end)
 	}
-
-	return `${weekdayLabel}, ${monthLabel} ${day}, ${year}`
+	const startLabel = formatter.format(start)
+	const endLabel = formatter.format(end)
+	return `${startLabel} - ${endLabel}`
 }

@@ -7,12 +7,7 @@ import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import {
-	formatDayViewHeaderDate,
-	isDayFirstLocale,
-	MONTH_KEYS,
-	WEEKDAY_KEYS,
-} from '@/lib/utils/date-locale-format'
+import { formatLocaleDate } from '@/lib/utils/date-locale-format'
 import { getDayKey, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
@@ -22,18 +17,16 @@ export const DayView = () => {
 	const today = isToday(currentDate)
 	const locale = currentLocale || currentDate.locale()
 
-	const headerDateLabel = useMemo(() => {
-		const isDayFirst = isDayFirstLocale(locale, currentDate.toDate())
-		const weekdayLabel = t(WEEKDAY_KEYS[currentDate.day()] ?? 'sunday')
-		const monthLabel = t(MONTH_KEYS[currentDate.month()] ?? 'january')
-
-		return formatDayViewHeaderDate({
-			date: currentDate,
-			isDayFirst,
-			monthLabel,
-			weekdayLabel,
-		})
-	}, [currentDate, locale, t])
+	const headerDateLabel = useMemo(
+		() =>
+			formatLocaleDate(currentDate.toDate(), locale, {
+				weekday: 'long',
+				month: 'long',
+				day: 'numeric',
+				year: 'numeric',
+			}),
+		[currentDate, locale]
+	)
 
 	const hours = getViewHours({
 		referenceDate: currentDate,

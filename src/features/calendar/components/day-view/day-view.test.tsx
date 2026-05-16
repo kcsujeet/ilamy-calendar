@@ -214,25 +214,23 @@ describe('DayView', () => {
 		expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
 	})
 
-	test('formats day-view header with day before month for day-first locales', () => {
+	test('formats day-view header with locale-aware Intl labels', () => {
 		cleanup()
 		const initialDate = dayjs('2025-05-15T12:00:00.000Z')
-		const translator = (key: string) => {
-			const labels: Record<string, string> = {
-				thursday: 'jeudi',
-				may: 'mai',
-			}
-			return labels[key] ?? key
-		}
+		const expectedHeader = new Intl.DateTimeFormat('fr-FR', {
+			weekday: 'long',
+			month: 'long',
+			day: 'numeric',
+			year: 'numeric',
+		}).format(initialDate.toDate())
 
 		renderDayView({
 			initialDate,
 			locale: 'fr-FR',
-			translator,
 		})
 
 		expect(screen.getByTestId('day-view-header')).toHaveTextContent(
-			'jeudi 15 mai 2025'
+			expectedHeader
 		)
 	})
 

@@ -5,23 +5,9 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { TranslationKey } from '@/lib/translations/types'
 import { cn } from '@/lib/utils'
+import { formatLocaleDate } from '@/lib/utils/date-locale-format'
 import { getDayKey, getMonthWeeks, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
-
-const MONTH_KEYS = [
-	'january',
-	'february',
-	'march',
-	'april',
-	'may',
-	'june',
-	'july',
-	'august',
-	'september',
-	'october',
-	'november',
-	'december',
-] as const
 
 const WEEKDAY_SHORT_TRANSLATION_KEYS = [
 	'sun',
@@ -70,6 +56,7 @@ interface DayData {
 export const YearView = () => {
 	const {
 		currentDate,
+		currentLocale,
 		selectDate,
 		events,
 		setView,
@@ -77,6 +64,7 @@ export const YearView = () => {
 		t,
 		firstDayOfWeek,
 	} = useSmartCalendarContext()
+	const locale = currentLocale || currentDate.locale()
 	const currentYear = currentDate.year()
 	const weekdayHeaderKeys = useMemo(
 		() => getOrderedWeekdayKeys(firstDayOfWeek),
@@ -97,7 +85,9 @@ export const YearView = () => {
 
 			return {
 				date: monthDate,
-				name: t(MONTH_KEYS[monthIndex] ?? 'january'),
+				name: formatLocaleDate(new Date(currentYear, monthIndex, 1), locale, {
+					month: 'long',
+				}),
 				eventCount: eventsInMonth.length,
 				monthKey: monthDate.format('MM'),
 			}

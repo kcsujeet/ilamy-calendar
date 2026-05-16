@@ -184,30 +184,20 @@ describe('YearView', () => {
 			expect(sundayHeaders.length).toBe(24) // 2 S's per month * 12 months
 		})
 
-		test('uses translator-provided month names', () => {
+		test('uses locale-formatted month names', () => {
 			cleanup()
-			const customMonths = {
-				january: 'Janvier',
-				february: 'Février',
-				march: 'Mars',
-				april: 'Avril',
-				may: 'Mai',
-				june: 'Juin',
-				july: 'Juillet',
-				august: 'Août',
-				september: 'Septembre',
-				october: 'Octobre',
-				november: 'Novembre',
-				december: 'Décembre',
-			}
-			const translator = (key: string) =>
-				(customMonths as Record<string, string>)[key] ?? key
+			const locale = 'fr-FR'
+			const monthNames = Array.from({ length: 12 }, (_, monthIndex) =>
+				new Intl.DateTimeFormat(locale, { month: 'long' }).format(
+					new Date(2025, monthIndex, 1)
+				)
+			)
 
-			renderYearView({ translator })
+			renderYearView({ locale })
 
-			Object.values(customMonths).forEach((name) => {
+			for (const name of monthNames) {
 				expect(screen.getByText(name)).toBeInTheDocument()
-			})
+			}
 		})
 
 		test('uses first uppercase letter of translator weekday labels', () => {

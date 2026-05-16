@@ -130,23 +130,21 @@ describe('Header with Export Button', () => {
 		expect(calledDate.year()).toBe(2025)
 	})
 
-	it('should render day view title with translated weekday and numeric day', () => {
-		const translator = (key: string) => {
-			const dict: Record<string, string> = {
-				monday: 'Lundi',
-			}
-			return dict[key] ?? key
-		}
+	it('should render day view title with locale-formatted weekday and day', () => {
+		const initialDate = dayjs('2025-05-05T09:00:00.000Z')
+		const expectedTitle = new Intl.DateTimeFormat('fr', {
+			weekday: 'long',
+			day: 'numeric',
+		}).format(initialDate.toDate())
 
 		renderHeader([], {
-			initialDate: dayjs('2025-05-05T09:00:00.000Z'),
+			initialDate,
 			initialView: 'day',
 			locale: 'fr',
-			translator,
 		})
 
 		expect(
-			screen.getByRole('button', { name: /Lundi,\s*5/i })
+			screen.getByRole('button', { name: new RegExp(expectedTitle, 'i') })
 		).toBeInTheDocument()
 	})
 })

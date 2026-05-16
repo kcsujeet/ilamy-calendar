@@ -57,7 +57,7 @@ export function RecurrenceEditDialog({
 
 	return (
 		<Dialog onOpenChange={onClose} open={isOpen}>
-			<DialogContent className="max-w-md">
+			<DialogContent className="max-w-md overflow-auto">
 				<DialogHeader>
 					<DialogTitle>
 						{isEdit ? t('editRecurringEvent') : t('deleteRecurringEvent')}

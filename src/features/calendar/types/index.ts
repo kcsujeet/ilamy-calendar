@@ -7,6 +7,28 @@ import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
 /**
+ * Format used for `start` and `end` in onEventAdd, onEventUpdate, and onEventDelete callbacks.
+ */
+export type DateEventType = 'Dayjs' | 'Date' | 'string'
+
+type DateEventValue<T extends DateEventType> = T extends 'Dayjs'
+	? Dayjs
+	: T extends 'Date'
+		? Date
+		: string
+
+/**
+ * Calendar event shape passed to onEvent* callbacks, with `start`/`end` typed per `dateEventType`.
+ */
+export type CalendarEventWithDateType<T extends DateEventType = 'Dayjs'> = Omit<
+	CalendarEvent,
+	'start' | 'end'
+> & {
+	start: DateEventValue<T>
+	end: DateEventValue<T>
+}
+
+/**
  * Custom class names for calendar styling.
  * Allows users to override default styles for various calendar elements.
  */
@@ -76,7 +98,22 @@ export interface RenderCurrentTimeIndicatorProps {
 	view: CalendarView
 }
 
-export interface IlamyCalendarProps {
+/** onEvent* callbacks with `start`/`end` typed from `dateEventType`. */
+export type IlamyCalendarEventMutationCallbacks<
+	T extends DateEventType = 'Dayjs',
+> = {
+	onEventAdd?: (event: CalendarEventWithDateType<T>) => void
+	onEventUpdate?: (event: CalendarEventWithDateType<T>) => void
+	onEventDelete?: (event: CalendarEventWithDateType<T>) => void
+}
+
+/** Union of mutation handlers (internal wiring — accepts any `dateEventType` branch). */
+export type IlamyCalendarEventMutationHandler =
+	| ((event: CalendarEventWithDateType<'Dayjs'>) => void)
+	| ((event: CalendarEventWithDateType<'Date'>) => void)
+	| ((event: CalendarEventWithDateType<'string'>) => void)
+
+export interface IlamyCalendarPropsBase {
 	/**
 	 * Array of events to display in the calendar.
 	 */
@@ -116,21 +153,6 @@ export interface IlamyCalendarProps {
 	 * Useful for syncing with external state or analytics.
 	 */
 	onViewChange?: (view: CalendarView) => void
-	/**
-	 * Callback when a new event is added to the calendar.
-	 * Provides the newly created event object.
-	 */
-	onEventAdd?: (event: CalendarEvent) => void
-	/**
-	 * Callback when an existing event is updated.
-	 * Provides the updated event object.
-	 */
-	onEventUpdate?: (event: CalendarEvent) => void
-	/**
-	 * Callback when an event is deleted from the calendar.
-	 * Provides the deleted event object.
-	 */
-	onEventDelete?: (event: CalendarEvent) => void
 	/**
 	 * Callback when the current date changes (navigation).
 	 * Provides the new current date and the current visible range.
@@ -301,3 +323,23 @@ export interface IlamyCalendarProps {
 	 */
 	renderHour?: (date: Dayjs) => React.ReactNode
 }
+
+/**
+ * Top-level props for `<IlamyCalendar>`.
+ * `dateEventType` narrows `start`/`end` on onEventAdd, onEventUpdate, and onEventDelete.
+ */
+export type IlamyCalendarProps =
+	| (IlamyCalendarPropsBase & {
+			/**
+			 * Format of `start` and `end` in onEventAdd, onEventUpdate, and onEventDelete callbacks.
+			 * Internal state always uses Dayjs; this only affects values passed to those callbacks.
+			 * @default 'Dayjs'
+			 */
+			dateEventType?: 'Dayjs'
+	  } & IlamyCalendarEventMutationCallbacks<'Dayjs'>)
+	| (IlamyCalendarPropsBase & {
+			dateEventType: 'Date'
+	  } & IlamyCalendarEventMutationCallbacks<'Date'>)
+	| (IlamyCalendarPropsBase & {
+			dateEventType: 'string'
+	  } & IlamyCalendarEventMutationCallbacks<'string'>)

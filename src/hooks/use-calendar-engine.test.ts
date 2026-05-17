@@ -304,6 +304,67 @@ describe('useCalendarEngine', () => {
 			expect(onEventAdd).toHaveBeenCalledWith(newEvent)
 		})
 
+		it('should pass ISO strings to onEventAdd when dateEventType is string', () => {
+			const onEventAdd = vi.fn()
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					dateEventType: 'string',
+					onEventAdd,
+				})
+			)
+
+			const newEvent = createEvent({ id: 'new-1', title: 'New Event' })
+			act(() => result.current.addEvent(newEvent))
+
+			expect(onEventAdd).toHaveBeenCalledTimes(1)
+			const callbackEvent = onEventAdd.mock.calls[0][0]
+			expect(callbackEvent.start).toBe('2025-01-15T10:00:00.000Z')
+			expect(callbackEvent.end).toBe('2025-01-15T11:00:00.000Z')
+		})
+
+		it('should pass Date objects to onEventUpdate when dateEventType is Date', () => {
+			const onEventUpdate = vi.fn()
+			const events = [createEvent({ id: '1', title: 'Original' })]
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					events,
+					dateEventType: 'Date',
+					onEventUpdate,
+				})
+			)
+
+			act(() => result.current.updateEvent('1', { title: 'Updated' }))
+
+			expect(onEventUpdate).toHaveBeenCalledTimes(1)
+			const callbackEvent = onEventUpdate.mock.calls[0][0]
+			expect(callbackEvent.start).toBeInstanceOf(Date)
+			expect(callbackEvent.end).toBeInstanceOf(Date)
+			expect(callbackEvent.start.toISOString()).toBe('2025-01-15T10:00:00.000Z')
+			expect(callbackEvent.end.toISOString()).toBe('2025-01-15T11:00:00.000Z')
+		})
+
+		it('should pass ISO strings to onEventDelete when dateEventType is string', () => {
+			const onEventDelete = vi.fn()
+			const events = [createEvent({ id: '1', title: 'First' })]
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					events,
+					dateEventType: 'string',
+					onEventDelete,
+				})
+			)
+
+			act(() => result.current.deleteEvent('1'))
+
+			expect(onEventDelete).toHaveBeenCalledTimes(1)
+			const callbackEvent = onEventDelete.mock.calls[0][0]
+			expect(callbackEvent.start).toBe('2025-01-15T10:00:00.000Z')
+			expect(callbackEvent.end).toBe('2025-01-15T11:00:00.000Z')
+		})
+
 		it('should update an event', () => {
 			const onEventUpdate = vi.fn()
 			const events = [createEvent({ id: '1', title: 'Original' })]

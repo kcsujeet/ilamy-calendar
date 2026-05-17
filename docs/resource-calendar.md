@@ -206,9 +206,10 @@ interface IlamyResourceCalendarProps extends IlamyCalendarProps {
 | `disableDragAndDrop` | `boolean`                           | `false`     | Disable event drag-and-drop                                          |
 | `onEventClick`       | `(event: CalendarEvent) => void`    | `undefined` | Event click handler                                                  |
 | `onCellClick`        | `(info: CellClickInfo) => void`     | `undefined` | Cell click handler with `start`, `end`, and optional `resourceId`    |
-| `onEventAdd`         | `(event: CalendarEvent) => void`    | `undefined` | Event add callback                                                   |
-| `onEventUpdate`      | `(event: CalendarEvent) => void`    | `undefined` | Event update callback                                                |
-| `onEventDelete`      | `(eventId: string) => void`         | `undefined` | Event delete callback                                                |
+| `dateEventType`      | `'Dayjs' \| 'Date' \| 'string'`     | `'Dayjs'`   | Format of `start`/`end` in onEvent* callbacks (inherited from IlamyCalendar) |
+| `onEventAdd`         | `(event) => void`                   | `undefined` | Event add callback (`start`/`end` per `dateEventType`)               |
+| `onEventUpdate`      | `(event) => void`                   | `undefined` | Event update callback (`start`/`end` per `dateEventType`)            |
+| `onEventDelete`      | `(event) => void`                   | `undefined` | Event delete callback (`start`/`end` per `dateEventType`)            |
 
 For all inherited props, see the [standard calendar documentation](https://ilamy.dev/docs/calendar).
 

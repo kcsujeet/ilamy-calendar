@@ -6,7 +6,9 @@ import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type {
 	CalendarClassesOverride,
 	CellClickInfo,
+	DateEventType,
 	DateRange,
+	IlamyCalendarEventMutationHandler,
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
@@ -22,13 +24,14 @@ export interface CalendarProviderProps {
 	firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
 	initialView?: CalendarView
 	initialDate?: Dayjs
+	dateEventType?: DateEventType
 	renderEvent?: (event: CalendarEvent) => ReactNode
 	onEventClick?: (event: CalendarEvent) => void
 	onCellClick?: (info: CellClickInfo) => void
 	onViewChange?: (view: CalendarView) => void
-	onEventAdd?: (event: CalendarEvent) => void
-	onEventUpdate?: (event: CalendarEvent) => void
-	onEventDelete?: (event: CalendarEvent) => void
+	onEventAdd?: IlamyCalendarEventMutationHandler
+	onEventUpdate?: IlamyCalendarEventMutationHandler
+	onEventDelete?: IlamyCalendarEventMutationHandler
 	onDateChange?: (date: Dayjs, range: DateRange) => void
 	locale?: string
 	timezone?: string
@@ -64,6 +67,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	firstDayOfWeek = 0,
 	initialView = 'month',
 	initialDate,
+	dateEventType = 'Dayjs',
 	renderEvent,
 	onEventClick,
 	onCellClick,
@@ -103,6 +107,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 		initialView,
 		initialDate,
 		businessHours,
+		dateEventType,
 		onEventAdd,
 		onEventUpdate,
 		onEventDelete,

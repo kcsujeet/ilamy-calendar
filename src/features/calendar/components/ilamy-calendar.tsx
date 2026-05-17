@@ -12,7 +12,6 @@ import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 // oxlint-disable-next-line no-duplicates
 import '@/lib/configs/dayjs-config'
-import type { WeekDays } from '@/components/types'
 import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
@@ -60,6 +59,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	firstDayOfWeek = 'sunday',
 	initialView = 'month',
 	initialDate,
+	dateEventType = 'Dayjs',
 	dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
 	eventSpacing = GAP_BETWEEN_ELEMENTS,
 	eventHeight = EVENT_BAR_HEIGHT,
@@ -72,6 +72,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 }) => {
 	return (
 		<CalendarProvider
+			dateEventType={dateEventType}
 			dayMaxEvents={dayMaxEvents}
 			eventHeight={eventHeight}
 			eventSpacing={eventSpacing}

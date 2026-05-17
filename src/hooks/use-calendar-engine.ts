@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
+import type {
+	CalendarEventWithDateType,
+	DateEventType,
+	IlamyCalendarEventMutationHandler,
+} from '@/features/calendar/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import {
 	deleteRecurringEvent as deleteRecurringEventImpl,
@@ -14,6 +19,7 @@ import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
 import { eventOverlapsRange } from '@/lib/utils/event-utils'
+import { formatEventForCallback } from '@/lib/utils/format-event-for-callback'
 import type { CalendarView } from '@/types'
 import { DAY_MAX_EVENTS_DEFAULT } from '../lib/constants'
 
@@ -23,9 +29,10 @@ export interface CalendarEngineConfig {
 	initialView?: CalendarView
 	initialDate?: Dayjs
 	businessHours?: BusinessHours | BusinessHours[]
-	onEventAdd?: (event: CalendarEvent) => void
-	onEventUpdate?: (event: CalendarEvent) => void
-	onEventDelete?: (event: CalendarEvent) => void
+	dateEventType?: DateEventType
+	onEventAdd?: IlamyCalendarEventMutationHandler
+	onEventUpdate?: IlamyCalendarEventMutationHandler
+	onEventDelete?: IlamyCalendarEventMutationHandler
 	onDateChange?: (date: Dayjs, range: { start: Dayjs; end: Dayjs }) => void
 	onViewChange?: (view: CalendarView) => void
 	locale?: string
@@ -107,6 +114,7 @@ export const useCalendarEngine = (
 		initialView = 'month',
 		initialDate = dayjs(),
 		businessHours,
+		dateEventType = 'Dayjs',
 		onEventAdd,
 		onEventUpdate,
 		onEventDelete,
@@ -230,12 +238,49 @@ export const useCalendarEngine = (
 		[updateDateAndNotify]
 	)
 
+	const invokeMutationHandler = useCallback(
+		(
+			handler: IlamyCalendarEventMutationHandler | undefined,
+			event: CalendarEvent
+		) => {
+			if (!handler) {
+				return
+			}
+			const callbackEvent = formatEventForCallback(event, dateEventType)
+			;(handler as (event: CalendarEventWithDateType<DateEventType>) => void)(
+				callbackEvent
+			)
+		},
+		[dateEventType]
+	)
+
+	const notifyEventAdd = useCallback(
+		(event: CalendarEvent) => {
+			invokeMutationHandler(onEventAdd, event)
+		},
+		[invokeMutationHandler, onEventAdd]
+	)
+
+	const notifyEventUpdate = useCallback(
+		(event: CalendarEvent) => {
+			invokeMutationHandler(onEventUpdate, event)
+		},
+		[invokeMutationHandler, onEventUpdate]
+	)
+
+	const notifyEventDelete = useCallback(
+		(event: CalendarEvent) => {
+			invokeMutationHandler(onEventDelete, event)
+		},
+		[invokeMutationHandler, onEventDelete]
+	)
+
 	const addEvent = useCallback(
 		(event: CalendarEvent) => {
 			setCurrentEvents((prev) => [...prev, event])
-			onEventAdd?.(event)
+			notifyEventAdd(event)
 		},
-		[onEventAdd]
+		[notifyEventAdd]
 	)
 
 	const updateEvent = useCallback(
@@ -249,9 +294,9 @@ export const useCalendarEngine = (
 			setCurrentEvents((prev) =>
 				prev.map((event) => (event.id === eventId ? newEvent : event))
 			)
-			onEventUpdate?.(newEvent)
+			notifyEventUpdate(newEvent)
 		},
-		[currentEvents, onEventUpdate]
+		[currentEvents, notifyEventUpdate]
 	)
 
 	const updateRecurringEvent = useCallback(
@@ -267,19 +312,19 @@ export const useCalendarEngine = (
 				scope: options.scope,
 			})
 			for (const storedEvent of updated) {
-				onEventUpdate?.(storedEvent)
+				notifyEventUpdate(storedEvent)
 			}
 			for (const storedEvent of added) {
-				onEventAdd?.(storedEvent)
+				notifyEventAdd(storedEvent)
 			}
 			setCurrentEvents(events)
 		},
-		[currentEvents, onEventUpdate, onEventAdd]
+		[currentEvents, notifyEventUpdate, notifyEventAdd]
 	)
 
 	const deleteRecurringEvent = useCallback(
 		(event: CalendarEvent, options: RecurrenceEditOptions) => {
-			onEventDelete?.(event)
+			notifyEventDelete(event)
 			setCurrentEvents(
 				deleteRecurringEventImpl({
 					targetEvent: event,
@@ -288,7 +333,7 @@ export const useCalendarEngine = (
 				})
 			)
 		},
-		[currentEvents, onEventDelete]
+		[currentEvents, notifyEventDelete]
 	)
 
 	const deleteEvent = useCallback(
@@ -299,9 +344,9 @@ export const useCalendarEngine = (
 			}
 
 			setCurrentEvents((prev) => prev.filter((e) => e.id !== eventId))
-			onEventDelete?.(eventToDelete)
+			notifyEventDelete(eventToDelete)
 		},
-		[currentEvents, onEventDelete]
+		[currentEvents, notifyEventDelete]
 	)
 
 	const openEventForm = useCallback(

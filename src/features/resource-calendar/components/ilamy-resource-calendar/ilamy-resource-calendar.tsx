@@ -20,6 +20,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
 	firstDayOfWeek = 'sunday',
 	initialView = 'month',
 	initialDate,
+	dateEventType = 'Dayjs',
 	disableDragAndDrop = false,
 	dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
 	timeFormat = '12-hour',
@@ -30,6 +31,7 @@ export const IlamyResourceCalendar: React.FC<IlamyResourceCalendarProps> = ({
 }) => {
 	return (
 		<ResourceCalendarProvider
+			dateEventType={dateEventType}
 			dayMaxEvents={dayMaxEvents}
 			disableDragAndDrop={disableDragAndDrop}
 			eventHeight={eventHeight}

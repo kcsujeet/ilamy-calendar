@@ -11,6 +11,10 @@ IlamyCalendarPropEvent          User provides (flexible date types: string | Dat
         |
 CalendarEvent                   Internal canonical type (dayjs dates)
         |
+    dateEventType prop          formatEventForCallback (onEventAdd/Update/Delete only)
+        |
+CalendarEventWithDateType<T>    Callback payload (start/end as Dayjs | Date | ISO string)
+        |
     positioning                 position-day-events / position-week-events
         |
 ProcessedCalendarEvent          CalendarEvent + layout fields (top, left, width, height)
@@ -40,6 +44,12 @@ The core event type used throughout the library.
 | `resourceId` | `string \| number` | no | Single resource assignment |
 | `resourceIds` | `(string \| number)[]` | no | Multiple resource assignment |
 | `data` | `Record<string, any>` | no | Custom application metadata |
+
+## CalendarEventWithDateType
+
+`src/features/calendar/types/index.ts`
+
+Same fields as `CalendarEvent`, but `start` and `end` follow the `dateEventType` prop (`'Dayjs'` | `'Date'` | `'string'`). Used only as the argument type for `onEventAdd`, `onEventUpdate`, and `onEventDelete`. Internal state and `onEventClick` always use Dayjs.
 
 ## ProcessedCalendarEvent
 
@@ -96,9 +106,10 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `onEventClick` | `(event) => void` | — | Event click callback |
 | `onCellClick` | `(info: CellClickInfo) => void` | — | Cell click callback |
 | `onViewChange` | `(view) => void` | — | View change callback |
-| `onEventAdd` | `(event) => void` | — | Event add callback |
-| `onEventUpdate` | `(event) => void` | — | Event update callback |
-| `onEventDelete` | `(event) => void` | — | Event delete callback |
+| `dateEventType` | `'Dayjs' \| 'Date' \| 'string'` | `'Dayjs'` | Format of `start`/`end` in `onEventAdd`, `onEventUpdate`, `onEventDelete` |
+| `onEventAdd` | `(event: CalendarEventWithDateType<…>) => void` | — | Event add callback; `start`/`end` narrow with `dateEventType` (discriminated union on props) |
+| `onEventUpdate` | `(event: CalendarEventWithDateType<…>) => void` | — | Event update callback; same narrowing |
+| `onEventDelete` | `(event: CalendarEventWithDateType<…>) => void` | — | Event delete callback; same narrowing |
 | `onDateChange` | `(date: Dayjs, range: { start: Dayjs; end: Dayjs }) => void` | — | Date navigation callback |
 | `locale` | `string` | — | dayjs locale |
 | `timezone` | `string` | — | dayjs timezone |
@@ -210,7 +221,7 @@ interface CellClickInfo {
 | Type | File |
 |------|------|
 | `CalendarEvent`, `ProcessedCalendarEvent`, `WeekDays`, `BusinessHours` | `src/components/types.ts` |
-| `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CellClickInfo`, `CalendarClassesOverride` | `src/features/calendar/types/index.ts` |
+| `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CalendarEventWithDateType`, `DateEventType`, `CellClickInfo`, `CalendarClassesOverride` | `src/features/calendar/types/index.ts` |
 | `Resource`, `IlamyResourceCalendarProps`, `IlamyResourceCalendarPropEvent` | `src/features/resource-calendar/types/index.ts` |
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |
 | `CalendarView`, `TimeFormat` | `src/types/index.ts` |

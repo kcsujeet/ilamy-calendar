@@ -1,7 +1,10 @@
 import type React from 'react'
+import { useRef } from 'react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
+import { useScrollToTime } from './use-scroll-to-time'
 import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
 import { VerticalGridHeaderContainer } from './vertical-grid-header-container'
 
@@ -37,6 +40,18 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	// the freed vertical space so the view doesn't render an empty time grid.
 	const expandAllDayRow = columns.every((c) => !c.days?.length)
 
+	const { currentDate, view, scrollTime } = useSmartCalendarContext()
+	const viewportRef = useRef<HTMLDivElement | null>(null)
+
+	const hasHoursToScroll = gridType === 'hour' && !expandAllDayRow
+
+	useScrollToTime({
+		viewportRef,
+		scrollTime,
+		enabled: hasHoursToScroll,
+		scrollKey: `${view}-${currentDate.format('YYYY-MM-DD')}`,
+	})
+
 	const header = children && (
 		<VerticalGridHeaderContainer
 			allDayRow={allDayRow}
@@ -51,7 +66,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	// entirely so the header (with the expanded all-day row) takes the full
 	// container height. h-full on a flex child only resolves correctly against
 	// a parent with a definite height, and Radix's Viewport wrapper has only
-	// min-height — not explicit height — which is why the all-day row's
+	// min-height (not explicit height), which is why the all-day row's
 	// flex-1 wouldn't grow when nested inside the ScrollArea.
 	if (expandAllDayRow && header) {
 		return (
@@ -77,7 +92,10 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 			<ScrollArea
 				className={cn('h-full', isRegularCalendar && 'overflow-auto')}
 				data-testid="vertical-grid-scroll"
-				viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
+				viewPortProps={{
+					className: '*:flex! *:flex-col! *:min-h-full',
+					ref: viewportRef,
+				}}
 			>
 				{/* header row for resource calendar inside scroll area */}
 				{isResourceCalendar && header}

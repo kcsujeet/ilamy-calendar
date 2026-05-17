@@ -35,6 +35,7 @@ interface ResourceCalendarProviderProps extends CalendarProviderProps {
 	) => React.ReactNode
 	renderHour?: (date: Dayjs) => React.ReactNode
 	hideNonBusinessHours?: boolean
+	scrollTime?: string
 }
 
 export const ResourceCalendarProvider: React.FC<
@@ -79,6 +80,7 @@ export const ResourceCalendarProvider: React.FC<
 	hideNonBusinessHours = false,
 	hiddenDays,
 	weekViewGranularity = 'hourly',
+	scrollTime,
 }) => {
 	// Resource-specific state
 	const [currentResources] = useState<Resource[]>(resources)
@@ -269,6 +271,7 @@ export const ResourceCalendarProvider: React.FC<
 			hideNonBusinessHours,
 			hiddenDays,
 			weekViewGranularity,
+			scrollTime,
 		}),
 		[
 			calendarEngine,
@@ -310,6 +313,7 @@ export const ResourceCalendarProvider: React.FC<
 			hideNonBusinessHours,
 			hiddenDays,
 			weekViewGranularity,
+			scrollTime,
 		]
 	)
 

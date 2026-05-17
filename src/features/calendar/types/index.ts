@@ -294,4 +294,28 @@ export interface IlamyCalendarProps {
 	 * Receives a Dayjs object for the hour and should return a React node.
 	 */
 	renderHour?: (date: Dayjs) => React.ReactNode
+	/**
+	 * Initial scroll position for hour-resolution views (day, week, resource
+	 * day, resource week, in both orientations). Accepts `"HH:mm"` or
+	 * `"HH:mm:ss"`. Minutes are floored to the hour. The scroll target is
+	 * clamped to the nearest visible row when `hideNonBusinessHours` hides
+	 * the requested hour.
+	 *
+	 * Independent of `businessHours`: you can show all 24 hours and still
+	 * focus on 08:00 on load.
+	 *
+	 * **Requires a fixed calendar height** so the internal time grid has a
+	 * scroll container to scroll within. If the calendar host element has
+	 * `height: auto`, the time grid grows to fit all hours and there is
+	 * nothing to scroll — this prop becomes a silent no-op.
+	 *
+	 * @example
+	 * ```tsx
+	 * <IlamyCalendar
+	 *   businessHours={{ daysOfWeek: [1,2,3,4,5], startTime: 0, endTime: 24 }}
+	 *   scrollTime="08:00:00"
+	 * />
+	 * ```
+	 */
+	scrollTime?: string
 }

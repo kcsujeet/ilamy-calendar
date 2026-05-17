@@ -77,6 +77,7 @@ export const ResourceCalendarProvider: React.FC<
 	renderCurrentTimeIndicator,
 	renderHour,
 	hideNonBusinessHours = false,
+	hideExportButton = false,
 	hiddenDays,
 	weekViewGranularity = 'hourly',
 }) => {
@@ -267,6 +268,7 @@ export const ResourceCalendarProvider: React.FC<
 			renderCurrentTimeIndicator,
 			renderHour,
 			hideNonBusinessHours,
+			hideExportButton,
 			hiddenDays,
 			weekViewGranularity,
 		}),
@@ -308,6 +310,7 @@ export const ResourceCalendarProvider: React.FC<
 			renderCurrentTimeIndicator,
 			renderHour,
 			hideNonBusinessHours,
+			hideExportButton,
 			hiddenDays,
 			weekViewGranularity,
 		]

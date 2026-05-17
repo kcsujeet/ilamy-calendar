@@ -237,6 +237,12 @@ export interface IlamyCalendarProps {
 	 */
 	hideNonBusinessHours?: boolean
 	/**
+	 * Whether to hide the iCalendar export button in the calendar header.
+	 * Applies to both desktop and mobile header layouts.
+	 * @default false
+	 */
+	hideExportButton?: boolean
+	/**
 	 * Custom class names for overriding default calendar element styles.
 	 * Allows fine-grained control over the appearance of different calendar elements.
 	 * @example { disabledCell: "bg-gray-100 text-gray-400" }

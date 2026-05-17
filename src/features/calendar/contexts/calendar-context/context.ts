@@ -67,6 +67,7 @@ export interface CalendarContextType {
 	) => React.ReactNode
 	renderHour?: (date: Dayjs) => React.ReactNode
 	hideNonBusinessHours?: boolean
+	hideExportButton?: boolean
 	hiddenDays?: Set<number>
 }
 

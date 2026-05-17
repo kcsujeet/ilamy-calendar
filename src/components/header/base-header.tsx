@@ -29,6 +29,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		headerClassName,
 		rawEvents,
 		t,
+		hideExportButton,
 	} = useSmartCalendarContext((ctx) => ({
 		view: ctx.view,
 		setView: ctx.setView,
@@ -40,6 +41,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		headerClassName: ctx.headerClassName,
 		rawEvents: ctx.rawEvents,
 		t: ctx.t,
+		hideExportButton: ctx.hideExportButton,
 	}))
 
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -121,7 +123,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 							variant="default"
 						/>
 						<NewEventButton />
-						<ExportButton />
+						{!hideExportButton && <ExportButton />}
 					</div>
 
 					<div className="flex items-center justify-end gap-1 @md/base-header:hidden">
@@ -142,9 +144,11 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 										onToday={withClose(today)}
 										variant="grid"
 									/>
-									<div className="pt-2 border-t">
-										<ExportButton fullWidth />
-									</div>
+									{!hideExportButton && (
+										<div className="pt-2 border-t">
+											<ExportButton fullWidth />
+										</div>
+									)}
 								</div>
 							</PopoverContent>
 						</Popover>

@@ -55,6 +55,7 @@ export interface CalendarProviderProps {
 	) => ReactNode
 	renderHour?: (date: Dayjs) => ReactNode
 	hideNonBusinessHours?: boolean
+	hideExportButton?: boolean
 	hiddenDays?: Set<number>
 	slotDuration?: SlotDuration
 	scrollTime?: string
@@ -95,6 +96,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	renderCurrentTimeIndicator,
 	renderHour,
 	hideNonBusinessHours = false,
+	hideExportButton = false,
 	hiddenDays,
 	slotDuration = 60,
 	scrollTime,
@@ -181,6 +183,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			renderCurrentTimeIndicator,
 			renderHour,
 			hideNonBusinessHours,
+			hideExportButton,
 			hiddenDays,
 			slotDuration,
 			scrollTime,
@@ -209,6 +212,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			renderCurrentTimeIndicator,
 			renderHour,
 			hideNonBusinessHours,
+			hideExportButton,
 			hiddenDays,
 			slotDuration,
 			scrollTime,

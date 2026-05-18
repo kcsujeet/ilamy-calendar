@@ -6,14 +6,8 @@ import { TimeHeaderRow } from '@/features/resource-calendar/components/time-head
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 export const ResourceDayHorizontal: React.FC = () => {
-	const {
-		currentDate,
-		t,
-		businessHours,
-		hideNonBusinessHours,
-		getVisibleResources,
-	} = useSmartCalendarContext()
-	const resources = getVisibleResources()
+	const { currentDate, t, businessHours, hideNonBusinessHours, resources } =
+		useSmartCalendarContext()
 	const dayHours = getViewHours({
 		referenceDate: currentDate,
 		businessHours,

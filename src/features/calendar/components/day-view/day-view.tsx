@@ -68,10 +68,7 @@ export const DayView = () => {
 					)}
 					transitionKey={getDayKey(currentDate)}
 				>
-					<span className="xs:inline hidden">
-						{currentDate.format('dddd, ')}
-					</span>
-					{currentDate.format('MMMM D, YYYY')}
+					{currentDate.format('dddd, LL')}
 					{today && (
 						<span className="bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm">
 							{t('today')}

@@ -218,4 +218,45 @@ describe('HorizontalGridRow', () => {
 			expect(row).toBeInTheDocument()
 		})
 	})
+
+	describe('current time indicator gating', () => {
+		// The events layer reads "now" from real-time `dayjs()` (no test-injection
+		// prop), so the hour-grid case uses a 2-hour window starting at the current
+		// hour to stay resilient against second-level timing drift during the test.
+		test('mounts the indicator when gridType is "hour"', () => {
+			const currentHour = dayjs().startOf('hour')
+			const columns = [
+				{
+					id: 'gate-hour-cell-1',
+					day: currentHour,
+					gridType: 'hour' as const,
+				},
+				{
+					id: 'gate-hour-cell-2',
+					day: currentHour.add(1, 'hour'),
+					gridType: 'hour' as const,
+				},
+			]
+
+			renderHorizontalGridRow({ columns, gridType: 'hour' })
+
+			expect(screen.getByTestId('current-time-indicator')).toBeInTheDocument()
+		})
+
+		test('does not mount the indicator when gridType is "day"', () => {
+			const columns = [
+				{
+					id: 'gate-day-cell',
+					day: initialDate,
+					gridType: 'day' as const,
+				},
+			]
+
+			renderHorizontalGridRow({ columns, gridType: 'day' })
+
+			expect(
+				screen.queryByTestId('current-time-indicator')
+			).not.toBeInTheDocument()
+		})
+	})
 })

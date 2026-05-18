@@ -72,13 +72,14 @@ export interface RenderCurrentTimeIndicatorProps {
 	 * - `'vertical'`: `progress` maps to a `top` offset (day/week vertical grids).
 	 * - `'horizontal'`: `progress` maps to a `left` offset (horizontal resource hour grids).
 	 *
-	 * Lets a single render function position correctly across both grid layouts.
+	 * The library always populates this field, so consumers can treat it as
+	 * always defined inside their render function.
 	 *
 	 * Note: distinct from the `orientation` prop on `IlamyResourceCalendar`.
 	 * `orientation` chooses which view component renders the calendar; `axis` tells
 	 * your render function which dimension `progress` maps to inside that view.
 	 */
-	axis: 'vertical' | 'horizontal'
+	axis?: 'vertical' | 'horizontal'
 	/**
 	 * The resource associated with this column (if in a resource-based view).
 	 * Pass this to conditionally render custom indicators for specific resources.

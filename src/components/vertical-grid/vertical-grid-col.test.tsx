@@ -72,10 +72,10 @@ describe('VerticalGridCol', () => {
 		).toBeInTheDocument()
 	})
 
-	test('renders minute slots when cellSlots is provided', () => {
+	test('renders minute slots when slotDurationMinutes is provided', () => {
 		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol({
-			cellSlots: [0, 30],
+			slotDurationMinutes: 30,
 		})
 
 		expect(
@@ -95,7 +95,7 @@ describe('VerticalGridCol', () => {
 	test('groups quarter-hour cells under one hour wrapper that shares the row equally', () => {
 		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol({
-			cellSlots: [0, 15, 30, 45],
+			slotDurationMinutes: 15,
 		})
 
 		const nineZero = screen.getByTestId(`vertical-cell-${dateStr}-09-00`)

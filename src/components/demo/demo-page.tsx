@@ -5,6 +5,7 @@ import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
 import type {
 	CellClickInfo,
 	RenderCurrentTimeIndicatorProps,
+	SlotDuration,
 } from '@/features/calendar/types'
 import { IlamyResourceCalendar } from '@/features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 import type { Resource } from '@/features/resource-calendar/types'
@@ -314,6 +315,7 @@ export function DemoPage() {
 	const [useCustomHourRenderer, setUseCustomHourRenderer] = useState(false)
 	const [hiddenDays, setHiddenDays] = useState<WeekDays[]>([])
 	const [eventHeight, setEventHeight] = useState(24)
+	const [slotDuration, setSlotDuration] = useState<SlotDuration>(60)
 
 	// Resource calendar settings
 	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
@@ -458,6 +460,7 @@ export function DemoPage() {
 						setInitialView={setInitialView}
 						setLocale={setLocale}
 						setOrientation={setOrientation}
+						setSlotDuration={setSlotDuration}
 						setStickyHeader={setStickyHeader}
 						setTimeFormat={setTimeFormat}
 						setTimezone={setTimezone}
@@ -468,6 +471,7 @@ export function DemoPage() {
 						setUseCustomOnEventClick={setUseCustomOnEventClick}
 						setUseCustomTimeIndicator={setUseCustomTimeIndicator}
 						setWeekViewGranularity={setWeekViewGranularity}
+						slotDuration={slotDuration}
 						stickyViewHeader={stickyViewHeader}
 						timeFormat={timeFormat}
 						timezone={timezone}
@@ -563,6 +567,7 @@ export function DemoPage() {
 									}
 									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
 									renderHour={useCustomHourRenderer ? renderHour : undefined}
+									slotDuration={slotDuration}
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}
 									timezone={timezone}
@@ -610,6 +615,7 @@ export function DemoPage() {
 									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
 									renderHour={useCustomHourRenderer ? renderHour : undefined}
 									resources={demoResources}
+									slotDuration={slotDuration}
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}
 									timezone={timezone}

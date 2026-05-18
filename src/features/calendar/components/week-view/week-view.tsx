@@ -25,6 +25,7 @@ export const WeekView: React.FC = () => {
 		businessHours,
 		hideNonBusinessHours,
 		hiddenDays,
+		slotDuration,
 	} = useSmartCalendarContext()
 
 	const weekDays = useMemo(
@@ -97,6 +98,7 @@ export const WeekView: React.FC = () => {
 			classes={{ header: 'w-full h-18', body: 'w-full' }}
 			columns={[firstCol, ...columns]}
 			gridType="hour"
+			slotDurationMinutes={slotDuration}
 			style={cssVars}
 			variant="regular"
 		>

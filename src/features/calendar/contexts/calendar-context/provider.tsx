@@ -8,6 +8,7 @@ import type {
 	CellClickInfo,
 	DateRange,
 	RenderCurrentTimeIndicatorProps,
+	SlotDuration,
 } from '@/features/calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
@@ -55,6 +56,7 @@ export interface CalendarProviderProps {
 	renderHour?: (date: Dayjs) => ReactNode
 	hideNonBusinessHours?: boolean
 	hiddenDays?: Set<number>
+	slotDuration?: SlotDuration
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -93,6 +95,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	renderHour,
 	hideNonBusinessHours = false,
 	hiddenDays,
+	slotDuration = 60,
 }) => {
 	// Use the calendar engine
 	const calendarEngine = useCalendarEngine({
@@ -177,6 +180,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			renderHour,
 			hideNonBusinessHours,
 			hiddenDays,
+			slotDuration,
 		}),
 		[
 			calendarEngine,
@@ -203,6 +207,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			renderHour,
 			hideNonBusinessHours,
 			hiddenDays,
+			slotDuration,
 		]
 	)
 

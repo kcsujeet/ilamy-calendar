@@ -13,10 +13,9 @@ interface VerticalGridProps {
 	classes?: { header?: string; body?: string; allDay?: string }
 	allDayRow?: React.ReactNode
 	/**
-	 * Optional array of minute slots by which the hour is divided
-	 * e.g., [0, 15, 30, 45] for quarter-hour slots
+	 * Granularity of each hour row in minutes. Forwarded to VerticalGridCol.
 	 */
-	cellSlots?: number[]
+	slotDurationMinutes?: number
 	style?: React.CSSProperties
 }
 
@@ -27,7 +26,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	variant = 'resource',
 	classes,
 	allDayRow,
-	cellSlots,
+	slotDurationMinutes,
 	style,
 }) => {
 	const isResourceCalendar = variant === 'resource'
@@ -91,9 +90,9 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 						<VerticalGridCol
 							key={keys.listKey(column.id, index)}
 							{...column}
-							cellSlots={cellSlots}
 							gridType={gridType}
 							isLastColumn={index === columns.length - 1}
+							slotDurationMinutes={slotDurationMinutes}
 						/>
 					))}
 				</div>

@@ -38,6 +38,7 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 - [x] `onViewChange` — matches view change callbacks
 - [x] Recurring event CRUD with scope (this/following/all) — FullCalendar doesn't have this built-in
 - [x] `renderEvent` / `renderResource` / `renderCurrentTimeIndicator` — flexible custom rendering
+- [x] `slotDuration` (15/30/60 minutes) — matches FullCalendar's `slotDuration` for hour-resolution views
 - [x] `hiddenDays` — hide specific weekdays
 - [x] Resource-specific business hours
 - [x] `businessHours` with split shifts

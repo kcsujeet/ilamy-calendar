@@ -78,8 +78,8 @@ describe('ResourceDayVertical', () => {
 		expect(allDayRows.length).toBe(2)
 	})
 
-	test('renders 15-minute slots by default in Day View', () => {
-		renderResourceDayVertical()
+	test('renders 15-minute slots when slotDuration is 15', () => {
+		renderResourceDayVertical({ slotDuration: 15 })
 		const dateStr = initialDate.format('YYYY-MM-DD')
 
 		// Should have 00, 15, 30, 45 slots
@@ -95,6 +95,24 @@ describe('ResourceDayVertical', () => {
 		expect(
 			screen.getByTestId(`vertical-cell-${dateStr}-09-45-resource-1`)
 		).toBeInTheDocument()
+	})
+
+	test('renders only hour slots by default', () => {
+		renderResourceDayVertical()
+		const dateStr = initialDate.format('YYYY-MM-DD')
+
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-00-resource-1`)
+		).toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${dateStr}-09-15-resource-1`)
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${dateStr}-09-30-resource-1`)
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${dateStr}-09-45-resource-1`)
+		).not.toBeInTheDocument()
 	})
 
 	// hideNonBusinessHours backwards compatibility tests

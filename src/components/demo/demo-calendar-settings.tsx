@@ -16,6 +16,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select'
+import type { SlotDuration } from '@/features/calendar/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { CalendarView, TimeFormat } from '@/types'
 import { ModeToggle } from './mode-toggle'
@@ -80,6 +81,9 @@ interface DemoCalendarSettingsProps {
 	// Hidden days
 	hiddenDays: WeekDays[]
 	setHiddenDays: (value: WeekDays[]) => void
+	// Slot duration (time-grid granularity)
+	slotDuration: SlotDuration
+	setSlotDuration: (value: SlotDuration) => void
 }
 
 export function DemoCalendarSettings({
@@ -137,6 +141,8 @@ export function DemoCalendarSettings({
 	setBusinessEndTime,
 	hiddenDays,
 	setHiddenDays,
+	slotDuration,
+	setSlotDuration,
 }: DemoCalendarSettingsProps) {
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -417,6 +423,24 @@ export function DemoCalendarSettings({
 						<SelectContent>
 							<SelectItem value="12-hour">12-hour (1:00 PM)</SelectItem>
 							<SelectItem value="24-hour">24-hour (13:00)</SelectItem>
+						</SelectContent>
+					</Select>
+				</label>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Slot Duration</span>
+					<Select
+						onValueChange={(value) =>
+							setSlotDuration(Number.parseInt(value, 10) as SlotDuration)
+						}
+						value={slotDuration.toString()}
+					>
+						<SelectTrigger className="w-full">
+							<SelectValue placeholder="Select slot duration" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="60">60 min (hour only, default)</SelectItem>
+							<SelectItem value="30">30 min (half-hour)</SelectItem>
+							<SelectItem value="15">15 min (quarter-hour)</SelectItem>
 						</SelectContent>
 					</Select>
 				</label>

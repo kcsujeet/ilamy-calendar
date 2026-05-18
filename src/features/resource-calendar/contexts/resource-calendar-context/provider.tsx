@@ -6,6 +6,7 @@ import type {
 	CalendarClassesOverride,
 	CellClickInfo,
 	RenderCurrentTimeIndicatorProps,
+	SlotDuration,
 } from '@/features/calendar/types'
 import type { Resource } from '@/features/resource-calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
@@ -35,6 +36,7 @@ interface ResourceCalendarProviderProps extends CalendarProviderProps {
 	) => React.ReactNode
 	renderHour?: (date: Dayjs) => React.ReactNode
 	hideNonBusinessHours?: boolean
+	slotDuration?: SlotDuration
 }
 
 export const ResourceCalendarProvider: React.FC<
@@ -79,6 +81,7 @@ export const ResourceCalendarProvider: React.FC<
 	hideNonBusinessHours = false,
 	hiddenDays,
 	weekViewGranularity = 'hourly',
+	slotDuration = 60,
 }) => {
 	// Resource-specific state
 	const [currentResources] = useState<Resource[]>(resources)
@@ -269,6 +272,7 @@ export const ResourceCalendarProvider: React.FC<
 			hideNonBusinessHours,
 			hiddenDays,
 			weekViewGranularity,
+			slotDuration,
 		}),
 		[
 			calendarEngine,
@@ -310,6 +314,7 @@ export const ResourceCalendarProvider: React.FC<
 			hideNonBusinessHours,
 			hiddenDays,
 			weekViewGranularity,
+			slotDuration,
 		]
 	)
 

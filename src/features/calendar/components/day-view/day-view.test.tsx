@@ -321,6 +321,7 @@ describe('DayView', () => {
 		renderDayView({
 			initialDate: monday,
 			businessHours,
+			slotDuration: 15,
 		})
 
 		const dateStr = monday.format('YYYY-MM-DD')
@@ -519,6 +520,7 @@ describe('DayView', () => {
 		renderDayView({
 			initialDate: monday,
 			businessHours,
+			slotDuration: 15,
 		})
 
 		const dateStr = monday.format('YYYY-MM-DD')
@@ -860,6 +862,69 @@ describe('DayView', () => {
 		// Event starting at 1pm (4 hours into 8-hour grid) should be at 50%
 		const style = eventWrapper?.getAttribute('style') || ''
 		expect(style).toContain('top: 50%')
+	})
+
+	test('renders only hour slots by default (no sub-hour subdivisions)', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		renderDayView({ initialDate: monday })
+
+		const dateStr = monday.format('YYYY-MM-DD')
+
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
+		).toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${dateStr}-09-15`)
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${dateStr}-09-30`)
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${dateStr}-09-45`)
+		).not.toBeInTheDocument()
+	})
+
+	test('renders half-hour slots when slotDuration is 30', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		renderDayView({ initialDate: monday, slotDuration: 30 })
+
+		const dateStr = monday.format('YYYY-MM-DD')
+
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-30`)
+		).toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${dateStr}-09-15`)
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${dateStr}-09-45`)
+		).not.toBeInTheDocument()
+	})
+
+	test('renders quarter-hour slots when slotDuration is 15', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		renderDayView({ initialDate: monday, slotDuration: 15 })
+
+		const dateStr = monday.format('YYYY-MM-DD')
+
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-15`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-30`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${dateStr}-09-45`)
+		).toBeInTheDocument()
 	})
 
 	test('customizes hour rendering when renderHour prop is provided', () => {

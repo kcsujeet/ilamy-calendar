@@ -401,4 +401,44 @@ describe('ResourceWeekVertical', () => {
 			})
 		})
 	})
+
+	describe('slotDuration', () => {
+		test('renders only hour slots by default', () => {
+			renderResourceWeekVertical()
+			const startOfWeek = initialDate.startOf('week')
+			const firstDay = startOfWeek.format('YYYY-MM-DD')
+
+			expect(
+				screen.getByTestId(`vertical-cell-${firstDay}-09-00-resource-1`)
+			).toBeInTheDocument()
+			expect(
+				screen.queryByTestId(`vertical-cell-${firstDay}-09-15-resource-1`)
+			).not.toBeInTheDocument()
+			expect(
+				screen.queryByTestId(`vertical-cell-${firstDay}-09-30-resource-1`)
+			).not.toBeInTheDocument()
+			expect(
+				screen.queryByTestId(`vertical-cell-${firstDay}-09-45-resource-1`)
+			).not.toBeInTheDocument()
+		})
+
+		test('renders quarter-hour slots when slotDuration is 15', () => {
+			renderResourceWeekVertical({ slotDuration: 15 })
+			const startOfWeek = initialDate.startOf('week')
+			const firstDay = startOfWeek.format('YYYY-MM-DD')
+
+			expect(
+				screen.getByTestId(`vertical-cell-${firstDay}-09-00-resource-1`)
+			).toBeInTheDocument()
+			expect(
+				screen.getByTestId(`vertical-cell-${firstDay}-09-15-resource-1`)
+			).toBeInTheDocument()
+			expect(
+				screen.getByTestId(`vertical-cell-${firstDay}-09-30-resource-1`)
+			).toBeInTheDocument()
+			expect(
+				screen.getByTestId(`vertical-cell-${firstDay}-09-45-resource-1`)
+			).toBeInTheDocument()
+		})
+	})
 })

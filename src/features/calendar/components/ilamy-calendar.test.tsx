@@ -679,6 +679,7 @@ describe('IlamyCalendar', () => {
 					initialDate={initialDate}
 					initialView="day"
 					onCellClick={mockOnCellClick}
+					slotDuration={15}
 				/>
 			)
 
@@ -690,7 +691,7 @@ describe('IlamyCalendar', () => {
 			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
 			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
 			expect(callArgs.start.toISOString()).toBe('2025-01-15T14:00:00.000Z')
-			// Day view time slots are 15 minutes (minute is 0)
+			// slotDuration=15 → end is 15 minutes after start
 			expect(callArgs.end.toISOString()).toBe('2025-01-15T14:15:00.000Z')
 			expect(callArgs.allDay).toBe(false)
 			expect(callArgs.resourceId).toBeUndefined()

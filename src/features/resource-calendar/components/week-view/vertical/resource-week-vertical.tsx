@@ -4,6 +4,7 @@ import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { HourLabel } from '@/components/hour-label/hour-label'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { keys } from '@/lib/utils/keys'
 import { useResourceWeekViewData } from '../use-resource-week-view-data'
@@ -15,6 +16,7 @@ export const ResourceWeekVertical: React.FC = () => {
 	const { isHourly, resources, weekDays, visibleDays } =
 		useResourceWeekViewData()
 	const { hours, columns } = useResourceWeekVerticalData()
+	const { slotDuration } = useSmartCalendarContext()
 
 	const firstCol = useMemo(
 		() => ({
@@ -66,6 +68,7 @@ export const ResourceWeekVertical: React.FC = () => {
 			columns={[firstCol, ...columns]}
 			data-testid="resource-week"
 			gridType={isHourly ? 'hour' : 'day'}
+			slotDurationMinutes={slotDuration}
 		>
 			<div className="flex-1 flex flex-col">
 				<ResourceWeekVerticalResourceHeader

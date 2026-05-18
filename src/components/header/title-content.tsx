@@ -13,21 +13,6 @@ import { cn } from '@/lib/utils'
 import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
-const MONTH_KEYS = [
-	'january',
-	'february',
-	'march',
-	'april',
-	'may',
-	'june',
-	'july',
-	'august',
-	'september',
-	'october',
-	'november',
-	'december',
-] as const
-
 const TitleContent = () => {
 	const { currentDate, view, selectDate, t, firstDayOfWeek } =
 		useSmartCalendarContext((ctx) => ({
@@ -40,7 +25,10 @@ const TitleContent = () => {
 
 	const [openPopover, setOpenPopover] = useState<string | null>(null)
 
-	const months = useMemo(() => MONTH_KEYS.map((key) => t(key)), [t])
+	const months = Array.from({ length: 12 }, (_, index) =>
+		currentDate.month(index).format('MMMM')
+	)
+
 	const currentYear = currentDate.year()
 	const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
@@ -58,7 +46,7 @@ const TitleContent = () => {
 						'justify-start font-normal',
 						currentDate.month() === index && 'bg-primary/10'
 					)}
-					key={month}
+					key={index}
 					onClick={() => handleSelectDate(currentDate.month(index))}
 					variant="ghost"
 				>

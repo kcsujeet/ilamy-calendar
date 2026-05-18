@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.7.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.6.3...v1.7.0)
+
+> 18 May 2026
+
+##### Features
+
+- feat: `scrollTime` prop on `IlamyCalendar` and `IlamyResourceCalendar` — sets the initial scroll position for hour-resolution views (day, week, resource day, resource week, both orientations). Accepts `"HH:mm"` or `"HH:mm:ss"`, minutes floored to the hour. Independent of `businessHours`. Requires a fixed calendar height. ([`#136`](https://github.com/kcsujeet/ilamy-calendar/pull/136)) — Closes [`#132`](https://github.com/kcsujeet/ilamy-calendar/issues/132)
+- feat: `slotDuration` prop on `IlamyCalendar` and `IlamyResourceCalendar` — controls time-grid granularity in minutes (`15 | 30 | 60`). Default `60` shows one row per hour with no sub-hour lines; `30` shows two; `15` shows four with dashed separators. **Note**: flips the day view and resource-day-vertical visual defaults from 15-minute to hour-only slots. Consumers wanting the prior look should pass `slotDuration={15}`. ([`#140`](https://github.com/kcsujeet/ilamy-calendar/pull/140)) — Closes [`#138`](https://github.com/kcsujeet/ilamy-calendar/issues/138)
+- feat: render the "now" line in horizontal resource hour grids. Previously the current-time indicator only appeared in vertical day/week grids. Adds an optional `axis: 'vertical' | 'horizontal'` field to `RenderCurrentTimeIndicatorProps` so custom-render callbacks can branch on layout. ([`#122`](https://github.com/kcsujeet/ilamy-calendar/pull/122)) — Thanks [@sumanthneerumalla](https://github.com/sumanthneerumalla)! — Closes [`#121`](https://github.com/kcsujeet/ilamy-calendar/issues/121)
+
+##### Fixes
+
+- fix: truncate long labels in narrow calendar cells (`AllDayCell`, week-view corner "Week", resource header "Resources") so locale translations like "Ganztägig" no longer break the layout. CSS-only. ([`#137`](https://github.com/kcsujeet/ilamy-calendar/pull/137)) — Closes [`#133`](https://github.com/kcsujeet/ilamy-calendar/issues/133)
+- fix: demo page no longer churns the GPU when idle ([`#127`](https://github.com/kcsujeet/ilamy-calendar/pull/127)) — Thanks [@maxdelorme](https://github.com/maxdelorme)!
+
 #### [v1.6.3](https://github.com/kcsujeet/ilamy-calendar/compare/v1.6.2...v1.6.3)
 
 > 26 April 2026

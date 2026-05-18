@@ -79,11 +79,16 @@ For diffs >300 lines or >5 files, spawn three `Explore` agents in a single messa
 
 ### Agent 2: Simplification Opportunities
 
+**DRY is the guiding principle here.** Actively hunt for repetition: any time the same shape of code (same boilerplate in tests, same condition, same JSX wrapper, same setup block) appears 2-3+ times, propose extracting it. Repetition is the single most common review finding and the easiest to undervalue. Look for it everywhere: production code, tests, demo code, documentation snippets. Test files in particular accumulate repetitive setup that begs for helpers like `renderXyzView`, `buildEvent`, `at(hour, minute)`.
+
+Specific patterns to flag:
+
+- **Repeated test setup**: multiple tests calling the same `render(<Provider>...<X /></Provider>)` boilerplate with one varying prop. Extract a `renderX(overrides?)` helper.
 - **Scope creep**: props added to shared components for a single use case. Should it live closer to the caller instead?
-- **Repeated inline checks**: the same condition appearing 10+ times. Extract to a boolean const.
+- **Repeated inline checks**: the same condition appearing 3+ times. Extract to a boolean const.
 - **Over-parameterized components**: 6+ props where 4 could be derived from context.
 - **Duplicate computation** across sibling components. Extract to a shared hook.
-- **Repeated `locale = currentLocale || currentDate.locale()`-style patterns** across 5+ files. Extract to a small hook so future changes (like adding `timeZone`) are one-line.
+- **Repeated `locale = currentLocale || currentDate.locale()`-style patterns** across multiple files. Extract to a small hook so future changes (like adding `timeZone`) are one-line.
 - **Template literal classNames** where `cn()` is the codebase convention.
 - **JSX blocks** >30 lines that could be standalone components.
 - **Useless wrapper divs** that duplicate parent styling.
@@ -92,6 +97,8 @@ For diffs >300 lines or >5 files, spawn three `Explore` agents in a single messa
   - **Empty deps + no inputs from component scope.** It's a module constant in disguise. Move it out of the component as a top-level `const`.
   - **Deps that change every render** (e.g. `[currentDate]` where `currentDate` updates on every navigation, or `[firstDayOfWeek]` where the body is 7 cheap dayjs ops). The cache never hits, the hook bookkeeping costs more than the work. Drop the memo, inline the expression.
   - When you suggest dropping a `useMemo`, the comment must include a brief reason: "empty deps", "deps change every render", "7 cheap ops, no benefit", etc. Do not just say "drop the useMemo" without explaining why.
+
+The goal is not zealous deduplication. Three similar lines is sometimes better than a premature abstraction. But when the same shape appears with no real variance, name it once.
 
 ### Agent 3: Code Quality & Efficiency
 
@@ -109,6 +116,7 @@ For diffs >300 lines or >5 files, spawn three `Explore` agents in a single messa
   - **No nested `if` or `switch` blocks.** Suggest flattening with early returns, guard variables, or key-value object lookups. Nested control flow is almost always a sign that the logic can be expressed more clearly.
   - **No ternaries in JSX.** Prefer single-level boolean conditionals (`{condition && <X />}`) or early returns from the component. `{isLoading ? <Spinner /> : <Content />}` should become an early return for the loading branch or two consecutive `&&` gates.
   - **No code the reader can't understand at a glance.** If a line takes more than a few seconds to parse, that is a defect, not cleverness. A comment explaining mechanics is a smell; rewrite the code instead. Comments should explain WHY, not WHAT.
+  - **Don't prop-drill what context already provides.** If a hook, function, or component already has access to a value via context (e.g. `useSmartCalendarContext`, `useEffectiveBusinessHours`), it should read it there directly instead of accepting it as a prop or argument and having every caller plumb it through. Flag any case where a caller pulls a value out of context only to pass it back into a callee that could pull it itself. Same rule for refs, settings, callbacks, and any other context-derived data. Tests can wrap the callee in a minimal provider.
 - **Unnecessary work**: `useMemo` / loops that run in modes where the result is unused. Guard with `if (!isActive) return []`.
 - **Missed memoization**: inline object/callback creation inside `useMemo` deps that breaks child memoization.
 - **Stale deps**: function refs used in dep arrays instead of the underlying data.

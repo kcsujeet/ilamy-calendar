@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
@@ -1113,5 +1113,33 @@ describe('WeekView', () => {
 		const customLastHours = screen.getAllByTestId('custom-hour-23')
 		expect(customLastHours.length).toBe(1)
 		expect(customLastHours[0]).toHaveTextContent('23:00')
+	})
+
+	describe('scrollTime', () => {
+		const originalScrollTo = Element.prototype.scrollTo
+
+		afterEach(() => {
+			Element.prototype.scrollTo = originalScrollTo
+		})
+
+		test('scrolls the viewport when scrollTime is set', () => {
+			cleanup()
+			const scrollSpy = mock((_options?: ScrollToOptions) => {})
+			Element.prototype.scrollTo = scrollSpy as unknown as Element['scrollTo']
+
+			renderWeekView({ scrollTime: '09:00:00' })
+
+			expect(scrollSpy).toHaveBeenCalled()
+		})
+
+		test('does not scroll when scrollTime is not provided', () => {
+			cleanup()
+			const scrollSpy = mock((_options?: ScrollToOptions) => {})
+			Element.prototype.scrollTo = scrollSpy as unknown as Element['scrollTo']
+
+			renderWeekView()
+
+			expect(scrollSpy).not.toHaveBeenCalled()
+		})
 	})
 })

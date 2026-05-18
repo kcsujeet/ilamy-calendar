@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import type { CalendarEvent } from '@/components/types'
@@ -328,5 +328,31 @@ describe('ResourceDayVertical', () => {
 		const customLastHour = screen.getByTestId('custom-hour-23')
 		expect(customLastHour).toBeInTheDocument()
 		expect(customLastHour).toHaveTextContent('23:00')
+	})
+
+	describe('scrollTime', () => {
+		const originalScrollTo = Element.prototype.scrollTo
+
+		afterEach(() => {
+			Element.prototype.scrollTo = originalScrollTo
+		})
+
+		test('scrolls the viewport when scrollTime is set', () => {
+			const scrollSpy = mock((_options?: ScrollToOptions) => {})
+			Element.prototype.scrollTo = scrollSpy as unknown as Element['scrollTo']
+
+			renderResourceDayVertical({ scrollTime: '08:00:00' })
+
+			expect(scrollSpy).toHaveBeenCalled()
+		})
+
+		test('does not scroll when scrollTime is not provided', () => {
+			const scrollSpy = mock((_options?: ScrollToOptions) => {})
+			Element.prototype.scrollTo = scrollSpy as unknown as Element['scrollTo']
+
+			renderResourceDayVertical()
+
+			expect(scrollSpy).not.toHaveBeenCalled()
+		})
 	})
 })

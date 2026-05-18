@@ -70,6 +70,7 @@ export interface CalendarContextType {
 	hideNonBusinessHours?: boolean
 	hiddenDays?: Set<number>
 	slotDuration: SlotDuration
+	scrollTime?: string
 }
 
 // CalendarContext is kept for internal Provider usage

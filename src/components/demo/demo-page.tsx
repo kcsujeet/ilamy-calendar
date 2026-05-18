@@ -316,6 +316,7 @@ export function DemoPage() {
 	const [hiddenDays, setHiddenDays] = useState<WeekDays[]>([])
 	const [eventHeight, setEventHeight] = useState(24)
 	const [slotDuration, setSlotDuration] = useState<SlotDuration>(60)
+	const [scrollTime, setScrollTime] = useState<string | undefined>(undefined)
 
 	// Resource calendar settings
 	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
@@ -431,10 +432,6 @@ export function DemoPage() {
 			className="container mx-auto px-4 py-8 relative"
 			data-testid="demo-page"
 		>
-			{/* Decorative background elements */}
-			<div className="fixed top-20 right-20 -z-10 w-96 h-96 bg-blue-500/10 rounded-full filter blur-3xl "></div>
-			<div className="fixed bottom-20 left-10 -z-10 w-80 h-80 bg-indigo-500/10 rounded-full filter blur-3xl "></div>
-
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-linear-to-br from-blue-600 to-indigo-700 dark:from-blue-400 dark:to-indigo-500">
 					Interactive Demo
@@ -465,6 +462,7 @@ export function DemoPage() {
 						isResourceCalendar={calendarType === 'resource'}
 						locale={locale}
 						orientation={orientation}
+						scrollTime={scrollTime}
 						setBusinessEndTime={setBusinessEndTime}
 						setBusinessStartTime={setBusinessStartTime}
 						setCalendarHeight={setCalendarHeight}
@@ -481,6 +479,7 @@ export function DemoPage() {
 						setInitialView={setInitialView}
 						setLocale={setLocale}
 						setOrientation={setOrientation}
+						setScrollTime={setScrollTime}
 						setSlotDuration={setSlotDuration}
 						setStickyHeader={setStickyHeader}
 						setTimeFormat={setTimeFormat}
@@ -588,6 +587,7 @@ export function DemoPage() {
 									}
 									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
 									renderHour={useCustomHourRenderer ? renderHour : undefined}
+									scrollTime={scrollTime}
 									slotDuration={slotDuration}
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}
@@ -636,6 +636,7 @@ export function DemoPage() {
 									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
 									renderHour={useCustomHourRenderer ? renderHour : undefined}
 									resources={demoResources}
+									scrollTime={scrollTime}
 									slotDuration={slotDuration}
 									stickyViewHeader={stickyViewHeader}
 									timeFormat={timeFormat}

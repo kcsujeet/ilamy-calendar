@@ -21,6 +21,7 @@ export const TimeHeaderRow: React.FC<TimeHeaderRowProps> = ({
 	<div className="flex h-12 border-b">
 		{hours.map((col, index) => {
 			const isNowHour = col.isSame(dayjs(), 'hour')
+			const hourStr = col.format('HH')
 			const key = keys.header.week.hour(col, index)
 			return (
 				<AnimatedSection
@@ -28,7 +29,8 @@ export const TimeHeaderRow: React.FC<TimeHeaderRowProps> = ({
 						'min-w-20 flex-1 border-r last:border-r-0 flex items-center justify-center text-xs shrink-0',
 						isNowHour && 'bg-blue-50 text-blue-600 font-medium'
 					)}
-					data-testid={keys.header.resource.timeLabel(view, col.format('HH'))}
+					data-hour={hourStr}
+					data-testid={keys.header.resource.timeLabel(view, hourStr)}
 					delay={index * delayStep}
 					key={keys.listKey(key, 'animated')}
 					transitionKey={keys.listKey(key, 'motion')}

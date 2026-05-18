@@ -57,6 +57,7 @@ export interface CalendarProviderProps {
 	hideNonBusinessHours?: boolean
 	hiddenDays?: Set<number>
 	slotDuration?: SlotDuration
+	scrollTime?: string
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -96,6 +97,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	hideNonBusinessHours = false,
 	hiddenDays,
 	slotDuration = 60,
+	scrollTime,
 }) => {
 	// Use the calendar engine
 	const calendarEngine = useCalendarEngine({
@@ -181,6 +183,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			hideNonBusinessHours,
 			hiddenDays,
 			slotDuration,
+			scrollTime,
 		}),
 		[
 			calendarEngine,
@@ -208,6 +211,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			hideNonBusinessHours,
 			hiddenDays,
 			slotDuration,
+			scrollTime,
 		]
 	)
 

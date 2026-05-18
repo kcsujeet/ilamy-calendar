@@ -128,7 +128,7 @@ const TitleContent = () => {
 							variant="ghost"
 						>
 							<div className="flex w-full items-center justify-between">
-								<span>{day.format('dddd, MMM D')}</span>
+								<span>{day.format('ll')}</span>
 								{today && (
 									<span className="bg-primary text-primary-foreground rounded-sm px-1! text-xs">
 										{t('today')}

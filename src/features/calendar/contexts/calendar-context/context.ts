@@ -68,6 +68,7 @@ export interface CalendarContextType {
 	renderHour?: (date: Dayjs) => React.ReactNode
 	hideNonBusinessHours?: boolean
 	hiddenDays?: Set<number>
+	scrollTime?: string
 }
 
 // CalendarContext is kept for internal Provider usage

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import type { CalendarEvent } from '@/components/types'
@@ -341,6 +341,43 @@ describe('ResourceDayHorizontal', () => {
 			// If it's showing at 9am, left would be 9/24 * 100 = 37.5.
 			expect(left).toBeCloseTo(41.67, 1)
 			expect(left).not.toBeCloseTo(37.5, 1)
+		})
+	})
+
+	describe('scrollTime', () => {
+		const originalScrollTo = Element.prototype.scrollTo
+
+		afterEach(() => {
+			Element.prototype.scrollTo = originalScrollTo
+		})
+
+		test('scrolls the viewport when scrollTime is set', () => {
+			const scrollSpy = mock((_options?: ScrollToOptions) => {})
+			Element.prototype.scrollTo = scrollSpy as unknown as Element['scrollTo']
+
+			renderResourceDayHorizontal({ scrollTime: '08:00:00' })
+
+			expect(scrollSpy).toHaveBeenCalled()
+		})
+
+		test('scrolls along the horizontal axis (uses `left`, not `top`)', () => {
+			const scrollSpy = mock((_options?: ScrollToOptions) => {})
+			Element.prototype.scrollTo = scrollSpy as unknown as Element['scrollTo']
+
+			renderResourceDayHorizontal({ scrollTime: '09:00' })
+
+			const scrollOptions = scrollSpy.mock.calls.at(0)?.at(0)
+			expect(scrollOptions).toHaveProperty('left')
+			expect(scrollOptions).not.toHaveProperty('top')
+		})
+
+		test('does not scroll when scrollTime is not provided', () => {
+			const scrollSpy = mock((_options?: ScrollToOptions) => {})
+			Element.prototype.scrollTo = scrollSpy as unknown as Element['scrollTo']
+
+			renderResourceDayHorizontal()
+
+			expect(scrollSpy).not.toHaveBeenCalled()
 		})
 	})
 })

@@ -1,5 +1,7 @@
 import type React from 'react'
+import { useRef } from 'react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { useScrollToTime } from '@/components/vertical-grid/use-scroll-to-time'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 import { HorizontalGridHeaderContainer } from './horizontal-grid-header-container'
@@ -27,10 +29,20 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 	variant = 'resource',
 	dayNumberHeight,
 }) => {
-	const { currentDate } = useSmartCalendarContext()
+	const { currentDate, view, scrollTime } = useSmartCalendarContext()
+	const viewportRef = useRef<HTMLDivElement | null>(null)
 
 	const isResourceCalendar = variant === 'resource'
 	const isRegularCalendar = !isResourceCalendar
+	const canHorizontalScrollToHour = gridType === 'hour' && isResourceCalendar
+
+	useScrollToTime({
+		viewportRef,
+		scrollTime,
+		enabled: canHorizontalScrollToHour,
+		scrollKey: `${view}-${currentDate.format('YYYY-MM-DD')}`,
+		axis: 'horizontal',
+	})
 
 	const header = children && (
 		<HorizontalGridHeaderContainer className={classes?.header}>
@@ -51,7 +63,10 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 			<ScrollArea
 				className={cn('h-full', isRegularCalendar && 'overflow-auto')}
 				data-testid="horizontal-grid-scroll"
-				viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
+				viewPortProps={{
+					className: '*:flex! *:flex-col! *:min-h-full',
+					ref: viewportRef,
+				}}
 			>
 				{/**
 				 * header row for resource calendar inside scroll area

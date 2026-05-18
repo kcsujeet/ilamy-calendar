@@ -59,13 +59,14 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 					const hourStr = day.format('HH')
 
 					if (renderCell) {
-						const testId =
-							id === keys.col.time
-								? keys.cell.verticalTime(hourStr)
-								: keys.cell.vertical(day, hourStr, '00', resourceId)
+						const isTimeGutter = id === keys.col.time
+						const testId = isTimeGutter
+							? keys.cell.verticalTime(hourStr)
+							: keys.cell.vertical(day, hourStr, '00', resourceId)
 						return (
 							<div
 								className="min-h-[60px] border-b border-r"
+								data-hour={isTimeGutter ? hourStr : undefined}
 								data-testid={testId}
 								key={keys.listKey(id, dayIndex, hourStr)}
 							>

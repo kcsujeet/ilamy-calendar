@@ -80,6 +80,9 @@ interface DemoCalendarSettingsProps {
 	// Hidden days
 	hiddenDays: WeekDays[]
 	setHiddenDays: (value: WeekDays[]) => void
+	// Initial scroll time (hour-resolution views only)
+	scrollTime: string | undefined
+	setScrollTime: (value: string | undefined) => void
 }
 
 export function DemoCalendarSettings({
@@ -137,6 +140,8 @@ export function DemoCalendarSettings({
 	setBusinessEndTime,
 	hiddenDays,
 	setHiddenDays,
+	scrollTime,
+	setScrollTime,
 }: DemoCalendarSettingsProps) {
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -488,6 +493,31 @@ export function DemoCalendarSettings({
 						</Select>
 					</label>
 				</div>
+				<label className="block text-sm text-left font-medium mb-1">
+					<span>Initial Scroll Time</span>
+					<Select
+						onValueChange={(value) =>
+							setScrollTime(value === 'none' ? undefined : value)
+						}
+						value={scrollTime ?? 'none'}
+					>
+						<SelectTrigger className="w-full">
+							<SelectValue placeholder="Scroll time" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="none">None (no auto-scroll)</SelectItem>
+							{Array.from({ length: 24 }).map((_, i) => (
+								<SelectItem
+									key={i}
+									value={`${i.toString().padStart(2, '0')}:00:00`}
+								>
+									{i.toString().padStart(2, '0')}:00
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</label>
+
 				<label className="block text-sm text-left font-medium mb-1">
 					<span>Hidden Days (Week View)</span>
 					<div className="space-y-1">

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import type { CalendarEvent } from '@/components/types'
@@ -617,6 +617,55 @@ describe('ResourceWeekHorizontal', () => {
 				expect(dailyClassName).toContain('w-full text-center')
 				expect(dailyClassName).not.toContain('sticky')
 			})
+		})
+	})
+
+	describe('scrollTime', () => {
+		const originalScrollTo = Element.prototype.scrollTo
+
+		afterEach(() => {
+			Element.prototype.scrollTo = originalScrollTo
+		})
+
+		test('scrolls the viewport when scrollTime is set and granularity is hourly', () => {
+			const scrollSpy = mock((_options?: ScrollToOptions) => {})
+			Element.prototype.scrollTo = scrollSpy as unknown as Element['scrollTo']
+
+			renderResourceWeekHorizontal({
+				scrollTime: '09:00:00',
+				weekViewGranularity: 'hourly',
+				initialView: 'week',
+			})
+
+			expect(scrollSpy).toHaveBeenCalled()
+			const scrollOptions = scrollSpy.mock.calls.at(0)?.at(0)
+			expect(scrollOptions).toHaveProperty('left')
+			expect(scrollOptions).not.toHaveProperty('top')
+		})
+
+		test('does not scroll on daily granularity', () => {
+			const scrollSpy = mock((_options?: ScrollToOptions) => {})
+			Element.prototype.scrollTo = scrollSpy as unknown as Element['scrollTo']
+
+			renderResourceWeekHorizontal({
+				scrollTime: '09:00:00',
+				weekViewGranularity: 'daily',
+				initialView: 'week',
+			})
+
+			expect(scrollSpy).not.toHaveBeenCalled()
+		})
+
+		test('does not scroll when scrollTime is not provided', () => {
+			const scrollSpy = mock((_options?: ScrollToOptions) => {})
+			Element.prototype.scrollTo = scrollSpy as unknown as Element['scrollTo']
+
+			renderResourceWeekHorizontal({
+				weekViewGranularity: 'hourly',
+				initialView: 'week',
+			})
+
+			expect(scrollSpy).not.toHaveBeenCalled()
 		})
 	})
 })

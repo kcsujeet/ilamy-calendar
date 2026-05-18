@@ -8,6 +8,7 @@ export type {
 	CellClickInfo,
 	IlamyCalendarProps,
 	RenderCurrentTimeIndicatorProps,
+	SlotDuration,
 } from './features/calendar/types'
 // Export types
 export type { RRuleOptions } from './features/recurrence/types'

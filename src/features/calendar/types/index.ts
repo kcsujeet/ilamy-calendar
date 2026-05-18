@@ -7,6 +7,13 @@ import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
 /**
+ * Granularity of the time grid in minutes for day, week, and resource hour views.
+ * Quarter-hour increments only. `60` shows one row per hour with no sub-hour lines.
+ * `30` shows two rows per hour. `15` shows four rows per hour with dashed sub-hour separators.
+ */
+export type SlotDuration = 15 | 30 | 60
+
+/**
  * Custom class names for calendar styling.
  * Allows users to override default styles for various calendar elements.
  */
@@ -319,6 +326,17 @@ export interface IlamyCalendarProps {
 	 * Receives a Dayjs object for the hour and should return a React node.
 	 */
 	renderHour?: (date: Dayjs) => React.ReactNode
+	/**
+	 * Granularity of the time grid in minutes for day, week, and resource hour views.
+	 * Quarter-hour increments only: `15`, `30`, or `60`.
+	 *
+	 * - `60` (default): one row per hour, no sub-hour lines.
+	 * - `30`: two rows per hour (top of hour, half hour).
+	 * - `15`: four rows per hour with dashed sub-hour separators.
+	 *
+	 * @default 60
+	 */
+	slotDuration?: SlotDuration
 	/**
 	 * Initial scroll position for hour-resolution views (day, week, resource
 	 * day, resource week, in both orientations). Accepts `"HH:mm"` or

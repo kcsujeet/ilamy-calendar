@@ -204,6 +204,45 @@ describe('WeekView', () => {
 		expect(screen.getByTestId(`${testIdPrefix}-23-00`)).toBeInTheDocument()
 	})
 
+	test('renders only hour slots by default (no sub-hour subdivisions)', () => {
+		const startOfWeek = initialDate.startOf('week')
+		const firstDay = startOfWeek.format('YYYY-MM-DD')
+
+		expect(
+			screen.getByTestId(`vertical-cell-${firstDay}-09-00`)
+		).toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${firstDay}-09-15`)
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${firstDay}-09-30`)
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-cell-${firstDay}-09-45`)
+		).not.toBeInTheDocument()
+	})
+
+	test('renders quarter-hour slots when slotDuration is 15', () => {
+		cleanup()
+		renderWeekView({ slotDuration: 15 })
+
+		const startOfWeek = initialDate.startOf('week')
+		const firstDay = startOfWeek.format('YYYY-MM-DD')
+
+		expect(
+			screen.getByTestId(`vertical-cell-${firstDay}-09-00`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${firstDay}-09-15`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${firstDay}-09-30`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-cell-${firstDay}-09-45`)
+		).toBeInTheDocument()
+	})
+
 	test('renders event layers for each day', () => {
 		const startOfWeek = initialDate.startOf('week')
 

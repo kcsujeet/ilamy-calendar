@@ -19,10 +19,11 @@ export interface VerticalGridColProps {
 	renderHeader?: () => React.ReactNode
 	renderCell?: (date: Dayjs) => React.ReactNode
 	noEvents?: boolean
-	/** Optional array of minute slots by which the hour is divided
-	 * e.g., [0, 15, 30, 45] for quarter-hour slots
+	/**
+	 * Granularity of each hour row in minutes. `60` renders one cell per hour with
+	 * no sub-hour lines. `30` renders two. `15` renders four with dashed separators.
 	 */
-	cellSlots?: number[]
+	slotDurationMinutes?: number
 	/** Whether this is the last column in the grid */
 	isLastColumn?: boolean
 }
@@ -37,9 +38,15 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	className,
 	renderCell,
 	noEvents,
-	cellSlots = [60], // Default to full hour slots
+	slotDurationMinutes = 60,
 	isLastColumn,
 }) => {
+	const slotCount = Math.floor(60 / slotDurationMinutes)
+	const cellOffsets = Array.from(
+		{ length: slotCount },
+		(_, i) => i * slotDurationMinutes
+	)
+	const hasSubHourSlots = cellOffsets.length > 1
 	return (
 		<div
 			className={cn(
@@ -83,24 +90,22 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 							)}
 							key={keys.listKey(id, dayIndex, hourStr)}
 						>
-							{cellSlots.map((minute) => {
-								const m = minute === 60 ? undefined : minute
-								const mm = m === undefined ? '00' : String(m).padStart(2, '0')
+							{cellOffsets.map((minute) => {
+								const mm = String(minute).padStart(2, '0')
 								const testId = keys.cell.vertical(day, hourStr, mm, resourceId)
-								const isQuarter = minute !== 60
 
 								return (
 									<GridCell
 										className={cn(
 											'hover:bg-accent relative z-10 flex-1 min-h-0 cursor-pointer border-b border-r-0',
-											isQuarter && 'border-dashed'
+											hasSubHourSlots && 'border-dashed'
 										)}
 										data-testid={testId}
-										day={m ? day.minute(m) : day}
+										day={hasSubHourSlots ? day.minute(minute) : day}
 										gridType={gridType}
 										hour={day.hour()}
 										key={keys.listKey(id, dayIndex, mm)}
-										minute={m}
+										minute={hasSubHourSlots ? minute : undefined}
 										resourceId={resourceId} // Events are rendered in a separate layer
 										shouldRenderEvents={false}
 									/>

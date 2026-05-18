@@ -15,6 +15,7 @@ export const ResourceDayVertical: React.FC = () => {
 		getVisibleResources,
 		businessHours,
 		hideNonBusinessHours,
+		slotDuration,
 	} = useSmartCalendarContext()
 
 	const resources = getVisibleResources()
@@ -68,11 +69,11 @@ export const ResourceDayVertical: React.FC = () => {
 					))}
 				</div>
 			}
-			cellSlots={[0, 15, 30, 45]}
 			classes={{ body: 'w-full', header: 'w-full' }}
 			columns={[firstCol, ...columns]}
 			data-testid="resource-day"
 			gridType="hour"
+			slotDurationMinutes={slotDuration}
 		>
 			{/* Header */}
 			<div

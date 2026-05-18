@@ -10,7 +10,7 @@ import { getDayKey, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
 export const DayView = () => {
-	const { currentDate, t, businessHours, hideNonBusinessHours } =
+	const { currentDate, t, businessHours, hideNonBusinessHours, slotDuration } =
 		useSmartCalendarContext()
 	const today = isToday(currentDate)
 	const hours = getViewHours({
@@ -46,7 +46,6 @@ export const DayView = () => {
 	return (
 		<VerticalGrid
 			allDayRow={<AllDayRow days={[currentDate]} />}
-			cellSlots={[0, 15, 30, 45]}
 			classes={{
 				header: 'w-full',
 				body: 'w-full',
@@ -54,6 +53,7 @@ export const DayView = () => {
 			}}
 			columns={[firstCol, columns]}
 			gridType="hour"
+			slotDurationMinutes={slotDuration}
 			variant="regular"
 		>
 			{/* Header */}

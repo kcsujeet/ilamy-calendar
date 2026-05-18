@@ -5,6 +5,7 @@ import type {
 	CalendarClassesOverride,
 	CellClickInfo,
 	RenderCurrentTimeIndicatorProps,
+	SlotDuration,
 } from '@/features/calendar/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
@@ -68,6 +69,7 @@ export interface CalendarContextType {
 	renderHour?: (date: Dayjs) => React.ReactNode
 	hideNonBusinessHours?: boolean
 	hiddenDays?: Set<number>
+	slotDuration: SlotDuration
 	scrollTime?: string
 }
 

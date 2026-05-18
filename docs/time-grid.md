@@ -136,7 +136,7 @@ Renders the grid structure: header, optional all-day row, and scrollable body wi
 
 - `columns`: Array of column definitions, each with `id`, `days` (hour slots), `day` (calendar date), `gridType`, and optional `renderCell`.
 - `gridType`: `'hour'` for time-based grids.
-- `cellSlots`: Sub-hour divisions (e.g., `[0, 15, 30, 45]` for 15-min slots).
+- `slotDurationMinutes`: Minutes per row (`15`, `30`, or `60`). `60` is one cell per hour with no sub-hour lines; `15` draws four cells per hour with dashed separators. Sourced from the public `slotDuration` prop on `IlamyCalendar` / `IlamyResourceCalendar`.
 - `allDayRow`: Optional all-day event row rendered above the grid.
 - `variant`: `'regular'` for standard calendar, omit for resource calendar.
 

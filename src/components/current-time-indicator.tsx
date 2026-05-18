@@ -13,18 +13,27 @@ interface CurrentTimeIndicatorProps {
 	now?: Dayjs
 	/** The resource associated with this column (optional) */
 	resource?: Resource
+	/**
+	 * Layout axis the indicator is rendered along. Defaults to `'vertical'`.
+	 * - `'vertical'`: horizontal line positioned by `top: {progress}%` (day/week vertical grids).
+	 * - `'horizontal'`: vertical line positioned by `left: {progress}%` (horizontal resource hour grids).
+	 */
+	axis?: 'vertical' | 'horizontal'
 }
 
 /**
- * Renders a horizontal red line indicating the current time relative to a vertical container's timeline.
- * The indicator handles its own visibility based on whether 'now' falls within the provided range.
- * Supports custom rendering via renderCurrentTimeIndicator from context.
+ * Renders a red marker indicating the current time relative to a container's timeline.
+ * Hides itself when `now` is outside the range. Switches orientation via the `axis` prop —
+ * vertical (default) draws a horizontal line for vertical grids; horizontal draws a vertical
+ * line for horizontal resource hour grids. Supports custom rendering via
+ * `renderCurrentTimeIndicator` from context.
  */
 const NoMemoCurrentTimeIndicator = ({
 	rangeStart,
 	rangeEnd,
 	now: propNow,
 	resource,
+	axis = 'vertical',
 }: CurrentTimeIndicatorProps) => {
 	// Get render function and current view from context
 	const { renderCurrentTimeIndicator, view } = useSmartCalendarContext(
@@ -58,12 +67,25 @@ const NoMemoCurrentTimeIndicator = ({
 					progress,
 					resource,
 					view,
+					axis,
 				})}
 			</>
 		)
 	}
 
 	// Default indicator rendering
+	if (axis === 'horizontal') {
+		return (
+			<div
+				className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-50 pointer-events-none"
+				data-testid="current-time-indicator"
+				style={{
+					left: `${progress}%`,
+				}}
+			/>
+		)
+	}
+
 	return (
 		<div
 			className="absolute left-0 right-0 h-0.5 bg-red-500 z-50 pointer-events-none"

@@ -364,17 +364,38 @@ export function DemoPage() {
 			</div>
 		)
 	}
-	// Custom current time indicator renderer
+	// Custom current time indicator renderer.
+	// Demonstrates branching on the `axis` prop so a single consumer-supplied
+	// render function can position correctly across vertical day/week grids
+	// (axis === 'vertical') and horizontal resource hour grids (axis === 'horizontal').
 	const renderCurrentTimeIndicator = ({
 		currentTime,
 		progress,
 		resource,
 		view,
+		axis,
 	}: RenderCurrentTimeIndicatorProps) => {
-		// In resource day view (view === 'day' with resources), ONLY show the badge for the first resource
-		// to avoid cluttering the horizontal line with multiple identical time badges.
+		// In resource day view, ONLY show the badge for the first resource to avoid
+		// cluttering the indicator with multiple identical time badges per row/column.
 		const isPrimaryResource = !resource || resource.id === 'room-a'
 		const showBadge = view === 'day' ? isPrimaryResource : true
+
+		if (axis === 'horizontal') {
+			return (
+				<div
+					className="absolute top-0 bottom-0 z-50 pointer-events-none w-0.5 flex flex-col"
+					style={{ left: `${progress}%` }}
+				>
+					{showBadge && (
+						<div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] sm:text-xs px-1.5 py-0.5 rounded-b-md font-medium shadow-sm whitespace-nowrap z-10">
+							{currentTime.format('h:mm A')} {view} {resource?.id}
+						</div>
+					)}
+					{/* Red line extends across the full row height */}
+					<div className="flex-1 bg-red-500" />
+				</div>
+			)
+		}
 
 		return (
 			<div

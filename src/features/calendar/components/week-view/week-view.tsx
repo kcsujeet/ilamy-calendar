@@ -103,9 +103,13 @@ export const WeekView: React.FC = () => {
 			<div className={'flex h-full flex-1'} data-testid="week-view-header">
 				{/* Corner cell with week number */}
 				<div className="w-10 sm:w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
-					<div className="flex flex-col items-center justify-center">
-						<span className="text-muted-foreground text-xs">{t('week')}</span>
-						<span className="font-medium">{currentDate.week()}</span>
+					<div className="flex flex-col items-center justify-center min-w-0 w-full">
+						<span className="text-muted-foreground text-xs truncate w-full text-center">
+							{t('week')}
+						</span>
+						<span className="font-medium truncate w-full text-center">
+							{currentDate.week()}
+						</span>
 					</div>
 				</div>
 

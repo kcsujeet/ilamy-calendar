@@ -95,10 +95,11 @@ const TitleContent = () => {
 						variant="ghost"
 					>
 						<div className="flex w-full items-center justify-between">
-							<span>{`${start.format('MMM D')} - ${end.format('D')}`}</span>
-							{crossesMonth && (
-								<span className="ml-0.5 text-xs opacity-70">{`${start.format('MMM')}-${end.format('MMM')}`}</span>
-							)}
+							<span>
+								{crossesMonth
+									? `${start.format('ll')} - ${end.format('ll')}`
+									: `${start.format('DD')} -  ${end.format('ll')}`}
+							</span>
 						</div>
 					</Button>
 				)
@@ -158,7 +159,7 @@ const TitleContent = () => {
 		{
 			id: 'week',
 			hidden: view !== 'week',
-			title: `${weekDays[0].format('MMM D')} - ${weekDays[6].format('MMM D')}`,
+			title: `${weekDays[0].format('ll')} - ${weekDays[6].format('ll')}`,
 			render: renderWeekContent,
 		},
 		{

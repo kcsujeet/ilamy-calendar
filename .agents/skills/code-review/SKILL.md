@@ -13,12 +13,16 @@ These are non-negotiable. Violating any of these is a defect in the review.
 
 - **Never post to GitHub before the user says to post.** Showing the draft is not approval; "looks good" is not approval. Wait for explicit "post it" or equivalent.
 - **Decide yourself whether a comment needs a decoration at all.** Most don't. Only ask the user about the choice of decoration (`blocking` vs `non-blocking` vs `if-minor`) for the small subset where one is actually needed AND severity is genuinely ambiguous. Never silently add `(blocking)` yourself.
-- **Never use em dashes (—).** Use periods, commas, parentheses, or rewrite. The user has corrected this multiple times.
+- **Never use em dashes (—).** Use periods, commas, parentheses, or rewrite. The user has corrected this multiple times. This applies to the chat reply you send the user too, not only the posted comment.
 - **Never add pleasantries or preamble.** No "well-scoped PR", "nice work", "tests pass" summaries. The inline comments speak for themselves. The reader can see the PR is well-scoped without being told.
+- **No movie-narration prose. Plain language only.** Phrases like "demonstrably closed", "worth shipping on its own", "a real bug fix", "the locale-on-mount fix is a real bug fix worth shipping" are corporate filler the user has called "cringy" and "robotic". Direct: "fixes the bug", "right fix", "broken". Read the draft aloud. If it sounds like a press release, rewrite it.
+- **Never add a top-level review body unless it says something the inline comments do not already say.** Summary lines like "All N issues are closed and the X fix is correct" only restate inlines. Even when the GitHub API requires a body (e.g. `REQUEST_CHANGES`), the rule is: either the body adds unique structural context (workflow feedback, "this PR is stacked on #N"), or you skip the review wrapper entirely and post individual inline comments via `/pulls/{N}/comments`.
 - **Never make claims about external APIs from cached knowledge.** Before citing behavior of dayjs, rrule, React, Intl, Tailwind, or any other library, WebFetch the canonical docs and cite the source inline. Past sessions shipped fabricated method names.
 - **Never make the review about pre-existing problems.** Flag them once briefly if they intersect the change, then move on. The PR author didn't write that code.
 - **Never create follow-up commits on the user's behalf during review.** If the user asks for fixes after the review, make them but ask before committing.
 - **Trust but verify.** When a sub-agent says "line 42 has a bug", open line 42 and confirm before putting it in the draft.
+- **When you flag one instance of a pattern, scan the diff for the same pattern elsewhere.** If you call out a useless `useMemo` in one file, grep the diff for other `useMemo` blocks and check each. If you call out a manual `Intl`-based helper, look for siblings. The user explicitly asked "look for other such options" when a single instance was flagged and other instances existed nearby.
+- **Treat author defiance of a prior review as blocking.** If the prior review explicitly asked the author to remove or refactor pattern X, and the new revision renamed or relocated pattern X instead of removing it, that is still the same architectural issue. Flag it as `(blocking)` and reference the prior review comment.
 
 ## Phase 0: Scope Check
 
@@ -88,7 +92,11 @@ Specific patterns to flag:
 - **Template literal classNames** where `cn()` is the codebase convention.
 - **JSX blocks** >30 lines that could be standalone components.
 - **Useless wrapper divs** that duplicate parent styling.
-- **Over-engineering relative to alternatives**: if the PR introduces a custom utility module (e.g., `formatLocaleDate.ts`) when a one-line plugin call would do (`dayjs.extend(localizedFormat)` + `format('LL')`), call it out with the comparison. Verify both produce identical output before claiming equivalence.
+- **Over-engineering relative to alternatives**: if the PR introduces a custom utility module (e.g., `formatLocaleDate.ts`) when a one-line plugin call would do (`dayjs.extend(localizedFormat)` + `format('LL')`), call it out with the comparison. Verify both produce identical output before claiming equivalence. **For every new helper function in the diff, ask: "what does this do that the underlying library / plugin / standard token does not already do?"** If the answer is "nothing meaningful" or "a stylistic preference", recommend deleting it.
+- **Useless `useMemo` blocks**. Two common shapes to flag:
+  - **Empty deps + no inputs from component scope.** It's a module constant in disguise. Move it out of the component as a top-level `const`.
+  - **Deps that change every render** (e.g. `[currentDate]` where `currentDate` updates on every navigation, or `[firstDayOfWeek]` where the body is 7 cheap dayjs ops). The cache never hits, the hook bookkeeping costs more than the work. Drop the memo, inline the expression.
+  - When you suggest dropping a `useMemo`, the comment must include a brief reason: "empty deps", "deps change every render", "7 cheap ops, no benefit", etc. Do not just say "drop the useMemo" without explaining why.
 
 The goal is not zealous deduplication. Three similar lines is sometimes better than a premature abstraction. But when the same shape appears with no real variance, name it once.
 
@@ -143,7 +151,21 @@ Follow the [Conventional Comments](https://conventionalcomments.org/) format str
 <optional body, 2-3 sentences default>
 ```
 
-A blank line between subject and body. Subject ends with a period. No em dashes anywhere.
+**A blank line between subject and body is mandatory.** GitHub renders the entire JSON `body` field as markdown; a missing blank line collapses everything into one paragraph and visually merges the subject with the body. When you write the JSON, that means two `\n` characters: `"body": "praise: Right fix.\n\nuseRef(locale) matched the prop..."`. The single-`\n` form `"praise: Right fix. useRef(locale) matched..."` is broken even when it looks correct in your draft preview, because the chat preview folds whitespace.
+
+Subject ends with a period. No em dashes anywhere.
+
+**Right:**
+```json
+"body": "praise: Right fix.\n\nuseRef(locale) matched the prop immediately on mount, so the effect skipped and dayjs.locale() never ran. useRef(undefined) forces the first run."
+```
+
+**Wrong (renders as one paragraph, subject merges into body):**
+```json
+"body": "praise: Right fix. useRef(locale) matched the prop immediately on mount, so the effect skipped and dayjs.locale() never ran."
+```
+
+This is the failure mode you've shipped most recently. The subject and body looked separated in your draft preview but the JSON had a single space, not `\n\n`. Always check the JSON literally.
 
 **Labels** (pick the one that matches):
 - `praise`: positive highlights. Only use if it's a specific, non-generic observation worth noting. Skip generic praise.
@@ -184,9 +206,18 @@ Inline review comments are the default in this repo, not top-level PR comments. 
 
 ### Top-level review body
 
-Default to none. Only include a top-level body when there is a structural observation that does not belong on any single line, for example "this PR is stacked on #124 and cannot be reviewed in isolation" or "blocking on the public-API change and the missing integration test (inline)." Never write filler like "Inline comments below." or "See inline." That achieves nothing for the reader, costs them a click, and clutters the PR conversation.
+Default to none. The body must add information that no inline comment carries. Two valid use cases:
 
-If you have no structural observation, do not wrap the comments in a review. Post them as individual inline comments instead (see Phase 5).
+- **Workflow / structural feedback.** "Thanks for creating the issues, much clearer what this PR fixes. Would have been better one PR per issue but fine for this time." Or "this PR is stacked on #124 and cannot be reviewed in isolation."
+- **Required by the API.** GitHub's `REQUEST_CHANGES` and `COMMENT` review events both require a non-empty body. If you have no unique structural content, do not use a review wrapper at all. Post individual inline comments via `/pulls/{N}/comments` (Phase 5, Strategy 1).
+
+Things that are **not** valid top-level bodies, even though they look summary-shaped:
+- "All 8 linked issues are closed and the locale-on-mount fix is a real bug fix." (Restates inlines + corporate filler.)
+- "Blocking on the public-API change and the missing test." (Restates the inline's `(blocking)` decoration.)
+- "Inline comments below." / "See inline." (Achieves nothing.)
+- Anything that reads like a press release or movie-trailer voiceover.
+
+If you cannot point at a sentence that says something no inline says, drop the body.
 
 ### Decide decorations yourself, ask only when stuck
 
@@ -218,6 +249,7 @@ Before showing the final decorated draft to the user, run through this checklist
 ### Comment quality
 
 - [ ] **Every comment follows Conventional Comments format**: `<label>: <subject>` on one line, blank line, then optional body. Decorations added in a separate step (see below).
+- [ ] **Every comment with a body has a literal `\n\n` between the subject line and the body in the JSON.** Grep the review JSON for `": "` followed by `<label>: ` patterns and confirm the next characters before the body are `\n\n`, not a single space. A missing blank line renders the whole comment as one paragraph on GitHub and the subject visually merges with the body. Verified by opening the posted review URL after submission and confirming the subject sits on its own line.
 - [ ] **No em dashes anywhere.** `grep "—"` on the draft returns nothing.
 - [ ] **No pleasantries or preamble.** No "well-scoped PR", "nice work", "tests pass" summaries. Top-level body is empty unless there is a structural observation.
 - [ ] **Each comment is 2-3 sentences in the body.** Longer is fine when context demands it (citing a prior fix, explaining a breaking-change implication). No padding.
@@ -225,6 +257,11 @@ Before showing the final decorated draft to the user, run through this checklist
 - [ ] **No false positives or weak observations.** If a finding is shaky, it is dropped, not softened. A 2-comment review beats an 8-comment review with 6 fluffy ones.
 - [ ] **Variables and intermediates that aid readability are not suggested for removal** just because they create a TS narrowing tax or look "redundant."
 - [ ] **Readability conventions checked.** Inline multi-clause conditions, multi-level ternaries, nested if/switch blocks, ternaries in JSX, and code that is hard to understand at a glance have been flagged where present.
+- [ ] **No movie-narration prose.** No "demonstrably", "worth shipping on its own", "a real X", or any sentence that sounds like a press release. Read the draft aloud as a sanity check.
+- [ ] **Each `suggestion` includes a brief reason.** "Drop this `useMemo`" is not enough; "Drop this `useMemo`. Empty deps and no inputs from component scope means it's a module constant in disguise." is.
+- [ ] **Pattern sweep done.** For every flagged pattern (useless memo, manual locale helper, hardcoded label, etc.), the diff has been scanned for other instances of the same pattern and either flagged or confirmed absent.
+- [ ] **For every new helper introduced by the diff**, asked: "what does this do that the existing library / plugin / standard token does not already do?" Helpers whose answer is "nothing" are flagged for deletion.
+- [ ] **Prior review compliance checked.** If a previous review on this PR asked the author to remove or refactor pattern X, and the new revision renamed or relocated it instead of removing it, that is flagged as `(blocking)` with a link to the prior comment.
 
 ### Decoration and approval
 
@@ -232,7 +269,7 @@ Before showing the final decorated draft to the user, run through this checklist
 - [ ] **Final decorated draft shown to user.**
 - [ ] **Explicit "post it" or equivalent approval received.** "Looks good" is not approval.
 - [ ] **Commit SHA captured from `headRefOid`** ready to pass as `commit_id` in the API call.
-- [ ] **Posting strategy chosen.** No filler top-level body. If there are no blocking comments and no real structural observation, individual inline comments are used instead of a review wrapper.
+- [ ] **Posting strategy chosen.** No filler top-level body. If there are no blocking comments and no real structural observation, individual inline comments are used instead of a review wrapper. If the only reason to use the review wrapper is "the API needs a body field," the answer is: fall back to individual inline comments instead.
 
 ## Phase 5: Post (only after approval)
 
@@ -240,11 +277,13 @@ After explicit user approval, choose the posting strategy based on whether any c
 
 ### Decision tree
 
-1. **No blocking comments AND no structural observation.** Post each comment as an individual inline review comment via `POST /repos/{owner}/{repo}/pulls/{N}/comments`. No review wrapper, no top-level body, no clutter. Each comment stands on its own anchored to its line.
+The key question is **"does my top-level body say something the inlines do not already say?"** That decides the strategy, not the blocking status.
 
-2. **At least one blocking comment.** Post a single `REQUEST_CHANGES` review via `POST /repos/{owner}/{repo}/pulls/{N}/reviews`. The top-level body must summarize what is blocking. Example: "Blocking on the public-API change in `types/index.ts:81` and the missing integration test." Never write filler like "Inline comments below."
+1. **No body content beyond what's in the inlines.** Post each comment as an individual inline review comment via `POST /repos/{owner}/{repo}/pulls/{N}/comments`. No review wrapper, no top-level body, no clutter. Works whether or not any comment is `(blocking)`. The GitHub UI loses the "Changes requested" status flag, but each `(blocking)` decoration in the comment body still communicates severity to the author.
 
-3. **Non-blocking comments + a structural observation worth making.** Single `COMMENT` review. Top-level body is the structural observation only.
+2. **Real structural observation + blocking comments.** Single `REQUEST_CHANGES` review via `POST /repos/{owner}/{repo}/pulls/{N}/reviews`. Top-level body is the structural observation (workflow feedback, prior-review reference, stacked-branch note). Do not summarize the inlines.
+
+3. **Real structural observation + no blocking comments.** Single `COMMENT` review. Top-level body is the structural observation only.
 
 ### Verify the API shape (once per session)
 

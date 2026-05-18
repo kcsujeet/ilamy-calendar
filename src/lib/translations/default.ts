@@ -87,15 +87,6 @@ export const defaultTranslations: Translations = {
 	noResourcesVisible: 'No resources visible',
 	addResourcesOrShowExisting: 'Add resources or show existing ones',
 
-	// Days of week
-	sunday: 'Sunday',
-	monday: 'Monday',
-	tuesday: 'Tuesday',
-	wednesday: 'Wednesday',
-	thursday: 'Thursday',
-	friday: 'Friday',
-	saturday: 'Saturday',
-
 	// Days short
 	sun: 'Sun',
 	mon: 'Mon',

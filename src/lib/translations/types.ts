@@ -83,15 +83,6 @@ export interface Translations {
 	noResourcesVisible: string
 	addResourcesOrShowExisting: string
 
-	// Days of week
-	sunday: string
-	monday: string
-	tuesday: string
-	wednesday: string
-	thursday: string
-	friday: string
-	saturday: string
-
 	// Days short
 	sun: string
 	mon: string

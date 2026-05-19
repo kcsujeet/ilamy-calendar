@@ -117,6 +117,152 @@ describe('recurrence-handler utility tests', () => {
 			expect(result).toHaveLength(1)
 			expect(result[0].title).toBe('New Title')
 		})
+
+		it('should remove all detached overrides and keep only the base for scope all from a detached target', () => {
+			const baseEvent = createBaseRecurringEvent({
+				id: 'series-detached',
+				uid: 'series-detached@ilamy.calendar',
+				start: dayjs('2025-01-06T09:00:00.000Z'),
+				end: dayjs('2025-01-06T10:00:00.000Z'),
+				exdates: ['2025-01-08T09:00:00.000Z', '2025-01-09T09:00:00.000Z'],
+				rrule: {
+					freq: RRule.DAILY,
+					interval: 1,
+					dtstart: new Date('2025-01-06T09:00:00.000Z'),
+				},
+			})
+			const draggedOverride: CalendarEvent = {
+				...baseEvent,
+				id: 'dragged-override',
+				title: 'Dragged override',
+				start: dayjs('2025-01-08T15:00:00.000Z'),
+				end: dayjs('2025-01-08T16:00:00.000Z'),
+				recurrenceId: '2025-01-08T09:00:00.000Z',
+				rrule: undefined,
+			}
+			const otherOverride: CalendarEvent = {
+				...baseEvent,
+				id: 'other-override',
+				title: 'Other override',
+				start: dayjs('2025-01-09T12:00:00.000Z'),
+				end: dayjs('2025-01-09T13:00:00.000Z'),
+				recurrenceId: '2025-01-09T09:00:00.000Z',
+				rrule: undefined,
+			}
+
+			const result = updateRecurringEvent({
+				targetEvent: draggedOverride,
+				updates: {
+					start: dayjs('2025-01-08T11:00:00.000Z'),
+					end: dayjs('2025-01-08T12:00:00.000Z'),
+				},
+				currentEvents: [baseEvent, draggedOverride, otherOverride],
+				scope: 'all',
+			})
+
+			expect(result).toHaveLength(1)
+
+			const updatedBase = result[0]
+			expect(updatedBase.id).toBe(baseEvent.id)
+			expect(updatedBase.rrule).toBeDefined()
+			expect(updatedBase.start.toISOString()).toBe('2025-01-06T11:00:00.000Z')
+			expect(updatedBase.end.toISOString()).toBe('2025-01-06T12:00:00.000Z')
+			expect(updatedBase.exdates).toBeUndefined()
+		})
+
+		it('should remove detached overrides and apply submitted time when scope all from a dragged generated instance', () => {
+			const baseEvent = createBaseRecurringEvent({
+				id: 'daily-x',
+				uid: 'daily-x@ilamy.calendar',
+				start: dayjs('2025-01-06T09:00:00.000Z'),
+				end: dayjs('2025-01-06T10:00:00.000Z'),
+				exdates: ['2025-01-08T09:00:00.000Z', '2025-01-10T09:00:00.000Z'],
+				rrule: {
+					freq: RRule.DAILY,
+					interval: 1,
+					dtstart: new Date('2025-01-06T09:00:00.000Z'),
+				},
+			})
+			const override: CalendarEvent = {
+				...baseEvent,
+				id: 'daily-x-override',
+				title: 'Override',
+				start: dayjs('2025-01-08T12:00:00.000Z'),
+				end: dayjs('2025-01-08T13:00:00.000Z'),
+				recurrenceId: '2025-01-08T09:00:00.000Z',
+				rrule: undefined,
+			}
+			const targetInstance: CalendarEvent = {
+				...baseEvent,
+				id: 'daily-x_3',
+				start: dayjs('2025-01-09T09:00:00.000Z'),
+				end: dayjs('2025-01-09T10:00:00.000Z'),
+				uid: baseEvent.uid,
+				rrule: undefined,
+			}
+
+			const result = updateRecurringEvent({
+				targetEvent: targetInstance,
+				updates: {
+					start: dayjs('2025-01-10T12:00:00.000Z'),
+					end: dayjs('2025-01-10T13:00:00.000Z'),
+				},
+				currentEvents: [baseEvent, override],
+				scope: 'all',
+			})
+
+			expect(result).toHaveLength(1)
+			expect(result[0].id).toBe(baseEvent.id)
+			expect(result[0].start.toISOString()).toBe('2025-01-06T12:00:00.000Z')
+			expect(result[0].end.toISOString()).toBe('2025-01-06T13:00:00.000Z')
+			expect(result[0].exdates).toBeUndefined()
+		})
+
+		it('should remove detached overrides when scope all has no time changes', () => {
+			const baseEvent = createBaseRecurringEvent({
+				id: 'daily-title',
+				uid: 'daily-title@ilamy.calendar',
+				start: dayjs('2025-01-06T09:00:00.000Z'),
+				end: dayjs('2025-01-06T10:00:00.000Z'),
+				exdates: ['2025-01-08T09:00:00.000Z'],
+				rrule: {
+					freq: RRule.DAILY,
+					interval: 1,
+					dtstart: new Date('2025-01-06T09:00:00.000Z'),
+				},
+			})
+			const override: CalendarEvent = {
+				...baseEvent,
+				id: 'daily-title-override',
+				title: 'Override',
+				start: dayjs('2025-01-08T12:00:00.000Z'),
+				end: dayjs('2025-01-08T13:00:00.000Z'),
+				recurrenceId: '2025-01-08T09:00:00.000Z',
+				rrule: undefined,
+			}
+			const targetInstance: CalendarEvent = {
+				...baseEvent,
+				id: 'daily-title_3',
+				start: dayjs('2025-01-09T09:00:00.000Z'),
+				end: dayjs('2025-01-09T10:00:00.000Z'),
+				uid: baseEvent.uid,
+				rrule: undefined,
+			}
+
+			const result = updateRecurringEvent({
+				targetEvent: targetInstance,
+				updates: { title: 'All title' },
+				currentEvents: [baseEvent, override],
+				scope: 'all',
+			})
+
+			expect(result).toHaveLength(1)
+			expect(result[0].id).toBe(baseEvent.id)
+			expect(result[0].title).toBe('All title')
+			expect(result[0].start.toISOString()).toBe(baseEvent.start.toISOString())
+			expect(result[0].end.toISOString()).toBe(baseEvent.end.toISOString())
+			expect(result[0].exdates).toBeUndefined()
+		})
 	})
 
 	describe('generateRecurringEvents', () => {

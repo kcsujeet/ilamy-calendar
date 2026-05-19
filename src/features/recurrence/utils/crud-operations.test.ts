@@ -269,6 +269,125 @@ describe('updateRecurringEvent', () => {
 	})
 
 	describe('scope: "all"', () => {
+		it('should collapse detached overrides when editing all after scope this', () => {
+			const dayThreeISO = '2025-01-08T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				id: 'daily-1',
+				rrule: {
+					freq: RRule.DAILY,
+					interval: 1,
+					dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+				},
+				start: dayjs('2025-01-06T09:00:00.000Z'),
+				end: dayjs('2025-01-06T10:00:00.000Z'),
+			})
+			const dayThreeInstance: CalendarEvent = {
+				...baseEvent,
+				id: 'daily-1_2',
+				start: dayjs(dayThreeISO),
+				end: dayjs('2025-01-08T10:00:00.000Z'),
+				rrule: undefined,
+			}
+
+			let currentEvents = updateRecurringEvent({
+				targetEvent: dayThreeInstance,
+				updates: { title: 'Modified day' },
+				currentEvents: [baseEvent],
+				scope: 'this',
+			})
+
+			currentEvents = updateRecurringEvent({
+				targetEvent: dayThreeInstance,
+				updates: { title: 'All daily' },
+				currentEvents,
+				scope: 'all',
+			})
+
+			expect(currentEvents).toHaveLength(1)
+			expect(
+				currentEvents.filter((e) => e.recurrenceId && !e.rrule)
+			).toHaveLength(0)
+
+			const storedBase = currentEvents.find((e) => e.rrule)
+			if (!storedBase?.rrule) throw new Error('storedBase.rrule missing')
+
+			const generated = generateRecurringEvents({
+				event: storedBase,
+				currentEvents,
+				startDate: dayjs('2025-01-06T00:00:00.000Z'),
+				endDate: dayjs('2025-01-10T23:59:59.999Z'),
+			})
+			const detachedOverrides = currentEvents.filter(
+				(e) => e.recurrenceId && !e.rrule
+			)
+			const onModifiedDay = [...generated, ...detachedOverrides].filter((e) =>
+				e.start.isSame(dayjs(dayThreeISO), 'day')
+			)
+
+			expect(onModifiedDay).toHaveLength(1)
+			expect(onModifiedDay[0].title).toBe('All daily')
+			expect(
+				generated.some((e) => e.start.isSame(dayjs(dayThreeISO), 'day'))
+			).toBe(true)
+		})
+
+		it('should not duplicate when scope all shifts series time after scope this (drag collapses overrides)', () => {
+			const dayThreeISO = '2025-01-08T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				id: 'daily-1',
+				rrule: {
+					freq: RRule.DAILY,
+					interval: 1,
+					dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+				},
+				start: dayjs('2025-01-06T09:00:00.000Z'),
+				end: dayjs('2025-01-06T10:00:00.000Z'),
+			})
+			const dayThreeInstance: CalendarEvent = {
+				...baseEvent,
+				id: 'daily-1_2',
+				start: dayjs(dayThreeISO),
+				end: dayjs('2025-01-08T10:00:00.000Z'),
+				rrule: undefined,
+			}
+
+			let currentEvents = updateRecurringEvent({
+				targetEvent: dayThreeInstance,
+				updates: { title: 'Modified day' },
+				currentEvents: [baseEvent],
+				scope: 'this',
+			})
+
+			currentEvents = updateRecurringEvent({
+				targetEvent: dayThreeInstance,
+				updates: {
+					title: 'All daily',
+					start: dayjs('2025-01-08T11:00:00.000Z'),
+					end: dayjs('2025-01-08T12:00:00.000Z'),
+				},
+				currentEvents,
+				scope: 'all',
+			})
+
+			expect(
+				currentEvents.filter((e) => e.recurrenceId && !e.rrule)
+			).toHaveLength(0)
+			expect(currentEvents).toHaveLength(1)
+
+			const storedBase = currentEvents.find((e) => e.rrule)
+			if (!storedBase?.rrule) throw new Error('storedBase.rrule missing')
+
+			const generated = generateRecurringEvents({
+				event: storedBase,
+				currentEvents,
+				startDate: dayjs('2025-01-08T00:00:00.000Z'),
+				endDate: dayjs('2025-01-08T23:59:59.999Z'),
+			})
+			expect(generated).toHaveLength(1)
+			expect(generated[0].title).toBe('All daily')
+			expect(generated[0].start.isSame(dayjs(dayThreeISO), 'day')).toBe(true)
+		})
+
 		it('should update the base recurring event', () => {
 			const baseEvent = createBaseRecurringEvent()
 			const targetEvent = createTargetEvent()
@@ -371,7 +490,7 @@ describe('updateRecurringEvent', () => {
 			expect(instances[4].start.toISOString()).toBe(fridayStartISO)
 		})
 
-		it('should apply time delta from target instance to base (scope: all)', () => {
+		it('should apply submitted time to base anchor (scope: all)', () => {
 			const mondayStartISO = '2025-01-06T09:00:00.000Z'
 			const baseEvent = createBaseRecurringEvent({
 				start: dayjs(mondayStartISO),

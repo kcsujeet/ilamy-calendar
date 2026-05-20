@@ -243,6 +243,46 @@ describe('updateRecurringEvent', () => {
 			expect(updatedBaseEvent?.exdates).toContain('2025-01-13T09:00:00.000Z')
 			expect(updatedBaseEvent?.exdates).toContain('2025-01-20T09:00:00.000Z')
 		})
+
+		it('should update stored override in place when scope this targets detached instance (no duplicate rows)', () => {
+			const baseEvent = createBaseRecurringEvent()
+			const targetInstance = createTargetEvent()
+			const afterFirst = updateRecurringEvent({
+				targetEvent: targetInstance,
+				updates: {
+					start: dayjs('2025-01-20T14:00:00.000Z'),
+					end: dayjs('2025-01-20T15:00:00.000Z'),
+				},
+				currentEvents: [baseEvent],
+				scope: 'this',
+			})
+
+			expect(afterFirst).toHaveLength(2)
+			const detached = afterFirst.find((e) => e.id !== baseEvent.id)
+			if (!detached) throw new Error('expected detached override')
+
+			const afterSecond = updateRecurringEvent({
+				targetEvent: detached,
+				updates: {
+					start: dayjs('2025-01-21T16:00:00.000Z'),
+					end: dayjs('2025-01-21T17:00:00.000Z'),
+				},
+				currentEvents: afterFirst,
+				scope: 'this',
+			})
+
+			expect(afterSecond).toHaveLength(2)
+			const baseAfter = afterSecond.find((e) => e.id === baseEvent.id)
+			expect(baseAfter?.exdates).toHaveLength(1)
+			expect(baseAfter?.exdates?.[0]).toBe('2025-01-20T09:00:00.000Z')
+
+			const overrides = afterSecond.filter((e) => e.recurrenceId && !e.rrule)
+			expect(overrides).toHaveLength(1)
+			expect(overrides[0].id).toBe(detached.id)
+			expect(overrides[0].recurrenceId).toBe('2025-01-20T09:00:00.000Z')
+			expect(overrides[0].start.toISOString()).toBe('2025-01-21T16:00:00.000Z')
+			expect(overrides[0].end.toISOString()).toBe('2025-01-21T17:00:00.000Z')
+		})
 	})
 
 	describe('scope: "following"', () => {

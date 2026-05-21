@@ -50,7 +50,8 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	return (
 		<div
 			className={cn(
-				'flex flex-col flex-1 items-center justify-center min-w-20 bg-background relative',
+				'flex flex-col flex-1 items-center justify-center bg-background relative',
+				isLastColumn ? 'border-r-0' : 'border-r',
 				className
 			)}
 			data-testid={dataTestId || keys.container.vertical.col(id)}
@@ -84,10 +85,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 
 					return (
 						<div
-							className={cn(
-								'flex flex-col min-h-[60px]',
-								isLastColumn ? 'border-r-0' : 'border-r'
-							)}
+							className="flex flex-col min-h-[60px]"
 							key={keys.listKey(id, dayIndex, hourStr)}
 						>
 							{cellOffsets.map((minute) => {

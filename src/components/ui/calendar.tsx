@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getMonthWeeks, isToday } from '@/lib/utils/date-utils'
+import { getMonthWeeks, getWeekDays, isToday } from '@/lib/utils/date-utils'
 
 interface CalendarProps {
 	selected?: Date
@@ -13,8 +13,6 @@ interface CalendarProps {
 	firstDayOfWeek?: number
 	className?: string
 }
-
-const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
 export function Calendar({
 	selected,
@@ -32,9 +30,9 @@ export function Calendar({
 	const selectedKey = selected
 		? dayjs(selected).format('YYYY-MM-DD')
 		: undefined
-	const weekdayHeaders = Array.from(
-		{ length: 7 },
-		(_, i) => WEEKDAY_LABELS[(firstDayOfWeek + i) % 7]
+
+	const weekdayHeaders = getWeekDays(dayjs(), firstDayOfWeek).map((d) =>
+		d.format('dd')
 	)
 
 	return (

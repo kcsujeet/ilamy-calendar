@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,21 +13,6 @@ import { cn } from '@/lib/utils'
 import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
-const MONTH_KEYS = [
-	'january',
-	'february',
-	'march',
-	'april',
-	'may',
-	'june',
-	'july',
-	'august',
-	'september',
-	'october',
-	'november',
-	'december',
-] as const
-
 const TitleContent = () => {
 	const { currentDate, view, selectDate, t, firstDayOfWeek } =
 		useSmartCalendarContext((ctx) => ({
@@ -40,7 +25,10 @@ const TitleContent = () => {
 
 	const [openPopover, setOpenPopover] = useState<string | null>(null)
 
-	const months = useMemo(() => MONTH_KEYS.map((key) => t(key)), [t])
+	const months = Array.from({ length: 12 }, (_, index) =>
+		currentDate.month(index).format('MMMM')
+	)
+
 	const currentYear = currentDate.year()
 	const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
@@ -58,7 +46,7 @@ const TitleContent = () => {
 						'justify-start font-normal',
 						currentDate.month() === index && 'bg-primary/10'
 					)}
-					key={month}
+					key={index}
 					onClick={() => handleSelectDate(currentDate.month(index))}
 					variant="ghost"
 				>
@@ -107,10 +95,11 @@ const TitleContent = () => {
 						variant="ghost"
 					>
 						<div className="flex w-full items-center justify-between">
-							<span>{`${start.format('MMM D')} - ${end.format('D')}`}</span>
-							{crossesMonth && (
-								<span className="ml-0.5 text-xs opacity-70">{`${start.format('MMM')}-${end.format('MMM')}`}</span>
-							)}
+							<span>
+								{crossesMonth
+									? `${start.format('ll')} - ${end.format('ll')}`
+									: `${start.format('DD')} -  ${end.format('ll')}`}
+							</span>
 						</div>
 					</Button>
 				)
@@ -140,7 +129,7 @@ const TitleContent = () => {
 							variant="ghost"
 						>
 							<div className="flex w-full items-center justify-between">
-								<span>{day.format('dddd, MMM D')}</span>
+								<span>{day.format('ll')}</span>
 								{today && (
 									<span className="bg-primary text-primary-foreground rounded-sm px-1! text-xs">
 										{t('today')}
@@ -170,7 +159,7 @@ const TitleContent = () => {
 		{
 			id: 'week',
 			hidden: view !== 'week',
-			title: `${weekDays[0].format('MMM D')} - ${weekDays[6].format('MMM D')}`,
+			title: `${weekDays[0].format('ll')} - ${weekDays[6].format('ll')}`,
 			render: renderWeekContent,
 		},
 		{

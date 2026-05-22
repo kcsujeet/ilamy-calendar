@@ -180,8 +180,8 @@ describe('YearView', () => {
 		test('renders weekday headers in each mini calendar', () => {
 			renderYearView()
 			// Each of 12 months has 7 day headers
-			const sundayHeaders = screen.getAllByText('S')
-			expect(sundayHeaders.length).toBe(24) // 2 S's per month * 12 months
+			const sundayHeaders = screen.getAllByText('Su')
+			expect(sundayHeaders.length).toBe(12) // 1 Sunday per month
 		})
 
 		test('renders grid with responsive classes', () => {

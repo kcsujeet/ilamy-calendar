@@ -8,6 +8,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@/components/ui/popover'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
@@ -28,6 +29,9 @@ export function DatePicker({
 	className,
 	disabled,
 }: DatePickerProps) {
+	const firstDayOfWeek = useSmartCalendarContext(
+		(context) => context.firstDayOfWeek
+	)
 	const popOverRef = useRef<HTMLButtonElement | null>(null)
 	const [selectedDate, setSelectedDate] = useState<Date | undefined>(date)
 
@@ -56,7 +60,7 @@ export function DatePicker({
 					>
 						<CalendarIcon />
 						{selectedDate ? (
-							dayjs(selectedDate).format('MMM D, YYYY')
+							dayjs(selectedDate).format('ll')
 						) : (
 							<span>{label}</span>
 						)}
@@ -67,6 +71,7 @@ export function DatePicker({
 					<Calendar
 						defaultMonth={selectedDate}
 						disabled={disabled}
+						firstDayOfWeek={firstDayOfWeek}
 						onSelect={handleDateSelect}
 						selected={selectedDate}
 					/>

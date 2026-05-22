@@ -107,23 +107,15 @@ describe('DayView', () => {
 	})
 
 	test('displays current date correctly in header', () => {
-		// Use today's actual date since the component might be defaulting to current date
-		const today = dayjs()
-		renderDayView()
+		const today = dayjs('2025-06-15T12:00:00.000Z')
+		renderDayView({ initialDate: today })
 
-		const header = screen.getByTestId('vertical-grid-header')
-		expect(header).toBeInTheDocument()
+		const header = screen.getByTestId('day-view-header')
+		expect(header).toHaveTextContent(today.format('LL'))
 
-		// Should have currentDate set to today
-		expect(screen.getByTestId('current-date-year')).toHaveTextContent(
-			today.year().toString()
-		)
-		expect(screen.getByTestId('current-date-month')).toHaveTextContent(
-			today.month().toString()
-		)
-		expect(screen.getByTestId('current-date-date')).toHaveTextContent(
-			today.date().toString()
-		)
+		expect(screen.getByTestId('current-date-year')).toHaveTextContent('2025')
+		expect(screen.getByTestId('current-date-month')).toHaveTextContent('5')
+		expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
 	})
 
 	test('shows today indicator for current day', () => {

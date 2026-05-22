@@ -4,6 +4,7 @@ import isBetween from 'dayjs/plugin/isBetween.js'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js'
 import localeData from 'dayjs/plugin/localeData.js'
+import localizedFormat from 'dayjs/plugin/localizedFormat.js'
 import minMax from 'dayjs/plugin/minMax.js'
 import timezone from 'dayjs/plugin/timezone.js'
 import utc from 'dayjs/plugin/utc.js'
@@ -74,6 +75,7 @@ dayjs.extend(minMax)
 dayjs.extend(timezone)
 dayjs.extend(utc)
 dayjs.extend(localeData)
+dayjs.extend(localizedFormat)
 dayjs.extend(fixTimezoneOffset)
 
 // Custom dayjs constructor that automatically uses .tz() for all instances.

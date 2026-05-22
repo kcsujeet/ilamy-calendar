@@ -36,7 +36,7 @@ const WEEKDAYS = [
 	RRule.FR,
 	RRule.SA,
 ]
-const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
 const END_TYPES = [
 	{ type: 'never', id: 'never', labelKey: 'never' },
 	{ type: 'count', id: 'after', labelKey: 'after' },
@@ -67,13 +67,19 @@ interface Props {
 }
 
 export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
-	const { t } = useSmartCalendarContext((ctx) => ({ t: ctx.t }))
+	const { t, firstDayOfWeek } = useSmartCalendarContext((ctx) => ({
+		t: ctx.t,
+		firstDayOfWeek: ctx.firstDayOfWeek,
+	}))
 	const [show, setShow] = useState(!!value)
 	const [opts, setOpts] = useState<RRuleOptions | null>(() => value || null)
 
-	const weekDays = useMemo(
-		() => DAY_KEYS.map((k, i) => ({ value: WEEKDAYS[i], label: t(k) })),
-		[t]
+	const WEEKDAY_OPTIONS = WEEKDAYS.map((value, index) => ({
+		value,
+		label: dayjs().day(index).format('ddd'),
+	}))
+	const weekDays = WEEKDAYS.map(
+		(d, i) => WEEKDAY_OPTIONS[(i + firstDayOfWeek) % 7]
 	)
 
 	useEffect(() => {
@@ -206,7 +212,10 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 								<Label className="text-xs">{t('repeatOn')}</Label>
 								<div className="flex flex-wrap gap-1 mt-1">
 									{weekDays.map((d, i) => (
-										<div className="flex items-center space-x-1" key={d.label}>
+										<div
+											className="flex items-center space-x-1"
+											key={keys.listKey('weekday', i)}
+										>
 											<Checkbox
 												checked={byweekday.includes(d.value)}
 												id={keys.listKey('day', i)}

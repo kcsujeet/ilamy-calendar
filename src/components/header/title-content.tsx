@@ -157,7 +157,7 @@ const TitleContent = () => {
 		{
 			id: 'week',
 			hidden: view !== 'week',
-			title: formatDateRange(weekDays.at(0), weekDays.at(-1)),
+			title: formatDateRange(weekDays[0], weekDays[6]),
 			render: renderWeekContent,
 		},
 		{

@@ -144,4 +144,21 @@ describe('Header with Export Button', () => {
 			screen.queryByRole('button', { name: /export calendar/i })
 		).not.toBeInTheDocument()
 	})
+
+	it('renders the week picker label using Intl.DateTimeFormat.formatRange so it is locale-correct and compact', () => {
+		renderHeader([], {
+			initialView: 'week',
+			initialDate: dayjs('2026-04-29T12:00:00.000Z'),
+		})
+
+		// firstDayOfWeek defaults to 0 (Sunday), so the week containing Apr 29 2026
+		// is Sun Apr 26 - Sat May 2. Intl.DateTimeFormat.formatRange with
+		// `{month: 'short', day: 'numeric'}` returns "Apr 26 – May 2" in English
+		// (en-dash separator, U+2013) and intelligently collapses redundant parts.
+		const weekButton = screen.getByRole('button', { name: 'Apr 26 – May 2' })
+		expect(weekButton).toBeInTheDocument()
+
+		// No year suffix anywhere in the label.
+		expect(weekButton.textContent).not.toContain('2026')
+	})
 })

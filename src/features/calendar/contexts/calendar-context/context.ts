@@ -47,6 +47,7 @@ export interface CalendarContextType {
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellClickInfo) => void
 	currentLocale?: string
+	timezone?: string
 	disableCellClick?: boolean
 	disableEventClick?: boolean
 	disableDragAndDrop?: boolean

@@ -9,5 +9,6 @@
   - A factory for the domain object being tested (e.g. `mkEvent(id, startH, endH, extra?)`).
   - A call wrapper that supplies sensible defaults (e.g. `run(events, opts?)`).
   - Collapse per-index `expect` chains into single array assertions: `result.map(e => e.left).toEqual([0, 25, 50])` instead of three separate `expect(result[i].left).toBe(...)`.
+  - For hook tests, write a `render<MeaningfulName>Hook(...)` helper that wraps `renderHook` + the provider and returns the function (or value) under test directly, not the `result` object. Drop the `use` prefix in the helper name (existing pattern: `useScrollToTime` → `renderScrollHook`, `useDateTimeFormatters` → `renderFormattersHook`). Each test then reads `fmt(a, b)` instead of `result.current.formatDateRange(a, b)`. Vary inputs to the helper (locale, timezone, etc.) to drive the case under test, but never copy-paste the `renderHook` call.
 
   Each test should read as a direct "input → expected output" statement. Keep helpers local to the test file unless they're obviously shared across multiple.

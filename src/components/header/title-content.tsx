@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { Button } from '@/components/ui/button'
 import {

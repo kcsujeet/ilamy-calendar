@@ -19,81 +19,86 @@ const customRenderEvent = (event: CalendarEvent) => (
 	<div data-testid={`custom-event-${event.id}`}>Custom: {event.title}</div>
 )
 
-const CustomResourceEventForm = (props: EventFormProps) => {
-	const event = props.selectedEvent as CalendarEvent | null
-	return (
-		<div data-testid="custom-event-form">
-			<span data-testid="form-open">{props.open ? 'open' : 'closed'}</span>
-			<span data-testid="selected-event-title">{event?.title || 'none'}</span>
-			<span data-testid="selected-event-id">{event?.id || 'no-id'}</span>
-			<span data-testid="selected-event-resource-id">
-				{event?.resourceId || 'no-resource'}
-			</span>
-			<span data-testid="selected-event-resource-ids">
-				{event?.resourceIds?.join(',') || 'no-resources'}
-			</span>
-			<button
-				data-testid="add-event-btn"
-				onClick={() =>
-					props.onAdd?.({
-						id: 'new-resource-event-1',
-						title: 'New Resource Event',
-						start: dayjs('2025-08-04T14:00:00.000Z'),
-						end: dayjs('2025-08-04T15:00:00.000Z'),
-						resourceId: 'resource-1',
-					} as CalendarEvent)
-				}
-			>
-				Add Event
-			</button>
-			<button
-				data-testid="add-cross-resource-event-btn"
-				onClick={() =>
-					props.onAdd?.({
-						id: 'cross-resource-event-1',
-						title: 'Cross Resource Event',
-						start: dayjs('2025-08-04T14:00:00.000Z'),
-						end: dayjs('2025-08-04T15:00:00.000Z'),
-						resourceIds: ['resource-1', 'resource-2'],
-					} as CalendarEvent)
-				}
-			>
-				Add Cross Resource Event
-			</button>
-			<button
-				data-testid="update-event-btn"
-				onClick={() =>
-					props.onUpdate?.({
-						...props.selectedEvent!,
-						title: 'Updated Resource Event',
-					})
-				}
-			>
-				Update Event
-			</button>
-			<button
-				data-testid="update-event-resource-btn"
-				onClick={() =>
-					props.onUpdate?.({
-						...props.selectedEvent!,
-						resourceId: 'resource-2',
-					} as CalendarEvent)
-				}
-			>
-				Move to Resource 2
-			</button>
-			<button
-				data-testid="delete-event-btn"
-				onClick={() => props.onDelete?.(props.selectedEvent!)}
-			>
-				Delete Event
-			</button>
-			<button data-testid="close-form-btn" onClick={props.onClose}>
-				Close
-			</button>
-		</div>
-	)
-}
+const CustomResourceEventForm = ({
+	open,
+	selectedEvent,
+	onAdd,
+	onUpdate,
+	onDelete,
+}: EventFormProps) => (
+	<div data-testid="custom-event-form">
+		<span data-testid="form-open">{open ? 'open' : 'closed'}</span>
+		<span data-testid="selected-event-title">
+			{selectedEvent?.title || 'none'}
+		</span>
+		<span data-testid="selected-event-id">{selectedEvent?.id || 'no-id'}</span>
+		<span data-testid="selected-event-resource-id">
+			{selectedEvent?.resourceId || 'no-resource'}
+		</span>
+		<span data-testid="selected-event-resource-ids">
+			{selectedEvent?.resourceIds?.join(',') || 'no-resources'}
+		</span>
+		<button
+			data-testid="add-event-btn"
+			onClick={() =>
+				onAdd?.({
+					id: 'new-resource-event-1',
+					title: 'New Resource Event',
+					start: dayjs('2025-08-04T14:00:00.000Z'),
+					end: dayjs('2025-08-04T15:00:00.000Z'),
+					resourceId: 'resource-1',
+				})
+			}
+			type="button"
+		>
+			Add Event
+		</button>
+		<button
+			data-testid="add-cross-resource-event-btn"
+			onClick={() =>
+				onAdd?.({
+					id: 'cross-resource-event-1',
+					title: 'Cross Resource Event',
+					start: dayjs('2025-08-04T14:00:00.000Z'),
+					end: dayjs('2025-08-04T15:00:00.000Z'),
+					resourceIds: ['resource-1', 'resource-2'],
+				})
+			}
+			type="button"
+		>
+			Add Cross Resource Event
+		</button>
+		{selectedEvent && (
+			<>
+				<button
+					data-testid="update-event-btn"
+					onClick={() =>
+						onUpdate?.({ ...selectedEvent, title: 'Updated Resource Event' })
+					}
+					type="button"
+				>
+					Update Event
+				</button>
+				<button
+					data-testid="update-event-resource-btn"
+					onClick={() =>
+						onUpdate?.({ ...selectedEvent, resourceId: 'resource-2' })
+					}
+					type="button"
+				>
+					Move to Resource 2
+				</button>
+				<button
+					data-testid="delete-event-btn"
+					onClick={() => onDelete?.(selectedEvent)}
+					type="button"
+				>
+					Delete Event
+				</button>
+			</>
+		)}
+	</div>
+)
 
 // Mock the export function
 mock.module('@/lib/export-ical', () => ({
@@ -516,7 +521,7 @@ describe('IlamyResourceCalendar', () => {
 				<IlamyResourceCalendar
 					events={[]}
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					renderEventForm={CustomResourceEventForm}
 					resources={mockResources}
 				/>
 			)
@@ -540,7 +545,7 @@ describe('IlamyResourceCalendar', () => {
 					events={[resourceEvent]}
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
 					initialView="month"
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					renderEventForm={CustomResourceEventForm}
 					resources={mockResources}
 				/>
 			)
@@ -576,7 +581,7 @@ describe('IlamyResourceCalendar', () => {
 					events={[crossResourceEvent]}
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
 					initialView="month"
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					renderEventForm={CustomResourceEventForm}
 					resources={mockResources}
 				/>
 			)
@@ -601,7 +606,7 @@ describe('IlamyResourceCalendar', () => {
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
 					initialView="month"
 					onEventAdd={mockOnEventAdd}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					renderEventForm={CustomResourceEventForm}
 					resources={mockResources}
 				/>
 			)
@@ -634,7 +639,7 @@ describe('IlamyResourceCalendar', () => {
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
 					initialView="month"
 					onEventAdd={mockOnEventAdd}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					renderEventForm={CustomResourceEventForm}
 					resources={mockResources}
 				/>
 			)
@@ -671,7 +676,7 @@ describe('IlamyResourceCalendar', () => {
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
 					initialView="month"
 					onEventUpdate={mockOnEventUpdate}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					renderEventForm={CustomResourceEventForm}
 					resources={mockResources}
 				/>
 			)
@@ -716,7 +721,7 @@ describe('IlamyResourceCalendar', () => {
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
 					initialView="month"
 					onEventUpdate={mockOnEventUpdate}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					renderEventForm={CustomResourceEventForm}
 					resources={mockResources}
 				/>
 			)
@@ -763,7 +768,7 @@ describe('IlamyResourceCalendar', () => {
 					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
 					initialView="month"
 					onEventDelete={mockOnEventDelete}
-					renderEventForm={(props) => <CustomResourceEventForm {...props} />}
+					renderEventForm={CustomResourceEventForm}
 					resources={mockResources}
 				/>
 			)
@@ -990,6 +995,76 @@ describe('IlamyResourceCalendar', () => {
 				const text = label.textContent || ''
 				expect(text).not.toMatch(/AM|PM/i)
 			})
+		})
+	})
+
+	describe('resources prop sync (issue #153)', () => {
+		const courtOne: Resource = { id: 'court-1', title: 'Court #1' }
+		const courtTwo: Resource = { id: 'court-2', title: 'Court #2' }
+		const courtThree: Resource = { id: 'court-3', title: 'Court #3' }
+
+		it('reflects a replaced resources prop without remount', () => {
+			const { rerender } = render(
+				<IlamyResourceCalendar initialView="day" resources={[courtOne]} />
+			)
+
+			expect(screen.getByText('Court #1')).toBeInTheDocument()
+			expect(screen.queryByText('Court #2')).not.toBeInTheDocument()
+
+			rerender(
+				<IlamyResourceCalendar initialView="day" resources={[courtTwo]} />
+			)
+
+			expect(screen.queryByText('Court #1')).not.toBeInTheDocument()
+			expect(screen.getByText('Court #2')).toBeInTheDocument()
+		})
+
+		it('shows newly-added resources by default', () => {
+			const { rerender } = render(
+				<IlamyResourceCalendar
+					initialView="day"
+					resources={[courtOne, courtTwo]}
+				/>
+			)
+
+			expect(screen.getByText('Court #1')).toBeInTheDocument()
+			expect(screen.getByText('Court #2')).toBeInTheDocument()
+			expect(screen.queryByText('Court #3')).not.toBeInTheDocument()
+
+			rerender(
+				<IlamyResourceCalendar
+					initialView="day"
+					resources={[courtOne, courtTwo, courtThree]}
+				/>
+			)
+
+			expect(screen.getByText('Court #1')).toBeInTheDocument()
+			expect(screen.getByText('Court #2')).toBeInTheDocument()
+			expect(screen.getByText('Court #3')).toBeInTheDocument()
+		})
+
+		it('drops removed resources from the visible set', () => {
+			const { rerender } = render(
+				<IlamyResourceCalendar
+					initialView="day"
+					resources={[courtOne, courtTwo, courtThree]}
+				/>
+			)
+
+			expect(screen.getByText('Court #1')).toBeInTheDocument()
+			expect(screen.getByText('Court #2')).toBeInTheDocument()
+			expect(screen.getByText('Court #3')).toBeInTheDocument()
+
+			rerender(
+				<IlamyResourceCalendar
+					initialView="day"
+					resources={[courtOne, courtThree]}
+				/>
+			)
+
+			expect(screen.getByText('Court #1')).toBeInTheDocument()
+			expect(screen.queryByText('Court #2')).not.toBeInTheDocument()
+			expect(screen.getByText('Court #3')).toBeInTheDocument()
 		})
 	})
 })

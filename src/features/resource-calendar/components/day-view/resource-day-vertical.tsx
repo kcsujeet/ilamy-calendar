@@ -12,13 +12,11 @@ import { keys } from '@/lib/utils/keys'
 export const ResourceDayVertical: React.FC = () => {
 	const {
 		currentDate,
-		getVisibleResources,
+		resources,
 		businessHours,
 		hideNonBusinessHours,
 		slotDuration,
 	} = useSmartCalendarContext()
-
-	const resources = getVisibleResources()
 	const hours = getViewHours({
 		referenceDate: currentDate,
 		businessHours,

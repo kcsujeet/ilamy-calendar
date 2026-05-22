@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import type { CalendarProviderProps } from '@/features/calendar/contexts/calendar-context/provider'
 import type {
@@ -86,12 +86,6 @@ export const ResourceCalendarProvider: React.FC<
 	slotDuration = 60,
 	scrollTime,
 }) => {
-	// Resource-specific state
-	const [currentResources] = useState<Resource[]>(resources)
-	const [visibleResources, setVisibleResources] = useState<
-		Set<string | number>
-	>(new Set(resources.map((r) => r.id)))
-
 	// Use the calendar engine
 	const calendarEngine = useCalendarEngine({
 		events,
@@ -109,36 +103,6 @@ export const ResourceCalendarProvider: React.FC<
 		translations,
 		translator,
 	})
-
-	// Resource visibility — all mutations go through a single updater.
-	const mutateVisibility = useCallback(
-		(op: 'show' | 'hide' | 'toggle', id: string | number) => {
-			setVisibleResources((prev) => {
-				const next = new Set(prev)
-				if (op === 'show' || (op === 'toggle' && !next.has(id))) next.add(id)
-				else next.delete(id)
-				return next
-			})
-		},
-		[]
-	)
-	const showResource = useCallback(
-		(id: string | number) => mutateVisibility('show', id),
-		[mutateVisibility]
-	)
-	const hideResource = useCallback(
-		(id: string | number) => mutateVisibility('hide', id),
-		[mutateVisibility]
-	)
-	const toggleResourceVisibility = useCallback(
-		(id: string | number) => mutateVisibility('toggle', id),
-		[mutateVisibility]
-	)
-	const showAllResources = useCallback(
-		() => setVisibleResources(new Set(currentResources.map((r) => r.id))),
-		[currentResources]
-	)
-	const hideAllResources = useCallback(() => setVisibleResources(new Set()), [])
 
 	// Event utilities — both filters go through getEventResourceIds so single
 	// and multi-resource events are handled uniformly.
@@ -160,16 +124,10 @@ export const ResourceCalendarProvider: React.FC<
 
 	const getResourceById = useCallback(
 		(resourceId: string | number): Resource | undefined => {
-			return currentResources.find((resource) => resource.id === resourceId)
+			return resources.find((resource) => resource.id === resourceId)
 		},
-		[currentResources]
+		[resources]
 	)
-
-	const getVisibleResources = useCallback((): Resource[] => {
-		return currentResources.filter((resource) =>
-			visibleResources.has(resource.id)
-		)
-	}, [currentResources, visibleResources])
 
 	// Cross-resource event utilities
 	const isEventCrossResource = useCallback((event: CalendarEvent): boolean => {
@@ -233,18 +191,11 @@ export const ResourceCalendarProvider: React.FC<
 		() => ({
 			...calendarEngine,
 			// Resource-specific state
-			resources: currentResources,
-			visibleResources,
-			toggleResourceVisibility,
-			showResource,
-			hideResource,
-			showAllResources,
-			hideAllResources,
+			resources,
 			// Resource utilities
 			getEventsForResource,
 			getEventsForResources,
 			getResourceById,
-			getVisibleResources,
 			isEventCrossResource,
 			getEventResourceIds,
 			// Override handlers
@@ -281,17 +232,10 @@ export const ResourceCalendarProvider: React.FC<
 		}),
 		[
 			calendarEngine,
-			currentResources,
-			visibleResources,
-			toggleResourceVisibility,
-			showResource,
-			hideResource,
-			showAllResources,
-			hideAllResources,
+			resources,
 			getEventsForResource,
 			getEventsForResources,
 			getResourceById,
-			getVisibleResources,
 			isEventCrossResource,
 			handleEventClick,
 			handleDateClick,

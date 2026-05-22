@@ -318,6 +318,23 @@ export function DemoPage() {
 	const [slotDuration, setSlotDuration] = useState<SlotDuration>(60)
 	const [scrollTime, setScrollTime] = useState<string | undefined>(undefined)
 
+	// Resource picker — lets the user swap the resources prop at runtime
+	// to verify that IlamyResourceCalendar reacts to prop changes (issue #153).
+	const [selectedResourceIds, setSelectedResourceIds] = useState<
+		Set<string | number>
+	>(new Set(demoResources.map((r) => r.id)))
+	const activeResources = demoResources.filter((r) =>
+		selectedResourceIds.has(r.id)
+	)
+	const toggleResource = (id: string | number) => {
+		setSelectedResourceIds((prev) => {
+			const next = new Set(prev)
+			if (next.has(id)) next.delete(id)
+			else next.add(id)
+			return next
+		})
+	}
+
 	// Resource calendar settings
 	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
 		'horizontal'
@@ -505,24 +522,37 @@ export function DemoPage() {
 						weekViewGranularity={weekViewGranularity}
 					/>
 
-					{/* Resource info card */}
+					{/* Resource picker */}
 					{calendarType === 'resource' && (
 						<Card className="p-4">
 							<h3 className="font-semibold mb-3">Demo Resources</h3>
 							<div className="space-y-2 text-sm">
-								{demoResources.map((resource) => (
-									<div className="flex items-center gap-2" key={resource.id}>
-										<div
-											className="w-3 h-3 rounded"
-											style={{ backgroundColor: resource.color }}
-										/>
-										<span>{resource.title}</span>
-									</div>
-								))}
+								{demoResources.map((resource) => {
+									const id = `resource-toggle-${resource.id}`
+									return (
+										<label
+											className="flex items-center gap-2 cursor-pointer"
+											htmlFor={id}
+											key={resource.id}
+										>
+											<input
+												checked={selectedResourceIds.has(resource.id)}
+												id={id}
+												onChange={() => toggleResource(resource.id)}
+												type="checkbox"
+											/>
+											<div
+												className="w-3 h-3 rounded"
+												style={{ backgroundColor: resource.color }}
+											/>
+											<span>{resource.title}</span>
+										</label>
+									)
+								})}
 							</div>
 							<div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-								Events are automatically assigned to resources. Some events span
-								multiple resources.
+								Toggle resources on/off to verify the calendar reacts to{' '}
+								<code>resources</code> prop changes without remounting.
 							</div>
 						</Card>
 					)}
@@ -635,7 +665,7 @@ export function DemoPage() {
 									}
 									renderEvent={useCustomEventRenderer ? renderEvent : undefined}
 									renderHour={useCustomHourRenderer ? renderHour : undefined}
-									resources={demoResources}
+									resources={activeResources}
 									scrollTime={scrollTime}
 									slotDuration={slotDuration}
 									stickyViewHeader={stickyViewHeader}

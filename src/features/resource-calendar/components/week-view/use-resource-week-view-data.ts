@@ -6,7 +6,7 @@ export function useResourceWeekViewData() {
 	const {
 		currentDate,
 		firstDayOfWeek,
-		getVisibleResources,
+		resources,
 		weekViewGranularity,
 		businessHours,
 		hideNonBusinessHours,
@@ -14,7 +14,6 @@ export function useResourceWeekViewData() {
 	} = useSmartCalendarContext()
 
 	const isHourly = weekViewGranularity === 'hourly'
-	const resources = getVisibleResources()
 
 	const weekDays = useMemo(
 		() => getWeekDays(currentDate, firstDayOfWeek),

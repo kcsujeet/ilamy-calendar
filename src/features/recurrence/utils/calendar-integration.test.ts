@@ -200,6 +200,36 @@ describe('Monthly and Complex Patterns', () => {
 		expect(result[3].start.toISOString()).toBe('2025-04-06T14:00:00.000Z')
 	})
 
+	it('should handle monthly byweekday nth when start aligns with the rule', () => {
+		const start = dayjs('2025-05-30T16:00:00.000Z')
+		const monthlyByWeekdayEvent: CalendarEvent = {
+			id: 'monthly-last-friday',
+			uid: 'monthly-last-friday@ilamy.calendar',
+			title: 'Monthly Last Friday',
+			start,
+			end: start.add(1, 'hour'),
+			rrule: {
+				freq: RRule.MONTHLY,
+				byweekday: [RRule.FR.nth(-1)],
+				dtstart: start.toDate(),
+				count: 3,
+			},
+			exdates: [],
+		}
+
+		const result = generateRecurringEvents({
+			event: monthlyByWeekdayEvent,
+			currentEvents: [],
+			startDate: dayjs('2025-05-01').startOf('day'),
+			endDate: dayjs('2025-07-31').endOf('day'),
+		})
+
+		expect(result).toHaveLength(3)
+		expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-05-30')
+		expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-06-27')
+		expect(result[2].start.format('YYYY-MM-DD')).toBe('2025-07-25')
+	})
+
 	it('should handle COUNT limits in RRULE', () => {
 		const limitedEvent: CalendarEvent = {
 			id: 'limited-1',

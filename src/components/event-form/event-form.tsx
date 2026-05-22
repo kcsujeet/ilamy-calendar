@@ -20,6 +20,8 @@ import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-ed
 import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
 import type { RRuleOptions } from '@/features/recurrence/types'
 import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler'
+import { detectPresetFromOptions } from '@/features/recurrence/utils/recurrence-preset-utils'
+import { alignStartWithRRule } from '@/features/recurrence/utils/rrule-editor-utils'
 import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
@@ -200,8 +202,31 @@ export const EventForm: React.FC<EventFormProps> = ({
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
 
-		const startDateTime = buildDateTime(startDate, startTime, isAllDay)
-		const endDateTime = buildEndDateTime(endDate, endTime, isAllDay)
+		let startDateTime = buildDateTime(startDate, startTime, isAllDay)
+		let endDateTime = buildEndDateTime(endDate, endTime, isAllDay)
+
+		if (
+			rrule &&
+			detectPresetFromOptions(rrule, startDateTime.toDate()) === 'customize'
+		) {
+			const alignedStart = alignStartWithRRule(startDateTime, rrule)
+			if (!alignedStart.isSame(startDateTime)) {
+				const durationMs = endDateTime.diff(startDateTime)
+				const previousStartDate = startDate
+				startDateTime = alignedStart
+				endDateTime = alignedStart.add(durationMs, 'millisecond')
+				if (!alignedStart.isSame(previousStartDate, 'day')) {
+					setStartDate(alignedStart.toDate())
+				}
+				if (!endDateTime.isSame(endDate, 'day')) {
+					setEndDate(endDateTime.toDate())
+				}
+			}
+		}
+
+		const resolvedRrule = rrule
+			? { ...rrule, dtstart: startDateTime.toDate() }
+			: undefined
 
 		const eventData: CalendarEvent = {
 			id: selectedEvent?.id || dayjs().format('YYYYMMDDHHmmss'),
@@ -213,7 +238,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 			location: formValues.location,
 			allDay: isAllDay,
 			color: selectedColor,
-			rrule: rrule || undefined,
+			rrule: resolvedRrule,
 		}
 
 		if (selectedEvent?.id && isRecurringEvent(selectedEvent)) {
@@ -225,7 +250,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 				location: formValues.location,
 				allDay: isAllDay,
 				color: selectedColor,
-				rrule: rrule || undefined,
+				rrule: resolvedRrule,
 			})
 			return
 		}
@@ -379,7 +404,15 @@ export const EventForm: React.FC<EventFormProps> = ({
 						/>
 
 						{/* Recurrence Section */}
-						<RecurrenceEditor onChange={handleRRuleChange} value={rrule} />
+						<RecurrenceEditor
+							onChange={handleRRuleChange}
+							referenceDate={buildDateTime(
+								startDate,
+								startTime,
+								isAllDay
+							).toDate()}
+							value={rrule}
+						/>
 					</div>
 				</ScrollArea>
 

@@ -7,6 +7,11 @@ import dayjs from '@/lib/configs/dayjs-config'
 import { EventForm } from './event-form'
 
 // Custom render function that wraps components in CalendarProvider
+const selectRecurrencePresetInForm = (label: string | RegExp) => {
+	fireEvent.click(screen.getByTestId('recurrence-preset-select'))
+	fireEvent.click(screen.getByRole('option', { name: label }))
+}
+
 const renderEventForm = (
 	props: Parameters<typeof EventForm>[0],
 	providerProps = {}
@@ -24,9 +29,9 @@ const renderEventForm = (
 }
 
 describe('EventForm', () => {
-	const mockOnAdd = mock(() => {})
-	const mockOnUpdate = mock(() => {})
-	const mockOnDelete = mock(() => {})
+	const mockOnAdd = mock((_event: CalendarEvent) => {})
+	const mockOnUpdate = mock((_event: CalendarEvent) => {})
+	const mockOnDelete = mock((_event: CalendarEvent) => {})
 	const mockOnClose = mock(() => {})
 
 	const defaultProps = {
@@ -105,8 +110,8 @@ describe('EventForm', () => {
 			// Check that date inputs show the selected date (there are both start and end date pickers)
 			expect(screen.getAllByText('Aug 15, 2025')).toHaveLength(2) // start and end date
 
-			// Check that time selects are rendered (2 selects: start and end)
-			expect(screen.queryAllByRole('combobox')).toHaveLength(2)
+			// Time selects plus recurrence preset (detail fields hidden until customize)
+			expect(screen.queryAllByRole('combobox')).toHaveLength(3)
 		})
 
 		it('should initialize form with event data when editing', () => {
@@ -385,17 +390,16 @@ describe('EventForm', () => {
 		it('should handle recurrence changes', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
-			const toggleButton = screen.getByTestId('toggle-recurrence')
-			fireEvent.click(toggleButton)
-
-			expect(toggleButton).toBeChecked()
+			selectRecurrencePresetInForm('Every day')
+			expect(
+				screen.getByTestId('recurrence-preset-select').textContent
+			).toContain('Every day')
 		})
 
 		it('should include recurrence in form submission', async () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
-			// Enable recurrence
-			fireEvent.click(screen.getByTestId('toggle-recurrence'))
+			selectRecurrencePresetInForm('Every day')
 
 			// Fill in title and submit
 			fireEvent.change(screen.getByPlaceholderText('Event title'), {
@@ -416,6 +420,41 @@ describe('EventForm', () => {
 					})
 				)
 			})
+		})
+
+		it('should align start date on submit when customize RRULE mismatches the day', async () => {
+			const eventOnFifteenth: CalendarEvent = {
+				...testNewEvent,
+				start: dayjs('2025-08-15T10:00:00'),
+				end: dayjs('2025-08-15T11:00:00'),
+			}
+
+			renderEventForm({ ...defaultProps, selectedEvent: eventOnFifteenth })
+
+			selectRecurrencePresetInForm('Customize')
+
+			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
+			fireEvent.click(frequencySelect)
+			fireEvent.click(screen.getByRole('option', { name: 'month' }))
+
+			const dayInput = screen.getByTestId('monthly-day-of-month')
+			fireEvent.change(dayInput, { target: { value: '20' } })
+
+			fireEvent.change(screen.getByPlaceholderText('Event title'), {
+				target: { value: 'Aligned Monthly' },
+			})
+
+			fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+
+			await waitFor(() => {
+				expect(mockOnAdd).toHaveBeenCalled()
+			})
+
+			const submitted = mockOnAdd.mock.calls[0][0] as CalendarEvent
+			expect(submitted.title).toBe('Aligned Monthly')
+			expect(submitted.start.date()).toBe(20)
+			expect(submitted.start.month()).toBe(7)
+			expect(submitted.rrule?.bymonthday).toEqual([20])
 		})
 	})
 
@@ -496,10 +535,9 @@ describe('EventForm', () => {
 				{ events: mockEvents }
 			)
 
-			// RecurrenceEditor should show as enabled (checkbox checked)
-			// because it found the parent's RRULE
-			const toggleButton = screen.getByTestId('toggle-recurrence')
-			expect(toggleButton).toBeChecked()
+			expect(
+				screen.getByTestId('recurrence-preset-select').textContent
+			).toContain('Customize')
 		})
 	})
 

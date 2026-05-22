@@ -34,7 +34,13 @@ export interface Translations {
 
 	// Recurrence
 	repeat: string
-	repeats: string
+	repeatsEvery: string
+	recurrenceOnce: string
+	recurrenceEveryDay: string
+	recurrenceEveryWeekday: string
+	recurrenceEveryWeekOn: string
+	recurrenceEveryMonthOnDay: string
+	recurrenceEveryMonthOnThe: string
 	customRecurrence: string
 	daily: string
 	weekly: string
@@ -49,6 +55,20 @@ export interface Translations {
 	after: string
 	occurrences: string
 	on: string
+	onDay: string
+	onThe: string
+	recurrenceOn: string
+	first: string
+	second: string
+	third: string
+	fourth: string
+	last: string
+	of: string
+	recurrenceDay: string
+	recurrenceWeekday: string
+	recurrenceWeekend: string
+	position: string
+	dayOfMonth: string
 
 	// Recurrence edit dialog
 	editRecurringEvent: string

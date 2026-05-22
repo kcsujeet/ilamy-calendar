@@ -264,7 +264,7 @@ export function DemoPage() {
 
 	// Calendar configuration state
 	const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>('sunday')
-	const [initialView, setInitialView] = useState<CalendarView>('month')
+	const [initialView, setInitialView] = useState<CalendarView>('week')
 	const [initialDate, setInitialDate] = useState<Dayjs | undefined>(undefined)
 	const [customEvents] = useState<CalendarEvent[]>(dummyEvents)
 	const [resourceEvents] = useState<CalendarEvent[]>(createResourceEvents())

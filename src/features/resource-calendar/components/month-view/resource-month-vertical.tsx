@@ -6,9 +6,7 @@ import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { keys } from '@/lib/utils/keys'
 
 export const ResourceMonthVertical: React.FC = () => {
-	const { currentDate, getVisibleResources } = useSmartCalendarContext()
-
-	const resources = getVisibleResources()
+	const { currentDate, resources } = useSmartCalendarContext()
 	const startOfMonth = currentDate.startOf('month')
 	const daysInMonth = Array.from(
 		{ length: currentDate.daysInMonth() },

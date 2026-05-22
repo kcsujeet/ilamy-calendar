@@ -7,13 +7,11 @@ import type { Resource } from '@/features/resource-calendar/types'
 export interface ResourceCalendarContextType extends CalendarContextType {
 	// Resource-specific state
 	resources: Resource[]
-	visibleResources: Set<string | number>
 
 	// Resource utilities
 	getEventsForResource: (resourceId: string | number) => CalendarEvent[]
 	getEventsForResources: (resourceIds: (string | number)[]) => CalendarEvent[]
 	getResourceById: (resourceId: string | number) => Resource | undefined
-	getVisibleResources: () => Resource[]
 
 	// Cross-resource event utilities
 	isEventCrossResource: (event: CalendarEvent) => boolean

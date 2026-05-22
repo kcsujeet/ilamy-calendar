@@ -27,9 +27,7 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 	children,
 	classes,
 }) => {
-	const { getVisibleResources } = useSmartCalendarContext()
-
-	const visibleResources = getVisibleResources()
+	const { resources } = useSmartCalendarContext()
 
 	const columns = days.map((day) => {
 		const isArray = Array.isArray(day)
@@ -43,7 +41,7 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 		}
 	})
 
-	const rows = visibleResources.map((resource) => ({
+	const rows = resources.map((resource) => ({
 		id: resource.id,
 		title: resource.title,
 		resource: resource,

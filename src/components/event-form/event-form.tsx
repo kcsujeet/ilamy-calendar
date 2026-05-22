@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -41,6 +41,44 @@ const COLOR_OPTIONS = [
 	{ value: 'bg-teal-100 text-teal-800', label: 'Teal' },
 	{ value: 'bg-orange-100 text-orange-800', label: 'Orange' },
 ]
+
+type TextFieldName = 'title' | 'description' | 'location'
+
+interface EventFormTextFieldProps {
+	name: TextFieldName
+	label: string
+	placeholder: string
+	value: string
+	required?: boolean
+	onChange: (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+	) => void
+}
+
+// Shared title / description / location inputs (must live outside EventForm to keep focus).
+const EventFormTextField = ({
+	name,
+	label,
+	placeholder,
+	value,
+	required = false,
+	onChange,
+}: EventFormTextFieldProps) => (
+	<div className="grid gap-1 sm:gap-2">
+		<Label className="text-xs sm:text-sm" htmlFor={name}>
+			{label}
+		</Label>
+		<Input
+			className="h-8 text-sm sm:h-9"
+			id={name}
+			name={name}
+			onChange={onChange}
+			placeholder={placeholder}
+			required={required}
+			value={value}
+		/>
+	</div>
+)
 
 export interface EventFormProps {
 	open?: boolean
@@ -229,34 +267,6 @@ export const EventForm: React.FC<EventFormProps> = ({
 	const startConstraints = getTimeConstraints(startDate, effectiveBusinessHours)
 	const endConstraints = getTimeConstraints(endDate, effectiveBusinessHours)
 
-	// Local component for title / description / location text inputs.
-	// They share identical markup; only label/placeholder/value differ.
-	type TextFieldName = 'title' | 'description' | 'location'
-	const TextField = ({
-		name,
-		placeholder,
-		required = false,
-	}: {
-		name: TextFieldName
-		placeholder: string
-		required?: boolean
-	}) => (
-		<div className="grid gap-1 sm:gap-2">
-			<Label className="text-xs sm:text-sm" htmlFor={name}>
-				{t(name)}
-			</Label>
-			<Input
-				className="h-8 text-sm sm:h-9"
-				id={name}
-				name={name}
-				onChange={handleInputChange}
-				placeholder={placeholder}
-				required={required}
-				value={formValues[name]}
-			/>
-		</div>
-	)
-
 	const dateFields = [
 		['startDate', startDate, handleStartDateChange],
 		['endDate', endDate, handleEndDateChange],
@@ -278,14 +288,20 @@ export const EventForm: React.FC<EventFormProps> = ({
 			<form className="flex flex-col flex-1 min-h-0" onSubmit={handleSubmit}>
 				<ScrollArea className="flex-1 min-h-0">
 					<div className="grid gap-3 sm:gap-4 p-1">
-						<TextField
+						<EventFormTextField
+							label={t('title')}
 							name="title"
+							onChange={handleInputChange}
 							placeholder={t('eventTitlePlaceholder')}
 							required
+							value={formValues.title}
 						/>
-						<TextField
+						<EventFormTextField
+							label={t('description')}
 							name="description"
+							onChange={handleInputChange}
 							placeholder={t('eventDescriptionPlaceholder')}
+							value={formValues.description}
 						/>
 
 						<div className="flex items-center space-x-2">
@@ -354,9 +370,12 @@ export const EventForm: React.FC<EventFormProps> = ({
 							</div>
 						</div>
 
-						<TextField
+						<EventFormTextField
+							label={t('location')}
 							name="location"
+							onChange={handleInputChange}
 							placeholder={t('eventLocationPlaceholder')}
+							value={formValues.location}
 						/>
 
 						{/* Recurrence Section */}

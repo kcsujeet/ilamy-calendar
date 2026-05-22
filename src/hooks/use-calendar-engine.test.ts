@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react'
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
+import 'dayjs/locale/fr.js'
 import type { Translations } from '@/lib/translations/types'
 import { getMonthWeeks } from '@/lib/utils/date-utils'
 import { useCalendarEngine } from './use-calendar-engine'
@@ -38,6 +39,46 @@ describe('useCalendarEngine', () => {
 		events: [] as CalendarEvent[],
 		firstDayOfWeek: 0,
 	}
+
+	describe('locale', () => {
+		afterEach(() => {
+			dayjs.locale('en')
+		})
+
+		it('applies locale on initial mount', () => {
+			const initialDate = dayjs('2025-06-15T12:00:00.000Z')
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					locale: 'fr',
+					initialDate,
+				})
+			)
+
+			expect(result.current.currentLocale).toBe('fr')
+			expect(result.current.currentDate.format('MMMM')).toBe('juin')
+		})
+
+		it('updates locale when the locale prop changes', () => {
+			const initialDate = dayjs('2025-06-15T12:00:00.000Z')
+			const { result, rerender } = renderHook(
+				({ locale }: { locale: string }) =>
+					useCalendarEngine({
+						...defaultConfig,
+						locale,
+						initialDate,
+					}),
+				{ initialProps: { locale: 'en' } }
+			)
+
+			expect(result.current.currentDate.format('MMMM')).toBe('June')
+
+			rerender({ locale: 'fr' })
+
+			expect(result.current.currentLocale).toBe('fr')
+			expect(result.current.currentDate.format('MMMM')).toBe('juin')
+		})
+	})
 
 	describe('initialization', () => {
 		it('should initialize with default values', () => {

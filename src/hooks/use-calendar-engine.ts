@@ -129,7 +129,7 @@ export const useCalendarEngine = (
 	const [currentLocale, setCurrentLocale] = useState(locale || 'en')
 	const lastEventsProp = useRef(events)
 	const lastTimezoneProp = useRef(timezone)
-	const lastLocaleProp = useRef(locale)
+	const lastLocaleProp = useRef<string | undefined>(undefined)
 
 	const t: TranslatorFunction = useMemo(() => {
 		if (translator) return translator

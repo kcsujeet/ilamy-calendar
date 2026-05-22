@@ -3,18 +3,9 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
-import { getDayKey, isToday } from '@/lib/utils/date-utils'
+import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
-const DAY_HEADER_NAMES = [
-	{ id: 'sun', label: 'S' },
-	{ id: 'mon', label: 'M' },
-	{ id: 'tue', label: 'T' },
-	{ id: 'wed', label: 'W' },
-	{ id: 'thu', label: 'T' },
-	{ id: 'fri', label: 'F' },
-	{ id: 'sat', label: 'S' },
-]
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
 const DAYS_IN_MINI_CALENDAR = 42
 
@@ -35,9 +26,21 @@ interface DayData {
 }
 
 export const YearView = () => {
-	const { currentDate, selectDate, events, setView, getEventsForDateRange, t } =
-		useSmartCalendarContext()
+	const {
+		currentDate,
+		selectDate,
+		events,
+		setView,
+		getEventsForDateRange,
+		t,
+		firstDayOfWeek,
+	} = useSmartCalendarContext()
 	const currentYear = currentDate.year()
+
+	const weekdayHeaders = getWeekDays(dayjs(), firstDayOfWeek).map((d) => ({
+		id: d.day().toString(),
+		label: d.format('dd'),
+	}))
 
 	const generateMonthsData = (): MonthData[] => {
 		return Array.from({ length: 12 }, (_, monthIndex) => {
@@ -180,7 +183,7 @@ export const YearView = () => {
 								className="grid grid-cols-7 gap-px text-[0.6rem]"
 								data-testid={keys.header.year.month(month.monthKey, 'mini')}
 							>
-								{DAY_HEADER_NAMES.map((day) => (
+								{weekdayHeaders.map((day) => (
 									<div
 										className="text-muted-foreground h-3 text-center"
 										key={keys.listKey('header', month.monthKey, day.id)}

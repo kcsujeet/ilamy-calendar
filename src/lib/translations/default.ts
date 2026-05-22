@@ -86,36 +86,4 @@ export const defaultTranslations: Translations = {
 	date: 'Date',
 	noResourcesVisible: 'No resources visible',
 	addResourcesOrShowExisting: 'Add resources or show existing ones',
-
-	// Days of week
-	sunday: 'Sunday',
-	monday: 'Monday',
-	tuesday: 'Tuesday',
-	wednesday: 'Wednesday',
-	thursday: 'Thursday',
-	friday: 'Friday',
-	saturday: 'Saturday',
-
-	// Days short
-	sun: 'Sun',
-	mon: 'Mon',
-	tue: 'Tue',
-	wed: 'Wed',
-	thu: 'Thu',
-	fri: 'Fri',
-	sat: 'Sat',
-
-	// Months
-	january: 'January',
-	february: 'February',
-	march: 'March',
-	april: 'April',
-	may: 'May',
-	june: 'June',
-	july: 'July',
-	august: 'August',
-	september: 'September',
-	october: 'October',
-	november: 'November',
-	december: 'December',
 }

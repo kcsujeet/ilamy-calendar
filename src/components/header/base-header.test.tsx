@@ -121,4 +121,27 @@ describe('Header with Export Button', () => {
 		expect(calledDate.month()).toBe(8)
 		expect(calledDate.year()).toBe(2025)
 	})
+
+	it('should not render export buttons when hideExportButton is true', () => {
+		renderHeader(testEvents, { hideExportButton: true })
+
+		expect(
+			screen.queryByRole('button', { name: /export/i })
+		).not.toBeInTheDocument()
+
+		const menuButtons = screen.getAllByRole('button', { name: '' })
+		const actualMenuButton = menuButtons.find((button) =>
+			button.querySelector('svg.lucide-menu')
+		)
+
+		if (!actualMenuButton) {
+			throw new Error('Menu button not found')
+		}
+
+		fireEvent.click(actualMenuButton)
+
+		expect(
+			screen.queryByRole('button', { name: /export calendar/i })
+		).not.toBeInTheDocument()
+	})
 })

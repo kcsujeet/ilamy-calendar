@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import { getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
-const CELL_CLASS = 'flex-1'
+const CELL_CLASS = 'flex-1 min-w-0'
 const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
 
 export const WeekView: React.FC = () => {
@@ -103,7 +103,7 @@ export const WeekView: React.FC = () => {
 		>
 			<div className={'flex h-full flex-1'} data-testid="week-view-header">
 				{/* Corner cell with week number */}
-				<div className="w-10 sm:w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
+				<div className="w-10 sm:w-16 min-w-10 sm:min-w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
 					<div className="flex flex-col items-center justify-center min-w-0 w-full">
 						<span className="text-muted-foreground text-xs truncate w-full text-center">
 							{t('week')}

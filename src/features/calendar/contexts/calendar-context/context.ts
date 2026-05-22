@@ -47,6 +47,7 @@ export interface CalendarContextType {
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellClickInfo) => void
 	currentLocale?: string
+	timezone?: string
 	disableCellClick?: boolean
 	disableEventClick?: boolean
 	disableDragAndDrop?: boolean
@@ -68,6 +69,7 @@ export interface CalendarContextType {
 	) => React.ReactNode
 	renderHour?: (date: Dayjs) => React.ReactNode
 	hideNonBusinessHours?: boolean
+	hideExportButton?: boolean
 	hiddenDays?: Set<number>
 	slotDuration: SlotDuration
 	scrollTime?: string

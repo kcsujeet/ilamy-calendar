@@ -121,4 +121,44 @@ describe('Header with Export Button', () => {
 		expect(calledDate.month()).toBe(8)
 		expect(calledDate.year()).toBe(2025)
 	})
+
+	it('should not render export buttons when hideExportButton is true', () => {
+		renderHeader(testEvents, { hideExportButton: true })
+
+		expect(
+			screen.queryByRole('button', { name: /export/i })
+		).not.toBeInTheDocument()
+
+		const menuButtons = screen.getAllByRole('button', { name: '' })
+		const actualMenuButton = menuButtons.find((button) =>
+			button.querySelector('svg.lucide-menu')
+		)
+
+		if (!actualMenuButton) {
+			throw new Error('Menu button not found')
+		}
+
+		fireEvent.click(actualMenuButton)
+
+		expect(
+			screen.queryByRole('button', { name: /export calendar/i })
+		).not.toBeInTheDocument()
+	})
+
+	it('renders the week picker label using Intl.DateTimeFormat.formatRange so it is locale-correct and compact', () => {
+		renderHeader([], {
+			initialView: 'week',
+			initialDate: dayjs('2026-04-29T12:00:00.000Z'),
+		})
+
+		// firstDayOfWeek defaults to 0 (Sunday), so the week containing Apr 29 2026
+		// is Sun Apr 26 - Sat May 2. Intl.DateTimeFormat.formatRange with
+		// `{month: 'short', day: 'numeric'}` returns "Apr 26 – May 2" in English
+		// (en-dash separator, U+2013) and intelligently collapses redundant parts.
+		const weekButton = screen.getByRole('button', { name: 'Apr 26 – May 2' })
+		expect(weekButton).toBeInTheDocument()
+
+		// No year suffix anywhere in the label.
+		expect(weekButton.textContent).not.toContain('2026')
+	})
 })

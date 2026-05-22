@@ -7,6 +7,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@/components/ui/popover'
+import { useDateTimeFormatters } from '@/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
@@ -22,6 +23,8 @@ const TitleContent = () => {
 			t: ctx.t,
 			firstDayOfWeek: ctx.firstDayOfWeek,
 		}))
+
+	const { formatDateRange } = useDateTimeFormatters()
 
 	const [openPopover, setOpenPopover] = useState<string | null>(null)
 
@@ -82,7 +85,6 @@ const TitleContent = () => {
 				const start = days[0]
 				const end = days[6]
 				const isCurrentWeek = weekDate.isSame(currentDate, 'week')
-				const crossesMonth = start.month() !== end.month()
 
 				return (
 					<Button
@@ -95,11 +97,7 @@ const TitleContent = () => {
 						variant="ghost"
 					>
 						<div className="flex w-full items-center justify-between">
-							<span>
-								{crossesMonth
-									? `${start.format('ll')} - ${end.format('ll')}`
-									: `${start.format('DD')} -  ${end.format('ll')}`}
-							</span>
+							<span>{formatDateRange(start, end)}</span>
 						</div>
 					</Button>
 				)
@@ -159,7 +157,7 @@ const TitleContent = () => {
 		{
 			id: 'week',
 			hidden: view !== 'week',
-			title: `${weekDays[0].format('ll')} - ${weekDays[6].format('ll')}`,
+			title: formatDateRange(weekDays.at(0), weekDays.at(-1)),
 			render: renderWeekContent,
 		},
 		{

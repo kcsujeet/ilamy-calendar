@@ -15,10 +15,20 @@ The calendar now supports exporting events to iCalendar (.ics) format, which is 
   - Recurring events with RRULE patterns
   - Events with exception dates (EXDATE)
   - Modified recurring instances (RECURRENCE-ID)
-- **Desktop and Mobile**: Export button available on both desktop and mobile interfaces
+- **Desktop and Mobile**: Export button available on both desktop and mobile interfaces (can be hidden via `hideExportButton`)
 - **Automatic Filename**: Generates timestamped filenames (e.g., `calendar-2025-08-04.ics`)
 
 ## Usage
+
+### Hiding the export button
+
+Pass `hideExportButton` to `IlamyCalendar` or `IlamyResourceCalendar` to remove the export control from the default header (desktop and mobile). Defaults to `false`.
+
+```tsx
+<IlamyCalendar events={events} hideExportButton />
+```
+
+When using a custom `headerComponent`, this prop has no effect — you control export UI yourself.
 
 ### Desktop
 

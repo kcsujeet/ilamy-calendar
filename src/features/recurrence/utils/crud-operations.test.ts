@@ -317,6 +317,84 @@ describe('updateRecurringEvent', () => {
 			expect(result).toHaveLength(2)
 			expect(result.find((e) => e.id === 'other-event')).toBeDefined()
 		})
+
+		it('should keep base series anchor when editing a later instance (scope: all)', () => {
+			const mondayStartISO = '2025-01-06T09:00:00.000Z'
+			const fridayStartISO = '2025-01-10T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				start: dayjs(mondayStartISO),
+				end: dayjs('2025-01-06T10:00:00.000Z'),
+				rrule: {
+					freq: RRule.WEEKLY,
+					interval: 1,
+					byweekday: [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR],
+					dtstart: dayjs(mondayStartISO).toDate(),
+				},
+			})
+			const fridayInstance = createTargetEvent({
+				id: 'recurring-1_4',
+				start: dayjs(fridayStartISO),
+				end: dayjs('2025-01-10T10:00:00.000Z'),
+			})
+
+			const result = updateRecurringEvent({
+				targetEvent: fridayInstance,
+				updates: {
+					title: 'Updated Weekdays',
+					start: dayjs(fridayStartISO),
+					end: dayjs('2025-01-10T10:00:00.000Z'),
+					rrule: {
+						freq: RRule.WEEKLY,
+						interval: 1,
+						byweekday: [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR],
+						dtstart: dayjs(fridayStartISO).toDate(),
+					},
+				},
+				currentEvents: [baseEvent],
+				scope: 'all',
+			})
+
+			const updatedBase = result[0]
+			expect(updatedBase.title).toBe('Updated Weekdays')
+			expect(updatedBase.start.toISOString()).toBe(mondayStartISO)
+			if (!updatedBase.rrule) throw new Error('updatedBase.rrule missing')
+			expect(updatedBase.rrule.dtstart?.toISOString()).toBe(mondayStartISO)
+
+			const instances = generateRecurringEvents({
+				event: updatedBase,
+				currentEvents: result,
+				startDate: dayjs('2025-01-06T00:00:00.000Z'),
+				endDate: dayjs('2025-01-12T23:59:59.999Z'),
+			})
+			expect(instances).toHaveLength(5)
+			expect(instances[0].start.toISOString()).toBe(mondayStartISO)
+			expect(instances[4].start.toISOString()).toBe(fridayStartISO)
+		})
+
+		it('should apply time delta from target instance to base (scope: all)', () => {
+			const mondayStartISO = '2025-01-06T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				start: dayjs(mondayStartISO),
+				end: dayjs('2025-01-06T10:00:00.000Z'),
+			})
+			const fridayInstance = createTargetEvent({
+				start: dayjs('2025-01-10T09:00:00.000Z'),
+				end: dayjs('2025-01-10T10:00:00.000Z'),
+			})
+
+			const result = updateRecurringEvent({
+				targetEvent: fridayInstance,
+				updates: {
+					start: dayjs('2025-01-10T11:00:00.000Z'),
+					end: dayjs('2025-01-10T12:00:00.000Z'),
+				},
+				currentEvents: [baseEvent],
+				scope: 'all',
+			})
+
+			expect(result[0].start.toISOString()).toBe('2025-01-06T11:00:00.000Z')
+			expect(result[0].end.toISOString()).toBe('2025-01-06T12:00:00.000Z')
+		})
 	})
 
 	describe('error handling', () => {

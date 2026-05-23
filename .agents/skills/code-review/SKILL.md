@@ -277,18 +277,18 @@ After explicit user approval, choose the posting strategy based on whether any c
 
 ### Mandatory approval-marker ritual
 
-The repo enforces this with a PreToolUse hook on Bash (`.claude/hooks/check-pr-post-approval.sh`). Any `gh` command that posts public-facing content (`gh api .../pulls/.../{comments,reviews} -X POST`, `gh pr {comment,review,create}`, `gh issue {comment,create}`) is blocked unless `.claude/state/pr-post-approved.flag` was touched within the last 30 seconds.
+The repo enforces this with a PreToolUse hook on Bash (`.claude/hooks/check-pr-post-approval.sh`). Any `gh` command that posts public-facing content (`gh api .../pulls/.../{comments,reviews} -X POST`, `gh pr {comment,review,create}`, `gh issue {comment,create}`) is blocked unless the same Bash command contains the literal substring `touch .claude/state/pr-post-approved.flag` (in the same chain, before the gh part).
 
-The hook exists because the recurring failure mode is interpreting stale or implied approval as fresh. The marker makes approval explicit, time-bound, and tool-enforced.
+The hook exists because the recurring failure mode is interpreting stale or implied approval as fresh. PreToolUse hooks fire BEFORE the Bash command runs, so a file-mtime check can't see the chained touch. Instead the hook scans the command text for the ritual, which makes approval an explicit, deliberate, auditable thing typed inline.
 
 **Rules:**
 - The phrase "post it" (or unambiguous equivalent: "send it", "go ahead", "ship it") in the user's most recent message is approval. Anything older has expired. "Okay", "looks good", and "sounds right" do not approve posting on their own.
-- Run `touch` and the `gh` post in the same chained command so the marker is fresh and the intent is auditable:
+- Chain `touch` and the `gh` post in a single Bash command so the touch is part of the same auditable invocation:
   ```bash
   touch .claude/state/pr-post-approved.flag && gh api repos/<owner>/<repo>/pulls/<N>/comments -X POST --input /tmp/pr<N>-cmt-1.json
   ```
-- One touch covers one chained Bash invocation. If you have multiple posts (e.g. several inline comments), either combine them into one Bash call with `&&` between gh commands, or touch again before each separate call.
-- If the hook blocks you, **stop and re-confirm with the user**. Do not touch the marker just to bypass the hook. The hook is the last line of defense against the bug it was built to prevent.
+- Each separate Bash invocation that posts needs its own inline `touch`. The hook does not remember state between calls; that is intentional.
+- If the hook blocks you, **stop and re-confirm with the user**. Do not touch the marker out of band to bypass the hook (it would not work anyway because the hook looks at the command text, not the file). The hook is the last line of defense against the bug it was built to prevent.
 
 ### After approval: choose strategy
 

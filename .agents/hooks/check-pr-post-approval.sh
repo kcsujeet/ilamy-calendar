@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # PreToolUse hook for Bash. Blocks public-facing GitHub posting commands
 # (gh api POST to pulls/comments|reviews, gh pr comment/review/create,
-# gh issue comment/create) unless `.claude/state/pr-post-approved.flag`
-# was touched within the last 30 seconds.
+# gh issue comment/create) unless the same command chains the explicit
+# approval ritual `touch .claude/state/pr-post-approved.flag &&` first.
 #
-# Why: a recurring failure mode is interpreting stale or implied approval
-# as fresh. The marker file makes the approval explicit and time-bound,
-# so even when conversation context drifts, the hook physically blocks
-# the post until the assistant deliberately runs `touch` right before it.
+# Why: the recurring failure mode is interpreting stale or implied approval
+# as fresh. Requiring the literal `touch ...` substring inside the same
+# Bash command makes approval explicit, deliberate, and auditable in the
+# Bash history. The hook fires BEFORE the command runs, so checking file
+# mtime is moot for chained commands; what matters is that the assistant
+# typed the ritual into the command itself.
 #
 # Bypass for one post:
 #   touch .claude/state/pr-post-approved.flag && <gh command>
@@ -38,45 +40,25 @@ if ! is_protected_command "$COMMAND"; then
 	exit 0
 fi
 
-FLAG=".claude/state/pr-post-approved.flag"
+# Approval ritual: the command itself must contain the literal touch.
+# Tolerate whitespace variants around the path; the path itself is exact.
+if [[ "$COMMAND" =~ touch[[:space:]]+\.claude/state/pr-post-approved\.flag ]]; then
+	exit 0
+fi
 
-if [[ ! -f "$FLAG" ]]; then
-	cat >&2 <<'EOF'
-Blocked: this command posts public-facing content to GitHub, but no fresh
-post-approval marker exists.
+cat >&2 <<'EOF'
+Blocked: this command posts public-facing content to GitHub but does not
+include the approval ritual in the same command.
 
-The user must say "post it" (or equivalent) and you must then run:
-  touch .claude/state/pr-post-approved.flag
-right before the gh command, ideally chained:
+The user must say "post it" (or unambiguous equivalent: "send it", "go
+ahead", "ship it") in their MOST RECENT message. Stale approval from
+earlier in the conversation does not carry forward. Once you have fresh
+approval, prepend the ritual so it runs in the same chained command:
+
   touch .claude/state/pr-post-approved.flag && <gh command>
 
-The marker expires 30 seconds after it is touched, so a stale approval
-from earlier in the session does not carry forward.
+The ritual is the deliberate, auditable bridge between conversational
+approval and the actual post. Do not bypass by touching the marker out
+of band; the hook only allows the post when the touch appears inline.
 EOF
-	exit 2
-fi
-
-# Portable mtime read (BSD `stat -f` on macOS, GNU `stat -c` on Linux).
-if FLAG_MTIME=$(stat -f %m "$FLAG" 2>/dev/null); then
-	:
-elif FLAG_MTIME=$(stat -c %Y "$FLAG" 2>/dev/null); then
-	:
-else
-	echo "Blocked: cannot read mtime of $FLAG (stat unsupported)." >&2
-	exit 2
-fi
-
-NOW=$(date +%s)
-AGE=$(( NOW - FLAG_MTIME ))
-
-if (( AGE > 30 )); then
-	cat >&2 <<EOF
-Blocked: post-approval marker is stale (touched ${AGE}s ago, max 30s).
-
-Approval does not carry across messages. Ask the user again, then chain:
-  touch .claude/state/pr-post-approved.flag && <gh command>
-EOF
-	exit 2
-fi
-
-exit 0
+exit 2

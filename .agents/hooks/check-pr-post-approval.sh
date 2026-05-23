@@ -29,10 +29,10 @@ is_protected_command() {
 	# gh api POST to PR comments or reviews
 	if [[ "$cmd" =~ gh[[:space:]]+api[[:space:]].*pulls/[^[:space:]]+/(comments|reviews).*-X[[:space:]]+POST ]]; then return 0; fi
 	if [[ "$cmd" =~ gh[[:space:]]+api[[:space:]].*-X[[:space:]]+POST.*pulls/[^[:space:]]+/(comments|reviews) ]]; then return 0; fi
-	# gh pr {comment,review,create}
-	if [[ "$cmd" =~ gh[[:space:]]+pr[[:space:]]+(comment|review|create)([[:space:]]|$) ]]; then return 0; fi
-	# gh issue {comment,create}
-	if [[ "$cmd" =~ gh[[:space:]]+issue[[:space:]]+(comment|create)([[:space:]]|$) ]]; then return 0; fi
+	# gh pr {comment,review,create,edit}
+	if [[ "$cmd" =~ gh[[:space:]]+pr[[:space:]]+(comment|review|create|edit)([[:space:]]|$) ]]; then return 0; fi
+	# gh issue {comment,create,edit}
+	if [[ "$cmd" =~ gh[[:space:]]+issue[[:space:]]+(comment|create|edit)([[:space:]]|$) ]]; then return 0; fi
 	return 1
 }
 

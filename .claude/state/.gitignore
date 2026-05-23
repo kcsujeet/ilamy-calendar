@@ -1,0 +1,4 @@
+# Ephemeral hook-state markers (e.g. pr-post-approved.flag) should not be tracked.
+*
+!.gitignore
+!.gitkeep

@@ -275,9 +275,28 @@ Before showing the final decorated draft to the user, run through this checklist
 
 After explicit user approval, choose the posting strategy based on whether any comment is `(blocking)` and whether you have a real structural observation for a top-level body.
 
+### Mandatory approval-marker ritual
+
+The repo enforces this with a PreToolUse hook on Bash (`.claude/hooks/check-pr-post-approval.sh`). Any `gh` command that posts public-facing content (`gh api .../pulls/.../{comments,reviews} -X POST`, `gh pr {comment,review,create}`, `gh issue {comment,create}`) is blocked unless the same Bash command contains the literal substring `touch .claude/state/pr-post-approved.flag` (in the same chain, before the gh part).
+
+The hook exists because the recurring failure mode is interpreting stale or implied approval as fresh. PreToolUse hooks fire BEFORE the Bash command runs, so a file-mtime check can't see the chained touch. Instead the hook scans the command text for the ritual, which makes approval an explicit, deliberate, auditable thing typed inline.
+
+**Rules:**
+- The phrase "post it" (or unambiguous equivalent: "send it", "go ahead", "ship it") in the user's most recent message is approval. Anything older has expired. "Okay", "looks good", and "sounds right" do not approve posting on their own.
+- Chain `touch` and the `gh` post in a single Bash command so the touch is part of the same auditable invocation:
+  ```bash
+  touch .claude/state/pr-post-approved.flag && gh api repos/<owner>/<repo>/pulls/<N>/comments -X POST --input /tmp/pr<N>-cmt-1.json
+  ```
+- Each separate Bash invocation that posts needs its own inline `touch`. The hook does not remember state between calls; that is intentional.
+- If the hook blocks you, **stop and re-confirm with the user**. Do not touch the marker out of band to bypass the hook (it would not work anyway because the hook looks at the command text, not the file). The hook is the last line of defense against the bug it was built to prevent.
+
+### After approval: choose strategy
+
 ### Decision tree
 
 The key question is **"does my top-level body say something the inlines do not already say?"** That decides the strategy, not the blocking status.
+
+(All commands below must be chained with `touch .claude/state/pr-post-approved.flag &&` to pass the hook. Examples in the Strategy sections show this.)
 
 1. **No body content beyond what's in the inlines.** Post each comment as an individual inline review comment via `POST /repos/{owner}/{repo}/pulls/{N}/comments`. No review wrapper, no top-level body, no clutter. Works whether or not any comment is `(blocking)`. The GitHub UI loses the "Changes requested" status flag, but each `(blocking)` decoration in the comment body still communicates severity to the author.
 
@@ -305,7 +324,7 @@ For multi-line range, replace `line` with `start_line` + `line` + `start_side` +
 
 Post each via:
 ```bash
-gh api repos/<owner>/<repo>/pulls/<N>/comments -X POST --input /tmp/pr<N>-cmt-<i>.json
+touch .claude/state/pr-post-approved.flag && gh api repos/<owner>/<repo>/pulls/<N>/comments -X POST --input /tmp/pr<N>-cmt-<i>.json
 ```
 
 **Strategy 2 or 3 (review with comments):**
@@ -324,7 +343,7 @@ gh api repos/<owner>/<repo>/pulls/<N>/comments -X POST --input /tmp/pr<N>-cmt-<i
 
 Post via:
 ```bash
-gh api repos/<owner>/<repo>/pulls/<N>/reviews -X POST --input /tmp/pr<N>-review.json
+touch .claude/state/pr-post-approved.flag && gh api repos/<owner>/<repo>/pulls/<N>/reviews -X POST --input /tmp/pr<N>-review.json
 ```
 
 Return the `html_url` from the response.

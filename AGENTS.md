@@ -26,6 +26,7 @@ These are non-negotiable. Violating any of these is a bug.
 - NEVER add Claude/AI as co-author in commits.
 - NEVER commit directly to main. Use feature branches.
 - ALWAYS update the dev log (`docs/logs/`) after making any codebase changes. This is mandatory — not optional. See "Development Logs" section below.
+- NEVER post public-facing GitHub content (PR comments, PR reviews, PR creation, issue comments, issue creation) without an explicit, fresh "post it" (or unambiguous equivalent) from the user in their most recent message. "Okay", "looks good", and stale approval from earlier in the conversation do NOT count. A PreToolUse hook (`.claude/hooks/check-pr-post-approval.sh`) enforces this by blocking the `gh` command unless `.claude/state/pr-post-approved.flag` was touched in the last 30 seconds. Chain the touch with the post command in a single Bash call so the marker is fresh and the intent is auditable.
 
 ## Development Logs (MANDATORY)
 

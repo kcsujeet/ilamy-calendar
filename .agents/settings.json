@@ -42,6 +42,15 @@
 						"command": ".claude/hooks/tdd-reminder.sh"
 					}
 				]
+			},
+			{
+				"matcher": "Bash",
+				"hooks": [
+					{
+						"type": "command",
+						"command": ".claude/hooks/check-pr-post-approval.sh"
+					}
+				]
 			}
 		]
 	}

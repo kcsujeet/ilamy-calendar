@@ -50,7 +50,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	return (
 		<div
 			className={cn(
-				'flex flex-col flex-1 items-center justify-center bg-background relative',
+				'flex flex-col flex-1 items-center min-w-20 justify-center bg-background relative',
 				isLastColumn ? 'border-r-0' : 'border-r',
 				className
 			)}

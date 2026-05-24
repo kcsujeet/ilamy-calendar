@@ -86,6 +86,7 @@ export const WeekView: React.FC = () => {
 		'--visible-days': visibleDays.length,
 	} as React.CSSProperties
 
+	const WidthClass = 'w-full'
 	return (
 		<VerticalGrid
 			allDayRow={
@@ -94,7 +95,11 @@ export const WeekView: React.FC = () => {
 					days={visibleDays}
 				/>
 			}
-			classes={{ header: 'w-full h-18', body: 'w-full' }}
+			classes={{
+				header: `${WidthClass} h-18`,
+				allDay: WidthClass,
+				body: WidthClass,
+			}}
 			columns={[firstCol, ...columns]}
 			gridType="hour"
 			slotDurationMinutes={slotDuration}

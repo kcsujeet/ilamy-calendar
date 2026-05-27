@@ -11,8 +11,7 @@ import { cn } from '@/lib/utils'
 import { getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
-const CELL_CLASS =
-	'w-[calc((100%-4rem)/var(--visible-days))] min-w-[calc((100%-4rem)/var(--visible-days))] flex-1'
+const CELL_CLASS = 'flex-1 min-w-0'
 const LEFT_COL_WIDTH = 'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'
 
 export const WeekView: React.FC = () => {
@@ -56,7 +55,7 @@ export const WeekView: React.FC = () => {
 		id: keys.col.time,
 		days: hours,
 		day: undefined,
-		className: `shrink-0 ${LEFT_COL_WIDTH} sticky left-0 bg-background z-20`,
+		className: `shrink-0 ${LEFT_COL_WIDTH} sticky left-0 bg-background z-20 border-r-0`,
 		gridType: 'hour' as const,
 		noEvents: true,
 		renderCell: (date: Dayjs) => (
@@ -87,6 +86,7 @@ export const WeekView: React.FC = () => {
 		'--visible-days': visibleDays.length,
 	} as React.CSSProperties
 
+	const WidthClass = 'w-full'
 	return (
 		<VerticalGrid
 			allDayRow={
@@ -95,7 +95,11 @@ export const WeekView: React.FC = () => {
 					days={visibleDays}
 				/>
 			}
-			classes={{ header: 'w-full h-18', body: 'w-full' }}
+			classes={{
+				header: `${WidthClass} h-18`,
+				allDay: WidthClass,
+				body: WidthClass,
+			}}
 			columns={[firstCol, ...columns]}
 			gridType="hour"
 			slotDurationMinutes={slotDuration}
@@ -104,7 +108,7 @@ export const WeekView: React.FC = () => {
 		>
 			<div className={'flex h-full flex-1'} data-testid="week-view-header">
 				{/* Corner cell with week number */}
-				<div className="w-10 sm:w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
+				<div className="w-10 sm:w-16 min-w-10 sm:min-w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
 					<div className="flex flex-col items-center justify-center min-w-0 w-full">
 						<span className="text-muted-foreground text-xs truncate w-full text-center">
 							{t('week')}
@@ -123,7 +127,7 @@ export const WeekView: React.FC = () => {
 					return (
 						<AnimatedSection
 							className={cn(
-								'hover:bg-accent flex-1 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-20 h-full',
+								'hover:bg-accent flex-1 min-w-0 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-20 h-full',
 								today && 'bg-primary/10 font-bold'
 							)}
 							data-testid={keys.header.weekday('week', day.format('dddd'))}

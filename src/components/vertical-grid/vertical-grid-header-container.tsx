@@ -19,7 +19,7 @@ const NoMemoVerticalGridHeaderContainer: React.FC<
 			viewHeaderClassName: state.viewHeaderClassName,
 		})
 	)
-
+	const TotalWidthClass = 'min-w-full w-fit'
 	return (
 		<div
 			className={cn(
@@ -29,7 +29,7 @@ const NoMemoVerticalGridHeaderContainer: React.FC<
 			)}
 		>
 			<div
-				className={cn('h-12 border-b min-w-full w-fit', classes?.header)}
+				className={cn('h-12 border-b', TotalWidthClass, classes?.header)}
 				data-testid="vertical-grid-header"
 			>
 				{children}
@@ -38,7 +38,8 @@ const NoMemoVerticalGridHeaderContainer: React.FC<
 			{allDayRow && (
 				<div
 					className={cn(
-						'flex w-full min-h-12',
+						'flex min-h-12',
+						TotalWidthClass,
 						expandAllDayRow && 'flex-1 overflow-hidden',
 						classes?.allDay
 					)}

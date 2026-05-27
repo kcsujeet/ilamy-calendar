@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
+import type { CSSProperties } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
@@ -841,6 +842,91 @@ describe('WeekView', () => {
 
 		const scrollArea = screen.getByTestId('vertical-grid-scroll')
 		expect(scrollArea).toBeInTheDocument()
+	})
+
+	test('Ensure first column has the same width as the time gutter', () => {
+		cleanup()
+		renderWeekView()
+		const WeekViewHeader = screen.getByTestId(`week-view-header`)
+		const timeGutter = screen.getByTestId('vertical-col-time-col')
+		const allDayRow = screen.getByTestId('all-day-row')
+		const firstCellOfAllDayRow = allDayRow.querySelector('div')
+		const firstCellOfWeekViewHeader = WeekViewHeader.querySelector('div')
+		// the time gutter should have the same width as the day columns and the first cell of the all-day row
+		const classNamesToCheck = ['w-10', 'sm:w-16', 'min-w-10', 'sm:min-w-16']
+		classNamesToCheck.forEach((className) => {
+			expect(timeGutter.className).toContain(className)
+		})
+		classNamesToCheck.forEach((className) => {
+			expect(firstCellOfAllDayRow?.className).toContain(className)
+		})
+		classNamesToCheck.forEach((className) => {
+			expect(firstCellOfWeekViewHeader?.className).toContain(className)
+		})
+	})
+
+	test('Ensure gutter has one border right and no more', () => {
+		const WeekViewHeader = screen.getByTestId(`week-view-header`)
+		const timeGutter = screen.getByTestId('vertical-col-time-col')
+		const allDayRow = screen.getByTestId('all-day-row')
+		const firstCellOfAllDayRow = allDayRow.querySelector('div')
+		const firstCellOfWeekViewHeader = WeekViewHeader.querySelector('div')
+		// the time gutter should not have a border
+		expect(timeGutter.className).toContain('border-r-0')
+		// but its cells does have a border
+		const firstCellOfGutter = screen.getByTestId(`vertical-time-00`)
+		expect(firstCellOfGutter.className).toContain('border-r')
+
+		// as should the first cell of all-day row
+		expect(firstCellOfAllDayRow?.className).toContain('border-r')
+
+		// as should the first cell of week view header
+		expect(firstCellOfWeekViewHeader?.className).toContain('border-r')
+	})
+
+	// for last column there is not need of a right border because is on the main container
+	test('Ensure last column does not have a right border', () => {
+		const startOfWeek = initialDate.startOf('week')
+		const lastDay = startOfWeek.add(6, 'day').format('YYYY-MM-DD')
+
+		// on the header
+		const CellOfWeekViewHeader = screen
+			.getByTestId(`week-view-header`)
+			.querySelector('div + div')
+		expect(CellOfWeekViewHeader?.className).toContain('last:border-r-0')
+
+		// on the all-day row
+		const lastCellOfAllDayRow = screen.getByTestId(`day-cell-${lastDay}`)
+		expect(lastCellOfAllDayRow?.className).toContain('last:border-r-0')
+
+		// on the body
+		const lastDayColumn = screen.getByTestId(`vertical-col-day-col-${lastDay}`)
+		expect(lastDayColumn?.className).toContain('border-r-0')
+	})
+
+	test('Ensure column have the same width', () => {
+		const startOfWeek = initialDate.startOf('week')
+		const firstDay = startOfWeek.format('YYYY-MM-DD')
+		const lastCellOfAllDayRow = screen.getByTestId(`day-cell-${firstDay}`)
+		const classNamesToControlWidth = ['flex-1', 'min-w-0']
+		const firstDayColumn = screen.getByTestId(
+			`vertical-col-day-col-${firstDay}`
+		)
+		// on the header
+		const firstDayHeader = screen.getByTestId('week-header-weekday-sunday')
+		classNamesToControlWidth.forEach((className) => {
+			expect(firstDayHeader.className).toContain(className)
+		})
+
+		// on the all-day row
+		classNamesToControlWidth.forEach((className) => {
+			expect(lastCellOfAllDayRow.className).toContain(className)
+		})
+
+		// on the body
+		classNamesToControlWidth.forEach((className) => {
+			expect(firstDayColumn.className).toContain(className)
+		})
 	})
 
 	test('still applies business hours styling when hideNonBusinessHours is false', () => {

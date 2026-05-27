@@ -69,7 +69,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 
 	return (
 		<div
-			className={cn('flex flex-1 relative', className)}
+			className={cn('flex flex-1 relative min-w-0', className)}
 			data-testid={keys.container.horizontal.row(id)}
 		>
 			{isResourceCalendar && resource && (
@@ -85,8 +85,8 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 					)}
 				</ResourceCell>
 			)}
-			<div className="relative flex-1 flex">
-				<div className="flex w-full">
+			<div className="relative flex-1 flex min-w-0">
+				<div className="flex w-full min-w-0">
 					{columns.map((col, index) => {
 						if (col.days) {
 							return (

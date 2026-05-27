@@ -82,6 +82,49 @@ const findBaseEventIndex = (
 const getSeriesTerminationDate = (targetEvent: CalendarEvent): Date =>
 	targetEvent.start.subtract(1, 'day').endOf('day').toDate()
 
+/**
+ * Keeps the calendar day from `target` while applying the time-of-day from `source`.
+ * Used to edit recurring series anchors without shifting the series to an instance day.
+ */
+const withTimeOfDay = (target: Dayjs, source: Dayjs): Dayjs => {
+	const timeOfDayMs = source.diff(source.startOf('day'), 'millisecond')
+	return target.startOf('day').add(timeOfDayMs, 'millisecond')
+}
+
+/**
+ * For scope "all": apply the delta between the edited instance and the submitted
+ * start/end to the base event anchor — avoids shifting the whole series to the
+ * instance's calendar day when the form is opened on e.g. Friday of a Mon–Fri rule.
+ */
+const applyAllScopeUpdates = (
+	baseEvent: CalendarEvent,
+	updates: Partial<CalendarEvent>
+): { start: Dayjs; end: Dayjs; rrule: RRuleOptions | undefined } => {
+	let newStart = baseEvent.start
+	// if the start has changed keep the same calendar day but with the new time
+	if (updates.start) {
+		newStart = withTimeOfDay(baseEvent.start, updates.start)
+	}
+
+	let newEnd = baseEvent.end
+	// ensure the new end is compute so the duration is preserved
+	if (updates.start && updates.end) {
+		newEnd = newStart.add(updates.end.diff(updates.start), 'millisecond')
+	} else if (updates.start) {
+		newEnd = newStart.add(baseEvent.end.diff(baseEvent.start), 'millisecond')
+	} else if (updates.end) {
+		newEnd = withTimeOfDay(baseEvent.end, updates.end)
+	}
+
+	const mergedRrule = updates.rrule ?? baseEvent.rrule
+	let newRrule: RRuleOptions | undefined
+	if (mergedRrule) {
+		newRrule = { ...mergedRrule, dtstart: newStart.toDate() }
+	}
+
+	return { start: newStart, end: newEnd, rrule: newRrule }
+}
+
 interface GenerateRecurringEventsProps {
 	event: CalendarEvent
 	currentEvents: CalendarEvent[]
@@ -281,12 +324,15 @@ export const updateRecurringEvent = ({
 		}
 
 		case 'all': {
-			// "All events" - Update the base recurring event
-			const updatedBaseEvent = {
+			// "All events" - Update the base recurring event (anchor dates, not instance day)
+			const anchored = applyAllScopeUpdates(baseEvent, updates)
+			updatedEvents[baseEventIndex] = {
 				...baseEvent,
 				...updates,
+				start: anchored.start,
+				end: anchored.end,
+				rrule: anchored.rrule,
 			}
-			updatedEvents[baseEventIndex] = updatedBaseEvent
 			break
 		}
 

@@ -25,7 +25,7 @@ These are non-negotiable. Violating any of these is a bug.
 - NEVER import `datetime` from rrule. Use dayjs.
 - NEVER add Claude/AI as co-author in commits.
 - NEVER commit directly to main. Use feature branches.
-- ALWAYS update the dev log (`docs/logs/`) after making any codebase changes. This is mandatory — not optional. See "Development Logs" section below.
+- ALWAYS update the dev log (`docs/logs/`) after making any codebase changes. This is mandatory — not optional. See "Development Logs" section below. Review-only sessions (no `src/` changes) don't require a log entry — the stop hook (`.claude/hooks/check-dev-log.sh`) checks `git diff --quiet HEAD -- src` and skips for clean trees.
 - NEVER post public-facing GitHub content (PR comments, PR reviews, PR creation, issue comments, issue creation) without an explicit, fresh "post it" (or unambiguous equivalent) from the user in their most recent message. "Okay", "looks good", and stale approval from earlier in the conversation do NOT count. A PreToolUse hook (`.claude/hooks/check-pr-post-approval.sh`) enforces this by blocking the `gh` command unless the same Bash command contains the literal substring `touch .claude/state/pr-post-approved.flag` ahead of the gh part. Chain the touch and the post in one command: `touch .claude/state/pr-post-approved.flag && gh ...`. The ritual is the deliberate, auditable bridge between conversational approval and the actual post.
 
 ## Development Logs (MANDATORY)

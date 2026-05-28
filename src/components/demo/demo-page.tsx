@@ -182,11 +182,6 @@ const handleEventDelete = (event: CalendarEvent) => {
 	alert(`Event deleted: ${event.title}`)
 }
 
-const handleDateChange = (date: Dayjs) => {
-	// Date navigation - could trigger other state updates in real apps
-	void date
-}
-
 // Demo resources
 const demoResources: Resource[] = [
 	{
@@ -335,6 +330,12 @@ export function DemoPage() {
 		})
 	}
 
+	// Track the calendar's current date in demo state so navigation persists
+	// across view-type switches (issue #172 repro).
+	const handleDateChange = (date: Dayjs) => {
+		setInitialDate(date)
+	}
+
 	// Resource calendar settings
 	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
 		'horizontal'
@@ -344,7 +345,7 @@ export function DemoPage() {
 		'hourly' | 'daily'
 	>('hourly')
 
-	const calendarKey = `${locale}-${initialView}-${initialDate?.toISOString() || 'today'}-${timeFormat}-${useCustomTimeIndicator}`
+	const calendarKey = `${locale}-${initialView}-${timeFormat}-${useCustomTimeIndicator}`
 
 	// Custom event renderer function — adapts to eventHeight
 	const renderEvent = (event: CalendarEvent) => {

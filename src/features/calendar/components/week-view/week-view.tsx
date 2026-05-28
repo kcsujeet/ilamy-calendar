@@ -139,7 +139,9 @@ export const WeekView: React.FC = () => {
 							}}
 							transitionKey={key}
 						>
-							<div className="text-xs sm:text-sm">{day.format('ddd')}</div>
+							<div className="text-xs sm:text-sm truncate w-full">
+								{day.format('ddd')}
+							</div>
 							<div
 								className={cn(
 									'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',

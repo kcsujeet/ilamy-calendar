@@ -18,7 +18,7 @@ export const ResourceMonthVertical: React.FC = () => {
 		days: daysInMonth,
 		day: undefined,
 		className:
-			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
+			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20 border-r-0',
 		gridType: 'day' as const,
 		noEvents: true,
 		renderCell: (date: Dayjs) => (

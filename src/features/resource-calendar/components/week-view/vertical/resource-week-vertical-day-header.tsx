@@ -39,7 +39,9 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 						key={keys.listKey(key, 'animated')}
 						transitionKey={keys.listKey(key, 'motion')}
 					>
-						<div className="text-sm">{day.format('ddd')}</div>
+						<div className="text-sm truncate w-full text-center">
+							{day.format('ddd')}
+						</div>
 						<div className="text-xs text-muted-foreground">
 							{day.format('M/D')}
 						</div>

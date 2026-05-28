@@ -28,13 +28,15 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 		>
 			{weekDays.map((weekDay, index) => (
 				<AnimatedSection
-					className="py-2 text-center font-medium border-r last:border-r-0 border-b flex-1"
+					className="py-2 text-center font-medium border-r last:border-r-0 border-b flex-1 min-w-0"
 					data-testid={keys.header.weekday('month', weekDay.format('ddd'))}
 					delay={index * 0.05}
 					key={weekDay.toISOString()}
 					transitionKey={weekDay.toISOString()}
 				>
-					<span className="text-sm capitalize">{weekDay.format('ddd')}</span>
+					<span className="text-sm capitalize truncate w-full block">
+						{weekDay.format('ddd')}
+					</span>
 				</AnimatedSection>
 			))}
 		</div>

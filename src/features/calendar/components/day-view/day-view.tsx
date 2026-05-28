@@ -25,7 +25,7 @@ export const DayView = () => {
 		day: undefined,
 		days: hours,
 		className:
-			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20',
+			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20 border-r-0',
 		gridType: 'hour' as const,
 		noEvents: true,
 		renderCell: (date: Dayjs) => (
@@ -63,7 +63,7 @@ export const DayView = () => {
 			>
 				<AnimatedSection
 					className={cn(
-						'flex justify-center items-center text-center text-base font-semibold sm:text-xl',
+						'flex justify-center items-center text-center text-sm font-semibold sm:text-xl',
 						today && 'text-primary'
 					)}
 					transitionKey={getDayKey(currentDate)}

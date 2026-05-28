@@ -38,7 +38,7 @@ export const ResourceWeekHorizontalDayHeader: React.FC<
 								isHourly ? 'sticky left-1/2' : 'w-full text-center'
 							)}
 						>
-							<div className="text-sm">{day.format('ddd')}</div>
+							<div className="text-sm truncate w-full">{day.format('ddd')}</div>
 							<div className="text-xs text-muted-foreground">
 								{day.format('M/D')}
 							</div>

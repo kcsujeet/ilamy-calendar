@@ -63,7 +63,7 @@ export const DayView = () => {
 			>
 				<AnimatedSection
 					className={cn(
-						'flex justify-center items-center text-center text-base font-semibold sm:text-xl',
+						'flex justify-center items-center text-center text-sm font-semibold sm:text-xl',
 						today && 'text-primary'
 					)}
 					transitionKey={getDayKey(currentDate)}

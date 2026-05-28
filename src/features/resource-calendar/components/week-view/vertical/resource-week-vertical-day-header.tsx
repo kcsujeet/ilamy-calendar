@@ -3,6 +3,7 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
+import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
 interface ResourceWeekVerticalDayHeaderProps {
@@ -24,12 +25,14 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 			{columns.map((col, index) => {
 				const day = col.day
 				if (!day) return null
+				const today = isToday(day)
 				const key = keys.header.week.hour(day, col.resourceId ?? '')
 
 				return (
 					<AnimatedSection
 						className={cn(
-							'min-w-20 flex-1 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
+							'min-w-20 flex-1 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background',
+							today && 'bg-primary/10 font-bold'
 						)}
 						data-testid={keys.header.resource.timeLabel(
 							'week',

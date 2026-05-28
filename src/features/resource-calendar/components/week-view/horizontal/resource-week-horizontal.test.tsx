@@ -181,8 +181,8 @@ describe('ResourceWeekHorizontal', () => {
 			const dayHeaders = screen.getAllByTestId('resource-week-day-header')
 			const todayHeader = dayHeaders.find(
 				(header) =>
-					header.classList.contains('bg-blue-50') &&
-					header.classList.contains('text-blue-600')
+					header.className.includes('bg-primary/10') &&
+					header.className.includes('font-bold')
 			)
 			expect(todayHeader).toBeDefined()
 		})
@@ -568,8 +568,8 @@ describe('ResourceWeekHorizontal', () => {
 				const dayHeaders = screen.getAllByTestId('resource-week-day-header')
 				const todayHeader = dayHeaders.find(
 					(header) =>
-						header.classList.contains('bg-blue-50') &&
-						header.classList.contains('text-blue-600')
+						header.className.includes('bg-primary/10') &&
+						header.className.includes('font-bold')
 				)
 				expect(todayHeader).toBeDefined()
 			})

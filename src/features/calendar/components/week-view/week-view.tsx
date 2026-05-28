@@ -144,7 +144,7 @@ export const WeekView: React.FC = () => {
 							</div>
 							<div
 								className={cn(
-									'mx-auto mt-1 flex h-5 w-5 items-center justify-center rounded-full text-xs',
+									'mx-auto mt-1 flex h-6 w-6 items-center justify-center rounded-full text-xs',
 									today && 'bg-primary text-primary-foreground'
 								)}
 							>

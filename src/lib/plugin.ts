@@ -43,7 +43,8 @@ export interface IlamyPlugin {
 	name: string
 	expandEvent?: (
 		event: CalendarEvent,
-		range: PluginDateRange
+		range: PluginDateRange,
+		allEvents: CalendarEvent[]
 	) => CalendarEvent[] | null
 	ownsEvent?: (event: CalendarEvent) => boolean
 	applyEdit?: (args: PluginEditArgs) => CalendarEvent[]
@@ -64,10 +65,11 @@ export interface PluginRuntime {
 const expandOne = (
 	plugins: IlamyPlugin[],
 	event: CalendarEvent,
-	range: PluginDateRange
+	range: PluginDateRange,
+	allEvents: CalendarEvent[]
 ): CalendarEvent[] => {
 	for (const plugin of plugins) {
-		const expanded = plugin.expandEvent?.(event, range)
+		const expanded = plugin.expandEvent?.(event, range, allEvents)
 		if (expanded) {
 			return expanded
 		}
@@ -77,7 +79,7 @@ const expandOne = (
 
 export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({
 	expandEvents: (events, range) =>
-		events.flatMap((event) => expandOne(plugins, event, range)),
+		events.flatMap((event) => expandOne(plugins, event, range, events)),
 	getOwner: (event) => plugins.find((plugin) => plugin.ownsEvent?.(event)),
 	getFormSectionPlugins: () =>
 		plugins.filter((plugin) => Boolean(plugin.renderFormSection)),

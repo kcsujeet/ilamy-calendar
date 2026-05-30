@@ -21,13 +21,15 @@ export const recurrencePlugin = (): IlamyPlugin => ({
 	// (rrule only) since only base events generate occurrences.
 	ownsEvent: (event) => isRecurringEvent(event),
 
-	expandEvent: (event, range) => {
+	expandEvent: (event, range, allEvents) => {
 		if (!event.rrule) {
 			return null
 		}
+		// `allEvents` is required so generateRecurringEvents can find this series'
+		// detached overrides and merge/skip them (parity with the old engine).
 		return generateRecurringEvents({
 			event,
-			currentEvents: [event],
+			currentEvents: allEvents,
 			startDate: range.start,
 			endDate: range.end,
 		})

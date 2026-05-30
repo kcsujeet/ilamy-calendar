@@ -36,6 +36,23 @@ describe('createPluginRuntime', () => {
 		expect(result.map((e) => e.id)).toEqual(['a', 'a-copy'])
 	})
 
+	test('expandEvents forwards the full event list to expandEvent (for override resolution)', () => {
+		let seenAll: CalendarEvent[] | undefined
+		const capturePlugin: IlamyPlugin = {
+			name: 'capture',
+			expandEvent: (e, _range, allEvents) => {
+				seenAll = allEvents
+				return [e]
+			},
+		}
+		const events = [
+			ev('a', '2025-01-05T09:00:00.000Z'),
+			ev('b', '2025-01-06T09:00:00.000Z'),
+		]
+		createPluginRuntime([capturePlugin]).expandEvents(events, range)
+		expect(seenAll?.map((e) => e.id)).toEqual(['a', 'b'])
+	})
+
 	test('expandEvents falls back to overlap default when no plugin claims the event', () => {
 		const runtime = createPluginRuntime([fakePlugin()])
 		const inRange = ev('b', '2025-01-10T09:00:00.000Z')

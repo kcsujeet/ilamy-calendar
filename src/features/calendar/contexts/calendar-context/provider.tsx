@@ -5,7 +5,7 @@ import type { EventFormProps } from '@/components/event-form/event-form'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type {
 	CalendarClassesOverride,
-	CellClickInfo,
+	CellInfo,
 	DateRange,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
@@ -25,7 +25,8 @@ export interface CalendarProviderProps {
 	initialDate?: Dayjs
 	renderEvent?: (event: CalendarEvent) => ReactNode
 	onEventClick?: (event: CalendarEvent) => void
-	onCellClick?: (info: CellClickInfo) => void
+	onCellClick?: (info: CellInfo) => void
+	isCellDisabled?: (info: CellInfo) => boolean
 	onViewChange?: (view: CalendarView) => void
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
@@ -70,6 +71,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	renderEvent,
 	onEventClick,
 	onCellClick,
+	isCellDisabled,
 	onViewChange,
 	onEventAdd,
 	onEventUpdate,
@@ -143,7 +145,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	)
 
 	const handleDateClick = useCallback(
-		(info: CellClickInfo) => {
+		(info: CellInfo) => {
 			if (disableCellClick) {
 				return
 			}
@@ -164,6 +166,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			renderEvent,
 			onEventClick: handleEventClick,
 			onCellClick: handleDateClick,
+			isCellDisabled,
 			locale,
 			timezone,
 			disableCellClick,
@@ -193,6 +196,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 			renderEvent,
 			handleEventClick,
 			handleDateClick,
+			isCellDisabled,
 			locale,
 			timezone,
 			disableCellClick,

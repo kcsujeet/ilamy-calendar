@@ -1,7 +1,6 @@
-// oxlint-disable no-negated-condition
-
 import { useDroppable } from '@dnd-kit/core'
 import type React from 'react'
+import type { CellInfo } from '@/features/calendar/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
@@ -22,6 +21,26 @@ interface DroppableCellProps {
 	disabled?: boolean
 }
 
+/**
+ * The time span a cell represents. Granularity follows the view: a 15-minute
+ * slot (day), a one-hour slot (week), or the whole day (month).
+ */
+function getCellRange(
+	date: Dayjs,
+	hour?: number,
+	minute?: number
+): { start: Dayjs; end: Dayjs } {
+	const start = date.hour(hour ?? 0).minute(minute ?? 0)
+
+	if (hour !== undefined && minute !== undefined) {
+		return { start, end: start.minute(minute + 15) }
+	}
+	if (hour !== undefined) {
+		return { start, end: start.hour(hour + 1).minute(0) }
+	}
+	return { start, end: start.hour(23).minute(59) }
+}
+
 export function DroppableCell({
 	id,
 	type,
@@ -38,44 +57,39 @@ export function DroppableCell({
 }: DroppableCellProps) {
 	const {
 		onCellClick,
+		isCellDisabled,
+		getResourceById,
 		disableDragAndDrop,
 		disableCellClick,
 		classesOverride,
 		view,
 	} = useSmartCalendarContext()
 
+	const { start, end } = getCellRange(date, hour, minute)
+	// `getResourceById` is only present on resource calendars; regular calendars resolve to undefined.
+	const resource = getResourceById?.(resourceId)
+	const cellInfo: CellInfo = { start, end, resource, allDay }
+
+	// Disabled by business hours (`disabled` prop) or the consumer's predicate.
+	const cellDisabled = disabled || Boolean(isCellDisabled?.(cellInfo))
+	const clickBlocked = disableCellClick || cellDisabled
+
 	const { isOver, setNodeRef } = useDroppable({
 		id,
-		data: {
-			type,
-			date,
-			hour,
-			minute,
-			resourceId,
-			allDay,
-		},
-		disabled: disableDragAndDrop || disabled,
+		data: { type, date, hour, minute, resourceId, allDay },
+		disabled: disableDragAndDrop || cellDisabled,
 	})
 
 	const handleCellClick = (e: React.MouseEvent) => {
 		e.stopPropagation()
-
-		if (disableCellClick || disabled) {
+		if (clickBlocked) {
 			return
 		}
-
-		const start = date.hour(hour ?? 0).minute(minute ?? 0)
-		let end = start.clone()
-		if (hour !== undefined && minute !== undefined) {
-			end = end.hour(hour).minute(minute + 15) // day view time slots are 15 minutes
-		} else if (hour !== undefined) {
-			end = end.hour(hour + 1).minute(0) // week view time slots are 1 hour
-		} else {
-			end = end.hour(23).minute(59) // month view full day
-		}
-
-		onCellClick({ start, end, resourceId, allDay })
+		onCellClick(cellInfo)
 	}
+
+	const showDropHighlight = isOver && !disableDragAndDrop && !cellDisabled
+	const disabledClass = classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME
 
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: The cell is interactive for event creation
@@ -84,11 +98,11 @@ export function DroppableCell({
 			className={cn(
 				'droppable-cell',
 				className,
-				isOver && !disableDragAndDrop && !disabled && 'bg-accent',
-				disableCellClick || disabled ? 'cursor-default' : 'cursor-pointer',
-				disabled && (classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME)
+				showDropHighlight && 'bg-accent',
+				clickBlocked ? 'cursor-default' : 'cursor-pointer',
+				cellDisabled && disabledClass
 			)}
-			data-disabled={disabled.toString()}
+			data-disabled={cellDisabled.toString()}
 			data-testid={dataTestId}
 			data-view={view}
 			onClick={handleCellClick}

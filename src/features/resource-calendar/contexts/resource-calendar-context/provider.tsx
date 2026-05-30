@@ -4,7 +4,7 @@ import type { CalendarEvent } from '@/components/types'
 import type { CalendarProviderProps } from '@/features/calendar/contexts/calendar-context/provider'
 import type {
 	CalendarClassesOverride,
-	CellClickInfo,
+	CellInfo,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
@@ -52,6 +52,7 @@ export const ResourceCalendarProvider: React.FC<
 	renderEvent,
 	onEventClick,
 	onCellClick,
+	isCellDisabled,
 	onViewChange,
 	onEventAdd,
 	onEventUpdate,
@@ -123,7 +124,10 @@ export const ResourceCalendarProvider: React.FC<
 	)
 
 	const getResourceById = useCallback(
-		(resourceId: string | number): Resource | undefined => {
+		(resourceId: string | number | undefined): Resource | undefined => {
+			if (resourceId === undefined) {
+				return undefined
+			}
 			return resources.find((resource) => resource.id === resourceId)
 		},
 		[resources]
@@ -158,7 +162,7 @@ export const ResourceCalendarProvider: React.FC<
 	)
 
 	const handleDateClick = useCallback(
-		(info: CellClickInfo) => {
+		(info: CellInfo) => {
 			if (disableCellClick) {
 				return
 			}
@@ -174,8 +178,8 @@ export const ResourceCalendarProvider: React.FC<
 					allDay: false,
 				} as CalendarEvent
 
-				if (info.resourceId !== undefined) {
-					newEvent.resourceId = info.resourceId
+				if (info.resource !== undefined) {
+					newEvent.resourceId = info.resource.id
 				}
 
 				calendarEngine.setSelectedEvent(newEvent)
@@ -202,6 +206,7 @@ export const ResourceCalendarProvider: React.FC<
 			onEventClick: handleEventClick,
 			onCellClick: handleDateClick,
 			// Pass-through props
+			isCellDisabled,
 			renderEvent,
 			renderResource,
 			renderEventForm,
@@ -239,6 +244,7 @@ export const ResourceCalendarProvider: React.FC<
 			isEventCrossResource,
 			handleEventClick,
 			handleDateClick,
+			isCellDisabled,
 			renderEvent,
 			renderResource,
 			renderEventForm,

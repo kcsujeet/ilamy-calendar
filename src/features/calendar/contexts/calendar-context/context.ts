@@ -3,7 +3,7 @@ import type { EventFormProps } from '@/components/event-form/event-form'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type {
 	CalendarClassesOverride,
-	CellClickInfo,
+	CellInfo,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
@@ -45,7 +45,8 @@ export interface CalendarContextType {
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
 	renderEvent?: (event: CalendarEvent) => React.ReactNode
 	onEventClick: (event: CalendarEvent) => void
-	onCellClick: (info: CellClickInfo) => void
+	onCellClick: (info: CellInfo) => void
+	isCellDisabled?: (info: CellInfo) => boolean
 	currentLocale?: string
 	timezone?: string
 	disableCellClick?: boolean

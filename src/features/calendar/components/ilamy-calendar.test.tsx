@@ -644,7 +644,7 @@ describe('IlamyCalendar', () => {
 			expect(callArgs.end.hour()).toBe(23)
 			expect(callArgs.end.minute()).toBe(59)
 			expect(callArgs.allDay).toBe(false)
-			expect(callArgs.resourceId).toBeUndefined()
+			expect(callArgs.resource).toBeUndefined()
 		})
 
 		it('should call onCellClick with correct hour in week view', async () => {
@@ -668,7 +668,7 @@ describe('IlamyCalendar', () => {
 			// Week view time slots are 1 hour (minute is undefined)
 			expect(callArgs.end.toISOString()).toBe('2025-01-15T11:00:00.000Z')
 			expect(callArgs.allDay).toBe(false)
-			expect(callArgs.resourceId).toBeUndefined()
+			expect(callArgs.resource).toBeUndefined()
 		})
 
 		it('should call onCellClick with correct arguments in day view', async () => {
@@ -694,7 +694,7 @@ describe('IlamyCalendar', () => {
 			// slotDuration=15 → end is 15 minutes after start
 			expect(callArgs.end.toISOString()).toBe('2025-01-15T14:15:00.000Z')
 			expect(callArgs.allDay).toBe(false)
-			expect(callArgs.resourceId).toBeUndefined()
+			expect(callArgs.resource).toBeUndefined()
 		})
 	})
 
@@ -846,6 +846,34 @@ describe('IlamyCalendar', () => {
 			// Should NOT have default classes
 			expect(nonBusinessTimeCell).not.toHaveClass('bg-secondary')
 			expect(nonBusinessTimeCell).not.toHaveClass('text-muted-foreground')
+		})
+	})
+
+	describe('isCellDisabled (issue #79)', () => {
+		it('disables the matching cell and blocks its click in month view', () => {
+			const onCellClick = mock()
+			render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialView="month"
+					isCellDisabled={(info) => info.start.date() === 20}
+					onCellClick={onCellClick}
+				/>
+			)
+
+			const disabledCell = screen.getByTestId('day-cell-2025-01-20')
+			const enabledCell = screen.getByTestId('day-cell-2025-01-15')
+
+			expect(disabledCell.getAttribute('data-disabled')).toBe('true')
+			expect(enabledCell.getAttribute('data-disabled')).toBe('false')
+
+			// Disabled cell blocks creation; enabled cell still fires onCellClick.
+			fireEvent.click(disabledCell)
+			expect(onCellClick).toHaveBeenCalledTimes(0)
+
+			fireEvent.click(enabledCell)
+			expect(onCellClick).toHaveBeenCalledTimes(1)
 		})
 	})
 })

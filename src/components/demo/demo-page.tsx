@@ -3,7 +3,7 @@ import type { CalendarEvent, WeekDays } from '@/components/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
 import type {
-	CellClickInfo,
+	CellInfo,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
@@ -166,7 +166,7 @@ const handleEventClick = (event: CalendarEvent) => {
 	alert(`Event clicked: ${event.title}`)
 }
 
-const handleDateClick = (info: CellClickInfo) => {
+const handleDateClick = (info: CellInfo) => {
 	alert(JSON.stringify(info))
 }
 

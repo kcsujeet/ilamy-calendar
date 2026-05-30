@@ -50,14 +50,14 @@ export interface DateRange {
 	end: Dayjs
 }
 
-export interface CellClickInfo {
-	/** Start date/time of the clicked cell */
+export interface CellInfo {
+	/** Start date/time of the cell */
 	start: Dayjs
-	/** End date/time of the clicked cell */
+	/** End date/time of the cell */
 	end: Dayjs
-	/** Resource ID if clicking on a resource calendar cell (optional) */
-	resourceId?: string | number
-	/** Whether the clicked cell is an all-day cell (optional) */
+	/** Full resource object in resource calendars; undefined in a regular calendar */
+	resource?: Resource
+	/** Whether this is an all-day cell (optional) */
 	allDay?: boolean
 }
 
@@ -130,7 +130,15 @@ export interface IlamyCalendarProps {
 	 * Callback when a calendar cell is clicked.
 	 * Provides cell information including start/end dates and optional resourceId.
 	 */
-	onCellClick?: (info: CellClickInfo) => void
+	onCellClick?: (info: CellInfo) => void
+	/**
+	 * Predicate to disable individual cells based on custom logic (holidays,
+	 * days-off, past dates, on-call windows, etc.). Return `true` to disable a
+	 * cell — disabled cells block event creation clicks, reject drag-drops, and
+	 * are grayed out. Composes with `businessHours` (a cell is disabled if either
+	 * business hours or this predicate disables it).
+	 */
+	isCellDisabled?: (info: CellInfo) => boolean
 	/**
 	 * Callback when the calendar view changes (month, week, day, year).
 	 * Useful for syncing with external state or analytics.

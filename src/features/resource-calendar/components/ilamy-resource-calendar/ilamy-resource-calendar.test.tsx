@@ -472,7 +472,7 @@ describe('IlamyResourceCalendar', () => {
 			// Resource Horizontal day view uses 1 hour slots (minute is undefined)
 			expect(callArgs.end.toISOString()).toBe('2025-08-04T11:00:00.000Z')
 			expect(callArgs.allDay).toBe(false)
-			expect(callArgs.resourceId).toBe(resourceId)
+			expect(callArgs.resource?.id).toBe(resourceId)
 		})
 
 		it('should call onCellClick with correct arguments in month view', async () => {
@@ -501,7 +501,7 @@ describe('IlamyResourceCalendar', () => {
 			expect(callArgs.end.hour()).toBe(23)
 			expect(callArgs.end.minute()).toBe(59)
 			expect(callArgs.allDay).toBe(false)
-			expect(callArgs.resourceId).toBe(resourceId)
+			expect(callArgs.resource?.id).toBe(resourceId)
 		})
 	})
 
@@ -1065,6 +1065,40 @@ describe('IlamyResourceCalendar', () => {
 			expect(screen.getByText('Court #1')).toBeInTheDocument()
 			expect(screen.queryByText('Court #2')).not.toBeInTheDocument()
 			expect(screen.getByText('Court #3')).toBeInTheDocument()
+		})
+	})
+
+	describe('isCellDisabled (issue #79)', () => {
+		it('disables the matching cell and passes the full resource', () => {
+			const onCellClick = mock()
+			const seenResourceIds: Array<string | number | undefined> = []
+
+			render(
+				<IlamyResourceCalendar
+					events={[]}
+					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="month"
+					isCellDisabled={(info) => {
+						seenResourceIds.push(info.resource?.id)
+						return info.start.date() === 10
+					}}
+					onCellClick={onCellClick}
+					resources={[mockResources[0]]}
+				/>
+			)
+
+			const row = screen.getByTestId('horizontal-row-resource-1')
+			const disabledCell = within(row).getByTestId('day-cell-2025-08-10')
+			const enabledCell = within(row).getByTestId('day-cell-2025-08-04')
+
+			expect(disabledCell.getAttribute('data-disabled')).toBe('true')
+			expect(enabledCell.getAttribute('data-disabled')).toBe('false')
+
+			fireEvent.click(disabledCell)
+			expect(onCellClick).toHaveBeenCalledTimes(0)
+
+			// The predicate received the full resource object, not just the id.
+			expect(seenResourceIds).toContain('resource-1')
 		})
 	})
 })

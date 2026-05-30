@@ -19,7 +19,8 @@ These are non-negotiable. Violating any of these is a bug.
 - NEVER start/stop the dev server. It's already running with hot reload.
 - NEVER commit or push without explicit user approval.
 - NEVER skip writing tests. TDD is mandatory.
-- NEVER use npm/node/vite/pnpm. Always use `bun`.
+- NEVER use npm/node/pnpm as the package manager or runtime. Always use `bun` (invoke tools via `bunx`, e.g. the demo dev server runs `bunx vite`).
+- ALWAYS use the latest published version when adding a dependency. Check `npm view <pkg> version` for the true latest — never copy version numbers from existing in-repo examples or from memory. Verify peer/engine compatibility and confirm the new major has no breaking changes for the APIs used (per the docs-first rule).
 - NEVER use `YYYY-MM-DD` format for storage/transmission. Always use ISO strings.
 - NEVER import dayjs directly. Always import from `@/lib/dayjs-config`.
 - NEVER import `datetime` from rrule. Use dayjs.

@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.8.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.7.0...v1.8.0)
+
+> 30 May 2026
+
+##### Notes
+
+- The month-name and day-name translation keys (`january`–`december`, `monday`–`sunday`, `mon`–`sun`) have been **removed** from the `Translations` type. Month and weekday names are now localized through the dayjs locale instead of translation overrides — import the locale and set the `locale` prop (e.g. `import 'dayjs/locale/de'` then `locale="de"`). Custom `translations` for these specific keys no longer apply.
+
+##### Features
+
+- feat: add `hideExportButton` prop to hide the calendar's Export button ([`#164`](https://github.com/kcsujeet/ilamy-calendar/pull/164)) — Thanks [@maxdelorme](https://github.com/maxdelorme)! — Closes [`#163`](https://github.com/kcsujeet/ilamy-calendar/issues/163)
+
+##### Fixes
+
+- fix: `IlamyResourceCalendar` now reflects changes to the `resources` prop after mount instead of requiring a full remount ([`#154`](https://github.com/kcsujeet/ilamy-calendar/pull/154)) — Closes [`#153`](https://github.com/kcsujeet/ilamy-calendar/issues/153)
+- fix: localization — day/week view headers, the week-range title, the date picker, and the recurrence editor now follow the active dayjs locale ([`#124`](https://github.com/kcsujeet/ilamy-calendar/pull/124)) — Thanks [@maxdelorme](https://github.com/maxdelorme)! — Closes [`#141`](https://github.com/kcsujeet/ilamy-calendar/issues/141), [`#142`](https://github.com/kcsujeet/ilamy-calendar/issues/142), [`#143`](https://github.com/kcsujeet/ilamy-calendar/issues/143), [`#144`](https://github.com/kcsujeet/ilamy-calendar/issues/144), [`#145`](https://github.com/kcsujeet/ilamy-calendar/issues/145), [`#146`](https://github.com/kcsujeet/ilamy-calendar/issues/146), [`#147`](https://github.com/kcsujeet/ilamy-calendar/issues/147), [`#148`](https://github.com/kcsujeet/ilamy-calendar/issues/148)
+- fix: editing a recurring series with scope "all" no longer drops the occurrences before the edited event ([`#161`](https://github.com/kcsujeet/ilamy-calendar/pull/161)) — Thanks [@maxdelorme](https://github.com/maxdelorme)! — Closes [`#150`](https://github.com/kcsujeet/ilamy-calendar/issues/150)
+- fix: event title, description, and location inputs keep focus while typing ([`#128`](https://github.com/kcsujeet/ilamy-calendar/pull/128)) — Thanks [@maxdelorme](https://github.com/maxdelorme)! — Closes [`#166`](https://github.com/kcsujeet/ilamy-calendar/issues/166)
+- fix: calendar body height is now dynamic instead of fixed ([`#135`](https://github.com/kcsujeet/ilamy-calendar/pull/135)) — Thanks [@maxdelorme](https://github.com/maxdelorme)!
+- fix: week-view day columns align to equal width, including the all-day row and header in the vertical resource week view ([`#169`](https://github.com/kcsujeet/ilamy-calendar/pull/169)) — Thanks [@maxdelorme](https://github.com/maxdelorme)! — Closes [`#160`](https://github.com/kcsujeet/ilamy-calendar/issues/160)
+- fix: compact, locale-aware week range in the header (e.g. `May 24 – 30`) ([`#167`](https://github.com/kcsujeet/ilamy-calendar/pull/167))
+- fix: apply the "today" highlight consistently in the resource week view ([`#175`](https://github.com/kcsujeet/ilamy-calendar/pull/175)) — Closes [`#159`](https://github.com/kcsujeet/ilamy-calendar/issues/159)
+- fix: resource week view headers show only the day number, matching the standard week view ([`#178`](https://github.com/kcsujeet/ilamy-calendar/pull/178)) — Closes [`#157`](https://github.com/kcsujeet/ilamy-calendar/issues/157)
+- fix: hide the current-time line in day-resolution vertical views (resource month, resource week daily), where a sub-day line is meaningless ([`#179`](https://github.com/kcsujeet/ilamy-calendar/pull/179)) — Closes [`#123`](https://github.com/kcsujeet/ilamy-calendar/issues/123)
+- fix: consistent cell borders across views, plus improved font sizing and label truncation on narrow viewports ([`#174`](https://github.com/kcsujeet/ilamy-calendar/pull/174))
+
 #### [v1.7.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.6.3...v1.7.0)
 
 > 18 May 2026

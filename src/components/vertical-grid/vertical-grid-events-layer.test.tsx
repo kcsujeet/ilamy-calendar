@@ -44,6 +44,7 @@ const renderEventsLayer = (props: {
 	days: Dayjs[]
 	resource?: Resource
 	view?: CalendarView
+	gridType?: 'day' | 'hour'
 	'data-testid'?: string
 }) => {
 	return render(
@@ -67,6 +68,36 @@ describe('VerticalGridEventsLayer', () => {
 		renderEventsLayer({ days: hours, 'data-testid': 'events-layer' })
 
 		expect(screen.getByTestId('current-time-indicator')).toBeInTheDocument()
+	})
+
+	test('renders the indicator in hour-resolution grids', () => {
+		const now = dayjs()
+		const rangeStart = now.startOf('hour')
+
+		renderEventsLayer({
+			days: [rangeStart],
+			gridType: 'hour',
+			'data-testid': 'events-layer',
+		})
+
+		expect(screen.getByTestId('current-time-indicator')).toBeInTheDocument()
+	})
+
+	test('does not render the indicator in day-resolution grids (issue #123)', () => {
+		// Day-resolution vertical views (resource month, resource week daily) span
+		// whole days, so a sub-day "now" line is meaningless and should be hidden,
+		// even though the current day is within range.
+		const today = dayjs().startOf('day')
+
+		renderEventsLayer({
+			days: [today],
+			gridType: 'day',
+			'data-testid': 'events-layer',
+		})
+
+		expect(
+			screen.queryByTestId('current-time-indicator')
+		).not.toBeInTheDocument()
 	})
 
 	test('does not render current time indicator when current time is outside range', () => {

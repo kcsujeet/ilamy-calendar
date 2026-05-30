@@ -57,6 +57,18 @@ describe('ResourceWeekHorizontal', () => {
 			expect(dayHeaders.length).toBe(7)
 		})
 
+		test('day headers show only the day number, not the M/D slash format (issue #157)', () => {
+			renderResourceWeekHorizontal()
+
+			// No header should render the M/D slash format (e.g. "1/1", "12/29")
+			expect(screen.queryAllByText(/^\d{1,2}\/\d{1,2}$/)).toHaveLength(0)
+
+			// Jan 1 2025 is a Wednesday; its header shows the bare day number "1"
+			const dayHeaders = screen.getAllByTestId('resource-week-day-header')
+			const wednesday = dayHeaders.find((h) => h.textContent?.includes('Wed'))
+			expect(wednesday?.textContent).toBe('Wed1')
+		})
+
 		test('renders time labels for each hour', () => {
 			renderResourceWeekHorizontal()
 

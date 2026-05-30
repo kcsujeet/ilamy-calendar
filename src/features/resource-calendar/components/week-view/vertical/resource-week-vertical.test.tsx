@@ -51,6 +51,24 @@ describe('ResourceWeekVertical', () => {
 		expect(screen.getByTestId('vertical-col-time-col')).toBeInTheDocument()
 	})
 
+	test('day headers show only the day number, not the M/D slash format (issue #157)', () => {
+		renderResourceWeekVertical()
+
+		// No header should render the M/D slash format (e.g. "1/1", "12/29")
+		expect(screen.queryAllByText(/^\d{1,2}\/\d{1,2}$/)).toHaveLength(0)
+
+		// Weekday labels still render, so the headers themselves are intact
+		expect(screen.getAllByText('Wed').length).toBeGreaterThan(0)
+	})
+
+	test('daily-mode day column shows only the day number, not M/D (issue #157)', () => {
+		renderResourceWeekVertical({ weekViewGranularity: 'daily' })
+
+		// The daily-mode first column must not use the M/D slash format either
+		expect(screen.queryAllByText(/^\d{1,2}\/\d{1,2}$/)).toHaveLength(0)
+		expect(screen.getAllByText('Wed').length).toBeGreaterThan(0)
+	})
+
 	test('renders day columns for each resource', () => {
 		renderResourceWeekVertical()
 
@@ -343,10 +361,14 @@ describe('ResourceWeekVertical', () => {
 			test('shows week number in the header in daily mode', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'daily' })
 
-				// Header renders "Week" label and week number as separate spans
+				// Header renders "Week" label and week number as sibling spans in the
+				// same gutter. Scope to that gutter so the week number isn't confused
+				// with a bare day number now that day headers show only "D" (issue #157).
 				const weekNumber = initialDate.week()
-				expect(screen.getByText('Week')).toBeInTheDocument()
-				expect(screen.getByText(String(weekNumber))).toBeInTheDocument()
+				const weekLabel = screen.getByText('Week')
+				expect(weekLabel.parentElement?.textContent).toContain(
+					String(weekNumber)
+				)
 			})
 
 			test('firstCol (date-col) shows day name + date for each day of the week', () => {

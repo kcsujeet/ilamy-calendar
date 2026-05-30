@@ -34,7 +34,7 @@ export const ResourceWeekVertical: React.FC = () => {
 					) : (
 						<>
 							<span>{date.format('ddd')}</span>
-							<span>{date.format('M/D')}</span>
+							<span>{date.format('D')}</span>
 						</>
 					)}
 				</div>

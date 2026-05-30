@@ -46,7 +46,7 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 							{day.format('ddd')}
 						</div>
 						<div className="text-xs text-muted-foreground">
-							{day.format('M/D')}
+							{day.format('D')}
 						</div>
 					</AnimatedSection>
 				)

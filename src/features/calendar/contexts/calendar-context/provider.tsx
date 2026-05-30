@@ -13,6 +13,7 @@ import type {
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
+import type { IlamyPlugin } from '@/lib/plugin'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 import { CalendarContext } from './context'
@@ -60,6 +61,7 @@ export interface CalendarProviderProps {
 	hiddenDays?: Set<number>
 	slotDuration?: SlotDuration
 	scrollTime?: string
+	plugins?: IlamyPlugin[]
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -102,6 +104,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	hiddenDays,
 	slotDuration = 60,
 	scrollTime,
+	plugins,
 }) => {
 	// Use the calendar engine
 	const calendarEngine = useCalendarEngine({
@@ -119,6 +122,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 		timezone,
 		translations,
 		translator,
+		plugins,
 	})
 
 	const editEvent = useCallback(

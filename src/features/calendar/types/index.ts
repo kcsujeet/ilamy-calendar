@@ -3,6 +3,7 @@ import type { EventFormProps } from '@/components/event-form/event-form'
 import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
 import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { IlamyPlugin } from '@/lib/plugin'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
@@ -375,4 +376,9 @@ export interface IlamyCalendarProps {
 	 * ```
 	 */
 	scrollTime?: string
+	/**
+	 * Optional plugins that add behavior/UI (e.g. recurrence). Defaults to the
+	 * built-in recurrence plugin when omitted.
+	 */
+	plugins?: IlamyPlugin[]
 }

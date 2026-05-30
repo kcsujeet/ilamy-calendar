@@ -9,6 +9,7 @@ import type {
 } from '@/features/calendar/types'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { IlamyPlugin } from '@/lib/plugin'
 import type { TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
@@ -42,6 +43,8 @@ export interface CalendarContextType {
 	openEventForm: (eventData?: Partial<CalendarEvent>) => void
 	closeEventForm: () => void
 	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
+	getOwner: (event: CalendarEvent) => IlamyPlugin | undefined
+	getFormSectionPlugins: () => IlamyPlugin[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
 	renderEvent?: (event: CalendarEvent) => React.ReactNode
 	onEventClick: (event: CalendarEvent) => void

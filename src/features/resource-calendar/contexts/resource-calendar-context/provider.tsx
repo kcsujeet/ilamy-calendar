@@ -86,6 +86,7 @@ export const ResourceCalendarProvider: React.FC<
 	weekViewGranularity = 'hourly',
 	slotDuration = 60,
 	scrollTime,
+	plugins,
 }) => {
 	// Use the calendar engine
 	const calendarEngine = useCalendarEngine({
@@ -103,6 +104,7 @@ export const ResourceCalendarProvider: React.FC<
 		timezone,
 		translations,
 		translator,
+		plugins,
 	})
 
 	// Event utilities — both filters go through getEventResourceIds so single

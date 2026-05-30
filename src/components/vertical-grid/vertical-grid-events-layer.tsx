@@ -25,13 +25,17 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	const todayEvents = useProcessedDayEvents({ days, gridType, resourceId })
 	const rangeStart = days.at(0)
 	const rangeEnd = days.at(-1)?.add(1, gridType)
+	// Only show the "now" line in hour-resolution grids. In day-resolution
+	// vertical views (resource month, resource week daily) a sub-day percentage
+	// line is meaningless, so suppress it — mirrors the horizontal events layer.
+	const showNowLine = gridType === 'hour' && Boolean(rangeStart && rangeEnd)
 
 	return (
 		<div
 			className="relative w-full h-full pointer-events-none z-10 overflow-clip"
 			data-testid={dataTestId}
 		>
-			{rangeStart && rangeEnd && (
+			{showNowLine && rangeStart && rangeEnd && (
 				<CurrentTimeIndicator
 					rangeEnd={rangeEnd}
 					rangeStart={rangeStart}

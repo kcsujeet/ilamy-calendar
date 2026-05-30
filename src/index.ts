@@ -5,7 +5,7 @@ export type { EventFormProps } from './components/event-form/event-form'
 export type { BusinessHours, CalendarEvent, WeekDays } from './components/types'
 export { IlamyCalendar } from './features/calendar/components/ilamy-calendar'
 export type {
-	CellClickInfo,
+	CellInfo,
 	IlamyCalendarProps,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,

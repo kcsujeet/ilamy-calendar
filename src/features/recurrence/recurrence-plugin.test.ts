@@ -20,8 +20,25 @@ const base: CalendarEvent = {
 describe('recurrencePlugin', () => {
 	test('ownsEvent is true for events with an rrule', () => {
 		const plugin = recurrencePlugin()
+		// Parity with the previous `isRecurringEvent` gate: an event is "owned"
+		// if it has an rrule (base), a recurrenceId (modified instance), or a uid
+		// (generated instance). A plain event with none of those is not owned.
 		expect(plugin.ownsEvent?.(base)).toBe(true)
-		expect(plugin.ownsEvent?.({ ...base, rrule: undefined })).toBe(false)
+		expect(
+			plugin.ownsEvent?.({
+				...base,
+				rrule: undefined,
+				recurrenceId: '2025-01-08T09:00:00.000Z',
+				uid: undefined,
+			})
+		).toBe(true)
+		const plain = {
+			id: 'plain',
+			title: 'Plain',
+			start: base.start,
+			end: base.end,
+		} as CalendarEvent
+		expect(plugin.ownsEvent?.(plain)).toBe(false)
 	})
 
 	test('expandEvent returns occurrences for an rrule event', () => {

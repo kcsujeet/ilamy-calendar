@@ -5,6 +5,7 @@ import type { RecurrenceEditScope } from './types'
 import {
 	deleteRecurringEvent,
 	generateRecurringEvents,
+	isRecurringEvent,
 	updateRecurringEvent,
 } from './utils/recurrence-handler'
 
@@ -15,7 +16,10 @@ import {
 export const recurrencePlugin = (): IlamyPlugin => ({
 	name: 'recurrence',
 
-	ownsEvent: (event) => Boolean(event.rrule),
+	// Matches the previous `isRecurringEvent` gate exactly (rrule, recurrenceId,
+	// or uid) so drag/edit routing behaves identically. `expandEvent` is narrower
+	// (rrule only) since only base events generate occurrences.
+	ownsEvent: (event) => isRecurringEvent(event),
 
 	expandEvent: (event, range) => {
 		if (!event.rrule) {

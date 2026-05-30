@@ -1,19 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
+import { recurrencePlugin } from '@/features/recurrence/recurrence-plugin'
 import type { RecurrenceEditOptions } from '@/features/recurrence/types'
-import {
-	deleteRecurringEvent as deleteRecurringEventImpl,
-	generateRecurringEvents,
-	updateRecurringEvent as updateRecurringEventImpl,
-} from '@/features/recurrence/utils/recurrence-handler'
 import dayjs, {
 	type Dayjs,
 	type ManipulateType,
 } from '@/lib/configs/dayjs-config'
+import { createPluginRuntime, type IlamyPlugin } from '@/lib/plugin'
 import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
-import { eventOverlapsRange } from '@/lib/utils/event-utils'
 import type { CalendarView } from '@/types'
 import { DAY_MAX_EVENTS_DEFAULT } from '../lib/constants'
 
@@ -32,6 +28,7 @@ export interface CalendarEngineConfig {
 	timezone?: string
 	translations?: Translations
 	translator?: TranslatorFunction
+	plugins?: IlamyPlugin[]
 }
 
 export interface CalendarEngineReturn {
@@ -70,6 +67,8 @@ export interface CalendarEngineReturn {
 	setIsEventFormOpen: React.Dispatch<React.SetStateAction<boolean>>
 	setSelectedDate: React.Dispatch<React.SetStateAction<Dayjs | null>>
 	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
+	getOwner: (event: CalendarEvent) => IlamyPlugin | undefined
+	getFormSectionPlugins: () => IlamyPlugin[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
 	t: TranslatorFunction
 }
@@ -118,6 +117,9 @@ export const useCalendarEngine = (
 		translator,
 	} = config
 
+	const { plugins = [recurrencePlugin()] } = config
+	const pluginRuntime = useMemo(() => createPluginRuntime(plugins), [plugins])
+
 	const [currentDate, setCurrentDate] = useState<Dayjs>(
 		dayjs.isDayjs(initialDate) ? initialDate : dayjs(initialDate)
 	)
@@ -138,26 +140,12 @@ export const useCalendarEngine = (
 	}, [translations, translator])
 
 	const getEventsForDateRange = useCallback(
-		(startDate: Dayjs, endDate: Dayjs): CalendarEvent[] => {
-			const allEvents: CalendarEvent[] = []
-
-			for (const event of currentEvents) {
-				if (event.rrule) {
-					allEvents.push(
-						...generateRecurringEvents({
-							event,
-							currentEvents,
-							startDate,
-							endDate,
-						})
-					)
-				} else if (eventOverlapsRange(event, startDate, endDate)) {
-					allEvents.push(event)
-				}
-			}
-			return allEvents
-		},
-		[currentEvents]
+		(startDate: Dayjs, endDate: Dayjs): CalendarEvent[] =>
+			pluginRuntime.expandEvents(currentEvents, {
+				start: startDate,
+				end: endDate,
+			}),
+		[currentEvents, pluginRuntime]
 	)
 
 	const getCurrentViewRange = useCallback(() => {
@@ -260,31 +248,35 @@ export const useCalendarEngine = (
 			updates: Partial<CalendarEvent>,
 			options: RecurrenceEditOptions
 		) => {
+			const owner = pluginRuntime.getOwner(event)
+			if (!owner?.applyEdit) {
+				return
+			}
 			onEventUpdate?.({ ...event, ...updates })
 			setCurrentEvents(
-				updateRecurringEventImpl({
-					targetEvent: event,
+				owner.applyEdit({
+					event,
 					updates,
 					currentEvents,
 					scope: options.scope,
 				})
 			)
 		},
-		[currentEvents, onEventUpdate]
+		[currentEvents, onEventUpdate, pluginRuntime]
 	)
 
 	const deleteRecurringEvent = useCallback(
 		(event: CalendarEvent, options: RecurrenceEditOptions) => {
+			const owner = pluginRuntime.getOwner(event)
+			if (!owner?.applyDelete) {
+				return
+			}
 			onEventDelete?.(event)
 			setCurrentEvents(
-				deleteRecurringEventImpl({
-					targetEvent: event,
-					currentEvents,
-					scope: options.scope,
-				})
+				owner.applyDelete({ event, currentEvents, scope: options.scope })
 			)
 		},
-		[currentEvents, onEventDelete]
+		[currentEvents, onEventDelete, pluginRuntime]
 	)
 
 	const deleteEvent = useCallback(
@@ -377,6 +369,8 @@ export const useCalendarEngine = (
 		setIsEventFormOpen,
 		setSelectedDate,
 		getEventsForDateRange,
+		getOwner: pluginRuntime.getOwner,
+		getFormSectionPlugins: pluginRuntime.getFormSectionPlugins,
 		findParentRecurringEvent,
 		t,
 	}

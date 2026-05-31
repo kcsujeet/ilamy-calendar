@@ -1,4 +1,4 @@
-import type { RRuleOptions } from '@/features/recurrence/types'
+import type { RRuleOptions } from '@/features/plugins/recurrence/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 
 /**

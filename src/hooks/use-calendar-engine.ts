@@ -1,12 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
-import { recurrencePlugin } from '@/features/recurrence/recurrence-plugin'
-import type { RecurrenceEditOptions } from '@/features/recurrence/types'
+import { createPluginRuntime } from '@/features/plugins/lib/create-plugin-runtime'
+import type { IlamyPlugin } from '@/features/plugins/lib/types'
+import { recurrencePlugin } from '@/features/plugins/recurrence/recurrence-plugin'
+import type { RecurrenceEditOptions } from '@/features/plugins/recurrence/types'
 import dayjs, {
 	type Dayjs,
 	type ManipulateType,
 } from '@/lib/configs/dayjs-config'
-import { createPluginRuntime, type IlamyPlugin } from '@/lib/plugin'
 import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
@@ -68,7 +76,7 @@ export interface CalendarEngineReturn {
 	setSelectedDate: React.Dispatch<React.SetStateAction<Dayjs | null>>
 	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
 	getOwner: (event: CalendarEvent) => IlamyPlugin | undefined
-	getFormSectionPlugins: () => IlamyPlugin[]
+	renderSlot: (slotName: string, context: unknown) => ReactNode[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
 	t: TranslatorFunction
 }
@@ -141,7 +149,7 @@ export const useCalendarEngine = (
 
 	const getEventsForDateRange = useCallback(
 		(startDate: Dayjs, endDate: Dayjs): CalendarEvent[] =>
-			pluginRuntime.expandEvents(currentEvents, {
+			pluginRuntime.transformEvents(currentEvents, {
 				start: startDate,
 				end: endDate,
 			}),
@@ -370,7 +378,7 @@ export const useCalendarEngine = (
 		setSelectedDate,
 		getEventsForDateRange,
 		getOwner: pluginRuntime.getOwner,
-		getFormSectionPlugins: pluginRuntime.getFormSectionPlugins,
+		renderSlot: pluginRuntime.renderSlot,
 		findParentRecurringEvent,
 		t,
 	}

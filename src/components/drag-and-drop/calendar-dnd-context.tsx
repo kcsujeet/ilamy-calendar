@@ -13,6 +13,10 @@ import {
 } from '@dnd-kit/core'
 import type React from 'react'
 import { useRef, useState } from 'react'
+import {
+	type EventMutationScopeSlotContext,
+	SLOT_EVENT_MUTATION_SCOPE,
+} from '@/components/calendar-slots'
 import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { getUpdatedEvent } from './dnd-utils'
@@ -81,8 +85,9 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		}
 
 		const owner = getOwner(event)
-		if (owner?.renderEditDialog) {
-			// Owned events with a scope dialog: prompt before applying.
+		if (owner?.applyEdit) {
+			// Owned events route through the owner's scoped mutation flow: prompt
+			// for scope (the owner renders the eventMutationScope slot), then apply.
 			setRecurringDialog({ isOpen: true, event, updates })
 		} else {
 			updateEvent(event.id, updates)
@@ -157,15 +162,18 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 				<EventDragOverlay ref={dragOverlayRef} />
 			</DndContext>
 
-			{/* Recurring event edit dialog, provided by the owning plugin */}
+			{/* Scope dialog for the owned event, provided by the owning plugin */}
 			{recurringDialog.isOpen &&
 				recurringDialog.event &&
-				getOwner(recurringDialog.event)?.renderEditDialog?.({
-					event: recurringDialog.event,
-					operation: 'edit',
-					onConfirm: handleRecurringEventConfirm,
-					onCancel: handleRecurringEventClose,
-				})}
+				getOwner(recurringDialog.event)?.renderSlot?.(
+					SLOT_EVENT_MUTATION_SCOPE,
+					{
+						event: recurringDialog.event,
+						operation: 'edit',
+						resolve: handleRecurringEventConfirm,
+						cancel: handleRecurringEventClose,
+					} satisfies EventMutationScopeSlotContext
+				)}
 		</>
 	)
 }

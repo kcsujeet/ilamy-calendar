@@ -17,15 +17,20 @@ const base: CalendarEvent = {
 	},
 } as CalendarEvent
 
+const range = {
+	start: dayjs('2025-01-06T00:00:00.000Z'),
+	end: dayjs('2025-01-08T23:59:59.999Z'),
+}
+
 describe('recurrencePlugin', () => {
-	test('ownsEvent is true for events with an rrule', () => {
+	test('claimsEvent matches the previous isRecurringEvent gate', () => {
 		const plugin = recurrencePlugin()
-		// Parity with the previous `isRecurringEvent` gate: an event is "owned"
-		// if it has an rrule (base), a recurrenceId (modified instance), or a uid
-		// (generated instance). A plain event with none of those is not owned.
-		expect(plugin.ownsEvent?.(base)).toBe(true)
+		// An event is claimed if it has an rrule (base), a recurrenceId (modified
+		// instance), or a uid (generated instance). A plain event with none of
+		// those is not claimed.
+		expect(plugin.claimsEvent?.(base)).toBe(true)
 		expect(
-			plugin.ownsEvent?.({
+			plugin.claimsEvent?.({
 				...base,
 				rrule: undefined,
 				recurrenceId: '2025-01-08T09:00:00.000Z',
@@ -38,23 +43,16 @@ describe('recurrencePlugin', () => {
 			start: base.start,
 			end: base.end,
 		} as CalendarEvent
-		expect(plugin.ownsEvent?.(plain)).toBe(false)
+		expect(plugin.claimsEvent?.(plain)).toBe(false)
 	})
 
-	test('expandEvent returns occurrences for an rrule event', () => {
+	test('transformEvents expands an rrule event into its occurrences', () => {
 		const plugin = recurrencePlugin()
-		const occurrences = plugin.expandEvent?.(
-			base,
-			{
-				start: dayjs('2025-01-06T00:00:00.000Z'),
-				end: dayjs('2025-01-08T23:59:59.999Z'),
-			},
-			[base]
-		)
+		const occurrences = plugin.transformEvents?.([base], range)
 		expect(occurrences?.length).toBe(3)
 	})
 
-	test('expandEvent merges a detached override into its occurrence', () => {
+	test('transformEvents merges a detached override into its occurrence', () => {
 		const plugin = recurrencePlugin()
 		const override = {
 			...base,
@@ -65,32 +63,16 @@ describe('recurrencePlugin', () => {
 			recurrenceId: '2025-01-07T09:00:00.000Z',
 			rrule: undefined,
 		} as CalendarEvent
-		const occurrences = plugin.expandEvent?.(
-			base,
-			{
-				start: dayjs('2025-01-06T00:00:00.000Z'),
-				end: dayjs('2025-01-08T23:59:59.999Z'),
-			},
-			[base, override]
-		)
-		const onDay2 = occurrences?.find((e) =>
+		const occurrences = plugin.transformEvents?.([base, override], range)
+		const moved = occurrences?.find((e) =>
 			e.start.isSame(dayjs('2025-01-07T14:00:00.000Z'))
 		)
-		expect(onDay2?.title).toBe('Moved')
+		expect(moved?.title).toBe('Moved')
 	})
 
-	test('expandEvent returns null for a non-rrule event (defer to default)', () => {
+	test('transformEvents passes a non-rrule event through untouched', () => {
 		const plugin = recurrencePlugin()
-		const plain = { ...base, rrule: undefined }
-		expect(
-			plugin.expandEvent?.(
-				plain,
-				{
-					start: dayjs('2025-01-06T00:00:00.000Z'),
-					end: dayjs('2025-01-08T23:59:59.999Z'),
-				},
-				[plain]
-			)
-		).toBeNull()
+		const plain = { ...base, id: 'plain', rrule: undefined } as CalendarEvent
+		expect(plugin.transformEvents?.([plain], range)).toEqual([plain])
 	})
 })

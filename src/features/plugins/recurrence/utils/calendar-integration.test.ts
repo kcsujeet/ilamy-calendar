@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
-import type { RRuleOptions } from '@/features/recurrence/types'
+import type { RRuleOptions } from '@/features/plugins/recurrence/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { generateRecurringEvents } from './recurrence-handler'
 

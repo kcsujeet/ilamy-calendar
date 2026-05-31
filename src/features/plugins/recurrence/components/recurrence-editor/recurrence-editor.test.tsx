@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, mock } from 'bun:test'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { RRule } from 'rrule'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import type { RRuleOptions } from '@/features/recurrence/types'
+import type { RRuleOptions } from '@/features/plugins/recurrence/types'
 import { RecurrenceEditor } from './recurrence-editor'
 
 // Test helper to create complete RRuleOptions with required dtstart

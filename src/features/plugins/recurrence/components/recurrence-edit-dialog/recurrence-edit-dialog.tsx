@@ -7,7 +7,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
-import type { RecurrenceEditScope } from '@/features/recurrence/types'
+import type { RecurrenceEditScope } from '@/features/plugins/recurrence/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 const SCOPES = [

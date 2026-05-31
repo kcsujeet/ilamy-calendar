@@ -13,7 +13,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select'
-import type { RRuleOptions } from '@/features/recurrence/types'
+import type { RRuleOptions } from '@/features/plugins/recurrence/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { keys } from '@/lib/utils/keys'

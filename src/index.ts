@@ -11,12 +11,12 @@ export type {
 	SlotDuration,
 } from './features/calendar/types'
 // Export types
-export type { RRuleOptions } from './features/recurrence/types'
+export type { RRuleOptions } from './features/plugins/recurrence/types'
 // RRULE-based recurrence system
 export {
 	generateRecurringEvents,
 	isRecurringEvent,
-} from './features/recurrence/utils/recurrence-handler'
+} from './features/plugins/recurrence/utils/recurrence-handler'
 export type { IlamyResourceCalendarProps } from './features/resource-calendar/components/ilamy-resource-calendar'
 export { IlamyResourceCalendar } from './features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 // Resource calendar types

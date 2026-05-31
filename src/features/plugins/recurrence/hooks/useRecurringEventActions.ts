@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
-import type { RecurrenceEditScope } from '@/features/recurrence/types'
+import type { RecurrenceEditScope } from '@/features/plugins/recurrence/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 interface DialogState {

@@ -1,5 +1,11 @@
 import type React from 'react'
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import {
+	type EventFormSlotContext,
+	type EventMutationScopeSlotContext,
+	SLOT_EVENT_FORM,
+	SLOT_EVENT_MUTATION_SCOPE,
+} from '@/components/calendar-slots'
 import type { CalendarEvent } from '@/components/types'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -15,8 +21,8 @@ import {
 	buildEndDateTime,
 	getTimeConstraints,
 } from '@/features/calendar/utils/event-form-utils'
-import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
-import type { RRuleOptions } from '@/features/recurrence/types'
+import { useRecurringEventActions } from '@/features/plugins/recurrence/hooks/useRecurringEventActions'
+import type { RRuleOptions } from '@/features/plugins/recurrence/types'
 import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
@@ -101,19 +107,14 @@ export const EventForm: React.FC<EventFormProps> = ({
 		handleConfirm,
 	} = useRecurringEventActions(onClose)
 
-	const {
-		findParentRecurringEvent,
-		t,
-		timeFormat,
-		getOwner,
-		getFormSectionPlugins,
-	} = useSmartCalendarContext((context) => ({
-		findParentRecurringEvent: context.findParentRecurringEvent,
-		t: context.t,
-		timeFormat: context.timeFormat,
-		getOwner: context.getOwner,
-		getFormSectionPlugins: context.getFormSectionPlugins,
-	}))
+	const { findParentRecurringEvent, t, timeFormat, getOwner, renderSlot } =
+		useSmartCalendarContext((context) => ({
+			findParentRecurringEvent: context.findParentRecurringEvent,
+			t: context.t,
+			timeFormat: context.timeFormat,
+			getOwner: context.getOwner,
+			renderSlot: context.renderSlot,
+		}))
 	const effectiveBusinessHours = useEffectiveBusinessHours(
 		selectedEvent?.resourceId
 	)
@@ -384,24 +385,16 @@ export const EventForm: React.FC<EventFormProps> = ({
 							value={formValues.location}
 						/>
 
-						{/* Plugin-provided form sections (e.g. recurrence editor) */}
-						{getFormSectionPlugins().map((plugin) => {
-							// Local `rrule` is the in-progress rule (merged from parent for
-							// instances), so it overrides the selected event's own rrule.
-							const formSectionEvent = {
+						{/* Plugin-provided form sections (e.g. recurrence editor).
+						    Local `rrule` is the in-progress rule (merged from parent for
+						    instances), so it overrides the selected event's own rrule. */}
+						{renderSlot(SLOT_EVENT_FORM, {
+							event: {
 								...selectedEvent,
 								rrule: rrule ?? undefined,
-							} as CalendarEvent
-							return (
-								<Fragment key={plugin.name}>
-									{plugin.renderFormSection?.({
-										event: formSectionEvent,
-										onChange: (updates) =>
-											handleRRuleChange(updates.rrule ?? null),
-									})}
-								</Fragment>
-							)
-						})}
+							} as CalendarEvent,
+							onChange: (updates) => handleRRuleChange(updates.rrule ?? null),
+						} satisfies EventFormSlotContext)}
 					</div>
 				</ScrollArea>
 
@@ -437,12 +430,12 @@ export const EventForm: React.FC<EventFormProps> = ({
 			{/* Scope dialog, provided by the owning plugin (e.g. recurrence) */}
 			{dialogState.isOpen &&
 				dialogState.event &&
-				getOwner(dialogState.event)?.renderEditDialog?.({
+				getOwner(dialogState.event)?.renderSlot?.(SLOT_EVENT_MUTATION_SCOPE, {
 					event: dialogState.event,
 					operation: dialogState.operationType,
-					onConfirm: (scope) => handleConfirm(scope as never),
-					onCancel: closeDialog,
-				})}
+					resolve: (scope) => handleConfirm(scope as never),
+					cancel: closeDialog,
+				} satisfies EventMutationScopeSlotContext)}
 		</>
 	)
 }

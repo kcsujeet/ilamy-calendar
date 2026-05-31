@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -15,11 +15,8 @@ import {
 	buildEndDateTime,
 	getTimeConstraints,
 } from '@/features/calendar/utils/event-form-utils'
-import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
-import { RecurrenceEditor } from '@/features/recurrence/components/recurrence-editor/recurrence-editor'
 import { useRecurringEventActions } from '@/features/recurrence/hooks/useRecurringEventActions'
 import type { RRuleOptions } from '@/features/recurrence/types'
-import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler'
 import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
@@ -104,13 +101,19 @@ export const EventForm: React.FC<EventFormProps> = ({
 		handleConfirm,
 	} = useRecurringEventActions(onClose)
 
-	const { findParentRecurringEvent, t, timeFormat } = useSmartCalendarContext(
-		(context) => ({
-			findParentRecurringEvent: context.findParentRecurringEvent,
-			t: context.t,
-			timeFormat: context.timeFormat,
-		})
-	)
+	const {
+		findParentRecurringEvent,
+		t,
+		timeFormat,
+		getOwner,
+		getFormSectionPlugins,
+	} = useSmartCalendarContext((context) => ({
+		findParentRecurringEvent: context.findParentRecurringEvent,
+		t: context.t,
+		timeFormat: context.timeFormat,
+		getOwner: context.getOwner,
+		getFormSectionPlugins: context.getFormSectionPlugins,
+	}))
 	const effectiveBusinessHours = useEffectiveBusinessHours(
 		selectedEvent?.resourceId
 	)
@@ -122,6 +125,9 @@ export const EventForm: React.FC<EventFormProps> = ({
 	const parentEvent = selectedEvent
 		? findParentRecurringEvent(selectedEvent)
 		: null
+
+	// Whether a plugin owns this event (gates the scoped edit/delete flow)
+	const eventIsOwned = Boolean(selectedEvent && getOwner(selectedEvent))
 
 	// Form state
 	const [startDate, setStartDate] = useState(start.toDate())
@@ -216,7 +222,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 			rrule: rrule || undefined,
 		}
 
-		if (selectedEvent?.id && isRecurringEvent(selectedEvent)) {
+		if (selectedEvent?.id && eventIsOwned) {
 			openEditDialog(selectedEvent, {
 				title: formValues.title,
 				start: startDateTime,
@@ -240,8 +246,8 @@ export const EventForm: React.FC<EventFormProps> = ({
 
 	const handleDelete = () => {
 		if (selectedEvent?.id) {
-			// Check if this is a recurring event
-			if (isRecurringEvent(selectedEvent)) {
+			// Check if a plugin owns this event (e.g. recurring)
+			if (eventIsOwned) {
 				// Show recurring event delete dialog
 				openDeleteDialog(selectedEvent)
 				return // Don't close the form yet, let the dialog handle it
@@ -378,8 +384,24 @@ export const EventForm: React.FC<EventFormProps> = ({
 							value={formValues.location}
 						/>
 
-						{/* Recurrence Section */}
-						<RecurrenceEditor onChange={handleRRuleChange} value={rrule} />
+						{/* Plugin-provided form sections (e.g. recurrence editor) */}
+						{getFormSectionPlugins().map((plugin) => {
+							// Local `rrule` is the in-progress rule (merged from parent for
+							// instances), so it overrides the selected event's own rrule.
+							const formSectionEvent = {
+								...selectedEvent,
+								rrule: rrule ?? undefined,
+							} as CalendarEvent
+							return (
+								<Fragment key={plugin.name}>
+									{plugin.renderFormSection?.({
+										event: formSectionEvent,
+										onChange: (updates) =>
+											handleRRuleChange(updates.rrule ?? null),
+									})}
+								</Fragment>
+							)
+						})}
 					</div>
 				</ScrollArea>
 
@@ -412,14 +434,15 @@ export const EventForm: React.FC<EventFormProps> = ({
 				</DialogFooter>
 			</form>
 
-			{/* Recurring Event Edit Dialog */}
-			<RecurrenceEditDialog
-				eventTitle={dialogState.event?.title || ''}
-				isOpen={dialogState.isOpen}
-				onClose={closeDialog}
-				onConfirm={handleConfirm}
-				operationType={dialogState.operationType}
-			/>
+			{/* Scope dialog, provided by the owning plugin (e.g. recurrence) */}
+			{dialogState.isOpen &&
+				dialogState.event &&
+				getOwner(dialogState.event)?.renderEditDialog?.({
+					event: dialogState.event,
+					operation: dialogState.operationType,
+					onConfirm: (scope) => handleConfirm(scope as never),
+					onCancel: closeDialog,
+				})}
 		</>
 	)
 }

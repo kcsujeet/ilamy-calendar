@@ -14,9 +14,6 @@ import {
 import type React from 'react'
 import { useRef, useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
-import { RecurrenceEditDialog } from '@/features/recurrence/components/recurrence-edit-dialog'
-import type { RecurrenceEditScope } from '@/features/recurrence/types'
-import { isRecurringEvent } from '@/features/recurrence/utils/recurrence-handler'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { getUpdatedEvent } from './dnd-utils'
 import { EventDragOverlay } from './event-drag-overlay'
@@ -37,10 +34,11 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		setActiveEvent: (event: CalendarEvent | null) => void
 	}>(null)
 
-	const { updateEvent, updateRecurringEvent, disableDragAndDrop } =
+	const { updateEvent, updateRecurringEvent, getOwner, disableDragAndDrop } =
 		useSmartCalendarContext((context) => ({
 			updateEvent: context.updateEvent,
 			updateRecurringEvent: context.updateRecurringEvent,
+			getOwner: context.getOwner,
 			disableDragAndDrop: context.disableDragAndDrop,
 		}))
 
@@ -82,8 +80,9 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 			return
 		}
 
-		if (isRecurringEvent(event)) {
-			// Recurring events: prompt the user via dialog before applying.
+		const owner = getOwner(event)
+		if (owner?.renderEditDialog) {
+			// Owned events with a scope dialog: prompt before applying.
 			setRecurringDialog({ isOpen: true, event, updates })
 		} else {
 			updateEvent(event.id, updates)
@@ -91,7 +90,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	}
 
 	// Handle recurring event dialog confirmation
-	const handleRecurringEventConfirm = (scope: RecurrenceEditScope) => {
+	const handleRecurringEventConfirm = (scope: unknown) => {
 		if (!recurringDialog.event || !recurringDialog.updates) {
 			setRecurringDialog(CLOSED_DIALOG)
 			return
@@ -99,7 +98,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 
 		try {
 			updateRecurringEvent(recurringDialog.event, recurringDialog.updates, {
-				scope,
+				scope: scope as never,
 				eventDate: recurringDialog.event.start,
 			})
 		} catch {
@@ -158,14 +157,15 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 				<EventDragOverlay ref={dragOverlayRef} />
 			</DndContext>
 
-			{/* Recurring event edit dialog */}
-			<RecurrenceEditDialog
-				eventTitle={recurringDialog.event?.title || ''}
-				isOpen={recurringDialog.isOpen}
-				onClose={handleRecurringEventClose}
-				onConfirm={handleRecurringEventConfirm}
-				operationType="edit"
-			/>
+			{/* Recurring event edit dialog, provided by the owning plugin */}
+			{recurringDialog.isOpen &&
+				recurringDialog.event &&
+				getOwner(recurringDialog.event)?.renderEditDialog?.({
+					event: recurringDialog.event,
+					operation: 'edit',
+					onConfirm: handleRecurringEventConfirm,
+					onCancel: handleRecurringEventClose,
+				})}
 		</>
 	)
 }

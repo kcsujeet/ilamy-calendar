@@ -17,7 +17,8 @@ export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({
 		)
 	},
 
-	getOwner: (event) => plugins.find((plugin) => plugin.claimsEvent?.(event)),
+	getEventManager: (event) =>
+		plugins.find((plugin) => plugin.managesEvent?.(event)),
 
 	// Every plugin may contribute to a slot. Each node is keyed by plugin name
 	// so consumers can render the returned array directly.

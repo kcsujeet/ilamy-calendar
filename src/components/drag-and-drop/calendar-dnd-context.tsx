@@ -38,13 +38,17 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		setActiveEvent: (event: CalendarEvent | null) => void
 	}>(null)
 
-	const { updateEvent, updateRecurringEvent, getOwner, disableDragAndDrop } =
-		useSmartCalendarContext((context) => ({
-			updateEvent: context.updateEvent,
-			updateRecurringEvent: context.updateRecurringEvent,
-			getOwner: context.getOwner,
-			disableDragAndDrop: context.disableDragAndDrop,
-		}))
+	const {
+		updateEvent,
+		updateRecurringEvent,
+		getEventManager,
+		disableDragAndDrop,
+	} = useSmartCalendarContext((context) => ({
+		updateEvent: context.updateEvent,
+		updateRecurringEvent: context.updateRecurringEvent,
+		getEventManager: context.getEventManager,
+		disableDragAndDrop: context.disableDragAndDrop,
+	}))
 
 	// State for recurring event dialog
 	const [recurringDialog, setRecurringDialog] = useState<{
@@ -84,7 +88,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 			return
 		}
 
-		const owner = getOwner(event)
+		const owner = getEventManager(event)
 		if (owner?.applyEdit) {
 			// Owned events route through the owner's scoped mutation flow: prompt
 			// for scope (the owner renders the eventMutationScope slot), then apply.
@@ -165,7 +169,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 			{/* Scope dialog for the owned event, provided by the owning plugin */}
 			{recurringDialog.isOpen &&
 				recurringDialog.event &&
-				getOwner(recurringDialog.event)?.renderSlot?.(
+				getEventManager(recurringDialog.event)?.renderSlot?.(
 					SLOT_EVENT_MUTATION_SCOPE,
 					{
 						event: recurringDialog.event,

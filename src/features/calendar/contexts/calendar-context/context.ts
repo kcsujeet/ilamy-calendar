@@ -43,7 +43,7 @@ export interface CalendarContextType {
 	openEventForm: (eventData?: Partial<CalendarEvent>) => void
 	closeEventForm: () => void
 	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
-	getOwner: (event: CalendarEvent) => IlamyPlugin | undefined
+	getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
 	renderSlot: (slotName: string, context: unknown) => React.ReactNode[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
 	renderEvent?: (event: CalendarEvent) => React.ReactNode

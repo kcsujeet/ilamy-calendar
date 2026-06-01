@@ -107,14 +107,19 @@ export const EventForm: React.FC<EventFormProps> = ({
 		handleConfirm,
 	} = useRecurringEventActions(onClose)
 
-	const { findParentRecurringEvent, t, timeFormat, getOwner, renderSlot } =
-		useSmartCalendarContext((context) => ({
-			findParentRecurringEvent: context.findParentRecurringEvent,
-			t: context.t,
-			timeFormat: context.timeFormat,
-			getOwner: context.getOwner,
-			renderSlot: context.renderSlot,
-		}))
+	const {
+		findParentRecurringEvent,
+		t,
+		timeFormat,
+		getEventManager,
+		renderSlot,
+	} = useSmartCalendarContext((context) => ({
+		findParentRecurringEvent: context.findParentRecurringEvent,
+		t: context.t,
+		timeFormat: context.timeFormat,
+		getEventManager: context.getEventManager,
+		renderSlot: context.renderSlot,
+	}))
 	const effectiveBusinessHours = useEffectiveBusinessHours(
 		selectedEvent?.resourceId
 	)
@@ -128,7 +133,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 		: null
 
 	// Whether a plugin owns this event (gates the scoped edit/delete flow)
-	const eventIsOwned = Boolean(selectedEvent && getOwner(selectedEvent))
+	const eventIsOwned = Boolean(selectedEvent && getEventManager(selectedEvent))
 
 	// Form state
 	const [startDate, setStartDate] = useState(start.toDate())
@@ -430,12 +435,15 @@ export const EventForm: React.FC<EventFormProps> = ({
 			{/* Scope dialog, provided by the owning plugin (e.g. recurrence) */}
 			{dialogState.isOpen &&
 				dialogState.event &&
-				getOwner(dialogState.event)?.renderSlot?.(SLOT_EVENT_MUTATION_SCOPE, {
-					event: dialogState.event,
-					operation: dialogState.operationType,
-					resolve: (scope) => handleConfirm(scope as never),
-					cancel: closeDialog,
-				} satisfies EventMutationScopeSlotContext)}
+				getEventManager(dialogState.event)?.renderSlot?.(
+					SLOT_EVENT_MUTATION_SCOPE,
+					{
+						event: dialogState.event,
+						operation: dialogState.operationType,
+						resolve: (scope) => handleConfirm(scope as never),
+						cancel: closeDialog,
+					} satisfies EventMutationScopeSlotContext
+				)}
 		</>
 	)
 }

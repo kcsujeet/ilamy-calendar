@@ -23,14 +23,14 @@ const range = {
 }
 
 describe('recurrencePlugin', () => {
-	test('claimsEvent matches the previous isRecurringEvent gate', () => {
+	test('managesEvent matches the previous isRecurringEvent gate', () => {
 		const plugin = recurrencePlugin()
-		// An event is claimed if it has an rrule (base), a recurrenceId (modified
+		// An event is managed if it has an rrule (base), a recurrenceId (modified
 		// instance), or a uid (generated instance). A plain event with none of
-		// those is not claimed.
-		expect(plugin.claimsEvent?.(base)).toBe(true)
+		// those is not managed.
+		expect(plugin.managesEvent?.(base)).toBe(true)
 		expect(
-			plugin.claimsEvent?.({
+			plugin.managesEvent?.({
 				...base,
 				rrule: undefined,
 				recurrenceId: '2025-01-08T09:00:00.000Z',
@@ -43,7 +43,7 @@ describe('recurrencePlugin', () => {
 			start: base.start,
 			end: base.end,
 		} as CalendarEvent
-		expect(plugin.claimsEvent?.(plain)).toBe(false)
+		expect(plugin.managesEvent?.(plain)).toBe(false)
 	})
 
 	test('transformEvents expands an rrule event into its occurrences', () => {

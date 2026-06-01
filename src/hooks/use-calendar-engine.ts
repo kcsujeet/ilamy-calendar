@@ -75,7 +75,7 @@ export interface CalendarEngineReturn {
 	setIsEventFormOpen: React.Dispatch<React.SetStateAction<boolean>>
 	setSelectedDate: React.Dispatch<React.SetStateAction<Dayjs | null>>
 	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
-	getOwner: (event: CalendarEvent) => IlamyPlugin | undefined
+	getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
 	renderSlot: (slotName: string, context: unknown) => ReactNode[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
 	t: TranslatorFunction
@@ -256,7 +256,7 @@ export const useCalendarEngine = (
 			updates: Partial<CalendarEvent>,
 			options: RecurrenceEditOptions
 		) => {
-			const owner = pluginRuntime.getOwner(event)
+			const owner = pluginRuntime.getEventManager(event)
 			if (!owner?.applyEdit) {
 				return
 			}
@@ -275,7 +275,7 @@ export const useCalendarEngine = (
 
 	const deleteRecurringEvent = useCallback(
 		(event: CalendarEvent, options: RecurrenceEditOptions) => {
-			const owner = pluginRuntime.getOwner(event)
+			const owner = pluginRuntime.getEventManager(event)
 			if (!owner?.applyDelete) {
 				return
 			}
@@ -377,7 +377,7 @@ export const useCalendarEngine = (
 		setIsEventFormOpen,
 		setSelectedDate,
 		getEventsForDateRange,
-		getOwner: pluginRuntime.getOwner,
+		getEventManager: pluginRuntime.getEventManager,
 		renderSlot: pluginRuntime.renderSlot,
 		findParentRecurringEvent,
 		t,

@@ -22,8 +22,8 @@ export interface PluginMutationArgs {
  * Hooks follow the Rollup/Vite execution kinds:
  * - `transformEvents` is sequential: each plugin receives the previous
  *   plugin's output, forming a transform chain.
- * - `claimsEvent` is first-match: the first plugin that claims an event owns
- *   its scoped mutations.
+ * - `managesEvent` is first-match: the first plugin whose managesEvent returns
+ *   true owns its scoped mutations.
  * - `renderSlot` is additive: every plugin may contribute to a mount point.
  *
  * `slotName` is an opaque string identifier and `context` is opaque to the
@@ -42,7 +42,7 @@ export interface IlamyPlugin {
 		events: CalendarEvent[],
 		range: PluginDateRange
 	) => CalendarEvent[]
-	claimsEvent?: (event: CalendarEvent) => boolean
+	managesEvent?: (event: CalendarEvent) => boolean
 	applyEdit?: (args: PluginMutationArgs) => CalendarEvent[]
 	applyDelete?: (args: PluginMutationArgs) => CalendarEvent[]
 	renderSlot?: (slotName: string, context: unknown) => ReactNode
@@ -53,6 +53,6 @@ export interface PluginRuntime {
 		events: CalendarEvent[],
 		range: PluginDateRange
 	) => CalendarEvent[]
-	getOwner: (event: CalendarEvent) => IlamyPlugin | undefined
+	getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
 	renderSlot: (slotName: string, context: unknown) => ReactNode[]
 }

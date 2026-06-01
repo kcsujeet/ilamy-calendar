@@ -30,7 +30,7 @@ const isSpecial = (e: CalendarEvent): boolean =>
 // A plugin that expands special events into two and claims them.
 const fakePlugin = (): IlamyPlugin => ({
 	name: 'fake',
-	claimsEvent: (e) => isSpecial(e),
+	managesEvent: (e) => isSpecial(e),
 	transformEvents: (events) =>
 		events.flatMap((e) =>
 			isSpecial(e) ? [e, { ...e, id: `${e.id}-copy` }] : [e]
@@ -91,13 +91,13 @@ describe('createPluginRuntime', () => {
 		expect(result.map((e) => e.id)).toEqual(['b'])
 	})
 
-	test('getOwner returns the first plugin that claims the event', () => {
+	test('getEventManager returns the first plugin that manages the event', () => {
 		const runtime = createPluginRuntime([fakePlugin()])
 		expect(
-			runtime.getOwner(ev('a', '2025-01-05T09:00:00.000Z', true))?.name
+			runtime.getEventManager(ev('a', '2025-01-05T09:00:00.000Z', true))?.name
 		).toBe('fake')
 		expect(
-			runtime.getOwner(ev('b', '2025-01-05T09:00:00.000Z'))
+			runtime.getEventManager(ev('b', '2025-01-05T09:00:00.000Z'))
 		).toBeUndefined()
 	})
 

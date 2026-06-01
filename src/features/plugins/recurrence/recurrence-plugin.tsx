@@ -44,7 +44,7 @@ export const recurrencePlugin = (): IlamyPlugin => ({
 
 	// Mirrors the previous `isRecurringEvent` gate (rrule, recurrenceId, or uid)
 	// so drag/edit routing is unchanged.
-	claimsEvent: (event) => isRecurringEvent(event),
+	managesEvent: (event) => isRecurringEvent(event),
 
 	applyEdit: ({ event, updates, currentEvents, scope }: PluginMutationArgs) =>
 		updateRecurringEvent({

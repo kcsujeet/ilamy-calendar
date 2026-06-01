@@ -227,9 +227,17 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 		]
 	)
 
+	const pluginProviders = calendarEngine.getProviders()
+	const wrappedChildren = pluginProviders.reduceRight(
+		(tree, PluginProvider, index) => (
+			<PluginProvider key={index}>{tree}</PluginProvider>
+		),
+		children as React.ReactNode
+	)
+
 	return (
 		<CalendarContext.Provider value={contextValue}>
-			{children}
+			{wrappedChildren}
 		</CalendarContext.Provider>
 	)
 }

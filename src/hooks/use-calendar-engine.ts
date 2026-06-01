@@ -77,6 +77,7 @@ export interface CalendarEngineReturn {
 	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
 	getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
 	renderSlot: (slotName: string, context: unknown) => ReactNode[]
+	collect: (point: string, context: unknown) => unknown[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
 	t: TranslatorFunction
 }
@@ -379,6 +380,7 @@ export const useCalendarEngine = (
 		getEventsForDateRange,
 		getEventManager: pluginRuntime.getEventManager,
 		renderSlot: pluginRuntime.renderSlot,
+		collect: pluginRuntime.collect,
 		findParentRecurringEvent,
 		t,
 	}

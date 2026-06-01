@@ -46,6 +46,12 @@ export interface IlamyPlugin {
 	applyEdit?: (args: PluginMutationArgs) => CalendarEvent[]
 	applyDelete?: (args: PluginMutationArgs) => CalendarEvent[]
 	renderSlot?: (slotName: string, context: unknown) => ReactNode
+	/**
+	 * Contributes arbitrary data to a named point. Additive: all plugins may
+	 * contribute to the same point; the runtime aggregates all results via
+	 * `collect`. Parallel to `renderSlot` but for data rather than UI nodes.
+	 */
+	contribute?: (point: string, context: unknown) => unknown[]
 }
 
 export interface PluginRuntime {
@@ -55,4 +61,5 @@ export interface PluginRuntime {
 	) => CalendarEvent[]
 	getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
 	renderSlot: (slotName: string, context: unknown) => ReactNode[]
+	collect: (point: string, context: unknown) => unknown[]
 }

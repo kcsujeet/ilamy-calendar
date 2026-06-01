@@ -116,4 +116,41 @@ describe('createPluginRuntime', () => {
 		const runtime = createPluginRuntime([fakePlugin()])
 		expect(runtime.renderSlot(ANOTHER_SLOT, {})).toHaveLength(0)
 	})
+
+	test('collect flattens contributions from all plugins for a point', () => {
+		const a: IlamyPlugin = {
+			name: 'a',
+			contribute: (p) => (p === 'x' ? ['a1'] : []),
+		}
+		const b: IlamyPlugin = {
+			name: 'b',
+			contribute: (p) => (p === 'x' ? ['b1', 'b2'] : []),
+		}
+		expect(createPluginRuntime([a, b]).collect('x', null)).toEqual([
+			'a1',
+			'b1',
+			'b2',
+		])
+	})
+	test('collect ignores plugins without contribute or contributing to other points', () => {
+		const a: IlamyPlugin = {
+			name: 'a',
+			contribute: (p) => (p === 'x' ? ['a1'] : []),
+		}
+		expect(createPluginRuntime([a, { name: 'b' }]).collect('y', null)).toEqual(
+			[]
+		)
+	})
+	test('collect passes the context through to contribute', () => {
+		let seen: unknown
+		const a: IlamyPlugin = {
+			name: 'a',
+			contribute: (_p, ctx) => {
+				seen = ctx
+				return []
+			},
+		}
+		createPluginRuntime([a]).collect('x', { hello: 'world' })
+		expect(seen).toEqual({ hello: 'world' })
+	})
 })

@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import type { CalendarEvent } from '@/components/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { Dayjs, ManipulateType } from '@/lib/configs/dayjs-config'
 
 export interface PluginDateRange {
 	start: Dayjs
@@ -36,6 +36,22 @@ export interface PluginMutationArgs {
  * `applyEdit` / `applyDelete` should also render the mutation-scope slot so the
  * core can gather that scope before mutating.
  */
+/**
+ * Describes a view type contributed by a plugin. The component reads calendar
+ * state via `useIlamyCalendarContext()`. `navigationUnit` controls how next/prev
+ * steps for the view ('week', 'month', 'day', …).
+ */
+export interface PluginView {
+	/** Unique view id, e.g. 'resource-week'. */
+	name: string
+	/** View-switcher label (or a translation key). */
+	label?: string
+	/** Renders the view; reads state via useIlamyCalendarContext(). */
+	component: ComponentType
+	/** How next/prev steps for this view ('week', 'month', 'day', …). */
+	navigationUnit?: ManipulateType
+}
+
 export interface IlamyPlugin {
 	name: string
 	transformEvents?: (
@@ -52,6 +68,17 @@ export interface IlamyPlugin {
 	 * `collect`. Parallel to `renderSlot` but for data rather than UI nodes.
 	 */
 	contribute?: (point: string, context: unknown) => unknown[]
+	/**
+	 * Registers new view types that the calendar can switch to. Each entry in
+	 * the array describes one view (id, component, navigation unit, …).
+	 */
+	views?: PluginView[]
+	/**
+	 * Wraps the calendar subtree so the plugin's own React context is available
+	 * to its views, slots, and components. Rendered as the outermost wrapper
+	 * among all plugin providers.
+	 */
+	provider?: ComponentType<{ children: ReactNode }>
 }
 
 export interface PluginRuntime {
@@ -62,4 +89,8 @@ export interface PluginRuntime {
 	getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
 	renderSlot: (slotName: string, context: unknown) => ReactNode[]
 	collect: (point: string, context: unknown) => unknown[]
+	/** Returns all views registered across all plugins, in plugin order. */
+	getViews: () => PluginView[]
+	/** Returns all providers declared by plugins, in plugin order (omits plugins with no provider). */
+	getProviders: () => Array<ComponentType<{ children: ReactNode }>>
 }

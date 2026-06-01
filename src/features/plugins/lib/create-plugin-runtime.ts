@@ -1,4 +1,9 @@
-import { createElement, Fragment, type ReactNode } from 'react'
+import {
+	type ComponentType,
+	createElement,
+	Fragment,
+	type ReactNode,
+} from 'react'
 import { eventOverlapsRange } from '@/lib/utils/event-utils'
 import type { IlamyPlugin, PluginRuntime } from './types'
 
@@ -35,4 +40,11 @@ export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({
 		}
 		return nodes
 	},
+
+	getViews: () => plugins.flatMap((plugin) => plugin.views ?? []),
+
+	getProviders: () =>
+		plugins
+			.map((plugin) => plugin.provider)
+			.filter((p): p is ComponentType<{ children: ReactNode }> => Boolean(p)),
 })

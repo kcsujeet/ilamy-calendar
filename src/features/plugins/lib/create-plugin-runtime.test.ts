@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import type { ReactNode } from 'react'
 import { createElement } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
@@ -152,5 +153,34 @@ describe('createPluginRuntime', () => {
 		}
 		createPluginRuntime([a]).collect('x', { hello: 'world' })
 		expect(seen).toEqual({ hello: 'world' })
+	})
+
+	test('getViews aggregates views from all plugins in order', () => {
+		const p1: IlamyPlugin = {
+			name: 'p1',
+			views: [{ name: 'v1', component: () => null }],
+		}
+		const p2: IlamyPlugin = {
+			name: 'p2',
+			views: [{ name: 'v2', component: () => null, navigationUnit: 'week' }],
+		}
+		expect(
+			createPluginRuntime([p1, p2])
+				.getViews()
+				.map((v) => v.name)
+		).toEqual(['v1', 'v2'])
+	})
+	test('getViews is empty when no plugin declares views', () => {
+		expect(createPluginRuntime([{ name: 'p' }]).getViews()).toEqual([])
+	})
+	test('getProviders returns the providers of plugins that declare one, in order', () => {
+		const A = ({ children }: { children: ReactNode }) => children
+		const B = ({ children }: { children: ReactNode }) => children
+		const runtime = createPluginRuntime([
+			{ name: 'a', provider: A },
+			{ name: 'b' },
+			{ name: 'c', provider: B },
+		])
+		expect(runtime.getProviders()).toEqual([A, B])
 	})
 })

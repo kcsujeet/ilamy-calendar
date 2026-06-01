@@ -3,13 +3,13 @@ import type React from 'react'
 import { Button } from '@/components/ui/button'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
+import { BUILT_IN_VIEWS, type BuiltInView, type CalendarView } from '@/types'
 
-type ViewType = 'day' | 'week' | 'month' | 'year'
-const AVAILABLE_VIEWS: ViewType[] = ['day', 'week', 'month', 'year']
+const AVAILABLE_VIEWS: BuiltInView[] = [...BUILT_IN_VIEWS]
 
 interface ViewControlsProps {
-	currentView: ViewType
-	onChange: (view: ViewType) => void
+	currentView: CalendarView
+	onChange: (view: CalendarView) => void
 	onToday?: () => void
 	onNext?: () => void
 	onPrevious?: () => void
@@ -28,15 +28,16 @@ const ViewControls: React.FC<ViewControlsProps> = ({
 	onNext,
 	onPrevious,
 }) => {
-	const { t, resources } = useSmartCalendarContext((context) => ({
+	const { t, resources, getViews } = useSmartCalendarContext((context) => ({
 		t: context.t,
 		resources: context.resources,
+		getViews: context.getViews,
 	}))
 	const isGrid = variant === 'grid'
 	const isResourceCalendar = resources && resources.length > 0
 
 	// Extract common button className logic to a function
-	const getButtonClassName = (viewType: ViewType) => {
+	const getButtonClassName = (viewType: CalendarView) => {
 		return cn(
 			// Base width for grid layout
 			isGrid ? 'w-full' : '',
@@ -45,7 +46,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
 		)
 	}
 
-	const getBtnVariant = (viewType: ViewType) => {
+	const getBtnVariant = (viewType: CalendarView) => {
 		return currentView === viewType ? 'default' : 'outline'
 	}
 
@@ -63,7 +64,7 @@ const ViewControls: React.FC<ViewControlsProps> = ({
 				<ChevronRight className="h-4 w-4" />
 			</Button>
 
-			{AVAILABLE_VIEWS.map((type: ViewType) => {
+			{AVAILABLE_VIEWS.map((type: BuiltInView) => {
 				if (isResourceCalendar && type === 'year') {
 					return null
 				}
@@ -80,6 +81,18 @@ const ViewControls: React.FC<ViewControlsProps> = ({
 					</Button>
 				)
 			})}
+
+			{getViews().map((v) => (
+				<Button
+					className={getButtonClassName(v.name)}
+					key={v.name}
+					onClick={() => onChange(v.name)}
+					size={size}
+					variant={getBtnVariant(v.name)}
+				>
+					{v.label ?? v.name}
+				</Button>
+			))}
 
 			<Button onClick={onToday} size={size} variant="outline">
 				{t('today')}

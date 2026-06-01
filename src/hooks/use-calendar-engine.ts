@@ -1,4 +1,5 @@
 import {
+	type ComponentType,
 	type ReactNode,
 	useCallback,
 	useEffect,
@@ -8,7 +9,7 @@ import {
 } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
 import { createPluginRuntime } from '@/features/plugins/lib/create-plugin-runtime'
-import type { IlamyPlugin } from '@/features/plugins/lib/types'
+import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
 import { recurrencePlugin } from '@/features/plugins/recurrence/recurrence-plugin'
 import type { RecurrenceEditOptions } from '@/features/plugins/recurrence/types'
 import dayjs, {
@@ -79,10 +80,12 @@ export interface CalendarEngineReturn {
 	renderSlot: (slotName: string, context: unknown) => ReactNode[]
 	collect: (point: string, context: unknown) => unknown[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
+	getViews: () => PluginView[]
+	getProviders: () => Array<ComponentType<{ children: ReactNode }>>
 	t: TranslatorFunction
 }
 
-const VIEW_UNITS: Record<CalendarView, ManipulateType> = {
+const VIEW_UNITS: Record<string, ManipulateType> = {
 	day: 'day',
 	week: 'week',
 	month: 'month',
@@ -101,7 +104,7 @@ export const calculateViewRange = (
 		const days = getWeekDays(date, firstDayOfWeek)
 		return { start: days[0].startOf('day'), end: days[6].endOf('day') }
 	}
-	// month view: 6 weeks × 7 days
+	// month view: 6 weeks × 7 days — also the default range for plugin/unknown views
 	const weeks = getMonthWeeks(date, firstDayOfWeek)
 	return { start: weeks[0][0].startOf('day'), end: weeks[5][6].endOf('day') }
 }
@@ -210,13 +213,17 @@ export const useCalendarEngine = (
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {
+			const unit =
+				VIEW_UNITS[view] ??
+				pluginRuntime.getViews().find((v) => v.name === view)?.navigationUnit ??
+				'day'
 			const newDate =
 				direction === 1
-					? currentDate.add(1, VIEW_UNITS[view])
-					: currentDate.subtract(1, VIEW_UNITS[view])
+					? currentDate.add(1, unit)
+					: currentDate.subtract(1, unit)
 			updateDateAndNotify(newDate)
 		},
-		[currentDate, view, updateDateAndNotify]
+		[currentDate, view, updateDateAndNotify, pluginRuntime]
 	)
 
 	const nextPeriod = useCallback(() => navigatePeriod(1), [navigatePeriod])
@@ -382,6 +389,8 @@ export const useCalendarEngine = (
 		renderSlot: pluginRuntime.renderSlot,
 		collect: pluginRuntime.collect,
 		findParentRecurringEvent,
+		getViews: pluginRuntime.getViews,
+		getProviders: pluginRuntime.getProviders,
 		t,
 	}
 }

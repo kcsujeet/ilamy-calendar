@@ -7,7 +7,7 @@ import type {
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
-import type { IlamyPlugin } from '@/features/plugins/lib/types'
+import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
 import type { RecurrenceEditOptions } from '@/features/plugins/recurrence/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { TranslatorFunction } from '@/lib/translations/types'
@@ -47,6 +47,7 @@ export interface CalendarContextType {
 	renderSlot: (slotName: string, context: unknown) => React.ReactNode[]
 	collect: (point: string, context: unknown) => unknown[]
 	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
+	getViews: () => PluginView[]
 	renderEvent?: (event: CalendarEvent) => React.ReactNode
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellInfo) => void

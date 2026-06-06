@@ -16,6 +16,23 @@ const defaultProps = {
 	firstDayOfWeek: 0,
 }
 
+// Factory for a daily recurring event starting July 1 at 9am
+const makeDailyRecurringEvent = (
+	overrides: Partial<CalendarEvent> = {}
+): CalendarEvent => ({
+	id: 'test-recurring',
+	title: 'Daily Meeting',
+	start: dayjs('2025-07-01').hour(9),
+	end: dayjs('2025-07-01').hour(10),
+	rrule: {
+		freq: RRule.DAILY,
+		interval: 1,
+		dtstart: dayjs('2025-07-01').hour(9).toDate(),
+	},
+	uid: 'test-recurring@calendar.test',
+	...overrides,
+})
+
 // Test component to capture context values
 const TestWrapper = ({
 	children,
@@ -73,18 +90,7 @@ function TestComponent() {
 
 describe('CalendarProvider - On-Demand Generation', () => {
 	it('should generate recurring events on-demand for current view only', () => {
-		const recurringEvent: CalendarEvent = {
-			id: 'test-recurring',
-			title: 'Daily Meeting',
-			start: dayjs('2025-07-01').hour(9),
-			end: dayjs('2025-07-01').hour(10),
-			rrule: {
-				freq: RRule.DAILY,
-				interval: 1,
-				dtstart: dayjs('2025-07-01').hour(9).toDate(),
-			},
-			uid: 'test-recurring@calendar.test',
-		}
+		const recurringEvent = makeDailyRecurringEvent()
 
 		const { getByTestId } = renderProvider(<TestComponent />, {
 			events: [recurringEvent],
@@ -122,16 +128,9 @@ describe('CalendarProvider - On-Demand Generation', () => {
 	})
 
 	it('should exclude events with EXDATE exclusions', () => {
-		const recurringEventWithExdates: CalendarEvent = {
+		const recurringEventWithExdates = makeDailyRecurringEvent({
 			id: 'test-excluded',
 			title: 'Meeting with Exclusions',
-			start: dayjs('2025-07-01').hour(9),
-			end: dayjs('2025-07-01').hour(10),
-			rrule: {
-				freq: RRule.DAILY,
-				interval: 1,
-				dtstart: dayjs('2025-07-01').hour(9).toDate(),
-			},
 			uid: 'test-excluded@calendar.test',
 			exdates: [
 				'2025-07-01T09:00:00.000Z',
@@ -142,7 +141,7 @@ describe('CalendarProvider - On-Demand Generation', () => {
 				'2025-07-06T09:00:00.000Z',
 				'2025-07-07T09:00:00.000Z',
 			], // Exclude all dates in range
-		}
+		})
 
 		const { getByTestId } = renderProvider(<TestComponent />, {
 			events: [recurringEventWithExdates],

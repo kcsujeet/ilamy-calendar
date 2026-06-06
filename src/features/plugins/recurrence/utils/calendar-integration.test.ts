@@ -5,6 +5,47 @@ import type { RRuleOptions } from '@/features/plugins/recurrence/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { generateRecurringEvents } from './recurrence-handler'
 
+// Call wrapper: supplies the always-empty currentEvents and full-range defaults.
+const generate = (
+	event: CalendarEvent,
+	start = dayjs('2025-01-06').startOf('day'),
+	end = dayjs('2025-01-20').endOf('day')
+) =>
+	generateRecurringEvents({
+		event,
+		currentEvents: [],
+		startDate: start,
+		endDate: end,
+	})
+
+// Factory for a daily recurring event starting Jan 6 at the given hour.
+const makeDailyEvent = (
+	overrides: Partial<CalendarEvent> = {}
+): CalendarEvent => ({
+	id: 'daily-1',
+	uid: 'daily-1@ilamy.calendar',
+	title: 'Daily Event',
+	start: dayjs('2025-01-06T09:00:00.000Z'),
+	end: dayjs('2025-01-06T10:00:00.000Z'),
+	rrule: {
+		freq: RRule.DAILY,
+		interval: 1,
+		dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+	},
+	exdates: [],
+	...overrides,
+})
+
+// Asserts each generated instance is unmodified (no recurrenceId) and starts
+// at the matching ISO time, in order.
+const expectInstanceStarts = (result: CalendarEvent[], startISOs: string[]) => {
+	expect(result).toHaveLength(startISOs.length)
+	expect(result.map((event) => event.recurrenceId)).toEqual(
+		startISOs.map(() => undefined)
+	)
+	expect(result.map((event) => event.start.toISOString())).toEqual(startISOs)
+}
+
 describe('generateRecurringEvents - Calendar Provider Integration', () => {
 	const baseEvent: CalendarEvent = {
 		id: 'recurring-1',
@@ -21,16 +62,8 @@ describe('generateRecurringEvents - Calendar Provider Integration', () => {
 		exdates: [],
 	}
 
-	const startDate = dayjs('2025-01-06').startOf('day')
-	const endDate = dayjs('2025-01-20').endOf('day')
-
 	it('should generate instances with same UID as parent and no recurrenceId', () => {
-		const result = generateRecurringEvents({
-			event: baseEvent,
-			currentEvents: [],
-			startDate,
-			endDate,
-		})
+		const result = generate(baseEvent)
 
 		// Should generate events: Jan 6,8,10 (week 1), Jan 13,15,17 (week 2), Jan 20 (week 3)
 		expect(result).toHaveLength(7) // 2 full weeks × 3 days + 1 day from week 3
@@ -70,12 +103,7 @@ describe('generateRecurringEvents - Calendar Provider Integration', () => {
 			},
 		}
 
-		const result = generateRecurringEvents({
-			event: eventWithoutUID,
-			currentEvents: [],
-			startDate,
-			endDate,
-		})
+		const result = generate(eventWithoutUID)
 
 		expect(result).toHaveLength(7)
 
@@ -94,12 +122,7 @@ describe('generateRecurringEvents - Calendar Provider Integration', () => {
 			exdates: ['2025-01-08T09:00:00.000Z'], // Exclude Wednesday Jan 8
 		}
 
-		const result = generateRecurringEvents({
-			event: eventWithExdates,
-			currentEvents: [],
-			startDate,
-			endDate,
-		})
+		const result = generate(eventWithExdates)
 
 		// Should have 6 events instead of 7 (excluding Jan 8)
 		expect(result).toHaveLength(6)
@@ -118,28 +141,14 @@ describe('generateRecurringEvents - Calendar Provider Integration', () => {
 	})
 
 	it('should handle daily recurring events', () => {
-		const dailyEvent: CalendarEvent = {
-			id: 'daily-1',
-			uid: 'daily-1@ilamy.calendar',
+		const dailyEvent = makeDailyEvent({
 			title: 'Daily Standup',
-			start: dayjs('2025-01-06T09:00:00.000Z'),
 			end: dayjs('2025-01-06T09:30:00.000Z'),
-			rrule: {
-				freq: RRule.DAILY,
-				interval: 1,
-				dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(), // Match event start time
-			},
-			exdates: [],
-		}
+		})
 
 		const shortRange = dayjs('2025-01-06').startOf('day')
 		const shortEnd = dayjs('2025-01-10').endOf('day')
-		const result = generateRecurringEvents({
-			event: dailyEvent,
-			currentEvents: [],
-			startDate: shortRange,
-			endDate: shortEnd,
-		})
+		const result = generate(dailyEvent, shortRange, shortEnd)
 
 		// Should generate 5 daily events (Jan 6-10)
 		expect(result).toHaveLength(5)
@@ -173,12 +182,7 @@ describe('Monthly and Complex Patterns', () => {
 
 		const longRange = dayjs('2025-01-01').startOf('day')
 		const longEnd = dayjs('2025-04-30').endOf('day')
-		const result = generateRecurringEvents({
-			event: monthlyEvent,
-			currentEvents: [],
-			startDate: longRange,
-			endDate: longEnd,
-		})
+		const result = generate(monthlyEvent, longRange, longEnd)
 
 		// Should generate 4 monthly events (Jan, Feb, Mar, Apr)
 		expect(result).toHaveLength(4)
@@ -201,76 +205,54 @@ describe('Monthly and Complex Patterns', () => {
 	})
 
 	it('should handle COUNT limits in RRULE', () => {
-		const limitedEvent: CalendarEvent = {
+		const limitedEvent = makeDailyEvent({
 			id: 'limited-1',
 			uid: 'limited-1@ilamy.calendar',
 			title: 'Limited Series',
-			start: dayjs('2025-01-06T09:00:00.000Z'),
-			end: dayjs('2025-01-06T10:00:00.000Z'),
 			rrule: {
 				freq: RRule.DAILY,
 				interval: 1,
 				count: 3,
 				dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(), // Match event start time
 			},
-			exdates: [],
-		}
-
-		const result = generateRecurringEvents({
-			event: limitedEvent,
-			currentEvents: [],
-			startDate: dayjs('2025-01-06').startOf('day'),
-			endDate: dayjs('2025-01-20').endOf('day'),
 		})
 
-		// Should generate exactly 3 events due to COUNT=3
-		expect(result).toHaveLength(3)
+		const result = generate(limitedEvent)
 
-		expect(result[0].recurrenceId).toBeUndefined()
-		expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z')
-		expect(result[1].recurrenceId).toBeUndefined()
-		expect(result[1].start.toISOString()).toBe('2025-01-07T09:00:00.000Z')
-		expect(result[2].recurrenceId).toBeUndefined()
-		expect(result[2].start.toISOString()).toBe('2025-01-08T09:00:00.000Z')
+		// Should generate exactly 3 events due to COUNT=3
+		expectInstanceStarts(result, [
+			'2025-01-06T09:00:00.000Z',
+			'2025-01-07T09:00:00.000Z',
+			'2025-01-08T09:00:00.000Z',
+		])
 	})
 
 	it('should handle UNTIL limits in RRULE', () => {
-		const untilEvent: CalendarEvent = {
+		const untilEvent = makeDailyEvent({
 			id: 'until-1',
 			uid: 'until-1@ilamy.calendar',
 			title: 'Until Series',
-			start: dayjs('2025-01-06T09:00:00.000Z'),
-			end: dayjs('2025-01-06T10:00:00.000Z'),
 			rrule: {
 				freq: RRule.DAILY,
 				interval: 1,
 				until: dayjs('2025-01-08T09:00:00.000Z').toDate(),
 				dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(), // Match event start time
 			},
-			exdates: [],
-		}
-
-		const result = generateRecurringEvents({
-			event: untilEvent,
-			currentEvents: [],
-			startDate: dayjs('2025-01-06').startOf('day'),
-			endDate: dayjs('2025-01-20').endOf('day'),
 		})
 
-		// Should generate events until Jan 8 (inclusive)
-		expect(result).toHaveLength(3)
+		const result = generate(untilEvent)
 
-		expect(result[0].recurrenceId).toBeUndefined()
-		expect(result[0].start.toISOString()).toBe('2025-01-06T09:00:00.000Z')
-		expect(result[1].recurrenceId).toBeUndefined()
-		expect(result[1].start.toISOString()).toBe('2025-01-07T09:00:00.000Z')
-		expect(result[2].recurrenceId).toBeUndefined()
-		expect(result[2].start.toISOString()).toBe('2025-01-08T09:00:00.000Z')
+		// Should generate events until Jan 8 (inclusive)
+		expectInstanceStarts(result, [
+			'2025-01-06T09:00:00.000Z',
+			'2025-01-07T09:00:00.000Z',
+			'2025-01-08T09:00:00.000Z',
+		])
 	})
 
 	it('should include events that span through the date range even if they start before it', () => {
 		// Long duration event (4 hours) that occurs daily
-		const longDurationEvent: CalendarEvent = {
+		const longDurationEvent = makeDailyEvent({
 			id: 'long-duration-1',
 			uid: 'long-duration-1@ilamy.calendar',
 			title: 'Long Meeting',
@@ -281,20 +263,14 @@ describe('Monthly and Complex Patterns', () => {
 				interval: 1,
 				dtstart: dayjs('2025-01-06T08:00:00.000Z').toDate(),
 			},
-			exdates: [],
-		}
+		})
 
 		// Query range: 10 AM to 2 PM on a specific day
 		// The event starts before the range (8 AM) but spans into it (ends at 12 PM)
 		const queryStart = dayjs('2025-01-07T10:00:00.000Z') // 10 AM next day
 		const queryEnd = dayjs('2025-01-07T14:00:00.000Z') // 2 PM next day
 
-		const result = generateRecurringEvents({
-			event: longDurationEvent,
-			currentEvents: [],
-			startDate: queryStart,
-			endDate: queryEnd,
-		})
+		const result = generate(longDurationEvent, queryStart, queryEnd)
 
 		// Should include the Jan 7 event that spans through the query range
 		expect(result).toHaveLength(1)
@@ -304,7 +280,7 @@ describe('Monthly and Complex Patterns', () => {
 
 	it('should not include events that end before the date range starts', () => {
 		// Short event that ends before our query range
-		const shortEvent: CalendarEvent = {
+		const shortEvent = makeDailyEvent({
 			id: 'short-1',
 			uid: 'short-1@ilamy.calendar',
 			title: 'Short Meeting',
@@ -315,20 +291,14 @@ describe('Monthly and Complex Patterns', () => {
 				interval: 1,
 				dtstart: dayjs('2025-01-06T08:00:00.000Z').toDate(),
 			},
-			exdates: [],
-		}
+		})
 
 		// Query range: 10 AM to 2 PM
 		// The event ends at 9 AM, so it doesn't span into the range
 		const queryStart = dayjs('2025-01-07T10:00:00.000Z')
 		const queryEnd = dayjs('2025-01-07T14:00:00.000Z')
 
-		const result = generateRecurringEvents({
-			event: shortEvent,
-			currentEvents: [],
-			startDate: queryStart,
-			endDate: queryEnd,
-		})
+		const result = generate(shortEvent, queryStart, queryEnd)
 
 		// Should not include any events since they don't span the query range
 		expect(result).toHaveLength(0)
@@ -344,12 +314,7 @@ describe('Monthly and Complex Patterns', () => {
 			exdates: [],
 		}
 
-		const result = generateRecurringEvents({
-			event: nonRecurringEvent,
-			currentEvents: [],
-			startDate: dayjs('2025-01-06').startOf('day'),
-			endDate: dayjs('2025-01-20').endOf('day'),
-		})
+		const result = generate(nonRecurringEvent)
 		expect(result).toHaveLength(0)
 	})
 
@@ -368,12 +333,7 @@ describe('Monthly and Complex Patterns', () => {
 
 		// Should throw an error for invalid RRULE options
 		expect(() => {
-			generateRecurringEvents({
-				event: malformedEvent,
-				currentEvents: [],
-				startDate: dayjs('2025-01-06').startOf('day'),
-				endDate: dayjs('2025-01-20').endOf('day'),
-			})
+			generate(malformedEvent)
 		}).toThrow()
 	})
 })

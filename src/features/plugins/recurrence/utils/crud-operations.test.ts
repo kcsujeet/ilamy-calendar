@@ -67,6 +67,19 @@ const makeOverride = (
 	...overrides,
 })
 
+// Asserts the original series in `result` was terminated with the given UNTIL.
+const expectTerminatedUntil = (
+	result: CalendarEvent[],
+	baseId: CalendarEvent['id'],
+	untilISO: string
+) => {
+	const terminatedEvent = result.find((e) => e.id === baseId)
+	if (!terminatedEvent?.rrule) {
+		throw new Error('terminatedEvent.rrule missing')
+	}
+	expect(terminatedEvent.rrule.until).toEqual(dayjs(untilISO).toDate())
+}
+
 describe('isRecurringEvent', () => {
 	it('should identify events with rrule as recurring', () => {
 		const event = createBaseRecurringEvent()
@@ -252,12 +265,7 @@ describe('updateRecurringEvent', () => {
 			expect(result).toHaveLength(2) // terminated original + new series
 
 			// Original series should be terminated with UNTIL
-			const terminatedEvent = result.find((e) => e.id === baseEvent.id)
-			if (!terminatedEvent?.rrule)
-				throw new Error('terminatedEvent.rrule missing')
-			expect(terminatedEvent.rrule.until).toEqual(
-				dayjs('2025-01-19T23:59:59.999Z').toDate()
-			)
+			expectTerminatedUntil(result, baseEvent.id, '2025-01-19T23:59:59.999Z')
 
 			// New series should start from target date
 			const newSeries = result.find((e) => e.id !== baseEvent.id)
@@ -287,12 +295,7 @@ describe('updateRecurringEvent', () => {
 			expect(result).toHaveLength(2)
 
 			// Original should terminate before first occurrence (effectively making it empty)
-			const terminatedEvent = result.find((e) => e.id === baseEvent.id)
-			if (!terminatedEvent?.rrule)
-				throw new Error('terminatedEvent.rrule missing')
-			expect(terminatedEvent.rrule.until).toEqual(
-				dayjs('2025-01-05T23:59:59.999Z').toDate()
-			)
+			expectTerminatedUntil(result, baseEvent.id, '2025-01-05T23:59:59.999Z')
 		})
 	})
 

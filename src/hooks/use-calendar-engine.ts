@@ -86,7 +86,7 @@ const VIEW_UNITS: Record<string, ManipulateType> = {
 	year: 'year',
 }
 
-export const calculateViewRange = (
+const calculateViewRange = (
 	date: Dayjs,
 	view: CalendarView,
 	firstDayOfWeek: number

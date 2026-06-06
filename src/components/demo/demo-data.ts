@@ -98,8 +98,9 @@ export const createResourceEvents = (): CalendarEvent[] => {
 
 // Resource event handlers
 export const handleResourceEventClick = (event: CalendarEvent) => {
-	const resources = event.resourceIds
-		? event.resourceIds.join(', ')
-		: event.resourceId
+	let resources = event.resourceId
+	if (event.resourceIds) {
+		resources = event.resourceIds.join(', ')
+	}
 	alert(`Resource Event clicked: ${event.title} (Resources: ${resources})`)
 }

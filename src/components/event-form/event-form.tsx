@@ -253,9 +253,11 @@ export const EventForm: React.FC<EventFormProps> = ({
 		}
 	}
 
-	const disabledDateMatcher = effectiveBusinessHours
-		? (date: Date) => !isBusinessDay(dayjs(date), effectiveBusinessHours)
-		: undefined
+	let disabledDateMatcher: ((date: Date) => boolean) | undefined
+	if (effectiveBusinessHours) {
+		disabledDateMatcher = (date) =>
+			!isBusinessDay(dayjs(date), effectiveBusinessHours)
+	}
 
 	const startConstraints = getTimeConstraints(startDate, effectiveBusinessHours)
 	const endConstraints = getTimeConstraints(endDate, effectiveBusinessHours)

@@ -55,18 +55,20 @@ export function RecurrenceEditDialog({
 
 	const isEdit = operationType === 'edit'
 
+	let title = t('deleteRecurringEvent')
+	let question = t('deleteRecurringEventQuestion')
+	if (isEdit) {
+		title = t('editRecurringEvent')
+		question = t('editRecurringEventQuestion')
+	}
+
 	return (
 		<Dialog onOpenChange={onClose} open={isOpen}>
 			<DialogContent className="max-w-md" onClose={onClose}>
 				<DialogHeader>
-					<DialogTitle>
-						{isEdit ? t('editRecurringEvent') : t('deleteRecurringEvent')}
-					</DialogTitle>
+					<DialogTitle>{title}</DialogTitle>
 					<DialogDescription>
-						"{eventTitle}"{' '}
-						{isEdit
-							? t('editRecurringEventQuestion')
-							: t('deleteRecurringEventQuestion')}
+						"{eventTitle}" {question}
 					</DialogDescription>
 				</DialogHeader>
 

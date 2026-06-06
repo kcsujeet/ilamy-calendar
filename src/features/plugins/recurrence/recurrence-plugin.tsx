@@ -32,16 +32,17 @@ export const recurrencePlugin = (): IlamyPlugin => ({
 	// detached overrides found in the full list. Non-base events (plain events,
 	// modified instances) pass through untouched.
 	transformEvents: (events, range) =>
-		events.flatMap((event) =>
-			event.rrule
-				? generateRecurringEvents({
-						event,
-						currentEvents: events,
-						startDate: range.start,
-						endDate: range.end,
-					})
-				: [event]
-		),
+		events.flatMap((event) => {
+			if (!event.rrule) {
+				return [event]
+			}
+			return generateRecurringEvents({
+				event,
+				currentEvents: events,
+				startDate: range.start,
+				endDate: range.end,
+			})
+		}),
 
 	// Mirrors the previous `isRecurringEvent` gate (rrule, recurrenceId, or uid)
 	// so drag/edit routing is unchanged.
@@ -62,10 +63,12 @@ export const recurrencePlugin = (): IlamyPlugin => ({
 			scope: scope as RecurrenceEditScope,
 		}),
 
-	contribute: (point: string, context: unknown): unknown[] =>
-		point === 'ical:vevent-properties'
-			? recurrenceICalProperties(context as CalendarEvent)
-			: [],
+	contribute: (point: string, context: unknown): unknown[] => {
+		if (point !== 'ical:vevent-properties') {
+			return []
+		}
+		return recurrenceICalProperties(context as CalendarEvent)
+	},
 
 	renderSlot: (slotName: string, context: unknown): ReactNode => {
 		if (slotName === SLOT_EVENT_FORM) {

@@ -3,9 +3,10 @@ import { dayjs } from '@ilamy/calendar'
 import { RRule } from 'rrule'
 
 const formatDate = (date: Dayjs, isAllDay = false): string => {
-	return isAllDay
-		? date.format('YYYYMMDD')
-		: date.utc().format('YYYYMMDD[T]HHmmss[Z]')
+	if (isAllDay) {
+		return date.format('YYYYMMDD')
+	}
+	return date.utc().format('YYYYMMDD[T]HHmmss[Z]')
 }
 
 const formatRRule = (rruleOptions: unknown): string => {

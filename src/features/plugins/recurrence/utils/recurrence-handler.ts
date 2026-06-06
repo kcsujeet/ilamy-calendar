@@ -165,9 +165,10 @@ export const generateRecurringEvents = ({
 		// Transform all dates to "floating time" (UTC with local components)
 		// This ensures RRule evaluates "Wednesday" as the user's local Wednesday
 		const floatingStart = toFloatingDate(event.start)
-		const floatingUntil = event.rrule.until
-			? toFloatingDate(dayjs(event.rrule.until))
-			: undefined
+		let floatingUntil: Date | undefined
+		if (event.rrule.until) {
+			floatingUntil = toFloatingDate(dayjs(event.rrule.until))
+		}
 
 		const ruleOptions: RRuleOptions = {
 			...event.rrule,

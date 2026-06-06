@@ -25,9 +25,10 @@ const escapeText = (text: string): string => {
 }
 
 const formatDate = (date: Dayjs, isAllDay = false): string => {
-	return isAllDay
-		? date.format('YYYYMMDD')
-		: date.utc().format('YYYYMMDD[T]HHmmss[Z]')
+	if (isAllDay) {
+		return date.format('YYYYMMDD')
+	}
+	return date.utc().format('YYYYMMDD[T]HHmmss[Z]')
 }
 
 const getUID = (event: CalendarEvent): string => {
@@ -104,9 +105,10 @@ export const downloadICalendar = (
 		type: 'text/calendar;charset=utf-8',
 	})
 	const url = URL.createObjectURL(blob)
-	const normalizedFilename = filename.endsWith('.ics')
-		? filename
-		: `${filename}.ics`
+	let normalizedFilename = filename
+	if (!filename.endsWith('.ics')) {
+		normalizedFilename = `${filename}.ics`
+	}
 
 	const link = document.createElement('a')
 	link.href = url

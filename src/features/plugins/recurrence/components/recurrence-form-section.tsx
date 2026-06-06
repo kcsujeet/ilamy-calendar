@@ -15,11 +15,12 @@ export const RecurrenceFormSection = ({ event, onChange }: Props) => {
 	const { rawEvents } = useIlamyCalendarContext()
 	// Find the base recurring event sharing this event's uid (the parent series).
 	const targetUid = event.uid
-	const parent = targetUid
-		? rawEvents.find(
-				(e) => (e.uid || `${e.id}@ilamy.calendar`) === targetUid && e.rrule
-			)
-		: undefined
+	let parent: CalendarEvent | undefined
+	if (targetUid) {
+		parent = rawEvents.find(
+			(e) => (e.uid || `${e.id}@ilamy.calendar`) === targetUid && e.rrule
+		)
+	}
 	const [rrule, setRrule] = useState<RRuleOptions | null>(
 		event.rrule ?? parent?.rrule ?? null
 	)

@@ -49,12 +49,22 @@ const getDescription = (
 	}
 	try {
 		const text = new RRule(opts).toText()
-		return text && !text.toLowerCase().includes('error')
-			? text.charAt(0).toUpperCase() + text.slice(1)
-			: t('customRecurrence')
+		const isUsableText = Boolean(text) && !text.toLowerCase().includes('error')
+		if (!isUsableText) {
+			return t('customRecurrence')
+		}
+		return text.charAt(0).toUpperCase() + text.slice(1)
 	} catch {
 		return t('customRecurrence')
 	}
+}
+
+// Normalize rrule's byweekday (a single value, an array, or absent) to an array.
+const resolveByweekday = (value: RRuleOptions['byweekday']) => {
+	if (Array.isArray(value)) {
+		return value
+	}
+	return value ? [value] : []
 }
 
 interface Props {
@@ -109,9 +119,8 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 	const toggleDay = (i: number) => {
 		const curr = (opts?.byweekday as Weekday[]) || []
 		const day = WEEKDAYS[i]
-		const next = curr.includes(day)
-			? curr.filter((d) => d !== day)
-			: [...curr, day]
+		const isSelected = curr.includes(day)
+		const next = isSelected ? curr.filter((d) => d !== day) : [...curr, day]
 		update({ byweekday: next.length ? next : undefined })
 	}
 
@@ -126,13 +135,19 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 		update(u)
 	}
 
-	const endType = opts?.until ? 'until' : opts?.count ? 'count' : 'never'
+	const handleUntilChange = (d: Date | undefined) => {
+		const until = d ? dayjs(d).endOf('day').toDate() : undefined
+		update({ until })
+	}
+
+	let endType: 'never' | 'count' | 'until' = 'never'
+	if (opts?.until) {
+		endType = 'until'
+	} else if (opts?.count) {
+		endType = 'count'
+	}
 	const freq = FREQ_TO_STR[opts?.freq ?? RRule.DAILY] || 'DAILY'
-	const byweekday = Array.isArray(opts?.byweekday)
-		? opts.byweekday
-		: opts?.byweekday
-			? [opts.byweekday]
-			: []
+	const byweekday = resolveByweekday(opts?.byweekday)
 
 	return (
 		<Card data-testid="recurrence-editor">
@@ -252,13 +267,7 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 											<DatePicker
 												className="h-6"
 												date={opts?.until ?? undefined}
-												onChange={(d) =>
-													update({
-														until: d
-															? dayjs(d).endOf('day').toDate()
-															: undefined,
-													})
-												}
+												onChange={handleUntilChange}
 											/>
 										)}
 									</div>

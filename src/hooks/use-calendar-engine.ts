@@ -211,10 +211,10 @@ export const useCalendarEngine = (
 				VIEW_UNITS[view] ??
 				pluginRuntime.getViews().find((v) => v.name === view)?.navigationUnit ??
 				'day'
-			const newDate =
-				direction === 1
-					? currentDate.add(1, unit)
-					: currentDate.subtract(1, unit)
+			let newDate = currentDate.subtract(1, unit)
+			if (direction === 1) {
+				newDate = currentDate.add(1, unit)
+			}
 			updateDateAndNotify(newDate)
 		},
 		[currentDate, view, updateDateAndNotify, pluginRuntime]

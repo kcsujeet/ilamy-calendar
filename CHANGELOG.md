@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v1.8.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.8.0...v1.8.1)
+
+> 6 June 2026
+
+##### ⚠️ Breaking changes
+
+> **Read before upgrading.** This release contains a breaking API change to `onCellClick`. If you use `onCellClick` or the `CellClickInfo` type, update your code as below.
+
+- The `CellClickInfo` type is **renamed to `CellInfo`** — update any import of `CellClickInfo`.
+- The cell-info payload **no longer has `resourceId`**; it now carries the full `resource` object. Replace `info.resourceId` with `info.resource?.id` in your `onCellClick` handler. ([`#180`](https://github.com/kcsujeet/ilamy-calendar/pull/180))
+
+##### Features
+
+- feat: add `isCellDisabled` prop — return `true` to disable a cell (blocks event-creation clicks, rejects drag-and-drop, grays it out); composes with `businessHours`. Both `isCellDisabled` and `onCellClick` receive the full `resource` object in resource calendars ([`#180`](https://github.com/kcsujeet/ilamy-calendar/pull/180)) — Closes [`#79`](https://github.com/kcsujeet/ilamy-calendar/issues/79)
+
+##### Fixes
+
+- fix: editing a recurring series with scope "all" now fully resets the series — clears EXDATEs and removes stale detached overrides, so a previously modified occurrence is no longer duplicated (Google Calendar behavior) ([`#182`](https://github.com/kcsujeet/ilamy-calendar/pull/182)) — Thanks [@maxdelorme](https://github.com/maxdelorme)! — Closes [`#151`](https://github.com/kcsujeet/ilamy-calendar/issues/151)
+
 #### [v1.8.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.7.0...v1.8.0)
 
 > 30 May 2026

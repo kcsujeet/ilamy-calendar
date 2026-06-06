@@ -1,6 +1,4 @@
-[serve.static]
-plugins = ["bun-plugin-tailwind"]
-env = "BUN_PUBLIC_*"
-
-[test]
-preload = ["./happydom.ts", "./testing-library.ts"]
+# Workspace-root config. Pin the hoisted linker to match the pre-monorepo
+# behavior (new Bun workspaces default to "isolated"); revisit later.
+[install]
+linker = "hoisted"

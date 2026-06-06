@@ -90,7 +90,7 @@
 			}
 		},
 		{
-			"includes": ["src/lib/configs/dayjs-config.ts"],
+			"includes": ["**/src/lib/configs/dayjs-config.ts"],
 			"linter": {
 				"rules": {
 					"style": {
@@ -100,7 +100,7 @@
 			}
 		},
 		{
-			"includes": ["src/components/demo/**"],
+			"includes": ["**/src/components/demo/**"],
 			"linter": {
 				"rules": {
 					"a11y": {
@@ -116,14 +116,14 @@
 				"!**/*.test.tsx",
 				"!**/*.spec.ts",
 				"!**/*.spec.tsx",
-				"!src/components/demo/**"
+				"!**/src/components/demo/**"
 			],
 			"plugins": ["./biome-plugins/no-inline-template-keys.grit"]
 		},
 		{
 			"includes": [
-				"src/features/plugins/**",
-				"!src/features/plugins/lib/**",
+				"**/src/features/plugins/**",
+				"!**/src/features/plugins/lib/**",
 				"!**/*.test.ts",
 				"!**/*.test.tsx",
 				"!**/*.spec.ts",

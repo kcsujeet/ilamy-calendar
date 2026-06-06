@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"jsx": "react-jsx",
+		"allowJs": true,
+		"lib": ["dom", "dom.iterable", "esnext"],
+		"target": "esnext",
+
+		// Bundler mode
+		"moduleResolution": "bundler",
+		"module": "Preserve",
+		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": true,
+		"noEmit": true,
+		"skipLibCheck": true
+	}
+}

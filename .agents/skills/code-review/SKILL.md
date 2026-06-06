@@ -131,6 +131,27 @@ DRY is a primary lens. When the same shape of code (test boilerplate, condition,
 
 Exceptions for this whole section: shadcn-derived `ui/` primitives (kept in sync with upstream) and pre-existing code in files this PR did not modify (`git diff` against base to confirm). When you flag one instance, grep the rest of the diff for siblings and flag them together.
 
+**These rules are deterministic, so you MUST verify each one with a self-run mechanical sweep over the changed files and read the output yourself. A subagent's "none" NEVER satisfies an item in this section.** (A real review missed three nested `if`s and shipped a "clean" verdict because it trusted an Explore agent's "rule: none" instead of running the grep. The agent is a candidate generator, not a verifier.) Eyeballing the diff is also not enough — run the commands. Build the file list once, then run every sweep against it:
+
+```bash
+# Changed, non-test, non-ui source files (the scan set for this whole section):
+git diff --name-only origin/main..HEAD -- 'src/**/*.ts' 'src/**/*.tsx' | grep -vE '\.test\.|/ui/' > /tmp/srcfiles.txt
+
+# Nested if/switch (the rule most often missed by agents): flags an `if` opened inside an already-open `if`.
+while IFS= read -r f; do [ -f "$f" ] || continue; awk -v F="$f" '
+  function indent(s){n=0;while(substr(s,n+1,1)=="\t")n++;return n}
+  /^[ \t]*if[ \t]*\(/{ind=indent($0);for(d in o){if(o[d]&&d<ind){print F":"NR" nested if";break}}o[ind]=1;next}
+  {ind=indent($0);for(d in o){if(d>=ind)o[d]=0}}' "$f"; done < /tmp/srcfiles.txt
+
+# Multi-line ternary (line starting with ? or :) and single-line nested ternary (a ? b : c ?):
+while IFS= read -r f; do [ -f "$f" ] || continue; grep -nE '^[[:space:]]*[?:][[:space:]]' "$f" | grep -vE '\?\.' | sed "s|^|$f:|"; grep -nE '\?[^?:]*:[^?:]*\?' "$f" | grep -vE '\?\.|https?:' | sed "s|^|$f:|"; done < /tmp/srcfiles.txt
+
+# Dense multi-clause conditions (2+ &&/||) and JSX ternaries:
+while IFS= read -r f; do [ -f "$f" ] || continue; grep -nE '(&&.*&&|\|\|.*\|\||&&.*\|\||\|\|.*&&)|\{[^}]*\?[^}]*<|\? *<[A-Z]' "$f" | grep -vE '^\s*(//|\*)' | sed "s|^|$f:|"; done < /tmp/srcfiles.txt
+```
+
+Every hit is a candidate, not a confirmed finding: open the file at the line and confirm it actually violates the rule (the sweeps over-match — e.g. a single-line single-level ternary in an assignment, or `if (!(a && b))` which is one logical test, are NOT violations). The sweeps under-match too (the nested-`if` awk is indentation-based), so still read each changed file's control flow. The boxes below are checked only after you have run these and triaged the output yourself.
+
 - [ ] **No nested or multi-line ternaries.** Nested = a ternary in either branch or the test (`a ? b : c ? d : e`, including single-line like `opts?.until ? 'until' : opts?.count ? 'count' : 'never'`). Multi-line = a single ternary the formatter wrapped across 2+ lines, even one level deep. Only a single-level ternary that fits on one line is allowed (`isActive ? 'on' : 'off'`). Remedies: nested/value-selecting → `if`/`else if`/`else` or an early-return guard with a named result var; value-or-`undefined` prop → precomputed named const or `if` assignment (NOT `cond && value`, which yields `false`); className `cond ? 'class' : ''` → `cond && 'class'` in `cn(...)`; fixed value-per-key → module-level lookup object.
 - [ ] **No dense inline conditions; use named variables.** Flag (a) multi-clause conditions (2+ `&&`/`||`/comparison clauses) inline in an `if`, `&&` JSX gate, ternary test, `return`, or `cn(...)` — e.g. `if (!event?.id || !updates || Object.keys(updates).length === 0)`; (b) array-method predicates (`.find`/`.filter`/`.some`/`.every`/`.findIndex`/`.map`) whose arrow packs computation + comparison + another clause — e.g. `(e) => (e.uid || \`${e.id}@ilamy.calendar\`) === targetUid && e.rrule && !e.recurrenceId`; (c) any single expression that takes more than a couple seconds to parse. Remedy: lift each sub-expression into a named `const`/`let` (or convert a one-expression arrow into a block with named locals + `return`) — `const hasNoUpdates = ...`, `const belongsToSeries = ...`, then `return belongsToSeries && isBaseSeries`. A truthiness clause used as a boolean becomes `Boolean(x)`. NOT flagged: single-clause conditions (`if (isOpen)`, `day.isToday && <X/>`), and an OR-chain that reads as one concept inside a named function / `Boolean(...)` (e.g. `Boolean(event.rrule || event.recurrenceId || event.uid)`).
 - [ ] **No nested `if`/`switch` blocks.** An `if` inside an `if` (or a `switch` nested in control flow) → flatten with early-return guards, named guard variables, or a key-value lookup object.

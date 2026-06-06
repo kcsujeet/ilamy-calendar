@@ -15,7 +15,20 @@ const CLOSED: ScopedMutationDialogState = {
 	event: null,
 }
 
-export function useScopedEventMutation(onComplete?: () => void) {
+export interface ScopedEventMutation {
+	dialogState: ScopedMutationDialogState
+	openEditDialog: (
+		event: CalendarEvent,
+		updates: Partial<CalendarEvent>
+	) => void
+	openDeleteDialog: (event: CalendarEvent) => void
+	closeDialog: () => void
+	handleConfirm: (scope: unknown) => void
+}
+
+export function useScopedEventMutation(
+	onComplete?: () => void
+): ScopedEventMutation {
 	const { applyScopedEdit, applyScopedDelete } = useSmartCalendarContext(
 		(c) => ({
 			applyScopedEdit: c.applyScopedEdit,

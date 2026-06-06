@@ -50,7 +50,7 @@
 	"scripts": {
 		"dev": "bunx vite",
 		"start": "NODE_ENV=production bun src/index.tsx",
-		"build": "NODE_ENV=production bunx bunup",
+		"build": "CI=true NODE_ENV=production bunx bunup",
 		"lint": "bunx biome lint . --diagnostic-level=error",
 		"lint:fix": "bunx biome lint --write .",
 		"format": "bunx biome format --write .",

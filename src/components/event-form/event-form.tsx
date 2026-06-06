@@ -1,10 +1,8 @@
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import {
-	type EventFormSlotContext,
-	type EventMutationScopeSlotContext,
-	SLOT_EVENT_FORM,
-	SLOT_EVENT_MUTATION_SCOPE,
+	EventFormSlot,
+	EventMutationScopeSlot,
 } from '@/components/calendar-slots'
 import type { CalendarEvent } from '@/components/types'
 import { Button } from '@/components/ui/button'
@@ -106,13 +104,13 @@ export const EventForm: React.FC<EventFormProps> = ({
 		handleConfirm,
 	} = useScopedEventMutation(onClose)
 
-	const { t, timeFormat, getEventManager, renderSlot } =
-		useSmartCalendarContext((context) => ({
+	const { t, timeFormat, getEventManager } = useSmartCalendarContext(
+		(context) => ({
 			t: context.t,
 			timeFormat: context.timeFormat,
 			getEventManager: context.getEventManager,
-			renderSlot: context.renderSlot,
-		}))
+		})
+	)
 	const effectiveBusinessHours = useEffectiveBusinessHours(
 		selectedEvent?.resourceId
 	)
@@ -143,8 +141,14 @@ export const EventForm: React.FC<EventFormProps> = ({
 	})
 
 	// Generic draft of plugin-contributed fields (e.g. recurrence's rrule).
-	// Plugins push their fields through the SLOT_EVENT_FORM `onChange`.
+	// Plugins push their fields through the event-form slot's `onChange`.
 	const [pluginUpdates, setPluginUpdates] = useState<Partial<CalendarEvent>>({})
+
+	// The event as the plugin editors see it: the selected event plus any
+	// in-progress plugin fields, so their inputs stay controlled.
+	const draftEvent = { ...selectedEvent, ...pluginUpdates } as CalendarEvent
+	const mergePluginUpdates = (updates: Partial<CalendarEvent>) =>
+		setPluginUpdates((prev) => ({ ...prev, ...updates }))
 
 	// Create wrapper functions to fix TypeScript errors with DatePicker
 	const handleStartDateChange = (date: Date | undefined) => {
@@ -367,17 +371,8 @@ export const EventForm: React.FC<EventFormProps> = ({
 							value={formValues.location}
 						/>
 
-						{/* Plugin-provided form sections (e.g. recurrence editor).
-						    `pluginUpdates` carries the in-progress plugin fields so the
-						    editors stay controlled. */}
-						{renderSlot(SLOT_EVENT_FORM, {
-							event: {
-								...selectedEvent,
-								...pluginUpdates,
-							} as CalendarEvent,
-							onChange: (updates) =>
-								setPluginUpdates((prev) => ({ ...prev, ...updates })),
-						} satisfies EventFormSlotContext)}
+						{/* Plugin-provided form sections (e.g. the recurrence editor). */}
+						<EventFormSlot event={draftEvent} onChange={mergePluginUpdates} />
 					</div>
 				</ScrollArea>
 
@@ -411,17 +406,11 @@ export const EventForm: React.FC<EventFormProps> = ({
 			</form>
 
 			{/* Scope dialog, provided by the owning plugin (e.g. recurrence) */}
-			{dialogState.isOpen &&
-				dialogState.event &&
-				getEventManager(dialogState.event)?.renderSlot?.(
-					SLOT_EVENT_MUTATION_SCOPE,
-					{
-						event: dialogState.event,
-						operation: dialogState.operation,
-						resolve: (scope) => handleConfirm(scope),
-						cancel: closeDialog,
-					} satisfies EventMutationScopeSlotContext
-				)}
+			<EventMutationScopeSlot
+				dialog={dialogState}
+				onCancel={closeDialog}
+				onResolve={handleConfirm}
+			/>
 		</>
 	)
 }

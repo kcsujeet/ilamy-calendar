@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
-interface ScopedMutationDialogState {
+export interface ScopedMutationDialogState {
 	isOpen: boolean
 	operation: 'edit' | 'delete'
 	event: CalendarEvent | null

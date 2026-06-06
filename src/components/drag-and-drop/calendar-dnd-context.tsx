@@ -13,10 +13,7 @@ import {
 } from '@dnd-kit/core'
 import type React from 'react'
 import { useRef } from 'react'
-import {
-	type EventMutationScopeSlotContext,
-	SLOT_EVENT_MUTATION_SCOPE,
-} from '@/components/calendar-slots'
+import { EventMutationScopeSlot } from '@/components/calendar-slots'
 import type { CalendarEvent } from '@/components/types'
 import { useScopedEventMutation } from '@/hooks/use-scoped-event-mutation'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
@@ -125,17 +122,11 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 			</DndContext>
 
 			{/* Scope dialog for the owned event, provided by the owning plugin */}
-			{dialogState.isOpen &&
-				dialogState.event &&
-				getEventManager(dialogState.event)?.renderSlot?.(
-					SLOT_EVENT_MUTATION_SCOPE,
-					{
-						event: dialogState.event,
-						operation: dialogState.operation,
-						resolve: handleConfirm,
-						cancel: closeDialog,
-					} satisfies EventMutationScopeSlotContext
-				)}
+			<EventMutationScopeSlot
+				dialog={dialogState}
+				onCancel={closeDialog}
+				onResolve={handleConfirm}
+			/>
 		</>
 	)
 }

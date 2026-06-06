@@ -7,6 +7,7 @@ import type {
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
+import { recurrencePlugin } from '@/features/plugins/recurrence/recurrence-plugin'
 import { IlamyResourceCalendar } from '@/features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
@@ -160,6 +161,11 @@ import 'dayjs/locale/zh-cn.js'
 import 'dayjs/locale/zh-hk.js'
 import 'dayjs/locale/zh-tw.js'
 import 'dayjs/locale/zh.js'
+
+// Recurrence is opt-in — the seed data has recurring events, so the demo
+// registers the recurrence plugin to expand them. Kept module-level so the
+// array reference is stable across renders.
+const demoPlugins = [recurrencePlugin()]
 
 // Event handlers moved outside component to avoid recreation
 const handleEventClick = (event: CalendarEvent) => {
@@ -611,6 +617,7 @@ export function DemoPage() {
 									}
 									onEventDelete={handleEventDelete}
 									onEventUpdate={handleEventUpdate}
+									plugins={demoPlugins}
 									renderCurrentTimeIndicator={
 										useCustomTimeIndicator
 											? renderCurrentTimeIndicator
@@ -659,6 +666,7 @@ export function DemoPage() {
 									onEventDelete={handleEventDelete}
 									onEventUpdate={handleEventUpdate}
 									orientation={orientation}
+									plugins={demoPlugins}
 									renderCurrentTimeIndicator={
 										useCustomTimeIndicator
 											? renderCurrentTimeIndicator

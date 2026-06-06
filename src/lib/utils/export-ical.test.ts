@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'bun:test'
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
+import { recurrenceICalProperties } from '@/features/plugins/recurrence/ical'
 import dayjs from '@/lib/configs/dayjs-config'
 import { exportToICalendar } from './export-ical'
+
+// No-op collect for tests asserting only core fields.
+const noCollect = (): unknown[] => []
+
+// collect backed by the recurrence plugin's iCal contribution, for tests that
+// assert RRULE / EXDATE / RECURRENCE-ID lines.
+const recurrenceCollect = (point: string, event: CalendarEvent): unknown[] =>
+	point === 'ical:vevent-properties' ? recurrenceICalProperties(event) : []
 
 // Helper to create minimal valid event
 const createEvent = (
@@ -57,7 +66,7 @@ describe('iCalendar Export', () => {
 	]
 
 	it('should generate valid iCalendar header and footer', () => {
-		const ical = exportToICalendar(sampleEvents)
+		const ical = exportToICalendar(sampleEvents, noCollect)
 
 		expect(ical).toContain('BEGIN:VCALENDAR')
 		expect(ical).toContain('VERSION:2.0')
@@ -66,7 +75,7 @@ describe('iCalendar Export', () => {
 	})
 
 	it('should export simple events correctly', () => {
-		const ical = exportToICalendar([sampleEvents[0]])
+		const ical = exportToICalendar([sampleEvents[0]], noCollect)
 
 		expect(ical).toContain('BEGIN:VEVENT')
 		expect(ical).toContain('UID:simple-1@ilamy.calendar')
@@ -79,7 +88,7 @@ describe('iCalendar Export', () => {
 	})
 
 	it('should export recurring events with RRULE', () => {
-		const ical = exportToICalendar([sampleEvents[1]])
+		const ical = exportToICalendar([sampleEvents[1]], recurrenceCollect)
 
 		expect(ical).toContain('BEGIN:VEVENT')
 		expect(ical).toContain('UID:recurring-1@ilamy.calendar')
@@ -90,7 +99,7 @@ describe('iCalendar Export', () => {
 	})
 
 	it('should export all-day events correctly', () => {
-		const ical = exportToICalendar([sampleEvents[2]])
+		const ical = exportToICalendar([sampleEvents[2]], noCollect)
 
 		expect(ical).toContain('BEGIN:VEVENT')
 		expect(ical).toContain('UID:all-day-1@ilamy.calendar')
@@ -101,7 +110,7 @@ describe('iCalendar Export', () => {
 	})
 
 	it('should export multiple events', () => {
-		const ical = exportToICalendar(sampleEvents)
+		const ical = exportToICalendar(sampleEvents, noCollect)
 
 		// Should contain all three events
 		const eventCount = (ical.match(/BEGIN:VEVENT/g) || []).length
@@ -122,7 +131,7 @@ describe('iCalendar Export', () => {
 			uid: 'special-1@ilamy.calendar',
 		}
 
-		const ical = exportToICalendar([eventWithSpecialChars])
+		const ical = exportToICalendar([eventWithSpecialChars], noCollect)
 
 		expect(ical).toContain('SUMMARY:Meeting\\; with\\, special\\\\ncharacters')
 		expect(ical).toContain(
@@ -145,7 +154,7 @@ describe('iCalendar Export', () => {
 			uid: 'exdate-1@ilamy.calendar',
 		}
 
-		const ical = exportToICalendar([eventWithExdates])
+		const ical = exportToICalendar([eventWithExdates], recurrenceCollect)
 
 		expect(ical).toContain('RRULE:')
 		expect(ical).toContain('EXDATE:20250805T090000Z,20250807T090000Z')
@@ -161,23 +170,25 @@ describe('iCalendar Export', () => {
 			uid: 'recurring-1@ilamy.calendar',
 		}
 
-		const ical = exportToICalendar([modifiedInstance])
+		const ical = exportToICalendar([modifiedInstance], recurrenceCollect)
 
 		expect(ical).toContain('RECURRENCE-ID:20250804T090000Z')
 		expect(ical).toContain('UID:recurring-1@ilamy.calendar')
 	})
 
 	it('should include timezone information', () => {
-		const ical = exportToICalendar(sampleEvents)
+		const ical = exportToICalendar(sampleEvents, noCollect)
 
 		expect(ical).toContain('BEGIN:VTIMEZONE')
 		expect(ical).toContain('TZID:UTC')
 		expect(ical).toContain('END:VTIMEZONE')
 	})
 
-	it('should filter out generated recurring instances but keep base events', () => {
-		const eventsWithInstances: CalendarEvent[] = [
-			// Base recurring event - should be included
+	it('should serialize every event passed in (exporter no longer filters)', () => {
+		// The core exporter is recurrence-agnostic and runs on raw events, which
+		// never contain generated instances, so no filtering happens — each event
+		// in the array becomes exactly one VEVENT.
+		const events: CalendarEvent[] = [
 			{
 				id: 'recurring-base',
 				title: 'Weekly Meeting',
@@ -191,23 +202,6 @@ describe('iCalendar Export', () => {
 				},
 				uid: 'weekly-meeting@calendar.com',
 			},
-			// Generated instance - should be filtered out
-			{
-				id: 'recurring-base_0',
-				title: 'Weekly Meeting',
-				start: dayjs('2025-01-15T10:00:00'),
-				end: dayjs('2025-01-15T11:00:00'),
-				uid: 'weekly-meeting@calendar.com',
-			},
-			// Another generated instance - should be filtered out
-			{
-				id: 'recurring-base_1',
-				title: 'Weekly Meeting',
-				start: dayjs('2025-01-22T10:00:00'),
-				end: dayjs('2025-01-22T11:00:00'),
-				uid: 'weekly-meeting@calendar.com',
-			},
-			// Modified instance - should be included
 			{
 				id: 'recurring-base_modified',
 				title: 'Modified Weekly Meeting',
@@ -216,7 +210,6 @@ describe('iCalendar Export', () => {
 				recurrenceId: '2025-01-29T10:00:00.000Z',
 				uid: 'weekly-meeting@calendar.com',
 			},
-			// Non-recurring event - should be included
 			{
 				id: 'single-event',
 				title: 'One-time Meeting',
@@ -225,34 +218,29 @@ describe('iCalendar Export', () => {
 			},
 		]
 
-		const ical = exportToICalendar(eventsWithInstances)
+		const ical = exportToICalendar(events, recurrenceCollect)
 
-		// Should contain exactly 3 events: base recurring, modified instance, and single event
+		// Every event becomes one VEVENT — three in, three out.
 		const eventCount = (ical.match(/BEGIN:VEVENT/g) || []).length
 		expect(eventCount).toBe(3)
 
-		// Base recurring event should be included with RRULE
+		// Base recurring event with RRULE contributed by recurrence.
 		expect(ical).toContain('UID:weekly-meeting@calendar.com')
 		expect(ical).toContain('RRULE:FREQ=WEEKLY;BYDAY=MO;INTERVAL=1')
 
-		// Modified instance should be included with RECURRENCE-ID
+		// Modified instance with RECURRENCE-ID contributed by recurrence.
 		expect(ical).toContain('RECURRENCE-ID:20250129T100000Z')
 		expect(ical).toContain('SUMMARY:Modified Weekly Meeting')
 
-		// Single event should be included
+		// Single event included.
 		expect(ical).toContain('UID:single-event@ilamy.calendar')
 		expect(ical).toContain('SUMMARY:One-time Meeting')
-
-		// Generated instances should NOT be included (no separate UID events for them)
-		const uidCount = (ical.match(/UID:weekly-meeting@calendar\.com/g) || [])
-			.length
-		expect(uidCount).toBe(2) // Only base event and modified instance should be exported
 	})
 })
 
 describe('RFC 5545 Compliance', () => {
 	it('should use CRLF line endings as per RFC 5545', () => {
-		const ical = exportToICalendar([createEvent()])
+		const ical = exportToICalendar([createEvent()], noCollect)
 		// RFC 5545 requires CRLF (\r\n) line endings
 		expect(ical).toContain('\r\n')
 		// Should not have bare LF
@@ -260,7 +248,7 @@ describe('RFC 5545 Compliance', () => {
 	})
 
 	it('should include required VCALENDAR properties', () => {
-		const ical = exportToICalendar([createEvent()])
+		const ical = exportToICalendar([createEvent()], noCollect)
 		expect(ical).toMatch(/^BEGIN:VCALENDAR/)
 		expect(ical).toContain('VERSION:2.0')
 		expect(ical).toContain('PRODID:')
@@ -270,9 +258,10 @@ describe('RFC 5545 Compliance', () => {
 	})
 
 	it('should include required VEVENT properties', () => {
-		const ical = exportToICalendar([
-			createEvent({ uid: 'test-uid@example.com' }),
-		])
+		const ical = exportToICalendar(
+			[createEvent({ uid: 'test-uid@example.com' })],
+			noCollect
+		)
 		const vevent = extractVEvent(ical)
 
 		expect(vevent).toContain('UID:test-uid@example.com')
@@ -287,7 +276,7 @@ describe('RFC 5545 Compliance', () => {
 			start: dayjs('2025-08-04T09:30:00.000Z'),
 			end: dayjs('2025-08-04T10:45:00.000Z'),
 		})
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 
 		expect(ical).toContain('DTSTART:20250804T093000Z')
 		expect(ical).toContain('DTEND:20250804T104500Z')
@@ -299,7 +288,7 @@ describe('RFC 5545 Compliance', () => {
 			end: dayjs('2025-08-05T00:00:00.000Z'),
 			allDay: true,
 		})
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 
 		expect(ical).toContain('DTSTART;VALUE=DATE:20250804')
 		expect(ical).toContain('DTEND;VALUE=DATE:20250805')
@@ -309,32 +298,32 @@ describe('RFC 5545 Compliance', () => {
 describe('Text Escaping (RFC 5545 Section 3.3.11)', () => {
 	it('should escape backslashes', () => {
 		const event = createEvent({ title: 'Path with\\backslash' })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		// Each \ in input becomes \\ in output
 		expect(ical).toContain('SUMMARY:Path with\\\\backslash')
 	})
 
 	it('should escape semicolons', () => {
 		const event = createEvent({ title: 'Meeting; Important' })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).toContain('SUMMARY:Meeting\\; Important')
 	})
 
 	it('should escape commas', () => {
 		const event = createEvent({ title: 'Review: A, B, C' })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).toContain('SUMMARY:Review: A\\, B\\, C')
 	})
 
 	it('should escape newlines as \\n', () => {
 		const event = createEvent({ description: 'Line 1\nLine 2\nLine 3' })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).toContain('DESCRIPTION:Line 1\\nLine 2\\nLine 3')
 	})
 
 	it('should remove carriage returns', () => {
 		const event = createEvent({ description: 'Text\r\nwith\r\nCRLF' })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		// \r should be removed, \n should be escaped
 		expect(ical).toContain('DESCRIPTION:Text\\nwith\\nCRLF')
 	})
@@ -345,7 +334,7 @@ describe('Text Escaping (RFC 5545 Section 3.3.11)', () => {
 			description: 'More; commas, here\nand lines',
 			location: 'Room A; Floor 2, Building',
 		})
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 
 		// Verify semicolons, commas, and newlines are escaped
 		expect(ical).toContain('SUMMARY:Test\\; with\\, special\\nchars')
@@ -357,13 +346,13 @@ describe('Text Escaping (RFC 5545 Section 3.3.11)', () => {
 describe('UID Generation', () => {
 	it('should use existing uid if provided', () => {
 		const event = createEvent({ uid: 'custom-uid@my-domain.com' })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).toContain('UID:custom-uid@my-domain.com')
 	})
 
 	it('should generate UID from id if uid not provided', () => {
 		const event = createEvent({ id: 'my-event-123' })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).toContain('UID:my-event-123@ilamy.calendar')
 	})
 
@@ -373,7 +362,7 @@ describe('UID Generation', () => {
 			createEvent({ id: 'event-2' }),
 			createEvent({ id: 'event-3' }),
 		]
-		const ical = exportToICalendar(events)
+		const ical = exportToICalendar(events, noCollect)
 
 		expect(ical).toContain('UID:event-1@ilamy.calendar')
 		expect(ical).toContain('UID:event-2@ilamy.calendar')
@@ -390,7 +379,7 @@ describe('RRULE Formatting', () => {
 				dtstart: dayjs('2025-08-04T09:00:00.000Z').toDate(),
 			},
 		})
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], recurrenceCollect)
 		expect(ical).toContain('RRULE:FREQ=DAILY;INTERVAL=1')
 	})
 
@@ -403,7 +392,7 @@ describe('RRULE Formatting', () => {
 				dtstart: dayjs('2025-08-04T09:00:00.000Z').toDate(),
 			},
 		})
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], recurrenceCollect)
 		expect(ical).toContain('RRULE:')
 		expect(ical).toContain('FREQ=WEEKLY')
 		expect(ical).toContain('INTERVAL=2')
@@ -420,7 +409,7 @@ describe('RRULE Formatting', () => {
 				dtstart: dayjs('2025-08-04T09:00:00.000Z').toDate(),
 			},
 		})
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], recurrenceCollect)
 		expect(ical).toContain('RRULE:FREQ=MONTHLY;INTERVAL=1')
 	})
 
@@ -433,7 +422,7 @@ describe('RRULE Formatting', () => {
 				dtstart: dayjs('2025-08-04T09:00:00.000Z').toDate(),
 			},
 		})
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], recurrenceCollect)
 		expect(ical).toContain('RRULE:')
 		expect(ical).toContain('COUNT=10')
 	})
@@ -447,7 +436,7 @@ describe('RRULE Formatting', () => {
 				dtstart: dayjs('2025-08-04T09:00:00.000Z').toDate(),
 			},
 		})
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], recurrenceCollect)
 		expect(ical).toContain('RRULE:')
 		expect(ical).toContain('UNTIL=')
 	})
@@ -457,18 +446,18 @@ describe('RRULE Formatting', () => {
 			rrule: { invalid: 'data' } as unknown as CalendarEvent['rrule'],
 		})
 		// Should not throw
-		expect(() => exportToICalendar([event])).not.toThrow()
+		expect(() => exportToICalendar([event], recurrenceCollect)).not.toThrow()
 	})
 })
 
-describe('Event Filtering', () => {
+describe('Event Serialization', () => {
 	it('should include base recurring events', () => {
 		const baseEvent = createEvent({
 			id: 'recurring-base',
 			rrule: { freq: RRule.DAILY, interval: 1, dtstart: new Date() },
 			uid: 'recurring@test.com',
 		})
-		const ical = exportToICalendar([baseEvent])
+		const ical = exportToICalendar([baseEvent], recurrenceCollect)
 		expect(extractVEvent(ical)).toContain('UID:recurring@test.com')
 		expect(extractVEvent(ical)).toContain('RRULE:')
 	})
@@ -479,64 +468,57 @@ describe('Event Filtering', () => {
 			recurrenceId: '2025-08-04T09:00:00.000Z',
 			uid: 'recurring@test.com',
 		})
-		const ical = exportToICalendar([modifiedInstance])
+		const ical = exportToICalendar([modifiedInstance], recurrenceCollect)
 		expect(extractVEvent(ical)).toContain('RECURRENCE-ID:20250804T090000Z')
 	})
 
 	it('should include non-recurring events', () => {
 		const singleEvent = createEvent({ id: 'single', title: 'Single Event' })
-		const ical = exportToICalendar([singleEvent])
+		const ical = exportToICalendar([singleEvent], noCollect)
 		expect(extractVEvent(ical)).toContain('SUMMARY:Single Event')
 	})
 
-	it('should filter out generated instances with same UID as base event', () => {
+	it('should serialize one VEVENT per event with no filtering', () => {
+		// The exporter no longer dedupes by UID — it runs on raw events that never
+		// contain generated instances, so every event becomes its own VEVENT.
 		const events = [
-			// Base event
 			createEvent({
 				id: 'base',
 				rrule: { freq: RRule.DAILY, interval: 1, dtstart: new Date() },
 				uid: 'recurring@test.com',
 			}),
-			// Generated instance (same UID, no rrule, no recurrenceId)
-			createEvent({
-				id: 'base_0',
-				uid: 'recurring@test.com',
-			}),
-			createEvent({
-				id: 'base_1',
-				uid: 'recurring@test.com',
-			}),
+			createEvent({ id: 'second', uid: 'second@test.com' }),
+			createEvent({ id: 'third', uid: 'third@test.com' }),
 		]
-		const ical = exportToICalendar(events)
+		const ical = exportToICalendar(events, recurrenceCollect)
 
-		// Should only have 1 VEVENT (the base event)
 		const eventCount = (ical.match(/BEGIN:VEVENT/g) || []).length
-		expect(eventCount).toBe(1)
+		expect(eventCount).toBe(3)
 	})
 })
 
 describe('Optional Fields', () => {
 	it('should include description when provided', () => {
 		const event = createEvent({ description: 'Event description' })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).toContain('DESCRIPTION:Event description')
 	})
 
 	it('should not include DESCRIPTION field when not provided', () => {
 		const event = createEvent({ description: undefined })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).not.toContain('DESCRIPTION:')
 	})
 
 	it('should include location when provided', () => {
 		const event = createEvent({ location: 'Conference Room A' })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).toContain('LOCATION:Conference Room A')
 	})
 
 	it('should not include LOCATION field when not provided', () => {
 		const event = createEvent({ location: undefined })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).not.toContain('LOCATION:')
 	})
 
@@ -545,7 +527,7 @@ describe('Optional Fields', () => {
 			rrule: { freq: RRule.DAILY, interval: 1, dtstart: new Date() },
 			exdates: ['2025-08-05T09:00:00.000Z', '2025-08-06T09:00:00.000Z'],
 		})
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], recurrenceCollect)
 		expect(ical).toContain('EXDATE:')
 		expect(ical).toContain('20250805T090000Z')
 		expect(ical).toContain('20250806T090000Z')
@@ -553,32 +535,40 @@ describe('Optional Fields', () => {
 
 	it('should not include EXDATE when exdates empty', () => {
 		const event = createEvent({ exdates: [] })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).not.toContain('EXDATE:')
 	})
 })
 
 describe('Calendar Metadata', () => {
 	it('should use default calendar name', () => {
-		const ical = exportToICalendar([createEvent()])
+		const ical = exportToICalendar([createEvent()], noCollect)
 		expect(ical).toContain('X-WR-CALNAME:ilamy Calendar')
 	})
 
 	it('should use custom calendar name', () => {
-		const ical = exportToICalendar([createEvent()], 'My Custom Calendar')
+		const ical = exportToICalendar(
+			[createEvent()],
+			noCollect,
+			'My Custom Calendar'
+		)
 		expect(ical).toContain('X-WR-CALNAME:My Custom Calendar')
 		expect(ical).toContain('X-WR-CALDESC:Exported from My Custom Calendar')
 	})
 
 	it('should escape special characters in calendar name', () => {
-		const ical = exportToICalendar([createEvent()], 'Work; Personal, Events')
+		const ical = exportToICalendar(
+			[createEvent()],
+			noCollect,
+			'Work; Personal, Events'
+		)
 		expect(ical).toContain('X-WR-CALNAME:Work\\; Personal\\, Events')
 	})
 })
 
 describe('Edge Cases', () => {
 	it('should handle empty events array', () => {
-		const ical = exportToICalendar([])
+		const ical = exportToICalendar([], noCollect)
 
 		expect(ical).toContain('BEGIN:VCALENDAR')
 		expect(ical).toContain('END:VCALENDAR')
@@ -592,7 +582,7 @@ describe('Edge Cases', () => {
 			start: dayjs('2025-08-04T09:00:00.000Z'),
 			end: dayjs('2025-08-04T10:00:00.000Z'),
 		}
-		const ical = exportToICalendar([minimalEvent])
+		const ical = exportToICalendar([minimalEvent], noCollect)
 
 		expect(ical).toContain('BEGIN:VEVENT')
 		expect(ical).toContain('UID:minimal@ilamy.calendar')
@@ -604,20 +594,20 @@ describe('Edge Cases', () => {
 
 	it('should handle event with empty title', () => {
 		const event = createEvent({ title: '' })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).toContain('SUMMARY:')
 	})
 
 	it('should handle event with very long title', () => {
 		const longTitle = 'A'.repeat(200)
 		const event = createEvent({ title: longTitle })
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		expect(ical).toContain(`SUMMARY:${longTitle}`)
 	})
 
 	it('should include standard VEVENT fields', () => {
 		const event = createEvent()
-		const ical = exportToICalendar([event])
+		const ical = exportToICalendar([event], noCollect)
 		const vevent = extractVEvent(ical)
 
 		expect(vevent).toContain('STATUS:CONFIRMED')
@@ -631,7 +621,7 @@ describe('Edge Cases', () => {
 		const events = Array.from({ length: 100 }, (_, i) =>
 			createEvent({ id: `event-${i}`, title: `Event ${i}` })
 		)
-		const ical = exportToICalendar(events)
+		const ical = exportToICalendar(events, noCollect)
 
 		const eventCount = (ical.match(/BEGIN:VEVENT/g) || []).length
 		expect(eventCount).toBe(100)

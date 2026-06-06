@@ -34,10 +34,12 @@
 	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
-			"import": {
-				"types": "./dist/index.d.ts",
-				"default": "./dist/index.js"
-			}
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./plugins/recurrence": {
+			"types": "./dist/features/plugins/recurrence/recurrence.d.ts",
+			"import": "./dist/features/plugins/recurrence/recurrence.js"
 		}
 	},
 	"files": [

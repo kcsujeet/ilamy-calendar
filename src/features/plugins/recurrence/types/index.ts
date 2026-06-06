@@ -1,5 +1,5 @@
+import type { Dayjs } from '@ilamy/calendar'
 import type { Options } from 'rrule'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 
 /**
  * Scope options for recurring event operations (Google Calendar style)

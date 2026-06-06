@@ -75,4 +75,39 @@ describe('recurrencePlugin', () => {
 		const plain = { ...base, id: 'plain', rrule: undefined } as CalendarEvent
 		expect(plugin.transformEvents?.([plain], range)).toEqual([plain])
 	})
+
+	test('contribute returns the RRULE line for a base event at the ical point', () => {
+		const plugin = recurrencePlugin()
+		const lines = plugin.contribute?.('ical:vevent-properties', base)
+		expect(lines).toEqual(['RRULE:FREQ=DAILY;INTERVAL=1'])
+	})
+
+	test('contribute returns the EXDATE line for an event with exdates', () => {
+		const plugin = recurrencePlugin()
+		const withExdates = {
+			...base,
+			exdates: ['2025-01-07T09:00:00.000Z', '2025-01-08T09:00:00.000Z'],
+		} as CalendarEvent
+		const lines = plugin.contribute?.('ical:vevent-properties', withExdates)
+		expect(lines).toEqual([
+			'RRULE:FREQ=DAILY;INTERVAL=1',
+			'EXDATE:20250107T090000Z,20250108T090000Z',
+		])
+	})
+
+	test('contribute returns the RECURRENCE-ID line for a modified instance', () => {
+		const plugin = recurrencePlugin()
+		const modified = {
+			...base,
+			rrule: undefined,
+			recurrenceId: '2025-01-07T09:00:00.000Z',
+		} as CalendarEvent
+		const lines = plugin.contribute?.('ical:vevent-properties', modified)
+		expect(lines).toEqual(['RECURRENCE-ID:20250107T090000Z'])
+	})
+
+	test('contribute returns an empty array for an unrelated point', () => {
+		const plugin = recurrencePlugin()
+		expect(plugin.contribute?.('some:other-point', base)).toEqual([])
+	})
 })

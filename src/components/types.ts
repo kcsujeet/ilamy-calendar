@@ -1,4 +1,3 @@
-import type { RRuleOptions } from '@/features/plugins/recurrence/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 
 /**
@@ -33,29 +32,6 @@ export interface CalendarEvent {
 	 * @default false
 	 */
 	allDay?: boolean
-	/**
-	 * Recurrence rule for recurring events (RFC 5545 standard)
-	 *
-	 * Uses TypeScript interface for better readability, type safety, and IDE support
-	 * compared to RRULE string format. Converted to rrule.js format internally.
-	 *
-	 * @example { freq: 'WEEKLY', interval: 1, byweekday: ['MO', 'WE', 'FR'] }
-	 * @example { freq: 'DAILY', interval: 1, count: 10 }
-	 * @example { freq: 'MONTHLY', interval: 1, until: new Date('2025-12-31') }
-	 */
-	rrule?: RRuleOptions
-	/**
-	 * Exception dates (EXDATE) - dates to exclude from recurrence
-	 * Uses ISO string format for storage and transmission
-	 * @example ['2025-01-15T09:00:00.000Z', '2025-01-22T09:00:00.000Z']
-	 */
-	exdates?: string[]
-	/**
-	 * Recurrence ID (RECURRENCE-ID) - identifies modified instances
-	 * Points to the original occurrence date this event modifies
-	 * Used for events that are modifications of recurring instances
-	 */
-	recurrenceId?: string
 	/**
 	 * UID for iCalendar compatibility
 	 * Unique identifier across calendar systems

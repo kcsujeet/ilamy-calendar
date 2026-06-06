@@ -1,8 +1,8 @@
+import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
+import { dayjs } from '@ilamy/calendar'
 import { RRule } from 'rrule'
-import type { CalendarEvent } from '@/components'
-import type { RRuleOptions } from '@/features/plugins/recurrence/types'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import { omitKeys, safeDate } from '@/lib/utils'
+import type { RRuleOptions } from '../types'
+import { omitKeys, safeDate } from './helpers'
 
 /**
  * Converts a Dayjs object to a "Floating Time" Date representation.

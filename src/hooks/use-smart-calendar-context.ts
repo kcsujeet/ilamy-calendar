@@ -1,11 +1,14 @@
+import type React from 'react'
 import { useContext } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
 import { CalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
 import { ResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
 import type { ResourceCalendarContextType } from '@/features/resource-calendar/contexts/resource-calendar-context/context'
 import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
-import type { CalendarView } from '@/types'
+import type { TranslatorFunction } from '@/lib/translations/types'
+import type { CalendarView, TimeFormat } from '@/types'
 
 /**
  * Full internal context type used by library components.
@@ -13,12 +16,14 @@ import type { CalendarView } from '@/types'
 export type SmartCalendarContextType = ResourceCalendarContextType
 
 /**
- * Publicly exposed calendar context properties.
+ * The public calendar API surface exposed by useIlamyCalendarContext() — for consumers and plugin
+ * components. The full internal context is intentionally not exported.
  */
-export interface UseIlamyCalendarContextReturn {
+export interface IlamyCalendarApi {
 	readonly currentDate: Dayjs
 	readonly view: CalendarView
 	readonly events: CalendarEvent[]
+	readonly rawEvents: CalendarEvent[]
 	readonly isEventFormOpen: boolean
 	readonly selectedEvent: CalendarEvent | null
 	readonly selectedDate: Dayjs | null
@@ -42,6 +47,21 @@ export interface UseIlamyCalendarContextReturn {
 		resourceId: string | number
 	) => CalendarEvent[]
 	readonly businessHours?: BusinessHours | BusinessHours[]
+	readonly t: TranslatorFunction
+	readonly timeFormat: TimeFormat
+	readonly timezone?: string
+	readonly currentLocale: string
+	readonly getEventsForDateRange: (start: Dayjs, end: Dayjs) => CalendarEvent[]
+	readonly applyScopedEdit: (
+		event: CalendarEvent,
+		updates: Partial<CalendarEvent>,
+		scope: unknown
+	) => void
+	readonly applyScopedDelete: (event: CalendarEvent, scope: unknown) => void
+	readonly getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
+	readonly renderSlot: (slotName: string, context: unknown) => React.ReactNode[]
+	readonly collect: (point: string, context: unknown) => unknown[]
+	readonly getViews: () => PluginView[]
 }
 
 /**
@@ -75,13 +95,14 @@ export function useSmartCalendarContext<T>(
  * Public hook exported for library users.
  * Returns a limited set of commonly used properties and methods.
  */
-export function useIlamyCalendarContext(): UseIlamyCalendarContextReturn {
+export function useIlamyCalendarContext(): IlamyCalendarApi {
 	const context = useSmartCalendarContext()
 
 	return {
 		currentDate: context.currentDate,
 		view: context.view,
 		events: context.events,
+		rawEvents: context.rawEvents,
 		isEventFormOpen: context.isEventFormOpen,
 		selectedEvent: context.selectedEvent,
 		selectedDate: context.selectedDate,
@@ -100,5 +121,16 @@ export function useIlamyCalendarContext(): UseIlamyCalendarContextReturn {
 		closeEventForm: context.closeEventForm,
 		getEventsForResource: context.getEventsForResource,
 		businessHours: context.businessHours,
+		t: context.t,
+		timeFormat: context.timeFormat,
+		timezone: context.timezone,
+		currentLocale: context.currentLocale ?? '',
+		getEventsForDateRange: context.getEventsForDateRange,
+		applyScopedEdit: context.applyScopedEdit,
+		applyScopedDelete: context.applyScopedDelete,
+		getEventManager: context.getEventManager,
+		renderSlot: context.renderSlot,
+		collect: context.collect,
+		getViews: context.getViews,
 	}
 }

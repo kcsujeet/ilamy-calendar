@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { recurrencePlugin } from '@/features/plugins/recurrence/recurrence-plugin'
 import dayjs from '@/lib/configs/dayjs-config'
 import { EventForm } from './event-form'
 
@@ -377,13 +378,19 @@ describe('EventForm', () => {
 
 	describe('Recurrence Integration', () => {
 		it('should render recurrence editor', () => {
-			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
+			renderEventForm(
+				{ ...defaultProps, selectedEvent: testNewEvent },
+				{ plugins: [recurrencePlugin()] }
+			)
 
 			expect(screen.getByTestId('recurrence-editor')).toBeInTheDocument()
 		})
 
 		it('should handle recurrence changes', () => {
-			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
+			renderEventForm(
+				{ ...defaultProps, selectedEvent: testNewEvent },
+				{ plugins: [recurrencePlugin()] }
+			)
 
 			const toggleButton = screen.getByTestId('toggle-recurrence')
 			fireEvent.click(toggleButton)
@@ -392,7 +399,10 @@ describe('EventForm', () => {
 		})
 
 		it('should include recurrence in form submission', async () => {
-			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
+			renderEventForm(
+				{ ...defaultProps, selectedEvent: testNewEvent },
+				{ plugins: [recurrencePlugin()] }
+			)
 
 			// Enable recurrence
 			fireEvent.click(screen.getByTestId('toggle-recurrence'))
@@ -493,7 +503,7 @@ describe('EventForm', () => {
 
 			renderEventForm(
 				{ ...defaultProps, selectedEvent: instanceEvent },
-				{ events: mockEvents }
+				{ events: mockEvents, plugins: [recurrencePlugin()] }
 			)
 
 			// RecurrenceEditor should show as enabled (checkbox checked)

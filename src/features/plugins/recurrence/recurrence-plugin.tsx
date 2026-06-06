@@ -1,16 +1,17 @@
-import type { ReactNode } from 'react'
+import './augment'
 import {
+	type CalendarEvent,
 	type EventFormSlotContext,
 	type EventMutationScopeSlotContext,
+	type IlamyPlugin,
+	type PluginMutationArgs,
 	SLOT_EVENT_FORM,
 	SLOT_EVENT_MUTATION_SCOPE,
-} from '@/components/calendar-slots'
-import type {
-	IlamyPlugin,
-	PluginMutationArgs,
-} from '@/features/plugins/lib/types'
+} from '@ilamy/calendar'
+import type { ReactNode } from 'react'
 import { RecurrenceEditDialog } from './components/recurrence-edit-dialog'
-import { RecurrenceEditor } from './components/recurrence-editor/recurrence-editor'
+import { RecurrenceFormSection } from './components/recurrence-form-section'
+import { recurrenceICalProperties } from './ical'
 import type { RecurrenceEditScope } from './types'
 import {
 	deleteRecurringEvent,
@@ -61,15 +62,15 @@ export const recurrencePlugin = (): IlamyPlugin => ({
 			scope: scope as RecurrenceEditScope,
 		}),
 
+	contribute: (point: string, context: unknown): unknown[] =>
+		point === 'ical:vevent-properties'
+			? recurrenceICalProperties(context as CalendarEvent)
+			: [],
+
 	renderSlot: (slotName: string, context: unknown): ReactNode => {
 		if (slotName === SLOT_EVENT_FORM) {
 			const { event, onChange } = context as EventFormSlotContext
-			return (
-				<RecurrenceEditor
-					onChange={(rrule) => onChange({ rrule: rrule || undefined })}
-					value={event.rrule ?? null}
-				/>
-			)
+			return <RecurrenceFormSection event={event} onChange={onChange} />
 		}
 		if (slotName === SLOT_EVENT_MUTATION_SCOPE) {
 			const { event, operation, resolve, cancel } =

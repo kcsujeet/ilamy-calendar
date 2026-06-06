@@ -119,6 +119,33 @@
 				"!src/components/demo/**"
 			],
 			"plugins": ["./biome-plugins/no-inline-template-keys.grit"]
+		},
+		{
+			"includes": [
+				"src/features/plugins/**",
+				"!src/features/plugins/lib/**",
+				"!**/*.test.ts",
+				"!**/*.test.tsx",
+				"!**/*.spec.ts",
+				"!**/*.spec.tsx"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": ["@/**"],
+										"message": "Plugin source must dogfood the public API: import from '@ilamy/calendar' (or relative paths / npm packages), never deep internals via the '@/' alias. Promote what you need to the public API first."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
 		}
 	]
 }

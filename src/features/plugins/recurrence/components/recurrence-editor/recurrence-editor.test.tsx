@@ -21,6 +21,22 @@ const getLastCallArg = (mockFn: ReturnType<typeof mock>) => {
 	return calls[calls.length - 1]?.[0]
 }
 
+// Map a frequency label to the native <option> value the editor emits.
+const FREQ_OPTION_VALUE: Record<string, string> = {
+	Daily: 'DAILY',
+	Weekly: 'WEEKLY',
+	Monthly: 'MONTHLY',
+	Yearly: 'YEARLY',
+}
+
+// Select a frequency on the native <select> frequency control.
+const selectFrequency = (label: keyof typeof FREQ_OPTION_VALUE) => {
+	const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
+	fireEvent.change(frequencySelect, {
+		target: { value: FREQ_OPTION_VALUE[label] },
+	})
+}
+
 describe('RecurrenceEditor', () => {
 	const mockOnChange = mock(() => {})
 
@@ -256,11 +272,7 @@ describe('RecurrenceEditor', () => {
 		it('should update RRULE when frequency changes', () => {
 			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
-			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
-			fireEvent.click(frequencySelect)
-
-			const weeklyOption = screen.getByRole('option', { name: 'Weekly' })
-			fireEvent.click(weeklyOption)
+			selectFrequency('Weekly')
 
 			expect(mockOnChange).toHaveBeenCalledWith(
 				expect.objectContaining({
@@ -279,11 +291,7 @@ describe('RecurrenceEditor', () => {
 				},
 			})
 
-			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
-			fireEvent.click(frequencySelect)
-
-			const dailyOption = screen.getByRole('option', { name: 'Daily' })
-			fireEvent.click(dailyOption)
+			selectFrequency('Daily')
 
 			// Check that onChange was called - let test failure show us the actual format
 			expect(mockOnChange).toHaveBeenCalledWith(
@@ -793,9 +801,7 @@ describe('RecurrenceEditor', () => {
 			fireEvent.click(checkbox)
 
 			// Change to weekly
-			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
-			fireEvent.click(frequencySelect)
-			fireEvent.click(screen.getByRole('option', { name: 'Weekly' }))
+			selectFrequency('Weekly')
 
 			// Select some days
 			fireEvent.click(screen.getByLabelText('Mon'))
@@ -865,9 +871,7 @@ describe('RecurrenceEditor', () => {
 		it('should produce RRule with exact frequency value', () => {
 			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
-			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
-			fireEvent.click(frequencySelect)
-			fireEvent.click(screen.getByRole('option', { name: 'Monthly' }))
+			selectFrequency('Monthly')
 
 			const result = getLastCallArg(mockOnChange)
 			expect(result.freq).toBe(RRule.MONTHLY)
@@ -1039,9 +1043,7 @@ describe('RecurrenceEditor', () => {
 
 			expect(screen.getByText('Daily')).toBeInTheDocument()
 
-			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
-			fireEvent.click(frequencySelect)
-			fireEvent.click(screen.getByRole('option', { name: 'Weekly' }))
+			selectFrequency('Weekly')
 
 			expect(screen.getByText('Weekly')).toBeInTheDocument()
 		})
@@ -1171,9 +1173,7 @@ describe('RecurrenceEditor', () => {
 				}),
 			})
 
-			const frequencySelect = screen.getByRole('combobox', { name: /repeats/i })
-			fireEvent.click(frequencySelect)
-			fireEvent.click(screen.getByRole('option', { name: 'Daily' }))
+			selectFrequency('Daily')
 
 			// Byweekday is kept in data (parent form should handle clearing if needed)
 			const result = getLastCallArg(mockOnChange)

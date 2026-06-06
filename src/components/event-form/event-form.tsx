@@ -21,9 +21,8 @@ import {
 	buildEndDateTime,
 	getTimeConstraints,
 } from '@/features/calendar/utils/event-form-utils'
-import { useRecurringEventActions } from '@/features/plugins/recurrence/hooks/useRecurringEventActions'
-import type { RRuleOptions } from '@/features/plugins/recurrence/types'
 import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
+import { useScopedEventMutation } from '@/hooks/use-scoped-event-mutation'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
@@ -105,32 +104,21 @@ export const EventForm: React.FC<EventFormProps> = ({
 		openDeleteDialog,
 		closeDialog,
 		handleConfirm,
-	} = useRecurringEventActions(onClose)
+	} = useScopedEventMutation(onClose)
 
-	const {
-		findParentRecurringEvent,
-		t,
-		timeFormat,
-		getEventManager,
-		renderSlot,
-	} = useSmartCalendarContext((context) => ({
-		findParentRecurringEvent: context.findParentRecurringEvent,
-		t: context.t,
-		timeFormat: context.timeFormat,
-		getEventManager: context.getEventManager,
-		renderSlot: context.renderSlot,
-	}))
+	const { t, timeFormat, getEventManager, renderSlot } =
+		useSmartCalendarContext((context) => ({
+			t: context.t,
+			timeFormat: context.timeFormat,
+			getEventManager: context.getEventManager,
+			renderSlot: context.renderSlot,
+		}))
 	const effectiveBusinessHours = useEffectiveBusinessHours(
 		selectedEvent?.resourceId
 	)
 
 	const start = selectedEvent?.start ?? dayjs()
 	const end = selectedEvent?.end ?? dayjs().add(1, 'hour')
-
-	// Find parent event if this is a recurring event instance
-	const parentEvent = selectedEvent
-		? findParentRecurringEvent(selectedEvent)
-		: null
 
 	// Whether a plugin owns this event (gates the scoped edit/delete flow)
 	const eventIsOwned = Boolean(selectedEvent && getEventManager(selectedEvent))
@@ -154,11 +142,9 @@ export const EventForm: React.FC<EventFormProps> = ({
 		location: selectedEvent?.location || '',
 	})
 
-	// Recurrence state - pull RRULE from parent if this is an instance
-	const [rrule, setRrule] = useState<RRuleOptions | null>(() => {
-		const eventRrule = selectedEvent?.rrule || parentEvent?.rrule
-		return eventRrule || null
-	})
+	// Generic draft of plugin-contributed fields (e.g. recurrence's rrule).
+	// Plugins push their fields through the SLOT_EVENT_FORM `onChange`.
+	const [pluginUpdates, setPluginUpdates] = useState<Partial<CalendarEvent>>({})
 
 	// Create wrapper functions to fix TypeScript errors with DatePicker
 	const handleStartDateChange = (date: Date | undefined) => {
@@ -225,7 +211,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 			location: formValues.location,
 			allDay: isAllDay,
 			color: selectedColor,
-			rrule: rrule || undefined,
+			...pluginUpdates,
 		}
 
 		if (selectedEvent?.id && eventIsOwned) {
@@ -237,7 +223,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 				location: formValues.location,
 				allDay: isAllDay,
 				color: selectedColor,
-				rrule: rrule || undefined,
+				...pluginUpdates,
 			})
 			return
 		}
@@ -261,15 +247,6 @@ export const EventForm: React.FC<EventFormProps> = ({
 			onDelete?.(selectedEvent)
 			onClose()
 		}
-	}
-
-	const handleRRuleChange = (newRRule: RRuleOptions | null) => {
-		if (!newRRule) {
-			setRrule(null)
-			return
-		}
-		const startDateTime = buildDateTime(startDate, startTime, isAllDay)
-		setRrule({ ...newRRule, dtstart: startDateTime.toDate() })
 	}
 
 	const disabledDateMatcher = effectiveBusinessHours
@@ -391,14 +368,15 @@ export const EventForm: React.FC<EventFormProps> = ({
 						/>
 
 						{/* Plugin-provided form sections (e.g. recurrence editor).
-						    Local `rrule` is the in-progress rule (merged from parent for
-						    instances), so it overrides the selected event's own rrule. */}
+						    `pluginUpdates` carries the in-progress plugin fields so the
+						    editors stay controlled. */}
 						{renderSlot(SLOT_EVENT_FORM, {
 							event: {
 								...selectedEvent,
-								rrule: rrule ?? undefined,
+								...pluginUpdates,
 							} as CalendarEvent,
-							onChange: (updates) => handleRRuleChange(updates.rrule ?? null),
+							onChange: (updates) =>
+								setPluginUpdates((prev) => ({ ...prev, ...updates })),
 						} satisfies EventFormSlotContext)}
 					</div>
 				</ScrollArea>
@@ -439,8 +417,8 @@ export const EventForm: React.FC<EventFormProps> = ({
 					SLOT_EVENT_MUTATION_SCOPE,
 					{
 						event: dialogState.event,
-						operation: dialogState.operationType,
-						resolve: (scope) => handleConfirm(scope as never),
+						operation: dialogState.operation,
+						resolve: (scope) => handleConfirm(scope),
 						cancel: closeDialog,
 					} satisfies EventMutationScopeSlotContext
 				)}

@@ -12,12 +12,13 @@ import {
 	useSensors,
 } from '@dnd-kit/core'
 import type React from 'react'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import {
 	type EventMutationScopeSlotContext,
 	SLOT_EVENT_MUTATION_SCOPE,
 } from '@/components/calendar-slots'
 import type { CalendarEvent } from '@/components/types'
+import { useScopedEventMutation } from '@/hooks/use-scoped-event-mutation'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { getUpdatedEvent } from './dnd-utils'
 import { EventDragOverlay } from './event-drag-overlay'
@@ -26,40 +27,21 @@ interface CalendarDndContextProps {
 	children: React.ReactNode
 }
 
-const CLOSED_DIALOG = {
-	isOpen: false,
-	event: null,
-	updates: null,
-} as const
-
 export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	const activeEventRef = useRef<CalendarEvent>(null)
 	const dragOverlayRef = useRef<{
 		setActiveEvent: (event: CalendarEvent | null) => void
 	}>(null)
 
-	const {
-		updateEvent,
-		updateRecurringEvent,
-		getEventManager,
-		disableDragAndDrop,
-	} = useSmartCalendarContext((context) => ({
-		updateEvent: context.updateEvent,
-		updateRecurringEvent: context.updateRecurringEvent,
-		getEventManager: context.getEventManager,
-		disableDragAndDrop: context.disableDragAndDrop,
-	}))
+	const { updateEvent, getEventManager, disableDragAndDrop } =
+		useSmartCalendarContext((context) => ({
+			updateEvent: context.updateEvent,
+			getEventManager: context.getEventManager,
+			disableDragAndDrop: context.disableDragAndDrop,
+		}))
 
-	// State for recurring event dialog
-	const [recurringDialog, setRecurringDialog] = useState<{
-		isOpen: boolean
-		event: CalendarEvent | null
-		updates: Partial<CalendarEvent> | null
-	}>({
-		isOpen: false,
-		event: null,
-		updates: null,
-	})
+	const { dialogState, openEditDialog, closeDialog, handleConfirm } =
+		useScopedEventMutation()
 
 	// Configure sensors with reduced activation constraints for easier dragging
 	const mouseSensor = useSensor(MouseSensor, {
@@ -92,34 +74,10 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		if (owner?.applyEdit) {
 			// Owned events route through the owner's scoped mutation flow: prompt
 			// for scope (the owner renders the eventMutationScope slot), then apply.
-			setRecurringDialog({ isOpen: true, event, updates })
+			openEditDialog(event, updates)
 		} else {
 			updateEvent(event.id, updates)
 		}
-	}
-
-	// Handle recurring event dialog confirmation
-	const handleRecurringEventConfirm = (scope: unknown) => {
-		if (!recurringDialog.event || !recurringDialog.updates) {
-			setRecurringDialog(CLOSED_DIALOG)
-			return
-		}
-
-		try {
-			updateRecurringEvent(recurringDialog.event, recurringDialog.updates, {
-				scope: scope as never,
-				eventDate: recurringDialog.event.start,
-			})
-		} catch {
-			// Silently handle error and reset dialog state
-		} finally {
-			setRecurringDialog(CLOSED_DIALOG)
-		}
-	}
-
-	// Handle recurring event dialog close
-	const handleRecurringEventClose = () => {
-		setRecurringDialog(CLOSED_DIALOG)
 	}
 
 	const handleDragStart = (event: DragStartEvent) => {
@@ -167,15 +125,15 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 			</DndContext>
 
 			{/* Scope dialog for the owned event, provided by the owning plugin */}
-			{recurringDialog.isOpen &&
-				recurringDialog.event &&
-				getEventManager(recurringDialog.event)?.renderSlot?.(
+			{dialogState.isOpen &&
+				dialogState.event &&
+				getEventManager(dialogState.event)?.renderSlot?.(
 					SLOT_EVENT_MUTATION_SCOPE,
 					{
-						event: recurringDialog.event,
-						operation: 'edit',
-						resolve: handleRecurringEventConfirm,
-						cancel: handleRecurringEventClose,
+						event: dialogState.event,
+						operation: dialogState.operation,
+						resolve: handleConfirm,
+						cancel: closeDialog,
 					} satisfies EventMutationScopeSlotContext
 				)}
 		</>

@@ -1,22 +1,18 @@
+import { dayjs, useIlamyCalendarContext } from '@ilamy/calendar'
 import { useEffect, useMemo, useState } from 'react'
 import type { Weekday } from 'rrule'
 import { RRule } from 'rrule'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { DatePicker } from '@/components/ui/date-picker'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select'
-import type { RRuleOptions } from '@/features/plugins/recurrence/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
-import { keys } from '@/lib/utils/keys'
+import type { RRuleOptions } from '../../types'
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
+import { Checkbox } from '../../ui/checkbox'
+import { DatePicker } from '../../ui/date-picker'
+import { Input } from '../../ui/input'
+import { Label } from '../../ui/label'
+import { Select } from '../../ui/select'
+
+// Composes React `key=` props and element ids from parts. Local copy of the
+// core `keys.listKey` helper (not part of the public surface).
+const listKey = (...parts: Array<string | number>): string => parts.join('-')
 
 const FREQ_MAP = {
 	DAILY: RRule.DAILY,
@@ -67,10 +63,7 @@ interface Props {
 }
 
 export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
-	const { t, firstDayOfWeek } = useSmartCalendarContext((ctx) => ({
-		t: ctx.t,
-		firstDayOfWeek: ctx.firstDayOfWeek,
-	}))
+	const { t, firstDayOfWeek } = useIlamyCalendarContext()
 	const [show, setShow] = useState(!!value)
 	const [opts, setOpts] = useState<RRuleOptions | null>(() => value || null)
 
@@ -169,25 +162,19 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 									{t('repeats')}
 								</Label>
 								<Select
+									className="h-8"
+									data-testid="frequency-select"
+									id="frequency"
 									onValueChange={(f) =>
 										update({ freq: FREQ_MAP[f as keyof typeof FREQ_MAP] })
 									}
 									value={freq}
 								>
-									<SelectTrigger
-										className="h-8"
-										data-testid="frequency-select"
-										id="frequency"
-									>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										{Object.keys(FREQ_MAP).map((f) => (
-											<SelectItem key={f} value={f}>
-												{t(f.toLowerCase())}
-											</SelectItem>
-										))}
-									</SelectContent>
+									{Object.keys(FREQ_MAP).map((f) => (
+										<option key={f} value={f}>
+											{t(f.toLowerCase())}
+										</option>
+									))}
 								</Select>
 							</div>
 							<div>
@@ -214,16 +201,16 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 									{weekDays.map((d, i) => (
 										<div
 											className="flex items-center space-x-1"
-											key={keys.listKey('weekday', i)}
+											key={listKey('weekday', i)}
 										>
 											<Checkbox
 												checked={byweekday.includes(d.value)}
-												id={keys.listKey('day', i)}
+												id={listKey('day', i)}
 												onCheckedChange={() => toggleDay(i)}
 											/>
 											<Label
 												className="text-xs cursor-pointer"
-												htmlFor={keys.listKey('day', i)}
+												htmlFor={listKey('day', i)}
 											>
 												{d.label}
 											</Label>

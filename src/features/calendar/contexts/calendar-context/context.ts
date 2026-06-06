@@ -8,7 +8,6 @@ import type {
 	SlotDuration,
 } from '@/features/calendar/types'
 import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
-import type { RecurrenceEditOptions } from '@/features/plugins/recurrence/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
@@ -30,23 +29,19 @@ export interface CalendarContextType {
 	today: () => void
 	addEvent: (event: CalendarEvent) => void
 	updateEvent: (eventId: string | number, event: Partial<CalendarEvent>) => void
-	updateRecurringEvent: (
+	deleteEvent: (eventId: string | number) => void
+	applyScopedEdit: (
 		event: CalendarEvent,
 		updates: Partial<CalendarEvent>,
-		options: RecurrenceEditOptions
+		scope: unknown
 	) => void
-	deleteEvent: (eventId: string | number) => void
-	deleteRecurringEvent: (
-		event: CalendarEvent,
-		options: RecurrenceEditOptions
-	) => void
+	applyScopedDelete: (event: CalendarEvent, scope: unknown) => void
 	openEventForm: (eventData?: Partial<CalendarEvent>) => void
 	closeEventForm: () => void
 	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
 	getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
 	renderSlot: (slotName: string, context: unknown) => React.ReactNode[]
 	collect: (point: string, context: unknown) => unknown[]
-	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
 	getViews: () => PluginView[]
 	renderEvent?: (event: CalendarEvent) => React.ReactNode
 	onEventClick: (event: CalendarEvent) => void

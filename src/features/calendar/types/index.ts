@@ -377,8 +377,9 @@ export interface IlamyCalendarProps {
 	 */
 	scrollTime?: string
 	/**
-	 * Optional plugins that add behavior/UI (e.g. recurrence). Defaults to the
-	 * built-in recurrence plugin when omitted.
+	 * Optional plugins that add behavior/UI (e.g. recurrence). The core ships
+	 * with no plugins by default — pass `recurrencePlugin()` to enable recurring
+	 * events.
 	 */
 	plugins?: IlamyPlugin[]
 }

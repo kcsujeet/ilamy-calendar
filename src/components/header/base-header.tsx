@@ -30,6 +30,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		rawEvents,
 		t,
 		hideExportButton,
+		collect,
 	} = useSmartCalendarContext((ctx) => ({
 		view: ctx.view,
 		setView: ctx.setView,
@@ -42,6 +43,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		rawEvents: ctx.rawEvents,
 		t: ctx.t,
 		hideExportButton: ctx.hideExportButton,
+		collect: ctx.collect,
 	}))
 
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -58,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
 	const handleExport = () => {
 		const filename = `ilamy-calendar-${new Date().toISOString().split('T')[0]}.ics`
-		downloadICalendar(rawEvents, filename, 'ilamy Calendar')
+		downloadICalendar(rawEvents, collect, filename, 'ilamy Calendar')
 		closeMobileMenu()
 	}
 

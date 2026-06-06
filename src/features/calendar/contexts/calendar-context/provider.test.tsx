@@ -3,6 +3,7 @@ import { render } from '@testing-library/react'
 import type React from 'react'
 import { RRule } from 'rrule'
 import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
+import { recurrencePlugin } from '@/features/plugins/recurrence/recurrence-plugin'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import type { CalendarProviderProps } from './provider'
@@ -54,8 +55,7 @@ const renderProvider = (
 
 // Test component to access context
 function TestComponent() {
-	const { events, getEventsForDateRange, findParentRecurringEvent } =
-		useSmartCalendarContext()
+	const { events, getEventsForDateRange } = useSmartCalendarContext()
 
 	// Test on-demand generation for a specific range
 	const rangeEvents = getEventsForDateRange(
@@ -63,26 +63,10 @@ function TestComponent() {
 		dayjs('2025-07-07').endOf('day')
 	)
 
-	// Test parent finding for recurring event instances
-	const testInstance: CalendarEvent = {
-		id: 'test-recurring_1',
-		title: 'Daily Meeting Instance',
-		start: dayjs('2025-07-02').hour(9),
-		end: dayjs('2025-07-02').hour(10),
-		recurrenceId: '2025-07-02T09:00:00.000Z',
-		uid: 'test-recurring@calendar.test',
-	}
-
-	const parentEvent = findParentRecurringEvent(testInstance)
-
 	return (
 		<div>
 			<div data-testid="total-events">{events.length}</div>
 			<div data-testid="range-events">{rangeEvents.length}</div>
-			<div data-testid="parent-found">{parentEvent ? 'true' : 'false'}</div>
-			<div data-testid="parent-rrule">
-				{parentEvent?.rrule ? JSON.stringify(parentEvent.rrule) : 'none'}
-			</div>
 		</div>
 	)
 }
@@ -105,6 +89,7 @@ describe('CalendarProvider - On-Demand Generation', () => {
 		const { getByTestId } = renderProvider(<TestComponent />, {
 			events: [recurringEvent],
 			dayMaxEvents: 3,
+			plugins: [recurrencePlugin()],
 		})
 
 		// Should generate events for the current view range (7 days from July 1-7)
@@ -162,6 +147,7 @@ describe('CalendarProvider - On-Demand Generation', () => {
 		const { getByTestId } = renderProvider(<TestComponent />, {
 			events: [recurringEventWithExdates],
 			dayMaxEvents: 3,
+			plugins: [recurrencePlugin()],
 		})
 
 		// Should not generate any events for excluded dates
@@ -173,117 +159,7 @@ describe('CalendarProvider - On-Demand Generation', () => {
 	})
 })
 
-describe('CalendarProvider - findParentRecurringEvent', () => {
-	it('should find parent event for recurring event instance', () => {
-		const parentEvent: CalendarEvent = {
-			id: 'test-recurring',
-			title: 'Daily Meeting',
-			start: dayjs('2025-07-01').hour(9),
-			end: dayjs('2025-07-01').hour(10),
-			rrule: {
-				freq: RRule.DAILY,
-				interval: 1,
-				dtstart: dayjs('2025-07-01').hour(9).toDate(),
-			},
-			uid: 'test-recurring@calendar.test',
-		}
-
-		const { getByTestId } = renderProvider(<TestComponent />, {
-			events: [parentEvent],
-			dayMaxEvents: 3,
-		})
-
-		expect(getByTestId('parent-found').textContent).toBe('true')
-		expect(getByTestId('parent-rrule').textContent).toContain('"freq":3') // Check for RRule.DAILY (3)
-	})
-
-	it('should return null for non-recurring event instance', () => {
-		const nonRecurringEvent: CalendarEvent = {
-			id: 'test-single',
-			title: 'One-time Meeting',
-			start: dayjs('2025-07-03').hour(9),
-			end: dayjs('2025-07-03').hour(10),
-		}
-
-		// Create a standalone instance without parent
-		const standaloneInstance: CalendarEvent = {
-			id: 'standalone-instance',
-			title: 'Standalone Instance',
-			start: dayjs('2025-07-04').hour(9),
-			end: dayjs('2025-07-04').hour(10),
-			recurrenceId: '2025-07-04T09:00:00.000Z',
-			uid: 'orphan@calendar.test', // No matching parent UID
-		}
-
-		function TestStandalone() {
-			const { findParentRecurringEvent } = useSmartCalendarContext()
-			const parentEvent = findParentRecurringEvent(standaloneInstance)
-
-			return (
-				<div>
-					<div data-testid="standalone-parent-found">
-						{parentEvent ? 'true' : 'false'}
-					</div>
-				</div>
-			)
-		}
-
-		const { getByTestId } = renderProvider(<TestStandalone />, {
-			events: [nonRecurringEvent],
-			dayMaxEvents: 3,
-		})
-
-		expect(getByTestId('standalone-parent-found').textContent).toBe('false')
-	})
-
-	it('should handle missing UID by generating UID from id', () => {
-		const parentEvent: CalendarEvent = {
-			id: 'test-recurring',
-			title: 'Daily Meeting',
-			start: dayjs('2025-07-01').hour(9),
-			end: dayjs('2025-07-01').hour(10),
-			rrule: {
-				freq: RRule.DAILY,
-				interval: 1,
-				dtstart: dayjs('2025-07-01').hour(9).toDate(),
-			},
-			// No UID - should auto-generate
-		}
-
-		const instanceWithoutUID: CalendarEvent = {
-			id: 'test-recurring_1',
-			title: 'Daily Meeting Instance',
-			start: dayjs('2025-07-02').hour(9),
-			end: dayjs('2025-07-02').hour(10),
-			recurrenceId: '2025-07-02T09:00:00.000Z',
-			// No UID - should auto-generate and match parent
-		}
-
-		function TestUIDGeneration() {
-			const { findParentRecurringEvent } = useSmartCalendarContext()
-			const parentEvent = findParentRecurringEvent(instanceWithoutUID)
-
-			return (
-				<div>
-					<div data-testid="uid-match-found">
-						{parentEvent ? 'true' : 'false'}
-					</div>
-					<div data-testid="uid-match-rrule">
-						{parentEvent?.rrule ? JSON.stringify(parentEvent.rrule) : 'none'}
-					</div>
-				</div>
-			)
-		}
-
-		const { getByTestId } = renderProvider(<TestUIDGeneration />, {
-			events: [parentEvent],
-			dayMaxEvents: 3,
-		})
-
-		expect(getByTestId('uid-match-found').textContent).toBe('false')
-		expect(getByTestId('uid-match-rrule').textContent).toBe('none')
-	})
-
+describe('CalendarProvider - recurring event integration', () => {
 	it('should not create duplicate events when recurring events are modified', () => {
 		// Create a base recurring event
 		const baseEvent: CalendarEvent = {
@@ -345,6 +221,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 		const { getByTestId } = renderProvider(<TestNoDuplicates />, {
 			events: events,
 			dayMaxEvents: 5,
+			plugins: [recurrencePlugin()],
 		})
 
 		// Should have 2 events on Jan 3rd (the base event generates one instance, and the modified instance is also present)
@@ -375,22 +252,18 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 		}
 
 		const TestRecurringCallbacks = () => {
-			const { updateRecurringEvent, deleteRecurringEvent } =
-				useSmartCalendarContext()
+			const { applyScopedEdit, applyScopedDelete } = useSmartCalendarContext()
 
 			const handleUpdateRecurring = () => {
-				updateRecurringEvent(
+				applyScopedEdit(
 					recurringEvent,
 					{ title: 'Updated Weekly Meeting' },
-					{ scope: 'this', eventDate: recurringEvent.start }
+					'this'
 				)
 			}
 
 			const handleDeleteRecurring = () => {
-				deleteRecurringEvent(recurringEvent, {
-					scope: 'this',
-					eventDate: recurringEvent.start,
-				})
+				applyScopedDelete(recurringEvent, 'this')
 			}
 
 			return (
@@ -418,6 +291,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 			dayMaxEvents: 5,
 			onEventUpdate: onEventUpdate,
 			onEventDelete: onEventDelete,
+			plugins: [recurrencePlugin()],
 		})
 
 		// Test updating recurring event - should call onEventUpdate with the updated event
@@ -450,11 +324,11 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 		}
 
 		const TestRruleUpdate = () => {
-			const { updateRecurringEvent } = useSmartCalendarContext()
+			const { applyScopedEdit } = useSmartCalendarContext()
 
 			const handleUpdateRrule = () => {
 				// Change from daily to weekly
-				updateRecurringEvent(
+				applyScopedEdit(
 					recurringEvent,
 					{
 						rrule: {
@@ -464,7 +338,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 							dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
 						},
 					},
-					{ scope: 'all', eventDate: recurringEvent.start }
+					'all'
 				)
 			}
 
@@ -485,6 +359,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 			events: [recurringEvent],
 			dayMaxEvents: 5,
 			onEventUpdate: onEventUpdate,
+			plugins: [recurrencePlugin()],
 		})
 
 		// Test updating rrule - should call onEventUpdate with the new rrule
@@ -519,17 +394,17 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 		}
 
 		const TestTimeUpdate = () => {
-			const { updateRecurringEvent } = useSmartCalendarContext()
+			const { applyScopedEdit } = useSmartCalendarContext()
 
 			const handleUpdateTime = () => {
 				// Change time from 2pm-3pm to 10am-11am
-				updateRecurringEvent(
+				applyScopedEdit(
 					recurringEvent,
 					{
 						start: dayjs('2025-01-06T10:00:00.000Z'),
 						end: dayjs('2025-01-06T11:00:00.000Z'),
 					},
-					{ scope: 'all', eventDate: recurringEvent.start }
+					'all'
 				)
 			}
 
@@ -550,6 +425,7 @@ describe('CalendarProvider - findParentRecurringEvent', () => {
 			events: [recurringEvent],
 			dayMaxEvents: 5,
 			onEventUpdate: onEventUpdate,
+			plugins: [recurrencePlugin()],
 		})
 
 		// Test updating time - should call onEventUpdate with new start/end times

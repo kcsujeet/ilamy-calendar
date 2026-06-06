@@ -65,9 +65,11 @@ const findBaseEventIndex = (
 	targetEvent: CalendarEvent
 ): number => {
 	const targetUid = getEventParentUID(targetEvent)
-	const index = events.findIndex(
-		(e) => getEventParentUID(e) === targetUid && e.rrule && !e.recurrenceId
-	)
+	const index = events.findIndex((candidate) => {
+		const belongsToSeries = getEventParentUID(candidate) === targetUid
+		const isBaseSeries = Boolean(candidate.rrule) && !candidate.recurrenceId
+		return belongsToSeries && isBaseSeries
+	})
 	if (index === -1) {
 		throw new Error('Base recurring event not found')
 	}
@@ -178,9 +180,11 @@ export const generateRecurringEvents = ({
 		const rule = new RRule(ruleOptions)
 
 		const parentUid = getEventParentUID(event)
-		const overrides = currentEvents.filter(
-			(e) => e.recurrenceId && getEventParentUID(e) === parentUid
-		)
+		const overrides = currentEvents.filter((candidate) => {
+			const isOverride = Boolean(candidate.recurrenceId)
+			const belongsToSeries = getEventParentUID(candidate) === parentUid
+			return isOverride && belongsToSeries
+		})
 
 		// Calculate event duration to expand search window for events that span the range
 		const eventDuration = event.end.diff(event.start)

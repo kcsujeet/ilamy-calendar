@@ -1,5 +1,5 @@
 import { dayjs, useIlamyCalendarContext } from '@ilamy/calendar'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Weekday } from 'rrule'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from '../../types'
@@ -82,7 +82,7 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 		label: dayjs().day(index).format('ddd'),
 	}))
 	const weekDays = WEEKDAYS.map(
-		(d, i) => WEEKDAY_OPTIONS[(i + firstDayOfWeek) % 7]
+		(_weekday, i) => WEEKDAY_OPTIONS[(i + firstDayOfWeek) % 7]
 	)
 
 	useEffect(() => {
@@ -238,40 +238,44 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 						<div>
 							<Label className="text-xs">{t('ends')}</Label>
 							<div className="space-y-2 mt-1">
-								{END_TYPES.map(({ type, id, labelKey }) => (
-									<div className="flex items-center space-x-2" key={type}>
-										<Checkbox
-											checked={endType === type}
-											id={id}
-											onCheckedChange={() => setEndType(type)}
-										/>
-										<Label className="text-xs" htmlFor={id}>
-											{t(labelKey)}
-										</Label>
-										{type === 'count' && endType === 'count' && (
-											<>
-												<Input
-													className="h-6 w-16 text-xs"
-													data-testid="count-input"
-													min="1"
-													onChange={(e) =>
-														update({ count: parseNum(e.target.value) })
-													}
-													type="number"
-													value={opts?.count || 1}
-												/>
-												<span className="text-xs">{t('occurrences')}</span>
-											</>
-										)}
-										{type === 'until' && endType === 'until' && (
-											<DatePicker
-												className="h-6"
-												date={opts?.until ?? undefined}
-												onChange={handleUntilChange}
+								{END_TYPES.map(({ type, id, labelKey }) => {
+									const showCountInput = type === 'count' && endType === 'count'
+									const showUntilInput = type === 'until' && endType === 'until'
+									return (
+										<div className="flex items-center space-x-2" key={type}>
+											<Checkbox
+												checked={endType === type}
+												id={id}
+												onCheckedChange={() => setEndType(type)}
 											/>
-										)}
-									</div>
-								))}
+											<Label className="text-xs" htmlFor={id}>
+												{t(labelKey)}
+											</Label>
+											{showCountInput && (
+												<>
+													<Input
+														className="h-6 w-16 text-xs"
+														data-testid="count-input"
+														min="1"
+														onChange={(e) =>
+															update({ count: parseNum(e.target.value) })
+														}
+														type="number"
+														value={opts?.count || 1}
+													/>
+													<span className="text-xs">{t('occurrences')}</span>
+												</>
+											)}
+											{showUntilInput && (
+												<DatePicker
+													className="h-6"
+													date={opts?.until ?? undefined}
+													onChange={handleUntilChange}
+												/>
+											)}
+										</div>
+									)
+								})}
 							</div>
 						</div>
 					</div>

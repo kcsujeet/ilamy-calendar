@@ -17,9 +17,11 @@ export const RecurrenceFormSection = ({ event, onChange }: Props) => {
 	const targetUid = event.uid
 	let parent: CalendarEvent | undefined
 	if (targetUid) {
-		parent = rawEvents.find(
-			(e) => (e.uid || `${e.id}@ilamy.calendar`) === targetUid && e.rrule
-		)
+		parent = rawEvents.find((candidate) => {
+			const candidateUid = candidate.uid || `${candidate.id}@ilamy.calendar`
+			const isSameSeries = candidateUid === targetUid
+			return isSameSeries && Boolean(candidate.rrule)
+		})
 	}
 	const [rrule, setRrule] = useState<RRuleOptions | null>(
 		event.rrule ?? parent?.rrule ?? null

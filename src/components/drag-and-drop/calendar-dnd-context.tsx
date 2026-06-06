@@ -63,7 +63,8 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		event: CalendarEvent,
 		updates: Partial<CalendarEvent>
 	) => {
-		if (!event?.id || !updates || Object.keys(updates).length === 0) {
+		const hasNoUpdates = !updates || Object.keys(updates).length === 0
+		if (!event?.id || hasNoUpdates) {
 			return
 		}
 

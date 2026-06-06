@@ -30,11 +30,9 @@ const formatRRule = (rruleOptions: unknown): string => {
 export const recurrenceICalProperties = (event: CalendarEvent): string[] => {
 	const lines: string[] = []
 
-	if (event.rrule) {
-		const rrule = formatRRule(event.rrule)
-		if (rrule) {
-			lines.push(rrule)
-		}
+	const rruleLine = event.rrule ? formatRRule(event.rrule) : ''
+	if (rruleLine) {
+		lines.push(rruleLine)
 	}
 
 	if (event.exdates?.length) {

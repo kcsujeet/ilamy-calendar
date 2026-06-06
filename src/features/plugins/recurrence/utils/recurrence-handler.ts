@@ -232,13 +232,10 @@ export const generateRecurringEvents = ({
 			})
 			.filter((recurringEvent) => {
 				// Filter out EXDATE exclusions
-				const hasExdates = event.exdates && event.exdates.length > 0
-				if (hasExdates) {
-					const eventStartISO = recurringEvent.start.toISOString()
-					const isExcluded = event.exdates?.includes(eventStartISO)
-					if (isExcluded) {
-						return false
-					}
+				const eventStartISO = recurringEvent.start.toISOString()
+				const isExcluded = event.exdates?.includes(eventStartISO) ?? false
+				if (isExcluded) {
+					return false
 				}
 
 				// Filter to only include events that span through the original requested date range

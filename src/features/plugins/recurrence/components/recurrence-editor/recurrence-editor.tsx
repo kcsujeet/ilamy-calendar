@@ -148,6 +148,7 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 	}
 	const freq = FREQ_TO_STR[opts?.freq ?? RRule.DAILY] || 'DAILY'
 	const byweekday = resolveByweekday(opts?.byweekday)
+	const showSummary = Boolean(show && value)
 
 	return (
 		<Card data-testid="recurrence-editor">
@@ -161,9 +162,9 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 					/>
 					<CardTitle className="text-sm">{t('repeat')}</CardTitle>
 				</div>
-				{show && value && (
+				{showSummary && (
 					<p className="text-xs text-muted-foreground">
-						{getDescription(value, t)}
+						{getDescription(value ?? null, t)}
 					</p>
 				)}
 			</CardHeader>

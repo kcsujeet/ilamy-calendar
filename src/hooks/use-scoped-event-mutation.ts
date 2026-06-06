@@ -54,12 +54,13 @@ export function useScopedEventMutation(
 	const handleConfirm = useCallback(
 		(scope: unknown) => {
 			setDialogState((state) => {
-				if (state.event) {
-					if (state.operation === 'edit') {
-						applyScopedEdit(state.event, state.updates ?? {}, scope)
-					} else {
-						applyScopedDelete(state.event, scope)
-					}
+				if (!state.event) {
+					return CLOSED
+				}
+				if (state.operation === 'edit') {
+					applyScopedEdit(state.event, state.updates ?? {}, scope)
+				} else {
+					applyScopedDelete(state.event, scope)
 				}
 				return CLOSED
 			})

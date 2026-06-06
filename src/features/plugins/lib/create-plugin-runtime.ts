@@ -34,7 +34,8 @@ export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({
 		const nodes: ReactNode[] = []
 		for (const plugin of plugins) {
 			const node = plugin.renderSlot?.(slotName, context)
-			if (node !== null && node !== undefined) {
+			const isPresent = node !== null && node !== undefined
+			if (isPresent) {
 				nodes.push(createElement(Fragment, { key: plugin.name }, node))
 			}
 		}

@@ -241,16 +241,17 @@ export const EventForm: React.FC<EventFormProps> = ({
 	}
 
 	const handleDelete = () => {
-		if (selectedEvent?.id) {
-			// Check if a plugin owns this event (e.g. recurring)
-			if (eventIsOwned) {
-				// Show recurring event delete dialog
-				openDeleteDialog(selectedEvent)
-				return // Don't close the form yet, let the dialog handle it
-			}
-			onDelete?.(selectedEvent)
-			onClose()
+		if (!selectedEvent?.id) {
+			return
 		}
+		// A plugin owns this event (e.g. recurring): let it gather the delete
+		// scope via its dialog; don't close the form yet.
+		if (eventIsOwned) {
+			openDeleteDialog(selectedEvent)
+			return
+		}
+		onDelete?.(selectedEvent)
+		onClose()
 	}
 
 	let disabledDateMatcher: ((date: Date) => boolean) | undefined

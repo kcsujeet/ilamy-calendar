@@ -15,5 +15,7 @@ export default defineConfig({
 	minify: true,
 	clean: true,
 	sourcemap: true,
-	external: ['react', 'react-dom'],
+	// @ilamy/ui is a dependency (its own published package); keep it external so
+	// the calendar bundle references the shared primitives instead of inlining them.
+	external: ['react', 'react-dom', /^@ilamy\/ui/],
 })

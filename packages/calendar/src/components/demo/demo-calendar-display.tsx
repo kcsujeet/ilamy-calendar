@@ -1,5 +1,5 @@
+import { Card, CardContent, CardHeader } from '@ilamy/ui/components/card'
 import type { CalendarEvent, WeekDays } from '@/components/types'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
 import type {
 	CalendarClassesOverride,

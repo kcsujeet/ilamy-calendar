@@ -1,3 +1,9 @@
+import { Button } from '@ilamy/ui/components/button'
+import { Checkbox } from '@ilamy/ui/components/checkbox'
+import { DialogFooter } from '@ilamy/ui/components/dialog'
+import { Input } from '@ilamy/ui/components/input'
+import { Label } from '@ilamy/ui/components/label'
+import { ScrollArea } from '@ilamy/ui/components/scroll-area'
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import {
@@ -5,13 +11,7 @@ import {
 	EventMutationScopeSlot,
 } from '@/components/calendar-slots'
 import type { CalendarEvent } from '@/components/types'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { DatePicker } from '@/components/ui/date-picker'
-import { DialogFooter } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { TimePicker } from '@/components/ui/time-picker'
 import { isBusinessDay } from '@/features/calendar/utils/business-hours'
 import {

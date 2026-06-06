@@ -1,13 +1,13 @@
-import type React from 'react'
-import { useImperativeHandle, useState } from 'react'
-import type { CalendarEvent } from '@/components'
-import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
-} from '@/components/ui/dialog'
+} from '@ilamy/ui/components/dialog'
+import type React from 'react'
+import { useImperativeHandle, useState } from 'react'
+import type { CalendarEvent } from '@/components'
+import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 export interface SelectedDayEvents {

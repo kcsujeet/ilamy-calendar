@@ -6,7 +6,9 @@
 			"@ilamy/calendar": ["./src/index.ts"],
 			"@ilamy/calendar/plugins/recurrence": [
 				"./src/features/plugins/recurrence/recurrence.ts"
-			]
+			],
+			"@ilamy/ui/components/*": ["../ui/src/components/*"],
+			"@ilamy/ui/lib/utils": ["../ui/src/lib/utils.ts"]
 		}
 	},
 	"include": ["**/*.ts", "**/*.tsx"],

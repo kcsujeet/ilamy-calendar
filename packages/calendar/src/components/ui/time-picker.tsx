@@ -1,13 +1,13 @@
-import { Clock } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@ilamy/ui/components/button'
+import { Input } from '@ilamy/ui/components/input'
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@/components/ui/popover'
-import { ScrollArea } from '@/components/ui/scroll-area'
+} from '@ilamy/ui/components/popover'
+import { ScrollArea } from '@ilamy/ui/components/scroll-area'
+import { Clock } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useAutocompleteTimepicker } from '@/hooks/use-autocomplete-timepicker'
 import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'

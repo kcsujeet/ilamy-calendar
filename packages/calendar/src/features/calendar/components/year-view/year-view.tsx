@@ -1,5 +1,5 @@
+import { ScrollArea, ScrollBar } from '@ilamy/ui/components/scroll-area'
 import { AnimatedSection } from '@/components/animations/animated-section'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'

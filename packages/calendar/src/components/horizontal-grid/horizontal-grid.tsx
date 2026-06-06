@@ -1,6 +1,6 @@
+import { ScrollArea, ScrollBar } from '@ilamy/ui/components/scroll-area'
 import type React from 'react'
 import { useRef } from 'react'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useScrollToTime } from '@/components/vertical-grid/use-scroll-to-time'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'

@@ -1,6 +1,6 @@
+import { Button } from '@ilamy/ui/components/button'
 import { Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
 
 type Theme = 'dark' | 'light' | 'system'
 const defaultTheme: Theme = 'dark'

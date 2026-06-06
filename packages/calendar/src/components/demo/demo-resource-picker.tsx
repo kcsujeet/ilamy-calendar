@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/card'
+import { Card } from '@ilamy/ui/components/card'
 import type { Resource } from '@/features/resource-calendar/types'
 
 type DemoResourcePickerProps = {

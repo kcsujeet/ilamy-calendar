@@ -1,21 +1,22 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: demo component */
-import type { WeekDays } from '@/components/types'
-import { Button } from '@/components/ui/button'
+
+import { Button } from '@ilamy/ui/components/button'
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+} from '@ilamy/ui/components/card'
+import { Checkbox } from '@ilamy/ui/components/checkbox'
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@/components/ui/select'
+} from '@ilamy/ui/components/select'
+import type { WeekDays } from '@/components/types'
 import type { SlotDuration } from '@/features/calendar/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { CalendarView, TimeFormat } from '@/types'

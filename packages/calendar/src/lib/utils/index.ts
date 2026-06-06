@@ -1,13 +1,10 @@
-import type { ClassValue } from 'clsx'
-import { clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
 import type { WeekDays } from '@/components/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 
-export function cn(...inputs: ClassValue[]) {
-	return twMerge(clsx(inputs))
-}
+// `cn` now lives in the shared @ilamy/ui package; re-exported here so the
+// existing `import { cn } from '@/lib/utils'` call sites in core stay unchanged.
+export { cn } from '@ilamy/ui/lib/utils'
 
 /**
  * Converts an optional WeekDays[] list into a Set<number> of day indices

@@ -1,6 +1,6 @@
+import { Button } from '@ilamy/ui/components/button'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getMonthWeeks, getWeekDays, isToday } from '@/lib/utils/date-utils'

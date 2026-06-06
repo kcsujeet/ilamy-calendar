@@ -15,7 +15,7 @@
 	],
 	"scripts": {
 		"build": "bun run --filter '*' build",
-		"test": "bun run --filter '*' test",
+		"test": "bun run --filter '*' --if-present test",
 		"type-check": "bun run --filter '*' type-check",
 		"lint": "bunx biome lint . --diagnostic-level=error",
 		"lint:fix": "bunx biome lint --write .",

@@ -92,6 +92,24 @@ const withTimeOfDay = (target: Dayjs, source: Dayjs): Dayjs => {
 }
 
 /**
+ * Appends the target occurrence's start to the base event's EXDATE list,
+ * excluding that single occurrence from the series. Shared by the "this" scope
+ * of both edit and delete.
+ */
+const addExdateToBaseEvent = (
+	baseEvent: CalendarEvent,
+	targetEvent: CalendarEvent
+): { baseEvent: CalendarEvent; targetEventStartISO: string } => {
+	const targetEventStartISO = targetEvent.start.toISOString()
+	const existingExdates = baseEvent.exdates || []
+	const updatedExdates = [...existingExdates, targetEventStartISO]
+	return {
+		baseEvent: { ...baseEvent, exdates: updatedExdates },
+		targetEventStartISO,
+	}
+}
+
+/**
  * For scope "all": apply the submitted wall-clock time to the base event anchor.
  * This keeps the series anchored to its original date while changing its time.
  */
@@ -257,14 +275,8 @@ export const updateRecurringEvent = ({
 	switch (scope) {
 		case 'this': {
 			// "This event only" - Add EXDATE to base event and create standalone modified event
-			const targetEventStartISO = targetEvent.start.toISOString()
-			const existingExdates = baseEvent.exdates || []
-			const updatedExdates = [...existingExdates, targetEventStartISO]
-
-			const updatedBaseEvent = {
-				...baseEvent,
-				exdates: updatedExdates,
-			}
+			const { baseEvent: updatedBaseEvent, targetEventStartISO } =
+				addExdateToBaseEvent(baseEvent, targetEvent)
 			updatedEvents[baseEventIndex] = updatedBaseEvent
 
 			// Create standalone modified event with recurrenceId
@@ -371,11 +383,10 @@ export const deleteRecurringEvent = ({
 	switch (scope) {
 		case 'this': {
 			// "This event only" - Add EXDATE to exclude this occurrence
-			const targetEventStartISO = targetEvent.start.toISOString()
-			const existingExdates = baseEvent.exdates || []
-			const updatedExdates = [...existingExdates, targetEventStartISO]
-
-			const updatedBaseEvent = { ...baseEvent, exdates: updatedExdates }
+			const { baseEvent: updatedBaseEvent } = addExdateToBaseEvent(
+				baseEvent,
+				targetEvent
+			)
 			updatedEvents[baseEventIndex] = updatedBaseEvent
 			break
 		}

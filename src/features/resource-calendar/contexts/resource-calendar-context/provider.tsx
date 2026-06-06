@@ -8,6 +8,7 @@ import type {
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
+import { composePluginProviders } from '@/features/plugins/lib/compose-plugin-providers'
 import type { Resource } from '@/features/resource-calendar/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
@@ -277,12 +278,9 @@ export const ResourceCalendarProvider: React.FC<
 		]
 	)
 
-	const pluginProviders = calendarEngine.getProviders()
-	const wrappedChildren = pluginProviders.reduceRight(
-		(tree, PluginProvider, index) => (
-			<PluginProvider key={index}>{tree}</PluginProvider>
-		),
-		children as React.ReactNode
+	const wrappedChildren = composePluginProviders(
+		calendarEngine.getProviders(),
+		children
 	)
 
 	return (

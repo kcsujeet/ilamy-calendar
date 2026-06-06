@@ -29,13 +29,13 @@ export const RecurrenceFormSection = ({ event, onChange }: Props) => {
 			onChange({ rrule: undefined })
 			return
 		}
-		// Anchor the series to the event's start when the rule omits its own dtstart.
-		const anchored: RRuleOptions = {
-			...next,
-			dtstart: next.dtstart ?? event.start.toDate(),
-		}
-		setRrule(anchored)
-		onChange({ rrule: anchored })
+		// Anchor the series to the event's start when the rule omits its own
+		// dtstart. A draft event may have no start yet; in that case pass the rule
+		// through unanchored rather than dereferencing a missing start.
+		const dtstart = next.dtstart ?? event.start?.toDate()
+		const resolved = dtstart ? { ...next, dtstart } : next
+		setRrule(resolved)
+		onChange({ rrule: resolved })
 	}
 	return <RecurrenceEditor onChange={handleChange} value={rrule} />
 }

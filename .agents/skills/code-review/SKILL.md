@@ -7,9 +7,21 @@ description: Review a GitHub PR or local diff for the @ilamy/calendar repo. Draf
 
 Review a pull request or local diff thoroughly, draft findings as Conventional Comments anchored to specific lines, and present the draft to the user. Never post to GitHub without explicit approval.
 
-## Hard Rules
+## How this skill works — READ FIRST
 
-These are non-negotiable. Violating any of these is a defect in the review.
+This skill is a **checklist, not an agent dispatch.** There is no "Agent 1 / Agent 2 / Agent 3" that decides what matters, and there are no optional "nice to have" findings. **Every rule in this document is a Hard Rule, and every item in "The Checklist" below is mandatory.**
+
+- The review is **complete only when you have personally verified and checked off every item in The Checklist.** Until then, the review is not done and you may not tell the user "looks good" / "all clear" / "ready to post."
+- Use `TaskCreate` to create one task per checklist item, and `TaskUpdate` to mark each `completed` **only after** you have actually verified it against the diff and the files. Do not batch-mark. Do not mark an item done you didn't check.
+- If an item genuinely does not apply (e.g. no layout changes in the diff), mark it done with a one-line note "n/a — no CSS/layout in diff." "Does not apply" is a verified conclusion, not a skip.
+- If you cannot honestly check an item, **say so explicitly to the user** and treat the review as incomplete. Never hand-wave a box.
+- Subagents are optional research helpers only. On a large diff (>300 lines or >5 files) you may dispatch `Explore` agents in parallel to gather raw material faster, but **you own every checkbox**: a sub-agent's report is an unverified input you must confirm against the actual file before it can satisfy a checklist item. Agents never "do the review"; the checklist does.
+
+The phases below (Scope → Gather → Work the checklist → Draft → Post) are the order of operations. The Checklist is the definition of done.
+
+## Hard Rules (process and posting)
+
+These govern how you run the review and how you post. Violating any is a defect. (The code-quality and readability Hard Rules live as checklist items in The Checklist — they are equally non-negotiable.)
 
 - **Never post to GitHub before the user says to post.** Showing the draft is not approval; "looks good" is not approval. Wait for explicit "post it" or equivalent.
 - **Decide yourself whether a comment needs a decoration at all.** Most don't. Only ask the user about the choice of decoration (`blocking` vs `non-blocking` vs `if-minor`) for the small subset where one is actually needed AND severity is genuinely ambiguous. Never silently add `(blocking)` yourself.
@@ -20,14 +32,10 @@ These are non-negotiable. Violating any of these is a defect in the review.
 - **Never make claims about external APIs from cached knowledge.** Before citing behavior of dayjs, rrule, React, Intl, Tailwind, or any other library, WebFetch the canonical docs and cite the source inline. Past sessions shipped fabricated method names.
 - **Never make the review about pre-existing problems.** Flag them once briefly if they intersect the change, then move on. The PR author didn't write that code.
 - **Never create follow-up commits on the user's behalf during review.** If the user asks for fixes after the review, make them but ask before committing.
-- **Trust but verify.** When a sub-agent says "line 42 has a bug", open line 42 and confirm before putting it in the draft.
+- **Trust but verify.** When a sub-agent (or your own first pass) says "line 42 has a bug", open line 42 and confirm before putting it in the draft.
 - **When you flag one instance of a pattern, scan the diff for the same pattern elsewhere.** If you call out a useless `useMemo` in one file, grep the diff for other `useMemo` blocks and check each. If you call out a manual `Intl`-based helper, look for siblings. The user explicitly asked "look for other such options" when a single instance was flagged and other instances existed nearby.
 - **Treat author defiance of a prior review as blocking.** If the prior review explicitly asked the author to remove or refactor pattern X, and the new revision renamed or relocated pattern X instead of removing it, that is still the same architectural issue. Flag it as `(blocking)` and reference the prior review comment.
-- **Layout / sizing changes get a viewport simulation.** For any PR that touches CSS or Tailwind width/height/min/max, flex/grid, or positioning, compute the result at 375px (mobile), 600px (small tablet), 768px, and 1024px+ viewports BEFORE deciding it's fine. Divide available width by the number of columns / cells, subtract padding, and ask whether the resulting usable width can hold the content readably. Surface those numbers in the comment so the author can see the cost. Removing a width floor (`min-w-*`) without responsive view switching is almost always wrong on a calendar with 7+ columns; the failure case is the smallest viewport × largest column count.
-- **Author intent ≠ absence of bug.** When the author defends a change as deliberate ("I removed `min-w-20` because fully fluid is the design"), that closes the *intent* question but not the *correctness* question. Always separately ask: given they intended this, does the resulting behavior actually work? For layout / observable-behavior comments, the default on a re-review is **not resolved** until you've either verified visually in the running dev server OR articulated concretely (numbers, walkthrough) why the change is safe. Author claim + dev log entry alone do not move a comment from open to resolved.
 - **On re-review, fetch the comment thread first.** Before triaging your prior findings against the new revision, run `gh api repos/<owner>/<repo>/pulls/<N>/comments` (or `gh pr view <N> --json reviews,comments`) and read every reply that arrived since you last posted. Author replies change what counts as "open" vs "resolved"; project-owner replies are authoritative. Don't trust the diff alone to tell you where prior comments stand.
-- **Always flag nested and multi-line ternaries.** Scan every changed `.ts`/`.tsx` file for ternaries and flag two shapes on sight, no judgment call: (a) **nested** — a ternary in either branch or in the test (`a ? b : c ? d : e`, including the single-line form like `opts?.until ? 'until' : opts?.count ? 'count' : 'never'`); (b) **multi-line** — a single ternary the formatter wrapped across 2+ lines (`cond ?\n  long\n  : alsoLong`), even one level deep. Only a single-level ternary that fits on one line is acceptable (`isActive ? 'on' : 'off'`). For each flag, suggest the matching remedy: nested or value-selecting → `if`/`else if`/`else` or an early-return guard with a named result variable (`let x = defaultBranch; if (cond) { x = ... }`); a string/value-or-`undefined` prop → precompute a named const so the ternary fits one line, or an `if` assignment (do NOT suggest `cond && value` when the false branch must be `undefined`, since `&&` yields `false`); a className `cond ? 'class' : ''` → `cond && 'class'` inside `cn(...)`; a fixed value-per-key mapping → a module-level lookup object; a ternary that produces JSX → an early return or `&&` gate. **Exceptions (do not flag):** shadcn-derived `ui/` primitives (kept in sync with upstream), and pre-existing ternaries in files this PR did not modify (out of scope — `git diff` the file against the base to confirm). When you flag one, grep the rest of the diff for the same shapes and flag them together.
-- **Always flag dense inline conditions; demand named variables.** Same always-flag discipline as ternaries, applied to boolean/condition expressions. Flag on sight, in every changed `.ts`/`.tsx` file: (a) a **multi-clause** condition (2+ `&&`/`||`/comparison clauses) used inline in an `if` test, an `&&` JSX gate, a ternary test, a `return`, or a `cn(...)` call — e.g. `if (!event?.id || !updates || Object.keys(updates).length === 0)`; (b) an **array-method predicate** (`.find`/`.filter`/`.some`/`.every`/`.findIndex`/`.map`) whose arrow body packs a computation plus a comparison plus another clause into one expression — e.g. `(e) => (e.uid || \`${e.id}@ilamy.calendar\`) === targetUid && e.rrule && !e.recurrenceId`; (c) any single expression that takes more than a couple of seconds to parse (a derived value buried inside a larger condition, a template literal compared inline, mixed `&&`/`||` without parens-clarified intent). The remedy is always the same: lift each meaningful sub-expression into a **named** `const`/`let` (or convert a one-expression arrow into a block with named locals + a `return`) whose name states what it means — `const hasNoUpdates = !updates || Object.keys(updates).length === 0`, `const belongsToSeries = getEventParentUID(candidate) === targetUid`, `const isBaseSeries = Boolean(candidate.rrule) && !candidate.recurrenceId`, then `return belongsToSeries && isBaseSeries`. A truthiness clause used as a boolean should become `Boolean(x)` (project rule). **Not flagged:** a single-clause condition (`if (isOpen)`, `day.isToday && <X/>`), and an OR-chain that reads as one clear concept and already sits in a named function or `Boolean(...)` (e.g. `Boolean(event.rrule || event.recurrenceId || event.uid)` inside `isRecurringEvent`). **Exceptions:** shadcn-derived `ui/` primitives and pre-existing conditions in files this PR didn't modify. When you flag one, grep the rest of the diff for sibling predicates/guards and flag them together.
 
 ## Phase 0: Scope Check
 
@@ -69,80 +77,94 @@ Read the surrounding context of any non-trivial change. A diff hunk alone hides 
 
 For PRs, also read the linked issue (`gh issue view <N>`). Issues often contain constraints ("no public-API changes", "must work for X") that the PR may have silently violated.
 
-## Phase 2: Review in Parallel
+## Phase 2: Work the Checklist
 
-For diffs >300 lines or >5 files, spawn three `Explore` agents in a single message. For smaller diffs, do this inline. Each agent gets the full diff so they work from the same source.
+Create a task per item in The Checklist (`TaskCreate`) and work it top to bottom. For a large diff you may fan out `Explore` agents to collect candidate findings in parallel, but feed everything back through the checklist: every candidate is unverified until you open the file and confirm it, and every box is checked by you. Drafting (Phase 4) happens as you go; posting (Phase 5) happens only after the whole checklist is green AND the user approves.
 
-### Agent 1: Bugs & Correctness
+## The Checklist
 
-- **Logic bugs**: off-by-one, wrong operator, inverted conditions, stale state.
-- **Leftover code**: duplicate JSX from incomplete refactors, dead imports, props threaded through that aren't used.
-- **Breaking changes**: modified shared components, changed prop shapes, removed exports. Grep for who imports them. Removing or making-required a field on a public type is a breaking change even if the PR description says it isn't.
-- **Data shape mismatches**: API contract drift, type assertions that hide real errors.
-- **Edge cases**: empty arrays, null/undefined, timezone issues. This codebase uses dayjs with a configured `timezone` prop. `Intl.DateTimeFormat` without a `timeZone` option formats in the system timezone, which is wrong for this calendar. The previous fix is documented in `docs/logs/2026-03-29.md` style entries.
-- **Regressions of previously-fixed bugs**: check if the dev logs (`docs/logs/`) describe a fix that this PR re-introduces. Don't trust the PR author's description; check the logs.
+This is the definition of done. **No item is optional.** Create one `TaskCreate` task per checkbox; mark `completed` only after real verification; if an item does not apply to this diff, mark it done with a one-line "n/a — <reason>". You may not claim the review is complete or ready to post while any box is unchecked.
 
-### Agent 2: Simplification Opportunities
+### A. Scope and intent
 
-**DRY is the guiding principle here.** Actively hunt for repetition: any time the same shape of code (same boilerplate in tests, same condition, same JSX wrapper, same setup block) appears 2-3+ times, propose extracting it. Repetition is the single most common review finding and the easiest to undervalue. Look for it everywhere: production code, tests, demo code, documentation snippets. Test files in particular accumulate repetitive setup that begs for helpers like `renderXyzView`, `buildEvent`, `at(hour, minute)`.
+- [ ] **Author's other open PRs checked for stacking.** If multiple PRs exist and this one's diff is >30 files, confirmed it is not stacked on another branch (Phase 0).
+- [ ] **PR title matches the diff's scope.** If the diff does more than the title promises, the out-of-scope work is called out separately rather than silently reviewed.
+- [ ] **Linked issue (if any) read in full.** Constraints from the issue ("no public-API changes", "must work for X") are reflected in the review.
+- [ ] **(Re-reviews only) Existing comment thread fetched.** Ran `gh api repos/<owner>/<repo>/pulls/<N>/comments` and read every reply (author and project owner) since the last posted review. Each prior comment's status (open / resolved / contested) reflects the most recent message in its thread, not just the diff state.
 
-Specific patterns to flag:
+### B. Sources of truth
 
-- **Repeated test setup**: multiple tests calling the same `render(<Provider>...<X /></Provider>)` boilerplate with one varying prop. Extract a `renderX(overrides?)` helper.
-- **Scope creep**: props added to shared components for a single use case. Should it live closer to the caller instead?
-- **Repeated inline checks**: the same condition appearing 3+ times. Extract to a boolean const.
-- **Over-parameterized components**: 6+ props where 4 could be derived from context.
-- **Duplicate computation** across sibling components. Extract to a shared hook.
-- **Repeated `locale = currentLocale || currentDate.locale()`-style patterns** across multiple files. Extract to a small hook so future changes (like adding `timeZone`) are one-line.
-- **Template literal classNames** where `cn()` is the codebase convention.
-- **JSX blocks** >30 lines that could be standalone components.
-- **Useless wrapper divs** that duplicate parent styling.
-- **Over-engineering relative to alternatives**: if the PR introduces a custom utility module (e.g., `formatLocaleDate.ts`) when a one-line plugin call would do (`dayjs.extend(localizedFormat)` + `format('LL')`), call it out with the comparison. Verify both produce identical output before claiming equivalence. **For every new helper function in the diff, ask: "what does this do that the underlying library / plugin / standard token does not already do?"** If the answer is "nothing meaningful" or "a stylistic preference", recommend deleting it.
-- **Useless `useMemo` blocks**. Two common shapes to flag:
-  - **Empty deps + no inputs from component scope.** It's a module constant in disguise. Move it out of the component as a top-level `const`.
-  - **Deps that change every render** (e.g. `[currentDate]` where `currentDate` updates on every navigation, or `[firstDayOfWeek]` where the body is 7 cheap dayjs ops). The cache never hits, the hook bookkeeping costs more than the work. Drop the memo, inline the expression.
-  - When you suggest dropping a `useMemo`, the comment must include a brief reason: "empty deps", "deps change every render", "7 cheap ops, no benefit", etc. Do not just say "drop the useMemo" without explaining why.
+- [ ] **Diff read in full, not skimmed.** For diffs over 35KB, read in chunks with offset/limit.
+- [ ] **Each finding verified against the actual file at the actual line.** Opened the file, read the line, confirmed the issue exists. No findings based purely on sub-agent reports.
+- [ ] **External API claims verified.** Any statement about behavior of dayjs, React, Intl, rrule, Tailwind, GitHub API, etc. has a WebFetch backing it, cited inline in the comment body where relevant.
+- [ ] **Dev logs (`docs/logs/`) checked for previously-fixed bugs** the PR might re-introduce. Don't trust the PR description; check the logs.
 
-The goal is not zealous deduplication. Three similar lines is sometimes better than a premature abstraction. But when the same shape appears with no real variance, name it once.
+### C. Bugs and correctness
 
-### Agent 3: Code Quality & Efficiency
+- [ ] **Logic bugs checked.** Off-by-one, wrong operator, inverted conditions, stale state, wrong dependency arrays.
+- [ ] **Leftover / dead code checked.** Duplicate JSX from incomplete refactors, dead imports, props threaded through that aren't used, commented-out blocks.
+- [ ] **Breaking changes checked.** Modified shared components, changed prop shapes, removed/renamed exports. Grepped for who imports them. Removing a field or making an optional field required on a public type is a breaking change even if the PR description says it isn't.
+- [ ] **Data-shape mismatches checked.** API contract drift, type assertions (`as`) that hide real errors, `any` smuggling a wrong type through.
+- [ ] **Edge cases checked.** Empty arrays, null/undefined, boundary values. Timezone: this codebase uses dayjs with a configured `timezone` prop; `Intl.DateTimeFormat` without a `timeZone` option formats in the system timezone, which is wrong here.
+- [ ] **Regression of a previously-fixed bug checked** against `docs/logs/`.
 
-- **Project conventions** (defined in `.agents/rules/code-style.md` and `.agents/rules/coding-patterns.md`):
-  - `.at(0)` / `.at(-1)` over `[0]` / `[length - 1]` for first/last array access.
-  - No `!` non-null assertions. Use guards, optional chaining, or default values.
-  - `Boolean(x)` over `!!x` for coercion.
-  - No `any`. Use `unknown` with type guards, specific interfaces, or generics.
-  - No `export default`. Named exports only.
-  - For `cn(...)` with multi-clause conditions, extract each conditional class to a named const, don't inline.
-- **Readability conventions** (the user has stated these explicitly; reviews should flag violations):
-  - **Colocation (Bulletproof React).** Tests live next to components (`foo.tsx` + `foo.test.tsx`). Hooks and utils live with the feature that owns them. Shared code sits at the lowest common ancestor in the tree. A PR that moves a feature-specific util into a global `lib/` should be questioned.
-  - **Named variables over inline expressions.** This is a Hard Rule (see "Always flag dense inline conditions; demand named variables" above) — always flag, no judgment call. When a condition has 2+ clauses (`a && b && c`), extract to a named const that describes what the combined condition represents. Example: `const canShowFeature = featureAvailable && featureEnabled && !userOptedOut` then `if (canShowFeature)`. Flag inline multi-clause conditions in `if`, `&&` JSX gates, ternary tests, `return`s, and `cn(...)` calls, and dense array-method predicates (`.find`/`.filter`/`.some`/`.map` arrows that pack a computation + comparison + another clause) — lift each sub-expression into a named local. Exceptions: single-clause conditions, an OR-chain that reads as one concept inside a named function/`Boolean(...)`, shadcn `ui/` primitives, and unmodified files.
-  - **Ternaries must be single-level AND single-line.** This is a Hard Rule (see "Always flag nested and multi-line ternaries" above) — always flag, no judgment call. A ternary is acceptable only when it has no nesting and fits on one line (`isActive ? 'on' : 'off'`). Flag a ternary if either (a) it nests another ternary in either branch or the test (`a ? b : c ? d : e`, including the single-line form), or (b) it wraps across multiple lines (the formatter broke `cond ? long : alsoLong` onto 2+ lines). Both mean the expression is too complex to read as a ternary. Suggest converting to `if/else if/else`, an early-return guard with a named result variable, a `cond && 'class'` form for className-or-empty cases inside `cn(...)`, a precomputed named const for value-or-`undefined` props, a small named helper, or a key-value lookup object. Exceptions: shadcn-derived `ui/` primitives and pre-existing ternaries in files this PR didn't modify.
-  - **No nested `if` or `switch` blocks.** Suggest flattening with early returns, guard variables, or key-value object lookups. Nested control flow is almost always a sign that the logic can be expressed more clearly.
-  - **No ternaries in JSX.** Prefer single-level boolean conditionals (`{condition && <X />}`) or early returns from the component. `{isLoading ? <Spinner /> : <Content />}` should become an early return for the loading branch or two consecutive `&&` gates.
-  - **No code the reader can't understand at a glance.** If a line takes more than a few seconds to parse, that is a defect, not cleverness. A comment explaining mechanics is a smell; rewrite the code instead. Comments should explain WHY, not WHAT.
-  - **Don't prop-drill what context already provides.** If a hook, function, or component already has access to a value via context (e.g. `useSmartCalendarContext`, `useEffectiveBusinessHours`), it should read it there directly instead of accepting it as a prop or argument and having every caller plumb it through. Flag any case where a caller pulls a value out of context only to pass it back into a callee that could pull it itself. Same rule for refs, settings, callbacks, and any other context-derived data. Tests can wrap the callee in a minimal provider.
-- **Unnecessary work**: `useMemo` / loops that run in modes where the result is unused. Guard with `if (!isActive) return []`.
-- **Missed memoization**: inline object/callback creation inside `useMemo` deps that breaks child memoization.
-- **Stale deps**: function refs used in dep arrays instead of the underlying data.
-- **Redundant recomputation**: a value already memoized by a shared hook being recomputed inline.
-- **Repeated call shapes inside a memo** with only one argument varying: extract to a `useCallback` and invoke at each site.
-- **Conditional memos that throw away cached work**: `useMemo(() => flag ? A() : B(), [...allDeps])` recomputes on every change. Split into two memos with narrower deps + a tiny selector.
-- **Test coverage gaps**: new prop or feature added without tests. Tests that assert CSS classes (brittle in JSDOM).
-- **Integration test gaps for gating logic**: if a feature is gated on a condition (e.g., `gridType === 'hour'`), there should be a test that the feature mounts under the condition and not otherwise. Component-level tests in isolation don't catch a regressed gate.
-- **Naming**: file name must uniquely identify the file across the whole codebase. `day-header.tsx` inside `resource-calendar/components/week-view/horizontal/` is wrong (too generic without path context). Use `resource-week-horizontal-day-header.tsx`. Names appear path-less in IDE tabs, grep, imports, stack traces.
-- **Unnecessary comments**: narrating what the code does, referencing the current task, TODO without a ticket.
+### D. Simplification and DRY
 
-## Phase 3: Triage
+DRY is a primary lens. When the same shape of code (test boilerplate, condition, JSX wrapper, setup block) appears 2-3+ times, propose extracting it. The goal is not zealous dedup (three similar lines can beat a premature abstraction), but identical shapes with no real variance get named once.
 
-When agents return, filter findings:
+- [ ] **Repeated test setup checked.** Multiple tests with the same `render(<Provider>...<X/></Provider>)` boilerplate varying one prop → propose a `renderX(overrides?)` helper. Same for repeated event literals / datetime construction (`at(hour, minute)`, `buildEvent`).
+- [ ] **Repeated inline checks / computations checked.** The same condition or derived value appearing 3+ times → extract to a named const or a shared hook (e.g. a repeated `locale = currentLocale || currentDate.locale()` pattern).
+- [ ] **Scope creep checked.** Props added to shared components for a single caller's use case → should it live closer to the caller? Over-parameterized components (6+ props where some are derivable from context).
+- [ ] **Over-engineering checked.** A custom utility/module where a one-line library call would do (e.g. `formatLocaleDate.ts` vs `dayjs.extend(localizedFormat)` + `format('LL')`). For **every new helper in the diff**, asked: "what does this do that the underlying library / plugin / standard token does not already do?" If the answer is "nothing meaningful", flagged for deletion. Verified equivalence before claiming it.
+- [ ] **Useless `useMemo` checked.** Empty deps + no inputs from component scope (it's a module constant in disguise → hoist). Deps that change every render (cache never hits → drop, inline). Every "drop this memo" comment includes the reason ("empty deps", "deps change every render", "7 cheap ops").
+- [ ] **JSX / structure checked.** JSX blocks >30 lines that should be standalone components; useless wrapper divs duplicating parent styling; template-literal classNames where `cn()` is the convention.
 
-- **Real issues**: bugs, breaking changes, missing tests, regressions of known fixes.
-- **Real suggestions**: repeated patterns, scope creep, over-engineering with a simpler alternative.
-- **Nitpicks**: style, naming preferences, micro-optimizations.
-- **Out of scope**: pre-existing issues this PR didn't touch. Drop or mention once and move on.
+### E. Code quality, conventions, and efficiency
 
-Skip false positives silently. Don't pad the review with weak observations. A 2-comment review is better than an 8-comment review where 6 are fluff.
+- [ ] **Project conventions enforced** (`.agents/rules/code-style.md`, `.agents/rules/coding-patterns.md`): `.at(0)`/`.at(-1)` over `[0]`/`[len-1]`; no `!` non-null assertions (use guards / optional chaining / defaults); `Boolean(x)` over `!!x`; no `any` (use `unknown` + guards, interfaces, generics); no `export default` (named only); `cn(...)` multi-clause conditions extracted to named consts.
+- [ ] **Efficiency checked.** Unnecessary work (`useMemo`/loops running in modes where the result is unused → guard with early return); missed memoization (inline object/callback in deps breaking child memo); stale deps (function refs in dep arrays instead of underlying data); redundant recomputation of an already-memoized value; repeated call shapes inside a memo varying one arg (→ `useCallback`); conditional memos that recompute on every change (→ split into narrower-dep memos + selector).
+- [ ] **Test coverage checked.** New prop/feature added without tests. Tests asserting CSS classes (brittle in JSDOM) flagged. Gating logic (e.g. `gridType === 'hour'`) has an integration test that the feature mounts under the condition and not otherwise.
+- [ ] **Naming checked.** Each file name uniquely identifies the file across the whole codebase (names appear path-less in tabs, grep, stack traces). `day-header.tsx` deep under `resource-calendar/.../week-view/horizontal/` is too generic → `resource-week-horizontal-day-header.tsx`.
+- [ ] **Comments checked.** No comments narrating WHAT the code does or referencing the current task; no `TODO` without a ticket. Comments explain WHY.
+
+### F. Readability Hard Rules (scan every changed `.ts`/`.tsx`; flag on sight)
+
+Exceptions for this whole section: shadcn-derived `ui/` primitives (kept in sync with upstream) and pre-existing code in files this PR did not modify (`git diff` against base to confirm). When you flag one instance, grep the rest of the diff for siblings and flag them together.
+
+- [ ] **No nested or multi-line ternaries.** Nested = a ternary in either branch or the test (`a ? b : c ? d : e`, including single-line like `opts?.until ? 'until' : opts?.count ? 'count' : 'never'`). Multi-line = a single ternary the formatter wrapped across 2+ lines, even one level deep. Only a single-level ternary that fits on one line is allowed (`isActive ? 'on' : 'off'`). Remedies: nested/value-selecting → `if`/`else if`/`else` or an early-return guard with a named result var; value-or-`undefined` prop → precomputed named const or `if` assignment (NOT `cond && value`, which yields `false`); className `cond ? 'class' : ''` → `cond && 'class'` in `cn(...)`; fixed value-per-key → module-level lookup object.
+- [ ] **No dense inline conditions; use named variables.** Flag (a) multi-clause conditions (2+ `&&`/`||`/comparison clauses) inline in an `if`, `&&` JSX gate, ternary test, `return`, or `cn(...)` — e.g. `if (!event?.id || !updates || Object.keys(updates).length === 0)`; (b) array-method predicates (`.find`/`.filter`/`.some`/`.every`/`.findIndex`/`.map`) whose arrow packs computation + comparison + another clause — e.g. `(e) => (e.uid || \`${e.id}@ilamy.calendar\`) === targetUid && e.rrule && !e.recurrenceId`; (c) any single expression that takes more than a couple seconds to parse. Remedy: lift each sub-expression into a named `const`/`let` (or convert a one-expression arrow into a block with named locals + `return`) — `const hasNoUpdates = ...`, `const belongsToSeries = ...`, then `return belongsToSeries && isBaseSeries`. A truthiness clause used as a boolean becomes `Boolean(x)`. NOT flagged: single-clause conditions (`if (isOpen)`, `day.isToday && <X/>`), and an OR-chain that reads as one concept inside a named function / `Boolean(...)` (e.g. `Boolean(event.rrule || event.recurrenceId || event.uid)`).
+- [ ] **No nested `if`/`switch` blocks.** An `if` inside an `if` (or a `switch` nested in control flow) → flatten with early-return guards, named guard variables, or a key-value lookup object.
+- [ ] **No ternaries in JSX.** `{cond ? <A/> : <B/>}` → an early return for one branch, two `{cond && <A/>}` gates, or a value lifted to a named const above the `return` (`{isEdit ? t('a') : t('b')}` → `const label = isEdit ? t('a') : t('b')` then `{label}`).
+- [ ] **No prop-drilling of context-provided values.** If a callee can read a value from a context it already consumes (`useSmartCalendarContext`, `useEffectiveBusinessHours`, etc.) but instead takes it as a prop/arg callers plumb through → have it read context directly. Same for refs, settings, callbacks. Tests can wrap the callee in a minimal provider.
+- [ ] **Colocation (Bulletproof React).** A component's test sits next to it (`foo.tsx` + `foo.test.tsx`); hooks and utils live with the feature that owns them; shared code sits at the lowest common ancestor. A PR that moves a feature-specific util into a global `lib/` is questioned.
+- [ ] **No code the reader can't understand at a glance.** A changed line that takes more than a couple seconds to parse is a defect, not cleverness. A comment explaining WHAT is a smell; rewrite (named vars, smaller functions) instead of annotating.
+- [ ] **Readability intermediates protected.** Variables/intermediates that aid readability are NOT suggested for removal just because they create a TS-narrowing tax or look "redundant."
+
+### G. Comment quality (the draft itself)
+
+- [ ] **Conventional Comments format.** `<label>: <subject>` on one line, blank line, then optional body. (Decorations added in section H.)
+- [ ] **Literal `\n\n` between subject and body in the JSON.** A single space renders the whole comment as one paragraph on GitHub and merges subject into body. Confirmed by inspecting the JSON literally (and, after posting, by opening the review URL).
+- [ ] **No em dashes anywhere.** `grep "—"` on the draft returns nothing (applies to your chat reply too).
+- [ ] **No pleasantries, preamble, or movie-narration prose.** No "well-scoped PR", "nice work", "tests pass", "demonstrably", "a real X", or press-release sentences. Read aloud as a check.
+- [ ] **Body length 2-3 sentences by default.** Longer only when context demands (citing a prior fix, a breaking-change implication). No padding.
+- [ ] **Every comment anchored to a specific file path and line / range.** No vague "somewhere in the recurrence module."
+- [ ] **No false positives or weak observations.** Shaky findings are dropped, not softened. A 2-comment review beats an 8-comment one with 6 fluffy.
+- [ ] **Each `suggestion` includes a brief reason.** "Drop this `useMemo`" → "Drop this `useMemo`. Empty deps and no component-scope inputs means it's a module constant in disguise."
+- [ ] **Pattern sweep done.** For every flagged pattern (useless memo, manual locale helper, hardcoded label, a readability violation, etc.), the rest of the diff has been scanned for siblings and each flagged or confirmed absent.
+- [ ] **Prior-review compliance checked.** If a previous review asked the author to remove/refactor pattern X and the new revision renamed or relocated it instead, that is flagged `(blocking)` with a link to the prior comment.
+- [ ] **Layout / sizing changes simulated at narrow viewports.** For any diff touching CSS or Tailwind width/height/min/max, flex/grid, or positioning: computed per-column / per-cell usable width at 375px, 600px, 768px, 1024px, subtracted padding, confirmed content still renders readably at each. Removing a `min-w-*`/`min-h-*` floor without responsive view switching is the failure pattern. Numbers surfaced in the comment. (Mark n/a if the diff has no CSS/layout.)
+- [ ] **Author intent treated as not equal to absence of bug.** Where the author defended a change as deliberate (description, commit, dev log, reply), separately asked "given they intended this, does the result actually work?" For layout / observable-behavior, did NOT mark resolved on author-claim alone; required a visual check in the running dev server OR a concrete numeric / step-by-step walkthrough.
+
+### H. Decoration and approval
+
+- [ ] **Decoration decided per comment.** Default is no decoration. `nitpick`/`praise`/`note`/`question`/`thought` never get one. `suggestion`/`issue`/`todo`/`chore` get one only when true severity differs materially from the label and a reader could misread it (`(blocking)`, `(non-blocking)`, `(if-minor)`). Never silently self-assign `(blocking)`.
+- [ ] **User asked only for the genuinely-ambiguous decorations**, batched into one `AskUserQuestion` call (one question per comment, up to four). Skipped the ask when severity was already clear or the user signaled it.
+- [ ] **Final decorated draft shown to the user**, ending with: "Say 'post it' to submit as a single review on commit `<sha>`. Or tell me what to tweak."
+- [ ] **Explicit "post it" or equivalent received** in the user's most recent message. "Looks good" / "okay" / stale approval do NOT count.
+- [ ] **Commit SHA captured from `headRefOid`** ready to pass as `commit_id`.
+- [ ] **Posting strategy chosen.** No filler top-level body. If there are no blocking comments and no real structural observation, use individual inline comments, not a review wrapper. "The API needs a body field" is not a reason to write a body — fall back to individual inline comments.
+
+Only when every box above is checked AND the user has said "post it" do you proceed to Phase 5.
 
 ## Phase 4: Draft (Conventional Comments)
 
@@ -195,10 +217,6 @@ Decide for yourself whether each comment needs a decoration at all, using this r
 
 Only ask the user about the choice of decoration when (a) a decoration is needed and (b) you genuinely cannot tell which one fits. Skip the ask when the user already signaled severity in conversation. If asking for multiple comments, batch them into a single `AskUserQuestion` call with one question per comment.
 
-### Draft each comment without a decoration first
-
-Body length: default to 2-3 sentences. Longer is fine when the context demands it (e.g., explaining why a refactor breaks consumers, or citing a previous fix's log entry). Shorter is fine when the subject is self-explanatory.
-
 ### Anchor every comment to a specific line
 
 Inline review comments are the default in this repo, not top-level PR comments. Use the full file path and line number (or line range for multi-line context). The format the user sees:
@@ -224,62 +242,11 @@ Things that are **not** valid top-level bodies, even though they look summary-sh
 
 If you cannot point at a sentence that says something no inline says, drop the body.
 
-### Decide decorations yourself, ask only when stuck
-
-For each comment, decide whether a decoration is needed using the rubric in the previous section. The default is no decoration. Add `(blocking)`, `(non-blocking)`, or `(if-minor)` only when the comment's true severity is materially different from what the label alone implies.
-
-If after applying the rubric you still cannot tell which decoration fits a comment, ask the user. Batch any asks into a single `AskUserQuestion` call (one question per still-ambiguous comment, up to four). Skip the ask entirely if every comment's decoration is already decided.
-
 ### Show the final draft
 
 Present the decorated comments in order. End with: "Say 'post it' to submit as a single review on commit `<sha>`. Or tell me what to tweak."
 
-## Verification Checklist
-
-Before showing the final decorated draft to the user, run through this checklist. Use `TaskCreate` to add one task per item and `TaskUpdate` to mark it completed only after verification. Do not skip items. Do not batch-mark. If an item cannot be checked off honestly, the draft is not ready.
-
-### Scope and intent
-
-- [ ] **Author's other open PRs checked** for stacking. If multiple PRs exist and this one's diff is >30 files, confirmed it is not stacked on top of another branch.
-- [ ] **PR title matches the diff's scope.** If the diff does more than the title promises, the out-of-scope work has been called out separately rather than silently reviewed.
-- [ ] **Linked issue (if any) read in full.** Constraints from the issue ("no public-API changes", etc.) are reflected in the review.
-- [ ] **(Re-reviews only) Existing comment thread fetched.** Ran `gh api repos/<owner>/<repo>/pulls/<N>/comments` and read every reply (author and project owner) that arrived since the last posted review. Each prior comment's status (open / resolved / contested) reflects the most recent message in its thread, not just the diff state.
-
-### Sources of truth
-
-- [ ] **Diff read in full, not skimmed.** For diffs over 35KB, read in chunks with offset/limit.
-- [ ] **Each finding verified against the actual file at the actual line.** Open the file, read the line, confirm the issue exists. No findings based purely on sub-agent reports.
-- [ ] **External API claims verified.** Any statement about behavior of dayjs, React, Intl, rrule, Tailwind, GitHub API, etc. has a WebFetch backing it, and the source is cited inline in the comment body when relevant.
-- [ ] **Dev logs (`docs/logs/`) checked for previously-fixed bugs** that the PR might re-introduce.
-
-### Comment quality
-
-- [ ] **Every comment follows Conventional Comments format**: `<label>: <subject>` on one line, blank line, then optional body. Decorations added in a separate step (see below).
-- [ ] **Every comment with a body has a literal `\n\n` between the subject line and the body in the JSON.** Grep the review JSON for `": "` followed by `<label>: ` patterns and confirm the next characters before the body are `\n\n`, not a single space. A missing blank line renders the whole comment as one paragraph on GitHub and the subject visually merges with the body. Verified by opening the posted review URL after submission and confirming the subject sits on its own line.
-- [ ] **No em dashes anywhere.** `grep "—"` on the draft returns nothing.
-- [ ] **No pleasantries or preamble.** No "well-scoped PR", "nice work", "tests pass" summaries. Top-level body is empty unless there is a structural observation.
-- [ ] **Each comment is 2-3 sentences in the body.** Longer is fine when context demands it (citing a prior fix, explaining a breaking-change implication). No padding.
-- [ ] **Every comment is anchored to a specific file path and line or line range.** No vague "somewhere in the recurrence module."
-- [ ] **No false positives or weak observations.** If a finding is shaky, it is dropped, not softened. A 2-comment review beats an 8-comment review with 6 fluffy ones.
-- [ ] **Variables and intermediates that aid readability are not suggested for removal** just because they create a TS narrowing tax or look "redundant."
-- [ ] **Readability conventions checked.** Every changed `.ts`/`.tsx` file was scanned and ALL of these flagged as Hard Rules (except shadcn `ui/` primitives and unmodified files): nested or multi-line ternaries, and dense inline conditions (multi-clause `if`/`&&`/ternary tests/`return`s/`cn(...)`, and computation-packed `.find`/`.filter`/`.map` predicates) that should become named variables. Nested if/switch blocks, ternaries in JSX, and code that is hard to understand at a glance have also been flagged where present.
-- [ ] **No movie-narration prose.** No "demonstrably", "worth shipping on its own", "a real X", or any sentence that sounds like a press release. Read the draft aloud as a sanity check.
-- [ ] **Each `suggestion` includes a brief reason.** "Drop this `useMemo`" is not enough; "Drop this `useMemo`. Empty deps and no inputs from component scope means it's a module constant in disguise." is.
-- [ ] **Pattern sweep done.** For every flagged pattern (useless memo, manual locale helper, hardcoded label, etc.), the diff has been scanned for other instances of the same pattern and either flagged or confirmed absent.
-- [ ] **For every new helper introduced by the diff**, asked: "what does this do that the existing library / plugin / standard token does not already do?" Helpers whose answer is "nothing" are flagged for deletion.
-- [ ] **Prior review compliance checked.** If a previous review on this PR asked the author to remove or refactor pattern X, and the new revision renamed or relocated it instead of removing it, that is flagged as `(blocking)` with a link to the prior comment.
-- [ ] **Layout / sizing changes simulated at narrow viewports.** For any diff touching CSS or Tailwind width/height/min/max, flex/grid, or positioning: computed per-column / per-cell usable width at 375px, 600px, 768px, and 1024px viewports, subtracted padding, and confirmed content can still render readably at each. Removal of a `min-w-*` / `min-h-*` floor without responsive view switching is the failure pattern to look for. Numbers are surfaced in the comment so the author can see the cost.
-- [ ] **Author intent treated as not equal to absence of bug.** Where the author has defended a change as deliberate (in a PR description, commit message, dev log, or reply), separately asked: "given they intended this, does the result actually work?" For layout / observable-behavior comments, did NOT mark resolved on author-claim alone. Required either a visual check in the running dev server OR a concrete numerical / step-by-step walkthrough showing the result is safe.
-
-### Decoration and approval
-
-- [ ] **Decoration decided per comment.** Default is no decoration. Decorations added only where the comment's true severity differs materially from what its label suggests. User asked only for the still-ambiguous subset, batched into one `AskUserQuestion` call. Never silently self-decide `(blocking)`.
-- [ ] **Final decorated draft shown to user.**
-- [ ] **Explicit "post it" or equivalent approval received.** "Looks good" is not approval.
-- [ ] **Commit SHA captured from `headRefOid`** ready to pass as `commit_id` in the API call.
-- [ ] **Posting strategy chosen.** No filler top-level body. If there are no blocking comments and no real structural observation, individual inline comments are used instead of a review wrapper. If the only reason to use the review wrapper is "the API needs a body field," the answer is: fall back to individual inline comments instead.
-
-## Phase 5: Post (only after approval)
+## Phase 5: Post (only after approval AND a fully-checked checklist)
 
 After explicit user approval, choose the posting strategy based on whether any comment is `(blocking)` and whether you have a real structural observation for a top-level body.
 
@@ -298,18 +265,14 @@ The hook exists because the recurring failure mode is interpreting stale or impl
 - Each separate Bash invocation that posts needs its own inline `touch`. The hook does not remember state between calls; that is intentional.
 - If the hook blocks you, **stop and re-confirm with the user**. Do not touch the marker out of band to bypass the hook (it would not work anyway because the hook looks at the command text, not the file). The hook is the last line of defense against the bug it was built to prevent.
 
-### After approval: choose strategy
-
 ### Decision tree
 
 The key question is **"does my top-level body say something the inlines do not already say?"** That decides the strategy, not the blocking status.
 
-(All commands below must be chained with `touch .claude/state/pr-post-approved.flag &&` to pass the hook. Examples in the Strategy sections show this.)
+(All commands below must be chained with `touch .claude/state/pr-post-approved.flag &&` to pass the hook.)
 
-1. **No body content beyond what's in the inlines.** Post each comment as an individual inline review comment via `POST /repos/{owner}/{repo}/pulls/{N}/comments`. No review wrapper, no top-level body, no clutter. Works whether or not any comment is `(blocking)`. The GitHub UI loses the "Changes requested" status flag, but each `(blocking)` decoration in the comment body still communicates severity to the author.
-
-2. **Real structural observation + blocking comments.** Single `REQUEST_CHANGES` review via `POST /repos/{owner}/{repo}/pulls/{N}/reviews`. Top-level body is the structural observation (workflow feedback, prior-review reference, stacked-branch note). Do not summarize the inlines.
-
+1. **No body content beyond what's in the inlines.** Post each comment as an individual inline review comment via `POST /repos/{owner}/{repo}/pulls/{N}/comments`. No review wrapper, no top-level body, no clutter. Works whether or not any comment is `(blocking)`. The GitHub UI loses the "Changes requested" status flag, but each `(blocking)` decoration in the comment body still communicates severity.
+2. **Real structural observation + blocking comments.** Single `REQUEST_CHANGES` review via `POST /repos/{owner}/{repo}/pulls/{N}/reviews`. Top-level body is the structural observation only. Do not summarize the inlines.
 3. **Real structural observation + no blocking comments.** Single `COMMENT` review. Top-level body is the structural observation only.
 
 ### Verify the API shape (once per session)

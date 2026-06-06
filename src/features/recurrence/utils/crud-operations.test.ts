@@ -39,6 +39,34 @@ const createTargetEvent = (
 	...overrides,
 })
 
+// Compact factories for the scope-"all" reset tests (DAILY series + overrides),
+// to reduce repeated boilerplate across these cases.
+const makeDailySeries = (
+	overrides: Partial<CalendarEvent> = {}
+): CalendarEvent => ({
+	id: 'daily-1',
+	title: 'Daily Standup',
+	start: dayjs('2025-01-06T09:00:00.000Z'),
+	end: dayjs('2025-01-06T10:00:00.000Z'),
+	rrule: {
+		freq: RRule.DAILY,
+		interval: 1,
+		dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+	},
+	uid: 'daily-1@calendar.test',
+	...overrides,
+})
+
+const makeOverride = (
+	base: CalendarEvent,
+	overrides: Partial<CalendarEvent> = {}
+): CalendarEvent => ({
+	...base,
+	rrule: undefined,
+	recurrenceId: '2025-01-07T09:00:00.000Z',
+	...overrides,
+})
+
 describe('isRecurringEvent', () => {
 	it('should identify events with rrule as recurring', () => {
 		const event = createBaseRecurringEvent()
@@ -394,6 +422,118 @@ describe('updateRecurringEvent', () => {
 
 			expect(result[0].start.toISOString()).toBe('2025-01-06T11:00:00.000Z')
 			expect(result[0].end.toISOString()).toBe('2025-01-06T12:00:00.000Z')
+		})
+
+		it('should return exactly one base row with exdates cleared', () => {
+			const baseEvent = makeDailySeries()
+			const targetEvent = makeDailySeries({
+				id: 'daily-1_2',
+				start: dayjs('2025-01-08T09:00:00.000Z'),
+				end: dayjs('2025-01-08T10:00:00.000Z'),
+				rrule: undefined,
+			})
+			const unrelated = createBaseRecurringEvent({
+				id: 'other-event',
+				uid: 'other@test',
+			})
+
+			const result = updateRecurringEvent({
+				targetEvent,
+				updates: { title: 'Reset Series' },
+				currentEvents: [baseEvent, unrelated],
+				scope: 'all',
+			})
+
+			const seriesRows = result.filter((e) => e.uid === 'daily-1@calendar.test')
+			expect(seriesRows).toHaveLength(1)
+			expect(seriesRows[0].title).toBe('Reset Series')
+			expect(seriesRows[0].exdates).toBeUndefined()
+			expect(result.find((e) => e.id === 'other-event')).toBeDefined()
+		})
+
+		it('should remove a pre-existing detached override of the same series', () => {
+			const baseEvent = makeDailySeries({
+				exdates: ['2025-01-07T09:00:00.000Z'],
+			})
+			const override = makeOverride(baseEvent, {
+				id: 'daily-1_override',
+				title: 'Detached Override',
+				exdates: undefined,
+			})
+			const targetEvent = makeDailySeries({
+				id: 'daily-1_2',
+				start: dayjs('2025-01-08T09:00:00.000Z'),
+				end: dayjs('2025-01-08T10:00:00.000Z'),
+				rrule: undefined,
+			})
+
+			const result = updateRecurringEvent({
+				targetEvent,
+				updates: { title: 'Reset Series' },
+				currentEvents: [baseEvent, override],
+				scope: 'all',
+			})
+
+			expect(result).toHaveLength(1)
+			expect(result[0].id).toBe('daily-1')
+			expect(result.find((e) => e.id === 'daily-1_override')).toBeUndefined()
+		})
+
+		it('should apply submitted wall-clock time to the base anchor date and preserve duration', () => {
+			const baseEvent = makeDailySeries()
+			const targetEvent = makeDailySeries({
+				id: 'daily-1_2',
+				start: dayjs('2025-01-08T09:00:00.000Z'),
+				end: dayjs('2025-01-08T10:00:00.000Z'),
+				rrule: undefined,
+			})
+
+			const result = updateRecurringEvent({
+				targetEvent,
+				updates: { start: dayjs('2025-01-08T14:30:00.000Z') },
+				currentEvents: [baseEvent],
+				scope: 'all',
+			})
+
+			// keeps original anchor date (Jan 6), new time-of-day (14:30)
+			expect(result[0].start.toISOString()).toBe('2025-01-06T14:30:00.000Z')
+			// duration preserved (1 hour) since no end submitted
+			expect(result[0].end.toISOString()).toBe('2025-01-06T15:30:00.000Z')
+		})
+
+		it('should resurrect a previously-deleted occurrence by clearing exdates (Google-Calendar reset behavior)', () => {
+			// 1. Start a daily series
+			const baseEvent = makeDailySeries()
+
+			// 2. Delete one occurrence with scope "this" -> produces an EXDATE
+			const occurrenceToDelete = makeDailySeries({
+				id: 'daily-1_1',
+				start: dayjs('2025-01-07T09:00:00.000Z'),
+				end: dayjs('2025-01-07T10:00:00.000Z'),
+				rrule: undefined,
+			})
+			const afterDelete = deleteRecurringEvent({
+				targetEvent: occurrenceToDelete,
+				currentEvents: [baseEvent],
+				scope: 'this',
+			})
+			expect(afterDelete[0].exdates).toContain('2025-01-07T09:00:00.000Z')
+
+			// 3. Edit the series with scope "all" -> the deleted occurrence is resurrected
+			const afterAllEdit = updateRecurringEvent({
+				targetEvent: makeDailySeries({
+					id: 'daily-1_2',
+					start: dayjs('2025-01-08T09:00:00.000Z'),
+					end: dayjs('2025-01-08T10:00:00.000Z'),
+					rrule: undefined,
+				}),
+				updates: { title: 'Reset Series' },
+				currentEvents: afterDelete,
+				scope: 'all',
+			})
+
+			expect(afterAllEdit).toHaveLength(1)
+			expect(afterAllEdit[0].exdates).toBeUndefined()
 		})
 	})
 

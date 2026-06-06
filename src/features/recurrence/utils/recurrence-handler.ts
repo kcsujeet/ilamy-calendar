@@ -92,9 +92,8 @@ const withTimeOfDay = (target: Dayjs, source: Dayjs): Dayjs => {
 }
 
 /**
- * For scope "all": apply the delta between the edited instance and the submitted
- * start/end to the base event anchor — avoids shifting the whole series to the
- * instance's calendar day when the form is opened on e.g. Friday of a Mon–Fri rule.
+ * For scope "all": apply the submitted wall-clock time to the base event anchor.
+ * This keeps the series anchored to its original date while changing its time.
  */
 const applyAllScopeUpdates = (
 	baseEvent: CalendarEvent,
@@ -325,6 +324,7 @@ export const updateRecurringEvent = ({
 
 		case 'all': {
 			// "All events" - Update the base recurring event (anchor dates, not instance day)
+			const parentUid = getEventParentUID(baseEvent)
 			const anchored = applyAllScopeUpdates(baseEvent, updates)
 			updatedEvents[baseEventIndex] = {
 				...baseEvent,
@@ -332,8 +332,16 @@ export const updateRecurringEvent = ({
 				start: anchored.start,
 				end: anchored.end,
 				rrule: anchored.rrule,
+				exdates: undefined,
 			}
-			break
+			const isDetachedOverrideOfSeries = (e: CalendarEvent): boolean => {
+				const isDetachedOverride = Boolean(e.recurrenceId) && !e.rrule
+				const belongsToSeries = getEventParentUID(e) === parentUid
+				return isDetachedOverride && belongsToSeries
+			}
+			// Google-Calendar behavior: an "all" edit resets the series — drop detached
+			// overrides and clear exceptions (previously split/deleted occurrences return).
+			return updatedEvents.filter((e) => !isDetachedOverrideOfSeries(e))
 		}
 
 		default:

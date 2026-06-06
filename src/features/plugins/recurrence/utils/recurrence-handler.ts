@@ -1,8 +1,8 @@
+import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
+import { dayjs } from '@ilamy/calendar'
 import { RRule } from 'rrule'
-import type { CalendarEvent } from '@/components'
-import type { RRuleOptions } from '@/features/recurrence/types'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import { omitKeys, safeDate } from '@/lib/utils'
+import type { RRuleOptions } from '../types'
+import { omitKeys, safeDate } from './helpers'
 
 /**
  * Converts a Dayjs object to a "Floating Time" Date representation.
@@ -65,9 +65,11 @@ const findBaseEventIndex = (
 	targetEvent: CalendarEvent
 ): number => {
 	const targetUid = getEventParentUID(targetEvent)
-	const index = events.findIndex(
-		(e) => getEventParentUID(e) === targetUid && e.rrule && !e.recurrenceId
-	)
+	const index = events.findIndex((candidate) => {
+		const belongsToSeries = getEventParentUID(candidate) === targetUid
+		const isBaseSeries = Boolean(candidate.rrule) && !candidate.recurrenceId
+		return belongsToSeries && isBaseSeries
+	})
 	if (index === -1) {
 		throw new Error('Base recurring event not found')
 	}
@@ -89,6 +91,24 @@ const getSeriesTerminationDate = (targetEvent: CalendarEvent): Date =>
 const withTimeOfDay = (target: Dayjs, source: Dayjs): Dayjs => {
 	const timeOfDayMs = source.diff(source.startOf('day'), 'millisecond')
 	return target.startOf('day').add(timeOfDayMs, 'millisecond')
+}
+
+/**
+ * Appends the target occurrence's start to the base event's EXDATE list,
+ * excluding that single occurrence from the series. Shared by the "this" scope
+ * of both edit and delete.
+ */
+const addExdateToBaseEvent = (
+	baseEvent: CalendarEvent,
+	targetEvent: CalendarEvent
+): { baseEvent: CalendarEvent; targetEventStartISO: string } => {
+	const targetEventStartISO = targetEvent.start.toISOString()
+	const existingExdates = baseEvent.exdates || []
+	const updatedExdates = [...existingExdates, targetEventStartISO]
+	return {
+		baseEvent: { ...baseEvent, exdates: updatedExdates },
+		targetEventStartISO,
+	}
 }
 
 /**
@@ -147,9 +167,10 @@ export const generateRecurringEvents = ({
 		// Transform all dates to "floating time" (UTC with local components)
 		// This ensures RRule evaluates "Wednesday" as the user's local Wednesday
 		const floatingStart = toFloatingDate(event.start)
-		const floatingUntil = event.rrule.until
-			? toFloatingDate(dayjs(event.rrule.until))
-			: undefined
+		let floatingUntil: Date | undefined
+		if (event.rrule.until) {
+			floatingUntil = toFloatingDate(dayjs(event.rrule.until))
+		}
 
 		const ruleOptions: RRuleOptions = {
 			...event.rrule,
@@ -159,9 +180,11 @@ export const generateRecurringEvents = ({
 		const rule = new RRule(ruleOptions)
 
 		const parentUid = getEventParentUID(event)
-		const overrides = currentEvents.filter(
-			(e) => e.recurrenceId && getEventParentUID(e) === parentUid
-		)
+		const overrides = currentEvents.filter((candidate) => {
+			const isOverride = Boolean(candidate.recurrenceId)
+			const belongsToSeries = getEventParentUID(candidate) === parentUid
+			return isOverride && belongsToSeries
+		})
 
 		// Calculate event duration to expand search window for events that span the range
 		const eventDuration = event.end.diff(event.start)
@@ -209,13 +232,10 @@ export const generateRecurringEvents = ({
 			})
 			.filter((recurringEvent) => {
 				// Filter out EXDATE exclusions
-				const hasExdates = event.exdates && event.exdates.length > 0
-				if (hasExdates) {
-					const eventStartISO = recurringEvent.start.toISOString()
-					const isExcluded = event.exdates?.includes(eventStartISO)
-					if (isExcluded) {
-						return false
-					}
+				const eventStartISO = recurringEvent.start.toISOString()
+				const isExcluded = event.exdates?.includes(eventStartISO) ?? false
+				if (isExcluded) {
+					return false
 				}
 
 				// Filter to only include events that span through the original requested date range
@@ -257,14 +277,8 @@ export const updateRecurringEvent = ({
 	switch (scope) {
 		case 'this': {
 			// "This event only" - Add EXDATE to base event and create standalone modified event
-			const targetEventStartISO = targetEvent.start.toISOString()
-			const existingExdates = baseEvent.exdates || []
-			const updatedExdates = [...existingExdates, targetEventStartISO]
-
-			const updatedBaseEvent = {
-				...baseEvent,
-				exdates: updatedExdates,
-			}
+			const { baseEvent: updatedBaseEvent, targetEventStartISO } =
+				addExdateToBaseEvent(baseEvent, targetEvent)
 			updatedEvents[baseEventIndex] = updatedBaseEvent
 
 			// Create standalone modified event with recurrenceId
@@ -371,11 +385,10 @@ export const deleteRecurringEvent = ({
 	switch (scope) {
 		case 'this': {
 			// "This event only" - Add EXDATE to exclude this occurrence
-			const targetEventStartISO = targetEvent.start.toISOString()
-			const existingExdates = baseEvent.exdates || []
-			const updatedExdates = [...existingExdates, targetEventStartISO]
-
-			const updatedBaseEvent = { ...baseEvent, exdates: updatedExdates }
+			const { baseEvent: updatedBaseEvent } = addExdateToBaseEvent(
+				baseEvent,
+				targetEvent
+			)
 			updatedEvents[baseEventIndex] = updatedBaseEvent
 			break
 		}

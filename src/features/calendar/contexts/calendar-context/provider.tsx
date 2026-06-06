@@ -10,6 +10,8 @@ import type {
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
+import { composePluginProviders } from '@/features/plugins/lib/compose-plugin-providers'
+import type { IlamyPlugin } from '@/features/plugins/lib/types'
 import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
@@ -60,6 +62,7 @@ export interface CalendarProviderProps {
 	hiddenDays?: Set<number>
 	slotDuration?: SlotDuration
 	scrollTime?: string
+	plugins?: IlamyPlugin[]
 }
 
 export const CalendarProvider: React.FC<CalendarProviderProps> = ({
@@ -102,6 +105,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 	hiddenDays,
 	slotDuration = 60,
 	scrollTime,
+	plugins,
 }) => {
 	// Use the calendar engine
 	const calendarEngine = useCalendarEngine({
@@ -119,6 +123,7 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 		timezone,
 		translations,
 		translator,
+		plugins,
 	})
 
 	const editEvent = useCallback(
@@ -223,9 +228,14 @@ export const CalendarProvider: React.FC<CalendarProviderProps> = ({
 		]
 	)
 
+	const wrappedChildren = composePluginProviders(
+		calendarEngine.getProviders(),
+		children
+	)
+
 	return (
 		<CalendarContext.Provider value={contextValue}>
-			{children}
+			{wrappedChildren}
 		</CalendarContext.Provider>
 	)
 }

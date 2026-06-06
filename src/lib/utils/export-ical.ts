@@ -1,4 +1,3 @@
-import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 
@@ -26,42 +25,26 @@ const escapeText = (text: string): string => {
 }
 
 const formatDate = (date: Dayjs, isAllDay = false): string => {
-	return isAllDay
-		? date.format('YYYYMMDD')
-		: date.utc().format('YYYYMMDD[T]HHmmss[Z]')
+	if (isAllDay) {
+		return date.format('YYYYMMDD')
+	}
+	return date.utc().format('YYYYMMDD[T]HHmmss[Z]')
 }
 
 const getUID = (event: CalendarEvent): string => {
 	return event.uid || `${event.id}@ilamy.calendar`
 }
 
-const formatRRule = (rruleOptions: unknown): string => {
-	try {
-		const rruleString = new RRule(
-			rruleOptions as ConstructorParameters<typeof RRule>[0]
-		).toString()
-		return (
-			rruleString.split('\n').find((line) => line.startsWith('RRULE:')) || ''
-		)
-	} catch {
-		return ''
-	}
-}
+type CollectFn = (point: string, event: CalendarEvent) => unknown[]
 
-const convertEventToVEvent = (event: CalendarEvent): string => {
+const convertEventToVEvent = (
+	event: CalendarEvent,
+	collect: CollectFn
+): string => {
 	const timestamp = dayjs().utc().format('YYYYMMDD[T]HHmmss[Z]')
 	const dateParam = event.allDay ? ';VALUE=DATE' : ''
-	const rrule = event.rrule ? formatRRule(event.rrule) : ''
 
-	const exdates = event.exdates?.length
-		? event.exdates.map((d) => formatDate(dayjs(d), event.allDay)).join(',')
-		: null
-
-	const recurrenceId = event.recurrenceId
-		? formatDate(dayjs(event.recurrenceId), event.allDay)
-		: null
-
-	const lines = [
+	const coreLines = [
 		'BEGIN:VEVENT',
 		`UID:${getUID(event)}`,
 		`DTSTART${dateParam}:${formatDate(event.start, event.allDay)}`,
@@ -69,9 +52,13 @@ const convertEventToVEvent = (event: CalendarEvent): string => {
 		`SUMMARY:${escapeText(event.title)}`,
 		event.description && `DESCRIPTION:${escapeText(event.description)}`,
 		event.location && `LOCATION:${escapeText(event.location)}`,
-		rrule,
-		exdates && `EXDATE:${exdates}`,
-		recurrenceId && `RECURRENCE-ID:${recurrenceId}`,
+	].filter(Boolean)
+
+	const extra = collect('ical:vevent-properties', event).filter(
+		(line): line is string => typeof line === 'string'
+	)
+
+	const trailingLines = [
 		`DTSTAMP:${timestamp}`,
 		`CREATED:${timestamp}`,
 		`LAST-MODIFIED:${timestamp}`,
@@ -81,34 +68,18 @@ const convertEventToVEvent = (event: CalendarEvent): string => {
 		'END:VEVENT',
 	]
 
-	return lines.filter(Boolean).join(CRLF)
-}
-
-const filterEvents = (events: CalendarEvent[]): CalendarEvent[] => {
-	const seenUIDs = new Set<string>()
-
-	return events.filter((event) => {
-		const uid = getUID(event)
-		const isBaseRecurring = event.rrule && !event.recurrenceId
-		const isModifiedInstance = event.recurrenceId && !event.rrule
-
-		if (isBaseRecurring) {
-			seenUIDs.add(uid)
-			return true
-		}
-		if (isModifiedInstance) {
-			return true
-		}
-		return !event.rrule && !event.recurrenceId && !seenUIDs.has(uid)
-	})
+	return [...coreLines, ...extra, ...trailingLines].join(CRLF)
 }
 
 export const exportToICalendar = (
 	events: CalendarEvent[],
+	collect: CollectFn,
 	calendarName = 'ilamy Calendar'
 ): string => {
 	const name = escapeText(calendarName)
-	const veventStrings = filterEvents(events).map(convertEventToVEvent)
+	const veventStrings = events.map((event) =>
+		convertEventToVEvent(event, collect)
+	)
 
 	return [
 		'BEGIN:VCALENDAR',
@@ -126,16 +97,18 @@ export const exportToICalendar = (
 
 export const downloadICalendar = (
 	events: CalendarEvent[],
+	collect: CollectFn,
 	filename = 'calendar.ics',
 	calendarName = 'ilamy Calendar'
 ): void => {
-	const blob = new Blob([exportToICalendar(events, calendarName)], {
+	const blob = new Blob([exportToICalendar(events, collect, calendarName)], {
 		type: 'text/calendar;charset=utf-8',
 	})
 	const url = URL.createObjectURL(blob)
-	const normalizedFilename = filename.endsWith('.ics')
-		? filename
-		: `${filename}.ics`
+	let normalizedFilename = filename
+	if (!filename.endsWith('.ics')) {
+		normalizedFilename = `${filename}.ics`
+	}
 
 	const link = document.createElement('a')
 	link.href = url

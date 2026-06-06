@@ -1,22 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { dayjs, useIlamyCalendarContext } from '@ilamy/calendar'
+import { useEffect, useState } from 'react'
 import type { Weekday } from 'rrule'
 import { RRule } from 'rrule'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { DatePicker } from '@/components/ui/date-picker'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select'
-import type { RRuleOptions } from '@/features/recurrence/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
-import { keys } from '@/lib/utils/keys'
+import type { RRuleOptions } from '../../types'
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
+import { Checkbox } from '../../ui/checkbox'
+import { DatePicker } from '../../ui/date-picker'
+import { Input } from '../../ui/input'
+import { Label } from '../../ui/label'
+import { Select } from '../../ui/select'
+
+// Composes React `key=` props and element ids from parts. Local copy of the
+// core `keys.listKey` helper (not part of the public surface).
+const listKey = (...parts: Array<string | number>): string => parts.join('-')
 
 const FREQ_MAP = {
 	DAILY: RRule.DAILY,
@@ -53,12 +49,22 @@ const getDescription = (
 	}
 	try {
 		const text = new RRule(opts).toText()
-		return text && !text.toLowerCase().includes('error')
-			? text.charAt(0).toUpperCase() + text.slice(1)
-			: t('customRecurrence')
+		const isUsableText = Boolean(text) && !text.toLowerCase().includes('error')
+		if (!isUsableText) {
+			return t('customRecurrence')
+		}
+		return text.charAt(0).toUpperCase() + text.slice(1)
 	} catch {
 		return t('customRecurrence')
 	}
+}
+
+// Normalize rrule's byweekday (a single value, an array, or absent) to an array.
+const resolveByweekday = (value: RRuleOptions['byweekday']) => {
+	if (Array.isArray(value)) {
+		return value
+	}
+	return value ? [value] : []
 }
 
 interface Props {
@@ -67,10 +73,7 @@ interface Props {
 }
 
 export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
-	const { t, firstDayOfWeek } = useSmartCalendarContext((ctx) => ({
-		t: ctx.t,
-		firstDayOfWeek: ctx.firstDayOfWeek,
-	}))
+	const { t, firstDayOfWeek } = useIlamyCalendarContext()
 	const [show, setShow] = useState(!!value)
 	const [opts, setOpts] = useState<RRuleOptions | null>(() => value || null)
 
@@ -79,7 +82,7 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 		label: dayjs().day(index).format('ddd'),
 	}))
 	const weekDays = WEEKDAYS.map(
-		(d, i) => WEEKDAY_OPTIONS[(i + firstDayOfWeek) % 7]
+		(_weekday, i) => WEEKDAY_OPTIONS[(i + firstDayOfWeek) % 7]
 	)
 
 	useEffect(() => {
@@ -116,9 +119,8 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 	const toggleDay = (i: number) => {
 		const curr = (opts?.byweekday as Weekday[]) || []
 		const day = WEEKDAYS[i]
-		const next = curr.includes(day)
-			? curr.filter((d) => d !== day)
-			: [...curr, day]
+		const isSelected = curr.includes(day)
+		const next = isSelected ? curr.filter((d) => d !== day) : [...curr, day]
 		update({ byweekday: next.length ? next : undefined })
 	}
 
@@ -133,13 +135,20 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 		update(u)
 	}
 
-	const endType = opts?.until ? 'until' : opts?.count ? 'count' : 'never'
+	const handleUntilChange = (d: Date | undefined) => {
+		const until = d ? dayjs(d).endOf('day').toDate() : undefined
+		update({ until })
+	}
+
+	let endType: 'never' | 'count' | 'until' = 'never'
+	if (opts?.until) {
+		endType = 'until'
+	} else if (opts?.count) {
+		endType = 'count'
+	}
 	const freq = FREQ_TO_STR[opts?.freq ?? RRule.DAILY] || 'DAILY'
-	const byweekday = Array.isArray(opts?.byweekday)
-		? opts.byweekday
-		: opts?.byweekday
-			? [opts.byweekday]
-			: []
+	const byweekday = resolveByweekday(opts?.byweekday)
+	const showSummary = Boolean(show && value)
 
 	return (
 		<Card data-testid="recurrence-editor">
@@ -153,9 +162,9 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 					/>
 					<CardTitle className="text-sm">{t('repeat')}</CardTitle>
 				</div>
-				{show && value && (
+				{showSummary && (
 					<p className="text-xs text-muted-foreground">
-						{getDescription(value, t)}
+						{getDescription(value ?? null, t)}
 					</p>
 				)}
 			</CardHeader>
@@ -169,25 +178,19 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 									{t('repeats')}
 								</Label>
 								<Select
+									className="h-8"
+									data-testid="frequency-select"
+									id="frequency"
 									onValueChange={(f) =>
 										update({ freq: FREQ_MAP[f as keyof typeof FREQ_MAP] })
 									}
 									value={freq}
 								>
-									<SelectTrigger
-										className="h-8"
-										data-testid="frequency-select"
-										id="frequency"
-									>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										{Object.keys(FREQ_MAP).map((f) => (
-											<SelectItem key={f} value={f}>
-												{t(f.toLowerCase())}
-											</SelectItem>
-										))}
-									</SelectContent>
+									{Object.keys(FREQ_MAP).map((f) => (
+										<option key={f} value={f}>
+											{t(f.toLowerCase())}
+										</option>
+									))}
 								</Select>
 							</div>
 							<div>
@@ -214,16 +217,16 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 									{weekDays.map((d, i) => (
 										<div
 											className="flex items-center space-x-1"
-											key={keys.listKey('weekday', i)}
+											key={listKey('weekday', i)}
 										>
 											<Checkbox
 												checked={byweekday.includes(d.value)}
-												id={keys.listKey('day', i)}
+												id={listKey('day', i)}
 												onCheckedChange={() => toggleDay(i)}
 											/>
 											<Label
 												className="text-xs cursor-pointer"
-												htmlFor={keys.listKey('day', i)}
+												htmlFor={listKey('day', i)}
 											>
 												{d.label}
 											</Label>
@@ -236,46 +239,44 @@ export const RecurrenceEditor: React.FC<Props> = ({ value, onChange }) => {
 						<div>
 							<Label className="text-xs">{t('ends')}</Label>
 							<div className="space-y-2 mt-1">
-								{END_TYPES.map(({ type, id, labelKey }) => (
-									<div className="flex items-center space-x-2" key={type}>
-										<Checkbox
-											checked={endType === type}
-											id={id}
-											onCheckedChange={() => setEndType(type)}
-										/>
-										<Label className="text-xs" htmlFor={id}>
-											{t(labelKey)}
-										</Label>
-										{type === 'count' && endType === 'count' && (
-											<>
-												<Input
-													className="h-6 w-16 text-xs"
-													data-testid="count-input"
-													min="1"
-													onChange={(e) =>
-														update({ count: parseNum(e.target.value) })
-													}
-													type="number"
-													value={opts?.count || 1}
-												/>
-												<span className="text-xs">{t('occurrences')}</span>
-											</>
-										)}
-										{type === 'until' && endType === 'until' && (
-											<DatePicker
-												className="h-6"
-												date={opts?.until ?? undefined}
-												onChange={(d) =>
-													update({
-														until: d
-															? dayjs(d).endOf('day').toDate()
-															: undefined,
-													})
-												}
+								{END_TYPES.map(({ type, id, labelKey }) => {
+									const showCountInput = type === 'count' && endType === 'count'
+									const showUntilInput = type === 'until' && endType === 'until'
+									return (
+										<div className="flex items-center space-x-2" key={type}>
+											<Checkbox
+												checked={endType === type}
+												id={id}
+												onCheckedChange={() => setEndType(type)}
 											/>
-										)}
-									</div>
-								))}
+											<Label className="text-xs" htmlFor={id}>
+												{t(labelKey)}
+											</Label>
+											{showCountInput && (
+												<>
+													<Input
+														className="h-6 w-16 text-xs"
+														data-testid="count-input"
+														min="1"
+														onChange={(e) =>
+															update({ count: parseNum(e.target.value) })
+														}
+														type="number"
+														value={opts?.count || 1}
+													/>
+													<span className="text-xs">{t('occurrences')}</span>
+												</>
+											)}
+											{showUntilInput && (
+												<DatePicker
+													className="h-6"
+													date={opts?.until ?? undefined}
+													onChange={handleUntilChange}
+												/>
+											)}
+										</div>
+									)
+								})}
 							</div>
 						</div>
 					</div>

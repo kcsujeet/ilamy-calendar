@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { BusinessHours, CalendarEvent } from '@/components/types'
-import type { RecurrenceEditOptions } from '@/features/recurrence/types'
 import {
-	deleteRecurringEvent as deleteRecurringEventImpl,
-	generateRecurringEvents,
-	updateRecurringEvent as updateRecurringEventImpl,
-} from '@/features/recurrence/utils/recurrence-handler'
+	type ComponentType,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react'
+import type { BusinessHours, CalendarEvent } from '@/components/types'
+import { createPluginRuntime } from '@/features/plugins/lib/create-plugin-runtime'
+import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
 import dayjs, {
 	type Dayjs,
 	type ManipulateType,
@@ -13,7 +17,6 @@ import dayjs, {
 import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
-import { eventOverlapsRange } from '@/lib/utils/event-utils'
 import type { CalendarView } from '@/types'
 import { DAY_MAX_EVENTS_DEFAULT } from '../lib/constants'
 
@@ -32,6 +35,7 @@ export interface CalendarEngineConfig {
 	timezone?: string
 	translations?: Translations
 	translator?: TranslatorFunction
+	plugins?: IlamyPlugin[]
 }
 
 export interface CalendarEngineReturn {
@@ -54,34 +58,35 @@ export interface CalendarEngineReturn {
 	today: () => void
 	addEvent: (event: CalendarEvent) => void
 	updateEvent: (eventId: string | number, event: Partial<CalendarEvent>) => void
-	updateRecurringEvent: (
+	deleteEvent: (eventId: string | number) => void
+	applyScopedEdit: (
 		event: CalendarEvent,
 		updates: Partial<CalendarEvent>,
-		options: RecurrenceEditOptions
+		scope: unknown
 	) => void
-	deleteEvent: (eventId: string | number) => void
-	deleteRecurringEvent: (
-		event: CalendarEvent,
-		options: RecurrenceEditOptions
-	) => void
+	applyScopedDelete: (event: CalendarEvent, scope: unknown) => void
 	openEventForm: (eventData?: Partial<CalendarEvent>) => void
 	closeEventForm: () => void
 	setSelectedEvent: React.Dispatch<React.SetStateAction<CalendarEvent | null>>
 	setIsEventFormOpen: React.Dispatch<React.SetStateAction<boolean>>
 	setSelectedDate: React.Dispatch<React.SetStateAction<Dayjs | null>>
 	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
-	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
+	getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
+	renderSlot: (slotName: string, context: unknown) => ReactNode[]
+	collect: (point: string, context: unknown) => unknown[]
+	getViews: () => PluginView[]
+	getProviders: () => Array<ComponentType<{ children: ReactNode }>>
 	t: TranslatorFunction
 }
 
-const VIEW_UNITS: Record<CalendarView, ManipulateType> = {
+const VIEW_UNITS: Record<string, ManipulateType> = {
 	day: 'day',
 	week: 'week',
 	month: 'month',
 	year: 'year',
 }
 
-export const calculateViewRange = (
+const calculateViewRange = (
 	date: Dayjs,
 	view: CalendarView,
 	firstDayOfWeek: number
@@ -93,7 +98,7 @@ export const calculateViewRange = (
 		const days = getWeekDays(date, firstDayOfWeek)
 		return { start: days[0].startOf('day'), end: days[6].endOf('day') }
 	}
-	// month view: 6 weeks × 7 days
+	// month view: 6 weeks × 7 days — also the default range for plugin/unknown views
 	const weeks = getMonthWeeks(date, firstDayOfWeek)
 	return { start: weeks[0][0].startOf('day'), end: weeks[5][6].endOf('day') }
 }
@@ -118,6 +123,9 @@ export const useCalendarEngine = (
 		translator,
 	} = config
 
+	const { plugins = [] } = config
+	const pluginRuntime = useMemo(() => createPluginRuntime(plugins), [plugins])
+
 	const [currentDate, setCurrentDate] = useState<Dayjs>(
 		dayjs.isDayjs(initialDate) ? initialDate : dayjs(initialDate)
 	)
@@ -138,26 +146,12 @@ export const useCalendarEngine = (
 	}, [translations, translator])
 
 	const getEventsForDateRange = useCallback(
-		(startDate: Dayjs, endDate: Dayjs): CalendarEvent[] => {
-			const allEvents: CalendarEvent[] = []
-
-			for (const event of currentEvents) {
-				if (event.rrule) {
-					allEvents.push(
-						...generateRecurringEvents({
-							event,
-							currentEvents,
-							startDate,
-							endDate,
-						})
-					)
-				} else if (eventOverlapsRange(event, startDate, endDate)) {
-					allEvents.push(event)
-				}
-			}
-			return allEvents
-		},
-		[currentEvents]
+		(startDate: Dayjs, endDate: Dayjs): CalendarEvent[] =>
+			pluginRuntime.transformEvents(currentEvents, {
+				start: startDate,
+				end: endDate,
+			}),
+		[currentEvents, pluginRuntime]
 	)
 
 	const getCurrentViewRange = useCallback(() => {
@@ -213,13 +207,17 @@ export const useCalendarEngine = (
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {
-			const newDate =
-				direction === 1
-					? currentDate.add(1, VIEW_UNITS[view])
-					: currentDate.subtract(1, VIEW_UNITS[view])
+			const unit =
+				VIEW_UNITS[view] ??
+				pluginRuntime.getViews().find((v) => v.name === view)?.navigationUnit ??
+				'day'
+			let newDate = currentDate.subtract(1, unit)
+			if (direction === 1) {
+				newDate = currentDate.add(1, unit)
+			}
 			updateDateAndNotify(newDate)
 		},
-		[currentDate, view, updateDateAndNotify]
+		[currentDate, view, updateDateAndNotify, pluginRuntime]
 	)
 
 	const nextPeriod = useCallback(() => navigatePeriod(1), [navigatePeriod])
@@ -254,37 +252,30 @@ export const useCalendarEngine = (
 		[currentEvents, onEventUpdate]
 	)
 
-	const updateRecurringEvent = useCallback(
-		(
-			event: CalendarEvent,
-			updates: Partial<CalendarEvent>,
-			options: RecurrenceEditOptions
-		) => {
+	const applyScopedEdit = useCallback(
+		(event: CalendarEvent, updates: Partial<CalendarEvent>, scope: unknown) => {
+			const manager = pluginRuntime.getEventManager(event)
+			if (!manager?.applyEdit) {
+				return
+			}
 			onEventUpdate?.({ ...event, ...updates })
 			setCurrentEvents(
-				updateRecurringEventImpl({
-					targetEvent: event,
-					updates,
-					currentEvents,
-					scope: options.scope,
-				})
+				manager.applyEdit({ event, updates, currentEvents, scope })
 			)
 		},
-		[currentEvents, onEventUpdate]
+		[currentEvents, onEventUpdate, pluginRuntime]
 	)
 
-	const deleteRecurringEvent = useCallback(
-		(event: CalendarEvent, options: RecurrenceEditOptions) => {
+	const applyScopedDelete = useCallback(
+		(event: CalendarEvent, scope: unknown) => {
+			const manager = pluginRuntime.getEventManager(event)
+			if (!manager?.applyDelete) {
+				return
+			}
 			onEventDelete?.(event)
-			setCurrentEvents(
-				deleteRecurringEventImpl({
-					targetEvent: event,
-					currentEvents,
-					scope: options.scope,
-				})
-			)
+			setCurrentEvents(manager.applyDelete({ event, currentEvents, scope }))
 		},
-		[currentEvents, onEventDelete]
+		[currentEvents, onEventDelete, pluginRuntime]
 	)
 
 	const deleteEvent = useCallback(
@@ -336,18 +327,6 @@ export const useCalendarEngine = (
 		[onViewChange, onDateChange, currentDate, firstDayOfWeek]
 	)
 
-	const findParentRecurringEvent = useCallback(
-		(event: CalendarEvent): CalendarEvent | null => {
-			const targetUID = event.uid
-			return (
-				currentEvents.find(
-					(e) => (e.uid || `${e.id}@ilamy.calendar`) === targetUID && e.rrule
-				) || null
-			)
-		},
-		[currentEvents]
-	)
-
 	return {
 		currentDate,
 		view,
@@ -368,16 +347,20 @@ export const useCalendarEngine = (
 		today,
 		addEvent,
 		updateEvent,
-		updateRecurringEvent,
+		applyScopedEdit,
+		applyScopedDelete,
 		deleteEvent,
-		deleteRecurringEvent,
 		openEventForm,
 		closeEventForm,
 		setSelectedEvent,
 		setIsEventFormOpen,
 		setSelectedDate,
 		getEventsForDateRange,
-		findParentRecurringEvent,
+		getEventManager: pluginRuntime.getEventManager,
+		renderSlot: pluginRuntime.renderSlot,
+		collect: pluginRuntime.collect,
+		getViews: pluginRuntime.getViews,
+		getProviders: pluginRuntime.getProviders,
 		t,
 	}
 }

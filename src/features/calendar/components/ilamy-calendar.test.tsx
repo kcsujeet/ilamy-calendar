@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test'
+import { beforeEach, describe, expect, it, mock, test } from 'bun:test'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { createContext, useContext } from 'react'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { CalendarEvent } from '@/components/types'
+import type { IlamyPlugin } from '@/features/plugins/lib/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { IlamyCalendar } from './ilamy-calendar'
 
@@ -876,4 +878,34 @@ describe('IlamyCalendar', () => {
 			expect(onCellClick).toHaveBeenCalledTimes(1)
 		})
 	})
+})
+
+test('renders a plugin view and exposes the plugin provider context to it', () => {
+	const FakeContext = createContext('default')
+	const FakeView = () => {
+		const value = useContext(FakeContext)
+		return <div data-testid="fake-view">{value}</div>
+	}
+	const fakePlugin: IlamyPlugin = {
+		name: 'fake',
+		provider: ({ children }) => (
+			<FakeContext.Provider value="from-plugin">
+				{children}
+			</FakeContext.Provider>
+		),
+		views: [
+			{
+				name: 'fake-view',
+				label: 'Fake',
+				component: FakeView,
+				navigationUnit: 'day',
+			},
+		],
+	}
+
+	render(<IlamyCalendar initialView="fake-view" plugins={[fakePlugin]} />)
+
+	const el = screen.getByTestId('fake-view')
+	expect(el).toBeDefined()
+	expect(el.textContent).toBe('from-plugin')
 })

@@ -1,6 +1,7 @@
 import type React from 'react'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
+import type { IlamyPlugin } from '@/features/plugins/lib/types'
 import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
@@ -375,4 +376,10 @@ export interface IlamyCalendarProps {
 	 * ```
 	 */
 	scrollTime?: string
+	/**
+	 * Optional plugins that add behavior/UI (e.g. recurrence). The core ships
+	 * with no plugins by default — pass `recurrencePlugin()` to enable recurring
+	 * events.
+	 */
+	plugins?: IlamyPlugin[]
 }

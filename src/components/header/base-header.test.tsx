@@ -91,6 +91,7 @@ describe('Header with Export Button', () => {
 					title: 'Another Event',
 				}),
 			]),
+			expect.any(Function),
 			expect.stringMatching(/calendar-\d{4}-\d{2}-\d{2}\.ics/),
 			'ilamy Calendar'
 		)

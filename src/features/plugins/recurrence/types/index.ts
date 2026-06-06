@@ -1,5 +1,4 @@
 import type { Options } from 'rrule'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 
 /**
  * Scope options for recurring event operations (Google Calendar style)
@@ -9,14 +8,6 @@ export type RecurrenceEditScope =
 	| 'this' // Only this specific event instance
 	| 'following' // This event and all following events in the series
 	| 'all' // All events in the recurring series
-
-/**
- * Options for editing recurring events
- */
-export interface RecurrenceEditOptions {
-	scope: RecurrenceEditScope
-	eventDate: Dayjs // The date of the specific event being edited
-}
 
 /**
  * Re-export rrule.js Options with practical TypeScript interface.

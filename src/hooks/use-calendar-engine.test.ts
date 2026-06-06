@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import { act, renderHook } from '@testing-library/react'
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
+import { recurrencePlugin } from '@/features/plugins/recurrence/recurrence-plugin'
 import dayjs from '@/lib/configs/dayjs-config'
 import 'dayjs/locale/fr.js'
 import type { Translations } from '@/lib/translations/types'
@@ -539,7 +540,11 @@ describe('useCalendarEngine', () => {
 		it('should generate recurring event instances within range', () => {
 			const events = [createRecurringEvent()]
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, events })
+				useCalendarEngine({
+					...defaultConfig,
+					events,
+					plugins: [recurrencePlugin()],
+				})
 			)
 
 			const rangeEvents = result.current.getEventsForDateRange(
@@ -562,15 +567,19 @@ describe('useCalendarEngine', () => {
 			const onEventUpdate = vi.fn()
 			const events = [createRecurringEvent()]
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, events, onEventUpdate })
+				useCalendarEngine({
+					...defaultConfig,
+					events,
+					onEventUpdate,
+					plugins: [recurrencePlugin()],
+				})
 			)
 
-			const eventDate = dayjs('2025-01-13T10:00:00.000Z')
 			act(() =>
-				result.current.updateRecurringEvent(
+				result.current.applyScopedEdit(
 					events[0],
 					{ title: 'Updated Meeting' },
-					{ scope: 'all', eventDate }
+					'all'
 				)
 			)
 
@@ -584,16 +593,15 @@ describe('useCalendarEngine', () => {
 			const onEventDelete = vi.fn()
 			const events = [createRecurringEvent()]
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, events, onEventDelete })
-			)
-
-			const eventDate = dayjs('2025-01-13T10:00:00.000Z')
-			act(() =>
-				result.current.deleteRecurringEvent(events[0], {
-					scope: 'all',
-					eventDate,
+				useCalendarEngine({
+					...defaultConfig,
+					events,
+					onEventDelete,
+					plugins: [recurrencePlugin()],
 				})
 			)
+
+			act(() => result.current.applyScopedDelete(events[0], 'all'))
 
 			expect(onEventDelete).toHaveBeenCalledTimes(1)
 			const deletedEvent = onEventDelete.mock.calls[0][0]
@@ -606,50 +614,22 @@ describe('useCalendarEngine', () => {
 			const baseEvent = createRecurringEvent({ uid: undefined })
 			const events = [baseEvent]
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, events, onEventDelete })
+				useCalendarEngine({
+					...defaultConfig,
+					events,
+					onEventDelete,
+					plugins: [recurrencePlugin()],
+				})
 			)
 
 			// Get an instance from the engine (it will have a generated UID)
 			const instances = result.current.events
 			const targetInstance = instances[0]
 
-			act(() =>
-				result.current.deleteRecurringEvent(targetInstance, {
-					scope: 'all',
-					eventDate: targetInstance.start,
-				})
-			)
+			act(() => result.current.applyScopedDelete(targetInstance, 'all'))
 
 			expect(onEventDelete).toHaveBeenCalledTimes(1)
 			expect(result.current.rawEvents).toHaveLength(0)
-		})
-		it('should find parent recurring event', () => {
-			const baseEvent = createRecurringEvent()
-			const events = [baseEvent]
-			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, events })
-			)
-
-			const childEvent = { ...baseEvent, id: 'instance-1', rrule: undefined }
-			const parent = result.current.findParentRecurringEvent(childEvent)
-
-			expect(parent).not.toBeNull()
-			expect(parent?.id).toBe('recurring-1')
-		})
-
-		it('should return null when no parent recurring event found', () => {
-			const events = [createEvent()]
-			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, events })
-			)
-
-			const orphanEvent = createEvent({
-				id: 'orphan',
-				uid: 'different-uid@ilamy.calendar',
-			})
-			const parent = result.current.findParentRecurringEvent(orphanEvent)
-
-			expect(parent).toBeNull()
 		})
 	})
 

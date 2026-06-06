@@ -25,14 +25,23 @@ import {
 import { normalizeEvents, safeDate, toHiddenDaysSet } from '@/lib/utils'
 
 const CalendarContent: React.FC = () => {
-	const { view, dayMaxEvents } = useSmartCalendarContext()
+	const { view, dayMaxEvents, getViews } = useSmartCalendarContext((c) => ({
+		view: c.view,
+		dayMaxEvents: c.dayMaxEvents,
+		getViews: c.getViews,
+	}))
 
-	const viewMap = {
+	const builtInViews: Record<string, React.ReactNode> = {
 		month: <MonthView dayMaxEvents={dayMaxEvents} key="month" />,
 		week: <WeekView key="week" />,
 		day: <DayView key="day" />,
 		year: <YearView key="year" />,
 	}
+	const pluginView = getViews().find((v) => v.name === view)
+	const PluginViewComponent = pluginView?.component
+	const activeView =
+		builtInViews[view] ??
+		(PluginViewComponent ? <PluginViewComponent key={view} /> : null)
 
 	return (
 		<div className="flex flex-col w-full h-full" data-testid="ilamy-calendar">
@@ -45,7 +54,7 @@ const CalendarContent: React.FC = () => {
 					transitionKey={view}
 				>
 					<div className="border h-full w-full" data-testid="calendar-body">
-						{viewMap[view]}
+						{activeView}
 					</div>
 				</AnimatedSection>
 			</CalendarDndContext>

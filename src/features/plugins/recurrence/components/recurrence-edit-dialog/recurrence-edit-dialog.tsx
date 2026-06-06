@@ -1,4 +1,6 @@
-import { Button } from '@/components/ui/button'
+import { useIlamyCalendarContext } from '@ilamy/calendar'
+import type { RecurrenceEditScope } from '../../types'
+import { Button } from '../../ui/button'
 import {
 	Dialog,
 	DialogContent,
@@ -6,9 +8,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from '@/components/ui/dialog'
-import type { RecurrenceEditScope } from '@/features/recurrence/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+} from '../../ui/dialog'
 
 const SCOPES = [
 	{
@@ -46,7 +46,7 @@ export function RecurrenceEditDialog({
 	operationType,
 	eventTitle,
 }: RecurrenceEditDialogProps) {
-	const { t } = useSmartCalendarContext((context) => ({ t: context.t }))
+	const { t } = useIlamyCalendarContext()
 
 	const handleScopeSelect = (scope: RecurrenceEditScope) => {
 		onConfirm(scope)
@@ -55,18 +55,20 @@ export function RecurrenceEditDialog({
 
 	const isEdit = operationType === 'edit'
 
+	let title = t('deleteRecurringEvent')
+	let question = t('deleteRecurringEventQuestion')
+	if (isEdit) {
+		title = t('editRecurringEvent')
+		question = t('editRecurringEventQuestion')
+	}
+
 	return (
 		<Dialog onOpenChange={onClose} open={isOpen}>
-			<DialogContent className="max-w-md">
+			<DialogContent className="max-w-md" onClose={onClose}>
 				<DialogHeader>
-					<DialogTitle>
-						{isEdit ? t('editRecurringEvent') : t('deleteRecurringEvent')}
-					</DialogTitle>
+					<DialogTitle>{title}</DialogTitle>
 					<DialogDescription>
-						"{eventTitle}"{' '}
-						{isEdit
-							? t('editRecurringEventQuestion')
-							: t('deleteRecurringEventQuestion')}
+						"{eventTitle}" {question}
 					</DialogDescription>
 				</DialogHeader>
 

@@ -1,68 +1,38 @@
 import { createContext } from 'react'
 import type { EventFormProps } from '@/components/event-form/event-form'
-import type { BusinessHours, CalendarEvent } from '@/components/types'
+import type { CalendarEvent } from '@/components/types'
 import type {
 	CalendarClassesOverride,
 	CellInfo,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
-import type { RecurrenceEditOptions } from '@/features/recurrence/types'
+import type { CalendarEngineReturn } from '@/hooks/use-calendar-engine'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
-import type { TranslatorFunction } from '@/lib/translations/types'
-import type { CalendarView, TimeFormat } from '@/types'
+import type { TimeFormat } from '@/types'
 
-export interface CalendarContextType {
-	currentDate: Dayjs
-	view: CalendarView
-	events: CalendarEvent[]
-	rawEvents: CalendarEvent[] // Unprocessed events for export
-	isEventFormOpen: boolean
-	selectedEvent: CalendarEvent | null
-	selectedDate: Dayjs | null
-	firstDayOfWeek: number // 0 for Sunday, 1 for Monday, etc.
-	setCurrentDate: (date: Dayjs) => void
-	selectDate: (date: Dayjs) => void
-	setView: (view: CalendarView) => void
-	nextPeriod: () => void
-	prevPeriod: () => void
-	today: () => void
-	addEvent: (event: CalendarEvent) => void
-	updateEvent: (eventId: string | number, event: Partial<CalendarEvent>) => void
-	updateRecurringEvent: (
-		event: CalendarEvent,
-		updates: Partial<CalendarEvent>,
-		options: RecurrenceEditOptions
-	) => void
-	deleteEvent: (eventId: string | number) => void
-	deleteRecurringEvent: (
-		event: CalendarEvent,
-		options: RecurrenceEditOptions
-	) => void
-	openEventForm: (eventData?: Partial<CalendarEvent>) => void
-	closeEventForm: () => void
-	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
-	findParentRecurringEvent: (event: CalendarEvent) => CalendarEvent | null
+/**
+ * The internal calendar context. Extends the engine's full return (state,
+ * navigation, CRUD, plugin runtime) and adds the presentation/config props the
+ * provider threads through from IlamyCalendar. The public, curated surface is
+ * `IlamyCalendarApi` (see use-smart-calendar-context).
+ */
+export interface CalendarContextType extends CalendarEngineReturn {
 	renderEvent?: (event: CalendarEvent) => React.ReactNode
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellInfo) => void
 	isCellDisabled?: (info: CellInfo) => boolean
-	currentLocale?: string
 	timezone?: string
 	disableCellClick?: boolean
 	disableEventClick?: boolean
 	disableDragAndDrop?: boolean
-	dayMaxEvents: number
 	eventSpacing: number
 	eventHeight: number
 	stickyViewHeader: boolean
 	viewHeaderClassName: string
 	headerComponent?: React.ReactNode // Optional custom header component
 	headerClassName?: string // Optional custom header class
-	businessHours?: BusinessHours | BusinessHours[]
 	renderEventForm?: (props: EventFormProps) => React.ReactNode
-	// Translation function
-	t: TranslatorFunction
 	timeFormat: TimeFormat
 	classesOverride?: CalendarClassesOverride
 	renderCurrentTimeIndicator?: (

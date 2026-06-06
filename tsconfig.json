@@ -13,7 +13,11 @@
 		"noEmit": true,
 		"skipLibCheck": true,
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+			"@ilamy/calendar": ["./src/index.ts"],
+			"@ilamy/calendar/plugins/recurrence": [
+				"./src/features/plugins/recurrence/recurrence.ts"
+			]
 		}
 	},
 	"include": ["**/*.ts", "**/*.tsx"],

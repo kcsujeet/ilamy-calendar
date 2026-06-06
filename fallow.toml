@@ -1,0 +1,35 @@
+# fallow static-analysis config.
+#
+# Scopes the audit to the shipped library. Everything excluded here is
+# non-shipped code whose findings are false positives for a published package:
+#
+#   examples/**            Standalone consumer apps with their own package.json.
+#                          They legitimately depend on @ilamy/calendar (and the
+#                          recurrence plugin subpath), which fallow can't resolve
+#                          to the workspace, so it reports the deps as unused.
+#   src/components/demo/** The local playground. Untested by design, so its
+#                          branching inflates CRAP and clone scores without being
+#                          part of the shippable surface.
+#
+# bunup.config.ts is the build entry, executed by the bunup CLI — nothing
+# imports it, so dead-code analysis sees it as orphaned. It's listed under
+# `entry` (additive to the package.json/plugin roots fallow auto-detects) so it
+# counts as a root and its build-only deps (e.g. bun-plugin-tailwind) stay used.
+# The shipped entry points (src/index.ts, the recurrence plugin subpath) are
+# left to auto-detection via package.json `exports`.
+
+ignorePatterns = ["examples/**"]
+entry = ["bunup.config.ts"]
+
+# bun-plugin-tailwind is loaded by Bun at build time via bunfig.toml
+# (`plugins = ["bun-plugin-tailwind"]`), not through a static import, so
+# dead-code analysis can't trace its use and reports it as an unused dependency.
+ignoreDependencies = ["bun-plugin-tailwind"]
+
+[health]
+# Complexity / CRAP: skip the untested demo playground.
+ignore = ["src/components/demo/**"]
+
+[duplicates]
+# Duplication: skip the untested demo playground.
+ignore = ["src/components/demo/**"]

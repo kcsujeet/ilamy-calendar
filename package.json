@@ -34,10 +34,12 @@
 	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
-			"import": {
-				"types": "./dist/index.d.ts",
-				"default": "./dist/index.js"
-			}
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./plugins/recurrence": {
+			"types": "./dist/features/plugins/recurrence/recurrence.d.ts",
+			"import": "./dist/features/plugins/recurrence/recurrence.js"
 		}
 	},
 	"files": [
@@ -48,7 +50,7 @@
 	"scripts": {
 		"dev": "bunx vite",
 		"start": "NODE_ENV=production bun src/index.tsx",
-		"build": "NODE_ENV=production bunx bunup",
+		"build": "CI=true NODE_ENV=production bunx bunup",
 		"lint": "bunx biome lint . --diagnostic-level=error",
 		"lint:fix": "bunx biome lint --write .",
 		"format": "bunx biome format --write .",

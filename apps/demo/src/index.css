@@ -1,10 +1,12 @@
-@import '@ilamy/calendar/styles.css';
+/* This demo brings its own design system (shadcn tokens). @ilamy/calendar ships
+ * no CSS — it just uses the conventional shadcn token classes, which our own
+ * globals.css below defines. */
+@import './styles/globals.css';
 
 /*
  * Tailwind v4 ignores node_modules by default, so register @ilamy/calendar's
- * dist (which bundles all the calendar + recurrence + UI class names) so its
- * pre-built classes are generated. Consumers need the same `@source` line for
- * their own build (see the package README).
+ * dist so Tailwind scans its class names and generates the matching utilities
+ * (which our tokens then style). Any consumer needs the same `@source` line.
  */
 @source "../../../node_modules/@ilamy/calendar/dist";
 

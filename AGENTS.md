@@ -95,7 +95,7 @@ apps/
   demo/         @ilamy/demo         (private)  Vite playground; consumes @ilamy/calendar's public API
 ```
 
-`@ilamy/calendar` ships these entry points: `.` (core), `./testing` (test harness), `./plugins/recurrence` (the recurrence plugin), `./styles.css` (design tokens). The recurrence subpath's `import … from '@ilamy/calendar'` self-references the same package at runtime.
+`@ilamy/calendar` ships these entry points: `.` (core), `./testing` (test harness), `./plugins/recurrence` (the recurrence plugin). The recurrence subpath's `import … from '@ilamy/calendar'` self-references the same package at runtime. **It ships no CSS** — "bring your own design system": components use the conventional shadcn token classes, and consumers `@source` the package's `dist` so Tailwind generates the utilities, styled by their own tokens. The demo (`apps/demo/src/styles/globals.css`) is the reference consumer that supplies a shadcn theme.
 
 Paths in the **Key Paths** section below are relative to `packages/calendar/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via tsconfig `paths`) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the recurrence package + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
 

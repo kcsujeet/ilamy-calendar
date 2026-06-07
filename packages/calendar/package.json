@@ -43,12 +43,10 @@
 		"./plugins/recurrence": {
 			"types": "./dist/plugins/recurrence.d.ts",
 			"import": "./dist/plugins/recurrence.js"
-		},
-		"./styles.css": "./styles/globals.css"
+		}
 	},
 	"files": [
 		"dist",
-		"styles",
 		"README.md",
 		"LICENSE"
 	],

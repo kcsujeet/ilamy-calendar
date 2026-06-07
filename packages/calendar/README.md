@@ -24,15 +24,17 @@ export function App() {
 }
 ```
 
-## Styling (required)
+## Styling — bring your own design system
 
-The components use shadcn design tokens shipped with the package. Import them once at your CSS entry and register the package as a source so Tailwind v4 generates the pre-built classes (it ignores `node_modules` by default — adjust the relative depth to your stylesheet):
+`@ilamy/calendar` ships **no CSS**. The components are styled with the conventional [shadcn/ui](https://ui.shadcn.com) token classes (`bg-background`, `text-muted-foreground`, `bg-primary`, `border-border`, `bg-card`, `ring-ring`, …), so **your** design system supplies the look. If you already use shadcn, those tokens are defined and you're done — just point Tailwind at the package so it generates the utility classes (Tailwind v4 ignores `node_modules` by default — adjust the relative depth to your stylesheet):
 
 ```css
-@import '@ilamy/calendar/styles.css';
-
 @source "../node_modules/@ilamy/calendar/dist";
 ```
+
+You'll also want `tailwindcss-animate` (or `tw-animate-css`) in your Tailwind setup for the dialog/select animations — it's a peer dependency.
+
+If you don't use shadcn, define the standard shadcn theme tokens (`--background`, `--foreground`, `--primary`, `--muted`/`--muted-foreground`, `--accent`, `--destructive`, `--border`, `--input`, `--ring`, `--card`, `--popover`, `--radius`) and their `@theme` color mappings; the calendar then inherits your palette.
 
 ## Public API
 

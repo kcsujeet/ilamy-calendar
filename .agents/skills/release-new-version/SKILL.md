@@ -1,11 +1,16 @@
 ---
 name: release-new-version
-description: Cut a new release of @ilamy/calendar — analyze commits since the last tag, suggest a semver bump, draft a CHANGELOG entry in the project's existing style, run the CI gate, commit, tag, push to origin, and create the GitHub release page (marked as `latest`). Pauses for the user to run `npm publish` interactively, then (on their signal) comments on every issue closed by the release and closes any still open. Use whenever the user says "release a new version", "cut a release", "ship v1.x", "bump the version", "prep a release", "publish the next version", "I just published X", "close the released issues", or anything that implies a new version should go out or a shipped version needs its issue follow-ups.
+description: Cut a new release of @ilamy/calendar — analyze commits since the last tag, suggest a semver bump, draft a CHANGELOG entry in the project's existing style, run the CI gate, commit, tag, push to origin, and create the GitHub release page (marked as `latest`). Pauses for the user to run `bun run release` (build + publish) interactively, then (on their signal) comments on every issue closed by the release and closes any still open. Use whenever the user says "release a new version", "cut a release", "ship v1.x", "bump the version", "prep a release", "publish the next version", "I just published X", "close the released issues", or anything that implies a new version should go out or a shipped version needs its issue follow-ups.
 ---
 
 # Release a new version of @ilamy/calendar
 
-You're shipping a new version of the `@ilamy/calendar` npm package. The flow is conservative on purpose: suggest, wait for approval, apply, wait for approval, push. The user handles `npm publish` manually (it needs an interactive login).
+You're shipping a new version of the `@ilamy/calendar` npm package. The flow is conservative on purpose: suggest, wait for approval, apply, wait for approval, push. The user handles the actual publish manually via `bun run release` (it needs an interactive login).
+
+**Monorepo note.** This is a Bun-workspaces monorepo but **only `@ilamy/calendar` is published** (the other `@ilamy/*` packages are `private` and bundled into it). So:
+- The shipped version lives in **`packages/calendar/package.json`**, not the root `package.json` (the root is private and versionless). Bump and read the version there.
+- `CHANGELOG.md` and `docs/logs/` stay at the repo root.
+- Publishing is a root command: **`bun run release`** = `build:lib` (build only `@ilamy/calendar`, bundling the internal packages) then `cd packages/calendar && bun publish` (honors `publishConfig.access` + runs prepack/postpack). `bun run release:dry` does the same with `--dry-run`.
 
 **Why the pauses matter.** Recent git history shows version churn (`1.7.0` → `1.6.1` → `1.6.0` → `1.6.1`) from premature version bumps. Every step that writes to the tree, commits, tags, or pushes should be explicitly approved. It's cheap to pause and expensive to revert a tag.
 
@@ -17,7 +22,7 @@ Do these in parallel and report anything wrong. Do not proceed if any check fail
 - `git status --short` → must be empty. If there are staged/unstaged changes, ask the user whether to commit, stash, or abort.
 - `git fetch origin main` then `git rev-list --left-right --count origin/main...HEAD` → local must be **equal to or 0 ahead** of `origin/main`. If local is behind, pull first. If ahead, confirm with the user that the unpushed commits are intended for this release.
 - `git describe --tags --abbrev=0` → capture the last release tag (e.g., `v1.6.1`). This is the baseline for the commit log and the changelog `compare` link.
-- Read `package.json` `version` field. Sanity-check it matches the last tag minus the `v` prefix. If they diverge (as happened with the `1.7.0` → `1.6.1` revert), surface the mismatch and ask the user what the correct baseline is before continuing.
+- Read **`packages/calendar/package.json`** `version` field (NOT the root — it's private and versionless). Sanity-check it matches the last tag minus the `v` prefix. If they diverge (as happened with the `1.7.0` → `1.6.1` revert), surface the mismatch and ask the user what the correct baseline is before continuing.
 
 Do **not** run `bun run ci` yet — save it for Phase 4 so we don't waste a clean build if the user doesn't like the version or the changelog.
 
@@ -111,12 +116,12 @@ Only now run `bun run ci` (lint + type-check + test + build). If it fails, stop 
 
 In this order:
 
-1. Edit `package.json` to set `"version": "X.Y.Z"`. Don't use `npm version` — its default behavior creates its own commit and tag with a message you don't control, and the recent revert chaos suggests you want full control over the commit.
+1. Edit **`packages/calendar/package.json`** to set `"version": "X.Y.Z"` (the published package — not the root). Don't use `npm version` — its default behavior creates its own commit and tag with a message you don't control, and the recent revert chaos suggests you want full control over the commit.
 2. Write the new changelog entry into `CHANGELOG.md` (already drafted in Phase 3).
 3. Update `docs/logs/YYYY-MM-DD.md` (today, per the project's mandatory dev-log rule) with a one-line summary: "**[release]**: Cut vX.Y.Z — <short summary of what's in it>".
 4. Stage **only** these three files explicitly by name — never `git add -A`:
    ```
-   git add package.json CHANGELOG.md docs/logs/<today>.md
+   git add packages/calendar/package.json CHANGELOG.md docs/logs/<today>.md
    ```
 5. Commit with message exactly `X.Y.Z` (matching the project's existing release-commit style — see commits `1.6.0`, `1.6.1`, `1.7.0` in `git log`). No conventional prefix, no body, no co-author trailer (project CLAUDE.md forbids AI co-author trailers).
 6. Tag: `git tag vX.Y.Z`. Lightweight tag, no `-a -m` — matches existing tag style in this repo unless `git tag -n <last-tag>` shows otherwise, in which case match that.
@@ -156,26 +161,29 @@ Turn the pushed tag into a published release page on GitHub, marked as `latest`.
    - No `--draft`. The user already approved the body in step 3; publishing a draft just means they have to click "Publish" again.
 5. **Report the release URL** from `gh`'s output so the user can open it.
 
-## Phase 8 — Hand off for `npm publish`
+## Phase 8 — Hand off for publish
 
 Only one manual step is left before the issue follow-ups:
 
 ```
 Released vX.Y.Z. Remaining (manual):
 
-  npm publish --access public
+  bun run release
 
-  (needs interactive npm login — that's why this skill stops here)
+  (from the repo root — builds @ilamy/calendar then publishes it; needs an
+  interactive npm login, which is why this skill stops here)
 
 Once published, say "published" (or similar) and I'll notify the issues
 this release closes.
 ```
 
-Do not offer to run `npm publish` yourself — it requires credentials you don't have. **Pause here.** Do not proceed to Phase 9 until the user confirms the publish landed; commenting "fixed in vX.Y.Z" on an issue before the package is on npm would be a lie to the reporter.
+`bun run release` builds only `@ilamy/calendar` (bundling the private internal packages) and runs `bun publish` from `packages/calendar` — it honors `publishConfig.access: public` and the prepack/postpack scripts (which inject `sideEffects: false` and strip devDependencies). Tip: suggest `bun run release:dry` first to preview the tarball without uploading.
+
+Do not offer to run `bun run release` yourself — it requires credentials you don't have. **Pause here.** Do not proceed to Phase 9 until the user confirms the publish landed; commenting "fixed in vX.Y.Z" on an issue before the package is on npm would be a lie to the reporter.
 
 ## Phase 9 — Notify closed issues
 
-Triggered when the user confirms `npm publish` succeeded (phrases like "published", "it's on npm", "done", "pushed to npm"). Comment on every issue that this release closes and close any still open — in a single approval gate, not per-issue.
+Triggered when the user confirms the publish succeeded (phrases like "published", "it's on npm", "done", "pushed to npm"). Comment on every issue that this release closes and close any still open — in a single approval gate, not per-issue.
 
 ### Find the issues
 
@@ -245,6 +253,6 @@ Posted on #119, #66. Closed #66. All done.
 ## Failure modes to watch for
 
 - **Tag already exists** (`git tag vX.Y.Z` fails): somebody already cut this version, or a previous attempt got halfway. Ask the user before using `-f`.
-- **`package.json` version doesn't match latest tag**: the canonical example is the recent `1.7.0` → reverted state. Flag it, ask what the true baseline is.
+- **`packages/calendar/package.json` version doesn't match latest tag**: the canonical example is the recent `1.7.0` → reverted state. Flag it, ask what the true baseline is.
 - **Unmerged PR references in the changelog**: the user closed a PR by rebasing/squashing. When you run `gh pr view <N>`, confirm the PR is `merged` (not `closed`). If it's `closed` without merging, don't credit it.
 - **`bun run ci` is slow** (~60s+ for the full gate on this repo): run it in the background and keep drafting; don't block the user unnecessarily.

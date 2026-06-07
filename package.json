@@ -16,6 +16,7 @@
 	"scripts": {
 		"dev": "bun run --filter '@ilamy/demo' dev",
 		"build": "bun run --filter '*' --if-present build",
+		"build:lib": "bun run --filter '@ilamy/calendar' build",
 		"test": "bun run --filter '*' --if-present test",
 		"type-check": "bun run --filter '*' --if-present type-check",
 		"lint": "bunx biome lint . --diagnostic-level=error",
@@ -25,6 +26,9 @@
 		"check": "bunx biome check . --diagnostic-level=error",
 		"check:fix": "bunx biome check --write .",
 		"ci": "bun run check && bun run build && bun run type-check && bun run test",
+		"publish:lib": "cd packages/calendar && bun publish",
+		"release": "bun run build:lib && bun run publish:lib",
+		"release:dry": "bun run build:lib && cd packages/calendar && bun publish --dry-run",
 		"pre-commit": "bun run check:fix",
 		"prepare": "bunx husky"
 	},

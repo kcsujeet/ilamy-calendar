@@ -12,7 +12,10 @@ export default defineConfig({
 	outDir: 'dist',
 	minify: true,
 	clean: true,
-	sourcemap: true,
+	// No sourcemaps in the published package. `sourcemap: true` embeds an inline
+	// base64 map in every .js (was ~84% of the shipped bytes); we ship code only
+	// (the source is public on GitHub). See bunup docs (true === 'inline').
+	sourcemap: 'none',
 	// Bundle the internal @ilamy/* workspace packages into this output (they're
 	// resolved to source via tsconfig paths). Their third-party deps (react,
 	// radix, clsx, etc.) stay external — see package.json dependencies.

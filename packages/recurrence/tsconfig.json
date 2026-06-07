@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"paths": {
+			"@ilamy/utils/dayjs": ["../utils/src/dayjs.ts"],
+			"@ilamy/utils/helpers": ["../utils/src/helpers.ts"],
+			"@ilamy/ui/components/*": ["../ui/src/components/*"],
+			"@ilamy/ui/lib/utils": ["../ui/src/lib/utils.ts"]
+		}
+	},
+	"include": ["**/*.ts", "**/*.tsx"],
+	"exclude": ["dist", "node_modules", "bunup.config.ts"]
+}

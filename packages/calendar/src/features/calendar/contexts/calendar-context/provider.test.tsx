@@ -1,0 +1,671 @@
+import { describe, expect, it, mock } from 'bun:test'
+import { recurrencePlugin } from '@ilamy/calendar-recurrence'
+import { render } from '@testing-library/react'
+import type React from 'react'
+import { RRule } from 'rrule'
+import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import dayjs from '@/lib/configs/dayjs-config'
+import type { CalendarProviderProps } from './provider'
+import { CalendarProvider } from './provider'
+
+// Default test props
+const defaultProps = {
+	events: [] as CalendarEvent[],
+	dayMaxEvents: 5,
+	firstDayOfWeek: 0,
+}
+
+// Factory for a daily recurring event starting July 1 at 9am
+const makeDailyRecurringEvent = (
+	overrides: Partial<CalendarEvent> = {}
+): CalendarEvent => ({
+	id: 'test-recurring',
+	title: 'Daily Meeting',
+	start: dayjs('2025-07-01').hour(9),
+	end: dayjs('2025-07-01').hour(10),
+	rrule: {
+		freq: RRule.DAILY,
+		interval: 1,
+		dtstart: dayjs('2025-07-01').hour(9).toDate(),
+	},
+	uid: 'test-recurring@calendar.test',
+	...overrides,
+})
+
+// Test component to capture context values
+const TestWrapper = ({
+	children,
+	testId,
+}: {
+	children: React.ReactNode
+	testId?: string
+}) => {
+	const { currentDate } = useSmartCalendarContext()
+
+	if (!testId) {
+		return <>{children}</>
+	}
+
+	return (
+		<>
+			<div data-testid={`${testId}-year`}>{currentDate.year()}</div>
+			<div data-testid={`${testId}-month`}>{currentDate.month()}</div>
+			<div data-testid={`${testId}-date`}>{currentDate.date()}</div>
+			{children}
+		</>
+	)
+}
+
+// Render helper function
+const renderProvider = (
+	children: React.ReactNode,
+	props: Partial<CalendarProviderProps> = {},
+	testId?: string
+) => {
+	return render(
+		<CalendarProvider {...defaultProps} {...props}>
+			<TestWrapper testId={testId}>{children}</TestWrapper>
+		</CalendarProvider>
+	)
+}
+
+// Test component to access context
+function TestComponent() {
+	const { events, getEventsForDateRange } = useSmartCalendarContext()
+
+	// Test on-demand generation for a specific range
+	const rangeEvents = getEventsForDateRange(
+		dayjs('2025-07-01'),
+		dayjs('2025-07-07').endOf('day')
+	)
+
+	return (
+		<div>
+			<div data-testid="total-events">{events.length}</div>
+			<div data-testid="range-events">{rangeEvents.length}</div>
+		</div>
+	)
+}
+
+describe('CalendarProvider - On-Demand Generation', () => {
+	it('should generate recurring events on-demand for current view only', () => {
+		const recurringEvent = makeDailyRecurringEvent()
+
+		const { getByTestId } = renderProvider(<TestComponent />, {
+			events: [recurringEvent],
+			dayMaxEvents: 3,
+			plugins: [recurrencePlugin()],
+		})
+
+		// Should generate events for the current view range (7 days from July 1-7)
+		const rangeEventsCount = Number.parseInt(
+			getByTestId('range-events').textContent || '0',
+			10
+		)
+		expect(rangeEventsCount).toBe(7)
+	})
+
+	it('should handle non-recurring events efficiently', () => {
+		const nonRecurringEvent: CalendarEvent = {
+			id: 'test-single',
+			title: 'One-time Meeting',
+			start: dayjs('2025-07-03').hour(9),
+			end: dayjs('2025-07-03').hour(10),
+		}
+
+		const { getByTestId } = renderProvider(<TestComponent />, {
+			events: [nonRecurringEvent],
+			dayMaxEvents: 3,
+		})
+
+		// Should include the single event in range
+		const rangeEventsCount = Number.parseInt(
+			getByTestId('range-events').textContent || '0',
+			10
+		)
+		expect(rangeEventsCount).toBe(1)
+	})
+
+	it('should exclude events with EXDATE exclusions', () => {
+		const recurringEventWithExdates = makeDailyRecurringEvent({
+			id: 'test-excluded',
+			title: 'Meeting with Exclusions',
+			uid: 'test-excluded@calendar.test',
+			exdates: [
+				'2025-07-01T09:00:00.000Z',
+				'2025-07-02T09:00:00.000Z',
+				'2025-07-03T09:00:00.000Z',
+				'2025-07-04T09:00:00.000Z',
+				'2025-07-05T09:00:00.000Z',
+				'2025-07-06T09:00:00.000Z',
+				'2025-07-07T09:00:00.000Z',
+			], // Exclude all dates in range
+		})
+
+		const { getByTestId } = renderProvider(<TestComponent />, {
+			events: [recurringEventWithExdates],
+			dayMaxEvents: 3,
+			plugins: [recurrencePlugin()],
+		})
+
+		// Should not generate any events for excluded dates
+		const rangeEventsCount = Number.parseInt(
+			getByTestId('range-events').textContent || '0',
+			10
+		)
+		expect(rangeEventsCount).toBe(0)
+	})
+})
+
+describe('CalendarProvider - recurring event integration', () => {
+	it('should not create duplicate events when recurring events are modified', () => {
+		// Create a base recurring event
+		const baseEvent: CalendarEvent = {
+			id: 'daily-standup',
+			title: 'Daily Standup',
+			start: dayjs('2025-01-01T09:00:00.000Z'),
+			end: dayjs('2025-01-01T09:30:00.000Z'),
+			rrule: {
+				freq: RRule.DAILY,
+				interval: 1,
+				dtstart: dayjs('2025-01-01T09:00:00.000Z').toDate(),
+			},
+			uid: 'daily-standup@calendar',
+		}
+
+		// Create a modified instance (what gets created when user drags/edits an occurrence)
+		const modifiedInstance: CalendarEvent = {
+			id: 'daily-standup_modified_123',
+			title: 'Daily Standup',
+			start: dayjs('2025-01-03T10:00:00.000Z'), // Moved to different time
+			end: dayjs('2025-01-03T10:30:00.000Z'),
+			recurrenceId: '2025-01-03T09:00:00.000Z', // Original occurrence time
+			uid: 'daily-standup@calendar', // Same UID as base
+		}
+
+		// Update base event with EXDATE to exclude the modified occurrence
+		const baseEventWithExdate: CalendarEvent = {
+			...baseEvent,
+			exdates: ['2025-01-03T09:00:00.000Z'],
+		}
+
+		const events = [baseEventWithExdate, modifiedInstance]
+
+		function TestNoDuplicates() {
+			const { getEventsForDateRange } = useSmartCalendarContext()
+
+			// Get events for a range that includes the modified date
+			const rangeEvents = getEventsForDateRange(
+				dayjs('2025-01-01T00:00:00.000Z'),
+				dayjs('2025-01-05T00:00:00.000Z')
+			)
+
+			// Count events on the modified date (Jan 3rd)
+			const jan3Events = rangeEvents.filter((event) =>
+				event.start.isSame(dayjs('2025-01-03T00:00:00.000Z'), 'day')
+			)
+
+			return (
+				<div>
+					<div data-testid="jan3-event-count">{jan3Events.length}</div>
+					<div data-testid="jan3-event-hour">
+						{jan3Events[0]?.start.hour() || 'none'}
+					</div>
+					<div data-testid="jan3-event-id">{jan3Events[0]?.id || 'none'}</div>
+				</div>
+			)
+		}
+
+		const { getByTestId } = renderProvider(<TestNoDuplicates />, {
+			events: events,
+			dayMaxEvents: 5,
+			plugins: [recurrencePlugin()],
+		})
+
+		// Should have 2 events on Jan 3rd (the base event generates one instance, and the modified instance is also present)
+		expect(getByTestId('jan3-event-count').textContent).toBe('2')
+		expect(getByTestId('jan3-event-hour').textContent).toBe('10') // Should be the modified time (10:00), not original (09:00)
+		expect(getByTestId('jan3-event-id').textContent).toBe(
+			'daily-standup_modified_123'
+		)
+	})
+
+	it('should call regular callbacks for recurring event operations', () => {
+		const onEventUpdate = mock(() => {})
+		const onEventDelete = mock(() => {})
+
+		const recurringEvent: CalendarEvent = {
+			id: 'weekly-meeting',
+			uid: 'weekly-meeting@ilamy.calendar',
+			title: 'Weekly Meeting',
+			start: dayjs('2025-01-06T10:00:00.000Z'),
+			end: dayjs('2025-01-06T11:00:00.000Z'),
+			rrule: {
+				freq: RRule.WEEKLY,
+				interval: 1,
+				byweekday: [RRule.MO],
+				dtstart: dayjs('2025-01-06T10:00:00.000Z').toDate(),
+			},
+			exdates: [],
+		}
+
+		const TestRecurringCallbacks = () => {
+			const { applyScopedEdit, applyScopedDelete } = useSmartCalendarContext()
+
+			const handleUpdateRecurring = () => {
+				applyScopedEdit(
+					recurringEvent,
+					{ title: 'Updated Weekly Meeting' },
+					'this'
+				)
+			}
+
+			const handleDeleteRecurring = () => {
+				applyScopedDelete(recurringEvent, 'this')
+			}
+
+			return (
+				<div>
+					<button
+						data-testid="update-recurring"
+						onClick={handleUpdateRecurring}
+						type="button"
+					>
+						Update Recurring
+					</button>
+					<button
+						data-testid="delete-recurring"
+						onClick={handleDeleteRecurring}
+						type="button"
+					>
+						Delete Recurring
+					</button>
+				</div>
+			)
+		}
+
+		const { getByTestId } = renderProvider(<TestRecurringCallbacks />, {
+			events: [recurringEvent],
+			dayMaxEvents: 5,
+			onEventUpdate: onEventUpdate,
+			onEventDelete: onEventDelete,
+			plugins: [recurrencePlugin()],
+		})
+
+		// Test updating recurring event - should call onEventUpdate with the updated event
+		getByTestId('update-recurring').click()
+		expect(onEventUpdate).toHaveBeenCalledWith({
+			...recurringEvent,
+			title: 'Updated Weekly Meeting',
+		})
+
+		// Test deleting recurring event - should call onEventDelete with the event
+		getByTestId('delete-recurring').click()
+		expect(onEventDelete).toHaveBeenCalledWith(recurringEvent)
+	})
+
+	it('should call onEventUpdate for rrule changes', () => {
+		const onEventUpdate = mock(() => {})
+
+		const recurringEvent: CalendarEvent = {
+			id: 'daily-standup',
+			uid: 'daily-standup@ilamy.calendar',
+			title: 'Daily Standup',
+			start: dayjs('2025-01-06T09:00:00.000Z'),
+			end: dayjs('2025-01-06T09:30:00.000Z'),
+			rrule: {
+				freq: RRule.DAILY,
+				interval: 1,
+				dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+			},
+			exdates: [],
+		}
+
+		const TestRruleUpdate = () => {
+			const { applyScopedEdit } = useSmartCalendarContext()
+
+			const handleUpdateRrule = () => {
+				// Change from daily to weekly
+				applyScopedEdit(
+					recurringEvent,
+					{
+						rrule: {
+							freq: RRule.WEEKLY,
+							interval: 1,
+							byweekday: [RRule.MO],
+							dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+						},
+					},
+					'all'
+				)
+			}
+
+			return (
+				<div>
+					<button
+						data-testid="update-rrule"
+						onClick={handleUpdateRrule}
+						type="button"
+					>
+						Update Rrule
+					</button>
+				</div>
+			)
+		}
+
+		const { getByTestId } = renderProvider(<TestRruleUpdate />, {
+			events: [recurringEvent],
+			dayMaxEvents: 5,
+			onEventUpdate: onEventUpdate,
+			plugins: [recurrencePlugin()],
+		})
+
+		// Test updating rrule - should call onEventUpdate with the new rrule
+		getByTestId('update-rrule').click()
+		expect(onEventUpdate).toHaveBeenCalledWith({
+			...recurringEvent,
+			rrule: {
+				freq: RRule.WEEKLY,
+				interval: 1,
+				byweekday: [RRule.MO],
+				dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+			},
+		})
+	})
+
+	it('should call onEventUpdate for time/date changes in recurring events', () => {
+		const onEventUpdate = mock(() => {})
+
+		const recurringEvent: CalendarEvent = {
+			id: 'team-meeting',
+			uid: 'team-meeting@ilamy.calendar',
+			title: 'Team Meeting',
+			start: dayjs('2025-01-06T14:00:00.000Z'),
+			end: dayjs('2025-01-06T15:00:00.000Z'),
+			rrule: {
+				freq: RRule.WEEKLY,
+				interval: 1,
+				byweekday: [RRule.MO],
+				dtstart: dayjs('2025-01-06T14:00:00.000Z').toDate(),
+			},
+			exdates: [],
+		}
+
+		const TestTimeUpdate = () => {
+			const { applyScopedEdit } = useSmartCalendarContext()
+
+			const handleUpdateTime = () => {
+				// Change time from 2pm-3pm to 10am-11am
+				applyScopedEdit(
+					recurringEvent,
+					{
+						start: dayjs('2025-01-06T10:00:00.000Z'),
+						end: dayjs('2025-01-06T11:00:00.000Z'),
+					},
+					'all'
+				)
+			}
+
+			return (
+				<div>
+					<button
+						data-testid="update-time"
+						onClick={handleUpdateTime}
+						type="button"
+					>
+						Update Time
+					</button>
+				</div>
+			)
+		}
+
+		const { getByTestId } = renderProvider(<TestTimeUpdate />, {
+			events: [recurringEvent],
+			dayMaxEvents: 5,
+			onEventUpdate: onEventUpdate,
+			plugins: [recurrencePlugin()],
+		})
+
+		// Test updating time - should call onEventUpdate with new start/end times
+		getByTestId('update-time').click()
+		expect(onEventUpdate).toHaveBeenCalledWith({
+			...recurringEvent,
+			start: dayjs('2025-01-06T10:00:00.000Z'),
+			end: dayjs('2025-01-06T11:00:00.000Z'),
+		})
+	})
+
+	it('should initialize with the specified initial view', () => {
+		const TestInitialView = () => {
+			const { view } = useSmartCalendarContext()
+			return <div data-testid="current-view">{view}</div>
+		}
+
+		const { getByTestId } = renderProvider(<TestInitialView />, {
+			dayMaxEvents: 5,
+			initialView: 'week',
+		})
+
+		expect(getByTestId('current-view').textContent).toBe('week')
+	})
+
+	it('should default to month view when no initialView is provided', () => {
+		const TestDefaultView = () => {
+			const { view } = useSmartCalendarContext()
+			return <div data-testid="current-view">{view}</div>
+		}
+
+		const { getByTestId } = renderProvider(<TestDefaultView />, {
+			dayMaxEvents: 5,
+		})
+
+		expect(getByTestId('current-view').textContent).toBe('month')
+	})
+
+	it('should initialize with the specified initial date', () => {
+		const initialDate = dayjs('2025-06-15T10:00:00.000Z')
+
+		const { getByTestId } = renderProvider(
+			<div />,
+			{
+				dayMaxEvents: 5,
+				initialDate: initialDate,
+			},
+			'current-date'
+		)
+
+		// Verify the calendar initializes with the specified date
+		expect(getByTestId('current-date-year').textContent).toBe('2025')
+		expect(getByTestId('current-date-month').textContent).toBe('5') // June is month 5 (0-indexed)
+		expect(getByTestId('current-date-date').textContent).toBe('15')
+	})
+
+	it('should default to today when no initialDate is provided', () => {
+		const today = dayjs()
+
+		const { getByTestId } = renderProvider(
+			<div />,
+			{
+				dayMaxEvents: 5,
+			},
+			'current-date'
+		)
+
+		// Verify the calendar defaults to today's date
+		expect(getByTestId('current-date-year').textContent).toBe(
+			today.year().toString()
+		)
+		expect(getByTestId('current-date-month').textContent).toBe(
+			today.month().toString()
+		)
+		expect(getByTestId('current-date-date').textContent).toBe(
+			today.date().toString()
+		)
+	})
+})
+
+describe('CalendarProvider - Business Hours', () => {
+	it('should provide businessHours in context', () => {
+		const businessHours: BusinessHours = {
+			daysOfWeek: [
+				'monday',
+				'tuesday',
+				'wednesday',
+				'thursday',
+				'friday',
+			] as WeekDays[],
+			startTime: 9,
+			endTime: 17,
+		}
+
+		const TestComponent = () => {
+			const { businessHours } = useSmartCalendarContext()
+			return (
+				<div data-testid="business-hours">{JSON.stringify(businessHours)}</div>
+			)
+		}
+
+		const { getByTestId } = renderProvider(<TestComponent />, {
+			businessHours,
+		})
+
+		const content = getByTestId('business-hours').textContent
+		expect(content).toBe(JSON.stringify(businessHours))
+	})
+})
+
+describe('firstDayOfWeek functionality', () => {
+	it('should calculate correct week range when firstDayOfWeek is Monday', () => {
+		const TestComponent = () => {
+			const { getEventsForDateRange } = useSmartCalendarContext()
+
+			// Test date: Wednesday Oct 15, 2025
+			const testDate = dayjs('2025-10-15T00:00:00.000Z')
+
+			// Calculate week range - should be Mon Oct 13 to Sun Oct 19
+			const currentDay = testDate.day()
+			const diff = (currentDay - 1 + 7) % 7 // firstDayOfWeek = 1 (Monday)
+			const expectedStart = testDate.subtract(diff, 'day').startOf('day')
+			const expectedEnd = expectedStart.add(6, 'day').endOf('day')
+
+			const weekEvents = getEventsForDateRange(expectedStart, expectedEnd)
+
+			return (
+				<div>
+					<div data-testid="week-start-day">{expectedStart.format('dddd')}</div>
+					<div data-testid="week-start-date">{expectedStart.format('D')}</div>
+					<div data-testid="week-end-day">{expectedEnd.format('dddd')}</div>
+					<div data-testid="week-end-date">{expectedEnd.format('D')}</div>
+					<div data-testid="events-count">{weekEvents.length}</div>
+				</div>
+			)
+		}
+
+		const testEvent: CalendarEvent = {
+			id: 'test-1',
+			title: 'Test Event',
+			start: dayjs('2025-10-14T10:00:00.000Z'), // Tuesday
+			end: dayjs('2025-10-14T11:00:00.000Z'),
+			uid: 'test-1@test.com',
+		}
+
+		const { getByTestId } = renderProvider(<TestComponent />, {
+			events: [testEvent],
+			firstDayOfWeek: 1, // Monday
+			initialDate: dayjs('2025-10-15T00:00:00.000Z'), // Wednesday
+		})
+
+		// Verify week starts on Monday
+		expect(getByTestId('week-start-day').textContent).toBe('Monday')
+		expect(getByTestId('week-start-date').textContent).toBe('13')
+
+		// Verify week ends on Sunday
+		expect(getByTestId('week-end-day').textContent).toBe('Sunday')
+		expect(getByTestId('week-end-date').textContent).toBe('19')
+
+		// Verify event is included in the week range
+		expect(getByTestId('events-count').textContent).toBe('1')
+	})
+
+	it('should calculate correct week range when current date is Sunday and firstDayOfWeek is Monday', () => {
+		const TestComponent = () => {
+			// Test date: Sunday Oct 12, 2025
+			const testDate = dayjs('2025-10-12T00:00:00.000Z')
+
+			// Calculate week range - should be Mon Oct 6 to Sun Oct 12
+			const currentDay = testDate.day()
+			const diff = (currentDay - 1 + 7) % 7 // firstDayOfWeek = 1 (Monday)
+			const expectedStart = testDate.subtract(diff, 'day').startOf('day')
+			const expectedEnd = expectedStart.add(6, 'day').endOf('day')
+
+			return (
+				<div>
+					<div data-testid="week-start-day">{expectedStart.format('dddd')}</div>
+					<div data-testid="week-start-date">{expectedStart.format('D')}</div>
+					<div data-testid="week-end-day">{expectedEnd.format('dddd')}</div>
+					<div data-testid="week-end-date">{expectedEnd.format('D')}</div>
+				</div>
+			)
+		}
+
+		const { getByTestId } = renderProvider(<TestComponent />, {
+			firstDayOfWeek: 1, // Monday
+			initialDate: dayjs('2025-10-12T00:00:00.000Z'), // Sunday
+		})
+
+		// Verify week starts on Monday (6 days before Sunday)
+		expect(getByTestId('week-start-day').textContent).toBe('Monday')
+		expect(getByTestId('week-start-date').textContent).toBe('6')
+
+		// Verify week ends on Sunday (current date)
+		expect(getByTestId('week-end-day').textContent).toBe('Sunday')
+		expect(getByTestId('week-end-date').textContent).toBe('12')
+	})
+
+	it('should calculate correct month range when firstDayOfWeek is Monday', () => {
+		const TestComponent = () => {
+			// October 2025 starts on Wednesday Oct 1
+			const oct1 = dayjs('2025-10-01T00:00:00.000Z')
+
+			// For month view with Monday as first day:
+			// Should start on Monday Sep 29 (to complete the first week)
+			// Should end on Sunday Nov 2 (to complete the last week)
+			const monthStart = oct1.startOf('month')
+			const monthStartDay = monthStart.day()
+			const startDiff = (monthStartDay - 1 + 7) % 7
+			const expectedStart = monthStart.subtract(startDiff, 'day').startOf('day')
+
+			const monthEnd = oct1.endOf('month')
+			const monthEndDay = monthEnd.day()
+			const endDiff = 6 - ((monthEndDay - 1 + 7) % 7)
+			const expectedEnd = monthEnd.add(endDiff, 'day').endOf('day')
+
+			return (
+				<div>
+					<div data-testid="month-start-day">
+						{expectedStart.format('dddd')}
+					</div>
+					<div data-testid="month-start-date">
+						{expectedStart.format('MMM D')}
+					</div>
+					<div data-testid="month-end-day">{expectedEnd.format('dddd')}</div>
+					<div data-testid="month-end-date">{expectedEnd.format('MMM D')}</div>
+				</div>
+			)
+		}
+
+		const { getByTestId } = renderProvider(<TestComponent />, {
+			firstDayOfWeek: 1, // Monday
+			initialDate: dayjs('2025-10-01T00:00:00.000Z'),
+		})
+
+		// Verify month grid starts on Monday
+		expect(getByTestId('month-start-day').textContent).toBe('Monday')
+		expect(getByTestId('month-start-date').textContent).toBe('Sep 29')
+
+		// Verify month grid ends on Sunday
+		expect(getByTestId('month-end-day').textContent).toBe('Sunday')
+		expect(getByTestId('month-end-date').textContent).toBe('Nov 2')
+	})
+})

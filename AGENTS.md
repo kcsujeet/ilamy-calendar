@@ -80,6 +80,25 @@ bun run ci                         # Full CI: lint + prettier + test + build
 
 React calendar component library. TypeScript, Shadcn-UI, Tailwind CSS, @dnd-kit, rrule.js.
 
+### Monorepo layout (Bun workspaces)
+
+**Only `@ilamy/calendar` is published.** It's a monorepo for development, but at build time the internal packages are bundled into the single `@ilamy/calendar` package; the others are `private: true`.
+
+```
+packages/
+  types/        @ilamy/types        (private)  shared plugin-contract types (no runtime)
+  utils/        @ilamy/utils        (private)  configured dayjs (./dayjs) + helpers (./helpers)
+  ui/           @ilamy/ui           (private)  shadcn primitives
+  recurrence/   @ilamy/calendar-recurrence (private)  RFC 5545 recurrence plugin
+  calendar/     @ilamy/calendar     (PUBLISHED) the core; bundles the four above
+apps/
+  demo/         @ilamy/demo         (private)  Vite playground; consumes @ilamy/calendar's public API
+```
+
+`@ilamy/calendar` ships these entry points: `.` (core), `./testing` (test harness), `./plugins/recurrence` (the recurrence plugin). The recurrence subpath's `import … from '@ilamy/calendar'` self-references the same package at runtime. **It ships no CSS** — "bring your own design system": components use the conventional shadcn token classes, and consumers `@source` the package's `dist` so Tailwind generates the utilities, styled by their own tokens. The demo (`apps/demo/src/styles/globals.css`) is the reference consumer that supplies a shadcn theme.
+
+Paths in the **Key Paths** section below are relative to `packages/calendar/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via tsconfig `paths`) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the recurrence package + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
+
 ### Data Flow
 
 ```
@@ -103,7 +122,7 @@ Uses `rrule.js` with strict RFC 5545 compliance. Three event types:
 | Generated instance | no | no | `originalId_number` |
 | Modified instance | no | yes | any |
 
-Core logic in `src/features/recurrence/utils/recurrence-handler.ts`:
+Core logic in `packages/recurrence/src/utils/recurrence-handler.ts`:
 - `generateRecurringEvents()` — create instances from rrule
 - `updateRecurringEvent()` — scoped updates (this/following/all) with EXDATE
 - `deleteRecurringEvent()` — scoped deletions
@@ -118,8 +137,9 @@ Every event must have a globally unique `uid`. EXDATE uses ISO strings in `exdat
 ## Key Paths
 
 ```
-src/
+packages/calendar/src/                         # (= @/… via tsconfig paths)
   index.ts                                    # Public API exports
+  testing/index.tsx                            # CalendarTestProvider (@ilamy/calendar/testing)
   features/
     calendar/
       ilamy-calendar.tsx                       # Main component
@@ -127,18 +147,14 @@ src/
       contexts/calendar-context/               # CalendarProvider, all state
       hooks/                                   # useProcessedDayEvents, useProcessedWeekEvents
       utils/                                   # business-hours, view-hours, event-form-utils
-    recurrence/
-      utils/recurrence-handler.ts              # Core recurring event logic
-      components/recurrence-editor/            # Recurrence rule builder UI
-      components/recurrence-edit-dialog/       # Edit/delete scope dialog
-      hooks/useRecurringEventActions.ts        # Recurring CRUD hook
+    plugins/lib/                               # Plugin kernel + contract (re-exports @ilamy/types)
     resource-calendar/
       ilamy-resource-calendar/                 # Resource calendar component
       contexts/resource-calendar-context/      # ResourceCalendarProvider
       day-view/ week-view/ month-view/         # Resource view variants
   components/
-    types.ts                                   # CalendarEvent, ProcessedCalendarEvent, WeekDays, BusinessHours
-    ui/                                        # Shadcn design system (button, dialog, input, etc.)
+    types.ts                                   # re-exports CalendarEvent/WeekDays/BusinessHours from @ilamy/types; ProcessedCalendarEvent
+    calendar-slots.tsx                         # SLOT_* mount points + slot context re-exports
     event-form/                                # Event creation/editing forms
     drag-and-drop/                             # @dnd-kit integration
     header/                                    # Calendar header, title, view controls
@@ -149,10 +165,19 @@ src/
     use-calendar-engine.ts                     # Main calendar engine
     use-smart-calendar-context.ts              # Type-safe context access
   lib/
-    configs/dayjs-config.ts                    # Pre-configured dayjs (ALWAYS import from here)
+    configs/dayjs-config.ts                    # shim → @ilamy/utils/dayjs (ALWAYS import dayjs from here)
     translations/                              # Default translations, types
-    utils/                                     # date-utils, position-*-events, export-ical
+    utils/                                     # date-utils, position-*-events, export-ical (cn/safeDate re-exported from @ilamy/ui & @ilamy/utils)
     constants.ts                               # Global constants
+
+# Recurrence plugin (separate package):
+packages/recurrence/src/
+  utils/recurrence-handler.ts                  # Core recurring event logic
+  components/recurrence-editor/                # Recurrence rule builder UI (@ilamy/ui Radix)
+  components/recurrence-edit-dialog/           # Edit/delete scope dialog
+  augment.ts                                   # declare module '@ilamy/calendar' { CalendarEvent.rrule … }
+
+# Shadcn primitives live in @ilamy/ui (packages/ui/src/components/*), imported via @ilamy/ui/components/<name>.
 
 docs/
   rfc-5545.md                                  # iCalendar spec reference

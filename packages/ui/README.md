@@ -1,16 +1,10 @@
 # @ilamy/ui
 
-Shared [shadcn/ui](https://ui.shadcn.com) primitives (Radix + Tailwind CSS v4) for the [`@ilamy/calendar`](https://www.npmjs.com/package/@ilamy/calendar) ecosystem.
+> **Internal package — not published.** These shadcn/ui primitives are bundled into [`@ilamy/calendar`](https://www.npmjs.com/package/@ilamy/calendar) at build time. The design tokens ship from `@ilamy/calendar/styles.css`. Consumers don't install this directly.
 
-## Install
+Shared [shadcn/ui](https://ui.shadcn.com) primitives (Radix + Tailwind CSS v4) used by the calendar and its plugins, kept in one workspace package to avoid per-feature duplication.
 
-```sh
-bun add @ilamy/ui
-```
-
-Peer deps: `react`, `react-dom`, `tailwindcss` (v4), `tailwindcss-animate`.
-
-## Usage
+## Usage (within the workspace)
 
 No barrel — import each primitive from its own subpath:
 
@@ -20,23 +14,7 @@ import { Dialog, DialogContent } from '@ilamy/ui/components/dialog'
 import { cn } from '@ilamy/ui/lib/utils'
 ```
 
-## Styling (required)
-
-This package ships the design tokens (CSS variables + Tailwind import) as a stylesheet. Import it once at your app's CSS entry:
-
-```css
-@import '@ilamy/ui/styles.css';
-```
-
-### Tailwind content detection
-
-Tailwind v4 does **not** scan `node_modules` by default, so its pre-built class names won't be generated unless you register the package as a source. Add this to the same CSS file (adjust the relative depth to your stylesheet):
-
-```css
-@source "../node_modules/@ilamy/ui/dist";
-```
-
-If you also use `@ilamy/calendar` / `@ilamy/calendar-recurrence`, register their `dist` directories the same way.
+New primitives are added with the shadcn CLI (see `components.json`).
 
 ## License
 

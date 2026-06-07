@@ -1,6 +1,8 @@
 # @ilamy/utils
 
-Shared runtime utilities for the [`@ilamy/calendar`](https://www.npmjs.com/package/@ilamy/calendar) ecosystem.
+> **Internal package — not published.** Bundled into [`@ilamy/calendar`](https://www.npmjs.com/package/@ilamy/calendar) at build time.
+
+Shared runtime utilities (the configured dayjs instance + small helpers) used across the workspace.
 
 ## Exports
 
@@ -23,12 +25,6 @@ import { safeDate, omitKeys, listKey } from '@ilamy/utils/helpers'
 - `safeDate(date)` — coerce a date-ish value to `Dayjs | undefined`.
 - `omitKeys(obj, keys)` — shallow copy without the given keys.
 - `listKey(...parts)` — compose a stable string key/id (`listKey('day', 3)` → `'day-3'`).
-
-## Install
-
-```sh
-bun add @ilamy/utils
-```
 
 ## License
 

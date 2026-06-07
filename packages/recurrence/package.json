@@ -1,6 +1,7 @@
 {
 	"name": "@ilamy/calendar-recurrence",
 	"version": "1.8.1",
+	"private": true,
 	"description": "Recurring-events plugin for @ilamy/calendar (RFC 5545 via rrule).",
 	"author": "Sujeet Kc",
 	"license": "MIT",
@@ -46,8 +47,5 @@
 		"@ilamy/ui": "workspace:*",
 		"@ilamy/utils": "workspace:*",
 		"rrule": "^2.8.1"
-	},
-	"publishConfig": {
-		"access": "public"
 	}
 }

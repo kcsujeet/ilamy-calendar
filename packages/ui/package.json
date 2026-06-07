@@ -1,6 +1,7 @@
 {
 	"name": "@ilamy/ui",
 	"version": "1.8.1",
+	"private": true,
 	"description": "Shared shadcn UI primitives for the @ilamy/calendar ecosystem.",
 	"author": "Sujeet Kc",
 	"license": "MIT",
@@ -17,12 +18,10 @@
 		"./lib/utils": {
 			"types": "./dist/src/lib/utils.d.ts",
 			"import": "./dist/src/lib/utils.js"
-		},
-		"./styles.css": "./src/styles/globals.css"
+		}
 	},
 	"files": [
 		"dist",
-		"src/styles",
 		"README.md",
 		"LICENSE"
 	],
@@ -51,8 +50,5 @@
 		"clsx": "^2.1.1",
 		"lucide-react": "^0.475.0",
 		"tailwind-merge": "^3.5.0"
-	},
-	"publishConfig": {
-		"access": "public"
 	}
 }

@@ -82,18 +82,22 @@ React calendar component library. TypeScript, Shadcn-UI, Tailwind CSS, @dnd-kit,
 
 ### Monorepo layout (Bun workspaces)
 
+**Only `@ilamy/calendar` is published.** It's a monorepo for development, but at build time the internal packages are bundled into the single `@ilamy/calendar` package; the others are `private: true`.
+
 ```
 packages/
-  types/        @ilamy/types        — shared plugin-contract types (no runtime)
-  utils/        @ilamy/utils        — configured dayjs (./dayjs) + helpers (./helpers)
-  ui/           @ilamy/ui           — shadcn primitives + design tokens (./styles.css)
-  calendar/     @ilamy/calendar      — the core library (everything below)
-  recurrence/   @ilamy/calendar-recurrence — RFC 5545 recurrence plugin
+  types/        @ilamy/types        (private)  shared plugin-contract types (no runtime)
+  utils/        @ilamy/utils        (private)  configured dayjs (./dayjs) + helpers (./helpers)
+  ui/           @ilamy/ui           (private)  shadcn primitives
+  recurrence/   @ilamy/calendar-recurrence (private)  RFC 5545 recurrence plugin
+  calendar/     @ilamy/calendar     (PUBLISHED) the core; bundles the four above
 apps/
-  demo/         @ilamy/demo (private) — Vite playground; consumes the published @ilamy/* APIs
+  demo/         @ilamy/demo         (private)  Vite playground; consumes @ilamy/calendar's public API
 ```
 
-Paths in the **Key Paths** section below are relative to `packages/calendar/`. The recurrence plugin now lives in `packages/recurrence/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Self-contained leaf packages (types/utils/ui) resolve via tsconfig `paths` to source; the alias-heavy `@ilamy/calendar` is consumed by recurrence/demo through its built `dist/*.d.ts` (true dogfooding).
+`@ilamy/calendar` ships these entry points: `.` (core), `./testing` (test harness), `./plugins/recurrence` (the recurrence plugin), `./styles.css` (design tokens). The recurrence subpath's `import … from '@ilamy/calendar'` self-references the same package at runtime.
+
+Paths in the **Key Paths** section below are relative to `packages/calendar/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via tsconfig `paths`) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the recurrence package + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
 
 ### Data Flow
 

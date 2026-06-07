@@ -1,6 +1,8 @@
 # @ilamy/types
 
-Shared, runtime-free TypeScript types for the [`@ilamy/calendar`](https://www.npmjs.com/package/@ilamy/calendar) ecosystem — the plugin-contract surface a plugin depends on without pulling in the whole calendar.
+> **Internal package — not published.** It is bundled into [`@ilamy/calendar`](https://www.npmjs.com/package/@ilamy/calendar) at build time. Consumers import these types from `@ilamy/calendar`, not from here.
+
+Shared, runtime-free TypeScript types — the plugin-contract surface, kept in its own workspace package so the core and plugins depend on a lightweight contract without circular imports.
 
 ## What's here
 
@@ -9,15 +11,7 @@ Shared, runtime-free TypeScript types for the [`@ilamy/calendar`](https://www.np
 - `EventFormSlotContext`, `EventMutationScopeSlotContext` — host slot context shapes.
 - `Dayjs`, `ManipulateType` — re-exported from `dayjs`.
 
-This package ships types only (no runtime). The configured dayjs **instance** lives in [`@ilamy/utils`](https://www.npmjs.com/package/@ilamy/utils).
-
-## Install
-
-```sh
-bun add @ilamy/types
-```
-
-> Most consumers don't depend on this directly — it comes transitively via `@ilamy/calendar`. Plugin authors may depend on it for a lightweight type-only contract.
+This package ships types only (no runtime). The configured dayjs **instance** lives in `@ilamy/utils`.
 
 ## License
 

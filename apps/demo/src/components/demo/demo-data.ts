@@ -1,5 +1,5 @@
 import type { CalendarEvent, CellInfo, Resource } from '@ilamy/calendar'
-import { recurrencePlugin } from '@ilamy/calendar-recurrence'
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 import dummyEvents from '@/lib/seed'
 
 // Recurrence is opt-in — the seed data has recurring events, so the demo

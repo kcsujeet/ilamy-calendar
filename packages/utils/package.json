@@ -1,0 +1,40 @@
+{
+	"name": "@ilamy/utils",
+	"version": "1.8.1",
+	"description": "Shared runtime utilities (configured dayjs + small helpers) for the @ilamy/calendar ecosystem.",
+	"author": "Sujeet Kc",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/kcsujeet/ilamy-calendar.git"
+	},
+	"type": "module",
+	"exports": {
+		"./dayjs": {
+			"types": "./dist/dayjs.d.ts",
+			"import": "./dist/dayjs.js"
+		},
+		"./helpers": {
+			"types": "./dist/helpers.d.ts",
+			"import": "./dist/helpers.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"scripts": {
+		"build": "CI=true NODE_ENV=production bunx bunup",
+		"type-check": "bunx tsc --noEmit",
+		"lint": "bunx biome lint . --diagnostic-level=error",
+		"check": "bunx biome check . --diagnostic-level=error",
+		"ci": "bun run check && bun run type-check && bun run build"
+	},
+	"dependencies": {
+		"dayjs": "^1.11.20"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

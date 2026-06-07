@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
+import { recurrenceICalProperties } from '@ilamy/calendar-recurrence'
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
-import { recurrenceICalProperties } from '@/features/plugins/recurrence/ical'
 import dayjs from '@/lib/configs/dayjs-config'
 import { exportToICalendar } from './export-ical'
 

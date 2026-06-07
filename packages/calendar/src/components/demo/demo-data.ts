@@ -1,6 +1,6 @@
+import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type { CalendarEvent } from '@/components/types'
 import type { CellInfo } from '@/features/calendar/types'
-import { recurrencePlugin } from '@/features/plugins/recurrence/recurrence-plugin'
 import type { Resource } from '@/features/resource-calendar/types'
 import dummyEvents from '@/lib/seed'
 

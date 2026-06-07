@@ -1,0 +1,37 @@
+{
+	"name": "@ilamy/types",
+	"version": "1.8.1",
+	"description": "Shared plugin-contract types for the @ilamy/calendar ecosystem.",
+	"author": "Sujeet Kc",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/kcsujeet/ilamy-calendar.git"
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"scripts": {
+		"build": "CI=true NODE_ENV=production bunx bunup",
+		"type-check": "bunx tsc --noEmit",
+		"lint": "bunx biome lint . --diagnostic-level=error",
+		"check": "bunx biome check . --diagnostic-level=error",
+		"ci": "bun run check && bun run type-check && bun run build"
+	},
+	"peerDependencies": {
+		"dayjs": "^1.11.20",
+		"react": "^19.2.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

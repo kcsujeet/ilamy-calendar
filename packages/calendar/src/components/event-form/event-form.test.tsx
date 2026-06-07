@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import { recurrencePlugin } from '@/features/plugins/recurrence/recurrence-plugin'
 import dayjs from '@/lib/configs/dayjs-config'
 import { EventForm } from './event-form'
 
@@ -376,59 +374,6 @@ describe('EventForm', () => {
 		})
 	})
 
-	describe('Recurrence Integration', () => {
-		it('should render recurrence editor', () => {
-			renderEventForm(
-				{ ...defaultProps, selectedEvent: testNewEvent },
-				{ plugins: [recurrencePlugin()] }
-			)
-
-			expect(screen.getByTestId('recurrence-editor')).toBeInTheDocument()
-		})
-
-		it('should handle recurrence changes', () => {
-			renderEventForm(
-				{ ...defaultProps, selectedEvent: testNewEvent },
-				{ plugins: [recurrencePlugin()] }
-			)
-
-			const toggleButton = screen.getByTestId('toggle-recurrence')
-			fireEvent.click(toggleButton)
-
-			expect(toggleButton).toBeChecked()
-		})
-
-		it('should include recurrence in form submission', async () => {
-			renderEventForm(
-				{ ...defaultProps, selectedEvent: testNewEvent },
-				{ plugins: [recurrencePlugin()] }
-			)
-
-			// Enable recurrence
-			fireEvent.click(screen.getByTestId('toggle-recurrence'))
-
-			// Fill in title and submit
-			fireEvent.change(screen.getByPlaceholderText('Event title'), {
-				target: { value: 'Recurring Event' },
-			})
-
-			fireEvent.click(screen.getByRole('button', { name: 'Create' }))
-
-			await waitFor(() => {
-				expect(mockOnAdd).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: 'Recurring Event',
-						rrule: expect.objectContaining({
-							freq: RRule.DAILY,
-							interval: 1,
-							dtstart: expect.any(Date),
-						}),
-					})
-				)
-			})
-		})
-	})
-
 	describe('Form Cancellation', () => {
 		it('should call onClose when cancel button is clicked', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
@@ -466,50 +411,6 @@ describe('EventForm', () => {
 			expect(
 				screen.getByPlaceholderText('Event location (optional)')
 			).toHaveValue('')
-		})
-	})
-
-	describe('Recurring Event Instance Editing', () => {
-		it('should pull RRULE from parent when editing an instance', () => {
-			const parentEvent: CalendarEvent = {
-				id: 'recurring-1',
-				uid: 'recurring-1@ilamy.calendar',
-				title: 'Weekly Meeting',
-				start: dayjs('2025-08-15T10:00:00'),
-				end: dayjs('2025-08-15T11:00:00'),
-				rrule: {
-					freq: RRule.WEEKLY,
-					byweekday: [RRule.MO, RRule.WE, RRule.FR],
-					interval: 1,
-					dtstart: dayjs('2025-08-15T10:00:00').toDate(),
-				},
-				allDay: false,
-				color: 'bg-blue-100 text-blue-800',
-			}
-
-			const instanceEvent: CalendarEvent = {
-				id: 'recurring-1_1',
-				uid: 'recurring-1@ilamy.calendar',
-				title: 'Weekly Meeting',
-				start: dayjs('2025-08-17T10:00:00'), // Wednesday instance
-				end: dayjs('2025-08-17T11:00:00'),
-				rrule: undefined, // Instance has no RRULE
-				allDay: false,
-				color: 'bg-blue-100 text-blue-800',
-			}
-
-			// Mock the calendar context to provide both parent and instance
-			const mockEvents = [parentEvent, instanceEvent]
-
-			renderEventForm(
-				{ ...defaultProps, selectedEvent: instanceEvent },
-				{ events: mockEvents, plugins: [recurrencePlugin()] }
-			)
-
-			// RecurrenceEditor should show as enabled (checkbox checked)
-			// because it found the parent's RRULE
-			const toggleButton = screen.getByTestId('toggle-recurrence')
-			expect(toggleButton).toBeChecked()
 		})
 	})
 

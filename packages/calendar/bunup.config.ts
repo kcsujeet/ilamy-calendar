@@ -3,19 +3,21 @@ import { unused } from 'bunup/plugins'
 
 export default defineConfig({
 	plugins: [unused()],
-	// Two public entry points: the core (`@ilamy/calendar`) and the recurrence
-	// plugin subpath (`@ilamy/calendar/plugins/recurrence`). bunup maps each
-	// entry to an output path mirroring its location under the entries' lowest
-	// common ancestor (`src/`), so recurrence emits to
-	// `dist/features/plugins/recurrence/recurrence.{js,d.ts}` — the package.json
-	// `exports` map points the subpath at that file.
-	entry: ['src/index.ts', 'src/features/plugins/recurrence/recurrence.ts'],
+	// Public entries: the core (`@ilamy/calendar`) and the test harness
+	// (`@ilamy/calendar/testing`, for plugin authors). Recurrence is now its own
+	// package (`@ilamy/calendar-recurrence`).
+	entry: ['src/index.ts', 'src/testing/index.tsx'],
 	format: ['esm'],
 	outDir: 'dist',
 	minify: true,
 	clean: true,
 	sourcemap: true,
-	// @ilamy/ui is a dependency (its own published package); keep it external so
-	// the calendar bundle references the shared primitives instead of inlining them.
-	external: ['react', 'react-dom', /^@ilamy\/ui/],
+	// All @ilamy/* siblings are published packages; keep them external so the
+	// calendar bundle references the shared code instead of inlining it.
+	// @ilamy/types in particular MUST stay external: the emitted .d.ts then
+	// re-exports `CalendarEvent` from `@ilamy/types` rather than inlining a
+	// private copy, so there is a single `CalendarEvent` identity. That lets the
+	// recurrence plugin's `declare module '@ilamy/types'` augmentation apply to
+	// the same type the calendar runtime (e.g. `useIlamyCalendarContext`) returns.
+	external: ['react', 'react-dom', /^@ilamy\//],
 })

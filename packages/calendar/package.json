@@ -36,9 +36,9 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
 		},
-		"./plugins/recurrence": {
-			"types": "./dist/features/plugins/recurrence/recurrence.d.ts",
-			"import": "./dist/features/plugins/recurrence/recurrence.js"
+		"./testing": {
+			"types": "./dist/testing/index.d.ts",
+			"import": "./dist/testing/index.js"
 		}
 	},
 	"files": [
@@ -66,7 +66,9 @@
 		"tailwindcss-animate": "^1.0.7"
 	},
 	"dependencies": {
+		"@ilamy/types": "workspace:*",
 		"@ilamy/ui": "workspace:*",
+		"@ilamy/utils": "workspace:*",
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/modifiers": "^9.0.0",
 		"@radix-ui/react-popover": "^1.1.15",
@@ -76,6 +78,9 @@
 		"motion": "^12.36.0",
 		"rrule": "^2.8.1",
 		"tailwind-merge": "^3.5.0"
+	},
+	"devDependencies": {
+		"@ilamy/calendar-recurrence": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"

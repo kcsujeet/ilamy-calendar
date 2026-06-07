@@ -2,9 +2,11 @@ import type { WeekDays } from '@/components/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 
-// `cn` now lives in the shared @ilamy/ui package; re-exported here so the
-// existing `import { cn } from '@/lib/utils'` call sites in core stay unchanged.
+// `cn` lives in the shared @ilamy/ui package; `safeDate`/`omitKeys` live in the
+// shared @ilamy/utils package. Re-exported here so the existing `@/lib/utils`
+// call sites in core stay unchanged.
 export { cn } from '@ilamy/ui/lib/utils'
+export { omitKeys, safeDate } from '@ilamy/utils/helpers'
 
 /**
  * Converts an optional WeekDays[] list into a Set<number> of day indices
@@ -15,30 +17,6 @@ export const toHiddenDaysSet = (
 ): Set<number> | undefined => {
 	if (!hiddenDays || hiddenDays.length === 0) return undefined
 	return new Set(hiddenDays.map((day) => WEEK_DAYS_NUMBER_MAP[day]))
-}
-
-export function safeDate(
-	date: Dayjs | Date | string | undefined
-): Dayjs | undefined {
-	if (date === undefined) {
-		return undefined
-	}
-	if (dayjs.isDayjs(date)) {
-		return date
-	}
-	const parsedDate = dayjs(date)
-	return parsedDate.isValid() ? parsedDate : undefined
-}
-
-export const omitKeys = <T extends object, K extends keyof T>(
-	obj: T,
-	keys: K[]
-): Omit<T, K> => {
-	const result = { ...obj }
-	for (const key of keys) {
-		delete result[key]
-	}
-	return result
 }
 
 /**

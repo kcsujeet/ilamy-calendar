@@ -24,7 +24,7 @@
 		"format:check": "bunx biome format .",
 		"check": "bunx biome check . --diagnostic-level=error",
 		"check:fix": "bunx biome check --write .",
-		"ci": "bun run check && bun run type-check && bun run test && bun run build",
+		"ci": "bun run check && bun run build && bun run type-check && bun run test",
 		"pre-commit": "bun run check:fix",
 		"prepare": "bunx husky"
 	},

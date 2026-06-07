@@ -80,6 +80,21 @@ bun run ci                         # Full CI: lint + prettier + test + build
 
 React calendar component library. TypeScript, Shadcn-UI, Tailwind CSS, @dnd-kit, rrule.js.
 
+### Monorepo layout (Bun workspaces)
+
+```
+packages/
+  types/        @ilamy/types        — shared plugin-contract types (no runtime)
+  utils/        @ilamy/utils        — configured dayjs (./dayjs) + helpers (./helpers)
+  ui/           @ilamy/ui           — shadcn primitives + design tokens (./styles.css)
+  calendar/     @ilamy/calendar      — the core library (everything below)
+  recurrence/   @ilamy/calendar-recurrence — RFC 5545 recurrence plugin
+apps/
+  demo/         @ilamy/demo (private) — Vite playground; consumes the published @ilamy/* APIs
+```
+
+Paths in the **Key Paths** section below are relative to `packages/calendar/`. The recurrence plugin now lives in `packages/recurrence/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Self-contained leaf packages (types/utils/ui) resolve via tsconfig `paths` to source; the alias-heavy `@ilamy/calendar` is consumed by recurrence/demo through its built `dist/*.d.ts` (true dogfooding).
+
 ### Data Flow
 
 ```
@@ -103,7 +118,7 @@ Uses `rrule.js` with strict RFC 5545 compliance. Three event types:
 | Generated instance | no | no | `originalId_number` |
 | Modified instance | no | yes | any |
 
-Core logic in `src/features/recurrence/utils/recurrence-handler.ts`:
+Core logic in `packages/recurrence/src/utils/recurrence-handler.ts`:
 - `generateRecurringEvents()` — create instances from rrule
 - `updateRecurringEvent()` — scoped updates (this/following/all) with EXDATE
 - `deleteRecurringEvent()` — scoped deletions
@@ -118,8 +133,9 @@ Every event must have a globally unique `uid`. EXDATE uses ISO strings in `exdat
 ## Key Paths
 
 ```
-src/
+packages/calendar/src/                         # (= @/… via tsconfig paths)
   index.ts                                    # Public API exports
+  testing/index.tsx                            # CalendarTestProvider (@ilamy/calendar/testing)
   features/
     calendar/
       ilamy-calendar.tsx                       # Main component
@@ -127,18 +143,14 @@ src/
       contexts/calendar-context/               # CalendarProvider, all state
       hooks/                                   # useProcessedDayEvents, useProcessedWeekEvents
       utils/                                   # business-hours, view-hours, event-form-utils
-    recurrence/
-      utils/recurrence-handler.ts              # Core recurring event logic
-      components/recurrence-editor/            # Recurrence rule builder UI
-      components/recurrence-edit-dialog/       # Edit/delete scope dialog
-      hooks/useRecurringEventActions.ts        # Recurring CRUD hook
+    plugins/lib/                               # Plugin kernel + contract (re-exports @ilamy/types)
     resource-calendar/
       ilamy-resource-calendar/                 # Resource calendar component
       contexts/resource-calendar-context/      # ResourceCalendarProvider
       day-view/ week-view/ month-view/         # Resource view variants
   components/
-    types.ts                                   # CalendarEvent, ProcessedCalendarEvent, WeekDays, BusinessHours
-    ui/                                        # Shadcn design system (button, dialog, input, etc.)
+    types.ts                                   # re-exports CalendarEvent/WeekDays/BusinessHours from @ilamy/types; ProcessedCalendarEvent
+    calendar-slots.tsx                         # SLOT_* mount points + slot context re-exports
     event-form/                                # Event creation/editing forms
     drag-and-drop/                             # @dnd-kit integration
     header/                                    # Calendar header, title, view controls
@@ -149,10 +161,19 @@ src/
     use-calendar-engine.ts                     # Main calendar engine
     use-smart-calendar-context.ts              # Type-safe context access
   lib/
-    configs/dayjs-config.ts                    # Pre-configured dayjs (ALWAYS import from here)
+    configs/dayjs-config.ts                    # shim → @ilamy/utils/dayjs (ALWAYS import dayjs from here)
     translations/                              # Default translations, types
-    utils/                                     # date-utils, position-*-events, export-ical
+    utils/                                     # date-utils, position-*-events, export-ical (cn/safeDate re-exported from @ilamy/ui & @ilamy/utils)
     constants.ts                               # Global constants
+
+# Recurrence plugin (separate package):
+packages/recurrence/src/
+  utils/recurrence-handler.ts                  # Core recurring event logic
+  components/recurrence-editor/                # Recurrence rule builder UI (@ilamy/ui Radix)
+  components/recurrence-edit-dialog/           # Edit/delete scope dialog
+  augment.ts                                   # declare module '@ilamy/calendar' { CalendarEvent.rrule … }
+
+# Shadcn primitives live in @ilamy/ui (packages/ui/src/components/*), imported via @ilamy/ui/components/<name>.
 
 docs/
   rfc-5545.md                                  # iCalendar spec reference

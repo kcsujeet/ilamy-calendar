@@ -1,7 +1,9 @@
-import type { CalendarEvent } from '@/components/types'
-import type { RenderCurrentTimeIndicatorProps } from '@/features/calendar/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
+import type {
+	CalendarEvent,
+	Dayjs,
+	RenderCurrentTimeIndicatorProps,
+} from '@ilamy/calendar'
+import { cn } from '@ilamy/ui/lib/utils'
 
 // Custom event renderer — adapts its typography to the configured eventHeight.
 // Returned as a factory so the demo can vary the renderer with the current

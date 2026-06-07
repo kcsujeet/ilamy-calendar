@@ -1,16 +1,17 @@
-import { Card, CardContent, CardHeader } from '@ilamy/ui/components/card'
-import type { CalendarEvent, WeekDays } from '@/components/types'
-import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
 import type {
 	CalendarClassesOverride,
+	CalendarEvent,
+	CalendarView,
 	CellInfo,
+	Dayjs,
 	RenderCurrentTimeIndicatorProps,
+	Resource,
 	SlotDuration,
-} from '@/features/calendar/types'
-import { IlamyResourceCalendar } from '@/features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
-import type { Resource } from '@/features/resource-calendar/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import type { CalendarView, TimeFormat } from '@/types'
+	TimeFormat,
+	WeekDays,
+} from '@ilamy/calendar'
+import { IlamyCalendar, IlamyResourceCalendar } from '@ilamy/calendar'
+import { Card, CardContent, CardHeader } from '@ilamy/ui/components/card'
 import {
 	createRenderEvent,
 	renderCurrentTimeIndicator,

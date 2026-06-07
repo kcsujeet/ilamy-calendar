@@ -1,5 +1,5 @@
+import { dayjs } from '@ilamy/calendar'
 import { RRule } from 'rrule'
-import dayjs from '@/lib/configs/dayjs-config'
 
 // Use a fixed month reference point for consistent display
 const baseDate = dayjs().startOf('month').date(1)

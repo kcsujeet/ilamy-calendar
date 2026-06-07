@@ -1,5 +1,12 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: demo component */
 
+import type {
+	CalendarView,
+	SlotDuration,
+	TimeFormat,
+	WeekDays,
+} from '@ilamy/calendar'
+import { type Dayjs, dayjs } from '@ilamy/calendar'
 import { Button } from '@ilamy/ui/components/button'
 import {
 	Card,
@@ -16,10 +23,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ilamy/ui/components/select'
-import type { WeekDays } from '@/components/types'
-import type { SlotDuration } from '@/features/calendar/types'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import type { CalendarView, TimeFormat } from '@/types'
 import { ModeToggle } from './mode-toggle'
 
 const ALL_TIMEZONES = Intl.supportedValuesOf('timeZone')

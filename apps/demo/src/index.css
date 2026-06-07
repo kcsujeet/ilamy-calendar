@@ -1,4 +1,13 @@
-@import '../styles/globals.css';
+@import '@ilamy/ui/styles.css';
+
+/*
+ * Tailwind v4 ignores node_modules by default, so register the @ilamy packages
+ * whose pre-built class names this demo renders. Consumers of @ilamy/calendar
+ * need the same `@source` lines for their own build (see the package README).
+ */
+@source "../../../node_modules/@ilamy/calendar/dist";
+@source "../../../node_modules/@ilamy/calendar-recurrence/dist";
+@source "../../../node_modules/@ilamy/ui/dist";
 
 @layer base {
   :root {

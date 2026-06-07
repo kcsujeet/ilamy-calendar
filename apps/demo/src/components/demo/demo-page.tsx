@@ -1,9 +1,13 @@
+import type {
+	CalendarEvent,
+	CalendarView,
+	Dayjs,
+	SlotDuration,
+	TimeFormat,
+	WeekDays,
+} from '@ilamy/calendar'
 import { useState } from 'react'
-import type { CalendarEvent, WeekDays } from '@/components/types'
-import type { SlotDuration } from '@/features/calendar/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import dummyEvents from '@/lib/seed'
-import type { CalendarView, TimeFormat } from '@/types'
 import { DemoCalendarDisplay } from './demo-calendar-display'
 import { DemoCalendarSettings } from './demo-calendar-settings'
 import { createResourceEvents, demoResources } from './demo-data'

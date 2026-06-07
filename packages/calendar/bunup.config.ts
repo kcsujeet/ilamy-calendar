@@ -2,7 +2,11 @@ import { defineConfig } from 'bunup'
 import { unused } from 'bunup/plugins'
 
 export default defineConfig({
-	plugins: [unused()],
+	// @ilamy/ui and @ilamy/utils are externalized below; the unused-deps check
+	// can't see through externals, so it would flag them as removable. They are
+	// real runtime deps (the dist imports @ilamy/ui/components/* and
+	// @ilamy/utils/helpers), so ignore them here.
+	plugins: [unused({ ignore: ['@ilamy/ui', '@ilamy/utils'] })],
 	// Public entries: the core (`@ilamy/calendar`) and the test harness
 	// (`@ilamy/calendar/testing`, for plugin authors). Recurrence is now its own
 	// package (`@ilamy/calendar-recurrence`).
@@ -13,11 +17,9 @@ export default defineConfig({
 	clean: true,
 	sourcemap: true,
 	// All @ilamy/* siblings are published packages; keep them external so the
-	// calendar bundle references the shared code instead of inlining it.
-	// @ilamy/types in particular MUST stay external: the emitted .d.ts then
-	// re-exports `CalendarEvent` from `@ilamy/types` rather than inlining a
-	// private copy, so there is a single `CalendarEvent` identity. That lets the
-	// recurrence plugin's `declare module '@ilamy/types'` augmentation apply to
-	// the same type the calendar runtime (e.g. `useIlamyCalendarContext`) returns.
+	// calendar bundle references the shared runtime code instead of inlining it.
+	// (@ilamy/types is type-only — it has no runtime to externalize; bunup inlines
+	// its type definitions into the emitted .d.ts, so the published types are
+	// self-contained. The CalendarEvent augmentation targets @ilamy/calendar.)
 	external: ['react', 'react-dom', /^@ilamy\//],
 })

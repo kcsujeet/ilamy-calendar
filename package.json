@@ -14,9 +14,10 @@
 		"apps/*"
 	],
 	"scripts": {
-		"build": "bun run --filter '*' build",
+		"dev": "bun run --filter '@ilamy/demo' dev",
+		"build": "bun run --filter '*' --if-present build",
 		"test": "bun run --filter '*' --if-present test",
-		"type-check": "bun run --filter '*' type-check",
+		"type-check": "bun run --filter '*' --if-present type-check",
 		"lint": "bunx biome lint . --diagnostic-level=error",
 		"lint:fix": "bunx biome lint --write .",
 		"format": "bunx biome format --write .",

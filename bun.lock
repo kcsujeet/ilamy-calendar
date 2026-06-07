@@ -24,25 +24,45 @@
         "vite": "^8.0.16",
       },
     },
+    "apps/demo": {
+      "name": "@ilamy/demo",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ilamy/calendar": "workspace:*",
+        "@ilamy/calendar-recurrence": "workspace:*",
+        "@ilamy/ui": "workspace:*",
+        "lucide-react": "^0.475.0",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "rrule": "^2.8.1",
+      },
+      "devDependencies": {
+        "@tailwindcss/vite": "^4.3.0",
+        "@types/react": "^19.2.17",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^6.0.2",
+        "tailwindcss": "^4.3.0",
+        "tailwindcss-animate": "^1.0.7",
+        "vite": "^8.0.16",
+      },
+    },
     "packages/calendar": {
       "name": "@ilamy/calendar",
       "version": "1.8.1",
       "dependencies": {
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/modifiers": "^9.0.0",
-        "@ilamy/types": "workspace:*",
         "@ilamy/ui": "workspace:*",
         "@ilamy/utils": "workspace:*",
         "@radix-ui/react-popover": "^1.1.15",
-        "clsx": "^2.1.1",
         "dayjs": "^1.11.20",
         "lucide-react": "^0.475.0",
         "motion": "^12.36.0",
-        "rrule": "^2.8.1",
-        "tailwind-merge": "^3.5.0",
       },
       "devDependencies": {
         "@ilamy/calendar-recurrence": "workspace:*",
+        "@ilamy/types": "workspace:*",
+        "rrule": "^2.8.1",
       },
       "peerDependencies": {
         "react": "^19.2.0",
@@ -93,6 +113,7 @@
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "tailwindcss": "^4.2.2",
+        "tailwindcss-animate": "^1.0.7",
       },
     },
     "packages/utils": {
@@ -167,6 +188,8 @@
     "@ilamy/calendar": ["@ilamy/calendar@workspace:packages/calendar"],
 
     "@ilamy/calendar-recurrence": ["@ilamy/calendar-recurrence@workspace:packages/recurrence"],
+
+    "@ilamy/demo": ["@ilamy/demo@workspace:apps/demo"],
 
     "@ilamy/types": ["@ilamy/types@workspace:packages/types"],
 

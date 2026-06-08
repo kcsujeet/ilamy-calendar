@@ -36,6 +36,16 @@ export interface Translations {
 	repeat: string
 	repeats: string
 	customRecurrence: string
+	frequency: string
+	everyWeekday: string
+	weeklyOn: string
+	monthlyOnDay: string
+	monthlyOnThe: string
+	first: string
+	second: string
+	third: string
+	fourth: string
+	last: string
 	daily: string
 	weekly: string
 	monthly: string

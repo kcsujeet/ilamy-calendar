@@ -20,9 +20,36 @@
 ignorePatterns = ["examples/**", "apps/**"]
 entry = ["packages/*/bunup.config.ts"]
 
-# bun-plugin-tailwind is loaded by Bun at build time via bunfig.toml, not through
-# a static import, so dead-code analysis can't trace its use.
-ignoreDependencies = ["bun-plugin-tailwind"]
+# Dependency findings that are false positives of fallow's per-package static view
+# of this bundled, hoisted workspace:
+#
+#   - bun-plugin-tailwind is loaded by Bun at build time via bunfig.toml, not a
+#     static import, so dead-code analysis can't trace its use.
+#   - @radix-ui/*, class-variance-authority, clsx, and tailwind-merge are imported
+#     by @ilamy/ui, which is bundled into the published @ilamy/calendar (its
+#     third-party deps stay external). They are declared in calendar's dependencies
+#     so consumers install them, even though calendar's own source reaches them
+#     only through the bundled @ilamy/ui. (@radix-ui/react-popover is omitted: it is
+#     imported by calendar source directly, so fallow already sees it as used.)
+#   - @tailwindcss/vite is the Vite plugin for apps/demo (an ignored playground),
+#     declared at the workspace root for hoisting, not a source import.
+#   - @testing-library/react is a test-only dependency declared once at the
+#     workspace root (hoisted linker) and used by package tests, intentionally not
+#     re-declared per package.
+ignoreDependencies = [
+	"bun-plugin-tailwind",
+	"@radix-ui/react-checkbox",
+	"@radix-ui/react-dialog",
+	"@radix-ui/react-label",
+	"@radix-ui/react-scroll-area",
+	"@radix-ui/react-select",
+	"@radix-ui/react-slot",
+	"class-variance-authority",
+	"clsx",
+	"tailwind-merge",
+	"@tailwindcss/vite",
+	"@testing-library/react",
+]
 
 [health]
 # Complexity / CRAP: skip the private playgrounds.

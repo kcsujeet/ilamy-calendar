@@ -40,5 +40,11 @@ export const RecurrenceFormSection = ({ event, onChange }: Props) => {
 		setRrule(resolved)
 		onChange({ rrule: resolved })
 	}
-	return <RecurrenceEditor onChange={handleChange} value={rrule} />
+	return (
+		<RecurrenceEditor
+			onChange={handleChange}
+			referenceDate={event.start?.toDate()}
+			value={rrule}
+		/>
+	)
 }

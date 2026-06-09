@@ -18,14 +18,35 @@ export const handleDateClick = (info: CellInfo) => {
 
 export const handleEventAdd = (event: CalendarEvent) => {
 	alert(`Event added: ${event.title}`)
+	console.log('Added event:', {
+		id: event.id,
+		exdates: event.exdates,
+		recurrenceId: event.recurrenceId,
+		rrule: event.rrule,
+		uid: event.uid,
+	})
 }
 
 export const handleEventUpdate = (event: CalendarEvent) => {
 	alert(`Event updated: ${event.title}`)
+	console.log('Updated event:', {
+		id: event.id,
+		exdates: event.exdates,
+		recurrenceId: event.recurrenceId,
+		rrule: event.rrule,
+		uid: event.uid,
+	})
 }
 
 export const handleEventDelete = (event: CalendarEvent) => {
 	alert(`Event deleted: ${event.title}`)
+	console.log('Deleted event:', {
+		id: event.id,
+		exdates: event.exdates,
+		recurrenceId: event.recurrenceId,
+		rrule: event.rrule,
+		uid: event.uid,
+	})
 }
 
 // Demo resources

@@ -9,7 +9,11 @@ import {
 } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
 import { createPluginRuntime } from '@/features/plugins/lib/create-plugin-runtime'
-import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
+import type {
+	IlamyPlugin,
+	PluginMutationResult,
+	PluginView,
+} from '@/features/plugins/lib/types'
 import dayjs, {
 	type Dayjs,
 	type ManipulateType,
@@ -85,6 +89,15 @@ const VIEW_UNITS: Record<string, ManipulateType> = {
 	month: 'month',
 	year: 'year',
 }
+
+const isPluginMutationResult = (
+	result: CalendarEvent[] | PluginMutationResult
+): result is PluginMutationResult =>
+	typeof result === 'object' &&
+	result !== null &&
+	'events' in result &&
+	'updated' in result &&
+	'added' in result
 
 const calculateViewRange = (
 	date: Dayjs,
@@ -262,12 +275,26 @@ export const useCalendarEngine = (
 			if (!manager?.applyEdit) {
 				return
 			}
+			const editResult = manager.applyEdit({
+				event,
+				updates,
+				currentEvents,
+				scope,
+			})
+			if (isPluginMutationResult(editResult)) {
+				for (const storedEvent of editResult.updated) {
+					onEventUpdate?.(storedEvent)
+				}
+				for (const storedEvent of editResult.added) {
+					onEventAdd?.(storedEvent)
+				}
+				setCurrentEvents(editResult.events)
+				return
+			}
 			onEventUpdate?.({ ...event, ...updates })
-			setCurrentEvents(
-				manager.applyEdit({ event, updates, currentEvents, scope })
-			)
+			setCurrentEvents(editResult)
 		},
-		[currentEvents, onEventUpdate, pluginRuntime]
+		[currentEvents, onEventAdd, onEventUpdate, pluginRuntime]
 	)
 
 	const applyScopedDelete = useCallback(

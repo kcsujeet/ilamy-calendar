@@ -15,6 +15,7 @@ export type {
 	IlamyPlugin,
 	PluginDateRange,
 	PluginMutationArgs,
+	PluginMutationResult,
 	PluginView,
 } from '@ilamy/types'
 

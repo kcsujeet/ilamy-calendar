@@ -11,4 +11,5 @@ export type { RRuleOptions } from './types'
 export {
 	generateRecurringEvents,
 	isRecurringEvent,
+	type RecurringUpdateResult,
 } from './utils/recurrence-handler'

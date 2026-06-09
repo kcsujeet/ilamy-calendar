@@ -28,3 +28,22 @@ jobs:
 
       - name: Run CI pipeline
         run: bun run ci
+
+  fallow:
+    name: Fallow analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Official composite action (prebuilt Rust binary, no Node runtime). Reads
+      # fallow.toml. Defaults applied: gate=new-only (only findings introduced by
+      # the change fail), auto-changed-since=true (PR/push delta scope),
+      # fail-on-issues=true (gates the job).
+      - name: Run fallow audit
+        uses: fallow-rs/fallow@v2
+        with:
+          command: audit
+          version: 2.90.0
+          format: human

@@ -3,7 +3,82 @@ import { CalendarTestProvider } from '@ilamy/calendar/testing'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from '../../types'
+import {
+	detectPreset,
+	getNthWeekdayOfMonth,
+	getPresetRRule,
+} from '../../utils/recurrence-presets'
 import { RecurrenceEditor } from './recurrence-editor'
+
+// Reference dates at noon UTC so the local-time day-of-month/weekday is stable
+// across the runner's timezone. 6/13/27 Jan 2025 are all Mondays; the 27th is
+// the last Monday of January, the 13th is the second.
+const MON_FIRST = new Date('2025-01-06T12:00:00Z')
+const MON_SECOND = new Date('2025-01-13T12:00:00Z')
+const MON_LAST = new Date('2025-01-27T12:00:00Z')
+
+describe('recurrence presets', () => {
+	it('counts which occurrence of its weekday a date is in its month', () => {
+		expect(getNthWeekdayOfMonth(MON_FIRST)).toBe(1)
+		expect(getNthWeekdayOfMonth(MON_SECOND)).toBe(2)
+		expect(getNthWeekdayOfMonth(MON_LAST)).toBe(-1)
+	})
+
+	it('maps presets to anchored rules', () => {
+		expect(getPresetRRule('once', MON_FIRST)).toBeNull()
+		expect(getPresetRRule('daily', MON_FIRST)).toEqual({
+			freq: RRule.DAILY,
+			interval: 1,
+			dtstart: MON_FIRST,
+		})
+		const weekdays = getPresetRRule('weekdays', MON_FIRST)
+		expect(weekdays?.freq).toBe(RRule.WEEKLY)
+		expect(
+			(weekdays?.byweekday as { weekday: number }[]).map((d) => d.weekday)
+		).toEqual([0, 1, 2, 3, 4])
+		const weekly = getPresetRRule('weeklyOnDay', MON_FIRST)
+		expect(
+			(weekly?.byweekday as { weekday: number }[]).map((d) => d.weekday)
+		).toEqual([0])
+		expect(getPresetRRule('monthlyOnDay', MON_FIRST)).toMatchObject({
+			freq: RRule.MONTHLY,
+			bymonthday: 6,
+		})
+		const monthlyWeekday = getPresetRRule('monthlyOnWeekday', MON_SECOND)
+		const byday = (
+			monthlyWeekday?.byweekday as { weekday: number; n: number }[]
+		).at(0)
+		expect(byday?.weekday).toBe(0)
+		expect(byday?.n).toBe(2)
+	})
+
+	it('detects the preset a saved rule represents', () => {
+		expect(detectPreset(null, MON_FIRST)).toBe('once')
+		expect(detectPreset(getPresetRRule('daily', MON_FIRST), MON_FIRST)).toBe(
+			'daily'
+		)
+		expect(
+			detectPreset(getPresetRRule('weeklyOnDay', MON_FIRST), MON_FIRST)
+		).toBe('weeklyOnDay')
+		expect(
+			detectPreset(getPresetRRule('monthlyOnWeekday', MON_SECOND), MON_SECOND)
+		).toBe('monthlyOnWeekday')
+		expect(
+			detectPreset(
+				{ freq: RRule.WEEKLY, interval: 3, dtstart: MON_FIRST },
+				MON_FIRST
+			)
+		).toBe('customize')
+	})
+
+	it('treats end conditions as preset-independent', () => {
+		const dailyWithEnd = {
+			...getPresetRRule('daily', MON_FIRST),
+			count: 5,
+		} as RRuleOptions
+		expect(detectPreset(dailyWithEnd, MON_FIRST)).toBe('daily')
+	})
+})
 
 // Test helper to create complete RRuleOptions with required dtstart
 const createRRuleOptions = (
@@ -23,13 +98,27 @@ const getLastCallArg = (mockFn: ReturnType<typeof mock>) => {
 
 type FrequencyLabel = 'Daily' | 'Weekly' | 'Monthly' | 'Yearly'
 
-// Select a frequency on the Radix Select frequency control: open the listbox
-// via its trigger, then pick the option whose label matches.
+// Pick an option on a Radix Select by its accessible (label) name: open the
+// listbox via the trigger, then click the matching option.
+const selectOption = (
+	comboboxName: RegExp,
+	optionName: RegExp | FrequencyLabel
+) => {
+	fireEvent.click(screen.getByRole('combobox', { name: comboboxName }))
+	fireEvent.click(screen.getByRole('option', { name: optionName }))
+}
+
+// Choose "Custom recurrence" from the preset picker, revealing the detailed
+// frequency/interval/weekday controls.
+const enterCustomMode = () => {
+	selectOption(/repeats/i, /custom recurrence/i)
+}
+
+// Select a frequency. The frequency control only exists in custom mode, so
+// enter it first.
 const selectFrequency = (label: FrequencyLabel) => {
-	const frequencyTrigger = screen.getByRole('combobox', { name: /repeats/i })
-	fireEvent.click(frequencyTrigger)
-	const option = screen.getByRole('option', { name: label })
-	fireEvent.click(option)
+	enterCustomMode()
+	selectOption(/frequency/i, label)
 }
 
 describe('RecurrenceEditor', () => {
@@ -146,7 +235,9 @@ describe('RecurrenceEditor', () => {
 			// Pass invalid RRuleOptions that would cause errors
 			renderRecurrenceEditor({ value: { freq: 999 } })
 
-			expect(screen.getByText('Custom recurrence')).toBeInTheDocument()
+			expect(screen.getByTestId('preset-select')).toHaveTextContent(
+				'Custom recurrence'
+			)
 			const checkbox = screen.getByTestId('toggle-recurrence')
 			expect(checkbox).toBeChecked()
 		})
@@ -164,7 +255,9 @@ describe('RecurrenceEditor', () => {
 			// Using a frequency that's not in our freqMap
 			renderRecurrenceEditor({ value: { freq: 999, interval: 1 } })
 
-			expect(screen.getByText('Custom recurrence')).toBeInTheDocument()
+			expect(screen.getByTestId('preset-select')).toHaveTextContent(
+				'Custom recurrence'
+			)
 		})
 
 		it('should handle extremely large interval values', () => {
@@ -264,6 +357,7 @@ describe('RecurrenceEditor', () => {
 					</CalendarTestProvider>
 				)
 
+				enterCustomMode()
 				const frequencySelect = screen.getByTestId('frequency-select')
 
 				// The RecurrenceEditor should display the frequency correctly
@@ -310,6 +404,7 @@ describe('RecurrenceEditor', () => {
 		it('should handle valid interval changes', () => {
 			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '5' } })
 
@@ -324,6 +419,7 @@ describe('RecurrenceEditor', () => {
 		it('should enforce minimum interval of 1', () => {
 			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '0' } })
 
@@ -338,6 +434,7 @@ describe('RecurrenceEditor', () => {
 		it('should handle negative interval values', () => {
 			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '-5' } })
 
@@ -352,6 +449,7 @@ describe('RecurrenceEditor', () => {
 		it('should handle non-numeric interval input', () => {
 			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: 'abc' } })
 
@@ -366,6 +464,7 @@ describe('RecurrenceEditor', () => {
 		it('should handle empty interval input', () => {
 			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '' } })
 
@@ -380,6 +479,7 @@ describe('RecurrenceEditor', () => {
 		it('should handle very large interval values', () => {
 			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '999999' } })
 
@@ -688,7 +788,9 @@ describe('RecurrenceEditor', () => {
 		it('should show "Custom recurrence" for unparseable RRULEs', () => {
 			renderRecurrenceEditor({ value: { freq: 999 as unknown, interval: 1 } })
 
-			expect(screen.getByText('Custom recurrence')).toBeInTheDocument()
+			expect(screen.getByTestId('preset-select')).toHaveTextContent(
+				'Custom recurrence'
+			)
 		})
 	})
 
@@ -696,6 +798,7 @@ describe('RecurrenceEditor', () => {
 		it('should handle multiple rapid onChange calls without issues', () => {
 			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 
 			// Rapid input changes with different values
@@ -773,6 +876,7 @@ describe('RecurrenceEditor', () => {
 		it('should maintain focus state correctly', () => {
 			renderRecurrenceEditor({ value: { freq: RRule.DAILY, interval: 1 } })
 
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			intervalInput.focus()
 
@@ -801,6 +905,7 @@ describe('RecurrenceEditor', () => {
 			fireEvent.click(screen.getByLabelText('Wed'))
 
 			// Change interval
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '2' } })
 
@@ -917,6 +1022,7 @@ describe('RecurrenceEditor', () => {
 				value: createRRuleOptions({ freq: RRule.DAILY, interval: 1, dtstart }),
 			})
 
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '5' } })
 
@@ -947,6 +1053,7 @@ describe('RecurrenceEditor', () => {
 				value: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
 			})
 
+			enterCustomMode()
 			expect(screen.getByTestId('frequency-select')).toHaveTextContent('Daily')
 
 			remountRecurrenceEditor(mounted, {
@@ -963,6 +1070,7 @@ describe('RecurrenceEditor', () => {
 				value: createRRuleOptions({ freq: RRule.DAILY, interval: 1 }),
 			})
 
+			enterCustomMode()
 			expect(screen.getByDisplayValue('1')).toBeInTheDocument()
 
 			remountRecurrenceEditor(mounted, {
@@ -1039,6 +1147,7 @@ describe('RecurrenceEditor', () => {
 
 			expect(screen.getByText('Daily')).toBeInTheDocument()
 
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '3' } })
 
@@ -1130,6 +1239,7 @@ describe('RecurrenceEditor', () => {
 			})
 
 			// Change interval
+			enterCustomMode()
 			const intervalInput = screen.getByLabelText('Every')
 			fireEvent.change(intervalInput, { target: { value: '3' } })
 
@@ -1153,6 +1263,48 @@ describe('RecurrenceEditor', () => {
 			const result = getLastCallArg(mockOnChange)
 			expect(result.freq).toBe(RRule.DAILY)
 			// The component doesn't clear byweekday automatically - it just changes freq
+		})
+	})
+
+	describe('🗓️ Preset Picker', () => {
+		it('applies a preset rule when chosen from the picker', () => {
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY }),
+			})
+
+			selectOption(/repeats/i, /every weekday/i)
+
+			const result = getLastCallArg(mockOnChange)
+			expect(result.freq).toBe(RRule.WEEKLY)
+			expect(
+				(result.byweekday as { weekday: number }[]).map((d) => d.weekday)
+			).toEqual([0, 1, 2, 3, 4])
+		})
+
+		it('hides the detailed controls until Custom is chosen', () => {
+			renderRecurrenceEditor({
+				value: createRRuleOptions({ freq: RRule.DAILY }),
+			})
+
+			expect(screen.queryByTestId('frequency-select')).not.toBeInTheDocument()
+
+			enterCustomMode()
+
+			expect(screen.getByTestId('frequency-select')).toBeInTheDocument()
+		})
+
+		it('switches monthly recurrence to the nth weekday of the month', () => {
+			// 13 Jan 2025 is the second Monday of its month.
+			renderRecurrenceEditor({
+				value: { freq: RRule.MONTHLY, interval: 1, dtstart: MON_SECOND },
+			})
+
+			selectOption(/repeat on/i, /monthly on the/i)
+
+			const result = getLastCallArg(mockOnChange)
+			const byday = (result.byweekday as { weekday: number; n: number }[]).at(0)
+			expect(byday?.weekday).toBe(0)
+			expect(byday?.n).toBe(2)
 		})
 	})
 })

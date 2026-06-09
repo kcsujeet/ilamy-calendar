@@ -62,6 +62,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # Full history so the action can resolve the PR base commit and diff
+          # changed files; a shallow clone omits the base ref.
+          fetch-depth: 0
 
       # Official composite action (prebuilt Rust binary, no Node runtime). Reads
       # fallow.toml. Defaults applied: gate=new-only (only findings introduced by

@@ -872,12 +872,50 @@ describe('Edge cases and stress tests', () => {
 			scope: 'this',
 		})
 
-		// Should have base event with 2 EXDATES (one from update, one from delete)
-		const baseEventResult = finalResult.find((e) => e.rrule)
-		expect(baseEventResult?.exdates).toHaveLength(2)
-		expect(
-			baseEventResult?.exdates?.filter((d) => d === '2025-01-20T09:00:00.000Z')
-		).toHaveLength(2)
+		expect(finalResult).toHaveLength(1)
+		const baseEventResult = finalResult[0]
+		expect(baseEventResult.exdates).toHaveLength(1)
+		expect(baseEventResult.exdates).toContain('2025-01-20T09:00:00.000Z')
+	})
+
+	it('should remove detached override when deleting the modified occurrence', () => {
+		const baseEvent = createBaseRecurringEvent()
+		const targetEvent = createTargetEvent()
+		let currentEvents = [baseEvent]
+
+		currentEvents = updateRecurringEvent({
+			targetEvent,
+			updates: {
+				title: 'Modified Title',
+				start: dayjs('2025-01-20T14:00:00'),
+				end: dayjs('2025-01-20T15:00:00'),
+			},
+			currentEvents,
+			scope: 'this',
+		})
+
+		const modifiedOverride = currentEvents.find((e) => e.recurrenceId)
+		expect(modifiedOverride).toBeDefined()
+
+		const finalResult = deleteRecurringEvent({
+			targetEvent: modifiedOverride as CalendarEvent,
+			currentEvents,
+			scope: 'this',
+		})
+
+		expect(finalResult).toHaveLength(1)
+		expect(finalResult[0].exdates).toContain('2025-01-20T09:00:00.000Z')
+
+		const visibleOccurrences = generateRecurringEvents({
+			event: finalResult[0],
+			currentEvents: finalResult,
+			startDate: dayjs('2025-01-13T00:00:00'),
+			endDate: dayjs('2025-01-27T00:00:00'),
+		})
+		const deletedDayOccurrences = visibleOccurrences.filter((e) =>
+			e.start.isSame(dayjs('2025-01-20T00:00:00'), 'day')
+		)
+		expect(deletedDayOccurrences).toHaveLength(0)
 	})
 
 	it('should handle multiple "following" updates creating series chain', () => {

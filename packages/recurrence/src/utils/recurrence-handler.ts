@@ -94,6 +94,13 @@ const withTimeOfDay = (target: Dayjs, source: Dayjs): Dayjs => {
 }
 
 /**
+ * RFC 5545 RECURRENCE-ID: for detached overrides, the original occurrence
+ * start is stored on recurrenceId; generated instances use their start.
+ */
+const getOccurrenceStartISO = (event: CalendarEvent): string =>
+	event.recurrenceId ?? event.start.toISOString()
+
+/**
  * Appends the target occurrence's start to the base event's EXDATE list,
  * excluding that single occurrence from the series. Shared by the "this" scope
  * of both edit and delete.
@@ -102,9 +109,11 @@ const addExdateToBaseEvent = (
 	baseEvent: CalendarEvent,
 	targetEvent: CalendarEvent
 ): { baseEvent: CalendarEvent; targetEventStartISO: string } => {
-	const targetEventStartISO = targetEvent.start.toISOString()
+	const targetEventStartISO = getOccurrenceStartISO(targetEvent)
 	const existingExdates = baseEvent.exdates || []
-	const updatedExdates = [...existingExdates, targetEventStartISO]
+	const updatedExdates = existingExdates.includes(targetEventStartISO)
+		? existingExdates
+		: [...existingExdates, targetEventStartISO]
 	return {
 		baseEvent: { ...baseEvent, exdates: updatedExdates },
 		targetEventStartISO,
@@ -384,13 +393,23 @@ export const deleteRecurringEvent = ({
 
 	switch (scope) {
 		case 'this': {
-			// "This event only" - Add EXDATE to exclude this occurrence
+			// "This event only" - Add EXDATE and drop any detached override for this occurrence
+			const occurrenceStartISO = getOccurrenceStartISO(targetEvent)
 			const { baseEvent: updatedBaseEvent } = addExdateToBaseEvent(
 				baseEvent,
 				targetEvent
 			)
 			updatedEvents[baseEventIndex] = updatedBaseEvent
-			break
+
+			const parentUid = getEventParentUID(baseEvent)
+			return updatedEvents.filter((event) => {
+				const isDetachedOverride =
+					Boolean(event.recurrenceId) && getEventParentUID(event) === parentUid
+				if (!isDetachedOverride) {
+					return true
+				}
+				return event.recurrenceId !== occurrenceStartISO
+			})
 		}
 
 		case 'following': {

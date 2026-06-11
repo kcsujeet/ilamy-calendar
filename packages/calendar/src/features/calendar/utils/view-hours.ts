@@ -34,7 +34,7 @@ export function getViewHours({
 	const hours = getDayHours({ referenceDate })
 
 	const hasBusinessHoursConfig =
-		!!businessHours || resourceBusinessHours.length > 0
+		Boolean(businessHours) || resourceBusinessHours.length > 0
 	const shouldFilterByBusinessHours =
 		hideNonBusinessHours && hasBusinessHoursConfig
 

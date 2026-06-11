@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { cleanup, render, screen } from '@testing-library/react'
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	within,
+} from '@testing-library/react'
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
@@ -184,5 +190,30 @@ describe('MonthView', () => {
 			`day-cell-${today.format('YYYY-MM-DD')}`
 		)
 		expect(todayCell).toBeInTheDocument()
+	})
+
+	test('opens all-events dialog listing every event of the day via the more link', () => {
+		cleanup()
+		const day = dayjs('2025-06-10T00:00:00.000Z')
+		const titles = ['Standup', 'Design Sync', 'Code Review', 'Retro']
+		const dayEvents: CalendarEvent[] = titles.map((title, index) => ({
+			id: `dialog-event-${index}`,
+			title,
+			start: day.hour(9 + index),
+			end: day.hour(10 + index),
+		}))
+
+		renderMonthView({ events: dayEvents, initialDate: day })
+
+		// dayMaxEvents is 3, so one event overflows into the more link
+		fireEvent.click(screen.getByText('+1 more'))
+
+		const dialog = screen.getByRole('dialog')
+		expect(
+			within(dialog).getByText(day.format('MMMM D, YYYY'))
+		).toBeInTheDocument()
+		titles.forEach((title) => {
+			expect(within(dialog).getByText(title)).toBeInTheDocument()
+		})
 	})
 })

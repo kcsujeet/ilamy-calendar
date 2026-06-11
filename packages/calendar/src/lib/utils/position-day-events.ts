@@ -75,18 +75,24 @@ export const getPositionedDayEvents = ({
 		}
 	}
 
-	// Max cluster offset by event count (2 events → 25%, etc.)
+	// Max cluster offset by event count; clusters of 5 or more cap at 70%.
+	const maxOffsetPercentByCount: Record<number, number> = {
+		2: 25,
+		3: 50,
+		4: 60,
+	}
+	const defaultMaxOffsetPercent = 70
 	const maxOffsetByCount = (n: number) =>
-		n === 2 ? 25 : n === 3 ? 50 : n === 4 ? 60 : 70
+		maxOffsetPercentByCount[n] ?? defaultMaxOffsetPercent
 
 	// Step 2: For each cluster, compute positions
 	const processedEvents: PositionedEvent[] = []
 	for (const cluster of clusters) {
-		if (cluster.length === 1) {
-			const event = cluster[0]
-			const pos = computeTopHeight(event)
+		const onlyEvent = cluster.length === 1 ? cluster.at(0) : undefined
+		if (onlyEvent) {
+			const pos = computeTopHeight(onlyEvent)
 			if (!pos) continue
-			processedEvents.push({ ...event, left: 0, width: 100, ...pos })
+			processedEvents.push({ ...onlyEvent, left: 0, width: 100, ...pos })
 			continue
 		}
 

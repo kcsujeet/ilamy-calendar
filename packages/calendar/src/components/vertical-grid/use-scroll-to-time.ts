@@ -25,10 +25,11 @@ const HOUR_SELECTOR = '[data-hour]'
 
 const parseHour = (time: string): number | null => {
 	const match = HOUR_PATTERN.exec(time)
-	if (!match) {
+	const hourDigits = match?.at(1)
+	if (!hourDigits) {
 		return null
 	}
-	const hour = Number.parseInt(match[1], 10)
+	const hour = Number.parseInt(hourDigits, 10)
 	const isInRange = hour >= 0 && hour <= 23
 	return isInRange ? hour : null
 }

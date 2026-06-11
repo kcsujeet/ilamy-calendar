@@ -38,11 +38,17 @@ export function useAutocompleteTimepicker({
 
 	const formatTime = (time: string) => {
 		const [hours, minutes] = time.split(':').map(Number)
-		const period = hours >= 12 ? 'PM' : 'AM'
-		const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
 
 		if (timeFormat === '24-hour') {
 			return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+		}
+
+		const period = hours >= 12 ? 'PM' : 'AM'
+		let displayHours = hours
+		if (hours === 0) {
+			displayHours = 12
+		} else if (hours > 12) {
+			displayHours = hours - 12
 		}
 
 		return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`

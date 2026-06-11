@@ -95,18 +95,20 @@ function DraggableEventUnmemoized({
 		)
 	}
 
+	const isDragDisabled = disableDrag || disableDragAndDrop
+	const idleCursorClass = disableEventClick
+		? 'cursor-default'
+		: 'cursor-pointer'
+	const cursorClass = isDragDisabled ? idleCursorClass : 'cursor-grab'
+	const draggingClass =
+		isDragging && !isDragDisabled && 'cursor-grabbing shadow-lg'
+
 	return (
 		<AnimatedSection
 			className={cn(
 				'truncate h-full w-full',
-				disableDrag || disableDragAndDrop
-					? disableEventClick
-						? 'cursor-default'
-						: 'cursor-pointer'
-					: 'cursor-grab',
-				isDragging &&
-					!(disableDrag || disableDragAndDrop) &&
-					'cursor-grabbing shadow-lg',
+				cursorClass,
+				draggingClass,
 				className
 			)}
 			layout={true}

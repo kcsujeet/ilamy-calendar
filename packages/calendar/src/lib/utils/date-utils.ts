@@ -55,10 +55,12 @@ export function getMonthWeeks(
 	monthDate: Dayjs,
 	firstDayOfWeek: number
 ): Dayjs[][] {
-	const firstWeek = getWeekDays(monthDate.startOf('month'), firstDayOfWeek)
+	const monthStart = monthDate.startOf('month')
+	const firstWeek = getWeekDays(monthStart, firstDayOfWeek)
+	const firstDayOfGrid = firstWeek.at(0) ?? monthStart
 
 	return Array.from({ length: 6 }, (_, weekIndex) => {
-		const weekStart = firstWeek[0].add(weekIndex, 'week')
+		const weekStart = firstDayOfGrid.add(weekIndex, 'week')
 		return getWeekDays(weekStart, firstDayOfWeek)
 	})
 }

@@ -31,7 +31,7 @@ export const ResourceEventGrid: React.FC<ResourceEventGridProps> = ({
 
 	const columns = days.map((day) => {
 		const isArray = Array.isArray(day)
-		const refDay = isArray ? day[0] : day
+		const refDay = isArray ? day.at(0) : day
 		return {
 			id: refDay ? keys.col.day(refDay) : 'day-col-unknown',
 			day: isArray ? undefined : day,

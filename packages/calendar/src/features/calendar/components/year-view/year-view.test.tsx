@@ -143,6 +143,25 @@ describe('YearView', () => {
 		cleanup()
 	})
 
+	test('aligns mini-calendar day cells with firstDayOfWeek headers', () => {
+		// June 1, 2025 is a Sunday. With Monday as first day of week, the June
+		// mini-calendar must start on Monday May 26 and span 42 days to July 6.
+		renderYearView({
+			firstDayOfWeek: 1,
+			initialDate: dayjs('2025-06-15T00:00:00.000Z'),
+		})
+
+		expect(
+			screen.getByTestId('year-day-2025-06-2025-05-26')
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId('year-day-2025-06-2025-07-06')
+		).toBeInTheDocument()
+		expect(
+			screen.queryByTestId('year-day-2025-06-2025-07-07')
+		).not.toBeInTheDocument()
+	})
+
 	describe('Basic Structure', () => {
 		test('renders year view with scroll area and grid', () => {
 			renderYearView()

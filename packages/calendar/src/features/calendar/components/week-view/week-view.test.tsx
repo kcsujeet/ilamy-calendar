@@ -1109,6 +1109,42 @@ describe('WeekView', () => {
 		}
 	})
 
+	test('updates day columns when hiddenDays changes after initial render', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const ui = (hiddenDays?: Set<number>) => (
+			<CalendarProvider
+				dayMaxEvents={dayMaxEvents}
+				events={[]}
+				firstDayOfWeek={0}
+				hiddenDays={hiddenDays}
+				initialDate={monday}
+				locale="en"
+			>
+				<WeekView />
+			</CalendarProvider>
+		)
+		const { rerender } = render(ui(undefined))
+
+		const sunday = monday.startOf('week').format('YYYY-MM-DD')
+		const saturday = monday.startOf('week').add(6, 'day').format('YYYY-MM-DD')
+		expect(
+			screen.getByTestId(`vertical-col-day-col-${sunday}`)
+		).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-col-day-col-${saturday}`)
+		).toBeInTheDocument()
+
+		rerender(ui(new Set([0, 6])))
+
+		expect(
+			screen.queryByTestId(`vertical-col-day-col-${sunday}`)
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByTestId(`vertical-col-day-col-${saturday}`)
+		).not.toBeInTheDocument()
+	})
+
 	test('hiddenDays with single hidden day works correctly', () => {
 		cleanup()
 		const monday = dayjs('2025-01-06T00:00:00.000Z')

@@ -7,7 +7,7 @@ import type {
 	WeekDays,
 } from '@ilamy/calendar'
 import { useState } from 'react'
-import dummyEvents from '@/lib/seed'
+import { dummyEvents } from '@/lib/seed'
 import { DemoCalendarDisplay } from './demo-calendar-display'
 import { DemoCalendarSettings } from './demo-calendar-settings'
 import { createResourceEvents, demoResources } from './demo-data'

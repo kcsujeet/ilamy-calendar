@@ -26,7 +26,8 @@ const RRULE_WEEKDAYS = [
 const WEEKDAY_PRESET = [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR]
 const ORDINALS = ['first', 'second', 'third', 'fourth']
 
-const getRRuleWeekday = (date: Date) => RRULE_WEEKDAYS[dayjs(date).day()]
+const getRRuleWeekday = (date: Date) =>
+	RRULE_WEEKDAYS.at(dayjs(date).day()) ?? RRule.SU
 
 // Which occurrence of its own weekday a date is within its month: 1–4, or -1
 // for the last one (no further same-weekday date remains that month).
@@ -137,7 +138,8 @@ export const getPresetLabel = (
 ) => {
 	const dayName = dayjs(reference).format('dddd')
 	const nth = getNthWeekdayOfMonth(reference)
-	const ordinal = nth === -1 ? t('last') : t(ORDINALS[nth - 1])
+	const ordinalKey = nth === -1 ? 'last' : (ORDINALS.at(nth - 1) ?? 'last')
+	const ordinal = t(ordinalKey)
 	const labels: Partial<Record<RecurrencePreset, string>> = {
 		daily: t('daily'),
 		weekdays: t('everyWeekday'),

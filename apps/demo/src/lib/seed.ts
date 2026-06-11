@@ -4,7 +4,7 @@ import { RRule } from 'rrule'
 // Use a fixed month reference point for consistent display
 const baseDate = dayjs().startOf('month').date(1)
 
-const dummyEvents = [
+export const dummyEvents = [
 	// First week events
 	{
 		id: '5.1',
@@ -189,5 +189,3 @@ const dummyEvents = [
 		exdates: [],
 	},
 ]
-
-export default dummyEvents

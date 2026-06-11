@@ -18,7 +18,7 @@ interface ViewControlsProps {
 	className?: string
 }
 
-const ViewControls: React.FC<ViewControlsProps> = ({
+export const ViewControls: React.FC<ViewControlsProps> = ({
 	currentView,
 	onChange,
 	variant = 'default',
@@ -100,5 +100,3 @@ const ViewControls: React.FC<ViewControlsProps> = ({
 		</div>
 	)
 }
-
-export default ViewControls

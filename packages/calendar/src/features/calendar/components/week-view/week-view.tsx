@@ -80,7 +80,7 @@ export const WeekView: React.FC = () => {
 			}),
 			value: day,
 		}))
-	}, [weekDays, businessHours, hideNonBusinessHours, visibleDays.map])
+	}, [weekDays, businessHours, hideNonBusinessHours, visibleDays])
 
 	const cssVars = {
 		'--visible-days': visibleDays.length,

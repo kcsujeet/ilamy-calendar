@@ -1,6 +1,6 @@
 import type { CalendarEvent, CellInfo, Resource } from '@ilamy/calendar'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
-import dummyEvents from '@/lib/seed'
+import { dummyEvents } from '@/lib/seed'
 
 // Recurrence is opt-in — the seed data has recurring events, so the demo
 // registers the recurrence plugin to expand them. Kept module-level so the
@@ -84,10 +84,10 @@ export const createResourceEvents = (): CalendarEvent[] => {
 		// Assign events to resources
 		if (index % 4 === 0) {
 			// Cross-resource event
-			resourceEvent.resourceIds = [resourceIds[0], resourceIds[1]]
+			resourceEvent.resourceIds = resourceIds.slice(0, 2)
 		} else {
 			// Single resource event
-			resourceEvent.resourceId = resourceIds[index % resourceIds.length]
+			resourceEvent.resourceId = resourceIds.at(index % resourceIds.length)
 		}
 
 		return resourceEvent

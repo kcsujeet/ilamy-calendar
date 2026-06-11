@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
-import Header from './base-header'
+import { Header } from './base-header'
 
 // Custom render function that wraps Header in CalendarProvider
 const renderHeader = (events: CalendarEvent[] = [], providerProps = {}) => {

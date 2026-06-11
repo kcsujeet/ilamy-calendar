@@ -96,11 +96,15 @@ const calculateViewRange = (
 	}
 	if (view === 'week') {
 		const days = getWeekDays(date, firstDayOfWeek)
-		return { start: days[0].startOf('day'), end: days[6].endOf('day') }
+		const weekStart = days.at(0) ?? date
+		const weekEnd = days.at(-1) ?? date
+		return { start: weekStart.startOf('day'), end: weekEnd.endOf('day') }
 	}
 	// month view: 6 weeks × 7 days — also the default range for plugin/unknown views
 	const weeks = getMonthWeeks(date, firstDayOfWeek)
-	return { start: weeks[0][0].startOf('day'), end: weeks[5][6].endOf('day') }
+	const gridStart = weeks.at(0)?.at(0) ?? date
+	const gridEnd = weeks.at(-1)?.at(-1) ?? date
+	return { start: gridStart.startOf('day'), end: gridEnd.endOf('day') }
 }
 
 export const useCalendarEngine = (

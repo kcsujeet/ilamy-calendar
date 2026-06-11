@@ -92,8 +92,7 @@ const createRRuleOptions = (
 
 // Helper to get the last call argument from mock
 const getLastCallArg = (mockFn: ReturnType<typeof mock>) => {
-	const calls = mockFn.mock.calls
-	return calls[calls.length - 1]?.[0]
+	return mockFn.mock.calls.at(-1)?.at(0)
 }
 
 type FrequencyLabel = 'Daily' | 'Weekly' | 'Monthly' | 'Yearly'

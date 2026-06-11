@@ -9,7 +9,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
 
-const elem = document.querySelector('#root')!
+const elem = document.querySelector('#root')
+if (!elem) {
+	throw new Error('Root element #root not found')
+}
 const app = (
 	<StrictMode>
 		<App />

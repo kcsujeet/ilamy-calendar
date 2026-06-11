@@ -93,6 +93,22 @@ interface DemoCalendarSettingsProps {
 	setScrollTime: (value: string | undefined) => void
 }
 
+function resolveInitialDateOption(initialDate: Dayjs | undefined): string {
+	if (initialDate === undefined) {
+		return 'today'
+	}
+	if (initialDate.isSame(dayjs().startOf('month'), 'day')) {
+		return 'start-of-month'
+	}
+	if (initialDate.isSame(dayjs().startOf('year'), 'day')) {
+		return 'start-of-year'
+	}
+	if (initialDate.isSame(dayjs().add(1, 'month'), 'month')) {
+		return 'next-month'
+	}
+	return 'custom'
+}
+
 export function DemoCalendarSettings({
 	calendarType,
 	setCalendarType,
@@ -308,17 +324,7 @@ export function DemoCalendarSettings({
 								setInitialDate(dayjs().add(1, 'month').startOf('month'))
 							}
 						}}
-						value={
-							initialDate === undefined
-								? 'today'
-								: initialDate.isSame(dayjs().startOf('month'), 'day')
-									? 'start-of-month'
-									: initialDate.isSame(dayjs().startOf('year'), 'day')
-										? 'start-of-year'
-										: initialDate.isSame(dayjs().add(1, 'month'), 'month')
-											? 'next-month'
-											: 'custom'
-						}
+						value={resolveInitialDateOption(initialDate)}
 					>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Select initial date" />

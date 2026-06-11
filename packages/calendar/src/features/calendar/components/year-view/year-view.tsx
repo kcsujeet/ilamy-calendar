@@ -64,7 +64,9 @@ export const YearView = () => {
 	}
 
 	const generateDaysForMonth = (monthDate: Dayjs): DayData[] => {
-		const firstDayOfCalendar = monthDate.startOf('month').startOf('week')
+		const monthStart = monthDate.startOf('month')
+		const firstDayOfCalendar =
+			getWeekDays(monthStart, firstDayOfWeek).at(0) ?? monthStart
 
 		return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) => {
 			const dayDate = firstDayOfCalendar.add(dayIndex, 'day')

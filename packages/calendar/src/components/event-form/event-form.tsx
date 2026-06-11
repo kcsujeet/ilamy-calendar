@@ -25,8 +25,10 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 
+const DEFAULT_EVENT_COLOR = 'bg-blue-100 text-blue-800'
+
 const COLOR_OPTIONS = [
-	{ value: 'bg-blue-100 text-blue-800', label: 'Blue' },
+	{ value: DEFAULT_EVENT_COLOR, label: 'Blue' },
 	{ value: 'bg-green-100 text-green-800', label: 'Green' },
 	{ value: 'bg-purple-100 text-purple-800', label: 'Purple' },
 	{ value: 'bg-red-100 text-red-800', label: 'Red' },
@@ -126,7 +128,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 	const [endDate, setEndDate] = useState(end.toDate())
 	const [isAllDay, setIsAllDay] = useState(selectedEvent?.allDay || false)
 	const [selectedColor, setSelectedColor] = useState(
-		selectedEvent?.color || COLOR_OPTIONS[0].value
+		selectedEvent?.color || DEFAULT_EVENT_COLOR
 	)
 
 	// Time state

@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
-const TitleContent = () => {
+export const TitleContent = () => {
 	const { currentDate, view, selectDate, t, firstDayOfWeek } =
 		useSmartCalendarContext((ctx) => ({
 			currentDate: ctx.currentDate,
@@ -82,8 +82,8 @@ const TitleContent = () => {
 			{Array.from({ length: 7 }, (_, i) => {
 				const weekDate = currentDate.subtract(3, 'week').add(i, 'week')
 				const days = getWeekDays(weekDate, firstDayOfWeek)
-				const start = days[0]
-				const end = days[6]
+				const start = days.at(0) ?? weekDate
+				const end = days.at(-1) ?? weekDate
 				const isCurrentWeek = weekDate.isSame(currentDate, 'week')
 
 				return (
@@ -157,7 +157,10 @@ const TitleContent = () => {
 		{
 			id: 'week',
 			hidden: view !== 'week',
-			title: formatDateRange(weekDays[0], weekDays[6]),
+			title: formatDateRange(
+				weekDays.at(0) ?? currentDate,
+				weekDays.at(-1) ?? currentDate
+			),
 			render: renderWeekContent,
 		},
 		{
@@ -200,5 +203,3 @@ const TitleContent = () => {
 			</Popover>
 		))
 }
-
-export default TitleContent

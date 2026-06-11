@@ -8,16 +8,17 @@ import { Calendar as CalendarIcon, Download, Menu, Plus } from 'lucide-react'
 import type React from 'react'
 import { useState } from 'react'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { downloadICalendar } from '@/lib/utils/export-ical'
-import TitleContent from './title-content'
-import ViewControls from './view-controls'
+import { TitleContent } from './title-content'
+import { ViewControls } from './view-controls'
 
 interface HeaderProps {
 	className?: string
 }
 
-const Header: React.FC<HeaderProps> = ({ className = '' }) => {
+export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 	const {
 		view,
 		setView,
@@ -59,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		}
 
 	const handleExport = () => {
-		const filename = `ilamy-calendar-${new Date().toISOString().split('T')[0]}.ics`
+		const filename = `ilamy-calendar-${dayjs().format('YYYY-MM-DD')}.ics`
 		downloadICalendar(rawEvents, collect, filename, 'ilamy Calendar')
 		closeMobileMenu()
 	}
@@ -160,5 +161,3 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		</div>
 	)
 }
-
-export default Header

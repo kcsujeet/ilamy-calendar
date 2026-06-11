@@ -27,7 +27,7 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [selectedDayEvents, setSelectedDayEvents] =
 		useState<SelectedDayEvents | null>(null)
-	const { currentDate, firstDayOfWeek, eventHeight } = useSmartCalendarContext()
+	const { eventHeight } = useSmartCalendarContext()
 
 	useImperativeHandle(ref, () => ({
 		open: () => setDialogOpen(true),
@@ -35,16 +35,6 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 		setSelectedDayEvents: (dayEvents: SelectedDayEvents) =>
 			setSelectedDayEvents(dayEvents),
 	}))
-
-	// Get start date for the current month view based on firstDayOfWeek
-	const firstDayOfMonth = currentDate.startOf('month')
-
-	// Calculate the first day of the calendar grid correctly
-	// Find the first day of week (e.g. Sunday or Monday) that comes before or on the first day of the month
-	let adjustedFirstDayOfCalendar = firstDayOfMonth.clone()
-	while (adjustedFirstDayOfCalendar.day() !== firstDayOfWeek) {
-		adjustedFirstDayOfCalendar = adjustedFirstDayOfCalendar.subtract(1, 'day')
-	}
 
 	return (
 		<Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
@@ -58,8 +48,8 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 					{selectedDayEvents?.events.map((event) => {
 						return (
 							<DraggableEvent
-								className="relative my-1" // Use event ID for unique identification
-								elementId={`all-events-dialog-event-$${event.id}`}
+								className="relative my-1"
+								elementId={`all-events-dialog-event-${event.id}`}
 								event={event}
 								key={event.id}
 								style={{ height: `${eventHeight}px` }}

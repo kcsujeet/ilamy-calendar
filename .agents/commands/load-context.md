@@ -46,13 +46,13 @@ Here is the full codebase layout. Internalize it before doing any work.
 
 Shared UI building blocks used across all features:
 
-- `types.ts` - Core types: `CalendarEvent`, `ProcessedCalendarEvent`, `WeekDays`, `BusinessHours`
+- `types.ts` - Core types: `CalendarEvent`, `WeekDays`, `BusinessHours`
 - `grid-cell.tsx` - Generic grid cell
 - `day-number.tsx` - Day number display
 - `droppable-cell.tsx` - Drop zone for DnD
 - `all-events-dialog.tsx` - Modal for all events
 - `current-time-indicator.tsx` - Live time indicator
-- `resource-cell.tsx` - Resource calendar cell
+- `resource-cell.tsx` - Resource header/label cell (used by the shared horizontal grid)
 
 **`components/ui/`** - Shadcn Design System:
 `badge`, `button`, `card`, `checkbox`, `dialog`, `input`, `label`, `date-picker`, `time-picker`, `calendar`, `popover`, `scroll-area`, `select`, `tabs`
@@ -62,11 +62,11 @@ Shared UI building blocks used across all features:
 - `dnd-utils.ts` - Drag-drop utilities
 - `event-drag-overlay.tsx` - Drag visual feedback
 
-**`components/event-form/`** - Event CRUD UI:
+**`features/calendar/components/event-form/`** - Event CRUD UI:
 - `event-form.tsx` - Main form component
 - `event-form-dialog.tsx` - Form in dialog wrapper
 
-**`components/header/`** - Calendar header:
+**`features/calendar/components/header/`** - Calendar header:
 - `base-header.tsx` - Main header with title and controls
 - `title-content.tsx` - Date display
 - `view-controls.tsx` - View switcher buttons
@@ -128,28 +128,29 @@ RFC 5545 compliant recurring events:
 
 **Tests** (4 files): `recurrence-handler.test.ts`, `calendar-integration.test.ts`, `crud-operations.test.ts`, `recurrence-timezone.test.ts`
 
-##### Resource Calendar Feature (`features/resource-calendar/`)
+##### Resource axis (in `features/calendar/`)
 
-Multi-resource calendar views:
+Resources are a configuration of the one calendar, not a separate feature:
 
-- `ilamy-resource-calendar/ilamy-resource-calendar.tsx` - Main resource calendar
-- `day-view/`, `week-view/`, `month-view/` - Resource-specific view variants
-- `contexts/resource-calendar-context/` - ResourceCalendarProvider
+- `components/ilamy-resource-calendar.tsx` - DEPRECATED alias of `IlamyCalendar`
+- `components/views/` - built-in views compose the resource arrangements (`supportsResources`)
+- `contexts/calendar-context/` - the ONE provider carries `resources`/`orientation`/`weekViewGranularity`
 
 #### Hooks (`src/hooks/`)
 
-- `use-calendar-engine.ts` - Main calendar engine
-- `use-smart-calendar-context.ts` - Type-safe context access
 - `use-autocomplete-timepicker.ts` - Time picker autocomplete
+
+Note: `use-calendar-engine.ts` (engine composer over the slice hooks), `use-smart-calendar-context.ts` (type-safe context access), and `use-effective-business-hours.ts` live in `src/features/calendar/hooks/`.
 
 #### Library (`src/lib/`)
 
-- `configs/dayjs-config.ts` - Pre-configured dayjs (always import from here)
+- Pre-configured dayjs lives in `@ilamy/utils/dayjs` (always import from there)
 - `translations/default.ts` - Default English translations (94 keys)
 - `translations/types.ts` - Translation types
 - `utils/date-utils.ts` - Date manipulation
-- `utils/position-day-events.ts` - Day view event positioning
-- `utils/position-week-events.ts` - Week view event positioning
+- `layout/geometry.ts` - The shared composed PositionedEvent contract
+- `layout/vertical.ts` - Day/week time-grid event layout (percent)
+- `layout/horizontal.ts` - Month/all-day row packing (row index; renderer derives pixels)
 - `utils/export-ical.ts` - iCalendar export
 - `utils/generator.ts` - Event data generator
 - `constants.ts` - Global constants
@@ -157,7 +158,7 @@ Multi-resource calendar views:
 
 ### Public API Exports (`src/index.ts`)
 
-**Components**: `IlamyCalendar`, `IlamyResourceCalendar`
+**Components**: `IlamyCalendar` (+ `IlamyResourceCalendar` deprecated alias)
 **Hooks**: `useIlamyCalendarContext()`
 **Recurrence**: `generateRecurringEvents()`, `isRecurringEvent()`, `RRule`
 **Types**: `CalendarEvent`, `CalendarView`, `TimeFormat`, `BusinessHours`, `WeekDays`, `RRuleOptions`, `Resource`, `Translations`, `TranslatorFunction`, `CellClickInfo`, `IlamyCalendarProps`
@@ -205,4 +206,4 @@ After loading all context, confirm to the user:
 2. A brief summary of any recent log entries
 3. That you're ready to work and will update the logs after making changes
 
-Remember: Always use `bun` (never npm/node). Always write tests. Never commit without asking. Always use ISO date strings. Always import dayjs from `@/lib/dayjs-config`.
+Remember: Always use `bun` (never npm/node). Always write tests. Never commit without asking. Always use ISO date strings. Always import dayjs from `@ilamy/utils/dayjs`.

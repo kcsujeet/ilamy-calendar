@@ -1,5 +1,5 @@
-import type { BusinessHours } from '@/components/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { BusinessHours } from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 
 /**

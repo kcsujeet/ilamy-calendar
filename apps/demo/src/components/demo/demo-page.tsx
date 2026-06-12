@@ -217,7 +217,7 @@ export function DemoPage() {
 	const [scrollTime, setScrollTime] = useState<string | undefined>(undefined)
 
 	// Resource picker — lets the user swap the resources prop at runtime
-	// to verify that IlamyResourceCalendar reacts to prop changes (issue #153).
+	// to verify that the resource calendar reacts to prop changes (issue #153).
 	const [selectedResourceIds, setSelectedResourceIds] = useState<
 		Set<string | number>
 	>(new Set(demoResources.map((r) => r.id)))

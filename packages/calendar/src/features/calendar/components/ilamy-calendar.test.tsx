@@ -1,10 +1,18 @@
-import { beforeEach, describe, expect, it, mock, test } from 'bun:test'
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	mock,
+	spyOn,
+	test,
+} from 'bun:test'
+import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createContext, useContext } from 'react'
-import type { EventFormProps } from '@/components/event-form/event-form'
-import type { CalendarEvent } from '@/components/types'
-import type { IlamyPlugin } from '@/features/plugins/lib/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { IlamyCalendar } from './ilamy-calendar'
 
 const CustomEventForm = (props: EventFormProps) => {
@@ -908,4 +916,65 @@ test('renders a plugin view and exposes the plugin provider context to it', () =
 	const el = screen.getByTestId('fake-view')
 	expect(el).toBeDefined()
 	expect(el.textContent).toBe('from-plugin')
+})
+
+test('renders a spec-driven plugin view that declares no component', () => {
+	const specOnlyPlugin: IlamyPlugin = {
+		name: 'spec-only',
+		views: [
+			{
+				name: 'three-day',
+				label: 'Three day',
+				layout: 'vertical',
+				navigationStep: { amount: 3, unit: 'day' },
+				range: (date) => ({
+					start: date.startOf('day'),
+					end: date.add(2, 'day').endOf('day'),
+				}),
+				columns: (date) => [
+					{
+						id: 'three-day-col',
+						day: date,
+						days: [date.startOf('day').hour(9), date.startOf('day').hour(10)],
+						gridType: 'hour',
+					},
+				],
+			},
+		],
+	}
+
+	render(<IlamyCalendar initialView="three-day" plugins={[specOnlyPlugin]} />)
+
+	expect(screen.getByTestId('vertical-col-three-day-col')).toBeDefined()
+})
+
+describe('orientation without resources', () => {
+	let warnSpy: ReturnType<typeof spyOn>
+
+	beforeEach(() => {
+		warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+	})
+
+	afterEach(() => {
+		warnSpy.mockRestore()
+	})
+
+	const allWarnArgs = () => warnSpy.mock.calls.flat().join(' ')
+
+	it('warns in dev when orientation is passed without resources', () => {
+		render(<IlamyCalendar orientation="vertical" />)
+		expect(allWarnArgs()).toContain(
+			'`orientation` was provided without `resources`'
+		)
+	})
+
+	it('does not warn when resources are present', () => {
+		render(
+			<IlamyCalendar
+				orientation="vertical"
+				resources={[{ id: 'r1', title: 'Room 1' }]}
+			/>
+		)
+		expect(allWarnArgs()).not.toContain('`orientation`')
+	})
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import type { DragEndEvent } from '@dnd-kit/core'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs from '@ilamy/utils/dayjs'
 import { getUpdatedEvent } from './dnd-utils'
 
 let cellType = 'day-cell'

@@ -1,11 +1,9 @@
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useMemo } from 'react'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { filterEventsByResource } from '@/lib/utils/event-utils'
-import {
-	getPositionedDayEvents,
-	type PositionedEvent,
-} from '@/lib/utils/position-day-events'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { filterEventsForResource } from '@/lib/events/pipeline'
+import type { VerticalPositionedEvent } from '@/lib/layout/geometry'
+import { layoutVertical } from '@/lib/layout/vertical'
 
 interface UseProcessedDayEventsProps {
 	days: Dayjs[] // The specific day this column represents
@@ -18,8 +16,7 @@ export const useProcessedDayEvents = ({
 	gridType,
 	resourceId,
 }: UseProcessedDayEventsProps) => {
-	const { getEventsForDateRange, getEventsForResource } =
-		useSmartCalendarContext()
+	const { getEventsForDateRange } = useSmartCalendarContext()
 	const first = days.at(0)
 	const last = days.at(-1)
 	const dayStart = first?.startOf('day')
@@ -30,25 +27,16 @@ export const useProcessedDayEvents = ({
 
 		let dayEvents = getEventsForDateRange(dayStart, dayEnd)
 		if (resourceId) {
-			dayEvents = filterEventsByResource(
-				dayEvents,
-				getEventsForResource(resourceId)
-			)
+			dayEvents = filterEventsForResource(dayEvents, resourceId)
 		}
 
 		// Vertical grids (Day/Week/Resource Vertical) never render all-day events
 		// as those are handled by the all-day-row or are not appropriate for the time grid.
 		return dayEvents.filter((e) => !e.allDay)
-	}, [
-		dayStart,
-		dayEnd,
-		getEventsForDateRange,
-		resourceId,
-		getEventsForResource,
-	])
+	}, [dayStart, dayEnd, getEventsForDateRange, resourceId])
 
-	const todayEvents = useMemo<PositionedEvent[]>(() => {
-		return getPositionedDayEvents({
+	const todayEvents = useMemo<VerticalPositionedEvent[]>(() => {
+		return layoutVertical({
 			days,
 			events,
 			gridType,

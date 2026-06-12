@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { HorizontalGrid } from './horizontal-grid'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -22,7 +22,7 @@ const mockRows = [
 
 const renderGrid = () => {
 	return render(
-		<ResourceCalendarProvider
+		<CalendarProvider
 			dayMaxEvents={3}
 			events={[]}
 			initialDate={initialDate}
@@ -31,7 +31,7 @@ const renderGrid = () => {
 			<HorizontalGrid rows={mockRows}>
 				<div>Header</div>
 			</HorizontalGrid>
-		</ResourceCalendarProvider>
+		</CalendarProvider>
 	)
 }
 

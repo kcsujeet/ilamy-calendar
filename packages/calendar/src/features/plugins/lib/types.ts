@@ -7,16 +7,9 @@ import type {
 import type { ComponentType, ReactNode } from 'react'
 
 // The plugin SDK contract (IlamyPlugin, PluginMutationArgs, PluginDateRange,
-// PluginView) now lives in the shared `@ilamy/types` package so plugins depend
-// on a lightweight contract, not the whole calendar. Re-exported here so the
-// existing `@/features/plugins/lib/types` call sites across core stay
-// unchanged. `PluginRuntime` is the core's internal aggregator and stays here.
-export type {
-	IlamyPlugin,
-	PluginDateRange,
-	PluginMutationArgs,
-	PluginView,
-} from '@ilamy/types'
+// PluginView, ...) lives in the shared `@ilamy/types` package so plugins
+// depend on a lightweight contract, not the whole calendar. `PluginRuntime`
+// is the core's internal aggregator and stays here.
 
 export interface PluginRuntime {
 	transformEvents: (

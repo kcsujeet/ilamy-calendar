@@ -1,7 +1,6 @@
+import { cn } from '@ilamy/ui/lib/utils'
 import { memo } from 'react'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-
-import { cn } from '@/lib/utils'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 interface VerticalGridHeaderContainerProps {
 	children?: React.ReactNode
@@ -29,7 +28,7 @@ const NoMemoVerticalGridHeaderContainer: React.FC<
 			)}
 		>
 			<div
-				className={cn('h-12 border-b', TotalWidthClass, classes?.header)}
+				className={cn('min-h-12 border-b', TotalWidthClass, classes?.header)}
 				data-testid="vertical-grid-header"
 			>
 				{children}

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import type { BusinessHours, WeekDays } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import type { BusinessHours, WeekDays } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { getViewHours } from './view-hours'
 
 describe('getViewHours', () => {

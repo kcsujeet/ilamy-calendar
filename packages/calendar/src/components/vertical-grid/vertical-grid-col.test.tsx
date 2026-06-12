@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { VerticalGridCol } from './vertical-grid-col'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -13,16 +13,16 @@ const renderVerticalGridCol = (props = {}) => {
 		day: initialDate,
 		days: mockDays,
 	}
-	// Use ResourceCalendarProvider to ensure getEventsForResource is available
+	// Use CalendarProvider to ensure getEventsForResource is available
 	return render(
-		<ResourceCalendarProvider
+		<CalendarProvider
 			dayMaxEvents={3}
 			events={[]}
 			initialDate={initialDate}
 			resources={[]}
 		>
 			<VerticalGridCol {...defaultProps} {...props} />
-		</ResourceCalendarProvider>
+		</CalendarProvider>
 	)
 }
 
@@ -63,9 +63,9 @@ describe('VerticalGridCol', () => {
 		).toBeInTheDocument()
 	})
 
-	test('includes resourceId in cell IDs if provided', () => {
+	test('includes the resource id in cell IDs when a resource is provided', () => {
 		const dateStr = initialDate.format('YYYY-MM-DD')
-		renderVerticalGridCol({ resourceId: 'res-1' })
+		renderVerticalGridCol({ resource: { id: 'res-1', title: 'Resource 1' } })
 
 		expect(
 			screen.getByTestId(`vertical-cell-${dateStr}-09-00-resource-res-1`)

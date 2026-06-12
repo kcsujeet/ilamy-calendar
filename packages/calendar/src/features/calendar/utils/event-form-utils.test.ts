@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { BusinessHours } from '@/components/types'
+import type { BusinessHours } from '@ilamy/types'
 import {
 	buildDateTime,
 	buildEndDateTime,

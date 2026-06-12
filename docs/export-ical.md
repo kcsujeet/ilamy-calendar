@@ -46,7 +46,7 @@ When using a custom `headerComponent`, this prop has no effect — you control e
 ### Core Files
 
 - `/src/lib/export-ical.ts` - Main export functionality
-- `/src/components/header/base-header.tsx` - UI integration
+- `/src/features/calendar/components/header/base-header.tsx` - UI integration
 - `/src/lib/export-ical.test.ts` - Comprehensive tests
 
 ### Key Functions

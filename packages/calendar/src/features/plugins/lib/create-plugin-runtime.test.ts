@@ -1,10 +1,9 @@
 import { describe, expect, test } from 'bun:test'
+import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import type { ReactNode } from 'react'
 import { createElement } from 'react'
-import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
 import { createPluginRuntime } from './create-plugin-runtime'
-import type { IlamyPlugin } from './types'
 
 // The runtime is generic: it passes slotName through untouched and never
 // references the host's slot catalog. Arbitrary names prove that.

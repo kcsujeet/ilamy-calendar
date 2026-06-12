@@ -1,35 +1,30 @@
+import type {
+	HorizontalCellSpec,
+	HorizontalRowSpec,
+	Resource,
+} from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { memo, useMemo } from 'react'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWeekEvents'
-import type { Resource } from '@/features/resource-calendar/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
 import { getDayKey } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
 import { ResourceCell } from '../resource-cell'
 import { HorizontalGridEventsLayer } from './horizontal-grid-events-layer'
 
-interface HorizontalGridColumn {
-	id: string
-	day?: Dayjs
-	days?: Dayjs[]
-	gridType: 'day' | 'hour'
-	className?: string
+interface HorizontalGridColumn extends HorizontalCellSpec {
 	renderCell?: (row: HorizontalGridRowProps) => React.ReactNode
 }
 
-export interface HorizontalGridRowProps {
-	id: string | number
-	resource?: Resource
+export interface HorizontalGridRowProps extends HorizontalRowSpec {
 	gridType?: 'day' | 'hour'
 	variant?: 'regular' | 'resource'
 	dayNumberHeight?: number
-	className?: string
 	columns?: HorizontalGridColumn[]
 	allDay?: boolean
-	showDayNumber?: boolean
 	isLastRow?: boolean
 }
 
@@ -63,7 +58,6 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 		days: flatDays,
 		gridType,
 		resourceId: resource?.id,
-		dayNumberHeight,
 		allDay,
 	})
 
@@ -131,6 +125,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 					<div className="absolute inset-0 z-10 pointer-events-none">
 						<HorizontalGridEventsLayer
 							data-testid={keys.container.eventsLayer('horizontal', id)}
+							dayNumberHeight={dayNumberHeight}
 							days={flatDays}
 							gridType={gridType}
 							positionedEvents={positionedEvents}
@@ -177,7 +172,6 @@ const GroupedColumn = memo(
 			days,
 			gridType,
 			resourceId,
-			dayNumberHeight,
 			allDay,
 		})
 
@@ -206,6 +200,7 @@ const GroupedColumn = memo(
 				<div className="absolute inset-0 z-10 pointer-events-none">
 					<HorizontalGridEventsLayer
 						data-testid={keys.container.eventsLayer('horizontal', id)}
+						dayNumberHeight={dayNumberHeight}
 						days={days}
 						gridType={gridType}
 						positionedEvents={positionedEvents}

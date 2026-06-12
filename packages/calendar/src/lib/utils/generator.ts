@@ -1,5 +1,5 @@
-import type { CalendarEvent } from '@/components'
-import dayjs from '@/lib/configs/dayjs-config'
+import type { CalendarEvent } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 
 export function generateMockEvents({ count = 5 } = {}) {
 	const events: CalendarEvent[] = []

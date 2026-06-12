@@ -1,11 +1,12 @@
+import type { Resource } from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo } from 'react'
 import { CurrentTimeIndicator } from '@/components/current-time-indicator'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
-import type { Resource } from '@/features/resource-calendar/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
+import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { keys } from '@/lib/utils/keys'
-import type { PositionedEvent } from '@/lib/utils/position-week-events'
 
 export interface HorizontalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
@@ -13,7 +14,9 @@ export interface HorizontalGridEventsLayerProps {
 	resourceId?: string | number
 	resource?: Resource
 	'data-testid'?: string
-	positionedEvents: PositionedEvent[]
+	positionedEvents: HorizontalPositionedEvent[]
+	/** Pixel offset reserved above the bars (the day-number strip). */
+	dayNumberHeight?: number
 }
 
 const NoMemoHorizontalGridEventsLayer: React.FC<
@@ -25,8 +28,9 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	resource,
 	'data-testid': dataTestId,
 	positionedEvents,
+	dayNumberHeight = DAY_NUMBER_HEIGHT,
 }) => {
-	const { eventHeight } = useSmartCalendarContext()
+	const { eventHeight, eventSpacing } = useSmartCalendarContext()
 	const weekStart = days.at(0)?.startOf('day')
 
 	// Now-line is gated to hour-resolution horizontal grids (resource day horizontal,
@@ -50,21 +54,25 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 					resource={resource}
 				/>
 			)}
-			{positionedEvents.map((event) => {
-				const eventKey = `${event.id}-${event.position}-${weekStart?.toISOString()}-${resourceId ?? 'no-resource'}`
+			{positionedEvents.map((positioned) => {
+				const { event, row } = positioned
+				// Layout returns the abstract row; the renderer owns the CSS units.
+				const top =
+					dayNumberHeight + eventSpacing + row * (eventHeight + eventSpacing)
+				const eventKey = `${event.id}-${row}-${weekStart?.toISOString()}-${resourceId ?? 'no-resource'}`
 
 				return (
 					<div
 						className="absolute z-10 pointer-events-auto overflow-clip"
-						data-left={event.left}
+						data-left={positioned.left}
 						data-testid={keys.container.horizontal.event(event.id)}
-						data-top={event.top}
-						data-width={event.width}
+						data-top={top}
+						data-width={positioned.width}
 						key={keys.listKey(eventKey, 'wrapper')}
 						style={{
-							left: `calc(${event.left}% + var(--spacing) * 0.25)`,
-							width: `calc(${event.width}% - var(--spacing) * 1)`,
-							top: `${event.top}px`,
+							left: `calc(${positioned.left}% + var(--spacing) * 0.25)`,
+							width: `calc(${positioned.width}% - var(--spacing) * 1)`,
+							top: `${top}px`,
 							height: `${eventHeight}px`,
 						}}
 					>
@@ -72,6 +80,8 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 							className="h-full w-full shadow"
 							elementId={eventKey}
 							event={event}
+							isTruncatedEnd={positioned.isTruncatedEnd}
+							isTruncatedStart={positioned.isTruncatedStart}
 						/>
 					</div>
 				)

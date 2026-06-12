@@ -1,8 +1,8 @@
 import { Button } from '@ilamy/ui/components/button'
+import { cn } from '@ilamy/ui/lib/utils'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useState } from 'react'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
 import { getMonthWeeks, getWeekDays, isToday } from '@/lib/utils/date-utils'
 
 interface CalendarProps {

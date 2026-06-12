@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'bun:test'
-import { act, renderHook } from '@testing-library/react'
-import { createElement, type ReactNode } from 'react'
-import type { CalendarEvent } from '@/components/types'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import type {
+	CalendarEvent,
 	IlamyPlugin,
 	PluginMutationArgs,
-} from '@/features/plugins/lib/types'
-import dayjs from '@/lib/configs/dayjs-config'
+} from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
+import { act, renderHook } from '@testing-library/react'
+import { createElement, type ReactNode } from 'react'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useScopedEventMutation } from './use-scoped-event-mutation'
 
 const managedEvent: CalendarEvent = {

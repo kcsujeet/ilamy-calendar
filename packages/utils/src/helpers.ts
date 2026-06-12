@@ -17,18 +17,6 @@ export function safeDate(
 	return parsedDate.isValid() ? parsedDate : undefined
 }
 
-/** Returns a shallow copy of `obj` with the given keys removed. */
-export const omitKeys = <T extends object, K extends keyof T>(
-	obj: T,
-	keys: K[]
-): Omit<T, K> => {
-	const result = { ...obj }
-	for (const key of keys) {
-		delete result[key]
-	}
-	return result
-}
-
 /**
  * Composes a stable string from parts, for React `key=` props and element ids
  * (e.g. `listKey('day', 3)` -> `'day-3'`).

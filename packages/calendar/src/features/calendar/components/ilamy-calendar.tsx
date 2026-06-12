@@ -1,47 +1,35 @@
+import type { CalendarEvent } from '@ilamy/types'
 import type React from 'react'
+import { useEffect } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
-import { EventFormDialog } from '@/components/event-form/event-form-dialog'
-import { Header } from '@/components/header'
-import type { CalendarEvent } from '@/components/types'
-import { DayView } from '@/features/calendar/components/day-view/day-view'
-import { MonthView } from '@/features/calendar/components/month-view/month-view'
-import { WeekView } from '@/features/calendar/components/week-view/week-view'
-import { YearView } from '@/features/calendar/components/year-view/year-view'
+import { EventFormDialog } from '@/features/calendar/components/event-form/event-form-dialog'
+import { Header } from '@/features/calendar/components/header/base-header'
+import { ViewRenderer } from '@/features/calendar/components/views/view-renderer'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 // oxlint-disable-next-line no-duplicates
-import '@/lib/configs/dayjs-config'
+import '@ilamy/utils/dayjs'
+import { safeDate } from '@ilamy/utils/helpers'
 import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
 import {
-	DAY_MAX_EVENTS_DEFAULT,
 	EVENT_BAR_HEIGHT,
 	GAP_BETWEEN_ELEMENTS,
 	WEEK_DAYS_NUMBER_MAP,
 } from '@/lib/constants'
-import { normalizeEvents, safeDate, toHiddenDaysSet } from '@/lib/utils'
+import { normalizeEvents, toHiddenDaysSet } from '@/lib/utils/normalize'
 
 const CalendarContent: React.FC = () => {
-	const { view, dayMaxEvents, getViews } = useSmartCalendarContext((c) => ({
+	const { view, getViews } = useSmartCalendarContext((c) => ({
 		view: c.view,
-		dayMaxEvents: c.dayMaxEvents,
 		getViews: c.getViews,
 	}))
 
-	const builtInViews: Record<string, React.ReactNode> = {
-		month: <MonthView dayMaxEvents={dayMaxEvents} key="month" />,
-		week: <WeekView key="week" />,
-		day: <DayView key="day" />,
-		year: <YearView key="year" />,
-	}
-	const pluginView = getViews().find((v) => v.name === view)
-	const PluginViewComponent = pluginView?.component
-	const activeView =
-		builtInViews[view] ??
-		(PluginViewComponent ? <PluginViewComponent key={view} /> : null)
+	const spec = getViews().find((v) => v.name === view)
+	const activeView = spec ? <ViewRenderer key={view} view={spec} /> : null
 
 	return (
 		<div className="flex flex-col w-full h-full" data-testid="ilamy-calendar">
@@ -68,7 +56,6 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	firstDayOfWeek = 'sunday',
 	initialView = 'month',
 	initialDate,
-	dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
 	eventSpacing = GAP_BETWEEN_ELEMENTS,
 	eventHeight = EVENT_BAR_HEIGHT,
 	stickyViewHeader = true,
@@ -76,11 +63,27 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	timeFormat = '12-hour',
 	hideNonBusinessHours = false,
 	hiddenDays,
+	resources,
+	orientation,
 	...props
 }) => {
+	const hasResources = Boolean(resources?.length)
+	useEffect(() => {
+		// Guarded `typeof process` check: the published bundle ships this line
+		// as-is (no build-time env replacement), so bundler-less ESM consumers
+		// must not crash on a bare `process` reference.
+		const isDevBuild =
+			typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
+		if (isDevBuild && orientation && !hasResources) {
+			// biome-ignore lint/suspicious/noConsole: deliberate DX guard (master plan, view contract)
+			console.warn(
+				'[@ilamy/calendar] `orientation` was provided without `resources` — it only applies when the calendar has resources, so it is ignored.'
+			)
+		}
+	}, [orientation, hasResources])
+
 	return (
 		<CalendarProvider
-			dayMaxEvents={dayMaxEvents}
 			eventHeight={eventHeight}
 			eventSpacing={eventSpacing}
 			events={normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events)}
@@ -89,6 +92,8 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			hideNonBusinessHours={hideNonBusinessHours}
 			initialDate={safeDate(initialDate)}
 			initialView={initialView}
+			orientation={orientation}
+			resources={resources}
 			stickyViewHeader={stickyViewHeader}
 			timeFormat={timeFormat}
 			viewHeaderClassName={viewHeaderClassName}

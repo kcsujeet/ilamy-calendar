@@ -1,8 +1,7 @@
 import { afterEach, expect } from 'bun:test'
+import dayjs from '@ilamy/utils/dayjs'
 import * as matchers from '@testing-library/jest-dom/matchers'
 import { cleanup } from '@testing-library/react'
-
-import dayjs from '@/lib/configs/dayjs-config'
 
 expect.extend(matchers)
 

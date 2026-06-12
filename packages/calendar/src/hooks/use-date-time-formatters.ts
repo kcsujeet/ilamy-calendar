@@ -1,5 +1,5 @@
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@ilamy/utils/dayjs'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 export function useDateTimeFormatters() {
 	const { currentLocale, timezone } = useSmartCalendarContext((ctx) => ({

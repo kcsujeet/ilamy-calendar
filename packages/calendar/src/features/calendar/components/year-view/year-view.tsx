@@ -1,8 +1,9 @@
 import { ScrollArea, ScrollBar } from '@ilamy/ui/components/scroll-area'
+import { cn } from '@ilamy/ui/lib/utils'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { AnimatedSection } from '@/components/animations/animated-section'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
@@ -29,7 +30,6 @@ export const YearView = () => {
 	const {
 		currentDate,
 		selectDate,
-		events,
 		setView,
 		getEventsForDateRange,
 		t,
@@ -48,10 +48,9 @@ export const YearView = () => {
 				.year(currentYear)
 				.month(monthIndex)
 				.startOf('month')
-			const eventsInMonth = events.filter(
-				(event) =>
-					event.start.year() === currentYear &&
-					event.start.month() === monthIndex
+			const eventsInMonth = getEventsForDateRange(
+				monthDate,
+				monthDate.endOf('month')
 			)
 
 			return {
@@ -145,7 +144,7 @@ export const YearView = () => {
 			>
 				{monthsData.map((month, monthIndex) => {
 					const daysInMonth = generateDaysForMonth(month.date)
-					const animationDelay = monthIndex * 0.05
+					const animationDelay = monthIndex * HEADER_STAGGER_DELAY
 
 					return (
 						<div

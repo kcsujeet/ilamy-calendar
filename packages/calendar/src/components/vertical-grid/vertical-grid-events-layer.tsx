@@ -1,10 +1,10 @@
+import type { Resource } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo } from 'react'
 import { CurrentTimeIndicator } from '@/components/current-time-indicator'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
-import type { Resource } from '@/features/resource-calendar/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
 
 interface VerticalGridEventsLayerProps {
@@ -42,7 +42,8 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 					resource={resource}
 				/>
 			)}
-			{todayEvents.map((event, index) => {
+			{todayEvents.map((positioned, index) => {
+				const { event } = positioned
 				const eventKey = `event-${event.id}-${index}-${days.at(0)?.toISOString()}-${resourceId ?? 'no-resource'}`
 				const isShortEvent = event.end.diff(event.start, 'minute') <= 15
 
@@ -51,10 +52,10 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 						className="absolute"
 						key={keys.listKey(eventKey, 'wrapper')}
 						style={{
-							left: `${event.left}%`,
-							width: `calc(${event.width}% - var(--spacing) * 2)`,
-							top: `${event.top}%`,
-							height: `${event.height}%`,
+							left: `${positioned.left}%`,
+							width: `calc(${positioned.width}% - var(--spacing) * 2)`,
+							top: `${positioned.top}%`,
+							height: `${positioned.height}%`,
 						}}
 					>
 						<DraggableEvent

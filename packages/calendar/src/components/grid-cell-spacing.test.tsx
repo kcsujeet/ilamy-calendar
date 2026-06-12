@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
 import { EVENT_BAR_HEIGHT } from '@/lib/constants'
 import { GridCell } from './grid-cell'
 

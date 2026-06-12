@@ -1,4 +1,4 @@
-import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { getDayKey, isToday } from './date-utils'
 
 type Id = string | number
@@ -70,6 +70,9 @@ export const keys = {
 	header: {
 		resource: {
 			weekDay: 'resource-week-day-header',
+			// The vertical-arrangement resource header (day AND month views).
+			columnsHeader: 'resource-columns-header',
+			monthDay: (day: Dayjs) => `resource-month-header-${day.toISOString()}`,
 			timeLabel: (view: 'week' | 'day', hour: number | string) =>
 				`resource-${view}-time-label-${padHourIfNumber(hour)}`,
 		},

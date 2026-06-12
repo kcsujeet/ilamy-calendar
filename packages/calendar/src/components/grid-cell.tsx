@@ -1,12 +1,12 @@
+import type { CalendarEvent } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import React, { memo, useMemo } from 'react'
 import { DayNumber } from '@/components/day-number'
-import type { CalendarEvent } from '@/components/types'
+import { useEffectiveBusinessHours } from '@/features/calendar/hooks/use-effective-business-hours'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
-import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
-import { filterEventsByResource } from '@/lib/utils/event-utils'
+import { filterEventsForResource } from '@/lib/events/pipeline'
 import { keys } from '@/lib/utils/keys'
 import type { SelectedDayEvents } from './all-events-dialog'
 import { AllEventDialog } from './all-events-dialog'
@@ -52,8 +52,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		getEventsForDateRange,
 		currentDate,
 		t,
-		getEventsForResource,
-		currentLocale,
 		eventSpacing,
 		eventHeight,
 	} = useSmartCalendarContext()
@@ -79,10 +77,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		}
 
 		if (resourceId) {
-			return filterEventsByResource(
-				todayEvents,
-				getEventsForResource(resourceId) ?? []
-			)
+			return filterEventsForResource(todayEvents, resourceId)
 		}
 
 		return todayEvents
@@ -91,7 +86,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		day,
 		resourceId,
 		getEventsForDateRange,
-		getEventsForResource,
 		gridType,
 		shouldRenderEvents,
 		allDay,
@@ -145,7 +139,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 					data-testid="grid-cell-content"
 					style={{ gap: `${eventSpacing}px` }}
 				>
-					{showDayNumber && <DayNumber date={day} locale={currentLocale} />}
+					{showDayNumber && <DayNumber date={day} />}
 
 					{shouldRenderEvents && (
 						<>

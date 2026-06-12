@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
+import dayjs from '@ilamy/utils/dayjs'
 import { render, screen } from '@testing-library/react'
-import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { AllDayRow } from './all-day-row'
 
 const mockDays = [
@@ -11,14 +11,14 @@ const mockDays = [
 
 const renderAllDayRow = (props = {}) => {
 	return render(
-		<ResourceCalendarProvider
+		<CalendarProvider
 			dayMaxEvents={4}
 			events={[]}
 			initialDate={mockDays[0]}
 			resources={[]}
 		>
 			<AllDayRow days={mockDays} {...props} />
-		</ResourceCalendarProvider>
+		</CalendarProvider>
 	)
 }
 

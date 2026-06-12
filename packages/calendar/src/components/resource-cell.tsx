@@ -1,6 +1,6 @@
-import type { Resource } from '@/features/resource-calendar/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import { cn } from '@/lib/utils'
+import type { Resource } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 interface ResourceCellProps {
 	resource: Resource

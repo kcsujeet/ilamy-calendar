@@ -8,7 +8,7 @@ type DemoResourcePickerProps = {
 }
 
 // Lets the user swap the resources prop at runtime to verify that
-// IlamyResourceCalendar reacts to prop changes (issue #153).
+// the resource calendar reacts to prop changes (issue #153).
 export function DemoResourcePicker({
 	resources,
 	selectedResourceIds,

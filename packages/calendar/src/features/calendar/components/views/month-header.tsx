@@ -1,0 +1,45 @@
+import { cn } from '@ilamy/ui/lib/utils'
+import type React from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { HEADER_STAGGER_DELAY } from '@/lib/constants'
+import { getWeekDays } from '@/lib/utils/date-utils'
+import { keys } from '@/lib/utils/keys'
+
+interface MonthHeaderProps {
+	className?: string
+}
+
+export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
+	const { firstDayOfWeek, stickyViewHeader, viewHeaderClassName, currentDate } =
+		useSmartCalendarContext()
+
+	// Reorder week days based on firstDayOfWeek
+	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
+
+	return (
+		<div
+			className={cn(
+				'flex w-full',
+				stickyViewHeader && 'sticky top-0 z-20',
+				viewHeaderClassName,
+				className
+			)}
+			data-testid="month-header"
+		>
+			{weekDays.map((weekDay, index) => (
+				<AnimatedSection
+					className="py-2 text-center font-medium border-r last:border-r-0 border-b flex-1 min-w-0"
+					data-testid={keys.header.weekday('month', weekDay.format('ddd'))}
+					delay={index * HEADER_STAGGER_DELAY}
+					key={weekDay.toISOString()}
+					transitionKey={weekDay.toISOString()}
+				>
+					<span className="text-sm capitalize truncate w-full block">
+						{weekDay.format('ddd')}
+					</span>
+				</AnimatedSection>
+			))}
+		</div>
+	)
+}

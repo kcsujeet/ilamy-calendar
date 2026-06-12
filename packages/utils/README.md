@@ -19,11 +19,10 @@ import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 ### `@ilamy/utils/helpers`
 
 ```ts
-import { safeDate, omitKeys, listKey } from '@ilamy/utils/helpers'
+import { safeDate, listKey } from '@ilamy/utils/helpers'
 ```
 
 - `safeDate(date)` — coerce a date-ish value to `Dayjs | undefined`.
-- `omitKeys(obj, keys)` — shallow copy without the given keys.
 - `listKey(...parts)` — compose a stable string key/id (`listKey('day', 3)` → `'day-3'`).
 
 ## License

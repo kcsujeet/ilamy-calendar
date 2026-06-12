@@ -4,13 +4,13 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@ilamy/ui/components/popover'
+import { cn } from '@ilamy/ui/lib/utils'
+import dayjs from '@ilamy/utils/dayjs'
 import { PopoverClose } from '@radix-ui/react-popover'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Calendar } from '@/components/ui/calendar'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 interface DatePickerProps {
 	date: Date | undefined

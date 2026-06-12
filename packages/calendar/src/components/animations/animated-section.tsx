@@ -1,3 +1,4 @@
+import { cn } from '@ilamy/ui/lib/utils'
 import {
 	AnimatePresence,
 	type HTMLMotionProps,
@@ -5,7 +6,6 @@ import {
 	type Variants,
 } from 'motion/react'
 import type * as React from 'react'
-import { cn } from '@/lib/utils'
 
 interface AnimatedSectionProps
 	extends Omit<HTMLMotionProps<'div'>, 'children' | 'layout' | 'layoutId'> {

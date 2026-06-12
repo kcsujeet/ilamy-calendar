@@ -28,7 +28,7 @@ HorizontalGridRow
   ├── useProcessedWeekEvents({ days, gridType, resourceId, ... })
   │     ├── events = getEventsForDateRange(weekStart, weekEnd)  ← 1 filter pass
   │     ├── dayEventsMap = group events by day                  ← 1 small pass
-  │     └── positionedEvents = getPositionedEvents(events)      ← 1 positioning pass
+  │     └── positionedEvents = layoutHorizontal(events)         ← 1 positioning pass
   │
   ├── GridCell day="Mon" precomputedEvents={dayEventsMap.get("2026-04-06")}
   ├── GridCell day="Tue" precomputedEvents={dayEventsMap.get("2026-04-07")}

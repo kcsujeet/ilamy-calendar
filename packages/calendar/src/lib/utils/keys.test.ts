@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs from '@ilamy/utils/dayjs'
 import { keys } from './keys'
 
 const monday = dayjs('2025-10-13T00:00:00.000Z')

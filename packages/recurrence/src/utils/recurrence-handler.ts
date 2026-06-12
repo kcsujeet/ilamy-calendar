@@ -1,6 +1,6 @@
 import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
-import { omitKeys, safeDate } from '@ilamy/utils/helpers'
+import { safeDate } from '@ilamy/utils/helpers'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from '../types'
 
@@ -293,14 +293,13 @@ export const updateRecurringEvent = ({
 			// Create standalone modified event with recurrenceId
 			const modifiedEventId = `${targetEvent.id}_modified_${Date.now()}`
 			const modifiedEvent: CalendarEvent = {
-				// @ts-expect-error TODO: fix the types
-				...omitKeys(targetEvent, ['width', 'height', 'top', 'left', 'right']),
+				...targetEvent,
 				...updates,
 				id: modifiedEventId,
 				recurrenceId: targetEventStartISO, // This marks it as a modified instance
 				uid: getEventParentUID(baseEvent), // Keep same UID as base event (iCalendar standard)
 				rrule: undefined, // Standalone events don't have RRULE
-			} as CalendarEvent
+			}
 			updatedEvents.push(modifiedEvent)
 			break
 		}

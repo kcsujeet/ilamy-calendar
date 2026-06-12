@@ -1,9 +1,9 @@
 import { DragOverlay } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
+import type { CalendarEvent } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { useImperativeHandle, useState } from 'react'
-import { cn } from '@/lib/utils'
-import type { CalendarEvent } from '../types'
 
 interface EventDragOverlayProps {
 	ref: React.Ref<{ setActiveEvent: (event: CalendarEvent) => void }>

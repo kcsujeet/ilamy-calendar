@@ -1,14 +1,14 @@
+import type { CalendarEvent, Resource } from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { createContext } from 'react'
-import type { EventFormProps } from '@/components/event-form/event-form'
-import type { CalendarEvent } from '@/components/types'
+import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
+import type { CalendarEngineReturn } from '@/features/calendar/hooks/use-calendar-engine'
 import type {
 	CalendarClassesOverride,
 	CellInfo,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
-import type { CalendarEngineReturn } from '@/hooks/use-calendar-engine'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { TimeFormat } from '@/types'
 
 /**
@@ -22,6 +22,7 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellInfo) => void
 	isCellDisabled?: (info: CellInfo) => boolean
+	locale?: string
 	timezone?: string
 	disableCellClick?: boolean
 	disableEventClick?: boolean
@@ -44,6 +45,8 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	hiddenDays?: Set<number>
 	slotDuration: SlotDuration
 	scrollTime?: string
+	/** Custom render for resource header cells (resource axis presentation). */
+	renderResource?: (resource: Resource) => React.ReactNode
 }
 
 // CalendarContext is kept for internal Provider usage

@@ -10,7 +10,7 @@ import type {
 	TimeFormat,
 	WeekDays,
 } from '@ilamy/calendar'
-import { IlamyCalendar, IlamyResourceCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar'
 import { Card, CardContent, CardHeader } from '@ilamy/ui/components/card'
 import {
 	createRenderEvent,
@@ -184,7 +184,7 @@ function ResourceCalendar({
 	onEventClick,
 }: ResourceCalendarProps) {
 	return (
-		<IlamyResourceCalendar
+		<IlamyCalendar
 			businessHours={businessHours}
 			classesOverride={classesOverride}
 			dayMaxEvents={dayMaxEvents}

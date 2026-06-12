@@ -1,4 +1,4 @@
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 
 /** Whether the given date falls on today (calendar day, respecting timezone). */
 export function isToday(date: Dayjs): boolean {
@@ -93,4 +93,15 @@ export function getDayHours({
 	return Array.from({ length }, (_, i) =>
 		startOfDay.hour(i).minute(0).second(0).millisecond(0)
 	)
+}
+
+/** The 6x7 month grid range: first cell of week 1 → last cell of week 6. */
+export const getMonthGridRange = (
+	date: Dayjs,
+	firstDayOfWeek: number
+): { start: Dayjs; end: Dayjs } => {
+	const weeks = getMonthWeeks(date, firstDayOfWeek)
+	const gridStart = weeks.at(0)?.at(0) ?? date
+	const gridEnd = weeks.at(-1)?.at(-1) ?? date
+	return { start: gridStart.startOf('day'), end: gridEnd.endOf('day') }
 }

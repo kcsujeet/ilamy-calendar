@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import type { WeekDays } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
-import { DayView } from './day-view/day-view'
-import { WeekView } from './week-view/week-view'
+import {
+	assertVerticalBusinessHourRange,
+	weekdayBusinessHours,
+} from '@/features/calendar/testing/resource-test-fixtures'
+import { DayView } from './views/day'
+import { WeekView } from './views/week'
 
 describe('Regular Calendar Business Hours Integration', () => {
 	beforeEach(() => {
@@ -14,17 +17,7 @@ describe('Regular Calendar Business Hours Integration', () => {
 	describe('DayView', () => {
 		test('falls back to global business hours range on a weekend (Sunday)', () => {
 			const sunday = dayjs('2025-01-05T00:00:00.000Z')
-			const businessHours = {
-				daysOfWeek: [
-					'monday',
-					'tuesday',
-					'wednesday',
-					'thursday',
-					'friday',
-				] as WeekDays[],
-				startTime: 10,
-				endTime: 16,
-			}
+			const businessHours = weekdayBusinessHours(10, 16)
 
 			render(
 				<CalendarProvider
@@ -38,27 +31,14 @@ describe('Regular Calendar Business Hours Integration', () => {
 			)
 
 			// Should show business range from Monday even though it's Sunday
-			expect(screen.getByTestId('vertical-time-10')).toBeInTheDocument()
-			expect(screen.getByTestId('vertical-time-15')).toBeInTheDocument()
-			expect(screen.queryByTestId('vertical-time-09')).not.toBeInTheDocument()
-			expect(screen.queryByTestId('vertical-time-16')).not.toBeInTheDocument()
+			assertVerticalBusinessHourRange(screen, 10, 15, 9, 16)
 		})
 	})
 
 	describe('WeekView', () => {
 		test('hides non-business hours consistently across the week', () => {
 			const initialDate = dayjs('2025-01-01T00:00:00.000Z') // Wednesday
-			const businessHours = {
-				daysOfWeek: [
-					'monday',
-					'tuesday',
-					'wednesday',
-					'thursday',
-					'friday',
-				] as WeekDays[],
-				startTime: 9,
-				endTime: 17,
-			}
+			const businessHours = weekdayBusinessHours(9, 17)
 
 			render(
 				<CalendarProvider

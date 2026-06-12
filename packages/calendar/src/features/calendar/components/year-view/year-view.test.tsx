@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import type { CalendarEvent } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { YearView } from './year-view'
 
 const monthNames = [
@@ -255,6 +255,26 @@ describe('YearView', () => {
 			expect(
 				screen.queryByTestId('year-month-count-04')
 			).not.toBeInTheDocument()
+		})
+
+		test('counts a multi-day event spanning a month boundary in both month badges', () => {
+			const year = 2025
+			const spanningEvent: CalendarEvent = {
+				id: 'span-1',
+				title: 'Spans Jan/Feb',
+				start: dayjs(`${year}-01-30T18:00:00.000Z`),
+				end: dayjs(`${year}-02-02T10:00:00.000Z`),
+			}
+
+			renderYearView({
+				events: [spanningEvent],
+				initialDate: dayjs(`${year}-01-15T00:00:00.000Z`),
+			})
+
+			const januaryBadge = screen.getByTestId('year-month-count-01')
+			const februaryBadge = screen.getByTestId('year-month-count-02')
+			expect(januaryBadge).toHaveTextContent('1 Event')
+			expect(februaryBadge).toHaveTextContent('1 Event')
 		})
 
 		test('badge has correct styling', () => {

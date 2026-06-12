@@ -1,11 +1,12 @@
+import type { IlamyPlugin } from '@ilamy/types'
 import {
 	type ComponentType,
 	createElement,
 	Fragment,
 	type ReactNode,
 } from 'react'
-import { eventOverlapsRange } from '@/lib/utils/event-utils'
-import type { IlamyPlugin, PluginRuntime } from './types'
+import { eventOverlapsRange } from '@/lib/events/pipeline'
+import type { PluginRuntime } from './types'
 
 export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({
 	// Sequential transform chain, then the core applies the range-overlap filter

@@ -1,24 +1,13 @@
+import type { VerticalColumnSpec } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { memo } from 'react'
-import type { Resource } from '@/features/resource-calendar/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
-export interface VerticalGridColProps {
-	id: string
-	day?: Dayjs
-	resourceId?: string | number
-	resource?: Resource
-	days: Dayjs[] // The specific day this column represents
-	className?: string
+export interface VerticalGridColProps extends VerticalColumnSpec {
 	'data-testid'?: string
-	gridType?: 'day' | 'hour'
-	renderHeader?: () => React.ReactNode
-	renderCell?: (date: Dayjs) => React.ReactNode
-	noEvents?: boolean
 	/**
 	 * Granularity of each hour row in minutes. `60` renders one cell per hour with
 	 * no sub-hour lines. `30` renders two. `15` renders four with dashed separators.
@@ -31,7 +20,6 @@ export interface VerticalGridColProps {
 const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	id,
 	days,
-	resourceId,
 	resource,
 	'data-testid': dataTestId,
 	gridType,
@@ -41,6 +29,8 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	slotDurationMinutes = 60,
 	isLastColumn,
 }) => {
+	// The spec carries `resource` as the single source; derive the id here.
+	const resourceId = resource?.id
 	const slotCount = Math.floor(60 / slotDurationMinutes)
 	const cellOffsets = Array.from(
 		{ length: slotCount },

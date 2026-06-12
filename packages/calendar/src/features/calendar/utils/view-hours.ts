@@ -1,7 +1,18 @@
-import type { BusinessHours } from '@/components/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { BusinessHours, Resource } from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { getDayHours } from '@/lib/utils/date-utils'
 import { calculateBusinessHoursRange } from './business-hours'
+
+/**
+ * The ONE derivation of per-resource business hours for `getViewHours`'s
+ * `resourceBusinessHours` parameter. Empty input → empty output, which
+ * `getViewHours` treats as "no resource config" (regular-calendar behavior).
+ */
+export function collectResourceBusinessHours(
+	resources: Resource[]
+): (BusinessHours | BusinessHours[])[] {
+	return resources.flatMap((r) => (r.businessHours ? [r.businessHours] : []))
+}
 
 interface GetViewHoursOptions {
 	referenceDate: Dayjs

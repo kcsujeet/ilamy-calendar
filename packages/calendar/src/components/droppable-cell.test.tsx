@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import type { Resource } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import type { CellInfo } from '@/features/calendar/types'
-import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import type { Resource } from '@/features/resource-calendar/types'
-import dayjs from '@/lib/configs/dayjs-config'
 import type { CalendarView } from '@/types'
 import { DroppableCell } from './droppable-cell'
 
@@ -137,7 +136,7 @@ describe('DroppableCell isCellDisabled (issue #79)', () => {
 		let received: CellInfo | undefined
 
 		render(
-			<ResourceCalendarProvider
+			<CalendarProvider
 				dayMaxEvents={3}
 				initialDate={initialDate}
 				initialView="month"
@@ -154,7 +153,7 @@ describe('DroppableCell isCellDisabled (issue #79)', () => {
 					resourceId="room-a"
 					type="day-cell"
 				/>
-			</ResourceCalendarProvider>
+			</CalendarProvider>
 		)
 
 		expect(received?.resource).toEqual(room)

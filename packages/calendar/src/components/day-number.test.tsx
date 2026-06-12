@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import dayjs from '@/lib/configs/dayjs-config'
 import { DayNumber } from './day-number'
 
 describe('DayNumber', () => {
@@ -31,14 +31,6 @@ describe('DayNumber', () => {
 
 		const element = screen.getByTestId(`day-number-${yesterday.format('D')}`)
 		expect(element).not.toHaveClass('bg-primary')
-	})
-
-	test('respects locale for numbering', () => {
-		const date = dayjs('2025-01-15')
-		// AR locale uses different numbering system characters in some environments
-		// but let's just check if it renders without crashing and has correct text
-		render(<DayNumber date={date} locale="ar" />)
-		expect(screen.getByTestId('day-number-15')).toBeInTheDocument()
 	})
 
 	test('applies custom className', () => {

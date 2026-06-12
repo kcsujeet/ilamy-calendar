@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test'
+import dayjs from '@ilamy/utils/dayjs'
 import { renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
 import { useDateTimeFormatters } from './use-date-time-formatters'
 
 const renderFormattersHook = (

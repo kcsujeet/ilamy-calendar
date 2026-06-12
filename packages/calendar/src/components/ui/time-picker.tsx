@@ -6,10 +6,10 @@ import {
 	PopoverTrigger,
 } from '@ilamy/ui/components/popover'
 import { ScrollArea } from '@ilamy/ui/components/scroll-area'
+import { cn } from '@ilamy/ui/lib/utils'
 import { Clock } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAutocompleteTimepicker } from '@/hooks/use-autocomplete-timepicker'
-import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
 import type { TimeFormat } from '@/types'
 

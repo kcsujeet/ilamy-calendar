@@ -1,11 +1,16 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
+import type {
+	BusinessHours,
+	CalendarEvent,
+	Resource,
+	WeekDays,
+} from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { render } from '@testing-library/react'
 import type React from 'react'
 import { RRule } from 'rrule'
-import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { CalendarProviderProps } from './provider'
 import { CalendarProvider } from './provider'
 
@@ -15,6 +20,18 @@ const defaultProps = {
 	dayMaxEvents: 5,
 	firstDayOfWeek: 0,
 }
+
+// Compact event factory: id doubles as title; July 1 9-10am unless overridden.
+const mkEvent = (
+	id: string,
+	extra: Partial<CalendarEvent> = {}
+): CalendarEvent => ({
+	id,
+	title: id,
+	start: dayjs('2025-07-01T09:00:00.000Z'),
+	end: dayjs('2025-07-01T10:00:00.000Z'),
+	...extra,
+})
 
 // Factory for a daily recurring event starting July 1 at 9am
 const makeDailyRecurringEvent = (
@@ -502,6 +519,102 @@ describe('CalendarProvider - recurring event integration', () => {
 		expect(getByTestId('current-date-date').textContent).toBe(
 			today.date().toString()
 		)
+	})
+})
+
+describe('CalendarProvider - render stability', () => {
+	it('keeps the context value referentially stable across identical re-renders', () => {
+		const seenContexts: unknown[] = []
+		const CaptureContext = () => {
+			seenContexts.push(useSmartCalendarContext())
+			return null
+		}
+		// Same prop VALUES on fresh elements each time — a parent re-render. The
+		// fresh child element forces the consumer to re-render and re-read the
+		// context, so the assertion compares two actual reads.
+		const events: CalendarEvent[] = []
+		const ui = () => (
+			<CalendarProvider dayMaxEvents={5} events={events} firstDayOfWeek={0}>
+				<CaptureContext />
+			</CalendarProvider>
+		)
+
+		const { rerender } = render(ui())
+		rerender(ui())
+
+		expect(seenContexts).toHaveLength(2)
+		expect(seenContexts.at(1)).toBe(seenContexts.at(0))
+	})
+})
+
+describe('CalendarProvider - Resource Axis', () => {
+	const TestResourceAxis = () => {
+		const ctx = useSmartCalendarContext()
+		const r1Events = ctx.getEventsForResource('r1')
+		const crossEvent = r1Events.at(1)
+		const isCross = crossEvent && ctx.isEventCrossResource(crossEvent)
+		return (
+			<div>
+				<div data-testid="axis-resources">
+					{(ctx.resources ?? []).map((r) => r.id).join(',')}
+				</div>
+				<div data-testid="axis-orientation">{ctx.orientation}</div>
+				<div data-testid="axis-granularity">{ctx.weekViewGranularity}</div>
+				<div data-testid="axis-r1-events">
+					{r1Events.map((e) => e.id).join(',')}
+				</div>
+				<div data-testid="axis-resource-title">
+					{ctx.getResourceById('r1')?.title ?? 'none'}
+				</div>
+				<div data-testid="axis-cross">{isCross ? 'cross' : 'single'}</div>
+			</div>
+		)
+	}
+
+	// One resource, one direct event, one cross-resource event, one unassigned.
+	const renderResourceAxis = () => {
+		const resources: Resource[] = [{ id: 'r1', title: 'Room 1' }]
+		const events = [
+			mkEvent('e1', { resourceId: 'r1' }),
+			mkEvent('e2', { resourceIds: ['r1', 'r2'] }),
+			mkEvent('e3'), // unassigned
+		]
+		return renderProvider(<TestResourceAxis />, {
+			events,
+			initialDate: dayjs('2025-07-01T00:00:00.000Z'),
+			orientation: 'vertical',
+			resources,
+		})
+	}
+
+	it('exposes the resources passed as props', () => {
+		const { getByTestId } = renderResourceAxis()
+		expect(getByTestId('axis-resources').textContent).toBe('r1')
+	})
+
+	it('exposes the orientation passed as props', () => {
+		const { getByTestId } = renderResourceAxis()
+		expect(getByTestId('axis-orientation').textContent).toBe('vertical')
+	})
+
+	it('defaults weekViewGranularity to hourly', () => {
+		const { getByTestId } = renderResourceAxis()
+		expect(getByTestId('axis-granularity').textContent).toBe('hourly')
+	})
+
+	it('getEventsForResource returns direct and cross-resource members, not unassigned', () => {
+		const { getByTestId } = renderResourceAxis()
+		expect(getByTestId('axis-r1-events').textContent).toBe('e1,e2')
+	})
+
+	it('getResourceById resolves the full resource', () => {
+		const { getByTestId } = renderResourceAxis()
+		expect(getByTestId('axis-resource-title').textContent).toBe('Room 1')
+	})
+
+	it('isEventCrossResource identifies multi-resource events', () => {
+		const { getByTestId } = renderResourceAxis()
+		expect(getByTestId('axis-cross').textContent).toBe('cross')
 	})
 })
 

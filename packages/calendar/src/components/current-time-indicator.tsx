@@ -1,8 +1,8 @@
+import type { Resource } from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
+import dayjs from '@ilamy/utils/dayjs'
 import { memo } from 'react'
-import type { Resource } from '@/features/resource-calendar/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import dayjs from '@/lib/configs/dayjs-config'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 interface CurrentTimeIndicatorProps {
 	/** The start date/time of the container's timeline (e.g., top of the column) */

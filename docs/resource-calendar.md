@@ -23,7 +23,7 @@ The Resource Calendar extends the standard calendar with resource-based event or
 ## Basic Usage
 
 ```tsx
-import { IlamyResourceCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar'
 import type { Resource, CalendarEvent } from '@ilamy/calendar'
 
 const resources: Resource[] = [
@@ -54,7 +54,7 @@ const events: CalendarEvent[] = [
 
 function App() {
   return (
-    <IlamyResourceCalendar
+    <IlamyCalendar
       resources={resources}
       events={events}
       firstDayOfWeek="sunday"
@@ -88,8 +88,6 @@ interface Resource {
    */
   backgroundColor?: string
 
-  /** Optional position for resource display */
-  position?: number
 }
 ```
 
@@ -179,49 +177,66 @@ const event: CalendarEvent = {
 
 ## Props
 
-The `IlamyResourceCalendar` component extends all props from `IlamyCalendar` with resource-specific additions:
+The resource calendar is `IlamyCalendar` with `resources` set — there is no separate
+component. Four props carry the resource axis (`IlamyResourceCalendar` remains as a
+deprecated alias of `IlamyCalendar` and will be removed in the next major):
 
 ```typescript
-interface IlamyResourceCalendarProps extends IlamyCalendarProps {
-  /** Array of events to display */
-  events?: CalendarEvent[]
+interface IlamyCalendarProps {
+  // ... standard calendar props
 
-  /** Array of resources */
+  /** Resources (people, rooms, equipment) to display as a resource axis */
   resources?: Resource[]
 
-  /** Custom render function for resources */
+  /** Custom render function for resource header cells */
   renderResource?: (resource: Resource) => React.ReactNode
+
+  /**
+   * How resources are arranged. Only applies when `resources` is set.
+   * - "horizontal": resources are rows, time is columns (default)
+   * - "vertical": resources are columns, time is rows
+   */
+  orientation?: 'horizontal' | 'vertical'
+
+  /**
+   * Granularity of week-view time slots when `resources` is set.
+   * - "hourly": one column per hour (default)
+   * - "daily": one column per day (`hiddenDays` is ignored in daily mode)
+   */
+  weekViewGranularity?: 'hourly' | 'daily'
 }
 ```
 
 ### Key Props
 
-| Prop                 | Type                                | Default     | Description                                                          |
-| -------------------- | ----------------------------------- | ----------- | -------------------------------------------------------------------- |
-| `resources`          | `Resource[]`                        | `[]`        | Array of resources to display                                        |
-| `events`             | `CalendarEvent[]`                   | `[]`        | Array of events with resource assignments                            |
-| `renderResource`     | `(resource: Resource) => ReactNode` | `undefined` | Custom resource rendering function                                   |
-| `initialView`        | `CalendarView`                      | `'month'`   | Initial view mode (Note: 'year' view is not supported for resources) |
-| `firstDayOfWeek`     | `'sunday' \| 'monday'`              | `'sunday'`  | First day of the week                                                |
-| `disableDragAndDrop` | `boolean`                           | `false`     | Disable event drag-and-drop                                          |
-| `onEventClick`       | `(event: CalendarEvent) => void`    | `undefined` | Event click handler                                                  |
-| `onCellClick`        | `(info: CellClickInfo) => void`     | `undefined` | Cell click handler with `start`, `end`, and optional `resourceId`    |
-| `onEventAdd`         | `(event: CalendarEvent) => void`    | `undefined` | Event add callback                                                   |
-| `onEventUpdate`      | `(event: CalendarEvent) => void`    | `undefined` | Event update callback                                                |
-| `onEventDelete`      | `(eventId: string) => void`         | `undefined` | Event delete callback                                                |
+| Prop                  | Type                                | Default        | Description                                                          |
+| --------------------- | ----------------------------------- | -------------- | -------------------------------------------------------------------- |
+| `resources`           | `Resource[]`                        | `undefined`    | Array of resources to display                                        |
+| `events`              | `CalendarEvent[]`                   | `[]`           | Array of events with resource assignments                            |
+| `renderResource`      | `(resource: Resource) => ReactNode` | `undefined`    | Custom resource rendering function                                   |
+| `orientation`         | `'horizontal' \| 'vertical'`        | `'horizontal'` | Where the resource axis goes                                         |
+| `weekViewGranularity` | `'hourly' \| 'daily'`               | `'hourly'`     | Week-view slot granularity with resources                            |
+| `initialView`         | `CalendarView`                      | `'month'`      | Initial view mode (Note: 'year' view is not supported for resources) |
+| `firstDayOfWeek`      | `'sunday' \| 'monday'`              | `'sunday'`     | First day of the week                                                |
+| `disableDragAndDrop`  | `boolean`                           | `false`        | Disable event drag-and-drop                                          |
+| `onEventClick`        | `(event: CalendarEvent) => void`    | `undefined`    | Event click handler                                                  |
+| `onCellClick`         | `(info: CellInfo) => void`          | `undefined`    | Cell click handler with `start`, `end`, and optional `resource`      |
+| `onEventAdd`          | `(event: CalendarEvent) => void`    | `undefined`    | Event add callback                                                   |
+| `onEventUpdate`       | `(event: CalendarEvent) => void`    | `undefined`    | Event update callback                                                |
+| `onEventDelete`       | `(event: CalendarEvent) => void`    | `undefined`    | Event delete callback                                                |
 
 For all inherited props, see the [standard calendar documentation](https://ilamy.dev/docs/calendar).
 
 ## Context API
 
-The Resource Calendar provides a specialized context with resource-specific utilities.
+`useIlamyCalendarContext()` carries the resource utilities on every calendar; on a calendar without resources they operate on the events' own resource fields.
 
-### useIlamyResourceCalendarContext
+### useIlamyCalendarContext
 
 Access the resource calendar context from within custom components:
 
 ```tsx
-import { useIlamyResourceCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar'
 
 function CustomComponent() {
   const {
@@ -233,7 +248,7 @@ function CustomComponent() {
     updateEvent,
     deleteEvent,
     getEventsForResource,
-  } = useIlamyResourceCalendarContext()
+  } = useIlamyCalendarContext()
 
   const roomAEvents = getEventsForResource('room-a')
 
@@ -244,7 +259,7 @@ function CustomComponent() {
 ### Context Methods
 
 ```typescript
-interface UseIlamyResourceCalendarContextReturn {
+interface IlamyCalendarApi {
   // Standard calendar properties
   readonly currentDate: Dayjs
   readonly view: CalendarView
@@ -286,7 +301,7 @@ The Resource Calendar supports three views, each displaying resources in horizon
 Timeline view showing resources as rows and days as columns:
 
 ```tsx
-<IlamyResourceCalendar
+<IlamyCalendar
   resources={resources}
   events={events}
   initialView="month"
@@ -305,7 +320,7 @@ Features:
 Detailed timeline with hourly time slots:
 
 ```tsx
-<IlamyResourceCalendar
+<IlamyCalendar
   resources={resources}
   events={events}
   initialView="week"
@@ -325,7 +340,7 @@ Features:
 Focused single-day view with maximum detail:
 
 ```tsx
-<IlamyResourceCalendar
+<IlamyCalendar
   resources={resources}
   events={events}
   initialView="day"
@@ -376,10 +391,10 @@ Cross-resource events are displayed across all assigned resource rows:
 ### Working with Cross-Resource Events
 
 ```tsx
-import { useIlamyResourceCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar'
 
 function EventManager() {
-  const { events, resources } = useIlamyResourceCalendarContext()
+  const { events, resources } = useIlamyCalendarContext()
 
   // Find all cross-resource events
   const crossResourceEvents = events.filter(
@@ -413,7 +428,7 @@ Customize how resources are displayed using the `renderResource` prop:
 ### Basic Custom Rendering
 
 ```tsx
-import { IlamyResourceCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar'
 import type { Resource } from '@ilamy/calendar'
 
 const CustomResourceRenderer = (resource: Resource) => (
@@ -428,7 +443,7 @@ const CustomResourceRenderer = (resource: Resource) => (
 
 function App() {
   return (
-    <IlamyResourceCalendar
+    <IlamyCalendar
       resources={resources}
       events={events}
       renderResource={CustomResourceRenderer}
@@ -441,7 +456,7 @@ function App() {
 
 ```tsx
 const AdvancedResourceRenderer = (resource: Resource) => {
-  const { getEventsForResource } = useIlamyResourceCalendarContext()
+  const { getEventsForResource } = useIlamyCalendarContext()
   const eventCount = getEventsForResource(resource.id).length
 
   return (
@@ -517,7 +532,7 @@ const resources: Resource[] = [
 Apply custom styles using Tailwind CSS or custom CSS:
 
 ```tsx
-<IlamyResourceCalendar
+<IlamyCalendar
   resources={resources}
   events={events}
   viewHeaderClassName="bg-linear-to-r from-blue-500 to-purple-500"
@@ -531,7 +546,7 @@ Style events differently based on their resource:
 
 ```tsx
 const CustomEventRenderer = (event: CalendarEvent) => {
-  const { getResourceById } = useIlamyResourceCalendarContext()
+  const { getResourceById } = useIlamyCalendarContext()
   const resource = event.resourceId
     ? getResourceById(event.resourceId)
     : undefined
@@ -550,7 +565,7 @@ const CustomEventRenderer = (event: CalendarEvent) => {
   )
 }
 
-;<IlamyResourceCalendar
+;<IlamyCalendar
   resources={resources}
   events={events}
   renderEvent={CustomEventRenderer}
@@ -562,8 +577,8 @@ const CustomEventRenderer = (event: CalendarEvent) => {
 ### Room Booking System
 
 ```tsx
-import { IlamyResourceCalendar } from '@ilamy/calendar'
-import type { CalendarEvent, CellClickInfo, Resource } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar'
+import type { CalendarEvent, CellInfo, Resource } from '@ilamy/calendar'
 import { useState } from 'react'
 import dayjs from 'dayjs'
 
@@ -576,27 +591,24 @@ const RoomBookingCalendar = () => {
       title: 'Conference Room A (10 people)',
       color: '#3B82F6',
       backgroundColor: '#EFF6FF',
-      position: 1,
     },
     {
       id: 'conf-b',
       title: 'Conference Room B (20 people)',
       color: '#EF4444',
       backgroundColor: '#FEF2F2',
-      position: 2,
     },
     {
       id: 'board-room',
       title: 'Board Room (8 people)',
       color: '#8B5CF6',
       backgroundColor: '#F5F3FF',
-      position: 3,
     },
   ]
 
-  const handleCellClick = (info: CellClickInfo) => {
-    const { start, end, resourceId } = info
-    if (!resourceId) return
+  const handleCellClick = (info: CellInfo) => {
+    const { start, end, resource } = info
+    if (!resource) return
 
     const newEvent: CalendarEvent = {
       id: `booking-${Date.now()}`,
@@ -604,7 +616,7 @@ const RoomBookingCalendar = () => {
       start,
       end,
       uid: `booking-${Date.now()}@company.com`,
-      resourceId,
+      resourceId: resource.id,
       color: '#10B981',
     }
 
@@ -616,7 +628,7 @@ const RoomBookingCalendar = () => {
   }
 
   return (
-    <IlamyResourceCalendar
+    <IlamyCalendar
       resources={rooms}
       events={events}
       initialView="week"
@@ -684,7 +696,7 @@ const TeamScheduleCalendar = () => {
   ]
 
   return (
-    <IlamyResourceCalendar
+    <IlamyCalendar
       resources={teamMembers}
       events={teamEvents}
       initialView="week"
@@ -733,7 +745,7 @@ const EquipmentScheduleCalendar = () => {
   )
 
   return (
-    <IlamyResourceCalendar
+    <IlamyCalendar
       resources={equipment}
       events={[]}
       initialView="day"
@@ -748,18 +760,18 @@ const EquipmentScheduleCalendar = () => {
 ### 1. Resource Organization
 
 - **Use meaningful IDs**: Choose descriptive resource IDs (`'room-a'`, `'john-doe'`) instead of generic ones
-- **Set positions**: Use the `position` property to control resource display order
+- **Order the array**: resources render in the order of the `resources` array
 - **Group related resources**: Organize resources by type (rooms, equipment, people)
 
 ```tsx
 const resources: Resource[] = [
   // Group 1: Small rooms
-  { id: 'small-1', title: 'Small Room 1', position: 1 },
-  { id: 'small-2', title: 'Small Room 2', position: 2 },
+  { id: 'small-1', title: 'Small Room 1' },
+  { id: 'small-2', title: 'Small Room 2' },
 
   // Group 2: Large rooms
-  { id: 'large-1', title: 'Large Room 1', position: 3 },
-  { id: 'large-2', title: 'Large Room 2', position: 4 },
+  { id: 'large-1', title: 'Large Room 1' },
+  { id: 'large-2', title: 'Large Room 2' },
 ]
 ```
 
@@ -789,7 +801,7 @@ const validateEvent = (
 
 ```tsx
 const MemoizedResourceEvents = React.memo(({ resourceId }: Props) => {
-  const { getEventsForResource } = useIlamyResourceCalendarContext()
+  const { getEventsForResource } = useIlamyCalendarContext()
   const events = React.useMemo(
     () => getEventsForResource(resourceId),
     [resourceId, getEventsForResource]
@@ -849,7 +861,7 @@ const handleEventUpdate = (updatedEvent: CalendarEvent) => {
 ```tsx
 describe('ResourceCalendar', () => {
   it('should filter events by resource', () => {
-    const { getEventsForResource } = useIlamyResourceCalendarContext()
+    const { getEventsForResource } = useIlamyCalendarContext()
     const roomAEvents = getEventsForResource('room-a')
     expect(roomAEvents).toHaveLength(3)
   })
@@ -867,7 +879,7 @@ const LocalizedResourceCalendar = () => {
   const { t } = useTranslation('calendar')
 
   return (
-    <IlamyResourceCalendar
+    <IlamyCalendar
       resources={resources}
       events={events}
       translator={(key) => t(key)}
@@ -912,7 +924,7 @@ Export resource calendar events to iCalendar format:
 import { downloadICalendar } from '@ilamy/calendar'
 
 const handleExport = () => {
-  const { events } = useIlamyResourceCalendarContext()
+  const { events } = useIlamyCalendarContext()
   downloadICalendar(events, 'resource-schedule.ics')
 }
 ```
@@ -927,9 +939,9 @@ The Resource Calendar is fully typed with comprehensive TypeScript definitions:
 import type {
   Resource,
   CalendarEvent,
-  CellClickInfo,
-  IlamyResourceCalendarProps,
-  UseIlamyResourceCalendarContextReturn,
+  CellInfo,
+  IlamyCalendarProps,
+  IlamyCalendarApi,
 } from '@ilamy/calendar'
 
 // Type-safe resource definition
@@ -951,9 +963,9 @@ const typedEvent: CalendarEvent = {
 }
 
 // Type-safe cell click handler
-const handleCellClick = (info: CellClickInfo) => {
-  // CellClickInfo contains: { start: Dayjs, end: Dayjs, resourceId?: string | number }
-  console.log('Clicked:', info.start, info.end, info.resourceId)
+const handleCellClick = (info: CellInfo) => {
+  // CellInfo contains: { start: Dayjs, end: Dayjs, resource?: Resource, allDay?: boolean }
+  console.log('Clicked:', info.start, info.end, info.resource?.id)
 }
 ```
 

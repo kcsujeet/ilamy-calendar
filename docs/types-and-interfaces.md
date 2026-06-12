@@ -11,14 +11,14 @@ IlamyCalendarPropEvent          User provides (flexible date types: string | Dat
         |
 CalendarEvent                   Internal canonical type (dayjs dates)
         |
-    positioning                 position-day-events / position-week-events
+    positioning                 lib/layout (geometry / vertical / horizontal)
         |
-ProcessedCalendarEvent          CalendarEvent + layout fields (top, left, width, height)
+PositionedEvent                 { event: CalendarEvent } + placement fields (left/width + top/height/zIndex or row)
 ```
 
 ## CalendarEvent
 
-`src/components/types.ts`
+`packages/types/src/index.ts` (`@ilamy/types`)
 
 The core event type used throughout the library.
 
@@ -39,20 +39,7 @@ The core event type used throughout the library.
 | `uid` | `string` | no | iCalendar UID for cross-system compatibility |
 | `resourceId` | `string \| number` | no | Single resource assignment |
 | `resourceIds` | `(string \| number)[]` | no | Multiple resource assignment |
-| `data` | `Record<string, any>` | no | Custom application metadata |
-
-## ProcessedCalendarEvent
-
-`src/components/types.ts`
-
-Extends `CalendarEvent` with positioning fields for the rendering engine. Internal use only.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `left` | `number` | Left position as percentage (0-100) |
-| `width` | `number` | Width as percentage (0-100) |
-| `top` | `number` | Top position as percentage (0-100) |
-| `height` | `number` | Height as percentage (0-100) |
+| `data` | `Record<string, unknown>` | no | Custom application metadata |
 
 ## IlamyCalendarPropEvent
 
@@ -68,7 +55,7 @@ Public-facing event type that accepts flexible date inputs. Extends `CalendarEve
 
 ## Resource
 
-`src/features/resource-calendar/types/index.ts`
+`packages/types/src/index.ts` (re-exported from `src/features/calendar/types/index.ts`)
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -76,9 +63,23 @@ Public-facing event type that accepts flexible date inputs. Extends `CalendarEve
 | `title` | `string` | yes | Display title |
 | `color` | `string` | no | Resource color |
 | `backgroundColor` | `string` | no | Resource background color |
-| `position` | `number` | no | Display order |
 | `businessHours` | `BusinessHours | BusinessHours[]` | no | Resource-specific business hours (overrides global) |
-| `data` | `Record<string, any>` | no | Custom resource metadata |
+| `data` | `Record<string, unknown>` | no | Custom resource metadata |
+
+## PluginView (view contract)
+
+`packages/types/src/index.ts`
+
+Describes a view — contributed by a plugin or built into the core (the four built-ins are
+`PluginView` specs in `src/features/calendar/components/views/`, resolved through one path).
+Core fields: `name`, `label?`, `component`, `navigationUnit?`. Optional view-spec fields:
+`navigationStep?`, `range?`, `columns?` (returns `VerticalColumnSpec[]` or
+`HorizontalRowSpec[]`), `layout?` (`'vertical' | 'horizontal'`), `renderHeader?`,
+`supportsResources?`. A view declares `columns` + `layout` to render through the shared
+grid engines, or just `component` (the escape hatch). Supporting types: `ViewConfig`,
+`ColumnSpec`, `VerticalColumnSpec`, `HorizontalCellSpec`, `HorizontalRowSpec`,
+`ViewHeaderContext` — all exported from `@ilamy/calendar`. Authoring guide:
+`docs/custom-views.md`.
 
 ## IlamyCalendarProps
 
@@ -121,18 +122,19 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `renderCurrentTimeIndicator` | `(props) => ReactNode` | — | Custom time indicator |
 | `classesOverride` | `CalendarClassesOverride` | — | CSS class overrides |
 
-## IlamyResourceCalendarProps
+## IlamyResourceCalendarProps (deprecated alias)
 
-`src/features/resource-calendar/types/index.ts`
+`src/features/calendar/components/ilamy-resource-calendar.tsx`
 
-Extends `IlamyCalendarProps` (minus `events`) with resource-specific additions:
+Deprecated alias of `IlamyCalendarProps` — the resource axis lives on `IlamyCalendar`
+directly (`resources`, `renderResource`, `orientation`, `weekViewGranularity`):
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `events` | `IlamyResourceCalendarPropEvent[]` | `[]` | Events with resource fields |
-| `resources` | `Resource[]` | `[]` | Resource definitions |
+| `resources` | `Resource[]` | `undefined` | Resource definitions |
 | `renderResource` | `(resource) => ReactNode` | — | Custom resource renderer |
-| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Resource layout orientation |
+| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Where the resource axis goes |
+| `weekViewGranularity` | `'hourly' \| 'daily'` | `'hourly'` | Week-view slot granularity with resources |
 
 ## Recurrence Types
 
@@ -173,7 +175,7 @@ type CalendarView = 'month' | 'week' | 'day' | 'year'
 type TimeFormat = '12-hour' | '24-hour'
 ```
 
-`src/components/types.ts`
+`packages/types/src/index.ts` (`@ilamy/types`)
 
 ```typescript
 type WeekDays = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday'
@@ -181,7 +183,7 @@ type WeekDays = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'fr
 
 ## BusinessHours
 
-`src/components/types.ts`
+`packages/types/src/index.ts` (`@ilamy/types`)
 
 ```typescript
 interface BusinessHours {
@@ -210,11 +212,10 @@ interface CellClickInfo {
 
 | Type | File |
 |------|------|
-| `CalendarEvent`, `ProcessedCalendarEvent`, `WeekDays`, `BusinessHours` | `src/components/types.ts` |
+| `CalendarEvent`, `WeekDays`, `BusinessHours` | `packages/types/src/index.ts` (`@ilamy/types`) |
 | `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CellClickInfo`, `CalendarClassesOverride` | `src/features/calendar/types/index.ts` |
-| `Resource`, `IlamyResourceCalendarProps`, `IlamyResourceCalendarPropEvent` | `src/features/resource-calendar/types/index.ts` |
+| `Resource` | `packages/types/src/index.ts` (`@ilamy/types`) |
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |
 | `CalendarView`, `TimeFormat` | `src/types/index.ts` |
 | `CalendarContextType` | `src/features/calendar/contexts/calendar-context/context.ts` |
-| `ResourceCalendarContextType` | `src/features/resource-calendar/contexts/resource-calendar-context/context.ts` |
 | `Translations`, `TranslatorFunction` | `src/lib/translations/types.ts` |

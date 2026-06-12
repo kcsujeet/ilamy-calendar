@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'bun:test'
 import { isRecurringEvent } from '@ilamy/calendar-recurrence'
+import type { CalendarEvent } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { render, screen } from '@testing-library/react'
 import { RRule } from 'rrule'
-import type { CalendarEvent } from '@/components/types'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
 import { CalendarDndContext } from './calendar-dnd-context'
 
 describe('CalendarDndContext', () => {

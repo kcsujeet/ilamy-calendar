@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import type { Resource } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import type { Resource } from '@/features/resource-calendar/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { ResourceCell } from './resource-cell'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -22,9 +22,9 @@ const renderResourceCell = (
 	renderResource?: (resource: Resource) => React.ReactNode,
 	children?: React.ReactNode
 ) => {
-	// Use ResourceCalendarProvider to ensure getEventsForResource is available
+	// Use CalendarProvider to ensure getEventsForResource is available
 	return render(
-		<ResourceCalendarProvider
+		<CalendarProvider
 			dayMaxEvents={3}
 			events={[]}
 			initialDate={initialDate}
@@ -34,7 +34,7 @@ const renderResourceCell = (
 			<ResourceCell data-testid="resource-cell" resource={mockResources[0]}>
 				{children}
 			</ResourceCell>
-		</ResourceCalendarProvider>
+		</CalendarProvider>
 	)
 }
 
@@ -76,26 +76,28 @@ describe('ResourceCell', () => {
 			data: { avatar: 'https://example.com/avatar.png' },
 		}
 
-		const renderWithMeta = (resource: Resource) => (
-			<div data-testid="meta-renderer">
-				<img
-					alt="avatar"
-					data-testid="resource-avatar"
-					src={resource.data?.avatar}
-				/>
-				<span>{resource.title}</span>
-			</div>
-		)
+		const renderWithMeta = (resource: Resource) => {
+			const avatar =
+				typeof resource.data?.avatar === 'string'
+					? resource.data.avatar
+					: undefined
+			return (
+				<div data-testid="meta-renderer">
+					<img alt="avatar" data-testid="resource-avatar" src={avatar} />
+					<span>{resource.title}</span>
+				</div>
+			)
+		}
 
 		render(
-			<ResourceCalendarProvider
+			<CalendarProvider
 				dayMaxEvents={7}
 				initialDate={initialDate}
 				renderResource={renderWithMeta}
 				resources={[resourceWithData]}
 			>
 				<ResourceCell data-testid="meta-cell" resource={resourceWithData} />
-			</ResourceCalendarProvider>
+			</CalendarProvider>
 		)
 
 		const img = screen.getByTestId('resource-avatar')

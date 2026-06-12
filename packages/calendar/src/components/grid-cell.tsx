@@ -53,7 +53,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		currentDate,
 		t,
 		getEventsForResource,
-		currentLocale,
 		eventSpacing,
 		eventHeight,
 	} = useSmartCalendarContext()
@@ -145,7 +144,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 					data-testid="grid-cell-content"
 					style={{ gap: `${eventSpacing}px` }}
 				>
-					{showDayNumber && <DayNumber date={day} locale={currentLocale} />}
+					{showDayNumber && <DayNumber date={day} />}
 
 					{shouldRenderEvents && (
 						<>

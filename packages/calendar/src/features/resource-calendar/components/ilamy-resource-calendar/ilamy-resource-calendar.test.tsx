@@ -112,21 +112,18 @@ describe('IlamyResourceCalendar', () => {
 			title: 'Conference Room A',
 			color: '#3B82F6',
 			backgroundColor: '#EFF6FF',
-			position: 1,
 		},
 		{
 			id: 'resource-2',
 			title: 'Conference Room B',
 			color: '#EF4444',
 			backgroundColor: '#FEF2F2',
-			position: 2,
 		},
 		{
 			id: 'resource-3',
 			title: 'Meeting Room C',
 			color: '#10B981',
 			backgroundColor: '#ECFDF5',
-			position: 3,
 		},
 	]
 

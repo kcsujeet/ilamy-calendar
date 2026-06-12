@@ -25,14 +25,13 @@ import {
 import { normalizeEvents, safeDate, toHiddenDaysSet } from '@/lib/utils'
 
 const CalendarContent: React.FC = () => {
-	const { view, dayMaxEvents, getViews } = useSmartCalendarContext((c) => ({
+	const { view, getViews } = useSmartCalendarContext((c) => ({
 		view: c.view,
-		dayMaxEvents: c.dayMaxEvents,
 		getViews: c.getViews,
 	}))
 
 	const builtInViews: Record<string, React.ReactNode> = {
-		month: <MonthView dayMaxEvents={dayMaxEvents} key="month" />,
+		month: <MonthView key="month" />,
 		week: <WeekView key="week" />,
 		day: <DayView key="day" />,
 		year: <YearView key="year" />,

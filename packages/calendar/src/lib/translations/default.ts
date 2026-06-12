@@ -1,6 +1,4 @@
-import type { Translations } from './types'
-
-export const defaultTranslations: Translations = {
+export const defaultTranslations = {
 	// Common actions
 	today: 'Today',
 	create: 'Create',
@@ -96,4 +94,4 @@ export const defaultTranslations: Translations = {
 	date: 'Date',
 	noResourcesVisible: 'No resources visible',
 	addResourcesOrShowExisting: 'Add resources or show existing ones',
-}
+} satisfies Record<string, string>

@@ -54,8 +54,7 @@ export interface CalendarEvent {
 	 * Use this to store additional metadata specific to your application
 	 * @example { meetingType: 'standup', attendees: ['john', 'jane'] }
 	 */
-	// oxlint-disable-next-line no-explicit-any
-	data?: Record<string, any>
+	data?: Record<string, unknown>
 }
 
 /**

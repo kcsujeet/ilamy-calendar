@@ -200,6 +200,41 @@ Everything that was previously accessible via deep imports is either available f
 
 ---
 
+## Type tightening (v2 structure overhaul, Phase 0)
+
+### `Translations` is now a derived type alias, not an interface
+
+`Translations` is now `Record<keyof typeof defaultTranslations, string>`. Annotating your
+translation objects keeps working unchanged. The only break: `declare module` augmentation
+that merged extra keys into the `Translations` interface no longer compiles — pass a
+`translator` function for custom keys instead.
+
+### `data` fields are `Record<string, unknown>` (was `Record<string, any>`)
+
+Applies to `CalendarEvent.data` and `Resource.data`. Writing data is unchanged. Reads now
+need narrowing:
+
+**Before (v1)**
+
+```ts
+const role = resource.data.role
+```
+
+**After (v2)**
+
+```ts
+const role = typeof resource.data?.role === 'string' ? resource.data.role : undefined
+```
+
+Or cast once at your own boundary: `const meta = resource.data as MyResourceMeta`.
+
+### `Resource.position` removed
+
+The optional `position` field on `Resource` was never read by the calendar. Order resources
+by ordering the `resources` array itself.
+
+---
+
 ## Summary checklist
 
 - [ ] Add `import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'` and pass `plugins={[recurrencePlugin()]}` to `<IlamyCalendar>` / `<IlamyResourceCalendar>`.
@@ -209,3 +244,5 @@ Everything that was previously accessible via deep imports is either available f
 - [ ] Remove any calls to `findParentRecurringEvent`; use `rawEvents` filtering instead if needed.
 - [ ] Remove any deep `@ilamy/calendar/src/...` imports; use only the two public entry points.
 - [ ] If you have TypeScript code that narrows `CalendarView` as an exhaustive union, update it for the new `string` type.
+- [ ] If you read properties off `event.data` / `resource.data`, add narrowing or a boundary cast (`Record<string, unknown>` now).
+- [ ] Remove any use of `Resource.position`; order the `resources` array instead.

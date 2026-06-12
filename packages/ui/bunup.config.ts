@@ -5,13 +5,11 @@ import { defineConfig } from 'bunup'
 // React + the Radix/icon/style deps are externalized so consumers dedupe them.
 export default defineConfig({
 	entry: [
-		'src/components/badge.tsx',
 		'src/components/button.tsx',
 		'src/components/card.tsx',
 		'src/components/checkbox.tsx',
 		'src/components/dialog.tsx',
 		'src/components/input.tsx',
-		'src/components/input-group.tsx',
 		'src/components/label.tsx',
 		'src/components/popover.tsx',
 		'src/components/scroll-area.tsx',

@@ -59,8 +59,6 @@ export interface Resource {
 	 * @example "#dbeafe", "blue-100", "rgba(59, 130, 246, 0.1)"
 	 */
 	backgroundColor?: string
-	/** Optional position for resource display */
-	position?: number
 	/**
 	 * Configuration for resource-specific business hours.
 	 * If provided, these will be used instead of the global business hours for this resource.
@@ -71,7 +69,5 @@ export interface Resource {
 	 * Use this to store additional metadata specific to your application
 	 * @example { avatar: 'https://example.com/avatar.png', role: 'admin' }
 	 */
-	// oxlint-disable-next-line no-explicit-any
-	// biome-ignore lint/suspicious/noExplicitAny: Metadata can be anything
-	data?: Record<string, any>
+	data?: Record<string, unknown>
 }

@@ -35,42 +35,36 @@ export const demoResources: Resource[] = [
 		title: 'Conference Room A',
 		color: '#1e40af',
 		backgroundColor: '#dbeafe',
-		position: 1,
 	},
 	{
 		id: 'room-b',
 		title: 'Conference Room B',
 		color: '#059669',
 		backgroundColor: '#d1fae5',
-		position: 2,
 	},
 	{
 		id: 'room-c',
 		title: 'Meeting Room C',
 		color: '#7c2d12',
 		backgroundColor: '#fed7aa',
-		position: 3,
 	},
 	{
 		id: 'equipment-1',
 		title: 'Projector #1',
 		color: '#7c3aed',
 		backgroundColor: '#ede9fe',
-		position: 4,
 	},
 	{
 		id: 'equipment-2',
 		title: 'Laptop Cart',
 		color: '#b45309',
 		backgroundColor: '#fef3c7',
-		position: 5,
 	},
 	{
 		id: 'vehicle-1',
 		title: 'Company Van',
 		color: '#d97706',
 		backgroundColor: '#ffedd5',
-		position: 6,
 	},
 ]
 

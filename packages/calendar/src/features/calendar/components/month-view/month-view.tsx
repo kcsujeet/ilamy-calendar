@@ -5,9 +5,8 @@ import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { getMonthWeeks } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import { MonthHeader } from './month-header'
-import type { MonthViewProps } from './types'
 
-export const MonthView: React.FC<MonthViewProps> = () => {
+export const MonthView: React.FC = () => {
 	const { currentDate, firstDayOfWeek } = useSmartCalendarContext()
 
 	const weeks = useMemo(

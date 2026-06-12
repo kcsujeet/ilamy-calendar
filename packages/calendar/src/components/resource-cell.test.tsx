@@ -76,16 +76,18 @@ describe('ResourceCell', () => {
 			data: { avatar: 'https://example.com/avatar.png' },
 		}
 
-		const renderWithMeta = (resource: Resource) => (
-			<div data-testid="meta-renderer">
-				<img
-					alt="avatar"
-					data-testid="resource-avatar"
-					src={resource.data?.avatar}
-				/>
-				<span>{resource.title}</span>
-			</div>
-		)
+		const renderWithMeta = (resource: Resource) => {
+			const avatar =
+				typeof resource.data?.avatar === 'string'
+					? resource.data.avatar
+					: undefined
+			return (
+				<div data-testid="meta-renderer">
+					<img alt="avatar" data-testid="resource-avatar" src={avatar} />
+					<span>{resource.title}</span>
+				</div>
+			)
+		}
 
 		render(
 			<ResourceCalendarProvider

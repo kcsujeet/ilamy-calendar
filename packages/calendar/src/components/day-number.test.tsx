@@ -33,14 +33,6 @@ describe('DayNumber', () => {
 		expect(element).not.toHaveClass('bg-primary')
 	})
 
-	test('respects locale for numbering', () => {
-		const date = dayjs('2025-01-15')
-		// AR locale uses different numbering system characters in some environments
-		// but let's just check if it renders without crashing and has correct text
-		render(<DayNumber date={date} locale="ar" />)
-		expect(screen.getByTestId('day-number-15')).toBeInTheDocument()
-	})
-
 	test('applies custom className', () => {
 		const date = dayjs('2025-01-15')
 		render(<DayNumber className="custom-class" date={date} />)

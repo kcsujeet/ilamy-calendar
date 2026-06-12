@@ -6,7 +6,6 @@ import { keys } from '@/lib/utils/keys'
 
 interface DayNumberProps {
 	date: Dayjs
-	locale?: string
 	className?: string
 }
 

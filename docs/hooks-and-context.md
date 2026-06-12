@@ -119,7 +119,7 @@ const positionedEvents = useProcessedDayEvents({
 })
 ```
 
-Filters out all-day events (those render in the all-day row). Calls `getPositionedDayEvents()` for layout.
+Filters out all-day events (those render in the all-day row). Calls `layoutVertical()` (`lib/layout/vertical.ts`) for layout.
 
 ### useProcessedWeekEvents()
 
@@ -131,13 +131,12 @@ Computes positioned events for multi-day spans in month/week views.
 const positionedEvents = useProcessedWeekEvents({
   days,              // dayjs[] — days in the row/week
   allDay,            // filter to all-day only
-  dayNumberHeight,   // pixel height of day number area
   resourceId,        // optional resource filter
   gridType,          // 'day' | 'hour'
 })
 ```
 
-Calls `getPositionedEvents()` for multi-day layout with `dayMaxEvents` and `eventSpacing`.
+Calls `layoutHorizontal()` (`lib/layout/horizontal.ts`) for multi-day row packing with `dayMaxEvents`; the events layer derives pixel offsets from the returned `row`.
 
 ### useRecurringEventActions()
 

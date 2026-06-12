@@ -28,12 +28,17 @@ function DraggableEventUnmemoized({
 	className,
 	style,
 	disableDrag = false,
+	isTruncatedStart = false,
+	isTruncatedEnd = false,
 }: {
 	elementId: string
 	className?: string
 	style?: CSSProperties
 	event: CalendarEvent
 	disableDrag?: boolean
+	/** Set by the horizontal events layer when the bar continues past the visible range. */
+	isTruncatedStart?: boolean
+	isTruncatedEnd?: boolean
 }) {
 	const { onEventClick, renderEvent, disableEventClick, disableDragAndDrop } =
 		useSmartCalendarContext()
@@ -49,24 +54,13 @@ function DraggableEventUnmemoized({
 
 	// Default event content to render if custom renderEvent is not provided
 	const DefaultEventContent = () => {
-		// Check if this event has truncation information
-		const enhancedEvent = event as unknown as {
-			isTruncatedStart?: boolean
-			isTruncatedEnd?: boolean
-		}
-		const isTruncatedStart = enhancedEvent.isTruncatedStart
-		const isTruncatedEnd = enhancedEvent.isTruncatedEnd
-
 		return (
 			<div
 				className={cn(
 					event.backgroundColor || 'bg-blue-500',
 					event.color || 'text-white',
 					'h-full w-full px-1 border-[1.5px] border-card text-left overflow-clip relative',
-					getBorderRadiusClass(
-						Boolean(isTruncatedStart),
-						Boolean(isTruncatedEnd)
-					)
+					getBorderRadiusClass(isTruncatedStart, isTruncatedEnd)
 				)}
 				style={{ backgroundColor: event.backgroundColor, color: event.color }}
 			>
@@ -137,7 +131,9 @@ export const DraggableEvent = memo(
 			prevProps.elementId === nextProps.elementId &&
 			prevProps.disableDrag === nextProps.disableDrag &&
 			prevProps.className === nextProps.className &&
-			prevProps.event === nextProps.event
+			prevProps.event === nextProps.event &&
+			prevProps.isTruncatedStart === nextProps.isTruncatedStart &&
+			prevProps.isTruncatedEnd === nextProps.isTruncatedEnd
 		)
 	}
 )

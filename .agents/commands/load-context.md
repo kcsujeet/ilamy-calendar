@@ -148,8 +148,9 @@ Multi-resource calendar views:
 - `translations/default.ts` - Default English translations (94 keys)
 - `translations/types.ts` - Translation types
 - `utils/date-utils.ts` - Date manipulation
-- `utils/position-day-events.ts` - Day view event positioning
-- `utils/position-week-events.ts` - Week view event positioning
+- `layout/geometry.ts` - The shared composed PositionedEvent contract
+- `layout/vertical.ts` - Day/week time-grid event layout (percent)
+- `layout/horizontal.ts` - Month/all-day row packing (row index; renderer derives pixels)
 - `utils/export-ical.ts` - iCalendar export
 - `utils/generator.ts` - Event data generator
 - `constants.ts` - Global constants

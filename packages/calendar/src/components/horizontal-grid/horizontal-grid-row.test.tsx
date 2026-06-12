@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
+import type { CalendarEvent } from '@/components/types'
 import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
 import type { Resource } from '@/features/resource-calendar/types'
 import dayjs from '@/lib/configs/dayjs-config'
+import {
+	DAY_NUMBER_HEIGHT,
+	EVENT_BAR_HEIGHT,
+	GAP_BETWEEN_ELEMENTS,
+} from '@/lib/constants'
 import { HorizontalGridRow } from './horizontal-grid-row'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -257,6 +263,96 @@ describe('HorizontalGridRow', () => {
 			expect(
 				screen.queryByTestId('current-time-indicator')
 			).not.toBeInTheDocument()
+		})
+	})
+
+	describe('event bar pixel placement (math owned by the events layer)', () => {
+		// Hour-long event on the grid's day; ids double as titles.
+		const mkEvent = (id: string, startHour: number): CalendarEvent => ({
+			id,
+			title: id,
+			start: initialDate.hour(startHour).minute(0),
+			end: initialDate.hour(startHour + 1).minute(0),
+		})
+
+		const renderRowWithEvents = ({
+			events,
+			dayNumberHeight,
+			eventSpacing,
+			eventHeight,
+		}: {
+			events: CalendarEvent[]
+			dayNumberHeight?: number
+			eventSpacing?: number
+			eventHeight?: number
+		}) => {
+			const columns = [
+				{ id: 'col-1', day: initialDate, gridType: 'day' as const },
+			]
+			return render(
+				<ResourceCalendarProvider
+					dayMaxEvents={4}
+					eventHeight={eventHeight}
+					eventSpacing={eventSpacing}
+					events={events}
+					initialDate={initialDate}
+					resources={[]}
+				>
+					<HorizontalGridRow
+						columns={columns}
+						dayNumberHeight={dayNumberHeight}
+						id="row-1"
+						variant="regular"
+					/>
+				</ResourceCalendarProvider>
+			)
+		}
+
+		const eventWrapper = (id: string) =>
+			screen.getByTestId(`horizontal-event-${id}`)
+
+		test('places the first row at default dayNumberHeight + spacing with default bar height', () => {
+			renderRowWithEvents({ events: [mkEvent('a', 10)] })
+			const expectedTop = DAY_NUMBER_HEIGHT + GAP_BETWEEN_ELEMENTS
+			expect(eventWrapper('a').style.top).toBe(`${expectedTop}px`)
+			expect(eventWrapper('a').style.height).toBe(`${EVENT_BAR_HEIGHT}px`)
+		})
+
+		test('uses the dayNumberHeight prop in the top calculation', () => {
+			renderRowWithEvents({ events: [mkEvent('a', 10)], dayNumberHeight: 50 })
+			expect(eventWrapper('a').style.top).toBe(`${50 + GAP_BETWEEN_ELEMENTS}px`)
+		})
+
+		test('sets the bar height from context eventHeight', () => {
+			renderRowWithEvents({ events: [mkEvent('a', 10)], eventHeight: 40 })
+			expect(eventWrapper('a').style.height).toBe('40px')
+		})
+
+		test('derives stacked row tops from eventHeight + eventSpacing', () => {
+			renderRowWithEvents({
+				events: [mkEvent('a', 10), mkEvent('b', 12)],
+				eventHeight: 48,
+			})
+			const rowZeroTop = DAY_NUMBER_HEIGHT + GAP_BETWEEN_ELEMENTS
+			const rowOneTop =
+				DAY_NUMBER_HEIGHT +
+				GAP_BETWEEN_ELEMENTS +
+				1 * (48 + GAP_BETWEEN_ELEMENTS)
+			expect(
+				[eventWrapper('a'), eventWrapper('b')].map((el) => el.style.top)
+			).toEqual([`${rowZeroTop}px`, `${rowOneTop}px`])
+		})
+
+		test('uses custom eventSpacing in stacked row tops', () => {
+			renderRowWithEvents({
+				events: [mkEvent('a', 10), mkEvent('b', 12)],
+				eventSpacing: 4,
+			})
+			const rowZeroTop = DAY_NUMBER_HEIGHT + 4
+			const rowOneTop = DAY_NUMBER_HEIGHT + 4 + 1 * (EVENT_BAR_HEIGHT + 4)
+			expect(
+				[eventWrapper('a'), eventWrapper('b')].map((el) => el.style.top)
+			).toEqual([`${rowZeroTop}px`, `${rowOneTop}px`])
 		})
 	})
 })

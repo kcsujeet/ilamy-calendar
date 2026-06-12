@@ -42,7 +42,8 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 					resource={resource}
 				/>
 			)}
-			{todayEvents.map((event, index) => {
+			{todayEvents.map((positioned, index) => {
+				const { event } = positioned
 				const eventKey = `event-${event.id}-${index}-${days.at(0)?.toISOString()}-${resourceId ?? 'no-resource'}`
 				const isShortEvent = event.end.diff(event.start, 'minute') <= 15
 
@@ -51,10 +52,10 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 						className="absolute"
 						key={keys.listKey(eventKey, 'wrapper')}
 						style={{
-							left: `${event.left}%`,
-							width: `calc(${event.width}% - var(--spacing) * 2)`,
-							top: `${event.top}%`,
-							height: `${event.height}%`,
+							left: `${positioned.left}%`,
+							width: `calc(${positioned.width}% - var(--spacing) * 2)`,
+							top: `${positioned.top}%`,
+							height: `${positioned.height}%`,
 						}}
 					>
 						<DraggableEvent

@@ -63,7 +63,6 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 		days: flatDays,
 		gridType,
 		resourceId: resource?.id,
-		dayNumberHeight,
 		allDay,
 	})
 
@@ -131,6 +130,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 					<div className="absolute inset-0 z-10 pointer-events-none">
 						<HorizontalGridEventsLayer
 							data-testid={keys.container.eventsLayer('horizontal', id)}
+							dayNumberHeight={dayNumberHeight}
 							days={flatDays}
 							gridType={gridType}
 							positionedEvents={positionedEvents}
@@ -177,7 +177,6 @@ const GroupedColumn = memo(
 			days,
 			gridType,
 			resourceId,
-			dayNumberHeight,
 			allDay,
 		})
 
@@ -206,6 +205,7 @@ const GroupedColumn = memo(
 				<div className="absolute inset-0 z-10 pointer-events-none">
 					<HorizontalGridEventsLayer
 						data-testid={keys.container.eventsLayer('horizontal', id)}
+						dayNumberHeight={dayNumberHeight}
 						days={days}
 						gridType={gridType}
 						positionedEvents={positionedEvents}

@@ -11,9 +11,9 @@ IlamyCalendarPropEvent          User provides (flexible date types: string | Dat
         |
 CalendarEvent                   Internal canonical type (dayjs dates)
         |
-    positioning                 position-day-events / position-week-events
+    positioning                 lib/layout (geometry / vertical / horizontal)
         |
-ProcessedCalendarEvent          CalendarEvent + layout fields (top, left, width, height)
+PositionedEvent                 { event: CalendarEvent } + placement fields (left/width + top/height/zIndex or row)
 ```
 
 ## CalendarEvent

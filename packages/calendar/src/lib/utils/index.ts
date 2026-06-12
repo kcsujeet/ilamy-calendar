@@ -2,11 +2,11 @@ import type { WeekDays } from '@/components/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
 
-// `cn` lives in the shared @ilamy/ui package; `safeDate`/`omitKeys` live in the
-// shared @ilamy/utils package. Re-exported here so the existing `@/lib/utils`
+// `cn` lives in the shared @ilamy/ui package; `safeDate` lives in the shared
+// @ilamy/utils package. Re-exported here so the existing `@/lib/utils`
 // call sites in core stay unchanged.
 export { cn } from '@ilamy/ui/lib/utils'
-export { omitKeys, safeDate } from '@ilamy/utils/helpers'
+export { safeDate } from '@ilamy/utils/helpers'
 
 /**
  * Converts an optional WeekDays[] list into a Set<number> of day indices

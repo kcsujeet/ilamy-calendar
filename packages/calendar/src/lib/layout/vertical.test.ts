@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
-import { getPositionedDayEvents } from './position-day-events'
+import { layoutVertical } from './vertical'
 
 // Default 24-hour grid anchored at 2025-01-13 00:00 UTC.
 const BASE = '2025-01-13T00:00:00.000Z'
@@ -36,13 +36,13 @@ const position = (
 		gridType?: 'day' | 'hour' | 'minute'
 	} = {}
 ) =>
-	getPositionedDayEvents({
+	layoutVertical({
 		days: opts.days ?? hourDays,
 		gridType: opts.gridType,
 		events,
 	})
 
-describe('getPositionedDayEvents', () => {
+describe('layoutVertical', () => {
 	describe('Input handling', () => {
 		it('returns empty array when no events', () => {
 			expect(position([])).toHaveLength(0)
@@ -53,8 +53,7 @@ describe('getPositionedDayEvents', () => {
 				mkEvent('all', 9, 10, { allDay: true }),
 				mkEvent('timed', 9, 10),
 			])
-			expect(result).toHaveLength(1)
-			expect(result[0].id).toBe('timed')
+			expect(result.map((p) => p.event.id)).toEqual(['timed'])
 		})
 
 		it('returns empty when only all-day events', () => {
@@ -102,7 +101,7 @@ describe('getPositionedDayEvents', () => {
 				mkEvent('long', 9, 11),
 				mkEvent('short', 9.5, 10),
 			])
-			expect(result.map((e) => e.id)).toEqual(['long', 'short'])
+			expect(result.map((p) => p.event.id)).toEqual(['long', 'short'])
 			expect(result.map((e) => e.left)).toEqual([0, 25])
 			expect(result.map((e) => e.width)).toEqual([100, 75])
 			expect(result.map((e) => e.zIndex)).toEqual([1, 2])
@@ -114,7 +113,7 @@ describe('getPositionedDayEvents', () => {
 				mkEvent('b', 9.5, 11.5), // 2h
 				mkEvent('c', 10, 11), // 1h
 			])
-			expect(result.map((e) => e.id)).toEqual(['a', 'b', 'c'])
+			expect(result.map((p) => p.event.id)).toEqual(['a', 'b', 'c'])
 			expect(result.map((e) => e.left)).toEqual([0, 25, 50])
 			expect(result.map((e) => e.width)).toEqual([100, 75, 50])
 			expect(result.map((e) => e.zIndex)).toEqual([1, 2, 3])
@@ -141,7 +140,7 @@ describe('getPositionedDayEvents', () => {
 				mkEvent('short', 9.5, 10),
 				mkEvent('long', 9, 11),
 			])
-			expect(result.map((e) => e.id)).toEqual(['long', 'short'])
+			expect(result.map((p) => p.event.id)).toEqual(['long', 'short'])
 		})
 
 		it('tie-breaks equal durations by earliest start', () => {
@@ -149,7 +148,7 @@ describe('getPositionedDayEvents', () => {
 				mkEvent('later', 9.5, 10.5),
 				mkEvent('earlier', 9, 10),
 			])
-			expect(result.map((e) => e.id)).toEqual(['earlier', 'later'])
+			expect(result.map((p) => p.event.id)).toEqual(['earlier', 'later'])
 		})
 	})
 
@@ -200,20 +199,21 @@ describe('getPositionedDayEvents', () => {
 	})
 
 	describe('Stability', () => {
-		it('preserves original event fields in positioned output', () => {
-			const [p] = position([
-				mkEvent('kept', 9, 10, {
-					title: 'Kept Title',
-					description: 'some description',
-					color: 'blue',
-				}),
-			])
-			expect(p).toMatchObject({
-				id: 'kept',
+		it('nests the original event by reference, un-mutated and un-copied', () => {
+			const source = mkEvent('kept', 9, 10, {
 				title: 'Kept Title',
 				description: 'some description',
 				color: 'blue',
 			})
+			const [p] = position([source])
+			expect(p.event).toBe(source)
+		})
+
+		it('emits no horizontal-strategy fields', () => {
+			const [p] = position([mkEvent('e', 9, 10)])
+			expect(p.row).toBeUndefined()
+			expect(p.isTruncatedStart).toBeUndefined()
+			expect(p.isTruncatedEnd).toBeUndefined()
 		})
 	})
 })

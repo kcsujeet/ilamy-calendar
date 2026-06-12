@@ -1,11 +1,9 @@
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { PositionedEvent } from '@/lib/layout/geometry'
+import { layoutVertical } from '@/lib/layout/vertical'
 import { filterEventsByResource } from '@/lib/utils/event-utils'
-import {
-	getPositionedDayEvents,
-	type PositionedEvent,
-} from '@/lib/utils/position-day-events'
 
 interface UseProcessedDayEventsProps {
 	days: Dayjs[] // The specific day this column represents
@@ -48,7 +46,7 @@ export const useProcessedDayEvents = ({
 	])
 
 	const todayEvents = useMemo<PositionedEvent[]>(() => {
-		return getPositionedDayEvents({
+		return layoutVertical({
 			days,
 			events,
 			gridType,

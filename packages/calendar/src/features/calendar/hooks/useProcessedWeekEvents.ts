@@ -2,20 +2,17 @@ import { useMemo } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { PositionedEvent } from '@/lib/layout/geometry'
+import { layoutHorizontal } from '@/lib/layout/horizontal'
 import { getDayKey } from '@/lib/utils/date-utils'
 import {
 	eventOverlapsRange,
 	filterEventsByResource,
 } from '@/lib/utils/event-utils'
-import {
-	getPositionedEvents,
-	type PositionedEvent,
-} from '@/lib/utils/position-week-events'
 
 interface UseProcessedWeekEventsProps {
 	days: Dayjs[]
 	allDay?: boolean
-	dayNumberHeight?: number
 	resourceId?: string | number
 	gridType?: 'day' | 'hour'
 }
@@ -28,17 +25,11 @@ export interface ProcessedWeekEventsResult {
 export const useProcessedWeekEvents = ({
 	days,
 	allDay,
-	dayNumberHeight,
 	resourceId,
 	gridType,
 }: UseProcessedWeekEventsProps): ProcessedWeekEventsResult => {
-	const {
-		getEventsForDateRange,
-		dayMaxEvents,
-		eventSpacing,
-		eventHeight,
-		getEventsForResource,
-	} = useSmartCalendarContext()
+	const { getEventsForDateRange, dayMaxEvents, getEventsForResource } =
+		useSmartCalendarContext()
 
 	const first = days.at(0)
 	const last = days.at(-1)
@@ -85,24 +76,13 @@ export const useProcessedWeekEvents = ({
 	}, [days, events])
 
 	const positionedEvents = useMemo(() => {
-		return getPositionedEvents({
+		return layoutHorizontal({
 			days,
 			events,
 			dayMaxEvents,
-			dayNumberHeight,
-			eventSpacing,
-			eventBarHeight: eventHeight,
 			gridType,
 		})
-	}, [
-		days,
-		dayMaxEvents,
-		dayNumberHeight,
-		eventSpacing,
-		eventHeight,
-		events,
-		gridType,
-	])
+	}, [days, dayMaxEvents, events, gridType])
 
 	return { positionedEvents, dayEventsMap }
 }

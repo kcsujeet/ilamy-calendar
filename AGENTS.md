@@ -167,7 +167,8 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
   lib/
     configs/dayjs-config.ts                    # shim → @ilamy/utils/dayjs (ALWAYS import dayjs from here)
     translations/                              # Default translations, types
-    utils/                                     # date-utils, position-*-events, export-ical (cn/safeDate re-exported from @ilamy/ui & @ilamy/utils)
+    layout/                                    # geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
+    utils/                                     # date-utils, export-ical (cn/safeDate re-exported from @ilamy/ui & @ilamy/utils)
     constants.ts                               # Global constants
 
 # Recurrence plugin (separate package):

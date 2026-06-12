@@ -5,8 +5,12 @@ import { RRule } from 'rrule'
 import {
 	deleteRecurringEvent,
 	generateRecurringEvents,
-	updateRecurringEvent,
+	updateRecurringEvent as updateRecurringEventImpl,
 } from './recurrence-handler'
+
+const updateRecurringEvent = (
+	...args: Parameters<typeof updateRecurringEventImpl>
+) => updateRecurringEventImpl(...args).events
 
 const createBaseRecurringEvent = (
 	overrides: Partial<CalendarEvent> = {}

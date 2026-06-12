@@ -6,8 +6,12 @@ import {
 	deleteRecurringEvent,
 	generateRecurringEvents,
 	isRecurringEvent,
-	updateRecurringEvent,
+	updateRecurringEvent as updateRecurringEventImpl,
 } from './recurrence-handler'
+
+const updateRecurringEvent = (
+	...args: Parameters<typeof updateRecurringEventImpl>
+) => updateRecurringEventImpl(...args).events
 
 // Test helper to create a base recurring event
 const createBaseRecurringEvent = (
@@ -219,9 +223,74 @@ describe('updateRecurringEvent', () => {
 			// Should have new standalone modified event
 			const modifiedEvent = result.find((e) => e.id !== baseEvent.id)
 			expect(modifiedEvent?.title).toBe('Modified Meeting')
+			expect(modifiedEvent?.id).toContain('recurring-1_modified_')
 			expect(modifiedEvent?.recurrenceId).toBe('2025-01-20T09:00:00.000Z')
 			expect(modifiedEvent?.uid).toBe(baseEvent.uid)
 			expect(modifiedEvent?.rrule).toBeUndefined()
+		})
+
+		it('should keep uid on scope this base row for onEventUpdate when base has no uid', () => {
+			const baseEvent = createBaseRecurringEvent({ uid: undefined })
+			// Generated instances carry the series uid (from base id) even when stored base omits uid
+			const seriesUid = 'recurring-1@ilamy.calendar'
+			const targetEvent = createTargetEvent({
+				uid: seriesUid,
+				rrule: undefined,
+			})
+
+			const { updated } = updateRecurringEventImpl({
+				targetEvent,
+				updates: { title: 'Modified Meeting' },
+				currentEvents: [baseEvent],
+				scope: 'this',
+			})
+
+			expect(updated).toHaveLength(1)
+			expect(updated[0].id).toBe('recurring-1')
+			expect(updated[0].uid).toBe(seriesUid)
+		})
+
+		it('should apply uid from updates on new override when scope this', () => {
+			const customUid = 'recurring-1@calendar.test'
+			const baseEvent = createBaseRecurringEvent({
+				uid: customUid,
+			})
+			const targetEvent = createTargetEvent()
+
+			const result = updateRecurringEvent({
+				targetEvent,
+				updates: { title: 'Custom uid override', uid: customUid },
+				currentEvents: [baseEvent],
+				scope: 'this',
+			})
+
+			const modifiedEvent = result.find((e) => e.id !== baseEvent.id)
+			expect(modifiedEvent?.uid).toBe(customUid)
+		})
+
+		it('should report base row in updated when editing a stored override', () => {
+			const baseEvent = createBaseRecurringEvent()
+			const occurrenceISO = '2025-01-20T09:00:00.000Z'
+			const storedOverride = createTargetEvent({
+				id: 'recurring-1_override',
+				title: 'Detached override',
+				recurrenceId: occurrenceISO,
+				rrule: undefined,
+			})
+
+			const { updated, added } = updateRecurringEventImpl({
+				targetEvent: storedOverride,
+				updates: { title: 'Edited override' },
+				currentEvents: [baseEvent, storedOverride],
+				scope: 'this',
+			})
+
+			expect(added).toHaveLength(0)
+			expect(updated).toHaveLength(2)
+			expect(updated[0].id).toBe('recurring-1')
+			expect(updated[0].exdates).toEqual([occurrenceISO])
+			expect(updated[1].id).toBe('recurring-1_override')
+			expect(updated[1].title).toBe('Edited override')
 		})
 
 		it('should preserve existing EXDATES when adding new one', () => {
@@ -327,6 +396,27 @@ describe('updateRecurringEvent', () => {
 			if (!updatedEvent.rrule) throw new Error('updatedEvent.rrule missing')
 			expect(updatedEvent.rrule.freq).toBe(RRule.DAILY)
 			expect(updatedEvent.id).toBe(baseEvent.id)
+			expect(updatedEvent.uid).toBe('recurring-1@calendar.test')
+		})
+
+		it('should keep uid on scope all updated row for onEventUpdate even when updates omit uid', () => {
+			const baseEvent = createBaseRecurringEvent({
+				uid: 'series-uid@calendar.test',
+			})
+			const targetInstance = createTargetEvent({
+				uid: 'series-uid@calendar.test',
+				rrule: undefined,
+			})
+
+			const { updated } = updateRecurringEventImpl({
+				targetEvent: targetInstance,
+				updates: { title: 'Series title', uid: undefined },
+				currentEvents: [baseEvent],
+				scope: 'all',
+			})
+
+			expect(updated).toHaveLength(1)
+			expect(updated[0].uid).toBe('series-uid@calendar.test')
 		})
 
 		it('should preserve other events in the array', () => {

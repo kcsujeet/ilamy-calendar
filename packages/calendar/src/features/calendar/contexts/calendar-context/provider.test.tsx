@@ -250,6 +250,7 @@ describe('CalendarProvider - recurring event integration', () => {
 
 	it('should call regular callbacks for recurring event operations', () => {
 		const onEventUpdate = mock(() => {})
+		const onEventAdd = mock(() => {})
 		const onEventDelete = mock(() => {})
 
 		const recurringEvent: CalendarEvent = {
@@ -306,16 +307,28 @@ describe('CalendarProvider - recurring event integration', () => {
 			events: [recurringEvent],
 			dayMaxEvents: 5,
 			onEventUpdate: onEventUpdate,
+			onEventAdd: onEventAdd,
 			onEventDelete: onEventDelete,
 			plugins: [recurrencePlugin()],
 		})
 
-		// Test updating recurring event - should call onEventUpdate with the updated event
+		// Scope "this" on base: update base (EXDATE) + add detached override
 		getByTestId('update-recurring').click()
-		expect(onEventUpdate).toHaveBeenCalledWith({
-			...recurringEvent,
-			title: 'Updated Weekly Meeting',
-		})
+		expect(onEventUpdate).toHaveBeenCalledTimes(1)
+		expect(onEventUpdate).toHaveBeenCalledWith(
+			expect.objectContaining({
+				id: 'weekly-meeting',
+				exdates: ['2025-01-06T10:00:00.000Z'],
+			})
+		)
+
+		expect(onEventAdd).toHaveBeenCalledTimes(1)
+		expect(onEventAdd).toHaveBeenCalledWith(
+			expect.objectContaining({
+				title: 'Updated Weekly Meeting',
+				id: expect.stringContaining('weekly-meeting_modified_'),
+			})
+		)
 
 		// Test deleting recurring event - should call onEventDelete with the event
 		getByTestId('delete-recurring').click()
@@ -324,6 +337,7 @@ describe('CalendarProvider - recurring event integration', () => {
 
 	it('should call onEventUpdate for rrule changes', () => {
 		const onEventUpdate = mock(() => {})
+		const onEventAdd = mock(() => {})
 
 		const recurringEvent: CalendarEvent = {
 			id: 'daily-standup',
@@ -375,24 +389,28 @@ describe('CalendarProvider - recurring event integration', () => {
 			events: [recurringEvent],
 			dayMaxEvents: 5,
 			onEventUpdate: onEventUpdate,
+			onEventAdd: onEventAdd,
 			plugins: [recurrencePlugin()],
 		})
 
-		// Test updating rrule - should call onEventUpdate with the new rrule
+		// Scope "all": single onEventUpdate with persisted base id
 		getByTestId('update-rrule').click()
-		expect(onEventUpdate).toHaveBeenCalledWith({
-			...recurringEvent,
-			rrule: {
-				freq: RRule.WEEKLY,
-				interval: 1,
-				byweekday: [RRule.MO],
-				dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
-			},
-		})
+		expect(onEventUpdate).toHaveBeenCalledTimes(1)
+		expect(onEventUpdate).toHaveBeenCalledWith(
+			expect.objectContaining({
+				id: 'daily-standup',
+				rrule: expect.objectContaining({
+					freq: RRule.WEEKLY,
+					byweekday: [RRule.MO],
+				}),
+			})
+		)
+		expect(onEventAdd).not.toHaveBeenCalled()
 	})
 
 	it('should call onEventUpdate for time/date changes in recurring events', () => {
 		const onEventUpdate = mock(() => {})
+		const onEventAdd = mock(() => {})
 
 		const recurringEvent: CalendarEvent = {
 			id: 'team-meeting',
@@ -441,16 +459,21 @@ describe('CalendarProvider - recurring event integration', () => {
 			events: [recurringEvent],
 			dayMaxEvents: 5,
 			onEventUpdate: onEventUpdate,
+			onEventAdd: onEventAdd,
 			plugins: [recurrencePlugin()],
 		})
 
-		// Test updating time - should call onEventUpdate with new start/end times
+		// Scope "all": onEventUpdate with base id and anchored times
 		getByTestId('update-time').click()
-		expect(onEventUpdate).toHaveBeenCalledWith({
-			...recurringEvent,
-			start: dayjs('2025-01-06T10:00:00.000Z'),
-			end: dayjs('2025-01-06T11:00:00.000Z'),
-		})
+		expect(onEventUpdate).toHaveBeenCalledTimes(1)
+		expect(onEventUpdate).toHaveBeenCalledWith(
+			expect.objectContaining({
+				id: 'team-meeting',
+				start: dayjs('2025-01-06T10:00:00.000Z'),
+				end: dayjs('2025-01-06T11:00:00.000Z'),
+			})
+		)
+		expect(onEventAdd).not.toHaveBeenCalled()
 	})
 
 	it('should initialize with the specified initial view', () => {

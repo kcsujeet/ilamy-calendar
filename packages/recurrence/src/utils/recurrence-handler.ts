@@ -1,4 +1,8 @@
-import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
+import type {
+	CalendarEvent,
+	Dayjs,
+	PluginMutationResult,
+} from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
 import { safeDate } from '@ilamy/utils/helpers'
 import { RRule } from 'rrule'
@@ -278,30 +282,70 @@ export const updateRecurringEvent = ({
 	updates,
 	currentEvents,
 	scope,
-}: UpdateRecurringEventProps): CalendarEvent[] => {
+}: UpdateRecurringEventProps): PluginMutationResult => {
 	const updatedEvents = [...currentEvents]
 	const baseEventIndex = findBaseEventIndex(updatedEvents, targetEvent)
 	const baseEvent = updatedEvents[baseEventIndex]
 
 	switch (scope) {
 		case 'this': {
-			// "This event only" - Add EXDATE to base event and create standalone modified event
-			const { baseEvent: updatedBaseEvent, targetEventStartISO } =
-				addExdateToBaseEvent(baseEvent, targetEvent)
+			// "This event only" - EXDATE on base + detached override for this occurrence.
+			// Generated instance: add a new override row. Stored override: update in place.
+			const seriesUid = getEventParentUID(baseEvent)
+			const isOverrideEvent = Boolean(
+				targetEvent.recurrenceId && !targetEvent.rrule
+			)
+			const recurrenceId =
+				isOverrideEvent && targetEvent.recurrenceId
+					? targetEvent.recurrenceId
+					: targetEvent.start.toISOString()
+
+			const existingExdates = baseEvent.exdates || []
+			const nextExdates = existingExdates.includes(recurrenceId)
+				? existingExdates
+				: [...existingExdates, recurrenceId]
+
+			const updatedBaseEvent: CalendarEvent = {
+				...baseEvent,
+				exdates: nextExdates,
+				uid: seriesUid,
+			}
 			updatedEvents[baseEventIndex] = updatedBaseEvent
 
-			// Create standalone modified event with recurrenceId
-			const modifiedEventId = `${targetEvent.id}_modified_${Date.now()}`
-			const modifiedEvent: CalendarEvent = {
+			const detachedOverride: CalendarEvent = {
 				...targetEvent,
 				...updates,
+				recurrenceId,
+				rrule: undefined,
+				uid: seriesUid,
+			}
+
+			if (isOverrideEvent) {
+				const overrideIndex = updatedEvents.findIndex(
+					(e) => e.id === targetEvent.id
+				)
+				if (overrideIndex === -1) {
+					throw new Error('Detached override not found')
+				}
+				updatedEvents[overrideIndex] = detachedOverride
+				return {
+					events: updatedEvents,
+					updated: [updatedBaseEvent, detachedOverride],
+					added: [],
+				}
+			}
+
+			const modifiedEventId = `${baseEvent.id}_modified_${Date.now()}`
+			const modifiedEvent: CalendarEvent = {
+				...detachedOverride,
 				id: modifiedEventId,
-				recurrenceId: targetEventStartISO, // This marks it as a modified instance
-				uid: getEventParentUID(baseEvent), // Keep same UID as base event (iCalendar standard)
-				rrule: undefined, // Standalone events don't have RRULE
 			}
 			updatedEvents.push(modifiedEvent)
-			break
+			return {
+				events: updatedEvents,
+				updated: [updatedBaseEvent],
+				added: [modifiedEvent],
+			}
 		}
 
 		case 'following': {
@@ -341,21 +385,29 @@ export const updateRecurringEvent = ({
 				recurrenceId: undefined, // This is a new base event, not an instance
 			}
 			updatedEvents.push(newSeriesEvent)
-			break
+			return {
+				events: updatedEvents,
+				updated: [terminatedEvent],
+				added: [newSeriesEvent],
+			}
 		}
 
 		case 'all': {
 			// "All events" - Update the base recurring event (anchor dates, not instance day)
 			const parentUid = getEventParentUID(baseEvent)
+			const seriesUid = getEventParentUID(baseEvent)
 			const anchored = applyAllScopeUpdates(baseEvent, updates)
-			updatedEvents[baseEventIndex] = {
+			const updatedBaseEvent: CalendarEvent = {
 				...baseEvent,
 				...updates,
 				start: anchored.start,
 				end: anchored.end,
 				rrule: anchored.rrule,
 				exdates: undefined,
+				uid: seriesUid,
 			}
+			updatedEvents[baseEventIndex] = updatedBaseEvent
+
 			const isDetachedOverrideOfSeries = (e: CalendarEvent): boolean => {
 				const isDetachedOverride = Boolean(e.recurrenceId) && !e.rrule
 				const belongsToSeries = getEventParentUID(e) === parentUid
@@ -363,7 +415,12 @@ export const updateRecurringEvent = ({
 			}
 			// Google-Calendar behavior: an "all" edit resets the series — drop detached
 			// overrides and clear exceptions (previously split/deleted occurrences return).
-			return updatedEvents.filter((e) => !isDetachedOverrideOfSeries(e))
+			const events = updatedEvents.filter((e) => !isDetachedOverrideOfSeries(e))
+			return {
+				events,
+				updated: [updatedBaseEvent],
+				added: [],
+			}
 		}
 
 		default:
@@ -371,8 +428,6 @@ export const updateRecurringEvent = ({
 				`Invalid scope: ${scope}. Must be 'this', 'following', or 'all'`
 			)
 	}
-
-	return updatedEvents
 }
 
 interface DeleteRecurringEventProps {

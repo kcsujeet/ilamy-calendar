@@ -13,6 +13,7 @@ export type {
 	IlamyPlugin,
 	PluginDateRange,
 	PluginMutationArgs,
+	PluginMutationResult,
 	PluginView,
 	Resource,
 	VerticalColumnSpec,

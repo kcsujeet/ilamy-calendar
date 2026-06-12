@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@ilamy/types'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 export interface ScopedMutationDialogState {
@@ -37,6 +37,10 @@ export function useScopedEventMutation(
 	)
 	const [dialogState, setDialogState] =
 		useState<ScopedMutationDialogState>(CLOSED)
+	const dialogStateRef = useRef(dialogState)
+	useEffect(() => {
+		dialogStateRef.current = dialogState
+	}, [dialogState])
 
 	const openEditDialog = useCallback(
 		(event: CalendarEvent, updates: Partial<CalendarEvent>) => {
@@ -51,19 +55,20 @@ export function useScopedEventMutation(
 
 	const closeDialog = useCallback(() => setDialogState(CLOSED), [])
 
+	// Side effects must not run inside a setState updater — React StrictMode
+	// (enabled in the demo) intentionally double-invokes updaters in dev.
 	const handleConfirm = useCallback(
 		(scope: unknown) => {
-			setDialogState((state) => {
-				if (!state.event) {
-					return CLOSED
-				}
-				if (state.operation === 'edit') {
-					applyScopedEdit(state.event, state.updates ?? {}, scope)
-				} else {
-					applyScopedDelete(state.event, scope)
-				}
-				return CLOSED
-			})
+			const state = dialogStateRef.current
+			if (!state.event) {
+				return
+			}
+			if (state.operation === 'edit') {
+				applyScopedEdit(state.event, state.updates ?? {}, scope)
+			} else {
+				applyScopedDelete(state.event, scope)
+			}
+			setDialogState(CLOSED)
 			onComplete?.()
 		},
 		[applyScopedEdit, applyScopedDelete, onComplete]

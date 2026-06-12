@@ -1,4 +1,8 @@
-import type { CalendarEvent, Resource } from '@ilamy/types'
+import type {
+	CalendarEvent,
+	PluginMutationResult,
+	Resource,
+} from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PluginRuntime } from '@/features/plugins/lib/types'
@@ -6,6 +10,15 @@ import {
 	filterEventsForResource,
 	getEventResourceIds,
 } from '@/lib/events/pipeline'
+
+const isPluginMutationResult = (
+	result: CalendarEvent[] | PluginMutationResult
+): result is PluginMutationResult =>
+	typeof result === 'object' &&
+	result !== null &&
+	'events' in result &&
+	'updated' in result &&
+	'added' in result
 
 export interface CalendarDataParams {
 	events: CalendarEvent[]
@@ -103,12 +116,26 @@ export const useCalendarData = ({
 			if (!manager?.applyEdit) {
 				return
 			}
+			const editResult = manager.applyEdit({
+				event,
+				updates,
+				currentEvents,
+				scope,
+			})
+			if (isPluginMutationResult(editResult)) {
+				for (const storedEvent of editResult.updated) {
+					onEventUpdate?.(storedEvent)
+				}
+				for (const storedEvent of editResult.added) {
+					onEventAdd?.(storedEvent)
+				}
+				setCurrentEvents(editResult.events)
+				return
+			}
 			onEventUpdate?.({ ...event, ...updates })
-			setCurrentEvents(
-				manager.applyEdit({ event, updates, currentEvents, scope })
-			)
+			setCurrentEvents(editResult)
 		},
-		[currentEvents, onEventUpdate, pluginRuntime]
+		[currentEvents, onEventAdd, onEventUpdate, pluginRuntime]
 	)
 
 	const applyScopedDelete = useCallback(

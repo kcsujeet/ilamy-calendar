@@ -307,6 +307,33 @@ are unaffected.
 
 ---
 
+### `applyEdit` may return a structured `PluginMutationResult` (additive, non-breaking)
+
+Only relevant if you author a plugin that implements `applyEdit`. A scoped edit can change
+multiple stored rows at once (e.g. a recurring "this" edit adds an EXDATE to the base row
+*and* creates a detached override). Returning a plain `CalendarEvent[]` forces the core to
+guess which persistence callback to fire, so it always fired one `onEventUpdate` with a
+synthetic merged instance — the wrong payload and, for multi-row edits, the wrong count.
+
+`applyEdit`'s return type widened from `CalendarEvent[]` to
+`CalendarEvent[] | PluginMutationResult`:
+
+```ts
+export interface PluginMutationResult {
+  events: CalendarEvent[]   // the full next event list (replaces the store)
+  updated: CalendarEvent[]  // existing rows to persist via onEventUpdate
+  added: CalendarEvent[]    // new rows to persist via onEventAdd
+}
+```
+
+When you return a `PluginMutationResult`, the core dispatches each `updated` row to
+`onEventUpdate`, each `added` row to `onEventAdd`, and sets the store to `events` — the real
+stored rows, with their own ids/uids. Returning a bare `CalendarEvent[]` behaves exactly as
+before (one synthetic `onEventUpdate`, store replaced), so existing plugins compile and run
+unchanged. The built-in recurrence plugin now returns the structured result.
+
+---
+
 ## One calendar: resources are props on `IlamyCalendar` (v2 structure overhaul, Phase 4)
 
 `IlamyCalendar` now accepts `resources`, `renderResource`, `orientation`, and

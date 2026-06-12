@@ -4,12 +4,12 @@ import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-cont
 import type { CalendarEvent } from '@/components/types'
 import { WeekView } from '@/features/calendar/components/views'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
 import {
 	resourceWeekInitialDate as initialDate,
 	noEvents,
 	twoResources,
-} from './resource-test-fixtures'
+} from '@/features/calendar/testing/resource-test-fixtures'
+import dayjs from '@/lib/configs/dayjs-config'
 
 const renderResourceWeekVertical = (props = {}) => {
 	return render(

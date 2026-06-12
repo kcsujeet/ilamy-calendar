@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import {
+	assertVerticalBusinessHourRange,
+	weekdayBusinessHours,
+} from '@/features/calendar/testing/resource-test-fixtures'
 import dayjs from '@/lib/configs/dayjs-config'
 import { DayView } from './views/day'
-import { weekdayBusinessHours } from './views/resource-test-fixtures'
 import { WeekView } from './views/week'
 
 describe('Regular Calendar Business Hours Integration', () => {
@@ -28,10 +31,7 @@ describe('Regular Calendar Business Hours Integration', () => {
 			)
 
 			// Should show business range from Monday even though it's Sunday
-			expect(screen.getByTestId('vertical-time-10')).toBeInTheDocument()
-			expect(screen.getByTestId('vertical-time-15')).toBeInTheDocument()
-			expect(screen.queryByTestId('vertical-time-09')).not.toBeInTheDocument()
-			expect(screen.queryByTestId('vertical-time-16')).not.toBeInTheDocument()
+			assertVerticalBusinessHourRange(screen, 10, 15, 9, 16)
 		})
 	})
 

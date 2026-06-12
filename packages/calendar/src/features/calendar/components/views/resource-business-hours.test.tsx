@@ -3,8 +3,13 @@ import type { Resource } from '@ilamy/types'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { DayView, WeekView } from '@/features/calendar/components/views'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import {
+	assertResourceWeekBusinessHourRange,
+	assertVerticalBusinessHourRange,
+	singleResource,
+	weekdayBusinessHours,
+} from '@/features/calendar/testing/resource-test-fixtures'
 import dayjs from '@/lib/configs/dayjs-config'
-import { singleResource, weekdayBusinessHours } from './resource-test-fixtures'
 
 describe('Resource Calendar Business Hours Integration', () => {
 	beforeEach(() => {
@@ -29,21 +34,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 				</CalendarProvider>
 			)
 
-			// Should show business hours (multiple across the week)
-			expect(
-				screen.getAllByTestId('resource-week-time-label-09').length
-			).toBeGreaterThan(0)
-			expect(
-				screen.getAllByTestId('resource-week-time-label-16').length
-			).toBeGreaterThan(0)
-
-			// Should NOT show non-business hours
-			expect(
-				screen.queryAllByTestId('resource-week-time-label-08').length
-			).toBe(0)
-			expect(
-				screen.queryAllByTestId('resource-week-time-label-17').length
-			).toBe(0)
+			assertResourceWeekBusinessHourRange(screen, 9, 16, 8, 17)
 		})
 	})
 
@@ -67,10 +58,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 
 			// Even though it's Sunday (not in daysOfWeek), it should show 10-16 range
 			// because of the new fallback logic in getViewHours
-			expect(screen.getByTestId('vertical-time-10')).toBeInTheDocument()
-			expect(screen.getByTestId('vertical-time-15')).toBeInTheDocument()
-			expect(screen.queryByTestId('vertical-time-09')).not.toBeInTheDocument()
-			expect(screen.queryByTestId('vertical-time-16')).not.toBeInTheDocument()
+			assertVerticalBusinessHourRange(screen, 10, 15, 9, 16)
 		})
 	})
 

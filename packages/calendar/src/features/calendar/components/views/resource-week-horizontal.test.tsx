@@ -4,12 +4,13 @@ import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-cont
 import type { CalendarEvent } from '@/components/types'
 import { WeekView } from '@/features/calendar/components/views'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
 import {
+	assertResourceWeekBusinessHourRange,
 	resourceWeekInitialDate as initialDate,
 	noEvents,
 	twoResources,
-} from './resource-test-fixtures'
+} from '@/features/calendar/testing/resource-test-fixtures'
+import dayjs from '@/lib/configs/dayjs-config'
 
 const renderResourceWeekHorizontal = (props = {}) => {
 	return render(
@@ -141,21 +142,7 @@ describe('ResourceWeekHorizontal', () => {
 				hideNonBusinessHours: true,
 			})
 
-			// Business hours should be present
-			expect(
-				screen.getAllByTestId('resource-week-time-label-09').length
-			).toBeGreaterThan(0)
-			expect(
-				screen.getAllByTestId('resource-week-time-label-16').length
-			).toBeGreaterThan(0)
-
-			// Non-business hours should NOT be present
-			expect(
-				screen.queryAllByTestId('resource-week-time-label-08').length
-			).toBe(0)
-			expect(
-				screen.queryAllByTestId('resource-week-time-label-17').length
-			).toBe(0)
+			assertResourceWeekBusinessHourRange(screen, 9, 16, 8, 17)
 			expect(
 				screen.queryAllByTestId('resource-week-time-label-23').length
 			).toBe(0)

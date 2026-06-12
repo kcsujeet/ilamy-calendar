@@ -1,12 +1,18 @@
+import type { Resource } from '@ilamy/types'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import type { PluginRuntime } from '@/features/plugins/lib/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import {
+	filterEventsForResource,
+	getEventResourceIds,
+} from '@/lib/events/pipeline'
 
 export interface CalendarDataParams {
 	events: CalendarEvent[]
 	pluginRuntime: PluginRuntime
 	getCurrentViewRange: () => { start: Dayjs; end: Dayjs }
+	resources: Resource[]
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
 	onEventDelete?: (event: CalendarEvent) => void
@@ -26,6 +32,12 @@ export interface CalendarDataSlice {
 		scope: unknown
 	) => void
 	applyScopedDelete: (event: CalendarEvent, scope: unknown) => void
+	getEventsForResource: (resourceId: string | number) => CalendarEvent[]
+	getEventsForResources: (resourceIds: (string | number)[]) => CalendarEvent[]
+	getResourceById: (
+		resourceId: string | number | undefined
+	) => Resource | undefined
+	isEventCrossResource: (event: CalendarEvent) => boolean
 }
 
 /** Data slice: event store, prop sync, CRUD, and plugin-scoped mutations. */
@@ -33,6 +45,7 @@ export const useCalendarData = ({
 	events,
 	pluginRuntime,
 	getCurrentViewRange,
+	resources,
 	onEventAdd,
 	onEventUpdate,
 	onEventDelete,
@@ -124,6 +137,38 @@ export const useCalendarData = ({
 		[currentEvents, onEventDelete]
 	)
 
+	// Resource utilities — both filters go through getEventResourceIds so single
+	// and multi-resource events are handled uniformly. Always defined: on a
+	// resource-less calendar they operate on an empty `resources` array, which
+	// is exactly the regular-calendar semantics.
+	const getEventsForResource = useCallback(
+		(resourceId: string | number): CalendarEvent[] =>
+			filterEventsForResource(processedEvents, resourceId),
+		[processedEvents]
+	)
+
+	const getEventsForResources = useCallback(
+		(resourceIds: (string | number)[]): CalendarEvent[] =>
+			processedEvents.filter((e) =>
+				getEventResourceIds(e).some((id) => resourceIds.includes(id))
+			),
+		[processedEvents]
+	)
+
+	const getResourceById = useCallback(
+		(resourceId: string | number | undefined): Resource | undefined => {
+			if (resourceId === undefined) {
+				return undefined
+			}
+			return resources.find((resource) => resource.id === resourceId)
+		},
+		[resources]
+	)
+
+	const isEventCrossResource = useCallback((event: CalendarEvent): boolean => {
+		return Boolean(event.resourceIds && event.resourceIds.length > 1)
+	}, [])
+
 	return {
 		events: processedEvents,
 		rawEvents: currentEvents,
@@ -134,5 +179,9 @@ export const useCalendarData = ({
 		deleteEvent,
 		applyScopedEdit,
 		applyScopedDelete,
+		getEventsForResource,
+		getEventsForResources,
+		getResourceById,
+		isEventCrossResource,
 	}
 }

@@ -81,24 +81,27 @@ const TestWrapper = ({ children, testId }: { children: React.ReactNode; testId: 
 }
 ```
 
-## ResourceCalendarProvider Test Wrapper
+## Resource Calendar Test Wrapper
 
-Resource calendar tests use `ResourceCalendarProvider` instead:
+Resource calendar tests use the same `CalendarProvider` with the resource axis props
+(`resources`, `orientation`, `weekViewGranularity`) and render the unified view:
 
 ```typescript
-import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
+import { WeekView } from '@/features/calendar/components/views'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 
 const renderResourceView = (props = {}) => {
   return render(
-    <ResourceCalendarProvider
+    <CalendarProvider
       dayMaxEvents={5}
       events={mockEvents}
-      resources={mockResources}
       firstDayOfWeek={0}
+      orientation="vertical"
+      resources={mockResources}
       {...props}
     >
-      <ResourceWeekVertical />
-    </ResourceCalendarProvider>
+      <WeekView />
+    </CalendarProvider>
   )
 }
 ```

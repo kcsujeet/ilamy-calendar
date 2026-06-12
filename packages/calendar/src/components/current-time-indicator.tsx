@@ -1,6 +1,6 @@
+import type { Resource } from '@ilamy/types'
 import { memo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import dayjs from '@/lib/configs/dayjs-config'
 

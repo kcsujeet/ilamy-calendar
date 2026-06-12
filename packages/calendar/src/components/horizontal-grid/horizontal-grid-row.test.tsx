@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import type { Resource } from '@ilamy/types'
 import { cleanup, render, screen } from '@testing-library/react'
 import type { CalendarEvent } from '@/components/types'
-import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context/provider'
-import type { Resource } from '@/features/resource-calendar/types'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
 import {
 	DAY_NUMBER_HEIGHT,
@@ -21,14 +21,14 @@ const mockResource: Resource = {
 
 const renderHorizontalGridRow = (props = {}) => {
 	return render(
-		<ResourceCalendarProvider
+		<CalendarProvider
 			dayMaxEvents={3}
 			events={[]}
 			initialDate={initialDate}
 			resources={[mockResource]}
 		>
 			<HorizontalGridRow id="row-1" resource={mockResource} {...props} />
-		</ResourceCalendarProvider>
+		</CalendarProvider>
 	)
 }
 
@@ -290,7 +290,7 @@ describe('HorizontalGridRow', () => {
 				{ id: 'col-1', day: initialDate, gridType: 'day' as const },
 			]
 			return render(
-				<ResourceCalendarProvider
+				<CalendarProvider
 					dayMaxEvents={4}
 					eventHeight={eventHeight}
 					eventSpacing={eventSpacing}
@@ -304,7 +304,7 @@ describe('HorizontalGridRow', () => {
 						id="row-1"
 						variant="regular"
 					/>
-				</ResourceCalendarProvider>
+				</CalendarProvider>
 			)
 		}
 

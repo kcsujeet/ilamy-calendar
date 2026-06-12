@@ -1,11 +1,15 @@
+import type { Resource } from '@ilamy/types'
 import type React from 'react'
-import type { EventFormProps } from '@/components/event-form/event-form'
 import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
+import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import type { IlamyPlugin } from '@/features/plugins/lib/types'
-import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
+
+// The shared contract owns Resource; re-exported here as the calendar
+// feature's public type home.
+export type { Resource } from '@ilamy/types'
 
 /**
  * Granularity of the time grid in minutes for day, week, and resource hour views.
@@ -41,6 +45,13 @@ export interface IlamyCalendarPropEvent
 	start: Dayjs | Date | string
 	end: Dayjs | Date | string
 }
+
+/**
+ * @deprecated Since v2.0 — `IlamyCalendarPropEvent` (via `CalendarEvent`)
+ * already carries `resourceId` / `resourceIds`. This alias will be removed in
+ * the next major.
+ */
+export type IlamyResourceCalendarPropEvent = IlamyCalendarPropEvent
 
 /**
  * Information passed to the onCellClick callback.
@@ -391,4 +402,26 @@ export interface IlamyCalendarProps {
 	 * events.
 	 */
 	plugins?: IlamyPlugin[]
+	/**
+	 * Resources (people, rooms, equipment) to display as a resource axis.
+	 * When set: events are shown per matching resource (`resourceIds`, falling
+	 * back to `resourceId`); events with no resource assignment are hidden; the
+	 * year view is hidden from the view switcher.
+	 */
+	resources?: Resource[]
+	/** Custom render function for resource header cells. */
+	renderResource?: (resource: Resource) => React.ReactNode
+	/**
+	 * How resources are arranged. Only applies when `resources` is set.
+	 * - "horizontal": resources are rows, time is columns (default)
+	 * - "vertical": resources are columns, time is rows
+	 */
+	orientation?: 'horizontal' | 'vertical'
+	/**
+	 * Granularity of week-view time slots when `resources` is set.
+	 * - "hourly": one column per hour (default)
+	 * - "daily": one column per day. Note: `hiddenDays` is ignored in daily
+	 *   mode (non-contiguous days would break multi-day event positioning).
+	 */
+	weekViewGranularity?: 'hourly' | 'daily'
 }

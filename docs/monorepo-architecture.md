@@ -46,7 +46,7 @@ Generic, **self-contained** shadcn primitives, managed by the shadcn CLI. Its ow
 
 The core, plugin-agnostic library. Everything currently in `src/` **except** the recurrence plugin, the demo, and the generic UI primitives.
 
-- Keeps: `features/calendar`, `features/resource-calendar`, `components/{event-form,drag-and-drop,header,vertical-grid,horizontal-grid,all-day-row,...}`, `hooks`, `lib`, `types`, the plugin **kernel** (`features/plugins/lib`: `createPluginRuntime`, `types`, `compose-plugin-providers`), and `components/calendar-slots.tsx` (host slot catalog + slot components).
+- Keeps: `features/calendar` (incl. its `components/{event-form,header,views}`), `components/{drag-and-drop,vertical-grid,horizontal-grid,all-day-row,...}`, `hooks`, `lib`, `types`, the plugin **kernel** (`features/plugins/lib`: `createPluginRuntime`, `types`, `compose-plugin-providers`), and `components/calendar-slots.tsx` (host slot catalog + slot components).
 - **Context-coupled composites stay here:** `date-picker` and `time-picker` use `useSmartCalendarContext` / `use-autocomplete-timepicker`, so they live in `@ilamy/calendar` and import primitives (`Button`, `Calendar`, `Popover`) from `@ilamy/ui`.
 - Depends on `@ilamy/ui` (`workspace:*`), plus `react`, `dayjs`, `@dnd-kit/*`.
 - Public API `src/index.ts` is unchanged from post-v2 (recurrence already removed). The `@ilamy/calendar/plugins/recurrence` **subpath is removed** — recurrence is now its own package.

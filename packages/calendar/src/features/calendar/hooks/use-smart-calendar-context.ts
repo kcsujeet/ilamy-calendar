@@ -1,3 +1,4 @@
+import type { Resource } from '@ilamy/types'
 import type React from 'react'
 import { useContext } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
@@ -7,36 +8,16 @@ import {
 } from '@/features/calendar/contexts/calendar-context/context'
 import type { OpenEventFormInput } from '@/features/calendar/types'
 import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
-import { ResourceCalendarContext } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import type { ResourceCalendarContextType } from '@/features/resource-calendar/contexts/resource-calendar-context/context'
-import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
 /**
- * Resource-calendar additions, optional on the smart context: a regular
- * calendar provides none of them, and the type now says so instead of the old
- * unsafe cast pretending they are always present.
+ * Full internal context type used by library components. Since the unified
+ * provider carries the resource axis, this is simply the calendar context:
+ * resource utilities are always defined; `resources` is honestly optional.
  */
-type ResourceContextFields = Pick<
-	ResourceCalendarContextType,
-	| 'resources'
-	| 'getEventsForResource'
-	| 'getEventsForResources'
-	| 'getResourceById'
-	| 'isEventCrossResource'
-	| 'getEventResourceIds'
-	| 'renderResource'
-	| 'orientation'
-	| 'weekViewGranularity'
->
-
-/**
- * Full internal context type used by library components.
- */
-export type SmartCalendarContextType = CalendarContextType &
-	Partial<ResourceContextFields>
+export type SmartCalendarContextType = CalendarContextType
 
 /**
  * The public calendar API surface exposed by useIlamyCalendarContext() — for consumers and plugin
@@ -67,10 +48,11 @@ export interface IlamyCalendarApi {
 	readonly openEventForm: (eventData?: OpenEventFormInput) => void
 	readonly closeEventForm: () => void
 	/**
-	 * Only present on resource calendars (`IlamyResourceCalendar`); `undefined`
-	 * on a regular calendar. Call as `getEventsForResource?.(id) ?? []`.
+	 * Events whose resource membership (`resourceIds`, falling back to
+	 * `resourceId`) contains the given resource. On a calendar without
+	 * resources this simply filters by the events' own resource fields.
 	 */
-	readonly getEventsForResource?: (
+	readonly getEventsForResource: (
 		resourceId: string | number
 	) => CalendarEvent[]
 	readonly businessHours?: BusinessHours | BusinessHours[]
@@ -102,17 +84,11 @@ export function useSmartCalendarContext<T>(
 export function useSmartCalendarContext<T>(
 	selector?: (context: SmartCalendarContextType) => T
 ): T | SmartCalendarContextType {
-	const resourceContext = useContext(ResourceCalendarContext)
-	const regularContext = useContext(CalendarContext)
-
-	// ResourceCalendarContextType extends CalendarContextType, so both context
-	// values are assignable to the smart type without a cast; in regular
-	// calendars the resource-specific fields are honestly undefined.
-	const context = resourceContext ?? regularContext
+	const context = useContext(CalendarContext)
 
 	if (!context) {
 		throw new Error(
-			'useSmartCalendarContext must be used within a CalendarProvider or ResourceCalendarProvider'
+			'useSmartCalendarContext must be used within a CalendarProvider'
 		)
 	}
 

@@ -142,32 +142,29 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
   testing/index.tsx                            # CalendarTestProvider (@ilamy/calendar/testing)
   features/
     calendar/
-      ilamy-calendar.tsx                       # Main component
-      views/  # built-in PluginView specs + ViewRenderer dispatcher (year component in year-view/)
-      contexts/calendar-context/               # CalendarProvider, all state
-      hooks/                                   # engine slices (use-calendar-{config,navigation,data,interaction}),
-                                               #   use-smart-calendar-context, useProcessed*Events
+      components/
+        ilamy-calendar.tsx                     # Main component (carries the resource axis props)
+        ilamy-resource-calendar.tsx            # DEPRECATED alias of IlamyCalendar
+        views/  # built-in PluginView specs + ViewRenderer dispatcher + resource arrangements (year component in year-view/)
+        header/                                # Calendar header, title, view controls
+        event-form/                            # Event creation/editing forms
+      contexts/calendar-context/               # CalendarProvider, all state (the ONE provider)
+      hooks/                                   # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,data,interaction}),
+                                               #   use-smart-calendar-context, useProcessed*Events, use-effective-business-hours
       utils/                                   # business-hours, view-hours, event-form-utils
     plugins/lib/                               # Plugin kernel + contract (re-exports @ilamy/types)
-    resource-calendar/
-      ilamy-resource-calendar/                 # Resource calendar component
-      contexts/resource-calendar-context/      # ResourceCalendarProvider
-      day-view/ week-view/ month-view/         # Resource view variants
   components/
     types.ts                                   # re-exports CalendarEvent/WeekDays/BusinessHours from @ilamy/types; ProcessedCalendarEvent
     calendar-slots.tsx                         # SLOT_* mount points + slot context re-exports
-    event-form/                                # Event creation/editing forms
     drag-and-drop/                             # @dnd-kit integration
-    header/                                    # Calendar header, title, view controls
     vertical-grid/                             # Time-based grid (day/week views)
     horizontal-grid/                           # Date-based grid (month view)
     all-day-row/                               # All-day event bar
-  hooks/
-    use-calendar-engine.ts                     # Engine composer (slices + cross-cutting effects)
   lib/
     configs/dayjs-config.ts                    # shim → @ilamy/utils/dayjs (ALWAYS import dayjs from here)
     translations/                              # Default translations, types
     layout/                                    # geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
+    events/pipeline.ts                         # event filters (resource membership, range overlap)
     utils/                                     # date-utils, export-ical (cn/safeDate re-exported from @ilamy/ui & @ilamy/utils)
     constants.ts                               # Global constants
 
@@ -195,7 +192,7 @@ docs/
 
 ### Public API (`src/index.ts`)
 
-**Components**: `IlamyCalendar`, `IlamyResourceCalendar`
+**Components**: `IlamyCalendar` (+ `IlamyResourceCalendar` deprecated alias)
 **Hooks**: `useIlamyCalendarContext()`
 **Recurrence**: `generateRecurringEvents()`, `isRecurringEvent()`, `RRule`
 **Types**: `CalendarEvent`, `CalendarView`, `TimeFormat`, `BusinessHours`, `WeekDays`, `RRuleOptions`, `Resource`, `Translations`, `TranslatorFunction`, `CellClickInfo`, `IlamyCalendarProps`

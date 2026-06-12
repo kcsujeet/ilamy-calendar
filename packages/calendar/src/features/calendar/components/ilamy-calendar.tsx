@@ -1,9 +1,10 @@
 import type React from 'react'
+import { useEffect } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
-import { EventFormDialog } from '@/components/event-form/event-form-dialog'
-import { Header } from '@/components/header'
 import type { CalendarEvent } from '@/components/types'
+import { EventFormDialog } from '@/features/calendar/components/event-form/event-form-dialog'
+import { Header } from '@/features/calendar/components/header'
 import { ViewRenderer } from '@/features/calendar/components/views'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -63,8 +64,20 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	timeFormat = '12-hour',
 	hideNonBusinessHours = false,
 	hiddenDays,
+	resources,
+	orientation,
 	...props
 }) => {
+	const hasResources = Boolean(resources?.length)
+	useEffect(() => {
+		if (process.env.NODE_ENV !== 'production' && orientation && !hasResources) {
+			// biome-ignore lint/suspicious/noConsole: deliberate DX guard (master plan, view contract)
+			console.warn(
+				'[@ilamy/calendar] `orientation` was provided without `resources` — it only applies when the calendar has resources, so it is ignored.'
+			)
+		}
+	}, [orientation, hasResources])
+
 	return (
 		<CalendarProvider
 			dayMaxEvents={dayMaxEvents}
@@ -76,6 +89,8 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			hideNonBusinessHours={hideNonBusinessHours}
 			initialDate={safeDate(initialDate)}
 			initialView={initialView}
+			orientation={orientation}
+			resources={resources}
 			stickyViewHeader={stickyViewHeader}
 			timeFormat={timeFormat}
 			viewHeaderClassName={viewHeaderClassName}

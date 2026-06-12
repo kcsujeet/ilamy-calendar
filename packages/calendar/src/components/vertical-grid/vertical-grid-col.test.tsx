@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
-import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { VerticalGridCol } from './vertical-grid-col'
 
@@ -13,16 +13,16 @@ const renderVerticalGridCol = (props = {}) => {
 		day: initialDate,
 		days: mockDays,
 	}
-	// Use ResourceCalendarProvider to ensure getEventsForResource is available
+	// Use CalendarProvider to ensure getEventsForResource is available
 	return render(
-		<ResourceCalendarProvider
+		<CalendarProvider
 			dayMaxEvents={3}
 			events={[]}
 			initialDate={initialDate}
 			resources={[]}
 		>
 			<VerticalGridCol {...defaultProps} {...props} />
-		</ResourceCalendarProvider>
+		</CalendarProvider>
 	)
 }
 

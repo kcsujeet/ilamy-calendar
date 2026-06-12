@@ -1,5 +1,5 @@
+import type { BusinessHours, Resource } from '@ilamy/types'
 import { useMemo, useState } from 'react'
-import type { BusinessHours } from '@/components/types'
 import { DAY_MAX_EVENTS_DEFAULT } from '@/lib/constants'
 import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
@@ -10,6 +10,12 @@ export interface CalendarConfigParams {
 	locale?: string
 	translations?: Translations
 	translator?: TranslatorFunction
+	/** The resource axis. Absent/empty → a regular calendar (no filtering, no resource columns). */
+	resources?: Resource[]
+	/** Resource arrangement preference. Only applies when `resources` is set. @default 'horizontal' */
+	orientation?: 'horizontal' | 'vertical'
+	/** Week-view granularity for resource weeks. @default 'hourly' */
+	weekViewGranularity?: 'hourly' | 'daily'
 }
 
 export interface CalendarConfigSlice {
@@ -19,6 +25,14 @@ export interface CalendarConfigSlice {
 	currentLocale: string
 	setCurrentLocale: React.Dispatch<React.SetStateAction<string>>
 	t: TranslatorFunction
+	/**
+	 * Passed through as-is (no `[]` default): "resource calendar" means
+	 * `resources && resources.length > 0`, so an explicit empty array keeps
+	 * behaving like a regular calendar.
+	 */
+	resources?: Resource[]
+	orientation: 'horizontal' | 'vertical'
+	weekViewGranularity: 'hourly' | 'daily'
 }
 
 /**
@@ -31,6 +45,9 @@ export const useCalendarConfig = ({
 	locale,
 	translations,
 	translator,
+	resources,
+	orientation = 'horizontal',
+	weekViewGranularity = 'hourly',
 }: CalendarConfigParams): CalendarConfigSlice => {
 	const [currentLocale, setCurrentLocale] = useState(locale || 'en')
 
@@ -47,5 +64,8 @@ export const useCalendarConfig = ({
 		currentLocale,
 		setCurrentLocale,
 		t,
+		resources,
+		orientation,
+		weekViewGranularity,
 	}
 }

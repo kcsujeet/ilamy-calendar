@@ -2,13 +2,13 @@ import { useMemo } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import {
+	eventOverlapsRange,
+	filterEventsForResource,
+} from '@/lib/events/pipeline'
 import type { PositionedEvent } from '@/lib/layout/geometry'
 import { layoutHorizontal } from '@/lib/layout/horizontal'
 import { getDayKey } from '@/lib/utils/date-utils'
-import {
-	eventOverlapsRange,
-	filterEventsByResource,
-} from '@/lib/utils/event-utils'
 
 interface UseProcessedWeekEventsProps {
 	days: Dayjs[]
@@ -28,8 +28,7 @@ export const useProcessedWeekEvents = ({
 	resourceId,
 	gridType,
 }: UseProcessedWeekEventsProps): ProcessedWeekEventsResult => {
-	const { getEventsForDateRange, dayMaxEvents, getEventsForResource } =
-		useSmartCalendarContext()
+	const { getEventsForDateRange, dayMaxEvents } = useSmartCalendarContext()
 
 	const first = days.at(0)
 	const last = days.at(-1)
@@ -41,10 +40,7 @@ export const useProcessedWeekEvents = ({
 
 		let weekEvents = getEventsForDateRange(weekStart, weekEnd)
 		if (resourceId) {
-			weekEvents = filterEventsByResource(
-				weekEvents,
-				getEventsForResource?.(resourceId) ?? []
-			)
+			weekEvents = filterEventsForResource(weekEvents, resourceId)
 		}
 
 		if (allDay) {
@@ -52,14 +48,7 @@ export const useProcessedWeekEvents = ({
 		}
 
 		return weekEvents
-	}, [
-		getEventsForDateRange,
-		getEventsForResource,
-		weekStart,
-		weekEnd,
-		resourceId,
-		allDay,
-	])
+	}, [getEventsForDateRange, weekStart, weekEnd, resourceId, allDay])
 
 	const dayEventsMap = useMemo(() => {
 		const map = new Map<string, CalendarEvent[]>()

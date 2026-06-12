@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, mock, test } from 'bun:test'
+import { beforeEach, describe, expect, it, mock, spyOn, test } from 'bun:test'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createContext, useContext } from 'react'
-import type { EventFormProps } from '@/components/event-form/event-form'
 import type { CalendarEvent } from '@/components/types'
+import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import type { IlamyPlugin } from '@/features/plugins/lib/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import { IlamyCalendar } from './ilamy-calendar'
@@ -908,4 +908,29 @@ test('renders a plugin view and exposes the plugin provider context to it', () =
 	const el = screen.getByTestId('fake-view')
 	expect(el).toBeDefined()
 	expect(el.textContent).toBe('from-plugin')
+})
+
+describe('orientation without resources', () => {
+	it('warns in dev when orientation is passed without resources', () => {
+		const warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+		render(<IlamyCalendar orientation="vertical" />)
+		const allWarnArgs = warnSpy.mock.calls.flat().join(' ')
+		expect(allWarnArgs).toContain(
+			'`orientation` was provided without `resources`'
+		)
+		warnSpy.mockRestore()
+	})
+
+	it('does not warn when resources are present', () => {
+		const warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+		render(
+			<IlamyCalendar
+				orientation="vertical"
+				resources={[{ id: 'r1', title: 'Room 1' }]}
+			/>
+		)
+		const allWarnArgs = warnSpy.mock.calls.flat().join(' ')
+		expect(allWarnArgs).not.toContain('`orientation`')
+		warnSpy.mockRestore()
+	})
 })

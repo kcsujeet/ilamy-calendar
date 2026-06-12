@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import type { Resource } from '@ilamy/types'
 import { cleanup, render, screen } from '@testing-library/react'
-import { ResourceCalendarProvider } from '@/features/resource-calendar/contexts/resource-calendar-context'
-import type { Resource } from '@/features/resource-calendar/types'
+import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
 import { ResourceCell } from './resource-cell'
 
@@ -22,9 +22,9 @@ const renderResourceCell = (
 	renderResource?: (resource: Resource) => React.ReactNode,
 	children?: React.ReactNode
 ) => {
-	// Use ResourceCalendarProvider to ensure getEventsForResource is available
+	// Use CalendarProvider to ensure getEventsForResource is available
 	return render(
-		<ResourceCalendarProvider
+		<CalendarProvider
 			dayMaxEvents={3}
 			events={[]}
 			initialDate={initialDate}
@@ -34,7 +34,7 @@ const renderResourceCell = (
 			<ResourceCell data-testid="resource-cell" resource={mockResources[0]}>
 				{children}
 			</ResourceCell>
-		</ResourceCalendarProvider>
+		</CalendarProvider>
 	)
 }
 
@@ -90,14 +90,14 @@ describe('ResourceCell', () => {
 		}
 
 		render(
-			<ResourceCalendarProvider
+			<CalendarProvider
 				dayMaxEvents={7}
 				initialDate={initialDate}
 				renderResource={renderWithMeta}
 				resources={[resourceWithData]}
 			>
 				<ResourceCell data-testid="meta-cell" resource={resourceWithData} />
-			</ResourceCalendarProvider>
+			</CalendarProvider>
 		)
 
 		const img = screen.getByTestId('resource-avatar')

@@ -2,25 +2,22 @@
 
 Internal reference for the hook and context system in @ilamy/calendar.
 
-## Dual-Context Architecture
+## One-Context Architecture
 
 ```
-IlamyCalendar                              IlamyResourceCalendar
-      |                                           |
-CalendarProvider                           ResourceCalendarProvider
-      |                                           |
-CalendarContext                             ResourceCalendarContext
-      |                                           |
-      +-------------------------------------------+
-                          |
-              useSmartCalendarContext()
-         (auto-detects which context is active)
-                          |
-              useIlamyCalendarContext()
-              (public API — limited surface)
+IlamyCalendar  (resources? → the resource axis)
+      |
+CalendarProvider
+      |
+CalendarContext
+      |
+useSmartCalendarContext()
+      |
+useIlamyCalendarContext()
+(public API — limited surface)
 ```
 
-Both providers consume `useCalendarContextValue()` (defined in `calendar-context/provider.tsx`) — the single assembly point that calls `useCalendarEngine()` and merges in the presentation props. `ResourceCalendarProvider` spreads that shared value and adds the resource-specific fields on top.
+The single provider consumes `useCalendarContextValue()` (defined in `calendar-context/provider.tsx`) — the assembly point that calls `useCalendarEngine()` (which carries the resource axis: `resources`, `orientation`, `weekViewGranularity`, and the resource utilities) and merges in the presentation props. `IlamyResourceCalendar` is a deprecated alias of `IlamyCalendar`.
 
 ## Public API
 
@@ -77,7 +74,7 @@ The only hook exported for library consumers. Returns a curated subset of contex
 
 `src/features/calendar/hooks/use-smart-calendar-context.ts`
 
-Unified internal hook used by all library components. Auto-detects whether the component is inside a `CalendarProvider` or `ResourceCalendarProvider` and returns the appropriate context.
+Unified internal hook used by all library components. Reads the one `CalendarContext`.
 
 ```typescript
 // Full context
@@ -89,13 +86,13 @@ const { updateEvent } = useSmartCalendarContext((ctx) => ({
 }))
 ```
 
-Returns `SmartCalendarContextType` = `CalendarContextType & Partial<ResourceContextFields>` — the resource-specific fields are honestly optional. In regular calendars they are `undefined`, and the type says so (no cast).
+Returns `SmartCalendarContextType` = `CalendarContextType`. The resource utilities (`getEventsForResource`, `getResourceById`, ...) are always defined; `resources` itself is honestly optional (absent on a regular calendar).
 
 ### useCalendarEngine()
 
-`src/hooks/use-calendar-engine.ts`
+`src/features/calendar/hooks/use-calendar-engine.ts`
 
-Engine composer used (through `useCalendarContextValue`) by both providers. Composes four slice hooks from `src/features/calendar/hooks/`, in order, plus the plugin runtime:
+Engine composer used through `useCalendarContextValue`. Composes four slice hooks from `src/features/calendar/hooks/`, in order, plus the plugin runtime:
 
 1. `useCalendarConfig` — `t()`, `currentLocale` state, `dayMaxEvents`, `businessHours`
 2. `pluginRuntime` (`useMemo(createPluginRuntime)`) — the cross-cutting fifth dependency
@@ -162,7 +159,7 @@ IlamyCalendar (or IlamyResourceCalendar)
     | - WeekDays[] → Set<number> for hiddenDays
     | - IlamyCalendarPropEvent → CalendarEvent (dates → dayjs)
     |
-CalendarProvider (or ResourceCalendarProvider)
+CalendarProvider
     |
     | useCalendarEngine() creates state + CRUD
     | Context value assembled from engine + props
@@ -212,15 +209,13 @@ If `disableDragAndDrop` is `true`, `CalendarDndContext` renders children without
 | File | Role |
 |------|------|
 | `src/features/calendar/hooks/use-smart-calendar-context.ts` | Unified context hook + public API hook |
-| `src/hooks/use-calendar-engine.ts` | Engine composer (slices + cross-cutting effects) |
+| `src/features/calendar/hooks/use-calendar-engine.ts` | Engine composer (slices + cross-cutting effects) |
 | `src/features/calendar/hooks/use-calendar-config.ts` | Config slice (i18n, locale state, defaults) |
 | `src/features/calendar/hooks/use-calendar-navigation.ts` | Navigation slice (date/view, range math) |
 | `src/features/calendar/hooks/use-calendar-data.ts` | Data slice (event store, CRUD, scoped mutations) |
 | `src/features/calendar/hooks/use-calendar-interaction.ts` | Interaction slice (selection, event form, click handlers) |
 | `src/features/calendar/contexts/calendar-context/context.ts` | `CalendarContextType` definition |
 | `src/features/calendar/contexts/calendar-context/provider.tsx` | `CalendarProvider` |
-| `src/features/resource-calendar/contexts/resource-calendar-context/context.ts` | `ResourceCalendarContextType` |
-| `src/features/resource-calendar/contexts/resource-calendar-context/provider.tsx` | `ResourceCalendarProvider` |
 | `src/features/calendar/hooks/useProcessedDayEvents.ts` | Day event positioning hook |
 | `src/features/calendar/hooks/useProcessedWeekEvents.ts` | Week event positioning hook |
 | `src/features/recurrence/hooks/useRecurringEventActions.ts` | Recurring event scope dialog hook |

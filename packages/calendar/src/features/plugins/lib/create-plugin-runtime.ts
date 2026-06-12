@@ -4,7 +4,7 @@ import {
 	Fragment,
 	type ReactNode,
 } from 'react'
-import { eventOverlapsRange } from '@/lib/utils/event-utils'
+import { eventOverlapsRange } from '@/lib/events/pipeline'
 import type { IlamyPlugin, PluginRuntime } from './types'
 
 export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({

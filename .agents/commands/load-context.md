@@ -52,7 +52,7 @@ Shared UI building blocks used across all features:
 - `droppable-cell.tsx` - Drop zone for DnD
 - `all-events-dialog.tsx` - Modal for all events
 - `current-time-indicator.tsx` - Live time indicator
-- `resource-cell.tsx` - Resource calendar cell
+- `resource-cell.tsx` - Resource header/label cell (used by the shared horizontal grid)
 
 **`components/ui/`** - Shadcn Design System:
 `badge`, `button`, `card`, `checkbox`, `dialog`, `input`, `label`, `date-picker`, `time-picker`, `calendar`, `popover`, `scroll-area`, `select`, `tabs`
@@ -62,11 +62,11 @@ Shared UI building blocks used across all features:
 - `dnd-utils.ts` - Drag-drop utilities
 - `event-drag-overlay.tsx` - Drag visual feedback
 
-**`components/event-form/`** - Event CRUD UI:
+**`features/calendar/components/event-form/`** - Event CRUD UI:
 - `event-form.tsx` - Main form component
 - `event-form-dialog.tsx` - Form in dialog wrapper
 
-**`components/header/`** - Calendar header:
+**`features/calendar/components/header/`** - Calendar header:
 - `base-header.tsx` - Main header with title and controls
 - `title-content.tsx` - Date display
 - `view-controls.tsx` - View switcher buttons
@@ -128,20 +128,19 @@ RFC 5545 compliant recurring events:
 
 **Tests** (4 files): `recurrence-handler.test.ts`, `calendar-integration.test.ts`, `crud-operations.test.ts`, `recurrence-timezone.test.ts`
 
-##### Resource Calendar Feature (`features/resource-calendar/`)
+##### Resource axis (in `features/calendar/`)
 
-Multi-resource calendar views:
+Resources are a configuration of the one calendar, not a separate feature:
 
-- `ilamy-resource-calendar/ilamy-resource-calendar.tsx` - Main resource calendar
-- `day-view/`, `week-view/`, `month-view/` - Resource-specific view variants
-- `contexts/resource-calendar-context/` - ResourceCalendarProvider
+- `components/ilamy-resource-calendar.tsx` - DEPRECATED alias of `IlamyCalendar`
+- `components/views/` - built-in views compose the resource arrangements (`supportsResources`)
+- `contexts/calendar-context/` - the ONE provider carries `resources`/`orientation`/`weekViewGranularity`
 
 #### Hooks (`src/hooks/`)
 
-- `use-calendar-engine.ts` - Engine composer: composes the slice hooks in `src/features/calendar/hooks/` (use-calendar-{config,navigation,data,interaction}) plus cross-cutting locale/timezone effects
 - `use-autocomplete-timepicker.ts` - Time picker autocomplete
 
-Note: `use-smart-calendar-context.ts` (type-safe context access) lives in `src/features/calendar/hooks/`.
+Note: `use-calendar-engine.ts` (engine composer over the slice hooks), `use-smart-calendar-context.ts` (type-safe context access), and `use-effective-business-hours.ts` live in `src/features/calendar/hooks/`.
 
 #### Library (`src/lib/`)
 
@@ -159,7 +158,7 @@ Note: `use-smart-calendar-context.ts` (type-safe context access) lives in `src/f
 
 ### Public API Exports (`src/index.ts`)
 
-**Components**: `IlamyCalendar`, `IlamyResourceCalendar`
+**Components**: `IlamyCalendar` (+ `IlamyResourceCalendar` deprecated alias)
 **Hooks**: `useIlamyCalendarContext()`
 **Recurrence**: `generateRecurringEvents()`, `isRecurringEvent()`, `RRule`
 **Types**: `CalendarEvent`, `CalendarView`, `TimeFormat`, `BusinessHours`, `WeekDays`, `RRuleOptions`, `Resource`, `Translations`, `TranslatorFunction`, `CellClickInfo`, `IlamyCalendarProps`

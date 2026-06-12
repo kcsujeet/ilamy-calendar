@@ -1,6 +1,8 @@
 import type {
 	Dayjs,
+	HorizontalRowSpec,
 	PluginView,
+	Resource,
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
@@ -11,11 +13,19 @@ import {
 	RESPONSIVE_GUTTER_WIDTH,
 } from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { getViewHours } from '@/features/calendar/utils/view-hours'
+import {
+	collectResourceBusinessHours,
+	getViewHours,
+} from '@/features/calendar/utils/view-hours'
 import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
+import { ResourcesCornerCell, resourceHorizontalRows } from './resource-axis'
+import { ResourceWeekHorizontalDayHeader } from './resource-week-horizontal-day-header'
+import { ResourceWeekVerticalDayHeader } from './resource-week-vertical-day-header'
+import { ResourceWeekVerticalResourceHeader } from './resource-week-vertical-resource-header'
+import { TimeHeaderRow } from './time-header-row'
 import { ViewRenderer } from './view-renderer'
 
 const getVisibleDays = (date: Dayjs, config: ViewConfig): Dayjs[] => {
@@ -24,6 +34,9 @@ const getVisibleDays = (date: Dayjs, config: ViewConfig): Dayjs[] => {
 	if (!hiddenDays) return weekDays
 	return weekDays.filter((day) => !hiddenDays.has(day.day()))
 }
+
+const isHourlyGranularity = (config: ViewConfig): boolean =>
+	(config.weekViewGranularity ?? 'hourly') === 'hourly'
 
 const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 	date,
@@ -88,7 +101,163 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 	)
 }
 
-const weekColumns = (date: Dayjs, config: ViewConfig): VerticalColumnSpec[] => {
+const weekHoursFor = (
+	day: Dayjs,
+	config: ViewConfig,
+	resources: Resource[],
+	allDates?: Dayjs[]
+): Dayjs[] =>
+	getViewHours({
+		referenceDate: day,
+		businessHours: config.businessHours,
+		hideNonBusinessHours: config.hideNonBusinessHours,
+		allDates,
+		resourceBusinessHours: collectResourceBusinessHours(resources),
+	})
+
+const resourceWeekVerticalColumns = (
+	date: Dayjs,
+	config: ViewConfig,
+	resources: Resource[]
+): VerticalColumnSpec[] => {
+	const weekDays = getWeekDays(date, config.firstDayOfWeek)
+
+	if (isHourlyGranularity(config)) {
+		const visibleDays = getVisibleDays(date, config)
+		return [
+			gutterColumn({
+				days: weekHoursFor(date, config, resources, weekDays),
+				gridType: 'hour',
+			}),
+			...resources.flatMap((resource) =>
+				visibleDays.map((day) => ({
+					id: keys.col.day(day, resource.id),
+					className: 'min-w-20 flex-1',
+					resourceId: resource.id,
+					resource,
+					day,
+					days: weekHoursFor(day, config, resources, weekDays),
+					gridType: 'hour' as const,
+				}))
+			),
+		]
+	}
+
+	// Uses `weekDays` (all 7) intentionally, not `visibleDays`. Non-contiguous
+	// visible days would break multi-day event positioning, so `hiddenDays` is
+	// not supported in daily granularity.
+	return [
+		gutterColumn({
+			days: weekDays,
+			gridType: 'day',
+			renderLabel: (day: Dayjs) => (
+				<>
+					<span>{day.format('ddd')}</span>
+					<span>{day.format('D')}</span>
+				</>
+			),
+		}),
+		...resources.map((resource) => ({
+			id: keys.col.resource('week', resource.id),
+			className: 'min-w-20 flex-1',
+			day: undefined,
+			resourceId: resource.id,
+			resource,
+			days: weekDays,
+			gridType: 'day' as const,
+		})),
+	]
+}
+
+const resourceWeekHorizontalRows = (
+	date: Dayjs,
+	config: ViewConfig,
+	resources: Resource[]
+): HorizontalRowSpec[] => {
+	const weekDays = getWeekDays(date, config.firstDayOfWeek)
+
+	if (isHourlyGranularity(config)) {
+		const weekHours = weekDays.map((day) =>
+			weekHoursFor(day, config, resources)
+		)
+		return resourceHorizontalRows({
+			resources,
+			days: weekHours,
+			gridType: 'hour',
+			cellClassName: 'min-w-20 flex-1',
+		})
+	}
+
+	return resourceHorizontalRows({
+		resources,
+		days: weekDays,
+		gridType: 'day',
+		cellClassName: 'min-w-20 flex-1',
+	})
+}
+
+const ResourceWeekVerticalHeader: React.FC<{
+	date: Dayjs
+	config: ViewConfig
+	resources: Resource[]
+}> = ({ date, config, resources }) => {
+	const visibleDays = getVisibleDays(date, config)
+	const isHourly = isHourlyGranularity(config)
+	const dayHeaderColumns = isHourly
+		? resources.flatMap((resource) =>
+				visibleDays.map((day) => ({ day, resourceId: resource.id }))
+			)
+		: []
+
+	return (
+		<div className="flex-1 flex flex-col">
+			<ResourceWeekVerticalResourceHeader
+				resources={resources}
+				visibleDays={visibleDays}
+			/>
+			{isHourly && <ResourceWeekVerticalDayHeader columns={dayHeaderColumns} />}
+		</div>
+	)
+}
+
+const ResourceWeekHorizontalHeader: React.FC<{
+	date: Dayjs
+	config: ViewConfig
+	resources: Resource[]
+}> = ({ date, config, resources }) => {
+	const weekDays = getWeekDays(date, config.firstDayOfWeek)
+	const isHourly = isHourlyGranularity(config)
+	const weekHours = isHourly
+		? weekDays.flatMap((day) => weekHoursFor(day, config, resources))
+		: []
+
+	return (
+		<>
+			<ResourcesCornerCell />
+			<div className="flex-1 flex flex-col">
+				<ResourceWeekHorizontalDayHeader days={weekDays} />
+				{isHourly && (
+					<TimeHeaderRow delayStep={0.005} hours={weekHours} view="week" />
+				)}
+			</div>
+		</>
+	)
+}
+
+const weekColumns = (
+	date: Dayjs,
+	config: ViewConfig
+): VerticalColumnSpec[] | HorizontalRowSpec[] => {
+	const resources = config.resources ?? []
+
+	if (resources.length) {
+		// Engine rule: with resources, the user's orientation picks the arrangement.
+		if (config.orientation === 'vertical') {
+			return resourceWeekVerticalColumns(date, config, resources)
+		}
+		return resourceWeekHorizontalRows(date, config, resources)
+	}
+
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
 	const visibleDays = getVisibleDays(date, config)
 	const gutterHours = getViewHours({
@@ -127,8 +296,7 @@ export const weekView: PluginView = {
 	label: 'week',
 	navigationUnit: 'week',
 	layout: 'vertical',
-	// Phase 4 flips this when the built-ins compose the resource axis.
-	supportsResources: false,
+	supportsResources: true,
 	range: (date, config) => {
 		const days = getWeekDays(date, config.firstDayOfWeek)
 		const weekStart = days.at(0) ?? date
@@ -136,8 +304,27 @@ export const weekView: PluginView = {
 		return { start: weekStart.startOf('day'), end: weekEnd.endOf('day') }
 	},
 	columns: weekColumns,
-	renderHeader: ({ date, config }) => (
-		<WeekViewHeader config={config} date={date} />
-	),
+	renderHeader: ({ date, config }) => {
+		const resources = config.resources ?? []
+		if (!resources.length) {
+			return <WeekViewHeader config={config} date={date} />
+		}
+		if (config.orientation === 'vertical') {
+			return (
+				<ResourceWeekVerticalHeader
+					config={config}
+					date={date}
+					resources={resources}
+				/>
+			)
+		}
+		return (
+			<ResourceWeekHorizontalHeader
+				config={config}
+				date={date}
+				resources={resources}
+			/>
+		)
+	},
 	component: WeekView,
 }

@@ -12,6 +12,8 @@ import { RESPONSIVE_GUTTER_WIDTH } from '@/components/vertical-grid/gutter'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { cn } from '@/lib/utils'
+import { ResourceAllDayRows } from './resource-axis'
 
 // Contract rule, not a runtime check: a view declaring `layout: 'vertical'`
 // returns VerticalColumnSpec[] from columns() (see PluginView.columns TSDoc).
@@ -36,6 +38,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 		slotDuration,
 		resources,
 		orientation,
+		weekViewGranularity,
 	} = useSmartCalendarContext((c) => ({
 		currentDate: c.currentDate,
 		firstDayOfWeek: c.firstDayOfWeek,
@@ -45,6 +48,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 		slotDuration: c.slotDuration,
 		resources: c.resources,
 		orientation: c.orientation,
+		weekViewGranularity: c.weekViewGranularity,
 	}))
 
 	const config = useMemo<ViewConfig>(
@@ -55,6 +59,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 			hideNonBusinessHours,
 			resources,
 			orientation,
+			weekViewGranularity,
 		}),
 		[
 			firstDayOfWeek,
@@ -63,6 +68,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 			hideNonBusinessHours,
 			resources,
 			orientation,
+			weekViewGranularity,
 		]
 	)
 
@@ -99,15 +105,26 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 			eventDays.length > 1
 				? { cell: 'flex-1 min-w-0', spacer: RESPONSIVE_GUTTER_WIDTH }
 				: undefined
+		// Resource columns get one all-day row per resource (derived from the
+		// resource identity the specs carry); regular columns share one row.
+		let allDayRow: React.ReactNode
+		if (gridType === 'hour') {
+			allDayRow = composesResourceAxis ? (
+				<ResourceAllDayRows columns={specs} />
+			) : (
+				<AllDayRow classes={allDayClasses} days={eventDays} />
+			)
+		}
+		// Resource grids rely on the min-w-full/w-fit defaults so wide column
+		// sets keep header and body aligned while scrolling.
+		const verticalClasses = composesResourceAxis
+			? undefined
+			: { header: 'w-full', body: 'w-full', allDay: 'w-full' }
 
 		return (
 			<VerticalGrid
-				allDayRow={
-					gridType === 'hour' ? (
-						<AllDayRow classes={allDayClasses} days={eventDays} />
-					) : undefined
-				}
-				classes={{ header: 'w-full', body: 'w-full', allDay: 'w-full' }}
+				allDayRow={allDayRow}
+				classes={verticalClasses}
 				columns={specs}
 				gridType={gridType}
 				slotDurationMinutes={slotDuration}
@@ -118,9 +135,27 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 		)
 	}
 
+	const horizontalGridType = specs.some((row) =>
+		row.columns?.some((cell) => cell.gridType === 'hour')
+	)
+		? 'hour'
+		: 'day'
+	// Grouped cells (a day's hour slots) need the taller two-row header.
+	const hasGroupedCells = specs.some((row) =>
+		row.columns?.some((cell) => cell.days)
+	)
+	const horizontalClasses = composesResourceAxis
+		? {
+				header: cn(hasGroupedCells && 'h-24', 'min-w-full'),
+				body: 'min-w-full',
+			}
+		: { body: 'w-full', header: 'w-full' }
+
 	return (
 		<HorizontalGrid
-			classes={{ body: 'w-full', header: 'w-full' }}
+			classes={horizontalClasses}
+			dayNumberHeight={composesResourceAxis ? 0 : undefined}
+			gridType={horizontalGridType}
 			rows={specs}
 			variant={variant}
 		>

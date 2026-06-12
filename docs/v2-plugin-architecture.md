@@ -1,7 +1,7 @@
 # @ilamy/calendar v2.0.0 — Plugin Architecture Spec
 
 **Status:** Design locked, pending implementation plan.
-**Goal:** Turn `@ilamy/calendar` into a fully pluggable calendar. The core is plugin-agnostic; recurrence (and later resource, iCal export) are plugins built against a public API. Internal and external developers create plugins the same way.
+**Goal:** Turn `@ilamy/calendar` into a fully pluggable calendar. The core is plugin-agnostic; recurrence (and later iCal export) are plugins built against a public API. Resources ship in core; a resource plugin is a possible future extraction once the v2 plugin contracts have proven themselves. Internal and external developers create plugins the same way.
 
 ---
 
@@ -85,7 +85,7 @@ export interface IlamyPlugin {
 }
 ```
 
-Every member except `name` is optional; a plugin implements only what it needs. A data-only plugin implements `transformEvents`; a whole-feature plugin (resource) implements `views` + `provider`; recurrence implements most.
+Every member except `name` is optional; a plugin implements only what it needs. A data-only plugin implements `transformEvents`; a hypothetical whole-feature plugin (say, an agenda timeline) implements `views` + `provider`; recurrence implements most.
 
 ### Execution semantics (Rollup/Vite model)
 
@@ -262,7 +262,7 @@ src/
     event-form/event-form.tsx               # uses useScopedEventMutation + renderSlot; no recurrence
     drag-and-drop/calendar-dnd-context.tsx  # uses useScopedEventMutation + renderSlot; no recurrence
     types.ts                                # lean CalendarEvent interface (no recurrence fields)
-  hooks/
+  features/calendar/hooks/
     use-calendar-engine.ts                  # plugins default = []; exposes collect/getViews/renderSlot/applyScoped*
     use-scoped-event-mutation.ts            # host scoped-mutation flow (shared)
   lib/

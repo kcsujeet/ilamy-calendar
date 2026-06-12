@@ -1,8 +1,10 @@
+import type { Resource } from '@ilamy/types'
 import type React from 'react'
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
-import type { EventFormProps } from '@/components/event-form/event-form'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
+import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
+import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
 import type {
 	CalendarClassesOverride,
 	CellInfo,
@@ -12,7 +14,6 @@ import type {
 } from '@/features/calendar/types'
 import { composePluginProviders } from '@/features/plugins/lib/compose-plugin-providers'
 import type { IlamyPlugin } from '@/features/plugins/lib/types'
-import { useCalendarEngine } from '@/hooks/use-calendar-engine'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
@@ -63,12 +64,19 @@ export interface CalendarProviderProps {
 	slotDuration?: SlotDuration
 	scrollTime?: string
 	plugins?: IlamyPlugin[]
+	/** The resource axis. Absent/empty → a regular calendar (no filtering, no resource columns). */
+	resources?: Resource[]
+	/** Custom render for resource header cells. */
+	renderResource?: (resource: Resource) => React.ReactNode
+	/** Resource arrangement preference. Only applies when `resources` is set. @default 'horizontal' */
+	orientation?: 'horizontal' | 'vertical'
+	/** Week-view granularity for resource weeks. @default 'hourly' */
+	weekViewGranularity?: 'hourly' | 'daily'
 }
 
 /**
- * Builds the shared context value: engine slices + presentation props. The
- * single assembly point both providers consume — ResourceCalendarProvider
- * spreads this and adds the resource fields on top (until Phase 4 absorbs it).
+ * Builds the shared context value: engine slices (including the resource
+ * axis) + presentation props. The single assembly point for the ONE provider.
  */
 export const useCalendarContextValue = (
 	props: Omit<CalendarProviderProps, 'children'>
@@ -113,6 +121,10 @@ export const useCalendarContextValue = (
 		slotDuration = 60,
 		scrollTime,
 		plugins,
+		resources,
+		renderResource,
+		orientation,
+		weekViewGranularity,
 	} = props
 
 	const engine = useCalendarEngine({
@@ -135,6 +147,9 @@ export const useCalendarContextValue = (
 		onCellClick,
 		disableEventClick,
 		disableCellClick,
+		resources,
+		orientation,
+		weekViewGranularity,
 	})
 
 	return useMemo(() => {
@@ -171,10 +186,12 @@ export const useCalendarContextValue = (
 			hiddenDays,
 			slotDuration,
 			scrollTime,
+			renderResource,
 		}
 	}, [
 		engine,
 		renderEvent,
+		renderResource,
 		isCellDisabled,
 		locale,
 		timezone,

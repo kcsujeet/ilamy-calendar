@@ -246,24 +246,13 @@ always pre-filled the event form with `allDay: false`, even for all-day cells.
 all-day cells), matching what `IlamyCalendar` has always done. If you depended on the old
 hardcode, pass `onCellClick` and open the form yourself with the shape you want.
 
-### `getEventsForResource` on `useIlamyCalendarContext()` is now optional
+### `getEventsForResource` on `useIlamyCalendarContext()` works everywhere
 
-It only ever existed at runtime on resource calendars; the v1 type claimed it was always
-present, so calling it on a regular calendar compiled and then crashed. v2 types it honestly.
-
-**Before (v1)**
-
-```ts
-const { getEventsForResource } = useIlamyCalendarContext()
-const roomEvents = getEventsForResource('room-1')
-```
-
-**After (v2)**
-
-```ts
-const { getEventsForResource } = useIlamyCalendarContext()
-const roomEvents = getEventsForResource?.('room-1') ?? []
-```
+In v1 it only existed at runtime on resource calendars while the type claimed it was
+always present, so calling it on a regular calendar compiled and then crashed. Since the
+resource axis moved into the one provider (Phase 4 below), it is genuinely always defined:
+on a calendar without resources it simply filters by the events' own
+`resourceIds`/`resourceId` fields. v1 call sites keep working unchanged.
 
 ---
 
@@ -292,6 +281,42 @@ are unaffected.
 
 ---
 
+## One calendar: resources are props on `IlamyCalendar` (v2 structure overhaul, Phase 4)
+
+`IlamyCalendar` now accepts `resources`, `renderResource`, `orientation`, and
+`weekViewGranularity` directly. Behavior with resources set is unchanged: events render
+per matching resource (`resourceIds`, falling back to `resourceId`), unassigned events
+are hidden, visible hours are the union of global and per-resource business hours, and
+the year view is hidden from the switcher.
+
+**Before (v1)**
+
+```tsx
+<IlamyResourceCalendar resources={rooms} orientation="vertical" events={events} />
+```
+
+**After (v2)**
+
+```tsx
+<IlamyCalendar resources={rooms} orientation="vertical" events={events} />
+```
+
+`IlamyResourceCalendar` still works as a deprecated alias and will be removed in the
+next major.
+
+Other notes:
+
+- `orientation` without `resources` is inert; dev builds now log a console warning.
+- `IlamyResourceCalendarPropEvent` is a deprecated alias of `IlamyCalendarPropEvent` —
+  `CalendarEvent` (and therefore the `events` prop) already carries
+  `resourceId` / `resourceIds`.
+- The root testid of a resource calendar is now `ilamy-calendar`
+  (was `ilamy-resource-calendar`).
+- Forcing a resource-incapable view programmatically (e.g. `initialView="year"` with
+  `resources`) renders it as a regular, resource-less view; the switcher still hides it.
+
+---
+
 ## Summary checklist
 
 - [ ] Add `import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'` and pass `plugins={[recurrencePlugin()]}` to `<IlamyCalendar>` / `<IlamyResourceCalendar>`.
@@ -304,4 +329,5 @@ are unaffected.
 - [ ] If you read properties off `event.data` / `resource.data`, add narrowing or a boundary cast (`Record<string, unknown>` now).
 - [ ] Remove any use of `Resource.position`; order the `resources` array instead.
 - [ ] Resource calendars: if you relied on cell-click always creating `allDay: false` events, handle it in `onCellClick`.
-- [ ] Call `getEventsForResource?.(id) ?? []` — it is `undefined` on regular calendars now (the type finally says so).
+- [ ] Replace `<IlamyResourceCalendar>` with `<IlamyCalendar resources={...}>` (the old name still works as a deprecated alias).
+- [ ] If your test harness queried the `ilamy-resource-calendar` root testid, query `ilamy-calendar` instead.

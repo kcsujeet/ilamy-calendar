@@ -1,6 +1,6 @@
+import type { Resource } from '@ilamy/types'
 import { memo } from 'react'
 import { HorizontalGridRow } from '@/components/horizontal-grid/horizontal-grid-row'
-import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'

@@ -154,6 +154,11 @@ export interface ViewConfig {
 	 * resource axis goes. Only meaningful when `resources` is set.
 	 */
 	orientation?: 'vertical' | 'horizontal'
+	/**
+	 * Week-view granularity when `resources` is set: 'hourly' (default) nests
+	 * hour slots under each day; 'daily' shows one cell per day.
+	 */
+	weekViewGranularity?: 'hourly' | 'daily'
 }
 
 /**

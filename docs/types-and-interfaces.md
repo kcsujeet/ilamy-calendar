@@ -68,7 +68,7 @@ Public-facing event type that accepts flexible date inputs. Extends `CalendarEve
 
 ## Resource
 
-`packages/types/src/index.ts` (re-exported from `src/features/resource-calendar/types/index.ts`)
+`packages/types/src/index.ts` (re-exported from `src/features/calendar/types/index.ts`)
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -135,18 +135,19 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `renderCurrentTimeIndicator` | `(props) => ReactNode` | — | Custom time indicator |
 | `classesOverride` | `CalendarClassesOverride` | — | CSS class overrides |
 
-## IlamyResourceCalendarProps
+## IlamyResourceCalendarProps (deprecated alias)
 
-`src/features/resource-calendar/types/index.ts`
+`src/features/calendar/components/ilamy-resource-calendar.tsx`
 
-Extends `IlamyCalendarProps` (minus `events`) with resource-specific additions:
+Deprecated alias of `IlamyCalendarProps` — the resource axis lives on `IlamyCalendar`
+directly (`resources`, `renderResource`, `orientation`, `weekViewGranularity`):
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `events` | `IlamyResourceCalendarPropEvent[]` | `[]` | Events with resource fields |
-| `resources` | `Resource[]` | `[]` | Resource definitions |
+| `resources` | `Resource[]` | `undefined` | Resource definitions |
 | `renderResource` | `(resource) => ReactNode` | — | Custom resource renderer |
-| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Resource layout orientation |
+| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Where the resource axis goes |
+| `weekViewGranularity` | `'hourly' \| 'daily'` | `'hourly'` | Week-view slot granularity with resources |
 
 ## Recurrence Types
 
@@ -226,9 +227,8 @@ interface CellClickInfo {
 |------|------|
 | `CalendarEvent`, `ProcessedCalendarEvent`, `WeekDays`, `BusinessHours` | `src/components/types.ts` |
 | `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CellClickInfo`, `CalendarClassesOverride` | `src/features/calendar/types/index.ts` |
-| `Resource`, `IlamyResourceCalendarProps`, `IlamyResourceCalendarPropEvent` | `src/features/resource-calendar/types/index.ts` |
+| `Resource` (re-export), `IlamyResourceCalendarPropEvent` (deprecated alias) | `src/features/calendar/types/index.ts` |
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |
 | `CalendarView`, `TimeFormat` | `src/types/index.ts` |
 | `CalendarContextType` | `src/features/calendar/contexts/calendar-context/context.ts` |
-| `ResourceCalendarContextType` | `src/features/resource-calendar/contexts/resource-calendar-context/context.ts` |
 | `Translations`, `TranslatorFunction` | `src/lib/translations/types.ts` |

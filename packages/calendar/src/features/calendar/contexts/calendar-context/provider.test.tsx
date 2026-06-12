@@ -1,5 +1,6 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
+import type { Resource } from '@ilamy/types'
 import { render } from '@testing-library/react'
 import type React from 'react'
 import { RRule } from 'rrule'
@@ -502,6 +503,64 @@ describe('CalendarProvider - recurring event integration', () => {
 		expect(getByTestId('current-date-date').textContent).toBe(
 			today.date().toString()
 		)
+	})
+})
+
+describe('CalendarProvider - Resource Axis', () => {
+	it('exposes the resource axis when resources are passed', () => {
+		const resources: Resource[] = [{ id: 'r1', title: 'Room 1' }]
+		const mkEvent = (
+			id: string,
+			extra: Partial<CalendarEvent> = {}
+		): CalendarEvent => ({
+			id,
+			title: id,
+			start: dayjs('2025-07-01T09:00:00.000Z'),
+			end: dayjs('2025-07-01T10:00:00.000Z'),
+			...extra,
+		})
+		const events = [
+			mkEvent('e1', { resourceId: 'r1' }),
+			mkEvent('e2', { resourceIds: ['r1', 'r2'] }),
+			mkEvent('e3'), // unassigned
+		]
+
+		const TestResourceAxis = () => {
+			const ctx = useSmartCalendarContext()
+			const r1Events = ctx.getEventsForResource('r1')
+			const crossEvent = r1Events.at(1)
+			const isCross = crossEvent && ctx.isEventCrossResource(crossEvent)
+			return (
+				<div>
+					<div data-testid="axis-resources">
+						{(ctx.resources ?? []).map((r) => r.id).join(',')}
+					</div>
+					<div data-testid="axis-orientation">{ctx.orientation}</div>
+					<div data-testid="axis-granularity">{ctx.weekViewGranularity}</div>
+					<div data-testid="axis-r1-events">
+						{r1Events.map((e) => e.id).join(',')}
+					</div>
+					<div data-testid="axis-resource-title">
+						{ctx.getResourceById('r1')?.title ?? 'none'}
+					</div>
+					<div data-testid="axis-cross">{isCross ? 'cross' : 'single'}</div>
+				</div>
+			)
+		}
+
+		const { getByTestId } = renderProvider(<TestResourceAxis />, {
+			events,
+			initialDate: dayjs('2025-07-01T00:00:00.000Z'),
+			orientation: 'vertical',
+			resources,
+		})
+
+		expect(getByTestId('axis-resources').textContent).toBe('r1')
+		expect(getByTestId('axis-orientation').textContent).toBe('vertical')
+		expect(getByTestId('axis-granularity').textContent).toBe('hourly')
+		expect(getByTestId('axis-r1-events').textContent).toBe('e1,e2')
+		expect(getByTestId('axis-resource-title').textContent).toBe('Room 1')
+		expect(getByTestId('axis-cross').textContent).toBe('cross')
 	})
 })
 

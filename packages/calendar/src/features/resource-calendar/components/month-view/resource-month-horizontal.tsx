@@ -4,6 +4,7 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { getMonthDays } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
@@ -27,7 +28,7 @@ export const ResourceMonthHorizontal: React.FC = () => {
 				return (
 					<AnimatedSection
 						className="w-20 border-b border-r shrink-0 flex items-center justify-center flex-col"
-						delay={index * 0.05}
+						delay={index * HEADER_STAGGER_DELAY}
 						key={keys.listKey(key, 'animated')}
 						transitionKey={keys.listKey(key, 'motion')}
 					>

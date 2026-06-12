@@ -1,39 +1,18 @@
 import { useCallback, useState } from 'react'
-import type { PluginRuntime } from '@/features/plugins/lib/types'
-import dayjs, {
-	type Dayjs,
-	type ManipulateType,
-} from '@/lib/configs/dayjs-config'
-import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
+import { builtInViews } from '@/features/calendar/components/views'
+import type { PluginRuntime, PluginView } from '@/features/plugins/lib/types'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import { getMonthGridRange } from '@/lib/utils/date-utils'
 import type { CalendarView } from '@/types'
-
-const VIEW_UNITS: Record<string, ManipulateType> = {
-	day: 'day',
-	week: 'week',
-	month: 'month',
-	year: 'year',
-}
 
 const calculateViewRange = (
 	date: Dayjs,
-	view: CalendarView,
+	viewSpec: PluginView | undefined,
 	firstDayOfWeek: number
-): { start: Dayjs; end: Dayjs } => {
-	if (view === 'day' || view === 'year') {
-		return { start: date.startOf(view), end: date.endOf(view) }
-	}
-	if (view === 'week') {
-		const days = getWeekDays(date, firstDayOfWeek)
-		const weekStart = days.at(0) ?? date
-		const weekEnd = days.at(-1) ?? date
-		return { start: weekStart.startOf('day'), end: weekEnd.endOf('day') }
-	}
-	// month view: 6 weeks × 7 days — also the default range for plugin/unknown views
-	const weeks = getMonthWeeks(date, firstDayOfWeek)
-	const gridStart = weeks.at(0)?.at(0) ?? date
-	const gridEnd = weeks.at(-1)?.at(-1) ?? date
-	return { start: gridStart.startOf('day'), end: gridEnd.endOf('day') }
-}
+): { start: Dayjs; end: Dayjs } =>
+	// Views without `range` keep today's fallback: the month 6x7 grid range.
+	viewSpec?.range?.(date, { firstDayOfWeek }) ??
+	getMonthGridRange(date, firstDayOfWeek)
 
 export interface CalendarNavigationParams {
 	initialDate: Dayjs
@@ -54,6 +33,8 @@ export interface CalendarNavigationSlice {
 	prevPeriod: () => void
 	today: () => void
 	getCurrentViewRange: () => { start: Dayjs; end: Dayjs }
+	/** The one resolution path: built-in view specs prepended, then plugin views. */
+	getAllViews: () => PluginView[]
 }
 
 /** Navigation slice: current date/view state, period stepping, range math. */
@@ -70,34 +51,49 @@ export const useCalendarNavigation = ({
 	)
 	const [view, setView] = useState<CalendarView>(initialView)
 
+	const getAllViews = useCallback(
+		() => [...builtInViews, ...pluginRuntime.getViews()],
+		[pluginRuntime]
+	)
+	const resolveViewSpec = useCallback(
+		(name: CalendarView) => getAllViews().find((v) => v.name === name),
+		[getAllViews]
+	)
+
 	const getCurrentViewRange = useCallback(() => {
-		return calculateViewRange(currentDate, view, firstDayOfWeek)
-	}, [currentDate, view, firstDayOfWeek])
+		return calculateViewRange(
+			currentDate,
+			resolveViewSpec(view),
+			firstDayOfWeek
+		)
+	}, [currentDate, view, firstDayOfWeek, resolveViewSpec])
 
 	const updateDateAndNotify = useCallback(
 		(newDate: Dayjs) => {
 			setCurrentDate(newDate)
-			const range = calculateViewRange(newDate, view, firstDayOfWeek)
+			const range = calculateViewRange(
+				newDate,
+				resolveViewSpec(view),
+				firstDayOfWeek
+			)
 			onDateChange?.(newDate, range)
 		},
-		[onDateChange, view, firstDayOfWeek]
+		[onDateChange, view, firstDayOfWeek, resolveViewSpec]
 	)
 
 	const selectDate = updateDateAndNotify
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {
-			const unit =
-				VIEW_UNITS[view] ??
-				pluginRuntime.getViews().find((v) => v.name === view)?.navigationUnit ??
-				'day'
-			let newDate = currentDate.subtract(1, unit)
-			if (direction === 1) {
-				newDate = currentDate.add(1, unit)
+			const spec = resolveViewSpec(view)
+			// navigationStep wins; else one navigationUnit; else one day (today's default).
+			const step = spec?.navigationStep ?? {
+				amount: 1,
+				unit: spec?.navigationUnit ?? 'day',
 			}
-			updateDateAndNotify(newDate)
+			updateDateAndNotify(currentDate.add(direction * step.amount, step.unit))
 		},
-		[currentDate, view, updateDateAndNotify, pluginRuntime]
+		[currentDate, view, updateDateAndNotify, resolveViewSpec]
 	)
 
 	const nextPeriod = useCallback(() => navigatePeriod(1), [navigatePeriod])
@@ -113,10 +109,14 @@ export const useCalendarNavigation = ({
 			setView(newView)
 			onViewChange?.(newView)
 			// View change affects visible range — notify consumers
-			const range = calculateViewRange(currentDate, newView, firstDayOfWeek)
+			const range = calculateViewRange(
+				currentDate,
+				resolveViewSpec(newView),
+				firstDayOfWeek
+			)
 			onDateChange?.(currentDate, range)
 		},
-		[onViewChange, onDateChange, currentDate, firstDayOfWeek]
+		[onViewChange, onDateChange, currentDate, firstDayOfWeek, resolveViewSpec]
 	)
 
 	return {
@@ -129,5 +129,6 @@ export const useCalendarNavigation = ({
 		prevPeriod,
 		today,
 		getCurrentViewRange,
+		getAllViews,
 	}
 }

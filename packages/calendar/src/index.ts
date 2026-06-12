@@ -23,10 +23,16 @@ export type {
 } from './features/calendar/types'
 // Plugin SDK contract types
 export type {
+	ColumnSpec,
+	HorizontalCellSpec,
+	HorizontalRowSpec,
 	IlamyPlugin,
 	PluginDateRange,
 	PluginMutationArgs,
 	PluginView,
+	VerticalColumnSpec,
+	ViewConfig,
+	ViewHeaderContext,
 } from './features/plugins/lib/types'
 export type { IlamyResourceCalendarProps } from './features/resource-calendar/components/ilamy-resource-calendar'
 export { IlamyResourceCalendar } from './features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'

@@ -1,5 +1,6 @@
 import type React from 'react'
 import { ResourceCell } from '@/components/resource-cell'
+import { gutterColumn } from '@/components/vertical-grid/gutter'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
@@ -13,21 +14,16 @@ export const ResourceMonthVertical: React.FC = () => {
 		(_, i) => startOfMonth.add(i, 'day')
 	)
 
-	const firstCol = {
-		id: keys.col.date,
+	const firstCol = gutterColumn({
 		days: daysInMonth,
-		day: undefined,
-		className:
-			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20 border-r-0',
-		gridType: 'day' as const,
-		noEvents: true,
-		renderCell: (date: Dayjs) => (
-			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
+		gridType: 'day',
+		renderLabel: (date: Dayjs) => (
+			<>
 				<span>{date.format('D')}</span>
 				<span>{date.format('ddd')}</span>
-			</div>
+			</>
 		),
-	}
+	})
 
 	const columns = resources.map((resource) => ({
 		id: keys.col.resource('month', resource.id),

@@ -2,7 +2,7 @@ import type React from 'react'
 import { useMemo } from 'react'
 import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
-import { HourLabel } from '@/components/hour-label/hour-label'
+import { gutterColumn } from '@/components/vertical-grid/gutter'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
@@ -19,27 +19,19 @@ export const ResourceWeekVertical: React.FC = () => {
 	const { slotDuration } = useSmartCalendarContext()
 
 	const firstCol = useMemo(
-		() => ({
-			id: isHourly ? keys.col.time : keys.col.date,
-			days: isHourly ? hours : weekDays,
-			day: undefined,
-			className:
-				'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20 border-r-0',
-			gridType: isHourly ? ('hour' as const) : ('day' as const),
-			noEvents: true,
-			renderCell: (date: Dayjs) => (
-				<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
-					{isHourly ? (
-						<HourLabel date={date} />
-					) : (
-						<>
-							<span>{date.format('ddd')}</span>
-							<span>{date.format('D')}</span>
-						</>
-					)}
-				</div>
-			),
-		}),
+		() =>
+			gutterColumn({
+				days: isHourly ? hours : weekDays,
+				gridType: isHourly ? 'hour' : 'day',
+				renderLabel: isHourly
+					? undefined
+					: (date: Dayjs) => (
+							<>
+								<span>{date.format('ddd')}</span>
+								<span>{date.format('D')}</span>
+							</>
+						),
+			}),
 		[hours, isHourly, weekDays]
 	)
 

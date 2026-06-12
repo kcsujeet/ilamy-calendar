@@ -1,8 +1,12 @@
+import type {
+	HorizontalCellSpec,
+	HorizontalRowSpec,
+	Resource,
+} from '@ilamy/types'
 import type React from 'react'
 import { memo, useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWeekEvents'
-import type { Resource } from '@/features/resource-calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getDayKey } from '@/lib/utils/date-utils'
@@ -11,25 +15,16 @@ import { GridCell } from '../grid-cell'
 import { ResourceCell } from '../resource-cell'
 import { HorizontalGridEventsLayer } from './horizontal-grid-events-layer'
 
-interface HorizontalGridColumn {
-	id: string
-	day?: Dayjs
-	days?: Dayjs[]
-	gridType: 'day' | 'hour'
-	className?: string
+interface HorizontalGridColumn extends HorizontalCellSpec {
 	renderCell?: (row: HorizontalGridRowProps) => React.ReactNode
 }
 
-export interface HorizontalGridRowProps {
-	id: string | number
-	resource?: Resource
+export interface HorizontalGridRowProps extends HorizontalRowSpec {
 	gridType?: 'day' | 'hour'
 	variant?: 'regular' | 'resource'
 	dayNumberHeight?: number
-	className?: string
 	columns?: HorizontalGridColumn[]
 	allDay?: boolean
-	showDayNumber?: boolean
 	isLastRow?: boolean
 }
 

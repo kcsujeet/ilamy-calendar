@@ -1,12 +1,11 @@
 import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
-import { HourLabel } from '@/components/hour-label/hour-label'
 import { ResourceCell } from '@/components/resource-cell'
 import type { BusinessHours } from '@/components/types'
+import { gutterColumn } from '@/components/vertical-grid/gutter'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { keys } from '@/lib/utils/keys'
 
 export const ResourceDayVertical: React.FC = () => {
@@ -27,20 +26,7 @@ export const ResourceDayVertical: React.FC = () => {
 			.filter(Boolean) as (BusinessHours | BusinessHours[])[],
 	})
 
-	const firstCol = {
-		id: keys.col.time,
-		day: undefined,
-		days: hours,
-		className:
-			'shrink-0 w-16 min-w-16 max-w-16 sticky left-0 bg-background z-20 border-r-0',
-		gridType: 'hour' as const,
-		noEvents: true,
-		renderCell: (date: Dayjs) => (
-			<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
-				<HourLabel date={date} />
-			</div>
-		),
-	}
+	const firstCol = gutterColumn({ days: hours, gridType: 'hour' })
 
 	const columns = resources.map((resource) => ({
 		id: keys.col.day(currentDate, resource.id),

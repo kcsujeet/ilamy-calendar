@@ -68,7 +68,7 @@ Public-facing event type that accepts flexible date inputs. Extends `CalendarEve
 
 ## Resource
 
-`src/features/resource-calendar/types/index.ts`
+`packages/types/src/index.ts` (re-exported from `src/features/resource-calendar/types/index.ts`)
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -76,9 +76,23 @@ Public-facing event type that accepts flexible date inputs. Extends `CalendarEve
 | `title` | `string` | yes | Display title |
 | `color` | `string` | no | Resource color |
 | `backgroundColor` | `string` | no | Resource background color |
-| `position` | `number` | no | Display order |
 | `businessHours` | `BusinessHours | BusinessHours[]` | no | Resource-specific business hours (overrides global) |
-| `data` | `Record<string, any>` | no | Custom resource metadata |
+| `data` | `Record<string, unknown>` | no | Custom resource metadata |
+
+## PluginView (view contract)
+
+`packages/types/src/index.ts`
+
+Describes a view — contributed by a plugin or built into the core (the four built-ins are
+`PluginView` specs in `src/features/calendar/components/views/`, resolved through one path).
+Core fields: `name`, `label?`, `component`, `navigationUnit?`. Optional view-spec fields:
+`navigationStep?`, `range?`, `columns?` (returns `VerticalColumnSpec[]` or
+`HorizontalRowSpec[]`), `layout?` (`'vertical' | 'horizontal'`), `renderHeader?`,
+`supportsResources?`. A view declares `columns` + `layout` to render through the shared
+grid engines, or just `component` (the escape hatch). Supporting types: `ViewConfig`,
+`ColumnSpec`, `VerticalColumnSpec`, `HorizontalCellSpec`, `HorizontalRowSpec`,
+`ViewHeaderContext` — all exported from `@ilamy/calendar`. Authoring guide:
+`docs/custom-views.md`.
 
 ## IlamyCalendarProps
 

@@ -4,6 +4,7 @@ import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-cal
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { TimeHeaderRow } from '@/features/resource-calendar/components/time-header-row'
+import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 
 export const ResourceDayHorizontal: React.FC = () => {
 	const {
@@ -38,7 +39,11 @@ export const ResourceDayHorizontal: React.FC = () => {
 			</div>
 
 			<div className="flex-1 flex flex-col">
-				<TimeHeaderRow delayStep={0.05} hours={dayHours} view="day" />
+				<TimeHeaderRow
+					delayStep={HEADER_STAGGER_DELAY}
+					hours={dayHours}
+					view="day"
+				/>
 			</div>
 		</ResourceEventGrid>
 	)

@@ -3,9 +3,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type React from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
-import { BUILT_IN_VIEWS, type BuiltInView, type CalendarView } from '@/types'
+import type { CalendarView } from '@/types'
 
-const AVAILABLE_VIEWS: BuiltInView[] = [...BUILT_IN_VIEWS]
+// Phase 4 deletes this allowlist: the resource-calendar feature still forks
+// day/week/month, so those built-ins stay visible on resource calendars even
+// though their core specs ship supportsResources: false until Phase 4 flips
+// them. Year stays hidden — the general rule already encodes the old
+// hardcoded year suppression.
+const RESOURCE_FORK_VIEWS = new Set(['day', 'week', 'month'])
 
 interface ViewControlsProps {
 	currentView: CalendarView
@@ -64,35 +69,25 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
 				<ChevronRight className="h-4 w-4" />
 			</Button>
 
-			{AVAILABLE_VIEWS.map((type: BuiltInView) => {
-				if (isResourceCalendar && type === 'year') {
+			{getViews().map((v) => {
+				const resourceCapable =
+					Boolean(v.supportsResources) || RESOURCE_FORK_VIEWS.has(v.name)
+				if (isResourceCalendar && !resourceCapable) {
 					return null
 				}
 
 				return (
 					<Button
-						className={getButtonClassName(type)}
-						key={type}
-						onClick={() => onChange(type)}
+						className={getButtonClassName(v.name)}
+						key={v.name}
+						onClick={() => onChange(v.name)}
 						size={size}
-						variant={getBtnVariant(type)}
+						variant={getBtnVariant(v.name)}
 					>
-						{t(type)}
+						{t(v.label ?? v.name)}
 					</Button>
 				)
 			})}
-
-			{getViews().map((v) => (
-				<Button
-					className={getButtonClassName(v.name)}
-					key={v.name}
-					onClick={() => onChange(v.name)}
-					size={size}
-					variant={getBtnVariant(v.name)}
-				>
-					{v.label ?? v.name}
-				</Button>
-			))}
 
 			<Button onClick={onToday} size={size} variant="outline">
 				{t('today')}

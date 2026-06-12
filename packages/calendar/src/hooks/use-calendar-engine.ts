@@ -221,7 +221,7 @@ export const useCalendarEngine = (
 		getEventManager: pluginRuntime.getEventManager,
 		renderSlot: pluginRuntime.renderSlot,
 		collect: pluginRuntime.collect,
-		getViews: pluginRuntime.getViews,
+		getViews: navigation.getAllViews,
 		getProviders: pluginRuntime.getProviders,
 		t: configSlice.t,
 		handleEventClick: interaction.handleEventClick,

@@ -12,6 +12,7 @@ import type { EventFormProps } from '@/components/event-form/event-form'
 import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { CellInfo } from '@/features/calendar/types'
+import type { IlamyPlugin } from '@/features/plugins/lib/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import type { Resource } from '../../types'
 import { IlamyResourceCalendar } from './ilamy-resource-calendar'
@@ -455,6 +456,57 @@ describe('IlamyResourceCalendar', () => {
 		)
 
 		expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
+	})
+
+	it('hides plugin views without supportsResources from the resource switcher, shows capable ones', () => {
+		const plugins: IlamyPlugin[] = [
+			{
+				name: 'incapable',
+				views: [{ name: 'agenda', label: 'Agenda', component: () => null }],
+			},
+			{
+				name: 'capable',
+				views: [
+					{
+						name: 'timeline',
+						label: 'Timeline',
+						component: () => null,
+						supportsResources: true,
+					},
+				],
+			},
+		]
+
+		render(
+			<IlamyResourceCalendar plugins={plugins} resources={mockResources} />
+		)
+
+		expect(screen.queryByText('Agenda')).toBeNull()
+		expect(screen.getByText('Timeline')).toBeDefined()
+	})
+
+	it('renders a resource-capable plugin view through the shared resolution path', () => {
+		const plugin: IlamyPlugin = {
+			name: 'custom',
+			views: [
+				{
+					name: 'custom-view',
+					label: 'Custom',
+					component: () => <div data-testid="custom-view">custom</div>,
+					supportsResources: true,
+				},
+			],
+		}
+
+		render(
+			<IlamyResourceCalendar
+				initialView="custom-view"
+				plugins={[plugin]}
+				resources={mockResources}
+			/>
+		)
+
+		expect(screen.getByTestId('custom-view')).toBeDefined()
 	})
 
 	describe('onCellClick', () => {

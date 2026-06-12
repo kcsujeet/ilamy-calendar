@@ -257,6 +257,26 @@ describe('YearView', () => {
 			).not.toBeInTheDocument()
 		})
 
+		test('counts a multi-day event spanning a month boundary in both month badges', () => {
+			const year = 2025
+			const spanningEvent: CalendarEvent = {
+				id: 'span-1',
+				title: 'Spans Jan/Feb',
+				start: dayjs(`${year}-01-30T18:00:00.000Z`),
+				end: dayjs(`${year}-02-02T10:00:00.000Z`),
+			}
+
+			renderYearView({
+				events: [spanningEvent],
+				initialDate: dayjs(`${year}-01-15`),
+			})
+
+			const januaryBadge = screen.getByTestId('year-month-count-01')
+			const februaryBadge = screen.getByTestId('year-month-count-02')
+			expect(januaryBadge).toHaveTextContent('1 Event')
+			expect(februaryBadge).toHaveTextContent('1 Event')
+		})
+
 		test('badge has correct styling', () => {
 			const year = 2025
 			const events = createTestEvents(year)

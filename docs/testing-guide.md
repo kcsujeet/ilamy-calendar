@@ -8,7 +8,7 @@ Reference for writing and running tests in @ilamy/calendar.
 bun test                              # Run all tests
 bun test --coverage                   # Tests with coverage report
 bun test src/features/calendar/       # Run tests in a directory
-bun test week-view.test.tsx           # Run a single file (partial match)
+bun test week.test.tsx                # Run a single file (partial match)
 bun test --watch                      # Watch mode (re-run on changes)
 ```
 
@@ -35,9 +35,9 @@ bun test --watch                      # Watch mode (re-run on changes)
 Tests are co-located next to the component they test:
 
 ```
-src/features/calendar/components/week-view/
-  week-view.tsx
-  week-view.test.tsx       # Tests live here, not in __tests__/
+src/features/calendar/components/views/
+  week.tsx
+  week.test.tsx            # Tests live here, not in __tests__/
 ```
 
 **Never create new test files.** Add tests to the existing `*.test.tsx` file for that component.

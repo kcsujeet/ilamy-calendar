@@ -26,3 +26,7 @@ export const DAY_NUMBER_TO_WEEK_DAYS: Record<number, WeekDays> = {
 	5: 'friday',
 	6: 'saturday',
 }
+
+// Per-item stagger (seconds) for AnimatedSection sequences in view headers and
+// the year grid. Previously the literal 0.05 pasted into 7 files.
+export const HEADER_STAGGER_DELAY = 0.05

@@ -56,7 +56,7 @@ const timeCol = { days: hours, ... }
 const dayCol  = { days: hours, ... }
 ```
 
-Applies to: `day-view.tsx`, `resource-day-vertical.tsx`, `resource-day-horizontal.tsx`
+Applies to: `views/day.tsx`, `resource-day-vertical.tsx`, `resource-day-horizontal.tsx`
 
 ### Week Views (multiple columns)
 
@@ -71,7 +71,7 @@ const columns = weekDays.map((day) => ({
 
 The shared time column (left gutter) uses a single `getViewHours` call with `currentDate` for display labels only.
 
-Applies to: `week-view.tsx`, `resource-week-vertical.tsx`, `resource-week-horizontal.tsx`
+Applies to: `views/week.tsx`, `resource-week-vertical.tsx`, `resource-week-horizontal.tsx`
 
 ## DST Handling
 

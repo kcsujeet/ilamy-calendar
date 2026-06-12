@@ -1,4 +1,4 @@
-import type { BusinessHours } from '@/components/types'
+import type { Resource } from '@ilamy/types'
 import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
@@ -28,9 +28,11 @@ export interface IlamyResourceCalendarProps
 	/** Custom render function for resources */
 	renderResource?: (resource: Resource) => React.ReactNode
 	/**
-	 * Orientation of the resource view.
-	 * - "horizontal": Resources are rows, time is columns (default)
-	 * - "vertical": Resources are columns, time is rows
+	 * Where the resource axis goes (only applies when `resources` is set):
+	 * - "horizontal": resources are rows, dates flow across (default)
+	 * - "vertical": resources are columns, time flows down
+	 * Distinct from a view's `layout`, which is the engine used when the
+	 * calendar has no resources. See docs/custom-views.md.
 	 */
 	orientation?: 'horizontal' | 'vertical'
 	/**
@@ -41,33 +43,4 @@ export interface IlamyResourceCalendarProps
 	weekViewGranularity?: 'hourly' | 'daily'
 }
 
-/**
- * Resource interface representing a calendar resource (person, room, equipment, etc.)
- */
-export interface Resource {
-	/** Unique identifier for the resource */
-	id: string | number
-	/** Display title of the resource */
-	title: string
-	/**
-	 * Color for the resource (supports CSS color values, hex, rgb, hsl, or CSS class names)
-	 * @example "#3b82f6", "blue-500", "rgb(59, 130, 246)"
-	 */
-	color?: string
-	/**
-	 * Background color for the resource (supports CSS color values, hex, rgb, hsl, or CSS class names)
-	 * @example "#dbeafe", "blue-100", "rgba(59, 130, 246, 0.1)"
-	 */
-	backgroundColor?: string
-	/**
-	 * Configuration for resource-specific business hours.
-	 * If provided, these will be used instead of the global business hours for this resource.
-	 */
-	businessHours?: BusinessHours | BusinessHours[]
-	/**
-	 * Custom data associated with the resource
-	 * Use this to store additional metadata specific to your application
-	 * @example { avatar: 'https://example.com/avatar.png', role: 'admin' }
-	 */
-	data?: Record<string, unknown>
-}
+export type { Resource } from '@ilamy/types'

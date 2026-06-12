@@ -92,6 +92,37 @@ export interface BusinessHours {
 	endTime?: number
 }
 
+/**
+ * Resource interface representing a calendar resource (person, room, equipment, etc.)
+ */
+export interface Resource {
+	/** Unique identifier for the resource */
+	id: string | number
+	/** Display title of the resource */
+	title: string
+	/**
+	 * Color for the resource (supports CSS color values, hex, rgb, hsl, or CSS class names)
+	 * @example "#3b82f6", "blue-500", "rgb(59, 130, 246)"
+	 */
+	color?: string
+	/**
+	 * Background color for the resource (supports CSS color values, hex, rgb, hsl, or CSS class names)
+	 * @example "#dbeafe", "blue-100", "rgba(59, 130, 246, 0.1)"
+	 */
+	backgroundColor?: string
+	/**
+	 * Configuration for resource-specific business hours.
+	 * If provided, these will be used instead of the global business hours for this resource.
+	 */
+	businessHours?: BusinessHours | BusinessHours[]
+	/**
+	 * Custom data associated with the resource
+	 * Use this to store additional metadata specific to your application
+	 * @example { avatar: 'https://example.com/avatar.png', role: 'admin' }
+	 */
+	data?: Record<string, unknown>
+}
+
 // --- Plugin SDK contract ---------------------------------------------------
 
 export interface PluginDateRange {
@@ -107,19 +138,128 @@ export interface PluginMutationArgs {
 }
 
 /**
- * Describes a view type contributed by a plugin. The component reads calendar
- * state via `useIlamyCalendarContext()`. `navigationUnit` controls how next/prev
- * steps for the view ('week', 'month', 'day', …).
+ * Calendar configuration handed to a view's `range()`/`columns()`/`renderHeader()`.
+ * Carries the resource axis (`resources`, `orientation`) so a resource-capable
+ * view can compose both arrangements.
+ */
+export interface ViewConfig {
+	firstDayOfWeek: number
+	hiddenDays?: Set<number>
+	businessHours?: BusinessHours | BusinessHours[]
+	hideNonBusinessHours?: boolean
+	/** The resource axis. Set only when the calendar renders resources. */
+	resources?: Resource[]
+	/**
+	 * The calendar-level resource arrangement (the user's choice): where the
+	 * resource axis goes. Only meaningful when `resources` is set.
+	 */
+	orientation?: 'vertical' | 'horizontal'
+}
+
+/**
+ * One column of a 'vertical' view (time flows down the column).
+ * Formalizes the calendar's existing VerticalGrid column input.
+ */
+export interface VerticalColumnSpec {
+	/** Stable column id; drives testids and React keys. */
+	id: string
+	/** The date this column represents; gutter/label columns leave it unset. */
+	day?: Dayjs
+	/** The cells of the column: hour slots (gridType 'hour') or dates ('day'). */
+	days: Dayjs[]
+	gridType?: 'day' | 'hour'
+	className?: string
+	/** Label-only column (e.g. the time gutter): renders no events. */
+	noEvents?: boolean
+	renderCell?: (date: Dayjs) => ReactNode
+	/** Resource-axis identity when the column belongs to one resource. */
+	resourceId?: string | number
+	resource?: Resource
+}
+
+/** One cell of a 'horizontal' row. */
+export interface HorizontalCellSpec {
+	id: string
+	day?: Dayjs
+	/** A grouped cell spanning several dates (nested-axis arrangements). */
+	days?: Dayjs[]
+	gridType: 'day' | 'hour'
+	className?: string
+}
+
+/**
+ * One row of a 'horizontal' view (date cells flow across the row).
+ * Formalizes the calendar's existing HorizontalGrid row input.
+ */
+export interface HorizontalRowSpec {
+	id: string | number
+	columns?: HorizontalCellSpec[]
+	className?: string
+	showDayNumber?: boolean
+	/** Resource-axis identity when the row belongs to one resource. */
+	resource?: Resource
+}
+
+/** What a view's `columns()` returns; `layout` picks which engine consumes it. */
+export type ColumnSpec = VerticalColumnSpec | HorizontalRowSpec
+
+/** Context passed to a view's `renderHeader`. */
+export interface ViewHeaderContext {
+	date: Dayjs
+	config: ViewConfig
+}
+
+/**
+ * Describes a view type — contributed by a plugin or built into the calendar
+ * core (the four built-ins are themselves `PluginView` entries). A view either
+ * declares `columns` + `layout` and renders through the shared grid engines,
+ * or renders entirely through `component` (the escape hatch).
  */
 export interface PluginView {
 	/** Unique view id, e.g. 'resource-week'. */
 	name: string
-	/** View-switcher label (or a translation key). */
+	/** View-switcher label (or a translation key; unknown keys render as-is). */
 	label?: string
-	/** Renders the view; reads state via useIlamyCalendarContext(). */
+	/** Renders the view when `columns`/`layout` are absent (the escape hatch). */
 	component: ComponentType
-	/** How next/prev steps for this view ('week', 'month', 'day', …). */
+	/** How far prev/next steps when `navigationStep` is absent ('week', 'month', …). */
 	navigationUnit?: ManipulateType
+	/**
+	 * How far prev/next jumps; defaults to one `navigationUnit`. Custom-duration
+	 * views (a 40-day grid, a 4-day vertical view) set `{ amount: 40, unit: 'day' }`
+	 * so navigation moves a full window.
+	 */
+	navigationStep?: { amount: number; unit: ManipulateType }
+	/**
+	 * Visible range for navigation callbacks and the event pipeline. Views
+	 * without `range` fall back to the month 6x7 grid range.
+	 */
+	range?: (date: Dayjs, config: ViewConfig) => { start: Dayjs; end: Dayjs }
+	/**
+	 * Column/row specs for the shared renderer. Return `VerticalColumnSpec[]`
+	 * when `layout` is 'vertical', `HorizontalRowSpec[]` when 'horizontal'.
+	 * Omit (together with `layout`) to render `component` instead.
+	 */
+	columns?: (
+		date: Dayjs,
+		config: ViewConfig
+	) => VerticalColumnSpec[] | HorizontalRowSpec[]
+	/**
+	 * The view's intrinsic shape (the author's choice): which engine renders it
+	 * when the calendar has NO resources. 'vertical' = time flows down;
+	 * 'horizontal' = date cells flow across in stacked rows. With resources on
+	 * a resource-capable view, the calendar-level `orientation` wins instead:
+	 * `engine = resources && supportsResources ? orientation : layout`.
+	 */
+	layout?: 'vertical' | 'horizontal'
+	/** Header row content rendered above the grid by the shared renderer. */
+	renderHeader?: (ctx: ViewHeaderContext) => ReactNode
+	/**
+	 * Whether `columns()` composes the resource axis when `config.resources`
+	 * is set. Defaults to false; the view switcher hides resource-incapable
+	 * views on a resource calendar.
+	 */
+	supportsResources?: boolean
 }
 
 /**

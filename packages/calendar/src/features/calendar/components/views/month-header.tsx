@@ -1,6 +1,7 @@
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
@@ -30,7 +31,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 				<AnimatedSection
 					className="py-2 text-center font-medium border-r last:border-r-0 border-b flex-1 min-w-0"
 					data-testid={keys.header.weekday('month', weekDay.format('ddd'))}
-					delay={index * 0.05}
+					delay={index * HEADER_STAGGER_DELAY}
 					key={weekDay.toISOString()}
 					transitionKey={weekDay.toISOString()}
 				>

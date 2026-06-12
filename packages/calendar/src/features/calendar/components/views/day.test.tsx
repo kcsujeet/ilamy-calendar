@@ -5,7 +5,7 @@ import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils/generator'
-import { DayView } from './day-view'
+import { DayView } from './day'
 
 // Mock events for testing
 const mockEvents: CalendarEvent[] = generateMockEvents()

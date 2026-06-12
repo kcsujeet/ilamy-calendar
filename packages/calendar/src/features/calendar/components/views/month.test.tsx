@@ -11,7 +11,7 @@ import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { generateMockEvents } from '@/lib/utils/generator'
-import { MonthView } from './month-view'
+import { MonthView } from './month'
 
 const weekDays: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 

@@ -12,10 +12,16 @@ import type { ComponentType, ReactNode } from 'react'
 // existing `@/features/plugins/lib/types` call sites across core stay
 // unchanged. `PluginRuntime` is the core's internal aggregator and stays here.
 export type {
+	ColumnSpec,
+	HorizontalCellSpec,
+	HorizontalRowSpec,
 	IlamyPlugin,
 	PluginDateRange,
 	PluginMutationArgs,
 	PluginView,
+	VerticalColumnSpec,
+	ViewConfig,
+	ViewHeaderContext,
 } from '@ilamy/types'
 
 export interface PluginRuntime {

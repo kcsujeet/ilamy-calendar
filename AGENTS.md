@@ -143,7 +143,7 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
   features/
     calendar/
       ilamy-calendar.tsx                       # Main component
-      day-view/ week-view/ month-view/ year-view/  # View components
+      views/  # built-in PluginView specs + ViewRenderer dispatcher (year component in year-view/)
       contexts/calendar-context/               # CalendarProvider, all state
       hooks/                                   # engine slices (use-calendar-{config,navigation,data,interaction}),
                                                #   use-smart-calendar-context, useProcessed*Events

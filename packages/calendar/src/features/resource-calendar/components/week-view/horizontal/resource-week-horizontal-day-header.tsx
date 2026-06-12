@@ -2,6 +2,7 @@ import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
+import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
@@ -29,7 +30,7 @@ export const ResourceWeekHorizontalDayHeader: React.FC<
 							today && 'bg-primary/10 font-bold'
 						)}
 						data-testid={keys.header.resource.weekDay}
-						delay={index * 0.05}
+						delay={index * HEADER_STAGGER_DELAY}
 						key={keys.listKey(key, 'animated')}
 						transitionKey={keys.listKey(key, 'motion')}
 					>

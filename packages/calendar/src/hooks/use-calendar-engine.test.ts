@@ -3,6 +3,7 @@ import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import { act, renderHook } from '@testing-library/react'
 import { RRule } from 'rrule'
 import type { CalendarEvent } from '@/components/types'
+import type { IlamyPlugin } from '@/features/plugins/lib/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import 'dayjs/locale/fr.js'
 import type { Translations } from '@/lib/translations/types'
@@ -302,6 +303,49 @@ describe('useCalendarEngine', () => {
 			expect(calledDate).toEqual(newDate)
 			expect(range.start.format('YYYY-MM-DD')).toBe('2025-06-01')
 			expect(range.end.format('YYYY-MM-DD')).toBe('2025-07-12')
+		})
+
+		it('navigates by navigationStep and reports the custom range for views that declare them', () => {
+			const onDateChange = vi.fn()
+			const initialDate = dayjs('2025-01-15')
+			const fortyDayPlugin: IlamyPlugin = {
+				name: 'forty',
+				views: [
+					{
+						name: 'forty-day',
+						component: () => null,
+						navigationStep: { amount: 40, unit: 'day' },
+						range: (date) => ({
+							start: date.startOf('day'),
+							end: date.add(39, 'day').endOf('day'),
+						}),
+					},
+				],
+			}
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate,
+					initialView: 'forty-day',
+					plugins: [fortyDayPlugin],
+					onDateChange,
+				})
+			)
+
+			act(() => result.current.nextPeriod()) // Jan 15 + 40 days
+
+			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-02-24')
+			const [, range] = onDateChange.mock.calls[0]
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-02-24')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-04-04')
+		})
+
+		it('prepends the four built-in view specs in getViews()', () => {
+			const { result } = renderHook(() => useCalendarEngine(defaultConfig))
+
+			const names = result.current.getViews().map((v) => v.name)
+
+			expect(names).toEqual(['day', 'week', 'month', 'year'])
 		})
 	})
 

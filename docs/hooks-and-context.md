@@ -99,7 +99,7 @@ Engine composer used (through `useCalendarContextValue`) by both providers. Comp
 
 1. `useCalendarConfig` — `t()`, `currentLocale` state, `dayMaxEvents`, `businessHours`
 2. `pluginRuntime` (`useMemo(createPluginRuntime)`) — the cross-cutting fifth dependency
-3. `useCalendarNavigation` — `currentDate`/`view` state, `nextPeriod`/`prevPeriod`/`today`, view-range math
+3. `useCalendarNavigation` — `currentDate`/`view` state, `nextPeriod`/`prevPeriod`/`today`, view-range math. One view-resolution path: `getAllViews()` prepends the built-in `PluginView` specs (`features/calendar/components/views/`) to the plugin views; ranges and navigation steps come from each spec's `range`/`navigationStep`/`navigationUnit` (fallback: month 6x7 grid range, one-day step). See `docs/custom-views.md`.
 4. `useCalendarData` — event store, prop sync, CRUD, plugin-scoped mutations (`applyScopedEdit`/`applyScopedDelete`)
 5. `useCalendarInteraction` — selection state, `openEventForm`/`closeEventForm` (resource-aware via `OpenEventFormInput`), `handleEventClick`/`handleDateClick`
 

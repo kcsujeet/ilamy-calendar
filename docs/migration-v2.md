@@ -171,7 +171,7 @@ const view: CalendarView = 'week' // still works — CalendarView is now string
 
 Code that compares or switches on the built-in view names still works. The change only matters if you previously relied on exhaustive narrowing or type-level enforcement of exactly four views.
 
-The built-in views are `'month'`, `'week'`, `'day'`, and `'year'`. The `BUILT_IN_VIEWS` constant and `BuiltInView` type are available internally for the calendar's own components.
+The built-in views are `'month'`, `'week'`, `'day'`, and `'year'` — themselves `PluginView` specs resolved through the same path as plugin views (see `docs/custom-views.md`).
 
 ---
 
@@ -264,6 +264,31 @@ const roomEvents = getEventsForResource('room-1')
 const { getEventsForResource } = useIlamyCalendarContext()
 const roomEvents = getEventsForResource?.('room-1') ?? []
 ```
+
+---
+
+### `PluginView` gains optional view-spec fields (non-breaking)
+
+`PluginView` adds `navigationStep`, `range`, `columns`, `layout`, `renderHeader`, and
+`supportsResources` — all optional. Existing view objects (`{ name, label, component,
+navigationUnit }`) keep working unchanged; verified against the v1 plugin-view shape in the
+test suite. New capability, not a break: a view that declares `columns` + `layout` renders
+through the calendar's shared engines, `range` drives the event pipeline, and
+`navigationStep` makes prev/next jump custom windows. See `docs/custom-views.md`.
+
+One behavior change ships alongside (see "View switcher" below): on a **resource** calendar
+the switcher now hides plugin views that don't declare `supportsResources: true`. They
+previously showed a button that rendered a blank body.
+
+---
+
+### View switcher: resource calendars hide resource-incapable plugin views
+
+On `IlamyResourceCalendar`, plugin views now appear in the view switcher only if they
+declare `supportsResources: true`. Previously every plugin view got a button that rendered
+a blank body. Regular calendars list plugin views exactly as before. Plugin view `label`s
+are now passed through the translator; unknown keys render verbatim, so plain-text labels
+are unaffected.
 
 ---
 

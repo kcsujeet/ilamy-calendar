@@ -4,10 +4,7 @@ import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-cont
 import { EventFormDialog } from '@/components/event-form/event-form-dialog'
 import { Header } from '@/components/header'
 import type { CalendarEvent } from '@/components/types'
-import { DayView } from '@/features/calendar/components/day-view/day-view'
-import { MonthView } from '@/features/calendar/components/month-view/month-view'
-import { WeekView } from '@/features/calendar/components/week-view/week-view'
-import { YearView } from '@/features/calendar/components/year-view/year-view'
+import { ViewRenderer } from '@/features/calendar/components/views'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 // oxlint-disable-next-line no-duplicates
@@ -30,17 +27,8 @@ const CalendarContent: React.FC = () => {
 		getViews: c.getViews,
 	}))
 
-	const builtInViews: Record<string, React.ReactNode> = {
-		month: <MonthView key="month" />,
-		week: <WeekView key="week" />,
-		day: <DayView key="day" />,
-		year: <YearView key="year" />,
-	}
-	const pluginView = getViews().find((v) => v.name === view)
-	const PluginViewComponent = pluginView?.component
-	const activeView =
-		builtInViews[view] ??
-		(PluginViewComponent ? <PluginViewComponent key={view} /> : null)
+	const spec = getViews().find((v) => v.name === view)
+	const activeView = spec ? <ViewRenderer key={view} view={spec} /> : null
 
 	return (
 		<div className="flex flex-col w-full h-full" data-testid="ilamy-calendar">

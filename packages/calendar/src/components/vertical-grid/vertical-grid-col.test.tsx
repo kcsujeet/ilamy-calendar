@@ -63,9 +63,9 @@ describe('VerticalGridCol', () => {
 		).toBeInTheDocument()
 	})
 
-	test('includes resourceId in cell IDs if provided', () => {
+	test('includes the resource id in cell IDs when a resource is provided', () => {
 		const dateStr = initialDate.format('YYYY-MM-DD')
-		renderVerticalGridCol({ resourceId: 'res-1' })
+		renderVerticalGridCol({ resource: { id: 'res-1', title: 'Resource 1' } })
 
 		expect(
 			screen.getByTestId(`vertical-cell-${dateStr}-09-00-resource-res-1`)

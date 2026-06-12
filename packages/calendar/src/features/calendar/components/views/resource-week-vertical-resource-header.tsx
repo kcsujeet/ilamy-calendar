@@ -1,14 +1,14 @@
 import type { Resource } from '@ilamy/types'
 import type React from 'react'
 import { ResourceCell } from '@/components/resource-cell'
+import { GUTTER_WIDTH } from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
+import { RESOURCE_CELL_WIDTH } from './resource-axis'
 
 interface ResourceWeekVerticalResourceHeaderProps {
 	resources: Resource[]
-	visibleDays: Dayjs[]
 }
 
 export const ResourceWeekVerticalResourceHeader: React.FC<
@@ -19,7 +19,12 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 
 	return (
 		<div className="flex h-12">
-			<div className="shrink-0 w-16 border-r z-20 bg-background sticky left-0">
+			<div
+				className={cn(
+					'shrink-0 border-r z-20 bg-background sticky left-0',
+					GUTTER_WIDTH
+				)}
+			>
 				<span
 					className={cn(
 						'px-2 h-full w-full flex flex-col justify-center text-xs text-muted-foreground text-center min-w-0',
@@ -38,7 +43,7 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 			{resources.map((resource) => {
 				return (
 					<ResourceCell
-						className="min-w-20 flex-1 border-b"
+						className={cn(RESOURCE_CELL_WIDTH, 'border-b')}
 						key={keys.listKey('resource-cell', resource.id)}
 						resource={resource}
 					>

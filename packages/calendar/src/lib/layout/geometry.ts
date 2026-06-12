@@ -1,23 +1,35 @@
 import type { CalendarEvent } from '@/components/types'
 
-/**
- * The single layout contract. The layout strategy determines which placement
- * group is set:
- * - `layoutVertical` (day/week time grid) fills `top`/`height`/`zIndex`.
- * - `layoutHorizontal` (month / all-day row) fills `row` + truncation flags
- *   and emits NO pixel fields — the renderer derives pixels from `row`.
- */
-export interface PositionedEvent {
+/** Placement fields shared by both layout strategies. */
+interface PositionedEventBase {
 	event: CalendarEvent
-	/** Horizontal placement, percent of the grid axis (both strategies). */
+	/** Horizontal placement, percent of the grid axis. */
 	left: number
 	width: number
-	/** Vertical strategy: vertical placement, percent of the visible range. */
-	top?: number
-	height?: number
-	zIndex?: number
-	/** Horizontal strategy: stacking row index; the renderer derives pixels. */
-	row?: number
-	isTruncatedStart?: boolean
-	isTruncatedEnd?: boolean
 }
+
+/** `layoutVertical` (day/week time grid): pixel-percentage placement. */
+export interface VerticalPositionedEvent extends PositionedEventBase {
+	kind: 'vertical'
+	/** Vertical placement, percent of the visible range. */
+	top: number
+	height: number
+	zIndex?: number
+}
+
+/**
+ * `layoutHorizontal` (month / all-day row): abstract row placement — the
+ * renderer derives pixels from `row`.
+ */
+export interface HorizontalPositionedEvent extends PositionedEventBase {
+	kind: 'horizontal'
+	/** Stacking row index. */
+	row: number
+	isTruncatedStart: boolean
+	isTruncatedEnd: boolean
+}
+
+/** The single layout contract, discriminated by the strategy that produced it. */
+export type PositionedEvent =
+	| VerticalPositionedEvent
+	| HorizontalPositionedEvent

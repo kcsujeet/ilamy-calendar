@@ -66,6 +66,26 @@ describe('eventOverlapsRange', () => {
 		)
 		expect(eventOverlapsRange(event, start, end)).toBe(false)
 	})
+
+	// Boundary contract: the range is inclusive on BOTH ends — an event
+	// touching either boundary instant counts as overlapping.
+	it('returns true when the event ends exactly at the range start', () => {
+		const event = makeEvent(
+			'f',
+			'2025-01-04T22:00:00.000Z',
+			'2025-01-05T00:00:00.000Z'
+		)
+		expect(eventOverlapsRange(event, start, end)).toBe(true)
+	})
+
+	it('returns true when the event starts exactly at the range end', () => {
+		const event = makeEvent(
+			'g',
+			'2025-01-05T23:59:59.999Z',
+			'2025-01-06T02:00:00.000Z'
+		)
+		expect(eventOverlapsRange(event, start, end)).toBe(true)
+	})
 })
 
 describe('getEventResourceIds', () => {
@@ -92,6 +112,17 @@ describe('getEventResourceIds', () => {
 			'2025-01-01T10:00:00.000Z',
 			'2025-01-01T11:00:00.000Z'
 		)
+		expect(getEventResourceIds(event)).toEqual([])
+	})
+
+	it('treats an empty resourceIds array as empty membership, still ignoring resourceId', () => {
+		// Pins the "resourceIds wins when present" rule for the [] edge: the
+		// event belongs to NO resource, even though resourceId is set.
+		const event = {
+			...makeEvent('a', '2025-01-01T10:00:00.000Z', '2025-01-01T11:00:00.000Z'),
+			resourceId: 'ignored',
+			resourceIds: [],
+		}
 		expect(getEventResourceIds(event)).toEqual([])
 	})
 })

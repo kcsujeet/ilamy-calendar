@@ -17,11 +17,16 @@ import {
 	collectResourceBusinessHours,
 	getViewHours,
 } from '@/features/calendar/utils/view-hours'
-import { HEADER_STAGGER_DELAY } from '@/lib/constants'
+import { HEADER_STAGGER_DELAY, HOUR_STAGGER_DELAY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
-import { ResourcesCornerCell, resourceHorizontalRows } from './resource-axis'
+import {
+	RESOURCE_CELL_WIDTH,
+	ResourcesCornerCell,
+	resourceHorizontalRows,
+	resourceVerticalColumns,
+} from './resource-axis'
 import { ResourceWeekHorizontalDayHeader } from './resource-week-horizontal-day-header'
 import { ResourceWeekVerticalDayHeader } from './resource-week-vertical-day-header'
 import { ResourceWeekVerticalResourceHeader } from './resource-week-vertical-resource-header'
@@ -51,8 +56,13 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 
 	return (
 		<div className={'flex h-18 flex-1'} data-testid="week-view-header">
-			{/* Corner cell with week number */}
-			<div className="w-10 sm:w-16 min-w-10 sm:min-w-16 h-full shrink-0 items-center justify-center border-r p-2 flex">
+			{/* Corner cell with week number — mirrors the responsive gutter width. */}
+			<div
+				className={cn(
+					RESPONSIVE_GUTTER_WIDTH,
+					'h-full shrink-0 items-center justify-center border-r p-2 flex'
+				)}
+			>
 				<div className="flex flex-col items-center justify-center min-w-0 w-full">
 					<span className="text-muted-foreground text-xs truncate w-full text-center">
 						{t('week')}
@@ -104,7 +114,6 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 const weekHoursFor = (
 	day: Dayjs,
 	config: ViewConfig,
-	resources: Resource[],
 	allDates?: Dayjs[]
 ): Dayjs[] =>
 	getViewHours({
@@ -112,7 +121,7 @@ const weekHoursFor = (
 		businessHours: config.businessHours,
 		hideNonBusinessHours: config.hideNonBusinessHours,
 		allDates,
-		resourceBusinessHours: collectResourceBusinessHours(resources),
+		resourceBusinessHours: collectResourceBusinessHours(config.resources ?? []),
 	})
 
 const resourceWeekVerticalColumns = (
@@ -124,30 +133,29 @@ const resourceWeekVerticalColumns = (
 
 	if (isHourlyGranularity(config)) {
 		const visibleDays = getVisibleDays(date, config)
-		return [
-			gutterColumn({
-				days: weekHoursFor(date, config, resources, weekDays),
+		return resourceVerticalColumns({
+			resources,
+			gutter: gutterColumn({
+				days: weekHoursFor(date, config, weekDays),
 				gridType: 'hour',
 			}),
-			...resources.flatMap((resource) =>
+			columnsFor: (resource) =>
 				visibleDays.map((day) => ({
 					id: keys.col.day(day, resource.id),
-					className: 'min-w-20 flex-1',
-					resourceId: resource.id,
-					resource,
+					className: RESOURCE_CELL_WIDTH,
 					day,
-					days: weekHoursFor(day, config, resources, weekDays),
+					days: weekHoursFor(day, config, weekDays),
 					gridType: 'hour' as const,
-				}))
-			),
-		]
+				})),
+		})
 	}
 
 	// Uses `weekDays` (all 7) intentionally, not `visibleDays`. Non-contiguous
 	// visible days would break multi-day event positioning, so `hiddenDays` is
 	// not supported in daily granularity.
-	return [
-		gutterColumn({
+	return resourceVerticalColumns({
+		resources,
+		gutter: gutterColumn({
 			days: weekDays,
 			gridType: 'day',
 			renderLabel: (day: Dayjs) => (
@@ -157,16 +165,14 @@ const resourceWeekVerticalColumns = (
 				</>
 			),
 		}),
-		...resources.map((resource) => ({
+		columnsFor: (resource) => ({
 			id: keys.col.resource('week', resource.id),
-			className: 'min-w-20 flex-1',
+			className: RESOURCE_CELL_WIDTH,
 			day: undefined,
-			resourceId: resource.id,
-			resource,
 			days: weekDays,
 			gridType: 'day' as const,
-		})),
-	]
+		}),
+	})
 }
 
 const resourceWeekHorizontalRows = (
@@ -177,14 +183,12 @@ const resourceWeekHorizontalRows = (
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
 
 	if (isHourlyGranularity(config)) {
-		const weekHours = weekDays.map((day) =>
-			weekHoursFor(day, config, resources)
-		)
+		const weekHours = weekDays.map((day) => weekHoursFor(day, config))
 		return resourceHorizontalRows({
 			resources,
 			days: weekHours,
 			gridType: 'hour',
-			cellClassName: 'min-w-20 flex-1',
+			cellClassName: RESOURCE_CELL_WIDTH,
 		})
 	}
 
@@ -192,7 +196,7 @@ const resourceWeekHorizontalRows = (
 		resources,
 		days: weekDays,
 		gridType: 'day',
-		cellClassName: 'min-w-20 flex-1',
+		cellClassName: RESOURCE_CELL_WIDTH,
 	})
 }
 
@@ -211,10 +215,7 @@ const ResourceWeekVerticalHeader: React.FC<{
 
 	return (
 		<div className="flex-1 flex flex-col">
-			<ResourceWeekVerticalResourceHeader
-				resources={resources}
-				visibleDays={visibleDays}
-			/>
+			<ResourceWeekVerticalResourceHeader resources={resources} />
 			{isHourly && <ResourceWeekVerticalDayHeader columns={dayHeaderColumns} />}
 		</div>
 	)
@@ -228,7 +229,7 @@ const ResourceWeekHorizontalHeader: React.FC<{
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
 	const isHourly = isHourlyGranularity(config)
 	const weekHours = isHourly
-		? weekDays.flatMap((day) => weekHoursFor(day, config, resources))
+		? weekDays.flatMap((day) => weekHoursFor(day, config))
 		: []
 
 	return (
@@ -237,7 +238,11 @@ const ResourceWeekHorizontalHeader: React.FC<{
 			<div className="flex-1 flex flex-col">
 				<ResourceWeekHorizontalDayHeader days={weekDays} />
 				{isHourly && (
-					<TimeHeaderRow delayStep={0.005} hours={weekHours} view="week" />
+					<TimeHeaderRow
+						delayStep={HOUR_STAGGER_DELAY}
+						hours={weekHours}
+						view="week"
+					/>
 				)}
 			</div>
 		</>
@@ -251,7 +256,6 @@ const weekColumns = (
 	const resources = config.resources ?? []
 
 	if (resources.length) {
-		// Engine rule: with resources, the user's orientation picks the arrangement.
 		if (config.orientation === 'vertical') {
 			return resourceWeekVerticalColumns(date, config, resources)
 		}
@@ -260,16 +264,10 @@ const weekColumns = (
 
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
 	const visibleDays = getVisibleDays(date, config)
-	const gutterHours = getViewHours({
-		referenceDate: date,
-		businessHours: config.businessHours,
-		hideNonBusinessHours: config.hideNonBusinessHours,
-		allDates: weekDays,
-	})
 
 	return [
 		gutterColumn({
-			days: gutterHours,
+			days: weekHoursFor(date, config, weekDays),
 			gridType: 'hour',
 			widthClassName: RESPONSIVE_GUTTER_WIDTH,
 		}),
@@ -277,12 +275,7 @@ const weekColumns = (
 		...visibleDays.map((day) => ({
 			id: keys.col.day(day),
 			day,
-			days: getViewHours({
-				referenceDate: day,
-				businessHours: config.businessHours,
-				hideNonBusinessHours: config.hideNonBusinessHours,
-				allDates: weekDays,
-			}),
+			days: weekHoursFor(day, config, weekDays),
 			className: 'flex-1 min-w-0',
 			gridType: 'hour' as const,
 		})),
@@ -326,5 +319,4 @@ export const weekView: PluginView = {
 			/>
 		)
 	},
-	component: WeekView,
 }

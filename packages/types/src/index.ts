@@ -138,11 +138,10 @@ export interface PluginMutationArgs {
 }
 
 /**
- * Calendar configuration handed to a view's `range()`/`columns()`/`renderHeader()`.
+ * Calendar configuration handed to a view's `columns()`/`renderHeader()`.
  * Carries the resource axis (`resources`, `orientation`) so a resource-capable
- * view can compose both arrangements. The full axis config reaches
- * `columns()`/`renderHeader()`; `range()` receives only `{ firstDayOfWeek }`
- * today.
+ * view can compose both arrangements. `range()` receives only the
+ * `firstDayOfWeek` slice (see its own signature).
  */
 export interface ViewConfig {
 	firstDayOfWeek: number
@@ -179,8 +178,10 @@ export interface VerticalColumnSpec {
 	/** Label-only column (e.g. the time gutter): renders no events. */
 	noEvents?: boolean
 	renderCell?: (date: Dayjs) => ReactNode
-	/** Resource-axis identity when the column belongs to one resource. */
-	resourceId?: string | number
+	/**
+	 * Resource-axis identity when the column belongs to one resource. The
+	 * single carrier: consumers derive the id from `resource.id`.
+	 */
 	resource?: Resource
 }
 
@@ -199,7 +200,8 @@ export interface HorizontalCellSpec {
  * Formalizes the calendar's existing HorizontalGrid row input.
  */
 export interface HorizontalRowSpec {
-	id: string | number
+	/** Stable row id; drives testids and React keys (matches VerticalColumnSpec.id). */
+	id: string
 	columns?: HorizontalCellSpec[]
 	className?: string
 	showDayNumber?: boolean
@@ -228,10 +230,11 @@ export interface PluginView {
 	/** View-switcher label (or a translation key; unknown keys render as-is). */
 	label?: string
 	/**
-	 * Always required. The escape hatch when `columns`/`layout` are absent;
-	 * for spec-driven views it is unused by the renderer (use `() => null`).
+	 * The escape hatch: renders the whole view when `columns`/`layout` are
+	 * absent. Spec-driven views omit it. A view with neither renders nothing
+	 * (dev builds log a warning).
 	 */
-	component: ComponentType
+	component?: ComponentType
 	/** How far prev/next steps when `navigationStep` is absent ('week', 'month', …). */
 	navigationUnit?: ManipulateType
 	/**
@@ -242,11 +245,14 @@ export interface PluginView {
 	navigationStep?: { amount: number; unit: ManipulateType }
 	/**
 	 * Visible range for navigation callbacks and the event pipeline. Views
-	 * without `range` fall back to the month 6x7 grid range. Receives only
-	 * `{ firstDayOfWeek }` as `config` today; the full axis config reaches
+	 * without `range` fall back to the month 6x7 grid range. Receives only the
+	 * `firstDayOfWeek` slice of the config; the full axis config reaches
 	 * `columns()`/`renderHeader()`.
 	 */
-	range?: (date: Dayjs, config: ViewConfig) => { start: Dayjs; end: Dayjs }
+	range?: (
+		date: Dayjs,
+		config: Pick<ViewConfig, 'firstDayOfWeek'>
+	) => { start: Dayjs; end: Dayjs }
 	/**
 	 * Column/row specs for the shared renderer. Return `VerticalColumnSpec[]`
 	 * when `layout` is 'vertical', `HorizontalRowSpec[]` when 'horizontal'.

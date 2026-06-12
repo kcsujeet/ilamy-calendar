@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { builtInViews } from '@/features/calendar/components/views'
 import type { PluginRuntime, PluginView } from '@/features/plugins/lib/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
@@ -27,6 +27,10 @@ export interface CalendarNavigationSlice {
 	currentDate: Dayjs
 	setCurrentDate: React.Dispatch<React.SetStateAction<Dayjs>>
 	view: CalendarView
+	/**
+	 * Switches the view. Side effects: fires `onViewChange(newView)`, then
+	 * `onDateChange(currentDate, range)` because the visible range changes.
+	 */
 	setView: (view: CalendarView) => void
 	selectDate: (date: Dayjs) => void
 	nextPeriod: () => void
@@ -119,16 +123,29 @@ export const useCalendarNavigation = ({
 		[onViewChange, onDateChange, currentDate, firstDayOfWeek, resolveViewSpec]
 	)
 
-	return {
-		currentDate,
-		setCurrentDate,
-		view,
-		setView: handleViewChange,
-		selectDate,
-		nextPeriod,
-		prevPeriod,
-		today,
-		getCurrentViewRange,
-		getAllViews,
-	}
+	return useMemo(
+		() => ({
+			currentDate,
+			setCurrentDate,
+			view,
+			setView: handleViewChange,
+			selectDate,
+			nextPeriod,
+			prevPeriod,
+			today,
+			getCurrentViewRange,
+			getAllViews,
+		}),
+		[
+			currentDate,
+			view,
+			handleViewChange,
+			selectDate,
+			nextPeriod,
+			prevPeriod,
+			today,
+			getCurrentViewRange,
+			getAllViews,
+		]
+	)
 }

@@ -138,9 +138,9 @@ export const useCalendarData = ({
 	)
 
 	// Resource utilities — both filters go through getEventResourceIds so single
-	// and multi-resource events are handled uniformly. Always defined: on a
-	// resource-less calendar they operate on an empty `resources` array, which
-	// is exactly the regular-calendar semantics.
+	// and multi-resource events are handled uniformly. They filter by the
+	// events' OWN resource fields, so they behave identically with or without a
+	// resource axis; only getResourceById consults the `resources` array.
 	const getEventsForResource = useCallback(
 		(resourceId: string | number): CalendarEvent[] =>
 			filterEventsForResource(processedEvents, resourceId),
@@ -169,19 +169,35 @@ export const useCalendarData = ({
 		return Boolean(event.resourceIds && event.resourceIds.length > 1)
 	}, [])
 
-	return {
-		events: processedEvents,
-		rawEvents: currentEvents,
-		setCurrentEvents,
-		getEventsForDateRange,
-		addEvent,
-		updateEvent,
-		deleteEvent,
-		applyScopedEdit,
-		applyScopedDelete,
-		getEventsForResource,
-		getEventsForResources,
-		getResourceById,
-		isEventCrossResource,
-	}
+	return useMemo(
+		() => ({
+			events: processedEvents,
+			rawEvents: currentEvents,
+			setCurrentEvents,
+			getEventsForDateRange,
+			addEvent,
+			updateEvent,
+			deleteEvent,
+			applyScopedEdit,
+			applyScopedDelete,
+			getEventsForResource,
+			getEventsForResources,
+			getResourceById,
+			isEventCrossResource,
+		}),
+		[
+			processedEvents,
+			currentEvents,
+			getEventsForDateRange,
+			addEvent,
+			updateEvent,
+			deleteEvent,
+			applyScopedEdit,
+			applyScopedDelete,
+			getEventsForResource,
+			getEventsForResources,
+			getResourceById,
+			isEventCrossResource,
+		]
+	)
 }

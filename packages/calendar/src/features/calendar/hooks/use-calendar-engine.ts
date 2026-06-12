@@ -7,11 +7,23 @@ import {
 	useRef,
 } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
-import { useCalendarConfig } from '@/features/calendar/hooks/use-calendar-config'
-import { useCalendarData } from '@/features/calendar/hooks/use-calendar-data'
-import { useCalendarInteraction } from '@/features/calendar/hooks/use-calendar-interaction'
-import { useCalendarNavigation } from '@/features/calendar/hooks/use-calendar-navigation'
-import type { CellInfo, OpenEventFormInput } from '@/features/calendar/types'
+import {
+	type CalendarConfigSlice,
+	useCalendarConfig,
+} from '@/features/calendar/hooks/use-calendar-config'
+import {
+	type CalendarDataSlice,
+	useCalendarData,
+} from '@/features/calendar/hooks/use-calendar-data'
+import {
+	type CalendarInteractionSlice,
+	useCalendarInteraction,
+} from '@/features/calendar/hooks/use-calendar-interaction'
+import {
+	type CalendarNavigationSlice,
+	useCalendarNavigation,
+} from '@/features/calendar/hooks/use-calendar-navigation'
+import type { CellInfo } from '@/features/calendar/types'
 import { createPluginRuntime } from '@/features/plugins/lib/create-plugin-runtime'
 import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
@@ -19,15 +31,18 @@ import { getEventResourceIds } from '@/lib/events/pipeline'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView } from '@/types'
 
-// Module constant, not a per-render `?? []`: keeps the data slice's
-// resource-utility identities render-stable on resource-less calendars.
+// Module constants, not per-render `?? []` defaults: keep the slice and
+// plugin-runtime identities render-stable when the props are absent.
 const EMPTY_RESOURCES: Resource[] = []
+const EMPTY_PLUGINS: IlamyPlugin[] = []
 
 export interface CalendarEngineConfig {
 	events: CalendarEvent[]
 	firstDayOfWeek: number
 	initialView?: CalendarView
 	initialDate?: Dayjs
+	/** Max stacked events per day in horizontal grids; the config slice defaults it. */
+	dayMaxEvents?: number
 	businessHours?: BusinessHours | BusinessHours[]
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
@@ -48,55 +63,24 @@ export interface CalendarEngineConfig {
 	weekViewGranularity?: 'hourly' | 'daily'
 }
 
-export interface CalendarEngineReturn {
-	currentDate: Dayjs
-	view: CalendarView
-	events: CalendarEvent[]
-	rawEvents: CalendarEvent[]
-	isEventFormOpen: boolean
-	selectedEvent: CalendarEvent | null
-	selectedDate: Dayjs | null
-	firstDayOfWeek: number
-	dayMaxEvents: number
-	currentLocale: string
-	businessHours?: BusinessHours | BusinessHours[]
-	setCurrentDate: (date: Dayjs) => void
-	selectDate: (date: Dayjs) => void
-	setView: (view: CalendarView) => void
-	nextPeriod: () => void
-	prevPeriod: () => void
-	today: () => void
-	addEvent: (event: CalendarEvent) => void
-	updateEvent: (eventId: string | number, event: Partial<CalendarEvent>) => void
-	deleteEvent: (eventId: string | number) => void
-	applyScopedEdit: (
-		event: CalendarEvent,
-		updates: Partial<CalendarEvent>,
-		scope: unknown
-	) => void
-	applyScopedDelete: (event: CalendarEvent, scope: unknown) => void
-	openEventForm: (eventData?: OpenEventFormInput) => void
-	closeEventForm: () => void
-	setSelectedEvent: React.Dispatch<React.SetStateAction<CalendarEvent | null>>
-	setIsEventFormOpen: React.Dispatch<React.SetStateAction<boolean>>
-	setSelectedDate: React.Dispatch<React.SetStateAction<Dayjs | null>>
-	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
+/**
+ * The engine's public surface, composed from the four slice contracts so each
+ * signature is declared exactly once. Omitted members are slice-internal
+ * (cross-cutting setters the composer wires, the handlers returned separately)
+ * or renamed (`getAllViews` surfaces as `getViews`). The plugin-runtime
+ * passthroughs and `getEventResourceIds` are the engine's own additions.
+ */
+export interface CalendarEngineReturn
+	extends Omit<CalendarConfigSlice, 'setCurrentLocale'>,
+		Omit<CalendarNavigationSlice, 'getCurrentViewRange' | 'getAllViews'>,
+		Omit<CalendarDataSlice, 'setCurrentEvents'>,
+		Omit<CalendarInteractionSlice, 'handleEventClick' | 'handleDateClick'> {
+	/** The navigation slice's `getAllViews` under its public name. */
+	getViews: () => PluginView[]
 	getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
 	renderSlot: (slotName: string, context: unknown) => ReactNode[]
 	collect: (point: string, context: unknown) => unknown[]
-	getViews: () => PluginView[]
 	getProviders: () => Array<ComponentType<{ children: ReactNode }>>
-	t: TranslatorFunction
-	/** The resource axis. Absent/empty → a regular calendar. */
-	resources?: Resource[]
-	orientation: 'horizontal' | 'vertical'
-	weekViewGranularity: 'hourly' | 'daily'
-	getEventsForResource: (resourceId: string | number) => CalendarEvent[]
-	getEventsForResources: (resourceIds: (string | number)[]) => CalendarEvent[]
-	getResourceById: (
-		resourceId: string | number | undefined
-	) => Resource | undefined
-	isEventCrossResource: (event: CalendarEvent) => boolean
 	getEventResourceIds: (event: CalendarEvent) => (string | number)[]
 }
 
@@ -115,10 +99,11 @@ export const useCalendarEngine = (
 	config: CalendarEngineConfig
 ): CalendarEngineReturn & CalendarEngineHandlers => {
 	const {
-		events = [],
+		events,
 		firstDayOfWeek = 0,
 		initialView = 'month',
 		initialDate = dayjs(),
+		dayMaxEvents,
 		businessHours,
 		onEventAdd,
 		onEventUpdate,
@@ -138,13 +123,14 @@ export const useCalendarEngine = (
 		weekViewGranularity,
 	} = config
 
-	const { plugins = [] } = config
+	const { plugins = EMPTY_PLUGINS } = config
 
 	// Slices, composed in order: config → pluginRuntime → navigation → data →
 	// interaction. pluginRuntime is the named fifth cross-cutting dependency
 	// (data, navigation, AND the provider's renderSlot/getProviders consume it).
 	const configSlice = useCalendarConfig({
 		firstDayOfWeek,
+		dayMaxEvents,
 		businessHours,
 		locale,
 		translations,
@@ -216,50 +202,30 @@ export const useCalendarEngine = (
 		}
 	}, [timezone, setCurrentDate, setCurrentEvents])
 
-	return {
-		currentDate: navigation.currentDate,
-		view: navigation.view,
-		events: data.events,
-		rawEvents: data.rawEvents,
-		isEventFormOpen: interaction.isEventFormOpen,
-		selectedEvent: interaction.selectedEvent,
-		selectedDate: interaction.selectedDate,
-		firstDayOfWeek,
-		dayMaxEvents: configSlice.dayMaxEvents,
-		currentLocale: configSlice.currentLocale,
-		businessHours,
-		setCurrentDate: navigation.setCurrentDate,
-		selectDate: navigation.selectDate,
-		setView: navigation.setView,
-		nextPeriod: navigation.nextPeriod,
-		prevPeriod: navigation.prevPeriod,
-		today: navigation.today,
-		addEvent: data.addEvent,
-		updateEvent: data.updateEvent,
-		applyScopedEdit: data.applyScopedEdit,
-		applyScopedDelete: data.applyScopedDelete,
-		deleteEvent: data.deleteEvent,
-		openEventForm: interaction.openEventForm,
-		closeEventForm: interaction.closeEventForm,
-		setSelectedEvent: interaction.setSelectedEvent,
-		setIsEventFormOpen: interaction.setIsEventFormOpen,
-		setSelectedDate: interaction.setSelectedDate,
-		getEventsForDateRange: data.getEventsForDateRange,
-		getEventManager: pluginRuntime.getEventManager,
-		renderSlot: pluginRuntime.renderSlot,
-		collect: pluginRuntime.collect,
-		getViews: navigation.getAllViews,
-		getProviders: pluginRuntime.getProviders,
-		t: configSlice.t,
-		resources: configSlice.resources,
-		orientation: configSlice.orientation,
-		weekViewGranularity: configSlice.weekViewGranularity,
-		getEventsForResource: data.getEventsForResource,
-		getEventsForResources: data.getEventsForResources,
-		getResourceById: data.getResourceById,
-		isEventCrossResource: data.isEventCrossResource,
-		getEventResourceIds,
-		handleEventClick: interaction.handleEventClick,
-		handleDateClick: interaction.handleDateClick,
-	}
+	// The memoized composition keeps the engine object referentially stable so
+	// the provider's own `useMemo([engine, …])` can hold the context value
+	// steady across re-renders with identical props. Slice-internal members are
+	// destructured OFF; `getAllViews` surfaces under its public name.
+	return useMemo(() => {
+		const { setCurrentLocale: _configInternal, ...configValues } = configSlice
+		const {
+			getCurrentViewRange: _navigationInternal,
+			getAllViews,
+			...navigationValues
+		} = navigation
+		const { setCurrentEvents: _dataInternal, ...dataValues } = data
+
+		return {
+			...configValues,
+			...navigationValues,
+			...dataValues,
+			...interaction,
+			getViews: getAllViews,
+			getEventManager: pluginRuntime.getEventManager,
+			renderSlot: pluginRuntime.renderSlot,
+			collect: pluginRuntime.collect,
+			getProviders: pluginRuntime.getProviders,
+			getEventResourceIds,
+		}
+	}, [configSlice, navigation, data, interaction, pluginRuntime])
 }

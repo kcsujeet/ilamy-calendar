@@ -6,6 +6,8 @@ import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 
 export interface CalendarConfigParams {
 	firstDayOfWeek: number
+	/** Max stacked events per day in horizontal grids. @default DAY_MAX_EVENTS_DEFAULT */
+	dayMaxEvents?: number
 	businessHours?: BusinessHours | BusinessHours[]
 	locale?: string
 	translations?: Translations
@@ -41,6 +43,7 @@ export interface CalendarConfigSlice {
  */
 export const useCalendarConfig = ({
 	firstDayOfWeek,
+	dayMaxEvents = DAY_MAX_EVENTS_DEFAULT,
 	businessHours,
 	locale,
 	translations,
@@ -57,15 +60,27 @@ export const useCalendarConfig = ({
 		return (key: string) => dict[key as keyof Translations] || key
 	}, [translations, translator])
 
-	return {
-		firstDayOfWeek,
-		dayMaxEvents: DAY_MAX_EVENTS_DEFAULT,
-		businessHours,
-		currentLocale,
-		setCurrentLocale,
-		t,
-		resources,
-		orientation,
-		weekViewGranularity,
-	}
+	return useMemo(
+		() => ({
+			firstDayOfWeek,
+			dayMaxEvents,
+			businessHours,
+			currentLocale,
+			setCurrentLocale,
+			t,
+			resources,
+			orientation,
+			weekViewGranularity,
+		}),
+		[
+			firstDayOfWeek,
+			dayMaxEvents,
+			businessHours,
+			currentLocale,
+			t,
+			resources,
+			orientation,
+			weekViewGranularity,
+		]
+	)
 }

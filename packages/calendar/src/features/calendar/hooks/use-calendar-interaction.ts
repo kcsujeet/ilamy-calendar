@@ -1,8 +1,16 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { CalendarEvent } from '@/components/types'
 import type { CellInfo, OpenEventFormInput } from '@/features/calendar/types'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { TranslatorFunction } from '@/lib/translations/types'
+
+/**
+ * A new-event draft intentionally has no `id` yet — the form assigns one on
+ * save. The context's `selectedEvent` slot carries drafts as CalendarEvent,
+ * so this builder owns the single, documented widening.
+ */
+const buildEventDraft = (draft: Omit<CalendarEvent, 'id'>): CalendarEvent =>
+	draft as CalendarEvent
 
 export interface CalendarInteractionParams {
 	currentDate: Dayjs
@@ -46,14 +54,16 @@ export const useCalendarInteraction = ({
 			}
 			const start = eventData?.start ?? currentDate
 			const resourceId = eventData?.resourceId ?? eventData?.resource?.id
-			setSelectedEvent({
-				title: t('newEvent'),
-				start,
-				end: eventData?.end ?? start.add(1, 'hour'),
-				resourceId,
-				description: '',
-				allDay: eventData?.allDay ?? false,
-			} as CalendarEvent)
+			setSelectedEvent(
+				buildEventDraft({
+					title: t('newEvent'),
+					start,
+					end: eventData?.end ?? start.add(1, 'hour'),
+					resourceId,
+					description: '',
+					allDay: eventData?.allDay ?? false,
+				})
+			)
 			setIsEventFormOpen(true)
 		},
 		[currentDate, t]
@@ -100,16 +110,27 @@ export const useCalendarInteraction = ({
 		[onCellClick, disableCellClick, openEventForm]
 	)
 
-	return {
-		isEventFormOpen,
-		selectedEvent,
-		selectedDate,
-		setIsEventFormOpen,
-		setSelectedEvent,
-		setSelectedDate,
-		openEventForm,
-		closeEventForm,
-		handleEventClick,
-		handleDateClick,
-	}
+	return useMemo(
+		() => ({
+			isEventFormOpen,
+			selectedEvent,
+			selectedDate,
+			setIsEventFormOpen,
+			setSelectedEvent,
+			setSelectedDate,
+			openEventForm,
+			closeEventForm,
+			handleEventClick,
+			handleDateClick,
+		}),
+		[
+			isEventFormOpen,
+			selectedEvent,
+			selectedDate,
+			openEventForm,
+			closeEventForm,
+			handleEventClick,
+			handleDateClick,
+		]
+	)
 }

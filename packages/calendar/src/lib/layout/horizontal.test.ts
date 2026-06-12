@@ -4,7 +4,7 @@ import dayjs from '@/lib/configs/dayjs-config'
 import { layoutHorizontal } from './horizontal'
 
 const days = Array.from({ length: 7 }, (_, i) =>
-	dayjs('2025-01-12').add(i, 'day')
+	dayjs('2025-01-12T00:00:00.000Z').add(i, 'day')
 )
 
 // Compact event factory: id doubles as title.
@@ -53,25 +53,25 @@ describe('layoutHorizontal', () => {
 			const result = run([singleDayEvent])
 
 			expect(result).toHaveLength(1)
-			expect(result[0].left).toBeCloseTo(14.285714, 2)
-			expect(result[0].width).toBeCloseTo(14.285714, 2)
-			expect(result[0].row).toBe(0)
+			const [p] = result
+			expect(p.left).toBeCloseTo(14.285714, 2)
+			expect(p.width).toBeCloseTo(14.285714, 2)
+			expect(p.row).toBe(0)
 		})
 
 		it('positions multi-day event correctly', () => {
 			const result = run([multiDayEvent])
 
 			expect(result).toHaveLength(1)
-			expect(result[0].left).toBeCloseTo(14.285714, 2)
-			expect(result[0].width).toBeCloseTo(42.857142, 2)
-			expect(result[0].row).toBe(0)
+			const [p] = result
+			expect(p.left).toBeCloseTo(14.285714, 2)
+			expect(p.width).toBeCloseTo(42.857142, 2)
+			expect(p.row).toBe(0)
 		})
 
-		it('emits no pixel fields — the renderer derives them from row', () => {
+		it('emits horizontal-kind placements — the renderer derives pixels from row', () => {
 			const [p] = run([singleDayEvent])
-			expect(p.top).toBeUndefined()
-			expect(p.height).toBeUndefined()
-			expect(p.zIndex).toBeUndefined()
+			expect(p.kind).toBe('horizontal')
 		})
 
 		it('nests the original event by reference, un-mutated and un-copied', () => {
@@ -85,8 +85,9 @@ describe('layoutHorizontal', () => {
 			const result = run([longMultiDayEvent])
 
 			expect(result).toHaveLength(1)
-			expect(result[0].left).toBe(0)
-			expect(result[0].isTruncatedStart).toBe(true)
+			const [p] = result
+			expect(p.left).toBe(0)
+			expect(p.isTruncatedStart).toBe(true)
 		})
 
 		it('truncates event ending after week end', () => {
@@ -99,17 +100,18 @@ describe('layoutHorizontal', () => {
 			])
 
 			expect(result).toHaveLength(1)
-			expect(result[0].isTruncatedEnd).toBe(true)
+			expect(result.at(0)?.isTruncatedEnd).toBe(true)
 		})
 
 		it('truncates event spanning entire week and beyond', () => {
 			const result = run([longMultiDayEvent])
 
 			expect(result).toHaveLength(1)
-			expect(result[0].left).toBe(0)
-			expect(result[0].width).toBe(100)
-			expect(result[0].isTruncatedStart).toBe(true)
-			expect(result[0].isTruncatedEnd).toBe(true)
+			const [p] = result
+			expect(p.left).toBe(0)
+			expect(p.width).toBe(100)
+			expect(p.isTruncatedStart).toBe(true)
+			expect(p.isTruncatedEnd).toBe(true)
 		})
 	})
 
@@ -124,7 +126,7 @@ describe('layoutHorizontal', () => {
 			])
 
 			expect(result).toHaveLength(1)
-			expect(result[0].left).toBeCloseTo(85.714285, 2)
+			expect(result.at(0)?.left).toBeCloseTo(85.714285, 2)
 		})
 
 		it('handles events exactly at week boundaries', () => {
@@ -138,8 +140,9 @@ describe('layoutHorizontal', () => {
 			])
 
 			expect(result).toHaveLength(2)
-			expect(result[0].left).toBe(0)
-			expect(result[1].left).toBeCloseTo(85.714285, 2)
+			const [first, last] = result
+			expect(first.left).toBe(0)
+			expect(last.left).toBeCloseTo(85.714285, 2)
 		})
 	})
 
@@ -229,7 +232,13 @@ describe('layoutHorizontal', () => {
 
 			const result = run(manyEvents, { dayMaxEvents: 3 })
 
-			expect(result.length).toBeLessThanOrEqual(3)
+			expect(result).toHaveLength(3)
+			expect(result.map((p) => p.event.id)).toEqual([
+				'event-0',
+				'event-1',
+				'event-2',
+			])
+			expect(result.map((p) => p.row)).toEqual([0, 1, 2])
 		})
 
 		it('tries to place truncated version if full event does not fit', () => {
@@ -257,8 +266,8 @@ describe('layoutHorizontal', () => {
 
 			const result = run(blockerEvents, { dayMaxEvents: 2 })
 
-			expect(result.length).toBeLessThanOrEqual(2)
-			expect(result.every((p) => (p.row ?? 0) < 2)).toBe(true)
+			expect(result).toHaveLength(2)
+			expect(result.map((p) => p.row)).toEqual([0, 1])
 		})
 	})
 
@@ -276,7 +285,7 @@ describe('layoutHorizontal', () => {
 			)
 
 			expect(result).toHaveLength(1)
-			expect(result[0].width).toBeCloseTo(14.285714, 2)
+			expect(result.at(0)?.width).toBeCloseTo(14.285714, 2)
 		})
 
 		it('handles hour gridType for multi-hour events', () => {
@@ -292,7 +301,7 @@ describe('layoutHorizontal', () => {
 			)
 
 			expect(result).toHaveLength(1)
-			expect(result[0].row).toBe(0)
+			expect(result.at(0)?.row).toBe(0)
 		})
 	})
 })

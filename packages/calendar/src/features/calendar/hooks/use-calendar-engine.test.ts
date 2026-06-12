@@ -313,7 +313,6 @@ describe('useCalendarEngine', () => {
 				views: [
 					{
 						name: 'forty-day',
-						component: () => null,
 						navigationStep: { amount: 40, unit: 'day' },
 						range: (date) => ({
 							start: date.startOf('day'),
@@ -340,12 +339,27 @@ describe('useCalendarEngine', () => {
 			expect(range.end.format('YYYY-MM-DD')).toBe('2025-04-04')
 		})
 
-		it('prepends the four built-in view specs in getViews()', () => {
-			const { result } = renderHook(() => useCalendarEngine(defaultConfig))
+		it('prepends the four built-in view specs ahead of plugin views in getViews()', () => {
+			const fortyDayPlugin: IlamyPlugin = {
+				name: 'forty',
+				views: [
+					{
+						name: 'forty-day',
+						navigationStep: { amount: 40, unit: 'day' },
+						range: (date) => ({
+							start: date.startOf('day'),
+							end: date.add(39, 'day').endOf('day'),
+						}),
+					},
+				],
+			}
+			const { result } = renderHook(() =>
+				useCalendarEngine({ ...defaultConfig, plugins: [fortyDayPlugin] })
+			)
 
 			const names = result.current.getViews().map((v) => v.name)
 
-			expect(names).toEqual(['day', 'week', 'month', 'year'])
+			expect(names).toEqual(['day', 'week', 'month', 'year', 'forty-day'])
 		})
 	})
 

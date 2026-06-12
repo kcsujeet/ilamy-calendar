@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@/components/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import type { PositionedEvent } from './geometry'
+import type { HorizontalPositionedEvent } from './geometry'
 
 export interface HorizontalLayoutInput {
 	days: Dayjs[]
@@ -10,9 +10,9 @@ export interface HorizontalLayoutInput {
 }
 
 interface GridBounds {
-	firstDay: Dayjs
-	lastDay: Dayjs
-	dayCount: number
+	firstUnit: Dayjs
+	lastUnit: Dayjs
+	unitCount: number
 	gridType: 'day' | 'hour'
 }
 
@@ -52,28 +52,28 @@ const partitionAndSortEvents = (
 /** Column span and truncation of an event, clamped to the grid bounds. */
 const computeColumnSpan = (
 	event: CalendarEvent,
-	{ firstDay, lastDay, dayCount, gridType }: GridBounds
+	{ firstUnit, lastUnit, unitCount, gridType }: GridBounds
 ): {
 	startCol: number
 	endCol: number
 	isTruncatedStart: boolean
 	isTruncatedEnd: boolean
 } => {
-	const eventStart = dayjs.max(event.start.startOf(gridType), firstDay)
+	const eventStart = dayjs.max(event.start.startOf(gridType), firstUnit)
 	const adjustedEnd =
 		gridType === 'hour' ? event.end.subtract(1, 'minute') : event.end
-	const eventEnd = dayjs.min(adjustedEnd.startOf(gridType), lastDay)
+	const eventEnd = dayjs.min(adjustedEnd.startOf(gridType), lastUnit)
 	return {
-		startCol: Math.max(0, eventStart.diff(firstDay, gridType)),
-		endCol: Math.min(dayCount - 1, eventEnd.diff(firstDay, gridType)),
-		isTruncatedStart: event.start.startOf(gridType).isBefore(firstDay),
-		isTruncatedEnd: event.end.startOf(gridType).isAfter(lastDay),
+		startCol: Math.max(0, eventStart.diff(firstUnit, gridType)),
+		endCol: Math.min(unitCount - 1, eventEnd.diff(firstUnit, gridType)),
+		isTruncatedStart: event.start.startOf(gridType).isBefore(firstUnit),
+		isTruncatedEnd: event.end.startOf(gridType).isAfter(lastUnit),
 	}
 }
 
 // --- Phase 3: place (occupancy grid) ----------------------------------------
 
-type OccupancyGrid = { taken: boolean }[][]
+type OccupancyGrid = boolean[][]
 
 /** First row where every column from startCol..endCol is free; -1 if none. */
 const findAvailableRow = (
@@ -84,7 +84,7 @@ const findAvailableRow = (
 	for (let row = 0; row < grid.length; row++) {
 		let canPlace = true
 		for (let col = startCol; col <= endCol; col++) {
-			if (grid[row][col].taken) {
+			if (grid[row][col]) {
 				canPlace = false
 				break
 			}
@@ -94,12 +94,21 @@ const findAvailableRow = (
 	return -1
 }
 
+interface PlaceArgs {
+	row: number
+	startCol: number
+	endCol: number
+	event: CalendarEvent
+	isTruncatedStart: boolean
+	isTruncatedEnd: boolean
+}
+
 export const layoutHorizontal = ({
 	days,
 	events,
 	dayMaxEvents,
 	gridType = 'day',
-}: HorizontalLayoutInput): PositionedEvent[] => {
+}: HorizontalLayoutInput): HorizontalPositionedEvent[] => {
 	// For hour-based grids, use actual first/last hours from the days array;
 	// for day-based grids, use start/end of day to capture all events.
 	const first = days.at(0)
@@ -107,10 +116,10 @@ export const layoutHorizontal = ({
 	if (!first || !last) return []
 
 	const bounds: GridBounds = {
-		firstDay:
+		firstUnit:
 			gridType === 'hour' ? first.startOf('hour') : first.startOf('day'),
-		lastDay: gridType === 'hour' ? last.endOf('hour') : last.endOf('day'),
-		dayCount: days.length,
+		lastUnit: gridType === 'hour' ? last.endOf('hour') : last.endOf('day'),
+		unitCount: days.length,
 		gridType,
 	}
 
@@ -119,29 +128,30 @@ export const layoutHorizontal = ({
 		gridType
 	)
 
-	// dayMaxEvents x dayCount occupancy grid.
+	// dayMaxEvents x unitCount occupancy grid.
 	const grid: OccupancyGrid = Array.from({ length: dayMaxEvents }, () =>
-		Array.from({ length: bounds.dayCount }, () => ({ taken: false }))
+		Array.from({ length: bounds.unitCount }, () => false)
 	)
 
-	const placedEvents: PositionedEvent[] = []
+	const placedEvents: HorizontalPositionedEvent[] = []
 
-	const place = (
-		row: number,
-		startCol: number,
-		endCol: number,
-		event: CalendarEvent,
-		isTruncatedStart: boolean,
-		isTruncatedEnd: boolean
-	) => {
+	const place = ({
+		row,
+		startCol,
+		endCol,
+		event,
+		isTruncatedStart,
+		isTruncatedEnd,
+	}: PlaceArgs) => {
 		for (let col = startCol; col <= endCol; col++) {
-			grid[row][col] = { taken: true }
+			grid[row][col] = true
 		}
-		const spanDays = endCol - startCol + 1
+		const spanUnits = endCol - startCol + 1
 		placedEvents.push({
+			kind: 'horizontal',
 			event,
-			left: (startCol / bounds.dayCount) * 100,
-			width: (spanDays / bounds.dayCount) * 100,
+			left: (startCol / bounds.unitCount) * 100,
+			width: (spanUnits / bounds.unitCount) * 100,
 			row,
 			isTruncatedStart,
 			isTruncatedEnd,
@@ -155,14 +165,7 @@ export const layoutHorizontal = ({
 		// First try: place from the original start position.
 		const row = findAvailableRow(grid, span.startCol, span.endCol)
 		if (row !== -1) {
-			place(
-				row,
-				span.startCol,
-				span.endCol,
-				event,
-				span.isTruncatedStart,
-				span.isTruncatedEnd
-			)
+			place({ row, event, ...span })
 			continue
 		}
 
@@ -174,19 +177,34 @@ export const layoutHorizontal = ({
 		) {
 			const truncRow = findAvailableRow(grid, tryStart, span.endCol)
 			if (truncRow !== -1) {
-				place(truncRow, tryStart, span.endCol, event, true, span.isTruncatedEnd)
+				place({
+					row: truncRow,
+					startCol: tryStart,
+					endCol: span.endCol,
+					event,
+					isTruncatedStart: true,
+					isTruncatedEnd: span.isTruncatedEnd,
+				})
 				break
 			}
 		}
 	}
 
-	// Single-unit events fill the remaining gaps.
+	// Single-unit events fill the remaining gaps. computeColumnSpan already
+	// clamps the span to the grid, so startCol needs no re-clamping here.
 	for (const event of sortedSingleUnit) {
 		const span = computeColumnSpan(event, bounds)
-		const col = Math.max(0, Math.min(bounds.dayCount - 1, span.startCol))
+		const col = span.startCol
 		const row = findAvailableRow(grid, col, col)
 		if (row !== -1) {
-			place(row, col, col, event, false, false)
+			place({
+				row,
+				startCol: col,
+				endCol: col,
+				event,
+				isTruncatedStart: false,
+				isTruncatedEnd: false,
+			})
 		}
 	}
 

@@ -6,7 +6,7 @@ import {
 	eventOverlapsRange,
 	filterEventsForResource,
 } from '@/lib/events/pipeline'
-import type { PositionedEvent } from '@/lib/layout/geometry'
+import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutHorizontal } from '@/lib/layout/horizontal'
 import { getDayKey } from '@/lib/utils/date-utils'
 
@@ -18,7 +18,7 @@ interface UseProcessedWeekEventsProps {
 }
 
 export interface ProcessedWeekEventsResult {
-	positionedEvents: PositionedEvent[]
+	positionedEvents: HorizontalPositionedEvent[]
 	dayEventsMap: Map<string, CalendarEvent[]>
 }
 

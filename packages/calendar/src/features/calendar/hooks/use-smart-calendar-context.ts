@@ -12,6 +12,10 @@ import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
+// Module constant, not a per-call `|| []`: keeps the public API's `resources`
+// identity stable on calendars without a resource axis.
+const EMPTY_RESOURCES: Resource[] = []
+
 /**
  * Full internal context type used by library components. Since the unified
  * provider carries the resource axis, this is simply the calendar context:
@@ -111,7 +115,7 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 		selectedEvent: context.selectedEvent,
 		selectedDate: context.selectedDate,
 		firstDayOfWeek: context.firstDayOfWeek,
-		resources: context.resources || [],
+		resources: context.resources ?? EMPTY_RESOURCES,
 		setCurrentDate: context.setCurrentDate,
 		selectDate: context.selectDate,
 		setView: context.setView,
@@ -128,7 +132,7 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 		t: context.t,
 		timeFormat: context.timeFormat,
 		timezone: context.timezone,
-		currentLocale: context.currentLocale ?? '',
+		currentLocale: context.currentLocale,
 		getEventsForDateRange: context.getEventsForDateRange,
 		applyScopedEdit: context.applyScopedEdit,
 		applyScopedDelete: context.applyScopedDelete,

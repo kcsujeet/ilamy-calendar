@@ -40,7 +40,8 @@ export interface CalendarProviderProps {
 	disableCellClick?: boolean
 	disableEventClick?: boolean
 	disableDragAndDrop?: boolean
-	dayMaxEvents: number
+	/** Max stacked events per day in horizontal grids; the engine defaults it. */
+	dayMaxEvents?: number
 	eventSpacing?: number
 	eventHeight?: number
 	stickyViewHeader?: boolean
@@ -74,15 +75,19 @@ export interface CalendarProviderProps {
 	weekViewGranularity?: 'hourly' | 'daily'
 }
 
+// Module constant, not a per-render `?? []`: keeps the engine's event store
+// from re-syncing (and the context value from churning) when `events` is absent.
+const EMPTY_EVENTS: CalendarEvent[] = []
+
 /**
  * Builds the shared context value: engine slices (including the resource
  * axis) + presentation props. The single assembly point for the ONE provider.
  */
-export const useCalendarContextValue = (
+const useCalendarContextValue = (
 	props: Omit<CalendarProviderProps, 'children'>
 ): CalendarContextType => {
 	const {
-		events = [],
+		events = EMPTY_EVENTS,
 		firstDayOfWeek = 0,
 		initialView = 'month',
 		initialDate,
@@ -132,6 +137,7 @@ export const useCalendarContextValue = (
 		firstDayOfWeek,
 		initialView,
 		initialDate,
+		dayMaxEvents,
 		businessHours,
 		onEventAdd,
 		onEventUpdate,
@@ -155,7 +161,9 @@ export const useCalendarContextValue = (
 	return useMemo(() => {
 		// The engine returns the context core plus the two click handlers; the
 		// handlers are destructured OFF so the spread below keeps the exact v1
-		// context shape (they re-enter as onEventClick / onCellClick).
+		// context shape (they re-enter as onEventClick / onCellClick). Fields the
+		// engine already provides (businessHours, dayMaxEvents, …) ride the
+		// spread — only presentation props are added here.
 		const { handleEventClick, handleDateClick, ...calendarEngine } = engine
 		return {
 			...calendarEngine,
@@ -168,14 +176,12 @@ export const useCalendarContextValue = (
 			disableCellClick,
 			disableEventClick,
 			disableDragAndDrop,
-			dayMaxEvents,
 			eventSpacing,
 			eventHeight,
 			stickyViewHeader,
 			viewHeaderClassName,
 			headerComponent,
 			headerClassName,
-			businessHours,
 			renderEventForm,
 			timeFormat,
 			classesOverride,
@@ -198,14 +204,12 @@ export const useCalendarContextValue = (
 		disableCellClick,
 		disableEventClick,
 		disableDragAndDrop,
-		dayMaxEvents,
 		eventSpacing,
 		eventHeight,
 		stickyViewHeader,
 		viewHeaderClassName,
 		headerComponent,
 		headerClassName,
-		businessHours,
 		renderEventForm,
 		timeFormat,
 		classesOverride,

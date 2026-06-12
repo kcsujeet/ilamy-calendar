@@ -20,7 +20,6 @@ export interface VerticalGridColProps extends VerticalColumnSpec {
 const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	id,
 	days,
-	resourceId,
 	resource,
 	'data-testid': dataTestId,
 	gridType,
@@ -30,6 +29,8 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	slotDurationMinutes = 60,
 	isLastColumn,
 }) => {
+	// The spec carries `resource` as the single source; derive the id here.
+	const resourceId = resource?.id
 	const slotCount = Math.floor(60 / slotDurationMinutes)
 	const cellOffsets = Array.from(
 		{ length: slotCount },

@@ -5,7 +5,7 @@ import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
-import type { PositionedEvent } from '@/lib/layout/geometry'
+import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { keys } from '@/lib/utils/keys'
 
 export interface HorizontalGridEventsLayerProps {
@@ -14,7 +14,7 @@ export interface HorizontalGridEventsLayerProps {
 	resourceId?: string | number
 	resource?: Resource
 	'data-testid'?: string
-	positionedEvents: PositionedEvent[]
+	positionedEvents: HorizontalPositionedEvent[]
 	/** Pixel offset reserved above the bars (the day-number strip). */
 	dayNumberHeight?: number
 }
@@ -55,8 +55,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 				/>
 			)}
 			{positionedEvents.map((positioned) => {
-				const { event } = positioned
-				const row = positioned.row ?? 0
+				const { event, row } = positioned
 				// Layout returns the abstract row; the renderer owns the CSS units.
 				const top =
 					dayNumberHeight + eventSpacing + row * (eventHeight + eventSpacing)

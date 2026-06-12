@@ -7,11 +7,18 @@ import type React from 'react'
 import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { ResourceCell } from '@/components/resource-cell'
+import { GUTTER_WIDTH } from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { getDayKey } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
+
+/**
+ * Width contract of one resource cell: header cells and body columns must
+ * use the same utilities or the axis misaligns.
+ */
+export const RESOURCE_CELL_WIDTH = 'min-w-20 flex-1'
 
 interface ResourceHorizontalRowsOptions {
 	resources: Resource[]
@@ -44,11 +51,38 @@ export const resourceHorizontalRows = ({
 	})
 
 	return resources.map((resource) => ({
-		id: resource.id,
+		id: String(resource.id),
 		resource,
 		columns,
 	}))
 }
+
+/** Column spec(s) for one resource; `resourceVerticalColumns` attaches the resource. */
+type ResourceColumnSeed = Omit<VerticalColumnSpec, 'resource'>
+
+interface ResourceVerticalColumnsOptions {
+	resources: Resource[]
+	/** The leading label column (time or date gutter), built via `gutterColumn`. */
+	gutter: VerticalColumnSpec
+	columnsFor: (resource: Resource) => ResourceColumnSeed | ResourceColumnSeed[]
+}
+
+/**
+ * Vertical arrangement of the resource axis: the gutter column followed by
+ * each resource's column(s) (resources as columns, time flows down).
+ */
+export const resourceVerticalColumns = ({
+	resources,
+	gutter,
+	columnsFor,
+}: ResourceVerticalColumnsOptions): VerticalColumnSpec[] => [
+	gutter,
+	...resources.flatMap((resource) => {
+		const seeds = columnsFor(resource)
+		const seedList = Array.isArray(seeds) ? seeds : [seeds]
+		return seedList.map((seed) => ({ ...seed, resource }))
+	}),
+]
 
 /**
  * Header row for vertical resource arrangements (day/month): a gutter-width
@@ -59,12 +93,17 @@ export const ResourceColumnsHeader: React.FC<{ resources: Resource[] }> = ({
 }) => (
 	<div
 		className={'flex border-b h-12 flex-1'}
-		data-testid="resource-month-header"
+		data-testid={keys.header.resource.columnsHeader}
 	>
-		<div className="shrink-0 border-r w-16 sticky top-0 left-0 bg-background z-20" />
+		<div
+			className={cn(
+				'shrink-0 border-r sticky top-0 left-0 bg-background z-20',
+				GUTTER_WIDTH
+			)}
+		/>
 		{resources.map((resource) => (
 			<ResourceCell
-				className="min-w-20 flex-1"
+				className={RESOURCE_CELL_WIDTH}
 				key={keys.listKey('resource-cell', resource.id)}
 				resource={resource}
 			/>

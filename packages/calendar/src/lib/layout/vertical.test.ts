@@ -209,11 +209,9 @@ describe('layoutVertical', () => {
 			expect(p.event).toBe(source)
 		})
 
-		it('emits no horizontal-strategy fields', () => {
+		it('emits vertical-kind placements', () => {
 			const [p] = position([mkEvent('e', 9, 10)])
-			expect(p.row).toBeUndefined()
-			expect(p.isTruncatedStart).toBeUndefined()
-			expect(p.isTruncatedEnd).toBeUndefined()
+			expect(p.kind).toBe('vertical')
 		})
 	})
 })

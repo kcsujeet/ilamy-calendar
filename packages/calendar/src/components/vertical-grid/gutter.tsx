@@ -7,6 +7,12 @@ import type { VerticalGridColProps } from './vertical-grid-col'
 
 /** Fixed gutter width (day view, the resource vertical views). */
 export const GUTTER_WIDTH = 'w-16 min-w-16 max-w-16'
+/**
+ * The lone event column beside the fixed gutter: 100% minus the gutter's
+ * 4rem (`w-16`). The `4rem` here and `GUTTER_WIDTH` above encode the same
+ * width — change them together.
+ */
+export const FULL_WIDTH_MINUS_GUTTER = 'w-[calc(100%-4rem)]'
 /** Responsive gutter width (week view + its all-day spacer). */
 export const RESPONSIVE_GUTTER_WIDTH =
 	'w-10 sm:w-16 min-w-10 sm:min-w-16 max-w-10 sm:max-w-16'

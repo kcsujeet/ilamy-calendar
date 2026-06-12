@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@/components/types'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import type { PositionedEvent } from './geometry'
+import type { VerticalPositionedEvent } from './geometry'
 
 export interface VerticalLayoutInput {
 	days: Dayjs[]
@@ -80,12 +80,12 @@ const maxOffsetByCount = (n: number) =>
 const placeCluster = (
 	cluster: CalendarEvent[],
 	metrics: GridMetrics
-): PositionedEvent[] => {
+): VerticalPositionedEvent[] => {
 	const onlyEvent = cluster.length === 1 ? cluster.at(0) : undefined
 	if (onlyEvent) {
 		const pos = computeTopHeight(onlyEvent, metrics)
 		if (!pos) return []
-		return [{ event: onlyEvent, left: 0, width: 100, ...pos }]
+		return [{ kind: 'vertical', event: onlyEvent, left: 0, width: 100, ...pos }]
 	}
 
 	// Multiple events — layered positioning. Longest duration first, tie-break
@@ -99,7 +99,7 @@ const placeCluster = (
 	const n = sortedCluster.length
 	const offsetPerEvent = n > 1 ? maxOffsetByCount(n) / (n - 1) : 0
 
-	const placed: PositionedEvent[] = []
+	const placed: VerticalPositionedEvent[] = []
 	for (let i = 0; i < n; i++) {
 		const event = sortedCluster.at(i)
 		if (!event) continue
@@ -108,6 +108,7 @@ const placeCluster = (
 		// First event (longest) takes full width; later events are offset.
 		const left = i === 0 ? 0 : offsetPerEvent * i
 		placed.push({
+			kind: 'vertical',
 			event,
 			...pos,
 			left,
@@ -124,7 +125,7 @@ export const layoutVertical = ({
 	days,
 	gridType = 'hour',
 	events,
-}: VerticalLayoutInput): PositionedEvent[] => {
+}: VerticalLayoutInput): VerticalPositionedEvent[] => {
 	// Filter out all-day events and sort by start time
 	const sortedEvents = events
 		.filter((e) => !e.allDay)

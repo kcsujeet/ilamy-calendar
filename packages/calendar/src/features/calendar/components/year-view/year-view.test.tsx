@@ -268,7 +268,7 @@ describe('YearView', () => {
 
 			renderYearView({
 				events: [spanningEvent],
-				initialDate: dayjs(`${year}-01-15`),
+				initialDate: dayjs(`${year}-01-15T00:00:00.000Z`),
 			})
 
 			const januaryBadge = screen.getByTestId('year-month-count-01')

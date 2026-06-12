@@ -385,11 +385,22 @@ describe('IlamyResourceCalendar', () => {
 		expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
 	})
 
-	it('should handle empty resources gracefully', () => {
-		render(<IlamyResourceCalendar events={mockEvents} resources={[]} />)
+	it('renders the regular (non-resource) grid when resources is empty', () => {
+		render(
+			<IlamyResourceCalendar
+				events={mockEvents}
+				initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+				initialView="month"
+				resources={[]}
+			/>
+		)
 
-		// Should still render even with no resources
 		expect(screen.getByTestId('calendar-header')).toBeInTheDocument()
+		// The regular month grid (week rows), not the resource axis (resource rows).
+		expect(screen.getByTestId('horizontal-row-week-0')).toBeInTheDocument()
+		expect(
+			screen.queryByTestId('horizontal-row-resource-1')
+		).not.toBeInTheDocument()
 	})
 
 	it('should handle events without resource assignments', () => {

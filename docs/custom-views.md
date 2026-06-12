@@ -53,13 +53,13 @@ orientation: 'vertical'                 orientation: 'horizontal'
 |---|---|
 | `range` | The event pipeline and `onDateChange` fall back to the month 6x7 grid range — wrong events fetched for your window. |
 | `navigationStep` / `navigationUnit` | Prev/next steps a single day. |
-| `columns` + `layout` | Your `component` renders everything itself (escape hatch — fine, that's the year view). |
+| `columns` + `layout` | Your `component` renders everything itself (escape hatch — fine, that's the year view). With no `component` either, the view renders nothing and dev builds log a warning. |
 | `renderHeader` | No header row above the grid. |
 | `supportsResources` | Your view is hidden from the switcher on resource calendars. |
 
-> Note: `range()` receives only `{ firstDayOfWeek }` as its `config` today; the full
-> axis config (`resources`, `orientation`, `hiddenDays`, ...) reaches `columns()` and
-> `renderHeader()`.
+> Note: `range()`'s `config` parameter is typed `Pick<ViewConfig, 'firstDayOfWeek'>` —
+> that is all it receives. The full axis config (`resources`, `orientation`,
+> `hiddenDays`, ...) reaches `columns()` and `renderHeader()`.
 
 ## Worked example: a 40-day grid
 
@@ -113,9 +113,8 @@ export const fortyDayView: PluginView = {
 			{date.format('LL')} — {date.add(WINDOW - 1, 'day').format('LL')}
 		</div>
 	),
-	// Always required. The escape hatch when `columns`/`layout` are absent; for
-	// spec-driven views it is unused by the renderer (use `() => null`).
-	component: () => null,
+	// No `component`: spec-driven views render through the shared engines.
+	// `component` is only for views that render everything themselves.
 }
 
 export const fortyDayPlugin: IlamyPlugin = {
@@ -129,7 +128,7 @@ export const fortyDayPlugin: IlamyPlugin = {
 Declare `supportsResources: true` and compose the resource axis in `columns()` from
 `config.resources`. Honor the engine rule: when `config.orientation` is 'horizontal',
 return one `HorizontalRowSpec` per resource (set `resource` on the row); when 'vertical',
-return one `VerticalColumnSpec` per resource (set `resourceId`/`resource` on the column).
+return one `VerticalColumnSpec` per resource (set `resource` on the column).
 The resource axis multiplies whatever day cells your window declares — the event pipeline
 already filters per resource.
 

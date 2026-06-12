@@ -1,11 +1,13 @@
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
+import { GUTTER_WIDTH } from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
+import { RESOURCE_CELL_WIDTH } from './resource-axis'
 
 interface ResourceWeekVerticalDayHeaderProps {
 	columns: Array<{ day?: Dayjs; resourceId?: string | number }>
@@ -18,7 +20,12 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 
 	return (
 		<div className="flex h-12">
-			<div className="shrink-0 w-16 border-r border-b z-20 bg-background sticky left-0">
+			<div
+				className={cn(
+					'shrink-0 border-r border-b z-20 bg-background sticky left-0',
+					GUTTER_WIDTH
+				)}
+			>
 				<span className="px-2 h-full w-full flex justify-center items-start font-medium">
 					{currentDate.week()}
 				</span>
@@ -32,7 +39,8 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 				return (
 					<AnimatedSection
 						className={cn(
-							'min-w-20 flex-1 border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background',
+							RESOURCE_CELL_WIDTH,
+							'border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background',
 							today && 'bg-primary/10 font-bold'
 						)}
 						data-testid={keys.header.resource.timeLabel(

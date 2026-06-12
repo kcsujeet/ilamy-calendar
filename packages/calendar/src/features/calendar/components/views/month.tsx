@@ -21,23 +21,18 @@ import {
 	ResourceColumnsHeader,
 	ResourcesCornerCell,
 	resourceHorizontalRows,
+	resourceVerticalColumns,
 } from './resource-axis'
 import { ViewRenderer } from './view-renderer'
-
-const daysInMonthOf = (date: Dayjs): Dayjs[] => {
-	const startOfMonth = date.startOf('month')
-	return Array.from({ length: date.daysInMonth() }, (_, i) =>
-		startOfMonth.add(i, 'day')
-	)
-}
 
 const resourceMonthVerticalColumns = (
 	date: Dayjs,
 	resources: Resource[]
 ): VerticalColumnSpec[] => {
-	const daysInMonth = daysInMonthOf(date)
-	return [
-		gutterColumn({
+	const daysInMonth = getMonthDays(date)
+	return resourceVerticalColumns({
+		resources,
+		gutter: gutterColumn({
 			days: daysInMonth,
 			gridType: 'day',
 			renderLabel: (day: Dayjs) => (
@@ -47,14 +42,13 @@ const resourceMonthVerticalColumns = (
 				</>
 			),
 		}),
-		...resources.map((resource) => ({
+		columnsFor: (resource) => ({
 			id: keys.col.resource('month', resource.id),
 			day: undefined,
-			resourceId: resource.id,
 			days: daysInMonth,
 			gridType: 'day' as const,
-		})),
-	]
+		}),
+	})
 }
 
 const ResourceMonthHorizontalHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
@@ -64,7 +58,7 @@ const ResourceMonthHorizontalHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 		<>
 			<ResourcesCornerCell />
 			{monthDays.map((day, index) => {
-				const key = `resource-month-header-${day.toISOString()}`
+				const key = keys.header.resource.monthDay(day)
 
 				return (
 					<AnimatedSection
@@ -91,7 +85,6 @@ const monthRows = (
 	const resources = config.resources ?? []
 
 	if (resources.length) {
-		// Engine rule: with resources, the user's orientation picks the arrangement.
 		if (config.orientation === 'vertical') {
 			return resourceMonthVerticalColumns(date, resources)
 		}
@@ -135,5 +128,4 @@ export const monthView: PluginView = {
 		}
 		return <ResourceMonthHorizontalHeader date={date} />
 	},
-	component: MonthView,
 }

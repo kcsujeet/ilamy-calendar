@@ -2,7 +2,7 @@ import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { HEADER_STAGGER_DELAY } from '@/lib/constants'
+import { HEADER_ROW_HEIGHT, HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
@@ -18,7 +18,7 @@ export const ResourceWeekHorizontalDayHeader: React.FC<
 	const isHourly = weekViewGranularity === 'hourly'
 
 	return (
-		<div className="flex h-12">
+		<div className={cn('flex', HEADER_ROW_HEIGHT)}>
 			{days.map((day, index) => {
 				const today = isToday(day)
 				const key = keys.header.week.day(day)

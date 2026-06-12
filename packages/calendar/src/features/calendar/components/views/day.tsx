@@ -2,13 +2,15 @@ import type {
 	Dayjs,
 	HorizontalRowSpec,
 	PluginView,
-	Resource,
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
-import { gutterColumn } from '@/components/vertical-grid/gutter'
+import {
+	FULL_WIDTH_MINUS_GUTTER,
+	gutterColumn,
+} from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import {
 	collectResourceBusinessHours,
@@ -19,9 +21,11 @@ import { cn } from '@/lib/utils'
 import { getDayKey, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import {
+	RESOURCE_CELL_WIDTH,
 	ResourceColumnsHeader,
 	ResourcesCornerCell,
 	resourceHorizontalRows,
+	resourceVerticalColumns,
 } from './resource-axis'
 import { TimeHeaderRow } from './time-header-row'
 import { ViewRenderer } from './view-renderer'
@@ -53,20 +57,20 @@ const DayViewHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 	)
 }
 
-const dayHours = (date: Dayjs, config: ViewConfig, resources: Resource[]) =>
+const dayHours = (date: Dayjs, config: ViewConfig) =>
 	getViewHours({
 		referenceDate: date,
 		businessHours: config.businessHours,
 		hideNonBusinessHours: config.hideNonBusinessHours,
 		allDates: [date],
-		resourceBusinessHours: collectResourceBusinessHours(resources),
+		resourceBusinessHours: collectResourceBusinessHours(config.resources ?? []),
 	})
 
 const ResourceDayHorizontalHeader: React.FC<{
 	date: Dayjs
 	config: ViewConfig
 }> = ({ date, config }) => {
-	const hours = dayHours(date, config, config.resources ?? [])
+	const hours = dayHours(date, config)
 
 	return (
 		<>
@@ -87,7 +91,7 @@ const dayColumns = (
 	config: ViewConfig
 ): VerticalColumnSpec[] | HorizontalRowSpec[] => {
 	const resources = config.resources ?? []
-	const hours = dayHours(date, config, resources)
+	const hours = dayHours(date, config)
 
 	if (!resources.length) {
 		return [
@@ -96,32 +100,30 @@ const dayColumns = (
 				id: keys.col.day(date),
 				day: date,
 				days: hours,
-				className: 'w-[calc(100%-4rem)] flex-1',
+				className: cn(FULL_WIDTH_MINUS_GUTTER, 'flex-1'),
 				gridType: 'hour',
 			},
 		]
 	}
 
-	// Engine rule: with resources, the user's orientation picks the arrangement.
 	if (config.orientation === 'vertical') {
-		return [
-			gutterColumn({ days: hours, gridType: 'hour' }),
-			...resources.map((resource) => ({
+		return resourceVerticalColumns({
+			resources,
+			gutter: gutterColumn({ days: hours, gridType: 'hour' }),
+			columnsFor: (resource) => ({
 				id: keys.col.day(date, resource.id),
-				resourceId: resource.id,
-				resource,
 				days: hours,
 				day: date,
 				gridType: 'hour' as const,
-			})),
-		]
+			}),
+		})
 	}
 
 	return resourceHorizontalRows({
 		resources,
 		days: hours,
 		gridType: 'hour',
-		cellClassName: 'min-w-20 flex-1',
+		cellClassName: RESOURCE_CELL_WIDTH,
 	})
 }
 
@@ -145,5 +147,4 @@ export const dayView: PluginView = {
 		}
 		return <ResourceDayHorizontalHeader config={config} date={date} />
 	},
-	component: DayView,
 }

@@ -271,6 +271,32 @@ previously showed a button that rendered a blank body.
 
 ---
 
+### `PluginView.component` is now optional (non-breaking)
+
+Spec-driven views (those declaring `columns` + `layout`) no longer need a dummy
+`component: () => null` — omit the field entirely. Component-only views keep working
+unchanged. A view that declares neither `columns`/`layout` nor `component` renders
+nothing; dev builds log a console warning naming the view.
+
+---
+
+### Custom view spec types tightened
+
+Only relevant if you author custom views (`PluginView.columns`):
+
+- **`VerticalColumnSpec.resourceId` removed.** `resource` is the single carrier of the
+  column's resource identity; the calendar derives the id from `resource.id`. Replace
+  `{ resourceId: r.id, resource: r }` with `{ resource: r }`.
+- **`HorizontalRowSpec.id` is now `string`** (was `string | number`), matching
+  `VerticalColumnSpec.id`. Stringify numeric ids: `id: String(resource.id)`.
+- **`PluginView.range`'s `config` parameter is now typed
+  `Pick<ViewConfig, 'firstDayOfWeek'>`** — the only slice it ever received at runtime.
+  Implementations annotated with the full `ViewConfig` still compile (the narrower
+  argument is assignable); only code that read other fields off `range`'s config (they
+  were always `undefined`) needs updating.
+
+---
+
 ### View switcher: resource calendars hide resource-incapable plugin views
 
 On `IlamyResourceCalendar`, plugin views now appear in the view switcher only if they
@@ -312,6 +338,8 @@ Other notes:
   `resourceId` / `resourceIds`.
 - The root testid of a resource calendar is now `ilamy-calendar`
   (was `ilamy-resource-calendar`).
+- The vertical-arrangement resource header testid is now `resource-columns-header`
+  (was `resource-month-header` — the header serves the day AND month views).
 - Forcing a resource-incapable view programmatically (e.g. `initialView="year"` with
   `resources`) renders it as a regular, resource-less view; the switcher still hides it.
 
@@ -331,3 +359,5 @@ Other notes:
 - [ ] Resource calendars: if you relied on cell-click always creating `allDay: false` events, handle it in `onCellClick`.
 - [ ] Replace `<IlamyResourceCalendar>` with `<IlamyCalendar resources={...}>` (the old name still works as a deprecated alias).
 - [ ] If your test harness queried the `ilamy-resource-calendar` root testid, query `ilamy-calendar` instead.
+- [ ] If your test harness queried the `resource-month-header` testid, query `resource-columns-header` instead.
+- [ ] Custom view authors: drop `component: () => null` from spec-driven views, replace `resourceId` with `resource` on `VerticalColumnSpec`, and stringify numeric `HorizontalRowSpec.id`s.

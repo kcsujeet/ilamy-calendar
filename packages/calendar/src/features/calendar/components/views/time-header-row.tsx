@@ -2,14 +2,17 @@ import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { HourLabel } from '@/components/hour-label/hour-label'
 import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import { HEADER_ROW_HEIGHT } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
+import { RESOURCE_CELL_WIDTH } from './resource-axis'
 
 interface TimeHeaderRowProps {
 	hours: Dayjs[]
 	view: 'week' | 'day'
-	// Per-item animation delay. Callers pass different step values depending on
-	// the list length (e.g. 0.005 for a week of hours, 0.05 for a single day).
+	// Per-item animation delay. Callers pass different step constants depending
+	// on the list length (HOUR_STAGGER_DELAY for a week of hours,
+	// HEADER_STAGGER_DELAY for a single day).
 	delayStep: number
 }
 
@@ -18,7 +21,7 @@ export const TimeHeaderRow: React.FC<TimeHeaderRowProps> = ({
 	view,
 	delayStep,
 }) => (
-	<div className="flex h-12 border-b">
+	<div className={cn('flex border-b', HEADER_ROW_HEIGHT)}>
 		{hours.map((col, index) => {
 			const isNowHour = col.isSame(dayjs(), 'hour')
 			const hourStr = col.format('HH')
@@ -26,7 +29,8 @@ export const TimeHeaderRow: React.FC<TimeHeaderRowProps> = ({
 			return (
 				<AnimatedSection
 					className={cn(
-						'min-w-20 flex-1 border-r last:border-r-0 flex items-center justify-center text-xs shrink-0',
+						RESOURCE_CELL_WIDTH,
+						'border-r last:border-r-0 flex items-center justify-center text-xs shrink-0',
 						isNowHour && 'bg-blue-50 text-blue-600 font-medium'
 					)}
 					data-hour={hourStr}

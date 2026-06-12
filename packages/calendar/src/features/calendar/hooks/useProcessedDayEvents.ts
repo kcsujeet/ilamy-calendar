@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { filterEventsForResource } from '@/lib/events/pipeline'
-import type { PositionedEvent } from '@/lib/layout/geometry'
+import type { VerticalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutVertical } from '@/lib/layout/vertical'
 
 interface UseProcessedDayEventsProps {
@@ -35,7 +35,7 @@ export const useProcessedDayEvents = ({
 		return dayEvents.filter((e) => !e.allDay)
 	}, [dayStart, dayEnd, getEventsForDateRange, resourceId])
 
-	const todayEvents = useMemo<PositionedEvent[]>(() => {
+	const todayEvents = useMemo<VerticalPositionedEvent[]>(() => {
 		return layoutVertical({
 			days,
 			events,

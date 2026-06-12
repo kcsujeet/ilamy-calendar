@@ -307,7 +307,7 @@ describe('useCalendarEngine', () => {
 
 		it('navigates by navigationStep and reports the custom range for views that declare them', () => {
 			const onDateChange = vi.fn()
-			const initialDate = dayjs('2025-01-15')
+			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
 			const fortyDayPlugin: IlamyPlugin = {
 				name: 'forty',
 				views: [

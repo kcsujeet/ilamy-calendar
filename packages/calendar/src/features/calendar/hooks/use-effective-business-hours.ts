@@ -16,7 +16,7 @@ export const useEffectiveBusinessHours = (
 	}))
 
 	return useMemo(() => {
-		if (resourceId != null && getResourceById) {
+		if (resourceId != null) {
 			const resource = getResourceById(resourceId)
 			if (resource?.businessHours) {
 				return resource.businessHours

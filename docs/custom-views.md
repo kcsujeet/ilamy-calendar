@@ -57,6 +57,10 @@ orientation: 'vertical'                 orientation: 'horizontal'
 | `renderHeader` | No header row above the grid. |
 | `supportsResources` | Your view is hidden from the switcher on resource calendars. |
 
+> Note: `range()` receives only `{ firstDayOfWeek }` as its `config` today; the full
+> axis config (`resources`, `orientation`, `hiddenDays`, ...) reaches `columns()` and
+> `renderHeader()`.
+
 ## Worked example: a 40-day grid
 
 One entry. `range` defines the window, `columns` its rows, `navigationStep` makes
@@ -109,7 +113,8 @@ export const fortyDayView: PluginView = {
 			{date.format('LL')} — {date.add(WINDOW - 1, 'day').format('LL')}
 		</div>
 	),
-	// Never rendered while columns+layout are present; required by the contract.
+	// Always required. The escape hatch when `columns`/`layout` are absent; for
+	// spec-driven views it is unused by the renderer (use `() => null`).
 	component: () => null,
 }
 

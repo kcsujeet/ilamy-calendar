@@ -27,11 +27,7 @@ export const toHiddenDaysSet = (
  * @returns Normalized array of calendar events with dayjs dates
  *
  * @example
- * // Regular calendar events
  * const events = normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(propEvents)
- *
- * // Resource calendar events
- * const resourceEvents = normalizeEvents<IlamyResourceCalendarPropEvent, CalendarEvent>(propEvents)
  */
 export function normalizeEvents<
 	TInput extends {

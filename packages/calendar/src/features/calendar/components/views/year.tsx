@@ -8,8 +8,8 @@ export const yearView: PluginView = {
 	name: 'year',
 	label: 'year',
 	navigationUnit: 'year',
-	// Stays false in Phase 4 too: the switcher keeps hiding year on resource
-	// calendars (generalizes today's hardcoded year-view suppression).
+	// The year view does not compose the resource axis, so the switcher hides
+	// it on resource calendars.
 	supportsResources: false,
 	range: (date) => ({ start: date.startOf('year'), end: date.endOf('year') }),
 	component: YearView,

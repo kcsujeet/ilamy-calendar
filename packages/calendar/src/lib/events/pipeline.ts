@@ -29,19 +29,6 @@ export function filterEventsForResource(
 }
 
 /**
- * Keep only events whose id appears in `resourceEvents`. Ids are compared as
- * strings so numeric/string mismatches between sources don't cause false
- * negatives.
- */
-export function filterEventsByResource(
-	events: CalendarEvent[],
-	resourceEvents: CalendarEvent[]
-): CalendarEvent[] {
-	const ids = new Set(resourceEvents.map((e) => String(e.id)))
-	return events.filter((event) => ids.has(String(event.id)))
-}
-
-/**
  * Whether an event's interval overlaps with the `[start, end]` range
  * (inclusive). Covers the three cases: starts inside the range, ends inside
  * the range, or fully spans the range.

@@ -154,7 +154,7 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
       utils/                                   # business-hours, view-hours, event-form-utils
     plugins/lib/                               # Plugin kernel + contract (re-exports @ilamy/types)
   components/
-    types.ts                                   # re-exports CalendarEvent/WeekDays/BusinessHours from @ilamy/types; ProcessedCalendarEvent
+    types.ts                                   # re-exports CalendarEvent/WeekDays/BusinessHours from @ilamy/types
     calendar-slots.tsx                         # SLOT_* mount points + slot context re-exports
     drag-and-drop/                             # @dnd-kit integration
     vertical-grid/                             # Time-based grid (day/week views)

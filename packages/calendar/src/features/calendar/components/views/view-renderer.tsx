@@ -101,10 +101,18 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 			.filter((col) => !col.noEvents)
 			.map((col) => col.day)
 			.filter((day): day is Dayjs => Boolean(day))
-		const allDayClasses =
-			eventDays.length > 1
-				? { cell: 'flex-1 min-w-0', spacer: RESPONSIVE_GUTTER_WIDTH }
-				: undefined
+		// The all-day spacer must mirror the gutter column's width. Views on the
+		// responsive gutter (week) need the matching responsive spacer plus
+		// shrinkable cells — regardless of how many days hiddenDays leaves
+		// visible; views on the fixed-width gutter (day) align with the
+		// AllDayCell default already.
+		const gutterCol = specs.find((col) => col.noEvents)
+		const usesResponsiveGutter = Boolean(
+			gutterCol?.className?.includes(RESPONSIVE_GUTTER_WIDTH)
+		)
+		const allDayClasses = usesResponsiveGutter
+			? { cell: 'flex-1 min-w-0', spacer: RESPONSIVE_GUTTER_WIDTH }
+			: undefined
 		// Resource columns get one all-day row per resource (derived from the
 		// resource identity the specs carry); regular columns share one row.
 		let allDayRow: React.ReactNode

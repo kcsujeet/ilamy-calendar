@@ -1145,6 +1145,36 @@ describe('WeekView', () => {
 		).not.toBeInTheDocument()
 	})
 
+	test('keeps responsive all-day spacer/cell classes when hiddenDays leaves one visible day', () => {
+		cleanup()
+		const monday = dayjs('2025-01-06T00:00:00.000Z')
+		const hiddenDays = new Set([0, 2, 3, 4, 5, 6]) // only Monday visible
+
+		renderWeekView({
+			initialDate: monday,
+			firstDayOfWeek: 0,
+			hiddenDays,
+		})
+
+		// The all-day spacer must mirror the responsive time gutter even with a
+		// single visible day, or the all-day row drifts out of column alignment.
+		const allDayRow = screen.getByTestId('all-day-row')
+		const spacer = allDayRow.querySelector('div')
+		const spacerClasses = ['w-10', 'sm:w-16', 'min-w-10', 'sm:min-w-16']
+		spacerClasses.forEach((className) => {
+			expect(spacer?.className).toContain(className)
+		})
+
+		// The lone all-day cell keeps the week view's width-control classes.
+		const mondayCell = screen.getByTestId(
+			`day-cell-${monday.format('YYYY-MM-DD')}`
+		)
+		const cellClasses = ['flex-1', 'min-w-0']
+		cellClasses.forEach((className) => {
+			expect(mondayCell.className).toContain(className)
+		})
+	})
+
 	test('hiddenDays with single hidden day works correctly', () => {
 		cleanup()
 		const monday = dayjs('2025-01-06T00:00:00.000Z')

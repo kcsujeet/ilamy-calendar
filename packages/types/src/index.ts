@@ -140,7 +140,9 @@ export interface PluginMutationArgs {
 /**
  * Calendar configuration handed to a view's `range()`/`columns()`/`renderHeader()`.
  * Carries the resource axis (`resources`, `orientation`) so a resource-capable
- * view can compose both arrangements.
+ * view can compose both arrangements. The full axis config reaches
+ * `columns()`/`renderHeader()`; `range()` receives only `{ firstDayOfWeek }`
+ * today.
  */
 export interface ViewConfig {
 	firstDayOfWeek: number
@@ -225,7 +227,10 @@ export interface PluginView {
 	name: string
 	/** View-switcher label (or a translation key; unknown keys render as-is). */
 	label?: string
-	/** Renders the view when `columns`/`layout` are absent (the escape hatch). */
+	/**
+	 * Always required. The escape hatch when `columns`/`layout` are absent;
+	 * for spec-driven views it is unused by the renderer (use `() => null`).
+	 */
 	component: ComponentType
 	/** How far prev/next steps when `navigationStep` is absent ('week', 'month', …). */
 	navigationUnit?: ManipulateType
@@ -237,7 +242,9 @@ export interface PluginView {
 	navigationStep?: { amount: number; unit: ManipulateType }
 	/**
 	 * Visible range for navigation callbacks and the event pipeline. Views
-	 * without `range` fall back to the month 6x7 grid range.
+	 * without `range` fall back to the month 6x7 grid range. Receives only
+	 * `{ firstDayOfWeek }` as `config` today; the full axis config reaches
+	 * `columns()`/`renderHeader()`.
 	 */
 	range?: (date: Dayjs, config: ViewConfig) => { start: Dayjs; end: Dayjs }
 	/**

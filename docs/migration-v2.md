@@ -307,7 +307,7 @@ next major.
 Other notes:
 
 - `orientation` without `resources` is inert; dev builds now log a console warning.
-- `IlamyResourceCalendarPropEvent` is a deprecated alias of `IlamyCalendarPropEvent` —
+- `IlamyResourceCalendarPropEvent` is gone — use `IlamyCalendarPropEvent`:
   `CalendarEvent` (and therefore the `events` prop) already carries
   `resourceId` / `resourceIds`.
 - The root testid of a resource calendar is now `ilamy-calendar`

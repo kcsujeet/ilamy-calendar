@@ -19,6 +19,10 @@ import { getEventResourceIds } from '@/lib/events/pipeline'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView } from '@/types'
 
+// Module constant, not a per-render `?? []`: keeps the data slice's
+// resource-utility identities render-stable on resource-less calendars.
+const EMPTY_RESOURCES: Resource[] = []
+
 export interface CalendarEngineConfig {
 	events: CalendarEvent[]
 	firstDayOfWeek: number
@@ -165,7 +169,7 @@ export const useCalendarEngine = (
 		events,
 		pluginRuntime,
 		getCurrentViewRange: navigation.getCurrentViewRange,
-		resources: configSlice.resources ?? [],
+		resources: configSlice.resources ?? EMPTY_RESOURCES,
 		onEventAdd,
 		onEventUpdate,
 		onEventDelete,

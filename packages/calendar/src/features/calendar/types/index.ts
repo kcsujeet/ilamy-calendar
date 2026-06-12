@@ -47,13 +47,6 @@ export interface IlamyCalendarPropEvent
 }
 
 /**
- * @deprecated Since v2.0 — `IlamyCalendarPropEvent` (via `CalendarEvent`)
- * already carries `resourceId` / `resourceIds`. This alias will be removed in
- * the next major.
- */
-export type IlamyResourceCalendarPropEvent = IlamyCalendarPropEvent
-
-/**
  * Information passed to the onCellClick callback.
  * Uses named properties for extensibility.
  */

@@ -3,7 +3,6 @@ import type { CalendarEvent } from '@/components/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import {
 	eventOverlapsRange,
-	filterEventsByResource,
 	filterEventsForResource,
 	getEventResourceIds,
 } from './pipeline'
@@ -17,33 +16,6 @@ const makeEvent = (
 	title: `Event ${id}`,
 	start: dayjs(startISO),
 	end: dayjs(endISO),
-})
-
-describe('filterEventsByResource', () => {
-	it('keeps events whose id appears in the resource event list', () => {
-		const events = [
-			makeEvent('a', '2025-01-01T10:00:00.000Z', '2025-01-01T11:00:00.000Z'),
-			makeEvent('b', '2025-01-01T10:00:00.000Z', '2025-01-01T11:00:00.000Z'),
-			makeEvent('c', '2025-01-01T10:00:00.000Z', '2025-01-01T11:00:00.000Z'),
-		]
-		const resourceEvents = [events[0], events[2]]
-		expect(filterEventsByResource(events, resourceEvents)).toEqual([
-			events[0],
-			events[2],
-		])
-	})
-
-	it('compares ids as strings so numeric/string mismatches still match', () => {
-		const events = [makeEvent(1, '2025-01-01', '2025-01-01')]
-		const resourceEvents = [makeEvent('1', '2025-01-01', '2025-01-01')]
-		expect(filterEventsByResource(events, resourceEvents)).toHaveLength(1)
-	})
-
-	it('returns an empty array when nothing matches', () => {
-		const events = [makeEvent('a', '2025-01-01', '2025-01-01')]
-		const resourceEvents = [makeEvent('z', '2025-01-01', '2025-01-01')]
-		expect(filterEventsByResource(events, resourceEvents)).toEqual([])
-	})
 })
 
 describe('eventOverlapsRange', () => {

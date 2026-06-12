@@ -48,7 +48,7 @@ The only hook exported for library consumers. Returns a curated subset of contex
 | `addEvent` | `(event: CalendarEvent) => void` | Add a new event |
 | `updateEvent` | `(eventId, updates) => void` | Update an existing event |
 | `deleteEvent` | `(eventId) => void` | Delete an event |
-| `getEventsForResource` | `((resourceId) => CalendarEvent[]) \| undefined` | Get events for a resource — only present on resource calendars; call as `getEventsForResource?.(id) ?? []` |
+| `getEventsForResource` | `(resourceId) => CalendarEvent[]` | Get events for a resource — always defined; returns `[]` on a regular calendar |
 
 **Navigation:**
 

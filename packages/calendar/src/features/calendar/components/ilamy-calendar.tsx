@@ -70,7 +70,12 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 }) => {
 	const hasResources = Boolean(resources?.length)
 	useEffect(() => {
-		if (process.env.NODE_ENV !== 'production' && orientation && !hasResources) {
+		// Guarded `typeof process` check: the published bundle ships this line
+		// as-is (no build-time env replacement), so bundler-less ESM consumers
+		// must not crash on a bare `process` reference.
+		const isDevBuild =
+			typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
+		if (isDevBuild && orientation && !hasResources) {
 			// biome-ignore lint/suspicious/noConsole: deliberate DX guard (master plan, view contract)
 			console.warn(
 				'[@ilamy/calendar] `orientation` was provided without `resources` — it only applies when the calendar has resources, so it is ignored.'

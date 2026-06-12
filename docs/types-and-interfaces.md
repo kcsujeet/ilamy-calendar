@@ -39,20 +39,7 @@ The core event type used throughout the library.
 | `uid` | `string` | no | iCalendar UID for cross-system compatibility |
 | `resourceId` | `string \| number` | no | Single resource assignment |
 | `resourceIds` | `(string \| number)[]` | no | Multiple resource assignment |
-| `data` | `Record<string, any>` | no | Custom application metadata |
-
-## ProcessedCalendarEvent
-
-`src/components/types.ts`
-
-Extends `CalendarEvent` with positioning fields for the rendering engine. Internal use only.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `left` | `number` | Left position as percentage (0-100) |
-| `width` | `number` | Width as percentage (0-100) |
-| `top` | `number` | Top position as percentage (0-100) |
-| `height` | `number` | Height as percentage (0-100) |
+| `data` | `Record<string, unknown>` | no | Custom application metadata |
 
 ## IlamyCalendarPropEvent
 
@@ -225,9 +212,9 @@ interface CellClickInfo {
 
 | Type | File |
 |------|------|
-| `CalendarEvent`, `ProcessedCalendarEvent`, `WeekDays`, `BusinessHours` | `src/components/types.ts` |
+| `CalendarEvent`, `WeekDays`, `BusinessHours` | `src/components/types.ts` |
 | `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CellClickInfo`, `CalendarClassesOverride` | `src/features/calendar/types/index.ts` |
-| `Resource` (re-export), `IlamyResourceCalendarPropEvent` (deprecated alias) | `src/features/calendar/types/index.ts` |
+| `Resource` (re-export) | `src/features/calendar/types/index.ts` |
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |
 | `CalendarView`, `TimeFormat` | `src/types/index.ts` |
 | `CalendarContextType` | `src/features/calendar/contexts/calendar-context/context.ts` |

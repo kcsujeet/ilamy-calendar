@@ -46,7 +46,7 @@ Here is the full codebase layout. Internalize it before doing any work.
 
 Shared UI building blocks used across all features:
 
-- `types.ts` - Core types: `CalendarEvent`, `ProcessedCalendarEvent`, `WeekDays`, `BusinessHours`
+- `types.ts` - Core types: `CalendarEvent`, `WeekDays`, `BusinessHours`
 - `grid-cell.tsx` - Generic grid cell
 - `day-number.tsx` - Day number display
 - `droppable-cell.tsx` - Drop zone for DnD

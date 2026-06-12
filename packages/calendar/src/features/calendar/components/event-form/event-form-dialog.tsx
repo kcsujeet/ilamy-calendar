@@ -1,3 +1,4 @@
+import type { CalendarEvent } from '@ilamy/types'
 import {
 	Dialog,
 	DialogContent,
@@ -5,7 +6,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ilamy/ui/components/dialog'
-import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { EventForm } from './event-form'
 

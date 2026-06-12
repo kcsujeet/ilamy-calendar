@@ -1,6 +1,5 @@
-import type { Resource } from '@ilamy/types'
-import type { BusinessHours } from '@/components/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { BusinessHours, Resource } from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { getDayHours } from '@/lib/utils/date-utils'
 import { calculateBusinessHoursRange } from './business-hours'
 

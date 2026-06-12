@@ -1,4 +1,4 @@
-import type { CalendarEvent } from '@/components/types'
+import type { CalendarEvent } from '@ilamy/types'
 
 /** Placement fields shared by both layout strategies. */
 interface PositionedEventBase {

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import {
 	assertVerticalBusinessHourRange,
 	weekdayBusinessHours,
 } from '@/features/calendar/testing/resource-test-fixtures'
-import dayjs from '@/lib/configs/dayjs-config'
 import { DayView } from './views/day'
 import { WeekView } from './views/week'
 

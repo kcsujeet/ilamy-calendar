@@ -1,7 +1,7 @@
 import type { VerticalColumnSpec } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { memo } from 'react'
-import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'

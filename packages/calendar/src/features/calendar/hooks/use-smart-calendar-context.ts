@@ -1,14 +1,18 @@
-import type { Resource } from '@ilamy/types'
+import type {
+	BusinessHours,
+	CalendarEvent,
+	IlamyPlugin,
+	PluginView,
+	Resource,
+} from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { useContext } from 'react'
-import type { BusinessHours, CalendarEvent } from '@/components/types'
 import {
 	CalendarContext,
 	type CalendarContextType,
 } from '@/features/calendar/contexts/calendar-context/context'
 import type { OpenEventFormInput } from '@/features/calendar/types'
-import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 

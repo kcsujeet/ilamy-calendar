@@ -1,5 +1,5 @@
-import type { CalendarEvent } from '@/components/types'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import type { CalendarEvent } from '@ilamy/types'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import type { HorizontalPositionedEvent } from './geometry'
 
 export interface HorizontalLayoutInput {

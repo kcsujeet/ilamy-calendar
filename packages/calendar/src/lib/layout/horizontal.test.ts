@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
-import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import type { CalendarEvent } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { layoutHorizontal } from './horizontal'
 
 const days = Array.from({ length: 7 }, (_, i) =>

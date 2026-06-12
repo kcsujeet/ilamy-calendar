@@ -1,6 +1,6 @@
 import type { DragEndEvent } from '@dnd-kit/core'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
-import type { CalendarEvent } from '../types'
+import type { CalendarEvent } from '@ilamy/types'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 
 interface DropCellData {
 	type?: string

@@ -1,4 +1,11 @@
-import type { Resource } from '@ilamy/types'
+import type {
+	BusinessHours,
+	CalendarEvent,
+	IlamyPlugin,
+	PluginView,
+	Resource,
+} from '@ilamy/types'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import {
 	type ComponentType,
 	type ReactNode,
@@ -6,7 +13,6 @@ import {
 	useMemo,
 	useRef,
 } from 'react'
-import type { BusinessHours, CalendarEvent } from '@/components/types'
 import {
 	type CalendarConfigSlice,
 	useCalendarConfig,
@@ -25,8 +31,6 @@ import {
 } from '@/features/calendar/hooks/use-calendar-navigation'
 import type { CellInfo } from '@/features/calendar/types'
 import { createPluginRuntime } from '@/features/plugins/lib/create-plugin-runtime'
-import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { getEventResourceIds } from '@/lib/events/pipeline'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView } from '@/types'

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test'
-import dayjs from '@/lib/configs/dayjs-config'
+import dayjs from '@ilamy/utils/dayjs'
 import {
 	getDayHours,
 	getDayKey,

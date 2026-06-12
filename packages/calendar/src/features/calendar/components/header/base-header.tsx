@@ -4,12 +4,12 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@ilamy/ui/components/popover'
+import { cn } from '@ilamy/ui/lib/utils'
+import dayjs from '@ilamy/utils/dayjs'
 import { Calendar as CalendarIcon, Download, Menu, Plus } from 'lucide-react'
 import type React from 'react'
 import { useState } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
 import { downloadICalendar } from '@/lib/utils/export-ical'
 import { TitleContent } from './title-content'
 import { ViewControls } from './view-controls'

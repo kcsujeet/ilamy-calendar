@@ -33,9 +33,9 @@ entry = ["packages/*/bunup.config.ts"]
 #     imported by calendar source directly, so fallow already sees it as used.)
 #   - @tailwindcss/vite is the Vite plugin for apps/demo (an ignored playground),
 #     declared at the workspace root for hoisting, not a source import.
-#   - @testing-library/react is a test-only dependency declared once at the
-#     workspace root (hoisted linker) and used by package tests, intentionally not
-#     re-declared per package.
+#   - @testing-library/react and @testing-library/jest-dom are test-only
+#     dependencies declared once at the workspace root (hoisted linker) and used
+#     by package tests/preloads, intentionally not re-declared per package.
 ignoreDependencies = [
 	"bun-plugin-tailwind",
 	"@radix-ui/react-checkbox",
@@ -49,6 +49,7 @@ ignoreDependencies = [
 	"tailwind-merge",
 	"@tailwindcss/vite",
 	"@testing-library/react",
+	"@testing-library/jest-dom",
 ]
 
 [health]

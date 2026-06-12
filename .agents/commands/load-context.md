@@ -144,7 +144,7 @@ Note: `use-calendar-engine.ts` (engine composer over the slice hooks), `use-smar
 
 #### Library (`src/lib/`)
 
-- `configs/dayjs-config.ts` - Pre-configured dayjs (always import from here)
+- Pre-configured dayjs lives in `@ilamy/utils/dayjs` (always import from there)
 - `translations/default.ts` - Default English translations (94 keys)
 - `translations/types.ts` - Translation types
 - `utils/date-utils.ts` - Date manipulation
@@ -206,4 +206,4 @@ After loading all context, confirm to the user:
 2. A brief summary of any recent log entries
 3. That you're ready to work and will update the logs after making changes
 
-Remember: Always use `bun` (never npm/node). Always write tests. Never commit without asking. Always use ISO date strings. Always import dayjs from `@/lib/dayjs-config`.
+Remember: Always use `bun` (never npm/node). Always write tests. Never commit without asking. Always use ISO date strings. Always import dayjs from `@ilamy/utils/dayjs`.

@@ -1,8 +1,13 @@
-import type { Resource } from '@ilamy/types'
+import type {
+	BusinessHours,
+	CalendarEvent,
+	IlamyPlugin,
+	Resource,
+} from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
-import type { BusinessHours, CalendarEvent } from '@/components/types'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
 import type {
@@ -13,8 +18,6 @@ import type {
 	SlotDuration,
 } from '@/features/calendar/types'
 import { composePluginProviders } from '@/features/plugins/lib/compose-plugin-providers'
-import type { IlamyPlugin } from '@/features/plugins/lib/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'

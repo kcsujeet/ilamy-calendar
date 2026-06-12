@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
-import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import type { CalendarEvent } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { layoutVertical } from './vertical'
 
 // Default 24-hour grid anchored at 2025-01-13 00:00 UTC.

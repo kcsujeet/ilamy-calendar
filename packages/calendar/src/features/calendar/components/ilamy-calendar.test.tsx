@@ -8,12 +8,11 @@ import {
 	spyOn,
 	test,
 } from 'bun:test'
+import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createContext, useContext } from 'react'
-import type { CalendarEvent } from '@/components/types'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
-import type { IlamyPlugin } from '@/features/plugins/lib/types'
-import dayjs from '@/lib/configs/dayjs-config'
 import { IlamyCalendar } from './ilamy-calendar'
 
 const CustomEventForm = (props: EventFormProps) => {

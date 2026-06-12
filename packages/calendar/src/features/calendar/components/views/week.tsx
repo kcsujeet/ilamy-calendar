@@ -6,6 +6,7 @@ import type {
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import {
@@ -18,7 +19,6 @@ import {
 	getViewHours,
 } from '@/features/calendar/utils/view-hours'
 import { HEADER_STAGGER_DELAY, HOUR_STAGGER_DELAY } from '@/lib/constants'
-import { cn } from '@/lib/utils'
 import { getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import {

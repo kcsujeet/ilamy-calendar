@@ -1,9 +1,9 @@
 import type { Resource } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { ResourceCell } from '@/components/resource-cell'
 import { GUTTER_WIDTH } from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
 

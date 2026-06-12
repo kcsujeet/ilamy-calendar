@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import type { CalendarEvent } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
-import type { CalendarEvent } from '@/components/types'
-import { WeekView } from '@/features/calendar/components/views'
+import { WeekView } from '@/features/calendar/components/views/week'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import {
 	resourceWeekInitialDate as initialDate,
 	noEvents,
 	twoResources,
 } from '@/features/calendar/testing/resource-test-fixtures'
-import dayjs from '@/lib/configs/dayjs-config'
 
 const renderResourceWeekVertical = (props = {}) => {
 	return render(

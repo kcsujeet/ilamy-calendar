@@ -1,16 +1,18 @@
+import type { CalendarEvent } from '@ilamy/types'
 import { Button } from '@ilamy/ui/components/button'
 import { Checkbox } from '@ilamy/ui/components/checkbox'
 import { DialogFooter } from '@ilamy/ui/components/dialog'
 import { Input } from '@ilamy/ui/components/input'
 import { Label } from '@ilamy/ui/components/label'
 import { ScrollArea } from '@ilamy/ui/components/scroll-area'
+import { cn } from '@ilamy/ui/lib/utils'
+import dayjs from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import {
 	EventFormSlot,
 	EventMutationScopeSlot,
 } from '@/components/calendar-slots'
-import type { CalendarEvent } from '@/components/types'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { useEffectiveBusinessHours } from '@/features/calendar/hooks/use-effective-business-hours'
@@ -22,8 +24,6 @@ import {
 	getTimeConstraints,
 } from '@/features/calendar/utils/event-form-utils'
 import { useScopedEventMutation } from '@/hooks/use-scoped-event-mutation'
-import dayjs from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
 
 const DEFAULT_EVENT_COLOR = 'bg-blue-100 text-blue-800'
 

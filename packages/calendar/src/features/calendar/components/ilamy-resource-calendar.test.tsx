@@ -1,6 +1,8 @@
 // No mocking - test the real CalendarDndContext
 
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
+import type { CalendarEvent, IlamyPlugin, Resource } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import {
 	fireEvent,
 	render,
@@ -8,13 +10,9 @@ import {
 	waitFor,
 	within,
 } from '@testing-library/react'
-import type { CalendarEvent } from '@/components/types'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { CellInfo } from '@/features/calendar/types'
-import type { IlamyPlugin } from '@/features/plugins/lib/types'
-import dayjs from '@/lib/configs/dayjs-config'
-import type { Resource } from '../types'
 import { IlamyResourceCalendar } from './ilamy-resource-calendar'
 
 const translator = (key: string) => `Translated: ${key}`

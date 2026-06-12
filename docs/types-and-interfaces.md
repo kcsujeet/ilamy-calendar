@@ -18,7 +18,7 @@ PositionedEvent                 { event: CalendarEvent } + placement fields (lef
 
 ## CalendarEvent
 
-`src/components/types.ts`
+`packages/types/src/index.ts` (`@ilamy/types`)
 
 The core event type used throughout the library.
 
@@ -175,7 +175,7 @@ type CalendarView = 'month' | 'week' | 'day' | 'year'
 type TimeFormat = '12-hour' | '24-hour'
 ```
 
-`src/components/types.ts`
+`packages/types/src/index.ts` (`@ilamy/types`)
 
 ```typescript
 type WeekDays = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday'
@@ -183,7 +183,7 @@ type WeekDays = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'fr
 
 ## BusinessHours
 
-`src/components/types.ts`
+`packages/types/src/index.ts` (`@ilamy/types`)
 
 ```typescript
 interface BusinessHours {
@@ -212,9 +212,9 @@ interface CellClickInfo {
 
 | Type | File |
 |------|------|
-| `CalendarEvent`, `WeekDays`, `BusinessHours` | `src/components/types.ts` |
+| `CalendarEvent`, `WeekDays`, `BusinessHours` | `packages/types/src/index.ts` (`@ilamy/types`) |
 | `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CellClickInfo`, `CalendarClassesOverride` | `src/features/calendar/types/index.ts` |
-| `Resource` (re-export) | `src/features/calendar/types/index.ts` |
+| `Resource` | `packages/types/src/index.ts` (`@ilamy/types`) |
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |
 | `CalendarView`, `TimeFormat` | `src/types/index.ts` |
 | `CalendarContextType` | `src/features/calendar/contexts/calendar-context/context.ts` |

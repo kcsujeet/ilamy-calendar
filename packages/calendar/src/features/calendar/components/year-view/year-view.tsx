@@ -1,9 +1,9 @@
 import { ScrollArea, ScrollBar } from '@ilamy/ui/components/scroll-area'
+import { cn } from '@ilamy/ui/lib/utils'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { HEADER_STAGGER_DELAY } from '@/lib/constants'
-import { cn } from '@/lib/utils'
 import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 

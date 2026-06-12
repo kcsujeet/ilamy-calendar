@@ -1,6 +1,6 @@
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { filterEventsForResource } from '@/lib/events/pipeline'
 import type { VerticalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutVertical } from '@/lib/layout/vertical'

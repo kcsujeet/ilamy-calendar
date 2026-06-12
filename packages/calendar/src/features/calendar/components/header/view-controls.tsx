@@ -1,8 +1,8 @@
 import { Button } from '@ilamy/ui/components/button'
+import { cn } from '@ilamy/ui/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type React from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { cn } from '@/lib/utils'
 import type { CalendarView } from '@/types'
 
 interface ViewControlsProps {

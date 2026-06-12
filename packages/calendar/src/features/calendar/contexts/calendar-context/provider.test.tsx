@@ -1,12 +1,16 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
-import type { Resource } from '@ilamy/types'
+import type {
+	BusinessHours,
+	CalendarEvent,
+	Resource,
+	WeekDays,
+} from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { render } from '@testing-library/react'
 import type React from 'react'
 import { RRule } from 'rrule'
-import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import dayjs from '@/lib/configs/dayjs-config'
 import type { CalendarProviderProps } from './provider'
 import { CalendarProvider } from './provider'
 

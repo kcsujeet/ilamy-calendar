@@ -4,6 +4,8 @@ import type {
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { useMemo } from 'react'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
@@ -11,9 +13,7 @@ import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
 import { RESPONSIVE_GUTTER_WIDTH } from '@/components/vertical-grid/gutter'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { GROUPED_HEADER_HEIGHT } from '@/lib/constants'
-import { cn } from '@/lib/utils'
 import { ResourceAllDayRows } from './resource-axis'
 
 // Contract rule, not a runtime check: a view declaring `layout: 'vertical'`

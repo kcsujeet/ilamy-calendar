@@ -1,6 +1,6 @@
+import { cn } from '@ilamy/ui/lib/utils'
 import { memo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { cn } from '@/lib/utils'
 
 interface HorizontalGridHeaderContainerProps {
 	children?: React.ReactNode

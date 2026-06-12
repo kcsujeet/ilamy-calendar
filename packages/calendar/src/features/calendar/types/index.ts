@@ -1,15 +1,15 @@
-import type { Resource } from '@ilamy/types'
+import type {
+	BusinessHours,
+	CalendarEvent,
+	IlamyPlugin,
+	Resource,
+	WeekDays,
+} from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
-import type { BusinessHours, CalendarEvent, WeekDays } from '@/components/types'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
-import type { IlamyPlugin } from '@/features/plugins/lib/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
-
-// The shared contract owns Resource; re-exported here as the calendar
-// feature's public type home.
-export type { Resource } from '@ilamy/types'
 
 /**
  * Granularity of the time grid in minutes for day, week, and resource hour views.

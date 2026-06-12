@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
-import type { Resource } from '@ilamy/types'
+import type { CalendarEvent, Resource } from '@ilamy/types'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
-import type { CalendarEvent } from '@/components/types'
-import { DayView } from '@/features/calendar/components/views'
+import { DayView } from '@/features/calendar/components/views/day'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 
 const mockResources: Resource[] = [
 	{ id: '1', title: 'Resource 1' },

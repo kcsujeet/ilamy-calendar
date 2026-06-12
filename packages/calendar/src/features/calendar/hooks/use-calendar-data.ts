@@ -1,8 +1,7 @@
-import type { Resource } from '@ilamy/types'
+import type { CalendarEvent, Resource } from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CalendarEvent } from '@/components/types'
 import type { PluginRuntime } from '@/features/plugins/lib/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import {
 	filterEventsForResource,
 	getEventResourceIds,

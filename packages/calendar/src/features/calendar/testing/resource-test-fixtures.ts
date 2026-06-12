@@ -1,7 +1,6 @@
 import { expect } from 'bun:test'
-import type { BusinessHours, Resource } from '@ilamy/types'
-import type { CalendarEvent } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import type { BusinessHours, CalendarEvent, Resource } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 
 /**
  * Shared fixtures for the resource/business-hours test suites. Test files
@@ -37,6 +36,27 @@ export const resourceWeekInitialDate = dayjs('2025-01-01T00:00:00.000Z')
 // Shared assertion helpers — dedupe the business-hours test clone groups.
 // ---------------------------------------------------------------------------
 
+const paddedHour = (n: number): string => String(n).padStart(2, '0')
+
+/**
+ * Core of the business-hour range assertions: the first/last visible hours
+ * must satisfy the visible expectation, the first/last hidden hours the
+ * hidden one. The view-specific helpers below supply the expectations.
+ */
+function assertHourRange(
+	expectVisible: (hour: string) => void,
+	expectHidden: (hour: string) => void,
+	firstVisible: number,
+	lastVisible: number,
+	firstHidden: number,
+	lastHidden: number
+): void {
+	expectVisible(paddedHour(firstVisible))
+	expectVisible(paddedHour(lastVisible))
+	expectHidden(paddedHour(firstHidden))
+	expectHidden(paddedHour(lastHidden))
+}
+
 /**
  * Assert that a vertical day-view shows only the given business hour range.
  * Used by both the regular and resource "weekend fallback" business-hours tests.
@@ -51,19 +71,18 @@ export function assertVerticalBusinessHourRange(
 	firstHidden: number,
 	lastHidden: number
 ): void {
-	const padded = (n: number) => String(n).padStart(2, '0')
-	expect(
-		screen.getByTestId(`vertical-time-${padded(firstVisible)}`)
-	).toBeInTheDocument()
-	expect(
-		screen.getByTestId(`vertical-time-${padded(lastVisible)}`)
-	).toBeInTheDocument()
-	expect(
-		screen.queryByTestId(`vertical-time-${padded(firstHidden)}`)
-	).not.toBeInTheDocument()
-	expect(
-		screen.queryByTestId(`vertical-time-${padded(lastHidden)}`)
-	).not.toBeInTheDocument()
+	assertHourRange(
+		(hour) =>
+			expect(screen.getByTestId(`vertical-time-${hour}`)).toBeInTheDocument(),
+		(hour) =>
+			expect(
+				screen.queryByTestId(`vertical-time-${hour}`)
+			).not.toBeInTheDocument(),
+		firstVisible,
+		lastVisible,
+		firstHidden,
+		lastHidden
+	)
 }
 
 /**
@@ -81,21 +100,18 @@ export function assertResourceWeekBusinessHourRange(
 	firstHidden: number,
 	lastHidden: number
 ): void {
-	const padded = (n: number) => String(n).padStart(2, '0')
-	expect(
-		screen.getAllByTestId(`resource-week-time-label-${padded(firstVisible)}`)
-			.length
-	).toBeGreaterThan(0)
-	expect(
-		screen.getAllByTestId(`resource-week-time-label-${padded(lastVisible)}`)
-			.length
-	).toBeGreaterThan(0)
-	expect(
-		screen.queryAllByTestId(`resource-week-time-label-${padded(firstHidden)}`)
-			.length
-	).toBe(0)
-	expect(
-		screen.queryAllByTestId(`resource-week-time-label-${padded(lastHidden)}`)
-			.length
-	).toBe(0)
+	assertHourRange(
+		(hour) =>
+			expect(
+				screen.getAllByTestId(`resource-week-time-label-${hour}`).length
+			).toBeGreaterThan(0),
+		(hour) =>
+			expect(
+				screen.queryAllByTestId(`resource-week-time-label-${hour}`).length
+			).toBe(0),
+		firstVisible,
+		lastVisible,
+		firstHidden,
+		lastHidden
+	)
 }

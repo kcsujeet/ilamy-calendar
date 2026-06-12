@@ -1,7 +1,8 @@
+import type { PluginView } from '@ilamy/types'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { useCallback, useMemo, useState } from 'react'
-import { builtInViews } from '@/features/calendar/components/views'
-import type { PluginRuntime, PluginView } from '@/features/plugins/lib/types'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import { builtInViews } from '@/features/calendar/components/views/built-in-views'
+import type { PluginRuntime } from '@/features/plugins/lib/types'
 import { getMonthGridRange } from '@/lib/utils/date-utils'
 import type { CalendarView } from '@/types'
 

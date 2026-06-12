@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import type { RenderCurrentTimeIndicatorProps } from '@/features/calendar/types'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { CalendarView } from '@/types'
 import { CurrentTimeIndicator } from './current-time-indicator'
 

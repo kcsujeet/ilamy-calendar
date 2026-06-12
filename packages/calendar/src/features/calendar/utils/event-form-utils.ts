@@ -1,6 +1,6 @@
-import type { BusinessHours } from '@/components/types'
+import type { BusinessHours } from '@ilamy/types'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { calculateBusinessHoursRange } from '@/features/calendar/utils/business-hours'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 
 export const buildDateTime = (
 	date: Date,

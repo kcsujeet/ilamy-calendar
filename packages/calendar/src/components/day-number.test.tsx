@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import dayjs from '@/lib/configs/dayjs-config'
 import { DayNumber } from './day-number'
 
 describe('DayNumber', () => {

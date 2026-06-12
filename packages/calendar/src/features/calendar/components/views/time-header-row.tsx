@@ -1,9 +1,9 @@
+import { cn } from '@ilamy/ui/lib/utils'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { HourLabel } from '@/components/hour-label/hour-label'
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import { HEADER_ROW_HEIGHT } from '@/lib/constants'
-import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
 

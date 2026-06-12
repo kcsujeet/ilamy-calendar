@@ -8,7 +8,7 @@ import type {
 } from '@ilamy/calendar'
 import { SLOT_EVENT_FORM, SLOT_EVENT_MUTATION_SCOPE } from '@ilamy/calendar'
 import type { ReactNode } from 'react'
-import { RecurrenceEditDialog } from './components/recurrence-edit-dialog'
+import { RecurrenceEditDialog } from './components/recurrence-edit-dialog/recurrence-edit-dialog'
 import { RecurrenceFormSection } from './components/recurrence-form-section'
 import { recurrenceICalProperties } from './ical'
 import type { RecurrenceEditScope } from './types'

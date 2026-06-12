@@ -1,5 +1,5 @@
+import type { CalendarEvent } from '@ilamy/types'
 import { useCallback, useState } from 'react'
-import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 export interface ScopedMutationDialogState {

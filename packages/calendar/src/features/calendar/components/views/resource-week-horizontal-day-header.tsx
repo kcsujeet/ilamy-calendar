@@ -1,9 +1,9 @@
+import { cn } from '@ilamy/ui/lib/utils'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { HEADER_ROW_HEIGHT, HEADER_STAGGER_DELAY } from '@/lib/constants'
-import { cn } from '@/lib/utils'
 import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 

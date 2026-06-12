@@ -1,7 +1,7 @@
+import type { CalendarEvent } from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useCallback, useMemo, useState } from 'react'
-import type { CalendarEvent } from '@/components/types'
 import type { CellInfo, OpenEventFormInput } from '@/features/calendar/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { TranslatorFunction } from '@/lib/translations/types'
 
 /**

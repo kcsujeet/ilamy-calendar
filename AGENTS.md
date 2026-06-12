@@ -22,7 +22,7 @@ These are non-negotiable. Violating any of these is a bug.
 - NEVER use npm/node/pnpm as the package manager or runtime. Always use `bun` (invoke tools via `bunx`, e.g. the demo dev server runs `bunx vite`).
 - ALWAYS use the latest published version when adding a dependency. Check `npm view <pkg> version` for the true latest — never copy version numbers from existing in-repo examples or from memory. Verify peer/engine compatibility and confirm the new major has no breaking changes for the APIs used (per the docs-first rule).
 - NEVER use `YYYY-MM-DD` format for storage/transmission. Always use ISO strings.
-- NEVER import dayjs directly. Always import from `@/lib/dayjs-config`.
+- NEVER import dayjs directly. Always import the configured instance from `@ilamy/utils/dayjs`.
 - NEVER import `datetime` from rrule. Use dayjs.
 - NEVER add Claude/AI as co-author in commits.
 - NEVER commit directly to main. Use feature branches.
@@ -152,20 +152,18 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
       hooks/                                   # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,data,interaction}),
                                                #   use-smart-calendar-context, useProcessed*Events, use-effective-business-hours
       utils/                                   # business-hours, view-hours, event-form-utils
-    plugins/lib/                               # Plugin kernel + contract (re-exports @ilamy/types)
+    plugins/lib/                               # Plugin kernel; PluginRuntime (contract types live in @ilamy/types)
   components/
-    types.ts                                   # re-exports CalendarEvent/WeekDays/BusinessHours from @ilamy/types
-    calendar-slots.tsx                         # SLOT_* mount points + slot context re-exports
+    calendar-slots.tsx                         # SLOT_* mount points + host slot components (context shapes in @ilamy/types)
     drag-and-drop/                             # @dnd-kit integration
     vertical-grid/                             # Time-based grid (day/week views)
     horizontal-grid/                           # Date-based grid (month view)
     all-day-row/                               # All-day event bar
   lib/
-    configs/dayjs-config.ts                    # shim → @ilamy/utils/dayjs (ALWAYS import dayjs from here)
     translations/                              # Default translations, types
     layout/                                    # geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
     events/pipeline.ts                         # event filters (resource membership, range overlap)
-    utils/                                     # date-utils, export-ical (cn/safeDate re-exported from @ilamy/ui & @ilamy/utils)
+    utils/                                     # date-utils, normalize, export-ical (cn → @ilamy/ui/lib/utils, safeDate → @ilamy/utils/helpers)
     constants.ts                               # Global constants
 
 # Recurrence plugin (separate package):

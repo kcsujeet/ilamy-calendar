@@ -1,7 +1,7 @@
+import { cn } from '@ilamy/ui/lib/utils'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { HourLabel } from '@/components/hour-label/hour-label'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'
 import type { VerticalGridColProps } from './vertical-grid-col'
 

@@ -3,12 +3,12 @@ import type {
 	HorizontalRowSpec,
 	Resource,
 } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { memo, useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWeekEvents'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
 import { getDayKey } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'

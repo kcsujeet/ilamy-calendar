@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
+import dayjs from '@ilamy/utils/dayjs'
 import { render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
 import { AllDayRow } from './all-day-row'
 
 const mockDays = [

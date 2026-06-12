@@ -1,4 +1,4 @@
-import type { Dayjs } from '@/lib/configs/dayjs-config'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { getDayKey, isToday } from './date-utils'
 
 type Id = string | number

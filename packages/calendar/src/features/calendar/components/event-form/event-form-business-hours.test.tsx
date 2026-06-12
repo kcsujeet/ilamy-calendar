@@ -1,11 +1,10 @@
 /// <reference types="@testing-library/jest-dom" />
 import { beforeEach, describe, expect, test } from 'bun:test'
-import type { Resource } from '@ilamy/types'
+import type { CalendarEvent, Resource } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { CalendarEvent } from '@/components/types'
 import { EventForm } from '@/features/calendar/components/event-form/event-form'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import dayjs from '@/lib/configs/dayjs-config'
 
 const mockResources: Resource[] = [
 	{

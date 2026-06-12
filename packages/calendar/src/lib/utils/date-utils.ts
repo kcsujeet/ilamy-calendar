@@ -1,4 +1,4 @@
-import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 
 /** Whether the given date falls on today (calendar day, respecting timezone). */
 export function isToday(date: Dayjs): boolean {

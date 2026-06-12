@@ -1,6 +1,6 @@
-import type { Resource } from '@ilamy/types'
+import type { CalendarEvent, Resource } from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { createContext } from 'react'
-import type { CalendarEvent } from '@/components/types'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import type { CalendarEngineReturn } from '@/features/calendar/hooks/use-calendar-engine'
 import type {
@@ -9,7 +9,6 @@ import type {
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { TimeFormat } from '@/types'
 
 /**

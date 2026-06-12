@@ -1,5 +1,5 @@
+import type { BusinessHours } from '@ilamy/types'
 import { useMemo } from 'react'
-import type { BusinessHours } from '@/components/types'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 /**

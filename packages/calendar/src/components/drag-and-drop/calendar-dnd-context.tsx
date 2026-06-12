@@ -11,10 +11,10 @@ import {
 	useSensor,
 	useSensors,
 } from '@dnd-kit/core'
+import type { CalendarEvent } from '@ilamy/types'
 import type React from 'react'
 import { useRef } from 'react'
 import { EventMutationScopeSlot } from '@/components/calendar-slots'
-import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useScopedEventMutation } from '@/hooks/use-scoped-event-mutation'
 import { getUpdatedEvent } from './dnd-utils'

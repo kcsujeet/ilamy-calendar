@@ -4,13 +4,13 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@ilamy/ui/components/popover'
+import { cn } from '@ilamy/ui/lib/utils'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useDateTimeFormatters } from '@/hooks/use-date-time-formatters'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
-import { cn } from '@/lib/utils'
 import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 

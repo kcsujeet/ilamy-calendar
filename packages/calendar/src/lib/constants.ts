@@ -1,4 +1,4 @@
-import type { WeekDays } from '@/components'
+import type { WeekDays } from '@ilamy/types'
 
 export const GAP_BETWEEN_ELEMENTS = 1 // px (gap-1)
 export const DAY_NUMBER_HEIGHT = 24 // px (h-6)

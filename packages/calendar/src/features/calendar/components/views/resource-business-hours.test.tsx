@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen, within } from '@testing-library/react'
-import { DayView, WeekView } from '@/features/calendar/components/views'
+import { DayView } from '@/features/calendar/components/views/day'
+import { WeekView } from '@/features/calendar/components/views/week'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import {
 	assertResourceWeekBusinessHourRange,
@@ -9,7 +11,6 @@ import {
 	singleResource,
 	weekdayBusinessHours,
 } from '@/features/calendar/testing/resource-test-fixtures'
-import dayjs from '@/lib/configs/dayjs-config'
 
 describe('Resource Calendar Business Hours Integration', () => {
 	beforeEach(() => {

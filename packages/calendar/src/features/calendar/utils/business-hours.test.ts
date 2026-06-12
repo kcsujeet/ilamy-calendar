@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
-import type { BusinessHours } from '@/components/types'
-import dayjs from '@/lib/configs/dayjs-config'
+import type { BusinessHours } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import { isBusinessHour } from './business-hours'
 
 describe('isBusinessHour', () => {

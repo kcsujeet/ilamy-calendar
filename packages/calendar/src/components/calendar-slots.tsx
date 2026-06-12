@@ -6,15 +6,6 @@ import type { ReactNode } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { ScopedMutationDialogState } from '@/hooks/use-scoped-event-mutation'
 
-// The slot context shapes are part of the plugin contract and now live in the
-// shared `@ilamy/types` package. Re-exported here so the existing
-// `@/components/calendar-slots` call sites stay unchanged. The SLOT_* names and
-// the host slot components below are runtime and stay in the core.
-export type {
-	EventFormSlotContext,
-	EventMutationScopeSlotContext,
-} from '@ilamy/types'
-
 /**
  * The calendar's plugin mount points. These belong to the host (the components
  * that render them: the event form and the drag-and-drop flow), NOT to the

@@ -1,7 +1,7 @@
+import type { CalendarEvent } from '@ilamy/types'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useMemo } from 'react'
-import type { CalendarEvent } from '@/components/types'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import type { Dayjs } from '@/lib/configs/dayjs-config'
 import {
 	eventOverlapsRange,
 	filterEventsForResource,

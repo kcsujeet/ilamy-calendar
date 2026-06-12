@@ -1,5 +1,5 @@
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Resource } from '@/features/resource-calendar/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 
 interface ResourceCellProps {

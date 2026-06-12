@@ -8,7 +8,7 @@ import { PopoverClose } from '@radix-ui/react-popover'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Calendar } from '@/components/ui/calendar'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 

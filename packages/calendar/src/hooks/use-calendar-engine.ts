@@ -1,24 +1,21 @@
 import {
 	type ComponentType,
 	type ReactNode,
-	useCallback,
 	useEffect,
 	useMemo,
 	useRef,
-	useState,
 } from 'react'
 import type { BusinessHours, CalendarEvent } from '@/components/types'
+import { useCalendarConfig } from '@/features/calendar/hooks/use-calendar-config'
+import { useCalendarData } from '@/features/calendar/hooks/use-calendar-data'
+import { useCalendarInteraction } from '@/features/calendar/hooks/use-calendar-interaction'
+import { useCalendarNavigation } from '@/features/calendar/hooks/use-calendar-navigation'
+import type { CellInfo, OpenEventFormInput } from '@/features/calendar/types'
 import { createPluginRuntime } from '@/features/plugins/lib/create-plugin-runtime'
 import type { IlamyPlugin, PluginView } from '@/features/plugins/lib/types'
-import dayjs, {
-	type Dayjs,
-	type ManipulateType,
-} from '@/lib/configs/dayjs-config'
-import { defaultTranslations } from '@/lib/translations/default'
+import dayjs, { type Dayjs } from '@/lib/configs/dayjs-config'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
-import { getMonthWeeks, getWeekDays } from '@/lib/utils/date-utils'
 import type { CalendarView } from '@/types'
-import { DAY_MAX_EVENTS_DEFAULT } from '../lib/constants'
 
 export interface CalendarEngineConfig {
 	events: CalendarEvent[]
@@ -36,6 +33,10 @@ export interface CalendarEngineConfig {
 	translations?: Translations
 	translator?: TranslatorFunction
 	plugins?: IlamyPlugin[]
+	onEventClick?: (event: CalendarEvent) => void
+	onCellClick?: (info: CellInfo) => void
+	disableEventClick?: boolean
+	disableCellClick?: boolean
 }
 
 export interface CalendarEngineReturn {
@@ -65,7 +66,7 @@ export interface CalendarEngineReturn {
 		scope: unknown
 	) => void
 	applyScopedDelete: (event: CalendarEvent, scope: unknown) => void
-	openEventForm: (eventData?: Partial<CalendarEvent>) => void
+	openEventForm: (eventData?: OpenEventFormInput) => void
 	closeEventForm: () => void
 	setSelectedEvent: React.Dispatch<React.SetStateAction<CalendarEvent | null>>
 	setIsEventFormOpen: React.Dispatch<React.SetStateAction<boolean>>
@@ -79,37 +80,20 @@ export interface CalendarEngineReturn {
 	t: TranslatorFunction
 }
 
-const VIEW_UNITS: Record<string, ManipulateType> = {
-	day: 'day',
-	week: 'week',
-	month: 'month',
-	year: 'year',
-}
-
-const calculateViewRange = (
-	date: Dayjs,
-	view: CalendarView,
-	firstDayOfWeek: number
-): { start: Dayjs; end: Dayjs } => {
-	if (view === 'day' || view === 'year') {
-		return { start: date.startOf(view), end: date.endOf(view) }
-	}
-	if (view === 'week') {
-		const days = getWeekDays(date, firstDayOfWeek)
-		const weekStart = days.at(0) ?? date
-		const weekEnd = days.at(-1) ?? date
-		return { start: weekStart.startOf('day'), end: weekEnd.endOf('day') }
-	}
-	// month view: 6 weeks × 7 days — also the default range for plugin/unknown views
-	const weeks = getMonthWeeks(date, firstDayOfWeek)
-	const gridStart = weeks.at(0)?.at(0) ?? date
-	const gridEnd = weeks.at(-1)?.at(-1) ?? date
-	return { start: gridStart.startOf('day'), end: gridEnd.endOf('day') }
+/**
+ * Click handlers the engine derives from the interaction slice. Returned
+ * ALONGSIDE CalendarEngineReturn and destructured off by the provider before
+ * the context spread, so the merged context value keeps its exact v1 shape
+ * (the handlers surface as `onEventClick` / `onCellClick`).
+ */
+export interface CalendarEngineHandlers {
+	handleEventClick: (event: CalendarEvent) => void
+	handleDateClick: (info: CellInfo) => void
 }
 
 export const useCalendarEngine = (
 	config: CalendarEngineConfig
-): CalendarEngineReturn => {
+): CalendarEngineReturn & CalendarEngineHandlers => {
 	const {
 		events = [],
 		firstDayOfWeek = 0,
@@ -125,55 +109,61 @@ export const useCalendarEngine = (
 		timezone,
 		translations,
 		translator,
+		onEventClick,
+		onCellClick,
+		disableEventClick,
+		disableCellClick,
 	} = config
 
 	const { plugins = [] } = config
+
+	// Slices, composed in order: config → pluginRuntime → navigation → data →
+	// interaction. pluginRuntime is the named fifth cross-cutting dependency
+	// (data, navigation, AND the provider's renderSlot/getProviders consume it).
+	const configSlice = useCalendarConfig({
+		firstDayOfWeek,
+		businessHours,
+		locale,
+		translations,
+		translator,
+	})
+
 	const pluginRuntime = useMemo(() => createPluginRuntime(plugins), [plugins])
 
-	const [currentDate, setCurrentDate] = useState<Dayjs>(
-		dayjs.isDayjs(initialDate) ? initialDate : dayjs(initialDate)
-	)
-	const [view, setView] = useState<CalendarView>(initialView)
-	const [currentEvents, setCurrentEvents] = useState<CalendarEvent[]>(events)
-	const [isEventFormOpen, setIsEventFormOpen] = useState(false)
-	const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
-	const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null)
-	const [currentLocale, setCurrentLocale] = useState(locale || 'en')
-	const lastEventsProp = useRef(events)
-	const lastTimezoneProp = useRef(timezone)
+	const navigation = useCalendarNavigation({
+		initialDate,
+		initialView,
+		firstDayOfWeek,
+		onDateChange,
+		onViewChange,
+		pluginRuntime,
+	})
+
+	const data = useCalendarData({
+		events,
+		pluginRuntime,
+		getCurrentViewRange: navigation.getCurrentViewRange,
+		onEventAdd,
+		onEventUpdate,
+		onEventDelete,
+	})
+
+	const interaction = useCalendarInteraction({
+		currentDate: navigation.currentDate,
+		t: configSlice.t,
+		disableEventClick,
+		disableCellClick,
+		onEventClick,
+		onCellClick,
+	})
+
+	// Cross-cutting effects: a config-prop trigger mutates navigation AND data
+	// state, so they live here in the composer, not inside any single slice.
+	const { setCurrentLocale } = configSlice
+	const { setCurrentDate } = navigation
+	const { setCurrentEvents } = data
+
 	const lastLocaleProp = useRef<string | undefined>(undefined)
-
-	const t: TranslatorFunction = useMemo(() => {
-		if (translator) return translator
-		const dict = translations || defaultTranslations
-		return (key: string) => dict[key as keyof Translations] || key
-	}, [translations, translator])
-
-	const getEventsForDateRange = useCallback(
-		(startDate: Dayjs, endDate: Dayjs): CalendarEvent[] =>
-			pluginRuntime.transformEvents(currentEvents, {
-				start: startDate,
-				end: endDate,
-			}),
-		[currentEvents, pluginRuntime]
-	)
-
-	const getCurrentViewRange = useCallback(() => {
-		return calculateViewRange(currentDate, view, firstDayOfWeek)
-	}, [currentDate, view, firstDayOfWeek])
-
-	const processedEvents = useMemo(() => {
-		const { start, end } = getCurrentViewRange()
-		return getEventsForDateRange(start, end)
-	}, [getEventsForDateRange, getCurrentViewRange])
-
-	useEffect(() => {
-		if (events !== lastEventsProp.current) {
-			setCurrentEvents(events)
-			lastEventsProp.current = events
-		}
-	}, [events])
-
 	useEffect(() => {
 		if (locale && locale !== lastLocaleProp.current) {
 			setCurrentLocale(locale)
@@ -181,8 +171,9 @@ export const useCalendarEngine = (
 			setCurrentDate((prevDate) => prevDate.locale(locale))
 			lastLocaleProp.current = locale
 		}
-	}, [locale])
+	}, [locale, setCurrentLocale, setCurrentDate])
 
+	const lastTimezoneProp = useRef(timezone)
 	useEffect(() => {
 		if (timezone && timezone !== lastTimezoneProp.current) {
 			dayjs.tz.setDefault(timezone)
@@ -196,175 +187,44 @@ export const useCalendarEngine = (
 			)
 			lastTimezoneProp.current = timezone
 		}
-	}, [timezone])
-
-	const updateDateAndNotify = useCallback(
-		(newDate: Dayjs) => {
-			setCurrentDate(newDate)
-			const range = calculateViewRange(newDate, view, firstDayOfWeek)
-			onDateChange?.(newDate, range)
-		},
-		[onDateChange, view, firstDayOfWeek]
-	)
-
-	const selectDate = updateDateAndNotify
-
-	const navigatePeriod = useCallback(
-		(direction: 1 | -1) => {
-			const unit =
-				VIEW_UNITS[view] ??
-				pluginRuntime.getViews().find((v) => v.name === view)?.navigationUnit ??
-				'day'
-			let newDate = currentDate.subtract(1, unit)
-			if (direction === 1) {
-				newDate = currentDate.add(1, unit)
-			}
-			updateDateAndNotify(newDate)
-		},
-		[currentDate, view, updateDateAndNotify, pluginRuntime]
-	)
-
-	const nextPeriod = useCallback(() => navigatePeriod(1), [navigatePeriod])
-	const prevPeriod = useCallback(() => navigatePeriod(-1), [navigatePeriod])
-
-	const today = useCallback(
-		() => updateDateAndNotify(dayjs()),
-		[updateDateAndNotify]
-	)
-
-	const addEvent = useCallback(
-		(event: CalendarEvent) => {
-			setCurrentEvents((prev) => [...prev, event])
-			onEventAdd?.(event)
-		},
-		[onEventAdd]
-	)
-
-	const updateEvent = useCallback(
-		(eventId: string | number, updates: Partial<CalendarEvent>) => {
-			const eventToUpdate = currentEvents.find((event) => event.id === eventId)
-			if (!eventToUpdate) {
-				return
-			}
-
-			const newEvent = { ...eventToUpdate, ...updates }
-			setCurrentEvents((prev) =>
-				prev.map((event) => (event.id === eventId ? newEvent : event))
-			)
-			onEventUpdate?.(newEvent)
-		},
-		[currentEvents, onEventUpdate]
-	)
-
-	const applyScopedEdit = useCallback(
-		(event: CalendarEvent, updates: Partial<CalendarEvent>, scope: unknown) => {
-			const manager = pluginRuntime.getEventManager(event)
-			if (!manager?.applyEdit) {
-				return
-			}
-			onEventUpdate?.({ ...event, ...updates })
-			setCurrentEvents(
-				manager.applyEdit({ event, updates, currentEvents, scope })
-			)
-		},
-		[currentEvents, onEventUpdate, pluginRuntime]
-	)
-
-	const applyScopedDelete = useCallback(
-		(event: CalendarEvent, scope: unknown) => {
-			const manager = pluginRuntime.getEventManager(event)
-			if (!manager?.applyDelete) {
-				return
-			}
-			onEventDelete?.(event)
-			setCurrentEvents(manager.applyDelete({ event, currentEvents, scope }))
-		},
-		[currentEvents, onEventDelete, pluginRuntime]
-	)
-
-	const deleteEvent = useCallback(
-		(eventId: string | number) => {
-			const eventToDelete = currentEvents.find((e) => e.id === eventId)
-			if (!eventToDelete) {
-				return
-			}
-
-			setCurrentEvents((prev) => prev.filter((e) => e.id !== eventId))
-			onEventDelete?.(eventToDelete)
-		},
-		[currentEvents, onEventDelete]
-	)
-
-	const openEventForm = useCallback(
-		(eventData?: Partial<CalendarEvent>) => {
-			if (eventData?.start) {
-				setSelectedDate(eventData.start)
-			}
-			const start = eventData?.start ?? currentDate
-			setSelectedEvent({
-				title: t('newEvent'),
-				start,
-				end: eventData?.end ?? start.add(1, 'hour'),
-				resourceId: eventData?.resourceId,
-				description: '',
-				allDay: eventData?.allDay ?? false,
-			} as CalendarEvent)
-			setIsEventFormOpen(true)
-		},
-		[currentDate, t]
-	)
-
-	const closeEventForm = useCallback(() => {
-		setSelectedDate(null)
-		setSelectedEvent(null)
-		setIsEventFormOpen(false)
-	}, [])
-
-	const handleViewChange = useCallback(
-		(newView: CalendarView) => {
-			setView(newView)
-			onViewChange?.(newView)
-			// View change affects visible range — notify consumers
-			const range = calculateViewRange(currentDate, newView, firstDayOfWeek)
-			onDateChange?.(currentDate, range)
-		},
-		[onViewChange, onDateChange, currentDate, firstDayOfWeek]
-	)
+	}, [timezone, setCurrentDate, setCurrentEvents])
 
 	return {
-		currentDate,
-		view,
-		events: processedEvents,
-		rawEvents: currentEvents,
-		isEventFormOpen,
-		selectedEvent,
-		selectedDate,
+		currentDate: navigation.currentDate,
+		view: navigation.view,
+		events: data.events,
+		rawEvents: data.rawEvents,
+		isEventFormOpen: interaction.isEventFormOpen,
+		selectedEvent: interaction.selectedEvent,
+		selectedDate: interaction.selectedDate,
 		firstDayOfWeek,
-		dayMaxEvents: DAY_MAX_EVENTS_DEFAULT,
-		currentLocale,
+		dayMaxEvents: configSlice.dayMaxEvents,
+		currentLocale: configSlice.currentLocale,
 		businessHours,
-		setCurrentDate,
-		selectDate,
-		setView: handleViewChange,
-		nextPeriod,
-		prevPeriod,
-		today,
-		addEvent,
-		updateEvent,
-		applyScopedEdit,
-		applyScopedDelete,
-		deleteEvent,
-		openEventForm,
-		closeEventForm,
-		setSelectedEvent,
-		setIsEventFormOpen,
-		setSelectedDate,
-		getEventsForDateRange,
+		setCurrentDate: navigation.setCurrentDate,
+		selectDate: navigation.selectDate,
+		setView: navigation.setView,
+		nextPeriod: navigation.nextPeriod,
+		prevPeriod: navigation.prevPeriod,
+		today: navigation.today,
+		addEvent: data.addEvent,
+		updateEvent: data.updateEvent,
+		applyScopedEdit: data.applyScopedEdit,
+		applyScopedDelete: data.applyScopedDelete,
+		deleteEvent: data.deleteEvent,
+		openEventForm: interaction.openEventForm,
+		closeEventForm: interaction.closeEventForm,
+		setSelectedEvent: interaction.setSelectedEvent,
+		setIsEventFormOpen: interaction.setIsEventFormOpen,
+		setSelectedDate: interaction.setSelectedDate,
+		getEventsForDateRange: data.getEventsForDateRange,
 		getEventManager: pluginRuntime.getEventManager,
 		renderSlot: pluginRuntime.renderSlot,
 		collect: pluginRuntime.collect,
 		getViews: pluginRuntime.getViews,
 		getProviders: pluginRuntime.getProviders,
-		t,
+		t: configSlice.t,
+		handleEventClick: interaction.handleEventClick,
+		handleDateClick: interaction.handleDateClick,
 	}
 }

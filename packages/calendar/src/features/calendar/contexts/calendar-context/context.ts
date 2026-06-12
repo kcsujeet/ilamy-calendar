@@ -22,6 +22,7 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellInfo) => void
 	isCellDisabled?: (info: CellInfo) => boolean
+	locale?: string
 	timezone?: string
 	disableCellClick?: boolean
 	disableEventClick?: boolean

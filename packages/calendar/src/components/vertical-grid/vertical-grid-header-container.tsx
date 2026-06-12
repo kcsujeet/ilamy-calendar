@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 import { cn } from '@/lib/utils'
 

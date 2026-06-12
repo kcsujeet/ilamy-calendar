@@ -10,6 +10,8 @@ import {
 } from '@testing-library/react'
 import type { EventFormProps } from '@/components/event-form/event-form'
 import type { CalendarEvent } from '@/components/types'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import type { CellInfo } from '@/features/calendar/types'
 import dayjs from '@/lib/configs/dayjs-config'
 import type { Resource } from '../../types'
 import { IlamyResourceCalendar } from './ilamy-resource-calendar'
@@ -18,6 +20,22 @@ const translator = (key: string) => `Translated: ${key}`
 const customRenderEvent = (event: CalendarEvent) => (
 	<div data-testid={`custom-event-${event.id}`}>Custom: {event.title}</div>
 )
+
+// Renders inside the provider tree (via headerComponent) and forwards a fixed
+// CellInfo into the context's onCellClick — lets tests drive the cell-click
+// fallback with inputs (allDay: true) the resource DOM never produces.
+const CellClickProbe = ({ info }: { info: CellInfo }) => {
+	const { onCellClick } = useSmartCalendarContext()
+	return (
+		<button
+			data-testid="probe-cell-click"
+			onClick={() => onCellClick(info)}
+			type="button"
+		>
+			probe cell click
+		</button>
+	)
+}
 
 const CustomResourceEventForm = ({
 	open,
@@ -37,6 +55,9 @@ const CustomResourceEventForm = ({
 		</span>
 		<span data-testid="selected-event-resource-ids">
 			{selectedEvent?.resourceIds?.join(',') || 'no-resources'}
+		</span>
+		<span data-testid="selected-event-all-day">
+			{selectedEvent?.allDay ? 'all-day' : 'timed'}
 		</span>
 		<button
 			data-testid="add-event-btn"
@@ -1096,6 +1117,86 @@ describe('IlamyResourceCalendar', () => {
 
 			// The predicate received the full resource object, not just the id.
 			expect(seenResourceIds).toContain('resource-1')
+		})
+	})
+
+	describe('cell click fallback (no onCellClick)', () => {
+		const allDayCellInfo: CellInfo = {
+			start: dayjs('2025-08-04T00:00:00.000Z'),
+			end: dayjs('2025-08-04T23:59:59.999Z'),
+			allDay: true,
+			resource: mockResources.at(0),
+		}
+
+		it('opens the form with a new event carrying the clicked cell resource', async () => {
+			render(
+				<IlamyResourceCalendar
+					events={[]}
+					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="month"
+					renderEventForm={CustomResourceEventForm}
+					resources={mockResources}
+				/>
+			)
+
+			const row = screen.getByTestId('horizontal-row-resource-2')
+			fireEvent.click(within(row).getByTestId('day-cell-2025-08-04'))
+
+			await waitFor(() => {
+				expect(screen.getByTestId('form-open')).toHaveTextContent('open')
+			})
+			expect(screen.getByTestId('selected-event-title')).toHaveTextContent(
+				'New Event'
+			)
+			expect(
+				screen.getByTestId('selected-event-resource-id')
+			).toHaveTextContent('resource-2')
+			expect(screen.getByTestId('selected-event-all-day')).toHaveTextContent(
+				'timed'
+			)
+		})
+
+		it('respects the allDay flag of the clicked cell (v2 unified behavior)', async () => {
+			render(
+				<IlamyResourceCalendar
+					events={[]}
+					headerComponent={<CellClickProbe info={allDayCellInfo} />}
+					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="month"
+					renderEventForm={CustomResourceEventForm}
+					resources={mockResources}
+				/>
+			)
+
+			fireEvent.click(screen.getByTestId('probe-cell-click'))
+
+			await waitFor(() => {
+				expect(screen.getByTestId('form-open')).toHaveTextContent('open')
+			})
+			expect(screen.getByTestId('selected-event-all-day')).toHaveTextContent(
+				'all-day'
+			)
+			expect(
+				screen.getByTestId('selected-event-resource-id')
+			).toHaveTextContent('resource-1')
+		})
+
+		it('ignores the fallback entirely when disableCellClick is set', () => {
+			render(
+				<IlamyResourceCalendar
+					disableCellClick={true}
+					events={[]}
+					headerComponent={<CellClickProbe info={allDayCellInfo} />}
+					initialDate={dayjs('2025-08-04T00:00:00.000Z')}
+					initialView="month"
+					renderEventForm={CustomResourceEventForm}
+					resources={mockResources}
+				/>
+			)
+
+			fireEvent.click(screen.getByTestId('probe-cell-click'))
+
+			expect(screen.getByTestId('form-open')).toHaveTextContent('closed')
 		})
 	})
 })

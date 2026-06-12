@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { BusinessHours } from '@/components/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 /**
  * Returns the resource-specific business hours when available, otherwise

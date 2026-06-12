@@ -3,10 +3,10 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import { EventFormDialog } from '@/components/event-form/event-form-dialog'
 import { Header } from '@/components/header'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { ResourceDayView } from '@/features/resource-calendar/components/day-view'
 import { ResourceMonthView } from '@/features/resource-calendar/components/month-view'
 import { ResourceWeekView } from '@/features/resource-calendar/components/week-view'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 export const ResourceCalendarBody: React.FC = () => {
 	const { view } = useSmartCalendarContext()

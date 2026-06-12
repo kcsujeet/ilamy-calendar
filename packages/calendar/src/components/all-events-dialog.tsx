@@ -8,7 +8,7 @@ import type React from 'react'
 import { useImperativeHandle, useState } from 'react'
 import type { CalendarEvent } from '@/components'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 export interface SelectedDayEvents {
 	day: Dayjs

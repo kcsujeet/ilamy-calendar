@@ -235,6 +235,38 @@ by ordering the `resources` array itself.
 
 ---
 
+## Provider unification (v2 structure overhaul, Phase 2)
+
+### Resource calendar: cell-click fallback now respects the cell's `allDay` flag
+
+**Before (v1):** clicking a cell on `IlamyResourceCalendar` without a custom `onCellClick`
+always pre-filled the event form with `allDay: false`, even for all-day cells.
+
+**After (v2):** the pre-filled event respects the clicked cell's flag (`allDay: true` for
+all-day cells), matching what `IlamyCalendar` has always done. If you depended on the old
+hardcode, pass `onCellClick` and open the form yourself with the shape you want.
+
+### `getEventsForResource` on `useIlamyCalendarContext()` is now optional
+
+It only ever existed at runtime on resource calendars; the v1 type claimed it was always
+present, so calling it on a regular calendar compiled and then crashed. v2 types it honestly.
+
+**Before (v1)**
+
+```ts
+const { getEventsForResource } = useIlamyCalendarContext()
+const roomEvents = getEventsForResource('room-1')
+```
+
+**After (v2)**
+
+```ts
+const { getEventsForResource } = useIlamyCalendarContext()
+const roomEvents = getEventsForResource?.('room-1') ?? []
+```
+
+---
+
 ## Summary checklist
 
 - [ ] Add `import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'` and pass `plugins={[recurrencePlugin()]}` to `<IlamyCalendar>` / `<IlamyResourceCalendar>`.
@@ -246,3 +278,5 @@ by ordering the `resources` array itself.
 - [ ] If you have TypeScript code that narrows `CalendarView` as an exhaustive union, update it for the new `string` type.
 - [ ] If you read properties off `event.data` / `resource.data`, add narrowing or a boundary cast (`Record<string, unknown>` now).
 - [ ] Remove any use of `Resource.position`; order the `resources` array instead.
+- [ ] Resource calendars: if you relied on cell-click always creating `allDay: false` events, handle it in `onCellClick`.
+- [ ] Call `getEventsForResource?.(id) ?? []` — it is `undefined` on regular calendars now (the type finally says so).

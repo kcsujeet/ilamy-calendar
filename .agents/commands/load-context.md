@@ -138,9 +138,10 @@ Multi-resource calendar views:
 
 #### Hooks (`src/hooks/`)
 
-- `use-calendar-engine.ts` - Main calendar engine
-- `use-smart-calendar-context.ts` - Type-safe context access
+- `use-calendar-engine.ts` - Engine composer: composes the slice hooks in `src/features/calendar/hooks/` (use-calendar-{config,navigation,data,interaction}) plus cross-cutting locale/timezone effects
 - `use-autocomplete-timepicker.ts` - Time picker autocomplete
+
+Note: `use-smart-calendar-context.ts` (type-safe context access) lives in `src/features/calendar/hooks/`.
 
 #### Library (`src/lib/`)
 

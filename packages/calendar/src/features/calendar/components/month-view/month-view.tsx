@@ -1,7 +1,7 @@
 import type React from 'react'
 import { useMemo } from 'react'
 import { HorizontalGrid } from '@/components/horizontal-grid/horizontal-grid'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { getMonthWeeks } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import { MonthHeader } from './month-header'

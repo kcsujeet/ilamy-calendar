@@ -1,6 +1,6 @@
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { isToday } from '@/lib/utils/date-utils'

@@ -8,10 +8,16 @@ export {
 export type { EventFormProps } from './components/event-form/event-form'
 export type { BusinessHours, CalendarEvent, WeekDays } from './components/types'
 export { IlamyCalendar } from './features/calendar/components/ilamy-calendar'
+// Public calendar context hooks
+export {
+	type IlamyCalendarApi,
+	useIlamyCalendarContext,
+} from './features/calendar/hooks/use-smart-calendar-context'
 export type {
 	CalendarClassesOverride,
 	CellInfo,
 	IlamyCalendarProps,
+	OpenEventFormInput,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from './features/calendar/types'
@@ -26,11 +32,6 @@ export type { IlamyResourceCalendarProps } from './features/resource-calendar/co
 export { IlamyResourceCalendar } from './features/resource-calendar/components/ilamy-resource-calendar/ilamy-resource-calendar'
 // Resource calendar types
 export type { Resource } from './features/resource-calendar/types'
-// Public calendar context hooks
-export {
-	type IlamyCalendarApi,
-	useIlamyCalendarContext,
-} from './hooks/use-smart-calendar-context'
 export type { Dayjs, ManipulateType } from './lib/configs/dayjs-config'
 // Public dayjs (configured instance) for plugin date math
 export { default as dayjs } from './lib/configs/dayjs-config'

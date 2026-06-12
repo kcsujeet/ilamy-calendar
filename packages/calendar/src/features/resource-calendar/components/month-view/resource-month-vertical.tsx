@@ -1,12 +1,12 @@
 import type React from 'react'
 import { ResourceCell } from '@/components/resource-cell'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { keys } from '@/lib/utils/keys'
 
 export const ResourceMonthVertical: React.FC = () => {
-	const { currentDate, resources } = useSmartCalendarContext()
+	const { currentDate, resources = [] } = useSmartCalendarContext()
 	const startOfMonth = currentDate.startOf('month')
 	const daysInMonth = Array.from(
 		{ length: currentDate.daysInMonth() },

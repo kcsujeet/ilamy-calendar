@@ -1,7 +1,7 @@
 import type React from 'react'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { TimeHeaderRow } from '@/features/resource-calendar/components/time-header-row'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 import { useResourceWeekViewData } from '../use-resource-week-view-data'
 import { ResourceWeekHorizontalDayHeader } from './resource-week-horizontal-day-header'

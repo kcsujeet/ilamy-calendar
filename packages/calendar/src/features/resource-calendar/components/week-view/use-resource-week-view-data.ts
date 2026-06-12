@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { getWeekDays } from '@/lib/utils/date-utils'
 
 export function useResourceWeekViewData() {
 	const {
 		currentDate,
 		firstDayOfWeek,
-		resources,
+		resources = [],
 		weekViewGranularity,
 		businessHours,
 		hideNonBusinessHours,

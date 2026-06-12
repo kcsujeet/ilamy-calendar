@@ -9,7 +9,7 @@ import { MonthView } from '@/features/calendar/components/month-view/month-view'
 import { WeekView } from '@/features/calendar/components/week-view/week-view'
 import { YearView } from '@/features/calendar/components/year-view/year-view'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 // oxlint-disable-next-line no-duplicates
 import '@/lib/configs/dayjs-config'
 import type {

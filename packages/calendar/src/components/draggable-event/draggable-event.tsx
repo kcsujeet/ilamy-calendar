@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 import { memo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import type { CalendarEvent } from '@/components/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { cn } from '@/lib/utils'
 
 const getBorderRadiusClass = (

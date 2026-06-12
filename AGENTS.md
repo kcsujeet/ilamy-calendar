@@ -145,7 +145,8 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
       ilamy-calendar.tsx                       # Main component
       day-view/ week-view/ month-view/ year-view/  # View components
       contexts/calendar-context/               # CalendarProvider, all state
-      hooks/                                   # useProcessedDayEvents, useProcessedWeekEvents
+      hooks/                                   # engine slices (use-calendar-{config,navigation,data,interaction}),
+                                               #   use-smart-calendar-context, useProcessed*Events
       utils/                                   # business-hours, view-hours, event-form-utils
     plugins/lib/                               # Plugin kernel + contract (re-exports @ilamy/types)
     resource-calendar/
@@ -162,8 +163,7 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
     horizontal-grid/                           # Date-based grid (month view)
     all-day-row/                               # All-day event bar
   hooks/
-    use-calendar-engine.ts                     # Main calendar engine
-    use-smart-calendar-context.ts              # Type-safe context access
+    use-calendar-engine.ts                     # Engine composer (slices + cross-cutting effects)
   lib/
     configs/dayjs-config.ts                    # shim → @ilamy/utils/dayjs (ALWAYS import dayjs from here)
     translations/                              # Default translations, types

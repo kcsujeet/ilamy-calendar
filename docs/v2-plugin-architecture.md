@@ -137,7 +137,7 @@ The main entry **must not import any plugin**, or tree-shaking and the opt-in mo
 
 ### 5.1 Curated public context surface (`IlamyCalendarApi`)
 
-The split already exists in `src/hooks/use-smart-calendar-context.ts` and v2 preserves it:
+The split already exists in `src/features/calendar/hooks/use-smart-calendar-context.ts` and v2 preserves it:
 
 - `useSmartCalendarContext` (internal, **not exported**) returns the full `SmartCalendarContextType` (all engine state + raw React setters). Library components use this.
 - `useIlamyCalendarContext` (public) returns the hand-picked `IlamyCalendarApi` (renamed from today's `UseIlamyCalendarContextReturn`). Plugins and consumers use this.

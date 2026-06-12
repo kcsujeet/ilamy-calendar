@@ -20,13 +20,13 @@ CalendarContext                             ResourceCalendarContext
               (public API — limited surface)
 ```
 
-Both providers use `useCalendarEngine()` internally for shared state management (date navigation, events, CRUD, translations). `ResourceCalendarProvider` extends the engine with resource-specific state.
+Both providers consume `useCalendarContextValue()` (defined in `calendar-context/provider.tsx`) — the single assembly point that calls `useCalendarEngine()` and merges in the presentation props. `ResourceCalendarProvider` spreads that shared value and adds the resource-specific fields on top.
 
 ## Public API
 
 ### useIlamyCalendarContext()
 
-`src/hooks/use-smart-calendar-context.ts`
+`src/features/calendar/hooks/use-smart-calendar-context.ts`
 
 The only hook exported for library consumers. Returns a curated subset of context values.
 
@@ -51,7 +51,7 @@ The only hook exported for library consumers. Returns a curated subset of contex
 | `addEvent` | `(event: CalendarEvent) => void` | Add a new event |
 | `updateEvent` | `(eventId, updates) => void` | Update an existing event |
 | `deleteEvent` | `(eventId) => void` | Delete an event |
-| `getEventsForResource` | `(resourceId) => CalendarEvent[]` | Get events for a resource |
+| `getEventsForResource` | `((resourceId) => CalendarEvent[]) \| undefined` | Get events for a resource — only present on resource calendars; call as `getEventsForResource?.(id) ?? []` |
 
 **Navigation:**
 
@@ -75,7 +75,7 @@ The only hook exported for library consumers. Returns a curated subset of contex
 
 ### useSmartCalendarContext()
 
-`src/hooks/use-smart-calendar-context.ts`
+`src/features/calendar/hooks/use-smart-calendar-context.ts`
 
 Unified internal hook used by all library components. Auto-detects whether the component is inside a `CalendarProvider` or `ResourceCalendarProvider` and returns the appropriate context.
 
@@ -89,21 +89,21 @@ const { updateEvent } = useSmartCalendarContext((ctx) => ({
 }))
 ```
 
-Returns `SmartCalendarContextType` which is an alias for `ResourceCalendarContextType` (the superset). In regular calendars, resource-specific fields are `undefined`.
+Returns `SmartCalendarContextType` = `CalendarContextType & Partial<ResourceContextFields>` — the resource-specific fields are honestly optional. In regular calendars they are `undefined`, and the type says so (no cast).
 
 ### useCalendarEngine()
 
 `src/hooks/use-calendar-engine.ts`
 
-Core engine hook used by both providers. Manages all shared state:
+Engine composer used (through `useCalendarContextValue`) by both providers. Composes four slice hooks from `src/features/calendar/hooks/`, in order, plus the plugin runtime:
 
-- Date navigation (`currentDate`, `view`, `nextPeriod`, `prevPeriod`, `today`)
-- Event state (`events`, `rawEvents`, CRUD operations)
-- Recurring event operations (`updateRecurringEvent`, `deleteRecurringEvent`)
-- Event form state (`isEventFormOpen`, `selectedEvent`, `openEventForm`, `closeEventForm`)
-- Recurrence expansion (`getEventsForDateRange` calls `generateRecurringEvents` for rrule events)
-- Translation (`t()` function)
-- Locale/timezone management
+1. `useCalendarConfig` — `t()`, `currentLocale` state, `dayMaxEvents`, `businessHours`
+2. `pluginRuntime` (`useMemo(createPluginRuntime)`) — the cross-cutting fifth dependency
+3. `useCalendarNavigation` — `currentDate`/`view` state, `nextPeriod`/`prevPeriod`/`today`, view-range math
+4. `useCalendarData` — event store, prop sync, CRUD, plugin-scoped mutations (`applyScopedEdit`/`applyScopedDelete`)
+5. `useCalendarInteraction` — selection state, `openEventForm`/`closeEventForm` (resource-aware via `OpenEventFormInput`), `handleEventClick`/`handleDateClick`
+
+The locale and timezone effects stay in the composer (not in any slice) because a config-prop trigger mutates navigation AND data state. The engine returns `CalendarEngineReturn & CalendarEngineHandlers`; the providers destructure the two handlers off and surface them as `onEventClick`/`onCellClick`.
 
 ### useProcessedDayEvents()
 
@@ -211,8 +211,12 @@ If `disableDragAndDrop` is `true`, `CalendarDndContext` renders children without
 
 | File | Role |
 |------|------|
-| `src/hooks/use-smart-calendar-context.ts` | Unified context hook + public API hook |
-| `src/hooks/use-calendar-engine.ts` | Core state engine |
+| `src/features/calendar/hooks/use-smart-calendar-context.ts` | Unified context hook + public API hook |
+| `src/hooks/use-calendar-engine.ts` | Engine composer (slices + cross-cutting effects) |
+| `src/features/calendar/hooks/use-calendar-config.ts` | Config slice (i18n, locale state, defaults) |
+| `src/features/calendar/hooks/use-calendar-navigation.ts` | Navigation slice (date/view, range math) |
+| `src/features/calendar/hooks/use-calendar-data.ts` | Data slice (event store, CRUD, scoped mutations) |
+| `src/features/calendar/hooks/use-calendar-interaction.ts` | Interaction slice (selection, event form, click handlers) |
 | `src/features/calendar/contexts/calendar-context/context.ts` | `CalendarContextType` definition |
 | `src/features/calendar/contexts/calendar-context/provider.tsx` | `CalendarProvider` |
 | `src/features/resource-calendar/contexts/resource-calendar-context/context.ts` | `ResourceCalendarContextType` |

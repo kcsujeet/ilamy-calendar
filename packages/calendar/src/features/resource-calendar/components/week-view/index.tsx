@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { ResourceWeekHorizontal } from './horizontal/resource-week-horizontal'
 import { ResourceWeekVertical } from './vertical/resource-week-vertical'
 

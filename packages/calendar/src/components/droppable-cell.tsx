@@ -1,7 +1,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import type React from 'react'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { CellInfo } from '@/features/calendar/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { cn } from '@/lib/utils'

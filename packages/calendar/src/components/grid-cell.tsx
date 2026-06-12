@@ -1,9 +1,9 @@
 import React, { memo, useMemo } from 'react'
 import { DayNumber } from '@/components/day-number'
 import type { CalendarEvent } from '@/components/types'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { filterEventsByResource } from '@/lib/utils/event-utils'
@@ -80,7 +80,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		if (resourceId) {
 			return filterEventsByResource(
 				todayEvents,
-				getEventsForResource(resourceId) ?? []
+				getEventsForResource?.(resourceId) ?? []
 			)
 		}
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { CalendarEvent } from '@/components/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import type { PositionedEvent } from '@/lib/layout/geometry'
 import { layoutHorizontal } from '@/lib/layout/horizontal'
@@ -43,7 +43,7 @@ export const useProcessedWeekEvents = ({
 		if (resourceId) {
 			weekEvents = filterEventsByResource(
 				weekEvents,
-				getEventsForResource(resourceId)
+				getEventsForResource?.(resourceId) ?? []
 			)
 		}
 

@@ -1,7 +1,7 @@
 import type React from 'react'
 import { ResourceCell } from '@/components/resource-cell'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { Resource } from '@/features/resource-calendar/types'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { keys } from '@/lib/utils/keys'

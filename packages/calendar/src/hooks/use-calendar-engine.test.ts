@@ -438,6 +438,36 @@ describe('useCalendarEngine', () => {
 			)
 		})
 
+		it('should carry the clicked cell resource into the new event', () => {
+			const { result } = renderHook(() => useCalendarEngine(defaultConfig))
+
+			const start = dayjs('2025-03-15T14:00:00.000Z')
+			act(() =>
+				result.current.openEventForm({
+					start,
+					end: start.add(30, 'minute'),
+					allDay: true,
+					resource: { id: 'room-1', title: 'Room 1' },
+				})
+			)
+
+			expect(result.current.selectedEvent?.resourceId).toBe('room-1')
+			expect(result.current.selectedEvent?.allDay).toBe(true)
+		})
+
+		it('should prefer an explicit resourceId over the carried resource', () => {
+			const { result } = renderHook(() => useCalendarEngine(defaultConfig))
+
+			act(() =>
+				result.current.openEventForm({
+					resourceId: 'explicit-id',
+					resource: { id: 'room-1', title: 'Room 1' },
+				})
+			)
+
+			expect(result.current.selectedEvent?.resourceId).toBe('explicit-id')
+		})
+
 		it('should close event form', () => {
 			const { result } = renderHook(() => useCalendarEngine(defaultConfig))
 

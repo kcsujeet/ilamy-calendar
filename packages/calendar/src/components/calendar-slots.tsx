@@ -3,8 +3,8 @@ import type {
 	EventMutationScopeSlotContext,
 } from '@ilamy/types'
 import type { ReactNode } from 'react'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { ScopedMutationDialogState } from '@/hooks/use-scoped-event-mutation'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 // The slot context shapes are part of the plugin contract and now live in the
 // shared `@ilamy/types` package. Re-exported here so the existing

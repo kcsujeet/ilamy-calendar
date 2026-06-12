@@ -7,7 +7,7 @@ import {
 import { Calendar as CalendarIcon, Download, Menu, Plus } from 'lucide-react'
 import type React from 'react'
 import { useState } from 'react'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 import { downloadICalendar } from '@/lib/utils/export-ical'

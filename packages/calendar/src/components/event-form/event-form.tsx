@@ -13,6 +13,7 @@ import {
 import type { CalendarEvent } from '@/components/types'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { isBusinessDay } from '@/features/calendar/utils/business-hours'
 import {
 	buildDateTime,
@@ -21,7 +22,6 @@ import {
 } from '@/features/calendar/utils/event-form-utils'
 import { useEffectiveBusinessHours } from '@/hooks/use-effective-business-hours'
 import { useScopedEventMutation } from '@/hooks/use-scoped-event-mutation'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import dayjs from '@/lib/configs/dayjs-config'
 import { cn } from '@/lib/utils'
 

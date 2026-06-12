@@ -63,6 +63,15 @@ export interface CellInfo {
 }
 
 /**
+ * Input accepted by `openEventForm`. A partial event, optionally carrying the
+ * full resource of the clicked cell (`CellInfo` is assignable as-is). When no
+ * explicit `resourceId` is given, the carried resource's id is used.
+ */
+export type OpenEventFormInput = Partial<CalendarEvent> & {
+	resource?: Resource
+}
+
+/**
  * Props passed to the custom render function for the current time indicator.
  * Allows users to customize how the current time indicator is displayed.
  */

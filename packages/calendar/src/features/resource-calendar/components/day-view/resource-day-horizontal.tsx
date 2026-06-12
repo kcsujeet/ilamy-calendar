@@ -1,13 +1,18 @@
 import type React from 'react'
 import type { BusinessHours } from '@/components/types'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { ResourceEventGrid } from '@/features/resource-calendar/components/resource-event-grid'
 import { TimeHeaderRow } from '@/features/resource-calendar/components/time-header-row'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 export const ResourceDayHorizontal: React.FC = () => {
-	const { currentDate, t, businessHours, hideNonBusinessHours, resources } =
-		useSmartCalendarContext()
+	const {
+		currentDate,
+		t,
+		businessHours,
+		hideNonBusinessHours,
+		resources = [],
+	} = useSmartCalendarContext()
 	const dayHours = getViewHours({
 		referenceDate: currentDate,
 		businessHours,

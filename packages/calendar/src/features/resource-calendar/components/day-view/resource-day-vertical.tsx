@@ -4,15 +4,15 @@ import { HourLabel } from '@/components/hour-label/hour-label'
 import { ResourceCell } from '@/components/resource-cell'
 import type { BusinessHours } from '@/components/types'
 import { VerticalGrid } from '@/components/vertical-grid/vertical-grid'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
-import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import type { Dayjs } from '@/lib/configs/dayjs-config'
 import { keys } from '@/lib/utils/keys'
 
 export const ResourceDayVertical: React.FC = () => {
 	const {
 		currentDate,
-		resources,
+		resources = [],
 		businessHours,
 		hideNonBusinessHours,
 		slotDuration,

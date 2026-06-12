@@ -58,3 +58,5 @@ ignore = ["apps/**"]
 [duplicates]
 # Duplication: skip the private playgrounds.
 ignore = ["apps/**"]
+# Import preambles are structural (path-aliased module wiring), not copy-paste debt.
+ignoreImports = true

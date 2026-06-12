@@ -44,83 +44,90 @@ const CustomResourceEventForm = ({
 	onAdd,
 	onUpdate,
 	onDelete,
-}: EventFormProps) => (
-	<div data-testid="custom-event-form">
-		<span data-testid="form-open">{open ? 'open' : 'closed'}</span>
-		<span data-testid="selected-event-title">
-			{selectedEvent?.title || 'none'}
-		</span>
-		<span data-testid="selected-event-id">{selectedEvent?.id || 'no-id'}</span>
-		<span data-testid="selected-event-resource-id">
-			{selectedEvent?.resourceId || 'no-resource'}
-		</span>
-		<span data-testid="selected-event-resource-ids">
-			{selectedEvent?.resourceIds?.join(',') || 'no-resources'}
-		</span>
-		<span data-testid="selected-event-all-day">
-			{selectedEvent?.allDay ? 'all-day' : 'timed'}
-		</span>
-		<button
-			data-testid="add-event-btn"
-			onClick={() =>
-				onAdd?.({
-					id: 'new-resource-event-1',
-					title: 'New Resource Event',
-					start: dayjs('2025-08-04T14:00:00.000Z'),
-					end: dayjs('2025-08-04T15:00:00.000Z'),
-					resourceId: 'resource-1',
-				})
-			}
-			type="button"
-		>
-			Add Event
-		</button>
-		<button
-			data-testid="add-cross-resource-event-btn"
-			onClick={() =>
-				onAdd?.({
-					id: 'cross-resource-event-1',
-					title: 'Cross Resource Event',
-					start: dayjs('2025-08-04T14:00:00.000Z'),
-					end: dayjs('2025-08-04T15:00:00.000Z'),
-					resourceIds: ['resource-1', 'resource-2'],
-				})
-			}
-			type="button"
-		>
-			Add Cross Resource Event
-		</button>
-		{selectedEvent && (
-			<>
-				<button
-					data-testid="update-event-btn"
-					onClick={() =>
-						onUpdate?.({ ...selectedEvent, title: 'Updated Resource Event' })
-					}
-					type="button"
-				>
-					Update Event
-				</button>
-				<button
-					data-testid="update-event-resource-btn"
-					onClick={() =>
-						onUpdate?.({ ...selectedEvent, resourceId: 'resource-2' })
-					}
-					type="button"
-				>
-					Move to Resource 2
-				</button>
-				<button
-					data-testid="delete-event-btn"
-					onClick={() => onDelete?.(selectedEvent)}
-					type="button"
-				>
-					Delete Event
-				</button>
-			</>
-		)}
-	</div>
-)
+}: EventFormProps) => {
+	// The selected event's fields, or the "nothing selected" placeholders.
+	const {
+		title = 'none',
+		id = 'no-id',
+		resourceId = 'no-resource',
+		resourceIds = [],
+		allDay = false,
+	} = selectedEvent ?? {}
+
+	return (
+		<div data-testid="custom-event-form">
+			<span data-testid="form-open">{open ? 'open' : 'closed'}</span>
+			<span data-testid="selected-event-title">{title}</span>
+			<span data-testid="selected-event-id">{id}</span>
+			<span data-testid="selected-event-resource-id">{resourceId}</span>
+			<span data-testid="selected-event-resource-ids">
+				{resourceIds.join(',') || 'no-resources'}
+			</span>
+			<span data-testid="selected-event-all-day">
+				{allDay ? 'all-day' : 'timed'}
+			</span>
+			<button
+				data-testid="add-event-btn"
+				onClick={() =>
+					onAdd?.({
+						id: 'new-resource-event-1',
+						title: 'New Resource Event',
+						start: dayjs('2025-08-04T14:00:00.000Z'),
+						end: dayjs('2025-08-04T15:00:00.000Z'),
+						resourceId: 'resource-1',
+					})
+				}
+				type="button"
+			>
+				Add Event
+			</button>
+			<button
+				data-testid="add-cross-resource-event-btn"
+				onClick={() =>
+					onAdd?.({
+						id: 'cross-resource-event-1',
+						title: 'Cross Resource Event',
+						start: dayjs('2025-08-04T14:00:00.000Z'),
+						end: dayjs('2025-08-04T15:00:00.000Z'),
+						resourceIds: ['resource-1', 'resource-2'],
+					})
+				}
+				type="button"
+			>
+				Add Cross Resource Event
+			</button>
+			{selectedEvent && (
+				<>
+					<button
+						data-testid="update-event-btn"
+						onClick={() =>
+							onUpdate?.({ ...selectedEvent, title: 'Updated Resource Event' })
+						}
+						type="button"
+					>
+						Update Event
+					</button>
+					<button
+						data-testid="update-event-resource-btn"
+						onClick={() =>
+							onUpdate?.({ ...selectedEvent, resourceId: 'resource-2' })
+						}
+						type="button"
+					>
+						Move to Resource 2
+					</button>
+					<button
+						data-testid="delete-event-btn"
+						onClick={() => onDelete?.(selectedEvent)}
+						type="button"
+					>
+						Delete Event
+					</button>
+				</>
+			)}
+		</div>
+	)
+}
 
 // Mock the export function
 mock.module('@/lib/export-ical', () => ({

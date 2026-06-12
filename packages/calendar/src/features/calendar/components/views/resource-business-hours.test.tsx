@@ -1,12 +1,10 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
 import { cleanup, render, screen, within } from '@testing-library/react'
-import type { WeekDays } from '@/components/types'
 import { DayView, WeekView } from '@/features/calendar/components/views'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
-
-const mockResources: Resource[] = [{ id: '1', title: 'Resource 1' }]
+import { singleResource, weekdayBusinessHours } from './resource-test-fixtures'
 
 describe('Resource Calendar Business Hours Integration', () => {
 	beforeEach(() => {
@@ -16,17 +14,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 	describe('ResourceWeekHorizontal', () => {
 		test('calculates correct dynamic width when hideNonBusinessHours is true', () => {
 			const initialDate = dayjs('2025-01-01T00:00:00.000Z') // Wednesday
-			const businessHours = {
-				daysOfWeek: [
-					'monday',
-					'tuesday',
-					'wednesday',
-					'thursday',
-					'friday',
-				] as WeekDays[],
-				startTime: 9,
-				endTime: 17,
-			}
+			const businessHours = weekdayBusinessHours(9, 17)
 
 			render(
 				<CalendarProvider
@@ -35,7 +23,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 					hideNonBusinessHours={true}
 					initialDate={initialDate}
 					orientation="horizontal"
-					resources={mockResources}
+					resources={singleResource}
 				>
 					<WeekView />
 				</CalendarProvider>
@@ -62,17 +50,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 	describe('ResourceDayVertical Weekend Fallback', () => {
 		test('falls back to global business hours range on a weekend (Sunday)', () => {
 			const sunday = dayjs('2025-01-05T00:00:00.000Z')
-			const businessHours = {
-				daysOfWeek: [
-					'monday',
-					'tuesday',
-					'wednesday',
-					'thursday',
-					'friday',
-				] as WeekDays[],
-				startTime: 10,
-				endTime: 16,
-			}
+			const businessHours = weekdayBusinessHours(10, 16)
 
 			render(
 				<CalendarProvider
@@ -81,7 +59,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 					hideNonBusinessHours={true}
 					initialDate={sunday}
 					orientation="vertical"
-					resources={mockResources}
+					resources={singleResource}
 				>
 					<DayView />
 				</CalendarProvider>
@@ -111,7 +89,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 					hideNonBusinessHours={true}
 					initialDate={monday}
 					orientation="horizontal"
-					resources={mockResources}
+					resources={singleResource}
 				>
 					<DayView />
 				</CalendarProvider>

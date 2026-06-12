@@ -4,11 +4,10 @@ import { monthView } from './month'
 import { weekView } from './week'
 import { yearView } from './year'
 
-export { DayView, dayView } from './day'
-export { MonthView, monthView } from './month'
+export { DayView } from './day'
+export { MonthView } from './month'
 export { ViewRenderer } from './view-renderer'
-export { WeekView, weekView } from './week'
-export { yearView } from './year'
+export { WeekView } from './week'
 
 /** The core's own views, resolved exactly like plugin views (prepended first). */
 export const builtInViews: PluginView[] = [

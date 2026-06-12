@@ -20,7 +20,8 @@ describe('EventForm Resource Business Hours', () => {
 		cleanup()
 	})
 
-	test('respects resource-specific business hours for time constraints', () => {
+	// Render the form for an R1 event on Monday noon — shared construction.
+	const renderMondayEventForm = () => {
 		const monday = dayjs('2025-01-06T12:00:00.000Z')
 		const selectedEvent: CalendarEvent = {
 			id: '1',
@@ -39,6 +40,10 @@ describe('EventForm Resource Business Hours', () => {
 				<EventForm onClose={() => {}} selectedEvent={selectedEvent} />
 			</CalendarProvider>
 		)
+	}
+
+	test('respects resource-specific business hours for time constraints', () => {
+		renderMondayEventForm()
 
 		const startTimeButton = screen.getByTestId('time-picker-start-time')
 		expect(startTimeButton).toBeInTheDocument()
@@ -46,24 +51,7 @@ describe('EventForm Resource Business Hours', () => {
 	})
 
 	test('DatePicker disables non-business days for the assigned resource', async () => {
-		const monday = dayjs('2025-01-06T12:00:00.000Z')
-		const selectedEvent: CalendarEvent = {
-			id: '1',
-			title: 'Test Event',
-			start: monday,
-			end: monday.add(1, 'hour'),
-			resourceId: 'R1',
-		}
-
-		render(
-			<CalendarProvider
-				dayMaxEvents={3}
-				initialDate={monday}
-				resources={mockResources}
-			>
-				<EventForm onClose={() => {}} selectedEvent={selectedEvent} />
-			</CalendarProvider>
-		)
+		renderMondayEventForm()
 
 		// Find the button showing the date
 		const startDateSection = screen.getByText('Start Date').parentElement

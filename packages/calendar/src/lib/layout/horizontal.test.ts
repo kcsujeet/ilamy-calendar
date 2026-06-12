@@ -81,11 +81,16 @@ describe('layoutHorizontal', () => {
 	})
 
 	describe('Edge Cases - Truncation', () => {
-		it('truncates event starting before week start', () => {
+		// Lay out the week-spanning event and return its single placement.
+		const runLongMultiDay = () => {
 			const result = run([longMultiDayEvent])
-
 			expect(result).toHaveLength(1)
 			const [p] = result
+			return p
+		}
+
+		it('truncates event starting before week start', () => {
+			const p = runLongMultiDay()
 			expect(p.left).toBe(0)
 			expect(p.isTruncatedStart).toBe(true)
 		})
@@ -104,10 +109,7 @@ describe('layoutHorizontal', () => {
 		})
 
 		it('truncates event spanning entire week and beyond', () => {
-			const result = run([longMultiDayEvent])
-
-			expect(result).toHaveLength(1)
-			const [p] = result
+			const p = runLongMultiDay()
 			expect(p.left).toBe(0)
 			expect(p.width).toBe(100)
 			expect(p.isTruncatedStart).toBe(true)

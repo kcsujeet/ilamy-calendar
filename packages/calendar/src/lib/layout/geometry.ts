@@ -28,8 +28,3 @@ export interface HorizontalPositionedEvent extends PositionedEventBase {
 	isTruncatedStart: boolean
 	isTruncatedEnd: boolean
 }
-
-/** The single layout contract, discriminated by the strategy that produced it. */
-export type PositionedEvent =
-	| VerticalPositionedEvent
-	| HorizontalPositionedEvent

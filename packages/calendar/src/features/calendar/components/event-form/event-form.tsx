@@ -113,12 +113,20 @@ export const EventForm: React.FC<EventFormProps> = ({
 			getEventManager: context.getEventManager,
 		})
 	)
-	const effectiveBusinessHours = useEffectiveBusinessHours(
-		selectedEvent?.resourceId
-	)
+	// The selected event's fields, or the new-event defaults.
+	const {
+		id: selectedEventId,
+		resourceId,
+		start = dayjs(),
+		end = dayjs().add(1, 'hour'),
+		allDay: initialAllDay = false,
+		color: initialColor = DEFAULT_EVENT_COLOR,
+		title: initialTitle = '',
+		description: initialDescription = '',
+		location: initialLocation = '',
+	} = selectedEvent ?? {}
 
-	const start = selectedEvent?.start ?? dayjs()
-	const end = selectedEvent?.end ?? dayjs().add(1, 'hour')
+	const effectiveBusinessHours = useEffectiveBusinessHours(resourceId)
 
 	// Whether a plugin owns this event (gates the scoped edit/delete flow)
 	const eventIsOwned = Boolean(selectedEvent && getEventManager(selectedEvent))
@@ -126,10 +134,8 @@ export const EventForm: React.FC<EventFormProps> = ({
 	// Form state
 	const [startDate, setStartDate] = useState(start.toDate())
 	const [endDate, setEndDate] = useState(end.toDate())
-	const [isAllDay, setIsAllDay] = useState(selectedEvent?.allDay || false)
-	const [selectedColor, setSelectedColor] = useState(
-		selectedEvent?.color || DEFAULT_EVENT_COLOR
-	)
+	const [isAllDay, setIsAllDay] = useState(initialAllDay)
+	const [selectedColor, setSelectedColor] = useState(initialColor)
 
 	// Time state
 	const [startTime, setStartTime] = useState(start.format('HH:mm'))
@@ -137,9 +143,9 @@ export const EventForm: React.FC<EventFormProps> = ({
 
 	// Initialize form values from selected event or defaults
 	const [formValues, setFormValues] = useState({
-		title: selectedEvent?.title || '',
-		description: selectedEvent?.description || '',
-		location: selectedEvent?.location || '',
+		title: initialTitle,
+		description: initialDescription,
+		location: initialLocation,
 	})
 
 	// Generic draft of plugin-contributed fields (e.g. recurrence's rrule).
@@ -208,11 +214,11 @@ export const EventForm: React.FC<EventFormProps> = ({
 		const endDateTime = buildEndDateTime(endDate, endTime, isAllDay)
 
 		const eventData: CalendarEvent = {
-			id: selectedEvent?.id || dayjs().format('YYYYMMDDHHmmss'),
+			id: selectedEventId || dayjs().format('YYYYMMDDHHmmss'),
 			title: formValues.title,
 			start: startDateTime,
 			end: endDateTime,
-			resourceId: selectedEvent?.resourceId,
+			resourceId,
 			description: formValues.description,
 			location: formValues.location,
 			allDay: isAllDay,
@@ -234,7 +240,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 			return
 		}
 
-		if (selectedEvent?.id) {
+		if (selectedEventId) {
 			onUpdate?.(eventData)
 		} else {
 			onAdd?.(eventData)
@@ -382,7 +388,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 				</ScrollArea>
 
 				<DialogFooter className="mt-4 shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:gap-0">
-					{selectedEvent?.id && (
+					{selectedEventId && (
 						<Button
 							className="w-full sm:mr-auto sm:w-auto"
 							onClick={handleDelete}
@@ -404,7 +410,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 							{t('cancel')}
 						</Button>
 						<Button className="flex-1 sm:flex-none" size="sm" type="submit">
-							{selectedEvent?.id ? t('update') : t('create')}
+							{selectedEventId ? t('update') : t('create')}
 						</Button>
 					</div>
 				</DialogFooter>

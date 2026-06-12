@@ -48,20 +48,20 @@ export const useCalendarInteraction = ({
 	const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null)
 
 	const openEventForm = useCallback(
-		(eventData?: OpenEventFormInput) => {
-			if (eventData?.start) {
-				setSelectedDate(eventData.start)
+		(eventData: OpenEventFormInput = {}) => {
+			const { start, end, resourceId, resource, allDay } = eventData
+			if (start) {
+				setSelectedDate(start)
 			}
-			const start = eventData?.start ?? currentDate
-			const resourceId = eventData?.resourceId ?? eventData?.resource?.id
+			const draftStart = start ?? currentDate
 			setSelectedEvent(
 				buildEventDraft({
 					title: t('newEvent'),
-					start,
-					end: eventData?.end ?? start.add(1, 'hour'),
-					resourceId,
+					start: draftStart,
+					end: end ?? draftStart.add(1, 'hour'),
+					resourceId: resourceId ?? resource?.id,
 					description: '',
-					allDay: eventData?.allDay ?? false,
+					allDay: allDay ?? false,
 				})
 			)
 			setIsEventFormOpen(true)

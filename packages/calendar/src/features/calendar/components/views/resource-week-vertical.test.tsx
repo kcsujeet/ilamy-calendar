@@ -1,28 +1,24 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import type { Resource } from '@ilamy/types'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import type { CalendarEvent } from '@/components/types'
 import { WeekView } from '@/features/calendar/components/views'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import dayjs from '@/lib/configs/dayjs-config'
-
-const mockResources: Resource[] = [
-	{ id: '1', title: 'Resource 1' },
-	{ id: '2', title: 'Resource 2' },
-]
-
-const mockEvents: CalendarEvent[] = []
-const initialDate = dayjs('2025-01-01T00:00:00.000Z')
+import {
+	resourceWeekInitialDate as initialDate,
+	noEvents,
+	twoResources,
+} from './resource-test-fixtures'
 
 const renderResourceWeekVertical = (props = {}) => {
 	return render(
 		<CalendarProvider
 			dayMaxEvents={3}
-			events={mockEvents}
+			events={noEvents}
 			initialDate={initialDate}
 			orientation="vertical"
-			resources={mockResources}
+			resources={twoResources}
 			{...props}
 		>
 			<CalendarDndContext>

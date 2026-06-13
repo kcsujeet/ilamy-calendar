@@ -11,14 +11,11 @@ import {
 	getEventResourceIds,
 } from '@/lib/events/pipeline'
 
+// applyEdit returns either the raw next event list or a structured result;
+// the array is the only non-object member, so it's the discriminant.
 const isPluginMutationResult = (
 	result: CalendarEvent[] | PluginMutationResult
-): result is PluginMutationResult =>
-	typeof result === 'object' &&
-	result !== null &&
-	'events' in result &&
-	'updated' in result &&
-	'added' in result
+): result is PluginMutationResult => !Array.isArray(result)
 
 export interface CalendarDataParams {
 	events: CalendarEvent[]

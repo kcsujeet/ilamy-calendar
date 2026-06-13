@@ -305,7 +305,10 @@ export function DemoCalendarSettings({
 							<SelectItem value="week">Week</SelectItem>
 							<SelectItem value="day">Day</SelectItem>
 							{!isResourceCalendar && (
-								<SelectItem value="year">Year</SelectItem>
+								<>
+									<SelectItem value="year">Year</SelectItem>
+									<SelectItem value="agenda">Agenda</SelectItem>
+								</>
 							)}
 						</SelectContent>
 					</Select>

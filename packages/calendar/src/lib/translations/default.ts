@@ -85,6 +85,8 @@ export const defaultTranslations = {
 	week: 'Week',
 	day: 'Day',
 	year: 'Year',
+	agenda: 'Agenda',
+	agendaNoEvents: 'No upcoming events',
 	more: 'more',
 
 	// Resource calendar

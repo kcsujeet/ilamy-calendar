@@ -67,6 +67,7 @@
         "tailwind-merge": "^3.5.0",
       },
       "devDependencies": {
+        "@ilamy/calendar-agenda": "workspace:*",
         "@ilamy/calendar-recurrence": "workspace:*",
         "@ilamy/types": "workspace:*",
         "@ilamy/ui": "workspace:*",
@@ -79,7 +80,20 @@
         "tailwindcss-animate": "^1.0.7",
       },
     },
-    "packages/recurrence": {
+    "packages/plugins/agenda": {
+      "name": "@ilamy/calendar-agenda",
+      "version": "1.8.1",
+      "dependencies": {
+        "@ilamy/ui": "workspace:*",
+        "@ilamy/utils": "workspace:*",
+      },
+      "peerDependencies": {
+        "@ilamy/calendar": "workspace:*",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+      },
+    },
+    "packages/plugins/recurrence": {
       "name": "@ilamy/calendar-recurrence",
       "version": "1.8.1",
       "dependencies": {
@@ -195,7 +209,9 @@
 
     "@ilamy/calendar": ["@ilamy/calendar@workspace:packages/calendar"],
 
-    "@ilamy/calendar-recurrence": ["@ilamy/calendar-recurrence@workspace:packages/recurrence"],
+    "@ilamy/calendar-agenda": ["@ilamy/calendar-agenda@workspace:packages/plugins/agenda"],
+
+    "@ilamy/calendar-recurrence": ["@ilamy/calendar-recurrence@workspace:packages/plugins/recurrence"],
 
     "@ilamy/demo": ["@ilamy/demo@workspace:apps/demo"],
 

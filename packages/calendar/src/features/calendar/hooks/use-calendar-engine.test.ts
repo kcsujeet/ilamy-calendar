@@ -861,6 +861,65 @@ describe('useCalendarEngine', () => {
 			expect(onEventDelete).toHaveBeenCalledTimes(1)
 			expect(result.current.rawEvents).toHaveLength(0)
 		})
+
+		it('should fire onEventDelete for base and overrides on scope all', () => {
+			const onEventDelete = vi.fn()
+			const base = createRecurringEvent()
+			const override: CalendarEvent = {
+				...base,
+				id: 'recurring-1_override',
+				recurrenceId: '2025-01-13T10:00:00.000Z',
+				rrule: undefined,
+			}
+			const events = [base, override]
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					events,
+					onEventDelete,
+					plugins: [recurrencePlugin()],
+				})
+			)
+
+			act(() => result.current.applyScopedDelete(base, 'all'))
+
+			expect(onEventDelete).toHaveBeenCalledTimes(2)
+			const deletedIds = onEventDelete.mock.calls.map((call) => call[0].id)
+			expect(deletedIds).toEqual(['recurring-1', 'recurring-1_override'])
+			expect(result.current.rawEvents).toHaveLength(0)
+		})
+
+		it('should fire onEventUpdate for base EXDATE on scope this delete', () => {
+			const onEventUpdate = vi.fn()
+			const onEventDelete = vi.fn()
+			const base = createRecurringEvent()
+			const events = [base]
+			const instance: CalendarEvent = {
+				...base,
+				id: 'recurring-1_1',
+				start: dayjs('2025-01-13T10:00:00.000Z'),
+				end: dayjs('2025-01-13T11:00:00.000Z'),
+				rrule: undefined,
+			}
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					events,
+					onEventUpdate,
+					onEventDelete,
+					plugins: [recurrencePlugin()],
+				})
+			)
+
+			act(() => result.current.applyScopedDelete(instance, 'this'))
+
+			expect(onEventUpdate).toHaveBeenCalledTimes(1)
+			expect(onEventUpdate.mock.calls[0][0].id).toBe('recurring-1')
+			expect(onEventUpdate.mock.calls[0][0].exdates).toContain(
+				'2025-01-13T10:00:00.000Z'
+			)
+			expect(onEventDelete).not.toHaveBeenCalled()
+		})
 	})
 
 	describe('translation', () => {

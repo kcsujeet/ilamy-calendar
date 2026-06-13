@@ -7,7 +7,7 @@ import type {
 	WeekDays,
 } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
-import { render } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 import type React from 'react'
 import { RRule } from 'rrule'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -313,7 +313,7 @@ describe('CalendarProvider - recurring event integration', () => {
 		})
 
 		// Scope "this" on base: update base (EXDATE) + add detached override
-		getByTestId('update-recurring').click()
+		act(() => getByTestId('update-recurring').click())
 		expect(onEventUpdate).toHaveBeenCalledTimes(1)
 		expect(onEventUpdate).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -330,9 +330,24 @@ describe('CalendarProvider - recurring event integration', () => {
 			})
 		)
 
-		// Test deleting recurring event - should call onEventDelete with the event
-		getByTestId('delete-recurring').click()
-		expect(onEventDelete).toHaveBeenCalledWith(recurringEvent)
+		// Scope "this" delete on the base: adds the occurrence EXDATE to the base
+		// (onEventUpdate) and drops the detached override created by the edit above
+		// (onEventDelete). It does NOT delete the clicked base row.
+		act(() => getByTestId('delete-recurring').click())
+		expect(onEventUpdate).toHaveBeenCalledTimes(2)
+		expect(onEventUpdate).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				id: 'weekly-meeting',
+				exdates: ['2025-01-06T10:00:00.000Z'],
+			})
+		)
+		expect(onEventDelete).toHaveBeenCalledTimes(1)
+		expect(onEventDelete).toHaveBeenCalledWith(
+			expect.objectContaining({
+				recurrenceId: '2025-01-06T10:00:00.000Z',
+				id: expect.stringContaining('weekly-meeting_modified_'),
+			})
+		)
 	})
 
 	it('should call onEventUpdate for rrule changes', () => {

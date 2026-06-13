@@ -6,12 +6,8 @@ import {
 	deleteRecurringEvent,
 	generateRecurringEvents,
 	isRecurringEvent,
-	updateRecurringEvent as updateRecurringEventImpl,
+	updateRecurringEvent,
 } from './recurrence-handler'
-
-const updateRecurringEvent = (
-	...args: Parameters<typeof updateRecurringEventImpl>
-) => updateRecurringEventImpl(...args).events
 
 // Test helper to create a base recurring event
 const createBaseRecurringEvent = (
@@ -211,7 +207,7 @@ describe('updateRecurringEvent', () => {
 				updates,
 				currentEvents,
 				scope: 'this',
-			})
+			}).events
 
 			expect(result).toHaveLength(2) // base event + modified standalone event
 
@@ -238,7 +234,7 @@ describe('updateRecurringEvent', () => {
 				rrule: undefined,
 			})
 
-			const { updated } = updateRecurringEventImpl({
+			const { updated } = updateRecurringEvent({
 				targetEvent,
 				updates: { title: 'Modified Meeting' },
 				currentEvents: [baseEvent],
@@ -262,7 +258,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Custom uid override', uid: customUid },
 				currentEvents: [baseEvent],
 				scope: 'this',
-			})
+			}).events
 
 			const modifiedEvent = result.find((e) => e.id !== baseEvent.id)
 			expect(modifiedEvent?.uid).toBe(customUid)
@@ -278,7 +274,7 @@ describe('updateRecurringEvent', () => {
 				rrule: undefined,
 			})
 
-			const { updated, added } = updateRecurringEventImpl({
+			const { updated, added } = updateRecurringEvent({
 				targetEvent: storedOverride,
 				updates: { title: 'Edited override' },
 				currentEvents: [baseEvent, storedOverride],
@@ -305,7 +301,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Modified' },
 				currentEvents,
 				scope: 'this',
-			})
+			}).events
 
 			const updatedBaseEvent = result.find((e) => e.id === baseEvent.id)
 			expect(updatedBaseEvent?.exdates).toHaveLength(2)
@@ -329,7 +325,7 @@ describe('updateRecurringEvent', () => {
 				updates,
 				currentEvents,
 				scope: 'following',
-			})
+			}).events
 
 			expect(result).toHaveLength(2) // terminated original + new series
 
@@ -359,7 +355,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'New Series' },
 				currentEvents,
 				scope: 'following',
-			})
+			}).events
 
 			expect(result).toHaveLength(2)
 
@@ -387,7 +383,7 @@ describe('updateRecurringEvent', () => {
 				updates,
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 
@@ -408,7 +404,7 @@ describe('updateRecurringEvent', () => {
 				rrule: undefined,
 			})
 
-			const { updated } = updateRecurringEventImpl({
+			const { updated } = updateRecurringEvent({
 				targetEvent: targetInstance,
 				updates: { title: 'Series title', uid: undefined },
 				currentEvents: [baseEvent],
@@ -433,7 +429,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Updated' },
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(2)
 			expect(result.find((e) => e.id === 'other-event')).toBeDefined()
@@ -473,7 +469,7 @@ describe('updateRecurringEvent', () => {
 				},
 				currentEvents: [baseEvent],
 				scope: 'all',
-			})
+			}).events
 
 			const updatedBase = result[0]
 			expect(updatedBase.title).toBe('Updated Weekdays')
@@ -511,7 +507,7 @@ describe('updateRecurringEvent', () => {
 				},
 				currentEvents: [baseEvent],
 				scope: 'all',
-			})
+			}).events
 
 			expect(result[0].start.toISOString()).toBe('2025-01-06T11:00:00.000Z')
 			expect(result[0].end.toISOString()).toBe('2025-01-06T12:00:00.000Z')
@@ -535,7 +531,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Reset Series' },
 				currentEvents: [baseEvent, unrelated],
 				scope: 'all',
-			})
+			}).events
 
 			const seriesRows = result.filter((e) => e.uid === 'daily-1@calendar.test')
 			expect(seriesRows).toHaveLength(1)
@@ -565,7 +561,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Reset Series' },
 				currentEvents: [baseEvent, override],
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 			expect(result[0].id).toBe('daily-1')
@@ -586,7 +582,7 @@ describe('updateRecurringEvent', () => {
 				updates: { start: dayjs('2025-01-08T14:30:00.000Z') },
 				currentEvents: [baseEvent],
 				scope: 'all',
-			})
+			}).events
 
 			// keeps original anchor date (Jan 6), new time-of-day (14:30)
 			expect(result[0].start.toISOString()).toBe('2025-01-06T14:30:00.000Z')
@@ -609,7 +605,7 @@ describe('updateRecurringEvent', () => {
 				targetEvent: occurrenceToDelete,
 				currentEvents: [baseEvent],
 				scope: 'this',
-			})
+			}).events
 			expect(afterDelete[0].exdates).toContain('2025-01-07T09:00:00.000Z')
 
 			// 3. Edit the series with scope "all" -> the deleted occurrence is resurrected
@@ -623,7 +619,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Reset Series' },
 				currentEvents: afterDelete,
 				scope: 'all',
-			})
+			}).events
 
 			expect(afterAllEdit).toHaveLength(1)
 			expect(afterAllEdit[0].exdates).toBeUndefined()
@@ -675,7 +671,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'this',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 
@@ -696,7 +692,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'this',
-			})
+			}).events
 
 			const updatedEvent = result[0]
 			expect(updatedEvent.exdates).toHaveLength(3)
@@ -716,7 +712,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'following',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 
@@ -740,7 +736,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent: firstOccurrence,
 				currentEvents,
 				scope: 'following',
-			})
+			}).events
 
 			const terminatedEvent = result[0]
 			if (!terminatedEvent.rrule) throw new Error('rrule missing')
@@ -766,7 +762,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'following',
-			})
+			}).events
 
 			const terminatedEvent = result[0]
 			// Should replace existing UNTIL with earlier termination date
@@ -791,7 +787,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 			expect(result[0].id).toBe('other')
@@ -809,7 +805,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(0)
 		})
@@ -837,7 +833,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 			expect(result[0].id).toBe('other')
@@ -951,7 +947,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { title: 'Modified' },
 			currentEvents,
 			scope: 'this',
-		})
+		}).events
 
 		expect(currentEvents).toHaveLength(2) // base + modified
 
@@ -960,7 +956,7 @@ describe('Edge cases and stress tests', () => {
 			targetEvent,
 			currentEvents,
 			scope: 'this',
-		})
+		}).events
 
 		expect(finalResult).toHaveLength(1)
 		const baseEventResult = finalResult[0]
@@ -982,7 +978,7 @@ describe('Edge cases and stress tests', () => {
 			},
 			currentEvents,
 			scope: 'this',
-		})
+		}).events
 
 		const modifiedOverride = currentEvents.find((e) => e.recurrenceId)
 		expect(modifiedOverride).toBeDefined()
@@ -991,7 +987,7 @@ describe('Edge cases and stress tests', () => {
 			targetEvent: modifiedOverride as CalendarEvent,
 			currentEvents,
 			scope: 'this',
-		})
+		}).events
 
 		expect(finalResult).toHaveLength(1)
 		expect(finalResult[0].exdates).toContain('2025-01-20T09:00:00.000Z')
@@ -1022,7 +1018,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { title: 'First Split' },
 			currentEvents,
 			scope: 'following',
-		})
+		}).events
 
 		expect(currentEvents).toHaveLength(2) // terminated original + new series
 
@@ -1037,7 +1033,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { title: 'Second Split' },
 			currentEvents,
 			scope: 'following',
-		})
+		}).events
 
 		expect(currentEvents).toHaveLength(3) // original terminated + first series terminated + second series
 	})
@@ -1058,7 +1054,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { start: dayjs('2025-01-20T14:00:00') }, // Change start time
 			currentEvents: [baseEvent],
 			scope: 'following',
-		})
+		}).events
 
 		const newSeries = result.find((e) => e.uid?.includes('_following'))
 		expect(newSeries?.start.format('HH:mm')).toBe('14:00')

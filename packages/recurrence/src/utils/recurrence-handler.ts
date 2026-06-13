@@ -334,6 +334,7 @@ export const updateRecurringEvent = ({
 					events: updatedEvents,
 					updated: [updatedBaseEvent, detachedOverride],
 					added: [],
+					deleted: [],
 				}
 			}
 
@@ -347,6 +348,7 @@ export const updateRecurringEvent = ({
 				events: updatedEvents,
 				updated: [updatedBaseEvent],
 				added: [modifiedEvent],
+				deleted: [],
 			}
 		}
 
@@ -391,6 +393,7 @@ export const updateRecurringEvent = ({
 				events: updatedEvents,
 				updated: [terminatedEvent],
 				added: [newSeriesEvent],
+				deleted: [],
 			}
 		}
 
@@ -417,10 +420,12 @@ export const updateRecurringEvent = ({
 			// Google-Calendar behavior: an "all" edit resets the series — drop detached
 			// overrides and clear exceptions (previously split/deleted occurrences return).
 			const events = updatedEvents.filter((e) => !isDetachedOverrideOfSeries(e))
+			const deletedOverrides = updatedEvents.filter(isDetachedOverrideOfSeries)
 			return {
 				events,
 				updated: [updatedBaseEvent],
 				added: [],
+				deleted: deletedOverrides,
 			}
 		}
 
@@ -441,7 +446,7 @@ export const deleteRecurringEvent = ({
 	targetEvent,
 	currentEvents,
 	scope,
-}: DeleteRecurringEventProps): CalendarEvent[] => {
+}: DeleteRecurringEventProps): PluginMutationResult => {
 	const updatedEvents = [...currentEvents]
 	const baseEventIndex = findBaseEventIndex(updatedEvents, targetEvent)
 	const baseEvent = updatedEvents[baseEventIndex]
@@ -450,21 +455,31 @@ export const deleteRecurringEvent = ({
 		case 'this': {
 			// "This event only" - Add EXDATE and drop any detached override for this occurrence
 			const occurrenceStartISO = getOccurrenceStartISO(targetEvent)
+			const parentUid = getEventParentUID(baseEvent)
 			const { baseEvent: updatedBaseEvent } = addExdateToBaseEvent(
 				baseEvent,
 				targetEvent
 			)
 			updatedEvents[baseEventIndex] = updatedBaseEvent
 
-			const parentUid = getEventParentUID(baseEvent)
-			return updatedEvents.filter((event) => {
-				const isDetachedOverride =
-					Boolean(event.recurrenceId) && getEventParentUID(event) === parentUid
-				if (!isDetachedOverride) {
-					return true
-				}
-				return event.recurrenceId !== occurrenceStartISO
-			})
+			const isThisOccurrenceOverride = (e: CalendarEvent): boolean => {
+				const isDetachedOverride = Boolean(e.recurrenceId)
+				const belongsToSeries = getEventParentUID(e) === parentUid
+				const isThisOccurrence = e.recurrenceId === occurrenceStartISO
+				return isDetachedOverride && belongsToSeries && isThisOccurrence
+			}
+
+			// Capture the detached override (if any) being dropped for this occurrence
+			// before it's filtered out, so it can be reported as a real stored deletion.
+			const droppedOverride = updatedEvents.find(isThisOccurrenceOverride)
+			const events = updatedEvents.filter((e) => !isThisOccurrenceOverride(e))
+
+			return {
+				events,
+				updated: [updatedBaseEvent],
+				added: [],
+				deleted: droppedOverride ? [droppedOverride] : [],
+			}
 		}
 
 		case 'following': {
@@ -477,16 +492,29 @@ export const deleteRecurringEvent = ({
 				} as RRuleOptions,
 			}
 			updatedEvents[baseEventIndex] = terminatedEvent
-			break
+			return {
+				events: updatedEvents,
+				updated: [terminatedEvent],
+				added: [],
+				deleted: [],
+			}
 		}
 
 		case 'all': {
 			// "All events" - Remove the entire recurring series
 			const targetUid = getEventParentUID(targetEvent)
+			const deletedSeries = updatedEvents.filter(
+				(e) => getEventParentUID(e) === targetUid
+			)
 			const eventsWithoutTargetSeries = updatedEvents.filter(
 				(e) => getEventParentUID(e) !== targetUid
 			)
-			return eventsWithoutTargetSeries
+			return {
+				events: eventsWithoutTargetSeries,
+				updated: [],
+				added: [],
+				deleted: deletedSeries,
+			}
 		}
 
 		default:
@@ -494,6 +522,4 @@ export const deleteRecurringEvent = ({
 				`Invalid scope: ${scope}. Must be 'this', 'following', or 'all'`
 			)
 	}
-
-	return updatedEvents
 }

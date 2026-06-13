@@ -24,8 +24,9 @@ const DELETED: CalendarEvent[] = []
 const makeMutationResult = (
 	events: CalendarEvent[],
 	updated: CalendarEvent[],
-	added: CalendarEvent[] = []
-): PluginMutationResult => ({ events, updated, added })
+	added: CalendarEvent[] = [],
+	deleted: CalendarEvent[] = []
+): PluginMutationResult => ({ events, updated, added, deleted })
 
 // A fake plugin that manages every event and returns sentinel results so we can
 // observe that the manager's applyEdit/applyDelete were invoked with the scope.

@@ -11,11 +11,42 @@ import {
 	getEventResourceIds,
 } from '@/lib/events/pipeline'
 
-// applyEdit returns either the raw next event list or a structured result;
-// the array is the only non-object member, so it's the discriminant.
+// applyEdit/applyDelete return either the raw next event list or a structured
+// result; the array is the only non-object member, so it's the discriminant.
 const isPluginMutationResult = (
 	result: CalendarEvent[] | PluginMutationResult
 ): result is PluginMutationResult => !Array.isArray(result)
+
+interface MutationCallbacks {
+	onEventUpdate?: (event: CalendarEvent) => void
+	onEventAdd?: (event: CalendarEvent) => void
+	onEventDelete?: (event: CalendarEvent) => void
+	setCurrentEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>
+}
+
+// Fans a structured plugin mutation out to the persistence callbacks (one call
+// per stored row that actually changed) and replaces the store. Shared by the
+// scoped edit and delete paths.
+const dispatchMutationResult = (
+	result: PluginMutationResult,
+	{
+		onEventUpdate,
+		onEventAdd,
+		onEventDelete,
+		setCurrentEvents,
+	}: MutationCallbacks
+): void => {
+	for (const storedEvent of result.updated) {
+		onEventUpdate?.(storedEvent)
+	}
+	for (const storedEvent of result.added) {
+		onEventAdd?.(storedEvent)
+	}
+	for (const storedEvent of result.deleted) {
+		onEventDelete?.(storedEvent)
+	}
+	setCurrentEvents(result.events)
+}
 
 export interface CalendarDataParams {
 	events: CalendarEvent[]
@@ -120,19 +151,18 @@ export const useCalendarData = ({
 				scope,
 			})
 			if (isPluginMutationResult(editResult)) {
-				for (const storedEvent of editResult.updated) {
-					onEventUpdate?.(storedEvent)
-				}
-				for (const storedEvent of editResult.added) {
-					onEventAdd?.(storedEvent)
-				}
-				setCurrentEvents(editResult.events)
+				dispatchMutationResult(editResult, {
+					onEventUpdate,
+					onEventAdd,
+					onEventDelete,
+					setCurrentEvents,
+				})
 				return
 			}
 			onEventUpdate?.({ ...event, ...updates })
 			setCurrentEvents(editResult)
 		},
-		[currentEvents, onEventAdd, onEventUpdate, pluginRuntime]
+		[currentEvents, onEventAdd, onEventUpdate, onEventDelete, pluginRuntime]
 	)
 
 	const applyScopedDelete = useCallback(
@@ -141,10 +171,20 @@ export const useCalendarData = ({
 			if (!manager?.applyDelete) {
 				return
 			}
+			const deleteResult = manager.applyDelete({ event, currentEvents, scope })
+			if (isPluginMutationResult(deleteResult)) {
+				dispatchMutationResult(deleteResult, {
+					onEventUpdate,
+					onEventAdd,
+					onEventDelete,
+					setCurrentEvents,
+				})
+				return
+			}
 			onEventDelete?.(event)
-			setCurrentEvents(manager.applyDelete({ event, currentEvents, scope }))
+			setCurrentEvents(deleteResult)
 		},
-		[currentEvents, onEventDelete, pluginRuntime]
+		[currentEvents, onEventAdd, onEventUpdate, onEventDelete, pluginRuntime]
 	)
 
 	const deleteEvent = useCallback(

@@ -144,6 +144,8 @@ export interface PluginMutationResult {
 	updated: CalendarEvent[]
 	/** New rows to persist via `onEventAdd`. */
 	added: CalendarEvent[]
+	/** Existing rows to persist via `onEventDelete`. */
+	deleted: CalendarEvent[]
 }
 
 /**
@@ -321,7 +323,9 @@ export interface IlamyPlugin {
 	applyEdit?: (
 		args: PluginMutationArgs
 	) => CalendarEvent[] | PluginMutationResult
-	applyDelete?: (args: PluginMutationArgs) => CalendarEvent[]
+	applyDelete?: (
+		args: PluginMutationArgs
+	) => CalendarEvent[] | PluginMutationResult
 	renderSlot?: (slotName: string, context: unknown) => ReactNode
 	/**
 	 * Contributes arbitrary data to a named point. Additive: all plugins may

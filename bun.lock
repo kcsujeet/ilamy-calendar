@@ -84,7 +84,6 @@
       "name": "@ilamy/calendar-agenda",
       "version": "1.8.1",
       "dependencies": {
-        "@ilamy/ui": "workspace:*",
         "@ilamy/utils": "workspace:*",
       },
       "peerDependencies": {

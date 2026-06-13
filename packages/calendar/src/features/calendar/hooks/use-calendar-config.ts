@@ -4,7 +4,7 @@ import { DAY_MAX_EVENTS_DEFAULT } from '@/lib/constants'
 import { defaultTranslations } from '@/lib/translations/default'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 
-export interface CalendarConfigParams {
+interface CalendarConfigParams {
 	firstDayOfWeek: number
 	/** Max stacked events per day in horizontal grids. @default DAY_MAX_EVENTS_DEFAULT */
 	dayMaxEvents?: number

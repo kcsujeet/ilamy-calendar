@@ -1,8 +1,8 @@
 import { type RefObject, useEffect, useRef } from 'react'
 
-export type ScrollToTimeAxis = 'vertical' | 'horizontal'
+type ScrollToTimeAxis = 'vertical' | 'horizontal'
 
-export interface UseScrollToTimeOptions {
+interface UseScrollToTimeOptions {
 	/**
 	 * Ref to the actual scrolling element (e.g. the Radix ScrollArea viewport).
 	 * The hook scrolls this element directly so the parent page is not affected.

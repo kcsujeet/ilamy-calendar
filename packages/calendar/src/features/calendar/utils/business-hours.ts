@@ -28,7 +28,7 @@ export const isBusinessDay = (
 	return hasMatch
 }
 
-export interface IsBusinessHourOptions {
+interface IsBusinessHourOptions {
 	date: Dayjs
 	hour?: number
 	minute?: number
@@ -83,7 +83,7 @@ export const isBusinessHour = ({
 /**
  * Helper to process a business hours configuration and update the range.
  */
-export const processBusinessHours = (
+const processBusinessHours = (
 	bh: BusinessHours | BusinessHours[] | undefined,
 	options: {
 		date?: Dayjs
@@ -109,7 +109,7 @@ export const processBusinessHours = (
 	}
 }
 
-export interface BusinessHoursRange {
+interface BusinessHoursRange {
 	minStart: number
 	maxEnd: number
 	hasBusinessHours: boolean

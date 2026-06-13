@@ -2,7 +2,7 @@ import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import type { HorizontalPositionedEvent } from './geometry'
 
-export interface HorizontalLayoutInput {
+interface HorizontalLayoutInput {
 	days: Dayjs[]
 	events: CalendarEvent[]
 	dayMaxEvents: number

@@ -17,16 +17,6 @@ export const WEEK_DAYS_NUMBER_MAP: Record<WeekDays, number> = {
 	saturday: 6,
 }
 
-export const DAY_NUMBER_TO_WEEK_DAYS: Record<number, WeekDays> = {
-	0: 'sunday',
-	1: 'monday',
-	2: 'tuesday',
-	3: 'wednesday',
-	4: 'thursday',
-	5: 'friday',
-	6: 'saturday',
-}
-
 // Per-item stagger (seconds) for AnimatedSection sequences in view headers and
 // the year grid. Previously the literal 0.05 pasted into 7 files.
 export const HEADER_STAGGER_DELAY = 0.05

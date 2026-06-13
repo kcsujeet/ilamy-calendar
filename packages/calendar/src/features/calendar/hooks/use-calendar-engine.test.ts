@@ -920,6 +920,36 @@ describe('useCalendarEngine', () => {
 			)
 			expect(onEventDelete).not.toHaveBeenCalled()
 		})
+
+		it('should fire onEventUpdate with base id and until on scope following delete', () => {
+			const onEventUpdate = vi.fn()
+			const onEventDelete = vi.fn()
+			const base = createRecurringEvent()
+			const events = [base]
+			const instance: CalendarEvent = {
+				...base,
+				id: 'recurring-1_2',
+				start: dayjs('2025-01-20T10:00:00.000Z'),
+				end: dayjs('2025-01-20T11:00:00.000Z'),
+				rrule: undefined,
+			}
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					events,
+					onEventUpdate,
+					onEventDelete,
+					plugins: [recurrencePlugin()],
+				})
+			)
+
+			act(() => result.current.applyScopedDelete(instance, 'following'))
+
+			expect(onEventUpdate).toHaveBeenCalledTimes(1)
+			expect(onEventUpdate.mock.calls[0][0].id).toBe('recurring-1')
+			expect(onEventUpdate.mock.calls[0][0].rrule.until).toBeDefined()
+			expect(onEventDelete).not.toHaveBeenCalled()
+		})
 	})
 
 	describe('translation', () => {

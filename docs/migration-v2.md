@@ -350,6 +350,10 @@ Likewise, an edit-"all" reset now fires `onEventDelete` for each detached overri
 If you persist per-row to an external store, these callbacks keep it consistent; previously
 the dropped rows were silently left behind as stale data.
 
+PR #194 also addresses issue #156: scoped recurring DELETE now reports the real stored rows
+(this/following → base `onEventUpdate`, all → base `onEventDelete`), and the fired payload
+always carries the base event's id, never a generated `<id>_0` instance id.
+
 ---
 
 ## One calendar: resources are props on `IlamyCalendar` (v2 structure overhaul, Phase 4)

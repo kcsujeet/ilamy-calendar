@@ -264,9 +264,35 @@ describe('updateRecurringEvent', () => {
 			expect(modifiedEvent?.uid).toBe(customUid)
 		})
 
-		it('should report base row in updated when editing a stored override', () => {
-			const baseEvent = createBaseRecurringEvent()
+		it('should report only the override (not the base) when editing a stored override in a consistent store', () => {
 			const occurrenceISO = '2025-01-20T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				exdates: [occurrenceISO],
+			})
+			const storedOverride = createTargetEvent({
+				id: 'recurring-1_override',
+				title: 'Detached override',
+				recurrenceId: occurrenceISO,
+				rrule: undefined,
+			})
+
+			const { updated, added, deleted } = updateRecurringEvent({
+				targetEvent: storedOverride,
+				updates: { title: 'Edited override' },
+				currentEvents: [baseEvent, storedOverride],
+				scope: 'this',
+			})
+
+			expect(added).toHaveLength(0)
+			expect(deleted).toHaveLength(0)
+			expect(updated).toHaveLength(1)
+			expect(updated[0].id).toBe('recurring-1_override')
+			expect(updated[0].title).toBe('Edited override')
+		})
+
+		it('should report both base and override when editing an override the base does not yet exdate', () => {
+			const occurrenceISO = '2025-01-20T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent()
 			const storedOverride = createTargetEvent({
 				id: 'recurring-1_override',
 				title: 'Detached override',
@@ -361,6 +387,62 @@ describe('updateRecurringEvent', () => {
 
 			// Original should terminate before first occurrence (effectively making it empty)
 			expectTerminatedUntil(result, baseEvent.id, '2025-01-05T23:59:59.999Z')
+		})
+
+		it('should cascade-delete detached overrides whose occurrence is after the split', () => {
+			const occurrenceDISO = '2025-01-20T09:00:00.000Z'
+			const occurrenceFISO = '2025-01-27T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				exdates: [occurrenceDISO, occurrenceFISO],
+			})
+			const overrideE = createTargetEvent({
+				id: 'recurring-1_overrideE',
+				title: 'Override E',
+				start: dayjs(occurrenceDISO),
+				recurrenceId: occurrenceDISO,
+				rrule: undefined,
+			})
+			const overrideF = createTargetEvent({
+				id: 'recurring-1_overrideF',
+				title: 'Override F',
+				start: dayjs(occurrenceFISO),
+				recurrenceId: occurrenceFISO,
+				rrule: undefined,
+			})
+			const targetEvent = createTargetEvent({
+				start: dayjs(occurrenceDISO),
+			})
+
+			const { events, updated, added, deleted } = updateRecurringEvent({
+				targetEvent,
+				updates: { title: 'New Series' },
+				currentEvents: [baseEvent, overrideE, overrideF],
+				scope: 'following',
+			})
+
+			const deletedIds = deleted.map((e) => e.id)
+			expect(deletedIds).toContain('recurring-1_overrideE')
+			expect(deletedIds).toContain('recurring-1_overrideF')
+
+			expect(
+				events.find((e) => e.id === 'recurring-1_overrideE')
+			).toBeUndefined()
+			expect(
+				events.find((e) => e.id === 'recurring-1_overrideF')
+			).toBeUndefined()
+
+			expect(updated).toHaveLength(1)
+			const terminatedEvent = updated[0]
+			expect(terminatedEvent.id).toBe('recurring-1')
+			if (!terminatedEvent.rrule) {
+				throw new Error('terminatedEvent.rrule missing')
+			}
+			expect(terminatedEvent.rrule.until).toBeDefined()
+			expect(terminatedEvent.exdates).not.toContain(occurrenceDISO)
+			expect(terminatedEvent.exdates).not.toContain(occurrenceFISO)
+
+			expect(added).toHaveLength(1)
+			expect(added[0].id).toBe('recurring-1_following')
 		})
 	})
 

@@ -125,6 +125,57 @@ const addExdateToBaseEvent = (
 }
 
 /**
+ * Builds the new base series produced by a "following" edit: a fresh series id/uid
+ * anchored at the target (or submitted) start, carrying the submitted updates.
+ */
+const buildFollowingSeriesEvent = (
+	baseEvent: CalendarEvent,
+	targetEvent: CalendarEvent,
+	updates: Partial<CalendarEvent>
+): CalendarEvent => {
+	const originalDuration = baseEvent.end.diff(baseEvent.start)
+	const newSeriesStartTime = updates.start || targetEvent.start
+	const newSeriesEndTime =
+		updates.end || newSeriesStartTime.add(originalDuration)
+	const newSeriesId = `${baseEvent.id}_following`
+	const newSeriesUID = `${newSeriesId}@ilamy.calendar`
+
+	return {
+		...baseEvent,
+		...updates,
+		rrule: {
+			...baseEvent.rrule,
+			...updates.rrule,
+			dtstart: newSeriesStartTime.toDate(),
+		} as RRuleOptions,
+		id: newSeriesId,
+		uid: newSeriesUID,
+		start: newSeriesStartTime,
+		end: newSeriesEndTime,
+		recurrenceId: undefined,
+	}
+}
+
+/**
+ * Predicate factory for the "following" edit: a detached override of the same
+ * series whose occurrence falls strictly after the split belongs to the new
+ * series' span and must be cascaded out, not orphaned in the store.
+ */
+const makeIsFollowingOverride = (
+	parentUid: string,
+	terminationDate: Date
+): ((event: CalendarEvent) => boolean) => {
+	return (event: CalendarEvent): boolean => {
+		const isDetachedOverride = Boolean(event.recurrenceId) && !event.rrule
+		const belongsToSeries = getEventParentUID(event) === parentUid
+		const isAfterSplit =
+			Boolean(event.recurrenceId) &&
+			dayjs(event.recurrenceId).isAfter(terminationDate)
+		return isDetachedOverride && belongsToSeries && isAfterSplit
+	}
+}
+
+/**
  * For scope "all": apply the submitted wall-clock time to the base event anchor.
  * This keeps the series anchored to its original date while changing its time.
  */
@@ -277,6 +328,226 @@ interface UpdateRecurringEventProps {
 	scope: 'this' | 'following' | 'all'
 }
 
+interface ScopedUpdateContext {
+	targetEvent: CalendarEvent
+	updates: Partial<CalendarEvent>
+	updatedEvents: CalendarEvent[]
+	baseEventIndex: number
+	baseEvent: CalendarEvent
+}
+
+/**
+ * The EXDATE key for a "this"-scope edit: a stored override keys by its original
+ * occurrence (`recurrenceId`); a generated instance keys by its own start.
+ */
+const getThisScopeRecurrenceId = (
+	targetEvent: CalendarEvent,
+	isOverrideEvent: boolean
+): string => {
+	if (isOverrideEvent && targetEvent.recurrenceId) {
+		return targetEvent.recurrenceId
+	}
+	return targetEvent.start.toISOString()
+}
+
+/**
+ * Replaces a stored override in place. The base is reported in `updated` only when
+ * it actually changed — a consistent store already exdates the occurrence and
+ * carries the uid, so reporting it would fire a redundant no-op onEventUpdate.
+ */
+interface ReplaceStoredOverrideArgs {
+	updatedEvents: CalendarEvent[]
+	targetEvent: CalendarEvent
+	detachedOverride: CalendarEvent
+	updatedBaseEvent: CalendarEvent
+	baseChanged: boolean
+}
+
+const replaceStoredOverride = ({
+	updatedEvents,
+	targetEvent,
+	detachedOverride,
+	updatedBaseEvent,
+	baseChanged,
+}: ReplaceStoredOverrideArgs): PluginMutationResult => {
+	const overrideIndex = updatedEvents.findIndex((e) => e.id === targetEvent.id)
+	if (overrideIndex === -1) {
+		throw new Error('Detached override not found')
+	}
+	updatedEvents[overrideIndex] = detachedOverride
+	return {
+		events: updatedEvents,
+		updated: baseChanged
+			? [updatedBaseEvent, detachedOverride]
+			: [detachedOverride],
+		added: [],
+		deleted: [],
+	}
+}
+
+/**
+ * Scope "this": EXDATE on base + a detached override for this occurrence.
+ * A generated instance adds a new override row; a stored override updates in place.
+ */
+const updateThisScope = ({
+	targetEvent,
+	updates,
+	updatedEvents,
+	baseEventIndex,
+	baseEvent,
+}: ScopedUpdateContext): PluginMutationResult => {
+	const seriesUid = getEventParentUID(baseEvent)
+	const isOverrideEvent = Boolean(
+		targetEvent.recurrenceId && !targetEvent.rrule
+	)
+	const recurrenceId = getThisScopeRecurrenceId(targetEvent, isOverrideEvent)
+
+	const existingExdates = baseEvent.exdates || []
+	const nextExdates = existingExdates.includes(recurrenceId)
+		? existingExdates
+		: [...existingExdates, recurrenceId]
+	const baseChanged =
+		nextExdates !== existingExdates || baseEvent.uid !== seriesUid
+
+	const updatedBaseEvent: CalendarEvent = {
+		...baseEvent,
+		exdates: nextExdates,
+		uid: seriesUid,
+	}
+	updatedEvents[baseEventIndex] = updatedBaseEvent
+
+	const detachedOverride: CalendarEvent = {
+		...targetEvent,
+		...updates,
+		recurrenceId,
+		rrule: undefined,
+		uid: seriesUid,
+	}
+
+	if (isOverrideEvent) {
+		return replaceStoredOverride({
+			updatedEvents,
+			targetEvent,
+			detachedOverride,
+			updatedBaseEvent,
+			baseChanged,
+		})
+	}
+
+	const modifiedEvent: CalendarEvent = {
+		...detachedOverride,
+		id: `${baseEvent.id}_modified_${Date.now()}`,
+	}
+	updatedEvents.push(modifiedEvent)
+	return {
+		events: updatedEvents,
+		updated: [updatedBaseEvent],
+		added: [modifiedEvent],
+		deleted: [],
+	}
+}
+
+/**
+ * Scope "following": terminate the original series with UNTIL before the target
+ * date and create a new series from the target. Detached overrides of the series
+ * whose occurrence falls after the split are cascaded out (reported in `deleted`).
+ */
+const updateFollowingScope = ({
+	targetEvent,
+	updates,
+	updatedEvents,
+	baseEventIndex,
+	baseEvent,
+}: ScopedUpdateContext): PluginMutationResult => {
+	const terminationDate = getSeriesTerminationDate(targetEvent)
+	const parentUid = getEventParentUID(baseEvent)
+	const isFollowingOverride = makeIsFollowingOverride(
+		parentUid,
+		terminationDate
+	)
+
+	// Update original series with UNTIL to end before target date. Drop the
+	// exdates that now sit beyond UNTIL (the cascaded overrides' occurrences).
+	const cleanedExdates = (baseEvent.exdates ?? []).filter(
+		(iso) => !dayjs(iso).isAfter(terminationDate)
+	)
+	const terminatedEvent = {
+		...baseEvent,
+		exdates: cleanedExdates,
+		rrule: {
+			...baseEvent.rrule,
+			until: terminationDate,
+		} as RRuleOptions,
+	}
+	updatedEvents[baseEventIndex] = terminatedEvent
+
+	const newSeriesEvent = buildFollowingSeriesEvent(
+		baseEvent,
+		targetEvent,
+		updates
+	)
+	updatedEvents.push(newSeriesEvent)
+
+	// The new series carries an rrule, so it is never matched as a following
+	// override; filter after the push so only the orphaned overrides drop out.
+	const followingOverrides = updatedEvents.filter(isFollowingOverride)
+	const events = updatedEvents.filter((e) => !isFollowingOverride(e))
+	return {
+		events,
+		updated: [terminatedEvent],
+		added: [newSeriesEvent],
+		deleted: followingOverrides,
+	}
+}
+
+/**
+ * Scope "all": reset the base recurring event (Google-Calendar behavior). Anchor
+ * dates change but the series day is kept; detached overrides are dropped and
+ * exceptions cleared, so previously split/deleted occurrences return.
+ */
+const updateAllScope = ({
+	updates,
+	updatedEvents,
+	baseEventIndex,
+	baseEvent,
+}: ScopedUpdateContext): PluginMutationResult => {
+	const seriesUid = getEventParentUID(baseEvent)
+	const anchored = applyAllScopeUpdates(baseEvent, updates)
+	const updatedBaseEvent: CalendarEvent = {
+		...baseEvent,
+		...updates,
+		start: anchored.start,
+		end: anchored.end,
+		rrule: anchored.rrule,
+		exdates: undefined,
+		uid: seriesUid,
+	}
+	updatedEvents[baseEventIndex] = updatedBaseEvent
+
+	const isDetachedOverrideOfSeries = (e: CalendarEvent): boolean => {
+		const isDetachedOverride = Boolean(e.recurrenceId) && !e.rrule
+		const belongsToSeries = getEventParentUID(e) === seriesUid
+		return isDetachedOverride && belongsToSeries
+	}
+	const events = updatedEvents.filter((e) => !isDetachedOverrideOfSeries(e))
+	const deletedOverrides = updatedEvents.filter(isDetachedOverrideOfSeries)
+	return {
+		events,
+		updated: [updatedBaseEvent],
+		added: [],
+		deleted: deletedOverrides,
+	}
+}
+
+const scopedUpdateHandlers: Record<
+	UpdateRecurringEventProps['scope'],
+	(context: ScopedUpdateContext) => PluginMutationResult
+> = {
+	this: updateThisScope,
+	following: updateFollowingScope,
+	all: updateAllScope,
+}
+
 export const updateRecurringEvent = ({
 	targetEvent,
 	updates,
@@ -287,159 +558,129 @@ export const updateRecurringEvent = ({
 	const baseEventIndex = findBaseEventIndex(updatedEvents, targetEvent)
 	const baseEvent = updatedEvents[baseEventIndex]
 
-	switch (scope) {
-		case 'this': {
-			// "This event only" - EXDATE on base + detached override for this occurrence.
-			// Generated instance: add a new override row. Stored override: update in place.
-			const seriesUid = getEventParentUID(baseEvent)
-			const isOverrideEvent = Boolean(
-				targetEvent.recurrenceId && !targetEvent.rrule
-			)
-			// A stored override keys its EXDATE by the original occurrence
-			// (`recurrenceId`); a generated instance keys by its own start.
-			let recurrenceId = targetEvent.start.toISOString()
-			if (isOverrideEvent && targetEvent.recurrenceId) {
-				recurrenceId = targetEvent.recurrenceId
-			}
-
-			const existingExdates = baseEvent.exdates || []
-			const nextExdates = existingExdates.includes(recurrenceId)
-				? existingExdates
-				: [...existingExdates, recurrenceId]
-
-			const updatedBaseEvent: CalendarEvent = {
-				...baseEvent,
-				exdates: nextExdates,
-				uid: seriesUid,
-			}
-			updatedEvents[baseEventIndex] = updatedBaseEvent
-
-			const detachedOverride: CalendarEvent = {
-				...targetEvent,
-				...updates,
-				recurrenceId,
-				rrule: undefined,
-				uid: seriesUid,
-			}
-
-			if (isOverrideEvent) {
-				const overrideIndex = updatedEvents.findIndex(
-					(e) => e.id === targetEvent.id
-				)
-				if (overrideIndex === -1) {
-					throw new Error('Detached override not found')
-				}
-				updatedEvents[overrideIndex] = detachedOverride
-				return {
-					events: updatedEvents,
-					updated: [updatedBaseEvent, detachedOverride],
-					added: [],
-					deleted: [],
-				}
-			}
-
-			const modifiedEventId = `${baseEvent.id}_modified_${Date.now()}`
-			const modifiedEvent: CalendarEvent = {
-				...detachedOverride,
-				id: modifiedEventId,
-			}
-			updatedEvents.push(modifiedEvent)
-			return {
-				events: updatedEvents,
-				updated: [updatedBaseEvent],
-				added: [modifiedEvent],
-				deleted: [],
-			}
-		}
-
-		case 'following': {
-			// "This and following" - Terminate original series and create new series
-			const terminationDate = getSeriesTerminationDate(targetEvent)
-
-			// Update original series with UNTIL to end before target date
-			const terminatedEvent = {
-				...baseEvent,
-				rrule: {
-					...baseEvent.rrule,
-					until: terminationDate,
-				} as RRuleOptions,
-			}
-			updatedEvents[baseEventIndex] = terminatedEvent
-
-			// Create new series starting from target date
-			const originalDuration = baseEvent.end.diff(baseEvent.start)
-			const newSeriesStartTime = updates.start || targetEvent.start
-			const newSeriesEndTime =
-				updates.end || newSeriesStartTime.add(originalDuration)
-			const newSeriesId = `${baseEvent.id}_following`
-			const newSeriesUID = `${newSeriesId}@ilamy.calendar`
-
-			const newSeriesEvent: CalendarEvent = {
-				...baseEvent,
-				...updates,
-				rrule: {
-					...baseEvent.rrule,
-					...updates.rrule,
-					dtstart: newSeriesStartTime.toDate(),
-				} as RRuleOptions,
-				id: newSeriesId,
-				uid: newSeriesUID, // New UID for new series
-				start: newSeriesStartTime,
-				end: newSeriesEndTime,
-				recurrenceId: undefined, // This is a new base event, not an instance
-			}
-			updatedEvents.push(newSeriesEvent)
-			return {
-				events: updatedEvents,
-				updated: [terminatedEvent],
-				added: [newSeriesEvent],
-				deleted: [],
-			}
-		}
-
-		case 'all': {
-			// "All events" - Update the base recurring event (anchor dates, not instance day)
-			const seriesUid = getEventParentUID(baseEvent)
-			const anchored = applyAllScopeUpdates(baseEvent, updates)
-			const updatedBaseEvent: CalendarEvent = {
-				...baseEvent,
-				...updates,
-				start: anchored.start,
-				end: anchored.end,
-				rrule: anchored.rrule,
-				exdates: undefined,
-				uid: seriesUid,
-			}
-			updatedEvents[baseEventIndex] = updatedBaseEvent
-
-			const isDetachedOverrideOfSeries = (e: CalendarEvent): boolean => {
-				const isDetachedOverride = Boolean(e.recurrenceId) && !e.rrule
-				const belongsToSeries = getEventParentUID(e) === seriesUid
-				return isDetachedOverride && belongsToSeries
-			}
-			// Google-Calendar behavior: an "all" edit resets the series — drop detached
-			// overrides and clear exceptions (previously split/deleted occurrences return).
-			const events = updatedEvents.filter((e) => !isDetachedOverrideOfSeries(e))
-			const deletedOverrides = updatedEvents.filter(isDetachedOverrideOfSeries)
-			return {
-				events,
-				updated: [updatedBaseEvent],
-				added: [],
-				deleted: deletedOverrides,
-			}
-		}
-
-		default:
-			throw new Error(
-				`Invalid scope: ${scope}. Must be 'this', 'following', or 'all'`
-			)
+	const handler = scopedUpdateHandlers[scope]
+	if (!handler) {
+		throw new Error(
+			`Invalid scope: ${scope}. Must be 'this', 'following', or 'all'`
+		)
 	}
+
+	return handler({
+		targetEvent,
+		updates,
+		updatedEvents,
+		baseEventIndex,
+		baseEvent,
+	})
 }
 
 interface DeleteRecurringEventProps {
 	targetEvent: CalendarEvent
 	currentEvents: CalendarEvent[]
 	scope: 'this' | 'following' | 'all'
+}
+
+interface ScopedDeleteContext {
+	targetEvent: CalendarEvent
+	updatedEvents: CalendarEvent[]
+	baseEventIndex: number
+	baseEvent: CalendarEvent
+}
+
+/**
+ * Scope "this": EXDATE the occurrence on the base and drop any detached override
+ * for it. The dropped override is reported in `deleted` so a stored row is removed.
+ */
+const deleteThisScope = ({
+	targetEvent,
+	updatedEvents,
+	baseEventIndex,
+	baseEvent,
+}: ScopedDeleteContext): PluginMutationResult => {
+	const occurrenceStartISO = getOccurrenceStartISO(targetEvent)
+	const parentUid = getEventParentUID(baseEvent)
+	const { baseEvent: updatedBaseEvent } = addExdateToBaseEvent(
+		baseEvent,
+		targetEvent
+	)
+	updatedEvents[baseEventIndex] = updatedBaseEvent
+
+	const isThisOccurrenceOverride = (e: CalendarEvent): boolean => {
+		const isDetachedOverride = Boolean(e.recurrenceId)
+		const belongsToSeries = getEventParentUID(e) === parentUid
+		const isThisOccurrence = e.recurrenceId === occurrenceStartISO
+		return isDetachedOverride && belongsToSeries && isThisOccurrence
+	}
+
+	// Capture the dropped override before filtering so it can be reported as a
+	// real stored deletion rather than silently vanishing from `events`.
+	const droppedOverride = updatedEvents.find(isThisOccurrenceOverride)
+	const events = updatedEvents.filter((e) => !isThisOccurrenceOverride(e))
+
+	return {
+		events,
+		updated: [updatedBaseEvent],
+		added: [],
+		deleted: droppedOverride ? [droppedOverride] : [],
+	}
+}
+
+/**
+ * Scope "following": terminate the series with UNTIL set before the target date,
+ * keeping the last pre-target occurrence.
+ */
+const deleteFollowingScope = ({
+	targetEvent,
+	updatedEvents,
+	baseEventIndex,
+	baseEvent,
+}: ScopedDeleteContext): PluginMutationResult => {
+	const terminatedEvent = {
+		...baseEvent,
+		rrule: {
+			...baseEvent.rrule,
+			until: getSeriesTerminationDate(targetEvent),
+		} as RRuleOptions,
+	}
+	updatedEvents[baseEventIndex] = terminatedEvent
+	return {
+		events: updatedEvents,
+		updated: [terminatedEvent],
+		added: [],
+		deleted: [],
+	}
+}
+
+/**
+ * Scope "all": remove the entire series (base + every detached override sharing
+ * the parent uid), reporting all removed rows in `deleted`.
+ */
+const deleteAllScope = ({
+	targetEvent,
+	updatedEvents,
+}: ScopedDeleteContext): PluginMutationResult => {
+	const targetUid = getEventParentUID(targetEvent)
+	const deletedSeries = updatedEvents.filter(
+		(e) => getEventParentUID(e) === targetUid
+	)
+	const eventsWithoutTargetSeries = updatedEvents.filter(
+		(e) => getEventParentUID(e) !== targetUid
+	)
+	return {
+		events: eventsWithoutTargetSeries,
+		updated: [],
+		added: [],
+		deleted: deletedSeries,
+	}
+}
+
+const scopedDeleteHandlers: Record<
+	DeleteRecurringEventProps['scope'],
+	(context: ScopedDeleteContext) => PluginMutationResult
+> = {
+	this: deleteThisScope,
+	following: deleteFollowingScope,
+	all: deleteAllScope,
 }
 
 export const deleteRecurringEvent = ({
@@ -451,75 +692,17 @@ export const deleteRecurringEvent = ({
 	const baseEventIndex = findBaseEventIndex(updatedEvents, targetEvent)
 	const baseEvent = updatedEvents[baseEventIndex]
 
-	switch (scope) {
-		case 'this': {
-			// "This event only" - Add EXDATE and drop any detached override for this occurrence
-			const occurrenceStartISO = getOccurrenceStartISO(targetEvent)
-			const parentUid = getEventParentUID(baseEvent)
-			const { baseEvent: updatedBaseEvent } = addExdateToBaseEvent(
-				baseEvent,
-				targetEvent
-			)
-			updatedEvents[baseEventIndex] = updatedBaseEvent
-
-			const isThisOccurrenceOverride = (e: CalendarEvent): boolean => {
-				const isDetachedOverride = Boolean(e.recurrenceId)
-				const belongsToSeries = getEventParentUID(e) === parentUid
-				const isThisOccurrence = e.recurrenceId === occurrenceStartISO
-				return isDetachedOverride && belongsToSeries && isThisOccurrence
-			}
-
-			// Capture the detached override (if any) being dropped for this occurrence
-			// before it's filtered out, so it can be reported as a real stored deletion.
-			const droppedOverride = updatedEvents.find(isThisOccurrenceOverride)
-			const events = updatedEvents.filter((e) => !isThisOccurrenceOverride(e))
-
-			return {
-				events,
-				updated: [updatedBaseEvent],
-				added: [],
-				deleted: droppedOverride ? [droppedOverride] : [],
-			}
-		}
-
-		case 'following': {
-			// "This and following" - Terminate series with UNTIL before target date
-			const terminatedEvent = {
-				...baseEvent,
-				rrule: {
-					...baseEvent.rrule,
-					until: getSeriesTerminationDate(targetEvent),
-				} as RRuleOptions,
-			}
-			updatedEvents[baseEventIndex] = terminatedEvent
-			return {
-				events: updatedEvents,
-				updated: [terminatedEvent],
-				added: [],
-				deleted: [],
-			}
-		}
-
-		case 'all': {
-			// "All events" - Remove the entire recurring series
-			const targetUid = getEventParentUID(targetEvent)
-			const deletedSeries = updatedEvents.filter(
-				(e) => getEventParentUID(e) === targetUid
-			)
-			const eventsWithoutTargetSeries = updatedEvents.filter(
-				(e) => getEventParentUID(e) !== targetUid
-			)
-			return {
-				events: eventsWithoutTargetSeries,
-				updated: [],
-				added: [],
-				deleted: deletedSeries,
-			}
-		}
-
-		default:
-			throw new Error(
-				`Invalid scope: ${scope}. Must be 'this', 'following', or 'all'`
-			)
+	const handler = scopedDeleteHandlers[scope]
+	if (!handler) {
+		throw new Error(
+			`Invalid scope: ${scope}. Must be 'this', 'following', or 'all'`
+		)
 	}
+
+	return handler({
+		targetEvent,
+		updatedEvents,
+		baseEventIndex,
+		baseEvent,
+	})
 }

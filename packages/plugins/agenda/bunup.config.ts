@@ -11,5 +11,11 @@ export default defineConfig({
 	minify: true,
 	clean: true,
 	sourcemap: true,
-	external: ['react', 'react-dom', '@ilamy/calendar', /^@ilamy\/utils/],
+	external: [
+		'react',
+		'react-dom',
+		'@ilamy/calendar',
+		/^@ilamy\/ui/,
+		/^@ilamy\/utils/,
+	],
 })

@@ -1,9 +1,20 @@
 import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { CalendarTestProvider } from '@ilamy/calendar/testing'
 import dayjs from '@ilamy/utils/dayjs'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { AgendaView } from './agenda-view'
+
+/** Surfaces the form-open state so a click's effect on context is observable. */
+const FormProbe = () => {
+	const { isEventFormOpen, selectedEvent } = useIlamyCalendarContext()
+	return (
+		<div data-testid="probe">
+			{isEventFormOpen ? `open:${selectedEvent?.id}` : 'closed'}
+		</div>
+	)
+}
 
 const mkEvent = (
 	id: string,
@@ -63,9 +74,18 @@ describe('AgendaView', () => {
 		expect(screen.queryByText('Day 1/1')).not.toBeInTheDocument()
 	})
 
-	it('renders each event as a clickable control', () => {
-		renderAgenda(seed)
-		expect(screen.getByRole('button', { name: /Meeting/ })).toBeInTheDocument()
+	it('opens the clicked event for editing', () => {
+		render(
+			<CalendarTestProvider events={seed} initialDate={dayjs('2026-06-13')}>
+				<AgendaView window="month" />
+				<FormProbe />
+			</CalendarTestProvider>
+		)
+		expect(screen.getByTestId('probe')).toHaveTextContent('closed')
+
+		fireEvent.click(screen.getByRole('button', { name: /Meeting/ }))
+
+		expect(screen.getByTestId('probe')).toHaveTextContent('open:m')
 	})
 
 	it('shows the empty state when no events fall in the window', () => {

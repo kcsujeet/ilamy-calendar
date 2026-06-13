@@ -50,7 +50,15 @@ describe('groupEventsByDay', () => {
 		])
 	})
 
-	it('repeats a multi-day event under each overlapped day in the range', () => {
+	it('places a timed event only on its start day, even across midnight', () => {
+		const events = [
+			mkEvent('overnight', '2026-06-02T23:00:00', '2026-06-03T01:00:00'),
+		]
+		const groups = run(events, '2026-06-01T00:00:00', '2026-06-05T23:59:59')
+		expect(groups.map((g) => g.key)).toEqual(['2026-06-02'])
+	})
+
+	it('repeats a multi-day all-day event under each overlapped day in the range', () => {
 		const events = [
 			mkEvent('multi', '2026-06-02T00:00:00', '2026-06-04T23:59:59', {
 				allDay: true,

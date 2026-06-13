@@ -1,25 +1,12 @@
-import type {
-	CalendarEvent,
-	TimeFormat,
-	TranslatorFunction,
-} from '@ilamy/calendar'
 import { listKey } from '@ilamy/utils/helpers'
 import type { AgendaDayGroupData } from '../utils/group-events-by-day'
 import { AgendaEventRow } from './agenda-event-row'
 
 interface AgendaDayGroupProps {
 	group: AgendaDayGroupData
-	timeFormat: TimeFormat
-	t: TranslatorFunction
-	onEventClick: (event: CalendarEvent) => void
 }
 
-export const AgendaDayGroup = ({
-	group,
-	timeFormat,
-	t,
-	onEventClick,
-}: AgendaDayGroupProps) => (
+export const AgendaDayGroup = ({ group }: AgendaDayGroupProps) => (
 	<div
 		className="flex gap-4 border-b px-2 py-3"
 		data-testid={listKey('agenda-day', group.key)}
@@ -36,9 +23,6 @@ export const AgendaDayGroup = ({
 					day={group.date}
 					event={event}
 					key={listKey(group.key, event.id)}
-					onClick={onEventClick}
-					t={t}
-					timeFormat={timeFormat}
 				/>
 			))}
 		</div>

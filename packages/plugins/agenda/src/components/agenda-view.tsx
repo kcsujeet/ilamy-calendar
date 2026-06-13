@@ -13,8 +13,7 @@ interface AgendaViewProps {
  * the year view) so it is independent of the active view's range.
  */
 export const AgendaView = ({ window }: AgendaViewProps) => {
-	const { currentDate, getEventsForDateRange, t, openEventForm, timeFormat } =
-		useIlamyCalendarContext()
+	const { currentDate, getEventsForDateRange, t } = useIlamyCalendarContext()
 
 	const range = windowRange(currentDate, window)
 	const events = getEventsForDateRange(range.start, range.end)
@@ -34,13 +33,7 @@ export const AgendaView = ({ window }: AgendaViewProps) => {
 	return (
 		<div className="flex flex-col" data-testid="agenda-view">
 			{groups.map((group) => (
-				<AgendaDayGroup
-					group={group}
-					key={group.key}
-					onEventClick={openEventForm}
-					t={t}
-					timeFormat={timeFormat}
-				/>
+				<AgendaDayGroup group={group} key={group.key} />
 			))}
 		</div>
 	)

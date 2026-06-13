@@ -9,12 +9,25 @@ export interface AgendaDayGroupData {
 	events: CalendarEvent[]
 }
 
-const overlapsDay = (
+/**
+ * All-day events repeat under each day they span (matching Google's Schedule
+ * view); a timed event appears once, under its start day, even if it crosses
+ * midnight.
+ */
+const appearsOnDay = (
 	event: CalendarEvent,
 	dayStart: Dayjs,
 	dayEnd: Dayjs
-): boolean =>
-	event.start.isSameOrBefore(dayEnd) && event.end.isSameOrAfter(dayStart)
+): boolean => {
+	if (event.allDay) {
+		return (
+			event.start.isSameOrBefore(dayEnd) && event.end.isSameOrAfter(dayStart)
+		)
+	}
+	return (
+		event.start.isSameOrAfter(dayStart) && event.start.isSameOrBefore(dayEnd)
+	)
+}
 
 const byAllDayThenStart = (a: CalendarEvent, b: CalendarEvent): number => {
 	const aRank = a.allDay ? 0 : 1
@@ -26,9 +39,9 @@ const byAllDayThenStart = (a: CalendarEvent, b: CalendarEvent): number => {
 }
 
 /**
- * Groups events by calendar day across `range`, dropping empty days. A multi-day
- * event is repeated under each day it overlaps within the window (clamped to it),
- * matching the agenda's per-day scanning model.
+ * Groups events by calendar day across `range`, dropping empty days. All-day
+ * events repeat under each day they span (clamped to the window); timed events
+ * appear once under their start day. Matches the agenda's per-day scanning model.
  */
 export const groupEventsByDay = (
 	events: CalendarEvent[],
@@ -42,7 +55,7 @@ export const groupEventsByDay = (
 		const dayStart = cursor.startOf('day')
 		const dayEnd = cursor.endOf('day')
 		const dayEvents = events
-			.filter((event) => overlapsDay(event, dayStart, dayEnd))
+			.filter((event) => appearsOnDay(event, dayStart, dayEnd))
 			.sort(byAllDayThenStart)
 		if (dayEvents.length > 0) {
 			groups.push({

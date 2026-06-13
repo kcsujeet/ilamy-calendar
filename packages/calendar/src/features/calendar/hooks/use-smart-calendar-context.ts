@@ -56,6 +56,12 @@ export interface IlamyCalendarApi {
 	readonly openEventForm: (eventData?: OpenEventFormInput) => void
 	readonly closeEventForm: () => void
 	/**
+	 * Handle a click on an existing event: runs the consumer's `onEventClick`
+	 * callback if provided, otherwise opens the event for editing. Lets plugin
+	 * views (e.g. agenda) handle event clicks identically to the built-in views.
+	 */
+	readonly onEventClick: (event: CalendarEvent) => void
+	/**
 	 * Events whose resource membership (`resourceIds`, falling back to
 	 * `resourceId`) contains the given resource. On a calendar without
 	 * resources this simply filters by the events' own resource fields.
@@ -131,6 +137,7 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 		deleteEvent: context.deleteEvent,
 		openEventForm: context.openEventForm,
 		closeEventForm: context.closeEventForm,
+		onEventClick: context.onEventClick,
 		getEventsForResource: context.getEventsForResource,
 		businessHours: context.businessHours,
 		t: context.t,

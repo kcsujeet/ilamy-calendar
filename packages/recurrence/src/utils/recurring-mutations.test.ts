@@ -2,11 +2,9 @@ import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
-import {
-	deleteRecurringEvent,
-	generateRecurringEvents,
-	updateRecurringEvent,
-} from './recurrence-handler'
+import { deleteRecurringEvent } from './delete-recurring-event'
+import { generateRecurringEvents } from './generate-recurring-events'
+import { updateRecurringEvent } from './update-recurring-event'
 
 const createBaseRecurringEvent = (
 	overrides: Partial<CalendarEvent> = {}
@@ -23,7 +21,7 @@ const createBaseRecurringEvent = (
 	...overrides,
 })
 
-describe('recurrence-handler utility tests', () => {
+describe('recurring mutations', () => {
 	describe('deleteRecurringEvent', () => {
 		it('should delete entire series (scope: all) when uid is missing from base event', () => {
 			const baseEvent = createBaseRecurringEvent({ id: 'series-1' })

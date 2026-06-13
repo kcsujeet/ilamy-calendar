@@ -2,12 +2,10 @@ import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
-import {
-	deleteRecurringEvent,
-	generateRecurringEvents,
-	isRecurringEvent,
-	updateRecurringEvent,
-} from './recurrence-handler'
+import { deleteRecurringEvent } from './delete-recurring-event'
+import { generateRecurringEvents } from './generate-recurring-events'
+import { isRecurringEvent } from './series-helpers'
+import { updateRecurringEvent } from './update-recurring-event'
 
 // Test helper to create a base recurring event
 const createBaseRecurringEvent = (

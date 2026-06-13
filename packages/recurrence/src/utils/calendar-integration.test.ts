@@ -3,7 +3,7 @@ import type { CalendarEvent } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from '../types'
-import { generateRecurringEvents } from './recurrence-handler'
+import { generateRecurringEvents } from './generate-recurring-events'
 
 // Call wrapper: supplies the always-empty currentEvents and full-range defaults.
 const generate = (

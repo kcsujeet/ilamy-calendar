@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
-import { generateRecurringEvents } from './recurrence-handler'
+import { generateRecurringEvents } from './generate-recurring-events'
 
 describe('Recurrence Timezone Persistence', () => {
 	const originalTz = dayjs.tz.guess()

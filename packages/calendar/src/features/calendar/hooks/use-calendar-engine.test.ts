@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
+import { agendaPlugin } from '@ilamy/calendar-agenda'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
@@ -368,6 +369,39 @@ describe('useCalendarEngine', () => {
 			const names = result.current.getViews().map((v) => v.name)
 
 			expect(names).toEqual(['day', 'week', 'month', 'year', 'forty-day'])
+		})
+
+		it('registers the agenda view only when the agenda plugin is provided', () => {
+			const without = renderHook(() => useCalendarEngine(defaultConfig))
+			const withoutNames = without.result.current.getViews().map((v) => v.name)
+			expect(withoutNames).not.toContain('agenda')
+
+			const withPlugin = renderHook(() =>
+				useCalendarEngine({ ...defaultConfig, plugins: [agendaPlugin()] })
+			)
+			const withNames = withPlugin.result.current.getViews().map((v) => v.name)
+			expect(withNames).toContain('agenda')
+		})
+
+		it('steps the agenda window and reports its range on navigation', () => {
+			const onDateChange = vi.fn()
+			const initialDate = dayjs('2026-06-13T00:00:00.000Z')
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate,
+					initialView: 'agenda',
+					plugins: [agendaPlugin({ window: 7 })],
+					onDateChange,
+				})
+			)
+
+			act(() => result.current.nextPeriod()) // +7 days
+
+			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2026-06-20')
+			const [, range] = onDateChange.mock.calls[0]
+			expect(range.start.format('YYYY-MM-DD')).toBe('2026-06-20')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2026-06-26')
 		})
 	})
 

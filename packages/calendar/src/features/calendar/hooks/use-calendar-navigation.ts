@@ -15,7 +15,7 @@ const calculateViewRange = (
 	viewSpec?.range?.(date, { firstDayOfWeek }) ??
 	getMonthGridRange(date, firstDayOfWeek)
 
-export interface CalendarNavigationParams {
+interface CalendarNavigationParams {
 	initialDate: Dayjs
 	initialView: CalendarView
 	firstDayOfWeek: number

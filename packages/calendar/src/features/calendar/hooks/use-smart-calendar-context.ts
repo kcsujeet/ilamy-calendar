@@ -25,7 +25,7 @@ const EMPTY_RESOURCES: Resource[] = []
  * provider carries the resource axis, this is simply the calendar context:
  * resource utilities are always defined; `resources` is honestly optional.
  */
-export type SmartCalendarContextType = CalendarContextType
+type SmartCalendarContextType = CalendarContextType
 
 /**
  * The public calendar API surface exposed by useIlamyCalendarContext() — for consumers and plugin

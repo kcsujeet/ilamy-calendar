@@ -4,7 +4,7 @@ import type { RRuleOptions } from '../types'
 import type { RecurrencePreset } from '../utils/recurrence-presets'
 
 export type EndType = 'never' | 'count' | 'until'
-export type MonthlyMode = 'day' | 'weekday'
+type MonthlyMode = 'day' | 'weekday'
 
 // The editor's state and mutations, shared with the field sub-components so each
 // derives the values it needs from `opts`/`reference` instead of taking props.

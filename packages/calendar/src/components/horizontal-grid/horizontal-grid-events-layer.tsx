@@ -8,7 +8,7 @@ import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
 import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { keys } from '@/lib/utils/keys'
 
-export interface HorizontalGridEventsLayerProps {
+interface HorizontalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
 	days: Dayjs[]
 	resourceId?: string | number

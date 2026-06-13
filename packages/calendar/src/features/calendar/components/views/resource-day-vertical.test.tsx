@@ -3,8 +3,8 @@ import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
-import { DayView } from '@/features/calendar/components/views/day'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { DayView } from '@/testing/view-harnesses'
 
 const mockResources: Resource[] = [
 	{ id: '1', title: 'Resource 1' },

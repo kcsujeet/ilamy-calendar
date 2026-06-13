@@ -4,8 +4,8 @@ import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { generateMockEvents } from '@/lib/utils/generator'
-import { DayView } from './day'
+import { generateMockEvents } from '@/testing/generator'
+import { DayView } from '@/testing/view-harnesses'
 
 // Mock events for testing
 const mockEvents: CalendarEvent[] = generateMockEvents()

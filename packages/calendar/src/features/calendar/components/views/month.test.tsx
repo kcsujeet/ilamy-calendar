@@ -10,8 +10,8 @@ import {
 } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { generateMockEvents } from '@/lib/utils/generator'
-import { MonthView } from './month'
+import { generateMockEvents } from '@/testing/generator'
+import { MonthView } from '@/testing/view-harnesses'
 
 const weekDays: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 

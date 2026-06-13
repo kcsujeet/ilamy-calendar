@@ -28,7 +28,6 @@ import {
 	resourceVerticalColumns,
 } from './resource-axis'
 import { TimeHeaderRow } from './time-header-row'
-import { ViewRenderer } from './view-renderer'
 
 const DayViewHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 	const { t } = useSmartCalendarContext((c) => ({ t: c.t }))
@@ -126,8 +125,6 @@ const dayColumns = (
 		cellClassName: RESOURCE_CELL_WIDTH,
 	})
 }
-
-export const DayView: React.FC = () => <ViewRenderer view={dayView} />
 
 export const dayView: PluginView = {
 	name: 'day',

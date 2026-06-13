@@ -31,7 +31,6 @@ import { ResourceWeekHorizontalDayHeader } from './resource-week-horizontal-day-
 import { ResourceWeekVerticalDayHeader } from './resource-week-vertical-day-header'
 import { ResourceWeekVerticalResourceHeader } from './resource-week-vertical-resource-header'
 import { TimeHeaderRow } from './time-header-row'
-import { ViewRenderer } from './view-renderer'
 
 const getVisibleDays = (date: Dayjs, config: ViewConfig): Dayjs[] => {
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
@@ -225,7 +224,7 @@ const ResourceWeekHorizontalHeader: React.FC<{
 	date: Dayjs
 	config: ViewConfig
 	resources: Resource[]
-}> = ({ date, config, resources }) => {
+}> = ({ date, config }) => {
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
 	const isHourly = isHourlyGranularity(config)
 	const weekHours = isHourly
@@ -281,8 +280,6 @@ const weekColumns = (
 		})),
 	]
 }
-
-export const WeekView: React.FC = () => <ViewRenderer view={weekView} />
 
 export const weekView: PluginView = {
 	name: 'week',

@@ -15,7 +15,7 @@ const CLOSED: ScopedMutationDialogState = {
 	event: null,
 }
 
-export interface ScopedEventMutation {
+interface ScopedEventMutation {
 	dialogState: ScopedMutationDialogState
 	openEditDialog: (
 		event: CalendarEvent,

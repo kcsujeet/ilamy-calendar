@@ -5,9 +5,8 @@ import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/
 import {
 	assertVerticalBusinessHourRange,
 	weekdayBusinessHours,
-} from '@/features/calendar/testing/resource-test-fixtures'
-import { DayView } from './views/day'
-import { WeekView } from './views/week'
+} from '@/testing/resource-test-fixtures'
+import { DayView, WeekView } from '@/testing/view-harnesses'
 
 describe('Regular Calendar Business Hours Integration', () => {
 	beforeEach(() => {

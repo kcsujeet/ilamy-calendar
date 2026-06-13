@@ -12,7 +12,7 @@ import type { TranslatorFunction } from '@/lib/translations/types'
 const buildEventDraft = (draft: Omit<CalendarEvent, 'id'>): CalendarEvent =>
 	draft as CalendarEvent
 
-export interface CalendarInteractionParams {
+interface CalendarInteractionParams {
 	currentDate: Dayjs
 	t: TranslatorFunction
 	disableEventClick?: boolean

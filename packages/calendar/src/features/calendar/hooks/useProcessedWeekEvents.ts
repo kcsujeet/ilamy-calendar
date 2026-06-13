@@ -17,7 +17,7 @@ interface UseProcessedWeekEventsProps {
 	gridType?: 'day' | 'hour'
 }
 
-export interface ProcessedWeekEventsResult {
+interface ProcessedWeekEventsResult {
 	positionedEvents: HorizontalPositionedEvent[]
 	dayEventsMap: Map<string, CalendarEvent[]>
 }

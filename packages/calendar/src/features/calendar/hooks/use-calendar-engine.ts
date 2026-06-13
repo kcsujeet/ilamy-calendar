@@ -40,7 +40,7 @@ import type { CalendarView } from '@/types'
 const EMPTY_RESOURCES: Resource[] = []
 const EMPTY_PLUGINS: IlamyPlugin[] = []
 
-export interface CalendarEngineConfig {
+interface CalendarEngineConfig {
 	events: CalendarEvent[]
 	firstDayOfWeek: number
 	initialView?: CalendarView
@@ -94,7 +94,7 @@ export interface CalendarEngineReturn
  * the context spread, so the merged context value keeps its exact v1 shape
  * (the handlers surface as `onEventClick` / `onCellClick`).
  */
-export interface CalendarEngineHandlers {
+interface CalendarEngineHandlers {
 	handleEventClick: (event: CalendarEvent) => void
 	handleDateClick: (info: CellInfo) => void
 }

@@ -48,7 +48,7 @@ const dispatchMutationResult = (
 	setCurrentEvents(result.events)
 }
 
-export interface CalendarDataParams {
+interface CalendarDataParams {
 	events: CalendarEvent[]
 	pluginRuntime: PluginRuntime
 	getCurrentViewRange: () => { start: Dayjs; end: Dayjs }

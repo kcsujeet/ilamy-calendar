@@ -3,14 +3,14 @@ import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
-import { WeekView } from '@/features/calendar/components/views/week'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import {
 	assertResourceWeekBusinessHourRange,
 	resourceWeekInitialDate as initialDate,
 	noEvents,
 	twoResources,
-} from '@/features/calendar/testing/resource-test-fixtures'
+} from '@/testing/resource-test-fixtures'
+import { WeekView } from '@/testing/view-harnesses'
 
 const renderResourceWeekHorizontal = (props = {}) => {
 	return render(

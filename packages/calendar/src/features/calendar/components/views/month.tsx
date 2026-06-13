@@ -23,7 +23,6 @@ import {
 	resourceHorizontalRows,
 	resourceVerticalColumns,
 } from './resource-axis'
-import { ViewRenderer } from './view-renderer'
 
 const resourceMonthVerticalColumns = (
 	date: Dayjs,
@@ -107,8 +106,6 @@ const monthRows = (
 		showDayNumber: true,
 	}))
 }
-
-export const MonthView: React.FC = () => <ViewRenderer view={monthView} />
 
 export const monthView: PluginView = {
 	name: 'month',

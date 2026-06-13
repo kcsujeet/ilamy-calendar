@@ -2,7 +2,7 @@ import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import type { VerticalPositionedEvent } from './geometry'
 
-export interface VerticalLayoutInput {
+interface VerticalLayoutInput {
 	days: Dayjs[]
 	gridType?: 'day' | 'hour' | 'minute'
 	events: CalendarEvent[]

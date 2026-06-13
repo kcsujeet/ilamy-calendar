@@ -67,6 +67,7 @@
         "tailwind-merge": "^3.5.0",
       },
       "devDependencies": {
+        "@ilamy/calendar-agenda": "workspace:*",
         "@ilamy/calendar-recurrence": "workspace:*",
         "@ilamy/types": "workspace:*",
         "@ilamy/ui": "workspace:*",
@@ -77,6 +78,19 @@
         "react-dom": "^19.2.0",
         "tailwindcss": "^4.2.2",
         "tailwindcss-animate": "^1.0.7",
+      },
+    },
+    "packages/plugins/agenda": {
+      "name": "@ilamy/calendar-agenda",
+      "version": "1.8.1",
+      "dependencies": {
+        "@ilamy/ui": "workspace:*",
+        "@ilamy/utils": "workspace:*",
+      },
+      "peerDependencies": {
+        "@ilamy/calendar": "workspace:*",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
       },
     },
     "packages/plugins/recurrence": {
@@ -194,6 +208,8 @@
     "@happy-dom/global-registrator": ["@happy-dom/global-registrator@18.0.1", "", { "dependencies": { "@types/node": "^20.0.0", "happy-dom": "^18.0.1" } }, "sha512-xCy/cpEP8xyJ6u0eokYgaQxeUmcKqHx/+aC3R0DLa7/S38efhZAVDQqLJ5zzTguLFS0gvAzZHP40NGaLwRyapQ=="],
 
     "@ilamy/calendar": ["@ilamy/calendar@workspace:packages/calendar"],
+
+    "@ilamy/calendar-agenda": ["@ilamy/calendar-agenda@workspace:packages/plugins/agenda"],
 
     "@ilamy/calendar-recurrence": ["@ilamy/calendar-recurrence@workspace:packages/plugins/recurrence"],
 

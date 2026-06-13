@@ -4,6 +4,7 @@
 		"paths": {
 			"@/*": ["./src/*"],
 			"@ilamy/calendar": ["./src/index.ts"],
+			"@ilamy/calendar-agenda": ["../plugins/agenda/src/index.ts"],
 			"@ilamy/calendar-recurrence": ["../plugins/recurrence/src/index.ts"],
 			"@ilamy/types": ["../types/src/index.ts"],
 			"@ilamy/utils/dayjs": ["../utils/src/dayjs.ts"],

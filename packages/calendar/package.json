@@ -43,6 +43,10 @@
 		"./plugins/recurrence": {
 			"types": "./dist/plugins/recurrence.d.ts",
 			"import": "./dist/plugins/recurrence.js"
+		},
+		"./plugins/agenda": {
+			"types": "./dist/plugins/agenda.d.ts",
+			"import": "./dist/plugins/agenda.js"
 		}
 	},
 	"files": [
@@ -87,6 +91,7 @@
 		"tailwind-merge": "^3.5.0"
 	},
 	"devDependencies": {
+		"@ilamy/calendar-agenda": "workspace:*",
 		"@ilamy/calendar-recurrence": "workspace:*",
 		"@ilamy/types": "workspace:*",
 		"@ilamy/ui": "workspace:*",

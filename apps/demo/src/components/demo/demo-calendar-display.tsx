@@ -318,7 +318,10 @@ export function DemoCalendarDisplay(props: DemoCalendarDisplayProps) {
 	} = props
 
 	const shared = resolveSharedCalendarProps(props)
-	const resourceInitialView = initialView === 'year' ? 'month' : initialView
+	// year and agenda are not resource-axis views; fall back to month on the resource calendar.
+	const isResourceOnlyFallback =
+		initialView === 'year' || initialView === 'agenda'
+	const resourceInitialView = isResourceOnlyFallback ? 'month' : initialView
 	const regularEventClick = useCustomOnEventClick ? handleEventClick : undefined
 	const resourceEventClick = useCustomOnEventClick
 		? handleResourceEventClick

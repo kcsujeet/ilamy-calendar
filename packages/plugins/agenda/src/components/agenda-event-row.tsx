@@ -14,17 +14,15 @@ const getTimePattern = (format: TimeFormat): string =>
 export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	const { t, timeFormat, onEventClick } = useIlamyCalendarContext()
 
-	const timeLabel = event.allDay
-		? t('allDay')
-		: event.start.format(getTimePattern(timeFormat))
+	const startTime = event.start.format(getTimePattern(timeFormat))
+	const timeLabel = event.allDay ? t('allDay') : startTime
 
 	const eventStartDay = event.start.startOf('day')
 	const totalDays = event.end.startOf('day').diff(eventStartDay, 'day') + 1
 	const dayIndex = day.startOf('day').diff(eventStartDay, 'day') + 1
 	const isMultiDayAllDay = Boolean(event.allDay) && totalDays > 1
-	const dayCounter = isMultiDayAllDay
-		? `${t('day')} ${dayIndex}/${totalDays}`
-		: null
+	const dayLabel = `${t('day')} ${dayIndex}/${totalDays}`
+	const dayCounter = isMultiDayAllDay ? dayLabel : null
 
 	return (
 		<button

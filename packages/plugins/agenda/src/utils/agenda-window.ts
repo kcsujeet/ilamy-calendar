@@ -20,7 +20,9 @@ export const windowRange = (
 /** How far prev/next steps for the window. */
 export const windowStep = (
 	window: AgendaWindow
-): { amount: number; unit: 'month' | 'day' } =>
-	window === 'month'
-		? { amount: 1, unit: 'month' }
-		: { amount: window, unit: 'day' }
+): { amount: number; unit: 'month' | 'day' } => {
+	if (window === 'month') {
+		return { amount: 1, unit: 'month' }
+	}
+	return { amount: window, unit: 'day' }
+}

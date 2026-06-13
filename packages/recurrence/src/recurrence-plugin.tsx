@@ -12,12 +12,10 @@ import { RecurrenceEditDialog } from './components/recurrence-edit-dialog/recurr
 import { RecurrenceFormSection } from './components/recurrence-form-section'
 import { recurrenceICalProperties } from './ical'
 import type { RecurrenceEditScope } from './types'
-import {
-	deleteRecurringEvent,
-	generateRecurringEvents,
-	isRecurringEvent,
-	updateRecurringEvent,
-} from './utils/recurrence-handler'
+import { deleteRecurringEvent } from './utils/delete-recurring-event'
+import { generateRecurringEvents } from './utils/generate-recurring-events'
+import { isRecurringEvent } from './utils/series-helpers'
+import { updateRecurringEvent } from './utils/update-recurring-event'
 
 /**
  * Built-in recurrence plugin. Implements the generic IlamyPlugin contract by

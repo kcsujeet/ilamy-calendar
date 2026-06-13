@@ -2,12 +2,10 @@ import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
-import {
-	deleteRecurringEvent,
-	generateRecurringEvents,
-	isRecurringEvent,
-	updateRecurringEvent,
-} from './recurrence-handler'
+import { deleteRecurringEvent } from './delete-recurring-event'
+import { generateRecurringEvents } from './generate-recurring-events'
+import { isRecurringEvent } from './series-helpers'
+import { updateRecurringEvent } from './update-recurring-event'
 
 // Test helper to create a base recurring event
 const createBaseRecurringEvent = (
@@ -207,7 +205,7 @@ describe('updateRecurringEvent', () => {
 				updates,
 				currentEvents,
 				scope: 'this',
-			})
+			}).events
 
 			expect(result).toHaveLength(2) // base event + modified standalone event
 
@@ -219,9 +217,100 @@ describe('updateRecurringEvent', () => {
 			// Should have new standalone modified event
 			const modifiedEvent = result.find((e) => e.id !== baseEvent.id)
 			expect(modifiedEvent?.title).toBe('Modified Meeting')
+			expect(modifiedEvent?.id).toContain('recurring-1_modified_')
 			expect(modifiedEvent?.recurrenceId).toBe('2025-01-20T09:00:00.000Z')
 			expect(modifiedEvent?.uid).toBe(baseEvent.uid)
 			expect(modifiedEvent?.rrule).toBeUndefined()
+		})
+
+		it('should keep uid on scope this base row for onEventUpdate when base has no uid', () => {
+			const baseEvent = createBaseRecurringEvent({ uid: undefined })
+			// Generated instances carry the series uid (from base id) even when stored base omits uid
+			const seriesUid = 'recurring-1@ilamy.calendar'
+			const targetEvent = createTargetEvent({
+				uid: seriesUid,
+				rrule: undefined,
+			})
+
+			const { updated } = updateRecurringEvent({
+				targetEvent,
+				updates: { title: 'Modified Meeting' },
+				currentEvents: [baseEvent],
+				scope: 'this',
+			})
+
+			expect(updated).toHaveLength(1)
+			expect(updated[0].id).toBe('recurring-1')
+			expect(updated[0].uid).toBe(seriesUid)
+		})
+
+		it('should apply uid from updates on new override when scope this', () => {
+			const customUid = 'recurring-1@calendar.test'
+			const baseEvent = createBaseRecurringEvent({
+				uid: customUid,
+			})
+			const targetEvent = createTargetEvent()
+
+			const result = updateRecurringEvent({
+				targetEvent,
+				updates: { title: 'Custom uid override', uid: customUid },
+				currentEvents: [baseEvent],
+				scope: 'this',
+			}).events
+
+			const modifiedEvent = result.find((e) => e.id !== baseEvent.id)
+			expect(modifiedEvent?.uid).toBe(customUid)
+		})
+
+		it('should report only the override (not the base) when editing a stored override in a consistent store', () => {
+			const occurrenceISO = '2025-01-20T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				exdates: [occurrenceISO],
+			})
+			const storedOverride = createTargetEvent({
+				id: 'recurring-1_override',
+				title: 'Detached override',
+				recurrenceId: occurrenceISO,
+				rrule: undefined,
+			})
+
+			const { updated, added, deleted } = updateRecurringEvent({
+				targetEvent: storedOverride,
+				updates: { title: 'Edited override' },
+				currentEvents: [baseEvent, storedOverride],
+				scope: 'this',
+			})
+
+			expect(added).toHaveLength(0)
+			expect(deleted).toHaveLength(0)
+			expect(updated).toHaveLength(1)
+			expect(updated[0].id).toBe('recurring-1_override')
+			expect(updated[0].title).toBe('Edited override')
+		})
+
+		it('should report both base and override when editing an override the base does not yet exdate', () => {
+			const occurrenceISO = '2025-01-20T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent()
+			const storedOverride = createTargetEvent({
+				id: 'recurring-1_override',
+				title: 'Detached override',
+				recurrenceId: occurrenceISO,
+				rrule: undefined,
+			})
+
+			const { updated, added } = updateRecurringEvent({
+				targetEvent: storedOverride,
+				updates: { title: 'Edited override' },
+				currentEvents: [baseEvent, storedOverride],
+				scope: 'this',
+			})
+
+			expect(added).toHaveLength(0)
+			expect(updated).toHaveLength(2)
+			expect(updated[0].id).toBe('recurring-1')
+			expect(updated[0].exdates).toEqual([occurrenceISO])
+			expect(updated[1].id).toBe('recurring-1_override')
+			expect(updated[1].title).toBe('Edited override')
 		})
 
 		it('should preserve existing EXDATES when adding new one', () => {
@@ -236,7 +325,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Modified' },
 				currentEvents,
 				scope: 'this',
-			})
+			}).events
 
 			const updatedBaseEvent = result.find((e) => e.id === baseEvent.id)
 			expect(updatedBaseEvent?.exdates).toHaveLength(2)
@@ -260,7 +349,7 @@ describe('updateRecurringEvent', () => {
 				updates,
 				currentEvents,
 				scope: 'following',
-			})
+			}).events
 
 			expect(result).toHaveLength(2) // terminated original + new series
 
@@ -290,12 +379,68 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'New Series' },
 				currentEvents,
 				scope: 'following',
-			})
+			}).events
 
 			expect(result).toHaveLength(2)
 
 			// Original should terminate before first occurrence (effectively making it empty)
 			expectTerminatedUntil(result, baseEvent.id, '2025-01-05T23:59:59.999Z')
+		})
+
+		it('should cascade-delete detached overrides whose occurrence is after the split', () => {
+			const occurrenceDISO = '2025-01-20T09:00:00.000Z'
+			const occurrenceFISO = '2025-01-27T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				exdates: [occurrenceDISO, occurrenceFISO],
+			})
+			const overrideE = createTargetEvent({
+				id: 'recurring-1_overrideE',
+				title: 'Override E',
+				start: dayjs(occurrenceDISO),
+				recurrenceId: occurrenceDISO,
+				rrule: undefined,
+			})
+			const overrideF = createTargetEvent({
+				id: 'recurring-1_overrideF',
+				title: 'Override F',
+				start: dayjs(occurrenceFISO),
+				recurrenceId: occurrenceFISO,
+				rrule: undefined,
+			})
+			const targetEvent = createTargetEvent({
+				start: dayjs(occurrenceDISO),
+			})
+
+			const { events, updated, added, deleted } = updateRecurringEvent({
+				targetEvent,
+				updates: { title: 'New Series' },
+				currentEvents: [baseEvent, overrideE, overrideF],
+				scope: 'following',
+			})
+
+			const deletedIds = deleted.map((e) => e.id)
+			expect(deletedIds).toContain('recurring-1_overrideE')
+			expect(deletedIds).toContain('recurring-1_overrideF')
+
+			expect(
+				events.find((e) => e.id === 'recurring-1_overrideE')
+			).toBeUndefined()
+			expect(
+				events.find((e) => e.id === 'recurring-1_overrideF')
+			).toBeUndefined()
+
+			expect(updated).toHaveLength(1)
+			const terminatedEvent = updated[0]
+			expect(terminatedEvent.id).toBe('recurring-1')
+			if (!terminatedEvent.rrule) {
+				throw new Error('terminatedEvent.rrule missing')
+			}
+			expect(terminatedEvent.rrule.until).toBeDefined()
+			expect(terminatedEvent.exdates).not.toContain(occurrenceDISO)
+			expect(terminatedEvent.exdates).not.toContain(occurrenceFISO)
+
+			expect(added).toHaveLength(1)
+			expect(added[0].id).toBe('recurring-1_following')
 		})
 	})
 
@@ -318,7 +463,7 @@ describe('updateRecurringEvent', () => {
 				updates,
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 
@@ -327,6 +472,27 @@ describe('updateRecurringEvent', () => {
 			if (!updatedEvent.rrule) throw new Error('updatedEvent.rrule missing')
 			expect(updatedEvent.rrule.freq).toBe(RRule.DAILY)
 			expect(updatedEvent.id).toBe(baseEvent.id)
+			expect(updatedEvent.uid).toBe('recurring-1@calendar.test')
+		})
+
+		it('should keep uid on scope all updated row for onEventUpdate even when updates omit uid', () => {
+			const baseEvent = createBaseRecurringEvent({
+				uid: 'series-uid@calendar.test',
+			})
+			const targetInstance = createTargetEvent({
+				uid: 'series-uid@calendar.test',
+				rrule: undefined,
+			})
+
+			const { updated } = updateRecurringEvent({
+				targetEvent: targetInstance,
+				updates: { title: 'Series title', uid: undefined },
+				currentEvents: [baseEvent],
+				scope: 'all',
+			})
+
+			expect(updated).toHaveLength(1)
+			expect(updated[0].uid).toBe('series-uid@calendar.test')
 		})
 
 		it('should preserve other events in the array', () => {
@@ -343,7 +509,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Updated' },
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(2)
 			expect(result.find((e) => e.id === 'other-event')).toBeDefined()
@@ -383,7 +549,7 @@ describe('updateRecurringEvent', () => {
 				},
 				currentEvents: [baseEvent],
 				scope: 'all',
-			})
+			}).events
 
 			const updatedBase = result[0]
 			expect(updatedBase.title).toBe('Updated Weekdays')
@@ -421,7 +587,7 @@ describe('updateRecurringEvent', () => {
 				},
 				currentEvents: [baseEvent],
 				scope: 'all',
-			})
+			}).events
 
 			expect(result[0].start.toISOString()).toBe('2025-01-06T11:00:00.000Z')
 			expect(result[0].end.toISOString()).toBe('2025-01-06T12:00:00.000Z')
@@ -445,7 +611,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Reset Series' },
 				currentEvents: [baseEvent, unrelated],
 				scope: 'all',
-			})
+			}).events
 
 			const seriesRows = result.filter((e) => e.uid === 'daily-1@calendar.test')
 			expect(seriesRows).toHaveLength(1)
@@ -475,7 +641,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Reset Series' },
 				currentEvents: [baseEvent, override],
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 			expect(result[0].id).toBe('daily-1')
@@ -496,7 +662,7 @@ describe('updateRecurringEvent', () => {
 				updates: { start: dayjs('2025-01-08T14:30:00.000Z') },
 				currentEvents: [baseEvent],
 				scope: 'all',
-			})
+			}).events
 
 			// keeps original anchor date (Jan 6), new time-of-day (14:30)
 			expect(result[0].start.toISOString()).toBe('2025-01-06T14:30:00.000Z')
@@ -519,7 +685,7 @@ describe('updateRecurringEvent', () => {
 				targetEvent: occurrenceToDelete,
 				currentEvents: [baseEvent],
 				scope: 'this',
-			})
+			}).events
 			expect(afterDelete[0].exdates).toContain('2025-01-07T09:00:00.000Z')
 
 			// 3. Edit the series with scope "all" -> the deleted occurrence is resurrected
@@ -533,7 +699,7 @@ describe('updateRecurringEvent', () => {
 				updates: { title: 'Reset Series' },
 				currentEvents: afterDelete,
 				scope: 'all',
-			})
+			}).events
 
 			expect(afterAllEdit).toHaveLength(1)
 			expect(afterAllEdit[0].exdates).toBeUndefined()
@@ -585,7 +751,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'this',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 
@@ -606,7 +772,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'this',
-			})
+			}).events
 
 			const updatedEvent = result[0]
 			expect(updatedEvent.exdates).toHaveLength(3)
@@ -626,7 +792,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'following',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 
@@ -650,7 +816,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent: firstOccurrence,
 				currentEvents,
 				scope: 'following',
-			})
+			}).events
 
 			const terminatedEvent = result[0]
 			if (!terminatedEvent.rrule) throw new Error('rrule missing')
@@ -676,7 +842,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'following',
-			})
+			}).events
 
 			const terminatedEvent = result[0]
 			// Should replace existing UNTIL with earlier termination date
@@ -701,7 +867,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 			expect(result[0].id).toBe('other')
@@ -719,7 +885,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(0)
 		})
@@ -747,7 +913,7 @@ describe('deleteRecurringEvent', () => {
 				targetEvent,
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 			expect(result[0].id).toBe('other')
@@ -861,7 +1027,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { title: 'Modified' },
 			currentEvents,
 			scope: 'this',
-		})
+		}).events
 
 		expect(currentEvents).toHaveLength(2) // base + modified
 
@@ -870,7 +1036,7 @@ describe('Edge cases and stress tests', () => {
 			targetEvent,
 			currentEvents,
 			scope: 'this',
-		})
+		}).events
 
 		expect(finalResult).toHaveLength(1)
 		const baseEventResult = finalResult[0]
@@ -892,7 +1058,7 @@ describe('Edge cases and stress tests', () => {
 			},
 			currentEvents,
 			scope: 'this',
-		})
+		}).events
 
 		const modifiedOverride = currentEvents.find((e) => e.recurrenceId)
 		expect(modifiedOverride).toBeDefined()
@@ -901,7 +1067,7 @@ describe('Edge cases and stress tests', () => {
 			targetEvent: modifiedOverride as CalendarEvent,
 			currentEvents,
 			scope: 'this',
-		})
+		}).events
 
 		expect(finalResult).toHaveLength(1)
 		expect(finalResult[0].exdates).toContain('2025-01-20T09:00:00.000Z')
@@ -932,7 +1098,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { title: 'First Split' },
 			currentEvents,
 			scope: 'following',
-		})
+		}).events
 
 		expect(currentEvents).toHaveLength(2) // terminated original + new series
 
@@ -947,7 +1113,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { title: 'Second Split' },
 			currentEvents,
 			scope: 'following',
-		})
+		}).events
 
 		expect(currentEvents).toHaveLength(3) // original terminated + first series terminated + second series
 	})
@@ -968,7 +1134,7 @@ describe('Edge cases and stress tests', () => {
 			updates: { start: dayjs('2025-01-20T14:00:00') }, // Change start time
 			currentEvents: [baseEvent],
 			scope: 'following',
-		})
+		}).events
 
 		const newSeries = result.find((e) => e.uid?.includes('_following'))
 		expect(newSeries?.start.format('HH:mm')).toBe('14:00')

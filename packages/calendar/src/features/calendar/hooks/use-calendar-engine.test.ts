@@ -56,6 +56,26 @@ describe('useCalendarEngine', () => {
 		firstDayOfWeek: 0,
 	}
 
+	// Mounts the engine with the recurrence plugin and fresh callback spies; each
+	// test destructures only the spies it asserts. Collapses the repeated
+	// renderHook + useCalendarEngine boilerplate across the recurring-event tests.
+	const renderRecurrenceEngine = (events: CalendarEvent[]) => {
+		const onEventUpdate = vi.fn()
+		const onEventAdd = vi.fn()
+		const onEventDelete = vi.fn()
+		const { result } = renderHook(() =>
+			useCalendarEngine({
+				...defaultConfig,
+				events,
+				onEventUpdate,
+				onEventAdd,
+				onEventDelete,
+				plugins: [recurrencePlugin()],
+			})
+		)
+		return { result, onEventUpdate, onEventAdd, onEventDelete }
+	}
+
 	describe('locale', () => {
 		afterEach(() => {
 			dayjs.locale('en')
@@ -614,14 +634,7 @@ describe('useCalendarEngine', () => {
 		})
 
 		it('should generate recurring event instances within range', () => {
-			const events = [createRecurringEvent()]
-			const { result } = renderHook(() =>
-				useCalendarEngine({
-					...defaultConfig,
-					events,
-					plugins: [recurrencePlugin()],
-				})
-			)
+			const { result } = renderRecurrenceEngine([createRecurringEvent()])
 
 			const rangeEvents = result.current.getEventsForDateRange(
 				dayjs('2025-01-01'),
@@ -640,16 +653,9 @@ describe('useCalendarEngine', () => {
 
 	describe('recurring events', () => {
 		it('should update recurring event with scope all', () => {
-			const onEventUpdate = vi.fn()
 			const events = [createRecurringEvent()]
-			const { result } = renderHook(() =>
-				useCalendarEngine({
-					...defaultConfig,
-					events,
-					onEventUpdate,
-					plugins: [recurrencePlugin()],
-				})
-			)
+			const { result, onEventUpdate, onEventAdd } =
+				renderRecurrenceEngine(events)
 
 			act(() =>
 				result.current.applyScopedEdit(
@@ -660,22 +666,126 @@ describe('useCalendarEngine', () => {
 			)
 
 			expect(onEventUpdate).toHaveBeenCalledTimes(1)
+			expect(onEventAdd).not.toHaveBeenCalled()
 			const updatedEvent = onEventUpdate.mock.calls[0][0]
 			expect(updatedEvent.title).toBe('Updated Meeting')
 			expect(updatedEvent.id).toBe('recurring-1')
+			expect(updatedEvent.uid).toBe('recurring-1@ilamy.calendar')
+		})
+
+		it('should emit onEventUpdate and onEventAdd with correct ids for scope this', () => {
+			const base = createRecurringEvent()
+			const instance = {
+				...base,
+				id: 'recurring-1_1',
+				start: dayjs('2025-01-13T10:00:00.000Z'),
+				end: dayjs('2025-01-13T11:00:00.000Z'),
+				rrule: undefined,
+			}
+			const { result, onEventUpdate, onEventAdd } = renderRecurrenceEngine([
+				base,
+			])
+
+			act(() =>
+				result.current.applyScopedEdit(
+					instance,
+					{ title: 'One-off change' },
+					'this'
+				)
+			)
+
+			expect(onEventUpdate).toHaveBeenCalledTimes(1)
+			expect(onEventUpdate.mock.calls[0][0].id).toBe('recurring-1')
+			expect(onEventUpdate.mock.calls[0][0].uid).toBe(
+				'recurring-1@ilamy.calendar'
+			)
+
+			expect(onEventAdd).toHaveBeenCalledTimes(1)
+			expect(onEventAdd.mock.calls[0][0].id).toContain('recurring-1_modified_')
+			expect(onEventAdd.mock.calls[0][0].title).toBe('One-off change')
+			expect(onEventAdd.mock.calls[0][0].uid).toBe('recurring-1@ilamy.calendar')
+		})
+
+		it('should pass series uid on onEventUpdate when base row has no uid (scope this)', () => {
+			const base = createRecurringEvent({ uid: undefined })
+			const baseId = 'recurring-1'
+			const uid = `${baseId}@ilamy.calendar`
+			const instance = {
+				...base,
+				id: baseId,
+				uid: uid,
+				start: dayjs('2025-01-13T10:00:00.000Z'),
+				end: dayjs('2025-01-13T11:00:00.000Z'),
+				rrule: undefined,
+			}
+			const { result, onEventUpdate } = renderRecurrenceEngine([base])
+
+			act(() =>
+				result.current.applyScopedEdit(instance, { title: 'One-off' }, 'this')
+			)
+
+			expect(onEventUpdate).toHaveBeenCalledTimes(1)
+			expect(onEventUpdate.mock.calls[0][0].uid).toBe(uid)
+			expect(result.current.rawEvents[0].uid).toBe(uid)
+		})
+
+		it('should pass uid from updates to onEventAdd override for scope this', () => {
+			const base = createRecurringEvent()
+			const baseId = 'recurring-1'
+			const customUid = `${baseId}@ilamy.calendar`
+			const instance = {
+				...base,
+				id: baseId,
+				start: dayjs('2025-01-13T10:00:00.000Z'),
+				end: dayjs('2025-01-13T11:00:00.000Z'),
+				rrule: undefined,
+			}
+			const { result, onEventAdd } = renderRecurrenceEngine([base])
+
+			act(() =>
+				result.current.applyScopedEdit(
+					instance,
+					{ title: 'One-off', uid: customUid },
+					'this'
+				)
+			)
+
+			expect(onEventAdd).toHaveBeenCalledTimes(1)
+			expect(onEventAdd.mock.calls[0][0].uid).toBe(customUid)
+		})
+
+		it('should emit onEventUpdate and onEventAdd with correct ids for scope following', () => {
+			const base = createRecurringEvent()
+			const instance = {
+				...base,
+				id: 'recurring-1_2',
+				start: dayjs('2025-01-20T10:00:00.000Z'),
+				end: dayjs('2025-01-20T11:00:00.000Z'),
+				rrule: undefined,
+			}
+			const { result, onEventUpdate, onEventAdd } = renderRecurrenceEngine([
+				base,
+			])
+
+			act(() =>
+				result.current.applyScopedEdit(
+					instance,
+					{ title: 'New series' },
+					'following'
+				)
+			)
+
+			expect(onEventUpdate).toHaveBeenCalledTimes(1)
+			expect(onEventUpdate.mock.calls[0][0].id).toBe('recurring-1')
+
+			expect(onEventAdd).toHaveBeenCalledTimes(1)
+			expect(onEventAdd.mock.calls[0][0].id).toBe('recurring-1_following')
+			expect(onEventAdd.mock.calls[0][0].title).toBe('New series')
 		})
 
 		it('should delete recurring event with scope all', () => {
-			const onEventDelete = vi.fn()
 			const events = [createRecurringEvent()]
-			const { result } = renderHook(() =>
-				useCalendarEngine({
-					...defaultConfig,
-					events,
-					onEventDelete,
-					plugins: [recurrencePlugin()],
-				})
-			)
+			const { result, onEventDelete } = renderRecurrenceEngine(events)
 
 			act(() => result.current.applyScopedDelete(events[0], 'all'))
 
@@ -686,17 +796,8 @@ describe('useCalendarEngine', () => {
 		})
 
 		it('should delete recurring event with scope all even if uid is missing', () => {
-			const onEventDelete = vi.fn()
 			const baseEvent = createRecurringEvent({ uid: undefined })
-			const events = [baseEvent]
-			const { result } = renderHook(() =>
-				useCalendarEngine({
-					...defaultConfig,
-					events,
-					onEventDelete,
-					plugins: [recurrencePlugin()],
-				})
-			)
+			const { result, onEventDelete } = renderRecurrenceEngine([baseEvent])
 
 			// Get an instance from the engine (it will have a generated UID)
 			const instances = result.current.events
@@ -706,6 +807,68 @@ describe('useCalendarEngine', () => {
 
 			expect(onEventDelete).toHaveBeenCalledTimes(1)
 			expect(result.current.rawEvents).toHaveLength(0)
+		})
+
+		it('should fire onEventDelete for base and overrides on scope all', () => {
+			const base = createRecurringEvent()
+			const override: CalendarEvent = {
+				...base,
+				id: 'recurring-1_override',
+				recurrenceId: '2025-01-13T10:00:00.000Z',
+				rrule: undefined,
+			}
+			const { result, onEventDelete } = renderRecurrenceEngine([base, override])
+
+			act(() => result.current.applyScopedDelete(base, 'all'))
+
+			expect(onEventDelete).toHaveBeenCalledTimes(2)
+			const deletedIds = onEventDelete.mock.calls.map((call) => call[0].id)
+			expect(deletedIds).toEqual(['recurring-1', 'recurring-1_override'])
+			expect(result.current.rawEvents).toHaveLength(0)
+		})
+
+		it('should fire onEventUpdate for base EXDATE on scope this delete', () => {
+			const base = createRecurringEvent()
+			const instance: CalendarEvent = {
+				...base,
+				id: 'recurring-1_1',
+				start: dayjs('2025-01-13T10:00:00.000Z'),
+				end: dayjs('2025-01-13T11:00:00.000Z'),
+				rrule: undefined,
+			}
+			const { result, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
+				base,
+			])
+
+			act(() => result.current.applyScopedDelete(instance, 'this'))
+
+			expect(onEventUpdate).toHaveBeenCalledTimes(1)
+			expect(onEventUpdate.mock.calls[0][0].id).toBe('recurring-1')
+			expect(onEventUpdate.mock.calls[0][0].exdates).toContain(
+				'2025-01-13T10:00:00.000Z'
+			)
+			expect(onEventDelete).not.toHaveBeenCalled()
+		})
+
+		it('should fire onEventUpdate with base id and until on scope following delete', () => {
+			const base = createRecurringEvent()
+			const instance: CalendarEvent = {
+				...base,
+				id: 'recurring-1_2',
+				start: dayjs('2025-01-20T10:00:00.000Z'),
+				end: dayjs('2025-01-20T11:00:00.000Z'),
+				rrule: undefined,
+			}
+			const { result, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
+				base,
+			])
+
+			act(() => result.current.applyScopedDelete(instance, 'following'))
+
+			expect(onEventUpdate).toHaveBeenCalledTimes(1)
+			expect(onEventUpdate.mock.calls[0][0].id).toBe('recurring-1')
+			expect(onEventUpdate.mock.calls[0][0].rrule.until).toBeDefined()
+			expect(onEventDelete).not.toHaveBeenCalled()
 		})
 	})
 

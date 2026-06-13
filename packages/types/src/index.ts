@@ -137,6 +137,17 @@ export interface PluginMutationArgs {
 	scope: unknown
 }
 
+/** Structured result from `applyEdit` when a mutation updates multiple stored rows. */
+export interface PluginMutationResult {
+	events: CalendarEvent[]
+	/** Existing rows to persist via `onEventUpdate`. */
+	updated: CalendarEvent[]
+	/** New rows to persist via `onEventAdd`. */
+	added: CalendarEvent[]
+	/** Existing rows to persist via `onEventDelete`. */
+	deleted: CalendarEvent[]
+}
+
 /**
  * Calendar configuration handed to a view's `columns()`/`renderHeader()`.
  * Carries the resource axis (`resources`, `orientation`) so a resource-capable
@@ -309,8 +320,12 @@ export interface IlamyPlugin {
 		range: PluginDateRange
 	) => CalendarEvent[]
 	managesEvent?: (event: CalendarEvent) => boolean
-	applyEdit?: (args: PluginMutationArgs) => CalendarEvent[]
-	applyDelete?: (args: PluginMutationArgs) => CalendarEvent[]
+	applyEdit?: (
+		args: PluginMutationArgs
+	) => CalendarEvent[] | PluginMutationResult
+	applyDelete?: (
+		args: PluginMutationArgs
+	) => CalendarEvent[] | PluginMutationResult
 	renderSlot?: (slotName: string, context: unknown) => ReactNode
 	/**
 	 * Contributes arbitrary data to a named point. Additive: all plugins may

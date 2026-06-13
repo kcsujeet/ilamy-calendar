@@ -307,6 +307,55 @@ are unaffected.
 
 ---
 
+### `applyEdit`/`applyDelete` may return a structured `PluginMutationResult` (additive, non-breaking)
+
+Only relevant if you author a plugin that implements `applyEdit` or `applyDelete`. A scoped
+mutation can change multiple stored rows at once (e.g. a recurring "this" edit adds an EXDATE
+to the base row *and* creates a detached override; a recurring "all" delete drops the base
+*and* every override). Returning a plain `CalendarEvent[]` forces the core to guess which
+persistence callback to fire, so it always fired one `onEventUpdate` (edit) or one
+`onEventDelete` for the clicked event (delete) — the wrong payload and, for multi-row
+mutations, the wrong count.
+
+Both `applyEdit` and `applyDelete` widened their return type from `CalendarEvent[]` to
+`CalendarEvent[] | PluginMutationResult`:
+
+```ts
+export interface PluginMutationResult {
+  events: CalendarEvent[]   // the full next event list (replaces the store)
+  updated: CalendarEvent[]  // existing rows to persist via onEventUpdate
+  added: CalendarEvent[]    // new rows to persist via onEventAdd
+  deleted: CalendarEvent[]  // existing rows to persist via onEventDelete
+}
+```
+
+When you return a `PluginMutationResult`, the core dispatches each `updated` row to
+`onEventUpdate`, each `added` row to `onEventAdd`, each `deleted` row to `onEventDelete`, and
+sets the store to `events` — the real stored rows, with their own ids/uids. Returning a bare
+`CalendarEvent[]` behaves exactly as before (one synthetic callback, store replaced), so
+existing plugins compile and run unchanged. The built-in recurrence plugin now returns the
+structured result from both hooks.
+
+**Behavior change for scoped recurring deletes.** They now report the actual stored rows
+removed or updated rather than a single `onEventDelete` for the clicked instance:
+
+- delete "this" fires `onEventUpdate` for the base event's new EXDATE (and `onEventDelete`
+  for the dropped override, if one existed) — not `onEventDelete` for a generated instance
+  that was never stored.
+- delete "all" fires `onEventDelete` once per stored row in the series (the base plus every
+  detached override).
+- delete "following" fires `onEventUpdate` for the terminated base.
+
+Likewise, an edit-"all" reset now fires `onEventDelete` for each detached override it drops.
+If you persist per-row to an external store, these callbacks keep it consistent; previously
+the dropped rows were silently left behind as stale data.
+
+PR #194 also addresses issue #156: scoped recurring DELETE now reports the real stored rows
+(this/following → base `onEventUpdate`, all → base `onEventDelete`), and the fired payload
+always carries the base event's id, never a generated `<id>_0` instance id.
+
+---
+
 ## One calendar: resources are props on `IlamyCalendar` (v2 structure overhaul, Phase 4)
 
 `IlamyCalendar` now accepts `resources`, `renderResource`, `orientation`, and

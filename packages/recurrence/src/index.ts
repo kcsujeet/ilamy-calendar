@@ -8,7 +8,5 @@ export type { RecurrenceAugmentation } from './augment'
 export { recurrenceICalProperties } from './ical'
 export { recurrencePlugin } from './recurrence-plugin'
 export type { RRuleOptions } from './types'
-export {
-	generateRecurringEvents,
-	isRecurringEvent,
-} from './utils/recurrence-handler'
+export { generateRecurringEvents } from './utils/generate-recurring-events'
+export { isRecurringEvent } from './utils/series-helpers'

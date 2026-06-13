@@ -2,11 +2,9 @@ import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
-import {
-	deleteRecurringEvent,
-	generateRecurringEvents,
-	updateRecurringEvent,
-} from './recurrence-handler'
+import { deleteRecurringEvent } from './delete-recurring-event'
+import { generateRecurringEvents } from './generate-recurring-events'
+import { updateRecurringEvent } from './update-recurring-event'
 
 const createBaseRecurringEvent = (
 	overrides: Partial<CalendarEvent> = {}
@@ -23,7 +21,7 @@ const createBaseRecurringEvent = (
 	...overrides,
 })
 
-describe('recurrence-handler utility tests', () => {
+describe('recurring mutations', () => {
 	describe('deleteRecurringEvent', () => {
 		it('should delete entire series (scope: all) when uid is missing from base event', () => {
 			const baseEvent = createBaseRecurringEvent({ id: 'series-1' })
@@ -42,7 +40,7 @@ describe('recurrence-handler utility tests', () => {
 				targetEvent: targetInstance,
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(0)
 		})
@@ -66,7 +64,7 @@ describe('recurrence-handler utility tests', () => {
 				targetEvent: targetInstance,
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(0)
 		})
@@ -87,10 +85,96 @@ describe('recurrence-handler utility tests', () => {
 				targetEvent: targetInstance,
 				currentEvents,
 				scope: 'this',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 			expect(result[0].exdates).toContain(targetInstance.start.toISOString())
+		})
+
+		it('should report base + overrides in deleted for scope all', () => {
+			const baseEvent = createBaseRecurringEvent({
+				id: 'series-del-all',
+				uid: 'series-del-all@ilamy.calendar',
+			})
+			const override: CalendarEvent = {
+				...baseEvent,
+				id: 'series-del-all_override',
+				recurrenceId: '2025-01-13T10:00:00.000Z',
+				rrule: undefined,
+			}
+			const currentEvents = [baseEvent, override]
+
+			const { deleted, updated, added, events } = deleteRecurringEvent({
+				targetEvent: baseEvent,
+				currentEvents,
+				scope: 'all',
+			})
+
+			expect(events).toHaveLength(0)
+			expect(updated).toHaveLength(0)
+			expect(added).toHaveLength(0)
+			expect(deleted.map((e) => e.id)).toEqual([
+				'series-del-all',
+				'series-del-all_override',
+			])
+		})
+
+		it('should report dropped override in deleted and base in updated for scope this', () => {
+			const baseEvent = createBaseRecurringEvent({
+				id: 'series-del-this',
+				uid: 'series-del-this@ilamy.calendar',
+			})
+			const occurrenceISO = '2025-01-13T10:00:00.000Z'
+			const override: CalendarEvent = {
+				...baseEvent,
+				id: 'series-del-this_override',
+				recurrenceId: occurrenceISO,
+				rrule: undefined,
+				start: dayjs(occurrenceISO),
+				end: dayjs('2025-01-13T11:00:00.000Z'),
+			}
+			const currentEvents = [baseEvent, override]
+
+			const { deleted, updated, added } = deleteRecurringEvent({
+				targetEvent: override,
+				currentEvents,
+				scope: 'this',
+			})
+
+			expect(added).toHaveLength(0)
+			expect(updated).toHaveLength(1)
+			expect(updated[0].id).toBe('series-del-this')
+			expect(updated[0].exdates).toContain(occurrenceISO)
+			expect(deleted).toHaveLength(1)
+			expect(deleted[0].id).toBe('series-del-this_override')
+		})
+
+		it('should report empty deleted and base in updated for scope this on a generated instance', () => {
+			const baseEvent = createBaseRecurringEvent({
+				id: 'series-del-gen',
+				uid: 'series-del-gen@ilamy.calendar',
+			})
+			const generatedInstance: CalendarEvent = {
+				...baseEvent,
+				id: 'series-del-gen_1',
+				start: baseEvent.start.add(1, 'week'),
+				end: baseEvent.end.add(1, 'week'),
+				rrule: undefined,
+			}
+			const currentEvents = [baseEvent]
+
+			const { deleted, updated } = deleteRecurringEvent({
+				targetEvent: generatedInstance,
+				currentEvents,
+				scope: 'this',
+			})
+
+			expect(deleted).toHaveLength(0)
+			expect(updated).toHaveLength(1)
+			expect(updated[0].id).toBe('series-del-gen')
+			expect(updated[0].exdates).toContain(
+				generatedInstance.start.toISOString()
+			)
 		})
 	})
 
@@ -112,10 +196,39 @@ describe('recurrence-handler utility tests', () => {
 				updates: { title: 'New Title' },
 				currentEvents,
 				scope: 'all',
-			})
+			}).events
 
 			expect(result).toHaveLength(1)
 			expect(result[0].title).toBe('New Title')
+		})
+
+		it('should report dropped detached overrides in deleted for scope all', () => {
+			const baseEvent = createBaseRecurringEvent({
+				id: 'series-edit-all',
+				uid: 'series-edit-all@ilamy.calendar',
+			})
+			const detachedOverride: CalendarEvent = {
+				...baseEvent,
+				id: 'series-edit-all_override',
+				recurrenceId: '2025-01-13T10:00:00.000Z',
+				rrule: undefined,
+			}
+			const currentEvents = [baseEvent, detachedOverride]
+
+			const { deleted, updated, events } = updateRecurringEvent({
+				targetEvent: baseEvent,
+				updates: { title: 'Reset Title' },
+				currentEvents,
+				scope: 'all',
+			})
+
+			expect(deleted).toHaveLength(1)
+			expect(deleted[0].id).toBe('series-edit-all_override')
+			expect(updated).toHaveLength(1)
+			expect(updated[0].id).toBe('series-edit-all')
+			expect(events.some((e) => e.id === 'series-edit-all_override')).toBe(
+				false
+			)
 		})
 	})
 

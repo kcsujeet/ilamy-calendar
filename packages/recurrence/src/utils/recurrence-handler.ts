@@ -295,10 +295,12 @@ export const updateRecurringEvent = ({
 			const isOverrideEvent = Boolean(
 				targetEvent.recurrenceId && !targetEvent.rrule
 			)
-			const recurrenceId =
-				isOverrideEvent && targetEvent.recurrenceId
-					? targetEvent.recurrenceId
-					: targetEvent.start.toISOString()
+			// A stored override keys its EXDATE by the original occurrence
+			// (`recurrenceId`); a generated instance keys by its own start.
+			let recurrenceId = targetEvent.start.toISOString()
+			if (isOverrideEvent && targetEvent.recurrenceId) {
+				recurrenceId = targetEvent.recurrenceId
+			}
 
 			const existingExdates = baseEvent.exdates || []
 			const nextExdates = existingExdates.includes(recurrenceId)
@@ -394,7 +396,6 @@ export const updateRecurringEvent = ({
 
 		case 'all': {
 			// "All events" - Update the base recurring event (anchor dates, not instance day)
-			const parentUid = getEventParentUID(baseEvent)
 			const seriesUid = getEventParentUID(baseEvent)
 			const anchored = applyAllScopeUpdates(baseEvent, updates)
 			const updatedBaseEvent: CalendarEvent = {
@@ -410,7 +411,7 @@ export const updateRecurringEvent = ({
 
 			const isDetachedOverrideOfSeries = (e: CalendarEvent): boolean => {
 				const isDetachedOverride = Boolean(e.recurrenceId) && !e.rrule
-				const belongsToSeries = getEventParentUID(e) === parentUid
+				const belongsToSeries = getEventParentUID(e) === seriesUid
 				return isDetachedOverride && belongsToSeries
 			}
 			// Google-Calendar behavior: an "all" edit resets the series — drop detached

@@ -79,7 +79,7 @@
         "tailwindcss-animate": "^1.0.7",
       },
     },
-    "packages/recurrence": {
+    "packages/plugins/recurrence": {
       "name": "@ilamy/calendar-recurrence",
       "version": "1.8.1",
       "dependencies": {
@@ -195,7 +195,7 @@
 
     "@ilamy/calendar": ["@ilamy/calendar@workspace:packages/calendar"],
 
-    "@ilamy/calendar-recurrence": ["@ilamy/calendar-recurrence@workspace:packages/recurrence"],
+    "@ilamy/calendar-recurrence": ["@ilamy/calendar-recurrence@workspace:packages/plugins/recurrence"],
 
     "@ilamy/demo": ["@ilamy/demo@workspace:apps/demo"],
 

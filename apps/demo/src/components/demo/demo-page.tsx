@@ -6,11 +6,16 @@ import type {
 	TimeFormat,
 	WeekDays,
 } from '@ilamy/calendar'
-import { useState } from 'react'
+import type { AgendaWindow } from '@ilamy/calendar/plugins/agenda'
+import { useMemo, useState } from 'react'
 import { dummyEvents } from '@/lib/seed'
 import { DemoCalendarDisplay } from './demo-calendar-display'
 import { DemoCalendarSettings } from './demo-calendar-settings'
-import { createResourceEvents, demoResources } from './demo-data'
+import {
+	createDemoPlugins,
+	createResourceEvents,
+	demoResources,
+} from './demo-data'
 import { DemoResourcePicker } from './demo-resource-picker'
 
 // Import all dayjs locales alphabetically
@@ -168,6 +173,10 @@ export function DemoPage() {
 	// Calendar configuration state
 	const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>('sunday')
 	const [initialView, setInitialView] = useState<CalendarView>('month')
+	// The agenda window is a developer config; rebuild the plugins array only
+	// when it changes so the calendar's `plugins` prop stays referentially stable.
+	const [agendaWindow, setAgendaWindow] = useState<AgendaWindow>('week')
+	const plugins = useMemo(() => createDemoPlugins(agendaWindow), [agendaWindow])
 	const [initialDate, setInitialDate] = useState<Dayjs | undefined>(undefined)
 	const [customEvents] = useState<CalendarEvent[]>(dummyEvents)
 	const [resourceEvents] = useState<CalendarEvent[]>(createResourceEvents())
@@ -269,6 +278,7 @@ export function DemoPage() {
 				{/* Calendar settings sidebar */}
 				<div className="lg:col-span-1 space-y-6">
 					<DemoCalendarSettings
+						agendaWindow={agendaWindow}
 						businessEndTime={businessEndTime}
 						businessStartTime={businessStartTime}
 						calendarHeight={calendarHeight}
@@ -287,6 +297,7 @@ export function DemoPage() {
 						locale={locale}
 						orientation={orientation}
 						scrollTime={scrollTime}
+						setAgendaWindow={setAgendaWindow}
 						setBusinessEndTime={setBusinessEndTime}
 						setBusinessStartTime={setBusinessStartTime}
 						setCalendarHeight={setCalendarHeight}
@@ -361,6 +372,7 @@ export function DemoPage() {
 						locale={locale}
 						onDateChange={handleDateChange}
 						orientation={orientation}
+						plugins={plugins}
 						resourceEvents={resourceEvents}
 						scrollTime={scrollTime}
 						slotDuration={slotDuration}

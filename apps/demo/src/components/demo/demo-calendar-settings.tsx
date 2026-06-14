@@ -7,6 +7,7 @@ import type {
 	WeekDays,
 } from '@ilamy/calendar'
 import { type Dayjs, dayjs } from '@ilamy/calendar'
+import type { AgendaWindow } from '@ilamy/calendar/plugins/agenda'
 import { Button } from '@ilamy/ui/components/button'
 import {
 	Card,
@@ -35,6 +36,8 @@ interface DemoCalendarSettingsProps {
 	setFirstDayOfWeek: (value: WeekDays) => void
 	initialView: CalendarView
 	setInitialView: (value: CalendarView) => void
+	agendaWindow: AgendaWindow
+	setAgendaWindow: (value: AgendaWindow) => void
 	initialDate: Dayjs | undefined
 	setInitialDate: (value: Dayjs | undefined) => void
 	useCustomEventRenderer: boolean
@@ -93,6 +96,15 @@ interface DemoCalendarSettingsProps {
 	setScrollTime: (value: string | undefined) => void
 }
 
+// The agenda window is a Select of strings; named periods pass through, numeric
+// options ('3' / '14') parse to a rolling N-day window.
+function parseAgendaWindow(value: string): AgendaWindow {
+	if (value === 'day' || value === 'week' || value === 'month') {
+		return value
+	}
+	return Number(value)
+}
+
 function resolveInitialDateOption(initialDate: Dayjs | undefined): string {
 	if (initialDate === undefined) {
 		return 'today'
@@ -116,6 +128,8 @@ export function DemoCalendarSettings({
 	setFirstDayOfWeek,
 	initialView,
 	setInitialView,
+	agendaWindow,
+	setAgendaWindow,
 	initialDate,
 	setInitialDate,
 	useCustomEventRenderer,
@@ -313,6 +327,28 @@ export function DemoCalendarSettings({
 						</SelectContent>
 					</Select>
 				</label>
+				{!isResourceCalendar && (
+					<label className="block text-sm text-left font-medium mb-1">
+						<span>Agenda Window</span>
+						<Select
+							onValueChange={(value) =>
+								setAgendaWindow(parseAgendaWindow(value))
+							}
+							value={String(agendaWindow)}
+						>
+							<SelectTrigger className="w-full">
+								<SelectValue placeholder="Select agenda window" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="day">Day</SelectItem>
+								<SelectItem value="week">Week</SelectItem>
+								<SelectItem value="month">Month</SelectItem>
+								<SelectItem value="3">Next 3 days</SelectItem>
+								<SelectItem value="14">Next 14 days</SelectItem>
+							</SelectContent>
+						</Select>
+					</label>
+				)}
 				<label className="block text-sm text-left font-medium mb-1">
 					<span>Initial Date</span>
 					<Select

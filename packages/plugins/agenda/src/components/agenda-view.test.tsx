@@ -4,6 +4,7 @@ import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { CalendarTestProvider } from '@ilamy/calendar/testing'
 import dayjs from '@ilamy/utils/dayjs'
 import { fireEvent, render, screen } from '@testing-library/react'
+import type { AgendaWindow } from '../utils/agenda-window'
 import { AgendaView } from './agenda-view'
 
 /** Surfaces the form-open state so a click's effect on context is observable. */
@@ -30,10 +31,14 @@ const mkEvent = (
 	...extra,
 })
 
-const renderAgenda = (events: CalendarEvent[], initialDateISO = '2026-06-13') =>
+const renderAgenda = (
+	events: CalendarEvent[],
+	window: AgendaWindow = 'month',
+	initialDateISO = '2026-06-13'
+) =>
 	render(
 		<CalendarTestProvider events={events} initialDate={dayjs(initialDateISO)}>
-			<AgendaView window="month" />
+			<AgendaView window={window} />
 		</CalendarTestProvider>
 	)
 
@@ -86,6 +91,16 @@ describe('AgendaView', () => {
 		fireEvent.click(screen.getByRole('button', { name: /Meeting/ }))
 
 		expect(screen.getByTestId('probe')).toHaveTextContent('open:m')
+	})
+
+	it('scopes events to the window: a day window drops events on other days', () => {
+		// Reference day is 2026-06-13 (Meeting); Trip is on 06-20.
+		const { container } = renderAgenda(seed, 'day')
+		const keys = Array.from(
+			container.querySelectorAll('[data-testid^="agenda-day-"]')
+		).map((el) => el.getAttribute('data-testid'))
+		expect(keys).toEqual(['agenda-day-2026-06-13'])
+		expect(screen.queryByText('Trip')).not.toBeInTheDocument()
 	})
 
 	it('shows the empty state when no events fall in the window', () => {

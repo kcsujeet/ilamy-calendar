@@ -118,7 +118,6 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 					>
 						<ChevronLeft className="h-4 w-4" />
 					</Button>
-					<TitleContent />
 					<Button
 						className="rounded-full"
 						onClick={nextPeriod}
@@ -127,6 +126,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 					>
 						<ChevronRight className="h-4 w-4" />
 					</Button>
+					<TitleContent />
 				</div>
 
 				<div className="flex flex-wrap justify-start @xl/base-header:justify-center gap-1 @4xl/base-header:justify-end overflow-x-auto">

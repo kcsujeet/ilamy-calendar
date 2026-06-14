@@ -146,17 +146,12 @@ export const TitleContent = () => {
 			id: 'month',
 			hidden: view === 'year',
 			title: currentDate.format('MMMM'),
-			// Fixed min-width (inline, so it doesn't depend on Tailwind generating
-			// the class) so the picker doesn't resize as the month name changes
-			// (e.g. "May" vs "September"). justify-between pins the chevron right.
-			triggerStyle: { width: '6.5rem', justifyContent: 'space-between' },
 			render: renderMonthContent,
 		},
 		{
 			id: 'year',
 			hidden: false,
 			title: currentDate.format('YYYY'),
-			triggerStyle: { width: '4.5rem', justifyContent: 'space-between' },
 			render: renderYearContent,
 		},
 		{

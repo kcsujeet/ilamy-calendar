@@ -16,7 +16,7 @@
 	],
 	"scripts": {
 		"dev": "bun run --filter '@ilamy/demo' dev",
-		"build": "bun run --filter '@ilamy/types' --filter '@ilamy/utils' --filter '@ilamy/ui' --if-present build && bun run --filter '@ilamy/calendar-recurrence' --filter '@ilamy/calendar-agenda' --if-present build && bun run --filter '@ilamy/calendar' --if-present build && bun run --filter '@ilamy/demo' --if-present build",
+		"build": "bun run --filter '@ilamy/types' --filter '@ilamy/utils' --if-present build && bun run --filter '@ilamy/ui' --if-present build && bun run --filter '@ilamy/calendar-recurrence' --filter '@ilamy/calendar-agenda' --if-present build && bun run --filter '@ilamy/calendar' --if-present build && bun run --filter '@ilamy/demo' --if-present build",
 		"build:lib": "bun run --filter '@ilamy/calendar' build",
 		"test": "bun run --filter '*' --if-present test",
 		"type-check": "bun run --filter '*' --if-present type-check",

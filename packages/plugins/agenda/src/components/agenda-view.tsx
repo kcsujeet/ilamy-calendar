@@ -1,4 +1,5 @@
 import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { ScrollArea } from '@ilamy/ui/components/scroll-area'
 import { type AgendaWindow, windowRange } from '../utils/agenda-window'
 import { groupEventsByDay } from '../utils/group-events-by-day'
 import { AgendaDayGroup } from './agenda-day-group'
@@ -31,10 +32,12 @@ export const AgendaView = ({ window }: AgendaViewProps) => {
 	}
 
 	return (
-		<div className="flex flex-col" data-testid="agenda-view">
-			{groups.map((group) => (
-				<AgendaDayGroup group={group} key={group.key} />
-			))}
-		</div>
+		<ScrollArea className="h-full" data-testid="agenda-view">
+			<div className="flex flex-col">
+				{groups.map((group) => (
+					<AgendaDayGroup group={group} key={group.key} />
+				))}
+			</div>
+		</ScrollArea>
 	)
 }

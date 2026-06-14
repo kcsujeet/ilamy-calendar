@@ -4,6 +4,7 @@ import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo } from 'react'
 import { CurrentTimeIndicator } from '@/components/current-time-indicator'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
 import { keys } from '@/lib/utils/keys'
 
@@ -22,9 +23,15 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	resource,
 	'data-testid': dataTestId,
 }) => {
+	const { resources } = useSmartCalendarContext((c) => ({
+		resources: c.resources,
+	}))
 	const todayEvents = useProcessedDayEvents({ days, gridType, resourceId })
 	const rangeStart = days.at(0)
 	const rangeEnd = days.at(-1)?.add(1, gridType)
+	// Stacked resource rows share one continuous now-line; only the first resource
+	// (or a non-resource grid) draws the dot at its start, so it isn't repeated.
+	const isFirstResource = !resourceId || resources?.at(0)?.id === resourceId
 	// Only show the "now" line in hour-resolution grids. In day-resolution
 	// vertical views (resource month, resource week daily) a sub-day percentage
 	// line is meaningless, so suppress it — mirrors the horizontal events layer.
@@ -40,6 +47,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 					rangeEnd={rangeEnd}
 					rangeStart={rangeStart}
 					resource={resource}
+					withDot={isFirstResource}
 				/>
 			)}
 			{todayEvents.map((positioned, index) => {

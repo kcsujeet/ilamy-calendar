@@ -62,9 +62,9 @@ describe('AgendaView', () => {
 	it('repeats a multi-day event under each spanned day with a Day N/M indicator', () => {
 		renderAgenda(seed)
 		expect(screen.getAllByText('Trip')).toHaveLength(3)
-		expect(screen.getByText('Day 1/3')).toBeInTheDocument()
-		expect(screen.getByText('Day 2/3')).toBeInTheDocument()
-		expect(screen.getByText('Day 3/3')).toBeInTheDocument()
+		expect(screen.getByText('(Day 1/3)')).toBeInTheDocument()
+		expect(screen.getByText('(Day 2/3)')).toBeInTheDocument()
+		expect(screen.getByText('(Day 3/3)')).toBeInTheDocument()
 	})
 
 	it('labels all-day events and shows no indicator for single-day events', () => {

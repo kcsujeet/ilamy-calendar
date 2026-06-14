@@ -1,12 +1,13 @@
 import type { CalendarEvent } from '@ilamy/types'
+import { DayLabel } from '@ilamy/ui/components/day-label'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import React, { memo, useMemo } from 'react'
-import { DayNumber } from '@/components/day-number'
 import { useEffectiveBusinessHours } from '@/features/calendar/hooks/use-effective-business-hours'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { isBusinessHour } from '@/features/calendar/utils/business-hours'
 import { filterEventsForResource } from '@/lib/events/pipeline'
+import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import type { SelectedDayEvents } from './all-events-dialog'
 import { AllEventDialog } from './all-events-dialog'
@@ -139,7 +140,13 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 					data-testid="grid-cell-content"
 					style={{ gap: `${eventSpacing}px` }}
 				>
-					{showDayNumber && <DayNumber date={day} />}
+					{showDayNumber && (
+						<DayLabel
+							data-testid={keys.dayNumber(day)}
+							dayNumber={day.format('D')}
+							today={isToday(day)}
+						/>
+					)}
 
 					{shouldRenderEvents && (
 						<>

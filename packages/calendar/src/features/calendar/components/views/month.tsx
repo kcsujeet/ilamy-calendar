@@ -6,6 +6,7 @@ import type {
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
+import { DayLabel } from '@ilamy/ui/components/day-label'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { gutterColumn } from '@/components/vertical-grid/gutter'
@@ -14,6 +15,7 @@ import {
 	getMonthDays,
 	getMonthGridRange,
 	getMonthWeeks,
+	isToday,
 } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import { MonthHeader } from './month-header'
@@ -58,6 +60,7 @@ const ResourceMonthHorizontalHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 			<ResourcesCornerCell />
 			{monthDays.map((day, index) => {
 				const key = keys.header.resource.monthDay(day)
+				const today = isToday(day)
 
 				return (
 					<AnimatedSection
@@ -66,10 +69,12 @@ const ResourceMonthHorizontalHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 						key={keys.listKey(key, 'animated')}
 						transitionKey={keys.listKey(key, 'motion')}
 					>
-						<div className="text-xs font-medium">{day.format('D')}</div>
-						<div className="text-xs text-muted-foreground">
-							{day.format('ddd')}
-						</div>
+						<DayLabel
+							className="flex-col-reverse"
+							dayNumber={day.format('D')}
+							today={today}
+							weekday={day.format('ddd')}
+						/>
 					</AnimatedSection>
 				)
 			})}

@@ -21,7 +21,7 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	const totalDays = event.end.startOf('day').diff(eventStartDay, 'day') + 1
 	const dayIndex = day.startOf('day').diff(eventStartDay, 'day') + 1
 	const isMultiDayAllDay = Boolean(event.allDay) && totalDays > 1
-	const dayLabel = `${t('day')} ${dayIndex}/${totalDays}`
+	const dayLabel = `(${t('day')} ${dayIndex}/${totalDays})`
 	const dayCounter = isMultiDayAllDay ? dayLabel : null
 
 	return (
@@ -33,12 +33,13 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 			<span className="text-muted-foreground w-20 shrink-0">{timeLabel}</span>
 			<span
 				className={cn(
-					'size-2 shrink-0 rounded-full',
-					event.backgroundColor || 'bg-blue-500'
+					'size-3 shrink-0 rounded-full border',
+					event.backgroundColor || 'bg-blue-500',
+					event.color
 				)}
 				style={{ backgroundColor: event.backgroundColor }}
 			/>
-			<span className="flex-1 truncate">{event.title}</span>
+			<span className="truncate">{event.title}</span>
 			{dayCounter && (
 				<span className="text-muted-foreground shrink-0 text-xs">
 					{dayCounter}

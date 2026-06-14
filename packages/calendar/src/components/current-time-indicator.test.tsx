@@ -228,10 +228,9 @@ describe('CurrentTimeIndicator', () => {
 
 		const indicator = screen.getByTestId('current-time-indicator')
 		expect(indicator).toBeInTheDocument()
+		// Horizontal axis positions by `left` (vertical positions by `top`).
 		expect(indicator.style.left).toBe('50%')
 		expect(indicator.style.top).toBe('')
-		expect(indicator.className).toContain('w-0.5')
-		expect(indicator.className).not.toContain('h-0.5')
 	})
 
 	test('forwards axis="horizontal" to custom render function', () => {

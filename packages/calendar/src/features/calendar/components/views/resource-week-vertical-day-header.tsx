@@ -1,3 +1,4 @@
+import { DayLabel } from '@ilamy/ui/components/day-label'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
@@ -40,8 +41,7 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 					<AnimatedSection
 						className={cn(
 							RESOURCE_CELL_WIDTH,
-							'border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background',
-							today && 'bg-primary/10 font-bold'
+							'border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
 						)}
 						data-testid={keys.header.resource.timeLabel(
 							'week',
@@ -51,12 +51,11 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 						key={keys.listKey(key, 'animated')}
 						transitionKey={keys.listKey(key, 'motion')}
 					>
-						<div className="text-sm truncate w-full text-center">
-							{day.format('ddd')}
-						</div>
-						<div className="text-xs text-muted-foreground">
-							{day.format('D')}
-						</div>
+						<DayLabel
+							dayNumber={day.format('D')}
+							today={today}
+							weekday={day.format('ddd')}
+						/>
 					</AnimatedSection>
 				)
 			})}

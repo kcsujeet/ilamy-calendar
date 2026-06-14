@@ -172,12 +172,11 @@ describe('ResourceWeekHorizontal', () => {
 				initialDate: today,
 			})
 
-			// At least one day header should have the today styling
+			// Exactly one day header highlights today via its number badge
+			// (filled primary circle); the header itself is not background-tinted.
 			const dayHeaders = screen.getAllByTestId('resource-week-day-header')
-			const todayHeader = dayHeaders.find(
-				(header) =>
-					header.className.includes('bg-primary/10') &&
-					header.className.includes('font-bold')
+			const todayHeader = dayHeaders.find((header) =>
+				header.querySelector('.bg-primary.text-primary-foreground')
 			)
 			expect(todayHeader).toBeDefined()
 		})
@@ -552,8 +551,8 @@ describe('ResourceWeekHorizontal', () => {
 			})
 
 			test('highlights today in the day header row in daily mode', () => {
-				// Verifies the extracted ResourceWeekHorizontalDayHeader applies
-				// the today-highlight className in daily mode, same as hourly.
+				// Verifies the extracted ResourceWeekHorizontalDayHeader highlights
+				// today's number badge in daily mode, same as hourly.
 				const today = dayjs()
 				renderResourceWeekHorizontal({
 					initialDate: today,
@@ -561,10 +560,8 @@ describe('ResourceWeekHorizontal', () => {
 				})
 
 				const dayHeaders = screen.getAllByTestId('resource-week-day-header')
-				const todayHeader = dayHeaders.find(
-					(header) =>
-						header.className.includes('bg-primary/10') &&
-						header.className.includes('font-bold')
+				const todayHeader = dayHeaders.find((header) =>
+					header.querySelector('.bg-primary.text-primary-foreground')
 				)
 				expect(todayHeader).toBeDefined()
 			})

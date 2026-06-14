@@ -30,8 +30,11 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	positionedEvents,
 	dayNumberHeight = DAY_NUMBER_HEIGHT,
 }) => {
-	const { eventHeight, eventSpacing } = useSmartCalendarContext()
+	const { eventHeight, eventSpacing, resources } = useSmartCalendarContext()
 	const weekStart = days.at(0)?.startOf('day')
+	// Stacked resource rows share one continuous now-line; only the first resource
+	// (or a non-resource grid) draws the dot at its start, so it isn't repeated.
+	const isFirstResource = !resourceId || resources?.at(0)?.id === resourceId
 
 	// Now-line is gated to hour-resolution horizontal grids (resource day horizontal,
 	// resource week horizontal hourly). Day-resolution grids — regular MonthView and
@@ -52,6 +55,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 					rangeEnd={rangeEnd}
 					rangeStart={rangeStart}
 					resource={resource}
+					withDot={isFirstResource}
 				/>
 			)}
 			{positionedEvents.map((positioned) => {

@@ -1,22 +1,12 @@
-import type {
-	CalendarEvent,
-	CalendarView,
-	Dayjs,
-	SlotDuration,
-	TimeFormat,
-	WeekDays,
-} from '@ilamy/calendar'
-import type { AgendaWindow } from '@ilamy/calendar/plugins/agenda'
-import { useMemo, useState } from 'react'
+import type { CalendarEvent } from '@ilamy/calendar'
+import { useState } from 'react'
+import { FormProvider, useForm, useWatch } from 'react-hook-form'
 import { dummyEvents } from '@/lib/seed'
 import { DemoCalendarDisplay } from './demo-calendar-display'
 import { DemoCalendarSettings } from './demo-calendar-settings'
-import {
-	createDemoPlugins,
-	createResourceEvents,
-	demoResources,
-} from './demo-data'
+import { createResourceEvents, demoResources } from './demo-data'
 import { DemoResourcePicker } from './demo-resource-picker'
+import { type DemoSettingsValues, defaultSettings } from './demo-settings-form'
 
 // Import all dayjs locales alphabetically
 // locale.json file: [{"key":"af","name":"Afrikaans"},{"key":"am","name":"Amharic"},{"key":"ar-dz","name":"Arabic (Algeria)"},{"key":"ar-iq","name":" Arabic (Iraq)"},{"key":"ar-kw","name":"Arabic (Kuwait)"},{"key":"ar-ly","name":"Arabic (Lybia)"},{"key":"ar-ma","name":"Arabic (Morocco)"},{"key":"ar-sa","name":"Arabic (Saudi Arabia)"},{"key":"ar-tn","name":" Arabic (Tunisia)"},{"key":"ar","name":"Arabic"},{"key":"az","name":"Azerbaijani"},{"key":"be","name":"Belarusian"},{"key":"bg","name":"Bulgarian"},{"key":"bi","name":"Bislama"},{"key":"bm","name":"Bambara"},{"key":"bn-bd","name":"Bengali (Bangladesh)"},{"key":"bn","name":"Bengali"},{"key":"bo","name":"Tibetan"},{"key":"br","name":"Breton"},{"key":"bs","name":"Bosnian"},{"key":"ca","name":"Catalan"},{"key":"cs","name":"Czech"},{"key":"cv","name":"Chuvash"},{"key":"cy","name":"Welsh"},{"key":"de-at","name":"German (Austria)"},{"key":"da","name":"Danish"},{"key":"de-ch","name":"German (Switzerland)"},{"key":"de","name":"German"},{"key":"dv","name":"Maldivian"},{"key":"el","name":"Greek"},{"key":"en-au","name":"English (Australia)"},{"key":"en-ca","name":"English (Canada)"},{"key":"en-gb","name":"English (United Kingdom)"},{"key":"en-ie","name":"English (Ireland)"},{"key":"en-il","name":"English (Israel)"},{"key":"en-in","name":"English (India)"},{"key":"en-nz","name":"English (New Zealand)"},{"key":"en-sg","name":"English (Singapore)"},{"key":"en-tt","name":"English (Trinidad & Tobago)"},{"key":"eo","name":"Esperanto"},{"key":"en","name":"English"},{"key":"es-do","name":"Spanish (Dominican Republic)"},{"key":"es-mx","name":"Spanish (Mexico)"},{"key":"es-pr","name":"Spanish (Puerto Rico)"},{"key":"es-us","name":"Spanish (United States)"},{"key":"et","name":"Estonian"},{"key":"es","name":"Spanish"},{"key":"eu","name":"Basque"},{"key":"fa","name":"Persian"},{"key":"fo","name":"Faroese"},{"key":"fi","name":"Finnish"},{"key":"fr-ca","name":"French (Canada)"},{"key":"fr-ch","name":"French (Switzerland)"},{"key":"fr","name":"French"},{"key":"fy","name":"Frisian"},{"key":"ga","name":"Irish or Irish Gaelic"},{"key":"gd","name":"Scottish Gaelic"},{"key":"gom-latn","name":"Konkani Latin script"},{"key":"gl","name":"Galician"},{"key":"gu","name":"Gujarati"},{"key":"he","name":"Hebrew"},{"key":"hi","name":"Hindi"},{"key":"hr","name":"Croatian"},{"key":"hu","name":"Hungarian"},{"key":"ht","name":"Haitian Creole (Haiti)"},{"key":"hy-am","name":"Armenian"},{"key":"id","name":"Indonesian"},{"key":"is","name":"Icelandic"},{"key":"it-ch","name":"Italian (Switzerland)"},{"key":"it","name":"Italian"},{"key":"ja","name":"Japanese"},{"key":"jv","name":"Javanese"},{"key":"ka","name":"Georgian"},{"key":"kk","name":"Kazakh"},{"key":"km","name":"Cambodian"},{"key":"kn","name":"Kannada"},{"key":"ko","name":"Korean"},{"key":"ku","name":"Kurdish"},{"key":"ky","name":"Kyrgyz"},{"key":"lb","name":"Luxembourgish"},{"key":"lo","name":"Lao"},{"key":"lt","name":"Lithuanian"},{"key":"lv","name":"Latvian"},{"key":"me","name":"Montenegrin"},{"key":"mi","name":"Maori"},{"key":"mk","name":"Macedonian"},{"key":"ml","name":"Malayalam"},{"key":"mn","name":"Mongolian"},{"key":"mr","name":"Marathi"},{"key":"ms-my","name":"Malay"},{"key":"ms","name":"Malay"},{"key":"mt","name":"Maltese (Malta)"},{"key":"my","name":"Burmese"},{"key":"nb","name":"Norwegian Bokmål"},{"key":"ne","name":"Nepalese"},{"key":"nl-be","name":"Dutch (Belgium)"},{"key":"nl","name":"Dutch"},{"key":"pl","name":"Polish"},{"key":"pt-br","name":"Portuguese (Brazil)"},{"key":"pt","name":"Portuguese"},{"key":"rn","name":"Kirundi"},{"key":"ro","name":"Romanian"},{"key":"ru","name":"Russian"},{"key":"rw","name":"Kinyarwanda (Rwanda)"},{"key":"sd","name":"Sindhi"},{"key":"se","name":"Northern Sami"},{"key":"si","name":"Sinhalese"},{"key":"sk","name":"Slovak"},{"key":"sl","name":"Slovenian"},{"key":"sq","name":"Albanian"},{"key":"sr-cyrl","name":"Serbian Cyrillic"},{"key":"ss","name":"siSwati"},{"key":"sv-fi","name":"Finland Swedish"},{"key":"sr","name":"Serbian"},{"key":"sv","name":"Swedish"},{"key":"sw","name":"Swahili"},{"key":"ta","name":"Tamil"},{"key":"te","name":"Telugu"},{"key":"tet","name":"Tetun Dili (East Timor)"},{"key":"tg","name":"Tajik"},{"key":"th","name":"Thai"},{"key":"tk","name":"Turkmen"},{"key":"tl-ph","name":"Tagalog (Philippines)"},{"key":"tlh","name":"Klingon"},{"key":"tr","name":"Turkish"},{"key":"tzl","name":"Talossan"},{"key":"tzm-latn","name":"Central Atlas Tamazight Latin"},{"key":"tzm","name":"Central Atlas Tamazight"},{"key":"ug-cn","name":"Uyghur (China)"},{"key":"uk","name":"Ukrainian"},{"key":"ur","name":"Urdu"},{"key":"uz-latn","name":"Uzbek Latin"},{"key":"uz","name":"Uzbek"},{"key":"vi","name":"Vietnamese"},{"key":"x-pseudo","name":"Pseudo"},{"key":"yo","name":"Yoruba Nigeria"},{"key":"zh-cn","name":"Chinese (China)"},{"key":"zh-hk","name":"Chinese (Hong Kong)"},{"key":"zh-tw","name":"Chinese (Taiwan)"},{"key":"zh","name":"Chinese"},{"key":"oc-lnc","name":"Occitan, lengadocian dialecte"},{"key":"nn","name":"Nynorsk"},{"key":"pa-in","name":"Punjabi (India)"}]
@@ -165,66 +155,15 @@ import 'dayjs/locale/zh-tw.js'
 import 'dayjs/locale/zh.js'
 
 export function DemoPage() {
-	// Calendar type state
-	const [calendarType, setCalendarType] = useState<'regular' | 'resource'>(
-		'regular'
-	)
+	// One form drives every setting. Components read what they need from this
+	// provider via useWatch, so DemoPage itself doesn't subscribe to field
+	// changes; it only watches calendarType to toggle the resource picker.
+	const form = useForm<DemoSettingsValues>({ defaultValues: defaultSettings })
+	const calendarType = useWatch({ control: form.control, name: 'calendarType' })
 
-	// Calendar configuration state
-	const [firstDayOfWeek, setFirstDayOfWeek] = useState<WeekDays>('sunday')
-	const [initialView, setInitialView] = useState<CalendarView>('month')
-	// The agenda window is a developer config; rebuild the plugins array only
-	// when it changes so the calendar's `plugins` prop stays referentially stable.
-	const [agendaWindow, setAgendaWindow] = useState<AgendaWindow>('week')
-	const plugins = useMemo(() => createDemoPlugins(agendaWindow), [agendaWindow])
-	const [initialDate, setInitialDate] = useState<Dayjs | undefined>(undefined)
+	// Static data, not part of the settings form.
 	const [customEvents] = useState<CalendarEvent[]>(dummyEvents)
 	const [resourceEvents] = useState<CalendarEvent[]>(createResourceEvents())
-	const [useCustomEventRenderer, setUseCustomEventRenderer] = useState(false)
-	const [locale, setLocale] = useState('en')
-	const [timezone, setTimezone] = useState(() => {
-		return Intl.DateTimeFormat().resolvedOptions().timeZone
-	})
-	const [stickyViewHeader, setStickyHeader] = useState(true)
-	const [hideNonBusinessHours, setHideNonBusinessHours] = useState(false)
-	const [businessStartTime, setBusinessStartTime] = useState(9)
-	const [businessEndTime, setBusinessEndTime] = useState(17)
-
-	const businessHours = [
-		{
-			daysOfWeek: [
-				'monday',
-				'tuesday',
-				'wednesday',
-				'thursday',
-				'friday',
-				'saturday',
-			] as WeekDays[],
-			startTime: businessStartTime,
-			endTime: businessEndTime,
-		},
-	]
-
-	// Disable functionality state
-	const [disableCellClick, setDisableCellClick] = useState(false)
-	const [disableEventClick, setDisableEventClick] = useState(false)
-	const [disableDragAndDrop, setDisableDragAndDrop] = useState(false)
-
-	// Custom handler state
-	const [useCustomOnDateClick, setUseCustomOnDateClick] = useState(false)
-	const [useCustomOnEventClick, setUseCustomOnEventClick] = useState(false)
-
-	// UI settings
-	const [calendarHeight, setCalendarHeight] = useState('600px')
-	const [dayMaxEvents, setDayMaxEvents] = useState(3)
-	const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour')
-	const [useCustomClasses, setUseCustomClasses] = useState(false)
-	const [useCustomTimeIndicator, setUseCustomTimeIndicator] = useState(false)
-	const [useCustomHourRenderer, setUseCustomHourRenderer] = useState(false)
-	const [hiddenDays, setHiddenDays] = useState<WeekDays[]>([])
-	const [eventHeight, setEventHeight] = useState(24)
-	const [slotDuration, setSlotDuration] = useState<SlotDuration>(60)
-	const [scrollTime, setScrollTime] = useState<string | undefined>(undefined)
 
 	// Resource picker — lets the user swap the resources prop at runtime
 	// to verify that the resource calendar reacts to prop changes (issue #153).
@@ -243,152 +182,46 @@ export function DemoPage() {
 		})
 	}
 
-	// Track the calendar's current date in demo state so navigation persists
-	// across view-type switches (issue #172 repro).
-	const handleDateChange = (date: Dayjs) => {
-		setInitialDate(date)
-	}
-
-	// Resource calendar settings
-	const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>(
-		'horizontal'
-	)
-
-	const [weekViewGranularity, setWeekViewGranularity] = useState<
-		'hourly' | 'daily'
-	>('hourly')
-
-	const calendarKey = `${locale}-${initialView}-${timeFormat}-${useCustomTimeIndicator}`
-
 	return (
-		<div
-			className="container mx-auto px-4 py-8 relative"
-			data-testid="demo-page"
-		>
-			<div className="mb-8">
-				<h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-linear-to-br from-blue-600 to-indigo-700 dark:from-blue-400 dark:to-indigo-500">
-					Interactive Demo
-				</h1>
-				<p className="text-muted-foreground">
-					Try out the ilamy Calendar components with different configurations
-				</p>
-			</div>
+		<FormProvider {...form}>
+			<div
+				className="container mx-auto px-4 py-8 relative"
+				data-testid="demo-page"
+			>
+				<div className="mb-8">
+					<h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-linear-to-br from-blue-600 to-indigo-700 dark:from-blue-400 dark:to-indigo-500">
+						Interactive Demo
+					</h1>
+					<p className="text-muted-foreground">
+						Try out the ilamy Calendar components with different configurations
+					</p>
+				</div>
 
-			<div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-				{/* Calendar settings sidebar */}
-				<div className="lg:col-span-1 space-y-6">
-					<DemoCalendarSettings
-						agendaWindow={agendaWindow}
-						businessEndTime={businessEndTime}
-						businessStartTime={businessStartTime}
-						calendarHeight={calendarHeight}
-						calendarType={calendarType}
-						dayMaxEvents={dayMaxEvents}
-						disableCellClick={disableCellClick}
-						disableDragAndDrop={disableDragAndDrop}
-						disableEventClick={disableEventClick}
-						eventHeight={eventHeight}
-						firstDayOfWeek={firstDayOfWeek}
-						hiddenDays={hiddenDays}
-						hideNonBusinessHours={hideNonBusinessHours}
-						initialDate={initialDate}
-						initialView={initialView}
-						isResourceCalendar={calendarType === 'resource'}
-						locale={locale}
-						orientation={orientation}
-						scrollTime={scrollTime}
-						setAgendaWindow={setAgendaWindow}
-						setBusinessEndTime={setBusinessEndTime}
-						setBusinessStartTime={setBusinessStartTime}
-						setCalendarHeight={setCalendarHeight}
-						setCalendarType={setCalendarType}
-						setDayMaxEvents={setDayMaxEvents}
-						setDisableCellClick={setDisableCellClick}
-						setDisableDragAndDrop={setDisableDragAndDrop}
-						setDisableEventClick={setDisableEventClick}
-						setEventHeight={setEventHeight}
-						setFirstDayOfWeek={setFirstDayOfWeek}
-						setHiddenDays={setHiddenDays}
-						setHideNonBusinessHours={setHideNonBusinessHours}
-						setInitialDate={setInitialDate}
-						setInitialView={setInitialView}
-						setLocale={setLocale}
-						setOrientation={setOrientation}
-						setScrollTime={setScrollTime}
-						setSlotDuration={setSlotDuration}
-						setStickyHeader={setStickyHeader}
-						setTimeFormat={setTimeFormat}
-						setTimezone={setTimezone}
-						setUseCustomClasses={setUseCustomClasses}
-						setUseCustomEventRenderer={setUseCustomEventRenderer}
-						setUseCustomHourRenderer={setUseCustomHourRenderer}
-						setUseCustomOnDateClick={setUseCustomOnDateClick}
-						setUseCustomOnEventClick={setUseCustomOnEventClick}
-						setUseCustomTimeIndicator={setUseCustomTimeIndicator}
-						setWeekViewGranularity={setWeekViewGranularity}
-						slotDuration={slotDuration}
-						stickyViewHeader={stickyViewHeader}
-						timeFormat={timeFormat}
-						timezone={timezone}
-						useCustomClasses={useCustomClasses}
-						// Resource calendar specific props
-						useCustomEventRenderer={useCustomEventRenderer}
-						useCustomHourRenderer={useCustomHourRenderer}
-						useCustomOnDateClick={useCustomOnDateClick}
-						useCustomOnEventClick={useCustomOnEventClick}
-						useCustomTimeIndicator={useCustomTimeIndicator}
-						weekViewGranularity={weekViewGranularity}
-					/>
+				<div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+					{/* Calendar settings sidebar */}
+					<div className="lg:col-span-1 space-y-6">
+						<DemoCalendarSettings />
 
-					{/* Resource picker */}
-					{calendarType === 'resource' && (
-						<DemoResourcePicker
-							onToggleResource={toggleResource}
-							resources={demoResources}
-							selectedResourceIds={selectedResourceIds}
+						{/* Resource picker */}
+						{calendarType === 'resource' && (
+							<DemoResourcePicker
+								onToggleResource={toggleResource}
+								resources={demoResources}
+								selectedResourceIds={selectedResourceIds}
+							/>
+						)}
+					</div>
+
+					{/* Calendar display */}
+					<div className="lg:col-span-3">
+						<DemoCalendarDisplay
+							activeResources={activeResources}
+							customEvents={customEvents}
+							resourceEvents={resourceEvents}
 						/>
-					)}
-				</div>
-
-				{/* Calendar display */}
-				<div className="lg:col-span-3">
-					<DemoCalendarDisplay
-						activeResources={activeResources}
-						businessHours={businessHours}
-						calendarHeight={calendarHeight}
-						calendarKey={calendarKey}
-						calendarType={calendarType}
-						customEvents={customEvents}
-						dayMaxEvents={dayMaxEvents}
-						disableCellClick={disableCellClick}
-						disableDragAndDrop={disableDragAndDrop}
-						disableEventClick={disableEventClick}
-						eventHeight={eventHeight}
-						firstDayOfWeek={firstDayOfWeek}
-						hiddenDays={hiddenDays}
-						hideNonBusinessHours={hideNonBusinessHours}
-						initialDate={initialDate}
-						initialView={initialView}
-						locale={locale}
-						onDateChange={handleDateChange}
-						orientation={orientation}
-						plugins={plugins}
-						resourceEvents={resourceEvents}
-						scrollTime={scrollTime}
-						slotDuration={slotDuration}
-						stickyViewHeader={stickyViewHeader}
-						timeFormat={timeFormat}
-						timezone={timezone}
-						useCustomClasses={useCustomClasses}
-						useCustomEventRenderer={useCustomEventRenderer}
-						useCustomHourRenderer={useCustomHourRenderer}
-						useCustomOnDateClick={useCustomOnDateClick}
-						useCustomOnEventClick={useCustomOnEventClick}
-						useCustomTimeIndicator={useCustomTimeIndicator}
-						weekViewGranularity={weekViewGranularity}
-					/>
+					</div>
 				</div>
 			</div>
-		</div>
+		</FormProvider>
 	)
 }

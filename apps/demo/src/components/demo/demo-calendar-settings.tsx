@@ -1,14 +1,5 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: demo component */
-
-import type {
-	CalendarView,
-	SlotDuration,
-	TimeFormat,
-	WeekDays,
-} from '@ilamy/calendar'
-import { type Dayjs, dayjs } from '@ilamy/calendar'
+import { type Dayjs, dayjs, type WeekDays } from '@ilamy/calendar'
 import type { AgendaWindow } from '@ilamy/calendar/plugins/agenda'
-import { Button } from '@ilamy/ui/components/button'
 import {
 	Card,
 	CardContent,
@@ -24,77 +15,23 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ilamy/ui/components/select'
+import { useController, useFormContext, useWatch } from 'react-hook-form'
+import { FormCheckbox } from './form/form-checkbox'
+import { FormInput } from './form/form-input'
+import { FormSelect } from './form/form-select'
 import { ModeToggle } from './mode-toggle'
 
 const ALL_TIMEZONES = Intl.supportedValuesOf('timeZone')
 
-interface DemoCalendarSettingsProps {
-	// Calendar type
-	calendarType: 'regular' | 'resource'
-	setCalendarType: (value: 'regular' | 'resource') => void
-	firstDayOfWeek: WeekDays
-	setFirstDayOfWeek: (value: WeekDays) => void
-	initialView: CalendarView
-	setInitialView: (value: CalendarView) => void
-	agendaWindow: AgendaWindow
-	setAgendaWindow: (value: AgendaWindow) => void
-	initialDate: Dayjs | undefined
-	setInitialDate: (value: Dayjs | undefined) => void
-	useCustomEventRenderer: boolean
-	setUseCustomEventRenderer: (value: boolean) => void
-	locale: string
-	setLocale: (value: string) => void
-	timezone: string
-	setTimezone: (value: string) => void
-	disableCellClick: boolean
-	setDisableCellClick: (value: boolean) => void
-	disableEventClick: boolean
-	setDisableEventClick: (value: boolean) => void
-	disableDragAndDrop: boolean
-	setDisableDragAndDrop: (value: boolean) => void
-	useCustomOnDateClick: boolean
-	setUseCustomOnDateClick: (value: boolean) => void
-	useCustomOnEventClick: boolean
-	setUseCustomOnEventClick: (value: boolean) => void
-	calendarHeight: string
-	setCalendarHeight: (value: string) => void
-	dayMaxEvents: number
-	setDayMaxEvents: (value: number) => void
-	eventHeight: number
-	setEventHeight: (value: number) => void
-	stickyViewHeader?: boolean
-	setStickyHeader?: (value: boolean) => void
-	timeFormat: TimeFormat
-	setTimeFormat: (value: TimeFormat) => void
-	useCustomClasses: boolean
-	setUseCustomClasses: (value: boolean) => void
-	useCustomTimeIndicator: boolean
-	setUseCustomTimeIndicator: (value: boolean) => void
-	useCustomHourRenderer: boolean
-	setUseCustomHourRenderer: (value: boolean) => void
-	// Resource calendar specific props
-	isResourceCalendar?: boolean
-	orientation?: 'horizontal' | 'vertical'
-	weekViewGranularity?: 'hourly' | 'daily'
-	setOrientation?: (value: 'horizontal' | 'vertical') => void
-	setWeekViewGranularity?: (value: 'hourly' | 'daily') => void
-	// Business hours settings
-	hideNonBusinessHours: boolean
-	setHideNonBusinessHours: (value: boolean) => void
-	businessStartTime: number
-	setBusinessStartTime: (value: number) => void
-	businessEndTime: number
-	setBusinessEndTime: (value: number) => void
-	// Hidden days
-	hiddenDays: WeekDays[]
-	setHiddenDays: (value: WeekDays[]) => void
-	// Slot duration (time-grid granularity)
-	slotDuration: SlotDuration
-	setSlotDuration: (value: SlotDuration) => void
-	// Initial scroll time (hour-resolution views only)
-	scrollTime: string | undefined
-	setScrollTime: (value: string | undefined) => void
-}
+const WEEK_DAYS: WeekDays[] = [
+	'sunday',
+	'monday',
+	'tuesday',
+	'wednesday',
+	'thursday',
+	'friday',
+	'saturday',
+]
 
 // The agenda window is a Select of strings; named periods pass through, numeric
 // options ('3' / '14') parse to a rolling N-day window.
@@ -105,6 +42,8 @@ function parseAgendaWindow(value: string): AgendaWindow {
 	return Number(value)
 }
 
+// The Initial Date control is a Select of presets, but the stored value is an
+// ISO string (the calendar also writes the navigated date back into it).
 function resolveInitialDateOption(initialDate: Dayjs | undefined): string {
 	if (initialDate === undefined) {
 		return 'today'
@@ -121,68 +60,90 @@ function resolveInitialDateOption(initialDate: Dayjs | undefined): string {
 	return 'custom'
 }
 
-export function DemoCalendarSettings({
-	calendarType,
-	setCalendarType,
-	firstDayOfWeek,
-	setFirstDayOfWeek,
-	initialView,
-	setInitialView,
-	agendaWindow,
-	setAgendaWindow,
-	initialDate,
-	setInitialDate,
-	useCustomEventRenderer,
-	setUseCustomEventRenderer,
-	locale,
-	setLocale,
-	timezone,
-	setTimezone,
-	disableCellClick,
-	setDisableCellClick,
-	disableEventClick,
-	setDisableEventClick,
-	disableDragAndDrop,
-	setDisableDragAndDrop,
-	useCustomOnDateClick,
-	setUseCustomOnDateClick,
-	useCustomOnEventClick,
-	setUseCustomOnEventClick,
-	calendarHeight,
-	setCalendarHeight,
-	dayMaxEvents,
-	setDayMaxEvents,
-	eventHeight,
-	setEventHeight,
-	stickyViewHeader,
-	setStickyHeader,
-	timeFormat,
-	setTimeFormat,
-	useCustomClasses,
-	setUseCustomClasses,
-	useCustomTimeIndicator,
-	setUseCustomTimeIndicator,
-	useCustomHourRenderer,
-	setUseCustomHourRenderer,
-	// Resource calendar props
-	isResourceCalendar,
-	orientation,
-	setOrientation,
-	weekViewGranularity,
-	setWeekViewGranularity,
-	hideNonBusinessHours,
-	setHideNonBusinessHours,
-	businessStartTime,
-	setBusinessStartTime,
-	businessEndTime,
-	setBusinessEndTime,
-	hiddenDays,
-	setHiddenDays,
-	slotDuration,
-	setSlotDuration,
-	scrollTime,
-	setScrollTime,
-}: DemoCalendarSettingsProps) {
+function optionToInitialDate(option: string): Dayjs | undefined {
+	if (option === 'start-of-month') {
+		return dayjs().startOf('month')
+	}
+	if (option === 'start-of-year') {
+		return dayjs().startOf('year')
+	}
+	if (option === 'next-month') {
+		return dayjs().add(1, 'month').startOf('month')
+	}
+	return undefined
+}
+
+// Initial Date and Hidden Days don't map cleanly onto FormSelect/FormCheckbox
+// (an ISO string behind a preset Select, and an array toggled by many
+// checkboxes), so they bind to the form directly with useController.
+function InitialDateField() {
+	const { control } = useFormContext()
+	const { field } = useController({ name: 'initialDate', control })
+	const currentDate: Dayjs | undefined = field.value
+		? dayjs(field.value)
+		: undefined
+	return (
+		<label className="block text-sm text-left font-medium mb-1">
+			<span>Initial Date</span>
+			<Select
+				onValueChange={(option) =>
+					field.onChange(optionToInitialDate(option)?.toISOString())
+				}
+				value={resolveInitialDateOption(currentDate)}
+			>
+				<SelectTrigger className="w-full">
+					<SelectValue placeholder="Select initial date" />
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="today">Today (Default)</SelectItem>
+					<SelectItem value="start-of-month">Start of Month</SelectItem>
+					<SelectItem value="start-of-year">Start of Year</SelectItem>
+					<SelectItem value="next-month">Next Month</SelectItem>
+				</SelectContent>
+			</Select>
+		</label>
+	)
+}
+
+function HiddenDaysField() {
+	const { control } = useFormContext()
+	const { field } = useController({ name: 'hiddenDays', control })
+	const hiddenDays: WeekDays[] = field.value ?? []
+	const toggleDay = (day: WeekDays, checked: boolean) => {
+		const next = checked
+			? [...hiddenDays, day]
+			: hiddenDays.filter((d) => d !== day)
+		field.onChange(next)
+	}
+	return (
+		<label className="block text-sm text-left font-medium mb-1">
+			<span>Hidden Days (Week View)</span>
+			<div className="space-y-1">
+				{WEEK_DAYS.map((day) => (
+					<div className="flex items-center space-x-2" key={day}>
+						<Checkbox
+							checked={hiddenDays.includes(day)}
+							id={`hidden-day-${day}`}
+							onCheckedChange={(checked) => toggleDay(day, checked === true)}
+						/>
+						<label
+							className="text-sm leading-none cursor-pointer capitalize"
+							htmlFor={`hidden-day-${day}`}
+						>
+							{day}
+						</label>
+					</div>
+				))}
+			</div>
+		</label>
+	)
+}
+
+export function DemoCalendarSettings() {
+	const { control } = useFormContext()
+	const isResourceCalendar =
+		useWatch({ control, name: 'calendarType' }) === 'resource'
+
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
 			<CardHeader className="border-b border-white/10 dark:border-white/5 p-4">
@@ -195,566 +156,189 @@ export function DemoCalendarSettings({
 				<div>
 					<ModeToggle />
 				</div>
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Calendar Type</span>
-					<div className="flex gap-1">
-						<Button
-							className={
-								calendarType === 'regular'
-									? 'bg-primary/80 text-primary-foreground'
-									: ''
-							}
-							onClick={() => {
-								setCalendarType('regular')
-							}}
-							variant="secondary"
-						>
-							Regular
-						</Button>
-						<Button
-							className={
-								calendarType === 'resource'
-									? 'bg-primary/80 text-primary-foreground'
-									: ''
-							}
-							onClick={() => {
-								setCalendarType('resource')
-							}}
-							variant="secondary"
-						>
-							Resource
-						</Button>
-					</div>
-				</label>
+
+				<FormSelect label="Calendar Type" name="calendarType">
+					<SelectItem value="regular">Regular</SelectItem>
+					<SelectItem value="resource">Resource</SelectItem>
+				</FormSelect>
 
 				{isResourceCalendar && (
-					<label className="block text-sm text-left font-medium mb-1">
-						<span>Orientation</span>
-						<div className="flex gap-1">
-							<Button
-								className={
-									orientation === 'horizontal'
-										? 'bg-primary/80 text-primary-foreground'
-										: ''
-								}
-								onClick={() => setOrientation?.('horizontal')}
-								variant="secondary"
-							>
-								Horizontal
-							</Button>
-							<Button
-								className={
-									orientation === 'vertical'
-										? 'bg-primary/80 text-primary-foreground'
-										: ''
-								}
-								onClick={() => setOrientation?.('vertical')}
-								variant="secondary"
-							>
-								Vertical
-							</Button>
-						</div>
-					</label>
+					<FormSelect label="Orientation" name="orientation">
+						<SelectItem value="horizontal">Horizontal</SelectItem>
+						<SelectItem value="vertical">Vertical</SelectItem>
+					</FormSelect>
 				)}
 				{isResourceCalendar && (
-					<label className="block text-sm text-left font-medium mb-1">
-						<span>Week View Granularity</span>
-						<div className="flex gap-1">
-							<Button
-								className={
-									weekViewGranularity === 'hourly'
-										? 'bg-primary/80 text-primary-foreground'
-										: ''
-								}
-								onClick={() => setWeekViewGranularity?.('hourly')}
-								variant="secondary"
-							>
-								Hourly
-							</Button>
-							<Button
-								className={
-									weekViewGranularity === 'daily'
-										? 'bg-primary/80 text-primary-foreground'
-										: ''
-								}
-								onClick={() => setWeekViewGranularity?.('daily')}
-								variant="secondary"
-							>
-								Daily
-							</Button>
-						</div>
-					</label>
+					<FormSelect label="Week View Granularity" name="weekViewGranularity">
+						<SelectItem value="hourly">Hourly</SelectItem>
+						<SelectItem value="daily">Daily</SelectItem>
+					</FormSelect>
 				)}
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>First Day of Week</span>
-					<Select
-						onValueChange={(value) => setFirstDayOfWeek(value as WeekDays)}
-						value={firstDayOfWeek}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select first day of week" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="sunday">Sunday</SelectItem>
-							<SelectItem value="monday">Monday</SelectItem>
-							<SelectItem value="tuesday">Tuesday</SelectItem>
-							<SelectItem value="wednesday">Wednesday</SelectItem>
-							<SelectItem value="thursday">Thursday</SelectItem>
-							<SelectItem value="friday">Friday</SelectItem>
-							<SelectItem value="saturday">Saturday</SelectItem>
-						</SelectContent>
-					</Select>
-				</label>
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Initial View</span>
-					<Select
-						onValueChange={(value) => setInitialView(value as CalendarView)}
-						value={initialView}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select initial view" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="month">Month</SelectItem>
-							<SelectItem value="week">Week</SelectItem>
-							<SelectItem value="day">Day</SelectItem>
-							{!isResourceCalendar && (
-								<>
-									<SelectItem value="year">Year</SelectItem>
-									<SelectItem value="agenda">Agenda</SelectItem>
-								</>
-							)}
-						</SelectContent>
-					</Select>
-				</label>
+
+				<FormSelect label="First Day of Week" name="firstDayOfWeek">
+					<SelectItem value="sunday">Sunday</SelectItem>
+					<SelectItem value="monday">Monday</SelectItem>
+					<SelectItem value="tuesday">Tuesday</SelectItem>
+					<SelectItem value="wednesday">Wednesday</SelectItem>
+					<SelectItem value="thursday">Thursday</SelectItem>
+					<SelectItem value="friday">Friday</SelectItem>
+					<SelectItem value="saturday">Saturday</SelectItem>
+				</FormSelect>
+
+				<FormSelect label="Initial View" name="initialView">
+					<SelectItem value="month">Month</SelectItem>
+					<SelectItem value="week">Week</SelectItem>
+					<SelectItem value="day">Day</SelectItem>
+					{!isResourceCalendar && <SelectItem value="year">Year</SelectItem>}
+					{!isResourceCalendar && (
+						<SelectItem value="agenda">Agenda</SelectItem>
+					)}
+				</FormSelect>
+
 				{!isResourceCalendar && (
-					<label className="block text-sm text-left font-medium mb-1">
-						<span>Agenda Window</span>
-						<Select
-							onValueChange={(value) =>
-								setAgendaWindow(parseAgendaWindow(value))
-							}
-							value={String(agendaWindow)}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select agenda window" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="day">Day</SelectItem>
-								<SelectItem value="week">Week</SelectItem>
-								<SelectItem value="month">Month</SelectItem>
-								<SelectItem value="3">Next 3 days</SelectItem>
-								<SelectItem value="14">Next 14 days</SelectItem>
-							</SelectContent>
-						</Select>
-					</label>
+					<FormSelect
+						label="Agenda Window"
+						name="agendaWindow"
+						parse={parseAgendaWindow}
+					>
+						<SelectItem value="day">Day</SelectItem>
+						<SelectItem value="week">Week</SelectItem>
+						<SelectItem value="month">Month</SelectItem>
+						<SelectItem value="3">Next 3 days</SelectItem>
+						<SelectItem value="14">Next 14 days</SelectItem>
+					</FormSelect>
 				)}
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Initial Date</span>
-					<Select
-						onValueChange={(value) => {
-							if (value === 'today') {
-								setInitialDate(undefined)
-							} else if (value === 'start-of-month') {
-								setInitialDate(dayjs().startOf('month'))
-							} else if (value === 'start-of-year') {
-								setInitialDate(dayjs().startOf('year'))
-							} else if (value === 'next-month') {
-								setInitialDate(dayjs().add(1, 'month').startOf('month'))
-							}
-						}}
-						value={resolveInitialDateOption(initialDate)}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select initial date" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="today">Today (Default)</SelectItem>
-							<SelectItem value="start-of-month">Start of Month</SelectItem>
-							<SelectItem value="start-of-year">Start of Year</SelectItem>
-							<SelectItem value="next-month">Next Month</SelectItem>
-						</SelectContent>
-					</Select>
-				</label>
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Locale</span>
-					<Select onValueChange={setLocale} value={locale}>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select locale" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="en">English</SelectItem>
-							<SelectItem value="cs">Čeština</SelectItem>
-							<SelectItem value="es">Español</SelectItem>
-							<SelectItem value="fr">Français</SelectItem>
-							<SelectItem value="de">Deutsch</SelectItem>
-							<SelectItem value="it">Italiano</SelectItem>
-							<SelectItem value="pt">Português</SelectItem>
-							<SelectItem value="ru">Русский</SelectItem>
-							<SelectItem value="zh">中文</SelectItem>
-							<SelectItem value="ja">日本語</SelectItem>
-							<SelectItem value="ko">한국어</SelectItem>
-						</SelectContent>
-					</Select>
-				</label>
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Timezone</span>
-					<Select onValueChange={setTimezone} value={timezone}>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select timezone" />
-						</SelectTrigger>
-						<SelectContent>
-							{ALL_TIMEZONES.map((tz) => (
-								<SelectItem key={tz} value={tz}>
-									{tz}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</label>
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Calendar Height</span>
-					<Select onValueChange={setCalendarHeight} value={calendarHeight}>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select height" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="auto">Auto</SelectItem>
-							<SelectItem value="300px">Extra Small (300px)</SelectItem>
-							<SelectItem value="400px">Small (400px)</SelectItem>
-							<SelectItem value="600px">Medium (600px)</SelectItem>
-							<SelectItem value="800px">Large (800px)</SelectItem>
-							<SelectItem value="1000px">Extra Large (1000px)</SelectItem>
-						</SelectContent>
-					</Select>
-				</label>
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Max Events Per Day</span>
-					<Select
-						onValueChange={(value) =>
-							setDayMaxEvents(Number.parseInt(value, 10))
-						}
-						value={dayMaxEvents?.toString()}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select max events" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="1">1 event</SelectItem>
-							<SelectItem value="2">2 events</SelectItem>
-							<SelectItem value="3">3 events</SelectItem>
-							<SelectItem value="4">4 events</SelectItem>
-							<SelectItem value="5">5 events</SelectItem>
-							<SelectItem value="999">No limit</SelectItem>
-						</SelectContent>
-					</Select>
-				</label>
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Event Bar Height</span>
-					<Select
-						onValueChange={(value) =>
-							setEventHeight(Number.parseInt(value, 10))
-						}
-						value={eventHeight.toString()}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select event height" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="20">20px (compact)</SelectItem>
-							<SelectItem value="24">24px (default)</SelectItem>
-							<SelectItem value="36">36px</SelectItem>
-							<SelectItem value="48">48px (two lines)</SelectItem>
-						</SelectContent>
-					</Select>
-				</label>
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Time Format</span>
-					<Select onValueChange={setTimeFormat} value={timeFormat}>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select time format" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="12-hour">12-hour (1:00 PM)</SelectItem>
-							<SelectItem value="24-hour">24-hour (13:00)</SelectItem>
-						</SelectContent>
-					</Select>
-				</label>
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Slot Duration</span>
-					<Select
-						onValueChange={(value) =>
-							setSlotDuration(Number.parseInt(value, 10) as SlotDuration)
-						}
-						value={slotDuration.toString()}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select slot duration" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="60">60 min (hour only, default)</SelectItem>
-							<SelectItem value="30">30 min (half-hour)</SelectItem>
-							<SelectItem value="15">15 min (quarter-hour)</SelectItem>
-						</SelectContent>
-					</Select>
-				</label>
 
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={stickyViewHeader}
-						id="stickyViewHeader"
-						onCheckedChange={() => setStickyHeader?.(!stickyViewHeader)}
-					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer ml-2"
-						htmlFor="stickyViewHeader"
-					>
-						Enable sticky header
-					</label>
-				</div>
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={hideNonBusinessHours}
-						id="hideNonBusinessHours"
-						onCheckedChange={() =>
-							setHideNonBusinessHours(!hideNonBusinessHours)
-						}
-					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer ml-2"
-						htmlFor="hideNonBusinessHours"
-					>
-						Hide non-business hours
-					</label>
-				</div>
+				<InitialDateField />
+
+				<FormSelect label="Locale" name="locale">
+					<SelectItem value="en">English</SelectItem>
+					<SelectItem value="cs">Čeština</SelectItem>
+					<SelectItem value="es">Español</SelectItem>
+					<SelectItem value="fr">Français</SelectItem>
+					<SelectItem value="de">Deutsch</SelectItem>
+					<SelectItem value="it">Italiano</SelectItem>
+					<SelectItem value="pt">Português</SelectItem>
+					<SelectItem value="ru">Русский</SelectItem>
+					<SelectItem value="zh">中文</SelectItem>
+					<SelectItem value="ja">日本語</SelectItem>
+					<SelectItem value="ko">한국어</SelectItem>
+				</FormSelect>
+
+				<FormSelect label="Timezone" name="timezone">
+					{ALL_TIMEZONES.map((tz) => (
+						<SelectItem key={tz} value={tz}>
+							{tz}
+						</SelectItem>
+					))}
+				</FormSelect>
+
+				<FormSelect label="Calendar Height" name="calendarHeight">
+					<SelectItem value="auto">Auto</SelectItem>
+					<SelectItem value="300px">Extra Small (300px)</SelectItem>
+					<SelectItem value="400px">Small (400px)</SelectItem>
+					<SelectItem value="600px">Medium (600px)</SelectItem>
+					<SelectItem value="800px">Large (800px)</SelectItem>
+					<SelectItem value="1000px">Extra Large (1000px)</SelectItem>
+				</FormSelect>
+
+				<FormSelect
+					label="Max Events Per Day"
+					name="dayMaxEvents"
+					parse={Number}
+				>
+					<SelectItem value="1">1 event</SelectItem>
+					<SelectItem value="2">2 events</SelectItem>
+					<SelectItem value="3">3 events</SelectItem>
+					<SelectItem value="4">4 events</SelectItem>
+					<SelectItem value="5">5 events</SelectItem>
+					<SelectItem value="999">No limit</SelectItem>
+				</FormSelect>
+
+				<FormSelect label="Event Bar Height" name="eventHeight" parse={Number}>
+					<SelectItem value="20">20px (compact)</SelectItem>
+					<SelectItem value="24">24px (default)</SelectItem>
+					<SelectItem value="36">36px</SelectItem>
+					<SelectItem value="48">48px (two lines)</SelectItem>
+				</FormSelect>
+
+				<FormSelect label="Time Format" name="timeFormat">
+					<SelectItem value="12-hour">12-hour (1:00 PM)</SelectItem>
+					<SelectItem value="24-hour">24-hour (13:00)</SelectItem>
+				</FormSelect>
+
+				<FormSelect label="Slot Duration" name="slotDuration" parse={Number}>
+					<SelectItem value="60">60 min (hour only, default)</SelectItem>
+					<SelectItem value="30">30 min (half-hour)</SelectItem>
+					<SelectItem value="15">15 min (quarter-hour)</SelectItem>
+				</FormSelect>
+
+				<FormCheckbox label="Enable sticky header" name="stickyViewHeader" />
+				<FormCheckbox
+					label="Hide non-business hours"
+					name="hideNonBusinessHours"
+				/>
 
 				<div className="grid grid-cols-2 gap-4">
-					<label className="block text-sm text-left font-medium mb-1">
-						<span>Business Start</span>
-						<Select
-							onValueChange={(value) => setBusinessStartTime(Number(value))}
-							value={businessStartTime.toString()}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Start" />
-							</SelectTrigger>
-							<SelectContent>
-								{Array.from({ length: 24 }).map((_, i) => (
-									<SelectItem key={i} value={i.toString()}>
-										{i}:00
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</label>
-					<label className="block text-sm text-left font-medium mb-1">
-						<span>Business End</span>
-						<Select
-							onValueChange={(value) => setBusinessEndTime(Number(value))}
-							value={businessEndTime.toString()}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="End" />
-							</SelectTrigger>
-							<SelectContent>
-								{Array.from({ length: 24 }).map((_, i) => (
-									<SelectItem key={i} value={i.toString()}>
-										{i}:00
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</label>
-				</div>
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Initial Scroll Time</span>
-					<Select
-						onValueChange={(value) =>
-							setScrollTime(value === 'none' ? undefined : value)
-						}
-						value={scrollTime ?? 'none'}
-					>
-						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Scroll time" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="none">None (no auto-scroll)</SelectItem>
-							{Array.from({ length: 24 }).map((_, i) => (
-								<SelectItem
-									key={i}
-									value={`${i.toString().padStart(2, '0')}:00:00`}
-								>
-									{i.toString().padStart(2, '0')}:00
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</label>
-
-				<label className="block text-sm text-left font-medium mb-1">
-					<span>Hidden Days (Week View)</span>
-					<div className="space-y-1">
-						{(
-							[
-								'sunday',
-								'monday',
-								'tuesday',
-								'wednesday',
-								'thursday',
-								'friday',
-								'saturday',
-							] as WeekDays[]
-						).map((day) => (
-							<div className="flex items-center space-x-2" key={day}>
-								<Checkbox
-									checked={hiddenDays.includes(day)}
-									id={`hidden-day-${day}`}
-									onCheckedChange={(checked) => {
-										if (checked) {
-											setHiddenDays([...hiddenDays, day])
-										} else {
-											setHiddenDays(hiddenDays.filter((d) => d !== day))
-										}
-									}}
-								/>
-								<label
-									className="text-sm leading-none cursor-pointer capitalize"
-									htmlFor={`hidden-day-${day}`}
-								>
-									{day}
-								</label>
-							</div>
-						))}
-					</div>
-				</label>
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={useCustomEventRenderer}
-						id="customRenderer"
-						onCheckedChange={() =>
-							setUseCustomEventRenderer(!useCustomEventRenderer)
-						}
+					<FormInput
+						label="Business Start"
+						max={23}
+						min={0}
+						name="businessStartTime"
+						parse={Number}
+						type="number"
 					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer"
-						htmlFor="customRenderer"
-					>
-						Use custom event renderer
-					</label>
-				</div>
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={useCustomTimeIndicator}
-						id="customTimeIndicator"
-						onCheckedChange={() =>
-							setUseCustomTimeIndicator(!useCustomTimeIndicator)
-						}
+					<FormInput
+						label="Business End"
+						max={23}
+						min={0}
+						name="businessEndTime"
+						parse={Number}
+						type="number"
 					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer"
-						htmlFor="customTimeIndicator"
-					>
-						Use custom time indicator
-					</label>
-				</div>
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={useCustomHourRenderer}
-						id="customHourRenderer"
-						onCheckedChange={() =>
-							setUseCustomHourRenderer(!useCustomHourRenderer)
-						}
-					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer"
-						htmlFor="customHourRenderer"
-					>
-						Use custom hour renderer
-					</label>
 				</div>
 
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={useCustomOnDateClick}
-						id="useCustomOnDateClick"
-						onCheckedChange={() =>
-							setUseCustomOnDateClick(!useCustomOnDateClick)
-						}
-					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer"
-						htmlFor="useCustomOnDateClick"
-					>
-						Use custom onCellClick handler
-					</label>
-				</div>
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={useCustomOnEventClick}
-						id="useCustomOnEventClick"
-						onCheckedChange={() =>
-							setUseCustomOnEventClick(!useCustomOnEventClick)
-						}
-					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer"
-						htmlFor="useCustomOnEventClick"
-					>
-						Use custom onEventClick handler
-					</label>
-				</div>
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={disableCellClick}
-						id="disableCellClick"
-						onCheckedChange={() => setDisableCellClick(!disableCellClick)}
-					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer"
-						htmlFor="disableCellClick"
-					>
-						Disable cell clicks
-					</label>
-				</div>
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={disableEventClick}
-						id="disableEventClick"
-						onCheckedChange={() => setDisableEventClick(!disableEventClick)}
-					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer"
-						htmlFor="disableEventClick"
-					>
-						Disable event clicks
-					</label>
-				</div>
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={disableDragAndDrop}
-						id="disableDragAndDrop"
-						onCheckedChange={() => setDisableDragAndDrop(!disableDragAndDrop)}
-					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer"
-						htmlFor="disableDragAndDrop"
-					>
-						Disable drag & drop
-					</label>
-				</div>
-				<div className="flex items-center space-x-2">
-					<Checkbox
-						checked={useCustomClasses}
-						id="useCustomClasses"
-						onCheckedChange={() => setUseCustomClasses(!useCustomClasses)}
-					/>
-					<label
-						className="text-sm font-medium leading-none cursor-pointer"
-						htmlFor="useCustomClasses"
-					>
-						Use custom disabled cell styles
-					</label>
-				</div>
+				<FormSelect label="Initial Scroll Time" name="scrollTime">
+					<SelectItem value="none">None (no auto-scroll)</SelectItem>
+					{Array.from({ length: 24 }).map((_, i) => {
+						const hour = i.toString().padStart(2, '0')
+						return (
+							<SelectItem key={hour} value={`${hour}:00:00`}>
+								{hour}:00
+							</SelectItem>
+						)
+					})}
+				</FormSelect>
+
+				<HiddenDaysField />
+
+				<FormCheckbox
+					label="Use custom event renderer"
+					name="useCustomEventRenderer"
+				/>
+				<FormCheckbox
+					label="Use custom time indicator"
+					name="useCustomTimeIndicator"
+				/>
+				<FormCheckbox
+					label="Use custom hour renderer"
+					name="useCustomHourRenderer"
+				/>
+				<FormCheckbox
+					label="Use custom onCellClick handler"
+					name="useCustomOnDateClick"
+				/>
+				<FormCheckbox
+					label="Use custom onEventClick handler"
+					name="useCustomOnEventClick"
+				/>
+				<FormCheckbox label="Disable cell clicks" name="disableCellClick" />
+				<FormCheckbox label="Disable event clicks" name="disableEventClick" />
+				<FormCheckbox label="Disable drag & drop" name="disableDragAndDrop" />
+				<FormCheckbox
+					label="Use custom disabled cell styles"
+					name="useCustomClasses"
+				/>
 			</CardContent>
 		</Card>
 	)

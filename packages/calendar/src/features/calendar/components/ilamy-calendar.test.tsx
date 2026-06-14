@@ -8,11 +8,14 @@ import {
 	spyOn,
 	test,
 } from 'bun:test'
+import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createContext, useContext } from 'react'
+import { RRule } from 'rrule'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
+import { useIlamyCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { IlamyCalendar } from './ilamy-calendar'
 
 const CustomEventForm = (props: EventFormProps) => {
@@ -978,5 +981,86 @@ describe('orientation without resources', () => {
 			/>
 		)
 		expect(allWarnArgs()).not.toContain('`orientation`')
+	})
+})
+
+describe('IlamyCalendar - internal edits survive re-render (issue #197)', () => {
+	const STANDUP: CalendarEvent = {
+		id: 'standup',
+		title: 'Daily Standup',
+		start: dayjs('2025-01-06T10:00:00.000Z'),
+		end: dayjs('2025-01-06T11:00:00.000Z'),
+		rrule: {
+			freq: RRule.WEEKLY,
+			interval: 1,
+			byweekday: [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR],
+			dtstart: new Date('2025-01-06T10:00:00.000Z'),
+		},
+		exdates: [],
+	}
+	// Stable references across renders, mirroring a consumer holding events/plugins
+	// in state. The bug was a fresh array from normalizeEvents on every render.
+	const EVENTS: CalendarEvent[] = [STANDUP]
+	const PLUGINS = [recurrencePlugin()]
+	const WED_PREFIX = '2025-01-08' // Wednesday of the rendered week
+
+	// Rendered inside the provider (headerComponent), so it reads the live context:
+	// extends the Wednesday occurrence by 1h (scope "this") and reports its end.
+	const EditHarness = () => {
+		const { events, applyScopedEdit } = useIlamyCalendarContext()
+		const wednesdayStandups = events.filter(
+			(e) =>
+				e.title === 'Daily Standup' &&
+				e.start.toISOString().startsWith(WED_PREFIX)
+		)
+		const target = wednesdayStandups.at(0)
+		return (
+			<div>
+				<button
+					data-testid="extend-wed"
+					onClick={() =>
+						target &&
+						applyScopedEdit(target, { end: target.end.add(1, 'hour') }, 'this')
+					}
+					type="button"
+				>
+					extend
+				</button>
+				<span data-testid="wed-ends">
+					{wednesdayStandups.map((e) => e.end.toISOString()).join('|')}
+				</span>
+			</div>
+		)
+	}
+
+	const calendar = () => (
+		<IlamyCalendar
+			events={EVENTS}
+			headerComponent={<EditHarness />}
+			initialDate={dayjs('2025-01-08T12:00:00.000Z')}
+			initialView="week"
+			plugins={PLUGINS}
+			timezone="UTC"
+		/>
+	)
+
+	it('keeps a scope-"this" edit after IlamyCalendar re-renders', () => {
+		const { rerender } = render(calendar())
+
+		expect(screen.getByTestId('wed-ends').textContent).toBe(
+			'2025-01-08T11:00:00.000Z'
+		)
+
+		fireEvent.click(screen.getByTestId('extend-wed'))
+		expect(screen.getByTestId('wed-ends').textContent).toBe(
+			'2025-01-08T12:00:00.000Z'
+		)
+
+		// A re-render of IlamyCalendar (what the demo triggers on navigation via a
+		// controlled initialDate) must not discard the in-memory override.
+		rerender(calendar())
+		expect(screen.getByTestId('wed-ends').textContent).toBe(
+			'2025-01-08T12:00:00.000Z'
+		)
 	})
 })

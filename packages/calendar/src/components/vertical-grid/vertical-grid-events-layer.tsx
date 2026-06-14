@@ -2,7 +2,7 @@ import type { Resource } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo } from 'react'
-import { CurrentTimeIndicator } from '@/components/current-time-indicator'
+import { CurrentTimeMarker } from '@/components/current-time-marker'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
@@ -43,7 +43,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 			data-testid={dataTestId}
 		>
 			{showNowLine && rangeStart && rangeEnd && (
-				<CurrentTimeIndicator
+				<CurrentTimeMarker
 					rangeEnd={rangeEnd}
 					rangeStart={rangeStart}
 					resource={resource}

@@ -1,13 +1,13 @@
 import type { Resource } from '@ilamy/types'
 import {
+	CurrentTimeIndicator,
 	type CurrentTimeIndicatorRenderProps,
-	CurrentTimeIndicator as UiCurrentTimeIndicator,
 } from '@ilamy/ui/components/current-time-indicator'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo, type ReactNode } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
-interface CurrentTimeIndicatorProps {
+interface CurrentTimeMarkerProps {
 	rangeStart: Dayjs
 	rangeEnd: Dayjs
 	now?: Dayjs
@@ -17,18 +17,18 @@ interface CurrentTimeIndicatorProps {
 }
 
 /**
- * Calendar wrapper over the shared `@ilamy/ui` current-time marker: wires the
+ * Calendar wrapper over the shared `@ilamy/ui` CurrentTimeIndicator: wires the
  * consumer's `renderCurrentTimeIndicator` and the current `view` from context,
  * adding `view`/`resource` to the shared component's computed position.
  */
-const NoMemoCurrentTimeIndicator = ({
+const NoMemoCurrentTimeMarker = ({
 	rangeStart,
 	rangeEnd,
 	now,
 	resource,
 	axis = 'vertical',
 	withDot,
-}: CurrentTimeIndicatorProps) => {
+}: CurrentTimeMarkerProps) => {
 	const { renderCurrentTimeIndicator, view } = useSmartCalendarContext(
 		(state) => ({
 			renderCurrentTimeIndicator: state.renderCurrentTimeIndicator,
@@ -44,7 +44,7 @@ const NoMemoCurrentTimeIndicator = ({
 	}
 
 	return (
-		<UiCurrentTimeIndicator
+		<CurrentTimeIndicator
 			axis={axis}
 			now={now}
 			rangeEnd={rangeEnd}
@@ -55,4 +55,4 @@ const NoMemoCurrentTimeIndicator = ({
 	)
 }
 
-export const CurrentTimeIndicator = memo(NoMemoCurrentTimeIndicator)
+export const CurrentTimeMarker = memo(NoMemoCurrentTimeMarker)

@@ -15,7 +15,7 @@ export interface CurrentTimeIndicatorRenderProps {
 	axis: 'vertical' | 'horizontal'
 }
 
-export interface CurrentTimeIndicatorProps {
+interface CurrentTimeIndicatorProps {
 	rangeStart: Dayjs
 	rangeEnd: Dayjs
 	/** Reference time for "now" (defaults to the current time; useful for tests). */

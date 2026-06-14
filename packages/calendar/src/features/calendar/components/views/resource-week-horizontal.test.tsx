@@ -29,6 +29,19 @@ const renderResourceWeekHorizontal = (props = {}) => {
 	)
 }
 
+// Exactly one day header highlights today via its number badge (filled primary
+// circle); the header itself is not background-tinted.
+const expectTodayHeaderHighlighted = (
+	props: Parameters<typeof renderResourceWeekHorizontal>[0]
+) => {
+	renderResourceWeekHorizontal(props)
+	const dayHeaders = screen.getAllByTestId('resource-week-day-header')
+	const todayHeader = dayHeaders.find((header) =>
+		header.querySelector('.bg-primary.text-primary-foreground')
+	)
+	expect(todayHeader).toBeDefined()
+}
+
 describe('ResourceWeekHorizontal', () => {
 	beforeEach(() => {
 		cleanup()
@@ -166,19 +179,7 @@ describe('ResourceWeekHorizontal', () => {
 
 	describe('today highlighting', () => {
 		test('highlights current day header when viewing current week', () => {
-			// Use current date to test today highlighting
-			const today = dayjs()
-			renderResourceWeekHorizontal({
-				initialDate: today,
-			})
-
-			// Exactly one day header highlights today via its number badge
-			// (filled primary circle); the header itself is not background-tinted.
-			const dayHeaders = screen.getAllByTestId('resource-week-day-header')
-			const todayHeader = dayHeaders.find((header) =>
-				header.querySelector('.bg-primary.text-primary-foreground')
-			)
-			expect(todayHeader).toBeDefined()
+			expectTodayHeaderHighlighted({ initialDate: dayjs() })
 		})
 	})
 
@@ -551,19 +552,11 @@ describe('ResourceWeekHorizontal', () => {
 			})
 
 			test('highlights today in the day header row in daily mode', () => {
-				// Verifies the extracted ResourceWeekHorizontalDayHeader highlights
-				// today's number badge in daily mode, same as hourly.
-				const today = dayjs()
-				renderResourceWeekHorizontal({
-					initialDate: today,
+				// Same as hourly, but in daily granularity.
+				expectTodayHeaderHighlighted({
+					initialDate: dayjs(),
 					weekViewGranularity: 'daily',
 				})
-
-				const dayHeaders = screen.getAllByTestId('resource-week-day-header')
-				const todayHeader = dayHeaders.find((header) =>
-					header.querySelector('.bg-primary.text-primary-foreground')
-				)
-				expect(todayHeader).toBeDefined()
 			})
 		})
 

@@ -1,7 +1,7 @@
 import type { Resource } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo } from 'react'
-import { CurrentTimeIndicator } from '@/components/current-time-indicator'
+import { CurrentTimeMarker } from '@/components/current-time-marker'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
@@ -50,7 +50,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 			data-testid={dataTestId}
 		>
 			{showNowLine && rangeStart && rangeEnd && (
-				<CurrentTimeIndicator
+				<CurrentTimeMarker
 					axis="horizontal"
 					rangeEnd={rangeEnd}
 					rangeStart={rangeStart}

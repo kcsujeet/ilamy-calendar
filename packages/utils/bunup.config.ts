@@ -11,6 +11,5 @@ export default defineConfig({
 	outDir: 'dist',
 	minify: true,
 	clean: true,
-	sourcemap: true,
 	external: ['dayjs', /^dayjs\//],
 })

@@ -24,7 +24,6 @@ export default defineConfig({
 	outDir: 'dist',
 	minify: true,
 	clean: true,
-	sourcemap: true,
 	// Stock shadcn primitives have no explicit return types; use full TS
 	// inference for .d.ts instead of isolated declarations (which would require
 	// annotating every component). These are leaf files, so the slower dts is

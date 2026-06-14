@@ -74,6 +74,11 @@ bun run pre-commit                 # lint:fix + prettier:fix
 bun run build                      # Production build (bunup)
 bun run type-check                 # TypeScript check
 bun run ci                         # Full CI: lint + prettier + test + build
+
+# Match the CI gate locally (Fallow static analysis). Always pass --no-cache:
+# `--changed-since` otherwise registers a per-base-sha git worktree under $TMPDIR
+# as a cache, and those accumulate in `git worktree list`. --no-cache leaves none.
+bunx fallow@2.90.0 audit --changed-since main --gate new-only --no-cache
 ```
 
 ## Architecture

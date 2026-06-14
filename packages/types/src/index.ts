@@ -241,6 +241,12 @@ export interface PluginView {
 	/** View-switcher label (or a translation key; unknown keys render as-is). */
 	label?: string
 	/**
+	 * View-switcher icon (a component taking `className`, e.g. a lucide icon).
+	 * Always shown in the switcher; the label appears beside it only when the
+	 * view is selected, and as a hover tooltip otherwise.
+	 */
+	icon: ComponentType<{ className?: string }>
+	/**
 	 * The escape hatch: renders the whole view when `columns`/`layout` are
 	 * absent. Spec-driven views omit it. A view with neither renders nothing
 	 * (dev builds log a warning).

@@ -26,7 +26,7 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 
 	return (
 		<button
-			className="hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm"
+			className="hover:bg-accent flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-left text-sm"
 			onClick={() => onEventClick(event)}
 			type="button"
 		>

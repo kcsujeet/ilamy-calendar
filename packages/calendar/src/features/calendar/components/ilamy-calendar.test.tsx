@@ -905,6 +905,7 @@ test('renders a plugin view and exposes the plugin provider context to it', () =
 			{
 				name: 'fake-view',
 				label: 'Fake',
+				icon: () => null,
 				component: FakeView,
 				navigationUnit: 'day',
 			},
@@ -925,6 +926,7 @@ test('renders a spec-driven plugin view that declares no component', () => {
 			{
 				name: 'three-day',
 				label: 'Three day',
+				icon: () => null,
 				layout: 'vertical',
 				navigationStep: { amount: 3, unit: 'day' },
 				range: (date) => ({

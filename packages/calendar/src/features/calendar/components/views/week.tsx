@@ -8,6 +8,7 @@ import type {
 } from '@ilamy/types'
 import { DayLabel } from '@ilamy/ui/components/day-label'
 import { cn } from '@ilamy/ui/lib/utils'
+import { Columns3 } from 'lucide-react'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import {
@@ -279,6 +280,7 @@ const weekColumns = (
 export const weekView: PluginView = {
 	name: 'week',
 	label: 'week',
+	icon: Columns3,
 	navigationUnit: 'week',
 	layout: 'vertical',
 	supportsResources: true,

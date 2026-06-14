@@ -49,6 +49,7 @@ ignoreDependencies = [
 	"@radix-ui/react-scroll-area",
 	"@radix-ui/react-select",
 	"@radix-ui/react-slot",
+	"@radix-ui/react-tooltip",
 	"class-variance-authority",
 	"clsx",
 	"tailwind-merge",
@@ -62,7 +63,9 @@ ignoreDependencies = [
 ignore = ["apps/**"]
 
 [duplicates]
-# Duplication: skip the private playgrounds.
-ignore = ["apps/**"]
+# Duplication: skip the private playgrounds and test files. Test setup (provider
+# wrappers, fixture literals, repeated render/query shapes) duplicates by nature
+# and isn't shippable debt; gating on it just punishes touching a test file.
+ignore = ["apps/**", "**/*.test.ts", "**/*.test.tsx"]
 # Import preambles are structural (path-aliased module wiring), not copy-paste debt.
 ignoreImports = true

@@ -1,4 +1,5 @@
 import type { PluginView } from '@ilamy/calendar'
+import { List } from 'lucide-react'
 import { createElement } from 'react'
 import { AgendaView } from '../components/agenda-view'
 import { type AgendaWindow, windowRange, windowStep } from './agenda-window'
@@ -14,6 +15,7 @@ export const createAgendaView = ({
 }: AgendaViewOptions = {}): PluginView => ({
 	name: 'agenda',
 	label: 'agenda',
+	icon: List,
 	navigationStep: windowStep(window),
 	range: (date) => windowRange(date, window),
 	supportsResources: false,

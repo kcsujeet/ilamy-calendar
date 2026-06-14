@@ -33,7 +33,7 @@ const CalendarContent: React.FC = () => {
 
 	return (
 		<div className="flex flex-col w-full h-full" data-testid="ilamy-calendar">
-			<Header className="p-1 shrink-0" />
+			<Header className="p-1 shrink-0 mb-1" />
 			{/* Calendar Body with AnimatePresence for view transitions */}
 			<CalendarDndContext>
 				<AnimatedSection

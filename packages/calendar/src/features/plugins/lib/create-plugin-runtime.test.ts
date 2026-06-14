@@ -157,11 +157,18 @@ describe('createPluginRuntime', () => {
 	test('getViews aggregates views from all plugins in order', () => {
 		const p1: IlamyPlugin = {
 			name: 'p1',
-			views: [{ name: 'v1', component: () => null }],
+			views: [{ name: 'v1', icon: () => null, component: () => null }],
 		}
 		const p2: IlamyPlugin = {
 			name: 'p2',
-			views: [{ name: 'v2', component: () => null, navigationUnit: 'week' }],
+			views: [
+				{
+					name: 'v2',
+					icon: () => null,
+					component: () => null,
+					navigationUnit: 'week',
+				},
+			],
 		}
 		expect(
 			createPluginRuntime([p1, p2])

@@ -17,6 +17,7 @@ export default defineConfig({
 		'src/components/scroll-area.tsx',
 		'src/components/select.tsx',
 		'src/components/textarea.tsx',
+		'src/components/tooltip.tsx',
 		'src/lib/utils.ts',
 	],
 	format: ['esm'],

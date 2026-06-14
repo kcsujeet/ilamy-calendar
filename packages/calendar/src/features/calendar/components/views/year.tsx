@@ -1,4 +1,5 @@
 import type { PluginView } from '@ilamy/types'
+import { Grid2x2 } from 'lucide-react'
 import { YearView } from '../year-view/year-view'
 
 // The 12-mini-calendar layout fits neither shared engine, so the year view is
@@ -7,6 +8,7 @@ import { YearView } from '../year-view/year-view'
 export const yearView: PluginView = {
 	name: 'year',
 	label: 'year',
+	icon: Grid2x2,
 	navigationUnit: 'year',
 	// The year view does not compose the resource axis, so the switcher hides
 	// it on resource calendars.

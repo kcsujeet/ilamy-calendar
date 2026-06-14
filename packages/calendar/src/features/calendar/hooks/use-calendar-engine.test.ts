@@ -884,6 +884,29 @@ describe('useCalendarEngine', () => {
 			expect(onEventDelete).not.toHaveBeenCalled()
 		})
 
+		it('should fire only onEventDelete when deleting an occurrence that has a stored override', () => {
+			const occurrenceISO = '2025-01-13T10:00:00.000Z'
+			const base = createRecurringEvent({ exdates: [occurrenceISO] })
+			const override: CalendarEvent = {
+				...base,
+				id: 'recurring-1_override',
+				recurrenceId: occurrenceISO,
+				rrule: undefined,
+				start: dayjs(occurrenceISO),
+				end: dayjs('2025-01-13T11:00:00.000Z'),
+			}
+			const { result, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
+				base,
+				override,
+			])
+
+			act(() => result.current.applyScopedDelete(override, 'this'))
+
+			expect(onEventUpdate).not.toHaveBeenCalled()
+			expect(onEventDelete).toHaveBeenCalledTimes(1)
+			expect(onEventDelete.mock.calls[0][0].id).toBe('recurring-1_override')
+		})
+
 		it('should fire onEventUpdate with base id and until on scope following delete', () => {
 			const base = createRecurringEvent()
 			const instance: CalendarEvent = {

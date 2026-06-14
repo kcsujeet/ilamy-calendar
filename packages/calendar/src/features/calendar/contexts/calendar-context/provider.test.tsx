@@ -330,17 +330,10 @@ describe('CalendarProvider - recurring event integration', () => {
 			})
 		)
 
-		// Scope "this" delete on the base: adds the occurrence EXDATE to the base
-		// (onEventUpdate) and drops the detached override created by the edit above
-		// (onEventDelete). It does NOT delete the clicked base row.
+		// Scope "this" delete on the base after an edit: the base already exdates
+		// this occurrence, so only the detached override is reported (onEventDelete).
 		act(() => getByTestId('delete-recurring').click())
-		expect(onEventUpdate).toHaveBeenCalledTimes(2)
-		expect(onEventUpdate).toHaveBeenLastCalledWith(
-			expect.objectContaining({
-				id: 'weekly-meeting',
-				exdates: ['2025-01-06T10:00:00.000Z'],
-			})
-		)
+		expect(onEventUpdate).toHaveBeenCalledTimes(1)
 		expect(onEventDelete).toHaveBeenCalledTimes(1)
 		expect(onEventDelete).toHaveBeenCalledWith(
 			expect.objectContaining({

@@ -23,7 +23,8 @@ interface ScopedDeleteContext {
 
 /**
  * Scope "this": EXDATE the occurrence on the base and drop any detached override
- * for it. The dropped override is reported in `deleted` so a stored row is removed.
+ * for it. Persistence callbacks are mutually exclusive — report `deleted` when a
+ * stored override is removed, otherwise report `updated` with the new EXDATE.
  */
 const deleteThisScope = ({
 	targetEvent,
@@ -53,7 +54,7 @@ const deleteThisScope = ({
 
 	return {
 		events,
-		updated: [updatedBaseEvent],
+		updated: droppedOverride ? [] : [updatedBaseEvent],
 		added: [],
 		deleted: droppedOverride ? [droppedOverride] : [],
 	}

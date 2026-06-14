@@ -780,6 +780,38 @@ describe('deleteRecurringEvent', () => {
 			expect(updatedEvent.exdates).toContain('2025-01-27T09:00:00.000Z')
 			expect(updatedEvent.exdates).toContain('2025-01-20T09:00:00.000Z')
 		})
+
+		it('should report only delete when an override exists, only update otherwise', () => {
+			const occurrenceISO = '2025-01-20T09:00:00.000Z'
+			const baseEvent = createBaseRecurringEvent({
+				exdates: [occurrenceISO],
+			})
+			const storedOverride = createTargetEvent({
+				id: 'recurring-1_override',
+				recurrenceId: occurrenceISO,
+				rrule: undefined,
+			})
+
+			const overrideDelete = deleteRecurringEvent({
+				targetEvent: storedOverride,
+				currentEvents: [baseEvent, storedOverride],
+				scope: 'this',
+			})
+			expect(overrideDelete.updated).toHaveLength(0)
+			expect(overrideDelete.deleted).toHaveLength(1)
+			expect(overrideDelete.deleted[0].id).toBe('recurring-1_override')
+
+			const freshBase = createBaseRecurringEvent()
+			const generatedInstance = createTargetEvent({ rrule: undefined })
+			const instanceDelete = deleteRecurringEvent({
+				targetEvent: generatedInstance,
+				currentEvents: [freshBase],
+				scope: 'this',
+			})
+			expect(instanceDelete.deleted).toHaveLength(0)
+			expect(instanceDelete.updated).toHaveLength(1)
+			expect(instanceDelete.updated[0].exdates).toContain(occurrenceISO)
+		})
 	})
 
 	describe('scope: "following"', () => {

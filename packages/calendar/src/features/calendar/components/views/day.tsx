@@ -6,6 +6,7 @@ import type {
 	ViewConfig,
 } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
+import { Square } from 'lucide-react'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import {
@@ -129,6 +130,7 @@ const dayColumns = (
 export const dayView: PluginView = {
 	name: 'day',
 	label: 'day',
+	icon: Square,
 	navigationUnit: 'day',
 	layout: 'vertical',
 	supportsResources: true,

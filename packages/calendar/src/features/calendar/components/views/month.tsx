@@ -7,6 +7,7 @@ import type {
 	ViewConfig,
 } from '@ilamy/types'
 import { DayLabel } from '@ilamy/ui/components/day-label'
+import { Grid3x3 } from 'lucide-react'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { gutterColumn } from '@/components/vertical-grid/gutter'
@@ -117,6 +118,7 @@ const monthRows = (
 export const monthView: PluginView = {
 	name: 'month',
 	label: 'month',
+	icon: Grid3x3,
 	navigationUnit: 'month',
 	layout: 'horizontal',
 	supportsResources: true,

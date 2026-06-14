@@ -6,7 +6,7 @@ import {
 } from '@ilamy/ui/components/popover'
 import { cn } from '@ilamy/ui/lib/utils'
 import dayjs from '@ilamy/utils/dayjs'
-import { Calendar as CalendarIcon, Download, Menu, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Menu, Plus } from 'lucide-react'
 import type React from 'react'
 import { useState } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -110,7 +110,22 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 				)}
 			>
 				<div className="flex flex-wrap items-center justify-center gap-1 @2xl/base-header:justify-start">
-					<CalendarIcon className="h-5 w-5" />
+					<Button
+						className="rounded-full"
+						onClick={prevPeriod}
+						size="icon-sm"
+						variant="ghost"
+					>
+						<ChevronLeft className="h-4 w-4" />
+					</Button>
+					<Button
+						className="rounded-full"
+						onClick={nextPeriod}
+						size="icon-sm"
+						variant="ghost"
+					>
+						<ChevronRight className="h-4 w-4" />
+					</Button>
 					<TitleContent />
 				</div>
 
@@ -120,8 +135,6 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 							className="justify-end"
 							currentView={view}
 							onChange={setView}
-							onNext={nextPeriod}
-							onPrevious={prevPeriod}
 							onToday={today}
 							variant="default"
 						/>

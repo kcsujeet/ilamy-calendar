@@ -42,6 +42,7 @@ const fortyDayPlugin: IlamyPlugin = {
 	views: [
 		{
 			name: 'forty-day',
+			icon: () => null,
 			navigationStep: { amount: 40, unit: 'day' },
 			range: (date) => ({
 				start: date.startOf('day'),

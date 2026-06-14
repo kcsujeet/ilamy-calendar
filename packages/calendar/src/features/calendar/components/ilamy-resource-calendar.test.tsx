@@ -496,7 +496,14 @@ describe('IlamyResourceCalendar', () => {
 		const plugins: IlamyPlugin[] = [
 			{
 				name: 'incapable',
-				views: [{ name: 'agenda', label: 'Agenda', component: () => null }],
+				views: [
+					{
+						name: 'agenda',
+						label: 'Agenda',
+						icon: () => null,
+						component: () => null,
+					},
+				],
 			},
 			{
 				name: 'capable',
@@ -504,6 +511,7 @@ describe('IlamyResourceCalendar', () => {
 					{
 						name: 'timeline',
 						label: 'Timeline',
+						icon: () => null,
 						component: () => null,
 						supportsResources: true,
 					},
@@ -515,8 +523,9 @@ describe('IlamyResourceCalendar', () => {
 			<IlamyResourceCalendar plugins={plugins} resources={mockResources} />
 		)
 
-		expect(screen.queryByText('Agenda')).toBeNull()
-		expect(screen.getByText('Timeline')).toBeDefined()
+		// Non-selected view buttons are icon-only; the label is the accessible name.
+		expect(screen.queryByRole('button', { name: 'Agenda' })).toBeNull()
+		expect(screen.getByRole('button', { name: 'Timeline' })).toBeDefined()
 	})
 
 	it('renders a resource-capable plugin view through the shared resolution path', () => {
@@ -526,6 +535,7 @@ describe('IlamyResourceCalendar', () => {
 				{
 					name: 'custom-view',
 					label: 'Custom',
+					icon: () => null,
 					component: () => <div data-testid="custom-view">custom</div>,
 					supportsResources: true,
 				},

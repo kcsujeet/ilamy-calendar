@@ -161,12 +161,14 @@ export const TitleContent = () => {
 				weekDays.at(0) ?? currentDate,
 				weekDays.at(-1) ?? currentDate
 			),
+			triggerStyle: undefined,
 			render: renderWeekContent,
 		},
 		{
 			id: 'day',
 			hidden: view !== 'day',
 			title: currentDate.format('dddd, D'),
+			triggerStyle: undefined,
 			render: renderDayContent,
 		},
 	]
@@ -183,7 +185,9 @@ export const TitleContent = () => {
 					<Button
 						className="flex items-center gap-1 px-1! font-semibold"
 						data-testid="calendar-month-button"
-						variant="ghost"
+						size="sm"
+						style={popover.triggerStyle}
+						variant="outline"
 					>
 						<AnimatedSection
 							className="flex items-center gap-1 px-1! font-semibold"
@@ -192,7 +196,9 @@ export const TitleContent = () => {
 						>
 							{popover.title}
 						</AnimatedSection>
-						<ChevronDown className="h-4 w-4" />
+						{/* Muted dropdown affordance (matches @ilamy/ui Select), so the
+						    picker chevrons read distinctly from the prev/next nav chevrons. */}
+						<ChevronDown className="size-4 opacity-50" />
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent className="w-40 p-0">

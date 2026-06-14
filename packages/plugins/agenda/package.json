@@ -45,6 +45,7 @@
 	},
 	"dependencies": {
 		"@ilamy/ui": "workspace:*",
-		"@ilamy/utils": "workspace:*"
+		"@ilamy/utils": "workspace:*",
+		"lucide-react": "^0.475.0"
 	}
 }

@@ -1,4 +1,9 @@
 import { Button } from '@ilamy/ui/components/button'
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@ilamy/ui/components/tooltip'
 import { cn } from '@ilamy/ui/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type React from 'react'
@@ -33,6 +38,8 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
 	}))
 	const isGrid = variant === 'grid'
 	const hasResources = Boolean(resources?.length)
+	// Non-selected views are icon-only square buttons (matching the chevrons' row).
+	const iconSize = size === 'sm' ? 'icon-sm' : 'icon'
 
 	// Extract common button className logic to a function
 	const getButtonClassName = (viewType: CalendarView) => {
@@ -55,12 +62,18 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
 				className
 			)}
 		>
-			<Button onClick={onPrevious} size={size} variant="outline">
-				<ChevronLeft className="h-4 w-4" />
-			</Button>
-			<Button onClick={onNext} size={size} variant="outline">
-				<ChevronRight className="h-4 w-4" />
-			</Button>
+			{/* Prev/next live next to the date in the header; the mobile menu (grid)
+			    keeps them inline since there's no separate date row there. */}
+			{isGrid && (
+				<>
+					<Button onClick={onPrevious} size={size} variant="outline">
+						<ChevronLeft className="h-4 w-4" />
+					</Button>
+					<Button onClick={onNext} size={size} variant="outline">
+						<ChevronRight className="h-4 w-4" />
+					</Button>
+				</>
+			)}
 
 			{getViews().map((v) => {
 				// Resource-incapable views (e.g. year) hide on resource calendars.
@@ -68,16 +81,33 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
 					return null
 				}
 
-				return (
+				const isActive = currentView === v.name
+				const label = t(v.label ?? v.name)
+				const Icon = v.icon
+				const button = (
 					<Button
+						aria-label={label}
 						className={getButtonClassName(v.name)}
 						key={v.name}
 						onClick={() => onChange(v.name)}
-						size={size}
+						size={isActive ? size : iconSize}
 						variant={getBtnVariant(v.name)}
 					>
-						{t(v.label ?? v.name)}
+						<Icon className="h-4 w-4" />
+						{isActive && label}
 					</Button>
+				)
+
+				// The selected view shows its label inline; the rest reveal it on hover.
+				if (isActive) {
+					return button
+				}
+
+				return (
+					<Tooltip key={v.name}>
+						<TooltipTrigger asChild>{button}</TooltipTrigger>
+						<TooltipContent>{label}</TooltipContent>
+					</Tooltip>
 				)
 			})}
 

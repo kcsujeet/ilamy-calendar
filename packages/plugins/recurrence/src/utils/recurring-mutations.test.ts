@@ -119,7 +119,7 @@ describe('recurring mutations', () => {
 			])
 		})
 
-		it('should report dropped override in deleted and base in updated for scope this', () => {
+		it('should report only the override in deleted for scope this when an override exists', () => {
 			const baseEvent = createBaseRecurringEvent({
 				id: 'series-del-this',
 				uid: 'series-del-this@ilamy.calendar',
@@ -135,18 +135,18 @@ describe('recurring mutations', () => {
 			}
 			const currentEvents = [baseEvent, override]
 
-			const { deleted, updated, added } = deleteRecurringEvent({
+			const { deleted, updated, added, events } = deleteRecurringEvent({
 				targetEvent: override,
 				currentEvents,
 				scope: 'this',
 			})
 
 			expect(added).toHaveLength(0)
-			expect(updated).toHaveLength(1)
-			expect(updated[0].id).toBe('series-del-this')
-			expect(updated[0].exdates).toContain(occurrenceISO)
+			expect(updated).toHaveLength(0)
 			expect(deleted).toHaveLength(1)
 			expect(deleted[0].id).toBe('series-del-this_override')
+			expect(events).toHaveLength(1)
+			expect(events[0].exdates).toContain(occurrenceISO)
 		})
 
 		it('should report empty deleted and base in updated for scope this on a generated instance', () => {

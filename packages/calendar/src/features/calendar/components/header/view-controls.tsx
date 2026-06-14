@@ -62,12 +62,18 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
 				className
 			)}
 		>
-			<Button onClick={onPrevious} size={size} variant="outline">
-				<ChevronLeft className="h-4 w-4" />
-			</Button>
-			<Button onClick={onNext} size={size} variant="outline">
-				<ChevronRight className="h-4 w-4" />
-			</Button>
+			{/* Prev/next live next to the date in the header; the mobile menu (grid)
+			    keeps them inline since there's no separate date row there. */}
+			{isGrid && (
+				<>
+					<Button onClick={onPrevious} size={size} variant="outline">
+						<ChevronLeft className="h-4 w-4" />
+					</Button>
+					<Button onClick={onNext} size={size} variant="outline">
+						<ChevronRight className="h-4 w-4" />
+					</Button>
+				</>
+			)}
 
 			{getViews().map((v) => {
 				// Resource-incapable views (e.g. year) hide on resource calendars.

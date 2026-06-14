@@ -1,22 +1,26 @@
 import {
 	Select,
 	SelectContent,
+	SelectItem,
 	SelectTrigger,
 	SelectValue,
 } from '@ilamy/ui/components/select'
-import type { ReactNode } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
+
+interface FormSelectOption {
+	value: string
+	label: string
+}
 
 interface FormSelectProps {
 	name: string
 	label: string
+	options: FormSelectOption[]
 	placeholder?: string
 	disabled?: boolean
 	// Convert the Select's string value to the stored form value. Numeric or
 	// union-typed fields pass a parser; the default keeps the raw string.
 	parse?: (value: string) => unknown
-	// SelectItem options.
-	children: ReactNode
 }
 
 // A react-hook-form-bound wrapper around the shadcn Select. Reads/writes the
@@ -24,10 +28,10 @@ interface FormSelectProps {
 export function FormSelect({
 	name,
 	label,
+	options,
 	placeholder,
 	disabled,
 	parse,
-	children,
 }: FormSelectProps) {
 	const { control } = useFormContext()
 	const { field } = useController({ name, control })
@@ -43,7 +47,13 @@ export function FormSelect({
 				<SelectTrigger className="w-full">
 					<SelectValue placeholder={placeholder} />
 				</SelectTrigger>
-				<SelectContent>{children}</SelectContent>
+				<SelectContent>
+					{options.map((option) => (
+						<SelectItem key={option.value} value={option.value}>
+							{option.label}
+						</SelectItem>
+					))}
+				</SelectContent>
 			</Select>
 		</label>
 	)

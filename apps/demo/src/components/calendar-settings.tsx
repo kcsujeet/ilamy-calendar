@@ -33,6 +33,106 @@ const WEEK_DAYS: WeekDays[] = [
 	'saturday',
 ]
 
+const CALENDAR_TYPE_OPTIONS = [
+	{ value: 'regular', label: 'Regular' },
+	{ value: 'resource', label: 'Resource' },
+]
+
+const ORIENTATION_OPTIONS = [
+	{ value: 'horizontal', label: 'Horizontal' },
+	{ value: 'vertical', label: 'Vertical' },
+]
+
+const WEEK_VIEW_GRANULARITY_OPTIONS = [
+	{ value: 'hourly', label: 'Hourly' },
+	{ value: 'daily', label: 'Daily' },
+]
+
+const FIRST_DAY_OF_WEEK_OPTIONS = WEEK_DAYS.map((day) => ({
+	value: day,
+	label: `${day.at(0)?.toUpperCase()}${day.slice(1)}`,
+}))
+
+const BASE_VIEW_OPTIONS = [
+	{ value: 'month', label: 'Month' },
+	{ value: 'week', label: 'Week' },
+	{ value: 'day', label: 'Day' },
+]
+
+const REGULAR_VIEW_OPTIONS = [
+	...BASE_VIEW_OPTIONS,
+	{ value: 'year', label: 'Year' },
+	{ value: 'agenda', label: 'Agenda' },
+]
+
+const AGENDA_WINDOW_OPTIONS = [
+	{ value: 'day', label: 'Day' },
+	{ value: 'week', label: 'Week' },
+	{ value: 'month', label: 'Month' },
+	{ value: '3', label: 'Next 3 days' },
+	{ value: '14', label: 'Next 14 days' },
+]
+
+const LOCALE_OPTIONS = [
+	{ value: 'en', label: 'English' },
+	{ value: 'cs', label: 'Čeština' },
+	{ value: 'es', label: 'Español' },
+	{ value: 'fr', label: 'Français' },
+	{ value: 'de', label: 'Deutsch' },
+	{ value: 'it', label: 'Italiano' },
+	{ value: 'pt', label: 'Português' },
+	{ value: 'ru', label: 'Русский' },
+	{ value: 'zh', label: '中文' },
+	{ value: 'ja', label: '日本語' },
+	{ value: 'ko', label: '한국어' },
+]
+
+const TIMEZONE_OPTIONS = ALL_TIMEZONES.map((tz) => ({ value: tz, label: tz }))
+
+const CALENDAR_HEIGHT_OPTIONS = [
+	{ value: 'auto', label: 'Auto' },
+	{ value: '300px', label: 'Extra Small (300px)' },
+	{ value: '400px', label: 'Small (400px)' },
+	{ value: '600px', label: 'Medium (600px)' },
+	{ value: '800px', label: 'Large (800px)' },
+	{ value: '1000px', label: 'Extra Large (1000px)' },
+]
+
+const DAY_MAX_EVENTS_OPTIONS = [
+	{ value: '1', label: '1 event' },
+	{ value: '2', label: '2 events' },
+	{ value: '3', label: '3 events' },
+	{ value: '4', label: '4 events' },
+	{ value: '5', label: '5 events' },
+	{ value: '999', label: 'No limit' },
+]
+
+const EVENT_HEIGHT_OPTIONS = [
+	{ value: '20', label: '20px (compact)' },
+	{ value: '24', label: '24px (default)' },
+	{ value: '36', label: '36px' },
+	{ value: '48', label: '48px (two lines)' },
+]
+
+const TIME_FORMAT_OPTIONS = [
+	{ value: '12-hour', label: '12-hour (1:00 PM)' },
+	{ value: '24-hour', label: '24-hour (13:00)' },
+]
+
+const SLOT_DURATION_OPTIONS = [
+	{ value: '60', label: '60 min (hour only, default)' },
+	{ value: '30', label: '30 min (half-hour)' },
+	{ value: '15', label: '15 min (quarter-hour)' },
+]
+
+const SCROLL_TIME_OPTIONS = [
+	{ value: 'none', label: 'None (no auto-scroll)' },
+	...Array.from({ length: 24 }).map((_, i) => {
+		const hour = i.toString().padStart(2, '0')
+		return { value: `${hour}:00:00`, label: `${hour}:00` }
+	}),
+]
+
 // The agenda window is a Select of strings; named periods pass through, numeric
 // options ('3' / '14') parse to a rolling N-day window.
 function parseAgendaWindow(value: string): AgendaWindow {
@@ -139,7 +239,7 @@ function HiddenDaysField() {
 	)
 }
 
-export function DemoCalendarSettings() {
+export function CalendarSettings() {
 	const { control } = useFormContext()
 	const isResourceCalendar =
 		useWatch({ control, name: 'calendarType' }) === 'resource'
@@ -157,121 +257,92 @@ export function DemoCalendarSettings() {
 					<ModeToggle />
 				</div>
 
-				<FormSelect label="Calendar Type" name="calendarType">
-					<SelectItem value="regular">Regular</SelectItem>
-					<SelectItem value="resource">Resource</SelectItem>
-				</FormSelect>
+				<FormSelect
+					label="Calendar Type"
+					name="calendarType"
+					options={CALENDAR_TYPE_OPTIONS}
+				/>
 
 				{isResourceCalendar && (
-					<FormSelect label="Orientation" name="orientation">
-						<SelectItem value="horizontal">Horizontal</SelectItem>
-						<SelectItem value="vertical">Vertical</SelectItem>
-					</FormSelect>
+					<FormSelect
+						label="Orientation"
+						name="orientation"
+						options={ORIENTATION_OPTIONS}
+					/>
 				)}
 				{isResourceCalendar && (
-					<FormSelect label="Week View Granularity" name="weekViewGranularity">
-						<SelectItem value="hourly">Hourly</SelectItem>
-						<SelectItem value="daily">Daily</SelectItem>
-					</FormSelect>
+					<FormSelect
+						label="Week View Granularity"
+						name="weekViewGranularity"
+						options={WEEK_VIEW_GRANULARITY_OPTIONS}
+					/>
 				)}
 
-				<FormSelect label="First Day of Week" name="firstDayOfWeek">
-					<SelectItem value="sunday">Sunday</SelectItem>
-					<SelectItem value="monday">Monday</SelectItem>
-					<SelectItem value="tuesday">Tuesday</SelectItem>
-					<SelectItem value="wednesday">Wednesday</SelectItem>
-					<SelectItem value="thursday">Thursday</SelectItem>
-					<SelectItem value="friday">Friday</SelectItem>
-					<SelectItem value="saturday">Saturday</SelectItem>
-				</FormSelect>
+				<FormSelect
+					label="First Day of Week"
+					name="firstDayOfWeek"
+					options={FIRST_DAY_OF_WEEK_OPTIONS}
+				/>
 
-				<FormSelect label="Initial View" name="initialView">
-					<SelectItem value="month">Month</SelectItem>
-					<SelectItem value="week">Week</SelectItem>
-					<SelectItem value="day">Day</SelectItem>
-					{!isResourceCalendar && <SelectItem value="year">Year</SelectItem>}
-					{!isResourceCalendar && (
-						<SelectItem value="agenda">Agenda</SelectItem>
-					)}
-				</FormSelect>
+				<FormSelect
+					label="Initial View"
+					name="initialView"
+					options={
+						isResourceCalendar ? BASE_VIEW_OPTIONS : REGULAR_VIEW_OPTIONS
+					}
+				/>
 
 				{!isResourceCalendar && (
 					<FormSelect
 						label="Agenda Window"
 						name="agendaWindow"
+						options={AGENDA_WINDOW_OPTIONS}
 						parse={parseAgendaWindow}
-					>
-						<SelectItem value="day">Day</SelectItem>
-						<SelectItem value="week">Week</SelectItem>
-						<SelectItem value="month">Month</SelectItem>
-						<SelectItem value="3">Next 3 days</SelectItem>
-						<SelectItem value="14">Next 14 days</SelectItem>
-					</FormSelect>
+					/>
 				)}
 
 				<InitialDateField />
 
-				<FormSelect label="Locale" name="locale">
-					<SelectItem value="en">English</SelectItem>
-					<SelectItem value="cs">Čeština</SelectItem>
-					<SelectItem value="es">Español</SelectItem>
-					<SelectItem value="fr">Français</SelectItem>
-					<SelectItem value="de">Deutsch</SelectItem>
-					<SelectItem value="it">Italiano</SelectItem>
-					<SelectItem value="pt">Português</SelectItem>
-					<SelectItem value="ru">Русский</SelectItem>
-					<SelectItem value="zh">中文</SelectItem>
-					<SelectItem value="ja">日本語</SelectItem>
-					<SelectItem value="ko">한국어</SelectItem>
-				</FormSelect>
+				<FormSelect label="Locale" name="locale" options={LOCALE_OPTIONS} />
 
-				<FormSelect label="Timezone" name="timezone">
-					{ALL_TIMEZONES.map((tz) => (
-						<SelectItem key={tz} value={tz}>
-							{tz}
-						</SelectItem>
-					))}
-				</FormSelect>
+				<FormSelect
+					label="Timezone"
+					name="timezone"
+					options={TIMEZONE_OPTIONS}
+				/>
 
-				<FormSelect label="Calendar Height" name="calendarHeight">
-					<SelectItem value="auto">Auto</SelectItem>
-					<SelectItem value="300px">Extra Small (300px)</SelectItem>
-					<SelectItem value="400px">Small (400px)</SelectItem>
-					<SelectItem value="600px">Medium (600px)</SelectItem>
-					<SelectItem value="800px">Large (800px)</SelectItem>
-					<SelectItem value="1000px">Extra Large (1000px)</SelectItem>
-				</FormSelect>
+				<FormSelect
+					label="Calendar Height"
+					name="calendarHeight"
+					options={CALENDAR_HEIGHT_OPTIONS}
+				/>
 
 				<FormSelect
 					label="Max Events Per Day"
 					name="dayMaxEvents"
+					options={DAY_MAX_EVENTS_OPTIONS}
 					parse={Number}
-				>
-					<SelectItem value="1">1 event</SelectItem>
-					<SelectItem value="2">2 events</SelectItem>
-					<SelectItem value="3">3 events</SelectItem>
-					<SelectItem value="4">4 events</SelectItem>
-					<SelectItem value="5">5 events</SelectItem>
-					<SelectItem value="999">No limit</SelectItem>
-				</FormSelect>
+				/>
 
-				<FormSelect label="Event Bar Height" name="eventHeight" parse={Number}>
-					<SelectItem value="20">20px (compact)</SelectItem>
-					<SelectItem value="24">24px (default)</SelectItem>
-					<SelectItem value="36">36px</SelectItem>
-					<SelectItem value="48">48px (two lines)</SelectItem>
-				</FormSelect>
+				<FormSelect
+					label="Event Bar Height"
+					name="eventHeight"
+					options={EVENT_HEIGHT_OPTIONS}
+					parse={Number}
+				/>
 
-				<FormSelect label="Time Format" name="timeFormat">
-					<SelectItem value="12-hour">12-hour (1:00 PM)</SelectItem>
-					<SelectItem value="24-hour">24-hour (13:00)</SelectItem>
-				</FormSelect>
+				<FormSelect
+					label="Time Format"
+					name="timeFormat"
+					options={TIME_FORMAT_OPTIONS}
+				/>
 
-				<FormSelect label="Slot Duration" name="slotDuration" parse={Number}>
-					<SelectItem value="60">60 min (hour only, default)</SelectItem>
-					<SelectItem value="30">30 min (half-hour)</SelectItem>
-					<SelectItem value="15">15 min (quarter-hour)</SelectItem>
-				</FormSelect>
+				<FormSelect
+					label="Slot Duration"
+					name="slotDuration"
+					options={SLOT_DURATION_OPTIONS}
+					parse={Number}
+				/>
 
 				<FormCheckbox label="Enable sticky header" name="stickyViewHeader" />
 				<FormCheckbox
@@ -298,17 +369,11 @@ export function DemoCalendarSettings() {
 					/>
 				</div>
 
-				<FormSelect label="Initial Scroll Time" name="scrollTime">
-					<SelectItem value="none">None (no auto-scroll)</SelectItem>
-					{Array.from({ length: 24 }).map((_, i) => {
-						const hour = i.toString().padStart(2, '0')
-						return (
-							<SelectItem key={hour} value={`${hour}:00:00`}>
-								{hour}:00
-							</SelectItem>
-						)
-					})}
-				</FormSelect>
+				<FormSelect
+					label="Initial Scroll Time"
+					name="scrollTime"
+					options={SCROLL_TIME_OPTIONS}
+				/>
 
 				<HiddenDaysField />
 

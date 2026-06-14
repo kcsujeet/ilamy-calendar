@@ -7,7 +7,7 @@ import type {
 import type { AgendaWindow } from '@ilamy/calendar/plugins/agenda'
 
 // The single react-hook-form shape backing the demo settings panel. Every
-// control in DemoCalendarSettings reads/writes one of these fields.
+// control in CalendarSettings reads/writes one of these fields.
 export interface DemoSettingsValues {
 	calendarType: 'regular' | 'resource'
 	orientation: 'horizontal' | 'vertical'

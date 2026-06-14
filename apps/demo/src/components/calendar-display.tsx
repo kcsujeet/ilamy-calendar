@@ -15,11 +15,12 @@ import { dayjs, IlamyCalendar } from '@ilamy/calendar'
 import { Card, CardContent, CardHeader } from '@ilamy/ui/components/card'
 import { useMemo } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
+import { type DemoSettingsValues, defaultSettings } from '@/types/settings-form'
 import {
 	createRenderEvent,
 	renderCurrentTimeIndicator,
 	renderHour,
-} from './demo-custom-renderers'
+} from '@/utils/custom-renderers'
 import {
 	createDemoPlugins,
 	handleDateClick,
@@ -28,8 +29,7 @@ import {
 	handleEventDelete,
 	handleEventUpdate,
 	handleResourceEventClick,
-} from './demo-data'
-import { type DemoSettingsValues, defaultSettings } from './demo-settings-form'
+} from '@/utils/demo-data'
 
 const customCalendarClassesOverride: CalendarClassesOverride = {
 	disabledCell:
@@ -54,7 +54,7 @@ type CellClickHandler = (info: CellInfo) => void
 type EventClickHandler = (event: CalendarEvent) => void
 
 // Props shared by both calendar variants after the demo toggles have been
-// resolved to concrete values (or undefined) in DemoCalendarDisplay.
+// resolved to concrete values (or undefined) in CalendarDisplay.
 type SharedCalendarProps = {
 	businessHours: {
 		daysOfWeek: WeekDays[]
@@ -240,7 +240,7 @@ function ResourceCalendar({
 
 // Only the data that doesn't live in the settings form. Everything else is read
 // from the form context via useWatch.
-type DemoCalendarDisplayProps = {
+type CalendarDisplayProps = {
 	customEvents: CalendarEvent[]
 	resourceEvents: CalendarEvent[]
 	activeResources: Resource[]
@@ -292,11 +292,11 @@ function resolveSharedCalendarProps(
 	}
 }
 
-export function DemoCalendarDisplay({
+export function CalendarDisplay({
 	customEvents,
 	resourceEvents,
 	activeResources,
-}: DemoCalendarDisplayProps) {
+}: CalendarDisplayProps) {
 	const { control, setValue } = useFormContext<DemoSettingsValues>()
 	// useWatch (no name) returns a deep-partial; merge over the defaults to get a
 	// fully-defined value object (every field is always present at runtime).

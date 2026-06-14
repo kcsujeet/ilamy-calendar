@@ -12,7 +12,10 @@ import {
 	CalendarContext,
 	type CalendarContextType,
 } from '@/features/calendar/contexts/calendar-context/context'
-import type { OpenEventFormInput } from '@/features/calendar/types'
+import type {
+	OpenEventFormInput,
+	RenderCurrentTimeIndicatorProps,
+} from '@/features/calendar/types'
 import type { TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
@@ -55,6 +58,20 @@ export interface IlamyCalendarApi {
 	readonly deleteEvent: (eventId: string | number) => void
 	readonly openEventForm: (eventData?: OpenEventFormInput) => void
 	readonly closeEventForm: () => void
+	/**
+	 * Handle a click on an existing event: runs the consumer's `onEventClick`
+	 * callback if provided, otherwise opens the event for editing. Lets plugin
+	 * views (e.g. agenda) handle event clicks identically to the built-in views.
+	 */
+	readonly onEventClick: (event: CalendarEvent) => void
+	/**
+	 * The consumer's custom current-time-indicator renderer, if provided. Lets
+	 * plugin views (e.g. agenda) render the indicator consistently with the
+	 * built-in views via the shared `@ilamy/ui` CurrentTimeIndicator.
+	 */
+	readonly renderCurrentTimeIndicator?: (
+		props: RenderCurrentTimeIndicatorProps
+	) => React.ReactNode
 	/**
 	 * Events whose resource membership (`resourceIds`, falling back to
 	 * `resourceId`) contains the given resource. On a calendar without
@@ -131,6 +148,8 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 		deleteEvent: context.deleteEvent,
 		openEventForm: context.openEventForm,
 		closeEventForm: context.closeEventForm,
+		onEventClick: context.onEventClick,
+		renderCurrentTimeIndicator: context.renderCurrentTimeIndicator,
 		getEventsForResource: context.getEventsForResource,
 		businessHours: context.businessHours,
 		t: context.t,

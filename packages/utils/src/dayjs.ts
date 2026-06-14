@@ -95,5 +95,4 @@ Object.assign(timezoneAwareDayjs, dayjs)
 // Files should use 'import dayjs, { type Dayjs } from "@ilamy/utils/dayjs"'
 export type Dayjs = dayjs.Dayjs
 export type ManipulateType = dayjs.ManipulateType
-type OpUnitType = dayjs.OpUnitType
 export default timezoneAwareDayjs as typeof dayjs

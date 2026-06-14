@@ -18,7 +18,7 @@
 # points (each package's `exports`) are left to auto-detection via package.json.
 
 ignorePatterns = ["examples/**", "apps/**"]
-entry = ["packages/*/bunup.config.ts"]
+entry = ["packages/*/bunup.config.ts", "packages/plugins/*/bunup.config.ts"]
 
 # Dependency findings that are false positives of fallow's per-package static view
 # of this bundled, hoisted workspace:
@@ -36,8 +36,13 @@ entry = ["packages/*/bunup.config.ts"]
 #   - @testing-library/react and @testing-library/jest-dom are test-only
 #     dependencies declared once at the workspace root (hoisted linker) and used
 #     by package tests/preloads, intentionally not re-declared per package.
+#   - bunup (build CLI, used in each package's bunup.config.ts) and
+#     @happy-dom/global-registrator (test preload) are the same: root-hoisted
+#     build/test tooling, not re-declared per package.
 ignoreDependencies = [
 	"bun-plugin-tailwind",
+	"bunup",
+	"@happy-dom/global-registrator",
 	"@radix-ui/react-checkbox",
 	"@radix-ui/react-dialog",
 	"@radix-ui/react-label",

@@ -188,4 +188,11 @@ export const dummyEvents = [
 		},
 		exdates: [],
 	},
+	{
+		id: '22',
+		title: 'Morning Yoga Class',
+		start: dayjs().hour(10),
+		end: dayjs().hour(12),
+		color: 'bg-cyan-100 text-cyan-800',
+	},
 ]

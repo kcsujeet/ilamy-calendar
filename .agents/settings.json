@@ -39,6 +39,10 @@
 				"hooks": [
 					{
 						"type": "command",
+						"command": ".claude/hooks/research-reminder.sh"
+					},
+					{
+						"type": "command",
 						"command": ".claude/hooks/tdd-reminder.sh"
 					}
 				]

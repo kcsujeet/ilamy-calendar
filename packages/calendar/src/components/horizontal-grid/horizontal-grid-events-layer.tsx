@@ -1,7 +1,7 @@
 import type { Resource } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo } from 'react'
-import { CurrentTimeIndicator } from '@/components/current-time-indicator'
+import { CurrentTimeMarker } from '@/components/current-time-marker'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
@@ -30,8 +30,11 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	positionedEvents,
 	dayNumberHeight = DAY_NUMBER_HEIGHT,
 }) => {
-	const { eventHeight, eventSpacing } = useSmartCalendarContext()
+	const { eventHeight, eventSpacing, resources } = useSmartCalendarContext()
 	const weekStart = days.at(0)?.startOf('day')
+	// Stacked resource rows share one continuous now-line; only the first resource
+	// (or a non-resource grid) draws the dot at its start, so it isn't repeated.
+	const isFirstResource = !resourceId || resources?.at(0)?.id === resourceId
 
 	// Now-line is gated to hour-resolution horizontal grids (resource day horizontal,
 	// resource week horizontal hourly). Day-resolution grids — regular MonthView and
@@ -47,11 +50,12 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 			data-testid={dataTestId}
 		>
 			{showNowLine && rangeStart && rangeEnd && (
-				<CurrentTimeIndicator
+				<CurrentTimeMarker
 					axis="horizontal"
 					rangeEnd={rangeEnd}
 					rangeStart={rangeStart}
 					resource={resource}
+					withDot={isFirstResource}
 				/>
 			)}
 			{positionedEvents.map((positioned) => {

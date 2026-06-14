@@ -1,11 +1,12 @@
 import type { CalendarEvent, CellInfo, Resource } from '@ilamy/calendar'
+import { agendaPlugin } from '@ilamy/calendar/plugins/agenda'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 import { dummyEvents } from '@/lib/seed'
 
-// Recurrence is opt-in — the seed data has recurring events, so the demo
-// registers the recurrence plugin to expand them. Kept module-level so the
-// array reference is stable across renders.
-export const demoPlugins = [recurrencePlugin()]
+// Recurrence and agenda are opt-in plugins. The seed data has recurring events,
+// so recurrence expands them; agenda adds the upcoming-events list view. Kept
+// module-level so the array reference is stable across renders.
+export const demoPlugins = [recurrencePlugin(), agendaPlugin()]
 
 // Event handlers kept module-level to avoid recreation across renders.
 export const handleEventClick = (event: CalendarEvent) => {

@@ -5,7 +5,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import type { RenderCurrentTimeIndicatorProps } from '@/features/calendar/types'
 import type { CalendarView } from '@/types'
-import { CurrentTimeIndicator } from './current-time-indicator'
+import { CurrentTimeMarker } from './current-time-marker'
 
 /**
  * Shared custom render implementation for tests.
@@ -32,7 +32,7 @@ let customRenderFn:
 
 /**
  * Test wrapper using CalendarContext.Provider directly.
- * Provides the context structure needed for CurrentTimeIndicator.
+ * Provides the context structure needed for CurrentTimeMarker.
  */
 const TestWrapper: React.FC<{
 	children: React.ReactNode
@@ -60,12 +60,12 @@ interface IndicatorProps {
 }
 
 /**
- * Helper component that wraps CurrentTimeIndicator in the test context.
+ * Helper component that wraps CurrentTimeMarker in the test context.
  * Useful for both render and rerender calls.
  */
 const Indicator = ({ view, ...props }: IndicatorProps) => (
 	<TestWrapper view={view}>
-		<CurrentTimeIndicator {...props} />
+		<CurrentTimeMarker {...props} />
 	</TestWrapper>
 )
 
@@ -73,7 +73,7 @@ const renderIndicator = (props: IndicatorProps) => {
 	return render(<Indicator {...props} />)
 }
 
-describe('CurrentTimeIndicator', () => {
+describe('CurrentTimeMarker', () => {
 	beforeEach(() => {
 		customRenderFn = undefined
 		cleanup()
@@ -228,10 +228,9 @@ describe('CurrentTimeIndicator', () => {
 
 		const indicator = screen.getByTestId('current-time-indicator')
 		expect(indicator).toBeInTheDocument()
+		// Horizontal axis positions by `left` (vertical positions by `top`).
 		expect(indicator.style.left).toBe('50%')
 		expect(indicator.style.top).toBe('')
-		expect(indicator.className).toContain('w-0.5')
-		expect(indicator.className).not.toContain('h-0.5')
 	})
 
 	test('forwards axis="horizontal" to custom render function', () => {

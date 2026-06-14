@@ -6,6 +6,7 @@ import type {
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
+import { DayLabel } from '@ilamy/ui/components/day-label'
 import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
@@ -80,8 +81,7 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 				return (
 					<AnimatedSection
 						className={cn(
-							'hover:bg-accent flex-1 min-w-0 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-20 h-full',
-							today && 'bg-primary/10 font-bold'
+							'hover:bg-accent flex-1 min-w-0 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-20 h-full'
 						)}
 						data-testid={keys.header.weekday('week', day.format('dddd'))}
 						delay={index * HEADER_STAGGER_DELAY}
@@ -92,17 +92,11 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 						}}
 						transitionKey={key}
 					>
-						<div className="text-xs sm:text-sm truncate w-full">
-							{day.format('ddd')}
-						</div>
-						<div
-							className={cn(
-								'mx-auto mt-1 flex h-6 w-6 items-center justify-center rounded-full text-xs',
-								today && 'bg-primary text-primary-foreground'
-							)}
-						>
-							{day.format('D')}
-						</div>
+						<DayLabel
+							dayNumber={day.format('D')}
+							today={today}
+							weekday={day.format('ddd')}
+						/>
 					</AnimatedSection>
 				)
 			})}
@@ -158,10 +152,11 @@ const resourceWeekVerticalColumns = (
 			days: weekDays,
 			gridType: 'day',
 			renderLabel: (day: Dayjs) => (
-				<>
-					<span>{day.format('ddd')}</span>
-					<span>{day.format('D')}</span>
-				</>
+				<DayLabel
+					dayNumber={day.format('D')}
+					today={isToday(day)}
+					weekday={day.format('ddd')}
+				/>
 			),
 		}),
 		columnsFor: (resource) => ({

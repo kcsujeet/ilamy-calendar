@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type React from 'react'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import { EventFormDialog } from '@/features/calendar/components/event-form/event-form-dialog'
@@ -68,6 +68,13 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	...props
 }) => {
 	const hasResources = Boolean(resources?.length)
+	// Stable reference while `events` is unchanged. Without this, a fresh array on
+	// every render makes CalendarProvider re-sync (use-calendar-data) and discard
+	// in-memory edits (recurring overrides/EXDATEs, drags) on any re-render (#197).
+	const normalizedEvents = useMemo(
+		() => normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events),
+		[events]
+	)
 	useEffect(() => {
 		// Guarded `typeof process` check: the published bundle ships this line
 		// as-is (no build-time env replacement), so bundler-less ESM consumers
@@ -86,7 +93,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 		<CalendarProvider
 			eventHeight={eventHeight}
 			eventSpacing={eventSpacing}
-			events={normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events)}
+			events={normalizedEvents}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
 			hiddenDays={toHiddenDaysSet(hiddenDays)}
 			hideNonBusinessHours={hideNonBusinessHours}

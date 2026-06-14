@@ -189,6 +189,7 @@ export function DemoPage() {
 				'wednesday',
 				'thursday',
 				'friday',
+				'saturday',
 			] as WeekDays[],
 			startTime: businessStartTime,
 			endTime: businessEndTime,

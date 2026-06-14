@@ -104,7 +104,7 @@
 			}
 		},
 		{
-			"includes": ["**/src/components/demo/**"],
+			"includes": ["apps/demo/**"],
 			"linter": {
 				"rules": {
 					"a11y": {
@@ -120,7 +120,7 @@
 				"!**/*.test.tsx",
 				"!**/*.spec.ts",
 				"!**/*.spec.tsx",
-				"!**/src/components/demo/**"
+				"!apps/demo/**"
 			],
 			"plugins": ["./biome-plugins/no-inline-template-keys.grit"]
 		}

@@ -1,7 +1,7 @@
 import type { Resource } from '@ilamy/calendar'
 import { Card } from '@ilamy/ui/components/card'
 
-type DemoResourcePickerProps = {
+type ResourcePickerProps = {
 	resources: Resource[]
 	selectedResourceIds: Set<string | number>
 	onToggleResource: (id: string | number) => void
@@ -9,11 +9,11 @@ type DemoResourcePickerProps = {
 
 // Lets the user swap the resources prop at runtime to verify that
 // the resource calendar reacts to prop changes (issue #153).
-export function DemoResourcePicker({
+export function ResourcePicker({
 	resources,
 	selectedResourceIds,
 	onToggleResource,
-}: DemoResourcePickerProps) {
+}: ResourcePickerProps) {
 	return (
 		<Card className="p-4">
 			<h3 className="font-semibold mb-3">Demo Resources</h3>

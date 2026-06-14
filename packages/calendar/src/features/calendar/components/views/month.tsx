@@ -37,10 +37,12 @@ const resourceMonthVerticalColumns = (
 			days: daysInMonth,
 			gridType: 'day',
 			renderLabel: (day: Dayjs) => (
-				<>
-					<span>{day.format('D')}</span>
-					<span>{day.format('ddd')}</span>
-				</>
+				<DayLabel
+					className="flex-col-reverse"
+					dayNumber={day.format('D')}
+					today={isToday(day)}
+					weekday={day.format('ddd')}
+				/>
 			),
 		}),
 		columnsFor: (resource) => ({

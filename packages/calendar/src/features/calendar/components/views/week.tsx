@@ -152,10 +152,11 @@ const resourceWeekVerticalColumns = (
 			days: weekDays,
 			gridType: 'day',
 			renderLabel: (day: Dayjs) => (
-				<>
-					<span>{day.format('ddd')}</span>
-					<span>{day.format('D')}</span>
-				</>
+				<DayLabel
+					dayNumber={day.format('D')}
+					today={isToday(day)}
+					weekday={day.format('ddd')}
+				/>
 			),
 		}),
 		columnsFor: (resource) => ({

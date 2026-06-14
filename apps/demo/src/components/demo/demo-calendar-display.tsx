@@ -4,6 +4,7 @@ import type {
 	CalendarView,
 	CellInfo,
 	Dayjs,
+	IlamyPlugin,
 	RenderCurrentTimeIndicatorProps,
 	Resource,
 	SlotDuration,
@@ -18,7 +19,6 @@ import {
 	renderHour,
 } from './demo-custom-renderers'
 import {
-	demoPlugins,
 	handleDateClick,
 	handleEventAdd,
 	handleEventClick,
@@ -50,6 +50,7 @@ type SharedCalendarProps = {
 	}[]
 	classesOverride: CalendarClassesOverride | undefined
 	dayMaxEvents: number
+	plugins: IlamyPlugin[]
 	disableCellClick: boolean
 	disableDragAndDrop: boolean
 	disableEventClick: boolean
@@ -82,6 +83,7 @@ function RegularCalendar({
 	businessHours,
 	classesOverride,
 	dayMaxEvents,
+	plugins,
 	disableCellClick,
 	disableDragAndDrop,
 	disableEventClick,
@@ -129,7 +131,7 @@ function RegularCalendar({
 			onEventClick={onEventClick}
 			onEventDelete={handleEventDelete}
 			onEventUpdate={handleEventUpdate}
-			plugins={demoPlugins}
+			plugins={plugins}
 			renderCurrentTimeIndicator={timeIndicator}
 			renderEvent={renderEvent}
 			renderHour={hourRenderer}
@@ -156,6 +158,7 @@ function ResourceCalendar({
 	businessHours,
 	classesOverride,
 	dayMaxEvents,
+	plugins,
 	disableCellClick,
 	disableDragAndDrop,
 	disableEventClick,
@@ -207,7 +210,7 @@ function ResourceCalendar({
 			onEventDelete={handleEventDelete}
 			onEventUpdate={handleEventUpdate}
 			orientation={orientation}
-			plugins={demoPlugins}
+			plugins={plugins}
 			renderCurrentTimeIndicator={timeIndicator}
 			renderEvent={renderEvent}
 			renderHour={hourRenderer}
@@ -228,6 +231,7 @@ type DemoCalendarDisplayProps = {
 	calendarKey: string
 	businessHours: SharedCalendarProps['businessHours']
 	dayMaxEvents: number
+	plugins: IlamyPlugin[]
 	disableCellClick: boolean
 	disableDragAndDrop: boolean
 	disableEventClick: boolean
@@ -275,6 +279,7 @@ function resolveSharedCalendarProps(
 	return {
 		businessHours: props.businessHours,
 		dayMaxEvents: props.dayMaxEvents,
+		plugins: props.plugins,
 		disableCellClick: props.disableCellClick,
 		disableDragAndDrop: props.disableDragAndDrop,
 		disableEventClick: props.disableEventClick,

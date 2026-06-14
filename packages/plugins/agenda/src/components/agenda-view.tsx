@@ -14,16 +14,19 @@ interface AgendaViewProps {
  * the year view) so it is independent of the active view's range.
  */
 export const AgendaView = ({ window }: AgendaViewProps) => {
-	const { currentDate, getEventsForDateRange, t } = useIlamyCalendarContext()
+	const { currentDate, getEventsForDateRange, t, firstDayOfWeek } =
+		useIlamyCalendarContext()
 
-	const range = windowRange(currentDate, window)
+	const range = windowRange(currentDate, window, firstDayOfWeek)
 	const events = getEventsForDateRange(range.start, range.end)
 	const groups = groupEventsByDay(events, range)
 
+	// An empty window (common for short windows like a day agenda) centers the
+	// message in the available space rather than pinning it to the corner.
 	if (groups.length === 0) {
 		return (
 			<div
-				className="text-muted-foreground p-4 text-sm"
+				className="text-muted-foreground flex h-full items-center justify-center p-4 text-sm"
 				data-testid="agenda-empty"
 			>
 				{t('agendaNoEvents')}
@@ -31,6 +34,8 @@ export const AgendaView = ({ window }: AgendaViewProps) => {
 		)
 	}
 
+	// A sparse list flows from the top and scrolls when it overflows; the empty
+	// space below a short list reads as a normal list (like an inbox), not broken.
 	return (
 		<ScrollArea className="h-full" data-testid="agenda-view">
 			<div className="flex flex-col">

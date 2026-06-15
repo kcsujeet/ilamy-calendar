@@ -1,0 +1,65 @@
+---
+title: Styling
+description: Customize the look and feel of ilamy Calendar with Tailwind CSS.
+slug: docs/customization/styling
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Customize styles using Tailwind CSS v4's theming system. ilamy Calendar ships no CSS - it relies entirely on your Tailwind configuration and the @source directive.
+
+## How ilamy Calendar Uses Colors
+
+ilamy Calendar is built with Tailwind CSS v4 and ships zero CSS. Instead, it uses Tailwind utility classes and CSS custom properties exclusively. This means you have complete control over the visual appearance using your Tailwind configuration.
+
+<Aside type="caution">
+You must register ilamy Calendar as a source using Tailwind's `@source` directive so Tailwind can scan the library for utility classes.
+</Aside>
+
+```css title="Required: Register ilamy Calendar with Tailwind"
+/* In your main CSS file (e.g., globals.css) */
+@source "../node_modules/@ilamy/calendar/dist";
+```
+
+## Learn More
+
+For comprehensive color customization options, theming strategies, and advanced techniques, refer to the official Tailwind CSS documentation:
+
+### Color Customization
+Learn about color palettes, custom colors, and opacity modifiers.
+[View Color Documentation](https://tailwindcss.com/docs/colors#customizing-colors)
+
+### @source Directive
+Learn how to use the @source directive to scan npm packages for classes.
+[View @source Documentation](https://tailwindcss.com/docs/v4-beta#scanning-files-from-npm-packages)
+
+### v4 Upgrade Guide
+Migrating from v3? Learn about CSS-based configuration and removed features.
+[View Upgrade Guide](https://tailwindcss.com/docs/upgrade-guide)
+
+## Event Colors
+
+Individual events can have custom colors by setting the `color` property:
+
+```tsx title="Custom Event Colors"
+const events = [
+  {
+    id: '1',
+    title: 'Team Meeting',
+    start: new Date(),
+    end: new Date(),
+    backgroundColor: '#3b82f6', // Custom blue color
+    color: 'black'
+  },
+  {
+    id: '2',
+    title: 'Personal Task',
+    start: new Date(),
+    end: new Date(),
+    backgroundColor: '#ef4444', // Custom red color
+    color: 'black'
+  },
+];
+
+<IlamyCalendar events={events} />
+```

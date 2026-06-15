@@ -1,0 +1,70 @@
+---
+import Default from '@astrojs/starlight/components/Head.astro'
+import type { Props } from '@astrojs/starlight/props'
+---
+
+<Default {...Astro.props}><slot /></Default>
+
+<!-- Sync theme with main app -->
+<script is:inline>
+  // Sync theme between main app and Starlight docs
+  const STORAGE_KEY = "ilamy-calendar-theme";
+  const STARLIGHT_THEME_KEY = "starlight-theme";
+
+  function syncFromMainApp() {
+    // Get theme from main app localStorage
+    const mainAppTheme = localStorage.getItem(STORAGE_KEY);
+    if (mainAppTheme) {
+      const root = document.documentElement;
+      root.setAttribute("data-theme", mainAppTheme);
+      localStorage.setItem(STARLIGHT_THEME_KEY, mainAppTheme);
+    }
+  }
+
+  function syncToMainApp() {
+    // Get theme from Starlight
+    const starlightTheme = localStorage.getItem(STARLIGHT_THEME_KEY);
+    if (starlightTheme) {
+      localStorage.setItem(STORAGE_KEY, starlightTheme);
+    }
+  }
+
+  // Initial sync on page load - prioritize main app theme
+  syncFromMainApp();
+
+  // Listen for storage changes (when theme changes in main app from another tab)
+  window.addEventListener("storage", (e) => {
+    if (e.key === STORAGE_KEY && e.newValue) {
+      const root = document.documentElement;
+      root.setAttribute("data-theme", e.newValue);
+      localStorage.setItem(STARLIGHT_THEME_KEY, e.newValue);
+    }
+  });
+
+  // Watch for Starlight theme changes using MutationObserver
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (
+        mutation.type === "attributes" &&
+        mutation.attributeName === "data-theme"
+      ) {
+        const newTheme = document.documentElement.getAttribute("data-theme");
+        if (newTheme) {
+          localStorage.setItem(STORAGE_KEY, newTheme);
+          localStorage.setItem(STARLIGHT_THEME_KEY, newTheme);
+        }
+      }
+    });
+  });
+
+  // Start observing
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
+
+  // Also listen for astro page transitions
+  document.addEventListener("astro:page-load", () => {
+    syncFromMainApp();
+  });
+</script>

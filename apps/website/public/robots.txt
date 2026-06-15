@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://ilamy.dev/sitemap-index.xml
+
+# Allow all common crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot  
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# Optimize crawl budget
+Crawl-delay: 1

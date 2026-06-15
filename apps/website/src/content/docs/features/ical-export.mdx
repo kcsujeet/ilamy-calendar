@@ -1,0 +1,89 @@
+---
+title: iCalendar Export
+description: Export calendar events to iCalendar format (.ics files).
+slug: docs/features/ical-export
+---
+
+Export your calendar events to iCalendar (.ics) format for use in other calendar applications like Google Calendar, Apple Calendar, Outlook, and more.
+
+The iCalendar export feature allows users to export their calendar events to the standard .ics format, ensuring compatibility with virtually all calendar applications. The implementation is fully RFC 5545 compliant and supports all event types including simple events, all-day events, and recurring events.
+
+:::tip[RFC 5545 Compliant]
+The export feature follows the official iCalendar specification, ensuring maximum compatibility across calendar applications.
+:::
+
+## Key Features
+
+### Complete Event Support
+- Simple events with title, description, location
+- All-day events
+- Recurring events with RRULE patterns
+- Events with exception dates (EXDATE)
+- Modified recurring instances (RECURRENCE-ID)
+
+### Universal Compatibility
+- Google Calendar
+- Apple Calendar
+- Microsoft Outlook
+- Thunderbird
+- Any RFC 5545 compliant calendar app
+
+## How to Use
+
+### Desktop Interface
+1. Look for the "Export" button in the top-right corner of the calendar header
+2. Click the button to download the .ics file
+3. The file will be automatically downloaded with a timestamped filename (e.g., `calendar-2025-08-04.ics`)
+
+### Mobile Interface
+1. Tap the menu button (☰) in the top-right corner
+2. Select "Export Calendar (.ics)" from the dropdown menu
+3. The file will be downloaded to your device
+
+## Supported Event Properties
+
+| Event Property | iCalendar Field | Description |
+|----------------|-----------------|-------------|
+| `title` | `SUMMARY` | Event title or summary |
+| `description` | `DESCRIPTION` | Detailed event description |
+| `location` | `LOCATION` | Event location or venue |
+| `start` | `DTSTART` | Event start date and time |
+| `end` | `DTEND` | Event end date and time |
+| `uid` | `UID` | Unique identifier for the event |
+| `allDay` | `VALUE=DATE` | Formats dates for all-day events |
+| `rrule` | `RRULE` | Recurrence rules for repeating events |
+| `exdates` | `EXDATE` | Exception dates for recurring events |
+| `recurrenceId` | `RECURRENCE-ID` | Modified instances of recurring events |
+
+## Example iCalendar Output
+
+Here's what the exported iCalendar content looks like:
+
+```icalendar
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ilamy//ilamy Calendar//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:My Calendar
+X-WR-CALDESC:Exported from My Calendar
+BEGIN:VTIMEZONE
+TZID:UTC
+BEGIN:STANDARD
+DTSTART:19700101T000000
+TZNAME:UTC
+TZOFFSETFROM:+0000
+TZOFFSETTO:+0000
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:meeting-1@ilamy.calendar
+DTSTART:20250804T100000Z
+DTEND:20250804T110000Z
+SUMMARY:Team Meeting
+DESCRIPTION:Weekly team sync
+LOCATION:Conference Room A
+DTSTAMP:20250804T120000Z
+END:VEVENT
+END:VCALENDAR
+```

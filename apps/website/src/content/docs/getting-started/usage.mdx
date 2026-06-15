@@ -1,0 +1,65 @@
+---
+title: Usage
+description: Get up and running with ilamy Calendar in just a few minutes.
+slug: docs/getting-started/usage
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components';
+
+Get up and running with ilamy Calendar in just a few minutes.
+
+## Basic Setup
+
+Once you've installed the package, follow these steps to configure and use the calendar:
+
+<Steps>
+
+1. ### Configure Tailwind CSS
+
+   Since ilamy Calendar is built with Tailwind CSS v4, you need to register the source path in your CSS file to ensure all component styles are included:
+
+   ```css title="globals.css"
+   @source "../node_modules/@ilamy/calendar/dist";
+   ```
+
+   <Aside>
+   This tells Tailwind to scan the calendar package for classes and include them in your build. This is especially important since node_modules are typically ignored by Tailwind by default.
+   </Aside>
+
+2. ### Configure Day.js (Optional)
+
+   If you are using Day.js and have installed it as a dependency in your project, you might need to extend the plugins that are required for this library.
+
+   ```tsx title="dayjs-config.ts"
+   import dayjs from 'dayjs';
+   import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js';
+   import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js';
+   import timezone from 'dayjs/plugin/timezone.js';
+   import utc from 'dayjs/plugin/utc.js';
+
+   dayjs.extend(isSameOrAfter);
+   dayjs.extend(isSameOrBefore);
+   dayjs.extend(timezone);
+   dayjs.extend(utc);
+   ```
+
+   These plugins are required for proper date handling and timezone support within the calendar component.
+
+3. ### Import and Use the Calendar
+
+   Now you can start using the calendar with minimal configuration:
+
+   ```tsx title="MyCalendar.tsx"
+   import { IlamyCalendar } from '@ilamy/calendar';
+
+   export default function MyCalendar() {
+     return (
+       <div className="p-6">
+         <IlamyCalendar />
+       </div>
+     );
+   }
+   ```
+
+</Steps>

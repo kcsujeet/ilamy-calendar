@@ -30,6 +30,7 @@ export default defineConfig({
 	resolve: {
 		tsconfigPaths: true,
 		alias: {
+			'@ilamy/playground': pkg('playground/src'),
 			'@ilamy/calendar-agenda': pkg('plugins/agenda/src'),
 			'@ilamy/calendar-recurrence': pkg('plugins/recurrence/src'),
 			'@ilamy/calendar': pkg('calendar/src'),

@@ -1,0 +1,12 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"paths": {
+			"@/*": ["./src/*"],
+			"@ilamy/ui/components/*": ["../ui/src/components/*"],
+			"@ilamy/ui/lib/utils": ["../ui/src/lib/utils.ts"]
+		}
+	},
+	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"exclude": ["dist", "node_modules"]
+}

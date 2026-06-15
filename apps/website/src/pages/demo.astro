@@ -1,8 +1,8 @@
 ---
-import { DemoPage } from '@/components/pages/demo/demo-page'
+import { Playground } from '@ilamy/playground'
 import MainLayout from '@/layouts/main-layout.astro'
 ---
 
 <MainLayout>
-  <DemoPage client:only />
+  <Playground client:only="react" />
 </MainLayout>

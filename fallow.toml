@@ -59,13 +59,15 @@ ignoreDependencies = [
 ]
 
 [health]
-# Complexity / CRAP: skip the private playgrounds.
-ignore = ["apps/**"]
+# Complexity / CRAP: skip the private playgrounds. `packages/playground` is the
+# shared demo UI (consumed by apps/demo + the website) — never published, and its
+# toggle-heavy branching inflates complexity without being shippable debt.
+ignore = ["apps/**", "packages/playground/**"]
 
 [duplicates]
 # Duplication: skip the private playgrounds and test files. Test setup (provider
 # wrappers, fixture literals, repeated render/query shapes) duplicates by nature
 # and isn't shippable debt; gating on it just punishes touching a test file.
-ignore = ["apps/**", "**/*.test.ts", "**/*.test.tsx"]
+ignore = ["apps/**", "packages/playground/**", "**/*.test.ts", "**/*.test.tsx"]
 # Import preambles are structural (path-aliased module wiring), not copy-paste debt.
 ignoreImports = true

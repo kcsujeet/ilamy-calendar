@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* The shared playground + the @ilamy/* source it pulls in live outside this
+   app's tree, so Tailwind needs explicit sources to generate their classes. */
+@source "../../../../packages/playground/src";
+@source "../../../../packages/ui/src";
+@source "../../../../packages/calendar/src";
+
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));

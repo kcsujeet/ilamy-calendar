@@ -6,7 +6,7 @@ import type {
 } from '@ilamy/calendar'
 import { type AgendaWindow, agendaPlugin } from '@ilamy/calendar/plugins/agenda'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
-import { dummyEvents } from '@/lib/seed'
+import { dummyEvents } from '../lib/seed'
 
 // Recurrence and agenda are opt-in plugins. The seed data has recurring events,
 // so recurrence expands them; agenda adds the upcoming-events list view scoped
@@ -23,18 +23,6 @@ export const handleEventClick = (event: CalendarEvent) => {
 
 export const handleDateClick = (info: CellInfo) => {
 	alert(JSON.stringify(info))
-}
-
-export const handleEventAdd = (event: CalendarEvent) => {
-	alert(`Event added: ${event.title}`)
-}
-
-export const handleEventUpdate = (event: CalendarEvent) => {
-	alert(`Event updated: ${event.title}`)
-}
-
-export const handleEventDelete = (event: CalendarEvent) => {
-	alert(`Event deleted: ${event.title}`)
 }
 
 // Demo resources
@@ -77,11 +65,14 @@ export const demoResources: Resource[] = [
 	},
 ]
 
-// Convert regular events to resource events
-export const createResourceEvents = (): CalendarEvent[] => {
+// Convert regular events to resource events. Takes the current events so the
+// resource view re-derives when the playground's event state changes.
+export const createResourceEvents = (
+	events: CalendarEvent[] = dummyEvents
+): CalendarEvent[] => {
 	const resourceIds = demoResources.map((r) => r.id)
 
-	return dummyEvents.map((event, index) => {
+	return events.map((event, index) => {
 		const resourceEvent: CalendarEvent = { ...event }
 
 		// Assign events to resources

@@ -142,6 +142,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				>
 					{showDayNumber && (
 						<DayLabel
+							className="items-start"
 							data-testid={keys.dayNumber(day)}
 							dayNumber={day.format('D')}
 							today={isToday(day)}

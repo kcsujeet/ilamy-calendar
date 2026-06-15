@@ -1,0 +1,71 @@
+---
+title: Agenda Plugin
+description: Add an agenda (upcoming-events list) view scoped to a configurable date window.
+slug: docs/plugins/agenda
+---
+
+The agenda plugin adds an **agenda view** — a chronological, grouped-by-day list of the events in a date window. It is an opt-in plugin: the core ships no views beyond month, week, day, and year, so you register it through the `plugins` prop.
+
+## Installation
+
+Import `agendaPlugin` from the `@ilamy/calendar/plugins/agenda` subpath and pass it to `plugins`:
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar';
+import { agendaPlugin } from '@ilamy/calendar/plugins/agenda';
+
+export default function MyCalendar() {
+  return (
+    <IlamyCalendar
+      events={events}
+      plugins={[agendaPlugin({ window: 'week' })]}
+    />
+  );
+}
+```
+
+Registering the plugin adds an **Agenda** entry to the view switcher. You can also open it programmatically with `setView('agenda')` from [`useIlamyCalendarContext`](/docs/components/use-ilamy-calendar-context), or make it the initial view with `initialView="agenda"`.
+
+## Options
+
+```ts
+agendaPlugin(options?: { window?: AgendaWindow })
+
+type AgendaWindow = 'day' | 'week' | 'month' | number
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `window` | `AgendaWindow` | `'month'` | The date window the agenda lists and that prev/next step over. |
+
+How `window` is interpreted:
+
+- **A named period** (`'day'`, `'week'`, `'month'`) is the calendar period *containing* the current date. It can include earlier days of that period and aligns with the matching grid view and header label.
+- **A number** is a rolling window of that many days starting *at* the current date and counting forward (e.g. `window={14}` lists the next 14 days).
+
+```tsx
+// The current calendar month
+<IlamyCalendar events={events} plugins={[agendaPlugin({ window: 'month' })]} />
+
+// A rolling 14-day window from today
+<IlamyCalendar events={events} plugins={[agendaPlugin({ window: 14 })]} />
+```
+
+## Combining with other plugins
+
+Plugins compose — pass them all in the `plugins` array. Register the [recurrence plugin](/docs/plugins/recurrence) alongside the agenda plugin and recurring instances appear in the agenda list:
+
+```tsx
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence';
+import { agendaPlugin } from '@ilamy/calendar/plugins/agenda';
+
+<IlamyCalendar
+  events={events}
+  plugins={[recurrencePlugin(), agendaPlugin({ window: 'week' })]}
+/>
+```
+
+## Notes
+
+- The agenda view does not support the resource axis. On a calendar with `resources` set, it is hidden from the view switcher.
+- Prev/next navigation steps by the configured window (a named period steps one period; a numeric window steps by that many days).

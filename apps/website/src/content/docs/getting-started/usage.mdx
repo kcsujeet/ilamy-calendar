@@ -62,4 +62,22 @@ Once you've installed the package, follow these steps to configure and use the c
    }
    ```
 
+4. ### Add plugins (optional)
+
+   The v2 core ships **no plugins** by default. Capabilities like recurring events and the agenda view are opt-in: import them from their subpath and register them via the `plugins` prop. Skip this step if you don't need them.
+
+   ```tsx title="MyCalendar.tsx"
+   import { IlamyCalendar } from '@ilamy/calendar';
+   import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence';
+
+   export default function MyCalendar() {
+     return (
+       <div className="p-6">
+         {/* recurrencePlugin expands events that have an `rrule` */}
+         <IlamyCalendar plugins={[recurrencePlugin()]} />
+       </div>
+     );
+   }
+   ```
+
 </Steps>

@@ -5,7 +5,9 @@
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+			"@ilamy/ui/components/*": ["../../packages/ui/src/components/*"],
+			"@ilamy/ui/lib/utils": ["../../packages/ui/src/lib/utils.ts"]
 		}
 	}
 }

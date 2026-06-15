@@ -16,10 +16,9 @@ import {
 	SelectValue,
 } from '@ilamy/ui/components/select'
 import { useController, useFormContext, useWatch } from 'react-hook-form'
+import { FormButtonGroup } from './form/form-button-group'
 import { FormCheckbox } from './form/form-checkbox'
-import { FormInput } from './form/form-input'
 import { FormSelect } from './form/form-select'
-import { ModeToggle } from './mode-toggle'
 
 const ALL_TIMEZONES = Intl.supportedValuesOf('timeZone')
 
@@ -33,8 +32,8 @@ const WEEK_DAYS: WeekDays[] = [
 	'saturday',
 ]
 
-const CALENDAR_TYPE_OPTIONS = [
-	{ value: 'regular', label: 'Regular' },
+const CALENDAR_MODE_OPTIONS = [
+	{ value: 'regular', label: 'Standard' },
 	{ value: 'resource', label: 'Resource' },
 ]
 
@@ -44,9 +43,36 @@ const ORIENTATION_OPTIONS = [
 ]
 
 const WEEK_VIEW_GRANULARITY_OPTIONS = [
-	{ value: 'hourly', label: 'Hourly' },
-	{ value: 'daily', label: 'Daily' },
+	{
+		value: 'hourly',
+		label: 'Hourly',
+		description: 'Hourly time slots per day (default).',
+	},
+	{
+		value: 'daily',
+		label: 'Daily',
+		description: 'One column per day, no time slots.',
+	},
 ]
+
+// Weekday checkboxes render Monday-first with short labels in a two-column grid.
+const WEEKDAY_CHECKBOX_OPTIONS: { value: WeekDays; label: string }[] = [
+	{ value: 'monday', label: 'Mon' },
+	{ value: 'tuesday', label: 'Tue' },
+	{ value: 'wednesday', label: 'Wed' },
+	{ value: 'thursday', label: 'Thu' },
+	{ value: 'friday', label: 'Fri' },
+	{ value: 'saturday', label: 'Sat' },
+	{ value: 'sunday', label: 'Sun' },
+]
+
+// Hour-of-day options labelled like "9 AM (09:00)".
+const HOUR_OPTIONS = Array.from({ length: 24 }).map((_, hour) => {
+	const pad = hour.toString().padStart(2, '0')
+	const period = hour < 12 ? 'AM' : 'PM'
+	const twelve = hour % 12 === 0 ? 12 : hour % 12
+	return { value: String(hour), label: `${twelve} ${period} (${pad}:00)` }
+})
 
 const FIRST_DAY_OF_WEEK_OPTIONS = WEEK_DAYS.map((day) => ({
 	value: day,
@@ -114,6 +140,13 @@ const EVENT_HEIGHT_OPTIONS = [
 	{ value: '48', label: '48px (two lines)' },
 ]
 
+const EVENT_SPACING_OPTIONS = [
+	{ value: '0', label: '0px (flush)' },
+	{ value: '1', label: '1px (default)' },
+	{ value: '2', label: '2px' },
+	{ value: '4', label: '4px' },
+]
+
 const TIME_FORMAT_OPTIONS = [
 	{ value: '12-hour', label: '12-hour (1:00 PM)' },
 	{ value: '24-hour', label: '24-hour (13:00)' },
@@ -173,9 +206,9 @@ function optionToInitialDate(option: string): Dayjs | undefined {
 	return undefined
 }
 
-// Initial Date and Hidden Days don't map cleanly onto FormSelect/FormCheckbox
-// (an ISO string behind a preset Select, and an array toggled by many
-// checkboxes), so they bind to the form directly with useController.
+// Initial Date and the weekday multi-selects don't map cleanly onto
+// FormSelect/FormCheckbox (an ISO string behind a preset Select, and an array
+// toggled by many checkboxes), so they bind to the form directly.
 function InitialDateField() {
 	const { control } = useFormContext()
 	const { field } = useController({ name: 'initialDate', control })
@@ -205,37 +238,45 @@ function InitialDateField() {
 	)
 }
 
-function HiddenDaysField() {
+// A weekday multi-select bound to an array field (used for hidden days and
+// business-hours days).
+function WeekdayMultiSelectField({
+	name,
+	label,
+}: {
+	name: string
+	label: string
+}) {
 	const { control } = useFormContext()
-	const { field } = useController({ name: 'hiddenDays', control })
-	const hiddenDays: WeekDays[] = field.value ?? []
+	const { field } = useController({ name, control })
+	const selected: WeekDays[] = field.value ?? []
 	const toggleDay = (day: WeekDays, checked: boolean) => {
 		const next = checked
-			? [...hiddenDays, day]
-			: hiddenDays.filter((d) => d !== day)
+			? [...selected, day]
+			: selected.filter((d) => d !== day)
 		field.onChange(next)
 	}
 	return (
-		<label className="block text-sm text-left font-medium mb-1">
-			<span>Hidden Days (Week View)</span>
-			<div className="space-y-1">
-				{WEEK_DAYS.map((day) => (
+		<div className="text-sm text-left font-medium">
+			<span>{label}</span>
+			<div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-1">
+				{WEEKDAY_CHECKBOX_OPTIONS.map(({ value: day, label: short }) => (
 					<div className="flex items-center space-x-2" key={day}>
 						<Checkbox
-							checked={hiddenDays.includes(day)}
-							id={`hidden-day-${day}`}
+							checked={selected.includes(day)}
+							id={`${name}-${day}`}
 							onCheckedChange={(checked) => toggleDay(day, checked === true)}
 						/>
 						<label
-							className="text-sm leading-none cursor-pointer capitalize"
-							htmlFor={`hidden-day-${day}`}
+							className="text-sm font-normal leading-none cursor-pointer"
+							htmlFor={`${name}-${day}`}
 						>
-							{day}
+							{short}
 						</label>
 					</div>
 				))}
 			</div>
-		</label>
+		</div>
 	)
 }
 
@@ -243,6 +284,10 @@ export function CalendarSettings() {
 	const { control } = useFormContext()
 	const isResourceCalendar =
 		useWatch({ control, name: 'calendarType' }) === 'resource'
+	const businessHoursEnabled = useWatch({
+		control,
+		name: 'enableBusinessHours',
+	})
 
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -253,25 +298,21 @@ export function CalendarSettings() {
 				<CardDescription>Customize the calendar display</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4 p-6">
-				<div>
-					<ModeToggle />
-				</div>
-
-				<FormSelect
-					label="Calendar Type"
+				<FormButtonGroup
+					label="Calendar Mode"
 					name="calendarType"
-					options={CALENDAR_TYPE_OPTIONS}
+					options={CALENDAR_MODE_OPTIONS}
 				/>
 
 				{isResourceCalendar && (
-					<FormSelect
-						label="Orientation"
+					<FormButtonGroup
+						label="Resource Orientation"
 						name="orientation"
 						options={ORIENTATION_OPTIONS}
 					/>
 				)}
 				{isResourceCalendar && (
-					<FormSelect
+					<FormButtonGroup
 						label="Week View Granularity"
 						name="weekViewGranularity"
 						options={WEEK_VIEW_GRANULARITY_OPTIONS}
@@ -332,6 +373,13 @@ export function CalendarSettings() {
 				/>
 
 				<FormSelect
+					label="Event Spacing"
+					name="eventSpacing"
+					options={EVENT_SPACING_OPTIONS}
+					parse={Number}
+				/>
+
+				<FormSelect
 					label="Time Format"
 					name="timeFormat"
 					options={TIME_FORMAT_OPTIONS}
@@ -344,51 +392,80 @@ export function CalendarSettings() {
 					parse={Number}
 				/>
 
-				<FormCheckbox label="Enable sticky header" name="stickyViewHeader" />
-				<FormCheckbox
-					label="Hide non-business hours"
-					name="hideNonBusinessHours"
-				/>
-
-				<div className="grid grid-cols-2 gap-4">
-					<FormInput
-						label="Business Start"
-						max={23}
-						min={0}
-						name="businessStartTime"
-						parse={Number}
-						type="number"
-					/>
-					<FormInput
-						label="Business End"
-						max={23}
-						min={0}
-						name="businessEndTime"
-						parse={Number}
-						type="number"
-					/>
-				</div>
-
 				<FormSelect
 					label="Initial Scroll Time"
 					name="scrollTime"
 					options={SCROLL_TIME_OPTIONS}
 				/>
 
-				<HiddenDaysField />
+				<FormCheckbox label="Enable sticky header" name="stickyViewHeader" />
+				<FormCheckbox label="Hide export button" name="hideExportButton" />
 
+				{/* Business hours */}
+				<FormCheckbox
+					label="Enable business hours"
+					name="enableBusinessHours"
+				/>
+				{businessHoursEnabled && (
+					<div className="border-l pl-4 ml-1 space-y-4">
+						<WeekdayMultiSelectField
+							label="Days of Week"
+							name="businessHoursDays"
+						/>
+						<FormSelect
+							label="Start Time"
+							name="businessHoursStart"
+							options={HOUR_OPTIONS}
+							parse={Number}
+						/>
+						<FormSelect
+							label="End Time"
+							name="businessHoursEnd"
+							options={HOUR_OPTIONS}
+							parse={Number}
+						/>
+						<FormCheckbox
+							label="Hide non-business hours"
+							name="hideNonBusinessHours"
+						/>
+					</div>
+				)}
+
+				<WeekdayMultiSelectField
+					label="Hidden Days (Week View)"
+					name="hiddenDays"
+				/>
+
+				{/* Custom renderers */}
 				<FormCheckbox
 					label="Use custom event renderer"
 					name="useCustomEventRenderer"
 				/>
+				{isResourceCalendar && (
+					<FormCheckbox
+						label="Use custom resource renderer"
+						name="useCustomResourceRenderer"
+					/>
+				)}
+				<FormCheckbox
+					label="Use custom calendar header"
+					name="useCustomCalendarHeader"
+				/>
+				<FormCheckbox label="Use custom event form" name="useCustomEventForm" />
 				<FormCheckbox
 					label="Use custom time indicator"
-					name="useCustomTimeIndicator"
+					name="useCustomCurrentTimeIndicator"
 				/>
 				<FormCheckbox
 					label="Use custom hour renderer"
 					name="useCustomHourRenderer"
 				/>
+				<FormCheckbox
+					label="Use custom disabled cell styles"
+					name="useCustomClasses"
+				/>
+
+				{/* Interaction */}
 				<FormCheckbox
 					label="Use custom onCellClick handler"
 					name="useCustomOnDateClick"
@@ -397,13 +474,13 @@ export function CalendarSettings() {
 					label="Use custom onEventClick handler"
 					name="useCustomOnEventClick"
 				/>
+				<FormCheckbox
+					label="Use event lifecycle callbacks (add/update/delete)"
+					name="useEventLifecycleCallbacks"
+				/>
 				<FormCheckbox label="Disable cell clicks" name="disableCellClick" />
 				<FormCheckbox label="Disable event clicks" name="disableEventClick" />
 				<FormCheckbox label="Disable drag & drop" name="disableDragAndDrop" />
-				<FormCheckbox
-					label="Use custom disabled cell styles"
-					name="useCustomClasses"
-				/>
 			</CardContent>
 		</Card>
 	)

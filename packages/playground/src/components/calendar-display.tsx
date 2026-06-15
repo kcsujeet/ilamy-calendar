@@ -4,6 +4,7 @@ import type {
 	CalendarView,
 	CellInfo,
 	Dayjs,
+	EventFormProps,
 	IlamyPlugin,
 	RenderCurrentTimeIndicatorProps,
 	Resource,
@@ -13,61 +14,62 @@ import type {
 } from '@ilamy/calendar'
 import { dayjs, IlamyCalendar } from '@ilamy/calendar'
 import { Card, CardContent, CardHeader } from '@ilamy/ui/components/card'
+import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
-import { type DemoSettingsValues, defaultSettings } from '@/types/settings-form'
 import {
+	defaultSettings,
+	type PlaygroundSettings,
+} from '../types/settings-form'
+import {
+	CustomCalendarHeader,
+	CustomEventForm,
 	createRenderEvent,
+	createRenderResource,
 	renderCurrentTimeIndicator,
 	renderHour,
-} from '@/utils/custom-renderers'
+} from '../utils/custom-renderers'
 import {
 	createDemoPlugins,
 	handleDateClick,
-	handleEventAdd,
 	handleEventClick,
-	handleEventDelete,
-	handleEventUpdate,
 	handleResourceEventClick,
-} from '@/utils/demo-data'
+} from '../utils/demo-data'
 
 const customCalendarClassesOverride: CalendarClassesOverride = {
 	disabledCell:
 		'bg-red-50 dark:bg-red-950 text-red-400 dark:text-red-600 pointer-events-none opacity-50',
 }
 
-const BUSINESS_DAYS: WeekDays[] = [
-	'monday',
-	'tuesday',
-	'wednesday',
-	'thursday',
-	'friday',
-	'saturday',
-]
+type BusinessHours = {
+	daysOfWeek: WeekDays[]
+	startTime: number
+	endTime: number
+}[]
 
-type RenderEvent = (event: CalendarEvent) => React.ReactNode
-type RenderHour = (date: Dayjs) => React.ReactNode
-type RenderTimeIndicator = (
-	props: RenderCurrentTimeIndicatorProps
-) => React.ReactNode
-type CellClickHandler = (info: CellInfo) => void
-type EventClickHandler = (event: CalendarEvent) => void
+type EventHandler = (event: CalendarEvent) => void
 
-// Props shared by both calendar variants after the demo toggles have been
-// resolved to concrete values (or undefined) in CalendarDisplay.
+// Lifecycle mutators owned by the Playground (they edit its event state). Gated
+// by the useEventLifecycleCallbacks toggle in resolveSharedCalendarProps.
+type LifecycleHandlers = {
+	onEventAdd: EventHandler
+	onEventUpdate: EventHandler
+	onEventDelete: EventHandler
+}
+
+// Props shared by both calendar variants after the toggles have been resolved
+// to concrete values (or undefined) in CalendarDisplay.
 type SharedCalendarProps = {
-	businessHours: {
-		daysOfWeek: WeekDays[]
-		startTime: number
-		endTime: number
-	}[]
+	businessHours: BusinessHours | undefined
 	classesOverride: CalendarClassesOverride | undefined
 	dayMaxEvents: number
+	eventHeight: number
+	eventSpacing: number
+	hideExportButton: boolean
 	plugins: IlamyPlugin[]
 	disableCellClick: boolean
 	disableDragAndDrop: boolean
 	disableEventClick: boolean
-	eventHeight: number
 	firstDayOfWeek: WeekDays
 	hiddenDays: WeekDays[]
 	hideNonBusinessHours: boolean
@@ -78,81 +80,70 @@ type SharedCalendarProps = {
 	stickyViewHeader: boolean
 	timeFormat: TimeFormat
 	timezone: string
-	onCellClick: CellClickHandler | undefined
+	headerComponent: ReactNode
+	onCellClick: ((info: CellInfo) => void) | undefined
 	onDateChange: (date: Dayjs) => void
-	renderEvent: RenderEvent | undefined
-	renderHour: RenderHour | undefined
-	renderCurrentTimeIndicator: RenderTimeIndicator | undefined
+	onEventAdd: EventHandler | undefined
+	onEventUpdate: EventHandler | undefined
+	onEventDelete: EventHandler | undefined
+	renderEvent: ((event: CalendarEvent) => ReactNode) | undefined
+	renderEventForm: ((props: EventFormProps) => ReactNode) | undefined
+	renderHour: ((date: Dayjs) => ReactNode) | undefined
+	renderCurrentTimeIndicator:
+		| ((props: RenderCurrentTimeIndicatorProps) => ReactNode)
+		| undefined
 }
 
 type RegularCalendarProps = SharedCalendarProps & {
 	calendarKey: string
 	initialView: CalendarView
 	customEvents: CalendarEvent[]
-	onEventClick: EventClickHandler | undefined
+	onEventClick: EventHandler | undefined
 }
 
 function RegularCalendar({
-	businessHours,
-	classesOverride,
-	dayMaxEvents,
-	plugins,
-	disableCellClick,
-	disableDragAndDrop,
-	disableEventClick,
-	eventHeight,
-	firstDayOfWeek,
-	hiddenDays,
-	hideNonBusinessHours,
-	initialDate,
-	locale,
-	scrollTime,
-	slotDuration,
-	stickyViewHeader,
-	timeFormat,
-	timezone,
-	onCellClick,
-	onDateChange,
-	renderEvent,
-	renderHour: hourRenderer,
-	renderCurrentTimeIndicator: timeIndicator,
 	calendarKey,
 	initialView,
 	customEvents,
 	onEventClick,
+	...shared
 }: RegularCalendarProps) {
 	return (
 		<IlamyCalendar
-			businessHours={businessHours}
-			classesOverride={classesOverride}
-			dayMaxEvents={dayMaxEvents}
-			disableCellClick={disableCellClick}
-			disableDragAndDrop={disableDragAndDrop}
-			disableEventClick={disableEventClick}
-			eventHeight={eventHeight}
+			businessHours={shared.businessHours}
+			classesOverride={shared.classesOverride}
+			dayMaxEvents={shared.dayMaxEvents}
+			disableCellClick={shared.disableCellClick}
+			disableDragAndDrop={shared.disableDragAndDrop}
+			disableEventClick={shared.disableEventClick}
+			eventHeight={shared.eventHeight}
+			eventSpacing={shared.eventSpacing}
 			events={customEvents}
-			firstDayOfWeek={firstDayOfWeek}
-			hiddenDays={hiddenDays}
-			hideNonBusinessHours={hideNonBusinessHours}
-			initialDate={initialDate}
+			firstDayOfWeek={shared.firstDayOfWeek}
+			headerComponent={shared.headerComponent}
+			hiddenDays={shared.hiddenDays}
+			hideExportButton={shared.hideExportButton}
+			hideNonBusinessHours={shared.hideNonBusinessHours}
+			initialDate={shared.initialDate}
 			initialView={initialView}
 			key={calendarKey}
-			locale={locale}
-			onCellClick={onCellClick}
-			onDateChange={onDateChange}
-			onEventAdd={handleEventAdd}
+			locale={shared.locale}
+			onCellClick={shared.onCellClick}
+			onDateChange={shared.onDateChange}
+			onEventAdd={shared.onEventAdd}
 			onEventClick={onEventClick}
-			onEventDelete={handleEventDelete}
-			onEventUpdate={handleEventUpdate}
-			plugins={plugins}
-			renderCurrentTimeIndicator={timeIndicator}
-			renderEvent={renderEvent}
-			renderHour={hourRenderer}
-			scrollTime={scrollTime}
-			slotDuration={slotDuration}
-			stickyViewHeader={stickyViewHeader}
-			timeFormat={timeFormat}
-			timezone={timezone}
+			onEventDelete={shared.onEventDelete}
+			onEventUpdate={shared.onEventUpdate}
+			plugins={shared.plugins}
+			renderCurrentTimeIndicator={shared.renderCurrentTimeIndicator}
+			renderEvent={shared.renderEvent}
+			renderEventForm={shared.renderEventForm}
+			renderHour={shared.renderHour}
+			scrollTime={shared.scrollTime}
+			slotDuration={shared.slotDuration}
+			stickyViewHeader={shared.stickyViewHeader}
+			timeFormat={shared.timeFormat}
+			timezone={shared.timezone}
 		/>
 	)
 }
@@ -164,33 +155,11 @@ type ResourceCalendarProps = SharedCalendarProps & {
 	weekViewGranularity: 'hourly' | 'daily'
 	resourceEvents: CalendarEvent[]
 	activeResources: Resource[]
-	onEventClick: EventClickHandler | undefined
+	onEventClick: EventHandler | undefined
+	renderResource: ((resource: Resource) => ReactNode) | undefined
 }
 
 function ResourceCalendar({
-	businessHours,
-	classesOverride,
-	dayMaxEvents,
-	plugins,
-	disableCellClick,
-	disableDragAndDrop,
-	disableEventClick,
-	eventHeight,
-	firstDayOfWeek,
-	hiddenDays,
-	hideNonBusinessHours,
-	initialDate,
-	locale,
-	scrollTime,
-	slotDuration,
-	stickyViewHeader,
-	timeFormat,
-	timezone,
-	onCellClick,
-	onDateChange,
-	renderEvent,
-	renderHour: hourRenderer,
-	renderCurrentTimeIndicator: timeIndicator,
 	calendarKey,
 	resourceInitialView,
 	orientation,
@@ -198,49 +167,56 @@ function ResourceCalendar({
 	resourceEvents,
 	activeResources,
 	onEventClick,
+	renderResource,
+	...shared
 }: ResourceCalendarProps) {
 	return (
 		<IlamyCalendar
-			businessHours={businessHours}
-			classesOverride={classesOverride}
-			dayMaxEvents={dayMaxEvents}
-			disableCellClick={disableCellClick}
-			disableDragAndDrop={disableDragAndDrop} // No year view for resource calendar
-			disableEventClick={disableEventClick}
-			eventHeight={eventHeight}
+			businessHours={shared.businessHours}
+			classesOverride={shared.classesOverride}
+			dayMaxEvents={shared.dayMaxEvents}
+			disableCellClick={shared.disableCellClick}
+			disableDragAndDrop={shared.disableDragAndDrop}
+			disableEventClick={shared.disableEventClick}
+			eventHeight={shared.eventHeight}
+			eventSpacing={shared.eventSpacing}
 			events={resourceEvents}
-			firstDayOfWeek={firstDayOfWeek}
-			hiddenDays={hiddenDays}
-			hideNonBusinessHours={hideNonBusinessHours}
-			initialDate={initialDate}
+			firstDayOfWeek={shared.firstDayOfWeek}
+			headerComponent={shared.headerComponent}
+			hiddenDays={shared.hiddenDays}
+			hideExportButton={shared.hideExportButton}
+			hideNonBusinessHours={shared.hideNonBusinessHours}
+			initialDate={shared.initialDate}
 			initialView={resourceInitialView}
 			key={`resource-${calendarKey}-${orientation}`}
-			locale={locale}
-			onCellClick={onCellClick}
-			onDateChange={onDateChange}
-			onEventAdd={handleEventAdd}
+			locale={shared.locale}
+			onCellClick={shared.onCellClick}
+			onDateChange={shared.onDateChange}
+			onEventAdd={shared.onEventAdd}
 			onEventClick={onEventClick}
-			onEventDelete={handleEventDelete}
-			onEventUpdate={handleEventUpdate}
+			onEventDelete={shared.onEventDelete}
+			onEventUpdate={shared.onEventUpdate}
 			orientation={orientation}
-			plugins={plugins}
-			renderCurrentTimeIndicator={timeIndicator}
-			renderEvent={renderEvent}
-			renderHour={hourRenderer}
+			plugins={shared.plugins}
+			renderCurrentTimeIndicator={shared.renderCurrentTimeIndicator}
+			renderEvent={shared.renderEvent}
+			renderEventForm={shared.renderEventForm}
+			renderHour={shared.renderHour}
+			renderResource={renderResource}
 			resources={activeResources}
-			scrollTime={scrollTime}
-			slotDuration={slotDuration}
-			stickyViewHeader={stickyViewHeader}
-			timeFormat={timeFormat}
-			timezone={timezone}
+			scrollTime={shared.scrollTime}
+			slotDuration={shared.slotDuration}
+			stickyViewHeader={shared.stickyViewHeader}
+			timeFormat={shared.timeFormat}
+			timezone={shared.timezone}
 			weekViewGranularity={weekViewGranularity}
 		/>
 	)
 }
 
-// Only the data that doesn't live in the settings form. Everything else is read
-// from the form context via useWatch.
-type CalendarDisplayProps = {
+// Data the Playground owns (event state) plus the state-aware lifecycle
+// mutators. Everything else is read from the form context via useWatch.
+type CalendarDisplayProps = LifecycleHandlers & {
 	customEvents: CalendarEvent[]
 	resourceEvents: CalendarEvent[]
 	activeResources: Resource[]
@@ -249,24 +225,30 @@ type CalendarDisplayProps = {
 // Resolve the form settings + optional toggles into the concrete props both
 // calendar branches share. Kept standalone to keep the component body small.
 function resolveSharedCalendarProps(
-	values: DemoSettingsValues,
+	values: PlaygroundSettings,
 	plugins: IlamyPlugin[],
-	onDateChange: (date: Dayjs) => void
+	onDateChange: (date: Dayjs) => void,
+	lifecycle: LifecycleHandlers
 ): SharedCalendarProps {
+	const lifecycleOn = values.useEventLifecycleCallbacks
 	return {
-		businessHours: [
-			{
-				daysOfWeek: BUSINESS_DAYS,
-				startTime: values.businessStartTime,
-				endTime: values.businessEndTime,
-			},
-		],
+		businessHours: values.enableBusinessHours
+			? [
+					{
+						daysOfWeek: values.businessHoursDays,
+						startTime: values.businessHoursStart,
+						endTime: values.businessHoursEnd,
+					},
+				]
+			: undefined,
 		dayMaxEvents: values.dayMaxEvents,
+		eventHeight: values.eventHeight,
+		eventSpacing: values.eventSpacing,
+		hideExportButton: values.hideExportButton,
 		plugins,
 		disableCellClick: values.disableCellClick,
 		disableDragAndDrop: values.disableDragAndDrop,
 		disableEventClick: values.disableEventClick,
-		eventHeight: values.eventHeight,
 		firstDayOfWeek: values.firstDayOfWeek,
 		hiddenDays: values.hiddenDays,
 		hideNonBusinessHours: values.hideNonBusinessHours,
@@ -278,15 +260,24 @@ function resolveSharedCalendarProps(
 		timeFormat: values.timeFormat,
 		timezone: values.timezone,
 		onDateChange,
+		headerComponent: values.useCustomCalendarHeader ? (
+			<CustomCalendarHeader />
+		) : undefined,
 		classesOverride: values.useCustomClasses
 			? customCalendarClassesOverride
 			: undefined,
 		onCellClick: values.useCustomOnDateClick ? handleDateClick : undefined,
+		onEventAdd: lifecycleOn ? lifecycle.onEventAdd : undefined,
+		onEventUpdate: lifecycleOn ? lifecycle.onEventUpdate : undefined,
+		onEventDelete: lifecycleOn ? lifecycle.onEventDelete : undefined,
 		renderEvent: values.useCustomEventRenderer
 			? createRenderEvent(values.eventHeight)
 			: undefined,
+		renderEventForm: values.useCustomEventForm
+			? (props) => <CustomEventForm {...props} />
+			: undefined,
 		renderHour: values.useCustomHourRenderer ? renderHour : undefined,
-		renderCurrentTimeIndicator: values.useCustomTimeIndicator
+		renderCurrentTimeIndicator: values.useCustomCurrentTimeIndicator
 			? renderCurrentTimeIndicator
 			: undefined,
 	}
@@ -296,12 +287,15 @@ export function CalendarDisplay({
 	customEvents,
 	resourceEvents,
 	activeResources,
+	onEventAdd,
+	onEventUpdate,
+	onEventDelete,
 }: CalendarDisplayProps) {
-	const { control, setValue } = useFormContext<DemoSettingsValues>()
+	const { control, setValue } = useFormContext<PlaygroundSettings>()
 	// useWatch (no name) returns a deep-partial; merge over the defaults to get a
 	// fully-defined value object (every field is always present at runtime).
 	const watched = useWatch({ control })
-	const values: DemoSettingsValues = { ...defaultSettings, ...watched }
+	const values: PlaygroundSettings = { ...defaultSettings, ...watched }
 
 	// Rebuild the plugins array only when the agenda window changes so the
 	// calendar's `plugins` prop stays referentially stable.
@@ -309,11 +303,15 @@ export function CalendarDisplay({
 		() => createDemoPlugins(values.agendaWindow),
 		[values.agendaWindow]
 	)
-	// Write the calendar's navigated date back into the form so it persists
-	// across view-type switches (issue #172 repro).
+	// Persist the navigated date into the form so it survives view-type switches
+	// (issue #172 repro).
 	const onDateChange = (date: Dayjs) =>
 		setValue('initialDate', date.toISOString())
-	const shared = resolveSharedCalendarProps(values, plugins, onDateChange)
+	const shared = resolveSharedCalendarProps(values, plugins, onDateChange, {
+		onEventAdd,
+		onEventUpdate,
+		onEventDelete,
+	})
 
 	// year and agenda are not resource-axis views; fall back to month on the resource calendar.
 	const isResourceOnlyFallback =
@@ -327,7 +325,10 @@ export function CalendarDisplay({
 	const resourceEventClick = values.useCustomOnEventClick
 		? handleResourceEventClick
 		: undefined
-	const calendarKey = `${values.locale}-${values.initialView}-${values.timeFormat}-${values.useCustomTimeIndicator}`
+	const renderResource = values.useCustomResourceRenderer
+		? createRenderResource(resourceEvents)
+		: undefined
+	const calendarKey = `${values.locale}-${values.initialView}-${values.timeFormat}-${values.useCustomCurrentTimeIndicator}`
 
 	return (
 		<Card className="border backdrop-blur-md shadow-lg overflow-clip relative p-2 bg-background">
@@ -363,6 +364,7 @@ export function CalendarDisplay({
 						calendarKey={calendarKey}
 						onEventClick={resourceEventClick}
 						orientation={values.orientation}
+						renderResource={renderResource}
 						resourceEvents={resourceEvents}
 						resourceInitialView={resourceInitialView}
 						weekViewGranularity={values.weekViewGranularity}

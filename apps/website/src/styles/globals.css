@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @source "../../../../packages/calendar/dist";
+/* The shared playground + the @ilamy/ui primitives it uses resolve to source. */
+@source "../../../../packages/playground/src";
+@source "../../../../packages/ui/src";
 
 @custom-variant dark (&:is(.dark *));
 

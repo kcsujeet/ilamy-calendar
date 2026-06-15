@@ -6,7 +6,18 @@ slug: docs/components/resource-calendar
 
 A powerful calendar component for visualizing and managing events across multiple resources like rooms, equipment, or team members.
 
-The Resource Calendar extends the standard calendar with resource-based event organization. Events are displayed in horizontal rows where each row represents a resource (person, room, equipment, etc.). It supports all standard calendar features including drag-and-drop, recurring events, and internationalization.
+The Resource Calendar extends the standard calendar with resource-based event organization. Events are displayed in rows (or columns) where each represents a resource (person, room, equipment, etc.). It supports all standard calendar features including drag-and-drop, recurring events, and internationalization.
+
+:::caution[v2: use `IlamyCalendar` with `resources`]
+In v2 the resource axis is built into `IlamyCalendar`: pass `resources`, `orientation`, `renderResource`, and `weekViewGranularity` directly to it. The dedicated `IlamyResourceCalendar` component still works as a **deprecated alias** (it will be removed in the next major), so the examples below use `IlamyCalendar`.
+
+```tsx
+// Before (v1)
+<IlamyResourceCalendar resources={rooms} orientation="vertical" events={events} />
+// After (v2)
+<IlamyCalendar resources={rooms} orientation="vertical" events={events} />
+```
+:::
 
 :::tip[Try it out]
 Visit the [interactive demo](/demo) and toggle to "Resource Calendar" mode to see it in action!
@@ -17,9 +28,9 @@ Visit the [interactive demo](/demo) and toggle to "Resource Calendar" mode to se
 ### Simple Resource Calendar
 
 ```tsx
-import { IlamyResourceCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar';
 import type { Resource, CalendarEvent } from '@ilamy/calendar';
-import dayjs from 'dayjs';
+import { dayjs } from '@ilamy/calendar';
 
 const resources: Resource[] = [
   {
@@ -49,7 +60,7 @@ const events: CalendarEvent[] = [
 
 function App() {
   return (
-    <IlamyResourceCalendar
+    <IlamyCalendar
       resources={resources}
       events={events}
       firstDayOfWeek="sunday"
@@ -84,15 +95,13 @@ interface Resource {
   // Background color for resource (hex, rgb, or CSS class)
   backgroundColor?: string;
 
-  // Optional position for resource display order
-  position?: number;
-
   // Optional business hours specific to this resource
   businessHours?: BusinessHours | BusinessHours[];
 
   // Custom metadata (e.g., avatar URLs, roles, departments)
-  // Accessible in custom resource renderers via renderResource
-  data?: Record<string, any>;
+  // Accessible in custom resource renderers via renderResource.
+  // Typed Record<string, unknown> in v2 — narrow or cast when reading.
+  data?: Record<string, unknown>;
 }
 ```
 
@@ -106,7 +115,7 @@ const resources = [
   { id: 'room-a', title: 'Room A', data: { capacity: 10, floor: 2 } },
 ];
 
-<IlamyResourceCalendar
+<IlamyCalendar
   resources={resources}
   renderResource={(resource) => (
     <div>
@@ -188,7 +197,7 @@ const event: CalendarEvent = {
 
 ## Props
 
-The IlamyResourceCalendar component extends all props from [IlamyCalendar](/docs/components/calendar) (including `locale`, `timezone`, `timeFormat`, etc.) with resource-specific additions below.
+These resource props are part of [IlamyCalendar](/docs/components/calendar)'s prop set (alongside `locale`, `timezone`, `timeFormat`, etc.); they take effect once `resources` is set.
 
 ### Resource-Specific Props
 
@@ -206,10 +215,10 @@ The IlamyResourceCalendar component extends all props from [IlamyCalendar](/docs
 ### Room Booking System
 
 ```tsx title="Conference Room Booking"
-import { IlamyResourceCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar';
 import type { CalendarEvent, CellInfo } from '@ilamy/calendar';
 import { useState } from 'react';
-import dayjs from 'dayjs';
+import { dayjs } from '@ilamy/calendar';
 
 const RoomBookingCalendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -259,7 +268,7 @@ const RoomBookingCalendar = () => {
   };
 
   return (
-    <IlamyResourceCalendar
+    <IlamyCalendar
       resources={rooms}
       events={events}
       initialView="week"
@@ -302,7 +311,7 @@ const IconResourceRenderer = (resource: Resource) => {
 
 function App() {
   return (
-    <IlamyResourceCalendar
+    <IlamyCalendar
       resources={resources}
       events={events}
       renderResource={IconResourceRenderer}
@@ -367,7 +376,7 @@ const unavailable = {
   'conf-a': [dayjs('2026-06-10')], // Room A out for maintenance
 };
 
-<IlamyResourceCalendar
+<IlamyCalendar
   resources={rooms}
   events={events}
   isCellDisabled={(info) => {
@@ -415,7 +424,7 @@ The resource week view supports two density modes via the `weekViewGranularity` 
 ### Hourly vs Daily — when to pick which
 
 ```tsx title="Hourly (default) — room-booking style"
-<IlamyResourceCalendar
+<IlamyCalendar
   resources={rooms}
   events={events}
   initialView="week"
@@ -424,7 +433,7 @@ The resource week view supports two density modes via the `weekViewGranularity` 
 ```
 
 ```tsx title="Daily — team-availability style"
-<IlamyResourceCalendar
+<IlamyCalendar
   resources={teamMembers}
   events={availabilityEvents}
   initialView="week"
@@ -446,7 +455,7 @@ The resource week view supports two density modes via the `weekViewGranularity` 
 
 ### Resource Organization
 - Use meaningful resource IDs (e.g., 'room-a', 'john-doe')
-- Set position property to control display order
+- Control display order by ordering the `resources` array itself
 - Group related resources by type
 - Include capacity info in resource titles when relevant
 

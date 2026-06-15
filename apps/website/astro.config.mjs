@@ -73,6 +73,13 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Plugins',
+					items: [
+						{ label: 'Recurrence', slug: 'docs/plugins/recurrence' },
+						{ label: 'Agenda', slug: 'docs/plugins/agenda' },
+					],
+				},
+				{
 					label: 'Features',
 					items: [
 						{
@@ -80,7 +87,6 @@ export default defineConfig({
 							slug: 'docs/features/internationalization',
 						},
 						{ label: 'iCal Export', slug: 'docs/features/ical-export' },
-						{ label: 'Recurrence', slug: 'docs/features/recurrence' },
 					],
 				},
 				{

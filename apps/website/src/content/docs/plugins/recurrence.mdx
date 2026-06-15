@@ -1,7 +1,7 @@
 ---
-title: Recurring Events
+title: Recurrence Plugin
 description: Create and manage repeating events with powerful RRULE-based recurrence patterns following the iCalendar specification.
-slug: docs/features/recurrence
+slug: docs/plugins/recurrence
 ---
 
 Create and manage repeating events with powerful RRULE-based recurrence patterns following the iCalendar specification.
@@ -9,6 +9,19 @@ Create and manage repeating events with powerful RRULE-based recurrence patterns
 The recurrence system in ilamy Calendar supports creating repeating events using RRULE (Recurrence Rule) patterns based on the iCalendar RFC 5545 specification. Under the hood, it uses the powerful [rrule.js](https://github.com/jakubroztocil/rrule) library to generate recurring event instances, ensuring robust and reliable recurrence handling.
 
 **RFC 5545 Compliant:** The recurrence system uses the industry-standard RRULE format powered by rrule.js, ensuring compatibility with other calendar applications when exporting.
+
+:::caution[Recurrence is opt-in in v2]
+In v2 the core ships zero plugins. Recurring events are **not** expanded unless you register the recurrence plugin. Import it from the `@ilamy/calendar/plugins/recurrence` subpath and pass it via the `plugins` prop:
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar'
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
+
+<IlamyCalendar events={events} plugins={[recurrencePlugin()]} />
+```
+
+Importing from this subpath also re-adds the `rrule`, `recurrenceId`, and `exdates` fields to `CalendarEvent` via TypeScript declaration merging. Without it, TypeScript reports `Property 'rrule' does not exist on type 'CalendarEvent'`.
+:::
 
 ## Key Features
 
@@ -35,8 +48,8 @@ The recurrence system in ilamy Calendar supports creating repeating events using
 Create a recurring event by adding an `rrule` property to your event object:
 
 ```tsx
-import { RRule } from 'rrule'
-import dayjs from 'dayjs'
+import { dayjs } from '@ilamy/calendar'
+import { RRule } from '@ilamy/calendar/plugins/recurrence'
 
 const weeklyMeeting = {
   id: 'weekly-standup',
@@ -103,13 +116,14 @@ rrule: {
 
 ## Instance Generation
 
-### Automatic Generation
+### Generation (with the recurrence plugin)
 
-The calendar automatically generates recurring event instances within the current view range using rrule.js internally. This happens transparently when navigating between different calendar views:
+When the recurrence plugin is registered, the calendar generates recurring event instances within the current view range using rrule.js internally. This happens transparently when navigating between different calendar views. Without the plugin, a base event with an `rrule` is rendered as a single event and never expanded.
 
 ```tsx
-// The calendar automatically generates instances
-// when you provide a base recurring event
+import { IlamyCalendar } from '@ilamy/calendar'
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
+
 const events = [
   {
     id: 'weekly-standup',
@@ -125,8 +139,8 @@ const events = [
   }
 ]
 
-// Pass this to IlamyCalendar and instances
-// will be generated automatically for the current view
+// Register the plugin so instances are generated for the current view
+<IlamyCalendar events={events} plugins={[recurrencePlugin()]} />
 ```
 
 ### Handling Overrides

@@ -20,7 +20,7 @@ const events = [
     start: new Date('2024-01-15T10:00:00'),
     end: new Date('2024-01-15T11:00:00'),
     description: 'Weekly team sync',
-    backgroundColor: '#3b82f6'
+    backgroundColor: '#3b82f6',
     color: 'black'
   },
   {
@@ -29,7 +29,7 @@ const events = [
     start: new Date('2024-01-20T23:59:59'),
     end: new Date('2024-01-20T23:59:59'),
     allDay: true,
-    backgroundColor: '#ef4444'
+    backgroundColor: '#ef4444',
     color: 'black'
   }
 ];
@@ -41,6 +41,28 @@ function MyCalendar() {
 }
 ```
 
+## Plugins
+
+The v2 core is plugin-agnostic and ships **no plugins by default**. Capabilities like recurring events and the agenda view are opt-in plugins you register through the `plugins` prop. Each plugin is imported from its own subpath so you only ship the code you use.
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar';
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence';
+import { agendaPlugin } from '@ilamy/calendar/plugins/agenda';
+
+<IlamyCalendar
+  events={events}
+  plugins={[recurrencePlugin(), agendaPlugin({ window: 'week' })]}
+/>
+```
+
+| Plugin | Import | Adds |
+|--------|--------|------|
+| `recurrencePlugin()` | `@ilamy/calendar/plugins/recurrence` | RFC 5545 recurring-event expansion, scoped edit/delete, and the `rrule`/`recurrenceId`/`exdates` fields on `CalendarEvent`. See [Recurring Events](/docs/plugins/recurrence). |
+| `agendaPlugin({ window })` | `@ilamy/calendar/plugins/agenda` | An agenda (upcoming-events list) view scoped to a `window` (`'day' \| 'week' \| 'month'`). |
+
+The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugins/recurrence`, and `@ilamy/calendar/plugins/agenda` (plus `@ilamy/calendar/testing`). Deep imports into the package internals are blocked in v2.
+
 ## Props
 
 ### Basic Props
@@ -48,7 +70,12 @@ function MyCalendar() {
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `events` | `CalendarEvent[]` | `[]` | Array of events to display in the calendar |
-| `initialView` | `'month' \| 'week' \| 'day' \| 'year'` | `'month'` | Sets the initial view when the calendar loads |
+| `plugins` | `IlamyPlugin[]` | `[]` | Opt-in plugins that add behavior/UI. The core ships none; pass `recurrencePlugin()` for recurring events or `agendaPlugin()` for the agenda view. See [Plugins](#plugins) below. |
+| `resources` | `Resource[]` | `[]` | Resources (rooms, people, equipment) to render as a resource axis. See [Resource Calendar](/docs/components/resource-calendar). |
+| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Resource axis arrangement. Only applies when `resources` is set. |
+| `renderResource` | `(resource: Resource) => ReactNode` | - | Custom renderer for resource header cells. |
+| `weekViewGranularity` | `'hourly' \| 'daily'` | `'hourly'` | Week-view slot granularity when `resources` is set. |
+| `initialView` | `CalendarView` (`'month' \| 'week' \| 'day' \| 'year'`, or a plugin view name) | `'month'` | Sets the initial view when the calendar loads. `CalendarView` is `string` in v2 so plugins can register extra views. |
 | `initialDate` | `dayjs.Dayjs \| Date \| string \| undefined` | `undefined` (today's date) | Sets the initial date displayed when the calendar loads. When undefined, defaults to today's date |
 | `firstDayOfWeek` | `'sunday' \| 'monday' \| 'tuesday' \| 'wednesday' \| 'thursday' \| 'friday' \| 'saturday'` | `'sunday'` | The first day of the week to display |
 | `dayMaxEvents` | `number` | `4` | Maximum number of events to display in a day cell |
@@ -755,21 +782,25 @@ function CalendarWithAPI() {
 
 The main event object used throughout the calendar. All events passed to the calendar should conform to this interface.
 
-```typescript title="CalendarEvent Interface"
+```typescript title="CalendarEvent (events prop input)"
 interface CalendarEvent {
-  id: string;              // Unique identifier for the event
+  id: string | number;     // Unique identifier for the event
   title: string;           // Display title of the event
-  start: Date;             // Start date and time
-  end: Date;               // End date and time
+  start: Dayjs | Date | string; // Start — accepted as Dayjs, Date, or ISO string
+  end: Dayjs | Date | string;   // End — accepted as Dayjs, Date, or ISO string
   description?: string;    // Optional description text
+  location?: string;       // Optional location
+  uid?: string;            // Optional iCalendar UID (used to group recurring series)
   color?: string;          // Optional text color (hex, rgb, named colors, class names)
   backgroundColor?: string; // Optional background color (hex, rgb, named colors, class names)
   allDay?: boolean;        // Whether this is an all-day event
   resourceId?: string | number;  // Single resource assignment (for resource calendars)
   resourceIds?: (string | number)[]; // Multiple resource assignment (for cross-resource events)
-  data?: Record<string, any>; // Optional custom data for additional properties
+  data?: Record<string, unknown>; // Optional custom data (narrow or cast when reading)
 }
 ```
+
+The `events` prop accepts `start` / `end` as a `Dayjs`, a `Date`, or an ISO string; the calendar normalizes them to `Dayjs` internally, so reads from `useIlamyCalendarContext()` always return `Dayjs`. With the recurrence plugin registered, `rrule`, `recurrenceId`, and `exdates` are also available on this type (see [Recurring Events](/docs/plugins/recurrence)).
 
 ### Event Properties Explained
 
@@ -777,8 +808,8 @@ interface CalendarEvent {
 
 - `id` - Must be unique across all events. Used for drag-and-drop and event updates.
 - `title` - The text displayed on the event in the calendar.
-- `start` - JavaScript Date object representing when the event begins.
-- `end` - JavaScript Date object representing when the event ends.
+- `start` - When the event begins. Pass a `Dayjs`, a `Date`, or an ISO string.
+- `end` - When the event ends. Pass a `Dayjs`, a `Date`, or an ISO string.
 
 #### Optional Properties
 

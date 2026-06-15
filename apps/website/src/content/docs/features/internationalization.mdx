@@ -188,15 +188,9 @@ const myTranslator = (key: TranslationKey) => {
 TypeScript type definitions for internationalization features.
 
 ```typescript title="Internationalization Types"
-// Translations object interface (simplified - see TranslationKey for complete list)
-interface Translations {
-  today: string;
-  month: string;
-  week: string;
-  day: string;
-  year: string;
-  // ... many more keys (see TranslationKey type)
-}
+// In v2 `Translations` is a derived type alias (not an interface): every key
+// from the canonical English dictionary, mapped to a string.
+type Translations = Record<keyof typeof defaultTranslations, string>;
 
 // Translation key type (exported from package)
 type TranslationKey = keyof Translations;

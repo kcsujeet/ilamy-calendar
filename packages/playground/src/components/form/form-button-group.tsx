@@ -33,6 +33,7 @@ export function FormButtonGroup({
 					<Button
 						key={option.value}
 						onClick={() => field.onChange(option.value)}
+						size="sm"
 						type="button"
 						variant={option.value === value ? 'secondary' : 'ghost'}
 					>

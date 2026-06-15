@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/npm/l/@ilamy/calendar?style=flat-square&color=black)](https://github.com/kcsujeet/ilamy-calendar/blob/main/LICENSE)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/kcsujeet/ilamy-calendar/ci.yml?branch=main&style=flat-square)](https://github.com/kcsujeet/ilamy-calendar/actions)
 
-A powerful, full-featured React calendar component library built with **TypeScript**, **Tailwind CSS 4**, and **Shadcn UI**. Designed for high-performance scheduling applications with full support for RFC 5545 recurring events, resource management, and drag-and-drop interactions.
+A powerful, full-featured yet **lightweight and highly pluggable** React calendar component library built with **TypeScript**, **Tailwind CSS 4**, and **shadcn/ui**. The core is small — ~40 KB minified (≈13 KB gzipped) — with opt-in plugins for recurring events, agenda views, and more, so you only ship what you use. Built for high-performance scheduling with RFC 5545 recurring events, resource management, and drag-and-drop interactions.
 
 <div align="center">
   <img width="1643" height="873" alt="ilamy Calendar Month View" src="https://github.com/user-attachments/assets/d289f034-0d26-4a1c-a997-dfa1ad26aa7a" />
@@ -26,14 +26,22 @@ A powerful, full-featured React calendar component library built with **TypeScri
 - **Resource-Aware Validation**: Ensure events are correctly assigned and don't overlap where prohibited.
 
 ### Recurring Events (RFC 5545)
+
+Opt-in via the recurrence plugin (`plugins={[recurrencePlugin()]}` from `@ilamy/calendar/plugins/recurrence`).
+
 - **Full RRULE Support**: Daily, Weekly, Monthly, Yearly patterns with complex frequencies.
 - **Smart CRUD**: Google Calendar-style operations—edit "this event", "this and following", or "all events".
 - **Exclusion Dates**: Robust handling of EXDATE and modified instances within a series.
 - **iCalendar Export**: Export events to `.ics` files with strict RFC 5545 compliance.
 
-### Interactions & Globalization
+### Plugin System
+- **Opt-in capabilities**: The core ships no plugins. Add behavior through the `plugins` prop, each from its own subpath: `@ilamy/calendar/plugins/recurrence` (RFC 5545 recurring events) and `@ilamy/calendar/plugins/agenda` (agenda list view).
+
+### Internationalization & Timezones
 - **Timezones**: Full timezone support via `dayjs.tz` with automatic DST handling.
 - **Internationalization**: Support for 100+ locales with configurable week start days.
+
+### Interactions
 - **Drag & Drop**: Move and resize events with precision using `@dnd-kit`.
 - **Responsive**: Adaptive layouts designed for desktop, tablet, and mobile.
 
@@ -60,7 +68,7 @@ bun add @ilamy/calendar
 pnpm add @ilamy/calendar
 ```
 
-> **Note**: This library requires **React 19+** and **Tailwind CSS 4+**.
+> **Note**: This library requires **React 19+** and **Tailwind CSS 4+**. Peers: `react`, `react-dom`, `tailwindcss` (v4), `tailwindcss-animate`.
 
 ---
 
@@ -68,7 +76,6 @@ pnpm add @ilamy/calendar
 
 ```tsx
 import { IlamyCalendar } from '@ilamy/calendar';
-import '@ilamy/calendar/dist/index.css'; // Import base styles
 
 const MyApp = () => {
   const events = [
@@ -95,13 +102,45 @@ const MyApp = () => {
 
 ---
 
+## Styling — bring your own design system
+
+`@ilamy/calendar` ships **no CSS**. Components use the conventional [shadcn/ui](https://ui.shadcn.com) token classes (`bg-background`, `text-muted-foreground`, `bg-primary`, `border-border`, …), so your design system supplies the look. Point Tailwind at the package so it generates the utilities (Tailwind v4 ignores `node_modules` by default — adjust the relative depth to your stylesheet):
+
+```css
+@source "../node_modules/@ilamy/calendar/dist";
+```
+
+If you already use shadcn, the tokens are defined and you're done. Otherwise, define the standard shadcn theme tokens (`--background`, `--primary`, `--border`, `--ring`, `--card`, …) so the calendar inherits your palette.
+
+---
+
+## Plugins
+
+The core ships **no plugins**. Add capabilities through the `plugins` prop, each imported from its own subpath:
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar';
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence';
+import { agendaPlugin } from '@ilamy/calendar/plugins/agenda';
+
+<IlamyCalendar
+  events={events}
+  plugins={[recurrencePlugin(), agendaPlugin({ window: 'week' })]}
+/>
+```
+
+- **`@ilamy/calendar/plugins/recurrence`** — RFC 5545 recurring-event expansion and scoped edit/delete. Also re-adds `rrule`/`recurrenceId`/`exdates` to `CalendarEvent`.
+- **`@ilamy/calendar/plugins/agenda`** — an agenda (upcoming-events list) view scoped to a `window`.
+
+---
+
 ## Examples
 
-Explore the [examples directory](./examples) for complete implementation patterns:
+Explore the [examples directory](https://github.com/kcsujeet/ilamy-calendar/tree/main/examples) for complete implementation patterns:
 
-- [Next.js](./examples/nextjs) - Integration with Next.js and Tailwind CSS.
-- [Astro](./examples/astro) - Static site integration with Astro.
-- [Vite](./examples/vite) - Fast, minimal setup using Vite.
+- [Next.js](https://github.com/kcsujeet/ilamy-calendar/tree/main/examples/nextjs) - Integration with Next.js and Tailwind CSS.
+- [Astro](https://github.com/kcsujeet/ilamy-calendar/tree/main/examples/astro) - Static site integration with Astro.
+- [Vite](https://github.com/kcsujeet/ilamy-calendar/tree/main/examples/vite) - Fast, minimal setup using Vite.
 
 ---
 

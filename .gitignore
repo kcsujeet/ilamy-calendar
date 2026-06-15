@@ -36,3 +36,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Claude Code local settings (personal overrides, not shared)
 .agents/settings.local.json
 .claude/settings.local.json
+
+# Generated at pack time from the repo-root README (see packages/calendar/scripts/prepack.ts)
+packages/calendar/README.md

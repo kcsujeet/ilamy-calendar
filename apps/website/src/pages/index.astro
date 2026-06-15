@@ -5,10 +5,12 @@ import {
 	CalendarRange,
 	Clock,
 	Code2,
+	Feather,
 	Globe,
 	LayoutGrid,
 	Moon,
 	Palette,
+	Puzzle,
 	Repeat,
 	Smartphone,
 } from 'lucide-react'
@@ -50,9 +52,11 @@ import MainLayout from '@/layouts/main-layout.astro'
             </h1>
             <p class="text-xl text-muted-foreground mb-8">
               The ultimate full calendar alternative built with TypeScript,
-              Tailwind CSS, and shadcn/ui. A headless React calendar component
-              with drag-and-drop, resource scheduling, and complete
-              customization for Next.js, Astro, and React applications.
+              Tailwind CSS, and shadcn/ui. A lightweight (~13 KB gzipped),
+              highly pluggable React calendar with drag-and-drop, resource
+              scheduling, and opt-in plugins — and it ships no CSS, so your
+              design system controls the look. Built for Next.js, Astro, and
+              React.
             </p>
             <div class="flex flex-wrap gap-4">
               <Link href="/demo">
@@ -180,6 +184,24 @@ import MainLayout from '@/layouts/main-layout.astro'
               className="w-12 h-12 text-teal-600 dark:text-teal-400"
             />
           </FeatureCard>
+          <FeatureCard
+            title="Pluggable Architecture"
+            description="The core ships no plugins. Add capabilities through opt-in plugins like recurring events and agenda views, each imported from its own subpath."
+          >
+            <Puzzle
+              slot="icon"
+              className="w-12 h-12 text-amber-600 dark:text-amber-400"
+            />
+          </FeatureCard>
+          <FeatureCard
+            title="Lightweight"
+            description="A small ~13 KB gzipped core. Plugins are opt-in and tree-shakeable, so you only ship the features you actually use."
+          >
+            <Feather
+              slot="icon"
+              className="w-12 h-12 text-emerald-600 dark:text-emerald-400"
+            />
+          </FeatureCard>
         </div>
       </div>
     </section>
@@ -290,22 +312,23 @@ interface CalendarEvent {
                 >
                   3
                 </span>
-                Extensible Architecture
+                Plugin System
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p class="mb-4 text-muted-foreground">
-                Easily extend with custom components:
+                Opt into capabilities — only ship what you use:
               </p>
               <pre
                 class="bg-muted/70 backdrop-blur-sm p-4 rounded-lg text-sm overflow-x-auto border border-muted-foreground/10 shadow-inner">
                 {`
-const renderEvent = (event) => (
-  <div className="custom-event">
-    <h4>{event.title}</h4>
-    <span>{event.location}</span>
-  </div>
-);`}
+import { recurrencePlugin }
+  from '@ilamy/calendar/plugins/recurrence';
+
+<IlamyCalendar
+  events={events}
+  plugins={[recurrencePlugin()]}
+/>`}
               </pre>
             </CardContent>
           </Card>

@@ -1,0 +1,205 @@
+---
+title: FAQ
+description: Frequently asked questions about ilamy Calendar.
+slug: docs/help/faq
+---
+
+Frequently asked questions about ilamy Calendar.
+
+## General Questions
+
+### How do I install ilamy Calendar?
+
+See the [installation guide](/docs/getting-started/installation) for detailed instructions.
+
+### Is ilamy Calendar free?
+
+Yes, ilamy Calendar is open-source and free to use.
+
+### What React versions are supported?
+
+ilamy Calendar supports React 19 and above.
+
+### Does ilamy Calendar support TypeScript?
+
+Yes, ilamy Calendar is built with TypeScript and provides full type definitions.
+
+### Which CSS framework does ilamy Calendar use?
+
+ilamy Calendar is built with Tailwind CSS v4 and ships no CSS. You need to configure Tailwind to scan the package using the `@source` directive.
+
+## Usage
+
+### How do I customize event colors?
+
+You can set custom colors for events by adding a `color` property to your event objects:
+
+```tsx
+const events = [
+  {
+    id: '1',
+    title: 'Meeting',
+    start: new Date(),
+    end: new Date(),
+    color: '#ff6b6b' // Custom color
+  }
+];
+```
+
+### How do I add drag and drop functionality?
+
+The calendar includes built-in drag and drop support that is enabled by default. To disable it, use the `disableDragAndDrop` prop:
+
+```tsx
+<IlamyCalendar
+  events={events}
+  disableDragAndDrop={true}
+  // ... other props
+/>
+```
+
+## Framework Integration
+
+### Can I use this with Next.js?
+
+Yes! ilamy Calendar works perfectly with Next.js, Vite, Create React App, and any other React framework. Just make sure to install the required peer dependencies. When using with Next.js, you need to use client directives:
+
+```tsx
+'use client';
+
+import { IlamyCalendar } from '@ilamy/calendar';
+import { useState } from 'react';
+
+export default function CalendarPage() {
+  const [events, setEvents] = useState([]);
+
+  return (
+    <IlamyCalendar
+      events={events}
+      // ... other props
+    />
+  );
+}
+```
+
+### Can I use this with Astro?
+
+Absolutely! This very website is built with Astro and demonstrates the calendar integration on the demo page. However, when using the calendar with Astro, you must use the `client:only` directive instead of other client directives like `client:load` because the calendar doesn't work properly with other directives:
+
+```jsx
+---
+// In your .astro file
+import { CalendarDemo } from '../components/calendar-demo';
+---
+
+<CalendarDemo client:only="react" />
+
+<!-- NOT recommended for this calendar -->
+<!-- <CalendarDemo client:load /> -->
+<!-- <CalendarDemo client:idle /> -->
+```
+
+## Features
+
+### Can I customize the appearance of the calendar?
+
+Yes, you can customize the calendar extensively using Tailwind CSS classes, custom components, and theme configuration. See the [customization guide](/docs/customization/styling) for details.
+
+### Does it support multiple languages?
+
+Yes, ilamy Calendar supports internationalization with locale-based formatting and custom translations. See the [internationalization guide](/docs/features/internationalization) for details.
+
+### Can I export events to iCalendar format?
+
+Yes, ilamy Calendar includes built-in iCalendar export functionality. See the [iCalendar export guide](/docs/features/ical-export) for details.
+
+### Does it support recurring events?
+
+Yes, ilamy Calendar fully supports recurring events with RRULE patterns. See the [recurrence guide](/docs/features/recurrence) for details.
+
+### Can I use custom fonts?
+
+Absolutely! The calendar inherits font styles from its parent container. You can use any web font or custom font family with Tailwind CSS font utilities.
+
+### Is the calendar responsive?
+
+Yes, the calendar is fully responsive and works great on desktop, tablet, and mobile devices. It automatically adapts its layout based on screen size.
+
+## Internationalization
+
+### How do I handle timezone support?
+
+Timezone is handled with the `timezone` prop. The calendar uses dayjs's default timezone (`dayjs.tz.setDefault()`) internally. If you change the timezone while the component is already rendered, you might need to re-render the component because dayjs operates outside of the React lifecycle:
+
+```tsx
+const [timezone, setTimezone] = useState('America/New_York');
+const [calendarKey, setCalendarKey] = useState(0);
+
+const handleTimezoneChange = (newTimezone) => {
+  setTimezone(newTimezone);
+  // Force re-render to apply timezone changes
+  setCalendarKey(prev => prev + 1);
+};
+
+<IlamyCalendar
+  key={calendarKey}
+  timezone={timezone}
+  events={events}
+  // ... other props
+/>
+```
+
+### How do I handle locale support?
+
+Locale is handled with the `locale` prop. The calendar uses dayjs's locale setting (`dayjs.locale()`) internally. If you change the locale while the component is already rendered, you might need to re-render the component because dayjs operates outside of the React lifecycle:
+
+```tsx
+const [locale, setLocale] = useState('en');
+const [calendarKey, setCalendarKey] = useState(0);
+
+const handleLocaleChange = (newLocale) => {
+  setLocale(newLocale);
+  // Force re-render to apply locale changes
+  setCalendarKey(prev => prev + 1);
+};
+
+<IlamyCalendar
+  key={calendarKey}
+  locale={locale}
+  events={events}
+  // ... other props
+/>
+```
+
+## Troubleshooting
+
+### Why aren't calendar styles showing up?
+
+Make sure you've registered the calendar package in your Tailwind CSS configuration using the `@source` directive:
+
+```css
+@source "../node_modules/@ilamy/calendar/dist";
+```
+
+See the [usage guide](/docs/getting-started/usage) for more details.
+
+### Why am I getting "isSameOrBefore is not a function" error?
+
+This error occurs when you have Day.js installed as a dependency in your project and the required plugins are not loaded. Although Day.js is exported from this library, your Day.js instance will be used, which may cause errors if the required plugins are not loaded.
+
+To fix this, you need to extend Day.js with the required plugins in your application:
+
+```tsx
+import dayjs from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js';
+import timezone from 'dayjs/plugin/timezone.js';
+import utc from 'dayjs/plugin/utc.js';
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(timezone);
+dayjs.extend(utc);
+```
+
+Add this configuration early in your application, preferably in your main entry file (e.g., main.tsx, index.tsx, or _app.tsx).

@@ -1,0 +1,237 @@
+---
+import MainLayout from '@/layouts/main-layout.astro'
+import { CONTACT_EMAIL, SUPPORT_URL } from '@/lib/constants'
+---
+
+<MainLayout>
+  <div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+      <!-- Header -->
+      <div class="text-center mb-12">
+        <h1
+          class="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-primary"
+        >
+          Support
+        </h1>
+        <p class="text-xl text-muted-foreground">
+          Get help with ilamy Calendar
+        </p>
+      </div>
+
+      <div class="space-y-12">
+        <!-- Support Options -->
+        <section>
+          <h2 class="text-2xl font-semibold mb-6">How Can I Help You?</h2>
+          <div class="grid md:grid-cols-2 gap-6">
+            <div
+              class="bg-card border rounded-lg p-6 hover:shadow-md transition-shadow"
+            >
+              <div
+                class="w-12 h-12 rounded-lg bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-4"
+              >
+                <span class="text-white text-lg">📚</span>
+              </div>
+              <h3 class="font-semibold text-blue-600 dark:text-blue-400 mb-2">
+                Documentation
+              </h3>
+              <p class="text-sm text-muted-foreground mb-4">
+                Explore comprehensive guides, tutorials, and API references.
+              </p>
+              <a
+                href="/docs"
+                class="text-primary hover:underline text-sm font-medium"
+              >
+                Read documentation →
+              </a>
+            </div>
+
+            <div
+              class="bg-card border rounded-lg p-6 hover:shadow-md transition-shadow"
+            >
+              <div
+                class="w-12 h-12 rounded-lg bg-linear-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-4"
+              >
+                <span class="text-white text-lg">🐛</span>
+              </div>
+              <h3
+                class="font-semibold text-purple-600 dark:text-purple-400 mb-2"
+              >
+                GitHub Issues
+              </h3>
+              <p class="text-sm text-muted-foreground mb-4">
+                Report bugs, request features, or contribute to the project.
+              </p>
+              <a
+                href="https://github.com/kcsujeet/ilamy-calendar/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary hover:underline text-sm font-medium"
+              >
+                View GitHub issues →
+              </a>
+            </div>
+
+            <div
+              class="bg-card border rounded-lg p-6 hover:shadow-md transition-shadow"
+            >
+              <div
+                class="w-12 h-12 rounded-lg bg-linear-to-br from-green-500 to-green-600 flex items-center justify-center mb-4"
+              >
+                <span class="text-white text-lg">❓</span>
+              </div>
+              <h3 class="font-semibold text-green-600 dark:text-green-400 mb-2">
+                FAQ
+              </h3>
+              <p class="text-sm text-muted-foreground mb-4">
+                Find answers to commonly asked questions about the calendar.
+              </p>
+              <a
+                href="/docs/help/faq"
+                class="text-primary hover:underline text-sm font-medium"
+              >
+                Browse FAQ →
+              </a>
+            </div>
+
+            <div
+              class="bg-card border rounded-lg p-6 hover:shadow-md transition-shadow"
+            >
+              <div
+                class="w-12 h-12 rounded-lg bg-linear-to-br from-indigo-500 to-indigo-600 flex items-center justify-center mb-4"
+              >
+                <span class="text-white text-lg">✉️</span>
+              </div>
+              <h3
+                class="font-semibold text-indigo-600 dark:text-indigo-400 mb-2"
+              >
+                Email Support
+              </h3>
+              <p class="text-sm text-muted-foreground mb-4">
+                Contact me directly for assistance with your issues.
+              </p>
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                class="text-primary hover:underline text-sm font-medium"
+              >
+                Email support →
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Common Issues -->
+        <section>
+          <h2 class="text-2xl font-semibold mb-6">Common Issues</h2>
+          <div class="space-y-4">
+            <div class="bg-card border rounded-lg p-6">
+              <h3 class="font-semibold mb-2">
+                How do I install ilamy Calendar?
+              </h3>
+              <p class="text-muted-foreground mb-3">
+                You can install ilamy Calendar using your preferred package
+                manager:
+              </p>
+              <div class="bg-muted/50 p-3 rounded-md text-sm font-mono">
+                bun add @ilamy/calendar
+              </div>
+            </div>
+
+            <div class="bg-card border rounded-lg p-6">
+              <h3 class="font-semibold mb-2">
+                Can I use this in commercial projects?
+              </h3>
+              <p class="text-muted-foreground">
+                Yes! ilamy Calendar is available under the MIT license, which
+                allows commercial use. Check our <a
+                  href="/license"
+                  class="text-primary hover:underline">license page</a
+                >
+                for full details.
+              </p>
+            </div>
+
+            <div class="bg-card border rounded-lg p-6">
+              <h3 class="font-semibold mb-2">Does it work with Next.js?</h3>
+              <p class="text-muted-foreground">
+                Yes! The calendar works with Next.js, but you need to use the
+                'use client' directive. Check our <a
+                  href="/docs/help/faq"
+                  class="text-primary hover:underline">FAQ</a
+                >
+                for framework-specific guidance.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Support the Project -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-pink-500 to-pink-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">💖</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Support the Project</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed mb-6">
+              ilamy Calendar is a passion project that I maintain in my free
+              time. If you find it useful and want to support its continued
+              development, consider supporting me on Ko-fi! ☕
+            </p>
+            <div
+              class="flex flex-col sm:flex-row gap-4 items-center justify-center"
+            >
+              <a
+                href={SUPPORT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 bg-linear-to-r from-pink-500 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
+              >
+                <span>💝</span>
+                Support on Ko-fi
+              </a>
+              <p class="text-sm text-muted-foreground">
+                Every contribution helps keep this project alive and growing!
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Contact -->
+        <section>
+          <div
+            class="bg-linear-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg p-8 border text-center"
+          >
+            <h2 class="text-2xl font-semibold mb-4">Still Need Help?</h2>
+            <p class="text-muted-foreground mb-6 max-w-2xl mx-auto">
+              If you can't find what you're looking for in the documentation or
+              FAQ, feel free to reach out. I'm here to help you succeed with
+              ilamy Calendar!
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                class="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Email Support
+              </a>
+              <a
+                href="https://github.com/kcsujeet/ilamy-calendar/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 border border-input bg-background px-6 py-3 rounded-lg hover:bg-accent transition-colors"
+              >
+                GitHub Issues
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</MainLayout>

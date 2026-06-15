@@ -1,0 +1,247 @@
+---
+title: Internationalization
+description: Support for multiple languages and locales in ilamy Calendar.
+slug: docs/features/internationalization
+---
+
+Comprehensive guide to internationalizing your calendar with custom translations, locales, and formatting.
+
+The calendar supports comprehensive internationalization through multiple approaches: locale-based formatting, custom translations object, or translator functions. If both translations and translator are provided, the translator function takes priority.
+
+## Basic Locale Setup
+
+The simplest way to internationalize your calendar is by setting the locale and timezone props. This will automatically format dates according to the specified locale.
+
+:::important
+For proper date formatting, you must explicitly import the corresponding `dayjs` locale in your application. The calendar component uses `dayjs` internally but does not bundle all locales to keep the bundle size small.
+:::
+
+```tsx title="Importing Locales"
+import { IlamyCalendar } from '@ilamy/calendar';
+import 'dayjs/locale/fr'; // Import the French locale
+
+function InternationalCalendar() {
+  return (
+    <IlamyCalendar
+      events={events}
+      locale="fr"
+      timezone="Europe/Paris"
+    />
+  );
+}
+```
+
+## Custom Translations
+
+For more control over the text displayed in your calendar, you can provide a custom translations object. This allows you to translate button labels, view names, and other UI text.
+
+```tsx title="Custom Translations Object"
+import { IlamyCalendar } from '@ilamy/calendar';
+
+const frenchTranslations = {
+  today: 'Aujourd\'hui',
+  month: 'Mois',
+  week: 'Semaine',
+  day: 'Jour',
+  year: 'Année',
+  previous: 'Précédent',
+  next: 'Suivant',
+  // Add more translation keys as needed
+};
+
+function TranslatedCalendar() {
+  return (
+    <IlamyCalendar
+      events={events}
+      locale="fr"
+      translations={frenchTranslations}
+      firstDayOfWeek="monday"
+    />
+  );
+}
+```
+
+## Translator Function
+
+For dynamic translations or integration with existing i18n libraries, you can provide a translator function. This function receives a translation key and optional parameters, and should return the translated string.
+
+```tsx title="Translator Function"
+import { IlamyCalendar } from '@ilamy/calendar';
+
+function TranslatorCalendar() {
+  const translator = (key, options) => {
+    const translations = {
+      today: 'Aujourd\'hui',
+      month: 'Mois',
+      week: 'Semaine',
+      day: 'Jour',
+      year: 'Année',
+      previous: 'Précédent',
+      next: 'Suivant',
+    };
+
+    // Handle dynamic translations based on options
+    if (options && options.count) {
+      // Pluralization logic
+      if (key === 'events') {
+        return options.count === 1 ? 'événement' : 'événements';
+      }
+    }
+
+    return translations[key] || key;
+  };
+
+  return (
+    <IlamyCalendar
+      events={events}
+      locale="fr"
+      translator={translator}
+      firstDayOfWeek="monday"
+    />
+  );
+}
+```
+
+## Integration with i18n Libraries
+
+You can easily integrate the calendar with popular i18n libraries like react-i18next, react-intl, or others.
+
+### react-i18next Integration
+
+```tsx title="react-i18next Integration"
+import { IlamyCalendar } from '@ilamy/calendar';
+import { useTranslation } from 'react-i18next';
+
+function I18nCalendar() {
+  const { t, i18n } = useTranslation();
+
+  const translator = (key, options) => {
+    return t(`calendar.${key}`, options);
+  };
+
+  return (
+    <IlamyCalendar
+      events={events}
+      locale={i18n.language}
+      translator={translator}
+      firstDayOfWeek="monday"
+    />
+  );
+}
+```
+
+### react-intl Integration
+
+```tsx title="react-intl Integration"
+import { IlamyCalendar } from '@ilamy/calendar';
+import { useIntl } from 'react-intl';
+
+function IntlCalendar() {
+  const intl = useIntl();
+
+  const translator = (key, options) => {
+    return intl.formatMessage(
+      { id: `calendar.${key}` },
+      options
+    );
+  };
+
+  return (
+    <IlamyCalendar
+      events={events}
+      locale={intl.locale}
+      translator={translator}
+      firstDayOfWeek="monday"
+    />
+  );
+}
+```
+
+## Available Translation Keys
+
+The calendar supports a comprehensive set of translation keys for static UI text — common actions, event properties, recurrence options, and view types. You can find the complete list of available keys via the `TranslationKey` type which is exported from the calendar package.
+
+:::important
+Month and weekday names are **not** translation keys. They are localized through the active `dayjs` locale, so set the `locale` prop and import the matching `dayjs` locale (see [Basic Locale Setup](#basic-locale-setup)). Providing `january`/`monday`/`mon`-style keys via `translations` has no effect.
+
+**Changed in v1.8.0:** the month-name and day-name keys were removed from the `Translations` type. If you previously localized month or weekday names through `translations`, switch to a `dayjs` locale instead (e.g. `import 'dayjs/locale/de'` then `locale="de"`).
+:::
+
+```typescript title="Using TranslationKey Type"
+import { TranslationKey } from '@ilamy/calendar';
+
+// The TranslationKey type includes all available keys:
+// - Common actions: today, create, update, delete, cancel
+// - Event related: event, events, title, description, location, etc.
+// - Recurrence: repeat, daily, weekly, monthly, yearly, etc.
+// - View types: month, week, day, year
+// (Month and weekday names come from the dayjs locale, not these keys.)
+
+const myTranslator = (key: TranslationKey) => {
+  // Your translation logic here
+  return translations[key] || key;
+};
+```
+
+## Types
+
+TypeScript type definitions for internationalization features.
+
+```typescript title="Internationalization Types"
+// Translations object interface (simplified - see TranslationKey for complete list)
+interface Translations {
+  today: string;
+  month: string;
+  week: string;
+  day: string;
+  year: string;
+  // ... many more keys (see TranslationKey type)
+}
+
+// Translation key type (exported from package)
+type TranslationKey = keyof Translations;
+
+// Translator function type
+type TranslatorFunction = (key: TranslationKey | string) => string;
+
+// Example usage
+const frenchTranslations: Translations = {
+  today: 'Aujourd\'hui',
+  month: 'Mois',
+  week: 'Semaine',
+  day: 'Jour',
+  year: 'Année',
+  // ... complete all required keys
+};
+
+const dynamicTranslator: TranslatorFunction = (key) => {
+  // Custom translation logic
+  return getTranslation(key);
+};
+```
+
+## Best Practices
+
+### Priority Order
+When both `translations` and `translator` are provided, the translator function takes priority. Use this to your advantage:
+- Provide fallback translations with the `translations` prop
+- Use `translator` for dynamic or complex translation logic
+- The translator can fall back to the static translations when needed
+
+### Performance
+- Memoize your translator function to avoid unnecessary re-renders
+- Use static translations objects when possible for better performance
+- Consider lazy loading translations for large applications
+
+### Locale Setup
+- Always set the `locale` prop for proper date formatting.
+- **Import necessary `dayjs` locales** in your entry file or component.
+- If your application supports many languages, you might need to import multiple locales:
+  ```tsx
+  import 'dayjs/locale/en';
+  import 'dayjs/locale/fr';
+  import 'dayjs/locale/es';
+  // etc.
+  ```
+- Consider setting `firstDayOfWeek` based on locale conventions.
+- Use appropriate timezone settings for your users' locations.

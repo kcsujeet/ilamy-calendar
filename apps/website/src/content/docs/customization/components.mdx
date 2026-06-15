@@ -1,0 +1,126 @@
+---
+title: Components
+description: Customize calendar components to match your application's design.
+slug: docs/customization/components
+---
+
+Learn how to customize individual calendar components.
+
+## Header Customization
+
+Customize the calendar header appearance and behavior using className props or replace it entirely with a custom component.
+
+### Header Class Name
+
+Use the `headerClassName` prop to apply custom styles to the calendar header:
+
+```tsx
+<IlamyCalendar
+  headerClassName="bg-blue-50 border-blue-200 text-blue-900"
+  // ... other props
+/>
+```
+
+### Custom Header Component
+
+For complete control, you can replace the default header with your own component:
+
+```tsx
+const CustomHeader = ({ currentDate, onNavigate }) => (
+  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-purple-600">
+    <button onClick={() => onNavigate('prev')}>← Previous</button>
+    <h2 className="text-white font-bold">{currentDate.format('MMMM YYYY')}</h2>
+    <button onClick={() => onNavigate('next')}>Next →</button>
+  </div>
+);
+
+<IlamyCalendar
+  headerComponent={CustomHeader}
+  // ... other props
+/>
+```
+
+## View Headers Customization
+
+Customize the day headers (Mon, Tue, Wed, etc.) that appear at the top of the calendar grid.
+
+```tsx
+<IlamyCalendar
+  viewHeaderClassName="bg-gray-100 text-gray-700 font-semibold py-3"
+  // ... other props
+/>
+```
+
+:::note[Sticky View Header Positioning]
+When using a sticky view header (`stickyViewHeader={true}`), the `viewHeaderClassName` is where you add positioning classes to prevent overlap with your top navigation.
+
+```tsx
+// If you have a 64px top navigation bar
+<IlamyCalendar
+  stickyViewHeader={true}
+  viewHeaderClassName="top-16 bg-background z-40"
+  // ... other props
+/>
+
+// For multiple navigation elements (e.g., 80px total height)
+<IlamyCalendar
+  stickyViewHeader={true}
+  viewHeaderClassName="top-20 bg-background shadow-sm z-40"
+  // ... other props
+/>
+```
+
+Remember to include `bg-background` and appropriate `z-index` values to ensure proper layering.
+:::
+
+You can also pass a custom component to completely replace the view headers for advanced styling and functionality.
+
+## Event Rendering
+
+Create custom event renderers to control how events appear within calendar cells using the `renderEvent` prop.
+
+### Custom Event Renderer
+
+```tsx
+const renderEvent = (event) => (
+  <div className={`
+    rounded-md p-2 text-sm font-medium
+    ${event.priority === 'high' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
+      event.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500' :
+      'bg-blue-100 text-blue-800 border-l-4 border-blue-500'}
+  `}>
+    <div className="flex items-center gap-2">
+      {event.priority === 'high' && <span>🔥</span>}
+      <span className="truncate">{event.title}</span>
+    </div>
+    {event.description && (
+      <p className="text-xs opacity-75 mt-1 truncate">{event.description}</p>
+    )}
+  </div>
+);
+
+<IlamyCalendar
+  renderEvent={renderEvent}
+  events={events}
+  // ... other props
+/>
+```
+
+### Event Props
+
+The event object passed to your custom renderer includes:
+- `title` - Event title
+- `start` - Start date/time
+- `end` - End date/time (optional)
+- `color` - Event color/theme
+- `allDay` - Whether it's an all-day event
+- `data` - Any custom properties you include in your event data
+
+## Styling Tips
+
+:::tip[Pro Tips]
+- Use CSS variables for consistent theming across all custom components
+- Consider accessibility when customizing colors and contrast ratios
+- Test your custom components with different screen sizes and zoom levels
+- Use the `cn()` utility function for conditional styling
+:::

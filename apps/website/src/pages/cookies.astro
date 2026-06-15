@@ -1,0 +1,314 @@
+---
+import MainLayout from '@/layouts/main-layout.astro'
+
+const lastUpdated = 'July 2025'
+---
+
+<MainLayout>
+  <div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+      <!-- Header -->
+      <div class="text-center mb-12">
+        <h1
+          class="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-primary"
+        >
+          Cookie Policy
+        </h1>
+        <p class="text-xl text-muted-foreground mb-2">
+          How I Use Cookies & Tracking
+        </p>
+        <p class="text-sm text-muted-foreground">
+          Last updated: {lastUpdated}
+        </p>
+      </div>
+
+      <div class="space-y-12">
+        <!-- Introduction -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-orange-500 to-orange-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">🍪</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">What Are Cookies?</h2>
+            </div>
+          </div>
+
+          <div
+            class="bg-linear-to-r from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20 rounded-lg p-6 border"
+          >
+            <p class="text-lg leading-relaxed mb-4">
+              Cookies are small text files stored on your device when you visit
+              a website. They help me understand how you use ilamy Calendar and
+              improve your experience.
+            </p>
+            <p class="text-muted-foreground">
+              I believe in transparency, so here's exactly what cookies I use
+              and why. Spoiler alert: it's minimal!
+            </p>
+          </div>
+        </section>
+
+        <!-- Types of Cookies -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">📋</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Types of Cookies I Use</h2>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-6">
+            <!-- Essential Cookies -->
+            <div
+              class="bg-white/70 dark:bg-gray-800/70 rounded-lg p-6 border hover:shadow-md transition-shadow"
+            >
+              <h3
+                class="font-semibold text-green-600 dark:text-green-400 mb-3 flex items-center gap-2"
+              >
+                <span>✅</span> Essential Cookies
+              </h3>
+              <p class="text-sm text-muted-foreground mb-3">
+                These are required for the site to work properly.
+              </p>
+              <ul class="space-y-2 text-sm text-muted-foreground">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                  Theme preference (dark/light mode)
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                  Session state for demo interactions
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                  Basic security measures
+                </li>
+              </ul>
+            </div>
+
+            <!-- Analytics Cookies -->
+            <div
+              class="bg-white/70 dark:bg-gray-800/70 rounded-lg p-6 border hover:shadow-md transition-shadow"
+            >
+              <h3
+                class="font-semibold text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-2"
+              >
+                <span>📊</span> Analytics Cookies
+              </h3>
+              <p class="text-sm text-muted-foreground mb-3">
+                Help me understand which pages are most useful.
+              </p>
+              <ul class="space-y-2 text-sm text-muted-foreground">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  Page views and popular content
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  Time spent on documentation
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  Demo usage patterns
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- What I Don't Use -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-red-500 to-red-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">🚫</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">What I Don't Use</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed mb-6">
+              As a solo developer focused on providing a great developer
+              experience, I avoid the typical tracking and advertising cookies
+              you'll find on corporate sites:
+            </p>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-red-500">✗</span>
+                <span>Advertising cookies</span>
+              </div>
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-red-500">✗</span>
+                <span>Cross-site tracking</span>
+              </div>
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-red-500">✗</span>
+                <span>Third-party marketing pixels</span>
+              </div>
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-red-500">✗</span>
+                <span>Behavioral profiling</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Browser Control -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-purple-500 to-purple-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">⚙️</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Managing Cookies</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed mb-6">
+              You have full control over cookies. Here's how to manage them in
+              different browsers:
+            </p>
+
+            <div class="grid md:grid-cols-2 gap-6">
+              <div class="space-y-3">
+                <h4 class="font-semibold flex items-center gap-2">
+                  <span class="text-blue-500">🌐</span>
+                  Desktop Browsers
+                </h4>
+                <div class="space-y-2 text-sm text-muted-foreground">
+                  <div>
+                    <strong>Chrome:</strong> Settings → Privacy → Cookies
+                  </div>
+                  <div>
+                    <strong>Firefox:</strong> Settings → Privacy & Security
+                  </div>
+                  <div><strong>Safari:</strong> Preferences → Privacy</div>
+                  <div>
+                    <strong>Edge:</strong> Settings → Cookies and site data
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <h4 class="font-semibold flex items-center gap-2">
+                  <span class="text-green-500">📱</span>
+                  Mobile Browsers
+                </h4>
+                <div class="space-y-2 text-sm text-muted-foreground">
+                  <div>
+                    <strong>iOS Safari:</strong> Settings → Safari → Privacy
+                  </div>
+                  <div>
+                    <strong>Android Chrome:</strong> Menu → Settings → Privacy
+                  </div>
+                  <div>
+                    <strong>Firefox Mobile:</strong> Menu → Settings → Privacy
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Local Storage -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-indigo-500 to-indigo-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">💾</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Local Storage</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed mb-4">
+              In addition to cookies, I use browser local storage to remember
+              your demo preferences and theme settings between visits.
+            </p>
+            <p class="text-muted-foreground mb-4">
+              This data stays on your device and is never sent to any servers.
+              You can clear it anytime through your browser's developer tools or
+              by clearing your browsing data.
+            </p>
+            <div
+              class="inline-flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded"
+            >
+              <span>💡</span>
+              <span
+                >Pro tip: Clearing cookies will reset your theme preference</span
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- Updates -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-teal-500 to-teal-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">🔄</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Policy Updates</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed">
+              I may update this cookie policy from time to time. Any changes
+              will be reflected by updating the "Last updated" date. Since I
+              keep cookie usage minimal, changes are likely to be infrequent and
+              minor.
+            </p>
+          </div>
+        </section>
+
+        <!-- Questions -->
+        <section>
+          <div
+            class="bg-linear-to-r from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20 rounded-lg p-8 border text-center"
+          >
+            <h2 class="text-2xl font-semibold mb-4">
+              Questions About Cookies?
+            </h2>
+            <p class="text-muted-foreground mb-6 max-w-2xl mx-auto">
+              If you have any questions about how I use cookies or want more
+              information about data handling, feel free to reach out!
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+              <a
+                href="/support"
+                class="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Contact Support
+              </a>
+              <a
+                href="/privacy"
+                class="inline-flex items-center gap-2 border border-primary text-primary px-6 py-3 rounded-lg hover:bg-primary/10 transition-colors"
+              >
+                View Privacy Policy
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</MainLayout>

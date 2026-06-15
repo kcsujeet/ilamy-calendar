@@ -1,0 +1,288 @@
+---
+title: Recurring Events
+description: Create and manage repeating events with powerful RRULE-based recurrence patterns following the iCalendar specification.
+slug: docs/features/recurrence
+---
+
+Create and manage repeating events with powerful RRULE-based recurrence patterns following the iCalendar specification.
+
+The recurrence system in ilamy Calendar supports creating repeating events using RRULE (Recurrence Rule) patterns based on the iCalendar RFC 5545 specification. Under the hood, it uses the powerful [rrule.js](https://github.com/jakubroztocil/rrule) library to generate recurring event instances, ensuring robust and reliable recurrence handling.
+
+**RFC 5545 Compliant:** The recurrence system uses the industry-standard RRULE format powered by rrule.js, ensuring compatibility with other calendar applications when exporting.
+
+## Key Features
+
+### Flexible Patterns
+
+- Daily, weekly, monthly, yearly recurrence
+- Custom intervals (every 2 weeks, every 3 months, etc.)
+- Specific weekdays (Mondays and Fridays)
+- Month-specific patterns (last Friday of month)
+- Count-based or date-based endings
+
+### Advanced Management
+
+- Exception dates (skip specific occurrences)
+- Modified instances (edit individual occurrences)
+- Dynamic generation within date ranges
+- Efficient instance filtering
+- Override detection and handling
+
+## Creating Recurring Events
+
+### Basic Recurring Event
+
+Create a recurring event by adding an `rrule` property to your event object:
+
+```tsx
+import { RRule } from 'rrule'
+import dayjs from 'dayjs'
+
+const weeklyMeeting = {
+  id: 'weekly-standup',
+  title: 'Weekly Team Standup',
+  start: dayjs('2025-08-04T09:00:00'),
+  end: dayjs('2025-08-04T10:00:00'),
+  description: 'Weekly team sync meeting',
+  rrule: {
+    freq: RRule.WEEKLY,
+    interval: 1,
+    byweekday: [RRule.MO], // Every Monday
+    dtstart: dayjs('2025-08-04T09:00:00').toDate(),
+    until: dayjs('2025-12-31T23:59:59').toDate()
+  }
+}
+```
+
+### Common Recurrence Patterns
+
+#### Daily Meetings
+
+```tsx
+rrule: {
+  freq: RRule.DAILY,
+  interval: 1,
+  dtstart: new Date('2025-08-04T09:00:00'),
+  count: 30 // 30 occurrences
+}
+```
+
+#### Bi-weekly Events
+
+```tsx
+rrule: {
+  freq: RRule.WEEKLY,
+  interval: 2, // Every 2 weeks
+  byweekday: [RRule.FR], // Fridays
+  dtstart: new Date('2025-08-04T14:00:00'),
+  until: new Date('2026-08-04T14:00:00')
+}
+```
+
+#### Monthly on Specific Weekday
+
+```tsx
+rrule: {
+  freq: RRule.MONTHLY,
+  byweekday: [RRule.FR.nth(-1)], // Last Friday of each month
+  dtstart: new Date('2025-08-04T15:00:00'),
+  count: 12 // 12 months
+}
+```
+
+#### Work Week Days
+
+```tsx
+rrule: {
+  freq: RRule.WEEKLY,
+  byweekday: [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR],
+  dtstart: new Date('2025-08-04T09:00:00'),
+  until: new Date('2025-12-31T23:59:59')
+}
+```
+
+## Instance Generation
+
+### Automatic Generation
+
+The calendar automatically generates recurring event instances within the current view range using rrule.js internally. This happens transparently when navigating between different calendar views:
+
+```tsx
+// The calendar automatically generates instances
+// when you provide a base recurring event
+const events = [
+  {
+    id: 'weekly-standup',
+    title: 'Weekly Team Standup',
+    start: dayjs('2025-08-04T09:00:00'),
+    end: dayjs('2025-08-04T10:00:00'),
+    rrule: {
+      freq: RRule.WEEKLY,
+      byweekday: [RRule.MO],
+      dtstart: dayjs('2025-08-04T09:00:00').toDate(),
+      until: dayjs('2025-12-31T23:59:59').toDate()
+    }
+  }
+]
+
+// Pass this to IlamyCalendar and instances
+// will be generated automatically for the current view
+```
+
+### Handling Overrides
+
+The system automatically handles modified instances and exception dates:
+
+#### Modified Instances
+
+When you modify a single occurrence of a recurring event, it creates a new event with a `recurrenceId` that matches the original occurrence time.
+
+```tsx
+const modifiedInstance = {
+  id: 'weekly-standup-modified',
+  title: 'Extended Team Standup',
+  start: dayjs('2025-08-11T09:00:00'),
+  end: dayjs('2025-08-11T11:00:00'), // Extended duration
+  recurrenceId: '2025-08-11T09:00:00.000Z', // Original occurrence time
+  uid: 'weekly-standup' // Same UID as base event
+}
+```
+
+#### Exception Dates
+
+Use `exdates` to skip specific occurrences without creating modified instances.
+
+```tsx
+const recurringEvent = {
+  // ... other properties
+  rrule: {
+    freq: RRule.WEEKLY,
+    byweekday: [RRule.MO],
+    dtstart: new Date('2025-08-04T09:00:00')
+  },
+  exdates: [
+    dayjs('2025-08-18T09:00:00').toDate(), // Skip this Monday
+    dayjs('2025-08-25T09:00:00').toDate()  // Skip this Monday too
+  ]
+}
+```
+
+## RRULE Properties
+
+The RRULE object supports the following properties based on the iCalendar specification. These properties are processed by rrule.js to generate recurring event instances.
+
+**rrule.js Documentation:** For comprehensive documentation of all RRULE properties and advanced patterns, refer to the [rrule.js documentation](https://github.com/jakubroztocil/rrule).
+
+| Property | Type | Description | Example |
+|----------|------|-------------|---------|
+| `freq` | Frequency | How often the event repeats | `RRule.DAILY` |
+| `interval` | number | Interval between occurrences | `2` (every 2 weeks) |
+| `byweekday` | Weekday[] | Specific days of the week | `[RRule.MO, RRule.FR]` |
+| `bymonthday` | number[] | Specific days of the month | `[1, 15]` (1st and 15th) |
+| `bymonth` | number[] | Specific months | `[1, 7]` (Jan and July) |
+| `dtstart` | Date | Start date for recurrence | `new Date('2025-08-04')` |
+| `until` | Date | End date for recurrence | `new Date('2025-12-31')` |
+| `count` | number | Number of occurrences | `10` (10 times) |
+
+**Note:** You cannot use both `until` and `count` in the same RRULE. Choose one termination method.
+
+## Advanced Examples
+
+### Complex Recurrence Pattern
+
+First Monday of every quarter:
+
+```tsx
+const quarterlyMeeting = {
+  id: 'quarterly-review',
+  title: 'Quarterly Business Review',
+  start: dayjs('2025-01-06T14:00:00'), // First Monday of 2025
+  end: dayjs('2025-01-06T16:00:00'),
+  rrule: {
+    freq: RRule.MONTHLY,
+    interval: 3, // Every 3 months
+    byweekday: [RRule.MO.nth(1)], // First Monday
+    dtstart: dayjs('2025-01-06T14:00:00').toDate()
+  }
+}
+```
+
+### Event with Exceptions and Modifications
+
+```tsx
+// Base recurring event
+const weeklyStandup = {
+  id: 'standup',
+  title: 'Team Standup',
+  start: dayjs('2025-08-04T09:00:00'),
+  end: dayjs('2025-08-04T09:30:00'),
+  uid: 'standup-series',
+  rrule: {
+    freq: RRule.WEEKLY,
+    byweekday: [RRule.MO, RRule.WE, RRule.FR],
+    dtstart: dayjs('2025-08-04T09:00:00').toDate(),
+    until: dayjs('2025-12-31T23:59:59').toDate()
+  },
+  exdates: [
+    // Skip these specific dates
+    dayjs('2025-08-15T09:00:00').toDate(), // Summer vacation
+    dayjs('2025-11-29T09:00:00').toDate()  // Thanksgiving week
+  ]
+}
+
+// Modified instance for a different time
+const modifiedStandup = {
+  id: 'standup-modified-aug-20',
+  title: 'Extended Team Standup + Planning',
+  start: dayjs('2025-08-20T10:00:00'), // Different time
+  end: dayjs('2025-08-20T11:00:00'),   // Longer duration
+  recurrenceId: '2025-08-20T09:00:00.000Z', // Original time
+  uid: 'standup-series'
+}
+```
+
+### Working with Multiple Time Zones
+
+```tsx
+// All times should be in consistent timezone
+const globalMeeting = {
+  id: 'global-sync',
+  title: 'Global Team Sync',
+  start: dayjs.utc('2025-08-04T14:00:00'), // 2 PM UTC
+  end: dayjs.utc('2025-08-04T15:00:00'),
+  rrule: {
+    freq: RRule.WEEKLY,
+    byweekday: [RRule.MO],
+    dtstart: dayjs.utc('2025-08-04T14:00:00').toDate(),
+    count: 26 // 6 months
+  }
+}
+```
+
+## Best Practices
+
+### Consistent UIDs
+
+Use consistent UIDs across the base event and all modified instances to ensure proper override detection.
+
+### Date Handling
+
+Always use consistent timezone handling. Convert to UTC for storage and use local timezone for display.
+
+### Performance Optimization
+
+Generate instances only for the current view range. The calendar automatically handles this during navigation.
+
+### Exception Handling
+
+Use exception dates for simple cancellations and modified instances for changes to time, duration, or other properties.
+
+## Integration with Other Features
+
+### iCalendar Export
+
+Recurring events are automatically converted to proper RRULE format when exporting to .ics files, maintaining compatibility with other calendar applications.
+
+### Calendar Views
+
+All calendar views (month, week, day) automatically handle recurring events, generating and displaying instances as needed for the current view range.

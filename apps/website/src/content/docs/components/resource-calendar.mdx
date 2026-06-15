@@ -1,0 +1,463 @@
+---
+title: Resource Calendar
+description: Display events across multiple resources like rooms, people, or equipment with the Resource Calendar component.
+slug: docs/components/resource-calendar
+---
+
+A powerful calendar component for visualizing and managing events across multiple resources like rooms, equipment, or team members.
+
+The Resource Calendar extends the standard calendar with resource-based event organization. Events are displayed in horizontal rows where each row represents a resource (person, room, equipment, etc.). It supports all standard calendar features including drag-and-drop, recurring events, and internationalization.
+
+:::tip[Try it out]
+Visit the [interactive demo](/demo) and toggle to "Resource Calendar" mode to see it in action!
+:::
+
+## Basic Usage
+
+### Simple Resource Calendar
+
+```tsx
+import { IlamyResourceCalendar } from '@ilamy/calendar';
+import type { Resource, CalendarEvent } from '@ilamy/calendar';
+import dayjs from 'dayjs';
+
+const resources: Resource[] = [
+  {
+    id: 'room-a',
+    title: 'Conference Room A',
+    color: '#3B82F6',
+    backgroundColor: '#EFF6FF',
+  },
+  {
+    id: 'room-b',
+    title: 'Conference Room B',
+    color: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+];
+
+const events: CalendarEvent[] = [
+  {
+    id: 'event-1',
+    title: 'Team Meeting',
+    start: dayjs('2025-08-04T09:00:00.000Z'),
+    end: dayjs('2025-08-04T10:00:00.000Z'),
+    uid: 'event-1@ilamy.calendar',
+    resourceId: 'room-a', // Assigned to Room A
+  },
+];
+
+function App() {
+  return (
+    <IlamyResourceCalendar
+      resources={resources}
+      events={events}
+      firstDayOfWeek="sunday"
+      initialView="week"
+      timeFormat="12-hour"
+    />
+  );
+}
+```
+
+:::note
+For sticky headers to work properly, the calendar's container must have a fixed height (e.g., `height: 600px`).
+:::
+
+## Resource Interface
+
+Resources represent the entities across which events are organized.
+
+### Resource Type Definition
+
+```typescript
+interface Resource {
+  // Unique identifier for the resource
+  id: string | number;
+
+  // Display title of the resource
+  title: string;
+
+  // Color for resource text (hex, rgb, or CSS class)
+  color?: string;
+
+  // Background color for resource (hex, rgb, or CSS class)
+  backgroundColor?: string;
+
+  // Optional position for resource display order
+  position?: number;
+
+  // Optional business hours specific to this resource
+  businessHours?: BusinessHours | BusinessHours[];
+
+  // Custom metadata (e.g., avatar URLs, roles, departments)
+  // Accessible in custom resource renderers via renderResource
+  data?: Record<string, any>;
+}
+```
+
+:::tip
+The `businessHours` property for a resource follows the same structure as the global `businessHours` prop. You can provide a single object or an array for split shifts.
+
+The `data` field lets you attach arbitrary metadata to a resource, which you can then access in your custom `renderResource` function:
+
+```tsx
+const resources = [
+  { id: 'room-a', title: 'Room A', data: { capacity: 10, floor: 2 } },
+];
+
+<IlamyResourceCalendar
+  resources={resources}
+  renderResource={(resource) => (
+    <div>
+      <span>{resource.title}</span>
+      <span className="text-xs text-muted-foreground">
+        Capacity: {resource.data?.capacity}
+      </span>
+    </div>
+  )}
+/>
+```
+:::
+
+### Resource Color System
+
+```tsx title="Colorful Resources"
+const resources: Resource[] = [
+  {
+    id: 'designer',
+    title: 'Design Team',
+    color: '#8B5CF6',        // Purple text
+    backgroundColor: '#F5F3FF', // Light purple background
+  },
+  {
+    id: 'engineer',
+    title: 'Engineering Team',
+    color: '#10B981',        // Green text
+    backgroundColor: '#ECFDF5', // Light green background
+  },
+];
+```
+
+## Resource Calendar Events
+
+The standard `CalendarEvent` interface includes optional resource assignment fields for use with resource calendars.
+
+### CalendarEvent with Resource Properties
+
+```typescript
+interface CalendarEvent {
+  // ... standard event properties (id, title, start, end, etc.)
+
+  // Single resource assignment
+  resourceId?: string | number;
+
+  // Multiple resource assignment (cross-resource events)
+  resourceIds?: (string | number)[];
+}
+```
+
+### Single Resource Events
+
+```tsx title="Event Assigned to One Resource"
+const event: CalendarEvent = {
+  id: 'meeting-1',
+  title: 'Team Standup',
+  start: dayjs('2025-08-04T10:00:00.000Z'),
+  end: dayjs('2025-08-04T10:30:00.000Z'),
+  uid: 'meeting-1@ilamy.calendar',
+  resourceId: 'room-a', // Assigned to one resource
+};
+```
+
+### Cross-Resource Events
+
+Events that span multiple resources using the `resourceIds` array:
+
+```tsx title="Event Spanning Multiple Resources"
+const event: CalendarEvent = {
+  id: 'all-hands',
+  title: 'All Hands Meeting',
+  start: dayjs('2025-08-04T14:00:00.000Z'),
+  end: dayjs('2025-08-04T15:00:00.000Z'),
+  uid: 'all-hands@ilamy.calendar',
+  resourceIds: ['room-a', 'room-b', 'room-c'], // Spans multiple resources
+  color: '#8B5CF6',
+};
+```
+
+## Props
+
+The IlamyResourceCalendar component extends all props from [IlamyCalendar](/docs/components/calendar) (including `locale`, `timezone`, `timeFormat`, etc.) with resource-specific additions below.
+
+### Resource-Specific Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `resources` | `Resource[]` | `[]` | Array of resources to display |
+| `events` | `CalendarEvent[]` | `[]` | Array of events with resource assignments (using resourceId or resourceIds properties) |
+| `renderResource` | `(resource: Resource) => ReactNode` | - | Custom function to render resource headers |
+| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Controls whether resources are displayed as rows (horizontal) or columns (vertical). |
+| `weekViewGranularity` | `'hourly' \| 'daily'` | `'hourly'` | Week view density. `'hourly'` (default) renders hourly time slots per day. `'daily'` renders a single row per day per resource — useful for high-level, non-time-of-day schedules. See [Week View Granularity](#week-view-granularity) below. |
+| `hiddenDays` | `WeekDays[]` | `[]` | (Inherited, resource caveat) Days to hide from the week view. **Ignored** in resource vertical week view with `weekViewGranularity: 'daily'` — non-contiguous visible days would break multi-day event positioning. Respected by the regular vertical week view and hourly resource vertical. |
+
+## Examples
+
+### Room Booking System
+
+```tsx title="Conference Room Booking"
+import { IlamyResourceCalendar } from '@ilamy/calendar';
+import type { CalendarEvent, CellInfo } from '@ilamy/calendar';
+import { useState } from 'react';
+import dayjs from 'dayjs';
+
+const RoomBookingCalendar = () => {
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+
+  const rooms: Resource[] = [
+    {
+      id: 'conf-a',
+      title: 'Conference Room A (10 people)',
+      color: '#3B82F6',
+      backgroundColor: '#EFF6FF',
+    },
+    {
+      id: 'conf-b',
+      title: 'Conference Room B (20 people)',
+      color: '#EF4444',
+      backgroundColor: '#FEF2F2',
+    },
+    {
+      id: 'board-room',
+      title: 'Board Room (8 people)',
+      color: '#8B5CF6',
+      backgroundColor: '#F5F3FF',
+    },
+  ];
+
+  const handleCellClick = (info: CellInfo) => {
+    const { start, end, resource } = info;
+    if (!resource) return;
+
+    const newEvent: CalendarEvent = {
+      id: `booking-${Date.now()}`,
+      title: 'New Booking',
+      start,
+      end,
+      uid: `booking-${Date.now()}@company.com`,
+      resourceId: resource.id,
+      color: '#10B981',
+    };
+
+    setEvents((prev) => [...prev, newEvent]);
+  };
+
+  const handleEventUpdate = (event: CalendarEvent) => {
+    setEvents((prev) =>
+      prev.map((e) => (e.id === event.id ? event : e))
+    );
+  };
+
+  return (
+    <IlamyResourceCalendar
+      resources={rooms}
+      events={events}
+      initialView="week"
+      onCellClick={handleCellClick}
+      onEventUpdate={handleEventUpdate}
+      firstDayOfWeek="monday"
+    />
+  );
+};
+```
+
+### Custom Resource Rendering
+
+Customize how resources are displayed using the `renderResource` prop:
+
+```tsx title="Custom Resource Headers with Icons"
+import { Calendar, MapPin, Users } from 'lucide-react';
+
+const IconResourceRenderer = (resource: Resource) => {
+  const getResourceIcon = (resourceId: string) => {
+    if (resourceId.includes('room')) return <MapPin className="h-4 w-4" />;
+    if (resourceId.includes('team')) return <Users className="h-4 w-4" />;
+    return <Calendar className="h-4 w-4" />;
+  };
+
+  return (
+    <div className="flex items-center gap-2 p-2">
+      <div style={{ color: resource.color }}>
+        {getResourceIcon(resource.id)}
+      </div>
+      <div className="flex flex-col">
+        <span className="font-medium">{resource.title}</span>
+        <span className="text-xs" style={{ color: resource.color }}>
+          Available
+        </span>
+      </div>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <IlamyResourceCalendar
+      resources={resources}
+      events={events}
+      renderResource={IconResourceRenderer}
+    />
+  );
+}
+```
+
+## Resource-Specific Business Hours
+
+You can define working hours for individual resources. This is essential for managing shifts across a team or varying availability for different rooms or equipment.
+
+### Configuration
+
+Resource-specific business hours are defined directly on the `Resource` object.
+
+```tsx title="Defining Resource Availability"
+const resources: Resource[] = [
+  {
+    id: 'dr-smith',
+    title: 'Dr. Smith',
+    businessHours: {
+      daysOfWeek: ['monday', 'wednesday', 'friday'],
+      startTime: 8,
+      endTime: 16,
+    }
+  },
+  {
+    id: 'dr-jones',
+    title: 'Dr. Jones',
+    businessHours: {
+      daysOfWeek: ['tuesday', 'thursday'],
+      startTime: 10,
+      endTime: 18,
+    }
+  }
+];
+```
+
+### Precedence and Grid Behavior
+
+1. **Grid Union**: When `hideNonBusinessHours` is enabled, the calendar calculates the **union** of all business hours (global and resource-specific) to determine the visible range. If Dr. Smith works 8-16 and Dr. Jones works 10-18, the calendar will show the full 8-18 range.
+2. **Resource Shading**: Each resource row (or column) will only enable the time slots that match its specific `businessHours`. Slots outside its specific availability will be shaded/disabled.
+3. **Fallback**: If a resource does not have specific `businessHours` defined, it falls back to using the global `businessHours` configuration.
+
+### Automatic Form Validation
+
+The built-in `EventForm` is fully resource-aware. When you select a resource for an event:
+- The **DatePicker** will automatically disable days that are not working days for that resource.
+- The **TimePicker** will constrain the selectable time range to the resource's specific working hours for that date.
+
+### Disabling Cells per Resource
+
+Use `isCellDisabled` for ad-hoc, per-resource availability beyond `businessHours` —
+for example, blocking a room while it's under maintenance. Returning `true` blocks
+event-creation clicks, rejects drag-and-drop onto the cell, and grays it out. It
+receives the same `CellInfo` object, so the full resource is available via
+`info.resource`. The result composes with `businessHours` via OR.
+
+```tsx title="Per-Resource Availability"
+const unavailable = {
+  'conf-a': [dayjs('2026-06-10')], // Room A out for maintenance
+};
+
+<IlamyResourceCalendar
+  resources={rooms}
+  events={events}
+  isCellDisabled={(info) => {
+    const resourceId = info.resource?.id;
+    if (!resourceId) return false;
+    const days = unavailable[resourceId] ?? [];
+    return days.some((day) => info.start.isSame(day, 'day'));
+  }}
+/>
+```
+
+## Views
+
+The Resource Calendar supports three views, each displaying resources in horizontal rows.
+
+### Month View
+Timeline view with resources as rows and days as columns. Compact event display with scroll for all resources.
+```tsx
+initialView="month"
+```
+
+### Week View
+Detailed 7-day timeline with hourly time slots. Perfect for precise scheduling with drag-and-drop between resources. Density is controlled via the [`weekViewGranularity`](#week-view-granularity) prop (`'hourly'` by default, or `'daily'` for a row-per-day schedule without time slots).
+```tsx
+initialView="week"
+```
+
+### Day View
+Focused single-day view with maximum detail. Full hourly breakdown across all resources.
+```tsx
+initialView="day"
+```
+
+:::caution[Coming Soon: Custom Duration Views]
+Custom duration views (e.g., 3-day, 2-week, 4-week views) for the resource calendar are currently in development and will be available in a future release. Stay tuned for updates!
+:::
+
+## Week View Granularity
+
+The resource week view supports two density modes via the `weekViewGranularity` prop:
+
+- **`'hourly'`** (default): the week is broken into hourly time slots for each day. Best for precise, time-of-day scheduling — meetings, appointments, shifts at specific hours.
+- **`'daily'`**: each day gets a single row per resource with no time slots inside. Best for high-level schedules where only the day matters — availability boards, project assignments, leave calendars.
+
+### Hourly vs Daily — when to pick which
+
+```tsx title="Hourly (default) — room-booking style"
+<IlamyResourceCalendar
+  resources={rooms}
+  events={events}
+  initialView="week"
+  weekViewGranularity="hourly"
+/>
+```
+
+```tsx title="Daily — team-availability style"
+<IlamyResourceCalendar
+  resources={teamMembers}
+  events={availabilityEvents}
+  initialView="week"
+  weekViewGranularity="daily"
+/>
+```
+
+### Interactions with other props
+
+- **`hiddenDays`** is **intentionally ignored** when `weekViewGranularity="daily"` is combined with vertical orientation. The daily mode assumes a contiguous week — hiding arbitrary days would break multi-day event positioning. If you need to hide days, stick with `weekViewGranularity="hourly"` or use the horizontal orientation.
+- **`businessHours`** and **`hideNonBusinessHours`** still apply in `'daily'` mode, but only influence day-level shading (non-business days are dimmed). They don't affect the row structure since daily mode has no time slots to hide.
+- **Drag-and-drop** works in both modes. In `'daily'`, dropping an event on a different day updates `event.start` to that day at the same local time.
+
+:::tip
+`'daily'` mode pairs naturally with tall event bars that carry richer content — since there's one row per day, you have more vertical space per event. Consider bumping `eventHeight` or using a custom `renderEvent` for denser detail.
+:::
+
+## Best Practices
+
+### Resource Organization
+- Use meaningful resource IDs (e.g., 'room-a', 'john-doe')
+- Set position property to control display order
+- Group related resources by type
+- Include capacity info in resource titles when relevant
+
+### Event Assignment
+- Use resourceId for single resource events (simpler and more performant)
+- Use resourceIds array only when event truly spans multiple resources
+- Validate resource IDs exist in resources array
+- Handle conflicts and validate resource availability before booking
+
+### Performance
+- Memoize event filtering for large datasets
+- Consider virtualization for 50+ resources
+- Batch multiple state updates together
+- Use React.memo for custom resource renderers

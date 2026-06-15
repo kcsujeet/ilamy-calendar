@@ -120,7 +120,7 @@
 				"!**/*.test.tsx",
 				"!**/*.spec.ts",
 				"!**/*.spec.tsx",
-				"!apps/demo/**"
+				"!apps/**"
 			],
 			"plugins": ["./biome-plugins/no-inline-template-keys.grit"]
 		}

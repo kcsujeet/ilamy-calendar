@@ -1,0 +1,1045 @@
+---
+title: Calendar
+description: A comprehensive React calendar component with month, week, day, and year views, plus powerful event lifecycle callbacks.
+slug: docs/components/calendar
+---
+
+A comprehensive React calendar component with month, week, day, and year views, plus powerful event lifecycle callbacks.
+
+## Basic Usage
+
+The Calendar component is the main component for displaying calendar views. It supports various props for customization and event handling. Events should follow the [CalendarEvent interface](#calendarevent-interface).
+
+```tsx title="Basic Calendar"
+import { IlamyCalendar } from '@ilamy/calendar';
+
+const events = [
+  {
+    id: '1',
+    title: 'Team Meeting',
+    start: new Date('2024-01-15T10:00:00'),
+    end: new Date('2024-01-15T11:00:00'),
+    description: 'Weekly team sync',
+    backgroundColor: '#3b82f6'
+    color: 'black'
+  },
+  {
+    id: '2',
+    title: 'Project Deadline',
+    start: new Date('2024-01-20T23:59:59'),
+    end: new Date('2024-01-20T23:59:59'),
+    allDay: true,
+    backgroundColor: '#ef4444'
+    color: 'black'
+  }
+];
+
+function MyCalendar() {
+  return (
+    <IlamyCalendar events={events} />
+  );
+}
+```
+
+## Props
+
+### Basic Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `events` | `CalendarEvent[]` | `[]` | Array of events to display in the calendar |
+| `initialView` | `'month' \| 'week' \| 'day' \| 'year'` | `'month'` | Sets the initial view when the calendar loads |
+| `initialDate` | `dayjs.Dayjs \| Date \| string \| undefined` | `undefined` (today's date) | Sets the initial date displayed when the calendar loads. When undefined, defaults to today's date |
+| `firstDayOfWeek` | `'sunday' \| 'monday' \| 'tuesday' \| 'wednesday' \| 'thursday' \| 'friday' \| 'saturday'` | `'sunday'` | The first day of the week to display |
+| `dayMaxEvents` | `number` | `4` | Maximum number of events to display in a day cell |
+| `renderEvent` | `(event: CalendarEvent) => ReactNode` | - | Custom function to render individual events |
+| `locale` | `string` | `'en'` | Locale for date formatting (e.g., "en", "fr", "de") |
+| `timezone` | `string` | Whatever your local timezone is | Timezone for date handling (e.g., "UTC", "America/New_York") |
+| `timeFormat` | `'12-hour' \| '24-hour'` | `'12-hour'` | Time format for displaying times in week and day views (e.g., '1:00 PM' vs '13:00') |
+| `hideNonBusinessHours` | `boolean` | `false` | Whether to hide hours outside of business hours in day and week views. Requires `businessHours` to be configured. |
+| `slotDuration` | `15 \| 30 \| 60` | `60` | Granularity of the time grid in minutes for day, week, and resource hour views. `60` shows one row per hour with no sub-hour lines; `30` shows two; `15` shows four with dashed separators. **Note**: in v1.7.0 the day-view and resource-day-vertical defaults flipped from 15-minute to hourly slots; pass `slotDuration={15}` to restore the prior look. |
+| `scrollTime` | `string` | - | Initial scroll position for hour-resolution views. Accepts `"HH:mm"` or `"HH:mm:ss"`. Minutes are floored to the hour. Clamps silently to the nearest visible row when `hideNonBusinessHours` hides the requested hour. Independent of `businessHours`. Requires a fixed calendar height to scroll. |
+| `hiddenDays` | `WeekDays[]` | `[]` | Days of the week to hide from the week view. Only applies to vertical week views (regular and resource vertical), not month, day, year, or resource horizontal views. |
+| `stickyViewHeader` | `boolean` | `true` | Whether to stick the view header to the top |
+| `viewHeaderClassName` | `string` | `''` | Custom class name for the view header |
+| `headerComponent` | `ReactNode` | `null` | Custom header component to render above the calendar |
+| `hideExportButton` | `boolean` | `false` | Hide the "Export" (.ics download) button in the calendar header. |
+| `renderCurrentTimeIndicator` | `(context: RenderCurrentTimeIndicatorProps) => ReactNode` | - | Custom function to render the current time indicator (line). |
+| `renderHour` | `(date: dayjs.Dayjs) => ReactNode` | - | Custom function to render hour labels in the time gutter of day and week views. Receives a Dayjs object for the hour. |
+| `disableCellClick` | `boolean` | `false` | Disable cell click interactions |
+| `disableEventClick` | `boolean` | `false` | Disable event click interactions |
+| `disableDragAndDrop` | `boolean` | `false` | Disable drag-and-drop functionality for events |
+| `eventSpacing` | `number` | `2` | Spacing (in pixels) between events in calendar views. Allows customizable gaps between events for better visual clarity. |
+| `eventHeight` | `number` | `24` | Height (in pixels) of event bars in horizontal grid views (month, resource month, resource week horizontal). Increase to show multi-line content like title + time. Does not affect day/week views which scale with event duration. |
+| `businessHours` | `BusinessHours \| BusinessHours[]` | `undefined` | Restrict calendar interactions to specified days and time ranges. Users can only create and edit events within business hours. Supports single object or array for different hours per day. |
+| `renderEventForm` | `(props: EventFormProps) => ReactNode` | `undefined` | Custom function to render the event form for creating and editing events. When provided, replaces the default event form. |
+| `classesOverride` | `ClassesOverride` | `undefined` | Custom class names to override default styling for various calendar elements, including disabled cells. |
+| `translations` | `Translations` | - | Translations object for internationalization. If both translations and translator are provided, translator takes priority. |
+| `translator` | `TranslatorFunction` | - | Translator function for internationalization. Takes priority over translations object if both are provided. |
+
+### Event Handlers
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `onEventClick` | `(event: CalendarEvent) => void` | Called when an event is clicked |
+| `onCellClick` | `(info: CellInfo) => void` | Called when a date cell is clicked. Receives a CellInfo object with start, end, and optional resource (the full resource object in resource calendars). |
+| `isCellDisabled` | `(info: CellInfo) => boolean` | Return `true` to disable a cell: blocks event-creation clicks, rejects drops onto the cell, and grays it out. Composes with `businessHours` via OR (a cell is disabled if business hours OR `isCellDisabled` disables it). |
+| `onViewChange` | `(view: 'month' \| 'week' \| 'day' \| 'year') => void` | Called when the calendar view changes |
+| `onEventAdd` | `(event: CalendarEvent) => void` | Called when a new event is created |
+| `onEventUpdate` | `(event: CalendarEvent) => void` | Called when an existing event is updated |
+| `onEventDelete` | `(event: CalendarEvent) => void` | Called when an event is deleted |
+| `onDateChange` | `(date: dayjs.Dayjs, range: { start: dayjs.Dayjs; end: dayjs.Dayjs }) => void` | Called when the calendar date changes or the view changes. The `range` contains the visible date range for the current view. |
+
+## Examples
+
+### With Event Handlers
+
+```tsx title="Event Handlers Example"
+import { IlamyCalendar } from '@ilamy/calendar';
+
+function MyCalendar() {
+  const handleEventClick = (event) => {
+    console.log('Event clicked:', event);
+    // Open event details modal, navigate to event page, etc.
+  };
+
+  const handleDateClick = (info) => {
+    console.log('Date clicked:', info.start, info.end);
+    // Create new event, switch to day view, etc.
+    // info contains: { start: Dayjs, end: Dayjs, resource?: Resource, allDay?: boolean }
+  };
+
+  const handleViewChange = (view) => {
+    console.log('View changed to:', view);
+    // Update URL, track analytics, etc.
+  };
+
+  return (
+    <IlamyCalendar
+      events={events}
+      firstDayOfWeek="monday"
+      onEventClick={handleEventClick}
+      onCellClick={handleDateClick}
+      onViewChange={handleViewChange}
+    />
+  );
+}
+```
+
+### Internationalization
+
+The calendar supports comprehensive internationalization including locale-based formatting, custom translations, and translator functions. For detailed documentation and examples, see the [Internationalization guide](/docs/features/internationalization).
+
+### Time Format Configuration
+
+Configure whether times are displayed in 12-hour or 24-hour format in week and day views.
+
+```tsx title="12-Hour and 24-Hour Time Formats"
+import { IlamyCalendar } from '@ilamy/calendar';
+
+function MyCalendar() {
+  return (
+    <>
+      {/* 12-hour format (default): displays as "1:00 PM", "2:30 PM" */}
+      <IlamyCalendar
+        events={events}
+        initialView="week"
+        timeFormat="12-hour"
+      />
+
+      {/* 24-hour format: displays as "13:00", "14:30" */}
+      <IlamyCalendar
+        events={events}
+        initialView="week"
+        timeFormat="24-hour"
+      />
+    </>
+  );
+}
+```
+
+### Custom Event Rendering
+
+```tsx title="Custom Event Renderer"
+import { IlamyCalendar } from '@ilamy/calendar';
+
+function CustomCalendar() {
+  const renderEvent = (event) => (
+    <div className="px-2 py-1 rounded bg-blue-100 text-blue-800">
+      <div className="font-semibold">{event.title}</div>
+      <div className="text-xs">{event.description}</div>
+    </div>
+  );
+
+  return (
+    <IlamyCalendar
+      events={events}
+      renderEvent={renderEvent}
+      onEventClick={(event) => alert(`Clicked: ${event.title}`)}
+      onCellClick={(info) => console.log('Selected date:', info.start, info.end)}
+    />
+  );
+}
+```
+
+### Custom Event Bar Height
+
+By default, event bars in month view are 24px tall — enough for a single line of text. Use `eventHeight` to increase the height and show more content, such as a title and time range on separate lines. Pair with `renderEvent` for full control over what's displayed.
+
+```tsx title="Multi-Line Event Bars"
+import { IlamyCalendar } from '@ilamy/calendar';
+
+function MyCalendar() {
+  return (
+    <IlamyCalendar
+      events={events}
+      eventHeight={48}
+      renderEvent={(event) => (
+        <div className="h-full w-full bg-blue-500 text-white px-1 rounded-md overflow-clip">
+          <p className="text-xs font-semibold">{event.title}</p>
+          <p className="text-[10px] opacity-80">
+            {event.start.format('h:mm A')} - {event.end.format('h:mm A')}
+          </p>
+        </div>
+      )}
+    />
+  );
+}
+```
+
+:::note
+`eventHeight` affects month view, resource month view, and resource week horizontal view. Day and week views use percentage-based heights that scale with event duration and are unaffected.
+:::
+
+### Initial View and Event Lifecycle
+
+```tsx title="Advanced Calendar Configuration"
+import { IlamyCalendar } from '@ilamy/calendar';
+import { useState } from 'react';
+
+function AdvancedCalendar() {
+  const [events, setEvents] = useState([]);
+
+  const handleEventAdd = (event) => {
+    console.log('New event added:', event);
+    setEvents(prev => [...prev, event]);
+    // Save to your backend API
+  };
+
+  const handleEventUpdate = (updatedEvent) => {
+    console.log('Event updated:', updatedEvent);
+    setEvents(prev =>
+      prev.map(event =>
+        event.id === updatedEvent.id ? updatedEvent : event
+      )
+    );
+    // Update in your backend API
+  };
+
+  const handleEventDelete = (deletedEvent) => {
+    console.log('Event deleted:', deletedEvent);
+    setEvents(prev =>
+      prev.filter(event => event.id !== deletedEvent.id)
+    );
+    // Delete from your backend API
+  };
+
+  const handleDateChange = (date, range) => {
+    console.log('Date changed to:', date.format('YYYY-MM-DD'));
+    console.log('Visible range:', range.start.format('YYYY-MM-DD'), 'to', range.end.format('YYYY-MM-DD'));
+    // Load events for the visible date range
+    // fetchEventsForRange(range.start, range.end);
+  };
+
+  return (
+    <IlamyCalendar
+      events={events}
+      initialView="week" // Start with week view
+      onEventAdd={handleEventAdd}
+      onEventUpdate={handleEventUpdate}
+      onEventDelete={handleEventDelete}
+      onDateChange={handleDateChange}
+      onEventClick={(event) => console.log('Event clicked:', event)}
+      onCellClick={(info) => console.log('Cell clicked:', info.start, info.end)}
+    />
+  );
+}
+```
+
+## View Options
+
+The calendar supports multiple view modes that you can set using the `initialView` prop.
+
+### Month View
+
+Traditional monthly calendar showing the entire month at a glance.
+
+```tsx
+<IlamyCalendar initialView="month" events={events} />
+```
+
+### Week View
+
+Weekly view showing 7 days with detailed time slots.
+
+```tsx
+<IlamyCalendar initialView="week" events={events} />
+```
+
+### Day View
+
+Single day view with 15-minute time slot granularity for detailed scheduling.
+
+```tsx
+<IlamyCalendar initialView="day" events={events} />
+```
+
+### Year View
+
+Annual overview showing all 12 months for long-term planning.
+
+```tsx
+<IlamyCalendar initialView="year" events={events} />
+```
+
+```tsx title="Setting Different Initial Views"
+// Month view (default)
+<IlamyCalendar initialView="month" events={events} />
+
+// Week view for detailed scheduling
+<IlamyCalendar initialView="week" events={events} />
+
+// Day view for hourly planning
+<IlamyCalendar initialView="day" events={events} />
+
+// Year view for long-term overview
+<IlamyCalendar initialView="year" events={events} />
+```
+
+## Business Hours
+
+Restrict calendar interactions to specific days and time ranges. When configured, users can only create and edit events within business hours. This is particularly useful for appointment booking, scheduling applications, and enforcing availability constraints.
+
+```tsx title="Configuring Business Hours"
+import { IlamyCalendar } from '@ilamy/calendar';
+
+function BusinessCalendar() {
+  const events = [/* your events */];
+
+  return (
+    <IlamyCalendar
+      events={events}
+      businessHours={{
+        daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        startTime: 9,  // 9 AM
+        endTime: 17,   // 5 PM
+      }}
+    />
+  );
+}
+```
+
+### Split Shifts Support
+
+You can define multiple business hour ranges for the same day (split shifts) by providing an array of `BusinessHours` objects. This allows for scheduled breaks or multiple working sessions.
+
+```tsx title="Configuring Split Shifts"
+<IlamyCalendar
+  events={events}
+  businessHours={[
+    {
+      daysOfWeek: ['monday', 'wednesday', 'friday'],
+      startTime: 9,  // Morning shift
+      endTime: 12,
+    },
+    {
+      daysOfWeek: ['monday', 'wednesday', 'friday'],
+      startTime: 14, // Afternoon shift
+      endTime: 18,
+    }
+  ]}
+/>
+```
+
+### daysOfWeek
+
+Array of day names that are considered business days. Users can only interact with the calendar on these days.
+
+**Type:** `string[]`
+**Valid values:** `'monday'`, `'tuesday'`, `'wednesday'`, `'thursday'`, `'friday'`, `'saturday'`, `'sunday'`
+
+### startTime
+
+Hour when business hours begin (24-hour format, inclusive). Events cannot be created or modified before this time.
+
+**Type:** `number (0-23)`
+
+### endTime
+
+Hour when business hours end (24-hour format, exclusive). Events cannot be created or modified at or after this time.
+
+**Type:** `number (0-23)`
+
+### hideNonBusinessHours
+
+When enabled, the calendar will only display the hours defined in the `businessHours` configuration, hiding the rest of the day. This is supported in Day and Week views (both vertical and horizontal orientations).
+
+**Type:** `boolean`
+**Default:** `false`
+
+```tsx title="Hiding Non-Business Hours"
+<IlamyCalendar
+  events={events}
+  hideNonBusinessHours={true}
+  businessHours={{
+    daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+    startTime: 8,
+    endTime: 18,
+  }}
+/>
+```
+
+## Hidden Days
+
+Hide specific weekdays from the week view. Hidden day columns are removed and the remaining columns expand to fill the available space. This only applies to vertical week views (regular and resource vertical) — it does not affect month, day, year, or resource horizontal week views.
+
+```tsx title="Hiding Weekends"
+import { IlamyCalendar } from '@ilamy/calendar';
+
+function BusinessWeekCalendar() {
+  return (
+    <IlamyCalendar
+      events={events}
+      initialView="week"
+      hiddenDays={['saturday', 'sunday']}
+    />
+  );
+}
+```
+
+```tsx title="Hiding a Single Day"
+<IlamyCalendar
+  events={events}
+  initialView="week"
+  hiddenDays={['friday']}
+/>
+```
+
+:::note
+Events that fall on hidden days are not deleted — they simply aren't visible in the week view. Switching to month or day view will still show those events.
+:::
+
+## Custom Hour Labels
+
+Customize how hour labels are displayed in the time gutter of day and week views using the `renderHour` prop.
+
+```tsx title="Custom Hour Labels"
+import { IlamyCalendar } from '@ilamy/calendar';
+
+function MyCalendar() {
+  return (
+    <IlamyCalendar
+      events={events}
+      initialView="week"
+      renderHour={(date) => (
+        <div className="flex flex-col items-center">
+          <span className="text-sm font-medium">{date.format('h A')}</span>
+          <span className="text-xs text-muted-foreground">{date.format('HH:00')}</span>
+        </div>
+      )}
+    />
+  );
+}
+```
+
+## Custom Current Time Indicator
+
+You can fully customize the "current time" line that appears in day and week views using the `renderCurrentTimeIndicator` prop.
+
+Branch on `axis`: horizontal resource hour grids (resource day/week horizontal) pass `axis === 'horizontal'` and expect a **vertical** line positioned with `left`; vertical day/week grids pass `axis === 'vertical'` and expect a **horizontal** line positioned with `top`. Ignoring `axis` draws a horizontal line in every view, which renders incorrectly in horizontal resource grids.
+
+```tsx title="Resource-Aware Custom Current Time Indicator"
+const CustomIndicator = ({ currentTime, progress, resource, axis }) => {
+  // The indicator renders once per resource row, so show the badge only for the
+  // first resource to avoid repeating identical time badges. Non-resource
+  // calendars have no `resource`, so the badge still shows there.
+  const showBadge = !resource || resource.id === 'primary';
+
+  if (axis === 'horizontal') {
+    // Vertical line for horizontal resource hour grids — position with `left`
+    return (
+      <div
+        className="absolute top-0 bottom-0 z-50 pointer-events-none w-0.5 flex flex-col"
+        style={{ left: `${progress}%` }}
+      >
+        {showBadge && (
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-b-md">
+            {currentTime.format('h:mm A')}
+          </div>
+        )}
+        <div className="flex-1 bg-red-500" />
+      </div>
+    );
+  }
+
+  // Horizontal line for vertical day/week grids — position with `top`
+  return (
+    <div
+      className="absolute left-0 right-0 z-50 pointer-events-none h-0.5 flex"
+      style={{ top: `${progress}%` }}
+    >
+      {showBadge && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-r-md">
+          {currentTime.format('h:mm A')}
+        </div>
+      )}
+      <div className="flex-1 bg-red-500" />
+    </div>
+  );
+};
+
+<IlamyCalendar
+  renderCurrentTimeIndicator={(props) => <CustomIndicator {...props} />}
+/>
+```
+
+### RenderCurrentTimeIndicatorProps
+
+The renderer receives a context object with the following properties:
+
+- `currentTime` - Current date/time as a Dayjs object
+- `rangeStart` - Start of the current view range
+- `rangeEnd` - End of the current view range
+- `progress` - Percentage (0-100) representing the current time's position within the day
+- `resource` - The current resource (in resource calendars)
+- `view` - The active view name ('day' or 'week')
+- `axis` - `'vertical' | 'horizontal'`. Vertical maps `progress` to a `top` offset (day/week vertical grids); horizontal maps it to a `left` offset (horizontal resource hour grids). The library always populates this, so consumers can treat it as defined inside their render function.
+
+## Custom Event Form
+
+Replace the default event form with your own custom implementation using the `renderEventForm` prop. This gives you full control over the event creation and editing experience.
+
+```tsx title="Custom Event Form Implementation"
+import { IlamyCalendar, EventFormProps, CalendarEvent } from '@ilamy/calendar';
+
+const CustomEventForm = ({
+  open,
+  selectedEvent,
+  onAdd,
+  onUpdate,
+  onDelete,
+  onClose,
+}: EventFormProps) => {
+  if (!open) return null;
+
+  const handleSubmit = (formData: FormData) => {
+    const eventData: CalendarEvent = {
+      id: selectedEvent?.id || `event-${Date.now()}`,
+      title: formData.get('title') as string,
+      start: selectedEvent?.start || new Date(),
+      end: selectedEvent?.end || new Date(),
+    };
+
+    if (selectedEvent?.id) {
+      onUpdate?.(eventData);
+    } else {
+      onAdd?.(eventData);
+    }
+    onClose();
+  };
+
+  return (
+    <dialog open={open} className="modal">
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        handleSubmit(new FormData(e.currentTarget));
+      }}>
+        <input
+          name="title"
+          defaultValue={selectedEvent?.title}
+          placeholder="Event title"
+        />
+        <div className="actions">
+          {selectedEvent?.id && (
+            <button type="button" onClick={() => {
+              onDelete?.(selectedEvent);
+              onClose();
+            }}>Delete</button>
+          )}
+          <button type="button" onClick={onClose}>Cancel</button>
+          <button type="submit">
+            {selectedEvent?.id ? 'Update' : 'Create'}
+          </button>
+        </div>
+      </form>
+    </dialog>
+  );
+};
+
+function MyCalendar() {
+  return (
+    <IlamyCalendar
+      events={events}
+      renderEventForm={(props) => <CustomEventForm {...props} />}
+    />
+  );
+}
+```
+
+### EventFormProps Properties
+
+- `open` - Boolean indicating if the form should be visible
+- `selectedEvent` - The event being edited (null for new events)
+- `onAdd` - Callback to create a new event
+- `onUpdate` - Callback to update an existing event
+- `onDelete` - Callback to delete an event
+- `onClose` - Callback to close the form (required)
+
+## Event Lifecycle Callbacks
+
+Handle event creation, updates, and deletion with powerful callback functions. These callbacks are essential for maintaining your event data and integrating with backend APIs.
+
+### Event Management Callbacks
+
+#### onEventAdd
+
+Triggered when a user creates a new event through the calendar interface.
+
+**Type:** `(event: CalendarEvent) => void`
+
+#### onEventUpdate
+
+Called when an existing event is modified (e.g., dragged, resized, or edited).
+
+**Type:** `(event: CalendarEvent) => void`
+
+#### onEventDelete
+
+Invoked when a user deletes an event from the calendar.
+
+**Type:** `(event: CalendarEvent) => void`
+
+#### onDateChange
+
+Fired when the user navigates to a different date or time period, or when the view changes. The second argument provides the visible date range for the current view, enabling efficient data fetching.
+
+**Type:** `(date: dayjs.Dayjs, range: { start: dayjs.Dayjs; end: dayjs.Dayjs }) => void`
+
+### Complete Integration Example
+
+```tsx title="Full Event Lifecycle Management"
+import { IlamyCalendar } from '@ilamy/calendar';
+import { useState } from 'react';
+
+function CalendarWithAPI() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Handle new event creation
+  const handleEventAdd = async (event) => {
+    setLoading(true);
+    try {
+      // Save to backend
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(event)
+      });
+
+      if (response.ok) {
+        const savedEvent = await response.json();
+        setEvents(prev => [...prev, savedEvent]);
+        console.log('Event created successfully:', savedEvent);
+      }
+    } catch (error) {
+      console.error('Failed to create event:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle event updates
+  const handleEventUpdate = async (updatedEvent) => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/events/' + updatedEvent.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedEvent)
+      });
+
+      if (response.ok) {
+        setEvents(prev =>
+          prev.map(event =>
+            event.id === updatedEvent.id ? updatedEvent : event
+          )
+        );
+        console.log('Event updated successfully:', updatedEvent);
+      }
+    } catch (error) {
+      console.error('Failed to update event:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle event deletion
+  const handleEventDelete = async (deletedEvent) => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/events/' + deletedEvent.id, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setEvents(prev =>
+          prev.filter(event => event.id !== deletedEvent.id)
+        );
+        console.log('Event deleted successfully:', deletedEvent);
+      }
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle date navigation and view changes
+  const handleDateChange = async (date, range) => {
+    console.log('Navigating to:', date.format('YYYY-MM-DD'));
+
+    // Load events for the visible date range
+    try {
+      const response = await fetch(
+        '/api/events?start=' + range.start.toISOString() +
+        '&end=' + range.end.toISOString()
+      );
+
+      if (response.ok) {
+        const monthEvents = await response.json();
+        setEvents(monthEvents);
+      }
+    } catch (error) {
+      console.error('Failed to load events for date:', error);
+    }
+  };
+
+  return (
+    <div className="relative">
+      {loading && (
+        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      )}
+
+      <IlamyCalendar
+        events={events}
+        initialView="month"
+        onEventAdd={handleEventAdd}
+        onEventUpdate={handleEventUpdate}
+        onEventDelete={handleEventDelete}
+        onDateChange={handleDateChange}
+        onEventClick={(event) => {
+          // Navigate to event details or open modal
+          console.log('Event clicked:', event);
+        }}
+      />
+    </div>
+  );
+}
+```
+
+## Types
+
+### CalendarEvent Interface
+
+The main event object used throughout the calendar. All events passed to the calendar should conform to this interface.
+
+```typescript title="CalendarEvent Interface"
+interface CalendarEvent {
+  id: string;              // Unique identifier for the event
+  title: string;           // Display title of the event
+  start: Date;             // Start date and time
+  end: Date;               // End date and time
+  description?: string;    // Optional description text
+  color?: string;          // Optional text color (hex, rgb, named colors, class names)
+  backgroundColor?: string; // Optional background color (hex, rgb, named colors, class names)
+  allDay?: boolean;        // Whether this is an all-day event
+  resourceId?: string | number;  // Single resource assignment (for resource calendars)
+  resourceIds?: (string | number)[]; // Multiple resource assignment (for cross-resource events)
+  data?: Record<string, any>; // Optional custom data for additional properties
+}
+```
+
+### Event Properties Explained
+
+#### Required Properties
+
+- `id` - Must be unique across all events. Used for drag-and-drop and event updates.
+- `title` - The text displayed on the event in the calendar.
+- `start` - JavaScript Date object representing when the event begins.
+- `end` - JavaScript Date object representing when the event ends.
+
+#### Optional Properties
+
+- `description` - Additional text shown in tooltips or custom event renderers.
+- `color` - Background color for the event. Supports hex (#ff0000), rgb(255,0,0), or named colors (red).
+- `allDay` - When true, the event spans the entire day and ignores time components.
+
+### Example Event Objects
+
+```typescript title="Various Event Types"
+// Regular timed event
+const meeting = {
+  id: 'meeting-1',
+  title: 'Team Standup',
+  start: new Date('2024-01-15T09:00:00'),
+  end: new Date('2024-01-15T09:30:00'),
+  description: 'Daily team sync meeting',
+  color: '#3b82f6'
+};
+
+// All-day event
+const holiday = {
+  id: 'holiday-1',
+  title: 'National Holiday',
+  start: new Date('2024-01-01'),
+  end: new Date('2024-01-01'),
+  allDay: true,
+  color: '#ef4444'
+};
+
+// Multi-day event
+const conference = {
+  id: 'conf-1',
+  title: 'Tech Conference',
+  start: new Date('2024-01-20T08:00:00'),
+  end: new Date('2024-01-22T18:00:00'),
+  description: 'Annual technology conference',
+  color: '#10b981'
+};
+```
+
+### BusinessHours Interface
+
+Configuration object for restricting calendar interactions to specific days and time ranges. Used with the `businessHours` prop. Supports both single object (same hours for all days) and array format (different hours per day).
+
+```typescript title="BusinessHours Type Definition"
+interface BusinessHours {
+  // Array of day names considered business days
+  daysOfWeek: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday')[];
+
+  // Hour when business hours start (0-23, inclusive)
+  startTime: number;
+
+  // Hour when business hours end (0-23, exclusive)
+  endTime: number;
+}
+```
+
+#### Usage Examples
+
+**Standard business hours** (same for all days):
+
+```typescript
+const businessHours: BusinessHours = {
+  daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+  startTime: 9,
+  endTime: 17,
+};
+
+<IlamyCalendar
+  events={events}
+  businessHours={businessHours}
+/>
+```
+
+**Different hours per day or Split Shifts** (array format):
+
+```typescript
+const businessHours: BusinessHours[] = [
+  // Regular shift for some days
+  {
+    daysOfWeek: ['tuesday', 'thursday'],
+    startTime: 10,
+    endTime: 18,
+  },
+  // Split shift (Morning)
+  {
+    daysOfWeek: ['monday', 'wednesday'],
+    startTime: 9,
+    endTime: 12,
+  },
+  // Split shift (Afternoon)
+  {
+    daysOfWeek: ['monday', 'wednesday'],
+    startTime: 14,
+    endTime: 18,
+  },
+  // Weekend hours
+  {
+    daysOfWeek: ['saturday'],
+    startTime: 11,
+    endTime: 15,
+  },
+];
+
+<IlamyCalendar
+  events={events}
+  businessHours={businessHours}
+/>
+```
+
+### CellInfo Interface
+
+Information passed to the `onCellClick` and `isCellDisabled` callbacks. Uses named properties for better extensibility and clarity.
+
+```typescript title="CellInfo Type Definition"
+interface CellInfo {
+  // Start date/time of the clicked cell
+  start: dayjs.Dayjs;
+
+  // End date/time of the clicked cell
+  end: dayjs.Dayjs;
+
+  // Full resource object when clicking a resource calendar cell;
+  // undefined in a regular calendar (optional)
+  resource?: Resource;
+
+  // Whether the clicked cell is an all-day cell (optional)
+  allDay?: boolean;
+}
+```
+
+#### Usage Example
+
+Handle cell clicks with the CellInfo object:
+
+```typescript
+const handleCellClick = (info: CellInfo) => {
+  const { start, end, resource, allDay } = info;
+  console.log('Cell clicked from', start.format(), 'to', end.format());
+
+  if (allDay) {
+    console.log('Clicked in all-day row');
+  }
+
+  // For resource calendars, the full resource object is available
+  if (resource) {
+    console.log('On resource:', resource.id);
+  }
+
+  // Create a new event — assign it to the cell's resource via resourceId
+  openEventForm({ start, end, resourceId: resource?.id, allDay });
+};
+
+<IlamyCalendar
+  events={events}
+  onCellClick={handleCellClick}
+/>
+```
+
+#### Disabling Cells
+
+Use `isCellDisabled` to block interactions on specific cells (holidays, days off,
+past dates, on-call windows, per-resource availability). Returning `true` blocks
+event-creation clicks, rejects drag-and-drop onto the cell, and grays it out. It
+composes with `businessHours` via OR.
+
+```typescript
+const isHoliday = (date: dayjs.Dayjs) =>
+  holidays.some((h) => date.isSame(h, 'day'));
+
+<IlamyCalendar
+  events={events}
+  isCellDisabled={(info) => isHoliday(info.start)}
+/>
+```
+
+### ClassesOverride Interface
+
+Custom class names to override default styling for various calendar elements. Used with the `classesOverride` prop to customize the appearance of calendar components.
+
+```typescript title="ClassesOverride Type Definition"
+interface ClassesOverride {
+  // Custom class name for disabled cells
+  // Applied to: cells outside business hours/days, and days from other months in month view
+  disabledCell?: string;
+}
+```
+
+:::note[Want more customization options?]
+Currently, `ClassesOverride` only supports customizing disabled cells. If you need to override styles for other calendar elements (events, headers, time slots, etc.), please [open an issue on GitHub](https://github.com/kcsujeet/ilamy-calendar/issues) describing your use case. We'd love to hear what customization options would be most valuable to you!
+:::
+
+#### Usage Example
+
+Customize the styling of disabled cells:
+
+```typescript
+const classesOverride: ClassesOverride = {
+  disabledCell: 'opacity-30 bg-gray-100 cursor-not-allowed',
+};
+
+<IlamyCalendar
+  events={events}
+  businessHours={{
+    daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+    startTime: 9,
+    endTime: 17,
+  }}
+  classesOverride={classesOverride}
+/>
+```
+
+### EventFormProps Interface
+
+Props passed to custom event form components via the `renderEventForm` prop. Use this interface to build your own event creation and editing forms.
+
+```typescript title="EventFormProps Type Definition"
+interface EventFormProps {
+  // Whether the form should be displayed
+  open?: boolean;
+
+  // The event being edited (null/undefined for new events)
+  selectedEvent?: CalendarEvent | null;
+
+  // Callback to create a new event
+  onAdd?: (event: CalendarEvent) => void;
+
+  // Callback to update an existing event
+  onUpdate?: (event: CalendarEvent) => void;
+
+  // Callback to delete an event
+  onDelete?: (event: CalendarEvent) => void;
+
+  // Callback to close the form (required)
+  onClose: () => void;
+}
+```
+
+#### Usage Example
+
+Implementing a custom event form with EventFormProps:
+
+```typescript
+const MyEventForm = (props: EventFormProps) => {
+  const { open, selectedEvent, onAdd, onUpdate, onDelete, onClose } = props;
+
+  if (!open) return null;
+
+  return (
+    <div className="modal">
+      <h2>{selectedEvent ? 'Edit Event' : 'New Event'}</h2>
+      {/* Your custom form UI */}
+      <button onClick={onClose}>Close</button>
+    </div>
+  );
+};
+
+// Usage
+<IlamyCalendar
+  events={events}
+  renderEventForm={(props) => <MyEventForm {...props} />}
+/>
+```

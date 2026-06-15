@@ -1,0 +1,350 @@
+---
+import MainLayout from '@/layouts/main-layout.astro'
+
+const lastUpdated = 'July 2025'
+---
+
+<MainLayout>
+  <div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+      <!-- Header -->
+      <div class="text-center mb-12">
+        <h1
+          class="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-linear-to-r from-green-600 to-teal-600"
+        >
+          Privacy Policy
+        </h1>
+        <p class="text-xl text-muted-foreground mb-2">How I Handle Your Data</p>
+        <p class="text-sm text-muted-foreground">
+          Last updated: {lastUpdated}
+        </p>
+      </div>
+
+      <div class="space-y-12">
+        <!-- Introduction -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-green-500 to-green-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">🔒</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Introduction</h2>
+            </div>
+          </div>
+
+          <div
+            class="bg-linear-to-r from-green-50 to-teal-50 dark:from-green-950/20 dark:to-teal-950/20 rounded-lg p-6 border"
+          >
+            <p class="text-lg leading-relaxed mb-4">
+              Welcome to ilamy Calendar! As a solo developer, I take your
+              privacy seriously. This policy explains how I handle any
+              information when you use this website and documentation.
+            </p>
+            <p class="text-muted-foreground">
+              The good news: since this is primarily a documentation site for an
+              open-source component, I collect very little personal information.
+            </p>
+          </div>
+        </section>
+
+        <!-- What I Collect -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">📊</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">What I Collect</h2>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-6">
+            <div
+              class="bg-white/70 dark:bg-gray-800/70 rounded-lg p-6 border hover:shadow-md transition-shadow"
+            >
+              <h3
+                class="font-semibold text-green-600 dark:text-green-400 mb-3 flex items-center gap-2"
+              >
+                <span>📈</span> Basic Analytics
+              </h3>
+              <ul class="space-y-2 text-sm text-muted-foreground">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                  Page views and popular content
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                  Browser type and device info
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                  Referral sources
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                  Time spent on pages
+                </li>
+              </ul>
+            </div>
+
+            <div
+              class="bg-white/70 dark:bg-gray-800/70 rounded-lg p-6 border hover:shadow-md transition-shadow"
+            >
+              <h3
+                class="font-semibold text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-2"
+              >
+                <span>✉️</span> Contact Info (Optional)
+              </h3>
+              <ul class="space-y-2 text-sm text-muted-foreground">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  Email if you contact me
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  Name if you provide it
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  GitHub username for issues
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  Feedback and comments
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- How I Use Data -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-purple-500 to-purple-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">🎯</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">How I Use Your Data</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed mb-4">
+              I use any collected information solely to improve the
+              documentation and user experience. This includes understanding
+              which pages are most helpful and responding to requests.
+            </p>
+            <div class="grid sm:grid-cols-2 gap-4 mt-6">
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-green-500">✓</span>
+                <span>Improve documentation</span>
+              </div>
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-green-500">✓</span>
+                <span>Respond to questions</span>
+              </div>
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-green-500">✓</span>
+                <span>Fix bugs and issues</span>
+              </div>
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-green-500">✓</span>
+                <span>Understand usage patterns</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Data Sharing -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-red-500 to-red-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">🚫</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">What I Don't Do</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed mb-6">
+              As a developer running a documentation site, I keep things
+              simple:
+            </p>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-red-500">✗</span>
+                <span>Sell your data</span>
+              </div>
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-red-500">✗</span>
+                <span>Share with advertisers</span>
+              </div>
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-red-500">✗</span>
+                <span>Send promotional emails</span>
+              </div>
+              <div class="flex items-center gap-3 text-muted-foreground">
+                <span class="text-red-500">✗</span>
+                <span>Track across websites</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Your Rights -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-indigo-500 to-indigo-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">👤</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Your Rights</h2>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-6">
+            <div
+              class="bg-white/70 dark:bg-gray-800/70 rounded-lg p-6 border hover:shadow-md transition-shadow text-center"
+            >
+              <div class="text-2xl mb-3">📥</div>
+              <h3 class="font-semibold mb-2">Access</h3>
+              <p class="text-sm text-muted-foreground">
+                Request what data I have about you
+              </p>
+            </div>
+            <div
+              class="bg-white/70 dark:bg-gray-800/70 rounded-lg p-6 border hover:shadow-md transition-shadow text-center"
+            >
+              <div class="text-2xl mb-3">✏️</div>
+              <h3 class="font-semibold mb-2">Correct</h3>
+              <p class="text-sm text-muted-foreground">
+                Fix any incorrect information
+              </p>
+            </div>
+            <div
+              class="bg-white/70 dark:bg-gray-800/70 rounded-lg p-6 border hover:shadow-md transition-shadow text-center"
+            >
+              <div class="text-2xl mb-3">🗑️</div>
+              <h3 class="font-semibold mb-2">Delete</h3>
+              <p class="text-sm text-muted-foreground">
+                Remove your data entirely
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Cookies -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-orange-500 to-orange-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">🍪</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Cookies</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed mb-4">
+              I use minimal cookies for basic functionality like remembering
+              your theme preference (dark/light mode) and basic analytics.
+            </p>
+            <p class="text-muted-foreground mb-4">
+              No tracking cookies or third-party advertising cookies are used.
+            </p>
+            <a
+              href="/cookies"
+              class="text-primary hover:underline inline-flex items-center gap-2"
+            >
+              See our Cookie Policy
+              <span>→</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- Security -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-teal-500 to-teal-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">🛡️</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Security</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed mb-4">
+              This site uses HTTPS encryption and follows modern web security
+              practices. However, no method of transmission over the internet is
+              100% secure.
+            </p>
+            <p class="text-muted-foreground">
+              Since this is mainly a documentation site with minimal data
+              collection, security risks are naturally low.
+            </p>
+          </div>
+        </section>
+
+        <!-- Updates -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-pink-500 to-pink-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">🔄</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Policy Updates</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed">
+              I may update this privacy policy occasionally. Any changes will be
+              reflected by updating the "Last updated" date. Given the minimal
+              nature of data collection, changes are likely to be minor.
+            </p>
+          </div>
+        </section>
+
+        <!-- Contact -->
+        <section>
+          <div
+            class="bg-linear-to-r from-green-50 to-teal-50 dark:from-green-950/20 dark:to-teal-950/20 rounded-lg p-8 border text-center"
+          >
+            <h2 class="text-2xl font-semibold mb-4">
+              Questions About Privacy?
+            </h2>
+            <p class="text-muted-foreground mb-6 max-w-2xl mx-auto">
+              If you have any questions about this privacy policy or how I
+              handle data, please don't hesitate to reach out. I'm happy to
+              clarify anything!
+            </p>
+            <a
+              href="/support"
+              class="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Contact Me
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</MainLayout>

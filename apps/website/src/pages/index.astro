@@ -1,0 +1,459 @@
+---
+import {
+	ArrowRight,
+	BarChart,
+	CalendarRange,
+	Clock,
+	Code2,
+	Globe,
+	LayoutGrid,
+	Moon,
+	Palette,
+	Repeat,
+	Smartphone,
+} from 'lucide-react'
+import { Badge, Button, Link } from '@/components'
+import { CalendarPreview } from '@/components/common/calendar-preview'
+import { FeatureCard } from '@/components/common/feature-card'
+import { DragDropIcon } from '@/components/icons/drag-drop-icon'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import MainLayout from '@/layouts/main-layout.astro'
+---
+
+<MainLayout>
+  <div class="flex flex-col">
+    {/* Hero section with calendar preview */}
+    <section class="py-24 px-4 relative overflow-hidden">
+      {/* Background gradient effects */}
+      <div
+        class="absolute inset-0 bg-linear-to-b from-indigo-500/10 via-background to-background z-0"
+      >
+      </div>
+      <div
+        class="absolute top-0 left-1/4 w-72 h-72 bg-blue-500/30 rounded-full filter blur-3xl opacity-30 animate-pulse"
+      >
+      </div>
+      <div
+        class="absolute top-40 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full filter blur-3xl opacity-20 animate-pulse"
+        style={{ animationDelay: "1s" }}
+      >
+      </div>
+
+      <div class="container mx-auto relative z-10">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Hero text content */}
+          <div class="flex flex-col lg:pr-8">
+            <h1
+              class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 bg-clip-text"
+            >
+              React Calendar Component with Tailwind CSS & shadcn/ui
+            </h1>
+            <p class="text-xl text-muted-foreground mb-8">
+              The ultimate full calendar alternative built with TypeScript,
+              Tailwind CSS, and shadcn/ui. A headless React calendar component
+              with drag-and-drop, resource scheduling, and complete
+              customization for Next.js, Astro, and React applications.
+            </p>
+            <div class="flex flex-wrap gap-4">
+              <Link href="/demo">
+                Try Demo{" "}
+                <ArrowRight
+                  className="w-4 h-4 inline-block ml-1 group-hover:translate-x-1 transition-transform"
+                />
+              </Link>
+              <Link
+                href="/docs/introduction"
+                variant="secondary"
+                className="border-2"
+              >
+                Documentation <Code2 className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Calendar preview */}
+          <div class="relative">
+            <div
+              class="absolute -inset-1 bg-linear-to-r from-blue-600/30 to-indigo-600/30 rounded-2xl blur-xl opacity-70"
+            >
+            </div>
+            <div
+              class="relative p-1 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl"
+            >
+              <CalendarPreview client:only />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {/* Features section */}
+    <section class="py-24 relative">
+      {/* Background elements */}
+      <div
+        class="absolute inset-0 bg-gradient-to-t from-blue-50/10 to-indigo-50/10 dark:from-blue-950/10 dark:to-indigo-950/10 z-0"
+      >
+      </div>
+      <div
+        class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-muted/30 to-transparent"
+      >
+      </div>
+      <div
+        class="absolute top-1/3 right-10 w-64 h-64 bg-blue-500/10 rounded-full filter blur-3xl"
+      >
+      </div>
+      <div
+        class="absolute bottom-1/3 left-10 w-80 h-80 bg-indigo-500/10 rounded-full filter blur-3xl"
+      >
+      </div>
+
+      <div class="container mx-auto px-4 relative z-10">
+        <div class="text-center mb-16">
+          <div class="flex items-center justify-center gap-2 mb-4">
+            <div class="h-px w-8 bg-gradient-to-r from-transparent to-blue-500">
+            </div>
+            <span class="text-blue-600 dark:text-blue-400 font-medium">
+              Powerful Features
+            </span>
+            <div class="h-px w-8 bg-gradient-to-l from-transparent to-blue-500">
+            </div>
+          </div>
+          <h2 class="text-4xl font-bold mb-4">Key Features</h2>
+          <p class="text-muted-foreground max-w-2xl mx-auto">
+            Everything you need to build beautiful and functional calendar
+            experiences
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          <FeatureCard
+            title="Multiple Views"
+            description="Day, week, month, and year views available out of the box to suit your application's needs."
+          >
+            <LayoutGrid
+              slot="icon"
+              className="w-12 h-12 text-blue-600 dark:text-blue-400"
+            />
+          </FeatureCard>
+          <FeatureCard
+            title="Drag & Drop"
+            description="Intuitive drag and drop interface for creating, moving, and resizing events with ease."
+          >
+            <DragDropIcon
+              slot="icon"
+              className="w-12 h-12 text-indigo-600 dark:text-indigo-400"
+            />
+          </FeatureCard>
+          <FeatureCard
+            title="Recurring Events"
+            description="Support for daily, weekly, monthly, and yearly recurring events with exceptions handling."
+          >
+            <Repeat
+              slot="icon"
+              className="w-12 h-12 text-purple-600 dark:text-purple-400"
+            />
+          </FeatureCard>
+          <FeatureCard
+            title="Event Duration"
+            description="Handle multi-day events, all-day events, and precisely timed events with consistent styling."
+          >
+            <CalendarRange
+              slot="icon"
+              className="w-12 h-12 text-pink-600 dark:text-pink-400"
+            />
+          </FeatureCard>
+          <FeatureCard
+            title="Timezone Support"
+            description="Full timezone support for international applications and distributed teams."
+          >
+            <Clock
+              slot="icon"
+              className="w-12 h-12 text-cyan-600 dark:text-cyan-400"
+            />
+          </FeatureCard>
+          <FeatureCard
+            title="Customizable Styling"
+            description="No CSS shipped - you control the entire styling. Bring your own design system and customize every aspect to match your brand."
+          >
+            <Palette
+              slot="icon"
+              className="w-12 h-12 text-teal-600 dark:text-teal-400"
+            />
+          </FeatureCard>
+        </div>
+      </div>
+    </section>
+
+    {/* Developer Features */}
+    <section class="py-24 relative overflow-hidden">
+      {/* Background elements */}
+      <div
+        class="absolute inset-0 bg-gradient-to-b from-background to-muted/30 z-0"
+      >
+      </div>
+      <div
+        class="absolute top-1/3 left-1/4 w-64 h-64 bg-blue-500/5 rounded-full filter blur-3xl"
+      >
+      </div>
+      <div
+        class="absolute bottom-1/3 right-1/4 w-80 h-80 bg-indigo-500/5 rounded-full filter blur-3xl"
+      >
+      </div>
+
+      <div class="container mx-auto px-4 relative z-10">
+        <div class="text-center mb-12">
+          <div class="flex items-center justify-center gap-2 mb-4">
+            <div class="h-px w-8 bg-gradient-to-r from-transparent to-blue-500">
+            </div>
+            <span class="text-blue-600 dark:text-blue-400 font-medium">
+              Developer Experience
+            </span>
+            <div class="h-px w-8 bg-gradient-to-l from-transparent to-blue-500">
+            </div>
+          </div>
+          <h2 class="text-3xl font-bold mb-4">Built for Developers</h2>
+          <p class="text-muted-foreground max-w-2xl mx-auto">
+            Designed with developer experience in mind, making integration
+            seamless and efficient
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Card
+            className="border-white/20 dark:border-white/15 bg-white/50 dark:bg-black/10 backdrop-blur-sm shadow-md hover:shadow-lg transition-all"
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span
+                  class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-bold"
+                >
+                  1
+                </span>
+                Simple API
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p class="mb-4 text-muted-foreground">
+                Our intuitive API makes integration a breeze:
+              </p>
+              <pre
+                class="bg-muted/70 backdrop-blur-sm p-4 rounded-lg text-sm overflow-x-auto border border-muted-foreground/10 shadow-inner">
+                {`
+<IlamyCalendar
+  events={myEvents}
+  firstDayOfWeek="monday"
+  renderEvent={customRenderer}
+/>`}
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="border-white/20 dark:border-white/15 bg-white/50 dark:bg-black/20 backdrop-blur-sm shadow-md hover:shadow-lg transition-all"
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span
+                  class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm font-bold"
+                >
+                  2
+                </span>
+                TypeScript Support
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p class="mb-4 text-muted-foreground">
+                Full TypeScript support with comprehensive typings:
+              </p>
+              <pre
+                class="bg-muted/70 backdrop-blur-sm p-4 rounded-lg text-sm overflow-x-auto border border-muted-foreground/10 shadow-inner">
+                {`
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: dayjs.Dayjs;
+  end: dayjs.Dayjs;
+  color?: string;
+  // ...other properties
+}`}
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="border-white/20 dark:border-white/15 bg-white/50 dark:bg-black/20 backdrop-blur-sm shadow-md hover:shadow-lg transition-all"
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span
+                  class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-sm font-bold"
+                >
+                  3
+                </span>
+                Extensible Architecture
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p class="mb-4 text-muted-foreground">
+                Easily extend with custom components:
+              </p>
+              <pre
+                class="bg-muted/70 backdrop-blur-sm p-4 rounded-lg text-sm overflow-x-auto border border-muted-foreground/10 shadow-inner">
+                {`
+const renderEvent = (event) => (
+  <div className="custom-event">
+    <h4>{event.title}</h4>
+    <span>{event.location}</span>
+  </div>
+);`}
+              </pre>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </section>
+
+    {/* Additional Features */}
+    <section class="py-24 relative overflow-hidden">
+      {/* Background elements */}
+      <div
+        class="absolute inset-0 bg-gradient-to-b from-secondary/10 to-secondary/30 z-0"
+      >
+      </div>
+      <div
+        class="absolute top-1/4 left-0 w-72 h-72 bg-blue-300/20 rounded-full filter blur-3xl dark:bg-blue-900/20"
+      >
+      </div>
+      <div
+        class="absolute bottom-1/4 right-0 w-96 h-96 bg-indigo-300/20 rounded-full filter blur-3xl dark:bg-indigo-900/20"
+      >
+      </div>
+
+      <div class="container mx-auto px-4 relative z-10">
+        <div class="text-center mb-12">
+          <div class="flex items-center justify-center gap-2 mb-4">
+            <div class="h-px w-8 bg-gradient-to-r from-transparent to-blue-500">
+            </div>
+            <span class="text-blue-600 dark:text-blue-400 font-medium">
+              Built for real-world applications
+            </span>
+            <div class="h-px w-8 bg-gradient-to-l from-transparent to-blue-500">
+            </div>
+          </div>
+          <h2 class="text-3xl font-bold mb-4">Production Ready</h2>
+          <p class="text-muted-foreground max-w-2xl mx-auto">
+            Enterprise-grade features built for modern applications and teams
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <Card
+            className="border-white/20 dark:border-white/15 bg-white/40 dark:bg-black/20 backdrop-blur-sm hover:shadow-md transition-all text-center"
+          >
+            <CardContent className="flex flex-col items-center pt-6">
+              <div
+                class="bg-blue-100 dark:bg-blue-900/30 w-16 h-16 rounded-full flex items-center justify-center mb-4"
+              >
+                <Moon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 class="text-lg font-semibold mb-2">Dark Mode</h3>
+              <p class="text-muted-foreground">
+                Built-in light and dark mode support for better user experience.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="border-white/20 dark:border-white/15 bg-white/40 dark:bg-black/20 backdrop-blur-sm hover:shadow-md transition-all text-center"
+          >
+            <CardContent className="flex flex-col items-center pt-6">
+              <div
+                class="bg-indigo-100 dark:bg-indigo-900/30 w-16 h-16 rounded-full flex items-center justify-center mb-4"
+              >
+                <Smartphone
+                  className="h-8 w-8 text-indigo-600 dark:text-indigo-400"
+                />
+              </div>
+              <h3 class="text-lg font-semibold mb-2">Responsive Design</h3>
+              <p class="text-muted-foreground">
+                Works beautifully across devices from mobile to desktop.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="border-white/20 dark:border-white/15 bg-white/40 dark:bg-black/20 backdrop-blur-sm hover:shadow-md transition-all text-center"
+          >
+            <CardContent className="flex flex-col items-center pt-6">
+              <div
+                class="bg-purple-100 dark:bg-purple-900/30 w-16 h-16 rounded-full flex items-center justify-center mb-4"
+              >
+                <Globe
+                  className="h-8 w-8 text-purple-600 dark:text-purple-400"
+                />
+              </div>
+              <h3 class="text-lg font-semibold mb-2">Localization</h3>
+              <p class="text-muted-foreground">
+                Easy internationalization with built-in locale support.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="border-white/20 dark:border-white/15 bg-white/40 dark:bg-black/20 backdrop-blur-sm hover:shadow-md transition-all text-center"
+          >
+            <CardContent className="flex flex-col items-center pt-6">
+              <div
+                class="bg-teal-100 dark:bg-teal-900/30 w-16 h-16 rounded-full flex items-center justify-center mb-4"
+              >
+                <BarChart
+                  className="h-8 w-8 text-teal-600 dark:text-teal-400"
+                />
+              </div>
+              <h3 class="text-lg font-semibold mb-2">Performance Optimized</h3>
+              <p class="text-muted-foreground">
+                Built for speed and efficiency, even with thousands of events.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </section>
+
+    {/* CTA section */}
+    <section class="py-24 relative overflow-hidden">
+      {/* Background gradient and effects */}
+      <div class="absolute inset-0 bg-primary z-0"></div>
+      <div
+        class="absolute -top-40 -right-40 w-96 h-96 bg-white/10 rounded-full filter blur-3xl"
+      >
+      </div>
+      <div
+        class="absolute -bottom-20 -left-20 w-80 h-80 bg-indigo-300/20 rounded-full filter blur-3xl"
+      >
+      </div>
+
+      {/* Content with glassmorphism overlay */}
+      <div class="container mx-auto px-4 text-center relative z-10">
+        <div
+          class="max-w-3xl mx-auto backdrop-blur-sm bg-white/10 rounded-2xl p-10 border border-white/20 shadow-xl"
+        >
+          <h2 class="text-3xl md:text-4xl font-bold mb-6 text-white">
+            Ready to enhance your application?
+          </h2>
+          <p class="text-xl mb-8 mx-auto text-white/90">
+            Get started with ilamy Calendar today and provide your users with a
+            seamless scheduling experience.
+          </p>
+          <Link
+            href="/docs/introduction"
+            variant="secondary"
+            className="border-2"
+          >
+            Install Now <Code2 className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  </div>
+</MainLayout>

@@ -1,0 +1,189 @@
+---
+import { Button } from '@/components'
+import MainLayout from '@/layouts/main-layout.astro'
+import { SUPPORT_URL } from '@/lib/constants'
+---
+
+<MainLayout>
+  <div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+      {/* Page Header */}
+      <div class="text-center mb-16">
+        <h1 class="text-4xl font-bold mb-6">Pricing</h1>
+        <p class="text-xl text-muted-foreground">
+          ilamy Calendar is completely free and open source. Support the project
+          if you find it useful!
+        </p>
+      </div>
+
+      {/* Main Content */}
+      <div class="space-y-12">
+        {/* Open Source Section */}
+        <div class="text-center">
+          <h2 class="text-3xl font-bold mb-6">100% Free & Open Source</h2>
+          <p class="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+            ilamy Calendar is released under the MIT license, which means you
+            can use it freely in personal projects, commercial applications, and
+            everything in between. No restrictions, no hidden costs, no
+            subscription fees.
+          </p>
+
+          <div
+            class="bg-secondary/20 rounded-xl border border-border/40 p-8 mb-8"
+          >
+            <h3 class="text-xl font-semibold mb-4">What you get:</h3>
+            <div
+              class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left max-w-2xl mx-auto"
+            >
+              <div class="flex items-start space-x-3">
+                <span class="text-primary">✓</span>
+                <span>Full calendar component</span>
+              </div>
+              <div class="flex items-start space-x-3">
+                <span class="text-primary">✓</span>
+                <span>Multiple views (day, week, month)</span>
+              </div>
+              <div class="flex items-start space-x-3">
+                <span class="text-primary">✓</span>
+                <span>Event management</span>
+              </div>
+              <div class="flex items-start space-x-3">
+                <span class="text-primary">✓</span>
+                <span>Drag and drop support</span>
+              </div>
+              <div class="flex items-start space-x-3">
+                <span class="text-primary">✓</span>
+                <span>Timezone support</span>
+              </div>
+              <div class="flex items-start space-x-3">
+                <span class="text-primary">✓</span>
+                <span>Responsive design</span>
+              </div>
+              <div class="flex items-start space-x-3">
+                <span class="text-primary">✓</span>
+                <span>TypeScript support</span>
+              </div>
+              <div class="flex items-start space-x-3">
+                <span class="text-primary">✓</span>
+                <span>Community support</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Support Section */}
+        <div class="text-center">
+          <h2 class="text-3xl font-bold mb-6">Support the Project</h2>
+          <p class="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+            ilamy Calendar is a passion project maintained in my free time. If
+            you find it useful and want to support its continued development,
+            consider making a donation! ☕
+          </p>
+
+          <div
+            class="bg-linear-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 rounded-xl border border-pink-200/50 dark:border-pink-800/50 p-8"
+          >
+            <div class="flex flex-col items-center space-y-6">
+              <div class="text-6xl">💝</div>
+              <p class="text-lg font-medium">
+                Every contribution helps keep this project alive and growing!
+              </p>
+              <a
+                href={SUPPORT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 bg-linear-to-r from-pink-500 to-pink-600 text-white px-8 py-4 rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg text-lg font-medium"
+              >
+                <span>💝</span>
+                Support ilamy Calendar
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Getting Started Section */}
+        <div class="text-center">
+          <h2 class="text-3xl font-bold mb-6">Ready to Get Started?</h2>
+          <p class="text-lg text-muted-foreground mb-8">
+            Jump right in and start building with ilamy Calendar today.
+          </p>
+          <div class="flex flex-wrap gap-4 justify-center">
+            <Button asChild size="lg">
+              <a href="/docs/getting-started/overview">Get Started</a>
+            </Button>
+            <Button variant="outline" size="lg" asChild>
+              <a href="/demo">View Demo</a>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* FAQ Section */}
+      <div class="mt-24 max-w-3xl mx-auto">
+        <h2 class="text-3xl font-bold mb-10 text-center">
+          Frequently Asked Questions
+        </h2>
+
+        <div class="space-y-8">
+          <div>
+            <h3 class="text-xl font-medium mb-2">
+              Is ilamy Calendar really free?
+            </h3>
+            <p class="text-muted-foreground">
+              Yes! ilamy Calendar is completely free and open source under the
+              MIT license. You can use it in personal projects, commercial
+              applications, and anywhere else without any licensing fees or
+              restrictions.
+            </p>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-medium mb-2">
+              Can I use it in commercial products?
+            </h3>
+            <p class="text-muted-foreground">
+              Absolutely! The MIT license allows you to use ilamy Calendar in
+              commercial products without any additional licensing requirements.
+              You're free to modify, distribute, and sell products that include
+              the calendar.
+            </p>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-medium mb-2">
+              What kind of support is available?
+            </h3>
+            <p class="text-muted-foreground">
+              Community support is available through GitHub issues and
+              discussions. The project has comprehensive documentation, and the
+              community is active in helping with questions and bug reports.
+            </p>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-medium mb-2">
+              Will there be paid plans in the future?
+            </h3>
+            <p class="text-muted-foreground">
+              The core ilamy Calendar will always remain free and open source.
+              The project is currently donation-supported and focused on
+              providing the best possible free calendar solution for developers.
+            </p>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-medium mb-2">
+              How can I contribute to the project?
+            </h3>
+            <p class="text-muted-foreground">
+              Besides donations, you can contribute by reporting bugs,
+              suggesting features, submitting pull requests, helping with
+              documentation, or spreading the word about the project. Check out
+              the GitHub repository for contribution guidelines.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</MainLayout>

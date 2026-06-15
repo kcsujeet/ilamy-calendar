@@ -1,0 +1,335 @@
+---
+import MainLayout from '@/layouts/main-layout.astro'
+import { SUPPORT_URL } from '@/lib/constants'
+
+const lastUpdated = 'July 2025'
+const currentYear = new Date().getFullYear()
+---
+
+<MainLayout>
+  <div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+      <!-- Header -->
+      <div class="text-center mb-12">
+        <h1
+          class="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-primary"
+        >
+          License
+        </h1>
+        <p class="text-xl text-muted-foreground mb-2">
+          Open Source & Free to Use
+        </p>
+        <p class="text-sm text-muted-foreground">
+          Last updated: {lastUpdated}
+        </p>
+      </div>
+
+      <div class="space-y-12">
+        <!-- MIT License Section -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-green-500 to-green-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">M</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">MIT License</h2>
+              <p class="text-sm text-muted-foreground">
+                Copyright (c) {currentYear}-present ilamy Calendar
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6 mb-6">
+            <div
+              class="bg-muted/50 p-4 rounded-md text-sm font-mono leading-relaxed whitespace-pre-wrap border-l-4 border-l-green-500"
+            >
+              Permission is hereby granted, free of charge, to any person
+              obtaining a copy of this software and associated documentation
+              files (the "Software"), to deal in the Software without
+              restriction, including without limitation the rights to use, copy,
+              modify, merge, publish, distribute, sublicense, and/or sell copies
+              of the Software, and to permit persons to whom the Software is
+              furnished to do so, subject to the following conditions: The above
+              copyright notice and this permission notice shall be included in
+              all copies or substantial portions of the Software. THE SOFTWARE
+              IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+              IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+              MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+              NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+              HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+              WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+              OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+              DEALINGS IN THE SOFTWARE.
+            </div>
+          </div>
+        </section>
+
+        <!-- What This Means -->
+        <section>
+          <h2 class="text-2xl font-semibold mb-6">What This Means</h2>
+          <div
+            class="bg-linear-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg p-6 border"
+          >
+            <p class="text-lg leading-relaxed mb-6">
+              The MIT License is a permissive open source license that gives you
+              maximum freedom. You can use ilamy Calendar in any project -
+              personal, commercial, or open source - as long as you include the
+              original license notice.
+            </p>
+
+            <div class="grid md:grid-cols-3 gap-6">
+              <div
+                class="bg-white/70 dark:bg-gray-800/70 rounded-lg p-4 border"
+              >
+                <h3
+                  class="font-semibold text-green-600 dark:text-green-400 mb-3 flex items-center gap-2"
+                >
+                  <span>✅</span> Permissions
+                </h3>
+                <ul class="space-y-2 text-sm">
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                    Commercial use
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                    Modification
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                    Distribution
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                    Private use
+                  </li>
+                </ul>
+              </div>
+
+              <div
+                class="bg-white/70 dark:bg-gray-800/70 rounded-lg p-4 border"
+              >
+                <h3
+                  class="font-semibold text-red-600 dark:text-red-400 mb-3 flex items-center gap-2"
+                >
+                  <span>❌</span> Limitations
+                </h3>
+                <ul class="space-y-2 text-sm">
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                    No liability
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                    No warranty
+                  </li>
+                </ul>
+              </div>
+
+              <div
+                class="bg-white/70 dark:bg-gray-800/70 rounded-lg p-4 border"
+              >
+                <h3
+                  class="font-semibold text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-2"
+                >
+                  <span>ℹ️</span> Conditions
+                </h3>
+                <ul class="space-y-2 text-sm">
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                    Include license notice
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Third-Party Dependencies -->
+        <section>
+          <h2 class="text-2xl font-semibold mb-6">Third-Party Dependencies</h2>
+          <p class="text-muted-foreground mb-6">
+            ilamy Calendar is built with amazing open source libraries, each
+            with their own licenses:
+          </p>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div
+              class="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
+              <h3 class="font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                React
+              </h3>
+              <p class="text-sm text-muted-foreground mb-2">
+                The foundation of our component
+              </p>
+              <p class="text-xs">
+                MIT License •
+                <a
+                  href="https://reactjs.org/license"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary hover:underline ml-1"
+                >
+                  View License
+                </a>
+              </p>
+            </div>
+
+            <div
+              class="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
+              <h3 class="font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                Tailwind CSS
+              </h3>
+              <p class="text-sm text-muted-foreground mb-2">
+                Beautiful styling framework
+              </p>
+              <p class="text-xs">
+                MIT License •
+                <a
+                  href="https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary hover:underline ml-1"
+                >
+                  View License
+                </a>
+              </p>
+            </div>
+
+            <div
+              class="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
+              <h3 class="font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                Day.js
+              </h3>
+              <p class="text-sm text-muted-foreground mb-2">
+                Date manipulation library
+              </p>
+              <p class="text-xs">
+                MIT License •
+                <a
+                  href="https://github.com/iamkun/dayjs/blob/dev/LICENSE"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary hover:underline ml-1"
+                >
+                  View License
+                </a>
+              </p>
+            </div>
+
+            <div
+              class="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
+              <h3 class="font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                Radix UI
+              </h3>
+              <p class="text-sm text-muted-foreground mb-2">
+                Accessible component primitives
+              </p>
+              <p class="text-xs">
+                MIT License •
+                <a
+                  href="https://github.com/radix-ui/primitives/blob/main/LICENSE"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary hover:underline ml-1"
+                >
+                  View License
+                </a>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Support the Project -->
+        <section>
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-10 h-10 rounded-lg bg-linear-to-br from-pink-500 to-pink-600 flex items-center justify-center"
+            >
+              <span class="text-white font-bold text-lg">💖</span>
+            </div>
+            <div>
+              <h2 class="text-2xl font-semibold">Enjoying ilamy Calendar?</h2>
+            </div>
+          </div>
+
+          <div class="bg-card border rounded-lg p-6">
+            <p class="text-lg leading-relaxed mb-4">
+              Since ilamy Calendar is completely free and open source, your
+              support helps me continue developing and maintaining this project.
+              If you're using it in your projects and finding value in it,
+              consider supporting its development!
+            </p>
+            <div class="grid md:grid-cols-2 gap-6 items-center">
+              <div>
+                <h3 class="font-semibold mb-2 flex items-center gap-2">
+                  <span>✨</span> Your support helps with:
+                </h3>
+                <ul class="space-y-1 text-sm text-muted-foreground">
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
+                    Adding new features
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
+                    Bug fixes and improvements
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
+                    Better documentation
+                  </li>
+                  <li class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
+                    Community support
+                  </li>
+                </ul>
+              </div>
+              <div class="text-center">
+                <a
+                  href={SUPPORT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 bg-linear-to-r from-pink-500 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
+                >
+                  <span>💝</span>
+                  Support ilamy Calendar
+                </a>
+                <p class="text-xs text-muted-foreground mt-2">
+                  Every little bit helps! ☕
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Questions -->
+        <section>
+          <div
+            class="bg-linear-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg p-8 border text-center"
+          >
+            <h2 class="text-2xl font-semibold mb-4">
+              Questions About Licensing?
+            </h2>
+            <p class="text-muted-foreground mb-6 max-w-2xl mx-auto">
+              If you have any questions about how you can use ilamy Calendar in
+              your project, feel free to reach out. I'm happy to help clarify
+              any licensing concerns.
+            </p>
+            <a
+              href="/support"
+              class="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Get Support
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</MainLayout>

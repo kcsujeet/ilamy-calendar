@@ -27,12 +27,11 @@ Builds & deployments) so pushes to `main` no longer auto-deploy.
 
 ```bash
 # from the repo root — secrets come from the environment, never committed
-export CLOUDFLARE_API_TOKEN=...      # a Pages-scoped API token (secret)
-export CLOUDFLARE_ACCOUNT_ID=...     # your Cloudflare account id
-export CLOUDFLARE_PAGES_PROJECT=...  # the Pages project name (e.g. ilamy)
+export CLOUDFLARE_API_TOKEN=...   # a Pages-scoped API token (secret)
+export CLOUDFLARE_ACCOUNT_ID=...  # your Cloudflare account id
 bun run --filter '@ilamy/website' deploy
 ```
 
-`deploy` runs `astro build` then `wrangler pages deploy dist`. Keep the three
-`CLOUDFLARE_*` values in your shell or an untracked `.env` (already gitignored) —
-this is a public repo, so they must never be committed.
+`deploy` runs `astro build` then `wrangler pages deploy dist --project-name=calendar-ilamy-dev`.
+Keep the two `CLOUDFLARE_*` values in your shell or an untracked `.env` (already
+gitignored) — this is a public repo, so they must never be committed.

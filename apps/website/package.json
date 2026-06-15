@@ -9,7 +9,7 @@
 		"preview": "astro preview",
 		"astro": "astro",
 		"type-check": "astro check",
-		"deploy": "astro build && wrangler pages deploy dist --project-name=\"$CLOUDFLARE_PAGES_PROJECT\" --branch=main"
+		"deploy": "astro build && wrangler pages deploy dist --project-name=calendar-ilamy-dev --branch=main"
 	},
 	"dependencies": {
 		"@astrojs/react": "^5.0.7",

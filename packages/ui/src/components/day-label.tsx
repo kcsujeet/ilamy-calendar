@@ -2,7 +2,10 @@ import type React from 'react'
 import { cn } from '../lib/utils'
 
 interface DayLabelProps {
-	/** True when this day is today: fills the number circle, tints the weekday. */
+	/**
+	 * True when this day is today: fills the number circle, tints the weekday,
+	 * and exposes `data-today="true"` as a styling/selection hook.
+	 */
 	today: boolean
 	/** Day-of-month, e.g. "13". */
 	dayNumber: React.ReactNode
@@ -36,6 +39,7 @@ export const DayLabel = ({
 		<div
 			className={cn('flex flex-col items-center', className)}
 			data-testid={dataTestId}
+			data-today={today ? 'true' : undefined}
 		>
 			{weekday != null && (
 				<div

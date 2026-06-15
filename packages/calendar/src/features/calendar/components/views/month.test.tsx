@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import type { CalendarEvent } from '@ilamy/types'
+import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import {
 	cleanup,
@@ -8,6 +8,7 @@ import {
 	screen,
 	within,
 } from '@testing-library/react'
+import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { generateMockEvents } from '@/testing/generator'
@@ -215,5 +216,42 @@ describe('MonthView', () => {
 		titles.forEach((title) => {
 			expect(within(dialog).getByText(title)).toBeInTheDocument()
 		})
+	})
+})
+
+const resourceList: Resource[] = [
+	{ id: '1', title: 'Resource 1' },
+	{ id: '2', title: 'Resource 2' },
+]
+
+const renderResourceMonthHorizontal = (props = {}) =>
+	render(
+		<CalendarProvider
+			dayMaxEvents={dayMaxEvents}
+			events={mockEvents}
+			initialView="month"
+			orientation="horizontal"
+			resources={resourceList}
+			{...props}
+		>
+			<CalendarDndContext>
+				<MonthView />
+			</CalendarDndContext>
+		</CalendarProvider>
+	)
+
+describe('ResourceMonthHorizontal', () => {
+	// Regression for #205: the resource month (horizontal) header must highlight
+	// today, the same way the resource week header does. Only the header renders a
+	// today-aware DayLabel in this arrangement, so exactly one cell is highlighted.
+	test('highlights today in the day header', () => {
+		cleanup()
+		const today = dayjs()
+
+		const { container } = renderResourceMonthHorizontal({ initialDate: today })
+
+		const highlighted = container.querySelectorAll('[data-today="true"]')
+		expect(highlighted).toHaveLength(1)
+		expect(highlighted.item(0)).toHaveTextContent(today.format('D'))
 	})
 })

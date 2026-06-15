@@ -29,9 +29,11 @@ Builds & deployments) so pushes to `main` no longer auto-deploy.
 # from the repo root — secrets come from the environment, never committed
 export CLOUDFLARE_API_TOKEN=...   # a Pages-scoped API token (secret)
 export CLOUDFLARE_ACCOUNT_ID=...  # your Cloudflare account id
-bun run --filter '@ilamy/website' deploy
+bun run deploy:website
 ```
 
-`deploy` runs `astro build` then `wrangler pages deploy dist --project-name=calendar-ilamy-dev`.
+`bun run deploy:website` (root) runs `build:lib` then this app's `deploy`, which is
+`astro build` then `wrangler pages deploy dist --project-name=calendar-ilamy-dev`.
+Building the lib first ensures the docs render against the current `@ilamy/calendar` build.
 Keep the two `CLOUDFLARE_*` values in your shell or an untracked `.env` (already
 gitignored) — this is a public repo, so they must never be committed.

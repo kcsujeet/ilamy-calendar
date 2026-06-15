@@ -1,20 +1,23 @@
 ---
 name: release-new-version
-description: Cut a new release of @ilamy/calendar — analyze commits since the last tag, suggest a semver bump, draft a CHANGELOG entry in the project's existing style, run the CI gate, commit, tag, push to origin, and create the GitHub release page (marked as `latest`). Pauses for the user to run `bun run release` (build + publish) interactively, then (on their signal) comments on every issue closed by the release and closes any still open. Use whenever the user says "release a new version", "cut a release", "ship v1.x", "bump the version", "prep a release", "publish the next version", "I just published X", "close the released issues", or anything that implies a new version should go out or a shipped version needs its issue follow-ups.
+description: Cut a new release of @ilamy/calendar — analyze commits since the last tag, suggest a semver bump, draft a CHANGELOG entry in the project's existing style, run the CI gate, commit, tag, push to origin, and create the GitHub release page (marked as `latest`). Pauses for the user to run `bun run release` (build + publish) interactively, then (on their signal) updates and deploys the docs site (`apps/website`, with demo/playground updates when needed) and comments on every issue closed by the release, closing any still open. Use whenever the user says "release a new version", "cut a release", "ship v1.x", "bump the version", "prep a release", "publish the next version", "I just published X", "close the released issues", or anything that implies a new version should go out or a shipped version needs its issue follow-ups.
 ---
 
 # Release a new version of @ilamy/calendar
 
 You're shipping a new version of the `@ilamy/calendar` npm package. The flow is conservative on purpose: suggest, wait for approval, apply, wait for approval, push. The user handles the actual publish manually via `bun run release` (it needs an interactive login).
 
-**Monorepo note.** This is a Bun-workspaces monorepo but **only `@ilamy/calendar` is published** (the other `@ilamy/*` packages are `private` and bundled into it). So:
+**Monorepo note.** This is a Bun-workspaces monorepo (`workspaces`: `packages/*`, `packages/plugins/*`, `apps/*`) but **only `@ilamy/calendar` is published**. Not every other package is bundled into it — be precise:
+- **Bundled into the published `@ilamy/calendar`** (private, no separate npm release): `@ilamy/types`, `@ilamy/utils`, `@ilamy/ui`, `@ilamy/calendar-recurrence`, `@ilamy/calendar-agenda` (the two plugin packages live under `packages/plugins/`). They are declared as `devDependencies` of `packages/calendar` and inlined via bunup's `noExternal`; `prepack` then drops `devDependencies` so the published manifest stays clean.
+- **Private but NOT bundled and NOT published**: the apps `@ilamy/demo` and `@ilamy/website`, and `@ilamy/playground`. They never ship to npm and are not part of a release. The docs site (`apps/website`) deploys separately (Cloudflare Pages) — cutting an npm release does **not** redeploy it.
 - The shipped version lives in **`packages/calendar/package.json`**, not the root `package.json` (the root is private and versionless). Bump and read the version there.
+- The published package exposes four entry points via its `exports` map: `.`, `./testing`, `./plugins/recurrence`, `./plugins/agenda`. If a release changes a plugin's public surface, name the relevant subpath in the changelog.
+- Publishing is a root command: **`bun run release`** = `build:lib` (`bun run --filter '@ilamy/calendar' build` — builds only the published package, bundling the internal packages above) then `publish:lib` (`cd packages/calendar && bun publish`, which honors `publishConfig.access: public` and runs `prepack`/`postpack`). `bun run release:dry` does the same with `--dry-run`.
 - `CHANGELOG.md` and `docs/logs/` stay at the repo root.
-- Publishing is a root command: **`bun run release`** = `build:lib` (build only `@ilamy/calendar`, bundling the internal packages) then `cd packages/calendar && bun publish` (honors `publishConfig.access` + runs prepack/postpack). `bun run release:dry` does the same with `--dry-run`.
 
 **Why the pauses matter.** Recent git history shows version churn (`1.7.0` → `1.6.1` → `1.6.0` → `1.6.1`) from premature version bumps. Every step that writes to the tree, commits, tags, or pushes should be explicitly approved. It's cheap to pause and expensive to revert a tag.
 
-## Phase 1 — Preflight
+## Step 1 — Preflight
 
 Do these in parallel and report anything wrong. Do not proceed if any check fails; tell the user and let them resolve it.
 
@@ -24,9 +27,9 @@ Do these in parallel and report anything wrong. Do not proceed if any check fail
 - `git describe --tags --abbrev=0` → capture the last release tag (e.g., `v1.6.1`). This is the baseline for the commit log and the changelog `compare` link.
 - Read **`packages/calendar/package.json`** `version` field (NOT the root — it's private and versionless). Sanity-check it matches the last tag minus the `v` prefix. If they diverge (as happened with the `1.7.0` → `1.6.1` revert), surface the mismatch and ask the user what the correct baseline is before continuing.
 
-Do **not** run `bun run ci` yet — save it for Phase 4 so we don't waste a clean build if the user doesn't like the version or the changelog.
+Do **not** run `bun run ci` yet — save it for Step 4 so we don't waste a clean build if the user doesn't like the version or the changelog.
 
-## Phase 2 — Suggest a version bump
+## Step 2 — Suggest a version bump
 
 Goal: propose `patch`, `minor`, or `major` with evidence, and wait for the user's call.
 
@@ -55,7 +58,7 @@ Goal: propose `patch`, `minor`, or `major` with evidence, and wait for the user'
 - A `feat:` that looks trivial or a `fix:` that looks like a breaking change: flag it; the user decides.
 - Zero commits since the last tag: stop, tell the user there's nothing to release.
 
-## Phase 3 — Draft the CHANGELOG entry
+## Step 3 — Draft the CHANGELOG entry
 
 Match the **existing format** in `CHANGELOG.md` exactly — the repo has a consistent style and downstream tooling/readers expect it.
 
@@ -108,16 +111,16 @@ Match the **existing format** in `CHANGELOG.md` exactly — the repo has a consi
 
 Insert the new entry at the **top** of `CHANGELOG.md` (after the `### Changelog` preamble, before the previous release). Show the user the full draft entry (not a diff — a diff of a prepend is noisy). Ask: *"Changelog looks right? Any wording changes?"*. Wait for approval. Iterate until they're happy.
 
-## Phase 4 — Run the CI gate
+## Step 4 — Run the CI gate
 
-Only now run `bun run ci` (lint + type-check + test + build). If it fails, stop and surface the failure — do not bump the version or commit anything. The user fixes the failure, then re-runs the skill (Phase 1 will re-check state).
+Only now run `bun run ci` (root). It runs, in order, `check` (Biome lint + format) → `build` → `type-check` → `test`. Monorepo wrinkle: root `bun run build` builds **every** workspace, including the `@ilamy/demo` and `@ilamy/website` apps, so this gate is slow and can fail on an app/website build issue that has nothing to do with the published package. If it fails, stop and surface the failure — do not bump the version or commit anything. The user fixes it (or, if it's an unrelated app-build failure, decides how to proceed — don't make that call yourself), then re-runs the skill (Step 1 will re-check state).
 
-## Phase 5 — Apply the bump
+## Step 5 — Apply the bump
 
 In this order:
 
 1. Edit **`packages/calendar/package.json`** to set `"version": "X.Y.Z"` (the published package — not the root). Don't use `npm version` — its default behavior creates its own commit and tag with a message you don't control, and the recent revert chaos suggests you want full control over the commit.
-2. Write the new changelog entry into `CHANGELOG.md` (already drafted in Phase 3).
+2. Write the new changelog entry into `CHANGELOG.md` (already drafted in Step 3).
 3. Update `docs/logs/YYYY-MM-DD.md` (today, per the project's mandatory dev-log rule) with a one-line summary: "**[release]**: Cut vX.Y.Z — <short summary of what's in it>".
 4. Stage **only** these three files explicitly by name — never `git add -A`:
    ```
@@ -128,7 +131,7 @@ In this order:
 
 Show the user `git log -1 --stat` and `git tag --points-at HEAD` and ask: *"Ready to push `main` and tag `vX.Y.Z` to `origin`?"*. Wait for approval.
 
-## Phase 6 — Push
+## Step 6 — Push
 
 On explicit approval:
 
@@ -139,7 +142,7 @@ git push origin vX.Y.Z
 
 Two separate pushes. If either fails (e.g., non-fast-forward on `main` because someone pushed while you were drafting), stop immediately — **do not** use `--force`. Tell the user and let them resolve.
 
-## Phase 7 — Create the GitHub release
+## Step 7 — Create the GitHub release
 
 Turn the pushed tag into a published release page on GitHub, marked as `latest`. This is public-facing, so follow the project's workflow rule: draft the body, get explicit approval, then post.
 
@@ -161,7 +164,7 @@ Turn the pushed tag into a published release page on GitHub, marked as `latest`.
    - No `--draft`. The user already approved the body in step 3; publishing a draft just means they have to click "Publish" again.
 5. **Report the release URL** from `gh`'s output so the user can open it.
 
-## Phase 8 — Hand off for publish
+## Step 8 — Hand off for publish
 
 Only one manual step is left before the issue follow-ups:
 
@@ -173,15 +176,39 @@ Released vX.Y.Z. Remaining (manual):
   (from the repo root — builds @ilamy/calendar then publishes it; needs an
   interactive npm login, which is why this skill stops here)
 
-Once published, say "published" (or similar) and I'll notify the issues
-this release closes.
+Once published, say "published" (or similar) and I'll update/deploy the
+docs site and notify the issues this release closes.
 ```
 
-`bun run release` builds only `@ilamy/calendar` (bundling the private internal packages) and runs `bun publish` from `packages/calendar` — it honors `publishConfig.access: public` and the prepack/postpack scripts (which inject `sideEffects: false` and strip devDependencies). Tip: suggest `bun run release:dry` first to preview the tarball without uploading.
+`bun run release` (= `build:lib` then `publish:lib`) builds only `@ilamy/calendar` (bundling the private internal packages) and runs `bun publish` from `packages/calendar` — it honors `publishConfig.access: public` and the prepack/postpack scripts (which inject `sideEffects: false` and strip devDependencies). Tip: suggest `bun run release:dry` first to preview the tarball without uploading.
 
-Do not offer to run `bun run release` yourself — it requires credentials you don't have. **Pause here.** Do not proceed to Phase 9 until the user confirms the publish landed; commenting "fixed in vX.Y.Z" on an issue before the package is on npm would be a lie to the reporter.
+Do not offer to run `bun run release` yourself — it requires credentials you don't have. **Pause here.** Do not comment "fixed in vX.Y.Z" on any issue (Step 10) until the user confirms the publish landed — saying so before the package is on npm would be a lie to the reporter. (The website deploy in Step 9 may run once the release is tagged, but is normally done right after the publish too.)
 
-## Phase 9 — Notify closed issues
+## Step 9 — Update and deploy the website
+
+The docs site and live demo (`apps/website`) live in this repo but ship **separately** from the npm package — a release isn't really done until the website reflects it. Most releases need only **docs** changes; some also touch the **demo / playground**.
+
+### Decide what the website needs
+
+Cross-reference the changelog you wrote in Step 3:
+
+- **`feat:` / public-API or prop changes** → update the matching page under `apps/website/src/content/docs/**` (a new prop → its row in `components/calendar.mdx`; a new plugin → a new `plugins/<name>.mdx` page **plus** a sidebar entry in `apps/website/astro.config.mjs`).
+- **A new or changed user-facing capability worth showing off** → update the demo (`apps/demo`) and/or the shared playground (`packages/playground`) so the live demo exercises it.
+- **`fix:`-only release with no public-surface change** → docs usually need no edits. Either skip the deploy, or redeploy anyway to pick up unrelated doc fixes already on `main`. Say which you're doing.
+
+Write any doc/demo changes the same way as the rest of the codebase: **verify every API claim against source** (don't trust memory — past doc passes shipped fabricated members), and validate with the website build (`bun run --filter '@ilamy/website' build`). These are ordinary repo changes — branch + PR per the workflow rule, or commit per the user's call. They are **not** part of the release commit/tag from Step 5.
+
+### Deploy (manual, like the npm publish)
+
+The site goes to Cloudflare Pages and is **not** auto-deployed on push. From the repo root:
+
+```
+bun run deploy:website
+```
+
+That's `build:lib` (so docs build against the just-released `@ilamy/calendar` dist) then the website's own `deploy` (`astro build && wrangler pages deploy dist --project-name=calendar-ilamy-dev --branch=main`). It needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the environment (Pages-scoped secrets; the repo is **public**, so never commit, echo, or paste them). If they aren't set in your environment, hand the `deploy` command to the user — same as the npm publish. Deploying is an outward-facing publish, so get explicit approval before running it (per `.agents/rules/workflow.md`) and confirm the live site afterward.
+
+## Step 10 — Notify closed issues
 
 Triggered when the user confirms the publish succeeded (phrases like "published", "it's on npm", "done", "pushed to npm"). Comment on every issue that this release closes and close any still open — in a single approval gate, not per-issue.
 
@@ -189,7 +216,7 @@ Triggered when the user confirms the publish succeeded (phrases like "published"
 
 Collect issue numbers from two sources and deduplicate:
 
-1. **The new CHANGELOG entry** — scan the block you wrote in Phase 3 for `Closes [`#N`](…/issues/N)` patterns. This is the canonical list.
+1. **The new CHANGELOG entry** — scan the block you wrote in Step 3 for `Closes [`#N`](…/issues/N)` patterns. This is the canonical list.
 2. **The commit range `<prev-tag>..<new-tag>`** — `git log <prev>..<new> --pretty=format:"%B"` then grep for `(Closes|Fixes|Resolves|closes|fixes|resolves) #\d+` in commit messages **and** in each referenced PR's body (`gh pr view <N> --json body`). Catches issues closed via a PR description that didn't make it verbatim into the changelog bullet.
 
 For each number, check state with `gh issue view <N> --json state,title,number`:
@@ -209,7 +236,7 @@ Fixed in vX.Y.Z — https://github.com/kcsujeet/ilamy-calendar/releases/tag/vX.Y
 Thanks for trying ilamy calendar! Feel free to open more issues any time.
 ```
 
-The release URL must match the one `gh release create` printed in Phase 7 — don't reconstruct it manually and risk a typo.
+The release URL must match the one `gh release create` printed in Step 7 — don't reconstruct it manually and risk a typo.
 
 ### Single approval gate
 

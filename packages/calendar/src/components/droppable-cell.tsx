@@ -58,6 +58,7 @@ export function DroppableCell({
 	const {
 		onCellClick,
 		isCellDisabled,
+		getCellClassName,
 		getResourceById,
 		disableDragAndDrop,
 		disableCellClick,
@@ -90,6 +91,7 @@ export function DroppableCell({
 
 	const showDropHighlight = isOver && !disableDragAndDrop && !cellDisabled
 	const disabledClass = classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME
+	const customClassName = getCellClassName?.(cellInfo)
 
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: The cell is interactive for event creation
@@ -98,6 +100,7 @@ export function DroppableCell({
 			className={cn(
 				'droppable-cell',
 				className,
+				customClassName,
 				showDropHighlight && 'bg-accent',
 				clickBlocked ? 'cursor-default' : 'cursor-pointer',
 				cellDisabled && disabledClass

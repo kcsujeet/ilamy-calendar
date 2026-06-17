@@ -160,3 +160,68 @@ describe('DroppableCell isCellDisabled (issue #79)', () => {
 		expect(received?.resource?.id).toBe('room-a')
 	})
 })
+
+describe('DroppableCell getCellClassName', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	const renderCell = (opts: {
+		getCellClassName?: (info: CellInfo) => string
+		onCellClick?: (info: CellInfo) => void
+	}) => {
+		return render(
+			<CalendarProvider
+				dayMaxEvents={3}
+				getCellClassName={opts.getCellClassName}
+				initialDate={initialDate}
+				initialView="month"
+				onCellClick={opts.onCellClick}
+			>
+				<DroppableCell
+					data-testid="cell"
+					date={initialDate}
+					id="test-cell"
+					type="day-cell"
+				/>
+			</CalendarProvider>
+		)
+	}
+
+	test('applies the class returned by getCellClassName', () => {
+		renderCell({
+			getCellClassName: () => 'bg-amber-100',
+		})
+
+		expect(screen.getByTestId('cell')).toHaveClass('bg-amber-100')
+	})
+
+	test('does not block onCellClick when only getCellClassName marks a cell', () => {
+		const onCellClick = mock()
+		renderCell({
+			getCellClassName: () => 'bg-amber-100',
+			onCellClick,
+		})
+
+		fireEvent.click(screen.getByTestId('cell'))
+
+		expect(onCellClick).toHaveBeenCalledTimes(1)
+		expect(screen.getByTestId('cell').getAttribute('data-disabled')).toBe(
+			'false'
+		)
+	})
+
+	test('passes the cell start/end range to getCellClassName', () => {
+		let received: CellInfo | undefined
+		renderCell({
+			getCellClassName: (info) => {
+				received = info
+				return ''
+			},
+		})
+
+		expect(received?.start.toISOString()).toBe('2025-01-01T00:00:00.000Z')
+		expect(received?.end.hour()).toBe(23)
+		expect(received?.end.minute()).toBe(59)
+	})
+})

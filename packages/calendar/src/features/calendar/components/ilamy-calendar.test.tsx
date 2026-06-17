@@ -862,6 +862,33 @@ describe('IlamyCalendar', () => {
 		})
 	})
 
+	describe('getCellClassName', () => {
+		it('styles unavailable cells without blocking clicks in month view', () => {
+			const onCellClick = mock()
+			render(
+				<IlamyCalendar
+					events={[]}
+					getCellClassName={(info) =>
+						info.start.date() === 20 ? 'bg-amber-100' : ''
+					}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialView="month"
+					onCellClick={onCellClick}
+				/>
+			)
+
+			const styledCell = screen.getByTestId('day-cell-2025-01-20')
+			const plainCell = screen.getByTestId('day-cell-2025-01-15')
+
+			expect(styledCell).toHaveClass('bg-amber-100')
+			expect(plainCell).not.toHaveClass('bg-amber-100')
+			expect(styledCell.getAttribute('data-disabled')).toBe('false')
+
+			fireEvent.click(styledCell)
+			expect(onCellClick).toHaveBeenCalledTimes(1)
+		})
+	})
+
 	describe('isCellDisabled (issue #79)', () => {
 		it('disables the matching cell and blocks its click in month view', () => {
 			const onCellClick = mock()

@@ -154,6 +154,12 @@ export interface IlamyCalendarProps {
 	 */
 	isCellDisabled?: (info: CellInfo) => boolean
 	/**
+	 * Returns extra CSS classes for a cell based on custom logic (unavailability
+	 * styling, on-call windows, etc.). Unlike `isCellDisabled`, this is purely
+	 * visual — cells remain clickable and accept drag-drops.
+	 */
+	getCellClassName?: (info: CellInfo) => string
+	/**
 	 * Callback when the calendar view changes (month, week, day, year).
 	 * Useful for syncing with external state or analytics.
 	 */

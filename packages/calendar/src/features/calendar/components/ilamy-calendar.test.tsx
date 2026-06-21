@@ -66,6 +66,39 @@ const CustomEventForm = (props: EventFormProps) => {
 }
 
 describe('IlamyCalendar', () => {
+	// The drag-to-create plugin clips its selection overlay to the element
+	// carrying `data-calendar-viewport`. It's an implicit cross-package contract,
+	// so removing the marker would silently break that plugin with no other test
+	// failing. This locks it in.
+	describe('plugin DOM contract', () => {
+		it('marks the calendar body with data-calendar-viewport', () => {
+			render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+				/>
+			)
+
+			const body = screen.getByTestId('calendar-body')
+			expect(body).toHaveAttribute('data-calendar-viewport', 'true')
+		})
+
+		it('renders grid cells carrying data-start/data-end so plugins can hit-test the DOM', () => {
+			// End-to-end: a view refactor that stopped rendering DroppableCell would
+			// break drag-to-create even though droppable-cell.test still passes.
+			const { container } = render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+				/>
+			)
+
+			const cell = container.querySelector('[data-start]')
+			expect(cell).not.toBeNull()
+			expect(cell).toHaveAttribute('data-end')
+		})
+	})
+
 	describe('renderEventForm', () => {
 		const createEvent = (
 			overrides: Partial<CalendarEvent> = {}

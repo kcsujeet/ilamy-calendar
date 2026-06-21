@@ -102,7 +102,11 @@ export function DroppableCell({
 				clickBlocked ? 'cursor-default' : 'cursor-pointer',
 				cellDisabled && disabledClass
 			)}
+			data-all-day={allDay ? 'true' : undefined}
 			data-disabled={cellDisabled.toString()}
+			data-end={end.toISOString()}
+			data-resource-id={resourceId}
+			data-start={start.toISOString()}
 			data-testid={dataTestId}
 			data-view={view}
 			onClick={handleCellClick}

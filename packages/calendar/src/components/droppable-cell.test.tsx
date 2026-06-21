@@ -160,3 +160,100 @@ describe('DroppableCell isCellDisabled (issue #79)', () => {
 		expect(received?.resource?.id).toBe('room-a')
 	})
 })
+
+describe('DroppableCell self-describing attributes (drag-create)', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	const renderCell = (
+		props: {
+			hour?: number
+			minute?: number
+			resourceId?: string | number
+			allDay?: boolean
+		} = {}
+	) =>
+		render(
+			<CalendarProvider
+				dayMaxEvents={3}
+				initialDate={initialDate}
+				initialView="week"
+			>
+				<DroppableCell
+					allDay={props.allDay}
+					data-testid="cell"
+					date={initialDate}
+					hour={props.hour}
+					id="test-cell"
+					minute={props.minute}
+					resourceId={props.resourceId}
+					type="day-cell"
+				/>
+			</CalendarProvider>
+		)
+
+	test('exposes a full-day range on a day cell (no hour)', () => {
+		renderCell()
+
+		const cell = screen.getByTestId('cell')
+		expect(cell.getAttribute('data-start')).toBe(
+			initialDate.hour(0).minute(0).toISOString()
+		)
+		expect(cell.getAttribute('data-end')).toBe(
+			initialDate.hour(23).minute(59).toISOString()
+		)
+	})
+
+	test('exposes a one-hour range on an hour cell', () => {
+		renderCell({ hour: 9 })
+
+		const cell = screen.getByTestId('cell')
+		expect(cell.getAttribute('data-start')).toBe(
+			initialDate.hour(9).minute(0).toISOString()
+		)
+		expect(cell.getAttribute('data-end')).toBe(
+			initialDate.hour(10).minute(0).toISOString()
+		)
+	})
+
+	test('exposes a 15-minute range on a minute cell', () => {
+		renderCell({ hour: 9, minute: 15 })
+
+		const cell = screen.getByTestId('cell')
+		expect(cell.getAttribute('data-start')).toBe(
+			initialDate.hour(9).minute(15).toISOString()
+		)
+		expect(cell.getAttribute('data-end')).toBe(
+			initialDate.hour(9).minute(30).toISOString()
+		)
+	})
+
+	test('exposes data-resource-id when the cell has a resourceId', () => {
+		renderCell({ resourceId: 'room-a' })
+
+		expect(screen.getByTestId('cell').getAttribute('data-resource-id')).toBe(
+			'room-a'
+		)
+	})
+
+	test('omits data-resource-id when the cell has no resource', () => {
+		renderCell()
+
+		expect(screen.getByTestId('cell').hasAttribute('data-resource-id')).toBe(
+			false
+		)
+	})
+
+	test('exposes data-all-day="true" only on an all-day cell', () => {
+		renderCell({ allDay: true })
+
+		expect(screen.getByTestId('cell').getAttribute('data-all-day')).toBe('true')
+	})
+
+	test('omits data-all-day on a timed cell', () => {
+		renderCell({ hour: 9 })
+
+		expect(screen.getByTestId('cell').hasAttribute('data-all-day')).toBe(false)
+	})
+})

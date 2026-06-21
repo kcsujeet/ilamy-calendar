@@ -12,6 +12,7 @@ const renderVerticalGridCol = (props = {}) => {
 		id: 'test-col',
 		day: initialDate,
 		days: mockDays,
+		gridType: 'hour' as const,
 	}
 	// Use CalendarProvider to ensure getEventsForResource is available
 	return render(
@@ -120,6 +121,22 @@ describe('VerticalGridCol', () => {
 			expect(cell.className).toMatch(/\bflex-1\b/)
 			expect(cell.className).not.toMatch(/\bh-\[15px\]\b/)
 		}
+	})
+
+	test('daily cells (gridType="day") describe a full-day range, not a 1-hour slot', () => {
+		// A daily-granularity vertical cell (resource month, week-daily) must span
+		// the whole day like the horizontal grid does, so drag-to-create's
+		// full-day-span region rule lets a selection cross days. Passing the hour
+		// through made it a 00:00-01:00 slot and broke multi-day selection.
+		const dateStr = initialDate.format('YYYY-MM-DD')
+		renderVerticalGridCol({ gridType: 'day', days: [initialDate] })
+
+		const cell = screen.getByTestId(`vertical-cell-${dateStr}-00-00`)
+		const startISO = cell.getAttribute('data-start')
+		const endISO = cell.getAttribute('data-end')
+		expect(startISO).not.toBeNull()
+		expect(endISO).not.toBeNull()
+		expect(dayjs(endISO).diff(dayjs(startISO), 'hour')).toBe(23)
 	})
 
 	test('renders events layer by default', () => {

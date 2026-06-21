@@ -2,15 +2,13 @@ import type { CellInfo, Resource } from '@ilamy/calendar'
 import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { DragToCreateContext, DragToCreateOptions } from '../types'
+import type { DragToCreateOptions } from '../types'
 import { type RawCell, readCell } from '../utils/read-cell'
+import { intersectRect, type Rect, unionRect } from '../utils/rect'
 import {
 	computeRange,
 	exceedsThreshold,
-	intersectRect,
 	isSameRegion,
-	type Rect,
-	unionRect,
 } from '../utils/selection'
 
 interface Gesture {
@@ -107,14 +105,12 @@ export function DragToCreateProvider({
 				allDay: range.allDay,
 			}
 			window.addEventListener('click', suppressClickOnce, { capture: true })
-			const ctx: DragToCreateContext = {
-				openEventForm: latest.current.openEventForm,
-			}
+			const openEventForm = latest.current.openEventForm
 			try {
 				if (latest.current.onSelect) {
-					latest.current.onSelect(selection, ctx)
+					latest.current.onSelect(selection, openEventForm)
 				} else {
-					ctx.openEventForm({
+					openEventForm({
 						start: range.start,
 						end: range.end,
 						allDay: range.allDay,

@@ -37,6 +37,23 @@ const computeMirror = (gesture: Gesture): Rect | null => {
 	return intersectRect(union, body.getBoundingClientRect())
 }
 
+/** The selection highlight, portaled to the body and positioned from `rect`. */
+function SelectionMirror({ rect }: { rect: Rect }): ReactNode {
+	return createPortal(
+		<div
+			aria-hidden="true"
+			className="pointer-events-none fixed z-50 rounded-sm border border-primary bg-primary/20"
+			style={{
+				top: rect.top,
+				left: rect.left,
+				width: rect.width,
+				height: rect.height,
+			}}
+		/>,
+		document.body
+	)
+}
+
 /**
  * Owns the entire drag-to-select gesture: pointer tracking, the click-vs-drag
  * threshold, the single-region clamp, the mirror overlay, and the commit. Reads
@@ -201,26 +218,10 @@ export function DragToCreateProvider({
 		}
 	}, [])
 
-	const mirrorNode = mirror
-		? createPortal(
-				<div
-					aria-hidden="true"
-					className="pointer-events-none fixed z-50 rounded-sm border border-primary bg-primary/20"
-					style={{
-						top: mirror.top,
-						left: mirror.left,
-						width: mirror.width,
-						height: mirror.height,
-					}}
-				/>,
-				document.body
-			)
-		: null
-
 	return (
 		<>
 			{children}
-			{mirrorNode}
+			{mirror && <SelectionMirror rect={mirror} />}
 		</>
 	)
 }

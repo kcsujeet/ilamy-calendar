@@ -23,6 +23,27 @@ const myTranslations: Translations = {
 />
 ```
 
+### Why `translations` requires every key (not `Partial`)
+
+`translations` is the full `Translations` type on purpose, it is **not** `Partial`.
+For a localization this is the safer contract: the type forces you to translate
+every key, so a missing one is a compile error rather than a label that silently
+renders in English. As a consequence, **adding a translation key to the library
+is an intentional (minor) breaking change**, localizers must add the new key.
+That is by design; do not relax this to `Partial<Translations>`.
+
+If you only want to override a few labels (not fully localize), spread the
+exported defaults so you still satisfy the full type:
+
+```tsx
+import { IlamyCalendar, defaultTranslations } from '@ilamy/calendar'
+
+<IlamyCalendar
+  events={events}
+  translations={{ ...defaultTranslations, create: 'Add', today: 'Now' }}
+/>
+```
+
 ## Approach 2: Translator Function
 
 Provide a function that handles translation logic:

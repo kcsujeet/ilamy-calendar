@@ -266,10 +266,10 @@ mechanism.
 - Implemented. Month/day-grid and resource calendars (both orientations) fall out
   of the same single-region rule with no geometry-specific code, because the rule
   reads cell attributes (`data-start`/`data-end`/`data-resource-id`/`data-all-day`),
-  not screen position. A cell that spans a whole day (month day-cell or all-day
-  row, detected by its range duration) may be selected across days; sub-day timed
-  slots clamp to the start day. The resource-id clamp keeps a drag within one
-  resource whether resources are columns (vertical) or rows (horizontal). The mirror
+  not screen position. Selections span days in every grid (month/all-day, and
+  timed → a multi-day timed event). The only region clamps are: never mix all-day
+  and timed cells, and never cross resources. The resource-id clamp keeps a drag
+  within one resource whether resources are columns (vertical) or rows (horizontal). The mirror
   is a bounding box over the start/end cells (crude across a month grid; refine
   later).
 
@@ -299,9 +299,12 @@ cell whose region differs, keeping the last valid same-region cell.
 - **Month / day-grid cells (full-day):** a cell whose range covers a whole day
   (month day-cell, all-day row) may span across days → a multi-day selection. This
   also covers the resource-month grid (full-day cells within one resource).
-- **Timed cell → another day (regular/resource timed week):** clamps to the start
-  day (single-day timed range, the common case in #209). Cross-day *timed* ranges
-  stay deferred (FullCalendar permits them; full-day cross-day already works).
+- **Timed cell → another day (regular/resource timed week):** spans days → a
+  multi-day timed event (`start` = first cell's start, `end` = last cell's end).
+  The core time grid already renders such events as per-day clamped segments
+  (`vertical.ts` `getEventPosition`). The mirror is still the single bounding box,
+  so the drag *preview* is approximate across days (a precise per-column staircase
+  is deferred); the committed event and its rendering are correct.
 
 ## 7. Other edge cases to nail (test matrix)
 
@@ -353,8 +356,9 @@ cell whose region differs, keeping the last valid same-region cell.
   `onCellClick`. The mirror is `aria-hidden`.
 
 ## 8. Out of scope (for now)
-- Multi-day *timed* ranges (cross-day in the timed grid); timed selections clamp to
-  one day. (Full-day month/all-day selections DO span days.)
+- A precise per-column staircase mirror for cross-day *timed* selections. The
+  selection and the committed multi-day timed event work; only the drag preview is
+  an approximate bounding box across days.
 - Auto-scroll at the grid edges + the in-grid mirror slot (MVP uses a body-portal
   mirror recomputed on pointermove; it won't reposition on scroll-without-move).
 - A precise per-cell month mirror (MVP draws a bounding box over start/end cells).

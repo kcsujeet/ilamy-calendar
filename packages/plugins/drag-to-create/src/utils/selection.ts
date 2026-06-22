@@ -12,33 +12,16 @@ export const exceedsThreshold = (
 ): boolean => Math.hypot(dx, dy) >= min
 
 /**
- * A cell that covers a whole day: a month / day-grid cell or an all-day-row cell.
- * Such cells may be selected across days (multi-day); sub-day timed slots clamp to
- * the start day. Derived from the cell's own range, so it holds in every view and
- * resource orientation without geometry-specific code.
- */
-const FULL_DAY_HOURS = 23
-const isFullDaySpan = (cell: RawCell): boolean =>
-	cell.end.diff(cell.start, 'hour') >= FULL_DAY_HOURS
-
-/**
  * The single-region invariant: a selection never mixes all-day and timed cells,
- * never spans resources (the resource clamp holds in both orientations), and a
- * timed (sub-day) selection stays within the start day. Full-day cells — the
- * month grid and the all-day row — may span days (multi-day). A candidate cell in
- * a different region is ignored, so the drag clamps to where it started.
+ * and never spans resources (the resource clamp holds in both orientations). Both
+ * timed and full-day selections may span days (a cross-day timed range becomes a
+ * multi-day timed event; month / all-day selections span days too). A candidate
+ * cell in a different region is ignored, so the drag clamps to where it started.
  */
 export const isSameRegion = (start: RawCell, candidate: RawCell): boolean => {
-	if (start.allDay !== candidate.allDay) {
-		return false
-	}
-	if (start.resourceId !== candidate.resourceId) {
-		return false
-	}
-	if (!isFullDaySpan(start) && !start.start.isSame(candidate.start, 'day')) {
-		return false
-	}
-	return true
+	const sameAllDay = start.allDay === candidate.allDay
+	const sameResource = start.resourceId === candidate.resourceId
+	return sameAllDay && sameResource
 }
 
 export interface DragSelection {

@@ -56,9 +56,9 @@ describe('isSameRegion', () => {
 		expect(isSameRegion(a, b)).toBe(false)
 	})
 
-	it('rejects a timed cell on a different day (MVP single-day clamp)', () => {
+	it('allows a timed cell on a different day (cross-day timed range)', () => {
 		const nextDay = cell('2025-01-02T09:00:00.000Z', '2025-01-02T10:00:00.000Z')
-		expect(isSameRegion(timed, nextDay)).toBe(false)
+		expect(isSameRegion(timed, nextDay)).toBe(true)
 	})
 
 	it('allows an all-day cell on a different day (multi-day all-day)', () => {
@@ -108,6 +108,16 @@ describe('computeRange', () => {
 
 		expect(range.start.toISOString()).toBe('2025-01-01T09:00:00.000Z')
 		expect(range.end.toISOString()).toBe('2025-01-01T12:00:00.000Z')
+	})
+
+	it('spans across days for a cross-day timed drag', () => {
+		const a = cell('2025-01-01T12:00:00.000Z', '2025-01-01T13:00:00.000Z')
+		const b = cell('2025-01-02T14:00:00.000Z', '2025-01-02T15:00:00.000Z')
+
+		const range = computeRange(a, b)
+
+		expect(range.start.toISOString()).toBe('2025-01-01T12:00:00.000Z')
+		expect(range.end.toISOString()).toBe('2025-01-02T15:00:00.000Z')
 	})
 
 	it('normalizes a reverse drag', () => {

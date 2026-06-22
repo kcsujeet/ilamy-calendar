@@ -92,6 +92,7 @@ export const defaultTranslations = {
 	// Resource calendar
 	resources: 'Resources',
 	resource: 'Resource',
+	selectResource: 'Select a resource',
 	time: 'Time',
 	date: 'Date',
 	noResourcesVisible: 'No resources visible',

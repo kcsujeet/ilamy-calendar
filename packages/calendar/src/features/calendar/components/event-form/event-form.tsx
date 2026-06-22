@@ -5,6 +5,13 @@ import { DialogFooter } from '@ilamy/ui/components/dialog'
 import { Input } from '@ilamy/ui/components/input'
 import { Label } from '@ilamy/ui/components/label'
 import { ScrollArea } from '@ilamy/ui/components/scroll-area'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ilamy/ui/components/select'
 import { cn } from '@ilamy/ui/lib/utils'
 import dayjs from '@ilamy/utils/dayjs'
 import type React from 'react'
@@ -106,17 +113,19 @@ export const EventForm: React.FC<EventFormProps> = ({
 		handleConfirm,
 	} = useScopedEventMutation(onClose)
 
-	const { t, timeFormat, getEventManager } = useSmartCalendarContext(
+	const { t, timeFormat, getEventManager, resources } = useSmartCalendarContext(
 		(context) => ({
 			t: context.t,
 			timeFormat: context.timeFormat,
 			getEventManager: context.getEventManager,
+			resources: context.resources ?? [],
 		})
 	)
 	// The selected event's fields, or the new-event defaults.
 	const {
 		id: selectedEventId,
 		resourceId,
+		resourceIds,
 		start = dayjs(),
 		end = dayjs().add(1, 'hour'),
 		allDay: initialAllDay = false,
@@ -126,7 +135,18 @@ export const EventForm: React.FC<EventFormProps> = ({
 		location: initialLocation = '',
 	} = selectedEvent ?? {}
 
-	const effectiveBusinessHours = useEffectiveBusinessHours(resourceId)
+	const hasResources = resources.length > 0
+	const initialSelectedResourceId = resourceId ?? resourceIds?.at(0)
+	const showResourceSelector =
+		hasResources && initialSelectedResourceId === undefined
+
+	const [selectedResourceId, setSelectedResourceId] = useState<
+		string | number | undefined
+	>(initialSelectedResourceId)
+
+	const effectiveResourceId = hasResources ? selectedResourceId : resourceId
+
+	const effectiveBusinessHours = useEffectiveBusinessHours(effectiveResourceId)
 
 	// Whether a plugin owns this event (gates the scoped edit/delete flow)
 	const eventIsOwned = Boolean(selectedEvent && getEventManager(selectedEvent))
@@ -207,8 +227,20 @@ export const EventForm: React.FC<EventFormProps> = ({
 		}
 	}, [isAllDay])
 
+	const resolveResourceId = (value: string): string | number => {
+		const resource = resources.find((item) => String(item.id) === value)
+		return resource?.id ?? value
+	}
+
+	const isResourceMissing =
+		showResourceSelector && selectedResourceId === undefined
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
+
+		if (isResourceMissing) {
+			return
+		}
 
 		const startDateTime = buildDateTime(startDate, startTime, isAllDay)
 		const endDateTime = buildEndDateTime(endDate, endTime, isAllDay)
@@ -218,7 +250,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 			title: formValues.title,
 			start: startDateTime,
 			end: endDateTime,
-			resourceId,
+			resourceId: effectiveResourceId,
 			description: formValues.description,
 			location: formValues.location,
 			allDay: isAllDay,
@@ -231,6 +263,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 				title: formValues.title,
 				start: startDateTime,
 				end: endDateTime,
+				resourceId: effectiveResourceId,
 				description: formValues.description,
 				location: formValues.location,
 				allDay: isAllDay,
@@ -287,6 +320,8 @@ export const EventForm: React.FC<EventFormProps> = ({
 		['endTime', 'end-time', endTime, handleEndTimeChange, endConstraints],
 	] as const
 
+	const resourceSelectValue = selectedResourceId?.toString()
+
 	return (
 		<>
 			<form className="flex flex-col flex-1 min-h-0" onSubmit={handleSubmit}>
@@ -307,6 +342,38 @@ export const EventForm: React.FC<EventFormProps> = ({
 							placeholder={t('eventDescriptionPlaceholder')}
 							value={formValues.description}
 						/>
+
+						{showResourceSelector && (
+							<div className="grid gap-1 sm:gap-2">
+								<Label className="text-xs sm:text-sm" htmlFor="resource">
+									{t('resource')}
+								</Label>
+								<Select
+									onValueChange={(value) =>
+										setSelectedResourceId(resolveResourceId(value))
+									}
+									value={resourceSelectValue}
+								>
+									<SelectTrigger
+										className="h-8 text-sm sm:h-9"
+										data-testid="resource-select"
+										id="resource"
+									>
+										<SelectValue placeholder={t('selectResource')} />
+									</SelectTrigger>
+									<SelectContent>
+										{resources.map((resource) => (
+											<SelectItem
+												key={String(resource.id)}
+												value={String(resource.id)}
+											>
+												{resource.title}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						)}
 
 						<div className="flex items-center space-x-2">
 							<Checkbox
@@ -409,7 +476,12 @@ export const EventForm: React.FC<EventFormProps> = ({
 						>
 							{t('cancel')}
 						</Button>
-						<Button className="flex-1 sm:flex-none" size="sm" type="submit">
+						<Button
+							className="flex-1 sm:flex-none"
+							disabled={isResourceMissing}
+							size="sm"
+							type="submit"
+						>
 							{selectedEventId ? t('update') : t('create')}
 						</Button>
 					</div>

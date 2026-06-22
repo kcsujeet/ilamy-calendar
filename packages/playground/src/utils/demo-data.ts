@@ -12,7 +12,7 @@ import { dummyEvents } from '../lib/seed'
 // Recurrence, agenda, and drag-to-create are opt-in plugins. The seed data has
 // recurring events, so recurrence expands them; agenda adds the upcoming-events
 // list view scoped to `agendaWindow`; drag-to-create lets you drag across empty
-// week/day cells to open the event form preselected with that range. Built
+// cells (any view) to open the event form preselected with that range. Built
 // per-window so the demo can change the window live; memoize the result in the
 // caller to keep the array reference stable.
 export const createDemoPlugins = (

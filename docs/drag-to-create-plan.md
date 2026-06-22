@@ -1,16 +1,22 @@
 # Drag-to-create (time-range selection) plan
 
-**Issue:** [#209](https://github.com/kcsujeet/ilamy-calendar/issues/209) — on week/day
-views, press on an empty cell, drag across cells, release to open the event
-editor preselected with the dragged time range.
+**Issue:** [#209](https://github.com/kcsujeet/ilamy-calendar/issues/209) — press on
+an empty cell, drag across cells, release to open the event editor preselected
+with the dragged range. (The issue framed it as week/day; it shipped working in
+every view, see Status.)
 
 **Owner note (issue thread):** "plugin is the way to go" + keep core minimal.
 This plan does exactly that: the only core change is two-to-four data attributes
 on the shared cell; all selection / mirror / create logic lives in the plugin
 (see section 4).
 
-**Status:** Proposal. Master plan; each phase should spawn a bite-sized TDD plan
-when picked up.
+**Status:** Shipped (PR #214). Works in month, week, and day views, regular and
+resource calendars, both orientations. Desktop drags from a 2px threshold; touch
+uses a press-and-hold then drag (a swipe still scrolls). The gesture mechanics
+live in a reusable `useDragGesture` hook; the only core change is the
+self-describing cell data attributes plus a `data-calendar-viewport` clip marker.
+Touch is verified on real devices, Chrome's responsive-mode emulation is an
+unreliable repro for it.
 
 ---
 

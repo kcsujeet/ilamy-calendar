@@ -1,36 +1,24 @@
 import type { CellInfo, Resource } from '@ilamy/calendar'
 import { useIlamyCalendarContext } from '@ilamy/calendar'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useDragGesture } from '../hooks/use-drag-gesture'
 import type { DragToCreateOptions } from '../types'
 import { type RawCell, readCell } from '../utils/read-cell'
 import { intersectRect, type Rect, unionRect } from '../utils/rect'
-import {
-	computeRange,
-	exceedsThreshold,
-	isSameRegion,
-} from '../utils/selection'
-
-interface Gesture {
-	pointerId: number
-	originX: number
-	originY: number
-	startCell: RawCell
-	lastCell: RawCell
-	active: boolean
-}
+import { computeRange, isSameRegion } from '../utils/selection'
 
 /**
- * The mirror rect for the current gesture, clipped to the calendar body so the
- * overlay never paints outside the (possibly scrolled / short) calendar. Returns
- * null when the selection is scrolled entirely out of the body's view.
+ * The mirror rect spanning the start..last cell, clipped to the calendar body so
+ * the overlay never paints outside the (possibly scrolled / short) calendar.
+ * Returns null when the selection is scrolled entirely out of the body's view.
  */
-const computeMirror = (gesture: Gesture): Rect | null => {
+const computeMirror = (startCell: RawCell, lastCell: RawCell): Rect | null => {
 	const union = unionRect(
-		gesture.startCell.element.getBoundingClientRect(),
-		gesture.lastCell.element.getBoundingClientRect()
+		startCell.element.getBoundingClientRect(),
+		lastCell.element.getBoundingClientRect()
 	)
-	const body = gesture.startCell.element.closest('[data-calendar-viewport]')
+	const body = startCell.element.closest('[data-calendar-viewport]')
 	if (!body) {
 		return union
 	}
@@ -55,9 +43,11 @@ function SelectionMirror({ rect }: { rect: Rect }): ReactNode {
 }
 
 /**
- * Owns the entire drag-to-select gesture: pointer tracking, the click-vs-drag
- * threshold, the single-region clamp, the mirror overlay, and the commit. Reads
- * only the public calendar API + the DOM (the self-describing cell attributes).
+ * Wires the calendar's selection logic into the generic `useDragGesture`
+ * recognizer: a press resolves to a grid cell, dragging extends the selection to
+ * the cell under the pointer (clamped to the same region), and releasing opens
+ * the event form with the range. The gesture mechanics (mouse threshold vs touch
+ * long-press, scroll/text-selection suppression, cleanup) live in the hook.
  */
 export function DragToCreateProvider({
 	children,
@@ -68,155 +58,60 @@ export function DragToCreateProvider({
 }): ReactNode {
 	const { openEventForm, resources, timezone } = useIlamyCalendarContext()
 	const [mirror, setMirror] = useState<Rect | null>(null)
-	const gestureRef = useRef<Gesture | null>(null)
+	const lastCellRef = useRef<RawCell | null>(null)
 
-	// Latest values, so the listeners (attached once) never go stale.
-	const latest = useRef({
-		openEventForm,
-		resources,
-		timezone,
-		onSelect: options.onSelect,
-	})
-	latest.current = {
-		openEventForm,
-		resources,
-		timezone,
-		onSelect: options.onSelect,
+	const clearSelection = () => {
+		lastCellRef.current = null
+		setMirror(null)
 	}
 
-	useEffect(() => {
-		// Block native text selection during a drag so the gesture doesn't
-		// highlight event titles and day numbers across the cells it passes over.
-		const lockTextSelection = () => {
-			document.body.style.setProperty('user-select', 'none')
-			document.body.style.setProperty('-webkit-user-select', 'none')
+	const commit = (startCell: RawCell, lastCell: RawCell) => {
+		const range = computeRange(startCell, lastCell)
+		const resource = resources.find(
+			(item: Resource) => String(item.id) === range.resourceId
+		)
+		const selection: CellInfo = {
+			start: range.start,
+			end: range.end,
+			resource,
+			allDay: range.allDay,
 		}
-		const unlockTextSelection = () => {
-			document.body.style.removeProperty('user-select')
-			document.body.style.removeProperty('-webkit-user-select')
-		}
-
-		const reset = () => {
-			gestureRef.current = null
-			setMirror(null)
-			unlockTextSelection()
-		}
-
-		// Swallow the synthesized click that follows a drag, so the cell's own
-		// onCellClick does not also fire after a selection.
-		const suppressClickOnce = (event: MouseEvent) => {
-			event.stopImmediatePropagation()
-			event.preventDefault()
-			window.removeEventListener('click', suppressClickOnce, { capture: true })
-		}
-
-		const commit = (gesture: Gesture) => {
-			const range = computeRange(gesture.startCell, gesture.lastCell)
-			const resource = latest.current.resources.find(
-				(item: Resource) => String(item.id) === range.resourceId
-			)
-			const selection: CellInfo = {
+		if (options.onSelect) {
+			options.onSelect(selection, openEventForm)
+		} else {
+			openEventForm({
 				start: range.start,
 				end: range.end,
-				resource,
 				allDay: range.allDay,
-			}
-			window.addEventListener('click', suppressClickOnce, { capture: true })
-			const openEventForm = latest.current.openEventForm
-			try {
-				if (latest.current.onSelect) {
-					latest.current.onSelect(selection, openEventForm)
-				} else {
-					openEventForm({
-						start: range.start,
-						end: range.end,
-						allDay: range.allDay,
-						resourceId: range.resourceId,
-					})
-				}
-			} finally {
-				reset()
-			}
+				resourceId: range.resourceId,
+			})
 		}
+	}
 
-		const onPointerDown = (event: PointerEvent) => {
-			if (event.button !== 0 || !event.isPrimary) {
-				return
-			}
-			const cell = readCell(event.target as Element, latest.current.timezone)
-			if (!cell) {
-				return
-			}
-			gestureRef.current = {
-				pointerId: event.pointerId,
-				originX: event.clientX,
-				originY: event.clientY,
-				startCell: cell,
-				lastCell: cell,
-				active: false,
-			}
-		}
-
-		const onPointerMove = (event: PointerEvent) => {
-			const gesture = gestureRef.current
-			if (!gesture || event.pointerId !== gesture.pointerId) {
-				return
-			}
-			if (!gesture.active) {
-				const dx = event.clientX - gesture.originX
-				const dy = event.clientY - gesture.originY
-				if (!exceedsThreshold(dx, dy)) {
-					return
-				}
-				gesture.active = true
-				lockTextSelection()
-				// Clear any selection the pre-threshold movement may have started.
-				window.getSelection()?.removeAllRanges()
-			}
+	useDragGesture<RawCell>({
+		resolvePress: (event) => readCell(event.target as Element, timezone),
+		onStart: (startCell) => {
+			lastCellRef.current = startCell
+			setMirror(computeMirror(startCell, startCell))
+		},
+		onMove: ({ clientX, clientY }, startCell) => {
 			const candidate = readCell(
-				document.elementFromPoint(event.clientX, event.clientY),
-				latest.current.timezone
+				document.elementFromPoint(clientX, clientY),
+				timezone
 			)
-			if (candidate && isSameRegion(gesture.startCell, candidate)) {
-				gesture.lastCell = candidate
+			if (candidate && isSameRegion(startCell, candidate)) {
+				lastCellRef.current = candidate
 			}
-			setMirror(computeMirror(gesture))
-		}
-
-		const onPointerUp = (event: PointerEvent) => {
-			const gesture = gestureRef.current
-			if (!gesture || event.pointerId !== gesture.pointerId) {
-				return
-			}
-			if (gesture.active) {
-				commit(gesture)
-			} else {
-				reset()
-			}
-		}
-
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') {
-				reset()
-			}
-		}
-
-		document.addEventListener('pointerdown', onPointerDown)
-		window.addEventListener('pointermove', onPointerMove)
-		window.addEventListener('pointerup', onPointerUp)
-		window.addEventListener('pointercancel', reset)
-		window.addEventListener('blur', reset)
-		window.addEventListener('keydown', onKeyDown)
-		return () => {
-			document.removeEventListener('pointerdown', onPointerDown)
-			window.removeEventListener('pointermove', onPointerMove)
-			window.removeEventListener('pointerup', onPointerUp)
-			window.removeEventListener('pointercancel', reset)
-			window.removeEventListener('blur', reset)
-			window.removeEventListener('keydown', onKeyDown)
-			window.removeEventListener('click', suppressClickOnce, { capture: true })
-		}
-	}, [])
+			const lastCell = lastCellRef.current ?? startCell
+			setMirror(computeMirror(startCell, lastCell))
+		},
+		onEnd: (startCell) => {
+			const lastCell = lastCellRef.current ?? startCell
+			commit(startCell, lastCell)
+			clearSelection()
+		},
+		onCancel: clearSelection,
+	})
 
 	return (
 		<>

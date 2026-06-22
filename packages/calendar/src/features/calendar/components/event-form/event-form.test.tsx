@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
-import type { CalendarEvent } from '@ilamy/types'
+import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
@@ -431,6 +431,132 @@ describe('EventForm', () => {
 			titleInput.focus()
 
 			expect(document.activeElement).toBe(titleInput)
+		})
+	})
+
+	describe('Resource selector', () => {
+		const mockResources: Resource[] = [
+			{ id: 'room-a', title: 'Room A' },
+			{ id: 'room-b', title: 'Room B' },
+		]
+
+		const selectResource = (title: string) => {
+			fireEvent.click(screen.getByRole('combobox', { name: /resource/i }))
+			fireEvent.click(screen.getByRole('option', { name: title }))
+		}
+
+		it('does not render a resource selector without resources', () => {
+			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
+
+			expect(
+				screen.queryByRole('combobox', { name: /resource/i })
+			).not.toBeInTheDocument()
+		})
+
+		it('renders a resource selector when resources are configured and no resource is known', () => {
+			renderEventForm(
+				{ ...defaultProps, selectedEvent: testNewEvent },
+				{ resources: mockResources }
+			)
+
+			expect(
+				screen.getByRole('combobox', { name: /resource/i })
+			).toBeInTheDocument()
+		})
+
+		it('hides the resource selector when resourceId is already known', () => {
+			renderEventForm(
+				{
+					...defaultProps,
+					selectedEvent: { ...testNewEvent, resourceId: 'room-b' },
+				},
+				{ resources: mockResources }
+			)
+
+			expect(
+				screen.queryByRole('combobox', { name: /resource/i })
+			).not.toBeInTheDocument()
+		})
+
+		it('keeps a known resourceId when creating from a resource grid cell', async () => {
+			renderEventForm(
+				{
+					...defaultProps,
+					selectedEvent: { ...testNewEvent, resourceId: 'room-b' },
+				},
+				{ resources: mockResources }
+			)
+
+			fireEvent.change(screen.getByPlaceholderText('Event title'), {
+				target: { value: 'Grid Event' },
+			})
+			fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+
+			await waitFor(() => {
+				expect(mockOnAdd).toHaveBeenCalledWith(
+					expect.objectContaining({
+						title: 'Grid Event',
+						resourceId: 'room-b',
+					})
+				)
+			})
+		})
+
+		it('disables create until a resource is selected', () => {
+			renderEventForm(
+				{ ...defaultProps, selectedEvent: testNewEvent },
+				{ resources: mockResources }
+			)
+
+			expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled()
+		})
+
+		it('includes selected resourceId when creating a new event', async () => {
+			renderEventForm(
+				{ ...defaultProps, selectedEvent: testNewEvent },
+				{ resources: mockResources }
+			)
+
+			fireEvent.change(screen.getByPlaceholderText('Event title'), {
+				target: { value: 'Resource Event' },
+			})
+			selectResource('Room A')
+
+			fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+
+			await waitFor(() => {
+				expect(mockOnAdd).toHaveBeenCalledWith(
+					expect.objectContaining({
+						title: 'Resource Event',
+						resourceId: 'room-a',
+					})
+				)
+			})
+		})
+
+		it('preserves resourceId when editing an event with a known resource', async () => {
+			renderEventForm(
+				{
+					...defaultProps,
+					selectedEvent: { ...testEvent, resourceId: 'room-a' },
+				},
+				{ resources: mockResources }
+			)
+
+			expect(
+				screen.queryByRole('combobox', { name: /resource/i })
+			).not.toBeInTheDocument()
+
+			fireEvent.click(screen.getByRole('button', { name: 'Update' }))
+
+			await waitFor(() => {
+				expect(mockOnUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						id: 'test-event-1',
+						resourceId: 'room-a',
+					})
+				)
+			})
 		})
 	})
 

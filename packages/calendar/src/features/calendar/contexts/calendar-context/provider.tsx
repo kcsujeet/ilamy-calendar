@@ -33,6 +33,7 @@ export interface CalendarProviderProps {
 	onEventClick?: (event: CalendarEvent) => void
 	onCellClick?: (info: CellInfo) => void
 	isCellDisabled?: (info: CellInfo) => boolean
+	getCellClassName?: (info: CellInfo) => string
 	onViewChange?: (view: CalendarView) => void
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
@@ -98,6 +99,7 @@ const useCalendarContextValue = (
 		onEventClick,
 		onCellClick,
 		isCellDisabled,
+		getCellClassName,
 		onViewChange,
 		onEventAdd,
 		onEventUpdate,
@@ -174,6 +176,7 @@ const useCalendarContextValue = (
 			onEventClick: handleEventClick,
 			onCellClick: handleDateClick,
 			isCellDisabled,
+			getCellClassName,
 			locale,
 			timezone,
 			disableCellClick,
@@ -202,6 +205,7 @@ const useCalendarContextValue = (
 		renderEvent,
 		renderResource,
 		isCellDisabled,
+		getCellClassName,
 		locale,
 		timezone,
 		disableCellClick,

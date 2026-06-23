@@ -200,6 +200,27 @@ Everything that was previously accessible via deep imports is either available f
 
 ---
 
+## 7. `dayjs` is now a peer dependency
+
+`dayjs` moved from a bundled dependency to a **peer dependency** so your app and the calendar share a single `dayjs` instance. Previously, package managers (notably pnpm) could resolve a separate `dayjs` copy for `@ilamy/calendar`, so a locale you imported in your app (`import 'dayjs/locale/fr'`) registered onto your copy but not the calendar's, leaving some dates unlocalized.
+
+Install `dayjs` explicitly (most apps already do, since `CalendarEvent.start`/`end` are `dayjs` objects):
+
+```bash
+npm install dayjs
+```
+
+With a shared instance, localizing dates is just importing the locale once in your app — no copying locale data between instances:
+
+```ts
+import 'dayjs/locale/fr'
+// <IlamyCalendar locale="fr" />
+```
+
+If you previously worked around the split instance (e.g. reading `rootDayjs.Ls[locale]` and calling `dayjs.locale(data, undefined, true)` on the calendar's `dayjs`), you can delete that code.
+
+---
+
 ## Type tightening (v2 structure overhaul, Phase 0)
 
 ### `Translations` is now a derived type alias, not an interface
@@ -402,6 +423,7 @@ Other notes:
 - [ ] Replace `updateRecurringEvent` calls with `applyScopedEdit` and `deleteRecurringEvent` calls with `applyScopedDelete`.
 - [ ] Remove any calls to `findParentRecurringEvent`; use `rawEvents` filtering instead if needed.
 - [ ] Remove any deep `@ilamy/calendar/src/...` imports; use only the two public entry points.
+- [ ] Install `dayjs` as a direct dependency (it is now a peer dependency). Remove any workaround that synced locale data between a separate app `dayjs` copy and the calendar's.
 - [ ] If you have TypeScript code that narrows `CalendarView` as an exhaustive union, update it for the new `string` type.
 - [ ] If you read properties off `event.data` / `resource.data`, add narrowing or a boundary cast (`Record<string, unknown>` now).
 - [ ] Remove any use of `Resource.position`; order the `resources` array instead.

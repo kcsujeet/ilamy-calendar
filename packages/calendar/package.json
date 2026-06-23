@@ -71,6 +71,7 @@
 		"postpack": "bun scripts/postpack.ts"
 	},
 	"peerDependencies": {
+		"dayjs": "^1.11.20",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
 		"tailwindcss": "^4.2.2",
@@ -90,7 +91,6 @@
 		"@radix-ui/react-tooltip": "^1.2.8",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
-		"dayjs": "^1.11.20",
 		"lucide-react": "^0.475.0",
 		"motion": "^12.36.0",
 		"react-hook-form": "7.80.0",
@@ -104,7 +104,8 @@
 		"@ilamy/calendar-recurrence": "workspace:*",
 		"@ilamy/types": "workspace:*",
 		"@ilamy/ui": "workspace:*",
-		"@ilamy/utils": "workspace:*"
+		"@ilamy/utils": "workspace:*",
+		"dayjs": "^1.11.20"
 	},
 	"publishConfig": {
 		"access": "public"

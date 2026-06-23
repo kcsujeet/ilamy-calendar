@@ -14,6 +14,8 @@ The simplest way to internationalize your calendar is by setting the locale and 
 
 :::important
 For proper date formatting, you must explicitly import the corresponding `dayjs` locale in your application. The calendar component uses `dayjs` internally but does not bundle all locales to keep the bundle size small.
+
+`dayjs` is a [peer dependency](/docs/getting-started/installation#peer-dependencies), so the calendar shares your app's `dayjs` instance. Importing the locale once in your app registers it for the calendar too — no extra syncing of locale data between copies is needed.
 :::
 
 ```tsx title="Importing Locales"

@@ -32,3 +32,45 @@ export const intersectRect = (a: Rect, b: Rect): Rect | null => {
 	}
 	return { top, left, width, height }
 }
+
+export interface EdgeScrollOptions {
+	/** Distance (px) from a container edge that triggers auto-scroll. */
+	edge: number
+	/** Scroll step (px) applied per animation frame while in the edge zone. */
+	speed: number
+	/**
+	 * Axis the scroll is locked to. 'y' zeroes horizontal scroll, 'x' zeroes
+	 * vertical, 'both' (default) allows either. Locks a resource grid to the axis
+	 * its resources lay out on so a drag can't scroll across resources.
+	 */
+	axis?: 'x' | 'y' | 'both'
+}
+
+/**
+ * Per-axis scroll step for a pointer near a scroll container's edges, so a drag
+ * can extend past the visible area. `{ x: 0, y: 0 }` when the pointer is away
+ * from every edge. Negative scrolls up/left, positive down/right; works on both
+ * axes (vertical time grids and horizontal resource grids).
+ */
+export const computeEdgeScroll = (
+	point: { clientX: number; clientY: number },
+	rect: Rect,
+	opts: EdgeScrollOptions
+): { x: number; y: number } => {
+	let x = 0
+	let y = 0
+	if (point.clientY < rect.top + opts.edge) {
+		y = -opts.speed
+	} else if (point.clientY > rect.top + rect.height - opts.edge) {
+		y = opts.speed
+	}
+	if (point.clientX < rect.left + opts.edge) {
+		x = -opts.speed
+	} else if (point.clientX > rect.left + rect.width - opts.edge) {
+		x = opts.speed
+	}
+	const axis = opts.axis ?? 'both'
+	const lockedX = axis === 'y' ? 0 : x
+	const lockedY = axis === 'x' ? 0 : y
+	return { x: lockedX, y: lockedY }
+}

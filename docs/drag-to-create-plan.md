@@ -359,8 +359,12 @@ cell whose region differs, keeping the last valid same-region cell.
 - A precise per-column staircase mirror for cross-day *timed* selections. The
   selection and the committed multi-day timed event work; only the drag preview is
   an approximate bounding box across days.
-- Auto-scroll at the grid edges + the in-grid mirror slot (MVP uses a body-portal
-  mirror recomputed on pointermove; it won't reposition on scroll-without-move).
+- The in-grid mirror slot (the mirror is a body-portal overlay clipped to the
+  calendar viewport, not rendered inside the grid). Edge auto-scroll IS
+  implemented: while dragging near a scroll-container edge the container scrolls
+  per frame and the selection (and mirror) extend; works on both axes (vertical
+  time grids, horizontal resource grids). Lives in `useDragGesture` so any drag
+  gets it; the per-axis step is the pure `computeEdgeScroll`.
 - A precise per-cell month mirror (MVP draws a bounding box over start/end cells).
 - `selectOverlap` (preventing selection over existing events); MVP allows overlap.
 - Resizing / moving the selection after release (the editor handles the range).

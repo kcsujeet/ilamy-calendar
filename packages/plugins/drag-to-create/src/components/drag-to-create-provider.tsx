@@ -8,29 +8,67 @@ import { type RawCell, readCell } from '../utils/read-cell'
 import { intersectRect, type Rect, unionRect } from '../utils/rect'
 import { computeRange, isSameRegion } from '../utils/selection'
 
+/** Where the selection highlight mounts and the rect (in that box's space). */
+interface Mirror {
+	rect: Rect
+	/**
+	 * The grid's scroll content (`data-calendar-scroll-content`) to mount inside,
+	 * or null to fall back to a fixed overlay on the body.
+	 */
+	content: HTMLElement | null
+}
+
 /**
- * The mirror rect spanning the start..last cell, clipped to the calendar body so
- * the overlay never paints outside the (possibly scrolled / short) calendar.
- * Returns null when the selection is scrolled entirely out of the body's view.
+ * Positions the mirror inside the grid's scroll content so the overlay scrolls
+ * with the cells, is clipped by the scroll viewport, and is painted *beneath*
+ * the sticky header / resource column (which sit at higher z within the same
+ * box). The rect is relative to that content box, which already moves with the
+ * scroll, so no scroll offset is needed. Falls back to a fixed overlay clipped
+ * to the calendar viewport when no scroll content is found; returns null when
+ * the fallback selection is scrolled entirely out of view.
  */
-const computeMirror = (startCell: RawCell, lastCell: RawCell): Rect | null => {
+const computeMirror = (
+	startCell: RawCell,
+	lastCell: RawCell
+): Mirror | null => {
 	const union = unionRect(
 		startCell.element.getBoundingClientRect(),
 		lastCell.element.getBoundingClientRect()
 	)
-	const body = startCell.element.closest('[data-calendar-viewport]')
-	if (!body) {
-		return union
+	const content = startCell.element.closest('[data-calendar-scroll-content]')
+	if (content instanceof HTMLElement) {
+		const box = content.getBoundingClientRect()
+		const rect = {
+			top: union.top - box.top,
+			left: union.left - box.left,
+			width: union.width,
+			height: union.height,
+		}
+		return { rect, content }
 	}
-	return intersectRect(union, body.getBoundingClientRect())
+	const viewport = startCell.element.closest('[data-calendar-viewport]')
+	if (!viewport) {
+		return { rect: union, content: null }
+	}
+	const clipped = intersectRect(union, viewport.getBoundingClientRect())
+	if (!clipped) {
+		return null
+	}
+	return { rect: clipped, content: null }
 }
 
-/** The selection highlight, portaled to the body and positioned from `rect`. */
-function SelectionMirror({ rect }: { rect: Rect }): ReactNode {
+/**
+ * The selection highlight. Mounted inside the grid's scroll content (positioned
+ * `absolute`, below the sticky chrome) when available, else a fixed overlay on
+ * the body. `z-15` sits above the cells (`z-10`) and below the sticky header
+ * (`z-21`) / resource column (`z-20`).
+ */
+function SelectionMirror({ rect, content }: Mirror): ReactNode {
+	const placement = content ? 'absolute z-15' : 'fixed z-50'
 	return createPortal(
 		<div
 			aria-hidden="true"
-			className="pointer-events-none fixed z-50 rounded-sm border border-primary bg-primary/20"
+			className={`pointer-events-none ${placement} rounded-sm border border-primary bg-primary/20`}
 			style={{
 				top: rect.top,
 				left: rect.left,
@@ -38,7 +76,7 @@ function SelectionMirror({ rect }: { rect: Rect }): ReactNode {
 				height: rect.height,
 			}}
 		/>,
-		document.body
+		content ?? document.body
 	)
 }
 
@@ -56,9 +94,18 @@ export function DragToCreateProvider({
 	children: ReactNode
 	options: DragToCreateOptions
 }): ReactNode {
-	const { openEventForm, resources, timezone } = useIlamyCalendarContext()
-	const [mirror, setMirror] = useState<Rect | null>(null)
+	const { openEventForm, resources, timezone, orientation } =
+		useIlamyCalendarContext()
+	const [mirror, setMirror] = useState<Mirror | null>(null)
 	const lastCellRef = useRef<RawCell | null>(null)
+
+	// Resource calendars scroll along the axis their resources are laid out on
+	// (vertical resource grid -> rows -> y; horizontal -> columns -> x). Locking
+	// the auto-scroll to that axis stops a drag from scrolling across resources.
+	// Regular calendars have a single axis, so both are allowed.
+	const isResourceCalendar = resources.length > 0
+	const resourceScrollAxis = orientation === 'vertical' ? 'y' : 'x'
+	const scrollAxis = isResourceCalendar ? resourceScrollAxis : 'both'
 
 	const clearSelection = () => {
 		lastCellRef.current = null
@@ -89,6 +136,7 @@ export function DragToCreateProvider({
 	}
 
 	useDragGesture<RawCell>({
+		scrollAxis,
 		resolvePress: (event) => readCell(event.target as Element, timezone),
 		onStart: (startCell) => {
 			lastCellRef.current = startCell
@@ -116,7 +164,7 @@ export function DragToCreateProvider({
 	return (
 		<>
 			{children}
-			{mirror && <SelectionMirror rect={mirror} />}
+			{mirror && <SelectionMirror {...mirror} />}
 		</>
 	)
 }

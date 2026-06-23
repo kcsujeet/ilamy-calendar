@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react'
+import { computeEdgeScroll } from '../utils/rect'
+import { findScrollContainer } from '../utils/scroll'
 import { exceedsThreshold } from '../utils/selection'
 
 export interface DragPoint {
@@ -23,6 +25,8 @@ export interface UseDragGestureOptions<T> {
 	longPressMs?: number
 	/** Touch movement (px) before the hold fires that aborts to a scroll. */
 	touchCancelSlopPx?: number
+	/** Axes the edge auto-scroll may use. Default both. */
+	scrollAxis?: 'x' | 'y' | 'both'
 }
 
 interface PendingGesture<T> {
@@ -38,6 +42,10 @@ interface PendingGesture<T> {
 const DEFAULT_THRESHOLD_PX = 2
 const DEFAULT_LONG_PRESS_MS = 400
 const DEFAULT_TOUCH_CANCEL_SLOP_PX = 10
+// Auto-scroll: how close (px) to a scroll-container edge triggers it, and how far
+// (px) it scrolls per animation frame.
+const EDGE_SCROLL_PX = 40
+const EDGE_SCROLL_SPEED_PX = 5
 
 /**
  * A unified mouse / pen / touch press-drag gesture recognizer built on Pointer
@@ -79,6 +87,60 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 			}
 		}
 
+		// Edge auto-scroll: the cell's scroll container, the last pointer position
+		// (the finger/mouse holds still at the edge), and the rAF handle.
+		let scrollContainer: HTMLElement | null = null
+		let lastPoint: DragPoint | null = null
+		let autoScrollFrame: number | null = null
+
+		const stopAutoScroll = () => {
+			if (autoScrollFrame !== null) {
+				cancelAnimationFrame(autoScrollFrame)
+				autoScrollFrame = null
+			}
+		}
+
+		// While the pointer sits in an edge zone, scroll the container a step per
+		// frame and re-fire onMove so the selection extends to the cell now under
+		// the (stationary) pointer. Stops itself once the pointer leaves the edge.
+		const runAutoScroll = () => {
+			autoScrollFrame = null
+			const gesture = gestureRef.current
+			if (!gesture?.active) {
+				return
+			}
+			if (!scrollContainer || !lastPoint) {
+				return
+			}
+			// computeEdgeScroll locks to scrollAxis so a horizontal resource grid
+			// doesn't auto-scroll vertically (across resources) and vice versa.
+			const delta = computeEdgeScroll(
+				lastPoint,
+				scrollContainer.getBoundingClientRect(),
+				{
+					edge: EDGE_SCROLL_PX,
+					speed: EDGE_SCROLL_SPEED_PX,
+					axis: optionsRef.current.scrollAxis,
+				}
+			)
+			if (delta.x === 0 && delta.y === 0) {
+				return
+			}
+			scrollContainer.scrollBy({
+				left: delta.x,
+				top: delta.y,
+				behavior: 'instant',
+			})
+			optionsRef.current.onMove(lastPoint, gesture.payload)
+			autoScrollFrame = requestAnimationFrame(runAutoScroll)
+		}
+
+		const ensureAutoScroll = () => {
+			if (autoScrollFrame === null) {
+				autoScrollFrame = requestAnimationFrame(runAutoScroll)
+			}
+		}
+
 		const preventTouchScroll = (event: TouchEvent) => {
 			if (gestureRef.current?.active) {
 				event.preventDefault()
@@ -96,8 +158,11 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 		// Tear down the current gesture's listeners/timer/locks (no callback).
 		const teardown = () => {
 			clearLongPress()
+			stopAutoScroll()
 			window.removeEventListener('touchmove', preventTouchScroll)
 			unlockTextSelection()
+			scrollContainer = null
+			lastPoint = null
 			gestureRef.current = null
 		}
 
@@ -142,6 +207,7 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 				active: false,
 			}
 			gestureRef.current = gesture
+			scrollContainer = findScrollContainer(event.target as Element)
 			// Touch starts on a hold (a swipe scrolls); mouse/pen on a small drag.
 			if (event.pointerType === 'touch') {
 				const longPressMs =
@@ -177,10 +243,9 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 				}
 				activate(gesture)
 			}
-			optionsRef.current.onMove(
-				{ clientX: event.clientX, clientY: event.clientY },
-				gesture.payload
-			)
+			lastPoint = { clientX: event.clientX, clientY: event.clientY }
+			optionsRef.current.onMove(lastPoint, gesture.payload)
+			ensureAutoScroll()
 		}
 
 		const onPointerUp = (event: PointerEvent) => {
@@ -220,6 +285,7 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 			window.removeEventListener('click', suppressClickOnce, { capture: true })
 			window.removeEventListener('touchmove', preventTouchScroll)
 			clearLongPress()
+			stopAutoScroll()
 			unlockTextSelection()
 		}
 	}, [])

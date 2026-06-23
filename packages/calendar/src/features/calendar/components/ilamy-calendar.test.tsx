@@ -1042,6 +1042,34 @@ describe('orientation without resources', () => {
 		)
 		expect(allWarnArgs()).not.toContain('`orientation`')
 	})
+
+	it('exposes the resolved orientation on the public context', () => {
+		const OrientationProbe = () => (
+			<span data-testid="probe-orientation">
+				{useIlamyCalendarContext().orientation}
+			</span>
+		)
+		render(
+			<IlamyCalendar
+				headerComponent={<OrientationProbe />}
+				orientation="vertical"
+				resources={[{ id: 'r1', title: 'Room 1' }]}
+			/>
+		)
+		expect(screen.getByTestId('probe-orientation').textContent).toBe('vertical')
+	})
+
+	it('defaults the public orientation to horizontal', () => {
+		const OrientationProbe = () => (
+			<span data-testid="probe-orientation">
+				{useIlamyCalendarContext().orientation}
+			</span>
+		)
+		render(<IlamyCalendar headerComponent={<OrientationProbe />} />)
+		expect(screen.getByTestId('probe-orientation').textContent).toBe(
+			'horizontal'
+		)
+	})
 })
 
 describe('IlamyCalendar - internal edits survive re-render (issue #197)', () => {

@@ -341,6 +341,13 @@ describe('EventForm', () => {
 					})
 				)
 			})
+
+			// All-day events span the whole day regardless of the picked times.
+			const submitted = mockOnAdd.mock.calls.at(0)?.at(0) as
+				| CalendarEvent
+				| undefined
+			expect(submitted?.start.format('HH:mm')).toBe('00:00')
+			expect(submitted?.end.format('HH:mm')).toBe('23:59')
 		})
 
 		it('should require title field', async () => {

@@ -1,35 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 import type { BusinessHours } from '@ilamy/types'
-import {
-	buildDateTime,
-	buildEndDateTime,
-	getTimeConstraints,
-} from './event-form-utils'
+import { buildDateTime, getTimeConstraints } from './event-form-utils'
 
 describe('event-form-utils', () => {
 	const testDate = new Date('2025-01-15T00:00:00.000Z') // Wednesday
 
 	describe('buildDateTime', () => {
-		test('combines date and time correctly', () => {
-			const result = buildDateTime(testDate, '14:30', false)
+		test('combines a date with an HH:mm time', () => {
+			const result = buildDateTime(testDate, '14:30')
 			expect(result.format('YYYY-MM-DD HH:mm')).toBe('2025-01-15 14:30')
-		})
-
-		test('sets time to 00:00 if isAllDay is true', () => {
-			const result = buildDateTime(testDate, '14:30', true)
-			expect(result.format('YYYY-MM-DD HH:mm')).toBe('2025-01-15 00:00')
-		})
-	})
-
-	describe('buildEndDateTime', () => {
-		test('combines date and time correctly', () => {
-			const result = buildEndDateTime(testDate, '15:45', false)
-			expect(result.format('YYYY-MM-DD HH:mm')).toBe('2025-01-15 15:45')
-		})
-
-		test('sets time to 23:59 if isAllDay is true', () => {
-			const result = buildEndDateTime(testDate, '15:45', true)
-			expect(result.format('YYYY-MM-DD HH:mm')).toBe('2025-01-15 23:59')
 		})
 	})
 

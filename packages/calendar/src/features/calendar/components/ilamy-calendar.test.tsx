@@ -97,6 +97,24 @@ describe('IlamyCalendar', () => {
 			expect(cell).not.toBeNull()
 			expect(cell).toHaveAttribute('data-end')
 		})
+
+		it('marks the grid scroll content with data-calendar-scroll-content', () => {
+			// The drag-to-create plugin mounts its selection overlay inside the
+			// element carrying `data-calendar-scroll-content` (so it scrolls with the
+			// cells and stays under the sticky chrome). Another cross-package marker
+			// that nothing else would fail on if it were removed.
+			const { container } = render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+				/>
+			)
+
+			const scrollContent = container.querySelector(
+				'[data-calendar-scroll-content]'
+			)
+			expect(scrollContent).not.toBeNull()
+		})
 	})
 
 	describe('renderEventForm', () => {

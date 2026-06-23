@@ -38,8 +38,6 @@ interface PendingGesture<T> {
 	active: boolean
 }
 
-// Match @dnd-kit's MouseSensor `distance: 2` so click-vs-drag feels identical.
-const DEFAULT_THRESHOLD_PX = 2
 const DEFAULT_LONG_PRESS_MS = 400
 const DEFAULT_TOUCH_CANCEL_SLOP_PX = 10
 // Auto-scroll: how close (px) to a scroll-container edge triggers it, and how far
@@ -220,28 +218,44 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 			}
 		}
 
+		// Resolve a still-pending gesture against the latest pointer position.
+		// Returns true once it has become an active drag (so the move proceeds),
+		// false while still pending (a touch swipe past the slop aborts here; touch
+		// otherwise activates on the hold timer, not on movement).
+		const tryActivate = (
+			gesture: PendingGesture<T>,
+			event: PointerEvent
+		): boolean => {
+			const dx = event.clientX - gesture.originX
+			const dy = event.clientY - gesture.originY
+			if (gesture.pointerType === 'touch') {
+				const slop =
+					optionsRef.current.touchCancelSlopPx ?? DEFAULT_TOUCH_CANCEL_SLOP_PX
+				const isSwipe = exceedsThreshold(dx, dy, slop)
+				if (isSwipe) {
+					cancel()
+				}
+				return false
+			}
+			const passedThreshold = exceedsThreshold(
+				dx,
+				dy,
+				optionsRef.current.thresholdPx
+			)
+			if (!passedThreshold) {
+				return false
+			}
+			activate(gesture)
+			return true
+		}
+
 		const onPointerMove = (event: PointerEvent) => {
 			const gesture = gestureRef.current
 			if (!gesture || event.pointerId !== gesture.pointerId) {
 				return
 			}
-			const dx = event.clientX - gesture.originX
-			const dy = event.clientY - gesture.originY
-			if (!gesture.active) {
-				if (gesture.pointerType === 'touch') {
-					const slop =
-						optionsRef.current.touchCancelSlopPx ?? DEFAULT_TOUCH_CANCEL_SLOP_PX
-					// Moving before the hold fires is a scroll, not a select.
-					if (exceedsThreshold(dx, dy, slop)) {
-						cancel()
-					}
-					return
-				}
-				const threshold = optionsRef.current.thresholdPx ?? DEFAULT_THRESHOLD_PX
-				if (!exceedsThreshold(dx, dy, threshold)) {
-					return
-				}
-				activate(gesture)
+			if (!gesture.active && !tryActivate(gesture, event)) {
+				return
 			}
 			lastPoint = { clientX: event.clientX, clientY: event.clientY }
 			optionsRef.current.onMove(lastPoint, gesture.payload)

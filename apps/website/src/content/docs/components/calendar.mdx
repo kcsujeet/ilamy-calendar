@@ -90,6 +90,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `stickyViewHeader` | `boolean` | `true` | Whether to stick the view header to the top |
 | `viewHeaderClassName` | `string` | `''` | Custom class name for the view header |
 | `headerComponent` | `ReactNode` | `null` | Custom header component to render above the calendar |
+| `headerClassName` | `string` | `undefined` | Custom class name applied to the calendar header (the toolbar with navigation and view controls). |
 | `hideExportButton` | `boolean` | `false` | Hide the "Export" (.ics download) button in the calendar header. |
 | `renderCurrentTimeIndicator` | `(context: RenderCurrentTimeIndicatorProps) => ReactNode` | - | Custom function to render the current time indicator (line). |
 | `renderHour` | `(date: dayjs.Dayjs) => ReactNode` | - | Custom function to render hour labels in the time gutter of day and week views. Receives a Dayjs object for the hour. |
@@ -111,6 +112,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `onEventClick` | `(event: CalendarEvent) => void` | Called when an event is clicked |
 | `onCellClick` | `(info: CellInfo) => void` | Called when a date cell is clicked. Receives a CellInfo object with start, end, and optional resource (the full resource object in resource calendars). |
 | `isCellDisabled` | `(info: CellInfo) => boolean` | Return `true` to disable a cell: blocks event-creation clicks, rejects drops onto the cell, and grays it out. Composes with `businessHours` via OR (a cell is disabled if business hours OR `isCellDisabled` disables it). |
+| `getCellClassName` | `(info: CellInfo) => string` | Return extra CSS classes for a cell from custom logic (unavailability styling, on-call windows, etc.). Receives the same `CellInfo` as `onCellClick`. Unlike `isCellDisabled`, this is purely visual: cells stay clickable and keep accepting drops. Return `''` for cells you do not want to style. |
 | `onViewChange` | `(view: 'month' \| 'week' \| 'day' \| 'year') => void` | Called when the calendar view changes |
 | `onEventAdd` | `(event: CalendarEvent) => void` | Called when a new event is created |
 | `onEventUpdate` | `(event: CalendarEvent) => void` | Called when an existing event is updated |
@@ -923,7 +925,7 @@ const businessHours: BusinessHours[] = [
 
 ### CellInfo Interface
 
-Information passed to the `onCellClick` and `isCellDisabled` callbacks. Uses named properties for better extensibility and clarity.
+Information passed to the `onCellClick`, `isCellDisabled`, and `getCellClassName` callbacks. Uses named properties for better extensibility and clarity.
 
 ```typescript title="CellInfo Type Definition"
 interface CellInfo {
@@ -984,6 +986,23 @@ const isHoliday = (date: dayjs.Dayjs) =>
 <IlamyCalendar
   events={events}
   isCellDisabled={(info) => isHoliday(info.start)}
+/>
+```
+
+#### Styling Cells
+
+Use `getCellClassName` to add CSS classes to specific cells based on custom logic
+(unavailability styling, on-call windows, highlighting). Unlike `isCellDisabled`,
+this is purely visual: cells stay clickable and keep accepting drops. Return an
+empty string for cells you do not want to style.
+
+```typescript
+const isWeekend = (date: dayjs.Dayjs) =>
+  date.day() === 0 || date.day() === 6;
+
+<IlamyCalendar
+  events={events}
+  getCellClassName={(info) => (isWeekend(info.start) ? 'bg-amber-50' : '')}
 />
 ```
 

@@ -77,6 +77,10 @@ export default defineConfig({
 					items: [
 						{ label: 'Recurrence', slug: 'docs/plugins/recurrence' },
 						{ label: 'Agenda', slug: 'docs/plugins/agenda' },
+						{
+							label: 'Drag to Create',
+							slug: 'docs/plugins/drag-to-create',
+						},
 					],
 				},
 				{

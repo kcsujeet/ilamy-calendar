@@ -1,0 +1,109 @@
+---
+title: Drag-to-Create Plugin
+description: Drag across empty cells to open the event form preselected with that time range.
+slug: docs/plugins/drag-to-create
+---
+
+The drag-to-create plugin lets users **press an empty cell and drag across the grid** to select a time range. Releasing opens the event form preselected with that range (or runs your own `onSelect`). It is an opt-in plugin, so you register it through the `plugins` prop.
+
+It works in the month, week, and day views, on both regular and resource calendars, in either orientation.
+
+## Installation
+
+Import `dragToCreatePlugin` from the `@ilamy/calendar/plugins/drag-to-create` subpath and pass it to `plugins`:
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar';
+import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create';
+
+export default function MyCalendar() {
+  return (
+    <IlamyCalendar
+      events={events}
+      initialView="week"
+      plugins={[dragToCreatePlugin()]}
+    />
+  );
+}
+```
+
+With no options, a completed drag opens the event form with `start`, `end`, `allDay`, and `resourceId` prefilled from the selection.
+
+## How the gesture works
+
+- **Mouse / pen**: a drag starts once the pointer moves past a small threshold, so a plain click still falls through to `onCellClick`.
+- **Touch**: a drag starts on a short press-and-hold, then drag. A quick swipe still scrolls the page instead of selecting.
+- **Auto-scroll**: holding the pointer near an edge of the scroll area scrolls it so the selection can extend past what is currently visible. On a resource calendar the scroll is locked to the axis the resources lay out on, so a drag never scrolls across resources.
+- **Single region**: a selection never mixes all-day and timed cells and never spans resources. A cross-day timed drag becomes a multi-day timed range; month and all-day drags span days.
+- Pressing **Escape**, or the window losing focus, cancels an in-progress selection.
+
+## Options
+
+```ts
+dragToCreatePlugin(options?: DragToCreateOptions)
+
+interface DragToCreateOptions {
+  onSelect?: (
+    selection: CellInfo,
+    openEventForm: (input: OpenEventFormInput) => void
+  ) => void;
+}
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `onSelect` | `(selection, openEventForm) => void` | — | Runs when a drag is committed. Omit to get the default (open the form preselected with the range). Provide to replace that default. |
+
+### `onSelect`
+
+`selection` is a [`CellInfo`](#cellinfo) spanning the dragged range, the same shape `onCellClick` receives. `openEventForm` is the calendar's own form opener, passed in so you can still open the form after running your own logic.
+
+```tsx
+<IlamyCalendar
+  events={events}
+  plugins={[
+    dragToCreatePlugin({
+      onSelect: (selection, openEventForm) => {
+        // Run your own logic, then open the form (or do something else entirely).
+        console.log('selected', selection.start.toISOString(), selection.end.toISOString());
+        openEventForm({
+          start: selection.start,
+          end: selection.end,
+          allDay: selection.allDay,
+          resource: selection.resource,
+        });
+      },
+    }),
+  ]}
+/>
+```
+
+#### CellInfo
+
+```ts
+interface CellInfo {
+  start: Dayjs;        // start of the selected range
+  end: Dayjs;          // end of the selected range
+  resource?: Resource; // the resource on a resource calendar; undefined otherwise
+  allDay?: boolean;    // true for an all-day / month selection
+}
+```
+
+## Combining with other plugins
+
+Plugins compose. Pass them all in the `plugins` array:
+
+```tsx
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence';
+import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create';
+
+<IlamyCalendar
+  events={events}
+  plugins={[recurrencePlugin(), dragToCreatePlugin()]}
+/>
+```
+
+## Notes
+
+- The plugin is bundled into `@ilamy/calendar` and exposed at the `@ilamy/calendar/plugins/drag-to-create` subpath. There is no separate package to install.
+- Selection reuses the public `CellInfo` and `openEventForm`, so it stays consistent with `onCellClick` and the rest of the calendar API.

@@ -47,6 +47,10 @@
 		"./plugins/agenda": {
 			"types": "./dist/plugins/agenda.d.ts",
 			"import": "./dist/plugins/agenda.js"
+		},
+		"./plugins/drag-to-create": {
+			"types": "./dist/plugins/drag-to-create.d.ts",
+			"import": "./dist/plugins/drag-to-create.js"
 		}
 	},
 	"files": [
@@ -93,6 +97,7 @@
 	},
 	"devDependencies": {
 		"@ilamy/calendar-agenda": "workspace:*",
+		"@ilamy/calendar-drag-to-create": "workspace:*",
 		"@ilamy/calendar-recurrence": "workspace:*",
 		"@ilamy/types": "workspace:*",
 		"@ilamy/ui": "workspace:*",

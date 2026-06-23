@@ -91,7 +91,11 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 										data-testid={testId}
 										day={hasSubHourSlots ? day.minute(minute) : day}
 										gridType={gridType}
-										hour={day.hour()}
+										// Match the horizontal grid: a daily cell describes the
+										// whole day (hour undefined); an hourly cell its slot.
+										// Passing the hour for daily cells made them 00:00-01:00
+										// slots, breaking drag-to-create's cross-day selection.
+										hour={gridType === 'hour' ? day.hour() : undefined}
 										key={keys.listKey(id, dayIndex, mm)}
 										minute={hasSubHourSlots ? minute : undefined}
 										resourceId={resourceId} // Events are rendered in a separate layer

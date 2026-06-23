@@ -66,6 +66,57 @@ const CustomEventForm = (props: EventFormProps) => {
 }
 
 describe('IlamyCalendar', () => {
+	// The drag-to-create plugin clips its selection overlay to the element
+	// carrying `data-calendar-viewport`. It's an implicit cross-package contract,
+	// so removing the marker would silently break that plugin with no other test
+	// failing. This locks it in.
+	describe('plugin DOM contract', () => {
+		it('marks the calendar body with data-calendar-viewport', () => {
+			render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+				/>
+			)
+
+			const body = screen.getByTestId('calendar-body')
+			expect(body).toHaveAttribute('data-calendar-viewport', 'true')
+		})
+
+		it('renders grid cells carrying data-start/data-end so plugins can hit-test the DOM', () => {
+			// End-to-end: a view refactor that stopped rendering DroppableCell would
+			// break drag-to-create even though droppable-cell.test still passes.
+			const { container } = render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+				/>
+			)
+
+			const cell = container.querySelector('[data-start]')
+			expect(cell).not.toBeNull()
+			expect(cell).toHaveAttribute('data-end')
+		})
+
+		it('marks the grid scroll content with data-calendar-scroll-content', () => {
+			// The drag-to-create plugin mounts its selection overlay inside the
+			// element carrying `data-calendar-scroll-content` (so it scrolls with the
+			// cells and stays under the sticky chrome). Another cross-package marker
+			// that nothing else would fail on if it were removed.
+			const { container } = render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+				/>
+			)
+
+			const scrollContent = container.querySelector(
+				'[data-calendar-scroll-content]'
+			)
+			expect(scrollContent).not.toBeNull()
+		})
+	})
+
 	describe('renderEventForm', () => {
 		const createEvent = (
 			overrides: Partial<CalendarEvent> = {}
@@ -1008,6 +1059,34 @@ describe('orientation without resources', () => {
 			/>
 		)
 		expect(allWarnArgs()).not.toContain('`orientation`')
+	})
+
+	it('exposes the resolved orientation on the public context', () => {
+		const OrientationProbe = () => (
+			<span data-testid="probe-orientation">
+				{useIlamyCalendarContext().orientation}
+			</span>
+		)
+		render(
+			<IlamyCalendar
+				headerComponent={<OrientationProbe />}
+				orientation="vertical"
+				resources={[{ id: 'r1', title: 'Room 1' }]}
+			/>
+		)
+		expect(screen.getByTestId('probe-orientation').textContent).toBe('vertical')
+	})
+
+	it('defaults the public orientation to horizontal', () => {
+		const OrientationProbe = () => (
+			<span data-testid="probe-orientation">
+				{useIlamyCalendarContext().orientation}
+			</span>
+		)
+		render(<IlamyCalendar headerComponent={<OrientationProbe />} />)
+		expect(screen.getByTestId('probe-orientation').textContent).toBe(
+			'horizontal'
+		)
 	})
 })
 

@@ -41,7 +41,14 @@ const CalendarContent: React.FC = () => {
 					direction="horizontal"
 					transitionKey={view}
 				>
-					<div className="border h-full w-full" data-testid="calendar-body">
+					{/* `data-calendar-viewport` is a stable hook for plugins (e.g.
+					    drag-to-create clips its selection overlay to this box). Keep it
+					    even if the test id changes. */}
+					<div
+						className="border h-full w-full"
+						data-calendar-viewport="true"
+						data-testid="calendar-body"
+					>
 						{activeView}
 					</div>
 				</AnimatedSection>

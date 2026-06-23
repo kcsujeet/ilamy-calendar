@@ -44,6 +44,8 @@ export interface IlamyCalendarApi {
 	readonly selectedDate: Dayjs | null
 	readonly firstDayOfWeek: number
 	readonly resources: Resource[]
+	/** Axis the views lay out along: 'horizontal' (columns) or 'vertical' (rows). */
+	readonly orientation: 'horizontal' | 'vertical'
 	readonly setCurrentDate: (date: Dayjs) => void
 	readonly selectDate: (date: Dayjs) => void
 	readonly setView: (view: CalendarView) => void
@@ -137,6 +139,7 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 		selectedDate: context.selectedDate,
 		firstDayOfWeek: context.firstDayOfWeek,
 		resources: context.resources ?? EMPTY_RESOURCES,
+		orientation: context.orientation,
 		setCurrentDate: context.setCurrentDate,
 		selectDate: context.selectDate,
 		setView: context.setView,

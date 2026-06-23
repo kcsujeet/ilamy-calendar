@@ -121,6 +121,7 @@
       },
       "devDependencies": {
         "@ilamy/calendar-agenda": "workspace:*",
+        "@ilamy/calendar-drag-to-create": "workspace:*",
         "@ilamy/calendar-recurrence": "workspace:*",
         "@ilamy/types": "workspace:*",
         "@ilamy/ui": "workspace:*",
@@ -156,6 +157,18 @@
         "@ilamy/ui": "workspace:*",
         "@ilamy/utils": "workspace:*",
         "lucide-react": "^0.475.0",
+      },
+      "peerDependencies": {
+        "@ilamy/calendar": "workspace:*",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+      },
+    },
+    "packages/plugins/drag-to-create": {
+      "name": "@ilamy/calendar-drag-to-create",
+      "version": "1.8.1",
+      "dependencies": {
+        "@ilamy/utils": "workspace:*",
       },
       "peerDependencies": {
         "@ilamy/calendar": "workspace:*",
@@ -440,6 +453,8 @@
     "@ilamy/calendar": ["@ilamy/calendar@workspace:packages/calendar"],
 
     "@ilamy/calendar-agenda": ["@ilamy/calendar-agenda@workspace:packages/plugins/agenda"],
+
+    "@ilamy/calendar-drag-to-create": ["@ilamy/calendar-drag-to-create@workspace:packages/plugins/drag-to-create"],
 
     "@ilamy/calendar-recurrence": ["@ilamy/calendar-recurrence@workspace:packages/plugins/recurrence"],
 

@@ -18,7 +18,7 @@
 		"dev": "bun run --filter '@ilamy/demo' dev",
 		"dev:website": "bun run build:lib && bun run --filter '@ilamy/website' dev",
 		"deploy:website": "bun run build:lib && bun run --filter '@ilamy/website' deploy",
-		"build": "bun run --filter '@ilamy/types' --filter '@ilamy/utils' --if-present build && bun run --filter '@ilamy/ui' --if-present build && bun run --filter '@ilamy/calendar-recurrence' --filter '@ilamy/calendar-agenda' --if-present build && bun run --filter '@ilamy/calendar' --if-present build && bun run --filter '@ilamy/demo' --if-present build && bun run --filter '@ilamy/website' --if-present build",
+		"build": "bun run --filter '@ilamy/types' --filter '@ilamy/utils' --if-present build && bun run --filter '@ilamy/ui' --if-present build && bun run --filter '@ilamy/calendar-recurrence' --filter '@ilamy/calendar-agenda' --filter '@ilamy/calendar-drag-to-create' --if-present build && bun run --filter '@ilamy/calendar' --if-present build && bun run --filter '@ilamy/demo' --if-present build && bun run --filter '@ilamy/website' --if-present build",
 		"build:lib": "bun run --filter '@ilamy/calendar' build",
 		"test": "bun run --filter '*' --if-present test",
 		"type-check": "bun run --filter '*' --if-present type-check",

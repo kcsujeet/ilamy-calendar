@@ -1,16 +1,22 @@
 # Drag-to-create (time-range selection) plan
 
-**Issue:** [#209](https://github.com/kcsujeet/ilamy-calendar/issues/209) — on week/day
-views, press on an empty cell, drag across cells, release to open the event
-editor preselected with the dragged time range.
+**Issue:** [#209](https://github.com/kcsujeet/ilamy-calendar/issues/209) — press on
+an empty cell, drag across cells, release to open the event editor preselected
+with the dragged range. (The issue framed it as week/day; it shipped working in
+every view, see Status.)
 
 **Owner note (issue thread):** "plugin is the way to go" + keep core minimal.
 This plan does exactly that: the only core change is two-to-four data attributes
 on the shared cell; all selection / mirror / create logic lives in the plugin
 (see section 4).
 
-**Status:** Proposal. Master plan; each phase should spawn a bite-sized TDD plan
-when picked up.
+**Status:** Shipped (PR #214). Works in month, week, and day views, regular and
+resource calendars, both orientations. Desktop drags from a 2px threshold; touch
+uses a press-and-hold then drag (a swipe still scrolls). The gesture mechanics
+live in a reusable `useDragGesture` hook; the only core change is the
+self-describing cell data attributes plus a `data-calendar-viewport` clip marker.
+Touch is verified on real devices, Chrome's responsive-mode emulation is an
+unreliable repro for it.
 
 ---
 
@@ -196,9 +202,9 @@ Implementation notes:
   carries `data-resource-id`; an all-day cell carries `data-all-day`.
 
 ### Phase 2 — The drag-to-create plugin
-- New plugin package `@ilamy/calendar-dragcreate`, shipped as a subpath like
+- New plugin package `@ilamy/calendar-drag-to-create`, shipped as a subpath like
   recurrence/agenda (private workspace package, bundled into the published
-  `@ilamy/calendar`, exposed at `@ilamy/calendar/plugins/dragcreate`).
+  `@ilamy/calendar`, exposed at `@ilamy/calendar/plugins/drag-to-create`).
 - Plugin `provider` attaches the pointer listeners, applies the distance
   threshold, hit-tests cells via `elementFromPoint` + `[data-start]`, renders the
   mirror portal (`pointer-events: none`), normalizes reverse drags, builds a
@@ -215,7 +221,7 @@ Implementation notes:
   not start a drag; reverse drag normalizes start/end.
 
 #### Plugin API (one option; the rest is YAGNI until asked)
-`dragCreatePlugin(options)` — keep the surface tiny. Issue #209 needs exactly one
+`dragToCreatePlugin(options)` — keep the surface tiny. Issue #209 needs exactly one
 thing (drag, open the editor with the range), so the only public option is the
 extensibility hook the owner asked for:
 
@@ -256,9 +262,16 @@ mechanism.
   dragging past the viewport edge, and a `minDistance` default that feels right on
   touch.
 
-### Phase 4 (optional) — Month / horizontal grid
-- Extend selection to the month grid (drag across day cells → multi-day all-day
-  range). Larger; the issue only asks for week/day, so defer.
+### Phase 4 — Month + resource calendars (done in the same rule)
+- Implemented. Month/day-grid and resource calendars (both orientations) fall out
+  of the same single-region rule with no geometry-specific code, because the rule
+  reads cell attributes (`data-start`/`data-end`/`data-resource-id`/`data-all-day`),
+  not screen position. Selections span days in every grid (month/all-day, and
+  timed → a multi-day timed event). The only region clamps are: never mix all-day
+  and timed cells, and never cross resources. The resource-id clamp keeps a drag
+  within one resource whether resources are columns (vertical) or rows (horizontal). The mirror
+  is a bounding box over the start/end cells (crude across a month grid; refine
+  later).
 
 ---
 
@@ -280,11 +293,18 @@ cell whose region differs, keeping the last valid same-region cell.
   grid does not extend past the all-day boundary. Start on a timed cell → the
   all-day row is ignored. No mixed all-day/timed selection. The selection's
   `allDay` is the start cell's.
-- **Resource column → another column (resource calendar):** clamps to the start
-  resource; the selection carries one `resource`.
-- **Day column → another day column (regular timed week):** decision for MVP —
-  clamp to the start day (single-day timed range, the common case in #209). Allow
-  multi-day timed ranges later if requested (FullCalendar permits them).
+- **Resource → another resource (vertical columns or horizontal rows):** clamps to
+  the start resource via `data-resource-id`; the selection carries one `resource`.
+  Orientation-agnostic (the rule is attribute-based).
+- **Month / day-grid cells (full-day):** a cell whose range covers a whole day
+  (month day-cell, all-day row) may span across days → a multi-day selection. This
+  also covers the resource-month grid (full-day cells within one resource).
+- **Timed cell → another day (regular/resource timed week):** spans days → a
+  multi-day timed event (`start` = first cell's start, `end` = last cell's end).
+  The core time grid already renders such events as per-day clamped segments
+  (`vertical.ts` `getEventPosition`). The mirror is still the single bounding box,
+  so the drag *preview* is approximate across days (a precise per-column staircase
+  is deferred); the committed event and its rendering are correct.
 
 ## 7. Other edge cases to nail (test matrix)
 
@@ -332,17 +352,24 @@ cell whose region differs, keeping the last valid same-region cell.
 - SSR: pointer/DOM logic is client-only; data attributes render server-side fine.
 - Plugin not registered: cells carry only harmless extra data attributes, no
   behavior.
-- A11y: drag-create is an enhancement; keyboard users keep single-cell create via
+- A11y: drag-to-create is an enhancement; keyboard users keep single-cell create via
   `onCellClick`. The mirror is `aria-hidden`.
 
 ## 8. Out of scope (for now)
-- Month/horizontal drag-select and horizontal resource orientation (resources as
-  rows) — Phase 4, deferred. MVP is the vertical week/day grid.
-- Multi-day timed ranges (cross-day in the timed grid); MVP clamps to one day.
+- A precise per-column staircase mirror for cross-day *timed* selections. The
+  selection and the committed multi-day timed event work; only the drag preview is
+  an approximate bounding box across days.
+- The in-grid mirror slot (the mirror is a body-portal overlay clipped to the
+  calendar viewport, not rendered inside the grid). Edge auto-scroll IS
+  implemented: while dragging near a scroll-container edge the container scrolls
+  per frame and the selection (and mirror) extend; works on both axes (vertical
+  time grids, horizontal resource grids). Lives in `useDragGesture` so any drag
+  gets it; the per-axis step is the pure `computeEdgeScroll`.
+- A precise per-cell month mirror (MVP draws a bounding box over start/end cells).
 - `selectOverlap` (preventing selection over existing events); MVP allows overlap.
 - Resizing / moving the selection after release (the editor handles the range).
 - Multi-range selection.
-- Keyboard drag-create (a11y enhancement); single-cell create via `onCellClick`
+- Keyboard drag-to-create (a11y enhancement); single-cell create via `onCellClick`
   remains the keyboard path.
 
 ## 9. Risks

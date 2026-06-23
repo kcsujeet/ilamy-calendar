@@ -5,16 +5,23 @@ import type {
 	Resource,
 } from '@ilamy/calendar'
 import { type AgendaWindow, agendaPlugin } from '@ilamy/calendar/plugins/agenda'
+import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 import { dummyEvents } from '../lib/seed'
 
-// Recurrence and agenda are opt-in plugins. The seed data has recurring events,
-// so recurrence expands them; agenda adds the upcoming-events list view scoped
-// to `agendaWindow`. Built per-window so the demo can change the window live;
-// memoize the result in the caller to keep the array reference stable.
+// Recurrence, agenda, and drag-to-create are opt-in plugins. The seed data has
+// recurring events, so recurrence expands them; agenda adds the upcoming-events
+// list view scoped to `agendaWindow`; drag-to-create lets you drag across empty
+// cells (any view) to open the event form preselected with that range. Built
+// per-window so the demo can change the window live; memoize the result in the
+// caller to keep the array reference stable.
 export const createDemoPlugins = (
 	agendaWindow: AgendaWindow
-): IlamyPlugin[] => [recurrencePlugin(), agendaPlugin({ window: agendaWindow })]
+): IlamyPlugin[] => [
+	recurrencePlugin(),
+	agendaPlugin({ window: agendaWindow }),
+	dragToCreatePlugin(),
+]
 
 // Event handlers kept module-level to avoid recreation across renders.
 export const handleEventClick = (event: CalendarEvent) => {

@@ -2,24 +2,10 @@ import type { BusinessHours } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { calculateBusinessHoursRange } from '@/features/calendar/utils/business-hours'
 
-export const buildDateTime = (
-	date: Date,
-	time: string,
-	isAllDay: boolean
-): Dayjs => {
+/** Combine a date with an `"HH:mm"` time into a single Dayjs. */
+export const buildDateTime = (date: Date, time: string): Dayjs => {
 	const [hours, minutes] = time.split(':').map(Number)
-	const base = dayjs(date).hour(hours).minute(minutes)
-	return isAllDay ? base.hour(0).minute(0) : base
-}
-
-export const buildEndDateTime = (
-	date: Date,
-	time: string,
-	isAllDay: boolean
-): Dayjs => {
-	const [hours, minutes] = time.split(':').map(Number)
-	const base = dayjs(date).hour(hours).minute(minutes)
-	return isAllDay ? base.hour(23).minute(59) : base
+	return dayjs(date).hour(hours).minute(minutes)
 }
 
 export const getTimeConstraints = (

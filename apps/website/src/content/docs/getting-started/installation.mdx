@@ -32,3 +32,38 @@ Get started with ilamy Calendar by installing it via your preferred package mana
     ```
   </TabItem>
 </Tabs>
+
+## Peer dependencies
+
+ilamy Calendar declares a few packages as **peer dependencies** so your app and the calendar share a single copy. This matters most for `dayjs`: the calendar's API uses `dayjs` objects (e.g. `CalendarEvent.start`), and date labels are localized through your app's `dayjs` instance. A shared copy means the `dayjs` locale you import in your app also applies to the calendar (no extra wiring).
+
+- `dayjs` (`^1.11.20`)
+- `react` and `react-dom` (`^19`)
+- `tailwindcss` (`^4`) and `tailwindcss-animate`
+
+Install `dayjs` alongside the calendar (your React and Tailwind setup already provides the rest):
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install @ilamy/calendar dayjs
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add @ilamy/calendar dayjs
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add @ilamy/calendar dayjs
+    ```
+  </TabItem>
+  <TabItem label="bun">
+    ```bash
+    bun add @ilamy/calendar dayjs
+    ```
+  </TabItem>
+</Tabs>
+
+To localize date labels, set the `locale` prop and import the matching `dayjs` locale once in your app. See [Internationalization](/docs/features/internationalization).

@@ -106,11 +106,11 @@ describe('Header with Export Button', () => {
 		})
 
 		await act(async () => {
-			fireEvent.click(screen.getByRole('button', { name: 'August' }))
+			fireEvent.click(screen.getByRole('combobox', { name: 'August' }))
 		})
 
 		await act(async () => {
-			fireEvent.click(screen.getByRole('button', { name: 'September' }))
+			fireEvent.click(screen.getByRole('option', { name: 'September' }))
 		})
 
 		await waitFor(() => {
@@ -156,7 +156,7 @@ describe('Header with Export Button', () => {
 		// is Sun Apr 26 - Sat May 2. Intl.DateTimeFormat.formatRange with
 		// `{month: 'short', day: 'numeric'}` returns "Apr 26 – May 2" in English
 		// (en-dash separator, U+2013) and intelligently collapses redundant parts.
-		const weekButton = screen.getByRole('button', { name: 'Apr 26 – May 2' })
+		const weekButton = screen.getByRole('combobox', { name: 'Apr 26 – May 2' })
 		expect(weekButton).toBeInTheDocument()
 
 		// No year suffix anywhere in the label.

@@ -21,6 +21,25 @@ You must register ilamy Calendar as a source using Tailwind's `@source` directiv
 @source "../node_modules/@ilamy/calendar/dist";
 ```
 
+## Scrollbar Layout Shift (Optional)
+
+ilamy Calendar uses Radix UI primitives (Select, Dialog, Popover) for its dropdowns and dialogs. When one opens, Radix locks body scroll via `react-remove-scroll`, which hides the page scrollbar and can shift your layout sideways by the scrollbar's width.
+
+<Aside type="tip">
+This is completely optional. Add it only if the layout shift bothers you - the calendar works fine without it.
+</Aside>
+
+To keep the scrollbar visible and avoid the shift, add this rule to your global CSS:
+
+```css title="Optional: keep the scrollbar on dropdown/dialog open"
+[data-scroll-locked][data-scroll-locked] {
+  overflow-y: scroll !important;
+  margin-right: 0 !important;
+}
+```
+
+The doubled `[data-scroll-locked]` selector raises specificity above Radix's own scroll-lock rule so the scrollbar stays and the compensation margin is dropped. See the upstream discussion for context: [shadcn-ui/ui#4227](https://github.com/shadcn-ui/ui/issues/4227).
+
 ## Learn More
 
 For comprehensive color customization options, theming strategies, and advanced techniques, refer to the official Tailwind CSS documentation:

@@ -1,18 +1,32 @@
-import { Button } from '@ilamy/ui/components/button'
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from '@ilamy/ui/components/popover'
-import { cn } from '@ilamy/ui/lib/utils'
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+} from '@ilamy/ui/components/select'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useDateTimeFormatters } from '@/hooks/use-date-time-formatters'
 import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
+
+// Each picker is a Select whose options carry the date they navigate to, so
+// onValueChange just looks the chosen option up and selects its date.
+interface PickerOption {
+	value: string
+	label: string
+	date: Dayjs
+	today?: boolean
+}
+
+interface Picker {
+	id: string
+	hidden: boolean
+	title: string
+	value: string
+	options: PickerOption[]
+}
 
 export const TitleContent = () => {
 	const { currentDate, view, selectDate, t, firstDayOfWeek } =
@@ -26,186 +40,138 @@ export const TitleContent = () => {
 
 	const { formatDateRange } = useDateTimeFormatters()
 
-	const [openPopover, setOpenPopover] = useState<string | null>(null)
-
-	const months = Array.from({ length: 12 }, (_, index) =>
-		currentDate.month(index).format('MMMM')
-	)
-
-	const currentYear = currentDate.year()
-	const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
+	const currentWeekStart = weekDays.at(0) ?? currentDate
+	const currentWeekEnd = weekDays.at(-1) ?? currentDate
+	const currentYear = currentDate.year()
 
-	const handleSelectDate = (date: Dayjs) => {
-		selectDate(date)
-		setOpenPopover(null)
-	}
-
-	const renderMonthContent = () => (
-		<>
-			{months.map((month, index) => (
-				<Button
-					className={cn(
-						'justify-start font-normal',
-						currentDate.month() === index && 'bg-primary/10'
-					)}
-					key={index}
-					onClick={() => handleSelectDate(currentDate.month(index))}
-					variant="ghost"
-				>
-					{month}
-				</Button>
-			))}
-		</>
+	const monthOptions: PickerOption[] = Array.from(
+		{ length: 12 },
+		(_, index) => ({
+			value: String(index),
+			label: currentDate.month(index).format('MMMM'),
+			date: currentDate.month(index),
+		})
 	)
 
-	const renderYearContent = () => (
-		<>
-			{years.map((year) => (
-				<Button
-					className={cn(
-						'justify-start font-normal',
-						currentDate.year() === year && 'bg-primary/10'
-					)}
-					key={year}
-					onClick={() => handleSelectDate(currentDate.year(year))}
-					variant="ghost"
-				>
-					{year}
-				</Button>
-			))}
-		</>
+	const yearOptions: PickerOption[] = Array.from({ length: 11 }, (_, i) => {
+		const year = currentYear - 5 + i
+		return {
+			value: String(year),
+			label: String(year),
+			date: currentDate.year(year),
+		}
+	})
+
+	const weekOptions: PickerOption[] = Array.from({ length: 7 }, (_, i) => {
+		const weekDate = currentDate.subtract(3, 'week').add(i, 'week')
+		const days = getWeekDays(weekDate, firstDayOfWeek)
+		const start = days.at(0) ?? weekDate
+		const end = days.at(-1) ?? weekDate
+		return {
+			value: getDayKey(start),
+			label: formatDateRange(start, end),
+			date: start,
+		}
+	})
+
+	const dayOptions: PickerOption[] = Array.from(
+		{ length: currentDate.daysInMonth() },
+		(_, i) => {
+			const day = currentDate.startOf('month').date(i + 1)
+			return {
+				value: getDayKey(day),
+				label: day.format('ll'),
+				date: day,
+				today: isToday(day),
+			}
+		}
 	)
 
-	const renderWeekContent = () => (
-		<>
-			{Array.from({ length: 7 }, (_, i) => {
-				const weekDate = currentDate.subtract(3, 'week').add(i, 'week')
-				const days = getWeekDays(weekDate, firstDayOfWeek)
-				const start = days.at(0) ?? weekDate
-				const end = days.at(-1) ?? weekDate
-				const isCurrentWeek = weekDate.isSame(currentDate, 'week')
-
-				return (
-					<Button
-						className={cn(
-							'justify-start font-normal',
-							isCurrentWeek && 'bg-primary/10'
-						)}
-						key={getDayKey(start)}
-						onClick={() => handleSelectDate(start)}
-						variant="ghost"
-					>
-						<div className="flex w-full items-center justify-between">
-							<span>{formatDateRange(start, end)}</span>
-						</div>
-					</Button>
-				)
-			})}
-		</>
-	)
-
-	const renderDayContent = () => {
-		const firstDay = currentDate.startOf('month')
-		const daysInMonth = currentDate.daysInMonth()
-
-		return (
-			<>
-				{Array.from({ length: daysInMonth }, (_, i) => {
-					const day = firstDay.date(i + 1)
-					const isCurrentDay = day.isSame(currentDate, 'day')
-					const today = isToday(day)
-
-					return (
-						<Button
-							className={cn(
-								'justify-start font-normal',
-								isCurrentDay && 'bg-primary/10'
-							)}
-							key={getDayKey(day)}
-							onClick={() => handleSelectDate(day)}
-							variant="ghost"
-						>
-							<div className="flex w-full items-center justify-between">
-								<span>{day.format('ll')}</span>
-								{today && (
-									<span className="bg-primary text-primary-foreground rounded-sm px-1! text-xs">
-										{t('today')}
-									</span>
-								)}
-							</div>
-						</Button>
-					)
-				})}
-			</>
-		)
-	}
-
-	const popovers = [
+	const pickers: Picker[] = [
 		{
 			id: 'month',
 			hidden: view === 'year',
 			title: currentDate.format('MMMM'),
-			render: renderMonthContent,
+			value: String(currentDate.month()),
+			options: monthOptions,
 		},
 		{
 			id: 'year',
 			hidden: false,
 			title: currentDate.format('YYYY'),
-			render: renderYearContent,
+			value: String(currentYear),
+			options: yearOptions,
 		},
 		{
 			id: 'week',
 			hidden: view !== 'week',
-			title: formatDateRange(
-				weekDays.at(0) ?? currentDate,
-				weekDays.at(-1) ?? currentDate
-			),
-			triggerStyle: undefined,
-			render: renderWeekContent,
+			title: formatDateRange(currentWeekStart, currentWeekEnd),
+			value: getDayKey(currentWeekStart),
+			options: weekOptions,
 		},
 		{
 			id: 'day',
 			hidden: view !== 'day',
 			title: currentDate.format('dddd, D'),
-			triggerStyle: undefined,
-			render: renderDayContent,
+			value: getDayKey(currentDate),
+			options: dayOptions,
 		},
 	]
 
-	return popovers
-		.filter((p) => !p.hidden)
-		.map((popover) => (
-			<Popover
-				key={popover.id}
-				onOpenChange={(open) => setOpenPopover(open ? popover.id : null)}
-				open={openPopover === popover.id}
+	const handleValueChange = (picker: Picker, value: string) => {
+		const option = picker.options.find((o) => o.value === value)
+		if (option) {
+			selectDate(option.date)
+		}
+	}
+
+	return pickers
+		.filter((picker) => !picker.hidden)
+		.map((picker) => (
+			<Select
+				key={picker.id}
+				onValueChange={(value) => handleValueChange(picker, value)}
+				value={picker.value}
 			>
-				<PopoverTrigger asChild>
-					<Button
-						className="flex items-center gap-1 px-1! font-semibold"
-						data-testid="calendar-month-button"
-						size="sm"
-						style={popover.triggerStyle}
-						variant="outline"
+				<SelectTrigger
+					aria-label={picker.title}
+					className="w-fit gap-1 px-2 font-semibold"
+					data-testid="calendar-month-button"
+					size="sm"
+				>
+					{/* Custom trigger content (not SelectValue) keeps each view's distinct
+					    title format, e.g. the day picker's "Monday, 5". */}
+					<AnimatedSection
+						className="flex items-center gap-1 font-semibold"
+						transitionKey={keys.listKey(picker.id, getDayKey(currentDate))}
 					>
-						<AnimatedSection
-							className="flex items-center gap-1 px-1! font-semibold"
-							data-testid="calendar-month-button"
-							transitionKey={keys.listKey(popover.id, getDayKey(currentDate))}
+						{picker.title}
+					</AnimatedSection>
+				</SelectTrigger>
+				{/* Don't snap focus back to the trigger on close, otherwise the
+				    trigger keeps a focus ring until the next click. */}
+				<SelectContent
+					className="min-w-40"
+					onCloseAutoFocus={(event) => event.preventDefault()}
+				>
+					{picker.options.map((option) => (
+						<SelectItem
+							className="whitespace-nowrap"
+							key={option.value}
+							value={option.value}
 						>
-							{popover.title}
-						</AnimatedSection>
-						{/* Muted dropdown affordance (matches @ilamy/ui Select), so the
-						    picker chevrons read distinctly from the prev/next nav chevrons. */}
-						<ChevronDown className="size-4 opacity-50" />
-					</Button>
-				</PopoverTrigger>
-				<PopoverContent className="w-40 p-0">
-					<div className="flex max-h-60 flex-col overflow-auto">
-						{popover.render()}
-					</div>
-				</PopoverContent>
-			</Popover>
+							<span className="flex items-center gap-2">
+								{option.label}
+								{option.today && (
+									<span className="bg-primary text-primary-foreground rounded-sm px-1.5 py-0.5 text-xs leading-none">
+										{t('today')}
+									</span>
+								)}
+							</span>
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 		))
 }

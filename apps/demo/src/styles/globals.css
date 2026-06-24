@@ -148,3 +148,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Radix popups (Select/Dialog/Popover) lock body scroll via react-remove-scroll,
+   which sets `body[data-scroll-locked] { overflow: hidden; margin-right: <gap> }`
+   and so hides the page scrollbar and shifts layout on open. Doubling the
+   attribute selector raises specificity above that rule to keep the scrollbar
+   present and drop the compensation gap. See shadcn-ui/ui#4227. */
+[data-scroll-locked][data-scroll-locked] {
+  overflow-y: scroll !important;
+  margin-right: 0 !important;
+}

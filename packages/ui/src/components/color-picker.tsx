@@ -9,6 +9,16 @@ const HEX_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
 const isHex = (value: string | undefined): value is string =>
 	Boolean(value && HEX_PATTERN.test(value))
 
+// Derive a readable name from a Tailwind background class (e.g.
+// `bg-cyan-100 text-cyan-800` -> `Cyan`), falling back to `Custom`.
+const colorNameFromClass = (value: string): string => {
+	const name = value.match(/bg-([a-z]+)-\d+/)?.at(1)
+	if (!name) {
+		return 'Custom'
+	}
+	return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
 interface ColorSwatch {
 	/** The value stored when picked: a Tailwind class string (e.g. `bg-blue-100 text-blue-800`) or a hex. */
 	value: string
@@ -49,8 +59,17 @@ function ColorPicker({
 
 	const valueIsHex = isHex(value)
 	const selectedSwatch = swatches.find((swatch) => swatch.value === value)
-	const triggerLabel =
-		selectedSwatch?.label ?? (valueIsHex ? value : 'Pick a color')
+
+	let triggerLabel: string
+	if (selectedSwatch) {
+		triggerLabel = selectedSwatch.label
+	} else if (valueIsHex) {
+		triggerLabel = value
+	} else if (value) {
+		triggerLabel = colorNameFromClass(value)
+	} else {
+		triggerLabel = 'Pick a color'
+	}
 
 	return (
 		<Popover>

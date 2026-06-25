@@ -241,6 +241,19 @@ describe('EventForm', () => {
 			)
 		})
 
+		it('should label the trigger from a Tailwind color not in the swatches', () => {
+			const cyanEvent: CalendarEvent = {
+				...testEvent,
+				backgroundColor: undefined,
+				color: 'bg-cyan-100 text-cyan-800',
+			}
+			renderEventForm({ ...defaultProps, selectedEvent: cyanEvent })
+
+			expect(screen.getByRole('button', { name: 'Color' })).toHaveTextContent(
+				'Cyan'
+			)
+		})
+
 		it('should preserve a legacy class-pair color when the color is not changed', async () => {
 			const legacyEvent: CalendarEvent = {
 				...testEvent,

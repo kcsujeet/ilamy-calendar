@@ -1,4 +1,4 @@
 {
 	"title": "Help",
-	"pages": ["faq", "support"]
+	"pages": ["faq", "support", "migration-to-v2"]
 }

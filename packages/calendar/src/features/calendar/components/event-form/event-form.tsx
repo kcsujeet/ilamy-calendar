@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '@ilamy/types'
 import { Button } from '@ilamy/ui/components/button'
 import { Checkbox } from '@ilamy/ui/components/checkbox'
+import { ColorPicker } from '@ilamy/ui/components/color-picker'
 import { DialogFooter } from '@ilamy/ui/components/dialog'
 import { Input } from '@ilamy/ui/components/input'
 import { Label } from '@ilamy/ui/components/label'
@@ -12,8 +13,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ilamy/ui/components/select'
-import { cn } from '@ilamy/ui/lib/utils'
+import { Textarea } from '@ilamy/ui/components/textarea'
 import dayjs from '@ilamy/utils/dayjs'
+import { readableTextColor } from '@ilamy/utils/helpers'
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import {
@@ -32,9 +34,12 @@ import {
 } from '@/features/calendar/utils/event-form-utils'
 import { useScopedEventMutation } from '@/hooks/use-scoped-event-mutation'
 
+// Default event color, kept as a Tailwind class-pair (theme-aware) like before.
 const DEFAULT_EVENT_COLOR = 'bg-blue-100 text-blue-800'
 
-const COLOR_OPTIONS = [
+// Curated swatches: the original Tailwind class-pairs (theme-aware). The picker
+// additionally allows any custom color via its native input + hex field.
+const EVENT_COLOR_SWATCHES = [
 	{ value: DEFAULT_EVENT_COLOR, label: 'Blue' },
 	{ value: 'bg-green-100 text-green-800', label: 'Green' },
 	{ value: 'bg-purple-100 text-purple-800', label: 'Purple' },
@@ -51,6 +56,53 @@ const COLOR_OPTIONS = [
 	{ value: 'bg-orange-100 text-orange-800', label: 'Orange' },
 ]
 
+const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
+
+// The picker's value is whatever the event already stored (a Tailwind class-pair
+// from a swatch, or a hex). Prefer a hex `backgroundColor`, then `color`, else
+// the default class-pair.
+const resolveInitialColor = (
+	backgroundColor: string | undefined,
+	color: string | undefined
+): string => {
+	if (backgroundColor && HEX_COLOR_PATTERN.test(backgroundColor)) {
+		return backgroundColor
+	}
+	return color ?? DEFAULT_EVENT_COLOR
+}
+
+// A swatch stores a Tailwind class-pair in `color`; a custom hex stores
+// `backgroundColor` + a readable text `color`.
+const buildColorFields = (
+	color: string
+): Pick<CalendarEvent, 'backgroundColor' | 'color'> => {
+	if (HEX_COLOR_PATTERN.test(color)) {
+		return { backgroundColor: color, color: readableTextColor(color) }
+	}
+	return { backgroundColor: undefined, color }
+}
+
+// Write the new color only when the user picked one (or the event had none).
+// Otherwise preserve the event's original color (legacy class-pair or hex) as-is.
+const resolveColorFields = ({
+	colorChanged,
+	hadInitialColor,
+	selectedColor,
+	initialBackgroundColor,
+	initialColor,
+}: {
+	colorChanged: boolean
+	hadInitialColor: boolean
+	selectedColor: string
+	initialBackgroundColor: string | undefined
+	initialColor: string | undefined
+}): Pick<CalendarEvent, 'backgroundColor' | 'color'> => {
+	if (colorChanged || !hadInitialColor) {
+		return buildColorFields(selectedColor)
+	}
+	return { backgroundColor: initialBackgroundColor, color: initialColor }
+}
+
 type TextFieldName = 'title' | 'description' | 'location'
 
 interface EventFormTextFieldProps {
@@ -59,6 +111,8 @@ interface EventFormTextFieldProps {
 	placeholder: string
 	value: string
 	required?: boolean
+	// Render a multi-line textarea (e.g. for the description) instead of an input.
+	multiline?: boolean
 	onChange: (
 		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 	) => void
@@ -71,21 +125,34 @@ const EventFormTextField = ({
 	placeholder,
 	value,
 	required = false,
+	multiline = false,
 	onChange,
 }: EventFormTextFieldProps) => (
 	<div className="grid gap-1 sm:gap-2">
 		<Label className="text-xs sm:text-sm" htmlFor={name}>
 			{label}
 		</Label>
-		<Input
-			className="h-8 text-sm sm:h-9"
-			id={name}
-			name={name}
-			onChange={onChange}
-			placeholder={placeholder}
-			required={required}
-			value={value}
-		/>
+		{multiline ? (
+			<Textarea
+				className="min-h-16 text-sm"
+				id={name}
+				name={name}
+				onChange={onChange}
+				placeholder={placeholder}
+				required={required}
+				value={value}
+			/>
+		) : (
+			<Input
+				className="h-8 text-sm sm:h-9"
+				id={name}
+				name={name}
+				onChange={onChange}
+				placeholder={placeholder}
+				required={required}
+				value={value}
+			/>
+		)}
 	</div>
 )
 
@@ -129,7 +196,8 @@ export const EventForm: React.FC<EventFormProps> = ({
 		start = dayjs(),
 		end = dayjs().add(1, 'hour'),
 		allDay: initialAllDay = false,
-		color: initialColor = DEFAULT_EVENT_COLOR,
+		color: initialColor,
+		backgroundColor: initialBackgroundColor,
 		title: initialTitle = '',
 		description: initialDescription = '',
 		location: initialLocation = '',
@@ -155,7 +223,18 @@ export const EventForm: React.FC<EventFormProps> = ({
 	const [startDate, setStartDate] = useState(start.toDate())
 	const [endDate, setEndDate] = useState(end.toDate())
 	const [isAllDay, setIsAllDay] = useState(initialAllDay)
-	const [selectedColor, setSelectedColor] = useState(initialColor)
+	const [selectedColor, setSelectedColor] = useState(
+		resolveInitialColor(initialBackgroundColor, initialColor)
+	)
+	// Existing events keep their original color (including legacy Tailwind
+	// class-pairs) untouched unless the user actually picks a new one.
+	const [colorPicked, setColorPicked] = useState(false)
+	const hadInitialColor = Boolean(initialColor || initialBackgroundColor)
+
+	const handleColorChange = (color: string) => {
+		setSelectedColor(color)
+		setColorPicked(true)
+	}
 
 	// Time state
 	const [startTime, setStartTime] = useState(start.format('HH:mm'))
@@ -245,6 +324,17 @@ export const EventForm: React.FC<EventFormProps> = ({
 		const startDateTime = buildDateTime(startDate, startTime, isAllDay)
 		const endDateTime = buildEndDateTime(endDate, endTime, isAllDay)
 
+		// Only write the new hex model when the user picked a color. Otherwise an
+		// existing event keeps its original color (legacy class-pair included) so
+		// editing other fields never rewrites its appearance.
+		const colorFields = resolveColorFields({
+			colorChanged: colorPicked,
+			hadInitialColor,
+			selectedColor,
+			initialBackgroundColor,
+			initialColor,
+		})
+
 		const eventData: CalendarEvent = {
 			id: selectedEventId || dayjs().format('YYYYMMDDHHmmss'),
 			title: formValues.title,
@@ -254,7 +344,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 			description: formValues.description,
 			location: formValues.location,
 			allDay: isAllDay,
-			color: selectedColor,
+			...colorFields,
 			...pluginUpdates,
 		}
 
@@ -337,6 +427,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 						/>
 						<EventFormTextField
 							label={t('description')}
+							multiline
 							name="description"
 							onChange={handleInputChange}
 							placeholder={t('eventDescriptionPlaceholder')}
@@ -423,22 +514,12 @@ export const EventForm: React.FC<EventFormProps> = ({
 
 						<div className="grid gap-1 sm:gap-2">
 							<Label className="text-xs sm:text-sm">{t('color')}</Label>
-							<div className="flex flex-wrap gap-2">
-								{COLOR_OPTIONS.map((color) => (
-									<Button
-										aria-label={color.label}
-										className={cn(
-											`${color.value} h-6 w-6 rounded-full sm:h-8 sm:w-8`,
-											selectedColor === color.value &&
-												'ring-2 ring-black ring-offset-1 sm:ring-offset-2'
-										)}
-										key={color.value}
-										onClick={() => setSelectedColor(color.value)}
-										type="button"
-										variant="ghost"
-									/>
-								))}
-							</div>
+							<ColorPicker
+								aria-label={t('color')}
+								onChange={handleColorChange}
+								swatches={EVENT_COLOR_SWATCHES}
+								value={selectedColor}
+							/>
 						</div>
 
 						<EventFormTextField

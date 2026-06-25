@@ -216,30 +216,95 @@ describe('EventForm', () => {
 	})
 
 	describe('Color Selection', () => {
-		it('should render color options', () => {
+		it('should render the Tailwind class-pair swatches in the picker', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
-			// Check that multiple color options are rendered
-			const colorButtons = screen
-				.getAllByRole('button')
-				.filter(
-					(button) =>
-						button.getAttribute('aria-label')?.includes('Blue') ||
-						button.getAttribute('aria-label')?.includes('Red') ||
-						button.getAttribute('aria-label')?.includes('Green')
-				)
+			fireEvent.click(screen.getByRole('button', { name: 'Color' }))
 
-			expect(colorButtons.length).toBeGreaterThan(0)
+			expect(screen.getByLabelText('Red')).toBeInTheDocument()
+			expect(screen.getByLabelText('Green')).toBeInTheDocument()
 		})
 
-		it('should select a color when clicked', () => {
+		it('should seed the picker from a legacy class-pair color', () => {
+			const legacyEvent: CalendarEvent = {
+				...testEvent,
+				backgroundColor: undefined,
+				color: 'bg-red-100 text-red-800',
+			}
+			renderEventForm({ ...defaultProps, selectedEvent: legacyEvent })
+
+			fireEvent.click(screen.getByRole('button', { name: 'Color' }))
+
+			expect(screen.getByLabelText('Red')).toHaveAttribute(
+				'aria-pressed',
+				'true'
+			)
+		})
+
+		it('should preserve a legacy class-pair color when the color is not changed', async () => {
+			const legacyEvent: CalendarEvent = {
+				...testEvent,
+				backgroundColor: undefined,
+				color: 'bg-red-100 text-red-800',
+			}
+			renderEventForm({ ...defaultProps, selectedEvent: legacyEvent })
+
+			fireEvent.click(screen.getByRole('button', { name: 'Update' }))
+
+			await waitFor(() => {
+				expect(mockOnUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						color: 'bg-red-100 text-red-800',
+						backgroundColor: undefined,
+					})
+				)
+			})
+		})
+
+		it('should store the picked swatch class-pair color on save', async () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
-			const redColorButton = screen.getByLabelText('Red')
-			fireEvent.click(redColorButton)
+			fireEvent.change(screen.getByPlaceholderText('Event title'), {
+				target: { value: 'Swatch Event' },
+			})
 
-			// The button should have ring classes indicating selection
-			expect(redColorButton).toHaveClass('ring-2', 'ring-black')
+			fireEvent.click(screen.getByRole('button', { name: 'Color' }))
+			fireEvent.click(screen.getByLabelText('Red'))
+
+			fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+
+			await waitFor(() => {
+				expect(mockOnAdd).toHaveBeenCalledWith(
+					expect.objectContaining({
+						color: 'bg-red-100 text-red-800',
+						backgroundColor: undefined,
+					})
+				)
+			})
+		})
+
+		it('should store a custom hex background and readable text color on save', async () => {
+			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
+
+			fireEvent.change(screen.getByPlaceholderText('Event title'), {
+				target: { value: 'Custom Event' },
+			})
+
+			fireEvent.click(screen.getByRole('button', { name: 'Color' }))
+			fireEvent.change(screen.getByLabelText('Hex color'), {
+				target: { value: '#ef4444' },
+			})
+
+			fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+
+			await waitFor(() => {
+				expect(mockOnAdd).toHaveBeenCalledWith(
+					expect.objectContaining({
+						backgroundColor: '#ef4444',
+						color: '#ffffff',
+					})
+				)
+			})
 		})
 	})
 

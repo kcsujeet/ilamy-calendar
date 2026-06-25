@@ -59,16 +59,16 @@ Install the library and its peer dependencies using your preferred package manag
 
 ```bash
 # npm
-npm install @ilamy/calendar
+npm install @ilamy/calendar dayjs
 
 # bun
-bun add @ilamy/calendar
+bun add @ilamy/calendar dayjs
 
 # pnpm
-pnpm add @ilamy/calendar
+pnpm add @ilamy/calendar dayjs
 ```
 
-> **Note**: This library requires **React 19+** and **Tailwind CSS 4+**. Peers: `react`, `react-dom`, `tailwindcss` (v4), `tailwindcss-animate`.
+> **Note**: This library requires **React 19+** and **Tailwind CSS 4+**. Peers: `dayjs`, `react`, `react-dom`, `tailwindcss` (v4), `tailwindcss-animate`. `dayjs` is in the command above because the calendar's API uses `dayjs` objects and shares your app's instance/locale.
 
 ---
 

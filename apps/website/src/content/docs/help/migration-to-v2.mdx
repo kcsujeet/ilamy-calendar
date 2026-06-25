@@ -1,0 +1,185 @@
+---
+title: Migrating to v2
+description: Upgrade from @ilamy/calendar v1 to v2, which introduces a plugin architecture and a single unified calendar component.
+slug: docs/help/migration-to-v2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+v2 introduces a **plugin architecture**. The core is now plugin-agnostic: capabilities like recurring events are opt-in plugins, and resources are props on the one `IlamyCalendar`. This guide covers every breaking change, ordered roughly by how many apps it affects.
+
+<Aside type="note">
+If you have no recurring events and don't author custom views, the changes most likely to affect you are the unified `IlamyCalendar` (#1) and the `dayjs` peer dependency (#3).
+</Aside>
+
+## 1. One calendar: resources are props on `IlamyCalendar`
+
+`IlamyResourceCalendar` is gone as a separate component. `IlamyCalendar` now accepts `resources`, `renderResource`, `orientation`, and `weekViewGranularity` directly. Behavior with resources set is unchanged.
+
+```tsx title="Before (v1)"
+<IlamyResourceCalendar resources={rooms} orientation="vertical" events={events} />
+```
+
+```tsx title="After (v2)"
+<IlamyCalendar resources={rooms} orientation="vertical" events={events} />
+```
+
+`IlamyResourceCalendar` still works as a deprecated alias and will be removed in the next major. Other notes:
+
+- `orientation` without `resources` is inert; dev builds log a console warning.
+- `IlamyResourceCalendarPropEvent` is gone — use `IlamyCalendarPropEvent` (`CalendarEvent` already carries `resourceId` / `resourceIds`).
+- The resource calendar's root testid is now `ilamy-calendar` (was `ilamy-resource-calendar`); the vertical-arrangement resource header testid is now `resource-columns-header` (was `resource-month-header`).
+
+## 2. Plugins are opt-in — recurrence no longer works by default
+
+In v1, recurring event expansion happened automatically. In v2 the core ships zero plugins, so you register `recurrencePlugin` explicitly. **Without it, recurring events silently stop expanding.**
+
+```tsx title="Before (v1)"
+import { IlamyCalendar } from '@ilamy/calendar'
+
+// Recurring events expanded automatically
+<IlamyCalendar events={events} />
+```
+
+```tsx title="After (v2)"
+import { IlamyCalendar } from '@ilamy/calendar'
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
+
+// Register the plugin to restore recurring-event behavior
+<IlamyCalendar events={events} plugins={[recurrencePlugin()]} />
+```
+
+If you have no recurring events you can omit the plugin entirely and skip the `@ilamy/calendar/plugins/recurrence` import.
+
+## 3. `dayjs` is now a peer dependency
+
+`dayjs` moved from a bundled dependency to a **peer dependency** so your app and the calendar share a single `dayjs` instance. Previously, package managers (notably pnpm) could resolve a separate `dayjs` copy for the calendar, so a locale you imported in your app registered onto your copy but not the calendar's, leaving some dates unlocalized.
+
+Install `dayjs` explicitly (most apps already do, since `CalendarEvent.start`/`end` are `dayjs` objects):
+
+```bash
+npm install dayjs
+```
+
+With a shared instance, localizing dates is just importing the locale once in your app:
+
+```ts
+import 'dayjs/locale/fr'
+// <IlamyCalendar locale="fr" />
+```
+
+If you previously worked around the split instance (e.g. reading `rootDayjs.Ls[locale]` and calling `dayjs.locale(...)` on the calendar's `dayjs`), you can delete that code.
+
+## 4. Recurrence helpers moved to a subpath
+
+`generateRecurringEvents`, `isRecurringEvent`, `RRule`, and `RRuleOptions` are no longer exported from the main `@ilamy/calendar` entry. Import them from the dedicated subpath.
+
+```ts title="Before (v1)"
+import {
+  generateRecurringEvents,
+  isRecurringEvent,
+  RRule,
+  type RRuleOptions,
+} from '@ilamy/calendar'
+```
+
+```ts title="After (v2)"
+import {
+  generateRecurringEvents,
+  isRecurringEvent,
+  RRule,
+  type RRuleOptions,
+} from '@ilamy/calendar/plugins/recurrence'
+```
+
+## 5. `CalendarEvent` no longer has recurrence fields by default
+
+In v1, `CalendarEvent` declared `rrule`, `recurrenceId`, and `exdates` directly. In v2 those fields are added back via TypeScript declaration merging when you import from `@ilamy/calendar/plugins/recurrence`.
+
+```ts title="After (v2)"
+// Importing the recurrence subpath runs the declaration merge.
+// Importing recurrencePlugin has the same effect.
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
+
+// Now CalendarEvent has rrule / recurrenceId / exdates again
+const event: CalendarEvent = {
+  id: '1',
+  title: 'Weekly standup',
+  start: dayjs('2026-01-05T09:00:00Z'),
+  end: dayjs('2026-01-05T09:30:00Z'),
+  rrule: { freq: RRule.WEEKLY },
+}
+```
+
+<Aside type="tip">
+If TypeScript reports `Property 'rrule' does not exist on type 'CalendarEvent'`, make sure you import from `@ilamy/calendar/plugins/recurrence` somewhere in your project.
+</Aside>
+
+## 6. Context method renames
+
+The recurrence-specific context methods were replaced with generic plugin-routing equivalents. The public context type is now `IlamyCalendarApi` (was `UseIlamyCalendarContextReturn`).
+
+| v1 method | v2 replacement | Notes |
+|---|---|---|
+| `updateRecurringEvent(event, updates, options)` | `applyScopedEdit(event, updates, scope)` | `scope` is opaque; gathered via the mutation-scope slot |
+| `deleteRecurringEvent(event, options)` | `applyScopedDelete(event, scope)` | same |
+| `findParentRecurringEvent(event)` | removed | use `rawEvents` to find the base series if needed |
+
+In most applications you do not call `applyScopedEdit`/`applyScopedDelete` directly. The host's built-in scoped-mutation flow (driven by the event form and drag-and-drop) handles them automatically when the recurrence plugin is registered.
+
+`rawEvents` is now public. If you previously relied on `findParentRecurringEvent` to locate the base rrule event of a generated instance, filter `rawEvents` by `uid`:
+
+```ts title="After (v2)"
+const { rawEvents } = useIlamyCalendarContext()
+const baseEvent = rawEvents.find(
+  (e) => e.uid === instance.uid && e.rrule !== undefined
+)
+```
+
+## 7. Deep imports are blocked
+
+The `exports` map now encapsulates the package. Any import path not listed in the map throws `ERR_PACKAGE_PATH_NOT_EXPORTED` at runtime (and a TypeScript error at compile time). The only valid entry points are:
+
+```ts
+import { ... } from '@ilamy/calendar'
+import { ... } from '@ilamy/calendar/plugins/recurrence'
+```
+
+Anything previously reached via `@ilamy/calendar/src/...` is either available from one of these entries or was intentionally internal.
+
+## 8. `CalendarView` is now `string`
+
+In v1 `CalendarView` was a closed union (`'month' | 'week' | 'day' | 'year'`). In v2 it is `string` so plugins can register additional views. Code that compares or switches on the built-in view names still works — the change only matters if you relied on exhaustive narrowing or type-level enforcement of exactly four views.
+
+## 9. Type tightening
+
+- **`Translations` is now a derived type alias**, not an interface (`Record<keyof typeof defaultTranslations, string>`). Annotating translation objects still works. The only break: `declare module` augmentation that merged extra keys into the `Translations` interface no longer compiles — pass a `translator` function for custom keys instead.
+- **`data` fields are `Record<string, unknown>`** (was `Record<string, any>`) on `CalendarEvent.data` and `Resource.data`. Writing is unchanged; reads need narrowing or a boundary cast:
+
+```ts title="After (v2)"
+const role = typeof resource.data?.role === 'string' ? resource.data.role : undefined
+// or cast once at your boundary:
+const meta = resource.data as MyResourceMeta
+```
+
+- **`Resource.position` removed.** It was never read by the calendar — order resources by ordering the `resources` array itself.
+
+## 10. Behavior changes
+
+- **Resource cell-click respects `allDay`.** Clicking a cell on a resource calendar without a custom `onCellClick` now pre-fills the event form with the cell's `allDay` flag (v1 always used `allDay: false`). If you relied on the old hardcode, pass `onCellClick` and open the form yourself.
+- **`getEventsForResource` works everywhere.** It is now always defined on `useIlamyCalendarContext()`; on a calendar without resources it filters by the events' own `resourceIds`/`resourceId`. v1 call sites keep working.
+
+## Summary checklist
+
+- [ ] Replace `<IlamyResourceCalendar>` with `<IlamyCalendar resources={...}>` (old name still works as a deprecated alias).
+- [ ] Pass `plugins={[recurrencePlugin()]}` to `<IlamyCalendar>` and import it from `@ilamy/calendar/plugins/recurrence`.
+- [ ] Install `dayjs` as a direct dependency; remove any locale-syncing workaround.
+- [ ] Move `generateRecurringEvents`, `isRecurringEvent`, `RRule`, `RRuleOptions` imports to `@ilamy/calendar/plugins/recurrence`.
+- [ ] If TypeScript reports missing `rrule`/`recurrenceId`/`exdates`, ensure the recurrence subpath is imported somewhere.
+- [ ] Replace `updateRecurringEvent` with `applyScopedEdit` and `deleteRecurringEvent` with `applyScopedDelete`; replace `findParentRecurringEvent` with `rawEvents` filtering.
+- [ ] Remove any deep `@ilamy/calendar/src/...` imports.
+- [ ] Update any exhaustive `CalendarView` union narrowing for the new `string` type.
+- [ ] Add narrowing or a boundary cast when reading `event.data` / `resource.data`.
+- [ ] Remove any use of `Resource.position`.
+- [ ] Update test harnesses that queried the `ilamy-resource-calendar` or `resource-month-header` testids.
+- [ ] Custom view authors: drop `component: () => null` from spec-driven views, replace `resourceId` with `resource` on `VerticalColumnSpec`, and stringify numeric `HorizontalRowSpec.id`s.

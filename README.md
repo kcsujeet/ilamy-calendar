@@ -154,7 +154,7 @@ For comprehensive guides, API references, and interactive demos, visit [ilamy.de
 
 ilamy Calendar is free and open source. If you'd like to support its development:
 
-<a href="https://ko-fi.com/kcsujeet" target="_blank"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Buy me a coffee at ko-fi.com" height="100" /></a>
+<a href="https://ko-fi.com/kcsujeet" target="_blank"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Buy me a coffee at ko-fi.com" style="height: 50px;" /></a>
 
 ---
 

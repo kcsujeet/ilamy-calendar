@@ -40,8 +40,8 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	return (
 		<div
 			className={cn(
-				'flex flex-col flex-1 items-center min-w-20 justify-center bg-background relative',
-				isLastColumn ? 'border-r-0' : 'border-r',
+				// Separator is on the cells, not this opaque column (it overpaints faint).
+				'flex flex-col flex-1 items-center min-w-20 justify-center bg-background relative border-r-0',
 				className
 			)}
 			data-testid={dataTestId || keys.container.vertical.col(id)}
@@ -55,6 +55,8 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 			>
 				{days.map((day, dayIndex) => {
 					const hourStr = day.format('HH')
+					// Last hour drops border-b to avoid doubling the calendar's bottom.
+					const isLastHour = dayIndex === days.length - 1
 
 					if (renderCell) {
 						const isTimeGutter = id === keys.col.time
@@ -63,7 +65,10 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 							: keys.cell.vertical(day, hourStr, '00', resourceId)
 						return (
 							<div
-								className="min-h-[60px] border-b border-r"
+								className={cn(
+									'min-h-[60px] border-r border-b',
+									isLastHour && 'border-b-0'
+								)}
 								data-hour={isTimeGutter ? hourStr : undefined}
 								data-testid={testId}
 								key={keys.listKey(id, dayIndex, hourStr)}
@@ -78,14 +83,18 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 							className="flex flex-col min-h-[60px]"
 							key={keys.listKey(id, dayIndex, hourStr)}
 						>
-							{cellOffsets.map((minute) => {
+							{cellOffsets.map((minute, offsetIndex) => {
 								const mm = String(minute).padStart(2, '0')
 								const testId = keys.cell.vertical(day, hourStr, mm, resourceId)
+								const isBottomCell =
+									isLastHour && offsetIndex === cellOffsets.length - 1
 
 								return (
 									<GridCell
 										className={cn(
-											'hover:bg-accent relative z-10 flex-1 min-h-0 cursor-pointer border-b border-r-0',
+											'hover:bg-accent relative z-10 flex-1 min-h-0 cursor-pointer border-b',
+											isLastColumn ? 'border-r-0' : 'border-r',
+											isBottomCell && 'border-b-0',
 											hasSubHourSlots && 'border-dashed'
 										)}
 										data-testid={testId}

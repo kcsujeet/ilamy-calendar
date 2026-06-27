@@ -101,6 +101,26 @@ describe('HorizontalGridRow', () => {
 			)
 			expect(cell).toHaveClass('border-b-0')
 		})
+
+		test('removes right border on the last column (no double with calendar border)', () => {
+			const days = [initialDate, initialDate.add(1, 'day')]
+			const columns = days.map((day) => ({
+				id: `col-${day.format('YYYY-MM-DD')}`,
+				day,
+				gridType: 'day' as const,
+			}))
+
+			renderHorizontalGridRow({ columns })
+
+			const first = screen
+				.getByTestId(`day-cell-${days[0].format('YYYY-MM-DD')}`)
+				.className.split(' ')
+			const last = screen
+				.getByTestId(`day-cell-${days[1].format('YYYY-MM-DD')}`)
+				.className.split(' ')
+			expect(first).toContain('border-r')
+			expect(last).toContain('border-r-0')
+		})
 	})
 
 	describe('grouped columns (multiple days per column - week view)', () => {

@@ -36,6 +36,11 @@ describe('useDateTimeFormatters', () => {
 			expect(fmt(d('2026-04-26'), d('2026-04-28'))).toBe('Apr 26 – 28')
 		})
 
+		it('drops the year for a week spanning two years', () => {
+			const fmt = renderFormattersHook()
+			expect(fmt(d('2026-12-30'), d('2027-01-05'))).toBe('Dec 30 – Jan 5')
+		})
+
 		it('respects the calendar locale (French puts the day before the month)', () => {
 			const fmt = renderFormattersHook({ locale: 'fr' })
 			expect(fmt(d('2026-04-26'), d('2026-05-02'))).toBe('26 avr. – 2 mai')

@@ -52,6 +52,40 @@ describe('VerticalGridCol', () => {
 		expect(screen.getByTestId('vertical-time-10')).toHaveTextContent('10:00')
 	})
 
+	test('day cells carry the vertical separator (border-r) for non-last columns', () => {
+		const dateStr = initialDate.format('YYYY-MM-DD')
+		renderVerticalGridCol()
+		const classes = screen
+			.getByTestId(`vertical-cell-${dateStr}-09-00`)
+			.className.split(' ')
+		expect(classes).toContain('border-r')
+		expect(classes).not.toContain('border-r-0')
+	})
+
+	test('last-column day cells omit the trailing border (border-r-0)', () => {
+		const dateStr = initialDate.format('YYYY-MM-DD')
+		renderVerticalGridCol({ isLastColumn: true })
+		const classes = screen
+			.getByTestId(`vertical-cell-${dateStr}-09-00`)
+			.className.split(' ')
+		expect(classes).toContain('border-r-0')
+	})
+
+	test('last-hour cell omits the bottom border (no double with the calendar border)', () => {
+		const dateStr = initialDate.format('YYYY-MM-DD')
+		renderVerticalGridCol()
+		// mockDays = [09:00, 10:00]; 10:00 is the bottom row, 09:00 keeps border-b.
+		const firstHour = screen
+			.getByTestId(`vertical-cell-${dateStr}-09-00`)
+			.className.split(' ')
+		const lastHour = screen
+			.getByTestId(`vertical-cell-${dateStr}-10-00`)
+			.className.split(' ')
+		expect(firstHour).toContain('border-b')
+		expect(firstHour).not.toContain('border-b-0')
+		expect(lastHour).toContain('border-b-0')
+	})
+
 	test('renders cells with correct IDs', () => {
 		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol()

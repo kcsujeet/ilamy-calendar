@@ -7,6 +7,8 @@ export const defaultTranslations = {
 	delete: 'Delete',
 	cancel: 'Cancel',
 	export: 'Export',
+	previous: 'Previous',
+	next: 'Next',
 
 	// Event related
 	event: 'Event',

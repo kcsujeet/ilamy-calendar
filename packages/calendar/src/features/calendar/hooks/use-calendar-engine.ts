@@ -29,7 +29,7 @@ import {
 	type CalendarNavigationSlice,
 	useCalendarNavigation,
 } from '@/features/calendar/hooks/use-calendar-navigation'
-import type { CellInfo } from '@/features/calendar/types'
+import type { CellInfo, DateRange } from '@/features/calendar/types'
 import { createPluginRuntime } from '@/features/plugins/lib/create-plugin-runtime'
 import { getEventResourceIds } from '@/lib/events/pipeline'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
@@ -86,6 +86,8 @@ export interface CalendarEngineReturn
 	collect: (point: string, context: unknown) => unknown[]
 	getProviders: () => Array<ComponentType<{ children: ReactNode }>>
 	getEventResourceIds: (event: CalendarEvent) => (string | number)[]
+	/** The active view's current visible date range (what is on screen). */
+	currentRange: DateRange
 }
 
 /**
@@ -230,6 +232,7 @@ export const useCalendarEngine = (
 			collect: pluginRuntime.collect,
 			getProviders: pluginRuntime.getProviders,
 			getEventResourceIds,
+			currentRange: navigation.getCurrentViewRange(),
 		}
 	}, [configSlice, navigation, data, interaction, pluginRuntime])
 }

@@ -34,15 +34,14 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 			{/* Time col spacer */}
 			{showSpacer && <AllDayCell className={classes?.spacer} />}
 
-			{/* Day all day cell */}
+			{/* Not isLastRow: the time grid follows, so cells keep border-b. */}
 			<HorizontalGridRow
 				allDay
-				className="flex-1 min-h-fit border-b"
+				className="flex-1 min-h-fit"
 				columns={columns}
 				dayNumberHeight={0}
 				gridType="day"
 				id={keys.allDayRow(resource?.id)}
-				isLastRow
 				resource={resource}
 				variant="regular"
 			/>

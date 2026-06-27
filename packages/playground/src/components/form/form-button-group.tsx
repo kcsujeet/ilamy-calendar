@@ -1,4 +1,5 @@
 import { Button } from '@ilamy/ui/components/button'
+import { ButtonGroup } from '@ilamy/ui/components/button-group'
 import { useController, useFormContext } from 'react-hook-form'
 
 interface FormButtonGroupOption {
@@ -12,14 +13,19 @@ interface FormButtonGroupProps {
 	name: string
 	label: string
 	options: FormButtonGroupOption[]
+	// Convert the button's string value to the stored form value. Numeric or
+	// union-typed fields pass a parser; the default keeps the raw string.
+	parse?: (value: string) => unknown
 }
 
-// A react-hook-form-bound segmented control: a row of toggle buttons where the
-// selected option is highlighted. Used for small either/or settings.
+// A react-hook-form-bound segmented control built on the @ilamy/ui ButtonGroup:
+// a connected row of buttons where the selected option is filled. Used for small
+// either/or settings.
 export function FormButtonGroup({
 	name,
 	label,
 	options,
+	parse,
 }: FormButtonGroupProps) {
 	const { control } = useFormContext()
 	const { field } = useController({ name, control })
@@ -28,19 +34,22 @@ export function FormButtonGroup({
 	return (
 		<div className="text-sm text-left font-medium">
 			<span>{label}</span>
-			<div className="flex gap-1 mt-1">
+			<ButtonGroup className="mt-1 w-full">
 				{options.map((option) => (
 					<Button
+						className="flex-1 px-2"
 						key={option.value}
-						onClick={() => field.onChange(option.value)}
+						onClick={() =>
+							field.onChange(parse ? parse(option.value) : option.value)
+						}
 						size="sm"
 						type="button"
-						variant={option.value === value ? 'secondary' : 'ghost'}
+						variant={option.value === value ? 'default' : 'outline'}
 					>
 						{option.label}
 					</Button>
 				))}
-			</div>
+			</ButtonGroup>
 			{selected?.description && (
 				<p className="text-xs text-muted-foreground font-normal mt-1">
 					{selected.description}

@@ -7,7 +7,7 @@ import {
 import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { Calendar } from '@/components/ui/calendar'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useDateTimeFormatters } from '@/hooks/use-date-time-formatters'
@@ -41,49 +41,36 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 		setOpen(false)
 	}
 
-	const title = (() => {
-		if (view === 'year') {
-			return currentDate.format('YYYY')
-		}
-		if (view === 'month') {
-			return currentDate.format('MMM YYYY')
-		}
-		if (view === 'week') {
-			return formatDateRange(weekStart, weekEnd)
-		}
-		if (view === 'day') {
-			return currentDate.format('ddd, MMM D, YYYY')
-		}
-		return currentDate.format('MMM D, YYYY')
-	})()
+	// Title and picker are keyed by view; unknown views fall back to the day form.
+	const titleByView: Partial<Record<string, string>> = {
+		year: currentDate.format('YYYY'),
+		month: currentDate.format('MMM YYYY'),
+		week: formatDateRange(weekStart, weekEnd),
+		day: currentDate.format('ddd, MMM D, YYYY'),
+	}
+	const title = titleByView[view] ?? currentDate.format('MMM D, YYYY')
 
-	const content = (() => {
-		if (view === 'year') {
-			return <YearGrid onSelect={handleSelect} selected={currentDate} />
-		}
-		if (view === 'month') {
-			return <MonthGrid onSelect={handleSelect} selected={currentDate} />
-		}
-		if (view === 'week') {
-			return (
-				<Calendar
-					defaultMonth={currentDate.toDate()}
-					firstDayOfWeek={firstDayOfWeek}
-					highlightedWeekOf={currentDate}
-					onSelect={(d) => d && handleSelect(dayjs(d))}
-					weekHover
-				/>
-			)
-		}
-		return (
+	const contentByView: Partial<Record<string, ReactNode>> = {
+		year: <YearGrid onSelect={handleSelect} selected={currentDate} />,
+		month: <MonthGrid onSelect={handleSelect} selected={currentDate} />,
+		week: (
 			<Calendar
 				defaultMonth={currentDate.toDate()}
 				firstDayOfWeek={firstDayOfWeek}
+				highlightedWeekOf={currentDate}
 				onSelect={(d) => d && handleSelect(dayjs(d))}
-				selected={currentDate.toDate()}
+				weekHover
 			/>
-		)
-	})()
+		),
+	}
+	const content = contentByView[view] ?? (
+		<Calendar
+			defaultMonth={currentDate.toDate()}
+			firstDayOfWeek={firstDayOfWeek}
+			onSelect={(d) => d && handleSelect(dayjs(d))}
+			selected={currentDate.toDate()}
+		/>
+	)
 
 	return (
 		<Popover onOpenChange={setOpen} open={open}>

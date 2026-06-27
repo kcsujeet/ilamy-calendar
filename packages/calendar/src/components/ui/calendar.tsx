@@ -34,16 +34,17 @@ interface DayState {
 // selected day (solid `bg-primary`) and stays put; hovering a different week
 // shows a lighter `bg-accent` band, exactly like per-day hover. Both can show
 // at once, so hovering never clears the active week.
-function cellClass(state: DayState): string {
+function getCellClass(state: DayState): string {
+	const hoverBand = state.weekHover && !state.isCurrentWeek
 	return cn(
 		'p-0 text-center',
 		state.weekHover && 'first:rounded-l-md last:rounded-r-md',
-		state.weekHover && !state.isCurrentWeek && 'group-hover/week:bg-accent',
+		hoverBand && 'group-hover/week:bg-accent',
 		state.isCurrentWeek && 'bg-primary'
 	)
 }
 
-function dayButtonClass(state: DayState): string {
+function getDayButtonClass(state: DayState): string {
 	return cn(
 		'w-full aspect-square text-sm select-none',
 		!state.isDisabled && 'cursor-pointer',
@@ -71,7 +72,7 @@ function DayCell({
 }) {
 	return (
 		<td
-			className={cellClass(state)}
+			className={getCellClass(state)}
 			data-disabled={state.isDisabled}
 			data-outside={state.isOutside}
 			data-selected={state.isSelected}
@@ -82,7 +83,7 @@ function DayCell({
 			<button
 				aria-disabled={state.isDisabled}
 				aria-hidden={state.isOutside}
-				className={dayButtonClass(state)}
+				className={getDayButtonClass(state)}
 				data-disabled={state.isDisabled}
 				data-selected={state.isSelected}
 				disabled={state.isDisabled || state.isOutside}
@@ -118,20 +119,22 @@ export function Calendar({
 		d.format('dd')
 	)
 
-	const highlightedWeek = highlightedWeekOf
-		? getWeekDays(highlightedWeekOf, firstDayOfWeek)
-		: null
-	const highlightStart = highlightedWeek?.at(0)
-	const highlightEnd = highlightedWeek?.at(-1)
+	let highlightStart: Dayjs | undefined
+	let highlightEnd: Dayjs | undefined
+	if (highlightedWeekOf) {
+		const highlightedWeek = getWeekDays(highlightedWeekOf, firstDayOfWeek)
+		highlightStart = highlightedWeek.at(0)
+		highlightEnd = highlightedWeek.at(-1)
+	}
 
 	const toDayState = (day: Dayjs): DayState => {
 		const isSelected = day.format('YYYY-MM-DD') === selectedKey
-		const isCurrentWeek = Boolean(
-			highlightStart &&
-				highlightEnd &&
-				!day.isBefore(highlightStart, 'day') &&
-				!day.isAfter(highlightEnd, 'day')
-		)
+		let isCurrentWeek = false
+		if (highlightStart && highlightEnd) {
+			const onOrAfterStart = !day.isBefore(highlightStart, 'day')
+			const onOrBeforeEnd = !day.isAfter(highlightEnd, 'day')
+			isCurrentWeek = onOrAfterStart && onOrBeforeEnd
+		}
 		return {
 			isOutside: !day.isSame(viewMonth, 'month'),
 			isSelected,

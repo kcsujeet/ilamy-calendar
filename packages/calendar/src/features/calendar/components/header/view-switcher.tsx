@@ -20,7 +20,6 @@ export function ViewSwitcher({ className }: ViewSwitcherProps) {
 		<ToggleGroup
 			className={cn('bg-muted gap-0 rounded-lg', className)}
 			onValueChange={(next) => next && setView(next)}
-			size="default"
 			type="single"
 			value={view}
 		>

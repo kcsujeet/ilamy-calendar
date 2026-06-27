@@ -1,8 +1,8 @@
 import { Button } from '@ilamy/ui/components/button'
-import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useState } from 'react'
+import { PickerGridCell } from './picker-grid-cell'
 
 interface MonthGridProps {
 	/** The currently active date; its month/year drive the highlighted cell. */
@@ -49,21 +49,15 @@ export function MonthGrid({ selected, onSelect }: MonthGridProps) {
 					const isCurrent =
 						year === now.year() && month.index === now.month() && !isSelected
 					return (
-						<button
-							aria-pressed={isSelected}
-							className={cn(
-								'hover:bg-accent rounded-md py-2 text-sm font-medium cursor-pointer select-none',
-								isCurrent && 'ring-1 ring-inset ring-foreground/40',
-								isSelected && 'bg-primary text-primary-foreground'
-							)}
+						<PickerGridCell
+							isCurrent={isCurrent}
+							isSelected={isSelected}
 							key={month.index}
-							onClick={() =>
+							label={month.label}
+							onSelect={() =>
 								onSelect(selected.year(year).month(month.index).date(1))
 							}
-							type="button"
-						>
-							{month.label}
-						</button>
+						/>
 					)
 				})}
 			</div>

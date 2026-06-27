@@ -1,8 +1,8 @@
 import { Button } from '@ilamy/ui/components/button'
-import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useState } from 'react'
+import { PickerGridCell } from './picker-grid-cell'
 
 const BLOCK = 12
 
@@ -51,19 +51,13 @@ export function YearGrid({ selected, onSelect }: YearGridProps) {
 					const isSelected = year === selected.year()
 					const isCurrent = year === now.year() && !isSelected
 					return (
-						<button
-							aria-pressed={isSelected}
-							className={cn(
-								'hover:bg-accent rounded-md py-2 text-sm font-medium cursor-pointer select-none',
-								isCurrent && 'ring-1 ring-inset ring-foreground/40',
-								isSelected && 'bg-primary text-primary-foreground'
-							)}
+						<PickerGridCell
+							isCurrent={isCurrent}
+							isSelected={isSelected}
 							key={year}
-							onClick={() => onSelect(selected.year(year))}
-							type="button"
-						>
-							{year}
-						</button>
+							label={year}
+							onSelect={() => onSelect(selected.year(year))}
+						/>
 					)
 				})}
 			</div>

@@ -19,16 +19,38 @@ interface HeaderDatePickerProps {
 	className?: string
 }
 
+// Agenda mirrors the day/week/month grid view's picker according to its window,
+// read off the view's navigationStep (day -> day, week -> week, month -> month).
+// A custom N-day window has no grid equivalent, so it keeps the day picker and a
+// range title.
+function getAgendaPickerView(
+	step: { amount: number; unit: string } | undefined
+): 'day' | 'week' | 'month' | 'agenda' {
+	const isSingleDayWindow = step?.unit === 'day' && step.amount === 1
+	if (step?.unit === 'month') return 'month'
+	if (step?.unit === 'week') return 'week'
+	if (isSingleDayWindow) return 'day'
+	return 'agenda'
+}
+
 // The header title doubles as a navigation dropdown: clicking it opens a
 // view-appropriate picker (day grid, week grid, month grid, or year grid).
 export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
-	const { currentDate, view, selectDate, firstDayOfWeek } =
-		useSmartCalendarContext((ctx) => ({
-			currentDate: ctx.currentDate,
-			view: ctx.view,
-			selectDate: ctx.selectDate,
-			firstDayOfWeek: ctx.firstDayOfWeek,
-		}))
+	const {
+		currentDate,
+		currentRange,
+		view,
+		selectDate,
+		firstDayOfWeek,
+		getViews,
+	} = useSmartCalendarContext((ctx) => ({
+		currentDate: ctx.currentDate,
+		currentRange: ctx.currentRange,
+		view: ctx.view,
+		selectDate: ctx.selectDate,
+		firstDayOfWeek: ctx.firstDayOfWeek,
+		getViews: ctx.getViews,
+	}))
 	const { formatDateRange } = useDateTimeFormatters()
 	const [open, setOpen] = useState(false)
 
@@ -41,14 +63,24 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 		setOpen(false)
 	}
 
+	// Agenda borrows the matching grid view's title/picker for its window; a
+	// custom-window agenda keeps the 'agenda' (range + day picker) form.
+	const activeView = getViews().find((v) => v.name === view)
+	const isAgendaView = view === 'agenda'
+	const effectiveView = isAgendaView
+		? getAgendaPickerView(activeView?.navigationStep)
+		: view
+
 	// Title and picker are keyed by view; unknown views fall back to the day form.
 	const titleByView: Partial<Record<string, string>> = {
 		year: currentDate.format('YYYY'),
 		month: currentDate.format('MMM YYYY'),
 		week: formatDateRange(weekStart, weekEnd),
 		day: currentDate.format('ddd, MMM D, YYYY'),
+		// Custom-window agenda: show the listed range, not one day.
+		agenda: formatDateRange(currentRange.start, currentRange.end),
 	}
-	const title = titleByView[view] ?? currentDate.format('MMM D, YYYY')
+	const title = titleByView[effectiveView] ?? currentDate.format('MMM D, YYYY')
 
 	const contentByView: Partial<Record<string, ReactNode>> = {
 		year: <YearGrid onSelect={handleSelect} selected={currentDate} />,
@@ -63,7 +95,7 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 			/>
 		),
 	}
-	const content = contentByView[view] ?? (
+	const content = contentByView[effectiveView] ?? (
 		<Calendar
 			defaultMonth={currentDate.toDate()}
 			firstDayOfWeek={firstDayOfWeek}

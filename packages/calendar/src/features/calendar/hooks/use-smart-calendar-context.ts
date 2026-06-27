@@ -13,6 +13,7 @@ import {
 	type CalendarContextType,
 } from '@/features/calendar/contexts/calendar-context/context'
 import type {
+	DateRange,
 	OpenEventFormInput,
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
@@ -36,6 +37,8 @@ type SmartCalendarContextType = CalendarContextType
  */
 export interface IlamyCalendarApi {
 	readonly currentDate: Dayjs
+	/** The active view's current visible date range (what is on screen). */
+	readonly currentRange: DateRange
 	readonly view: CalendarView
 	readonly events: CalendarEvent[]
 	readonly rawEvents: CalendarEvent[]
@@ -131,6 +134,7 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 
 	return {
 		currentDate: context.currentDate,
+		currentRange: context.currentRange,
 		view: context.view,
 		events: context.events,
 		rawEvents: context.rawEvents,

@@ -1,4 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test'
+import { agendaPlugin } from '@ilamy/calendar-agenda'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -128,5 +129,42 @@ describe('Calendar header', () => {
 		const title = screen.getByTestId('calendar-title')
 		expect(title).toHaveTextContent('Apr 26 – May 2')
 		expect(title.textContent).not.toContain('2026')
+	})
+
+	it('renders a custom-window agenda range (not a single day) in the title', () => {
+		renderHeader([], {
+			initialView: 'agenda',
+			initialDate: dayjs('2026-04-15T12:00:00.000Z'),
+			plugins: [agendaPlugin({ window: 7 })],
+		})
+
+		// A custom 7-day window starting at Apr 15 lists Apr 15 - 21, so the title
+		// shows that range rather than just "Apr 15".
+		const title = screen.getByTestId('calendar-title')
+		expect(title).toHaveTextContent('Apr 15 – 21')
+	})
+
+	it('mirrors the week-view title for a week-window agenda', () => {
+		renderHeader([], {
+			initialView: 'agenda',
+			initialDate: dayjs('2026-04-15T12:00:00.000Z'),
+			plugins: [agendaPlugin({ window: 'week' })],
+		})
+
+		// firstDayOfWeek 0: the week containing Apr 15 2026 (a Wednesday) is
+		// Sun Apr 12 - Sat Apr 18, exactly as week view would title it.
+		const title = screen.getByTestId('calendar-title')
+		expect(title).toHaveTextContent('Apr 12 – 18')
+	})
+
+	it('mirrors the month-view title for a month-window agenda', () => {
+		renderHeader([], {
+			initialView: 'agenda',
+			initialDate: dayjs('2026-04-15T12:00:00.000Z'),
+			plugins: [agendaPlugin({ window: 'month' })],
+		})
+
+		const title = screen.getByTestId('calendar-title')
+		expect(title).toHaveTextContent('Apr 2026')
 	})
 })

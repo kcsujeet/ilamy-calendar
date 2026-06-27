@@ -6,6 +6,7 @@ import { defineConfig } from 'bunup'
 export default defineConfig({
 	entry: [
 		'src/components/button.tsx',
+		'src/components/button-group.tsx',
 		'src/components/card.tsx',
 		'src/components/checkbox.tsx',
 		'src/components/current-time-indicator.tsx',

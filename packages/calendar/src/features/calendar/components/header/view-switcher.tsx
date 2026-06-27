@@ -18,8 +18,11 @@ export function ViewSwitcher({ className }: ViewSwitcherProps) {
 
 	return (
 		<ToggleGroup
-			className={cn('bg-muted gap-0 rounded-lg', className)}
+			// p-0.5 track + sm (h-8) items = h-9 total: the active pill sits inset
+			// inside the muted track while the control still matches the h-9 buttons.
+			className={cn('bg-muted gap-0 rounded-lg p-0.75', className)}
 			onValueChange={(next) => next && setView(next)}
+			size="sm"
 			type="single"
 			value={view}
 		>

@@ -82,6 +82,8 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 			<div className="relative flex-1 flex min-w-0">
 				<div className="flex w-full min-w-0">
 					{columns.map((col, index) => {
+						// Edge cells drop their border to avoid doubling the calendar frame.
+						const isLastCol = index === columns.length - 1
 						if (col.days) {
 							return (
 								<GroupedColumn
@@ -90,7 +92,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 									dayNumberHeight={dayNumberHeight}
 									gridType={gridType}
 									id={id}
-									isLastCol={index === columns.length - 1}
+									isLastCol={isLastCol}
 									isLastRow={isLastRow}
 									key={col.id}
 									resource={resource}
@@ -106,6 +108,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								className={cn(
 									'flex-1 w-20',
 									isLastRow && 'border-b-0',
+									isLastCol && 'border-r-0',
 									col.className
 								)}
 								day={col.day}

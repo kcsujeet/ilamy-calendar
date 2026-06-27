@@ -95,8 +95,8 @@ const AGENDA_WINDOW_OPTIONS = [
 	{ value: 'day', label: 'Day' },
 	{ value: 'week', label: 'Week' },
 	{ value: 'month', label: 'Month' },
-	{ value: '3', label: 'Next 3 days' },
-	{ value: '14', label: 'Next 14 days' },
+	{ value: '3', label: '3-day' },
+	{ value: '14', label: '14-day' },
 ]
 
 const LOCALE_OPTIONS = [
@@ -288,6 +288,7 @@ export function CalendarSettings() {
 		control,
 		name: 'enableBusinessHours',
 	})
+	const showAgendaWindow = !isResourceCalendar
 
 	return (
 		<Card className="border bg-background backdrop-blur-md shadow-lg overflow-clip gap-0">
@@ -319,6 +320,15 @@ export function CalendarSettings() {
 					/>
 				)}
 
+				{showAgendaWindow && (
+					<FormButtonGroup
+						label="Agenda Window"
+						name="agendaWindow"
+						options={AGENDA_WINDOW_OPTIONS}
+						parse={parseAgendaWindow}
+					/>
+				)}
+
 				<FormSelect
 					label="First Day of Week"
 					name="firstDayOfWeek"
@@ -332,15 +342,6 @@ export function CalendarSettings() {
 						isResourceCalendar ? BASE_VIEW_OPTIONS : REGULAR_VIEW_OPTIONS
 					}
 				/>
-
-				{!isResourceCalendar && (
-					<FormSelect
-						label="Agenda Window"
-						name="agendaWindow"
-						options={AGENDA_WINDOW_OPTIONS}
-						parse={parseAgendaWindow}
-					/>
-				)}
 
 				<InitialDateField />
 

@@ -1,9 +1,8 @@
-import { Button } from '@ilamy/ui/components/button'
 import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useState } from 'react'
 import { getMonthWeeks, getWeekDays, isToday } from '@/lib/utils/date-utils'
+import { PickerNav } from './picker-nav'
 
 interface CalendarProps {
 	selected?: Date
@@ -150,27 +149,13 @@ export function Calendar({
 			className={cn('bg-background p-3 w-72', className)}
 			data-slot="calendar"
 		>
-			<div className="flex items-center justify-between mb-2">
-				<Button
-					aria-label="Previous month"
-					onClick={() => setViewMonth((m) => m.subtract(1, 'month'))}
-					size="icon"
-					variant="ghost"
-				>
-					<ChevronLeftIcon className="size-4" />
-				</Button>
-				<div className="text-sm font-medium select-none">
-					{viewMonth.format('MMMM YYYY')}
-				</div>
-				<Button
-					aria-label="Next month"
-					onClick={() => setViewMonth((m) => m.add(1, 'month'))}
-					size="icon"
-					variant="ghost"
-				>
-					<ChevronRightIcon className="size-4" />
-				</Button>
-			</div>
+			<PickerNav
+				label={viewMonth.format('MMMM YYYY')}
+				nextLabel="Next month"
+				onNext={() => setViewMonth((m) => m.add(1, 'month'))}
+				onPrev={() => setViewMonth((m) => m.subtract(1, 'month'))}
+				prevLabel="Previous month"
+			/>
 
 			<table
 				className="w-full border-collapse"

@@ -1,7 +1,6 @@
-import { Button } from '@ilamy/ui/components/button'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useState } from 'react'
+import { PickerNav } from '@/components/ui/picker-nav'
 import { PickerGridCell } from './picker-grid-cell'
 
 const BLOCK = 12
@@ -24,27 +23,13 @@ export function YearGrid({ selected, onSelect }: YearGridProps) {
 
 	return (
 		<div className="w-72 p-3" data-slot="year-grid">
-			<div className="mb-2 flex items-center justify-between">
-				<Button
-					aria-label="Previous years"
-					onClick={() => setBlockStart((s) => s - BLOCK)}
-					size="icon"
-					variant="ghost"
-				>
-					<ChevronLeftIcon className="size-4" />
-				</Button>
-				<div className="text-sm font-medium select-none">
-					{blockStart} – {blockStart + BLOCK - 1}
-				</div>
-				<Button
-					aria-label="Next years"
-					onClick={() => setBlockStart((s) => s + BLOCK)}
-					size="icon"
-					variant="ghost"
-				>
-					<ChevronRightIcon className="size-4" />
-				</Button>
-			</div>
+			<PickerNav
+				label={`${blockStart} – ${blockStart + BLOCK - 1}`}
+				nextLabel="Next years"
+				onNext={() => setBlockStart((s) => s + BLOCK)}
+				onPrev={() => setBlockStart((s) => s - BLOCK)}
+				prevLabel="Previous years"
+			/>
 
 			<div className="grid grid-cols-3 gap-1">
 				{years.map((year) => {

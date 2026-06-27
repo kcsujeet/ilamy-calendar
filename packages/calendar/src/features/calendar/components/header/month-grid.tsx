@@ -1,7 +1,6 @@
-import { Button } from '@ilamy/ui/components/button'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useState } from 'react'
+import { PickerNav } from '@/components/ui/picker-nav'
 import { PickerGridCell } from './picker-grid-cell'
 
 interface MonthGridProps {
@@ -22,25 +21,13 @@ export function MonthGrid({ selected, onSelect }: MonthGridProps) {
 
 	return (
 		<div className="w-72 p-3" data-slot="month-grid">
-			<div className="mb-2 flex items-center justify-between">
-				<Button
-					aria-label="Previous year"
-					onClick={() => setYear((y) => y - 1)}
-					size="icon"
-					variant="ghost"
-				>
-					<ChevronLeftIcon className="size-4" />
-				</Button>
-				<div className="text-sm font-medium select-none">{year}</div>
-				<Button
-					aria-label="Next year"
-					onClick={() => setYear((y) => y + 1)}
-					size="icon"
-					variant="ghost"
-				>
-					<ChevronRightIcon className="size-4" />
-				</Button>
-			</div>
+			<PickerNav
+				label={year}
+				nextLabel="Next year"
+				onNext={() => setYear((y) => y + 1)}
+				onPrev={() => setYear((y) => y - 1)}
+				prevLabel="Previous year"
+			/>
 
 			<div className="grid grid-cols-3 gap-1">
 				{months.map((month) => {

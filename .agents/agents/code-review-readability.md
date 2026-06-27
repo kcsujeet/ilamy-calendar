@@ -21,6 +21,7 @@ The dispatch prompt gives you the review target (PR number, local diff, or saved
 3. Single-line dense-condition sweep.
 4. **Trailing-`&&`/`||` multi-line dense-condition sweep** — this catches a condition split one clause per line, which the single-line sweep structurally cannot see. This is the exact gap that has shipped a "clean" verdict over a 4-clause `Boolean(...)` before. Skipping it = automatic FAIL.
 5. `switch` sweep.
+6. **Value-dispatch sweep** (`(() =>` IIFEs and `else if` chains) — an `if`-cascade or IIFE that maps one discriminant to a returned value/JSX should be a lookup map. Prefer a plain value map; flag an unnecessary `() =>` wrapper too.
 
 Open every hit and triage: a hit is dismissed ONLY if it matches a documented over-match shape (single-line single-level ternary, `if (!(a && b))`, an OR concept-chain inside `Boolean(...)`). Never dismiss a real hit as "idiomatic". A multi-line ternary is ALWAYS a violation. If you are unsure whether a hit is real or an over-match, mark it FAIL and surface it (do not silently drop it).
 

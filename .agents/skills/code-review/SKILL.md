@@ -176,6 +176,7 @@ Deterministic. **Run every mechanical sweep in those files yourself and read the
 - [ ] **No nested or multi-line ternaries** (only a single-level one-line ternary is allowed).
 - [ ] **No dense inline conditions** (2+ clauses, on one line OR wrapped one clause per line) → named variables.
 - [ ] **No nested `if` blocks; prefer maps over `switch`** (flag every `switch`).
+- [ ] **No value-dispatch `if`-cascades / IIFEs that should be lookup maps** (plain value map by default; builder functions only when a value must be lazy or takes an arg).
 - [ ] **No ternaries in JSX.**
 - [ ] **No prop-drilling of context-provided values.**
 - [ ] **Colocation + Bulletproof type-folders** (ran the misplaced-modules sweep; context/hook/util not under `components/`).

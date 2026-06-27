@@ -523,9 +523,10 @@ describe('IlamyResourceCalendar', () => {
 			<IlamyResourceCalendar plugins={plugins} resources={mockResources} />
 		)
 
-		// Non-selected view buttons are icon-only; the label is the accessible name.
-		expect(screen.queryByRole('button', { name: 'Agenda' })).toBeNull()
-		expect(screen.getByRole('button', { name: 'Timeline' })).toBeDefined()
+		// The segmented view switcher renders single-select toggles (radios); the
+		// label is the accessible name.
+		expect(screen.queryByRole('radio', { name: 'Agenda' })).toBeNull()
+		expect(screen.getByRole('radio', { name: 'Timeline' })).toBeDefined()
 	})
 
 	it('renders a resource-capable plugin view through the shared resolution path', () => {

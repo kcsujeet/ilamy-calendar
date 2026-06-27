@@ -5,7 +5,9 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { Header } from './base-header'
 
-// Custom render function that wraps Header in CalendarProvider
+// Custom render function that wraps Header in CalendarProvider. The header tier
+// defaults to 'desktop' in tests (no layout for ResizeObserver to measure), so
+// these exercise the desktop layout: segmented switcher + inline Export button.
 const renderHeader = (events: CalendarEvent[] = [], providerProps = {}) => {
 	return render(
 		<CalendarProvider
@@ -25,7 +27,7 @@ mock.module('@/lib/utils/export-ical', () => ({
 	downloadICalendar: mockDownloadICalendar,
 }))
 
-describe('Header with Export Button', () => {
+describe('Calendar header', () => {
 	const testEvents: CalendarEvent[] = [
 		{
 			id: 'test-1',
@@ -43,7 +45,7 @@ describe('Header with Export Button', () => {
 		},
 	]
 
-	it('should render export button on desktop', () => {
+	it('should render the export button', () => {
 		renderHeader(testEvents)
 
 		const exportButton = screen.getByRole('button', { name: /export/i })
@@ -51,45 +53,15 @@ describe('Header with Export Button', () => {
 		expect(exportButton).toHaveTextContent('Export')
 	})
 
-	it('should render export button in mobile menu', () => {
+	it('should call downloadICalendar when export is clicked', () => {
 		renderHeader(testEvents)
 
-		// Open mobile menu - find the menu button by its icon
-		const menuButtons = screen.getAllByRole('button', { name: '' })
-		const actualMenuButton = menuButtons.find((button) =>
-			button.querySelector('svg.lucide-menu')
-		)
-
-		if (!actualMenuButton) {
-			throw new Error('Menu button not found')
-		}
-
-		fireEvent.click(actualMenuButton)
-
-		// Check for export button in mobile menu
-		const mobileExportButton = screen.getByRole('button', {
-			name: /export calendar/i,
-		})
-		expect(mobileExportButton).toBeInTheDocument()
-		expect(mobileExportButton).toHaveTextContent('Export Calendar (.ics)')
-	})
-
-	it('should call downloadICalendar when export button is clicked', () => {
-		renderHeader(testEvents)
-
-		const exportButton = screen.getByRole('button', { name: /export/i })
-		fireEvent.click(exportButton)
+		fireEvent.click(screen.getByRole('button', { name: /export/i }))
 
 		expect(mockDownloadICalendar).toHaveBeenCalledWith(
 			expect.arrayContaining([
-				expect.objectContaining({
-					id: 'test-1',
-					title: 'Test Event',
-				}),
-				expect.objectContaining({
-					id: 'test-2',
-					title: 'Another Event',
-				}),
+				expect.objectContaining({ id: 'test-1', title: 'Test Event' }),
+				expect.objectContaining({ id: 'test-2', title: 'Another Event' }),
 			]),
 			expect.any(Function),
 			expect.stringMatching(/calendar-\d{4}-\d{2}-\d{2}\.ics/),
@@ -97,7 +69,15 @@ describe('Header with Export Button', () => {
 		)
 	})
 
-	it('should call onDateChange when selecting a month from the built-in header dropdown', async () => {
+	it('should not render the export button when hideExportButton is true', () => {
+		renderHeader(testEvents, { hideExportButton: true })
+
+		expect(
+			screen.queryByRole('button', { name: /export/i })
+		).not.toBeInTheDocument()
+	})
+
+	it('should call onDateChange when picking a month from the title date picker', async () => {
 		const onDateChange = mock()
 
 		renderHeader([], {
@@ -105,12 +85,12 @@ describe('Header with Export Button', () => {
 			onDateChange,
 		})
 
+		// Title shows "August 2025" in month view; clicking it opens the month grid.
 		await act(async () => {
-			fireEvent.click(screen.getByRole('combobox', { name: 'August' }))
+			fireEvent.click(screen.getByTestId('calendar-title'))
 		})
-
 		await act(async () => {
-			fireEvent.click(screen.getByRole('option', { name: 'September' }))
+			fireEvent.click(screen.getByRole('button', { name: 'Sep' }))
 		})
 
 		await waitFor(() => {
@@ -123,43 +103,30 @@ describe('Header with Export Button', () => {
 		expect(calledDate.year()).toBe(2025)
 	})
 
-	it('should not render export buttons when hideExportButton is true', () => {
-		renderHeader(testEvents, { hideExportButton: true })
+	it('should switch the active view from the segmented switcher', async () => {
+		renderHeader()
 
-		expect(
-			screen.queryByRole('button', { name: /export/i })
-		).not.toBeInTheDocument()
+		const weekToggle = screen.getByRole('radio', { name: 'Week' })
+		await act(async () => {
+			fireEvent.click(weekToggle)
+		})
 
-		const menuButtons = screen.getAllByRole('button', { name: '' })
-		const actualMenuButton = menuButtons.find((button) =>
-			button.querySelector('svg.lucide-menu')
-		)
-
-		if (!actualMenuButton) {
-			throw new Error('Menu button not found')
-		}
-
-		fireEvent.click(actualMenuButton)
-
-		expect(
-			screen.queryByRole('button', { name: /export calendar/i })
-		).not.toBeInTheDocument()
+		await waitFor(() => {
+			expect(weekToggle).toHaveAttribute('aria-checked', 'true')
+		})
 	})
 
-	it('renders the week picker label using Intl.DateTimeFormat.formatRange so it is locale-correct and compact', () => {
+	it('renders the week range in the title using Intl.DateTimeFormat.formatRange', () => {
 		renderHeader([], {
 			initialView: 'week',
 			initialDate: dayjs('2026-04-29T12:00:00.000Z'),
 		})
 
 		// firstDayOfWeek defaults to 0 (Sunday), so the week containing Apr 29 2026
-		// is Sun Apr 26 - Sat May 2. Intl.DateTimeFormat.formatRange with
-		// `{month: 'short', day: 'numeric'}` returns "Apr 26 – May 2" in English
-		// (en-dash separator, U+2013) and intelligently collapses redundant parts.
-		const weekButton = screen.getByRole('combobox', { name: 'Apr 26 – May 2' })
-		expect(weekButton).toBeInTheDocument()
-
-		// No year suffix anywhere in the label.
-		expect(weekButton.textContent).not.toContain('2026')
+		// is Sun Apr 26 - Sat May 2. formatRange returns "Apr 26 – May 2" in English
+		// (en-dash separator, U+2013) with no year suffix.
+		const title = screen.getByTestId('calendar-title')
+		expect(title).toHaveTextContent('Apr 26 – May 2')
+		expect(title.textContent).not.toContain('2026')
 	})
 })

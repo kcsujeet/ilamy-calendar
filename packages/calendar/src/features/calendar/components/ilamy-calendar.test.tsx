@@ -624,9 +624,8 @@ describe('IlamyCalendar', () => {
 					expect(events.length).toBeGreaterThan(0)
 				})
 
-				// Get all buttons and find the exact "Week" button
-				const weekButtons = screen.getAllByRole('button', { name: /^week$/i })
-				fireEvent.click(weekButtons[0])
+				// The segmented view switcher renders single-select toggles (radios).
+				fireEvent.click(screen.getByRole('radio', { name: /^week$/i }))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
@@ -638,9 +637,7 @@ describe('IlamyCalendar', () => {
 					expect(events.length).toBeGreaterThan(0)
 				})
 
-				// Find exact "Day" button
-				const dayButtons = screen.getAllByRole('button', { name: /^day$/i })
-				fireEvent.click(dayButtons[0])
+				fireEvent.click(screen.getByRole('radio', { name: /^day$/i }))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()

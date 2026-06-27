@@ -1,5 +1,4 @@
 // biome-ignore-all lint/a11y/useSemanticElements: shadcn ButtonGroup is a div with role="group"; a <fieldset> would change layout and semantics
-import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 import type * as React from 'react'
 
@@ -38,24 +37,4 @@ function ButtonGroup({
 	)
 }
 
-function ButtonGroupText({
-	className,
-	asChild = false,
-	...props
-}: React.ComponentProps<'div'> & {
-	asChild?: boolean
-}) {
-	const Comp = asChild ? Slot : 'div'
-
-	return (
-		<Comp
-			className={cn(
-				"flex items-center gap-2 rounded-md border bg-muted px-4 text-sm font-medium shadow-xs [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
-				className
-			)}
-			{...props}
-		/>
-	)
-}
-
-export { ButtonGroup, ButtonGroupText, buttonGroupVariants }
+export { ButtonGroup }

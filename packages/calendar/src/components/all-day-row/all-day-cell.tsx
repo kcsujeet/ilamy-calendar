@@ -1,5 +1,6 @@
 import { cn } from '@ilamy/ui/lib/utils'
 import { memo } from 'react'
+import { STICKY_GUTTER_SHADOW } from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 interface AllDayCellProps {
@@ -11,7 +12,8 @@ const NoMemoAllDayCell: React.FC<AllDayCellProps> = ({ className }) => {
 	return (
 		<div
 			className={cn(
-				'w-16 border-r shrink-0 sticky left-0 bg-background z-20 flex border-b items-center justify-center px-1 text-xs text-muted-foreground',
+				'w-16 shrink-0 sticky left-0 bg-background z-20 flex items-center justify-center px-1 text-xs text-muted-foreground',
+				STICKY_GUTTER_SHADOW,
 				className
 			)}
 		>

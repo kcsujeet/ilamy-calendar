@@ -19,10 +19,7 @@ export const ResourceCell: React.FC<ResourceCellProps> = ({
 
 	return (
 		<div
-			className={cn(
-				'flex items-center justify-center p-2 border-r last:border-r-0',
-				className
-			)}
+			className={cn('flex items-center justify-center p-2', className)}
 			data-testid={dataTestId}
 			style={{
 				color: resource.color,

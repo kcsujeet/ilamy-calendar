@@ -107,19 +107,21 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 			>
 				{/* header row for resource calendar inside scroll area */}
 				{isResourceCalendar && header}
-				{/* Calendar area with scroll */}
+				{/* Calendar area with scroll. gap-px + bg-border draws the vertical
+					    separators between columns through the gaps. */}
 				<div
-					className={cn('relative flex flex-1 min-w-full w-fit', classes?.body)}
+					className={cn(
+						'relative flex flex-1 min-w-full w-fit gap-px bg-border',
+						classes?.body
+					)}
 					data-calendar-scroll-content="true"
 					data-testid="vertical-grid-body"
 				>
-					{/* Day columns with time slots */}
 					{columns.map((column, index) => (
 						<VerticalGridCol
 							key={keys.listKey(column.id, index)}
 							{...column}
 							gridType={gridType}
-							isLastColumn={index === columns.length - 1}
 							slotDurationMinutes={slotDurationMinutes}
 						/>
 					))}

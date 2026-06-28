@@ -13,8 +13,6 @@ export interface VerticalGridColProps extends VerticalColumnSpec {
 	 * no sub-hour lines. `30` renders two. `15` renders four with dashed separators.
 	 */
 	slotDurationMinutes?: number
-	/** Whether this is the last column in the grid */
-	isLastColumn?: boolean
 }
 
 const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
@@ -27,7 +25,6 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	renderCell,
 	noEvents,
 	slotDurationMinutes = 60,
-	isLastColumn,
 }) => {
 	// The spec carries `resource` as the single source; derive the id here.
 	const resourceId = resource?.id
@@ -40,23 +37,22 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	return (
 		<div
 			className={cn(
-				// Separator is on the cells, not this opaque column (it overpaints faint).
-				'flex flex-col flex-1 items-center min-w-20 justify-center bg-background relative border-r-0',
+				// Opaque column; grid lines come from the gaps in the containers
+				// (this one for vertical separators between columns is the parent's job).
+				'flex flex-col flex-1 items-center min-w-20 justify-center bg-background relative',
 				className
 			)}
 			data-testid={dataTestId || keys.container.vertical.col(id)}
 		>
-			{/* Time slots */}
+			{/* Time slots. gap-px + bg-border draws the hour lines through the gaps. */}
 			<div
-				className="w-full h-full relative grid"
+				className="w-full h-full relative grid gap-px bg-border"
 				style={{
 					gridTemplateRows: `repeat(${days.length}, minmax(0, 1fr))`,
 				}}
 			>
 				{days.map((day, dayIndex) => {
 					const hourStr = day.format('HH')
-					// Last hour drops border-b to avoid doubling the calendar's bottom.
-					const isLastHour = dayIndex === days.length - 1
 
 					if (renderCell) {
 						const isTimeGutter = id === keys.col.time
@@ -65,10 +61,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 							: keys.cell.vertical(day, hourStr, '00', resourceId)
 						return (
 							<div
-								className={cn(
-									'min-h-[60px] border-r border-b',
-									isLastHour && 'border-b-0'
-								)}
+								className="min-h-[60px] bg-background"
 								data-hour={isTimeGutter ? hourStr : undefined}
 								data-testid={testId}
 								key={keys.listKey(id, dayIndex, hourStr)}
@@ -86,16 +79,17 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 							{cellOffsets.map((minute, offsetIndex) => {
 								const mm = String(minute).padStart(2, '0')
 								const testId = keys.cell.vertical(day, hourStr, mm, resourceId)
-								const isBottomCell =
-									isLastHour && offsetIndex === cellOffsets.length - 1
+								// Sub-hour slots keep a dashed divider (the documented gap
+								// exception) between sub-slots within an hour; the solid hour
+								// lines come from the grid's gap-px.
+								const isSubDivider =
+									hasSubHourSlots && offsetIndex < cellOffsets.length - 1
 
 								return (
 									<GridCell
 										className={cn(
-											'hover:bg-accent relative z-10 flex-1 min-h-0 cursor-pointer border-b',
-											isLastColumn ? 'border-r-0' : 'border-r',
-											isBottomCell && 'border-b-0',
-											hasSubHourSlots && 'border-dashed'
+											'hover:bg-accent relative z-10 flex-1 min-h-0 cursor-pointer',
+											isSubDivider && 'border-b border-dashed'
 										)}
 										data-testid={testId}
 										day={hasSubHourSlots ? day.minute(minute) : day}

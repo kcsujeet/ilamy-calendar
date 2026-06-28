@@ -61,26 +61,28 @@ const ResourceMonthHorizontalHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 	return (
 		<>
 			<ResourcesCornerCell />
-			{monthDays.map((day, index) => {
-				const key = keys.header.resource.monthDay(day)
-				const today = isToday(day)
+			<div className="flex flex-1 gap-px bg-border border-b">
+				{monthDays.map((day, index) => {
+					const key = keys.header.resource.monthDay(day)
+					const today = isToday(day)
 
-				return (
-					<AnimatedSection
-						className="w-20 border-b border-r shrink-0 flex items-center justify-center flex-col"
-						delay={index * HEADER_STAGGER_DELAY}
-						key={keys.listKey(key, 'animated')}
-						transitionKey={keys.listKey(key, 'motion')}
-					>
-						<DayLabel
-							className="flex-col-reverse"
-							dayNumber={day.format('D')}
-							today={today}
-							weekday={day.format('ddd')}
-						/>
-					</AnimatedSection>
-				)
-			})}
+					return (
+						<AnimatedSection
+							className="flex-1 w-20 bg-background shrink-0 flex items-center justify-center flex-col"
+							delay={index * HEADER_STAGGER_DELAY}
+							key={keys.listKey(key, 'animated')}
+							transitionKey={keys.listKey(key, 'motion')}
+						>
+							<DayLabel
+								className="flex-col-reverse"
+								dayNumber={day.format('D')}
+								today={today}
+								weekday={day.format('ddd')}
+							/>
+						</AnimatedSection>
+					)
+				})}
+			</div>
 		</>
 	)
 }

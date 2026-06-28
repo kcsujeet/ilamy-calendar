@@ -3,8 +3,10 @@ import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import type { CSSProperties } from 'react'
+import { STICKY_GUTTER_SHADOW } from '@/components/vertical-grid/gutter'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { generateMockEvents } from '@/testing/generator'
 import { WeekView } from '@/testing/view-harnesses'
 
@@ -409,11 +411,11 @@ describe('WeekView', () => {
 		expect(businessCell.className).not.toContain('bg-muted/30')
 		expect(businessCell.className).toContain('cursor-pointer')
 
-		// Monday 8am should be non-business hour (bg-secondary)
+		// Monday 8am should be non-business hour (disabled color-mix fill)
 		const nonBusinessCell = screen.getByTestId(
 			`vertical-cell-${monday.format('YYYY-MM-DD')}-08-00`
 		)
-		expect(nonBusinessCell.className).toContain('bg-secondary')
+		expect(nonBusinessCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(nonBusinessCell.className).toContain('text-muted-foreground')
 		expect(nonBusinessCell.className).not.toContain('hover:bg-muted/50')
 		expect(nonBusinessCell.className).toContain('cursor-default')
@@ -423,7 +425,7 @@ describe('WeekView', () => {
 		const sundayCell = screen.getByTestId(
 			`vertical-cell-${sunday.format('YYYY-MM-DD')}-10-00`
 		)
-		expect(sundayCell.className).toContain('bg-secondary')
+		expect(sundayCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(sundayCell.className).toContain('text-muted-foreground')
 		expect(sundayCell.className).toContain('cursor-default')
 	})
@@ -446,24 +448,24 @@ describe('WeekView', () => {
 		// Exactly at 9am (startTime) - Should be business hour
 		const startBoundaryCell = screen.getByTestId(`${testIdPrefix}-09-00`)
 		expect(startBoundaryCell.className).toContain('hover:bg-accent')
-		expect(startBoundaryCell.className).not.toContain('bg-secondary')
+		expect(startBoundaryCell.className).not.toContain('color-mix')
 		expect(startBoundaryCell.className).toContain('cursor-pointer')
 
 		// Exactly at 5pm (endTime) - Should be non-business hour (endTime is exclusive)
 		const endBoundaryCell = screen.getByTestId(`${testIdPrefix}-17-00`)
-		expect(endBoundaryCell.className).toContain('bg-secondary')
+		expect(endBoundaryCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(endBoundaryCell.className).toContain('text-muted-foreground')
 		expect(endBoundaryCell.className).toContain('cursor-default')
 
 		// 4pm (one hour before endTime) - Should be business hour
 		const beforeEndCell = screen.getByTestId(`${testIdPrefix}-16-00`)
 		expect(beforeEndCell.className).toContain('hover:bg-accent')
-		expect(beforeEndCell.className).not.toContain('bg-secondary')
+		expect(beforeEndCell.className).not.toContain('color-mix')
 		expect(beforeEndCell.className).toContain('cursor-pointer')
 
 		// 8am (one hour before startTime) - Should be non-business hour
 		const beforeStartCell = screen.getByTestId(`${testIdPrefix}-08-00`)
-		expect(beforeStartCell.className).toContain('bg-secondary')
+		expect(beforeStartCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(beforeStartCell.className).toContain('text-muted-foreground')
 		expect(beforeStartCell.className).toContain('cursor-default')
 	})
@@ -489,7 +491,7 @@ describe('WeekView', () => {
 			`${testIdPrefix}-${monday.format('YYYY-MM-DD')}-10-00`
 		)
 		expect(mondayCell.className).toContain('hover:bg-accent')
-		expect(mondayCell.className).not.toContain('bg-secondary')
+		expect(mondayCell.className).not.toContain('color-mix')
 
 		// Friday 10am - Business hour
 		const friday = monday.add(4, 'day')
@@ -497,14 +499,14 @@ describe('WeekView', () => {
 			`${testIdPrefix}-${friday.format('YYYY-MM-DD')}-10-00`
 		)
 		expect(fridayCell.className).toContain('hover:bg-accent')
-		expect(fridayCell.className).not.toContain('bg-secondary')
+		expect(fridayCell.className).not.toContain('color-mix')
 
 		// Saturday 10am - Non-business day
 		const saturday = monday.add(5, 'day')
 		const saturdayCell = screen.getByTestId(
 			`${testIdPrefix}-${saturday.format('YYYY-MM-DD')}-10-00`
 		)
-		expect(saturdayCell.className).toContain('bg-secondary')
+		expect(saturdayCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(saturdayCell.className).toContain('text-muted-foreground')
 
 		// Sunday 10am - Non-business day
@@ -512,7 +514,7 @@ describe('WeekView', () => {
 		const sundayCell = screen.getByTestId(
 			`${testIdPrefix}-${sunday.format('YYYY-MM-DD')}-10-00`
 		)
-		expect(sundayCell.className).toContain('bg-secondary')
+		expect(sundayCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(sundayCell.className).toContain('text-muted-foreground')
 	})
 
@@ -536,7 +538,7 @@ describe('WeekView', () => {
 		const sundayCell = screen.getByTestId(
 			`${testIdPrefix}-${sunday.format('YYYY-MM-DD')}-10-00`
 		)
-		expect(sundayCell.className).toContain('bg-secondary')
+		expect(sundayCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(sundayCell.className).toContain('text-muted-foreground')
 
 		// Monday 10am - Business hour
@@ -545,14 +547,14 @@ describe('WeekView', () => {
 			`${testIdPrefix}-${monday.format('YYYY-MM-DD')}-10-00`
 		)
 		expect(mondayCell.className).toContain('hover:bg-accent')
-		expect(mondayCell.className).not.toContain('bg-secondary')
+		expect(mondayCell.className).not.toContain('color-mix')
 
 		// Saturday 10am - Non-business day
 		const saturday = sunday.add(6, 'day')
 		const saturdayCell = screen.getByTestId(
 			`${testIdPrefix}-${saturday.format('YYYY-MM-DD')}-10-00`
 		)
-		expect(saturdayCell.className).toContain('bg-secondary')
+		expect(saturdayCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(saturdayCell.className).toContain('text-muted-foreground')
 	})
 
@@ -575,16 +577,16 @@ describe('WeekView', () => {
 		const tuesdayTestId = `${testIdPrefix}-${tuesday.format('YYYY-MM-DD')}`
 		const tuesdayBusinessCell = screen.getByTestId(`${tuesdayTestId}-11-00`)
 		expect(tuesdayBusinessCell.className).toContain('hover:bg-accent')
-		expect(tuesdayBusinessCell.className).not.toContain('bg-secondary')
+		expect(tuesdayBusinessCell.className).not.toContain('color-mix')
 
 		// Tuesday 9am - Non-business hour (before start)
 		const tuesdayEarlyCell = screen.getByTestId(`${tuesdayTestId}-09-00`)
-		expect(tuesdayEarlyCell.className).toContain('bg-secondary')
+		expect(tuesdayEarlyCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(tuesdayEarlyCell.className).toContain('text-muted-foreground')
 
 		// Tuesday 4pm - Non-business hour (after end)
 		const tuesdayLateCell = screen.getByTestId(`${tuesdayTestId}-16-00`)
-		expect(tuesdayLateCell.className).toContain('bg-secondary')
+		expect(tuesdayLateCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(tuesdayLateCell.className).toContain('text-muted-foreground')
 
 		// Monday 11am - Non-business day
@@ -592,7 +594,7 @@ describe('WeekView', () => {
 		const mondayCell = screen.getByTestId(
 			`${testIdPrefix}-${monday.format('YYYY-MM-DD')}-11-00`
 		)
-		expect(mondayCell.className).toContain('bg-secondary')
+		expect(mondayCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(mondayCell.className).toContain('text-muted-foreground')
 
 		// Friday 11am - Non-business day
@@ -600,7 +602,7 @@ describe('WeekView', () => {
 		const fridayCell = screen.getByTestId(
 			`${testIdPrefix}-${friday.format('YYYY-MM-DD')}-11-00`
 		)
-		expect(fridayCell.className).toContain('bg-secondary')
+		expect(fridayCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(fridayCell.className).toContain('text-muted-foreground')
 	})
 
@@ -623,20 +625,20 @@ describe('WeekView', () => {
 		const wednesdayTestId = `${testIdPrefix}-${wednesday.format('YYYY-MM-DD')}`
 		const wednesdayCell = screen.getByTestId(`${wednesdayTestId}-10-00`)
 		expect(wednesdayCell.className).toContain('hover:bg-accent')
-		expect(wednesdayCell.className).not.toContain('bg-secondary')
+		expect(wednesdayCell.className).not.toContain('color-mix')
 
 		// Tuesday 10am - Non-business day
 		const tuesday = wednesday.subtract(1, 'day')
 		const tuesdayTestId = `${testIdPrefix}-${tuesday.format('YYYY-MM-DD')}`
 		const tuesdayCell = screen.getByTestId(`${tuesdayTestId}-10-00`)
-		expect(tuesdayCell.className).toContain('bg-secondary')
+		expect(tuesdayCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(tuesdayCell.className).toContain('text-muted-foreground')
 
 		// Thursday 10am - Non-business day
 		const thursday = wednesday.add(1, 'day')
 		const thursdayTestId = `${testIdPrefix}-${thursday.format('YYYY-MM-DD')}`
 		const thursdayCell = screen.getByTestId(`${thursdayTestId}-10-00`)
-		expect(thursdayCell.className).toContain('bg-secondary')
+		expect(thursdayCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(thursdayCell.className).toContain('text-muted-foreground')
 	})
 
@@ -654,7 +656,7 @@ describe('WeekView', () => {
 			`vertical-cell-${monday.format('YYYY-MM-DD')}-10-00`
 		)
 		expect(mondayCell.className).toContain('hover:bg-accent')
-		expect(mondayCell.className).not.toContain('bg-secondary')
+		expect(mondayCell.className).not.toContain('color-mix')
 		expect(mondayCell.className).toContain('cursor-pointer')
 
 		// Sunday 10am - Should be clickable (no business hours restriction)
@@ -663,7 +665,7 @@ describe('WeekView', () => {
 			`vertical-cell-${sunday.format('YYYY-MM-DD')}-10-00`
 		)
 		expect(sundayCell.className).toContain('hover:bg-accent')
-		expect(sundayCell.className).not.toContain('bg-secondary')
+		expect(sundayCell.className).not.toContain('color-mix')
 		expect(sundayCell.className).toContain('cursor-pointer')
 	})
 
@@ -865,27 +867,32 @@ describe('WeekView', () => {
 		})
 	})
 
-	test('Ensure gutter has one border right and no more', () => {
+	test('Ensure gutter provides exactly one right separator via box-shadow', () => {
 		const WeekViewHeader = screen.getByTestId(`week-view-header`)
 		const timeGutter = screen.getByTestId('vertical-col-time-col')
 		const allDayRow = screen.getByTestId('all-day-row')
 		const firstCellOfAllDayRow = allDayRow.querySelector('div')
 		const firstCellOfWeekViewHeader = WeekViewHeader.querySelector('div')
-		// the time gutter should not have a border
-		expect(timeGutter.className).toContain('border-r-0')
-		// but its cells does have a border
+		// The sticky gutter draws its right separator with the box-shadow, not border-r.
+		expect(timeGutter.className).toContain(STICKY_GUTTER_SHADOW)
+		expect(timeGutter.className).not.toContain('border-r')
+		// Its inner cells no longer carry a per-cell border under the gap model.
 		const firstCellOfGutter = screen.getByTestId(`vertical-time-00`)
-		expect(firstCellOfGutter.className).toContain('border-r')
+		expect(firstCellOfGutter.className).not.toContain('border-r')
 
-		// as should the first cell of all-day row
-		expect(firstCellOfAllDayRow?.className).toContain('border-r')
+		// The all-day spacer mirrors the gutter with the same box-shadow separator.
+		expect(firstCellOfAllDayRow?.className).toContain(STICKY_GUTTER_SHADOW)
+		expect(firstCellOfAllDayRow?.className).not.toContain('border-r')
 
-		// as should the first cell of week view header
-		expect(firstCellOfWeekViewHeader?.className).toContain('border-r')
+		// The week view header corner cell uses the same box-shadow separator.
+		expect(firstCellOfWeekViewHeader?.className).toContain(STICKY_GUTTER_SHADOW)
+		expect(firstCellOfWeekViewHeader?.className).not.toContain('border-r')
 	})
 
-	// for last column there is not need of a right border because is on the main container
-	test('Ensure last column does not have a right border', () => {
+	// Under the gap-px model columns draw no per-cell right border at all; the
+	// inter-column separators come from the gap between columns, so the last
+	// column needs no special-casing.
+	test('Ensure day columns carry no per-cell right border', () => {
 		const startOfWeek = initialDate.startOf('week')
 		const lastDay = startOfWeek.add(6, 'day').format('YYYY-MM-DD')
 
@@ -893,15 +900,15 @@ describe('WeekView', () => {
 		const CellOfWeekViewHeader = screen
 			.getByTestId(`week-view-header`)
 			.querySelector('div + div')
-		expect(CellOfWeekViewHeader?.className).toContain('last:border-r-0')
+		expect(CellOfWeekViewHeader?.className).not.toContain('border-r')
 
 		// on the all-day row
 		const lastCellOfAllDayRow = screen.getByTestId(`day-cell-${lastDay}`)
-		expect(lastCellOfAllDayRow?.className).toContain('last:border-r-0')
+		expect(lastCellOfAllDayRow?.className).not.toContain('border-r')
 
 		// on the body
 		const lastDayColumn = screen.getByTestId(`vertical-col-day-col-${lastDay}`)
-		expect(lastDayColumn?.className).toContain('border-r-0')
+		expect(lastDayColumn?.className).not.toContain('border-r')
 	})
 
 	test('Ensure column have the same width', () => {
@@ -955,7 +962,7 @@ describe('WeekView', () => {
 		const nonBusinessCell = screen.getByTestId(
 			`vertical-cell-${monday.format('YYYY-MM-DD')}-08-00`
 		)
-		expect(nonBusinessCell.className).toContain('bg-secondary')
+		expect(nonBusinessCell.className).toContain(DISABLED_CELL_CLASSNAME)
 		expect(nonBusinessCell.className).toContain('cursor-default')
 	})
 

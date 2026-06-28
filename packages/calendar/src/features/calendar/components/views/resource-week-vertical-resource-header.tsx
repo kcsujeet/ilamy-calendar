@@ -2,7 +2,10 @@ import type { Resource } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { ResourceCell } from '@/components/resource-cell'
-import { GUTTER_WIDTH } from '@/components/vertical-grid/gutter'
+import {
+	GUTTER_WIDTH,
+	STICKY_GUTTER_SHADOW,
+} from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/lib/utils/keys'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
@@ -18,17 +21,18 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 	const isHourly = weekViewGranularity === 'hourly'
 
 	return (
-		<div className="flex h-12">
+		<div className="flex h-12 gap-px bg-border">
 			<div
 				className={cn(
-					'shrink-0 border-r z-20 bg-background sticky left-0',
-					GUTTER_WIDTH
+					'shrink-0 z-20 bg-background sticky left-0',
+					GUTTER_WIDTH,
+					STICKY_GUTTER_SHADOW
 				)}
 			>
 				<span
 					className={cn(
 						'px-2 h-full w-full flex flex-col justify-center text-xs text-muted-foreground text-center min-w-0',
-						isHourly ? 'justify-end' : 'justify-center border-b'
+						isHourly ? 'justify-end' : 'justify-center'
 					)}
 				>
 					<span className="truncate w-full">{t('week')}</span>
@@ -43,7 +47,7 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 			{resources.map((resource) => {
 				return (
 					<ResourceCell
-						className={cn(RESOURCE_CELL_WIDTH, 'border-b')}
+						className={cn(RESOURCE_CELL_WIDTH, 'bg-background border-b')}
 						key={keys.listKey('resource-cell', resource.id)}
 						resource={resource}
 					>

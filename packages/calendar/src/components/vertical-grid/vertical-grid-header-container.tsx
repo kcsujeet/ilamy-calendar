@@ -33,11 +33,12 @@ const NoMemoVerticalGridHeaderContainer: React.FC<
 			>
 				{children}
 			</div>
-			{/* All-day row */}
+			{/* All-day row. border-b: the all-day/time-grid separator, owned here so
+			    it spans the full width below the sticky gutter and is drawn once. */}
 			{allDayRow && (
 				<div
 					className={cn(
-						'flex min-h-12',
+						'flex min-h-12 border-b',
 						TotalWidthClass,
 						expandAllDayRow && 'flex-1 overflow-hidden',
 						classes?.allDay

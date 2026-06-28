@@ -85,7 +85,7 @@ describe('HorizontalGridRow', () => {
 			).toBeInTheDocument()
 		})
 
-		test('removes bottom border on last row for flat columns', () => {
+		test('draws cell separators via gap-px bg-border (no per-cell borders)', () => {
 			const columns = [
 				{
 					id: 'col-1',
@@ -94,15 +94,20 @@ describe('HorizontalGridRow', () => {
 				},
 			]
 
-			renderHorizontalGridRow({ columns, isLastRow: true })
+			const { container } = renderHorizontalGridRow({ columns })
+
+			const cellsContainer = container.querySelector('.flex.w-full.min-w-0')
+			expect(cellsContainer).toHaveClass('gap-px')
+			expect(cellsContainer).toHaveClass('bg-border')
 
 			const cell = screen.getByTestId(
 				`day-cell-${initialDate.format('YYYY-MM-DD')}`
 			)
-			expect(cell).toHaveClass('border-b-0')
+			expect(cell).not.toHaveClass('border-b')
+			expect(cell).not.toHaveClass('border-b-0')
 		})
 
-		test('removes right border on the last column (no double with calendar border)', () => {
+		test('uses gap-based separators instead of per-column right borders', () => {
 			const days = [initialDate, initialDate.add(1, 'day')]
 			const columns = days.map((day) => ({
 				id: `col-${day.format('YYYY-MM-DD')}`,
@@ -110,16 +115,22 @@ describe('HorizontalGridRow', () => {
 				gridType: 'day' as const,
 			}))
 
-			renderHorizontalGridRow({ columns })
+			const { container } = renderHorizontalGridRow({ columns })
 
-			const first = screen
-				.getByTestId(`day-cell-${days[0].format('YYYY-MM-DD')}`)
-				.className.split(' ')
-			const last = screen
-				.getByTestId(`day-cell-${days[1].format('YYYY-MM-DD')}`)
-				.className.split(' ')
-			expect(first).toContain('border-r')
-			expect(last).toContain('border-r-0')
+			const cellsContainer = container.querySelector('.flex.w-full.min-w-0')
+			expect(cellsContainer).toHaveClass('gap-px')
+			expect(cellsContainer).toHaveClass('bg-border')
+
+			const first = screen.getByTestId(
+				`day-cell-${days[0].format('YYYY-MM-DD')}`
+			)
+			const last = screen.getByTestId(
+				`day-cell-${days[1].format('YYYY-MM-DD')}`
+			)
+			expect(first).not.toHaveClass('border-r')
+			expect(first).not.toHaveClass('border-r-0')
+			expect(last).not.toHaveClass('border-r')
+			expect(last).not.toHaveClass('border-r-0')
 		})
 	})
 
@@ -164,7 +175,7 @@ describe('HorizontalGridRow', () => {
 			).toBeInTheDocument()
 		})
 
-		test('applies border-r class to non-last grouped columns', () => {
+		test('draws grouped column separators via gap-px bg-border (no per-cell borders)', () => {
 			const day1Hours = [
 				initialDate.hour(9).minute(0),
 				initialDate.hour(10).minute(0),
@@ -189,13 +200,19 @@ describe('HorizontalGridRow', () => {
 				},
 			]
 
-			renderHorizontalGridRow({ columns, gridType: 'hour' })
+			const { container } = renderHorizontalGridRow({
+				columns,
+				gridType: 'hour',
+			})
 
-			// First column's cells should have border-r! class
+			// The grouped column inner container draws the day separators.
+			const groupedContainer = container.querySelector('.flex.w-full.gap-px')
+			expect(groupedContainer).toHaveClass('bg-border')
+
+			// Cells no longer carry a per-cell right border.
 			const firstColCell = screen.getByTestId('day-cell-2025-01-01-09-00')
-			expect(firstColCell).toHaveClass('border-r!')
+			expect(firstColCell).not.toHaveClass('border-r!')
 
-			// Last column's cells should NOT have border-r! class
 			const lastColCell = screen.getByTestId('day-cell-2025-01-02-09-00')
 			expect(lastColCell).not.toHaveClass('border-r!')
 		})

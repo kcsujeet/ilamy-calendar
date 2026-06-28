@@ -14,6 +14,7 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import {
 	gutterColumn,
 	RESPONSIVE_GUTTER_WIDTH,
+	STICKY_GUTTER_SHADOW,
 } from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import {
@@ -56,12 +57,16 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 	const visibleDays = getVisibleDays(date, config)
 
 	return (
-		<div className={'flex h-18 flex-1'} data-testid="week-view-header">
+		<div
+			className={'flex h-18 flex-1 gap-px bg-border'}
+			data-testid="week-view-header"
+		>
 			{/* Corner cell with week number — mirrors the responsive gutter width. */}
 			<div
 				className={cn(
 					RESPONSIVE_GUTTER_WIDTH,
-					'h-full shrink-0 items-center justify-center border-r p-2 flex'
+					'h-full shrink-0 items-center justify-center bg-background p-2 flex',
+					STICKY_GUTTER_SHADOW
 				)}
 			>
 				<div className="flex flex-col items-center justify-center min-w-0 w-full">
@@ -82,7 +87,7 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 				return (
 					<AnimatedSection
 						className={cn(
-							'hover:bg-accent flex-1 min-w-0 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 border-r last:border-r-0 w-20 h-full'
+							'hover:bg-accent bg-background flex-1 min-w-0 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 w-20 h-full'
 						)}
 						data-testid={keys.header.weekday('week', day.format('dddd'))}
 						delay={index * HEADER_STAGGER_DELAY}

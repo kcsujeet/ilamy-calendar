@@ -92,7 +92,16 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 				className={cn('h-full', isRegularCalendar && 'overflow-auto')}
 				data-testid="vertical-grid-scroll"
 				viewPortProps={{
-					className: '*:flex! *:flex-col! *:min-h-full',
+					// Radix ScrollArea wraps content in a `min-width:100%; display:table`
+					// div. `*:flex!/*:flex-col!/*:min-h-full` reshape it, but its width
+					// stays effectively indefinite, so a non-sticky child sizing with a
+					// percentage (the body's `min-w-full`) resolves to 0 and `w-fit`
+					// shrink-wraps it, leaving the body's columns at their `min-w-20`
+					// floor while the sticky header, which resolves against the scroll
+					// viewport, fills. `*:w-max` makes that wrapper definite (grow to
+					// content) while its `min-width:100%` keeps it >= the viewport, so the
+					// body fills when narrow and still scrolls when wide.
+					className: '*:flex! *:flex-col! *:min-h-full *:w-max',
 					ref: viewportRef,
 				}}
 			>

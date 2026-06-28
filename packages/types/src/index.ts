@@ -258,6 +258,12 @@ export interface PluginView {
 	 * How far prev/next jumps; defaults to one `navigationUnit`. Custom-duration
 	 * views (a 40-day grid, a 4-day vertical view) set `{ amount: 40, unit: 'day' }`
 	 * so navigation moves a full window.
+	 *
+	 * This also selects the header title/date-picker form (the core derives it
+	 * generically, never by view name): a single `day`/`week`/`month`/`year` step
+	 * borrows that grid's picker and title; any other step (amount > 1, or a custom
+	 * unit) shows the day picker over the view's `range`. A third-party view gets
+	 * the right picker for free just by declaring how it navigates.
 	 */
 	navigationStep?: { amount: number; unit: ManipulateType }
 	/**

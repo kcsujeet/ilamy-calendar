@@ -1,6 +1,6 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { agendaPlugin } from '@ilamy/calendar-agenda'
-import type { CalendarEvent } from '@ilamy/types'
+import type { CalendarEvent, IlamyPlugin, PluginView } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
@@ -166,5 +166,116 @@ describe('Calendar header', () => {
 
 		const title = screen.getByTestId('calendar-title')
 		expect(title).toHaveTextContent('Apr 2026')
+	})
+})
+
+// The header date picker must derive its title + picker form generically from a
+// view's navigation metadata, never from the view's name. These exercise a
+// throwaway third-party view (named 'sprint', not 'agenda') to prove core stays
+// plugin-agnostic: the same nav step that drives prev/next also picks the picker.
+describe('header date picker (plugin-agnostic)', () => {
+	// Apr 15 2026 is a Wednesday; firstDayOfWeek defaults to 0 (Sunday), so its
+	// week is Sun Apr 12 - Sat Apr 18.
+	const at = dayjs('2026-04-15T12:00:00.000Z')
+
+	const StubIcon = () => null
+
+	// A one-view plugin with arbitrary navigation metadata and an optional range.
+	const customViewPlugin = (
+		view: Partial<PluginView> & Pick<PluginView, 'name'>
+	): IlamyPlugin => ({
+		name: `plugin-${view.name}`,
+		views: [{ icon: StubIcon, component: () => null, ...view }],
+	})
+
+	const renderSprint = (view: Partial<PluginView>, providerProps = {}) =>
+		renderHeader([], {
+			initialView: 'sprint',
+			initialDate: at,
+			plugins: [customViewPlugin({ name: 'sprint', ...view })],
+			...providerProps,
+		})
+
+	const titleText = () => screen.getByTestId('calendar-title').textContent ?? ''
+
+	it('titles a week-navigating custom view as a week range', () => {
+		renderSprint({ navigationUnit: 'week' })
+		expect(titleText()).toContain('Apr 12 – 18')
+	})
+
+	it('titles a month-navigating custom view as MMM YYYY', () => {
+		renderSprint({ navigationUnit: 'month' })
+		expect(titleText()).toContain('Apr 2026')
+	})
+
+	it('titles a year-navigating custom view as YYYY', () => {
+		renderSprint({ navigationUnit: 'year' })
+		expect(titleText()).toContain('2026')
+		expect(titleText()).not.toContain('Apr')
+	})
+
+	it('titles a single-day custom view as a single date with weekday', () => {
+		renderSprint({ navigationUnit: 'day' })
+		expect(titleText()).toContain('Wed, Apr 15, 2026')
+	})
+
+	it('titles a multi-day-window custom view as its range', () => {
+		renderSprint({
+			navigationStep: { amount: 3, unit: 'day' },
+			range: (date) => ({ start: date, end: date.add(2, 'day') }),
+		})
+		// A 3-day window Apr 15 - 17: not a single day, not a grid week.
+		expect(titleText()).toContain('Apr 15 – 17')
+	})
+
+	it('treats navigationStep as winning over navigationUnit', () => {
+		// A view that labels itself week but steps a 10-day window is a range.
+		renderSprint({
+			navigationUnit: 'week',
+			navigationStep: { amount: 10, unit: 'day' },
+			range: (date) => ({ start: date, end: date.add(9, 'day') }),
+		})
+		expect(titleText()).toContain('Apr 15 – 24')
+	})
+
+	it('falls back to a single date when a view declares no navigation metadata', () => {
+		renderSprint({})
+		expect(titleText()).toContain('Wed, Apr 15, 2026')
+	})
+
+	it('opens the month grid (not the day calendar) for a month-navigating view', async () => {
+		const onDateChange = mock()
+		renderSprint({ navigationUnit: 'month' }, { onDateChange })
+
+		await act(async () => {
+			fireEvent.click(screen.getByTestId('calendar-title'))
+		})
+		// The month grid shows month buttons; the day calendar would not.
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: 'Sep' }))
+		})
+
+		await waitFor(() => {
+			expect(onDateChange).toHaveBeenCalledTimes(1)
+		})
+		expect(onDateChange.mock.calls[0][0].month()).toBe(8)
+	})
+
+	it('opens the year grid for a year-navigating view', async () => {
+		const onDateChange = mock()
+		renderSprint({ navigationUnit: 'year' }, { onDateChange })
+
+		await act(async () => {
+			fireEvent.click(screen.getByTestId('calendar-title'))
+		})
+		// The year grid lists selectable years; pick the next one.
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: '2027' }))
+		})
+
+		await waitFor(() => {
+			expect(onDateChange).toHaveBeenCalledTimes(1)
+		})
+		expect(onDateChange.mock.calls[0][0].year()).toBe(2027)
 	})
 })

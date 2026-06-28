@@ -15,8 +15,12 @@
     @apply font-sans;
   }
 
+  /* Normal block flow so #root fills the viewport width. The starter's
+   * `grid place-items-center` sized #root to its content (justify-items: center),
+   * which let a wide calendar grow the page and scroll horizontally. The demo's
+   * own `container mx-auto` handles horizontal centering. */
   body {
-    @apply grid place-items-center min-w-[320px] min-h-screen relative m-0 bg-background text-foreground;
+    @apply min-w-[320px] min-h-screen relative m-0 bg-background text-foreground;
   }
 }
 

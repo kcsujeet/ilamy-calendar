@@ -4,5 +4,8 @@ import MainLayout from '@/layouts/main-layout.astro'
 ---
 
 <MainLayout>
-  <Playground client:only="react" />
+  <!-- The playground is 100% width; the consumer owns the max-width + centering. -->
+  <div class="container mx-auto">
+    <Playground client:only="react" />
+  </div>
 </MainLayout>

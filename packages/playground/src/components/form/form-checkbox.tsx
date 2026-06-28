@@ -1,4 +1,5 @@
 import { Checkbox } from '@ilamy/ui/components/checkbox'
+import { useId } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
 
 interface FormCheckboxProps {
@@ -10,7 +11,9 @@ interface FormCheckboxProps {
 export function FormCheckbox({ name, label }: FormCheckboxProps) {
 	const { control } = useFormContext()
 	const { field } = useController({ name, control })
-	const id = `form-checkbox-${name}`
+	// useId keeps the label/checkbox association unique even when the settings
+	// panel is mounted twice (mobile dialog + desktop sidebar).
+	const id = useId()
 	return (
 		<div className="flex items-center space-x-2">
 			<Checkbox

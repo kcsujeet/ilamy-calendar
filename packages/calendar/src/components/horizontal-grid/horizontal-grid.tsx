@@ -79,16 +79,15 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 					data-testid="horizontal-grid-body"
 				>
 					<div
-						className="relative w-full flex flex-col flex-1"
+						className="relative w-full flex flex-col flex-1 gap-px bg-border"
 						data-calendar-scroll-content="true"
 						key={currentDate.format('YYYY-MM')}
 					>
-						{rows.map((row, index) => (
+						{rows.map((row) => (
 							<HorizontalGridRow
 								allDay={row.allDay ?? topLevelAllDay}
 								dayNumberHeight={dayNumberHeight}
 								gridType={gridType}
-								isLastRow={index === rows.length - 1}
 								key={row.id}
 								variant={variant}
 								{...row}

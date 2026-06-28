@@ -25,7 +25,6 @@ export interface HorizontalGridRowProps extends HorizontalRowSpec {
 	dayNumberHeight?: number
 	columns?: HorizontalGridColumn[]
 	allDay?: boolean
-	isLastRow?: boolean
 }
 
 const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
@@ -38,7 +37,6 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	columns = [],
 	allDay,
 	showDayNumber = false,
-	isLastRow = false,
 }) => {
 	const { renderResource } = useSmartCalendarContext()
 
@@ -68,7 +66,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 		>
 			{isResourceCalendar && resource && (
 				<ResourceCell
-					className="w-20 sm:w-40 sticky left-0 bg-background z-20 h-full"
+					className="w-20 sm:w-40 border-r sticky left-0 bg-background z-20 h-full"
 					data-testid={keys.container.horizontal.rowLabel(resource.id)}
 					resource={resource}
 				>
@@ -80,10 +78,9 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 				</ResourceCell>
 			)}
 			<div className="relative flex-1 flex min-w-0">
-				<div className="flex w-full min-w-0">
-					{columns.map((col, index) => {
-						// Edge cells drop their border to avoid doubling the calendar frame.
-						const isLastCol = index === columns.length - 1
+				{/* gap-px + bg-border draws the vertical separators between cells. */}
+				<div className="flex w-full min-w-0 gap-px bg-border">
+					{columns.map((col) => {
 						if (col.days) {
 							return (
 								<GroupedColumn
@@ -92,8 +89,6 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 									dayNumberHeight={dayNumberHeight}
 									gridType={gridType}
 									id={id}
-									isLastCol={isLastCol}
-									isLastRow={isLastRow}
 									key={col.id}
 									resource={resource}
 									resourceId={resource?.id}
@@ -105,12 +100,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 						return col.day ? (
 							<GridCell
 								allDay={allDay}
-								className={cn(
-									'flex-1 w-20',
-									isLastRow && 'border-b-0',
-									isLastCol && 'border-r-0',
-									col.className
-								)}
+								className={cn('flex-1 w-20', col.className)}
 								day={col.day}
 								gridType={gridType}
 								hour={gridType === 'hour' ? col.day.hour() : undefined}
@@ -155,8 +145,6 @@ const GroupedColumn = memo(
 		resourceId,
 		dayNumberHeight,
 		showDayNumber,
-		isLastRow,
-		isLastCol,
 		id,
 	}: {
 		col: HorizontalGridColumn
@@ -166,8 +154,6 @@ const GroupedColumn = memo(
 		resourceId?: string | number
 		dayNumberHeight?: number
 		showDayNumber: boolean
-		isLastRow: boolean
-		isLastCol: boolean
 		id: string | number
 	}) => {
 		const days = col.days ?? []
@@ -180,16 +166,12 @@ const GroupedColumn = memo(
 
 		return (
 			<div className="flex relative w-full">
-				<div className="flex w-full">
+				{/* gap-px + bg-border draws the day separators within the group. */}
+				<div className="flex w-full gap-px bg-border">
 					{days.map((day) => (
 						<GridCell
 							allDay={allDay}
-							className={cn(
-								'flex-1 w-20',
-								isLastRow && 'border-b-0',
-								!isLastCol && 'border-r!',
-								col.className
-							)}
+							className={cn('flex-1 w-20', col.className)}
 							day={day}
 							gridType={gridType}
 							hour={gridType === 'hour' ? day.hour() : undefined}

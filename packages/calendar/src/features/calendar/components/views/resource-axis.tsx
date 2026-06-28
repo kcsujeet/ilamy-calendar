@@ -9,7 +9,10 @@ import type React from 'react'
 import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
 import { ResourceCell } from '@/components/resource-cell'
-import { GUTTER_WIDTH } from '@/components/vertical-grid/gutter'
+import {
+	GUTTER_WIDTH,
+	STICKY_GUTTER_SHADOW,
+} from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { getDayKey } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
@@ -92,18 +95,19 @@ export const ResourceColumnsHeader: React.FC<{ resources: Resource[] }> = ({
 	resources,
 }) => (
 	<div
-		className={'flex border-b h-12 flex-1'}
+		className={'flex gap-px bg-border h-12 flex-1'}
 		data-testid={keys.header.resource.columnsHeader}
 	>
 		<div
 			className={cn(
-				'shrink-0 border-r sticky top-0 left-0 bg-background z-20',
-				GUTTER_WIDTH
+				'shrink-0 sticky top-0 left-0 bg-background z-20',
+				GUTTER_WIDTH,
+				STICKY_GUTTER_SHADOW
 			)}
 		/>
 		{resources.map((resource) => (
 			<ResourceCell
-				className={RESOURCE_CELL_WIDTH}
+				className={cn(RESOURCE_CELL_WIDTH, 'bg-background')}
 				key={keys.listKey('resource-cell', resource.id)}
 				resource={resource}
 			/>
@@ -156,12 +160,12 @@ export const ResourceAllDayRows: React.FC<{
 	}
 
 	return (
-		<div className="flex w-full">
+		<div className="flex w-full gap-px bg-border">
 			<AllDayCell />
 			{groups.map(({ resource, days }) => (
 				<AllDayRow
 					classes={{
-						cell: cn('min-w-20', days.length > 1 && 'flex-1', 'border-r!'),
+						cell: cn('min-w-20', days.length > 1 && 'flex-1'),
 					}}
 					days={days}
 					key={keys.allDayRow(resource.id)}

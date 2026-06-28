@@ -20,7 +20,8 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 	return (
 		<div
 			className={cn(
-				'flex w-full',
+				// gap-px + bg-border: weekday separators; border-b: header/body line.
+				'flex w-full gap-px bg-border border-b',
 				stickyViewHeader && 'sticky top-0 z-20',
 				viewHeaderClassName,
 				className
@@ -29,7 +30,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 		>
 			{weekDays.map((weekDay, index) => (
 				<AnimatedSection
-					className="py-2 text-center font-medium border-r last:border-r-0 border-b flex-1 min-w-0"
+					className="py-2 text-center font-medium bg-background flex-1 min-w-0"
 					data-testid={keys.header.weekday('month', weekDay.format('ddd'))}
 					delay={index * HEADER_STAGGER_DELAY}
 					key={weekDay.toISOString()}

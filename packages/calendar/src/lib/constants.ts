@@ -4,8 +4,14 @@ export const GAP_BETWEEN_ELEMENTS = 1 // px (gap-1)
 export const DAY_NUMBER_HEIGHT = 24 // px (h-6)
 export const EVENT_BAR_HEIGHT = 24 // px (h-[24px])
 export const DAY_MAX_EVENTS_DEFAULT = 4 // Default max events per day
+// A faint, opaque shade mixed from the theme's own background/foreground so it
+// adapts to any theme. bg-secondary sat right on the (faint) border lightness
+// in the dark shadcn palette, hiding the grid lines on disabled cells. The grid
+// line sits between background and foreground in lightness, so a SMALL mix keeps
+// the fill near the background and clear of the border line in both light and
+// dark; mixing further would drift the fill onto the line and hide it again.
 export const DISABLED_CELL_CLASSNAME =
-	'bg-secondary text-muted-foreground pointer-events-none'
+	'bg-[color-mix(in_oklch,var(--background),var(--foreground)_3%)] text-muted-foreground pointer-events-none'
 
 export const WEEK_DAYS_NUMBER_MAP: Record<WeekDays, number> = {
 	sunday: 0,

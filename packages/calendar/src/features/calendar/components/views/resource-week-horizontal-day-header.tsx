@@ -19,7 +19,7 @@ export const ResourceWeekHorizontalDayHeader: React.FC<
 	const isHourly = weekViewGranularity === 'hourly'
 
 	return (
-		<div className={cn('flex', HEADER_ROW_HEIGHT)}>
+		<div className={cn('flex gap-px bg-border border-b', HEADER_ROW_HEIGHT)}>
 			{days.map((day, index) => {
 				const today = isToday(day)
 				const key = keys.header.week.day(day)
@@ -27,7 +27,7 @@ export const ResourceWeekHorizontalDayHeader: React.FC<
 				return (
 					<AnimatedSection
 						className={cn(
-							'shrink-0 border-r last:border-r-0 border-b flex-1 flex items-center text-center font-medium min-w-20'
+							'shrink-0 bg-background flex-1 flex items-center text-center font-medium min-w-20'
 						)}
 						data-testid={keys.header.resource.weekDay}
 						delay={index * HEADER_STAGGER_DELAY}

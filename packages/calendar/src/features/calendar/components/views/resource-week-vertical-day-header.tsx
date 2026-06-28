@@ -3,7 +3,10 @@ import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
-import { GUTTER_WIDTH } from '@/components/vertical-grid/gutter'
+import {
+	GUTTER_WIDTH,
+	STICKY_GUTTER_SHADOW,
+} from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { isToday } from '@/lib/utils/date-utils'
@@ -20,11 +23,12 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 	const { currentDate } = useSmartCalendarContext()
 
 	return (
-		<div className="flex h-12">
+		<div className="flex h-12 gap-px bg-border">
 			<div
 				className={cn(
-					'shrink-0 border-r border-b z-20 bg-background sticky left-0',
-					GUTTER_WIDTH
+					'shrink-0 z-20 bg-background sticky left-0',
+					GUTTER_WIDTH,
+					STICKY_GUTTER_SHADOW
 				)}
 			>
 				<span className="px-2 h-full w-full flex justify-center items-start font-medium">
@@ -41,7 +45,7 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 					<AnimatedSection
 						className={cn(
 							RESOURCE_CELL_WIDTH,
-							'border-r last:border-r-0 border-b flex flex-col items-center justify-center text-xs shrink-0 bg-background'
+							'flex flex-col items-center justify-center text-xs shrink-0 bg-background'
 						)}
 						data-testid={keys.header.resource.timeLabel(
 							'week',

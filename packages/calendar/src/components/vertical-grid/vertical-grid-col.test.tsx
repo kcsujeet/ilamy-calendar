@@ -52,38 +52,53 @@ describe('VerticalGridCol', () => {
 		expect(screen.getByTestId('vertical-time-10')).toHaveTextContent('10:00')
 	})
 
-	test('day cells carry the vertical separator (border-r) for non-last columns', () => {
+	test('hour separators come from the grid gap, not per-cell borders', () => {
 		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol()
-		const classes = screen
-			.getByTestId(`vertical-cell-${dateStr}-09-00`)
-			.className.split(' ')
-		expect(classes).toContain('border-r')
-		expect(classes).not.toContain('border-r-0')
+		// Approach G: the grid container draws the hour/column lines via the
+		// gaps (gap-px) filled with the border color (bg-border). Cells carry no
+		// per-cell separators.
+		const cell = screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
+		const gridContainer = cell.closest('div.grid')
+		expect(gridContainer).not.toBeNull()
+		const gridClasses = gridContainer?.className.split(' ') ?? []
+		expect(gridClasses).toContain('gap-px')
+		expect(gridClasses).toContain('bg-border')
+
+		const cellClasses = cell.className.split(' ')
+		expect(cellClasses).not.toContain('border-r')
+		expect(cellClasses).not.toContain('border-r-0')
+		expect(cellClasses).not.toContain('border-b')
+		expect(cellClasses).not.toContain('border-b-0')
 	})
 
-	test('last-column day cells omit the trailing border (border-r-0)', () => {
-		const dateStr = initialDate.format('YYYY-MM-DD')
-		renderVerticalGridCol({ isLastColumn: true })
-		const classes = screen
-			.getByTestId(`vertical-cell-${dateStr}-09-00`)
-			.className.split(' ')
-		expect(classes).toContain('border-r-0')
-	})
-
-	test('last-hour cell omits the bottom border (no double with the calendar border)', () => {
+	test('no day cell carries a per-cell separator regardless of position', () => {
 		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol()
-		// mockDays = [09:00, 10:00]; 10:00 is the bottom row, 09:00 keeps border-b.
+		// mockDays = [09:00, 10:00]; with gap-based lines neither the first nor
+		// the last row gets a per-cell border-r/border-b.
 		const firstHour = screen
 			.getByTestId(`vertical-cell-${dateStr}-09-00`)
 			.className.split(' ')
 		const lastHour = screen
 			.getByTestId(`vertical-cell-${dateStr}-10-00`)
 			.className.split(' ')
-		expect(firstHour).toContain('border-b')
-		expect(firstHour).not.toContain('border-b-0')
-		expect(lastHour).toContain('border-b-0')
+		expect(firstHour).not.toContain('border-b')
+		expect(firstHour).not.toContain('border-r')
+		expect(lastHour).not.toContain('border-b')
+		expect(lastHour).not.toContain('border-r')
+	})
+
+	test('the gutter draws its right separator with a box-shadow, not border-r', () => {
+		renderVerticalGridCol({
+			id: 'time-col',
+			className:
+				'shadow-[1px_0_0_0_color-mix(in_oklch,var(--background),var(--foreground)_10%)]',
+			renderCell: (date: Dayjs) => <span>{date.format('HH:mm')}</span>,
+		})
+		const gutter = screen.getByTestId('vertical-col-time-col')
+		expect(gutter.className).toContain('shadow-[1px_0_0_0')
+		expect(gutter.className.split(' ')).not.toContain('border-r')
 	})
 
 	test('renders cells with correct IDs', () => {

@@ -16,6 +16,7 @@ import { createContext, useContext } from 'react'
 import { RRule } from 'rrule'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { useIlamyCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { IlamyCalendar } from './ilamy-calendar'
 
 const CustomEventForm = (props: EventFormProps) => {
@@ -786,8 +787,7 @@ describe('IlamyCalendar', () => {
 
 			// Find a Saturday cell (non-business day) - should have default disabled styling
 			const saturdayCell = screen.getByTestId('day-cell-2025-01-18')
-			expect(saturdayCell).toHaveClass('bg-secondary')
-			expect(saturdayCell).toHaveClass('text-muted-foreground')
+			expect(saturdayCell).toHaveClass(DISABLED_CELL_CLASSNAME)
 		})
 
 		it('should apply custom disabledCell className when provided', async () => {

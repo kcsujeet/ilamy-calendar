@@ -42,15 +42,20 @@ describe('AllDayRow', () => {
 		expect(dayNumbers).toHaveLength(0)
 	})
 
-	it('gives the cells a bottom border to separate the row from the time grid', () => {
+	it('separates the row from the time grid without per-cell borders', () => {
 		renderAllDayRow()
-		// The all-day row is NOT the last row (the time grid follows), so its cells
-		// keep border-b rather than being stripped to border-b-0.
+		// Approach G: the all-day/time-grid separator is owned by the all-day
+		// container (border-b on [data-testid="vertical-grid-all-day"]), not the
+		// cells. The cells themselves carry no bottom border.
 		const cellClasses = screen
 			.getByTestId('day-cell-2025-01-13')
 			.className.split(' ')
-		expect(cellClasses).toContain('border-b')
+		expect(cellClasses).not.toContain('border-b')
 		expect(cellClasses).not.toContain('border-b-0')
+		// Inter-cell separators are drawn by the row via gap-px + bg-border.
+		const rowClasses = screen.getByTestId('all-day-row').className.split(' ')
+		expect(rowClasses).toContain('gap-px')
+		expect(rowClasses).toContain('bg-border')
 	})
 
 	it('does not stack a second bottom border (no thick/double line)', () => {
@@ -62,13 +67,17 @@ describe('AllDayRow', () => {
 		expect((wrapper?.className ?? '').split(' ')).not.toContain('border-b')
 	})
 
-	it('strips the rightmost cell right border so it does not double the calendar border', () => {
+	it('draws cell separators via gap-px instead of per-cell right borders', () => {
 		renderAllDayRow()
-		// The calendar body has a border all around; `last:border-r-0` drops the
-		// last cell's right border so it does not stack with that outer border.
+		// Approach G: no cell carries a right border (so none can double the outer
+		// calendar border); the row draws inter-cell lines with gap-px + bg-border.
 		const lastCellClasses = screen
 			.getByTestId('day-cell-2025-01-14')
 			.className.split(' ')
-		expect(lastCellClasses).toContain('last:border-r-0')
+		expect(lastCellClasses).not.toContain('border-r')
+		expect(lastCellClasses).not.toContain('last:border-r-0')
+		const rowClasses = screen.getByTestId('all-day-row').className.split(' ')
+		expect(rowClasses).toContain('gap-px')
+		expect(rowClasses).toContain('bg-border')
 	})
 })

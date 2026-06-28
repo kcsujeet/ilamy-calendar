@@ -23,18 +23,20 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 		id: keys.col.allDay(day, index),
 		day,
 		gridType: 'day' as const,
-		className: cn('h-full min-h-12 border-r last:border-r-0', classes?.cell),
+		className: cn('h-full min-h-12 bg-background', classes?.cell),
 	}))
 
 	return (
 		<div
-			className={cn('flex w-full bg-background', classes?.row)}
+			// gap-px + bg-border draws the spacer/grid + inter-day separators,
+			// matching the header and body. The bottom border is owned by the
+			// all-day container in VerticalGridHeaderContainer.
+			className={cn('flex w-full gap-px bg-border', classes?.row)}
 			data-testid="all-day-row"
 		>
 			{/* Time col spacer */}
 			{showSpacer && <AllDayCell className={classes?.spacer} />}
 
-			{/* Not isLastRow: the time grid follows, so cells keep border-b. */}
 			<HorizontalGridRow
 				allDay
 				className="flex-1 min-h-fit"

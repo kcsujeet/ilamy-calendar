@@ -38,9 +38,11 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		return headerComponent
 	}
 
-	// Container queries drive the control variants; `flex-wrap` keeps everything on
-	// one row whenever it fits and lets it spill onto a second row only when the
-	// container is too narrow (small/mobile widths). No JS measurement needed.
+	// Container queries drive both the control variants and the row/stack decision.
+	// The row vs. two-row layout is keyed to the container width (@lg), NOT to
+	// flex-wrap: wrapping would key off content width, so the date title changing
+	// per view (e.g. "Jun 2026" vs "Jun 28 - Jul 4") could flip a fixed-width
+	// container between one and two rows. No JS measurement needed.
 	return (
 		<div
 			className={cn('@container/base-header w-full', headerClassName)}
@@ -48,9 +50,10 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		>
 			<div
 				className={cn(
-					// Wrapped (phones, below ~@lg) each cluster is alone on its line:
-					// center it. Once the compact row fits (@lg) spread to the edges.
-					'flex flex-wrap items-center justify-center gap-2 @lg/base-header:justify-between',
+					// Below @lg (phones): stack the two clusters, each centered on its
+					// own line. At @lg and up the compact row fits: lay out in a single
+					// row and spread to the edges.
+					'flex flex-col items-center gap-2 @lg/base-header:flex-row @lg/base-header:justify-between',
 					className
 				)}
 			>

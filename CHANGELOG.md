@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v2.0.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.8.1...v2.0.0)
+
+> 28 June 2026
+
+v2 reworks ilamy into a plugin-first calendar: the core is plugin-agnostic, recurrence is now an opt-in plugin, and resources are props on a single `IlamyCalendar`. New Agenda and drag-to-create plugins ship alongside.
+
+##### ⚠️ Breaking changes
+
+> **Read the [v2 migration guide](https://ilamy.dev/docs/help/migration-to-v2) before upgrading.** It walks through every change below with before/after code.
+
+- **Plugins are opt-in.** Recurring events no longer work out of the box — pass the recurrence plugin (`plugins={[recurrencePlugin()]}`) to restore v1 behavior.
+- **Recurrence helpers moved to a subpath** — import them from `@ilamy/calendar/plugins/recurrence`, not the package root.
+- **`CalendarEvent` no longer carries recurrence fields by default** — the recurrence plugin adds them via module augmentation.
+- **One unified component.** Resources are now props on `IlamyCalendar`; `IlamyResourceCalendar` stays as a deprecated alias.
+- **`dayjs` is now a peer dependency** — install it yourself and import locales there.
+- **Deep imports are blocked** — import only from the documented entry points (`.`, `./testing`, `./plugins/*`).
+- **Context method renames** on `useIlamyCalendarContext()` — see the guide.
+- **`CalendarView` is now `string`** (was a fixed union) so custom views can define their own ids.
+- **Type tightening** — `Translations` is a derived alias, `data` fields are `Record<string, unknown>`, and `Resource.position` was removed.
+
+##### Features
+
+- feat: **plugin architecture** — the core is plugin-agnostic; plugins contribute views, providers, event handling, and event-form sections through the `IlamyPlugin` / `PluginView` contract ([`#183`](https://github.com/kcsujeet/ilamy-calendar/pull/183), [`#192`](https://github.com/kcsujeet/ilamy-calendar/pull/192))
+- feat: **Agenda view plugin** (`@ilamy/calendar/plugins/agenda`) — a list view grouped by day with a configurable day/week/month/N-day window ([`#196`](https://github.com/kcsujeet/ilamy-calendar/pull/196), [`#202`](https://github.com/kcsujeet/ilamy-calendar/pull/202)) — Closes [`#139`](https://github.com/kcsujeet/ilamy-calendar/issues/139)
+- feat: **drag-to-create plugin** (`@ilamy/calendar/plugins/drag-to-create`) — drag across the grid to create a time-range event, with touch support and orientation-aware edge auto-scroll ([`#214`](https://github.com/kcsujeet/ilamy-calendar/pull/214))
+- feat: **custom views** — author your own views via the generalized `PluginView` contract (a columns/layout spec, or a full component) ([`#192`](https://github.com/kcsujeet/ilamy-calendar/pull/192))
+- feat: **redesigned header** — an icon-based view switcher with tooltips and a context-aware date picker (day/week/month/year grids) that adapts to the active view ([`#198`](https://github.com/kcsujeet/ilamy-calendar/pull/198), [`#220`](https://github.com/kcsujeet/ilamy-calendar/pull/220), [`#225`](https://github.com/kcsujeet/ilamy-calendar/pull/225))
+- feat: add a **color picker** to the event form ([`#221`](https://github.com/kcsujeet/ilamy-calendar/pull/221))
+- feat: add the **`getCellClassName`** prop for per-cell custom styling ([`#211`](https://github.com/kcsujeet/ilamy-calendar/pull/211)) — Thanks [@maxdelorme](https://github.com/maxdelorme)!
+- feat: **recurrence presets** and a monthly by-weekday mode ([`#187`](https://github.com/kcsujeet/ilamy-calendar/pull/187))
+
+##### Fixes
+
+- fix: resource calendar — the resource picker is no longer missing when creating a new event ([`#215`](https://github.com/kcsujeet/ilamy-calendar/pull/215)) — Thanks [@maxdelorme](https://github.com/maxdelorme)!
+- fix: recurring override edits are kept across navigation ([`#200`](https://github.com/kcsujeet/ilamy-calendar/pull/200)) — Closes [`#197`](https://github.com/kcsujeet/ilamy-calendar/issues/197)
+- fix: deleting an overriding occurrence no longer fires a spurious update ([`#189`](https://github.com/kcsujeet/ilamy-calendar/pull/189), [`#199`](https://github.com/kcsujeet/ilamy-calendar/pull/199)) — Thanks [@maxdelorme](https://github.com/maxdelorme)!
+- fix: resource vertical-grid columns now fill the width and align with the header ([`#226`](https://github.com/kcsujeet/ilamy-calendar/pull/226))
+- fix: localization reaches the calendar now that `dayjs` is a shared peer dependency ([`#219`](https://github.com/kcsujeet/ilamy-calendar/pull/219))
+- fix: month/year grid alignment and stale week-view columns ([`#190`](https://github.com/kcsujeet/ilamy-calendar/pull/190))
+
+##### Performance
+
+- perf: drop sourcemaps from the published package — install size ~0.71 MB → 159 KB ([`#186`](https://github.com/kcsujeet/ilamy-calendar/pull/186))
+
 #### [v1.8.1](https://github.com/kcsujeet/ilamy-calendar/compare/v1.8.0...v1.8.1)
 
 > 6 June 2026

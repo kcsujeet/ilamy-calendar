@@ -1,3 +1,4 @@
+import type { PluginView } from '@ilamy/types'
 import { Button } from '@ilamy/ui/components/button'
 import {
 	Popover,
@@ -19,18 +20,33 @@ interface HeaderDatePickerProps {
 	className?: string
 }
 
-// Agenda mirrors the day/week/month grid view's picker according to its window,
-// read off the view's navigationStep (day -> day, week -> week, month -> month).
-// A custom N-day window has no grid equivalent, so it keeps the day picker and a
-// range title.
-function getAgendaPickerView(
-	step: { amount: number; unit: string } | undefined
-): 'day' | 'week' | 'month' | 'agenda' {
-	const isSingleDayWindow = step?.unit === 'day' && step.amount === 1
-	if (step?.unit === 'month') return 'month'
-	if (step?.unit === 'week') return 'week'
-	if (isSingleDayWindow) return 'day'
-	return 'agenda'
+type PickerKind = 'day' | 'week' | 'month' | 'year' | 'range'
+
+// A single navigation unit maps to that grid's picker; everything else is a range.
+const PICKER_BY_UNIT: Partial<Record<string, PickerKind>> = {
+	day: 'day',
+	week: 'week',
+	month: 'month',
+	year: 'year',
+}
+
+// The title dropdown is a jump-to-date aid, so its picker form (and the title
+// format) follow how far the view navigates — metadata every view already
+// declares for prev/next via `navigationStep` / `navigationUnit`. A view that
+// steps a single day/week/month/year borrows that grid's picker; anything else
+// (a multi-unit or custom window) has no single cell to pick, so it shows the day
+// picker over the view's range. Nothing here references a view by name, so core
+// stays agnostic of agenda or any third-party view. Mirrors the step resolution
+// in use-calendar-navigation.
+function pickerKind(view: PluginView | undefined): PickerKind {
+	const step = view?.navigationStep ?? {
+		amount: 1,
+		unit: view?.navigationUnit ?? 'day',
+	}
+	if (step.amount !== 1) {
+		return 'range'
+	}
+	return PICKER_BY_UNIT[step.unit] ?? 'range'
 }
 
 // The header title doubles as a navigation dropdown: clicking it opens a
@@ -63,26 +79,30 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 		setOpen(false)
 	}
 
-	// Agenda borrows the matching grid view's title/picker for its window; a
-	// custom-window agenda keeps the 'agenda' (range + day picker) form.
-	const activeView = getViews().find((v) => v.name === view)
-	const isAgendaView = view === 'agenda'
-	const effectiveView = isAgendaView
-		? getAgendaPickerView(activeView?.navigationStep)
-		: view
+	// Title and picker are keyed by the derived picker kind, not the view name.
+	const kind = pickerKind(getViews().find((v) => v.name === view))
 
-	// Title and picker are keyed by view; unknown views fall back to the day form.
-	const titleByView: Partial<Record<string, string>> = {
+	const titleByKind: Record<PickerKind, string> = {
 		year: currentDate.format('YYYY'),
 		month: currentDate.format('MMM YYYY'),
 		week: formatDateRange(weekStart, weekEnd),
 		day: currentDate.format('ddd, MMM D, YYYY'),
-		// Custom-window agenda: show the listed range, not one day.
-		agenda: formatDateRange(currentRange.start, currentRange.end),
+		// A multi-unit/custom window shows its listed range, not a single day.
+		range: formatDateRange(currentRange.start, currentRange.end),
 	}
-	const title = titleByView[effectiveView] ?? currentDate.format('MMM D, YYYY')
+	const title = titleByKind[kind]
 
-	const contentByView: Partial<Record<string, ReactNode>> = {
+	// Both 'day' and 'range' navigate within days, so both use the day calendar;
+	// only their titles differ.
+	const dayPicker = (
+		<Calendar
+			defaultMonth={currentDate.toDate()}
+			firstDayOfWeek={firstDayOfWeek}
+			onSelect={(d) => d && handleSelect(dayjs(d))}
+			selected={currentDate.toDate()}
+		/>
+	)
+	const contentByKind: Record<PickerKind, ReactNode> = {
 		year: <YearGrid onSelect={handleSelect} selected={currentDate} />,
 		month: <MonthGrid onSelect={handleSelect} selected={currentDate} />,
 		week: (
@@ -94,15 +114,10 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 				weekHover
 			/>
 		),
+		day: dayPicker,
+		range: dayPicker,
 	}
-	const content = contentByView[effectiveView] ?? (
-		<Calendar
-			defaultMonth={currentDate.toDate()}
-			firstDayOfWeek={firstDayOfWeek}
-			onSelect={(d) => d && handleSelect(dayjs(d))}
-			selected={currentDate.toDate()}
-		/>
-	)
+	const content = contentByKind[kind]
 
 	return (
 		<Popover onOpenChange={setOpen} open={open}>

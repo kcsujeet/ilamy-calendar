@@ -273,6 +273,13 @@ export interface IlamyCalendarProps {
 	 */
 	renderEventForm?: (props: EventFormProps) => React.ReactNode
 	/**
+	 * Called when the "+N more" overflow indicator in a month/grid cell is
+	 * clicked, receiving the cell's day and its full list of events.
+	 * If provided, it overrides the built-in "all events" dialog, letting you
+	 * render your own popover/dialog. When omitted, the default dialog opens.
+	 */
+	onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
+	/**
 	 * Time format for displaying times in the calendar.
 	 * - "12-hour": Times displayed as "1:00 PM" (default)
 	 * - "24-hour": Times displayed as "13:00"

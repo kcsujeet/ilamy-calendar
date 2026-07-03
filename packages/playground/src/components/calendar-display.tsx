@@ -33,6 +33,7 @@ import {
 	createDemoPlugins,
 	handleDateClick,
 	handleEventClick,
+	handleMoreEventsClick,
 	handleResourceEventClick,
 } from '../utils/demo-data'
 
@@ -82,6 +83,7 @@ type SharedCalendarProps = {
 	timezone: string
 	headerComponent: ReactNode
 	onCellClick: ((info: CellInfo) => void) | undefined
+	onMoreEventsClick: ((day: Dayjs, events: CalendarEvent[]) => void) | undefined
 	onDateChange: (date: Dayjs) => void
 	onEventAdd: EventHandler | undefined
 	onEventUpdate: EventHandler | undefined
@@ -134,6 +136,7 @@ function RegularCalendar({
 			onEventClick={onEventClick}
 			onEventDelete={shared.onEventDelete}
 			onEventUpdate={shared.onEventUpdate}
+			onMoreEventsClick={shared.onMoreEventsClick}
 			plugins={shared.plugins}
 			renderCurrentTimeIndicator={shared.renderCurrentTimeIndicator}
 			renderEvent={shared.renderEvent}
@@ -196,6 +199,7 @@ function ResourceCalendar({
 			onEventClick={onEventClick}
 			onEventDelete={shared.onEventDelete}
 			onEventUpdate={shared.onEventUpdate}
+			onMoreEventsClick={shared.onMoreEventsClick}
 			orientation={orientation}
 			plugins={shared.plugins}
 			renderCurrentTimeIndicator={shared.renderCurrentTimeIndicator}
@@ -267,6 +271,7 @@ function resolveSharedCalendarProps(
 			? customCalendarClassesOverride
 			: undefined,
 		onCellClick: values.useCustomOnDateClick ? handleDateClick : undefined,
+		onMoreEventsClick: handleMoreEventsClick,
 		onEventAdd: lifecycleOn ? lifecycle.onEventAdd : undefined,
 		onEventUpdate: lifecycleOn ? lifecycle.onEventUpdate : undefined,
 		onEventDelete: lifecycleOn ? lifecycle.onEventDelete : undefined,

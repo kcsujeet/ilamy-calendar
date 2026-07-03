@@ -55,6 +55,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		t,
 		eventSpacing,
 		eventHeight,
+		onMoreEventsClick,
 	} = useSmartCalendarContext()
 	const effectiveBusinessHours = useEffectiveBusinessHours(resourceId)
 
@@ -92,8 +93,13 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		allDay,
 	])
 
-	// Handler for showing all events in a dialog
+	// Handler for showing all events: defer to the consumer's callback when
+	// provided, otherwise open the built-in "all events" dialog.
 	const showAllEvents = (day: Dayjs, events: CalendarEvent[]) => {
+		if (onMoreEventsClick) {
+			onMoreEventsClick(day, events)
+			return
+		}
 		allEventsDialogRef.current?.setSelectedDayEvents({
 			day,
 			events,

@@ -173,6 +173,35 @@ const handleLocaleChange = (newLocale) => {
 
 ## Troubleshooting
 
+### Why isn't `@ilamy/calendar/plugins/recurrence` found after installing?
+
+The plugin subpaths (`/plugins/recurrence`, `/plugins/agenda`, `/plugins/drag-to-create`) exist only in **v2.0.0 and later**. On 1.x, recurrence was built into the core and there were no plugin entry points, so the import fails even though the docs describe it. Upgrade to v2 following the [migration guide](/docs/help/migration-to-v2), then register the plugin:
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar'
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
+
+<IlamyCalendar events={events} plugins={[recurrencePlugin()]} />
+```
+
+### How do I make scoped edits to a recurring series from a custom event form?
+
+Use `applyScopedEdit` and `applyScopedDelete` from `useIlamyCalendarContext()` (v2.0.0+). Pass the occurrence the user is editing, the changed fields, and a scope of `'this'`, `'following'`, or `'all'` — the recurrence plugin handles the RFC 5545 mechanics (exception dates, modified instances, series splits), and the resulting changes are reported through `onEventUpdate`, `onEventAdd`, and `onEventDelete` so you can persist them:
+
+```tsx
+const { applyScopedEdit, getEventManager } = useIlamyCalendarContext();
+
+// In your form's submit handler:
+if (getEventManager(event)) {
+  // Recurring — ask the user for a scope, then:
+  applyScopedEdit(event, updates, scope); // 'this' | 'following' | 'all'
+} else {
+  updateEvent(event.id, updates);
+}
+```
+
+See the [useIlamyCalendarContext reference](/docs/components/use-ilamy-calendar-context) for details.
+
 ### Why aren't calendar styles showing up?
 
 Make sure you've registered the calendar package in your Tailwind CSS configuration using the `@source` directive:

@@ -21,6 +21,8 @@ import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 ```
 
 Importing from this subpath also re-adds the `rrule`, `recurrenceId`, and `exdates` fields to `CalendarEvent` via TypeScript declaration merging. Without it, TypeScript reports `Property 'rrule' does not exist on type 'CalendarEvent'`.
+
+The `@ilamy/calendar/plugins/recurrence` subpath requires **v2.0.0 or later**. On 1.x this import fails because recurrence was built into the core and no plugin subpath existed. Upgrade by following the [migration guide](/docs/help/migration-to-v2).
 :::
 
 ## Key Features

@@ -163,7 +163,7 @@ export interface IlamyCalendarApi {
   // navigation
   readonly setCurrentDate: (date: Dayjs) => void
   readonly selectDate: (date: Dayjs) => void
-  readonly setView: (view: string) => void
+  readonly setView: (view: string, date?: Dayjs) => void
   readonly nextPeriod: () => void
   readonly prevPeriod: () => void
   readonly today: () => void

@@ -56,7 +56,7 @@ The only hook exported for library consumers. Returns a curated subset of contex
 |--------|-------------|
 | `setCurrentDate(date)` | Jump to a specific date |
 | `selectDate(date)` | Set current date (fires `onDateChange`) |
-| `setView(view)` | Switch view (fires `onViewChange`) |
+| `setView(view, date?)` | Switch view, optionally moving to `date` atomically (fires `onViewChange`, then one `onDateChange`) |
 | `nextPeriod()` | Navigate forward by current view unit |
 | `prevPeriod()` | Navigate backward by current view unit |
 | `today()` | Jump to today |

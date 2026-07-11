@@ -341,6 +341,29 @@ describe('useCalendarEngine', () => {
 			expect(range.end.format('YYYY-MM-DD')).toBe('2025-07-12')
 		})
 
+		it('setView with a target date updates date and view atomically and emits one onDateChange', () => {
+			const onDateChange = vi.fn()
+			const initialDate = dayjs('2025-01-15')
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate,
+					initialView: 'year',
+					onDateChange,
+				})
+			)
+
+			act(() => result.current.setView('day', dayjs('2025-03-10')))
+
+			expect(result.current.view).toBe('day')
+			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(onDateChange).toHaveBeenCalledTimes(1)
+			const [calledDate, range] = onDateChange.mock.calls[0]
+			expect(calledDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-03-10')
+		})
+
 		it('navigates by navigationStep and reports the custom range for views that declare them', () => {
 			const onDateChange = vi.fn()
 			const initialDate = dayjs('2025-01-15T00:00:00.000Z')

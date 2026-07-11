@@ -51,7 +51,8 @@ export interface IlamyCalendarApi {
 	readonly orientation: 'horizontal' | 'vertical'
 	readonly setCurrentDate: (date: Dayjs) => void
 	readonly selectDate: (date: Dayjs) => void
-	readonly setView: (view: CalendarView) => void
+	/** Switch view; pass `date` to move there atomically in the same update. */
+	readonly setView: (view: CalendarView, date?: Dayjs) => void
 	readonly nextPeriod: () => void
 	readonly prevPeriod: () => void
 	readonly today: () => void

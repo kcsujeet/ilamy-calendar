@@ -59,6 +59,7 @@ export interface PlaygroundSettings {
 	// Interaction handlers
 	useCustomOnDateClick: boolean
 	useCustomOnEventClick: boolean
+	useCustomOnMoreEventsClick: boolean
 	useEventLifecycleCallbacks: boolean
 	disableCellClick: boolean
 	disableEventClick: boolean
@@ -99,6 +100,7 @@ export const defaultSettings: PlaygroundSettings = {
 	useCustomClasses: false,
 	useCustomOnDateClick: false,
 	useCustomOnEventClick: false,
+	useCustomOnMoreEventsClick: false,
 	useEventLifecycleCallbacks: false,
 	disableCellClick: false,
 	disableEventClick: false,

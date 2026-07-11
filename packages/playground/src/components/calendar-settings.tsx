@@ -476,6 +476,10 @@ export function CalendarSettings() {
 					name="useCustomOnEventClick"
 				/>
 				<FormCheckbox
+					label="Use custom onMoreEventsClick handler"
+					name="useCustomOnMoreEventsClick"
+				/>
+				<FormCheckbox
 					label="Use event lifecycle callbacks (add/update/delete)"
 					name="useEventLifecycleCallbacks"
 				/>

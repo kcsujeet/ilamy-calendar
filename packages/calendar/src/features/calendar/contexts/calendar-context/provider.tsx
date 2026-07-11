@@ -54,6 +54,7 @@ export interface CalendarProviderProps {
 	headerClassName?: string // Optional custom header class
 	businessHours?: BusinessHours | BusinessHours[]
 	renderEventForm?: (props: EventFormProps) => ReactNode
+	onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
 	// Translation options - provide either translations object OR translator function
 	translations?: Translations
 	translator?: TranslatorFunction
@@ -119,6 +120,7 @@ const useCalendarContextValue = (
 		headerClassName,
 		businessHours,
 		renderEventForm,
+		onMoreEventsClick,
 		translations,
 		translator,
 		timeFormat = '12-hour',
@@ -189,6 +191,7 @@ const useCalendarContextValue = (
 			headerComponent,
 			headerClassName,
 			renderEventForm,
+			onMoreEventsClick,
 			timeFormat,
 			classesOverride,
 			renderCurrentTimeIndicator,
@@ -218,6 +221,7 @@ const useCalendarContextValue = (
 		headerComponent,
 		headerClassName,
 		renderEventForm,
+		onMoreEventsClick,
 		timeFormat,
 		classesOverride,
 		renderCurrentTimeIndicator,

@@ -35,6 +35,7 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	headerComponent?: React.ReactNode // Optional custom header component
 	headerClassName?: string // Optional custom header class
 	renderEventForm?: (props: EventFormProps) => React.ReactNode
+	onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
 	timeFormat: TimeFormat
 	classesOverride?: CalendarClassesOverride
 	renderCurrentTimeIndicator?: (

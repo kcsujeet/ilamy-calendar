@@ -1,6 +1,7 @@
 import type {
 	CalendarEvent,
 	CellInfo,
+	Dayjs,
 	IlamyPlugin,
 	Resource,
 } from '@ilamy/calendar'
@@ -30,6 +31,10 @@ export const handleEventClick = (event: CalendarEvent) => {
 
 export const handleDateClick = (info: CellInfo) => {
 	alert(JSON.stringify(info))
+}
+
+export const handleMoreEventsClick = (day: Dayjs, events: CalendarEvent[]) => {
+	alert(`${events.length} events on ${day.format('MMMM D, YYYY')}`)
 }
 
 // Demo resources

@@ -271,7 +271,9 @@ function resolveSharedCalendarProps(
 			? customCalendarClassesOverride
 			: undefined,
 		onCellClick: values.useCustomOnDateClick ? handleDateClick : undefined,
-		onMoreEventsClick: handleMoreEventsClick,
+		onMoreEventsClick: values.useCustomOnMoreEventsClick
+			? handleMoreEventsClick
+			: undefined,
 		onEventAdd: lifecycleOn ? lifecycle.onEventAdd : undefined,
 		onEventUpdate: lifecycleOn ? lifecycle.onEventUpdate : undefined,
 		onEventDelete: lifecycleOn ? lifecycle.onEventDelete : undefined,

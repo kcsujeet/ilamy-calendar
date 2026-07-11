@@ -27,14 +27,8 @@ interface DayData {
 }
 
 export const YearView = () => {
-	const {
-		currentDate,
-		selectDate,
-		setView,
-		getEventsForDateRange,
-		t,
-		firstDayOfWeek,
-	} = useSmartCalendarContext()
+	const { currentDate, setView, getEventsForDateRange, t, firstDayOfWeek } =
+		useSmartCalendarContext()
 	const currentYear = currentDate.year()
 
 	const weekdayHeaders = getWeekDays(dayjs(), firstDayOfWeek).map((d) => ({
@@ -90,8 +84,9 @@ export const YearView = () => {
 		event?: React.MouseEvent
 	) => {
 		event?.stopPropagation()
-		selectDate(date)
-		setView(view)
+		// Atomic date + view change: one onDateChange with the clicked day's
+		// range in the target view (issue #231).
+		setView(view, date)
 	}
 
 	const getEventCountLabel = (count: number): string => {

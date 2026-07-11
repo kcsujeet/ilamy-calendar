@@ -29,10 +29,11 @@ export interface CalendarNavigationSlice {
 	setCurrentDate: React.Dispatch<React.SetStateAction<Dayjs>>
 	view: CalendarView
 	/**
-	 * Switches the view. Side effects: fires `onViewChange(newView)`, then
-	 * `onDateChange(currentDate, range)` because the visible range changes.
+	 * Switches the view, optionally moving to `date` in the same update so both
+	 * settle atomically. Side effects: fires `onViewChange(newView)`, then one
+	 * `onDateChange(date ?? currentDate, range)` because the visible range changes.
 	 */
-	setView: (view: CalendarView) => void
+	setView: (view: CalendarView, date?: Dayjs) => void
 	selectDate: (date: Dayjs) => void
 	nextPeriod: () => void
 	prevPeriod: () => void
@@ -110,16 +111,23 @@ export const useCalendarNavigation = ({
 	)
 
 	const handleViewChange = useCallback(
-		(newView: CalendarView) => {
+		(newView: CalendarView, date?: Dayjs) => {
+			// When a target date accompanies the view change (e.g. year view day
+			// click), apply both before notifying so consumers never observe a
+			// range computed from the previous date (issue #231).
+			const targetDate = date ?? currentDate
+			if (date) {
+				setCurrentDate(date)
+			}
 			setView(newView)
 			onViewChange?.(newView)
 			// View change affects visible range — notify consumers
 			const range = calculateViewRange(
-				currentDate,
+				targetDate,
 				resolveViewSpec(newView),
 				firstDayOfWeek
 			)
-			onDateChange?.(currentDate, range)
+			onDateChange?.(targetDate, range)
 		},
 		[onViewChange, onDateChange, currentDate, firstDayOfWeek, resolveViewSpec]
 	)

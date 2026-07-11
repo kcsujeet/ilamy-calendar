@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -475,6 +475,46 @@ describe('YearView', () => {
 
 			// Should be day view, not month view
 			expect(screen.getByTestId('ctx-view')).toHaveTextContent('day')
+		})
+
+		// Issue #231: consumers loading events from onDateChange must receive the
+		// clicked day's range, not a stale range computed from the previous
+		// date/view. Exactly one emission with the final date + range.
+		test('clicking a day cell emits one onDateChange with the clicked day range', () => {
+			const calls: Array<{ date: Dayjs; range: { start: Dayjs; end: Dayjs } }> =
+				[]
+			renderYearView({
+				initialDate: dayjs('2025-01-15'),
+				onDateChange: (date: Dayjs, range: { start: Dayjs; end: Dayjs }) =>
+					calls.push({ date, range }),
+			})
+
+			fireEvent.click(screen.getByTestId('year-day-2025-03-2025-03-10'))
+
+			expect(calls).toHaveLength(1)
+			const emitted = calls.at(0)
+			expect(emitted?.date.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(emitted?.range.start.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(emitted?.range.end.format('YYYY-MM-DD')).toBe('2025-03-10')
+		})
+
+		test('clicking a month title emits one onDateChange with the month grid range', () => {
+			const calls: Array<{ date: Dayjs; range: { start: Dayjs; end: Dayjs } }> =
+				[]
+			renderYearView({
+				initialDate: dayjs('2025-01-15'),
+				onDateChange: (date: Dayjs, range: { start: Dayjs; end: Dayjs }) =>
+					calls.push({ date, range }),
+			})
+
+			fireEvent.click(screen.getByTestId('year-month-title-03'))
+
+			expect(calls).toHaveLength(1)
+			const emitted = calls.at(0)
+			expect(emitted?.date.format('YYYY-MM-DD')).toBe('2025-03-01')
+			// March 2025 month grid (6x7, week starts Sunday): Feb 23 – Apr 5
+			expect(emitted?.range.start.format('YYYY-MM-DD')).toBe('2025-02-23')
+			expect(emitted?.range.end.format('YYYY-MM-DD')).toBe('2025-04-05')
 		})
 	})
 

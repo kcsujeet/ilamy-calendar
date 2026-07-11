@@ -275,7 +275,7 @@ interface IlamyCalendarApi {
   // Navigation methods
   setCurrentDate: (date: Dayjs) => void
   selectDate: (date: Dayjs) => void
-  setView: (view: CalendarView) => void
+  setView: (view: CalendarView, date?: Dayjs) => void
   nextPeriod: () => void
   prevPeriod: () => void
   today: () => void

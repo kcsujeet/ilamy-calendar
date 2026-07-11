@@ -59,23 +59,27 @@ Context, decisions, things to watch out for.
 
 ## Session Start
 
-Run `/project:load-context` to load the full codebase map, rules, and recent dev logs before starting work.
+Run `/load-context` to load the full codebase map, rules, and recent dev logs before starting work.
 
 ## Commands
 
 ```bash
-bun test                           # Run all tests
-bun test --coverage                # Tests with coverage
-bun run lint                       # Lint (oxlint)
+bun run test                       # All tests (fans out per package via --filter)
+# NEVER run bare `bun test` at the repo root — it bypasses each package's
+# bunfig happy-dom preload and fails en masse. Inside a package it's fine.
+bun test --coverage                # Tests with coverage (run inside a package)
+bun run lint                       # Lint (Biome)
 bun run lint:fix                   # Fix lint issues
-bun run prettier:check             # Check formatting
-bun run prettier:fix               # Fix formatting
-bun run pre-commit                 # lint:fix + prettier:fix
+bun run format:check               # Check formatting (Biome)
+bun run format                     # Fix formatting
+bun run check:fix                  # Combined lint + format fixes
+bun run pre-commit                 # = check:fix
 bun run build                      # Production build (bunup)
 bun run type-check                 # TypeScript check
-bun run ci                         # Full CI: lint + prettier + test + build
+bun run ci                         # Full CI: check + build + type-check + test
 
-# Match the CI gate locally (Fallow static analysis). Always pass --no-cache:
+# Match the CI gate locally (Fallow static analysis; CI runs fallow-rs/fallow@v2
+# pinned to 2.90.0, config in fallow.toml). Always pass --no-cache:
 # `--changed-since` otherwise registers a per-base-sha git worktree under $TMPDIR
 # as a cache, and those accumulate in `git worktree list`. --no-cache leaves none.
 bunx fallow@2.90.0 audit --changed-since main --gate new-only --no-cache
@@ -94,15 +98,21 @@ packages/
   types/        @ilamy/types        (private)  shared plugin-contract types (no runtime)
   utils/        @ilamy/utils        (private)  configured dayjs (./dayjs) + helpers (./helpers)
   ui/           @ilamy/ui           (private)  shadcn primitives
-  recurrence/   @ilamy/calendar-recurrence (private)  RFC 5545 recurrence plugin
-  calendar/     @ilamy/calendar     (PUBLISHED) the core; bundles the four above
+  playground/   @ilamy/playground   (private)  shared interactive demo UI, source-only; consumed by apps/demo + apps/website
+  plugins/
+    recurrence/     @ilamy/calendar-recurrence     (private)  RFC 5545 recurrence plugin
+    agenda/         @ilamy/calendar-agenda         (private)  agenda view plugin
+    drag-to-create/ @ilamy/calendar-drag-to-create (private)  drag-to-create plugin
+  calendar/     @ilamy/calendar     (PUBLISHED) the core; bundles the internal packages above
 apps/
-  demo/         @ilamy/demo         (private)  Vite playground; consumes @ilamy/calendar's public API
+  demo/         @ilamy/demo         (private)  Vite demo app; consumes @ilamy/calendar's public API
+  website/      @ilamy/website      (private)  docs website (deployed via `bun run deploy:website`)
+examples/       standalone consumer apps (astro, nextjs, vite) depending on the published package
 ```
 
-`@ilamy/calendar` ships these entry points: `.` (core), `./testing` (test harness), `./plugins/recurrence` (the recurrence plugin). The recurrence subpath's `import … from '@ilamy/calendar'` self-references the same package at runtime. **It ships no CSS** — "bring your own design system": components use the conventional shadcn token classes, and consumers `@source` the package's `dist` so Tailwind generates the utilities, styled by their own tokens. The demo (`apps/demo/src/styles/globals.css`) is the reference consumer that supplies a shadcn theme.
+`@ilamy/calendar` ships these entry points: `.` (core), `./testing` (test harness), `./plugins/recurrence`, `./plugins/agenda`, `./plugins/drag-to-create`. The plugin subpaths' `import … from '@ilamy/calendar'` self-references the same package at runtime. **It ships no CSS** — "bring your own design system": components use the conventional shadcn token classes, and consumers `@source` the package's `dist` so Tailwind generates the utilities, styled by their own tokens. The demo (`apps/demo/src/styles/globals.css`) is the reference consumer that supplies a shadcn theme.
 
-Paths in the **Key Paths** section below are relative to `packages/calendar/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via tsconfig `paths`) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the recurrence package + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
+Paths in the **Key Paths** section below are relative to `packages/calendar/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via tsconfig `paths`) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the plugin packages + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
 
 ### Data Flow
 
@@ -127,17 +137,17 @@ Uses `rrule.js` with strict RFC 5545 compliance. Three event types:
 | Generated instance | no | no | `originalId_number` |
 | Modified instance | no | yes | any |
 
-Core logic in `packages/recurrence/src/utils/recurrence-handler.ts`:
-- `generateRecurringEvents()` — create instances from rrule
-- `updateRecurringEvent()` — scoped updates (this/following/all) with EXDATE
-- `deleteRecurringEvent()` — scoped deletions
-- `isRecurringEvent()` — identify base vs instance
+Core logic in `packages/plugins/recurrence/src/utils/` (one file per operation):
+- `generateRecurringEvents()` (`generate-recurring-events.ts`) — create instances from rrule
+- `updateRecurringEvent()` (`update-recurring-event.ts`) — scoped updates (this/following/all) with EXDATE
+- `deleteRecurringEvent()` (`delete-recurring-event.ts`) — scoped deletions
+- `isRecurringEvent()` (`series-helpers.ts`) — identify base vs instance
 
 Every event must have a globally unique `uid`. EXDATE uses ISO strings in `exdates[]`.
 
 ### i18n
 
-`CalendarProvider` handles translations. Props: `translations?: Translations` or `translator?: TranslatorFunction`. Falls back to English. All components access via `useIlamyCalendarContext().t()`. 94 translation keys. See `docs/translation-usage.md` for full details.
+`CalendarProvider` handles translations. Props: `translations?: Translations` or `translator?: TranslatorFunction`. Falls back to English. All components access via `useIlamyCalendarContext().t()`. 85 translation keys. See `docs/translation-usage.md` for full details.
 
 ## Key Paths
 
@@ -171,9 +181,9 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
     utils/                                     # date-utils, normalize, export-ical (cn → @ilamy/ui/lib/utils, safeDate → @ilamy/utils/helpers)
     constants.ts                               # Global constants
 
-# Recurrence plugin (separate package):
-packages/recurrence/src/
-  utils/recurrence-handler.ts                  # Core recurring event logic
+# Recurrence plugin (separate package; agenda + drag-to-create siblings follow the same shape):
+packages/plugins/recurrence/src/
+  utils/                                       # generate-recurring-events, update-/delete-recurring-event, series-helpers (isRecurringEvent)
   components/recurrence-editor/                # Recurrence rule builder UI (@ilamy/ui Radix)
   components/recurrence-edit-dialog/           # Edit/delete scope dialog
   augment.ts                                   # declare module '@ilamy/calendar' { CalendarEvent.rrule … }
@@ -190,15 +200,22 @@ docs/
   testing-guide.md                             # Test patterns, wrappers, mocking
   types-and-interfaces.md                      # Type catalog and relationships
   hooks-and-context.md                         # Hook architecture, context system
+  writing-plugins.md                           # Plugin authoring guide
+  custom-views.md                              # Custom view (PluginView) guide
+  agenda-view.md                               # Agenda plugin docs
+  migration-v2.md                              # v1 → v2 migration guide
+  monorepo-architecture.md                     # Workspace/build architecture
   logs/                                        # Daily dev logs (see Development Logs)
 ```
 
 ### Public API (`src/index.ts`)
 
 **Components**: `IlamyCalendar` (+ `IlamyResourceCalendar` deprecated alias)
-**Hooks**: `useIlamyCalendarContext()`
-**Recurrence**: `generateRecurringEvents()`, `isRecurringEvent()`, `RRule`
-**Types**: `CalendarEvent`, `CalendarView`, `TimeFormat`, `BusinessHours`, `WeekDays`, `RRuleOptions`, `Resource`, `Translations`, `TranslatorFunction`, `CellClickInfo`, `IlamyCalendarProps`
+**Hooks**: `useIlamyCalendarContext()` (returns `IlamyCalendarApi`)
+**Plugin SDK**: `SLOT_EVENT_FORM`, `SLOT_EVENT_MUTATION_SCOPE`, configured `dayjs`, contract types (`IlamyPlugin`, `PluginView`, `ViewConfig`, …)
+**Types**: `CalendarEvent`, `CalendarView`, `TimeFormat`, `BusinessHours`, `WeekDays`, `Resource`, `Translations`, `TranslatorFunction`, `CellInfo`, `IlamyCalendarProps`
+
+Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringEvents()`, `isRecurringEvent()`, `RRule`, `RRuleOptions`, `recurrencePlugin` come from `@ilamy/calendar/plugins/recurrence`.
 
 ## Code Rules
 
@@ -227,13 +244,13 @@ docs/
 - Co-located: `component.test.tsx` next to component files
 - Integration focus: test through context and user interactions
 - Recurring events: verify RFC 5545 compliance
-- ~45 test files across components, recurrence, utilities, context/hooks
+- ~62 test files across the calendar package (45) and the plugin packages
 
 ## Git Workflow
 
 1. Create a feature branch
 2. Make changes
-3. Run tests (`bun test`)
+3. Run tests (`bun run test` at the root, or `bun test` inside a package)
 4. Ask user to review
 5. Wait for explicit approval
 6. Commit with conventional prefix (`feat:`, `fix:`, `docs:`, etc.), max 100 chars

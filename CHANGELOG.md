@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v2.0.1](https://github.com/kcsujeet/ilamy-calendar/compare/v2.0.0...v2.0.1)
+
+> 12 July 2026
+
+##### Features
+
+- feat: add the **`onMoreEventsClick`** prop — clicking the "+N more" overflow indicator hands the cell's day and full event list to your callback instead of opening the built-in all-events dialog ([`#230`](https://github.com/kcsujeet/ilamy-calendar/pull/230)) — Thanks [@sangeetha-armtek](https://github.com/sangeetha-armtek)!
+
+##### Fixes
+
+- fix: clicking a day in the year view opened an empty day view for consumers loading events via `onDateChange` — date and view now change atomically, and `setView(view, date?)` accepts an optional target date ([`#233`](https://github.com/kcsujeet/ilamy-calendar/pull/233)) — Closes [`#231`](https://github.com/kcsujeet/ilamy-calendar/issues/231)
+- fix: `onDateChange` payloads are computed from the latest navigation state, so navigation calls sequenced in one handler (`selectDate` then `setView`, or repeated `nextPeriod`) always emit the final date and range ([`#234`](https://github.com/kcsujeet/ilamy-calendar/pull/234))
+
 #### [v2.0.0](https://github.com/kcsujeet/ilamy-calendar/compare/v1.8.1...v2.0.0)
 
 > 28 June 2026

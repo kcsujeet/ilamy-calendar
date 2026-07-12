@@ -8,6 +8,7 @@ import { RRule } from 'rrule'
 import 'dayjs/locale/fr.js'
 import type { Translations } from '@/lib/translations/types'
 import { getMonthWeeks } from '@/lib/utils/date-utils'
+import type { CalendarView } from '@/types'
 import { useCalendarEngine } from './use-calendar-engine'
 
 const createEvent = (
@@ -362,6 +363,75 @@ describe('useCalendarEngine', () => {
 			expect(calledDate.format('YYYY-MM-DD')).toBe('2025-03-10')
 			expect(range.start.format('YYYY-MM-DD')).toBe('2025-03-10')
 			expect(range.end.format('YYYY-MM-DD')).toBe('2025-03-10')
+		})
+
+		// Navigation state is mirrored at mutation time, so navigation calls
+		// sequenced inside ONE handler must each see the previous call's result —
+		// closure reads of pre-batch React state would emit stale payloads.
+		// Shared harness for the sequencing tests: engine mounted at Jan 15 2025
+		// with an onDateChange spy; each test varies only the initial view.
+		const renderNavEngine = (initialView: CalendarView) => {
+			const onDateChange = vi.fn()
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate: dayjs('2025-01-15'),
+					initialView,
+					onDateChange,
+				})
+			)
+			return { result, onDateChange }
+		}
+
+		const expectSecondEmissionDay = (
+			onDateChange: ReturnType<typeof vi.fn>,
+			isoDay: string
+		) => {
+			expect(onDateChange).toHaveBeenCalledTimes(2)
+			const [calledDate, range] = onDateChange.mock.calls.at(1) ?? []
+			expect(calledDate?.format('YYYY-MM-DD')).toBe(isoDay)
+			expect(range?.start.format('YYYY-MM-DD')).toBe(isoDay)
+			expect(range?.end.format('YYYY-MM-DD')).toBe(isoDay)
+		}
+
+		it('emits the latest range when selectDate follows setView in one handler', () => {
+			const { result, onDateChange } = renderNavEngine('year')
+
+			act(() => {
+				result.current.setView('day')
+				result.current.selectDate(dayjs('2025-03-10'))
+			})
+
+			expect(result.current.view).toBe('day')
+			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expectSecondEmissionDay(onDateChange, '2025-03-10')
+		})
+
+		it('emits the latest range when setView follows selectDate in one handler', () => {
+			const { result, onDateChange } = renderNavEngine('year')
+
+			act(() => {
+				result.current.selectDate(dayjs('2025-03-10'))
+				result.current.setView('day')
+			})
+
+			expect(result.current.view).toBe('day')
+			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expectSecondEmissionDay(onDateChange, '2025-03-10')
+		})
+
+		it('applies sequenced period steps cumulatively within one handler', () => {
+			const { result, onDateChange } = renderNavEngine('month')
+
+			act(() => {
+				result.current.nextPeriod()
+				result.current.nextPeriod()
+			})
+
+			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-15')
+			expect(onDateChange).toHaveBeenCalledTimes(2)
+			const [calledDate] = onDateChange.mock.calls.at(1) ?? []
+			expect(calledDate?.format('YYYY-MM-DD')).toBe('2025-03-15')
 		})
 
 		it('navigates by navigationStep and reports the custom range for views that declare them', () => {

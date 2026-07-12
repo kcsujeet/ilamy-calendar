@@ -1,6 +1,6 @@
 import type { PluginView } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { builtInViews } from '@/features/calendar/components/views/built-in-views'
 import type { PluginRuntime } from '@/features/plugins/lib/types'
 import { getMonthGridRange } from '@/lib/utils/date-utils'
@@ -43,6 +43,12 @@ export interface CalendarNavigationSlice {
 	getAllViews: () => PluginView[]
 }
 
+/** Date + view as one value so a navigation step can move both atomically. */
+interface NavState {
+	date: Dayjs
+	view: CalendarView
+}
+
 /** Navigation slice: current date/view state, period stepping, range math. */
 export const useCalendarNavigation = ({
 	initialDate,
@@ -52,10 +58,24 @@ export const useCalendarNavigation = ({
 	onViewChange,
 	pluginRuntime,
 }: CalendarNavigationParams): CalendarNavigationSlice => {
-	const [currentDate, setCurrentDate] = useState<Dayjs>(
-		dayjs.isDayjs(initialDate) ? initialDate : dayjs(initialDate)
-	)
-	const [view, setView] = useState<CalendarView>(initialView)
+	const [navState, setNavState] = useState<NavState>(() => ({
+		date: dayjs.isDayjs(initialDate) ? initialDate : dayjs(initialDate),
+		view: initialView,
+	}))
+	// Mutation-time mirror of navState. React state read from a closure is
+	// pre-batch, so navigation calls sequenced in one handler (selectDate +
+	// setView, double nextPeriod, …) would compute their emissions from stale
+	// values (issue #231). Every write goes through applyNav, which updates the
+	// mirror synchronously; every read that feeds a mutation or an emission
+	// uses the mirror, never the closure.
+	const latestNav = useRef(navState)
+
+	const applyNav = useCallback((partial: Partial<NavState>): NavState => {
+		const next = { ...latestNav.current, ...partial }
+		latestNav.current = next
+		setNavState(next)
+		return next
+	}, [])
 
 	const getAllViews = useCallback(
 		() => [...builtInViews, ...pluginRuntime.getViews()],
@@ -66,77 +86,85 @@ export const useCalendarNavigation = ({
 		[getAllViews]
 	)
 
+	// Render-facing: reads the committed state so it stays consistent with what
+	// is on screen.
 	const getCurrentViewRange = useCallback(() => {
 		return calculateViewRange(
-			currentDate,
-			resolveViewSpec(view),
+			navState.date,
+			resolveViewSpec(navState.view),
 			firstDayOfWeek
 		)
-	}, [currentDate, view, firstDayOfWeek, resolveViewSpec])
+	}, [navState, firstDayOfWeek, resolveViewSpec])
 
-	const updateDateAndNotify = useCallback(
-		(newDate: Dayjs) => {
-			setCurrentDate(newDate)
+	const notifyDateChange = useCallback(
+		(next: NavState) => {
 			const range = calculateViewRange(
-				newDate,
-				resolveViewSpec(view),
+				next.date,
+				resolveViewSpec(next.view),
 				firstDayOfWeek
 			)
-			onDateChange?.(newDate, range)
+			onDateChange?.(next.date, range)
 		},
-		[onDateChange, view, firstDayOfWeek, resolveViewSpec]
+		[onDateChange, firstDayOfWeek, resolveViewSpec]
 	)
 
-	const selectDate = updateDateAndNotify
+	const selectDate = useCallback(
+		(date: Dayjs) => {
+			notifyDateChange(applyNav({ date }))
+		},
+		[applyNav, notifyDateChange]
+	)
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {
+			const { date, view } = latestNav.current
 			const spec = resolveViewSpec(view)
 			// navigationStep wins; else one navigationUnit; else one day (today's default).
 			const step = spec?.navigationStep ?? {
 				amount: 1,
 				unit: spec?.navigationUnit ?? 'day',
 			}
-			updateDateAndNotify(currentDate.add(direction * step.amount, step.unit))
+			const nextDate = date.add(direction * step.amount, step.unit)
+			notifyDateChange(applyNav({ date: nextDate }))
 		},
-		[currentDate, view, updateDateAndNotify, resolveViewSpec]
+		[applyNav, notifyDateChange, resolveViewSpec]
 	)
 
 	const nextPeriod = useCallback(() => navigatePeriod(1), [navigatePeriod])
 	const prevPeriod = useCallback(() => navigatePeriod(-1), [navigatePeriod])
 
 	const today = useCallback(
-		() => updateDateAndNotify(dayjs()),
-		[updateDateAndNotify]
+		() => notifyDateChange(applyNav({ date: dayjs() })),
+		[applyNav, notifyDateChange]
 	)
 
 	const handleViewChange = useCallback(
 		(newView: CalendarView, date?: Dayjs) => {
-			// When a target date accompanies the view change (e.g. year view day
-			// click), apply both before notifying so consumers never observe a
-			// range computed from the previous date (issue #231).
-			const targetDate = date ?? currentDate
-			if (date) {
-				setCurrentDate(date)
-			}
-			setView(newView)
+			const next = applyNav(date ? { view: newView, date } : { view: newView })
 			onViewChange?.(newView)
 			// View change affects visible range — notify consumers
-			const range = calculateViewRange(
-				targetDate,
-				resolveViewSpec(newView),
-				firstDayOfWeek
-			)
-			onDateChange?.(targetDate, range)
+			notifyDateChange(next)
 		},
-		[onViewChange, onDateChange, currentDate, firstDayOfWeek, resolveViewSpec]
+		[applyNav, onViewChange, notifyDateChange]
 	)
+
+	// Raw setter (no onDateChange): funneled through applyNav so the mutation
+	// mirror never drifts. Supports functional updaters like React's dispatch.
+	const setCurrentDate: React.Dispatch<React.SetStateAction<Dayjs>> =
+		useCallback(
+			(action) => {
+				const nextDate =
+					typeof action === 'function' ? action(latestNav.current.date) : action
+				applyNav({ date: nextDate })
+			},
+			[applyNav]
+		)
 
 	return useMemo(
 		() => ({
-			currentDate,
+			currentDate: navState.date,
 			setCurrentDate,
-			view,
+			view: navState.view,
 			setView: handleViewChange,
 			selectDate,
 			nextPeriod,
@@ -146,8 +174,8 @@ export const useCalendarNavigation = ({
 			getAllViews,
 		}),
 		[
-			currentDate,
-			view,
+			navState,
+			setCurrentDate,
 			handleViewChange,
 			selectDate,
 			nextPeriod,

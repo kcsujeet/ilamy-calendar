@@ -116,6 +116,23 @@ The event object passed to your custom renderer includes:
 - `allDay` - Whether it's an all-day event
 - `data` - Any custom properties you include in your event data
 
+## More Events Overflow
+
+When a day cell holds more events than `dayMaxEvents` (default `4`), the calendar renders a "+N more" indicator. Clicking it opens the built-in all-events dialog. Provide `onMoreEventsClick` to replace that dialog with your own UI:
+
+```tsx
+<IlamyCalendar
+  events={events}
+  dayMaxEvents={3}
+  onMoreEventsClick={(day, events) => {
+    // day: the cell's day (Dayjs); events: all events for that day
+    openDayDrawer(day, events);
+  }}
+/>
+```
+
+When the callback is provided, the built-in dialog never opens. Omit it to keep the default behavior.
+
 ## Styling Tips
 
 :::tip[Pro Tips]

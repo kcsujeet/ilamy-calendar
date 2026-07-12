@@ -7,7 +7,7 @@
 A powerful, full-featured yet **lightweight and highly pluggable** React calendar component library built with **TypeScript**, **Tailwind CSS 4**, and **shadcn/ui**. The core is small — ~40 KB minified (≈13 KB gzipped) — with opt-in plugins for recurring events, agenda views, and more, so you only ship what you use. Built for high-performance scheduling with RFC 5545 recurring events, resource management, and drag-and-drop interactions.
 
 <div align="center">
-  <img width="1643" height="873" alt="ilamy Calendar Month View" src="https://github.com/user-attachments/assets/d289f034-0d26-4a1c-a997-dfa1ad26aa7a" />
+  <img width="1159" height="698" alt="Screenshot 2026-07-12 at 2 44 36 PM" src="https://github.com/user-attachments/assets/316c6ad4-2965-4dc4-b779-88b0ac916669" />
   <p align="center"><i>Elegant month view with seamless event transitions</i></p>
 </div>
 

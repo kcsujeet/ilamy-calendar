@@ -114,7 +114,7 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `disableCellClick` | `boolean` | — | Disable cell clicks |
 | `disableEventClick` | `boolean` | — | Disable event clicks |
 | `disableDragAndDrop` | `boolean` | — | Disable DnD |
-| `dayMaxEvents` | `number` | `3` | Max events per day in month view |
+| `dayMaxEvents` | `number` | `4` | Max events per day in month view |
 | `onMoreEventsClick` | `(day: Dayjs, events: CalendarEvent[]) => void` | — | Called when the "+N more" overflow indicator is clicked, with the cell's day and full event list. Overrides the built-in all-events dialog when provided |
 | `eventSpacing` | `number` | `1` | Gap between stacked events (px) |
 | `stickyViewHeader` | `boolean` | `true` | Sticky day/week headers |

@@ -113,11 +113,12 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `onCellClick` | `(info: CellInfo) => void` | Called when a date cell is clicked. Receives a CellInfo object with start, end, and optional resource (the full resource object in resource calendars). |
 | `isCellDisabled` | `(info: CellInfo) => boolean` | Return `true` to disable a cell: blocks event-creation clicks, rejects drops onto the cell, and grays it out. Composes with `businessHours` via OR (a cell is disabled if business hours OR `isCellDisabled` disables it). |
 | `getCellClassName` | `(info: CellInfo) => string` | Return extra CSS classes for a cell from custom logic (unavailability styling, on-call windows, etc.). Receives the same `CellInfo` as `onCellClick`. Unlike `isCellDisabled`, this is purely visual: cells stay clickable and keep accepting drops. Return `''` for cells you do not want to style. |
-| `onViewChange` | `(view: 'month' \| 'week' \| 'day' \| 'year') => void` | Called when the calendar view changes |
+| `onMoreEventsClick` | `(day: dayjs.Dayjs, events: CalendarEvent[]) => void` | Called when the "+N more" overflow indicator in a day cell is clicked, receiving the cell's day and its full event list. When provided, it replaces the built-in all-events dialog. See [More Events Overflow](/docs/customization/components#more-events-overflow). |
+| `onViewChange` | `(view: CalendarView) => void` | Called when the calendar view changes. `CalendarView` is `string` in v2, so plugin views (e.g. `'agenda'`) are included |
 | `onEventAdd` | `(event: CalendarEvent) => void` | Called when a new event is created |
 | `onEventUpdate` | `(event: CalendarEvent) => void` | Called when an existing event is updated |
 | `onEventDelete` | `(event: CalendarEvent) => void` | Called when an event is deleted |
-| `onDateChange` | `(date: dayjs.Dayjs, range: { start: dayjs.Dayjs; end: dayjs.Dayjs }) => void` | Called when the calendar date changes or the view changes. The `range` contains the visible date range for the current view. |
+| `onDateChange` | `(date: dayjs.Dayjs, range: { start: dayjs.Dayjs; end: dayjs.Dayjs }) => void` | Called when the calendar date changes or the view changes. The `range` contains the visible date range for the current view. When date and view change together (e.g. clicking a day in the year view), it fires once with the final date and range. |
 
 ## Examples
 

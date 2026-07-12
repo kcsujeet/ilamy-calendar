@@ -69,7 +69,7 @@ The hook returns an object with the following properties and methods:
 | `firstDayOfWeek` | `number` | The first day of the week (0 = Sunday) |
 | `setCurrentDate` | `(date: Dayjs) => void` | Navigate to a specific date/month |
 | `selectDate` | `(date: Dayjs) => void` | Select a specific date |
-| `setView` | `(view: CalendarView) => void` | Change the current view |
+| `setView` | `(view: CalendarView, date?: Dayjs) => void` | Change the current view. Pass `date` to also move there in the same update, firing a single `onDateChange` with the new view's range |
 | `nextPeriod` | `() => void` | Navigate to the next period |
 | `prevPeriod` | `() => void` | Navigate to the previous period |
 | `today` | `() => void` | Navigate to today's date |

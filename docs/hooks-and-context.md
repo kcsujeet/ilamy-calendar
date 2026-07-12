@@ -61,6 +61,8 @@ The only hook exported for library consumers. Returns a curated subset of contex
 | `prevPeriod()` | Navigate backward by current view unit |
 | `today()` | Jump to today |
 
+Navigation calls may be sequenced inside one event handler (e.g. `selectDate(d)` then `setView('day')`, or two `nextPeriod()` calls): each call sees the previous call's result, and every `onDateChange` emission reflects the latest date + view — never a stale pre-batch value.
+
 **Event form:**
 
 | Method | Description |

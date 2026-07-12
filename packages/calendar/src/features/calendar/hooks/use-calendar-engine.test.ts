@@ -364,6 +364,81 @@ describe('useCalendarEngine', () => {
 			expect(range.end.format('YYYY-MM-DD')).toBe('2025-03-10')
 		})
 
+		// Navigation state is mirrored at mutation time, so navigation calls
+		// sequenced inside ONE handler must each see the previous call's result —
+		// closure reads of pre-batch React state would emit stale payloads.
+		it('emits the latest range when selectDate follows setView in one handler', () => {
+			const onDateChange = vi.fn()
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate: dayjs('2025-01-15'),
+					initialView: 'year',
+					onDateChange,
+				})
+			)
+
+			act(() => {
+				result.current.setView('day')
+				result.current.selectDate(dayjs('2025-03-10'))
+			})
+
+			expect(result.current.view).toBe('day')
+			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(onDateChange).toHaveBeenCalledTimes(2)
+			const [calledDate, range] = onDateChange.mock.calls[1]
+			expect(calledDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-03-10')
+		})
+
+		it('emits the latest range when setView follows selectDate in one handler', () => {
+			const onDateChange = vi.fn()
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate: dayjs('2025-01-15'),
+					initialView: 'year',
+					onDateChange,
+				})
+			)
+
+			act(() => {
+				result.current.selectDate(dayjs('2025-03-10'))
+				result.current.setView('day')
+			})
+
+			expect(result.current.view).toBe('day')
+			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(onDateChange).toHaveBeenCalledTimes(2)
+			const [calledDate, range] = onDateChange.mock.calls[1]
+			expect(calledDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(range.start.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(range.end.format('YYYY-MM-DD')).toBe('2025-03-10')
+		})
+
+		it('applies sequenced period steps cumulatively within one handler', () => {
+			const onDateChange = vi.fn()
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate: dayjs('2025-01-15'),
+					initialView: 'month',
+					onDateChange,
+				})
+			)
+
+			act(() => {
+				result.current.nextPeriod()
+				result.current.nextPeriod()
+			})
+
+			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-15')
+			expect(onDateChange).toHaveBeenCalledTimes(2)
+			const [calledDate] = onDateChange.mock.calls[1]
+			expect(calledDate.format('YYYY-MM-DD')).toBe('2025-03-15')
+		})
+
 		it('navigates by navigationStep and reports the custom range for views that declare them', () => {
 			const onDateChange = vi.fn()
 			const initialDate = dayjs('2025-01-15T00:00:00.000Z')

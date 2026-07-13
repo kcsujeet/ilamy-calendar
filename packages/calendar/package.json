@@ -21,7 +21,6 @@
 		"shadcn",
 		"radix-ui",
 		"dnd-kit",
-		"motion",
 		"events",
 		"scheduling",
 		"drag-and-drop",
@@ -93,7 +92,6 @@
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"lucide-react": "^0.475.0",
-		"motion": "^12.36.0",
 		"rrule": "^2.8.1",
 		"tailwind-merge": "^3.5.0"
 	},

@@ -105,8 +105,6 @@ function DraggableEventUnmemoized({
 				draggingClass,
 				className
 			)}
-			layout={true}
-			layoutId={elementId}
 			onClick={(e) => {
 				e.stopPropagation()
 				onEventClick(event)

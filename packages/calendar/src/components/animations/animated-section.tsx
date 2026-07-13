@@ -1,74 +1,53 @@
 import { cn } from '@ilamy/ui/lib/utils'
-import {
-	AnimatePresence,
-	type HTMLMotionProps,
-	motion,
-	type Variants,
-} from 'motion/react'
 import type * as React from 'react'
 
-interface AnimatedSectionProps
-	extends Omit<HTMLMotionProps<'div'>, 'children' | 'layout' | 'layoutId'> {
+interface AnimatedSectionProps extends React.HTMLAttributes<HTMLDivElement> {
 	children: React.ReactNode
 	transitionKey: string
 	delay?: number
-	className?: string
 	direction?: 'vertical' | 'horizontal'
-	layout?: boolean | 'position' | 'size' | 'preserve-aspect'
-	layoutId?: string
 	'data-testid'?: string
+	ref?: React.Ref<HTMLDivElement>
 }
 
-const variants: Variants = {
-	hidden: ({ direction }: { direction: 'vertical' | 'horizontal' }) => ({
-		opacity: 0,
-		x: direction === 'horizontal' ? 10 : 0,
-		y: direction === 'vertical' ? -10 : 0,
-	}),
-	visible: ({ delay }: { delay: number }) => ({
-		opacity: 1,
-		x: 0,
-		y: 0,
-		transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1], delay },
-	}),
-	exit: ({ direction }: { direction: 'vertical' | 'horizontal' }) => ({
-		opacity: 0,
-		x: direction === 'horizontal' ? -10 : 0,
-		y: direction === 'vertical' ? -10 : 0,
-		transition: { duration: 0.15 },
-	}),
-}
-
+// CSS-only enter animation via the tailwindcss-animate peer plugin (the same
+// utilities the @ilamy/ui shadcn components use), replacing motion/react,
+// which cost consumers ~123kB min (~28% of the bundle) for a 200ms fade.
+// Changing `transitionKey` remounts the div, which replays the animation;
+// `fill-mode-backwards` keeps the element hidden until its stagger `delay`
+// (seconds) elapses.
 export const AnimatedSection: React.FC<AnimatedSectionProps> = ({
 	children,
 	transitionKey,
 	delay = 0,
 	className,
 	direction = 'vertical',
-	layout,
-	layoutId,
 	'data-testid': testId,
 	ref,
+	style,
 	...props
-}) => (
-	<AnimatePresence mode="wait">
-		<motion.div
-			animate="visible"
-			className={cn('inline-block w-full', className)}
-			custom={{ delay, direction }}
+}) => {
+	const slideInClass =
+		direction === 'horizontal'
+			? 'slide-in-from-right-2.5'
+			: 'slide-in-from-top-2.5'
+
+	return (
+		<div
+			className={cn(
+				'inline-block w-full animate-in fade-in fill-mode-backwards duration-200 ease-in-out',
+				slideInClass,
+				className
+			)}
 			data-testid={testId}
-			exit="exit"
-			initial="hidden"
 			key={transitionKey}
-			layout={layout}
-			layoutId={layoutId}
 			ref={ref}
-			variants={variants}
+			style={{ animationDelay: `${delay}s`, ...style }}
 			{...props}
 		>
 			{children}
-		</motion.div>
-	</AnimatePresence>
-)
+		</div>
+	)
+}
 
 AnimatedSection.displayName = 'AnimatedSection'

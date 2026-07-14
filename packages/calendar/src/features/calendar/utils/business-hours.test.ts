@@ -525,7 +525,9 @@ describe('isBusinessHour', () => {
 							businessHours: matrixCase.config,
 						})
 					)
-					const expected = matrixCase.slots.map((slot) => slot.at(2))
+					const expected = matrixCase.slots.map(
+						([, , isBusiness]) => isBusiness
+					)
 					expect(results).toEqual(expected)
 				})
 			}

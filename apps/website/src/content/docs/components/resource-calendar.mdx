@@ -326,7 +326,7 @@ You can define working hours for individual resources. This is essential for man
 
 ### Configuration
 
-Resource-specific business hours are defined directly on the `Resource` object.
+Resource-specific business hours are defined directly on the `Resource` object. They accept the same formats as the global config: whole-hour numbers or `'HH:mm'` strings for sub-hour boundaries (e.g. `startTime: '09:15'`).
 
 ```tsx title="Defining Resource Availability"
 const resources: Resource[] = [

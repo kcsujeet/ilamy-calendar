@@ -139,6 +139,24 @@ describe('getViewHours', () => {
 		expect(hours.length).toBe(6) // 10, 11, 12, 13, 14, 15
 	})
 
+	test('keeps partially-business boundary hours visible for sub-hour boundaries', () => {
+		const businessHours: BusinessHours = {
+			startTime: '09:15',
+			endTime: '17:15',
+		}
+
+		const hours = getViewHours({
+			referenceDate,
+			businessHours,
+			hideNonBusinessHours: true,
+		})
+
+		// The 9:00 row hosts the 9:15 start and the 17:00 row the 17:15 end.
+		expect(hours).toHaveLength(9) // 9 .. 17
+		expect(hours.at(0)?.hour()).toBe(9)
+		expect(hours.at(-1)?.hour()).toBe(17)
+	})
+
 	test('returns no hours when business range is empty', () => {
 		const businessHours: BusinessHours = {
 			daysOfWeek: ['wednesday'],

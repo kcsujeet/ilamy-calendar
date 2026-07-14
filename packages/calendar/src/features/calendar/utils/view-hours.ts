@@ -62,8 +62,13 @@ export function getViewHours({
 
 	if (minStart >= maxEnd) return []
 
+	// Floor/ceil so hours hosting a sub-hour boundary (e.g. a 9:15 start)
+	// stay visible rather than being cut off at the fractional bound.
+	const firstVisibleHour = Math.floor(minStart)
+	const lastVisibleHourExclusive = Math.ceil(maxEnd)
+
 	return hours.filter((h) => {
 		const hour = h.hour()
-		return hour >= minStart && hour < maxEnd
+		return hour >= firstVisibleHour && hour < lastVisibleHourExclusive
 	})
 }

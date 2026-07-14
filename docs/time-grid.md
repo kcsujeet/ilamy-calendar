@@ -35,7 +35,7 @@ Uses `startOfDay.hour(i)` so that row N always represents "the hour labeled N". 
 
 `src/features/calendar/utils/view-hours.ts`
 
-Wraps `getDayHours` with optional business hours filtering. When `hideNonBusinessHours` is enabled, it filters hours to the business range (e.g., 9-17).
+Wraps `getDayHours` with optional business hours filtering. When `hideNonBusinessHours` is enabled, it filters hours to the business range (e.g., 9-17). Sub-hour boundaries (`'09:15'`) floor/ceil the range so the hour rows hosting a boundary stay visible.
 
 ```typescript
 getViewHours({ referenceDate, businessHours?, hideNonBusinessHours?, allDates?, resourceBusinessHours? })

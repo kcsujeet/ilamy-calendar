@@ -371,7 +371,9 @@ function BusinessCalendar() {
 
 ### Split Shifts Support
 
-You can define multiple business hour ranges for the same day (split shifts) by providing an array of `BusinessHours` objects. This allows for scheduled breaks or multiple working sessions.
+You can define multiple business hour ranges for the same day (split shifts) by providing an array of `BusinessHours` objects. This allows for scheduled breaks or multiple working sessions. Sub-hour `'HH:mm'` boundaries work here too (e.g. a `'09:15'`–`'12:15'` morning shift).
+
+Note that each range is checked independently — adjacent ranges do not merge. A time slot that straddles the seam between two touching ranges (e.g. an hour slot over 12:00–13:00 with ranges ending and starting at `'12:30'`) counts as non-business. If the combined window is really one continuous range, define it as one.
 
 ```tsx title="Configuring Split Shifts"
 <IlamyCalendar
@@ -400,19 +402,37 @@ Array of day names that are considered business days. Users can only interact wi
 
 ### startTime
 
-Hour when business hours begin (24-hour format, inclusive). Events cannot be created or modified before this time.
+Time when business hours begin (inclusive). Events cannot be created or modified before this time. Use a whole number for on-the-hour boundaries or an `'HH:mm'` string for sub-hour boundaries such as `'09:15'`. Fractional numbers are not supported and round to the nearest whole hour.
 
-**Type:** `number (0-23)`
+**Type:** `number (0-24) | string ('HH:mm')`
+**Default:** `9`
 
 ### endTime
 
-Hour when business hours end (24-hour format, exclusive). Events cannot be created or modified at or after this time.
+Time when business hours end (exclusive). Events cannot be created or modified at or after this time. Accepts the same formats as `startTime`. `'24:00'` is a valid end-of-day boundary.
 
-**Type:** `number (0-23)`
+**Type:** `number (0-24) | string ('HH:mm')`
+**Default:** `17`
+
+Malformed or out-of-range strings (`'9am'`, `'9:99'`, `'25:00'`) are ignored and fall back to the defaults (9 for `startTime`, 17 for `endTime`).
+
+```tsx title="Sub-Hour Business Hours"
+<IlamyCalendar
+  events={events}
+  slotDuration={15}
+  businessHours={{
+    daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+    startTime: '09:15',
+    endTime: '17:15',
+  }}
+/>
+```
+
+A time slot is interactive only when it fits entirely inside business hours. On grids coarser than the boundary — for example default one-hour cells with a `'09:15'` start — the partially-covered slot counts as non-business, so the calendar never allows a booking that violates the boundary. Set `slotDuration` to match your finest boundary (as above) for exact behavior.
 
 ### hideNonBusinessHours
 
-When enabled, the calendar will only display the hours defined in the `businessHours` configuration, hiding the rest of the day. This is supported in Day and Week views (both vertical and horizontal orientations).
+When enabled, the calendar will only display the hours defined in the `businessHours` configuration, hiding the rest of the day. This is supported in Day and Week views (both vertical and horizontal orientations). With sub-hour boundaries, the hour rows hosting a boundary stay visible (a `'09:15'` start keeps the 9:00 row on screen); slots outside the boundary within those rows are simply disabled.
 
 **Type:** `boolean`
 **Default:** `false`

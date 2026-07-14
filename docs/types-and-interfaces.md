@@ -188,13 +188,23 @@ type WeekDays = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'fr
 
 ```typescript
 interface BusinessHours {
-  daysOfWeek?: WeekDays[]   // Default: ['monday'...'friday']
-  startTime?: number        // Default: 9 (24-hour format, 0-24)
-  endTime?: number          // Default: 17
+  daysOfWeek?: WeekDays[]        // Default: ['monday'...'friday']
+  startTime?: number | string    // Default: 9 (24-hour number, or 'HH:mm' e.g. '09:15')
+  endTime?: number | string      // Default: 17
 }
 ```
 
 Can be a single object or an array for different hours on different days.
+Sub-hour boundaries use `'HH:mm'` strings; fractional numbers are not
+supported (they round to the nearest whole hour — `9.25` is NOT 9:15).
+Malformed or out-of-range strings (`'9:99'`, `'25:00'`) fall back to the
+9/17 defaults; `'24:00'` is a valid end-of-day. A grid slot counts as
+business only when it fits entirely inside a single config's range, so on
+grids coarser than the boundary (e.g. hour cells with a 9:15 start) the
+partial slot is treated as non-business — set `slotDuration` to match the
+finest boundary for exact behavior. Ranges are checked independently:
+adjacent/touching ranges do not merge, so a slot straddling their seam is
+non-business.
 
 ## CellClickInfo
 

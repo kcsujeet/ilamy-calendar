@@ -28,10 +28,47 @@ export const isBusinessDay = (
 	return hasMatch
 }
 
+const TIME_STRING_PATTERN = /^(\d{1,2}):(\d{2})$/
+
+/**
+ * Normalizes a business-hours boundary to minutes since midnight. Numbers are
+ * whole 24-hour values (fractions round to the nearest hour — decimal hours
+ * are NOT supported); sub-hour boundaries use 'HH:mm' strings. Malformed
+ * strings fall back to the given default hour.
+ */
+const toBoundaryMinutes = (
+	value: number | string | undefined,
+	fallbackHours: number
+): number => {
+	if (typeof value === 'number') {
+		return Math.round(value) * 60
+	}
+
+	if (typeof value === 'string') {
+		const match = value.match(TIME_STRING_PATTERN)
+		if (match) {
+			const hours = Number(match[1])
+			const minutes = Number(match[2])
+			const withinDay = hours * 60 + minutes <= 24 * 60
+			if (minutes <= 59 && withinDay) {
+				return hours * 60 + minutes
+			}
+		}
+	}
+
+	return fallbackHours * 60
+}
+
 interface IsBusinessHourOptions {
 	date: Dayjs
 	hour?: number
 	minute?: number
+	/**
+	 * When set, the check covers the whole slot [hour:minute, +durationMinutes):
+	 * the slot counts as business only if it fits entirely inside a config's
+	 * range. Without it, the check is a point-in-range test.
+	 */
+	durationMinutes?: number
 	businessHours?: BusinessHours | BusinessHours[]
 }
 
@@ -45,6 +82,7 @@ export const isBusinessHour = ({
 	date,
 	hour,
 	minute = 0,
+	durationMinutes,
 	businessHours,
 }: IsBusinessHourOptions): boolean => {
 	// If business hours are not configured, consider everything as "business hours"
@@ -63,15 +101,15 @@ export const isBusinessHour = ({
 	processBusinessHours(businessHours, {
 		date,
 		onMatch: (config) => {
-			// Check time against this specific config
-			// startTime and endTime are numbers (0-24)
-			const startH = config.startTime ?? 9
-			const endH = config.endTime ?? 17
+			const startMinutes = toBoundaryMinutes(config.startTime, 9)
+			const endMinutes = toBoundaryMinutes(config.endTime, 17)
 
-			const startMinutes = startH * 60
-			const endMinutes = endH * 60
+			const startsInside = currentMinutes >= startMinutes
+			const endsInside = durationMinutes
+				? currentMinutes + durationMinutes <= endMinutes
+				: currentMinutes < endMinutes
 
-			if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+			if (startsInside && endsInside) {
 				isInBusinessHour = true
 			}
 		},
@@ -110,7 +148,9 @@ const processBusinessHours = (
 }
 
 interface BusinessHoursRange {
+	/** Earliest start across configs, in hours (fractional for sub-hour boundaries). */
 	minStart: number
+	/** Latest end across configs, in hours (fractional for sub-hour boundaries). */
 	maxEnd: number
 	hasBusinessHours: boolean
 }
@@ -137,8 +177,8 @@ export const calculateBusinessHoursRange = (options: {
 
 	const onMatch = (config: BusinessHours) => {
 		hasBusinessHours = true
-		minStart = Math.min(minStart, config.startTime ?? 9)
-		maxEnd = Math.max(maxEnd, config.endTime ?? 17)
+		minStart = Math.min(minStart, toBoundaryMinutes(config.startTime, 9) / 60)
+		maxEnd = Math.max(maxEnd, toBoundaryMinutes(config.endTime, 17) / 60)
 	}
 
 	// Invoke processBusinessHours for the global config and every resource

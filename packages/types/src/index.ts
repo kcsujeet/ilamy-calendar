@@ -81,15 +81,19 @@ export interface BusinessHours {
 	 */
 	daysOfWeek?: WeekDays[]
 	/**
-	 * Start time for business hours in 24-hour format (0-24).
+	 * Start time for business hours: a whole 24-hour number (0-24) or an
+	 * 'HH:mm' string for sub-hour boundaries (e.g. '09:15'). Fractional
+	 * numbers round to the nearest hour — use a string for sub-hour precision.
 	 * @default 9
 	 */
-	startTime?: number
+	startTime?: number | string
 	/**
-	 * End time for business hours in 24-hour format (0-24).
+	 * End time for business hours: a whole 24-hour number (0-24) or an
+	 * 'HH:mm' string for sub-hour boundaries (e.g. '17:15'). Fractional
+	 * numbers round to the nearest hour — use a string for sub-hour precision.
 	 * @default 17
 	 */
-	endTime?: number
+	endTime?: number | string
 }
 
 /**

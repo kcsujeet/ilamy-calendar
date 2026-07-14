@@ -5,7 +5,10 @@ import type { Dayjs } from '@ilamy/utils/dayjs'
 import React, { memo, useMemo } from 'react'
 import { useEffectiveBusinessHours } from '@/features/calendar/hooks/use-effective-business-hours'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { isBusinessHour } from '@/features/calendar/utils/business-hours'
+import {
+	isBusinessDay,
+	isBusinessHour,
+} from '@/features/calendar/utils/business-hours'
 import { filterEventsForResource } from '@/lib/events/pipeline'
 import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
@@ -17,6 +20,7 @@ interface GridProps {
 	day: Dayjs
 	hour?: number // Optional hour for hour-based grids
 	minute?: number // Optional minute for more granular time slots
+	slotDurationMinutes?: number // Span of an hour-grid slot, for business-hour containment
 	dayMaxEvents?: number
 	className?: string // Optional className for custom styling
 	resourceId?: string | number // Optional resource ID for resource-specific day cells
@@ -33,6 +37,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	day,
 	hour,
 	minute,
+	slotDurationMinutes = 60,
 	className = '',
 	resourceId,
 	gridType = 'day',
@@ -112,16 +117,27 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	const hiddenEventsCount = todayEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
 
-	const isBusiness = isBusinessHour({
-		date: day,
-		hour: gridType === 'hour' ? day.hour() : undefined,
-		businessHours: effectiveBusinessHours,
-	})
+	// Whole-slot containment: an hour-grid slot is business only if it fits
+	// entirely inside business hours, so slots partially crossing a sub-hour
+	// boundary (e.g. a 9:00 hour cell with a 9:15 start) count as non-business.
+	const isBusiness = useMemo(() => {
+		if (gridType === 'hour') {
+			return isBusinessHour({
+				date: day,
+				hour: day.hour(),
+				minute: day.minute(),
+				durationMinutes: slotDurationMinutes,
+				businessHours: effectiveBusinessHours,
+			})
+		}
 
-	const testId =
-		gridType === 'hour'
-			? keys.cell.day(day, day.format('HH'), day.format('mm'))
-			: keys.cell.day(day)
+		return isBusinessDay(day, effectiveBusinessHours)
+	}, [gridType, day, slotDurationMinutes, effectiveBusinessHours])
+
+	const hourKey = keys.cell.day(day, day.format('HH'), day.format('mm'))
+	const dayKey = keys.cell.day(day)
+	const testId = gridType === 'hour' ? hourKey : dayKey
+
 	const droppableId = keys.droppable.dayCell(day, { allDay, resourceId })
 
 	return (

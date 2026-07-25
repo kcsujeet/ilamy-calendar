@@ -86,7 +86,7 @@ describe('overlapsRangeMs', () => {
 		['entirely after the range', 2100, 2500, false],
 		['zero duration inside the range', 1500, 1500, true],
 		['zero duration outside the range', 900, 900, false],
-	] as const)('%s', (_label, startMs, endMs, expected) => {
+	] as const)('%s', (_label: string, startMs: number, endMs: number, expected: boolean) => {
 		expect(
 			overlapsRangeMs(bounds(startMs, endMs), range.start, range.end)
 		).toBe(expected)

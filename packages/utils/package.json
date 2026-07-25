@@ -18,6 +18,10 @@
 		"./helpers": {
 			"types": "./dist/helpers.d.ts",
 			"import": "./dist/helpers.js"
+		},
+		"./events": {
+			"types": "./dist/events.d.ts",
+			"import": "./dist/events.js"
 		}
 	},
 	"files": [
@@ -27,11 +31,12 @@
 	],
 	"scripts": {
 		"build": "CI=true NODE_ENV=production bunx bunup",
+		"test": "bun test",
 		"type-check": "bunx tsc --noEmit",
 		"test": "bun test",
 		"lint": "bunx biome lint . --diagnostic-level=error",
 		"check": "bunx biome check . --diagnostic-level=error",
-		"ci": "bun run check && bun run type-check && bun run build"
+		"ci": "bun run check && bun run type-check && bun run test && bun run build"
 	},
 	"dependencies": {
 		"dayjs": "^1.11.20"

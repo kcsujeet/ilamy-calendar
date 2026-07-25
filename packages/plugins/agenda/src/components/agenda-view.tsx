@@ -1,5 +1,6 @@
 import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { ScrollArea } from '@ilamy/ui/components/scroll-area'
+import { useMemo } from 'react'
 import { type AgendaWindow, windowRange } from '../utils/agenda-window'
 import { groupEventsByDay } from '../utils/group-events-by-day'
 import { AgendaDayGroup } from './agenda-day-group'
@@ -17,9 +18,16 @@ export const AgendaView = ({ window }: AgendaViewProps) => {
 	const { currentDate, getEventsForDateRange, t, firstDayOfWeek } =
 		useIlamyCalendarContext()
 
-	const range = windowRange(currentDate, window, firstDayOfWeek)
-	const events = getEventsForDateRange(range.start, range.end)
-	const groups = groupEventsByDay(events, range)
+	// Memoized so a context change that leaves the window and events untouched
+	// does not re-query and re-group. `getEventsForDateRange` changes identity
+	// whenever the event set does, which is the signal to recompute.
+	const groups = useMemo(() => {
+		const range = windowRange(currentDate, window, firstDayOfWeek)
+		return groupEventsByDay(
+			getEventsForDateRange(range.start, range.end),
+			range
+		)
+	}, [currentDate, window, firstDayOfWeek, getEventsForDateRange])
 
 	// An empty window (common for short windows like a day agenda) centers the
 	// message in the available space rather than pinning it to the corner.

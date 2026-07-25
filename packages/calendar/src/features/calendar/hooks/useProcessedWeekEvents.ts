@@ -1,11 +1,9 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
+import { bucketEventsByDay, buildDayIndex } from '@ilamy/utils/events'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import {
-	eventOverlapsRange,
-	filterEventsForResource,
-} from '@/lib/events/pipeline'
+import { filterEventsForResource } from '@/lib/events/pipeline'
 import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutHorizontal } from '@/lib/layout/horizontal'
 import { getDayKey } from '@/lib/utils/date-utils'
@@ -50,19 +48,21 @@ export const useProcessedWeekEvents = ({
 		return weekEvents
 	}, [getEventsForDateRange, weekStart, weekEnd, resourceId, allDay])
 
+	// Day boundaries depend only on the grid, not the events, so they survive
+	// event changes. This matters more than it looks: with a default timezone
+	// configured, each startOf/endOf re-derives the UTC offset, so computing
+	// boundaries per event was among the most expensive things the grid did.
+	const dayIndex = useMemo(() => buildDayIndex(days), [days])
+
 	const dayEventsMap = useMemo(() => {
 		const map = new Map<string, CalendarEvent[]>()
-		for (const day of days) {
-			const key = getDayKey(day)
-			const dayStart = day.startOf('day')
-			const dayEnd = day.endOf('day')
-			const dayEvents = events.filter((e) =>
-				eventOverlapsRange(e, dayStart, dayEnd)
-			)
-			map.set(key, dayEvents)
-		}
+		// One bucketing pass instead of re-filtering every event once per day.
+		const buckets = bucketEventsByDay(events, dayIndex)
+		days.forEach((day, dayPosition) => {
+			map.set(getDayKey(day), buckets.at(dayPosition) ?? [])
+		})
 		return map
-	}, [days, events])
+	}, [days, dayIndex, events])
 
 	const positionedEvents = useMemo(() => {
 		return layoutHorizontal({

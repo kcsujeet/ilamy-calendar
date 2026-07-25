@@ -568,3 +568,151 @@ describe('YearView', () => {
 		})
 	})
 })
+
+/**
+ * Counts are now derived from a single range query bucketed by day, rather than
+ * 516 separate queries. Every pre-existing fixture in this file is a single-day
+ * event, so none of them exercise multi-day spans — and the first version of the
+ * bucketed implementation got exactly that case wrong, summing per-day buckets
+ * for the month badge so one 5-day event read as "5 Events".
+ *
+ * These tests pin the distinction: the month badge counts DISTINCT events, while
+ * day cells mark every day an event spans.
+ */
+describe('Multi-day event counting', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	const spanningEvent = (
+		id: string,
+		startISO: string,
+		endISO: string
+	): CalendarEvent => ({
+		id,
+		title: `Event ${id}`,
+		start: dayjs(startISO),
+		end: dayjs(endISO),
+		allDay: true,
+	})
+
+	test('counts a five-day event once in the month badge', () => {
+		renderYearView({
+			events: [
+				spanningEvent(
+					'span',
+					'2025-03-03T00:00:00.000Z',
+					'2025-03-07T23:59:59.999Z'
+				),
+			],
+			initialDate: dayjs('2025-03-05'),
+		})
+		expect(screen.getByTestId('year-month-count-03')).toHaveTextContent(
+			'1 Event'
+		)
+	})
+
+	test('counts a five-day event plus a single-day event as two, not six', () => {
+		renderYearView({
+			events: [
+				spanningEvent(
+					'span',
+					'2025-03-03T00:00:00.000Z',
+					'2025-03-07T23:59:59.999Z'
+				),
+				spanningEvent(
+					'single',
+					'2025-03-12T09:00:00.000Z',
+					'2025-03-12T10:00:00.000Z'
+				),
+			],
+			initialDate: dayjs('2025-03-05'),
+		})
+		expect(screen.getByTestId('year-month-count-03')).toHaveTextContent(
+			'2 Events'
+		)
+	})
+
+	test('marks every day a multi-day event spans with a dot', () => {
+		renderYearView({
+			events: [
+				spanningEvent(
+					'span',
+					'2025-03-03T00:00:00.000Z',
+					'2025-03-07T23:59:59.999Z'
+				),
+			],
+			initialDate: dayjs('2025-03-05'),
+		})
+		// Each spanned day reports one event via its title attribute.
+		for (const day of ['03', '04', '05', '06', '07']) {
+			expect(
+				screen.getByTestId(`year-day-2025-03-2025-03-${day}`)
+			).toHaveAttribute('title', '1 Event')
+		}
+		// The day before the span has none.
+		expect(
+			screen.getByTestId('year-day-2025-03-2025-03-02')
+		).not.toHaveAttribute('title', '1 Event')
+	})
+
+	test('counts an event spanning a month boundary in both months', () => {
+		renderYearView({
+			events: [
+				spanningEvent(
+					'cross',
+					'2025-03-30T00:00:00.000Z',
+					'2025-04-02T23:59:59.999Z'
+				),
+			],
+			initialDate: dayjs('2025-03-31'),
+		})
+		expect(screen.getByTestId('year-month-count-03')).toHaveTextContent(
+			'1 Event'
+		)
+		expect(screen.getByTestId('year-month-count-04')).toHaveTextContent(
+			'1 Event'
+		)
+	})
+
+	test('counts an event spanning a year boundary in the visible year only', () => {
+		renderYearView({
+			events: [
+				spanningEvent(
+					'newyear',
+					'2024-12-30T00:00:00.000Z',
+					'2025-01-02T23:59:59.999Z'
+				),
+			],
+			initialDate: dayjs('2025-01-15'),
+		})
+		expect(screen.getByTestId('year-month-count-01')).toHaveTextContent(
+			'1 Event'
+		)
+		// December of the displayed year is untouched by a previous-year event.
+		expect(screen.queryByTestId('year-month-count-12')).not.toBeInTheDocument()
+	})
+
+	test('leaves leading days from the previous month countable in both grids', () => {
+		// Mar 31 2025 is a Monday, so it appears as a trailing day in March's grid
+		// and as a leading day in April's. Both cells must report the same count.
+		renderYearView({
+			events: [
+				spanningEvent(
+					'last',
+					'2025-03-31T09:00:00.000Z',
+					'2025-03-31T10:00:00.000Z'
+				),
+			],
+			initialDate: dayjs('2025-03-31'),
+		})
+		expect(screen.getByTestId('year-day-2025-03-2025-03-31')).toHaveAttribute(
+			'title',
+			'1 Event'
+		)
+		expect(screen.getByTestId('year-day-2025-04-2025-03-31')).toHaveAttribute(
+			'title',
+			'1 Event'
+		)
+	})
+})

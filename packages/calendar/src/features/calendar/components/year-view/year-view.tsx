@@ -1,9 +1,17 @@
 import { ScrollArea, ScrollBar } from '@ilamy/ui/components/scroll-area'
 import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import {
+	bucketEventsByDay,
+	buildDayIndex,
+	dayIndexOf,
+	getEventBoundsMs,
+	overlapsRangeMs,
+} from '@ilamy/utils/events'
+import { useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
+import { getDayKey, getWeekDays } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
@@ -14,6 +22,7 @@ interface MonthData {
 	name: string
 	eventCount: number
 	monthKey: string
+	days: DayData[]
 }
 
 interface DayData {
@@ -35,47 +44,134 @@ export const YearView = () => {
 		label: d.format('dd'),
 	}))
 
-	const generateMonthsData = (): MonthData[] => {
-		return Array.from({ length: 12 }, (_, monthIndex) => {
-			const monthDate = dayjs()
-				.year(currentYear)
-				.month(monthIndex)
-				.startOf('month')
-			const eventsInMonth = getEventsForDateRange(
-				monthDate,
-				monthDate.endOf('month')
+	/**
+	 * Per-day event counts for the whole visible year, from ONE range query.
+	 *
+	 * This component used to call `getEventsForDateRange` 516 times per render —
+	 * 12 month queries plus 12 x 42 mini-calendar day queries — in the render
+	 * body, with no memoization and no cache anywhere beneath it. With the
+	 * recurrence plugin active every one of those queries re-expanded every
+	 * RRULE, so a single recurring event cost hundreds of milliseconds per
+	 * render.
+	 *
+	 * Note that memoizing the old shape alone would not have fixed it: all 516
+	 * ranges are distinct, so a range-keyed cache gets zero hits within a render.
+	 * The fix has to be structural — query once, then bucket by day.
+	 *
+	 * The 12 mini-calendars overlap (each shows leading/trailing days from its
+	 * neighbours), so they all index into a single contiguous day array rather
+	 * than building 504 dates of their own.
+	 */
+	const yearGrid = useMemo(() => {
+		const monthStarts = Array.from({ length: 12 }, (_, monthIndex) =>
+			dayjs().year(currentYear).month(monthIndex).startOf('month')
+		)
+		const januaryStart = monthStarts.at(0)
+		const decemberStart = monthStarts.at(-1)
+		if (!januaryStart || !decemberStart) {
+			return undefined
+		}
+
+		const firstGridDay =
+			getWeekDays(januaryStart, firstDayOfWeek).at(0) ?? januaryStart
+		const lastMonthFirstDay =
+			getWeekDays(decemberStart, firstDayOfWeek).at(0) ?? decemberStart
+		const lastGridDay = lastMonthFirstDay.add(DAYS_IN_MINI_CALENDAR - 1, 'day')
+
+		// Walk the span rather than deriving a length from diff(), which truncates
+		// to a whole number of days and can come up short across a DST transition.
+		// The bound is compared numerically on purpose: `isSameOrBefore(x, 'day')`
+		// would run two `startOf` calls per iteration, and with a timezone
+		// configured each of those costs around 81us. Both endpoints are local
+		// midnight and the cursor advances a day at a time, so it lands on
+		// `lastGridDay` exactly.
+		const lastGridDayMs = lastGridDay.valueOf()
+		const days: Dayjs[] = []
+		let cursor = firstGridDay
+		while (cursor.valueOf() <= lastGridDayMs) {
+			days.push(cursor)
+			cursor = cursor.add(1, 'day')
+		}
+
+		const dayIndex = buildDayIndex(days)
+		const events = getEventsForDateRange(
+			firstGridDay.startOf('day'),
+			lastGridDay.endOf('day')
+		)
+		const dayCounts = bucketEventsByDay(events, dayIndex).map(
+			(dayEvents) => dayEvents.length
+		)
+
+		return { monthStarts, days, dayIndex, events, dayCounts }
+	}, [currentYear, firstDayOfWeek, getEventsForDateRange])
+
+	const monthsData = useMemo((): MonthData[] => {
+		if (!yearGrid) {
+			return []
+		}
+		const { monthStarts, days, dayIndex, events, dayCounts } = yearGrid
+
+		// `isToday`/`isSelected` reduce to integer index comparisons once the day
+		// index exists. Both are clamped by dayIndexOf, so they are only trusted
+		// when the date actually falls inside the grid.
+		const gridStart = dayIndex.dayStarts.at(0) ?? Number.NaN
+		const indexWithinGrid = (date: Dayjs): number => {
+			const timestamp = date.startOf('day').valueOf()
+			if (timestamp < gridStart || timestamp > dayIndex.gridEnd) {
+				return -1
+			}
+			return dayIndexOf(dayIndex, timestamp)
+		}
+		const todayIndex = indexWithinGrid(dayjs())
+		const selectedIndex = indexWithinGrid(currentDate)
+
+		return monthStarts.map((monthDate) => {
+			const monthStartMs = monthDate.valueOf()
+			const monthEndMs = monthDate.endOf('month').valueOf()
+
+			// Count DISTINCT events overlapping the month. Summing the per-day
+			// buckets would count a multi-day event once per day it spans, which
+			// inflates the badge (a single 5-day event would read as 5).
+			let eventCount = 0
+			for (const event of events) {
+				if (
+					overlapsRangeMs(getEventBoundsMs(event), monthStartMs, monthEndMs)
+				) {
+					eventCount++
+				}
+			}
+
+			const monthGridStart =
+				getWeekDays(monthDate, firstDayOfWeek).at(0) ?? monthDate
+			const firstCellIndex = dayIndexOf(dayIndex, monthGridStart.valueOf())
+			const monthNumber = monthDate.month()
+
+			const monthDays = Array.from(
+				{ length: DAYS_IN_MINI_CALENDAR },
+				(_, offset) => {
+					const cellIndex = firstCellIndex + offset
+					const dayDate =
+						days.at(cellIndex) ?? monthGridStart.add(offset, 'day')
+					return {
+						date: dayDate,
+						dayKey: getDayKey(dayDate),
+						isInCurrentMonth: dayDate.month() === monthNumber,
+						isToday: cellIndex === todayIndex,
+						isSelected: cellIndex === selectedIndex,
+						eventCount: dayCounts.at(cellIndex) ?? 0,
+					}
+				}
 			)
 
 			return {
 				date: monthDate,
 				name: monthDate.format('MMMM'),
-				eventCount: eventsInMonth.length,
+				eventCount,
 				monthKey: monthDate.format('MM'),
+				days: monthDays,
 			}
 		})
-	}
-
-	const generateDaysForMonth = (monthDate: Dayjs): DayData[] => {
-		const monthStart = monthDate.startOf('month')
-		const firstDayOfCalendar =
-			getWeekDays(monthStart, firstDayOfWeek).at(0) ?? monthStart
-
-		return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) => {
-			const dayDate = firstDayOfCalendar.add(dayIndex, 'day')
-			const dayStart = dayDate.startOf('day')
-			const dayEnd = dayDate.endOf('day')
-			const eventsOnDay = getEventsForDateRange(dayStart, dayEnd)
-
-			return {
-				date: dayDate,
-				dayKey: getDayKey(dayDate),
-				isInCurrentMonth: dayDate.month() === monthDate.month(),
-				isToday: isToday(dayDate),
-				isSelected: dayDate.isSame(currentDate, 'day'),
-				eventCount: eventsOnDay.length,
-			}
-		})
-	}
+	}, [yearGrid, currentDate, firstDayOfWeek])
 
 	const navigateToDate = (
 		date: Dayjs,
@@ -121,8 +217,6 @@ export const YearView = () => {
 		return cn('h-[3px] w-[3px] rounded-full', dotColor)
 	}
 
-	const monthsData = generateMonthsData()
-
 	const getDayTooltip = (eventCount: number): string => {
 		if (eventCount === 0) {
 			return ''
@@ -137,7 +231,7 @@ export const YearView = () => {
 				data-testid="year-grid"
 			>
 				{monthsData.map((month) => {
-					const daysInMonth = generateDaysForMonth(month.date)
+					const daysInMonth = month.days
 
 					return (
 						<div

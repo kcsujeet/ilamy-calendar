@@ -103,6 +103,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 										minute={hasSubHourSlots ? minute : undefined}
 										resourceId={resourceId} // Events are rendered in a separate layer
 										shouldRenderEvents={false}
+										slotDurationMinutes={slotDurationMinutes}
 									/>
 								)
 							})}

@@ -8,6 +8,13 @@ interface DatePickerProps {
 	className?: string
 }
 
+/**
+ * `<input type="date">` both renders and reports its value in this shape, so it
+ * is used for display formatting only — never as a parse format. The configured
+ * dayjs (`@ilamy/utils/dayjs`) forwards extra constructor arguments to
+ * `dayjs.tz()`, whose second parameter is a TIMEZONE, so passing this as a parse
+ * format throws `RangeError: invalid time zone`.
+ */
 const DATE_INPUT_FORMAT = 'YYYY-MM-DD'
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -23,7 +30,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 			onChange?.(undefined)
 			return
 		}
-		const parsed = dayjs(raw, DATE_INPUT_FORMAT)
+		// `raw` is already an ISO date ('YYYY-MM-DD') from the native date input, so
+		// the single-argument constructor parses it correctly and honours the
+		// calendar's configured timezone.
+		const parsed = dayjs(raw)
 		onChange?.(parsed.isValid() ? parsed.toDate() : undefined)
 	}
 

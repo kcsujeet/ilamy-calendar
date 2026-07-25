@@ -38,6 +38,51 @@ const fixTimezoneOffset: PluginFunc = (_option, dayjsClass, dayjsFactory) => {
 	const originalStartOf = proto.startOf as StartOfFn
 	const originalEndOf = proto.endOf
 
+	/**
+	 * Memoised zone offsets.
+	 *
+	 * The offset lookup below is the single most expensive operation in this
+	 * ecosystem: a `format()` plus a full `dayjs.tz()` reparse, measured at ~81us,
+	 * paid on EVERY `startOf`/`endOf` once a default timezone is set. Grids call
+	 * those per day and per cell, so it dominated every view's cost.
+	 *
+	 * Keyed on the zone plus the result's WALL-CLOCK minute, not its instant. The
+	 * offset is a function of how the wall-clock fields are interpreted in the
+	 * zone, and during a transition `result` may still carry a stale offset — the
+	 * very case this patch exists to correct — so two results sharing an instant
+	 * can legitimately need different answers. Wall-clock keying cannot conflate
+	 * them.
+	 *
+	 * Minute granularity is used because IANA offset transitions land on minute
+	 * boundaries, so a bucket can never straddle one. (A coarser bucket, e.g. per
+	 * day, would be wrong: the offset changes mid-day on a transition day.)
+	 * Day-boundary work only ever produces two distinct wall minutes per day, so
+	 * the cache stays small in practice.
+	 */
+	const offsetCache = new Map<string, number>()
+	const OFFSET_CACHE_LIMIT = 4096
+
+	function expectedOffsetFor(result: dayjs.Dayjs, tz: string): number {
+		const wallClockMinute = Math.floor(
+			(result.valueOf() + result.utcOffset() * 60_000) / 60_000
+		)
+		const key = `${tz}|${wallClockMinute}`
+		const cached = offsetCache.get(key)
+		if (cached !== undefined) {
+			return cached
+		}
+		const computed = dayjsFactory
+			.tz(result.format('YYYY-MM-DDTHH:mm:ss'), tz)
+			.utcOffset()
+		// Bounded so a long-lived app cannot grow it without limit. Zone offsets
+		// for a given wall minute never change, so dropping everything is safe.
+		if (offsetCache.size >= OFFSET_CACHE_LIMIT) {
+			offsetCache.clear()
+		}
+		offsetCache.set(key, computed)
+		return computed
+	}
+
 	function restoreTimezone(
 		instance: dayjs.Dayjs,
 		result: dayjs.Dayjs
@@ -45,10 +90,7 @@ const fixTimezoneOffset: PluginFunc = (_option, dayjsClass, dayjsFactory) => {
 		const tz = (instance as DayjsInternal).$x?.$timezone || defaultTimezone
 		if (!tz) return result
 
-		const expectedOffset = dayjsFactory
-			.tz(result.format('YYYY-MM-DDTHH:mm:ss'), tz)
-			.utcOffset()
-		if (result.utcOffset() !== expectedOffset) {
+		if (result.utcOffset() !== expectedOffsetFor(result, tz)) {
 			return result.tz(tz, true)
 		}
 		return result

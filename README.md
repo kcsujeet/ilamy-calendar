@@ -13,6 +13,14 @@ A powerful, full-featured yet **lightweight and highly pluggable** React calenda
 
 ---
 
+## Support
+
+ilamy Calendar is free and open source. If you'd like to support its development:
+
+<a href="https://ko-fi.com/kcsujeet" target="_blank"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Buy me a coffee at ko-fi.com" style="height: 50px;" /></a>
+
+---
+
 ## Features
 
 ### Core Views
@@ -147,14 +155,6 @@ Explore the [examples directory](https://github.com/kcsujeet/ilamy-calendar/tree
 ## Documentation
 
 For comprehensive guides, API references, and interactive demos, visit [ilamy.dev](https://ilamy.dev).
-
----
-
-## Support
-
-ilamy Calendar is free and open source. If you'd like to support its development:
-
-<a href="https://ko-fi.com/kcsujeet" target="_blank"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Buy me a coffee at ko-fi.com" style="height: 50px;" /></a>
 
 ---
 

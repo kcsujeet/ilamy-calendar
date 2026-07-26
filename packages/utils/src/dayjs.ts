@@ -95,4 +95,26 @@ Object.assign(timezoneAwareDayjs, dayjs)
 // Files should use 'import dayjs, { type Dayjs } from "@ilamy/utils/dayjs"'
 export type Dayjs = dayjs.Dayjs
 export type ManipulateType = dayjs.ManipulateType
-export default timezoneAwareDayjs as typeof dayjs
+
+/**
+ * dayjs's statics without its call signatures. Mapping over the keys drops the
+ * call signatures, which is what lets the exported type re-advertise only the
+ * single-argument constructor.
+ */
+type DayjsStatics = { [K in keyof typeof dayjs]: (typeof dayjs)[K] }
+
+/**
+ * The configured dayjs: a one-argument constructor plus every dayjs static.
+ *
+ * The constructor forwards its arguments to `dayjs.tz()`, whose second
+ * parameter is a TIMEZONE and not a parse format, so `dayjs(input, 'YYYY-MM-DD')`
+ * threw `RangeError: invalid time zone` at runtime while type-checking cleanly
+ * (see the recurrence date-picker bug). Format parsing would additionally need
+ * the CustomParseFormat plugin, which this module deliberately does not extend
+ * (https://day.js.org/docs/en/parse/string-format). Offering only the
+ * one-argument form turns that mistake into a compile error. To parse in an
+ * explicit zone, call `dayjs.tz(input, timezone)`.
+ */
+type ConfiguredDayjs = ((date?: dayjs.ConfigType) => dayjs.Dayjs) & DayjsStatics
+
+export default timezoneAwareDayjs as unknown as ConfiguredDayjs

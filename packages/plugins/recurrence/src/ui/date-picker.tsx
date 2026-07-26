@@ -4,6 +4,11 @@ import type * as React from 'react'
 
 interface DatePickerProps {
 	date: Date | undefined
+	/**
+	 * Receives start of day in the calendar's configured timezone, which east of
+	 * UTC is the previous UTC day. Callers that need a whole-day boundary must
+	 * normalize (`dayjs(value).endOf('day')`) rather than use the instant as-is.
+	 */
 	onChange?: (date: Date | undefined) => void
 	className?: string
 }

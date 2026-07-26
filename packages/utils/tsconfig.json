@@ -1,5 +1,10 @@
 {
 	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		// `bun:test` in the co-located tests; unlike the other packages this one
+		// does not pick up the root @types/bun automatically.
+		"types": ["bun"]
+	},
 	"include": ["src/**/*.ts"],
 	"exclude": ["dist", "node_modules", "bunup.config.ts"]
 }

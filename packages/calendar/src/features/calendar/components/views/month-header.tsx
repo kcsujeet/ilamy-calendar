@@ -29,7 +29,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 		>
 			{weekDays.map((weekDay) => (
 				<div
-					className="py-2 text-center font-medium bg-background flex-1 min-w-0"
+					className="py-2 text-center font-medium bg-background flex-1 min-w-0 flex items-center justify-center"
 					data-testid={keys.header.weekday('month', weekDay.format('ddd'))}
 					key={weekDay.toISOString()}
 				>

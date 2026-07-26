@@ -103,6 +103,10 @@ describe('MonthView', () => {
 		expect(animated).not.toBeNull()
 		expect(animated?.textContent).toBe('Mon')
 		expect((animated as HTMLElement).style.animationDelay).toBe('0s')
+
+		// The cell centers the wrapper. Without this the inline-block wrapper
+		// sits on the text baseline and the label rides high in the row.
+		expect(cell.className).toContain('items-center')
 	})
 
 	test('renders MonthView with correct weekday headers starting from Monday', () => {

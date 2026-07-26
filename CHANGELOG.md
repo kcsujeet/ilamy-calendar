@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v2.0.2](https://github.com/kcsujeet/ilamy-calendar/compare/v2.0.1...v2.0.2)
+
+> 26 July 2026
+
+##### Features
+
+- feat: `businessHours` `startTime`/`endTime` accept `'HH:mm'` strings, so sub-hour boundaries like `'09:15'` are enforced exactly. A slot is bookable only when it fits entirely inside business hours, so the calendar never allows a booking that violates the boundary; set `slotDuration` to match your finest boundary for exact shading. Whole numbers behave as before, and fractional numbers are not supported (they round to the nearest hour) ([`#239`](https://github.com/kcsujeet/ilamy-calendar/pull/239)) — Closes [`#237`](https://github.com/kcsujeet/ilamy-calendar/issues/237)
+
+##### Fixes
+
+- fix: typing or picking an end date for a recurring event threw `RangeError: invalid time zone`, because the date picker passed a parse format where the configured dayjs expects a timezone ([`#242`](https://github.com/kcsujeet/ilamy-calendar/pull/242)) — Thanks [@mattanderson-io](https://github.com/mattanderson-io)!
+- fix: the configured dayjs no longer accepts a parse-format argument that always threw at runtime, so the mistake behind the above fix is now a compile error ([`#243`](https://github.com/kcsujeet/ilamy-calendar/pull/243))
+
+##### Performance
+
+- perf: dropped the `motion` dependency, cutting roughly 117kB minified (40kB gzipped) from consumer bundles, about 26% of the total. Enter animations are now CSS-only via the `tailwindcss-animate` utilities the shadcn components already use. The 150ms exit fade on view switches and the drag-settle animation on events are gone ([`#238`](https://github.com/kcsujeet/ilamy-calendar/pull/238))
+
 #### [v2.0.1](https://github.com/kcsujeet/ilamy-calendar/compare/v2.0.0...v2.0.1)
 
 > 12 July 2026

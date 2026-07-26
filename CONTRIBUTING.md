@@ -95,7 +95,7 @@ BREAKING CHANGE: onCellClick now receives CellClickInfo object instead of separa
 
 5. **Create a Pull Request**
    - Use a clear, descriptive title
-   - Reference any related issues
+   - **Link an issue with `Closes #123`.** This is required for contributions from outside the maintainer. If no issue covers the problem yet, open one first, then link it. The issue is what makes the problem trackable and searchable later; a PR description alone is not, because it disappears from issue views once merged. PRs without a linked issue will be asked for one before review.
    - Describe what changes were made and why
    - Include screenshots for UI changes
 

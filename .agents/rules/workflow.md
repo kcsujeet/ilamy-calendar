@@ -1,1 +1,2 @@
 - Never post PR reviews, comments, or any public-facing content without explicit user approval. Always present the draft to the user first and wait for confirmation before posting.
+- Every PR opened by someone other than the maintainer (`kcsujeet`) must link an issue (`Closes #N`). When reviewing such a PR with no linked issue, flag the missing issue before reviewing the diff: a merged PR body is not trackable, so without an issue there is no searchable record of the problem the change solved. Maintainer PRs are exempt.

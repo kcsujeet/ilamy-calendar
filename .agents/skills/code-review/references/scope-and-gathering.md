@@ -48,6 +48,7 @@ For PRs, also read the linked issue (`gh issue view <N>`). Issues often contain 
 
 - **Author's other open PRs checked for stacking.** If multiple PRs exist and this one's diff is >30 files, confirmed it is not stacked on another branch (Phase 0).
 - **PR title matches the diff's scope.** If the diff does more than the title promises, the out-of-scope work is called out separately rather than silently reviewed.
+- **Linked issue present on every non-maintainer PR.** If the PR author is not `kcsujeet` and `gh pr view <N> --json closingIssuesReferences,body` shows no linked issue and no `Closes #N` in the body, that is a finding: ask for an issue before reviewing further. A merged PR description is not trackable, so without an issue there is no searchable record of what problem the change solved. Maintainer PRs are exempt.
 - **Linked issue (if any) read in full.** Constraints from the issue ("no public-API changes", "must work for X") are reflected in the review.
 - **(Re-reviews only) Existing comment thread fetched.** Ran `gh api repos/<owner>/<repo>/pulls/<N>/comments` and read every reply (author and project owner) since the last posted review. Each prior comment's status (open / resolved / contested) reflects the most recent message in its thread, not just the diff state.
 

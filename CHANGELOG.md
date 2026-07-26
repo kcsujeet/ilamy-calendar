@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v2.0.3](https://github.com/kcsujeet/ilamy-calendar/compare/v2.0.2...v2.0.3)
+
+> 26 July 2026
+
+##### Fixes
+
+- fix: view headers animated the whole header cell, including its background and hover styling, so navigating slid the entire row in. Only the label inside animates now, matching the year view, and the per-item stagger is gone so labels enter together rather than cascading. Enter duration is 500ms ([`#244`](https://github.com/kcsujeet/ilamy-calendar/pull/244))
+- fix: hour labels in the resource horizontal views were left-aligned instead of centered in their columns, and month view weekday labels were not vertically centered ([`#244`](https://github.com/kcsujeet/ilamy-calendar/pull/244))
+
 #### [v2.0.2](https://github.com/kcsujeet/ilamy-calendar/compare/v2.0.1...v2.0.2)
 
 > 26 July 2026

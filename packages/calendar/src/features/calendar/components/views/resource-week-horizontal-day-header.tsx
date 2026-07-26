@@ -4,7 +4,7 @@ import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { HEADER_ROW_HEIGHT, HEADER_STAGGER_DELAY } from '@/lib/constants'
+import { HEADER_ROW_HEIGHT } from '@/lib/constants'
 import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
@@ -25,27 +25,26 @@ export const ResourceWeekHorizontalDayHeader: React.FC<
 				const key = keys.header.week.day(day)
 
 				return (
-					<AnimatedSection
+					<div
 						className={cn(
 							'shrink-0 bg-background flex-1 flex items-center text-center font-medium min-w-20'
 						)}
 						data-testid={keys.header.resource.weekDay}
-						delay={index * HEADER_STAGGER_DELAY}
-						key={keys.listKey(key, 'animated')}
-						transitionKey={keys.listKey(key, 'motion')}
+						key={key}
 					>
-						<div
+						<AnimatedSection
 							className={cn(
 								isHourly ? 'sticky left-1/2' : 'w-full text-center'
 							)}
+							transitionKey={key}
 						>
 							<DayLabel
 								dayNumber={day.format('D')}
 								today={today}
 								weekday={day.format('ddd')}
 							/>
-						</div>
-					</AnimatedSection>
+						</AnimatedSection>
+					</div>
 				)
 			})}
 		</div>

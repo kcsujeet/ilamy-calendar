@@ -21,7 +21,6 @@ import {
 	collectResourceBusinessHours,
 	getViewHours,
 } from '@/features/calendar/utils/view-hours'
-import { HEADER_STAGGER_DELAY, HOUR_STAGGER_DELAY } from '@/lib/constants'
 import { getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import {
@@ -85,25 +84,27 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 				const key = keys.header.week.day(day)
 
 				return (
-					<AnimatedSection
+					// biome-ignore lint/a11y/noStaticElementInteractions: day header is clickable, unchanged behavior
+					// biome-ignore lint/a11y/useKeyWithClickEvents: keyboard access is handled by the day cells
+					<div
 						className={cn(
 							'hover:bg-accent bg-background flex-1 min-w-0 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 w-20 h-full'
 						)}
 						data-testid={keys.header.weekday('week', day.format('dddd'))}
-						delay={index * HEADER_STAGGER_DELAY}
 						key={key}
 						onClick={() => {
 							selectDate(day)
 							openEventForm({ start: day })
 						}}
-						transitionKey={key}
 					>
-						<DayLabel
-							dayNumber={day.format('D')}
-							today={today}
-							weekday={day.format('ddd')}
-						/>
-					</AnimatedSection>
+						<AnimatedSection transitionKey={key}>
+							<DayLabel
+								dayNumber={day.format('D')}
+								today={today}
+								weekday={day.format('ddd')}
+							/>
+						</AnimatedSection>
+					</div>
 				)
 			})}
 		</div>
@@ -237,13 +238,7 @@ const ResourceWeekHorizontalHeader: React.FC<{
 			<ResourcesCornerCell />
 			<div className="flex-1 flex flex-col">
 				<ResourceWeekHorizontalDayHeader days={weekDays} />
-				{isHourly && (
-					<TimeHeaderRow
-						delayStep={HOUR_STAGGER_DELAY}
-						hours={weekHours}
-						view="week"
-					/>
-				)}
+				{isHourly && <TimeHeaderRow hours={weekHours} view="week" />}
 			</div>
 		</>
 	)

@@ -90,6 +90,21 @@ describe('MonthView', () => {
 		})
 	})
 
+	test('animates the weekday label only, leaving the header cell static', () => {
+		cleanup()
+		renderMonthView()
+
+		const cell = screen.getByTestId('month-header-weekday-mon')
+		const animated = cell.querySelector('.animate-in')
+
+		// The cell keeps its background and layout; only the text inside enters,
+		// matching the year view. No stagger.
+		expect(cell.className).not.toContain('animate-in')
+		expect(animated).not.toBeNull()
+		expect(animated?.textContent).toBe('Mon')
+		expect((animated as HTMLElement).style.animationDelay).toBe('0s')
+	})
+
 	test('renders MonthView with correct weekday headers starting from Monday', () => {
 		cleanup() // Clean up previous renders
 		const { container } = renderMonthView({ firstDayOfWeek: 1 }) // Set Monday as first day of week

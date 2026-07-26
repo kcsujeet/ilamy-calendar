@@ -18,7 +18,6 @@ import {
 	collectResourceBusinessHours,
 	getViewHours,
 } from '@/features/calendar/utils/view-hours'
-import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { getDayKey, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import {
@@ -76,11 +75,7 @@ const ResourceDayHorizontalHeader: React.FC<{
 		<>
 			<ResourcesCornerCell />
 			<div className="flex-1 flex flex-col">
-				<TimeHeaderRow
-					delayStep={HEADER_STAGGER_DELAY}
-					hours={hours}
-					view="day"
-				/>
+				<TimeHeaderRow hours={hours} view="day" />
 			</div>
 		</>
 	)

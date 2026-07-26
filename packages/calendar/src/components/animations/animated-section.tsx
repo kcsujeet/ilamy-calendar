@@ -35,7 +35,7 @@ export const AnimatedSection: React.FC<AnimatedSectionProps> = ({
 	return (
 		<div
 			className={cn(
-				'inline-block w-full animate-in fade-in fill-mode-backwards duration-200 ease-in-out',
+				'inline-block w-full animate-in fade-in fill-mode-backwards duration-500 ease-in-out',
 				slideInClass,
 				className
 			)}

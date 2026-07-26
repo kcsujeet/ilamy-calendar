@@ -2,7 +2,6 @@ import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { getWeekDays } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
@@ -28,18 +27,18 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 			)}
 			data-testid="month-header"
 		>
-			{weekDays.map((weekDay, index) => (
-				<AnimatedSection
+			{weekDays.map((weekDay) => (
+				<div
 					className="py-2 text-center font-medium bg-background flex-1 min-w-0"
 					data-testid={keys.header.weekday('month', weekDay.format('ddd'))}
-					delay={index * HEADER_STAGGER_DELAY}
 					key={weekDay.toISOString()}
-					transitionKey={weekDay.toISOString()}
 				>
-					<span className="text-sm capitalize truncate w-full block">
-						{weekDay.format('ddd')}
-					</span>
-				</AnimatedSection>
+					<AnimatedSection transitionKey={weekDay.toISOString()}>
+						<span className="text-sm capitalize truncate w-full block">
+							{weekDay.format('ddd')}
+						</span>
+					</AnimatedSection>
+				</div>
 			))}
 		</div>
 	)

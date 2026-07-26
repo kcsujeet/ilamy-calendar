@@ -3,7 +3,6 @@ import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
@@ -137,9 +136,8 @@ export const YearView = () => {
 				className="grid auto-rows-fr grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3"
 				data-testid="year-grid"
 			>
-				{monthsData.map((month, monthIndex) => {
+				{monthsData.map((month) => {
 					const daysInMonth = generateDaysForMonth(month.date)
-					const animationDelay = monthIndex * HEADER_STAGGER_DELAY
 
 					return (
 						<div
@@ -149,7 +147,6 @@ export const YearView = () => {
 						>
 							<AnimatedSection
 								className="mb-2 flex items-center justify-between"
-								delay={animationDelay}
 								key={keys.listKey('month', month.monthKey)}
 								transitionKey={keys.listKey('month', month.monthKey)}
 							>

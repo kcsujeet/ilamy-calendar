@@ -8,7 +8,6 @@ import {
 	STICKY_GUTTER_SHADOW,
 } from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
@@ -42,7 +41,7 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 				const key = keys.header.week.hour(day, col.resourceId ?? '')
 
 				return (
-					<AnimatedSection
+					<div
 						className={cn(
 							RESOURCE_CELL_WIDTH,
 							'flex flex-col items-center justify-center text-xs shrink-0 bg-background'
@@ -51,16 +50,16 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 							'week',
 							day.format('HH')
 						)}
-						delay={index * HEADER_STAGGER_DELAY}
-						key={keys.listKey(key, 'animated')}
-						transitionKey={keys.listKey(key, 'motion')}
+						key={key}
 					>
-						<DayLabel
-							dayNumber={day.format('D')}
-							today={today}
-							weekday={day.format('ddd')}
-						/>
-					</AnimatedSection>
+						<AnimatedSection transitionKey={key}>
+							<DayLabel
+								dayNumber={day.format('D')}
+								today={today}
+								weekday={day.format('ddd')}
+							/>
+						</AnimatedSection>
+					</div>
 				)
 			})}
 		</div>

@@ -11,7 +11,6 @@ import { Grid3x3 } from 'lucide-react'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { gutterColumn } from '@/components/vertical-grid/gutter'
-import { HEADER_STAGGER_DELAY } from '@/lib/constants'
 import {
 	getMonthDays,
 	getMonthGridRange,
@@ -67,19 +66,19 @@ const ResourceMonthHorizontalHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 					const today = isToday(day)
 
 					return (
-						<AnimatedSection
+						<div
 							className="flex-1 w-20 bg-background shrink-0 flex items-center justify-center flex-col"
-							delay={index * HEADER_STAGGER_DELAY}
-							key={keys.listKey(key, 'animated')}
-							transitionKey={keys.listKey(key, 'motion')}
+							key={key}
 						>
-							<DayLabel
-								className="flex-col-reverse"
-								dayNumber={day.format('D')}
-								today={today}
-								weekday={day.format('ddd')}
-							/>
-						</AnimatedSection>
+							<AnimatedSection transitionKey={key}>
+								<DayLabel
+									className="flex-col-reverse"
+									dayNumber={day.format('D')}
+									today={today}
+									weekday={day.format('ddd')}
+								/>
+							</AnimatedSection>
+						</div>
 					)
 				})}
 			</div>

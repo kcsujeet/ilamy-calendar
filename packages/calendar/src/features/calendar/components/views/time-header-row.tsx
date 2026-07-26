@@ -10,16 +10,11 @@ import { RESOURCE_CELL_WIDTH } from './resource-axis'
 interface TimeHeaderRowProps {
 	hours: Dayjs[]
 	view: 'week' | 'day'
-	// Per-item animation delay. Callers pass different step constants depending
-	// on the list length (HOUR_STAGGER_DELAY for a week of hours,
-	// HEADER_STAGGER_DELAY for a single day).
-	delayStep: number
 }
 
 export const TimeHeaderRow: React.FC<TimeHeaderRowProps> = ({
 	hours,
 	view,
-	delayStep,
 }) => (
 	<div className={cn('flex gap-px bg-border border-b', HEADER_ROW_HEIGHT)}>
 		{hours.map((col, index) => {
@@ -27,7 +22,7 @@ export const TimeHeaderRow: React.FC<TimeHeaderRowProps> = ({
 			const hourStr = col.format('HH')
 			const key = keys.header.week.hour(col, index)
 			return (
-				<AnimatedSection
+				<div
 					className={cn(
 						RESOURCE_CELL_WIDTH,
 						'bg-background flex items-center justify-center text-xs shrink-0',
@@ -35,12 +30,14 @@ export const TimeHeaderRow: React.FC<TimeHeaderRowProps> = ({
 					)}
 					data-hour={hourStr}
 					data-testid={keys.header.resource.timeLabel(view, hourStr)}
-					delay={index * delayStep}
-					key={keys.listKey(key, 'animated')}
-					transitionKey={keys.listKey(key, 'motion')}
+					key={key}
 				>
-					<HourLabel date={col} />
-				</AnimatedSection>
+					{/* `HourLabel` renders bare text, so the animated wrapper has to
+					    carry the centering the cell used to apply directly. */}
+					<AnimatedSection className="text-center" transitionKey={key}>
+						<HourLabel date={col} />
+					</AnimatedSection>
+				</div>
 			)
 		})}
 	</div>

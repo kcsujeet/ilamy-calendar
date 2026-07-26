@@ -100,6 +100,20 @@ describe('WeekView', () => {
 		})
 	})
 
+	test('animates the day label only, leaving the header cell static', () => {
+		cleanup()
+		renderWeekView()
+
+		const cell = screen.getByTestId('week-header-weekday-sunday')
+		const animated = cell.querySelector('.animate-in')
+
+		// The clickable cell keeps its background and hover styling; only the
+		// label inside enters, matching the year view. No stagger.
+		expect(cell.className).not.toContain('animate-in')
+		expect(animated).not.toBeNull()
+		expect((animated as HTMLElement).style.animationDelay).toBe('0s')
+	})
+
 	test('renders WeekView with correct weekday headers starting from Monday', () => {
 		cleanup() // Clean up previous renders
 		renderWeekView({ firstDayOfWeek: 1 }) // Set Monday as first day of week

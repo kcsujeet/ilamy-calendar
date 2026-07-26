@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test'
+import { afterEach, describe, expect, it } from 'bun:test'
 import dayjs from '@ilamy/utils/dayjs'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { DatePicker } from './date-picker'
@@ -65,5 +65,40 @@ describe('DatePicker', () => {
 		const { input, received } = renderPicker()
 		fireEvent.change(input, { target: { value: '2028-02-29' } })
 		expect(dayjs(received.at(0)).format('YYYY-MM-DD')).toBe('2028-02-29')
+	})
+
+	/**
+	 * The reported instant is start of day in the CONFIGURED timezone, which the
+	 * calendar sets through `dayjs.tz.setDefault` (`use-calendar-engine.ts`).
+	 * East of UTC that instant lands on the previous UTC day, so these pin the
+	 * contract the sole consumer relies on: `recurrence-editor`'s `setUntil`
+	 * normalizes with `endOf('day')` in the same zone, which must land the
+	 * series end back on the day the user picked.
+	 */
+	describe('configured timezone', () => {
+		afterEach(() => {
+			dayjs.tz.setDefault(undefined)
+		})
+
+		it('reports start of day in the configured timezone', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const { input, received } = renderPicker()
+
+			fireEvent.change(input, { target: { value: '2026-03-02' } })
+
+			expect(received.at(0)?.toISOString()).toBe('2026-03-01T15:00:00.000Z')
+		})
+
+		it('survives the endOf-day round trip its consumer applies', () => {
+			dayjs.tz.setDefault('Asia/Tokyo')
+			const { input, received } = renderPicker()
+
+			fireEvent.change(input, { target: { value: '2026-03-02' } })
+			const until = dayjs(received.at(0)).endOf('day')
+			const lastOccurrence = dayjs('2026-03-02').hour(23)
+
+			expect(until.format('YYYY-MM-DD')).toBe('2026-03-02')
+			expect(lastOccurrence.isBefore(until)).toBe(true)
+		})
 	})
 })

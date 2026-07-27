@@ -89,63 +89,151 @@ export function overlapsRangeMs(
 }
 
 /**
- * Precomputed day boundaries for a contiguous run of days.
+ * Precomputed boundaries for a list of days, which need NOT be consecutive.
  *
- * `dayStarts[i]` is the epoch millisecond start of day `i`; `gridEnd` is the
- * last millisecond of the final day.
+ * `dayStarts[i]` and `dayEnds[i]` are the first and last epoch milliseconds of
+ * day `i`. Both arrays are ascending.
+ *
+ * Storing the end of every day, rather than only the end of the grid, is what
+ * makes gapped lists correct. `useProcessedWeekEvents` receives the
+ * `hiddenDays`-filtered column list (see `week.tsx`), so "the nearest preceding
+ * day start" is NOT "the day containing this timestamp" — with Wednesday hidden,
+ * a Wednesday timestamp's nearest preceding start is Tuesday.
  */
 export interface DayIndex {
 	readonly dayStarts: readonly number[]
-	readonly gridEnd: number
+	readonly dayEnds: readonly number[]
 }
 
 /**
  * Builds a day index from the grid's own day list.
  *
- * Calls `startOf('day')` once per day — d calls, not d x n. That matters a lot:
- * with a default timezone configured, the ecosystem's `startOf`/`endOf` patch
+ * Calls `startOf('day')`/`endOf('day')` once per day — d calls, not d x n. That
+ * matters: with a default timezone configured the ecosystem's `startOf`/`endOf`
  * re-derives the UTC offset on every call, so a per-day boundary computed inside
  * an event loop is one of the most expensive things the library can do.
  *
- * The boundaries are stored as real per-day values rather than derived from a
- * fixed 86_400_000ms stride, because local days are 23 or 25 hours long around a
- * DST transition and fixed-stride arithmetic misassigns events across one.
+ * Boundaries are real per-day values rather than a fixed 86_400_000ms stride,
+ * because local days run 23 or 25 hours around a DST transition and fixed-stride
+ * arithmetic misassigns events across one.
  */
 export function buildDayIndex(days: readonly Dayjs[]): DayIndex {
 	const dayStarts: number[] = []
+	const dayEnds: number[] = []
 	for (const day of days) {
 		dayStarts.push(day.startOf('day').valueOf())
+		dayEnds.push(day.endOf('day').valueOf())
 	}
-	const lastDay = days.at(-1)
-	return {
-		dayStarts,
-		gridEnd:
-			lastDay === undefined ? Number.NaN : lastDay.endOf('day').valueOf(),
-	}
+	return { dayStarts, dayEnds }
 }
 
-/**
- * Index of the day containing `timestampMs`, or -1 when it precedes the grid.
- * Timestamps after the grid return the last day's index, so callers clamp with
- * `Math.min`. Binary search: O(log d).
- */
-export function dayIndexOf(index: DayIndex, timestampMs: number): number {
-	const { dayStarts } = index
-	const first = dayStarts.at(0)
-	if (first === undefined || timestampMs < first) {
+/** Index of the last entry in an ascending array that is <= `value`, else -1. */
+const lastIndexAtOrBefore = (
+	ascending: readonly number[],
+	value: number
+): number => {
+	const first = ascending.at(0)
+	if (first === undefined || value < first) {
 		return -1
 	}
 	let low = 0
-	let high = dayStarts.length - 1
+	let high = ascending.length - 1
 	while (low < high) {
-		const mid = (low + high + 1) >> 1
-		if ((dayStarts.at(mid) ?? Number.NaN) <= timestampMs) {
-			low = mid
+		const middle = (low + high + 1) >> 1
+		if ((ascending.at(middle) ?? Number.NaN) <= value) {
+			low = middle
 		} else {
-			high = mid - 1
+			high = middle - 1
 		}
 	}
 	return low
+}
+
+/** Index of the first entry in an ascending array that is >= `value`, else -1. */
+const firstIndexAtOrAfter = (
+	ascending: readonly number[],
+	value: number
+): number => {
+	const last = ascending.at(-1)
+	if (last === undefined || value > last) {
+		return -1
+	}
+	let low = 0
+	let high = ascending.length - 1
+	while (low < high) {
+		const middle = (low + high) >> 1
+		if ((ascending.at(middle) ?? Number.NaN) >= value) {
+			high = middle
+		} else {
+			low = middle + 1
+		}
+	}
+	return low
+}
+
+/**
+ * Index of the day CONTAINING `timestampMs`, or -1 when no day does.
+ *
+ * Returning -1 for a timestamp that falls in a gap — or outside the grid — is the
+ * point: callers must not clamp it into a neighbouring day.
+ */
+export function dayIndexOf(index: DayIndex, timestampMs: number): number {
+	const candidate = lastIndexAtOrBefore(index.dayStarts, timestampMs)
+	if (candidate < 0) {
+		return -1
+	}
+	const dayEnd = index.dayEnds.at(candidate)
+	if (dayEnd === undefined || timestampMs > dayEnd) {
+		return -1
+	}
+	return candidate
+}
+
+/**
+ * Inclusive range of day indices a well-formed interval overlaps, or undefined.
+ *
+ * Both bounds come from a binary search, and the result needs no per-day
+ * re-verification: every index at or after `low` has `dayEnds[i] >= startMs`, and
+ * every index at or before `high` has `dayStarts[i] <= endMs`, so each index in
+ * between satisfies the inclusive overlap test. An interval that falls entirely
+ * inside a gap yields `low > high` and is correctly reported as no days.
+ */
+export function daySpanOf(
+	index: DayIndex,
+	startMs: number,
+	endMs: number
+): { low: number; high: number } | undefined {
+	const low = firstIndexAtOrAfter(index.dayEnds, startMs)
+	const high = lastIndexAtOrBefore(index.dayStarts, endMs)
+	if (low < 0 || high < 0 || low > high) {
+		return undefined
+	}
+	return { low, high }
+}
+
+/**
+ * Days a malformed interval (end before start) appears on.
+ *
+ * The original per-day predicate used three clauses (starts-inside /
+ * ends-inside / spans); for these its spans clause cannot fire, so such an event
+ * matches the day holding its start and the day holding its end, and none of the
+ * days between. Reproduced here so behaviour is unchanged for malformed input.
+ */
+const malformedEventDays = (
+	index: DayIndex,
+	startMs: number,
+	endMs: number
+): number[] => {
+	const startDay = dayIndexOf(index, startMs)
+	const endDay = dayIndexOf(index, endMs)
+	const days: number[] = []
+	if (startDay >= 0) {
+		days.push(startDay)
+	}
+	if (endDay >= 0 && endDay !== startDay) {
+		days.push(endDay)
+	}
+	return days
 }
 
 /**
@@ -157,9 +245,7 @@ export function dayIndexOf(index: DayIndex, timestampMs: number): number {
  * downstream rendering order is unchanged.
  *
  * Membership is identical to testing `eventOverlapsRange` against each day,
- * including for malformed events whose end precedes their start: those match the
- * day containing their start and the day containing their end, but not the days
- * between (the original predicate's spans-range clause cannot fire for them).
+ * including for gapped day lists and for malformed events.
  */
 export function bucketEventsByDay<T extends EventTimes>(
 	events: readonly T[],
@@ -170,33 +256,56 @@ export function bucketEventsByDay<T extends EventTimes>(
 	if (dayCount === 0) {
 		return buckets
 	}
-	const gridStart = index.dayStarts.at(0) ?? Number.NaN
-	const lastIndex = dayCount - 1
 
 	for (const event of events) {
 		const { startMs, endMs } = getEventBoundsMs(event)
 
 		if (endMs < startMs) {
-			// Malformed: mirror the original predicate's two independent matches.
-			const startDay = dayIndexOf(index, startMs)
-			if (startDay >= 0 && startMs <= index.gridEnd) {
-				buckets[startDay]?.push(event)
-			}
-			const endDay = dayIndexOf(index, endMs)
-			if (endDay >= 0 && endDay !== startDay && endMs <= index.gridEnd) {
-				buckets[endDay]?.push(event)
+			for (const day of malformedEventDays(index, startMs, endMs)) {
+				buckets.at(day)?.push(event)
 			}
 			continue
 		}
 
-		if (endMs < gridStart || startMs > index.gridEnd) {
+		const span = daySpanOf(index, startMs, endMs)
+		if (!span) {
 			continue
 		}
-		const low = Math.max(0, dayIndexOf(index, startMs))
-		const high = Math.min(lastIndex, dayIndexOf(index, endMs))
-		for (let day = low; day <= high; day++) {
-			buckets[day]?.push(event)
+		for (let day = span.low; day <= span.high; day++) {
+			buckets.at(day)?.push(event)
 		}
 	}
 	return buckets
+}
+
+/**
+ * Per-day event counts over the same index, without materialising the buckets.
+ *
+ * The year view needs only `length` per day, so building 504 arrays and then
+ * reading their sizes is pure waste.
+ */
+export function countEventsByDay<T extends EventTimes>(
+	events: readonly T[],
+	index: DayIndex
+): number[] {
+	const counts = new Array<number>(index.dayStarts.length).fill(0)
+	for (const event of events) {
+		const { startMs, endMs } = getEventBoundsMs(event)
+
+		if (endMs < startMs) {
+			for (const day of malformedEventDays(index, startMs, endMs)) {
+				counts[day] = (counts.at(day) ?? 0) + 1
+			}
+			continue
+		}
+
+		const span = daySpanOf(index, startMs, endMs)
+		if (!span) {
+			continue
+		}
+		for (let day = span.low; day <= span.high; day++) {
+			counts[day] = (counts.at(day) ?? 0) + 1
+		}
+	}
+	return counts
 }

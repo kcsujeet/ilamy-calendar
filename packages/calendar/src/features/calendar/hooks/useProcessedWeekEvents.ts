@@ -56,7 +56,10 @@ export const useProcessedWeekEvents = ({
 
 	const dayEventsMap = useMemo(() => {
 		const map = new Map<string, CalendarEvent[]>()
-		// One bucketing pass instead of re-filtering every event once per day.
+		// One bucketing pass instead of re-filtering every event once per day. The
+		// index carries both boundaries of every day, so a `hiddenDays`-filtered
+		// column list stays correct: an event on a hidden day belongs to no column
+		// rather than leaking into the preceding one.
 		const buckets = bucketEventsByDay(events, dayIndex)
 		days.forEach((day, dayPosition) => {
 			map.set(getDayKey(day), buckets.at(dayPosition) ?? [])

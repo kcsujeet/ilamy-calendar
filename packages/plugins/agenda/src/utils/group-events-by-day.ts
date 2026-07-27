@@ -2,6 +2,7 @@ import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
 import {
 	buildDayIndex,
 	dayIndexOf,
+	daySpanOf,
 	getEventBoundsMs,
 } from '@ilamy/utils/events'
 
@@ -47,36 +48,33 @@ export const groupEventsByDay = (
 
 	const dayIndex = buildDayIndex(days)
 	const buckets: CalendarEvent[][] = days.map(() => [])
-	const lastIndex = days.length - 1
-	const gridStart = dayIndex.dayStarts.at(0)
-	if (gridStart === undefined) {
-		return []
-	}
 
-	// One pass over the events instead of re-scanning them once per day. The
-	// membership rules are the agenda's own, not the generic range overlap, so
-	// this cannot use `bucketEventsByDay`: all-day events land on every day they
-	// span, timed events only on their start day.
+	// One pass over the events instead of re-scanning them once per day. Only the
+	// all-day rule matches the generic day-span calculation; the timed rule is the
+	// agenda's own, which is why this does not simply call `bucketEventsByDay`.
 	for (const event of events) {
 		const { startMs, endMs } = getEventBoundsMs(event)
+
 		if (event.allDay) {
-			// Equivalent to `start <= dayEnd && end >= dayStart` per day, so an
-			// all-day event whose end precedes its start yields an empty range and
-			// is dropped, exactly as the per-day predicate dropped it.
-			if (endMs < gridStart || startMs > dayIndex.gridEnd) {
+			// `daySpanOf` is the same inclusive overlap the per-day predicate applied,
+			// so an all-day event whose end precedes its start spans no days and is
+			// dropped, exactly as before.
+			const span = daySpanOf(dayIndex, startMs, endMs)
+			if (!span) {
 				continue
 			}
-			const low = Math.max(0, dayIndexOf(dayIndex, startMs))
-			const high = Math.min(lastIndex, dayIndexOf(dayIndex, endMs))
-			for (let day = low; day <= high; day++) {
+			for (let day = span.low; day <= span.high; day++) {
 				buckets.at(day)?.push(event)
 			}
 			continue
 		}
-		if (startMs < gridStart || startMs > dayIndex.gridEnd) {
+
+		// Timed events appear only under their start day, even across midnight.
+		const startDay = dayIndexOf(dayIndex, startMs)
+		if (startDay < 0) {
 			continue
 		}
-		buckets.at(dayIndexOf(dayIndex, startMs))?.push(event)
+		buckets.at(startDay)?.push(event)
 	}
 
 	const groups: AgendaDayGroupData[] = []

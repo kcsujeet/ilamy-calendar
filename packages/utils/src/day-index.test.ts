@@ -3,6 +3,7 @@ import dayjs from './dayjs'
 import {
 	bucketEventsByDay,
 	buildDayIndex,
+	countEventsByDay,
 	type DayIndex,
 	dayIndexOf,
 	getEventBoundsMs,
@@ -52,16 +53,21 @@ afterEach(() => {
 })
 
 describe('buildDayIndex', () => {
-	it('records one start per day and the last millisecond of the final day', () => {
+	it('records both boundaries of every day', () => {
 		const days = dayGrid('2026-03-02T00:00:00.000Z', 3)
 		const index = buildDayIndex(days)
 		expect(index.dayStarts).toHaveLength(3)
-		expect(index.dayStarts.at(0)).toBe(days[0].startOf('day').valueOf())
-		expect(index.gridEnd).toBe(days[2].endOf('day').valueOf())
+		expect(index.dayEnds).toHaveLength(3)
+		days.forEach((day, position) => {
+			expect(index.dayStarts.at(position)).toBe(day.startOf('day').valueOf())
+			expect(index.dayEnds.at(position)).toBe(day.endOf('day').valueOf())
+		})
 	})
 
 	it('returns an empty index for no days', () => {
-		expect(buildDayIndex([]).dayStarts).toHaveLength(0)
+		const index = buildDayIndex([])
+		expect(index.dayStarts).toHaveLength(0)
+		expect(index.dayEnds).toHaveLength(0)
 	})
 })
 
@@ -78,8 +84,16 @@ describe('dayIndexOf', () => {
 		expect(dayIndexOf(index, days[0].startOf('day').valueOf() - 1)).toBe(-1)
 	})
 
-	it('returns the last index after the grid', () => {
-		expect(dayIndexOf(index, days[4].add(10, 'day').valueOf())).toBe(4)
+	// Deliberately -1 rather than a clamped last index: callers must not be handed
+	// a neighbouring day for a timestamp no day actually contains.
+	it('returns -1 after the grid', () => {
+		expect(dayIndexOf(index, days[4].add(10, 'day').valueOf())).toBe(-1)
+	})
+
+	it('returns -1 for a timestamp inside a gap', () => {
+		const gapped = [days[0], days[1], days[3], days[4]]
+		const gappedIndex = buildDayIndex(gapped)
+		expect(dayIndexOf(gappedIndex, days[2].hour(13).valueOf())).toBe(-1)
 	})
 
 	it('is exact on every day boundary', () => {
@@ -274,5 +288,81 @@ describe('bucketEventsByDay across DST transitions', () => {
 		for (const event of events) {
 			expect(placed).toContain(event.id)
 		}
+	})
+})
+
+/**
+ * Gapped day lists. `useProcessedWeekEvents` receives the `hiddenDays`-filtered
+ * column list (see `week.tsx`), so the day array is not always consecutive.
+ *
+ * An earlier version of `bucketEventsByDay` treated "nearest preceding day start"
+ * as "the day containing this timestamp", which only holds for consecutive days.
+ * With Wednesday hidden, a Wednesday event landed in Tuesday's bucket — where the
+ * per-day predicate had placed it nowhere — inflating `hiddenEventsCount` and the
+ * "all events" dialog. These fixtures are taken from that real call site rather
+ * than invented, which is why the original suite missed the case.
+ */
+describe('bucketEventsByDay with gapped day lists', () => {
+	const week = dayGrid('2026-03-01T00:00:00.000Z', 7) // Sunday-first
+	const withoutWednesday = week.filter((day) => day.day() !== 3)
+
+	const eventOn = (id: string, day: (typeof week)[number]): TestEvent => ({
+		id,
+		start: day.startOf('day').add(9, 'hour'),
+		end: day.startOf('day').add(10, 'hour'),
+	})
+
+	it('places a hidden-day event in no bucket at all', () => {
+		const index = buildDayIndex(withoutWednesday)
+		const buckets = bucketEventsByDay([eventOn('wed', week[3])], index)
+		expect(ids(buckets)).toEqual([[], [], [], [], [], []])
+	})
+
+	it('matches per-day filtering across every day of a gapped week', () => {
+		const index = buildDayIndex(withoutWednesday)
+		const events = week.map((day, position) => eventOn(`d${position}`, day))
+		expect(ids(bucketEventsByDay(events, index))).toEqual(
+			ids(referenceBuckets(events, withoutWednesday))
+		)
+	})
+
+	it('does not bridge a gap with a multi-day event', () => {
+		const index = buildDayIndex(withoutWednesday)
+		// Tuesday through Thursday: present on Tue and Thu, and Wednesday is absent
+		// from the grid entirely rather than silently collapsing the span.
+		const spanning: TestEvent = {
+			id: 'span',
+			start: week[2].startOf('day'),
+			end: week[4].endOf('day'),
+		}
+		expect(ids(bucketEventsByDay([spanning], index))).toEqual(
+			ids(referenceBuckets([spanning], withoutWednesday))
+		)
+	})
+
+	it('matches per-day filtering with several days hidden', () => {
+		const workweek = week.filter((day) => day.day() !== 0 && day.day() !== 6)
+		const index = buildDayIndex(workweek)
+		const events = [
+			...week.map((day, position) => eventOn(`d${position}`, day)),
+			{
+				id: 'weekend-span',
+				start: week[5].startOf('day'),
+				end: week[6].endOf('day'),
+			},
+		]
+		expect(ids(bucketEventsByDay(events, index))).toEqual(
+			ids(referenceBuckets(events, workweek))
+		)
+	})
+
+	it('counts and buckets agree on a gapped grid', () => {
+		const index = buildDayIndex(withoutWednesday)
+		const events = week.map((day, position) => eventOn(`d${position}`, day))
+		const counts = countEventsByDay(events, index)
+		const bucketed = bucketEventsByDay(events, index).map(
+			(bucket) => bucket.length
+		)
+		expect(counts).toEqual(bucketed)
 	})
 })

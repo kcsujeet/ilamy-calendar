@@ -605,7 +605,7 @@ describe('Multi-day event counting', () => {
 					'2025-03-07T23:59:59.999Z'
 				),
 			],
-			initialDate: dayjs('2025-03-05'),
+			initialDate: dayjs('2025-03-05T12:00:00.000Z'),
 		})
 		expect(screen.getByTestId('year-month-count-03')).toHaveTextContent(
 			'1 Event'
@@ -626,7 +626,7 @@ describe('Multi-day event counting', () => {
 					'2025-03-12T10:00:00.000Z'
 				),
 			],
-			initialDate: dayjs('2025-03-05'),
+			initialDate: dayjs('2025-03-05T12:00:00.000Z'),
 		})
 		expect(screen.getByTestId('year-month-count-03')).toHaveTextContent(
 			'2 Events'
@@ -642,7 +642,7 @@ describe('Multi-day event counting', () => {
 					'2025-03-07T23:59:59.999Z'
 				),
 			],
-			initialDate: dayjs('2025-03-05'),
+			initialDate: dayjs('2025-03-05T12:00:00.000Z'),
 		})
 		// Each spanned day reports one event via its title attribute.
 		for (const day of ['03', '04', '05', '06', '07']) {
@@ -665,7 +665,7 @@ describe('Multi-day event counting', () => {
 					'2025-04-02T23:59:59.999Z'
 				),
 			],
-			initialDate: dayjs('2025-03-31'),
+			initialDate: dayjs('2025-03-31T12:00:00.000Z'),
 		})
 		expect(screen.getByTestId('year-month-count-03')).toHaveTextContent(
 			'1 Event'
@@ -684,7 +684,7 @@ describe('Multi-day event counting', () => {
 					'2025-01-02T23:59:59.999Z'
 				),
 			],
-			initialDate: dayjs('2025-01-15'),
+			initialDate: dayjs('2025-01-15T12:00:00.000Z'),
 		})
 		expect(screen.getByTestId('year-month-count-01')).toHaveTextContent(
 			'1 Event'
@@ -704,7 +704,7 @@ describe('Multi-day event counting', () => {
 					'2025-03-31T10:00:00.000Z'
 				),
 			],
-			initialDate: dayjs('2025-03-31'),
+			initialDate: dayjs('2025-03-31T12:00:00.000Z'),
 		})
 		expect(screen.getByTestId('year-day-2025-03-2025-03-31')).toHaveAttribute(
 			'title',

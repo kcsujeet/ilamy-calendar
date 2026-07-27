@@ -51,9 +51,7 @@ export interface EventBoundsMs {
 const boundsCache = new WeakMap<object, EventBoundsMs>()
 
 /** Epoch-millisecond bounds for an event, computed once per event object. */
-export function getEventBoundsMs<T extends EventTimes>(
-	event: T
-): EventBoundsMs {
+export function getEventBoundsMs(event: EventTimes): EventBoundsMs {
 	const cached = boundsCache.get(event)
 	if (cached !== undefined) {
 		return cached
@@ -284,17 +282,21 @@ export function bucketEventsByDay<T extends EventTimes>(
  * The year view needs only `length` per day, so building 504 arrays and then
  * reading their sizes is pure waste.
  */
-export function countEventsByDay<T extends EventTimes>(
-	events: readonly T[],
+export function countEventsByDay(
+	events: readonly EventTimes[],
 	index: DayIndex
 ): number[] {
 	const counts = new Array<number>(index.dayStarts.length).fill(0)
+	const increment = (day: number): void => {
+		counts[day] = (counts.at(day) ?? 0) + 1
+	}
+
 	for (const event of events) {
 		const { startMs, endMs } = getEventBoundsMs(event)
 
 		if (endMs < startMs) {
 			for (const day of malformedEventDays(index, startMs, endMs)) {
-				counts[day] = (counts.at(day) ?? 0) + 1
+				increment(day)
 			}
 			continue
 		}
@@ -304,7 +306,7 @@ export function countEventsByDay<T extends EventTimes>(
 			continue
 		}
 		for (let day = span.low; day <= span.high; day++) {
-			counts[day] = (counts.at(day) ?? 0) + 1
+			increment(day)
 		}
 	}
 	return counts

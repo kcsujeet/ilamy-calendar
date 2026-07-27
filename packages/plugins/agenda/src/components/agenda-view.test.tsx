@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import type { CalendarEvent } from '@ilamy/calendar'
+import type { CalendarEvent, IlamyPlugin } from '@ilamy/calendar'
 import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { CalendarTestProvider } from '@ilamy/calendar/testing'
 import dayjs from '@ilamy/utils/dayjs'
@@ -120,12 +120,15 @@ describe('AgendaView', () => {
  * `getEventsForDateRange` call — public API, no internals touched.
  */
 describe('AgendaView query count', () => {
-	const countingPlugin = () => {
+	const countingPlugin = (): {
+		plugin: IlamyPlugin
+		calls: () => number
+	} => {
 		let calls = 0
 		return {
 			plugin: {
 				name: 'agenda-query-counter',
-				transformEvents: (events: CalendarEvent[]) => {
+				transformEvents: (events: CalendarEvent[]): CalendarEvent[] => {
 					calls++
 					return events
 				},
@@ -135,45 +138,37 @@ describe('AgendaView query count', () => {
 	}
 
 	const events = [
-		mkEvent('a', 'One', '2026-06-03T09:00:00', '2026-06-03T10:00:00'),
-		mkEvent('b', 'Two', '2026-06-10T09:00:00', '2026-06-10T10:00:00'),
+		mkEvent('a', 'One', '2026-06-03T09:00:00.000Z', '2026-06-03T10:00:00.000Z'),
+		mkEvent('b', 'Two', '2026-06-10T09:00:00.000Z', '2026-06-10T10:00:00.000Z'),
 	]
 
-	it('does not multiply queries on a re-render with unchanged inputs', () => {
-		const counter = countingPlugin()
-		const tree = (
-			<CalendarTestProvider
-				events={events}
-				initialDate={dayjs('2026-06-13')}
-				// biome-ignore lint/suspicious/noExplicitAny: minimal plugin stub
-				plugins={[counter.plugin as any]}
-			>
-				<AgendaView window="month" />
-			</CalendarTestProvider>
-		)
-		const { rerender } = render(tree)
-		const afterFirst = counter.calls()
-		expect(afterFirst).toBeGreaterThan(0)
+	const treeWith = (plugin: IlamyPlugin) => (
+		<CalendarTestProvider
+			events={events}
+			initialDate={dayjs('2026-06-13T00:00:00.000Z')}
+			plugins={[plugin]}
+		>
+			<AgendaView window="month" />
+		</CalendarTestProvider>
+	)
 
-		rerender(tree)
-		// Memoized: a re-render with identical props must not re-query per render.
-		expect(counter.calls()).toBeLessThanOrEqual(afterFirst * 2)
+	it('issues exactly two queries per render, not one per day in the window', () => {
+		const counter = countingPlugin()
+		render(treeWith(counter.plugin))
+		// A 30-day window previously implied a per-day scan of the whole array;
+		// grouping is now a single pass over one query's results. The second call is
+		// the provider's own work for the active range.
+		expect(counter.calls()).toBe(2)
 	})
 
-	it('issues a bounded number of queries, not one per day in the window', () => {
+	it('does not re-query at all on a re-render with unchanged inputs', () => {
 		const counter = countingPlugin()
-		render(
-			<CalendarTestProvider
-				events={events}
-				initialDate={dayjs('2026-06-13')}
-				// biome-ignore lint/suspicious/noExplicitAny: minimal plugin stub
-				plugins={[counter.plugin as any]}
-			>
-				<AgendaView window="month" />
-			</CalendarTestProvider>
-		)
-		// A 30-day window previously implied a per-day scan of the whole array;
-		// grouping is now a single pass over one query's results.
-		expect(counter.calls()).toBeLessThanOrEqual(6)
+		const tree = treeWith(counter.plugin)
+		const { rerender } = render(tree)
+		expect(counter.calls()).toBe(2)
+
+		rerender(tree)
+		// Memoized, so the count is unchanged — not merely bounded.
+		expect(counter.calls()).toBe(2)
 	})
 })

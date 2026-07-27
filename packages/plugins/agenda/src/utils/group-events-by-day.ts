@@ -49,16 +49,22 @@ export const groupEventsByDay = (
 	const dayIndex = buildDayIndex(days)
 	const buckets: CalendarEvent[][] = days.map(() => [])
 
-	// One pass over the events instead of re-scanning them once per day. Only the
-	// all-day rule matches the generic day-span calculation; the timed rule is the
-	// agenda's own, which is why this does not simply call `bucketEventsByDay`.
+	// One pass over the events instead of re-scanning them once per day.
+	//
+	// The day-span calculation itself is shared — `daySpanOf` — but this cannot
+	// delegate wholesale to `bucketEventsByDay`, for two reasons that are easy to
+	// miss. Timed events belong only to their start day, even across midnight,
+	// which the generic overlap does not express. And for a MALFORMED all-day event
+	// (end before start) the agenda's two-clause overlap drops it, whereas
+	// `bucketEventsByDay` reproduces the core's three-clause predicate and places
+	// it on both its start and end days. Routing all-day events through the generic
+	// helper would therefore change agenda behaviour for malformed input.
 	for (const event of events) {
 		const { startMs, endMs } = getEventBoundsMs(event)
 
 		if (event.allDay) {
-			// `daySpanOf` is the same inclusive overlap the per-day predicate applied,
-			// so an all-day event whose end precedes its start spans no days and is
-			// dropped, exactly as before.
+			// Undefined span means no overlap, which is also how a malformed all-day
+			// event gets dropped — matching the per-day predicate this replaced.
 			const span = daySpanOf(dayIndex, startMs, endMs)
 			if (!span) {
 				continue

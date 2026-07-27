@@ -84,12 +84,11 @@ describe('YearView range-query count', () => {
 		)
 
 		expect(screen.getByTestId('year-view')).toBeInTheDocument()
-		// The old implementation issued 516 per render; this one issues 3 (the
-		// view's own year query plus the provider's own work for the active range).
-		// Bounded rather than pinned exactly so unrelated provider changes do not
-		// churn this test, but tight enough that reintroducing per-cell querying
-		// fails immediately.
-		expect(counter.calls()).toBeLessThanOrEqual(6)
+		// The old implementation issued 516 per render; this one issues exactly 3 —
+		// the view's own year query plus the provider's own work for the active
+		// range. Pinned rather than bounded: a bound of 6 would pass at 6, and the
+		// number is the whole point of the test.
+		expect(counter.calls()).toBe(3)
 	})
 
 	test('queries a single span covering the whole visible year', () => {
@@ -111,14 +110,24 @@ describe('YearView range-query count', () => {
 		// single query sufficient. Per-day queries would all be one day wide.
 		const spans = counter.ranges().map((range) => {
 			const [start, end] = range.split('..')
-			return dayjs(end).diff(dayjs(start), 'day')
+			return dayjs(`${end}T00:00:00.000Z`).diff(
+				dayjs(`${start}T00:00:00.000Z`),
+				'day'
+			)
 		})
-		expect(Math.max(...spans)).toBeGreaterThan(360)
+		// The visible year grid runs from January's grid start to December's grid
+		// end — 12 overlapping 42-day mini calendars — which is 377 whole days apart
+		// for 2026 with firstDayOfWeek 0. A per-day query would be 0.
+		expect(Math.max(...spans)).toBe(377)
 	})
 
 	test('does not re-query when nothing relevant changed', () => {
 		const counter = countingPlugin()
-		const { rerender } = render(
+		// The element is built once and re-rendered as-is. Rebuilding the JSX would
+		// pass a fresh `plugins` array literal, which legitimately changes the plugin
+		// runtime's identity and invalidates the memo — that is provider behaviour,
+		// not the memoization this test is about.
+		const tree = (
 			<CalendarProvider
 				dayMaxEvents={3}
 				events={events}
@@ -130,22 +139,13 @@ describe('YearView range-query count', () => {
 				<YearView />
 			</CalendarProvider>
 		)
-		const afterFirstRender = counter.calls()
+		const { rerender } = render(tree)
+		expect(counter.calls()).toBe(3)
 
-		rerender(
-			<CalendarProvider
-				dayMaxEvents={3}
-				events={events}
-				firstDayOfWeek={0}
-				initialDate={dayjs('2026-03-15T00:00:00.000Z')}
-				locale="en"
-				plugins={[counter.plugin]}
-			>
-				<YearView />
-			</CalendarProvider>
-		)
+		rerender(tree)
 
-		// A re-render with identical inputs must not multiply the query count.
-		expect(counter.calls()).toBeLessThanOrEqual(afterFirstRender * 2)
+		// Unchanged, not merely bounded: `<= first * 2` would have permitted exactly
+		// the doubling this test exists to forbid.
+		expect(counter.calls()).toBe(3)
 	})
 })

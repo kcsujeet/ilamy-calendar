@@ -2,8 +2,8 @@ import { ScrollArea, ScrollBar } from '@ilamy/ui/components/scroll-area'
 import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import {
-	bucketEventsByDay,
 	buildDayIndex,
+	countEventsByDay,
 	dayIndexOf,
 	getEventBoundsMs,
 	overlapsRangeMs,
@@ -17,6 +17,20 @@ import { keys } from '@/lib/utils/keys'
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
 const DAYS_IN_MINI_CALENDAR = 42
 
+/**
+ * First cell of a month's mini calendar, normalised to local midnight.
+ *
+ * `getWeekDays` builds its values with `.startOf('week').day(n)`, which can carry
+ * a stale UTC offset when that week crosses a DST fall-back — the resulting
+ * instant is then 23:00 on the PREVIOUS day. Indexing that raw instant shifted
+ * the whole 42-cell grid by one day (Europe/London and Europe/Berlin, November
+ * 2025, `firstDayOfWeek: 1`), so the boundary is re-normalised here.
+ */
+const monthGridStartOf = (monthDate: Dayjs, firstDayOfWeek: number): Dayjs => {
+	const weekStart = getWeekDays(monthDate, firstDayOfWeek).at(0) ?? monthDate
+	return weekStart.startOf('day')
+}
+
 interface MonthData {
 	date: Dayjs
 	name: string
@@ -29,7 +43,6 @@ interface DayData {
 	date: Dayjs
 	dayKey: string
 	isInCurrentMonth: boolean
-	isToday: boolean
 	isSelected: boolean
 	eventCount: number
 }
@@ -66,17 +79,14 @@ export const YearView = () => {
 		const monthStarts = Array.from({ length: 12 }, (_, monthIndex) =>
 			dayjs().year(currentYear).month(monthIndex).startOf('month')
 		)
-		const januaryStart = monthStarts.at(0)
-		const decemberStart = monthStarts.at(-1)
-		if (!januaryStart || !decemberStart) {
-			return undefined
-		}
+		const januaryStart = dayjs().year(currentYear).month(0).startOf('month')
+		const decemberStart = dayjs().year(currentYear).month(11).startOf('month')
 
-		const firstGridDay =
-			getWeekDays(januaryStart, firstDayOfWeek).at(0) ?? januaryStart
-		const lastMonthFirstDay =
-			getWeekDays(decemberStart, firstDayOfWeek).at(0) ?? decemberStart
-		const lastGridDay = lastMonthFirstDay.add(DAYS_IN_MINI_CALENDAR - 1, 'day')
+		const firstGridDay = monthGridStartOf(januaryStart, firstDayOfWeek)
+		const lastGridDay = monthGridStartOf(decemberStart, firstDayOfWeek).add(
+			DAYS_IN_MINI_CALENDAR - 1,
+			'day'
+		)
 
 		// Walk the span rather than deriving a length from diff(), which truncates
 		// to a whole number of days and can come up short across a DST transition.
@@ -98,32 +108,25 @@ export const YearView = () => {
 			firstGridDay.startOf('day'),
 			lastGridDay.endOf('day')
 		)
-		const dayCounts = bucketEventsByDay(events, dayIndex).map(
-			(dayEvents) => dayEvents.length
-		)
+		// Only the per-day COUNT is rendered, so materialising 504 buckets and then
+		// reading their lengths would allocate for nothing.
+		const dayCounts = countEventsByDay(events, dayIndex)
 
 		return { monthStarts, days, dayIndex, events, dayCounts }
 	}, [currentYear, firstDayOfWeek, getEventsForDateRange])
 
 	const monthsData = useMemo((): MonthData[] => {
-		if (!yearGrid) {
-			return []
-		}
 		const { monthStarts, days, dayIndex, events, dayCounts } = yearGrid
 
-		// `isToday`/`isSelected` reduce to integer index comparisons once the day
-		// index exists. Both are clamped by dayIndexOf, so they are only trusted
-		// when the date actually falls inside the grid.
-		const gridStart = dayIndex.dayStarts.at(0) ?? Number.NaN
-		const indexWithinGrid = (date: Dayjs): number => {
-			const timestamp = date.startOf('day').valueOf()
-			if (timestamp < gridStart || timestamp > dayIndex.gridEnd) {
-				return -1
-			}
-			return dayIndexOf(dayIndex, timestamp)
-		}
-		const todayIndex = indexWithinGrid(dayjs())
-		const selectedIndex = indexWithinGrid(currentDate)
+		// `isSelected` reduces to an integer comparison once the day index exists.
+		// `dayIndexOf` returns -1 for a date outside the grid, so no clamping guard
+		// is needed. `isToday` is deliberately NOT resolved here: this memo does not
+		// re-run at a midnight rollover, so a long-lived tab would keep highlighting
+		// yesterday. It is compared at render time instead.
+		const selectedIndex = dayIndexOf(
+			dayIndex,
+			currentDate.startOf('day').valueOf()
+		)
 
 		return monthStarts.map((monthDate) => {
 			const monthStartMs = monthDate.valueOf()
@@ -141,8 +144,7 @@ export const YearView = () => {
 				}
 			}
 
-			const monthGridStart =
-				getWeekDays(monthDate, firstDayOfWeek).at(0) ?? monthDate
+			const monthGridStart = monthGridStartOf(monthDate, firstDayOfWeek)
 			const firstCellIndex = dayIndexOf(dayIndex, monthGridStart.valueOf())
 			const monthNumber = monthDate.month()
 
@@ -156,7 +158,6 @@ export const YearView = () => {
 						date: dayDate,
 						dayKey: getDayKey(dayDate),
 						isInCurrentMonth: dayDate.month() === monthNumber,
-						isToday: cellIndex === todayIndex,
 						isSelected: cellIndex === selectedIndex,
 						eventCount: dayCounts.at(cellIndex) ?? 0,
 					}
@@ -189,19 +190,19 @@ export const YearView = () => {
 		return `${count} ${eventWord}`
 	}
 
-	const getDayClassName = (day: DayData): string => {
+	const getDayClassName = (day: DayData, isTodayCell: boolean): string => {
 		const baseClass =
 			'relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center hover:bg-accent rounded-sm transition-colors duration-200'
 		const outsideMonthClass = day.isInCurrentMonth
 			? ''
 			: 'text-muted-foreground opacity-50'
-		const todayClass = day.isToday
+		const todayClass = isTodayCell
 			? 'bg-primary text-primary-foreground rounded-full'
 			: ''
 		const selectedClass =
-			day.isSelected && !day.isToday ? 'bg-muted rounded-full font-bold' : ''
+			day.isSelected && !isTodayCell ? 'bg-muted rounded-full font-bold' : ''
 		const hasEventsClass =
-			day.eventCount > 0 && !day.isToday && !day.isSelected ? 'font-medium' : ''
+			day.eventCount > 0 && !isTodayCell && !day.isSelected ? 'font-medium' : ''
 
 		return cn(
 			baseClass,
@@ -216,6 +217,10 @@ export const YearView = () => {
 		const dotColor = isToday ? 'bg-primary-foreground' : color
 		return cn('h-[3px] w-[3px] rounded-full', dotColor)
 	}
+
+	// Computed once per render, outside the memo, so a midnight rollover moves the
+	// highlight on the next render instead of requiring the events or year to change.
+	const todayKey = getDayKey(dayjs())
 
 	const getDayTooltip = (eventCount: number): string => {
 		if (eventCount === 0) {
@@ -290,10 +295,13 @@ export const YearView = () => {
 										0,
 										visibleDotCount
 									)
+									// Resolved per render rather than inside the memo, so a tab
+									// left open past midnight stops highlighting yesterday.
+									const isTodayCell = day.dayKey === todayKey
 
 									return (
 										<button
-											className={getDayClassName(day)}
+											className={getDayClassName(day, isTodayCell)}
 											data-testid={dayTestId}
 											key={day.dayKey}
 											onClick={(e) => navigateToDate(day.date, 'day', e)}
@@ -308,14 +316,14 @@ export const YearView = () => {
 												<div
 													className={cn(
 														'absolute bottom-0 flex w-full justify-center space-x-px',
-														day.isToday && 'bottom-px'
+														isTodayCell && 'bottom-px'
 													)}
 												>
 													{visibleDotColors.map((dotColor) => (
 														<span
 															className={getEventDotClassName(
 																dotColor,
-																day.isToday
+																isTodayCell
 															)}
 															key={dotColor}
 														/>

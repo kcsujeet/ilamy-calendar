@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
@@ -711,6 +711,92 @@ describe('Multi-day event counting', () => {
 			'1 Event'
 		)
 		expect(screen.getByTestId('year-day-2025-04-2025-03-31')).toHaveAttribute(
+			'title',
+			'1 Event'
+		)
+	})
+})
+
+/**
+ * `getWeekDays` builds its values with `.startOf('week').day(n)`, which can carry
+ * a stale UTC offset when that week crosses a DST fall-back — the instant is then
+ * 23:00 on the PREVIOUS day. Indexing that raw instant shifted the entire 42-cell
+ * mini calendar by one day.
+ *
+ * These run with a European zone configured, which the rest of this file does not,
+ * because the shift only appears when the grid's first week straddles a
+ * fall-back transition.
+ */
+describe('Mini calendar grid alignment across a DST fall-back', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	const europeanZones = ['Europe/London', 'Europe/Berlin']
+
+	test.each(
+		europeanZones
+	)('starts November 2025 on the correct Monday in %s', (zone: string) => {
+		dayjs.tz.setDefault(zone)
+		renderYearView({
+			firstDayOfWeek: 1,
+			initialDate: dayjs('2025-11-15T12:00:00.000Z'),
+			timezone: zone,
+		})
+
+		// The November grid must begin on Mon 27 Oct, not Sun 26 Oct.
+		expect(
+			screen.getByTestId('year-day-2025-11-2025-10-27')
+		).toBeInTheDocument()
+		expect(
+			screen.queryByTestId('year-day-2025-11-2025-10-26')
+		).not.toBeInTheDocument()
+	})
+
+	test.each(
+		europeanZones
+	)('keeps every month grid 42 cells and correctly aligned in %s', (zone: string) => {
+		dayjs.tz.setDefault(zone)
+		renderYearView({
+			firstDayOfWeek: 1,
+			initialDate: dayjs('2025-11-15T12:00:00.000Z'),
+			timezone: zone,
+		})
+
+		// Every month's first cell must be a Monday when firstDayOfWeek is 1.
+		for (let month = 1; month <= 12; month++) {
+			const monthId = month.toString().padStart(2, '0')
+			const grid = screen.getByTestId(`year-month-mini-${monthId}`)
+			const cells = grid.querySelectorAll('[data-testid^="year-day-"]')
+			expect(cells).toHaveLength(42)
+			const firstCell = cells[0]?.getAttribute('data-testid') ?? ''
+			const isoDate = firstCell.replace(`year-day-2025-${monthId}-`, '')
+			expect(dayjs(`${isoDate}T12:00:00.000Z`).day()).toBe(1)
+		}
+	})
+
+	test('places an event on the correct day in a fall-back week', () => {
+		const zone = 'Europe/London'
+		dayjs.tz.setDefault(zone)
+		renderYearView({
+			events: [
+				{
+					id: 'transition',
+					title: 'Transition day event',
+					start: dayjs('2025-10-27T09:00:00.000Z'),
+					end: dayjs('2025-10-27T10:00:00.000Z'),
+				},
+			],
+			firstDayOfWeek: 1,
+			initialDate: dayjs('2025-10-15T12:00:00.000Z'),
+			timezone: zone,
+		})
+
+		expect(screen.getByTestId('year-day-2025-10-2025-10-27')).toHaveAttribute(
 			'title',
 			'1 Event'
 		)

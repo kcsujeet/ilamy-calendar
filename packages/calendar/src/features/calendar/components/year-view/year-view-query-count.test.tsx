@@ -63,6 +63,25 @@ const events: CalendarEvent[] = [
 	},
 ]
 
+/**
+ * Returns the element rather than rendering it, so the re-render test can mount
+ * the SAME element twice. Rebuilding the JSX would pass a fresh `plugins` array
+ * literal, which legitimately changes the plugin runtime's identity and
+ * invalidates the memo — provider behaviour, not the memoization under test.
+ */
+const yearViewTree = (plugin: IlamyPlugin) => (
+	<CalendarProvider
+		dayMaxEvents={3}
+		events={events}
+		firstDayOfWeek={0}
+		initialDate={dayjs('2026-03-15T00:00:00.000Z')}
+		locale="en"
+		plugins={[plugin]}
+	>
+		<YearView />
+	</CalendarProvider>
+)
+
 describe('YearView range-query count', () => {
 	beforeEach(() => {
 		cleanup()
@@ -70,18 +89,7 @@ describe('YearView range-query count', () => {
 
 	test('issues a handful of range queries per render, not one per cell', () => {
 		const counter = countingPlugin()
-		render(
-			<CalendarProvider
-				dayMaxEvents={3}
-				events={events}
-				firstDayOfWeek={0}
-				initialDate={dayjs('2026-03-15T00:00:00.000Z')}
-				locale="en"
-				plugins={[counter.plugin]}
-			>
-				<YearView />
-			</CalendarProvider>
-		)
+		render(yearViewTree(counter.plugin))
 
 		expect(screen.getByTestId('year-view')).toBeInTheDocument()
 		// The old implementation issued 516 per render; this one issues exactly 3 —
@@ -93,18 +101,7 @@ describe('YearView range-query count', () => {
 
 	test('queries a single span covering the whole visible year', () => {
 		const counter = countingPlugin()
-		render(
-			<CalendarProvider
-				dayMaxEvents={3}
-				events={events}
-				firstDayOfWeek={0}
-				initialDate={dayjs('2026-03-15T00:00:00.000Z')}
-				locale="en"
-				plugins={[counter.plugin]}
-			>
-				<YearView />
-			</CalendarProvider>
-		)
+		render(yearViewTree(counter.plugin))
 
 		// One of the ranges must span the full visible year, which is what makes a
 		// single query sufficient. Per-day queries would all be one day wide.
@@ -123,22 +120,8 @@ describe('YearView range-query count', () => {
 
 	test('does not re-query when nothing relevant changed', () => {
 		const counter = countingPlugin()
-		// The element is built once and re-rendered as-is. Rebuilding the JSX would
-		// pass a fresh `plugins` array literal, which legitimately changes the plugin
-		// runtime's identity and invalidates the memo — that is provider behaviour,
-		// not the memoization this test is about.
-		const tree = (
-			<CalendarProvider
-				dayMaxEvents={3}
-				events={events}
-				firstDayOfWeek={0}
-				initialDate={dayjs('2026-03-15T00:00:00.000Z')}
-				locale="en"
-				plugins={[counter.plugin]}
-			>
-				<YearView />
-			</CalendarProvider>
-		)
+		// Built once and re-rendered as-is — see `yearViewTree`.
+		const tree = yearViewTree(counter.plugin)
 		const { rerender } = render(tree)
 		expect(counter.calls()).toBe(3)
 

@@ -53,9 +53,13 @@ const fixTimezoneOffset: PluginFunc = (_option, dayjsClass, dayjsFactory) => {
 	 * can legitimately need different answers. Wall-clock keying cannot conflate
 	 * them.
 	 *
-	 * Minute granularity is used because IANA offset transitions land on minute
-	 * boundaries, so a bucket can never straddle one. (A coarser bucket, e.g. per
-	 * day, would be wrong: the offset changes mid-day on a transition day.)
+	 * Minute granularity is used because every POST-1970 civil offset transition
+	 * in the IANA database lands on a minute boundary, so a bucket can never
+	 * straddle one. That range is what this library targets. The claim is narrowed
+	 * on purpose: the tz database can represent sub-minute offsets for older
+	 * entries — theory.html gives Dublin Mean Time as UT -00:25:21.1 — and minute
+	 * keys would conflate those. (A coarser bucket, e.g. per day, would be wrong
+	 * even in range: the offset changes mid-day on a transition day.)
 	 * Day-boundary work only ever produces two distinct wall minutes per day, so
 	 * the cache stays small in practice.
 	 */

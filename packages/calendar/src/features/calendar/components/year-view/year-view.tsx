@@ -32,6 +32,22 @@ const monthGridStartOf = (monthDate: Dayjs, firstDayOfWeek: number): Dayjs => {
 	return weekStart.startOf('day')
 }
 
+// KNOWN DIVERGENCE, recorded rather than silently tolerated.
+//
+// `getMonthGridRange(date, firstDayOfWeek).start` in `lib/utils/date-utils.ts`
+// computes the same conceptual value and is what `views/month.tsx` and
+// `use-calendar-navigation.ts` use, but the two disagree in exactly the zones
+// this normalisation targets:
+//
+//   Europe/London and Europe/Berlin, April 2025, firstDayOfWeek: 1
+//     monthGridStartOf        2025-03-31   (correct)
+//     getMonthGridRange.start 2025-03-24   (a week early)
+//
+// So the month view is still wrong where the year view is now right. Landing the
+// fix in `date-utils.ts` would repair all three consumers at once, but it is a
+// visible month-view layout change and does not belong inside a performance PR.
+// Tracked separately; see the PR discussion for #241.
+
 interface MonthData {
 	date: Dayjs
 	name: string

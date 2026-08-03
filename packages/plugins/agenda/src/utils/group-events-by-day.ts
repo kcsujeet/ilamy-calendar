@@ -1,6 +1,7 @@
 import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
 import {
 	buildDayIndex,
+	collectDaysBetween,
 	dayIndexOf,
 	daySpanOf,
 	getEventBoundsMs,
@@ -33,19 +34,7 @@ export const groupEventsByDay = (
 	events: CalendarEvent[],
 	range: { start: Dayjs; end: Dayjs }
 ): AgendaDayGroupData[] => {
-	const lastDayMs = range.end.startOf('day').valueOf()
-	const firstDay = range.start.startOf('day')
-
-	// Collect the window's days first. Compared numerically rather than with
-	// `isSameOrBefore`, which would run another `startOf` per iteration — with a
-	// timezone configured each of those costs around 81us.
-	const days: Dayjs[] = []
-	let cursor = firstDay
-	while (cursor.valueOf() <= lastDayMs) {
-		days.push(cursor)
-		cursor = cursor.add(1, 'day')
-	}
-
+	const days = collectDaysBetween(range.start, range.end)
 	const dayIndex = buildDayIndex(days)
 	const buckets: CalendarEvent[][] = days.map(() => [])
 

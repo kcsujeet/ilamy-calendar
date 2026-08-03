@@ -264,6 +264,59 @@ describe('groupEventsByDay parity with the per-day implementation', () => {
 		)
 	})
 
+	// The day walk advances with `add(1, 'day')`, which carries the receiver's UTC
+	// offset forward. Without re-normalising, the cursor sits an hour past local
+	// midnight after a spring-forward and the loop ends one day early, dropping the
+	// window's LAST day. Every case above happens to put its events mid-window,
+	// which is why they all passed while March 31 was disappearing.
+	describe('keeps the final day of a window containing a spring-forward', () => {
+		for (const zone of ['Europe/London', 'Europe/Berlin']) {
+			it(`covers the last day of March in ${zone}`, () => {
+				dayjs.tz.setDefault(zone)
+				try {
+					const events = [
+						mkEvent('last-day', '2025-03-31T09:00:00', '2025-03-31T10:00:00'),
+					]
+					const groups = run(
+						events,
+						'2025-03-01T00:00:00',
+						'2025-03-31T23:59:59'
+					)
+					expect(groups.map((group) => group.key)).toEqual(['2025-03-31'])
+					expect(groups.at(0)?.events.map((event) => event.id)).toEqual([
+						'last-day',
+					])
+				} finally {
+					dayjs.tz.setDefault()
+				}
+			})
+		}
+
+		it('matches the per-day implementation day-for-day across March', () => {
+			dayjs.tz.setDefault('Europe/London')
+			try {
+				const events = Array.from({ length: 31 }, (_, dayOffset) => {
+					const day = String(dayOffset + 1).padStart(2, '0')
+					return mkEvent(
+						`day-${day}`,
+						`2025-03-${day}T09:00:00`,
+						`2025-03-${day}T10:00:00`
+					)
+				})
+				const groups = run(events, '2025-03-01T00:00:00', '2025-03-31T23:59:59')
+				expect(groups).toHaveLength(31)
+				expect(groups.at(-1)?.key).toBe('2025-03-31')
+				expect(
+					shape(events, '2025-03-01T00:00:00', '2025-03-31T23:59:59')
+				).toEqual(
+					referenceShape(events, '2025-03-01T00:00:00', '2025-03-31T23:59:59')
+				)
+			} finally {
+				dayjs.tz.setDefault()
+			}
+		})
+	})
+
 	it('agrees across a DST transition with a timezone configured', () => {
 		dayjs.tz.setDefault('America/Los_Angeles')
 		try {

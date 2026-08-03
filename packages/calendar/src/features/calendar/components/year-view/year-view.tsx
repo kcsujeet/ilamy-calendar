@@ -3,6 +3,7 @@ import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import {
 	buildDayIndex,
+	collectDaysBetween,
 	countEventsByDay,
 	dayIndexOf,
 	getEventBoundsMs,
@@ -79,8 +80,9 @@ export const YearView = () => {
 		const monthStarts = Array.from({ length: 12 }, (_, monthIndex) =>
 			dayjs().year(currentYear).month(monthIndex).startOf('month')
 		)
-		const januaryStart = dayjs().year(currentYear).month(0).startOf('month')
-		const decemberStart = dayjs().year(currentYear).month(11).startOf('month')
+		const januaryStart = monthStarts.at(0) ?? dayjs().year(currentYear).month(0)
+		const decemberStart =
+			monthStarts.at(-1) ?? dayjs().year(currentYear).month(11)
 
 		const firstGridDay = monthGridStartOf(januaryStart, firstDayOfWeek)
 		const lastGridDay = monthGridStartOf(decemberStart, firstDayOfWeek).add(
@@ -90,18 +92,12 @@ export const YearView = () => {
 
 		// Walk the span rather than deriving a length from diff(), which truncates
 		// to a whole number of days and can come up short across a DST transition.
-		// The bound is compared numerically on purpose: `isSameOrBefore(x, 'day')`
-		// would run two `startOf` calls per iteration, and with a timezone
-		// configured each of those costs around 81us. Both endpoints are local
-		// midnight and the cursor advances a day at a time, so it lands on
-		// `lastGridDay` exactly.
-		const lastGridDayMs = lastGridDay.valueOf()
-		const days: Dayjs[] = []
-		let cursor = firstGridDay
-		while (cursor.valueOf() <= lastGridDayMs) {
-			days.push(cursor)
-			cursor = cursor.add(1, 'day')
-		}
+		// `collectDaysBetween` re-normalises the cursor each step; without that the
+		// walk loses the final cell in any zone whose offset changes permanently
+		// mid-year (Africa/Casablanca 2018, Europe/Volgograd 2018, Asia/Pyongyang
+		// 2018, Asia/Amman 2022). Ordinary DST zones hide the bug because the
+		// spring and autumn skews cancel by December.
+		const days = collectDaysBetween(firstGridDay, lastGridDay)
 
 		const dayIndex = buildDayIndex(days)
 		const events = getEventsForDateRange(
@@ -119,9 +115,14 @@ export const YearView = () => {
 		const { monthStarts, days, dayIndex, events, dayCounts } = yearGrid
 
 		// `isSelected` reduces to an integer comparison once the day index exists.
-		// `dayIndexOf` returns -1 for a date outside the grid, so no clamping guard
-		// is needed. `isToday` is deliberately NOT resolved here: this memo does not
-		// re-run at a midnight rollover, so a long-lived tab would keep highlighting
+		// `dayIndexOf` returns -1 for a date outside the grid, which is safe for
+		// `selectedIndex` (it simply matches no cell) but NOT safe to feed to
+		// `.at()`: a negative index reads from the end of the array, so a missing
+		// grid start would silently render the last day of the year instead of
+		// falling back. The cell lookup below guards on the index explicitly.
+		//
+		// `isToday` is deliberately NOT resolved here: this memo does not re-run at
+		// a midnight rollover, so a long-lived tab would keep highlighting
 		// yesterday. It is compared at render time instead.
 		const selectedIndex = dayIndexOf(
 			dayIndex,
@@ -152,14 +153,16 @@ export const YearView = () => {
 				{ length: DAYS_IN_MINI_CALENDAR },
 				(_, offset) => {
 					const cellIndex = firstCellIndex + offset
+					const isInGrid = cellIndex >= 0
 					const dayDate =
-						days.at(cellIndex) ?? monthGridStart.add(offset, 'day')
+						(isInGrid ? days.at(cellIndex) : undefined) ??
+						monthGridStart.add(offset, 'day')
 					return {
 						date: dayDate,
 						dayKey: getDayKey(dayDate),
 						isInCurrentMonth: dayDate.month() === monthNumber,
-						isSelected: cellIndex === selectedIndex,
-						eventCount: dayCounts.at(cellIndex) ?? 0,
+						isSelected: isInGrid && cellIndex === selectedIndex,
+						eventCount: (isInGrid ? dayCounts.at(cellIndex) : undefined) ?? 0,
 					}
 				}
 			)

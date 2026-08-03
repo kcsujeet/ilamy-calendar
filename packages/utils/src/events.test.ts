@@ -1,8 +1,70 @@
-import { describe, expect, it } from 'bun:test'
+import { afterEach, describe, expect, it } from 'bun:test'
 import dayjs from './dayjs'
-import { getEventBoundsMs, overlapsRangeMs } from './events'
+import { collectDaysBetween, getEventBoundsMs, overlapsRangeMs } from './events'
 
 const at = (iso: string) => dayjs(iso)
+
+describe('collectDaysBetween', () => {
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	const keysOf = (first: string, last: string): string[] =>
+		collectDaysBetween(dayjs(first), dayjs(last)).map((day) =>
+			day.format('YYYY-MM-DD')
+		)
+
+	it('includes both endpoints', () => {
+		expect(
+			keysOf('2026-06-01T00:00:00.000Z', '2026-06-04T23:59:59.000Z')
+		).toEqual(['2026-06-01', '2026-06-02', '2026-06-03', '2026-06-04'])
+	})
+
+	it('returns a single day when both endpoints are the same day', () => {
+		expect(
+			keysOf('2026-06-05T09:00:00.000Z', '2026-06-05T17:00:00.000Z')
+		).toEqual(['2026-06-05'])
+	})
+
+	it('returns nothing when the last day precedes the first', () => {
+		expect(
+			keysOf('2026-06-05T00:00:00.000Z', '2026-06-01T00:00:00.000Z')
+		).toEqual([])
+	})
+
+	it('normalises endpoints that are not at midnight', () => {
+		expect(
+			keysOf('2026-06-01T23:30:00.000Z', '2026-06-03T00:30:00.000Z')
+		).toEqual(['2026-06-01', '2026-06-02', '2026-06-03'])
+	})
+
+	// `add(1, 'day')` carries the receiver's UTC offset forward, so a walk that
+	// does not re-normalise sits an hour past local midnight after a spring
+	// forward and ends one iteration early. That drops the range's LAST day.
+	it('keeps every day of March across a spring forward in Europe/London', () => {
+		dayjs.tz.setDefault('Europe/London')
+		const days = keysOf('2025-03-01T00:00:00.000Z', '2025-03-31T23:59:59.000Z')
+		expect(days).toHaveLength(31)
+		expect(days.at(0)).toBe('2025-03-01')
+		expect(days.at(-1)).toBe('2025-03-31')
+	})
+
+	it('keeps every day of March across a spring forward in Australia/Lord_Howe', () => {
+		// 30-minute DST shift, so the skew is not a whole hour.
+		dayjs.tz.setDefault('Australia/Lord_Howe')
+		const days = keysOf('2025-10-01T00:00:00.000Z', '2025-10-31T23:59:59.000Z')
+		expect(days).toHaveLength(31)
+		expect(days.at(-1)).toBe('2025-10-31')
+	})
+
+	it('yields consecutive distinct days across a fall back in Europe/Berlin', () => {
+		dayjs.tz.setDefault('Europe/Berlin')
+		const days = keysOf('2025-10-20T00:00:00.000Z', '2025-11-05T23:59:59.000Z')
+		expect(days).toHaveLength(17)
+		expect(new Set(days).size).toBe(17)
+		expect(days.at(-1)).toBe('2025-11-05')
+	})
+})
 
 describe('getEventBoundsMs', () => {
 	it('returns the epoch milliseconds of start and end', () => {

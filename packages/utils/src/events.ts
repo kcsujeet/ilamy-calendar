@@ -104,6 +104,35 @@ export interface DayIndex {
 }
 
 /**
+ * Collects every local day from `firstDay` to `lastDay` inclusive.
+ *
+ * Both endpoints are normalised to local midnight here, and the cursor is
+ * re-normalised after every step. That re-normalisation is load-bearing, not
+ * defensive: `add(1, 'day')` carries the receiver's UTC offset forward, so once
+ * the walk crosses a spring-forward the cursor sits an hour past true local
+ * midnight. Comparing that against a normalised bound ends the loop one day
+ * early and silently drops the range's final day — for a month agenda in
+ * `Europe/London`, March would render no group for the 31st at all.
+ *
+ * The bound is compared numerically rather than with `isSameOrBefore`, which
+ * runs two more `startOf` calls per iteration. One `startOf` per day is d calls,
+ * not d x n, which is the axis that does not matter.
+ *
+ * Exists as one shared helper because this walk appeared in two call sites and
+ * was wrong in both.
+ */
+export function collectDaysBetween(firstDay: Dayjs, lastDay: Dayjs): Dayjs[] {
+	const lastDayMs = lastDay.startOf('day').valueOf()
+	const days: Dayjs[] = []
+	let cursor = firstDay.startOf('day')
+	while (cursor.valueOf() <= lastDayMs) {
+		days.push(cursor)
+		cursor = cursor.add(1, 'day').startOf('day')
+	}
+	return days
+}
+
+/**
  * Builds a day index from the grid's own day list.
  *
  * Calls `startOf('day')`/`endOf('day')` once per day — d calls, not d x n. That

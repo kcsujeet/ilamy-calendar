@@ -802,3 +802,79 @@ describe('Mini calendar grid alignment across a DST fall-back', () => {
 		)
 	})
 })
+
+describe('Mini calendar grid in zones with a permanent mid-year offset change', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	// The grid is one contiguous walk from January's grid start to December's, and
+	// `add(1, 'day')` carries the receiver's UTC offset forward. In an ordinary DST
+	// zone the spring and autumn skews cancel by December, so London and Berlin
+	// hide the defect. These zones change offset permanently mid-year, so the skew
+	// never cancels and the walk ends a day short — December's 42nd cell then has
+	// no day behind it.
+	const shiftingZones: [string, number][] = [
+		['Africa/Casablanca', 2018],
+		['Europe/Volgograd', 2018],
+		['Asia/Pyongyang', 2018],
+		['Asia/Amman', 2022],
+	]
+
+	test.each(
+		shiftingZones
+	)('renders all 42 cells for every month in %s %i', (zone: string, year: number) => {
+		dayjs.tz.setDefault(zone)
+		renderYearView({
+			firstDayOfWeek: 1,
+			initialDate: dayjs(`${year}-06-15T12:00:00.000Z`),
+			timezone: zone,
+		})
+
+		for (let month = 1; month <= 12; month++) {
+			const monthId = month.toString().padStart(2, '0')
+			const grid = screen.getByTestId(`year-month-mini-${monthId}`)
+			const cells = grid.querySelectorAll('[data-testid^="year-day-"]')
+			expect(cells).toHaveLength(42)
+		}
+	})
+
+	// The cell LABELS survive a short walk, because a missing day falls back to
+	// `monthGridStart.add(offset, 'day')` and recomputes the right date. What does
+	// not survive is the event COUNT: it comes from the day index, which is one
+	// entry short, so the final cell silently reads zero. Asserting on the grid
+	// shape alone would pass against the bug.
+	const finalGridDays: [string, number, string][] = [
+		['Africa/Casablanca', 2018, '2019-01-06'],
+		['Europe/Volgograd', 2018, '2019-01-06'],
+		['Asia/Pyongyang', 2018, '2019-01-06'],
+		['Asia/Amman', 2022, '2023-01-08'],
+	]
+
+	test.each(
+		finalGridDays
+	)('counts an event on the last grid day in %s %i', (zone: string, year: number, finalDay: string) => {
+		dayjs.tz.setDefault(zone)
+		renderYearView({
+			events: [
+				{
+					id: 'final-cell',
+					title: 'Event on the final grid day',
+					start: dayjs(`${finalDay}T09:00:00.000Z`),
+					end: dayjs(`${finalDay}T10:00:00.000Z`),
+				},
+			],
+			firstDayOfWeek: 1,
+			initialDate: dayjs(`${year}-06-15T12:00:00.000Z`),
+			timezone: zone,
+		})
+
+		expect(
+			screen.getByTestId(`year-day-${year}-12-${finalDay}`)
+		).toHaveAttribute('title', '1 Event')
+	})
+})

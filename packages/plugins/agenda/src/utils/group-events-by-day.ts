@@ -3,8 +3,8 @@ import {
 	buildDayIndex,
 	collectDaysBetween,
 	type DayIndex,
-	dayIndexOf,
-	daySpanOf,
+	findDayIndex,
+	getDaySpan,
 	getEventBoundsMs,
 } from '@ilamy/utils/events'
 
@@ -38,7 +38,7 @@ const getAllDayPositions = (
 	endMs: number,
 	dayIndex: DayIndex
 ): number[] => {
-	const span = daySpanOf(dayIndex, startMs, endMs)
+	const span = getDaySpan(dayIndex, startMs, endMs)
 	if (!span) {
 		return []
 	}
@@ -54,7 +54,7 @@ const getAllDayPositions = (
  * crosses midnight. Empty when the start falls outside the window.
  */
 const getTimedPositions = (startMs: number, dayIndex: DayIndex): number[] => {
-	const startDay = dayIndexOf(dayIndex, startMs)
+	const startDay = findDayIndex(dayIndex, startMs)
 	return startDay < 0 ? [] : [startDay]
 }
 
@@ -72,7 +72,7 @@ const getTimedPositions = (startMs: number, dayIndex: DayIndex): number[] => {
  *
  * Routing all-day events through the generic helper would therefore change
  * agenda behaviour for malformed input. The day-span calculation itself IS
- * shared, via `daySpanOf`.
+ * shared, via `getDaySpan`.
  */
 const getEventDayPositions = (
 	event: CalendarEvent,

@@ -155,7 +155,7 @@ export function buildDayIndex(days: readonly Dayjs[]): DayIndex {
 }
 
 /** Index of the last entry in an ascending array that is <= `value`, else -1. */
-const lastIndexAtOrBefore = (
+const findLastIndexAtOrBefore = (
 	ascending: readonly number[],
 	value: number
 ): number => {
@@ -167,7 +167,11 @@ const lastIndexAtOrBefore = (
 	let high = ascending.length - 1
 	while (low < high) {
 		const middle = (low + high + 1) >> 1
-		if ((ascending.at(middle) ?? Number.NaN) <= value) {
+		// Bound-checked above, so this is never the sentinel. Kept on its own line
+		// rather than inside the comparison, where a NaN would flip the branch
+		// silently instead of being visible.
+		const middleValue = ascending.at(middle) ?? Number.NaN
+		if (middleValue <= value) {
 			low = middle
 		} else {
 			high = middle - 1
@@ -177,7 +181,7 @@ const lastIndexAtOrBefore = (
 }
 
 /** Index of the first entry in an ascending array that is >= `value`, else -1. */
-const firstIndexAtOrAfter = (
+const findFirstIndexAtOrAfter = (
 	ascending: readonly number[],
 	value: number
 ): number => {
@@ -189,7 +193,8 @@ const firstIndexAtOrAfter = (
 	let high = ascending.length - 1
 	while (low < high) {
 		const middle = (low + high) >> 1
-		if ((ascending.at(middle) ?? Number.NaN) >= value) {
+		const middleValue = ascending.at(middle) ?? Number.NaN
+		if (middleValue >= value) {
 			high = middle
 		} else {
 			low = middle + 1
@@ -204,8 +209,8 @@ const firstIndexAtOrAfter = (
  * Returning -1 for a timestamp that falls in a gap — or outside the grid — is the
  * point: callers must not clamp it into a neighbouring day.
  */
-export function dayIndexOf(index: DayIndex, timestampMs: number): number {
-	const candidate = lastIndexAtOrBefore(index.dayStarts, timestampMs)
+export function findDayIndex(index: DayIndex, timestampMs: number): number {
+	const candidate = findLastIndexAtOrBefore(index.dayStarts, timestampMs)
 	if (candidate < 0) {
 		return -1
 	}
@@ -225,14 +230,19 @@ export function dayIndexOf(index: DayIndex, timestampMs: number): number {
  * between satisfies the inclusive overlap test. An interval that falls entirely
  * inside a gap yields `low > high` and is correctly reported as no days.
  */
-export function daySpanOf(
+export function getDaySpan(
 	index: DayIndex,
 	startMs: number,
 	endMs: number
 ): { low: number; high: number } | undefined {
-	const low = firstIndexAtOrAfter(index.dayEnds, startMs)
-	const high = lastIndexAtOrBefore(index.dayStarts, endMs)
-	if (low < 0 || high < 0 || low > high) {
+	const low = findFirstIndexAtOrAfter(index.dayEnds, startMs)
+	const high = findLastIndexAtOrBefore(index.dayStarts, endMs)
+
+	const hasFirstDay = low >= 0
+	const hasLastDay = high >= 0
+	const spanIsEmpty = low > high
+
+	if (!hasFirstDay || !hasLastDay || spanIsEmpty) {
 		return undefined
 	}
 	return { low, high }
@@ -246,13 +256,13 @@ export function daySpanOf(
  * matches the day holding its start and the day holding its end, and none of the
  * days between. Reproduced here so behaviour is unchanged for malformed input.
  */
-const malformedEventDays = (
+const getMalformedEventDays = (
 	index: DayIndex,
 	startMs: number,
 	endMs: number
 ): number[] => {
-	const startDay = dayIndexOf(index, startMs)
-	const endDay = dayIndexOf(index, endMs)
+	const startDay = findDayIndex(index, startMs)
+	const endDay = findDayIndex(index, endMs)
 	const days: number[] = []
 	if (startDay >= 0) {
 		days.push(startDay)
@@ -261,6 +271,42 @@ const malformedEventDays = (
 		days.push(endDay)
 	}
 	return days
+}
+
+/**
+ * Calls `visit` once per (event, day) membership, for every event.
+ *
+ * Holds the membership dispatch — the malformed-interval branch and the
+ * well-formed span — in ONE place. `bucketEventsByDay` and `countEventsByDay`
+ * differ only in what they do per membership, and duplicating the dispatch meant
+ * the malformed-input semantics had to be kept in sync by hand.
+ *
+ * No empty-index guard is needed: with no days, `getDaySpan` returns undefined
+ * and `getMalformedEventDays` returns an empty array, so nothing is visited.
+ */
+const forEachEventDay = <T extends EventTimes>(
+	events: readonly T[],
+	index: DayIndex,
+	visit: (event: T, dayPosition: number) => void
+): void => {
+	for (const event of events) {
+		const { startMs, endMs } = getEventBoundsMs(event)
+
+		if (endMs < startMs) {
+			for (const dayPosition of getMalformedEventDays(index, startMs, endMs)) {
+				visit(event, dayPosition)
+			}
+			continue
+		}
+
+		const span = getDaySpan(index, startMs, endMs)
+		if (!span) {
+			continue
+		}
+		for (let dayPosition = span.low; dayPosition <= span.high; dayPosition++) {
+			visit(event, dayPosition)
+		}
+	}
 }
 
 /**
@@ -278,30 +324,13 @@ export function bucketEventsByDay<T extends EventTimes>(
 	events: readonly T[],
 	index: DayIndex
 ): T[][] {
-	const dayCount = index.dayStarts.length
-	const buckets: T[][] = Array.from({ length: dayCount }, () => [])
-	if (dayCount === 0) {
-		return buckets
-	}
-
-	for (const event of events) {
-		const { startMs, endMs } = getEventBoundsMs(event)
-
-		if (endMs < startMs) {
-			for (const day of malformedEventDays(index, startMs, endMs)) {
-				buckets.at(day)?.push(event)
-			}
-			continue
-		}
-
-		const span = daySpanOf(index, startMs, endMs)
-		if (!span) {
-			continue
-		}
-		for (let day = span.low; day <= span.high; day++) {
-			buckets.at(day)?.push(event)
-		}
-	}
+	const buckets: T[][] = Array.from(
+		{ length: index.dayStarts.length },
+		() => []
+	)
+	forEachEventDay(events, index, (event, dayPosition) => {
+		buckets.at(dayPosition)?.push(event)
+	})
 	return buckets
 }
 
@@ -316,27 +345,8 @@ export function countEventsByDay(
 	index: DayIndex
 ): number[] {
 	const counts = new Array<number>(index.dayStarts.length).fill(0)
-	const increment = (day: number): void => {
-		counts[day] = (counts.at(day) ?? 0) + 1
-	}
-
-	for (const event of events) {
-		const { startMs, endMs } = getEventBoundsMs(event)
-
-		if (endMs < startMs) {
-			for (const day of malformedEventDays(index, startMs, endMs)) {
-				increment(day)
-			}
-			continue
-		}
-
-		const span = daySpanOf(index, startMs, endMs)
-		if (!span) {
-			continue
-		}
-		for (let day = span.low; day <= span.high; day++) {
-			increment(day)
-		}
-	}
+	forEachEventDay(events, index, (_event, dayPosition) => {
+		counts[dayPosition] = (counts.at(dayPosition) ?? 0) + 1
+	})
 	return counts
 }

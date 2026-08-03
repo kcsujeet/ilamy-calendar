@@ -10,7 +10,7 @@ import {
 	collectDaysBetween,
 	countEventsByDay,
 	type DayIndex,
-	dayIndexOf,
+	findDayIndex,
 	getEventBoundsMs,
 	overlapsRangeMs,
 } from './events'
@@ -248,35 +248,35 @@ describe('buildDayIndex', () => {
 	})
 })
 
-describe('dayIndexOf', () => {
+describe('findDayIndex', () => {
 	const days = dayGrid('2026-03-02T00:00:00.000Z', 5)
 	const index: DayIndex = buildDayIndex(days)
 
 	it('locates a timestamp inside the grid', () => {
-		expect(dayIndexOf(index, days[3].startOf('day').valueOf())).toBe(3)
-		expect(dayIndexOf(index, days[3].hour(13).valueOf())).toBe(3)
+		expect(findDayIndex(index, days[3].startOf('day').valueOf())).toBe(3)
+		expect(findDayIndex(index, days[3].hour(13).valueOf())).toBe(3)
 	})
 
 	it('returns -1 before the grid', () => {
-		expect(dayIndexOf(index, days[0].startOf('day').valueOf() - 1)).toBe(-1)
+		expect(findDayIndex(index, days[0].startOf('day').valueOf() - 1)).toBe(-1)
 	})
 
 	// Deliberately -1 rather than a clamped last index: callers must not be handed
 	// a neighbouring day for a timestamp no day actually contains.
 	it('returns -1 after the grid', () => {
-		expect(dayIndexOf(index, days[4].add(10, 'day').valueOf())).toBe(-1)
+		expect(findDayIndex(index, days[4].add(10, 'day').valueOf())).toBe(-1)
 	})
 
 	it('returns -1 for a timestamp inside a gap', () => {
 		const gapped = [days[0], days[1], days[3], days[4]]
 		const gappedIndex = buildDayIndex(gapped)
-		expect(dayIndexOf(gappedIndex, days[2].hour(13).valueOf())).toBe(-1)
+		expect(findDayIndex(gappedIndex, days[2].hour(13).valueOf())).toBe(-1)
 	})
 
 	it('is exact on every day boundary', () => {
 		days.forEach((day, expected) => {
-			expect(dayIndexOf(index, day.startOf('day').valueOf())).toBe(expected)
-			expect(dayIndexOf(index, day.endOf('day').valueOf())).toBe(expected)
+			expect(findDayIndex(index, day.startOf('day').valueOf())).toBe(expected)
+			expect(findDayIndex(index, day.endOf('day').valueOf())).toBe(expected)
 		})
 	})
 })

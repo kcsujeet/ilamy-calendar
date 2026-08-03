@@ -5,7 +5,7 @@ import {
 	buildDayIndex,
 	collectDaysBetween,
 	countEventsByDay,
-	dayIndexOf,
+	findDayIndex,
 	getEventBoundsMs,
 	overlapsRangeMs,
 } from '@ilamy/utils/events'
@@ -77,12 +77,20 @@ export const YearView = () => {
 	 * than building 504 dates of their own.
 	 */
 	const yearGrid = useMemo(() => {
-		const monthStarts = Array.from({ length: 12 }, (_, monthIndex) =>
+		const monthStartAt = (monthIndex: number) =>
 			dayjs().year(currentYear).month(monthIndex).startOf('month')
-		)
-		const januaryStart = monthStarts.at(0) ?? dayjs().year(currentYear).month(0)
-		const decemberStart =
-			monthStarts.at(-1) ?? dayjs().year(currentYear).month(11)
+
+		// The two endpoints are named rather than read back out of the array, so
+		// each month's `startOf('month')` is paid exactly once — it costs ~81us with
+		// a timezone configured — and no `.at()` fallback for an impossible index is
+		// needed to satisfy the type.
+		const januaryStart = monthStartAt(0)
+		const decemberStart = monthStartAt(11)
+		const monthStarts = [
+			januaryStart,
+			...Array.from({ length: 10 }, (_, offset) => monthStartAt(offset + 1)),
+			decemberStart,
+		]
 
 		const firstGridDay = monthGridStartOf(januaryStart, firstDayOfWeek)
 		const lastGridDay = monthGridStartOf(decemberStart, firstDayOfWeek).add(
@@ -115,7 +123,7 @@ export const YearView = () => {
 		const { monthStarts, days, dayIndex, events, dayCounts } = yearGrid
 
 		// `isSelected` reduces to an integer comparison once the day index exists.
-		// `dayIndexOf` returns -1 for a date outside the grid, which is safe for
+		// `findDayIndex` returns -1 for a date outside the grid, which is safe for
 		// `selectedIndex` (it simply matches no cell) but NOT safe to feed to
 		// `.at()`: a negative index reads from the end of the array, so a missing
 		// grid start would silently render the last day of the year instead of
@@ -124,7 +132,7 @@ export const YearView = () => {
 		// `isToday` is deliberately NOT resolved here: this memo does not re-run at
 		// a midnight rollover, so a long-lived tab would keep highlighting
 		// yesterday. It is compared at render time instead.
-		const selectedIndex = dayIndexOf(
+		const selectedIndex = findDayIndex(
 			dayIndex,
 			currentDate.startOf('day').valueOf()
 		)
@@ -146,7 +154,7 @@ export const YearView = () => {
 			}
 
 			const monthGridStart = monthGridStartOf(monthDate, firstDayOfWeek)
-			const firstCellIndex = dayIndexOf(dayIndex, monthGridStart.valueOf())
+			const firstCellIndex = findDayIndex(dayIndex, monthGridStart.valueOf())
 			const monthNumber = monthDate.month()
 
 			const monthDays = Array.from(

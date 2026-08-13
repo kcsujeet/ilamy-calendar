@@ -617,6 +617,27 @@ describe('useCalendarEngine', () => {
 			expect(result.current.selectedEvent?.title).toBe('New Event')
 		})
 
+		/**
+		 * #248. With no `start` the draft falls back to `currentDate`, which comes
+		 * from `dayjs()` and carries the seconds and milliseconds of page load. The
+		 * form only offers hours and minutes, and a consumer's `renderEventForm`
+		 * receives this draft directly and can save it without passing through the
+		 * form's own builders, so the residue has to be cleared here too.
+		 */
+		it('seeds the draft on a whole minute', () => {
+			const initialDate = dayjs('2025-03-15T14:32:44.567Z')
+			const { result } = renderHook(() =>
+				useCalendarEngine({ ...defaultConfig, initialDate })
+			)
+
+			act(() => result.current.openEventForm())
+
+			expect(result.current.selectedEvent?.start.format('ss.SSS')).toBe(
+				'00.000'
+			)
+			expect(result.current.selectedEvent?.end.format('ss.SSS')).toBe('00.000')
+		})
+
 		it('should open event form with specific date', () => {
 			const { result } = renderHook(() => useCalendarEngine(defaultConfig))
 

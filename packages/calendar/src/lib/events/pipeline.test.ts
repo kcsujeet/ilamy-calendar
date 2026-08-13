@@ -67,15 +67,19 @@ describe('eventOverlapsRange', () => {
 		expect(eventOverlapsRange(event, start, end)).toBe(false)
 	})
 
-	// Boundary contract: the range is inclusive on BOTH ends — an event
-	// touching either boundary instant counts as overlapping.
-	it('returns true when the event ends exactly at the range start', () => {
+	/**
+	 * Boundary contract: an event's `end` is EXCLUSIVE (#248), so one ending at
+	 * the range's first instant occupies none of the range and must not match. An
+	 * event's `start` is inclusive, so one beginning at the range's last instant
+	 * still does.
+	 */
+	it('returns false when the event ends exactly at the range start', () => {
 		const event = makeEvent(
 			'f',
 			'2025-01-04T22:00:00.000Z',
 			'2025-01-05T00:00:00.000Z'
 		)
-		expect(eventOverlapsRange(event, start, end)).toBe(true)
+		expect(eventOverlapsRange(event, start, end)).toBe(false)
 	})
 
 	it('returns true when the event starts exactly at the range end', () => {

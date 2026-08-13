@@ -704,8 +704,8 @@ describe('IlamyCalendar', () => {
 			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
 			expect(callArgs.start.toISOString()).toBe('2025-01-15T00:00:00.000Z')
 			// Month view full day (hour and minute are undefined)
-			expect(callArgs.end.hour()).toBe(23)
-			expect(callArgs.end.minute()).toBe(59)
+			// Exclusive end: the day cell runs to the next midnight (#248).
+			expect(callArgs.end.toISOString()).toBe('2025-01-16T00:00:00.000Z')
 			expect(callArgs.allDay).toBe(false)
 			expect(callArgs.resource).toBeUndefined()
 		})

@@ -219,9 +219,17 @@ export const EventForm: React.FC<EventFormProps> = ({
 	// Whether a plugin owns this event (gates the scoped edit/delete flow)
 	const eventIsOwned = Boolean(selectedEvent && getEventManager(selectedEvent))
 
+	// An all-day `end` is STORED exclusively, as the midnight after the last day
+	// the event covers (#248), but the picker shows the user that last day.
+	// `buildEndDateTime` converts back on save. An end that is not on a midnight
+	// boundary predates this and is already inclusive, so it is shown untouched.
+	const endsOnMidnight = end.isSame(end.startOf('day'))
+	const lastCoveredDay =
+		initialAllDay && endsOnMidnight ? end.subtract(1, 'day') : end
+
 	// Form state
 	const [startDate, setStartDate] = useState(start.toDate())
-	const [endDate, setEndDate] = useState(end.toDate())
+	const [endDate, setEndDate] = useState(lastCoveredDay.toDate())
 	const [isAllDay, setIsAllDay] = useState(initialAllDay)
 	const [selectedColor, setSelectedColor] = useState(
 		resolveInitialColor(initialBackgroundColor, initialColor)

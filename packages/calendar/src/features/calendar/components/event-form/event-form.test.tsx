@@ -215,6 +215,61 @@ describe('EventForm', () => {
 		})
 	})
 
+	/**
+	 * #248. An all-day event is STORED with an exclusive end (the following
+	 * midnight, per RFC 5545 and the Google Calendar API) but is SHOWN the way a
+	 * user thinks of it: the last day it covers. Google draws the same line, with
+	 * an exclusive API and a UI that never asks for a midnight end.
+	 */
+	describe('All-day end date, exclusive storage and inclusive display', () => {
+		const allDayOnAug15: CalendarEvent = {
+			id: 'all-day-1',
+			title: 'All-day event',
+			start: dayjs('2025-08-15T00:00:00'),
+			end: dayjs('2025-08-16T00:00:00'),
+			allDay: true,
+		}
+
+		/** The two date pickers in DOM order: Start Date, then End Date. */
+		const endDateButton = () =>
+			screen.getAllByRole('button', { name: /Aug \d+, 2025/ }).at(1)
+
+		it('shows the last covered day, not the exclusive end', () => {
+			renderEventForm({ ...defaultProps, selectedEvent: allDayOnAug15 })
+
+			expect(endDateButton()).toHaveTextContent('Aug 15, 2025')
+		})
+
+		it('stores the exclusive end again when saved untouched', () => {
+			const onUpdate = mock((_event: CalendarEvent) => {})
+			renderEventForm({
+				...defaultProps,
+				onUpdate,
+				selectedEvent: allDayOnAug15,
+			})
+
+			fireEvent.click(screen.getByRole('button', { name: /update|save/i }))
+
+			const saved = onUpdate.mock.calls.at(0)?.at(0)
+			expect(saved?.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-16 00:00')
+		})
+
+		/**
+		 * Events written before this change end at 23:59 on the last covered day.
+		 * That is not a midnight boundary, so it is read as the inclusive value it
+		 * is and displayed as-is rather than shifted a day earlier.
+		 */
+		it('reads a legacy 23:59 end as the last covered day', () => {
+			const legacy: CalendarEvent = {
+				...allDayOnAug15,
+				end: dayjs('2025-08-15T23:59:00'),
+			}
+			renderEventForm({ ...defaultProps, selectedEvent: legacy })
+
+			expect(endDateButton()).toHaveTextContent('Aug 15, 2025')
+		})
+	})
+
 	describe('Color Selection', () => {
 		it('should render the Tailwind class-pair swatches in the picker', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })

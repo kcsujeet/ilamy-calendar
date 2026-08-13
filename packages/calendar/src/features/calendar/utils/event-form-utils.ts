@@ -25,13 +25,20 @@ export const buildDateTime = (
 	return isAllDay ? base.hour(0).minute(0) : base
 }
 
+/**
+ * `date` is the LAST day an all-day event covers, which is what the picker shows
+ * the user. It is stored as the following midnight, because `end` is exclusive
+ * (#248): RFC 5545 calls DTEND "the non-inclusive end of the event", and the
+ * Google Calendar API documents `end` the same way. `event-form` converts back
+ * for display.
+ */
 export const buildEndDateTime = (
 	date: Date,
 	time: string,
 	isAllDay: boolean
 ): Dayjs => {
 	const base = atMinute(date, time)
-	return isAllDay ? base.hour(23).minute(59) : base
+	return isAllDay ? base.add(1, 'day').startOf('day') : base
 }
 
 export const getTimeConstraints = (

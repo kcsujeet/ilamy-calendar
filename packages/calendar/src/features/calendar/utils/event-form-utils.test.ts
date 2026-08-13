@@ -48,9 +48,15 @@ describe('event-form-utils', () => {
 			expect(result.format('YYYY-MM-DD HH:mm')).toBe('2025-01-15 15:45')
 		})
 
-		test('sets time to 23:59 if isAllDay is true', () => {
+		/**
+		 * #248. An all-day end is stored EXCLUSIVELY, as the following midnight,
+		 * which is what RFC 5545, the Google Calendar API and FullCalendar all
+		 * mean by `end`. The picker still shows the user the last day the event
+		 * covers; `event-form` converts between the two.
+		 */
+		test('stores an all-day end as the following midnight', () => {
 			const result = buildEndDateTime(testDate, '15:45', true)
-			expect(result.format('YYYY-MM-DD HH:mm')).toBe('2025-01-15 23:59')
+			expect(result.format('YYYY-MM-DD HH:mm')).toBe('2025-01-16 00:00')
 		})
 
 		test('drops seconds and milliseconds carried by the date', () => {
@@ -62,7 +68,7 @@ describe('event-form-utils', () => {
 
 		test('drops seconds and milliseconds for an all-day end', () => {
 			const result = buildEndDateTime(dirtyDate, '15:45', true)
-			expect(result.format('HH:mm:ss.SSS')).toBe('23:59:00.000')
+			expect(result.format('HH:mm:ss.SSS')).toBe('00:00:00.000')
 		})
 	})
 

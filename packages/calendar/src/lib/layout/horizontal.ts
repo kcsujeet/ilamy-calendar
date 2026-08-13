@@ -60,8 +60,11 @@ const computeColumnSpan = (
 	isTruncatedEnd: boolean
 } => {
 	const eventStart = dayjs.max(event.start.startOf(gridType), firstUnit)
-	const adjustedEnd =
-		gridType === 'hour' ? event.end.subtract(1, 'minute') : event.end
+	// `end` is exclusive at every granularity: an event ending at midnight stops
+	// as that day begins, so it must not claim the day's column, exactly as one
+	// ending on the hour does not claim that hour's row (#248). Stepping back a
+	// minute lands on the last unit the event actually occupies.
+	const adjustedEnd = event.end.subtract(1, 'minute')
 	const eventEnd = dayjs.min(adjustedEnd.startOf(gridType), lastUnit)
 	return {
 		startCol: Math.max(0, eventStart.diff(firstUnit, gridType)),

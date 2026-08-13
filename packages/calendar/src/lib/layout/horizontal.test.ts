@@ -47,7 +47,67 @@ const run = (
 		gridType: opts.gridType,
 	})
 
+/** Column count a placement covers, derived from its percentage width. */
+const columnsOf = (width: number) => Math.round(width / (100 / days.length))
+
 describe('layoutHorizontal', () => {
+	/**
+	 * #248. `end` is exclusive, matching RFC 5545 ("the DTEND property ...
+	 * specifies the non-inclusive end of the event"), the Google Calendar API and
+	 * FullCalendar. An event ending at midnight stops as that day begins and must
+	 * not paint on it.
+	 */
+	describe('Exclusive end', () => {
+		it('covers one day when the event ends at the next midnight', () => {
+			const event = mkEvent(
+				'midnight-to-midnight',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-14T00:00:00.000Z'
+			)
+
+			const [placement] = run([event])
+
+			expect(columnsOf(placement.width)).toBe(1)
+		})
+
+		it('covers both days when the event ends during the second day', () => {
+			const event = mkEvent(
+				'into-the-next-day',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-14T09:00:00.000Z'
+			)
+
+			const [placement] = run([event])
+
+			expect(columnsOf(placement.width)).toBe(2)
+		})
+
+		it('covers three days for an all-day event stored the conventional way', () => {
+			// Jan 13, 14 and 15, so the exclusive end is Jan 16 at midnight.
+			const event = mkEvent(
+				'three-all-days',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-16T00:00:00.000Z'
+			)
+
+			const [placement] = run([event])
+
+			expect(columnsOf(placement.width)).toBe(3)
+		})
+
+		it('still covers one day when start and end are equal', () => {
+			const event = mkEvent(
+				'zero-length',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-13T00:00:00.000Z'
+			)
+
+			const [placement] = run([event])
+
+			expect(columnsOf(placement.width)).toBe(1)
+		})
+	})
+
 	describe('Basic Positioning', () => {
 		it('positions single-day event correctly', () => {
 			const result = run([singleDayEvent])

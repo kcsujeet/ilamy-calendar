@@ -78,13 +78,61 @@ dayjs.extend(localeData)
 dayjs.extend(localizedFormat)
 dayjs.extend(fixTimezoneOffset)
 
-// Custom dayjs constructor that automatically uses .tz() for all instances.
-// This ensures that dayjs() calls throughout the codebase honor the default
-// timezone set via dayjs.tz.setDefault().
-const timezoneAwareDayjs = (...args: unknown[]) => {
-	return (dayjs as unknown as { tz: (...a: unknown[]) => dayjs.Dayjs }).tz(
-		...args
-	)
+/**
+ * The suffixes dayjs accepts as an explicit UTC offset. dayjs's own parse regex
+ * has no offset group, so these strings fall through to the native `Date`
+ * parser, which reads `Z`, `±HH:MM` and `±HHMM` (a bare `±HH` is rejected as
+ * invalid). Matched against the TIME half of the value only, so the hyphens in
+ * `2026-03-02` cannot be mistaken for one.
+ */
+const EXPLICIT_OFFSET = /(?:Z|[+-]\d{2}:?\d{2})$/i
+
+const hasExplicitOffset = (value: string): boolean => {
+	const timePart = value.split(/[Tt\s]/).at(1)
+	if (!timePart) {
+		return false
+	}
+	return EXPLICIT_OFFSET.test(timePart)
+}
+
+/**
+ * Custom dayjs constructor that resolves every input in the timezone set via
+ * `dayjs.tz.setDefault()`, so `dayjs()` calls throughout the codebase honor the
+ * calendar's zone, and in the machine's zone when the calendar has none.
+ *
+ * Which zone anchors a STRING depends on whether it carries its own offset,
+ * because the two kinds of string mean different things:
+ *
+ * - `'2026-08-17T22:00:00.000Z'` already names an instant. It keeps that instant
+ *   and merely renders in the calendar's zone. Handing it to `dayjs.tz()` would
+ *   read the clock face and discard the offset
+ *   (https://day.js.org/docs/en/plugin/timezone), which in Europe/Vienna turned
+ *   this value into 2026-08-17T22:00+02:00: a different instant, on a different
+ *   day, so an all-day event showed up twice (#247).
+ * - `'2026-03-02'` names a wall-clock reading with no instant of its own, so the
+ *   calendar's zone is what anchors it. Letting dayjs read it locally instead
+ *   would put the same calendar on a different instant for every user.
+ *
+ * Both rules say the same thing: the machine's zone never decides anything the
+ * `timezone` prop can decide.
+ */
+const timezoneAwareDayjs = (input?: dayjs.ConfigType) => {
+	const instant = dayjs(input)
+	// `dayjs.tz()` throws `RangeError: date value is not finite` on an
+	// unparseable value rather than returning an invalid instance, so it must
+	// never see one. Callers guard with `.isValid()` (see `safeDate`).
+	if (!instant.isValid()) {
+		return instant
+	}
+	const isWallClockReading =
+		typeof input === 'string' && !hasExplicitOffset(input)
+	if (isWallClockReading) {
+		return dayjs.tz(input)
+	}
+	if (!defaultTimezone) {
+		return instant
+	}
+	return instant.tz(defaultTimezone)
 }
 
 // Attach all static methods and properties from the original dayjs to our wrapper.
@@ -106,14 +154,15 @@ type DayjsStatics = { [K in keyof typeof dayjs]: (typeof dayjs)[K] }
 /**
  * The configured dayjs: a one-argument constructor plus every dayjs static.
  *
- * The constructor forwards its arguments to `dayjs.tz()`, whose second
- * parameter is a TIMEZONE and not a parse format, so `dayjs(input, 'YYYY-MM-DD')`
- * threw `RangeError: invalid time zone` at runtime while type-checking cleanly
- * (see the recurrence date-picker bug). Format parsing would additionally need
- * the CustomParseFormat plugin, which this module deliberately does not extend
- * (https://day.js.org/docs/en/parse/string-format). Offering only the
- * one-argument form turns that mistake into a compile error. To parse in an
- * explicit zone, call `dayjs.tz(input, timezone)`.
+ * The constructor takes the input and nothing else. It used to forward every
+ * argument to `dayjs.tz()`, whose second parameter is a TIMEZONE and not a parse
+ * format, so `dayjs(input, 'YYYY-MM-DD')` threw `RangeError: invalid time zone`
+ * at runtime while type-checking cleanly (see the recurrence date-picker bug).
+ * A second argument is now ignored rather than misread, and the one-argument type
+ * keeps it a compile error either way. Format parsing would additionally need the
+ * CustomParseFormat plugin, which this module deliberately does not extend
+ * (https://day.js.org/docs/en/parse/string-format). To read a bare wall-clock
+ * string as a time in a given zone, call `dayjs.tz(input, timezone)`.
  */
 type ConfiguredDayjs = ((date?: dayjs.ConfigType) => dayjs.Dayjs) & DayjsStatics
 

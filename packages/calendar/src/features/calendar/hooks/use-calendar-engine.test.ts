@@ -1132,64 +1132,126 @@ describe('useCalendarEngine', () => {
 			dayjs.tz.setDefault(originalTz)
 		})
 
+		const NOON_UTC_ISO = '2025-01-15T12:00:00.000Z'
+		const noEvents: CalendarEvent[] = []
+
+		/**
+		 * Mounts the engine in `timezone` (pass `undefined` for no prop at all) and
+		 * hands back the clocks these tests read, plus `moveTo` for a later zone.
+		 * Every case here is "mount in a zone, maybe move to another, then read a
+		 * clock", so only the zones and the clock read differ between them.
+		 *
+		 * `events` and `initialDate` are created ONCE per call because the hook
+		 * re-runs on every render, and a fresh array each time would loop the
+		 * events sync into an endless re-render.
+		 */
+		const renderZonedEngineHook = (
+			timezone: string | undefined,
+			events: CalendarEvent[] = noEvents
+		) => {
+			const initialDate = dayjs(NOON_UTC_ISO)
+			const { result, rerender } = renderHook(
+				({ timezone: zone }: { timezone?: string }) =>
+					useCalendarEngine({
+						...defaultConfig,
+						events,
+						initialDate,
+						timezone: zone,
+					}),
+				{ initialProps: { timezone } }
+			)
+			return {
+				currentDate: () => result.current.currentDate,
+				firstEventStart: () => result.current.rawEvents.at(0)?.start,
+				moveTo: (nextZone?: string) => {
+					act(() => {
+						rerender({ timezone: nextZone })
+					})
+				},
+			}
+		}
+
+		/** The zone a date parsed AFTER mounting comes out in. */
+		const zoneOfAFreshParse = () =>
+			dayjs('2026-03-02T00:00:00.000Z').format('Z')
+
 		it('should automatically use the default timezone for new dayjs() instances', () => {
 			dayjs.tz.setDefault('America/New_York')
 			const now = dayjs()
 			expect(['-05:00', '-04:00']).toContain(now.format('Z'))
 		})
 
+		/**
+		 * The zone has to be in force for the FIRST render, not from the second one
+		 * on: every date the calendar shows is parsed before any effect that runs
+		 * after mount. These mount with no default zone set, so nothing but the
+		 * prop can put the calendar in Tokyo.
+		 */
+		it('applies the timezone prop on mount', () => {
+			dayjs.tz.setDefault(undefined)
+
+			renderZonedEngineHook('Asia/Tokyo')
+
+			expect(zoneOfAFreshParse()).toBe('+09:00')
+		})
+
+		it('renders the initial date in the timezone prop on mount', () => {
+			dayjs.tz.setDefault(undefined)
+
+			const { currentDate } = renderZonedEngineHook('Asia/Tokyo')
+
+			expect(currentDate().format('Z')).toBe('+09:00')
+		})
+
+		it('returns to the machine zone when the timezone prop is removed', () => {
+			const { moveTo } = renderZonedEngineHook('Asia/Tokyo')
+
+			moveTo(undefined)
+
+			expect(zoneOfAFreshParse()).toBe('+00:00')
+		})
+
+		/**
+		 * Dropping the prop has to carry the dates the calendar is already holding
+		 * back with it, or the view keeps rendering on the old clock while every
+		 * newly parsed date uses the machine's.
+		 */
+		it('converts held dates back when the timezone prop is removed', () => {
+			const { currentDate, moveTo } = renderZonedEngineHook('Asia/Tokyo')
+			expect(currentDate().format('Z')).toBe('+09:00')
+
+			moveTo(undefined)
+
+			expect(currentDate().format('Z')).toBe('+00:00')
+		})
+
 		it('should reactive update currentDate when timezone prop changes', () => {
-			const initialDate = dayjs('2025-01-15T12:00:00Z') // 12:00 UTC
-			const initialEvents: CalendarEvent[] = []
-			const { result, rerender } = renderHook(
-				({ timezone }) =>
-					useCalendarEngine({
-						...defaultConfig,
-						events: initialEvents,
-						initialDate,
-						timezone,
-					}),
-				{ initialProps: { timezone: 'UTC' } }
-			)
+			const { currentDate, moveTo } = renderZonedEngineHook('UTC')
+			expect(currentDate().format('HH:mm')).toBe('12:00')
 
-			expect(result.current.currentDate.format('HH:mm')).toBe('12:00')
+			moveTo('America/New_York')
 
-			// Change to New York (UTC-5)
-			act(() => {
-				rerender({ timezone: 'America/New_York' })
-			})
-
-			// 12:00 UTC should now be 07:00 AM in New York
-			expect(result.current.currentDate.format('HH:mm')).toBe('07:00')
-			expect(result.current.currentDate.format('Z')).toBe('-05:00')
+			expect(currentDate().format('HH:mm')).toBe('07:00')
+			expect(currentDate().format('Z')).toBe('-05:00')
 		})
 
 		it('should reactive update event times when timezone prop changes', () => {
-			const event = createEvent({
-				start: dayjs('2025-01-15T10:00:00Z'),
-				end: dayjs('2025-01-15T11:00:00Z'),
-			})
-			const events = [event]
-			const { result, rerender } = renderHook(
-				({ timezone }) =>
-					useCalendarEngine({
-						...defaultConfig,
-						events,
-						timezone,
-					}),
-				{ initialProps: { timezone: 'UTC' } }
+			const tenAmEvents = [
+				createEvent({
+					start: dayjs('2025-01-15T10:00:00.000Z'),
+					end: dayjs('2025-01-15T11:00:00.000Z'),
+				}),
+			]
+			const { firstEventStart, moveTo } = renderZonedEngineHook(
+				'UTC',
+				tenAmEvents
 			)
+			expect(firstEventStart()?.format('HH:mm')).toBe('10:00')
 
-			expect(result.current.rawEvents[0].start.format('HH:mm')).toBe('10:00')
+			moveTo('Asia/Tokyo')
 
-			// Change to Tokyo (UTC+9)
-			act(() => {
-				rerender({ timezone: 'Asia/Tokyo' })
-			})
-
-			// 10:00 UTC should now be 19:00 in Tokyo
-			expect(result.current.rawEvents[0].start.format('HH:mm')).toBe('19:00')
-			expect(result.current.rawEvents[0].start.format('Z')).toBe('+09:00')
+			expect(firstEventStart()?.format('HH:mm')).toBe('19:00')
+			expect(firstEventStart()?.format('Z')).toBe('+09:00')
 		})
 	})
 

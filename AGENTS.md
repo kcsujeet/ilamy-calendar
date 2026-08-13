@@ -197,6 +197,7 @@ docs/
   resource-calendar.md                         # Resource calendar docs
   translation-usage.md                         # i18n guide
   time-grid.md                                 # Time grid architecture & DST handling
+  timezones.md                                 # Timezone contract: what anchors a date, and when
   testing-guide.md                             # Test patterns, wrappers, mocking
   types-and-interfaces.md                      # Type catalog and relationships
   hooks-and-context.md                         # Hook architecture, context system
@@ -224,6 +225,7 @@ Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringE
 - Storage/transmission: `dayjs().toISOString()` — always ISO strings
 - Display only: `YYYY-MM-DD` format is acceptable in UI
 - Tests: use `'2025-10-13T00:00:00.000Z'` or `dayjs().toISOString()`, never `'2025-10-13'`
+- Timezones: with a `timezone` prop the machine's zone decides nothing; without one everything falls back to it. A string carrying `Z`/`±HH:MM` keeps its instant, a string carrying no offset is anchored in the configured zone, and the zone must be applied DURING render (an effect is too late). Read `docs/timezones.md` before touching anything that parses a date or calls `dayjs.tz.setDefault`.
 
 ### Code Quality
 

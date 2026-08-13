@@ -192,16 +192,32 @@ export const useCalendarEngine = (
 		}
 	}, [locale, setCurrentLocale, setCurrentDate])
 
-	const lastTimezoneProp = useRef(timezone)
+	// The ref starts at `undefined`, NOT at `timezone`: seeding it with the prop
+	// made this effect's own guard false on mount, so `setDefault` never ran at
+	// all and the prop only worked if it later changed (#247).
+	//
+	// Applying the zone in an effect rather than during render is deliberate.
+	// `dayjs.tz.setDefault` is a module-global write, and a component renders on
+	// the server too — Next.js prerenders `'use client'` components — where one
+	// global would be shared across concurrent requests. Effects never run during
+	// SSR, so the write stays on the client. The cost is that mount renders once
+	// in the machine's zone before this converts, which is why the conversion
+	// below has to cover the dates the calendar is already holding, in BOTH
+	// directions: dropping the prop returns them to the machine's zone instead of
+	// stranding the view on the old clock. Instants never move, only the clock
+	// they render on.
+	const lastTimezoneProp = useRef<string | undefined>(undefined)
 	useEffect(() => {
-		if (timezone && timezone !== lastTimezoneProp.current) {
+		if (timezone !== lastTimezoneProp.current) {
 			dayjs.tz.setDefault(timezone)
-			setCurrentDate((prev) => prev.tz(timezone))
+			const toCalendarZone = (date: Dayjs): Dayjs =>
+				timezone ? date.tz(timezone) : date.local()
+			setCurrentDate((prevDate) => toCalendarZone(prevDate))
 			setCurrentEvents((prev) =>
 				prev.map((e) => ({
 					...e,
-					start: e.start.tz(timezone),
-					end: e.end.tz(timezone),
+					start: toCalendarZone(e.start),
+					end: toCalendarZone(e.end),
 				}))
 			)
 			lastTimezoneProp.current = timezone

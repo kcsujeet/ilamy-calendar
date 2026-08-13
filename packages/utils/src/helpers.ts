@@ -3,6 +3,10 @@ import dayjs, { type Dayjs } from './dayjs'
 /**
  * Coerces an optional date-ish value into a Dayjs, or undefined when it is
  * missing or unparseable. Already-Dayjs values pass through untouched.
+ *
+ * Passing through does NOT leak the caller's timezone: the one call site that
+ * can hand this a Dayjs is `IlamyCalendar`'s `initialDate`, and the navigation
+ * slice re-anchors it in the calendar's zone (see `docs/timezones.md`).
  */
 export function safeDate(
 	date: Dayjs | Date | string | undefined

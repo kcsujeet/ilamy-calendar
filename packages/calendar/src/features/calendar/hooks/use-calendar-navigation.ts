@@ -59,7 +59,11 @@ export const useCalendarNavigation = ({
 	pluginRuntime,
 }: CalendarNavigationParams): CalendarNavigationSlice => {
 	const [navState, setNavState] = useState<NavState>(() => ({
-		date: dayjs.isDayjs(initialDate) ? initialDate : dayjs(initialDate),
+		// Re-anchored, not passed through: `initialDate` is TYPED as Dayjs, so an
+		// `isDayjs` check here can only ever say "pass it through", handing the
+		// calendar whatever zone the consumer's own module was in. This is the last
+		// place that can fix that, since nothing downstream re-parses it.
+		date: dayjs(initialDate),
 		view: initialView,
 	}))
 	// Mutation-time mirror of navState. React state read from a closure is

@@ -20,11 +20,10 @@ export interface RawCell {
  * the cell is disabled.
  *
  * `data-start`/`data-end` are UTC ISO strings (the cell emits `toISOString()`).
- * They MUST be parsed with `dayjs.utc()`: the configured dayjs aliases the
- * `dayjs()` constructor to `dayjs.tz()`, which (under a `setDefault` timezone)
- * reads a `Z` string by its literal wall-clock — so `dayjs('…T03:00Z')` would
- * yield 03:00, not the 00:00 the instant represents. `dayjs.utc(iso)` parses the
- * instant correctly; `.tz(timezone)` then renders it in calendar-local time.
+ * They are parsed with `dayjs.utc()` and rendered through the explicit
+ * `timezone` argument, so the reconstruction depends on nothing but its inputs:
+ * the bare constructor would also read the instant correctly (#247) but would
+ * render it in whatever zone `dayjs.tz.setDefault` last received.
  *
  * Reconstructing in the calendar timezone matters both for a correct
  * `openEventForm` payload AND so the same-day clamp in `isSameRegion` compares

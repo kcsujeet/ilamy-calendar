@@ -160,6 +160,22 @@ expect(event.start.toISOString()).toBe('2025-01-15T10:00:00.000Z')
 start: dayjs('2025-01-15')
 ```
 
+### Timezone tests
+
+Tests run at offset zero (happy-dom makes `Intl` resolve to `UTC`), where a
+wall-clock misreading is a no-op. That is how #247 survived 1127 tests. Four
+rules keep a timezone test honest — see `docs/timezones.md` for the reasoning:
+
+1. Set the zone explicitly with `dayjs.tz.setDefault('Asia/Tokyo')`; without it
+   nothing can manifest.
+2. Assert an instant at least once (`toISOString()` / `valueOf()`), not only
+   `format()` — a shifted instant hides behind a matching format.
+3. Keep expectations absolute, never "whatever the machine would say", so they
+   hold on CI and on a laptop in any zone.
+4. Do not try to vary the machine zone mid-test. dayjs's timezone plugin caches
+   an `Intl.DateTimeFormat` per zone, so a `process.env.TZ` change is ignored
+   once that formatter exists.
+
 ## Recurring Event Testing
 
 Patterns for the three event types:
@@ -228,6 +244,8 @@ happy-dom provides `ResizeObserver` and `IntersectionObserver` out of the box �
 | Portal-rendered content not found | Dialogs/popovers render outside the component tree — use `screen.getByRole()` which searches the whole document |
 | Events not appearing in rendered view | Ensure `initialDate` matches the event dates and `events` are passed to the provider |
 | Import errors on `dayjs` | Always import from `@ilamy/utils/dayjs`, never from `dayjs` directly |
+| Suite fails only with an exported non-UTC `TZ` | Expected for tests that hard-code UTC-shaped display (a `09:00Z` event asserted at the 9am row is 14:30 for an IST viewer). CI and default local runs resolve to UTC. |
+| A hook test hangs instead of failing | A fresh `[]`/object literal passed on every render loops the events sync. Hoist it so the reference is stable across re-renders. |
 
 ## Key Files
 

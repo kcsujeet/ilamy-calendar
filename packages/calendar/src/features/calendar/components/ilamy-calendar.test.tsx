@@ -16,6 +16,7 @@ import { createContext, useContext } from 'react'
 import { RRule } from 'rrule'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { useIlamyCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import type { IlamyCalendarPropEvent } from '@/features/calendar/types'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { IlamyCalendar } from './ilamy-calendar'
 
@@ -1165,5 +1166,96 @@ describe('IlamyCalendar - internal edits survive re-render (issue #197)', () => 
 		expect(screen.getByTestId('wed-ends').textContent).toBe(
 			'2025-01-08T12:00:00.000Z'
 		)
+	})
+})
+
+/**
+ * With a `timezone` prop, nothing about what the calendar shows may depend on
+ * where the browser happens to be. `IlamyCalendar` normalizes events and
+ * `initialDate` in its OWN render, above the provider that applies the zone, so
+ * these pin the ordering as much as the conversion (#247).
+ */
+describe('IlamyCalendar - timezone prop', () => {
+	afterEach(() => {
+		dayjs.tz.setDefault(undefined)
+	})
+
+	const StartProbe = () => (
+		<span data-testid="probe-start">
+			{useIlamyCalendarContext().events.at(0)?.start.format('HH:mm Z')}
+		</span>
+	)
+
+	const renderWithTokyo = (start: IlamyCalendarPropEvent['start']) => {
+		render(
+			<IlamyCalendar
+				events={[
+					{
+						id: '1',
+						title: 'Standup',
+						start,
+						end: dayjs(start).add(1, 'hour'),
+					},
+				]}
+				headerComponent={<StartProbe />}
+				initialDate="2025-01-15T12:00:00.000Z"
+				timezone="Asia/Tokyo"
+			/>
+		)
+		return screen.getByTestId('probe-start').textContent
+	}
+
+	it('renders an ISO string event on the calendar clock', () => {
+		expect(renderWithTokyo('2025-01-15T12:00:00.000Z')).toBe('21:00 +09:00')
+	})
+
+	it('renders an event the consumer already parsed on the calendar clock', () => {
+		const parsedBeforeMount = dayjs('2025-01-15T12:00:00.000Z')
+
+		expect(renderWithTokyo(parsedBeforeMount)).toBe('21:00 +09:00')
+	})
+})
+
+/**
+ * Regression test for the report in #247: an all-day event given as UTC ISO
+ * strings showed up one day early for a viewer east of UTC. `22:00Z` is midnight
+ * the NEXT day in Europe/Vienna, so the bar must start in the Aug 18 column; it
+ * used to start in Aug 17's because the offset was discarded.
+ *
+ * The month grid reports each bar's placement as a percentage in `data-left`,
+ * which is `column / 7 * 100`. August 18 2026 is a Tuesday, so in a Sunday-start
+ * week (Aug 16..22) the expected column is 2.
+ */
+describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
+	afterEach(() => {
+		dayjs.tz.setDefault(undefined)
+	})
+
+	const columnOfFirstEventBar = (): number => {
+		const bar = document.querySelector('[data-testid^="horizontal-event-"]')
+		const left = Number(bar?.getAttribute('data-left'))
+		return Math.round(left / (100 / 7))
+	}
+
+	it('places the event in the column its offset denotes, not one day early', () => {
+		render(
+			<IlamyCalendar
+				events={[
+					{
+						id: '1',
+						title: 'All-day event',
+						start: '2026-08-17T22:00:00.000Z',
+						end: '2026-08-18T22:00:00.000Z',
+						allDay: true,
+					},
+				]}
+				initialDate="2026-08-18T12:00:00.000Z"
+				timezone="Europe/Vienna"
+			/>
+		)
+
+		const AUGUST_18_COLUMN = 2
+
+		expect(columnOfFirstEventBar()).toBe(AUGUST_18_COLUMN)
 	})
 })

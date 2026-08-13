@@ -17,6 +17,12 @@ export const toHiddenDaysSet = (
  * Normalizes calendar events from public-facing format to internal format.
  * Converts flexible date types (dayjs, Date, string) to strict dayjs objects.
  *
+ * An already-Dayjs date is re-anchored rather than passed through: the consumer
+ * parsed it in its own module, in the machine's zone, so passing it through
+ * would render a correct instant against the wrong clock once a `timezone` prop
+ * is in play. The configured constructor keeps the instant and moves only the
+ * zone it displays in.
+ *
  * @param events - Array of calendar events with flexible date types
  * @returns Normalized array of calendar events with dayjs dates
  *
@@ -30,15 +36,15 @@ export function normalizeEvents<
 	},
 	TOutput,
 >(events: TInput[] | undefined): TOutput[] {
-	if (!events || !events.length) {
+	if (!events?.length) {
 		return []
 	}
 
 	return events.map((event) => {
 		return {
 			...event,
-			start: dayjs.isDayjs(event.start) ? event.start : dayjs(event.start),
-			end: dayjs.isDayjs(event.end) ? event.end : dayjs(event.end),
+			start: dayjs(event.start),
+			end: dayjs(event.end),
 		} as TOutput
 	})
 }

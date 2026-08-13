@@ -75,6 +75,10 @@ Applies to: `views/week.tsx` (both the regular body and the resource arrangement
 
 ## DST Handling
 
+For which zone a date is anchored in before it ever reaches the grid, see
+`docs/timezones.md`. This section is only about what a DST transition does to
+hour generation once the zone is settled.
+
 ### The Problem
 
 On DST spring-forward days (e.g., March 8, 2026 in America/Halifax), 2 AM doesn't exist. `dayjs('2026-03-08').hour(2)` returns a dayjs object with `.hour() === 3`.

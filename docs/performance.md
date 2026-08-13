@@ -65,21 +65,32 @@ const eventKey = `${event.id}-${position}-${weekStart.toISOString()}-${resourceI
 Each effect is guarded with a `useRef` to track the previous value and skip when unchanged:
 
 ```tsx
-const lastTimezoneProp = useRef(timezone)
+// Seed with `undefined`, never with the prop — see the warning below.
+const lastTimezoneProp = useRef<string | undefined>(undefined)
 
 useEffect(() => {
-  if (timezone && timezone !== lastTimezoneProp.current) {
+  if (timezone !== lastTimezoneProp.current) {
     dayjs.tz.setDefault(timezone)
-    setCurrentDate((prev) => prev.tz(timezone))
+    const toCalendarZone = (date: Dayjs) =>
+      timezone ? date.tz(timezone) : date.local()
+    setCurrentDate(toCalendarZone)
     setCurrentEvents((prev) => prev.map((e) => ({
       ...e,
-      start: e.start.tz(timezone),
-      end: e.end.tz(timezone),
+      start: toCalendarZone(e.start),
+      end: toCalendarZone(e.end),
     })))
     lastTimezoneProp.current = timezone
   }
 }, [timezone])
 ```
+
+> **A guard that skips mount is a bug, not an optimization.** This effect used to
+> seed the ref with the prop (`useRef(timezone)`) and test `if (timezone && …)`.
+> Both parts silently disabled it: seeding with the prop makes the guard false on
+> the mount render, so `dayjs.tz.setDefault` never ran unless the prop later
+> changed, and the truthiness test meant removing the prop never restored the
+> machine's zone (#247). Guard against *unchanged* values, not against the first
+> value. When adding a guard here, check that a fresh mount still does its work.
 
 The `isDeepEqual` check on events sync was removed — it performed a recursive deep comparison (including Dayjs value comparisons) on every events prop change. A simple reference check via the `useRef` pattern is sufficient since React's reconciliation already handles referential equality.
 
@@ -90,6 +101,7 @@ When the `timezone` prop changes, the engine updates both `currentDate` and stor
 - `dayjs.tz.setDefault()` only affects **new** `dayjs()` calls — it doesn't retroactively change existing Dayjs instances
 - Events come from user props and don't get re-created when timezone changes
 - Without `.tz()` on stored events, they would display in the original timezone forever
+- The same applies on **mount**, not just on change: the first render resolves dates before this effect runs, so the conversion is what puts them on the calendar's clock. That is the tradeoff for keeping the global write out of render, where it would also execute during SSR. See `docs/timezones.md`.
 
 ## Tips for Consumers
 

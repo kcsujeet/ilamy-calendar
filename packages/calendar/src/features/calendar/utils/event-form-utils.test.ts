@@ -148,6 +148,36 @@ describe('event-form-utils', () => {
 			expect(result).toEqual({ min: '09:00', max: '16:45' })
 		})
 
+		/**
+		 * Business hours running to midnight. `endTime: 0` names the same instant
+		 * as `24`, so the picker must offer the whole evening. It used to build its
+		 * max as `(0 - 1):45`, an impossible `-1:45` that produced an empty option
+		 * list and an "N/A" dropdown.
+		 */
+		test('offers the full evening when business hours end at midnight', () => {
+			const untilMidnight: BusinessHours = {
+				daysOfWeek: ['wednesday'],
+				startTime: 0,
+				endTime: 0,
+			}
+
+			const result = getTimeConstraints(testDate, untilMidnight)
+
+			expect(result).toEqual({ min: '00:00', max: '23:45' })
+		})
+
+		test('treats endTime 24 the same as endTime 0', () => {
+			const asTwentyFour: BusinessHours = {
+				daysOfWeek: ['wednesday'],
+				startTime: 0,
+				endTime: 24,
+			}
+
+			const result = getTimeConstraints(testDate, asTwentyFour)
+
+			expect(result).toEqual({ min: '00:00', max: '23:45' })
+		})
+
 		test('handles multiple rules for the same day (split shifts)', () => {
 			const businessHours: BusinessHours[] = [
 				{

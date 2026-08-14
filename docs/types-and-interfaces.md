@@ -207,9 +207,11 @@ type WeekDays = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'fr
 interface BusinessHours {
   daysOfWeek?: WeekDays[]        // Default: ['monday'...'friday']
   startTime?: number | string    // Default: 9 (24-hour number, or 'HH:mm' e.g. '09:15')
-  endTime?: number | string      // Default: 17
+  endTime?: number | string      // Default: 17 (0 and 24 both mean midnight)
 }
 ```
+
+An `endTime` of `0` means midnight at the **end** of the day, the same instant as `24`, because a picker offering "12 AM" as the closing hour sends the former. Read literally as `00:00` it would close the day before it opened, which left the event form with no selectable time at all. An empty range is therefore one whose end does not follow its start, such as `9` to `9`.
 
 Can be a single object or an array for different hours on different days.
 Sub-hour boundaries use `'HH:mm'` strings; fractional numbers are not

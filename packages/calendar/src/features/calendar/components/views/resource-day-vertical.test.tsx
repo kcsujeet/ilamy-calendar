@@ -163,8 +163,10 @@ describe('ResourceDayVertical', () => {
 		renderResourceDayVertical({
 			businessHours: {
 				daysOfWeek: ['wednesday'],
-				startTime: 0,
-				endTime: 0,
+				// An empty range: the end does not follow the start. It cannot be
+				// written 0 to 0, which now means a full day ending at midnight.
+				startTime: 9,
+				endTime: 9,
 			},
 			hideNonBusinessHours: true,
 		})

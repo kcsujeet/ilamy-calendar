@@ -72,6 +72,36 @@ describe('AgendaView', () => {
 		expect(screen.getByText('(Day 3/3)')).toBeInTheDocument()
 	})
 
+	/**
+	 * #248. An all-day event's `end` is exclusive, so the counter has to run to the
+	 * last day the event COVERS. Counting from the raw end made a conventionally
+	 * stored three-day event read "Day 1/4", and a one-day event read "Day 1/2".
+	 */
+	it('counts days from the last covered day when the end is exclusive', () => {
+		const exclusiveTrip = [
+			mkEvent('t', 'Trip', '2026-06-20T00:00:00', '2026-06-23T00:00:00', {
+				allDay: true,
+			}),
+		]
+		renderAgenda(exclusiveTrip)
+
+		expect(screen.getByText('(Day 1/3)')).toBeInTheDocument()
+		expect(screen.getByText('(Day 3/3)')).toBeInTheDocument()
+		expect(screen.queryByText('(Day 1/4)')).not.toBeInTheDocument()
+	})
+
+	it('shows no day counter for a one-day all-day event ending at the next midnight', () => {
+		const oneDay = [
+			mkEvent('h', 'Holiday', '2026-06-20T00:00:00', '2026-06-21T00:00:00', {
+				allDay: true,
+			}),
+		]
+		renderAgenda(oneDay)
+
+		expect(screen.getByText('Holiday')).toBeInTheDocument()
+		expect(screen.queryByText('(Day 1/2)')).not.toBeInTheDocument()
+	})
+
 	it('labels all-day events and shows no indicator for single-day events', () => {
 		renderAgenda(seed)
 		// Trip is all-day across 3 days -> 3 "All day" labels; Meeting is timed.

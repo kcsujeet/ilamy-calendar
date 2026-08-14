@@ -62,15 +62,21 @@ const computeColumnSpan = (
 	const eventStart = dayjs.max(event.start.startOf(gridType), firstUnit)
 	// `end` is exclusive at every granularity: an event ending at midnight stops
 	// as that day begins, so it must not claim the day's column, exactly as one
-	// ending on the hour does not claim that hour's row (#248). Stepping back a
-	// minute lands on the last unit the event actually occupies.
-	const adjustedEnd = event.end.subtract(1, 'minute')
+	// ending on the hour does not claim that hour's row (#248). The step back is a
+	// MILLISECOND, dayjs's smallest unit, so it lands on the last instant the
+	// event occupies and nothing else. A coarser step silently swallows anything
+	// ending inside it: at a minute, an event running 30 seconds into the next day
+	// lost that day entirely.
+	const adjustedEnd = event.end.subtract(1, 'millisecond')
 	const eventEnd = dayjs.min(adjustedEnd.startOf(gridType), lastUnit)
 	return {
 		startCol: Math.max(0, eventStart.diff(firstUnit, gridType)),
 		endCol: Math.min(unitCount - 1, eventEnd.diff(firstUnit, gridType)),
 		isTruncatedStart: event.start.startOf(gridType).isBefore(firstUnit),
-		isTruncatedEnd: event.end.startOf(gridType).isAfter(lastUnit),
+		// Read off the SAME exclusive end as the span above. Using the raw `end`
+		// here would disagree with it at the grid's edge, drawing the overrun
+		// indicator on an event that ends exactly where the grid does.
+		isTruncatedEnd: adjustedEnd.startOf(gridType).isAfter(lastUnit),
 	}
 }
 

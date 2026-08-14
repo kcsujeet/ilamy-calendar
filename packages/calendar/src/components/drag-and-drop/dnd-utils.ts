@@ -39,13 +39,11 @@ export const getUpdatedEvent = (
 
 	const eventDuration = activeEvent.end.diff(activeEvent.start, 'second')
 
-	// Create new end time by adding the original duration
-	let newEnd = newStart.add(eventDuration, 'second')
-
-	if (newEnd.isSame(newEnd.startOf('day'))) {
-		// If the new end time is at midnight, set it to 24 hours of partial day
-		newEnd = newEnd.subtract(1, 'day').endOf('day')
-	}
+	// Create new end time by adding the original duration. An end landing on
+	// midnight is kept: `end` is exclusive (#248), so it is a legitimate end and
+	// the layout paints it on the day it actually covers. Snapping it back to the
+	// previous 23:59:59.999, as this used to, resized the event on every drag.
+	const newEnd = newStart.add(eventDuration, 'second')
 
 	// Update the event with new times and resource if changed
 	const updates = {

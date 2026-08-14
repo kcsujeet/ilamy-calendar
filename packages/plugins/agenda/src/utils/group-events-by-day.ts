@@ -20,9 +20,10 @@ const appearsOnDay = (
 	dayEnd: Dayjs
 ): boolean => {
 	if (event.allDay) {
-		return (
-			event.start.isSameOrBefore(dayEnd) && event.end.isSameOrAfter(dayStart)
-		)
+		// `end` is exclusive (#248), so an event ending at this day's first instant
+		// covers none of it. Anything looser lists a one-day all-day event under
+		// the following day too, contradicting the grid.
+		return event.start.isSameOrBefore(dayEnd) && event.end.isAfter(dayStart)
 	}
 	return (
 		event.start.isSameOrAfter(dayStart) && event.start.isSameOrBefore(dayEnd)

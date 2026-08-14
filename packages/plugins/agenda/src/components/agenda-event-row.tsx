@@ -18,7 +18,11 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	const timeLabel = event.allDay ? t('allDay') : startTime
 
 	const eventStartDay = event.start.startOf('day')
-	const totalDays = event.end.startOf('day').diff(eventStartDay, 'day') + 1
+	// `end` is exclusive (#248), so the count runs to the last day the event
+	// COVERS. Taken from the raw end, a conventionally stored three-day event read
+	// "Day 1/4" and a one-day event read "Day 1/2".
+	const lastCoveredDay = event.end.subtract(1, 'millisecond').startOf('day')
+	const totalDays = lastCoveredDay.diff(eventStartDay, 'day') + 1
 	const dayIndex = day.startOf('day').diff(eventStartDay, 'day') + 1
 	const isMultiDayAllDay = Boolean(event.allDay) && totalDays > 1
 	const dayLabel = `(${t('day')} ${dayIndex}/${totalDays})`

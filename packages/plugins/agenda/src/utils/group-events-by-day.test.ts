@@ -58,6 +58,45 @@ describe('groupEventsByDay', () => {
 		expect(groups.map((g) => g.key)).toEqual(['2026-06-02'])
 	})
 
+	/**
+	 * #248. An all-day event's `end` is exclusive, so one stored the conventional
+	 * way (midnight to the following midnight) covers a single day and must be
+	 * listed once. Testing the end against `isSameOrAfter(dayStart)` listed it
+	 * under the following day as well, contradicting the month grid.
+	 */
+	it('lists a one-day all-day event once when its end is the following midnight', () => {
+		const groups = run(
+			[
+				mkEvent('one-day', '2026-06-02T00:00:00', '2026-06-03T00:00:00', {
+					allDay: true,
+				}),
+			],
+			'2026-06-01T00:00:00',
+			'2026-06-30T23:59:59'
+		)
+
+		expect(groups.map((g) => g.key)).toEqual(['2026-06-02'])
+	})
+
+	it('repeats a conventionally stored multi-day all-day event under each day it covers', () => {
+		const groups = run(
+			[
+				// Covers Jun 2, 3 and 4: the exclusive end is Jun 5 at midnight.
+				mkEvent('three-days', '2026-06-02T00:00:00', '2026-06-05T00:00:00', {
+					allDay: true,
+				}),
+			],
+			'2026-06-01T00:00:00',
+			'2026-06-30T23:59:59'
+		)
+
+		expect(groups.map((g) => g.key)).toEqual([
+			'2026-06-02',
+			'2026-06-03',
+			'2026-06-04',
+		])
+	})
+
 	it('repeats a multi-day all-day event under each overlapped day in the range', () => {
 		const events = [
 			mkEvent('multi', '2026-06-02T00:00:00', '2026-06-04T23:59:59', {

@@ -100,12 +100,14 @@ export const generateRecurringEvents = ({
 					return false
 				}
 
-				// Filter to only include events that span through the original requested date range
-				// An event spans the range if: event_start < range_end AND event_end > range_start
-				// Use isSameOrBefore/isSameOrAfter to include boundary cases
+				// Only occurrences that overlap the requested range: the start is
+				// inclusive, the end EXCLUSIVE (#248), so one ending at the range's
+				// first instant covers none of it. This used to read
+				// `end.isSameOrAfter(startDate)`, which contradicted the rule above and
+				// generated that boundary occurrence.
 				const eventSpansRange =
 					recurringEvent.start.isSameOrBefore(endDate) &&
-					recurringEvent.end.isSameOrAfter(startDate)
+					recurringEvent.end.isAfter(startDate)
 
 				return eventSpansRange
 			})

@@ -35,8 +35,10 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	const isResourceCalendar = variant === 'resource'
 	const isRegularCalendar = !isResourceCalendar
 	// Triggered when `hideNonBusinessHours` filters every column to zero hours
-	// (e.g. business hours `startTime: 0, endTime: 0`). The all-day row takes
-	// the freed vertical space so the view doesn't render an empty time grid.
+	// (e.g. business hours `startTime: 9, endTime: 9`, an end that does not follow
+	// its start — note `endTime: 0` means MIDNIGHT, a full day, not an empty
+	// range). The all-day row takes the freed vertical space so the view doesn't
+	// render an empty time grid.
 	const expandAllDayRow = columns.every((c) => !c.days?.length)
 
 	const { currentDate, view, scrollTime } = useSmartCalendarContext()

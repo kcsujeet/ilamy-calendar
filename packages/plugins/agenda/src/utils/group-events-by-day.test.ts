@@ -80,7 +80,7 @@ describe('groupEventsByDay', () => {
 
 	/**
 	 * A zero-duration all-day event still belongs to its date. The core's
-	 * `eventOverlapsRange` keeps it (its START falls inside the day) and the grid
+	 * `overlapsRange` keeps it (its START falls inside the day) and the grid
 	 * paints it; testing only the end against the day's first instant dropped it
 	 * from the agenda alone.
 	 */

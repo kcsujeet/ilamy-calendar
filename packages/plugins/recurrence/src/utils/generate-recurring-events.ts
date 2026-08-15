@@ -1,6 +1,6 @@
 import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
-import { safeDate } from '@ilamy/utils/helpers'
+import { overlapsRange, safeDate } from '@ilamy/utils/helpers'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from '../types'
 import { fromFloatingDate, toFloatingDate } from './floating-time'
@@ -100,21 +100,15 @@ export const generateRecurringEvents = ({
 					return false
 				}
 
-				// The same three cases the core's `eventOverlapsRange` uses, so an
-				// occurrence is kept here exactly when the host would keep it: `start`
-				// is inclusive, `end` is EXCLUSIVE (#248). Testing the end alone let one
-				// ending at the range's first instant through, and later dropped a
-				// zero-duration occurrence, which its START is what places.
-				const startsInRange =
-					recurringEvent.start.isSameOrAfter(startDate) &&
-					recurringEvent.start.isSameOrBefore(endDate)
-				const endsInRange =
-					recurringEvent.end.isAfter(startDate) &&
-					recurringEvent.end.isSameOrBefore(endDate)
-				const spansRange =
-					recurringEvent.start.isBefore(startDate) &&
-					recurringEvent.end.isAfter(endDate)
-				const eventSpansRange = startsInRange || endsInRange || spansRange
+				// The shared predicate, so an occurrence is kept here exactly when the
+				// host would keep it. A private copy of it went wrong twice: once by
+				// including an occurrence that ENDS at the range start, once by dropping
+				// a zero-duration one, which its start is what places (#248).
+				const eventSpansRange = overlapsRange(
+					recurringEvent,
+					startDate,
+					endDate
+				)
 
 				return eventSpansRange
 			})

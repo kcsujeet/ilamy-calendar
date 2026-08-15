@@ -21,6 +21,40 @@ export function safeDate(
 	return parsedDate.isValid() ? parsedDate : undefined
 }
 
+/** Anything with a start and an end: a calendar event, a cell, a selection. */
+interface Interval {
+	start: Dayjs
+	end: Dayjs
+}
+
+/**
+ * Whether `interval` overlaps `[start, end]`. Covers the three cases: it starts
+ * inside the range, it ends inside the range, or it spans the range entirely.
+ *
+ * An interval's `start` is INCLUSIVE and its `end` EXCLUSIVE, matching RFC 5545
+ * ("the DTEND property ... specifies the non-inclusive end of the event") and
+ * the Google Calendar API. So one ending at the range's first instant occupies
+ * none of it and does not overlap, while one beginning at the range's last
+ * instant does. A zero-duration interval is placed by its start, since an end
+ * equal to it is behind every instant of the range.
+ *
+ * This lives in `@ilamy/utils` because the core and two plugins all need the
+ * same answer. Three private copies drifted apart once already (#248): the grid
+ * showed a one-day event while the agenda showed two.
+ */
+export function overlapsRange(
+	interval: Interval,
+	start: Dayjs,
+	end: Dayjs
+): boolean {
+	const startsInRange =
+		interval.start.isSameOrAfter(start) && interval.start.isSameOrBefore(end)
+	const endsInRange =
+		interval.end.isAfter(start) && interval.end.isSameOrBefore(end)
+	const spansRange = interval.start.isBefore(start) && interval.end.isAfter(end)
+	return startsInRange || endsInRange || spansRange
+}
+
 /**
  * Composes a stable string from parts, for React `key=` props and element ids
  * (e.g. `listKey('day', 3)` -> `'day-3'`).

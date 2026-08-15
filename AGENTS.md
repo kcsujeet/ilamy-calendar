@@ -97,7 +97,7 @@ React calendar component library. TypeScript, Shadcn-UI, Tailwind CSS, @dnd-kit,
 ```
 packages/
   types/        @ilamy/types        (private)  shared plugin-contract types (no runtime)
-  utils/        @ilamy/utils        (private)  configured dayjs (./dayjs) + helpers (./helpers)
+  utils/        @ilamy/utils        (private)  configured dayjs (./dayjs) + helpers (./helpers: safeDate, overlapsRange, …)
   ui/           @ilamy/ui           (private)  shadcn primitives
   playground/   @ilamy/playground   (private)  shared interactive demo UI, source-only; consumed by apps/demo + apps/website
   plugins/
@@ -178,7 +178,7 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
   lib/
     translations/                              # Default translations, types
     layout/                                    # geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
-    events/pipeline.ts                         # event filters (resource membership, range overlap)
+    events/pipeline.ts                         # event filters (resource membership; range overlap lives in @ilamy/utils)
     utils/                                     # date-utils, normalize, export-ical (cn → @ilamy/ui/lib/utils, safeDate → @ilamy/utils/helpers)
     constants.ts                               # Global constants
 

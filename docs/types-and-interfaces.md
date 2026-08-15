@@ -51,7 +51,7 @@ An event runs up to, but not including, `end`, matching RFC 5545 §3.6.1 ("the D
 | `2025-01-13T00:00` to `2025-01-14T09:00` | Jan 13 and Jan 14 |
 | All-day Jan 13, stored conventionally | `start` Jan 13, `end` Jan 14 |
 
-This holds at every granularity: an event ending on the hour does not occupy that hour's row, and one ending at midnight does not occupy that day's column (`lib/layout/horizontal.ts`). The same rule makes `eventOverlapsRange` treat an event ending at a range's first instant as outside it.
+This holds at every granularity: an event ending on the hour does not occupy that hour's row, and one ending at midnight does not occupy that day's column (`lib/layout/horizontal.ts`). The same rule makes `overlapsRange` (`@ilamy/utils/helpers`, shared by the core and both plugins) treat an event ending at a range's first instant as outside it.
 
 Two conversions exist so users are never asked for a midnight end, which is the same split Google draws between its API and its UI:
 

@@ -1,4 +1,5 @@
 import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
+import { overlapsRange } from '@ilamy/utils/helpers'
 
 export interface AgendaDayGroupData {
 	/** 'YYYY-MM-DD' for the day. */
@@ -20,17 +21,10 @@ const appearsOnDay = (
 	dayEnd: Dayjs
 ): boolean => {
 	if (event.allDay) {
-		// The same three cases the core's `eventOverlapsRange` uses, so the agenda
-		// and the grid never disagree: `start` is inclusive, `end` is exclusive
-		// (#248). Testing the end alone dropped a zero-duration event, whose start
-		// is what places it; testing it loosely listed a one-day event under the
-		// following day as well.
-		const startsInDay =
-			event.start.isSameOrAfter(dayStart) && event.start.isSameOrBefore(dayEnd)
-		const endsInDay =
-			event.end.isAfter(dayStart) && event.end.isSameOrBefore(dayEnd)
-		const spansDay = event.start.isBefore(dayStart) && event.end.isAfter(dayEnd)
-		return startsInDay || endsInDay || spansDay
+		// The shared predicate, so the agenda and the grid cannot disagree about
+		// which days an event covers. A private copy of it drifted once already
+		// (#248), listing a one-day event under two days.
+		return overlapsRange(event, dayStart, dayEnd)
 	}
 	return (
 		event.start.isSameOrAfter(dayStart) && event.start.isSameOrBefore(dayEnd)

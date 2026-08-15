@@ -1,11 +1,11 @@
 import type { IlamyPlugin } from '@ilamy/types'
+import { overlapsRange } from '@ilamy/utils/helpers'
 import {
 	type ComponentType,
 	createElement,
 	Fragment,
 	type ReactNode,
 } from 'react'
-import { eventOverlapsRange } from '@/lib/events/pipeline'
 import type { PluginRuntime } from './types'
 
 export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({
@@ -19,7 +19,7 @@ export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({
 			events
 		)
 		return transformed.filter((event) =>
-			eventOverlapsRange(event, range.start, range.end)
+			overlapsRange(event, range.start, range.end)
 		)
 	},
 

@@ -84,7 +84,7 @@ describe('generateRecurringEvents - exclusive end at the range boundary', () => 
 
 	/**
 	 * A zero-duration occurrence is placed by its START, exactly as the core's
-	 * `eventOverlapsRange` places one. Testing only the end dropped the occurrence
+	 * `overlapsRange` places one. Testing only the end dropped the occurrence
 	 * that lands on the range's first instant.
 	 */
 	it('keeps a zero-duration occurrence that starts at the range start', () => {

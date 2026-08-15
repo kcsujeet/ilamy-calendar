@@ -20,10 +20,17 @@ const appearsOnDay = (
 	dayEnd: Dayjs
 ): boolean => {
 	if (event.allDay) {
-		// `end` is exclusive (#248), so an event ending at this day's first instant
-		// covers none of it. Anything looser lists a one-day all-day event under
-		// the following day too, contradicting the grid.
-		return event.start.isSameOrBefore(dayEnd) && event.end.isAfter(dayStart)
+		// The same three cases the core's `eventOverlapsRange` uses, so the agenda
+		// and the grid never disagree: `start` is inclusive, `end` is exclusive
+		// (#248). Testing the end alone dropped a zero-duration event, whose start
+		// is what places it; testing it loosely listed a one-day event under the
+		// following day as well.
+		const startsInDay =
+			event.start.isSameOrAfter(dayStart) && event.start.isSameOrBefore(dayEnd)
+		const endsInDay =
+			event.end.isAfter(dayStart) && event.end.isSameOrBefore(dayEnd)
+		const spansDay = event.start.isBefore(dayStart) && event.end.isAfter(dayEnd)
+		return startsInDay || endsInDay || spansDay
 	}
 	return (
 		event.start.isSameOrAfter(dayStart) && event.start.isSameOrBefore(dayEnd)

@@ -164,6 +164,45 @@ describe('layoutHorizontal', () => {
 			expect(placement.isTruncatedEnd).toBe(true)
 		})
 
+		/**
+		 * Whether an event spans more than one column is a question about calendar
+		 * boundaries, not duration. Classifying by `end.diff(start, unit) > 0` sent
+		 * every event shorter than a whole unit down the single-column path, so an
+		 * overnight event vanished from its second day even though the span math
+		 * had it right.
+		 */
+		it('covers both days for an overnight event shorter than 24 hours', () => {
+			const overnight = mkEvent(
+				'overnight',
+				'2025-01-13T18:00:00.000Z',
+				'2025-01-14T06:00:00.000Z'
+			)
+
+			const [placement] = run([overnight])
+
+			expect(columnsOf(placement.width)).toBe(2)
+		})
+
+		it('covers both hours for an event crossing the hour by minutes', () => {
+			const hours = Array.from({ length: 24 }, (_, i) =>
+				dayjs('2025-01-13T00:00:00.000Z').add(i, 'hour')
+			)
+			const crossesTheHour = mkEvent(
+				'nine-thirty-to-ten-fifteen',
+				'2025-01-13T09:30:00.000Z',
+				'2025-01-13T10:15:00.000Z'
+			)
+
+			const [placement] = layoutHorizontal({
+				days: hours,
+				events: [crossesTheHour],
+				dayMaxEvents: 4,
+				gridType: 'hour',
+			})
+
+			expect(Math.round(placement.width / (100 / hours.length))).toBe(2)
+		})
+
 		it('still covers one day when start and end are equal', () => {
 			const event = mkEvent(
 				'zero-length',

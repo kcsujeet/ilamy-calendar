@@ -23,12 +23,20 @@ const partitionAndSortEvents = (
 	events: CalendarEvent[],
 	gridType: 'day' | 'hour'
 ): { sortedMultiUnit: CalendarEvent[]; sortedSingleUnit: CalendarEvent[] } => {
-	const multiUnitEvents = events.filter(
-		(e) => e.end.diff(e.start, gridType) > 0
-	)
-	const singleUnitEvents = events.filter(
-		(e) => e.end.diff(e.start, gridType) === 0
-	)
+	// Spanning is a question about BOUNDARIES, not duration. Classifying by
+	// `end.diff(start, unit) > 0` truncates, so anything shorter than a whole unit
+	// took the single-column path: an 18:00-to-06:00 event vanished from its
+	// second day, and a 09:30-to-10:15 one from its second hour, even though the
+	// span math had them right. Comparing the start's unit with the last unit the
+	// event OCCUPIES (its exclusive end, stepped back) asks the real question.
+	const spansMultipleUnits = (e: CalendarEvent): boolean =>
+		e.end
+			.subtract(1, 'millisecond')
+			.startOf(gridType)
+			.isAfter(e.start.startOf(gridType))
+
+	const multiUnitEvents = events.filter(spansMultipleUnits)
+	const singleUnitEvents = events.filter((e) => !spansMultipleUnits(e))
 
 	// Multi-unit: by start date, then longer events first.
 	const sortedMultiUnit = [...multiUnitEvents].sort((a, b) => {

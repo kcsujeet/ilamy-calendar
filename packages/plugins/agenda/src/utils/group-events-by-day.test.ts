@@ -78,6 +78,26 @@ describe('groupEventsByDay', () => {
 		expect(groups.map((g) => g.key)).toEqual(['2026-06-02'])
 	})
 
+	/**
+	 * A zero-duration all-day event still belongs to its date. The core's
+	 * `eventOverlapsRange` keeps it (its START falls inside the day) and the grid
+	 * paints it; testing only the end against the day's first instant dropped it
+	 * from the agenda alone.
+	 */
+	it('lists a zero-duration all-day event on its date', () => {
+		const groups = run(
+			[
+				mkEvent('zero', '2026-06-02T00:00:00', '2026-06-02T00:00:00', {
+					allDay: true,
+				}),
+			],
+			'2026-06-01T00:00:00',
+			'2026-06-30T23:59:59'
+		)
+
+		expect(groups.map((g) => g.key)).toEqual(['2026-06-02'])
+	})
+
 	it('repeats a conventionally stored multi-day all-day event under each day it covers', () => {
 		const groups = run(
 			[

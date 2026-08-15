@@ -1217,6 +1217,34 @@ describe('IlamyCalendar - timezone prop', () => {
 })
 
 /**
+ * #248 review. A day cell reports an exclusive range, so its End Date prefills
+ * as the FOLLOWING day. That date means a boundary for a timed event but the
+ * last covered day for an all-day one, so checking "All day" has to reinterpret
+ * it. Without that, saving added a day and a single-day click produced a
+ * two-day event.
+ */
+describe('IlamyCalendar - cell click then All day', () => {
+	it('creates a one-day event for the day that was clicked', () => {
+		const added: CalendarEvent[] = []
+		render(
+			<IlamyCalendar
+				events={[]}
+				initialDate="2026-05-13T12:00:00.000Z"
+				onEventAdd={(event) => added.push(event)}
+			/>
+		)
+
+		fireEvent.click(screen.getByTestId('day-cell-2026-05-13'))
+		fireEvent.click(screen.getByLabelText('All day'))
+		fireEvent.click(screen.getByRole('button', { name: /create|add|save/i }))
+
+		const created = added.at(0)
+		expect(created?.start.format('YYYY-MM-DD HH:mm')).toBe('2026-05-13 00:00')
+		expect(created?.end.format('YYYY-MM-DD HH:mm')).toBe('2026-05-14 00:00')
+	})
+})
+
+/**
  * Regression test for the report in #247: an all-day event given as UTC ISO
  * strings showed up one day early for a viewer east of UTC. `22:00Z` is midnight
  * the NEXT day in Europe/Vienna, so the bar must start in the Aug 18 column; it

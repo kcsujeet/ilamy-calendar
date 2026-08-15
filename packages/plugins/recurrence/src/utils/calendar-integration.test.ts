@@ -81,6 +81,37 @@ describe('generateRecurringEvents - exclusive end at the range boundary', () => 
 			'2025-01-07T00:00:00.000Z'
 		)
 	})
+
+	/**
+	 * A zero-duration occurrence is placed by its START, exactly as the core's
+	 * `eventOverlapsRange` places one. Testing only the end dropped the occurrence
+	 * that lands on the range's first instant.
+	 */
+	it('keeps a zero-duration occurrence that starts at the range start', () => {
+		const zeroDuration: CalendarEvent = {
+			id: 'zero-duration',
+			uid: 'zero-duration@ilamy.calendar',
+			title: 'Zero duration',
+			start: dayjs('2025-01-06T09:00:00.000Z'),
+			end: dayjs('2025-01-06T09:00:00.000Z'),
+			rrule: {
+				freq: RRule.DAILY,
+				interval: 1,
+				dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+			},
+			exdates: [],
+		}
+
+		const result = generate(
+			zeroDuration,
+			dayjs('2025-01-08T09:00:00.000Z'),
+			dayjs('2025-01-10T09:00:00.000Z')
+		)
+
+		expect(result.map((e) => e.start.toISOString())).toContain(
+			'2025-01-08T09:00:00.000Z'
+		)
+	})
 })
 
 describe('generateRecurringEvents - Calendar Provider Integration', () => {

@@ -100,14 +100,21 @@ export const generateRecurringEvents = ({
 					return false
 				}
 
-				// Only occurrences that overlap the requested range: the start is
-				// inclusive, the end EXCLUSIVE (#248), so one ending at the range's
-				// first instant covers none of it. This used to read
-				// `end.isSameOrAfter(startDate)`, which contradicted the rule above and
-				// generated that boundary occurrence.
-				const eventSpansRange =
-					recurringEvent.start.isSameOrBefore(endDate) &&
-					recurringEvent.end.isAfter(startDate)
+				// The same three cases the core's `eventOverlapsRange` uses, so an
+				// occurrence is kept here exactly when the host would keep it: `start`
+				// is inclusive, `end` is EXCLUSIVE (#248). Testing the end alone let one
+				// ending at the range's first instant through, and later dropped a
+				// zero-duration occurrence, which its START is what places.
+				const startsInRange =
+					recurringEvent.start.isSameOrAfter(startDate) &&
+					recurringEvent.start.isSameOrBefore(endDate)
+				const endsInRange =
+					recurringEvent.end.isAfter(startDate) &&
+					recurringEvent.end.isSameOrBefore(endDate)
+				const spansRange =
+					recurringEvent.start.isBefore(startDate) &&
+					recurringEvent.end.isAfter(endDate)
+				const eventSpansRange = startsInRange || endsInRange || spansRange
 
 				return eventSpansRange
 			})

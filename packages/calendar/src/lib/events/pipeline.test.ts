@@ -82,6 +82,21 @@ describe('eventOverlapsRange', () => {
 		expect(eventOverlapsRange(event, start, end)).toBe(false)
 	})
 
+	/**
+	 * A zero-duration event is placed by its START; its end proves nothing, since
+	 * an exclusive end equal to the start is behind every instant of the range.
+	 * The agenda plugin and the recurrence plugin both mirror this predicate, so
+	 * this is the case that keeps all three agreeing.
+	 */
+	it('returns true for a zero-duration event inside the range', () => {
+		const event = makeEvent(
+			'h',
+			'2025-01-05T00:00:00.000Z',
+			'2025-01-05T00:00:00.000Z'
+		)
+		expect(eventOverlapsRange(event, start, end)).toBe(true)
+	})
+
 	it('returns true when the event starts exactly at the range end', () => {
 		const event = makeEvent(
 			'g',

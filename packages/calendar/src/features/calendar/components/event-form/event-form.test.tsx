@@ -255,6 +255,30 @@ describe('EventForm', () => {
 		})
 
 		/**
+		 * #248 review. The step back only applies when the End Date sits on a LATER
+		 * day than the start. Applied unconditionally it moved the end before the
+		 * start, and `buildEndDateTime` adding a day back then saved a zero-duration
+		 * event where the user asked for a one-day one.
+		 */
+		it('does not step the end date behind the start when they share a day', () => {
+			const onUpdate = mock((_event: CalendarEvent) => {})
+			const zeroLength: CalendarEvent = {
+				id: 'zero',
+				title: 'Zero length',
+				start: dayjs('2025-08-15T00:00:00'),
+				end: dayjs('2025-08-15T00:00:00'),
+			}
+			renderEventForm({ ...defaultProps, onUpdate, selectedEvent: zeroLength })
+
+			fireEvent.click(screen.getByLabelText('All day'))
+			fireEvent.click(screen.getByRole('button', { name: /update|save/i }))
+
+			const saved = onUpdate.mock.calls.at(0)?.at(0)
+			expect(saved?.start.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 00:00')
+			expect(saved?.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-16 00:00')
+		})
+
+		/**
 		 * Events written before this change end at 23:59 on the last covered day.
 		 * That is not a midnight boundary, so it is read as the inclusive value it
 		 * is and displayed as-is rather than shifted a day earlier.

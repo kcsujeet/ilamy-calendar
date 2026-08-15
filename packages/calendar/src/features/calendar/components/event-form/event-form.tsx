@@ -292,9 +292,18 @@ export const EventForm: React.FC<EventFormProps> = ({
 	 */
 	const handleAllDayChange = (checked: boolean) => {
 		setIsAllDay(checked)
-		if (checked && endTime === '00:00') {
-			setEndDate((previous) => dayjs(previous).subtract(1, 'day').toDate())
+		if (!(checked && endTime === '00:00')) {
+			return
 		}
+		// Only when the end sits on a LATER day. A same-day midnight end means a
+		// zero-length event, and stepping that back would put the end before the
+		// start, saving another zero-length event where a one-day one was asked for.
+		setEndDate((previous) => {
+			const endsOnALaterDay = dayjs(previous).isAfter(dayjs(startDate), 'day')
+			return endsOnALaterDay
+				? dayjs(previous).subtract(1, 'day').toDate()
+				: previous
+		})
 	}
 
 	// Time validation handlers - only validate when dates are the same

@@ -19,6 +19,7 @@ These are non-negotiable. Violating any of these is a bug.
 - NEVER start/stop the dev server. It's already running with hot reload.
 - NEVER commit or push without explicit user approval.
 - NEVER skip writing tests. TDD is mandatory.
+- ALWAYS hunt the repercussions of a change before claiming it is done. Name the meaning you are changing, sweep for everything that depends on it (duplicated predicates in plugins, siblings in the same function, compensating hacks, tests and docs pinning the old contract), and prove the fix by reverting it and watching a test fail. Passing tests only prove that nothing *covered* broke. See `.agents/rules/change-impact.md`.
 - NEVER use npm/node/pnpm as the package manager or runtime. Always use `bun` (invoke tools via `bunx`, e.g. the demo dev server runs `bunx vite`).
 - ALWAYS use the latest published version when adding a dependency. Check `npm view <pkg> version` for the true latest — never copy version numbers from existing in-repo examples or from memory. Verify peer/engine compatibility and confirm the new major has no breaking changes for the APIs used (per the docs-first rule).
 - NEVER use `YYYY-MM-DD` format for storage/transmission. Always use ISO strings.
@@ -96,7 +97,7 @@ React calendar component library. TypeScript, Shadcn-UI, Tailwind CSS, @dnd-kit,
 ```
 packages/
   types/        @ilamy/types        (private)  shared plugin-contract types (no runtime)
-  utils/        @ilamy/utils        (private)  configured dayjs (./dayjs) + helpers (./helpers)
+  utils/        @ilamy/utils        (private)  configured dayjs (./dayjs) + helpers (./helpers: safeDate, overlapsRange, …)
   ui/           @ilamy/ui           (private)  shadcn primitives
   playground/   @ilamy/playground   (private)  shared interactive demo UI, source-only; consumed by apps/demo + apps/website
   plugins/
@@ -177,7 +178,7 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
   lib/
     translations/                              # Default translations, types
     layout/                                    # geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
-    events/pipeline.ts                         # event filters (resource membership, range overlap)
+    events/pipeline.ts                         # event filters (resource membership; range overlap lives in @ilamy/utils)
     utils/                                     # date-utils, normalize, export-ical (cn → @ilamy/ui/lib/utils, safeDate → @ilamy/utils/helpers)
     constants.ts                               # Global constants
 

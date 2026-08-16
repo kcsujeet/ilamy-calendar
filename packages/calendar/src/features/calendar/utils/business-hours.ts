@@ -59,6 +59,21 @@ const toBoundaryMinutes = (
 	return fallbackHours * 60
 }
 
+/**
+ * The same normalization for an END boundary, where midnight means the end of
+ * the day rather than its start. `0` and `24` name the same instant, and a
+ * picker offering "12 AM" as the closing hour sends the former. Read literally
+ * as 00:00 it would close the day before it opened, leaving no business hour and
+ * an empty time picker.
+ */
+const toEndBoundaryMinutes = (
+	value: number | string | undefined,
+	fallbackHours: number
+): number => {
+	const minutes = toBoundaryMinutes(value, fallbackHours)
+	return minutes === 0 ? 24 * 60 : minutes
+}
+
 interface IsBusinessHourOptions {
 	date: Dayjs
 	hour?: number
@@ -102,7 +117,7 @@ export const isBusinessHour = ({
 		date,
 		onMatch: (config) => {
 			const startMinutes = toBoundaryMinutes(config.startTime, 9)
-			const endMinutes = toBoundaryMinutes(config.endTime, 17)
+			const endMinutes = toEndBoundaryMinutes(config.endTime, 17)
 
 			const startsInside = currentMinutes >= startMinutes
 			const endsInside = durationMinutes
@@ -178,7 +193,7 @@ export const calculateBusinessHoursRange = (options: {
 	const onMatch = (config: BusinessHours) => {
 		hasBusinessHours = true
 		minStart = Math.min(minStart, toBoundaryMinutes(config.startTime, 9) / 60)
-		maxEnd = Math.max(maxEnd, toBoundaryMinutes(config.endTime, 17) / 60)
+		maxEnd = Math.max(maxEnd, toEndBoundaryMinutes(config.endTime, 17) / 60)
 	}
 
 	// Invoke processBusinessHours for the global config and every resource

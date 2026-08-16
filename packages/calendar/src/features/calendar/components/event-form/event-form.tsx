@@ -219,9 +219,17 @@ export const EventForm: React.FC<EventFormProps> = ({
 	// Whether a plugin owns this event (gates the scoped edit/delete flow)
 	const eventIsOwned = Boolean(selectedEvent && getEventManager(selectedEvent))
 
+	// An all-day `end` is STORED exclusively, as the midnight after the last day
+	// the event covers (#248), but the picker shows the user that last day.
+	// `buildEndDateTime` converts back on save. An end that is not on a midnight
+	// boundary predates this and is already inclusive, so it is shown untouched.
+	const endsOnMidnight = end.isSame(end.startOf('day'))
+	const lastCoveredDay =
+		initialAllDay && endsOnMidnight ? end.subtract(1, 'day') : end
+
 	// Form state
 	const [startDate, setStartDate] = useState(start.toDate())
-	const [endDate, setEndDate] = useState(end.toDate())
+	const [endDate, setEndDate] = useState(lastCoveredDay.toDate())
 	const [isAllDay, setIsAllDay] = useState(initialAllDay)
 	const [selectedColor, setSelectedColor] = useState(
 		resolveInitialColor(initialBackgroundColor, initialColor)
@@ -272,6 +280,30 @@ export const EventForm: React.FC<EventFormProps> = ({
 		if (date && dayjs(date).isBefore(dayjs(startDate))) {
 			setStartDate(date)
 		}
+	}
+
+	/**
+	 * The End Date input means different things in the two modes: a boundary for a
+	 * timed event, the last day COVERED for an all-day one. Switching to all-day
+	 * therefore has to reinterpret it, and a midnight end covers through the
+	 * previous day. Without this step back, clicking a month cell (whose range
+	 * ends at the next midnight) and ticking All day saved a two-day event for a
+	 * single day (#248).
+	 */
+	const handleAllDayChange = (checked: boolean) => {
+		setIsAllDay(checked)
+		if (!(checked && endTime === '00:00')) {
+			return
+		}
+		// Only when the end sits on a LATER day. A same-day midnight end means a
+		// zero-length event, and stepping that back would put the end before the
+		// start, saving another zero-length event where a one-day one was asked for.
+		setEndDate((previous) => {
+			const endsOnALaterDay = dayjs(previous).isAfter(dayjs(startDate), 'day')
+			return endsOnALaterDay
+				? dayjs(previous).subtract(1, 'day').toDate()
+				: previous
+		})
 	}
 
 	// Time validation handlers - only validate when dates are the same
@@ -470,7 +502,9 @@ export const EventForm: React.FC<EventFormProps> = ({
 							<Checkbox
 								checked={isAllDay}
 								id="allDay"
-								onCheckedChange={(checked) => setIsAllDay(checked === true)}
+								onCheckedChange={(checked) =>
+									handleAllDayChange(checked === true)
+								}
 							/>
 							<Label className="text-xs sm:text-sm" htmlFor="allDay">
 								{t('allDay')}

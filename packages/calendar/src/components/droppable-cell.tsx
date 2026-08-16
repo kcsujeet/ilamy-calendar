@@ -38,7 +38,9 @@ function getCellRange(
 	if (hour !== undefined) {
 		return { start, end: start.hour(hour + 1).minute(0) }
 	}
-	return { start, end: start.hour(23).minute(59) }
+	// The next midnight, not 23:59: `end` is exclusive, which is what the slot
+	// and hour branches above already report (#248).
+	return { start, end: start.add(1, 'day').startOf('day') }
 }
 
 export function DroppableCell({

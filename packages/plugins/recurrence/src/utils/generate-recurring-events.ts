@@ -1,6 +1,6 @@
 import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
-import { safeDate } from '@ilamy/utils/helpers'
+import { overlapsRange, safeDate } from '@ilamy/utils/helpers'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from '../types'
 import { fromFloatingDate, toFloatingDate } from './floating-time'
@@ -100,12 +100,15 @@ export const generateRecurringEvents = ({
 					return false
 				}
 
-				// Filter to only include events that span through the original requested date range
-				// An event spans the range if: event_start < range_end AND event_end > range_start
-				// Use isSameOrBefore/isSameOrAfter to include boundary cases
-				const eventSpansRange =
-					recurringEvent.start.isSameOrBefore(endDate) &&
-					recurringEvent.end.isSameOrAfter(startDate)
+				// The shared predicate, so an occurrence is kept here exactly when the
+				// host would keep it. A private copy of it went wrong twice: once by
+				// including an occurrence that ENDS at the range start, once by dropping
+				// a zero-duration one, which its start is what places (#248).
+				const eventSpansRange = overlapsRange(
+					recurringEvent,
+					startDate,
+					endDate
+				)
 
 				return eventSpansRange
 			})

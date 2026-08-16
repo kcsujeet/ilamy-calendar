@@ -185,7 +185,8 @@ describe('VerticalGridCol', () => {
 		const endISO = cell.getAttribute('data-end')
 		expect(startISO).not.toBeNull()
 		expect(endISO).not.toBeNull()
-		expect(dayjs(endISO).diff(dayjs(startISO), 'hour')).toBe(23)
+		// A whole day, exclusive of the next midnight (#248).
+		expect(dayjs(endISO).diff(dayjs(startISO), 'hour')).toBe(24)
 	})
 
 	test('renders events layer by default', () => {

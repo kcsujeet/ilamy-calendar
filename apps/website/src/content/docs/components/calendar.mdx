@@ -809,8 +809,8 @@ The main event object used throughout the calendar. All events passed to the cal
 interface CalendarEvent {
   id: string | number;     // Unique identifier for the event
   title: string;           // Display title of the event
-  start: Dayjs | Date | string; // Start — accepted as Dayjs, Date, or ISO string
-  end: Dayjs | Date | string;   // End — accepted as Dayjs, Date, or ISO string
+  start: Dayjs | Date | string; // Start (inclusive) — Dayjs, Date, or ISO string
+  end: Dayjs | Date | string;   // End (EXCLUSIVE) — Dayjs, Date, or ISO string
   description?: string;    // Optional description text
   location?: string;       // Optional location
   uid?: string;            // Optional iCalendar UID (used to group recurring series)
@@ -838,7 +838,21 @@ The `events` prop accepts `start` / `end` as a `Dayjs`, a `Date`, or an ISO stri
 
 - `description` - Additional text shown in tooltips or custom event renderers.
 - `color` - Background color for the event. Supports hex (#ff0000), rgb(255,0,0), or named colors (red).
-- `allDay` - When true, the event spans the entire day and ignores time components.
+- `allDay` - When true, the event spans whole days and ignores time components.
+
+#### `end` is exclusive
+
+An event runs up to, but not including, its `end`, matching [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545) ("the DTEND property ... specifies the non-inclusive end of the event") and the [Google Calendar API](https://developers.google.com/workspace/calendar/api/v3/reference/events), where `end` is "The (exclusive) end time of the event".
+
+So an event ending at midnight stops as that day begins:
+
+| Event | Days it covers |
+|---|---|
+| `2024-01-01T00:00` to `2024-01-02T00:00` | Jan 1 |
+| `2024-01-01T00:00` to `2024-01-02T09:00` | Jan 1 and Jan 2 |
+| All-day Jan 1 through Jan 3 | `start` Jan 1, `end` Jan 4 |
+
+The built-in event form shows you the last day an all-day event covers, and stores the exclusive value for you.
 
 ### Example Event Objects
 
@@ -853,12 +867,12 @@ const meeting = {
   color: '#3b82f6'
 };
 
-// All-day event
+// All-day event covering Jan 1. `end` is exclusive, so it is Jan 2.
 const holiday = {
   id: 'holiday-1',
   title: 'National Holiday',
   start: new Date('2024-01-01'),
-  end: new Date('2024-01-01'),
+  end: new Date('2024-01-02'),
   allDay: true,
   color: '#ef4444'
 };

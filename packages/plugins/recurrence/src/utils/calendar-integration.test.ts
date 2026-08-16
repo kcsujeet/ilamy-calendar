@@ -46,6 +46,74 @@ const expectInstanceStarts = (result: CalendarEvent[], startISOs: string[]) => {
 	expect(result.map((event) => event.start.toISOString())).toEqual(startISOs)
 }
 
+/**
+ * #248. An occurrence's `end` is exclusive, so one ending at the range's first
+ * instant covers none of the range and does not belong in it. The filter's own
+ * comment states the rule as "event_end > range_start" while the code used
+ * `isSameOrAfter`, so a boundary occurrence was generated anyway.
+ */
+describe('generateRecurringEvents - exclusive end at the range boundary', () => {
+	it('omits an occurrence that ends exactly at the range start', () => {
+		const allDayDaily: CalendarEvent = {
+			id: 'all-day-daily',
+			uid: 'all-day-daily@ilamy.calendar',
+			title: 'All-day daily',
+			allDay: true,
+			// Each occurrence covers one day: 00:00 to the following midnight.
+			start: dayjs('2025-01-06T00:00:00.000Z'),
+			end: dayjs('2025-01-07T00:00:00.000Z'),
+			rrule: {
+				freq: RRule.DAILY,
+				interval: 1,
+				dtstart: dayjs('2025-01-06T00:00:00.000Z').toDate(),
+			},
+			exdates: [],
+		}
+
+		// Range starts Jan 8: the Jan 7 occurrence ends exactly at that instant.
+		const result = generate(
+			allDayDaily,
+			dayjs('2025-01-08T00:00:00.000Z'),
+			dayjs('2025-01-09T00:00:00.000Z')
+		)
+
+		expect(result.map((e) => e.start.toISOString())).not.toContain(
+			'2025-01-07T00:00:00.000Z'
+		)
+	})
+
+	/**
+	 * A zero-duration occurrence is placed by its START, exactly as the core's
+	 * `overlapsRange` places one. Testing only the end dropped the occurrence
+	 * that lands on the range's first instant.
+	 */
+	it('keeps a zero-duration occurrence that starts at the range start', () => {
+		const zeroDuration: CalendarEvent = {
+			id: 'zero-duration',
+			uid: 'zero-duration@ilamy.calendar',
+			title: 'Zero duration',
+			start: dayjs('2025-01-06T09:00:00.000Z'),
+			end: dayjs('2025-01-06T09:00:00.000Z'),
+			rrule: {
+				freq: RRule.DAILY,
+				interval: 1,
+				dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+			},
+			exdates: [],
+		}
+
+		const result = generate(
+			zeroDuration,
+			dayjs('2025-01-08T09:00:00.000Z'),
+			dayjs('2025-01-10T09:00:00.000Z')
+		)
+
+		expect(result.map((e) => e.start.toISOString())).toContain(
+			'2025-01-08T09:00:00.000Z'
+		)
+	})
+})
+
 describe('generateRecurringEvents - Calendar Provider Integration', () => {
 	const baseEvent: CalendarEvent = {
 		id: 'recurring-1',

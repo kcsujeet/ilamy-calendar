@@ -157,11 +157,16 @@ describe('getViewHours', () => {
 		expect(hours.at(-1)?.hour()).toBe(17)
 	})
 
+	/**
+	 * An empty range is one whose end does not follow its start. It can no longer
+	 * be written as `0` to `0`: an `endTime` of 0 means midnight at the END of the
+	 * day, so that config now describes a full 24 hours.
+	 */
 	test('returns no hours when business range is empty', () => {
 		const businessHours: BusinessHours = {
 			daysOfWeek: ['wednesday'],
-			startTime: 0,
-			endTime: 0,
+			startTime: 9,
+			endTime: 9,
 		}
 
 		const hours = getViewHours({

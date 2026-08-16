@@ -53,7 +53,11 @@ export const useCalendarInteraction = ({
 			if (start) {
 				setSelectedDate(start)
 			}
-			const draftStart = start ?? currentDate
+			// Truncated to the minute because the form offers nothing finer, and an
+			// unpicked `start` falls back to `currentDate`, which came from `dayjs()`
+			// and carries the seconds of page load. Left in, that residue makes a
+			// midnight-to-midnight event 23:59:27 long (#248).
+			const draftStart = (start ?? currentDate).second(0).millisecond(0)
 			setSelectedEvent(
 				buildEventDraft({
 					title: t('newEvent'),

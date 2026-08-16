@@ -27,21 +27,3 @@ export function filterEventsForResource(
 		getEventResourceIds(event).includes(resourceId)
 	)
 }
-
-/**
- * Whether an event's interval overlaps with the `[start, end]` range
- * (inclusive). Covers the three cases: starts inside the range, ends inside
- * the range, or fully spans the range.
- */
-export function eventOverlapsRange(
-	event: CalendarEvent,
-	start: Dayjs,
-	end: Dayjs
-): boolean {
-	const startsInRange =
-		event.start.isSameOrAfter(start) && event.start.isSameOrBefore(end)
-	const endsInRange =
-		event.end.isSameOrAfter(start) && event.end.isSameOrBefore(end)
-	const spansRange = event.start.isBefore(start) && event.end.isAfter(end)
-	return startsInRange || endsInRange || spansRange
-}

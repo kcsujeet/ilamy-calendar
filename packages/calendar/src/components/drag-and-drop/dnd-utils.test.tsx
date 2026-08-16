@@ -176,9 +176,17 @@ describe('getUpdatedEvent Utility Function', () => {
 		expect(updates.allDay).toBe(false)
 	})
 
-	it('should handle event end time at midnight correctly', () => {
+	/**
+	 * #248. A drag moves an event; it must not resize it. An end landing on
+	 * midnight used to be snapped back to the previous day's 23:59:59.999, which
+	 * shortened this two-hour event to 1h59m59.999s and reintroduced the
+	 * sub-second residue the form no longer produces. `end` is exclusive, so
+	 * midnight is a legitimate end and the layout already paints it on the right
+	 * day.
+	 */
+	it('keeps an end that lands on midnight, preserving the duration', () => {
 		start = dayjs('2024-06-15T22:00:00')
-		end = dayjs('2024-06-16T00:00:00') // End time at midnight (2 hour duration)
+		end = dayjs('2024-06-16T00:00:00') // 2 hour duration
 		cellType = 'day-cell'
 		cellDate = dayjs('2024-10-22T22:00:00')
 		allDay = false
@@ -193,8 +201,8 @@ describe('getUpdatedEvent Utility Function', () => {
 		const updates = (result as any)?.updates
 		if (!updates) return
 		expect(updates.start.format()).toBe(cellDate.format())
-		// When end time lands exactly at midnight, it should be adjusted to 23:59 of the same day
-		expect(updates.end.format()).toBe(cellDate.endOf('day').format())
+		expect(updates.end.format()).toBe(cellDate.add(2, 'hour').format())
+		expect(updates.end.diff(updates.start, 'second')).toBe(7200)
 	})
 
 	it('should handle dragging multi-day all-day event to time cell correctly', () => {

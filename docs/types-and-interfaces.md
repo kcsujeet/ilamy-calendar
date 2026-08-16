@@ -27,7 +27,7 @@ The core event type used throughout the library.
 | `id` | `string \| number` | yes | Unique identifier |
 | `title` | `string` | yes | Display title |
 | `start` | `dayjs.Dayjs` | yes | Start date/time |
-| `end` | `dayjs.Dayjs` | yes | End date/time |
+| `end` | `dayjs.Dayjs` | yes | End date/time, **exclusive** (see below) |
 | `color` | `string` | no | Text/border color (CSS value, hex, rgb, or class name) |
 | `backgroundColor` | `string` | no | Background color |
 | `description` | `string` | no | Event description |
@@ -40,6 +40,23 @@ The core event type used throughout the library.
 | `resourceId` | `string \| number` | no | Single resource assignment |
 | `resourceIds` | `(string \| number)[]` | no | Multiple resource assignment |
 | `data` | `Record<string, unknown>` | no | Custom application metadata |
+
+### `end` is exclusive
+
+An event runs up to, but not including, `end`, matching RFC 5545 §3.6.1 ("the DTEND property for a VEVENT calendar component specifies the non-inclusive end of the event") and the Google Calendar API, where `end` is "The (exclusive) end time of the event".
+
+| Event | Days it covers |
+|---|---|
+| `2025-01-13T00:00` to `2025-01-14T00:00` | Jan 13 |
+| `2025-01-13T00:00` to `2025-01-14T09:00` | Jan 13 and Jan 14 |
+| All-day Jan 13, stored conventionally | `start` Jan 13, `end` Jan 14 |
+
+This holds at every granularity: an event ending on the hour does not occupy that hour's row, and one ending at midnight does not occupy that day's column (`lib/layout/horizontal.ts`). The same rule makes `overlapsRange` (`@ilamy/utils/helpers`, shared by the core and both plugins) treat an event ending at a range's first instant as outside it.
+
+Two conversions exist so users are never asked for a midnight end, which is the same split Google draws between its API and its UI:
+
+- `buildEndDateTime` stores an all-day end as the midnight after the last covered day.
+- `event-form` displays that last covered day. An all-day end that is not on a midnight boundary predates this convention and is shown untouched.
 
 ## IlamyCalendarPropEvent
 
@@ -190,9 +207,11 @@ type WeekDays = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'fr
 interface BusinessHours {
   daysOfWeek?: WeekDays[]        // Default: ['monday'...'friday']
   startTime?: number | string    // Default: 9 (24-hour number, or 'HH:mm' e.g. '09:15')
-  endTime?: number | string      // Default: 17
+  endTime?: number | string      // Default: 17 (0 and 24 both mean midnight)
 }
 ```
+
+An `endTime` of `0` means midnight at the **end** of the day, the same instant as `24`, because a picker offering "12 AM" as the closing hour sends the former. Read literally as `00:00` it would close the day before it opened, which left the event form with no selectable time at all. An empty range is therefore one whose end does not follow its start, such as `9` to `9`.
 
 Can be a single object or an array for different hours on different days.
 Sub-hour boundaries use `'HH:mm'` strings; fractional numbers are not

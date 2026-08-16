@@ -23,12 +23,20 @@ const partitionAndSortEvents = (
 	events: CalendarEvent[],
 	gridType: 'day' | 'hour'
 ): { sortedMultiUnit: CalendarEvent[]; sortedSingleUnit: CalendarEvent[] } => {
-	const multiUnitEvents = events.filter(
-		(e) => e.end.diff(e.start, gridType) > 0
-	)
-	const singleUnitEvents = events.filter(
-		(e) => e.end.diff(e.start, gridType) === 0
-	)
+	// Spanning is a question about BOUNDARIES, not duration. Classifying by
+	// `end.diff(start, unit) > 0` truncates, so anything shorter than a whole unit
+	// took the single-column path: an 18:00-to-06:00 event vanished from its
+	// second day, and a 09:30-to-10:15 one from its second hour, even though the
+	// span math had them right. Comparing the start's unit with the last unit the
+	// event OCCUPIES (its exclusive end, stepped back) asks the real question.
+	const spansMultipleUnits = (e: CalendarEvent): boolean =>
+		e.end
+			.subtract(1, 'millisecond')
+			.startOf(gridType)
+			.isAfter(e.start.startOf(gridType))
+
+	const multiUnitEvents = events.filter(spansMultipleUnits)
+	const singleUnitEvents = events.filter((e) => !spansMultipleUnits(e))
 
 	// Multi-unit: by start date, then longer events first.
 	const sortedMultiUnit = [...multiUnitEvents].sort((a, b) => {
@@ -60,14 +68,23 @@ const computeColumnSpan = (
 	isTruncatedEnd: boolean
 } => {
 	const eventStart = dayjs.max(event.start.startOf(gridType), firstUnit)
-	const adjustedEnd =
-		gridType === 'hour' ? event.end.subtract(1, 'minute') : event.end
+	// `end` is exclusive at every granularity: an event ending at midnight stops
+	// as that day begins, so it must not claim the day's column, exactly as one
+	// ending on the hour does not claim that hour's row (#248). The step back is a
+	// MILLISECOND, dayjs's smallest unit, so it lands on the last instant the
+	// event occupies and nothing else. A coarser step silently swallows anything
+	// ending inside it: at a minute, an event running 30 seconds into the next day
+	// lost that day entirely.
+	const adjustedEnd = event.end.subtract(1, 'millisecond')
 	const eventEnd = dayjs.min(adjustedEnd.startOf(gridType), lastUnit)
 	return {
 		startCol: Math.max(0, eventStart.diff(firstUnit, gridType)),
 		endCol: Math.min(unitCount - 1, eventEnd.diff(firstUnit, gridType)),
 		isTruncatedStart: event.start.startOf(gridType).isBefore(firstUnit),
-		isTruncatedEnd: event.end.startOf(gridType).isAfter(lastUnit),
+		// Read off the SAME exclusive end as the span above. Using the raw `end`
+		// here would disagree with it at the grid's edge, drawing the overrun
+		// indicator on an event that ends exactly where the grid does.
+		isTruncatedEnd: adjustedEnd.startOf(gridType).isAfter(lastUnit),
 	}
 }
 

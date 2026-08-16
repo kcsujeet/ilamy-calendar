@@ -166,6 +166,9 @@ const meta = resource.data as MyResourceMeta
 
 ## 10. Behavior changes
 
+- **`end` is exclusive on date grids.** An event runs up to, but not including, its `end`, matching [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545) and the [Google Calendar API](https://developers.google.com/workspace/calendar/api/v3/reference/events). An event from `2025-01-13T00:00` to `2025-01-14T00:00` covers Jan 13 only; previously it also painted Jan 14. To keep a two-day bar, end it during the second day (`2025-01-14T23:59`) or at the following midnight (`2025-01-15T00:00`). Timed events inside a day are unaffected, and an inclusive-style end such as `23:59` still renders on the day it names, because that instant falls during the day.
+- **All-day events store an exclusive end.** The built-in form now writes the midnight after the last covered day rather than `23:59`, so a one-day all-day event exports as `DTSTART;VALUE=DATE:20250804` / `DTEND;VALUE=DATE:20250805`, which is what the RFC requires. The form still shows you the last covered day, and an existing event ending at `23:59` is read as the inclusive value it is, so old data keeps displaying correctly.
+- **Day cells report an exclusive range.** `CellInfo.end` from `onCellClick` (and the `data-end` attribute plugins read) is now the next midnight rather than `23:59`, matching the hour and 15-minute cells, which already ended on the next slot boundary.
 - **Resource cell-click respects `allDay`.** Clicking a cell on a resource calendar without a custom `onCellClick` now pre-fills the event form with the cell's `allDay` flag (v1 always used `allDay: false`). If you relied on the old hardcode, pass `onCellClick` and open the form yourself.
 - **`getEventsForResource` works everywhere.** It is now always defined on `useIlamyCalendarContext()`; on a calendar without resources it filters by the events' own `resourceIds`/`resourceId`. v1 call sites keep working.
 
@@ -182,4 +185,5 @@ const meta = resource.data as MyResourceMeta
 - [ ] Add narrowing or a boundary cast when reading `event.data` / `resource.data`.
 - [ ] Remove any use of `Resource.position`.
 - [ ] Update test harnesses that queried the `ilamy-resource-calendar` or `resource-month-header` testids.
+- [ ] Audit multi-day and all-day events for the exclusive `end`: a bar that used to reach its `end` day now stops the day before.
 - [ ] Custom view authors: drop `component: () => null` from spec-driven views, replace `resourceId` with `resource` on `VerticalColumnSpec`, and stringify numeric `HorizontalRowSpec.id`s.

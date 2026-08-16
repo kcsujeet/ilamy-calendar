@@ -11,6 +11,36 @@ describe('isBusinessHour', () => {
 		expect(isBusinessHour({ date: monday, hour: 10, minute: 0 })).toBe(true)
 	})
 
+	/**
+	 * An `endTime` of 0 means midnight at the END of the day, the same instant
+	 * `24` names. Read literally as 00:00 it would close the day before it opens,
+	 * leaving no business hour at all and no selectable time in the event form.
+	 */
+	it('treats endTime 0 as midnight at the end of the day', () => {
+		const untilMidnight: BusinessHours = {
+			daysOfWeek: ['monday'],
+			startTime: 9,
+			endTime: 0,
+		}
+
+		expect(
+			isBusinessHour({
+				date: monday,
+				hour: 23,
+				minute: 45,
+				businessHours: untilMidnight,
+			})
+		).toBe(true)
+		expect(
+			isBusinessHour({
+				date: monday,
+				hour: 8,
+				minute: 0,
+				businessHours: untilMidnight,
+			})
+		).toBe(false)
+	})
+
 	it('should respect custom businessHours object', () => {
 		const config: BusinessHours = {
 			daysOfWeek: ['monday'], // Monday only

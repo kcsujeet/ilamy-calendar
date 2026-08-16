@@ -47,7 +47,175 @@ const run = (
 		gridType: opts.gridType,
 	})
 
+/** Column count a placement covers, derived from its percentage width. */
+const columnsOf = (width: number) => Math.round(width / (100 / days.length))
+
 describe('layoutHorizontal', () => {
+	/**
+	 * #248. `end` is exclusive, matching RFC 5545 ("the DTEND property ...
+	 * specifies the non-inclusive end of the event"), the Google Calendar API and
+	 * FullCalendar. An event ending at midnight stops as that day begins and must
+	 * not paint on it.
+	 */
+	describe('Exclusive end', () => {
+		it('covers one day when the event ends at the next midnight', () => {
+			const event = mkEvent(
+				'midnight-to-midnight',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-14T00:00:00.000Z'
+			)
+
+			const [placement] = run([event])
+
+			expect(columnsOf(placement.width)).toBe(1)
+		})
+
+		it('covers both days when the event ends during the second day', () => {
+			const event = mkEvent(
+				'into-the-next-day',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-14T09:00:00.000Z'
+			)
+
+			const [placement] = run([event])
+
+			expect(columnsOf(placement.width)).toBe(2)
+		})
+
+		it('covers three days for an all-day event stored the conventional way', () => {
+			// Jan 13, 14 and 15, so the exclusive end is Jan 16 at midnight.
+			const event = mkEvent(
+				'three-all-days',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-16T00:00:00.000Z'
+			)
+
+			const [placement] = run([event])
+
+			expect(columnsOf(placement.width)).toBe(3)
+		})
+
+		/**
+		 * The step back from `end` has to be the smallest unit dayjs represents, not
+		 * a convenient one. A minute would swallow anything ending within 59.999
+		 * seconds after a boundary: an event running 30 seconds into the next day
+		 * really does occupy part of it.
+		 */
+		it('covers both days when the event ends just past midnight', () => {
+			const event = mkEvent(
+				'thirty-seconds-over',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-14T00:00:30.000Z'
+			)
+
+			const [placement] = run([event])
+
+			expect(columnsOf(placement.width)).toBe(2)
+		})
+
+		it('covers both hours when the event ends just past the hour', () => {
+			const hours = Array.from({ length: 24 }, (_, i) =>
+				dayjs('2025-01-13T00:00:00.000Z').add(i, 'hour')
+			)
+			const event = mkEvent(
+				'thirty-seconds-over-the-hour',
+				'2025-01-13T09:00:00.000Z',
+				'2025-01-13T10:00:30.000Z'
+			)
+
+			const [placement] = layoutHorizontal({
+				days: hours,
+				events: [event],
+				dayMaxEvents: 4,
+				gridType: 'hour',
+			})
+
+			expect(Math.round(placement.width / (100 / hours.length))).toBe(2)
+		})
+
+		/**
+		 * The truncation flag has to be read off the same exclusive end as the span,
+		 * or the two disagree exactly at the grid's edge: an event ending at the
+		 * midnight after the last day covers that day and stops, but a flag read
+		 * from the raw `end` marks it as continuing and draws the overrun
+		 * indicator.
+		 */
+		it('does not mark an event ending at the grid edge as continuing past it', () => {
+			const endsAtGridEdge = mkEvent(
+				'through-the-last-day',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-19T00:00:00.000Z'
+			)
+
+			const [placement] = run([endsAtGridEdge])
+
+			expect(placement.isTruncatedEnd).toBe(false)
+		})
+
+		it('still marks an event that really runs past the grid', () => {
+			const overrunsGrid = mkEvent(
+				'past-the-last-day',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-19T09:00:00.000Z'
+			)
+
+			const [placement] = run([overrunsGrid])
+
+			expect(placement.isTruncatedEnd).toBe(true)
+		})
+
+		/**
+		 * Whether an event spans more than one column is a question about calendar
+		 * boundaries, not duration. Classifying by `end.diff(start, unit) > 0` sent
+		 * every event shorter than a whole unit down the single-column path, so an
+		 * overnight event vanished from its second day even though the span math
+		 * had it right.
+		 */
+		it('covers both days for an overnight event shorter than 24 hours', () => {
+			const overnight = mkEvent(
+				'overnight',
+				'2025-01-13T18:00:00.000Z',
+				'2025-01-14T06:00:00.000Z'
+			)
+
+			const [placement] = run([overnight])
+
+			expect(columnsOf(placement.width)).toBe(2)
+		})
+
+		it('covers both hours for an event crossing the hour by minutes', () => {
+			const hours = Array.from({ length: 24 }, (_, i) =>
+				dayjs('2025-01-13T00:00:00.000Z').add(i, 'hour')
+			)
+			const crossesTheHour = mkEvent(
+				'nine-thirty-to-ten-fifteen',
+				'2025-01-13T09:30:00.000Z',
+				'2025-01-13T10:15:00.000Z'
+			)
+
+			const [placement] = layoutHorizontal({
+				days: hours,
+				events: [crossesTheHour],
+				dayMaxEvents: 4,
+				gridType: 'hour',
+			})
+
+			expect(Math.round(placement.width / (100 / hours.length))).toBe(2)
+		})
+
+		it('still covers one day when start and end are equal', () => {
+			const event = mkEvent(
+				'zero-length',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-13T00:00:00.000Z'
+			)
+
+			const [placement] = run([event])
+
+			expect(columnsOf(placement.width)).toBe(1)
+		})
+	})
+
 	describe('Basic Positioning', () => {
 		it('positions single-day event correctly', () => {
 			const result = run([singleDayEvent])

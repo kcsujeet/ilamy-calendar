@@ -704,8 +704,8 @@ describe('IlamyCalendar', () => {
 			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
 			expect(callArgs.start.toISOString()).toBe('2025-01-15T00:00:00.000Z')
 			// Month view full day (hour and minute are undefined)
-			expect(callArgs.end.hour()).toBe(23)
-			expect(callArgs.end.minute()).toBe(59)
+			// Exclusive end: the day cell runs to the next midnight (#248).
+			expect(callArgs.end.toISOString()).toBe('2025-01-16T00:00:00.000Z')
 			expect(callArgs.allDay).toBe(false)
 			expect(callArgs.resource).toBeUndefined()
 		})
@@ -1213,6 +1213,34 @@ describe('IlamyCalendar - timezone prop', () => {
 		const parsedBeforeMount = dayjs('2025-01-15T12:00:00.000Z')
 
 		expect(renderWithTokyo(parsedBeforeMount)).toBe('21:00 +09:00')
+	})
+})
+
+/**
+ * #248 review. A day cell reports an exclusive range, so its End Date prefills
+ * as the FOLLOWING day. That date means a boundary for a timed event but the
+ * last covered day for an all-day one, so checking "All day" has to reinterpret
+ * it. Without that, saving added a day and a single-day click produced a
+ * two-day event.
+ */
+describe('IlamyCalendar - cell click then All day', () => {
+	it('creates a one-day event for the day that was clicked', () => {
+		const added: CalendarEvent[] = []
+		render(
+			<IlamyCalendar
+				events={[]}
+				initialDate="2026-05-13T12:00:00.000Z"
+				onEventAdd={(event) => added.push(event)}
+			/>
+		)
+
+		fireEvent.click(screen.getByTestId('day-cell-2026-05-13'))
+		fireEvent.click(screen.getByLabelText('All day'))
+		fireEvent.click(screen.getByRole('button', { name: /create|add|save/i }))
+
+		const created = added.at(0)
+		expect(created?.start.format('YYYY-MM-DD HH:mm')).toBe('2026-05-13 00:00')
+		expect(created?.end.format('YYYY-MM-DD HH:mm')).toBe('2026-05-14 00:00')
 	})
 })
 

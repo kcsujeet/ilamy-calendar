@@ -3,6 +3,10 @@ import { recurrenceICalProperties } from '@ilamy/calendar-recurrence'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
+import {
+	buildDateTime,
+	buildEndDateTime,
+} from '@/features/calendar/utils/event-form-utils'
 import { exportToICalendar } from './export-ical'
 
 // No-op collect for tests asserting only core fields.
@@ -288,6 +292,27 @@ describe('RFC 5545 Compliance', () => {
 			end: dayjs('2025-08-05T00:00:00.000Z'),
 			allDay: true,
 		})
+		const ical = exportToICalendar([event], noCollect)
+
+		expect(ical).toContain('DTSTART;VALUE=DATE:20250804')
+		expect(ical).toContain('DTEND;VALUE=DATE:20250805')
+	})
+
+	/**
+	 * #248. RFC 5545 §3.6.1 calls DTEND "the non-inclusive end of the event", so a
+	 * one-day all-day event must export as the NEXT day. The form used to store
+	 * such an end at 23:59, which exported as `DTEND;VALUE=DATE:20250804`: a
+	 * DTEND equal to DTSTART, describing no days at all. Built through the form's
+	 * own helpers so the two stay honest about each other.
+	 */
+	it('exports a one-day all-day event built by the form with the next day as DTEND', () => {
+		const august4 = new Date('2025-08-04T00:00:00.000Z')
+		const event = createEvent({
+			start: buildDateTime(august4, '00:00', true),
+			end: buildEndDateTime(august4, '23:59', true),
+			allDay: true,
+		})
+
 		const ical = exportToICalendar([event], noCollect)
 
 		expect(ical).toContain('DTSTART;VALUE=DATE:20250804')

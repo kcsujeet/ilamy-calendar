@@ -113,10 +113,9 @@ describe('DroppableCell isCellDisabled (issue #79)', () => {
 			},
 		})
 
-		// Month day-cell spans the full day.
+		// Month day-cell spans the full day, ending at the exclusive next midnight.
 		expect(received?.start.toISOString()).toBe('2025-01-01T00:00:00.000Z')
-		expect(received?.end.hour()).toBe(23)
-		expect(received?.end.minute()).toBe(59)
+		expect(received?.end.toISOString()).toBe('2025-01-02T00:00:00.000Z')
 	})
 
 	test('regular calendar leaves info.resource undefined', () => {
@@ -154,15 +153,20 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 		cleanup()
 	})
 
+	/**
+	 * The end is exclusive, the same way the hour and minute cells below already
+	 * report theirs (09:00 to 10:00, 09:15 to 09:30): a day cell runs to the next
+	 * midnight, not to 23:59 (#248).
+	 */
 	test('exposes a full-day range on a day cell (no hour)', () => {
 		renderCell()
 
 		const cell = screen.getByTestId('cell')
 		expect(cell.getAttribute('data-start')).toBe(
-			initialDate.hour(0).minute(0).toISOString()
+			initialDate.startOf('day').toISOString()
 		)
 		expect(cell.getAttribute('data-end')).toBe(
-			initialDate.hour(23).minute(59).toISOString()
+			initialDate.add(1, 'day').startOf('day').toISOString()
 		)
 	})
 
@@ -252,7 +256,6 @@ describe('DroppableCell getCellClassName', () => {
 		})
 
 		expect(received?.start.toISOString()).toBe('2025-01-01T00:00:00.000Z')
-		expect(received?.end.hour()).toBe(23)
-		expect(received?.end.minute()).toBe(59)
+		expect(received?.end.toISOString()).toBe('2025-01-02T00:00:00.000Z')
 	})
 })

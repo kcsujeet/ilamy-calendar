@@ -58,6 +58,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 		resourceId: resource?.id,
 		allDay,
 	})
+	const cellTimeAxis = gridType === 'hour' ? 'horizontal' : undefined
 
 	return (
 		<div
@@ -109,7 +110,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								precomputedEvents={dayEventsMap.get(getDayKey(col.day))}
 								resourceId={resource?.id}
 								showDayNumber={showDayNumber}
-								timeAxis={gridType === 'hour' ? 'horizontal' : undefined}
+								timeAxis={cellTimeAxis}
 							/>
 						) : null
 					})}
@@ -165,6 +166,7 @@ const GroupedColumn = memo(
 			resourceId,
 			allDay,
 		})
+		const cellTimeAxis = gridType === 'hour' ? 'horizontal' : undefined
 
 		return (
 			<div className="flex relative w-full">
@@ -181,7 +183,7 @@ const GroupedColumn = memo(
 							laneId={`horizontal-${String(id)}`}
 							resourceId={resourceId}
 							showDayNumber={showDayNumber}
-							timeAxis={gridType === 'hour' ? 'horizontal' : undefined}
+							timeAxis={cellTimeAxis}
 						/>
 					))}
 				</div>

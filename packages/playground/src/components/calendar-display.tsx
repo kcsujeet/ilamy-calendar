@@ -242,6 +242,12 @@ function resolveSharedCalendarProps(
 	lifecycle: LifecycleHandlers
 ): SharedCalendarProps {
 	const lifecycleOn = values.useEventLifecycleCallbacks
+	let dragSnapInterval: SharedCalendarProps['dragSnapInterval']
+	if (values.dragSnapInterval === 'slot-duration') {
+		dragSnapInterval = undefined
+	} else {
+		dragSnapInterval = values.dragSnapInterval
+	}
 	return {
 		businessHours: values.enableBusinessHours
 			? [
@@ -259,10 +265,7 @@ function resolveSharedCalendarProps(
 		plugins,
 		disableCellClick: values.disableCellClick,
 		disableDragAndDrop: values.disableDragAndDrop,
-		dragSnapInterval:
-			values.dragSnapInterval === 'slot-duration'
-				? undefined
-				: values.dragSnapInterval,
+		dragSnapInterval,
 		disableEventClick: values.disableEventClick,
 		firstDayOfWeek: values.firstDayOfWeek,
 		hiddenDays: values.hiddenDays,

@@ -34,6 +34,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 		(_, i) => i * slotDurationMinutes
 	)
 	const hasSubHourSlots = cellOffsets.length > 1
+	const cellTimeAxis = gridType === 'hour' ? 'vertical' : undefined
 	return (
 		<div
 			className={cn(
@@ -105,7 +106,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 										resourceId={resourceId} // Events are rendered in a separate layer
 										shouldRenderEvents={false}
 										slotDurationMinutes={slotDurationMinutes}
-										timeAxis={gridType === 'hour' ? 'vertical' : undefined}
+										timeAxis={cellTimeAxis}
 									/>
 								)
 							})}

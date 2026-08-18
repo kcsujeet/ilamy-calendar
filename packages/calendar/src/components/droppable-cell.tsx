@@ -90,10 +90,6 @@ export function DroppableCell({
 			minute,
 			resourceId,
 			allDay,
-			start,
-			end,
-			axis: timeAxis,
-			laneId,
 		},
 		disabled: disableDragAndDrop || cellDisabled,
 	})

@@ -100,7 +100,9 @@ describe('recurrencePlugin', () => {
 
 		expect(transformed).toHaveLength(3)
 		expect(movedOccurrences).toHaveLength(1)
-		expect(movedOccurrences[0].recurrenceId).toBe(generated.start.toISOString())
+		expect(movedOccurrences.at(0)?.recurrenceId).toBe(
+			generated.start.toISOString()
+		)
 	})
 
 	test('transformEvents passes a non-rrule event through untouched', () => {

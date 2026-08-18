@@ -59,12 +59,12 @@ export const EventDragOverlay: React.FC<EventDragOverlayProps> = ({
 				>
 					<DraggableEvent
 						className={presentation?.className}
+						disableAnimation
 						disableDrag
 						elementId={`drag-overlay-${String(activeEvent.id)}`}
 						event={activeEvent}
 						isTruncatedEnd={presentation?.isTruncatedEnd}
 						isTruncatedStart={presentation?.isTruncatedStart}
-						renderMode="drag-preview"
 						style={presentation?.style}
 					/>
 				</div>

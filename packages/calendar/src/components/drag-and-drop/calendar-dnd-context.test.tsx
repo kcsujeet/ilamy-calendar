@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
 import { isRecurringEvent } from '@ilamy/calendar-recurrence'
 import type { CalendarEvent, Resource } from '@ilamy/types'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import dayjs from '@ilamy/utils/dayjs'
 import { act, cleanup, render, screen } from '@testing-library/react'
 import type React from 'react'
 import { RRule } from 'rrule'
@@ -126,7 +126,7 @@ describe('CalendarDndContext', () => {
 		}
 		const sourceEventStyle = { outline: '1px solid rgb(1, 2, 3)' }
 
-		const rect = (
+		const getRect = (
 			left: number,
 			top: number,
 			width: number,
@@ -152,8 +152,8 @@ describe('CalendarDndContext', () => {
 			mockIsDragging = true
 			const destinationResourceId = (
 				providerProps.resources as Resource[] | undefined
-			)?.[0]?.id
-			const rendered = render(
+			)?.at(0)?.id
+			render(
 				<CalendarProvider
 					dayMaxEvents={5}
 					events={[draggedEvent]}
@@ -162,124 +162,123 @@ describe('CalendarDndContext', () => {
 					{...providerProps}
 				>
 					<CalendarDndContext>
-						<div data-testid="source-event">
-							<DraggableEvent
-								className="h-full custom-source-class shadow"
-								elementId="source-dragged-event"
-								event={draggedEvent}
-								isTruncatedStart
-								style={sourceEventStyle}
-								timeAxis={axis}
+						<div data-calendar-viewport="true">
+							<div data-testid="source-event">
+								<DraggableEvent
+									className="h-full custom-source-class shadow"
+									elementId="source-dragged-event"
+									event={draggedEvent}
+									isTruncatedStart
+									style={sourceEventStyle}
+									timeAxis={axis}
+								/>
+							</div>
+							<div
+								data-disabled="false"
+								data-dnd-axis={axis}
+								data-dnd-lane="vertical-day"
+								data-end="2025-01-15T19:00:00.000Z"
+								data-resource-id={destinationResourceId}
+								data-start="2025-01-15T18:00:00.000Z"
+								data-testid="hour-18"
+							/>
+							<div
+								data-disabled="false"
+								data-dnd-axis={axis}
+								data-dnd-lane="vertical-day"
+								data-end="2025-01-15T20:00:00.000Z"
+								data-resource-id={destinationResourceId}
+								data-start="2025-01-15T19:00:00.000Z"
+								data-testid="hour-19"
+							/>
+							<div
+								data-disabled="false"
+								data-dnd-axis={axis}
+								data-dnd-lane="other-day"
+								data-end="2025-01-16T20:00:00.000Z"
+								data-resource-id={destinationResourceId}
+								data-start="2025-01-16T19:00:00.000Z"
+								data-testid="other-day-hour-19"
+							/>
+							<div
+								data-disabled="false"
+								data-dnd-axis={axis}
+								data-dnd-lane="other-day"
+								data-end="2025-01-16T21:00:00.000Z"
+								data-resource-id={destinationResourceId}
+								data-start="2025-01-16T20:00:00.000Z"
+								data-testid="other-day-hour-20"
 							/>
 						</div>
-						<div
-							data-disabled="false"
-							data-dnd-axis={axis}
-							data-dnd-lane="vertical-day"
-							data-end="2025-01-15T19:00:00.000Z"
-							data-resource-id={destinationResourceId}
-							data-start="2025-01-15T18:00:00.000Z"
-							data-testid="hour-18"
-						/>
-						<div
-							data-disabled="false"
-							data-dnd-axis={axis}
-							data-dnd-lane="vertical-day"
-							data-end="2025-01-15T20:00:00.000Z"
-							data-resource-id={destinationResourceId}
-							data-start="2025-01-15T19:00:00.000Z"
-							data-testid="hour-19"
-						/>
-						<div
-							data-disabled="false"
-							data-dnd-axis={axis}
-							data-dnd-lane="other-day"
-							data-end="2025-01-16T20:00:00.000Z"
-							data-resource-id={destinationResourceId}
-							data-start="2025-01-16T19:00:00.000Z"
-							data-testid="other-day-hour-19"
-						/>
-						<div
-							data-disabled="false"
-							data-dnd-axis={axis}
-							data-dnd-lane="other-day"
-							data-end="2025-01-16T21:00:00.000Z"
-							data-resource-id={destinationResourceId}
-							data-start="2025-01-16T20:00:00.000Z"
-							data-testid="other-day-hour-20"
-						/>
 					</CalendarDndContext>
 				</CalendarProvider>
 			)
 
-			Object.defineProperty(
-				screen.getByTestId('hour-18'),
-				'getBoundingClientRect',
+			let cellRects = [
+				{ testId: 'hour-18', value: getRect(100, 100, 200, 60) },
 				{
-					value: () =>
-						axis === 'vertical'
-							? rect(100, 100, 200, 60)
-							: rect(100, 100, 60, 200),
-				}
-			)
-			Object.defineProperty(
-				screen.getByTestId('hour-19'),
-				'getBoundingClientRect',
+					testId: 'hour-19',
+					value: getRect(100, 160 + timeCellGap, 200, 60),
+				},
 				{
-					value: () =>
-						axis === 'vertical'
-							? rect(100, 160 + timeCellGap, 200, 60)
-							: rect(160 + timeCellGap, 100, 60, 200),
-				}
-			)
-			Object.defineProperty(
-				screen.getByTestId('other-day-hour-19'),
-				'getBoundingClientRect',
+					testId: 'other-day-hour-19',
+					value: getRect(otherLaneStart, 160, 200, 60),
+				},
 				{
-					value: () =>
-						axis === 'vertical'
-							? rect(otherLaneStart, 160, 200, 60)
-							: rect(160, otherLaneStart, 60, 200),
-				}
-			)
-			Object.defineProperty(
-				screen.getByTestId('other-day-hour-20'),
-				'getBoundingClientRect',
-				{
-					value: () =>
-						axis === 'vertical'
-							? rect(otherLaneStart, 220, 200, 60)
-							: rect(220, otherLaneStart, 60, 200),
-				}
-			)
-
-			return rendered
+					testId: 'other-day-hour-20',
+					value: getRect(otherLaneStart, 220, 200, 60),
+				},
+			]
+			if (axis === 'horizontal') {
+				cellRects = [
+					{ testId: 'hour-18', value: getRect(100, 100, 60, 200) },
+					{
+						testId: 'hour-19',
+						value: getRect(160 + timeCellGap, 100, 60, 200),
+					},
+					{
+						testId: 'other-day-hour-19',
+						value: getRect(160, otherLaneStart, 60, 200),
+					},
+					{
+						testId: 'other-day-hour-20',
+						value: getRect(220, otherLaneStart, 60, 200),
+					},
+				]
+			}
+			for (const cellRect of cellRects) {
+				Object.defineProperty(
+					screen.getByTestId(cellRect.testId),
+					'getBoundingClientRect',
+					{ value: () => cellRect.value }
+				)
+			}
 		}
 
 		const startAndMoveToQuarterHour = (
 			axis: 'vertical' | 'horizontal' = 'vertical',
-			resourceId?: string,
 			sourceSize?: { width: number; height: number },
-			initialRectAvailable = true
+			initialRectAvailable = true,
+			sourceEvent: CalendarEvent = draggedEvent
 		) => {
 			const width = sourceSize?.width ?? (axis === 'vertical' ? 120 : 60)
 			const height = sourceSize?.height ?? (axis === 'vertical' ? 60 : 120)
 			const activeRect =
 				axis === 'vertical'
-					? rect(100, 0, width, height)
-					: rect(0, 100, width, height)
+					? getRect(100, 0, width, height)
+					: getRect(0, 100, width, height)
 			const active = {
 				id: 'source-dragged-event',
 				data: {
 					current: {
-						event: draggedEvent,
+						event: sourceEvent,
 						presentation: {
 							className: 'h-full custom-source-class shadow',
 							isTruncatedEnd: false,
 							isTruncatedStart: true,
 							style: sourceEventStyle,
 						},
-						timeAxis: axis,
+						timeAxis: sourceEvent.allDay ? undefined : axis,
 						type: 'calendar-event',
 					},
 				},
@@ -300,12 +299,6 @@ describe('CalendarDndContext', () => {
 				id: 'hour-19',
 				data: {
 					current: {
-						axis,
-						date: dayjs('2025-01-15T19:00:00.000Z'),
-						end: dayjs('2025-01-15T20:00:00.000Z'),
-						laneId: 'vertical-day',
-						resourceId,
-						start: dayjs('2025-01-15T19:00:00.000Z'),
 						type: 'time-cell',
 					},
 				},
@@ -368,9 +361,10 @@ describe('CalendarDndContext', () => {
 			expect(dragOverlayProps.style).toEqual({ height: 60, width: 120 })
 			const modifier = (
 				dragOverlayProps.modifiers as Array<(args: never) => { y: number }>
-			)[0]
+			).at(0)
+			if (!modifier) throw new Error('Expected a drag overlay modifier')
 			const alignedTransform = modifier({
-				activeNodeRect: rect(100, 1000, 120, 60),
+				activeNodeRect: getRect(100, 1000, 120, 60),
 				transform: { x: 0, y: -1000, scaleX: 1, scaleY: 1 },
 			} as never)
 			expect(alignedTransform.y).toBe(145)
@@ -389,7 +383,7 @@ describe('CalendarDndContext', () => {
 					start: expect.objectContaining({}),
 				})
 			)
-			const updated = onEventUpdate.mock.calls[0]?.[0] as CalendarEvent
+			const updated = onEventUpdate.mock.calls.at(0)?.at(0) as CalendarEvent
 			expect(updated.start.toISOString()).toBe('2025-01-15T18:45:00.000Z')
 			expect(updated.end.toISOString()).toBe('2025-01-15T19:45:00.000Z')
 			expect(screen.queryByTestId('event-drag-overlay')).toBeNull()
@@ -414,7 +408,6 @@ describe('CalendarDndContext', () => {
 			renderDragHarness({ dragSnapInterval: 15 })
 			startAndMoveToQuarterHour(
 				'vertical',
-				undefined,
 				{
 					height: 121.9140625,
 					width: 43.9609375,
@@ -434,6 +427,7 @@ describe('CalendarDndContext', () => {
 
 		it('passes axis-aware context to a custom indicator and honors visibility', () => {
 			const room = { id: 'room-1', title: 'Room 1' }
+			const onEventUpdate = mock()
 			const renderIndicator = mock(
 				({ selectedTime, axis }: RenderDragTimeIndicatorProps) => (
 					<div data-testid="custom-drag-indicator">
@@ -443,16 +437,17 @@ describe('CalendarDndContext', () => {
 			)
 			renderDragHarness({
 				dragSnapInterval: 15,
+				onEventUpdate,
 				renderDragTimeIndicator: renderIndicator,
 				resources: [room],
 			})
-			const { active, over } = startAndMoveToQuarterHour('vertical', room.id)
+			const { active, over } = startAndMoveToQuarterHour('vertical')
 
 			expect(screen.getByTestId('custom-drag-indicator')).toHaveTextContent(
 				'vertical:18:45'
 			)
 			expect(renderIndicator).toHaveBeenCalledTimes(1)
-			expect(renderIndicator.mock.calls[0]?.[0]).toEqual({
+			expect(renderIndicator.mock.calls.at(0)?.at(0)).toEqual({
 				axis: 'vertical',
 				event: draggedEvent,
 				progress: 75,
@@ -462,7 +457,8 @@ describe('CalendarDndContext', () => {
 				selectedTime: expect.objectContaining({}),
 				view: 'day',
 			})
-			const indicatorProps = renderIndicator.mock.calls[0]?.[0]
+			const indicatorProps = renderIndicator.mock.calls.at(0)?.at(0)
+			if (!indicatorProps) throw new Error('Expected drag indicator props')
 			expect(indicatorProps.selectedTime.toISOString()).toBe(
 				'2025-01-15T18:45:00.000Z'
 			)
@@ -491,6 +487,16 @@ describe('CalendarDndContext', () => {
 				} as never)
 			})
 			expect(screen.getByTestId('custom-drag-indicator')).toBeInTheDocument()
+			expect(renderIndicator).toHaveBeenCalledTimes(1)
+
+			act(() => {
+				dndContextProps.onDragEnd({ active, over } as never)
+			})
+			const updatedEvent = onEventUpdate.mock.calls
+				.at(0)
+				?.at(0) as CalendarEvent
+			expect(updatedEvent.resourceId).toBe(room.id)
+
 			expect(renderIndicator).toHaveBeenCalledTimes(1)
 
 			cleanup()
@@ -535,8 +541,71 @@ describe('CalendarDndContext', () => {
 			act(() => {
 				dndContextProps.onDragEnd({ active, over } as never)
 			})
-			const updated = onEventUpdate.mock.calls[0]?.[0] as CalendarEvent
+			const updated = onEventUpdate.mock.calls.at(0)?.at(0) as CalendarEvent
 			expect(updated.start.toISOString()).toBe('2025-01-16T19:45:00.000Z')
+		})
+
+		it('resolves timed drag geometry only within the source calendar', () => {
+			render(
+				<div
+					data-disabled="false"
+					data-dnd-axis="vertical"
+					data-dnd-lane="foreign-day"
+					data-end="2025-01-16T19:00:00.000Z"
+					data-start="2025-01-16T18:00:00.000Z"
+					data-testid="foreign-calendar-cell"
+				/>
+			)
+			const foreignCell = screen.getByTestId('foreign-calendar-cell')
+			Object.defineProperty(foreignCell, 'getBoundingClientRect', {
+				value: () => getRect(100, 400, 200, 60),
+			})
+			renderDragHarness({ dragSnapInterval: 15, timeFormat: '24-hour' })
+
+			startAndMoveToQuarterHour()
+
+			expect(screen.getByTestId('drag-time-indicator')).toHaveTextContent(
+				'18:45'
+			)
+		})
+
+		it('uses the pointer as the time anchor for an all-day source event', () => {
+			const allDayEvent: CalendarEvent = {
+				...draggedEvent,
+				allDay: true,
+				start: dayjs('2025-01-15T00:00:00.000Z'),
+				end: dayjs('2025-01-16T00:00:00.000Z'),
+			}
+			renderDragHarness({ dragSnapInterval: 15, timeFormat: '24-hour' })
+
+			startAndMoveToQuarterHour('vertical', undefined, true, allDayEvent)
+
+			expect(screen.getByTestId('drag-time-indicator')).toHaveTextContent(
+				'19:15'
+			)
+		})
+
+		it('rejects a pointer outside the timed grid', () => {
+			const onEventUpdate = mock()
+			renderDragHarness({ dragSnapInterval: 15, onEventUpdate })
+			const { active, over } = startAndMoveToQuarterHour()
+
+			act(() => {
+				window.dispatchEvent(
+					new MouseEvent('mousemove', { clientX: 900, clientY: 900 })
+				)
+				dndContextProps.onDragMove({
+					active,
+					delta: { x: 790, y: 875 },
+					over,
+				} as never)
+			})
+
+			expect(screen.queryByTestId('drag-time-indicator')).toBeNull()
+			act(() => {
+				dndContextProps.onDragEnd({ active, over } as never)
+			})
+			expect(onEventUpdate).toHaveBeenCalledTimes(0)
 		})
 
 		it('keeps the snap position at the viewport pointer during auto-scroll', () => {
@@ -559,7 +628,8 @@ describe('CalendarDndContext', () => {
 			)
 			const modifier = (
 				dragOverlayProps.modifiers as Array<(args: never) => { y: number }>
-			)[0]
+			).at(0)
+			if (!modifier) throw new Error('Expected a drag overlay modifier')
 			const transform = modifier({
 				transform: { x: 0, y: 205, scaleX: 1, scaleY: 1 },
 			} as never)
@@ -596,7 +666,7 @@ describe('CalendarDndContext', () => {
 			act(() => {
 				dndContextProps.onDragEnd({ active, over } as never)
 			})
-			const updated = onEventUpdate.mock.calls[0]?.[0] as CalendarEvent
+			const updated = onEventUpdate.mock.calls.at(0)?.at(0) as CalendarEvent
 			expect(updated.start.toISOString()).toBe('2025-01-15T19:00:00.000Z')
 		})
 
@@ -654,33 +724,23 @@ describe('CalendarDndContext', () => {
 			act(() => {
 				dndContextProps.onDragEnd({ active, over } as never)
 			})
-			const updated = onEventUpdate.mock.calls[0]?.[0] as CalendarEvent
+			const updated = onEventUpdate.mock.calls.at(0)?.at(0) as CalendarEvent
 			expect(updated.start.toISOString()).toBe('2025-01-15T18:45:00.000Z')
 		})
 
 		it('uses a vertical snap line when time runs horizontally', () => {
-			const renderIndicator = mock(
-				({ selectedTime, axis }: { selectedTime: Dayjs; axis: string }) => (
-					<div data-testid="horizontal-drag-indicator">
-						{axis}:{selectedTime.format('HH:mm')}
-					</div>
-				)
-			)
 			renderDragHarness(
 				{
 					dragSnapInterval: 15,
-					renderDragTimeIndicator: renderIndicator,
+					timeFormat: '24-hour',
 				},
 				'horizontal'
 			)
 			startAndMoveToQuarterHour('horizontal')
 
-			expect(screen.getByTestId('horizontal-drag-indicator')).toHaveTextContent(
-				'horizontal:18:45'
-			)
-			expect(renderIndicator.mock.calls[0]?.[0]).toEqual(
-				expect.objectContaining({ axis: 'horizontal', progress: 75 })
-			)
+			const indicator = screen.getByTestId('drag-time-indicator')
+			expect(indicator).toHaveTextContent('18:45')
+			expect(indicator).toHaveStyle({ left: '75%' })
 		})
 
 		it('rejects a snapped start in a disabled cell and clears visuals on cancel', () => {

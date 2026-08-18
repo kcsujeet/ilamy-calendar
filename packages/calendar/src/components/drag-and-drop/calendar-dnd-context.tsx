@@ -10,7 +10,7 @@ import {
 import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
-import { useEffect, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { EventMutationScopeSlot } from '@/components/calendar-slots'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -39,17 +39,6 @@ interface ActiveDragData {
 	}
 }
 
-interface DropCellData {
-	type?: 'day-cell' | 'time-cell'
-	date?: Dayjs
-	start?: Dayjs
-	end?: Dayjs
-	resourceId?: string | number
-	allDay?: boolean
-	axis?: 'vertical' | 'horizontal'
-	laneId?: string
-}
-
 interface DragIndicatorState {
 	selectedTime: Dayjs
 	rangeStart: Dayjs
@@ -61,10 +50,6 @@ interface DragIndicatorState {
 	top: number
 	width: number
 	height: number
-}
-
-interface PendingDrop {
-	updatedEvent: NonNullable<ReturnType<typeof getUpdatedEvent>>
 }
 
 type TimeAxis = 'vertical' | 'horizontal'
@@ -94,29 +79,30 @@ const resolveTimedDrag = ({
 	event,
 	activeEvent,
 	pointer,
-	sourceTimeAxis,
 	grabOffset,
 	dragSnapInterval,
 	timezone,
 	getResourceById,
+	queryRoot,
 }: {
-	event: Pick<DragMoveEvent, 'active' | 'delta' | 'over'>
+	event: Pick<DragMoveEvent, 'active' | 'over'>
 	activeEvent: CalendarEvent
 	pointer: { x: number; y: number }
-	sourceTimeAxis?: 'vertical' | 'horizontal'
 	grabOffset: DragGrabOffset | null
 	dragSnapInterval: DragSnapInterval
 	timezone?: string
 	getResourceById: (
 		resourceId: string | number | undefined
 	) => Resource | undefined
+	queryRoot: ParentNode
 }) => {
 	const allCells = Array.from(
-		document.querySelectorAll<HTMLElement>('[data-dnd-lane][data-dnd-axis]')
+		queryRoot.querySelectorAll<HTMLElement>('[data-dnd-lane][data-dnd-axis]')
 	).flatMap((cell) => {
 		const axis = cell.dataset.dndAxis
 		const laneId = cell.dataset.dndLane
-		if ((axis !== 'vertical' && axis !== 'horizontal') || !laneId) {
+		const hasValidAxis = axis === 'vertical' || axis === 'horizontal'
+		if (!hasValidAxis || !laneId) {
 			return []
 		}
 		return [
@@ -133,87 +119,100 @@ const resolveTimedDrag = ({
 			allCells.map((cell) => [`${cell.axis}:${cell.laneId}`, cell] as const)
 		).values()
 	)
-	const destinationCell =
-		allCells.find(({ axis, rect }) => {
-			const crossCoordinate = axis === 'vertical' ? pointer.x : pointer.y
-			const crossStart = axis === 'vertical' ? rect.left : rect.top
-			const crossEnd = axis === 'vertical' ? rect.right : rect.bottom
-			return crossCoordinate >= crossStart && crossCoordinate < crossEnd
-		}) ??
-		(['vertical', 'horizontal'] as const)
-			.flatMap((axis) => {
-				const axisLanes = laneRepresentatives
-					.filter((lane) => lane.axis === axis)
-					.sort((a, b) =>
-						axis === 'vertical'
-							? a.rect.left - b.rect.left
-							: a.rect.top - b.rect.top
-					)
-				const crossCoordinate = axis === 'vertical' ? pointer.x : pointer.y
-				return axisLanes.filter(({ rect }, index) => {
-					const crossStart = axis === 'vertical' ? rect.left : rect.top
-					const previousRect = axisLanes[index - 1]?.rect
-					if (!previousRect) return false
-					const previousEnd =
-						axis === 'vertical' ? previousRect.right : previousRect.bottom
-					const gap = crossStart - previousEnd
-					return (
-						gap > 0 &&
-						gap <= 1 &&
-						crossCoordinate >= previousEnd &&
-						crossCoordinate < crossStart
-					)
+	const directDestinationCell = allCells.find(({ axis, rect }) => {
+		const crossCoordinate = axis === 'vertical' ? pointer.x : pointer.y
+		const crossStart = axis === 'vertical' ? rect.left : rect.top
+		const crossEnd = axis === 'vertical' ? rect.right : rect.bottom
+		const isOnOrAfterStart = crossCoordinate >= crossStart
+		const isBeforeEnd = crossCoordinate < crossEnd
+		return isOnOrAfterStart && isBeforeEnd
+	})
+	const gapDestinationCell = (['vertical', 'horizontal'] as const)
+		.flatMap((axis) => {
+			const axisLanes = laneRepresentatives
+				.filter((lane) => lane.axis === axis)
+				.sort((a, b) => {
+					let difference = a.rect.top - b.rect.top
+					if (axis === 'vertical') {
+						difference = a.rect.left - b.rect.left
+					}
+					return difference
 				})
+			const crossCoordinate = axis === 'vertical' ? pointer.x : pointer.y
+			return axisLanes.filter(({ rect }, index) => {
+				const crossStart = axis === 'vertical' ? rect.left : rect.top
+				let previousRect: DOMRect | undefined
+				if (index > 0) {
+					previousRect = axisLanes.at(index - 1)?.rect
+				}
+				if (!previousRect) return false
+				let previousEnd = previousRect.bottom
+				if (axis === 'vertical') {
+					previousEnd = previousRect.right
+				}
+				const gap = crossStart - previousEnd
+				if (gap <= 0 || gap > 1) return false
+				if (crossCoordinate < previousEnd) return false
+				return crossCoordinate < crossStart
 			})
-			.at(0)
+		})
+		.at(0)
+	const destinationCell = directDestinationCell ?? gapDestinationCell
 	if (!destinationCell) {
 		return null
 	}
 
 	const { axis, laneId } = destinationCell
 	const pointerCoordinate = axis === 'vertical' ? pointer.y : pointer.x
-	const preservesTimedAnchor =
-		!activeEvent.allDay && sourceTimeAxis === axis && grabOffset?.axis === axis
-	const leadingCoordinate = preservesTimedAnchor
-		? pointerCoordinate - grabOffset.offset
-		: pointerCoordinate
+	const matchingGrabOffset = grabOffset?.axis === axis ? grabOffset : null
+	let leadingCoordinate = pointerCoordinate
+	if (!activeEvent.allDay && matchingGrabOffset) {
+		leadingCoordinate -= matchingGrabOffset.offset
+	}
 	const cellsWithRects = allCells
 		.filter((cell) => cell.laneId === laneId && cell.axis === axis)
-		.sort((a, b) =>
-			axis === 'vertical' ? a.rect.top - b.rect.top : a.rect.left - b.rect.left
-		)
-	const rawCell =
-		cellsWithRects.find(({ rect }, index) => {
-			const start = axis === 'vertical' ? rect.top : rect.left
-			const end = axis === 'vertical' ? rect.bottom : rect.right
-			const isLast = index === cellsWithRects.length - 1
-			return (
-				leadingCoordinate >= start &&
-				(leadingCoordinate < end || (isLast && leadingCoordinate === end))
-			)
-		}) ??
-		cellsWithRects.find(({ rect }, index) => {
-			const previousRect = cellsWithRects[index - 1]?.rect
-			if (!previousRect) return false
-			const start = axis === 'vertical' ? rect.top : rect.left
-			const previousEnd =
-				axis === 'vertical' ? previousRect.bottom : previousRect.right
-			const gap = start - previousEnd
-			return (
-				gap > 0 &&
-				gap <= 1 &&
-				leadingCoordinate >= previousEnd &&
-				leadingCoordinate < start
-			)
+		.sort((a, b) => {
+			let difference = a.rect.left - b.rect.left
+			if (axis === 'vertical') {
+				difference = a.rect.top - b.rect.top
+			}
+			return difference
 		})
-	const rawStartISO = rawCell?.cell.dataset.start
-	const rawEndISO = rawCell?.cell.dataset.end
-	if (
-		!rawCell ||
-		!rawStartISO ||
-		!rawEndISO ||
-		rawCell.cell.dataset.disabled === 'true'
-	) {
+	const containingRawCell = cellsWithRects.find(({ rect }, index) => {
+		const start = axis === 'vertical' ? rect.top : rect.left
+		const end = axis === 'vertical' ? rect.bottom : rect.right
+		const isLast = index === cellsWithRects.length - 1
+		const isBeforeEnd = leadingCoordinate < end
+		const isAtFinalEnd = isLast && leadingCoordinate === end
+		const isWithinEnd = isBeforeEnd || isAtFinalEnd
+		return leadingCoordinate >= start && isWithinEnd
+	})
+	const gapRawCell = cellsWithRects.find(({ rect }, index) => {
+		let previousRect: DOMRect | undefined
+		if (index > 0) {
+			previousRect = cellsWithRects.at(index - 1)?.rect
+		}
+		if (!previousRect) return false
+		const start = axis === 'vertical' ? rect.top : rect.left
+		let previousEnd = previousRect.right
+		if (axis === 'vertical') {
+			previousEnd = previousRect.bottom
+		}
+		const gap = start - previousEnd
+		if (gap <= 0 || gap > 1) return false
+		if (leadingCoordinate < previousEnd) return false
+		return leadingCoordinate < start
+	})
+	const rawCell = containingRawCell ?? gapRawCell
+	if (!rawCell) {
+		return null
+	}
+	const rawStartISO = rawCell.cell.dataset.start
+	const rawEndISO = rawCell.cell.dataset.end
+	if (!rawStartISO || !rawEndISO) {
+		return null
+	}
+	if (rawCell.cell.dataset.disabled === 'true') {
 		return null
 	}
 
@@ -223,10 +222,12 @@ const resolveTimedDrag = ({
 		rawRangeStart = rawRangeStart.tz(timezone)
 		rawRangeEnd = rawRangeEnd.tz(timezone)
 	}
-	const rawPixelStart =
-		axis === 'vertical' ? rawCell.rect.top : rawCell.rect.left
-	const rawPixelSize =
-		axis === 'vertical' ? rawCell.rect.height : rawCell.rect.width
+	let rawPixelStart = rawCell.rect.left
+	let rawPixelSize = rawCell.rect.width
+	if (axis === 'vertical') {
+		rawPixelStart = rawCell.rect.top
+		rawPixelSize = rawCell.rect.height
+	}
 	const rawProgress = Math.min(
 		1,
 		Math.max(0, (leadingCoordinate - rawPixelStart) / rawPixelSize)
@@ -236,9 +237,10 @@ const resolveTimedDrag = ({
 	const serializedResourceId = destinationCell.cell.dataset.resourceId
 	const stringResource = getResourceById(serializedResourceId)
 	const numericResourceId = Number(serializedResourceId)
-	const numericResource = Number.isNaN(numericResourceId)
-		? undefined
-		: getResourceById(numericResourceId)
+	let numericResource: Resource | undefined
+	if (!Number.isNaN(numericResourceId)) {
+		numericResource = getResourceById(numericResourceId)
+	}
 	const resource = stringResource ?? numericResource
 	const resourceId = resource?.id ?? serializedResourceId
 	const updatedEvent = getUpdatedEvent(event, activeEvent, {
@@ -254,7 +256,10 @@ const resolveTimedDrag = ({
 	const selectedCell = cellsWithRects.find(({ cell }) => {
 		const startISO = cell.dataset.start
 		const endISO = cell.dataset.end
-		if (!startISO || !endISO || cell.dataset.disabled === 'true') {
+		if (!startISO || !endISO) {
+			return false
+		}
+		if (cell.dataset.disabled === 'true') {
 			return false
 		}
 		let start = dayjs(startISO)
@@ -263,14 +268,16 @@ const resolveTimedDrag = ({
 			start = start.tz(timezone)
 			end = end.tz(timezone)
 		}
-		return (
-			selectedTime.valueOf() >= start.valueOf() &&
-			selectedTime.valueOf() < end.valueOf()
-		)
+		const isOnOrAfterStart = selectedTime.valueOf() >= start.valueOf()
+		const isBeforeEnd = selectedTime.valueOf() < end.valueOf()
+		return isOnOrAfterStart && isBeforeEnd
 	})
-	const selectedStartISO = selectedCell?.cell.dataset.start
-	const selectedEndISO = selectedCell?.cell.dataset.end
-	if (!selectedCell || !selectedStartISO || !selectedEndISO) {
+	if (!selectedCell) {
+		return null
+	}
+	const selectedStartISO = selectedCell.cell.dataset.start
+	const selectedEndISO = selectedCell.cell.dataset.end
+	if (!selectedStartISO || !selectedEndISO) {
 		return null
 	}
 
@@ -283,10 +290,12 @@ const resolveTimedDrag = ({
 	const rangeDuration = rangeEnd.diff(rangeStart, 'millisecond')
 	const progress =
 		(selectedTime.diff(rangeStart, 'millisecond') / rangeDuration) * 100
-	const selectedPixelStart =
-		axis === 'vertical' ? selectedCell.rect.top : selectedCell.rect.left
-	const selectedPixelSize =
-		axis === 'vertical' ? selectedCell.rect.height : selectedCell.rect.width
+	let selectedPixelStart = selectedCell.rect.left
+	let selectedPixelSize = selectedCell.rect.width
+	if (axis === 'vertical') {
+		selectedPixelStart = selectedCell.rect.top
+		selectedPixelSize = selectedCell.rect.height
+	}
 	const selectedCoordinate =
 		selectedPixelStart + selectedPixelSize * (progress / 100)
 
@@ -311,7 +320,7 @@ const resolveTimedDrag = ({
 		},
 	} satisfies {
 		laneId: string
-		updatedEvent: PendingDrop['updatedEvent']
+		updatedEvent: NonNullable<ReturnType<typeof getUpdatedEvent>>
 		snapTarget: NonNullable<DragVisualState['snapTarget']>
 		indicator: DragIndicatorState
 	}
@@ -340,6 +349,37 @@ const DragTimeIndicator = ({
 		resource: indicator.resource,
 		view,
 	})
+	const timePattern = timeFormat === '12-hour' ? 'h:mm A' : 'HH:mm'
+	const selectedTimeLabel = indicator.selectedTime.format(timePattern)
+	let indicatorContent = customIndicator
+	if (!render && indicator.axis === 'vertical') {
+		indicatorContent = (
+			<div
+				className="absolute left-0 right-0 flex -translate-y-1/2 items-center"
+				data-testid="drag-time-indicator"
+				style={{ top: `${indicator.progress}%` }}
+			>
+				<div className="h-0.5 flex-1 bg-primary" />
+				<span className="absolute left-0 -translate-y-full rounded-sm bg-primary px-1 py-0.5 text-[10px] text-primary-foreground shadow-sm">
+					{selectedTimeLabel}
+				</span>
+			</div>
+		)
+	}
+	if (!render && indicator.axis === 'horizontal') {
+		indicatorContent = (
+			<div
+				className="absolute top-0 bottom-0 flex -translate-x-1/2 flex-col items-center"
+				data-testid="drag-time-indicator"
+				style={{ left: `${indicator.progress}%` }}
+			>
+				<span className="absolute top-0 -translate-y-full rounded-sm bg-primary px-1 py-0.5 text-[10px] text-primary-foreground shadow-sm">
+					{selectedTimeLabel}
+				</span>
+				<div className="w-0.5 flex-1 bg-primary" />
+			</div>
+		)
+	}
 
 	return createPortal(
 		<div
@@ -352,35 +392,7 @@ const DragTimeIndicator = ({
 				height: indicator.height,
 			}}
 		>
-			{render ? (
-				customIndicator
-			) : indicator.axis === 'vertical' ? (
-				<div
-					className="absolute left-0 right-0 flex -translate-y-1/2 items-center"
-					data-testid="drag-time-indicator"
-					style={{ top: `${indicator.progress}%` }}
-				>
-					<div className="h-0.5 flex-1 bg-primary" />
-					<span className="absolute left-0 -translate-y-full rounded-sm bg-primary px-1 py-0.5 text-[10px] text-primary-foreground shadow-sm">
-						{indicator.selectedTime.format(
-							timeFormat === '12-hour' ? 'h:mm A' : 'HH:mm'
-						)}
-					</span>
-				</div>
-			) : (
-				<div
-					className="absolute top-0 bottom-0 flex -translate-x-1/2 flex-col items-center"
-					data-testid="drag-time-indicator"
-					style={{ left: `${indicator.progress}%` }}
-				>
-					<span className="absolute top-0 -translate-y-full rounded-sm bg-primary px-1 py-0.5 text-[10px] text-primary-foreground shadow-sm">
-						{indicator.selectedTime.format(
-							timeFormat === '12-hour' ? 'h:mm A' : 'HH:mm'
-						)}
-					</span>
-					<div className="w-0.5 flex-1 bg-primary" />
-				</div>
-			)}
+			{indicatorContent}
 		</div>,
 		document.body
 	)
@@ -388,39 +400,44 @@ const DragTimeIndicator = ({
 
 export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	const activeEventRef = useRef<CalendarEvent>(null)
-	const activeTimeAxisRef = useRef<TimeAxis | undefined>(undefined)
 	const initialPointerRef = useRef<{ x: number; y: number } | null>(null)
 	const livePointerRef = useRef<{ x: number; y: number } | null>(null)
 	const grabOffsetRef = useRef<DragGrabOffset | null>(null)
-	const pendingDropRef = useRef<PendingDrop | null>(null)
+	const calendarRootRef = useRef<HTMLElement | null>(null)
+	const pendingDropRef = useRef<NonNullable<
+		ReturnType<typeof getUpdatedEvent>
+	> | null>(null)
 	const lastDragVisualSignatureRef = useRef<string | null>(null)
 	const [dragVisual, updateDragVisual] = useReducer(
-		(state: DragVisualState, update: Partial<DragVisualState>) => ({
-			...state,
-			...update,
-		}),
+		(state: DragVisualState, update: Partial<DragVisualState>) => {
+			const hasOnlyTimedVisualFields = Object.keys(update).length === 2
+			const clearsTimedVisual =
+				update.indicator === null && update.snapTarget === undefined
+			const isTimedVisualClear = hasOnlyTimedVisualFields && clearsTimedVisual
+			const timedVisualAlreadyClear =
+				state.indicator === null && state.snapTarget === undefined
+			if (isTimedVisualClear && timedVisualAlreadyClear) {
+				return state
+			}
+			return { ...state, ...update }
+		},
 		EMPTY_DRAG_VISUAL
 	)
+	const handleMouseMove = useCallback((event: MouseEvent) => {
+		livePointerRef.current = { x: event.clientX, y: event.clientY }
+	}, [])
+	const handleTouchMove = useCallback((event: TouchEvent) => {
+		const touch = event.touches[0]
+		if (!touch) return
+		livePointerRef.current = { x: touch.clientX, y: touch.clientY }
+	}, [])
 
 	useEffect(() => {
-		const mouseMoveListener = (event: MouseEvent) => {
-			livePointerRef.current = { x: event.clientX, y: event.clientY }
-		}
-		const touchMoveListener = (event: TouchEvent) => {
-			const touch = event.touches[0]
-			if (!touch) return
-			livePointerRef.current = { x: touch.clientX, y: touch.clientY }
-		}
-		window.addEventListener('mousemove', mouseMoveListener, true)
-		window.addEventListener('touchmove', touchMoveListener, {
-			capture: true,
-			passive: true,
-		})
 		return () => {
-			window.removeEventListener('mousemove', mouseMoveListener, true)
-			window.removeEventListener('touchmove', touchMoveListener, true)
+			window.removeEventListener('mousemove', handleMouseMove, true)
+			window.removeEventListener('touchmove', handleTouchMove, true)
 		}
-	}, [])
+	}, [handleMouseMove, handleTouchMove])
 
 	const {
 		updateEvent,
@@ -489,28 +506,36 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		}
 
 		activeEventRef.current = activeData.event
-		activeTimeAxisRef.current = activeData.timeAxis
 		pendingDropRef.current = null
 		lastDragVisualSignatureRef.current = null
+		window.addEventListener('mousemove', handleMouseMove, true)
+		window.addEventListener('touchmove', handleTouchMove, {
+			capture: true,
+			passive: true,
+		})
 
 		const initialRect = event.active.rect.current.initial
 		const activatorTarget = event.activatorEvent.target
-		const sourceElement =
-			activatorTarget instanceof Element
-				? activatorTarget.closest<HTMLElement>(
-						'[data-calendar-draggable-event]'
-					)
-				: null
+		let sourceElement: HTMLElement | null = null
+		if (activatorTarget instanceof Element) {
+			sourceElement = activatorTarget.closest<HTMLElement>(
+				'[data-calendar-draggable-event]'
+			)
+		}
 		const sourceRect = initialRect ?? sourceElement?.getBoundingClientRect()
+		calendarRootRef.current =
+			sourceElement?.closest<HTMLElement>('[data-calendar-viewport]') ?? null
+		let size: DragVisualState['size']
+		let sourcePosition: DragVisualState['sourcePosition']
+		if (sourceRect) {
+			size = { width: sourceRect.width, height: sourceRect.height }
+			sourcePosition = { left: sourceRect.left, top: sourceRect.top }
+		}
 		updateDragVisual({
 			activeEvent: activeData.event,
 			presentation: activeData.presentation,
-			size: sourceRect
-				? { width: sourceRect.width, height: sourceRect.height }
-				: undefined,
-			sourcePosition: sourceRect
-				? { left: sourceRect.left, top: sourceRect.top }
-				: undefined,
+			size,
+			sourcePosition,
 			indicator: null,
 			snapTarget: undefined,
 		})
@@ -521,23 +546,29 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		const mouseEvent = activatorEvent as MouseEvent
 		const pointerX = touch?.clientX ?? mouseEvent.clientX
 		const pointerY = touch?.clientY ?? mouseEvent.clientY
-		const hasPointer =
-			Number.isFinite(pointerX) && Number.isFinite(pointerY) && sourceRect
-
-		initialPointerRef.current = hasPointer ? { x: pointerX, y: pointerY } : null
+		const hasPointer = Number.isFinite(pointerX) && Number.isFinite(pointerY)
+		initialPointerRef.current = null
+		if (hasPointer) {
+			initialPointerRef.current = { x: pointerX, y: pointerY }
+		}
 		livePointerRef.current = null
-		if (hasPointer && activeData.timeAxis === 'vertical') {
+		const pointerByAxis = { horizontal: pointerX, vertical: pointerY }
+		const sourceStartByAxis = {
+			horizontal: sourceRect?.left,
+			vertical: sourceRect?.top,
+		}
+		const timeAxis = activeData.timeAxis
+		const axisPointer = timeAxis ? pointerByAxis[timeAxis] : undefined
+		const sourceStart = timeAxis ? sourceStartByAxis[timeAxis] : undefined
+		const hasSourceStart = sourceStart !== undefined
+		const hasAxisPointer = Number.isFinite(axisPointer)
+		const hasGrabCoordinates = hasSourceStart && hasAxisPointer
+		grabOffsetRef.current = null
+		if (timeAxis && hasGrabCoordinates) {
 			grabOffsetRef.current = {
-				axis: 'vertical',
-				offset: pointerY - sourceRect.top,
+				axis: timeAxis,
+				offset: (axisPointer ?? 0) - (sourceStart ?? 0),
 			}
-		} else if (hasPointer && activeData.timeAxis === 'horizontal') {
-			grabOffsetRef.current = {
-				axis: 'horizontal',
-				offset: pointerX - sourceRect.left,
-			}
-		} else {
-			grabOffsetRef.current = null
 		}
 	}
 
@@ -560,11 +591,11 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 				x: initialPointer.x + event.delta.x,
 				y: initialPointer.y + event.delta.y,
 			},
-			sourceTimeAxis: activeTimeAxisRef.current,
 			grabOffset: grabOffsetRef.current,
 			dragSnapInterval,
 			timezone,
 			getResourceById,
+			queryRoot: calendarRootRef.current ?? document,
 		})
 		if (!resolution) {
 			pendingDropRef.current = null
@@ -573,9 +604,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 			return
 		}
 
-		pendingDropRef.current = {
-			updatedEvent: resolution.updatedEvent,
-		}
+		pendingDropRef.current = resolution.updatedEvent
 		const { indicator, snapTarget } = resolution
 		const dragVisualSignature =
 			`${resolution.laneId}|${indicator.selectedTime.valueOf()}|` +
@@ -590,11 +619,13 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	}
 
 	const clearDrag = () => {
+		window.removeEventListener('mousemove', handleMouseMove, true)
+		window.removeEventListener('touchmove', handleTouchMove, true)
 		activeEventRef.current = null
-		activeTimeAxisRef.current = undefined
 		initialPointerRef.current = null
 		livePointerRef.current = null
 		grabOffsetRef.current = null
+		calendarRootRef.current = null
 		pendingDropRef.current = null
 		lastDragVisualSignatureRef.current = null
 		updateDragVisual({
@@ -610,12 +641,12 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	const handleDragEnd = (event: DragEndEvent) => {
 		const activeEvent = activeEventRef.current
 		const pendingDrop = pendingDropRef.current
-		const dropData = event.over?.data.current as DropCellData | undefined
-		const fallbackDayDrop =
-			activeEvent && dropData?.type !== 'time-cell'
-				? getUpdatedEvent(event, activeEvent)
-				: null
-		const updatedEvent = pendingDrop?.updatedEvent ?? fallbackDayDrop
+		const dropType = event.over?.data.current?.type
+		let fallbackDayDrop: ReturnType<typeof getUpdatedEvent> = null
+		if (activeEvent && dropType !== 'time-cell') {
+			fallbackDayDrop = getUpdatedEvent(event, activeEvent)
+		}
+		const updatedEvent = pendingDrop ?? fallbackDayDrop
 		if (updatedEvent) {
 			performEventUpdate(updatedEvent.activeEvent, updatedEvent.updates)
 		}
@@ -635,6 +666,18 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		indicator,
 		snapTarget,
 	} = dragVisual
+	let dragTimeIndicator: React.ReactNode = null
+	if (indicator && activeEvent) {
+		dragTimeIndicator = (
+			<DragTimeIndicator
+				event={activeEvent}
+				indicator={indicator}
+				render={renderDragTimeIndicator}
+				timeFormat={timeFormat}
+				view={view}
+			/>
+		)
+	}
 
 	return (
 		<>
@@ -647,15 +690,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 				sensors={sensors}
 			>
 				{children}
-				{showDragTimeIndicator && indicator && activeEvent && (
-					<DragTimeIndicator
-						event={activeEvent}
-						indicator={indicator}
-						render={renderDragTimeIndicator}
-						timeFormat={timeFormat}
-						view={view}
-					/>
-				)}
+				{showDragTimeIndicator && dragTimeIndicator}
 				<EventDragOverlay
 					activeEvent={activeEvent}
 					presentation={presentation}

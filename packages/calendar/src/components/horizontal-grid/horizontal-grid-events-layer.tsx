@@ -43,6 +43,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	const rangeStart = days.at(0)
 	const rangeEnd = days.at(-1)?.add(1, gridType)
 	const showNowLine = gridType === 'hour' && Boolean(rangeStart && rangeEnd)
+	const eventTimeAxis = gridType === 'hour' ? 'horizontal' : undefined
 
 	return (
 		<div
@@ -86,7 +87,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 							event={event}
 							isTruncatedEnd={positioned.isTruncatedEnd}
 							isTruncatedStart={positioned.isTruncatedStart}
-							timeAxis={gridType === 'hour' ? 'horizontal' : undefined}
+							timeAxis={eventTimeAxis}
 						/>
 					</div>
 				)

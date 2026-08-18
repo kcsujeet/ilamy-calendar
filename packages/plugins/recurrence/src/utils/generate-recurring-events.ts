@@ -61,7 +61,6 @@ export const generateRecurringEvents = ({
 		// Get all occurrences in the expanded range
 		const occurrences = rule.between(expandedStartDateTime, endDateTime, true)
 
-		// Convert and filter occurrences in one pass.
 		const recurringEvents: CalendarEvent[] = []
 		for (const [index, occurrence] of occurrences.entries()) {
 			const occurrenceDate = fromFloatingDate(occurrence, event.start)
@@ -69,17 +68,17 @@ export const generateRecurringEvents = ({
 				safeDate(candidate.recurrenceId)?.isSame(occurrenceDate)
 			)
 
-			const originalDuration = event.end.diff(event.start)
-			const recurringEvent: CalendarEvent = existingOverride
-				? { ...event, ...existingOverride }
-				: {
-						...event,
-						id: `${event.id}_${index}`,
-						start: occurrenceDate,
-						end: occurrenceDate.add(originalDuration, 'millisecond'),
-						uid: parentUid,
-						rrule: undefined,
-					}
+			let recurringEvent: CalendarEvent = {
+				...event,
+				id: `${event.id}_${index}`,
+				start: occurrenceDate,
+				end: occurrenceDate.add(eventDuration, 'millisecond'),
+				uid: parentUid,
+				rrule: undefined,
+			}
+			if (existingOverride) {
+				recurringEvent = { ...event, ...existingOverride }
+			}
 
 			// Detached overrides are excluded by their original occurrence, not
 			// their potentially moved start time.

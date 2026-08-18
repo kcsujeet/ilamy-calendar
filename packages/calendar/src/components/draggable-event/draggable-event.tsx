@@ -28,7 +28,7 @@ function DraggableEventUnmemoized({
 	className,
 	style,
 	disableDrag = false,
-	renderMode = 'event',
+	disableAnimation = false,
 	timeAxis,
 	isTruncatedStart = false,
 	isTruncatedEnd = false,
@@ -38,7 +38,7 @@ function DraggableEventUnmemoized({
 	style?: CSSProperties
 	event: CalendarEvent
 	disableDrag?: boolean
-	renderMode?: 'event' | 'drag-preview'
+	disableAnimation?: boolean
 	timeAxis?: 'vertical' | 'horizontal'
 	/** Set by the horizontal events layer when the bar continues past the visible range. */
 	isTruncatedStart?: boolean
@@ -105,8 +105,8 @@ function DraggableEventUnmemoized({
 		? 'cursor-default'
 		: 'cursor-pointer'
 	const cursorClass = isDragDisabled ? idleCursorClass : 'cursor-grab'
-	const draggingClass =
-		isDragging && !isDragDisabled && 'cursor-grabbing opacity-50'
+	const showsDraggingState = isDragging && !isDragDisabled
+	const draggingClass = showsDraggingState && 'cursor-grabbing opacity-50'
 
 	return (
 		<AnimatedSection
@@ -117,7 +117,7 @@ function DraggableEventUnmemoized({
 				className
 			)}
 			data-calendar-draggable-event
-			disableAnimation={renderMode === 'drag-preview'}
+			disableAnimation={disableAnimation}
 			onClick={(e) => {
 				e.stopPropagation()
 				onEventClick(event)
@@ -138,15 +138,16 @@ export const DraggableEvent = memo(
 	DraggableEventUnmemoized,
 	(prevProps, nextProps) => {
 		// Compare the essential props to prevent unnecessary re-renders
-		return (
-			prevProps.elementId === nextProps.elementId &&
-			prevProps.disableDrag === nextProps.disableDrag &&
-			prevProps.renderMode === nextProps.renderMode &&
-			prevProps.timeAxis === nextProps.timeAxis &&
-			prevProps.className === nextProps.className &&
-			prevProps.event === nextProps.event &&
-			prevProps.isTruncatedStart === nextProps.isTruncatedStart &&
-			prevProps.isTruncatedEnd === nextProps.isTruncatedEnd
-		)
+		const unchangedProps = [
+			prevProps.elementId === nextProps.elementId,
+			prevProps.disableDrag === nextProps.disableDrag,
+			prevProps.disableAnimation === nextProps.disableAnimation,
+			prevProps.timeAxis === nextProps.timeAxis,
+			prevProps.className === nextProps.className,
+			prevProps.event === nextProps.event,
+			prevProps.isTruncatedStart === nextProps.isTruncatedStart,
+			prevProps.isTruncatedEnd === nextProps.isTruncatedEnd,
+		]
+		return unchangedProps.every(Boolean)
 	}
 )

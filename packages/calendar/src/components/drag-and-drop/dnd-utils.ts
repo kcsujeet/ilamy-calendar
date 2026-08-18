@@ -27,13 +27,17 @@ export const getUpdatedEvent = (
 	options: DragResolutionOptions = {}
 ) => {
 	const { active, over } = event
-
-	if (!active || !activeEvent || (!over && !options.rawStart)) {
+	const hasTimedGeometry = Boolean(options.rawStart)
+	const hasDropTarget = Boolean(over) || hasTimedGeometry
+	if (!active || !activeEvent) {
+		return null
+	}
+	if (!hasDropTarget) {
 		return null
 	}
 
 	const data = (over?.data.current || {}) as DropCellData
-	const isTimeCell = Boolean(options.rawStart) || data.type === 'time-cell'
+	const isTimeCell = hasTimedGeometry || data.type === 'time-cell'
 	const resourceId =
 		'resourceId' in options ? options.resourceId : data.resourceId
 	const { allDay } = data

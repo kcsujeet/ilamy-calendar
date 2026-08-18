@@ -198,7 +198,7 @@ describe('getUpdatedEvent Utility Function', () => {
 		expect(result?.updates.start.toISOString()).toBe(expectedStartISO)
 	})
 
-	it('rounds an exact half interval forward and carries into the next hour', () => {
+	it('rounds half intervals forward across hour and day boundaries', () => {
 		cellDate = dayjs('2024-10-20T18:00:00.000Z')
 		cellType = 'time-cell'
 		hour = 18
@@ -220,12 +220,23 @@ describe('getUpdatedEvent Utility Function', () => {
 				snapInterval: 15,
 			}
 		)
+		const nextDay = getUpdatedEvent(
+			getDragEvent() as unknown as DragEndEvent,
+			getActiveEvent(),
+			{
+				rawStart: dayjs('2024-10-20T23:53:00.000Z'),
+				snapInterval: 15,
+			}
+		)
 
 		expect(halfInterval?.updates.start.toISOString()).toBe(
 			'2024-10-20T18:15:00.000Z'
 		)
 		expect(nextHour?.updates.start.toISOString()).toBe(
 			'2024-10-20T19:00:00.000Z'
+		)
+		expect(nextDay?.updates.start.toISOString()).toBe(
+			'2024-10-21T00:00:00.000Z'
 		)
 	})
 

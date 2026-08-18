@@ -4,7 +4,7 @@ import { overlapsRange, safeDate } from '@ilamy/utils/helpers'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from '../types'
 import { fromFloatingDate, toFloatingDate } from './floating-time'
-import { getEventParentUID } from './series-helpers'
+import { getEventParentUID, getOccurrenceStartISO } from './series-helpers'
 
 interface GenerateRecurringEventsProps {
 	event: CalendarEvent
@@ -61,57 +61,42 @@ export const generateRecurringEvents = ({
 		// Get all occurrences in the expanded range
 		const occurrences = rule.between(expandedStartDateTime, endDateTime, true)
 
-		// Convert occurrences to CalendarEvent instances
-		const recurringEvents: CalendarEvent[] = occurrences
-			.map((occurrence, index) => {
-				const occurrenceDate = fromFloatingDate(occurrence, event.start)
-				const existingOverride = overrides.find((e) =>
-					safeDate(e.recurrenceId)?.isSame(occurrenceDate)
-				)
+		// Convert and filter occurrences in one pass.
+		const recurringEvents: CalendarEvent[] = []
+		for (const [index, occurrence] of occurrences.entries()) {
+			const occurrenceDate = fromFloatingDate(occurrence, event.start)
+			const existingOverride = overrides.find((candidate) =>
+				safeDate(candidate.recurrenceId)?.isSame(occurrenceDate)
+			)
 
-				// If there's an override, use it
-				if (existingOverride) {
-					return { ...event, ...existingOverride }
-				}
+			const originalDuration = event.end.diff(event.start)
+			const recurringEvent: CalendarEvent = existingOverride
+				? { ...event, ...existingOverride }
+				: {
+						...event,
+						id: `${event.id}_${index}`,
+						start: occurrenceDate,
+						end: occurrenceDate.add(originalDuration, 'millisecond'),
+						uid: parentUid,
+						rrule: undefined,
+					}
 
-				// Calculate the duration from the original event
-				const originalDuration = event.end.diff(event.start)
-				const newEndTime = occurrenceDate.add(originalDuration, 'millisecond')
-				const recurringEventId = `${event.id}_${index}`
-				const parentUID = getEventParentUID(event)
+			// Detached overrides are excluded by their original occurrence, not
+			// their potentially moved start time.
+			const eventStartISO = getOccurrenceStartISO(recurringEvent)
+			const isExcluded = event.exdates?.includes(eventStartISO) ?? false
+			if (isExcluded) {
+				continue
+			}
 
-				// Create the recurring event instance
-				const recurringEvent: CalendarEvent = {
-					...event,
-					id: recurringEventId,
-					start: occurrenceDate,
-					end: newEndTime,
-					uid: parentUID, // Same UID as parent for proper grouping
-					rrule: undefined, // Instance events don't have RRULE
-				}
-
-				return recurringEvent
-			})
-			.filter((recurringEvent) => {
-				// Filter out EXDATE exclusions
-				const eventStartISO = recurringEvent.start.toISOString()
-				const isExcluded = event.exdates?.includes(eventStartISO) ?? false
-				if (isExcluded) {
-					return false
-				}
-
-				// The shared predicate, so an occurrence is kept here exactly when the
-				// host would keep it. A private copy of it went wrong twice: once by
-				// including an occurrence that ENDS at the range start, once by dropping
-				// a zero-duration one, which its start is what places (#248).
-				const eventSpansRange = overlapsRange(
-					recurringEvent,
-					startDate,
-					endDate
-				)
-
-				return eventSpansRange
-			})
+			// The shared predicate, so an occurrence is kept here exactly when the
+			// host would keep it. A private copy of it went wrong twice: once by
+			// including an occurrence that ENDS at the range start, once by dropping
+			// a zero-duration one, which its start is what places (#248).
+			if (overlapsRange(recurringEvent, startDate, endDate)) {
+				recurringEvents.push(recurringEvent)
+			}
+		}
 
 		return recurringEvents
 	} catch (error) {

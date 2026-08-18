@@ -127,6 +127,9 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `hideExportButton` | `boolean` | `false` | Hide the iCalendar export button in the default header (desktop and mobile) |
 | `hideNonBusinessHours` | `boolean` | `false` | Hide off-hours in day/week views |
 | `slotDuration` | `15 \| 30 \| 60` | `60` | Time-grid granularity (minutes). `60` gives one row per hour with no sub-hour lines; `30` two; `15` four with dashed separators. Applies to day, week, and resource hour views. |
+| `dragSnapInterval` | `1 \| 5 \| 10 \| 15 \| 30 \| 60` | `slotDuration` | Clock-aligned drag interval for timed events. An explicit value is independent of `slotDuration`; use `1` for minute-accurate movement. |
+| `showDragTimeIndicator` | `boolean` | `true` | Show the selected snap line and time while dragging over a timed grid. |
+| `renderDragTimeIndicator` | `(props: RenderDragTimeIndicatorProps) => ReactNode` | — | Replace the live drag-time line and label. |
 | `hiddenDays` | `WeekDays[]` | `[]` | Days to hide from vertical week view. Ignored in resource vertical week view with daily granularity (`weekViewGranularity: 'daily'`) — non-contiguous days would break multi-day event positioning. |
 | `disableCellClick` | `boolean` | — | Disable cell clicks |
 | `disableEventClick` | `boolean` | — | Disable event clicks |
@@ -243,7 +246,7 @@ interface CellClickInfo {
 | Type | File |
 |------|------|
 | `CalendarEvent`, `WeekDays`, `BusinessHours` | `packages/types/src/index.ts` (`@ilamy/types`) |
-| `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CellClickInfo`, `CalendarClassesOverride` | `src/features/calendar/types/index.ts` |
+| `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CellInfo`, `CalendarClassesOverride`, `DragSnapInterval`, `RenderDragTimeIndicatorProps` | `src/features/calendar/types/index.ts` |
 | `Resource` | `packages/types/src/index.ts` (`@ilamy/types`) |
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |
 | `CalendarView`, `TimeFormat` | `src/types/index.ts` |

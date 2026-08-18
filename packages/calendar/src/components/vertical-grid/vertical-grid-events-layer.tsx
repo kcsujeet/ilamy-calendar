@@ -72,6 +72,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 							})}
 							elementId={eventKey}
 							event={event}
+							timeAxis={gridType === 'hour' ? 'vertical' : undefined}
 						/>
 					</div>
 				)

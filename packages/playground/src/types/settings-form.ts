@@ -1,5 +1,6 @@
 import type {
 	CalendarView,
+	DragSnapInterval,
 	SlotDuration,
 	TimeFormat,
 	WeekDays,
@@ -33,6 +34,7 @@ export interface PlaygroundSettings {
 	eventHeight: number
 	eventSpacing: number
 	slotDuration: SlotDuration
+	dragSnapInterval: DragSnapInterval | 'slot-duration'
 	// 'none' (no auto-scroll) or an ISO-ish 'HH:00:00'. Mapped to undefined for
 	// the calendar's `scrollTime` prop in the display.
 	scrollTime: string
@@ -64,6 +66,7 @@ export interface PlaygroundSettings {
 	disableCellClick: boolean
 	disableEventClick: boolean
 	disableDragAndDrop: boolean
+	showDragTimeIndicator: boolean
 }
 
 export const defaultSettings: PlaygroundSettings = {
@@ -82,6 +85,7 @@ export const defaultSettings: PlaygroundSettings = {
 	eventHeight: 24,
 	eventSpacing: 1,
 	slotDuration: 60,
+	dragSnapInterval: 'slot-duration',
 	scrollTime: 'none',
 	stickyViewHeader: true,
 	hideExportButton: false,
@@ -105,4 +109,5 @@ export const defaultSettings: PlaygroundSettings = {
 	disableCellClick: false,
 	disableEventClick: false,
 	disableDragAndDrop: false,
+	showDragTimeIndicator: true,
 }

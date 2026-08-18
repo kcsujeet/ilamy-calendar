@@ -105,9 +105,11 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								gridType={gridType}
 								hour={gridType === 'hour' ? col.day.hour() : undefined}
 								key={col.day.toISOString()}
+								laneId={`horizontal-${String(id)}`}
 								precomputedEvents={dayEventsMap.get(getDayKey(col.day))}
 								resourceId={resource?.id}
 								showDayNumber={showDayNumber}
+								timeAxis={gridType === 'hour' ? 'horizontal' : undefined}
 							/>
 						) : null
 					})}
@@ -176,8 +178,10 @@ const GroupedColumn = memo(
 							gridType={gridType}
 							hour={gridType === 'hour' ? day.hour() : undefined}
 							key={day.toISOString()}
+							laneId={`horizontal-${String(id)}`}
 							resourceId={resourceId}
 							showDayNumber={showDayNumber}
+							timeAxis={gridType === 'hour' ? 'horizontal' : undefined}
 						/>
 					))}
 				</div>

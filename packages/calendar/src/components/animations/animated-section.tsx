@@ -6,6 +6,7 @@ interface AnimatedSectionProps extends React.HTMLAttributes<HTMLDivElement> {
 	transitionKey: string
 	delay?: number
 	direction?: 'vertical' | 'horizontal'
+	disableAnimation?: boolean
 	'data-testid'?: string
 	ref?: React.Ref<HTMLDivElement>
 }
@@ -22,6 +23,7 @@ export const AnimatedSection: React.FC<AnimatedSectionProps> = ({
 	delay = 0,
 	className,
 	direction = 'vertical',
+	disableAnimation = false,
 	'data-testid': testId,
 	ref,
 	style,
@@ -35,8 +37,10 @@ export const AnimatedSection: React.FC<AnimatedSectionProps> = ({
 	return (
 		<div
 			className={cn(
-				'inline-block w-full animate-in fade-in fill-mode-backwards duration-500 ease-in-out',
-				slideInClass,
+				'inline-block w-full',
+				!disableAnimation &&
+					'animate-in fade-in fill-mode-backwards duration-500 ease-in-out',
+				!disableAnimation && slideInClass,
 				className
 			)}
 			data-testid={testId}

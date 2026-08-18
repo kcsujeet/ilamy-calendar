@@ -18,6 +18,9 @@ import type { CalendarView, TimeFormat } from '@/types'
  */
 export type SlotDuration = 15 | 30 | 60
 
+/** Clock-aligned minute interval used while dragging timed events. */
+export type DragSnapInterval = 1 | 5 | 10 | 15 | 30 | 60
+
 /**
  * Custom class names for calendar styling.
  * Allows users to override default styles for various calendar elements.
@@ -107,6 +110,26 @@ export interface RenderCurrentTimeIndicatorProps {
 	 */
 	resource?: Resource
 	/** The current calendar view (e.g. 'day', 'week') */
+	view: CalendarView
+}
+
+/** Props supplied to a custom drag-time indicator. */
+export interface RenderDragTimeIndicatorProps {
+	/** The snapped start time currently selected by the drag gesture. */
+	selectedTime: Dayjs
+	/** The event being dragged. */
+	event: CalendarEvent
+	/** Start of the time cell hosting the selected snap line. */
+	rangeStart: Dayjs
+	/** Exclusive end of the time cell hosting the selected snap line. */
+	rangeEnd: Dayjs
+	/** Position of selectedTime within the host cell, from 0 to 100. */
+	progress: number
+	/** Direction in which time advances in the active view. */
+	axis: 'vertical' | 'horizontal'
+	/** Destination resource, when dragging in a resource view. */
+	resource?: Resource
+	/** Current calendar view. */
 	view: CalendarView
 }
 
@@ -219,6 +242,24 @@ export interface IlamyCalendarProps {
 	 * Useful for read-only views or when drag-and-drop is not needed.
 	 */
 	disableDragAndDrop?: boolean
+	/**
+	 * Clock-aligned interval used when dragging timed events. When omitted, it
+	 * follows `slotDuration`; an explicit value remains independent from the grid.
+	 * @default slotDuration
+	 */
+	dragSnapInterval?: DragSnapInterval
+	/**
+	 * Show the live snap line and selected time while dragging over a timed grid.
+	 * @default true
+	 */
+	showDragTimeIndicator?: boolean
+	/**
+	 * Replace the built-in drag snap line and time label. The renderer is hosted
+	 * over the destination lane and receives the selected position and context.
+	 */
+	renderDragTimeIndicator?: (
+		props: RenderDragTimeIndicatorProps
+	) => React.ReactNode
 	/**
 	 * Maximum number of events to display per day in month view.
 	 * Additional events will be hidden and can be viewed via a "more" link.

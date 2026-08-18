@@ -19,6 +19,9 @@ interface RenderCellOptions {
 	// Cell props
 	hour?: number
 	minute?: number
+	slotDurationMinutes?: number
+	timeAxis?: 'vertical' | 'horizontal'
+	laneId?: string
 	resourceId?: string | number
 	allDay?: boolean
 }
@@ -42,8 +45,11 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 				date={initialDate}
 				hour={opts.hour}
 				id="test-cell"
+				laneId={opts.laneId}
 				minute={opts.minute}
 				resourceId={opts.resourceId}
+				slotDurationMinutes={opts.slotDurationMinutes}
+				timeAxis={opts.timeAxis}
 				type="day-cell"
 			/>
 		</CalendarProvider>
@@ -183,7 +189,7 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 	})
 
 	test('exposes a 15-minute range on a minute cell', () => {
-		renderCell({ hour: 9, minute: 15 })
+		renderCell({ hour: 9, minute: 15, slotDurationMinutes: 15 })
 
 		const cell = screen.getByTestId('cell')
 		expect(cell.getAttribute('data-start')).toBe(
@@ -192,6 +198,26 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 		expect(cell.getAttribute('data-end')).toBe(
 			initialDate.hour(9).minute(30).toISOString()
 		)
+	})
+
+	test('uses the actual visual slot duration and exposes timed lane metadata', () => {
+		renderCell({
+			hour: 9,
+			minute: 30,
+			slotDurationMinutes: 30,
+			timeAxis: 'vertical',
+			laneId: 'vertical-day-2025-01-01',
+		})
+
+		const cell = screen.getByTestId('cell')
+		expect(cell.getAttribute('data-start')).toBe(
+			initialDate.hour(9).minute(30).toISOString()
+		)
+		expect(cell.getAttribute('data-end')).toBe(
+			initialDate.hour(10).minute(0).toISOString()
+		)
+		expect(cell.getAttribute('data-dnd-axis')).toBe('vertical')
+		expect(cell.getAttribute('data-dnd-lane')).toBe('vertical-day-2025-01-01')
 	})
 
 	test('exposes data-resource-id when the cell has a resourceId', () => {

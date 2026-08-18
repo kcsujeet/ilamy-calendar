@@ -97,6 +97,9 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `disableCellClick` | `boolean` | `false` | Disable cell click interactions |
 | `disableEventClick` | `boolean` | `false` | Disable event click interactions |
 | `disableDragAndDrop` | `boolean` | `false` | Disable drag-and-drop functionality for events |
+| `dragSnapInterval` | `1 \| 5 \| 10 \| 15 \| 30 \| 60` | `slotDuration` | Clock-aligned snapping interval for timed drags. Use `1` for minute-accurate movement without coarse snapping. Explicit values are independent of `slotDuration`. |
+| `showDragTimeIndicator` | `boolean` | `true` | Show the live snap line and selected time while dragging over timed grids. |
+| `renderDragTimeIndicator` | `(props: RenderDragTimeIndicatorProps) => ReactNode` | - | Replace the live drag-time indicator. Receives selected time, event, host range, progress, axis, resource, and view. |
 | `eventSpacing` | `number` | `2` | Spacing (in pixels) between events in calendar views. Allows customizable gaps between events for better visual clarity. |
 | `eventHeight` | `number` | `24` | Height (in pixels) of event bars in horizontal grid views (month, resource month, resource week horizontal). Increase to show multi-line content like title + time. Does not affect day/week views which scale with event duration. |
 | `businessHours` | `BusinessHours \| BusinessHours[]` | `undefined` | Restrict calendar interactions to specified days and time ranges. Users can only create and edit events within business hours. Supports single object or array for different hours per day. |
@@ -429,6 +432,29 @@ Malformed or out-of-range strings (`'9am'`, `'9:99'`, `'25:00'`) are ignored and
 ```
 
 A time slot is interactive only when it fits entirely inside business hours. On grids coarser than the boundary — for example default one-hour cells with a `'09:15'` start — the partially-covered slot counts as non-business, so the calendar never allows a booking that violates the boundary. Set `slotDuration` to match your finest boundary (as above) for exact behavior.
+
+## Drag Snapping and Time Indicator
+
+Timed drag snapping is configured separately from the visual grid. This example
+keeps hourly grid rows while allowing starts such as 18:45:
+
+```tsx title="Quarter-Hour Drag Snapping"
+<IlamyCalendar
+  events={events}
+  slotDuration={60}
+  dragSnapInterval={15}
+  showDragTimeIndicator
+/>
+```
+
+The event's leading edge snaps to the nearest clock boundary and the live line
+shows the selected start time. In vertical day/week grids the line is horizontal;
+in horizontal resource grids it follows the time axis and becomes vertical.
+When `dragSnapInterval` is omitted, it follows `slotDuration`.
+Set `showDragTimeIndicator={false}` to hide it, or use
+`renderDragTimeIndicator` to replace its presentation.
+Set `dragSnapInterval={1}` to allow movement to any whole minute, effectively
+disabling coarser snapping.
 
 ### hideNonBusinessHours
 

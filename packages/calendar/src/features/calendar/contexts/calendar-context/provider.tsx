@@ -1,83 +1,23 @@
-import type {
-	BusinessHours,
-	CalendarEvent,
-	IlamyPlugin,
-	Resource,
-} from '@ilamy/types'
+import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import type React from 'react'
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
-import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
-import type {
-	CalendarClassesOverride,
-	CellInfo,
-	DateRange,
-	RenderCurrentTimeIndicatorProps,
-	SlotDuration,
-} from '@/features/calendar/types'
+import type { IlamyCalendarProps } from '@/features/calendar/types'
 import { composePluginProviders } from '@/features/plugins/lib/compose-plugin-providers'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
-import type { Translations, TranslatorFunction } from '@/lib/translations/types'
-import type { CalendarView, TimeFormat } from '@/types'
 import { CalendarContext, type CalendarContextType } from './context'
 
-export interface CalendarProviderProps {
+export interface CalendarProviderProps
+	extends Omit<
+		IlamyCalendarProps,
+		'events' | 'firstDayOfWeek' | 'initialDate' | 'hiddenDays'
+	> {
 	children: ReactNode
 	events?: CalendarEvent[]
 	firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
-	initialView?: CalendarView
 	initialDate?: Dayjs
-	renderEvent?: (event: CalendarEvent) => ReactNode
-	onEventClick?: (event: CalendarEvent) => void
-	onCellClick?: (info: CellInfo) => void
-	isCellDisabled?: (info: CellInfo) => boolean
-	getCellClassName?: (info: CellInfo) => string
-	onViewChange?: (view: CalendarView) => void
-	onEventAdd?: (event: CalendarEvent) => void
-	onEventUpdate?: (event: CalendarEvent) => void
-	onEventDelete?: (event: CalendarEvent) => void
-	onDateChange?: (date: Dayjs, range: DateRange) => void
-	locale?: string
-	timezone?: string
-	disableCellClick?: boolean
-	disableEventClick?: boolean
-	disableDragAndDrop?: boolean
-	/** Max stacked events per day in horizontal grids; the engine defaults it. */
-	dayMaxEvents?: number
-	eventSpacing?: number
-	eventHeight?: number
-	stickyViewHeader?: boolean
-	viewHeaderClassName?: string
-	headerComponent?: ReactNode // Optional custom header component
-	headerClassName?: string // Optional custom header class
-	businessHours?: BusinessHours | BusinessHours[]
-	renderEventForm?: (props: EventFormProps) => ReactNode
-	onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
-	// Translation options - provide either translations object OR translator function
-	translations?: Translations
-	translator?: TranslatorFunction
-	timeFormat?: TimeFormat
-	classesOverride?: CalendarClassesOverride
-	renderCurrentTimeIndicator?: (
-		props: RenderCurrentTimeIndicatorProps
-	) => ReactNode
-	renderHour?: (date: Dayjs) => ReactNode
-	hideNonBusinessHours?: boolean
-	hideExportButton?: boolean
 	hiddenDays?: Set<number>
-	slotDuration?: SlotDuration
-	scrollTime?: string
-	plugins?: IlamyPlugin[]
-	/** The resource axis. Absent/empty → a regular calendar (no filtering, no resource columns). */
-	resources?: Resource[]
-	/** Custom render for resource header cells. */
-	renderResource?: (resource: Resource) => React.ReactNode
-	/** Resource arrangement preference. Only applies when `resources` is set. @default 'horizontal' */
-	orientation?: 'horizontal' | 'vertical'
-	/** Week-view granularity for resource weeks. @default 'hourly' */
-	weekViewGranularity?: 'hourly' | 'daily'
 }
 
 // Module constant, not a per-render `?? []`: keeps the engine's event store
@@ -111,6 +51,9 @@ const useCalendarContextValue = (
 		disableCellClick,
 		disableEventClick,
 		disableDragAndDrop,
+		dragSnapInterval,
+		showDragTimeIndicator = true,
+		renderDragTimeIndicator,
 		dayMaxEvents,
 		eventSpacing = GAP_BETWEEN_ELEMENTS,
 		eventHeight = EVENT_BAR_HEIGHT,
@@ -138,6 +81,7 @@ const useCalendarContextValue = (
 		orientation,
 		weekViewGranularity,
 	} = props
+	const resolvedDragSnapInterval = dragSnapInterval ?? slotDuration
 
 	const engine = useCalendarEngine({
 		events,
@@ -184,6 +128,9 @@ const useCalendarContextValue = (
 			disableCellClick,
 			disableEventClick,
 			disableDragAndDrop,
+			dragSnapInterval: resolvedDragSnapInterval,
+			showDragTimeIndicator,
+			renderDragTimeIndicator,
 			eventSpacing,
 			eventHeight,
 			stickyViewHeader,
@@ -214,6 +161,9 @@ const useCalendarContextValue = (
 		disableCellClick,
 		disableEventClick,
 		disableDragAndDrop,
+		resolvedDragSnapInterval,
+		showDragTimeIndicator,
+		renderDragTimeIndicator,
 		eventSpacing,
 		eventHeight,
 		stickyViewHeader,

@@ -12,6 +12,9 @@ interface DroppableCellProps {
 	date: Dayjs
 	hour?: number
 	minute?: number
+	slotDurationMinutes?: number
+	timeAxis?: 'vertical' | 'horizontal'
+	laneId?: string
 	resourceId?: string | number
 	allDay?: boolean
 	children?: React.ReactNode
@@ -28,15 +31,13 @@ interface DroppableCellProps {
 function getCellRange(
 	date: Dayjs,
 	hour?: number,
-	minute?: number
+	minute?: number,
+	slotDurationMinutes = 60
 ): { start: Dayjs; end: Dayjs } {
 	const start = date.hour(hour ?? 0).minute(minute ?? 0)
 
-	if (hour !== undefined && minute !== undefined) {
-		return { start, end: start.minute(minute + 15) }
-	}
 	if (hour !== undefined) {
-		return { start, end: start.hour(hour + 1).minute(0) }
+		return { start, end: start.add(slotDurationMinutes, 'minute') }
 	}
 	// The next midnight, not 23:59: `end` is exclusive, which is what the slot
 	// and hour branches above already report (#248).
@@ -49,6 +50,9 @@ export function DroppableCell({
 	date,
 	hour,
 	minute,
+	slotDurationMinutes = 60,
+	timeAxis,
+	laneId,
 	resourceId,
 	allDay,
 	children,
@@ -68,7 +72,7 @@ export function DroppableCell({
 		view,
 	} = useSmartCalendarContext()
 
-	const { start, end } = getCellRange(date, hour, minute)
+	const { start, end } = getCellRange(date, hour, minute, slotDurationMinutes)
 	// `getResourceById` is only present on resource calendars; regular calendars resolve to undefined.
 	const resource = getResourceById?.(resourceId)
 	const cellInfo: CellInfo = { start, end, resource, allDay }
@@ -79,7 +83,18 @@ export function DroppableCell({
 
 	const { isOver, setNodeRef } = useDroppable({
 		id,
-		data: { type, date, hour, minute, resourceId, allDay },
+		data: {
+			type,
+			date,
+			hour,
+			minute,
+			resourceId,
+			allDay,
+			start,
+			end,
+			axis: timeAxis,
+			laneId,
+		},
 		disabled: disableDragAndDrop || cellDisabled,
 	})
 
@@ -109,6 +124,8 @@ export function DroppableCell({
 			)}
 			data-all-day={allDay ? 'true' : undefined}
 			data-disabled={cellDisabled.toString()}
+			data-dnd-axis={timeAxis}
+			data-dnd-lane={laneId}
 			data-end={end.toISOString()}
 			data-resource-id={resourceId}
 			data-start={start.toISOString()}

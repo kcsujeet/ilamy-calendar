@@ -4,6 +4,7 @@ import type {
 	CalendarView,
 	CellInfo,
 	Dayjs,
+	DragSnapInterval,
 	EventFormProps,
 	IlamyPlugin,
 	RenderCurrentTimeIndicatorProps,
@@ -70,6 +71,7 @@ type SharedCalendarProps = {
 	plugins: IlamyPlugin[]
 	disableCellClick: boolean
 	disableDragAndDrop: boolean
+	dragSnapInterval: DragSnapInterval | undefined
 	disableEventClick: boolean
 	firstDayOfWeek: WeekDays
 	hiddenDays: WeekDays[]
@@ -78,6 +80,7 @@ type SharedCalendarProps = {
 	locale: string
 	scrollTime: string | undefined
 	slotDuration: SlotDuration
+	showDragTimeIndicator: boolean
 	stickyViewHeader: boolean
 	timeFormat: TimeFormat
 	timezone: string
@@ -118,6 +121,7 @@ function RegularCalendar({
 			disableCellClick={shared.disableCellClick}
 			disableDragAndDrop={shared.disableDragAndDrop}
 			disableEventClick={shared.disableEventClick}
+			dragSnapInterval={shared.dragSnapInterval}
 			eventHeight={shared.eventHeight}
 			eventSpacing={shared.eventSpacing}
 			events={customEvents}
@@ -143,6 +147,7 @@ function RegularCalendar({
 			renderEventForm={shared.renderEventForm}
 			renderHour={shared.renderHour}
 			scrollTime={shared.scrollTime}
+			showDragTimeIndicator={shared.showDragTimeIndicator}
 			slotDuration={shared.slotDuration}
 			stickyViewHeader={shared.stickyViewHeader}
 			timeFormat={shared.timeFormat}
@@ -181,6 +186,7 @@ function ResourceCalendar({
 			disableCellClick={shared.disableCellClick}
 			disableDragAndDrop={shared.disableDragAndDrop}
 			disableEventClick={shared.disableEventClick}
+			dragSnapInterval={shared.dragSnapInterval}
 			eventHeight={shared.eventHeight}
 			eventSpacing={shared.eventSpacing}
 			events={resourceEvents}
@@ -209,6 +215,7 @@ function ResourceCalendar({
 			renderResource={renderResource}
 			resources={activeResources}
 			scrollTime={shared.scrollTime}
+			showDragTimeIndicator={shared.showDragTimeIndicator}
 			slotDuration={shared.slotDuration}
 			stickyViewHeader={shared.stickyViewHeader}
 			timeFormat={shared.timeFormat}
@@ -252,6 +259,10 @@ function resolveSharedCalendarProps(
 		plugins,
 		disableCellClick: values.disableCellClick,
 		disableDragAndDrop: values.disableDragAndDrop,
+		dragSnapInterval:
+			values.dragSnapInterval === 'slot-duration'
+				? undefined
+				: values.dragSnapInterval,
 		disableEventClick: values.disableEventClick,
 		firstDayOfWeek: values.firstDayOfWeek,
 		hiddenDays: values.hiddenDays,
@@ -260,6 +271,7 @@ function resolveSharedCalendarProps(
 		locale: values.locale,
 		scrollTime: values.scrollTime === 'none' ? undefined : values.scrollTime,
 		slotDuration: values.slotDuration,
+		showDragTimeIndicator: values.showDragTimeIndicator,
 		stickyViewHeader: values.stickyViewHeader,
 		timeFormat: values.timeFormat,
 		timezone: values.timezone,

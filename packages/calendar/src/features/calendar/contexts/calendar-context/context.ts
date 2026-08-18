@@ -6,7 +6,9 @@ import type { CalendarEngineReturn } from '@/features/calendar/hooks/use-calenda
 import type {
 	CalendarClassesOverride,
 	CellInfo,
+	DragSnapInterval,
 	RenderCurrentTimeIndicatorProps,
+	RenderDragTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
 import type { TimeFormat } from '@/types'
@@ -28,6 +30,11 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	disableCellClick?: boolean
 	disableEventClick?: boolean
 	disableDragAndDrop?: boolean
+	dragSnapInterval: DragSnapInterval
+	showDragTimeIndicator: boolean
+	renderDragTimeIndicator?: (
+		props: RenderDragTimeIndicatorProps
+	) => React.ReactNode
 	eventSpacing: number
 	eventHeight: number
 	stickyViewHeader: boolean

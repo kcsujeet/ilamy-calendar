@@ -28,6 +28,8 @@ function DraggableEventUnmemoized({
 	className,
 	style,
 	disableDrag = false,
+	renderMode = 'event',
+	timeAxis,
 	isTruncatedStart = false,
 	isTruncatedEnd = false,
 }: {
@@ -36,6 +38,8 @@ function DraggableEventUnmemoized({
 	style?: CSSProperties
 	event: CalendarEvent
 	disableDrag?: boolean
+	renderMode?: 'event' | 'drag-preview'
+	timeAxis?: 'vertical' | 'horizontal'
 	/** Set by the horizontal events layer when the bar continues past the visible range. */
 	isTruncatedStart?: boolean
 	isTruncatedEnd?: boolean
@@ -48,6 +52,13 @@ function DraggableEventUnmemoized({
 		data: {
 			event,
 			type: 'calendar-event',
+			timeAxis,
+			presentation: {
+				className,
+				style,
+				isTruncatedStart,
+				isTruncatedEnd,
+			},
 		},
 		disabled: disableDrag || disableDragAndDrop,
 	})
@@ -95,7 +106,7 @@ function DraggableEventUnmemoized({
 		: 'cursor-pointer'
 	const cursorClass = isDragDisabled ? idleCursorClass : 'cursor-grab'
 	const draggingClass =
-		isDragging && !isDragDisabled && 'cursor-grabbing shadow-lg'
+		isDragging && !isDragDisabled && 'cursor-grabbing opacity-50'
 
 	return (
 		<AnimatedSection
@@ -105,6 +116,8 @@ function DraggableEventUnmemoized({
 				draggingClass,
 				className
 			)}
+			data-calendar-draggable-event
+			disableAnimation={renderMode === 'drag-preview'}
 			onClick={(e) => {
 				e.stopPropagation()
 				onEventClick(event)
@@ -128,6 +141,8 @@ export const DraggableEvent = memo(
 		return (
 			prevProps.elementId === nextProps.elementId &&
 			prevProps.disableDrag === nextProps.disableDrag &&
+			prevProps.renderMode === nextProps.renderMode &&
+			prevProps.timeAxis === nextProps.timeAxis &&
 			prevProps.className === nextProps.className &&
 			prevProps.event === nextProps.event &&
 			prevProps.isTruncatedStart === nextProps.isTruncatedStart &&

@@ -158,6 +158,16 @@ const SLOT_DURATION_OPTIONS = [
 	{ value: '15', label: '15 min (quarter-hour)' },
 ]
 
+const DRAG_SNAP_INTERVAL_OPTIONS = [
+	{ value: 'slot-duration', label: 'Match slot duration (default)' },
+	{ value: '60', label: '60 min' },
+	{ value: '30', label: '30 min' },
+	{ value: '15', label: '15 min' },
+	{ value: '10', label: '10 min' },
+	{ value: '5', label: '5 min' },
+	{ value: '1', label: 'No snapping (1 min)' },
+]
+
 const SCROLL_TIME_OPTIONS = [
 	{ value: 'none', label: 'None (no auto-scroll)' },
 	...Array.from({ length: 24 }).map((_, i) => {
@@ -394,6 +404,13 @@ export function CalendarSettings() {
 				/>
 
 				<FormSelect
+					label="Drag Snap Interval"
+					name="dragSnapInterval"
+					options={DRAG_SNAP_INTERVAL_OPTIONS}
+					parse={(value) => (value === 'slot-duration' ? value : Number(value))}
+				/>
+
+				<FormSelect
 					label="Initial Scroll Time"
 					name="scrollTime"
 					options={SCROLL_TIME_OPTIONS}
@@ -486,6 +503,10 @@ export function CalendarSettings() {
 				<FormCheckbox label="Disable cell clicks" name="disableCellClick" />
 				<FormCheckbox label="Disable event clicks" name="disableEventClick" />
 				<FormCheckbox label="Disable drag & drop" name="disableDragAndDrop" />
+				<FormCheckbox
+					label="Show drag time indicator"
+					name="showDragTimeIndicator"
+				/>
 			</CardContent>
 		</Card>
 	)

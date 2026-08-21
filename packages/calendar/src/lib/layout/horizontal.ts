@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import { isAfter, isBefore } from '@ilamy/utils/helpers'
 import type { HorizontalPositionedEvent } from './geometry'
 
 interface HorizontalLayoutInput {
@@ -30,10 +31,10 @@ const partitionAndSortEvents = (
 	// span math had them right. Comparing the start's unit with the last unit the
 	// event OCCUPIES (its exclusive end, stepped back) asks the real question.
 	const spansMultipleUnits = (e: CalendarEvent): boolean =>
-		e.end
-			.subtract(1, 'millisecond')
-			.startOf(gridType)
-			.isAfter(e.start.startOf(gridType))
+		isAfter(
+			e.end.subtract(1, 'millisecond').startOf(gridType),
+			e.start.startOf(gridType)
+		)
 
 	const multiUnitEvents = events.filter(spansMultipleUnits)
 	const singleUnitEvents = events.filter((e) => !spansMultipleUnits(e))
@@ -80,11 +81,11 @@ const computeColumnSpan = (
 	return {
 		startCol: Math.max(0, eventStart.diff(firstUnit, gridType)),
 		endCol: Math.min(unitCount - 1, eventEnd.diff(firstUnit, gridType)),
-		isTruncatedStart: event.start.startOf(gridType).isBefore(firstUnit),
+		isTruncatedStart: isBefore(event.start.startOf(gridType), firstUnit),
 		// Read off the SAME exclusive end as the span above. Using the raw `end`
 		// here would disagree with it at the grid's edge, drawing the overrun
 		// indicator on an event that ends exactly where the grid does.
-		isTruncatedEnd: adjustedEnd.startOf(gridType).isAfter(lastUnit),
+		isTruncatedEnd: isAfter(adjustedEnd.startOf(gridType), lastUnit),
 	}
 }
 

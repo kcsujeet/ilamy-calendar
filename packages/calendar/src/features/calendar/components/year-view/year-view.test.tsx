@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import type { CalendarEvent } from '@ilamy/types'
+import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
@@ -566,5 +566,56 @@ describe('YearView', () => {
 				screen.getByTestId('year-day-2025-01-2025-02-01')
 			).toBeInTheDocument()
 		})
+	})
+})
+
+/**
+ * The year view used to compute its data in the render body: 12 month-range
+ * queries plus 12 x 42 mini-calendar day queries, uncached, every render.
+ * Nothing memoizes beneath `getEventsForDateRange`, so with the recurrence
+ * plugin installed each one re-expanded every RRULE (#245).
+ *
+ * Counting a plugin's `transformEvents` calls counts the queries exactly, and
+ * uses only public API. The count is pinned with `toBe` rather than a bound:
+ * a bound would drift upward unnoticed, and wall-clock timing is too noisy on
+ * shared CI runners to gate on.
+ *
+ * Four is two queries per render (the engine's own view-range memo, plus the
+ * year grid) across the provider's two render passes. It was 1034.
+ */
+describe('YearView query count', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	const renderCountingQueries = (props: Record<string, unknown> = {}) => {
+		let queryCount = 0
+		const countingPlugin: IlamyPlugin = {
+			name: 'query-counter',
+			transformEvents: (events) => {
+				queryCount += 1
+				return events
+			},
+		}
+		const view = renderYearView({ ...props, plugins: [countingPlugin] })
+		return { ...view, getQueryCount: () => queryCount }
+	}
+
+	test('issues a constant number of queries regardless of event count', () => {
+		const year = dayjs().year()
+		const { getQueryCount } = renderCountingQueries({
+			events: createTestEvents(year),
+			initialDate: dayjs(`${year}-01-15`),
+		})
+		expect(getQueryCount()).toBe(4)
+	})
+
+	test('does not scale queries with the number of mini-calendar cells', () => {
+		const year = dayjs().year()
+		const { getQueryCount } = renderCountingQueries({
+			events: [],
+			initialDate: dayjs(`${year}-06-15`),
+		})
+		expect(getQueryCount()).toBe(4)
 	})
 })

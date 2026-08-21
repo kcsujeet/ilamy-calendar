@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import { isSameOrAfter } from '@ilamy/utils/helpers'
 import type { VerticalPositionedEvent } from './geometry'
 
 interface VerticalLayoutInput {
@@ -25,7 +26,7 @@ const clusterOverlappingEvents = (
 	let currentCluster: CalendarEvent[] = []
 	let lastEventEnd: Dayjs | null = null
 	for (const event of sortedEvents) {
-		if (lastEventEnd && event.start.isSameOrAfter(lastEventEnd)) {
+		if (lastEventEnd && isSameOrAfter(event.start, lastEventEnd)) {
 			if (currentCluster.length > 0) {
 				clusters.push(currentCluster)
 			}

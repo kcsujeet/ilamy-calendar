@@ -1,6 +1,5 @@
 import type { OpUnitType as DayjsOpUnitType, PluginFunc } from 'dayjs'
 import dayjs from 'dayjs'
-import isBetween from 'dayjs/plugin/isBetween.js'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js'
 import localeData from 'dayjs/plugin/localeData.js'
@@ -70,7 +69,6 @@ dayjs.extend(weekday)
 dayjs.extend(weekOfYear)
 dayjs.extend(isSameOrAfter)
 dayjs.extend(isSameOrBefore)
-dayjs.extend(isBetween)
 dayjs.extend(minMax)
 dayjs.extend(timezone)
 dayjs.extend(utc)

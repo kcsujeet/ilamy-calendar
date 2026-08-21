@@ -1,13 +1,17 @@
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
-
-/** Whether the given date falls on today (calendar day, respecting timezone). */
-export function isToday(date: Dayjs): boolean {
-	return date.isSame(dayjs(), 'day')
-}
+import { dayKey, isSameDay } from '@ilamy/utils/helpers'
 
 /** `YYYY-MM-DD` string used as a stable per-day key across the codebase. */
-export function getDayKey(date: Dayjs): string {
-	return date.format('YYYY-MM-DD')
+export const getDayKey = dayKey
+
+/**
+ * Whether the given date falls on today (calendar day, respecting timezone).
+ *
+ * Callers rendering many cells at once should hoist `getDayKey(dayjs())` and
+ * compare keys directly: constructing "now" is the cost that remains here.
+ */
+export function isToday(date: Dayjs): boolean {
+	return isSameDay(date, dayjs())
 }
 
 /**

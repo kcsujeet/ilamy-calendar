@@ -1,5 +1,9 @@
 import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
-import { overlapsRange } from '@ilamy/utils/helpers'
+import {
+	isBetweenInclusive,
+	isSameOrBefore,
+	overlapsRange,
+} from '@ilamy/utils/helpers'
 
 export interface AgendaDayGroupData {
 	/** 'YYYY-MM-DD' for the day. */
@@ -26,9 +30,7 @@ const appearsOnDay = (
 		// (#248), listing a one-day event under two days.
 		return overlapsRange(event, dayStart, dayEnd)
 	}
-	return (
-		event.start.isSameOrAfter(dayStart) && event.start.isSameOrBefore(dayEnd)
-	)
+	return isBetweenInclusive(event.start, dayStart, dayEnd)
 }
 
 const byAllDayThenStart = (a: CalendarEvent, b: CalendarEvent): number => {
@@ -53,8 +55,8 @@ export const groupEventsByDay = (
 	const lastDay = range.end.startOf('day')
 	let cursor = range.start.startOf('day')
 
-	while (cursor.isSameOrBefore(lastDay)) {
-		const dayStart = cursor.startOf('day')
+	while (isSameOrBefore(cursor, lastDay)) {
+		const dayStart = cursor
 		const dayEnd = cursor.endOf('day')
 		const dayEvents = events
 			.filter((event) => appearsOnDay(event, dayStart, dayEnd))
@@ -66,7 +68,11 @@ export const groupEventsByDay = (
 				events: dayEvents,
 			})
 		}
-		cursor = cursor.add(1, 'day')
+		// `add(1, 'day')` holds the wall clock at 00:00 but carries the previous
+		// UTC offset across a DST transition, so the following day arrives an hour
+		// away from true local midnight and events in that hour fall into the
+		// wrong bucket. Re-normalizing is what keeps the cursor on real midnights.
+		cursor = cursor.add(1, 'day').startOf('day')
 	}
 	return groups
 }

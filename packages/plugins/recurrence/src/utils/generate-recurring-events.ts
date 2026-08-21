@@ -1,6 +1,6 @@
 import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
-import { overlapsRange, safeDate } from '@ilamy/utils/helpers'
+import { isSame, overlapsRange, safeDate } from '@ilamy/utils/helpers'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from '../types'
 import { fromFloatingDate, toFloatingDate } from './floating-time'
@@ -65,9 +65,13 @@ export const generateRecurringEvents = ({
 		const recurringEvents: CalendarEvent[] = occurrences
 			.map((occurrence, index) => {
 				const occurrenceDate = fromFloatingDate(occurrence, event.start)
-				const existingOverride = overrides.find((e) =>
-					safeDate(e.recurrenceId)?.isSame(occurrenceDate)
-				)
+				const existingOverride = overrides.find((e) => {
+					const overrideRecurrenceId = safeDate(e.recurrenceId)
+					if (!overrideRecurrenceId) {
+						return false
+					}
+					return isSame(overrideRecurrenceId, occurrenceDate)
+				})
 
 				// If there's an override, use it
 				if (existingOverride) {

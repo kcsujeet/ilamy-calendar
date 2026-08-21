@@ -5,7 +5,7 @@ import {
 } from '@ilamy/ui/components/current-time-indicator'
 import { DayLabel } from '@ilamy/ui/components/day-label'
 import dayjs from '@ilamy/utils/dayjs'
-import { listKey } from '@ilamy/utils/helpers'
+import { isSameDay, listKey } from '@ilamy/utils/helpers'
 import type { ReactNode } from 'react'
 import type { AgendaDayGroupData } from '../utils/group-events-by-day'
 import { AgendaEventRow } from './agenda-event-row'
@@ -16,7 +16,7 @@ interface AgendaDayGroupProps {
 
 export const AgendaDayGroup = ({ group }: AgendaDayGroupProps) => {
 	const { view, renderCurrentTimeIndicator } = useIlamyCalendarContext()
-	const isToday = group.date.isSame(dayjs(), 'day')
+	const isToday = isSameDay(group.date, dayjs())
 
 	let renderIndicator:
 		| ((props: CurrentTimeIndicatorRenderProps) => ReactNode)

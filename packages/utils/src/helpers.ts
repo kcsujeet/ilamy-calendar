@@ -21,6 +21,40 @@ export function safeDate(
 	return parsedDate.isValid() ? parsedDate : undefined
 }
 
+/* ---------------------------------------------------------------------------
+ * Calendar-day questions
+ *
+ * dayjs's own comparators are fine to use directly: `compareByInstant` in
+ * `./dayjs` makes the unitless ones answer by epoch millisecond, so
+ * `a.isBefore(b)` costs ~10ns even with a `timezone` set. Nothing here
+ * duplicates them.
+ *
+ * A comparison carrying a UNIT is different. `isSame(x, 'day')` still routes
+ * through dayjs-timezone's `startOf`, which costs ~101µs, and every grid cell
+ * asks that question. Rendered day keys answer it for ~1.5µs.
+ * ------------------------------------------------------------------------ */
+
+/** `YYYY-MM-DD` in the configured zone: the stable per-day key. */
+export const dayKey = (date: Dayjs): string => date.format('YYYY-MM-DD')
+
+/**
+ * Whether two instants fall on the same calendar day.
+ *
+ * Compares rendered keys rather than epoch millis, because "same day" is a
+ * question about a calendar, not about elapsed time: two instants an hour apart
+ * can be different days, and 23 hours apart the same one. `format` stays cheap
+ * under a timezone (~0.7µs) where `isSame(x, 'day')` does not.
+ *
+ * Each operand is rendered in ITS OWN zone, so this expects both to share one,
+ * which every call site in the calendar does (grid days and `dayjs()` alike
+ * come from the configured zone). It is NOT a drop-in for
+ * `a.isSame(b, 'day')`, which evaluates the day window in `a`'s zone: for a
+ * single instant held as 23:00 in New York and 12:00 the next day in Tokyo,
+ * dayjs answers true and this answers false. The tests pin that.
+ */
+export const isSameDay = (a: Dayjs, b: Dayjs): boolean =>
+	dayKey(a) === dayKey(b)
+
 /** Anything with a start and an end: a calendar event, a cell, a selection. */
 interface Interval {
 	start: Dayjs
@@ -41,6 +75,10 @@ interface Interval {
  * This lives in `@ilamy/utils` because the core and two plugins all need the
  * same answer. Three private copies drifted apart once already (#248): the grid
  * showed a one-day event while the agenda showed two.
+ *
+ * The three clauses are deliberately NOT collapsed to
+ * `start <= rangeEnd && end >= rangeStart`. They disagree on an interval whose
+ * end precedes its start, which the tests pin.
  */
 export function overlapsRange(
 	interval: Interval,

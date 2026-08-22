@@ -5,6 +5,7 @@ import type {
 } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
+import { dayKey } from '@ilamy/utils/helpers'
 import type React from 'react'
 import { AllDayCell } from '@/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/components/all-day-row/all-day-row'
@@ -14,7 +15,6 @@ import {
 	STICKY_GUTTER_SHADOW,
 } from '@/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { getDayKey } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
 /**
@@ -152,9 +152,9 @@ export const ResourceAllDayRows: React.FC<{
 			groupsByResourceId.set(column.resource.id, group)
 			groups.push(group)
 		}
-		const dayKey = getDayKey(column.day)
-		if (!group.seenDayKeys.has(dayKey)) {
-			group.seenDayKeys.add(dayKey)
+		const columnKey = dayKey(column.day)
+		if (!group.seenDayKeys.has(columnKey)) {
+			group.seenDayKeys.add(columnKey)
 			group.days.push(column.day)
 		}
 	}

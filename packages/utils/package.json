@@ -34,6 +34,6 @@
 		"ci": "bun run check && bun run type-check && bun run build"
 	},
 	"dependencies": {
-		"dayjs": "^1.11.20"
+		"dayjs": "^1.11.23"
 	}
 }

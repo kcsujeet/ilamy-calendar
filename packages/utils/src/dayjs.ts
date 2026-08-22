@@ -1,6 +1,5 @@
 import type { OpUnitType as DayjsOpUnitType, PluginFunc } from 'dayjs'
 import dayjs from 'dayjs'
-import isBetween from 'dayjs/plugin/isBetween.js'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js'
 import localeData from 'dayjs/plugin/localeData.js'
@@ -65,18 +64,73 @@ const fixTimezoneOffset: PluginFunc = (_option, dayjsClass, dayjsFactory) => {
 	proto.endOf = originalEndOf
 }
 
+/**
+ * Makes unitless comparison answer by INSTANT, which is what dayjs documents it
+ * to be ("default milliseconds": https://day.js.org/docs/en/query/is-before,
+ * .../is-same, .../is-same-or-after) and what upstream does not deliver for
+ * timezone-aware instances.
+ *
+ * Every comparator routes through `startOf` (`isBefore` -> `endOf(units)`;
+ * `isSame` -> both `startOf` and `endOf`; `isSameOrAfter` = `isSame || isAfter`,
+ * so up to three). dayjs-timezone overrides `startOf` with a
+ * format -> reparse -> `.tz(zone, true)` round-trip that runs even for the no-op
+ * `startOf(undefined)`. Two consequences, both fixed here:
+ *
+ *   - Correctness. The re-anchor MOVES an instance whose UTC offset is stale,
+ *     which `add()` produces across a DST transition. Two instants an hour apart
+ *     then compared equal. Reported upstream as dayjs#1399 (open since 2021).
+ *   - Cost. 45µs to 135µs per comparison against ~12ns here, multiplied by
+ *     events x days on every per-day filter (#245). Reported upstream as
+ *     dayjs#2344 (open since 2023).
+ *
+ * The fast path applies ONLY when no unit is given and the operand is already a
+ * Dayjs. A unit asks a different question (`isSame(x, 'day')` compares calendar
+ * days), and any other operand needs dayjs's own coercion; both fall through to
+ * the original implementation untouched.
+ */
+const compareByInstant: PluginFunc = (_option, dayjsClass) => {
+	const proto = dayjsClass.prototype as unknown as Record<string, unknown>
+	const comparisons = {
+		isBefore: (a: number, b: number) => a < b,
+		isAfter: (a: number, b: number) => a > b,
+		isSame: (a: number, b: number) => a === b,
+		isSameOrBefore: (a: number, b: number) => a <= b,
+		isSameOrAfter: (a: number, b: number) => a >= b,
+	}
+
+	for (const [methodName, compare] of Object.entries(comparisons)) {
+		const originalMethod = proto[methodName] as (
+			that?: dayjs.ConfigType,
+			units?: DayjsOpUnitType
+		) => boolean
+
+		proto[methodName] = function (
+			this: dayjs.Dayjs,
+			that?: dayjs.ConfigType,
+			units?: DayjsOpUnitType
+		): boolean {
+			const isInstantComparison = units === undefined && dayjs.isDayjs(that)
+			if (isInstantComparison) {
+				return compare(this.valueOf(), that.valueOf())
+			}
+			return originalMethod.call(this, that, units)
+		}
+	}
+}
+
 // Extend dayjs with plugins
 dayjs.extend(weekday)
 dayjs.extend(weekOfYear)
 dayjs.extend(isSameOrAfter)
 dayjs.extend(isSameOrBefore)
-dayjs.extend(isBetween)
 dayjs.extend(minMax)
 dayjs.extend(timezone)
 dayjs.extend(utc)
 dayjs.extend(localeData)
 dayjs.extend(localizedFormat)
 dayjs.extend(fixTimezoneOffset)
+// Last: it wraps the comparator methods the plugins above install.
+dayjs.extend(compareByInstant)
 
 /**
  * The suffixes dayjs accepts as an explicit UTC offset. dayjs's own parse regex

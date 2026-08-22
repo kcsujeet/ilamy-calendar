@@ -1,5 +1,12 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
-import type { CalendarEvent } from '@ilamy/types'
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	setSystemTime,
+	test,
+} from 'bun:test'
+import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
@@ -566,5 +573,114 @@ describe('YearView', () => {
 				screen.getByTestId('year-day-2025-01-2025-02-01')
 			).toBeInTheDocument()
 		})
+	})
+})
+
+/**
+ * The year view used to compute its data in the render body: 12 month-range
+ * queries plus 12 x 42 mini-calendar day queries, uncached, every render.
+ * Nothing memoizes beneath `getEventsForDateRange`, so with the recurrence
+ * plugin installed each one re-expanded every RRULE (#245).
+ *
+ * Counting a plugin's `transformEvents` calls counts the queries exactly, and
+ * uses only public API. The count is pinned with `toBe` rather than a bound:
+ * a bound would drift upward unnoticed, and wall-clock timing is too noisy on
+ * shared CI runners to gate on.
+ *
+ * Four is two queries per render (the engine's own view-range memo, plus the
+ * year grid) across the provider's two render passes. It was 1034.
+ */
+describe('YearView query count', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	const renderCountingQueries = (props: Record<string, unknown> = {}) => {
+		let queryCount = 0
+		const countingPlugin: IlamyPlugin = {
+			name: 'query-counter',
+			transformEvents: (events) => {
+				queryCount += 1
+				return events
+			},
+		}
+		const view = renderYearView({ ...props, plugins: [countingPlugin] })
+		return { ...view, getQueryCount: () => queryCount }
+	}
+
+	test('issues a constant number of queries regardless of event count', () => {
+		const year = dayjs().year()
+		const { getQueryCount } = renderCountingQueries({
+			events: createTestEvents(year),
+			initialDate: dayjs(`${year}-01-15`),
+		})
+		expect(getQueryCount()).toBe(4)
+	})
+
+	test('does not scale queries with the number of mini-calendar cells', () => {
+		const year = dayjs().year()
+		const { getQueryCount } = renderCountingQueries({
+			events: [],
+			initialDate: dayjs(`${year}-06-15`),
+		})
+		expect(getQueryCount()).toBe(4)
+	})
+})
+
+/**
+ * "Today" comes from the clock, not from a prop, so the highlight has to keep
+ * up with it.
+ *
+ * This CANNOT fail today: the memo holding the day data recomputes on every
+ * render anyway, because `getEventsForDateRange` takes a new identity each time
+ * (three distinct identities over five renders, measured). So the today key is
+ * recomputed as a side effect of that churn rather than by design.
+ *
+ * It is kept because the day that churn is fixed, which is a known and wanted
+ * optimisation, the memo starts actually memoizing and this becomes the test
+ * that catches "today" freezing on whatever day the view first rendered.
+ */
+describe('YearView today highlight', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	afterEach(() => {
+		setSystemTime()
+		dayjs.tz.setDefault()
+	})
+
+	const TODAY_CLASS = 'bg-primary'
+
+	test('follows the clock across midnight without a prop change', () => {
+		dayjs.tz.setDefault('UTC')
+		setSystemTime(new Date('2025-06-15T23:59:00.000Z'))
+
+		const tree = () => (
+			<CalendarProvider
+				dayMaxEvents={3}
+				events={[]}
+				firstDayOfWeek={0}
+				initialDate={dayjs('2025-06-15T12:00:00.000Z')}
+				locale="en"
+				timezone="UTC"
+			>
+				<YearView />
+			</CalendarProvider>
+		)
+		const { rerender } = render(tree())
+		expect(
+			screen.getByTestId('year-day-2025-06-2025-06-15').className
+		).toContain(TODAY_CLASS)
+
+		setSystemTime(new Date('2025-06-16T00:01:00.000Z'))
+		rerender(tree())
+
+		expect(
+			screen.getByTestId('year-day-2025-06-2025-06-16').className
+		).toContain(TODAY_CLASS)
+		expect(
+			screen.getByTestId('year-day-2025-06-2025-06-15').className
+		).not.toContain(TODAY_CLASS)
 	})
 })

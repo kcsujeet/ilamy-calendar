@@ -19,6 +19,7 @@ interface RenderCellOptions {
 	// Cell props
 	hour?: number
 	minute?: number
+	slotDurationMinutes?: number
 	resourceId?: string | number
 	allDay?: boolean
 }
@@ -44,6 +45,7 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 				id="test-cell"
 				minute={opts.minute}
 				resourceId={opts.resourceId}
+				slotDurationMinutes={opts.slotDurationMinutes}
 				type="day-cell"
 			/>
 		</CalendarProvider>
@@ -191,6 +193,18 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 		)
 		expect(cell.getAttribute('data-end')).toBe(
 			initialDate.hour(9).minute(30).toISOString()
+		)
+	})
+
+	test('honors slotDurationMinutes on a minute cell', () => {
+		renderCell({ hour: 9, minute: 30, slotDurationMinutes: 30 })
+
+		const cell = screen.getByTestId('cell')
+		expect(cell.getAttribute('data-start')).toBe(
+			initialDate.hour(9).minute(30).toISOString()
+		)
+		expect(cell.getAttribute('data-end')).toBe(
+			initialDate.hour(10).minute(0).toISOString()
 		)
 	})
 

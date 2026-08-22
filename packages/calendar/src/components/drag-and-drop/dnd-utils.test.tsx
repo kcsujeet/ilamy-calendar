@@ -10,24 +10,53 @@ let allDayCell: boolean | undefined = false
 let hour: number | undefined
 let minute: number | undefined
 
-const getDragEvent = () => ({
-	active: {
-		id: 'event-1',
-	},
-	over: {
-		id: 'time-cell-2024-06-15-10-30',
-		data: {
-			current: {
-				type: cellType,
-				date: cellDate,
-				allDay: allDayCell,
-				resourceId: cellResourceId,
-				hour: hour,
-				minute: minute,
-			},
+const getDragEvent = (geometry?: {
+	activeTop: number
+	overTop: number
+	slotHeight: number
+}) => {
+	const activeRect = geometry
+		? {
+				bottom: geometry.activeTop + 120,
+				height: 120,
+				left: 0,
+				right: 100,
+				top: geometry.activeTop,
+				width: 100,
+			}
+		: null
+	const overRect = geometry
+		? {
+				bottom: geometry.overTop + geometry.slotHeight,
+				height: geometry.slotHeight,
+				left: 0,
+				right: 100,
+				top: geometry.overTop,
+				width: 100,
+			}
+		: undefined
+
+	return {
+		active: {
+			id: 'event-1',
+			rect: { current: { initial: null, translated: activeRect } },
 		},
-	},
-})
+		over: {
+			id: 'time-cell-2024-06-15-10-30',
+			data: {
+				current: {
+					type: cellType,
+					date: cellDate,
+					allDay: allDayCell,
+					resourceId: cellResourceId,
+					hour: hour,
+					minute: minute,
+				},
+			},
+			rect: overRect,
+		},
+	}
+}
 
 let start = dayjs('2024-06-15T00:00:00')
 let end = dayjs('2024-06-15T23:59:59')
@@ -46,7 +75,8 @@ describe('getUpdatedEvent Utility Function', () => {
 	it('should return null if active or over is missing', () => {
 		const result = getUpdatedEvent(
 			{ active: null, over: null } as unknown as DragEndEvent,
-			null
+			null,
+			60
 		)
 		expect(result).toBeNull()
 	})
@@ -54,7 +84,8 @@ describe('getUpdatedEvent Utility Function', () => {
 	it('should return null if activeEvent is null', () => {
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			null
+			null,
+			60
 		)
 		expect(result).toBeNull()
 	})
@@ -62,7 +93,8 @@ describe('getUpdatedEvent Utility Function', () => {
 	it('should calculate new start and end times correctly for day-cell drop', () => {
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent()
+			getActiveEvent(),
+			60
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
@@ -81,7 +113,8 @@ describe('getUpdatedEvent Utility Function', () => {
 
 			const result = getUpdatedEvent(
 				getDragEvent() as unknown as DragEndEvent,
-				getActiveEvent()
+				getActiveEvent(),
+				60
 			)
 			expect(result).not.toBeNull()
 			const updates = (result as any)?.updates
@@ -99,7 +132,8 @@ describe('getUpdatedEvent Utility Function', () => {
 
 			const result = getUpdatedEvent(
 				getDragEvent() as unknown as DragEndEvent,
-				getActiveEvent()
+				getActiveEvent(),
+				60
 			)
 			expect(result).not.toBeNull()
 			const updates = (result as any)?.updates
@@ -117,7 +151,8 @@ describe('getUpdatedEvent Utility Function', () => {
 
 			const result = getUpdatedEvent(
 				getDragEvent() as unknown as DragEndEvent,
-				getActiveEvent()
+				getActiveEvent(),
+				60
 			)
 			expect(result).not.toBeNull()
 			const updates = (result as any)?.updates
@@ -132,7 +167,8 @@ describe('getUpdatedEvent Utility Function', () => {
 
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent()
+			getActiveEvent(),
+			60
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
@@ -148,7 +184,8 @@ describe('getUpdatedEvent Utility Function', () => {
 
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent()
+			getActiveEvent(),
+			60
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
@@ -160,6 +197,39 @@ describe('getUpdatedEvent Utility Function', () => {
 		expect(updates.allDay).toBe(false)
 	})
 
+	it('resolves a multi-slot event from its preview leading edge', () => {
+		start = dayjs('2024-10-20T09:00:00.000Z')
+		end = dayjs('2024-10-20T11:00:00.000Z')
+		cellDate = dayjs('2024-10-20T18:00:00.000Z')
+		cellType = 'day-cell'
+		hour = 18
+		minute = undefined
+		allDay = false
+		allDayCell = false
+
+		const cases = [
+			{ activeTop: 600, expectedHour: 18, slotDuration: 60, slotHeight: 60 },
+			{ activeTop: 570, expectedHour: 18, slotDuration: 60, slotHeight: 60 },
+			{ activeTop: 540, expectedHour: 17, slotDuration: 60, slotHeight: 60 },
+			{ activeTop: 480, expectedHour: 16, slotDuration: 60, slotHeight: 60 },
+			{ activeTop: 540, expectedHour: 17, slotDuration: 15, slotHeight: 15 },
+		]
+		for (const { activeTop, expectedHour, slotDuration, slotHeight } of cases) {
+			const result = getUpdatedEvent(
+				getDragEvent({
+					activeTop,
+					overTop: 600,
+					slotHeight,
+				}) as unknown as DragEndEvent,
+				getActiveEvent(),
+				slotDuration
+			)
+
+			expect(result?.updates.start.hour()).toBe(expectedHour)
+			expect(result?.updates.end.diff(result.updates.start, 'hour')).toBe(2)
+		}
+	})
+
 	it('should set all-day to false when dropping on time-cell even if original event was all-day', () => {
 		allDay = true
 		cellType = 'time-cell'
@@ -167,13 +237,19 @@ describe('getUpdatedEvent Utility Function', () => {
 		minute = 0
 
 		const result = getUpdatedEvent(
-			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent()
+			getDragEvent({
+				activeTop: 480,
+				overTop: 600,
+				slotHeight: 60,
+			}) as unknown as DragEndEvent,
+			getActiveEvent(),
+			60
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
 		if (!updates) return
 		expect(updates.allDay).toBe(false)
+		expect(updates.start.hour()).toBe(9)
 	})
 
 	/**
@@ -195,7 +271,8 @@ describe('getUpdatedEvent Utility Function', () => {
 
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent()
+			getActiveEvent(),
+			60
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
@@ -219,7 +296,8 @@ describe('getUpdatedEvent Utility Function', () => {
 
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent()
+			getActiveEvent(),
+			60
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates

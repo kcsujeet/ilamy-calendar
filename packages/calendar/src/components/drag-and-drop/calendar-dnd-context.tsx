@@ -20,11 +20,12 @@ interface CalendarDndContextProps {
 }
 
 export function CalendarDndContext({ children }: CalendarDndContextProps) {
-	const { updateEvent, getEventManager, disableDragAndDrop } =
+	const { updateEvent, getEventManager, disableDragAndDrop, slotDuration } =
 		useSmartCalendarContext((context) => ({
 			updateEvent: context.updateEvent,
 			getEventManager: context.getEventManager,
 			disableDragAndDrop: context.disableDragAndDrop,
+			slotDuration: context.slotDuration,
 		}))
 
 	const { dialogState, openEditDialog, closeDialog, handleConfirm } =
@@ -74,7 +75,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		if (activeData?.type === 'calendar-event') {
 			activeEvent = activeData.event as CalendarEvent
 		}
-		const updatedEvent = getUpdatedEvent(event, activeEvent)
+		const updatedEvent = getUpdatedEvent(event, activeEvent, slotDuration)
 		if (updatedEvent) {
 			const { activeEvent, updates } = updatedEvent
 			performEventUpdate(activeEvent, updates)

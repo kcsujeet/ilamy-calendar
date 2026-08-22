@@ -13,7 +13,8 @@ interface DropCellData {
 
 export const getUpdatedEvent = (
 	event: DragEndEvent,
-	activeEvent: CalendarEvent | null
+	activeEvent: CalendarEvent | null,
+	slotDuration: number
 ) => {
 	const { active, over } = event
 
@@ -35,6 +36,21 @@ export const getUpdatedEvent = (
 		const { date } = data
 
 		newStart = dayjs(date)
+	}
+
+	const isTimedGridCell = isTimeCell || data.hour !== undefined
+	const translatedRect = active.rect?.current.translated
+	const dropTargetRect = over.rect
+	if (
+		isTimedGridCell &&
+		!activeEvent.allDay &&
+		translatedRect &&
+		dropTargetRect?.height
+	) {
+		const slotOffset = Math.round(
+			(translatedRect.top - dropTargetRect.top) / dropTargetRect.height
+		)
+		newStart = newStart.add(slotOffset * slotDuration, 'minute')
 	}
 
 	const eventDuration = activeEvent.end.diff(activeEvent.start, 'second')

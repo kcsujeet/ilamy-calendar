@@ -1,6 +1,7 @@
 import { useDraggable } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
+import type React from 'react'
 import type { CSSProperties } from 'react'
 import { memo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
@@ -22,46 +23,33 @@ const getBorderRadiusClass = (
 	return 'rounded-md'
 }
 
-function DraggableEventUnmemoized({
+export function DraggableEventPresentation({
 	elementId,
 	event,
 	className,
 	style,
+	animation,
 	disableDrag = false,
-	disableAnimation = false,
-	timeAxis,
+	isDragging = false,
 	isTruncatedStart = false,
 	isTruncatedEnd = false,
+	ref,
+	...props
 }: {
 	elementId: string
 	className?: string
 	style?: CSSProperties
 	event: CalendarEvent
+	animation?: 'enter' | 'none'
 	disableDrag?: boolean
-	disableAnimation?: boolean
-	timeAxis?: 'vertical' | 'horizontal'
+	isDragging?: boolean
 	/** Set by the horizontal events layer when the bar continues past the visible range. */
 	isTruncatedStart?: boolean
 	isTruncatedEnd?: boolean
-}) {
+	ref?: React.Ref<HTMLDivElement>
+} & React.HTMLAttributes<HTMLDivElement>) {
 	const { onEventClick, renderEvent, disableEventClick, disableDragAndDrop } =
 		useSmartCalendarContext()
-
-	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-		id: elementId,
-		data: {
-			event,
-			type: 'calendar-event',
-			timeAxis,
-			presentation: {
-				className,
-				style,
-				isTruncatedStart,
-				isTruncatedEnd,
-			},
-		},
-		disabled: disableDrag || disableDragAndDrop,
-	})
 
 	// Default event content to render if custom renderEvent is not provided
 	const DefaultEventContent = () => {
@@ -105,28 +93,26 @@ function DraggableEventUnmemoized({
 		? 'cursor-default'
 		: 'cursor-pointer'
 	const cursorClass = isDragDisabled ? idleCursorClass : 'cursor-grab'
-	const showsDraggingState = isDragging && !isDragDisabled
-	const draggingClass = showsDraggingState && 'cursor-grabbing opacity-50'
+	const draggingClass =
+		isDragging && !isDragDisabled && 'cursor-grabbing opacity-50'
 
 	return (
 		<AnimatedSection
+			animation={animation}
 			className={cn(
 				'truncate h-full w-full',
 				cursorClass,
 				draggingClass,
 				className
 			)}
-			data-calendar-draggable-event
-			disableAnimation={disableAnimation}
 			onClick={(e) => {
 				e.stopPropagation()
 				onEventClick(event)
 			}}
-			ref={setNodeRef}
+			ref={ref}
 			style={style}
 			transitionKey={elementId}
-			{...attributes}
-			{...listeners}
+			{...props}
 		>
 			{/* Use custom renderEvent from context if available, otherwise use default */}
 			{renderEvent ? renderEvent(event) : <DefaultEventContent />}
@@ -134,20 +120,70 @@ function DraggableEventUnmemoized({
 	)
 }
 
+function DraggableEventUnmemoized({
+	elementId,
+	event,
+	className,
+	style,
+	disableDrag = false,
+	isTruncatedStart = false,
+	isTruncatedEnd = false,
+}: {
+	elementId: string
+	className?: string
+	style?: CSSProperties
+	event: CalendarEvent
+	disableDrag?: boolean
+	/** Set by the horizontal events layer when the bar continues past the visible range. */
+	isTruncatedStart?: boolean
+	isTruncatedEnd?: boolean
+}) {
+	const { disableDragAndDrop } = useSmartCalendarContext()
+
+	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+		id: elementId,
+		data: {
+			event,
+			type: 'calendar-event',
+			presentation: {
+				className,
+				style,
+				isTruncatedStart,
+				isTruncatedEnd,
+			},
+		},
+		disabled: disableDrag || disableDragAndDrop,
+	})
+
+	return (
+		<DraggableEventPresentation
+			className={className}
+			disableDrag={disableDrag}
+			elementId={elementId}
+			event={event}
+			isDragging={isDragging}
+			isTruncatedEnd={isTruncatedEnd}
+			isTruncatedStart={isTruncatedStart}
+			ref={setNodeRef}
+			style={style}
+			{...attributes}
+			{...listeners}
+		/>
+	)
+}
+
 export const DraggableEvent = memo(
 	DraggableEventUnmemoized,
 	(prevProps, nextProps) => {
 		// Compare the essential props to prevent unnecessary re-renders
-		const unchangedProps = [
-			prevProps.elementId === nextProps.elementId,
-			prevProps.disableDrag === nextProps.disableDrag,
-			prevProps.disableAnimation === nextProps.disableAnimation,
-			prevProps.timeAxis === nextProps.timeAxis,
-			prevProps.className === nextProps.className,
-			prevProps.event === nextProps.event,
-			prevProps.isTruncatedStart === nextProps.isTruncatedStart,
-			prevProps.isTruncatedEnd === nextProps.isTruncatedEnd,
-		]
-		return unchangedProps.every(Boolean)
+		return (
+			prevProps.elementId === nextProps.elementId &&
+			prevProps.disableDrag === nextProps.disableDrag &&
+			prevProps.className === nextProps.className &&
+			prevProps.event === nextProps.event &&
+			prevProps.style === nextProps.style &&
+			prevProps.isTruncatedStart === nextProps.isTruncatedStart &&
+			prevProps.isTruncatedEnd === nextProps.isTruncatedEnd
+		)
 	}
 )

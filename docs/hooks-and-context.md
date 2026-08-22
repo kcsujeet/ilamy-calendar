@@ -198,21 +198,11 @@ VerticalGrid / HorizontalGrid
 
 **Collision detection:** `pointerWithin` — matches the cell under the pointer.
 
-Timed drags resolve the event's leading edge against the destination lane and
-snap it to `dragSnapInterval` (`slotDuration` by default). An explicit value is
-independent of the visual `slotDuration`; setting it to `1` allows movement to
-any whole minute and effectively disables coarser snapping. The overlay
-preserves the event's original size and renderer while the source remains at
-half opacity. A live indicator follows the time axis (horizontal in vertical
-grids, vertical in horizontal grids) and can be hidden or replaced with
-`renderDragTimeIndicator`.
-
 **Drop flow:**
-1. `handleDragStart` — captures the active event and source geometry
-2. `handleDragMove` — resolves and previews timed destinations continuously
-3. `handleDragEnd` — commits the resolved timed update or computes a whole-day update
-4. If recurring: opens scope dialog, then calls `updateRecurringEvent()`
-5. If regular: calls `updateEvent()` directly
+1. `handleDragStart` — captures the active event
+2. `handleDragEnd` — calls `getUpdatedEvent()` to compute new times
+3. If recurring: opens scope dialog, then calls `updateRecurringEvent()`
+4. If regular: calls `updateEvent()` directly
 
 If `disableDragAndDrop` is `true`, `CalendarDndContext` renders children without any DnD wrapper.
 

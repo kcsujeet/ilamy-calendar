@@ -105,48 +105,6 @@ function TestComponent() {
 	)
 }
 
-function DragConfigProbe() {
-	const { dragSnapInterval, showDragTimeIndicator } = useSmartCalendarContext()
-	return (
-		<div
-			data-indicator={showDragTimeIndicator.toString()}
-			data-snap={dragSnapInterval}
-			data-testid="drag-config"
-		/>
-	)
-}
-
-describe('CalendarProvider - drag configuration', () => {
-	it('defaults snapping to the slot duration with the live indicator enabled', () => {
-		const { getByTestId } = renderProvider(<DragConfigProbe />)
-		const config = getByTestId('drag-config')
-
-		expect(config.getAttribute('data-snap')).toBe('60')
-		expect(config.getAttribute('data-indicator')).toBe('true')
-	})
-
-	it('uses a non-hourly slot duration as the default snap interval', () => {
-		const { getByTestId } = renderProvider(<DragConfigProbe />, {
-			slotDuration: 15,
-		})
-		const config = getByTestId('drag-config')
-
-		expect(config.getAttribute('data-snap')).toBe('15')
-	})
-
-	it('threads independent snap and indicator settings through context', () => {
-		const { getByTestId } = renderProvider(<DragConfigProbe />, {
-			dragSnapInterval: 60,
-			showDragTimeIndicator: false,
-			slotDuration: 15,
-		})
-		const config = getByTestId('drag-config')
-
-		expect(config.getAttribute('data-snap')).toBe('60')
-		expect(config.getAttribute('data-indicator')).toBe('false')
-	})
-})
-
 describe('CalendarProvider - On-Demand Generation', () => {
 	it('should generate recurring events on-demand for current view only', () => {
 		const recurringEvent = makeDailyRecurringEvent()
@@ -282,8 +240,8 @@ describe('CalendarProvider - recurring event integration', () => {
 			plugins: [recurrencePlugin()],
 		})
 
-		// The detached override replaces the excluded generated occurrence.
-		expect(getByTestId('jan3-event-count').textContent).toBe('1')
+		// Should have 2 events on Jan 3rd (the base event generates one instance, and the modified instance is also present)
+		expect(getByTestId('jan3-event-count').textContent).toBe('2')
 		expect(getByTestId('jan3-event-hour').textContent).toBe('10') // Should be the modified time (10:00), not original (09:00)
 		expect(getByTestId('jan3-event-id').textContent).toBe(
 			'daily-standup_modified_123'

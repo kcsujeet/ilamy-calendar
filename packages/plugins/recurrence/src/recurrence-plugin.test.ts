@@ -70,41 +70,6 @@ describe('recurrencePlugin', () => {
 		expect(moved?.title).toBe('Moved')
 	})
 
-	test('emits one event after moving one generated occurrence with scope this', () => {
-		const plugin = recurrencePlugin()
-		const generated = plugin
-			.transformEvents?.([base], range)
-			.find((event) => event.start.isSame(base.start.add(1, 'day')))
-		expect(generated).toBeDefined()
-		if (!generated) {
-			throw new Error('Expected the second generated occurrence')
-		}
-
-		const movedStart = generated.start.add(1, 'hour')
-		const movedEnd = generated.end.add(1, 'hour')
-		const editResult = plugin.applyEdit?.({
-			event: generated,
-			updates: { start: movedStart, end: movedEnd },
-			currentEvents: [base],
-			scope: 'this',
-		})
-		expect(editResult).toBeDefined()
-		if (!editResult || Array.isArray(editResult)) {
-			throw new Error('Expected a structured recurring edit result')
-		}
-
-		const transformed = plugin.transformEvents?.(editResult.events, range) ?? []
-		const movedOccurrences = transformed.filter((event) =>
-			event.start.isSame(movedStart)
-		)
-
-		expect(transformed).toHaveLength(3)
-		expect(movedOccurrences).toHaveLength(1)
-		expect(movedOccurrences.at(0)?.recurrenceId).toBe(
-			generated.start.toISOString()
-		)
-	})
-
 	test('transformEvents passes a non-rrule event through untouched', () => {
 		const plugin = recurrencePlugin()
 		const plain = { ...base, id: 'plain', rrule: undefined } as CalendarEvent

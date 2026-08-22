@@ -36,7 +36,6 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	// vertical views (resource month, resource week daily) a sub-day percentage
 	// line is meaningless, so suppress it — mirrors the horizontal events layer.
 	const showNowLine = gridType === 'hour' && Boolean(rangeStart && rangeEnd)
-	const eventTimeAxis = gridType === 'hour' ? 'vertical' : undefined
 
 	return (
 		<div
@@ -73,7 +72,6 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 							})}
 							elementId={eventKey}
 							event={event}
-							timeAxis={eventTimeAxis}
 						/>
 					</div>
 				)

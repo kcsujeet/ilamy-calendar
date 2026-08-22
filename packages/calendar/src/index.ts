@@ -44,11 +44,9 @@ export {
 export type {
 	CalendarClassesOverride,
 	CellInfo,
-	DragSnapInterval,
 	IlamyCalendarProps,
 	OpenEventFormInput,
 	RenderCurrentTimeIndicatorProps,
-	RenderDragTimeIndicatorProps,
 	SlotDuration,
 } from './features/calendar/types'
 export { defaultTranslations } from './lib/translations/default'

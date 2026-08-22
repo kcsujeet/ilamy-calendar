@@ -34,7 +34,6 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 		(_, i) => i * slotDurationMinutes
 	)
 	const hasSubHourSlots = cellOffsets.length > 1
-	const cellTimeAxis = gridType === 'hour' ? 'vertical' : undefined
 	return (
 		<div
 			className={cn(
@@ -101,12 +100,10 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 										// slots, breaking drag-to-create's cross-day selection.
 										hour={gridType === 'hour' ? day.hour() : undefined}
 										key={keys.listKey(id, dayIndex, mm)}
-										laneId={`vertical-${String(id)}`}
 										minute={hasSubHourSlots ? minute : undefined}
 										resourceId={resourceId} // Events are rendered in a separate layer
 										shouldRenderEvents={false}
 										slotDurationMinutes={slotDurationMinutes}
-										timeAxis={cellTimeAxis}
 									/>
 								)
 							})}

@@ -21,8 +21,6 @@ interface GridProps {
 	hour?: number // Optional hour for hour-based grids
 	minute?: number // Optional minute for more granular time slots
 	slotDurationMinutes?: number // Span of an hour-grid slot, for business-hour containment
-	timeAxis?: 'vertical' | 'horizontal'
-	laneId?: string
 	dayMaxEvents?: number
 	className?: string // Optional className for custom styling
 	resourceId?: string | number // Optional resource ID for resource-specific day cells
@@ -40,8 +38,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	hour,
 	minute,
 	slotDurationMinutes = 60,
-	timeAxis,
-	laneId,
 	className = '',
 	resourceId,
 	gridType = 'day',
@@ -157,12 +153,9 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				disabled={!isBusiness || !isCurrentMonth}
 				hour={hour}
 				id={droppableId}
-				laneId={laneId}
 				minute={minute}
 				resourceId={resourceId}
-				slotDurationMinutes={slotDurationMinutes}
-				timeAxis={timeAxis}
-				type={gridType === 'hour' ? 'time-cell' : 'day-cell'}
+				type="day-cell"
 			>
 				<div
 					className="flex flex-col h-full w-full"

@@ -67,22 +67,6 @@ describe('HorizontalGridRow', () => {
 	})
 
 	describe('flat columns (single day per column)', () => {
-		test('marks hourly cells as a horizontal drag lane', () => {
-			const columns = [
-				{
-					id: 'hour-9',
-					day: initialDate.hour(9),
-					gridType: 'hour' as const,
-				},
-			]
-
-			renderHorizontalGridRow({ columns, gridType: 'hour' })
-
-			const cell = screen.getByTestId('day-cell-2025-01-01-09-00')
-			expect(cell.getAttribute('data-dnd-axis')).toBe('horizontal')
-			expect(cell.getAttribute('data-dnd-lane')).toBe('horizontal-row-1')
-		})
-
 		test('renders grid cells for flat day columns', () => {
 			const days = [initialDate, initialDate.add(1, 'day')]
 			const columns = days.map((day) => ({

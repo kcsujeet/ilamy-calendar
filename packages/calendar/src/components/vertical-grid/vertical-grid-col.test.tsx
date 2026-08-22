@@ -140,16 +140,6 @@ describe('VerticalGridCol', () => {
 		expect(
 			screen.getByTestId(`vertical-cell-${dateStr}-10-30`)
 		).toBeInTheDocument()
-		expect(
-			screen
-				.getByTestId(`vertical-cell-${dateStr}-09-30`)
-				.getAttribute('data-dnd-axis')
-		).toBe('vertical')
-		expect(
-			screen
-				.getByTestId(`vertical-cell-${dateStr}-09-30`)
-				.getAttribute('data-dnd-lane')
-		).toBe('vertical-test-col')
 	})
 
 	test('groups quarter-hour cells under one hour wrapper that shares the row equally', () => {

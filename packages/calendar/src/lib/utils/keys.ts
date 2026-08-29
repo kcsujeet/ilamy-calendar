@@ -1,5 +1,6 @@
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { getDayKey, isToday } from './date-utils'
+import { dayKey } from '@ilamy/utils/helpers'
+import { isToday } from './date-utils'
 
 type Id = string | number
 
@@ -23,19 +24,19 @@ export const keys = {
 		time: 'time-col',
 		date: 'date-col',
 		day: (day: Dayjs, resourceId?: Id) => {
-			const base = `day-col-${getDayKey(day)}`
+			const base = `day-col-${dayKey(day)}`
 			return resourceId != null ? `${base}-resource-${resourceId}` : base
 		},
 		resource: (scope: 'week' | 'month', resourceId: Id) =>
 			`${scope}-col-resource-${resourceId}`,
 		allDay: (day: Dayjs, index: number) =>
-			`all-day-col-${getDayKey(day)}-${index}`,
+			`all-day-col-${dayKey(day)}-${index}`,
 	},
 
 	// Grid cell identifiers
 	cell: {
 		day: (day: Dayjs, hour?: number | string, minute: number | string = 0) => {
-			const k = getDayKey(day)
+			const k = dayKey(day)
 			return hour != null
 				? `day-cell-${k}-${pad2(hour)}-${pad2(minute)}`
 				: `day-cell-${k}`
@@ -47,7 +48,7 @@ export const keys = {
 			minute: number | string,
 			resourceId?: Id
 		) => {
-			const base = `vertical-cell-${getDayKey(day)}-${pad2(hour)}-${pad2(minute)}`
+			const base = `vertical-cell-${dayKey(day)}-${pad2(hour)}-${pad2(minute)}`
 			return resourceId != null ? `${base}-resource-${resourceId}` : base
 		},
 	},

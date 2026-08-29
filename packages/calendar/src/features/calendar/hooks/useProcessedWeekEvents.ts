@@ -1,12 +1,11 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { overlapsRange } from '@ilamy/utils/helpers'
+import { dayKey, overlapsRange } from '@ilamy/utils/helpers'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { filterEventsForResource } from '@/lib/events/pipeline'
 import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutHorizontal } from '@/lib/layout/horizontal'
-import { getDayKey } from '@/lib/utils/date-utils'
 
 interface UseProcessedWeekEventsProps {
 	days: Dayjs[]
@@ -51,7 +50,7 @@ export const useProcessedWeekEvents = ({
 	const dayEventsMap = useMemo(() => {
 		const map = new Map<string, CalendarEvent[]>()
 		for (const day of days) {
-			const key = getDayKey(day)
+			const key = dayKey(day)
 			const dayStart = day.startOf('day')
 			const dayEnd = day.endOf('day')
 			const dayEvents = events.filter((e) => overlapsRange(e, dayStart, dayEnd))

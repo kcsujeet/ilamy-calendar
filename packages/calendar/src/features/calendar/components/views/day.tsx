@@ -6,6 +6,7 @@ import type {
 	ViewConfig,
 } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
+import { dayKey } from '@ilamy/utils/helpers'
 import { Square } from 'lucide-react'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
@@ -18,7 +19,7 @@ import {
 	collectResourceBusinessHours,
 	getViewHours,
 } from '@/features/calendar/utils/view-hours'
-import { getDayKey, isToday } from '@/lib/utils/date-utils'
+import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 import {
 	RESOURCE_CELL_WIDTH,
@@ -43,7 +44,7 @@ const DayViewHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 					'flex justify-center items-center text-center text-sm font-semibold sm:text-xl',
 					today && 'text-primary'
 				)}
-				transitionKey={getDayKey(date)}
+				transitionKey={dayKey(date)}
 			>
 				{date.format('dddd, LL')}
 				{today && (

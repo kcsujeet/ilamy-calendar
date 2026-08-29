@@ -1,9 +1,12 @@
+import type { CalendarEvent } from '@ilamy/types'
 import { ScrollArea, ScrollBar } from '@ilamy/ui/components/scroll-area'
 import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import { dayKey, overlapsRange } from '@ilamy/utils/helpers'
+import { useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { getDayKey, getWeekDays, isToday } from '@/lib/utils/date-utils'
+import { getWeekDays } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
 
 const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
@@ -14,6 +17,7 @@ interface MonthData {
 	name: string
 	eventCount: number
 	monthKey: string
+	days: DayData[]
 }
 
 interface DayData {
@@ -35,15 +39,85 @@ export const YearView = () => {
 		label: d.format('dd'),
 	}))
 
-	const generateMonthsData = (): MonthData[] => {
-		return Array.from({ length: 12 }, (_, monthIndex) => {
-			const monthDate = dayjs()
-				.year(currentYear)
-				.month(monthIndex)
-				.startOf('month')
-			const eventsInMonth = getEventsForDateRange(
-				monthDate,
-				monthDate.endOf('month')
+	/**
+	 * One query for the whole visible year, then every cell and badge is counted
+	 * from that single list.
+	 *
+	 * This used to run in the render body and issue 12 month queries plus
+	 * 12 x 42 day queries, uncached, on every render. Nothing memoizes beneath
+	 * `getEventsForDateRange`, so with the recurrence plugin installed each of
+	 * those re-expanded every RRULE, and one recurring event was enough to make
+	 * the view unusable (#245). Memoizing the old shape would not have helped:
+	 * all 516 ranges are distinct, so a range-keyed cache gets no hits within a
+	 * render, and the first paint is the problem.
+	 *
+	 * Every month's grid sits inside the January-to-December span, so the wide
+	 * query returns a superset of what each narrow one did and re-filtering with
+	 * the same predicate reproduces the old counts exactly.
+	 */
+	const monthsData = useMemo((): MonthData[] => {
+		const todayKey = dayKey(dayjs())
+		const selectedKey = dayKey(currentDate)
+
+		const monthStarts = Array.from({ length: 12 }, (_, monthIndex) =>
+			dayjs().year(currentYear).month(monthIndex).startOf('month')
+		)
+		// A mini calendar starts on the first day of the week containing the 1st.
+		// `dayDate` is deliberately left un-normalized, exactly as before: after a
+		// DST fall-back `add(n, 'day')` carries a stale offset, and the cell's
+		// label, its click target and its event window all derive from that one
+		// instant, so they agree with each other. Normalizing only some of them
+		// would shift the grid by a day.
+		const monthGrids = monthStarts.map((monthStart) => {
+			const gridStart = getWeekDays(monthStart, firstDayOfWeek).at(0)
+			const firstDayOfCalendar = gridStart ?? monthStart
+			return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) =>
+				firstDayOfCalendar.add(dayIndex, 'day')
+			)
+		})
+
+		const firstVisibleDay = monthGrids.at(0)?.at(0)
+		const lastVisibleDay = monthGrids.at(-1)?.at(-1)
+		let yearEvents: CalendarEvent[] = []
+		if (firstVisibleDay && lastVisibleDay) {
+			yearEvents = getEventsForDateRange(
+				firstVisibleDay.startOf('day'),
+				lastVisibleDay.endOf('day')
+			)
+		}
+
+		return monthStarts.map((monthDate, monthIndex) => {
+			const gridDays = monthGrids.at(monthIndex) ?? []
+			const days = gridDays.map((dayDate): DayData => {
+				const dayStart = dayDate.startOf('day')
+				const dayEnd = dayDate.endOf('day')
+				const cellKey = dayKey(dayDate)
+				const eventsOnDay = yearEvents.filter((event) =>
+					overlapsRange(event, dayStart, dayEnd)
+				)
+
+				return {
+					date: dayDate,
+					dayKey: cellKey,
+					isInCurrentMonth: dayDate.month() === monthDate.month(),
+					// Day-key comparison rather than `isToday`/`isSame(_, 'day')`:
+					// identical answers, but those cost ~91µs each under a timezone
+					// and this runs 504 times per render.
+					isToday: cellKey === todayKey,
+					isSelected: cellKey === selectedKey,
+					eventCount: eventsOnDay.length,
+				}
+			})
+
+			// The badge counts DISTINCT events in the month. Summing the day buckets
+			// would count a five-day event five times.
+			//
+			// `monthEnd` is hoisted out of the predicate deliberately. Inline, it
+			// was re-evaluated once per event, and `endOf` on a tz-aware instance
+			// costs ~45µs: that single misplaced call was ~760ms of this view.
+			const monthEnd = monthDate.endOf('month')
+			const eventsInMonth = yearEvents.filter((event) =>
+				overlapsRange(event, monthDate, monthEnd)
 			)
 
 			return {
@@ -51,31 +125,10 @@ export const YearView = () => {
 				name: monthDate.format('MMMM'),
 				eventCount: eventsInMonth.length,
 				monthKey: monthDate.format('MM'),
+				days,
 			}
 		})
-	}
-
-	const generateDaysForMonth = (monthDate: Dayjs): DayData[] => {
-		const monthStart = monthDate.startOf('month')
-		const firstDayOfCalendar =
-			getWeekDays(monthStart, firstDayOfWeek).at(0) ?? monthStart
-
-		return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) => {
-			const dayDate = firstDayOfCalendar.add(dayIndex, 'day')
-			const dayStart = dayDate.startOf('day')
-			const dayEnd = dayDate.endOf('day')
-			const eventsOnDay = getEventsForDateRange(dayStart, dayEnd)
-
-			return {
-				date: dayDate,
-				dayKey: getDayKey(dayDate),
-				isInCurrentMonth: dayDate.month() === monthDate.month(),
-				isToday: isToday(dayDate),
-				isSelected: dayDate.isSame(currentDate, 'day'),
-				eventCount: eventsOnDay.length,
-			}
-		})
-	}
+	}, [currentYear, currentDate, firstDayOfWeek, getEventsForDateRange])
 
 	const navigateToDate = (
 		date: Dayjs,
@@ -121,8 +174,6 @@ export const YearView = () => {
 		return cn('h-[3px] w-[3px] rounded-full', dotColor)
 	}
 
-	const monthsData = generateMonthsData()
-
 	const getDayTooltip = (eventCount: number): string => {
 		if (eventCount === 0) {
 			return ''
@@ -137,7 +188,7 @@ export const YearView = () => {
 				data-testid="year-grid"
 			>
 				{monthsData.map((month) => {
-					const daysInMonth = generateDaysForMonth(month.date)
+					const daysInMonth = month.days
 
 					return (
 						<div

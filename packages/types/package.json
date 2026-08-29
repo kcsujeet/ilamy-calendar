@@ -29,7 +29,7 @@
 		"ci": "bun run check && bun run type-check && bun run build"
 	},
 	"peerDependencies": {
-		"dayjs": "^1.11.20",
+		"dayjs": "^1.11.23",
 		"react": "^19.2.0"
 	}
 }

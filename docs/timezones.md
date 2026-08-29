@@ -108,6 +108,45 @@ Removing the `timezone` prop is handled symmetrically: fresh parses go back to
 the machine's zone, and the dates the calendar already holds are converted with
 `.local()` rather than left on the old clock.
 
+## Comparing dates
+
+Unitless comparison answers by INSTANT. `isBefore`, `isAfter`, `isSame`,
+`isSameOrBefore` and `isSameOrAfter` are overridden in
+`packages/utils/src/dayjs.ts` (`compareByInstant`) to compare epoch
+milliseconds whenever no unit is given and the operand is already a Dayjs.
+Anything else, a unit or a string/Date/number operand, falls through to dayjs
+untouched.
+
+This is what dayjs documents unitless comparison to be, "default milliseconds"
+(https://day.js.org/docs/en/query/is-before), and upstream does not deliver it
+for zone-aware instances. Every comparator routes through `startOf`,
+dayjs-timezone overrides `startOf` with a format, reparse and `.tz(zone, true)`
+round-trip, and that re-anchor MOVES an instance whose offset is stale. Two
+instants an hour apart compared equal. Reported upstream as dayjs#1399 (open
+since 2021); the cost, 45µs to 135µs per call, as dayjs#2344 (open since 2023).
+
+Three consequences worth knowing:
+
+- **A drifted instance now orders by its real instant.** `add(n, 'day')` across
+  a DST transition holds the wall clock but carries the previous offset, so
+  such a value compares as the instant it actually is, not as the instant its
+  clock face suggests.
+- **`dayjs.max` and `dayjs.min` change with it.** The minMax plugin calls
+  `isAfter`/`isBefore` with a Dayjs and no unit, so both take the fast path.
+- **The override is global.** `dayjs.extend` mutates the prototype of whichever
+  `dayjs` module instance resolves, so an app whose own `dayjs` dedupes to the
+  same copy gets this behaviour outside the calendar too. The same is already
+  true of `fixTimezoneOffset`.
+
+**Comparing calendar DAYS is a different question.** `isSame(x, 'day')` carries
+a unit, so it still routes through dayjs-timezone's `startOf` at ~101µs. Use
+`isSameDay` from `@ilamy/utils/helpers` instead, which compares rendered
+`YYYY-MM-DD` keys for ~1.5µs. It renders each operand in ITS OWN zone, so it
+expects both to share one, which every call site in the calendar does. It is
+not a drop-in for `isSame(x, 'day')`: for a single instant held as 23:00 in New
+York and 12:00 the next day in Tokyo, dayjs answers true and `isSameDay`
+answers false.
+
 ## Writing timezone tests
 
 Four rules, each learned from a test that lied:
@@ -134,7 +173,8 @@ correctly sees that at 14:30.
 
 ## Key files
 
-- `packages/utils/src/dayjs.ts` — the configured constructor and the offset rule
+- `packages/utils/src/dayjs.ts` — the configured constructor, the offset rule, and `compareByInstant`
+- `packages/utils/src/helpers.ts` — `dayKey` / `isSameDay` for calendar-day questions
 - `packages/calendar/src/features/calendar/hooks/use-calendar-engine.ts` — the effect that applies the zone and converts held dates
 - `packages/calendar/src/lib/utils/normalize.ts`, `packages/calendar/src/features/calendar/hooks/use-calendar-navigation.ts` — re-anchoring incoming props
 - `packages/plugins/drag-to-create/src/utils/read-cell.ts` — the explicit `dayjs.utc(iso).tz(zone)` pattern

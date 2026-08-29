@@ -65,13 +65,27 @@ export const generateRecurringEvents = ({
 		const recurringEvents: CalendarEvent[] = occurrences
 			.map((occurrence, index) => {
 				const occurrenceDate = fromFloatingDate(occurrence, event.start)
-				const existingOverride = overrides.find((e) =>
+				const hasOverride = overrides.some((e) =>
 					safeDate(e.recurrenceId)?.isSame(occurrenceDate)
 				)
 
-				// If there's an override, use it
-				if (existingOverride) {
-					return { ...event, ...existingOverride }
+				// An overridden occurrence is rendered from the override row itself,
+				// which the plugin's transformEvents emits (merged over this base).
+				// Emitting a merged copy here as well put the override on the grid
+				// twice as soon as it had been moved: the EXDATE below keys off the
+				// ORIGINAL occurrence, so it no longer matched the moved copy's start
+				// and stopped suppressing it.
+				if (hasOverride) {
+					return undefined
+				}
+
+				// EXDATE removes this occurrence. Keyed off the occurrence, not off
+				// the emitted event's start, so it stays correct however the
+				// occurrence is later re-timed.
+				const occurrenceISO = occurrenceDate.toISOString()
+				const isExcluded = event.exdates?.includes(occurrenceISO) ?? false
+				if (isExcluded) {
+					return undefined
 				}
 
 				// Calculate the duration from the original event
@@ -92,14 +106,8 @@ export const generateRecurringEvents = ({
 
 				return recurringEvent
 			})
+			.filter((recurringEvent) => recurringEvent !== undefined)
 			.filter((recurringEvent) => {
-				// Filter out EXDATE exclusions
-				const eventStartISO = recurringEvent.start.toISOString()
-				const isExcluded = event.exdates?.includes(eventStartISO) ?? false
-				if (isExcluded) {
-					return false
-				}
-
 				// The shared predicate, so an occurrence is kept here exactly when the
 				// host would keep it. A private copy of it went wrong twice: once by
 				// including an occurrence that ENDS at the range start, once by dropping

@@ -14,7 +14,7 @@ import { recurrenceICalProperties } from './ical'
 import type { RecurrenceEditScope } from './types'
 import { deleteRecurringEvent } from './utils/delete-recurring-event'
 import { generateRecurringEvents } from './utils/generate-recurring-events'
-import { isRecurringEvent } from './utils/series-helpers'
+import { getEventParentUID, isRecurringEvent } from './utils/series-helpers'
 import { updateRecurringEvent } from './utils/update-recurring-event'
 
 /**
@@ -25,21 +25,42 @@ import { updateRecurringEvent } from './utils/update-recurring-event'
 export const recurrencePlugin = (): IlamyPlugin => ({
 	name: 'recurrence',
 
-	// Expand each base (rrule) event into its in-range instances, merging any
-	// detached overrides found in the full list. Non-base events (plain events,
-	// modified instances) pass through untouched.
-	transformEvents: (events, range) =>
-		events.flatMap((event) => {
-			if (!event.rrule) {
-				return [event]
+	// Expand each base (rrule) event into its in-range instances. The expansion
+	// SKIPS occurrences that have a detached override; the override is emitted
+	// here instead, exactly once, merged over its base. Emitting it from both
+	// places put a moved override on the grid twice. Plain events pass through.
+	transformEvents: (events, range) => {
+		const baseBySeriesUid = new Map<string, CalendarEvent>()
+		for (const event of events) {
+			if (event.rrule) {
+				baseBySeriesUid.set(getEventParentUID(event), event)
 			}
-			return generateRecurringEvents({
-				event,
-				currentEvents: events,
-				startDate: range.start,
-				endDate: range.end,
-			})
-		}),
+		}
+
+		return events.flatMap((event) => {
+			if (event.rrule) {
+				return generateRecurringEvents({
+					event,
+					currentEvents: events,
+					startDate: range.start,
+					endDate: range.end,
+				})
+			}
+
+			// Merging over the base keeps the fields an override omits — an
+			// imported VEVENT carries only what it changes. `rrule` is forced off:
+			// an override is an instance, and a sparse one has no key of its own to
+			// shadow the base's.
+			if (event.recurrenceId) {
+				const baseEvent = baseBySeriesUid.get(getEventParentUID(event))
+				if (baseEvent) {
+					return [{ ...baseEvent, ...event, rrule: undefined }]
+				}
+			}
+
+			return [event]
+		})
+	},
 
 	// Mirrors the previous `isRecurringEvent` gate (rrule, recurrenceId, or uid)
 	// so drag/edit routing is unchanged.

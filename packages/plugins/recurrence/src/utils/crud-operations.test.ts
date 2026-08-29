@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
+import { recurrencePlugin } from '../recurrence-plugin'
 import { deleteRecurringEvent } from './delete-recurring-event'
 import { generateRecurringEvents } from './generate-recurring-events'
 import { isRecurringEvent } from './series-helpers'
@@ -148,7 +149,11 @@ describe('generateRecurringEvents', () => {
 		expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-20')
 	})
 
-	it('should handle overrides correctly', () => {
+	// Contract moved: the expansion SKIPS an overridden occurrence rather than
+	// emitting a merged copy of it. The override is emitted once, by the
+	// plugin's transformEvents (asserted in the sibling test below). Emitting it
+	// from both places rendered a moved override twice on the grid.
+	it('should skip an overridden occurrence rather than emit it', () => {
 		const baseEvent = createBaseRecurringEvent()
 		const overrideEvent: CalendarEvent = {
 			...createTargetEvent(),
@@ -165,14 +170,33 @@ describe('generateRecurringEvents', () => {
 			endDate: dayjs('2025-01-31'),
 		})
 
-		expect(result).toHaveLength(4)
-
-		// Find the overridden event
+		expect(result).toHaveLength(3) // 4 Mondays - the overridden one
 		const modifiedEvent = result.find((e) =>
 			e.start.isSame(dayjs('2025-01-13T14:00:00'))
 		)
-		expect(modifiedEvent).toBeDefined()
-		expect(modifiedEvent?.title).toBe('Modified Meeting')
+		expect(modifiedEvent).toBeUndefined()
+	})
+
+	it('should emit an override exactly once, merged over its base', () => {
+		const baseEvent = createBaseRecurringEvent()
+		const overrideEvent: CalendarEvent = {
+			...createTargetEvent(),
+			recurrenceId: '2025-01-13T09:00:00.000Z',
+			title: 'Modified Meeting',
+			start: dayjs('2025-01-13T14:00:00'),
+			end: dayjs('2025-01-13T15:00:00'),
+		}
+
+		const result = recurrencePlugin().transformEvents?.(
+			[baseEvent, overrideEvent],
+			{ start: dayjs('2025-01-01'), end: dayjs('2025-01-31') }
+		)
+
+		const modifiedEvents = result?.filter((e) =>
+			e.start.isSame(dayjs('2025-01-13T14:00:00'))
+		)
+		expect(modifiedEvents).toHaveLength(1)
+		expect(modifiedEvents?.at(0)?.title).toBe('Modified Meeting')
 	})
 
 	it('should return empty array for non-recurring events', () => {

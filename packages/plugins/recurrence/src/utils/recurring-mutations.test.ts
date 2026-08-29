@@ -2,8 +2,8 @@ import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
+import { recurrencePlugin } from '../recurrence-plugin'
 import { deleteRecurringEvent } from './delete-recurring-event'
-import { generateRecurringEvents } from './generate-recurring-events'
 import { updateRecurringEvent } from './update-recurring-event'
 
 const createBaseRecurringEvent = (
@@ -244,18 +244,23 @@ describe('recurring mutations', () => {
 				title: 'Overridden Title',
 				uid: 'series-5@ilamy.calendar',
 				recurrenceId: overrideDate.toISOString(),
+				// A modified instance carries no rrule (see the event-type table in
+				// AGENTS.md); the spread above inherits the base's.
+				rrule: undefined,
 			}
 
 			const currentEvents = [baseEvent, overrideEvent]
-			const generated = generateRecurringEvents({
-				event: baseEvent,
-				currentEvents,
-				startDate: baseEvent.start.subtract(1, 'day'),
-				endDate: baseEvent.start.add(1, 'month'),
+			// The uid match is what identifies the override as belonging to this
+			// series. Asserted through transformEvents, which is now the single
+			// emitter of overrides — the expansion skips their occurrences.
+			const generated = recurrencePlugin().transformEvents?.(currentEvents, {
+				start: baseEvent.start.subtract(1, 'day'),
+				end: baseEvent.start.add(1, 'month'),
 			})
 
-			const overridden = generated.find((e) => e.start.isSame(overrideDate))
-			expect(overridden?.title).toBe('Overridden Title')
+			const overridden = generated?.filter((e) => e.start.isSame(overrideDate))
+			expect(overridden).toHaveLength(1)
+			expect(overridden?.at(0)?.title).toBe('Overridden Title')
 		})
 	})
 })

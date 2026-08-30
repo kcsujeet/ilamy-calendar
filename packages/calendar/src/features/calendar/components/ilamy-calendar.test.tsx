@@ -759,6 +759,32 @@ describe('IlamyCalendar', () => {
 			expect(callArgs.allDay).toBe(false)
 			expect(callArgs.resource).toBeUndefined()
 		})
+
+		it('should call onCellClick with correct arguments in day view for slotDuration=30', async () => {
+			// Goes through the real GridCell wiring, not DroppableCell directly.
+			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
+			render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={initialDate}
+					initialView="day"
+					onCellClick={mockOnCellClick}
+					slotDuration={30}
+				/>
+			)
+
+			const dateStr = initialDate.format('YYYY-MM-DD')
+			const timeCell = screen.getByTestId(`vertical-cell-${dateStr}-14-00`)
+			fireEvent.click(timeCell)
+
+			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
+			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
+			expect(callArgs.start.toISOString()).toBe('2025-01-15T14:00:00.000Z')
+			// slotDuration=30 → end is 30 minutes after start
+			expect(callArgs.end.toISOString()).toBe('2025-01-15T14:30:00.000Z')
+			expect(callArgs.allDay).toBe(false)
+			expect(callArgs.resource).toBeUndefined()
+		})
 	})
 
 	describe('custom disabled state classesOverride', () => {

@@ -155,6 +155,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				id={droppableId}
 				minute={minute}
 				resourceId={resourceId}
+				slotDurationMinutes={slotDurationMinutes}
 				type="day-cell"
 			>
 				<div

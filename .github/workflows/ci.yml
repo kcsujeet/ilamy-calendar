@@ -72,8 +72,8 @@ jobs:
       # the change fail), auto-changed-since=true (PR/push delta scope),
       # fail-on-issues=true (gates the job).
       - name: Run fallow audit
-        uses: fallow-rs/fallow@v2
+        uses: fallow-rs/fallow@v3
         with:
           command: audit
-          version: 2.90.0
+          version: 3.20.0
           format: human

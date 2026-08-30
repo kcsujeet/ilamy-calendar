@@ -15,7 +15,8 @@ interface DroppableCellProps {
 	/**
 	 * Duration of a minute-level cell, in minutes. Only meaningful when
 	 * `minute` is set; ignored for hour cells (always 60) and day cells
-	 * (always the full day).
+	 * (always the full day). Only the vertical grid renders minute-level
+	 * cells, so this is inert on the horizontal one.
 	 */
 	slotDurationMinutes: number
 	resourceId?: string | number
@@ -28,9 +29,15 @@ interface DroppableCellProps {
 }
 
 /**
- * The time span a cell represents. Granularity follows the view: a
- * `slotDurationMinutes`-wide slot (day/resource grids), a one-hour slot
- * (week), or the whole day (month).
+ * The time span a cell represents, chosen by how precisely the caller located
+ * the cell rather than by which view is rendering: a `slotDurationMinutes`-wide
+ * slot when `minute` is given, a one-hour slot when only `hour` is, and the
+ * whole day when neither is.
+ *
+ * Only the vertical grid passes `minute`, and `slotDuration` only reaches that
+ * engine (`view-renderer.tsx`). Resource calendars default to the horizontal
+ * engine, so they report one-hour cells whatever `slotDuration` is set to;
+ * `orientation="vertical"` is what makes it apply (#255).
  */
 function getCellRange(
 	date: Dayjs,

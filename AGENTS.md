@@ -80,11 +80,11 @@ bun run build                      # Production build (bunup)
 bun run type-check                 # TypeScript check
 bun run ci                         # Full CI: check + build + type-check + test
 
-# Match the CI gate locally (Fallow static analysis; CI runs fallow-rs/fallow@v2
-# pinned to 2.90.0, config in fallow.toml). Always pass --no-cache:
+# Match the CI gate locally (Fallow static analysis; CI runs fallow-rs/fallow@v3
+# pinned to 3.20.0, config in fallow.toml). Always pass --no-cache:
 # `--changed-since` otherwise registers a per-base-sha git worktree under $TMPDIR
 # as a cache, and those accumulate in `git worktree list`. --no-cache leaves none.
-bunx fallow@2.90.0 audit --changed-since main --gate new-only --no-cache
+bunx fallow@3.20.0 audit --changed-since main --gate new-only --no-cache
 ```
 
 ## Architecture

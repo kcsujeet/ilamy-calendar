@@ -451,6 +451,30 @@ The resource week view supports two density modes via the `weekViewGranularity` 
 `'daily'` mode pairs naturally with tall event bars that carry richer content — since there's one row per day, you have more vertical space per event. Consider bumping `eventHeight` or using a custom `renderEvent` for denser detail.
 :::
 
+## Dragging events between resources
+
+Dropping an event on a different resource moves it across the axis as well as
+through time. What changes depends on how the event declares its membership:
+
+- **`resourceId`** (single resource) — set to the resource the event was dropped on.
+- **`resourceIds`** (cross-resource) — the resource row the drag **started from** is
+  removed and the drop target takes its place, deduped. The event's other resources
+  are left alone, so an event in `['room-a', 'room-b']` dragged from the `room-b`
+  row onto `room-c` becomes `['room-a', 'room-c']`.
+
+An event dropped on a row it does not belong to is left unchanged on the resource
+axis (its time still moves), and dropping it back on its own row changes nothing.
+
+This matches FullCalendar's resource mutation. RFC 5545 does not cover a resource
+axis — its [`RESOURCES` property](https://datatracker.ietf.org/doc/html/rfc5545#section-3.8.1.10)
+is a free-text equipment list with no drag semantics.
+
+:::note
+A cross-resource event is rendered once per resource it belongs to. The row you
+drag from is what identifies which membership entry to replace, so dragging the
+same event from a different row produces a different result.
+:::
+
 ## Best Practices
 
 ### Resource Organization

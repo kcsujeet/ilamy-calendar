@@ -86,6 +86,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 							event={event}
 							isTruncatedEnd={positioned.isTruncatedEnd}
 							isTruncatedStart={positioned.isTruncatedStart}
+							sourceResourceId={resourceId}
 						/>
 					</div>
 				)

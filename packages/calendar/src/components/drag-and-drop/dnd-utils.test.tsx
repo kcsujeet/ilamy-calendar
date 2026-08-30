@@ -9,6 +9,7 @@ let cellResourceId: string | number | undefined
 let allDayCell: boolean | undefined = false
 let hour: number | undefined
 let minute: number | undefined
+let sourceResourceId: string | number | undefined
 
 const getDragEvent = (geometry?: {
 	activeTop: number
@@ -39,6 +40,12 @@ const getDragEvent = (geometry?: {
 	return {
 		active: {
 			id: 'event-1',
+			data: {
+				current: {
+					type: 'calendar-event',
+					sourceResourceId,
+				},
+			},
 			rect: { current: { initial: null, translated: activeRect } },
 		},
 		over: {
@@ -62,6 +69,7 @@ let start = dayjs('2024-06-15T00:00:00')
 let end = dayjs('2024-06-15T23:59:59')
 let allDay = false
 let resourceId: string | number | undefined
+let resourceIds: (string | number)[] | undefined
 const getActiveEvent = () => ({
 	id: 'event-1',
 	title: 'Sample Event',
@@ -69,6 +77,7 @@ const getActiveEvent = () => ({
 	end: end,
 	allDay: allDay,
 	resourceId: resourceId,
+	resourceIds: resourceIds,
 })
 
 describe('getUpdatedEvent Utility Function', () => {
@@ -163,6 +172,7 @@ describe('getUpdatedEvent Utility Function', () => {
 
 	it('should update resourceId when dropping on a cell with different resourceId', () => {
 		resourceId = 'resource-1'
+		resourceIds = undefined
 		cellResourceId = 'resource-2'
 
 		const result = getUpdatedEvent(
@@ -174,6 +184,73 @@ describe('getUpdatedEvent Utility Function', () => {
 		const updates = (result as any)?.updates
 		if (!updates) return
 		expect(updates.resourceId).toBe(cellResourceId)
+	})
+
+	// Cross-resource membership follows FullCalendar's resource mutation: remove
+	// the row the drag started from, add the drop target, dedupe, and leave an
+	// event that was not in the source row untouched.
+	// premium/packages/preact-scheduler/src/resource/EventDragging.ts
+	describe('cross-resource drops (resourceIds)', () => {
+		it('should swap the source resource for the target and keep the others', () => {
+			resourceId = undefined
+			resourceIds = ['resource-1', 'resource-2']
+			sourceResourceId = 'resource-1'
+			cellResourceId = 'resource-3'
+
+			const result = getUpdatedEvent(
+				getDragEvent() as unknown as DragEndEvent,
+				getActiveEvent(),
+				60
+			)
+			const updates = result?.updates
+			expect(updates?.resourceIds).toEqual(['resource-2', 'resource-3'])
+		})
+
+		it('should not duplicate a target the event already belongs to', () => {
+			resourceId = undefined
+			resourceIds = ['resource-1', 'resource-2']
+			sourceResourceId = 'resource-1'
+			cellResourceId = 'resource-2'
+
+			const result = getUpdatedEvent(
+				getDragEvent() as unknown as DragEndEvent,
+				getActiveEvent(),
+				60
+			)
+			const updates = result?.updates
+			expect(updates?.resourceIds).toEqual(['resource-2'])
+		})
+
+		it('should leave membership untouched when the source row is not a member', () => {
+			resourceId = undefined
+			resourceIds = ['resource-1', 'resource-2']
+			sourceResourceId = 'resource-9'
+			cellResourceId = 'resource-3'
+
+			const result = getUpdatedEvent(
+				getDragEvent() as unknown as DragEndEvent,
+				getActiveEvent(),
+				60
+			)
+			const updates = result?.updates
+			expect(updates?.resourceIds).toBeUndefined()
+			expect(updates?.resourceId).toBeUndefined()
+		})
+
+		it('should not change the resource when dropped on its own row', () => {
+			resourceId = undefined
+			resourceIds = ['resource-1', 'resource-2']
+			sourceResourceId = 'resource-1'
+			cellResourceId = 'resource-1'
+
+			const result = getUpdatedEvent(
+				getDragEvent() as unknown as DragEndEvent,
+				getActiveEvent(),
+				60
+			)
+			const updates = result?.updates
+			expect(updates?.resourceIds).toBeUndefined()
+		})
 	})
 
 	it('should calculate new start and end times correctly for time-cell drop', () => {

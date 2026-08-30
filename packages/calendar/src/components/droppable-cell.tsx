@@ -12,6 +12,13 @@ interface DroppableCellProps {
 	date: Dayjs
 	hour?: number
 	minute?: number
+	/**
+	 * Duration of a minute-level cell, in minutes. Only meaningful when
+	 * `minute` is set; ignored for hour cells (always 60) and day cells
+	 * (always the full day). Only the vertical grid renders minute-level
+	 * cells, so this is inert on the horizontal one.
+	 */
+	slotDurationMinutes: number
 	resourceId?: string | number
 	allDay?: boolean
 	children?: React.ReactNode
@@ -22,18 +29,26 @@ interface DroppableCellProps {
 }
 
 /**
- * The time span a cell represents. Granularity follows the view: a 15-minute
- * slot (day), a one-hour slot (week), or the whole day (month).
+ * The time span a cell represents, chosen by how precisely the caller located
+ * the cell rather than by which view is rendering: a `slotDurationMinutes`-wide
+ * slot when `minute` is given, a one-hour slot when only `hour` is, and the
+ * whole day when neither is.
+ *
+ * Only the vertical grid passes `minute`, and `slotDuration` only reaches that
+ * engine (`view-renderer.tsx`). Resource calendars default to the horizontal
+ * engine, so they report one-hour cells whatever `slotDuration` is set to;
+ * `orientation="vertical"` is what makes it apply (#255).
  */
 function getCellRange(
 	date: Dayjs,
-	hour?: number,
-	minute?: number
+	hour: number | undefined,
+	minute: number | undefined,
+	slotDurationMinutes: number
 ): { start: Dayjs; end: Dayjs } {
 	const start = date.hour(hour ?? 0).minute(minute ?? 0)
 
 	if (hour !== undefined && minute !== undefined) {
-		return { start, end: start.minute(minute + 15) }
+		return { start, end: start.add(slotDurationMinutes, 'minute') }
 	}
 	if (hour !== undefined) {
 		return { start, end: start.hour(hour + 1).minute(0) }
@@ -49,6 +64,7 @@ export function DroppableCell({
 	date,
 	hour,
 	minute,
+	slotDurationMinutes,
 	resourceId,
 	allDay,
 	children,
@@ -68,7 +84,7 @@ export function DroppableCell({
 		view,
 	} = useSmartCalendarContext()
 
-	const { start, end } = getCellRange(date, hour, minute)
+	const { start, end } = getCellRange(date, hour, minute, slotDurationMinutes)
 	// `getResourceById` is only present on resource calendars; regular calendars resolve to undefined.
 	const resource = getResourceById?.(resourceId)
 	const cellInfo: CellInfo = { start, end, resource, allDay }

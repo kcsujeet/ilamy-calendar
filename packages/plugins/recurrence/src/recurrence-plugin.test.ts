@@ -70,6 +70,57 @@ describe('recurrencePlugin', () => {
 		expect(moved?.title).toBe('Moved')
 	})
 
+	test('transformEvents emits a moved override exactly once', () => {
+		const plugin = recurrencePlugin()
+		const occurrenceISO = '2025-01-07T09:00:00.000Z'
+		const movedStart = dayjs('2025-01-07T14:00:00.000Z')
+		const baseWithExdate = {
+			...base,
+			exdates: [occurrenceISO],
+		} as CalendarEvent
+		const override = {
+			...base,
+			id: 'daily-1_modified_1',
+			title: 'Moved',
+			start: movedStart,
+			end: dayjs('2025-01-07T15:00:00.000Z'),
+			recurrenceId: occurrenceISO,
+			rrule: undefined,
+		} as CalendarEvent
+		const occurrences = plugin.transformEvents?.(
+			[baseWithExdate, override],
+			range
+		)
+		const moved = occurrences?.filter((e) => e.start.isSame(movedStart))
+		expect(moved).toHaveLength(1)
+	})
+
+	test('transformEvents fills a sparse override from its base', () => {
+		const plugin = recurrencePlugin()
+		const colouredBase = {
+			...base,
+			description: 'Series description',
+			backgroundColor: '#123456',
+		} as CalendarEvent
+		// An imported VEVENT override carries only what it changes.
+		const sparseOverride = {
+			id: 'daily-1_sparse',
+			uid: 'daily-1@ilamy.calendar',
+			title: 'Moved',
+			start: dayjs('2025-01-07T14:00:00.000Z'),
+			end: dayjs('2025-01-07T15:00:00.000Z'),
+			recurrenceId: '2025-01-07T09:00:00.000Z',
+		} as CalendarEvent
+		const occurrences = plugin.transformEvents?.(
+			[colouredBase, sparseOverride],
+			range
+		)
+		const moved = occurrences?.find((e) => e.id === 'daily-1_sparse')
+		expect(moved?.description).toBe('Series description')
+		expect(moved?.backgroundColor).toBe('#123456')
+		expect(moved?.rrule).toBeUndefined()
+	})
+
 	test('transformEvents passes a non-rrule event through untouched', () => {
 		const plugin = recurrencePlugin()
 		const plain = { ...base, id: 'plain', rrule: undefined } as CalendarEvent

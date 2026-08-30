@@ -115,3 +115,84 @@ describe('configured dayjs', () => {
 		expect(dayjs.isDayjs(dayjs())).toBe(true)
 	})
 })
+
+/**
+ * Unitless comparison is a question about INSTANTS, and dayjs documents it as
+ * such: "default milliseconds"
+ * (https://day.js.org/docs/en/query/is-before, .../is-same, .../is-same-or-after).
+ *
+ * Upstream does not honour that for timezone-aware instances. Every comparator
+ * routes through `startOf`, dayjs-timezone overrides `startOf` with a
+ * format -> reparse -> `.tz(zone, true)` round-trip, and that re-anchor MOVES an
+ * instance whose UTC offset is stale. Two instants an hour apart then compare
+ * equal. Separately it costs 45-135µs per call, which is what made the per-day
+ * hot paths collapse (#245).
+ *
+ * So the comparators are overridden to answer by instant whenever no unit is
+ * given and the operand is already a Dayjs. These cases pin BOTH halves of that
+ * contract: the instant answers, and the untouched fallbacks.
+ */
+describe('comparators answer by instant', () => {
+	const TZ = 'America/New_York'
+
+	afterEach(() => {
+		dayjs.tz.setDefault(undefined)
+	})
+
+	/**
+	 * `add` holds the wall clock but carries the previous offset across a DST
+	 * transition, so this is 2025-03-10 00:00 -05:00 (05:00Z) where true local
+	 * midnight is 04:00Z. A real drifted instance, not a contrived one.
+	 */
+	const staleAndTrueMidnight = () => {
+		dayjs.tz.setDefault(TZ)
+		const stale = dayjs
+			.tz('2025-03-08T00:00:00', TZ)
+			.startOf('day')
+			.add(2, 'day')
+		const trueMidnight = dayjs.tz('2025-03-10T00:00:00', TZ)
+		return { stale, trueMidnight }
+	}
+
+	it('treats two instants an hour apart as different', () => {
+		const { stale, trueMidnight } = staleAndTrueMidnight()
+		expect(stale.valueOf() - trueMidnight.valueOf()).toBe(3_600_000)
+		expect(stale.isSame(trueMidnight)).toBe(false)
+	})
+
+	it('orders a stale-offset instance by its real instant', () => {
+		const { stale, trueMidnight } = staleAndTrueMidnight()
+		expect(stale.isAfter(trueMidnight)).toBe(true)
+		expect(stale.isBefore(trueMidnight)).toBe(false)
+		expect(stale.isSameOrAfter(trueMidnight)).toBe(true)
+		expect(stale.isSameOrBefore(trueMidnight)).toBe(false)
+	})
+
+	it('agrees with valueOf for ordinary instances', () => {
+		dayjs.tz.setDefault(TZ)
+		const earlier = dayjs.tz('2025-07-15T09:30:00', TZ)
+		const later = earlier.add(2, 'hour')
+		expect(earlier.isBefore(later)).toBe(true)
+		expect(later.isAfter(earlier)).toBe(true)
+		expect(earlier.isSame(earlier)).toBe(true)
+		expect(earlier.isSameOrBefore(earlier)).toBe(true)
+		expect(earlier.isSameOrAfter(earlier)).toBe(true)
+	})
+
+	it('leaves unit-ed comparison to dayjs', () => {
+		dayjs.tz.setDefault(TZ)
+		const morning = dayjs.tz('2025-07-15T09:00:00', TZ)
+		const night = dayjs.tz('2025-07-15T23:00:00', TZ)
+		expect(morning.isSame(night, 'day')).toBe(true)
+		expect(morning.isSame(night, 'hour')).toBe(false)
+		expect(morning.isBefore(night, 'day')).toBe(false)
+	})
+
+	it('still accepts operands that are not Dayjs', () => {
+		dayjs.tz.setDefault(TZ)
+		const instance = dayjs.tz('2025-07-15T09:00:00', TZ)
+		expect(instance.isAfter('2020-01-01T00:00:00.000Z')).toBe(true)
+		expect(instance.isBefore(new Date('2030-01-01T00:00:00.000Z'))).toBe(true)
+		expect(instance.isSame(instance.valueOf())).toBe(true)
+	})
+})

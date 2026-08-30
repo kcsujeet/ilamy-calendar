@@ -11,6 +11,49 @@ interface DropCellData {
 	allDay?: boolean
 }
 
+type ResourceId = string | number
+
+/**
+ * The resource-axis half of a drop, mirroring FullCalendar's resource mutation
+ * (`premium/packages/preact-scheduler/src/resource/EventDragging.ts`): the row
+ * the drag STARTED from is removed from the membership and the drop target
+ * takes its place, deduped; an event that was not in the source row is left
+ * untouched. Writing only `resourceId` moved nothing for a cross-resource
+ * event, because `getEventResourceIds` ignores `resourceId` whenever
+ * `resourceIds` is present.
+ *
+ * Single-resource events take the target even when the drag reports no source
+ * row (dragging out of the "all events" dialog, which has no resource axis).
+ */
+const getResourceUpdates = (
+	activeEvent: CalendarEvent,
+	fromResourceId: ResourceId | undefined,
+	toResourceId: ResourceId | undefined
+): Partial<CalendarEvent> => {
+	const droppedOutsideResourceAxis = toResourceId === undefined
+	if (droppedOutsideResourceAxis || fromResourceId === toResourceId) {
+		return {}
+	}
+
+	if (!activeEvent.resourceIds) {
+		return { resourceId: toResourceId }
+	}
+
+	const sourceIndex = activeEvent.resourceIds.indexOf(
+		fromResourceId as ResourceId
+	)
+	if (sourceIndex === -1) {
+		return {}
+	}
+
+	const resourceIds = activeEvent.resourceIds.slice()
+	resourceIds.splice(sourceIndex, 1)
+	if (!resourceIds.includes(toResourceId)) {
+		resourceIds.push(toResourceId)
+	}
+	return { resourceIds }
+}
+
 export const getUpdatedEvent = (
 	event: DragEndEvent,
 	activeEvent: CalendarEvent | null,
@@ -61,11 +104,15 @@ export const getUpdatedEvent = (
 	// previous 23:59:59.999, as this used to, resized the event on every drag.
 	const newEnd = newStart.add(eventDuration, 'second')
 
+	const sourceResourceId = (
+		active.data.current as { sourceResourceId?: ResourceId } | undefined
+	)?.sourceResourceId
+
 	// Update the event with new times and resource if changed
 	const updates = {
 		start: newStart,
 		end: newEnd,
-		resourceId,
+		...getResourceUpdates(activeEvent, sourceResourceId, resourceId),
 		allDay: isTimeCell ? false : (allDay ?? activeEvent.allDay),
 	}
 	return { activeEvent, updates }

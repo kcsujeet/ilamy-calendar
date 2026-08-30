@@ -240,8 +240,12 @@ describe('CalendarProvider - recurring event integration', () => {
 			plugins: [recurrencePlugin()],
 		})
 
-		// Should have 2 events on Jan 3rd (the base event generates one instance, and the modified instance is also present)
-		expect(getByTestId('jan3-event-count').textContent).toBe('2')
+		// Exactly one: the modified instance. The expansion skips an occurrence
+		// that has an override, so the override is emitted once instead of also
+		// being merged into the series. This assertion used to read '2', which
+		// pinned the duplicate this test is named for — a moved override rendered
+		// twice in the cell it was dropped on.
+		expect(getByTestId('jan3-event-count').textContent).toBe('1')
 		expect(getByTestId('jan3-event-hour').textContent).toBe('10') // Should be the modified time (10:00), not original (09:00)
 		expect(getByTestId('jan3-event-id').textContent).toBe(
 			'daily-standup_modified_123'

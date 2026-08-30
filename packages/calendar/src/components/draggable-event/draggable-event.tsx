@@ -50,7 +50,6 @@ export function DraggableEventPresentation({
 } & React.HTMLAttributes<HTMLDivElement>) {
 	const { onEventClick, renderEvent, disableEventClick, disableDragAndDrop } =
 		useSmartCalendarContext()
-
 	// Default event content to render if custom renderEvent is not provided
 	const DefaultEventContent = () => {
 		return (
@@ -128,12 +127,19 @@ function DraggableEventUnmemoized({
 	disableDrag = false,
 	isTruncatedStart = false,
 	isTruncatedEnd = false,
+	sourceResourceId,
 }: {
 	elementId: string
 	className?: string
 	style?: CSSProperties
 	event: CalendarEvent
 	disableDrag?: boolean
+	/**
+	 * The resource row this instance is rendered in. A cross-resource event is
+	 * rendered once per resource, so the drop needs to know which one the drag
+	 * started from in order to swap that one for the target.
+	 */
+	sourceResourceId?: string | number
 	/** Set by the horizontal events layer when the bar continues past the visible range. */
 	isTruncatedStart?: boolean
 	isTruncatedEnd?: boolean
@@ -145,6 +151,7 @@ function DraggableEventUnmemoized({
 		data: {
 			event,
 			type: 'calendar-event',
+			sourceResourceId,
 			presentation: {
 				className,
 				style,
@@ -182,6 +189,7 @@ export const DraggableEvent = memo(
 			prevProps.className === nextProps.className &&
 			prevProps.event === nextProps.event &&
 			prevProps.style === nextProps.style &&
+			prevProps.sourceResourceId === nextProps.sourceResourceId &&
 			prevProps.isTruncatedStart === nextProps.isTruncatedStart &&
 			prevProps.isTruncatedEnd === nextProps.isTruncatedEnd
 		)

@@ -153,6 +153,11 @@ The system automatically handles modified instances and exception dates:
 
 When you modify a single occurrence of a recurring event, it creates a new event with a `recurrenceId` that matches the original occurrence time.
 
+An override **replaces** the occurrence it names: the series expansion skips that
+occurrence, and the override is what renders — wherever it has been moved to,
+including outside the range the series was expanded over. You do not also need an
+`exdates` entry for it, and adding one changes nothing.
+
 ```tsx
 const modifiedInstance = {
   id: 'weekly-standup-modified',
@@ -167,6 +172,9 @@ const modifiedInstance = {
 #### Exception Dates
 
 Use `exdates` to skip specific occurrences without creating modified instances.
+Entries are **ISO strings** (`exdates?: string[]`) keyed to the *original*
+occurrence time, so they must be produced with `.toISOString()` — a `Date` never
+matches.
 
 ```tsx
 const recurringEvent = {
@@ -177,8 +185,8 @@ const recurringEvent = {
     dtstart: new Date('2025-08-04T09:00:00')
   },
   exdates: [
-    dayjs('2025-08-18T09:00:00').toDate(), // Skip this Monday
-    dayjs('2025-08-25T09:00:00').toDate()  // Skip this Monday too
+    dayjs('2025-08-18T09:00:00').toISOString(), // Skip this Monday
+    dayjs('2025-08-25T09:00:00').toISOString()  // Skip this Monday too
   ]
 }
 ```

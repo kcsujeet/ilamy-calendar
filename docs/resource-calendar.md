@@ -755,6 +755,19 @@ const EquipmentScheduleCalendar = () => {
 }
 ```
 
+## Dragging Events Between Resources
+
+Dropping an event on a different resource moves it across the axis as well as through time:
+
+- **`resourceId`** (single resource) — set to the resource the event was dropped on.
+- **`resourceIds`** (cross-resource) — the resource row the drag **started from** is removed and the drop target takes its place, deduped. Other resources are untouched, so `['room-a', 'room-b']` dragged from the `room-b` row onto `room-c` becomes `['room-a', 'room-c']`.
+
+An event dropped on a row it does not belong to is unchanged on the resource axis (its time still moves); dropping it on its own row changes nothing.
+
+This follows FullCalendar's resource mutation (`premium/packages/preact-scheduler/src/resource/EventDragging.ts`). RFC 5545 does not cover a resource axis — its `RESOURCES` property (3.8.1.10) is a free-text equipment list with no drag semantics.
+
+Because a cross-resource event is rendered once per resource, the row you drag from is what identifies which membership entry to replace.
+
 ## Best Practices
 
 ### 1. Resource Organization

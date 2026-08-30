@@ -45,7 +45,7 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 				id="test-cell"
 				minute={opts.minute}
 				resourceId={opts.resourceId}
-				slotDurationMinutes={opts.slotDurationMinutes}
+				slotDurationMinutes={opts.slotDurationMinutes ?? 15}
 				type="day-cell"
 			/>
 		</CalendarProvider>

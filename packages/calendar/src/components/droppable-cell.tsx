@@ -15,9 +15,9 @@ interface DroppableCellProps {
 	/**
 	 * Duration of a minute-level cell, in minutes. Only meaningful when
 	 * `minute` is set; ignored for hour cells (always 60) and day cells
-	 * (always the full day). Defaults to 15 to match the previous behavior.
+	 * (always the full day).
 	 */
-	slotDurationMinutes?: number
+	slotDurationMinutes: number
 	resourceId?: string | number
 	allDay?: boolean
 	children?: React.ReactNode
@@ -34,9 +34,9 @@ interface DroppableCellProps {
  */
 function getCellRange(
 	date: Dayjs,
-	hour?: number,
-	minute?: number,
-	slotDurationMinutes = 15
+	hour: number | undefined,
+	minute: number | undefined,
+	slotDurationMinutes: number
 ): { start: Dayjs; end: Dayjs } {
 	const start = date.hour(hour ?? 0).minute(minute ?? 0)
 

@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'bun:test'
+import { beforeEach, describe, expect, it } from 'bun:test'
 import type { DragEndEvent } from '@dnd-kit/core'
 import dayjs from '@ilamy/utils/dayjs'
-import { getUpdatedEvent } from './dnd-utils'
+import { type DropCellData, getUpdatedEvent } from './dnd-utils'
 
 let cellType = 'day-cell'
 let cellDate = dayjs('2024-10-15T00:00:00')
@@ -10,57 +10,36 @@ let allDayCell: boolean | undefined = false
 let hour: number | undefined
 let minute: number | undefined
 let sourceResourceId: string | number | undefined
+let cellDisabled = false
+let activeEventAvailable = true
+let originCell: DropCellData | null
 
-const getDragEvent = (geometry?: {
-	activeTop: number
-	overTop: number
-	slotHeight: number
-}) => {
-	const activeRect = geometry
-		? {
-				bottom: geometry.activeTop + 120,
-				height: 120,
-				left: 0,
-				right: 100,
-				top: geometry.activeTop,
-				width: 100,
-			}
-		: null
-	const overRect = geometry
-		? {
-				bottom: geometry.overTop + geometry.slotHeight,
-				height: geometry.slotHeight,
-				left: 0,
-				right: 100,
-				top: geometry.overTop,
-				width: 100,
-			}
-		: undefined
-
+const getDragEvent = () => {
 	return {
 		active: {
 			id: 'event-1',
 			data: {
 				current: {
+					event: activeEventAvailable ? getActiveEvent() : undefined,
 					type: 'calendar-event',
 					sourceResourceId,
 				},
 			},
-			rect: { current: { initial: null, translated: activeRect } },
 		},
 		over: {
 			id: 'time-cell-2024-06-15-10-30',
 			data: {
 				current: {
 					type: cellType,
-					date: cellDate,
 					allDay: allDayCell,
+					disabled: cellDisabled,
 					resourceId: cellResourceId,
-					hour: hour,
-					minute: minute,
+					start: cellDate
+						.hour(hour ?? cellDate.hour())
+						.minute(minute ?? cellDate.minute())
+						.startOf('minute'),
 				},
 			},
-			rect: overRect,
 		},
 	}
 }
@@ -81,29 +60,60 @@ const getActiveEvent = () => ({
 })
 
 describe('getUpdatedEvent Utility Function', () => {
-	it('should return null if active or over is missing', () => {
+	beforeEach(() => {
+		cellType = 'day-cell'
+		cellDate = dayjs('2024-10-15T00:00:00')
+		cellResourceId = undefined
+		allDayCell = false
+		hour = undefined
+		minute = undefined
+		sourceResourceId = undefined
+		cellDisabled = false
+		activeEventAvailable = true
+		start = dayjs('2024-06-15T00:00:00')
+		end = dayjs('2024-06-15T23:59:59')
+		allDay = false
+		resourceId = undefined
+		resourceIds = undefined
+		originCell = {
+			type: 'day-cell',
+			start: dayjs('2024-06-15T00:00:00'),
+			allDay: false,
+		}
+	})
+
+	it('should return null if over is missing', () => {
 		const result = getUpdatedEvent(
-			{ active: null, over: null } as unknown as DragEndEvent,
-			null,
-			60
+			{ ...getDragEvent(), over: null } as unknown as DragEndEvent,
+			originCell
 		)
 		expect(result).toBeNull()
 	})
 
-	it('should return null if activeEvent is null', () => {
+	it('should return null if active event data is missing', () => {
+		activeEventAvailable = false
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			null,
-			60
+			originCell
 		)
+		expect(result).toBeNull()
+	})
+
+	it('rejects a disabled destination while allowing it as an origin', () => {
+		cellDisabled = true
+
+		const result = getUpdatedEvent(
+			getDragEvent() as unknown as DragEndEvent,
+			originCell
+		)
+
 		expect(result).toBeNull()
 	})
 
 	it('should calculate new start and end times correctly for day-cell drop', () => {
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent(),
-			60
+			originCell
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
@@ -122,8 +132,7 @@ describe('getUpdatedEvent Utility Function', () => {
 
 			const result = getUpdatedEvent(
 				getDragEvent() as unknown as DragEndEvent,
-				getActiveEvent(),
-				60
+				originCell
 			)
 			expect(result).not.toBeNull()
 			const updates = (result as any)?.updates
@@ -138,11 +147,15 @@ describe('getUpdatedEvent Utility Function', () => {
 		it('should convert all-day event to non-all-day when dropped on non-all-day cell', () => {
 			allDay = true
 			allDayCell = false
+			originCell = {
+				type: 'day-cell',
+				start: dayjs('2024-06-15T00:00:00'),
+				allDay: true,
+			}
 
 			const result = getUpdatedEvent(
 				getDragEvent() as unknown as DragEndEvent,
-				getActiveEvent(),
-				60
+				originCell
 			)
 			expect(result).not.toBeNull()
 			const updates = (result as any)?.updates
@@ -157,11 +170,15 @@ describe('getUpdatedEvent Utility Function', () => {
 		it('should retain all-day status when dropping all-day event on cell with all-day flag not defined', () => {
 			allDay = true
 			allDayCell = undefined
+			originCell = {
+				type: 'day-cell',
+				start: dayjs('2024-06-15T00:00:00'),
+				allDay: true,
+			}
 
 			const result = getUpdatedEvent(
 				getDragEvent() as unknown as DragEndEvent,
-				getActiveEvent(),
-				60
+				originCell
 			)
 			expect(result).not.toBeNull()
 			const updates = (result as any)?.updates
@@ -177,8 +194,7 @@ describe('getUpdatedEvent Utility Function', () => {
 
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent(),
-			60
+			originCell
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
@@ -199,8 +215,7 @@ describe('getUpdatedEvent Utility Function', () => {
 
 			const result = getUpdatedEvent(
 				getDragEvent() as unknown as DragEndEvent,
-				getActiveEvent(),
-				60
+				originCell
 			)
 			const updates = result?.updates
 			expect(updates?.resourceIds).toEqual(['resource-2', 'resource-3'])
@@ -214,8 +229,7 @@ describe('getUpdatedEvent Utility Function', () => {
 
 			const result = getUpdatedEvent(
 				getDragEvent() as unknown as DragEndEvent,
-				getActiveEvent(),
-				60
+				originCell
 			)
 			const updates = result?.updates
 			expect(updates?.resourceIds).toEqual(['resource-2'])
@@ -229,8 +243,7 @@ describe('getUpdatedEvent Utility Function', () => {
 
 			const result = getUpdatedEvent(
 				getDragEvent() as unknown as DragEndEvent,
-				getActiveEvent(),
-				60
+				originCell
 			)
 			const updates = result?.updates
 			expect(updates?.resourceIds).toBeUndefined()
@@ -245,8 +258,7 @@ describe('getUpdatedEvent Utility Function', () => {
 
 			const result = getUpdatedEvent(
 				getDragEvent() as unknown as DragEndEvent,
-				getActiveEvent(),
-				60
+				originCell
 			)
 			const updates = result?.updates
 			expect(updates?.resourceIds).toBeUndefined()
@@ -261,8 +273,7 @@ describe('getUpdatedEvent Utility Function', () => {
 
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent(),
-			60
+			originCell
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
@@ -274,36 +285,88 @@ describe('getUpdatedEvent Utility Function', () => {
 		expect(updates.allDay).toBe(false)
 	})
 
-	it('resolves a multi-slot event from its preview leading edge', () => {
-		start = dayjs('2024-10-20T09:00:00.000Z')
-		end = dayjs('2024-10-20T11:00:00.000Z')
-		cellDate = dayjs('2024-10-20T18:00:00.000Z')
-		cellType = 'day-cell'
-		hour = 18
-		minute = undefined
+	it('applies the hovered-cell delta to the original event start', () => {
+		start = dayjs('2024-10-20T09:45:00.000Z')
+		end = dayjs('2024-10-20T11:45:00.000Z')
+		cellDate = dayjs('2024-10-20T00:00:00.000Z')
+		cellType = 'time-cell'
 		allDay = false
 		allDayCell = false
 
 		const cases = [
-			{ activeTop: 600, expectedHour: 18, slotDuration: 60, slotHeight: 60 },
-			{ activeTop: 570, expectedHour: 18, slotDuration: 60, slotHeight: 60 },
-			{ activeTop: 540, expectedHour: 17, slotDuration: 60, slotHeight: 60 },
-			{ activeTop: 480, expectedHour: 16, slotDuration: 60, slotHeight: 60 },
-			{ activeTop: 540, expectedHour: 17, slotDuration: 15, slotHeight: 15 },
+			{ originHour: 9, targetHour: 18, expectedHour: 18 },
+			{ originHour: 10, targetHour: 18, expectedHour: 17 },
+			{ originHour: 11, targetHour: 18, expectedHour: 16 },
 		]
-		for (const { activeTop, expectedHour, slotDuration, slotHeight } of cases) {
+		for (const { originHour, targetHour, expectedHour } of cases) {
+			originCell = {
+				type: 'time-cell',
+				start: cellDate.hour(originHour).minute(0).startOf('minute'),
+				allDay: false,
+			}
+			hour = targetHour
+			minute = 0
 			const result = getUpdatedEvent(
-				getDragEvent({
-					activeTop,
-					overTop: 600,
-					slotHeight,
-				}) as unknown as DragEndEvent,
-				getActiveEvent(),
-				slotDuration
+				getDragEvent() as unknown as DragEndEvent,
+				originCell
 			)
 
 			expect(result?.updates.start.hour()).toBe(expectedHour)
+			expect(result?.updates.start.minute()).toBe(45)
 			expect(result?.updates.end.diff(result.updates.start, 'hour')).toBe(2)
+		}
+	})
+
+	it('applies one delta across a day and resource change', () => {
+		start = dayjs('2025-01-15T09:00:00.000Z')
+		end = dayjs('2025-01-15T11:00:00.000Z')
+		resourceId = 'resource-1'
+		cellDate = dayjs('2025-01-16T00:00:00.000Z')
+		cellType = 'time-cell'
+		hour = 13
+		minute = 0
+		cellResourceId = 'resource-2'
+		originCell = {
+			type: 'time-cell',
+			start: dayjs('2025-01-15T10:00:00.000Z'),
+			resourceId: 'resource-1',
+			allDay: false,
+		}
+
+		const result = getUpdatedEvent(
+			getDragEvent() as unknown as DragEndEvent,
+			originCell
+		)
+
+		expect(result?.updates.start.toISOString()).toBe('2025-01-16T12:00:00.000Z')
+		expect(result?.updates.resourceId).toBe('resource-2')
+	})
+
+	it('keeps the local clock offset when the cell delta crosses DST', () => {
+		dayjs.tz.setDefault('America/New_York')
+		try {
+			start = dayjs.tz('2025-11-01T09:15:00', 'America/New_York')
+			end = dayjs.tz('2025-11-01T10:15:00', 'America/New_York')
+			cellDate = dayjs.tz('2025-11-02T00:00:00', 'America/New_York')
+			cellType = 'time-cell'
+			hour = 10
+			minute = 0
+			originCell = {
+				type: 'time-cell',
+				start: dayjs.tz('2025-11-01T10:00:00', 'America/New_York'),
+				allDay: false,
+			}
+
+			const result = getUpdatedEvent(
+				getDragEvent() as unknown as DragEndEvent,
+				originCell
+			)
+
+			expect(result?.updates.start.toISOString()).toBe(
+				'2025-11-02T14:15:00.000Z'
+			)
+		} finally {
+			dayjs.tz.setDefault()
 		}
 	})
 
@@ -313,14 +376,15 @@ describe('getUpdatedEvent Utility Function', () => {
 		hour = 9
 		minute = 0
 
+		originCell = {
+			type: 'day-cell',
+			start: dayjs('2024-06-15T00:00:00'),
+			allDay: true,
+		}
+
 		const result = getUpdatedEvent(
-			getDragEvent({
-				activeTop: 480,
-				overTop: 600,
-				slotHeight: 60,
-			}) as unknown as DragEndEvent,
-			getActiveEvent(),
-			60
+			getDragEvent() as unknown as DragEndEvent,
+			originCell
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
@@ -345,11 +409,15 @@ describe('getUpdatedEvent Utility Function', () => {
 		allDay = false
 		hour = undefined
 		minute = undefined
+		originCell = {
+			type: 'day-cell',
+			start: dayjs('2024-06-15T22:00:00'),
+			allDay: false,
+		}
 
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent(),
-			60
+			originCell
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
@@ -357,6 +425,24 @@ describe('getUpdatedEvent Utility Function', () => {
 		expect(updates.start.format()).toBe(cellDate.format())
 		expect(updates.end.format()).toBe(cellDate.add(2, 'hour').format())
 		expect(updates.end.diff(updates.start, 'second')).toBe(7200)
+	})
+
+	it('preserves duration with millisecond precision', () => {
+		start = dayjs('2024-06-15T09:00:00.125Z')
+		end = dayjs('2024-06-15T10:00:00.875Z')
+		cellDate = dayjs('2024-06-16T12:00:00.000Z')
+		originCell = {
+			type: 'day-cell',
+			start: dayjs('2024-06-15T12:00:00.000Z'),
+			allDay: false,
+		}
+
+		const result = getUpdatedEvent(
+			getDragEvent() as unknown as DragEndEvent,
+			originCell
+		)
+
+		expect(result?.updates.end.diff(result.updates.start)).toBe(end.diff(start))
 	})
 
 	it('should handle dragging multi-day all-day event to time cell correctly', () => {
@@ -370,28 +456,22 @@ describe('getUpdatedEvent Utility Function', () => {
 		hour = 1
 		minute = 0
 		cellResourceId = undefined
+		originCell = {
+			type: 'day-cell',
+			start: dayjs('2024-11-04T00:00:00.000Z'),
+			allDay: true,
+		}
 
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,
-			getActiveEvent(),
-			60
+			originCell
 		)
 		expect(result).not.toBeNull()
 		const updates = (result as any)?.updates
 		if (!updates) return
 
-		// CURRENT BEHAVIOR (with second precision):
-		// - Original duration: 2 days 23h 59m 59.999s (using endOf('day'))
-		// - Duration in seconds: 259199 (loses millisecond precision)
-		// - Start: Nov 4 01:00:00
-		// - End: Nov 4 01:00:00 + 259199 sec = Nov 7 00:59:59
 		expect(updates.start.toISOString()).toBe('2024-11-04T01:00:00.000Z')
-		expect(updates.end.toISOString()).toBe('2024-11-07T00:59:59.000Z')
+		expect(updates.end.toISOString()).toBe('2024-11-07T00:59:59.999Z')
 		expect(updates.allDay).toBe(false)
-
-		// NOTE: Still 1 second off from ideal behavior due to millisecond truncation
-		// - Ideal: Nov 7 01:00:00 (3 full days later)
-		// - Actual: Nov 7 00:59:59 (loses .999ms when using second precision)
-		// - To fully fix: would need millisecond precision instead of second
 	})
 })

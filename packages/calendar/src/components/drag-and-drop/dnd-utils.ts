@@ -2,16 +2,21 @@ import type { DragEndEvent } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 
-interface DropCellData {
-	type?: string
-	date?: string
-	hour?: number
-	minute?: number
-	resourceId?: string
+type ResourceId = string | number
+
+export interface DropCellData {
+	type: 'day-cell' | 'time-cell'
+	start: Dayjs
+	resourceId?: ResourceId
 	allDay?: boolean
+	disabled?: boolean
 }
 
-type ResourceId = string | number
+interface CalendarDragData {
+	type: 'calendar-event'
+	event: CalendarEvent
+	sourceResourceId?: ResourceId
+}
 
 /**
  * The resource-axis half of a drop, mirroring FullCalendar's resource mutation
@@ -56,64 +61,53 @@ const getResourceUpdates = (
 
 export const getUpdatedEvent = (
 	event: DragEndEvent,
-	activeEvent: CalendarEvent | null,
-	slotDuration: number
+	dragOrigin: DropCellData | null
 ) => {
 	const { active, over } = event
+	const activeData = active.data.current as CalendarDragData | undefined
+	const data = over?.data.current as DropCellData | undefined
 
-	if (!active || !over || !activeEvent) {
+	if (
+		activeData?.type !== 'calendar-event' ||
+		!activeData.event ||
+		!data ||
+		data.disabled
+	) {
 		return null
 	}
 
-	const data = (over.data.current || {}) as DropCellData
+	const activeEvent = activeData.event
 	const isTimeCell = data.type === 'time-cell'
 	const { resourceId, allDay } = data
-	let newStart: Dayjs
+	const targetStart = data.start
 
+	let targetAllDay = activeEvent.allDay
+	if (allDay !== undefined) {
+		targetAllDay = allDay
+	}
 	if (isTimeCell) {
-		const { date, hour = 0, minute = 0 } = data
+		targetAllDay = false
+	}
+	const originAllDay =
+		dragOrigin?.type === 'time-cell'
+			? false
+			: (dragOrigin?.allDay ?? activeEvent.allDay)
+	let newStart = targetStart
 
-		// Create new start time based on the drop target
-		newStart = dayjs(date).hour(hour).minute(minute)
-	} else {
-		const { date } = data
-
-		newStart = dayjs(date)
+	if (dragOrigin && originAllDay === targetAllDay) {
+		const cellDelta = targetStart.valueOf() - dragOrigin.start.valueOf()
+		newStart = dayjs(activeEvent.start.valueOf() + cellDelta)
 	}
 
-	const isTimedGridCell = isTimeCell || data.hour !== undefined
-	const translatedRect = active.rect?.current.translated
-	const dropTargetRect = over.rect
-	if (
-		isTimedGridCell &&
-		!activeEvent.allDay &&
-		translatedRect &&
-		dropTargetRect?.height
-	) {
-		const slotOffset = Math.round(
-			(translatedRect.top - dropTargetRect.top) / dropTargetRect.height
-		)
-		newStart = newStart.add(slotOffset * slotDuration, 'minute')
-	}
-
-	const eventDuration = activeEvent.end.diff(activeEvent.start, 'second')
-
-	// Create new end time by adding the original duration. An end landing on
-	// midnight is kept: `end` is exclusive (#248), so it is a legitimate end and
-	// the layout paints it on the day it actually covers. Snapping it back to the
-	// previous 23:59:59.999, as this used to, resized the event on every drag.
-	const newEnd = newStart.add(eventDuration, 'second')
-
-	const sourceResourceId = (
-		active.data.current as { sourceResourceId?: ResourceId } | undefined
-	)?.sourceResourceId
+	const eventDelta = newStart.valueOf() - activeEvent.start.valueOf()
+	const newEnd = dayjs(activeEvent.end.valueOf() + eventDelta)
 
 	// Update the event with new times and resource if changed
 	const updates = {
 		start: newStart,
 		end: newEnd,
-		...getResourceUpdates(activeEvent, sourceResourceId, resourceId),
-		allDay: isTimeCell ? false : (allDay ?? activeEvent.allDay),
+		...getResourceUpdates(activeEvent, activeData.sourceResourceId, resourceId),
+		allDay: targetAllDay,
 	}
 	return { activeEvent, updates }
 }

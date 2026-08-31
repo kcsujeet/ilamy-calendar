@@ -95,8 +95,8 @@ export function DroppableCell({
 
 	const { isOver, setNodeRef } = useDroppable({
 		id,
-		data: { type, date, hour, minute, resourceId, allDay },
-		disabled: disableDragAndDrop || cellDisabled,
+		data: { type, start, resourceId, allDay, disabled: cellDisabled },
+		disabled: disableDragAndDrop,
 	})
 
 	const handleCellClick = (e: React.MouseEvent) => {

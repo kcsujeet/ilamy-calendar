@@ -128,6 +128,7 @@ function DraggableEventUnmemoized({
 	isTruncatedStart = false,
 	isTruncatedEnd = false,
 	sourceResourceId,
+	useDestinationTime = false,
 }: {
 	elementId: string
 	className?: string
@@ -140,6 +141,13 @@ function DraggableEventUnmemoized({
 	 * started from in order to swap that one for the target.
 	 */
 	sourceResourceId?: string | number
+	/**
+	 * Use the destination cell's time directly instead of applying a cell delta.
+	 * Events rendered outside the grid, such as those in the all-events dialog,
+	 * have no source cell; without this, their first destination would be mistaken
+	 * for the origin and dropping there would produce a zero delta.
+	 */
+	useDestinationTime?: boolean
 	/** Set by the horizontal events layer when the bar continues past the visible range. */
 	isTruncatedStart?: boolean
 	isTruncatedEnd?: boolean
@@ -152,6 +160,7 @@ function DraggableEventUnmemoized({
 			event,
 			type: 'calendar-event',
 			sourceResourceId,
+			useDestinationTime,
 			presentation: {
 				className,
 				style,
@@ -190,6 +199,7 @@ export const DraggableEvent = memo(
 			prevProps.event === nextProps.event &&
 			prevProps.style === nextProps.style &&
 			prevProps.sourceResourceId === nextProps.sourceResourceId &&
+			prevProps.useDestinationTime === nextProps.useDestinationTime &&
 			prevProps.isTruncatedStart === nextProps.isTruncatedStart &&
 			prevProps.isTruncatedEnd === nextProps.isTruncatedEnd
 		)

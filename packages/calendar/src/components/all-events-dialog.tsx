@@ -53,6 +53,7 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 								event={event}
 								key={event.id}
 								style={{ height: `${eventHeight}px` }}
+								useDestinationTime
 							/>
 						)
 					})}

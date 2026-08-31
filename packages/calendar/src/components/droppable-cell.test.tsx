@@ -17,6 +17,7 @@ interface RenderCellOptions {
 	onCellClick?: (info: CellInfo) => void
 	resources?: Resource[]
 	// Cell props
+	date?: ReturnType<typeof dayjs>
 	hour?: number
 	minute?: number
 	slotDurationMinutes?: number
@@ -40,7 +41,7 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 			<DroppableCell
 				allDay={opts.allDay}
 				data-testid="cell"
-				date={initialDate}
+				date={opts.date ?? initialDate}
 				hour={opts.hour}
 				id="test-cell"
 				minute={opts.minute}
@@ -205,6 +206,15 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 		)
 		expect(cell.getAttribute('data-end')).toBe(
 			initialDate.hour(10).minute(0).toISOString()
+		)
+	})
+
+	test('preserves sub-minute precision from the cell date', () => {
+		const preciseDate = dayjs('2025-01-01T09:15:30.125Z')
+		renderCell({ date: preciseDate, hour: 9, minute: 15 })
+
+		expect(screen.getByTestId('cell').getAttribute('data-start')).toBe(
+			'2025-01-01T09:15:30.125Z'
 		)
 	})
 

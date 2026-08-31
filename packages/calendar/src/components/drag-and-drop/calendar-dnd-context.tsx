@@ -1,4 +1,4 @@
-import type { DragEndEvent } from '@dnd-kit/core'
+import type { DragEndEvent, DragOverEvent } from '@dnd-kit/core'
 import {
 	DndContext,
 	MouseSensor,
@@ -9,10 +9,11 @@ import {
 } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
 import type React from 'react'
+import { useRef } from 'react'
 import { EventMutationScopeSlot } from '@/components/calendar-slots'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useScopedEventMutation } from '@/hooks/use-scoped-event-mutation'
-import { getUpdatedEvent } from './dnd-utils'
+import { type DropCellData, getUpdatedEvent } from './dnd-utils'
 import { EventDragOverlay } from './event-drag-overlay'
 
 interface CalendarDndContextProps {
@@ -20,12 +21,12 @@ interface CalendarDndContextProps {
 }
 
 export function CalendarDndContext({ children }: CalendarDndContextProps) {
-	const { updateEvent, getEventManager, disableDragAndDrop, slotDuration } =
+	const dragOriginRef = useRef<DropCellData | null>(null)
+	const { updateEvent, getEventManager, disableDragAndDrop } =
 		useSmartCalendarContext((context) => ({
 			updateEvent: context.updateEvent,
 			getEventManager: context.getEventManager,
 			disableDragAndDrop: context.disableDragAndDrop,
-			slotDuration: context.slotDuration,
 		}))
 
 	const { dialogState, openEditDialog, closeDialog, handleConfirm } =
@@ -69,17 +70,46 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		}
 	}
 
-	const handleDragEnd = (event: DragEndEvent) => {
-		const activeData = event.active.data.current
-		let activeEvent: CalendarEvent | null = null
-		if (activeData?.type === 'calendar-event') {
-			activeEvent = activeData.event as CalendarEvent
+	const handleDragStart = () => {
+		dragOriginRef.current = null
+	}
+
+	const handleDragOver = (event: DragOverEvent) => {
+		if (dragOriginRef.current !== null) {
+			return
 		}
-		const updatedEvent = getUpdatedEvent(event, activeEvent, slotDuration)
+
+		const activeData = event.active.data.current
+		if (
+			activeData?.type !== 'calendar-event' ||
+			activeData.useDestinationTime
+		) {
+			return
+		}
+
+		const overData = event.over?.data.current
+		if (!overData?.start) {
+			return
+		}
+		if (overData.type !== 'day-cell' && overData.type !== 'time-cell') {
+			return
+		}
+
+		dragOriginRef.current = overData as unknown as DropCellData
+	}
+
+	const handleDragEnd = (event: DragEndEvent) => {
+		const dragOrigin = dragOriginRef.current
+		dragOriginRef.current = null
+		const updatedEvent = getUpdatedEvent(event, dragOrigin)
 		if (updatedEvent) {
 			const { activeEvent, updates } = updatedEvent
 			performEventUpdate(activeEvent, updates)
 		}
+	}
+
+	const handleDragCancel = () => {
+		dragOriginRef.current = null
 	}
 
 	// If drag and drop is disabled, just return children without DndContext
@@ -91,7 +121,10 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		<>
 			<DndContext
 				collisionDetection={pointerWithin}
+				onDragCancel={handleDragCancel}
 				onDragEnd={handleDragEnd}
+				onDragOver={handleDragOver}
+				onDragStart={handleDragStart}
 				sensors={sensors}
 			>
 				{children}

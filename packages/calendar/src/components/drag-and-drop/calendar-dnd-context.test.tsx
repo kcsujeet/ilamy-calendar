@@ -6,11 +6,19 @@ import { act, render, screen } from '@testing-library/react'
 import type React from 'react'
 import { RRule } from 'rrule'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
+import { DroppableCell } from '@/components/droppable-cell'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 
 let dragOverlayProps: Record<string, unknown> = {}
 let dndContextProps: {
+	onDragCancel?: (event: unknown) => void
 	onDragEnd?: (event: unknown) => void
+	onDragOver?: (event: unknown) => void
+	onDragStart?: (event: unknown) => void
+} = {}
+let droppableHookArgs: {
+	data?: Record<string, unknown>
+	disabled?: boolean
 } = {}
 let mockActive: {
 	data: { current: Record<string, unknown> }
@@ -47,6 +55,13 @@ mock.module('@dnd-kit/core', () => ({
 		listeners: {},
 		setNodeRef: () => {},
 	}),
+	useDroppable: (args: {
+		data?: Record<string, unknown>
+		disabled?: boolean
+	}) => {
+		droppableHookArgs = args
+		return { isOver: false, setNodeRef: () => {} }
+	},
 	useSensor: () => ({}),
 	useSensors: () => [],
 }))
@@ -57,6 +72,7 @@ describe('CalendarDndContext', () => {
 	beforeEach(() => {
 		dndContextProps = {}
 		dragOverlayProps = {}
+		droppableHookArgs = {}
 		mockActive = null
 	})
 
@@ -88,11 +104,24 @@ describe('CalendarDndContext', () => {
 	const timedDropTarget = {
 		data: {
 			current: {
-				date: '2025-01-16T00:00:00.000Z',
-				hour: 19,
-				minute: 0,
-				type: 'time-cell',
+				allDay: false,
+				start: dayjs('2025-01-16T19:00:00.000Z'),
+				type: 'day-cell',
 			},
+		},
+	}
+	const timedOriginTarget = {
+		data: {
+			current: {
+				allDay: false,
+				start: dayjs('2025-01-15T19:00:00.000Z'),
+				type: 'day-cell',
+			},
+		},
+	}
+	const calendarDragActive = {
+		data: {
+			current: { event: draggedEvent, type: 'calendar-event' },
 		},
 	}
 
@@ -188,25 +217,127 @@ describe('CalendarDndContext', () => {
 		expect(sourceEvent.style.height).toBe('48px')
 	})
 
-	it('updates the event from the active drag data on drop', () => {
+	it('applies the cell delta to the event start when grabbed below its top', () => {
 		const onEventUpdate = mock((_event: CalendarEvent) => {})
 		render(getHarness({ onEventUpdate }))
 
 		act(() => {
+			dndContextProps.onDragStart?.({ active: calendarDragActive })
+			dndContextProps.onDragOver?.({
+				active: calendarDragActive,
+				over: timedOriginTarget,
+			})
 			dndContextProps.onDragEnd?.({
-				active: {
-					data: {
-						current: { event: draggedEvent, type: 'calendar-event' },
-					},
-				},
+				active: calendarDragActive,
 				over: timedDropTarget,
 			})
 		})
 
 		expect(onEventUpdate).toHaveBeenCalledTimes(1)
 		const updatedEvent = onEventUpdate.mock.calls.at(0)?.at(0)
-		expect(updatedEvent?.start.hour()).toBe(19)
+		expect(updatedEvent?.start.toISOString()).toBe('2025-01-16T18:00:00.000Z')
 		expect(updatedEvent?.end.diff(updatedEvent.start, 'hour')).toBe(2)
+	})
+
+	it('keeps the first hovered cell as the drag origin', () => {
+		const onEventUpdate = mock((_event: CalendarEvent) => {})
+		render(getHarness({ onEventUpdate }))
+
+		act(() => {
+			dndContextProps.onDragStart?.({ active: calendarDragActive })
+			dndContextProps.onDragOver?.({
+				active: calendarDragActive,
+				over: timedOriginTarget,
+			})
+			dndContextProps.onDragOver?.({
+				active: calendarDragActive,
+				over: timedDropTarget,
+			})
+			dndContextProps.onDragEnd?.({
+				active: calendarDragActive,
+				over: timedDropTarget,
+			})
+		})
+
+		const updatedEvent = onEventUpdate.mock.calls.at(0)?.at(0)
+		expect(updatedEvent?.start.toISOString()).toBe('2025-01-16T18:00:00.000Z')
+	})
+
+	it('clears the origin on cancel and falls back to an absolute drop', () => {
+		const onEventUpdate = mock((_event: CalendarEvent) => {})
+		render(getHarness({ onEventUpdate }))
+
+		act(() => {
+			dndContextProps.onDragStart?.({ active: calendarDragActive })
+			dndContextProps.onDragOver?.({
+				active: calendarDragActive,
+				over: timedOriginTarget,
+			})
+			dndContextProps.onDragCancel?.({ active: calendarDragActive })
+			dndContextProps.onDragStart?.({ active: calendarDragActive })
+			dndContextProps.onDragEnd?.({
+				active: calendarDragActive,
+				over: timedDropTarget,
+			})
+		})
+
+		const updatedEvent = onEventUpdate.mock.calls.at(0)?.at(0)
+		expect(updatedEvent?.start.toISOString()).toBe('2025-01-16T19:00:00.000Z')
+	})
+
+	it('uses the destination directly for an event dragged outside a grid', () => {
+		const onEventUpdate = mock((_event: CalendarEvent) => {})
+		const dialogDragActive = {
+			data: {
+				current: {
+					useDestinationTime: true,
+					event: draggedEvent,
+					type: 'calendar-event',
+				},
+			},
+		}
+		render(getHarness({ onEventUpdate }))
+
+		act(() => {
+			dndContextProps.onDragStart?.({ active: dialogDragActive })
+			dndContextProps.onDragOver?.({
+				active: dialogDragActive,
+				over: timedDropTarget,
+			})
+			dndContextProps.onDragEnd?.({
+				active: dialogDragActive,
+				over: timedDropTarget,
+			})
+		})
+
+		const updatedEvent = onEventUpdate.mock.calls.at(0)?.at(0)
+		expect(updatedEvent?.start.toISOString()).toBe('2025-01-16T19:00:00.000Z')
+	})
+
+	it('keeps disabled cells available as drag origins while marking them disabled', () => {
+		render(
+			<CalendarProvider
+				events={[draggedEvent]}
+				initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+				isCellDisabled={() => true}
+			>
+				<CalendarDndContext>
+					<DroppableCell
+						date={dayjs('2025-01-15T09:00:00.000Z')}
+						hour={9}
+						id="disabled-origin"
+						slotDurationMinutes={60}
+						type="day-cell"
+					/>
+				</CalendarDndContext>
+			</CalendarProvider>
+		)
+
+		expect(droppableHookArgs.disabled).toBeUndefined()
+		expect(droppableHookArgs.data?.disabled).toBe(true)
+		expect(
+			(droppableHookArgs.data?.start as ReturnType<typeof dayjs>).toISOString()
+		).toBe('2025-01-15T09:00:00.000Z')
 	})
 
 	it('ignores event data from another drag type', () => {

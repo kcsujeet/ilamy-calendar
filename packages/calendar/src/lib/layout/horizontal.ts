@@ -172,6 +172,7 @@ export const layoutHorizontal = ({
 			row,
 			isTruncatedStart,
 			isTruncatedEnd,
+			spanUnits,
 		})
 	}
 

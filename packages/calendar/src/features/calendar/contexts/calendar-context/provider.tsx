@@ -14,6 +14,7 @@ import type {
 	CalendarClassesOverride,
 	CellInfo,
 	DateRange,
+	EventSegment,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
@@ -29,7 +30,7 @@ export interface CalendarProviderProps {
 	firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
 	initialView?: CalendarView
 	initialDate?: Dayjs
-	renderEvent?: (event: CalendarEvent) => ReactNode
+	renderEvent?: (event: CalendarEvent, segment: EventSegment) => ReactNode
 	onEventClick?: (event: CalendarEvent) => void
 	onCellClick?: (info: CellInfo) => void
 	isCellDisabled?: (info: CellInfo) => boolean

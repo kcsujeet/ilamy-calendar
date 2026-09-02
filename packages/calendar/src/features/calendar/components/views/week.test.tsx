@@ -54,11 +54,6 @@ const renderWeekView = (props = {}) => {
 			events={mockEvents}
 			firstDayOfWeek={firstDayOfWeek}
 			initialDate={initialDate}
-			// Mirrors production, where the rendered view is resolved *from*
-			// `view` on the context (see IlamyCalendar). Without it the harness
-			// mounts the week grid while the context still says 'month', and
-			// anything that reads the active view sees the wrong one.
-			initialView="week"
 			locale={locale}
 			{...props}
 		>

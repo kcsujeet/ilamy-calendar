@@ -200,6 +200,22 @@ export interface VerticalColumnSpec {
 	resource?: Resource
 }
 
+/**
+ * What a cell lying outside the view's navigation period does.
+ *
+ * Only the month grid produces such cells today: it pads its first and last
+ * rows with days from the neighbouring months so every week is seven cells
+ * wide. A week is not contained by a month, so week view has no outside
+ * period at all and this never applies there.
+ *
+ * - `disabled` — greyed out, refusing clicks and drops. The default, and what
+ *   the month grid has always done.
+ * - `interactive` — an ordinary cell. Book on 1 April from March's grid.
+ * - `navigate` — clicking moves the calendar to that day, so the padded row
+ *   doubles as a way into the next or previous month.
+ */
+export type OutsidePeriodBehavior = 'disabled' | 'interactive' | 'navigate'
+
 /** One cell of a 'horizontal' row. */
 export interface HorizontalCellSpec {
 	id: string
@@ -208,6 +224,12 @@ export interface HorizontalCellSpec {
 	days?: Dayjs[]
 	gridType: 'day' | 'hour'
 	className?: string
+	/**
+	 * This cell is shown for continuity but falls outside the period the view
+	 * navigates by. Set by the view that pads its grid; `outsidePeriodBehavior`
+	 * decides what that means for the reader.
+	 */
+	outsidePeriod?: boolean
 }
 
 /**
@@ -258,6 +280,12 @@ export interface PluginView {
 	component?: ComponentType
 	/** How far prev/next steps when `navigationStep` is absent ('week', 'month', …). */
 	navigationUnit?: ManipulateType
+	/**
+	 * How this view treats cells it marks `outsidePeriod`. Only meaningful for
+	 * a view that produces them. The calendar-level prop of the same name
+	 * overrides this. @default 'disabled'
+	 */
+	outsidePeriodBehavior?: OutsidePeriodBehavior
 	/**
 	 * How far prev/next jumps; defaults to one `navigationUnit`. Custom-duration
 	 * views (a 40-day grid, a 4-day vertical view) set `{ amount: 40, unit: 'day' }`

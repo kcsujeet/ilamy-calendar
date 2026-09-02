@@ -2,6 +2,7 @@ import type {
 	BusinessHours,
 	CalendarEvent,
 	IlamyPlugin,
+	OutsidePeriodBehavior,
 	Resource,
 	WeekDays,
 } from '@ilamy/types'
@@ -430,4 +431,27 @@ export interface IlamyCalendarProps {
 	 *   mode (non-contiguous days would break multi-day event positioning).
 	 */
 	weekViewGranularity?: 'hourly' | 'daily'
+	/**
+	 * What happens to cells that lie outside the period the active view
+	 * navigates by. Only the month grid has such cells: it pads its first and
+	 * last rows with days from the neighbouring months so every week is seven
+	 * cells wide. A week is not contained by a month, so week and day views
+	 * have no outside period and this does nothing there.
+	 *
+	 * - `'disabled'` (default) — greyed out, refusing clicks and drops.
+	 * - `'interactive'` — ordinary cells, so 1 April can be booked from March's
+	 *   grid without navigating first.
+	 * - `'navigate'` — clicking moves the calendar to that day, turning the
+	 *   padded rows into a way into the neighbouring month.
+	 *
+	 * Overrides the active view's own default, so a plugin view can ship a
+	 * sensible one and a consumer can still disagree.
+	 *
+	 * @default 'disabled'
+	 * @example
+	 * ```tsx
+	 * <IlamyCalendar outsidePeriodBehavior="navigate" />
+	 * ```
+	 */
+	outsidePeriodBehavior?: OutsidePeriodBehavior
 }

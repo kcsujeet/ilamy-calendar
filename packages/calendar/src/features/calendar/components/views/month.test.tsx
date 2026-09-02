@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import {
@@ -239,21 +239,73 @@ describe('MonthView', () => {
 
 	// The month grid pads its first and last rows with days from the
 	// neighbouring months so every week is seven cells wide. Those cells are
-	// context, not part of the month being edited, and stay disabled. Pinned
-	// because the same check used to run in week and day view, where the days
-	// are not padding at all.
-	test('disables the days padded in from the neighbouring months', () => {
-		cleanup()
+	// context, not part of the month being edited. What they do about it is
+	// `outsidePeriodBehavior`; the default is to stay out of the way.
+	describe('days padded in from the neighbouring months', () => {
 		// March 2025 starts on a Saturday, so the first row is padded with
 		// 23-28 February and the last with 1-5 April.
-		renderMonthView({ initialDate: dayjs('2025-03-15T00:00:00.000Z') })
-
+		const march = dayjs('2025-03-15T00:00:00.000Z')
 		const cellOn = (date: string) => screen.getByTestId(`day-cell-${date}`)
 
-		expect(cellOn('2025-02-26').dataset.disabled).toBe('true')
-		expect(cellOn('2025-04-02').dataset.disabled).toBe('true')
-		// A day the month actually owns stays interactive.
-		expect(cellOn('2025-03-12').dataset.disabled).toBe('false')
+		const renderMarch = (props = {}) => {
+			cleanup()
+			renderMonthView({ initialDate: march, ...props })
+		}
+
+		test('are disabled by default', () => {
+			renderMarch()
+
+			expect(cellOn('2025-02-26').dataset.disabled).toBe('true')
+			expect(cellOn('2025-04-02').dataset.disabled).toBe('true')
+			// A day the month actually owns stays interactive.
+			expect(cellOn('2025-03-12').dataset.disabled).toBe('false')
+		})
+
+		test('are ordinary cells when interactive', () => {
+			renderMarch({ outsidePeriodBehavior: 'interactive' })
+
+			expect(cellOn('2025-02-26').dataset.disabled).toBe('false')
+			expect(cellOn('2025-04-02').dataset.disabled).toBe('false')
+		})
+
+		test('open the create flow when interactive, rather than navigating', () => {
+			const onCellClick = mock(() => {})
+			renderMarch({ outsidePeriodBehavior: 'interactive', onCellClick })
+
+			fireEvent.click(cellOn('2025-04-02'))
+
+			expect(onCellClick).toHaveBeenCalledTimes(1)
+		})
+
+		test('move the calendar to that day when navigate', () => {
+			const onDateChange = mock(() => {})
+			renderMarch({ outsidePeriodBehavior: 'navigate', onDateChange })
+
+			fireEvent.click(cellOn('2025-04-02'))
+
+			// The grid now shows April, so the header follows the click.
+			expect(screen.getByTestId('current-date-month')).toHaveTextContent('3')
+			expect(onDateChange).toHaveBeenCalled()
+		})
+
+		test('do not also open the create flow when navigate', () => {
+			const onCellClick = mock(() => {})
+			renderMarch({ outsidePeriodBehavior: 'navigate', onCellClick })
+
+			fireEvent.click(cellOn('2025-04-02'))
+
+			// One click, one answer: arriving in April is the whole action.
+			expect(onCellClick).not.toHaveBeenCalled()
+		})
+
+		test('leave days the month owns alone in every mode', () => {
+			const onCellClick = mock(() => {})
+			renderMarch({ outsidePeriodBehavior: 'navigate', onCellClick })
+
+			fireEvent.click(cellOn('2025-03-12'))
+
+			expect(onCellClick).toHaveBeenCalledTimes(1)
+		})
 	})
 })
 

@@ -2,6 +2,7 @@ import type {
 	BusinessHours,
 	CalendarEvent,
 	IlamyPlugin,
+	OutsidePeriodBehavior,
 	Resource,
 } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
@@ -78,6 +79,11 @@ export interface CalendarProviderProps {
 	orientation?: 'horizontal' | 'vertical'
 	/** Week-view granularity for resource weeks. @default 'hourly' */
 	weekViewGranularity?: 'hourly' | 'daily'
+	/**
+	 * What cells outside the view's navigation period do — month padding, and
+	 * nothing else today. Overrides the active view's own default.
+	 */
+	outsidePeriodBehavior?: OutsidePeriodBehavior
 }
 
 // Module constant, not a per-render `?? []`: keeps the engine's event store
@@ -137,6 +143,7 @@ const useCalendarContextValue = (
 		renderResource,
 		orientation,
 		weekViewGranularity,
+		outsidePeriodBehavior,
 	} = props
 
 	const engine = useCalendarEngine({
@@ -202,9 +209,21 @@ const useCalendarContextValue = (
 			slotDuration,
 			scrollTime,
 			renderResource,
+			// The prop wins; otherwise the active view states its own default,
+			// because only a view that pads its grid has an opinion worth
+			// having. Resolved here so a grid of 42 cells does not each look it
+			// up for themselves.
+			outsidePeriodBehavior:
+				outsidePeriodBehavior ??
+				calendarEngine
+					.getViews()
+					.find((candidate) => candidate.name === calendarEngine.view)
+					?.outsidePeriodBehavior ??
+				'disabled',
 		}
 	}, [
 		engine,
+		outsidePeriodBehavior,
 		renderEvent,
 		renderResource,
 		isCellDisabled,

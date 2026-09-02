@@ -110,6 +110,11 @@ const monthRows = (
 			day,
 			className: 'w-auto',
 			gridType: 'day' as const,
+			// The grid runs whole weeks, so the first and last rows reach into
+			// the neighbouring months. Those days are context, not part of the
+			// month being edited — the only place in the calendar where that is
+			// true, and the reason this flag exists.
+			outsidePeriod: day.month() !== date.month(),
 		})),
 		className: 'flex-1',
 		showDayNumber: true,
@@ -121,6 +126,10 @@ export const monthView: PluginView = {
 	label: 'month',
 	icon: Grid3x3,
 	navigationUnit: 'month',
+	// What the month grid has always done with its padding. Consumers who want
+	// those days bookable, or want them to page into the neighbouring month,
+	// override it with the calendar's `outsidePeriodBehavior`.
+	outsidePeriodBehavior: 'disabled',
 	layout: 'horizontal',
 	supportsResources: true,
 	range: (date, config) => getMonthGridRange(date, config.firstDayOfWeek),

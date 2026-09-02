@@ -1,4 +1,8 @@
-import type { CalendarEvent, Resource } from '@ilamy/types'
+import type {
+	CalendarEvent,
+	OutsidePeriodBehavior,
+	Resource,
+} from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { createContext } from 'react'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
@@ -49,6 +53,11 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	scrollTime?: string
 	/** Custom render for resource header cells (resource axis presentation). */
 	renderResource?: (resource: Resource) => React.ReactNode
+	/**
+	 * Resolved once here rather than per cell: the calendar-level prop if given,
+	 * else the active view's own default, else 'disabled'.
+	 */
+	outsidePeriodBehavior: OutsidePeriodBehavior
 }
 
 // CalendarContext is kept for internal Provider usage

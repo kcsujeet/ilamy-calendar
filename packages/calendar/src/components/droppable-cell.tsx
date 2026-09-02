@@ -10,6 +10,12 @@ interface DroppableCellProps {
 	id: string
 	type: 'day-cell' | 'time-cell'
 	date: Dayjs
+	/**
+	 * Clicking this cell moves the calendar to its date instead of opening the
+	 * create flow. Set for cells outside the view's navigation period when the
+	 * calendar is configured to page into them.
+	 */
+	navigateOnClick?: boolean
 	hour?: number
 	minute?: number
 	/**
@@ -72,6 +78,7 @@ export function DroppableCell({
 	style,
 	'data-testid': dataTestId,
 	disabled = false,
+	navigateOnClick = false,
 }: DroppableCellProps) {
 	const {
 		onCellClick,
@@ -82,6 +89,7 @@ export function DroppableCell({
 		disableCellClick,
 		classesOverride,
 		view,
+		selectDate,
 	} = useSmartCalendarContext()
 
 	const { start, end } = getCellRange(date, hour, minute, slotDurationMinutes)
@@ -102,6 +110,13 @@ export function DroppableCell({
 	const handleCellClick = (e: React.MouseEvent) => {
 		e.stopPropagation()
 		if (clickBlocked) {
+			return
+		}
+		// Paging into the neighbouring month is the whole action here: opening
+		// the create flow as well would be two answers to one click, on a date
+		// the reader is only just arriving at.
+		if (navigateOnClick) {
+			selectDate(date)
 			return
 		}
 		onCellClick(cellInfo)

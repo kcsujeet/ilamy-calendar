@@ -9,6 +9,7 @@ import {
 	isBusinessDay,
 	isBusinessHour,
 } from '@/features/calendar/utils/business-hours'
+import { OUTSIDE_PERIOD_CELL_CLASSNAME } from '@/lib/constants'
 import { filterEventsForResource } from '@/lib/events/pipeline'
 import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
@@ -67,6 +68,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		eventHeight,
 		onMoreEventsClick,
 		outsidePeriodBehavior,
+		classesOverride,
 	} = useSmartCalendarContext()
 	const effectiveBusinessHours = useEffectiveBusinessHours(resourceId)
 
@@ -124,6 +126,19 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	const disabledByPeriod = outsidePeriod && outsidePeriodBehavior === 'disabled'
 	const navigatesOnClick = outsidePeriod && outsidePeriodBehavior === 'navigate'
 
+	/*
+	 * Interaction and appearance are separate questions. Making padding
+	 * clickable should not make it look like part of the month — a grid whose
+	 * first and last rows are indistinguishable from the rest no longer says
+	 * which month it is showing. Cells the period disables are left alone: they
+	 * already wear `disabledCell`, and stacking both would change a look that
+	 * has not changed.
+	 */
+	const outsidePeriodClassName =
+		outsidePeriod && !disabledByPeriod
+			? (classesOverride?.outsidePeriodCell ?? OUTSIDE_PERIOD_CELL_CLASSNAME)
+			: undefined
+
 	const hiddenEventsCount = todayEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
 
@@ -156,6 +171,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				allDay={allDay}
 				className={cn(
 					'cursor-pointer overflow-clip p-1 bg-background hover:bg-accent min-h-[60px] relative min-w-0',
+					outsidePeriodClassName,
 					className
 				)}
 				data-testid={dataTestId || testId}

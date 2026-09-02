@@ -31,6 +31,16 @@ export interface CalendarClassesOverride {
 	 * @example "bg-gray-100 text-gray-400 cursor-not-allowed"
 	 */
 	disabledCell?: string
+	/**
+	 * Class name for cells outside the view's navigation period that are still
+	 * usable — month padding under an `outsidePeriodBehavior` of `interactive`
+	 * or `navigate`. Cells the period *disables* keep `disabledCell`.
+	 *
+	 * Pass an empty string to draw them exactly like any other cell.
+	 * @default "bg-[color-mix(in_oklch,var(--background),var(--foreground)_1.5%)] text-muted-foreground"
+	 * @example "bg-gray-50"
+	 */
+	outsidePeriodCell?: string
 }
 
 /**

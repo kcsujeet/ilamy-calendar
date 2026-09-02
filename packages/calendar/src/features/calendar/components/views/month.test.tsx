@@ -11,6 +11,10 @@ import {
 import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import {
+	DISABLED_CELL_CLASSNAME,
+	OUTSIDE_PERIOD_CELL_CLASSNAME,
+} from '@/lib/constants'
 import { generateMockEvents } from '@/testing/generator'
 import { MonthView } from '@/testing/view-harnesses'
 
@@ -296,6 +300,38 @@ describe('MonthView', () => {
 
 			// One click, one answer: arriving in April is the whole action.
 			expect(onCellClick).not.toHaveBeenCalled()
+		})
+
+		test('are still marked out when interactive, so the month stays legible', () => {
+			renderMarch({ outsidePeriodBehavior: 'interactive' })
+
+			// Usable, but not drawn as though they belonged to March.
+			expect(cellOn('2025-04-02').className).toContain(
+				OUTSIDE_PERIOD_CELL_CLASSNAME
+			)
+			expect(cellOn('2025-03-12').className).not.toContain(
+				OUTSIDE_PERIOD_CELL_CLASSNAME
+			)
+		})
+
+		test('keep the disabled look, not both, when the period disables them', () => {
+			renderMarch()
+
+			expect(cellOn('2025-04-02').className).toContain(DISABLED_CELL_CLASSNAME)
+			expect(cellOn('2025-04-02').className).not.toContain(
+				OUTSIDE_PERIOD_CELL_CLASSNAME
+			)
+		})
+
+		test('can be drawn like any other cell', () => {
+			renderMarch({
+				outsidePeriodBehavior: 'interactive',
+				classesOverride: { outsidePeriodCell: '' },
+			})
+
+			expect(cellOn('2025-04-02').className).not.toContain(
+				OUTSIDE_PERIOD_CELL_CLASSNAME
+			)
 		})
 
 		test('leave days the month owns alone in every mode', () => {

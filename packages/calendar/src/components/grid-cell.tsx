@@ -1,4 +1,4 @@
-import type { CalendarEvent } from '@ilamy/types'
+import type { CalendarEvent, OutsidePeriodBehavior } from '@ilamy/types'
 import { DayLabel } from '@ilamy/ui/components/day-label'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
@@ -9,6 +9,7 @@ import {
 	isBusinessDay,
 	isBusinessHour,
 } from '@/features/calendar/utils/business-hours'
+import { OUTSIDE_PERIOD_CELL_CLASSNAME } from '@/lib/constants'
 import { filterEventsForResource } from '@/lib/events/pipeline'
 import { isToday } from '@/lib/utils/date-utils'
 import { keys } from '@/lib/utils/keys'
@@ -28,9 +29,57 @@ interface GridProps {
 	shouldRenderEvents?: boolean // Flag to determine if events should be rendered
 	allDay?: boolean // Flag to indicate if this is an all-day cell
 	showDayNumber?: boolean // Flag to show or hide the day number
+	/**
+	 * This day lies outside the period the view navigates by — month padding,
+	 * and nothing else today. `outsidePeriodBehavior` decides what that means.
+	 */
+	outsidePeriod?: boolean
 	children?: React.ReactNode
 	'data-testid'?: string
 	precomputedEvents?: CalendarEvent[]
+}
+
+/**
+ * What being outside the view's navigation period does to a cell.
+ *
+ * Whether a cell is padding is the view's call, not something to infer here by
+ * comparing months: a week spanning 31 March to 6 April is not padding on
+ * either side, and that comparison used to disable half of it.
+ *
+ * Interaction and appearance are separate questions, which is why this returns
+ * both. Making padding clickable should not make it look like part of the
+ * month — a grid whose first and last rows are indistinguishable from the rest
+ * no longer says which month it is showing. Cells the period disables get no
+ * class of their own: they already wear `disabledCell`, and stacking both would
+ * change a look that has not changed.
+ */
+interface OutsidePeriodPresentation {
+	disabled: boolean
+	navigateOnClick: boolean
+	className?: string
+}
+
+const INSIDE_PERIOD: OutsidePeriodPresentation = {
+	disabled: false,
+	navigateOnClick: false,
+}
+
+const outsidePeriodPresentation = (
+	outsidePeriod: boolean,
+	behavior: OutsidePeriodBehavior,
+	override: string | undefined
+): OutsidePeriodPresentation => {
+	if (!outsidePeriod) {
+		return INSIDE_PERIOD
+	}
+	if (behavior === 'disabled') {
+		return { disabled: true, navigateOnClick: false }
+	}
+	return {
+		disabled: false,
+		navigateOnClick: behavior === 'navigate',
+		className: override ?? OUTSIDE_PERIOD_CELL_CLASSNAME,
+	}
 }
 
 const NoMemoGridCell: React.FC<GridProps> = ({
@@ -46,6 +95,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	precomputedEvents,
 	'data-testid': dataTestId,
 	showDayNumber = false,
+	outsidePeriod = false,
 	children,
 }) => {
 	const allEventsDialogRef = React.useRef<{
@@ -56,11 +106,12 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	const {
 		dayMaxEvents = 0,
 		getEventsForDateRange,
-		currentDate,
 		t,
 		eventSpacing,
 		eventHeight,
 		onMoreEventsClick,
+		outsidePeriodBehavior,
+		classesOverride,
 	} = useSmartCalendarContext()
 	const effectiveBusinessHours = useEffectiveBusinessHours(resourceId)
 
@@ -112,7 +163,11 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		allEventsDialogRef.current?.open()
 	}
 
-	const isCurrentMonth = day.month() === currentDate.month()
+	const period = outsidePeriodPresentation(
+		outsidePeriod,
+		outsidePeriodBehavior,
+		classesOverride?.outsidePeriodCell
+	)
 
 	const hiddenEventsCount = todayEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
@@ -146,14 +201,16 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				allDay={allDay}
 				className={cn(
 					'cursor-pointer overflow-clip p-1 bg-background hover:bg-accent min-h-[60px] relative min-w-0',
+					period.className,
 					className
 				)}
 				data-testid={dataTestId || testId}
 				date={day}
-				disabled={!isBusiness || !isCurrentMonth}
+				disabled={!isBusiness || period.disabled}
 				hour={hour}
 				id={droppableId}
 				minute={minute}
+				navigateOnClick={period.navigateOnClick}
 				resourceId={resourceId}
 				slotDurationMinutes={slotDurationMinutes}
 				type="day-cell"

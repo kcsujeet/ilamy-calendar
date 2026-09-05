@@ -13,6 +13,14 @@ export const DAY_MAX_EVENTS_DEFAULT = 4 // Default max events per day
 export const DISABLED_CELL_CLASSNAME =
 	'bg-[color-mix(in_oklch,var(--background),var(--foreground)_3%)] text-muted-foreground pointer-events-none'
 
+// A cell outside the view's navigation period that is still usable — month
+// padding under `interactive` or `navigate`. It cannot borrow the disabled look
+// (it is not disabled) but it cannot look like an ordinary cell either, or the
+// month boundary disappears and the grid stops saying which month it is
+// showing. Half the mix of the disabled fill: visible as a band, not as a wall.
+export const OUTSIDE_PERIOD_CELL_CLASSNAME =
+	'bg-[color-mix(in_oklch,var(--background),var(--foreground)_1.5%)] text-muted-foreground'
+
 export const WEEK_DAYS_NUMBER_MAP: Record<WeekDays, number> = {
 	sunday: 0,
 	monday: 1,

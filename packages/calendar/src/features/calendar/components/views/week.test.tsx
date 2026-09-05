@@ -1317,4 +1317,68 @@ describe('WeekView', () => {
 			expect(scrollSpy).not.toHaveBeenCalled()
 		})
 	})
+
+	// A week is not contained by a month: weeks 5 and 6 of most months straddle
+	// a boundary, so a fix that only looked at `currentDate` would leave half
+	// the visible week dead. Monday 31 March / Tuesday 1 April is the smallest
+	// real case, and both directions matter because `currentDate` can sit on
+	// either side of the boundary depending on which way you navigated in.
+	describe('weeks spanning two months', () => {
+		const monday = dayjs('2025-03-31T00:00:00.000Z') // Mon 31 Mar 2025
+		const tuesday = dayjs('2025-04-01T00:00:00.000Z') // Tue 1 Apr 2025
+
+		const cellAt = (day: Dayjs) =>
+			screen.getByTestId(`vertical-cell-${day.format('YYYY-MM-DD')}-10-00`)
+
+		const renderCrossMonthWeek = (initialDate: Dayjs) => {
+			cleanup()
+			renderWeekView({ initialDate, firstDayOfWeek: 1 })
+		}
+
+		test("keeps next month's days interactive when navigated in from March", () => {
+			renderCrossMonthWeek(monday)
+
+			expect(cellAt(tuesday).dataset.disabled).toBe('false')
+			expect(cellAt(tuesday).className).not.toContain(DISABLED_CELL_CLASSNAME)
+			expect(cellAt(tuesday).className).toContain('cursor-pointer')
+		})
+
+		test("keeps next month's all-day cells interactive", () => {
+			renderCrossMonthWeek(monday)
+			const allDayCell = screen.getByTestId(
+				`day-cell-${tuesday.format('YYYY-MM-DD')}`
+			)
+
+			expect(allDayCell.dataset.disabled).toBe('false')
+		})
+
+		test("keeps last month's days interactive when navigated in from April", () => {
+			renderCrossMonthWeek(tuesday)
+
+			expect(cellAt(monday).dataset.disabled).toBe('false')
+			expect(cellAt(monday).className).not.toContain(DISABLED_CELL_CLASSNAME)
+			expect(cellAt(monday).className).toContain('cursor-pointer')
+		})
+
+		test("still disables next month's days outside business hours", () => {
+			cleanup()
+			renderWeekView({
+				initialDate: monday,
+				firstDayOfWeek: 1,
+				businessHours: {
+					daysOfWeek: ['monday', 'tuesday'],
+					startTime: 9,
+					endTime: 17,
+				},
+			})
+			const outsideHours = screen.getByTestId(
+				`vertical-cell-${tuesday.format('YYYY-MM-DD')}-03-00`
+			)
+
+			// The two reasons are independent: crossing into April no longer
+			// disables anything, but 3am is still outside business hours.
+			expect(cellAt(tuesday).dataset.disabled).toBe('false')
+			expect(outsideHours.dataset.disabled).toBe('true')
+		})
+	})
 })

@@ -30,6 +30,7 @@ function DraggableEventUnmemoized({
 	disableDrag = false,
 	isTruncatedStart = false,
 	isTruncatedEnd = false,
+	spanUnits = 1,
 	sourceResourceId,
 }: {
 	elementId: string
@@ -46,6 +47,11 @@ function DraggableEventUnmemoized({
 	/** Set by the horizontal events layer when the bar continues past the visible range. */
 	isTruncatedStart?: boolean
 	isTruncatedEnd?: boolean
+	/**
+	 * Grid units this bar covers, from the horizontal layout. One for a
+	 * vertical (time-column) event, which occupies a single day.
+	 */
+	spanUnits?: number
 }) {
 	const { onEventClick, renderEvent, disableEventClick, disableDragAndDrop } =
 		useSmartCalendarContext()
@@ -123,8 +129,18 @@ function DraggableEventUnmemoized({
 			{...attributes}
 			{...listeners}
 		>
-			{/* Use custom renderEvent from context if available, otherwise use default */}
-			{renderEvent ? renderEvent(event) : <DefaultEventContent />}
+			{/*
+				Use custom renderEvent from context if available, otherwise use
+				default. The segment travels with the event because the default
+				content above reads all of it — the border radius, both
+				continuation markers and their padding — and a custom renderer
+				that cannot see it has no way to draw the same thing.
+			*/}
+			{renderEvent ? (
+				renderEvent(event, { isTruncatedStart, isTruncatedEnd, spanUnits })
+			) : (
+				<DefaultEventContent />
+			)}
 		</AnimatedSection>
 	)
 }
@@ -139,7 +155,8 @@ export const DraggableEvent = memo(
 			prevProps.className === nextProps.className &&
 			prevProps.event === nextProps.event &&
 			prevProps.isTruncatedStart === nextProps.isTruncatedStart &&
-			prevProps.isTruncatedEnd === nextProps.isTruncatedEnd
+			prevProps.isTruncatedEnd === nextProps.isTruncatedEnd &&
+			prevProps.spanUnits === nextProps.spanUnits
 		)
 	}
 )

@@ -22,6 +22,33 @@ export type SlotDuration = 15 | 30 | 60
  * Custom class names for calendar styling.
  * Allows users to override default styles for various calendar elements.
  */
+/**
+ * Which slice of an event a `renderEvent` call is drawing.
+ *
+ * An event too long for the row it starts in is cut at the boundary and drawn
+ * as one bar per row, each through its own `renderEvent` call. Without knowing
+ * which slice it has, a custom renderer cannot tell a real end from a break —
+ * so it rounds both, marks neither, and two halves of one booking read as two
+ * bookings that happen to sit either side of a Sunday. The built-in renderer
+ * has always had this; a custom one had no way to ask.
+ */
+export interface EventSegment {
+	/** The event starts before this bar; it is a continuation. */
+	isTruncatedStart: boolean
+	/** The event runs past this bar and resumes in the next row. */
+	isTruncatedEnd: boolean
+	/**
+	 * Grid units this bar covers — days in a day grid, hours in an hour one.
+	 * One for a vertical (time-column) event, which occupies a single day.
+	 *
+	 * What it buys you is the width of a single unit, `100 / spanUnits` percent
+	 * of the bar, which is the only way to place content against a particular
+	 * day of a multi-day bar: a start time over the day it starts on rather
+	 * than floating at the far end of the span, where it reads as a finish.
+	 */
+	spanUnits: number
+}
+
 export interface CalendarClassesOverride {
 	/**
 	 * Class name for disabled cells (non-business hours).
@@ -134,7 +161,7 @@ export interface IlamyCalendarProps {
 	 * Custom render function for calendar events.
 	 * If provided, it will override the default event rendering.
 	 */
-	renderEvent?: (event: CalendarEvent) => React.ReactNode
+	renderEvent?: (event: CalendarEvent, segment: EventSegment) => React.ReactNode
 	/**
 	 * Callback when an event is clicked.
 	 * Provides the clicked event object.

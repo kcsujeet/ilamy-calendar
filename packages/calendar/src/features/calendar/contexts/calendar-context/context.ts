@@ -6,6 +6,7 @@ import type { CalendarEngineReturn } from '@/features/calendar/hooks/use-calenda
 import type {
 	CalendarClassesOverride,
 	CellInfo,
+	EventSegment,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
@@ -18,7 +19,7 @@ import type { TimeFormat } from '@/types'
  * `IlamyCalendarApi` (see use-smart-calendar-context).
  */
 export interface CalendarContextType extends CalendarEngineReturn {
-	renderEvent?: (event: CalendarEvent) => React.ReactNode
+	renderEvent?: (event: CalendarEvent, segment: EventSegment) => React.ReactNode
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellInfo) => void
 	isCellDisabled?: (info: CellInfo) => boolean

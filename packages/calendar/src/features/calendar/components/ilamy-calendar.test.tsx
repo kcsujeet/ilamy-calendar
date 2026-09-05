@@ -11,12 +11,21 @@ import {
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react'
 import { createContext, useContext } from 'react'
 import { RRule } from 'rrule'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { useIlamyCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import type { IlamyCalendarPropEvent } from '@/features/calendar/types'
+import type {
+	IlamyCalendarPropEvent,
+	IlamyCalendarProps,
+} from '@/features/calendar/types'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { IlamyCalendar } from './ilamy-calendar'
 
@@ -1239,6 +1248,53 @@ describe('IlamyCalendar - timezone prop', () => {
 		const parsedBeforeMount = dayjs('2025-01-15T12:00:00.000Z')
 
 		expect(renderWithTokyo(parsedBeforeMount)).toBe('21:00 +09:00')
+	})
+
+	/*
+	 * The same question asked of the date the calendar OPENS on. `initialDate`
+	 * is parsed before the zone is known, so the calendar was showing whichever
+	 * day that date fell on in the machine's zone — off by one for any reader
+	 * far enough from the workspace, which is the case the prop exists for.
+	 *
+	 * Two zones either side of every machine, so neither passes by accident.
+	 */
+	const DayProbe = () => (
+		<span data-testid="probe-day">
+			{useIlamyCalendarContext().currentDate.format('YYYY-MM-DD')}
+		</span>
+	)
+
+	const dayShownFor = (
+		timezone: string,
+		initialDate?: IlamyCalendarProps['initialDate']
+	) => {
+		cleanup()
+		render(
+			<IlamyCalendar
+				headerComponent={<DayProbe />}
+				initialDate={initialDate}
+				initialView="day"
+				timezone={timezone}
+			/>
+		)
+		return screen.getByTestId('probe-day').textContent
+	}
+
+	it('opens on the date it was given, wherever the reader is', () => {
+		// A date, not a moment: the consumer named 10 March, so 10 March is what
+		// opens — in Kiritimati (+14) and in Midway (-11) alike.
+		expect(dayShownFor('Pacific/Kiritimati', '2025-03-10')).toBe('2025-03-10')
+		expect(dayShownFor('Pacific/Midway', '2025-03-10')).toBe('2025-03-10')
+	})
+
+	it("opens on the calendar's today when given no date", () => {
+		// No date is a different question: "now", answered on the calendar's
+		// clock rather than the machine's. Near midnight those are different days.
+		for (const timezone of ['Pacific/Kiritimati', 'Pacific/Midway']) {
+			expect(dayShownFor(timezone)).toBe(
+				dayjs().tz(timezone).format('YYYY-MM-DD')
+			)
+		}
 	})
 })
 

@@ -101,6 +101,40 @@ interface CalendarEngineHandlers {
 	handleDateClick: (info: CellInfo) => void
 }
 
+/**
+ * The date the calendar opens on, read on the calendar's clock rather than the
+ * machine's.
+ *
+ * `initialDate` is parsed by the consumer's own module, or by `safeDate` in
+ * `IlamyCalendar`, and both run before the zone is known — so the calendar was
+ * opening on whichever day that date fell on where the browser happens to be.
+ * For a reader far enough from the workspace that is the wrong day, which is
+ * exactly the reader `timezone` exists for.
+ *
+ * The two cases are different questions and get different answers:
+ *
+ * - A date GIVEN is a calendar date. The consumer wrote 10 March; 10 March is
+ *   what opens. Its wall clock is kept and read in the calendar's zone.
+ * - NO date is "now". That is a moment, so the instant is kept and read on the
+ *   calendar's clock — near midnight the calendar's today and the reader's are
+ *   different days, and the calendar's is the one it should show.
+ *
+ * Called during render, which is safe: `dayjs.tz` with an explicit zone is a
+ * pure call, unlike the `setDefault` below that has to wait for an effect.
+ */
+const anchorInitialDate = (
+	initialDate: Dayjs | undefined,
+	timezone: string | undefined
+): Dayjs => {
+	if (!timezone) {
+		return initialDate ?? dayjs()
+	}
+	if (!initialDate) {
+		return dayjs().tz(timezone)
+	}
+	return dayjs.tz(initialDate.format('YYYY-MM-DDTHH:mm:ss'), timezone)
+}
+
 export const useCalendarEngine = (
 	config: CalendarEngineConfig
 ): CalendarEngineReturn & CalendarEngineHandlers => {
@@ -108,7 +142,7 @@ export const useCalendarEngine = (
 		events,
 		firstDayOfWeek = 0,
 		initialView = 'month',
-		initialDate = dayjs(),
+		initialDate,
 		dayMaxEvents,
 		businessHours,
 		onEventAdd,
@@ -149,7 +183,7 @@ export const useCalendarEngine = (
 	const pluginRuntime = useMemo(() => createPluginRuntime(plugins), [plugins])
 
 	const navigation = useCalendarNavigation({
-		initialDate,
+		initialDate: anchorInitialDate(initialDate, timezone),
 		initialView,
 		firstDayOfWeek,
 		onDateChange,

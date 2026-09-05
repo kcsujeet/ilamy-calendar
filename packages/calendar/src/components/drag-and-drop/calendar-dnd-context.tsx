@@ -13,7 +13,7 @@ import {
 } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
 import type React from 'react'
-import { useRef } from 'react'
+import { useId, useRef } from 'react'
 import { EventMutationScopeSlot } from '@/components/calendar-slots'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useScopedEventMutation } from '@/hooks/use-scoped-event-mutation'
@@ -25,6 +25,21 @@ interface CalendarDndContextProps {
 }
 
 export function CalendarDndContext({ children }: CalendarDndContextProps) {
+	/*
+	 * dnd-kit derives the `aria-describedby` it puts on every draggable from a
+	 * module-level counter that is never reset. In the browser that is fine —
+	 * the module is fresh per page load. On a server it is not: the module
+	 * lives for the life of the process, so the counter carries across
+	 * requests and the second render of a page emits `DndDescribedBy-1` where
+	 * the client, starting over at 0, emits `DndDescribedBy-0`. Every
+	 * server-rendered calendar after the first then fails to hydrate.
+	 *
+	 * `useId` is React's answer to exactly this: it derives the id from the
+	 * component's position in the tree, so server and client agree however many
+	 * requests the process has served. Passing it through means consumers do
+	 * not have to know any of this.
+	 */
+	const dndContextId = useId()
 	const activeEventRef = useRef<CalendarEvent>(null)
 	const dragOverlayRef = useRef<{
 		setActiveEvent: (event: CalendarEvent | null) => void
@@ -113,6 +128,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 		<>
 			<DndContext
 				collisionDetection={pointerWithin}
+				id={dndContextId}
 				onDragCancel={handleDragCancel}
 				onDragEnd={handleDragEnd}
 				onDragStart={handleDragStart}

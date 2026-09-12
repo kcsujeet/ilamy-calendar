@@ -1332,27 +1332,33 @@ describe('WeekView', () => {
 		const monday = dayjs('2025-03-31T00:00:00.000Z') // Mon 31 Mar 2025
 		const tuesday = dayjs('2025-04-01T00:00:00.000Z') // Tue 1 Apr 2025
 
-		const cellAt = (day: Dayjs) =>
-			screen.getByTestId(`vertical-cell-${day.format('YYYY-MM-DD')}-10-00`)
+		// Looked up by absolute date, not by formatting a fixture: formatting
+		// resolves through the machine clock, which moves the week these tests
+		// are about.
+		const cellAt = (date: string) =>
+			screen.getByTestId(`vertical-cell-${date}-10-00`)
 
 		const renderCrossMonthWeek = (initialDate: Dayjs) => {
 			cleanup()
-			renderWeekView({ initialDate, firstDayOfWeek: 1 })
+			// The fixtures are UTC instants, so the calendar has to read them on
+			// the same clock or 31 March lands on the 30th and the week no
+			// longer straddles the boundary.
+			renderWeekView({ initialDate, firstDayOfWeek: 1, timezone: 'UTC' })
 		}
 
 		test("keeps next month's days interactive when navigated in from March", () => {
 			renderCrossMonthWeek(monday)
 
-			expect(cellAt(tuesday).dataset.disabled).toBe('false')
-			expect(cellAt(tuesday).className).not.toContain(DISABLED_CELL_CLASSNAME)
-			expect(cellAt(tuesday).className).toContain('cursor-pointer')
+			expect(cellAt('2025-04-01').dataset.disabled).toBe('false')
+			expect(cellAt('2025-04-01').className).not.toContain(
+				DISABLED_CELL_CLASSNAME
+			)
+			expect(cellAt('2025-04-01').className).toContain('cursor-pointer')
 		})
 
 		test("keeps next month's all-day cells interactive", () => {
 			renderCrossMonthWeek(monday)
-			const allDayCell = screen.getByTestId(
-				`day-cell-${tuesday.format('YYYY-MM-DD')}`
-			)
+			const allDayCell = screen.getByTestId('day-cell-2025-04-01')
 
 			expect(allDayCell.dataset.disabled).toBe('false')
 		})
@@ -1360,9 +1366,11 @@ describe('WeekView', () => {
 		test("keeps last month's days interactive when navigated in from April", () => {
 			renderCrossMonthWeek(tuesday)
 
-			expect(cellAt(monday).dataset.disabled).toBe('false')
-			expect(cellAt(monday).className).not.toContain(DISABLED_CELL_CLASSNAME)
-			expect(cellAt(monday).className).toContain('cursor-pointer')
+			expect(cellAt('2025-03-31').dataset.disabled).toBe('false')
+			expect(cellAt('2025-03-31').className).not.toContain(
+				DISABLED_CELL_CLASSNAME
+			)
+			expect(cellAt('2025-03-31').className).toContain('cursor-pointer')
 		})
 
 		test("still disables next month's days outside business hours", () => {
@@ -1370,19 +1378,18 @@ describe('WeekView', () => {
 			renderWeekView({
 				initialDate: monday,
 				firstDayOfWeek: 1,
+				timezone: 'UTC',
 				businessHours: {
 					daysOfWeek: ['monday', 'tuesday'],
 					startTime: 9,
 					endTime: 17,
 				},
 			})
-			const outsideHours = screen.getByTestId(
-				`vertical-cell-${tuesday.format('YYYY-MM-DD')}-03-00`
-			)
+			const outsideHours = screen.getByTestId('vertical-cell-2025-04-01-03-00')
 
 			// The two reasons are independent: crossing into April no longer
 			// disables anything, but 3am is still outside business hours.
-			expect(cellAt(tuesday).dataset.disabled).toBe('false')
+			expect(cellAt('2025-04-01').dataset.disabled).toBe('false')
 			expect(outsideHours.dataset.disabled).toBe('true')
 		})
 	})

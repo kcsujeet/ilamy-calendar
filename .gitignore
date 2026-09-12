@@ -39,3 +39,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Generated at pack time from the repo-root README (see packages/calendar/scripts/prepack.ts)
 packages/calendar/README.md
+
+# Playwright (apps/e2e)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

@@ -1,0 +1,29 @@
+{
+	"name": "@ilamy/e2e",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Deterministic browser harness for @ilamy/calendar. Never published.",
+	"type": "module",
+	"scripts": {
+		"dev": "bunx vite",
+		"e2e": "bunx playwright test",
+		"e2e:ui": "bunx playwright test --ui",
+		"e2e:update": "bunx playwright test --update-snapshots",
+		"type-check": "bunx tsc --noEmit"
+	},
+	"dependencies": {
+		"@ilamy/calendar": "workspace:*",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.63.0",
+		"@tailwindcss/vite": "^4.3.0",
+		"@types/react": "^19.2.17",
+		"@types/react-dom": "^19.2.3",
+		"@vitejs/plugin-react": "^6.0.2",
+		"tailwindcss": "^4.3.0",
+		"tailwindcss-animate": "^1.0.7",
+		"vite": "^8.0.16"
+	}
+}

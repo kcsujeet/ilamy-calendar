@@ -50,6 +50,9 @@
       "version": "0.0.0",
       "dependencies": {
         "@ilamy/calendar": "workspace:*",
+        "@ilamy/calendar-agenda": "workspace:*",
+        "@ilamy/calendar-drag-to-create": "workspace:*",
+        "@ilamy/calendar-recurrence": "workspace:*",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
       },

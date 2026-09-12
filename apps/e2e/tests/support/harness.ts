@@ -10,13 +10,19 @@ export const PINNED_NOW = '2025-03-12T09:00:00.000Z'
 /** The zone the browser and the calendar both run in unless a test says otherwise. */
 export const DEFAULT_TIMEZONE = 'UTC'
 
+export type ViewName = 'day' | 'week' | 'month' | 'year' | 'agenda'
+
 export interface ScenarioOptions {
 	scenario: string
-	view: 'day' | 'week' | 'month' | 'year' | 'agenda'
+	view: ViewName
 	orientation?: 'vertical' | 'horizontal'
 	timezone?: string
 	/** Overrides the date the calendar opens on. Defaults to the pinned instant. */
 	date?: string
+	/** Plugins to install, e.g. ['agenda']. A view a plugin adds needs this. */
+	plugins?: readonly string[]
+	/** Any other calendar setting, passed straight through as a query parameter. */
+	settings?: Readonly<Record<string, string | number>>
 }
 
 /**
@@ -41,6 +47,12 @@ export const gotoScenario = async (
 	})
 	if (options.orientation) {
 		params.set('orientation', options.orientation)
+	}
+	if (options.plugins?.length) {
+		params.set('plugins', options.plugins.join(','))
+	}
+	for (const [key, value] of Object.entries(options.settings ?? {})) {
+		params.set(key, String(value))
 	}
 
 	await page.goto(`/?${params.toString()}`)

@@ -7,6 +7,11 @@ const PORT = 4200
  * locale, the viewport and the colour scheme. A suite that inherits any of them
  * from the host asserts something different on a colleague's laptop than it
  * does in CI, and the visual baselines stop meaning anything at all.
+ *
+ * Two projects, because they have different portability. Behaviour assertions
+ * run anywhere. Screenshots only match the platform that produced them, so the
+ * visual project is opt-in and its baselines are generated in the pinned Linux
+ * container that CI also uses (`bun run e2e:update` at the repo root).
  */
 export default defineConfig({
 	testDir: './tests',
@@ -22,7 +27,18 @@ export default defineConfig({
 		viewport: { width: 1280, height: 900 },
 		trace: 'on-first-retry',
 	},
-	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+	projects: [
+		{
+			name: 'behaviour',
+			testIgnore: /visual\.spec\.ts/,
+			use: { ...devices['Desktop Chrome'] },
+		},
+		{
+			name: 'visual',
+			testMatch: /visual\.spec\.ts/,
+			use: { ...devices['Desktop Chrome'] },
+		},
+	],
 	webServer: {
 		command: `bun x vite --port ${PORT} --strictPort`,
 		url: `http://localhost:${PORT}`,

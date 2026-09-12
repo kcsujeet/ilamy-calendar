@@ -840,10 +840,10 @@ An event runs up to, but not including, its `end`. An event from
 `2025-01-13T00:00` to `2025-01-14T00:00` covers **13 January only**; before
 3.0.0 it also painted 14 January.
 
-If you are upgrading from v2, audit your multi-day and all-day events: a bar
-that used to reach its `end` day now stops the day before. To keep a two-day
-bar, end it during the second day (`2025-01-14T23:59`) or at the following
-midnight (`2025-01-15T00:00`). Timed events inside a single day are unaffected.
+Only an `end` at exactly midnight is affected. An `end` during the day, such as
+`23:59`, still covers that day, and all-day events created by the built-in form
+render exactly as they did in v2. To keep a bar that reaches a given day, end it
+during that day (`2025-01-14T23:59`) or at the following midnight.
 
 This matches [RFC 5545 §3.6.1](https://www.rfc-editor.org/rfc/rfc5545#section-3.6.1),
 which calls DTEND "the non-inclusive end of the event", and the

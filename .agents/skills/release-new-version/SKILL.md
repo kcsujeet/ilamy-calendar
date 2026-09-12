@@ -99,6 +99,18 @@ Match the **existing format** in `CHANGELOG.md` exactly — the repo has a consi
 - **PR link format**: `([`#N`](https://github.com/kcsujeet/ilamy-calendar/pull/N))` — backticks around `#N`, trailing space before the parenthesis group.
 - **Issue-closing**: if a PR body closes an issue, append `— Closes [`#M`](https://github.com/kcsujeet/ilamy-calendar/issues/M)`.
 - **Contributor attribution**: for each PR, run `gh pr view <N> --json author,number`. If the author login is **not** `kcsujeet`, append `— Thanks [@<handle>](https://github.com/<handle>)!`. Don't thank the repo owner.
+- **Attribute taken-over PRs to whoever opened the original.** Some contributor PRs are closed unmerged and re-done as a maintainer PR — same diagnosis, different implementation. The merged PR's author is then `kcsujeet`, so the author check above finds nobody to thank and the person who did the work silently loses the credit. Sweep for this every release:
+
+  ```bash
+  # closed-but-never-merged PRs from contributors, since the last release
+  gh pr list --state closed --limit 150 --json number,title,author,mergedAt,closedAt \
+    -q '.[] | select(.mergedAt == null) | select(.author.login != "kcsujeet")
+        | select(.closedAt > "<last-release-date>")
+        | "#\(.number) @\(.author.login) \(.closedAt[0:10]) \(.title)"'
+  ```
+
+  For each hit, ask whether something in this release replaced it — usually obvious from the title, and the superseding PR's body often says so outright (`#253` states "credit for the diagnosis belongs to @mattanderson-io"). If so, thank the original author on the bullet for the merged PR. A closed PR that was **not** replaced gets no credit; nothing of theirs shipped.
+- **Do not thank issue reporters.** Credit is for authoring a PR, including one that was taken over. Reporting a bug, however well diagnosed, is not the same thing, and the changelog's `Closes #N` link already records who filed it.
 - **Bullet wording**: rewrite commit messages into user-facing prose. "feat: add prop X" → "feat: add `X` prop — lets consumers do Y". Read the PR/commit body for the why. Avoid internal jargon the user-facing audience won't parse. When the original commit message is already good, lifting it directly is fine.
 
 ### What to include vs. omit

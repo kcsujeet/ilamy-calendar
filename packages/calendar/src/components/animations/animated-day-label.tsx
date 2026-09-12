@@ -5,7 +5,7 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 interface AnimatedDayLabelProps {
 	/** True when this day is today. Forwarded to `DayLabel`. */
 	today: boolean
-	/** Day-of-month, e.g. "13". This is the part that animates. */
+	/** Day-of-month, e.g. "13". */
 	dayNumber: string
 	/** Weekday label, e.g. "Mon". Omit to render the number alone. */
 	weekday?: string
@@ -14,11 +14,15 @@ interface AnimatedDayLabelProps {
 }
 
 /**
- * A `DayLabel` whose number animates when it changes and whose weekday does
- * not. Navigating a calendar moves the number while the weekday stays put —
- * Monday's column is still headed "Mon" — so replaying the whole label reads as
- * a blink rather than as the number having moved. Keying the animation to the
- * number means it plays when, and only when, there is a change to show.
+ * A `DayLabel` whose two halves animate independently, each keyed to the text
+ * it renders, so the fade plays on whichever half actually changed.
+ *
+ * Which half that is depends on the header. A week column keeps its weekday and
+ * moves its number: Monday's column still says "Mon" next week, with a new
+ * date under it. A month column does the reverse, because the first column is
+ * day 1 of every month while the weekday beneath it moves. Animating the label
+ * as one unit re-introduced the half that had not moved, which reads as a blink
+ * rather than as a change.
  */
 export const AnimatedDayLabel: React.FC<AnimatedDayLabelProps> = ({
 	today,
@@ -34,6 +38,10 @@ export const AnimatedDayLabel: React.FC<AnimatedDayLabelProps> = ({
 			</AnimatedSection>
 		}
 		today={today}
-		weekday={weekday}
+		weekday={
+			weekday == null ? undefined : (
+				<AnimatedSection transitionKey={weekday}>{weekday}</AnimatedSection>
+			)
+		}
 	/>
 )

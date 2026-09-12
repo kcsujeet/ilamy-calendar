@@ -1441,5 +1441,60 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 			expect(dayCell().textContent).not.toBe(textBefore)
 			expect(weekday()).toBe(weekdayBefore)
 		})
+
+		it('animates the week number but not the word beside it', () => {
+			render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={dayjs('2025-03-03T00:00:00.000Z')}
+					initialView="week"
+					timezone="UTC"
+				/>
+			)
+			const corner = () =>
+				screen.getByTestId('week-view-header').firstElementChild
+			const label = () => corner()?.querySelector('span')
+			const number = () => corner()?.querySelectorAll('div')[1]
+
+			const labelBefore = label()
+			const numberBefore = number()
+			goToNextPeriod()
+
+			// Week 10 becomes week 11, so the number has something to show and
+			// the word 'Week' does not.
+			expect(corner()?.textContent).toBe('Week11')
+			expect(label()).toBe(labelBefore)
+			expect(number()).not.toBe(numberBefore)
+		})
+
+		// A month header is the mirror image of a week header: the first column
+		// is day 1 of every month, and the weekday under it is what moves.
+		it.each([
+			'vertical',
+			'horizontal',
+		] as const)('animates the weekday but not the number in the %s resource month header', (orientation) => {
+			render(
+				<IlamyCalendar
+					events={[]}
+					initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+					initialView="month"
+					orientation={orientation}
+					resources={[{ id: '1', title: 'Resource 1' }]}
+					timezone="UTC"
+				/>
+			)
+			const label = () => document.querySelector('.flex-col-reverse')
+			const weekday = () => label()?.children[0]?.firstElementChild
+			const dayNumber = () => label()?.children[1]?.firstElementChild
+
+			const weekdayBefore = weekday()
+			const numberBefore = dayNumber()
+			goToNextPeriod()
+
+			// 1 March is a Saturday, 1 April a Tuesday.
+			expect(label()?.textContent).toBe('Tue1')
+			expect(weekday()).not.toBe(weekdayBefore)
+			expect(dayNumber()).toBe(numberBefore)
+		})
 	})
 })

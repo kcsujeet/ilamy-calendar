@@ -6,7 +6,6 @@ import type {
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
-import { DayLabel } from '@ilamy/ui/components/day-label'
 import { Grid3x3 } from 'lucide-react'
 import type React from 'react'
 import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
@@ -37,7 +36,7 @@ const resourceMonthVerticalColumns = (
 			days: daysInMonth,
 			gridType: 'day',
 			renderLabel: (day: Dayjs) => (
-				<DayLabel
+				<AnimatedDayLabel
 					className="flex-col-reverse"
 					dayNumber={day.format('D')}
 					today={isToday(day)}

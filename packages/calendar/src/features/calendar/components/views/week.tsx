@@ -11,6 +11,7 @@ import { cn } from '@ilamy/ui/lib/utils'
 import { Columns3 } from 'lucide-react'
 import type React from 'react'
 import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import {
 	gutterColumn,
 	RESPONSIVE_GUTTER_WIDTH,
@@ -54,6 +55,7 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 		openEventForm: c.openEventForm,
 	}))
 	const visibleDays = getVisibleDays(date, config)
+	const weekNumber = String(date.week())
 
 	return (
 		<div
@@ -72,9 +74,15 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 					<span className="text-muted-foreground text-xs truncate w-full text-center">
 						{t('week')}
 					</span>
-					<span className="font-medium truncate w-full text-center">
-						{date.week()}
-					</span>
+					{/* Same rule as the day numbers beside it: the word stays put and
+					    the number animates, so the fade plays on the one part that
+					    moved. */}
+					<AnimatedSection
+						className="font-medium truncate w-full text-center"
+						transitionKey={weekNumber}
+					>
+						{weekNumber}
+					</AnimatedSection>
 				</div>
 			</div>
 

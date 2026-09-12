@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v3.0.0](https://github.com/kcsujeet/ilamy-calendar/compare/v2.0.3...v3.0.0)
+
+> 12 September 2026
+
+v3 aligns an event's `end` with RFC 5545 and the Google Calendar API: it is now exclusive. That is the only breaking change, and a calendar showing only timed events inside a single day needs no changes at all. The release also brings a `renderEvent` that knows which slice of an event it is drawing, server-rendering that hydrates cleanly, and a run of timezone fixes.
+
+##### ⚠️ Breaking changes
+
+> **Read the [v3 migration guide](https://ilamy.dev/docs/help/migration-to-v3) before upgrading.** It lists who is affected and what to change.
+
+- **`end` is exclusive.** An event runs up to, but not including, its `end`. An event from `2025-01-13T00:00` to `2025-01-14T00:00` covers 13 January only; it used to paint 14 January as well. To keep a two-day bar, end it during the second day (`2025-01-14T23:59`) or at the following midnight. Timed events inside a day are unaffected, and an inclusive-style end such as `23:59` still renders on the day it names. This matches [RFC 5545 §3.6.1](https://www.rfc-editor.org/rfc/rfc5545#section-3.6.1) and the [Google Calendar API](https://developers.google.com/workspace/calendar/api/v3/reference/events) ([`#250`](https://github.com/kcsujeet/ilamy-calendar/pull/250)) — Closes [`#248`](https://github.com/kcsujeet/ilamy-calendar/issues/248)
+- **All-day events store an exclusive end.** The built-in form writes the midnight after the last covered day rather than `23:59`, so a one-day all-day event exports as `DTSTART;VALUE=DATE:20250804` / `DTEND;VALUE=DATE:20250805`. The form still shows you the last covered day, and existing events ending at `23:59` keep displaying correctly ([`#250`](https://github.com/kcsujeet/ilamy-calendar/pull/250))
+- **`CellInfo.end` is the next midnight.** What `onCellClick` receives (and the `data-end` attribute plugins read) ends on the next boundary rather than at `23:59`, matching the hour and 15-minute cells, which already did ([`#250`](https://github.com/kcsujeet/ilamy-calendar/pull/250))
+
+##### Features
+
+- feat: `renderEvent` receives a second argument saying which slice of the event the current bar draws. An event longer than its row is drawn as one bar per row, and until now every call looked identical, so a custom renderer could not square a cut edge and round a real one. `segment.isStart` / `segment.isEnd` follow FullCalendar's event render hook ([`#264`](https://github.com/kcsujeet/ilamy-calendar/pull/264)) — Closes [`#263`](https://github.com/kcsujeet/ilamy-calendar/issues/263) — Thanks [@habovh](https://github.com/habovh)!
+
+##### Fixes
+
+- fix: a date carrying an explicit offset (`Z` or `±HH:MM`) keeps the instant it names instead of being re-read as wall-clock time in the configured zone, and the `timezone` prop now applies on mount rather than only when it changes ([`#249`](https://github.com/kcsujeet/ilamy-calendar/pull/249)) — Closes [`#247`](https://github.com/kcsujeet/ilamy-calendar/issues/247)
+- fix: `initialDate` opens on the date you give it. A string without an offset is anchored in the calendar's zone, so `'2025-03-10'` opens on 10 March wherever it is read; a `Date`, a `Dayjs` or an offset-carrying string keeps its instant and only the clock it renders against changes ([`#266`](https://github.com/kcsujeet/ilamy-calendar/pull/266)) — Closes [`#265`](https://github.com/kcsujeet/ilamy-calendar/issues/265) — Thanks [@habovh](https://github.com/habovh)!
+- fix: server-rendered calendars hydrate without a mismatch. The drag-and-drop context now takes a stable id from React's `useId` instead of a module-level counter that carried between requests ([`#262`](https://github.com/kcsujeet/ilamy-calendar/pull/262)) — Closes [`#261`](https://github.com/kcsujeet/ilamy-calendar/issues/261) — Thanks [@habovh](https://github.com/habovh)!
+- fix: week and day views no longer disable days belonging to the neighbouring month, so the week of 31 March is interactive on both sides. The month grid keeps greying its own padding ([`#260`](https://github.com/kcsujeet/ilamy-calendar/pull/260)) — Closes [`#259`](https://github.com/kcsujeet/ilamy-calendar/issues/259) — Thanks [@habovh](https://github.com/habovh)!
+- fix: `slotDuration` reaches the droppable cells, so a cell click on a 15- or 30-minute grid reports the slot you configured rather than a full hour ([`#256`](https://github.com/kcsujeet/ilamy-calendar/pull/256)) — Closes [`#255`](https://github.com/kcsujeet/ilamy-calendar/issues/255) — Thanks [@johanjq](https://github.com/johanjq)!
+- fix: a recurrence override that has been moved no longer renders twice, and an event dragged onto another resource actually moves there ([`#257`](https://github.com/kcsujeet/ilamy-calendar/pull/257))
+- fix: header labels animate only when their text changes. Navigating a month used to replay the fade over an unchanged weekday row; now a week column keeps its weekday and animates its number, and a month column does the reverse ([`#273`](https://github.com/kcsujeet/ilamy-calendar/pull/273))
+
+##### Performance
+
+- perf: date comparisons answer by instant rather than by formatting, and the year view resolves its events in one pass instead of one query per day ([`#253`](https://github.com/kcsujeet/ilamy-calendar/pull/253)) — Closes [`#245`](https://github.com/kcsujeet/ilamy-calendar/issues/245) — Thanks [@mattanderson-io](https://github.com/mattanderson-io)!
+
+##### Internal
+
+- test: a deterministic browser (E2E) suite covering all 12 rendering surfaces, with the clock, zone, locale and viewport pinned so a calendar test cannot depend on the day it runs ([`#275`](https://github.com/kcsujeet/ilamy-calendar/pull/275))
+- chore: the docs site moved to Astro 7.2.10 for a critical AVIF decode advisory. The published package is unaffected ([`#276`](https://github.com/kcsujeet/ilamy-calendar/pull/276)) — Closes [`#274`](https://github.com/kcsujeet/ilamy-calendar/issues/274)
+
 #### [v2.0.3](https://github.com/kcsujeet/ilamy-calendar/compare/v2.0.2...v2.0.3)
 
 > 26 July 2026

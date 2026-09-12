@@ -9,7 +9,7 @@ import type {
 import { DayLabel } from '@ilamy/ui/components/day-label'
 import { Grid3x3 } from 'lucide-react'
 import type React from 'react'
-import { AnimatedSection } from '@/components/animations/animated-section'
+import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
 import { gutterColumn } from '@/components/vertical-grid/gutter'
 import {
 	getMonthDays,
@@ -62,7 +62,9 @@ const ResourceMonthHorizontalHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 			<ResourcesCornerCell />
 			<div className="flex flex-1 gap-px bg-border border-b">
 				{monthDays.map((day, index) => {
-					const key = keys.header.resource.monthDay(day)
+					// Keyed by position, not by date. Most columns head the same day
+					// number from one month to the next, and those should sit still.
+					const key = keys.listKey('resource-month-day', index)
 					const today = isToday(day)
 
 					return (
@@ -70,14 +72,12 @@ const ResourceMonthHorizontalHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 							className="flex-1 w-20 bg-background shrink-0 flex items-center justify-center flex-col"
 							key={key}
 						>
-							<AnimatedSection transitionKey={key}>
-								<DayLabel
-									className="flex-col-reverse"
-									dayNumber={day.format('D')}
-									today={today}
-									weekday={day.format('ddd')}
-								/>
-							</AnimatedSection>
+							<AnimatedDayLabel
+								className="flex-col-reverse"
+								dayNumber={day.format('D')}
+								today={today}
+								weekday={day.format('ddd')}
+							/>
 						</div>
 					)
 				})}

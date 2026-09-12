@@ -10,7 +10,7 @@ import { DayLabel } from '@ilamy/ui/components/day-label'
 import { cn } from '@ilamy/ui/lib/utils'
 import { Columns3 } from 'lucide-react'
 import type React from 'react'
-import { AnimatedSection } from '@/components/animations/animated-section'
+import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
 import {
 	gutterColumn,
 	RESPONSIVE_GUTTER_WIDTH,
@@ -81,7 +81,12 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 			{/* Day header cells */}
 			{visibleDays.map((day, index) => {
 				const today = isToday(day)
-				const key = keys.header.week.day(day)
+				// A column heads the same weekday in every week, so the cell is
+				// keyed by its position. Keying it by the date remounted the whole
+				// label on every navigation, replaying the fade over a weekday
+				// that had not changed; only the number moves, and it animates
+				// itself (see AnimatedDayLabel).
+				const key = keys.listKey('week-header-day', index)
 
 				return (
 					// biome-ignore lint/a11y/noStaticElementInteractions: day header is clickable, unchanged behavior
@@ -97,13 +102,11 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 							openEventForm({ start: day })
 						}}
 					>
-						<AnimatedSection transitionKey={key}>
-							<DayLabel
-								dayNumber={day.format('D')}
-								today={today}
-								weekday={day.format('ddd')}
-							/>
-						</AnimatedSection>
+						<AnimatedDayLabel
+							dayNumber={day.format('D')}
+							today={today}
+							weekday={day.format('ddd')}
+						/>
 					</div>
 				)
 			})}

@@ -110,7 +110,7 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `firstDayOfWeek` | `WeekDays` | `'sunday'` | First day of week |
 | `initialView` | `CalendarView` | `'month'` | Starting view |
 | `initialDate` | `dayjs \| Date \| string` | today | Starting date |
-| `renderEvent` | `(event) => ReactNode` | — | Custom event renderer |
+| `renderEvent` | `(event, segment) => ReactNode` | — | Custom event renderer; `segment` is an `EventSegment` |
 | `onEventClick` | `(event) => void` | — | Event click callback |
 | `onCellClick` | `(info: CellClickInfo) => void` | — | Cell click callback |
 | `onViewChange` | `(view) => void` | — | View change callback |
@@ -238,11 +238,32 @@ interface CellClickInfo {
 }
 ```
 
+## EventSegment
+
+`src/features/calendar/types/index.ts`
+
+Second argument to `renderEvent`. An event longer than the row or day column it
+starts in is drawn as one bar per row, and `renderEvent` runs once per bar; this
+says which slice the current bar holds.
+
+```typescript
+interface EventSegment {
+  isStart: boolean
+  isEnd: boolean
+}
+```
+
+`isStart` is `true` when the bar holds the event's real start rather than
+resuming a cut one, `isEnd` when it holds the real end rather than running past
+it. Both are `true` for an event that fits in one row. The names and their
+meaning match FullCalendar's event render hook.
+
 ## Key File Locations
 
 | Type | File |
 |------|------|
 | `CalendarEvent`, `WeekDays`, `BusinessHours` | `packages/types/src/index.ts` (`@ilamy/types`) |
+| `EventSegment` | `packages/calendar/src/features/calendar/types/index.ts` |
 | `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CellClickInfo`, `CalendarClassesOverride` | `src/features/calendar/types/index.ts` |
 | `Resource` | `packages/types/src/index.ts` (`@ilamy/types`) |
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |

@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react'
 import { memo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import type { EventSegment } from '@/features/calendar/types'
 
 const getBorderRadiusClass = (
 	isTruncatedStart: boolean,
@@ -43,7 +44,7 @@ function DraggableEventUnmemoized({
 	 * started from in order to swap that one for the target.
 	 */
 	sourceResourceId?: string | number
-	/** Set by the horizontal events layer when the bar continues past the visible range. */
+	/** Set by the events layer when the visible range cut this bar. */
 	isTruncatedStart?: boolean
 	isTruncatedEnd?: boolean
 }) {
@@ -105,6 +106,20 @@ function DraggableEventUnmemoized({
 	const draggingClass =
 		isDragging && !isDragDisabled && 'cursor-grabbing shadow-lg'
 
+	// The default content reads both of these (border radius, the continuation
+	// markers and their padding), so a custom renderer needs them too or it
+	// cannot draw the same thing. Stated positively, matching FullCalendar:
+	// the flags say what the bar HOLDS, not what was cut off it.
+	const segment: EventSegment = {
+		isStart: !isTruncatedStart,
+		isEnd: !isTruncatedEnd,
+	}
+	const content = renderEvent ? (
+		renderEvent(event, segment)
+	) : (
+		<DefaultEventContent />
+	)
+
 	return (
 		<AnimatedSection
 			className={cn(
@@ -123,8 +138,7 @@ function DraggableEventUnmemoized({
 			{...attributes}
 			{...listeners}
 		>
-			{/* Use custom renderEvent from context if available, otherwise use default */}
-			{renderEvent ? renderEvent(event) : <DefaultEventContent />}
+			{content}
 		</AnimatedSection>
 	)
 }

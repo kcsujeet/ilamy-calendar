@@ -72,6 +72,8 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 							})}
 							elementId={eventKey}
 							event={event}
+							isTruncatedEnd={positioned.isTruncatedEnd}
+							isTruncatedStart={positioned.isTruncatedStart}
 							sourceResourceId={resourceId}
 						/>
 					</div>

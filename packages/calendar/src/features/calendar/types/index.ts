@@ -19,6 +19,27 @@ import type { CalendarView, TimeFormat } from '@/types'
 export type SlotDuration = 15 | 30 | 60
 
 /**
+ * Which slice of an event a `renderEvent` call is drawing.
+ *
+ * An event too long for the row it starts in is cut at the boundary and drawn
+ * as one bar per row, each through its own `renderEvent` call. Without knowing
+ * which slice it has, a custom renderer cannot tell a real end from a break —
+ * so it rounds both, marks neither, and two halves of one booking read as two
+ * bookings that happen to sit either side of a Sunday. The built-in renderer
+ * has always had this; a custom one had no way to ask.
+ *
+ * Named to match FullCalendar's event render hook, which gives its renderers
+ * the same two facts under the same names, so a renderer ported from there
+ * behaves the same here.
+ */
+export interface EventSegment {
+	/** This bar holds the event's real start, rather than resuming a cut one. */
+	isStart: boolean
+	/** This bar holds the event's real end, rather than running past it. */
+	isEnd: boolean
+}
+
+/**
  * Custom class names for calendar styling.
  * Allows users to override default styles for various calendar elements.
  */
@@ -134,7 +155,7 @@ export interface IlamyCalendarProps {
 	 * Custom render function for calendar events.
 	 * If provided, it will override the default event rendering.
 	 */
-	renderEvent?: (event: CalendarEvent) => React.ReactNode
+	renderEvent?: (event: CalendarEvent, segment: EventSegment) => React.ReactNode
 	/**
 	 * Callback when an event is clicked.
 	 * Provides the clicked event object.

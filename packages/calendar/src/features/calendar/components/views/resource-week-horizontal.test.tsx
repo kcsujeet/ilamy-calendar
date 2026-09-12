@@ -18,6 +18,7 @@ const renderResourceWeekHorizontal = (props = {}) => {
 			dayMaxEvents={3}
 			events={noEvents}
 			initialDate={initialDate}
+			initialView="week"
 			orientation="horizontal"
 			resources={twoResources}
 			{...props}

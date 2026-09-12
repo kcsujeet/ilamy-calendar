@@ -55,9 +55,8 @@ const renderWeekView = (props = {}) => {
 			firstDayOfWeek={firstDayOfWeek}
 			initialDate={initialDate}
 			// Mirrors production, where the rendered view is resolved *from*
-			// `view` on the context (see IlamyCalendar). Without it the harness
-			// mounts the week grid while the context still says 'month', and
-			// anything that reads the active view sees the wrong one.
+			// `view` on the context (see IlamyCalendar). The harness refuses to
+			// render without it.
 			initialView="week"
 			locale={locale}
 			{...props}
@@ -1147,6 +1146,7 @@ describe('WeekView', () => {
 				firstDayOfWeek={0}
 				hiddenDays={hiddenDays}
 				initialDate={monday}
+				initialView="week"
 				locale="en"
 			>
 				<WeekView />

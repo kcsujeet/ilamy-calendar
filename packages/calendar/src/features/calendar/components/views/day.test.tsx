@@ -39,6 +39,7 @@ const renderDayView = (props = {}) => {
 			dayMaxEvents={dayMaxEvents}
 			events={mockEvents}
 			firstDayOfWeek={firstDayOfWeek}
+			initialView="day"
 			locale={locale}
 			{...props}
 		>

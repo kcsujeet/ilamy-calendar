@@ -6,12 +6,13 @@ const PORT = 4200
  * Everything the machine could otherwise decide is pinned here: the zone, the
  * locale, the viewport and the colour scheme. A suite that inherits any of them
  * from the host asserts something different on a colleague's laptop than it
- * does in CI, and the visual baselines stop meaning anything at all.
+ * does in CI.
  *
- * Two projects, because they have different portability. Behaviour assertions
- * run anywhere. Screenshots only match the platform that produced them, so the
- * visual project is opt-in and its baselines are generated in the pinned Linux
- * container that CI also uses (`bun run e2e:update` at the repo root).
+ * There is no screenshot comparison. Pixel baselines only match the platform
+ * that produced them, and every intentional restyle means reviewing a dozen
+ * image diffs — a check nobody genuinely reads is worse than no check, because
+ * it turns a real signal into a ritual. Layout is asserted through behaviour
+ * and geometry instead. See docs/superpowers/specs/2026-09-12-e2e-testing-design.md.
  */
 export default defineConfig({
 	testDir: './tests',
@@ -27,18 +28,7 @@ export default defineConfig({
 		viewport: { width: 1280, height: 900 },
 		trace: 'on-first-retry',
 	},
-	projects: [
-		{
-			name: 'behaviour',
-			testIgnore: /visual\.spec\.ts/,
-			use: { ...devices['Desktop Chrome'] },
-		},
-		{
-			name: 'visual',
-			testMatch: /visual\.spec\.ts/,
-			use: { ...devices['Desktop Chrome'] },
-		},
-	],
+	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 	webServer: {
 		command: `bun x vite --port ${PORT} --strictPort`,
 		url: `http://localhost:${PORT}`,

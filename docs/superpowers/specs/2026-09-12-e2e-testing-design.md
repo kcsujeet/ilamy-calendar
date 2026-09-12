@@ -128,21 +128,34 @@ twenty specs.
 `webServer` in the config boots the harness (`command`, `url`,
 `reuseExistingServer: !process.env.CI`).
 
-## Visual layer
+## Visual layer: deferred, deliberately
 
-One baseline per *rendering surface* on the `basic` fixture — eleven screens if
-agenda has no resource form, thirteen if it does. That is a principled number
-rather than a chosen one: each surface is a distinct layout engine, and a
-screenshot is the only thing that sees a layout break. Fixtures beyond `basic`
-are covered by behaviour assertions, not more baselines.
+The first draft of this design specified one screenshot baseline per rendering
+surface. That is not built, and the decision is recorded here rather than left
+as a gap.
 
-Baselines are generated inside `mcr.microsoft.com/playwright:v1.63.0-noble`
-(pinned, per https://playwright.dev/docs/docker) so they match CI byte for byte
-rather than macOS font rendering. `bun run e2e:update` refreshes them through
-the same container.
+A pixel baseline cannot tell "you broke the layout" from "you restyled it on
+purpose": both are just different pixels, so every intentional change means a
+human opening each diff and confirming it. On a repo with one maintainer, a
+dozen diffs per restyle gets rubber-stamped, and a check nobody genuinely reads
+is worse than no check — it converts a real signal into a ritual.
 
-Every screenshot is a file a human reviews when it changes. Keeping them to one
-per surface is what stops the diffs becoming a rubber stamp.
+Two further things weaken the case here specifically:
+
+- `@ilamy/calendar` ships no CSS. A baseline would record the harness's own
+  pinned theme, not what any consumer sees, so it validates layout rather than
+  appearance.
+- Baselines only match the platform that produced them, so they must be
+  generated in the CI container. That is one more thing that has to be running
+  before anyone can accept an intentional change.
+
+Layout is asserted through behaviour instead: exact counts of bars, columns and
+cells, which fail with a readable message rather than an image.
+
+Revisit this if a purely visual regression ever ships unnoticed — a wrong
+colour, an invisible element, a collapsed bar. That would be evidence the
+behaviour assertions have a blind spot worth the maintenance cost, and the
+decision should turn on that evidence rather than on the idea being appealing.
 
 ## CI
 
@@ -173,7 +186,7 @@ one-off check.
 2. Axis 1 first: every view and arrangement renders, driven off the matrix, so
    the surfaces are all reachable before any of them is tested deeply.
 3. Axis 2: page objects and behaviour specs per fixture.
-4. Visual baselines in the container, and the CI job.
+4. The CI job, in the pinned Playwright container.
 5. `.mcp.json` and the CLAUDE.md section.
 6. Drag and drop, last and deliberately.
 

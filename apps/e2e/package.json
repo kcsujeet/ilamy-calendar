@@ -6,11 +6,9 @@
 	"type": "module",
 	"scripts": {
 		"dev": "bunx vite",
-		"e2e": "bunx playwright test --project=behaviour",
-		"e2e:ui": "bunx playwright test --project=behaviour --ui",
-		"e2e:update": "docker run --rm --init --ipc=host -v \"$PWD/../..\":/work -w /work/apps/e2e mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test --project=visual --update-snapshots",
-		"type-check": "bunx tsc --noEmit",
-		"e2e:visual": "bunx playwright test --project=visual"
+		"e2e": "bunx playwright test",
+		"e2e:ui": "bunx playwright test --ui",
+		"type-check": "bunx tsc --noEmit"
 	},
 	"dependencies": {
 		"@ilamy/calendar": "workspace:*",

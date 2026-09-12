@@ -266,22 +266,21 @@ combinations of settings than anyone would write fixtures for, so none are
 written. Unknown values render an error rather than falling back to a default.
 
 ```bash
-bun run e2e            # the gate: behaviour assertions, runs anywhere
+bun run e2e            # the gate
 bun run e2e:ui         # the same, in Playwright's UI mode
-bun run e2e:visual     # screenshot comparison; needs matching baselines
-bun run e2e:update     # regenerate baselines in the pinned Linux container
 ```
 
-- **Baselines are Linux-only.** They are generated in
-  `mcr.microsoft.com/playwright:v1.63.0-noble`, the same image CI uses, because
-  a screenshot only matches the platform that produced it. Never commit
-  baselines generated on macOS; `bun run e2e:update` needs Docker running.
+- **There is no screenshot comparison.** Pixel baselines only match the platform
+  that produced them, and every intentional restyle means reviewing a dozen
+  image diffs; a check nobody genuinely reads is worse than no check. Layout is
+  asserted through behaviour and geometry. Revisit this if a purely visual
+  regression ever ships unnoticed.
 - **Everything is pinned**: the clock (`page.clock.setFixedTime`), zone, locale,
   viewport and colour scheme. A calendar renders almost everything from "today",
   so a suite that lets any of them through asserts something different tomorrow.
   The pinned instant is `2025-03-12T09:00:00.000Z`.
-- **Screenshots need `animations: 'disabled'`.** The headers fade in over 500ms
-  and a shot taken mid-fade is washed out and different every run.
+- **Headers animate in over 500ms.** Anything that screenshots or measures
+  geometry has to wait them out, or it reads a half-faded, mid-transition frame.
 
 ### Driving the browser yourself
 

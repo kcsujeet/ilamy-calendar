@@ -58,9 +58,8 @@ jobs:
   e2e:
     name: E2E
     runs-on: ubuntu-latest
-    # The pinned Playwright image, so screenshots are compared against the same
-    # font rendering that produced the baselines. A different image tag is a
-    # different renderer and every visual test fails at once.
+    # The pinned Playwright image, so the browser and its system libraries are
+    # the same ones the suite was written against.
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
       options: --ipc=host
@@ -77,13 +76,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Behaviour
+      - name: E2E
         run: bun run e2e
-
-      # Visual runs separately so a layout diff reads as a layout diff rather
-      # than being buried in a behaviour failure.
-      - name: Visual
-        run: bun run e2e:visual
 
       - name: Upload report
         if: ${{ !cancelled() }}
@@ -93,16 +87,14 @@ jobs:
           path: apps/e2e/playwright-report/
           retention-days: 7
 
-      # A visual failure is unreadable without the images, and a first run with
-      # no baselines writes them here for committing.
-      - name: Upload screenshots
+      # Traces are recorded on the retry, and a failure is hard to read without
+      # them.
+      - name: Upload traces
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-screenshots
-          path: |
-            apps/e2e/test-results/
-            apps/e2e/tests/visual.spec.ts-snapshots/
+          name: playwright-traces
+          path: apps/e2e/test-results/
           retention-days: 7
 
   fallow:

@@ -23,7 +23,6 @@
 		"test": "bun run --filter '*' --if-present test",
 		"e2e": "bun run --filter '@ilamy/e2e' e2e",
 		"e2e:ui": "bun run --filter '@ilamy/e2e' e2e:ui",
-		"e2e:update": "bun run --filter '@ilamy/e2e' e2e:update",
 		"type-check": "bun run --filter '*' --if-present type-check",
 		"lint": "bunx biome lint . --diagnostic-level=error",
 		"lint:fix": "bunx biome lint --write .",
@@ -36,8 +35,7 @@
 		"release": "bun run build:lib && bun run publish:lib",
 		"release:dry": "bun run build:lib && cd packages/calendar && bun publish --dry-run",
 		"pre-commit": "bun run check:fix",
-		"prepare": "bunx husky",
-		"e2e:visual": "bun run --filter '@ilamy/e2e' e2e:visual"
+		"prepare": "bunx husky"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.16",

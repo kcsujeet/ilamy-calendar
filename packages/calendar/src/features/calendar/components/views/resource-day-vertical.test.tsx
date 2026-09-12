@@ -20,6 +20,7 @@ const renderResourceDayVertical = (props = {}) => {
 			dayMaxEvents={3}
 			events={mockEvents}
 			initialDate={initialDate}
+			initialView="day"
 			orientation="vertical"
 			resources={mockResources}
 			{...props}

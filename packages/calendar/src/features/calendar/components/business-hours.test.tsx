@@ -25,6 +25,7 @@ describe('Regular Calendar Business Hours Integration', () => {
 					dayMaxEvents={3}
 					hideNonBusinessHours={true}
 					initialDate={sunday}
+					initialView="day"
 				>
 					<DayView />
 				</CalendarProvider>
@@ -50,6 +51,7 @@ describe('Regular Calendar Business Hours Integration', () => {
 					businessHours={subHourBusinessHours}
 					dayMaxEvents={3}
 					initialDate={wednesday}
+					initialView="week"
 					{...props}
 				>
 					<WeekView />
@@ -118,6 +120,7 @@ describe('Regular Calendar Business Hours Integration', () => {
 					dayMaxEvents={3}
 					hideNonBusinessHours={true}
 					initialDate={initialDate}
+					initialView="week"
 				>
 					<WeekView />
 				</CalendarProvider>

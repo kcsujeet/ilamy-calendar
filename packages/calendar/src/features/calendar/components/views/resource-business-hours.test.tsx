@@ -27,6 +27,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 					dayMaxEvents={3}
 					hideNonBusinessHours={true}
 					initialDate={initialDate}
+					initialView="week"
 					orientation="horizontal"
 					resources={singleResource}
 				>
@@ -49,6 +50,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 					dayMaxEvents={3}
 					hideNonBusinessHours={true}
 					initialDate={sunday}
+					initialView="day"
 					orientation="vertical"
 					resources={singleResource}
 				>
@@ -76,6 +78,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 					dayMaxEvents={3}
 					hideNonBusinessHours={true}
 					initialDate={monday}
+					initialView="day"
 					orientation="horizontal"
 					resources={singleResource}
 				>
@@ -118,6 +121,7 @@ describe('Resource Calendar Business Hours Integration', () => {
 					dayMaxEvents={3}
 					hideNonBusinessHours={true}
 					initialDate={initialDate}
+					initialView="day"
 					orientation="horizontal"
 					resources={resources}
 				>

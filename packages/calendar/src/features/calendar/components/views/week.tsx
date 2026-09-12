@@ -10,6 +10,7 @@ import { DayLabel } from '@ilamy/ui/components/day-label'
 import { cn } from '@ilamy/ui/lib/utils'
 import { Columns3 } from 'lucide-react'
 import type React from 'react'
+import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import {
 	gutterColumn,
@@ -54,6 +55,7 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 		openEventForm: c.openEventForm,
 	}))
 	const visibleDays = getVisibleDays(date, config)
+	const weekNumber = String(date.week())
 
 	return (
 		<div
@@ -72,16 +74,27 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 					<span className="text-muted-foreground text-xs truncate w-full text-center">
 						{t('week')}
 					</span>
-					<span className="font-medium truncate w-full text-center">
-						{date.week()}
-					</span>
+					{/* Same rule as the day numbers beside it: the word stays put and
+					    the number animates, so the fade plays on the one part that
+					    moved. */}
+					<AnimatedSection
+						className="font-medium truncate w-full text-center"
+						transitionKey={weekNumber}
+					>
+						{weekNumber}
+					</AnimatedSection>
 				</div>
 			</div>
 
 			{/* Day header cells */}
 			{visibleDays.map((day, index) => {
 				const today = isToday(day)
-				const key = keys.header.week.day(day)
+				// A column heads the same weekday in every week, so the cell is
+				// keyed by its position. Keying it by the date remounted the whole
+				// label on every navigation, replaying the fade over a weekday
+				// that had not changed; only the number moves, and it animates
+				// itself (see AnimatedDayLabel).
+				const key = keys.listKey('week-header-day', index)
 
 				return (
 					// biome-ignore lint/a11y/noStaticElementInteractions: day header is clickable, unchanged behavior
@@ -97,13 +110,11 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 							openEventForm({ start: day })
 						}}
 					>
-						<AnimatedSection transitionKey={key}>
-							<DayLabel
-								dayNumber={day.format('D')}
-								today={today}
-								weekday={day.format('ddd')}
-							/>
-						</AnimatedSection>
+						<AnimatedDayLabel
+							dayNumber={day.format('D')}
+							today={today}
+							weekday={day.format('ddd')}
+						/>
 					</div>
 				)
 			})}

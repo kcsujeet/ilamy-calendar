@@ -2,7 +2,7 @@ import { DayLabel } from '@ilamy/ui/components/day-label'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
-import { AnimatedSection } from '@/components/animations/animated-section'
+import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
 import {
 	GUTTER_WIDTH,
 	STICKY_GUTTER_SHADOW,
@@ -38,7 +38,13 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 				const day = col.day
 				if (!day) return null
 				const today = isToday(day)
-				const key = keys.header.week.hour(day, col.resourceId ?? '')
+				// Keyed by position, not by date: the column heads the same weekday
+				// in every week, and only the number inside it changes.
+				const key = keys.listKey(
+					'resource-week-day',
+					col.resourceId ?? '',
+					index
+				)
 
 				return (
 					<div
@@ -52,13 +58,11 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 						)}
 						key={key}
 					>
-						<AnimatedSection transitionKey={key}>
-							<DayLabel
-								dayNumber={day.format('D')}
-								today={today}
-								weekday={day.format('ddd')}
-							/>
-						</AnimatedSection>
+						<AnimatedDayLabel
+							dayNumber={day.format('D')}
+							today={today}
+							weekday={day.format('ddd')}
+						/>
 					</div>
 				)
 			})}

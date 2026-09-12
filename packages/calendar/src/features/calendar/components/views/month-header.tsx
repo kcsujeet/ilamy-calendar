@@ -27,19 +27,27 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 			)}
 			data-testid="month-header"
 		>
-			{weekDays.map((weekDay) => (
-				<div
-					className="py-2 text-center font-medium bg-background flex-1 min-w-0 flex items-center justify-center"
-					data-testid={keys.header.weekday('month', weekDay.format('ddd'))}
-					key={weekDay.toISOString()}
-				>
-					<AnimatedSection transitionKey={weekDay.toISOString()}>
-						<span className="text-sm capitalize truncate w-full block">
-							{weekDay.format('ddd')}
-						</span>
-					</AnimatedSection>
-				</div>
-			))}
+			{weekDays.map((weekDay) => {
+				// The month grid's weekday row reads the same in every month, so
+				// it is keyed by the name it renders rather than by the date that
+				// produced it. Keying it by the date remounted all seven cells on
+				// every navigation and replayed the fade over unchanged text.
+				const name = weekDay.format('ddd')
+
+				return (
+					<div
+						className="py-2 text-center font-medium bg-background flex-1 min-w-0 flex items-center justify-center"
+						data-testid={keys.header.weekday('month', name)}
+						key={name}
+					>
+						<AnimatedSection transitionKey={name}>
+							<span className="text-sm capitalize truncate w-full block">
+								{name}
+							</span>
+						</AnimatedSection>
+					</div>
+				)
+			})}
 		</div>
 	)
 }

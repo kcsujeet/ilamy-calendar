@@ -20,7 +20,10 @@ export const TimeHeaderRow: React.FC<TimeHeaderRowProps> = ({
 		{hours.map((col, index) => {
 			const isNowHour = col.isSame(dayjs(), 'hour')
 			const hourStr = col.format('HH')
-			const key = keys.header.week.hour(col, index)
+			// Keyed by the hour it renders. The row shows the same hours whatever
+			// day is displayed, so keying it by the date replayed the fade over
+			// unchanged labels on every navigation.
+			const key = keys.listKey('time-header-hour', hourStr, index)
 			return (
 				<div
 					className={cn(

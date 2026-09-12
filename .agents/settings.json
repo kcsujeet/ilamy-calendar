@@ -1,4 +1,18 @@
 {
+	"extraKnownMarketplaces": {
+		"kc-claude-kit": {
+			"source": {
+				"source": "github",
+				"repo": "kcsujeet/kc-claude-kit"
+			}
+		}
+	},
+	"enabledPlugins": {
+		"claude-md@kc-claude-kit": true,
+		"code-review@kc-claude-kit": true,
+		"conventions@kc-claude-kit": true,
+		"testing@kc-claude-kit": true
+	},
 	"permissions": {
 		"allow": [
 			"WebFetch(domain:docs.anthropic.com)",

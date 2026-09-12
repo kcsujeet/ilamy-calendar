@@ -236,6 +236,25 @@ describe('MonthView', () => {
 			expect(within(dialog).getByText(title)).toBeInTheDocument()
 		})
 	})
+
+	// The month grid pads its first and last rows with days from the
+	// neighbouring months so every week is seven cells wide. Those cells are
+	// context, not part of the month being edited, and stay disabled. Pinned
+	// because the same check used to run in week and day view, where the days
+	// are not padding at all.
+	test('disables the days padded in from the neighbouring months', () => {
+		cleanup()
+		// March 2025 starts on a Saturday, so the first row is padded with
+		// 23-28 February and the last with 1-5 April.
+		renderMonthView({ initialDate: dayjs('2025-03-15T00:00:00.000Z') })
+
+		const cellOn = (date: string) => screen.getByTestId(`day-cell-${date}`)
+
+		expect(cellOn('2025-02-26').dataset.disabled).toBe('true')
+		expect(cellOn('2025-04-02').dataset.disabled).toBe('true')
+		// A day the month actually owns stays interactive.
+		expect(cellOn('2025-03-12').dataset.disabled).toBe('false')
+	})
 })
 
 const resourceList: Resource[] = [

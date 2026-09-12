@@ -14,6 +14,13 @@ export interface VerticalPositionedEvent extends PositionedEventBase {
 	/** Vertical placement, percent of the visible range. */
 	top: number
 	height: number
+	/**
+	 * Whether the visible range cut this event. A column shows a fixed span of
+	 * hours or days, so an event reaching past either edge is drawn clipped,
+	 * exactly as a month row clips a bar that outruns the week.
+	 */
+	isTruncatedStart: boolean
+	isTruncatedEnd: boolean
 	zIndex?: number
 }
 
@@ -27,11 +34,4 @@ export interface HorizontalPositionedEvent extends PositionedEventBase {
 	row: number
 	isTruncatedStart: boolean
 	isTruncatedEnd: boolean
-	/**
-	 * How many grid units this bar covers — days in a day grid, hours in an
-	 * hour one. `width` says the same thing as a percentage of the row, which
-	 * is what CSS needs; this is what anyone laying out the bar's *contents*
-	 * needs, since a share of the bar is only meaningful against a unit count.
-	 */
-	spanUnits: number
 }

@@ -79,7 +79,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `initialDate` | `dayjs.Dayjs \| Date \| string \| undefined` | `undefined` (today's date) | Sets the initial date displayed when the calendar loads. When undefined, defaults to today's date |
 | `firstDayOfWeek` | `'sunday' \| 'monday' \| 'tuesday' \| 'wednesday' \| 'thursday' \| 'friday' \| 'saturday'` | `'sunday'` | The first day of the week to display |
 | `dayMaxEvents` | `number` | `4` | Maximum number of events to display in a day cell |
-| `renderEvent` | `(event: CalendarEvent) => ReactNode` | - | Custom function to render individual events |
+| `renderEvent` | `(event: CalendarEvent, segment: EventSegment) => ReactNode` | - | Custom function to render individual events. `segment` says which slice of the event this bar is drawing |
 | `locale` | `string` | `'en'` | Locale for date formatting (e.g., "en", "fr", "de") |
 | `timezone` | `string` | Whatever your local timezone is | Timezone for date handling (e.g., "UTC", "America/New_York") |
 | `timeFormat` | `'12-hour' \| '24-hour'` | `'12-hour'` | Time format for displaying times in week and day views (e.g., '1:00 PM' vs '13:00') |
@@ -211,6 +211,34 @@ function CustomCalendar() {
   );
 }
 ```
+
+### Drawing a cut event
+
+A booking longer than the row it starts in is drawn as one bar per row, and
+`renderEvent` runs once for each. The second argument says which slice you have,
+so you can square the cut edge and round the real one:
+
+```tsx
+<IlamyCalendar
+  events={events}
+  renderEvent={(event, segment) => (
+    <div
+      className={cn(
+        'px-2 py-1 bg-blue-100 text-blue-800',
+        segment.isStart ? 'rounded-l' : 'rounded-l-none',
+        segment.isEnd ? 'rounded-r' : 'rounded-r-none'
+      )}
+    >
+      {event.title}
+    </div>
+  )}
+/>
+```
+
+`isStart` is `true` when this bar holds the event's real start, `isEnd` when it
+holds the real end. Both are `true` for an event that fits in one row. The names
+and their meaning match FullCalendar's event render hook, so a renderer written
+against that behaves the same here.
 
 ### Custom Event Bar Height
 

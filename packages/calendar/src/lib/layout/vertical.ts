@@ -46,7 +46,12 @@ const clusterOverlappingEvents = (
 const computeTopHeight = (
 	event: CalendarEvent,
 	{ gridStart, totalUnits, gridType, isDiscrete }: GridMetrics
-): { top: number; height: number } | null => {
+): {
+	top: number
+	height: number
+	isTruncatedStart: boolean
+	isTruncatedEnd: boolean
+} | null => {
 	let startTime = event.start.diff(gridStart, gridType, true)
 	let endTime = event.end.diff(gridStart, gridType, true)
 	if (isDiscrete) {
@@ -54,13 +59,20 @@ const computeTopHeight = (
 		endTime = Math.ceil(endTime)
 		if (endTime <= startTime) endTime = startTime + 1
 	}
-	if (startTime < 0) startTime = 0
-	if (endTime > totalUnits) endTime = totalUnits
+	// The clamps below are what truncation IS here: an event reaching past
+	// either edge of the visible range gets drawn at the edge instead, and the
+	// renderer needs to know that the edge is not the event's own boundary.
+	const isTruncatedStart = startTime < 0
+	const isTruncatedEnd = endTime > totalUnits
+	if (isTruncatedStart) startTime = 0
+	if (isTruncatedEnd) endTime = totalUnits
 	const duration = Math.max(0, endTime - startTime)
 	if (duration === 0) return null
 	return {
 		top: (startTime / totalUnits) * 100,
 		height: (duration / totalUnits) * 100,
+		isTruncatedStart,
+		isTruncatedEnd,
 	}
 }
 

@@ -61,6 +61,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		eventSpacing,
 		eventHeight,
 		onMoreEventsClick,
+		view,
 	} = useSmartCalendarContext()
 	const effectiveBusinessHours = useEffectiveBusinessHours(resourceId)
 
@@ -112,7 +113,14 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		allEventsDialogRef.current?.open()
 	}
 
-	const isCurrentMonth = day.month() === currentDate.month()
+	// Only the month grid pads itself: its first and last rows carry days from
+	// the neighbouring months so every week is seven cells wide, and those are
+	// context rather than part of the month being edited. Every other grid
+	// shows exactly the days it means to, and those days are free to cross a
+	// month boundary — the week of 31 March runs into April, and April is not
+	// padding there.
+	const isOutsideDisplayedMonth =
+		view === 'month' && day.month() !== currentDate.month()
 
 	const hiddenEventsCount = todayEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
@@ -150,7 +158,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				)}
 				data-testid={dataTestId || testId}
 				date={day}
-				disabled={!isBusiness || !isCurrentMonth}
+				disabled={!isBusiness || isOutsideDisplayedMonth}
 				hour={hour}
 				id={droppableId}
 				minute={minute}

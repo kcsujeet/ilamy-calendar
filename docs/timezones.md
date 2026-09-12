@@ -97,12 +97,19 @@ module, in the machine's zone; passing them through would render a correct
 instant against the wrong clock. Re-anchoring keeps the instant and changes only
 the clock.
 
-`safeDate` is the deliberate exception: it passes a `Dayjs` through untouched,
-because its only caller that can supply one is `IlamyCalendar`'s `initialDate`,
-which the navigation slice re-anchors anyway. Watch the direction of the argument
-here — the navigation slice's `isDayjs` check had to GO (`initialDate` is typed
-as `Dayjs` there, so the check could only ever choose pass-through, and nothing
-downstream re-parses it), while `safeDate`'s had to STAY.
+`initialDate` is the one prop that does NOT come through parsed, and it cannot:
+re-anchoring keeps the instant, but the date a calendar opens on is a position
+in the grid rather than a moment, so `'2026-03-02'` has to mean 2 March wherever
+it is read. Telling those apart needs the raw value, because a parse has already
+thrown the distinction away. The engine therefore takes the prop unparsed and
+applies the same rule the constructor does, with the zone passed in rather than
+read from the module default (`setDefault` runs in an effect, too late for the
+first render). The shared predicate is `isWallClockReading` in
+`packages/utils/src/dayjs.ts`.
+
+This is FullCalendar's `timeZone` rule too: a string without an offset is
+"parsed (and thus displayed) as if it were" in the configured zone, one with an
+offset is "appropriately shifted to display" in it.
 
 Removing the `timezone` prop is handled symmetrically: fresh parses go back to
 the machine's zone, and the dates the calendar already holds are converted with
@@ -175,6 +182,6 @@ correctly sees that at 14:30.
 
 - `packages/utils/src/dayjs.ts` — the configured constructor, the offset rule, and `compareByInstant`
 - `packages/utils/src/helpers.ts` — `dayKey` / `isSameDay` for calendar-day questions
-- `packages/calendar/src/features/calendar/hooks/use-calendar-engine.ts` — the effect that applies the zone and converts held dates
-- `packages/calendar/src/lib/utils/normalize.ts`, `packages/calendar/src/features/calendar/hooks/use-calendar-navigation.ts` — re-anchoring incoming props
+- `packages/calendar/src/features/calendar/hooks/use-calendar-engine.ts` — `anchorInitialDate` (the date the calendar opens on) and the effect that applies the zone and converts held dates
+- `packages/calendar/src/lib/utils/normalize.ts` — re-anchoring incoming events
 - `packages/plugins/drag-to-create/src/utils/read-cell.ts` — the explicit `dayjs.utc(iso).tz(zone)` pattern

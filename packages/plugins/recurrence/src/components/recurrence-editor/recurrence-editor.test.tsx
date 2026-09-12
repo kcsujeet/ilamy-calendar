@@ -33,21 +33,25 @@ describe('recurrence presets', () => {
 		})
 		const weekdays = getPresetRRule('weekdays', MON_FIRST)
 		expect(weekdays?.freq).toBe(RRule.WEEKLY)
-		expect(
-			(weekdays?.byweekday as { weekday: number }[]).map((d) => d.weekday)
-		).toEqual([0, 1, 2, 3, 4])
+		// `?.` before a cast does not protect the call that follows it: an
+		// undefined preset would reach `.map` and throw a TypeError instead of
+		// failing as an assertion. Defaulting to an empty array keeps the
+		// expectation exact and the failure readable.
+		const weekdayDays = (weekdays?.byweekday ?? []) as { weekday: number }[]
+		expect(weekdayDays.map((d) => d.weekday)).toEqual([0, 1, 2, 3, 4])
 		const weekly = getPresetRRule('weeklyOnDay', MON_FIRST)
-		expect(
-			(weekly?.byweekday as { weekday: number }[]).map((d) => d.weekday)
-		).toEqual([0])
+		const weeklyDays = (weekly?.byweekday ?? []) as { weekday: number }[]
+		expect(weeklyDays.map((d) => d.weekday)).toEqual([0])
 		expect(getPresetRRule('monthlyOnDay', MON_FIRST)).toMatchObject({
 			freq: RRule.MONTHLY,
 			bymonthday: 6,
 		})
 		const monthlyWeekday = getPresetRRule('monthlyOnWeekday', MON_SECOND)
-		const byday = (
-			monthlyWeekday?.byweekday as { weekday: number; n: number }[]
-		).at(0)
+		const monthlyDays = (monthlyWeekday?.byweekday ?? []) as {
+			weekday: number
+			n: number
+		}[]
+		const byday = monthlyDays.at(0)
 		expect(byday?.weekday).toBe(0)
 		expect(byday?.n).toBe(2)
 	})

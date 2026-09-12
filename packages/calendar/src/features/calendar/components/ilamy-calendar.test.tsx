@@ -1469,32 +1469,32 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 
 		// A month header is the mirror image of a week header: the first column
 		// is day 1 of every month, and the weekday under it is what moves.
-		it.each([
-			'vertical',
-			'horizontal',
-		] as const)('animates the weekday but not the number in the %s resource month header', (orientation) => {
-			render(
-				<IlamyCalendar
-					events={[]}
-					initialDate={dayjs('2025-03-01T00:00:00.000Z')}
-					initialView="month"
-					orientation={orientation}
-					resources={[{ id: '1', title: 'Resource 1' }]}
-					timezone="UTC"
-				/>
-			)
-			const label = () => document.querySelector('.flex-col-reverse')
-			const weekday = () => label()?.children[0]?.firstElementChild
-			const dayNumber = () => label()?.children[1]?.firstElementChild
+		it.each(['vertical', 'horizontal'] as const)(
+			'animates the weekday but not the number in the %s resource month header',
+			(orientation) => {
+				render(
+					<IlamyCalendar
+						events={[]}
+						initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+						initialView="month"
+						orientation={orientation}
+						resources={[{ id: '1', title: 'Resource 1' }]}
+						timezone="UTC"
+					/>
+				)
+				const label = () => document.querySelector('.flex-col-reverse')
+				const weekday = () => label()?.children[0]?.firstElementChild
+				const dayNumber = () => label()?.children[1]?.firstElementChild
 
-			const weekdayBefore = weekday()
-			const numberBefore = dayNumber()
-			goToNextPeriod()
+				const weekdayBefore = weekday()
+				const numberBefore = dayNumber()
+				goToNextPeriod()
 
-			// 1 March is a Saturday, 1 April a Tuesday.
-			expect(label()?.textContent).toBe('Tue1')
-			expect(weekday()).not.toBe(weekdayBefore)
-			expect(dayNumber()).toBe(numberBefore)
-		})
+				// 1 March is a Saturday, 1 April a Tuesday.
+				expect(label()?.textContent).toBe('Tue1')
+				expect(weekday()).not.toBe(weekdayBefore)
+				expect(dayNumber()).toBe(numberBefore)
+			}
+		)
 	})
 })

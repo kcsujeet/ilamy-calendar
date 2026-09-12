@@ -58,13 +58,14 @@ describe('DroppableCell data-view attribute', () => {
 
 	const views: CalendarView[] = ['month', 'week', 'day', 'year']
 
-	test.each(
-		views
-	)('should render data-view="%s" attribute from context', (view) => {
-		renderCell({ view })
+	test.each(views)(
+		'should render data-view="%s" attribute from context',
+		(view) => {
+			renderCell({ view })
 
-		expect(screen.getByTestId('cell').getAttribute('data-view')).toBe(view)
-	})
+			expect(screen.getByTestId('cell').getAttribute('data-view')).toBe(view)
+		}
+	)
 })
 
 describe('DroppableCell isCellDisabled (issue #79)', () => {

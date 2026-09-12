@@ -1,7 +1,7 @@
-# E2E testing for @ilamy/calendar
+# Browser (E2E) testing
 
-Status: proposed
-Date: 2026-09-12
+How `apps/e2e` works, why it is built this way, and what it deliberately does
+not cover. For the unit suite see `testing-guide.md`.
 
 ## Why
 

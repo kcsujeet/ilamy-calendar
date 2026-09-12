@@ -12,7 +12,7 @@ const PORT = 4200
  * that produced them, and every intentional restyle means reviewing a dozen
  * image diffs — a check nobody genuinely reads is worse than no check, because
  * it turns a real signal into a ritual. Layout is asserted through behaviour
- * and geometry instead. See docs/superpowers/specs/2026-09-12-e2e-testing-design.md.
+ * and geometry instead. See docs/e2e-testing.md.
  */
 export default defineConfig({
 	testDir: './tests',

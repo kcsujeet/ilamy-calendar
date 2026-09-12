@@ -201,6 +201,7 @@ docs/
   time-grid.md                                 # Time grid architecture & DST handling
   timezones.md                                 # Timezone contract: what anchors a date, and when
   testing-guide.md                             # Test patterns, wrappers, mocking
+  e2e-testing.md                               # Browser harness: scenarios, what is pinned, what is not tested
   types-and-interfaces.md                      # Type catalog and relationships
   hooks-and-context.md                         # Hook architecture, context system
   writing-plugins.md                           # Plugin authoring guide
@@ -254,7 +255,8 @@ Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringE
 
 `apps/e2e` is a deterministic browser harness. It mounts `IlamyCalendar` with
 its entire configuration taken from the URL, so any state is reachable by
-navigating rather than by clicking through setup.
+navigating rather than by clicking through setup. Full rationale, including what
+is deliberately not tested, is in `docs/e2e-testing.md`.
 
 ```
 ?scenario=resources&view=week&orientation=vertical&slot=15&dayMaxEvents=3&height=500px

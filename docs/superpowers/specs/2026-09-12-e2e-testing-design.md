@@ -159,9 +159,15 @@ decision should turn on that evidence rather than on the idea being appealing.
 
 ## CI
 
-A fourth job in `ci.yml`, after `build-test`, running in the pinned Playwright
-container. Uploads the HTML report and diff images as artifacts on failure,
-because a red visual check is unreadable without them.
+A fourth job in `ci.yml`, on `ubuntu-latest` like the others, installing the
+browser with `playwright install --with-deps` — the setup Playwright documents
+(https://playwright.dev/docs/ci-intro). The HTML report is uploaded always and
+traces on failure, because a red browser test is unreadable without them.
+
+Not the Playwright container, despite the first draft saying so. Its only real
+advantage was identical font rendering for screenshot baselines, which are no
+longer taken, and it has no `unzip`, which `setup-bun` needs in order to install
+Bun at all.
 
 ## Agent access
 

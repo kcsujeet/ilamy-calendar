@@ -58,11 +58,6 @@ jobs:
   e2e:
     name: E2E
     runs-on: ubuntu-latest
-    # The pinned Playwright image, so the browser and its system libraries are
-    # the same ones the suite was written against.
-    container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
-      options: --ipc=host
 
     steps:
       - name: Checkout code
@@ -75,6 +70,13 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      # `--with-deps` brings the system libraries the browser needs, which a
+      # bare runner does not have. The Playwright container ships them already,
+      # but it has no `unzip`, which setup-bun needs to install Bun at all.
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+        working-directory: apps/e2e
 
       - name: E2E
         run: bun run e2e

@@ -59,10 +59,9 @@ export const useCalendarNavigation = ({
 	pluginRuntime,
 }: CalendarNavigationParams): CalendarNavigationSlice => {
 	const [navState, setNavState] = useState<NavState>(() => ({
-		// Re-anchored, not passed through: `initialDate` is TYPED as Dayjs, so an
-		// `isDayjs` check here can only ever say "pass it through", handing the
-		// calendar whatever zone the consumer's own module was in. This is the last
-		// place that can fix that, since nothing downstream re-parses it.
+		// Already anchored by `anchorInitialDate` in the engine, which sees the
+		// raw prop and so can tell a clock reading from an instant. This call
+		// only normalises the value; it can no longer change which day it names.
 		date: dayjs(initialDate),
 		view: initialView,
 	}))

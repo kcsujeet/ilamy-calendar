@@ -150,6 +150,25 @@ const hasExplicitOffset = (value: string): boolean => {
 }
 
 /**
+ * Whether a value names a clock reading rather than an instant.
+ *
+ * Only an offset-less string qualifies: `'2026-03-02'` says what a clock shows
+ * and nothing about when, so the calendar's zone is what anchors it. Everything
+ * else (an offset-carrying string, a `Date`, a `Dayjs`, a millisecond number)
+ * already names a moment, and a zone only changes the clock it renders against.
+ *
+ * This is FullCalendar's `timeZone` rule as well: a string without an offset is
+ * "parsed (and thus displayed) as if it were" in the configured zone, while one
+ * with an offset is "appropriately shifted to display" in it.
+ *
+ * Exported because the zone is not always the module default: a calendar
+ * resolving the date it opens on has the zone in hand before `setDefault` has
+ * run, and needs to apply the same rule with that zone instead.
+ */
+export const isWallClockReading = (input?: dayjs.ConfigType): input is string =>
+	typeof input === 'string' && !hasExplicitOffset(input)
+
+/**
  * Custom dayjs constructor that resolves every input in the timezone set via
  * `dayjs.tz.setDefault()`, so `dayjs()` calls throughout the codebase honor the
  * calendar's zone, and in the machine's zone when the calendar has none.
@@ -178,9 +197,7 @@ const timezoneAwareDayjs = (input?: dayjs.ConfigType) => {
 	if (!instant.isValid()) {
 		return instant
 	}
-	const isWallClockReading =
-		typeof input === 'string' && !hasExplicitOffset(input)
-	if (isWallClockReading) {
+	if (isWallClockReading(input)) {
 		return dayjs.tz(input)
 	}
 	if (!defaultTimezone) {

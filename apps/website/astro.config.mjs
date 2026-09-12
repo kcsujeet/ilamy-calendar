@@ -106,6 +106,10 @@ export default defineConfig({
 						{ label: 'FAQ', slug: 'docs/help/faq' },
 						{ label: 'Support', slug: 'docs/help/support' },
 						{
+							label: 'Migrating to v3',
+							slug: 'docs/help/migration-to-v3',
+						},
+						{
 							label: 'Migrating to v2',
 							slug: 'docs/help/migration-to-v2',
 						},

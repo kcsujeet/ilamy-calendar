@@ -194,7 +194,9 @@ function MyCalendar() {
 import { IlamyCalendar } from '@ilamy/calendar';
 
 function CustomCalendar() {
-  const renderEvent = (event) => (
+  // `segment` says which slice of the event this bar draws; see
+  // "Drawing a cut event" below.
+  const renderEvent = (event, segment) => (
     <div className="px-2 py-1 rounded bg-blue-100 text-blue-800">
       <div className="font-semibold">{event.title}</div>
       <div className="text-xs">{event.description}</div>
@@ -832,6 +834,21 @@ function CalendarWithAPI() {
 ### CalendarEvent Interface
 
 The main event object used throughout the calendar. All events passed to the calendar should conform to this interface.
+
+:::caution[`end` is exclusive since 3.0.0]
+An event runs up to, but not including, its `end`. An event from
+`2025-01-13T00:00` to `2025-01-14T00:00` covers **13 January only**; before
+3.0.0 it also painted 14 January.
+
+If you are upgrading from v2, audit your multi-day and all-day events: a bar
+that used to reach its `end` day now stops the day before. To keep a two-day
+bar, end it during the second day (`2025-01-14T23:59`) or at the following
+midnight (`2025-01-15T00:00`). Timed events inside a single day are unaffected.
+
+This matches [RFC 5545 §3.6.1](https://www.rfc-editor.org/rfc/rfc5545#section-3.6.1),
+which calls DTEND "the non-inclusive end of the event", and the
+[Google Calendar API](https://developers.google.com/workspace/calendar/api/v3/reference/events).
+:::
 
 ```typescript title="CalendarEvent (events prop input)"
 interface CalendarEvent {

@@ -238,6 +238,18 @@ interface CellClickInfo {
 }
 ```
 
+## SlotDuration
+
+`src/features/calendar/types/index.ts`
+
+```typescript
+type SlotDuration = 15 | 30 | 60
+```
+
+The granularity of a time grid in minutes, and the value of the `slotDuration`
+prop. Exported so a consumer can type a variable it is threading through their
+own component rather than widening it to `number`.
+
 ## EventSegment
 
 `src/features/calendar/types/index.ts`
@@ -263,7 +275,7 @@ meaning match FullCalendar's event render hook.
 | Type | File |
 |------|------|
 | `CalendarEvent`, `WeekDays`, `BusinessHours` | `packages/types/src/index.ts` (`@ilamy/types`) |
-| `EventSegment` | `packages/calendar/src/features/calendar/types/index.ts` |
+| `EventSegment`, `SlotDuration` | `packages/calendar/src/features/calendar/types/index.ts` |
 | `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CellClickInfo`, `CalendarClassesOverride` | `src/features/calendar/types/index.ts` |
 | `Resource` | `packages/types/src/index.ts` (`@ilamy/types`) |
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |

@@ -82,6 +82,12 @@ export default function CalendarPage() {
 }
 ```
 
+Since 3.0.0 the calendar also hydrates cleanly when it *is* server-rendered:
+the drag-and-drop context takes a stable id derived with React's `useId`, so
+the markup the server produces matches what the client expects. Before that,
+the ids were numbered from a module-level counter that carried between
+requests, and the second request onwards mismatched.
+
 ### Can I use this with Astro?
 
 Absolutely! This very website is built with Astro and demonstrates the calendar integration on the demo page. However, when using the calendar with Astro, you must use the `client:only` directive instead of other client directives like `client:load` because the calendar doesn't work properly with other directives:

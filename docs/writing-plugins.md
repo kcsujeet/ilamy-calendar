@@ -541,3 +541,27 @@ import {
   type RRuleOptions,
 } from '@ilamy/calendar/plugins/recurrence'
 ```
+
+## `PluginMutationResult`
+
+The richer return type of a plugin's `applyUpdate` / `applyDelete`. Both may
+return either `CalendarEvent[]` or a `PluginMutationResult`.
+
+```typescript
+interface PluginMutationResult {
+	events: CalendarEvent[]
+	/** Existing rows to persist via `onEventUpdate`. */
+	updated: CalendarEvent[]
+	/** New rows to persist via `onEventAdd`. */
+	added: CalendarEvent[]
+	/** Existing rows to persist via `onEventDelete`. */
+	deleted: CalendarEvent[]
+}
+```
+
+Returning a plain array says only what the event list should now look like.
+Returning the object also says *how the change should be persisted*, splitting
+it across the host's three callbacks. One edit can be several persistence
+operations at once: a scoped recurrence edit ("this and following") ends the
+original series early, adds a new one, and leaves other rows untouched, which a
+single array cannot express.

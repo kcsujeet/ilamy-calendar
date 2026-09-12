@@ -87,6 +87,57 @@ bun run ci                         # Full CI: check + build + type-check + test
 bunx fallow@3.20.0 audit --changed-since main --gate new-only --no-cache
 ```
 
+## Troubleshooting the dev server and installs
+
+Two failures that waste hours because they lie about their cause.
+
+### A stale dev server serves old config
+
+`astro dev` prints `Stop: astro dev stop` and, since Astro 7, supports
+`astro dev stop` / `status` / `logs`
+(https://docs.astro.build/en/reference/cli-reference/). The running process is
+`node .../astro.mjs dev`, so **`pkill -f "astro dev"` does not match it** and
+leaves the server alive. Start another and Astro takes the next free port —
+4201, 4202 — while your browser and your curl keep hitting 4200.
+
+The result is that you edit config, restart, re-test, and read the *old*
+server's behaviour as evidence about the new config. This has already produced
+a confident and completely wrong "I proved these two changes are load-bearing".
+
+```bash
+bunx astro dev stop                                  # the reliable stop
+lsof -nP -iTCP -sTCP:LISTEN | grep -E ':420[0-9]'    # find strays before trusting a result
+```
+
+Before believing any dev-server measurement, confirm which port answered and
+that only one server is listening.
+
+### A build error that contradicts the lockfile
+
+If an error names a missing export that the installed version plainly has, or a
+React context is "not found" when there is one provider, suspect **duplicate or
+stale installs** rather than the version:
+
+```bash
+find . -path "*/node_modules/<pkg>/package.json" -not -path "*/node_modules/*/node_modules/*"
+```
+
+Nested copies under `apps/*/node_modules` shadow the hoisted one. This repo has
+hit it twice: a nested `astro@6.4.6` surviving an upgrade to 7.2.10, which made
+the build fail on an export the new version exports; and duplicate copies that
+split the calendar context so a plugin could not see its provider.
+
+The fix is a clean regeneration, and it is the first thing to try, not the last:
+
+```bash
+rm -rf node_modules apps/*/node_modules packages/*/node_modules \
+       packages/plugins/*/node_modules bun.lock
+bun install
+```
+
+`examples/*` keep their own lockfiles and are installed separately; they are not
+part of this.
+
 ## Architecture
 
 React calendar component library. TypeScript, Shadcn-UI, Tailwind CSS, @dnd-kit, rrule.js.

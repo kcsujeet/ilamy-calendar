@@ -24,30 +24,52 @@ describe('recurrence presets', () => {
 		expect(getNthWeekdayOfMonth(MON_LAST)).toBe(-1)
 	})
 
-	it('maps presets to anchored rules', () => {
+	// `rrule` types `byweekday` loosely, and a `?.` in front of a cast guards
+	// nothing: the cast puts a member call after it, so an absent rule would
+	// throw a TypeError rather than fail an assertion. Reading the numbers
+	// through one helper keeps every expectation below exact.
+	const weekdayNumbers = (rule: { byweekday?: unknown } | null) =>
+		((rule?.byweekday ?? []) as { weekday: number }[]).map((d) => d.weekday)
+
+	it('maps `once` to no rule at all', () => {
 		expect(getPresetRRule('once', MON_FIRST)).toBeNull()
+	})
+
+	it('anchors `daily` to the date it was created from', () => {
 		expect(getPresetRRule('daily', MON_FIRST)).toEqual({
 			freq: RRule.DAILY,
 			interval: 1,
 			dtstart: MON_FIRST,
 		})
+	})
+
+	it('maps `weekdays` to Monday through Friday', () => {
 		const weekdays = getPresetRRule('weekdays', MON_FIRST)
+
 		expect(weekdays?.freq).toBe(RRule.WEEKLY)
-		expect(
-			(weekdays?.byweekday as { weekday: number }[]).map((d) => d.weekday)
-		).toEqual([0, 1, 2, 3, 4])
-		const weekly = getPresetRRule('weeklyOnDay', MON_FIRST)
-		expect(
-			(weekly?.byweekday as { weekday: number }[]).map((d) => d.weekday)
-		).toEqual([0])
+		expect(weekdayNumbers(weekdays)).toEqual([0, 1, 2, 3, 4])
+	})
+
+	it('maps `weeklyOnDay` to the one weekday it was anchored on', () => {
+		expect(weekdayNumbers(getPresetRRule('weeklyOnDay', MON_FIRST))).toEqual([
+			0,
+		])
+	})
+
+	it('maps `monthlyOnDay` to the day of the month', () => {
 		expect(getPresetRRule('monthlyOnDay', MON_FIRST)).toMatchObject({
 			freq: RRule.MONTHLY,
 			bymonthday: 6,
 		})
-		const monthlyWeekday = getPresetRRule('monthlyOnWeekday', MON_SECOND)
+	})
+
+	it('maps `monthlyOnWeekday` to that weekday and its position', () => {
+		const rule = getPresetRRule('monthlyOnWeekday', MON_SECOND)
 		const byday = (
-			monthlyWeekday?.byweekday as { weekday: number; n: number }[]
+			(rule?.byweekday ?? []) as { weekday: number; n: number }[]
 		).at(0)
+
+		// MON_SECOND is the second Monday, so weekday 0 at position 2.
 		expect(byday?.weekday).toBe(0)
 		expect(byday?.n).toBe(2)
 	})

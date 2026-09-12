@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+<svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" >
+  <title>ilamy Calendar icon</title>
   <defs>
     <style>
       .cls-1 {
@@ -9,7 +10,7 @@
       }
     </style>
   </defs>
-  <rect class="cls-1" width="160" height="160" rx="19.8" ry="19.8"/>
+  <rect class="cls-1" height="160" rx="19.8" ry="19.8" width="160" />
   <g>
     <circle class="cls-2" cx="80" cy="33.06" r="17.5"/>
     <ellipse class="cls-2" cx="80" cy="100.56" rx="35" ry="43.87"/>

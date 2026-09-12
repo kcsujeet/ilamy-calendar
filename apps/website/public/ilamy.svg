@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+<svg data-name="Layer 2" id="Layer_2" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" >
+  <title>ilamy Calendar logo</title>
   <defs>
     <style>
       .cls-1 {
@@ -11,10 +12,10 @@
       }
     </style>
   </defs>
-  <g id="Layer_5" data-name="Layer 5">
-    <rect class="cls-1" width="160" height="160" rx="19.8" ry="19.8"/>
+  <g data-name="Layer 5" id="Layer_5" >
+    <rect class="cls-1" height="160" rx="19.8" ry="19.8" width="160" />
   </g>
-  <g id="Layer_6" data-name="Layer 6">
+  <g data-name="Layer 6" id="Layer_6" >
     <g>
       <g>
         <circle class="cls-2" cx="80" cy="33.06" r="17.5"/>

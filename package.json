@@ -21,6 +21,8 @@
 		"build": "bun run --filter '@ilamy/types' --filter '@ilamy/utils' --if-present build && bun run --filter '@ilamy/ui' --if-present build && bun run --filter '@ilamy/calendar-recurrence' --filter '@ilamy/calendar-agenda' --filter '@ilamy/calendar-drag-to-create' --if-present build && bun run --filter '@ilamy/calendar' --if-present build && bun run --filter '@ilamy/demo' --if-present build && bun run --filter '@ilamy/website' --if-present build",
 		"build:lib": "bun run --filter '@ilamy/calendar' build",
 		"test": "bun run --filter '*' --if-present test",
+		"e2e": "bun run --filter '@ilamy/e2e' e2e",
+		"e2e:ui": "bun run --filter '@ilamy/e2e' e2e:ui",
 		"type-check": "bun run --filter '*' --if-present type-check",
 		"lint": "bunx biome lint . --diagnostic-level=error",
 		"lint:fix": "bunx biome lint --write .",

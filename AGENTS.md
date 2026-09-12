@@ -201,6 +201,7 @@ docs/
   time-grid.md                                 # Time grid architecture & DST handling
   timezones.md                                 # Timezone contract: what anchors a date, and when
   testing-guide.md                             # Test patterns, wrappers, mocking
+  e2e-testing.md                               # Browser harness: scenarios, what is pinned, what is not tested
   types-and-interfaces.md                      # Type catalog and relationships
   hooks-and-context.md                         # Hook architecture, context system
   writing-plugins.md                           # Plugin authoring guide
@@ -249,6 +250,54 @@ Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringE
 - Integration focus: test through context and user interactions
 - Recurring events: verify RFC 5545 compliance
 - ~62 test files across the calendar package (45) and the plugin packages
+
+## Browser testing (E2E)
+
+`apps/e2e` is a deterministic browser harness. It mounts `IlamyCalendar` with
+its entire configuration taken from the URL, so any state is reachable by
+navigating rather than by clicking through setup. Full rationale, including what
+is deliberately not tested, is in `docs/e2e-testing.md`.
+
+```
+?scenario=resources&view=week&orientation=vertical&slot=15&dayMaxEvents=3&height=500px
+```
+
+A **scenario** supplies the events (`src/scenarios.ts`); every **calendar
+setting** is a query parameter (`src/harness-config.ts`). There are far more
+combinations of settings than anyone would write fixtures for, so none are
+written. Unknown values render an error rather than falling back to a default.
+
+```bash
+bun run e2e            # the gate
+bun run e2e:ui         # the same, in Playwright's UI mode
+```
+
+- **There is no screenshot comparison.** Pixel baselines only match the platform
+  that produced them, and every intentional restyle means reviewing a dozen
+  image diffs; a check nobody genuinely reads is worse than no check. Layout is
+  asserted through behaviour and geometry. Revisit this if a purely visual
+  regression ever ships unnoticed.
+- **Everything is pinned**: the clock (`page.clock.setFixedTime`), zone, locale,
+  viewport and colour scheme. A calendar renders almost everything from "today",
+  so a suite that lets any of them through asserts something different tomorrow.
+  The pinned instant is `2025-03-12T09:00:00.000Z`.
+- **Headers animate in over 500ms.** Anything that screenshots or measures
+  geometry has to wait them out, or it reads a half-faded, mid-transition frame.
+
+### Driving the browser yourself
+
+The repo ships a project-scoped `.mcp.json` with `@playwright/mcp`, so browser
+tools are available without per-machine setup. Use them to *investigate* — to
+answer "does this look right" on a state no spec covers yet.
+
+**Anything you find that way gets recorded as a spec before the work is done.**
+An exploratory pass is not coverage: it proves the bug exists once, on your
+machine, and proves nothing tomorrow. Only specs gate; an agent's judgement
+never does.
+
+Add a scenario to `src/scenarios.ts` when a fixture is genuinely new. Reach for
+a query parameter first — most "new cases" are an existing fixture under a
+different setting.
 
 ## Git Workflow
 

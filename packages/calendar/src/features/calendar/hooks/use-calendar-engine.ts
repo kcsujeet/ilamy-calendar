@@ -5,13 +5,15 @@ import type {
 	PluginView,
 	Resource,
 } from '@ilamy/types'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import dayjs, { type Dayjs, isWallClockReading } from '@ilamy/utils/dayjs'
+import { safeDate } from '@ilamy/utils/helpers'
 import {
 	type ComponentType,
 	type ReactNode,
 	useEffect,
 	useMemo,
 	useRef,
+	useState,
 } from 'react'
 import {
 	type CalendarConfigSlice,
@@ -44,7 +46,7 @@ interface CalendarEngineConfig {
 	events: CalendarEvent[]
 	firstDayOfWeek: number
 	initialView?: CalendarView
-	initialDate?: Dayjs
+	initialDate?: Dayjs | Date | string
 	/** Max stacked events per day in horizontal grids; the config slice defaults it. */
 	dayMaxEvents?: number
 	businessHours?: BusinessHours | BusinessHours[]
@@ -105,34 +107,30 @@ interface CalendarEngineHandlers {
  * The date the calendar opens on, read on the calendar's clock rather than the
  * machine's.
  *
- * `initialDate` is parsed by the consumer's own module, or by `safeDate` in
- * `IlamyCalendar`, and both run before the zone is known — so the calendar was
- * opening on whichever day that date fell on where the browser happens to be.
- * For a reader far enough from the workspace that is the wrong day, which is
- * exactly the reader `timezone` exists for.
+ * Applies the same rule as the configured constructor, with one difference: the
+ * zone arrives as an argument rather than from the module default, because
+ * `setDefault` runs in an effect and has not fired during the first render.
  *
- * The two cases are different questions and get different answers:
- *
- * - A date GIVEN is a calendar date. The consumer wrote 10 March; 10 March is
- *   what opens. Its wall clock is kept and read in the calendar's zone.
- * - NO date is "now". That is a moment, so the instant is kept and read on the
- *   calendar's clock — near midnight the calendar's today and the reader's are
- *   different days, and the calendar's is the one it should show.
- *
- * Called during render, which is safe: `dayjs.tz` with an explicit zone is a
- * pure call, unlike the `setDefault` below that has to wait for an effect.
+ * A string with no offset names a clock reading, so the calendar's zone anchors
+ * it and 10 March opens on 10 March wherever it is read. Anything else already
+ * names an instant, so only the clock it renders against changes. With no date
+ * at all the answer is "now", on the calendar's clock rather than the reader's.
  */
 const anchorInitialDate = (
-	initialDate: Dayjs | undefined,
+	initialDate: Dayjs | Date | string | undefined,
 	timezone: string | undefined
 ): Dayjs => {
 	if (!timezone) {
-		return initialDate ?? dayjs()
+		return safeDate(initialDate) ?? dayjs()
 	}
 	if (!initialDate) {
 		return dayjs().tz(timezone)
 	}
-	return dayjs.tz(initialDate.format('YYYY-MM-DDTHH:mm:ss'), timezone)
+	if (isWallClockReading(initialDate)) {
+		return dayjs.tz(initialDate, timezone)
+	}
+	const instant = safeDate(initialDate) ?? dayjs()
+	return instant.tz(timezone)
 }
 
 export const useCalendarEngine = (
@@ -182,8 +180,14 @@ export const useCalendarEngine = (
 
 	const pluginRuntime = useMemo(() => createPluginRuntime(plugins), [plugins])
 
+	// Once per mount, not per render: the navigation slice reads this only in
+	// its lazy state initializer, so every later call is thrown away.
+	const [anchoredInitialDate] = useState(() =>
+		anchorInitialDate(initialDate, timezone)
+	)
+
 	const navigation = useCalendarNavigation({
-		initialDate: anchorInitialDate(initialDate, timezone),
+		initialDate: anchoredInitialDate,
 		initialView,
 		firstDayOfWeek,
 		onDateChange,

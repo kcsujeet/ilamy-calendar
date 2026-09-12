@@ -10,7 +10,6 @@ import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 // oxlint-disable-next-line no-duplicates
 import '@ilamy/utils/dayjs'
-import { safeDate } from '@ilamy/utils/helpers'
 import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
@@ -104,7 +103,9 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
 			hiddenDays={toHiddenDaysSet(hiddenDays)}
 			hideNonBusinessHours={hideNonBusinessHours}
-			initialDate={safeDate(initialDate)}
+			// Raw, not parsed: the engine needs to see whether the value names an
+			// instant or a clock reading, which `safeDate` flattens away.
+			initialDate={initialDate}
 			initialView={initialView}
 			orientation={orientation}
 			resources={resources}

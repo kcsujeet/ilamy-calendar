@@ -28,7 +28,7 @@ export interface CalendarProviderProps {
 	events?: CalendarEvent[]
 	firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
 	initialView?: CalendarView
-	initialDate?: Dayjs
+	initialDate?: Dayjs | Date | string
 	renderEvent?: (event: CalendarEvent) => ReactNode
 	onEventClick?: (event: CalendarEvent) => void
 	onCellClick?: (info: CellInfo) => void

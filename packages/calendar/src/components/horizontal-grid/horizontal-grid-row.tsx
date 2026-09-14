@@ -8,10 +8,7 @@ import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { memo, useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import {
-	columnKey,
-	useProcessedWeekEvents,
-} from '@/features/calendar/hooks/useProcessedWeekEvents'
+import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWeekEvents'
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
 import { ResourceCell } from '../resource-cell'
@@ -54,7 +51,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	}, [columns, isGrouped])
 
 	// Compute events once at the row level — shared between GridCells and events layer
-	const { positionedEvents, dayEventsMap } = useProcessedWeekEvents({
+	const { positionedEvents, columnEventsMap } = useProcessedWeekEvents({
 		days: flatDays,
 		gridType,
 		resourceId: resource?.id,
@@ -107,8 +104,8 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								gridType={gridType}
 								hour={gridType === 'hour' ? col.day.hour() : undefined}
 								key={col.day.toISOString()}
-								precomputedEvents={dayEventsMap.get(
-									columnKey(col.day, gridType)
+								precomputedEvents={columnEventsMap.get(
+									keys.col.events(col.day, gridType)
 								)}
 								resourceId={resource?.id}
 								showDayNumber={showDayNumber}

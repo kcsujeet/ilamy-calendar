@@ -31,6 +31,16 @@ export const keys = {
 			`${scope}-col-resource-${resourceId}`,
 		allDay: (day: Dayjs, index: number) =>
 			`all-day-col-${dayKey(day)}-${index}`,
+		/**
+		 * Buckets a column's events. An hour grid draws many columns from one
+		 * calendar day, so a date key collapses them onto one entry and every
+		 * cell is handed the whole day (#280); the unit has to be part of the
+		 * key. Day columns keep the date, which already identifies them.
+		 */
+		events: (day: Dayjs, gridType: 'day' | 'hour' = 'day') =>
+			gridType === 'hour'
+				? `col-events-${day.toISOString()}`
+				: `col-events-${dayKey(day)}`,
 	},
 
 	// Grid cell identifiers

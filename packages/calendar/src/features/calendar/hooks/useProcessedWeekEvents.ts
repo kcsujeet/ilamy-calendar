@@ -1,25 +1,12 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { dayKey, overlapsRange } from '@ilamy/utils/helpers'
+import { overlapsRange } from '@ilamy/utils/helpers'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { filterEventsForResource } from '@/lib/events/pipeline'
 import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutHorizontal } from '@/lib/layout/horizontal'
-
-/**
- * Identifies the column a cell belongs to, so the map below can be read back by
- * the component rendering the cells.
- *
- * An hour grid draws 24 columns from the same calendar day, so a `YYYY-MM-DD`
- * key collapses all of them onto one entry and every cell is handed the whole
- * day (#280). Day columns keep the date key, which is already unique per column
- * and is what the month grids look up.
- */
-export const columnKey = (
-	day: Dayjs,
-	gridType: 'day' | 'hour' = 'day'
-): string => (gridType === 'hour' ? day.toISOString() : dayKey(day))
+import { keys } from '@/lib/utils/keys'
 
 interface UseProcessedWeekEventsProps {
 	days: Dayjs[]
@@ -30,7 +17,7 @@ interface UseProcessedWeekEventsProps {
 
 interface ProcessedWeekEventsResult {
 	positionedEvents: HorizontalPositionedEvent[]
-	dayEventsMap: Map<string, CalendarEvent[]>
+	columnEventsMap: Map<string, CalendarEvent[]>
 }
 
 export const useProcessedWeekEvents = ({
@@ -61,7 +48,7 @@ export const useProcessedWeekEvents = ({
 		return weekEvents
 	}, [getEventsForDateRange, weekStart, weekEnd, resourceId, allDay])
 
-	const dayEventsMap = useMemo(() => {
+	const columnEventsMap = useMemo(() => {
 		const map = new Map<string, CalendarEvent[]>()
 		const unit = gridType === 'hour' ? 'hour' : 'day'
 		for (const day of days) {
@@ -70,7 +57,7 @@ export const useProcessedWeekEvents = ({
 			const columnEvents = events.filter((e) =>
 				overlapsRange(e, columnStart, columnEnd)
 			)
-			map.set(columnKey(day, gridType), columnEvents)
+			map.set(keys.col.events(day, gridType), columnEvents)
 		}
 		return map
 	}, [days, events, gridType])
@@ -84,5 +71,5 @@ export const useProcessedWeekEvents = ({
 		})
 	}, [days, dayMaxEvents, events, gridType])
 
-	return { positionedEvents, dayEventsMap }
+	return { positionedEvents, columnEventsMap }
 }

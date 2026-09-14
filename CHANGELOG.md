@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v3.0.1](https://github.com/kcsujeet/ilamy-calendar/compare/v3.0.0...v3.0.1)
+
+> 14 September 2026
+
+##### Fixes
+
+- fix: the resource day view in horizontal orientation showed the same `+N more` on every hour cell, counting the whole day rather than the cell's own hour. Empty hours claimed to be hiding events, and clicking any of them listed the entire day. Rows were also sized from that over-long list, so a row holding one event stood as tall as `dayMaxEvents` allows ([`#281`](https://github.com/kcsujeet/ilamy-calendar/pull/281)) — Closes [`#280`](https://github.com/kcsujeet/ilamy-calendar/issues/280)
+- fix: `dayMaxEvents`'s doc comment said the default is 3. It is 4, and it caps events per grid cell rather than per day: an hour cell in the resource day view is subject to it too ([`#281`](https://github.com/kcsujeet/ilamy-calendar/pull/281))
+
+##### Docs
+
+- docs: the v3 migration guide overstated the breaking change. It listed all-day events as affected, when an all-day event created by the built-in form renders exactly as it did in v2. Only an `end` at exactly midnight changes, and the guide now says so ([`#279`](https://github.com/kcsujeet/ilamy-calendar/pull/279))
+
 #### [v3.0.0](https://github.com/kcsujeet/ilamy-calendar/compare/v2.0.3...v3.0.0)
 
 > 12 September 2026

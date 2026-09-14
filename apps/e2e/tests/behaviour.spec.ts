@@ -210,17 +210,19 @@ test.describe('resource day view overflow', () => {
 		await expect(calendar.root.getByText(/\+\d+ more/)).toHaveCount(0)
 	})
 
-	test('each hour cell shows only its own event', async ({ page }) => {
+	test('each hour cell holds only its own event', async ({ page }) => {
 		await gotoScenario(page, {
 			scenario: 'resource-day-overflow',
 			view: 'day',
 			orientation: 'horizontal',
 		})
-		const calendar = new CalendarPage(page)
 
-		// All seven are on screen, once each.
+		// The cell's own signal is the height placeholder it renders per event it
+		// believes it holds, which carries the title as its test id. Asserting the
+		// bars instead would prove nothing: those come from the events layer,
+		// which this bug never touched, and they render once either way.
 		for (const index of [1, 4, 7]) {
-			await expect(calendar.event(`Course ${index}`).first()).toBeVisible()
+			await expect(page.getByTestId(`Course ${index}`)).toHaveCount(1)
 		}
 	})
 })

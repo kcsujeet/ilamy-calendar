@@ -32,15 +32,13 @@ export const keys = {
 		allDay: (day: Dayjs, index: number) =>
 			`all-day-col-${dayKey(day)}-${index}`,
 		/**
-		 * Buckets a column's events. An hour grid draws many columns from one
-		 * calendar day, so a date key collapses them onto one entry and every
-		 * cell is handed the whole day (#280); the unit has to be part of the
-		 * key. Day columns keep the date, which already identifies them.
+		 * Buckets a column's events. The full instant, not the date: an hour grid
+		 * draws many columns from one calendar day, and a date key collapses them
+		 * onto one entry so every cell is handed the whole day (#280). The row
+		 * builds its columns and reads this map from the same `Dayjs` values, so
+		 * the instant identifies a column of either grid.
 		 */
-		events: (day: Dayjs, gridType: 'day' | 'hour' = 'day') =>
-			gridType === 'hour'
-				? `col-events-${day.toISOString()}`
-				: `col-events-${dayKey(day)}`,
+		events: (day: Dayjs) => `col-events-${day.toISOString()}`,
 	},
 
 	// Grid cell identifiers

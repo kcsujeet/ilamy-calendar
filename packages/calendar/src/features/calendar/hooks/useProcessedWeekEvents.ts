@@ -50,14 +50,14 @@ export const useProcessedWeekEvents = ({
 
 	const columnEventsMap = useMemo(() => {
 		const map = new Map<string, CalendarEvent[]>()
-		const unit = gridType === 'hour' ? 'hour' : 'day'
+		const unit = gridType ?? 'day'
 		for (const day of days) {
 			const columnStart = day.startOf(unit)
 			const columnEnd = day.endOf(unit)
 			const columnEvents = events.filter((e) =>
 				overlapsRange(e, columnStart, columnEnd)
 			)
-			map.set(keys.col.events(day, gridType), columnEvents)
+			map.set(keys.col.events(day), columnEvents)
 		}
 		return map
 	}, [days, events, gridType])

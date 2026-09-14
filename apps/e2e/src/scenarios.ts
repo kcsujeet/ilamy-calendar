@@ -237,7 +237,9 @@ export const scenarios = {
 		description:
 			'#280: seven non-overlapping one-hour events in one resource. Every hour cell claimed the whole day\'s overflow, so all 24 showed "+3 more" — including empty hours.',
 		views: ['day'],
-		config: { dayMaxEvents: 4, scrollTime: '08:00' },
+		// `dayMaxEvents` is left at its default of 4, which is what the report
+		// used. `scrollTime` puts the events on screen for anyone opening the URL.
+		config: { scrollTime: '08:00' },
 		resources: [{ id: 'room-a', title: 'Room A' }],
 		events: [9, 11, 13, 15, 17, 19, 21].map((hour, index) =>
 			event(

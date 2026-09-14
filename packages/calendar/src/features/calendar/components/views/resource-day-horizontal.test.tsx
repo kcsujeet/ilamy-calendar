@@ -400,7 +400,7 @@ describe('ResourceDayHorizontal', () => {
 		)
 
 		test('shows no overflow when no hour holds more than dayMaxEvents', () => {
-			renderResourceDayHorizontal({ dayMaxEvents: 4, events: hourlyEvents })
+			renderResourceDayHorizontal({ events: hourlyEvents })
 
 			// Seven events across seven separate hours: one per cell, so nothing
 			// is ever hidden and no cell may claim otherwise.
@@ -424,7 +424,7 @@ describe('ResourceDayHorizontal', () => {
 			const indicators = screen.queryAllByText(/\+\d+ more/)
 
 			expect(indicators).toHaveLength(1)
-			expect(indicators[0]).toHaveTextContent('+2 more')
+			expect(indicators.at(0)).toHaveTextContent('+2 more')
 		})
 	})
 })

@@ -5,11 +5,13 @@ import type {
 } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { dayKey } from '@ilamy/utils/helpers'
 import type React from 'react'
 import { memo, useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWeekEvents'
+import {
+	columnKey,
+	useProcessedWeekEvents,
+} from '@/features/calendar/hooks/useProcessedWeekEvents'
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
 import { ResourceCell } from '../resource-cell'
@@ -105,7 +107,9 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								gridType={gridType}
 								hour={gridType === 'hour' ? col.day.hour() : undefined}
 								key={col.day.toISOString()}
-								precomputedEvents={dayEventsMap.get(dayKey(col.day))}
+								precomputedEvents={dayEventsMap.get(
+									columnKey(col.day, gridType)
+								)}
 								resourceId={resource?.id}
 								showDayNumber={showDayNumber}
 							/>

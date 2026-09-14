@@ -233,6 +233,23 @@ export const scenarios = {
 		),
 	},
 
+	'resource-day-overflow': {
+		description:
+			'#280: seven non-overlapping one-hour events in one resource. Every hour cell claimed the whole day\'s overflow, so all 24 showed "+3 more" — including empty hours.',
+		views: ['day'],
+		config: { dayMaxEvents: 4, scrollTime: '08:00' },
+		resources: [{ id: 'room-a', title: 'Room A' }],
+		events: [9, 11, 13, 15, 17, 19, 21].map((hour, index) =>
+			event(
+				`course-${index}`,
+				`Course ${index + 1}`,
+				`2025-03-12T${String(hour).padStart(2, '0')}:00:00.000Z`,
+				`2025-03-12T${String(hour + 1).padStart(2, '0')}:00:00.000Z`,
+				{ resourceId: 'room-a' }
+			)
+		),
+	},
+
 	resources: {
 		description:
 			'Three resources with events on each, for the resource axis in both orientations.',

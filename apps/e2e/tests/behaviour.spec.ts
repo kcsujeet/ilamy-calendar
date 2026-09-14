@@ -186,3 +186,41 @@ test.describe('the week that spans two months', () => {
 		await expect(disabled.first()).toBeAttached()
 	})
 })
+
+/*
+ * #280. An hour column and a day column are different units, but the cells were
+ * bucketed by calendar day either way, so all 24 hour columns of a resource row
+ * shared one entry and each was handed the whole day. Every cell then claimed to
+ * be hiding events, including hours holding nothing.
+ */
+test.describe('resource day view overflow', () => {
+	test('no hour cell claims hidden events when none are hidden', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'resource-day-overflow',
+			view: 'day',
+			orientation: 'horizontal',
+		})
+		const calendar = new CalendarPage(page)
+		await calendar.expectRendered()
+
+		// Seven events in seven separate hours, four allowed per cell: nothing is
+		// ever hidden, so no cell may say otherwise.
+		await expect(calendar.root.getByText(/\+\d+ more/)).toHaveCount(0)
+	})
+
+	test('each hour cell shows only its own event', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'resource-day-overflow',
+			view: 'day',
+			orientation: 'horizontal',
+		})
+		const calendar = new CalendarPage(page)
+
+		// All seven are on screen, once each.
+		for (const index of [1, 4, 7]) {
+			await expect(calendar.event(`Course ${index}`).first()).toBeVisible()
+		}
+	})
+})

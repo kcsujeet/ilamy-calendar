@@ -243,7 +243,7 @@ export interface IlamyCalendarProps {
 	/**
 	 * Maximum number of events to display per day in month view.
 	 * Additional events will be hidden and can be viewed via a "more" link.
-	 * Defaults to 3 if not specified.
+	 * Defaults to 4 if not specified.
 	 */
 	dayMaxEvents?: number
 	/**

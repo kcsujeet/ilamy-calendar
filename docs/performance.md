@@ -17,7 +17,7 @@ In month view, both GridCells (42 total) and event overlay layers (6 total) inde
 `useProcessedWeekEvents` is called once at the `HorizontalGridRow` level. It returns:
 
 - `positionedEvents` — passed to `HorizontalGridEventsLayer` for the event overlay
-- `dayEventsMap` — a `Map<string, CalendarEvent[]>` grouped by day, passed to each `GridCell` via the `precomputedEvents` prop
+- `columnEventsMap` — a `Map<string, CalendarEvent[]>` grouped by the column's own unit (a day, or an hour on an hour grid), passed to each `GridCell` via the `precomputedEvents` prop
 
 This reduces **48 filter passes to 6** (one per row) plus 6 small per-day groupings over an already-filtered list.
 
@@ -27,11 +27,11 @@ This reduces **48 filter passes to 6** (one per row) plus 6 small per-day groupi
 HorizontalGridRow
   ├── useProcessedWeekEvents({ days, gridType, resourceId, ... })
   │     ├── events = getEventsForDateRange(weekStart, weekEnd)  ← 1 filter pass
-  │     ├── dayEventsMap = group events by day                  ← 1 small pass
+  │     ├── columnEventsMap = group events per column           ← 1 small pass
   │     └── positionedEvents = layoutHorizontal(events)         ← 1 positioning pass
   │
-  ├── GridCell day="Mon" precomputedEvents={dayEventsMap.get("2026-04-06")}
-  ├── GridCell day="Tue" precomputedEvents={dayEventsMap.get("2026-04-07")}
+  ├── GridCell day="Mon" precomputedEvents={columnEventsMap.get(key(mon))}
+  ├── GridCell day="Tue" precomputedEvents={columnEventsMap.get(key(tue))}
   ├── ...                                                       ← no filtering
   │
   └── HorizontalGridEventsLayer positionedEvents={positionedEvents}

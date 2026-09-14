@@ -21,6 +21,14 @@ describe('keys.col', () => {
 
 	it('generates a resource column id per scope', () => {
 		expect(keys.col.resource('week', 'r1')).toBe('week-col-resource-r1')
+
+		// Columns of an hour grid share a date, so the key has to carry the
+		// instant: a date key collapses all 24 onto one entry (#280).
+		const nineAm = monday.hour(9)
+		const tenAm = monday.hour(10)
+
+		expect(keys.col.events(nineAm)).not.toBe(keys.col.events(tenAm))
+		expect(keys.col.events(monday)).toBe(`col-events-${monday.toISOString()}`)
 		expect(keys.col.resource('month', 'r1')).toBe('month-col-resource-r1')
 	})
 

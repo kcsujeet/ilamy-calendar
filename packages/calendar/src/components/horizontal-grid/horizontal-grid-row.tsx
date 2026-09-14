@@ -5,7 +5,6 @@ import type {
 } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { dayKey } from '@ilamy/utils/helpers'
 import type React from 'react'
 import { memo, useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -52,7 +51,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	}, [columns, isGrouped])
 
 	// Compute events once at the row level — shared between GridCells and events layer
-	const { positionedEvents, dayEventsMap } = useProcessedWeekEvents({
+	const { positionedEvents, columnEventsMap } = useProcessedWeekEvents({
 		days: flatDays,
 		gridType,
 		resourceId: resource?.id,
@@ -105,7 +104,9 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								gridType={gridType}
 								hour={gridType === 'hour' ? col.day.hour() : undefined}
 								key={col.day.toISOString()}
-								precomputedEvents={dayEventsMap.get(dayKey(col.day))}
+								precomputedEvents={columnEventsMap.get(
+									keys.col.events(col.day)
+								)}
 								resourceId={resource?.id}
 								showDayNumber={showDayNumber}
 							/>

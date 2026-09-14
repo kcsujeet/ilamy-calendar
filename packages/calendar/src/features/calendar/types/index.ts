@@ -241,9 +241,10 @@ export interface IlamyCalendarProps {
 	 */
 	disableDragAndDrop?: boolean
 	/**
-	 * Maximum number of events to display per day in month view.
+	 * Maximum number of events to display in one grid cell: a day in month
+	 * view, an hour in the resource day view.
 	 * Additional events will be hidden and can be viewed via a "more" link.
-	 * Defaults to 3 if not specified.
+	 * Defaults to 4 if not specified.
 	 */
 	dayMaxEvents?: number
 	/**

@@ -186,3 +186,43 @@ test.describe('the week that spans two months', () => {
 		await expect(disabled.first()).toBeAttached()
 	})
 })
+
+/*
+ * #280. An hour column and a day column are different units, but the cells were
+ * bucketed by calendar day either way, so all 24 hour columns of a resource row
+ * shared one entry and each was handed the whole day. Every cell then claimed to
+ * be hiding events, including hours holding nothing.
+ */
+test.describe('resource day view overflow', () => {
+	test('no hour cell claims hidden events when none are hidden', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'resource-day-overflow',
+			view: 'day',
+			orientation: 'horizontal',
+		})
+		const calendar = new CalendarPage(page)
+		await calendar.expectRendered()
+
+		// Seven events in seven separate hours, four allowed per cell: nothing is
+		// ever hidden, so no cell may say otherwise.
+		await expect(calendar.root.getByText(/\+\d+ more/)).toHaveCount(0)
+	})
+
+	test('each hour cell holds only its own event', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'resource-day-overflow',
+			view: 'day',
+			orientation: 'horizontal',
+		})
+
+		// The cell's own signal is the height placeholder it renders per event it
+		// believes it holds, which carries the title as its test id. Asserting the
+		// bars instead would prove nothing: those come from the events layer,
+		// which this bug never touched, and they render once either way.
+		for (const index of [1, 4, 7]) {
+			await expect(page.getByTestId(`Course ${index}`)).toHaveCount(1)
+		}
+	})
+})

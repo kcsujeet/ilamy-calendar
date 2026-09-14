@@ -380,4 +380,51 @@ describe('ResourceDayHorizontal', () => {
 			expect(scrollSpy).not.toHaveBeenCalled()
 		})
 	})
+
+	/*
+	 * #280. An hour column and a day column are different units, but the cells
+	 * were bucketed by calendar day either way: every one of the 24 hour columns
+	 * formats to the same `YYYY-MM-DD`, so each was handed the whole day's
+	 * events. The visible result was `+N more` on every cell of the row,
+	 * including hours holding nothing at all.
+	 */
+	describe('overflow indicator per hour cell', () => {
+		const hourlyEvents: CalendarEvent[] = [9, 11, 13, 15, 17, 19, 21].map(
+			(hour, index) => ({
+				id: String(index),
+				title: `Course ${index + 1}`,
+				start: dayjs('2025-01-01T00:00:00.000Z').hour(hour),
+				end: dayjs('2025-01-01T00:00:00.000Z').hour(hour + 1),
+				resourceId: '1',
+			})
+		)
+
+		test('shows no overflow when no hour holds more than dayMaxEvents', () => {
+			renderResourceDayHorizontal({ events: hourlyEvents })
+
+			// Seven events across seven separate hours: one per cell, so nothing
+			// is ever hidden and no cell may claim otherwise.
+			expect(screen.queryAllByText(/\+\d+ more/)).toHaveLength(0)
+		})
+
+		test('shows overflow only on the hour that actually overflows', () => {
+			const crowded: CalendarEvent[] = Array.from({ length: 6 }, (_, i) => ({
+				id: `crowded-${i}`,
+				title: `Crowded ${i}`,
+				start: dayjs('2025-01-01T00:00:00.000Z').hour(10),
+				end: dayjs('2025-01-01T00:00:00.000Z').hour(11),
+				resourceId: '1',
+			}))
+			renderResourceDayHorizontal({
+				dayMaxEvents: 4,
+				events: [...hourlyEvents, ...crowded],
+			})
+
+			// Only the 10:00 cell holds more than four; every other hour is under.
+			const indicators = screen.queryAllByText(/\+\d+ more/)
+
+			expect(indicators).toHaveLength(1)
+			expect(indicators.at(0)).toHaveTextContent('+2 more')
+		})
+	})
 })

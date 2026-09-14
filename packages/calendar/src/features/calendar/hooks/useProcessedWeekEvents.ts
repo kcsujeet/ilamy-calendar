@@ -1,11 +1,12 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { dayKey, overlapsRange } from '@ilamy/utils/helpers'
+import { overlapsRange } from '@ilamy/utils/helpers'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { filterEventsForResource } from '@/lib/events/pipeline'
 import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutHorizontal } from '@/lib/layout/horizontal'
+import { keys } from '@/lib/utils/keys'
 
 interface UseProcessedWeekEventsProps {
 	days: Dayjs[]
@@ -16,7 +17,7 @@ interface UseProcessedWeekEventsProps {
 
 interface ProcessedWeekEventsResult {
 	positionedEvents: HorizontalPositionedEvent[]
-	dayEventsMap: Map<string, CalendarEvent[]>
+	columnEventsMap: Map<string, CalendarEvent[]>
 }
 
 export const useProcessedWeekEvents = ({
@@ -47,17 +48,19 @@ export const useProcessedWeekEvents = ({
 		return weekEvents
 	}, [getEventsForDateRange, weekStart, weekEnd, resourceId, allDay])
 
-	const dayEventsMap = useMemo(() => {
+	const columnEventsMap = useMemo(() => {
 		const map = new Map<string, CalendarEvent[]>()
+		const unit = gridType ?? 'day'
 		for (const day of days) {
-			const key = dayKey(day)
-			const dayStart = day.startOf('day')
-			const dayEnd = day.endOf('day')
-			const dayEvents = events.filter((e) => overlapsRange(e, dayStart, dayEnd))
-			map.set(key, dayEvents)
+			const columnStart = day.startOf(unit)
+			const columnEnd = day.endOf(unit)
+			const columnEvents = events.filter((e) =>
+				overlapsRange(e, columnStart, columnEnd)
+			)
+			map.set(keys.col.events(day), columnEvents)
 		}
 		return map
-	}, [days, events])
+	}, [days, events, gridType])
 
 	const positionedEvents = useMemo(() => {
 		return layoutHorizontal({
@@ -68,5 +71,5 @@ export const useProcessedWeekEvents = ({
 		})
 	}, [days, dayMaxEvents, events, gridType])
 
-	return { positionedEvents, dayEventsMap }
+	return { positionedEvents, columnEventsMap }
 }

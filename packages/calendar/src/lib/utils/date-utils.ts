@@ -35,9 +35,14 @@ export function getWeekDays(
 	currentDate: Dayjs,
 	firstDayOfWeek: number
 ): Dayjs[] {
+	// `startOf('week')` and `day()` each carry the receiver's offset forward
+	// rather than recomputing it, so composing them across a DST transition lands
+	// an hour off and on the far side of a day boundary. Re-anchoring here keeps
+	// the week this returns the week the caller asked for (#246).
 	const startOfWeekFromCurrentDate = currentDate
 		.startOf('week')
 		.day(firstDayOfWeek)
+		.startOf('day')
 
 	const adjustedStartOfWeek = currentDate.isBefore(startOfWeekFromCurrentDate)
 		? startOfWeekFromCurrentDate.subtract(1, 'week')
@@ -61,7 +66,14 @@ export function getMonthWeeks(
 	const firstDayOfGrid = firstWeek.at(0) ?? monthStart
 
 	return Array.from({ length: 6 }, (_, weekIndex) => {
-		const weekStart = firstDayOfGrid.add(weekIndex, 'week')
+		// `startOf('day')` re-anchors after the step, because `add` carries the
+		// receiver's offset forward rather than recomputing it. Across an autumn
+		// transition the offset it kept is an hour too large, so the anchor lands
+		// before midnight, in the previous week, and `getWeekDays` snaps it back
+		// to the week already emitted: one week twice, another missing, and the
+		// events in the missing week never render (#246). Measured rather than
+		// assumed, since dayjs does not document `add` against DST.
+		const weekStart = firstDayOfGrid.add(weekIndex, 'week').startOf('day')
 		return getWeekDays(weekStart, firstDayOfWeek)
 	})
 }

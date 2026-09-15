@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import {
@@ -59,6 +59,49 @@ const renderMonthView = (props = {}) => {
 }
 
 describe('MonthView', () => {
+	/*
+	 * #246. The grid is built by stepping a week at a time, and both the step and
+	 * the week-start calculation carried the receiver's UTC offset forward rather
+	 * than recomputing it. Across an autumn transition the anchor landed an hour
+	 * early, in the previous week, so the grid repeated one week and dropped
+	 * another. An event in the dropped week rendered nowhere.
+	 */
+	describe('across a DST transition', () => {
+		afterEach(() => {
+			dayjs.tz.setDefault()
+		})
+
+		test('renders 42 distinct days and the events in every week', () => {
+			cleanup() // the suite's beforeEach already rendered a default grid
+			dayjs.tz.setDefault('Europe/London')
+
+			// October 2025: the UK falls back on the 26th. Before the fix the grid
+			// repeated 26 October to 1 November and dropped the week after it.
+			const inTheDroppedWeek: CalendarEvent[] = [
+				{
+					id: 'dropped',
+					title: 'Event in the dropped week',
+					start: dayjs('2025-11-04T10:00:00.000Z'),
+					end: dayjs('2025-11-04T11:00:00.000Z'),
+				},
+			]
+			renderMonthView({
+				events: inTheDroppedWeek,
+				firstDayOfWeek: 1,
+				initialDate: dayjs('2025-10-15T12:00:00.000Z'),
+				initialView: 'month',
+				timezone: 'Europe/London',
+			})
+
+			const cells = screen.getAllByTestId(/^day-cell-/)
+			const dates = cells.map((cell) =>
+				cell.getAttribute('data-start')?.slice(0, 10)
+			)
+
+			expect(new Set(dates).size).toBe(42)
+			expect(screen.getByText('Event in the dropped week')).toBeInTheDocument()
+		})
+	})
 	beforeEach(() => {
 		// Reset the dayjs locale to default before each test
 		locale = 'en'

@@ -509,6 +509,51 @@ describe('getWeekDays', () => {
 })
 
 describe('getMonthWeeks', () => {
+	/*
+	 * #246. `add(n, 'week')` carries the receiver's frozen UTC offset, so across
+	 * a DST transition the anchor lands an hour off and on the far side of a week
+	 * boundary. `getWeekDays` then snaps it back to the week it already produced,
+	 * which puts one week in the grid twice and drops another entirely. Events in
+	 * the dropped week do not render at all.
+	 */
+	describe('across a DST transition', () => {
+		afterEach(() => {
+			dayjs.tz.setDefault()
+		})
+
+		const distinctDays = (month: string, firstDayOfWeek: number) => {
+			const weeks = getMonthWeeks(dayjs(month).startOf('month'), firstDayOfWeek)
+			const days = weeks.flat().map((day) => day.format('YYYY-MM-DD'))
+			return new Set(days).size
+		}
+
+		it('keeps 42 distinct days through the autumn transition', () => {
+			dayjs.tz.setDefault('Europe/London')
+
+			// 26 October 2025 is the UK autumn transition.
+			expect(distinctDays('2025-10-15T12:00:00.000Z', 0)).toBe(42)
+			expect(distinctDays('2025-10-15T12:00:00.000Z', 1)).toBe(42)
+			expect(distinctDays('2025-11-15T12:00:00.000Z', 1)).toBe(42)
+		})
+
+		it('keeps 42 distinct days in a western zone', () => {
+			dayjs.tz.setDefault('America/New_York')
+
+			// 2 November 2025 is the US autumn transition. Only the autumn ones
+			// break: the offset decreases, so the frozen offset carries the anchor
+			// back past midnight into the previous week. A spring transition drifts
+			// the other way and stays inside the day.
+			expect(distinctDays('2025-11-15T12:00:00.000Z', 0)).toBe(42)
+			expect(distinctDays('2025-11-15T12:00:00.000Z', 6)).toBe(42)
+		})
+
+		it('keeps 42 distinct days in a southern-hemisphere zone', () => {
+			dayjs.tz.setDefault('Australia/Sydney')
+
+			expect(distinctDays('2025-04-15T12:00:00.000Z', 1)).toBe(42)
+			expect(distinctDays('2025-10-15T12:00:00.000Z', 1)).toBe(42)
+		})
+	})
 	describe('timezone preservation', () => {
 		const TOKYO_OFFSET = 540
 

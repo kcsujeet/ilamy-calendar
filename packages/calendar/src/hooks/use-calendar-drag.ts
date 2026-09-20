@@ -7,7 +7,7 @@ import type {
 } from '@dnd-kit/core'
 import { MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
 	calculateDropTimes,
 	type DropCellData,
@@ -15,6 +15,7 @@ import {
 } from '@/components/drag-and-drop/dnd-utils'
 import type { DragPreviewState } from '@/contexts/drag-preview-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { dragCursor } from '@/lib/utils/drag-preview'
 import {
 	calculateGrabOffset,
 	type DragSegment,
@@ -55,7 +56,11 @@ const isSameDrop = (
 		previous.start.isSame(next.start) && previous.end.isSame(next.end)
 	const sameTarget =
 		previous.resourceId === next.resourceId && previous.allDay === next.allDay
-	return sameSpan && sameTarget
+	// Validity is part of the identity: crossing from an open day to a closed one
+	// can leave the span untouched, and skipping the update there would strand
+	// the not-allowed cursor on the wrong half of the drag.
+	const sameValidity = previous.isDropAllowed === next.isDropAllowed
+	return sameSpan && sameTarget && sameValidity
 }
 
 /**
@@ -107,7 +112,31 @@ const candidateFor = (
 		end,
 		resourceId: data.resourceId ?? activeEvent.resourceId,
 		allDay,
+		isDropAllowed: !data.disabled,
 	}
+}
+
+/**
+ * Wears the drag's cursor for the whole page while one is in flight, so the
+ * refusal is visible wherever the pointer happens to be rather than only over
+ * the cell it is refusing. FullCalendar does the same thing by toggling
+ * `fc-not-allowed` on `document.body`; this sets the style directly because
+ * the library ships no CSS of its own.
+ */
+const useDragCursor = (dragPreview: DragPreviewState | null) => {
+	const cursor = dragCursor(dragPreview)
+	useEffect(() => {
+		if (!cursor) {
+			return
+		}
+		const previous = document.body.style.cursor
+		document.body.style.cursor = cursor
+		// Restores on drop, on cancel, and on unmount mid-drag — leaving a
+		// `not-allowed` cursor behind on the whole page would outlive the drag.
+		return () => {
+			document.body.style.cursor = previous
+		}
+	}, [cursor])
 }
 
 /** Small movement thresholds, so a drag starts without feeling sticky. */
@@ -138,6 +167,7 @@ export const useCalendarDrag = (
 	const grabOffsetRef = useRef<GrabOffset>(NO_GRAB_OFFSET)
 	const overlayRef = useRef<DragOverlayHandle | null>(null)
 	const [dragPreview, setDragPreview] = useState<DragPreviewState | null>(null)
+	useDragCursor(dragPreview)
 
 	const endDrag = () => {
 		activeEventRef.current = null

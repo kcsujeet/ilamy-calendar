@@ -10,6 +10,14 @@ export interface DropCellData {
 	minute?: number
 	resourceId?: string | number
 	allDay?: boolean
+	/**
+	 * Whether this cell refuses drops. A disabled cell is still REGISTERED as a
+	 * droppable so the mirror keeps rendering over it and the pointer can be
+	 * released there; validity is decided at drop time instead, the way
+	 * FullCalendar separates "where would this land" from "is that allowed"
+	 * (`eventAllow`, and the `fc-not-allowed` class it puts on the body).
+	 */
+	disabled?: boolean
 }
 
 type ResourceId = string | number
@@ -123,6 +131,11 @@ export const getUpdatedEvent = (
 	}
 
 	const data = (over.data.current || {}) as DropCellData
+	// Released on a cell that refuses drops: commit nothing, so the event
+	// reverts to where it started.
+	if (data.disabled) {
+		return null
+	}
 	const { resourceId } = data
 	const { start, end, allDay } = calculateDropTimes(
 		activeEvent,

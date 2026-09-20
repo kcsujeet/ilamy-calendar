@@ -12,6 +12,7 @@ let allDayCell: boolean | undefined = false
 let hour: number | undefined
 let minute: number | undefined
 let sourceResourceId: string | number | undefined
+let disabledCell: boolean | undefined
 
 const getDragEvent = () => ({
 	active: {
@@ -33,6 +34,7 @@ const getDragEvent = () => ({
 				resourceId: cellResourceId,
 				hour: hour,
 				minute: minute,
+				disabled: disabledCell,
 			},
 		},
 	},
@@ -64,6 +66,7 @@ beforeEach(() => {
 	hour = undefined
 	minute = undefined
 	sourceResourceId = undefined
+	disabledCell = undefined
 	start = dayjs('2024-06-15T00:00:00')
 	end = dayjs('2024-06-15T23:59:59')
 	allDay = false
@@ -85,6 +88,22 @@ describe('getUpdatedEvent Utility Function', () => {
 			getDragEvent() as unknown as DragEndEvent,
 			null
 		)
+		expect(result).toBeNull()
+	})
+
+	it('returns null when the cell released on is disabled', () => {
+		// A disabled cell is a droppable now, so the mirror keeps rendering over
+		// it and the pointer can be released there. Validity is decided HERE, at
+		// drop time, the way FullCalendar separates "where would this land" from
+		// "is that allowed" -- releasing simply commits nothing and the event
+		// reverts.
+		disabledCell = true
+
+		const result = getUpdatedEvent(
+			getDragEvent() as unknown as DragEndEvent,
+			getActiveEvent()
+		)
+
 		expect(result).toBeNull()
 	})
 

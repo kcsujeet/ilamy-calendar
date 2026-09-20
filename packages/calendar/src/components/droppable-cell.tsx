@@ -161,8 +161,21 @@ export function DroppableCell({
 
 	const { isOver, setNodeRef } = useDroppable({
 		id,
-		data: { type, date, hour, minute, resourceId, allDay },
-		disabled: disableDragAndDrop || cellDisabled,
+		// A disabled cell stays REGISTERED so the mirror keeps rendering over it
+		// and the pointer can be released there; `disabled` in the data is what
+		// makes the drop a no-op. Refusing the hit-test instead left `over` null,
+		// which blanked the whole preview and swapped the snapped mirror for a
+		// floating chip the moment the pointer crossed a closed day.
+		data: {
+			type,
+			date,
+			hour,
+			minute,
+			resourceId,
+			allDay,
+			disabled: cellDisabled,
+		},
+		disabled: disableDragAndDrop,
 	})
 
 	const handleCellClick = (e: React.MouseEvent) => {

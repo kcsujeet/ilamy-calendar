@@ -78,3 +78,21 @@ export const getDragPreviewEvent = (
 		allDay: dragPreview.allDay,
 	}
 }
+
+/**
+ * The cursor the page should wear for the drag in flight.
+ *
+ * FullCalendar signals a refused drop with the cursor rather than by hiding the
+ * mirror — its bundle toggles `fc-not-allowed` on `document.body` while the
+ * pointer sits somewhere its constraints forbid, and `dragRevertDuration`
+ * exists because the event visibly goes there and then animates back. This
+ * library ships no CSS, so the caller applies the returned value directly.
+ *
+ * Empty string, not `'auto'`: it clears an inline `cursor` without overriding
+ * whatever the page had.
+ */
+export const dragCursor = (dragPreview: DragPreviewState | null): string => {
+	// `=== false` because the flag is optional and absent means allowed.
+	const refusesDrop = dragPreview?.isDropAllowed === false
+	return refusesDrop ? 'not-allowed' : ''
+}

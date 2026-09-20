@@ -14,6 +14,19 @@ export interface DragPreviewState {
 	end: Dayjs
 	resourceId?: string | number
 	allDay: boolean
+	/**
+	 * Whether releasing here would actually move the event. False over a cell
+	 * that refuses drops: the mirror is still drawn, because the candidate is
+	 * still where the pointer says, and the release simply commits nothing.
+	 * FullCalendar draws its mirror over an invalid area too and signals the
+	 * refusal with the cursor (`fc-not-allowed` on the body) rather than by
+	 * hiding it.
+	 *
+	 * Optional, and ABSENT MEANS ALLOWED — the safe default, so a candidate built
+	 * without an opinion never silently forbids a drop. Read it as
+	 * `isDropAllowed === false`, never as `!isDropAllowed`.
+	 */
+	isDropAllowed?: boolean
 }
 
 export const DragPreviewContext = createContext<DragPreviewState | null>(null)

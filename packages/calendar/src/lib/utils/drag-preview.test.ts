@@ -2,7 +2,11 @@ import { describe, expect, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import type { DragPreviewState } from '@/contexts/drag-preview-context'
-import { getDragPreviewEvent, isPreviewOnTarget } from './drag-preview'
+import {
+	dragCursor,
+	getDragPreviewEvent,
+	isPreviewOnTarget,
+} from './drag-preview'
 
 const at = (hour: number, minute = 0) =>
 	dayjs('2025-01-01T00:00:00.000Z').hour(hour).minute(minute)
@@ -115,5 +119,28 @@ describe('getDragPreviewEvent', () => {
 		const preview = mkPreview({ allDay: true })
 
 		expect(getDragPreviewEvent(preview, wholeDay)?.allDay).toBe(true)
+	})
+})
+
+describe('dragCursor', () => {
+	// FullCalendar signals a refused drop with the cursor rather than by hiding
+	// the mirror: it toggles `fc-not-allowed` on `document.body` while the drag
+	// sits over an area its constraints forbid.
+	test('asks for not-allowed while the candidate sits on a closed cell', () => {
+		expect(dragCursor(mkPreview({ isDropAllowed: false }))).toBe('not-allowed')
+	})
+
+	test('asks for nothing while the candidate is droppable', () => {
+		expect(dragCursor(mkPreview({ isDropAllowed: true }))).toBe('')
+	})
+
+	test('treats an unstated verdict as droppable, never as refused', () => {
+		// `isDropAllowed` is optional and absent means allowed, so a candidate
+		// built without an opinion must not strand a not-allowed cursor.
+		expect(dragCursor(mkPreview())).toBe('')
+	})
+
+	test('asks for nothing when no drag is in flight', () => {
+		expect(dragCursor(null)).toBe('')
 	})
 })

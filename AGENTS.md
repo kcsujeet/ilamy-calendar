@@ -63,6 +63,19 @@ Context, decisions, things to watch out for.
 
 Run `/load-context` to load the full codebase map, rules, and recent dev logs before starting work.
 
+The plugins this repo relies on install themselves. `.claude/settings.json` declares the
+`kc-claude-kit` marketplace in `extraKnownMarketplaces`, which registers it once you trust
+the folder, and enables its plugins in `enabledPlugins`. Enabling is not installing: since
+Claude Code v2.1.195 a plugin that comes from an external source stays uninstalled until
+someone runs `claude plugin install`
+([docs](https://code.claude.com/docs/en/discover-plugins#configure-team-marketplaces)), so a
+`SessionStart` hook (`.claude/hooks/install-project-plugins.sh`) runs that command for any
+plugin still missing. A fresh clone therefore needs no manual `/plugin` step; the newly
+installed plugins are active from the next session, or after `/reload-plugins`. The hook
+installs at **local** scope because `--scope project` refuses to write through this repo's
+symlinked `.claude/settings.json`, and the shared enable record already lives there. It
+prints nothing once everything is present, and never blocks the session.
+
 ## Commands
 
 ```bash

@@ -335,6 +335,30 @@ describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)'
 		})
 	})
 
+	test('tints a disabled cell the candidate spans across', () => {
+		// A multi-day span crosses days you cannot drop ONTO -- weekends, closed
+		// days -- and the mirror is already drawn across them. Leaving those cells
+		// grey makes the bar look like it is crossing unavailable ground.
+		//
+		// This cannot be mistaken for "you may release here": a disabled cell is
+		// not registered as a droppable and carries `pointer-events-none`, so
+		// `isOver` can never fire for it. The only route to a highlight is the
+		// candidate COVERING its range, which is exactly what is being said.
+		renderCell({
+			preview: mkPreview(),
+			hour: 10,
+			minute: 30,
+			view: 'week',
+			isCellDisabled: () => true,
+		})
+
+		const highlight = screen.getByTestId('cell').firstElementChild
+
+		expect(highlight).toHaveStyle({
+			backgroundColor: 'rgba(188, 232, 241, 0.3)',
+		})
+	})
+
 	test('leaves a cell the candidate does not cover unpainted', () => {
 		renderCell({ preview: mkPreview(), hour: 14, minute: 0, view: 'week' })
 

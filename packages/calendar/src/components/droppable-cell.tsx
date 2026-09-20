@@ -79,8 +79,9 @@ const DROP_TARGET_HIGHLIGHT = 'rgba(188, 232, 241, 0.3)'
  * Whether the in-flight drag would land on this cell. `end` is exclusive
  * (#248); `isPreviewOnTarget` takes the last instant the cell covers.
  *
- * A boolean is all the cell needs: it reports the landing on
- * `data-drop-target` and paints nothing itself.
+ * A boolean is all the cell needs. The tint it draws is one fixed colour, and
+ * `data-drop-target` carries no payload either, so neither reader wants the
+ * candidate itself.
  */
 const useDragLandsHere = (
 	cellRange: { start: Dayjs; end: Dayjs },
@@ -176,8 +177,15 @@ export function DroppableCell({
 	// `isOver` alone is not enough: a grab offset moves the candidate off the
 	// cell the pointer is on, and the cells it does cover must light up too.
 	const isDropTarget = isOver || landsHere
-	const dropAllowed = !disableDragAndDrop && !cellDisabled
-	const showDropHighlight = isDropTarget && dropAllowed
+	// A disabled cell still lights up when the candidate COVERS it. A multi-day
+	// span crosses days you cannot drop onto -- weekends, closed days -- and the
+	// mirror is already drawn across them, so leaving those cells in their
+	// disabled grey makes the bar look like it is crossing unavailable ground.
+	//
+	// It cannot be read as "release here": a disabled cell is not registered as a
+	// droppable and carries `pointer-events-none`, so `isOver` never fires for
+	// one. Its only route to a highlight is the candidate covering its range.
+	const showDropHighlight = isDropTarget && !disableDragAndDrop
 
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: The cell is interactive for event creation

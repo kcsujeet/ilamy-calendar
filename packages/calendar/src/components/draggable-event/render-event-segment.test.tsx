@@ -143,6 +143,135 @@ describe('renderEvent segment', () => {
 })
 
 /*
+ * Which corners a bar squares, and on which axis. FullCalendar squares a cut
+ * side only in daygrid
+ * (`.fc-daygrid-block-event:not(.fc-event-start){border-top-left-radius:0;…}`);
+ * timegrid carries no such rule and leaves its events fully rounded. Squaring
+ * the LEFT and RIGHT of a time-column bar is meaningless twice over: that bar
+ * is cut along the vertical axis, and it is horizontally complete inside its
+ * own column.
+ */
+describe('event bar truncation affordances', () => {
+	// Saturday to the following Tuesday, so the month grid cuts it at the week
+	// boundary and draws it as two bars.
+	const acrossTheWeekend: CalendarEvent[] = [
+		{
+			id: 'long',
+			title: 'Long booking',
+			start: dayjs('2025-03-01T09:00:00.000Z'),
+			end: dayjs('2025-03-04T17:00:00.000Z'),
+		},
+	]
+
+	/** The styled surface each bar draws, found through its title. */
+	const cornersOf = (title: string) =>
+		screen
+			.getAllByText(title)
+			.map((node) => node.parentElement?.className ?? '')
+
+	/** The full-height stripes that mark a span continuing past the bar. */
+	const continuationMarkers = (container: HTMLElement) =>
+		container.querySelectorAll('[class*="bg-foreground/25"]').length
+
+	test('squares the cut side of a month bar, which is cut left-to-right', () => {
+		cleanup()
+		render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				events={acrossTheWeekend}
+				firstDayOfWeek={1}
+				initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+			>
+				<MonthView />
+			</CalendarProvider>
+		)
+
+		const [firstBar, secondBar] = cornersOf('Long booking')
+
+		expect(firstBar).toContain('rounded-l-md rounded-r-none')
+		expect(secondBar).toContain('rounded-r-md rounded-l-none')
+	})
+
+	test('marks a cut month bar with a continuation stripe on the cut side', () => {
+		cleanup()
+		const { container } = render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				events={acrossTheWeekend}
+				firstDayOfWeek={1}
+				initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+			>
+				<MonthView />
+			</CalendarProvider>
+		)
+
+		// Two bars, each cut once: the first at its right edge, the second at
+		// its left.
+		expect(continuationMarkers(container)).toBe(2)
+	})
+
+	test('gives a time-column bar no continuation stripe at all', () => {
+		// The stripe sits at `left-0` / `right-0`, full height. That says "this
+		// span continues sideways", which is true of a month row and false of a
+		// time column -- an overnight event continues DOWNWARD, past midnight.
+		// FullCalendar marks continuation only in daygrid; timegrid gets none.
+		cleanup()
+		const overnight: CalendarEvent[] = [
+			{
+				id: 'overnight',
+				title: 'Overnight',
+				start: dayjs('2025-01-06T22:00:00.000Z'),
+				end: dayjs('2025-01-07T02:00:00.000Z'),
+			},
+		]
+		const { container } = render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				events={overnight}
+				firstDayOfWeek={1}
+				initialDate={dayjs('2025-01-06T00:00:00.000Z')}
+				initialView="week"
+				timezone="UTC"
+			>
+				<WeekView />
+			</CalendarProvider>
+		)
+
+		expect(continuationMarkers(container)).toBe(0)
+	})
+
+	test('leaves a time-column bar fully rounded, however the hours cut it', () => {
+		cleanup()
+		const overnight: CalendarEvent[] = [
+			{
+				id: 'overnight',
+				title: 'Overnight',
+				start: dayjs('2025-01-06T22:00:00.000Z'),
+				end: dayjs('2025-01-07T02:00:00.000Z'),
+			},
+		]
+		render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				events={overnight}
+				firstDayOfWeek={1}
+				initialDate={dayjs('2025-01-06T00:00:00.000Z')}
+				initialView="week"
+				timezone="UTC"
+			>
+				<WeekView />
+			</CalendarProvider>
+		)
+
+		const bars = cornersOf('Overnight')
+
+		expect(bars.every((bar) => bar.includes('rounded-md'))).toBe(true)
+		expect(bars.some((bar) => bar.includes('rounded-r-none'))).toBe(false)
+		expect(bars.some((bar) => bar.includes('rounded-l-none'))).toBe(false)
+	})
+})
+
+/*
  * What the bar says about itself to the pointer. These are the only observable
  * of the drag-state classes, and nothing pinned them: the derivation was once
  * extracted into a helper that was never called, and the whole suite stayed

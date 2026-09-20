@@ -7,6 +7,7 @@ import { CurrentTimeMarker } from '@/components/current-time-marker'
 import { DragPreviewCard } from '@/components/drag-and-drop/drag-preview-card'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useDragPreview } from '@/contexts/drag-preview-context'
+import { GridAxisContext } from '@/contexts/grid-axis-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
 import { useDragPreviewEvent } from '@/hooks/use-drag-preview-event'
@@ -65,40 +66,42 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	}, [previewEvent, days, gridType])
 
 	return (
-		<div
-			className="relative w-full h-full pointer-events-none z-10 overflow-clip"
-			data-testid={dataTestId}
-		>
-			{showNowLine && rangeStart && rangeEnd && (
-				<CurrentTimeMarker
-					rangeEnd={rangeEnd}
-					rangeStart={rangeStart}
-					resource={resource}
-					withDot={isFirstResource}
-				/>
-			)}
-			{todayEvents.map((positioned, index) => {
-				const elementId = verticalEventKey(
-					positioned.event.id,
-					index,
-					days,
-					resourceId
-				)
-				return (
-					<VerticalEventBar
-						draggedEventId={dragPreview?.event.id}
-						elementId={elementId}
-						key={keys.listKey(elementId, 'wrapper')}
-						positioned={positioned}
-						range={{ start: rangeStart, end: rangeEnd }}
-						resourceId={resourceId}
+		<GridAxisContext.Provider value="vertical">
+			<div
+				className="relative w-full h-full pointer-events-none z-10 overflow-clip"
+				data-testid={dataTestId}
+			>
+				{showNowLine && rangeStart && rangeEnd && (
+					<CurrentTimeMarker
+						rangeEnd={rangeEnd}
+						rangeStart={rangeStart}
+						resource={resource}
+						withDot={isFirstResource}
 					/>
-				)
-			})}
-			{previewPositioned && (
-				<VerticalDragPreview previewPositioned={previewPositioned} />
-			)}
-		</div>
+				)}
+				{todayEvents.map((positioned, index) => {
+					const elementId = verticalEventKey(
+						positioned.event.id,
+						index,
+						days,
+						resourceId
+					)
+					return (
+						<VerticalEventBar
+							draggedEventId={dragPreview?.event.id}
+							elementId={elementId}
+							key={keys.listKey(elementId, 'wrapper')}
+							positioned={positioned}
+							range={{ start: rangeStart, end: rangeEnd }}
+							resourceId={resourceId}
+						/>
+					)
+				})}
+				{previewPositioned && (
+					<VerticalDragPreview previewPositioned={previewPositioned} />
+				)}
+			</div>
+		</GridAxisContext.Provider>
 	)
 }
 

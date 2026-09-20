@@ -21,17 +21,35 @@ export const eventSurfaceStyle = (event: CalendarEvent) => ({
 	color: event.color,
 })
 
+interface EventSurfaceRadiusInput {
+	/** The axis the grid's time runs along, which decides which corners can square. */
+	axis: 'vertical' | 'horizontal'
+	isTruncatedStart: boolean
+	isTruncatedEnd: boolean
+}
+
 /**
  * Which corners an event segment rounds. Stated as what the segment HOLDS: a
  * side the visible range cut off is drawn square, because the span continues
  * past it. The bar and the drag mirror both read this — a mirror that stayed
  * fully rounded would claim the drop ends inside a row it actually spills out
  * of.
+ *
+ * Only a horizontal grid squares anything, which is FullCalendar's rule:
+ * `.fc-daygrid-block-event:not(.fc-event-start)` zeroes the left radii and
+ * `:not(.fc-event-end)` the right, while timegrid carries no such rule and
+ * leaves its events fully rounded. A time column is cut along the VERTICAL
+ * axis, so squaring its left and right edges marks the wrong two sides — and
+ * that bar is horizontally complete inside its own column anyway.
  */
-export const eventSurfaceRadius = (
-	isTruncatedStart: boolean,
-	isTruncatedEnd: boolean
-): string => {
+export const eventSurfaceRadius = ({
+	axis,
+	isTruncatedStart,
+	isTruncatedEnd,
+}: EventSurfaceRadiusInput): string => {
+	if (axis === 'vertical') {
+		return 'rounded-md'
+	}
 	if (isTruncatedStart && isTruncatedEnd) {
 		return 'rounded-none'
 	}

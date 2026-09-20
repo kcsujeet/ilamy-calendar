@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
+import { useGridAxis } from '@/contexts/grid-axis-context'
 import {
 	eventSurfaceClasses,
 	eventSurfaceRadius,
@@ -17,17 +18,28 @@ export function DefaultEventContent({
 	isTruncatedStart,
 	isTruncatedEnd,
 }: DefaultEventContentProps) {
+	const axis = useGridAxis()
+
+	// A stripe at `left-0`/`right-0` says "this span continues sideways", which
+	// is what a month row cuts along. A time column cuts along the other axis —
+	// an overnight event continues DOWNWARD — so the same stripe there marks two
+	// edges the event does not actually run past. FullCalendar marks continuation
+	// in daygrid only; timegrid carries no such affordance, and neither does this.
+	const marksContinuation = axis === 'horizontal'
+	const showStartMarker = marksContinuation && isTruncatedStart
+	const showEndMarker = marksContinuation && isTruncatedEnd
+
 	return (
 		<div
 			className={cn(
 				eventSurfaceClasses(event),
 				'h-full w-full px-1 border-[1.5px] border-card text-left overflow-clip relative',
-				eventSurfaceRadius(isTruncatedStart, isTruncatedEnd)
+				eventSurfaceRadius({ axis, isTruncatedStart, isTruncatedEnd })
 			)}
 			style={eventSurfaceStyle(event)}
 		>
 			{/* Left continuation indicator */}
-			{isTruncatedStart && (
+			{showStartMarker && (
 				<div className="absolute left-0 top-0 bottom-0 w-0.5 bg-foreground/25"></div>
 			)}
 
@@ -36,15 +48,15 @@ export function DefaultEventContent({
 				className={cn(
 					'text-[10px] font-semibold sm:text-xs mt-0.5',
 					// Add slight padding to avoid overlap with indicators
-					isTruncatedStart && 'pl-1',
-					isTruncatedEnd && 'pr-1'
+					showStartMarker && 'pl-1',
+					showEndMarker && 'pr-1'
 				)}
 			>
 				{event.title}
 			</p>
 
 			{/* Right continuation indicator */}
-			{isTruncatedEnd && (
+			{showEndMarker && (
 				<div className="absolute right-0 top-0 bottom-0 w-0.5 bg-foreground/25"></div>
 			)}
 		</div>

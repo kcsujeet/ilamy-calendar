@@ -63,7 +63,11 @@ export function DragPreviewCard({
 			className={cn(
 				'absolute z-20 pointer-events-none transition-none overflow-clip',
 				'shadow-xl ring-2 ring-foreground border-[1.5px] border-card',
-				eventSurfaceRadius(isTruncatedStart, isTruncatedEnd),
+				eventSurfaceRadius({
+					axis: orientation,
+					isTruncatedStart,
+					isTruncatedEnd,
+				}),
 				eventSurfaceClasses(event)
 			)}
 			data-testid={keys.dragPreview(orientation)}

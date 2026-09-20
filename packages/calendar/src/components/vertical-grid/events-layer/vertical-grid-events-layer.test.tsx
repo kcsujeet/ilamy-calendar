@@ -2,8 +2,13 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
+import {
+	DragPreviewContext,
+	type DragPreviewState,
+} from '@/contexts/drag-preview-context'
 import { CalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import type { RenderCurrentTimeIndicatorProps } from '@/features/calendar/types'
+import { keys } from '@/lib/utils/keys'
 import type { CalendarView } from '@/types'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
@@ -25,30 +30,38 @@ let customRenderFn:
 const TestWrapper: React.FC<{
 	children: React.ReactNode
 	view?: CalendarView
-}> = ({ children, view = 'day' }) => (
+	preview?: DragPreviewState
+}> = ({ children, view = 'day', preview }) => (
 	<CalendarContext.Provider
 		value={
 			{
 				renderCurrentTimeIndicator: customRenderFn,
 				events: [],
 				getEventsForDateRange: () => [],
+				timeFormat: '12-hour',
 				view,
 			} as never
 		}
 	>
-		{children}
+		<DragPreviewContext.Provider value={preview ?? null}>
+			{children}
+		</DragPreviewContext.Provider>
 	</CalendarContext.Provider>
 )
 
-const renderEventsLayer = (props: {
+const renderEventsLayer = ({
+	preview,
+	...props
+}: {
 	days: Dayjs[]
 	resource?: Resource
 	view?: CalendarView
 	gridType?: 'day' | 'hour'
 	'data-testid'?: string
+	preview?: DragPreviewState
 }) => {
 	return render(
-		<TestWrapper view={props.view}>
+		<TestWrapper preview={preview} view={props.view}>
 			<VerticalGridEventsLayer {...props} />
 		</TestWrapper>
 	)
@@ -169,5 +182,78 @@ describe('VerticalGridEventsLayer', () => {
 		renderEventsLayer({ days: hours, 'data-testid': 'events-layer' })
 
 		expect(receivedResource).toBeUndefined()
+	})
+
+	test('renders the snapped mirror when the candidate overlaps the column', () => {
+		const day = dayjs('2025-01-01T00:00:00.000Z')
+		const hours = Array.from({ length: 24 }, (_, i) => day.add(i, 'hour'))
+		const preview: DragPreviewState = {
+			event: {
+				id: 'event-dragged',
+				title: 'Dragging Meeting',
+				start: day.hour(10),
+				end: day.hour(12),
+			},
+			start: day.hour(10),
+			end: day.hour(12),
+			allDay: false,
+		}
+
+		renderEventsLayer({ days: hours, gridType: 'hour', preview })
+
+		expect(screen.getByTestId(keys.dragPreview('vertical'))).toBeInTheDocument()
+		expect(screen.getByText('Dragging Meeting')).toBeInTheDocument()
+		expect(screen.getByText(/10:00am/)).toBeInTheDocument()
+		expect(screen.getByText(/12:00pm/)).toBeInTheDocument()
+	})
+
+	test('draws the mirror opaque, as the strongest surface in the grid', () => {
+		// FullCalendar puts no opacity rule on `.fc-event-mirror` at all; only the
+		// bar left behind is dimmed. A translucent mirror inverts the hierarchy —
+		// the thing being moved ends up fainter than the grid it crosses, which is
+		// how it became impossible to tell what was being dragged.
+		const day = dayjs('2025-01-01T00:00:00.000Z')
+		const hours = Array.from({ length: 24 }, (_, i) => day.add(i, 'hour'))
+		const preview: DragPreviewState = {
+			event: {
+				id: 'event-dragged',
+				title: 'Dragging Meeting',
+				start: day.hour(10),
+				end: day.hour(12),
+			},
+			start: day.hour(10),
+			end: day.hour(12),
+			allDay: false,
+		}
+
+		renderEventsLayer({ days: hours, gridType: 'hour', preview })
+
+		const mirror = screen.getByTestId(keys.dragPreview('vertical'))
+
+		expect(mirror.className).not.toContain('opacity-')
+		expect(mirror.className).toContain('ring-2')
+	})
+
+	test('draws no mirror for an all-day candidate, which this grid never shows', () => {
+		const day = dayjs('2025-01-01T00:00:00.000Z')
+		const hours = Array.from({ length: 24 }, (_, i) => day.add(i, 'hour'))
+		const preview: DragPreviewState = {
+			event: {
+				id: 'event-dragged',
+				title: 'Company Offsite',
+				start: day.startOf('day'),
+				end: day.add(1, 'day').startOf('day'),
+				allDay: true,
+			},
+			start: day.startOf('day'),
+			end: day.add(1, 'day').startOf('day'),
+			allDay: true,
+		}
+
+		renderEventsLayer({ days: hours, gridType: 'hour', preview })
+
+		expect(
+			screen.queryByTestId(keys.dragPreview('vertical'))
+		).not.toBeInTheDocument()
 	})
 })

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { gotoScenario } from './support/harness'
-import { MonthGrid } from './support/pages'
+import { MonthGrid, TimeGrid } from './support/pages'
 
 /**
  * Drag and drop, deliberately last and deliberately narrow.
@@ -15,8 +15,11 @@ import { MonthGrid } from './support/pages'
  * green, and then a real failure reads as noise too.
  */
 
-/** Presses, moves in steps so the sensor activates, and releases. */
-const dragTo = async (
+/**
+ * Presses and moves in steps so the sensor activates, WITHOUT releasing. Use it
+ * to inspect what the calendar shows mid-drag; the caller owns the mouse-up.
+ */
+const pressAndMoveTo = async (
 	page: import('@playwright/test').Page,
 	from: import('@playwright/test').Locator,
 	to: import('@playwright/test').Locator
@@ -40,8 +43,24 @@ const dragTo = async (
 			source.y + ((target.y - source.y) * step) / 8 + target.height / 2
 		)
 	}
+}
+
+/** Presses, moves in steps so the sensor activates, and releases. */
+const dragTo = async (
+	page: import('@playwright/test').Page,
+	from: import('@playwright/test').Locator,
+	to: import('@playwright/test').Locator
+): Promise<void> => {
+	await pressAndMoveTo(page, from, to)
 	await page.mouse.up()
 }
+
+/** The fill an event gets when it declares no colour of its own. */
+const FALLBACK_FILL = 'oklch(0.623 0.214 259.815)'
+
+/** The colour the snapped mirror is painting, as the browser resolves it. */
+const mirrorColour = (mirror: import('@playwright/test').Locator) =>
+	mirror.evaluate((el) => getComputedStyle(el).backgroundColor)
 
 test.describe('drag and drop', () => {
 	test('moves an event to another day in the month grid', async ({ page }) => {
@@ -59,6 +78,86 @@ test.describe('drag and drop', () => {
 		await expect
 			.poll(async () => (await month.eventNamed('Earlier in the month')).start)
 			.toMatch(/^2025-03-06/)
+	})
+
+	test('moves an event to another hour in the day grid', async ({ page }) => {
+		// The month grid alone cannot catch this: it drops onto day cells, which
+		// take their date from the cell and their clock from the event. Only an
+		// hour grid proves the drop reads the slot it was dropped on.
+		// Pinned scroll, not luck: the grid is taller than the viewport, and an
+		// element below the fold has a bounding box the mouse cannot reach.
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'day',
+			settings: { scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+
+		const bar = grid.event('Morning stand-up').first()
+		await expect(bar).toBeVisible()
+
+		// 09:30 to the 13:00 slot, straight down the same column.
+		await dragTo(page, bar, grid.slotAt('2025-03-12T13:00'))
+
+		await expect
+			.poll(async () => (await grid.eventNamed('Morning stand-up')).start)
+			.toMatch(/^2025-03-12T13:00/)
+	})
+
+	test("paints the mirror in the dragged event's own colour", async ({
+		page,
+	}) => {
+		// An event may carry its fill in `backgroundColor` as a CSS value OR in
+		// `color` as Tailwind classes, and the playground's own seed data uses the
+		// second. A reader that checks only `backgroundColor` falls back to
+		// `bg-blue-500` and paints every mirror the same blue.
+		await gotoScenario(page, { scenario: 'colored', view: 'month' })
+		const month = new MonthGrid(page)
+
+		await pressAndMoveTo(
+			page,
+			month.event('CSS colour').first(),
+			month.cellOn('2025-03-20')
+		)
+
+		// The fixture authors this event as `backgroundColor: '#f59e0b'`.
+		await expect
+			.poll(() => mirrorColour(month.dragMirror))
+			.toBe('rgb(245, 158, 11)')
+		await page.mouse.up()
+	})
+
+	test('paints the mirror for an event coloured by class', async ({ page }) => {
+		await gotoScenario(page, { scenario: 'colored', view: 'month' })
+		const month = new MonthGrid(page)
+
+		await pressAndMoveTo(
+			page,
+			month.event('Tailwind classes').first(),
+			month.cellOn('2025-03-20')
+		)
+
+		// Not the `bg-blue-500` fallback, which is what every event used to get.
+		await expect
+			.poll(() => mirrorColour(month.dragMirror))
+			.not.toBe(FALLBACK_FILL)
+		await page.mouse.up()
+	})
+
+	test('marks the drop target without painting over it', async ({ page }) => {
+		// The mirror is the only thing that says where the drop lands. The cell
+		// reports it on `data-drop-target` for a consumer to style, and paints
+		// nothing: a tint in the dragged event's own colour is the same hue as the
+		// mirror standing on it, and a multi-day drag floods every cell it spans.
+		await gotoScenario(page, { scenario: 'colored', view: 'month' })
+		const month = new MonthGrid(page)
+		const cell = month.cellOn('2025-03-20')
+
+		await pressAndMoveTo(page, month.event('CSS colour').first(), cell)
+
+		await expect(cell).toHaveAttribute('data-drop-target', 'true')
+		await expect(cell.locator('[aria-hidden="true"]')).toHaveCount(0)
+		await page.mouse.up()
 	})
 
 	test('leaves the event alone when drag and drop is disabled', async ({

@@ -30,6 +30,14 @@ export class CalendarPage {
 		return this.page.getByRole('button', { name: 'Today', exact: true }).click()
 	}
 
+	/**
+	 * The snapped mirror of the event being dragged. Only one is ever on screen:
+	 * a view draws one grid, and each grid draws at most one mirror.
+	 */
+	get dragMirror(): Locator {
+		return this.page.locator('[data-testid^="event-drag-preview-"]')
+	}
+
 	/** The one cell marked today, if the pinned date is on screen at all. */
 	get todayMarker(): Locator {
 		return this.page.getByTestId('day-number-today')
@@ -106,6 +114,17 @@ export class TimeGrid extends CalendarPage {
 
 	get hourLabels(): Locator {
 		return this.page.locator('[data-testid^="vertical-time-"]')
+	}
+
+	/**
+	 * The slot whose range opens at this instant, given as an ISO prefix such as
+	 * '2025-03-12T13:00'. Every cell reports its own range on `data-start`,
+	 * which is the only thing that distinguishes one hour from the next.
+	 */
+	slotAt(startsWith: string): Locator {
+		return this.page.locator(
+			`[data-testid^="vertical-cell-"][data-start^="${startsWith}"]`
+		)
 	}
 }
 

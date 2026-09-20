@@ -1,12 +1,22 @@
 import type { Resource } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { CurrentTimeMarker } from '@/components/current-time-marker'
+
+import { DragPreviewCard } from '@/components/drag-and-drop/drag-preview-card'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
+import { useDragPreview } from '@/contexts/drag-preview-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
+import { useDragPreviewEvent } from '@/hooks/use-drag-preview-event'
+import type { VerticalPositionedEvent } from '@/lib/layout/geometry'
+import { layoutVertical } from '@/lib/layout/vertical'
+import { timeOfDayPattern } from '@/lib/utils/date-utils'
+import { dragSegmentFor } from '@/lib/utils/grab-offset'
 import { keys } from '@/lib/utils/keys'
+import { VerticalDragPreview } from './vertical-drag-preview'
+import { VerticalEventBar, verticalEventKey } from './vertical-event-bar'
 
 interface VerticalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
@@ -23,9 +33,11 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	resource,
 	'data-testid': dataTestId,
 }) => {
-	const { resources } = useSmartCalendarContext((c) => ({
+	const { resources, timeFormat } = useSmartCalendarContext((c) => ({
 		resources: c.resources,
+		timeFormat: c.timeFormat,
 	}))
+	const dragPreview = useDragPreview()
 	const todayEvents = useProcessedDayEvents({ days, gridType, resourceId })
 	const rangeStart = days.at(0)
 	const rangeEnd = days.at(-1)?.add(1, gridType)
@@ -36,6 +48,21 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	// vertical views (resource month, resource week daily) a sub-day percentage
 	// line is meaningless, so suppress it — mirrors the horizontal events layer.
 	const showNowLine = gridType === 'hour' && Boolean(rangeStart && rangeEnd)
+
+	// An all-day candidate needs no rejection here: `layoutVertical` drops
+	// all-day events, exactly as it does for real ones.
+	const previewEvent = useDragPreviewEvent({ days, gridType, resourceId })
+	const previewPositioned = useMemo(() => {
+		if (!previewEvent) {
+			return null
+		}
+		const positioned = layoutVertical({
+			days,
+			gridType,
+			events: [previewEvent],
+		})
+		return positioned.at(0) ?? null
+	}, [previewEvent, days, gridType])
 
 	return (
 		<div
@@ -51,34 +78,26 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 				/>
 			)}
 			{todayEvents.map((positioned, index) => {
-				const { event } = positioned
-				const eventKey = `event-${event.id}-${index}-${days.at(0)?.toISOString()}-${resourceId ?? 'no-resource'}`
-				const isShortEvent = event.end.diff(event.start, 'minute') <= 15
-
+				const elementId = verticalEventKey(
+					positioned.event.id,
+					index,
+					days,
+					resourceId
+				)
 				return (
-					<div
-						className="absolute"
-						key={keys.listKey(eventKey, 'wrapper')}
-						style={{
-							left: `${positioned.left}%`,
-							width: `calc(${positioned.width}% - var(--spacing) * 2)`,
-							top: `${positioned.top}%`,
-							height: `${positioned.height}%`,
-						}}
-					>
-						<DraggableEvent
-							className={cn('pointer-events-auto', {
-								'[&_p]:text-[10px] [&_p]:mt-0': isShortEvent,
-							})}
-							elementId={eventKey}
-							event={event}
-							isTruncatedEnd={positioned.isTruncatedEnd}
-							isTruncatedStart={positioned.isTruncatedStart}
-							sourceResourceId={resourceId}
-						/>
-					</div>
+					<VerticalEventBar
+						draggedEventId={dragPreview?.event.id}
+						elementId={elementId}
+						key={keys.listKey(elementId, 'wrapper')}
+						positioned={positioned}
+						range={{ start: rangeStart, end: rangeEnd }}
+						resourceId={resourceId}
+					/>
 				)
 			})}
+			{previewPositioned && (
+				<VerticalDragPreview previewPositioned={previewPositioned} />
+			)}
 		</div>
 	)
 }

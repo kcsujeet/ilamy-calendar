@@ -2,9 +2,11 @@ import { useDroppable } from '@dnd-kit/core'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
+import { useDragPreview } from '@/contexts/drag-preview-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { CellInfo } from '@/features/calendar/types'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
+import { isPreviewOnTarget } from '@/lib/utils/drag-preview'
 
 interface DroppableCellProps {
 	id: string
@@ -58,6 +60,50 @@ function getCellRange(
 	return { start, end: start.add(1, 'day').startOf('day') }
 }
 
+/**
+ * Whether the in-flight drag would land on this cell. `end` is exclusive
+ * (#248); `isPreviewOnTarget` takes the last instant the cell covers.
+ *
+ * A boolean is all the cell needs: it reports the landing on
+ * `data-drop-target` and paints nothing itself.
+ */
+const useDragLandsHere = (
+	cellRange: { start: Dayjs; end: Dayjs },
+	resourceId: string | number | undefined,
+	allDay: boolean | undefined
+): boolean => {
+	const dragPreview = useDragPreview()
+	return isPreviewOnTarget(dragPreview, {
+		rangeStart: cellRange.start,
+		rangeEnd: cellRange.end.subtract(1, 'millisecond'),
+		resourceId,
+		allDay,
+	})
+}
+
+interface CellClassInput {
+	className?: string
+	customClassName?: string
+	disabledClass: string
+	clickBlocked: boolean
+	cellDisabled: boolean
+}
+
+const cellClasses = ({
+	className,
+	customClassName,
+	disabledClass,
+	clickBlocked,
+	cellDisabled,
+}: CellClassInput) =>
+	cn(
+		'droppable-cell',
+		className,
+		customClassName,
+		clickBlocked ? 'cursor-default' : 'cursor-pointer',
+		cellDisabled && disabledClass
+	)
+
 export function DroppableCell({
 	id,
 	type,
@@ -107,24 +153,27 @@ export function DroppableCell({
 		onCellClick(cellInfo)
 	}
 
-	const showDropHighlight = isOver && !disableDragAndDrop && !cellDisabled
-	const disabledClass = classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME
-	const customClassName = getCellClassName?.(cellInfo)
+	const landsHere = useDragLandsHere({ start, end }, resourceId, allDay)
+	// `isOver` alone is not enough: a grab offset moves the candidate off the
+	// cell the pointer is on, and the cells it does cover must light up too.
+	const isDropTarget = isOver || landsHere
+	const dropAllowed = !disableDragAndDrop && !cellDisabled
+	const showDropHighlight = isDropTarget && dropAllowed
 
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: The cell is interactive for event creation
 		// biome-ignore lint/a11y/useKeyWithClickEvents: Key events are handled by parent components
 		<div
-			className={cn(
-				'droppable-cell',
+			className={cellClasses({
 				className,
-				customClassName,
-				showDropHighlight && 'bg-accent',
-				clickBlocked ? 'cursor-default' : 'cursor-pointer',
-				cellDisabled && disabledClass
-			)}
+				customClassName: getCellClassName?.(cellInfo),
+				disabledClass: classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME,
+				clickBlocked,
+				cellDisabled,
+			})}
 			data-all-day={allDay ? 'true' : undefined}
 			data-disabled={cellDisabled.toString()}
+			data-drop-target={showDropHighlight ? 'true' : undefined}
 			data-end={end.toISOString()}
 			data-resource-id={resourceId}
 			data-start={start.toISOString()}

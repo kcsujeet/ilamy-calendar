@@ -12,7 +12,7 @@ import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWe
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
 import { ResourceCell } from '../resource-cell'
-import { HorizontalGridEventsLayer } from './horizontal-grid-events-layer'
+import { HorizontalGridEventsLayer } from './events-layer/horizontal-grid-events-layer'
 
 interface HorizontalGridColumn extends HorizontalCellSpec {
 	renderCell?: (row: HorizontalGridRowProps) => React.ReactNode
@@ -118,6 +118,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 				{!isGrouped && (
 					<div className="absolute inset-0 z-10 pointer-events-none">
 						<HorizontalGridEventsLayer
+							allDay={allDay}
 							data-testid={keys.container.eventsLayer('horizontal', id)}
 							dayNumberHeight={dayNumberHeight}
 							days={flatDays}
@@ -185,6 +186,7 @@ const GroupedColumn = memo(
 
 				<div className="absolute inset-0 z-10 pointer-events-none">
 					<HorizontalGridEventsLayer
+						allDay={allDay}
 						data-testid={keys.container.eventsLayer('horizontal', id)}
 						dayNumberHeight={dayNumberHeight}
 						days={days}

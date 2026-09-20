@@ -2,11 +2,16 @@ import { describe, expect, mock, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
+import {
+	DragPreviewContext,
+	type DragPreviewState,
+} from '@/contexts/drag-preview-context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import type {
 	EventSegment,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
+import { keys } from '@/lib/utils/keys'
 import { MonthView, WeekView } from '@/testing/view-harnesses'
 
 /*
@@ -134,5 +139,98 @@ describe('renderEvent segment', () => {
 
 		expect(typeof oneArgument).toBe('function')
 		expect(typeof threeArguments).toBe('function')
+	})
+})
+
+/*
+ * What the bar says about itself to the pointer. These are the only observable
+ * of the drag-state classes, and nothing pinned them: the derivation was once
+ * extracted into a helper that was never called, and the whole suite stayed
+ * green while the two copies sat side by side.
+ */
+describe('draggable event drag-state classes', () => {
+	const booking: CalendarEvent[] = [
+		{
+			id: 'long',
+			title: 'Long booking',
+			start: dayjs('2025-03-01T09:00:00.000Z'),
+			end: dayjs('2025-03-01T17:00:00.000Z'),
+		},
+	]
+
+	const renderBar = (
+		options: {
+			preview?: DragPreviewState
+			settings?: {
+				disableDragAndDrop?: boolean
+				disableEventClick?: boolean
+			}
+		} = {}
+	) => {
+		cleanup()
+		render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				events={booking}
+				firstDayOfWeek={1}
+				initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+				{...options.settings}
+			>
+				<DragPreviewContext.Provider value={options.preview ?? null}>
+					<MonthView />
+				</DragPreviewContext.Provider>
+			</CalendarProvider>
+		)
+
+		const wrapper = screen
+			.getAllByTestId(keys.container.horizontal.event('long'))
+			.at(0)
+		return wrapper?.querySelector('[class*="cursor-"]')?.className ?? ''
+	}
+
+	test('offers a grab handle when the event can be dragged', () => {
+		expect(renderBar()).toContain('cursor-grab')
+	})
+
+	test('offers a pointer when dragging is off but clicking is not', () => {
+		const classes = renderBar({ settings: { disableDragAndDrop: true } })
+
+		expect(classes).toContain('cursor-pointer')
+		expect(classes).not.toContain('cursor-grab')
+	})
+
+	test('offers nothing when neither dragging nor clicking is available', () => {
+		const classes = renderBar({
+			settings: { disableDragAndDrop: true, disableEventClick: true },
+		})
+
+		expect(classes).toContain('cursor-default')
+	})
+
+	// 0.5, below FullCalendar's 0.75 ghost
+	// (`.fc-event-dragging:not(.fc-event-selected){opacity:.75}`), on purpose:
+	// that number assumes an un-outlined mirror competing for attention, and
+	// this mirror is opaque and hard-ringed. The bar must still read as "here,
+	// and moving" rather than as deleted, which is the floor.
+	test('dims the source bar while its event is being dragged', () => {
+		const preview: DragPreviewState = {
+			event: booking[0] as CalendarEvent,
+			start: dayjs('2025-03-05T09:00:00.000Z'),
+			end: dayjs('2025-03-05T17:00:00.000Z'),
+			allDay: false,
+		}
+
+		expect(renderBar({ preview })).toContain('opacity-50')
+	})
+
+	test('leaves other events undimmed', () => {
+		const preview: DragPreviewState = {
+			event: { id: 'other', title: 'Another' } as CalendarEvent,
+			start: dayjs('2025-03-05T09:00:00.000Z'),
+			end: dayjs('2025-03-05T17:00:00.000Z'),
+			allDay: false,
+		}
+
+		expect(renderBar({ preview })).not.toContain('opacity-50')
 	})
 })

@@ -113,6 +113,10 @@ export const keys = {
 	dayNumber: (date: Dayjs) =>
 		isToday(date) ? 'day-number-today' : `day-number-${date.format('D')}`,
 
+	// The snapped mirror of a dragged event, one per grid orientation.
+	dragPreview: (orientation: 'vertical' | 'horizontal') =>
+		`event-drag-preview-${orientation}`,
+
 	// Form element testid for time pickers (name = 'start' / 'end' etc.)
 	timePicker: (name: string | undefined) => `time-picker-${name ?? ''}`,
 

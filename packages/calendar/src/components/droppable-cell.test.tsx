@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+	DragPreviewContext,
+	type DragPreviewState,
+} from '@/contexts/drag-preview-context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import type { CellInfo } from '@/features/calendar/types'
 import type { CalendarView } from '@/types'
@@ -22,6 +26,8 @@ interface RenderCellOptions {
 	slotDurationMinutes?: number
 	resourceId?: string | number
 	allDay?: boolean
+	/** The in-flight drag this cell should react to, if any. */
+	preview?: DragPreviewState
 }
 
 // One CalendarProvider + DroppableCell setup for every test; pass only the
@@ -37,17 +43,19 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 			onCellClick={opts.onCellClick}
 			resources={opts.resources}
 		>
-			<DroppableCell
-				allDay={opts.allDay}
-				data-testid="cell"
-				date={initialDate}
-				hour={opts.hour}
-				id="test-cell"
-				minute={opts.minute}
-				resourceId={opts.resourceId}
-				slotDurationMinutes={opts.slotDurationMinutes ?? 15}
-				type="day-cell"
-			/>
+			<DragPreviewContext.Provider value={opts.preview ?? null}>
+				<DroppableCell
+					allDay={opts.allDay}
+					data-testid="cell"
+					date={initialDate}
+					hour={opts.hour}
+					id="test-cell"
+					minute={opts.minute}
+					resourceId={opts.resourceId}
+					slotDurationMinutes={opts.slotDurationMinutes ?? 15}
+					type="day-cell"
+				/>
+			</DragPreviewContext.Provider>
 		</CalendarProvider>
 	)
 
@@ -272,5 +280,104 @@ describe('DroppableCell getCellClassName', () => {
 
 		expect(received?.start.toISOString()).toBe('2025-01-01T00:00:00.000Z')
 		expect(received?.end.toISOString()).toBe('2025-01-02T00:00:00.000Z')
+	})
+})
+
+describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	const mkPreview = (
+		overrides: Partial<DragPreviewState> = {}
+	): DragPreviewState => ({
+		event: {
+			id: 'event-1',
+			title: 'Team Sync',
+			start: initialDate.hour(10),
+			end: initialDate.hour(12),
+		},
+		start: initialDate.hour(10),
+		end: initialDate.hour(12),
+		allDay: false,
+		...overrides,
+	})
+
+	test('highlights a cell the candidate covers', () => {
+		renderCell({ preview: mkPreview(), hour: 10, minute: 30, view: 'week' })
+
+		expect(screen.getByTestId('cell')).toHaveAttribute(
+			'data-drop-target',
+			'true'
+		)
+	})
+
+	test('marks the target without painting anything over it', () => {
+		// The cell reports the landing through `data-drop-target` and draws
+		// nothing. FullCalendar's `.fc-highlight` tints the target, but it tints
+		// it in ONE fixed neutral at 0.3; a tint in the dragged event's own
+		// colour, which is what this cell used to paint, is the same hue as the
+		// mirror standing on it, and a multi-day drag floods every cell it spans.
+		// The snapped mirror already says where the drop lands.
+		renderCell({ preview: mkPreview(), hour: 10, minute: 30, view: 'week' })
+
+		expect(screen.getByTestId('cell').children).toHaveLength(0)
+	})
+
+	test('leaves a cell outside the candidate alone', () => {
+		renderCell({ preview: mkPreview(), hour: 14, minute: 0, view: 'week' })
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-drop-target')
+	})
+
+	test('leaves the cell starting exactly at the candidate end alone', () => {
+		renderCell({ preview: mkPreview(), hour: 12, minute: 0, view: 'week' })
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-drop-target')
+	})
+
+	test('leaves the cell ending exactly at the candidate start alone', () => {
+		// The cell's own `end` is exclusive (#248), so the candidate beginning at
+		// that instant occupies none of this cell. Handing the exclusive end to
+		// `isPreviewOnTarget`, which takes the LAST instant, lights it up wrongly.
+		const preview = mkPreview({
+			start: initialDate.hour(10).minute(15),
+			end: initialDate.hour(12),
+		})
+		renderCell({ preview, hour: 10, minute: 0, view: 'week' })
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-drop-target')
+	})
+
+	test('leaves cells of another resource alone', () => {
+		renderCell({
+			preview: mkPreview({ resourceId: 'room-a' }),
+			hour: 10,
+			minute: 30,
+			resourceId: 'room-b',
+			view: 'week',
+		})
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-drop-target')
+	})
+
+	test('leaves the all-day cell alone while a timed event is dragged', () => {
+		renderCell({ preview: mkPreview(), allDay: true, view: 'week' })
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-drop-target')
+	})
+
+	test('highlights the all-day cell while an all-day event is dragged', () => {
+		const preview = mkPreview({
+			start: initialDate.startOf('day'),
+			end: initialDate.add(1, 'day').startOf('day'),
+			allDay: true,
+		})
+		renderCell({ preview, allDay: true, view: 'week' })
+
+		expect(screen.getByTestId('cell')).toHaveAttribute(
+			'data-drop-target',
+			'true'
+		)
 	})
 })

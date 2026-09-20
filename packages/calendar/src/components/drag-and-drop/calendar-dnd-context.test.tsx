@@ -5,6 +5,7 @@ import dayjs from '@ilamy/utils/dayjs'
 import { render, screen } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import { RRule } from 'rrule'
+import { useDragPreview } from '@/contexts/drag-preview-context'
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { CalendarDndContext } from './calendar-dnd-context'
@@ -57,6 +58,27 @@ describe('CalendarDndContext', () => {
 			renderWithCalendarProvider()
 			const dialog = screen.queryByRole('dialog')
 			expect(dialog).not.toBeInTheDocument()
+		})
+
+		it('should provide a drag preview that is null before any drag', () => {
+			let previewValue: unknown = 'uninitialized'
+			function TestPreviewConsumer() {
+				previewValue = useDragPreview()
+				return <div data-testid="preview-consumer" />
+			}
+			render(
+				<CalendarProvider
+					dayMaxEvents={5}
+					disableDragAndDrop={false}
+					events={[]}
+					firstDayOfWeek={0}
+				>
+					<CalendarDndContext>
+						<TestPreviewConsumer />
+					</CalendarDndContext>
+				</CalendarProvider>
+			)
+			expect(previewValue).toBeNull()
 		})
 	})
 

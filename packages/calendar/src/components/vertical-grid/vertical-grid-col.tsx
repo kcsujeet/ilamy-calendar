@@ -4,7 +4,7 @@ import type React from 'react'
 import { memo } from 'react'
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
-import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
+import { VerticalGridEventsLayer } from './events-layer/vertical-grid-events-layer'
 
 export interface VerticalGridColProps extends VerticalColumnSpec {
 	'data-testid'?: string

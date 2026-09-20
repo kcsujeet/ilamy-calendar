@@ -2,12 +2,17 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
+import {
+	DragPreviewContext,
+	type DragPreviewState,
+} from '@/contexts/drag-preview-context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import {
 	DAY_NUMBER_HEIGHT,
 	EVENT_BAR_HEIGHT,
 	GAP_BETWEEN_ELEMENTS,
 } from '@/lib/constants'
+import { keys } from '@/lib/utils/keys'
 import { HorizontalGridRow } from './horizontal-grid-row'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -18,7 +23,10 @@ const mockResource: Resource = {
 	color: 'blue',
 }
 
-const renderHorizontalGridRow = (props = {}) => {
+const renderHorizontalGridRow = ({
+	preview,
+	...props
+}: { preview?: DragPreviewState } & Record<string, unknown> = {}) => {
 	return render(
 		<CalendarProvider
 			dayMaxEvents={3}
@@ -26,7 +34,9 @@ const renderHorizontalGridRow = (props = {}) => {
 			initialDate={initialDate}
 			resources={[mockResource]}
 		>
-			<HorizontalGridRow id="row-1" resource={mockResource} {...props} />
+			<DragPreviewContext.Provider value={preview ?? null}>
+				<HorizontalGridRow id="row-1" resource={mockResource} {...props} />
+			</DragPreviewContext.Provider>
 		</CalendarProvider>
 	)
 }
@@ -389,6 +399,106 @@ describe('HorizontalGridRow', () => {
 			expect(
 				[eventWrapper('a'), eventWrapper('b')].map((el) => el.style.top)
 			).toEqual([`${rowZeroTop}px`, `${rowOneTop}px`])
+		})
+	})
+
+	describe('drag preview mirror rendering (FullCalendar / Google Calendar)', () => {
+		const week = Array.from({ length: 7 }, (_, i) => initialDate.add(i, 'day'))
+		const columns = [{ id: 'col-week', days: week, gridType: 'day' as const }]
+
+		const mkPreview = (allDay: boolean): DragPreviewState => ({
+			event: {
+				id: 'event-preview',
+				title: 'Multi-day Conference',
+				start: initialDate,
+				end: initialDate.add(3, 'day'),
+				allDay,
+			},
+			start: initialDate,
+			end: initialDate.add(3, 'day'),
+			allDay,
+		})
+
+		test('renders the snapped mirror bar when the candidate overlaps the row', () => {
+			renderHorizontalGridRow({
+				columns,
+				id: 'row-preview',
+				preview: mkPreview(true),
+			})
+
+			expect(
+				screen.getByTestId(keys.dragPreview('horizontal'))
+			).toBeInTheDocument()
+			expect(screen.getByText('Multi-day Conference')).toBeInTheDocument()
+		})
+
+		test('squares the mirror on whichever side the row cut it', () => {
+			// The mirror is a bar like any other, so it has to admit the same thing
+			// a real bar admits: this span continues past the edge of the row. A
+			// mirror that stays fully rounded claims the drop ends inside the week.
+			const spillsBothWays: DragPreviewState = {
+				event: {
+					id: 'event-preview',
+					title: 'Multi-day Conference',
+					start: initialDate.subtract(2, 'day'),
+					end: initialDate.add(10, 'day'),
+					allDay: true,
+				},
+				start: initialDate.subtract(2, 'day'),
+				end: initialDate.add(10, 'day'),
+				allDay: true,
+			}
+			renderHorizontalGridRow({
+				columns,
+				id: 'row-preview',
+				preview: spillsBothWays,
+			})
+
+			const mirror = screen.getByTestId(keys.dragPreview('horizontal'))
+
+			expect(mirror.className).toContain('rounded-none')
+		})
+
+		test('rounds the mirror on both ends when the row holds the whole span', () => {
+			renderHorizontalGridRow({
+				columns,
+				id: 'row-preview',
+				preview: mkPreview(true),
+			})
+
+			const mirror = screen.getByTestId(keys.dragPreview('horizontal'))
+
+			expect(mirror.className).toContain('rounded-md')
+		})
+
+		test('outlines the mirror so it cannot blend into the bars behind it', () => {
+			// A fill-only mirror is invisible against a grid of same-hue bars: the
+			// pastel it copies is the pastel it is standing on. The ring is drawn in
+			// a theme token rather than the event's colour, so it contrasts whatever
+			// the event is filled with.
+			renderHorizontalGridRow({
+				columns,
+				id: 'row-preview',
+				preview: mkPreview(true),
+			})
+
+			const mirror = screen.getByTestId(keys.dragPreview('horizontal'))
+
+			expect(mirror.className).toContain('ring-2')
+			expect(mirror.className).toContain('ring-foreground')
+		})
+
+		test('draws no mirror in the all-day band for a timed candidate', () => {
+			renderHorizontalGridRow({
+				allDay: true,
+				columns,
+				id: 'row-preview',
+				preview: mkPreview(false),
+			})
+
+			expect(
+				screen.queryByTestId(keys.dragPreview('horizontal'))
+			).not.toBeInTheDocument()
 		})
 	})
 })

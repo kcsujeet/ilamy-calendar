@@ -7,6 +7,7 @@ import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-cal
 import type { CellInfo } from '@/features/calendar/types'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { isPreviewOnTarget } from '@/lib/utils/drag-preview'
+import type { DropCellData } from './drag-and-drop/dnd-utils'
 
 interface DroppableCellProps {
 	id: string
@@ -75,6 +76,15 @@ function getCellRange(
  */
 const DROP_TARGET_HIGHLIGHT = 'rgba(188, 232, 241, 0.3)'
 
+/** The tint itself, so the cell's own body stays about being a cell. */
+const DropTargetHighlight = () => (
+	<div
+		aria-hidden="true"
+		className="absolute inset-0 pointer-events-none"
+		style={{ backgroundColor: DROP_TARGET_HIGHLIGHT }}
+	/>
+)
+
 /**
  * Whether the in-flight drag would land on this cell. `end` is exclusive
  * (#248); `isPreviewOnTarget` takes the last instant the cell covers.
@@ -95,6 +105,46 @@ const useDragLandsHere = (
 		resourceId,
 		allDay,
 	})
+}
+
+interface DropTargetInput {
+	id: string
+	/** Published to the drag so a drop can read where — and whether — it landed. */
+	data: DropCellData
+	cellRange: { start: Dayjs; end: Dayjs }
+	disableDragAndDrop: boolean
+}
+
+/**
+ * Registers the cell as a drop target and says whether to tint it.
+ *
+ * A disabled cell stays REGISTERED: the mirror has to keep rendering over it
+ * and the pointer has to be releasable there, exactly as FullCalendar draws its
+ * mirror over an area its constraints forbid. `data.disabled` is what makes the
+ * drop a no-op, decided in `getUpdatedEvent`. Refusing the hit-test instead
+ * left `over` null, which blanked the whole preview and swapped the snapped
+ * mirror for a floating chip the moment the pointer crossed a closed day.
+ *
+ * So a disabled cell tints too, whether the pointer is over it or the candidate
+ * merely spans it — a multi-day drag crosses closed days, and leaving those
+ * cells grey makes the bar look like it is crossing unavailable ground.
+ */
+const useDropTarget = ({
+	id,
+	data,
+	cellRange,
+	disableDragAndDrop,
+}: DropTargetInput) => {
+	const { isOver, setNodeRef } = useDroppable({
+		id,
+		data,
+		disabled: disableDragAndDrop,
+	})
+	// `isOver` alone is not enough: a grab offset moves the candidate off the
+	// cell the pointer is on, and the cells it does cover must light up too.
+	const landsHere = useDragLandsHere(cellRange, data.resourceId, data.allDay)
+	const isDropTarget = isOver || landsHere
+	return { setNodeRef, showDropHighlight: isDropTarget && !disableDragAndDrop }
 }
 
 interface CellClassInput {
@@ -159,13 +209,8 @@ export function DroppableCell({
 	const cellDisabled = disabled || Boolean(isCellDisabled?.(cellInfo))
 	const clickBlocked = disableCellClick || cellDisabled
 
-	const { isOver, setNodeRef } = useDroppable({
+	const { setNodeRef, showDropHighlight } = useDropTarget({
 		id,
-		// A disabled cell stays REGISTERED so the mirror keeps rendering over it
-		// and the pointer can be released there; `disabled` in the data is what
-		// makes the drop a no-op. Refusing the hit-test instead left `over` null,
-		// which blanked the whole preview and swapped the snapped mirror for a
-		// floating chip the moment the pointer crossed a closed day.
 		data: {
 			type,
 			date,
@@ -175,7 +220,8 @@ export function DroppableCell({
 			allDay,
 			disabled: cellDisabled,
 		},
-		disabled: disableDragAndDrop,
+		cellRange: { start, end },
+		disableDragAndDrop: Boolean(disableDragAndDrop),
 	})
 
 	const handleCellClick = (e: React.MouseEvent) => {
@@ -185,20 +231,6 @@ export function DroppableCell({
 		}
 		onCellClick(cellInfo)
 	}
-
-	const landsHere = useDragLandsHere({ start, end }, resourceId, allDay)
-	// `isOver` alone is not enough: a grab offset moves the candidate off the
-	// cell the pointer is on, and the cells it does cover must light up too.
-	const isDropTarget = isOver || landsHere
-	// A disabled cell still lights up when the candidate COVERS it. A multi-day
-	// span crosses days you cannot drop onto -- weekends, closed days -- and the
-	// mirror is already drawn across them, so leaving those cells in their
-	// disabled grey makes the bar look like it is crossing unavailable ground.
-	//
-	// It cannot be read as "release here": a disabled cell is not registered as a
-	// droppable and carries `pointer-events-none`, so `isOver` never fires for
-	// one. Its only route to a highlight is the candidate covering its range.
-	const showDropHighlight = isDropTarget && !disableDragAndDrop
 
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: The cell is interactive for event creation
@@ -223,13 +255,7 @@ export function DroppableCell({
 			ref={setNodeRef}
 			style={style}
 		>
-			{showDropHighlight && (
-				<div
-					aria-hidden="true"
-					className="absolute inset-0 pointer-events-none"
-					style={{ backgroundColor: DROP_TARGET_HIGHLIGHT }}
-				/>
-			)}
+			{showDropHighlight && <DropTargetHighlight />}
 			{children}
 		</div>
 	)

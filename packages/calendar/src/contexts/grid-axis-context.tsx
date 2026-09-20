@@ -1,7 +1,8 @@
 import { createContext, useContext } from 'react'
 
-/** The axis a grid's time runs along. */
-export type GridAxis = 'vertical' | 'horizontal'
+/** The axis a grid's time runs along. Not exported: nothing outside needs to
+ * name it, and the two providers pass it as a literal. */
+type GridAxis = 'vertical' | 'horizontal'
 
 /**
  * Which grid drew the bar you are inside. Ambient rather than a prop, because

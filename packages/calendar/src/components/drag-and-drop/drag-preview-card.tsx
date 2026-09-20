@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import {
 	eventSurfaceClasses,
 	eventSurfaceRadius,
+	eventSurfaceStyle,
 } from '@/lib/utils/event-surface'
 import { keys } from '@/lib/utils/keys'
 
@@ -38,16 +39,27 @@ interface DragPreviewCardProps {
  * The outline is the part fill alone cannot do. A mirror painted only in the
  * event's own colour is invisible in the case that matters most — dragging
  * within a run of same-hue bars, where the pastel it copies is the pastel it is
- * standing on. So it is ringed in `foreground` and separated from that ring by
- * the same `border-card` hairline a real bar wears: fill, gap, hard edge. The
- * ring is a theme token rather than a tint of the event, so it contrasts every
- * fill a consumer can supply, and it appears ONLY on the mirror — the earlier
- * worry about a hard box in a monochrome theme was about outlining resting
- * bars, which are still drawn without one.
+ * standing on. The ring is a theme token rather than a tint of the event, so it
+ * contrasts every fill a consumer can supply, and it appears ONLY on the mirror
+ * — the earlier worry about a hard box in a monochrome theme was about
+ * outlining resting bars, which are still drawn without one.
  *
- * `backgroundColor` is given as both a class and an inline style, the way
+ * It is an INSET ring, and that is not cosmetic. Tailwind's `ring` is a
+ * box-shadow painted OUTSIDE the border box, and both events layers wrap their
+ * subtree in `overflow-clip`; an outside ring is therefore shaved off on every
+ * edge the mirror sits flush against — its left at `left: 0%`, its bottom
+ * whenever the span runs past the visible hours — which drew an outline round
+ * only the two edges that happened to sit inside the layer. `inset-ring` paints
+ * within the box and cannot be clipped, so the outline closes.
+ *
+ * The colour is set here and ONLY here, as both class and inline style, the way
  * `DefaultEventContent` does it: a consumer may supply either a Tailwind class
- * or a CSS colour, and only one of the two will apply.
+ * or a CSS colour, and only one of the two will apply. The content layer inside
+ * carries layout and nothing else — it is `h-full w-full`, and an inset shadow
+ * paints below child content, so any fill re-applied there covers the outline
+ * exactly. `event.color` is a trap for this: it may hold the whole fill
+ * (`'bg-amber-100 text-amber-800'`), not just the text colour. Text colour
+ * inherits from this element, so the inner layer never needs it.
  */
 export function DragPreviewCard({
 	orientation,
@@ -62,7 +74,7 @@ export function DragPreviewCard({
 		<div
 			className={cn(
 				'absolute z-20 pointer-events-none transition-none overflow-clip',
-				'shadow-xl ring-2 ring-foreground border-[1.5px] border-card',
+				'shadow-xl inset-ring-2 inset-ring-foreground border-[1.5px] border-card',
 				eventSurfaceRadius({
 					axis: orientation,
 					isTruncatedStart,
@@ -71,7 +83,7 @@ export function DragPreviewCard({
 				eventSurfaceClasses(event)
 			)}
 			data-testid={keys.dragPreview(orientation)}
-			style={{ ...style, backgroundColor: event.backgroundColor }}
+			style={{ ...style, ...eventSurfaceStyle(event) }}
 		>
 			<div
 				className={cn(

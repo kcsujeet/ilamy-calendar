@@ -476,16 +476,53 @@ describe('HorizontalGridRow', () => {
 			// pastel it copies is the pastel it is standing on. The ring is drawn in
 			// a theme token rather than the event's colour, so it contrasts whatever
 			// the event is filled with.
+			//
+			// INSET, not an outside ring. Tailwind's `ring` is a box-shadow painted
+			// outside the border box, and both events layers wrap their subtree in
+			// `overflow-clip` — so an outside ring is cut away on every edge the
+			// mirror sits flush against (its left at `left: 0%`, its bottom when the
+			// span runs past the visible hours), leaving a partial outline round
+			// two sides. An inset ring paints inside the box and cannot be clipped.
 			renderHorizontalGridRow({
 				columns,
 				id: 'row-preview',
 				preview: mkPreview(true),
 			})
 
-			const mirror = screen.getByTestId(keys.dragPreview('horizontal'))
+			const classes = screen
+				.getByTestId(keys.dragPreview('horizontal'))
+				.className.split(/\s+/)
 
-			expect(mirror.className).toContain('ring-2')
-			expect(mirror.className).toContain('ring-foreground')
+			expect(classes).toContain('inset-ring-2')
+			expect(classes).toContain('inset-ring-foreground')
+			expect(classes).not.toContain('ring-2')
+		})
+
+		test('does not let the content layer paint over the outline', () => {
+			// `event.color` may carry the whole fill, not just text: the playground
+			// seeds `'bg-amber-100 text-amber-800'`. The card's inner layer is
+			// `h-full w-full`, and an inset box-shadow paints BELOW child content —
+			// so re-applying the fill there covers the outline exactly. The colour
+			// belongs on the card, once; the content layer is layout only.
+			const coloured: DragPreviewState = {
+				event: {
+					id: 'event-preview',
+					title: 'Multi-day Conference',
+					start: initialDate,
+					end: initialDate.add(3, 'day'),
+					allDay: true,
+					color: 'bg-amber-100 text-amber-800',
+				},
+				start: initialDate,
+				end: initialDate.add(3, 'day'),
+				allDay: true,
+			}
+			renderHorizontalGridRow({ columns, id: 'row-preview', preview: coloured })
+
+			const mirror = screen.getByTestId(keys.dragPreview('horizontal'))
+			const contentLayer = mirror.firstElementChild
+
+			expect(contentLayer?.className).not.toContain('bg-')
 		})
 
 		test('draws no mirror in the all-day band for a timed candidate', () => {

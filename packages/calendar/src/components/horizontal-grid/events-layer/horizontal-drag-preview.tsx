@@ -1,4 +1,3 @@
-import { cn } from '@ilamy/ui/lib/utils'
 import { DragPreviewCard } from '@/components/drag-and-drop/drag-preview-card'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
@@ -23,10 +22,7 @@ export function HorizontalDragPreview({
 
 	return (
 		<DragPreviewCard
-			contentClassName={cn(
-				'px-1.5 flex items-center gap-1',
-				event.color || 'text-white'
-			)}
+			contentClassName="px-1.5 flex items-center gap-1"
 			event={event}
 			isTruncatedEnd={isTruncatedEnd}
 			isTruncatedStart={isTruncatedStart}

@@ -1,4 +1,3 @@
-import { cn } from '@ilamy/ui/lib/utils'
 import { DragPreviewCard } from '@/components/drag-and-drop/drag-preview-card'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { VerticalPositionedEvent } from '@/lib/layout/geometry'
@@ -19,7 +18,7 @@ export function VerticalDragPreview({
 
 	return (
 		<DragPreviewCard
-			contentClassName={cn('px-1.5 py-1 relative', event.color || 'text-white')}
+			contentClassName="px-1.5 py-1 relative"
 			event={event}
 			isTruncatedEnd={isTruncatedEnd}
 			isTruncatedStart={isTruncatedStart}

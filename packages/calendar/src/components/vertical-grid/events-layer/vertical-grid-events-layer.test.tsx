@@ -231,7 +231,8 @@ describe('VerticalGridEventsLayer', () => {
 		const mirror = screen.getByTestId(keys.dragPreview('vertical'))
 
 		expect(mirror.className).not.toContain('opacity-')
-		expect(mirror.className).toContain('ring-2')
+		// Inset, so the layer's `overflow-clip` cannot shave it off.
+		expect(mirror.className.split(/\s+/)).toContain('inset-ring-2')
 	})
 
 	test('draws no mirror for an all-day candidate, which this grid never shows', () => {

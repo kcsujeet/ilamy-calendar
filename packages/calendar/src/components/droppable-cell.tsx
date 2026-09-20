@@ -61,6 +61,21 @@ function getCellRange(
 }
 
 /**
+ * The tint a cell wears while a drag would land on it, taken from FullCalendar
+ * rather than invented: v6 ships `--fc-highlight-color:rgba(188,232,241,.3)`
+ * behind `.fc .fc-highlight{background:var(--fc-highlight-color)}`, and v4's
+ * `core/main.css` spells the same colour `#bce8f1` at `opacity: .3`.
+ *
+ * A fixed literal, not a theme token, and deliberately so. Two earlier attempts
+ * failed on exactly that point: a grey tint sits on the same axis as the
+ * disabled and hover fills, which in a monochrome theme (the demo sets
+ * `--primary` and `--foreground` to the same black) makes all three
+ * indistinguishable; and a tint in the DRAGGED EVENT's own colour is the same
+ * hue as the mirror standing on it. This pale cyan can collide with neither.
+ */
+const DROP_TARGET_HIGHLIGHT = 'rgba(188, 232, 241, 0.3)'
+
+/**
  * Whether the in-flight drag would land on this cell. `end` is exclusive
  * (#248); `isPreviewOnTarget` takes the last instant the cell covers.
  *
@@ -97,7 +112,11 @@ const cellClasses = ({
 	cellDisabled,
 }: CellClassInput) =>
 	cn(
-		'droppable-cell',
+		// `relative` so the drop-target highlight, which is this component's own
+		// `absolute inset-0` child, is positioned against the cell rather than
+		// against whatever happens to be the nearest positioned ancestor. The one
+		// current caller passes it too; owning it here means the next one need not.
+		'droppable-cell relative',
 		className,
 		customClassName,
 		clickBlocked ? 'cursor-default' : 'cursor-pointer',
@@ -183,6 +202,13 @@ export function DroppableCell({
 			ref={setNodeRef}
 			style={style}
 		>
+			{showDropHighlight && (
+				<div
+					aria-hidden="true"
+					className="absolute inset-0 pointer-events-none"
+					style={{ backgroundColor: DROP_TARGET_HIGHLIGHT }}
+				/>
+			)}
 			{children}
 		</div>
 	)

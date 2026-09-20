@@ -144,11 +144,13 @@ test.describe('drag and drop', () => {
 		await page.mouse.up()
 	})
 
-	test('marks the drop target without painting over it', async ({ page }) => {
-		// The mirror is the only thing that says where the drop lands. The cell
-		// reports it on `data-drop-target` for a consumer to style, and paints
-		// nothing: a tint in the dragged event's own colour is the same hue as the
-		// mirror standing on it, and a multi-day drag floods every cell it spans.
+	test("tints the drop target in FullCalendar's highlight colour", async ({
+		page,
+	}) => {
+		// One fixed pale cyan, never the dragged event's own colour: v6 ships
+		// `--fc-highlight-color:rgba(188,232,241,.3)`. Painting the event's hue
+		// here makes the target indistinguishable from the mirror standing on it,
+		// and floods every cell of a multi-day span.
 		await gotoScenario(page, { scenario: 'colored', view: 'month' })
 		const month = new MonthGrid(page)
 		const cell = month.cellOn('2025-03-20')
@@ -156,7 +158,14 @@ test.describe('drag and drop', () => {
 		await pressAndMoveTo(page, month.event('CSS colour').first(), cell)
 
 		await expect(cell).toHaveAttribute('data-drop-target', 'true')
-		await expect(cell.locator('[aria-hidden="true"]')).toHaveCount(0)
+		await expect
+			.poll(() =>
+				cell.evaluate((el) => {
+					const tint = el.querySelector('[aria-hidden="true"]')
+					return tint ? getComputedStyle(tint).backgroundColor : 'no tint'
+				})
+			)
+			.toBe('rgba(188, 232, 241, 0.3)')
 		await page.mouse.up()
 	})
 

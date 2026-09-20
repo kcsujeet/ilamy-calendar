@@ -312,14 +312,31 @@ describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)'
 		)
 	})
 
-	test('marks the target without painting anything over it', () => {
-		// The cell reports the landing through `data-drop-target` and draws
-		// nothing. FullCalendar's `.fc-highlight` tints the target, but it tints
-		// it in ONE fixed neutral at 0.3; a tint in the dragged event's own
-		// colour, which is what this cell used to paint, is the same hue as the
-		// mirror standing on it, and a multi-day drag floods every cell it spans.
-		// The snapped mirror already says where the drop lands.
+	test("tints the target in FullCalendar's own highlight colour", () => {
+		// CONTRACT MOVED, deliberately. This cell first painted the DRAGGED
+		// EVENT's colour at 0.75, which was the same hue and nearly the same
+		// weight as the mirror standing on it and flooded every cell of a
+		// multi-day span; that was removed and the cell painted nothing at all.
+		// It now paints what FullCalendar paints: ONE fixed pale cyan, low alpha.
+		// v6 ships `--fc-highlight-color:rgba(188,232,241,.3)` with
+		// `.fc .fc-highlight{background:var(--fc-highlight-color)}`; v4's
+		// `core/main.css` spells the same colour `#bce8f1` at `opacity: .3`.
+		//
+		// Being a fixed literal rather than a theme token is the point: it is the
+		// one shade that cannot collide with the dragged event's fill, and it
+		// cannot land on the same axis as the disabled and hover greys in a
+		// monochrome theme, which is what made every earlier attempt unreadable.
 		renderCell({ preview: mkPreview(), hour: 10, minute: 30, view: 'week' })
+
+		const highlight = screen.getByTestId('cell').firstElementChild
+
+		expect(highlight).toHaveStyle({
+			backgroundColor: 'rgba(188, 232, 241, 0.3)',
+		})
+	})
+
+	test('leaves a cell the candidate does not cover unpainted', () => {
+		renderCell({ preview: mkPreview(), hour: 14, minute: 0, view: 'week' })
 
 		expect(screen.getByTestId('cell').children).toHaveLength(0)
 	})

@@ -1,7 +1,7 @@
 import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 
 const pkg = (path: string) =>
 	fileURLToPath(new URL(`../../packages/${path}`, import.meta.url))
@@ -25,26 +25,50 @@ const pkg = (path: string) =>
 //
 // The demo's type-check (`tsc --noEmit`) still resolves `@ilamy/*` via dist, so
 // it keeps validating against the published API surface.
-export default defineConfig({
-	plugins: [react(), tailwindcss()],
-	resolve: {
-		tsconfigPaths: true,
-		alias: {
-			'@ilamy/playground': pkg('playground/src'),
-			'@ilamy/calendar-agenda': pkg('plugins/agenda/src'),
-			'@ilamy/calendar-drag-to-create': pkg('plugins/drag-to-create/src'),
-			'@ilamy/calendar-recurrence': pkg('plugins/recurrence/src'),
-			'@ilamy/calendar': pkg('calendar/src'),
-			'@ilamy/ui': pkg('ui/src'),
-			'@ilamy/utils': pkg('utils/src'),
-			'@ilamy/types': pkg('types/src'),
+export default defineConfig(({ mode }) => {
+	// Third argument '' loads every variable, not just the VITE_-prefixed ones
+	// (https://vite.dev/config/). This is what lets a gitignored
+	// `apps/demo/.env.local` turn polling on for one machine.
+	const env = loadEnv(mode, process.cwd(), '')
+
+	return {
+		plugins: [react(), tailwindcss()],
+		resolve: {
+			tsconfigPaths: true,
+			alias: {
+				'@ilamy/playground': pkg('playground/src'),
+				'@ilamy/calendar-agenda': pkg('plugins/agenda/src'),
+				'@ilamy/calendar-drag-to-create': pkg('plugins/drag-to-create/src'),
+				'@ilamy/calendar-recurrence': pkg('plugins/recurrence/src'),
+				'@ilamy/calendar': pkg('calendar/src'),
+				'@ilamy/ui': pkg('ui/src'),
+				'@ilamy/utils': pkg('utils/src'),
+				'@ilamy/types': pkg('types/src'),
+			},
+			// Source packages all import the host's hoisted react; keep one copy so
+			// hooks don't see two React instances.
+			dedupe: ['react', 'react-dom'],
 		},
-		// Source packages all import the host's hoisted react; keep one copy so
-		// hooks don't see two React instances.
-		dedupe: ['react', 'react-dom'],
-	},
-	server: {
-		port: 4100,
-		strictPort: true,
-	},
+		server: {
+			port: 4100,
+			strictPort: true,
+			// Escape hatch for a machine whose native file watcher is broken.
+			//
+			// macOS's fsevents backend can wedge system-wide: every `fs.watch` in a
+			// fresh process then fails with EMFILE regardless of `ulimit -n` (measured
+			// at 1024 through 1048576) and regardless of the directory, while there is
+			// no actual fd pressure (12k of 368k system-wide). Vite swallows the error,
+			// so the server starts clean, serves correctly, and simply never invalidates
+			// anything again -- HMR looks "broken" with nothing in the log.
+			//
+			// A reboot is the real answer; polling is unaffected by the fault and keeps
+			// you working until then. Off by default because it costs CPU on a repo
+			// this size and nobody else should pay for one wedged laptop -- switch it
+			// on per machine with `VITE_USE_POLLING=1` in a gitignored
+			// `apps/demo/.env.local`, or in the environment.
+			watch: {
+				usePolling: env.VITE_USE_POLLING === '1',
+			},
+		},
+	}
 })

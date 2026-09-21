@@ -17,8 +17,20 @@ Alternatively, enable Windows Developer Mode (Windows 10+) which flips the defau
 These are non-negotiable. Violating any of these is a bug.
 
 - NEVER start/stop the dev server. It's already running with hot reload.
-- NEVER commit or push without explicit user approval.
-- NEVER skip writing tests. TDD is mandatory.
+- NEVER commit or push without explicit user approval. Approval is PER COMMIT and
+  does not carry forward: "commit and push" authorises that one commit, not the
+  next one, and never the rest of the session. Re-asking is the cost of getting
+  this wrong, which is low; committing unasked is not.
+- NEVER commit until the user has TESTED the change themselves and said it is
+  good. Green tests are not that signal: they only prove what is covered. When
+  the work is done, say what changed, say how to exercise it, and STOP. Wait.
+  This applies however obvious the fix looks and however many gates pass.
+- NEVER skip writing tests. TDD is mandatory, and a change that touches
+  behaviour needs BOTH unit and e2e coverage, written before the fix. Unit tests
+  alone have twice missed real defects on this repo because they construct their
+  own inputs: a hand-made rect hid that dnd-kit measures a time-grid bar as its
+  28px label rather than the 1463px column, so every drag grabbed the wrong
+  point. Only a spec driving a real pointer over real geometry caught it.
 - ALWAYS hunt the repercussions of a change before claiming it is done. Name the meaning you are changing, sweep for everything that depends on it (duplicated predicates in plugins, siblings in the same function, compensating hacks, tests and docs pinning the old contract), and prove the fix by reverting it and watching a test fail. Passing tests only prove that nothing *covered* broke. See `.agents/rules/change-impact.md`.
 - ALWAYS match the established standard, never invent your own semantics. This library is RFC 5545 compliant, and where the RFC is silent its behavior must match FullCalendar and Google Calendar. A deviation is a bug even when it is self-consistent and even when the tests pass. Before choosing behavior for anything a calendar already has a convention for (event boundaries, recurrence and overrides, all-day handling, drag/drop across a resource axis, scheduling semantics), look it up and cite it: the RFC section, the FullCalendar docs or source, or Google Calendar's documented behavior. Two deviations already shipped and had to be undone — an inclusive `end` (the RFC's DTEND is exclusive, #248), and a recurrence override emitted from two places at once. If the standard genuinely does not cover the case, say so explicitly and justify the choice; do not quietly pick one.
 - NEVER use npm/node/pnpm as the package manager or runtime. Always use `bun` (invoke tools via `bunx`, e.g. the demo dev server runs `bunx vite`).
@@ -313,6 +325,10 @@ Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringE
 ### TDD
 
 - Write tests FIRST, then implement (red-green-refactor)
+- Both layers, not one: a unit test for the rule, an e2e spec for the behaviour
+  through the real UI. Anything involving geometry, pointers, or measurement is
+  e2e or it is unverified.
+- Hand the change to the user to test before committing. See the Hard Rules.
 - Never create new test files — update existing `component.test.tsx` files
 - Never create new functions — replace/update existing implementations
 - Exact assertions: `toHaveLength(3)`, `toBe('exact-value')` — not `toBeGreaterThan(0)`

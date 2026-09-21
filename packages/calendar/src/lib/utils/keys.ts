@@ -71,6 +71,9 @@ export const keys = {
 			rowLabel: (resourceId: Id) => `horizontal-row-label-${resourceId}`,
 			event: (eventId: Id) => `horizontal-event-${eventId}`,
 		},
+		// One per day column, so a multi-day event yields several; they appear in
+		// column order, which is what lets a test grab a chosen column.
+		verticalEvent: (eventId: Id) => `vertical-event-${eventId}`,
 		eventsLayer: (orientation: 'vertical' | 'horizontal', id: Id) =>
 			`${orientation}-events-${id}`,
 	},

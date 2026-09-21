@@ -6,6 +6,7 @@ import {
 	type VerticalPositionedEvent,
 } from '@/lib/layout/geometry'
 import { getDragSegment } from '@/lib/utils/grab-offset'
+import { keys } from '@/lib/utils/keys'
 
 /** Identifies one bar: an event can be drawn once per column and per resource. */
 export const getVerticalEventKey = (
@@ -37,7 +38,11 @@ export function VerticalEventBar({
 	const isShortEvent = event.end.diff(event.start, 'minute') <= 15
 
 	return (
-		<div className="absolute" style={getVerticalBarStyle(positioned)}>
+		<div
+			className="absolute"
+			data-testid={keys.container.verticalEvent(event.id)}
+			style={getVerticalBarStyle(positioned)}
+		>
 			<DraggableEvent
 				className={cn('pointer-events-auto', {
 					'[&_p]:text-[10px] [&_p]:mt-0': isShortEvent,

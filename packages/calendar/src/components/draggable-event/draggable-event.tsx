@@ -2,7 +2,7 @@ import { useDraggable } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { CSSProperties, ReactNode } from 'react'
-import { memo } from 'react'
+import { memo, useRef } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { EventSegment } from '@/features/calendar/types'
@@ -111,6 +111,13 @@ function DraggableEventUnmemoized({
 	const { onEventClick, renderEvent, disableEventClick, disableDragAndDrop } =
 		useSmartCalendarContext()
 
+	// Measured on demand rather than read from `active.rect.current.initial`:
+	// dnd-kit's own measurement of a time-grid bar comes back as the label's
+	// height (28px) instead of the bar's (a full day column is ~1463px), which
+	// clamps the grab fraction to 1 and reads every grab as "the very end of
+	// the segment". The node stays mounted for the whole drag, so measuring it
+	// at the first drag-over gives the real box.
+	const barRef = useRef<HTMLElement | null>(null)
 	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
 		id: elementId,
 		data: {
@@ -118,9 +125,15 @@ function DraggableEventUnmemoized({
 			type: 'calendar-event',
 			sourceResourceId,
 			dragSegment,
+			getBarRect: () => barRef.current?.getBoundingClientRect(),
 		},
 		disabled: disableDrag || disableDragAndDrop,
 	})
+
+	const registerBar = (node: HTMLElement | null) => {
+		barRef.current = node
+		setNodeRef(node)
+	}
 
 	// `isDragging` marks the bar under the pointer; `isBeingDragged` also covers
 	// this event's other bars (a clipped span, or a second resource row).
@@ -158,7 +171,7 @@ function DraggableEventUnmemoized({
 				e.stopPropagation()
 				onEventClick(event)
 			}}
-			ref={setNodeRef}
+			ref={registerBar}
 			style={style}
 			transitionKey={elementId}
 			{...attributes}

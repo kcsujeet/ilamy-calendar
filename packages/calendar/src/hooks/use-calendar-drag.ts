@@ -73,6 +73,13 @@ interface PendingGrab {
 	calendarEvent: CalendarEvent
 	segment: DragSegment
 	activatorEvent: Event
+	/**
+	 * The bar's box as it was when the pointer went down. Measured then, not
+	 * later: the pointer coordinate is from that instant, and pairing it with a
+	 * rect read after a scroll or reflow computes the grab against geometry the
+	 * pointer never saw.
+	 */
+	barRect?: DOMRect
 }
 
 const readGrab = ({
@@ -92,9 +99,18 @@ const readGrab = ({
 		return { calendarEvent, pending: null }
 	}
 
+	const getBarRect = active.data.current.getBarRect as
+		| (() => DOMRect | undefined)
+		| undefined
+
 	return {
 		calendarEvent,
-		pending: { calendarEvent, segment, activatorEvent },
+		pending: {
+			calendarEvent,
+			segment,
+			activatorEvent,
+			barRect: getBarRect?.(),
+		},
 	}
 }
 
@@ -196,16 +212,20 @@ export const useCalendarDrag = (
 	/**
 	 * Measures the grab as soon as there is a rect to measure it against.
 	 *
-	 * NOT at drag start: `active.rect.current.initial` is still null there, so
-	 * computing the offset then silently yielded `NO_GRAB_OFFSET` for every
-	 * drag, and the event re-anchored to its start instead of holding the point
-	 * you grabbed. dnd-kit has measured by the first drag-over, which is also
-	 * the first moment the offset is needed, since the candidate is built here.
+	 * The RECT is captured at drag start, where the pointer coordinate also comes
+	 * from, so the two describe the same instant. Only the arithmetic waits: it
+	 * runs here because this is the first moment the offset is needed, and
+	 * because dnd-kit's own `active.rect.current.initial` (the fallback) is
+	 * still null at drag start.
 	 */
 	const resolveGrabOffset = (event: DragOverEvent) => {
 		const pending = pendingGrabRef.current
-		const initialRect = event.active.rect.current.initial
-		if (!pending || !initialRect) {
+		if (!pending) {
+			return
+		}
+		// The bar's own box first: dnd-kit measures a time-grid bar as its label.
+		const initialRect = pending.barRect ?? event.active.rect.current.initial
+		if (!initialRect) {
 			return
 		}
 		grabOffsetRef.current = calculateGrabOffset({

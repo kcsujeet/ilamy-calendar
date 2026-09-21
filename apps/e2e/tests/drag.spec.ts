@@ -247,6 +247,93 @@ test.describe('drag and drop', () => {
 			.toMatch(/^2025-03-11T09:00/)
 	})
 
+	test('moves a multi-day event rigidly when grabbed by a middle column', async ({
+		page,
+	}) => {
+		// The train rule, and FullCalendar's: an event moves BY a delta
+		// (https://fullcalendar.io/docs/eventDrop), so pushing it from the middle
+		// must not drag its start to your hand. A week view draws one bar per day
+		// column, and dnd-kit measures such a bar as its LABEL (28px) rather than
+		// the column (~1463px), which clamped the grab fraction to 1 and read
+		// every grab as the segment's end. One column right with no vertical
+		// movement then shifted the event by 13 hours instead of a day.
+		await gotoScenario(page, {
+			scenario: 'timed-multi-day',
+			view: 'week',
+			settings: { scrollTime: '08:00' },
+		})
+		const grid = new TimeGrid(page)
+
+		const before = await grid.eventNamed('Field survey')
+		expect(before.start).toMatch(/^2025-03-10T09:00/)
+
+		// Mar 10 09:00 to Mar 13 17:00 draws four column bars; take the second.
+		const middleColumn = grid.bars('timed-span-1').nth(1)
+		await middleColumn.scrollIntoViewIfNeeded()
+		const box = await middleColumn.boundingBox()
+		if (!box) {
+			throw new Error('the bar needs a layout to be grabbed')
+		}
+
+		const grabX = box.x + box.width / 2
+		const grabY = 500
+		const columnWidth = box.width
+		await page.mouse.move(grabX, grabY)
+		await page.mouse.down()
+		for (let step = 1; step <= 10; step += 1) {
+			await page.mouse.move(grabX + (columnWidth * step) / 10, grabY)
+		}
+		await page.mouse.up()
+
+		// Exactly one day later at both ends: translated, not re-anchored.
+		await expect
+			.poll(async () => (await grid.eventNamed('Field survey')).start)
+			.toMatch(/^2025-03-11T09:00/)
+		const after = await grid.eventNamed('Field survey')
+		expect(after.end).toMatch(/^2025-03-14T17:00/)
+	})
+
+	test('drops an event whose body spans disabled cells', async ({ page }) => {
+		// Disabled means disabled for the POINTER, not for the event. A cell you
+		// cannot click or release on may still be covered by an event's body: a
+		// span running 09:00 to 17:00 over four days crosses every night, and
+		// every night is outside business hours. Only the cell under the pointer
+		// decides whether the drop lands.
+		await gotoScenario(page, {
+			scenario: 'timed-multi-day',
+			view: 'week',
+			settings: { scrollTime: '08:00', businessHours: '9-17' },
+		})
+		const grid = new TimeGrid(page)
+
+		// The nights this event covers are refused cells, and it starts anyway.
+		const nightCell = grid.slotAt('2025-03-11T02:00')
+		await expect(nightCell).toHaveAttribute('data-disabled', 'true')
+
+		const businessSlot = grid.slotAt('2025-03-11T10:00')
+		const slotBox = await businessSlot.boundingBox()
+		const middleColumn = grid.bars('timed-span-1').nth(1)
+		const barBox = await middleColumn.boundingBox()
+		if (!slotBox || !barBox) {
+			throw new Error('the grab and the target both need a layout')
+		}
+
+		// Grab at a business hour and release at one, one column to the right.
+		const grabX = barBox.x + barBox.width / 2
+		const grabY = slotBox.y + slotBox.height / 2
+		await page.mouse.move(grabX, grabY)
+		await page.mouse.down()
+		for (let step = 1; step <= 10; step += 1) {
+			await page.mouse.move(grabX + (barBox.width * step) / 10, grabY)
+		}
+		await page.mouse.up()
+
+		// It moved: the nights under the event never had a say.
+		await expect
+			.poll(async () => (await grid.eventNamed('Field survey')).start)
+			.toMatch(/^2025-03-11T09:00/)
+	})
+
 	test('keeps the mirror over a cell that refuses the drop', async ({
 		page,
 	}) => {

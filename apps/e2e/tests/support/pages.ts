@@ -136,6 +136,15 @@ export class TimeGrid extends CalendarPage {
 	}
 
 	/**
+	 * A multi-day event's per-column bars, in column order. Distinct from
+	 * `event(title)`, which finds the TEXT: measuring a grab needs the element
+	 * that actually spans the hours.
+	 */
+	bars(eventId: string): Locator {
+		return this.page.getByTestId(`vertical-event-${eventId}`)
+	}
+
+	/**
 	 * The slot whose range opens at this instant, given as an ISO prefix such as
 	 * '2025-03-12T13:00'. Every cell reports its own range on `data-start`,
 	 * which is the only thing that distinguishes one hour from the next.

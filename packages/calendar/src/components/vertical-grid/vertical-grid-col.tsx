@@ -4,7 +4,7 @@ import type React from 'react'
 import { memo } from 'react'
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
-import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
+import { VerticalGridEventsLayer } from './events-layer/vertical-grid-events-layer'
 
 export interface VerticalGridColProps extends VerticalColumnSpec {
 	'data-testid'?: string
@@ -99,6 +99,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 										// Passing the hour for daily cells made them 00:00-01:00
 										// slots, breaking drag-to-create's cross-day selection.
 										hour={gridType === 'hour' ? day.hour() : undefined}
+										isSubDivider={isSubDivider}
 										key={keys.listKey(id, dayIndex, mm)}
 										minute={hasSubHourSlots ? minute : undefined}
 										resourceId={resourceId} // Events are rendered in a separate layer

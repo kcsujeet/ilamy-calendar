@@ -2,9 +2,12 @@ import { useDroppable } from '@dnd-kit/core'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
+import { useDragPreview } from '@/contexts/drag-preview-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { CellInfo } from '@/features/calendar/types'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
+import { isPreviewOnTarget } from '@/lib/utils/drag-preview'
+import type { DropCellData } from './drag-and-drop/dnd-utils'
 
 interface DroppableCellProps {
 	id: string
@@ -25,6 +28,14 @@ interface DroppableCellProps {
 	className?: string
 	style?: React.CSSProperties
 	'data-testid'?: string
+	/**
+	 * Whether this cell draws the dashed sub-hour divider below itself. Emitted
+	 * as `data-slot-divider` so a consumer can hide or restyle just those lines
+	 * from a stylesheet (`[data-slot-divider] { border-bottom-style: none }`),
+	 * which is how you get sub-hour drag targets without the visual clutter.
+	 * The library ships no CSS, so a stable selector is the whole affordance.
+	 */
+	isSubDivider?: boolean
 	disabled?: boolean
 }
 
@@ -58,6 +69,157 @@ function getCellRange(
 	return { start, end: start.add(1, 'day').startOf('day') }
 }
 
+/**
+ * The tint a cell wears while a drag would land on it, taken from FullCalendar
+ * rather than invented: v6 ships `--fc-highlight-color:rgba(188,232,241,.3)`
+ * behind `.fc .fc-highlight{background:var(--fc-highlight-color)}`, and v4's
+ * `core/main.css` spells the same colour `#bce8f1` at `opacity: .3`.
+ *
+ * A fixed literal, not a theme token, and deliberately so. Two earlier attempts
+ * failed on exactly that point: a grey tint sits on the same axis as the
+ * disabled and hover fills, which in a monochrome theme (the demo sets
+ * `--primary` and `--foreground` to the same black) makes all three
+ * indistinguishable; and a tint in the DRAGGED EVENT's own colour is the same
+ * hue as the mirror standing on it. This pale cyan can collide with neither.
+ */
+const DROP_TARGET_HIGHLIGHT = 'rgba(188, 232, 241, 0.3)'
+
+/** The tint itself, so the cell's own body stays about being a cell. */
+const DropTargetHighlight = () => (
+	<div
+		aria-hidden="true"
+		className="absolute inset-0 pointer-events-none"
+		style={{ backgroundColor: DROP_TARGET_HIGHLIGHT }}
+	/>
+)
+
+/**
+ * Whether the in-flight drag would land on this cell. `end` is exclusive
+ * (#248); `isPreviewOnTarget` takes the last instant the cell covers.
+ *
+ * A boolean is all the cell needs. The tint it draws is one fixed colour, and
+ * `data-drop-target` carries no payload either, so neither reader wants the
+ * candidate itself.
+ */
+const useDragLandsHere = (
+	cellRange: { start: Dayjs; end: Dayjs },
+	resourceId: string | number | undefined,
+	allDay: boolean | undefined
+): boolean => {
+	const dragPreview = useDragPreview()
+	return isPreviewOnTarget(dragPreview, {
+		rangeStart: cellRange.start,
+		rangeEnd: cellRange.end.subtract(1, 'millisecond'),
+		resourceId,
+		allDay,
+	})
+}
+
+interface DropTargetInput {
+	id: string
+	/** Published to the drag so a drop can read where — and whether — it landed. */
+	data: DropCellData
+	cellRange: { start: Dayjs; end: Dayjs }
+	disableDragAndDrop: boolean
+}
+
+/**
+ * Registers the cell as a drop target and says whether to tint it.
+ *
+ * A disabled cell stays REGISTERED: the mirror has to keep rendering over it
+ * and the pointer has to be releasable there, exactly as FullCalendar draws its
+ * mirror over an area its constraints forbid. `data.disabled` is what makes the
+ * drop a no-op, decided in `getUpdatedEvent`. Refusing the hit-test instead
+ * left `over` null, which blanked the whole preview and swapped the snapped
+ * mirror for a floating chip the moment the pointer crossed a closed day.
+ *
+ * So a disabled cell tints too, whether the pointer is over it or the candidate
+ * merely spans it — a multi-day drag crosses closed days, and leaving those
+ * cells grey makes the bar look like it is crossing unavailable ground.
+ */
+const useDropTarget = ({
+	id,
+	data,
+	cellRange,
+	disableDragAndDrop,
+}: DropTargetInput) => {
+	const { isOver, setNodeRef } = useDroppable({
+		id,
+		data,
+		disabled: disableDragAndDrop,
+	})
+	// `isOver` alone is not enough: a grab offset moves the candidate off the
+	// cell the pointer is on, and the cells it does cover must light up too.
+	const landsHere = useDragLandsHere(cellRange, data.resourceId, data.allDay)
+	const isDropTarget = isOver || landsHere
+	return { setNodeRef, showDropHighlight: isDropTarget && !disableDragAndDrop }
+}
+
+interface CellDataInput {
+	allDay?: boolean
+	cellDisabled: boolean
+	showDropHighlight: boolean
+	isSubDivider: boolean
+	range: { start: Dayjs; end: Dayjs }
+	resourceId?: string | number
+	dataTestId?: string
+	view: string
+}
+
+/**
+ * What the cell tells the outside world about itself: its range, whether it
+ * refuses drops, whether a drag lands across it, and whether it draws the
+ * sub-hour divider. These are the library's styling and testing surface, since
+ * it ships no CSS of its own.
+ */
+const getCellDataAttributes = ({
+	allDay,
+	cellDisabled,
+	showDropHighlight,
+	isSubDivider,
+	range,
+	resourceId,
+	dataTestId,
+	view,
+}: CellDataInput) => ({
+	'data-all-day': allDay ? 'true' : undefined,
+	'data-disabled': cellDisabled.toString(),
+	'data-drop-target': showDropHighlight ? 'true' : undefined,
+	'data-end': range.end.toISOString(),
+	'data-resource-id': resourceId,
+	'data-slot-divider': isSubDivider ? 'true' : undefined,
+	'data-start': range.start.toISOString(),
+	'data-testid': dataTestId,
+	'data-view': view,
+})
+
+interface CellClassInput {
+	className?: string
+	customClassName?: string
+	disabledClass: string
+	clickBlocked: boolean
+	cellDisabled: boolean
+}
+
+const getCellClasses = ({
+	className,
+	customClassName,
+	disabledClass,
+	clickBlocked,
+	cellDisabled,
+}: CellClassInput) =>
+	cn(
+		// `relative` so the drop-target highlight, which is this component's own
+		// `absolute inset-0` child, is positioned against the cell rather than
+		// against whatever happens to be the nearest positioned ancestor. The one
+		// current caller passes it too; owning it here means the next one need not.
+		'droppable-cell relative',
+		className,
+		customClassName,
+		clickBlocked ? 'cursor-default' : 'cursor-pointer',
+		cellDisabled && disabledClass
+	)
+
 export function DroppableCell({
 	id,
 	type,
@@ -72,6 +234,7 @@ export function DroppableCell({
 	style,
 	'data-testid': dataTestId,
 	disabled = false,
+	isSubDivider = false,
 }: DroppableCellProps) {
 	const {
 		onCellClick,
@@ -93,10 +256,19 @@ export function DroppableCell({
 	const cellDisabled = disabled || Boolean(isCellDisabled?.(cellInfo))
 	const clickBlocked = disableCellClick || cellDisabled
 
-	const { isOver, setNodeRef } = useDroppable({
+	const { setNodeRef, showDropHighlight } = useDropTarget({
 		id,
-		data: { type, date, hour, minute, resourceId, allDay },
-		disabled: disableDragAndDrop || cellDisabled,
+		data: {
+			type,
+			date,
+			hour,
+			minute,
+			resourceId,
+			allDay,
+			disabled: cellDisabled,
+		},
+		cellRange: { start, end },
+		disableDragAndDrop: Boolean(disableDragAndDrop),
 	})
 
 	const handleCellClick = (e: React.MouseEvent) => {
@@ -107,33 +279,32 @@ export function DroppableCell({
 		onCellClick(cellInfo)
 	}
 
-	const showDropHighlight = isOver && !disableDragAndDrop && !cellDisabled
-	const disabledClass = classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME
-	const customClassName = getCellClassName?.(cellInfo)
-
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: The cell is interactive for event creation
 		// biome-ignore lint/a11y/useKeyWithClickEvents: Key events are handled by parent components
 		<div
-			className={cn(
-				'droppable-cell',
+			className={getCellClasses({
 				className,
-				customClassName,
-				showDropHighlight && 'bg-accent',
-				clickBlocked ? 'cursor-default' : 'cursor-pointer',
-				cellDisabled && disabledClass
-			)}
-			data-all-day={allDay ? 'true' : undefined}
-			data-disabled={cellDisabled.toString()}
-			data-end={end.toISOString()}
-			data-resource-id={resourceId}
-			data-start={start.toISOString()}
-			data-testid={dataTestId}
-			data-view={view}
+				customClassName: getCellClassName?.(cellInfo),
+				disabledClass: classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME,
+				clickBlocked,
+				cellDisabled,
+			})}
+			{...getCellDataAttributes({
+				allDay,
+				cellDisabled,
+				showDropHighlight,
+				isSubDivider,
+				range: { start, end },
+				resourceId,
+				dataTestId,
+				view,
+			})}
 			onClick={handleCellClick}
 			ref={setNodeRef}
 			style={style}
 		>
+			{showDropHighlight && <DropTargetHighlight />}
 			{children}
 		</div>
 	)

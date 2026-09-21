@@ -1,38 +1,74 @@
 import { useDraggable } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
-import type { CSSProperties } from 'react'
-import { memo } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import { memo, useRef } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { EventSegment } from '@/features/calendar/types'
+import type { DragSegment } from '@/lib/utils/grab-offset'
+import {
+	DefaultEventContent,
+	type DefaultEventContentProps,
+} from './default-event-content'
 
-const getBorderRadiusClass = (
-	isTruncatedStart: boolean,
-	isTruncatedEnd: boolean
-) => {
-	if (isTruncatedStart && isTruncatedEnd) {
-		return 'rounded-none'
-	}
-	if (isTruncatedStart) {
-		return 'rounded-r-md rounded-l-none'
-	}
-	if (isTruncatedEnd) {
-		return 'rounded-l-md rounded-r-none'
-	}
-	return 'rounded-md'
+interface DragStateClassInput {
+	isDragDisabled: boolean
+	disableEventClick: boolean
+	isSourceOfDrag: boolean
 }
 
-function DraggableEventUnmemoized({
-	elementId,
+/**
+ * How the bar reads to the pointer: what it offers, and whether it is in flight.
+ *
+ * The in-flight ghost sits at 0.5, which is a DELIBERATE deviation from
+ * FullCalendar's `.fc-event-dragging:not(.fc-event-selected){opacity:.75}`.
+ * 0.75 is the right number for FullCalendar's mirror, which carries no outline
+ * of its own and so needs the grid around it to stay quiet to be found. This
+ * mirror is opaque AND hard-ringed (`DragPreviewCard`), so it wins the
+ * hierarchy on its own, and the bar left behind can recede further than the RFC
+ * -silent standard suggests. It still has to read as "the event is here, and it
+ * is moving" rather than as deleted, which is what rules out going lower.
+ */
+const getDragStateClasses = ({
+	isDragDisabled,
+	disableEventClick,
+	isSourceOfDrag,
+}: DragStateClassInput) => {
+	const idleCursor = disableEventClick ? 'cursor-default' : 'cursor-pointer'
+	const showAsDragged = isSourceOfDrag && !isDragDisabled
+	return {
+		cursorClass: isDragDisabled ? idleCursor : 'cursor-grab',
+		draggingClass: showAsDragged && 'cursor-grabbing opacity-50 select-none',
+	}
+}
+
+interface EventContentInput extends DefaultEventContentProps {
+	renderEvent?: (event: CalendarEvent, segment: EventSegment) => ReactNode
+	segment: EventSegment
+}
+
+/** The consumer's renderer when there is one, otherwise the built-in bar. */
+const renderEventContent = ({
+	renderEvent,
 	event,
-	className,
-	style,
-	disableDrag = false,
-	isTruncatedStart = false,
-	isTruncatedEnd = false,
-	sourceResourceId,
-}: {
+	segment,
+	isTruncatedStart,
+	isTruncatedEnd,
+}: EventContentInput): ReactNode => {
+	if (renderEvent) {
+		return renderEvent(event, segment)
+	}
+	return (
+		<DefaultEventContent
+			event={event}
+			isTruncatedEnd={isTruncatedEnd}
+			isTruncatedStart={isTruncatedStart}
+		/>
+	)
+}
+
+interface DraggableEventProps {
 	elementId: string
 	className?: string
 	style?: CSSProperties
@@ -47,64 +83,65 @@ function DraggableEventUnmemoized({
 	/** Set by the events layer when the visible range cut this bar. */
 	isTruncatedStart?: boolean
 	isTruncatedEnd?: boolean
-}) {
+	/**
+	 * The span this bar draws, which the grid clipped to its own range. The drop
+	 * needs it to read the grab point in the same unit as the rendered rect.
+	 */
+	dragSegment?: DragSegment
+	/**
+	 * Whether this event is the one being dragged. Passed by the events layer,
+	 * which already reads the drag preview: subscribing here instead would
+	 * re-render every bar in the grid on every drag-over tick, through `memo`.
+	 */
+	isBeingDragged?: boolean
+}
+
+function DraggableEventUnmemoized({
+	elementId,
+	event,
+	className,
+	style,
+	disableDrag = false,
+	isTruncatedStart = false,
+	isTruncatedEnd = false,
+	sourceResourceId,
+	dragSegment,
+	isBeingDragged = false,
+}: DraggableEventProps) {
 	const { onEventClick, renderEvent, disableEventClick, disableDragAndDrop } =
 		useSmartCalendarContext()
 
+	// Measured on demand rather than read from `active.rect.current.initial`:
+	// dnd-kit's own measurement of a time-grid bar comes back as the label's
+	// height (28px) instead of the bar's (a full day column is ~1463px), which
+	// clamps the grab fraction to 1 and reads every grab as "the very end of
+	// the segment". The node stays mounted for the whole drag, so measuring it
+	// at the first drag-over gives the real box.
+	const barRef = useRef<HTMLElement | null>(null)
 	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
 		id: elementId,
 		data: {
 			event,
 			type: 'calendar-event',
 			sourceResourceId,
+			dragSegment,
+			getBarRect: () => barRef.current?.getBoundingClientRect(),
 		},
 		disabled: disableDrag || disableDragAndDrop,
 	})
 
-	// Default event content to render if custom renderEvent is not provided
-	const DefaultEventContent = () => {
-		return (
-			<div
-				className={cn(
-					event.backgroundColor || 'bg-blue-500',
-					event.color || 'text-white',
-					'h-full w-full px-1 border-[1.5px] border-card text-left overflow-clip relative',
-					getBorderRadiusClass(isTruncatedStart, isTruncatedEnd)
-				)}
-				style={{ backgroundColor: event.backgroundColor, color: event.color }}
-			>
-				{/* Left continuation indicator */}
-				{isTruncatedStart && (
-					<div className="absolute left-0 top-0 bottom-0 w-0.5 bg-foreground/25"></div>
-				)}
-
-				{/* Event title */}
-				<p
-					className={cn(
-						'text-[10px] font-semibold sm:text-xs mt-0.5',
-						// Add slight padding to avoid overlap with indicators
-						isTruncatedStart && 'pl-1',
-						isTruncatedEnd && 'pr-1'
-					)}
-				>
-					{event.title}
-				</p>
-
-				{/* Right continuation indicator */}
-				{isTruncatedEnd && (
-					<div className="absolute right-0 top-0 bottom-0 w-0.5 bg-foreground/25"></div>
-				)}
-			</div>
-		)
+	const registerBar = (node: HTMLElement | null) => {
+		barRef.current = node
+		setNodeRef(node)
 	}
 
-	const isDragDisabled = disableDrag || disableDragAndDrop
-	const idleCursorClass = disableEventClick
-		? 'cursor-default'
-		: 'cursor-pointer'
-	const cursorClass = isDragDisabled ? idleCursorClass : 'cursor-grab'
-	const draggingClass =
-		isDragging && !isDragDisabled && 'cursor-grabbing shadow-lg'
+	// `isDragging` marks the bar under the pointer; `isBeingDragged` also covers
+	// this event's other bars (a clipped span, or a second resource row).
+	const { cursorClass, draggingClass } = getDragStateClasses({
+		isDragDisabled: Boolean(disableDrag || disableDragAndDrop),
+		disableEventClick: Boolean(disableEventClick),
+		isSourceOfDrag: isDragging || isBeingDragged,
+	})
 
 	// The default content reads both of these (border radius, the continuation
 	// markers and their padding), so a custom renderer needs them too or it
@@ -114,11 +151,13 @@ function DraggableEventUnmemoized({
 		isStart: !isTruncatedStart,
 		isEnd: !isTruncatedEnd,
 	}
-	const content = renderEvent ? (
-		renderEvent(event, segment)
-	) : (
-		<DefaultEventContent />
-	)
+	const content = renderEventContent({
+		renderEvent,
+		event,
+		segment,
+		isTruncatedStart,
+		isTruncatedEnd,
+	})
 
 	return (
 		<AnimatedSection
@@ -132,7 +171,7 @@ function DraggableEventUnmemoized({
 				e.stopPropagation()
 				onEventClick(event)
 			}}
-			ref={setNodeRef}
+			ref={registerBar}
 			style={style}
 			transitionKey={elementId}
 			{...attributes}
@@ -143,17 +182,60 @@ function DraggableEventUnmemoized({
 	)
 }
 
+/**
+ * Compared by value: the events layer rebuilds the segment on every render, so
+ * comparing by identity would defeat `memo` for every bar in the grid.
+ */
+const isSameSegment = (a?: DragSegment, b?: DragSegment): boolean => {
+	if (!a || !b) {
+		return a === b
+	}
+	const sameSpan = a.start.isSame(b.start) && a.end.isSame(b.end)
+	return sameSpan && a.axis === b.axis
+}
+
+/**
+ * Compared by value, not identity. Both events layers rebuild `style` every
+ * render, so comparing by reference would defeat `memo` for every bar in the
+ * grid; but it cannot be skipped either, because `AllEventsDialog` passes the
+ * bar's whole height through it, and a `eventHeight` change there reaches the
+ * bar through nothing else.
+ */
+const isSameStyle = (a?: CSSProperties, b?: CSSProperties): boolean => {
+	if (!a || !b) {
+		return a === b
+	}
+	const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+	return [...keys].every(
+		(key) => a[key as keyof CSSProperties] === b[key as keyof CSSProperties]
+	)
+}
+
+/**
+ * The props that change what a bar looks like. `style` is compared separately,
+ * by value, for the reason above.
+ */
+const COMPARED_PROPS = [
+	'elementId',
+	'disableDrag',
+	'className',
+	'event',
+	'isTruncatedStart',
+	'isTruncatedEnd',
+	'isBeingDragged',
+] as const satisfies ReadonlyArray<keyof DraggableEventProps>
+
 export const DraggableEvent = memo(
 	DraggableEventUnmemoized,
 	(prevProps, nextProps) => {
-		// Compare the essential props to prevent unnecessary re-renders
-		return (
-			prevProps.elementId === nextProps.elementId &&
-			prevProps.disableDrag === nextProps.disableDrag &&
-			prevProps.className === nextProps.className &&
-			prevProps.event === nextProps.event &&
-			prevProps.isTruncatedStart === nextProps.isTruncatedStart &&
-			prevProps.isTruncatedEnd === nextProps.isTruncatedEnd
+		const sameProps = COMPARED_PROPS.every(
+			(prop) => prevProps[prop] === nextProps[prop]
 		)
+		const sameSegment = isSameSegment(
+			prevProps.dragSegment,
+			nextProps.dragSegment
+		)
+		const sameStyle = isSameStyle(prevProps.style, nextProps.style)
+		return sameProps && sameSegment && sameStyle
 	}
 )

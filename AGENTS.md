@@ -17,8 +17,20 @@ Alternatively, enable Windows Developer Mode (Windows 10+) which flips the defau
 These are non-negotiable. Violating any of these is a bug.
 
 - NEVER start/stop the dev server. It's already running with hot reload.
-- NEVER commit or push without explicit user approval.
-- NEVER skip writing tests. TDD is mandatory.
+- NEVER commit or push without explicit user approval. Approval is PER COMMIT and
+  does not carry forward: "commit and push" authorises that one commit, not the
+  next one, and never the rest of the session. Re-asking is the cost of getting
+  this wrong, which is low; committing unasked is not.
+- NEVER commit until the user has TESTED the change themselves and said it is
+  good. Green tests are not that signal: they only prove what is covered. When
+  the work is done, say what changed, say how to exercise it, and STOP. Wait.
+  This applies however obvious the fix looks and however many gates pass.
+- NEVER skip writing tests. TDD is mandatory, and a change that touches
+  behaviour needs BOTH unit and e2e coverage, written before the fix. Unit tests
+  alone have twice missed real defects on this repo because they construct their
+  own inputs: a hand-made rect hid that dnd-kit measures a time-grid bar as its
+  28px label rather than the 1463px column, so every drag grabbed the wrong
+  point. Only a spec driving a real pointer over real geometry caught it.
 - ALWAYS hunt the repercussions of a change before claiming it is done. Name the meaning you are changing, sweep for everything that depends on it (duplicated predicates in plugins, siblings in the same function, compensating hacks, tests and docs pinning the old contract), and prove the fix by reverting it and watching a test fail. Passing tests only prove that nothing *covered* broke. See `.agents/rules/change-impact.md`.
 - ALWAYS match the established standard, never invent your own semantics. This library is RFC 5545 compliant, and where the RFC is silent its behavior must match FullCalendar and Google Calendar. A deviation is a bug even when it is self-consistent and even when the tests pass. Before choosing behavior for anything a calendar already has a convention for (event boundaries, recurrence and overrides, all-day handling, drag/drop across a resource axis, scheduling semantics), look it up and cite it: the RFC section, the FullCalendar docs or source, or Google Calendar's documented behavior. Two deviations already shipped and had to be undone — an inclusive `end` (the RFC's DTEND is exclusive, #248), and a recurrence override emitted from two places at once. If the standard genuinely does not cover the case, say so explicitly and justify the choice; do not quietly pick one.
 - NEVER use npm/node/pnpm as the package manager or runtime. Always use `bun` (invoke tools via `bunx`, e.g. the demo dev server runs `bunx vite`).
@@ -62,6 +74,19 @@ Context, decisions, things to watch out for.
 ## Session Start
 
 Run `/load-context` to load the full codebase map, rules, and recent dev logs before starting work.
+
+The plugins this repo relies on install themselves. `.claude/settings.json` declares the
+`kc-claude-kit` marketplace in `extraKnownMarketplaces`, which registers it once you trust
+the folder, and enables its plugins in `enabledPlugins`. Enabling is not installing: since
+Claude Code v2.1.195 a plugin that comes from an external source stays uninstalled until
+someone runs `claude plugin install`
+([docs](https://code.claude.com/docs/en/discover-plugins#configure-team-marketplaces)), so a
+`SessionStart` hook (`.claude/hooks/install-project-plugins.sh`) runs that command for any
+plugin still missing. A fresh clone therefore needs no manual `/plugin` step; the newly
+installed plugins are active from the next session, or after `/reload-plugins`. The hook
+installs at **local** scope because `--scope project` refuses to write through this repo's
+symlinked `.claude/settings.json`, and the shared enable record already lives there. It
+prints nothing once everything is present, and never blocks the session.
 
 ## Commands
 
@@ -216,22 +241,31 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
         views/  # built-in PluginView specs + ViewRenderer dispatcher + resource arrangements (year component in year-view/)
         header/                                # Calendar header, title, view controls
         event-form/                            # Event creation/editing forms
-      contexts/calendar-context/               # CalendarProvider, all state (the ONE provider)
+      contexts/calendar-context/               # CalendarProvider, all calendar STATE (the ONE state provider)
       hooks/                                   # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,data,interaction}),
                                                #   use-smart-calendar-context, useProcessed*Events, use-effective-business-hours
       utils/                                   # business-hours, view-hours, event-form-utils
     plugins/lib/                               # Plugin kernel; PluginRuntime (contract types live in @ilamy/types)
+  contexts/                                    # Grid-level contexts, shared by components + hooks
+    drag-preview-context.tsx                   # The in-flight drag candidate (the snapped mirror reads it)
+    grid-axis-context.tsx                      # Which grid drew a bar; decides its truncation affordances
+  hooks/                                       # Package-level hooks (use-calendar-drag, use-drop-commit,
+                                               #   use-drag-preview-event, use-scoped-event-mutation, …)
   components/
     calendar-slots.tsx                         # SLOT_* mount points + host slot components (context shapes in @ilamy/types)
-    drag-and-drop/                             # @dnd-kit integration
+    drag-and-drop/                             # @dnd-kit integration + the drag mirror card
     vertical-grid/                             # Time-based grid (day/week views)
+      events-layer/                            # The layer, its event bar, and its drag mirror
     horizontal-grid/                           # Date-based grid (month view)
+      events-layer/                            # Same three, for the row axis
     all-day-row/                               # All-day event bar
   lib/
     translations/                              # Default translations, types
     layout/                                    # geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
     events/pipeline.ts                         # event filters (resource membership; range overlap lives in @ilamy/utils)
-    utils/                                     # date-utils, normalize, export-ical (cn → @ilamy/ui/lib/utils, safeDate → @ilamy/utils/helpers)
+    utils/                                     # date-utils, normalize, export-ical, keys, drag-preview,
+                                               #   grab-offset, event-surface (cn → @ilamy/ui/lib/utils,
+                                               #   safeDate → @ilamy/utils/helpers)
     constants.ts                               # Global constants
 
 # Recurrence plugin (separate package; agenda + drag-to-create siblings follow the same shape):
@@ -291,6 +325,10 @@ Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringE
 ### TDD
 
 - Write tests FIRST, then implement (red-green-refactor)
+- Both layers, not one: a unit test for the rule, an e2e spec for the behaviour
+  through the real UI. Anything involving geometry, pointers, or measurement is
+  e2e or it is unverified.
+- Hand the change to the user to test before committing. See the Hard Rules.
 - Never create new test files — update existing `component.test.tsx` files
 - Never create new functions — replace/update existing implementations
 - Exact assertions: `toHaveLength(3)`, `toBe('exact-value')` — not `toBeGreaterThan(0)`

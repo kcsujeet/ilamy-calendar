@@ -31,6 +31,8 @@ interface GridProps {
 	children?: React.ReactNode
 	'data-testid'?: string
 	precomputedEvents?: CalendarEvent[]
+	/** Whether this cell draws the dashed sub-hour divider below itself. */
+	isSubDivider?: boolean
 }
 
 const NoMemoGridCell: React.FC<GridProps> = ({
@@ -46,6 +48,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	precomputedEvents,
 	'data-testid': dataTestId,
 	showDayNumber = false,
+	isSubDivider = false,
 	children,
 }) => {
 	const allEventsDialogRef = React.useRef<{
@@ -161,6 +164,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				disabled={!isBusiness || isOutsideDisplayedMonth}
 				hour={hour}
 				id={droppableId}
+				isSubDivider={isSubDivider}
 				minute={minute}
 				resourceId={resourceId}
 				slotDurationMinutes={slotDurationMinutes}

@@ -5,47 +5,89 @@ import { RRule } from '@ilamy/calendar/plugins/recurrence'
 const baseDate = dayjs().startOf('month').date(1)
 
 export const dummyEvents = [
-	// First week events
+	// Colour matrix. `backgroundColor` and `color` each accept a Tailwind class
+	// OR a CSS value, and either may be omitted, so there are nine combinations
+	// an event can reach the renderer with. All nine are seeded here: anything
+	// that repaints an event (the drag mirror, a custom renderer) has to handle
+	// every one, and a reader that checks only `backgroundColor` silently paints
+	// the `color`-only cases the fallback blue. The titles read as real events on
+	// purpose — this seeds the public demo, and a grid captioned with the names
+	// of the props under test is not a calendar anyone can evaluate. Which form
+	// each one exercises is in its `description`.
 	{
 		id: '5.1',
-		title: 'Weekly Review',
-		description: 'Review team performance and goals',
+		title: 'Quarterly Planning',
+		description: 'Falls back to bg-blue-500 + text-white',
 		start: baseDate.date(12).hour(15),
 		end: baseDate.date(12).hour(16),
-		color: 'bg-teal-100 text-teal-800',
 	},
-	// Second week events
 	{
 		id: '5.2',
-		title: 'Client Feedback Session',
-		description: 'Gather feedback on recent deliverables',
+		title: 'Design Review',
+		description: 'Fill and text both ride in `color` as Tailwind classes',
 		start: baseDate.date(12).hour(10),
 		end: baseDate.date(12).hour(11),
-		color: 'bg-orange-100 text-orange-800',
+		color: 'bg-teal-100 text-teal-800',
 	},
 	{
 		id: '5.3',
-		title: 'Team Lunch',
-		description: 'Monthly team bonding lunch',
+		title: 'Client Check-in',
+		description: 'Text colour only; the fill falls back',
 		start: baseDate.date(12).hour(12),
 		end: baseDate.date(12).hour(13),
-		color: 'bg-pink-100 text-pink-800',
+		color: '#7c3aed',
 	},
 	{
 		id: '5.4',
-		title: 'Sprint Planning',
-		description: 'Plan next sprint tasks',
-		start: baseDate.date(12).hour(10),
-		end: baseDate.date(12).hour(12),
-		color: 'bg-indigo-100 text-indigo-800',
+		title: 'Sprint Retrospective',
+		description: 'Fill as a Tailwind class, no text colour',
+		start: baseDate.date(13).hour(10),
+		end: baseDate.date(13).hour(12),
+		backgroundColor: 'bg-rose-500',
 	},
 	{
 		id: '5.5',
-		title: 'Code Review',
-		description: 'Review code changes before merge',
-		start: baseDate.date(12).hour(11),
-		end: baseDate.date(12).hour(12),
-		color: 'bg-amber-100 text-amber-800',
+		title: 'Budget Review',
+		description: 'Fill as a CSS value, no text colour',
+		start: baseDate.date(13).hour(13),
+		end: baseDate.date(13).hour(14),
+		backgroundColor: '#f59e0b',
+	},
+	{
+		id: '5.6',
+		title: 'All Hands',
+		description: 'Fill and text as Tailwind classes',
+		start: baseDate.date(14).hour(9),
+		end: baseDate.date(14).hour(10),
+		backgroundColor: 'bg-violet-500',
+		color: 'text-violet-50',
+	},
+	{
+		id: '5.7',
+		title: 'Onboarding Session',
+		description: 'Fill and text as CSS values',
+		start: baseDate.date(14).hour(11),
+		end: baseDate.date(14).hour(12),
+		backgroundColor: '#0ea5e9',
+		color: '#08203a',
+	},
+	{
+		id: '5.8',
+		title: 'Security Audit',
+		description: 'Mixed forms in one event',
+		start: baseDate.date(15).hour(9),
+		end: baseDate.date(15).hour(10),
+		backgroundColor: 'bg-emerald-500',
+		color: '#022c22',
+	},
+	{
+		id: '5.9',
+		title: 'Roadmap Sync',
+		description: 'Mixed forms the other way round',
+		start: baseDate.date(15).hour(11),
+		end: baseDate.date(15).hour(12),
+		backgroundColor: '#1e293b',
+		color: 'text-amber-300',
 	},
 
 	// Multi-day events (within same month)

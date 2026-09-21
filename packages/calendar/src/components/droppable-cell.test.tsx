@@ -2,8 +2,13 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+	DragPreviewContext,
+	type DragPreviewState,
+} from '@/contexts/drag-preview-context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import type { CellInfo } from '@/features/calendar/types'
+import { mkDragPreview as mkPreview } from '@/testing/drag-test-fixtures'
 import type { CalendarView } from '@/types'
 import { DroppableCell } from './droppable-cell'
 
@@ -22,6 +27,9 @@ interface RenderCellOptions {
 	slotDurationMinutes?: number
 	resourceId?: string | number
 	allDay?: boolean
+	/** The in-flight drag this cell should react to, if any. */
+	preview?: DragPreviewState
+	isSubDivider?: boolean
 }
 
 // One CalendarProvider + DroppableCell setup for every test; pass only the
@@ -37,17 +45,20 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 			onCellClick={opts.onCellClick}
 			resources={opts.resources}
 		>
-			<DroppableCell
-				allDay={opts.allDay}
-				data-testid="cell"
-				date={initialDate}
-				hour={opts.hour}
-				id="test-cell"
-				minute={opts.minute}
-				resourceId={opts.resourceId}
-				slotDurationMinutes={opts.slotDurationMinutes ?? 15}
-				type="day-cell"
-			/>
+			<DragPreviewContext.Provider value={opts.preview ?? null}>
+				<DroppableCell
+					allDay={opts.allDay}
+					data-testid="cell"
+					date={initialDate}
+					hour={opts.hour}
+					id="test-cell"
+					isSubDivider={opts.isSubDivider}
+					minute={opts.minute}
+					resourceId={opts.resourceId}
+					slotDurationMinutes={opts.slotDurationMinutes ?? 15}
+					type="day-cell"
+				/>
+			</DragPreviewContext.Provider>
 		</CalendarProvider>
 	)
 
@@ -66,6 +77,26 @@ describe('DroppableCell data-view attribute', () => {
 			expect(screen.getByTestId('cell').getAttribute('data-view')).toBe(view)
 		}
 	)
+})
+
+describe('DroppableCell sub-hour divider hook', () => {
+	test('marks a cell that draws the dashed divider', () => {
+		// The library ships no CSS, so the only way to hide or restyle just the
+		// sub-hour lines is a stable selector. Keyed off the SAME flag that draws
+		// the border, so the last slot of each hour, which has none, is excluded.
+		renderCell({ isSubDivider: true })
+
+		expect(screen.getByTestId('cell')).toHaveAttribute(
+			'data-slot-divider',
+			'true'
+		)
+	})
+
+	test('leaves a cell that draws no divider unmarked', () => {
+		renderCell()
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-slot-divider')
+	})
 })
 
 describe('DroppableCell isCellDisabled (issue #79)', () => {
@@ -272,5 +303,125 @@ describe('DroppableCell getCellClassName', () => {
 
 		expect(received?.start.toISOString()).toBe('2025-01-01T00:00:00.000Z')
 		expect(received?.end.toISOString()).toBe('2025-01-02T00:00:00.000Z')
+	})
+})
+
+describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	test('highlights a cell the candidate covers', () => {
+		renderCell({ preview: mkPreview(), hour: 10, minute: 30, view: 'week' })
+
+		expect(screen.getByTestId('cell')).toHaveAttribute(
+			'data-drop-target',
+			'true'
+		)
+	})
+
+	test("tints the target in FullCalendar's own highlight colour", () => {
+		// FullCalendar's own highlight: v6 ships
+		// `--fc-highlight-color:rgba(188,232,241,.3)` behind
+		// `.fc .fc-highlight{background:var(--fc-highlight-color)}`.
+		//
+		// A fixed literal rather than a theme token, because it is the one shade
+		// that collides with neither the dragged event's own fill nor the
+		// disabled and hover greys, which in a monochrome theme sit on the same
+		// axis as each other.
+		renderCell({ preview: mkPreview(), hour: 10, minute: 30, view: 'week' })
+
+		const highlight = screen.getByTestId('cell').firstElementChild
+
+		expect(highlight).toHaveStyle({
+			backgroundColor: 'rgba(188, 232, 241, 0.3)',
+		})
+	})
+
+	test('tints a disabled cell the candidate spans across', () => {
+		// A multi-day span crosses days you cannot drop ONTO -- weekends, closed
+		// days -- and the mirror is already drawn across them. Leaving those cells
+		// grey makes the bar look like it is crossing unavailable ground.
+		//
+		// Not "you may release here": a disabled cell registers as a droppable so
+		// the mirror can keep rendering over it, and the refusal is decided at
+		// drop time in `getUpdatedEvent`. The tint says only that the candidate
+		// spans this cell.
+		renderCell({
+			preview: mkPreview(),
+			hour: 10,
+			minute: 30,
+			view: 'week',
+			isCellDisabled: () => true,
+		})
+
+		const highlight = screen.getByTestId('cell').firstElementChild
+
+		expect(highlight).toHaveStyle({
+			backgroundColor: 'rgba(188, 232, 241, 0.3)',
+		})
+	})
+
+	test('leaves a cell the candidate does not cover unpainted', () => {
+		renderCell({ preview: mkPreview(), hour: 14, minute: 0, view: 'week' })
+
+		expect(screen.getByTestId('cell').children).toHaveLength(0)
+	})
+
+	test('leaves a cell outside the candidate alone', () => {
+		renderCell({ preview: mkPreview(), hour: 14, minute: 0, view: 'week' })
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-drop-target')
+	})
+
+	test('leaves the cell starting exactly at the candidate end alone', () => {
+		renderCell({ preview: mkPreview(), hour: 12, minute: 0, view: 'week' })
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-drop-target')
+	})
+
+	test('leaves the cell ending exactly at the candidate start alone', () => {
+		// The cell's own `end` is exclusive (#248), so the candidate beginning at
+		// that instant occupies none of this cell. Handing the exclusive end to
+		// `isPreviewOnTarget`, which takes the LAST instant, lights it up wrongly.
+		const preview = mkPreview({
+			start: initialDate.hour(10).minute(15),
+			end: initialDate.hour(12),
+		})
+		renderCell({ preview, hour: 10, minute: 0, view: 'week' })
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-drop-target')
+	})
+
+	test('leaves cells of another resource alone', () => {
+		renderCell({
+			preview: mkPreview({ resourceId: 'room-a' }),
+			hour: 10,
+			minute: 30,
+			resourceId: 'room-b',
+			view: 'week',
+		})
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-drop-target')
+	})
+
+	test('leaves the all-day cell alone while a timed event is dragged', () => {
+		renderCell({ preview: mkPreview(), allDay: true, view: 'week' })
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-drop-target')
+	})
+
+	test('highlights the all-day cell while an all-day event is dragged', () => {
+		const preview = mkPreview({
+			start: initialDate.startOf('day'),
+			end: initialDate.add(1, 'day').startOf('day'),
+			allDay: true,
+		})
+		renderCell({ preview, allDay: true, view: 'week' })
+
+		expect(screen.getByTestId('cell')).toHaveAttribute(
+			'data-drop-target',
+			'true'
+		)
 	})
 })

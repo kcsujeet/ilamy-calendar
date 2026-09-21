@@ -1,5 +1,6 @@
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { isSameDay } from '@ilamy/utils/helpers'
+import type { TimeFormat } from '@/types'
 
 /**
  * Whether the given date falls on today (calendar day, respecting timezone).
@@ -118,3 +119,10 @@ export const getMonthGridRange = (
 	const gridEnd = weeks.at(-1)?.at(-1) ?? date
 	return { start: gridStart.startOf('day'), end: gridEnd.endOf('day') }
 }
+
+/**
+ * The dayjs pattern for a clock time in the calendar's configured format.
+ * `HourLabel` formats whole hours and keeps its own, coarser pattern.
+ */
+export const getTimeOfDayPattern = (timeFormat: TimeFormat): string =>
+	timeFormat === '12-hour' ? 'h:mma' : 'HH:mm'

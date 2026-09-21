@@ -87,6 +87,29 @@ export const scenarios = {
 		],
 	},
 
+	colored: {
+		description:
+			'Events that carry their colour the two different ways the API allows: one in `color` as Tailwind classes (what the playground seed does), one in `backgroundColor` as a CSS value. Anything that repaints an event — the drag mirror above all — has to read both, or it paints everything the same fallback blue.',
+		views: ['day', 'week', 'month'],
+		config: { scrollTime: '08:00' },
+		events: [
+			event(
+				'colored-1',
+				'Tailwind classes',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ color: 'bg-teal-100 text-teal-800' }
+			),
+			event(
+				'colored-2',
+				'CSS colour',
+				'2025-03-12T11:00:00.000Z',
+				'2025-03-12T12:00:00.000Z',
+				{ backgroundColor: '#f59e0b', color: '#ffffff' }
+			),
+		],
+	},
+
 	'short-events': {
 		description:
 			'15 and 30 minute events against a 15 minute slot. The shortest thing the grid can draw, where a rounding error is visible.',
@@ -192,6 +215,20 @@ export const scenarios = {
 				'First day of April',
 				'2025-04-01T10:00:00.000Z',
 				'2025-04-01T11:00:00.000Z'
+			),
+		],
+	},
+
+	'timed-multi-day': {
+		description:
+			'A multi-day event that does NOT start or end at midnight. A month row draws it across whole, equal day columns while its elapsed time runs 09:00 to 17:00, so the two diverge: reading the grab point as a fraction of TIME rather than of columns lands the drop a day out. Every other multi-day fixture here is midnight-aligned, where the two agree and the bug is invisible.',
+		views: ['week', 'month'],
+		events: [
+			event(
+				'timed-span-1',
+				'Field survey',
+				'2025-03-10T09:00:00.000Z',
+				'2025-03-13T17:00:00.000Z'
 			),
 		],
 	},

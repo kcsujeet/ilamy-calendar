@@ -71,6 +71,9 @@ export const keys = {
 			rowLabel: (resourceId: Id) => `horizontal-row-label-${resourceId}`,
 			event: (eventId: Id) => `horizontal-event-${eventId}`,
 		},
+		// One per day column, so a multi-day event yields several; they appear in
+		// column order, which is what lets a test grab a chosen column.
+		verticalEvent: (eventId: Id) => `vertical-event-${eventId}`,
 		eventsLayer: (orientation: 'vertical' | 'horizontal', id: Id) =>
 			`${orientation}-events-${id}`,
 	},
@@ -112,6 +115,10 @@ export const keys = {
 	// otherwise `day-number-{D}`.
 	dayNumber: (date: Dayjs) =>
 		isToday(date) ? 'day-number-today' : `day-number-${date.format('D')}`,
+
+	// The snapped mirror of a dragged event, one per grid orientation.
+	dragPreview: (orientation: 'vertical' | 'horizontal') =>
+		`event-drag-preview-${orientation}`,
 
 	// Form element testid for time pickers (name = 'start' / 'end' etc.)
 	timePicker: (name: string | undefined) => `time-picker-${name ?? ''}`,

@@ -1,4 +1,9 @@
-import type { SlotDuration, TimeFormat, WeekDays } from '@ilamy/calendar'
+import type {
+	BusinessHours,
+	SlotDuration,
+	TimeFormat,
+	WeekDays,
+} from '@ilamy/calendar'
 
 /**
  * Settings the URL can set, on top of whatever a scenario pins.
@@ -18,6 +23,12 @@ export interface UrlConfig {
 	hiddenDays?: WeekDays[]
 	weekViewGranularity?: 'hourly' | 'daily'
 	hideNonBusinessHours?: boolean
+	/**
+	 * Weekday business hours, as `startHour-endHour` (e.g. `9-17`). Cells
+	 * outside them are disabled, which is the only way to reach a disabled cell
+	 * from the URL: a drag can then be driven across one.
+	 */
+	businessHours?: BusinessHours
 	stickyViewHeader?: boolean
 	disableDragAndDrop?: boolean
 	timeFormat?: TimeFormat
@@ -28,6 +39,29 @@ export interface UrlConfig {
 
 /** Raised for a value the URL got wrong, so the harness can show it rather than guess. */
 export class ConfigError extends Error {}
+
+const WEEKDAYS: WeekDays[] = [
+	'monday',
+	'tuesday',
+	'wednesday',
+	'thursday',
+	'friday',
+]
+
+/** `9-17` -> weekdays 09:00 to 17:00. Weekends are left non-business. */
+const parseBusinessHours = (raw: string): BusinessHours => {
+	const [startRaw, endRaw] = raw.split('-')
+	const startTime = Number(startRaw)
+	const endTime = Number(endRaw)
+	const isWholeHour = (value: number) =>
+		Number.isInteger(value) && value >= 0 && value <= 24
+	if (!isWholeHour(startTime) || !isWholeHour(endTime)) {
+		throw new ConfigError(
+			`businessHours: expected startHour-endHour, e.g. 9-17, got "${raw}"`
+		)
+	}
+	return { daysOfWeek: WEEKDAYS, startTime, endTime }
+}
 
 const oneOf = <T extends string | number>(
 	key: string,
@@ -150,6 +184,11 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const stickyViewHeader = get('stickyViewHeader')
 	if (stickyViewHeader !== null) {
 		config.stickyViewHeader = boolean('stickyViewHeader', stickyViewHeader)
+	}
+
+	const businessHours = get('businessHours')
+	if (businessHours !== null) {
+		config.businessHours = parseBusinessHours(businessHours)
 	}
 
 	const disableDragAndDrop = get('disableDragAndDrop')

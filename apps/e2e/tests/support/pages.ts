@@ -30,6 +30,24 @@ export class CalendarPage {
 		return this.page.getByRole('button', { name: 'Today', exact: true }).click()
 	}
 
+	/**
+	 * The snapped mirror of the event being dragged. Only one is ever on screen:
+	 * a view draws one grid, and each grid draws at most one mirror.
+	 */
+	get dragMirror(): Locator {
+		return this.page.locator('[data-testid^="event-drag-preview-"]')
+	}
+
+	/** Cells the calendar has marked as refusing drops. */
+	get disabledCells(): Locator {
+		return this.page.locator('[data-disabled="true"]')
+	}
+
+	/** The cells the in-flight drag would land across. */
+	get dropTargets(): Locator {
+		return this.page.locator('[data-drop-target="true"]')
+	}
+
 	/** The one cell marked today, if the pinned date is on screen at all. */
 	get todayMarker(): Locator {
 		return this.page.getByTestId('day-number-today')
@@ -82,6 +100,15 @@ export class MonthGrid extends CalendarPage {
 		return this.page.locator('[data-testid^="day-cell-"]')
 	}
 
+	/**
+	 * The positioned bar for an event, by its id. Distinct from `event(title)`,
+	 * which finds the TEXT inside the bar: a geometry measurement needs the
+	 * element that actually spans the day columns.
+	 */
+	bar(eventId: string): Locator {
+		return this.page.getByTestId(`horizontal-event-${eventId}`)
+	}
+
 	/** The cell whose range starts on this date, e.g. '2025-03-12'. */
 	cellOn(date: string): Locator {
 		return this.page.locator(
@@ -106,6 +133,26 @@ export class TimeGrid extends CalendarPage {
 
 	get hourLabels(): Locator {
 		return this.page.locator('[data-testid^="vertical-time-"]')
+	}
+
+	/**
+	 * A multi-day event's per-column bars, in column order. Distinct from
+	 * `event(title)`, which finds the TEXT: measuring a grab needs the element
+	 * that actually spans the hours.
+	 */
+	bars(eventId: string): Locator {
+		return this.page.getByTestId(`vertical-event-${eventId}`)
+	}
+
+	/**
+	 * The slot whose range opens at this instant, given as an ISO prefix such as
+	 * '2025-03-12T13:00'. Every cell reports its own range on `data-start`,
+	 * which is the only thing that distinguishes one hour from the next.
+	 */
+	slotAt(startsWith: string): Locator {
+		return this.page.locator(
+			`[data-testid^="vertical-cell-"][data-start^="${startsWith}"]`
+		)
 	}
 }
 

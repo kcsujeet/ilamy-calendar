@@ -1,7 +1,10 @@
 import { DragPreviewCard } from '@/components/drag-and-drop/drag-preview-card'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
-import { timeOfDayPattern } from '@/lib/utils/date-utils'
+import {
+	getHorizontalBarStyle,
+	type HorizontalPositionedEvent,
+} from '@/lib/layout/geometry'
+import { getTimeOfDayPattern } from '@/lib/utils/date-utils'
 
 interface HorizontalDragPreviewProps {
 	previewPositioned: HorizontalPositionedEvent
@@ -17,8 +20,7 @@ export function HorizontalDragPreview({
 		timeFormat: c.timeFormat,
 		eventHeight: c.eventHeight,
 	}))
-	const { event, left, width, isTruncatedStart, isTruncatedEnd } =
-		previewPositioned
+	const { event, isTruncatedStart, isTruncatedEnd } = previewPositioned
 
 	return (
 		<DragPreviewCard
@@ -27,16 +29,11 @@ export function HorizontalDragPreview({
 			isTruncatedEnd={isTruncatedEnd}
 			isTruncatedStart={isTruncatedStart}
 			orientation="horizontal"
-			style={{
-				left: `calc(${left}% + var(--spacing) * 0.25)`,
-				width: `calc(${width}% - var(--spacing) * 1)`,
-				top: `${top}px`,
-				height: `${eventHeight}px`,
-			}}
+			style={getHorizontalBarStyle(previewPositioned, top, eventHeight)}
 		>
 			{!event.allDay && (
 				<span className="text-[10px] font-semibold sm:text-xs">
-					{event.start.format(timeOfDayPattern(timeFormat))}
+					{event.start.format(getTimeOfDayPattern(timeFormat))}
 				</span>
 			)}
 			<span className="text-[10px] font-bold sm:text-xs truncate">

@@ -35,7 +35,7 @@ export interface DragSegment {
  * The span a rendered bar covers: the event as the grid clipped it to its own
  * range. Returns undefined when the grid has no range to clip against.
  */
-export const dragSegmentFor = (
+export const getDragSegment = (
 	event: { start: Dayjs; end: Dayjs },
 	range: { start: Dayjs | undefined; end: Dayjs | undefined },
 	axis: DragSegment['axis']
@@ -49,7 +49,7 @@ export const dragSegmentFor = (
 }
 
 /** Where the pointer sat along an axis of the rect, as 0..1. */
-const fractionWithin = (
+const getFractionWithin = (
 	pointer: number,
 	rectStart: number,
 	rectLength: number
@@ -90,27 +90,56 @@ export const calculateGrabOffset = ({
 	const rectStart = isVertical ? initialRect?.top : initialRect?.left
 	const rectLength = isVertical ? initialRect?.height : initialRect?.width
 
-	const hasPointer = pointer !== undefined && rectStart !== undefined
-	const hasRect = (rectLength ?? 0) > 0
-	if (!hasPointer || !hasRect) {
+	// Each guard narrows the value it checks, so the call below needs no cast:
+	// `(rectLength ?? 0) > 0` reads as a rect check but leaves `rectLength`
+	// possibly undefined, which is what forced an `as number` here before.
+	if (pointer === undefined || rectStart === undefined) {
+		return NO_GRAB_OFFSET
+	}
+	if (rectLength === undefined || rectLength <= 0) {
 		return NO_GRAB_OFFSET
 	}
 
-	const fraction = fractionWithin(pointer, rectStart, rectLength as number)
+	const fraction = getFractionWithin(pointer, rectStart, rectLength)
 	const segmentMinutes = segment.end.diff(segment.start, 'minute')
 	const grabbedAt = segment.start.add(fraction * segmentMinutes, 'minute')
+	// Time is linear in pixels down a time column, but NOT across a row of day
+	// columns, so the two axes read the grabbed day differently.
+	const columnDay = getGrabbedDayColumn(segment, fraction)
+	const grabbedDayAt = isVertical ? grabbedAt : columnDay
 
 	return {
-		minutes: grabbedMinutesInto(activeEvent, grabbedAt, slotDurationMinutes),
-		days: grabbedDaysInto(activeEvent, grabbedAt),
+		minutes: getGrabbedMinutesInto(activeEvent, grabbedAt, slotDurationMinutes),
+		days: getGrabbedDaysInto(activeEvent, grabbedDayAt),
 	}
+}
+
+/**
+ * The day whose column the pointer grabbed, on a horizontal grid.
+ *
+ * Such a grid draws a multi-day bar across WHOLE, EQUAL columns, so a fraction
+ * of the bar's width is a fraction of its COLUMNS. Reading it as a fraction of
+ * elapsed time agrees only when the span is midnight-aligned: for a timed span
+ * the first and last columns are full width but partial time, so the pointer
+ * crosses into the next day's worth of minutes while still inside the previous
+ * day's column, and the drop lands a day out. A Jan 1 09:00 -> Jan 4 17:00 bar
+ * is wrong across 11% of its width this way, an 18:00 -> 06:00 one across 33%.
+ */
+const getGrabbedDayColumn = (segment: DragSegment, fraction: number): Dayjs => {
+	const firstColumn = segment.start.startOf('day')
+	// `end` is exclusive (#248), so back off an instant before taking the day.
+	const lastColumn = segment.end.subtract(1, 'millisecond').startOf('day')
+	const columnCount = lastColumn.diff(firstColumn, 'day') + 1
+	const grabbedIndex = Math.floor(fraction * columnCount)
+	const clampedIndex = Math.min(Math.max(0, grabbedIndex), columnCount - 1)
+	return firstColumn.add(clampedIndex, 'day')
 }
 
 /**
  * The grab as whole slots into the event. Clamped to the last slot, so grabbing
  * the bar's final pixel grabs its final slot rather than one past the event.
  */
-const grabbedMinutesInto = (
+const getGrabbedMinutesInto = (
 	activeEvent: CalendarEvent,
 	grabbedAt: Dayjs,
 	slotDurationMinutes: number
@@ -129,7 +158,7 @@ const grabbedMinutesInto = (
  * day. Clamped to the last day the event occupies: `end` is exclusive (#248),
  * so a Jan 1 -> Jan 4 event occupies Jan 1 through Jan 3.
  */
-const grabbedDaysInto = (
+const getGrabbedDaysInto = (
 	activeEvent: CalendarEvent,
 	grabbedAt: Dayjs
 ): number => {

@@ -13,10 +13,10 @@ import { cn } from '@ilamy/ui/lib/utils'
  * `backgroundColor`), and a reader that misses it paints every event the same
  * fallback blue.
  */
-export const eventSurfaceClasses = (event: CalendarEvent): string =>
+export const getEventSurfaceClasses = (event: CalendarEvent): string =>
 	cn(event.backgroundColor || 'bg-blue-500', event.color || 'text-white')
 
-export const eventSurfaceStyle = (event: CalendarEvent) => ({
+export const getEventSurfaceStyle = (event: CalendarEvent) => ({
 	backgroundColor: event.backgroundColor,
 	color: event.color,
 })
@@ -42,7 +42,7 @@ interface EventSurfaceRadiusInput {
  * axis, so squaring its left and right edges marks the wrong two sides — and
  * that bar is horizontally complete inside its own column anyway.
  */
-export const eventSurfaceRadius = ({
+export const getEventSurfaceRadius = ({
 	axis,
 	isTruncatedStart,
 	isTruncatedEnd,

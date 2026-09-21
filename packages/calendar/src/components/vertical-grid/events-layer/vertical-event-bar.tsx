@@ -1,11 +1,14 @@
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
-import type { VerticalPositionedEvent } from '@/lib/layout/geometry'
-import { dragSegmentFor } from '@/lib/utils/grab-offset'
+import {
+	getVerticalBarStyle,
+	type VerticalPositionedEvent,
+} from '@/lib/layout/geometry'
+import { getDragSegment } from '@/lib/utils/grab-offset'
 
 /** Identifies one bar: an event can be drawn once per column and per resource. */
-export const verticalEventKey = (
+export const getVerticalEventKey = (
 	eventId: string | number,
 	index: number,
 	days: Dayjs[],
@@ -29,25 +32,17 @@ export function VerticalEventBar({
 	resourceId,
 	draggedEventId,
 }: VerticalEventBarProps) {
-	const { event, left, width, top, height } = positioned
+	const { event } = positioned
 	// A bar this short has no room for the default two-line content.
 	const isShortEvent = event.end.diff(event.start, 'minute') <= 15
 
 	return (
-		<div
-			className="absolute"
-			style={{
-				left: `${left}%`,
-				width: `calc(${width}% - var(--spacing) * 2)`,
-				top: `${top}%`,
-				height: `${height}%`,
-			}}
-		>
+		<div className="absolute" style={getVerticalBarStyle(positioned)}>
 			<DraggableEvent
 				className={cn('pointer-events-auto', {
 					'[&_p]:text-[10px] [&_p]:mt-0': isShortEvent,
 				})}
-				dragSegment={dragSegmentFor(event, range, 'vertical')}
+				dragSegment={getDragSegment(event, range, 'vertical')}
 				elementId={elementId}
 				event={event}
 				isBeingDragged={draggedEventId === event.id}

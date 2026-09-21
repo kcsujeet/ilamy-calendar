@@ -15,7 +15,7 @@ import {
 } from '@/components/drag-and-drop/dnd-utils'
 import type { DragPreviewState } from '@/contexts/drag-preview-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { dragCursor } from '@/lib/utils/drag-preview'
+import { getDragCursor } from '@/lib/utils/drag-preview'
 import {
 	calculateGrabOffset,
 	type DragSegment,
@@ -68,10 +68,20 @@ const isSameDrop = (
  * Only a bar drawn by a grid reports the span it covers; without one (the "all
  * events" dialog) the event is grabbed at its start.
  */
-const readGrab = (
-	{ active, activatorEvent }: DragStartEvent,
-	slotDurationMinutes: number
-): { calendarEvent: CalendarEvent; grabOffset: GrabOffset } | null => {
+/** Everything the grab needs except the rect, which does not exist yet. */
+interface PendingGrab {
+	calendarEvent: CalendarEvent
+	segment: DragSegment
+	activatorEvent: Event
+}
+
+const readGrab = ({
+	active,
+	activatorEvent,
+}: DragStartEvent): {
+	calendarEvent: CalendarEvent
+	pending: PendingGrab | null
+} | null => {
 	if (active.data.current?.type !== 'calendar-event') {
 		return null
 	}
@@ -79,23 +89,17 @@ const readGrab = (
 	const calendarEvent = active.data.current.event as CalendarEvent
 	const segment = active.data.current.dragSegment as DragSegment | undefined
 	if (!segment) {
-		return { calendarEvent, grabOffset: NO_GRAB_OFFSET }
+		return { calendarEvent, pending: null }
 	}
 
 	return {
 		calendarEvent,
-		grabOffset: calculateGrabOffset({
-			activeEvent: calendarEvent,
-			initialRect: active.rect.current.initial,
-			activatorEvent,
-			segment,
-			slotDurationMinutes,
-		}),
+		pending: { calendarEvent, segment, activatorEvent },
 	}
 }
 
 /** Where the dragged event would land, given the cell under the pointer. */
-const candidateFor = (
+const getCandidatePlacement = (
 	activeEvent: CalendarEvent,
 	overData: DropCellData | undefined,
 	grabOffset: GrabOffset
@@ -124,7 +128,7 @@ const candidateFor = (
  * the library ships no CSS of its own.
  */
 const useDragCursor = (dragPreview: DragPreviewState | null) => {
-	const cursor = dragCursor(dragPreview)
+	const cursor = getDragCursor(dragPreview)
 	useEffect(() => {
 		if (!cursor) {
 			return
@@ -165,6 +169,7 @@ export const useCalendarDrag = (
 	const sensors = useDragSensors()
 	const activeEventRef = useRef<CalendarEvent>(null)
 	const grabOffsetRef = useRef<GrabOffset>(NO_GRAB_OFFSET)
+	const pendingGrabRef = useRef<PendingGrab | null>(null)
 	const overlayRef = useRef<DragOverlayHandle | null>(null)
 	const [dragPreview, setDragPreview] = useState<DragPreviewState | null>(null)
 	useDragCursor(dragPreview)
@@ -172,28 +177,56 @@ export const useCalendarDrag = (
 	const endDrag = () => {
 		activeEventRef.current = null
 		grabOffsetRef.current = NO_GRAB_OFFSET
+		pendingGrabRef.current = null
 		setDragPreview(null)
 		overlayRef.current?.setActiveEvent(null)
 	}
 
 	const onDragStart = (event: DragStartEvent) => {
-		const grabbed = readGrab(event, slotDuration)
+		const grabbed = readGrab(event)
 		if (!grabbed) {
 			return
 		}
 		overlayRef.current?.setActiveEvent(grabbed.calendarEvent)
 		activeEventRef.current = grabbed.calendarEvent
-		grabOffsetRef.current = grabbed.grabOffset
+		grabOffsetRef.current = NO_GRAB_OFFSET
+		pendingGrabRef.current = grabbed.pending
+	}
+
+	/**
+	 * Measures the grab as soon as there is a rect to measure it against.
+	 *
+	 * NOT at drag start: `active.rect.current.initial` is still null there, so
+	 * computing the offset then silently yielded `NO_GRAB_OFFSET` for every
+	 * drag, and the event re-anchored to its start instead of holding the point
+	 * you grabbed. dnd-kit has measured by the first drag-over, which is also
+	 * the first moment the offset is needed, since the candidate is built here.
+	 */
+	const resolveGrabOffset = (event: DragOverEvent) => {
+		const pending = pendingGrabRef.current
+		const initialRect = event.active.rect.current.initial
+		if (!pending || !initialRect) {
+			return
+		}
+		grabOffsetRef.current = calculateGrabOffset({
+			activeEvent: pending.calendarEvent,
+			initialRect,
+			activatorEvent: pending.activatorEvent,
+			segment: pending.segment,
+			slotDurationMinutes: slotDuration,
+		})
+		pendingGrabRef.current = null
 	}
 
 	const onDragOver = (event: DragOverEvent) => {
+		resolveGrabOffset(event)
 		const activeEvent = activeEventRef.current
 		if (!activeEvent || !event.over) {
 			setDragPreview(null)
 			return
 		}
 
-		const nextPreview = candidateFor(
+		const nextPreview = getCandidatePlacement(
 			activeEvent,
 			event.over.data.current,
 			grabOffsetRef.current

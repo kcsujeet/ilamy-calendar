@@ -5,7 +5,7 @@ import { type GrabOffset, NO_GRAB_OFFSET } from '@/lib/utils/grab-offset'
 
 export interface DropCellData {
 	type?: string
-	date?: string | Dayjs
+	date?: Dayjs
 	hour?: number
 	minute?: number
 	resourceId?: string | number
@@ -63,18 +63,24 @@ export const calculateDropTimes = (
 	const targetDate = dayjs(date).subtract(grabOffset.days, 'day')
 	const droppedOnAllDayCell = allDay === true
 	const cellTakesEitherKind = allDay === undefined
-	const staysAllDay =
-		droppedOnAllDayCell || (cellTakesEitherKind && Boolean(activeEvent.allDay))
+	const eventIsAllDay = Boolean(activeEvent.allDay)
+	const cellKeepsTheEventsKind = cellTakesEitherKind && eventIsAllDay
+	const staysAllDay = droppedOnAllDayCell || cellKeepsTheEventsKind
 
 	if (staysAllDay) {
 		return { ...withDuration(targetDate.startOf('day')), allDay: true }
 	}
 
-	const keptTimeOfDay = targetDate
-		.hour(activeEvent.start.hour())
-		.minute(activeEvent.start.minute())
-		.second(activeEvent.start.second())
-		.millisecond(activeEvent.start.millisecond())
+	// Rebuilt from a zoneless string rather than with `.hour()/.minute()`
+	// setters. The setters hold the clock face but carry the SOURCE day's UTC
+	// offset, so landing on a DST transition day serialises an hour out: the
+	// grid shows 10:00 while the consumer is handed 15:00Z, where New York
+	// 10:00 is 14:00Z. A string with no offset is anchored in the configured
+	// zone on parse, which re-derives the offset for the TARGET day
+	// (`docs/timezones.md`).
+	const targetDay = targetDate.format('YYYY-MM-DD')
+	const timeOfDay = activeEvent.start.format('HH:mm:ss.SSS')
+	const keptTimeOfDay = dayjs(`${targetDay}T${timeOfDay}`)
 	return { ...withDuration(keptTimeOfDay), allDay: false }
 }
 

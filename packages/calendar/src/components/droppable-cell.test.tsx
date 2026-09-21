@@ -8,6 +8,7 @@ import {
 } from '@/contexts/drag-preview-context'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import type { CellInfo } from '@/features/calendar/types'
+import { mkDragPreview as mkPreview } from '@/testing/drag-test-fixtures'
 import type { CalendarView } from '@/types'
 import { DroppableCell } from './droppable-cell'
 
@@ -28,6 +29,7 @@ interface RenderCellOptions {
 	allDay?: boolean
 	/** The in-flight drag this cell should react to, if any. */
 	preview?: DragPreviewState
+	isSubDivider?: boolean
 }
 
 // One CalendarProvider + DroppableCell setup for every test; pass only the
@@ -50,6 +52,7 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 					date={initialDate}
 					hour={opts.hour}
 					id="test-cell"
+					isSubDivider={opts.isSubDivider}
 					minute={opts.minute}
 					resourceId={opts.resourceId}
 					slotDurationMinutes={opts.slotDurationMinutes ?? 15}
@@ -74,6 +77,26 @@ describe('DroppableCell data-view attribute', () => {
 			expect(screen.getByTestId('cell').getAttribute('data-view')).toBe(view)
 		}
 	)
+})
+
+describe('DroppableCell sub-hour divider hook', () => {
+	test('marks a cell that draws the dashed divider', () => {
+		// The library ships no CSS, so the only way to hide or restyle just the
+		// sub-hour lines is a stable selector. Keyed off the SAME flag that draws
+		// the border, so the last slot of each hour, which has none, is excluded.
+		renderCell({ isSubDivider: true })
+
+		expect(screen.getByTestId('cell')).toHaveAttribute(
+			'data-slot-divider',
+			'true'
+		)
+	})
+
+	test('leaves a cell that draws no divider unmarked', () => {
+		renderCell()
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-slot-divider')
+	})
 })
 
 describe('DroppableCell isCellDisabled (issue #79)', () => {
@@ -288,21 +311,6 @@ describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)'
 		cleanup()
 	})
 
-	const mkPreview = (
-		overrides: Partial<DragPreviewState> = {}
-	): DragPreviewState => ({
-		event: {
-			id: 'event-1',
-			title: 'Team Sync',
-			start: initialDate.hour(10),
-			end: initialDate.hour(12),
-		},
-		start: initialDate.hour(10),
-		end: initialDate.hour(12),
-		allDay: false,
-		...overrides,
-	})
-
 	test('highlights a cell the candidate covers', () => {
 		renderCell({ preview: mkPreview(), hour: 10, minute: 30, view: 'week' })
 
@@ -313,19 +321,14 @@ describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)'
 	})
 
 	test("tints the target in FullCalendar's own highlight colour", () => {
-		// CONTRACT MOVED, deliberately. This cell first painted the DRAGGED
-		// EVENT's colour at 0.75, which was the same hue and nearly the same
-		// weight as the mirror standing on it and flooded every cell of a
-		// multi-day span; that was removed and the cell painted nothing at all.
-		// It now paints what FullCalendar paints: ONE fixed pale cyan, low alpha.
-		// v6 ships `--fc-highlight-color:rgba(188,232,241,.3)` with
-		// `.fc .fc-highlight{background:var(--fc-highlight-color)}`; v4's
-		// `core/main.css` spells the same colour `#bce8f1` at `opacity: .3`.
+		// FullCalendar's own highlight: v6 ships
+		// `--fc-highlight-color:rgba(188,232,241,.3)` behind
+		// `.fc .fc-highlight{background:var(--fc-highlight-color)}`.
 		//
-		// Being a fixed literal rather than a theme token is the point: it is the
-		// one shade that cannot collide with the dragged event's fill, and it
-		// cannot land on the same axis as the disabled and hover greys in a
-		// monochrome theme, which is what made every earlier attempt unreadable.
+		// A fixed literal rather than a theme token, because it is the one shade
+		// that collides with neither the dragged event's own fill nor the
+		// disabled and hover greys, which in a monochrome theme sit on the same
+		// axis as each other.
 		renderCell({ preview: mkPreview(), hour: 10, minute: 30, view: 'week' })
 
 		const highlight = screen.getByTestId('cell').firstElementChild
@@ -340,10 +343,10 @@ describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)'
 		// days -- and the mirror is already drawn across them. Leaving those cells
 		// grey makes the bar look like it is crossing unavailable ground.
 		//
-		// This cannot be mistaken for "you may release here": a disabled cell is
-		// not registered as a droppable and carries `pointer-events-none`, so
-		// `isOver` can never fire for it. The only route to a highlight is the
-		// candidate COVERING its range, which is exactly what is being said.
+		// Not "you may release here": a disabled cell registers as a droppable so
+		// the mirror can keep rendering over it, and the refusal is decided at
+		// drop time in `getUpdatedEvent`. The tint says only that the candidate
+		// spans this cell.
 		renderCell({
 			preview: mkPreview(),
 			hour: 10,

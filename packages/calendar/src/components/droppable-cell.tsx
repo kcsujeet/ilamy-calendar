@@ -28,6 +28,14 @@ interface DroppableCellProps {
 	className?: string
 	style?: React.CSSProperties
 	'data-testid'?: string
+	/**
+	 * Whether this cell draws the dashed sub-hour divider below itself. Emitted
+	 * as `data-slot-divider` so a consumer can hide or restyle just those lines
+	 * from a stylesheet (`[data-slot-divider] { border-bottom-style: none }`),
+	 * which is how you get sub-hour drag targets without the visual clutter.
+	 * The library ships no CSS, so a stable selector is the whole affordance.
+	 */
+	isSubDivider?: boolean
 	disabled?: boolean
 }
 
@@ -147,6 +155,44 @@ const useDropTarget = ({
 	return { setNodeRef, showDropHighlight: isDropTarget && !disableDragAndDrop }
 }
 
+interface CellDataInput {
+	allDay?: boolean
+	cellDisabled: boolean
+	showDropHighlight: boolean
+	isSubDivider: boolean
+	range: { start: Dayjs; end: Dayjs }
+	resourceId?: string | number
+	dataTestId?: string
+	view: string
+}
+
+/**
+ * What the cell tells the outside world about itself: its range, whether it
+ * refuses drops, whether a drag lands across it, and whether it draws the
+ * sub-hour divider. These are the library's styling and testing surface, since
+ * it ships no CSS of its own.
+ */
+const getCellDataAttributes = ({
+	allDay,
+	cellDisabled,
+	showDropHighlight,
+	isSubDivider,
+	range,
+	resourceId,
+	dataTestId,
+	view,
+}: CellDataInput) => ({
+	'data-all-day': allDay ? 'true' : undefined,
+	'data-disabled': cellDisabled.toString(),
+	'data-drop-target': showDropHighlight ? 'true' : undefined,
+	'data-end': range.end.toISOString(),
+	'data-resource-id': resourceId,
+	'data-slot-divider': isSubDivider ? 'true' : undefined,
+	'data-start': range.start.toISOString(),
+	'data-testid': dataTestId,
+	'data-view': view,
+})
+
 interface CellClassInput {
 	className?: string
 	customClassName?: string
@@ -155,7 +201,7 @@ interface CellClassInput {
 	cellDisabled: boolean
 }
 
-const cellClasses = ({
+const getCellClasses = ({
 	className,
 	customClassName,
 	disabledClass,
@@ -188,6 +234,7 @@ export function DroppableCell({
 	style,
 	'data-testid': dataTestId,
 	disabled = false,
+	isSubDivider = false,
 }: DroppableCellProps) {
 	const {
 		onCellClick,
@@ -236,21 +283,23 @@ export function DroppableCell({
 		// biome-ignore lint/a11y/noStaticElementInteractions: The cell is interactive for event creation
 		// biome-ignore lint/a11y/useKeyWithClickEvents: Key events are handled by parent components
 		<div
-			className={cellClasses({
+			className={getCellClasses({
 				className,
 				customClassName: getCellClassName?.(cellInfo),
 				disabledClass: classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME,
 				clickBlocked,
 				cellDisabled,
 			})}
-			data-all-day={allDay ? 'true' : undefined}
-			data-disabled={cellDisabled.toString()}
-			data-drop-target={showDropHighlight ? 'true' : undefined}
-			data-end={end.toISOString()}
-			data-resource-id={resourceId}
-			data-start={start.toISOString()}
-			data-testid={dataTestId}
-			data-view={view}
+			{...getCellDataAttributes({
+				allDay,
+				cellDisabled,
+				showDropHighlight,
+				isSubDivider,
+				range: { start, end },
+				resourceId,
+				dataTestId,
+				view,
+			})}
 			onClick={handleCellClick}
 			ref={setNodeRef}
 			style={style}

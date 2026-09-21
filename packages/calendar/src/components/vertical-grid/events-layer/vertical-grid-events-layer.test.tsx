@@ -9,6 +9,7 @@ import {
 import { CalendarContext } from '@/features/calendar/contexts/calendar-context/context'
 import type { RenderCurrentTimeIndicatorProps } from '@/features/calendar/types'
 import { keys } from '@/lib/utils/keys'
+import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import type { CalendarView } from '@/types'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
@@ -187,7 +188,7 @@ describe('VerticalGridEventsLayer', () => {
 	test('renders the snapped mirror when the candidate overlaps the column', () => {
 		const day = dayjs('2025-01-01T00:00:00.000Z')
 		const hours = Array.from({ length: 24 }, (_, i) => day.add(i, 'hour'))
-		const preview: DragPreviewState = {
+		const preview = mkDragPreview({
 			event: {
 				id: 'event-dragged',
 				title: 'Dragging Meeting',
@@ -197,7 +198,7 @@ describe('VerticalGridEventsLayer', () => {
 			start: day.hour(10),
 			end: day.hour(12),
 			allDay: false,
-		}
+		})
 
 		renderEventsLayer({ days: hours, gridType: 'hour', preview })
 
@@ -214,7 +215,7 @@ describe('VerticalGridEventsLayer', () => {
 		// how it became impossible to tell what was being dragged.
 		const day = dayjs('2025-01-01T00:00:00.000Z')
 		const hours = Array.from({ length: 24 }, (_, i) => day.add(i, 'hour'))
-		const preview: DragPreviewState = {
+		const preview = mkDragPreview({
 			event: {
 				id: 'event-dragged',
 				title: 'Dragging Meeting',
@@ -224,7 +225,7 @@ describe('VerticalGridEventsLayer', () => {
 			start: day.hour(10),
 			end: day.hour(12),
 			allDay: false,
-		}
+		})
 
 		renderEventsLayer({ days: hours, gridType: 'hour', preview })
 
@@ -238,7 +239,7 @@ describe('VerticalGridEventsLayer', () => {
 	test('draws no mirror for an all-day candidate, which this grid never shows', () => {
 		const day = dayjs('2025-01-01T00:00:00.000Z')
 		const hours = Array.from({ length: 24 }, (_, i) => day.add(i, 'hour'))
-		const preview: DragPreviewState = {
+		const preview = mkDragPreview({
 			event: {
 				id: 'event-dragged',
 				title: 'Company Offsite',
@@ -249,7 +250,7 @@ describe('VerticalGridEventsLayer', () => {
 			start: day.startOf('day'),
 			end: day.add(1, 'day').startOf('day'),
 			allDay: true,
-		}
+		})
 
 		renderEventsLayer({ days: hours, gridType: 'hour', preview })
 

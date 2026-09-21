@@ -65,11 +65,11 @@ describe('VerticalGridCol', () => {
 		expect(gridClasses).toContain('gap-px')
 		expect(gridClasses).toContain('bg-border')
 
-		const cellClasses = cell.className.split(' ')
-		expect(cellClasses).not.toContain('border-r')
-		expect(cellClasses).not.toContain('border-r-0')
-		expect(cellClasses).not.toContain('border-b')
-		expect(cellClasses).not.toContain('border-b-0')
+		const getCellClasses = cell.className.split(' ')
+		expect(getCellClasses).not.toContain('border-r')
+		expect(getCellClasses).not.toContain('border-r-0')
+		expect(getCellClasses).not.toContain('border-b')
+		expect(getCellClasses).not.toContain('border-b-0')
 	})
 
 	test('no day cell carries a per-cell separator regardless of position', () => {

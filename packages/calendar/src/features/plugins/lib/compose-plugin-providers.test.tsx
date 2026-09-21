@@ -22,7 +22,7 @@ describe('composePluginProviders', () => {
 			[Outer, Inner],
 			<span data-testid="leaf">leaf</span>
 		)
-		const { getByTestId } = render(<>{tree}</>)
+		const { getByTestId } = render(tree)
 
 		const outer = getByTestId('outer')
 		const inner = getByTestId('inner')

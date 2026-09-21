@@ -31,8 +31,11 @@ export const useDropCommit = (): DropCommit => {
 		event: CalendarEvent,
 		updates: Partial<CalendarEvent>
 	) => {
-		const hasNoUpdates = Object.keys(updates ?? {}).length === 0
-		if (!event?.id || hasNoUpdates) {
+		// Both are required by the signature, so only the empty-updates case is a
+		// real state: `getUpdatedEvent` returns null rather than empty updates
+		// when a drop is refused, but a no-op drag still reaches here.
+		const hasNoUpdates = Object.keys(updates).length === 0
+		if (!event.id || hasNoUpdates) {
 			return
 		}
 

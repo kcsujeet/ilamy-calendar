@@ -2,9 +2,9 @@ import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { CSSProperties, ReactNode } from 'react'
 import {
-	eventSurfaceClasses,
-	eventSurfaceRadius,
-	eventSurfaceStyle,
+	getEventSurfaceClasses,
+	getEventSurfaceRadius,
+	getEventSurfaceStyle,
 } from '@/lib/utils/event-surface'
 import { keys } from '@/lib/utils/keys'
 
@@ -20,8 +20,8 @@ interface DragPreviewCardProps {
 	 * tells a real bar. The mirror squares the cut side for the same reason the
 	 * bar does: the span continues past the edge.
 	 */
-	isTruncatedStart?: boolean
-	isTruncatedEnd?: boolean
+	isTruncatedStart: boolean
+	isTruncatedEnd: boolean
 	/** Layout for the label row; the card owns everything outside it. */
 	contentClassName?: string
 	children: ReactNode
@@ -40,9 +40,9 @@ interface DragPreviewCardProps {
  * event's own colour is invisible in the case that matters most — dragging
  * within a run of same-hue bars, where the pastel it copies is the pastel it is
  * standing on. The ring is a theme token rather than a tint of the event, so it
- * contrasts every fill a consumer can supply, and it appears ONLY on the mirror
- * — the earlier worry about a hard box in a monochrome theme was about
- * outlining resting bars, which are still drawn without one.
+ * contrasts every fill a consumer can supply. It appears ONLY on the mirror;
+ * resting bars carry no outline, so a monochrome theme gets no hard box around
+ * events at rest.
  *
  * It is an INSET ring, and that is not cosmetic. Tailwind's `ring` is a
  * box-shadow painted OUTSIDE the border box, and both events layers wrap their
@@ -65,8 +65,8 @@ export function DragPreviewCard({
 	orientation,
 	event,
 	style,
-	isTruncatedStart = false,
-	isTruncatedEnd = false,
+	isTruncatedStart,
+	isTruncatedEnd,
 	contentClassName,
 	children,
 }: DragPreviewCardProps) {
@@ -75,15 +75,15 @@ export function DragPreviewCard({
 			className={cn(
 				'absolute z-20 pointer-events-none transition-none overflow-clip',
 				'shadow-xl inset-ring-2 inset-ring-foreground border-[1.5px] border-card',
-				eventSurfaceRadius({
+				getEventSurfaceRadius({
 					axis: orientation,
 					isTruncatedStart,
 					isTruncatedEnd,
 				}),
-				eventSurfaceClasses(event)
+				getEventSurfaceClasses(event)
 			)}
 			data-testid={keys.dragPreview(orientation)}
-			style={{ ...style, ...eventSurfaceStyle(event) }}
+			style={{ ...style, ...getEventSurfaceStyle(event) }}
 		>
 			<div
 				className={cn(

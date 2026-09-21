@@ -229,22 +229,31 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
         views/  # built-in PluginView specs + ViewRenderer dispatcher + resource arrangements (year component in year-view/)
         header/                                # Calendar header, title, view controls
         event-form/                            # Event creation/editing forms
-      contexts/calendar-context/               # CalendarProvider, all state (the ONE provider)
+      contexts/calendar-context/               # CalendarProvider, all calendar STATE (the ONE state provider)
       hooks/                                   # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,data,interaction}),
                                                #   use-smart-calendar-context, useProcessed*Events, use-effective-business-hours
       utils/                                   # business-hours, view-hours, event-form-utils
     plugins/lib/                               # Plugin kernel; PluginRuntime (contract types live in @ilamy/types)
+  contexts/                                    # Grid-level contexts, shared by components + hooks
+    drag-preview-context.tsx                   # The in-flight drag candidate (the snapped mirror reads it)
+    grid-axis-context.tsx                      # Which grid drew a bar; decides its truncation affordances
+  hooks/                                       # Package-level hooks (use-calendar-drag, use-drop-commit,
+                                               #   use-drag-preview-event, use-scoped-event-mutation, …)
   components/
     calendar-slots.tsx                         # SLOT_* mount points + host slot components (context shapes in @ilamy/types)
-    drag-and-drop/                             # @dnd-kit integration
+    drag-and-drop/                             # @dnd-kit integration + the drag mirror card
     vertical-grid/                             # Time-based grid (day/week views)
+      events-layer/                            # The layer, its event bar, and its drag mirror
     horizontal-grid/                           # Date-based grid (month view)
+      events-layer/                            # Same three, for the row axis
     all-day-row/                               # All-day event bar
   lib/
     translations/                              # Default translations, types
     layout/                                    # geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
     events/pipeline.ts                         # event filters (resource membership; range overlap lives in @ilamy/utils)
-    utils/                                     # date-utils, normalize, export-ical (cn → @ilamy/ui/lib/utils, safeDate → @ilamy/utils/helpers)
+    utils/                                     # date-utils, normalize, export-ical, keys, drag-preview,
+                                               #   grab-offset, event-surface (cn → @ilamy/ui/lib/utils,
+                                               #   safeDate → @ilamy/utils/helpers)
     constants.ts                               # Global constants
 
 # Recurrence plugin (separate package; agenda + drag-to-create siblings follow the same shape):

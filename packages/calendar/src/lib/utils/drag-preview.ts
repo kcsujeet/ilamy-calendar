@@ -46,10 +46,9 @@ export const isPreviewOnTarget = (
 
 	const previewHasResource = dragPreview.resourceId !== undefined
 	const targetHasResource = resourceId !== undefined
-	const isOtherResource =
-		previewHasResource &&
-		targetHasResource &&
-		dragPreview.resourceId !== resourceId
+	const isDifferentResource = dragPreview.resourceId !== resourceId
+	const bothHaveResource = previewHasResource && targetHasResource
+	const isOtherResource = bothHaveResource && isDifferentResource
 	if (isOtherResource) {
 		return false
 	}
@@ -88,11 +87,12 @@ export const getDragPreviewEvent = (
  * exists because the event visibly goes there and then animates back. This
  * library ships no CSS, so the caller applies the returned value directly.
  *
- * Empty string, not `'auto'`: it clears an inline `cursor` without overriding
- * whatever the page had.
+ * `undefined` when there is nothing to say, so the caller leaves whatever
+ * cursor the page already had alone rather than assigning over it.
  */
-export const dragCursor = (dragPreview: DragPreviewState | null): string => {
-	// `=== false` because the flag is optional and absent means allowed.
+export const getDragCursor = (
+	dragPreview: DragPreviewState | null
+): 'not-allowed' | undefined => {
 	const refusesDrop = dragPreview?.isDropAllowed === false
-	return refusesDrop ? 'not-allowed' : ''
+	return refusesDrop ? 'not-allowed' : undefined
 }

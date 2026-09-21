@@ -13,6 +13,7 @@ import {
 	GAP_BETWEEN_ELEMENTS,
 } from '@/lib/constants'
 import { keys } from '@/lib/utils/keys'
+import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import { HorizontalGridRow } from './horizontal-grid-row'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -406,18 +407,19 @@ describe('HorizontalGridRow', () => {
 		const week = Array.from({ length: 7 }, (_, i) => initialDate.add(i, 'day'))
 		const columns = [{ id: 'col-week', days: week, gridType: 'day' as const }]
 
-		const mkPreview = (allDay: boolean): DragPreviewState => ({
-			event: {
-				id: 'event-preview',
-				title: 'Multi-day Conference',
+		const mkPreview = (allDay: boolean) =>
+			mkDragPreview({
+				event: {
+					id: 'event-preview',
+					title: 'Multi-day Conference',
+					start: initialDate,
+					end: initialDate.add(3, 'day'),
+					allDay,
+				},
 				start: initialDate,
 				end: initialDate.add(3, 'day'),
 				allDay,
-			},
-			start: initialDate,
-			end: initialDate.add(3, 'day'),
-			allDay,
-		})
+			})
 
 		test('renders the snapped mirror bar when the candidate overlaps the row', () => {
 			renderHorizontalGridRow({
@@ -436,7 +438,7 @@ describe('HorizontalGridRow', () => {
 			// The mirror is a bar like any other, so it has to admit the same thing
 			// a real bar admits: this span continues past the edge of the row. A
 			// mirror that stays fully rounded claims the drop ends inside the week.
-			const spillsBothWays: DragPreviewState = {
+			const spillsBothWays = mkDragPreview({
 				event: {
 					id: 'event-preview',
 					title: 'Multi-day Conference',
@@ -447,7 +449,7 @@ describe('HorizontalGridRow', () => {
 				start: initialDate.subtract(2, 'day'),
 				end: initialDate.add(10, 'day'),
 				allDay: true,
-			}
+			})
 			renderHorizontalGridRow({
 				columns,
 				id: 'row-preview',
@@ -504,7 +506,7 @@ describe('HorizontalGridRow', () => {
 			// `h-full w-full`, and an inset box-shadow paints BELOW child content —
 			// so re-applying the fill there covers the outline exactly. The colour
 			// belongs on the card, once; the content layer is layout only.
-			const coloured: DragPreviewState = {
+			const coloured = mkDragPreview({
 				event: {
 					id: 'event-preview',
 					title: 'Multi-day Conference',
@@ -516,7 +518,7 @@ describe('HorizontalGridRow', () => {
 				start: initialDate,
 				end: initialDate.add(3, 'day'),
 				allDay: true,
-			}
+			})
 			renderHorizontalGridRow({ columns, id: 'row-preview', preview: coloured })
 
 			const mirror = screen.getByTestId(keys.dragPreview('horizontal'))

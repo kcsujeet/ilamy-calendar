@@ -182,9 +182,25 @@ const isSameSegment = (a?: DragSegment, b?: DragSegment): boolean => {
 }
 
 /**
- * The props that change what a bar looks like. `style` is left out on purpose:
- * the events layer rebuilds it every render, and the bar reads its placement
- * from the wrapper element rather than from the style object.
+ * Compared by value, not identity. Both events layers rebuild `style` every
+ * render, so comparing by reference would defeat `memo` for every bar in the
+ * grid; but it cannot be skipped either, because `AllEventsDialog` passes the
+ * bar's whole height through it, and a `eventHeight` change there reaches the
+ * bar through nothing else.
+ */
+const isSameStyle = (a?: CSSProperties, b?: CSSProperties): boolean => {
+	if (!a || !b) {
+		return a === b
+	}
+	const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+	return [...keys].every(
+		(key) => a[key as keyof CSSProperties] === b[key as keyof CSSProperties]
+	)
+}
+
+/**
+ * The props that change what a bar looks like. `style` is compared separately,
+ * by value, for the reason above.
  */
 const COMPARED_PROPS = [
 	'elementId',
@@ -202,8 +218,11 @@ export const DraggableEvent = memo(
 		const sameProps = COMPARED_PROPS.every(
 			(prop) => prevProps[prop] === nextProps[prop]
 		)
-		return (
-			sameProps && isSameSegment(prevProps.dragSegment, nextProps.dragSegment)
+		const sameSegment = isSameSegment(
+			prevProps.dragSegment,
+			nextProps.dragSegment
 		)
+		const sameStyle = isSameStyle(prevProps.style, nextProps.style)
+		return sameProps && sameSegment && sameStyle
 	}
 )

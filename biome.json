@@ -48,7 +48,8 @@
 				"noAssignInExpressions": "warn"
 			},
 			"correctness": {
-				"noUnusedVariables": "warn"
+				"noUnusedImports": "error",
+				"noUnusedVariables": "error"
 			},
 			"style": {
 				"noRestrictedImports": {
@@ -79,6 +80,17 @@
 		}
 	},
 	"overrides": [
+		{
+			"includes": ["**/*.astro"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedImports": "off",
+						"noUnusedVariables": "off"
+					}
+				}
+			}
+		},
 		{
 			"includes": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"],
 			"linter": {

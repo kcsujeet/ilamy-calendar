@@ -1,23 +1,17 @@
 import type { Resource } from '@ilamy/types'
-import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo, useMemo } from 'react'
 import { CurrentTimeMarker } from '@/components/current-time-marker'
 
-import { DragPreviewCard } from '@/components/drag-and-drop/drag-preview-card'
-import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useDragPreview } from '@/contexts/drag-preview-context'
 import { GridAxisContext } from '@/contexts/grid-axis-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
 import { useDragPreviewEvent } from '@/hooks/use-drag-preview-event'
-import type { VerticalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutVertical } from '@/lib/layout/vertical'
-import { timeOfDayPattern } from '@/lib/utils/date-utils'
-import { dragSegmentFor } from '@/lib/utils/grab-offset'
 import { keys } from '@/lib/utils/keys'
 import { VerticalDragPreview } from './vertical-drag-preview'
-import { VerticalEventBar, verticalEventKey } from './vertical-event-bar'
+import { getVerticalEventKey, VerticalEventBar } from './vertical-event-bar'
 
 interface VerticalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
@@ -34,10 +28,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	resource,
 	'data-testid': dataTestId,
 }) => {
-	const { resources, timeFormat } = useSmartCalendarContext((c) => ({
-		resources: c.resources,
-		timeFormat: c.timeFormat,
-	}))
+	const resources = useSmartCalendarContext((c) => c.resources)
 	const dragPreview = useDragPreview()
 	const todayEvents = useProcessedDayEvents({ days, gridType, resourceId })
 	const rangeStart = days.at(0)
@@ -80,7 +71,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 					/>
 				)}
 				{todayEvents.map((positioned, index) => {
-					const elementId = verticalEventKey(
+					const elementId = getVerticalEventKey(
 						positioned.event.id,
 						index,
 						days,

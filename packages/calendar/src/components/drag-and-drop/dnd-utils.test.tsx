@@ -582,6 +582,65 @@ describe('calculateGrabOffset', () => {
 		expect(offset.days).toBe(2)
 	})
 
+	it('keeps the wall clock across a DST transition, not the stale offset', () => {
+		// Moving a timed event between DAY cells keeps its time of day. Building
+		// that with `.hour()/.minute()` holds the clock face but carries the
+		// SOURCE day's UTC offset, so landing on a spring-forward day serialises
+		// an hour late: the grid shows 10:00 while `onEventUpdate` reports 15:00Z
+		// where New York 10:00 is 14:00Z. `docs/timezones.md` documents the
+		// re-anchor this relies on.
+		dayjs.tz.setDefault('America/New_York')
+		const march9 = dayjs.tz('2025-03-09T00:00:00', 'America/New_York')
+		const tenAm = dayjs.tz('2025-03-05T10:00:00', 'America/New_York')
+
+		const result = calculateDropTimes(
+			{
+				id: 'timed',
+				title: 'Timed',
+				start: tenAm,
+				end: tenAm.add(1, 'hour'),
+			} as CalendarEvent,
+			{ type: 'day-cell', date: march9 },
+			{ minutes: 0, days: 0 }
+		)
+
+		const trueTenAm = dayjs.tz('2025-03-09T10:00:00', 'America/New_York')
+		expect(result.start.toISOString()).toBe(trueTenAm.toISOString())
+		dayjs.tz.setDefault()
+	})
+
+	it('reads the grabbed day from the column, not from elapsed time', () => {
+		// A month row draws a multi-day bar across WHOLE, EQUAL day columns, so
+		// the pointer's fraction across the bar is a fraction of columns. Mapping
+		// it through elapsed time instead only agrees when the event is
+		// midnight-aligned (which every other fixture here is). For a timed span
+		// the two diverge and the drop lands a day out.
+		//
+		// Jan 1 09:00 -> Jan 4 17:00 draws 4 columns over the 700px rect at
+		// left 200, so column 0 (Jan 1) is x 200..375. x=370 is inside it.
+		// Time-proportionally that same fraction is 19.4h past 09:00, i.e. Jan 2.
+		const timedMultiDay = {
+			id: 'timed-multi-day',
+			title: 'Timed multi-day',
+			start: dayjs('2025-01-01T09:00:00.000Z'),
+			end: dayjs('2025-01-04T17:00:00.000Z'),
+		} as CalendarEvent
+
+		const offset = calculateGrabOffset({
+			activeEvent: timedMultiDay,
+			initialRect: rect,
+			activatorEvent: pointerAt(370, 100),
+			segment: {
+				start: timedMultiDay.start,
+				end: timedMultiDay.end,
+				axis: 'horizontal',
+			},
+			slotDurationMinutes: 60,
+		})
+
+		expect(offset.days).toBe(0)
+	})
+
 	it('reports no offset for a keyboard drag, which carries no pointer', () => {
 		const offset = calculateGrabOffset({
 			activeEvent: twoHourEvent,

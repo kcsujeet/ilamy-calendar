@@ -47,11 +47,11 @@ describe('AllDayRow', () => {
 		// Approach G: the all-day/time-grid separator is owned by the all-day
 		// container (border-b on [data-testid="vertical-grid-all-day"]), not the
 		// cells. The cells themselves carry no bottom border.
-		const cellClasses = screen
+		const getCellClasses = screen
 			.getByTestId('day-cell-2025-01-13')
 			.className.split(' ')
-		expect(cellClasses).not.toContain('border-b')
-		expect(cellClasses).not.toContain('border-b-0')
+		expect(getCellClasses).not.toContain('border-b')
+		expect(getCellClasses).not.toContain('border-b-0')
 		// Inter-cell separators are drawn by the row via gap-px + bg-border.
 		const rowClasses = screen.getByTestId('all-day-row').className.split(' ')
 		expect(rowClasses).toContain('gap-px')

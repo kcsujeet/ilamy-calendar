@@ -12,6 +12,7 @@ import type {
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
 import { keys } from '@/lib/utils/keys'
+import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import { MonthView, WeekView } from '@/testing/view-harnesses'
 
 /*
@@ -342,23 +343,23 @@ describe('draggable event drag-state classes', () => {
 	// this mirror is opaque and hard-ringed. The bar must still read as "here,
 	// and moving" rather than as deleted, which is the floor.
 	test('dims the source bar while its event is being dragged', () => {
-		const preview: DragPreviewState = {
-			event: booking[0] as CalendarEvent,
+		const preview = mkDragPreview({
+			event: booking.at(0) as CalendarEvent,
 			start: dayjs('2025-03-05T09:00:00.000Z'),
 			end: dayjs('2025-03-05T17:00:00.000Z'),
 			allDay: false,
-		}
+		})
 
 		expect(renderBar({ preview })).toContain('opacity-50')
 	})
 
 	test('leaves other events undimmed', () => {
-		const preview: DragPreviewState = {
+		const preview = mkDragPreview({
 			event: { id: 'other', title: 'Another' } as CalendarEvent,
 			start: dayjs('2025-03-05T09:00:00.000Z'),
 			end: dayjs('2025-03-05T17:00:00.000Z'),
 			allDay: false,
-		}
+		})
 
 		expect(renderBar({ preview })).not.toContain('opacity-50')
 	})

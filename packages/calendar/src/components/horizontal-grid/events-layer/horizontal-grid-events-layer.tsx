@@ -1,11 +1,8 @@
 import type { Resource } from '@ilamy/types'
-import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo, useMemo } from 'react'
 import { CurrentTimeMarker } from '@/components/current-time-marker'
 
-import { DragPreviewCard } from '@/components/drag-and-drop/drag-preview-card'
-import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useDragPreview } from '@/contexts/drag-preview-context'
 import { GridAxisContext } from '@/contexts/grid-axis-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -13,11 +10,12 @@ import { useDragPreviewEvent } from '@/hooks/use-drag-preview-event'
 import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
 import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutHorizontal } from '@/lib/layout/horizontal'
-import { timeOfDayPattern } from '@/lib/utils/date-utils'
-import { dragSegmentFor } from '@/lib/utils/grab-offset'
 import { keys } from '@/lib/utils/keys'
 import { HorizontalDragPreview } from './horizontal-drag-preview'
-import { HorizontalEventBar, horizontalEventKey } from './horizontal-event-bar'
+import {
+	getHorizontalEventKey,
+	HorizontalEventBar,
+} from './horizontal-event-bar'
 
 /**
  * The preview is a single bar, so it never competes for a row and is never the
@@ -71,7 +69,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 
 	// Layout returns the abstract row; the renderer owns the CSS units. Shared
 	// so the preview cannot drift from the bar it mirrors.
-	const rowTop = (row: number) =>
+	const getRowTop = (row: number) =>
 		dayNumberHeight + eventSpacing + row * (eventHeight + eventSpacing)
 
 	const previewEvent = useDragPreviewEvent({
@@ -109,7 +107,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 					/>
 				)}
 				{positionedEvents.map((positioned) => {
-					const elementId = horizontalEventKey(
+					const elementId = getHorizontalEventKey(
 						positioned,
 						weekStart,
 						resourceId
@@ -123,14 +121,14 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 							positioned={positioned}
 							range={{ start: rangeStart, end: rangeEnd }}
 							resourceId={resourceId}
-							top={rowTop(positioned.row)}
+							top={getRowTop(positioned.row)}
 						/>
 					)
 				})}
 				{previewPositioned && (
 					<HorizontalDragPreview
 						previewPositioned={previewPositioned}
-						top={rowTop(previewPositioned.row)}
+						top={getRowTop(previewPositioned.row)}
 					/>
 				)}
 			</div>

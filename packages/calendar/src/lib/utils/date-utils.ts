@@ -124,5 +124,5 @@ export const getMonthGridRange = (
  * The dayjs pattern for a clock time in the calendar's configured format.
  * `HourLabel` formats whole hours and keeps its own, coarser pattern.
  */
-export const timeOfDayPattern = (timeFormat: TimeFormat): string =>
+export const getTimeOfDayPattern = (timeFormat: TimeFormat): string =>
 	timeFormat === '12-hour' ? 'h:mma' : 'HH:mm'

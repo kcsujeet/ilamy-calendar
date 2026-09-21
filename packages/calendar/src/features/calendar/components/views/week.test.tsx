@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import type { CSSProperties } from 'react'
 import { STICKY_GUTTER_SHADOW } from '@/components/vertical-grid/gutter'
 import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -1197,8 +1196,8 @@ describe('WeekView', () => {
 		const mondayCell = screen.getByTestId(
 			`day-cell-${monday.format('YYYY-MM-DD')}`
 		)
-		const cellClasses = ['flex-1', 'min-w-0']
-		cellClasses.forEach((className) => {
+		const getCellClasses = ['flex-1', 'min-w-0']
+		getCellClasses.forEach((className) => {
 			expect(mondayCell.className).toContain(className)
 		})
 	})

@@ -59,7 +59,7 @@ const dragTo = async (
 const FALLBACK_FILL = 'oklch(0.623 0.214 259.815)'
 
 /** The colour the snapped mirror is painting, as the browser resolves it. */
-const mirrorColour = (mirror: import('@playwright/test').Locator) =>
+const getMirrorColour = (mirror: import('@playwright/test').Locator) =>
 	mirror.evaluate((el) => getComputedStyle(el).backgroundColor)
 
 test.describe('drag and drop', () => {
@@ -122,7 +122,7 @@ test.describe('drag and drop', () => {
 
 		// The fixture authors this event as `backgroundColor: '#f59e0b'`.
 		await expect
-			.poll(() => mirrorColour(month.dragMirror))
+			.poll(() => getMirrorColour(month.dragMirror))
 			.toBe('rgb(245, 158, 11)')
 		await page.mouse.up()
 	})
@@ -139,7 +139,7 @@ test.describe('drag and drop', () => {
 
 		// Not the `bg-blue-500` fallback, which is what every event used to get.
 		await expect
-			.poll(() => mirrorColour(month.dragMirror))
+			.poll(() => getMirrorColour(month.dragMirror))
 			.not.toBe(FALLBACK_FILL)
 		await page.mouse.up()
 	})
@@ -166,6 +166,159 @@ test.describe('drag and drop', () => {
 				})
 			)
 			.toBe('rgba(188, 232, 241, 0.3)')
+		await page.mouse.up()
+	})
+
+	test('keeps the grab point under the pointer across day columns', async ({
+		page,
+	}) => {
+		// The headline behaviour: the point you GRABBED lands under the pointer.
+		// A month row draws this bar across whole, equal day columns while its
+		// time runs 09:00 to 17:00, so reading the grab as a fraction of elapsed
+		// TIME rather than of columns puts the drop a day out. Every other
+		// multi-day fixture here is midnight-aligned, where the two agree.
+		await gotoScenario(page, { scenario: 'timed-multi-day', view: 'month' })
+		const month = new MonthGrid(page)
+
+		// The positioned bar, not the text inside it: this measures columns.
+		const bar = month.bar('timed-span-1')
+		await expect(bar).toBeVisible()
+		const before = await month.eventNamed('Field survey')
+		expect(before.start).toMatch(/^2025-03-10T09:00/)
+
+		// Grab inside the FIRST day column (Mar 10) rather than at the bar's
+		// left edge, then release one column to the right.
+		const box = await bar.boundingBox()
+		if (!box) {
+			throw new Error('the bar needs a layout to be grabbed')
+		}
+		const columnWidth = box.width / 4
+		const grabX = box.x + columnWidth * 0.8
+		const grabY = box.y + box.height / 2
+
+		await page.mouse.move(grabX, grabY)
+		await page.mouse.down()
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(grabX + (columnWidth * step) / 8, grabY)
+		}
+		await page.mouse.up()
+
+		// Moved exactly one day, and the duration is untouched.
+		await expect
+			.poll(async () => (await month.eventNamed('Field survey')).start)
+			.toMatch(/^2025-03-11T09:00/)
+		const after = await month.eventNamed('Field survey')
+		expect(after.end).toMatch(/^2025-03-14T17:00/)
+	})
+
+	test('honours a grab taken several columns into the bar', async ({
+		page,
+	}) => {
+		// The offset only shows itself when the grab is NOT at the bar's start.
+		// dnd-kit has not measured the draggable at drag start, so reading its
+		// rect there yields no offset at all and the event silently re-anchors
+		// to its own start. Grab the THIRD column (Mar 12) and release one
+		// column right: holding the grab point moves the event by exactly one
+		// day, while losing it would jump the start to the release column.
+		await gotoScenario(page, { scenario: 'timed-multi-day', view: 'month' })
+		const month = new MonthGrid(page)
+
+		const bar = month.bar('timed-span-1')
+		await expect(bar).toBeVisible()
+
+		const box = await bar.boundingBox()
+		if (!box) {
+			throw new Error('the bar needs a layout to be grabbed')
+		}
+		const columnWidth = box.width / 4
+		const grabX = box.x + columnWidth * 2.5
+		const grabY = box.y + box.height / 2
+
+		await page.mouse.move(grabX, grabY)
+		await page.mouse.down()
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(grabX + (columnWidth * step) / 8, grabY)
+		}
+		await page.mouse.up()
+
+		// One day later, not jumped to the column released on.
+		await expect
+			.poll(async () => (await month.eventNamed('Field survey')).start)
+			.toMatch(/^2025-03-11T09:00/)
+	})
+
+	test('keeps the mirror over a cell that refuses the drop', async ({
+		page,
+	}) => {
+		// FullCalendar keeps its mirror over an area its constraints forbid and
+		// signals the refusal with the cursor. Blanking the preview instead
+		// swapped the snapped mirror for a floating chip mid-drag.
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			settings: { businessHours: '9-17' },
+		})
+		const month = new MonthGrid(page)
+
+		// 2025-03-08 is a Saturday, so business hours leave it disabled.
+		const closedDay = month.cellOn('2025-03-08')
+		await expect(closedDay).toHaveAttribute('data-disabled', 'true')
+
+		await pressAndMoveTo(
+			page,
+			month.event('Earlier in the month').first(),
+			closedDay
+		)
+
+		await expect(month.dragMirror).toBeVisible()
+		await expect
+			.poll(() => page.evaluate(() => document.body.style.cursor))
+			.toBe('not-allowed')
+		await page.mouse.up()
+	})
+
+	test('commits nothing when released on a cell that refuses drops', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			settings: { businessHours: '9-17' },
+		})
+		const month = new MonthGrid(page)
+
+		await dragTo(
+			page,
+			month.event('Earlier in the month').first(),
+			month.cellOn('2025-03-08')
+		)
+
+		// Released on a closed Saturday: the event stays where it was.
+		const event = await month.eventNamed('Earlier in the month')
+		expect(event.start).toMatch(/^2025-03-04/)
+		// And the cursor does not outlive the drag.
+		await expect
+			.poll(() => page.evaluate(() => document.body.style.cursor))
+			.not.toBe('not-allowed')
+	})
+
+	test('dims the source bar while its event is in flight', async ({ page }) => {
+		await gotoScenario(page, { scenario: 'basic', view: 'month' })
+		const month = new MonthGrid(page)
+
+		const bar = month.event('Earlier in the month').first()
+		await pressAndMoveTo(page, bar, month.cellOn('2025-03-06'))
+
+		// The source stays visible and recedes; it must not vanish, or there is
+		// nothing to say the event is being moved rather than deleted.
+		await expect
+			.poll(() =>
+				bar.evaluate((el) => {
+					const dimmed = el.closest('.opacity-50')
+					return dimmed === null ? 'not dimmed' : 'dimmed'
+				})
+			)
+			.toBe('dimmed')
 		await page.mouse.up()
 	})
 

@@ -99,6 +99,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 										// Passing the hour for daily cells made them 00:00-01:00
 										// slots, breaking drag-to-create's cross-day selection.
 										hour={gridType === 'hour' ? day.hour() : undefined}
+										isSubDivider={isSubDivider}
 										key={keys.listKey(id, dayIndex, mm)}
 										minute={hasSubHourSlots ? minute : undefined}
 										resourceId={resourceId} // Events are rendered in a separate layer

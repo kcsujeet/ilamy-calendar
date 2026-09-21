@@ -38,6 +38,16 @@ export class CalendarPage {
 		return this.page.locator('[data-testid^="event-drag-preview-"]')
 	}
 
+	/** Cells the calendar has marked as refusing drops. */
+	get disabledCells(): Locator {
+		return this.page.locator('[data-disabled="true"]')
+	}
+
+	/** The cells the in-flight drag would land across. */
+	get dropTargets(): Locator {
+		return this.page.locator('[data-drop-target="true"]')
+	}
+
 	/** The one cell marked today, if the pinned date is on screen at all. */
 	get todayMarker(): Locator {
 		return this.page.getByTestId('day-number-today')
@@ -88,6 +98,15 @@ export class CalendarPage {
 export class MonthGrid extends CalendarPage {
 	get cells(): Locator {
 		return this.page.locator('[data-testid^="day-cell-"]')
+	}
+
+	/**
+	 * The positioned bar for an event, by its id. Distinct from `event(title)`,
+	 * which finds the TEXT inside the bar: a geometry measurement needs the
+	 * element that actually spans the day columns.
+	 */
+	bar(eventId: string): Locator {
+		return this.page.getByTestId(`horizontal-event-${eventId}`)
 	}
 
 	/** The cell whose range starts on this date, e.g. '2025-03-12'. */

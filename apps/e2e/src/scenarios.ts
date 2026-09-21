@@ -219,6 +219,20 @@ export const scenarios = {
 		],
 	},
 
+	'timed-multi-day': {
+		description:
+			'A multi-day event that does NOT start or end at midnight. A month row draws it across whole, equal day columns while its elapsed time runs 09:00 to 17:00, so the two diverge: reading the grab point as a fraction of TIME rather than of columns lands the drop a day out. Every other multi-day fixture here is midnight-aligned, where the two agree and the bug is invisible.',
+		views: ['week', 'month'],
+		events: [
+			event(
+				'timed-span-1',
+				'Field survey',
+				'2025-03-10T09:00:00.000Z',
+				'2025-03-13T17:00:00.000Z'
+			),
+		],
+	},
+
 	'all-day-events': {
 		description:
 			'All-day and multi-day-all-day events, which live in the all-day row rather than the time grid.',

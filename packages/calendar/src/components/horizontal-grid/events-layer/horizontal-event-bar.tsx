@@ -1,11 +1,14 @@
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
-import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
-import { dragSegmentFor } from '@/lib/utils/grab-offset'
+import {
+	getHorizontalBarStyle,
+	type HorizontalPositionedEvent,
+} from '@/lib/layout/geometry'
+import { getDragSegment } from '@/lib/utils/grab-offset'
 import { keys } from '@/lib/utils/keys'
 
 /** Identifies one bar: a row draws an event once per stacking row and resource. */
-export const horizontalEventKey = (
+export const getHorizontalEventKey = (
 	positioned: HorizontalPositionedEvent,
 	weekStart: Dayjs | undefined,
 	resourceId?: string | number
@@ -41,16 +44,11 @@ export function HorizontalEventBar({
 			data-testid={keys.container.horizontal.event(event.id)}
 			data-top={top}
 			data-width={width}
-			style={{
-				left: `calc(${left}% + var(--spacing) * 0.25)`,
-				width: `calc(${width}% - var(--spacing) * 1)`,
-				top: `${top}px`,
-				height: `${eventHeight}px`,
-			}}
+			style={getHorizontalBarStyle(positioned, top, eventHeight)}
 		>
 			<DraggableEvent
 				className="h-full w-full shadow"
-				dragSegment={dragSegmentFor(event, range, 'horizontal')}
+				dragSegment={getDragSegment(event, range, 'horizontal')}
 				elementId={elementId}
 				event={event}
 				isBeingDragged={draggedEventId === event.id}

@@ -1,5 +1,4 @@
 import type { CalendarEvent } from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
 
 /**
  * Membership rule for the resource axis: when `resourceIds` is present,

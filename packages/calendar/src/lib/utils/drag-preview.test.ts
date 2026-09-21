@@ -1,30 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
-import type { DragPreviewState } from '@/contexts/drag-preview-context'
+import { mkDragPreview as mkPreview } from '@/testing/drag-test-fixtures'
 import {
-	dragCursor,
+	getDragCursor,
 	getDragPreviewEvent,
 	isPreviewOnTarget,
 } from './drag-preview'
 
 const at = (hour: number, minute = 0) =>
 	dayjs('2025-01-01T00:00:00.000Z').hour(hour).minute(minute)
-
-const mkPreview = (
-	overrides: Partial<DragPreviewState> = {}
-): DragPreviewState => ({
-	event: {
-		id: 'event-1',
-		title: 'Team Sync',
-		start: at(9),
-		end: at(10),
-	} as CalendarEvent,
-	start: at(10),
-	end: at(12),
-	allDay: false,
-	...overrides,
-})
 
 // The grid range the preview is tested against: `rangeEnd` is the LAST instant
 // shown, matching `overlapsRange`'s inclusive convention.
@@ -122,25 +106,23 @@ describe('getDragPreviewEvent', () => {
 	})
 })
 
-describe('dragCursor', () => {
+describe('getDragCursor', () => {
 	// FullCalendar signals a refused drop with the cursor rather than by hiding
 	// the mirror: it toggles `fc-not-allowed` on `document.body` while the drag
 	// sits over an area its constraints forbid.
 	test('asks for not-allowed while the candidate sits on a closed cell', () => {
-		expect(dragCursor(mkPreview({ isDropAllowed: false }))).toBe('not-allowed')
+		expect(getDragCursor(mkPreview({ isDropAllowed: false }))).toBe(
+			'not-allowed'
+		)
 	})
 
 	test('asks for nothing while the candidate is droppable', () => {
-		expect(dragCursor(mkPreview({ isDropAllowed: true }))).toBe('')
-	})
-
-	test('treats an unstated verdict as droppable, never as refused', () => {
-		// `isDropAllowed` is optional and absent means allowed, so a candidate
-		// built without an opinion must not strand a not-allowed cursor.
-		expect(dragCursor(mkPreview())).toBe('')
+		// `undefined`, not a cursor value: the caller leaves whatever cursor the
+		// page already had rather than assigning over it.
+		expect(getDragCursor(mkPreview({ isDropAllowed: true }))).toBeUndefined()
 	})
 
 	test('asks for nothing when no drag is in flight', () => {
-		expect(dragCursor(null)).toBe('')
+		expect(getDragCursor(null)).toBeUndefined()
 	})
 })

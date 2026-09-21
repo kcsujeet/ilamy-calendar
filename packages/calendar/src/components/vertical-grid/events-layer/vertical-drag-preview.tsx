@@ -1,7 +1,10 @@
 import { DragPreviewCard } from '@/components/drag-and-drop/drag-preview-card'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import type { VerticalPositionedEvent } from '@/lib/layout/geometry'
-import { timeOfDayPattern } from '@/lib/utils/date-utils'
+import {
+	getVerticalBarStyle,
+	type VerticalPositionedEvent,
+} from '@/lib/layout/geometry'
+import { getTimeOfDayPattern } from '@/lib/utils/date-utils'
 
 interface VerticalDragPreviewProps {
 	previewPositioned: VerticalPositionedEvent
@@ -12,9 +15,8 @@ export function VerticalDragPreview({
 	previewPositioned,
 }: VerticalDragPreviewProps) {
 	const timeFormat = useSmartCalendarContext((c) => c.timeFormat)
-	const { event, left, width, top, height, isTruncatedStart, isTruncatedEnd } =
-		previewPositioned
-	const pattern = timeOfDayPattern(timeFormat)
+	const { event, isTruncatedStart, isTruncatedEnd } = previewPositioned
+	const pattern = getTimeOfDayPattern(timeFormat)
 
 	return (
 		<DragPreviewCard
@@ -23,12 +25,7 @@ export function VerticalDragPreview({
 			isTruncatedEnd={isTruncatedEnd}
 			isTruncatedStart={isTruncatedStart}
 			orientation="vertical"
-			style={{
-				left: `${left}%`,
-				width: `calc(${width}% - var(--spacing) * 2)`,
-				top: `${top}%`,
-				height: `${height}%`,
-			}}
+			style={getVerticalBarStyle(previewPositioned)}
 		>
 			<p className="text-[10px] font-semibold sm:text-xs">
 				{event.start.format(pattern)} – {event.end.format(pattern)}

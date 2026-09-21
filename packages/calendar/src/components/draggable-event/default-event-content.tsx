@@ -2,9 +2,9 @@ import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import { useGridAxis } from '@/contexts/grid-axis-context'
 import {
-	eventSurfaceClasses,
-	eventSurfaceRadius,
-	eventSurfaceStyle,
+	getEventSurfaceClasses,
+	getEventSurfaceRadius,
+	getEventSurfaceStyle,
 } from '@/lib/utils/event-surface'
 
 export interface DefaultEventContentProps {
@@ -32,11 +32,11 @@ export function DefaultEventContent({
 	return (
 		<div
 			className={cn(
-				eventSurfaceClasses(event),
+				getEventSurfaceClasses(event),
 				'h-full w-full px-1 border-[1.5px] border-card text-left overflow-clip relative',
-				eventSurfaceRadius({ axis, isTruncatedStart, isTruncatedEnd })
+				getEventSurfaceRadius({ axis, isTruncatedStart, isTruncatedEnd })
 			)}
-			style={eventSurfaceStyle(event)}
+			style={getEventSurfaceStyle(event)}
 		>
 			{/* Left continuation indicator */}
 			{showStartMarker && (

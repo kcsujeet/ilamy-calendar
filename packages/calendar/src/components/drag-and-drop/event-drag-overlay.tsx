@@ -5,6 +5,10 @@ import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { useImperativeHandle, useState } from 'react'
 import { useDragPreview } from '@/contexts/drag-preview-context'
+import {
+	getEventSurfaceClasses,
+	getEventSurfaceStyle,
+} from '@/lib/utils/event-surface'
 
 interface EventDragOverlayProps {
 	ref: React.Ref<{ setActiveEvent: (event: CalendarEvent | null) => void }>
@@ -31,13 +35,9 @@ export const EventDragOverlay: React.FC<EventDragOverlayProps> = ({ ref }) => {
 				<div
 					className={cn(
 						'cursor-grabbing truncate rounded-md px-3 py-1.5 text-xs font-medium shadow-xl opacity-80',
-						activeEvent.backgroundColor || 'bg-blue-500',
-						activeEvent.color || 'text-white'
+						getEventSurfaceClasses(activeEvent)
 					)}
-					style={{
-						backgroundColor: activeEvent.backgroundColor,
-						color: activeEvent.color,
-					}}
+					style={getEventSurfaceStyle(activeEvent)}
 				>
 					{activeEvent.title}
 				</div>

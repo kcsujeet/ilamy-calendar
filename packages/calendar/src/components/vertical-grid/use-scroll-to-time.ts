@@ -98,7 +98,12 @@ export const useScrollToTime = ({
 		if (!enabled || !scrollTime) {
 			return
 		}
-		if (lastScrolledKeyRef.current === scrollKey) {
+		// Scroll once per date range and scrollTime, never on an ordinary
+		// re-render, so the user's own scrolling is left alone. The scrollTime is
+		// part of the key because FullCalendar reapplies a changed scrollTime
+		// immediately rather than at the next navigation.
+		const appliedKey = `${scrollKey}|${scrollTime}`
+		if (lastScrolledKeyRef.current === appliedKey) {
 			return
 		}
 
@@ -120,6 +125,6 @@ export const useScrollToTime = ({
 			return
 		}
 		scrollViewportToRow(viewport, targetRow, firstRow, axis)
-		lastScrolledKeyRef.current = scrollKey
+		lastScrolledKeyRef.current = appliedKey
 	}, [enabled, scrollTime, scrollKey, viewportRef, axis])
 }

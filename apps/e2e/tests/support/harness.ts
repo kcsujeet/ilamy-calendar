@@ -58,3 +58,25 @@ export const gotoScenario = async (
 	await page.goto(`/?${params.toString()}`)
 	await page.getByTestId('ilamy-calendar').waitFor()
 }
+
+/**
+ * Changes settings on the calendar that is already mounted, the way a consumer
+ * changes a prop at runtime. `gotoScenario` cannot: navigating remounts the
+ * calendar, so it would only ever see the new value on its first render.
+ */
+export const setSettings = async (
+	page: Page,
+	settings: Readonly<Record<string, string | number>>
+): Promise<void> => {
+	await page.evaluate(
+		(entries) => {
+			const url = new URL(window.location.href)
+			for (const [key, value] of entries) {
+				url.searchParams.set(key, value)
+			}
+			window.history.pushState(null, '', url)
+			window.dispatchEvent(new PopStateEvent('popstate'))
+		},
+		Object.entries(settings).map(([key, value]) => [key, String(value)])
+	)
+}

@@ -157,6 +157,29 @@ describe('useScrollToTime', () => {
 		expect(scrollSpy).toHaveBeenCalledTimes(2)
 	})
 
+	test('re-scrolls when scrollTime changes on the same date range', () => {
+		const viewportRef = createRef<HTMLElement>()
+		viewportRef.current = viewport
+
+		const { rerender } = renderHook(
+			(props: { scrollTime: string }) =>
+				useScrollToTime({
+					viewportRef,
+					scrollTime: props.scrollTime,
+					enabled: true,
+					scrollKey: 'day-2025-01-01',
+				}),
+			{ initialProps: { scrollTime: '08:00:00' } }
+		)
+
+		rerender({ scrollTime: '14:00:00' })
+		const scrolledTops = scrollSpy.mock.calls.map((call) => call.at(0)?.top)
+		expect(scrolledTops).toEqual([
+			hourIndex(8) * HOUR_PIXEL_SIZE,
+			hourIndex(14) * HOUR_PIXEL_SIZE,
+		])
+	})
+
 	test('scrolls horizontally when axis is "horizontal"', () => {
 		renderScrollHook({ scrollTime: '10:00', axis: 'horizontal' })
 

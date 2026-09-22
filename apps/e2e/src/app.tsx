@@ -8,7 +8,7 @@ import { agendaPlugin } from '@ilamy/calendar-agenda'
 import { dragToCreatePlugin } from '@ilamy/calendar-drag-to-create'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type React from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ConfigError, readUrlConfig } from './harness-config'
 import {
 	isScenarioName,
@@ -58,9 +58,15 @@ const isOrientation = (value: string): value is Orientation =>
  * Unknown values fail loudly. A silent fallback to a default would make a typo
  * look like a passing test of a screen nobody asked for, which is exactly how
  * the view harnesses in #270 went wrong.
+ *
+ * The URL is re-read on `popstate`, so a spec can change a setting on a
+ * calendar that is already mounted (`setSettings` in the test support). That is
+ * how a consumer changing a prop at runtime looks, and a fresh navigation can
+ * never reproduce it: the calendar would mount with the new value instead.
  */
 export const App = () => {
-	const params = new URLSearchParams(window.location.search)
+	const search = useLocationSearch()
+	const params = new URLSearchParams(search)
 
 	const scenarioName = params.get('scenario') ?? 'basic'
 	const viewName = params.get('view') ?? 'month'
@@ -120,6 +126,18 @@ export const App = () => {
 			view={viewName}
 		/>
 	)
+}
+
+const useLocationSearch = (): string => {
+	const [search, setSearch] = useState(window.location.search)
+
+	useEffect(() => {
+		const handlePopState = () => setSearch(window.location.search)
+		window.addEventListener('popstate', handlePopState)
+		return () => window.removeEventListener('popstate', handlePopState)
+	}, [])
+
+	return search
 }
 
 interface HarnessProps {

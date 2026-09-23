@@ -16,6 +16,7 @@ import type {
 export interface UrlConfig {
 	slotDuration?: SlotDuration
 	scrollTime?: string
+	scrollToNow?: boolean
 	dayMaxEvents?: number
 	eventHeight?: number
 	eventSpacing?: number
@@ -179,6 +180,11 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 			'hideNonBusinessHours',
 			hideNonBusinessHours
 		)
+	}
+
+	const scrollToNow = get('scrollToNow')
+	if (scrollToNow !== null) {
+		config.scrollToNow = boolean('scrollToNow', scrollToNow)
 	}
 
 	const stickyViewHeader = get('stickyViewHeader')

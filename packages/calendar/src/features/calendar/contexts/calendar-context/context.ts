@@ -48,6 +48,7 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	hiddenDays?: Set<number>
 	slotDuration: SlotDuration
 	scrollTime?: string
+	scrollToNow?: boolean
 	/** Custom render for resource header cells (resource axis presentation). */
 	renderResource?: (resource: Resource) => React.ReactNode
 }

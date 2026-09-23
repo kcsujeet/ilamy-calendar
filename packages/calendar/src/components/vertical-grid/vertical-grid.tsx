@@ -41,15 +41,19 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	// render an empty time grid.
 	const expandAllDayRow = columns.every((c) => !c.days?.length)
 
-	const { currentDate, view, scrollTime } = useSmartCalendarContext()
+	const { currentDate, view, scrollTime, scrollToNow } =
+		useSmartCalendarContext()
 	const viewportRef = useRef<HTMLDivElement | null>(null)
 
-	const hasHoursToScroll = gridType === 'hour' && !expandAllDayRow
+	// Day-row grids (vertical resource month) scroll too, though only to now:
+	// they have no hour rows for scrollTime to find.
+	const hasRowsToScroll = !expandAllDayRow
 
 	useScrollToTime({
 		viewportRef,
 		scrollTime,
-		enabled: hasHoursToScroll,
+		scrollToNow,
+		enabled: hasRowsToScroll,
 		scrollKey: `${view}-${currentDate.format('YYYY-MM-DD')}`,
 	})
 

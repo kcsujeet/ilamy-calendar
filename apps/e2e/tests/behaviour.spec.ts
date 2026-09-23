@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test'
-import { gotoScenario } from './support/harness'
+import { expect, type Page, test } from '@playwright/test'
+import { gotoScenario, setSettings } from './support/harness'
 import { CalendarPage, MonthGrid, TimeGrid } from './support/pages'
 
 /**
@@ -225,4 +225,78 @@ test.describe('resource day view overflow', () => {
 			await expect(page.getByTestId(`Course ${index}`)).toHaveCount(1)
 		}
 	})
+})
+
+/**
+ * How far the row for `hour` sits from the scroll viewport's leading edge, in
+ * pixels along the grid's time axis. After a scroll to that hour it is the same
+ * for every hour that is not clamped, which is what makes it comparable across
+ * two different scrollTimes.
+ */
+const hourOffset = (
+	page: Page,
+	scrollTestId: string,
+	hour: string,
+	axis: 'vertical' | 'horizontal'
+): Promise<number> =>
+	page.evaluate(
+		({ scrollTestId, hour, axis }) => {
+			const viewport = document.querySelector(
+				`[data-testid="${scrollTestId}"] [data-radix-scroll-area-viewport]`
+			)
+			const row = viewport?.querySelector(`[data-hour="${hour}"]`)
+			if (!viewport || !row) {
+				throw new Error(`no row for hour ${hour} in ${scrollTestId}`)
+			}
+			const viewportRect = viewport.getBoundingClientRect()
+			const rowRect = row.getBoundingClientRect()
+			return axis === 'vertical'
+				? rowRect.top - viewportRect.top
+				: rowRect.left - viewportRect.left
+		},
+		{ scrollTestId, hour, axis }
+	)
+
+test.describe('scrollTime', () => {
+	// FullCalendar's scrollTime "determines how far forward the scroll pane is
+	// initially scrolled", and it is reapplied whenever it changes, not only on
+	// navigation. Both hours are early enough to stay clear of the end of the
+	// day, where the browser clamps the scroll and the hours stop lining up (the
+	// timeline has ~10 columns of room at this viewport; 12:00 would clamp).
+	const cases = [
+		{
+			name: 'week time grid',
+			scenario: 'basic',
+			orientation: undefined,
+			scrollTestId: 'vertical-grid-scroll',
+			axis: 'vertical',
+		},
+		{
+			name: 'resource day timeline',
+			scenario: 'resources',
+			orientation: 'horizontal',
+			scrollTestId: 'horizontal-grid-scroll',
+			axis: 'horizontal',
+		},
+	] as const
+
+	for (const { name, scenario, orientation, scrollTestId, axis } of cases) {
+		test(`changing it on a mounted ${name} scrolls to the new hour`, async ({
+			page,
+		}) => {
+			await gotoScenario(page, {
+				scenario,
+				view: orientation ? 'day' : 'week',
+				orientation,
+				settings: { scrollTime: '06:00', height: '500px' },
+			})
+			const landing = await hourOffset(page, scrollTestId, '06', axis)
+
+			await setSettings(page, { scrollTime: '09:00' })
+
+			await expect
+				.poll(() => hourOffset(page, scrollTestId, '09', axis))
+				.toBe(landing)
+		})
+	}
 })

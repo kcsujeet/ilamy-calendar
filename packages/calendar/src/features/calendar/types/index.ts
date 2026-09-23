@@ -407,6 +407,10 @@ export interface IlamyCalendarProps {
 	 * clamped to the nearest visible row when `hideNonBusinessHours` hides
 	 * the requested hour.
 	 *
+	 * Reapplied whenever the visible date range changes (navigation, view
+	 * switch) and whenever `scrollTime` itself changes, as FullCalendar does.
+	 * Ordinary re-renders leave the user's own scroll position alone.
+	 *
 	 * Independent of `businessHours`: you can show all 24 hours and still
 	 * focus on 08:00 on load.
 	 *

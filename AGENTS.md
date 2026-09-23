@@ -75,18 +75,24 @@ Context, decisions, things to watch out for.
 
 Run `/load-context` to load the full codebase map, rules, and recent dev logs before starting work.
 
-The plugins this repo relies on install themselves. `.claude/settings.json` declares the
-`kc-claude-kit` marketplace in `extraKnownMarketplaces`, which registers it once you trust
-the folder, and enables its plugins in `enabledPlugins`. Enabling is not installing: since
-Claude Code v2.1.195 a plugin that comes from an external source stays uninstalled until
-someone runs `claude plugin install`
-([docs](https://code.claude.com/docs/en/discover-plugins#configure-team-marketplaces)), so a
-`SessionStart` hook (`.claude/hooks/install-project-plugins.sh`) runs that command for any
-plugin still missing. A fresh clone therefore needs no manual `/plugin` step; the newly
-installed plugins are active from the next session, or after `/reload-plugins`. The hook
-installs at **local** scope because `--scope project` refuses to write through this repo's
-symlinked `.claude/settings.json`, and the shared enable record already lives there. It
-prints nothing once everything is present, and never blocks the session.
+The plugins this repo relies on are declared, not installed, the way Claude Code
+documents for team marketplaces. `.claude/settings.json` lists the `kc-claude-kit`
+marketplace in `extraKnownMarketplaces`, which Claude Code adds once you trust the folder,
+and enables its plugins in `enabledPlugins`. Since Claude Code v2.1.195 that does not
+install a plugin from an external source: Claude Code reports it as not installed and
+shows the `claude plugin install` command to run
+([docs](https://code.claude.com/docs/en/discover-plugins#configure-team-marketplaces)).
+Installing is a deliberate step because a plugin runs code with your user privileges, so
+this repo leaves it to you. Once per machine:
+
+```bash
+claude plugin install claude-md@kc-claude-kit
+claude plugin install code-review@kc-claude-kit
+claude plugin install conventions@kc-claude-kit
+claude plugin install testing@kc-claude-kit
+```
+
+They load from the next session, or after `/reload-plugins`.
 
 ## Commands
 
@@ -392,7 +398,7 @@ different setting.
 
 Reviews use the `code-review:review-code` skill from the `kc-claude-kit` plugin
 ([source](https://github.com/kcsujeet/kc-claude-kit/tree/main/plugins/code-review)),
-which the `SessionStart` hook above installs. It triggers on "review this PR", a PR URL
+installed as described under Session Start. It triggers on "review this PR", a PR URL
 or a branch name, runs one gate agent per rule file, and never posts to GitHub on its
 own. Two competitors are switched off for this repo in `.claude/settings.json`: the
 official `code-review@claude-plugins-official` plugin (`enabledPlugins: false`) and

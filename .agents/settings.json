@@ -41,18 +41,6 @@
 		"defaultMode": "acceptEdits"
 	},
 	"hooks": {
-		"SessionStart": [
-			{
-				"matcher": "startup|resume",
-				"hooks": [
-					{
-						"type": "command",
-						"command": ".claude/hooks/install-project-plugins.sh",
-						"timeout": 120
-					}
-				]
-			}
-		],
 		"Stop": [
 			{
 				"hooks": [

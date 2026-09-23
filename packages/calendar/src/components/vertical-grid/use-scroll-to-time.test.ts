@@ -26,27 +26,12 @@ const stubRect = (top: number, left: number) => () =>
 		toJSON: () => ({}),
 	}) as DOMRect
 
-const buildViewport = (hours: number[]) => {
-	const viewport = document.createElement('div')
-	viewport.getBoundingClientRect = stubRect(0, 0)
-	hours.forEach((hour, index) => {
-		const row = document.createElement('div')
-		row.setAttribute('data-hour', String(hour).padStart(2, '0'))
-		// First row sits at offset 0 inside the time area; later rows step
-		// down/right by one hour height. Mirrors how the real time-gutter or
-		// time-header row is laid out after any sticky-left/top column.
-		row.getBoundingClientRect = stubRect(
-			index * HOUR_PIXEL_SIZE,
-			index * HOUR_PIXEL_SIZE
-		)
-		viewport.appendChild(row)
-	})
-	document.body.appendChild(viewport)
-	return viewport
-}
+/** The hours every fixture draws, 06:00 to 17:00. */
+const HOURS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 
-const hourIndex = (hour: number) =>
-	[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].indexOf(hour)
+const hourIndex = (hour: number) => HOURS.indexOf(hour)
+
+const padHour = (hour: number) => String(hour).padStart(2, '0')
 
 const setupScrollSpy = () => {
 	const spy = mock((_options?: ScrollToOptions) => {})
@@ -54,52 +39,66 @@ const setupScrollSpy = () => {
 	return spy
 }
 
+interface FixtureElement {
+	/** Tags the element `data-hour`, as the time gutter or time header does. */
+	hour?: string
+	/** `[start, end)` as UTC ISO strings, as `DroppableCell` reports itself. */
+	start?: string
+	end?: string
+	allDay?: boolean
+}
+
 /**
- * A grid of droppable cells, the way `DroppableCell` reports itself: each one
- * carries its own `[start, end)` as UTC ISO strings. Consecutive cells step one
- * `HOUR_PIXEL_SIZE` along the axis. An `hour` also tags the cell `data-hour`,
- * standing in for the gutter row at the same offset, so `scrollTime` has
- * something to aim at in the same grid.
+ * A scroll viewport holding `elements` in order. The first sits at offset 0
+ * inside the time area and each later one steps down/right by one hour, which
+ * mirrors how the real gutter, header row or cells are laid out after any
+ * sticky-left/top column.
  */
-const buildCellViewport = (
-	ranges: { start: string; end: string; allDay?: boolean; hour?: string }[]
-) => {
+const buildViewport = (elements: FixtureElement[]) => {
 	const viewport = document.createElement('div')
 	viewport.getBoundingClientRect = stubRect(0, 0)
-	ranges.forEach(({ start, end, allDay, hour }, index) => {
-		const cell = document.createElement('div')
-		cell.setAttribute('data-start', start)
-		cell.setAttribute('data-end', end)
-		if (allDay) {
-			cell.setAttribute('data-all-day', 'true')
-		}
+	elements.forEach(({ hour, start, end, allDay }, index) => {
+		const element = document.createElement('div')
 		if (hour) {
-			cell.setAttribute('data-hour', hour)
+			element.setAttribute('data-hour', hour)
 		}
-		cell.getBoundingClientRect = stubRect(
+		if (start) {
+			element.setAttribute('data-start', start)
+		}
+		if (end) {
+			element.setAttribute('data-end', end)
+		}
+		if (allDay) {
+			element.setAttribute('data-all-day', 'true')
+		}
+		element.getBoundingClientRect = stubRect(
 			index * HOUR_PIXEL_SIZE,
 			index * HOUR_PIXEL_SIZE
 		)
-		viewport.appendChild(cell)
+		viewport.appendChild(element)
 	})
 	document.body.appendChild(viewport)
 	return viewport
 }
 
-/** One-hour cells on 1 January 2025, 06:00 to 17:00 UTC. */
-const hourCells = () =>
-	[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map((hour) => {
-		const hh = String(hour).padStart(2, '0')
-		const next = String(hour + 1).padStart(2, '0')
-		return {
-			start: `2025-01-01T${hh}:00:00.000Z`,
-			end: `2025-01-01T${next}:00:00.000Z`,
-			hour: hh,
-		}
-	})
+/** The gutter alone: one `data-hour` row per hour. */
+const hourRows = (): FixtureElement[] =>
+	HOURS.map((hour) => ({ hour: padHour(hour) }))
+
+/**
+ * One-hour cells on 1 January 2025, 06:00 to 17:00 UTC. Each also carries its
+ * `data-hour`, standing in for the gutter row at the same offset, so
+ * `scrollTime` has something to aim at in the same grid.
+ */
+const hourCells = (): FixtureElement[] =>
+	HOURS.map((hour) => ({
+		hour: padHour(hour),
+		start: `2025-01-01T${padHour(hour)}:00:00.000Z`,
+		end: `2025-01-01T${padHour(hour + 1)}:00:00.000Z`,
+	}))
 
 /** Whole-day cells for 1 to 10 January 2025. */
-const dayCells = () =>
+const dayCells = (): FixtureElement[] =>
 	[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((day) => ({
 		start: `2025-01-${String(day).padStart(2, '0')}T00:00:00.000Z`,
 		end: `2025-01-${String(day + 1).padStart(2, '0')}T00:00:00.000Z`,
@@ -115,29 +114,38 @@ describe('useScrollToTime', () => {
 	let scrollSpy: ReturnType<typeof setupScrollSpy>
 
 	beforeEach(() => {
-		viewport = buildViewport([6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17])
+		viewport = buildViewport(hourRows())
 		scrollSpy = setupScrollSpy()
 	})
 
+	/**
+	 * Mounts the hook over `target` (the hour-row viewport by default). Only
+	 * `scrollToNow` can change on rerender, which the live-toggle case needs.
+	 */
 	const renderScrollHook = (
 		overrides: Partial<{
-			viewportRef: ReturnType<typeof createRef<HTMLElement>>
+			target: HTMLElement
 			scrollTime?: string
+			scrollToNow: boolean
 			enabled: boolean
 			scrollKey: string
 			axis: 'vertical' | 'horizontal'
 		}> = {}
 	) => {
+		const { target = viewport, scrollToNow = false, ...options } = overrides
 		const viewportRef = createRef<HTMLElement>()
-		viewportRef.current = viewport
-		return renderHook(() =>
-			useScrollToTime({
-				viewportRef,
-				scrollTime: '08:00:00',
-				enabled: true,
-				scrollKey: 'day-2025-01-01',
-				...overrides,
-			})
+		viewportRef.current = target
+		return renderHook(
+			(props: { scrollToNow: boolean }) =>
+				useScrollToTime({
+					viewportRef,
+					scrollTime: '08:00:00',
+					enabled: true,
+					scrollKey: 'day-2025-01-01',
+					...options,
+					scrollToNow: props.scrollToNow,
+				}),
+			{ initialProps: { scrollToNow } }
 		)
 	}
 
@@ -248,39 +256,23 @@ describe('useScrollToTime', () => {
 	})
 
 	describe('scrollToNow', () => {
-		const renderNowHook = (
-			target: HTMLElement,
-			overrides: Partial<{
-				scrollTime?: string
-				scrollToNow: boolean
-				axis: 'vertical' | 'horizontal'
-			}> = {}
-		) => {
-			const viewportRef = createRef<HTMLElement>()
-			viewportRef.current = target
-			return renderHook(
-				(props: { scrollToNow: boolean }) =>
-					useScrollToTime({
-						viewportRef,
-						enabled: true,
-						scrollKey: 'week-2025-01-01',
-						...overrides,
-						scrollToNow: props.scrollToNow,
-					}),
-				{ initialProps: { scrollToNow: overrides.scrollToNow ?? true } }
-			)
-		}
-
 		test('scrolls to the cell that contains now', () => {
 			setSystemTime(new Date('2025-01-01T10:30:00.000Z'))
-			renderNowHook(buildCellViewport(hourCells()))
+			renderScrollHook({
+				target: buildViewport(hourCells()),
+				scrollToNow: true,
+			})
 
 			expect(scrolledToTop()).toBe(4 * HOUR_PIXEL_SIZE)
 		})
 
 		test("scrolls a day-column grid horizontally to today's column", () => {
 			setSystemTime(new Date('2025-01-05T15:00:00.000Z'))
-			renderNowHook(buildCellViewport(dayCells()), { axis: 'horizontal' })
+			renderScrollHook({
+				target: buildViewport(dayCells()),
+				scrollToNow: true,
+				axis: 'horizontal',
+			})
 
 			expect(scrolledToLeft()).toBe(4 * HOUR_PIXEL_SIZE)
 			expect(scrolledToTop()).toBeUndefined()
@@ -288,7 +280,11 @@ describe('useScrollToTime', () => {
 
 		test('wins over scrollTime while now is on screen', () => {
 			setSystemTime(new Date('2025-01-01T14:00:00.000Z'))
-			renderNowHook(buildCellViewport(hourCells()), { scrollTime: '08:00' })
+			renderScrollHook({
+				target: buildViewport(hourCells()),
+				scrollToNow: true,
+				scrollTime: '08:00',
+			})
 
 			expect(scrolledToTop()).toBe(8 * HOUR_PIXEL_SIZE)
 		})
@@ -297,7 +293,11 @@ describe('useScrollToTime', () => {
 			// A month later than every cell, at 14:00, so a fallback that still
 			// read now's hour would land on 14:00 rather than scrollTime's 10:00.
 			setSystemTime(new Date('2025-02-01T14:00:00.000Z'))
-			renderNowHook(buildCellViewport(hourCells()), { scrollTime: '10:00' })
+			renderScrollHook({
+				target: buildViewport(hourCells()),
+				scrollToNow: true,
+				scrollTime: '10:00',
+			})
 
 			expect(scrolledToTop()).toBe(4 * HOUR_PIXEL_SIZE)
 		})
@@ -307,7 +307,12 @@ describe('useScrollToTime', () => {
 			// offset into a month that does not contain today. FullCalendar resets
 			// to the range start (plus scrollTime) on every range change.
 			setSystemTime(new Date('2025-02-01T10:00:00.000Z'))
-			renderNowHook(buildCellViewport(dayCells()), { axis: 'horizontal' })
+			renderScrollHook({
+				target: buildViewport(dayCells()),
+				scrollToNow: true,
+				scrollTime: undefined,
+				axis: 'horizontal',
+			})
 
 			expect(scrolledToLeft()).toBe(0)
 		})
@@ -319,7 +324,10 @@ describe('useScrollToTime', () => {
 				end: '2025-01-02T00:00:00.000Z',
 				allDay: true,
 			}
-			renderNowHook(buildCellViewport([allDay, ...hourCells()]))
+			renderScrollHook({
+				target: buildViewport([allDay, ...hourCells()]),
+				scrollToNow: true,
+			})
 
 			// The timed cells start one step past the all-day cell. Measured from
 			// the first timed cell, 12:00 is six steps in; measuring from the
@@ -329,9 +337,9 @@ describe('useScrollToTime', () => {
 
 		test('re-scrolls when scrollToNow is turned on for the same range', () => {
 			setSystemTime(new Date('2025-01-01T14:00:00.000Z'))
-			const { rerender } = renderNowHook(buildCellViewport(hourCells()), {
+			const { rerender } = renderScrollHook({
+				target: buildViewport(hourCells()),
 				scrollTime: '08:00',
-				scrollToNow: false,
 			})
 
 			rerender({ scrollToNow: true })

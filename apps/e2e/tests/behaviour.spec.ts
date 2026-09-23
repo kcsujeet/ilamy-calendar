@@ -227,6 +227,10 @@ test.describe('resource day view overflow', () => {
 	})
 })
 
+/** The Radix scroll viewport inside the grid scroll area with `testId`. */
+const scrollViewportSelector = (testId: string): string =>
+	`[data-testid="${testId}"] [data-radix-scroll-area-viewport]`
+
 /**
  * How far the row for `hour` sits from the scroll viewport's leading edge, in
  * pixels along the grid's time axis. After a scroll to that hour it is the same
@@ -240,13 +244,11 @@ const hourOffset = (
 	axis: 'vertical' | 'horizontal'
 ): Promise<number> =>
 	page.evaluate(
-		({ scrollTestId, hour, axis }) => {
-			const viewport = document.querySelector(
-				`[data-testid="${scrollTestId}"] [data-radix-scroll-area-viewport]`
-			)
+		({ selector, hour, axis }) => {
+			const viewport = document.querySelector(selector)
 			const row = viewport?.querySelector(`[data-hour="${hour}"]`)
 			if (!viewport || !row) {
-				throw new Error(`no row for hour ${hour} in ${scrollTestId}`)
+				throw new Error(`no row for hour ${hour} in ${selector}`)
 			}
 			const viewportRect = viewport.getBoundingClientRect()
 			const rowRect = row.getBoundingClientRect()
@@ -254,7 +256,7 @@ const hourOffset = (
 				? rowRect.top - viewportRect.top
 				: rowRect.left - viewportRect.left
 		},
-		{ scrollTestId, hour, axis }
+		{ selector: scrollViewportSelector(scrollTestId), hour, axis }
 	)
 
 test.describe('scrollTime', () => {
@@ -316,14 +318,12 @@ const scrollAlignment = (
 	axis: 'vertical' | 'horizontal'
 ): Promise<{ scrolled: number; expected: number }> =>
 	page.evaluate(
-		({ scrollTestId, target, origin, axis }) => {
-			const viewport = document.querySelector(
-				`[data-testid="${scrollTestId}"] [data-radix-scroll-area-viewport]`
-			)
+		({ selector, target, origin, axis }) => {
+			const viewport = document.querySelector(selector)
 			const targetEl = viewport?.querySelector(target)
 			const originEl = viewport?.querySelector(origin)
 			if (!viewport || !targetEl || !originEl) {
-				throw new Error(`missing ${target} or ${origin} in ${scrollTestId}`)
+				throw new Error(`missing ${target} or ${origin} in ${selector}`)
 			}
 			const targetRect = targetEl.getBoundingClientRect()
 			const originRect = originEl.getBoundingClientRect()
@@ -340,7 +340,7 @@ const scrollAlignment = (
 				expected: targetRect.left - originRect.left,
 			}
 		},
-		{ scrollTestId, target, origin, axis }
+		{ selector: scrollViewportSelector(scrollTestId), target, origin, axis }
 	)
 
 const TIMED_CELL = '[data-start]:not([data-all-day="true"])'
@@ -350,10 +350,14 @@ test.describe('scrollToNow', () => {
 	// The pinned now is Wednesday 12 March 2025, 09:00 UTC. Each grid scrolls to
 	// the cell holding it: an hour row, an hour column, or a whole day. The
 	// height keeps every target clear of the end of the grid, where the browser
-	// would clamp the scroll.
+	// would clamp the scroll. `expectedOffset` is that cell's distance from the
+	// start of the time area at the pinned viewport: nine 61px hour rows or 81px
+	// hour columns (eighty-one columns into the week), and eleven 81px day
+	// columns or 61px day rows into the month.
 	const cases = [
 		{
 			name: 'week time grid',
+			expectedOffset: 549,
 			scenario: 'basic',
 			view: 'week',
 			orientation: undefined,
@@ -365,6 +369,7 @@ test.describe('scrollToNow', () => {
 		},
 		{
 			name: 'resource day timeline',
+			expectedOffset: 729,
 			scenario: 'resources',
 			view: 'day',
 			orientation: 'horizontal',
@@ -376,6 +381,7 @@ test.describe('scrollToNow', () => {
 		},
 		{
 			name: 'hourly resource week timeline',
+			expectedOffset: 6561,
 			scenario: 'resources',
 			view: 'week',
 			orientation: 'horizontal',
@@ -387,6 +393,7 @@ test.describe('scrollToNow', () => {
 		},
 		{
 			name: 'resource month timeline (#285)',
+			expectedOffset: 891,
 			scenario: 'resources',
 			view: 'month',
 			orientation: 'horizontal',
@@ -400,6 +407,7 @@ test.describe('scrollToNow', () => {
 			// The one grid whose all-day row sits inside the scroll area: its
 			// all-day cells hold now too, and must not be taken for the target.
 			name: 'vertical resource day',
+			expectedOffset: 549,
 			scenario: 'resources',
 			view: 'day',
 			orientation: 'vertical',
@@ -411,6 +419,7 @@ test.describe('scrollToNow', () => {
 		},
 		{
 			name: 'vertical resource month',
+			expectedOffset: 671,
 			scenario: 'resources',
 			view: 'month',
 			orientation: 'vertical',
@@ -438,8 +447,9 @@ test.describe('scrollToNow', () => {
 				c.origin,
 				c.axis
 			)
-			expect(expected).toBeGreaterThan(0)
-			// Within a pixel: a column 81px wide lands on fractional offsets.
+			// Within a pixel: a column 81px wide lands on fractional offsets. The
+			// first pins the layout being measured; the second, the scroll.
+			expect(expected).toBeCloseTo(c.expectedOffset, 0)
 			expect(scrolled).toBeCloseTo(expected, 0)
 		})
 	}
@@ -485,9 +495,7 @@ test.describe('scrollToNow', () => {
 			})
 			await new CalendarPage(page).next()
 
-			const viewport = page.locator(
-				`[data-testid="${scrollTestId}"] [data-radix-scroll-area-viewport]`
-			)
+			const viewport = page.locator(scrollViewportSelector(scrollTestId))
 			await expect
 				.poll(() => viewport.evaluate((el) => el.scrollLeft + el.scrollTop))
 				.toBe(0)
@@ -532,7 +540,7 @@ test.describe('scrollToNow', () => {
 			settings: { scrollToNow: 'true', height: '500px' },
 		})
 		const viewport = page.locator(
-			'[data-testid="horizontal-grid-scroll"] [data-radix-scroll-area-viewport]'
+			scrollViewportSelector('horizontal-grid-scroll')
 		)
 		await viewport.evaluate((el) => {
 			el.scrollLeft = 40

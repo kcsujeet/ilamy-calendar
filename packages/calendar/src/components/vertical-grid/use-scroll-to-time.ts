@@ -1,4 +1,5 @@
-import dayjs from '@ilamy/utils/dayjs'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import { overlapsRange } from '@ilamy/utils/helpers'
 import { type RefObject, useEffect, useRef } from 'react'
 
 type ScrollToTimeAxis = 'vertical' | 'horizontal'
@@ -72,11 +73,12 @@ interface ScrollTarget {
 	origin: HTMLElement
 }
 
-const cellContains = (cell: HTMLElement, instant: number): boolean => {
-	const start = dayjs(cell.dataset.start ?? '').valueOf()
-	const end = dayjs(cell.dataset.end ?? '').valueOf()
-	return start <= instant && instant < end
-}
+// A missing attribute reads as `''`, which dayjs parses as invalid, so the cell
+// overlaps nothing. `dayjs(undefined)` would read as now and match every time.
+const readCellInterval = (cell: HTMLElement): { start: Dayjs; end: Dayjs } => ({
+	start: dayjs(cell.dataset.start ?? ''),
+	end: dayjs(cell.dataset.end ?? ''),
+})
 
 /**
  * The cell holding the current moment, whatever the grid's resolution: an hour
@@ -89,8 +91,12 @@ const findNowTarget = (viewport: HTMLElement): ScrollTarget | null => {
 		viewport.querySelectorAll<HTMLElement>(TIMED_CELL_SELECTOR)
 	)
 	const origin = cells.at(0)
-	const now = dayjs().valueOf()
-	const target = cells.find((cell) => cellContains(cell, now))
+	const now = dayjs()
+	// A zero-length range at now: a cell overlaps it exactly when its start is
+	// at or before now and its exclusive end after it.
+	const target = cells.find((cell) =>
+		overlapsRange(readCellInterval(cell), now, now)
+	)
 	if (!origin || !target) {
 		return null
 	}
@@ -128,30 +134,19 @@ const scrollViewportToRow = (
 	// sticky column.
 	const targetRect = targetRow.getBoundingClientRect()
 	const firstRect = firstRow.getBoundingClientRect()
-
-	if (axis === 'horizontal') {
-		viewport.scrollTo({
-			left: targetRect.left - firstRect.left,
-			behavior: 'auto',
-		})
-		return
-	}
-
-	viewport.scrollTo({
-		top: targetRect.top - firstRect.top,
-		behavior: 'auto',
-	})
+	const horizontalOffset = targetRect.left - firstRect.left
+	const verticalOffset = targetRect.top - firstRect.top
+	const offset = axis === 'horizontal' ? horizontalOffset : verticalOffset
+	scrollViewportAlong(viewport, axis, offset)
 }
 
-const scrollViewportToStart = (
+const scrollViewportAlong = (
 	viewport: HTMLElement,
-	axis: ScrollToTimeAxis
+	axis: ScrollToTimeAxis,
+	offset: number
 ) => {
-	if (axis === 'horizontal') {
-		viewport.scrollTo({ left: 0, behavior: 'auto' })
-		return
-	}
-	viewport.scrollTo({ top: 0, behavior: 'auto' })
+	const edge = axis === 'horizontal' ? 'left' : 'top'
+	viewport.scrollTo({ [edge]: offset, behavior: 'auto' })
 }
 
 /**
@@ -181,7 +176,7 @@ const applyScroll = (
 		// A range without now, and no scrollTime to fall back to: open on the
 		// range start, as FullCalendar does, rather than keeping the offset the
 		// previous range scrolled to.
-		scrollViewportToStart(viewport, axis)
+		scrollViewportAlong(viewport, axis, 0)
 		return true
 	}
 	return false
@@ -198,7 +193,7 @@ export const useScrollToTime = ({
 	const lastScrolledKeyRef = useRef<string | null>(null)
 
 	useEffect(() => {
-		if (!enabled || (!scrollTime && !scrollToNow)) {
+		if (!enabled) {
 			return
 		}
 		// Scroll once per date range and setting, never on an ordinary re-render,

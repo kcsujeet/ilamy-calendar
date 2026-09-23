@@ -60,13 +60,18 @@ Canonical: `packages/calendar/src/features/calendar/components/views/resource-we
 
 ## Posting in this repo
 
-Not a gate; it applies when the user asks to post. A PreToolUse hook (`.claude/hooks/check-pr-post-approval.sh`) blocks any `gh` command that posts unless the same Bash command contains `touch .claude/state/pr-post-approved.flag` before the `gh` part, and only after a fresh "post it" in the user's latest message:
+Not a gate; it applies when the user asks to post. Two PreToolUse hooks guard GitHub writes here, and both must pass:
+
+- **This repo's hook** (`.claude/hooks/check-pr-post-approval.sh`) blocks any `gh` command that posts public content (PR and issue comments, reviews, `gh pr create`, `gh issue create`) unless the same Bash command contains `touch .claude/state/pr-post-approved.flag` before the `gh` part.
+- **The kc-claude-kit code-review hook** blocks GitHub review writes (`gh pr comment`, `gh pr review`, `gh issue comment`, and `gh api` writes to comments or reviews) unless the command carries `KC_REVIEW_POST_APPROVED=1`. It does not cover `gh pr create` or issue creation, which is why this repo keeps its own hook.
+
+Both markers are typed only after a fresh "post it" in the user's latest message. A review comment therefore needs both:
 
 ```bash
-touch .claude/state/pr-post-approved.flag && gh api repos/kcsujeet/ilamy-calendar/pulls/<N>/comments -X POST --input <file>
+touch .claude/state/pr-post-approved.flag && KC_REVIEW_POST_APPROVED=1 gh api repos/kcsujeet/ilamy-calendar/pulls/<N>/comments -X POST --input <file>
 ```
 
-Inline comments anchored to a line are the default; a top-level body is written only when it says something the inline comments do not.
+Draft comments with `/code-review:post-review`, which validates each comment's file and line against the diff (`build-comment-payloads.sh`) and prints the exact commands to approve. Inline comments anchored to a line are the default; a top-level body is written only when it says something the inline comments do not.
 
 ## Gate checklist
 

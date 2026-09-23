@@ -410,6 +410,7 @@ export interface IlamyCalendarProps {
 	 * Reapplied whenever the visible date range changes (navigation, view
 	 * switch) and whenever `scrollTime` itself changes, as FullCalendar does.
 	 * Ordinary re-renders leave the user's own scroll position alone.
+	 * `scrollToNow` takes precedence while the current moment is on screen.
 	 *
 	 * Independent of `businessHours`: you can show all 24 hours and still
 	 * focus on 08:00 on load.
@@ -428,6 +429,32 @@ export interface IlamyCalendarProps {
 	 * ```
 	 */
 	scrollTime?: string
+	/**
+	 * Open every scrolling grid on the current moment rather than its start:
+	 * the current hour in time grids (day, week, resource day, hourly resource
+	 * week), and today's column or row in day grids (resource month, daily
+	 * resource week, #285). Month and year grids do not scroll, so it does
+	 * nothing there.
+	 *
+	 * Applies only while now is on screen. On a range without it (after
+	 * navigating away, or when the current hour or day is hidden) the grid
+	 * falls back to `scrollTime`, or to its start. Like `scrollTime`, it is
+	 * applied when the range changes and when this prop changes, not as the
+	 * clock moves, so it never pulls the grid away from a reader. "Now" is the
+	 * current instant; the calendar's `timezone` only decides how it is drawn.
+	 *
+	 * Now is lined up with the leading edge, like `scrollTime`. Late in the day
+	 * or month there is not enough grid left to do that, and the browser stops
+	 * at its maximum scroll: now stays on screen, short of the edge. FullCalendar
+	 * behaves the same.
+	 *
+	 * Neither FullCalendar nor RFC 5545 defines this. FullCalendar's timeline
+	 * opens on the range start plus `scrollTime`, and its users reach today by
+	 * setting `scrollTime` themselves; this is that, done for them.
+	 *
+	 * @default false
+	 */
+	scrollToNow?: boolean
 	/**
 	 * Optional plugins that add behavior/UI (e.g. recurrence). The core ships
 	 * with no plugins by default — pass `recurrencePlugin()` to enable recurring

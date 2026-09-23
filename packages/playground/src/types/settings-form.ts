@@ -37,6 +37,7 @@ export interface PlaygroundSettings {
 	// the calendar's `scrollTime` prop in the display.
 	scrollTime: string
 	stickyViewHeader: boolean
+	scrollToNow: boolean
 	hideExportButton: boolean
 	hiddenDays: WeekDays[]
 
@@ -84,6 +85,7 @@ export const defaultSettings: PlaygroundSettings = {
 	slotDuration: 60,
 	scrollTime: 'none',
 	stickyViewHeader: true,
+	scrollToNow: false,
 	hideExportButton: false,
 	hiddenDays: [],
 	enableBusinessHours: true,

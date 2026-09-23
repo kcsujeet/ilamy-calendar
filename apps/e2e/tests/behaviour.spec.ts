@@ -300,3 +300,249 @@ test.describe('scrollTime', () => {
 		})
 	}
 })
+
+/**
+ * Where the viewport is scrolled to, next to where it would be if `target` sat
+ * exactly at the start of the scrollable time area. `origin` is the first
+ * element of that area, which sits right after any sticky resource column or
+ * header; scrolling by the distance between the two lines the target up with
+ * where the origin sat.
+ */
+const scrollAlignment = (
+	page: Page,
+	scrollTestId: string,
+	target: string,
+	origin: string,
+	axis: 'vertical' | 'horizontal'
+): Promise<{ scrolled: number; expected: number }> =>
+	page.evaluate(
+		({ scrollTestId, target, origin, axis }) => {
+			const viewport = document.querySelector(
+				`[data-testid="${scrollTestId}"] [data-radix-scroll-area-viewport]`
+			)
+			const targetEl = viewport?.querySelector(target)
+			const originEl = viewport?.querySelector(origin)
+			if (!viewport || !targetEl || !originEl) {
+				throw new Error(`missing ${target} or ${origin} in ${scrollTestId}`)
+			}
+			const targetRect = targetEl.getBoundingClientRect()
+			const originRect = originEl.getBoundingClientRect()
+			// Both rects move with the scroll, so their distance is the scroll
+			// offset that lines the target up with the origin's resting place.
+			if (axis === 'vertical') {
+				return {
+					scrolled: viewport.scrollTop,
+					expected: targetRect.top - originRect.top,
+				}
+			}
+			return {
+				scrolled: viewport.scrollLeft,
+				expected: targetRect.left - originRect.left,
+			}
+		},
+		{ scrollTestId, target, origin, axis }
+	)
+
+const TIMED_CELL = '[data-start]:not([data-all-day="true"])'
+const HOUR_ROW = '[data-hour]'
+
+test.describe('scrollToNow', () => {
+	// The pinned now is Wednesday 12 March 2025, 09:00 UTC. Each grid scrolls to
+	// the cell holding it: an hour row, an hour column, or a whole day. The
+	// height keeps every target clear of the end of the grid, where the browser
+	// would clamp the scroll.
+	const cases = [
+		{
+			name: 'week time grid',
+			scenario: 'basic',
+			view: 'week',
+			orientation: undefined,
+			settings: {},
+			scrollTestId: 'vertical-grid-scroll',
+			target: '[data-hour="09"]',
+			origin: HOUR_ROW,
+			axis: 'vertical',
+		},
+		{
+			name: 'resource day timeline',
+			scenario: 'resources',
+			view: 'day',
+			orientation: 'horizontal',
+			settings: {},
+			scrollTestId: 'horizontal-grid-scroll',
+			target: '[data-hour="09"]',
+			origin: HOUR_ROW,
+			axis: 'horizontal',
+		},
+		{
+			name: 'hourly resource week timeline',
+			scenario: 'resources',
+			view: 'week',
+			orientation: 'horizontal',
+			settings: { granularity: 'hourly' },
+			scrollTestId: 'horizontal-grid-scroll',
+			target: '[data-start="2025-03-12T09:00:00.000Z"]',
+			origin: TIMED_CELL,
+			axis: 'horizontal',
+		},
+		{
+			name: 'resource month timeline (#285)',
+			scenario: 'resources',
+			view: 'month',
+			orientation: 'horizontal',
+			settings: {},
+			scrollTestId: 'horizontal-grid-scroll',
+			target: '[data-start="2025-03-12T00:00:00.000Z"]',
+			origin: TIMED_CELL,
+			axis: 'horizontal',
+		},
+		{
+			// The one grid whose all-day row sits inside the scroll area: its
+			// all-day cells hold now too, and must not be taken for the target.
+			name: 'vertical resource day',
+			scenario: 'resources',
+			view: 'day',
+			orientation: 'vertical',
+			settings: {},
+			scrollTestId: 'vertical-grid-scroll',
+			target: '[data-hour="09"]',
+			origin: HOUR_ROW,
+			axis: 'vertical',
+		},
+		{
+			name: 'vertical resource month',
+			scenario: 'resources',
+			view: 'month',
+			orientation: 'vertical',
+			settings: {},
+			scrollTestId: 'vertical-grid-scroll',
+			target: '[data-start="2025-03-12T00:00:00.000Z"]',
+			origin: TIMED_CELL,
+			axis: 'vertical',
+		},
+	] as const
+
+	for (const c of cases) {
+		test(`the ${c.name} opens on now`, async ({ page }) => {
+			await gotoScenario(page, {
+				scenario: c.scenario,
+				view: c.view,
+				orientation: c.orientation,
+				settings: { ...c.settings, scrollToNow: 'true', height: '500px' },
+			})
+
+			const { scrolled, expected } = await scrollAlignment(
+				page,
+				c.scrollTestId,
+				c.target,
+				c.origin,
+				c.axis
+			)
+			expect(expected).toBeGreaterThan(0)
+			// Within a pixel: a column 81px wide lands on fractional offsets.
+			expect(scrolled).toBeCloseTo(expected, 0)
+		})
+	}
+
+	test('a week without now falls back to scrollTime', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { scrollToNow: 'true', scrollTime: '06:00', height: '500px' },
+		})
+		await new CalendarPage(page).next()
+
+		await expect
+			.poll(async () => {
+				const { scrolled, expected } = await scrollAlignment(
+					page,
+					'vertical-grid-scroll',
+					'[data-hour="06"]',
+					HOUR_ROW,
+					'vertical'
+				)
+				return scrolled - expected
+			})
+			.toBe(0)
+	})
+
+	// The scenario sets scrollTime 08:00, which a day grid has no hour to aim at,
+	// so the grid has to open on its first day rather than where today was.
+	const monthsWithoutNow = [
+		{ orientation: 'horizontal', scrollTestId: 'horizontal-grid-scroll' },
+		{ orientation: 'vertical', scrollTestId: 'vertical-grid-scroll' },
+	] as const
+
+	for (const { orientation, scrollTestId } of monthsWithoutNow) {
+		test(`a ${orientation} resource month without now opens on its first day`, async ({
+			page,
+		}) => {
+			await gotoScenario(page, {
+				scenario: 'resources',
+				view: 'month',
+				orientation,
+				settings: { scrollToNow: 'true', height: '500px' },
+			})
+			await new CalendarPage(page).next()
+
+			const viewport = page.locator(
+				`[data-testid="${scrollTestId}"] [data-radix-scroll-area-viewport]`
+			)
+			await expect
+				.poll(() => viewport.evaluate((el) => el.scrollLeft + el.scrollTop))
+				.toBe(0)
+		})
+	}
+
+	test('turning it on for a mounted calendar scrolls straight away', async ({
+		page,
+	}) => {
+		// The scenario's scrollTime has already scrolled this range to 08:00, so
+		// the range alone no longer justifies a scroll; the setting has to.
+		await gotoScenario(page, {
+			scenario: 'resources',
+			view: 'day',
+			orientation: 'horizontal',
+			settings: { height: '500px' },
+		})
+
+		await setSettings(page, { scrollToNow: 'true' })
+
+		await expect
+			.poll(async () => {
+				const { scrolled, expected } = await scrollAlignment(
+					page,
+					'horizontal-grid-scroll',
+					'[data-hour="09"]',
+					HOUR_ROW,
+					'horizontal'
+				)
+				return Math.round(scrolled - expected)
+			})
+			.toBe(0)
+	})
+
+	test('an ordinary re-render leaves the reader where they scrolled', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'resources',
+			view: 'month',
+			orientation: 'horizontal',
+			settings: { scrollToNow: 'true', height: '500px' },
+		})
+		const viewport = page.locator(
+			'[data-testid="horizontal-grid-scroll"] [data-radix-scroll-area-viewport]'
+		)
+		await viewport.evaluate((el) => {
+			el.scrollLeft = 40
+		})
+
+		// A setting the scroll does not depend on: the calendar re-renders, the
+		// range and now are unchanged, so nothing should move.
+		await setSettings(page, { dayMaxEvents: 2 })
+		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
+
+		expect(await viewport.evaluate((el) => el.scrollLeft)).toBe(40)
+	})
+})

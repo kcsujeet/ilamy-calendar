@@ -77,6 +77,7 @@ type SharedCalendarProps = {
 	initialDate: Dayjs | undefined
 	locale: string
 	scrollTime: string | undefined
+	scrollToNow: boolean
 	slotDuration: SlotDuration
 	stickyViewHeader: boolean
 	timeFormat: TimeFormat
@@ -143,6 +144,7 @@ function RegularCalendar({
 			renderEventForm={shared.renderEventForm}
 			renderHour={shared.renderHour}
 			scrollTime={shared.scrollTime}
+			scrollToNow={shared.scrollToNow}
 			slotDuration={shared.slotDuration}
 			stickyViewHeader={shared.stickyViewHeader}
 			timeFormat={shared.timeFormat}
@@ -209,6 +211,7 @@ function ResourceCalendar({
 			renderResource={renderResource}
 			resources={activeResources}
 			scrollTime={shared.scrollTime}
+			scrollToNow={shared.scrollToNow}
 			slotDuration={shared.slotDuration}
 			stickyViewHeader={shared.stickyViewHeader}
 			timeFormat={shared.timeFormat}
@@ -259,6 +262,7 @@ function resolveSharedCalendarProps(
 		initialDate: values.initialDate ? dayjs(values.initialDate) : undefined,
 		locale: values.locale,
 		scrollTime: values.scrollTime === 'none' ? undefined : values.scrollTime,
+		scrollToNow: values.scrollToNow,
 		slotDuration: values.slotDuration,
 		stickyViewHeader: values.stickyViewHeader,
 		timeFormat: values.timeFormat,

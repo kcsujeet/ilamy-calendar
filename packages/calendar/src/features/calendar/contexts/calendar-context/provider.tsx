@@ -70,6 +70,7 @@ export interface CalendarProviderProps {
 	hiddenDays?: Set<number>
 	slotDuration?: SlotDuration
 	scrollTime?: string
+	scrollToNow?: boolean
 	plugins?: IlamyPlugin[]
 	/** The resource axis. Absent/empty → a regular calendar (no filtering, no resource columns). */
 	resources?: Resource[]
@@ -133,6 +134,7 @@ const useCalendarContextValue = (
 		hiddenDays,
 		slotDuration = 60,
 		scrollTime,
+		scrollToNow,
 		plugins,
 		resources,
 		renderResource,
@@ -202,6 +204,7 @@ const useCalendarContextValue = (
 			hiddenDays,
 			slotDuration,
 			scrollTime,
+			scrollToNow,
 			renderResource,
 		}
 	}, [
@@ -232,6 +235,7 @@ const useCalendarContextValue = (
 		hiddenDays,
 		slotDuration,
 		scrollTime,
+		scrollToNow,
 	])
 }
 

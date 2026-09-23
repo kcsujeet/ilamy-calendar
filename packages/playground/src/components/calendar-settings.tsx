@@ -399,6 +399,7 @@ export function CalendarSettings() {
 					options={SCROLL_TIME_OPTIONS}
 				/>
 
+				<FormCheckbox label="Scroll to now" name="scrollToNow" />
 				<FormCheckbox label="Enable sticky header" name="stickyViewHeader" />
 				<FormCheckbox label="Hide export button" name="hideExportButton" />
 

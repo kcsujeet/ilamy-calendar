@@ -388,6 +388,27 @@ Add a scenario to `src/scenarios.ts` when a fixture is genuinely new. Reach for
 a query parameter first — most "new cases" are an existing fixture under a
 different setting.
 
+## Code review
+
+Reviews use the `code-review:review-code` skill from the `kc-claude-kit` plugin
+([source](https://github.com/kcsujeet/kc-claude-kit/tree/main/plugins/code-review)),
+which the `SessionStart` hook above installs. It triggers on "review this PR", a PR URL
+or a branch name, runs one gate agent per rule file, and never posts to GitHub on its
+own. Two competitors are switched off for this repo in `.claude/settings.json`: the
+official `code-review@claude-plugins-official` plugin (`enabledPlugins: false`) and
+Claude Code's bundled `/code-review` (`skillOverrides`, which applies to bundled skills
+but not plugin ones, per the [skills docs](https://code.claude.com/docs/en/skills)).
+
+The kit's rules are generic. What is specific to this repo (the RFC 5545 / FullCalendar
+standard, the configured dayjs, package boundaries, unit + e2e coverage, the dev log,
+linked issues, the posting ritual) lives in `.agents/review-conventions.md`, read by the
+kit's `project-conventions` gate as `.claude/review-conventions.md`. A new review rule
+for this repo goes there, not into the kit.
+
+The plugin is Claude Code only. Gemini CLI and Antigravity load no review skill here; when
+reviewing, walk the `## Gate checklist` in `.agents/review-conventions.md` and the rules
+it points to.
+
 ## Git Workflow
 
 1. Create a feature branch

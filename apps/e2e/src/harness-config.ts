@@ -36,6 +36,12 @@ export interface UrlConfig {
 	locale?: string
 	/** Harness-only: the height of the box the calendar is given. */
 	height?: string
+	/**
+	 * Harness-only: a custom `renderEvent` to draw events with. `sticky-title`
+	 * is the pattern the docs give consumers for keeping their own title in
+	 * view, so the custom properties it reads are pinned as public contract.
+	 */
+	renderEventVariant?: 'sticky-title'
 }
 
 /** Raised for a value the URL got wrong, so the harness can show it rather than guess. */
@@ -223,6 +229,16 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const height = get('height')
 	if (height !== null) {
 		config.height = height
+	}
+
+	const renderEventVariant = get('renderEventVariant')
+	if (renderEventVariant !== null) {
+		config.renderEventVariant = oneOf(
+			'renderEventVariant',
+			renderEventVariant,
+			['sticky-title'] as const,
+			String
+		)
 	}
 
 	return config

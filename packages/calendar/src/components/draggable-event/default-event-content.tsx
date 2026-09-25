@@ -5,6 +5,7 @@ import {
 	getEventSurfaceClasses,
 	getEventSurfaceRadius,
 	getEventSurfaceStyle,
+	STICKY_TITLE_CLASS,
 } from '@/lib/utils/event-surface'
 
 export interface DefaultEventContentProps {
@@ -47,6 +48,7 @@ export function DefaultEventContent({
 			<p
 				className={cn(
 					'text-[10px] font-semibold sm:text-xs mt-0.5',
+					STICKY_TITLE_CLASS[axis],
 					// Add slight padding to avoid overlap with indicators
 					showStartMarker && 'pl-1',
 					showEndMarker && 'pr-1'

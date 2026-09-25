@@ -1,6 +1,7 @@
 import { cn } from '@ilamy/ui/lib/utils'
 import { memo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { getHeaderStickyInset } from '@/hooks/use-sticky-insets'
 
 interface VerticalGridHeaderContainerProps {
 	children?: React.ReactNode
@@ -26,6 +27,7 @@ const NoMemoVerticalGridHeaderContainer: React.FC<
 				stickyViewHeader && 'sticky top-0 z-21 bg-background', // Z-index above the left sticky resource column
 				viewHeaderClassName
 			)}
+			data-sticky-inset={getHeaderStickyInset(stickyViewHeader)}
 		>
 			<div
 				className={cn('min-h-12 border-b', TotalWidthClass, classes?.header)}

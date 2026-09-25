@@ -110,7 +110,10 @@ export const App = () => {
 
 	// The URL wins over the scenario's own settings, so a fixture can be pushed
 	// into a configuration it was not written for without editing it.
-	const { height, ...calendarConfig } = { ...scenario.config, ...urlConfig }
+	const { height, renderEventVariant, ...calendarConfig } = {
+		...scenario.config,
+		...urlConfig,
+	}
 	const resources = scenario.resources ? [...scenario.resources] : undefined
 
 	return (
@@ -120,6 +123,7 @@ export const App = () => {
 			height={height}
 			orientation={orientation ?? undefined}
 			plugins={plugins}
+			renderEventVariant={renderEventVariant}
 			resources={resources}
 			scenario={scenario}
 			timezone={timezone}
@@ -140,9 +144,12 @@ const useLocationSearch = (): string => {
 	return search
 }
 
+type HarnessOnly = 'height' | 'renderEventVariant'
+
 interface HarnessProps {
-	config: Omit<ReturnType<typeof readUrlConfig>, 'height'>
+	config: Omit<ReturnType<typeof readUrlConfig>, HarnessOnly>
 	date: string
+	renderEventVariant?: ReturnType<typeof readUrlConfig>['renderEventVariant']
 	height?: string
 	orientation?: Orientation
 	plugins: IlamyPlugin[]
@@ -165,6 +172,7 @@ interface HarnessProps {
 const Harness: React.FC<HarnessProps> = ({
 	config,
 	date,
+	renderEventVariant,
 	height,
 	orientation,
 	plugins,
@@ -204,6 +212,9 @@ const Harness: React.FC<HarnessProps> = ({
 				onEventUpdate={handleUpdate}
 				orientation={orientation}
 				plugins={plugins}
+				renderEvent={
+					renderEventVariant === 'sticky-title' ? renderStickyTitle : undefined
+				}
 				resources={resources}
 				timezone={timezone}
 			/>
@@ -214,6 +225,29 @@ const Harness: React.FC<HarnessProps> = ({
 		</div>
 	)
 }
+
+/**
+ * The custom-renderer pattern from the docs: the renderer owns its markup, so
+ * it opts its title into sticking by reading the offsets the grid publishes.
+ * Inline styles rather than Tailwind, since a consumer need not use Tailwind.
+ */
+const renderStickyTitle = (event: CalendarEvent) => (
+	<div style={{ height: '100%', background: '#dbeafe', padding: '0 4px' }}>
+		<span
+			style={{
+				position: 'sticky',
+				left: 'var(--ilamy-sticky-left)',
+				top: 'var(--ilamy-sticky-top)',
+				display: 'inline-block',
+				maxWidth: '100%',
+				// Small enough to fit an 80px resource column with room to slide.
+				fontSize: '10px',
+			}}
+		>
+			{event.title}
+		</span>
+	</div>
+)
 
 /** Renders the mistake rather than a plausible-looking wrong screen. */
 const Problem = ({ children }: { children: React.ReactNode }) => (

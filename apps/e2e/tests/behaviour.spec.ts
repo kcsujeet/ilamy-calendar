@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Locator, type Page, test } from '@playwright/test'
 import { gotoScenario, setSettings } from './support/harness'
 import { CalendarPage, MonthGrid, TimeGrid } from './support/pages'
 
@@ -552,5 +552,412 @@ test.describe('scrollToNow', () => {
 		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
 
 		expect(await viewport.evaluate((el) => el.scrollLeft)).toBe(40)
+	})
+})
+
+/**
+ * Where an event's title sits against the edge a reader can see, after the
+ * grid is scrolled `scrollBy` pixels along `axis`. The edge is the far side of
+ * the grid's own sticky column or header (`inset`), or the viewport itself when
+ * nothing sticks there. Rounded: column widths land on fractional pixels.
+ */
+interface TitleGeometryQuery {
+	scrollTestId: string
+	barTestId: string
+	title: string
+	axis: 'horizontal' | 'vertical'
+	scrollBy: number
+	/** The grid's sticky column or header; absent, the viewport's own edge. */
+	inset?: (page: Page) => Locator
+}
+
+const titleGeometry = async (page: Page, c: TitleGeometryQuery) => {
+	const viewport = page.locator(scrollViewportSelector(c.scrollTestId))
+	await viewport.evaluate(
+		(el, { axis, scrollBy }) => {
+			if (axis === 'horizontal') {
+				el.scrollLeft = scrollBy
+			} else {
+				el.scrollTop = scrollBy
+			}
+		},
+		{ axis: c.axis, scrollBy: c.scrollBy }
+	)
+
+	const bar = page.getByTestId(c.barTestId)
+	const title = bar.getByText(c.title, { exact: true })
+	const [barBox, titleBox, edgeBox] = await Promise.all([
+		bar.boundingBox(),
+		title.boundingBox(),
+		(c.inset ? c.inset(page) : viewport).boundingBox(),
+	])
+	if (!barBox || !titleBox || !edgeBox) {
+		throw new Error(`"${c.title}" or its edge is not on screen`)
+	}
+
+	const isHorizontal = c.axis === 'horizontal'
+	const start = (box: typeof barBox) => (isHorizontal ? box.x : box.y)
+	const size = (box: typeof barBox) => (isHorizontal ? box.width : box.height)
+	// A sticky column or header hides everything up to its far side; with
+	// none, the reader sees from the viewport's own leading edge.
+	const edge = c.inset ? start(edgeBox) + size(edgeBox) : start(edgeBox)
+
+	return {
+		barStart: Math.round(start(barBox) - edge),
+		titleStart: Math.round(start(titleBox) - edge),
+		titleEnd: Math.round(start(titleBox) + size(titleBox) - edge),
+		barEnd: Math.round(start(barBox) + size(barBox) - edge),
+	}
+}
+
+const resourceLabel = (resourceId: string) => (page: Page) =>
+	page.getByTestId(`horizontal-row-label-${resourceId}`)
+
+test.describe('sticky event titles (#290)', () => {
+	// FullCalendar's default event content puts `fc-sticky` on the title
+	// (core/src/common/StandardEvent.tsx), pinned with `left: 0` on horizontal
+	// bars (h-event.css) and `top: 0` on time-grid bars (v-event.css). Ours
+	// clears the grid's own sticky column or header rather than the raw edge,
+	// because in a resource grid those sit inside the same scroller. The default
+	// title then keeps the gap it has unscrolled (4px beside, 2px below the
+	// edge); a custom renderer offsets by the bare properties, so sits flush.
+	const cases = [
+		{
+			name: 'resource month timeline',
+			scenario: 'long-resource-events',
+			view: 'month',
+			orientation: 'horizontal',
+			settings: {},
+			scrollTestId: 'horizontal-grid-scroll',
+			barTestId: 'horizontal-event-long-res-1',
+			title: 'Site survey',
+			axis: 'horizontal',
+			expectedTitleStart: 4,
+			scrollBy: 400,
+			inset: resourceLabel('r1'),
+		},
+		{
+			name: 'resource day timeline',
+			scenario: 'long-resource-events',
+			view: 'day',
+			orientation: 'horizontal',
+			settings: {},
+			scrollTestId: 'horizontal-grid-scroll',
+			barTestId: 'horizontal-event-long-res-2',
+			title: 'Long shift',
+			axis: 'horizontal',
+			expectedTitleStart: 4,
+			scrollBy: 500,
+			inset: resourceLabel('r2'),
+		},
+		{
+			name: 'week time grid',
+			scenario: 'long-events',
+			view: 'week',
+			orientation: undefined,
+			settings: {},
+			scrollTestId: 'vertical-grid-scroll',
+			barTestId: 'vertical-event-long-1',
+			title: 'Long shift',
+			axis: 'vertical',
+			expectedTitleStart: 2,
+			scrollBy: 600,
+			inset: undefined,
+		},
+		{
+			name: 'day time grid',
+			scenario: 'long-events',
+			view: 'day',
+			orientation: undefined,
+			settings: {},
+			scrollTestId: 'vertical-grid-scroll',
+			barTestId: 'vertical-event-long-1',
+			title: 'Long shift',
+			axis: 'vertical',
+			expectedTitleStart: 2,
+			scrollBy: 600,
+			inset: undefined,
+		},
+		{
+			// The header, all-day row included, sticks inside this scroller.
+			name: 'vertical resource week',
+			scenario: 'long-resource-events',
+			view: 'week',
+			orientation: 'vertical',
+			settings: {},
+			scrollTestId: 'vertical-grid-scroll',
+			barTestId: 'vertical-event-long-res-2',
+			title: 'Long shift',
+			axis: 'vertical',
+			expectedTitleStart: 2,
+			scrollBy: 600,
+			inset: (page: Page) => page.getByTestId('vertical-grid-all-day'),
+		},
+		{
+			name: 'vertical resource day',
+			scenario: 'long-resource-events',
+			view: 'day',
+			orientation: 'vertical',
+			settings: {},
+			scrollTestId: 'vertical-grid-scroll',
+			barTestId: 'vertical-event-long-res-2',
+			title: 'Long shift',
+			axis: 'vertical',
+			expectedTitleStart: 2,
+			scrollBy: 600,
+			inset: (page: Page) => page.getByTestId('vertical-grid-all-day'),
+		},
+		{
+			// Without a sticky header nothing covers the top of the scroller, so
+			// the title has only the viewport's own edge to clear.
+			name: 'vertical resource day without a sticky header',
+			scenario: 'long-resource-events',
+			view: 'day',
+			orientation: 'vertical',
+			settings: { stickyViewHeader: 'false' },
+			scrollTestId: 'vertical-grid-scroll',
+			barTestId: 'vertical-event-long-res-2',
+			title: 'Long shift',
+			axis: 'vertical',
+			expectedTitleStart: 2,
+			scrollBy: 600,
+			inset: undefined,
+		},
+		{
+			// The all-day row scrolls sideways under its own sticky "All day" cell.
+			name: 'vertical resource week all-day row',
+			scenario: 'long-resource-events',
+			view: 'week',
+			orientation: 'vertical',
+			settings: {},
+			scrollTestId: 'vertical-grid-scroll',
+			barTestId: 'horizontal-event-long-res-1',
+			title: 'Site survey',
+			axis: 'horizontal',
+			expectedTitleStart: 4,
+			scrollBy: 200,
+			inset: (page: Page) =>
+				page
+					.getByTestId('vertical-grid-all-day')
+					.getByText('All day', { exact: true })
+					.locator('..'),
+		},
+		{
+			// A custom renderer owns its markup, so nothing of ours sticks in it.
+			// It opts in by reading the published offsets, as the docs show.
+			name: 'resource month timeline with a custom renderer',
+			scenario: 'long-resource-events',
+			view: 'month',
+			orientation: 'horizontal',
+			settings: { renderEventVariant: 'sticky-title' },
+			scrollTestId: 'horizontal-grid-scroll',
+			barTestId: 'horizontal-event-long-res-1',
+			title: 'Site survey',
+			axis: 'horizontal',
+			expectedTitleStart: 0,
+			scrollBy: 400,
+			inset: resourceLabel('r1'),
+		},
+		{
+			name: 'vertical resource day with a custom renderer',
+			scenario: 'long-resource-events',
+			view: 'day',
+			orientation: 'vertical',
+			settings: { renderEventVariant: 'sticky-title' },
+			scrollTestId: 'vertical-grid-scroll',
+			barTestId: 'vertical-event-long-res-2',
+			title: 'Long shift',
+			axis: 'vertical',
+			expectedTitleStart: 0,
+			scrollBy: 600,
+			inset: (page: Page) => page.getByTestId('vertical-grid-all-day'),
+		},
+	] as const
+
+	for (const c of cases) {
+		test(`the ${c.name} keeps a scrolled event's title in view`, async ({
+			page,
+		}) => {
+			await gotoScenario(page, {
+				scenario: c.scenario,
+				view: c.view,
+				orientation: c.orientation,
+				settings: { ...c.settings, height: '500px' },
+			})
+
+			await expect
+				.poll(async () => {
+					const { barStart, titleStart } = await titleGeometry(page, c)
+					return { barRunsUnderEdge: barStart < 0, titleStart }
+				})
+				.toEqual({ barRunsUnderEdge: true, titleStart: c.expectedTitleStart })
+		})
+	}
+
+	test('a grid with only its time gutter publishes the gutter as its sticky column', async ({
+		page,
+	}) => {
+		// A vertical resource month has no all-day row, so its date gutter is
+		// the only thing sticking to the left. 200px wide is narrow enough for
+		// its three resource columns to scroll sideways under it.
+		await page.setViewportSize({ width: 200, height: 700 })
+		await gotoScenario(page, {
+			scenario: 'long-resource-events',
+			view: 'month',
+			orientation: 'vertical',
+			settings: { renderEventVariant: 'sticky-title', height: '500px' },
+		})
+
+		await expect
+			.poll(async () => {
+				const { barStart, titleStart } = await titleGeometry(page, {
+					scrollTestId: 'vertical-grid-scroll',
+					barTestId: 'vertical-event-long-res-2',
+					title: 'Long shift',
+					axis: 'horizontal',
+					scrollBy: 93,
+					inset: (page: Page) => page.getByTestId('vertical-col-date-col'),
+				})
+				return { barRunsUnderEdge: barStart < 0, titleStart }
+			})
+			.toEqual({ barRunsUnderEdge: true, titleStart: 0 })
+	})
+
+	test("a dragged event's mirror keeps its title in view", async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'long-resource-events',
+			view: 'month',
+			orientation: 'horizontal',
+			settings: { height: '500px' },
+		})
+		const viewport = page.locator(
+			scrollViewportSelector('horizontal-grid-scroll')
+		)
+		await viewport.evaluate((el) => {
+			el.scrollLeft = 600
+		})
+		const [barBox, labelBox] = await Promise.all([
+			page.getByTestId('horizontal-event-long-res-1').boundingBox(),
+			resourceLabel('r1')(page).boundingBox(),
+		])
+		if (!barBox || !labelBox) {
+			throw new Error('"Site survey" or its resource label is not on screen')
+		}
+
+		// Grabbed in the middle of what is visible, then one day column to the
+		// RIGHT, in steps so the drag sensor activates: the mirror still starts
+		// under the resource column. Leftward would near the scroller's edge,
+		// where the drag auto-scrolls the grid and pulls the mirror into view.
+		const visibleStart = labelBox.x + labelBox.width
+		const grabX = (visibleStart + barBox.x + barBox.width) / 2
+		const grabY = barBox.y + barBox.height / 2
+		await page.mouse.move(grabX, grabY)
+		await page.mouse.down()
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(grabX + (81 * step) / 8, grabY)
+		}
+
+		const mirror = new CalendarPage(page).dragMirror
+		await expect
+			.poll(async () => {
+				const [mirrorBox, titleBox, labelBox] = await Promise.all([
+					mirror.boundingBox(),
+					mirror.getByText('Site survey', { exact: true }).boundingBox(),
+					resourceLabel('r1')(page).boundingBox(),
+				])
+				if (!mirrorBox || !titleBox || !labelBox) {
+					return undefined
+				}
+				const edge = labelBox.x + labelBox.width
+				return {
+					mirrorRunsUnderEdge: mirrorBox.x < edge,
+					titleStart: Math.round(titleBox.x - edge),
+				}
+			})
+			.toEqual({ mirrorRunsUnderEdge: true, titleStart: 4 })
+		await page.mouse.up()
+	})
+
+	test("a dragged time-grid event's mirror keeps its title in view", async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'long-events',
+			view: 'week',
+			settings: { height: '500px' },
+		})
+		const viewport = page.locator(
+			scrollViewportSelector('vertical-grid-scroll')
+		)
+		await viewport.evaluate((el) => {
+			el.scrollTop = 600
+		})
+		const [barBox, viewportBox] = await Promise.all([
+			page.getByTestId('vertical-event-long-1').boundingBox(),
+			viewport.boundingBox(),
+		])
+		if (!barBox || !viewportBox) {
+			throw new Error('"Long shift" is not on screen')
+		}
+
+		// One hour down from the middle of what is visible, clear of the edges
+		// where the drag would auto-scroll the grid.
+		const grabX = barBox.x + barBox.width / 2
+		const grabY = (viewportBox.y + barBox.y + barBox.height) / 2
+		await page.mouse.move(grabX, grabY)
+		await page.mouse.down()
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(grabX, grabY + (61 * step) / 8)
+		}
+
+		// The segment in the start's column: a time grid draws one mirror per
+		// day column the drop would span.
+		const mirror = page
+			.getByTestId('vertical-events-day-col-2025-03-12')
+			.getByTestId('event-drag-preview-vertical')
+		await expect
+			.poll(async () => {
+				const [mirrorBox, titleBox, edgeBox] = await Promise.all([
+					mirror.boundingBox(),
+					mirror.getByText('Long shift', { exact: true }).boundingBox(),
+					viewport.boundingBox(),
+				])
+				if (!mirrorBox || !titleBox || !edgeBox) {
+					return undefined
+				}
+				return {
+					mirrorRunsUnderEdge: mirrorBox.y < edgeBox.y,
+					titleStart: Math.round(titleBox.y - edgeBox.y),
+				}
+			})
+			.toEqual({ mirrorRunsUnderEdge: true, titleStart: 2 })
+		await page.mouse.up()
+	})
+
+	test('a title never leaves its own bar', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'long-resource-events',
+			view: 'month',
+			orientation: 'horizontal',
+			settings: { height: '500px' },
+		})
+
+		// Scrolled until only the last few pixels of the bar are left in view:
+		// the title is pushed against its bar's end rather than past it.
+		await expect
+			.poll(async () => {
+				const { titleEnd, barEnd } = await titleGeometry(page, {
+					scrollTestId: 'horizontal-grid-scroll',
+					barTestId: 'horizontal-event-long-res-1',
+					title: 'Site survey',
+					axis: 'horizontal',
+					// Leaves the last 30px of the bar beside the resource column.
+					scrollBy: 942,
+					inset: resourceLabel('r1'),
+				})
+				return { titleEnd, barEnd }
+			})
+			// 5px short of the bar's end: the content's padding and border.
+			.toEqual({ titleEnd: 22, barEnd: 27 })
 	})
 })

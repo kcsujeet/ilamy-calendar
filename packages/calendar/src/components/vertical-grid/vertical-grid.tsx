@@ -3,6 +3,7 @@ import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { useRef } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useStickyInsets } from '@/hooks/use-sticky-insets'
 import { keys } from '@/lib/utils/keys'
 import { useScrollToTime } from './use-scroll-to-time'
 import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
@@ -56,6 +57,10 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 		enabled: hasRowsToScroll,
 		scrollKey: `${view}-${currentDate.format('YYYY-MM-DD')}`,
 	})
+
+	// Only a resource grid keeps its header inside the scroller; a regular
+	// grid's header sits above it and covers none of it.
+	useStickyInsets(viewportRef, columns.length)
 
 	const header = children && (
 		<VerticalGridHeaderContainer

@@ -243,6 +243,49 @@ holds the real end. Both are `true` for an event that fits in one row. The names
 and their meaning match FullCalendar's event render hook, so a renderer written
 against that behaves the same here.
 
+### Keeping the title in view
+
+When a long event is scrolled partly out of view (a booking that started
+before the visible part of a resource timeline, or a shift that began above
+the scrolled time grid), the default event content keeps its title on the
+visible part of the bar. The title slides along the bar and stops at its end,
+never past it, and the mirror drawn while you drag the event does the same.
+FullCalendar's default event content behaves the same way.
+
+A custom `renderEvent` owns its markup, so nothing in it sticks unless you ask.
+Each grid publishes how far its own sticky resource column and header reach
+into the scroll area, as two CSS custom properties on the scroll viewport:
+
+| Property | Value |
+|---|---|
+| `--ilamy-sticky-left` | Width of the grid's widest sticky column: the resource column, the time or date gutter, or the "All day" label |
+| `--ilamy-sticky-top` | Height of the grid's sticky header, `0px` when `stickyViewHeader` is off or the header sits outside the scroll area |
+
+Offset a sticky title by them. Offsetting it by `0` would pin it under the
+resource column instead of beside it:
+
+```tsx
+<IlamyCalendar
+  events={events}
+  renderEvent={(event) => (
+    <div className="h-full px-1 bg-blue-100 text-blue-800">
+      <span className="sticky left-(--ilamy-sticky-left) top-(--ilamy-sticky-top) inline-block max-w-full">
+        {event.title}
+      </span>
+    </div>
+  )}
+/>
+```
+
+- **`inline-block max-w-full`**: a title as wide as its bar has no room to slide.
+- **No `overflow: hidden` between the title and the bar.** A sticky element
+  sticks to its nearest ancestor with `overflow` set to `hidden`, `scroll`,
+  `auto` or `overlay`
+  ([MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/position#sticky)).
+  Under one of those it never moves. Use `overflow: clip` to hide overflow instead.
+- **Outside a grid (the "+N more" dialog, the drag overlay) the properties are
+  unset.** There `left`/`top` fall back to `auto`, so the title stays where it is.
+
 ### Custom Event Bar Height
 
 By default, event bars in month view are 24px tall — enough for a single line of text. Use `eventHeight` to increase the height and show more content, such as a title and time range on separate lines. Pair with `renderEvent` for full control over what's displayed.

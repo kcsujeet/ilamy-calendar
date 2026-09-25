@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
@@ -32,13 +32,14 @@ const mockRows = [
 	},
 ]
 
-const renderHorizontalGrid = (props = {}) => {
+const renderHorizontalGrid = (props = {}, providerProps = {}) => {
 	return render(
 		<CalendarProvider
 			dayMaxEvents={3}
 			events={[]}
 			initialDate={initialDate}
 			resources={[]}
+			{...providerProps}
 		>
 			<HorizontalGrid rows={mockRows} {...props}>
 				<div data-testid="grid-children">Header Content</div>
@@ -99,5 +100,58 @@ describe('HorizontalGrid', () => {
 		expect(screen.getByTestId('horizontal-grid-body')).toHaveClass(
 			'custom-body-class'
 		)
+	})
+
+	describe('sticky insets', () => {
+		// happy-dom lays nothing out, so every rect is empty. Only elements the
+		// grid marks as sticky get a size, which is all the measurement reads.
+		const originalRect = HTMLElement.prototype.getBoundingClientRect
+		const RESOURCE_COLUMN_WIDTH = 160
+		const HEADER_HEIGHT = 48
+
+		beforeEach(() => {
+			HTMLElement.prototype.getBoundingClientRect = function () {
+				const side = this.getAttribute('data-sticky-inset')
+				const width = side === 'left' ? RESOURCE_COLUMN_WIDTH : 0
+				const height = side === 'top' ? HEADER_HEIGHT : 0
+				return new DOMRect(0, 0, width, height)
+			}
+		})
+
+		afterEach(() => {
+			HTMLElement.prototype.getBoundingClientRect = originalRect
+		})
+
+		const published = (property: string) =>
+			screen
+				.getByTestId('horizontal-grid-scroll')
+				.querySelector<HTMLElement>('[data-radix-scroll-area-viewport]')
+				?.style.getPropertyValue(property)
+		const publishedLeft = () => published('--ilamy-sticky-left')
+		const publishedTop = () => published('--ilamy-sticky-top')
+
+		test('a resource grid publishes its sticky resource column width', () => {
+			renderHorizontalGrid()
+
+			expect(publishedLeft()).toBe(`${RESOURCE_COLUMN_WIDTH}px`)
+		})
+
+		test('a regular grid has no sticky column to clear', () => {
+			renderHorizontalGrid({ variant: 'regular' })
+
+			expect(publishedLeft()).toBe('0px')
+		})
+
+		test('a resource grid publishes its sticky header height', () => {
+			renderHorizontalGrid()
+
+			expect(publishedTop()).toBe(`${HEADER_HEIGHT}px`)
+		})
+
+		test('a header that scrolls away covers nothing', () => {
+			renderHorizontalGrid({}, { stickyViewHeader: false })
+
+			expect(publishedTop()).toBe('0px')
+		})
 	})
 })

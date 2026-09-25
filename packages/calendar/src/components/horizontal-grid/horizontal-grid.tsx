@@ -4,6 +4,7 @@ import type React from 'react'
 import { useRef } from 'react'
 import { useScrollToTime } from '@/components/vertical-grid/use-scroll-to-time'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useStickyInsets } from '@/hooks/use-sticky-insets'
 import { HorizontalGridHeaderContainer } from './horizontal-grid-header-container'
 import {
 	HorizontalGridRow,
@@ -45,6 +46,8 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 		scrollKey: `${view}-${currentDate.format('YYYY-MM-DD')}`,
 		axis: 'horizontal',
 	})
+
+	useStickyInsets(viewportRef, rows.length)
 
 	const header = children && (
 		<HorizontalGridHeaderContainer className={classes?.header}>

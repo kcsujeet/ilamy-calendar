@@ -162,7 +162,12 @@ function DraggableEventUnmemoized({
 	return (
 		<AnimatedSection
 			className={cn(
-				'truncate h-full w-full',
+				// `truncate` minus its `overflow: hidden`, which would make this box
+				// the scroller a sticky title inside it sticks to, so it never moves
+				// (https://developer.mozilla.org/en-US/docs/Web/CSS/position#sticky).
+				// `clip` hides the same overflow without being one, and still draws
+				// the ellipsis a plain-text `renderEvent` relies on.
+				'overflow-clip text-ellipsis whitespace-nowrap h-full w-full',
 				cursorClass,
 				draggingClass,
 				className

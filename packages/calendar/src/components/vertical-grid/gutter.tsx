@@ -57,6 +57,7 @@ export const gutterColumn = ({
 		'sticky left-0 bg-background z-20',
 		STICKY_GUTTER_SHADOW
 	),
+	'data-sticky-inset': 'left',
 	gridType,
 	noEvents: true,
 	renderCell: (date: Dayjs) => (

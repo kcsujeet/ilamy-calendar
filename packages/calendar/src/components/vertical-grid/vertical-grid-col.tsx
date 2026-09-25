@@ -2,12 +2,14 @@ import type { VerticalColumnSpec } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { memo } from 'react'
+import type { StickyInsetSide } from '@/hooks/use-sticky-insets'
 import { keys } from '@/lib/utils/keys'
 import { GridCell } from '../grid-cell'
 import { VerticalGridEventsLayer } from './events-layer/vertical-grid-events-layer'
 
 export interface VerticalGridColProps extends VerticalColumnSpec {
 	'data-testid'?: string
+	'data-sticky-inset'?: StickyInsetSide
 	/**
 	 * Granularity of each hour row in minutes. `60` renders one cell per hour with
 	 * no sub-hour lines. `30` renders two. `15` renders four with dashed separators.
@@ -20,6 +22,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	days,
 	resource,
 	'data-testid': dataTestId,
+	'data-sticky-inset': stickyInset,
 	gridType,
 	className,
 	renderCell,
@@ -42,6 +45,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 				'flex flex-col flex-1 items-center min-w-20 justify-center bg-background relative',
 				className
 			)}
+			data-sticky-inset={stickyInset}
 			data-testid={dataTestId || keys.container.vertical.col(id)}
 		>
 			{/* Time slots. gap-px + bg-border draws the hour lines through the gaps. */}

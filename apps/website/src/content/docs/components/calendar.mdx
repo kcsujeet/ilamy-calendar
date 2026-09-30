@@ -250,16 +250,24 @@ before the visible part of a resource timeline, or a shift that began above
 the scrolled time grid), the default event content keeps its title on the
 visible part of the bar. The title slides along the bar and stops at its end,
 never past it, and the mirror drawn while you drag the event does the same.
-FullCalendar's default event content behaves the same way.
+FullCalendar's default event content behaves the same way. The title also
+stays in view when a calendar taller than the window scrolls with the page,
+below the view header if `stickyViewHeader` pins it there. FullCalendar only
+does that with `height: 'auto'`, where it has no scroller of its own.
 
 A custom `renderEvent` owns its markup, so nothing in it sticks unless you ask.
-Each grid publishes how far its own sticky resource column and header reach
-into the scroll area, as two CSS custom properties on the scroll viewport:
+Each grid publishes, as two CSS custom properties on its scroll viewport, how
+far into it the reader cannot see: past its own sticky resource column and
+header, and past whatever hides it from outside (the top of the window, or a
+view header pinned there, when a calendar taller than the window scrolls with
+the page):
 
 | Property | Value |
 |---|---|
-| `--ilamy-sticky-left` | Width of the grid's widest sticky column: the resource column, the time or date gutter, or the "All day" label |
-| `--ilamy-sticky-top` | Height of the grid's sticky header, `0px` when `stickyViewHeader` is off or the header sits outside the scroll area |
+| `--ilamy-sticky-left` | The widest sticky column (the resource column, the time or date gutter, or the "All day" label), or how far the grid is scrolled off the left of the window, whichever is further |
+| `--ilamy-sticky-top` | The sticky view header, or how far the page has scrolled the grid under the window's top or a header pinned there, whichever is further; `0px` when nothing covers it |
+
+They update as the page or any scrolling container around the calendar scrolls.
 
 Offset a sticky title by them. Offsetting it by `0` would pin it under the
 resource column instead of beside it:

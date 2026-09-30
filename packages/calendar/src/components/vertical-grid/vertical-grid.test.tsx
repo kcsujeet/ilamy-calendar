@@ -103,16 +103,22 @@ describe('VerticalGrid', () => {
 	})
 
 	describe('sticky insets', () => {
-		// happy-dom lays nothing out, so every rect is empty. Only elements the
-		// grid marks as sticky get a size, which is all the measurement reads.
+		// happy-dom lays nothing out, so every rect is empty. The layout the
+		// measurement reads is faked here: the sticky header sits at the window's
+		// top, and the scroll viewport wherever a test puts it.
 		const originalRect = HTMLElement.prototype.getBoundingClientRect
 		const OriginalResizeObserver = globalThis.ResizeObserver
 		const HEADER_HEIGHT = 97
 		let headerHeight = HEADER_HEIGHT
+		let viewportTop = 0
 
 		beforeEach(() => {
 			headerHeight = HEADER_HEIGHT
+			viewportTop = 0
 			HTMLElement.prototype.getBoundingClientRect = function () {
+				if (this.hasAttribute('data-radix-scroll-area-viewport')) {
+					return new DOMRect(0, viewportTop, 0, 0)
+				}
 				const isStickyHeader = this.getAttribute('data-sticky-inset') === 'top'
 				return new DOMRect(0, 0, 0, isStickyHeader ? headerHeight : 0)
 			}
@@ -177,9 +183,32 @@ describe('VerticalGrid', () => {
 		})
 
 		test('a regular grid keeps its header outside the scroller', () => {
+			// The viewport starts where the header above it ends. The header is
+			// measured by position now, not size, so it covers none of it.
+			viewportTop = HEADER_HEIGHT
 			renderVerticalGrid({ variant: 'regular', allDayRow: <div>All Day</div> })
 
 			expect(publishedTop()).toBe('0px')
+		})
+
+		test('a page scrolled under a header stuck to the window', () => {
+			// The page is scrolled 200px past the grid's top while the header
+			// stays pinned at the window's: it reaches 297px into the viewport.
+			viewportTop = -200
+			renderVerticalGrid({ variant: 'regular', allDayRow: <div>All Day</div> })
+
+			expect(publishedTop()).toBe(`${200 + HEADER_HEIGHT}px`)
+		})
+
+		test('a page scrolled past the grid with no sticky header', () => {
+			// Nothing covers the grid, but the window's own top hides 200px of it.
+			viewportTop = -200
+			renderVerticalGrid(
+				{ variant: 'regular', allDayRow: <div>All Day</div> },
+				{ stickyViewHeader: false }
+			)
+
+			expect(publishedTop()).toBe('200px')
 		})
 	})
 })

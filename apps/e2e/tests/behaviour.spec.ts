@@ -934,6 +934,59 @@ test.describe('sticky event titles (#290)', () => {
 		await page.mouse.up()
 	})
 
+	// A calendar taller than the window scrolls with the PAGE, not only inside
+	// itself. A regular grid's header sits outside the calendar's scroller, so
+	// `stickyViewHeader` pins it to the window; the title has to clear it there
+	// too, or it slides under it (#290 follow-up, reported on the PR).
+	const pageScrollCases = [
+		{
+			// The all-day row sticks with the header, so it is the lower edge.
+			name: 'under a header stuck to the window',
+			settings: {},
+			edge: (page: Page) => page.getByTestId('vertical-grid-all-day'),
+		},
+		{
+			name: 'above the window when the header scrolls away',
+			settings: { stickyViewHeader: 'false' },
+			edge: undefined,
+		},
+	] as const
+
+	for (const c of pageScrollCases) {
+		test(`a page-scrolled week keeps the title in view ${c.name}`, async ({
+			page,
+		}) => {
+			await gotoScenario(page, {
+				scenario: 'long-events',
+				view: 'week',
+				settings: { ...c.settings, height: '1600px' },
+			})
+			const bar = page.getByTestId('vertical-event-long-1')
+			const title = bar.getByText('Long shift', { exact: true })
+
+			await expect
+				.poll(async () => {
+					await page.evaluate(() => window.scrollTo(0, 600))
+					const [barBox, titleBox, edgeBox] = await Promise.all([
+						bar.boundingBox(),
+						title.boundingBox(),
+						c.edge ? c.edge(page).boundingBox() : null,
+					])
+					if (!barBox || !titleBox) {
+						return undefined
+					}
+					// The first pixel the reader can see: below the stuck header, or
+					// the window's own top once nothing covers it.
+					const edge = edgeBox ? edgeBox.y + edgeBox.height : 0
+					return {
+						barRunsUnderEdge: barBox.y < edge,
+						titleStart: Math.round(titleBox.y - edge),
+					}
+				})
+				.toEqual({ barRunsUnderEdge: true, titleStart: 2 })
+		})
+	}
+
 	test('a title never leaves its own bar', async ({ page }) => {
 		await gotoScenario(page, {
 			scenario: 'long-resource-events',

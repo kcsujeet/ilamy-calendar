@@ -44,6 +44,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 
 	const { currentDate, view, scrollTime, scrollToNow } =
 		useSmartCalendarContext()
+	const rootRef = useRef<HTMLDivElement | null>(null)
 	const viewportRef = useRef<HTMLDivElement | null>(null)
 
 	// Day-row grids (vertical resource month) scroll too, though only to now:
@@ -60,7 +61,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 
 	// Only a resource grid keeps its header inside the scroller; a regular
 	// grid's header sits above it and covers none of it.
-	useStickyInsets(viewportRef, columns.length)
+	useStickyInsets(rootRef, viewportRef, columns.length)
 
 	const header = children && (
 		<VerticalGridHeaderContainer
@@ -94,6 +95,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 		<div
 			className="h-full flex flex-col"
 			data-testid="vertical-grid-container"
+			ref={rootRef}
 			style={style}
 		>
 			{/* header row */}

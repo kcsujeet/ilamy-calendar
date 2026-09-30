@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/npm/l/@ilamy/calendar?style=flat-square&color=black)](https://github.com/kcsujeet/ilamy-calendar/blob/main/LICENSE)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/kcsujeet/ilamy-calendar/ci.yml?branch=main&style=flat-square)](https://github.com/kcsujeet/ilamy-calendar/actions)
 
-A powerful, full-featured yet **lightweight and highly pluggable** React calendar component library built with **TypeScript**, **Tailwind CSS 4**, and **shadcn/ui**. The core is small — ~40 KB minified (≈13 KB gzipped) — with opt-in plugins for recurring events, agenda views, and more, so you only ship what you use. Built for high-performance scheduling with RFC 5545 recurring events, resource management, and drag-and-drop interactions.
+A powerful, full-featured yet **lightweight and highly pluggable** React calendar component library built with **TypeScript**, **Tailwind CSS 4**, and **shadcn/ui**. The core is small — ~118 KB minified (≈40 KB gzipped), React and other dependencies not included — with opt-in plugins for recurring events, agenda views, and more, so you only ship what you use. Built for high-performance scheduling with RFC 5545 recurring events, resource management, and drag-and-drop interactions.
 
 <div align="center">
   <img width="1159" height="698" alt="Screenshot 2026-07-12 at 2 44 36 PM" src="https://github.com/user-attachments/assets/316c6ad4-2965-4dc4-b779-88b0ac916669" />

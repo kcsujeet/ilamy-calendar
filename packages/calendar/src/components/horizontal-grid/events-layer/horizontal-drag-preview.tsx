@@ -1,3 +1,4 @@
+import { cn } from '@ilamy/ui/lib/utils'
 import { DragPreviewCard } from '@/components/drag-and-drop/drag-preview-card'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import {
@@ -5,6 +6,7 @@ import {
 	type HorizontalPositionedEvent,
 } from '@/lib/layout/geometry'
 import { getTimeOfDayPattern } from '@/lib/utils/date-utils'
+import { STICKY_TITLE_CLASS } from '@/lib/utils/event-surface'
 
 interface HorizontalDragPreviewProps {
 	previewPositioned: HorizontalPositionedEvent
@@ -36,7 +38,12 @@ export function HorizontalDragPreview({
 					{event.start.format(getTimeOfDayPattern(timeFormat))}
 				</span>
 			)}
-			<span className="text-[10px] font-bold sm:text-xs truncate">
+			<span
+				className={cn(
+					'text-[10px] font-bold sm:text-xs truncate',
+					STICKY_TITLE_CLASS.horizontal
+				)}
+			>
 				{event.title}
 			</span>
 		</DragPreviewCard>

@@ -16,6 +16,7 @@ const NoMemoAllDayCell: React.FC<AllDayCellProps> = ({ className }) => {
 				STICKY_GUTTER_SHADOW,
 				className
 			)}
+			data-sticky-inset="left"
 		>
 			<span className="truncate">{t('allDay')}</span>
 		</div>

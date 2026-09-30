@@ -270,6 +270,11 @@ resuming a cut one, `isEnd` when it holds the real end rather than running past
 it. Both are `true` for an event that fits in one row. The names and their
 meaning match FullCalendar's event render hook.
 
+A custom `renderEvent` title does not stick on scroll the way the default one
+does. It opts in by reading `--ilamy-sticky-left` / `--ilamy-sticky-top`, which
+each grid publishes on its scroll viewport (`src/hooks/use-sticky-insets.ts`).
+See "Keeping the title in view" in the website's calendar docs.
+
 ## Key File Locations
 
 | Type | File |

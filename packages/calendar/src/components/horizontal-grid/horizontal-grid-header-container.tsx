@@ -1,6 +1,7 @@
 import { cn } from '@ilamy/ui/lib/utils'
 import { memo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { getHeaderStickyInset } from '@/hooks/use-sticky-insets'
 
 interface HorizontalGridHeaderContainerProps {
 	children?: React.ReactNode
@@ -25,6 +26,7 @@ const NoMemoHorizontalGridHeaderContainer = ({
 				className,
 				viewHeaderClassName
 			)}
+			data-sticky-inset={getHeaderStickyInset(stickyViewHeader)}
 			data-testid="horizontal-grid-header"
 		>
 			{children}

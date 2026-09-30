@@ -289,6 +289,43 @@ export const scenarios = {
 		),
 	},
 
+	'long-events': {
+		description:
+			'#290: an event far taller than the viewport, so scrolling down runs its start, and the title the default content draws there, off the top of the time grid.',
+		views: ['day', 'week'],
+		events: [
+			event(
+				'long-1',
+				'Long shift',
+				'2025-03-12T02:00:00.000Z',
+				'2025-03-12T20:00:00.000Z'
+			),
+		],
+	},
+
+	'long-resource-events': {
+		description:
+			'#290: events longer than the resource grid is wide or tall. Scrolling runs their start under the sticky resource column or header, and a title that does not stick goes with it.',
+		views: ['day', 'week', 'month'],
+		resources: TEAM,
+		events: [
+			event(
+				'long-res-1',
+				'Site survey',
+				'2025-03-03T00:00:00.000Z',
+				'2025-03-13T00:00:00.000Z',
+				{ allDay: true, resourceId: 'r1' }
+			),
+			event(
+				'long-res-2',
+				'Long shift',
+				'2025-03-12T02:00:00.000Z',
+				'2025-03-12T20:00:00.000Z',
+				{ resourceId: 'r2' }
+			),
+		],
+	},
+
 	resources: {
 		description:
 			'Three resources with events on each, for the resource axis in both orientations.',

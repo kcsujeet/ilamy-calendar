@@ -160,6 +160,20 @@ describe('keys.dayNumber (DayNumber component testid)', () => {
 	})
 })
 
+describe('keys.stickyInsets', () => {
+	it('names every part the insets depend on', () => {
+		expect(keys.stickyInsets('week', monday, true, 21)).toBe(
+			'sticky-insets-week-2025-10-13-sticky-21'
+		)
+	})
+
+	it('changes when the header stops sticking', () => {
+		expect(keys.stickyInsets('week', monday, false, 21)).toBe(
+			'sticky-insets-week-2025-10-13-static-21'
+		)
+	})
+})
+
 describe('keys.timePicker', () => {
 	it('builds a named time-picker testid', () => {
 		expect(keys.timePicker('start')).toBe('time-picker-start')

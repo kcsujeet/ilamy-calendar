@@ -1,12 +1,14 @@
 import type { Resource } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import type { StickyInsetSide } from '@/hooks/use-sticky-insets'
 
 interface ResourceCellProps {
 	resource: Resource
 	className?: string
 	children?: React.ReactNode
 	'data-testid'?: string
+	'data-sticky-inset'?: StickyInsetSide
 }
 
 export const ResourceCell: React.FC<ResourceCellProps> = ({
@@ -14,12 +16,14 @@ export const ResourceCell: React.FC<ResourceCellProps> = ({
 	className,
 	children,
 	'data-testid': dataTestId,
+	'data-sticky-inset': stickyInset,
 }) => {
 	const { renderResource } = useSmartCalendarContext()
 
 	return (
 		<div
 			className={cn('flex items-center justify-center p-2', className)}
+			data-sticky-inset={stickyInset}
 			data-testid={dataTestId}
 			style={{
 				color: resource.color,

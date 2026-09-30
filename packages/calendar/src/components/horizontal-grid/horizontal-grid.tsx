@@ -4,6 +4,7 @@ import type React from 'react'
 import { useRef } from 'react'
 import { useScrollToTime } from '@/components/vertical-grid/use-scroll-to-time'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useStickyInsets } from '@/hooks/use-sticky-insets'
 import { HorizontalGridHeaderContainer } from './horizontal-grid-header-container'
 import {
 	HorizontalGridRow,
@@ -31,6 +32,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 }) => {
 	const { currentDate, view, scrollTime, scrollToNow } =
 		useSmartCalendarContext()
+	const rootRef = useRef<HTMLDivElement | null>(null)
 	const viewportRef = useRef<HTMLDivElement | null>(null)
 
 	const isResourceCalendar = variant === 'resource'
@@ -46,6 +48,8 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 		axis: 'horizontal',
 	})
 
+	useStickyInsets(rootRef, viewportRef, rows.length)
+
 	const header = children && (
 		<HorizontalGridHeaderContainer className={classes?.header}>
 			{children}
@@ -56,6 +60,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 		<div
 			className="h-full flex flex-col"
 			data-testid="horizontal-grid-container"
+			ref={rootRef}
 		>
 			{/**
 			 * header row is rendered outside scroll area for regular calendar

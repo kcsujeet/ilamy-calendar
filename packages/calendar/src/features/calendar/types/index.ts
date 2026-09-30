@@ -154,6 +154,12 @@ export interface IlamyCalendarProps {
 	/**
 	 * Custom render function for calendar events.
 	 * If provided, it will override the default event rendering.
+	 *
+	 * The default content keeps its title in view while a long event is
+	 * scrolled partly out of the grid; custom content does not. To opt a
+	 * custom title in, make it sticky with `left: var(--ilamy-sticky-left)`
+	 * and `top: var(--ilamy-sticky-top)`, which each grid publishes to clear
+	 * its own sticky column and header.
 	 */
 	renderEvent?: (event: CalendarEvent, segment: EventSegment) => React.ReactNode
 	/**

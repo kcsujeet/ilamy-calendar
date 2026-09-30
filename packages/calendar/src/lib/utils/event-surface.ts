@@ -61,3 +61,23 @@ export const getEventSurfaceRadius = ({
 	}
 	return 'rounded-md'
 }
+
+/**
+ * Keeps an event's title on the part of its bar the reader can see, as
+ * FullCalendar's does (`fc-sticky` in `core/src/common/StandardEvent.tsx`):
+ * along the row on a horizontal bar, down the column on a time-grid bar. The
+ * bar and the drag mirror both wear it, so a dragged long event keeps its
+ * title in view too.
+ *
+ * The offsets clear the grid's own sticky column and header (see
+ * `useStickyInsets`), plus the gap the title keeps from its bar's edge when
+ * nothing is scrolled (`px-1`, `mt-0.5`), so it does not read as clipped.
+ * Outside a grid the property is unset, which invalidates the whole `calc()`,
+ * leaving the inset `auto` and the title where it is.
+ */
+export const STICKY_TITLE_CLASS = {
+	// Shrink-wrapped: a title as wide as its bar has no room to slide.
+	horizontal:
+		'sticky left-[calc(var(--ilamy-sticky-left)+--spacing(1))] inline-block max-w-full align-top',
+	vertical: 'sticky top-[calc(var(--ilamy-sticky-top)+--spacing(0.5))]',
+} as const satisfies Record<EventSurfaceRadiusInput['axis'], string>

@@ -1,5 +1,6 @@
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { dayKey } from '@ilamy/utils/helpers'
+import type { CalendarView } from '@/types'
 import { isToday } from './date-utils'
 
 type Id = string | number
@@ -115,6 +116,16 @@ export const keys = {
 	// otherwise `day-number-{D}`.
 	dayNumber: (date: Dayjs) =>
 		isToday(date) ? 'day-number-today' : `day-number-${date.format('D')}`,
+
+	// What a grid's sticky insets depend on (see useStickyInsets): a change to
+	// any part replaces the elements that mark them.
+	stickyInsets: (
+		view: CalendarView,
+		date: Dayjs,
+		isHeaderSticky: boolean,
+		laneCount: number
+	) =>
+		`sticky-insets-${view}-${dayKey(date)}-${isHeaderSticky ? 'sticky' : 'static'}-${laneCount}`,
 
 	// The snapped mirror of a dragged event, one per grid orientation.
 	dragPreview: (orientation: 'vertical' | 'horizontal') =>

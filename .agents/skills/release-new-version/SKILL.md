@@ -194,7 +194,16 @@ docs site and notify the issues this release closes.
 
 `bun run release` (= `build:lib` then `publish:lib`) builds only `@ilamy/calendar` (bundling the private internal packages) and runs `bun publish` from `packages/calendar` — it honors `publishConfig.access: public` and the prepack/postpack scripts (which inject `sideEffects: false` and strip devDependencies). Tip: suggest `bun run release:dry` first to preview the tarball without uploading.
 
-Do not offer to run `bun run release` yourself — it requires credentials you don't have. **Pause here.** Do not comment "fixed in vX.Y.Z" on any issue (Step 10) until the user confirms the publish landed — saying so before the package is on npm would be a lie to the reporter. (The website deploy in Step 9 may run once the release is tagged, but is normally done right after the publish too.)
+Do not offer to run `bun run release` yourself — it requires credentials you don't have. **Pause here.** Do not comment "Shipped in" / "Fixed in vX.Y.Z" on any issue (Step 10) until the publish has landed — saying so before the package is on npm would be a lie to the reporter.
+
+**Confirm the publish on the registry itself**, not only on the user's word or npm's confirmation email. The email can arrive before the registry and its CDN catch up, and a plain `npm view` can serve a stale copy: during v3.1.0 it reported `3.0.1` as latest for a while after the email. Query the registry with a cache-buster and allow a delay before concluding anything:
+
+```bash
+curl -s -H 'Cache-Control: no-cache' "https://registry.npmjs.org/@ilamy%2Fcalendar?t=$(date +%s)" \
+  | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['dist-tags']['latest'], d['time'].get('X.Y.Z'))"
+```
+
+If the version is missing, say so plainly as "not on the registry yet", re-check after a minute or two, and only then ask the user for the publish output. (The website deploy in Step 9 may run once the release is tagged, but is normally done right after the publish too.)
 
 ## Step 9 — Update and deploy the website
 
@@ -242,6 +251,14 @@ Skip numbers that resolve to pull requests, not issues. `gh issue view` on a PR 
 
 Keep it short and human. No marketing copy, no emoji, no changelog repetition — the reporter can click through to the release page for details.
 
+The first word depends on what the issue asked for. Read it off the changelog bullet that closes the issue (you wrote it in Step 3): a bullet under **Features** gets **"Shipped in"**, one under **Fixes** gets **"Fixed in"**. Telling someone their feature request was "fixed" reads as if their idea were a bug.
+
+```
+Shipped in vX.Y.Z — https://github.com/kcsujeet/ilamy-calendar/releases/tag/vX.Y.Z
+
+Thanks for trying ilamy calendar! Feel free to open more issues any time.
+```
+
 ```
 Fixed in vX.Y.Z — https://github.com/kcsujeet/ilamy-calendar/releases/tag/vX.Y.Z
 
@@ -257,19 +274,20 @@ Present the full plan in one message (issues + bodies + actions) and ask once. E
 ```
 Ready to post on these 2 issues:
 
-  #119 "Vertical ResourceCalendar: quarter-hour gridlines..." (currently CLOSED) — comment only
-  #66  "Tooltips not localized" (currently OPEN) — comment + close
+  #N "<feature request title>" (Features, currently CLOSED) — comment only
+       Shipped in vX.Y.Z — https://github.com/kcsujeet/ilamy-calendar/releases/tag/vX.Y.Z
 
-Comment body (same on all):
+  #M "<bug report title>" (Fixes, currently OPEN) — comment + close
+       Fixed in vX.Y.Z — https://github.com/kcsujeet/ilamy-calendar/releases/tag/vX.Y.Z
 
-  Fixed in v1.6.2 — https://github.com/kcsujeet/ilamy-calendar/releases/tag/v1.6.2
+Every body ends with:
 
   Thanks for trying ilamy calendar! Feel free to open more issues any time.
 
 Post?
 ```
 
-The project's workflow rule (`.agents/rules/workflow.md`) requires explicit approval before any public-facing post — one approval for the batch is fine since the body is identical and the user has seen the full list.
+The project's workflow rule (`.agents/rules/workflow.md`) requires explicit approval before any public-facing post — one approval for the batch is fine since the user has seen every body and the full list.
 
 ### Post on approval
 
@@ -286,7 +304,7 @@ If `gh issue close` reports "already closed" (the auto-close landed between your
 After the batch, report what landed:
 
 ```
-Posted on #119, #66. Closed #66. All done.
+Posted on #N, #M. Closed #M. All done.
 ```
 
 ## Failure modes to watch for

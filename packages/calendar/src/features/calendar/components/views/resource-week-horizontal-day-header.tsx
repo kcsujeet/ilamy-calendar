@@ -35,7 +35,11 @@ export const ResourceWeekHorizontalDayHeader: React.FC<
 					>
 						<AnimatedDayLabel
 							className={cn(
-								isHourly ? 'sticky left-1/2' : 'w-full text-center'
+								// Sticks mid-timeline, so where midnight crosses the middle the
+								// outgoing day's label is pushed against its day's end and the
+								// incoming one sits at its day's start. The padding keeps the
+								// two apart when they meet, instead of reading as "WedThu".
+								isHourly ? 'sticky left-1/2 px-2' : 'w-full text-center'
 							)}
 							dayNumber={day.format('D')}
 							today={today}

@@ -1,7 +1,8 @@
 import { cn } from '@ilamy/ui/lib/utils'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { HourLabel } from '@/components/hour-label/hour-label'
+import { CURRENT_HOUR_LABEL_CLASS } from '@/lib/constants'
 import { keys } from '@/lib/utils/keys'
 import type { VerticalGridColProps } from './vertical-grid-col'
 
@@ -36,6 +37,12 @@ interface GutterColumnOptions {
 	renderLabel?: (date: Dayjs) => React.ReactNode
 	/** Width utilities; defaults to the fixed `GUTTER_WIDTH`. */
 	widthClassName?: string
+	/**
+	 * Whether the grid this gutter labels shows today. An hour gutter labels
+	 * every day column at once, so its hours carry no date of their own to
+	 * compare with now: the caller says whether today is on screen.
+	 */
+	showsToday?: boolean
 }
 
 /**
@@ -47,22 +54,47 @@ export const gutterColumn = ({
 	gridType,
 	renderLabel,
 	widthClassName = GUTTER_WIDTH,
-}: GutterColumnOptions): VerticalGridColProps => ({
-	id: gridType === 'hour' ? keys.col.time : keys.col.date,
-	day: undefined,
-	days,
-	className: cn(
-		'shrink-0',
-		widthClassName,
-		'sticky left-0 bg-background z-20',
-		STICKY_GUTTER_SHADOW
-	),
-	'data-sticky-inset': 'left',
-	gridType,
-	noEvents: true,
-	renderCell: (date: Dayjs) => (
-		<div className="text-muted-foreground p-2 text-right text-[10px] sm:text-xs flex flex-col items-center">
-			{renderLabel ? renderLabel(date) : <HourLabel date={date} />}
-		</div>
-	),
-})
+	showsToday = false,
+}: GutterColumnOptions): VerticalGridColProps => {
+	const isHourGutter = gridType === 'hour'
+
+	return {
+		id: isHourGutter ? keys.col.time : keys.col.date,
+		day: undefined,
+		days,
+		className: cn(
+			'shrink-0',
+			widthClassName,
+			'sticky left-0 bg-background z-20',
+			STICKY_GUTTER_SHADOW
+		),
+		'data-sticky-inset': 'left',
+		gridType,
+		noEvents: true,
+		renderCell: (date: Dayjs) => {
+			// Marks the hour holding now, as the resource timeline's header row does.
+			// By hour of day, not instant: the gutter's hours are built on whichever
+			// date the view opened on, which is not necessarily today.
+			const nowHour = dayjs().hour()
+			const isNowHourOfDay = date.hour() === nowHour
+			const isCurrentHour = isHourGutter && showsToday && isNowHourOfDay
+			const labelColorClass = isCurrentHour
+				? CURRENT_HOUR_LABEL_CLASS
+				: 'text-muted-foreground'
+			const currentMarker = isCurrentHour ? 'time' : undefined
+			const label = renderLabel ? renderLabel(date) : <HourLabel date={date} />
+
+			return (
+				<div
+					aria-current={currentMarker}
+					className={cn(
+						'h-full p-2 text-right text-[10px] sm:text-xs flex flex-col items-center',
+						labelColorClass
+					)}
+				>
+					{label}
+				</div>
+			)
+		},
+	}
+}

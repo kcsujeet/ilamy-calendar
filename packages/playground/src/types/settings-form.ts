@@ -85,7 +85,7 @@ export const defaultSettings: PlaygroundSettings = {
 	slotDuration: 60,
 	scrollTime: 'none',
 	stickyViewHeader: true,
-	scrollToNow: false,
+	scrollToNow: true,
 	hideExportButton: false,
 	hiddenDays: [],
 	enableBusinessHours: true,

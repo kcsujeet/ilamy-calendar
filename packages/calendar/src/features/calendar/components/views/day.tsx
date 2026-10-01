@@ -88,10 +88,11 @@ const dayColumns = (
 ): VerticalColumnSpec[] | HorizontalRowSpec[] => {
 	const resources = config.resources ?? []
 	const hours = dayHours(date, config)
+	const isDayToday = isToday(date)
 
 	if (!resources.length) {
 		return [
-			gutterColumn({ days: hours, gridType: 'hour' }),
+			gutterColumn({ days: hours, gridType: 'hour', showsToday: isDayToday }),
 			{
 				id: keys.col.day(date),
 				day: date,
@@ -105,7 +106,11 @@ const dayColumns = (
 	if (config.orientation === 'vertical') {
 		return resourceVerticalColumns({
 			resources,
-			gutter: gutterColumn({ days: hours, gridType: 'hour' }),
+			gutter: gutterColumn({
+				days: hours,
+				gridType: 'hour',
+				showsToday: isDayToday,
+			}),
 			columnsFor: (resource) => ({
 				id: keys.col.day(date, resource.id),
 				days: hours,

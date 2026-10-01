@@ -88,6 +88,40 @@ const computeColumnSpan = (
 	}
 }
 
+/**
+ * Where a bar starts and ends, in columns. A day axis draws whole days, as a
+ * month row does. An hour axis draws the event's exact times, as FullCalendar's
+ * timeline does (`computeMsSlotCoverage` adds the remainder within a slot):
+ * drawing whole hours made a 10:27-12:27 event look three hours long.
+ *
+ * Each end is measured inside its own column. An event with no length keeps its
+ * whole column rather than vanishing.
+ */
+const computeBarEdges = (
+	event: CalendarEvent,
+	startCol: number,
+	endCol: number,
+	{ columns, gridType }: { columns: Dayjs[]; gridType: 'day' | 'hour' }
+): { start: number; end: number } => {
+	const wholeColumns = { start: startCol, end: endCol + 1 }
+	const startColumn = columns.at(startCol)
+	const endColumn = columns.at(endCol)
+	const isDayAxis = gridType === 'day'
+	if (isDayAxis || !startColumn || !endColumn) {
+		return wholeColumns
+	}
+
+	const hoursIntoStartColumn = event.start.diff(startColumn, 'hour', true)
+	const hoursIntoEndColumn = event.end.diff(endColumn, 'hour', true)
+	const startOffset = Math.min(Math.max(hoursIntoStartColumn, 0), 1)
+	const endOffset = Math.min(Math.max(hoursIntoEndColumn, 0), 1)
+	const start = startCol + startOffset
+	const end = endCol + endOffset
+
+	const hasLength = end > start
+	return hasLength ? { start, end } : wholeColumns
+}
+
 // --- Phase 3: place (occupancy grid) ----------------------------------------
 
 type OccupancyGrid = boolean[][]
@@ -163,11 +197,15 @@ export const layoutHorizontal = ({
 		for (let col = startCol; col <= endCol; col++) {
 			grid[row][col] = true
 		}
-		const spanUnits = endCol - startCol + 1
+		const edges = computeBarEdges(event, startCol, endCol, {
+			columns: days,
+			gridType,
+		})
+		const spanUnits = edges.end - edges.start
 		placedEvents.push({
 			kind: 'horizontal',
 			event,
-			left: (startCol / bounds.unitCount) * 100,
+			left: (edges.start / bounds.unitCount) * 100,
 			width: (spanUnits / bounds.unitCount) * 100,
 			row,
 			isTruncatedStart,

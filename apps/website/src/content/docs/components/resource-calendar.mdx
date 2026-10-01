@@ -451,6 +451,21 @@ The resource week view supports two density modes via the `weekViewGranularity` 
 `'daily'` mode pairs naturally with tall event bars that carry richer content — since there's one row per day, you have more vertical space per event. Consider bumping `eventHeight` or using a custom `renderEvent` for denser detail.
 :::
 
+### How an event sits on an hourly timeline
+
+On an hourly timeline (resource day or week in horizontal orientation), an
+event's bar starts and ends at its exact times. A 10:27–12:27 booking begins
+27 minutes into the 10 AM column and ends 27 minutes into the 12 PM column; it
+is not rounded out to whole hours. This matches FullCalendar's timeline, and
+the vertical time grids, which already place events by the minute. Day-based
+rows (resource month, and `weekViewGranularity="daily"`) still draw whole days.
+
+A very short event keeps a minimum width so it stays visible and clickable:
+`calc(var(--spacing) * 8)`, which is 32px with Tailwind's default spacing. It
+uses your theme's `--spacing`, like the hour columns themselves
+(`min-w-20`), so the two keep their proportion however you size them.
+FullCalendar has the same floor as its `eventMinWidth` option.
+
 ## Dragging events between resources
 
 Dropping an event on a different resource moves it across the axis as well as

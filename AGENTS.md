@@ -42,6 +42,19 @@ These are non-negotiable. Violating any of these is a bug.
   own inputs: a hand-made rect hid that dnd-kit measures a time-grid bar as its
   28px label rather than the 1463px column, so every drag grabbed the wrong
   point. Only a spec driving a real pointer over real geometry caught it.
+- DOUBLE-VERIFY every claim before you state it. A bug, a cause, a fix, a
+  standard ("FullCalendar does X"), a measurement: each is a hypothesis until
+  checked twice, and you do not report it as fact before then.
+  - Reproduce a bug through the real UI or the public API, never only through
+    a hand-built input. Then confirm the input is one the app can actually
+    produce. Two bugs were reported here that did not exist: a "7-hour drop"
+    that was the probe triggering drag auto-scroll, and a "split business
+    hours" misplacement fed columns that `getViewHours` never builds.
+  - Cite the source for a standard (file and line, or the docs URL), read at
+    the version people actually run.
+  - If you cannot verify something yet, say "unverified" in plain words. When
+    a claim turns out wrong, retract it explicitly and fix every place it was
+    written (code comments, docs, the dev log).
 - ALWAYS hunt the repercussions of a change before claiming it is done. Name the meaning you are changing, sweep for everything that depends on it (duplicated predicates in plugins, siblings in the same function, compensating hacks, tests and docs pinning the old contract), and prove the fix by reverting it and watching a test fail. Passing tests only prove that nothing *covered* broke. See `.agents/rules/change-impact.md`.
 - ALWAYS match the established standard, never invent your own semantics. This library is RFC 5545 compliant, and where the RFC is silent its behavior must match FullCalendar and Google Calendar. A deviation is a bug even when it is self-consistent and even when the tests pass. Before choosing behavior for anything a calendar already has a convention for (event boundaries, recurrence and overrides, all-day handling, drag/drop across a resource axis, scheduling semantics), look it up and cite it: the RFC section, the FullCalendar docs or source, or Google Calendar's documented behavior. Two deviations already shipped and had to be undone — an inclusive `end` (the RFC's DTEND is exclusive, #248), and a recurrence override emitted from two places at once. If the standard genuinely does not cover the case, say so explicitly and justify the choice; do not quietly pick one.
 - NEVER use npm/node/pnpm as the package manager or runtime. Always use `bun` (invoke tools via `bunx`, e.g. the demo dev server runs `bunx vite`).
@@ -352,8 +365,11 @@ Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringE
   through the real UI. Anything involving geometry, pointers, or measurement is
   e2e or it is unverified.
 - Hand the change to the user to test before committing. See the Hard Rules.
-- Never create new test files — update existing `component.test.tsx` files
-- Never create new functions — replace/update existing implementations
+- One test file per unit. If `component.test.tsx` exists, add to it; never
+  split it into a second file such as `component.someFunction.test.tsx`. A
+  unit with no tests yet gets a new co-located test file.
+- Don't add a parallel function next to one that already does the job: update
+  the existing implementation instead of writing a second version of it.
 - Exact assertions: `toHaveLength(3)`, `toBe('exact-value')` — not `toBeGreaterThan(0)`
 
 ### Testing

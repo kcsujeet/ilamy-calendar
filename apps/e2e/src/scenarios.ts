@@ -323,6 +323,23 @@ export const scenarios = {
 				'2025-03-12T20:00:00.000Z',
 				{ resourceId: 'r2' }
 			),
+			// Off the hour on purpose: a timeline that drew whole hours showed this
+			// 10:27-12:27 event as three hours long (reported before v3.1.0).
+			event(
+				'long-res-3',
+				'Yoga class',
+				'2025-03-12T10:27:00.000Z',
+				'2025-03-12T12:27:00.000Z',
+				{ resourceId: 'r3' }
+			),
+			// Five minutes: drawn at its exact length it would be a sliver.
+			event(
+				'long-res-4',
+				'Quick check',
+				'2025-03-12T14:00:00.000Z',
+				'2025-03-12T14:05:00.000Z',
+				{ resourceId: 'r3' }
+			),
 		],
 	},
 

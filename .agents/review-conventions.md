@@ -30,7 +30,7 @@ Source: `.agents/rules/code-style.md`, `.agents/rules/coding-patterns.md`.
 
 ## §K5. Behavior changes carry unit and e2e tests, written first
 
-A change to behavior has both a unit test, added to the existing co-located `*.test.ts(x)` (no new test files), and an e2e spec in `apps/e2e/tests/` that drives the real UI. Geometry, pointers and scrolling are e2e or they are unverified. Assertions are exact (`toBe(3)`, `toBeCloseTo(891, 0)`), never `toBeGreaterThan(0)`. Gating logic is tested both ways (mounts under the condition, not otherwise). The PR states that each fix was revert-proofed: putting the old line back fails a named test.
+A change to behavior has both a unit test, added to the unit's co-located `*.test.ts(x)` (one test file per unit: extend the existing one rather than splitting it into a second file; a unit with no tests yet gets a new one), and an e2e spec in `apps/e2e/tests/` that drives the real UI. Geometry, pointers and scrolling are e2e or they are unverified. Assertions are exact (`toBe(3)`, `toBeCloseTo(891, 0)`), never `toBeGreaterThan(0)`. Gating logic is tested both ways (mounts under the condition, not otherwise). The PR states that each fix was revert-proofed: putting the old line back fails a named test.
 
 Source: `AGENTS.md` (Hard Rules, TDD, Browser testing), `docs/e2e-testing.md`. Canonical: `apps/e2e/tests/behaviour.spec.ts`.
 

@@ -104,6 +104,33 @@ test.describe('drag and drop', () => {
 			.toMatch(/^2025-03-12T13:00/)
 	})
 
+	test('moves an event by the slot it lands on when the calendar has its own timezone', async ({
+		page,
+	}) => {
+		// The browser runs in UTC and the calendar in Vancouver (UTC-7 on 12
+		// March 2025), the way any app sets `timezone` to something other than
+		// its visitor's zone. The slot under the pointer is a Vancouver hour, so
+		// a drop reading wall-clock time in the browser's zone would land seven
+		// hours out. Nothing else drags with the two zones apart.
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'week',
+			timezone: 'America/Vancouver',
+			settings: { scrollTime: '02:00' },
+		})
+		const grid = new TimeGrid(page)
+
+		const bar = grid.event('Morning stand-up').first()
+		await expect(bar).toBeVisible()
+
+		// 09:30Z is 02:30 in Vancouver. The 05:00 slot there is 12:00Z.
+		await dragTo(page, bar, grid.slotAt('2025-03-12T12:00'))
+
+		await expect
+			.poll(async () => (await grid.eventNamed('Morning stand-up')).start)
+			.toMatch(/^2025-03-12T12:00/)
+	})
+
 	test("paints the mirror in the dragged event's own colour", async ({
 		page,
 	}) => {

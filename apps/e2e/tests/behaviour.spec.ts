@@ -1069,3 +1069,51 @@ test.describe('the current hour', () => {
 		await expect(page.locator('[aria-current="time"]')).toHaveCount(0)
 	})
 })
+
+test.describe('hourly resource timeline day labels', () => {
+	// Each day's label sticks in the middle of the timeline, so as midnight
+	// crosses the middle the outgoing day's label is pushed against the end of
+	// its day while the incoming one sits at the start of its own. Without
+	// padding the two touched, reading as "WedThu" (reported on #292).
+	test('two labels meeting at midnight keep apart', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'resources',
+			view: 'week',
+			orientation: 'horizontal',
+			settings: { granularity: 'hourly', height: '500px' },
+		})
+		const viewport = page.locator(
+			scrollViewportSelector('horizontal-grid-scroll')
+		)
+		const dayHeaders = page.getByTestId('resource-week-day-header')
+		const wednesday = dayHeaders.getByText('Wed', { exact: true })
+		const thursday = dayHeaders.getByText('Thu', { exact: true })
+
+		await expect
+			.poll(async () => {
+				// Midnight 20px past the middle of the timeline, where the labels
+				// stick: Wednesday's is pushed against the end of its day.
+				await viewport.evaluate((el) => {
+					const thursdayCell = [
+						...el.querySelectorAll('[data-testid="resource-week-day-header"]'),
+					].find((cell) => cell.textContent?.includes('Thu'))
+					if (!thursdayCell) {
+						return
+					}
+					const middle = el.getBoundingClientRect().left + el.clientWidth / 2
+					const offset = thursdayCell.getBoundingClientRect().left - middle
+					el.scrollLeft += offset - 20
+				})
+				const [wednesdayBox, thursdayBox] = await Promise.all([
+					wednesday.boundingBox(),
+					thursday.boundingBox(),
+				])
+				if (!wednesdayBox || !thursdayBox) {
+					return undefined
+				}
+				return Math.round(thursdayBox.x - (wednesdayBox.x + wednesdayBox.width))
+			})
+			// Each label's 8px padding, plus the 1px day divider between them.
+			.toBe(17)
+	})
+})

@@ -27,4 +27,8 @@ export const WEEK_DAYS_NUMBER_MAP: Record<WeekDays, number> = {
 // the grouped two-row header (day row stacked on hour row) must be exactly
 // 2x that — h-24. Change them together.
 export const HEADER_ROW_HEIGHT = 'h-12'
+
+// The hour label holding now, in every time axis: the resource timeline's
+// header row and the time grids' gutter. One look, so the two cannot drift.
+export const CURRENT_HOUR_LABEL_CLASS = 'bg-blue-50 text-blue-600 font-medium'
 export const GROUPED_HEADER_HEIGHT = 'h-24'

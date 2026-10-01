@@ -1294,6 +1294,31 @@ describe('WeekView', () => {
 		expect(customLastHours[0]).toHaveTextContent('23:00')
 	})
 
+	describe('the current hour', () => {
+		// Each label names its hour, so the marked one can be read back.
+		const renderHour = (date: Dayjs) => (
+			<span data-testid={`hour-${date.format('HH')}`}>{date.format('HH')}</span>
+		)
+		const markedHours = () =>
+			[...document.querySelectorAll('[aria-current="time"]')].map(
+				(label) => label.textContent
+			)
+
+		test('the gutter marks the hour holding now in a week that shows today', () => {
+			cleanup()
+			renderWeekView({ renderHour })
+
+			expect(markedHours()).toEqual([dayjs().format('HH')])
+		})
+
+		test('a week that does not show today marks no hour', () => {
+			cleanup()
+			renderWeekView({ renderHour, initialDate: dayjs().add(1, 'week') })
+
+			expect(markedHours()).toEqual([])
+		})
+	})
+
 	describe('scrollTime', () => {
 		const originalScrollTo = Element.prototype.scrollTo
 

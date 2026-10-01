@@ -3,7 +3,7 @@ import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { HourLabel } from '@/components/hour-label/hour-label'
-import { HEADER_ROW_HEIGHT } from '@/lib/constants'
+import { CURRENT_HOUR_LABEL_CLASS, HEADER_ROW_HEIGHT } from '@/lib/constants'
 import { keys } from '@/lib/utils/keys'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
 
@@ -19,6 +19,7 @@ export const TimeHeaderRow: React.FC<TimeHeaderRowProps> = ({
 	<div className={cn('flex gap-px bg-border border-b', HEADER_ROW_HEIGHT)}>
 		{hours.map((col, index) => {
 			const isNowHour = col.isSame(dayjs(), 'hour')
+			const currentMarker = isNowHour ? 'time' : undefined
 			const hourStr = col.format('HH')
 			// Keyed by the hour it renders. The row shows the same hours whatever
 			// day is displayed, so keying it by the date replayed the fade over
@@ -26,10 +27,11 @@ export const TimeHeaderRow: React.FC<TimeHeaderRowProps> = ({
 			const key = keys.listKey('time-header-hour', hourStr, index)
 			return (
 				<div
+					aria-current={currentMarker}
 					className={cn(
 						RESOURCE_CELL_WIDTH,
 						'bg-background flex items-center justify-center text-xs shrink-0',
-						isNowHour && 'bg-blue-50 text-blue-600 font-medium'
+						isNowHour && CURRENT_HOUR_LABEL_CLASS
 					)}
 					data-hour={hourStr}
 					data-testid={keys.header.resource.timeLabel(view, hourStr)}

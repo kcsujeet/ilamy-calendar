@@ -16,6 +16,17 @@ Alternatively, enable Windows Developer Mode (Windows 10+) which flips the defau
 
 These are non-negotiable. Violating any of these is a bug.
 
+- SIMPLICITY IS THE TOP PRIORITY. Code must be dead simple, and so must the
+  architecture. Code that is hard to read, hard to understand, or built in a
+  complicated way is not acceptable, however correct it is.
+  - Prefer the plainest solution that works: fewer moving parts, fewer
+    layers, fewer options, no indirection that does not earn its place.
+  - Data flows in one obvious, logical direction. A reader can follow where
+    a value comes from and where it goes without jumping around the codebase.
+  - Name things so the code reads like a description of what it does (see
+    "Code Quality": name every condition and computed value before use).
+  - If a change needs a long explanation to be understood, simplify the
+    change, not the explanation.
 - NEVER start/stop the dev server. It's already running with hot reload.
 - NEVER commit or push without explicit user approval. Approval is PER COMMIT and
   does not carry forward: "commit and push" authorises that one commit, not the
@@ -324,6 +335,12 @@ Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringE
 ### Code Quality
 
 - Extract complex operations into descriptive variables
+- Readability beats brevity. Name a value before you use it: every condition
+  (`const isCurrentHour = isHourGutter && showsToday && isNowHourOfDay`),
+  every operand of a boolean chain, and every computed argument, prop or JSX
+  attribute. Pass the name, not the expression: `showsToday={isTodayVisible}`,
+  not `showsToday={visibleDays.some((day) => isToday(day))}`. Write it this way
+  the first time; it is not a cleanup pass for later.
 - One operation per line, no long chains
 - Meaningful names: `targetEventStartISO` not `targetEvent.start.toISOString()`
 - Follow the Shadcn design system. Use predefined sizes (sm, default, lg). Don't override design tokens (h-8, h-9, custom spacing) unless absolutely necessary.

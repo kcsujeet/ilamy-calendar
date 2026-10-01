@@ -144,11 +144,13 @@ const resourceWeekVerticalColumns = (
 
 	if (isHourlyGranularity(config)) {
 		const visibleDays = getVisibleDays(date, config)
+		const isTodayVisible = visibleDays.some((day) => isToday(day))
 		return resourceVerticalColumns({
 			resources,
 			gutter: gutterColumn({
 				days: weekHoursFor(date, config, weekDays),
 				gridType: 'hour',
+				showsToday: isTodayVisible,
 			}),
 			columnsFor: (resource) =>
 				visibleDays.map((day) => ({
@@ -270,12 +272,14 @@ const weekColumns = (
 
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
 	const visibleDays = getVisibleDays(date, config)
+	const isTodayVisible = visibleDays.some((day) => isToday(day))
 
 	return [
 		gutterColumn({
 			days: weekHoursFor(date, config, weekDays),
 			gridType: 'hour',
 			widthClassName: RESPONSIVE_GUTTER_WIDTH,
+			showsToday: isTodayVisible,
 		}),
 		// Each day column gets its own hours on the correct date.
 		...visibleDays.map((day) => ({

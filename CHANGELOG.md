@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v3.1.0](https://github.com/kcsujeet/ilamy-calendar/compare/v3.0.1...v3.1.0)
+
+> 1 October 2026
+
+##### Features
+
+- feat: new `scrollToNow` prop (default `false`). Every scrolling grid opens on the current moment: the current hour in time grids, and today's column or row in the resource month and daily resource week, in both orientations. It applies only while now is on screen; otherwise it falls back to `scrollTime`, or to the start of the range. Like `scrollTime`, it is reapplied on navigation and when the prop changes, not as the clock moves ([`#287`](https://github.com/kcsujeet/ilamy-calendar/pull/287)) — Closes [`#285`](https://github.com/kcsujeet/ilamy-calendar/issues/285)
+- feat: a long event scrolled partly out of the grid keeps its title on the part still in view, as FullCalendar's default event content does. This covers resource timelines, time grids, the all-day row and the drag mirror, and it also follows the page when a calendar taller than the window scrolls with it, staying below a pinned view header. A custom `renderEvent` can opt in through the new `--ilamy-sticky-left` / `--ilamy-sticky-top` CSS custom properties; see "Keeping the title in view" in the calendar docs ([`#292`](https://github.com/kcsujeet/ilamy-calendar/pull/292)) — Closes [`#290`](https://github.com/kcsujeet/ilamy-calendar/issues/290)
+- feat: dragging an event paints a snapped mirror of where it would land, in the grid, labelled with the time range it would take, and the source bar dims to half opacity. A drop keeps the point you grabbed under the pointer, the way FullCalendar moves by a delta, and a timed event moved between days keeps its time of day. Sub-hour cells that draw the dashed divider carry `data-slot-divider` for styling ([`#283`](https://github.com/kcsujeet/ilamy-calendar/pull/283))
+- feat: the time grids' gutter marks the hour holding now, as the resource timeline's header row already did. The marked label carries `aria-current="time"` in both ([`#295`](https://github.com/kcsujeet/ilamy-calendar/pull/295))
+
+##### Fixes
+
+- fix: on an hourly timeline (resource day or week, horizontal), an event's bar starts and ends at its exact times instead of filling whole hour cells. A 10:27–12:27 event no longer looks three hours long, and dragging it no longer appears to cut an hour off. This matches FullCalendar's timeline. Very short events keep a minimum width of `calc(var(--spacing) * 8)` (FullCalendar's `eventMinWidth`), on your theme's spacing scale like the hour columns ([`#296`](https://github.com/kcsujeet/ilamy-calendar/pull/296))
+- fix: with a `timezone` set, a month grid spanning an autumn DST change no longer shows one week twice and drops another, whose events did not render ([`#282`](https://github.com/kcsujeet/ilamy-calendar/pull/282)) — Closes [`#246`](https://github.com/kcsujeet/ilamy-calendar/issues/246)
+- fix: changing `scrollTime` on a mounted calendar scrolls to the new hour straight away, as FullCalendar does, instead of waiting for the next navigation ([`#286`](https://github.com/kcsujeet/ilamy-calendar/pull/286))
+- fix: in the hourly resource timeline, two day labels meeting at midnight no longer run together ("WedThu") ([`#295`](https://github.com/kcsujeet/ilamy-calendar/pull/295))
+
+##### Docs
+
+- docs: the README and website state the core's measured size, ~118 KB minified / ~40 KB gzipped (React and other dependencies not included). The previous ~13 KB figure was out of date ([`#293`](https://github.com/kcsujeet/ilamy-calendar/pull/293))
+
+##### Internal
+
+- chore: Biome upgraded to 2.5.14 ([`#284`](https://github.com/kcsujeet/ilamy-calendar/pull/284))
+
 #### [v3.0.1](https://github.com/kcsujeet/ilamy-calendar/compare/v3.0.0...v3.0.1)
 
 > 14 September 2026

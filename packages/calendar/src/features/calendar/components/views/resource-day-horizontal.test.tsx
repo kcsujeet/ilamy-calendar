@@ -334,12 +334,12 @@ describe('ResourceDayHorizontal', () => {
 			const eventWrapper = screen.getByTestId('horizontal-event-precise-1015am')
 			const left = parseFloat(eventWrapper.getAttribute('data-left') || '')
 
-			// 10.25/24 * 100 = 42.70833...
-			// But since gridType is 'hour', startOf(gridType) is used.
-			// 10:15 .startOf('hour') is 10:00.
-			// So it should still be at 41.67.
-			// If it's showing at 9am, left would be 9/24 * 100 = 37.5.
-			expect(left).toBeCloseTo(41.67, 1)
+			// The hour axis draws exact times, as FullCalendar's timeline does, so
+			// 10:15 sits a quarter into the 10:00 hour: 10.25/24 * 100 = 42.708.
+			// It used to round down to the hour (41.67), which drew the event as
+			// starting at 10:00. Snapping to 9am would put it at 9/24 * 100 = 37.5.
+			const exactStartPercent = (10.25 / 24) * 100
+			expect(left).toBeCloseTo(exactStartPercent, 2)
 			expect(left).not.toBeCloseTo(37.5, 1)
 		})
 	})

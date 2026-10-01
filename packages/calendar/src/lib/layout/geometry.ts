@@ -50,6 +50,10 @@ export const getHorizontalBarStyle = (
 ): CSSProperties => ({
 	left: `calc(${positioned.left}% + var(--spacing) * 0.25)`,
 	width: `calc(${positioned.width}% - var(--spacing) * 1)`,
+	// An hour axis sizes a bar by its exact time, so a short event would be a
+	// sliver. FullCalendar's timeline keeps a minimum (`eventMinWidth`); ours is
+	// on the consumer's spacing scale, like the `min-w-20` hour columns.
+	minWidth: 'calc(var(--spacing) * 8)',
 	top: `${top}px`,
 	height: `${eventHeight}px`,
 })

@@ -40,7 +40,7 @@ src/features/calendar/components/views/
   week.test.tsx            # Tests live here, not in __tests__/
 ```
 
-**Never create new test files.** Add tests to the existing `*.test.tsx` file for that component.
+**One test file per unit.** Add tests to the unit's existing `*.test.tsx`; never split it into a second file such as `component.someFunction.test.tsx`. A unit with no tests yet gets a new co-located test file.
 
 ## CalendarProvider Test Wrapper
 

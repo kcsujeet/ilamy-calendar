@@ -130,7 +130,11 @@ describe('layoutHorizontal', () => {
 				gridType: 'hour',
 			})
 
-			expect(Math.round(placement.width / (100 / hours.length))).toBe(2)
+			// An hour axis now draws exact times, so the bar no longer fills the
+			// second hour. What this pins still holds: it reaches into it, 30s past.
+			const hourWidth = 100 / hours.length
+			const barEndInHours = (placement.left + placement.width) / hourWidth
+			expect(barEndInHours).toBeCloseTo(10 + 30 / 3600, 6)
 		})
 
 		/**
@@ -200,7 +204,13 @@ describe('layoutHorizontal', () => {
 				gridType: 'hour',
 			})
 
-			expect(Math.round(placement.width / (100 / hours.length))).toBe(2)
+			// Exact times now, not whole hours: the bar runs from 09:30 into the
+			// 10:00 hour and stops at 10:15, rather than vanishing from it.
+			const hourWidth = 100 / hours.length
+			const barStartInHours = placement.left / hourWidth
+			const barEndInHours = (placement.left + placement.width) / hourWidth
+			expect(barStartInHours).toBeCloseTo(9.5, 6)
+			expect(barEndInHours).toBeCloseTo(10.25, 6)
 		})
 
 		it('still covers one day when start and end are equal', () => {
@@ -472,6 +482,79 @@ describe('layoutHorizontal', () => {
 
 			expect(result).toHaveLength(1)
 			expect(result.at(0)?.row).toBe(0)
+		})
+	})
+
+	/**
+	 * An hour axis places a bar at its exact times, as FullCalendar's timeline
+	 * does (`computeMsSlotCoverage` in `TimelineCoords.ts` adds the remainder
+	 * within a slot). Drawing whole hours made a 10:27-12:27 event look three
+	 * hours long, and a drag then appeared to shorten it.
+	 */
+	describe('Exact time on an hour axis', () => {
+		const hours = Array.from({ length: 24 }, (_, i) =>
+			dayjs('2025-01-13T00:00:00.000Z').add(i, 'hour')
+		)
+		const hourWidth = 100 / hours.length
+		const placeOnHours = (startISO: string, endISO: string) => {
+			const [placement] = layoutHorizontal({
+				days: hours,
+				events: [mkEvent('timed', startISO, endISO)],
+				dayMaxEvents: 4,
+				gridType: 'hour',
+			})
+			return placement
+		}
+		/** Left edge and width, in hours, read back off the percentages. */
+		const inHours = ({ left, width }: { left: number; width: number }) => ({
+			start: left / hourWidth,
+			length: width / hourWidth,
+		})
+
+		it('starts and ends a bar at its exact minutes', () => {
+			const placement = placeOnHours(
+				'2025-01-13T10:27:00.000Z',
+				'2025-01-13T12:27:00.000Z'
+			)
+
+			const { start, length } = inHours(placement)
+			expect(start).toBeCloseTo(10.45, 6)
+			expect(length).toBeCloseTo(2, 6)
+		})
+
+		it('draws a bar inside one hour at its own length', () => {
+			const placement = placeOnHours(
+				'2025-01-13T10:15:00.000Z',
+				'2025-01-13T10:45:00.000Z'
+			)
+
+			const { start, length } = inHours(placement)
+			expect(start).toBeCloseTo(10.25, 6)
+			expect(length).toBeCloseTo(0.5, 6)
+		})
+
+		it('keeps a whole hour for an event with no length', () => {
+			const placement = placeOnHours(
+				'2025-01-13T10:00:00.000Z',
+				'2025-01-13T10:00:00.000Z'
+			)
+
+			const { start, length } = inHours(placement)
+			expect(start).toBeCloseTo(10, 6)
+			expect(length).toBeCloseTo(1, 6)
+		})
+
+		it('still draws whole days on a day axis', () => {
+			const [placement] = run([
+				mkEvent(
+					'timed-days',
+					'2025-01-13T09:00:00.000Z',
+					'2025-01-14T17:00:00.000Z'
+				),
+			])
+
+			expect(columnsOf(placement.width)).toBe(2)
+			expect(placement.left).toBeCloseTo((1 / days.length) * 100, 6)
 		})
 	})
 })

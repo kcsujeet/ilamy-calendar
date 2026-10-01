@@ -1117,3 +1117,91 @@ test.describe('hourly resource timeline day labels', () => {
 			.toBe(17)
 	})
 })
+
+test.describe('an off-the-hour event on the hourly timeline', () => {
+	// FullCalendar's timeline places an event at its exact times within a slot
+	// (`computeMsSlotCoverage` in `TimelineCoords.ts`). Ours drew whole hours, so
+	// a 10:27-12:27 event looked three hours long, and dragging it seemed to cut
+	// an hour off when the mirror showed its real two.
+	const openTimeline = (page: Page) =>
+		gotoScenario(page, {
+			scenario: 'long-resource-events',
+			view: 'day',
+			orientation: 'horizontal',
+			settings: { scrollTime: '08:00', height: '600px' },
+		})
+
+	test('draws the bar from its exact start to its exact end', async ({
+		page,
+	}) => {
+		await openTimeline(page)
+		const bar = page.getByTestId('horizontal-event-long-res-3')
+
+		// The bar's own geometry, as a percentage of its row: the drawn box is
+		// inset a few pixels so neighbouring bars do not touch. A day row is 24
+		// hours wide, so a percentage converts straight to minutes.
+		await expect
+			.poll(async () => {
+				const [left, width] = await Promise.all([
+					bar.getAttribute('data-left'),
+					bar.getAttribute('data-width'),
+				])
+				const minutesPerPercent = (24 * 60) / 100
+				const startMinutes = Number(left) * minutesPerPercent
+				const endMinutes = (Number(left) + Number(width)) * minutesPerPercent
+				return {
+					start: Math.round(startMinutes),
+					end: Math.round(endMinutes),
+				}
+			})
+			.toEqual({ start: 10 * 60 + 27, end: 12 * 60 + 27 })
+	})
+
+	test('a very short event keeps a minimum width', async ({ page }) => {
+		// FullCalendar keeps timeline events at least `eventMinWidth` wide. Ours
+		// is eight spacing units: 32px at the harness's default theme, where the
+		// five-minute event would otherwise be about 7px of an 80px hour.
+		await openTimeline(page)
+		const bar = page.getByTestId('horizontal-event-long-res-4')
+
+		await expect
+			.poll(async () => Math.round((await bar.boundingBox())?.width ?? 0))
+			.toBe(32)
+	})
+
+	test('a drag keeps its length in the mirror and after the drop', async ({
+		page,
+	}) => {
+		await openTimeline(page)
+		const calendar = new CalendarPage(page)
+		const bar = page.getByTestId('horizontal-event-long-res-3')
+		await expect(bar).toBeVisible()
+		const barBox = await bar.boundingBox()
+		const hourBox = await page
+			.getByTestId('resource-day-time-label-10')
+			.boundingBox()
+		if (!barBox || !hourBox) {
+			throw new Error('the bar or the 10:00 header cell is not on screen')
+		}
+
+		// One hour later, along its own row, in steps so the sensor activates.
+		const grabX = barBox.x + barBox.width / 2
+		const grabY = barBox.y + barBox.height / 2
+		await page.mouse.move(grabX, grabY)
+		await page.mouse.down()
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(grabX + (hourBox.width * step) / 8, grabY)
+		}
+
+		const mirrorBox = await calendar.dragMirror.boundingBox()
+		expect(Math.round(mirrorBox?.width ?? 0)).toBe(Math.round(barBox.width))
+
+		await page.mouse.up()
+		await expect
+			.poll(async () => {
+				const { start, end } = await calendar.eventNamed('Yoga class')
+				return (Date.parse(end) - Date.parse(start)) / 60_000
+			})
+			.toBe(120)
+	})
+})

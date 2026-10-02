@@ -149,6 +149,30 @@ test.describe('navigation', () => {
 
 		await expect(calendar.title).toHaveText(before ?? '')
 	})
+
+	test('moving a week keeps the time grid cells mounted (#300)', async ({
+		page,
+	}) => {
+		// Each cell is a dnd-kit droppable, and dnd-kit copies its whole registry
+		// on every register and unregister. Remounting ~2000 cells per click made
+		// a 15-minute resource week take seconds to navigate.
+		await gotoScenario(page, {
+			scenario: 'resources',
+			view: 'week',
+			orientation: 'vertical',
+			settings: { slot: 15 },
+		})
+		const grid = new TimeGrid(page)
+		const firstCell = page.locator('[data-testid^="vertical-cell-"]').first()
+		await firstCell.evaluate((cell) => {
+			cell.setAttribute('data-probe', 'before-navigation')
+		})
+
+		await grid.next()
+
+		await expect(firstCell).toHaveAttribute('data-start', /^2025-03-16/)
+		await expect(firstCell).toHaveAttribute('data-probe', 'before-navigation')
+	})
 })
 
 test.describe('the week that spans two months', () => {

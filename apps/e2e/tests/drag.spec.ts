@@ -104,6 +104,28 @@ test.describe('drag and drop', () => {
 			.toMatch(/^2025-03-12T13:00/)
 	})
 
+	test('drops on the slot of the week navigated to', async ({ page }) => {
+		// Cells survive navigation (#300), so the drop data they publish must
+		// follow the new week rather than the one they were mounted on.
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'week',
+			date: '2025-03-05T09:00:00.000Z',
+			settings: { scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+		await grid.next()
+
+		const bar = grid.event('Morning stand-up').first()
+		await expect(bar).toBeVisible()
+
+		await dragTo(page, bar, grid.slotAt('2025-03-12T13:00'))
+
+		await expect
+			.poll(async () => (await grid.eventNamed('Morning stand-up')).start)
+			.toMatch(/^2025-03-12T13:00/)
+	})
+
 	test('moves an event by the slot it lands on when the calendar has its own timezone', async ({
 		page,
 	}) => {

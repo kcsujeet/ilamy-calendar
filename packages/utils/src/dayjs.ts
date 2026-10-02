@@ -1,4 +1,10 @@
-import type { OpUnitType as DayjsOpUnitType, PluginFunc } from 'dayjs'
+import type {
+	ConfigType,
+	Dayjs as DayjsInstance,
+	ManipulateType as DayjsManipulateType,
+	OpUnitType as DayjsOpUnitType,
+	PluginFunc,
+} from 'dayjs'
 import dayjs from 'dayjs'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js'
@@ -212,8 +218,11 @@ Object.assign(timezoneAwareDayjs, dayjs)
 
 // Export the Dayjs type separately for use as a type in other files.
 // Files should use 'import dayjs, { type Dayjs } from "@ilamy/utils/dayjs"'
-export type Dayjs = dayjs.Dayjs
-export type ManipulateType = dayjs.ManipulateType
+// Named imports, not `dayjs.Dayjs`: bunup's declaration bundler renames these
+// aliases on a name clash (to `Dayjs3`) and renamed the `Dayjs` inside
+// `dayjs.Dayjs` with them, publishing a type dayjs does not export (#302).
+export type Dayjs = DayjsInstance
+export type ManipulateType = DayjsManipulateType
 
 /**
  * dayjs's statics without its call signatures. Mapping over the keys drops the
@@ -235,6 +244,6 @@ type DayjsStatics = { [K in keyof typeof dayjs]: (typeof dayjs)[K] }
  * (https://day.js.org/docs/en/parse/string-format). To read a bare wall-clock
  * string as a time in a given zone, call `dayjs.tz(input, timezone)`.
  */
-type ConfiguredDayjs = ((date?: dayjs.ConfigType) => dayjs.Dayjs) & DayjsStatics
+type ConfiguredDayjs = ((date?: ConfigType) => DayjsInstance) & DayjsStatics
 
 export default timezoneAwareDayjs as unknown as ConfiguredDayjs

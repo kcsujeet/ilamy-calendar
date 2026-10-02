@@ -5,8 +5,7 @@ import type {
 	Resource,
 } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import type React from 'react'
-import type { ReactNode } from 'react'
+import type { FC, ReactNode } from 'react'
 import { useMemo } from 'react'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
@@ -75,7 +74,7 @@ export interface CalendarProviderProps {
 	/** The resource axis. Absent/empty → a regular calendar (no filtering, no resource columns). */
 	resources?: Resource[]
 	/** Custom render for resource header cells. */
-	renderResource?: (resource: Resource) => React.ReactNode
+	renderResource?: (resource: Resource) => ReactNode
 	/** Resource arrangement preference. Only applies when `resources` is set. @default 'horizontal' */
 	orientation?: 'horizontal' | 'vertical'
 	/** Week-view granularity for resource weeks. @default 'hourly' */
@@ -239,7 +238,7 @@ const useCalendarContextValue = (
 	])
 }
 
-export const CalendarProvider: React.FC<CalendarProviderProps> = ({
+export const CalendarProvider: FC<CalendarProviderProps> = ({
 	children,
 	...props
 }) => {

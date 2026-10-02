@@ -133,7 +133,8 @@ bun run check:fix                  # Combined lint + format fixes
 bun run pre-commit                 # = check:fix
 bun run build                      # Production build (bunup)
 bun run type-check                 # TypeScript check
-bun run ci                         # Full CI: check + build + type-check + test
+bun run check:dist-types           # Strict tsc over the BUILT dist/*.d.ts (run after build)
+bun run ci                         # Full CI: check + build + check:dist-types + type-check + test
 
 # Match the CI gate locally (Fallow static analysis; CI runs fallow-rs/fallow@v3
 # pinned to 3.20.0, config in fallow.toml). Always pass --no-cache:

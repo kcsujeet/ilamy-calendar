@@ -6,7 +6,7 @@ import type {
 	WeekDays,
 } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import type React from 'react'
+import type { ReactNode } from 'react'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
@@ -161,7 +161,7 @@ export interface IlamyCalendarProps {
 	 * and `top: var(--ilamy-sticky-top)`, which each grid publishes to clear
 	 * its own sticky column and header.
 	 */
-	renderEvent?: (event: CalendarEvent, segment: EventSegment) => React.ReactNode
+	renderEvent?: (event: CalendarEvent, segment: EventSegment) => ReactNode
 	/**
 	 * Callback when an event is clicked.
 	 * Provides the clicked event object.
@@ -281,7 +281,7 @@ export interface IlamyCalendarProps {
 	 * Custom header component to replace the default calendar header.
 	 * Useful for adding custom branding or additional controls.
 	 */
-	headerComponent?: React.ReactNode
+	headerComponent?: ReactNode
 	/**
 	 * Custom class name for the calendar header.
 	 * Useful for applying custom styles to the header.
@@ -299,7 +299,7 @@ export interface IlamyCalendarProps {
 	 * If provided, it will override the default event form component.
 	 * The function receives EventFormProps and should return a React node.
 	 */
-	renderEventForm?: (props: EventFormProps) => React.ReactNode
+	renderEventForm?: (props: EventFormProps) => ReactNode
 	/**
 	 * Called when the "+N more" overflow indicator in a month/grid cell is
 	 * clicked, receiving the cell's day and its full list of events.
@@ -370,7 +370,7 @@ export interface IlamyCalendarProps {
 	 */
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
-	) => React.ReactNode
+	) => ReactNode
 	/**
 	 * Days of the week to hide from the week view.
 	 * Hidden days won't render as columns, giving remaining days more space.
@@ -394,7 +394,7 @@ export interface IlamyCalendarProps {
 	 * Custom render function for the hour labels in the gutter/header.
 	 * Receives a Dayjs object for the hour and should return a React node.
 	 */
-	renderHour?: (date: Dayjs) => React.ReactNode
+	renderHour?: (date: Dayjs) => ReactNode
 	/**
 	 * Granularity of the time grid in minutes for day, week, and resource hour views.
 	 * Quarter-hour increments only: `15`, `30`, or `60`.
@@ -475,7 +475,7 @@ export interface IlamyCalendarProps {
 	 */
 	resources?: Resource[]
 	/** Custom render function for resource header cells. */
-	renderResource?: (resource: Resource) => React.ReactNode
+	renderResource?: (resource: Resource) => ReactNode
 	/**
 	 * How resources are arranged. Only applies when `resources` is set.
 	 * - "horizontal": resources are rows, time is columns (default)

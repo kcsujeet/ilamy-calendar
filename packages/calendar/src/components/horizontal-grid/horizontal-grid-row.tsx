@@ -80,7 +80,11 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 			<div className="relative flex-1 flex min-w-0">
 				{/* gap-px + bg-border draws the vertical separators between cells. */}
 				<div className="flex w-full min-w-0 gap-px bg-border">
-					{columns.map((col) => {
+					{/* Keyed by position, not by date, so navigating keeps every cell
+					    mounted: a remount re-registers its droppable, and dnd-kit copies
+					    its whole registry for each one (#300). */}
+					{columns.map((col, columnIndex) => {
+						const columnKey = keys.listKey('col', columnIndex)
 						if (col.days) {
 							return (
 								<GroupedColumn
@@ -89,7 +93,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 									dayNumberHeight={dayNumberHeight}
 									gridType={gridType}
 									id={id}
-									key={col.id}
+									key={columnKey}
 									resource={resource}
 									resourceId={resource?.id}
 									showDayNumber={showDayNumber}
@@ -104,7 +108,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								day={col.day}
 								gridType={gridType}
 								hour={gridType === 'hour' ? col.day.hour() : undefined}
-								key={col.day.toISOString()}
+								key={columnKey}
 								precomputedEvents={columnEventsMap.get(
 									keys.col.events(col.day)
 								)}
@@ -171,14 +175,14 @@ const GroupedColumn = memo(
 			<div className="flex relative w-full">
 				{/* gap-px + bg-border draws the day separators within the group. */}
 				<div className="flex w-full gap-px bg-border">
-					{days.map((day) => (
+					{days.map((day, dayIndex) => (
 						<GridCell
 							allDay={allDay}
 							className={cn('flex-1 w-20', col.className)}
 							day={day}
 							gridType={gridType}
 							hour={gridType === 'hour' ? day.hour() : undefined}
-							key={day.toISOString()}
+							key={keys.listKey('day', dayIndex)}
 							resourceId={resourceId}
 							showDayNumber={showDayNumber}
 						/>

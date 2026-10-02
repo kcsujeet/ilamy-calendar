@@ -54,6 +54,16 @@ const eventKey = `${event.id}-${resourceId ?? 'no-resource'}`
 const eventKey = `${event.id}-${position}-${weekStart.toISOString()}-${resourceId}`
 ```
 
+## Cell Key Strategy
+
+Every grid cell is a `@dnd-kit/core` droppable, and dnd-kit copies its whole droppable map on each register and unregister (`core.esm.js` `RegisterDroppable`/`UnregisterDroppable`, v6.3.1). Registering N cells is therefore O(N²), so a cell must never remount just because the date it shows changed (#300).
+
+- Cells, columns and rows are keyed by **position** (`keys.listKey('col', index)`), or by resource id for a resource row. Never by date: navigation then hands each kept cell its new date as a prop.
+- `DroppableCell` takes its droppable id from `useId()`, not from its date. The drop reads the date from the droppable's `data`, which `useDroppable` refreshes on every render.
+- No container above the cells is keyed by the date either. `HorizontalGrid` once keyed its body by `currentDate.format('YYYY-MM')`, which remounted every cell on each new month.
+
+`navigation keeps every cell mounted (#300)` in `ilamy-calendar.test.tsx` covers every view and orientation; the e2e harness checks the same in a real browser.
+
 ## Engine Effect Guards
 
 ### Problem

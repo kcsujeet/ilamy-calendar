@@ -88,7 +88,6 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 					<div
 						className="relative w-full flex flex-col flex-1 gap-px bg-border"
 						data-calendar-scroll-content="true"
-						key={currentDate.format('YYYY-MM')}
 					>
 						{rows.map((row) => (
 							<HorizontalGridRow

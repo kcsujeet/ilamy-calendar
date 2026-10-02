@@ -48,6 +48,25 @@ test.describe('month grid', () => {
 		await expect(month.overflowIndicators).toHaveText('+5 more')
 	})
 
+	test('the overflow indicator opens a dialog listing every event of the day', async ({
+		page,
+	}) => {
+		// Only cells that draw events mount the dialog; this proves the cells
+		// that can show the indicator still have one behind it.
+		await gotoScenario(page, {
+			scenario: 'many-events',
+			view: 'month',
+			settings: { dayMaxEvents: 2 },
+		})
+		const month = new MonthGrid(page)
+
+		await month.overflowIndicators.click()
+
+		const dialog = page.getByRole('dialog')
+		await expect(dialog).toContainText('March 12, 2025')
+		await expect(dialog.getByText(/^Event \d$/)).toHaveCount(7)
+	})
+
 	test('draws an event longer than a row as one bar per row', async ({
 		page,
 	}) => {
@@ -173,6 +192,68 @@ test.describe('navigation', () => {
 		await expect(firstCell).toHaveAttribute('data-start', /^2025-03-16/)
 		await expect(firstCell).toHaveAttribute('data-probe', 'before-navigation')
 	})
+
+	// The same cost on the date-row grid and the all-day rows, which key their
+	// cells in a separate component. 31 January, so every "next" also crosses
+	// into February: the date-row grid once remounted on each new month too.
+	for (const surface of [
+		{ name: 'month', view: 'month' },
+		{ name: 'week all-day row', view: 'week' },
+		{
+			name: 'resource week, horizontal',
+			view: 'week',
+			orientation: 'horizontal',
+		},
+		{
+			name: 'resource day, horizontal',
+			view: 'day',
+			orientation: 'horizontal',
+		},
+		{
+			name: 'resource month, horizontal',
+			view: 'month',
+			orientation: 'horizontal',
+		},
+		{
+			name: 'resource week all-day rows',
+			view: 'week',
+			orientation: 'vertical',
+		},
+	] as const) {
+		test(`navigating keeps every cell mounted: ${surface.name} (#300)`, async ({
+			page,
+		}) => {
+			const isResourceSurface = 'orientation' in surface
+			await gotoScenario(page, {
+				scenario: isResourceSurface ? 'resources' : 'basic',
+				view: surface.view,
+				orientation: isResourceSurface ? surface.orientation : undefined,
+				date: '2025-01-31T09:00:00.000Z',
+			})
+			const calendar = new CalendarPage(page)
+			const titleBefore = await calendar.title.textContent()
+			const cells = page.locator('.droppable-cell')
+			const firstStartBefore = await cells.first().getAttribute('data-start')
+			await cells.evaluateAll((all) => {
+				for (const cell of all) {
+					cell.setAttribute('data-probe', 'before-navigation')
+				}
+			})
+
+			await calendar.next()
+
+			// A cell without the probe is one React mounted fresh. February can
+			// draw fewer cells than January, never one that was not kept.
+			await expect(calendar.title).not.toHaveText(titleBefore ?? '')
+			await expect(cells.first()).not.toHaveAttribute(
+				'data-start',
+				firstStartBefore ?? ''
+			)
+			await expect(
+				page.locator('.droppable-cell:not([data-probe])')
+			).toHaveCount(0)
+		})
+	}
 })
 
 test.describe('the week that spans two months', () => {

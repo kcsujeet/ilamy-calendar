@@ -68,7 +68,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 								className="min-h-[60px] bg-background"
 								data-hour={isTimeGutter ? hourStr : undefined}
 								data-testid={testId}
-								key={keys.listKey(id, dayIndex, hourStr)}
+								key={keys.listKey(dayIndex, hourStr)}
 							>
 								{renderCell(day)}
 							</div>
@@ -78,7 +78,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 					return (
 						<div
 							className="flex flex-col min-h-[60px]"
-							key={keys.listKey(id, dayIndex, hourStr)}
+							key={keys.listKey(dayIndex, hourStr)}
 						>
 							{cellOffsets.map((minute, offsetIndex) => {
 								const mm = String(minute).padStart(2, '0')
@@ -104,7 +104,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 										// slots, breaking drag-to-create's cross-day selection.
 										hour={gridType === 'hour' ? day.hour() : undefined}
 										isSubDivider={isSubDivider}
-										key={keys.listKey(id, dayIndex, mm)}
+										key={keys.listKey(dayIndex, mm)}
 										minute={hasSubHourSlots ? minute : undefined}
 										resourceId={resourceId} // Events are rendered in a separate layer
 										shouldRenderEvents={false}

@@ -2,6 +2,7 @@ import { useDroppable } from '@dnd-kit/core'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
+import { useId } from 'react'
 import { useDragPreview } from '@/contexts/drag-preview-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { CellInfo } from '@/features/calendar/types'
@@ -10,7 +11,6 @@ import { isPreviewOnTarget } from '@/lib/utils/drag-preview'
 import type { DropCellData } from './drag-and-drop/dnd-utils'
 
 interface DroppableCellProps {
-	id: string
 	type: 'day-cell' | 'time-cell'
 	date: Dayjs
 	hour?: number
@@ -116,7 +116,6 @@ const useDragLandsHere = (
 }
 
 interface DropTargetInput {
-	id: string
 	/** Published to the drag so a drop can read where — and whether — it landed. */
 	data: DropCellData
 	cellRange: { start: Dayjs; end: Dayjs }
@@ -138,13 +137,16 @@ interface DropTargetInput {
  * cells grey makes the bar look like it is crossing unavailable ground.
  */
 const useDropTarget = ({
-	id,
 	data,
 	cellRange,
 	disableDragAndDrop,
 }: DropTargetInput) => {
 	const { isOver, setNodeRef } = useDroppable({
-		id,
+		// An id for the cell, not for its date. dnd-kit re-registers a droppable
+		// whenever its id changes and copies its whole registry each time, so a
+		// date-based id made every navigation cost O(cells²) (#300). `data`
+		// still carries the date, and the drop reads it from there.
+		id: useId(),
 		data,
 		disabled: disableDragAndDrop,
 	})
@@ -221,7 +223,6 @@ const getCellClasses = ({
 	)
 
 export function DroppableCell({
-	id,
 	type,
 	date,
 	hour,
@@ -257,7 +258,6 @@ export function DroppableCell({
 	const clickBlocked = disableCellClick || cellDisabled
 
 	const { setNodeRef, showDropHighlight } = useDropTarget({
-		id,
 		data: {
 			type,
 			date,

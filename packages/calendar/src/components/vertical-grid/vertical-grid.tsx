@@ -132,7 +132,9 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 				>
 					{columns.map((column, index) => (
 						<VerticalGridCol
-							key={keys.listKey(column.id, index)}
+							// By position, not by `column.id`: the id carries the date, so
+							// keying on it remounted every cell on navigation (#300).
+							key={keys.listKey('col', index)}
 							{...column}
 							gridType={gridType}
 							slotDurationMinutes={slotDurationMinutes}

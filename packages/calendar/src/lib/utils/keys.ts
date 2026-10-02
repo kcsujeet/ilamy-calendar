@@ -133,16 +133,4 @@ export const keys = {
 
 	// Form element testid for time pickers (name = 'start' / 'end' etc.)
 	timePicker: (name: string | undefined) => `time-picker-${name ?? ''}`,
-
-	// Droppable ids (dnd-kit registry — ISO for per-slot uniqueness).
-	// `drop-` prefix avoids colliding with `cell.day` testids.
-	droppable: {
-		dayCell: (day: Dayjs, options?: { allDay?: boolean; resourceId?: Id }) => {
-			const iso = day.toISOString()
-			const allDayPart = options?.allDay ? '-allday' : ''
-			const resourcePart =
-				options?.resourceId != null ? `-resource-${options.resourceId}` : ''
-			return `drop-day-cell-${iso}${allDayPart}${resourcePart}`
-		},
-	},
 } as const

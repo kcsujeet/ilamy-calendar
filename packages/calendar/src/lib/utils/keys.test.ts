@@ -189,29 +189,3 @@ describe('keys.listKey (generic iteration key composer)', () => {
 		expect(keys.listKey('header', '01', 'mon')).toBe('header-01-mon')
 	})
 })
-
-describe('keys.droppable (dnd-kit registry)', () => {
-	it('uses drop- prefix + ISO timestamp for unique day-cell droppable ids', () => {
-		expect(keys.droppable.dayCell(monday)).toBe(
-			'drop-day-cell-2025-10-13T00:00:00.000Z'
-		)
-	})
-
-	it('appends -allday marker', () => {
-		expect(keys.droppable.dayCell(monday, { allDay: true })).toBe(
-			'drop-day-cell-2025-10-13T00:00:00.000Z-allday'
-		)
-	})
-
-	it('appends resource marker', () => {
-		expect(keys.droppable.dayCell(monday, { resourceId: 'r1' })).toBe(
-			'drop-day-cell-2025-10-13T00:00:00.000Z-resource-r1'
-		)
-	})
-
-	it('appends both markers in the expected order (allday before resource)', () => {
-		expect(
-			keys.droppable.dayCell(monday, { allDay: true, resourceId: 'r1' })
-		).toBe('drop-day-cell-2025-10-13T00:00:00.000Z-allday-resource-r1')
-	})
-})

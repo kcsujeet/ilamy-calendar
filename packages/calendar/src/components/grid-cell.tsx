@@ -149,8 +149,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	const dayKey = keys.cell.day(day)
 	const testId = gridType === 'hour' ? hourKey : dayKey
 
-	const droppableId = keys.droppable.dayCell(day, { allDay, resourceId })
-
 	return (
 		<>
 			<DroppableCell
@@ -163,7 +161,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				date={day}
 				disabled={!isBusiness || isOutsideDisplayedMonth}
 				hour={hour}
-				id={droppableId}
 				isSubDivider={isSubDivider}
 				minute={minute}
 				resourceId={resourceId}

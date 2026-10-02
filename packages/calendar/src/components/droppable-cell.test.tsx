@@ -51,7 +51,6 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 					data-testid="cell"
 					date={initialDate}
 					hour={opts.hour}
-					id="test-cell"
 					isSubDivider={opts.isSubDivider}
 					minute={opts.minute}
 					resourceId={opts.resourceId}

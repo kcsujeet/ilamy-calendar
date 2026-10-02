@@ -34,6 +34,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	const { commitDrop, scopeDialog } = useDropCommit()
 	const { sensors, dragPreview, overlayRef, handlers } =
 		useCalendarDrag(commitDrop)
+	const isDragging = dragPreview !== null
 
 	// If drag and drop is disabled, just return children without DndContext
 	if (disableDragAndDrop) {
@@ -48,7 +49,15 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 				sensors={sensors}
 				{...handlers}
 			>
-				{children}
+				{/* `data-dragging` lets a cell drop its hover tint while an event is
+				    dragged over it, leaving the drop tint as the only one (#299).
+				    `contents` keeps the wrapper out of the layout. */}
+				<div
+					className="contents"
+					data-dragging={isDragging ? 'true' : undefined}
+				>
+					{children}
+				</div>
 				<EventDragOverlay ref={overlayRef} />
 			</DndContext>
 

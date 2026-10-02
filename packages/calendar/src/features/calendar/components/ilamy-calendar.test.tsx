@@ -10,7 +10,7 @@ import {
 	test,
 } from 'bun:test'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
-import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
+import type { CalendarEvent, IlamyPlugin, Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import {
 	cleanup,
@@ -1496,5 +1496,69 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 				expect(dayNumber()).toBe(numberBefore)
 			}
 		)
+	})
+})
+
+// Every cell is a dnd-kit droppable, and dnd-kit copies its whole registry
+// on each register and unregister. A cell keyed by its date remounted on
+// every navigation, so a big grid re-registered thousands of droppables and
+// froze for seconds (#300). A kept cell takes its new date as a prop.
+describe('navigation keeps every cell mounted (#300)', () => {
+	const RESOURCES = [
+		{ id: 'r1', title: 'Room A' },
+		{ id: 'r2', title: 'Room B' },
+	]
+	// The last day of a month, so each "next" also crosses into August, which
+	// has as many days as July: a resource month keeps its cell count.
+	const LAST_DAY_OF_JULY = '2025-07-31T09:00:00.000Z'
+
+	const getCells = () => [...document.querySelectorAll('.droppable-cell')]
+	const getFirstCellStart = () => getCells().at(0)?.getAttribute('data-start')
+
+	interface NavigationCase {
+		name: string
+		view: 'day' | 'week' | 'month'
+		orientation?: 'horizontal' | 'vertical'
+		resources?: Resource[]
+	}
+
+	test.each<NavigationCase>([
+		{ name: 'day', view: 'day' as const },
+		{ name: 'week', view: 'week' as const },
+		{ name: 'month', view: 'month' as const },
+		...(['horizontal', 'vertical'] as const).flatMap((orientation) =>
+			(['day', 'week', 'month'] as const).map((view) => ({
+				name: `resource ${view} ${orientation}`,
+				view,
+				orientation,
+				resources: RESOURCES,
+			}))
+		),
+	])('$name', ({ view, orientation, resources }) => {
+		render(
+			<IlamyCalendar
+				events={[]}
+				initialDate={LAST_DAY_OF_JULY}
+				initialView={view}
+				orientation={orientation}
+				resources={resources}
+				timezone="UTC"
+			/>
+		)
+		const cellsBefore = getCells()
+		const startBefore = getFirstCellStart()
+
+		fireEvent.click(screen.getByLabelText('Next'))
+
+		// A month grid can gain or lose a week row; the cells both months draw
+		// come first, so those are the ones that must have stayed.
+		const cellsAfter = getCells()
+		const sharedCellCount = Math.min(cellsBefore.length, cellsAfter.length)
+		const sharedCellsAfter = cellsAfter.slice(0, sharedCellCount)
+		const remountedCells = sharedCellsAfter.filter(
+			(cell, index) => cell !== cellsBefore.at(index)
+		)
+		expect(getFirstCellStart()).not.toBe(startBefore)
+		expect(remountedCells).toHaveLength(0)
 	})
 })

@@ -80,6 +80,27 @@ test.describe('drag and drop', () => {
 			.toMatch(/^2025-03-06/)
 	})
 
+	test('drops on the day of the month navigated to', async ({ page }) => {
+		// Month cells survive navigation (#300): these were mounted on February
+		// dates, so the drop data they publish must follow them into March.
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			date: '2025-02-12T09:00:00.000Z',
+		})
+		const month = new MonthGrid(page)
+		await month.next()
+
+		const bar = month.event('Earlier in the month').first()
+		await expect(bar).toBeVisible()
+
+		await dragTo(page, bar, month.cellOn('2025-03-06'))
+
+		await expect
+			.poll(async () => (await month.eventNamed('Earlier in the month')).start)
+			.toMatch(/^2025-03-06/)
+	})
+
 	test('moves an event to another hour in the day grid', async ({ page }) => {
 		// The month grid alone cannot catch this: it drops onto day cells, which
 		// take their date from the cell and their clock from the event. Only an

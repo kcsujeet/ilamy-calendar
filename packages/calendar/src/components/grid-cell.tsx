@@ -222,8 +222,11 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				</div>
 			</DroppableCell>
 
-			{/* Dialog for showing all events */}
-			<AllEventDialog ref={allEventsDialogRef} />
+			{/* Only a cell that draws events can show "+N more", the dialog's one
+			    opener. Time-grid slots draw none, and a closed dialog in each of
+			    their thousands still cost a quarter to a third of navigating a
+			    15-minute resource week (#300). */}
+			{shouldRenderEvents && <AllEventDialog ref={allEventsDialogRef} />}
 		</>
 	)
 }

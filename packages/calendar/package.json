@@ -62,6 +62,7 @@
 		"test": "bun test",
 		"test:coverage": "bun test --coverage",
 		"type-check": "bunx tsc --noEmit",
+		"check:dist-types": "bunx tsc -p tsconfig.dist.json",
 		"lint": "bunx biome lint . --diagnostic-level=error",
 		"check": "bunx biome check . --diagnostic-level=error",
 		"check:fix": "bunx biome check --write .",

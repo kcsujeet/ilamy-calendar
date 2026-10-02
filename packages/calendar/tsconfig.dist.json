@@ -1,0 +1,19 @@
+{
+	// Type-checks the PUBLISHED declarations the way a strict consumer does
+	// (`skipLibCheck: false`), after `bun run build`. The source type-check
+	// cannot catch a declaration-bundling bug: bunup's dts bundler once renamed
+	// `dayjs.Dayjs` to `dayjs.Dayjs3`, which does not exist (#302).
+	// Deliberately standalone: no `paths`, so `@ilamy/calendar` resolves to the
+	// built package exactly as it does in a consumer's node_modules.
+	"compilerOptions": {
+		"strict": true,
+		"skipLibCheck": false,
+		"noEmit": true,
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
+		"types": []
+	},
+	"include": ["dist/**/*.d.ts"]
+}

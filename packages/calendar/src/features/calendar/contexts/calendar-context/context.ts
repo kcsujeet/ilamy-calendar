@@ -1,6 +1,6 @@
 import type { CalendarEvent, Resource } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { createContext } from 'react'
+import { type Context, createContext, type ReactNode } from 'react'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import type { CalendarEngineReturn } from '@/features/calendar/hooks/use-calendar-engine'
 import type {
@@ -19,7 +19,7 @@ import type { TimeFormat } from '@/types'
  * `IlamyCalendarApi` (see use-smart-calendar-context).
  */
 export interface CalendarContextType extends CalendarEngineReturn {
-	renderEvent?: (event: CalendarEvent, segment: EventSegment) => React.ReactNode
+	renderEvent?: (event: CalendarEvent, segment: EventSegment) => ReactNode
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellInfo) => void
 	isCellDisabled?: (info: CellInfo) => boolean
@@ -33,16 +33,16 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	eventHeight: number
 	stickyViewHeader: boolean
 	viewHeaderClassName: string
-	headerComponent?: React.ReactNode // Optional custom header component
+	headerComponent?: ReactNode // Optional custom header component
 	headerClassName?: string // Optional custom header class
-	renderEventForm?: (props: EventFormProps) => React.ReactNode
+	renderEventForm?: (props: EventFormProps) => ReactNode
 	onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
 	timeFormat: TimeFormat
 	classesOverride?: CalendarClassesOverride
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
-	) => React.ReactNode
-	renderHour?: (date: Dayjs) => React.ReactNode
+	) => ReactNode
+	renderHour?: (date: Dayjs) => ReactNode
 	hideNonBusinessHours?: boolean
 	hideExportButton?: boolean
 	hiddenDays?: Set<number>
@@ -50,9 +50,9 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	scrollTime?: string
 	scrollToNow?: boolean
 	/** Custom render for resource header cells (resource axis presentation). */
-	renderResource?: (resource: Resource) => React.ReactNode
+	renderResource?: (resource: Resource) => ReactNode
 }
 
 // CalendarContext is kept for internal Provider usage
-export const CalendarContext: React.Context<CalendarContextType | undefined> =
+export const CalendarContext: Context<CalendarContextType | undefined> =
 	createContext<CalendarContextType | undefined>(undefined)

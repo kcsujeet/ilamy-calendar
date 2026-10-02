@@ -49,6 +49,12 @@ jobs:
       - name: Build
         run: bun run build
 
+      # The published declarations, checked as a strict consumer would
+      # (skipLibCheck: false). The source type-check cannot see a
+      # declaration-bundling bug (#302).
+      - name: Check published types
+        run: bun run check:dist-types
+
       - name: Type-check
         run: bun run type-check
 

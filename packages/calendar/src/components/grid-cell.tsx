@@ -154,7 +154,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 			<DroppableCell
 				allDay={allDay}
 				className={cn(
-					'cursor-pointer overflow-clip p-1 bg-background hover:bg-accent min-h-[60px] relative min-w-0',
+					'cursor-pointer overflow-clip p-1 bg-background not-in-data-dragging:hover:bg-accent min-h-[60px] relative min-w-0',
 					className
 				)}
 				data-testid={dataTestId || testId}

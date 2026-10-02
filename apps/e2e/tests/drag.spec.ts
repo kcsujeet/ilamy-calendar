@@ -58,9 +58,104 @@ const dragTo = async (
 /** The fill an event gets when it declares no colour of its own. */
 const FALLBACK_FILL = 'oklch(0.623 0.214 259.815)'
 
+/** A cell's own background, as the browser resolves it. */
+const getCellFill = (cell: import('@playwright/test').Locator) =>
+	cell.evaluate((el) => getComputedStyle(el).backgroundColor)
+
 /** The colour the snapped mirror is painting, as the browser resolves it. */
 const getMirrorColour = (mirror: import('@playwright/test').Locator) =>
 	mirror.evaluate((el) => getComputedStyle(el).backgroundColor)
+
+// A cell tints under the pointer to invite a click (#299). During a drag that
+// tint was a second colour beside the drop tint, meaning nothing; the cell
+// under a drag keeps its resting fill and only the drop tint shows.
+test.describe('cell hover tint', () => {
+	test('a month cell takes the hover tint when nothing is dragged', async ({
+		page,
+	}) => {
+		await gotoScenario(page, { scenario: 'basic', view: 'month' })
+		const month = new MonthGrid(page)
+		const hovered = month.cellOn('2025-03-06')
+		const neighbour = month.cellOn('2025-03-07')
+
+		await hovered.hover()
+
+		const [hoveredFill, restingFill] = await Promise.all([
+			getCellFill(hovered),
+			getCellFill(neighbour),
+		])
+		expect(hoveredFill).not.toBe(restingFill)
+	})
+
+	test('a time slot takes the hover tint when nothing is dragged', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'day',
+			settings: { scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+		const hovered = grid.slotAt('2025-03-12T11:00')
+		const neighbour = grid.slotAt('2025-03-12T12:00')
+
+		await hovered.hover()
+
+		const [hoveredFill, restingFill] = await Promise.all([
+			getCellFill(hovered),
+			getCellFill(neighbour),
+		])
+		expect(hoveredFill).not.toBe(restingFill)
+	})
+
+	test('the month cell under a drag keeps its resting fill', async ({
+		page,
+	}) => {
+		await gotoScenario(page, { scenario: 'basic', view: 'month' })
+		const month = new MonthGrid(page)
+		const target = month.cellOn('2025-03-06')
+		const neighbour = month.cellOn('2025-03-07')
+
+		await pressAndMoveTo(
+			page,
+			month.event('Earlier in the month').first(),
+			target
+		)
+
+		// The drop tint is the cell's overlay child, so the cell's own fill is
+		// what the hover tint would change.
+		await expect(target).toHaveAttribute('data-drop-target', 'true')
+		const [targetFill, restingFill] = await Promise.all([
+			getCellFill(target),
+			getCellFill(neighbour),
+		])
+		expect(targetFill).toBe(restingFill)
+		await page.mouse.up()
+	})
+
+	test('the time slot under a drag keeps its resting fill', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'day',
+			settings: { scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+		const target = grid.slotAt('2025-03-12T13:00')
+		const neighbour = grid.slotAt('2025-03-12T15:00')
+
+		await pressAndMoveTo(page, grid.event('Morning stand-up').first(), target)
+
+		await expect(target).toHaveAttribute('data-drop-target', 'true')
+		const [targetFill, restingFill] = await Promise.all([
+			getCellFill(target),
+			getCellFill(neighbour),
+		])
+		expect(targetFill).toBe(restingFill)
+		await page.mouse.up()
+	})
+})
 
 test.describe('drag and drop', () => {
 	test('moves an event to another day in the month grid', async ({ page }) => {

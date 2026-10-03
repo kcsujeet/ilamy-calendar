@@ -1,5 +1,9 @@
 {
 	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		// `bun:test` in the co-located tests, as in @ilamy/utils.
+		"types": ["bun"]
+	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],
 	"exclude": ["dist", "node_modules", "bunup.config.ts"]
 }

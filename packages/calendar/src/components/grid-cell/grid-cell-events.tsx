@@ -56,11 +56,7 @@ export const GridCellEvents: React.FC<GridCellEventsProps> = ({
 			cellEvents = cellEvents.filter((e) => e.allDay)
 		}
 
-		if (resourceId) {
-			return filterEventsForResource(cellEvents, resourceId)
-		}
-
-		return cellEvents
+		return filterEventsForResource(cellEvents, resourceId)
 	}, [
 		precomputedEvents,
 		day,

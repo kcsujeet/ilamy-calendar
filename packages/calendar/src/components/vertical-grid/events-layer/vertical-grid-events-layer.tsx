@@ -34,7 +34,9 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	const rangeEnd = days.at(-1)?.add(1, gridType)
 	// Stacked resource rows share one continuous now-line; only the first resource
 	// (or a non-resource grid) draws the dot at its start, so it isn't repeated.
-	const isFirstResource = !resourceId || resources?.at(0)?.id === resourceId
+	const hasNoResourceAxis = resourceId === undefined
+	const isFirstResource =
+		hasNoResourceAxis || resources?.at(0)?.id === resourceId
 	// Only show the "now" line in hour-resolution grids. In day-resolution
 	// vertical views (resource month, resource week daily) a sub-day percentage
 	// line is meaningless, so suppress it — mirrors the horizontal events layer.

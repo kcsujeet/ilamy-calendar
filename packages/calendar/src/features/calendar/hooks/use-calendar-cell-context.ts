@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import { useRequiredContext } from '@ilamy/ui/hooks/use-required-context'
 import {
 	CalendarCellContext,
 	type CalendarCellContextType,
@@ -9,14 +9,9 @@ import {
  * change elsewhere in the calendar (an event moving) does not re-render the
  * thousands of cells in a time grid. See CalendarCellContextType.
  */
-export const useCalendarCellContext = (): CalendarCellContextType => {
-	const context = useContext(CalendarCellContext)
-
-	if (!context) {
-		throw new Error(
-			'useCalendarCellContext must be used within a CalendarProvider'
-		)
-	}
-
-	return context
-}
+export const useCalendarCellContext = (): CalendarCellContextType =>
+	useRequiredContext(
+		CalendarCellContext,
+		'useCalendarCellContext',
+		'CalendarProvider'
+	)

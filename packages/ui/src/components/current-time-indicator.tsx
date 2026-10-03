@@ -71,7 +71,12 @@ const NoMemoCurrentTimeIndicator = ({
 				data-testid="current-time-indicator"
 				style={{ left: `${progress}%` }}
 			>
-				{withDot && <div className="size-2 shrink-0 rounded-full bg-red-500" />}
+				{withDot && (
+					<div
+						className="size-2 shrink-0 rounded-full bg-red-500"
+						data-testid="current-time-dot"
+					/>
+				)}
 				<div className="w-0.5 flex-1 bg-red-500" />
 			</div>
 		)
@@ -83,7 +88,12 @@ const NoMemoCurrentTimeIndicator = ({
 			data-testid="current-time-indicator"
 			style={{ top: `${progress}%` }}
 		>
-			{withDot && <div className="size-2 shrink-0 rounded-full bg-red-500" />}
+			{withDot && (
+				<div
+					className="size-2 shrink-0 rounded-full bg-red-500"
+					data-testid="current-time-dot"
+				/>
+			)}
 			<div className="h-0.5 flex-1 bg-red-500" />
 		</div>
 	)

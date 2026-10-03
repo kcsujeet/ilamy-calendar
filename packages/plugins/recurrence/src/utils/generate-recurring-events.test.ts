@@ -226,7 +226,7 @@ describe('generateRecurringEvents instance ids', () => {
 	// series and starts over past it. An hourly series over seven months
 	// crosses that, and answers must stay what a fresh series gives.
 	it('answers correctly after its memo of instants starts over', () => {
-		const hourly = (id: string) =>
+		const mkHourlyEvent = (id: string) =>
 			mkRecurringEvent(
 				id,
 				'2025-01-01T00:00:00.000Z',
@@ -238,8 +238,8 @@ describe('generateRecurringEvents instance ids', () => {
 					},
 				}
 			)
-		const reused = hourly('hourly')
-		const fresh = hourly('hourly')
+		const reused = mkHourlyEvent('hourly')
+		const fresh = mkHourlyEvent('hourly')
 
 		const sevenMonths = expand(
 			reused,

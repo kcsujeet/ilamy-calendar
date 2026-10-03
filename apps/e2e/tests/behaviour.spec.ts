@@ -521,6 +521,68 @@ test.describe('resource day view overflow', () => {
 	})
 })
 
+/*
+ * A resource id is `string | number`, so 0 is as real as any other. A truthy
+ * `if (resourceId)` read it as "no resource" and skipped the filter, so the
+ * row for resource 0 held every resource's events.
+ */
+test.describe('a resource with id 0', () => {
+	const cases = (['horizontal', 'vertical'] as const).flatMap((orientation) =>
+		(['day', 'week', 'month'] as const).map((view) => ({ orientation, view }))
+	)
+
+	for (const { orientation, view } of cases) {
+		test(`draws each event once in a ${orientation} ${view}`, async ({
+			page,
+		}) => {
+			await gotoScenario(page, {
+				scenario: 'numeric-resource-ids',
+				view,
+				orientation,
+			})
+			await new CalendarPage(page).expectRendered()
+
+			// One event per resource: drawn twice means resource 0 drew both.
+			const bars = (eventId: string) =>
+				page.locator(`[data-testid="${orientation}-event-${eventId}"]`)
+			await expect(bars('zero-1')).toHaveCount(1)
+			await expect(bars('one-1')).toHaveCount(1)
+		})
+	}
+
+	for (const orientation of ['horizontal', 'vertical'] as const) {
+		test(`does not draw a second now dot in a ${orientation} day`, async ({
+			page,
+		}) => {
+			await gotoScenario(page, {
+				scenario: 'numeric-resource-ids',
+				view: 'day',
+				orientation,
+			})
+			await new CalendarPage(page).expectRendered()
+
+			// Every resource draws the now-line; only the first draws its dot.
+			await expect(page.getByTestId('current-time-indicator')).toHaveCount(2)
+			await expect(page.getByTestId('current-time-dot')).toHaveCount(1)
+		})
+	}
+
+	test('its month cells hold only its own events', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'numeric-resource-ids',
+			view: 'month',
+			orientation: 'horizontal',
+		})
+		await new CalendarPage(page).expectRendered()
+
+		// The cell's own signal is the placeholder it renders per event it
+		// believes it holds, which carries the title as its test id.
+		const zeroRow = page.getByTestId('horizontal-row-0')
+		await expect(zeroRow.getByTestId('Room Zero booking')).toHaveCount(1)
+		await expect(zeroRow.getByTestId('Room One booking')).toHaveCount(0)
+	})
+})
+
 /** The Radix scroll viewport inside the grid scroll area with `testId`. */
 const scrollViewportSelector = (testId: string): string =>
 	`[data-testid="${testId}"] [data-radix-scroll-area-viewport]`

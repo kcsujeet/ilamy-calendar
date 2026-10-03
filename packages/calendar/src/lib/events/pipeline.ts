@@ -17,11 +17,18 @@ export const getEventResourceIds = (
 	return []
 }
 
-/** Resource-axis filter stage: keep events whose membership set contains resourceId. */
+/**
+ * Resource-axis filter stage: keep events whose membership set contains
+ * resourceId. With no resourceId (a grid without a resource axis) every event
+ * is kept. Checked against `undefined`, never truthiness: 0 is a real id.
+ */
 export function filterEventsForResource(
 	events: CalendarEvent[],
-	resourceId: string | number
+	resourceId: string | number | undefined
 ): CalendarEvent[] {
+	if (resourceId === undefined) {
+		return events
+	}
 	return events.filter((event) =>
 		getEventResourceIds(event).includes(resourceId)
 	)

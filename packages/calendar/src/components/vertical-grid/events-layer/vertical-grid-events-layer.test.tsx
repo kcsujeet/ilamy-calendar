@@ -32,7 +32,8 @@ const TestWrapper: React.FC<{
 	children: React.ReactNode
 	view?: CalendarView
 	preview?: DragPreviewState
-}> = ({ children, view = 'day', preview }) => (
+	resources?: Resource[]
+}> = ({ children, view = 'day', preview, resources }) => (
 	<CalendarContext.Provider
 		value={
 			{
@@ -41,6 +42,7 @@ const TestWrapper: React.FC<{
 				getEventsForDateRange: () => [],
 				timeFormat: '12-hour',
 				view,
+				resources,
 			} as never
 		}
 	>
@@ -52,17 +54,20 @@ const TestWrapper: React.FC<{
 
 const renderEventsLayer = ({
 	preview,
+	resources,
 	...props
 }: {
 	days: Dayjs[]
 	resource?: Resource
+	resourceId?: string | number
+	resources?: Resource[]
 	view?: CalendarView
 	gridType?: 'day' | 'hour'
 	'data-testid'?: string
 	preview?: DragPreviewState
 }) => {
 	return render(
-		<TestWrapper preview={preview} view={props.view}>
+		<TestWrapper preview={preview} resources={resources} view={props.view}>
 			<VerticalGridEventsLayer {...props} />
 		</TestWrapper>
 	)
@@ -95,6 +100,24 @@ describe('VerticalGridEventsLayer', () => {
 		})
 
 		expect(screen.getByTestId('current-time-indicator')).toBeInTheDocument()
+	})
+
+	test('draws the dot only for the first resource, even when another has id 0', () => {
+		// A truthy check read id 0 as "no resource axis", so a resource 0 that
+		// is not first drew a second dot on the shared now-line.
+		const days = [dayjs().startOf('hour')]
+		const resources = [
+			{ id: 1, title: 'Room One' },
+			{ id: 0, title: 'Room Zero' },
+		]
+
+		renderEventsLayer({ days, resources, resourceId: 0 })
+		expect(screen.getByTestId('current-time-indicator')).toBeInTheDocument()
+		expect(screen.queryByTestId('current-time-dot')).not.toBeInTheDocument()
+
+		cleanup()
+		renderEventsLayer({ days, resources, resourceId: 1 })
+		expect(screen.getByTestId('current-time-dot')).toBeInTheDocument()
 	})
 
 	test('does not render the indicator in day-resolution grids (issue #123)', () => {

@@ -324,6 +324,35 @@ export const scenarios = {
 		),
 	},
 
+	'numeric-resource-ids': {
+		description:
+			'Resource ids are `string | number`, so 0 is a real id. A truthy check read it as "no resource": the row for resource 0 drew every resource\'s events and a second now-line dot.',
+		views: ['day', 'week', 'month'],
+		config: { scrollTime: '08:00' },
+		// Room Zero second: a resource that is not first must not draw the
+		// now-line's dot, and a truthy check made 0 look like "no resource".
+		resources: [
+			{ id: 1, title: 'Room One' },
+			{ id: 0, title: 'Room Zero' },
+		],
+		events: [
+			event(
+				'zero-1',
+				'Room Zero booking',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ resourceId: 0 }
+			),
+			event(
+				'one-1',
+				'Room One booking',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ resourceId: 1 }
+			),
+		],
+	},
+
 	'long-events': {
 		description:
 			'#290: an event far taller than the viewport, so scrolling down runs its start, and the title the default content draws there, off the top of the time grid.',

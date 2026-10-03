@@ -12,6 +12,7 @@ No barrel — import each primitive from its own subpath:
 import { Button } from '@ilamy/ui/components/button'
 import { Dialog, DialogContent } from '@ilamy/ui/components/dialog'
 import { cn } from '@ilamy/ui/lib/utils'
+import { useRequiredContext } from '@ilamy/ui/hooks/use-required-context'
 ```
 
 New primitives are added with the shadcn CLI (see `components.json`).

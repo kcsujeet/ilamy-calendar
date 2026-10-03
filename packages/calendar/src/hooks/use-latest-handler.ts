@@ -14,7 +14,8 @@ import { useCallback, useInsertionEffect, useRef } from 'react'
  *
  * Returns `undefined` when there is no handler, so `if (onCellClick)`
  * fallbacks keep working: presence still changes the identity, the handler's
- * own identity does not.
+ * own identity does not. A call made after the handler was removed returns
+ * `undefined`, which the return type says rather than casting away.
  *
  * Not for callbacks a component calls while rendering (`getCellClassName`,
  * `renderEvent`, …): a cell only re-runs those when it re-renders, so keeping
@@ -22,7 +23,7 @@ import { useCallback, useInsertionEffect, useRef } from 'react'
  */
 export const useLatestHandler = <Args extends unknown[], Result>(
 	handler: ((...args: Args) => Result) | undefined
-): ((...args: Args) => Result) | undefined => {
+): ((...args: Args) => Result | undefined) | undefined => {
 	const latestHandler = useRef(handler)
 
 	useInsertionEffect(() => {
@@ -30,7 +31,7 @@ export const useLatestHandler = <Args extends unknown[], Result>(
 	})
 
 	const stableHandler = useCallback(
-		(...args: Args) => latestHandler.current?.(...args) as Result,
+		(...args: Args) => latestHandler.current?.(...args),
 		[]
 	)
 

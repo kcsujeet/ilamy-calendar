@@ -18,7 +18,7 @@ interface GenerateRecurringEventsProps {
  * the next few navigations and every column inside the view are answered
  * from it rather than by walking the rule again.
  */
-const WINDOW_MARGIN_MS = 42 * 24 * 60 * 60 * 1000
+const WINDOW_MARGIN_DAYS = 42
 
 /** Converted occurrences kept per series before the memo starts over. */
 const MAX_MEMOIZED_OCCURRENCES = 4096
@@ -107,8 +107,16 @@ const getOccurrencesBetween = (
 	const endsInsideWindow = beforeMs <= memo.windowEndMs
 	const isInsideWindow = startsInsideWindow && endsInsideWindow
 	if (!isInsideWindow) {
-		memo.windowStartMs = afterMs - WINDOW_MARGIN_MS
-		memo.windowEndMs = beforeMs + WINDOW_MARGIN_MS
+		// Floating dates are UTC instants, so the margin is shifted in UTC
+		// (setUTC* setters, https://day.js.org/docs/en/plugin/utc): no DST.
+		memo.windowStartMs = dayjs
+			.utc(afterMs)
+			.subtract(WINDOW_MARGIN_DAYS, 'day')
+			.valueOf()
+		memo.windowEndMs = dayjs
+			.utc(beforeMs)
+			.add(WINDOW_MARGIN_DAYS, 'day')
+			.valueOf()
 		memo.windowOccurrences = memo.rule
 			.between(new Date(memo.windowStartMs), new Date(memo.windowEndMs), true)
 			.map((date) => date.getTime())

@@ -309,6 +309,8 @@ packages/plugins/recurrence/src/
   augment.ts                                   # declare module '@ilamy/calendar' { CalendarEvent.rrule … }
 
 # Shadcn primitives live in @ilamy/ui (packages/ui/src/components/*), imported via @ilamy/ui/components/<name>.
+# Shared React hooks live there too (packages/ui/src/hooks/*), imported via @ilamy/ui/hooks/<name>
+# (useRequiredContext: read a context or throw outside its provider).
 
 docs/
   rfc-5545.md                                  # iCalendar spec reference

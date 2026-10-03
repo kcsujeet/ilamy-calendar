@@ -36,10 +36,8 @@ export const useProcessedWeekEvents = ({
 	const events = useMemo(() => {
 		if (!weekStart || !weekEnd) return []
 
-		let weekEvents = getEventsForDateRange(weekStart, weekEnd)
-		if (resourceId) {
-			weekEvents = filterEventsForResource(weekEvents, resourceId)
-		}
+		const rangeEvents = getEventsForDateRange(weekStart, weekEnd)
+		let weekEvents = filterEventsForResource(rangeEvents, resourceId)
 
 		if (allDay) {
 			weekEvents = weekEvents.filter((e) => Boolean(e.allDay))

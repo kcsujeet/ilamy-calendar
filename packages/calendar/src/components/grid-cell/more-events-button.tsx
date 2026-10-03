@@ -24,7 +24,9 @@ export const MoreEventsButton: React.FC<MoreEventsButtonProps> = ({
 			onOpen()
 		}}
 		onKeyDown={(e) => {
-			const isActivationKey = e.key === 'Enter' || e.key === ' '
+			const isEnterKey = e.key === 'Enter'
+			const isSpaceKey = e.key === ' '
+			const isActivationKey = isEnterKey || isSpaceKey
 			if (isActivationKey) {
 				e.preventDefault()
 				e.stopPropagation()

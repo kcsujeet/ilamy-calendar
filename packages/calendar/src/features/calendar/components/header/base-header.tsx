@@ -39,10 +39,16 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 	}
 
 	// Container queries drive both the control variants and the row/stack decision.
-	// The row vs. two-row layout is keyed to the container width (@lg), NOT to
+	// The row vs. two-row layout is keyed to the container width (@xl), NOT to
 	// flex-wrap: wrapping would key off content width, so the date title changing
 	// per view (e.g. "Jun 2026" vs "Jun 28 - Jul 4") could flip a fixed-width
 	// container between one and two rows. No JS measurement needed.
+	//
+	// Each breakpoint sits where its row measurably fits (#298), with the day
+	// view's title, the longest, in English and German: the compact row needs
+	// ~562px (@xl, 576px); with Export/New labels ~651px (@2xl, 672px); with the
+	// segmented switcher ~770px (@4xl, 896px). Earlier breakpoints let the
+	// navigation cluster spill under, or wrap beside, the actions.
 	return (
 		<div
 			className={cn('@container/base-header w-full', headerClassName)}
@@ -50,14 +56,17 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		>
 			<div
 				className={cn(
-					// Below @lg (phones): stack the two clusters, each centered on its
-					// own line. At @lg and up the compact row fits: lay out in a single
+					// Below @xl (phones): stack the two clusters, each centered on its
+					// own line. At @xl and up the compact row fits: lay out in a single
 					// row and spread to the edges.
-					'flex flex-col items-center gap-2 @lg/base-header:flex-row @lg/base-header:justify-between',
+					'flex flex-col items-center gap-2 @xl/base-header:flex-row @xl/base-header:justify-between',
 					className
 				)}
 			>
-				<div className="flex min-w-0 items-center gap-2">
+				{/* In the stacked layout, wraps only when it cannot fit: on a narrow
+				    phone the day view's long label (or a longer locale's) would
+				    otherwise push the outer buttons past both edges (#298). */}
+				<div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
 					<div className="bg-background flex h-9 items-center rounded-lg border">
 						<Button
 							aria-label={t('previous')}
@@ -85,9 +94,9 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 				</div>
 
 				<div className="flex items-center gap-2">
-					{/* Segmented switcher once it fits (~@3xl); compact dropdown below. */}
-					<ViewSwitcher className="hidden @3xl/base-header:flex" />
-					<ViewMenu className="@3xl/base-header:hidden" />
+					{/* Segmented switcher once it fits (@4xl); compact dropdown below. */}
+					<ViewSwitcher className="hidden @4xl/base-header:flex" />
+					<ViewMenu className="@4xl/base-header:hidden" />
 
 					{/* Export + New show a label when there's room, icon-only when narrow. */}
 					{!hideExportButton && (

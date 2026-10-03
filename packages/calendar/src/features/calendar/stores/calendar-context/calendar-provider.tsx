@@ -8,6 +8,11 @@ import type {
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type { FC, ReactNode } from 'react'
 import { useMemo } from 'react'
+import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/config/constants'
+import type {
+	Translations,
+	TranslatorFunction,
+} from '@/config/translations/types'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
 import type {
@@ -18,10 +23,8 @@ import type {
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from '@/features/calendar/types'
-import { composePluginProviders } from '@/features/plugins/lib/compose-plugin-providers'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
-import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
-import type { Translations, TranslatorFunction } from '@/lib/translations/types'
+import { composePluginProviders } from '@/lib/plugins/compose-plugin-providers'
 import type { CalendarView, TimeFormat } from '@/types'
 import { CalendarCellProvider } from '../calendar-cell-context/calendar-cell-provider'
 import { CalendarContext, type CalendarContextType } from './calendar-context'

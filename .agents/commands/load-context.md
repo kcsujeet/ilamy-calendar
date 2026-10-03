@@ -56,7 +56,7 @@ Shared UI building blocks used across all features:
 **`components/ui/`** - Shadcn Design System:
 `badge`, `button`, `card`, `checkbox`, `dialog`, `input`, `label`, `date-picker`, `time-picker`, `calendar`, `popover`, `scroll-area`, `select`, `tabs`
 
-**`components/drag-and-drop/`** - @dnd-kit integration:
+**`features/calendar/components/drag-and-drop/`** - @dnd-kit integration:
 - `calendar-dnd-context.tsx` - DnD context wrapper
 - `dnd-utils.ts` - Drag-drop utilities
 - `event-drag-overlay.tsx` - Drag visual feedback
@@ -70,17 +70,17 @@ Shared UI building blocks used across all features:
 - `title-content.tsx` - Date display
 - `view-controls.tsx` - View switcher buttons
 
-**`components/vertical-grid/`** - Time-based grid (day/week views):
+**`features/calendar/components/vertical-grid/`** - Time-based grid (day/week views):
 - `vertical-grid.tsx`, `vertical-grid-col.tsx`, `vertical-grid-header-container.tsx`, `vertical-grid-events-layer.tsx`
 
-**`components/horizontal-grid/`** - Month-style grid:
+**`features/calendar/components/horizontal-grid/`** - Month-style grid:
 - `horizontal-grid.tsx`, `horizontal-grid-row.tsx`, `horizontal-grid-header-container.tsx`, `horizontal-grid-events-layer.tsx`
 
-**`components/all-day-row/`** - All-day events bar:
+**`features/calendar/components/all-day-row/`** - All-day events bar:
 - `all-day-row.tsx`, `all-day-cell.tsx`
 
 **`components/animations/`** - `animated-section.tsx` (Framer Motion)
-**`components/draggable-event/`** - `draggable-event.tsx`
+**`features/calendar/components/draggable-event/`** - `draggable-event.tsx`
 
 #### Features (`src/features/`)
 
@@ -93,7 +93,7 @@ The main calendar feature module:
 - `day-view/day-view.tsx` - Single day view
 - `week-view/week-view.tsx` - Weekly view
 - `month-view/month-view.tsx` - Monthly grid view
-- `year-view/year-view.tsx` - Year overview
+- `views/year-view.tsx` - Year overview
 
 **State** (`features/calendar/stores/`, Bulletproof's `stores/`; one folder per context):
 - `calendar-context/calendar-context.ts` - CalendarContext definition
@@ -101,8 +101,8 @@ The main calendar feature module:
 - `calendar-cell-context/calendar-cell-context.ts` + `calendar-cell-provider.tsx` - the narrow subset grid cells read
 
 **Hooks**:
-- `useProcessedDayEvents.ts` - Process events for day view
-- `useProcessedWeekEvents.ts` - Process events for week view
+- `use-processed-day-events.ts` - Process events for day view
+- `use-processed-week-events.ts` - Process events for week view
 
 **Utils**:
 - `business-hours.ts` - Business hours highlighting

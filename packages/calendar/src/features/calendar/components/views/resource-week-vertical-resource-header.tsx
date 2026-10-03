@@ -1,13 +1,13 @@
 import type { Resource } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
-import { ResourceCell } from '@/components/resource-cell'
+import { ResourceCell } from '@/features/calendar/components/resource-cell'
 import {
 	GUTTER_WIDTH,
 	STICKY_GUTTER_SHADOW,
-} from '@/components/vertical-grid/gutter'
+} from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { keys } from '@/lib/utils/keys'
+import { keys } from '@/features/calendar/utils/keys'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
 
 interface ResourceWeekVerticalResourceHeaderProps {

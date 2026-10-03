@@ -24,7 +24,7 @@ const renderHeader = (events: CalendarEvent[] = [], providerProps = {}) => {
 
 const mockDownloadICalendar = mock()
 
-mock.module('@/lib/utils/export-ical', () => ({
+mock.module('@/features/calendar/utils/export-ical', () => ({
 	downloadICalendar: mockDownloadICalendar,
 }))
 

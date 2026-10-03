@@ -1,6 +1,6 @@
 import type { PluginView } from '@ilamy/types'
 import { Grid2x2 } from 'lucide-react'
-import { YearView } from '../year-view/year-view'
+import { YearView } from './year-view'
 
 // The 12-mini-calendar layout fits neither shared engine, so the year view is
 // the canonical `component` escape hatch: no `columns`/`layout`, full custom

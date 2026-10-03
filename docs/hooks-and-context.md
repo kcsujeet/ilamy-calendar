@@ -108,7 +108,7 @@ The locale and timezone effects stay in the composer (not in any slice) because 
 
 ### useProcessedDayEvents()
 
-`src/features/calendar/hooks/useProcessedDayEvents.ts`
+`src/features/calendar/hooks/use-processed-day-events.ts`
 
 Computes positioned events for a single day column in day/week views.
 
@@ -120,11 +120,11 @@ const positionedEvents = useProcessedDayEvents({
 })
 ```
 
-Filters out all-day events (those render in the all-day row). Calls `layoutVertical()` (`lib/layout/vertical.ts`) for layout.
+Filters out all-day events (those render in the all-day row). Calls `layoutVertical()` (`features/calendar/utils/layout/vertical.ts`) for layout.
 
 ### useProcessedWeekEvents()
 
-`src/features/calendar/hooks/useProcessedWeekEvents.ts`
+`src/features/calendar/hooks/use-processed-week-events.ts`
 
 Computes positioned events for multi-day spans in month/week views.
 
@@ -137,7 +137,7 @@ const positionedEvents = useProcessedWeekEvents({
 })
 ```
 
-Calls `layoutHorizontal()` (`lib/layout/horizontal.ts`) for multi-day row packing with `dayMaxEvents`; the events layer derives pixel offsets from the returned `row`.
+Calls `layoutHorizontal()` (`features/calendar/utils/layout/horizontal.ts`) for multi-day row packing with `dayMaxEvents`; the events layer derives pixel offsets from the returned `row`.
 
 ### useRecurringEventActions()
 
@@ -185,7 +185,7 @@ VerticalGrid / HorizontalGrid
 
 ## DnD System
 
-`src/components/drag-and-drop/calendar-dnd-context.tsx`
+`src/features/calendar/components/drag-and-drop/calendar-dnd-context.tsx`
 
 `CalendarDndContext` wraps all view components inside the provider.
 
@@ -227,7 +227,7 @@ If `disableDragAndDrop` is `true`, `CalendarDndContext` renders children without
 | `src/features/calendar/stores/calendar-cell-context/calendar-cell-context.ts` | `CalendarCellContext` + `CalendarCellContextType` (the cell subset) |
 | `src/features/calendar/stores/calendar-cell-context/calendar-cell-provider.tsx` | `CalendarCellProvider` (rendered inside `CalendarProvider`) |
 | `src/features/calendar/stores/calendar-context/calendar-provider.tsx` | `CalendarProvider` |
-| `src/features/calendar/hooks/useProcessedDayEvents.ts` | Day event positioning hook |
-| `src/features/calendar/hooks/useProcessedWeekEvents.ts` | Week event positioning hook |
+| `src/features/calendar/hooks/use-processed-day-events.ts` | Day event positioning hook |
+| `src/features/calendar/hooks/use-processed-week-events.ts` | Week event positioning hook |
 | `src/features/recurrence/hooks/useRecurringEventActions.ts` | Recurring event scope dialog hook |
-| `src/components/drag-and-drop/calendar-dnd-context.tsx` | DnD context wrapper |
+| `src/features/calendar/components/drag-and-drop/calendar-dnd-context.tsx` | DnD context wrapper |

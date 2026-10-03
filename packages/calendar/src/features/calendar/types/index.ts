@@ -8,8 +8,11 @@ import type {
 } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type { ReactNode } from 'react'
+import type {
+	Translations,
+	TranslatorFunction,
+} from '@/config/translations/types'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
-import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
 /**

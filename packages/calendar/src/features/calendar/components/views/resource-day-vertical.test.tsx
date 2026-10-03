@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
+import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { DayView } from '@/testing/view-harnesses'
 

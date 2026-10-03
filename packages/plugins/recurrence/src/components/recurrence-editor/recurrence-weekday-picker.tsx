@@ -4,7 +4,7 @@ import { Label } from '@ilamy/ui/components/label'
 import dayjs from '@ilamy/utils/dayjs'
 import { listKey } from '@ilamy/utils/helpers'
 import { RRule } from 'rrule'
-import { useRecurrenceEditor } from '../../contexts/recurrence-editor-context'
+import { useRecurrenceEditor } from '../../stores/recurrence-editor-context'
 import { resolveByweekday } from '../../utils/recurrence-presets'
 
 const WEEKDAYS = [

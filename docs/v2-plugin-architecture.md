@@ -30,7 +30,7 @@
 
 ## 3. The plugin contract
 
-`src/features/plugins/lib/types.ts` (exported publicly from `@ilamy/calendar`):
+`src/lib/plugins/types.ts` (exported publicly from `@ilamy/calendar`):
 
 ```ts
 import type { ReactNode, ComponentType } from 'react'
@@ -97,7 +97,7 @@ Every member except `name` is optional; a plugin implements only what it needs. 
 
 ## 4. The runtime
 
-`src/features/plugins/lib/create-plugin-runtime.ts`:
+`src/lib/plugins/create-plugin-runtime.ts`:
 
 ```ts
 export interface PluginRuntime {

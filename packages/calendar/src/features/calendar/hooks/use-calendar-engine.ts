@@ -16,6 +16,10 @@ import {
 	useRef,
 	useState,
 } from 'react'
+import type {
+	Translations,
+	TranslatorFunction,
+} from '@/config/translations/types'
 import {
 	type CalendarDataSlice,
 	useCalendarData,
@@ -33,10 +37,9 @@ import {
 	useCalendarNavigation,
 } from '@/features/calendar/hooks/use-calendar-navigation'
 import type { CellInfo, DateRange } from '@/features/calendar/types'
-import { createPluginRuntime } from '@/features/plugins/lib/create-plugin-runtime'
+import { getEventResourceIds } from '@/features/calendar/utils/event-pipeline'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
-import { getEventResourceIds } from '@/lib/events/pipeline'
-import type { Translations, TranslatorFunction } from '@/lib/translations/types'
+import { createPluginRuntime } from '@/lib/plugins/create-plugin-runtime'
 import type { CalendarView } from '@/types'
 
 // Module constants, not per-render `?? []` defaults: keep the slice and

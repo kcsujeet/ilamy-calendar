@@ -25,10 +25,17 @@ export type {
 export type { Dayjs, ManipulateType } from '@ilamy/utils/dayjs'
 // Public dayjs (configured instance) for plugin date math
 export { default as dayjs } from '@ilamy/utils/dayjs'
+export { defaultTranslations } from './config/translations/default'
+// Translation system
+export type {
+	TranslationKey,
+	Translations,
+	TranslatorFunction,
+} from './config/translations/types'
 export {
 	SLOT_EVENT_FORM,
 	SLOT_EVENT_MUTATION_SCOPE,
-} from './components/calendar-slots'
+} from './features/calendar/components/calendar-slots'
 export type { EventFormProps } from './features/calendar/components/event-form/event-form'
 export { IlamyCalendar } from './features/calendar/components/ilamy-calendar'
 // Deprecated alias kept for the beta cycle — IlamyCalendar carries the
@@ -51,11 +58,4 @@ export type {
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 } from './features/calendar/types'
-export { defaultTranslations } from './lib/translations/default'
-// Translation system
-export type {
-	TranslationKey,
-	Translations,
-	TranslatorFunction,
-} from './lib/translations/types'
 export type { CalendarView, TimeFormat } from './types'

@@ -21,10 +21,11 @@ import { useEffect, useState } from 'react'
 import {
 	EventFormSlot,
 	EventMutationScopeSlot,
-} from '@/components/calendar-slots'
-import { DatePicker } from '@/components/ui/date-picker'
-import { TimePicker } from '@/components/ui/time-picker'
+} from '@/features/calendar/components/calendar-slots'
+import { DatePicker } from '@/features/calendar/components/date-picker'
+import { TimePicker } from '@/features/calendar/components/time-picker'
 import { useEffectiveBusinessHours } from '@/features/calendar/hooks/use-effective-business-hours'
+import { useScopedEventMutation } from '@/features/calendar/hooks/use-scoped-event-mutation'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { isBusinessDay } from '@/features/calendar/utils/business-hours'
 import {
@@ -32,7 +33,6 @@ import {
 	buildEndDateTime,
 	getTimeConstraints,
 } from '@/features/calendar/utils/event-form-utils'
-import { useScopedEventMutation } from '@/hooks/use-scoped-event-mutation'
 
 // Default event color, kept as a Tailwind class-pair (theme-aware) like before.
 const DEFAULT_EVENT_COLOR = 'bg-blue-100 text-blue-800'

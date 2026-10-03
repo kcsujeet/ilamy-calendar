@@ -110,10 +110,10 @@ const renderResourceView = (props = {}) => {
 
 ### generateMockEvents
 
-`src/lib/utils/generator.ts` — creates an array of simple day-spanning events:
+`src/testing/generator.ts` — creates an array of simple day-spanning events:
 
 ```typescript
-import { generateMockEvents } from '@/lib/utils/generator'
+import { generateMockEvents } from '@/testing/generator'
 
 const mockEvents = generateMockEvents({ count: 5 })
 // Returns CalendarEvent[] with ids "0"-"4", each spanning one day of the current week
@@ -254,4 +254,4 @@ happy-dom provides `ResizeObserver` and `IntersectionObserver` out of the box �
 | `happydom.ts` | Global DOM registration |
 | `testing-library.ts` | Matcher extensions and cleanup |
 | `matchers.d.ts` | TypeScript declarations for extended matchers |
-| `src/lib/utils/generator.ts` | `generateMockEvents` factory |
+| `src/testing/generator.ts` | `generateMockEvents` factory |

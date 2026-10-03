@@ -8,6 +8,7 @@ import type {
 import { useRequiredContext } from '@ilamy/ui/hooks/use-required-context'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
+import type { TranslatorFunction } from '@/config/translations/types'
 import {
 	CalendarContext,
 	type CalendarContextType,
@@ -17,7 +18,6 @@ import type {
 	OpenEventFormInput,
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
-import type { TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
 // Module constant, not a per-call `|| []`: keeps the public API's `resources`

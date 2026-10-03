@@ -1,7 +1,7 @@
 import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { useState } from 'react'
-import { getMonthWeeks, getWeekDays, isToday } from '@/lib/utils/date-utils'
+import { getMonthWeeks, getWeekDays, isToday } from '@/utils/date-utils'
 import { PickerNav } from './picker-nav'
 
 interface CalendarProps {

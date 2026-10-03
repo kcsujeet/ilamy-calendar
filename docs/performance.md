@@ -114,7 +114,7 @@ Grid cells read `CalendarCellContext` (`features/calendar/stores/calendar-cell-c
 
 ## Hit-Testing During a Drag
 
-`pointerWithinLazily` (`lib/utils/pointer-within-lazily.ts`) replaces dnd-kit's `pointerWithin`. It applies the same inclusive point-in-rect test but stops reading a cell's edges once one rules it out, then passes the survivors to `pointerWithin` itself, so hits and ranking are identical. The drag sensors' options are module constants, because dnd-kit's `useSensor` memoizes on the options object's identity.
+`pointerWithinLazily` (`features/calendar/utils/pointer-within-lazily.ts`) replaces dnd-kit's `pointerWithin`. It applies the same inclusive point-in-rect test but stops reading a cell's edges once one rules it out, then passes the survivors to `pointerWithin` itself, so hits and ranking are identical. The drag sensors' options are module constants, because dnd-kit's `useSensor` memoizes on the options object's identity.
 
 ## Timezone Reactive Updates
 

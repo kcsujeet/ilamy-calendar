@@ -1,6 +1,6 @@
 import type { BusinessHours } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { WEEK_DAYS_NUMBER_MAP } from '@/lib/constants'
+import { WEEK_DAYS_NUMBER_MAP } from '@/config/constants'
 
 /**
  * Checks if a specific date is a business day.

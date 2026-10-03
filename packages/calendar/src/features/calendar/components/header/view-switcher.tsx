@@ -1,7 +1,7 @@
 import { ToggleGroup, ToggleGroupItem } from '@ilamy/ui/components/toggle-group'
 import { cn } from '@ilamy/ui/lib/utils'
+import { useHeaderViews } from '@/features/calendar/hooks/use-header-views'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { useHeaderViews } from './use-header-views'
 
 interface ViewSwitcherProps {
 	className?: string

@@ -81,6 +81,36 @@
 	},
 	"overrides": [
 		{
+			"includes": [
+				"packages/calendar/src/components/**",
+				"packages/calendar/src/config/**",
+				"packages/calendar/src/hooks/**",
+				"packages/calendar/src/lib/**",
+				"packages/calendar/src/types/**",
+				"packages/calendar/src/utils/**"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"paths": {
+									"dayjs": "Please use '@/lib/configs/dayjs-config' instead to ensure timezone consistency."
+								},
+								"patterns": [
+									{
+										"group": ["@/features/*", "@/features/**"],
+										"message": "Shared code cannot import a feature (Bulletproof React: shared -> features -> app). Move this file into the feature, or move what it needs into a shared folder."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
 			"includes": ["**/*.astro"],
 			"linter": {
 				"rules": {

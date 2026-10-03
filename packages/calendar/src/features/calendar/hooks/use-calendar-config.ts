@@ -1,8 +1,11 @@
 import type { BusinessHours, Resource } from '@ilamy/types'
 import { useMemo, useState } from 'react'
-import { DAY_MAX_EVENTS_DEFAULT } from '@/lib/constants'
-import { defaultTranslations } from '@/lib/translations/default'
-import type { Translations, TranslatorFunction } from '@/lib/translations/types'
+import { DAY_MAX_EVENTS_DEFAULT } from '@/config/constants'
+import { defaultTranslations } from '@/config/translations/default'
+import type {
+	Translations,
+	TranslatorFunction,
+} from '@/config/translations/types'
 
 interface CalendarConfigParams {
 	firstDayOfWeek: number

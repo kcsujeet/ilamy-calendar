@@ -12,7 +12,7 @@ import { RRule, type Weekday } from 'rrule'
 import {
 	type RecurrenceEditorContextValue,
 	RecurrenceEditorProvider,
-} from '../../contexts/recurrence-editor-context'
+} from '../../stores/recurrence-editor-context'
 import type { RRuleOptions } from '../../types'
 import {
 	detectPreset,

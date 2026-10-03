@@ -8,7 +8,7 @@ import {
 	SelectValue,
 } from '@ilamy/ui/components/select'
 import { RRule } from 'rrule'
-import { useRecurrenceEditor } from '../../contexts/recurrence-editor-context'
+import { useRecurrenceEditor } from '../../stores/recurrence-editor-context'
 import {
 	getPresetLabel,
 	resolveByweekday,

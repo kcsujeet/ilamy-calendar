@@ -66,7 +66,7 @@ describe('useCalendarEngine', () => {
 		const onEventUpdate = vi.fn()
 		const onEventAdd = vi.fn()
 		const onEventDelete = vi.fn()
-		const onEventsChange = vi.fn()
+		const onEventsChange = vi.fn<(change: EventsChange) => void>()
 		const { result } = renderHook(() =>
 			useCalendarEngine({
 				...defaultConfig,
@@ -78,7 +78,8 @@ describe('useCalendarEngine', () => {
 				plugins: [recurrencePlugin()],
 			})
 		)
-		return { result, onEventUpdate, onEventAdd, onEventDelete, onEventsChange }
+		const engine = () => result.current
+		return { engine, onEventUpdate, onEventAdd, onEventDelete, onEventsChange }
 	}
 
 	describe('locale', () => {
@@ -785,9 +786,9 @@ describe('useCalendarEngine', () => {
 		})
 
 		it('should generate recurring event instances within range', () => {
-			const { result } = renderRecurrenceEngine([createRecurringEvent()])
+			const { engine } = renderRecurrenceEngine([createRecurringEvent()])
 
-			const rangeEvents = result.current.getEventsForDateRange(
+			const rangeEvents = engine().getEventsForDateRange(
 				dayjs('2025-01-01'),
 				dayjs('2025-01-31')
 			)
@@ -805,15 +806,11 @@ describe('useCalendarEngine', () => {
 	describe('recurring events', () => {
 		it('should update recurring event with scope all', () => {
 			const events = [createRecurringEvent()]
-			const { result, onEventUpdate, onEventAdd } =
+			const { engine, onEventUpdate, onEventAdd } =
 				renderRecurrenceEngine(events)
 
 			act(() =>
-				result.current.applyScopedEdit(
-					events[0],
-					{ title: 'Updated Meeting' },
-					'all'
-				)
+				engine().applyScopedEdit(events[0], { title: 'Updated Meeting' }, 'all')
 			)
 
 			expect(onEventUpdate).toHaveBeenCalledTimes(1)
@@ -833,16 +830,12 @@ describe('useCalendarEngine', () => {
 				end: dayjs('2025-01-13T11:00:00.000Z'),
 				rrule: undefined,
 			}
-			const { result, onEventUpdate, onEventAdd } = renderRecurrenceEngine([
+			const { engine, onEventUpdate, onEventAdd } = renderRecurrenceEngine([
 				base,
 			])
 
 			act(() =>
-				result.current.applyScopedEdit(
-					instance,
-					{ title: 'One-off change' },
-					'this'
-				)
+				engine().applyScopedEdit(instance, { title: 'One-off change' }, 'this')
 			)
 
 			expect(onEventUpdate).toHaveBeenCalledTimes(1)
@@ -869,15 +862,15 @@ describe('useCalendarEngine', () => {
 				end: dayjs('2025-01-13T11:00:00.000Z'),
 				rrule: undefined,
 			}
-			const { result, onEventUpdate } = renderRecurrenceEngine([base])
+			const { engine, onEventUpdate } = renderRecurrenceEngine([base])
 
 			act(() =>
-				result.current.applyScopedEdit(instance, { title: 'One-off' }, 'this')
+				engine().applyScopedEdit(instance, { title: 'One-off' }, 'this')
 			)
 
 			expect(onEventUpdate).toHaveBeenCalledTimes(1)
 			expect(onEventUpdate.mock.calls[0][0].uid).toBe(uid)
-			expect(result.current.rawEvents[0].uid).toBe(uid)
+			expect(engine().rawEvents[0].uid).toBe(uid)
 		})
 
 		it('should pass uid from updates to onEventAdd override for scope this', () => {
@@ -891,10 +884,10 @@ describe('useCalendarEngine', () => {
 				end: dayjs('2025-01-13T11:00:00.000Z'),
 				rrule: undefined,
 			}
-			const { result, onEventAdd } = renderRecurrenceEngine([base])
+			const { engine, onEventAdd } = renderRecurrenceEngine([base])
 
 			act(() =>
-				result.current.applyScopedEdit(
+				engine().applyScopedEdit(
 					instance,
 					{ title: 'One-off', uid: customUid },
 					'this'
@@ -914,16 +907,12 @@ describe('useCalendarEngine', () => {
 				end: dayjs('2025-01-20T11:00:00.000Z'),
 				rrule: undefined,
 			}
-			const { result, onEventUpdate, onEventAdd } = renderRecurrenceEngine([
+			const { engine, onEventUpdate, onEventAdd } = renderRecurrenceEngine([
 				base,
 			])
 
 			act(() =>
-				result.current.applyScopedEdit(
-					instance,
-					{ title: 'New series' },
-					'following'
-				)
+				engine().applyScopedEdit(instance, { title: 'New series' }, 'following')
 			)
 
 			expect(onEventUpdate).toHaveBeenCalledTimes(1)
@@ -936,28 +925,28 @@ describe('useCalendarEngine', () => {
 
 		it('should delete recurring event with scope all', () => {
 			const events = [createRecurringEvent()]
-			const { result, onEventDelete } = renderRecurrenceEngine(events)
+			const { engine, onEventDelete } = renderRecurrenceEngine(events)
 
-			act(() => result.current.applyScopedDelete(events[0], 'all'))
+			act(() => engine().applyScopedDelete(events[0], 'all'))
 
 			expect(onEventDelete).toHaveBeenCalledTimes(1)
 			const deletedEvent = onEventDelete.mock.calls[0][0]
 			expect(deletedEvent.id).toBe('recurring-1')
-			expect(result.current.rawEvents).toHaveLength(0)
+			expect(engine().rawEvents).toHaveLength(0)
 		})
 
 		it('should delete recurring event with scope all even if uid is missing', () => {
 			const baseEvent = createRecurringEvent({ uid: undefined })
-			const { result, onEventDelete } = renderRecurrenceEngine([baseEvent])
+			const { engine, onEventDelete } = renderRecurrenceEngine([baseEvent])
 
 			// Get an instance from the engine (it will have a generated UID)
-			const instances = result.current.events
+			const instances = engine().events
 			const targetInstance = instances[0]
 
-			act(() => result.current.applyScopedDelete(targetInstance, 'all'))
+			act(() => engine().applyScopedDelete(targetInstance, 'all'))
 
 			expect(onEventDelete).toHaveBeenCalledTimes(1)
-			expect(result.current.rawEvents).toHaveLength(0)
+			expect(engine().rawEvents).toHaveLength(0)
 		})
 
 		it('should fire onEventDelete for base and overrides on scope all', () => {
@@ -968,14 +957,14 @@ describe('useCalendarEngine', () => {
 				recurrenceId: '2025-01-13T10:00:00.000Z',
 				rrule: undefined,
 			}
-			const { result, onEventDelete } = renderRecurrenceEngine([base, override])
+			const { engine, onEventDelete } = renderRecurrenceEngine([base, override])
 
-			act(() => result.current.applyScopedDelete(base, 'all'))
+			act(() => engine().applyScopedDelete(base, 'all'))
 
 			expect(onEventDelete).toHaveBeenCalledTimes(2)
 			const deletedIds = onEventDelete.mock.calls.map((call) => call[0].id)
 			expect(deletedIds).toEqual(['recurring-1', 'recurring-1_override'])
-			expect(result.current.rawEvents).toHaveLength(0)
+			expect(engine().rawEvents).toHaveLength(0)
 		})
 
 		it('should fire onEventUpdate for base EXDATE on scope this delete', () => {
@@ -987,11 +976,11 @@ describe('useCalendarEngine', () => {
 				end: dayjs('2025-01-13T11:00:00.000Z'),
 				rrule: undefined,
 			}
-			const { result, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
+			const { engine, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
 				base,
 			])
 
-			act(() => result.current.applyScopedDelete(instance, 'this'))
+			act(() => engine().applyScopedDelete(instance, 'this'))
 
 			expect(onEventUpdate).toHaveBeenCalledTimes(1)
 			expect(onEventUpdate.mock.calls[0][0].id).toBe('recurring-1')
@@ -1012,12 +1001,12 @@ describe('useCalendarEngine', () => {
 				start: dayjs(occurrenceISO),
 				end: dayjs('2025-01-13T11:00:00.000Z'),
 			}
-			const { result, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
+			const { engine, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
 				base,
 				override,
 			])
 
-			act(() => result.current.applyScopedDelete(override, 'this'))
+			act(() => engine().applyScopedDelete(override, 'this'))
 
 			expect(onEventUpdate).not.toHaveBeenCalled()
 			expect(onEventDelete).toHaveBeenCalledTimes(1)
@@ -1033,11 +1022,11 @@ describe('useCalendarEngine', () => {
 				end: dayjs('2025-01-20T11:00:00.000Z'),
 				rrule: undefined,
 			}
-			const { result, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
+			const { engine, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
 				base,
 			])
 
-			act(() => result.current.applyScopedDelete(instance, 'following'))
+			act(() => engine().applyScopedDelete(instance, 'following'))
 
 			expect(onEventUpdate).toHaveBeenCalledTimes(1)
 			expect(onEventUpdate.mock.calls[0][0].id).toBe('recurring-1')
@@ -1062,21 +1051,22 @@ describe('useCalendarEngine', () => {
 			updated: change.updated.map((e) => e.id),
 			deleted: change.deleted.map((e) => e.id),
 		})
-		const changesOf = (spy: ReturnType<typeof vi.fn>) =>
-			spy.mock.calls.map(([change]) => summarize(change as EventsChange))
+		const getChanges = (spy: { mock: { calls: [EventsChange][] } }) =>
+			spy.mock.calls.map(([change]) => summarize(change))
 
 		const renderWithChanges = (events: CalendarEvent[] = []) => {
-			const onEventsChange = vi.fn()
+			const onEventsChange = vi.fn<(change: EventsChange) => void>()
 			const { result } = renderHook(() =>
 				useCalendarEngine({ ...defaultConfig, events, onEventsChange })
 			)
-			return { result, onEventsChange }
+			const engine = () => result.current
+			return { engine, onEventsChange }
 		}
 
 		it('reports an add once', () => {
-			const { result, onEventsChange } = renderWithChanges()
-			act(() => result.current.addEvent(createEvent({ id: 'new' })))
-			expect(changesOf(onEventsChange)).toEqual([
+			const { engine, onEventsChange } = renderWithChanges()
+			act(() => engine().addEvent(createEvent({ id: 'new' })))
+			expect(getChanges(onEventsChange)).toEqual([
 				{
 					action: 'add',
 					scope: undefined,
@@ -1089,9 +1079,9 @@ describe('useCalendarEngine', () => {
 		})
 
 		it('reports an update once, with the updated row', () => {
-			const { result, onEventsChange } = renderWithChanges([createEvent()])
-			act(() => result.current.updateEvent('1', { title: 'Renamed' }))
-			expect(changesOf(onEventsChange)).toEqual([
+			const { engine, onEventsChange } = renderWithChanges([createEvent()])
+			act(() => engine().updateEvent('1', { title: 'Renamed' }))
+			expect(getChanges(onEventsChange)).toEqual([
 				{
 					action: 'update',
 					scope: undefined,
@@ -1101,14 +1091,14 @@ describe('useCalendarEngine', () => {
 					deleted: [],
 				},
 			])
-			const [change] = onEventsChange.mock.calls[0] as [EventsChange]
-			expect(change.updated.at(0)?.title).toBe('Renamed')
+			const change = onEventsChange.mock.calls.at(0)?.at(0)
+			expect(change?.updated.at(0)?.title).toBe('Renamed')
 		})
 
 		it('reports a delete once', () => {
-			const { result, onEventsChange } = renderWithChanges([createEvent()])
-			act(() => result.current.deleteEvent('1'))
-			expect(changesOf(onEventsChange)).toEqual([
+			const { engine, onEventsChange } = renderWithChanges([createEvent()])
+			act(() => engine().deleteEvent('1'))
+			expect(getChanges(onEventsChange)).toEqual([
 				{
 					action: 'delete',
 					scope: undefined,
@@ -1120,10 +1110,25 @@ describe('useCalendarEngine', () => {
 			])
 		})
 
+		it('keeps every event added in one batch, each reported once', () => {
+			// The store is updated from its previous value, not from a list read
+			// at render time, so two adds in one handler both stick.
+			const { engine, onEventsChange } = renderWithChanges()
+			act(() => {
+				engine().addEvent(createEvent({ id: 'first' }))
+				engine().addEvent(createEvent({ id: 'second' }))
+			})
+			expect(engine().rawEvents.map((e) => e.id)).toEqual(['first', 'second'])
+			expect(getChanges(onEventsChange).map((c) => c.event)).toEqual([
+				'first',
+				'second',
+			])
+		})
+
 		it('reports nothing when the event to update or delete does not exist', () => {
-			const { result, onEventsChange } = renderWithChanges([createEvent()])
-			act(() => result.current.updateEvent('missing', { title: 'x' }))
-			act(() => result.current.deleteEvent('missing'))
+			const { engine, onEventsChange } = renderWithChanges([createEvent()])
+			act(() => engine().updateEvent('missing', { title: 'x' }))
+			act(() => engine().deleteEvent('missing'))
 			expect(onEventsChange).not.toHaveBeenCalled()
 		})
 
@@ -1149,16 +1154,12 @@ describe('useCalendarEngine', () => {
 			}
 
 			it('reports "edit all" once: the series updated, the moved occurrence deleted', () => {
-				const { result, onEventUpdate, onEventDelete, onEventsChange } =
+				const { engine, onEventUpdate, onEventDelete, onEventsChange } =
 					renderRecurrenceEngine([base, override])
 				act(() =>
-					result.current.applyScopedEdit(
-						occurrence,
-						{ title: 'Renamed' },
-						'all'
-					)
+					engine().applyScopedEdit(occurrence, { title: 'Renamed' }, 'all')
 				)
-				expect(changesOf(onEventsChange)).toEqual([
+				expect(getChanges(onEventsChange)).toEqual([
 					{
 						action: 'update',
 						scope: 'all',
@@ -1174,18 +1175,14 @@ describe('useCalendarEngine', () => {
 			})
 
 			it('reports "edit this" once: the series updated, the new override added', () => {
-				const { result, onEventsChange } = renderRecurrenceEngine([
+				const { engine, onEventsChange } = renderRecurrenceEngine([
 					base,
 					override,
 				])
 				act(() =>
-					result.current.applyScopedEdit(
-						occurrence,
-						{ title: 'One-off' },
-						'this'
-					)
+					engine().applyScopedEdit(occurrence, { title: 'One-off' }, 'this')
 				)
-				const [change] = changesOf(onEventsChange)
+				const [change] = getChanges(onEventsChange)
 				expect(onEventsChange).toHaveBeenCalledTimes(1)
 				expect(change?.action).toBe('update')
 				expect(change?.scope).toBe('this')
@@ -1195,10 +1192,10 @@ describe('useCalendarEngine', () => {
 			})
 
 			it('reports "delete all" once, with every row of the series', () => {
-				const { result, onEventDelete, onEventsChange } =
+				const { engine, onEventDelete, onEventsChange } =
 					renderRecurrenceEngine([base, override])
-				act(() => result.current.applyScopedDelete(occurrence, 'all'))
-				expect(changesOf(onEventsChange)).toEqual([
+				act(() => engine().applyScopedDelete(occurrence, 'all'))
+				expect(getChanges(onEventsChange)).toEqual([
 					{
 						action: 'delete',
 						scope: 'all',
@@ -1217,12 +1214,12 @@ describe('useCalendarEngine', () => {
 			const listPlugin: IlamyPlugin = {
 				name: 'list',
 				managesEvent: () => true,
-				applyEdit: ({ event, updates, currentEvents }) =>
-					currentEvents.map((e) =>
-						e.id === event.id ? { ...e, ...updates } : e
-					),
+				applyEdit: ({ event, updates, currentEvents }) => {
+					const editedEvent = { ...event, ...updates }
+					return currentEvents.map((e) => (e.id === event.id ? editedEvent : e))
+				},
 			}
-			const onEventsChange = vi.fn()
+			const onEventsChange = vi.fn<(change: EventsChange) => void>()
 			const event = createEvent()
 			// Outside the hook: a new array per render would reset the store forever.
 			const events = [event]
@@ -1235,7 +1232,7 @@ describe('useCalendarEngine', () => {
 				})
 			)
 			act(() => result.current.applyScopedEdit(event, { title: 'x' }, 'custom'))
-			expect(changesOf(onEventsChange)).toEqual([
+			expect(getChanges(onEventsChange)).toEqual([
 				{
 					action: 'update',
 					scope: 'custom',

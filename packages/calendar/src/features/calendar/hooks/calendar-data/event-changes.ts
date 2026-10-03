@@ -17,7 +17,7 @@ export interface MutationCallbacks {
 export type ChangeOrigin = Pick<EventsChange, 'action' | 'event' | 'scope'>
 
 /** The change for an action that touched one stored row. */
-export const rowChange = (
+export const toRowChange = (
 	origin: ChangeOrigin,
 	row: CalendarEvent
 ): EventsChange => ({
@@ -34,16 +34,16 @@ export const rowChange = (
  * only non-object member, so it is the discriminant.
  */
 export const toMutationResult = (
-	result: CalendarEvent[] | PluginMutationResult,
+	mutationResult: CalendarEvent[] | PluginMutationResult,
 	origin: ChangeOrigin,
 	row: CalendarEvent
 ): PluginMutationResult => {
-	const isPlainList = Array.isArray(result)
+	const isPlainList = Array.isArray(mutationResult)
 	if (!isPlainList) {
-		return result
+		return mutationResult
 	}
-	const { added, updated, deleted } = rowChange(origin, row)
-	return { events: result, added, updated, deleted }
+	const { added, updated, deleted } = toRowChange(origin, row)
+	return { events: mutationResult, added, updated, deleted }
 }
 
 /**
@@ -51,7 +51,7 @@ export const toMutationResult = (
  * then the store, then the whole action once through `onEventsChange` (#309).
  */
 export const dispatchMutationResult = (
-	result: PluginMutationResult,
+	mutationResult: PluginMutationResult,
 	origin: ChangeOrigin,
 	{
 		onEventUpdate,
@@ -61,20 +61,20 @@ export const dispatchMutationResult = (
 		setCurrentEvents,
 	}: MutationCallbacks
 ): void => {
-	for (const storedEvent of result.updated) {
+	for (const storedEvent of mutationResult.updated) {
 		onEventUpdate?.(storedEvent)
 	}
-	for (const storedEvent of result.added) {
+	for (const storedEvent of mutationResult.added) {
 		onEventAdd?.(storedEvent)
 	}
-	for (const storedEvent of result.deleted) {
+	for (const storedEvent of mutationResult.deleted) {
 		onEventDelete?.(storedEvent)
 	}
-	setCurrentEvents(result.events)
+	setCurrentEvents(mutationResult.events)
 	onEventsChange?.({
 		...origin,
-		added: result.added,
-		updated: result.updated,
-		deleted: result.deleted,
+		added: mutationResult.added,
+		updated: mutationResult.updated,
+		deleted: mutationResult.deleted,
 	})
 }

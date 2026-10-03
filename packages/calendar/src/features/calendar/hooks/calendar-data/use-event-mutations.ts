@@ -3,7 +3,7 @@ import { useCallback } from 'react'
 import {
 	type ChangeOrigin,
 	type MutationCallbacks,
-	rowChange,
+	toRowChange,
 } from './event-changes'
 
 interface EventMutationsParams extends MutationCallbacks {
@@ -35,7 +35,7 @@ export const useEventMutations = ({
 		(event: CalendarEvent) => {
 			setCurrentEvents((prev) => [...prev, event])
 			onEventAdd?.(event)
-			onEventsChange?.(rowChange({ action: 'add', event }, event))
+			onEventsChange?.(toRowChange({ action: 'add', event }, event))
 		},
 		[setCurrentEvents, onEventAdd, onEventsChange]
 	)
@@ -53,7 +53,7 @@ export const useEventMutations = ({
 			)
 			onEventUpdate?.(newEvent)
 			const origin: ChangeOrigin = { action: 'update', event: eventToUpdate }
-			onEventsChange?.(rowChange(origin, newEvent))
+			onEventsChange?.(toRowChange(origin, newEvent))
 		},
 		[currentEvents, setCurrentEvents, onEventUpdate, onEventsChange]
 	)
@@ -68,7 +68,7 @@ export const useEventMutations = ({
 			setCurrentEvents((prev) => prev.filter((e) => e.id !== eventId))
 			onEventDelete?.(eventToDelete)
 			const origin: ChangeOrigin = { action: 'delete', event: eventToDelete }
-			onEventsChange?.(rowChange(origin, eventToDelete))
+			onEventsChange?.(toRowChange(origin, eventToDelete))
 		},
 		[currentEvents, setCurrentEvents, onEventDelete, onEventsChange]
 	)

@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@ilamy/types'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { PluginRuntime } from '@/features/plugins/lib/types'
 import {
 	type ChangeOrigin,
@@ -36,6 +36,17 @@ export const usePluginMutations = ({
 	onEventDelete,
 	onEventsChange,
 }: PluginMutationsParams): PluginMutations => {
+	const callbacks: MutationCallbacks = useMemo(
+		() => ({
+			setCurrentEvents,
+			onEventAdd,
+			onEventUpdate,
+			onEventDelete,
+			onEventsChange,
+		}),
+		[setCurrentEvents, onEventAdd, onEventUpdate, onEventDelete, onEventsChange]
+	)
+
 	const applyScopedEdit = useCallback(
 		(event: CalendarEvent, updates: Partial<CalendarEvent>, scope: unknown) => {
 			const manager = pluginRuntime.getEventManager(event)
@@ -50,24 +61,10 @@ export const usePluginMutations = ({
 			})
 			const origin: ChangeOrigin = { action: 'update', event, scope }
 			const updatedEvent = { ...event, ...updates }
-			const result = toMutationResult(editResult, origin, updatedEvent)
-			dispatchMutationResult(result, origin, {
-				setCurrentEvents,
-				onEventAdd,
-				onEventUpdate,
-				onEventDelete,
-				onEventsChange,
-			})
+			const mutationResult = toMutationResult(editResult, origin, updatedEvent)
+			dispatchMutationResult(mutationResult, origin, callbacks)
 		},
-		[
-			currentEvents,
-			pluginRuntime,
-			setCurrentEvents,
-			onEventAdd,
-			onEventUpdate,
-			onEventDelete,
-			onEventsChange,
-		]
+		[currentEvents, pluginRuntime, callbacks]
 	)
 
 	const applyScopedDelete = useCallback(
@@ -78,24 +75,10 @@ export const usePluginMutations = ({
 			}
 			const deleteResult = manager.applyDelete({ event, currentEvents, scope })
 			const origin: ChangeOrigin = { action: 'delete', event, scope }
-			const result = toMutationResult(deleteResult, origin, event)
-			dispatchMutationResult(result, origin, {
-				setCurrentEvents,
-				onEventAdd,
-				onEventUpdate,
-				onEventDelete,
-				onEventsChange,
-			})
+			const mutationResult = toMutationResult(deleteResult, origin, event)
+			dispatchMutationResult(mutationResult, origin, callbacks)
 		},
-		[
-			currentEvents,
-			pluginRuntime,
-			setCurrentEvents,
-			onEventAdd,
-			onEventUpdate,
-			onEventDelete,
-			onEventsChange,
-		]
+		[currentEvents, pluginRuntime, callbacks]
 	)
 
 	return { applyScopedEdit, applyScopedDelete }

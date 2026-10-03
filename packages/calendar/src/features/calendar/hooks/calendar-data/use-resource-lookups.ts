@@ -14,6 +14,12 @@ export interface ResourceLookups {
 	isEventCrossResource: (event: CalendarEvent) => boolean
 }
 
+/** An event booked on more than one resource. Reads only the event itself. */
+const isEventCrossResource = (event: CalendarEvent): boolean => {
+	const resourceCount = event.resourceIds?.length ?? 0
+	return resourceCount > 1
+}
+
 /**
  * Resource questions about the events in view. Both filters go through
  * getEventResourceIds so single and multi-resource events are handled
@@ -48,10 +54,6 @@ export const useResourceLookups = (
 		},
 		[resources]
 	)
-
-	const isEventCrossResource = useCallback((event: CalendarEvent): boolean => {
-		return Boolean(event.resourceIds && event.resourceIds.length > 1)
-	}, [])
 
 	return {
 		getEventsForResource,

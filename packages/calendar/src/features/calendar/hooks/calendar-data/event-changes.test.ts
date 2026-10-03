@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
-import { rowChange, toMutationResult } from './event-changes'
+import { toMutationResult, toRowChange } from './event-changes'
 
 const mkEvent = (id: string): CalendarEvent => ({
 	id,
@@ -11,7 +11,7 @@ const mkEvent = (id: string): CalendarEvent => ({
 })
 
 /** The ids in each list of a change or result. */
-const idsOf = (lists: {
+const getIds = (lists: {
 	added: CalendarEvent[]
 	updated: CalendarEvent[]
 	deleted: CalendarEvent[]
@@ -21,12 +21,12 @@ const idsOf = (lists: {
 	deleted: lists.deleted.map((e) => e.id),
 })
 
-describe('rowChange', () => {
+describe('toRowChange', () => {
 	it('puts the row in the list its action names', () => {
 		const row = mkEvent('a')
 		const actions = ['add', 'update', 'delete'] as const
 		const changes = actions.map((action) =>
-			idsOf(rowChange({ action, event: row }, row))
+			getIds(toRowChange({ action, event: row }, row))
 		)
 		expect(changes).toEqual([
 			{ added: ['a'], updated: [], deleted: [] },
@@ -53,12 +53,12 @@ describe('toMutationResult', () => {
 		const origin = { action: 'update', event: mkEvent('a') } as const
 		const result = toMutationResult(events, origin, mkEvent('a'))
 		expect(result.events).toBe(events)
-		expect(idsOf(result)).toEqual({ added: [], updated: ['a'], deleted: [] })
+		expect(getIds(result)).toEqual({ added: [], updated: ['a'], deleted: [] })
 	})
 
 	it('reads a plain event list as one deleted row for a delete', () => {
 		const origin = { action: 'delete', event: mkEvent('a') } as const
 		const result = toMutationResult([], origin, mkEvent('a'))
-		expect(idsOf(result)).toEqual({ added: [], updated: [], deleted: ['a'] })
+		expect(getIds(result)).toEqual({ added: [], updated: [], deleted: ['a'] })
 	})
 })

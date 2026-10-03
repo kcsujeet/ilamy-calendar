@@ -11,6 +11,7 @@ import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import { ConfigError, readUrlConfig } from './harness-config'
+import type { PublishedChange } from './published-change'
 import {
 	isScenarioName,
 	PINNED_NOW,
@@ -160,16 +161,6 @@ interface HarnessProps {
 	view: ViewName
 }
 
-/** An onEventsChange call as the specs read it: the action and its row ids. */
-interface PublishedChange {
-	action: EventsChange['action']
-	scope: string | null
-	event: string
-	added: string[]
-	updated: string[]
-	deleted: string[]
-}
-
 /**
  * Holds the events so mutations stick, and publishes what the calendar reports
  * back as JSON.
@@ -217,14 +208,14 @@ const Harness: React.FC<HarnessProps> = ({
 	// action was reported once (#309).
 	const [changes, setChanges] = useState<PublishedChange[]>([])
 	const handleChange = (change: EventsChange) => {
-		const ids = (rows: CalendarEvent[]) => rows.map((row) => String(row.id))
+		const toIds = (rows: CalendarEvent[]) => rows.map((row) => String(row.id))
 		const published: PublishedChange = {
 			action: change.action,
 			scope: typeof change.scope === 'string' ? change.scope : null,
 			event: String(change.event.id),
-			added: ids(change.added),
-			updated: ids(change.updated),
-			deleted: ids(change.deleted),
+			added: toIds(change.added),
+			updated: toIds(change.updated),
+			deleted: toIds(change.deleted),
 		}
 		setChanges((current) => [...current, published])
 	}

@@ -330,6 +330,64 @@ test.describe('recurring events', () => {
 		await expect(grid.event('Daily stand-up')).toHaveCount(7)
 		expect(await readOccurrenceBars(page)).toEqual(barsBefore)
 	})
+
+	// #307: occurrences after a daylight-saving change kept the series start's
+	// UTC offset and were drawn an hour late. RFC 5545 §3.8.5.3: instances
+	// start "at the same local time regardless of time zone changes", so each
+	// occurrence lands exactly where a one-off at 09:00 that day does.
+	test('a 09:00 series stays at 09:00 across the spring change', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'recurring-dst',
+			view: 'week',
+			plugins: ['recurrence'],
+			timezone: 'America/New_York',
+		})
+		const grid = new TimeGrid(page)
+		await expect(grid.event('Morning check-in')).toHaveCount(7)
+		await page.evaluate(() =>
+			Promise.all(
+				document.getAnimations().map((animation) => animation.finished)
+			)
+		)
+
+		/** The top of every bar whose test id starts with `prefix`, by column. */
+		const readTopsByColumn = (prefix: string) =>
+			page
+				.locator(`[data-testid^="vertical-event-${prefix}"]`)
+				.evaluateAll((bars) =>
+					bars.map((bar) => {
+						const box = bar.getBoundingClientRect()
+						const column = bar.closest('[data-testid^="vertical-col-"]')
+						const columnId = column?.getAttribute('data-testid')
+						return `${columnId}@${Math.round(box.top)}`
+					})
+				)
+
+		// Sunday 9 March (the change day) and Wednesday 12 March each hold a
+		// one-off at 09:00 EDT; the occurrence on those days sits beside it.
+		const series = await readTopsByColumn('dst-series')
+		const oneOffs = [
+			...(await readTopsByColumn('dst-sunday')),
+			...(await readTopsByColumn('dst-reference')),
+		]
+		for (const oneOff of oneOffs) {
+			expect(series).toContain(oneOff)
+		}
+
+		// Monday to Saturday share one row: no day after the change is an hour
+		// late. The change day is left out; it is pinned by its one-off above.
+		const changeDayColumn = 'vertical-col-day-col-2025-03-09'
+		const afterChangeDay = series.filter(
+			(bar) => !bar.startsWith(changeDayColumn)
+		)
+		const afterChangeTops = new Set(
+			afterChangeDay.map((bar) => bar.split('@').at(1))
+		)
+		expect(afterChangeDay).toHaveLength(6)
+		expect(afterChangeTops.size).toBe(1)
+	})
 })
 
 test.describe('navigation', () => {

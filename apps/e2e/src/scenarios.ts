@@ -290,6 +290,44 @@ export const scenarios = {
 		],
 	},
 
+	'recurring-dst': {
+		description:
+			'#307: a daily 09:00 series in America/New_York (open with plugins=recurrence and tz=America/New_York) that starts before the 9 March 2025 change to daylight time, beside a one-off at 09:00 EDT. Every occurrence keeps its 09:00 wall-clock time across the change, as RFC 5545 requires of a DTSTART with a TZID, so each lands where a one-off at 09:00 that day does.',
+		views: ['week'],
+		config: { scrollTime: '08:00' },
+		events: [
+			event(
+				'dst-series',
+				'Morning check-in',
+				// 09:00 EST
+				'2025-03-06T14:00:00.000Z',
+				'2025-03-06T14:30:00.000Z',
+				{
+					rrule: {
+						freq: RRule.DAILY,
+						dtstart: at('2025-03-06T14:00:00.000Z').toDate(),
+					},
+				}
+			),
+			// The change day itself: compared against a one-off at the same time
+			// rather than against the other days' row.
+			event(
+				'dst-sunday',
+				'Sunday at nine',
+				// 09:00 EDT
+				'2025-03-09T13:00:00.000Z',
+				'2025-03-09T13:30:00.000Z'
+			),
+			event(
+				'dst-reference',
+				'One-off at nine',
+				// 09:00 EDT
+				'2025-03-12T13:00:00.000Z',
+				'2025-03-12T13:30:00.000Z'
+			),
+		],
+	},
+
 	'many-events': {
 		description:
 			'More events in one day than `dayMaxEvents` allows, so the overflow indicator has to appear.',

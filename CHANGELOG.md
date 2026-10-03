@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v3.2.0](https://github.com/kcsujeet/ilamy-calendar/compare/v3.1.0...v3.2.0)
+
+> 3 October 2026
+
+##### Features
+
+- feat: new `onEventsChange` prop, called once per user action with every stored row it touched: `{ action, event, scope, added, updated, deleted }`. A recurring edit touches several rows ("edit all" updates the series and deletes the occurrences that were moved one by one), and `onEventAdd` / `onEventUpdate` / `onEventDelete` report them one call at a time; `onEventsChange` reports the action as one unit, so a backend can save it, or refuse it, in one transaction. FullCalendar reports an action once the same way (`eventChange` with `relatedEvents`). The per-row callbacks are unchanged. `EventsChange` is exported, and `RecurrenceEditScope` from `@ilamy/calendar/plugins/recurrence` ([`#317`](https://github.com/kcsujeet/ilamy-calendar/pull/317)) — Closes [`#309`](https://github.com/kcsujeet/ilamy-calendar/issues/309)
+
+##### Fixes
+
+- fix: recurring events keep their local time across a daylight-saving change. With a `timezone` that differed from the browser's, every occurrence after a change ran an hour off: a daily 09:00 New York series showed at 10:00 from 9 March. Occurrences now follow RFC 5545: the same local time, a time skipped by the spring change moves forward by the gap, and one repeated by the autumn change takes its first occurrence. Exclusions and moved occurrences saved by earlier versions for an occurrence after a change, in such a calendar, hold the old shifted time and no longer match it ([`#312`](https://github.com/kcsujeet/ilamy-calendar/pull/312)) — Closes [`#307`](https://github.com/kcsujeet/ilamy-calendar/issues/307)
+- fix: on the day the clocks change, timed events and the now-line sit beside their clock time. They were drawn an hour early on the spring day and an hour late on the autumn day, in the week, day and resource timeline views ([`#313`](https://github.com/kcsujeet/ilamy-calendar/pull/313)) — Closes [`#311`](https://github.com/kcsujeet/ilamy-calendar/issues/311)
+- fix: "delete this and following" also removes occurrences that were moved after the cut, and reports them to `onEventDelete`. They used to stay on the grid ([`#316`](https://github.com/kcsujeet/ilamy-calendar/pull/316)) — Closes [`#315`](https://github.com/kcsujeet/ilamy-calendar/issues/315)
+- fix: a resource whose id is `0` no longer draws every resource's events, or a second dot on the now-line ([`#308`](https://github.com/kcsujeet/ilamy-calendar/pull/308))
+- fix: the header fits at every width, from phone to desktop. The navigation wraps instead of being cut off, and the single-row and segmented-switcher layouts now switch where they fit: at 576px and 896px of the calendar's own width ([`#306`](https://github.com/kcsujeet/ilamy-calendar/pull/306)) — Closes [`#298`](https://github.com/kcsujeet/ilamy-calendar/issues/298)
+- fix: the cell under a dragged event no longer takes the hover tint, so only the drop tint shows; hovering without a drag still tints. While an event is dragged, the calendar carries `data-dragging` for your own styles ([`#305`](https://github.com/kcsujeet/ilamy-calendar/pull/305)) — Closes [`#299`](https://github.com/kcsujeet/ilamy-calendar/issues/299)
+- fix: the published type declarations reference valid `dayjs` and React types, so a project type-checking with `skipLibCheck: false` passes ([`#304`](https://github.com/kcsujeet/ilamy-calendar/pull/304)) — Closes [`#302`](https://github.com/kcsujeet/ilamy-calendar/issues/302)
+
+##### Performance
+
+- perf: grid cells stay mounted when you navigate, in every view and orientation, and time-grid slots no longer mount a closed all-events dialog. A horizontal resource week with 30 rooms went from 1,229 ms to 728 ms per "next" in Chromium ([`#301`](https://github.com/kcsujeet/ilamy-calendar/pull/301), [`#303`](https://github.com/kcsujeet/ilamy-calendar/pull/303)) — Closes [`#300`](https://github.com/kcsujeet/ilamy-calendar/issues/300) — Thanks [@troioi-vn](https://github.com/troioi-vn)!
+- perf: a recurring series is expanded once per window rather than from its start for every column (200 series begun in 2015: 4,560 ms to 188 ms per week "next"); grid cells read a narrow context, so an event change no longer re-renders every time slot; event handlers keep one identity, so passing them inline no longer re-renders the grid; and drag hit-testing reads fewer cell edges ([`#308`](https://github.com/kcsujeet/ilamy-calendar/pull/308))
+
+##### Docs
+
+- docs: the recurrence page's exclusions example used `Date` objects, which exclude nothing; it now uses ISO strings, explains the time zone rule, and documents editing and deleting a series. The FAQ no longer tells you to remount the calendar when `timezone` or `locale` changes, and the performance tips no longer ask for `useCallback` around event handlers ([`#318`](https://github.com/kcsujeet/ilamy-calendar/pull/318))
+
+##### Internal
+
+- refactor: the source follows Bulletproof React's structure (shared → features → app), and a Biome rule rejects a shared file importing a feature ([`#319`](https://github.com/kcsujeet/ilamy-calendar/pull/319))
+
 #### [v3.1.0](https://github.com/kcsujeet/ilamy-calendar/compare/v3.0.1...v3.1.0)
 
 > 1 October 2026

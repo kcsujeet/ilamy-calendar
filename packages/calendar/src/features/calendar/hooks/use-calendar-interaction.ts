@@ -1,8 +1,8 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useCallback, useMemo, useState } from 'react'
+import type { TranslatorFunction } from '@/config/translations/types'
 import type { CellInfo, OpenEventFormInput } from '@/features/calendar/types'
-import type { TranslatorFunction } from '@/lib/translations/types'
 
 /**
  * A new-event draft intentionally has no `id` yet — the form assigns one on

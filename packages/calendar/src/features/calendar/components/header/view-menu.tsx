@@ -6,8 +6,8 @@ import {
 	DropdownMenuTrigger,
 } from '@ilamy/ui/components/dropdown-menu'
 import { Check, ChevronDown } from 'lucide-react'
+import { useHeaderViews } from '@/features/calendar/hooks/use-header-views'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { useHeaderViews } from './use-header-views'
 
 interface ViewMenuProps {
 	className?: string

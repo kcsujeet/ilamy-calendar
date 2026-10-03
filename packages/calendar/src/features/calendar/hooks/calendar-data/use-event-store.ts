@@ -1,7 +1,7 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { PluginRuntime } from '@/features/plugins/lib/types'
+import type { PluginRuntime } from '@/lib/plugins/types'
 
 interface EventStoreParams {
 	events: CalendarEvent[]

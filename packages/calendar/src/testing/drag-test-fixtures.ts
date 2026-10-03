@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
-import type { DragPreviewState } from '@/stores/drag-preview-context'
+import type { DragPreviewState } from '@/features/calendar/stores/drag-preview-context'
 
 /**
  * Shared construction for the drag suites. Five test files were each building

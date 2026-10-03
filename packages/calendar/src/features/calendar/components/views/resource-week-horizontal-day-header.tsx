@@ -2,10 +2,10 @@ import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
+import { HEADER_ROW_HEIGHT } from '@/config/constants'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { HEADER_ROW_HEIGHT } from '@/lib/constants'
-import { isToday } from '@/lib/utils/date-utils'
-import { keys } from '@/lib/utils/keys'
+import { keys } from '@/features/calendar/utils/keys'
+import { isToday } from '@/utils/date-utils'
 
 interface ResourceWeekHorizontalDayHeaderProps {
 	days: Dayjs[]

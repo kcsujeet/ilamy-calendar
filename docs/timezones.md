@@ -183,5 +183,5 @@ correctly sees that at 14:30.
 - `packages/utils/src/dayjs.ts` — the configured constructor, the offset rule, and `compareByInstant`
 - `packages/utils/src/helpers.ts` — `dayKey` / `isSameDay` for calendar-day questions
 - `packages/calendar/src/features/calendar/hooks/use-calendar-engine.ts` — `anchorInitialDate` (the date the calendar opens on) and the effect that applies the zone and converts held dates
-- `packages/calendar/src/lib/utils/normalize.ts` — re-anchoring incoming events
+- `packages/calendar/src/features/calendar/utils/normalize.ts` — re-anchoring incoming events
 - `packages/plugins/drag-to-create/src/utils/read-cell.ts` — the explicit `dayjs.utc(iso).tz(zone)` pattern

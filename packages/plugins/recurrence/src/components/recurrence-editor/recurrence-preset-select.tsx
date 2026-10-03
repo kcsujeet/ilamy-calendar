@@ -7,7 +7,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ilamy/ui/components/select'
-import { useRecurrenceEditor } from '../../contexts/recurrence-editor-context'
+import { useRecurrenceEditor } from '../../stores/recurrence-editor-context'
 import {
 	detectPreset,
 	getPresetLabel,

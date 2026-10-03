@@ -21,13 +21,13 @@ import {
 } from '@testing-library/react'
 import { createContext, useContext } from 'react'
 import { RRule } from 'rrule'
+import { DISABLED_CELL_CLASSNAME } from '@/config/constants'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { useIlamyCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
-import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { IlamyCalendar } from './ilamy-calendar'
 
 const CustomEventForm = (props: EventFormProps) => {

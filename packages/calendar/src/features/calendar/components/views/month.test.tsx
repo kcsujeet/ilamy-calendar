@@ -8,7 +8,7 @@ import {
 	screen,
 	within,
 } from '@testing-library/react'
-import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
+import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { generateMockEvents } from '@/testing/generator'

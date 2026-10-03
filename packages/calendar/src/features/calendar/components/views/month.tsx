@@ -9,14 +9,14 @@ import type {
 import { Grid3x3 } from 'lucide-react'
 import type React from 'react'
 import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
-import { gutterColumn } from '@/components/vertical-grid/gutter'
+import { gutterColumn } from '@/features/calendar/components/vertical-grid/gutter'
+import { keys } from '@/features/calendar/utils/keys'
 import {
 	getMonthDays,
 	getMonthGridRange,
 	getMonthWeeks,
 	isToday,
-} from '@/lib/utils/date-utils'
-import { keys } from '@/lib/utils/keys'
+} from '@/utils/date-utils'
 import { MonthHeader } from './month-header'
 import {
 	ResourceColumnsHeader,

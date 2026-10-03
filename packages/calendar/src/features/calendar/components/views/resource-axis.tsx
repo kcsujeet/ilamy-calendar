@@ -7,15 +7,15 @@ import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { dayKey } from '@ilamy/utils/helpers'
 import type React from 'react'
-import { AllDayCell } from '@/components/all-day-row/all-day-cell'
-import { AllDayRow } from '@/components/all-day-row/all-day-row'
-import { ResourceCell } from '@/components/resource-cell'
+import { AllDayCell } from '@/features/calendar/components/all-day-row/all-day-cell'
+import { AllDayRow } from '@/features/calendar/components/all-day-row/all-day-row'
+import { ResourceCell } from '@/features/calendar/components/resource-cell'
 import {
 	GUTTER_WIDTH,
 	STICKY_GUTTER_SHADOW,
-} from '@/components/vertical-grid/gutter'
+} from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { keys } from '@/lib/utils/keys'
+import { keys } from '@/features/calendar/utils/keys'
 
 /**
  * Width contract of one resource cell: header cells and body columns must

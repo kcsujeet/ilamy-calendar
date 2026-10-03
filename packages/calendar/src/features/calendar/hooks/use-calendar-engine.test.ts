@@ -6,9 +6,9 @@ import dayjs from '@ilamy/utils/dayjs'
 import { act, renderHook } from '@testing-library/react'
 import { RRule } from 'rrule'
 import 'dayjs/locale/fr.js'
-import type { Translations } from '@/lib/translations/types'
-import { getMonthWeeks } from '@/lib/utils/date-utils'
+import type { Translations } from '@/config/translations/types'
 import type { CalendarView } from '@/types'
+import { getMonthWeeks } from '@/utils/date-utils'
 import { useCalendarEngine } from './use-calendar-engine'
 
 const createEvent = (

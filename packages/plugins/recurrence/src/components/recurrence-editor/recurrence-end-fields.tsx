@@ -5,8 +5,8 @@ import { Label } from '@ilamy/ui/components/label'
 import {
 	type EndType,
 	useRecurrenceEditor,
-} from '../../contexts/recurrence-editor-context'
-import { DatePicker } from '../../ui/date-picker'
+} from '../../stores/recurrence-editor-context'
+import { DateInput } from '../date-input'
 
 const END_TYPES = [
 	{ type: 'never', id: 'never', labelKey: 'never' },
@@ -59,7 +59,7 @@ export const RecurrenceEndFields: React.FC = () => {
 								</>
 							)}
 							{showUntilInput && (
-								<DatePicker className="h-6" date={until} onChange={setUntil} />
+								<DateInput className="h-6" date={until} onChange={setUntil} />
 							)}
 						</div>
 					)

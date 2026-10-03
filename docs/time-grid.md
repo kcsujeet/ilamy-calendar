@@ -20,7 +20,7 @@ getViewHours({ referenceDate })    Filter by business hours if enabled
 
 ### getDayHours
 
-`src/lib/utils/date-utils.ts`
+`src/utils/date-utils.ts`
 
 Generates 24 dayjs objects for a given date, one per hour (0-23).
 
@@ -155,7 +155,7 @@ a booking and the now-line on both 2025 change days.
 
 ## VerticalGrid Component
 
-`src/components/vertical-grid/vertical-grid.tsx`
+`src/features/calendar/components/vertical-grid/vertical-grid.tsx`
 
 Renders the grid structure: header, optional all-day row, and scrollable body with time rows.
 
@@ -187,10 +187,10 @@ Renders the grid structure: header, optional all-day row, and scrollable body wi
 
 | File | Role |
 |------|------|
-| `src/lib/utils/date-utils.ts` | `getDayHours` — generates hourly slots |
+| `src/utils/date-utils.ts` | `getDayHours` — generates hourly slots |
 | `src/features/calendar/utils/view-hours.ts` | `getViewHours` — filters by business hours |
 | `src/features/calendar/utils/business-hours.ts` | `calculateBusinessHoursRange` — computes min/max hours |
-| `src/components/vertical-grid/vertical-grid.tsx` | Grid layout and structure |
-| `src/components/vertical-grid/vertical-grid-col.tsx` | Column rendering with DST-safe keys |
-| `src/components/vertical-grid/vertical-grid-events-layer.tsx` | Event overlay positioning |
-| `src/components/grid-cell/grid-cell.tsx` | Individual droppable grid cell (its parts live beside it in `grid-cell/`) |
+| `src/features/calendar/components/vertical-grid/vertical-grid.tsx` | Grid layout and structure |
+| `src/features/calendar/components/vertical-grid/vertical-grid-col.tsx` | Column rendering with DST-safe keys |
+| `src/features/calendar/components/vertical-grid/vertical-grid-events-layer.tsx` | Event overlay positioning |
+| `src/features/calendar/components/grid-cell/grid-cell.tsx` | Individual droppable grid cell (its parts live beside it in `grid-cell/`) |

@@ -2,7 +2,7 @@ import type { CalendarEvent } from '@ilamy/types'
 import type React from 'react'
 import { useEffect, useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
-import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-context'
+import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
 import { EventFormDialog } from '@/features/calendar/components/event-form/event-form-dialog'
 import { Header } from '@/features/calendar/components/header/base-header'
 import { ViewRenderer } from '@/features/calendar/components/views/view-renderer'
@@ -10,16 +10,19 @@ import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-cal
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 // oxlint-disable-next-line no-duplicates
 import '@ilamy/utils/dayjs'
+import {
+	EVENT_BAR_HEIGHT,
+	GAP_BETWEEN_ELEMENTS,
+	WEEK_DAYS_NUMBER_MAP,
+} from '@/config/constants'
 import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
 import {
-	EVENT_BAR_HEIGHT,
-	GAP_BETWEEN_ELEMENTS,
-	WEEK_DAYS_NUMBER_MAP,
-} from '@/lib/constants'
-import { normalizeEvents, toHiddenDaysSet } from '@/lib/utils/normalize'
+	normalizeEvents,
+	toHiddenDaysSet,
+} from '@/features/calendar/utils/normalize'
 
 const CalendarContent: React.FC = () => {
 	const { view, getViews } = useSmartCalendarContext((c) => ({

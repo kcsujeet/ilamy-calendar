@@ -2,9 +2,9 @@ import type { PluginView } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { builtInViews } from '@/features/calendar/components/views/built-in-views'
-import type { PluginRuntime } from '@/features/plugins/lib/types'
-import { getMonthGridRange } from '@/lib/utils/date-utils'
+import type { PluginRuntime } from '@/lib/plugins/types'
 import type { CalendarView } from '@/types'
+import { getMonthGridRange } from '@/utils/date-utils'
 
 const calculateViewRange = (
 	date: Dayjs,

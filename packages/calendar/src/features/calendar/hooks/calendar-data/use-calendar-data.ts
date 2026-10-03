@@ -1,7 +1,7 @@
 import type { CalendarEvent, EventsChange, Resource } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useMemo } from 'react'
-import type { PluginRuntime } from '@/features/plugins/lib/types'
+import type { PluginRuntime } from '@/lib/plugins/types'
 import { type EventMutations, useEventMutations } from './use-event-mutations'
 import { useEventStore } from './use-event-store'
 import {

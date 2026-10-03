@@ -13,14 +13,14 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import {
 	FULL_WIDTH_MINUS_GUTTER,
 	gutterColumn,
-} from '@/components/vertical-grid/gutter'
+} from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { keys } from '@/features/calendar/utils/keys'
 import {
 	collectResourceBusinessHours,
 	getViewHours,
 } from '@/features/calendar/utils/view-hours'
-import { isToday } from '@/lib/utils/date-utils'
-import { keys } from '@/lib/utils/keys'
+import { isToday } from '@/utils/date-utils'
 import {
 	RESOURCE_CELL_WIDTH,
 	ResourceColumnsHeader,

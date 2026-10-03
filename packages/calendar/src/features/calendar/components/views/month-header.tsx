@@ -2,8 +2,8 @@ import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { getWeekDays } from '@/lib/utils/date-utils'
-import { keys } from '@/lib/utils/keys'
+import { keys } from '@/features/calendar/utils/keys'
+import { getWeekDays } from '@/utils/date-utils'
 
 interface MonthHeaderProps {
 	className?: string

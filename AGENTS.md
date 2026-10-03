@@ -263,53 +263,56 @@ Every event must have a globally unique `uid`. EXDATE uses ISO strings in `exdat
 ## Key Paths
 
 ```
-packages/calendar/src/                         # (= @/… via tsconfig paths)
-  index.ts                                    # Public API exports
-  testing/index.tsx                            # CalendarTestProvider (@ilamy/calendar/testing)
-  features/
-    calendar/
-      components/
-        ilamy-calendar.tsx                     # Main component (carries the resource axis props)
-        ilamy-resource-calendar.tsx            # DEPRECATED alias of IlamyCalendar
-        views/  # built-in PluginView specs + ViewRenderer dispatcher + resource arrangements (year component in year-view/)
-        header/                                # Calendar header, title, view controls
-        event-form/                            # Event creation/editing forms
-      stores/                                  # Calendar STATE (Bulletproof `stores/`): one folder per context, each with its own provider
-        calendar-context/                      #   CalendarContext + CalendarProvider (the ONE state provider)
-        calendar-cell-context/                 #   CalendarCellContext + CalendarCellProvider (the narrow subset grid cells read)
-      hooks/                                   # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,interaction}),
-                                               #   use-smart-calendar-context, useProcessed*Events, use-effective-business-hours
-        calendar-data/                         #   the data slice: use-calendar-data composes use-event-store, use-event-mutations,
+packages/calendar/src/                         # (= @/… via tsconfig paths). Bulletproof React layout: imports flow
+                                               #   shared -> features -> app; biome.json rejects a shared file importing @/features/*
+  index.ts                                    # Public API exports (app layer)
+  testing/                                    # CalendarTestProvider (@ilamy/calendar/testing, app layer) + test fixtures
+  plugins/                                    # Plugin subpath entries (@ilamy/calendar/plugins/*, app layer)
+  features/calendar/                          # THE calendar feature: everything calendar-specific
+    components/
+      ilamy-calendar.tsx                       # Main component (carries the resource axis props)
+      ilamy-resource-calendar.tsx              # DEPRECATED alias of IlamyCalendar
+      views/                                   # built-in PluginView specs + ViewRenderer dispatcher + resource arrangements, year-view
+      header/                                  # Calendar header, title, view controls
+      event-form/                              # Event creation/editing forms
+      vertical-grid/                           # Time-based grid (day/week views)
+        events-layer/                          #   The layer, its event bar, and its drag mirror
+      horizontal-grid/                         # Date-based grid (month view)
+        events-layer/                          #   Same three, for the row axis
+      grid-cell/                               # The cell and its parts
+      all-day-row/                             # All-day event bar
+      drag-and-drop/                           # @dnd-kit integration + the drag mirror card
+      draggable-event/                         # Draggable event bar + default content
+      calendar-slots.tsx                       # SLOT_* mount points + host slot components (context shapes in @ilamy/types)
+      droppable-cell.tsx, resource-cell.tsx, current-time-marker.tsx, hour-label.tsx, date-picker.tsx, time-picker.tsx
+    hooks/                                     # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,interaction}),
+                                               #   use-smart-calendar-context, use-processed-{day,week}-events, use-effective-business-hours,
+                                               #   drag hooks (use-calendar-drag, use-drop-commit, use-drag-preview-event), use-scoped-event-mutation, …
+      calendar-data/                           #   the data slice: use-calendar-data composes use-event-store, use-event-mutations,
                                                #   use-plugin-mutations, use-resource-lookups; event-changes (pure reporting helpers)
-      utils/                                   # business-hours, view-hours, event-form-utils
-    plugins/lib/                               # Plugin kernel; PluginRuntime (contract types live in @ilamy/types)
-  stores/                                      # Shared grid-level state (Bulletproof `stores/`), used by components + hooks
-    drag-preview-context.tsx                   # The in-flight drag candidate (the snapped mirror reads it)
-    grid-axis-context.tsx                      # Which grid drew a bar; decides its truncation affordances
-  hooks/                                       # Package-level hooks (use-calendar-drag, use-drop-commit,
-                                               #   use-drag-preview-event, use-scoped-event-mutation, …)
-  components/
-    calendar-slots.tsx                         # SLOT_* mount points + host slot components (context shapes in @ilamy/types)
-    drag-and-drop/                             # @dnd-kit integration + the drag mirror card
-    vertical-grid/                             # Time-based grid (day/week views)
-      events-layer/                            # The layer, its event bar, and its drag mirror
-    horizontal-grid/                           # Date-based grid (month view)
-      events-layer/                            # Same three, for the row axis
-    all-day-row/                               # All-day event bar
-  lib/
-    translations/                              # Default translations, types
-    layout/                                    # geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
-    events/pipeline.ts                         # event filters (resource membership; range overlap lives in @ilamy/utils)
-    utils/                                     # date-utils, normalize, export-ical, keys, drag-preview,
-                                               #   grab-offset, event-surface (cn → @ilamy/ui/lib/utils,
-                                               #   safeDate → @ilamy/utils/helpers)
-    constants.ts                               # Global constants
+    stores/                                    # Calendar STATE (Bulletproof `stores/`)
+      calendar-context/                        #   CalendarContext + CalendarProvider (the ONE state provider)
+      calendar-cell-context/                   #   CalendarCellContext + CalendarCellProvider (the narrow subset grid cells read)
+      drag-preview-context.tsx                 #   The in-flight drag candidate (the snapped mirror reads it)
+      grid-axis-context.tsx                    #   Which grid drew a bar; decides its truncation affordances
+    utils/                                     # business-hours, view-hours, event-form-utils, event-pipeline (resource membership),
+                                               #   keys, normalize, export-ical, drag-preview, grab-offset, event-surface, pointer-within-lazily
+      layout/                                  #   geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
+    types/
+  components/                                 # Shared, feature-independent UI: animations/, ui/ (calendar, picker-nav)
+  hooks/                                      # Shared hooks: use-latest-handler, use-autocomplete-timepicker
+  lib/plugins/                                # Plugin kernel; PluginRuntime (contract types live in @ilamy/types)
+  config/                                     # constants.ts, translations/ (default translations, types)
+  utils/                                      # date-utils (generic date math)
+  types/                                      # Shared types (CalendarView, TimeFormat)
 
 # Recurrence plugin (separate package; agenda + drag-to-create siblings follow the same shape):
 packages/plugins/recurrence/src/
   utils/                                       # generate-recurring-events, update-/delete-recurring-event, series-helpers (isRecurringEvent)
   components/recurrence-editor/                # Recurrence rule builder UI (@ilamy/ui Radix)
   components/recurrence-edit-dialog/           # Edit/delete scope dialog
+  components/date-input.tsx                    # Native date input for the series end
+  stores/recurrence-editor-context.ts          # The editor's state
   augment.ts                                   # declare module '@ilamy/calendar' { CalendarEvent.rrule … }
 
 # Shadcn primitives live in @ilamy/ui (packages/ui/src/components/*), imported via @ilamy/ui/components/<name>.

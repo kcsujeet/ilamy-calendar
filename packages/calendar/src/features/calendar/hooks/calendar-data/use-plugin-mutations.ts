@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import { useCallback, useMemo } from 'react'
-import type { PluginRuntime } from '@/features/plugins/lib/types'
+import type { PluginRuntime } from '@/lib/plugins/types'
 import {
 	type ChangeOrigin,
 	dispatchMutationResult,

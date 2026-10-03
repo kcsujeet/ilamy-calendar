@@ -11,7 +11,7 @@ IlamyCalendarPropEvent          User provides (flexible date types: string | Dat
         |
 CalendarEvent                   Internal canonical type (dayjs dates)
         |
-    positioning                 lib/layout (geometry / vertical / horizontal)
+    positioning                 features/calendar/utils/layout (geometry / vertical / horizontal)
         |
 PositionedEvent                 { event: CalendarEvent } + placement fields (left/width + top/height/zIndex or row)
 ```
@@ -51,7 +51,7 @@ An event runs up to, but not including, `end`, matching RFC 5545 §3.6.1 ("the D
 | `2025-01-13T00:00` to `2025-01-14T09:00` | Jan 13 and Jan 14 |
 | All-day Jan 13, stored conventionally | `start` Jan 13, `end` Jan 14 |
 
-This holds at every granularity: an event ending on the hour does not occupy that hour's row, and one ending at midnight does not occupy that day's column (`lib/layout/horizontal.ts`). The same rule makes `overlapsRange` (`@ilamy/utils/helpers`, shared by the core and both plugins) treat an event ending at a range's first instant as outside it.
+This holds at every granularity: an event ending on the hour does not occupy that hour's row, and one ending at midnight does not occupy that day's column (`features/calendar/utils/layout/horizontal.ts`). The same rule makes `overlapsRange` (`@ilamy/utils/helpers`, shared by the core and both plugins) treat an event ending at a range's first instant as outside it.
 
 Two conversions exist so users are never asked for a midnight end, which is the same split Google draws between its API and its UI:
 
@@ -290,7 +290,7 @@ meaning match FullCalendar's event render hook.
 
 A custom `renderEvent` title does not stick on scroll the way the default one
 does. It opts in by reading `--ilamy-sticky-left` / `--ilamy-sticky-top`, which
-each grid publishes on its scroll viewport (`src/hooks/use-sticky-insets.ts`).
+each grid publishes on its scroll viewport (`src/features/calendar/hooks/use-sticky-insets.ts`).
 See "Keeping the title in view" in the website's calendar docs.
 
 ## Key File Locations
@@ -304,4 +304,4 @@ See "Keeping the title in view" in the website's calendar docs.
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |
 | `CalendarView`, `TimeFormat` | `src/types/index.ts` |
 | `CalendarContextType` | `src/features/calendar/stores/calendar-context/calendar-context.ts` |
-| `Translations`, `TranslatorFunction` | `src/lib/translations/types.ts` |
+| `Translations`, `TranslatorFunction` | `src/config/translations/types.ts` |

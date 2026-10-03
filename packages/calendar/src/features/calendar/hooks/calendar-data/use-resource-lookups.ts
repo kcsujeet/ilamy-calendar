@@ -3,7 +3,7 @@ import { useCallback } from 'react'
 import {
 	filterEventsForResource,
 	getEventResourceIds,
-} from '@/lib/events/pipeline'
+} from '@/features/calendar/utils/event-pipeline'
 
 export interface ResourceLookups {
 	getEventsForResource: (resourceId: string | number) => CalendarEvent[]

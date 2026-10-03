@@ -110,10 +110,12 @@ Installing is a deliberate step because a plugin runs code with your user privil
 this repo leaves it to you. Once per machine:
 
 ```bash
-claude plugin install claude-md@kc-claude-kit
 claude plugin install code-review@kc-claude-kit
 claude plugin install conventions@kc-claude-kit
+claude plugin install instructions@kc-claude-kit
 claude plugin install testing@kc-claude-kit
+claude plugin install usage-band@kc-claude-kit
+claude plugin install image-preview@kc-claude-kit
 ```
 
 They load from the next session, or after `/reload-plugins`.

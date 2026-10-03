@@ -47,7 +47,7 @@ Here is the full codebase layout. Internalize it before doing any work.
 Shared UI building blocks used across all features:
 
 - `types.ts` - Core types: `CalendarEvent`, `WeekDays`, `BusinessHours`
-- `grid-cell/` - Generic grid cell: `grid-cell.tsx` (the cell), `use-is-cell-unavailable.ts` (business hours, month padding), `grid-cell-content.tsx` (spacing, day number), `grid-cell-events.tsx` (event placeholders, "+N more"), `more-events-button.tsx`, `all-events-dialog.tsx` (modal for all events)
+- `grid-cell/` - Generic grid cell: `grid-cell.tsx` (the cell; its availability check is `features/calendar/hooks/use-is-cell-unavailable.ts`), `grid-cell-content.tsx` (spacing, day number), `grid-cell-events.tsx` (event placeholders, "+N more"), `more-events-button.tsx`, `all-events-dialog.tsx` (modal for all events)
 - `day-number.tsx` - Day number display
 - `droppable-cell.tsx` - Drop zone for DnD
 - `current-time-indicator.tsx` - Live time indicator

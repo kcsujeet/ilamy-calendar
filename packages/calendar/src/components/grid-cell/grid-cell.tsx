@@ -3,25 +3,28 @@ import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { memo, useRef } from 'react'
+import { useIsCellUnavailable } from '@/features/calendar/hooks/use-is-cell-unavailable'
 import { keys } from '@/lib/utils/keys'
 import { DroppableCell } from '../droppable-cell'
 import { AllEventDialog, type AllEventDialogHandle } from './all-events-dialog'
 import { GridCellContent } from './grid-cell-content'
 import { GridCellEvents } from './grid-cell-events'
-import { useIsCellUnavailable } from './use-is-cell-unavailable'
 
 interface GridProps {
 	day: Dayjs
-	hour?: number // Optional hour for hour-based grids
-	minute?: number // Optional minute for more granular time slots
-	slotDurationMinutes?: number // Span of an hour-grid slot, for business-hour containment
+	hour?: number
+	minute?: number
+	/** Span of an hour-grid slot, for business-hour containment. */
+	slotDurationMinutes?: number
 	dayMaxEvents?: number
-	className?: string // Optional className for custom styling
-	resourceId?: string | number // Optional resource ID for resource-specific day cells
-	gridType?: 'day' | 'hour' // Future use for different grid types
-	shouldRenderEvents?: boolean // Flag to determine if events should be rendered
-	allDay?: boolean // Flag to indicate if this is an all-day cell
-	showDayNumber?: boolean // Flag to show or hide the day number
+	className?: string
+	resourceId?: string | number
+	/** Whether the cell spans a day (month, all-day row) or an hour slot. */
+	gridType?: 'day' | 'hour'
+	/** False in time grids, whose events are drawn by a separate layer. */
+	shouldRenderEvents?: boolean
+	allDay?: boolean
+	showDayNumber?: boolean
 	children?: React.ReactNode
 	'data-testid'?: string
 	precomputedEvents?: CalendarEvent[]

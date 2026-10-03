@@ -569,14 +569,14 @@ describe('CalendarProvider - render stability', () => {
 		// fresh child element forces the consumer to re-render and re-read the
 		// context, so the assertion compares two actual reads.
 		const events: CalendarEvent[] = []
-		const ui = () => (
+		const buildCalendar = () => (
 			<CalendarProvider dayMaxEvents={5} events={events} firstDayOfWeek={0}>
 				<CaptureContext />
 			</CalendarProvider>
 		)
 
-		const { rerender } = render(ui())
-		rerender(ui())
+		const { rerender } = render(buildCalendar())
+		rerender(buildCalendar())
 
 		expect(seenContexts).toHaveLength(2)
 		expect(seenContexts.at(1)).toBe(seenContexts.at(0))

@@ -6,7 +6,7 @@ import { generateRecurringEvents } from './generate-recurring-events'
 
 const at = (iso: string) => dayjs(iso)
 
-const series = (
+const mkRecurringEvent = (
 	id: string,
 	startISO: string,
 	endISO: string,
@@ -57,7 +57,7 @@ describe('generateRecurringEvents instance ids', () => {
 	})
 
 	it('numbers occurrences from the start of the queried range', () => {
-		const daily = series(
+		const daily = mkRecurringEvent(
 			'daily',
 			'2025-03-01T09:00:00.000Z',
 			'2025-03-01T10:00:00.000Z'
@@ -72,7 +72,7 @@ describe('generateRecurringEvents instance ids', () => {
 	})
 
 	it('counts from the range, not from a distant DTSTART', () => {
-		const old = series(
+		const old = mkRecurringEvent(
 			'old',
 			'2015-03-01T09:00:00.000Z',
 			'2015-03-01T10:00:00.000Z'
@@ -84,7 +84,7 @@ describe('generateRecurringEvents instance ids', () => {
 	})
 
 	it('counts the occurrence the backward duration widening pulls in', () => {
-		const overnight = series(
+		const overnight = mkRecurringEvent(
 			'night',
 			'2025-03-01T22:00:00.000Z',
 			'2025-03-02T03:00:00.000Z'
@@ -97,7 +97,7 @@ describe('generateRecurringEvents instance ids', () => {
 	})
 
 	it('keeps the index of an EXDATE-excluded occurrence', () => {
-		const daily = series(
+		const daily = mkRecurringEvent(
 			'ex',
 			'2025-03-10T09:00:00.000Z',
 			'2025-03-10T10:00:00.000Z',
@@ -115,7 +115,7 @@ describe('generateRecurringEvents instance ids', () => {
 	})
 
 	it('keeps the index of an overridden occurrence', () => {
-		const daily = series(
+		const daily = mkRecurringEvent(
 			'ov',
 			'2025-03-10T09:00:00.000Z',
 			'2025-03-10T10:00:00.000Z'
@@ -138,7 +138,7 @@ describe('generateRecurringEvents instance ids', () => {
 	})
 
 	it('includes an occurrence that starts exactly at the range start', () => {
-		const instant = series(
+		const instant = mkRecurringEvent(
 			'edge',
 			'2025-03-01T00:00:00.000Z',
 			'2025-03-01T00:00:00.000Z'
@@ -150,12 +150,12 @@ describe('generateRecurringEvents instance ids', () => {
 	})
 
 	it('answers a range the same after the series answered a wider one', () => {
-		const reused = series(
+		const reused = mkRecurringEvent(
 			'reused',
 			'2015-03-01T22:00:00.000Z',
 			'2015-03-02T03:00:00.000Z'
 		)
-		const fresh = series(
+		const fresh = mkRecurringEvent(
 			'reused',
 			'2015-03-01T22:00:00.000Z',
 			'2015-03-02T03:00:00.000Z'
@@ -169,7 +169,7 @@ describe('generateRecurringEvents instance ids', () => {
 	// the start on that same object between queries: the second answer must
 	// come from the new rule, never from the one the memo worked out before.
 	it('answers from the new rule when the same event gets a new rrule', () => {
-		const event = series(
+		const event = mkRecurringEvent(
 			'rule',
 			'2025-03-01T09:00:00.000Z',
 			'2025-03-01T10:00:00.000Z'
@@ -186,7 +186,7 @@ describe('generateRecurringEvents instance ids', () => {
 	})
 
 	it('answers from the new start when the same event moves', () => {
-		const event = series(
+		const event = mkRecurringEvent(
 			'moved',
 			'2025-03-01T09:00:00.000Z',
 			'2025-03-01T10:00:00.000Z'
@@ -199,5 +199,59 @@ describe('generateRecurringEvents instance ids', () => {
 		expect(expand(event, ...WEDNESDAY)).toEqual([
 			'moved_0@2025-03-12T14:00:00.000Z',
 		])
+	})
+
+	// UNTIL moved on the same rule object: neither the rule's identity nor the
+	// start changed, so only the UNTIL check can tell the memo is stale.
+	it('answers from the new UNTIL when the same rule is cut short', () => {
+		const event = mkRecurringEvent(
+			'until',
+			'2025-03-01T09:00:00.000Z',
+			'2025-03-01T10:00:00.000Z'
+		)
+		expand(event, ...WEEK)
+
+		const rule = event.rrule
+		if (rule) {
+			rule.until = at('2025-03-11T23:59:59.999Z').toDate()
+		}
+
+		expect(expand(event, ...WEEK)).toEqual([
+			'until_0@2025-03-10T09:00:00.000Z',
+			'until_1@2025-03-11T09:00:00.000Z',
+		])
+	})
+
+	// The memo keeps at most MAX_MEMOIZED_OCCURRENCES converted instants per
+	// series and starts over past it. An hourly series over seven months
+	// crosses that, and answers must stay what a fresh series gives.
+	it('answers correctly after its memo of instants starts over', () => {
+		const hourly = (id: string) =>
+			mkRecurringEvent(
+				id,
+				'2025-01-01T00:00:00.000Z',
+				'2025-01-01T00:30:00.000Z',
+				{
+					rrule: {
+						freq: RRule.HOURLY,
+						dtstart: at('2025-01-01T00:00:00.000Z').toDate(),
+					},
+				}
+			)
+		const reused = hourly('hourly')
+		const fresh = hourly('hourly')
+
+		const sevenMonths = expand(
+			reused,
+			'2025-01-01T00:00:00.000Z',
+			'2025-07-31T23:59:59.999Z'
+		)
+
+		const HOURS_IN_JANUARY_TO_JULY = 212 * 24
+		expect(sevenMonths).toHaveLength(HOURS_IN_JANUARY_TO_JULY)
+		expect(sevenMonths.at(-1)).toBe(
+			`hourly_${HOURS_IN_JANUARY_TO_JULY - 1}@2025-07-31T23:00:00.000Z`
+		)
+		expect(expand(reused, ...WEDNESDAY)).toEqual(expand(fresh, ...WEDNESDAY))
 	})
 })

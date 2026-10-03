@@ -271,7 +271,7 @@ export const scenarios = {
 					rrule: {
 						freq: RRule.WEEKLY,
 						byweekday: [RRule.MO, RRule.WE],
-						dtstart: new Date('2015-06-01T11:00:00.000Z'),
+						dtstart: at('2015-06-01T11:00:00.000Z').toDate(),
 					},
 				}
 			),
@@ -283,7 +283,7 @@ export const scenarios = {
 				{
 					rrule: {
 						freq: RRule.DAILY,
-						dtstart: new Date('2025-03-01T09:00:00.000Z'),
+						dtstart: at('2025-03-01T09:00:00.000Z').toDate(),
 					},
 				}
 			),

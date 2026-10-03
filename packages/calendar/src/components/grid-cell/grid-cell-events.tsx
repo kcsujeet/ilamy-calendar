@@ -41,26 +41,26 @@ export const GridCellEvents: React.FC<GridCellEventsProps> = ({
 		onMoreEventsClick,
 	} = useSmartCalendarContext()
 
-	const todayEvents = useMemo(() => {
+	const cellEvents = useMemo(() => {
 		// Use pre-computed events from the row level when available
 		if (precomputedEvents) {
 			return precomputedEvents
 		}
 
-		let todayEvents = getEventsForDateRange(
+		let cellEvents = getEventsForDateRange(
 			day.startOf(gridType),
 			day.endOf(gridType)
 		)
 
 		if (allDay) {
-			todayEvents = todayEvents.filter((e) => e.allDay)
+			cellEvents = cellEvents.filter((e) => e.allDay)
 		}
 
 		if (resourceId) {
-			return filterEventsForResource(todayEvents, resourceId)
+			return filterEventsForResource(cellEvents, resourceId)
 		}
 
-		return todayEvents
+		return cellEvents
 	}, [
 		precomputedEvents,
 		day,
@@ -74,19 +74,19 @@ export const GridCellEvents: React.FC<GridCellEventsProps> = ({
 	// built-in "all events" dialog.
 	const showAllEvents = () => {
 		if (onMoreEventsClick) {
-			onMoreEventsClick(day, todayEvents)
+			onMoreEventsClick(day, cellEvents)
 			return
 		}
 		allEventsDialogRef.current?.setSelectedDayEvents({
 			day,
-			events: todayEvents,
+			events: cellEvents,
 		})
 		allEventsDialogRef.current?.open()
 	}
 
-	const hiddenEventsCount = todayEvents.length - dayMaxEvents
+	const hiddenEventsCount = cellEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
-	const visibleEvents = todayEvents.slice(0, dayMaxEvents)
+	const visibleEvents = cellEvents.slice(0, dayMaxEvents)
 
 	return (
 		<>

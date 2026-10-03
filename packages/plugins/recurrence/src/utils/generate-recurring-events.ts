@@ -90,7 +90,7 @@ const readSeriesMemo = ({
  * window is that same walk over a wider span, so filtering it the same way
  * returns the same dates in the same order.
  */
-const occurrencesBetween = (
+const getOccurrencesBetween = (
 	memo: SeriesMemo,
 	after: Date,
 	before: Date
@@ -127,7 +127,7 @@ const occurrencesBetween = (
 }
 
 /** `fromFloatingDate(new Date(occurrenceMs), event.start)`, computed once. */
-const occurrenceInstant = (
+const getOccurrenceInstant = (
 	memo: SeriesMemo,
 	occurrenceMs: number,
 	reference: Dayjs
@@ -204,7 +204,7 @@ export const generateRecurringEvents = ({
 		const endDateTime = toFloatingDate(endDate)
 
 		// Get all occurrences in the expanded range
-		const occurrences = occurrencesBetween(
+		const occurrences = getOccurrencesBetween(
 			memo,
 			expandedStartDateTime,
 			endDateTime
@@ -213,7 +213,11 @@ export const generateRecurringEvents = ({
 		// Convert occurrences to CalendarEvent instances
 		const recurringEvents: CalendarEvent[] = occurrences
 			.map((occurrence, index) => {
-				const occurrenceDate = occurrenceInstant(memo, occurrence, event.start)
+				const occurrenceDate = getOccurrenceInstant(
+					memo,
+					occurrence,
+					event.start
+				)
 				const hasOverride = overriddenInstants.has(occurrenceDate.valueOf())
 
 				// An overridden occurrence is rendered from the override row itself,

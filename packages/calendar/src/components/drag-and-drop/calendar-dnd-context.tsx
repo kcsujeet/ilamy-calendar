@@ -5,8 +5,8 @@ import { EventMutationScopeSlot } from '@/components/calendar-slots'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useCalendarDrag } from '@/hooks/use-calendar-drag'
 import { useDropCommit } from '@/hooks/use-drop-commit'
+import { pointerWithinLazily } from '@/lib/utils/pointer-within-lazily'
 import { DragPreviewContext } from '@/stores/drag-preview-context'
-import { pointerWithinLazily } from './dnd-utils'
 import { EventDragOverlay } from './event-drag-overlay'
 
 interface CalendarDndContextProps {

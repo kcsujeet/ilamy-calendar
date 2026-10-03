@@ -8,11 +8,13 @@
 		}
 	},
 	"enabledPlugins": {
-		"claude-md@kc-claude-kit": true,
 		"code-review@kc-claude-kit": true,
 		"code-review@claude-plugins-official": false,
 		"conventions@kc-claude-kit": true,
-		"testing@kc-claude-kit": true
+		"instructions@kc-claude-kit": true,
+		"testing@kc-claude-kit": true,
+		"usage-band@kc-claude-kit": true,
+		"image-preview@kc-claude-kit": true
 	},
 	"skillOverrides": {
 		"code-review": "off"

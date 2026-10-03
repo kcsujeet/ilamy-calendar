@@ -153,6 +153,33 @@ export interface PluginMutationResult {
 }
 
 /**
+ * One user action and every stored row it touched, reported once through
+ * `onEventsChange` (#309). A recurring edit touches several rows (the series,
+ * an override, deleted overrides) that the per-row callbacks report one by
+ * one; this reports them together so they can be saved, or refused, as a unit.
+ * FullCalendar reports an action once the same way (`eventChange` with
+ * `relatedEvents`).
+ */
+export interface EventsChange {
+	/** What the user did. */
+	action: 'add' | 'update' | 'delete'
+	/** The event the user acted on, as it was shown (an occurrence, for a series). */
+	event: CalendarEvent
+	/**
+	 * The scope chosen in the plugin's scope dialog, when a plugin manages the
+	 * event; otherwise undefined. The recurrence plugin passes its
+	 * `RecurrenceEditScope` (`'this' | 'following' | 'all'`).
+	 */
+	scope?: unknown
+	/** New rows, the same ones passed to `onEventAdd`. */
+	added: CalendarEvent[]
+	/** Changed rows, the same ones passed to `onEventUpdate`. */
+	updated: CalendarEvent[]
+	/** Removed rows, the same ones passed to `onEventDelete`. */
+	deleted: CalendarEvent[]
+}
+
+/**
  * Calendar configuration handed to a view's `columns()`/`renderHeader()`.
  * Carries the resource axis (`resources`, `orientation`) so a resource-capable
  * view can compose both arrangements. `range()` receives only the

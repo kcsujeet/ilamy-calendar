@@ -77,6 +77,21 @@ export class CalendarPage {
 		return JSON.parse(raw ?? '[]')
 	}
 
+	/** Every `onEventsChange` call so far, as the harness published it (#309). */
+	async eventChanges(): Promise<
+		Array<{
+			action: 'add' | 'update' | 'delete'
+			scope: string | null
+			event: string
+			added: string[]
+			updated: string[]
+			deleted: string[]
+		}>
+	> {
+		const raw = await this.page.getByTestId('event-changes').textContent()
+		return JSON.parse(raw ?? '[]')
+	}
+
 	async eventNamed(title: string) {
 		const state = await this.eventState()
 		const found = state.find((event) => event.title === title)

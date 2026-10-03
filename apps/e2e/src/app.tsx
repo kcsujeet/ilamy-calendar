@@ -1,5 +1,6 @@
 import {
 	type CalendarEvent,
+	type EventsChange,
 	IlamyCalendar,
 	type IlamyPlugin,
 	type Resource,
@@ -159,6 +160,16 @@ interface HarnessProps {
 	view: ViewName
 }
 
+/** An onEventsChange call as the specs read it: the action and its row ids. */
+interface PublishedChange {
+	action: EventsChange['action']
+	scope: string | null
+	event: string
+	added: string[]
+	updated: string[]
+	deleted: string[]
+}
+
 /**
  * Holds the events so mutations stick, and publishes what the calendar reports
  * back as JSON.
@@ -202,6 +213,22 @@ const Harness: React.FC<HarnessProps> = ({
 		setEvents((current) => current.filter((event) => event.id !== deleted.id))
 	}
 
+	// Every onEventsChange call, by row id, so a spec can assert that one user
+	// action was reported once (#309).
+	const [changes, setChanges] = useState<PublishedChange[]>([])
+	const handleChange = (change: EventsChange) => {
+		const ids = (rows: CalendarEvent[]) => rows.map((row) => String(row.id))
+		const published: PublishedChange = {
+			action: change.action,
+			scope: typeof change.scope === 'string' ? change.scope : null,
+			event: String(change.event.id),
+			added: ids(change.added),
+			updated: ids(change.updated),
+			deleted: ids(change.deleted),
+		}
+		setChanges((current) => [...current, published])
+	}
+
 	const published = events.map((event) => ({
 		id: event.id,
 		title: event.title,
@@ -222,6 +249,7 @@ const Harness: React.FC<HarnessProps> = ({
 				initialView={view}
 				onEventAdd={handleAdd}
 				onEventDelete={handleDelete}
+				onEventsChange={handleChange}
 				onEventUpdate={handleUpdate}
 				orientation={orientation}
 				plugins={plugins}
@@ -234,6 +262,9 @@ const Harness: React.FC<HarnessProps> = ({
 			{/* Read by the specs, invisible to a screenshot. */}
 			<script data-testid="event-state" type="application/json">
 				{JSON.stringify(published)}
+			</script>
+			<script data-testid="event-changes" type="application/json">
+				{JSON.stringify(changes)}
 			</script>
 		</div>
 	)

@@ -216,7 +216,12 @@ If `disableDragAndDrop` is `true`, `CalendarDndContext` renders children without
 | `src/features/calendar/hooks/use-calendar-engine.ts` | Engine composer (slices + cross-cutting effects) |
 | `src/features/calendar/hooks/use-calendar-config.ts` | Config slice (i18n, locale state, defaults) |
 | `src/features/calendar/hooks/use-calendar-navigation.ts` | Navigation slice (date/view, range math) |
-| `src/features/calendar/hooks/use-calendar-data.ts` | Data slice (event store, CRUD, scoped mutations) |
+| `src/features/calendar/hooks/calendar-data/use-calendar-data.ts` | Data slice: composes the hooks beside it |
+| `src/features/calendar/hooks/calendar-data/use-event-store.ts` | Stored rows, `events` prop sync, expansion for a date range |
+| `src/features/calendar/hooks/calendar-data/use-event-mutations.ts` | Plain add / update / delete |
+| `src/features/calendar/hooks/calendar-data/use-plugin-mutations.ts` | Scoped edit / delete through the managing plugin |
+| `src/features/calendar/hooks/calendar-data/use-resource-lookups.ts` | Resource filters and lookups over the events in view |
+| `src/features/calendar/hooks/calendar-data/event-changes.ts` | Pure helpers: build an `EventsChange`, report a mutation through the callbacks |
 | `src/features/calendar/hooks/use-calendar-interaction.ts` | Interaction slice (selection, event form, click handlers) |
 | `src/features/calendar/stores/calendar-context/calendar-context.ts` | `CalendarContext` + `CalendarContextType` |
 | `src/features/calendar/stores/calendar-cell-context/calendar-cell-context.ts` | `CalendarCellContext` + `CalendarCellContextType` (the cell subset) |

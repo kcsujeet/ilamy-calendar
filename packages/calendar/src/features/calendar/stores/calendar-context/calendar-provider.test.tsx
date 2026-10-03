@@ -599,6 +599,7 @@ describe('CalendarProvider - render stability', () => {
 				onCellClick={() => calls.push(`cell:${label}`)}
 				onDateChange={() => calls.push(`date:${label}`)}
 				onEventClick={() => calls.push(`click:${label}`)}
+				onEventsChange={() => calls.push(`change:${label}`)}
 				onEventUpdate={() => calls.push(`update:${label}`)}
 			>
 				<CaptureContext />
@@ -621,6 +622,7 @@ describe('CalendarProvider - render stability', () => {
 		expect(seenContexts.at(1)).toBe(seenContexts.at(0))
 		expect(calls).toEqual([
 			'update:second',
+			'change:second',
 			'click:second',
 			'cell:second',
 			'date:second',

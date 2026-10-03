@@ -1,6 +1,7 @@
 import type {
 	BusinessHours,
 	CalendarEvent,
+	EventsChange,
 	IlamyPlugin,
 	PluginView,
 	Resource,
@@ -16,13 +17,13 @@ import {
 	useState,
 } from 'react'
 import {
+	type CalendarDataSlice,
+	useCalendarData,
+} from '@/features/calendar/hooks/calendar-data/use-calendar-data'
+import {
 	type CalendarConfigSlice,
 	useCalendarConfig,
 } from '@/features/calendar/hooks/use-calendar-config'
-import {
-	type CalendarDataSlice,
-	useCalendarData,
-} from '@/features/calendar/hooks/use-calendar-data'
 import {
 	type CalendarInteractionSlice,
 	useCalendarInteraction,
@@ -54,6 +55,7 @@ interface CalendarEngineConfig {
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
 	onEventDelete?: (event: CalendarEvent) => void
+	onEventsChange?: (change: EventsChange) => void
 	onDateChange?: (date: Dayjs, range: { start: Dayjs; end: Dayjs }) => void
 	onViewChange?: (view: CalendarView) => void
 	locale?: string
@@ -144,6 +146,7 @@ const useStableConfigHandlers = (config: CalendarEngineConfig) => ({
 	onEventAdd: useLatestHandler(config.onEventAdd),
 	onEventUpdate: useLatestHandler(config.onEventUpdate),
 	onEventDelete: useLatestHandler(config.onEventDelete),
+	onEventsChange: useLatestHandler(config.onEventsChange),
 	onDateChange: useLatestHandler(config.onDateChange),
 	onViewChange: useLatestHandler(config.onViewChange),
 	onEventClick: useLatestHandler(config.onEventClick),
@@ -175,6 +178,7 @@ export const useCalendarEngine = (
 		onEventAdd,
 		onEventUpdate,
 		onEventDelete,
+		onEventsChange,
 		onDateChange,
 		onViewChange,
 		onEventClick,
@@ -223,6 +227,7 @@ export const useCalendarEngine = (
 		onEventAdd,
 		onEventUpdate,
 		onEventDelete,
+		onEventsChange,
 	})
 
 	const interaction = useCalendarInteraction({

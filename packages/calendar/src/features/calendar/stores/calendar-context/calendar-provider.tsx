@@ -1,6 +1,7 @@
 import type {
 	BusinessHours,
 	CalendarEvent,
+	EventsChange,
 	IlamyPlugin,
 	Resource,
 } from '@ilamy/types'
@@ -40,6 +41,7 @@ export interface CalendarProviderProps {
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
 	onEventDelete?: (event: CalendarEvent) => void
+	onEventsChange?: (change: EventsChange) => void
 	onDateChange?: (date: Dayjs, range: DateRange) => void
 	locale?: string
 	timezone?: string
@@ -108,6 +110,7 @@ const useCalendarContextValue = (
 		onEventAdd,
 		onEventUpdate,
 		onEventDelete,
+		onEventsChange,
 		onDateChange,
 		locale,
 		timezone,
@@ -155,6 +158,7 @@ const useCalendarContextValue = (
 		onEventAdd,
 		onEventUpdate,
 		onEventDelete,
+		onEventsChange,
 		onDateChange,
 		onViewChange,
 		locale,

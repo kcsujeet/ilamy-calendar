@@ -192,7 +192,7 @@ import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 
 ### How do I make scoped edits to a recurring series from a custom event form?
 
-Use `applyScopedEdit` and `applyScopedDelete` from `useIlamyCalendarContext()` (v2.0.0+). Pass the occurrence the user is editing, the changed fields, and a scope of `'this'`, `'following'`, or `'all'` — the recurrence plugin handles the RFC 5545 mechanics (exception dates, modified instances, series splits), and the resulting changes are reported through `onEventUpdate`, `onEventAdd`, and `onEventDelete` so you can persist them:
+Use `applyScopedEdit` and `applyScopedDelete` from `useIlamyCalendarContext()` (v2.0.0+). Pass the occurrence the user is editing, the changed fields, and a scope of `'this'`, `'following'`, or `'all'` — the recurrence plugin handles the RFC 5545 mechanics (exception dates, modified instances, series splits), and the resulting changes are reported through `onEventUpdate`, `onEventAdd`, and `onEventDelete` so you can persist them, and once more, all together, through `onEventsChange` if you would rather save each action as one unit:
 
 ```tsx
 const { applyScopedEdit, getEventManager } = useIlamyCalendarContext();

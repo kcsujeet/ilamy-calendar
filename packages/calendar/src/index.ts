@@ -8,6 +8,7 @@ export type {
 	ColumnSpec,
 	EventFormSlotContext,
 	EventMutationScopeSlotContext,
+	EventsChange,
 	HorizontalCellSpec,
 	HorizontalRowSpec,
 	IlamyPlugin,

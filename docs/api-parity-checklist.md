@@ -35,6 +35,7 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 - [x] `onCellClick` with `CellClickInfo` including `resourceId` — matches `dateClick`
 - [x] `onEventClick` — matches `eventClick`
 - [x] `onEventAdd` / `onEventUpdate` / `onEventDelete` — matches `eventAdd` / `eventChange` / `eventRemove`
+- [x] `onEventsChange` — one callback per user action with every row it touched, like FullCalendar's `eventChange` with `relatedEvents` (#309). `revert()` is still open (Tier 1)
 - [x] `onViewChange` — matches view change callbacks
 - [x] Recurring event CRUD with scope (this/following/all) — FullCalendar doesn't have this built-in
 - [x] `renderEvent` / `renderResource` / `renderCurrentTimeIndicator` — flexible custom rendering

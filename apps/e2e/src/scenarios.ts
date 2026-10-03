@@ -4,6 +4,7 @@ import {
 	type Resource,
 	type SlotDuration,
 } from '@ilamy/calendar'
+import { RRule } from '@ilamy/calendar-recurrence'
 
 /**
  * The instant the harness pretends it is. Must match `PINNED_NOW` in the test
@@ -251,6 +252,40 @@ export const scenarios = {
 				'2025-03-13T00:00:00.000Z',
 				'2025-03-15T00:00:00.000Z',
 				{ allDay: true }
+			),
+		],
+	},
+
+	recurring: {
+		description:
+			'Two recurring series (open with plugins=recurrence): a Monday/Wednesday class that began in June 2015, so each expansion walks years of rule, and a daily stand-up. Pins the occurrences the recurrence plugin draws, including after navigating away and back.',
+		views: ['day', 'week', 'month'],
+		config: { scrollTime: '08:00' },
+		events: [
+			event(
+				'class',
+				'Long-running class',
+				'2015-06-01T11:00:00.000Z',
+				'2015-06-01T11:45:00.000Z',
+				{
+					rrule: {
+						freq: RRule.WEEKLY,
+						byweekday: [RRule.MO, RRule.WE],
+						dtstart: new Date('2015-06-01T11:00:00.000Z'),
+					},
+				}
+			),
+			event(
+				'standup',
+				'Daily stand-up',
+				'2025-03-01T09:00:00.000Z',
+				'2025-03-01T09:15:00.000Z',
+				{
+					rrule: {
+						freq: RRule.DAILY,
+						dtstart: new Date('2025-03-01T09:00:00.000Z'),
+					},
+				}
 			),
 		],
 	},

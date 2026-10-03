@@ -82,11 +82,13 @@ Unified internal hook used by all library components. Reads the one `CalendarCon
 // Full context
 const ctx = useSmartCalendarContext()
 
-// With selector (avoids unnecessary re-renders)
+// With selector (shapes the result only)
 const { updateEvent } = useSmartCalendarContext((ctx) => ({
   updateEvent: ctx.updateEvent,
 }))
 ```
+
+The selector does NOT limit re-renders: the hook is `useContext`, so every consumer re-renders whenever any field of the context changes. Hot components that exist once per grid cell read the narrow `useCalendarCellContext()` instead (`features/calendar/hooks/use-calendar-cell-context.ts`; `CalendarCellContextType`: date, view, spacing, business hours, the cell callbacks and flags), which changes only when one of those fields does; an event moving changes none of them. Consumer handlers that only run on events (`onEventUpdate`, `onCellClick`, `onDateChange`, …) pass through `useLatestHandler`, so an inline handler's new identity does not rebuild either context, while the newest handler is still the one called. Render-time callbacks (`getCellClassName`, `isCellDisabled`, `renderEvent`, …) are deliberately not wrapped: cells must re-render to re-run them.
 
 Returns `SmartCalendarContextType` = `CalendarContextType`. The resource utilities (`getEventsForResource`, `getResourceById`, ...) are always defined; `resources` itself is honestly optional (absent on a regular calendar).
 
@@ -216,7 +218,9 @@ If `disableDragAndDrop` is `true`, `CalendarDndContext` renders children without
 | `src/features/calendar/hooks/use-calendar-navigation.ts` | Navigation slice (date/view, range math) |
 | `src/features/calendar/hooks/use-calendar-data.ts` | Data slice (event store, CRUD, scoped mutations) |
 | `src/features/calendar/hooks/use-calendar-interaction.ts` | Interaction slice (selection, event form, click handlers) |
-| `src/features/calendar/contexts/calendar-context/context.ts` | `CalendarContextType` definition |
+| `src/features/calendar/contexts/calendar-context/calendar-context.ts` | `CalendarContext` + `CalendarContextType` |
+| `src/features/calendar/contexts/calendar-cell-context/calendar-cell-context.ts` | `CalendarCellContext` + `CalendarCellContextType` (the cell subset) |
+| `src/features/calendar/contexts/calendar-cell-context/provider.tsx` | `CalendarCellProvider` (rendered inside `CalendarProvider`) |
 | `src/features/calendar/contexts/calendar-context/provider.tsx` | `CalendarProvider` |
 | `src/features/calendar/hooks/useProcessedDayEvents.ts` | Day event positioning hook |
 | `src/features/calendar/hooks/useProcessedWeekEvents.ts` | Week event positioning hook |

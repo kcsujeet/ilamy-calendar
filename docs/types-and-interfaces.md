@@ -285,5 +285,5 @@ See "Keeping the title in view" in the website's calendar docs.
 | `Resource` | `packages/types/src/index.ts` (`@ilamy/types`) |
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |
 | `CalendarView`, `TimeFormat` | `src/types/index.ts` |
-| `CalendarContextType` | `src/features/calendar/contexts/calendar-context/context.ts` |
+| `CalendarContextType` | `src/features/calendar/contexts/calendar-context/calendar-context.ts` |
 | `Translations`, `TranslatorFunction` | `src/lib/translations/types.ts` |

@@ -270,6 +270,65 @@ test.describe('header layout across widths', () => {
 	})
 })
 
+// The recurrence plugin caches each series' expansion across navigations
+// (rrule walks from DTSTART on every query, so a series that began years ago
+// was re-walked per column). What it draws must not depend on the cache.
+test.describe('recurring events', () => {
+	/** The occurrences the time grid draws: each bar's id and where it sits. */
+	const readOccurrenceBars = async (page: Page) => {
+		// Navigation slides the grid in; measure once it has stopped moving.
+		await page.evaluate(() =>
+			Promise.all(
+				document.getAnimations().map((animation) => animation.finished)
+			)
+		)
+		return page
+			.locator('[data-testid^="vertical-event-"]')
+			.evaluateAll((bars) =>
+				bars.map((bar) => {
+					const box = bar.getBoundingClientRect()
+					return `${bar.getAttribute('data-testid')}@${Math.round(box.left)},${Math.round(box.top)}`
+				})
+			)
+	}
+
+	test("a series that began years ago shows this week's occurrences", async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'recurring',
+			view: 'week',
+			plugins: ['recurrence'],
+		})
+		const grid = new TimeGrid(page)
+
+		// The week of 9 March 2025: Monday the 10th and Wednesday the 12th.
+		await expect(grid.event('Long-running class')).toHaveCount(2)
+		await expect(grid.event('Daily stand-up')).toHaveCount(7)
+	})
+
+	test('navigating away and back draws the same occurrences', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'recurring',
+			view: 'week',
+			plugins: ['recurrence'],
+		})
+		const grid = new TimeGrid(page)
+		await expect(grid.event('Daily stand-up')).toHaveCount(7)
+		const barsBefore = await readOccurrenceBars(page)
+
+		await grid.next()
+		await grid.next()
+		await grid.previous()
+		await grid.previous()
+
+		await expect(grid.event('Daily stand-up')).toHaveCount(7)
+		expect(await readOccurrenceBars(page)).toEqual(barsBefore)
+	})
+})
+
 test.describe('navigation', () => {
 	test('today returns to the pinned day from anywhere', async ({ page }) => {
 		await gotoScenario(page, { scenario: 'basic', view: 'month' })

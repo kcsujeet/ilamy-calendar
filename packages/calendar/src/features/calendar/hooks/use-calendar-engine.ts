@@ -33,6 +33,7 @@ import {
 } from '@/features/calendar/hooks/use-calendar-navigation'
 import type { CellInfo, DateRange } from '@/features/calendar/types'
 import { createPluginRuntime } from '@/features/plugins/lib/create-plugin-runtime'
+import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { getEventResourceIds } from '@/lib/events/pipeline'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView } from '@/types'
@@ -133,6 +134,22 @@ const anchorInitialDate = (
 	return instant.tz(timezone)
 }
 
+/**
+ * The consumer's event handlers, each with a stable identity that always calls
+ * the newest one. They run only in response to events, never during render, so
+ * their identity must not rebuild the context: an inline `onEventUpdate`
+ * otherwise re-renders every grid cell on each of the consumer's renders.
+ */
+const useStableConfigHandlers = (config: CalendarEngineConfig) => ({
+	onEventAdd: useLatestHandler(config.onEventAdd),
+	onEventUpdate: useLatestHandler(config.onEventUpdate),
+	onEventDelete: useLatestHandler(config.onEventDelete),
+	onDateChange: useLatestHandler(config.onDateChange),
+	onViewChange: useLatestHandler(config.onViewChange),
+	onEventClick: useLatestHandler(config.onEventClick),
+	onCellClick: useLatestHandler(config.onCellClick),
+})
+
 export const useCalendarEngine = (
 	config: CalendarEngineConfig
 ): CalendarEngineReturn & CalendarEngineHandlers => {
@@ -143,23 +160,26 @@ export const useCalendarEngine = (
 		initialDate,
 		dayMaxEvents,
 		businessHours,
-		onEventAdd,
-		onEventUpdate,
-		onEventDelete,
-		onDateChange,
-		onViewChange,
 		locale,
 		timezone,
 		translations,
 		translator,
-		onEventClick,
-		onCellClick,
 		disableEventClick,
 		disableCellClick,
 		resources,
 		orientation,
 		weekViewGranularity,
 	} = config
+
+	const {
+		onEventAdd,
+		onEventUpdate,
+		onEventDelete,
+		onDateChange,
+		onViewChange,
+		onEventClick,
+		onCellClick,
+	} = useStableConfigHandlers(config)
 
 	const { plugins = EMPTY_PLUGINS } = config
 

@@ -10,17 +10,21 @@ import type React from 'react'
 import { useImperativeHandle, useState } from 'react'
 import { DraggableEvent } from '@/components/draggable-event/draggable-event'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+
 export interface SelectedDayEvents {
 	day: Dayjs
 	events: CalendarEvent[]
 }
 
+/** What a cell can do with its dialog: fill it with a day's events and open it. */
+export interface AllEventsDialogHandle {
+	open: () => void
+	close: () => void
+	setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void
+}
+
 interface AllEventDialogProps {
-	ref: React.Ref<{
-		open: () => void
-		close: () => void
-		setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void
-	}>
+	ref: React.Ref<AllEventsDialogHandle>
 }
 
 export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {

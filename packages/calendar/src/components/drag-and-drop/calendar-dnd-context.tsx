@@ -1,4 +1,4 @@
-import { DndContext, pointerWithin } from '@dnd-kit/core'
+import { DndContext } from '@dnd-kit/core'
 import type React from 'react'
 import { useId } from 'react'
 import { EventMutationScopeSlot } from '@/components/calendar-slots'
@@ -6,6 +6,7 @@ import { DragPreviewContext } from '@/contexts/drag-preview-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useCalendarDrag } from '@/hooks/use-calendar-drag'
 import { useDropCommit } from '@/hooks/use-drop-commit'
+import { pointerWithinLazily } from './dnd-utils'
 import { EventDragOverlay } from './event-drag-overlay'
 
 interface CalendarDndContextProps {
@@ -44,7 +45,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	return (
 		<DragPreviewContext.Provider value={dragPreview}>
 			<DndContext
-				collisionDetection={pointerWithin}
+				collisionDetection={pointerWithinLazily}
 				id={dndContextId}
 				sensors={sensors}
 				{...handlers}

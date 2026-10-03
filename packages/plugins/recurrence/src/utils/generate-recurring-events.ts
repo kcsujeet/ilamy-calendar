@@ -13,6 +13,127 @@ interface GenerateRecurringEventsProps {
 	endDate: Dayjs
 }
 
+/**
+ * How far past a requested range the cached occurrence window reaches, so
+ * the next few navigations and every column inside the view are answered
+ * from it rather than by walking the rule again.
+ */
+const WINDOW_MARGIN_MS = 42 * 24 * 60 * 60 * 1000
+
+/** Converted occurrences kept per series before the memo starts over. */
+const MAX_MEMOIZED_OCCURRENCES = 4096
+
+/**
+ * What one series has already worked out. rrule walks from DTSTART on every
+ * `between()`, so a series that started years ago paid that walk once per
+ * grid column. `windowOccurrences` holds the floating-time instants of a
+ * `between(windowStart, windowEnd, true)` call, in rrule's iteration order,
+ * and every query inside the window is answered by filtering it the way
+ * `between()` filters its own walk. `instants` memoizes `fromFloatingDate`,
+ * which costs seven timezone-aware setter calls per occurrence.
+ */
+interface SeriesMemo {
+	rruleOptions: RRuleOptions
+	start: Dayjs
+	floatingUntilMs: number | undefined
+	rule: RRule
+	windowStartMs: number
+	windowEndMs: number
+	windowOccurrences: number[]
+	instants: Map<number, Dayjs>
+}
+
+const seriesMemos = new WeakMap<CalendarEvent, SeriesMemo>()
+
+const readSeriesMemo = (
+	event: CalendarEvent,
+	rruleOptions: RRuleOptions,
+	floatingUntil: Date | undefined
+): SeriesMemo => {
+	const floatingUntilMs = floatingUntil?.getTime()
+	const memo = seriesMemos.get(event)
+	const isMemoCurrent =
+		memo !== undefined &&
+		memo.rruleOptions === event.rrule &&
+		memo.start === event.start &&
+		memo.floatingUntilMs === floatingUntilMs
+	if (memo && isMemoCurrent) {
+		return memo
+	}
+
+	const freshMemo: SeriesMemo = {
+		rruleOptions: event.rrule as RRuleOptions,
+		start: event.start,
+		floatingUntilMs,
+		rule: new RRule(rruleOptions),
+		windowStartMs: Number.POSITIVE_INFINITY,
+		windowEndMs: Number.NEGATIVE_INFINITY,
+		windowOccurrences: [],
+		instants: new Map(),
+	}
+	seriesMemos.set(event, freshMemo)
+	return freshMemo
+}
+
+/**
+ * Exactly `memo.rule.between(after, before, true)`. rrule walks in order,
+ * skips dates before `after` and stops at the first one after `before`; the
+ * window is that same walk over a wider span, so filtering it the same way
+ * returns the same dates in the same order.
+ */
+const occurrencesBetween = (
+	memo: SeriesMemo,
+	after: Date,
+	before: Date
+): number[] => {
+	const afterMs = after.getTime()
+	const beforeMs = before.getTime()
+	const hasInvalidBound = Number.isNaN(afterMs) || Number.isNaN(beforeMs)
+	if (hasInvalidBound) {
+		// Let rrule raise the error it always raised.
+		return memo.rule.between(after, before, true).map((date) => date.getTime())
+	}
+
+	const isInsideWindow =
+		afterMs >= memo.windowStartMs && beforeMs <= memo.windowEndMs
+	if (!isInsideWindow) {
+		memo.windowStartMs = afterMs - WINDOW_MARGIN_MS
+		memo.windowEndMs = beforeMs + WINDOW_MARGIN_MS
+		memo.windowOccurrences = memo.rule
+			.between(new Date(memo.windowStartMs), new Date(memo.windowEndMs), true)
+			.map((date) => date.getTime())
+	}
+
+	const occurrences: number[] = []
+	for (const occurrenceMs of memo.windowOccurrences) {
+		if (occurrenceMs > beforeMs) {
+			break
+		}
+		if (occurrenceMs >= afterMs) {
+			occurrences.push(occurrenceMs)
+		}
+	}
+	return occurrences
+}
+
+/** `fromFloatingDate(new Date(occurrenceMs), event.start)`, computed once. */
+const occurrenceInstant = (
+	memo: SeriesMemo,
+	occurrenceMs: number,
+	reference: Dayjs
+): Dayjs => {
+	const memoized = memo.instants.get(occurrenceMs)
+	if (memoized) {
+		return memoized
+	}
+	if (memo.instants.size >= MAX_MEMOIZED_OCCURRENCES) {
+		memo.instants.clear()
+	}
+	const instant = fromFloatingDate(new Date(occurrenceMs), reference)
+	memo.instants.set(occurrenceMs, instant)
+	return instant
+}
+
 export const generateRecurringEvents = ({
 	event,
 	currentEvents,
@@ -39,7 +160,7 @@ export const generateRecurringEvents = ({
 			dtstart: floatingStart,
 			until: floatingUntil,
 		}
-		const rule = new RRule(ruleOptions)
+		const memo = readSeriesMemo(event, ruleOptions, floatingUntil)
 
 		const parentUid = getEventParentUID(event)
 		const overrides = currentEvents.filter((candidate) => {
@@ -47,6 +168,15 @@ export const generateRecurringEvents = ({
 			const belongsToSeries = getEventParentUID(candidate) === parentUid
 			return isOverride && belongsToSeries
 		})
+		// `isSame` with no unit compares instants, so a set of instants answers
+		// the same question without re-parsing every RECURRENCE-ID per occurrence.
+		const overriddenInstants = new Set<number>()
+		for (const override of overrides) {
+			const overriddenOccurrence = safeDate(override.recurrenceId)
+			if (overriddenOccurrence) {
+				overriddenInstants.add(overriddenOccurrence.valueOf())
+			}
+		}
 
 		// Calculate event duration to expand search window for events that span the range
 		const eventDuration = event.end.diff(event.start)
@@ -59,15 +189,17 @@ export const generateRecurringEvents = ({
 		const endDateTime = toFloatingDate(endDate)
 
 		// Get all occurrences in the expanded range
-		const occurrences = rule.between(expandedStartDateTime, endDateTime, true)
+		const occurrences = occurrencesBetween(
+			memo,
+			expandedStartDateTime,
+			endDateTime
+		)
 
 		// Convert occurrences to CalendarEvent instances
 		const recurringEvents: CalendarEvent[] = occurrences
 			.map((occurrence, index) => {
-				const occurrenceDate = fromFloatingDate(occurrence, event.start)
-				const hasOverride = overrides.some((e) =>
-					safeDate(e.recurrenceId)?.isSame(occurrenceDate)
-				)
+				const occurrenceDate = occurrenceInstant(memo, occurrence, event.start)
+				const hasOverride = overriddenInstants.has(occurrenceDate.valueOf())
 
 				// An overridden occurrence is rendered from the override row itself,
 				// which the plugin's transformEvents emits (merged over this base).

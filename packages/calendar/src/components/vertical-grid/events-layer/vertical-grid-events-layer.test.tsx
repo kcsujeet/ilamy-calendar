@@ -6,7 +6,7 @@ import {
 	DragPreviewContext,
 	type DragPreviewState,
 } from '@/contexts/drag-preview-context'
-import { CalendarContext } from '@/features/calendar/contexts/calendar-context/context'
+import { CalendarContext } from '@/features/calendar/contexts/calendar-context/calendar-context'
 import type { RenderCurrentTimeIndicatorProps } from '@/features/calendar/types'
 import { keys } from '@/lib/utils/keys'
 import { mkDragPreview } from '@/testing/drag-test-fixtures'

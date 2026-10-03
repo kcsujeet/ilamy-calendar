@@ -4,7 +4,7 @@ import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { useId } from 'react'
 import { useDragPreview } from '@/contexts/drag-preview-context'
-import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useCalendarCellContext } from '@/features/calendar/hooks/use-calendar-cell-context'
 import type { CellInfo } from '@/features/calendar/types'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { isPreviewOnTarget } from '@/lib/utils/drag-preview'
@@ -246,7 +246,7 @@ export function DroppableCell({
 		disableCellClick,
 		classesOverride,
 		view,
-	} = useSmartCalendarContext()
+	} = useCalendarCellContext()
 
 	const { start, end } = getCellRange(date, hour, minute, slotDurationMinutes)
 	// `getResourceById` is only present on resource calendars; regular calendars resolve to undefined.

@@ -4,7 +4,7 @@ import type React from 'react'
 import { memo } from 'react'
 import type { StickyInsetSide } from '@/hooks/use-sticky-insets'
 import { keys } from '@/lib/utils/keys'
-import { GridCell } from '../grid-cell'
+import { GridCell } from '../grid-cell/grid-cell'
 import { VerticalGridEventsLayer } from './events-layer/vertical-grid-events-layer'
 
 export interface VerticalGridColProps extends VerticalColumnSpec {

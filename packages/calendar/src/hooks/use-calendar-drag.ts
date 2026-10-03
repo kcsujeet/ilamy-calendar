@@ -159,14 +159,21 @@ const useDragCursor = (dragPreview: DragPreviewState | null) => {
 	}, [cursor])
 }
 
+/*
+ * Module constants, not inline literals: dnd-kit's useSensor memoizes on the
+ * options object's identity, so a fresh literal made a new sensor list on every
+ * render. That rebuilt dnd-kit's internal context, which re-rendered every
+ * droppable cell and draggable event whenever this hook's component rendered.
+ */
+const MOUSE_SENSOR_OPTIONS = { activationConstraint: { distance: 2 } }
+const TOUCH_SENSOR_OPTIONS = {
+	activationConstraint: { delay: 100, tolerance: 5 },
+}
+
 /** Small movement thresholds, so a drag starts without feeling sticky. */
 const useDragSensors = () => {
-	const mouseSensor = useSensor(MouseSensor, {
-		activationConstraint: { distance: 2 },
-	})
-	const touchSensor = useSensor(TouchSensor, {
-		activationConstraint: { delay: 100, tolerance: 5 },
-	})
+	const mouseSensor = useSensor(MouseSensor, MOUSE_SENSOR_OPTIONS)
+	const touchSensor = useSensor(TouchSensor, TOUCH_SENSOR_OPTIONS)
 	return useSensors(mouseSensor, touchSensor)
 }
 

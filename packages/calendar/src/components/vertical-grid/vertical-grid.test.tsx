@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import dayjs from '@ilamy/utils/dayjs'
 import { act, cleanup, render, screen } from '@testing-library/react'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { VerticalGrid } from './vertical-grid'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')

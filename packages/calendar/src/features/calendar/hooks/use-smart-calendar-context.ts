@@ -11,7 +11,7 @@ import { useContext } from 'react'
 import {
 	CalendarContext,
 	type CalendarContextType,
-} from '@/features/calendar/contexts/calendar-context/calendar-context'
+} from '@/features/calendar/stores/calendar-context/calendar-context'
 import type {
 	DateRange,
 	OpenEventFormInput,

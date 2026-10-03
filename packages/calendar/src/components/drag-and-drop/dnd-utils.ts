@@ -185,8 +185,23 @@ export const pointerWithinLazily: CollisionDetection = (args) => {
 		return []
 	}
 	const { x, y } = pointerCoordinates
-	const containsPointer = (rect: ClientRect) =>
-		rect.top <= y && y <= rect.bottom && rect.left <= x && x <= rect.right
+	// Edge by edge, so a cell is ruled out on its first failing edge.
+	const containsPointer = (rect: ClientRect) => {
+		const isBelowTop = rect.top <= y
+		if (!isBelowTop) {
+			return false
+		}
+		const isAboveBottom = y <= rect.bottom
+		if (!isAboveBottom) {
+			return false
+		}
+		const isRightOfLeft = rect.left <= x
+		if (!isRightOfLeft) {
+			return false
+		}
+		const isLeftOfRight = x <= rect.right
+		return isLeftOfRight
+	}
 	const hits = droppableContainers.filter((container) => {
 		const rect = droppableRects.get(container.id)
 		return rect !== undefined && containsPointer(rect)

@@ -3,7 +3,7 @@ import { agendaPlugin } from '@ilamy/calendar-agenda'
 import type { CalendarEvent, IlamyPlugin, PluginView } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { Header } from './base-header'
 
 // Custom render function that wraps Header in CalendarProvider. The header tier

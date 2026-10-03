@@ -95,9 +95,10 @@ The main calendar feature module:
 - `month-view/month-view.tsx` - Monthly grid view
 - `year-view/year-view.tsx` - Year overview
 
-**Context** (`features/calendar/contexts/calendar-context/`):
-- `context.ts` - React Context definition
-- `provider.tsx` - CalendarProvider (all state management, CRUD ops, view state, translations)
+**State** (`features/calendar/stores/`, Bulletproof's `stores/`; one folder per context):
+- `calendar-context/calendar-context.ts` - CalendarContext definition
+- `calendar-context/calendar-provider.tsx` - CalendarProvider (all state management, CRUD ops, view state, translations)
+- `calendar-cell-context/calendar-cell-context.ts` + `calendar-cell-provider.tsx` - the narrow subset grid cells read
 
 **Hooks**:
 - `useProcessedDayEvents.ts` - Process events for day view
@@ -133,7 +134,7 @@ Resources are a configuration of the one calendar, not a separate feature:
 
 - `components/ilamy-resource-calendar.tsx` - DEPRECATED alias of `IlamyCalendar`
 - `components/views/` - built-in views compose the resource arrangements (`supportsResources`)
-- `contexts/calendar-context/` - the ONE provider carries `resources`/`orientation`/`weekViewGranularity`
+- `stores/calendar-context/` - the ONE provider carries `resources`/`orientation`/`weekViewGranularity`
 
 #### Hooks (`src/hooks/`)
 

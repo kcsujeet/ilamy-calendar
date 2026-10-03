@@ -2,15 +2,14 @@ import type { Resource } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo, useMemo } from 'react'
 import { CurrentTimeMarker } from '@/components/current-time-marker'
-
-import { useDragPreview } from '@/contexts/drag-preview-context'
-import { GridAxisContext } from '@/contexts/grid-axis-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useDragPreviewEvent } from '@/hooks/use-drag-preview-event'
 import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
 import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutHorizontal } from '@/lib/layout/horizontal'
 import { keys } from '@/lib/utils/keys'
+import { useDragPreview } from '@/stores/drag-preview-context'
+import { GridAxisContext } from '@/stores/grid-axis-context'
 import { HorizontalDragPreview } from './horizontal-drag-preview'
 import {
 	getHorizontalEventKey,

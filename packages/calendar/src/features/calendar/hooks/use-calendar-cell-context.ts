@@ -2,7 +2,7 @@ import { useContext } from 'react'
 import {
 	CalendarCellContext,
 	type CalendarCellContextType,
-} from '@/features/calendar/contexts/calendar-cell-context/calendar-cell-context'
+} from '@/features/calendar/stores/calendar-cell-context/calendar-cell-context'
 
 /**
  * Internal hook for grid cells: the narrow context a cell draws from, so a

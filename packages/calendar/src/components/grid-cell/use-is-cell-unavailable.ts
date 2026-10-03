@@ -34,8 +34,9 @@ export const useIsCellUnavailable = ({
 	// shows exactly the days it means to, and those days are free to cross a
 	// month boundary — the week of 31 March runs into April, and April is not
 	// padding there.
-	const isOutsideDisplayedMonth =
-		view === 'month' && day.month() !== currentDate.month()
+	const isMonthView = view === 'month'
+	const isOtherMonth = day.month() !== currentDate.month()
+	const isOutsideDisplayedMonth = isMonthView && isOtherMonth
 
 	// Whole-slot containment: an hour-grid slot is business only if it fits
 	// entirely inside business hours, so slots partially crossing a sub-hour

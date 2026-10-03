@@ -2,8 +2,8 @@ import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { render } from '@testing-library/react'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useCalendarCellContext } from '@/features/calendar/hooks/use-calendar-cell-context'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 
 const mkEvent = (id: string): CalendarEvent => ({
 	id,
@@ -19,22 +19,22 @@ const renderCellContextReader = () => {
 		seenCellContexts.push(useCalendarCellContext())
 		return null
 	}
-	const ui = (events: CalendarEvent[]) => (
+	const buildCalendar = (events: CalendarEvent[]) => (
 		<CalendarProvider events={events}>
 			<CaptureCellContext />
 		</CalendarProvider>
 	)
-	return { seenCellContexts, ui }
+	return { seenCellContexts, buildCalendar }
 }
 
 describe('CalendarCellProvider', () => {
 	// A time grid has thousands of cells reading this context, so an event
 	// changing must not hand them a new value.
 	it('keeps the cell context when the events change', () => {
-		const { seenCellContexts, ui } = renderCellContextReader()
+		const { seenCellContexts, buildCalendar } = renderCellContextReader()
 
-		const { rerender } = render(ui([mkEvent('a')]))
-		rerender(ui([mkEvent('a'), mkEvent('b')]))
+		const { rerender } = render(buildCalendar([mkEvent('a')]))
+		rerender(buildCalendar([mkEvent('a'), mkEvent('b')]))
 
 		expect(seenCellContexts).toHaveLength(2)
 		expect(new Set(seenCellContexts).size).toBe(1)

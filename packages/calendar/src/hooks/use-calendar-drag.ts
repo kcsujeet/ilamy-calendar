@@ -13,7 +13,6 @@ import {
 	type DropCellData,
 	getUpdatedEvent,
 } from '@/components/drag-and-drop/dnd-utils'
-import type { DragPreviewState } from '@/contexts/drag-preview-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { getDragCursor } from '@/lib/utils/drag-preview'
 import {
@@ -22,6 +21,7 @@ import {
 	type GrabOffset,
 	NO_GRAB_OFFSET,
 } from '@/lib/utils/grab-offset'
+import type { DragPreviewState } from '@/stores/drag-preview-context'
 
 /** The overlay the drag chip renders into, imperatively driven by the drag. */
 interface DragOverlayHandle {

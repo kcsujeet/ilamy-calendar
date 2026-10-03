@@ -5,11 +5,11 @@ import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { filterEventsForResource } from '@/lib/events/pipeline'
 import { keys } from '@/lib/utils/keys'
-import type { AllEventsDialogHandle } from './all-events-dialog'
+import type { AllEventDialogHandle } from './all-events-dialog'
 import { MoreEventsButton } from './more-events-button'
 
 interface GridCellEventsProps {
-	allEventsDialogRef: React.RefObject<AllEventsDialogHandle | null>
+	allEventsDialogRef: React.RefObject<AllEventDialogHandle | null>
 	day: Dayjs
 	gridType: 'day' | 'hour'
 	allDay: boolean

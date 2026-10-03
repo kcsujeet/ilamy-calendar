@@ -8,7 +8,7 @@ import type {
 import dayjs from '@ilamy/utils/dayjs'
 import { act, renderHook } from '@testing-library/react'
 import { createElement, type ReactNode, StrictMode } from 'react'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { useScopedEventMutation } from './use-scoped-event-mutation'
 
 const managedEvent: CalendarEvent = {

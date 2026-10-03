@@ -2,12 +2,12 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
+import type { CellInfo } from '@/features/calendar/types'
 import {
 	DragPreviewContext,
 	type DragPreviewState,
-} from '@/contexts/drag-preview-context'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
-import type { CellInfo } from '@/features/calendar/types'
+} from '@/stores/drag-preview-context'
 import { mkDragPreview as mkPreview } from '@/testing/drag-test-fixtures'
 import type { CalendarView } from '@/types'
 import { DroppableCell } from './droppable-cell'

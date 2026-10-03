@@ -6,8 +6,8 @@ import { CalendarDndContext } from '@/components/drag-and-drop/calendar-dnd-cont
 import { EventFormDialog } from '@/features/calendar/components/event-form/event-form-dialog'
 import { Header } from '@/features/calendar/components/header/base-header'
 import { ViewRenderer } from '@/features/calendar/components/views/view-renderer'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 // oxlint-disable-next-line no-duplicates
 import '@ilamy/utils/dayjs'
 import type {

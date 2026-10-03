@@ -3,11 +3,11 @@ import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { useId } from 'react'
-import { useDragPreview } from '@/contexts/drag-preview-context'
 import { useCalendarCellContext } from '@/features/calendar/hooks/use-calendar-cell-context'
 import type { CellInfo } from '@/features/calendar/types'
 import { DISABLED_CELL_CLASSNAME } from '@/lib/constants'
 import { isPreviewOnTarget } from '@/lib/utils/drag-preview'
+import { useDragPreview } from '@/stores/drag-preview-context'
 import type { DropCellData } from './drag-and-drop/dnd-utils'
 
 interface DroppableCellProps {

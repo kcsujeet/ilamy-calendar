@@ -287,7 +287,10 @@ test.describe('recurring events', () => {
 			.evaluateAll((bars) =>
 				bars.map((bar) => {
 					const box = bar.getBoundingClientRect()
-					return `${bar.getAttribute('data-testid')}@${Math.round(box.left)},${Math.round(box.top)}`
+					const testId = bar.getAttribute('data-testid')
+					const left = Math.round(box.left)
+					const top = Math.round(box.top)
+					return `${testId}@${left},${top}`
 				})
 			)
 	}

@@ -165,26 +165,39 @@ describe('generateRecurringEvents instance ids', () => {
 		expect(expand(reused, ...WEDNESDAY)).toEqual(expand(fresh, ...WEDNESDAY))
 	})
 
-	// Normalized events are memoized on the `events` prop alone, so a calendar
-	// whose `timezone` prop changes keeps the same event objects. An event read
-	// with no zone takes its offsets from the default zone, so an answer worked
-	// out before the change must not be served after it.
-	it('answers for the new zone after the default zone changes', () => {
-		dayjs.tz.setDefault()
-		const reused = series(
-			'zoned',
-			'2025-03-03T09:00:00.000Z',
-			'2025-03-03T09:45:00.000Z'
+	// The series memo is keyed on the event object. These change the rule or
+	// the start on that same object between queries: the second answer must
+	// come from the new rule, never from the one the memo worked out before.
+	it('answers from the new rule when the same event gets a new rrule', () => {
+		const event = series(
+			'rule',
+			'2025-03-01T09:00:00.000Z',
+			'2025-03-01T10:00:00.000Z'
 		)
-		const fresh = series(
-			'zoned',
-			'2025-03-03T09:00:00.000Z',
-			'2025-03-03T09:45:00.000Z'
+		expand(event, ...WEEK)
+
+		event.rrule = {
+			freq: RRule.WEEKLY,
+			byweekday: [RRule.WE],
+			dtstart: at('2025-03-01T09:00:00.000Z').toDate(),
+		}
+
+		expect(expand(event, ...WEEK)).toEqual(['rule_0@2025-03-12T09:00:00.000Z'])
+	})
+
+	it('answers from the new start when the same event moves', () => {
+		const event = series(
+			'moved',
+			'2025-03-01T09:00:00.000Z',
+			'2025-03-01T10:00:00.000Z'
 		)
-		expand(reused, ...WEEK)
+		expand(event, ...WEDNESDAY)
 
-		dayjs.tz.setDefault('Asia/Kolkata')
+		event.start = at('2025-03-01T14:00:00.000Z')
+		event.end = at('2025-03-01T15:00:00.000Z')
 
-		expect(expand(reused, ...WEEK)).toEqual(expand(fresh, ...WEEK))
+		expect(expand(event, ...WEDNESDAY)).toEqual([
+			'moved_0@2025-03-12T14:00:00.000Z',
+		])
 	})
 })

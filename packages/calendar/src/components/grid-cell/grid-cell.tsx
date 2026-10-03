@@ -5,7 +5,7 @@ import type React from 'react'
 import { memo, useRef } from 'react'
 import { keys } from '@/lib/utils/keys'
 import { DroppableCell } from '../droppable-cell'
-import { AllEventDialog, type AllEventsDialogHandle } from './all-events-dialog'
+import { AllEventDialog, type AllEventDialogHandle } from './all-events-dialog'
 import { GridCellContent } from './grid-cell-content'
 import { GridCellEvents } from './grid-cell-events'
 import { useIsCellUnavailable } from './use-is-cell-unavailable'
@@ -64,7 +64,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	isSubDivider = false,
 	children,
 }) => {
-	const allEventsDialogRef = useRef<AllEventsDialogHandle>(null)
+	const allEventsDialogRef = useRef<AllEventDialogHandle>(null)
 	const isUnavailable = useIsCellUnavailable({
 		day,
 		gridType,

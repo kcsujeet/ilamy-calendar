@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
+import { CalendarContext } from '@/features/calendar/stores/calendar-context/calendar-context'
+import type { RenderCurrentTimeIndicatorProps } from '@/features/calendar/types'
+import { keys } from '@/lib/utils/keys'
 import {
 	DragPreviewContext,
 	type DragPreviewState,
-} from '@/contexts/drag-preview-context'
-import { CalendarContext } from '@/features/calendar/contexts/calendar-context/calendar-context'
-import type { RenderCurrentTimeIndicatorProps } from '@/features/calendar/types'
-import { keys } from '@/lib/utils/keys'
+} from '@/stores/drag-preview-context'
 import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import type { CalendarView } from '@/types'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'

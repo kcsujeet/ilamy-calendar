@@ -12,8 +12,8 @@ import type React from 'react'
 import { RRule } from 'rrule'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { CalendarContextType } from './calendar-context'
-import type { CalendarProviderProps } from './provider'
-import { CalendarProvider } from './provider'
+import type { CalendarProviderProps } from './calendar-provider'
+import { CalendarProvider } from './calendar-provider'
 
 // Default test props
 const defaultProps = {
@@ -593,7 +593,7 @@ describe('CalendarProvider - render stability', () => {
 		}
 		const events = [mkEvent('a')]
 		const calls: string[] = []
-		const ui = (label: string) => (
+		const buildCalendar = (label: string) => (
 			<CalendarProvider
 				events={events}
 				onCellClick={() => calls.push(`cell:${label}`)}
@@ -605,8 +605,8 @@ describe('CalendarProvider - render stability', () => {
 			</CalendarProvider>
 		)
 
-		const { rerender } = render(ui('first'))
-		rerender(ui('second'))
+		const { rerender } = render(buildCalendar('first'))
+		rerender(buildCalendar('second'))
 		const context = seenContexts.at(-1)
 		act(() => {
 			context?.updateEvent('a', { title: 'moved' })

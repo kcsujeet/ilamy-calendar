@@ -17,14 +17,14 @@ export interface SelectedDayEvents {
 }
 
 /** What a cell can do with its dialog: fill it with a day's events and open it. */
-export interface AllEventsDialogHandle {
+export interface AllEventDialogHandle {
 	open: () => void
 	close: () => void
 	setSelectedDayEvents: (dayEvents: SelectedDayEvents) => void
 }
 
 interface AllEventDialogProps {
-	ref: React.Ref<AllEventsDialogHandle>
+	ref: React.Ref<AllEventDialogHandle>
 }
 
 export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {

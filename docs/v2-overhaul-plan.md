@@ -86,7 +86,9 @@ These are observed, not hypothetical:
 
 Per the Bulletproof React project-structure doc: shared top-level folders hold
 feature-agnostic code only; each feature is organized internally by type
-(`components/`, `contexts/`, `hooks/`, `types/`, `utils/` — only the folders it needs);
+(`components/`, `stores/`, `hooks/`, `types/`, `utils/` — only the folders it needs; React contexts and
+their providers live in `stores/`, Bulletproof's folder for state — this plan first used a `contexts/`
+folder, replaced by `stores/` on 2026-10-02 to follow Bulletproof exactly);
 code flows one direction (shared → features → app layer); features never import from
 each other. For this library the "app layer" is `index.ts` plus the public
 `IlamyCalendar`/`IlamyResourceCalendar` components, where composition happens.
@@ -115,7 +117,7 @@ packages/calendar/src/
       components/
         views/               # built-in PluginView entries: month/week/day/year + dispatcher
         header/  event-form/ # feature-specific UI (moved from shared components/)
-      contexts/              # ONE provider composing the engine slices
+      stores/                # ONE provider composing the engine slices (+ the cell subset's)
       hooks/                 # engine slices: use-calendar-data, use-calendar-navigation,
                              #   use-calendar-config, use-calendar-interaction,
                              #   use-smart-calendar-context (selector-only, no cast)

@@ -218,10 +218,10 @@ If `disableDragAndDrop` is `true`, `CalendarDndContext` renders children without
 | `src/features/calendar/hooks/use-calendar-navigation.ts` | Navigation slice (date/view, range math) |
 | `src/features/calendar/hooks/use-calendar-data.ts` | Data slice (event store, CRUD, scoped mutations) |
 | `src/features/calendar/hooks/use-calendar-interaction.ts` | Interaction slice (selection, event form, click handlers) |
-| `src/features/calendar/contexts/calendar-context/calendar-context.ts` | `CalendarContext` + `CalendarContextType` |
-| `src/features/calendar/contexts/calendar-cell-context/calendar-cell-context.ts` | `CalendarCellContext` + `CalendarCellContextType` (the cell subset) |
-| `src/features/calendar/contexts/calendar-cell-context/provider.tsx` | `CalendarCellProvider` (rendered inside `CalendarProvider`) |
-| `src/features/calendar/contexts/calendar-context/provider.tsx` | `CalendarProvider` |
+| `src/features/calendar/stores/calendar-context/calendar-context.ts` | `CalendarContext` + `CalendarContextType` |
+| `src/features/calendar/stores/calendar-cell-context/calendar-cell-context.ts` | `CalendarCellContext` + `CalendarCellContextType` (the cell subset) |
+| `src/features/calendar/stores/calendar-cell-context/calendar-cell-provider.tsx` | `CalendarCellProvider` (rendered inside `CalendarProvider`) |
+| `src/features/calendar/stores/calendar-context/calendar-provider.tsx` | `CalendarProvider` |
 | `src/features/calendar/hooks/useProcessedDayEvents.ts` | Day event positioning hook |
 | `src/features/calendar/hooks/useProcessedWeekEvents.ts` | Week event positioning hook |
 | `src/features/recurrence/hooks/useRecurringEventActions.ts` | Recurring event scope dialog hook |

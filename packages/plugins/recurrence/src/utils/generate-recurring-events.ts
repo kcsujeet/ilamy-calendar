@@ -45,27 +45,36 @@ interface SeriesMemo {
 
 const seriesMemos = new WeakMap<CalendarEvent, SeriesMemo>()
 
-const readSeriesMemo = (
-	event: CalendarEvent,
-	rruleOptions: RRuleOptions,
+interface SeriesMemoInput {
+	event: CalendarEvent
+	/** The event's own rule, compared by identity to tell whether it changed. */
+	rrule: RRuleOptions
+	/** The rule rrule evaluates: `rrule` with floating DTSTART and UNTIL. */
+	ruleOptions: RRuleOptions
 	floatingUntil: Date | undefined
-): SeriesMemo => {
+}
+
+/** The series' memo, rebuilt when its rule, start or UNTIL has changed. */
+const readSeriesMemo = ({
+	event,
+	rrule,
+	ruleOptions,
+	floatingUntil,
+}: SeriesMemoInput): SeriesMemo => {
 	const floatingUntilMs = floatingUntil?.getTime()
 	const memo = seriesMemos.get(event)
-	const isMemoCurrent =
-		memo !== undefined &&
-		memo.rruleOptions === event.rrule &&
-		memo.start === event.start &&
-		memo.floatingUntilMs === floatingUntilMs
-	if (memo && isMemoCurrent) {
+	const hasSameRule = memo?.rruleOptions === rrule
+	const hasSameStart = memo?.start === event.start
+	const hasSameUntil = memo?.floatingUntilMs === floatingUntilMs
+	if (memo && hasSameRule && hasSameStart && hasSameUntil) {
 		return memo
 	}
 
 	const freshMemo: SeriesMemo = {
-		rruleOptions: event.rrule as RRuleOptions,
+		rruleOptions: rrule,
 		start: event.start,
 		floatingUntilMs,
-		rule: new RRule(rruleOptions),
+		rule: new RRule(ruleOptions),
 		windowStartMs: Number.POSITIVE_INFINITY,
 		windowEndMs: Number.NEGATIVE_INFINITY,
 		windowOccurrences: [],
@@ -94,8 +103,9 @@ const occurrencesBetween = (
 		return memo.rule.between(after, before, true).map((date) => date.getTime())
 	}
 
-	const isInsideWindow =
-		afterMs >= memo.windowStartMs && beforeMs <= memo.windowEndMs
+	const startsInsideWindow = afterMs >= memo.windowStartMs
+	const endsInsideWindow = beforeMs <= memo.windowEndMs
+	const isInsideWindow = startsInsideWindow && endsInsideWindow
 	if (!isInsideWindow) {
 		memo.windowStartMs = afterMs - WINDOW_MARGIN_MS
 		memo.windowEndMs = beforeMs + WINDOW_MARGIN_MS
@@ -160,7 +170,12 @@ export const generateRecurringEvents = ({
 			dtstart: floatingStart,
 			until: floatingUntil,
 		}
-		const memo = readSeriesMemo(event, ruleOptions, floatingUntil)
+		const memo = readSeriesMemo({
+			event,
+			rrule: event.rrule,
+			ruleOptions,
+			floatingUntil,
+		})
 
 		const parentUid = getEventParentUID(event)
 		const overrides = currentEvents.filter((candidate) => {

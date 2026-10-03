@@ -9,8 +9,8 @@ import {
 import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { YearView } from './year-view'
 
 const monthNames = [

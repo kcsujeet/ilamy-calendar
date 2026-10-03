@@ -272,12 +272,14 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
         views/  # built-in PluginView specs + ViewRenderer dispatcher + resource arrangements (year component in year-view/)
         header/                                # Calendar header, title, view controls
         event-form/                            # Event creation/editing forms
-      contexts/calendar-context/               # CalendarProvider, all calendar STATE (the ONE state provider)
+      stores/                                  # Calendar STATE (Bulletproof `stores/`): one folder per context, each with its own provider
+        calendar-context/                      #   CalendarContext + CalendarProvider (the ONE state provider)
+        calendar-cell-context/                 #   CalendarCellContext + CalendarCellProvider (the narrow subset grid cells read)
       hooks/                                   # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,data,interaction}),
                                                #   use-smart-calendar-context, useProcessed*Events, use-effective-business-hours
       utils/                                   # business-hours, view-hours, event-form-utils
     plugins/lib/                               # Plugin kernel; PluginRuntime (contract types live in @ilamy/types)
-  contexts/                                    # Grid-level contexts, shared by components + hooks
+  stores/                                      # Shared grid-level state (Bulletproof `stores/`), used by components + hooks
     drag-preview-context.tsx                   # The in-flight drag candidate (the snapped mirror reads it)
     grid-axis-context.tsx                      # Which grid drew a bar; decides its truncation affordances
   hooks/                                       # Package-level hooks (use-calendar-drag, use-drop-commit,

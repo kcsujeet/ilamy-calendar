@@ -22,7 +22,7 @@ import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
-import { CalendarCellProvider } from '../calendar-cell-context/provider'
+import { CalendarCellProvider } from '../calendar-cell-context/calendar-cell-provider'
 import { CalendarContext, type CalendarContextType } from './calendar-context'
 
 export interface CalendarProviderProps {

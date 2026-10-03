@@ -21,6 +21,17 @@ You must register ilamy Calendar as a source using Tailwind's `@source` directiv
 @source "../node_modules/@ilamy/calendar/dist";
 ```
 
+## Cells During a Drag
+
+While an event is dragged over the calendar, an element around the grid carries `data-dragging="true"`. Day cells and time slots use it to drop their hover tint, so only the drop tint shows under the dragged event (`not-in-data-dragging:hover:bg-accent`). Use the same attribute for your own styles, with Tailwind v4's `in-*` and `not-*` variants on classes you pass in, or a plain selector:
+
+```css
+/* Dim every cell while any event is being dragged */
+[data-dragging] .droppable-cell {
+  opacity: 0.9;
+}
+```
+
 ## Scrollbar Layout Shift (Optional)
 
 ilamy Calendar uses Radix UI primitives (Select, Dialog, Popover) for its dropdowns and dialogs. When one opens, Radix locks body scroll via `react-remove-scroll`, which hides the page scrollbar and can shift your layout sideways by the scrollbar's width.

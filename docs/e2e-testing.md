@@ -114,18 +114,33 @@ Three things are pinned, and all three are load-bearing:
 ## Structure
 
 ```
-apps/e2e/                  the harness app (Vite, private)
-  src/scenarios.ts         the typed scenario record
-  src/main.tsx             reads the URL, mounts IlamyCalendar
-e2e/                       the tests
+apps/e2e/                       the harness app (Vite, private) and its tests
   playwright.config.ts
-  pages/                   page objects: MonthGrid, WeekGrid, EventBar
-  specs/
+  src/main.tsx                  mounts the app
+  src/app.tsx                   reads the URL, mounts IlamyCalendar, publishes its state
+  src/harness-config.ts         every calendar setting, parsed from the query string
+  src/scenarios.ts              the typed scenario record (the events)
+  src/published-change.ts       the onEventsChange shape the harness publishes
+  tests/support/harness.ts      gotoScenario: pins the clock, builds the URL
+  tests/support/pages.ts        page objects: CalendarPage, MonthGrid, TimeGrid, YearGrid, ResourceAxis
+  tests/{behaviour,clock,drag,matrix}.spec.ts
 ```
 
 Page objects wrap the `keys.*` testids the components already emit, so
 selectors have one home. A markup change breaks one page object rather than
 twenty specs.
+
+`gotoScenario` takes the scenario, view, orientation, `timezone` (the `tz`
+parameter), `date`, `now` (the pinned clock, `PINNED_NOW` by default),
+`plugins` and any other setting as a query parameter.
+
+The harness behaves like a consumer that controls `events`: it persists every
+`onEventAdd`, `onEventUpdate` and `onEventDelete`. The calendar resets to the
+`events` prop whenever it changes, so a harness that dropped one of them would
+see that row come back on the next update (#315). It publishes what the
+calendar reports as JSON in two hidden `<script>` elements, read by
+`CalendarPage.eventState()` (`event-state`, the stored rows) and
+`CalendarPage.eventChanges()` (`event-changes`, every `onEventsChange` call).
 
 `webServer` in the config boots the harness (`command`, `url`,
 `reuseExistingServer: !process.env.CI`).

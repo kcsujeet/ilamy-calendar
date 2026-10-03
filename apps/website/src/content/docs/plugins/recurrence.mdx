@@ -191,6 +191,41 @@ const recurringEvent = {
 }
 ```
 
+## Editing and Deleting a Series
+
+Editing or deleting an occurrence asks which part of the series it applies to. The three scopes are exported as `RecurrenceEditScope` from `@ilamy/calendar/plugins/recurrence`.
+
+| Scope | Edit | Delete |
+|---|---|---|
+| `'this'` | Excludes the occurrence from the series and adds an override for it | Excludes the occurrence from the series |
+| `'following'` | Ends the series the day before and starts a new one from the occurrence | Ends the series the day before |
+| `'all'` | Changes the series; occurrences moved or deleted one by one return to it | Removes the series |
+
+Every stored row a scope touches is reported, so your backend stays in step: the series is reported to `onEventUpdate`, a new override or series to `onEventAdd`, and anything removed to `onEventDelete`. With "this and following", and with "all", that includes occurrences that were moved one by one and fall in the affected part.
+
+One action can therefore call those callbacks several times. To save it as one unit, use `onEventsChange`, called once per action with every row it touched:
+
+```tsx
+import type { RecurrenceEditScope } from '@ilamy/calendar/plugins/recurrence'
+
+<IlamyCalendar
+  events={events}
+  plugins={[recurrencePlugin()]}
+  onEventsChange={(change) => {
+    const scope = change.scope as RecurrenceEditScope | undefined
+    api.saveChange({
+      action: change.action, // 'add' | 'update' | 'delete'
+      scope,                 // 'this' | 'following' | 'all' for a recurring edit
+      added: change.added,
+      updated: change.updated,
+      deleted: change.deleted,
+    })
+  }}
+/>
+```
+
+The arrays hold stored rows, not occurrences: a daily series over a whole year is one row, so they stay small. See [`onEventsChange`](/docs/components/calendar#oneventschange).
+
 ## RRULE Properties
 
 The RRULE object supports the following properties based on the iCalendar specification. These properties are processed by rrule.js to generate recurring event instances.
@@ -248,9 +283,11 @@ const weeklyStandup = {
     until: dayjs('2025-12-31T23:59:59').toDate()
   },
   exdates: [
-    // Skip these specific dates
-    dayjs('2025-08-15T09:00:00').toDate(), // Summer vacation
-    dayjs('2025-11-29T09:00:00').toDate()  // Thanksgiving week
+    // Skip these occurrences. Each is the occurrence's start as an ISO string,
+    // exactly as the series produces it: a Date, or another time of day,
+    // matches nothing.
+    dayjs('2025-08-15T09:00:00').toISOString(), // Summer vacation
+    dayjs('2025-11-28T09:00:00').toISOString()  // Thanksgiving week
   ]
 }
 
@@ -267,21 +304,22 @@ const modifiedStandup = {
 
 ### Working with Multiple Time Zones
 
+A series repeats at the same **clock time** in the calendar's zone (the `timezone` prop, or the browser's zone without one), including across a daylight-saving change. This is what RFC 5545 asks of a start with a time zone: instances "start at the same local time regardless of time zone changes" (§3.8.5.3). A clock time skipped by the spring change moves forward by the gap, and one repeated by the autumn change takes its first occurrence (§3.3.5).
+
 ```tsx
-// All times should be in consistent timezone
-const globalMeeting = {
-  id: 'global-sync',
-  title: 'Global Team Sync',
-  start: dayjs.utc('2025-08-04T14:00:00'), // 2 PM UTC
-  end: dayjs.utc('2025-08-04T15:00:00'),
-  rrule: {
-    freq: RRule.WEEKLY,
-    byweekday: [RRule.MO],
-    dtstart: dayjs.utc('2025-08-04T14:00:00').toDate(),
-    count: 26 // 6 months
-  }
+// In a calendar with timezone="America/New_York"
+const morningSync = {
+  id: 'morning-sync',
+  title: 'Morning Sync',
+  start: dayjs('2025-03-03T09:00'), // 09:00 New York (EST, 14:00 UTC)
+  end: dayjs('2025-03-03T09:30'),
+  rrule: { freq: RRule.WEEKLY, byweekday: [RRule.MO], count: 26 }
 }
+// Every Monday at 09:00 New York time: 14:00 UTC until 9 March,
+// 13:00 UTC from 10 March, when New York is on daylight time.
 ```
+
+If a meeting must stay at a fixed UTC time instead, run the calendar in `timezone="UTC"`.
 
 ## Best Practices
 

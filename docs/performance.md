@@ -104,6 +104,18 @@ useEffect(() => {
 
 The `isDeepEqual` check on events sync was removed — it performed a recursive deep comparison (including Dayjs value comparisons) on every events prop change. A simple reference check via the `useRef` pattern is sufficient since React's reconciliation already handles referential equality.
 
+## Narrow Cell Context
+
+Grid cells read `CalendarCellContext` (`features/calendar/stores/calendar-cell-context/`), a memoized subset of the calendar context: the date, view, spacing, business hours and the cell callbacks and flags. An event change rebuilds the full context but not this one, so it no longer re-renders every time slot. Cells that draw events (`grid-cell-events.tsx`) still read the full context.
+
+## Recurrence Expansion Cache
+
+`generateRecurringEvents` keeps a memo per series, in a `WeakMap` keyed on the event object and rebuilt when its `rrule`, `start` or UNTIL changes. It walks the rule once over the requested range plus 42 days either side (`WINDOW_MARGIN_DAYS`) and answers every column and nearby navigation from that window, filtering it exactly as rrule's `between()` does. Converted instants are cached too, up to 4096 per series (`MAX_MEMOIZED_OCCURRENCES`), after which the cache starts over.
+
+## Hit-Testing During a Drag
+
+`pointerWithinLazily` (`lib/utils/pointer-within-lazily.ts`) replaces dnd-kit's `pointerWithin`. It applies the same inclusive point-in-rect test but stops reading a cell's edges once one rules it out, then passes the survivors to `pointerWithin` itself, so hits and ranking are identical. The drag sensors' options are module constants, because dnd-kit's `useSensor` memoizes on the options object's identity.
+
 ## Timezone Reactive Updates
 
 When the `timezone` prop changes, the engine updates both `currentDate` and stored events with `.tz(timezone)`. This is necessary because:
@@ -128,17 +140,21 @@ const memoizedEvents = useMemo(() => normalizeEvents(events), [events])
 <IlamyCalendar events={memoizedEvents} />
 ```
 
-### Memoize Callback Props
+### Event Handlers Can Be Inline
 
-Callback props like `onEventClick`, `onCellClick`, `renderEvent`, and `businessHours` are included in the context value's dependency array. Unstable references cause the entire context to recompute, triggering re-renders in all consumers:
+Handlers the calendar calls in response to an action (`onEventAdd`, `onEventUpdate`, `onEventDelete`, `onEventsChange`, `onEventClick`, `onCellClick`, `onDateChange`, `onViewChange`, `onMoreEventsClick`) go through `useLatestHandler` (`use-calendar-engine.ts`, `calendar-provider.tsx`): their identity never changes and they always call your newest function, so an inline handler does not rebuild the context.
+
+### Memoize Render-Time Callbacks
+
+Callbacks the calendar calls while rendering (`renderEvent`, `getCellClassName`, `isCellDisabled`) are not wrapped, so a new output shows up as soon as it changes. Their identity is a dependency: a new function every render recomputes the context and re-renders the cells that read it.
 
 ```tsx
 // Bad — new function every render
-<IlamyCalendar onEventClick={(event) => handleClick(event)} />
+<IlamyCalendar getCellClassName={(info) => classFor(info)} />
 
 // Good — stable reference
-const handleEventClick = useCallback((event) => { ... }, [])
-<IlamyCalendar onEventClick={handleEventClick} />
+const getCellClassName = useCallback((info) => classFor(info), [])
+<IlamyCalendar getCellClassName={getCellClassName} />
 ```
 
 ### Business Hours as a Constant

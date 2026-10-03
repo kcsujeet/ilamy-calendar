@@ -129,55 +129,33 @@ Absolutely! The calendar inherits font styles from its parent container. You can
 
 ### Is the calendar responsive?
 
-Yes, the calendar is fully responsive and works great on desktop, tablet, and mobile devices. It automatically adapts its layout based on screen size.
+Yes. The calendar adapts to the width of its own container rather than the screen, so it fits a sidebar as well as a full page. The header, for example, stacks its controls on a narrow calendar, sets them in one row from 576px wide, and shows the segmented view switcher from 896px.
 
 ## Internationalization
 
 ### How do I handle timezone support?
 
-Timezone is handled with the `timezone` prop. The calendar uses dayjs's default timezone (`dayjs.tz.setDefault()`) internally. If you change the timezone while the component is already rendered, you might need to re-render the component because dayjs operates outside of the React lifecycle:
+Timezone is handled with the `timezone` prop. Changing it while the calendar is mounted moves the current date and every event onto the new zone's clock, so no `key` or remount is needed:
 
 ```tsx
 const [timezone, setTimezone] = useState('America/New_York');
-const [calendarKey, setCalendarKey] = useState(0);
 
-const handleTimezoneChange = (newTimezone) => {
-  setTimezone(newTimezone);
-  // Force re-render to apply timezone changes
-  setCalendarKey(prev => prev + 1);
-};
-
-<IlamyCalendar
-  key={calendarKey}
-  timezone={timezone}
-  events={events}
-  // ... other props
-/>
+<IlamyCalendar timezone={timezone} events={events} />
 ```
+
+Instants never move; only the clock they are shown on changes. Removing the prop returns the calendar to the browser's zone.
 
 ### How do I handle locale support?
 
-Locale is handled with the `locale` prop. The calendar uses dayjs's locale setting (`dayjs.locale()`) internally. If you change the locale while the component is already rendered, you might need to re-render the component because dayjs operates outside of the React lifecycle:
+Locale is handled with the `locale` prop. Changing it while the calendar is mounted applies the new locale's month and weekday names and formats, so no `key` or remount is needed:
 
 ```tsx
 const [locale, setLocale] = useState('en');
-const [calendarKey, setCalendarKey] = useState(0);
 
-const handleLocaleChange = (newLocale) => {
-  setLocale(newLocale);
-  // Force re-render to apply locale changes
-  setCalendarKey(prev => prev + 1);
-};
-
-<IlamyCalendar
-  key={calendarKey}
-  locale={locale}
-  events={events}
-  // ... other props
-/>
+<IlamyCalendar locale={locale} events={events} />
 ```
 
-## Troubleshooting
+Load the dayjs locale first (`import 'dayjs/locale/fr'`).
 
 ### Why isn't `@ilamy/calendar/plugins/recurrence` found after installing?
 

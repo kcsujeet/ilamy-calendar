@@ -1,4 +1,5 @@
 import type { CalendarEvent } from '@ilamy/calendar'
+import dayjs from '@ilamy/utils/dayjs'
 
 export const isRecurringEvent = (event: CalendarEvent): boolean => {
 	return Boolean(event.rrule || event.recurrenceId || event.uid)
@@ -40,6 +41,26 @@ export const findBaseEventIndex = (
  */
 export const getSeriesTerminationDate = (targetEvent: CalendarEvent): Date =>
 	targetEvent.start.subtract(1, 'day').endOf('day').toDate()
+
+/**
+ * Predicate factory for the "following" scope of edit and delete: a detached
+ * override of the same series whose occurrence falls strictly after the split
+ * no longer belongs to the terminated series, so it must be removed and
+ * reported, not orphaned in the store (#315).
+ */
+export const makeIsFollowingOverride = (
+	parentUid: string,
+	terminationDate: Date
+): ((event: CalendarEvent) => boolean) => {
+	return (event: CalendarEvent): boolean => {
+		const isDetachedOverride = Boolean(event.recurrenceId) && !event.rrule
+		const belongsToSeries = getEventParentUID(event) === parentUid
+		const isAfterSplit =
+			Boolean(event.recurrenceId) &&
+			dayjs(event.recurrenceId).isAfter(terminationDate)
+		return isDetachedOverride && belongsToSeries && isAfterSplit
+	}
+}
 
 /**
  * RFC 5545 RECURRENCE-ID: for detached overrides, the original occurrence

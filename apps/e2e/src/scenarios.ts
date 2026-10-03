@@ -353,6 +353,36 @@ export const scenarios = {
 		],
 	},
 
+	'recurring-moved': {
+		description:
+			'#315: a daily stand-up for the week of 10 March 2025 (open with plugins=recurrence) whose Friday occurrence was moved to 11:00. Deleting Wednesday "and following" must take the moved Friday with the rest of the series.',
+		views: ['week'],
+		config: { scrollTime: '08:00' },
+		events: [
+			event(
+				'moved-series',
+				'Stand-up',
+				'2025-03-10T09:00:00.000Z',
+				'2025-03-10T09:30:00.000Z',
+				{
+					uid: 'moved-series',
+					rrule: {
+						freq: RRule.DAILY,
+						count: 7,
+						dtstart: at('2025-03-10T09:00:00.000Z').toDate(),
+					},
+				}
+			),
+			event(
+				'moved-friday',
+				'Rescheduled check-in',
+				'2025-03-14T11:00:00.000Z',
+				'2025-03-14T11:30:00.000Z',
+				{ uid: 'moved-series', recurrenceId: '2025-03-14T09:00:00.000Z' }
+			),
+		],
+	},
+
 	'many-events': {
 		description:
 			'More events in one day than `dayMaxEvents` allows, so the overflow indicator has to appear.',

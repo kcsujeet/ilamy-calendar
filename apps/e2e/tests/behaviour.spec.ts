@@ -331,6 +331,32 @@ test.describe('recurring events', () => {
 		expect(await readOccurrenceBars(page)).toEqual(barsBefore)
 	})
 
+	// #315: "delete this and following" ended the series but left occurrences
+	// moved after the cut on the grid. "Edit this and following" removes them.
+	test('deleting "this and following" takes later moved occurrences with it', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'recurring-moved',
+			view: 'week',
+			plugins: ['recurrence'],
+		})
+		const grid = new TimeGrid(page)
+		await expect(grid.event('Stand-up')).toHaveCount(5)
+		await expect(grid.event('Rescheduled check-in')).toHaveCount(1)
+
+		// Monday and Tuesday come first; the third bar is Wednesday 12 March.
+		await page
+			.locator('[data-testid^="vertical-event-moved-series"]')
+			.nth(2)
+			.click()
+		await page.getByRole('button', { name: 'Delete' }).click()
+		await page.getByText('This and following events').click()
+
+		await expect(grid.event('Stand-up')).toHaveCount(2)
+		await expect(grid.event('Rescheduled check-in')).toHaveCount(0)
+	})
+
 	// #307: occurrences after a daylight-saving change kept the series start's
 	// UTC offset and were drawn an hour late. RFC 5545 §3.8.5.3: instances
 	// start "at the same local time regardless of time zone changes", so every

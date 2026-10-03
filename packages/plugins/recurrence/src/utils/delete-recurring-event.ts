@@ -6,6 +6,7 @@ import {
 	getEventParentUID,
 	getOccurrenceStartISO,
 	getSeriesTerminationDate,
+	makeIsFollowingOverride,
 } from './series-helpers'
 
 interface DeleteRecurringEventProps {
@@ -70,19 +71,30 @@ const deleteFollowingScope = ({
 	baseEventIndex,
 	baseEvent,
 }: ScopedDeleteContext): PluginMutationResult => {
+	const terminationDate = getSeriesTerminationDate(targetEvent)
 	const terminatedEvent = {
 		...baseEvent,
 		rrule: {
 			...baseEvent.rrule,
-			until: getSeriesTerminationDate(targetEvent),
+			until: terminationDate,
 		} as RRuleOptions,
 	}
 	updatedEvents[baseEventIndex] = terminatedEvent
+
+	// Moved occurrences after the cut go with the series, as they do for
+	// "edit this and following"; left behind, they stayed drawn (#315).
+	const parentUid = getEventParentUID(baseEvent)
+	const isFollowingOverride = makeIsFollowingOverride(
+		parentUid,
+		terminationDate
+	)
+	const followingOverrides = updatedEvents.filter(isFollowingOverride)
+	const events = updatedEvents.filter((e) => !isFollowingOverride(e))
 	return {
-		events: updatedEvents,
+		events,
 		updated: [terminatedEvent],
 		added: [],
-		deleted: [],
+		deleted: followingOverrides,
 	}
 }
 

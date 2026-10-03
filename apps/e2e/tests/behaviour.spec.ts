@@ -143,6 +143,133 @@ test.describe('time grids', () => {
 	})
 })
 
+// The header has two clusters: navigation (previous/next, Today, the date
+// picker) and actions (view, Export, New). It stacks them on narrow screens and
+// lays them in one row once the row fits (#298). Each case is checked across
+// the full width range, because the failures were all at one breakpoint or
+// another: the navigation cut off at both edges on a phone, and wrapped beside
+// a one-line action cluster where a row switched on before it fit.
+test.describe('header layout across widths', () => {
+	const HEADER_WIDTHS = [
+		300, 320, 360, 414, 480, 512, 544, 576, 608, 640, 672, 720, 768, 832, 896,
+		1024, 1280,
+	]
+
+	interface HeaderLayout {
+		isRow: boolean
+		/** How far any control reaches past the header's own box. */
+		clippedBy: number
+		/** In a row: how far the navigation reaches into the actions. */
+		overlapBy: number
+		navigationLines: number
+		actionLines: number
+	}
+
+	const readHeaderLayout = (page: Page): Promise<HeaderLayout> =>
+		page.getByTestId('calendar-header').evaluate(async (header) => {
+			// Mid-animation transforms would move the boxes being measured.
+			const animations = header.getAnimations({ subtree: true })
+			await Promise.all(animations.map((animation) => animation.finished))
+			const row = header.firstElementChild as HTMLElement
+			const [navigation, actions] = [...row.children] as HTMLElement[]
+			const headerBox = header.getBoundingClientRect()
+			const visibleBoxes = (cluster: HTMLElement) =>
+				[...cluster.children]
+					.filter((child) => (child as HTMLElement).offsetParent !== null)
+					.map((child) => child.getBoundingClientRect())
+			// Lines, not elements: children whose tops are within a few pixels of
+			// each other sit on the same line.
+			const countLines = (cluster: HTMLElement) => {
+				const tops = visibleBoxes(cluster)
+					.map((box) => box.top)
+					.sort((a, b) => a - b)
+				let lines = 0
+				let lineTop = Number.NEGATIVE_INFINITY
+				for (const top of tops) {
+					if (top - lineTop > 12) {
+						lines += 1
+						lineTop = top
+					}
+				}
+				return lines
+			}
+			const navigationBoxes = visibleBoxes(navigation)
+			const actionBoxes = visibleBoxes(actions)
+			const allBoxes = [...navigationBoxes, ...actionBoxes]
+			const leftmost = Math.min(...allBoxes.map((box) => box.left))
+			const rightmost = Math.max(...allBoxes.map((box) => box.right))
+			const isRow = getComputedStyle(row).flexDirection === 'row'
+			const navigationRight = Math.max(...navigationBoxes.map((b) => b.right))
+			const actionsLeft = Math.min(...actionBoxes.map((b) => b.left))
+			return {
+				isRow,
+				clippedBy: Math.max(
+					0,
+					Math.round(headerBox.left - leftmost),
+					Math.round(rightmost - headerBox.right)
+				),
+				overlapBy: isRow
+					? Math.max(0, Math.round(navigationRight - actionsLeft))
+					: 0,
+				navigationLines: countLines(navigation),
+				actionLines: countLines(actions),
+			}
+		})
+
+	for (const locale of ['en', 'de']) {
+		for (const view of ['day', 'week', 'month', 'year'] as const) {
+			test(`fits at every width: ${view}, ${locale}`, async ({ page }) => {
+				await gotoScenario(page, {
+					scenario: 'basic',
+					view,
+					settings: { locale },
+				})
+
+				for (const width of HEADER_WIDTHS) {
+					await page.setViewportSize({ width, height: 600 })
+					const layout = await readHeaderLayout(page)
+
+					// A row only when each cluster fits on one line beside the other;
+					// stacked, the navigation may wrap on a narrow phone.
+					const expectedLayout = layout.isRow
+						? { clippedBy: 0, overlapBy: 0, navigationLines: 1, actionLines: 1 }
+						: {
+								clippedBy: 0,
+								overlapBy: 0,
+								navigationLines: layout.navigationLines,
+								actionLines: 1,
+							}
+					expect(
+						{
+							clippedBy: layout.clippedBy,
+							overlapBy: layout.overlapBy,
+							navigationLines: layout.navigationLines,
+							actionLines: layout.actionLines,
+						},
+						`${width}px (${layout.isRow ? 'row' : 'stacked'})`
+					).toEqual(expectedLayout)
+				}
+			})
+		}
+	}
+
+	test('lays out as a single row on a desktop and stacks on a phone', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'resources',
+			view: 'day',
+			orientation: 'vertical',
+		})
+
+		await page.setViewportSize({ width: 1280, height: 600 })
+		expect((await readHeaderLayout(page)).isRow).toBe(true)
+
+		await page.setViewportSize({ width: 360, height: 600 })
+		expect((await readHeaderLayout(page)).isRow).toBe(false)
+	})
+})
+
 test.describe('navigation', () => {
 	test('today returns to the pinned day from anywhere', async ({ page }) => {
 		await gotoScenario(page, { scenario: 'basic', view: 'month' })

@@ -839,6 +839,36 @@ describe('deleteRecurringEvent', () => {
 	})
 
 	describe('scope: "following"', () => {
+		// #315: moved occurrences after the cut used to stay in the store, drawn
+		// and never reported to onEventDelete. "Edit this and following" already
+		// removed them; delete now matches it.
+		it('removes and reports moved occurrences after the cut, keeping earlier ones', () => {
+			const earlierISO = '2025-01-13T09:00:00.000Z'
+			const laterISO = '2025-01-27T09:00:00.000Z'
+			const mkOverride = (id: string, occurrenceISO: string) =>
+				createTargetEvent({
+					id,
+					start: dayjs(occurrenceISO).add(2, 'hour'),
+					end: dayjs(occurrenceISO).add(3, 'hour'),
+					recurrenceId: occurrenceISO,
+				})
+			const earlier = mkOverride('override-earlier', earlierISO)
+			const later = mkOverride('override-later', laterISO)
+
+			const { events, updated, deleted } = deleteRecurringEvent({
+				targetEvent: createTargetEvent(),
+				currentEvents: [createBaseRecurringEvent(), earlier, later],
+				scope: 'following',
+			})
+
+			expect(deleted.map((e) => e.id)).toEqual(['override-later'])
+			expect(events.map((e) => e.id)).toEqual([
+				'recurring-1',
+				'override-earlier',
+			])
+			expect(updated.map((e) => e.id)).toEqual(['recurring-1'])
+		})
+
 		it('should terminate series with UNTIL before target date', () => {
 			const baseEvent = createBaseRecurringEvent()
 			const targetEvent = createTargetEvent()

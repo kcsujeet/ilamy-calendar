@@ -9,6 +9,7 @@ import {
 	findBaseEventIndex,
 	getEventParentUID,
 	getSeriesTerminationDate,
+	makeIsFollowingOverride,
 } from './series-helpers'
 
 /**
@@ -49,25 +50,6 @@ const buildFollowingSeriesEvent = (
 		start: newSeriesStartTime,
 		end: newSeriesEndTime,
 		recurrenceId: undefined,
-	}
-}
-
-/**
- * Predicate factory for the "following" edit: a detached override of the same
- * series whose occurrence falls strictly after the split belongs to the new
- * series' span and must be cascaded out, not orphaned in the store.
- */
-const makeIsFollowingOverride = (
-	parentUid: string,
-	terminationDate: Date
-): ((event: CalendarEvent) => boolean) => {
-	return (event: CalendarEvent): boolean => {
-		const isDetachedOverride = Boolean(event.recurrenceId) && !event.rrule
-		const belongsToSeries = getEventParentUID(event) === parentUid
-		const isAfterSplit =
-			Boolean(event.recurrenceId) &&
-			dayjs(event.recurrenceId).isAfter(terminationDate)
-		return isDetachedOverride && belongsToSeries && isAfterSplit
 	}
 }
 

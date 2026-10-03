@@ -191,6 +191,17 @@ const Harness: React.FC<HarnessProps> = ({
 		)
 	}
 
+	// Adds and deletes are persisted too, the way a consumer that controls
+	// `events` must: the calendar resets to the `events` prop whenever it
+	// changes, so a row the harness dropped on the floor would come back (#315).
+	const handleAdd = (added: CalendarEvent) => {
+		setEvents((current) => [...current, added])
+	}
+
+	const handleDelete = (deleted: CalendarEvent) => {
+		setEvents((current) => current.filter((event) => event.id !== deleted.id))
+	}
+
 	const published = events.map((event) => ({
 		id: event.id,
 		title: event.title,
@@ -209,6 +220,8 @@ const Harness: React.FC<HarnessProps> = ({
 				events={events}
 				initialDate={date}
 				initialView={view}
+				onEventAdd={handleAdd}
+				onEventDelete={handleDelete}
 				onEventUpdate={handleUpdate}
 				orientation={orientation}
 				plugins={plugins}

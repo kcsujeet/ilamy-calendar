@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import type { PublishedChange } from '../../src/published-change'
 
 /**
  * Page objects wrap the testids the components emit, so a markup change breaks
@@ -74,6 +75,12 @@ export class CalendarPage {
 		}>
 	> {
 		const raw = await this.page.getByTestId('event-state').textContent()
+		return JSON.parse(raw ?? '[]')
+	}
+
+	/** Every `onEventsChange` call so far, as the harness published it (#309). */
+	async eventChanges(): Promise<PublishedChange[]> {
+		const raw = await this.page.getByTestId('event-changes').textContent()
 		return JSON.parse(raw ?? '[]')
 	}
 

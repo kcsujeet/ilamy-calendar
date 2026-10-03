@@ -119,6 +119,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `onEventAdd` | `(event: CalendarEvent) => void` | Called when a new event is created |
 | `onEventUpdate` | `(event: CalendarEvent) => void` | Called when an existing event is updated |
 | `onEventDelete` | `(event: CalendarEvent) => void` | Called when an event is deleted |
+| `onEventsChange` | `(change: EventsChange) => void` | Called once per user action with every stored row it touched (`added`, `updated`, `deleted`), for saving a recurring edit as one unit. The per-row callbacks above still fire. See [onEventsChange](#oneventschange) |
 | `onDateChange` | `(date: dayjs.Dayjs, range: { start: dayjs.Dayjs; end: dayjs.Dayjs }) => void` | Called when the calendar date changes or the view changes. The `range` contains the visible date range for the current view. When date and view change together (e.g. clicking a day in the year view), it fires once with the final date and range. |
 
 ## Examples
@@ -750,6 +751,40 @@ Called when an existing event is modified (e.g., dragged, resized, or edited).
 Invoked when a user deletes an event from the calendar.
 
 **Type:** `(event: CalendarEvent) => void`
+
+#### onEventsChange
+
+Called once per user action, with every stored row the action touched. The three callbacks above report those rows one at a time, and a recurring edit touches several: "edit all events" updates the series and deletes the occurrences that were moved, and "edit this event" updates the series and adds an override. `onEventsChange` reports them together, so a backend can save the action in one transaction, or refuse it as a whole. FullCalendar reports an action once the same way (`eventChange` with `relatedEvents`).
+
+The per-row callbacks still fire. Use one or the other.
+
+**Type:** `(change: EventsChange) => void`
+
+```ts
+interface EventsChange {
+  action: 'add' | 'update' | 'delete' // what the user did
+  event: CalendarEvent                // the event the user acted on, as shown
+  scope?: unknown                     // the scope chosen in the plugin's dialog, if any
+  added: CalendarEvent[]              // the rows onEventAdd receives
+  updated: CalendarEvent[]            // the rows onEventUpdate receives
+  deleted: CalendarEvent[]            // the rows onEventDelete receives
+}
+```
+
+With the recurrence plugin, `scope` is a `RecurrenceEditScope` (`'this' | 'following' | 'all'`), exported from `@ilamy/calendar/plugins/recurrence`.
+
+```tsx title="Saving each action as one request"
+<IlamyCalendar
+  events={events}
+  plugins={[recurrencePlugin()]}
+  onEventsChange={async (change) => {
+    await fetch('/api/events/changes', {
+      method: 'POST',
+      body: JSON.stringify(change),
+    })
+  }}
+/>
+```
 
 #### onDateChange
 

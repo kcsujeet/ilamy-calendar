@@ -75,7 +75,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 }) => {
 	const hasResources = Boolean(resources?.length)
 	// Stable reference while `events` is unchanged. Without this, a fresh array on
-	// every render makes CalendarProvider re-sync (use-calendar-data) and discard
+	// every render makes CalendarProvider re-sync (use-event-store) and discard
 	// in-memory edits (recurring overrides/EXDATEs, drags) on any re-render (#197).
 	const normalizedEvents = useMemo(
 		() => normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events),

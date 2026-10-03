@@ -1,5 +1,6 @@
 import {
 	type CalendarEvent,
+	type EventsChange,
 	IlamyCalendar,
 	type IlamyPlugin,
 	type Resource,
@@ -10,6 +11,7 @@ import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import { ConfigError, readUrlConfig } from './harness-config'
+import type { PublishedChange } from './published-change'
 import {
 	isScenarioName,
 	PINNED_NOW,
@@ -202,6 +204,22 @@ const Harness: React.FC<HarnessProps> = ({
 		setEvents((current) => current.filter((event) => event.id !== deleted.id))
 	}
 
+	// Every onEventsChange call, by row id, so a spec can assert that one user
+	// action was reported once (#309).
+	const [changes, setChanges] = useState<PublishedChange[]>([])
+	const handleChange = (change: EventsChange) => {
+		const toIds = (rows: CalendarEvent[]) => rows.map((row) => String(row.id))
+		const published: PublishedChange = {
+			action: change.action,
+			scope: typeof change.scope === 'string' ? change.scope : null,
+			event: String(change.event.id),
+			added: toIds(change.added),
+			updated: toIds(change.updated),
+			deleted: toIds(change.deleted),
+		}
+		setChanges((current) => [...current, published])
+	}
+
 	const published = events.map((event) => ({
 		id: event.id,
 		title: event.title,
@@ -222,6 +240,7 @@ const Harness: React.FC<HarnessProps> = ({
 				initialView={view}
 				onEventAdd={handleAdd}
 				onEventDelete={handleDelete}
+				onEventsChange={handleChange}
 				onEventUpdate={handleUpdate}
 				orientation={orientation}
 				plugins={plugins}
@@ -234,6 +253,9 @@ const Harness: React.FC<HarnessProps> = ({
 			{/* Read by the specs, invisible to a screenshot. */}
 			<script data-testid="event-state" type="application/json">
 				{JSON.stringify(published)}
+			</script>
+			<script data-testid="event-changes" type="application/json">
+				{JSON.stringify(changes)}
 			</script>
 		</div>
 	)

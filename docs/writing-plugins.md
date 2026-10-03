@@ -559,6 +559,8 @@ interface PluginMutationResult {
 }
 ```
 
+The calendar reports each list row by row through `onEventUpdate`, `onEventAdd` and `onEventDelete`, then reports the whole result once through `onEventsChange`, together with the action, the event acted on and the `scope` your plugin received.
+
 Returning a plain array says only what the event list should now look like.
 Returning the object also says *how the change should be persisted*, splitting
 it across the host's three callbacks. One edit can be several persistence

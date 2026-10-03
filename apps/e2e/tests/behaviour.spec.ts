@@ -357,6 +357,42 @@ test.describe('recurring events', () => {
 		await expect(grid.event('Rescheduled check-in')).toHaveCount(0)
 	})
 
+	// #309: one user action is reported once through onEventsChange, with every
+	// row it touched, as FullCalendar fires one eventChange per action. "Edit all"
+	// updates the series and deletes the moved occurrence it replaces.
+	test('editing "all events" reports one change with every row it touched', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'recurring-moved',
+			view: 'week',
+			plugins: ['recurrence'],
+		})
+		const grid = new TimeGrid(page)
+		await expect(grid.event('Stand-up')).toHaveCount(5)
+
+		// The third bar is Wednesday 12 March.
+		await page
+			.locator('[data-testid^="vertical-event-moved-series"]')
+			.nth(2)
+			.click()
+		await page.locator('input[name="title"]').fill('Team sync')
+		await page.getByRole('button', { name: 'Update' }).click()
+		await page.getByText('All events', { exact: true }).click()
+
+		await expect(grid.event('Team sync')).toHaveCount(6)
+		expect(await grid.eventChanges()).toEqual([
+			{
+				action: 'update',
+				scope: 'all',
+				event: expect.stringMatching(/^moved-series_/),
+				added: [],
+				updated: ['moved-series'],
+				deleted: ['moved-friday'],
+			},
+		])
+	})
+
 	// #307: occurrences after a daylight-saving change kept the series start's
 	// UTC offset and were drawn an hour late. RFC 5545 §3.8.5.3: instances
 	// start "at the same local time regardless of time zone changes", so every

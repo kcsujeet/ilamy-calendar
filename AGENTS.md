@@ -277,8 +277,10 @@ packages/calendar/src/                         # (= @/… via tsconfig paths)
       stores/                                  # Calendar STATE (Bulletproof `stores/`): one folder per context, each with its own provider
         calendar-context/                      #   CalendarContext + CalendarProvider (the ONE state provider)
         calendar-cell-context/                 #   CalendarCellContext + CalendarCellProvider (the narrow subset grid cells read)
-      hooks/                                   # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,data,interaction}),
+      hooks/                                   # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,interaction}),
                                                #   use-smart-calendar-context, useProcessed*Events, use-effective-business-hours
+        calendar-data/                         #   the data slice: use-calendar-data composes use-event-store, use-event-mutations,
+                                               #   use-plugin-mutations, use-resource-lookups; event-changes (pure reporting helpers)
       utils/                                   # business-hours, view-hours, event-form-utils
     plugins/lib/                               # Plugin kernel; PluginRuntime (contract types live in @ilamy/types)
   stores/                                      # Shared grid-level state (Bulletproof `stores/`), used by components + hooks

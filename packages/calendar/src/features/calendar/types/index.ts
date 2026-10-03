@@ -1,6 +1,7 @@
 import type {
 	BusinessHours,
 	CalendarEvent,
+	EventsChange,
 	IlamyPlugin,
 	Resource,
 	WeekDays,
@@ -206,6 +207,13 @@ export interface IlamyCalendarProps {
 	 * Provides the deleted event object.
 	 */
 	onEventDelete?: (event: CalendarEvent) => void
+	/**
+	 * Callback once per user action, with every stored row it touched: what
+	 * `onEventAdd`, `onEventUpdate` and `onEventDelete` report one row at a time.
+	 * Use it to save a recurring edit (series, override, deleted overrides) as
+	 * one unit. The per-row callbacks still fire; use one or the other.
+	 */
+	onEventsChange?: (change: EventsChange) => void
 	/**
 	 * Callback when the current date changes (navigation).
 	 * Provides the new current date and the current visible range.

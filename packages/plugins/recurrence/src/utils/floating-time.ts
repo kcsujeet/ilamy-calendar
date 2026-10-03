@@ -1,4 +1,5 @@
 import type { Dayjs } from '@ilamy/calendar'
+import dayjs from '@ilamy/utils/dayjs'
 
 /**
  * Converts a Dayjs object to a "Floating Time" Date representation.
@@ -24,17 +25,17 @@ export const toFloatingDate = (d: Dayjs): Date => {
 }
 
 /**
- * Converts a "Floating Time" Date back to a Dayjs object in the original context.
- * It takes the YMDHMS components from the UTC Date and applies them to the
- * reference Dayjs object (preserving its timezone/locale).
+ * Converts a "Floating Time" Date back to a Dayjs in the calendar's zone: its
+ * UTC components are the wall-clock reading, read in that zone for that date.
+ *
+ * Read as an offset-less string, which the configured dayjs anchors in the
+ * calendar's zone (docs/timezones.md), so the offset is the one in force on
+ * that date. Setting the components on `reference` kept the reference's
+ * offset, so every occurrence after a daylight-saving change ran an hour off
+ * (#307). RFC 5545 §3.8.5.3 keeps instances at "the same local time
+ * regardless of time zone changes".
  */
 export const fromFloatingDate = (date: Date, reference: Dayjs): Dayjs => {
-	return reference
-		.year(date.getUTCFullYear())
-		.month(date.getUTCMonth())
-		.date(date.getUTCDate())
-		.hour(date.getUTCHours())
-		.minute(date.getUTCMinutes())
-		.second(date.getUTCSeconds())
-		.millisecond(date.getUTCMilliseconds())
+	const wallClock = date.toISOString().replace('Z', '')
+	return dayjs(wallClock).locale(reference.locale())
 }

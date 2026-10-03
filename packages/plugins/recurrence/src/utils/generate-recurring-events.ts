@@ -30,7 +30,7 @@ const MAX_MEMOIZED_OCCURRENCES = 4096
  * `between(windowStart, windowEnd, true)` call, in rrule's iteration order,
  * and every query inside the window is answered by filtering it the way
  * `between()` filters its own walk. `instants` memoizes `fromFloatingDate`,
- * which costs seven timezone-aware setter calls per occurrence.
+ * which parses each occurrence's wall-clock time in the calendar's zone.
  */
 interface SeriesMemo {
 	rruleOptions: RRuleOptions

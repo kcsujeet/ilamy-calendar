@@ -126,9 +126,32 @@ On a spring-forward day:
 
 Since the `dayIndex` key fix handles the duplicate, `.hour(i)` is correct for grid alignment.
 
-### Testing Limitation
+### Placing events and the now-line: clock time, not elapsed time
 
-`bun test` runs in UTC, which has no DST transitions. DST bugs can only be verified manually in the browser with a DST timezone (e.g., `TZ=America/Halifax`).
+Rows (and the hour columns of a resource timeline) are labelled by clock hour,
+so a bar and the current-time line are placed by clock time too:
+`wallClockDiff` (`@ilamy/utils/helpers`) measures from the column's midnight
+the way a clock face reads it. `layoutVertical`, `layoutHorizontal` and
+`CurrentTimeIndicator` all use it. FullCalendar places them the same way: its
+`DateMarker` holds the zone's wall-clock fields as a UTC date
+(`timestampToMarker`, core `datelib/env.ts`) and `computeDateTop` measures from
+the marker's start of day (timegrid `TimeColsSlatsCoords.ts`, v6.1.21).
+
+dayjs diffs days and weeks by clock time already, but hours and minutes by the
+time that passes (`zoneDelta` in dayjs `src/index.js`). With a plain
+`diff(…, 'hour')`, 09:00 on a 23-hour day sat on the 8 AM row and on a 25-hour
+day on the 10 AM row (#311). Nothing assumes a change is an hour long: the
+offsets come from the IANA data the runtime's `Intl` API ships, so a zone that
+moves by 30 minutes (Lord Howe Island) or changes its rules is placed the same
+way. Tests pin both.
+
+### Testing
+
+`dayjs.tz.setDefault('America/New_York')` in a unit test exercises a DST zone
+whatever the machine's zone (see `wallClockDiff`, `layoutVertical` and
+`layoutHorizontal` tests). In the browser, the e2e harness takes the zone from
+`?tz=` and the clock from `gotoScenario({ now })`: the `dst-days` scenario pins
+a booking and the now-line on both 2025 change days.
 
 ## VerticalGrid Component
 

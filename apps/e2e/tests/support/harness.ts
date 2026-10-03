@@ -19,6 +19,8 @@ export interface ScenarioOptions {
 	timezone?: string
 	/** Overrides the date the calendar opens on. Defaults to the pinned instant. */
 	date?: string
+	/** Overrides the pinned clock, for "now" on a particular day. Defaults to `PINNED_NOW`. */
+	now?: string
 	/** Plugins to install, e.g. ['agenda']. A view a plugin adds needs this. */
 	plugins?: readonly string[]
 	/** Any other calendar setting, passed straight through as a query parameter. */
@@ -36,8 +38,9 @@ export const gotoScenario = async (
 	page: Page,
 	options: ScenarioOptions
 ): Promise<void> => {
-	await page.clock.install({ time: new Date(PINNED_NOW) })
-	await page.clock.setFixedTime(new Date(PINNED_NOW))
+	const now = new Date(options.now ?? PINNED_NOW)
+	await page.clock.install({ time: now })
+	await page.clock.setFixedTime(now)
 
 	const params = new URLSearchParams({
 		scenario: options.scenario,

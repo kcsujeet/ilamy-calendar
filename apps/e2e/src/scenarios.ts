@@ -292,7 +292,7 @@ export const scenarios = {
 
 	'recurring-dst': {
 		description:
-			'#307: a daily 09:00 series in America/New_York (open with plugins=recurrence and tz=America/New_York) that starts before the 9 March 2025 change to daylight time, beside a one-off at 09:00 EDT. Every occurrence keeps its 09:00 wall-clock time across the change, as RFC 5545 requires of a DTSTART with a TZID, so each lands where a one-off at 09:00 that day does.',
+			'#307: a daily 09:00 series in America/New_York (open with plugins=recurrence and tz=America/New_York) that starts before the 9 March 2025 change to daylight time, beside a one-off at 09:00 EDT. Every occurrence keeps its 09:00 wall-clock time across the change, as RFC 5545 requires of a DTSTART with a TZID, so every occurrence shares the row of a one-off at 09:00 EDT.',
 		views: ['week'],
 		config: { scrollTime: '08:00' },
 		events: [
@@ -309,21 +309,46 @@ export const scenarios = {
 					},
 				}
 			),
-			// The change day itself: compared against a one-off at the same time
-			// rather than against the other days' row.
-			event(
-				'dst-sunday',
-				'Sunday at nine',
-				// 09:00 EDT
-				'2025-03-09T13:00:00.000Z',
-				'2025-03-09T13:30:00.000Z'
-			),
 			event(
 				'dst-reference',
 				'One-off at nine',
 				// 09:00 EDT
 				'2025-03-12T13:00:00.000Z',
 				'2025-03-12T13:30:00.000Z'
+			),
+		],
+	},
+
+	'dst-days': {
+		description:
+			'#311: a 09:00-10:00 booking in America/New_York (open with tz=America/New_York) on both 2025 clock-change days and an ordinary day. Rows and columns are labelled by clock hour, so each sits at hour 9, as FullCalendar places it; by elapsed time the 23-hour day put it at 8 and the 25-hour day at 10.',
+		views: ['day'],
+		config: { scrollTime: '00:00' },
+		resources: TEAM,
+		events: [
+			// 09:00 EDT, the spring change day
+			event(
+				'spring',
+				'Spring change',
+				'2025-03-09T13:00:00.000Z',
+				'2025-03-09T14:00:00.000Z',
+				{ resourceId: 'r1' }
+			),
+			// 09:00 EDT, an ordinary day
+			event(
+				'ordinary',
+				'Ordinary day',
+				'2025-03-12T13:00:00.000Z',
+				'2025-03-12T14:00:00.000Z',
+				{ resourceId: 'r1' }
+			),
+			// 09:00 EST, the autumn change day
+			event(
+				'autumn',
+				'Autumn change',
+				'2025-11-02T14:00:00.000Z',
+				'2025-11-02T15:00:00.000Z',
+				{ resourceId: 'r1' }
 			),
 		],
 	},

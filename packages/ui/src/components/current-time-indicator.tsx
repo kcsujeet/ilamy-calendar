@@ -1,5 +1,6 @@
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import dayjs from '@ilamy/utils/dayjs'
+import { wallClockDiff } from '@ilamy/utils/helpers'
 import { memo, type ReactNode } from 'react'
 
 export interface CurrentTimeIndicatorRenderProps {
@@ -54,8 +55,10 @@ const NoMemoCurrentTimeIndicator = ({
 		return null
 	}
 
-	const totalDuration = rangeEnd.diff(rangeStart, 'minute')
-	const minutesFromStart = now.diff(rangeStart, 'minute')
+	// Clock time, not elapsed time: the grid is labelled by clock hour, so on a
+	// day the clocks change, elapsed time put the line an hour off (#311).
+	const totalDuration = wallClockDiff(rangeEnd, rangeStart, 'minute')
+	const minutesFromStart = wallClockDiff(now, rangeStart, 'minute')
 	const progress = (minutesFromStart / totalDuration) * 100
 
 	if (render) {

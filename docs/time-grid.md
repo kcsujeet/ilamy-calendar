@@ -170,4 +170,4 @@ Renders the grid structure: header, optional all-day row, and scrollable body wi
 | `src/components/vertical-grid/vertical-grid.tsx` | Grid layout and structure |
 | `src/components/vertical-grid/vertical-grid-col.tsx` | Column rendering with DST-safe keys |
 | `src/components/vertical-grid/vertical-grid-events-layer.tsx` | Event overlay positioning |
-| `src/components/grid-cell.tsx` | Individual droppable grid cell |
+| `src/components/grid-cell/grid-cell.tsx` | Individual droppable grid cell (its parts live beside it in `grid-cell/`) |

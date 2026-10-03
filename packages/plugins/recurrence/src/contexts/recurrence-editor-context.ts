@@ -1,4 +1,5 @@
-import { createContext, useContext } from 'react'
+import { useRequiredContext } from '@ilamy/ui/hooks/use-required-context'
+import { createContext } from 'react'
 import type { Weekday } from 'rrule'
 import type { RRuleOptions } from '../types'
 import type { RecurrencePreset } from '../utils/recurrence-presets'
@@ -20,17 +21,15 @@ export interface RecurrenceEditorContextValue {
 	setUntil: (date: Date | undefined) => void
 }
 
-const RecurrenceEditorContext =
-	createContext<RecurrenceEditorContextValue | null>(null)
+const RecurrenceEditorContext = createContext<
+	RecurrenceEditorContextValue | undefined
+>(undefined)
 
 export const RecurrenceEditorProvider = RecurrenceEditorContext.Provider
 
-export const useRecurrenceEditor = () => {
-	const context = useContext(RecurrenceEditorContext)
-	if (!context) {
-		throw new Error(
-			'useRecurrenceEditor must be used within a RecurrenceEditor'
-		)
-	}
-	return context
-}
+export const useRecurrenceEditor = (): RecurrenceEditorContextValue =>
+	useRequiredContext(
+		RecurrenceEditorContext,
+		'useRecurrenceEditor',
+		'RecurrenceEditor'
+	)

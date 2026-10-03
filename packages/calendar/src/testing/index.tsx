@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import {
 	CalendarProvider,
 	type CalendarProviderProps,
-} from '@/features/calendar/contexts/calendar-context/provider'
+} from '@/features/calendar/stores/calendar-context/calendar-provider'
 
 type CalendarTestProviderProps = Partial<CalendarProviderProps> & {
 	children: ReactNode

@@ -4,6 +4,7 @@ import {
 	type Resource,
 	type SlotDuration,
 } from '@ilamy/calendar'
+import { RRule } from '@ilamy/calendar-recurrence'
 
 /**
  * The instant the harness pretends it is. Must match `PINNED_NOW` in the test
@@ -255,6 +256,40 @@ export const scenarios = {
 		],
 	},
 
+	recurring: {
+		description:
+			'Two recurring series (open with plugins=recurrence): a Monday/Wednesday class that began in June 2015, so each expansion walks years of rule, and a daily stand-up. Pins the occurrences the recurrence plugin draws, including after navigating away and back.',
+		views: ['day', 'week', 'month'],
+		config: { scrollTime: '08:00' },
+		events: [
+			event(
+				'class',
+				'Long-running class',
+				'2015-06-01T11:00:00.000Z',
+				'2015-06-01T11:45:00.000Z',
+				{
+					rrule: {
+						freq: RRule.WEEKLY,
+						byweekday: [RRule.MO, RRule.WE],
+						dtstart: at('2015-06-01T11:00:00.000Z').toDate(),
+					},
+				}
+			),
+			event(
+				'standup',
+				'Daily stand-up',
+				'2025-03-01T09:00:00.000Z',
+				'2025-03-01T09:15:00.000Z',
+				{
+					rrule: {
+						freq: RRule.DAILY,
+						dtstart: at('2025-03-01T09:00:00.000Z').toDate(),
+					},
+				}
+			),
+		],
+	},
+
 	'many-events': {
 		description:
 			'More events in one day than `dayMaxEvents` allows, so the overflow indicator has to appear.',
@@ -287,6 +322,35 @@ export const scenarios = {
 				{ resourceId: 'room-a' }
 			)
 		),
+	},
+
+	'numeric-resource-ids': {
+		description:
+			'Resource ids are `string | number`, so 0 is a real id. A truthy check read it as "no resource": the row for resource 0 drew every resource\'s events and a second now-line dot.',
+		views: ['day', 'week', 'month'],
+		config: { scrollTime: '08:00' },
+		// Room Zero second: a resource that is not first must not draw the
+		// now-line's dot, and a truthy check made 0 look like "no resource".
+		resources: [
+			{ id: 1, title: 'Room One' },
+			{ id: 0, title: 'Room Zero' },
+		],
+		events: [
+			event(
+				'zero-1',
+				'Room Zero booking',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ resourceId: 0 }
+			),
+			event(
+				'one-1',
+				'Room One booking',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ resourceId: 1 }
+			),
+		],
 	},
 
 	'long-events': {

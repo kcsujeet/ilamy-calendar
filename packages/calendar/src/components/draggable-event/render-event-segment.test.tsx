@@ -2,16 +2,16 @@ import { describe, expect, mock, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import {
-	DragPreviewContext,
-	type DragPreviewState,
-} from '@/contexts/drag-preview-context'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import type {
 	EventSegment,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
 import { keys } from '@/lib/utils/keys'
+import {
+	DragPreviewContext,
+	type DragPreviewState,
+} from '@/stores/drag-preview-context'
 import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import { MonthView, WeekView } from '@/testing/view-harnesses'
 

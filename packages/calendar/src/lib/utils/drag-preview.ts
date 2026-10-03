@@ -1,7 +1,7 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { overlapsRange } from '@ilamy/utils/helpers'
-import type { DragPreviewState } from '@/contexts/drag-preview-context'
+import type { DragPreviewState } from '@/stores/drag-preview-context'
 
 /**
  * What a grid (or a single cell) is showing, so the drag preview can be tested

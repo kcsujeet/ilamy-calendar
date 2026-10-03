@@ -2,15 +2,14 @@ import type { Resource } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo, useMemo } from 'react'
 import { CurrentTimeMarker } from '@/components/current-time-marker'
-
-import { useDragPreview } from '@/contexts/drag-preview-context'
-import { GridAxisContext } from '@/contexts/grid-axis-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useDragPreviewEvent } from '@/hooks/use-drag-preview-event'
 import { DAY_NUMBER_HEIGHT } from '@/lib/constants'
 import type { HorizontalPositionedEvent } from '@/lib/layout/geometry'
 import { layoutHorizontal } from '@/lib/layout/horizontal'
 import { keys } from '@/lib/utils/keys'
+import { useDragPreview } from '@/stores/drag-preview-context'
+import { GridAxisContext } from '@/stores/grid-axis-context'
 import { HorizontalDragPreview } from './horizontal-drag-preview'
 import {
 	getHorizontalEventKey,
@@ -57,7 +56,9 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	const weekStart = days.at(0)?.startOf('day')
 	// Stacked resource rows share one continuous now-line; only the first resource
 	// (or a non-resource grid) draws the dot at its start, so it isn't repeated.
-	const isFirstResource = !resourceId || resources?.at(0)?.id === resourceId
+	const hasNoResourceAxis = resourceId === undefined
+	const isFirstResource =
+		hasNoResourceAxis || resources?.at(0)?.id === resourceId
 
 	// Now-line is gated to hour-resolution horizontal grids (resource day horizontal,
 	// resource week horizontal hourly). Day-resolution grids — regular MonthView and

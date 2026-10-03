@@ -15,6 +15,10 @@
 			"types": "./dist/src/components/*.d.ts",
 			"import": "./dist/src/components/*.js"
 		},
+		"./hooks/*": {
+			"types": "./dist/src/hooks/*.d.ts",
+			"import": "./dist/src/hooks/*.js"
+		},
 		"./lib/utils": {
 			"types": "./dist/src/lib/utils.d.ts",
 			"import": "./dist/src/lib/utils.js"
@@ -30,6 +34,7 @@
 		"type-check": "bunx tsc --noEmit",
 		"lint": "bunx biome lint . --diagnostic-level=error",
 		"check": "bunx biome check . --diagnostic-level=error",
+		"test": "bun test",
 		"ci": "bun run check && bun run type-check && bun run build"
 	},
 	"peerDependencies": {

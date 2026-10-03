@@ -2,14 +2,13 @@ import type { Resource } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo, useMemo } from 'react'
 import { CurrentTimeMarker } from '@/components/current-time-marker'
-
-import { useDragPreview } from '@/contexts/drag-preview-context'
-import { GridAxisContext } from '@/contexts/grid-axis-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/useProcessedDayEvents'
 import { useDragPreviewEvent } from '@/hooks/use-drag-preview-event'
 import { layoutVertical } from '@/lib/layout/vertical'
 import { keys } from '@/lib/utils/keys'
+import { useDragPreview } from '@/stores/drag-preview-context'
+import { GridAxisContext } from '@/stores/grid-axis-context'
 import { VerticalDragPreview } from './vertical-drag-preview'
 import { getVerticalEventKey, VerticalEventBar } from './vertical-event-bar'
 
@@ -35,7 +34,9 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	const rangeEnd = days.at(-1)?.add(1, gridType)
 	// Stacked resource rows share one continuous now-line; only the first resource
 	// (or a non-resource grid) draws the dot at its start, so it isn't repeated.
-	const isFirstResource = !resourceId || resources?.at(0)?.id === resourceId
+	const hasNoResourceAxis = resourceId === undefined
+	const isFirstResource =
+		hasNoResourceAxis || resources?.at(0)?.id === resourceId
 	// Only show the "now" line in hour-resolution grids. In day-resolution
 	// vertical views (resource month, resource week daily) a sub-day percentage
 	// line is meaningless, so suppress it — mirrors the horizontal events layer.

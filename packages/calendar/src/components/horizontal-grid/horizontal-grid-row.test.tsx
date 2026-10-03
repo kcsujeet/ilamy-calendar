@@ -2,17 +2,17 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import {
-	DragPreviewContext,
-	type DragPreviewState,
-} from '@/contexts/drag-preview-context'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import {
 	DAY_NUMBER_HEIGHT,
 	EVENT_BAR_HEIGHT,
 	GAP_BETWEEN_ELEMENTS,
 } from '@/lib/constants'
 import { keys } from '@/lib/utils/keys'
+import {
+	DragPreviewContext,
+	type DragPreviewState,
+} from '@/stores/drag-preview-context'
 import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import { HorizontalGridRow } from './horizontal-grid-row'
 

@@ -5,13 +5,13 @@ import type {
 	PluginView,
 	Resource,
 } from '@ilamy/types'
+import { useRequiredContext } from '@ilamy/ui/hooks/use-required-context'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
-import { useContext } from 'react'
 import {
 	CalendarContext,
 	type CalendarContextType,
-} from '@/features/calendar/contexts/calendar-context/context'
+} from '@/features/calendar/stores/calendar-context/calendar-context'
 import type {
 	DateRange,
 	OpenEventFormInput,
@@ -115,13 +115,11 @@ export function useSmartCalendarContext<T>(
 export function useSmartCalendarContext<T>(
 	selector?: (context: SmartCalendarContextType) => T
 ): T | SmartCalendarContextType {
-	const context = useContext(CalendarContext)
-
-	if (!context) {
-		throw new Error(
-			'useSmartCalendarContext must be used within a CalendarProvider'
-		)
-	}
+	const context = useRequiredContext(
+		CalendarContext,
+		'useSmartCalendarContext',
+		'CalendarProvider'
+	)
 
 	return selector ? selector(context) : context
 }

@@ -36,10 +36,8 @@ export const useProcessedWeekEvents = ({
 	const events = useMemo(() => {
 		if (!weekStart || !weekEnd) return []
 
-		let weekEvents = getEventsForDateRange(weekStart, weekEnd)
-		if (resourceId) {
-			weekEvents = filterEventsForResource(weekEvents, resourceId)
-		}
+		const rangeEvents = getEventsForDateRange(weekStart, weekEnd)
+		let weekEvents = filterEventsForResource(rangeEvents, resourceId)
 
 		if (allDay) {
 			weekEvents = weekEvents.filter((e) => Boolean(e.allDay))
@@ -51,7 +49,14 @@ export const useProcessedWeekEvents = ({
 	const columnEventsMap = useMemo(() => {
 		const map = new Map<string, CalendarEvent[]>()
 		const unit = gridType ?? 'day'
+		const hasNoEvents = events.length === 0
 		for (const day of days) {
+			// Every column of an empty row is empty. Bounding a column costs two
+			// zone conversions, and a resource row is usually empty on most days.
+			if (hasNoEvents) {
+				map.set(keys.col.events(day), [])
+				continue
+			}
 			const columnStart = day.startOf(unit)
 			const columnEnd = day.endOf(unit)
 			const columnEvents = events.filter((e) =>

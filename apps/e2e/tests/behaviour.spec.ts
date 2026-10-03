@@ -270,6 +270,68 @@ test.describe('header layout across widths', () => {
 	})
 })
 
+// The recurrence plugin caches each series' expansion across navigations
+// (rrule walks from DTSTART on every query, so a series that began years ago
+// was re-walked per column). What it draws must not depend on the cache.
+test.describe('recurring events', () => {
+	/** The occurrences the time grid draws: each bar's id and where it sits. */
+	const readOccurrenceBars = async (page: Page) => {
+		// Navigation slides the grid in; measure once it has stopped moving.
+		await page.evaluate(() =>
+			Promise.all(
+				document.getAnimations().map((animation) => animation.finished)
+			)
+		)
+		return page
+			.locator('[data-testid^="vertical-event-"]')
+			.evaluateAll((bars) =>
+				bars.map((bar) => {
+					const box = bar.getBoundingClientRect()
+					const testId = bar.getAttribute('data-testid')
+					const left = Math.round(box.left)
+					const top = Math.round(box.top)
+					return `${testId}@${left},${top}`
+				})
+			)
+	}
+
+	test("a series that began years ago shows this week's occurrences", async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'recurring',
+			view: 'week',
+			plugins: ['recurrence'],
+		})
+		const grid = new TimeGrid(page)
+
+		// The week of 9 March 2025: Monday the 10th and Wednesday the 12th.
+		await expect(grid.event('Long-running class')).toHaveCount(2)
+		await expect(grid.event('Daily stand-up')).toHaveCount(7)
+	})
+
+	test('navigating away and back draws the same occurrences', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'recurring',
+			view: 'week',
+			plugins: ['recurrence'],
+		})
+		const grid = new TimeGrid(page)
+		await expect(grid.event('Daily stand-up')).toHaveCount(7)
+		const barsBefore = await readOccurrenceBars(page)
+
+		await grid.next()
+		await grid.next()
+		await grid.previous()
+		await grid.previous()
+
+		await expect(grid.event('Daily stand-up')).toHaveCount(7)
+		expect(await readOccurrenceBars(page)).toEqual(barsBefore)
+	})
+})
+
 test.describe('navigation', () => {
 	test('today returns to the pinned day from anywhere', async ({ page }) => {
 		await gotoScenario(page, { scenario: 'basic', view: 'month' })
@@ -456,6 +518,68 @@ test.describe('resource day view overflow', () => {
 		for (const index of [1, 4, 7]) {
 			await expect(page.getByTestId(`Course ${index}`)).toHaveCount(1)
 		}
+	})
+})
+
+/*
+ * A resource id is `string | number`, so 0 is as real as any other. A truthy
+ * `if (resourceId)` read it as "no resource" and skipped the filter, so the
+ * row for resource 0 held every resource's events.
+ */
+test.describe('a resource with id 0', () => {
+	const cases = (['horizontal', 'vertical'] as const).flatMap((orientation) =>
+		(['day', 'week', 'month'] as const).map((view) => ({ orientation, view }))
+	)
+
+	for (const { orientation, view } of cases) {
+		test(`draws each event once in a ${orientation} ${view}`, async ({
+			page,
+		}) => {
+			await gotoScenario(page, {
+				scenario: 'numeric-resource-ids',
+				view,
+				orientation,
+			})
+			await new CalendarPage(page).expectRendered()
+
+			// One event per resource: drawn twice means resource 0 drew both.
+			const bars = (eventId: string) =>
+				page.locator(`[data-testid="${orientation}-event-${eventId}"]`)
+			await expect(bars('zero-1')).toHaveCount(1)
+			await expect(bars('one-1')).toHaveCount(1)
+		})
+	}
+
+	for (const orientation of ['horizontal', 'vertical'] as const) {
+		test(`does not draw a second now dot in a ${orientation} day`, async ({
+			page,
+		}) => {
+			await gotoScenario(page, {
+				scenario: 'numeric-resource-ids',
+				view: 'day',
+				orientation,
+			})
+			await new CalendarPage(page).expectRendered()
+
+			// Every resource draws the now-line; only the first draws its dot.
+			await expect(page.getByTestId('current-time-indicator')).toHaveCount(2)
+			await expect(page.getByTestId('current-time-dot')).toHaveCount(1)
+		})
+	}
+
+	test('its month cells hold only its own events', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'numeric-resource-ids',
+			view: 'month',
+			orientation: 'horizontal',
+		})
+		await new CalendarPage(page).expectRendered()
+
+		// The cell's own signal is the placeholder it renders per event it
+		// believes it holds, which carries the title as its test id.
+		const zeroRow = page.getByTestId('horizontal-row-0')
+		await expect(zeroRow.getByTestId('Room Zero booking')).toHaveCount(1)
+		await expect(zeroRow.getByTestId('Room One booking')).toHaveCount(0)
 	})
 })
 

@@ -25,10 +25,8 @@ export const useProcessedDayEvents = ({
 	const events = useMemo(() => {
 		if (!dayStart || !dayEnd) return []
 
-		let dayEvents = getEventsForDateRange(dayStart, dayEnd)
-		if (resourceId) {
-			dayEvents = filterEventsForResource(dayEvents, resourceId)
-		}
+		const rangeEvents = getEventsForDateRange(dayStart, dayEnd)
+		const dayEvents = filterEventsForResource(rangeEvents, resourceId)
 
 		// Vertical grids (Day/Week/Resource Vertical) never render all-day events
 		// as those are handled by the all-day-row or are not appropriate for the time grid.

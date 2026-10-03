@@ -10,7 +10,7 @@ import { memo, useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/useProcessedWeekEvents'
 import { keys } from '@/lib/utils/keys'
-import { GridCell } from '../grid-cell'
+import { GridCell } from '../grid-cell/grid-cell'
 import { ResourceCell } from '../resource-cell'
 import { HorizontalGridEventsLayer } from './events-layer/horizontal-grid-events-layer'
 

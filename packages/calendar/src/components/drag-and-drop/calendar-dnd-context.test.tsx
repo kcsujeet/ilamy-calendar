@@ -5,9 +5,9 @@ import dayjs from '@ilamy/utils/dayjs'
 import { render, screen } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import { RRule } from 'rrule'
-import { useDragPreview } from '@/contexts/drag-preview-context'
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
+import { useDragPreview } from '@/stores/drag-preview-context'
 import { CalendarDndContext } from './calendar-dnd-context'
 
 describe('CalendarDndContext', () => {

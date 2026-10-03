@@ -4,11 +4,11 @@ import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { useImperativeHandle, useState } from 'react'
-import { useDragPreview } from '@/contexts/drag-preview-context'
 import {
 	getEventSurfaceClasses,
 	getEventSurfaceStyle,
 } from '@/lib/utils/event-surface'
+import { useDragPreview } from '@/stores/drag-preview-context'
 
 interface EventDragOverlayProps {
 	ref: React.Ref<{ setActiveEvent: (event: CalendarEvent | null) => void }>

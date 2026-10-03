@@ -48,7 +48,7 @@ Most tests wrap the component under test in `CalendarProvider`. Each test file d
 
 ```typescript
 import { render, screen } from '@testing-library/react'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import dayjs from '@ilamy/utils/dayjs'
 
 const renderWeekView = (props = {}) => {
@@ -88,7 +88,7 @@ Resource calendar tests use the same `CalendarProvider` with the resource axis p
 
 ```typescript
 import { WeekView } from '@/features/calendar/components/views'
-import { CalendarProvider } from '@/features/calendar/contexts/calendar-context/provider'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 
 const renderResourceView = (props = {}) => {
   return render(

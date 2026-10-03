@@ -18,10 +18,12 @@ import type {
 	SlotDuration,
 } from '@/features/calendar/types'
 import { composePluginProviders } from '@/features/plugins/lib/compose-plugin-providers'
+import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/lib/constants'
 import type { Translations, TranslatorFunction } from '@/lib/translations/types'
 import type { CalendarView, TimeFormat } from '@/types'
-import { CalendarContext, type CalendarContextType } from './context'
+import { CalendarCellProvider } from '../calendar-cell-context/calendar-cell-provider'
+import { CalendarContext, type CalendarContextType } from './calendar-context'
 
 export interface CalendarProviderProps {
 	children: ReactNode
@@ -121,7 +123,6 @@ const useCalendarContextValue = (
 		headerClassName,
 		businessHours,
 		renderEventForm,
-		onMoreEventsClick,
 		translations,
 		translator,
 		timeFormat = '12-hour',
@@ -140,6 +141,9 @@ const useCalendarContextValue = (
 		orientation,
 		weekViewGranularity,
 	} = props
+
+	// Called on a click, never while rendering: see useLatestHandler.
+	const onMoreEventsClick = useLatestHandler(props.onMoreEventsClick)
 
 	const engine = useCalendarEngine({
 		events,
@@ -251,7 +255,7 @@ export const CalendarProvider: FC<CalendarProviderProps> = ({
 
 	return (
 		<CalendarContext.Provider value={contextValue}>
-			{wrappedChildren}
+			<CalendarCellProvider>{wrappedChildren}</CalendarCellProvider>
 		</CalendarContext.Provider>
 	)
 }

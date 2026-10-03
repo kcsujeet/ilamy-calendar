@@ -1,8 +1,8 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useMemo } from 'react'
-import { useDragPreview } from '@/contexts/drag-preview-context'
 import { getDragPreviewEvent } from '@/lib/utils/drag-preview'
+import { useDragPreview } from '@/stores/drag-preview-context'
 
 interface UseDragPreviewEventInput {
 	days: Dayjs[]

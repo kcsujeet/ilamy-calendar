@@ -1,7 +1,8 @@
 import { defineConfig } from 'bunup'
 
-// Shared shadcn primitives. No barrel: each primitive + `cn` is its own entry,
-// exposed as a subpath (`@ilamy/ui/components/<name>`, `@ilamy/ui/lib/utils`).
+// Shared shadcn primitives. No barrel: each primitive, hook and `cn` is its own
+// entry, exposed as a subpath (`@ilamy/ui/components/<name>`,
+// `@ilamy/ui/hooks/<name>`, `@ilamy/ui/lib/utils`).
 // React + the Radix/icon/style deps are externalized so consumers dedupe them.
 export default defineConfig({
 	entry: [
@@ -19,6 +20,7 @@ export default defineConfig({
 		'src/components/select.tsx',
 		'src/components/textarea.tsx',
 		'src/components/tooltip.tsx',
+		'src/hooks/use-required-context.ts',
 		'src/lib/utils.ts',
 	],
 	format: ['esm'],

@@ -11,8 +11,9 @@ import { act, render } from '@testing-library/react'
 import type React from 'react'
 import { RRule } from 'rrule'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import type { CalendarProviderProps } from './provider'
-import { CalendarProvider } from './provider'
+import type { CalendarContextType } from './calendar-context'
+import type { CalendarProviderProps } from './calendar-provider'
+import { CalendarProvider } from './calendar-provider'
 
 // Default test props
 const defaultProps = {
@@ -568,17 +569,62 @@ describe('CalendarProvider - render stability', () => {
 		// fresh child element forces the consumer to re-render and re-read the
 		// context, so the assertion compares two actual reads.
 		const events: CalendarEvent[] = []
-		const ui = () => (
+		const buildCalendar = () => (
 			<CalendarProvider dayMaxEvents={5} events={events} firstDayOfWeek={0}>
 				<CaptureContext />
 			</CalendarProvider>
 		)
 
-		const { rerender } = render(ui())
-		rerender(ui())
+		const { rerender } = render(buildCalendar())
+		rerender(buildCalendar())
 
 		expect(seenContexts).toHaveLength(2)
 		expect(seenContexts.at(1)).toBe(seenContexts.at(0))
+	})
+
+	// Consumers pass handlers inline, so every render of theirs hands the
+	// calendar new functions. Those must not rebuild the context (it would
+	// re-render every grid cell), yet the newest handler must be the one called.
+	it('keeps the context value when only inline handlers change, and calls the newest one', () => {
+		const seenContexts: CalendarContextType[] = []
+		const CaptureContext = () => {
+			seenContexts.push(useSmartCalendarContext())
+			return null
+		}
+		const events = [mkEvent('a')]
+		const calls: string[] = []
+		const buildCalendar = (label: string) => (
+			<CalendarProvider
+				events={events}
+				onCellClick={() => calls.push(`cell:${label}`)}
+				onDateChange={() => calls.push(`date:${label}`)}
+				onEventClick={() => calls.push(`click:${label}`)}
+				onEventUpdate={() => calls.push(`update:${label}`)}
+			>
+				<CaptureContext />
+			</CalendarProvider>
+		)
+
+		const { rerender } = render(buildCalendar('first'))
+		rerender(buildCalendar('second'))
+		const context = seenContexts.at(-1)
+		act(() => {
+			context?.updateEvent('a', { title: 'moved' })
+			context?.onEventClick(mkEvent('a'))
+			context?.onCellClick({
+				start: dayjs('2025-07-01T09:00:00.000Z'),
+				end: dayjs('2025-07-01T10:00:00.000Z'),
+			})
+			context?.nextPeriod()
+		})
+
+		expect(seenContexts.at(1)).toBe(seenContexts.at(0))
+		expect(calls).toEqual([
+			'update:second',
+			'click:second',
+			'cell:second',
+			'date:second',
+		])
 	})
 })
 

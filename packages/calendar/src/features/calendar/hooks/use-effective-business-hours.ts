@@ -1,6 +1,6 @@
 import type { BusinessHours } from '@ilamy/types'
 import { useMemo } from 'react'
-import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useCalendarCellContext } from '@/features/calendar/hooks/use-calendar-cell-context'
 
 /**
  * Returns the resource-specific business hours when available, otherwise
@@ -10,10 +10,9 @@ import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-cal
 export const useEffectiveBusinessHours = (
 	resourceId: string | number | undefined
 ): BusinessHours | BusinessHours[] | undefined => {
-	const { businessHours, getResourceById } = useSmartCalendarContext((ctx) => ({
-		businessHours: ctx.businessHours,
-		getResourceById: ctx.getResourceById,
-	}))
+	// The cell context, since every grid cell calls this: the full context
+	// would re-render all of them whenever any event changed.
+	const { businessHours, getResourceById } = useCalendarCellContext()
 
 	return useMemo(() => {
 		if (resourceId != null) {

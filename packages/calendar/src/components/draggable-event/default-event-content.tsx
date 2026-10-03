@@ -1,12 +1,12 @@
 import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
-import { useGridAxis } from '@/contexts/grid-axis-context'
 import {
 	getEventSurfaceClasses,
 	getEventSurfaceRadius,
 	getEventSurfaceStyle,
 	STICKY_TITLE_CLASS,
 } from '@/lib/utils/event-surface'
+import { useGridAxis } from '@/stores/grid-axis-context'
 
 export interface DefaultEventContentProps {
 	event: CalendarEvent

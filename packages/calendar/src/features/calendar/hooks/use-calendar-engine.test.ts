@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import { agendaPlugin } from '@ilamy/calendar-agenda'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
-import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
+import type { CalendarEvent, EventsChange, IlamyPlugin } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { act, renderHook } from '@testing-library/react'
 import { RRule } from 'rrule'
@@ -66,6 +66,7 @@ describe('useCalendarEngine', () => {
 		const onEventUpdate = vi.fn()
 		const onEventAdd = vi.fn()
 		const onEventDelete = vi.fn()
+		const onEventsChange = vi.fn()
 		const { result } = renderHook(() =>
 			useCalendarEngine({
 				...defaultConfig,
@@ -73,10 +74,11 @@ describe('useCalendarEngine', () => {
 				onEventUpdate,
 				onEventAdd,
 				onEventDelete,
+				onEventsChange,
 				plugins: [recurrencePlugin()],
 			})
 		)
-		return { result, onEventUpdate, onEventAdd, onEventDelete }
+		return { result, onEventUpdate, onEventAdd, onEventDelete, onEventsChange }
 	}
 
 	describe('locale', () => {
@@ -1041,6 +1043,208 @@ describe('useCalendarEngine', () => {
 			expect(onEventUpdate.mock.calls[0][0].id).toBe('recurring-1')
 			expect(onEventUpdate.mock.calls[0][0].rrule.until).toBeDefined()
 			expect(onEventDelete).not.toHaveBeenCalled()
+		})
+	})
+
+	/**
+	 * #309. One user action can touch several stored rows (a recurring edit is a
+	 * series update plus an override add, or plus deletions). `onEventsChange`
+	 * reports the action once, with every row, so a backend can apply or refuse
+	 * it as a unit, the way FullCalendar fires one `eventChange` per action.
+	 */
+	describe('onEventsChange', () => {
+		/** A change reduced to its action, scope and the ids of its rows. */
+		const summarize = (change: EventsChange) => ({
+			action: change.action,
+			scope: change.scope,
+			event: change.event.id,
+			added: change.added.map((e) => e.id),
+			updated: change.updated.map((e) => e.id),
+			deleted: change.deleted.map((e) => e.id),
+		})
+		const changesOf = (spy: ReturnType<typeof vi.fn>) =>
+			spy.mock.calls.map(([change]) => summarize(change as EventsChange))
+
+		const renderWithChanges = (events: CalendarEvent[] = []) => {
+			const onEventsChange = vi.fn()
+			const { result } = renderHook(() =>
+				useCalendarEngine({ ...defaultConfig, events, onEventsChange })
+			)
+			return { result, onEventsChange }
+		}
+
+		it('reports an add once', () => {
+			const { result, onEventsChange } = renderWithChanges()
+			act(() => result.current.addEvent(createEvent({ id: 'new' })))
+			expect(changesOf(onEventsChange)).toEqual([
+				{
+					action: 'add',
+					scope: undefined,
+					event: 'new',
+					added: ['new'],
+					updated: [],
+					deleted: [],
+				},
+			])
+		})
+
+		it('reports an update once, with the updated row', () => {
+			const { result, onEventsChange } = renderWithChanges([createEvent()])
+			act(() => result.current.updateEvent('1', { title: 'Renamed' }))
+			expect(changesOf(onEventsChange)).toEqual([
+				{
+					action: 'update',
+					scope: undefined,
+					event: '1',
+					added: [],
+					updated: ['1'],
+					deleted: [],
+				},
+			])
+			const [change] = onEventsChange.mock.calls[0] as [EventsChange]
+			expect(change.updated.at(0)?.title).toBe('Renamed')
+		})
+
+		it('reports a delete once', () => {
+			const { result, onEventsChange } = renderWithChanges([createEvent()])
+			act(() => result.current.deleteEvent('1'))
+			expect(changesOf(onEventsChange)).toEqual([
+				{
+					action: 'delete',
+					scope: undefined,
+					event: '1',
+					added: [],
+					updated: [],
+					deleted: ['1'],
+				},
+			])
+		})
+
+		it('reports nothing when the event to update or delete does not exist', () => {
+			const { result, onEventsChange } = renderWithChanges([createEvent()])
+			act(() => result.current.updateEvent('missing', { title: 'x' }))
+			act(() => result.current.deleteEvent('missing'))
+			expect(onEventsChange).not.toHaveBeenCalled()
+		})
+
+		describe('a recurring series with a moved occurrence', () => {
+			const occurrenceISO = '2025-01-13T10:00:00.000Z'
+			const base = createRecurringEvent({ exdates: [occurrenceISO] })
+			const override: CalendarEvent = {
+				...base,
+				id: 'recurring-1_override',
+				recurrenceId: occurrenceISO,
+				rrule: undefined,
+				exdates: undefined,
+				start: dayjs('2025-01-13T12:00:00.000Z'),
+				end: dayjs('2025-01-13T13:00:00.000Z'),
+			}
+			const occurrence: CalendarEvent = {
+				...base,
+				id: 'recurring-1_2',
+				start: dayjs('2025-01-20T10:00:00.000Z'),
+				end: dayjs('2025-01-20T11:00:00.000Z'),
+				rrule: undefined,
+				exdates: undefined,
+			}
+
+			it('reports "edit all" once: the series updated, the moved occurrence deleted', () => {
+				const { result, onEventUpdate, onEventDelete, onEventsChange } =
+					renderRecurrenceEngine([base, override])
+				act(() =>
+					result.current.applyScopedEdit(
+						occurrence,
+						{ title: 'Renamed' },
+						'all'
+					)
+				)
+				expect(changesOf(onEventsChange)).toEqual([
+					{
+						action: 'update',
+						scope: 'all',
+						event: 'recurring-1_2',
+						added: [],
+						updated: ['recurring-1'],
+						deleted: ['recurring-1_override'],
+					},
+				])
+				// The per-row callbacks are unchanged.
+				expect(onEventUpdate).toHaveBeenCalledTimes(1)
+				expect(onEventDelete).toHaveBeenCalledTimes(1)
+			})
+
+			it('reports "edit this" once: the series updated, the new override added', () => {
+				const { result, onEventsChange } = renderRecurrenceEngine([
+					base,
+					override,
+				])
+				act(() =>
+					result.current.applyScopedEdit(
+						occurrence,
+						{ title: 'One-off' },
+						'this'
+					)
+				)
+				const [change] = changesOf(onEventsChange)
+				expect(onEventsChange).toHaveBeenCalledTimes(1)
+				expect(change?.action).toBe('update')
+				expect(change?.scope).toBe('this')
+				expect(change?.updated).toEqual(['recurring-1'])
+				expect(change?.added).toHaveLength(1)
+				expect(change?.deleted).toEqual([])
+			})
+
+			it('reports "delete all" once, with every row of the series', () => {
+				const { result, onEventDelete, onEventsChange } =
+					renderRecurrenceEngine([base, override])
+				act(() => result.current.applyScopedDelete(occurrence, 'all'))
+				expect(changesOf(onEventsChange)).toEqual([
+					{
+						action: 'delete',
+						scope: 'all',
+						event: 'recurring-1_2',
+						added: [],
+						updated: [],
+						deleted: ['recurring-1', 'recurring-1_override'],
+					},
+				])
+				expect(onEventDelete).toHaveBeenCalledTimes(2)
+			})
+		})
+
+		it('reports a plugin edit that returns a plain list as an update of the event', () => {
+			// A plugin may return the next event list instead of a structured result.
+			const listPlugin: IlamyPlugin = {
+				name: 'list',
+				managesEvent: () => true,
+				applyEdit: ({ event, updates, currentEvents }) =>
+					currentEvents.map((e) =>
+						e.id === event.id ? { ...e, ...updates } : e
+					),
+			}
+			const onEventsChange = vi.fn()
+			const event = createEvent()
+			// Outside the hook: a new array per render would reset the store forever.
+			const events = [event]
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					events,
+					onEventsChange,
+					plugins: [listPlugin],
+				})
+			)
+			act(() => result.current.applyScopedEdit(event, { title: 'x' }, 'custom'))
+			expect(changesOf(onEventsChange)).toEqual([
+				{
+					action: 'update',
+					scope: 'custom',
+					event: '1',
+					added: [],
+					updated: ['1'],
+					deleted: [],
+				},
+			])
 		})
 	})
 

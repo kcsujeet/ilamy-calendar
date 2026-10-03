@@ -140,7 +140,7 @@ Resources are a configuration of the one calendar, not a separate feature:
 
 - `use-autocomplete-timepicker.ts` - Time picker autocomplete
 
-Note: `use-calendar-engine.ts` (engine composer over the slice hooks), `use-smart-calendar-context.ts` (type-safe context access), and `use-effective-business-hours.ts` live in `src/features/calendar/hooks/`.
+Note: `use-calendar-engine.ts` (engine composer over the slice hooks), `use-smart-calendar-context.ts` (type-safe context access), and `use-effective-business-hours.ts` live in `src/features/calendar/hooks/`; the data slice is the `calendar-data/` folder beside them (`use-calendar-data.ts` composing `use-event-store`, `use-event-mutations`, `use-plugin-mutations`, `use-resource-lookups`, and the pure `event-changes.ts`).
 
 #### Library (`src/lib/`)
 

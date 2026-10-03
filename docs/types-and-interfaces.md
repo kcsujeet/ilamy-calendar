@@ -117,6 +117,7 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `onEventAdd` | `(event) => void` | — | Event add callback |
 | `onEventUpdate` | `(event) => void` | — | Event update callback |
 | `onEventDelete` | `(event) => void` | — | Event delete callback |
+| `onEventsChange` | `(change: EventsChange) => void` | — | Once per user action, with the `added` / `updated` / `deleted` rows it touched (#309) |
 | `onDateChange` | `(date: Dayjs, range: { start: Dayjs; end: Dayjs }) => void` | — | Date navigation callback |
 | `locale` | `string` | — | dayjs locale |
 | `timezone` | `string` | — | dayjs timezone |
@@ -173,6 +174,8 @@ type RRuleOptions = {
 ```typescript
 type RecurrenceEditScope = 'this' | 'following' | 'all'
 ```
+
+Exported from `@ilamy/calendar/plugins/recurrence`; it is what `EventsChange.scope` holds for a recurring edit.
 
 ### Event Type Identification
 
@@ -235,6 +238,21 @@ interface CellClickInfo {
   end: dayjs.Dayjs
   resourceId?: string | number
   allDay?: boolean
+}
+```
+
+## EventsChange
+
+`@ilamy/types` (re-exported from `@ilamy/calendar`). Passed to `onEventsChange` once per user action (#309).
+
+```typescript
+interface EventsChange {
+  action: 'add' | 'update' | 'delete'
+  event: CalendarEvent      // the event the user acted on, as shown
+  scope?: unknown           // the plugin's scope; RecurrenceEditScope for recurrence
+  added: CalendarEvent[]    // the rows onEventAdd receives
+  updated: CalendarEvent[]  // the rows onEventUpdate receives
+  deleted: CalendarEvent[]  // the rows onEventDelete receives
 }
 ```
 

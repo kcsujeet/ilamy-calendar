@@ -333,8 +333,8 @@ test.describe('recurring events', () => {
 
 	// #307: occurrences after a daylight-saving change kept the series start's
 	// UTC offset and were drawn an hour late. RFC 5545 §3.8.5.3: instances
-	// start "at the same local time regardless of time zone changes", so each
-	// occurrence lands exactly where a one-off at 09:00 that day does.
+	// start "at the same local time regardless of time zone changes", so every
+	// occurrence, the change day's included (#311), shares the 09:00 one-off's row.
 	test('a 09:00 series stays at 09:00 across the spring change', async ({
 		page,
 	}) => {
@@ -352,42 +352,134 @@ test.describe('recurring events', () => {
 			)
 		)
 
-		/** The top of every bar whose test id starts with `prefix`, by column. */
-		const readTopsByColumn = (prefix: string) =>
-			page
+		/** The distinct tops of the bars whose test id starts with `prefix`. */
+		const readTops = async (prefix: string) => {
+			const tops = await page
 				.locator(`[data-testid^="vertical-event-${prefix}"]`)
 				.evaluateAll((bars) =>
-					bars.map((bar) => {
-						const box = bar.getBoundingClientRect()
-						const column = bar.closest('[data-testid^="vertical-col-"]')
-						const columnId = column?.getAttribute('data-testid')
-						return `${columnId}@${Math.round(box.top)}`
-					})
+					bars.map((bar) => Math.round(bar.getBoundingClientRect().top))
 				)
-
-		// Sunday 9 March (the change day) and Wednesday 12 March each hold a
-		// one-off at 09:00 EDT; the occurrence on those days sits beside it.
-		const series = await readTopsByColumn('dst-series')
-		const oneOffs = [
-			...(await readTopsByColumn('dst-sunday')),
-			...(await readTopsByColumn('dst-reference')),
-		]
-		for (const oneOff of oneOffs) {
-			expect(series).toContain(oneOff)
+			return [...new Set(tops)]
 		}
 
-		// Monday to Saturday share one row: no day after the change is an hour
-		// late. The change day is left out; it is pinned by its one-off above.
-		const changeDayColumn = 'vertical-col-day-col-2025-03-09'
-		const afterChangeDay = series.filter(
-			(bar) => !bar.startsWith(changeDayColumn)
+		const nineOClockTops = await readTops('dst-reference')
+		expect(nineOClockTops).toHaveLength(1)
+		expect(await readTops('dst-series')).toEqual(nineOClockTops)
+
+		// The week before is EST, and the series is still on the same row.
+		await grid.previous()
+		await expect(grid.event('Morning check-in')).toHaveCount(3)
+		await page.evaluate(() =>
+			Promise.all(
+				document.getAnimations().map((animation) => animation.finished)
+			)
 		)
-		const afterChangeTops = new Set(
-			afterChangeDay.map((bar) => bar.split('@').at(1))
-		)
-		expect(afterChangeDay).toHaveLength(6)
-		expect(afterChangeTops.size).toBe(1)
+		expect(await readTops('dst-series')).toEqual(nineOClockTops)
 	})
+})
+
+/*
+ * #311. Rows and columns are labelled by clock hour, so a 09:00 booking and the
+ * now-line at 09:00 sit at hour 9 on any day, as FullCalendar places them
+ * (`computeDateTop`, timegrid, v6.1.21). By elapsed time, the 23-hour spring
+ * change day put them at hour 8 and the 25-hour autumn one at hour 10.
+ */
+test.describe('a day the clocks change', () => {
+	const DAYS = [
+		{
+			name: 'the spring change day',
+			nineAM: '2025-03-09T13:00:00.000Z',
+			event: 'spring',
+		},
+		{
+			name: 'an ordinary day',
+			nineAM: '2025-03-12T13:00:00.000Z',
+			event: 'ordinary',
+		},
+		{
+			name: 'the autumn change day',
+			nineAM: '2025-11-02T14:00:00.000Z',
+			event: 'autumn',
+		},
+	] as const
+
+	/** Where `selector` sits within its positioned parent, in hours of a 24-hour axis. */
+	const readHour = async (
+		page: Page,
+		selector: string,
+		axis: 'vertical' | 'horizontal'
+	) => {
+		await page.evaluate(() =>
+			Promise.all(
+				document.getAnimations().map((animation) => animation.finished)
+			)
+		)
+		return page
+			.locator(selector)
+			.first()
+			.evaluate((element, axisName) => {
+				const parent = (element as HTMLElement).offsetParent
+				const parentBox = parent?.getBoundingClientRect()
+				const box = element.getBoundingClientRect()
+				if (!parentBox) {
+					return Number.NaN
+				}
+				const isVertical = axisName === 'vertical'
+				const offset = isVertical
+					? box.top - parentBox.top
+					: box.left - parentBox.left
+				const length = isVertical ? parentBox.height : parentBox.width
+				return (offset / length) * 24
+			}, axis)
+	}
+
+	for (const day of DAYS) {
+		for (const orientation of ['vertical', 'horizontal'] as const) {
+			test(`a 09:00 booking sits at 9 AM on ${day.name}, ${orientation}`, async ({
+				page,
+			}) => {
+				await gotoScenario(page, {
+					scenario: 'dst-days',
+					view: 'day',
+					orientation,
+					timezone: 'America/New_York',
+					date: day.nineAM,
+				})
+				const bar = `[data-testid="${orientation}-event-${day.event}"]`
+				expect(await readHour(page, bar, orientation)).toBeCloseTo(9, 1)
+			})
+
+			test(`the now-line at 09:00 sits at 9 AM on ${day.name}, ${orientation}`, async ({
+				page,
+			}) => {
+				await gotoScenario(page, {
+					scenario: 'dst-days',
+					view: 'day',
+					orientation,
+					timezone: 'America/New_York',
+					date: day.nineAM,
+					now: day.nineAM,
+				})
+				// The line is centred on its position, so read its middle.
+				const line = '[data-testid="current-time-indicator"]'
+				const hour = await readHour(page, line, orientation)
+				const lineBox = await page.locator(line).first().boundingBox()
+				const parentLength = await page
+					.locator(line)
+					.first()
+					.evaluate((element, axisName) => {
+						const parent = (element as HTMLElement).offsetParent
+						const box = parent?.getBoundingClientRect()
+						return axisName === 'vertical' ? box?.height : box?.width
+					}, orientation)
+				const lineThickness =
+					orientation === 'vertical' ? lineBox?.height : lineBox?.width
+				const halfLineInHours =
+					((lineThickness ?? 0) / 2 / (parentLength ?? 1)) * 24
+				expect(hour + halfLineInHours).toBeCloseTo(9, 1)
+			})
+		}
+	}
 })
 
 test.describe('navigation', () => {

@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import { wallClockDiff } from '@ilamy/utils/helpers'
 import type { HorizontalPositionedEvent } from './geometry'
 
 interface HorizontalLayoutInput {
@@ -77,9 +78,15 @@ const computeColumnSpan = (
 	// lost that day entirely.
 	const adjustedEnd = event.end.subtract(1, 'millisecond')
 	const eventEnd = dayjs.min(adjustedEnd.startOf(gridType), lastUnit)
+	// Clock time, not elapsed time: columns are labelled by clock hour, so on a
+	// day the clocks change, elapsed time put 09:00 in the 8 or 10 AM column (#311).
+	const unitsToStart = Math.trunc(
+		wallClockDiff(eventStart, firstUnit, gridType)
+	)
+	const unitsToEnd = Math.trunc(wallClockDiff(eventEnd, firstUnit, gridType))
 	return {
-		startCol: Math.max(0, eventStart.diff(firstUnit, gridType)),
-		endCol: Math.min(unitCount - 1, eventEnd.diff(firstUnit, gridType)),
+		startCol: Math.max(0, unitsToStart),
+		endCol: Math.min(unitCount - 1, unitsToEnd),
 		isTruncatedStart: event.start.startOf(gridType).isBefore(firstUnit),
 		// Read off the SAME exclusive end as the span above. Using the raw `end`
 		// here would disagree with it at the grid's edge, drawing the overrun

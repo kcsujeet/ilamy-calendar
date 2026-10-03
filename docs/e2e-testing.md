@@ -102,7 +102,9 @@ Three things are pinned, and all three are load-bearing:
 - **The clock.** Every spec calls `page.clock.install()` then
   `page.clock.setFixedTime()` before navigating, so `Date.now()` and
   `new Date()` never move (https://playwright.dev/docs/clock). Without this,
-  "today" drifts and every baseline rots.
+  "today" drifts and every baseline rots. It is `PINNED_NOW` unless a spec
+  passes `gotoScenario({ now })`, still fixed, for "now" on a particular day
+  (the now-line on a clock-change day, #311).
 - **The zone.** `timezoneId` in the Playwright `use` block, and the `timezone`
   prop on the calendar. Both, because they answer different questions: the first
   is what the browser believes, the second is what the calendar renders against.

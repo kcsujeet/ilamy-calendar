@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import dayjs from './dayjs'
-import { dayKey, isSameDay, overlapsRange } from './helpers'
+import { dayKey, isSameDay, overlapsRange, wallClockDiff } from './helpers'
 
 /**
  * An interval is `[start, end)`: the start is inclusive, the end exclusive
@@ -175,5 +175,58 @@ describe('dayKey and isSameDay', () => {
 		expect(isSameDay(evening, nextMorning)).toBe(true)
 		expect(dayKey(evening)).toBe('2025-10-14')
 		dayjs.tz.setDefault()
+	})
+})
+
+/**
+ * #311. What a clock face shows between two moments, which on a day the clocks
+ * change is not the time that passes: on 9 March 2025 in New York, 09:00 is 8
+ * hours after midnight but reads 9 hours on.
+ */
+describe('wallClockDiff', () => {
+	const originalTz = dayjs.tz.guess()
+
+	beforeEach(() => {
+		dayjs.tz.setDefault('America/New_York')
+	})
+
+	afterEach(() => {
+		dayjs.tz.setDefault(originalTz)
+	})
+
+	const hoursFromMidnight = (dayISO: string, timeISO: string) =>
+		wallClockDiff(dayjs(timeISO), dayjs(dayISO), 'hour')
+
+	it('reads 9 hours from midnight to 09:00 on the spring change day', () => {
+		expect(hoursFromMidnight('2025-03-09T00:00', '2025-03-09T09:00')).toBe(9)
+	})
+
+	it('reads 9 hours from midnight to 09:00 on the autumn change day', () => {
+		expect(hoursFromMidnight('2025-11-02T00:00', '2025-11-02T09:00')).toBe(9)
+	})
+
+	it('matches the elapsed time on an ordinary day', () => {
+		expect(hoursFromMidnight('2025-03-12T00:00', '2025-03-12T09:30')).toBe(9.5)
+	})
+
+	it('reads 1440 minutes across the whole spring change day', () => {
+		const midnight = dayjs('2025-03-09T00:00')
+		const nextMidnight = dayjs('2025-03-10T00:00')
+		expect(wallClockDiff(nextMidnight, midnight, 'minute')).toBe(1440)
+	})
+
+	it('reads 9 hours to 09:00 when the clocks move by half an hour', () => {
+		// Lord Howe Island moves 30 minutes: 6 April 2025 is 24.5 hours long and
+		// 5 October 23.5, so 09:00 is 9.5 and 8.5 hours after midnight.
+		dayjs.tz.setDefault('Australia/Lord_Howe')
+		expect(hoursFromMidnight('2025-04-06T00:00', '2025-04-06T09:00')).toBe(9)
+		expect(hoursFromMidnight('2025-10-05T00:00', '2025-10-05T09:00')).toBe(9)
+	})
+
+	it('agrees with dayjs on days, which already read the clock face', () => {
+		const midnight = dayjs('2025-03-08T00:00')
+		const weekLater = dayjs('2025-03-15T00:00')
+		expect(wallClockDiff(weekLater, midnight, 'day')).toBe(7)
+		expect(weekLater.diff(midnight, 'day', true)).toBe(7)
 	})
 })

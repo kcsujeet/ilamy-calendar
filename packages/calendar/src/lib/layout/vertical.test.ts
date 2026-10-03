@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { layoutVertical } from './vertical'
 
 // Default 24-hour grid anchored at 2025-01-13 00:00 UTC.
@@ -213,5 +214,60 @@ describe('layoutVertical', () => {
 			const [p] = position([mkEvent('e', 9, 10)])
 			expect(p.kind).toBe('vertical')
 		})
+	})
+})
+
+/**
+ * #311. Rows are labelled by clock hour, so a bar sits at the clock time it
+ * starts, as FullCalendar's time grid places it (`computeDateTop` in
+ * TimeColsSlatsCoords.ts, v6.1.21). By elapsed time, 09:00 on a 23-hour day
+ * landed on the 8 AM row, and on a 25-hour day on the 10 AM row.
+ */
+describe('layoutVertical on a day the clocks change', () => {
+	const originalTz = dayjs.tz.guess()
+	const HOUR_PERCENT = 100 / 24
+
+	beforeEach(() => {
+		dayjs.tz.setDefault('America/New_York')
+	})
+
+	afterEach(() => {
+		dayjs.tz.setDefault(originalTz)
+	})
+
+	/** Top and height, in hours, of a 09:00-10:00 event on `dayISO`'s grid. */
+	const placeNineToTen = (dayISO: string) => {
+		const days = getViewHours({ referenceDate: dayjs(dayISO) })
+		const event = {
+			id: 'nine',
+			title: 'nine',
+			start: dayjs(`${dayISO}T09:00`),
+			end: dayjs(`${dayISO}T10:00`),
+		}
+		const [placed] = layoutVertical({ days, events: [event] })
+		return {
+			top: (placed?.top ?? 0) / HOUR_PERCENT,
+			height: (placed?.height ?? 0) / HOUR_PERCENT,
+		}
+	}
+
+	it('puts 09:00 on the 9 AM row on the spring change day', () => {
+		const { top, height } = placeNineToTen('2025-03-09')
+		expect(top).toBeCloseTo(9, 6)
+		expect(height).toBeCloseTo(1, 6)
+	})
+
+	it('puts 09:00 on the 9 AM row on the autumn change day', () => {
+		const { top, height } = placeNineToTen('2025-11-02')
+		expect(top).toBeCloseTo(9, 6)
+		expect(height).toBeCloseTo(1, 6)
+	})
+
+	it('puts 09:00 on the 9 AM row when the clocks move by half an hour', () => {
+		// Lord Howe Island: 5 October 2025 is 23.5 hours long.
+		dayjs.tz.setDefault('Australia/Lord_Howe')
+		const { top, height } = placeNineToTen('2025-10-05')
+		expect(top).toBeCloseTo(9, 6)
+		expect(height).toBeCloseTo(1, 6)
 	})
 })

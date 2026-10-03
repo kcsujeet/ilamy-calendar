@@ -96,6 +96,36 @@ export function overlapsRange(
 }
 
 /**
+ * A date's wall-clock reading stored as a UTC instant: the fields a clock in
+ * its zone shows, with no offset left to change. FullCalendar's `DateMarker`
+ * is the same thing (`timestampToMarker`, core/src/datelib/env.ts, v6.1.21).
+ */
+const toWallClockUtc = (date: Dayjs): Dayjs => {
+	const offsetMinutes = date.utcOffset()
+	return date.utc().add(offsetMinutes, 'minute')
+}
+
+/**
+ * `end.diff(start, unit, true)` as a clock face reads it, for placing a time
+ * on a grid whose rows or columns are labelled by clock hour (#311).
+ *
+ * dayjs already diffs days and weeks this way, but hours and minutes by the
+ * time that passes (src/index.js, `zoneDelta`), and on a day the clocks change
+ * the two differ: in New York on 9 March 2025, 09:00 is 8 hours after
+ * midnight yet sits beside the "9 AM" label. FullCalendar positions by the
+ * same reading (`computeDateTop`, timegrid/src/TimeColsSlatsCoords.ts).
+ */
+export const wallClockDiff = (
+	end: Dayjs,
+	start: Dayjs,
+	unit: 'day' | 'hour' | 'minute'
+): number => {
+	const endOnClock = toWallClockUtc(end)
+	const startOnClock = toWallClockUtc(start)
+	return endOnClock.diff(startOnClock, unit, true)
+}
+
+/**
  * Composes a stable string from parts, for React `key=` props and element ids
  * (e.g. `listKey('day', 3)` -> `'day-3'`).
  */

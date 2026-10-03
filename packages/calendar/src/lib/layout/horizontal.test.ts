@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { layoutHorizontal } from './horizontal'
 
 const days = Array.from({ length: 7 }, (_, i) =>
@@ -556,5 +557,57 @@ describe('layoutHorizontal', () => {
 			expect(columnsOf(placement.width)).toBe(2)
 			expect(placement.left).toBeCloseTo((1 / days.length) * 100, 6)
 		})
+	})
+})
+
+/**
+ * #311. Hour columns are labelled by clock hour, so a bar starts in the column
+ * of its clock time, as FullCalendar's timeline places it. By elapsed time,
+ * 09:00 on a 23-hour day started in the 8 AM column, and on a 25-hour day in
+ * the 10 AM column.
+ */
+describe('layoutHorizontal on a day the clocks change', () => {
+	const originalTz = dayjs.tz.guess()
+	const HOUR_PERCENT = 100 / 24
+
+	beforeEach(() => {
+		dayjs.tz.setDefault('America/New_York')
+	})
+
+	afterEach(() => {
+		dayjs.tz.setDefault(originalTz)
+	})
+
+	/** Left edge and width, in hours, of a 09:00-10:00 event on `dayISO`'s hour axis. */
+	const placeNineToTen = (dayISO: string) => {
+		const hours = getViewHours({ referenceDate: dayjs(dayISO) })
+		const event = {
+			id: 'nine',
+			title: 'nine',
+			start: dayjs(`${dayISO}T09:00`),
+			end: dayjs(`${dayISO}T10:00`),
+		}
+		const [placed] = layoutHorizontal({
+			days: hours,
+			events: [event],
+			dayMaxEvents: 4,
+			gridType: 'hour',
+		})
+		return {
+			start: (placed?.left ?? 0) / HOUR_PERCENT,
+			length: (placed?.width ?? 0) / HOUR_PERCENT,
+		}
+	}
+
+	it('starts 09:00 in the 9 AM column on the spring change day', () => {
+		const { start, length } = placeNineToTen('2025-03-09')
+		expect(start).toBeCloseTo(9, 6)
+		expect(length).toBeCloseTo(1, 6)
+	})
+
+	it('starts 09:00 in the 9 AM column on the autumn change day', () => {
+		const { start, length } = placeNineToTen('2025-11-02')
+		expect(start).toBeCloseTo(9, 6)
+		expect(length).toBeCloseTo(1, 6)
 	})
 })

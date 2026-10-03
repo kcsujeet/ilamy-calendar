@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import { wallClockDiff } from '@ilamy/utils/helpers'
 import type { VerticalPositionedEvent } from './geometry'
 
 interface VerticalLayoutInput {
@@ -52,8 +53,10 @@ const computeTopHeight = (
 	isTruncatedStart: boolean
 	isTruncatedEnd: boolean
 } | null => {
-	let startTime = event.start.diff(gridStart, gridType, true)
-	let endTime = event.end.diff(gridStart, gridType, true)
+	// Clock time, not elapsed time: rows are labelled by clock hour, so on a day
+	// the clocks change, elapsed time put 09:00 beside 8 AM or 10 AM (#311).
+	let startTime = wallClockDiff(event.start, gridStart, gridType)
+	let endTime = wallClockDiff(event.end, gridStart, gridType)
 	if (isDiscrete) {
 		startTime = Math.floor(startTime)
 		endTime = Math.ceil(endTime)

@@ -51,12 +51,19 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	// they have no hour rows for scrollTime to find.
 	const hasRowsToScroll = !expandAllDayRow
 
+	const renderedHours = columns.map((column) => {
+		const hours = (column.days ?? []).map((day) => day.toISOString())
+		return hours.join(',')
+	})
+	const renderedHoursKey = renderedHours.join('|')
+	const scrollKey = `${view}-${currentDate.format('YYYY-MM-DD')}-${renderedHoursKey}`
+
 	useScrollToTime({
 		viewportRef,
 		scrollTime,
 		scrollToNow,
 		enabled: hasRowsToScroll,
-		scrollKey: `${view}-${currentDate.format('YYYY-MM-DD')}`,
+		scrollKey,
 	})
 
 	// Only a resource grid keeps its header inside the scroller; a regular

@@ -425,7 +425,8 @@ export interface IlamyCalendarProps {
 	 * the requested hour.
 	 *
 	 * Reapplied whenever the visible date range changes (navigation, view
-	 * switch) and whenever `scrollTime` itself changes, as FullCalendar does.
+	 * switch), the rendered hours change, or `scrollTime` itself changes, as
+	 * FullCalendar does.
 	 * Ordinary re-renders leave the user's own scroll position alone.
 	 * `scrollToNow` takes precedence while the current moment is on screen.
 	 *
@@ -456,9 +457,9 @@ export interface IlamyCalendarProps {
 	 * Applies only while now is on screen. On a range without it (after
 	 * navigating away, or when the current hour or day is hidden) the grid
 	 * falls back to `scrollTime`, or to its start. Like `scrollTime`, it is
-	 * applied when the range changes and when this prop changes, not as the
-	 * clock moves, so it never pulls the grid away from a reader. "Now" is the
-	 * current instant; the calendar's `timezone` only decides how it is drawn.
+	 * applied when the range, rendered hours, or this prop changes. Clock
+	 * movement alone never changes the scroll position. "Now" is the current
+	 * instant; the calendar's `timezone` only decides how it is drawn.
 	 *
 	 * Now is lined up with the leading edge, like `scrollTime`. Late in the day
 	 * or month there is not enough grid left to do that, and the browser stops

@@ -914,6 +914,70 @@ const scrollAlignment = (
 const TIMED_CELL = '[data-start]:not([data-all-day="true"])'
 const HOUR_ROW = '[data-hour]'
 
+test.describe('rendered hours change (#320)', () => {
+	for (const axis of ['horizontal', 'vertical'] as const) {
+		for (const scrollToNow of ['true', 'false']) {
+			test(`${axis} reapplies initial scrolling when hours change (scrollToNow=${scrollToNow})`, async ({
+				page,
+			}) => {
+				await page.setViewportSize({ width: 393, height: 852 })
+				await gotoScenario(page, {
+					scenario: 'resources',
+					view: 'day',
+					orientation: axis,
+					settings: {
+						scrollToNow,
+						scrollTime: '09:00',
+						hideNonBusinessHours: 'true',
+						businessHours: '12-17',
+						height: '500px',
+					},
+				})
+				const scrollTestId = `${axis}-grid-scroll`
+				const viewport = page.locator(scrollViewportSelector(scrollTestId))
+				await viewport.evaluate((el) => {
+					el.setAttribute('data-mounted-probe', 'kept')
+				})
+				await setSettings(page, { businessHours: '6-17' })
+				await expect(viewport).toHaveAttribute('data-mounted-probe', 'kept')
+				await expect
+					.poll(async () => {
+						const { scrolled, expected } = await scrollAlignment(
+							page,
+							scrollTestId,
+							'[data-hour="09"]',
+							'[data-hour="06"]',
+							axis
+						)
+						return {
+							moved: scrolled > 0,
+							aligned: Math.abs(scrolled - expected) < 1,
+						}
+					})
+					.toEqual({ moved: true, aligned: true })
+				const manualScroll = await viewport.evaluate((el, axis) => {
+					if (axis === 'horizontal') {
+						el.scrollLeft = 100
+						return el.scrollLeft
+					}
+					el.scrollTop = 100
+					return el.scrollTop
+				}, axis)
+				await setSettings(page, { dayMaxEvents: 2 })
+				await expect
+					.poll(() =>
+						viewport.evaluate(
+							(el, axis) =>
+								axis === 'horizontal' ? el.scrollLeft : el.scrollTop,
+							axis
+						)
+					)
+					.toBe(manualScroll)
+			})
+		}
+	}
+})
+
 test.describe('scrollToNow', () => {
 	// The pinned now is Wednesday 12 March 2025, 09:00 UTC. Each grid scrolls to
 	// the cell holding it: an hour row, an hour column, or a whole day. The

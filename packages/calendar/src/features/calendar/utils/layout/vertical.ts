@@ -141,10 +141,14 @@ export const layoutVertical = ({
 	gridType = 'hour',
 	events,
 }: VerticalLayoutInput): VerticalPositionedEvent[] => {
-	// Filter out all-day events and sort by start time
-	const sortedEvents = events
-		.filter((e) => !e.allDay)
-		.toSorted((a, b) => a.start.diff(b.start))
+	// A time grid (hour or minute rows) leaves all-day events to its all-day row,
+	// as FullCalendar's time grid does (AllDaySplitter,
+	// timegrid/src/DayTimeColsView.tsx:27, v6.1.21). A day grid has no such row:
+	// its rows are whole days, so it draws them like any other event, as
+	// FullCalendar's day grid does (#322).
+	const isDayGrid = gridType === 'day'
+	const drawnEvents = isDayGrid ? events : events.filter((e) => !e.allDay)
+	const sortedEvents = drawnEvents.toSorted((a, b) => a.start.diff(b.start))
 
 	if (sortedEvents.length === 0) {
 		return []

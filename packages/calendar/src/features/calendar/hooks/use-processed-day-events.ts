@@ -26,11 +26,9 @@ export const useProcessedDayEvents = ({
 		if (!dayStart || !dayEnd) return []
 
 		const rangeEvents = getEventsForDateRange(dayStart, dayEnd)
-		const dayEvents = filterEventsForResource(rangeEvents, resourceId)
-
-		// Vertical grids (Day/Week/Resource Vertical) never render all-day events
-		// as those are handled by the all-day-row or are not appropriate for the time grid.
-		return dayEvents.filter((e) => !e.allDay)
+		// Which of these the grid draws (all-day ones only on a day grid) is
+		// `layoutVertical`'s rule, kept in one place.
+		return filterEventsForResource(rangeEvents, resourceId)
 	}, [dayStart, dayEnd, getEventsForDateRange, resourceId])
 
 	const todayEvents = useMemo<VerticalPositionedEvent[]>(() => {

@@ -175,6 +175,55 @@ test.describe('drag and drop', () => {
 			.toMatch(/^2025-03-06/)
 	})
 
+	test('keeps an all-day event all-day when it moves in the month grid', async ({
+		page,
+	}) => {
+		// A drop changes an event's kind only between an all-day area and a timed
+		// one (FullCalendar's EventDragging.ts:450, v6.1.21), and a month cell is
+		// neither. Its `allDay: false` used to be read as "timed", so an all-day
+		// event dropped there came back timed (#322).
+		await gotoScenario(page, { scenario: 'all-day-events', view: 'month' })
+		const month = new MonthGrid(page)
+
+		await dragTo(
+			page,
+			month.event('Public holiday'),
+			month.cellOn('2025-03-19')
+		)
+
+		await expect
+			.poll(async () => (await month.eventNamed('Public holiday')).start)
+			.toBe('2025-03-19T00:00:00.000Z')
+		const after = await month.eventNamed('Public holiday')
+		expect(after).toMatchObject({
+			end: '2025-03-20T00:00:00.000Z',
+			allDay: true,
+		})
+	})
+
+	test('keeps a timed event timed, at its clock, when it moves in the month grid', async ({
+		page,
+	}) => {
+		// The other half: a timed event stays timed, and like FullCalendar and
+		// Google Calendar the drop keeps its clock and changes only the date.
+		await gotoScenario(page, { scenario: 'basic', view: 'month' })
+		const month = new MonthGrid(page)
+		const before = await month.eventNamed('Earlier in the month')
+		const clockBefore = before.start.slice(10)
+
+		await dragTo(
+			page,
+			month.event('Earlier in the month').first(),
+			month.cellOn('2025-03-06')
+		)
+
+		await expect
+			.poll(async () => (await month.eventNamed('Earlier in the month')).start)
+			.toBe(`2025-03-06${clockBefore}`)
+		const after = await month.eventNamed('Earlier in the month')
+		expect(after.allDay).toBe(false)
+	})
+
 	test('drops on the day of the month navigated to', async ({ page }) => {
 		// Month cells survive navigation (#300): these were mounted on February
 		// dates, so the drop data they publish must follow them into March.
@@ -456,6 +505,72 @@ test.describe('drag and drop', () => {
 			.toMatch(/^2025-03-11T09:00/)
 		const after = await grid.eventNamed('Field survey')
 		expect(after.end).toMatch(/^2025-03-14T17:00/)
+	})
+
+	test('moves an all-day event a day down the vertical resource month (#322)', async ({
+		page,
+	}) => {
+		// Drawn there since #322. Its cells are whole days, so the drop keeps the
+		// event all-day and moves it by whole days, as on the horizontal month;
+		// FullCalendar moves an event BY a delta (https://fullcalendar.io/docs/eventDrop).
+		await gotoScenario(page, {
+			scenario: 'long-resource-events',
+			view: 'month',
+			orientation: 'vertical',
+		})
+		const grid = new MonthGrid(page)
+		const before = await grid.eventNamed('Site survey')
+		expect(before).toMatchObject({
+			start: '2025-03-03T00:00:00.000Z',
+			end: '2025-03-13T00:00:00.000Z',
+			allDay: true,
+		})
+
+		// Grabbed on its first day, dropped on the next day of the same room.
+		const firstDay = page.locator(
+			'[data-resource-id="r1"][data-start="2025-03-03T00:00:00.000Z"]'
+		)
+		const nextDay = page.locator(
+			'[data-resource-id="r1"][data-start="2025-03-04T00:00:00.000Z"]'
+		)
+		await dragTo(page, firstDay, nextDay)
+
+		await expect
+			.poll(async () => (await grid.eventNamed('Site survey')).start)
+			.toBe('2025-03-04T00:00:00.000Z')
+		const after = await grid.eventNamed('Site survey')
+		expect(after).toMatchObject({
+			end: '2025-03-14T00:00:00.000Z',
+			allDay: true,
+			resourceId: 'r1',
+		})
+	})
+
+	test("an all-day event's mirror on the vertical resource month shows no time (#322)", async ({
+		page,
+	}) => {
+		// "Events that are all-day will never display time text anyhow"
+		// (https://fullcalendar.io/docs/displayEventTime). Before #322 no all-day
+		// event reached this grid, and its mirror printed "12:00am – 12:00am".
+		await gotoScenario(page, {
+			scenario: 'long-resource-events',
+			view: 'month',
+			orientation: 'vertical',
+		})
+		const grid = new MonthGrid(page)
+
+		await pressAndMoveTo(
+			page,
+			page.locator(
+				'[data-resource-id="r1"][data-start="2025-03-03T00:00:00.000Z"]'
+			),
+			page.locator(
+				'[data-resource-id="r1"][data-start="2025-03-04T00:00:00.000Z"]'
+			)
+		)
+
+		await expect(grid.dragMirror).toHaveText('Site survey')
+		await page.mouse.up()
 	})
 
 	test('drops an event whose body spans disabled cells', async ({ page }) => {

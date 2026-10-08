@@ -259,7 +259,7 @@ describe('VerticalGridEventsLayer', () => {
 		expect(mirror.className.split(/\s+/)).toContain('inset-ring-2')
 	})
 
-	test('draws no mirror for an all-day candidate, which this grid never shows', () => {
+	test('draws no mirror for an all-day candidate on an hour grid, which leaves those to its all-day row', () => {
 		const day = dayjs('2025-01-01T00:00:00.000Z')
 		const hours = Array.from({ length: 24 }, (_, i) => day.add(i, 'hour'))
 		const preview = mkDragPreview({
@@ -280,5 +280,51 @@ describe('VerticalGridEventsLayer', () => {
 		expect(
 			screen.queryByTestId(keys.dragPreview('vertical'))
 		).not.toBeInTheDocument()
+	})
+
+	// #322. A day grid draws all-day events, so it mirrors them too, and like
+	// FullCalendar shows no time for them: "Events that are all-day will never
+	// display time text anyhow" (https://fullcalendar.io/docs/displayEventTime).
+	test('mirrors an all-day candidate on a day grid with its title and no time', () => {
+		const day = dayjs('2025-01-01T00:00:00.000Z')
+		const days = Array.from({ length: 7 }, (_, i) => day.add(i, 'day'))
+		const preview = mkDragPreview({
+			event: {
+				id: 'event-dragged',
+				title: 'Company Offsite',
+				start: day.add(1, 'day'),
+				end: day.add(3, 'day'),
+				allDay: true,
+			},
+			start: day.add(1, 'day'),
+			end: day.add(3, 'day'),
+			allDay: true,
+		})
+
+		renderEventsLayer({ days, gridType: 'day', preview })
+
+		const mirror = screen.getByTestId(keys.dragPreview('vertical'))
+		expect(mirror.textContent).toBe('Company Offsite')
+	})
+
+	test('mirrors a timed candidate on a day grid with its time', () => {
+		const day = dayjs('2025-01-01T00:00:00.000Z')
+		const days = Array.from({ length: 7 }, (_, i) => day.add(i, 'day'))
+		const preview = mkDragPreview({
+			event: {
+				id: 'event-dragged',
+				title: 'Field trip',
+				start: day.add(1, 'day').hour(9),
+				end: day.add(2, 'day').hour(17),
+			},
+			start: day.add(1, 'day').hour(9),
+			end: day.add(2, 'day').hour(17),
+			allDay: false,
+		})
+
+		renderEventsLayer({ days, gridType: 'day', preview })
+
+		const mirror = screen.getByTestId(keys.dragPreview('vertical'))
+		expect(mirror.textContent).toBe('9:00am – 5:00pmField trip')
 	})
 })

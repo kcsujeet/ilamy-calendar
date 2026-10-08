@@ -42,8 +42,8 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	// line is meaningless, so suppress it — mirrors the horizontal events layer.
 	const showNowLine = gridType === 'hour' && Boolean(rangeStart && rangeEnd)
 
-	// An all-day candidate needs no rejection here: `layoutVertical` drops
-	// all-day events, exactly as it does for real ones.
+	// An all-day candidate needs no rejection here: `layoutVertical` decides
+	// whether this grid draws all-day events, exactly as it does for real ones.
 	const previewEvent = useDragPreviewEvent({ days, gridType, resourceId })
 	const previewPositioned = useMemo(() => {
 		if (!previewEvent) {

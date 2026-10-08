@@ -1837,3 +1837,77 @@ test.describe('an off-the-hour event on the hourly timeline', () => {
 			.toBe(120)
 	})
 })
+
+test.describe('an all-day event on a vertical day grid (#322)', () => {
+	// A vertical grid whose rows are whole days (the resource month view, and
+	// the resource week view at daily granularity) has no all-day row above it,
+	// so its own rows are the only place an all-day event can be drawn, as
+	// FullCalendar's day grid draws all-day and timed events alike (v6.1.21,
+	// daygrid/src/DayTable.tsx has no all-day split). The horizontal resource
+	// month is the control: it drew the event before the fix too.
+	//
+	// "Site survey" is all-day on Room A, 3 March to 13 March exclusive: its bar
+	// starts where its first visible day's row starts and ends where the 13th's
+	// row starts (the rows sit a 1px gap apart, which the bar runs across). The
+	// week of the pinned date (9-15 March) shows its last four days.
+	const cases = [
+		{
+			name: 'resource month, vertical',
+			view: 'month',
+			settings: {},
+			firstDay: '2025-03-03',
+		},
+		{
+			name: 'resource week at daily granularity, vertical',
+			view: 'week',
+			settings: { granularity: 'daily' },
+			firstDay: '2025-03-09',
+		},
+	] as const
+
+	test('the horizontal resource month draws it (control)', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'long-resource-events',
+			view: 'month',
+			orientation: 'horizontal',
+		})
+		await expect(new CalendarPage(page).event('Site survey')).toBeVisible()
+	})
+
+	for (const c of cases) {
+		test(`${c.name} draws it across its days`, async ({ page }) => {
+			await gotoScenario(page, {
+				scenario: 'long-resource-events',
+				view: c.view,
+				orientation: 'vertical',
+				settings: c.settings,
+			})
+			const calendar = new CalendarPage(page)
+			await calendar.expectRendered()
+
+			const roomACell = (day: string) =>
+				page.locator(
+					`[data-resource-id="r1"][data-start="${day}T00:00:00.000Z"]`
+				)
+			const [bar, firstCell, endCell] = await Promise.all([
+				page.getByTestId('vertical-event-long-res-1').boundingBox(),
+				roomACell(c.firstDay).boundingBox(),
+				roomACell('2025-03-13').boundingBox(),
+			])
+			if (!bar || !firstCell || !endCell) {
+				throw new Error(
+					'"Site survey", its first day or its end day is not on screen'
+				)
+			}
+
+			const barTop = Math.round(bar.y)
+			const barBottom = Math.round(bar.y + bar.height)
+			const firstDayTop = Math.round(firstCell.y)
+			const endDayTop = Math.round(endCell.y)
+			expect({ barTop, barBottom }).toEqual({
+				barTop: firstDayTop,
+				barBottom: endDayTop,
+			})
+		})
+	}
+})

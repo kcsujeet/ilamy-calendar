@@ -63,12 +63,16 @@ export const calculateDropTimes = (
 		return { ...withDuration(grabbedSlot), allDay: false }
 	}
 
+	// A drop changes an event's kind only when it crosses between a timed area
+	// and an all-day one (FullCalendar, interaction/src/interactions/
+	// EventDragging.ts:450, v6.1.21). A time slot (above) makes it timed and an
+	// all-day cell makes it all-day; a whole-day cell (month, resource day grid)
+	// is neither, so the event keeps its own kind. Those cells report
+	// `allDay: false`, which is why this must not read `false` as "timed" (#322).
 	const targetDate = dayjs(date).subtract(grabOffset.days, 'day')
 	const droppedOnAllDayCell = allDay === true
-	const cellTakesEitherKind = allDay === undefined
 	const eventIsAllDay = Boolean(activeEvent.allDay)
-	const cellKeepsTheEventsKind = cellTakesEitherKind && eventIsAllDay
-	const staysAllDay = droppedOnAllDayCell || cellKeepsTheEventsKind
+	const staysAllDay = droppedOnAllDayCell || eventIsAllDay
 
 	if (staysAllDay) {
 		return { ...withDuration(targetDate.startOf('day')), allDay: true }

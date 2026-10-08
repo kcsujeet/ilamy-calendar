@@ -19,6 +19,9 @@ export function VerticalDragPreview({
 	const timeFormat = useSmartCalendarContext((c) => c.timeFormat)
 	const { event, isTruncatedStart, isTruncatedEnd } = previewPositioned
 	const pattern = getTimeOfDayPattern(timeFormat)
+	// "Events that are all-day will never display time text anyhow"
+	// (https://fullcalendar.io/docs/displayEventTime). A day grid mirrors them.
+	const isTimed = !event.allDay
 
 	return (
 		<DragPreviewCard
@@ -29,9 +32,11 @@ export function VerticalDragPreview({
 			orientation="vertical"
 			style={getVerticalBarStyle(previewPositioned)}
 		>
-			<p className="text-[10px] font-semibold sm:text-xs">
-				{event.start.format(pattern)} – {event.end.format(pattern)}
-			</p>
+			{isTimed && (
+				<p className="text-[10px] font-semibold sm:text-xs">
+					{event.start.format(pattern)} – {event.end.format(pattern)}
+				</p>
+			)}
 			<p
 				className={cn(
 					'text-[10px] font-bold sm:text-xs truncate',

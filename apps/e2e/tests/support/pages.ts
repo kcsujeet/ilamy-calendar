@@ -72,6 +72,7 @@ export class CalendarPage {
 			start: string
 			end: string
 			resourceId: string | null
+			allDay: boolean
 		}>
 	> {
 		const raw = await this.page.getByTestId('event-state').textContent()

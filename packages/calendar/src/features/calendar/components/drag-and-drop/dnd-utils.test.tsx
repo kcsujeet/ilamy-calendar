@@ -144,7 +144,14 @@ describe('getUpdatedEvent Utility Function', () => {
 			)
 		})
 
-		it('should convert all-day event to non-all-day when dropped on non-all-day cell', () => {
+		// #322. This used to expect `false`: an all-day event dropped on a whole-day
+		// cell turned timed. But `allDay: false` with no hour is exactly what a
+		// month or resource day-grid cell reports, so every all-day event dragged
+		// in a month grid lost its all-day status. A drop changes an event's kind
+		// only when it crosses between an all-day area and a timed one
+		// (FullCalendar, interaction/src/interactions/EventDragging.ts:450,
+		// v6.1.21); a whole-day cell is neither, so the event keeps its own.
+		it('keeps an all-day event all-day when dropped on a whole-day cell that is not an all-day cell', () => {
 			allDay = true
 			allDayCell = false
 
@@ -155,7 +162,7 @@ describe('getUpdatedEvent Utility Function', () => {
 			expect(result).not.toBeNull()
 			const updates = result?.updates
 			if (!updates) return
-			expect(updates.allDay).toBe(false)
+			expect(updates.allDay).toBe(true)
 			expect(updates.start.format()).toBe(dayjs(cellDate).format())
 			expect(updates.end.diff(updates.start, 'second')).toBe(
 				end.diff(start, 'second')

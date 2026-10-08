@@ -226,6 +226,7 @@ const Harness: React.FC<HarnessProps> = ({
 		start: event.start.toISOString(),
 		end: event.end.toISOString(),
 		resourceId: event.resourceId ?? null,
+		allDay: Boolean(event.allDay),
 	}))
 
 	return (

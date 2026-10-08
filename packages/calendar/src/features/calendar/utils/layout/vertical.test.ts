@@ -49,11 +49,24 @@ describe('layoutVertical', () => {
 			expect(position([])).toHaveLength(0)
 		})
 
-		it('filters out all-day events', () => {
+		// An hour grid's all-day row draws them, as FullCalendar's time grid splits
+		// them off (AllDaySplitter, DayTimeColsView.tsx:27, v6.1.21).
+		it('filters out all-day events on an hour grid', () => {
 			const result = position([
 				mkEvent('all', 9, 10, { allDay: true }),
 				mkEvent('timed', 9, 10),
 			])
+			expect(result.map((p) => p.event.id)).toEqual(['timed'])
+		})
+
+		it('filters out all-day events on a minute grid too', () => {
+			const minuteDays = Array.from({ length: 24 * 60 }, (_, i) =>
+				dayjs(BASE).add(i, 'minute')
+			)
+			const result = position(
+				[mkEvent('all', 9, 10, { allDay: true }), mkEvent('timed', 9, 10)],
+				{ days: minuteDays, gridType: 'minute' }
+			)
 			expect(result.map((p) => p.event.id)).toEqual(['timed'])
 		})
 
@@ -187,6 +200,20 @@ describe('layoutVertical', () => {
 			})
 			expect(p.top).toBe(0)
 			expect(p.height).toBeCloseTo((2 / 7) * 100, 5)
+		})
+
+		// #322. A day grid has no all-day row, so its rows are the only place an
+		// all-day event can be drawn; FullCalendar's day grid draws all-day and
+		// timed events alike (daygrid/src/DayTable.tsx has no all-day split, v6.1.21).
+		it('keeps an all-day event, across its days up to the exclusive end', () => {
+			// Days 1-3: starts at day 1's midnight, ends at day 4's (exclusive).
+			const [p] = position([mkEvent('all', 24, 96, { allDay: true })], {
+				days: dayDays,
+				gridType: 'day',
+			})
+			expect(p.event.id).toBe('all')
+			expect(p.top).toBeCloseTo((1 / 7) * 100, 5)
+			expect(p.height).toBeCloseTo((3 / 7) * 100, 5)
 		})
 
 		it('ensures at least 1 unit duration for discrete events', () => {

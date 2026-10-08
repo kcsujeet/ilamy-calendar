@@ -6,6 +6,7 @@ import { useScrollToTime } from '@/features/calendar/hooks/use-scroll-to-time'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useStickyInsets } from '@/features/calendar/hooks/use-sticky-insets'
 import { keys } from '@/features/calendar/utils/keys'
+import { getScrollKey } from '@/features/calendar/utils/scroll-key'
 import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
 import { VerticalGridHeaderContainer } from './vertical-grid-header-container'
 
@@ -51,12 +52,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	// they have no hour rows for scrollTime to find.
 	const hasRowsToScroll = !expandAllDayRow
 
-	const renderedHours = columns.map((column) => {
-		const hours = (column.days ?? []).map((day) => day.toISOString())
-		return hours.join(',')
-	})
-	const renderedHoursKey = renderedHours.join('|')
-	const scrollKey = `${view}-${currentDate.format('YYYY-MM-DD')}-${renderedHoursKey}`
+	const scrollKey = getScrollKey(view, currentDate, columns)
 
 	useScrollToTime({
 		viewportRef,

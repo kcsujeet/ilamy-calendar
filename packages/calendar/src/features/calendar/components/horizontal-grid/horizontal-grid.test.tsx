@@ -2,16 +2,15 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
-import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
-import { getViewHours } from '@/features/calendar/utils/view-hours'
 import {
-	buildBusinessHours,
-	buildScrollCalendar,
-	lastScrollInHours,
-	SCROLL_TEST_NOW,
-	SCROLL_TEST_SCROLL_TIME,
-	stubScrollGeometry,
+	buildScrollWeek,
+	getVisibleHours,
+	NARROW_START,
+	ScrollTestProvider,
+	setUpScrollGeometry,
+	testScrollingWhenHoursChange,
+	WIDE_START,
 } from '@/testing/scroll-test-fixtures'
 import { HorizontalGrid } from './horizontal-grid'
 
@@ -113,32 +112,21 @@ describe('HorizontalGrid', () => {
 	})
 
 	describe('scrolling when rendered hours change (#320)', () => {
-		let geometry: ReturnType<typeof stubScrollGeometry>
+		const getScrollTo = setUpScrollGeometry()
 
-		beforeEach(() => {
-			geometry = stubScrollGeometry()
-		})
-		afterEach(() => {
-			cleanup()
-			geometry.restore()
-		})
+		testScrollingWhenHoursChange('horizontal', getScrollTo)
 
-		const renderCalendar = (
-			options: Omit<Parameters<typeof buildScrollCalendar>[0], 'orientation'>
-		) => render(buildScrollCalendar({ orientation: 'horizontal', ...options }))
-
-		// One row per entry, each holding the hours its business hours leave
-		// visible; `asDays` puts them in one grouped column instead of one per hour.
+		// One row per entry, holding the hours it opens at; `asDays` puts them in
+		// one grouped column instead of one column per hour.
 		const buildGrid = (
 			startTimes: number[],
-			{ variant = 'resource', asDays = false } = {}
+			{
+				variant = 'resource',
+				asDays = false,
+			}: { variant?: 'resource' | 'regular'; asDays?: boolean } = {}
 		) => {
 			const rows = startTimes.map((startTime, index) => {
-				const hours = getViewHours({
-					referenceDate: dayjs(SCROLL_TEST_NOW),
-					businessHours: buildBusinessHours(startTime),
-					hideNonBusinessHours: true,
-				})
+				const hours = getVisibleHours(startTime)
 				const groupedColumn = {
 					id: 'hours',
 					days: hours,
@@ -153,131 +141,43 @@ describe('HorizontalGrid', () => {
 				return { id: String(index), columns }
 			})
 			return (
-				<CalendarProvider
-					initialDate={SCROLL_TEST_NOW}
-					scrollTime={SCROLL_TEST_SCROLL_TIME}
-					scrollToNow
-					timezone="UTC"
-				>
-					<HorizontalGrid
-						gridType="hour"
-						rows={rows}
-						variant={variant as 'resource' | 'regular'}
-					/>
-				</CalendarProvider>
+				<ScrollTestProvider>
+					<HorizontalGrid gridType="hour" rows={rows} variant={variant} />
+				</ScrollTestProvider>
 			)
 		}
 
-		test('scrolls to now once the widened hours show it', () => {
-			const { rerender } = renderCalendar({ startTime: 12 })
-			// 09:00 is hidden, so it falls back to 07:00, clamped to the first hour.
-			expect(lastScrollInHours(geometry.scrollTo)).toBe(0)
-
-			rerender(buildScrollCalendar({ orientation: 'horizontal', startTime: 6 }))
-
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(2)
-			expect(lastScrollInHours(geometry.scrollTo)).toBe(3) // 06:00 -> 09:00
-		})
-
-		test('reapplies scrollTime alone when the hours change', () => {
-			const { rerender } = renderCalendar({ startTime: 12, scrollToNow: false })
-			rerender(
-				buildScrollCalendar({
-					orientation: 'horizontal',
-					startTime: 6,
-					scrollToNow: false,
-				})
-			)
-
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(2)
-			expect(lastScrollInHours(geometry.scrollTo)).toBe(1) // 06:00 -> 07:00
-		})
-
-		test.each(['calendar', 'resources'] as const)(
-			'reapplies when the %s hours change',
-			(hoursOn) => {
-				const { rerender } = renderCalendar({ startTime: 12, hoursOn })
-				rerender(
-					buildScrollCalendar({
-						orientation: 'horizontal',
-						startTime: 6,
-						hoursOn,
-					})
-				)
-
-				expect(geometry.scrollTo).toHaveBeenCalledTimes(2)
-			}
-		)
-
-		test('leaves the scroll alone when the hours stay equal', () => {
-			const { rerender } = renderCalendar({ startTime: 6 })
-			rerender(buildScrollCalendar({ orientation: 'horizontal', startTime: 6 }))
-
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(1)
-		})
-
-		test('leaves the scroll alone when a resource is added with equal hours', () => {
-			const { rerender } = renderCalendar({ startTime: 6 })
-			rerender(
-				buildScrollCalendar({
-					orientation: 'horizontal',
-					startTime: 6,
-					resourceCount: 2,
-				})
-			)
-
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(1)
-		})
-
 		test('reapplies when only a later row changes', () => {
-			const { rerender } = render(buildGrid([12, 12]))
-			rerender(buildGrid([12, 6]))
+			const { rerender } = render(buildGrid([NARROW_START, NARROW_START]))
+			rerender(buildGrid([NARROW_START, WIDE_START]))
 
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(2)
+			expect(getScrollTo()).toHaveBeenCalledTimes(2)
 		})
 
 		test("reads the hours from a column's grouped days", () => {
-			const { rerender } = render(buildGrid([12], { asDays: true }))
-			rerender(buildGrid([6], { asDays: true }))
+			const { rerender } = render(buildGrid([NARROW_START], { asDays: true }))
+			rerender(buildGrid([WIDE_START], { asDays: true }))
 
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(2)
+			expect(getScrollTo()).toHaveBeenCalledTimes(2)
 		})
 
 		test('never scrolls a regular grid, which does not scroll sideways', () => {
-			const { rerender } = render(buildGrid([12], { variant: 'regular' }))
-			rerender(buildGrid([6], { variant: 'regular' }))
+			const { rerender } = render(
+				buildGrid([NARROW_START], { variant: 'regular' })
+			)
+			rerender(buildGrid([WIDE_START], { variant: 'regular' }))
 
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(0)
+			expect(getScrollTo()).toHaveBeenCalledTimes(0)
 		})
 
-		test('reapplies when a later day changes but the first day and week bounds stay equal', () => {
-			const buildWeek = (wednesdayStart: number) => (
-				<IlamyCalendar
-					businessHours={[
-						buildBusinessHours(6, ['sunday']),
-						buildBusinessHours(12, [
-							'monday',
-							'tuesday',
-							'thursday',
-							'friday',
-							'saturday',
-						]),
-						buildBusinessHours(wednesdayStart, ['wednesday']),
-					]}
-					events={[]}
-					hideNonBusinessHours
-					initialDate={SCROLL_TEST_NOW}
-					initialView="week"
-					orientation="horizontal"
-					resources={[{ id: 'room', title: 'Room' }]}
-					scrollToNow
-					timezone="UTC"
-				/>
-			)
-			const { rerender } = render(buildWeek(12))
-			rerender(buildWeek(9))
+		// A horizontal week lays each day's own hours out side by side, so
+		// Wednesday opening earlier adds columns even though Sunday already
+		// opens at six.
+		test("reapplies when a later day's hours change", () => {
+			const { rerender } = render(buildScrollWeek('horizontal', NARROW_START))
+			rerender(buildScrollWeek('horizontal', 9))
 
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(2)
+			expect(getScrollTo()).toHaveBeenCalledTimes(2)
 		})
 	})
 

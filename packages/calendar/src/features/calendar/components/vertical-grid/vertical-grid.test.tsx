@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import dayjs from '@ilamy/utils/dayjs'
 import { act, cleanup, render, screen } from '@testing-library/react'
-import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
-import { getViewHours } from '@/features/calendar/utils/view-hours'
 import {
-	buildBusinessHours,
-	buildScrollCalendar,
-	lastScrollInHours,
+	buildScrollWeek,
+	getVisibleHours,
+	NARROW_START,
 	SCROLL_TEST_NOW,
-	SCROLL_TEST_SCROLL_TIME,
-	stubScrollGeometry,
+	ScrollTestProvider,
+	setUpScrollGeometry,
+	testScrollingWhenHoursChange,
+	WIDE_START,
 } from '@/testing/scroll-test-fixtures'
 import { VerticalGrid } from './vertical-grid'
 
@@ -113,32 +113,15 @@ describe('VerticalGrid', () => {
 	})
 
 	describe('scrolling when rendered hours change (#320)', () => {
-		let geometry: ReturnType<typeof stubScrollGeometry>
+		const getScrollTo = setUpScrollGeometry()
 
-		beforeEach(() => {
-			geometry = stubScrollGeometry()
-		})
-		afterEach(() => {
-			cleanup()
-			geometry.restore()
-		})
+		testScrollingWhenHoursChange('vertical', getScrollTo)
 
-		const renderCalendar = (
-			options: Omit<Parameters<typeof buildScrollCalendar>[0], 'orientation'>
-		) => render(buildScrollCalendar({ orientation: 'vertical', ...options }))
-
-		// One column per entry, each holding the hours its business hours leave
-		// visible; an empty list leaves a column with no hours at all.
+		// One column per entry, holding the hours it opens at; `null` leaves a
+		// column with no hours at all.
 		const buildGrid = (startTimes: Array<number | null>) => {
 			const columns = startTimes.map((startTime, index) => {
-				const hasHours = startTime !== null
-				const hours = hasHours
-					? getViewHours({
-							referenceDate: dayjs(SCROLL_TEST_NOW),
-							businessHours: buildBusinessHours(startTime),
-							hideNonBusinessHours: true,
-						})
-					: []
+				const hours = startTime === null ? [] : getVisibleHours(startTime)
 				return {
 					id: String(index),
 					day: dayjs(SCROLL_TEST_NOW),
@@ -147,123 +130,34 @@ describe('VerticalGrid', () => {
 				}
 			})
 			return (
-				<CalendarProvider
-					initialDate={SCROLL_TEST_NOW}
-					scrollTime={SCROLL_TEST_SCROLL_TIME}
-					scrollToNow
-					timezone="UTC"
-				>
+				<ScrollTestProvider>
 					<VerticalGrid columns={columns} gridType="hour" />
-				</CalendarProvider>
+				</ScrollTestProvider>
 			)
 		}
 
-		test('scrolls to now once the widened hours show it', () => {
-			const { rerender } = renderCalendar({ startTime: 12 })
-			// 09:00 is hidden, so it falls back to 07:00, clamped to the first hour.
-			expect(lastScrollInHours(geometry.scrollTo)).toBe(0)
-
-			rerender(buildScrollCalendar({ orientation: 'vertical', startTime: 6 }))
-
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(2)
-			expect(lastScrollInHours(geometry.scrollTo)).toBe(3) // 06:00 -> 09:00
-		})
-
-		test('reapplies scrollTime alone when the hours change', () => {
-			const { rerender } = renderCalendar({ startTime: 12, scrollToNow: false })
-			rerender(
-				buildScrollCalendar({
-					orientation: 'vertical',
-					startTime: 6,
-					scrollToNow: false,
-				})
-			)
-
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(2)
-			expect(lastScrollInHours(geometry.scrollTo)).toBe(1) // 06:00 -> 07:00
-		})
-
-		test.each(['calendar', 'resources'] as const)(
-			'reapplies when the %s hours change',
-			(hoursOn) => {
-				const { rerender } = renderCalendar({ startTime: 12, hoursOn })
-				rerender(
-					buildScrollCalendar({
-						orientation: 'vertical',
-						startTime: 6,
-						hoursOn,
-					})
-				)
-
-				expect(geometry.scrollTo).toHaveBeenCalledTimes(2)
-			}
-		)
-
-		test('leaves the scroll alone when the hours stay equal', () => {
-			const { rerender } = renderCalendar({ startTime: 6 })
-			rerender(buildScrollCalendar({ orientation: 'vertical', startTime: 6 }))
-
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(1)
-		})
-
-		test('leaves the scroll alone when a resource is added with equal hours', () => {
-			const { rerender } = renderCalendar({ startTime: 6 })
-			rerender(
-				buildScrollCalendar({
-					orientation: 'vertical',
-					startTime: 6,
-					resourceCount: 2,
-				})
-			)
-
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(1)
-		})
-
 		test('reapplies when only a later column changes', () => {
-			const { rerender } = render(buildGrid([12, 12]))
-			rerender(buildGrid([12, 6]))
+			const { rerender } = render(buildGrid([NARROW_START, NARROW_START]))
+			rerender(buildGrid([NARROW_START, WIDE_START]))
 
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(2)
+			expect(getScrollTo()).toHaveBeenCalledTimes(2)
 		})
 
 		test('never scrolls a grid whose columns hold no hours', () => {
 			const { rerender } = render(buildGrid([null, null]))
 			rerender(buildGrid([null, null]))
 
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(0)
+			expect(getScrollTo()).toHaveBeenCalledTimes(0)
 		})
 
 		// A vertical week shares one column of hour rows across its days, built
-		// from the whole week's hours (`weekHoursFor`), so a day's hours moving
-		// inside that range leaves every row where it was.
+		// from the whole week's hours (`weekHoursFor`), so Wednesday opening
+		// earlier inside that range leaves every row where it was.
 		test("leaves the scroll alone when a day's hours change inside the week's shared rows", () => {
-			const buildWeek = (wednesdayStart: number) => (
-				<IlamyCalendar
-					businessHours={[
-						buildBusinessHours(6, ['sunday']),
-						buildBusinessHours(12, [
-							'monday',
-							'tuesday',
-							'thursday',
-							'friday',
-							'saturday',
-						]),
-						buildBusinessHours(wednesdayStart, ['wednesday']),
-					]}
-					events={[]}
-					hideNonBusinessHours
-					initialDate={SCROLL_TEST_NOW}
-					initialView="week"
-					orientation="vertical"
-					resources={[{ id: 'room', title: 'Room' }]}
-					scrollToNow
-					timezone="UTC"
-				/>
-			)
-			const { rerender } = render(buildWeek(12))
-			rerender(buildWeek(9))
+			const { rerender } = render(buildScrollWeek('vertical', NARROW_START))
+			rerender(buildScrollWeek('vertical', 9))
 
-			expect(geometry.scrollTo).toHaveBeenCalledTimes(1)
+			expect(getScrollTo()).toHaveBeenCalledTimes(1)
 		})
 	})
 
@@ -340,7 +234,6 @@ describe('VerticalGrid', () => {
 		})
 
 		test('without ResizeObserver the insets are still published once', () => {
-			// @ts-expect-error: an environment that predates ResizeObserver
 			globalThis.ResizeObserver = undefined
 			renderVerticalGrid({ allDayRow: <div>All Day</div> })
 

@@ -1,27 +1,53 @@
-import { mock, setSystemTime } from 'bun:test'
+import {
+	afterEach,
+	beforeEach,
+	expect,
+	mock,
+	setSystemTime,
+	test,
+} from 'bun:test'
 import type { BusinessHours, Resource, WeekDays } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
+import { cleanup, render } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
+import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
+import { getViewHours } from '@/features/calendar/utils/view-hours'
 
 /** A Wednesday, 09:00 UTC: the "now" every scroll test runs at. */
 export const SCROLL_TEST_NOW = '2025-03-12T09:00:00.000Z'
+const NOW_HOUR = 9
 
 /** Distinct from now, so a scroll to `scrollTime` lands somewhere else. */
-export const SCROLL_TEST_SCROLL_TIME = '07:00'
+const SCROLL_TEST_SCROLL_TIME = '07:00'
+const SCROLL_TIME_HOUR = 7
+
+/** Business hours opening at noon hide now; opening at six show it. */
+export const NARROW_START = 12
+export const WIDE_START = 6
 
 /** How far apart the stubbed geometry puts consecutive hours. */
 const PIXELS_PER_HOUR = 100
 
+type Orientation = 'horizontal' | 'vertical'
+
 /** Business hours ending at 17:00; days default to Monday-Friday. */
-export const buildBusinessHours = (
+const buildBusinessHours = (
 	startTime: number,
 	daysOfWeek?: WeekDays[]
 ): BusinessHours => ({ daysOfWeek, startTime, endTime: 17 })
 
-// happy-dom lays nothing out, so every rect is empty and every scroll lands on
-// 0. Placing each hour row and timed cell PIXELS_PER_HOUR apart, by the hour it
-// holds, lets a test tell which cell `useScrollToTime` scrolled to.
-const hourOf = (element: HTMLElement): number => {
+/** The hours a day at SCROLL_TEST_NOW shows when business hours open at `startTime`. */
+export const getVisibleHours = (startTime: number) =>
+	getViewHours({
+		referenceDate: dayjs(SCROLL_TEST_NOW),
+		businessHours: buildBusinessHours(startTime),
+		hideNonBusinessHours: true,
+	})
+
+// happy-dom lays nothing out, so every scroll would land on 0. Placing each
+// hour row and timed cell by its hour lets a test see which one was targeted.
+const getHourOfElement = (element: HTMLElement): number => {
 	const hourLabel = element.getAttribute('data-hour')
 	if (hourLabel !== null) {
 		return Number.parseInt(hourLabel, 10)
@@ -30,7 +56,7 @@ const hourOf = (element: HTMLElement): number => {
 	return cellStart ? dayjs(cellStart).utc().hour() : 0
 }
 
-const rectAtHour = (hour: number): DOMRect => {
+const buildRectAtHour = (hour: number): DOMRect => {
 	const offset = hour * PIXELS_PER_HOUR
 	return {
 		x: offset,
@@ -45,12 +71,8 @@ const rectAtHour = (hour: number): DOMRect => {
 	}
 }
 
-// Other tests stub these methods at two levels: the grids' sticky-inset tests
-// assign HTMLElement.prototype.getBoundingClientRect and restore it by
-// assignment, which leaves an own property there, and the view tests swap
-// Element.prototype.scrollTo. Installing on HTMLElement.prototype wins over
-// both, and putting back exactly the property that was there leaves nothing
-// for a later file to trip over.
+// Other test files leave stubs of these on both Element.prototype and
+// HTMLElement.prototype; this one wins over both and leaves nothing behind.
 const replaceOnHTMLElement = (
 	name: 'scrollTo' | 'getBoundingClientRect',
 	replacement: (this: HTMLElement, ...args: never[]) => unknown
@@ -71,39 +93,57 @@ const replaceOnHTMLElement = (
 	}
 }
 
-/**
- * Pins now, places hours along both axes, and records `scrollTo` without
- * moving anything. Call `restore` in `afterEach`.
- */
-export const stubScrollGeometry = () => {
+/** Pins now, places hours along both axes, and records `scrollTo`. */
+const stubScrollGeometry = () => {
 	setSystemTime(new Date(SCROLL_TEST_NOW))
 	const scrollTo = mock((_options?: ScrollToOptions) => {})
 	const restoreScrollTo = replaceOnHTMLElement('scrollTo', scrollTo)
 	const restoreRects = replaceOnHTMLElement(
 		'getBoundingClientRect',
 		function (this: HTMLElement) {
-			return rectAtHour(hourOf(this))
+			return buildRectAtHour(getHourOfElement(this))
 		}
 	)
-	const restore = () => {
+	const restoreScrollGeometry = () => {
 		restoreScrollTo()
 		restoreRects()
 		setSystemTime()
 	}
-	return { scrollTo, restore }
+	return { scrollTo, restoreScrollGeometry }
+}
+
+type ScrollToMock = ReturnType<typeof stubScrollGeometry>['scrollTo']
+
+/**
+ * Stubs the scroll geometry around every test in the calling `describe`.
+ * Returns a getter for the current test's `scrollTo` mock.
+ */
+export const setUpScrollGeometry = () => {
+	let geometry: ReturnType<typeof stubScrollGeometry> | undefined
+	beforeEach(() => {
+		geometry = stubScrollGeometry()
+	})
+	afterEach(() => {
+		cleanup()
+		geometry?.restoreScrollGeometry()
+	})
+	return (): ScrollToMock => {
+		if (!geometry) {
+			throw new Error('setUpScrollGeometry: no test is running')
+		}
+		return geometry.scrollTo
+	}
 }
 
 /** Where the last scroll landed, in hours past the first visible hour. */
-export const lastScrollInHours = (
-	scrollTo: ReturnType<typeof stubScrollGeometry>['scrollTo']
-): number | undefined => {
+const getLastScrollInHours = (scrollTo: ScrollToMock): number | undefined => {
 	const options = scrollTo.mock.calls.at(-1)?.at(0)
 	const offset = options?.left ?? options?.top
 	return offset === undefined ? undefined : offset / PIXELS_PER_HOUR
 }
 
 interface ScrollCalendarOptions {
-	orientation: 'horizontal' | 'vertical'
+	orientation: Orientation
 	/** Business hours start; they end at 17:00. */
 	startTime: number
 	/** Whether the hours are the calendar's or each resource's own. */
@@ -113,7 +153,7 @@ interface ScrollCalendarOptions {
 }
 
 /** A resource day view at SCROLL_TEST_NOW with non-business hours hidden. */
-export const buildScrollCalendar = ({
+const buildScrollCalendar = ({
 	orientation,
 	startTime,
 	hoursOn = 'calendar',
@@ -146,4 +186,110 @@ export const buildScrollCalendar = ({
 			timezone="UTC"
 		/>
 	)
+}
+
+const NON_WEDNESDAY_DAYS: WeekDays[] = [
+	'monday',
+	'tuesday',
+	'thursday',
+	'friday',
+	'saturday',
+]
+
+/**
+ * A resource week whose Sunday opens at 06:00, Wednesday at `wednesdayStart`,
+ * and every other day at noon, so only Wednesday's hours move between renders.
+ */
+export const buildScrollWeek = (
+	orientation: Orientation,
+	wednesdayStart: number
+) => (
+	<IlamyCalendar
+		businessHours={[
+			buildBusinessHours(WIDE_START, ['sunday']),
+			buildBusinessHours(NARROW_START, NON_WEDNESDAY_DAYS),
+			buildBusinessHours(wednesdayStart, ['wednesday']),
+		]}
+		events={[]}
+		hideNonBusinessHours
+		initialDate={SCROLL_TEST_NOW}
+		initialView="week"
+		orientation={orientation}
+		resources={[{ id: 'room', title: 'Room' }]}
+		scrollToNow
+		timezone="UTC"
+	/>
+)
+
+/** The calendar state a bare grid needs to scroll: now, scrollTime, UTC. */
+export const ScrollTestProvider = ({ children }: { children: ReactNode }) => (
+	<CalendarProvider
+		initialDate={SCROLL_TEST_NOW}
+		scrollTime={SCROLL_TEST_SCROLL_TIME}
+		scrollToNow
+		timezone="UTC"
+	>
+		{children}
+	</CalendarProvider>
+)
+
+/**
+ * The tests both grids share: what a change in hours, or in resources, does
+ * to the initial scroll of a resource day view in `orientation`.
+ */
+export const testScrollingWhenHoursChange = (
+	orientation: Orientation,
+	getScrollTo: () => ScrollToMock
+) => {
+	const buildCalendar = (options: Omit<ScrollCalendarOptions, 'orientation'>) =>
+		buildScrollCalendar({ orientation, ...options })
+
+	test('scrolls to now once the widened hours show it', () => {
+		const { rerender } = render(buildCalendar({ startTime: NARROW_START }))
+		// Now is hidden, so it falls back to scrollTime, clamped to the first hour.
+		expect(getLastScrollInHours(getScrollTo())).toBe(0)
+
+		rerender(buildCalendar({ startTime: WIDE_START }))
+
+		expect(getScrollTo()).toHaveBeenCalledTimes(2)
+		expect(getLastScrollInHours(getScrollTo())).toBe(NOW_HOUR - WIDE_START)
+	})
+
+	test('reapplies scrollTime alone when the hours change', () => {
+		const { rerender } = render(
+			buildCalendar({ startTime: NARROW_START, scrollToNow: false })
+		)
+		rerender(buildCalendar({ startTime: WIDE_START, scrollToNow: false }))
+
+		expect(getScrollTo()).toHaveBeenCalledTimes(2)
+		expect(getLastScrollInHours(getScrollTo())).toBe(
+			SCROLL_TIME_HOUR - WIDE_START
+		)
+	})
+
+	test.each(['calendar', 'resources'] as const)(
+		'reapplies when the %s hours change',
+		(hoursOn) => {
+			const { rerender } = render(
+				buildCalendar({ startTime: NARROW_START, hoursOn })
+			)
+			rerender(buildCalendar({ startTime: WIDE_START, hoursOn }))
+
+			expect(getScrollTo()).toHaveBeenCalledTimes(2)
+		}
+	)
+
+	test('leaves the scroll alone when the hours stay equal', () => {
+		const { rerender } = render(buildCalendar({ startTime: WIDE_START }))
+		rerender(buildCalendar({ startTime: WIDE_START }))
+
+		expect(getScrollTo()).toHaveBeenCalledTimes(1)
+	})
+
+	test('leaves the scroll alone when a resource is added with equal hours', () => {
+		const { rerender } = render(buildCalendar({ startTime: WIDE_START }))
+		rerender(buildCalendar({ startTime: WIDE_START, resourceCount: 2 }))
+
+		expect(getScrollTo()).toHaveBeenCalledTimes(1)
+	})
 }

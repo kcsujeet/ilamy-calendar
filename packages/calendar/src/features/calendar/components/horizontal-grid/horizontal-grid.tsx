@@ -39,9 +39,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 	const isResourceCalendar = variant === 'resource'
 	const isRegularCalendar = !isResourceCalendar
 	const allColumns = rows.flatMap((row) => row.columns ?? [])
-	const scrollKey = isResourceCalendar
-		? getScrollKey(view, currentDate, allColumns)
-		: ''
+	const scrollKey = getScrollKey(view, currentDate, allColumns)
 
 	// Only the resource timeline scrolls sideways. Its day-column form (resource
 	// month, #285) scrolls only to now, having no hour columns for scrollTime.

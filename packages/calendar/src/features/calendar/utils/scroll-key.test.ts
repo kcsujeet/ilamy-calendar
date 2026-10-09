@@ -3,43 +3,59 @@ import dayjs from '@ilamy/utils/dayjs'
 import { getScrollKey } from './scroll-key'
 
 const DATE = dayjs('2025-03-12T00:00:00.000Z')
-const at = (hour: number) => DATE.hour(hour)
-const hourColumn = (hour: number) => ({ day: at(hour) })
-const groupedColumn = (...hours: number[]) => ({ days: hours.map(at) })
+const buildDateAtHour = (hour: number) => DATE.hour(hour)
+const buildHourColumn = (hour: number) => ({ day: buildDateAtHour(hour) })
+const buildGroupedColumn = (...hours: number[]) => ({
+	days: hours.map(buildDateAtHour),
+})
 
-const key = (columns: Parameters<typeof getScrollKey>[2], view = 'day') =>
-	getScrollKey(view, DATE, columns)
+const getTestScrollKey = (
+	columns: Parameters<typeof getScrollKey>[2],
+	{ view = 'day', date = DATE } = {}
+) => getScrollKey(view, date, columns)
 
 describe('getScrollKey', () => {
 	test('names the view, the date and the hours on screen', () => {
-		expect(key([hourColumn(9), hourColumn(10)])).toBe(
+		expect(getTestScrollKey([buildHourColumn(9), buildHourColumn(10)])).toBe(
 			'day-2025-03-12-2025-03-12T09:00:00.000Z,2025-03-12T10:00:00.000Z'
 		)
 	})
 
-	// #321: one row or column per resource repeated the same hours, so adding a
-	// resource changed the key and scrolled a reader back.
+	// One row or column per resource repeats the same hours; adding a resource
+	// must not change the key and scroll a reader back.
 	test('counts each hour once, however many resources repeat it', () => {
-		const oneResource = [groupedColumn(9, 10)]
-		const twoResources = [groupedColumn(9, 10), groupedColumn(9, 10)]
-		expect(key(twoResources)).toBe(key(oneResource))
+		const oneResource = [buildGroupedColumn(9, 10)]
+		const twoResources = [buildGroupedColumn(9, 10), buildGroupedColumn(9, 10)]
+		expect(getTestScrollKey(twoResources)).toBe(getTestScrollKey(oneResource))
 	})
 
 	test("reads a column's grouped days and a single day alike", () => {
-		expect(key([groupedColumn(9, 10)])).toBe(
-			key([hourColumn(9), hourColumn(10)])
+		expect(getTestScrollKey([buildGroupedColumn(9, 10)])).toBe(
+			getTestScrollKey([buildHourColumn(9), buildHourColumn(10)])
 		)
 	})
 
 	test('changes when the hours on screen change', () => {
-		expect(key([groupedColumn(6, 7)])).not.toBe(key([groupedColumn(12, 13)]))
+		expect(getTestScrollKey([buildGroupedColumn(6, 7)])).not.toBe(
+			getTestScrollKey([buildGroupedColumn(12, 13)])
+		)
 	})
 
 	test('changes with the view', () => {
-		expect(key([hourColumn(9)], 'week')).not.toBe(key([hourColumn(9)], 'day'))
+		const columns = [buildHourColumn(9)]
+		expect(getTestScrollKey(columns, { view: 'week' })).not.toBe(
+			getTestScrollKey(columns, { view: 'day' })
+		)
+	})
+
+	test('changes with the date, even when the hours read the same', () => {
+		const columns = [buildHourColumn(9)]
+		expect(getTestScrollKey(columns, { date: DATE.add(1, 'day') })).not.toBe(
+			getTestScrollKey(columns)
+		)
 	})
 
 	test('treats a column with neither as holding no hours', () => {
-		expect(key([{}])).toBe('day-2025-03-12-')
+		expect(getTestScrollKey([{}])).toBe('day-2025-03-12-')
 	})
 })

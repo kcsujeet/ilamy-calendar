@@ -6,7 +6,7 @@ interface ColumnHours {
 	days?: Dayjs[]
 }
 
-const hoursOf = (column: ColumnHours): Dayjs[] => {
+const getColumnHours = (column: ColumnHours): Dayjs[] => {
 	if (column.days) {
 		return column.days
 	}
@@ -14,13 +14,10 @@ const hoursOf = (column: ColumnHours): Dayjs[] => {
 }
 
 /**
- * What a grid's initial scroll is applied once per: the view, the date, and
- * the hours on screen, so widening the hours reapplies it (#320). FullCalendar
- * does the same: its time grid rescrolls whenever its date profile changes
- * (`timegrid/src/TimeCols.tsx:136`), and the date profile carries the slot
- * range (`core/src/DateProfileGenerator.ts:164,167`, v6.1.21). Each hour counts
- * once, however many resource rows or columns repeat it, so adding a resource
- * with the same hours leaves a reader where they scrolled.
+ * What a grid's initial scroll is applied once per: the view, the date and the
+ * distinct hours on screen. Changing the hours reapplies it, as FullCalendar's
+ * time grid rescrolls when its slot range changes (timegrid/src/TimeCols.tsx:136,
+ * v6.1.21); adding a resource with the same hours does not.
  */
 export const getScrollKey = (
 	view: string,
@@ -28,7 +25,7 @@ export const getScrollKey = (
 	columns: ColumnHours[]
 ): string => {
 	const hourInstants = columns
-		.flatMap(hoursOf)
+		.flatMap(getColumnHours)
 		.map((hour) => hour.toISOString())
 	const distinctHours = [...new Set(hourInstants)].join(',')
 	return `${view}-${currentDate.format('YYYY-MM-DD')}-${distinctHours}`

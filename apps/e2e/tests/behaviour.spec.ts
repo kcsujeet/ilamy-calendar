@@ -920,24 +920,54 @@ const TIMED_CELL = '[data-start]:not([data-all-day="true"])'
 const HOUR_ROW = '[data-hour]'
 
 test.describe('rendered hours change (#320)', () => {
-	// Now is pinned at 09:00 and scrollTime is 07:00, so landing on now and
-	// falling back to scrollTime end up on different hours.
+	const PHONE_VIEWPORT = { width: 393, height: 852 }
+	const CALENDAR_HEIGHT = '500px'
+	const READER_SCROLL_PX = 100
+
 	const readScroll = (viewport: Locator, axis: 'horizontal' | 'vertical') =>
 		viewport.evaluate(
 			(el, axis) => (axis === 'horizontal' ? el.scrollLeft : el.scrollTop),
 			axis
 		)
 
+	// The scroll is applied in an effect after React commits; two animation
+	// frames let any pending one land before a "nothing moved" read.
+	const waitForEffects = (page: Page) =>
+		page.evaluate(
+			() =>
+				new Promise<void>((resolve) =>
+					requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+				)
+		)
+
+	const isAlignedOn = async (
+		page: Page,
+		scrollTestId: string,
+		hour: string,
+		axis: 'horizontal' | 'vertical'
+	) => {
+		const { scrolled, expected } = await scrollAlignment(
+			page,
+			scrollTestId,
+			`[data-hour="${hour}"]`,
+			'[data-hour="06"]',
+			axis
+		)
+		return { moved: scrolled > 0, aligned: Math.abs(scrolled - expected) < 1 }
+	}
+
 	for (const axis of ['horizontal', 'vertical'] as const) {
 		const scrollTestId = `${axis}-grid-scroll`
 
 		for (const scrollToNow of [true, false]) {
+			// Now is pinned at 09:00 and scrollTime is 07:00, so landing on now and
+			// falling back to scrollTime end up on different hours.
 			const landingHour = scrollToNow ? '09' : '07'
 
 			test(`${axis} reapplies initial scrolling when the hours widen (scrollToNow=${scrollToNow})`, async ({
 				page,
 			}) => {
-				await page.setViewportSize({ width: 393, height: 852 })
+				await page.setViewportSize(PHONE_VIEWPORT)
 				await gotoScenario(page, {
 					scenario: 'resources',
 					view: 'day',
@@ -947,7 +977,7 @@ test.describe('rendered hours change (#320)', () => {
 						scrollTime: '07:00',
 						hideNonBusinessHours: 'true',
 						businessHours: '12-17',
-						height: '500px',
+						height: CALENDAR_HEIGHT,
 					},
 				})
 				const viewport = page.locator(scrollViewportSelector(scrollTestId))
@@ -961,19 +991,7 @@ test.describe('rendered hours change (#320)', () => {
 
 				await expect(viewport).toHaveAttribute('data-mounted-probe', 'kept')
 				await expect
-					.poll(async () => {
-						const { scrolled, expected } = await scrollAlignment(
-							page,
-							scrollTestId,
-							`[data-hour="${landingHour}"]`,
-							'[data-hour="06"]',
-							axis
-						)
-						return {
-							moved: scrolled > 0,
-							aligned: Math.abs(scrolled - expected) < 1,
-						}
-					})
+					.poll(() => isAlignedOn(page, scrollTestId, landingHour, axis))
 					.toEqual({ moved: true, aligned: true })
 			})
 		}
@@ -981,7 +999,7 @@ test.describe('rendered hours change (#320)', () => {
 		test(`${axis} leaves a reader's scroll alone on a re-render and when a resource is added`, async ({
 			page,
 		}) => {
-			await page.setViewportSize({ width: 393, height: 852 })
+			await page.setViewportSize(PHONE_VIEWPORT)
 			await gotoScenario(page, {
 				scenario: 'resources',
 				view: 'day',
@@ -990,30 +1008,34 @@ test.describe('rendered hours change (#320)', () => {
 					scrollToNow: 'true',
 					hideNonBusinessHours: 'true',
 					businessHours: '6-17',
-					height: '500px',
+					height: CALENDAR_HEIGHT,
 					resourceCount: 2,
 				},
 			})
 			const viewport = page.locator(scrollViewportSelector(scrollTestId))
-			await expect.poll(() => readScroll(viewport, axis)).toBeGreaterThan(0)
-			const readerScroll = await viewport.evaluate((el, axis) => {
-				if (axis === 'horizontal') {
-					el.scrollLeft = 100
-					return el.scrollLeft
-				}
-				el.scrollTop = 100
-				return el.scrollTop
-			}, axis)
+			await expect
+				.poll(() => isAlignedOn(page, scrollTestId, '09', axis))
+				.toEqual({ moved: true, aligned: true })
+			await viewport.evaluate(
+				(el, { axis, offset }) => {
+					if (axis === 'horizontal') {
+						el.scrollLeft = offset
+						return
+					}
+					el.scrollTop = offset
+				},
+				{ axis, offset: READER_SCROLL_PX }
+			)
 
-			// Waits for each change to land before reading the scroll, so the check
-			// cannot pass on the frame before the re-render.
 			await setSettings(page, { timeFormat: '24-hour' })
 			await expect(page.locator('[data-hour="13"]').first()).toContainText('13')
-			expect(await readScroll(viewport, axis)).toBe(readerScroll)
+			await waitForEffects(page)
+			expect(await readScroll(viewport, axis)).toBe(READER_SCROLL_PX)
 
 			await setSettings(page, { resourceCount: 3 })
 			await expect(new ResourceAxis(page).resource('Room C')).toBeVisible()
-			expect(await readScroll(viewport, axis)).toBe(readerScroll)
+			await waitForEffects(page)
+			expect(await readScroll(viewport, axis)).toBe(READER_SCROLL_PX)
 		})
 	}
 })

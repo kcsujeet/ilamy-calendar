@@ -149,6 +149,11 @@ const processBusinessHours = (
 	const configs = Array.isArray(bh) ? bh : [bh]
 
 	for (const config of configs) {
+		// TODO(next major): match FullCalendar, which defaults a config without
+		// `daysOfWeek` to Monday-Friday and ignores such an array entry
+		// (core/src/structs/business-hours.ts, v6.1.21). Applying it to every
+		// day is kept until then because the change silently turns weekends
+		// non-business for consumers who omit it.
 		if (date && config.daysOfWeek) {
 			const dayOfWeek = date.day()
 			if (

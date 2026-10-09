@@ -81,8 +81,9 @@ export interface BusinessHours {
 	 *
 	 * This deviates from FullCalendar, which defaults an object to Monday-Friday
 	 * and ignores an array entry without days
-	 * (core/src/structs/business-hours.ts, v6.1.21). Kept to avoid a breaking
-	 * change; list the days explicitly to get weekdays only.
+	 * (core/src/structs/business-hours.ts, v6.1.21). Kept until the next major
+	 * (see the TODO in business-hours.ts); list the days explicitly to get
+	 * weekdays only.
 	 * @default every day
 	 */
 	daysOfWeek?: WeekDays[]

@@ -76,8 +76,15 @@ export type WeekDays =
  */
 export interface BusinessHours {
 	/**
-	 * Days of the week to apply business hours to.
-	 * @default ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+	 * Days of the week to apply business hours to. Omitted, the hours apply to
+	 * every day, weekends included, in both the object and the array form.
+	 *
+	 * This deviates from FullCalendar, which defaults an object to Monday-Friday
+	 * and ignores an array entry without days
+	 * (core/src/structs/business-hours.ts, v6.1.21). Kept until the next major
+	 * (see the TODO in business-hours.ts); list the days explicitly to get
+	 * weekdays only.
+	 * @default every day
 	 */
 	daysOfWeek?: WeekDays[]
 	/**

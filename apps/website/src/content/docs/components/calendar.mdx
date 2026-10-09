@@ -482,6 +482,9 @@ Array of day names that are considered business days. Users can only interact wi
 
 **Type:** `string[]`
 **Valid values:** `'monday'`, `'tuesday'`, `'wednesday'`, `'thursday'`, `'friday'`, `'saturday'`, `'sunday'`
+**Default:** every day
+
+Leaving `daysOfWeek` out applies the hours to all seven days, weekends included, whether you pass one object or an array. List the days explicitly to restrict them, for example `['monday', 'tuesday', 'wednesday', 'thursday', 'friday']` for weekdays only. This differs from FullCalendar, which defaults to Monday to Friday.
 
 ### startTime
 
@@ -1026,8 +1029,8 @@ Configuration object for restricting calendar interactions to specific days and 
 
 ```typescript title="BusinessHours Type Definition"
 interface BusinessHours {
-  // Array of day names considered business days
-  daysOfWeek: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday')[];
+  // Array of day names considered business days (default: every day)
+  daysOfWeek?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday')[];
 
   // Hour when business hours start (0-23, inclusive)
   startTime: number;

@@ -208,7 +208,7 @@ type WeekDays = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'fr
 
 ```typescript
 interface BusinessHours {
-  daysOfWeek?: WeekDays[]        // Default: ['monday'...'friday']
+  daysOfWeek?: WeekDays[]        // Default: every day (FullCalendar defaults to Mon-Fri; we do not)
   startTime?: number | string    // Default: 9 (24-hour number, or 'HH:mm' e.g. '09:15')
   endTime?: number | string      // Default: 17 (0 and 24 both mean midnight)
 }

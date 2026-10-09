@@ -41,6 +41,26 @@ describe('isBusinessHour', () => {
 		).toBe(false)
 	})
 
+	/**
+	 * Omitting `daysOfWeek` applies the hours to every day, weekends included.
+	 * FullCalendar defaults to Monday-Friday here instead; see the
+	 * `BusinessHours.daysOfWeek` doc comment in @ilamy/types.
+	 */
+	const hoursWithoutDays: BusinessHours = { startTime: 9, endTime: 17 }
+	it.each<[string, BusinessHours | BusinessHours[]]>([
+		['an object', hoursWithoutDays],
+		['an array entry', [hoursWithoutDays]],
+	])('applies %s without daysOfWeek to every day', (_, config) => {
+		const isSundayBusiness = isBusinessHour({
+			date: sunday,
+			hour: 10,
+			minute: 0,
+			businessHours: config,
+		})
+
+		expect(isSundayBusiness).toBe(true)
+	})
+
 	it('should respect custom businessHours object', () => {
 		const config: BusinessHours = {
 			daysOfWeek: ['monday'], // Monday only

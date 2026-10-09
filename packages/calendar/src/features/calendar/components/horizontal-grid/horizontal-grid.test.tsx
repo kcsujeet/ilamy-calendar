@@ -6,11 +6,12 @@ import { CalendarProvider } from '@/features/calendar/stores/calendar-context/ca
 import {
 	buildScrollWeek,
 	getVisibleHours,
-	NARROW_START,
+	MID_BUSINESS_START_HOUR,
+	NARROW_BUSINESS_START_HOUR,
 	ScrollTestProvider,
 	setUpScrollGeometry,
 	testScrollingWhenHoursChange,
-	WIDE_START,
+	WIDE_BUSINESS_START_HOUR,
 } from '@/testing/scroll-test-fixtures'
 import { HorizontalGrid } from './horizontal-grid'
 
@@ -116,8 +117,7 @@ describe('HorizontalGrid', () => {
 
 		testScrollingWhenHoursChange('horizontal', getScrollTo)
 
-		// One row per entry, holding the hours it opens at; `asDays` puts them in
-		// one grouped column instead of one column per hour.
+		// `asDays` groups each row's hours into one column instead of one per hour.
 		const buildGrid = (
 			startTimes: number[],
 			{
@@ -148,24 +148,44 @@ describe('HorizontalGrid', () => {
 		}
 
 		test('reapplies when only a later row changes', () => {
-			const { rerender } = render(buildGrid([NARROW_START, NARROW_START]))
-			rerender(buildGrid([NARROW_START, WIDE_START]))
+			const { rerender } = render(
+				buildGrid([NARROW_BUSINESS_START_HOUR, NARROW_BUSINESS_START_HOUR])
+			)
+			rerender(
+				buildGrid([NARROW_BUSINESS_START_HOUR, WIDE_BUSINESS_START_HOUR])
+			)
 
 			expect(getScrollTo()).toHaveBeenCalledTimes(2)
 		})
 
 		test("reads the hours from a column's grouped days", () => {
-			const { rerender } = render(buildGrid([NARROW_START], { asDays: true }))
-			rerender(buildGrid([WIDE_START], { asDays: true }))
+			const { rerender } = render(
+				buildGrid([NARROW_BUSINESS_START_HOUR], { asDays: true })
+			)
+			rerender(buildGrid([WIDE_BUSINESS_START_HOUR], { asDays: true }))
 
 			expect(getScrollTo()).toHaveBeenCalledTimes(2)
 		})
 
+		test('reads a row without columns as holding no hours', () => {
+			render(
+				<ScrollTestProvider>
+					<HorizontalGrid gridType="hour" rows={[{ id: 'bare' }]} />
+				</ScrollTestProvider>
+			)
+
+			// With no cell holding now and no hour for scrollTime, it opens at the start.
+			expect(getScrollTo()).toHaveBeenLastCalledWith({
+				left: 0,
+				behavior: 'auto',
+			})
+		})
+
 		test('never scrolls a regular grid, which does not scroll sideways', () => {
 			const { rerender } = render(
-				buildGrid([NARROW_START], { variant: 'regular' })
+				buildGrid([NARROW_BUSINESS_START_HOUR], { variant: 'regular' })
 			)
-			rerender(buildGrid([WIDE_START], { variant: 'regular' }))
+			rerender(buildGrid([WIDE_BUSINESS_START_HOUR], { variant: 'regular' }))
 
 			expect(getScrollTo()).toHaveBeenCalledTimes(0)
 		})
@@ -174,8 +194,10 @@ describe('HorizontalGrid', () => {
 		// Wednesday opening earlier adds columns even though Sunday already
 		// opens at six.
 		test("reapplies when a later day's hours change", () => {
-			const { rerender } = render(buildScrollWeek('horizontal', NARROW_START))
-			rerender(buildScrollWeek('horizontal', 9))
+			const { rerender } = render(
+				buildScrollWeek('horizontal', NARROW_BUSINESS_START_HOUR)
+			)
+			rerender(buildScrollWeek('horizontal', MID_BUSINESS_START_HOUR))
 
 			expect(getScrollTo()).toHaveBeenCalledTimes(2)
 		})

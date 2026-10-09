@@ -12,6 +12,7 @@ import { cleanup, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
+import type { IlamyCalendarProps } from '@/features/calendar/types'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 
 /** A Wednesday, 09:00 UTC: the "now" every scroll test runs at. */
@@ -23,19 +24,21 @@ const SCROLL_TEST_SCROLL_TIME = '07:00'
 const SCROLL_TIME_HOUR = 7
 
 /** Business hours opening at noon hide now; opening at six show it. */
-export const NARROW_START = 12
-export const WIDE_START = 6
+export const NARROW_BUSINESS_START_HOUR = 12
+export const WIDE_BUSINESS_START_HOUR = 6
+/** Between the two, so a day opening then stays inside a week's 06:00-17:00 range. */
+export const MID_BUSINESS_START_HOUR = 9
+const BUSINESS_END_HOUR = 17
 
-/** How far apart the stubbed geometry puts consecutive hours. */
 const PIXELS_PER_HOUR = 100
 
-type Orientation = 'horizontal' | 'vertical'
+type ScrollGridOrientation = NonNullable<IlamyCalendarProps['orientation']>
 
-/** Business hours ending at 17:00; days default to Monday-Friday. */
+// Without `daysOfWeek` the hours apply to every day (business-hours.ts).
 const buildBusinessHours = (
 	startTime: number,
 	daysOfWeek?: WeekDays[]
-): BusinessHours => ({ daysOfWeek, startTime, endTime: 17 })
+): BusinessHours => ({ daysOfWeek, startTime, endTime: BUSINESS_END_HOUR })
 
 /** The hours a day at SCROLL_TEST_NOW shows when business hours open at `startTime`. */
 export const getVisibleHours = (startTime: number) =>
@@ -78,22 +81,21 @@ const replaceOnHTMLElement = (
 	replacement: (this: HTMLElement, ...args: never[]) => unknown
 ) => {
 	const prototype = HTMLElement.prototype
-	const previous = Object.getOwnPropertyDescriptor(prototype, name)
+	const originalDescriptor = Object.getOwnPropertyDescriptor(prototype, name)
 	Object.defineProperty(prototype, name, {
 		value: replacement,
 		configurable: true,
 		writable: true,
 	})
 	return () => {
-		if (previous) {
-			Object.defineProperty(prototype, name, previous)
+		if (originalDescriptor) {
+			Object.defineProperty(prototype, name, originalDescriptor)
 			return
 		}
 		Reflect.deleteProperty(prototype, name)
 	}
 }
 
-/** Pins now, places hours along both axes, and records `scrollTo`. */
 const stubScrollGeometry = () => {
 	setSystemTime(new Date(SCROLL_TEST_NOW))
 	const scrollTo = mock((_options?: ScrollToOptions) => {})
@@ -143,7 +145,7 @@ const getLastScrollInHours = (scrollTo: ScrollToMock): number | undefined => {
 }
 
 interface ScrollCalendarOptions {
-	orientation: Orientation
+	orientation: ScrollGridOrientation
 	/** Business hours start; they end at 17:00. */
 	startTime: number
 	/** Whether the hours are the calendar's or each resource's own. */
@@ -152,7 +154,6 @@ interface ScrollCalendarOptions {
 	resourceCount?: number
 }
 
-/** A resource day view at SCROLL_TEST_NOW with non-business hours hidden. */
 const buildScrollCalendar = ({
 	orientation,
 	startTime,
@@ -201,13 +202,13 @@ const NON_WEDNESDAY_DAYS: WeekDays[] = [
  * and every other day at noon, so only Wednesday's hours move between renders.
  */
 export const buildScrollWeek = (
-	orientation: Orientation,
+	orientation: ScrollGridOrientation,
 	wednesdayStart: number
 ) => (
 	<IlamyCalendar
 		businessHours={[
-			buildBusinessHours(WIDE_START, ['sunday']),
-			buildBusinessHours(NARROW_START, NON_WEDNESDAY_DAYS),
+			buildBusinessHours(WIDE_BUSINESS_START_HOUR, ['sunday']),
+			buildBusinessHours(NARROW_BUSINESS_START_HOUR, NON_WEDNESDAY_DAYS),
 			buildBusinessHours(wednesdayStart, ['wednesday']),
 		]}
 		events={[]}
@@ -238,32 +239,41 @@ export const ScrollTestProvider = ({ children }: { children: ReactNode }) => (
  * to the initial scroll of a resource day view in `orientation`.
  */
 export const testScrollingWhenHoursChange = (
-	orientation: Orientation,
+	orientation: ScrollGridOrientation,
 	getScrollTo: () => ScrollToMock
 ) => {
 	const buildCalendar = (options: Omit<ScrollCalendarOptions, 'orientation'>) =>
 		buildScrollCalendar({ orientation, ...options })
 
 	test('scrolls to now once the widened hours show it', () => {
-		const { rerender } = render(buildCalendar({ startTime: NARROW_START }))
+		const { rerender } = render(
+			buildCalendar({ startTime: NARROW_BUSINESS_START_HOUR })
+		)
 		// Now is hidden, so it falls back to scrollTime, clamped to the first hour.
 		expect(getLastScrollInHours(getScrollTo())).toBe(0)
 
-		rerender(buildCalendar({ startTime: WIDE_START }))
+		rerender(buildCalendar({ startTime: WIDE_BUSINESS_START_HOUR }))
 
 		expect(getScrollTo()).toHaveBeenCalledTimes(2)
-		expect(getLastScrollInHours(getScrollTo())).toBe(NOW_HOUR - WIDE_START)
+		expect(getLastScrollInHours(getScrollTo())).toBe(
+			NOW_HOUR - WIDE_BUSINESS_START_HOUR
+		)
 	})
 
 	test('reapplies scrollTime alone when the hours change', () => {
 		const { rerender } = render(
-			buildCalendar({ startTime: NARROW_START, scrollToNow: false })
+			buildCalendar({
+				startTime: NARROW_BUSINESS_START_HOUR,
+				scrollToNow: false,
+			})
 		)
-		rerender(buildCalendar({ startTime: WIDE_START, scrollToNow: false }))
+		rerender(
+			buildCalendar({ startTime: WIDE_BUSINESS_START_HOUR, scrollToNow: false })
+		)
 
 		expect(getScrollTo()).toHaveBeenCalledTimes(2)
 		expect(getLastScrollInHours(getScrollTo())).toBe(
-			SCROLL_TIME_HOUR - WIDE_START
+			SCROLL_TIME_HOUR - WIDE_BUSINESS_START_HOUR
 		)
 	})
 
@@ -271,24 +281,30 @@ export const testScrollingWhenHoursChange = (
 		'reapplies when the %s hours change',
 		(hoursOn) => {
 			const { rerender } = render(
-				buildCalendar({ startTime: NARROW_START, hoursOn })
+				buildCalendar({ startTime: NARROW_BUSINESS_START_HOUR, hoursOn })
 			)
-			rerender(buildCalendar({ startTime: WIDE_START, hoursOn }))
+			rerender(buildCalendar({ startTime: WIDE_BUSINESS_START_HOUR, hoursOn }))
 
 			expect(getScrollTo()).toHaveBeenCalledTimes(2)
 		}
 	)
 
 	test('leaves the scroll alone when the hours stay equal', () => {
-		const { rerender } = render(buildCalendar({ startTime: WIDE_START }))
-		rerender(buildCalendar({ startTime: WIDE_START }))
+		const { rerender } = render(
+			buildCalendar({ startTime: WIDE_BUSINESS_START_HOUR })
+		)
+		rerender(buildCalendar({ startTime: WIDE_BUSINESS_START_HOUR }))
 
 		expect(getScrollTo()).toHaveBeenCalledTimes(1)
 	})
 
 	test('leaves the scroll alone when a resource is added with equal hours', () => {
-		const { rerender } = render(buildCalendar({ startTime: WIDE_START }))
-		rerender(buildCalendar({ startTime: WIDE_START, resourceCount: 2 }))
+		const { rerender } = render(
+			buildCalendar({ startTime: WIDE_BUSINESS_START_HOUR })
+		)
+		rerender(
+			buildCalendar({ startTime: WIDE_BUSINESS_START_HOUR, resourceCount: 2 })
+		)
 
 		expect(getScrollTo()).toHaveBeenCalledTimes(1)
 	})

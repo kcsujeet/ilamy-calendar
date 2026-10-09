@@ -923,6 +923,16 @@ test.describe('rendered hours change (#320)', () => {
 	const PHONE_VIEWPORT = { width: 393, height: 852 }
 	const CALENDAR_HEIGHT = '500px'
 	const READER_SCROLL_PX = 100
+	// Measured geometry lands on fractional pixels.
+	const ALIGNMENT_TOLERANCE_PX = 1
+	const NARROW_BUSINESS_HOURS = '12-17'
+	const WIDE_BUSINESS_HOURS = '6-17'
+	const FIRST_WIDE_HOUR = '06'
+	// Now is pinned at 09:00 and scrollTime is 07:00, so landing on now and
+	// falling back to scrollTime end up on different hours.
+	const NOW_HOUR = '09'
+	const SCROLL_TIME = '07:00'
+	const SCROLL_TIME_HOUR = '07'
 
 	const readScroll = (viewport: Locator, axis: 'horizontal' | 'vertical') =>
 		viewport.evaluate(
@@ -940,7 +950,7 @@ test.describe('rendered hours change (#320)', () => {
 				)
 		)
 
-	const isAlignedOn = async (
+	const getScrollOutcomeAtHour = async (
 		page: Page,
 		scrollTestId: string,
 		hour: string,
@@ -950,19 +960,21 @@ test.describe('rendered hours change (#320)', () => {
 			page,
 			scrollTestId,
 			`[data-hour="${hour}"]`,
-			'[data-hour="06"]',
+			`[data-hour="${FIRST_WIDE_HOUR}"]`,
 			axis
 		)
-		return { moved: scrolled > 0, aligned: Math.abs(scrolled - expected) < 1 }
+		const misalignment = Math.abs(scrolled - expected)
+		return {
+			moved: scrolled > 0,
+			aligned: misalignment < ALIGNMENT_TOLERANCE_PX,
+		}
 	}
 
 	for (const axis of ['horizontal', 'vertical'] as const) {
 		const scrollTestId = `${axis}-grid-scroll`
 
 		for (const scrollToNow of [true, false]) {
-			// Now is pinned at 09:00 and scrollTime is 07:00, so landing on now and
-			// falling back to scrollTime end up on different hours.
-			const landingHour = scrollToNow ? '09' : '07'
+			const landingHour = scrollToNow ? NOW_HOUR : SCROLL_TIME_HOUR
 
 			test(`${axis} reapplies initial scrolling when the hours widen (scrollToNow=${scrollToNow})`, async ({
 				page,
@@ -974,9 +986,9 @@ test.describe('rendered hours change (#320)', () => {
 					orientation: axis,
 					settings: {
 						scrollToNow: String(scrollToNow),
-						scrollTime: '07:00',
+						scrollTime: SCROLL_TIME,
 						hideNonBusinessHours: 'true',
-						businessHours: '12-17',
+						businessHours: NARROW_BUSINESS_HOURS,
 						height: CALENDAR_HEIGHT,
 					},
 				})
@@ -987,11 +999,13 @@ test.describe('rendered hours change (#320)', () => {
 					el.setAttribute('data-mounted-probe', 'kept')
 				})
 
-				await setSettings(page, { businessHours: '6-17' })
+				await setSettings(page, { businessHours: WIDE_BUSINESS_HOURS })
 
 				await expect(viewport).toHaveAttribute('data-mounted-probe', 'kept')
 				await expect
-					.poll(() => isAlignedOn(page, scrollTestId, landingHour, axis))
+					.poll(() =>
+						getScrollOutcomeAtHour(page, scrollTestId, landingHour, axis)
+					)
 					.toEqual({ moved: true, aligned: true })
 			})
 		}
@@ -1007,14 +1021,14 @@ test.describe('rendered hours change (#320)', () => {
 				settings: {
 					scrollToNow: 'true',
 					hideNonBusinessHours: 'true',
-					businessHours: '6-17',
+					businessHours: WIDE_BUSINESS_HOURS,
 					height: CALENDAR_HEIGHT,
 					resourceCount: 2,
 				},
 			})
 			const viewport = page.locator(scrollViewportSelector(scrollTestId))
 			await expect
-				.poll(() => isAlignedOn(page, scrollTestId, '09', axis))
+				.poll(() => getScrollOutcomeAtHour(page, scrollTestId, NOW_HOUR, axis))
 				.toEqual({ moved: true, aligned: true })
 			await viewport.evaluate(
 				(el, { axis, offset }) => {

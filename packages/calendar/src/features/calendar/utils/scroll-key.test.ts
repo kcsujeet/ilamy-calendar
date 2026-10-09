@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import dayjs from '@ilamy/utils/dayjs'
 import { getScrollKey } from './scroll-key'
 
-const DATE = dayjs('2025-03-12T00:00:00.000Z')
-const buildDateAtHour = (hour: number) => DATE.hour(hour)
+const SCROLL_KEY_TEST_DATE = dayjs('2025-03-12T00:00:00.000Z')
+const buildDateAtHour = (hour: number) => SCROLL_KEY_TEST_DATE.hour(hour)
 const buildHourColumn = (hour: number) => ({ day: buildDateAtHour(hour) })
 const buildGroupedColumn = (...hours: number[]) => ({
 	days: hours.map(buildDateAtHour),
@@ -11,7 +11,7 @@ const buildGroupedColumn = (...hours: number[]) => ({
 
 const getTestScrollKey = (
 	columns: Parameters<typeof getScrollKey>[2],
-	{ view = 'day', date = DATE } = {}
+	{ view = 'day', date = SCROLL_KEY_TEST_DATE } = {}
 ) => getScrollKey(view, date, columns)
 
 describe('getScrollKey', () => {
@@ -50,9 +50,9 @@ describe('getScrollKey', () => {
 
 	test('changes with the date, even when the hours read the same', () => {
 		const columns = [buildHourColumn(9)]
-		expect(getTestScrollKey(columns, { date: DATE.add(1, 'day') })).not.toBe(
-			getTestScrollKey(columns)
-		)
+		expect(
+			getTestScrollKey(columns, { date: SCROLL_KEY_TEST_DATE.add(1, 'day') })
+		).not.toBe(getTestScrollKey(columns))
 	})
 
 	test('treats a column with neither as holding no hours', () => {

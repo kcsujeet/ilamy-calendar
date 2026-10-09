@@ -5,12 +5,13 @@ import { CalendarProvider } from '@/features/calendar/stores/calendar-context/ca
 import {
 	buildScrollWeek,
 	getVisibleHours,
-	NARROW_START,
+	MID_BUSINESS_START_HOUR,
+	NARROW_BUSINESS_START_HOUR,
 	SCROLL_TEST_NOW,
 	ScrollTestProvider,
 	setUpScrollGeometry,
 	testScrollingWhenHoursChange,
-	WIDE_START,
+	WIDE_BUSINESS_START_HOUR,
 } from '@/testing/scroll-test-fixtures'
 import { VerticalGrid } from './vertical-grid'
 
@@ -117,8 +118,7 @@ describe('VerticalGrid', () => {
 
 		testScrollingWhenHoursChange('vertical', getScrollTo)
 
-		// One column per entry, holding the hours it opens at; `null` leaves a
-		// column with no hours at all.
+		// `null` leaves a column with no hours at all.
 		const buildGrid = (startTimes: Array<number | null>) => {
 			const columns = startTimes.map((startTime, index) => {
 				const hours = startTime === null ? [] : getVisibleHours(startTime)
@@ -137,8 +137,12 @@ describe('VerticalGrid', () => {
 		}
 
 		test('reapplies when only a later column changes', () => {
-			const { rerender } = render(buildGrid([NARROW_START, NARROW_START]))
-			rerender(buildGrid([NARROW_START, WIDE_START]))
+			const { rerender } = render(
+				buildGrid([NARROW_BUSINESS_START_HOUR, NARROW_BUSINESS_START_HOUR])
+			)
+			rerender(
+				buildGrid([NARROW_BUSINESS_START_HOUR, WIDE_BUSINESS_START_HOUR])
+			)
 
 			expect(getScrollTo()).toHaveBeenCalledTimes(2)
 		})
@@ -154,8 +158,10 @@ describe('VerticalGrid', () => {
 		// from the whole week's hours (`weekHoursFor`), so Wednesday opening
 		// earlier inside that range leaves every row where it was.
 		test("leaves the scroll alone when a day's hours change inside the week's shared rows", () => {
-			const { rerender } = render(buildScrollWeek('vertical', NARROW_START))
-			rerender(buildScrollWeek('vertical', 9))
+			const { rerender } = render(
+				buildScrollWeek('vertical', NARROW_BUSINESS_START_HOUR)
+			)
+			rerender(buildScrollWeek('vertical', MID_BUSINESS_START_HOUR))
 
 			expect(getScrollTo()).toHaveBeenCalledTimes(1)
 		})

@@ -234,6 +234,7 @@ describe('VerticalGrid', () => {
 		})
 
 		test('without ResizeObserver the insets are still published once', () => {
+			// @ts-expect-error: an environment that predates ResizeObserver
 			globalThis.ResizeObserver = undefined
 			renderVerticalGrid({ allDayRow: <div>All Day</div> })
 

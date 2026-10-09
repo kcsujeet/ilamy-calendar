@@ -1,6 +1,11 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { gotoScenario, setSettings } from './support/harness'
-import { CalendarPage, MonthGrid, TimeGrid } from './support/pages'
+import {
+	CalendarPage,
+	MonthGrid,
+	ResourceAxis,
+	TimeGrid,
+} from './support/pages'
 
 /**
  * Axis 2: what each fixture is actually for. The matrix proves every surface
@@ -915,66 +920,137 @@ const TIMED_CELL = '[data-start]:not([data-all-day="true"])'
 const HOUR_ROW = '[data-hour]'
 
 test.describe('rendered hours change (#320)', () => {
+	const PHONE_VIEWPORT = { width: 393, height: 852 }
+	const CALENDAR_HEIGHT = '500px'
+	const READER_SCROLL_PX = 100
+	// Measured geometry lands on fractional pixels.
+	const ALIGNMENT_TOLERANCE_PX = 1
+	const NARROW_BUSINESS_HOURS = '12-17'
+	const WIDE_BUSINESS_HOURS = '6-17'
+	const FIRST_WIDE_HOUR = '06'
+	// Now is pinned at 09:00 and scrollTime is 07:00, so landing on now and
+	// falling back to scrollTime end up on different hours.
+	const NOW_HOUR = '09'
+	const SCROLL_TIME = '07:00'
+	const SCROLL_TIME_HOUR = '07'
+
+	const readScroll = (viewport: Locator, axis: 'horizontal' | 'vertical') =>
+		viewport.evaluate(
+			(el, axis) => (axis === 'horizontal' ? el.scrollLeft : el.scrollTop),
+			axis
+		)
+
+	// The scroll is applied in an effect after React commits; two animation
+	// frames let any pending one land before a "nothing moved" read.
+	const waitForEffects = (page: Page) =>
+		page.evaluate(
+			() =>
+				new Promise<void>((resolve) =>
+					requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+				)
+		)
+
+	const getScrollOutcomeAtHour = async (
+		page: Page,
+		scrollTestId: string,
+		hour: string,
+		axis: 'horizontal' | 'vertical'
+	) => {
+		const { scrolled, expected } = await scrollAlignment(
+			page,
+			scrollTestId,
+			`[data-hour="${hour}"]`,
+			`[data-hour="${FIRST_WIDE_HOUR}"]`,
+			axis
+		)
+		const misalignment = Math.abs(scrolled - expected)
+		return {
+			moved: scrolled > 0,
+			aligned: misalignment < ALIGNMENT_TOLERANCE_PX,
+		}
+	}
+
 	for (const axis of ['horizontal', 'vertical'] as const) {
-		for (const scrollToNow of ['true', 'false']) {
-			test(`${axis} reapplies initial scrolling when hours change (scrollToNow=${scrollToNow})`, async ({
+		const scrollTestId = `${axis}-grid-scroll`
+
+		for (const scrollToNow of [true, false]) {
+			const landingHour = scrollToNow ? NOW_HOUR : SCROLL_TIME_HOUR
+
+			test(`${axis} reapplies initial scrolling when the hours widen (scrollToNow=${scrollToNow})`, async ({
 				page,
 			}) => {
-				await page.setViewportSize({ width: 393, height: 852 })
+				await page.setViewportSize(PHONE_VIEWPORT)
 				await gotoScenario(page, {
 					scenario: 'resources',
 					view: 'day',
 					orientation: axis,
 					settings: {
-						scrollToNow,
-						scrollTime: '09:00',
+						scrollToNow: String(scrollToNow),
+						scrollTime: SCROLL_TIME,
 						hideNonBusinessHours: 'true',
-						businessHours: '12-17',
-						height: '500px',
+						businessHours: NARROW_BUSINESS_HOURS,
+						height: CALENDAR_HEIGHT,
 					},
 				})
-				const scrollTestId = `${axis}-grid-scroll`
 				const viewport = page.locator(scrollViewportSelector(scrollTestId))
+				// Proves the hours change re-renders the mounted grid rather than
+				// remounting it, which would scroll for an unrelated reason.
 				await viewport.evaluate((el) => {
 					el.setAttribute('data-mounted-probe', 'kept')
 				})
-				await setSettings(page, { businessHours: '6-17' })
+
+				await setSettings(page, { businessHours: WIDE_BUSINESS_HOURS })
+
 				await expect(viewport).toHaveAttribute('data-mounted-probe', 'kept')
 				await expect
-					.poll(async () => {
-						const { scrolled, expected } = await scrollAlignment(
-							page,
-							scrollTestId,
-							'[data-hour="09"]',
-							'[data-hour="06"]',
-							axis
-						)
-						return {
-							moved: scrolled > 0,
-							aligned: Math.abs(scrolled - expected) < 1,
-						}
-					})
-					.toEqual({ moved: true, aligned: true })
-				const manualScroll = await viewport.evaluate((el, axis) => {
-					if (axis === 'horizontal') {
-						el.scrollLeft = 100
-						return el.scrollLeft
-					}
-					el.scrollTop = 100
-					return el.scrollTop
-				}, axis)
-				await setSettings(page, { dayMaxEvents: 2 })
-				await expect
 					.poll(() =>
-						viewport.evaluate(
-							(el, axis) =>
-								axis === 'horizontal' ? el.scrollLeft : el.scrollTop,
-							axis
-						)
+						getScrollOutcomeAtHour(page, scrollTestId, landingHour, axis)
 					)
-					.toBe(manualScroll)
+					.toEqual({ moved: true, aligned: true })
 			})
 		}
+
+		test(`${axis} leaves a reader's scroll alone on a re-render and when a resource is added`, async ({
+			page,
+		}) => {
+			await page.setViewportSize(PHONE_VIEWPORT)
+			await gotoScenario(page, {
+				scenario: 'resources',
+				view: 'day',
+				orientation: axis,
+				settings: {
+					scrollToNow: 'true',
+					hideNonBusinessHours: 'true',
+					businessHours: WIDE_BUSINESS_HOURS,
+					height: CALENDAR_HEIGHT,
+					resourceCount: 2,
+				},
+			})
+			const viewport = page.locator(scrollViewportSelector(scrollTestId))
+			await expect
+				.poll(() => getScrollOutcomeAtHour(page, scrollTestId, NOW_HOUR, axis))
+				.toEqual({ moved: true, aligned: true })
+			await viewport.evaluate(
+				(el, { axis, offset }) => {
+					if (axis === 'horizontal') {
+						el.scrollLeft = offset
+						return
+					}
+					el.scrollTop = offset
+				},
+				{ axis, offset: READER_SCROLL_PX }
+			)
+
+			await setSettings(page, { timeFormat: '24-hour' })
+			await expect(page.locator('[data-hour="13"]').first()).toContainText('13')
+			await waitForEffects(page)
+			expect(await readScroll(viewport, axis)).toBe(READER_SCROLL_PX)
+
+			await setSettings(page, { resourceCount: 3 })
+			await expect(new ResourceAxis(page).resource('Room C')).toBeVisible()
+			await waitForEffects(page)
+			expect(await readScroll(viewport, axis)).toBe(READER_SCROLL_PX)
+		})
 	}
 })
 

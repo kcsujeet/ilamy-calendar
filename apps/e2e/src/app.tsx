@@ -112,11 +112,11 @@ export const App = () => {
 
 	// The URL wins over the scenario's own settings, so a fixture can be pushed
 	// into a configuration it was not written for without editing it.
-	const { height, renderEventVariant, ...calendarConfig } = {
+	const { height, renderEventVariant, resourceCount, ...calendarConfig } = {
 		...scenario.config,
 		...urlConfig,
 	}
-	const resources = scenario.resources ? [...scenario.resources] : undefined
+	const resources = scenario.resources?.slice(0, resourceCount)
 
 	return (
 		<Harness

@@ -42,6 +42,11 @@ export interface UrlConfig {
 	 * view, so the custom properties it reads are pinned as public contract.
 	 */
 	renderEventVariant?: 'sticky-title'
+	/**
+	 * Harness-only: keep the scenario's first N resources. Changed on a mounted
+	 * calendar, it adds or removes a resource the way a consumer's filter does.
+	 */
+	resourceCount?: number
 }
 
 /** Raised for a value the URL got wrong, so the harness can show it rather than guess. */
@@ -229,6 +234,11 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const height = get('height')
 	if (height !== null) {
 		config.height = height
+	}
+
+	const resourceCount = get('resourceCount')
+	if (resourceCount !== null) {
+		config.resourceCount = positiveInt('resourceCount', resourceCount)
 	}
 
 	const renderEventVariant = get('renderEventVariant')

@@ -422,7 +422,7 @@ describe('CalendarProvider - recurring event integration', () => {
 	})
 
 	it('should call onEventUpdate for time/date changes in recurring events', () => {
-		const onEventUpdate = mock(() => {})
+		const onEventUpdate = mock((_event: CalendarEvent) => {})
 		const onEventAdd = mock(() => {})
 
 		const recurringEvent: CalendarEvent = {
@@ -476,16 +476,16 @@ describe('CalendarProvider - recurring event integration', () => {
 			plugins: [recurrencePlugin()],
 		})
 
-		// Scope "all": onEventUpdate with base id and anchored times
+		// Scope "all": onEventUpdate with base id and anchored times. Compared by
+		// instant: the series start is rebuilt from its clock time (correct across
+		// a clock change), and a Dayjs's internals differ with how it was built
+		// even when it names the same moment.
 		getByTestId('update-time').click()
 		expect(onEventUpdate).toHaveBeenCalledTimes(1)
-		expect(onEventUpdate).toHaveBeenCalledWith(
-			expect.objectContaining({
-				id: 'team-meeting',
-				start: dayjs('2025-01-06T10:00:00.000Z'),
-				end: dayjs('2025-01-06T11:00:00.000Z'),
-			})
-		)
+		const updated = onEventUpdate.mock.calls.at(0)?.at(0)
+		expect(updated?.id).toBe('team-meeting')
+		expect(updated?.start.toISOString()).toBe('2025-01-06T10:00:00.000Z')
+		expect(updated?.end.toISOString()).toBe('2025-01-06T11:00:00.000Z')
 		expect(onEventAdd).not.toHaveBeenCalled()
 	})
 

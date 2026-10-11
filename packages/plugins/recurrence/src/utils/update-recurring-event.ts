@@ -15,10 +15,18 @@ import {
 /**
  * Keeps the calendar day from `target` while applying the time-of-day from `source`.
  * Used to edit recurring series anchors without shifting the series to an instance day.
+ *
+ * The time of day is the CLOCK time, not the time elapsed since midnight: on a
+ * clock-change day 09:30 is 8.5 or 10.5 hours after midnight, which moved the
+ * series an hour (the grid reads clock time too since #311).
  */
 const withTimeOfDay = (target: Dayjs, source: Dayjs): Dayjs => {
-	const timeOfDayMs = source.diff(source.startOf('day'), 'millisecond')
-	return target.startOf('day').add(timeOfDayMs, 'millisecond')
+	const targetDay = target.format('YYYY-MM-DD')
+	const sourceTime = source.format('HH:mm:ss.SSS')
+	// Offset-less, so it is read in the calendar's zone with the offset in
+	// force at that clock time.
+	const wallClock = `${targetDay}T${sourceTime}`
+	return dayjs(wallClock)
 }
 
 /**

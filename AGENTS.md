@@ -471,6 +471,18 @@ The plugin is Claude Code only. Gemini CLI and Antigravity load no review skill 
 reviewing, walk the `## Gate checklist` in `.agents/review-conventions.md` and the rules
 it points to.
 
+## Releases
+
+Cut a release with the `release-new-version` skill (`.agents/skills/release-new-version/`,
+or `/release-new-version`), never by hand. It covers the steps that are easy to skip:
+the semver table, the changelog with its contributor-credit sweep, the lightweight tag,
+the GitHub release, the npm publish hand-off and registry check, the website update and
+deploy, and the "Fixed in" comments on closed issues. Where it conflicts with the Hard
+Rules, the Hard Rules win: the release commit goes through a PR, not straight to `main`.
+
+Other repo workflows also live in `.agents/skills/` (refactor review, bundle size,
+React checks). Check there before improvising one.
+
 ## Git Workflow
 
 1. Create a feature branch

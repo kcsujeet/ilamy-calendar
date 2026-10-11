@@ -169,7 +169,9 @@ Four rules, each learned from a test that lied:
    caches an `Intl.DateTimeFormat` per zone, so mutating `process.env.TZ`
    mid-run is ignored once that formatter exists — the first zone used wins for
    the rest of the process. A helper that appears to prove machine-independence
-   this way proves nothing.
+   this way proves nothing. To test on another machine zone, start a child
+   process with `TZ` set (`runOnMachineIn` in `packages/utils/src/dayjs.test.ts`);
+   in the browser, set Playwright's `timezoneId` (`test.use`).
 
 Note that happy-dom makes `Intl` resolve to `UTC` (`process.env.TZ` is unset),
 so tests run at offset zero unless a developer exports `TZ`. At offset zero a
@@ -177,6 +179,52 @@ wall-clock misreading is a no-op, which is exactly why this class of bug hides.
 Running the suite with an exported non-UTC `TZ` fails tests that hard-code
 UTC-shaped display, e.g. a `09:00Z` event asserted at the 9am row: an IST viewer
 correctly sees that at 14:30.
+
+## The machine's zone still leaks through dayjs (Temporal migration required)
+
+The rule above says the machine's zone decides nothing once a `timezone` prop
+is set. dayjs does not fully keep that promise, and the next major version
+**must** move date math to Temporal to fix it.
+
+dayjs keeps a date in another zone as a local `Date` shifted by that zone's
+offset, and reads its hours through the machine's zone (`proto.utcOffset` in
+`dayjs/plugin/utc`, `proto.tz` in `dayjs/plugin/timezone`, v1.11.23). When the
+shifted time falls in the machine's own clock change, the reading is an hour
+off. Measured on dayjs 1.11.23 in Chrome, Firefox, Safari and Bun, all correct
+with the machine in UTC:
+
+- With a Havana calendar on a Vancouver machine, `06:30Z` (02:30 in Havana)
+  reads 03:30 (dayjs#2304).
+- With a New York calendar on a Vancouver machine, `startOf('day')` on 9 March
+  2025 returned 23:00 the day before, and the week view skipped the week of
+  9 March (dayjs#1437).
+
+`startOf`/`endOf` are patched in `packages/utils/src/dayjs.ts`: the clock is
+rounded in UTC, so the week view and day boundaries no longer depend on the
+machine. That is a symptom fix. Other readings can still be an hour wrong, for
+roughly one hour a year, when the calendar's zone and the machine's change
+their clocks at different times.
+
+Each patch here covers one symptom of the same design, so the fix is not more
+patches. FullCalendar keeps clock times in UTC "date markers" and converts at
+the edges through the zone database, with Temporal since v7
+(`packages/headless-calendar/src/marker.ts` and `env.ts`, v7.1.1). Moving to
+Temporal changes the public `dayjs` export of the plugin SDK, so it needs a
+major version.
+
+The migration's acceptance check: for calendar zones with awkward rules
+(clocks changing at midnight, by half an hour, in the southern hemisphere, and
+offsets that are not whole hours), around every clock change of a year, every
+day, week, month and hour boundary and every clock reading must match a
+reference built on `Intl` alone, on several machine zones (child processes with
+`TZ` set). Where a clock reading occurs twice, Temporal decides: a day starts
+at its first midnight (`ZonedDateTime#startOfDay()`), ends just before the next
+day starts, and an hour rounds within its own offset
+(`round({ roundingMode: 'floor' })`). Measured on dayjs 1.11.23 across 14
+such zones: `main` gave 38 wrong results on a UTC machine, 92 on Vancouver and
+54 on London; with this patch 13 remain on every machine (zones whose clocks
+change at midnight, where dayjs picks the wrong one of a repeated midnight),
+plus up to 27 more depending on the machine (Havana, London, Beirut, New York).
 
 ## Key files
 

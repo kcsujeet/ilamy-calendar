@@ -59,9 +59,58 @@ const fixTimezoneOffset: PluginFunc = (_option, dayjsClass, dayjsFactory) => {
 		return result
 	}
 
+	/**
+	 * Upstream reads the clock in the MACHINE's zone and moves it into `tz` with
+	 * `keepLocalTime`, which takes the offset at the wrong instant when both
+	 * zones change their clocks near the same date: on a Vancouver machine, New
+	 * York's 9 March started an hour early and 2 November two hours late, and the
+	 * week view skipped the week of 9 March (dayjs#1437). Here the clock is
+	 * rounded in UTC, which has no clock changes.
+	 *
+	 * The rounded reading is reached by moving the instant back by the clock
+	 * time rounded off, which keeps a reading in the repeated autumn hour in
+	 * that hour. Only when a clock change lies in between (the start of a
+	 * change day) does that land on another reading; `dayjs.tz` then anchors
+	 * the reading with the offset in force at it.
+	 *
+	 * TODO(next major): this is a symptom fix. dayjs keeps a zoned date as a
+	 * local `Date` shifted by the offset and reads it through the machine's zone
+	 * (dayjs#2304), so other operations can still read an hour wrong when the
+	 * machine's own clocks change. Migrating to Temporal is required; see
+	 * docs/timezones.md, "The machine's zone still leaks through dayjs".
+	 */
+	function startOfInZone(
+		instance: dayjs.Dayjs,
+		tz: string,
+		unit: DayjsOpUnitType,
+		_startOf?: boolean
+	): dayjs.Dayjs {
+		const locale = instance.locale()
+		const readingFormat = 'YYYY-MM-DDTHH:mm:ss.SSS'
+		const clockReading = instance.format(readingFormat)
+		// Same locale, so a week starts on the locale's first day.
+		const clockInUtc = dayjsFactory.utc(clockReading).locale(locale)
+		const roundedClock = originalStartOf.call(clockInUtc, unit, _startOf)
+		const roundedReading = roundedClock.format(readingFormat)
+
+		const roundedOffMs = clockInUtc.diff(roundedClock)
+		const movedInstant = dayjsFactory(instance.valueOf() - roundedOffMs)
+		const movedInZone = movedInstant.tz(tz).locale(locale)
+		const isRoundedReading =
+			movedInZone.format(readingFormat) === roundedReading
+		if (isRoundedReading) {
+			return movedInZone
+		}
+		return dayjsFactory.tz(roundedReading, tz).locale(locale)
+	}
+
 	// dayjs's endOf calls startOf(unit, false) internally — the second arg
 	// (_startOf) controls start-vs-end behavior. We must forward it.
 	proto.startOf = function (unit: DayjsOpUnitType, _startOf?: boolean) {
+		const tz = (this as DayjsInternal).$x?.$timezone
+		if (tz) {
+			return startOfInZone(this, tz, unit, _startOf)
+		}
 		const result = originalStartOf.call(this, unit, _startOf)
 		return restoreTimezone(this, result)
 	}

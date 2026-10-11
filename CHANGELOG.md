@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v3.2.1](https://github.com/kcsujeet/ilamy-calendar/compare/v3.2.0...v3.2.1)
+
+> 11 October 2026
+
+##### Fixes
+
+- fix: with a `timezone` different from the computer's, day and week boundaries no longer shift when both zones change their clocks near the same date. With a New York calendar on a Vancouver computer, the week view skipped the week of 9 March 2025 and 2 November's day view started two hours late ([`#328`](https://github.com/kcsujeet/ilamy-calendar/pull/328))
+- fix: editing "All events" from an occurrence on a daylight-saving change day no longer moves the whole series an hour ([`#327`](https://github.com/kcsujeet/ilamy-calendar/pull/327))
+- fix: all-day events show in the vertical resource month view and the vertical resource week view at daily granularity, and dragging an all-day event in a month or day-grid cell keeps it all-day ([`#323`](https://github.com/kcsujeet/ilamy-calendar/pull/323)) — Closes [`#322`](https://github.com/kcsujeet/ilamy-calendar/issues/322)
+- fix: `scrollToNow` and `scrollTime` reapply when the rendered hours change, e.g. when business hours widen to include now; adding a resource with the same hours no longer resets the scroll ([`#321`](https://github.com/kcsujeet/ilamy-calendar/pull/321), [`#324`](https://github.com/kcsujeet/ilamy-calendar/pull/324)) — Closes [`#320`](https://github.com/kcsujeet/ilamy-calendar/issues/320) — Thanks [@troioi-vn](https://github.com/troioi-vn)!
+
+##### Docs
+
+- docs: `BusinessHours` without `daysOfWeek` applies to every day, weekends included; the type's comment had said Monday to Friday ([`#325`](https://github.com/kcsujeet/ilamy-calendar/pull/325))
+- docs: known limitation: with a `timezone` set, a date can still read an hour off for about an hour a year on a computer whose own clocks change at a different time; a move to Temporal is planned for the next major ([`#328`](https://github.com/kcsujeet/ilamy-calendar/pull/328), [`#329`](https://github.com/kcsujeet/ilamy-calendar/pull/329))
+
 #### [v3.2.0](https://github.com/kcsujeet/ilamy-calendar/compare/v3.1.0...v3.2.0)
 
 > 3 October 2026

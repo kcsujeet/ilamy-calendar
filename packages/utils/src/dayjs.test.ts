@@ -196,3 +196,102 @@ describe('comparators answer by instant', () => {
 		expect(instance.isSame(instance.valueOf())).toBe(true)
 	})
 })
+
+/**
+ * Upstream `startOf` re-reads the clock time in the MACHINE's zone, then moves
+ * it into the calendar's zone with `keepLocalTime`, taking the offset at the
+ * wrong instant when both zones change their clocks near the same date. With
+ * the machine in Vancouver and the calendar in New York, 9 March 2025 started
+ * an hour early and 2 November two hours late, so the week view skipped a week.
+ *
+ * The machine's zone is fixed per process (see the note at the top), so each
+ * case runs in a child process started with `TZ` set.
+ */
+/** What `script` prints when run on a machine in `machineZone`. */
+const runOnMachineIn = (machineZone: string, script: string): string => {
+	const child = Bun.spawnSync(['bun', '-e', script], {
+		env: { ...process.env, TZ: machineZone },
+	})
+	return child.stdout.toString().trim()
+}
+
+describe('startOf on a calendar zone clock-change day', () => {
+	const DAYJS_MODULE = `${import.meta.dir}/dayjs.ts`
+
+	/** `expression` evaluated on a machine in `machineZone`, calendar in New York. */
+	const evaluateOnMachineIn = (machineZone: string, expression: string) =>
+		runOnMachineIn(
+			machineZone,
+			`
+			import dayjs from '${DAYJS_MODULE}'
+			dayjs.tz.setDefault('America/New_York')
+			console.log((${expression}).toISOString())
+		`
+		)
+
+	const MACHINE_ZONES = ['UTC', 'America/Vancouver']
+
+	it.each(MACHINE_ZONES)(
+		'starts the spring change day at midnight EST (machine %s)',
+		(machineZone) => {
+			const dayStart = evaluateOnMachineIn(
+				machineZone,
+				"dayjs('2025-03-09T16:00:00.000Z').startOf('day')"
+			)
+			expect(dayStart).toBe('2025-03-09T05:00:00.000Z')
+		}
+	)
+
+	it.each(MACHINE_ZONES)(
+		'starts the week of the spring change on Sunday 9 March (machine %s)',
+		(machineZone) => {
+			const weekStart = evaluateOnMachineIn(
+				machineZone,
+				"dayjs('2025-03-12T09:00:00.000Z').startOf('week')"
+			)
+			expect(weekStart).toBe('2025-03-09T05:00:00.000Z')
+		}
+	)
+
+	it.each(MACHINE_ZONES)(
+		'starts the autumn change day at midnight EDT (machine %s)',
+		(machineZone) => {
+			const dayStart = evaluateOnMachineIn(
+				machineZone,
+				"dayjs('2025-11-02T17:00:00.000Z').startOf('day')"
+			)
+			expect(dayStart).toBe('2025-11-02T04:00:00.000Z')
+		}
+	)
+
+	// 06:30Z is 01:30 EST, in the hour the autumn change repeats. Rounding
+	// stays in that second 01:00-02:00, not the first one, an hour earlier.
+	it.each(MACHINE_ZONES)(
+		'rounds within the repeated autumn hour (machine %s)',
+		(machineZone) => {
+			const hourStart = evaluateOnMachineIn(
+				machineZone,
+				"dayjs('2025-11-02T06:30:00.000Z').startOf('hour')"
+			)
+			const minuteStart = evaluateOnMachineIn(
+				machineZone,
+				"dayjs('2025-11-02T06:30:00.000Z').startOf('minute')"
+			)
+			expect([hourStart, minuteStart]).toEqual([
+				'2025-11-02T06:00:00.000Z',
+				'2025-11-02T06:30:00.000Z',
+			])
+		}
+	)
+
+	it.each(MACHINE_ZONES)(
+		'ends the autumn change day at 23:59:59.999 EST (machine %s)',
+		(machineZone) => {
+			const dayEnd = evaluateOnMachineIn(
+				machineZone,
+				"dayjs('2025-11-02T17:00:00.000Z').endOf('day')"
+			)
+			expect(dayEnd).toBe('2025-11-03T04:59:59.999Z')
+		}
+	)
+})

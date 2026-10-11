@@ -588,6 +588,70 @@ test.describe('a day the clocks change', () => {
 	}
 })
 
+/*
+ * The suite pins the browser to UTC, which hid this. dayjs's `startOf` read the
+ * clock in the MACHINE's zone, so on a Vancouver machine New York's change days
+ * started an hour early (spring) or two late (autumn). The week of 9 March then
+ * snapped back to 2 March, and no navigation could reach it.
+ */
+test.describe('a machine whose own clocks change', () => {
+	test.use({ timezoneId: 'America/Vancouver' })
+
+	/** The week header's text: "Week 11 Sun 9 Mon 10 ...". */
+	const readWeekHeader = async (page: Page) => {
+		await page.evaluate(() =>
+			Promise.all(
+				document.getAnimations().map((animation) => animation.finished)
+			)
+		)
+		const header = await page.getByTestId('week-view-header').innerText()
+		return header.replace(/\s+/g, ' ').trim()
+	}
+
+	test('shows the week of the spring change', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'recurring-dst',
+			view: 'week',
+			plugins: ['recurrence'],
+			timezone: 'America/New_York',
+		})
+		const grid = new TimeGrid(page)
+
+		expect(await readWeekHeader(page)).toBe(
+			'Week 11 Sun 9 Mon 10 Tue 11 Wed 12 Thu 13 Fri 14 Sat 15'
+		)
+		// The daily series, the change day's occurrence included.
+		await expect(grid.event('Morning check-in')).toHaveCount(7)
+
+		// Back a week and forward again lands on the same week, not past it.
+		await grid.previous()
+		await grid.next()
+		expect(await readWeekHeader(page)).toBe(
+			'Week 11 Sun 9 Mon 10 Tue 11 Wed 12 Thu 13 Fri 14 Sat 15'
+		)
+	})
+
+	// Autumn's start of day came back at 01:00 EDT, so the day view's first
+	// row, labelled 12 AM, opened an hour late and midnight had no row.
+	test('starts the autumn change day at midnight', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'recurring-dst',
+			view: 'day',
+			plugins: ['recurrence'],
+			timezone: 'America/New_York',
+			date: '2025-11-02T14:00:00.000Z',
+		})
+		const grid = new TimeGrid(page)
+
+		const firstSlotStart = await grid
+			.slotAt('2025-11-0')
+			.first()
+			.getAttribute('data-start')
+		// Midnight EDT.
+		expect(firstSlotStart).toBe('2025-11-02T04:00:00.000Z')
+	})
+})
+
 test.describe('navigation', () => {
 	test('today returns to the pinned day from anywhere', async ({ page }) => {
 		await gotoScenario(page, { scenario: 'basic', view: 'month' })

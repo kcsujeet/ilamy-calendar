@@ -57,6 +57,17 @@ These are non-negotiable. Violating any of these is a bug.
     written (code comments, docs, the dev log).
 - ALWAYS hunt the repercussions of a change before claiming it is done. Name the meaning you are changing, sweep for everything that depends on it (duplicated predicates in plugins, siblings in the same function, compensating hacks, tests and docs pinning the old contract), and prove the fix by reverting it and watching a test fail. Passing tests only prove that nothing *covered* broke. See `.agents/rules/change-impact.md`.
 - ALWAYS match the established standard, never invent your own semantics. This library is RFC 5545 compliant, and where the RFC is silent its behavior must match FullCalendar and Google Calendar. A deviation is a bug even when it is self-consistent and even when the tests pass. Before choosing behavior for anything a calendar already has a convention for (event boundaries, recurrence and overrides, all-day handling, drag/drop across a resource axis, scheduling semantics), look it up and cite it: the RFC section, the FullCalendar docs or source, or Google Calendar's documented behavior. Two deviations already shipped and had to be undone — an inclusive `end` (the RFC's DTEND is exclusive, #248), and a recurrence override emitted from two places at once. If the standard genuinely does not cover the case, say so explicitly and justify the choice; do not quietly pick one.
+- ALWAYS read all the docs in `docs/` (every `.md` file; `docs/logs/` is covered
+  under Session Start) before changing code. They hold contracts and known gaps
+  the code does not show, and they are what stops a fix from contradicting an
+  earlier decision. In particular, `docs/timezones.md` records a known gap that
+  matters on any date or time work: dayjs still reads zoned dates through the
+  machine's zone, so a bug can appear only on a machine whose own clocks
+  change. The decided fix is a Temporal migration (with `temporal-polyfill`)
+  in the next major, and it is required. Until then, do not pile more patches
+  onto `packages/utils/src/dayjs.ts` without raising it with the user first,
+  and reproduce date bugs with the machine zone set (Playwright `timezoneId`,
+  or a child process with `TZ`), not only in UTC.
 - NEVER use npm/node/pnpm as the package manager or runtime. Always use `bun` (invoke tools via `bunx`, e.g. the demo dev server runs `bunx vite`).
 - ALWAYS use the latest published version when adding a dependency. Check `npm view <pkg> version` for the true latest — never copy version numbers from existing in-repo examples or from memory. Verify peer/engine compatibility and confirm the new major has no breaking changes for the APIs used (per the docs-first rule).
 - NEVER use `YYYY-MM-DD` format for storage/transmission. Always use ISO strings.
@@ -355,7 +366,7 @@ Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringE
 - Storage/transmission: `dayjs().toISOString()` — always ISO strings
 - Display only: `YYYY-MM-DD` format is acceptable in UI
 - Tests: use `'2025-10-13T00:00:00.000Z'` or `dayjs().toISOString()`, never `'2025-10-13'`
-- Timezones: with a `timezone` prop the machine's zone decides nothing; without one everything falls back to it. A string carrying `Z`/`±HH:MM` keeps its instant, a string carrying no offset is anchored in the configured zone, and the zone must be applied DURING render (an effect is too late). Read `docs/timezones.md` before touching anything that parses a date or calls `dayjs.tz.setDefault`.
+- Timezones: with a `timezone` prop the machine's zone decides nothing; without one everything falls back to it. A string carrying `Z`/`±HH:MM` keeps its instant, a string carrying no offset is anchored in the configured zone, and the zone must be applied DURING render (an effect is too late). Read `docs/timezones.md` before touching anything that parses a date or calls `dayjs.tz.setDefault` (see the Hard Rules: the machine's zone still leaks through dayjs until the Temporal migration).
 
 ### Code Quality
 

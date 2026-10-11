@@ -443,6 +443,45 @@ test.describe('recurring events', () => {
 		)
 		expect(await readTops('dst-series')).toEqual(nineOClockTops)
 	})
+
+	// 9 March 2025 is 23 hours long in New York, so 09:30 that day is 8.5 hours
+	// after midnight. Editing "all events" from it applied those 8.5 hours to
+	// the series' first day and moved the series to 08:30. It takes the clock time.
+	test('editing "all events" from the change day keeps the clock time', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'recurring-dst',
+			view: 'week',
+			plugins: ['recurrence'],
+			timezone: 'America/New_York',
+		})
+		const grid = new TimeGrid(page)
+		await expect(grid.event('Morning check-in')).toHaveCount(7)
+
+		/** Picks `time` in the form's time picker named `name`. */
+		const pickTime = async (name: string, time: string) => {
+			await page.getByTestId(`time-picker-${name}`).click()
+			await page.getByPlaceholder('Search time...').fill(time)
+			await page.getByRole('button', { name: time, exact: true }).click()
+			// The popover closes before the next picker opens its own search box.
+			await expect(page.getByPlaceholder('Search time...')).toHaveCount(0)
+		}
+
+		// The week starts on Sunday 9 March, the change day.
+		await grid.event('Morning check-in').first().click()
+		await pickTime('start-time', '9:30 AM')
+		await pickTime('end-time', '10:00 AM')
+		await page.getByRole('button', { name: 'Update' }).click()
+		await page.getByText('All events', { exact: true }).click()
+
+		// 09:30 EST on the series' first day, 6 March.
+		await expect
+			.poll(async () => (await grid.eventNamed('Morning check-in')).start)
+			.toBe('2025-03-06T14:30:00.000Z')
+		const series = await grid.eventNamed('Morning check-in')
+		expect(series.end).toBe('2025-03-06T15:00:00.000Z')
+	})
 })
 
 /*

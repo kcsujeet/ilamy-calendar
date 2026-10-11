@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test'
+import { afterEach, describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
@@ -229,6 +229,76 @@ describe('recurring mutations', () => {
 			expect(events.some((e) => e.id === 'series-edit-all_override')).toBe(
 				false
 			)
+		})
+
+		// 9 March 2025 is 23 hours long in New York: 09:30 that day is 8.5 hours
+		// after midnight, 9.5 on any other day. Scope "all" keeps the series day
+		// and takes the edited CLOCK time, as the grid does since #311.
+		describe('across a clock-change day', () => {
+			afterEach(() => {
+				dayjs.tz.setDefault()
+			})
+
+			const at = (iso: string) => dayjs(iso)
+
+			const editAll = (
+				seriesStartISO: string,
+				occurrenceStartISO: string,
+				editedStartISO: string
+			) => {
+				dayjs.tz.setDefault('America/New_York')
+				const seriesStart = at(seriesStartISO)
+				const baseEvent = createBaseRecurringEvent({
+					id: 'change-day-series',
+					start: seriesStart,
+					end: seriesStart.add(30, 'minute'),
+					rrule: { freq: RRule.DAILY, dtstart: seriesStart.toDate() },
+				})
+				const occurrenceStart = at(occurrenceStartISO)
+				const occurrence: CalendarEvent = {
+					...baseEvent,
+					id: 'change-day-series_1',
+					uid: 'change-day-series@ilamy.calendar',
+					start: occurrenceStart,
+					end: occurrenceStart.add(30, 'minute'),
+					rrule: undefined,
+				}
+				const editedStart = at(editedStartISO)
+				const { events } = updateRecurringEvent({
+					targetEvent: occurrence,
+					updates: { start: editedStart, end: editedStart.add(30, 'minute') },
+					currentEvents: [baseEvent],
+					scope: 'all',
+				})
+				const series = events.find((event) => event.id === 'change-day-series')
+				return [series?.start.toISOString(), series?.end.toISOString()]
+			}
+
+			it('takes the clock time of an occurrence on the change day', () => {
+				// 09:00 EST series; the 9 March occurrence moved to 09:30 EDT.
+				const series = editAll(
+					'2025-03-07T14:00:00.000Z',
+					'2025-03-09T13:00:00.000Z',
+					'2025-03-09T13:30:00.000Z'
+				)
+				expect(series).toEqual([
+					'2025-03-07T14:30:00.000Z',
+					'2025-03-07T15:00:00.000Z',
+				])
+			})
+
+			it('applies the clock time to a series starting on the change day', () => {
+				// 09:00 EDT series from 9 March; the 12 March occurrence moved to 09:30.
+				const series = editAll(
+					'2025-03-09T13:00:00.000Z',
+					'2025-03-12T13:00:00.000Z',
+					'2025-03-12T13:30:00.000Z'
+				)
+				expect(series).toEqual([
+					'2025-03-09T13:30:00.000Z',
+					'2025-03-09T14:00:00.000Z',
+				])
+			})
 		})
 	})
 

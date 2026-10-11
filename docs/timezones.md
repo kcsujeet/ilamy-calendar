@@ -212,6 +212,19 @@ the edges through the zone database, with Temporal since v7
 Temporal changes the public `dayjs` export of the plugin SDK, so it needs a
 major version.
 
+Temporal needs a polyfill. Native support covers 70.18% of users
+([caniuse](https://caniuse.com/temporal), checked 2026-10-10): Chrome and Edge
+144+, Firefox 139+, but Safari only in Technology Preview and neither iOS
+Safari nor Samsung Internet. The plan is to do what FullCalendar v7 does:
+depend on `temporal-polyfill` (MIT, by FullCalendar's author; v7.1.1 pins
+`^1.0.1`) and import its function API (`temporal-polyfill/fns/ZonedDateTime`,
+`.../PlainDateTime`, `.../Instant`), which leaves the global `Temporal` alone
+and tree-shakes. Every browser then runs the same code, and consumers install
+nothing extra. The polyfill does not defer to native Temporal by itself; its
+README offers a codemod to move to `Temporal.*` once Safari ships it. Its
+README claims "Less than 20 kB"; measure what it adds to our bundle before
+committing to it.
+
 The migration's acceptance check: for calendar zones with awkward rules
 (clocks changing at midnight, by half an hour, in the southern hemisphere, and
 offsets that are not whole hours), around every clock change of a year, every

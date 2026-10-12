@@ -51,7 +51,8 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	dayNumberHeight = DAY_NUMBER_HEIGHT,
 	allDay,
 }) => {
-	const { eventHeight, eventSpacing, resources } = useSmartCalendarContext()
+	const { eventHeight, eventSpacing, resources, nowIndicator } =
+		useSmartCalendarContext()
 	const dragPreview = useDragPreview()
 	const weekStart = days.at(0)?.startOf('day')
 	// Stacked resource rows share one continuous now-line; only the first resource
@@ -66,7 +67,9 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	// meaningless 1px sliver.
 	const rangeStart = days.at(0)
 	const rangeEnd = days.at(-1)?.add(1, gridType)
-	const showNowLine = gridType === 'hour' && Boolean(rangeStart && rangeEnd)
+	const isHourGrid = gridType === 'hour'
+	const hasRange = Boolean(rangeStart && rangeEnd)
+	const showNowLine = nowIndicator && isHourGrid && hasRange
 
 	// Layout returns the abstract row; the renderer owns the CSS units. Shared
 	// so the preview cannot drift from the bar it mirrors.

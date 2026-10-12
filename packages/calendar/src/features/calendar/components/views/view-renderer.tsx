@@ -33,8 +33,9 @@ interface EngineViewProps {
 const VerticalEngineView: React.FC<
 	EngineViewProps & { specs: VerticalColumnSpec[] }
 > = ({ specs, header, composesResourceAxis, variant }) => {
-	const { slotDuration } = useSmartCalendarContext((c) => ({
+	const { slotDuration, allDaySlot } = useSmartCalendarContext((c) => ({
 		slotDuration: c.slotDuration,
+		allDaySlot: c.allDaySlot,
 	}))
 	const gridType = specs.some((col) => col.gridType === 'hour') ? 'hour' : 'day'
 	const eventDays = specs
@@ -56,7 +57,8 @@ const VerticalEngineView: React.FC<
 	// Resource columns get one all-day row per resource (derived from the
 	// resource identity the specs carry); regular columns share one row.
 	let allDayRow: React.ReactNode
-	if (gridType === 'hour') {
+	const showsAllDayRow = gridType === 'hour' && allDaySlot
+	if (showsAllDayRow) {
 		allDayRow = composesResourceAxis ? (
 			<ResourceAllDayRows columns={specs} />
 		) : (

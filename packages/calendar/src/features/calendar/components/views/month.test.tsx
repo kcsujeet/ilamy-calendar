@@ -335,4 +335,69 @@ describe('ResourceMonthHorizontal', () => {
 		expect(highlighted).toHaveLength(1)
 		expect(highlighted.item(0)).toHaveTextContent(today.format('D'))
 	})
+
+	describe('week numbers', () => {
+		// January 2023 opens on Sunday the 1st: the grid's six rows start on
+		// 1, 8, 15, 22 and 29 January and 5 February.
+		const january2023 = dayjs('2023-01-15T12:00:00.000Z')
+		const weekNumbersShown = () =>
+			screen.queryAllByTestId('week-number').map((node) => node.textContent)
+
+		test('shows none when weekNumbers is unset, as before', () => {
+			cleanup()
+			renderMonthView({ initialDate: january2023 })
+
+			expect(weekNumbersShown()).toEqual([])
+		})
+
+		test('weekNumbers={false} shows none', () => {
+			cleanup()
+			renderMonthView({ initialDate: january2023, weekNumbers: false })
+
+			expect(weekNumbersShown()).toEqual([])
+		})
+
+		test("weekNumbers shows one per row, counted from the row's first day", () => {
+			cleanup()
+			renderMonthView({ initialDate: january2023, weekNumbers: true })
+
+			expect(weekNumbersShown()).toEqual(['1', '2', '3', '4', '5', '6'])
+		})
+
+		test("weekNumberCalculation='ISO' counts ISO weeks", () => {
+			cleanup()
+			renderMonthView({
+				initialDate: january2023,
+				weekNumbers: true,
+				weekNumberCalculation: 'ISO',
+			})
+
+			expect(weekNumbersShown()).toEqual(['52', '1', '2', '3', '4', '5'])
+		})
+
+		test('a weekNumberCalculation function is called with each row first day', () => {
+			cleanup()
+			const firstDays: string[] = []
+			renderMonthView({
+				initialDate: january2023,
+				weekNumbers: true,
+				weekNumberCalculation: (date: Date) => {
+					firstDays.push(date.toISOString().slice(0, 10))
+					return 9
+				},
+			})
+
+			expect(weekNumbersShown()).toEqual(['9', '9', '9', '9', '9', '9'])
+			expect(new Set(firstDays)).toEqual(
+				new Set([
+					'2023-01-01',
+					'2023-01-08',
+					'2023-01-15',
+					'2023-01-22',
+					'2023-01-29',
+					'2023-02-05',
+				])
+			)
+		})
+	})
 })

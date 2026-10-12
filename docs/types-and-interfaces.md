@@ -137,6 +137,10 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `hideNonBusinessHours` | `boolean` | `false` | Hide off-hours in day/week views |
 | `slotDuration` | `15 \| 30 \| 60` | `60` | Time-grid granularity (minutes). `60` gives one row per hour with no sub-hour lines; `30` two; `15` four with dashed separators. Applies to day, week, and resource hour views. |
 | `hiddenDays` | `WeekDays[]` | `[]` | Days to hide from vertical week view. Ignored in resource vertical week view with daily granularity (`weekViewGranularity: 'daily'`) — non-contiguous days would break multi-day event positioning. |
+| `allDaySlot` | `boolean` | `true` | Draw the all-day row in day, week and resource time grids. `false` removes it and all-day events are not shown in those views. |
+| `nowIndicator` | `boolean` | `true` | Draw the current-time line in time grids. |
+| `weekNumbers` | `boolean` | unset | Unset: week number in the week and resource week header corner, none in month view. `true`: also a number in each month row, from the row's first day. `false`: nowhere. |
+| `weekNumberCalculation` | `WeekNumberCalculation` | `'local'` | `'local'` (the locale's count, dayjs `week()`), `'ISO'` (ISO 8601; changes only the number, not the first day of the week) or `(date: Date) => number` (receives the instant as a `Date`). |
 | `disableCellClick` | `boolean` | — | Disable cell clicks |
 | `disableEventClick` | `boolean` | — | Disable event clicks |
 | `disableDragAndDrop` | `boolean` | — | **Deprecated**, use `editable={false}`. Only sets the `editable` default, so an explicit `eventStartEditable` still enables moving. Kept until 4.0 |

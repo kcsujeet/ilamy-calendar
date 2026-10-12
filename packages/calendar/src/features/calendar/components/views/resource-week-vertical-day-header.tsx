@@ -7,6 +7,7 @@ import {
 } from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
+import { getWeekNumber } from '@/features/calendar/utils/week-number'
 import { DayHeaderLabel } from './day-header-label'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
 
@@ -17,7 +18,9 @@ interface ResourceWeekVerticalDayHeaderProps {
 export const ResourceWeekVerticalDayHeader: React.FC<
 	ResourceWeekVerticalDayHeaderProps
 > = ({ columns }) => {
-	const { currentDate } = useSmartCalendarContext()
+	const { currentDate, weekNumbers, weekNumberCalculation } =
+		useSmartCalendarContext()
+	const showsWeekNumber = weekNumbers !== false
 
 	return (
 		<div className="flex h-12 gap-px bg-border">
@@ -28,9 +31,14 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 					STICKY_GUTTER_SHADOW
 				)}
 			>
-				<span className="px-2 h-full w-full flex justify-center items-start font-medium">
-					{currentDate.week()}
-				</span>
+				{showsWeekNumber && (
+					<span
+						className="px-2 h-full w-full flex justify-center items-start font-medium"
+						data-testid="week-number"
+					>
+						{getWeekNumber(currentDate, weekNumberCalculation)}
+					</span>
+				)}
 			</div>
 			{columns.map((col, index) => {
 				const day = col.day

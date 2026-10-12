@@ -23,6 +23,7 @@ import type {
 	EventSegment,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
+	WeekNumberCalculation,
 } from '@/features/calendar/types'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { composePluginProviders } from '@/lib/plugins/compose-plugin-providers'
@@ -87,6 +88,10 @@ export interface CalendarProviderProps {
 	slotDuration?: SlotDuration
 	scrollTime?: string
 	scrollToNow?: boolean
+	allDaySlot?: boolean
+	nowIndicator?: boolean
+	weekNumbers?: boolean
+	weekNumberCalculation?: WeekNumberCalculation
 	plugins?: IlamyPlugin[]
 	/** The resource axis. Absent/empty → a regular calendar (no filtering, no resource columns). */
 	resources?: Resource[]
@@ -159,6 +164,10 @@ const useCalendarContextValue = (
 		slotDuration = 60,
 		scrollTime,
 		scrollToNow,
+		allDaySlot = true,
+		nowIndicator = true,
+		weekNumbers,
+		weekNumberCalculation = 'local',
 		plugins,
 		resources,
 		renderResource,
@@ -249,6 +258,10 @@ const useCalendarContextValue = (
 			slotDuration,
 			scrollTime,
 			scrollToNow,
+			allDaySlot,
+			nowIndicator,
+			weekNumbers,
+			weekNumberCalculation,
 			renderResource,
 		}
 	}, [
@@ -290,6 +303,10 @@ const useCalendarContextValue = (
 		slotDuration,
 		scrollTime,
 		scrollToNow,
+		allDaySlot,
+		nowIndicator,
+		weekNumbers,
+		weekNumberCalculation,
 	])
 }
 

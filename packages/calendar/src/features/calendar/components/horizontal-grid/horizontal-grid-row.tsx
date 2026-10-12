@@ -10,6 +10,7 @@ import { memo, useMemo } from 'react'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/use-processed-week-events'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
+import { getWeekNumber } from '@/features/calendar/utils/week-number'
 import { GridCell } from '../grid-cell/grid-cell'
 import { ResourceCell } from '../resource-cell'
 import { HorizontalGridEventsLayer } from './events-layer/horizontal-grid-events-layer'
@@ -36,8 +37,10 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	columns = [],
 	allDay,
 	showDayNumber = false,
+	showWeekNumber = false,
 }) => {
-	const { renderResource } = useSmartCalendarContext()
+	const { renderResource, weekNumbers, weekNumberCalculation } =
+		useSmartCalendarContext()
 
 	const isResourceCalendar = variant === 'resource'
 	// Flat columns: each column has col.day (regular month, resource month)
@@ -57,6 +60,13 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 		resourceId: resource?.id,
 		allDay,
 	})
+
+	const firstDay = flatDays.at(0)
+	const isWeekNumberOn = weekNumbers === true
+	const weekNumber =
+		showWeekNumber && isWeekNumberOn && firstDay
+			? getWeekNumber(firstDay, weekNumberCalculation)
+			: undefined
 
 	return (
 		<div
@@ -114,6 +124,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								)}
 								resourceId={resource?.id}
 								showDayNumber={showDayNumber}
+								weekNumber={columnIndex === 0 ? weekNumber : undefined}
 							/>
 						) : null
 					})}

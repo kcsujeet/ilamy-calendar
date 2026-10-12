@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { DISABLED_CELL_CLASSNAME } from '@/config/constants'
 import { STICKY_GUTTER_SHADOW } from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -1415,6 +1415,70 @@ describe('WeekView', () => {
 			// disables anything, but 3am is still outside business hours.
 			expect(cellAt('2025-04-01').dataset.disabled).toBe('false')
 			expect(outsideHours.dataset.disabled).toBe('true')
+		})
+	})
+
+	describe('display toggles', () => {
+		// Sunday 1 January 2023: week 1 by the locale's count, week 52 by ISO.
+		const newYearsDay2023 = dayjs('2023-01-01T12:00:00.000Z')
+
+		test('allDaySlot is on by default', () => {
+			cleanup()
+			renderWeekView()
+
+			expect(screen.getByTestId('all-day-row')).toBeInTheDocument()
+		})
+
+		test('allDaySlot={false} removes the all-day row', () => {
+			cleanup()
+			renderWeekView({ allDaySlot: false })
+
+			expect(screen.queryByTestId('all-day-row')).not.toBeInTheDocument()
+			expect(screen.queryByTestId('vertical-grid-all-day')).toBeNull()
+		})
+
+		test('shows the locale week number in the header corner when weekNumbers is unset', () => {
+			cleanup()
+			renderWeekView({ initialDate: newYearsDay2023 })
+
+			expect(screen.getByTestId('week-number')).toHaveTextContent('1')
+		})
+
+		test('weekNumbers={false} hides the week number and its label', () => {
+			cleanup()
+			renderWeekView({ initialDate: newYearsDay2023, weekNumbers: false })
+
+			expect(screen.queryByTestId('week-number')).not.toBeInTheDocument()
+			expect(
+				within(screen.getByTestId('week-view-header')).queryByText('Week')
+			).not.toBeInTheDocument()
+		})
+
+		test('weekNumbers={true} shows the week number', () => {
+			cleanup()
+			renderWeekView({ initialDate: newYearsDay2023, weekNumbers: true })
+
+			expect(screen.getByTestId('week-number')).toHaveTextContent('1')
+		})
+
+		test("weekNumberCalculation='ISO' counts ISO weeks", () => {
+			cleanup()
+			renderWeekView({
+				initialDate: newYearsDay2023,
+				weekNumberCalculation: 'ISO',
+			})
+
+			expect(screen.getByTestId('week-number')).toHaveTextContent('52')
+		})
+
+		test('a weekNumberCalculation function supplies the number', () => {
+			cleanup()
+			renderWeekView({
+				initialDate: newYearsDay2023,
+				weekNumberCalculation: () => 77,
+			})
+
+			expect(screen.getByTestId('week-number')).toHaveTextContent('77')
 		})
 	})
 })

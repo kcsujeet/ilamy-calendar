@@ -26,6 +26,7 @@ const TEST_CUSTOM_RENDER = ({ resource }: RenderCurrentTimeIndicatorProps) => (
 let customRenderFn:
 	| ((props: RenderCurrentTimeIndicatorProps) => React.ReactNode)
 	| undefined
+let nowIndicator = true
 
 // Test wrapper using CalendarContext.Provider directly
 const TestWrapper: React.FC<{
@@ -38,6 +39,7 @@ const TestWrapper: React.FC<{
 		value={
 			{
 				renderCurrentTimeIndicator: customRenderFn,
+				nowIndicator,
 				events: [],
 				getEventsForDateRange: () => [],
 				timeFormat: '12-hour',
@@ -76,6 +78,7 @@ const renderEventsLayer = ({
 describe('VerticalGridEventsLayer', () => {
 	beforeEach(() => {
 		customRenderFn = undefined
+		nowIndicator = true
 		cleanup()
 	})
 
@@ -142,6 +145,20 @@ describe('VerticalGridEventsLayer', () => {
 		const hours = [futureDate]
 
 		renderEventsLayer({ days: hours, 'data-testid': 'events-layer' })
+
+		expect(
+			screen.queryByTestId('current-time-indicator')
+		).not.toBeInTheDocument()
+	})
+
+	test('does not render the indicator when nowIndicator is off', () => {
+		nowIndicator = false
+
+		renderEventsLayer({
+			days: [dayjs().startOf('hour')],
+			gridType: 'hour',
+			'data-testid': 'events-layer',
+		})
 
 		expect(
 			screen.queryByTestId('current-time-indicator')

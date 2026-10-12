@@ -2,9 +2,15 @@ import { expect, type Locator, type Page, test } from '@playwright/test'
 import { gotoScenario, type ScenarioOptions } from '../support/harness'
 import { type CalendarPage, MonthGrid, TimeGrid } from '../support/pages'
 
+// A cancelled animation rejects `finished` with an AbortError (MDN,
+// Animation.cancel()); for "wait until at rest" it counts as finished.
 const settle = (page: Page) =>
 	page.evaluate(() =>
-		Promise.all(document.getAnimations().map((a) => a.finished))
+		Promise.all(
+			document
+				.getAnimations()
+				.map((animation) => animation.finished.catch(() => undefined))
+		)
 	)
 
 const pressAndMove = async (

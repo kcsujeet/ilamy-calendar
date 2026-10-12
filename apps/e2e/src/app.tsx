@@ -2,11 +2,12 @@ import {
 	type CalendarEvent,
 	dayjs,
 	type EventsChange,
-	type EventsFetcher,
+	type EventsFetchInfo,
 	IlamyCalendar,
 	type IlamyCalendarApi,
 	type IlamyPlugin,
 	type Resource,
+	useIlamyCalendarContext,
 } from '@ilamy/calendar'
 import { agendaPlugin } from '@ilamy/calendar-agenda'
 import { dragToCreatePlugin } from '@ilamy/calendar-drag-to-create'
@@ -123,6 +124,7 @@ export const App = () => {
 		externalToolbar,
 		fetch,
 		fetchDelay,
+		resourcesFetch,
 		...calendarConfig
 	} = {
 		...scenario.config,
@@ -142,6 +144,7 @@ export const App = () => {
 			plugins={plugins}
 			renderEventVariant={renderEventVariant}
 			resources={resources}
+			resourcesFetchMode={resourcesFetch}
 			revertChanges={revertChanges}
 			scenario={scenario}
 			timezone={timezone}
@@ -176,6 +179,7 @@ interface HarnessProps {
 	externalToolbar?: boolean
 	fetchDelay?: number
 	fetchMode?: 'delayed' | 'failing'
+	resourcesFetchMode?: 'delayed' | 'failing'
 	renderEventVariant?: ReturnType<typeof readUrlConfig>['renderEventVariant']
 	height?: string
 	orientation?: Orientation
@@ -203,6 +207,7 @@ const Harness: React.FC<HarnessProps> = ({
 	externalToolbar,
 	fetchDelay = 0,
 	fetchMode,
+	resourcesFetchMode,
 	renderEventVariant,
 	height,
 	orientation,
@@ -259,49 +264,44 @@ const Harness: React.FC<HarnessProps> = ({
 	// With `fetch` set, `events` is a function that plays the consumer's server:
 	// it answers from the rows held above, so a saved edit is what the next fetch
 	// returns. Read through a ref so a mounted calendar sees a changed `fetch`.
-	const server = useRef({ events, fetchMode, fetchDelay })
-	server.current = { events, fetchMode, fetchDelay }
-	const nextFetchId = useRef(0)
-	const [fetchLog, setFetchLog] = useState<PublishedFetch[]>([])
-	const [fetchState, setFetchState] = useState({ isLoading: false, errors: 0 })
-
-	const fetchFromServer: EventsFetcher = (info, { signal }) => {
-		const id = nextFetchId.current
-		nextFetchId.current += 1
-		const finish = (status: PublishedFetch['status']) =>
-			setFetchLog((log) =>
-				log.map((entry) => (entry.id === id ? { ...entry, status } : entry))
-			)
-		setFetchLog((log) => [
-			...log,
-			{ id, start: info.startStr, end: info.endStr, status: 'pending' },
-		])
-
-		return new Promise((resolve, reject) => {
-			const timer = setTimeout(() => {
-				if (server.current.fetchMode === 'failing') {
-					finish('failed')
-					reject(new Error('the harness server failed'))
-					return
-				}
-				// A real server returns every row whose recurrence intersects the
-				// range, so a series row always comes back (the harness does not
-				// evaluate the rule); a plain row only when it overlaps.
-				const inRange = server.current.events.filter(
-					(row) =>
-						Boolean(row.rrule) ||
-						(row.start.isBefore(info.end) && row.end.isAfter(info.start))
-				)
-				finish('done')
-				resolve(inRange)
-			}, server.current.fetchDelay)
-			signal.addEventListener('abort', () => {
-				clearTimeout(timer)
-				finish('aborted')
-				reject(new DOMException('superseded', 'AbortError'))
-			})
-		})
+	const server = useRef({
+		events,
+		fetchMode,
+		resources,
+		resourcesFetchMode,
+		fetchDelay,
+	})
+	server.current = {
+		events,
+		fetchMode,
+		resources,
+		resourcesFetchMode,
+		fetchDelay,
 	}
+	const [fetchState, setFetchState] = useState({
+		isLoading: false,
+		errors: 0,
+	})
+	const [resourceErrors, setResourceErrors] = useState(0)
+	const [resourceSets, setResourceSets] = useState<string[][]>([])
+	const [fetchLog, fetchFromServer] = useServer(
+		() => server.current.fetchMode,
+		() => server.current.fetchDelay,
+		(info) =>
+			// A real server returns every row whose recurrence intersects the
+			// range, so a series row always comes back (the harness does not
+			// evaluate the rule); a plain row only when it overlaps.
+			server.current.events.filter(
+				(row) =>
+					Boolean(row.rrule) ||
+					(row.start.isBefore(info.end) && row.end.isAfter(info.start))
+			)
+	)
+	const [resourcesFetchLog, fetchResourcesFromServer] = useServer(
+		() => server.current.resourcesFetchMode,
+		() => server.current.fetchDelay,
+		() => server.current.resources ?? []
+	)
 
 	// A server that rejects every save persists nothing, so the calendar's own
 	// rows are the only thing `revert` has to put right.
@@ -337,13 +337,22 @@ const Harness: React.FC<HarnessProps> = ({
 					setFetchState((state) => ({ ...state, errors: state.errors + 1 }))
 				}
 				onEventUpdate={shouldPersistRows ? handleUpdate : undefined}
+				onResourcesError={() => setResourceErrors((count) => count + 1)}
 				orientation={orientation}
-				plugins={plugins}
+				plugins={
+					resourcesFetchMode ? [...plugins, refetchButtonPlugin] : plugins
+				}
 				ref={calendarRef}
 				renderEvent={
 					renderEventVariant === 'sticky-title' ? renderStickyTitle : undefined
 				}
-				resources={resources}
+				resources={resourcesFetchMode ? fetchResourcesFromServer : resources}
+				resourcesSet={(set) =>
+					setResourceSets((current) => [
+						...current,
+						set.map((resource) => String(resource.id)),
+					])
+				}
 				timezone={timezone}
 			/>
 			{/* Read by the specs, invisible to a screenshot. */}
@@ -355,6 +364,15 @@ const Harness: React.FC<HarnessProps> = ({
 			</script>
 			<script data-testid="fetch-log" type="application/json">
 				{JSON.stringify(fetchLog)}
+			</script>
+			<script data-testid="resources-fetch-log" type="application/json">
+				{JSON.stringify(resourcesFetchLog)}
+			</script>
+			<script data-testid="resources-errors" type="application/json">
+				{JSON.stringify(resourceErrors)}
+			</script>
+			<script data-testid="resources-set" type="application/json">
+				{JSON.stringify(resourceSets)}
 			</script>
 			<script data-testid="fetch-state" type="application/json">
 				{JSON.stringify(fetchState)}
@@ -412,6 +430,85 @@ const ExternalToolbar: React.FC<{
 			<span data-testid="external-view">{readout.view}</span>
 		</div>
 	)
+}
+
+/**
+ * Plays the consumer's server for one function prop (`events` or `resources`):
+ * answers after `fetchDelay` ms, or fails, and logs every call and how it ended.
+ * The mode and delay are read on every call, so a spec can change them on a
+ * mounted calendar.
+ */
+const useServer = <Row,>(
+	getMode: () => 'delayed' | 'failing' | undefined,
+	getDelay: () => number,
+	answer: (info: EventsFetchInfo) => Row[]
+): [
+	PublishedFetch[],
+	(info: EventsFetchInfo, options: { signal: AbortSignal }) => Promise<Row[]>,
+] => {
+	const nextId = useRef(0)
+	const [log, setLog] = useState<PublishedFetch[]>([])
+
+	const serve = (
+		info: EventsFetchInfo,
+		{ signal }: { signal: AbortSignal }
+	) => {
+		const id = nextId.current
+		nextId.current += 1
+		const finish = (status: PublishedFetch['status']) =>
+			setLog((entries) =>
+				entries.map((entry) => (entry.id === id ? { ...entry, status } : entry))
+			)
+		setLog((entries) => [
+			...entries,
+			{ id, start: info.startStr, end: info.endStr, status: 'pending' },
+		])
+
+		return new Promise<Row[]>((resolve, reject) => {
+			const timer = setTimeout(() => {
+				if (getMode() === 'failing') {
+					finish('failed')
+					reject(new Error('the harness server failed'))
+					return
+				}
+				finish('done')
+				resolve(answer(info))
+			}, getDelay())
+			signal.addEventListener('abort', () => {
+				clearTimeout(timer)
+				finish('aborted')
+				reject(new DOMException('superseded', 'AbortError'))
+			})
+		})
+	}
+	return [log, serve]
+}
+
+/** A button that calls `refetchResources()`; the context is only reachable inside the calendar. */
+const RefetchResourcesButton = ({
+	children,
+}: {
+	children: React.ReactNode
+}) => {
+	const { refetchResources } = useIlamyCalendarContext()
+	return (
+		<>
+			{children}
+			<button
+				data-testid="refetch-resources"
+				onClick={refetchResources}
+				style={{ position: 'fixed', right: 0, bottom: 0, zIndex: 1000 }}
+				type="button"
+			>
+				refetch resources
+			</button>
+		</>
+	)
+}
+
+const refetchButtonPlugin: IlamyPlugin = {
+	name: 'harness-refetch-resources',
+	provider: RefetchResourcesButton,
 }
 
 /**

@@ -49,6 +49,8 @@ The only hook exported for library consumers. Returns a curated subset of contex
 | `updateEvent` | `(eventId, updates) => void` | Update an existing event |
 | `deleteEvent` | `(eventId) => void` | Delete an event |
 | `refetchEvents` | `() => void` | Fetch the visible range again through an `events` function, whatever `lazyFetching` says; the shown events stay until the new ones arrive. No-op for an array |
+| `hasResourceAxis` | `boolean` | Whether the calendar lays out a resource axis: it has resources, or is still loading them with a `resources` function. The one predicate to read instead of `resources.length` |
+| `refetchResources` | `() => void` | Call the `resources` function again; the shown resources stay until the new ones arrive. No-op for an array |
 | `getEventsForResource` | `(resourceId) => CalendarEvent[]` | Get events for a resource — always defined; returns `[]` on a regular calendar |
 
 **Navigation:**
@@ -105,7 +107,7 @@ Engine composer used through `useCalendarContextValue`. Composes four slice hook
 1. `useCalendarConfig` — `t()`, `currentLocale` state, `dayMaxEvents`, `businessHours`
 2. `pluginRuntime` (`useMemo(createPluginRuntime)`) — the cross-cutting fifth dependency
 3. `useCalendarNavigation` — `currentDate`/`view` state, `nextPeriod`/`prevPeriod`/`today`, view-range math. One view-resolution path: `getAllViews()` prepends the built-in `PluginView` specs (`features/calendar/components/views/`) to the plugin views; ranges and navigation steps come from each spec's `range`/`navigationStep`/`navigationUnit` (fallback: month 6x7 grid range, one-day step). See `docs/custom-views.md`.
-4. `useCalendarData` — event store, prop sync, CRUD, plugin-scoped mutations (`applyScopedEdit`/`applyScopedDelete`), and `useEventsFetcher` (an `events` function: fetch, abort, `loading`, `refetchEvents`). With the recurrence plugin the function must return the series rows (and their overrides and `exdates`) whose recurrence intersects the range, not only rows whose first occurrence overlaps it: the plugin expands a series from its row, so a series left out loses its later occurrences
+4. `useCalendarData` — event store, prop sync, CRUD, plugin-scoped mutations (`applyScopedEdit`/`applyScopedDelete`), and `useRangeFetcher` (run once for an `events` function and once for a `resources` function: fetch, abort, failures, refetch; `use-calendar-data` folds both into one `loading` and owns the resolved `resources` and `resourcesSet`). With the recurrence plugin the function must return the series rows (and their overrides and `exdates`) whose recurrence intersects the range, not only rows whose first occurrence overlaps it: the plugin expands a series from its row, so a series left out loses its later occurrences
 5. `useCalendarInteraction` — selection state, `openEventForm`/`closeEventForm` (resource-aware via `OpenEventFormInput`), `handleEventClick`/`handleDateClick`
 
 The locale and timezone effects stay in the composer (not in any slice) because a config-prop trigger mutates navigation AND data state. The engine returns `CalendarEngineReturn & CalendarEngineHandlers`; the providers destructure the two handlers off and surface them as `onEventClick`/`onCellClick`.
@@ -225,7 +227,7 @@ VerticalGrid / HorizontalGrid
 | `src/features/calendar/hooks/calendar-data/use-calendar-data.ts` | Data slice: composes the hooks beside it |
 | `src/features/calendar/hooks/calendar-data/use-event-store.ts` | Stored rows, `events` prop sync, expansion for a date range |
 | `src/features/calendar/components/ilamy-calendar.tsx` | Also `useCalendarRefHandle`: publishes the context API on the `ref` prop |
-| `src/features/calendar/hooks/calendar-data/use-events-fetcher.ts` | Loads events for the visible range when `events` is a function: lazy refetch rule, abort of superseded fetches, `loading`, failures, `refetchEvents` |
+| `src/features/calendar/hooks/calendar-data/use-range-fetcher.ts` | Loads events, or resources, for the visible range when the prop is a function: lazy refetch rule (events, or resources with `refetchResourcesOnNavigate`; otherwise once), abort of superseded fetches, `loading`, failures, refetch |
 | `src/features/calendar/hooks/calendar-data/use-event-mutations.ts` | Plain add / update / delete |
 | `src/features/calendar/hooks/calendar-data/use-plugin-mutations.ts` | Scoped edit / delete through the managing plugin |
 | `src/features/calendar/hooks/calendar-data/use-resource-lookups.ts` | Resource filters and lookups over the events in view |

@@ -125,7 +125,12 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	ref,
 	...props
 }) => {
-	const hasResources = Boolean(resources?.length)
+	const resourcesFetcher =
+		typeof resources === 'function' ? resources : undefined
+	const resourcesArray = typeof resources === 'function' ? undefined : resources
+	// A function may still resolve to none; the warning is for a calendar that has no axis at all.
+	const hasResources =
+		Boolean(resourcesFetcher) || Boolean(resourcesArray?.length)
 	const { normalizedEvents, eventsFetcher } = useEventsSource(events)
 	const hiddenDaysToDraw = useHiddenDaysToDraw(hiddenDays, weekends)
 	useOrientationWarning(orientation, hasResources)
@@ -145,7 +150,8 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			initialDate={initialDate}
 			initialView={initialView}
 			orientation={orientation}
-			resources={resources}
+			resources={resourcesArray}
+			resourcesFetcher={resourcesFetcher}
 			slotMaxTime={slotMaxTime}
 			slotMinTime={slotMinTime}
 			stickyViewHeader={stickyViewHeader}

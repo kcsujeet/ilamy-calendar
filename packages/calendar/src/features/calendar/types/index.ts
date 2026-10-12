@@ -175,6 +175,17 @@ export type EventsFetcher = (
 	options: { signal: AbortSignal }
 ) => Promise<IlamyCalendarPropEvent[]>
 
+/**
+ * Loads the resources. Called with the visible range at mount (and, with
+ * `refetchResourcesOnNavigate`, whenever the view leaves the fetched range).
+ * `options.signal` aborts when a newer request supersedes this one; a late
+ * result is ignored either way.
+ */
+export type ResourcesFetcher = (
+	info: EventsFetchInfo,
+	options: { signal: AbortSignal }
+) => Promise<Resource[]>
+
 export interface IlamyCalendarProps {
 	/**
 	 * Drives the calendar from outside it: `ref.current` is the object
@@ -204,8 +215,8 @@ export interface IlamyCalendarProps {
 	 */
 	lazyFetching?: boolean
 	/**
-	 * With an `events` function: called with `true` when a fetch starts and
-	 * `false` when none is in flight any more. Fires on those transitions only.
+	 * With an `events` or `resources` function: called with `true` when a fetch
+	 * starts and `false` when none is in flight any more, for both together. Fires on those transitions only.
 	 */
 	loading?: (isLoading: boolean) => void
 	/**
@@ -732,12 +743,38 @@ export interface IlamyCalendarProps {
 	 */
 	plugins?: IlamyPlugin[]
 	/**
-	 * Resources (people, rooms, equipment) to display as a resource axis.
+	 * Resources (people, rooms, equipment) to display as a resource axis: an
+	 * array, or a function that loads them (see `ResourcesFetcher`).
+	 *
+	 * A function is called once on mount and again on `refetchResources()`, or
+	 * on navigation with `refetchResourcesOnNavigate`. A new function identity
+	 * does NOT refetch. Until it resolves the calendar is a resource calendar with no lanes yet;
+	 * a failure keeps the resources shown and goes to `onResourcesError`.
 	 * When set: events are shown per matching resource (`resourceIds`, falling
 	 * back to `resourceId`); events with no resource assignment are hidden; the
 	 * year view is hidden from the view switcher.
 	 */
-	resources?: Resource[]
+	resources?: Resource[] | ResourcesFetcher
+	/**
+	 * With a `resources` function: also fetch when the visible range leaves the
+	 * range last fetched, so the function can return resources for the dates in view.
+	 * @default false
+	 */
+	refetchResourcesOnNavigate?: boolean
+	/**
+	 * Called with the resource list once it is set and after every change: an
+	 * array prop whose resources changed, or a fetch result. Compared by
+	 * content, so an inline array does not re-fire on every render (`data` is
+	 * compared one level deep: same keys, each value `===`; keep objects nested
+	 * deeper inside `data` stable). Not called
+	 * while there is no list yet.
+	 */
+	resourcesSet?: (resources: Resource[]) => void
+	/**
+	 * With a `resources` function: called when a fetch fails. The resources
+	 * already shown stay. Without it, the error goes to `console.error`.
+	 */
+	onResourcesError?: (error: unknown) => void
 	/** Custom render function for resource header cells. */
 	renderResource?: (resource: Resource) => ReactNode
 	/**

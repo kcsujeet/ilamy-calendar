@@ -60,6 +60,7 @@ export type {
 	IlamyCalendarProps,
 	OpenEventFormInput,
 	RenderCurrentTimeIndicatorProps,
+	ResourcesFetcher,
 	SlotDuration,
 	WeekNumberCalculation,
 } from './features/calendar/types'

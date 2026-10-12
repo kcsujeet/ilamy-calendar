@@ -1,4 +1,4 @@
-import type { CalendarEvent } from '@ilamy/types'
+import type { CalendarEvent, Resource } from '@ilamy/types'
 import {
 	isSupportedSlotDuration,
 	resolveSlotDuration,
@@ -6,7 +6,7 @@ import {
 import type { FC, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/config/constants'
-import type { CalendarEventsFetcher } from '@/features/calendar/hooks/calendar-data/use-events-fetcher'
+import type { RangeFetcher } from '@/features/calendar/hooks/calendar-data/use-range-fetcher'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
 import type { IlamyCalendarProps } from '@/features/calendar/types'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
@@ -31,18 +31,22 @@ const useWarnAboutSlotDuration = (requestedSlotDuration: number) => {
 }
 
 /**
- * The public props, with the three the provider receives already resolved:
- * `events` as stored events, `firstDayOfWeek` as a day number and
- * `hiddenDays` as a set of day numbers.
+ * The public props, with four the provider receives already resolved:
+ * `events` as stored events, `firstDayOfWeek` as a day number,
+ * `hiddenDays` as a set of day numbers and `resources` as an array.
  */
 export type CalendarProviderProps = Omit<
 	IlamyCalendarProps,
-	'events' | 'firstDayOfWeek' | 'hiddenDays'
+	'events' | 'firstDayOfWeek' | 'hiddenDays' | 'resources'
 > & {
 	children: ReactNode
 	events?: CalendarEvent[]
 	/** Loads the events for the visible range; used instead of `events` when set. */
-	eventsFetcher?: CalendarEventsFetcher
+	eventsFetcher?: RangeFetcher<CalendarEvent>
+	/** The resolved resource array; a `resources` function arrives as `resourcesFetcher`. */
+	resources?: Resource[]
+	/** Loads the resources; used instead of `resources` when set. */
+	resourcesFetcher?: RangeFetcher<Resource>
 	firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
 	hiddenDays?: Set<number>
 }
@@ -64,6 +68,10 @@ const useCalendarContextValue = (
 		lazyFetching,
 		loading,
 		onEventsError,
+		resourcesFetcher,
+		refetchResourcesOnNavigate,
+		resourcesSet,
+		onResourcesError,
 		firstDayOfWeek = 0,
 		initialView = 'month',
 		initialDate,
@@ -152,6 +160,10 @@ const useCalendarContextValue = (
 		lazyFetching,
 		loading,
 		onEventsError,
+		resourcesFetcher,
+		refetchResourcesOnNavigate,
+		resourcesSet,
+		onResourcesError,
 		firstDayOfWeek,
 		initialView,
 		initialDate,

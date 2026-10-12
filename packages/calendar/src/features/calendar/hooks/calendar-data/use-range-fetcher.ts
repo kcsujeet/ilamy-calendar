@@ -1,24 +1,31 @@
-import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useEffect, useRef } from 'react'
 import type { EventsFetchInfo } from '@/features/calendar/types'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
 
-export type CalendarEventsFetcher = (
+export type RangeFetcher<Row> = (
 	info: EventsFetchInfo,
 	options: { signal: AbortSignal }
-) => Promise<CalendarEvent[]>
+) => Promise<Row[]>
 
-interface EventsFetcherParams {
-	/** The consumer's `events` function, already normalized. Absent for an array. */
-	eventsFetcher?: CalendarEventsFetcher
+interface RangeFetcherParams<Row> {
+	/** Names the data in messages: the consumer's `events` or `resources` function. */
+	name: 'events' | 'resources'
+	/** The consumer's function, already normalized. Absent for an array. */
+	fetcher?: RangeFetcher<Row>
+	/**
+	 * Whether a change of the visible range refetches. When `false` the data is
+	 * fetched once (and again on `refetch()`), whatever the view shows.
+	 * @default true
+	 */
+	followsRange?: boolean
 	/** The visible range as the view reports it: `end` is the last instant shown. */
 	getCurrentViewRange: () => { start: Dayjs; end: Dayjs }
 	timezone?: string
 	lazyFetching?: boolean
 	loading?: (isLoading: boolean) => void
-	onEventsError?: (error: unknown) => void
-	setCurrentEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>
+	onError?: (error: unknown) => void
+	onResult: (rows: Row[]) => void
 }
 
 const doNothing = () => undefined
@@ -29,41 +36,13 @@ interface FetchedRange {
 	timezone?: string
 }
 
-interface FetchDecisionInput {
-	fetched?: FetchedRange
-	visibleStartMs: number
-	visibleEndMs: number
-	timezone?: string
-	isFetchInFlight: boolean
-	lazyFetching: boolean
-}
-
-/** Whether the range effect must start a fetch now; see `useEventsFetcher` for the rules. */
-export const mustFetchRange = ({
-	fetched,
-	visibleStartMs,
-	visibleEndMs,
-	timezone,
-	isFetchInFlight,
-	lazyFetching,
-}: FetchDecisionInput): boolean => {
-	if (!fetched) {
-		return true
-	}
-	const isZoneChanged = fetched.timezone !== timezone
-	const isOutsideFetchedRange =
-		visibleStartMs < fetched.startMs || visibleEndMs > fetched.endMs
-	return (
-		isFetchInFlight || isZoneChanged || isOutsideFetchedRange || !lazyFetching
-	)
-}
-
 /**
- * Loads the events for the visible range when `events` is a function.
+ * Loads the events, or the resources, for the visible range when the prop is
+ * a function. One hook serves both so the abort and latest-wins rules exist once.
  *
  * A fetch starts when nothing was fetched yet, when one is still in flight,
  * when the visible range leaves the last fetched one (or always, with
- * `lazyFetching` off), when the time zone changes, or on `refetchEvents()`.
+ * `lazyFetching` off), when the time zone changes, or on `refetch()`.
  * Starting a fetch aborts the one before it, and a result that is not the
  * latest request's is ignored even if the consumer never honoured the signal.
  * A failure keeps the events on screen and does not record the range, so the
@@ -72,18 +51,21 @@ export const mustFetchRange = ({
  * The function is read through `useLatestHandler`: a new identity (an inline
  * function) never refetches by itself.
  */
-export const useEventsFetcher = ({
-	eventsFetcher,
+export const useRangeFetcher = <Row>({
+	name,
+	fetcher,
+	followsRange = true,
 	getCurrentViewRange,
 	timezone,
 	lazyFetching = true,
 	loading,
-	onEventsError,
-	setCurrentEvents,
-}: EventsFetcherParams): { refetchEvents: () => void } => {
-	const fetchEvents = useLatestHandler(eventsFetcher)
+	onError,
+	onResult,
+}: RangeFetcherParams<Row>): { refetch: () => void } => {
+	const fetchRows = useLatestHandler(fetcher)
 	const reportLoading = useLatestHandler(loading)
-	const reportError = useLatestHandler(onEventsError)
+	const reportError = useLatestHandler(onError)
+	const reportResult = useLatestHandler(onResult)
 
 	const latestRequestId = useRef(0)
 	const inFlight = useRef<AbortController | undefined>(undefined)
@@ -102,7 +84,7 @@ export const useEventsFetcher = ({
 	}
 
 	const fetchVisibleRange = async () => {
-		if (!fetchEvents) {
+		if (!fetchRows) {
 			return
 		}
 		inFlight.current?.abort()
@@ -125,14 +107,14 @@ export const useEventsFetcher = ({
 
 		setLoading(true)
 		try {
-			const fetched = await fetchEvents(info, { signal: controller.signal })
+			const fetched = await fetchRows(info, { signal: controller.signal })
 			if (!isLatest()) {
 				return
 			}
 			inFlight.current = undefined
 			if (!Array.isArray(fetched)) {
 				throw new TypeError(
-					'[@ilamy/calendar] the `events` function must resolve to an array'
+					`[@ilamy/calendar] the \`${name}\` function must resolve to an array`
 				)
 			}
 			lastFetched.current = {
@@ -140,7 +122,7 @@ export const useEventsFetcher = ({
 				endMs: visible.end.valueOf(),
 				timezone,
 			}
-			setCurrentEvents(fetched)
+			reportResult?.(fetched)
 			setLoading(false)
 		} catch (error) {
 			if (!isLatest()) {
@@ -151,32 +133,37 @@ export const useEventsFetcher = ({
 			if (reportError) {
 				reportError(error)
 			} else {
-				// biome-ignore lint/suspicious/noConsole: the only place a failed fetch can surface without `onEventsError`
-				console.error('[@ilamy/calendar] events fetch failed', error)
+				// biome-ignore lint/suspicious/noConsole: the only place a failed fetch can surface without an error handler
+				console.error(`[@ilamy/calendar] ${name} fetch failed`, error)
 			}
 		}
 	}
 	// Stable identity, newest closure: the effect below must run on a range or
 	// zone change only, never because a render built a new function.
-	const refetchEvents = useLatestHandler(() => {
+	const refetch = useLatestHandler(() => {
 		void fetchVisibleRange()
 	})
 
-	const hasFetcher = Boolean(fetchEvents)
+	const hasFetcher = Boolean(fetchRows)
 	useEffect(() => {
 		if (!hasFetcher) {
 			return
 		}
-		const mustFetch = mustFetchRange({
-			fetched: lastFetched.current,
-			visibleStartMs: rangeStartMs,
-			visibleEndMs: rangeEndMs,
-			timezone,
-			isFetchInFlight: isLoading.current,
-			lazyFetching,
-		})
+		const fetched = lastFetched.current
+		const isNeverFetched = fetched === undefined
+		const isFetchInFlight = isLoading.current
+		const isZoneChanged = fetched?.timezone !== timezone
+		const isOutsideFetchedRange =
+			fetched !== undefined &&
+			(rangeStartMs < fetched.startMs || rangeEndMs > fetched.endMs)
+		const mustFetchAgain =
+			isFetchInFlight || isZoneChanged || isOutsideFetchedRange || !lazyFetching
+		// Data that ignores the range is fetched once, never again because of it.
+		const mustFetch = followsRange
+			? isNeverFetched || mustFetchAgain
+			: isNeverFetched && !isFetchInFlight
 		if (mustFetch) {
-			refetchEvents?.()
+			refetch?.()
 		}
 	}, [
 		hasFetcher,
@@ -184,7 +171,8 @@ export const useEventsFetcher = ({
 		rangeEndMs,
 		timezone,
 		lazyFetching,
-		refetchEvents,
+		followsRange,
+		refetch,
 	])
 
 	// Whatever is still in flight when the calendar goes away must not land,
@@ -200,5 +188,5 @@ export const useEventsFetcher = ({
 		[stopLoading]
 	)
 
-	return { refetchEvents: refetchEvents ?? doNothing }
+	return { refetch: refetch ?? doNothing }
 }

@@ -17,6 +17,7 @@ import {
 import { useDateTimeFormatters } from '@/features/calendar/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
+import { viewHasResourceAxis } from '@/features/calendar/utils/resource-list'
 import {
 	collectResourceBusinessHours,
 	getViewHours,
@@ -101,7 +102,7 @@ const dayColumns = (
 	const hours = dayHours(date, config)
 	const isDayToday = isToday(date)
 
-	if (!resources.length) {
+	if (!viewHasResourceAxis(config)) {
 		return [
 			gutterColumn({ days: hours, gridType: 'hour', showsToday: isDayToday }),
 			{
@@ -150,7 +151,7 @@ export const dayView: PluginView = {
 	columns: dayColumns,
 	renderHeader: ({ date, config }) => {
 		const resources = config.resources ?? []
-		if (!resources.length) {
+		if (!viewHasResourceAxis(config)) {
 			return <DayViewHeader date={date} />
 		}
 		if (config.orientation === 'vertical') {

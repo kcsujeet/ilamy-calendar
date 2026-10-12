@@ -24,7 +24,7 @@ import {
 	type CalendarDataSlice,
 	useCalendarData,
 } from '@/features/calendar/hooks/calendar-data/use-calendar-data'
-import type { CalendarEventsFetcher } from '@/features/calendar/hooks/calendar-data/use-events-fetcher'
+import type { RangeFetcher } from '@/features/calendar/hooks/calendar-data/use-range-fetcher'
 import {
 	type CalendarConfigSlice,
 	useCalendarConfig,
@@ -43,18 +43,22 @@ import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { createPluginRuntime } from '@/lib/plugins/create-plugin-runtime'
 import type { CalendarView } from '@/types'
 
-// Module constants, not per-render `?? []` defaults: keep the slice and
-// plugin-runtime identities render-stable when the props are absent.
-const EMPTY_RESOURCES: Resource[] = []
+// Module constant, not a per-render `?? []` default: keeps the plugin-runtime
+// identity render-stable when the prop is absent.
 const EMPTY_PLUGINS: IlamyPlugin[] = []
 
 interface CalendarEngineConfig {
 	events: CalendarEvent[]
 	/** Loads events for the visible range; used instead of `events` when set. */
-	eventsFetcher?: CalendarEventsFetcher
+	eventsFetcher?: RangeFetcher<CalendarEvent>
 	lazyFetching?: boolean
 	loading?: (isLoading: boolean) => void
 	onEventsError?: (error: unknown) => void
+	/** Loads resources; used instead of the `resources` array when set. */
+	resourcesFetcher?: RangeFetcher<Resource>
+	refetchResourcesOnNavigate?: boolean
+	resourcesSet?: (resources: Resource[]) => void
+	onResourcesError?: (error: unknown) => void
 	firstDayOfWeek: number
 	initialView?: CalendarView
 	initialDate?: Dayjs | Date | string
@@ -173,6 +177,10 @@ export const useCalendarEngine = (
 		lazyFetching,
 		loading,
 		onEventsError,
+		resourcesFetcher,
+		refetchResourcesOnNavigate,
+		resourcesSet,
+		onResourcesError,
 		firstDayOfWeek = 0,
 		initialView = 'month',
 		initialDate,
@@ -213,7 +221,6 @@ export const useCalendarEngine = (
 		locale,
 		translations,
 		translator,
-		resources,
 		orientation,
 		weekViewGranularity,
 	})
@@ -242,10 +249,14 @@ export const useCalendarEngine = (
 		lazyFetching,
 		loading,
 		onEventsError,
+		resourcesFetcher,
+		refetchResourcesOnNavigate,
+		resourcesSet,
+		onResourcesError,
 		timezone,
 		pluginRuntime,
 		getCurrentViewRange: navigation.getCurrentViewRange,
-		resources: configSlice.resources ?? EMPTY_RESOURCES,
+		resources,
 		onEventAdd,
 		onEventUpdate,
 		onEventDelete,

@@ -203,7 +203,10 @@ These resource props are part of [IlamyCalendar](/docs/components/calendar)'s pr
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `resources` | `Resource[]` | `[]` | Array of resources to display |
+| `resources` | `Resource[] \| ((info, { signal }) => Promise<Resource[]>)` | `[]` | Resources to display, or a function that loads them (see [Loading resources](#loading-resources)) |
+| `refetchResourcesOnNavigate` | `boolean` | `false` | With a `resources` function: also fetch when the visible range leaves the last fetched one |
+| `resourcesSet` | `(resources: Resource[]) => void` | - | Called once the list is set and after every change |
+| `onResourcesError` | `(error: unknown) => void` | `console.error` | With a `resources` function: a fetch failed. The resources on screen stay |
 | `events` | `CalendarEvent[]` | `[]` | Array of events with resource assignments (using resourceId or resourceIds properties) |
 | `renderResource` | `(resource: Resource) => ReactNode` | - | Custom function to render resource headers |
 | `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Controls whether resources are displayed as rows (horizontal) or columns (vertical). |
@@ -319,6 +322,29 @@ function App() {
   );
 }
 ```
+
+## Loading resources
+
+Pass a function to load the resources from your server. It receives the visible range and an abort signal, and returns a promise:
+
+```tsx
+<IlamyCalendar
+  resources={(info, { signal }) =>
+    fetch(`/api/rooms?from=${info.startStr}&to=${info.endStr}`, { signal }).then((response) => response.json())
+  }
+  refetchResourcesOnNavigate
+  resourcesSet={(resources) => console.log(resources.length)}
+  onResourcesError={(error) => console.error(error)}
+  events={events}
+/>
+```
+
+- The function is called once on mount and when you call `refetchResources()` from [`useIlamyCalendarContext`](/docs/components/use-ilamy-calendar-context). With `refetchResourcesOnNavigate` it is also called when you navigate outside the range it last fetched.
+- Until it resolves the calendar is already a resource calendar, with no lanes yet. If a fetch fails, the resources on screen stay and `onResourcesError` is called.
+- A newer fetch aborts the previous one through `signal`; a late result is ignored.
+- Passing a new function on each render does not refetch. Call `refetchResources()` when your query changes.
+- `loading` reports `true` while either the `events` or the `resources` function has a fetch in flight.
+- `resourcesSet` is called once the list is set and after every change. It compares the list's content, so an inline array does not re-fire on every render. `data` is compared one level deep (same keys, each value `===`); keep objects nested deeper inside `data` stable.
 
 ## Resource-Specific Business Hours
 

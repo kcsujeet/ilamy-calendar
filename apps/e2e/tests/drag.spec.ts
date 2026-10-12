@@ -890,9 +890,13 @@ test.describe('change info', () => {
 		bar: import('@playwright/test').Locator
 	) => {
 		await expect(bar).toBeVisible()
+		// A cancelled animation rejects `finished` with an AbortError (MDN,
+		// Animation.cancel()); it is at rest all the same.
 		await page.evaluate(() =>
 			Promise.all(
-				document.getAnimations().map((animation) => animation.finished)
+				document
+					.getAnimations()
+					.map((animation) => animation.finished.catch(() => undefined))
 			)
 		)
 		return bar.boundingBox()

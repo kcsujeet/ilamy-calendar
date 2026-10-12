@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/npm/l/@ilamy/calendar?style=flat-square&color=black)](https://github.com/kcsujeet/ilamy-calendar/blob/main/LICENSE)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/kcsujeet/ilamy-calendar/ci.yml?branch=main&style=flat-square)](https://github.com/kcsujeet/ilamy-calendar/actions)
 
-A powerful, full-featured yet **lightweight and highly pluggable** React calendar component library built with **TypeScript**, **Tailwind CSS 4**, and **shadcn/ui**. The core is small — ~118 KB minified (≈40 KB gzipped), React and other dependencies not included — with opt-in plugins for recurring events, agenda views, and more, so you only ship what you use. Built for high-performance scheduling with RFC 5545 recurring events, resource management, and drag-and-drop interactions.
+A powerful, full-featured yet **lightweight and highly pluggable** React calendar component library built with **TypeScript**, **Tailwind CSS 4**, and **shadcn/ui**. The core is small — ~127 KB minified (≈40 KB gzipped), React and other dependencies not included — with opt-in plugins for recurring events, agenda views, and more, so you only ship what you use. Built for scheduling with RFC 5545 recurring events, resource management, and drag-and-drop to move events.
 
 <div align="center">
   <img width="1159" height="698" alt="Screenshot 2026-07-12 at 2 44 36 PM" src="https://github.com/user-attachments/assets/316c6ad4-2965-4dc4-b779-88b0ac916669" />
@@ -31,7 +31,7 @@ ilamy Calendar is free and open source. If you'd like to support its development
 ### Resource Management
 - **Resource Timeline**: Visualize and manage events across multiple resources (rooms, people, equipment).
 - **Vertical & Horizontal Layouts**: Flexible resource views to fit any application design.
-- **Resource-Aware Validation**: Ensure events are correctly assigned and don't overlap where prohibited.
+- **Resource-Aware Availability**: The event form limits dates and times to each resource's business hours, and `isCellDisabled` (or `businessHours`) blocks drops onto unavailable cells.
 
 ### Recurring Events (RFC 5545)
 
@@ -43,19 +43,19 @@ Opt-in via the recurrence plugin (`plugins={[recurrencePlugin()]}` from `@ilamy/
 - **iCalendar Export**: Export events to `.ics` files with strict RFC 5545 compliance.
 
 ### Plugin System
-- **Opt-in capabilities**: The core ships no plugins. Add behavior through the `plugins` prop, each from its own subpath: `@ilamy/calendar/plugins/recurrence` (RFC 5545 recurring events) and `@ilamy/calendar/plugins/agenda` (agenda list view).
+- **Opt-in capabilities**: The core ships no plugins. Add behavior through the `plugins` prop, each from its own subpath: `@ilamy/calendar/plugins/recurrence` (RFC 5545 recurring events), `@ilamy/calendar/plugins/agenda` (agenda list view) and `@ilamy/calendar/plugins/drag-to-create` (drag across empty cells to create an event).
 
 ### Internationalization & Timezones
-- **Timezones**: Full timezone support via `dayjs.tz` with automatic DST handling.
-- **Internationalization**: Support for 100+ locales with configurable week start days.
+- **Timezones**: A `timezone` prop renders and parses dates in that zone via `dayjs.tz`, DST included. Known gap: dayjs still reads zoned dates through the machine's own zone, so results can be an hour off on a machine whose clocks change (see `docs/timezones.md`).
+- **Internationalization**: Dates follow any dayjs locale (dayjs ships 140+; import the ones you use, e.g. `import 'dayjs/locale/fr'`, and pass `locale`). UI text is translated through the `translations` or `translator` props, with English built in. The week start day is configurable.
 
 ### Interactions
-- **Drag & Drop**: Move and resize events with precision using `@dnd-kit`.
+- **Drag & Drop**: Drag events to move them, powered by `@dnd-kit`.
 - **Responsive**: Adaptive layouts designed for desktop, tablet, and mobile.
 
 ### Developer Experience
 - **Type Safety**: Written in TypeScript with comprehensive type definitions and IntelliSense support.
-- **Reliability**: 100% test coverage for all mission-critical date and recurrence logic.
+- **Tests**: A unit and integration suite covers date, recurrence and layout logic, plus a browser (Playwright) suite for drag and geometry.
 - **Theming**: Built on Tailwind CSS 4 variables for effortless branding and customization.
 - **Modern Stack**: Zero-config integration with React 19 and modern build tools.
 
@@ -139,6 +139,7 @@ import { agendaPlugin } from '@ilamy/calendar/plugins/agenda';
 
 - **`@ilamy/calendar/plugins/recurrence`** — RFC 5545 recurring-event expansion and scoped edit/delete. Also re-adds `rrule`/`recurrenceId`/`exdates` to `CalendarEvent`.
 - **`@ilamy/calendar/plugins/agenda`** — an agenda (upcoming-events list) view scoped to a `window`.
+- **`@ilamy/calendar/plugins/drag-to-create`** — drag across empty cells to open the event form preselected with that range.
 
 ---
 

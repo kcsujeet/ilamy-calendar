@@ -1,4 +1,5 @@
 import type React from 'react'
+import { type Ref, useImperativeHandle, useMemo, useRef } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
 import { EventFormDialog } from '@/features/calendar/components/event-form/event-form-dialog'
@@ -10,7 +11,11 @@ import {
 } from '@/features/calendar/hooks/use-calendar-prop-warnings'
 import { useEventsSource } from '@/features/calendar/hooks/use-events-source'
 import { useHiddenDaysToDraw } from '@/features/calendar/hooks/use-hidden-days-to-draw'
-import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import {
+	type IlamyCalendarApi,
+	useIlamyCalendarContext,
+	useSmartCalendarContext,
+} from '@/features/calendar/hooks/use-smart-calendar-context'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 // oxlint-disable-next-line no-duplicates
 import '@ilamy/utils/dayjs'
@@ -21,7 +26,10 @@ import {
 } from '@/config/constants'
 import type { IlamyCalendarProps } from '@/features/calendar/types'
 
-const CalendarContent: React.FC = () => {
+const CalendarContent: React.FC<{ calendarRef?: Ref<IlamyCalendarApi> }> = ({
+	calendarRef,
+}) => {
+	useCalendarRefHandle(calendarRef)
 	const { view, getViews } = useSmartCalendarContext((c) => ({
 		view: c.view,
 		getViews: c.getViews,
@@ -57,6 +65,44 @@ const CalendarContent: React.FC = () => {
 	)
 }
 
+/**
+ * The handle `ref.current` points at: ONE object for the calendar's life, whose
+ * methods and values read the latest API. A fresh object per render would make
+ * React call a callback ref with null and then the new handle after every
+ * commit, so a callback ref that sets state would loop forever.
+ */
+const createApiHandle = (readLatestApi: () => IlamyCalendarApi) => {
+	const handle: Record<string, unknown> = {}
+	for (const [name, value] of Object.entries(readLatestApi())) {
+		const isMethod = typeof value === 'function'
+		const callLatestMethod = (...args: unknown[]) =>
+			Reflect.apply(Reflect.get(readLatestApi(), name), undefined, args)
+		Object.defineProperty(handle, name, {
+			enumerable: true,
+			get: isMethod
+				? () => callLatestMethod
+				: () => Reflect.get(readLatestApi(), name),
+		})
+	}
+	return handle as unknown as IlamyCalendarApi
+}
+
+/**
+ * Publishes the calendar's API on the consumer's `ref`. `ref` is a regular prop
+ * in React 19, so no `forwardRef`; `useImperativeHandle(ref, createHandle, [])`
+ * publishes the handle once (https://react.dev/reference/react/useImperativeHandle).
+ */
+const useCalendarRefHandle = (calendarRef?: Ref<IlamyCalendarApi>) => {
+	const api = useIlamyCalendarContext()
+	const latestApiRef = useRef(api)
+	latestApiRef.current = api
+	// Created once: React re-runs the factory whenever the ref's identity
+	// changes (an inline callback ref is new every render), and must get the
+	// same object back each time.
+	const handle = useMemo(() => createApiHandle(() => latestApiRef.current), [])
+	useImperativeHandle(calendarRef, () => handle, [handle])
+}
+
 export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	events,
 	firstDayOfWeek = 'sunday',
@@ -73,6 +119,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	weekends,
 	resources,
 	orientation,
+	ref,
 	...props
 }) => {
 	const hasResources = Boolean(resources?.length)
@@ -102,7 +149,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			viewHeaderClassName={viewHeaderClassName}
 			{...props}
 		>
-			<CalendarContent />
+			<CalendarContent calendarRef={ref} />
 		</CalendarProvider>
 	)
 }

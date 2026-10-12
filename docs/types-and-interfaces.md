@@ -192,6 +192,7 @@ Rules, each following FullCalendar v7.1.1 (`packages/preact/src/reducers/eventSo
 - **Failure** keeps the events on screen, calls `onEventsError` (or `console.error` without it) and does not record the range, so the next navigation retries (`:189-205,58-60`).
 - **`refetchEvents()`** on `useIlamyCalendarContext()` refetches the visible range regardless of `lazyFetching`; the old events stay until the new ones arrive (`CalendarApiImpl.ts:509-511`).
 - **Mutations** are applied in the calendar immediately and reported through the usual callbacks. The next fetch replaces the calendar's events with exactly what the function returns. *Deviation:* FullCalendar keeps source-less client-added events across a refetch; ilamy has one source, so keeping them would duplicate events the server now returns.
+- **`ref`**: the same `refetchEvents()` is on `ref.current` (see `docs/hooks-and-context.md`, "From outside the calendar").
 - **Function identity**: a new function does not refetch (an inline `events={() => ...}` would refetch on every render). The latest function is the one called. Call `refetchEvents()` when your query changes.
 - **Not supported:** multiple event sources and JSON-feed URLs (a feed plugin is roadmap 4.3.9).
 

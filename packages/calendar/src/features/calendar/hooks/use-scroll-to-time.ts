@@ -1,6 +1,7 @@
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { overlapsRange } from '@ilamy/utils/helpers'
 import { type RefObject, useEffect, useRef } from 'react'
+import type { ScrollRequest } from '@/features/calendar/stores/calendar-context/calendar-context'
 
 type ScrollToTimeAxis = 'vertical' | 'horizontal'
 
@@ -20,6 +21,13 @@ interface UseScrollToTimeOptions {
 	 * on screen; `scrollTime` is the fallback when it is not.
 	 */
 	scrollToNow?: boolean
+	/**
+	 * A time asked for after mount (the `scrollToTime` API). Each new request
+	 * scrolls once, whatever the date range or `scrollTime` say. A request made
+	 * before this grid mounted belongs to the view that was showing then, so it
+	 * is ignored.
+	 */
+	scrollRequest?: ScrollRequest
 	enabled: boolean
 	scrollKey: string
 	/**
@@ -64,6 +72,20 @@ const parseTime = (time: string): ParsedTime | null => {
 
 const readRowHour = (row: HTMLElement): number =>
 	Number.parseInt(row.getAttribute('data-hour') ?? '', 10)
+
+/**
+ * The hours of the first day: the rows up to where the hour stops rising. A
+ * timeline spanning several days repeats its hours once per day, and a time
+ * is looked for in the first day, never at the end of the range.
+ */
+const firstDayRows = (rows: HTMLElement[]): HTMLElement[] => {
+	const firstDayEnd = rows.findIndex((row, index) => {
+		const previousRow = rows.at(index - 1)
+		const isFirstRow = index === 0 || previousRow === undefined
+		return !isFirstRow && readRowHour(row) <= readRowHour(previousRow)
+	})
+	return firstDayEnd === -1 ? rows : rows.slice(0, firstDayEnd)
+}
 
 const findTargetRow = (
 	rows: HTMLElement[],
@@ -139,7 +161,9 @@ const findScrollTimeTarget = (
 	if (parsed === null) {
 		return null
 	}
-	const rows = Array.from(viewport.querySelectorAll<HTMLElement>(HOUR_SELECTOR))
+	const rows = firstDayRows(
+		Array.from(viewport.querySelectorAll<HTMLElement>(HOUR_SELECTOR))
+	)
 	const origin = rows.at(0)
 	const target = findTargetRow(rows, parsed.hour)
 	if (!origin || !target) {
@@ -220,6 +244,7 @@ export const useScrollToTime = ({
 	viewportRef,
 	scrollTime,
 	scrollToNow = false,
+	scrollRequest,
 	enabled,
 	scrollKey,
 	axis = 'vertical',
@@ -250,4 +275,23 @@ export const useScrollToTime = ({
 			lastScrolledKeyRef.current = appliedKey
 		}
 	}, [enabled, scrollTime, scrollToNow, scrollKey, viewportRef, axis])
+
+	const lastRequestRef = useRef(scrollRequest)
+
+	useEffect(() => {
+		const viewport = viewportRef.current
+		const isNewRequest = scrollRequest !== lastRequestRef.current
+		if (!enabled || !viewport || !scrollRequest || !isNewRequest) {
+			return
+		}
+		const didScroll = applyScroll(viewport, {
+			scrollTime: scrollRequest.time,
+			scrollToNow: false,
+			axis,
+		})
+		// Rows not in the DOM yet: leave it unconsumed, like the effect above.
+		if (didScroll) {
+			lastRequestRef.current = scrollRequest
+		}
+	}, [enabled, scrollRequest, viewportRef, axis])
 }

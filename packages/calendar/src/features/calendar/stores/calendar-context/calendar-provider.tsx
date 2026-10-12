@@ -4,7 +4,7 @@ import {
 	resolveSlotDuration,
 } from '@ilamy/utils/helpers'
 import type { FC, ReactNode } from 'react'
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/config/constants'
 import type { CalendarEventsFetcher } from '@/features/calendar/hooks/calendar-data/use-events-fetcher'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
@@ -12,7 +12,11 @@ import type { IlamyCalendarProps } from '@/features/calendar/types'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { composePluginProviders } from '@/lib/plugins/compose-plugin-providers'
 import { CalendarCellProvider } from '../calendar-cell-context/calendar-cell-provider'
-import { CalendarContext, type CalendarContextType } from './calendar-context'
+import {
+	CalendarContext,
+	type CalendarContextType,
+	type ScrollRequest,
+} from './calendar-context'
 
 /** Says once, per value, that a slot size cannot be drawn and an hour is used. */
 const useWarnAboutSlotDuration = (requestedSlotDuration: number) => {
@@ -136,6 +140,12 @@ const useCalendarContextValue = (
 	// Called while a drag hovers a placement, never while rendering.
 	const eventAllow = useLatestHandler(props.eventAllow)
 
+	// The grids own the scrolling elements, so a request is state they watch.
+	const [scrollRequest, setScrollRequest] = useState<ScrollRequest>()
+	const scrollToTime = useCallback((time: string) => {
+		setScrollRequest({ time })
+	}, [])
+
 	const engine = useCalendarEngine({
 		events,
 		eventsFetcher,
@@ -220,6 +230,8 @@ const useCalendarContextValue = (
 			snapDuration,
 			scrollTime,
 			scrollToNow,
+			scrollRequest,
+			scrollToTime,
 			allDaySlot,
 			nowIndicator,
 			weekNumbers,
@@ -270,6 +282,8 @@ const useCalendarContextValue = (
 		snapDuration,
 		scrollTime,
 		scrollToNow,
+		scrollRequest,
+		scrollToTime,
 		allDaySlot,
 		nowIndicator,
 		weekNumbers,

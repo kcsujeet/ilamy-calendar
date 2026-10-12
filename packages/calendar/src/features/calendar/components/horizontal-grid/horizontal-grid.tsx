@@ -31,7 +31,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 	variant = 'resource',
 	dayNumberHeight,
 }) => {
-	const { currentDate, view, scrollTime, scrollToNow } =
+	const { currentDate, view, scrollTime, scrollToNow, scrollRequest } =
 		useSmartCalendarContext()
 	const rootRef = useRef<HTMLDivElement | null>(null)
 	const viewportRef = useRef<HTMLDivElement | null>(null)
@@ -47,6 +47,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 		viewportRef,
 		scrollTime,
 		scrollToNow,
+		scrollRequest,
 		enabled: isResourceCalendar,
 		scrollKey,
 		axis: 'horizontal',

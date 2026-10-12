@@ -12,6 +12,8 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 - [x] **Lazy event loading (`events` as function)** — done as `events` accepting `(info, { signal }) => Promise<Event[]>` (3.3.8); `lazyFetching`, `onEventsError` and `refetchEvents()` come with it. Cut: multiple event sources and JSON-feed URLs. Was: allow `events` to be an async function for on-demand fetching
 - [x] **`loading` callback** — done: `loading(isLoading)` fires when a fetch starts and when none is in flight any more (3.3.8). Was: enables showing a spinner during data loading
 
+- [x] **Imperative `ref` API** — done as `ref` on `IlamyCalendar` whose `current` is the `useIlamyCalendarContext()` object, plus `scrollToTime(time)` (3.3.9). Ilamy's names are kept (`setCurrentDate`, `nextPeriod`, `setView`, ...). Cut: `getEventById` (find it in `events`), `select`/`unselect` (4.1.3). Was: control the calendar from outside it
+
 ## Tier 2: Important for Specific Use Cases
 
 - [x] **Event resize** — the user drags an event's end edge (and the start edge with `eventResizableFromStart`) to change its duration, gated by `eventDurationEditable` / per-event `durationEditable` (3.3.3). Reported through `onEventsChange` with `delta` and `endDelta`, not a separate `onEventResize`

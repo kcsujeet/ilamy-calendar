@@ -127,16 +127,22 @@ describe('useScrollToTime', () => {
 			target: HTMLElement
 			scrollTime?: string
 			scrollToNow: boolean
+			scrollRequest: { time: string }
 			enabled: boolean
 			scrollKey: string
 			axis: 'vertical' | 'horizontal'
 		}> = {}
 	) => {
-		const { target = viewport, scrollToNow = false, ...options } = overrides
+		const {
+			target = viewport,
+			scrollToNow = false,
+			scrollRequest,
+			...options
+		} = overrides
 		const viewportRef = createRef<HTMLElement>()
 		viewportRef.current = target
 		return renderHook(
-			(props: { scrollToNow: boolean }) =>
+			(props: { scrollToNow: boolean; scrollRequest?: { time: string } }) =>
 				useScrollToTime({
 					viewportRef,
 					scrollTime: '08:00:00',
@@ -144,8 +150,14 @@ describe('useScrollToTime', () => {
 					scrollKey: 'day-2025-01-01',
 					...options,
 					scrollToNow: props.scrollToNow,
+					scrollRequest: props.scrollRequest,
 				}),
-			{ initialProps: { scrollToNow } }
+			{
+				initialProps: { scrollToNow, scrollRequest } as {
+					scrollToNow: boolean
+					scrollRequest?: { time: string }
+				},
+			}
 		)
 	}
 
@@ -376,6 +388,72 @@ describe('useScrollToTime', () => {
 			rerender({ scrollToNow: true })
 			const scrolledTops = scrollSpy.mock.calls.map((call) => call.at(0)?.top)
 			expect(scrolledTops).toEqual([2 * HOUR_PIXEL_SIZE, 8 * HOUR_PIXEL_SIZE])
+		})
+	})
+
+	describe('scrollRequest', () => {
+		const rerenderWith = (
+			result: ReturnType<typeof renderScrollHook>,
+			scrollRequest: { time: string }
+		) => result.rerender({ scrollToNow: false, scrollRequest })
+
+		test('scrolls to a request made after mount, not to scrollTime', () => {
+			const result = renderScrollHook({ scrollTime: '08:00' })
+			scrollSpy.mockClear()
+
+			rerenderWith(result, { time: '10:30' })
+
+			expect(scrolledToTop()).toBe(hourIndex(10) * HOUR_PIXEL_SIZE + 30)
+		})
+
+		test('ignores a request older than the hook', () => {
+			renderScrollHook({
+				scrollTime: undefined,
+				scrollRequest: { time: '10:30' },
+			})
+
+			expect(scrollSpy).not.toHaveBeenCalled()
+		})
+
+		test('scrolls once per request, and again for a new request of the same time', () => {
+			const result = renderScrollHook({ scrollTime: undefined })
+			const request = { time: '10:30' }
+			rerenderWith(result, request)
+			rerenderWith(result, request)
+			expect(scrollSpy).toHaveBeenCalledTimes(1)
+
+			rerenderWith(result, { time: '10:30' })
+
+			expect(scrollSpy).toHaveBeenCalledTimes(2)
+		})
+
+		test('ignores a request while disabled', () => {
+			const result = renderScrollHook({ enabled: false, scrollTime: undefined })
+
+			rerenderWith(result, { time: '10:30' })
+
+			expect(scrollSpy).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('a timeline spanning several days', () => {
+		// 00:00 to 23:00, once per day, for two days: the header row of a
+		// multi-day horizontal resource timeline.
+		const twoDays = () =>
+			buildViewport(
+				[0, 1].flatMap(() =>
+					Array.from({ length: 24 }, (_, hour) => ({ hour: padHour(hour) }))
+				)
+			)
+
+		test('the last visible hour lands in the first day, not at the end of the range', () => {
+			renderScrollHook({
+				target: twoDays(),
+				scrollTime: '23:45',
+				axis: 'horizontal',
+			})
+
+			expect(scrolledToLeft()).toBe(23 * HOUR_PIXEL_SIZE + 45)
 		})
 	})
 })

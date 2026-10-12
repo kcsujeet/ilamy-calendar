@@ -36,6 +36,17 @@ These are non-negotiable. Violating any of these is a bug.
   good. Green tests are not that signal: they only prove what is covered. When
   the work is done, say what changed, say how to exercise it, and STOP. Wait.
   This applies however obvious the fix looks and however many gates pass.
+- EXCEPTION to the two rules above, and to the "post it" rule below, for the
+  FullCalendar parity program only (`docs/fullcalendar-parity-plan.md`): the
+  owner has given standing approval for the main session (the "manager") to
+  commit on a `parity/*` branch, push that branch and open its PR against
+  `main`, once the plan's final verification (Delivery process, step 5) passes
+  in full. That verification replaces the owner's manual test. The owner merges;
+  nobody else does. Still NEVER commit to `main`, never leave work as a
+  local-only commit, and never comment on, review, label or close issues or PRs
+  without a fresh "post it". Sub-agents never commit, push or post; only the
+  manager does. The PR hook still applies: chain
+  `touch .claude/state/pr-post-approved.flag && gh pr create ...`.
 - NEVER skip writing tests. TDD is mandatory, and a change that touches
   behaviour needs BOTH unit and e2e coverage, written before the fix. Unit tests
   alone have twice missed real defects on this repo because they construct their

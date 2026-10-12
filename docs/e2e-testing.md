@@ -186,6 +186,16 @@ advantage was identical font rendering for screenshot baselines, which are no
 longer taken, and it has no `unzip`, which `setup-bun` needs in order to install
 Bun at all.
 
+## Running from several worktrees
+
+The server port comes from `E2E_PORT` (default 4200). Give each worktree its
+own: `E2E_PORT=4311 bun run e2e`. Locally `webServer.reuseExistingServer` is
+true (https://playwright.dev/docs/test-webserver), so Playwright attaches to
+whatever already listens on the port and starts nothing. Two worktrees on the
+same port therefore do not collide: the second silently tests the first one's
+code. With a distinct port each run starts its own server. CI does not set the
+variable and is unchanged.
+
 ## Agent access
 
 A committed project-scoped `.mcp.json` adding `@playwright/mcp`

@@ -54,11 +54,18 @@ export interface IlamyCalendarApi {
 	 * the hour). Does nothing in a view without an hour axis, such as month.
 	 */
 	readonly scrollToTime: (time: string) => void
+	/**
+	 * Calls the `resources` function again. The resources shown stay until the
+	 * new ones arrive. Does nothing when `resources` is an array.
+	 */
+	readonly refetchResources: () => void
 	readonly isEventFormOpen: boolean
 	readonly selectedEvent: CalendarEvent | null
 	readonly selectedDate: Dayjs | null
 	readonly firstDayOfWeek: number
 	readonly resources: Resource[]
+	/** Whether the calendar lays out a resource axis: it has resources, or is still loading them. */
+	readonly hasResourceAxis: boolean
 	/** Axis the views lay out along: 'horizontal' (columns) or 'vertical' (rows). */
 	readonly orientation: 'horizontal' | 'vertical'
 	readonly setCurrentDate: (date: Dayjs) => void
@@ -151,11 +158,13 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 		rawEvents: context.rawEvents,
 		refetchEvents: context.refetchEvents,
 		scrollToTime: context.scrollToTime,
+		refetchResources: context.refetchResources,
 		isEventFormOpen: context.isEventFormOpen,
 		selectedEvent: context.selectedEvent,
 		selectedDate: context.selectedDate,
 		firstDayOfWeek: context.firstDayOfWeek,
 		resources: context.resources ?? EMPTY_RESOURCES,
+		hasResourceAxis: context.hasResourceAxis,
 		orientation: context.orientation,
 		setCurrentDate: context.setCurrentDate,
 		selectDate: context.selectDate,

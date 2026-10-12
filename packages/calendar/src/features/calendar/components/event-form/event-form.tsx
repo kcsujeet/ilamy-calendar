@@ -180,14 +180,14 @@ export const EventForm: React.FC<EventFormProps> = ({
 		handleConfirm,
 	} = useScopedEventMutation(onClose)
 
-	const { t, timeFormat, getEventManager, resources } = useSmartCalendarContext(
-		(context) => ({
+	const { t, timeFormat, getEventManager, resources, hasResourceAxis } =
+		useSmartCalendarContext((context) => ({
 			t: context.t,
 			timeFormat: context.timeFormat,
 			getEventManager: context.getEventManager,
 			resources: context.resources ?? [],
-		})
-	)
+			hasResourceAxis: context.hasResourceAxis,
+		}))
 	// The selected event's fields, or the new-event defaults.
 	const {
 		id: selectedEventId,
@@ -203,7 +203,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 		location: initialLocation = '',
 	} = selectedEvent ?? {}
 
-	const hasResources = resources.length > 0
+	const hasResources = hasResourceAxis
 	const initialSelectedResourceId = resourceId ?? resourceIds?.at(0)
 	const showResourceSelector =
 		hasResources && initialSelectedResourceId === undefined

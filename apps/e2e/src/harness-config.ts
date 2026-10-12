@@ -82,6 +82,15 @@ export interface UrlConfig {
 	/** Harness-only: how long the `events` function takes to answer, in ms. */
 	fetchDelay?: number
 	/**
+	 * Harness-only: pass `resources` as a function that answers with the
+	 * scenario's resources after `fetchDelay` ms (`delayed`) or fails after it
+	 * (`failing`). Read on every call, like `fetch`. A button the harness draws
+	 * calls `refetchResources()`.
+	 */
+	resourcesFetch?: 'delayed' | 'failing'
+	/** With `resourcesFetch` set: fetch again whenever the range leaves the fetched one. */
+	refetchResourcesOnNavigate?: boolean
+	/**
 	 * Harness-only: keep the scenario's first N resources. Changed on a mounted
 	 * calendar, it adds or removes a resource the way a consumer's filter does.
 	 */
@@ -453,6 +462,24 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const externalToolbar = get('externalToolbar')
 	if (externalToolbar !== null) {
 		config.externalToolbar = boolean('externalToolbar', externalToolbar)
+	}
+
+	const resourcesFetch = get('resourcesFetch')
+	if (resourcesFetch !== null) {
+		config.resourcesFetch = oneOf(
+			'resourcesFetch',
+			resourcesFetch,
+			['delayed', 'failing'] as const,
+			String
+		)
+	}
+
+	const refetchResourcesOnNavigate = get('refetchResourcesOnNavigate')
+	if (refetchResourcesOnNavigate !== null) {
+		config.refetchResourcesOnNavigate = boolean(
+			'refetchResourcesOnNavigate',
+			refetchResourcesOnNavigate
+		)
 	}
 
 	const fetchDelay = get('fetchDelay')

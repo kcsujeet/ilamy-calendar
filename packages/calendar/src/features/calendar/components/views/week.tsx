@@ -17,6 +17,7 @@ import {
 } from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
+import { viewHasResourceAxis } from '@/features/calendar/utils/resource-list'
 import {
 	collectResourceBusinessHours,
 	getViewHours,
@@ -259,7 +260,7 @@ const weekColumns = (
 ): VerticalColumnSpec[] | HorizontalRowSpec[] => {
 	const resources = config.resources ?? []
 
-	if (resources.length) {
+	if (viewHasResourceAxis(config)) {
 		if (config.orientation === 'vertical') {
 			return resourceWeekVerticalColumns(date, config, resources)
 		}
@@ -304,7 +305,7 @@ export const weekView: PluginView = {
 	columns: weekColumns,
 	renderHeader: ({ date, config }) => {
 		const resources = config.resources ?? []
-		if (!resources.length) {
+		if (!viewHasResourceAxis(config)) {
 			return <WeekViewHeader config={config} date={date} />
 		}
 		if (config.orientation === 'vertical') {

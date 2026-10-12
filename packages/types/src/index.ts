@@ -269,6 +269,12 @@ export interface ViewConfig {
 	/** The resource axis. Set only when the calendar renders resources. */
 	resources?: Resource[]
 	/**
+	 * Whether the calendar is a resource calendar: it has resources, or is still
+	 * loading them (then `resources` is empty or absent). When absent, it is
+	 * derived from `resources` being non-empty.
+	 */
+	hasResourceAxis?: boolean
+	/**
 	 * The calendar-level resource arrangement (the user's choice): where the
 	 * resource axis goes. Only meaningful when `resources` is set.
 	 */

@@ -371,4 +371,25 @@ describe('ResourceDayVertical', () => {
 			expect(screen.queryAllByTestId('all-day-row')).toHaveLength(0)
 		})
 	})
+
+	test('is a resource calendar with no lanes while a resources function is pending', () => {
+		const neverResolves = () => new Promise<Resource[]>(() => undefined)
+		cleanup()
+		render(
+			<CalendarProvider
+				events={[]}
+				initialDate={initialDate}
+				initialView="day"
+				orientation="vertical"
+				resourcesFetcher={neverResolves}
+			>
+				<CalendarDndContext>
+					<DayView />
+				</CalendarDndContext>
+			</CalendarProvider>
+		)
+
+		expect(screen.getByTestId('resource-columns-header')).toBeInTheDocument()
+		expect(screen.queryByTestId('day-view-header')).toBeNull()
+	})
 })

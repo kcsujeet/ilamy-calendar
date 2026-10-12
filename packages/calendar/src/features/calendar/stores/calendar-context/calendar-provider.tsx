@@ -1,6 +1,10 @@
 import type { CalendarEvent } from '@ilamy/types'
+import {
+	isSupportedSlotDuration,
+	resolveSlotDuration,
+} from '@ilamy/utils/helpers'
 import type { FC, ReactNode } from 'react'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/config/constants'
 import type { CalendarEventsFetcher } from '@/features/calendar/hooks/calendar-data/use-events-fetcher'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
@@ -9,6 +13,18 @@ import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { composePluginProviders } from '@/lib/plugins/compose-plugin-providers'
 import { CalendarCellProvider } from '../calendar-cell-context/calendar-cell-provider'
 import { CalendarContext, type CalendarContextType } from './calendar-context'
+
+/** Says once, per value, that a slot size cannot be drawn and an hour is used. */
+const useWarnAboutSlotDuration = (requestedSlotDuration: number) => {
+	useEffect(() => {
+		if (isSupportedSlotDuration(requestedSlotDuration)) {
+			return
+		}
+		console.warn(
+			`[ilamy] slotDuration={${requestedSlotDuration}} is not a divisor of 60 minutes; using 60.`
+		)
+	}, [requestedSlotDuration])
+}
 
 /**
  * The public props, with the three the provider receives already resolved:
@@ -93,7 +109,8 @@ const useCalendarContextValue = (
 		slotMaxTime,
 		hideExportButton = false,
 		hiddenDays,
-		slotDuration = 60,
+		slotDuration: requestedSlotDuration = 60,
+		snapDuration,
 		scrollTime,
 		scrollToNow,
 		allDaySlot = true,
@@ -106,6 +123,9 @@ const useCalendarContextValue = (
 		orientation,
 		weekViewGranularity,
 	} = props
+
+	const slotDuration = resolveSlotDuration(requestedSlotDuration)
+	useWarnAboutSlotDuration(requestedSlotDuration)
 
 	// What every label falls back to; only a consumer-passed value may override
 	// a locale's own 12/24 hour choice (`explicitTimeFormat`).
@@ -197,6 +217,7 @@ const useCalendarContextValue = (
 			hideExportButton,
 			hiddenDays,
 			slotDuration,
+			snapDuration,
 			scrollTime,
 			scrollToNow,
 			allDaySlot,
@@ -246,6 +267,7 @@ const useCalendarContextValue = (
 		hideExportButton,
 		hiddenDays,
 		slotDuration,
+		snapDuration,
 		scrollTime,
 		scrollToNow,
 		allDaySlot,

@@ -91,6 +91,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 
 								return (
 									<GridCell
+										axis="vertical"
 										className={cn(
 											'not-in-data-dragging:hover:bg-accent relative z-10 flex-1 min-h-0 cursor-pointer',
 											isSubDivider && 'border-b border-dashed'

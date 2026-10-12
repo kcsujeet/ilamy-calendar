@@ -151,4 +151,16 @@ describe('computeRange', () => {
 		expect(range.resourceId).toBe('room-a')
 		expect(range.end.toISOString()).toBe('2025-01-02T23:59:00.000Z')
 	})
+
+	it('runs from the start of the first snapped slice to the end of the last', () => {
+		const first = cell('2025-03-12T09:15:00.000Z', '2025-03-12T09:30:00.000Z')
+		const last = cell('2025-03-12T10:00:00.000Z', '2025-03-12T10:15:00.000Z')
+
+		const range = computeRange(first, last)
+
+		expect([range.start.toISOString(), range.end.toISOString()]).toEqual([
+			'2025-03-12T09:15:00.000Z',
+			'2025-03-12T10:15:00.000Z',
+		])
+	})
 })

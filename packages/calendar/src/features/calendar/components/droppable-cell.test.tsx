@@ -21,10 +21,12 @@ interface RenderCellOptions {
 	getCellClassName?: (info: CellInfo) => string
 	onCellClick?: (info: CellInfo) => void
 	resources?: Resource[]
+	snapDuration?: number
 	// Cell props
 	hour?: number
 	minute?: number
 	slotDurationMinutes?: number
+	axis?: 'vertical' | 'horizontal'
 	resourceId?: string | number
 	allDay?: boolean
 	/** The in-flight drag this cell should react to, if any. */
@@ -44,10 +46,12 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 			isCellDisabled={opts.isCellDisabled}
 			onCellClick={opts.onCellClick}
 			resources={opts.resources}
+			snapDuration={opts.snapDuration}
 		>
 			<DragPreviewContext.Provider value={opts.preview ?? null}>
 				<DroppableCell
 					allDay={opts.allDay}
+					axis={opts.axis}
 					data-testid="cell"
 					date={initialDate}
 					hour={opts.hour}
@@ -95,6 +99,56 @@ describe('DroppableCell sub-hour divider hook', () => {
 		renderCell()
 
 		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-slot-divider')
+	})
+})
+
+describe('DroppableCell snap size', () => {
+	test('names the snap size and the time axis of a cell with a finer snap', () => {
+		renderCell({
+			hour: 9,
+			slotDurationMinutes: 60,
+			snapDuration: 15,
+			axis: 'horizontal',
+		})
+
+		const cell = screen.getByTestId('cell')
+		expect(cell).toHaveAttribute('data-snap-minutes', '15')
+		expect(cell).toHaveAttribute('data-time-axis', 'horizontal')
+	})
+
+	test('resolves the snap against the cell: a 30-minute slot snaps to 5', () => {
+		renderCell({
+			hour: 9,
+			minute: 30,
+			slotDurationMinutes: 30,
+			snapDuration: 5,
+			axis: 'vertical',
+		})
+
+		expect(screen.getByTestId('cell')).toHaveAttribute('data-snap-minutes', '5')
+	})
+
+	test.each([
+		['no snap is set', undefined],
+		['the snap is as large as the cell', 60],
+		['the snap does not divide the cell', 45],
+	])('says nothing about snapping when %s', (_label, snapDuration) => {
+		renderCell({
+			hour: 9,
+			slotDurationMinutes: 60,
+			snapDuration,
+			axis: 'vertical',
+		})
+
+		const cell = screen.getByTestId('cell')
+		expect(cell).not.toHaveAttribute('data-snap-minutes')
+		expect(cell).not.toHaveAttribute('data-time-axis')
+	})
+
+	test('says nothing about snapping on a day cell', () => {
+		renderCell({ snapDuration: 15 })
+
+		expect(screen.getByTestId('cell')).not.toHaveAttribute('data-snap-minutes')
 	})
 })
 

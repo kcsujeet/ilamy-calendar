@@ -1,5 +1,6 @@
 import type { Dayjs } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
+import type { TimeAxis } from '@ilamy/utils/helpers'
 
 /**
  * A grid cell's identity, read from the self-describing data attributes that
@@ -10,6 +11,13 @@ export interface RawCell {
 	end: Dayjs
 	resourceId?: string
 	allDay: boolean
+	/**
+	 * The size, in minutes, a selection snaps to inside this cell, and the axis
+	 * time runs along in it. Present only on a time cell that snaps finer than
+	 * itself (`data-snap-minutes`, `data-time-axis`).
+	 */
+	snapMinutes?: number
+	axis?: TimeAxis
 	/** The cell element itself (for geometry / mirror positioning). */
 	element: HTMLElement
 }
@@ -48,11 +56,15 @@ export const readCell = (
 	}
 	const toCalendarTime = (iso: string): Dayjs =>
 		timezone ? dayjs.utc(iso).tz(timezone) : dayjs.utc(iso).local()
+	const snapMinutes = cell.dataset.snapMinutes
+	const axis = cell.dataset.timeAxis
 	return {
 		start: toCalendarTime(start),
 		end: toCalendarTime(end),
 		resourceId: cell.dataset.resourceId,
 		allDay: cell.dataset.allDay === 'true',
+		snapMinutes: snapMinutes === undefined ? undefined : Number(snapMinutes),
+		axis: axis === 'vertical' || axis === 'horizontal' ? axis : undefined,
 		element: cell,
 	}
 }

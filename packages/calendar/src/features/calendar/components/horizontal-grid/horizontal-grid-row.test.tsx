@@ -26,14 +26,19 @@ const mockResource: Resource = {
 
 const renderHorizontalGridRow = ({
 	preview,
+	snapDuration,
 	...props
-}: { preview?: DragPreviewState } & Record<string, unknown> = {}) => {
+}: {
+	preview?: DragPreviewState
+	snapDuration?: number
+} & Record<string, unknown> = {}) => {
 	return render(
 		<CalendarProvider
 			dayMaxEvents={3}
 			events={[]}
 			initialDate={initialDate}
 			resources={[mockResource]}
+			snapDuration={snapDuration}
 		>
 			<DragPreviewContext.Provider value={preview ?? null}>
 				<HorizontalGridRow id="row-1" resource={mockResource} {...props} />
@@ -74,6 +79,35 @@ describe('HorizontalGridRow', () => {
 			expect(
 				screen.queryByTestId('horizontal-row-label-res-1')
 			).not.toBeInTheDocument()
+		})
+	})
+
+	describe('hour columns', () => {
+		const hourColumn = {
+			id: 'col-9',
+			day: initialDate.hour(9),
+			gridType: 'hour' as const,
+		}
+
+		test('tell each cell time runs left to right and what it snaps to', () => {
+			const { container } = renderHorizontalGridRow({
+				columns: [hourColumn],
+				gridType: 'hour',
+				snapDuration: 15,
+			})
+
+			const cell = container.querySelector('[data-time-axis]')
+			expect(cell).toHaveAttribute('data-time-axis', 'horizontal')
+			expect(cell).toHaveAttribute('data-snap-minutes', '15')
+		})
+
+		test('leave a cell alone when nothing snaps finer than the hour', () => {
+			const { container } = renderHorizontalGridRow({
+				columns: [hourColumn],
+				gridType: 'hour',
+			})
+
+			expect(container.querySelector('[data-snap-minutes]')).toBeNull()
 		})
 	})
 

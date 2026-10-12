@@ -1,6 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import dayjs from './dayjs'
-import { dayKey, isSameDay, overlapsRange, wallClockDiff } from './helpers'
+import {
+	dayKey,
+	getCellMinutes,
+	getFractionAlong,
+	getSnapBucket,
+	isSameDay,
+	isSupportedSlotDuration,
+	overlapsRange,
+	resolveSlotDuration,
+	resolveSnapDuration,
+	wallClockDiff,
+} from './helpers'
 
 /**
  * An interval is `[start, end)`: the start is inclusive, the end exclusive
@@ -228,5 +239,105 @@ describe('wallClockDiff', () => {
 		const weekLater = dayjs('2025-03-15T00:00')
 		expect(wallClockDiff(weekLater, midnight, 'day')).toBe(7)
 		expect(weekLater.diff(midnight, 'day', true)).toBe(7)
+	})
+})
+
+describe('resolveSlotDuration', () => {
+	it.each([1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60])(
+		'keeps %i, a divisor of an hour',
+		(minutes) => {
+			expect(isSupportedSlotDuration(minutes)).toBe(true)
+			expect(resolveSlotDuration(minutes)).toBe(minutes)
+		}
+	)
+
+	it.each([7, 45, 90, 0, -15, 7.5, Number.NaN])(
+		'falls back to 60 for %p, which does not divide an hour',
+		(minutes) => {
+			expect(isSupportedSlotDuration(minutes)).toBe(false)
+			expect(resolveSlotDuration(minutes)).toBe(60)
+		}
+	)
+})
+
+describe('getCellMinutes', () => {
+	it('is an hour for a cell with no minute', () => {
+		expect(getCellMinutes(undefined, 15)).toBe(60)
+	})
+
+	it('is the slot for a cell with a minute', () => {
+		expect(getCellMinutes(30, 20)).toBe(20)
+	})
+
+	it('is an hour for a cell with a minute and no slot', () => {
+		expect(getCellMinutes(30, undefined)).toBe(60)
+	})
+})
+
+describe('resolveSnapDuration', () => {
+	it('is the cell size when no snap is given', () => {
+		expect(resolveSnapDuration(undefined, 30)).toBe(30)
+	})
+
+	it.each([
+		[5, 30],
+		[15, 60],
+		[30, 60],
+		[30, 30],
+	])('keeps a snap of %i inside a %i-minute cell', (snap, cell) => {
+		expect(resolveSnapDuration(snap, cell)).toBe(snap)
+	})
+
+	it.each([
+		[20, 30],
+		[45, 60],
+		[90, 60],
+		[0, 60],
+		[-5, 60],
+		[7.5, 60],
+	])(
+		'falls back to the cell for a snap of %p in a %i-minute cell',
+		(snap, cell) => {
+			expect(resolveSnapDuration(snap, cell)).toBe(cell)
+		}
+	)
+
+	it('resolves per cell: 10 is no snap of a 15-minute slot but is one of an hour', () => {
+		expect(resolveSnapDuration(10, 15)).toBe(15)
+		expect(resolveSnapDuration(10, 60)).toBe(10)
+	})
+})
+
+describe('getFractionAlong', () => {
+	it.each([
+		[150, 100, 200, 0.25],
+		[100, 100, 200, 0],
+		[300, 100, 200, 1],
+		[50, 100, 200, 0],
+		[900, 100, 200, 1],
+	])(
+		'puts %p in a span from %p of length %p at %p',
+		(at, start, length, expected) => {
+			expect(getFractionAlong(at, start, length)).toBe(expected)
+		}
+	)
+
+	it('is 0 for a span with no length', () => {
+		expect(getFractionAlong(150, 100, 0)).toBe(0)
+	})
+})
+
+describe('getSnapBucket', () => {
+	it.each([
+		[0, 0],
+		[0.24, 0],
+		[0.25, 1],
+		[0.6, 2],
+		[0.99, 3],
+		[1, 3],
+		[-1, 0],
+		[5, 3],
+	])('puts a pointer %p along an hour in bucket %i of 4', (fraction, index) => {
+		expect(getSnapBucket(fraction, 60, 15)).toEqual({ index, count: 4 })
 	})
 })

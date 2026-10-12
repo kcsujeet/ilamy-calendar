@@ -121,6 +121,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 						return col.day ? (
 							<GridCell
 								allDay={allDay}
+								axis="horizontal"
 								className={cn('flex-1 w-20', col.className)}
 								day={col.day}
 								gridType={gridType}
@@ -196,6 +197,7 @@ const GroupedColumn = memo(
 					{days.map((day, dayIndex) => (
 						<GridCell
 							allDay={allDay}
+							axis="horizontal"
 							className={cn('flex-1 w-20', col.className)}
 							day={day}
 							gridType={gridType}

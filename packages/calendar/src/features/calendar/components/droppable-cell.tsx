@@ -1,6 +1,11 @@
 import { useDroppable } from '@dnd-kit/core'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
+import {
+	getCellMinutes,
+	resolveSnapDuration,
+	type TimeAxis,
+} from '@ilamy/utils/helpers'
 import type React from 'react'
 import { useId } from 'react'
 import { DISABLED_CELL_CLASSNAME } from '@/config/constants'
@@ -22,6 +27,8 @@ interface DroppableCellProps {
 	 * cells, so this is inert on the horizontal one.
 	 */
 	slotDurationMinutes: number
+	/** The axis time runs along in the grid that drew the cell; set on hour cells. */
+	axis?: TimeAxis
 	resourceId?: string | number
 	allDay?: boolean
 	children?: React.ReactNode
@@ -67,6 +74,25 @@ function getCellRange(
 	// The next midnight, not 23:59: `end` is exclusive, which is what the slot
 	// and hour branches above already report (#248).
 	return { start, end: start.add(1, 'day').startOf('day') }
+}
+
+/**
+ * The size a drag, resize or selection snaps to inside a time cell, when that
+ * is finer than the cell; undefined otherwise, so a cell that snaps to itself
+ * says nothing. A cell without a `minute` is an hour long.
+ */
+function getFinerSnapMinutes(
+	hour: number | undefined,
+	minute: number | undefined,
+	slotDurationMinutes: number,
+	snapDuration: number | undefined
+): number | undefined {
+	if (hour === undefined) {
+		return undefined
+	}
+	const cellMinutes = getCellMinutes(minute, slotDurationMinutes)
+	const snapMinutes = resolveSnapDuration(snapDuration, cellMinutes)
+	return snapMinutes < cellMinutes ? snapMinutes : undefined
 }
 
 /**
@@ -158,6 +184,8 @@ interface CellDataInput {
 	cellDisabled: boolean
 	showDropHighlight: boolean
 	isSubDivider: boolean
+	snapMinutes?: number
+	axis?: TimeAxis
 	range: { start: Dayjs; end: Dayjs }
 	resourceId?: string | number
 	dataTestId?: string
@@ -175,6 +203,8 @@ const getCellDataAttributes = ({
 	cellDisabled,
 	showDropHighlight,
 	isSubDivider,
+	snapMinutes,
+	axis,
 	range,
 	resourceId,
 	dataTestId,
@@ -186,7 +216,9 @@ const getCellDataAttributes = ({
 	'data-end': range.end.toISOString(),
 	'data-resource-id': resourceId,
 	'data-slot-divider': isSubDivider ? 'true' : undefined,
+	'data-snap-minutes': snapMinutes,
 	'data-start': range.start.toISOString(),
+	'data-time-axis': snapMinutes === undefined ? undefined : axis,
 	'data-testid': dataTestId,
 	'data-view': view,
 })
@@ -224,6 +256,7 @@ export function DroppableCell({
 	hour,
 	minute,
 	slotDurationMinutes,
+	axis,
 	resourceId,
 	allDay,
 	children,
@@ -240,6 +273,7 @@ export function DroppableCell({
 		getResourceById,
 		disableCellClick,
 		classesOverride,
+		snapDuration,
 		view,
 	} = useCalendarCellContext()
 
@@ -252,6 +286,13 @@ export function DroppableCell({
 	const cellDisabled = disabled || Boolean(isCellDisabled?.(cellInfo))
 	const clickBlocked = disableCellClick || cellDisabled
 
+	const snapMinutes = getFinerSnapMinutes(
+		hour,
+		minute,
+		slotDurationMinutes,
+		snapDuration
+	)
+
 	const { setNodeRef, showDropHighlight } = useDropTarget({
 		data: {
 			type,
@@ -259,6 +300,8 @@ export function DroppableCell({
 			hour,
 			minute,
 			slotDurationMinutes,
+			snapMinutes,
+			axis,
 			resourceId,
 			allDay,
 			disabled: cellDisabled,
@@ -290,6 +333,8 @@ export function DroppableCell({
 				cellDisabled,
 				showDropHighlight,
 				isSubDivider,
+				snapMinutes,
+				axis,
 				range: { start, end },
 				resourceId,
 				dataTestId,

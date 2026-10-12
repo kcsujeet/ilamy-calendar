@@ -123,9 +123,15 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 	)
 }
 
+/**
+ * The hour rows of one day. The caller collects the resources' business hours
+ * ONCE per render and passes them in: collecting them here would walk every
+ * resource for every day of every resource column.
+ */
 const weekHoursFor = (
 	day: Dayjs,
 	config: ViewConfig,
+	resourceBusinessHours: ReturnType<typeof collectResourceBusinessHours>,
 	allDates?: Dayjs[]
 ): Dayjs[] =>
 	getViewHours({
@@ -135,7 +141,7 @@ const weekHoursFor = (
 		slotMinTime: config.slotMinTime,
 		slotMaxTime: config.slotMaxTime,
 		allDates,
-		resourceBusinessHours: collectResourceBusinessHours(config.resources ?? []),
+		resourceBusinessHours,
 	})
 
 const resourceWeekVerticalColumns = (
@@ -148,19 +154,24 @@ const resourceWeekVerticalColumns = (
 
 	if (isHourlyGranularity(config)) {
 		const isTodayVisible = visibleDays.some((day) => isToday(day))
+		const resourceBusinessHours = collectResourceBusinessHours(resources)
+		// One hour list per visible day, shared by every resource's column.
+		const hoursOfVisibleDays = visibleDays.map((day) =>
+			weekHoursFor(day, config, resourceBusinessHours, weekDays)
+		)
 		return resourceVerticalColumns({
 			resources,
 			gutter: gutterColumn({
-				days: weekHoursFor(date, config, weekDays),
+				days: weekHoursFor(date, config, resourceBusinessHours, weekDays),
 				gridType: 'hour',
 				showsToday: isTodayVisible,
 			}),
 			columnsFor: (resource) =>
-				visibleDays.map((day) => ({
+				visibleDays.map((day, dayIndex) => ({
 					id: keys.col.day(day, resource.id),
 					className: RESOURCE_CELL_WIDTH,
 					day,
-					days: weekHoursFor(day, config, weekDays),
+					days: hoursOfVisibleDays[dayIndex],
 					gridType: 'hour' as const,
 				})),
 		})
@@ -193,7 +204,10 @@ const resourceWeekHorizontalRows = (
 	const visibleDays = getVisibleDays(date, config)
 
 	if (isHourlyGranularity(config)) {
-		const weekHours = visibleDays.map((day) => weekHoursFor(day, config))
+		const resourceBusinessHours = collectResourceBusinessHours(resources)
+		const weekHours = visibleDays.map((day) =>
+			weekHoursFor(day, config, resourceBusinessHours)
+		)
 		return resourceHorizontalRows({
 			resources,
 			days: weekHours,
@@ -235,11 +249,12 @@ const ResourceWeekHorizontalHeader: React.FC<{
 	date: Dayjs
 	config: ViewConfig
 	resources: Resource[]
-}> = ({ date, config }) => {
+}> = ({ date, config, resources }) => {
 	const visibleDays = getVisibleDays(date, config)
 	const isHourly = isHourlyGranularity(config)
+	const resourceBusinessHours = collectResourceBusinessHours(resources)
 	const hoursOfVisibleDays = visibleDays.flatMap((day) =>
-		weekHoursFor(day, config)
+		weekHoursFor(day, config, resourceBusinessHours)
 	)
 	const weekHours = isHourly ? hoursOfVisibleDays : []
 
@@ -270,10 +285,12 @@ const weekColumns = (
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
 	const visibleDays = getVisibleDays(date, config)
 	const isTodayVisible = visibleDays.some((day) => isToday(day))
+	// This branch has no resources, so there are no resource business hours.
+	const noResourceBusinessHours = collectResourceBusinessHours([])
 
 	return [
 		gutterColumn({
-			days: weekHoursFor(date, config, weekDays),
+			days: weekHoursFor(date, config, noResourceBusinessHours, weekDays),
 			gridType: 'hour',
 			widthClassName: RESPONSIVE_GUTTER_WIDTH,
 			showsToday: isTodayVisible,
@@ -282,7 +299,7 @@ const weekColumns = (
 		...visibleDays.map((day) => ({
 			id: keys.col.day(day),
 			day,
-			days: weekHoursFor(day, config, weekDays),
+			days: weekHoursFor(day, config, noResourceBusinessHours, weekDays),
 			className: 'flex-1 min-w-0',
 			gridType: 'hour' as const,
 		})),

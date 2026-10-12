@@ -1209,6 +1209,249 @@ describe('useCalendarEngine', () => {
 			})
 		})
 
+		describe('delta', () => {
+			const getDelta = (
+				updates: Partial<CalendarEvent>
+			): EventsChange['delta'] => {
+				const { engine, onEventsChange } = renderWithChanges([createEvent()])
+				act(() => engine().updateEvent('1', updates))
+				return onEventsChange.mock.calls.at(0)?.at(0)?.delta
+			}
+
+			it('is the move of the start, in days and wall-clock time', () => {
+				const delta = getDelta({
+					start: dayjs('2025-01-16T10:30:00.000Z'),
+					end: dayjs('2025-01-16T11:30:00.000Z'),
+				})
+				expect(delta).toEqual({ days: 1, milliseconds: 1_800_000 })
+			})
+
+			it('is zero when the start did not move', () => {
+				expect(getDelta({ title: 'Renamed' })).toEqual({
+					days: 0,
+					milliseconds: 0,
+				})
+			})
+
+			it('measures a timed event moved to the next all-day row from its day start', () => {
+				// FullCalendar measures from the start of the event's day when a drag
+				// turns a timed event all-day (EventDragging.ts:454, v7.1.1), so a
+				// 10:00 event dropped on the next day's all-day row moved one day.
+				// Zoneless strings, so the clock reads the same on any machine zone.
+				const timedEvent = createEvent({
+					start: dayjs('2025-01-15T10:00:00'),
+					end: dayjs('2025-01-15T11:00:00'),
+				})
+				const { engine, onEventsChange } = renderWithChanges([timedEvent])
+				act(() =>
+					engine().updateEvent('1', {
+						start: dayjs('2025-01-16T00:00:00'),
+						end: dayjs('2025-01-17T00:00:00'),
+						allDay: true,
+					})
+				)
+				const delta = onEventsChange.mock.calls.at(0)?.at(0)?.delta
+				expect(delta).toEqual({ days: 1, milliseconds: 0 })
+			})
+
+			it('measures an all-day event moved to a timed slot from its midnight start', () => {
+				const allDayEvent = createEvent({
+					start: dayjs('2025-01-15T00:00:00'),
+					end: dayjs('2025-01-16T00:00:00'),
+					allDay: true,
+				})
+				const { engine, onEventsChange } = renderWithChanges([allDayEvent])
+				act(() =>
+					engine().updateEvent('1', {
+						start: dayjs('2025-01-16T11:00:00'),
+						end: dayjs('2025-01-16T12:00:00'),
+						allDay: false,
+					})
+				)
+				const delta = onEventsChange.mock.calls.at(0)?.at(0)?.delta
+				expect(delta).toEqual({ days: 1, milliseconds: 39_600_000 })
+			})
+
+			it('is undefined for an add and a delete', () => {
+				const { engine, onEventsChange } = renderWithChanges([createEvent()])
+				act(() => engine().addEvent(createEvent({ id: 'new' })))
+				act(() => engine().deleteEvent('1'))
+				const deltas = onEventsChange.mock.calls.map(([change]) => change.delta)
+				expect(deltas).toEqual([undefined, undefined])
+			})
+
+			it('is the move of the start for a scoped recurring edit', () => {
+				const { engine, onEventsChange } = renderRecurrenceEngine([
+					createRecurringEvent(),
+				])
+				const occurrence = createEvent({
+					id: 'recurring-1_2',
+					uid: 'recurring-1@ilamy.calendar',
+					start: dayjs('2025-01-13T10:00:00.000Z'),
+					end: dayjs('2025-01-13T11:00:00.000Z'),
+				})
+				act(() =>
+					engine().applyScopedEdit(
+						occurrence,
+						{
+							start: dayjs('2025-01-13T08:00:00.000Z'),
+							end: dayjs('2025-01-13T09:00:00.000Z'),
+						},
+						'this'
+					)
+				)
+				const delta = onEventsChange.mock.calls.at(0)?.at(0)?.delta
+				expect(delta).toEqual({ days: 0, milliseconds: -7_200_000 })
+			})
+		})
+
+		describe('revert', () => {
+			const renderReverting = (events: CalendarEvent[]) => {
+				const onEventAdd = vi.fn()
+				const onEventUpdate = vi.fn()
+				const onEventDelete = vi.fn()
+				const onEventsChange = vi.fn<(change: EventsChange) => void>()
+				const { result } = renderHook(() =>
+					useCalendarEngine({
+						...defaultConfig,
+						events,
+						onEventAdd,
+						onEventUpdate,
+						onEventDelete,
+						onEventsChange,
+						plugins: [recurrencePlugin()],
+					})
+				)
+				const getEngine = () => result.current
+				/** Reverts a reported change (the last by default) and asserts it reported nothing. */
+				const revertLast = (index = -1) => {
+					const change = onEventsChange.mock.calls.at(index)?.at(0)
+					if (!change) {
+						throw new Error('no change was reported')
+					}
+					const callsBefore = [
+						onEventAdd,
+						onEventUpdate,
+						onEventDelete,
+						onEventsChange,
+					].map((spy) => spy.mock.calls.length)
+					act(() => change.revert())
+					const callsAfter = [
+						onEventAdd,
+						onEventUpdate,
+						onEventDelete,
+						onEventsChange,
+					].map((spy) => spy.mock.calls.length)
+					expect(callsAfter).toEqual(callsBefore)
+				}
+				return { getEngine, revertLast }
+			}
+
+			it('removes an added event', () => {
+				const original = createEvent()
+				const { getEngine, revertLast } = renderReverting([original])
+				act(() => getEngine().addEvent(createEvent({ id: 'new' })))
+				revertLast()
+				expect(getEngine().rawEvents).toEqual([original])
+			})
+
+			it('restores the exact previous row of an updated event', () => {
+				const original = createEvent()
+				const { getEngine, revertLast } = renderReverting([original])
+				act(() => getEngine().updateEvent('1', { title: 'Renamed' }))
+				expect(getEngine().rawEvents.at(0)?.title).toBe('Renamed')
+				revertLast()
+				expect(getEngine().rawEvents.at(0)).toBe(original)
+			})
+
+			it('puts back a deleted event', () => {
+				const first = createEvent({ id: 'first' })
+				const second = createEvent({ id: 'second' })
+				const { getEngine, revertLast } = renderReverting([first, second])
+				act(() => getEngine().deleteEvent('first'))
+				revertLast()
+				expect(getEngine().rawEvents).toEqual([first, second])
+			})
+
+			it('puts a deleted event back once when reverted twice', () => {
+				const first = createEvent({ id: 'first' })
+				const second = createEvent({ id: 'second' })
+				const { getEngine, revertLast } = renderReverting([first, second])
+				act(() => getEngine().deleteEvent('first'))
+				revertLast()
+				revertLast()
+				expect(getEngine().rawEvents).toEqual([first, second])
+			})
+
+			it('leaves a later edit alone when reverted a second time', () => {
+				const original = createEvent()
+				const { getEngine, revertLast } = renderReverting([original])
+				act(() => getEngine().updateEvent('1', { title: 'First edit' }))
+				revertLast()
+				act(() => getEngine().updateEvent('1', { title: 'Second edit' }))
+				revertLast(0)
+				expect(getEngine().rawEvents.at(0)?.title).toBe('Second edit')
+			})
+
+			it('keeps an event added after the reverted action', () => {
+				const original = createEvent()
+				const { getEngine, revertLast } = renderReverting([original])
+				act(() => getEngine().updateEvent('1', { title: 'Renamed' }))
+				act(() => getEngine().addEvent(createEvent({ id: 'later' })))
+				revertLast(0)
+				expect(getEngine().rawEvents.map((e) => e.id)).toEqual(['1', 'later'])
+				expect(getEngine().rawEvents.at(0)).toBe(original)
+			})
+
+			describe('a recurring series with a moved occurrence', () => {
+				const occurrenceISO = '2025-01-13T10:00:00.000Z'
+				const base = createRecurringEvent({ exdates: [occurrenceISO] })
+				const override: CalendarEvent = {
+					...base,
+					id: 'recurring-1_override',
+					recurrenceId: occurrenceISO,
+					rrule: undefined,
+					exdates: undefined,
+					start: dayjs('2025-01-20T12:00:00.000Z'),
+					end: dayjs('2025-01-20T13:00:00.000Z'),
+				}
+				const occurrence: CalendarEvent = {
+					...base,
+					id: 'recurring-1_2',
+					start: dayjs('2025-01-13T10:00:00.000Z'),
+					end: dayjs('2025-01-13T11:00:00.000Z'),
+					rrule: undefined,
+					exdates: undefined,
+				}
+				const stored = [base, override]
+
+				const scopes = ['this', 'following', 'all'] as const
+				for (const scope of scopes) {
+					it(`restores every row after editing "${scope}"`, () => {
+						const { getEngine, revertLast } = renderReverting(stored)
+						act(() =>
+							getEngine().applyScopedEdit(
+								occurrence,
+								{ title: 'Renamed' },
+								scope
+							)
+						)
+						expect(getEngine().rawEvents).not.toEqual(stored)
+						revertLast()
+						expect(getEngine().rawEvents).toEqual(stored)
+					})
+
+					it(`restores every row after deleting "${scope}"`, () => {
+						const { getEngine, revertLast } = renderReverting(stored)
+						act(() => getEngine().applyScopedDelete(occurrence, scope))
+						expect(getEngine().rawEvents).not.toEqual(stored)
+						revertLast()
+						expect(getEngine().rawEvents).toEqual(stored)
+					})
+				}
+			})
+		})
+
 		it('reports a plugin edit that returns a plain list as an update of the event', () => {
 			// A plugin may return the next event list instead of a structured result.
 			const listPlugin: IlamyPlugin = {

@@ -137,13 +137,53 @@ and usually carries several rows. FullCalendar's `eventChange` means
 modifications only (adds and removals are `eventAdd` and `eventRemove`), so
 reusing that name would suggest a narrower callback than this one.
 
+## Change info: `delta` and `revert` (3.3.1)
+
+Added on top of the callback above, verified at FullCalendar v7.1.1 (paths
+under `packages/preact/src/`). `eventChange` gives `{ oldEvent, event,
+relatedEvents, revert }` (`event-crud.ts:13-18`) and `eventDrop` adds `delta`
+(`interaction-plugin/interactions/EventDragging.ts:289-301`).
+
+Mapping, deliberately not a copy of FullCalendar's names:
+
+- `EventsChange.event` is already the event as it was shown, before the change,
+  which is FullCalendar's `oldEvent`. No `oldEvent` field is added; the new rows
+  are in `updated`.
+- FullCalendar's `relatedEvents` is covered, more precisely, by `added`,
+  `updated` and `deleted`.
+- `delta` is FullCalendar's Duration, as `{ days, milliseconds }`
+  (`years`/`months` omitted: no action here produces them). It is computed as
+  `diffDayAndTime` does (`headless-calendar/src/marker.ts:48-58`): the
+  difference of the two start-of-day dates plus the difference of the two
+  wall-clock times of day, so a drag across a clock change keeps the event at
+  its clock time. ilamy has one callback, so `delta` is on every `'update'`
+  (zero when the start did not move), not only on drags. It is undefined for
+  `'add'` and `'delete'`.
+- `revert()` restores the pre-action rows of every row the action touched, by
+  writing the calendar's store, and fires no callback
+  (`EventDragging.ts:281-286`, `structs/event-store.ts:55-77`). Here it removes
+  `added`, puts the previous version over each row of `updated` (looked up by
+  id in the rows held before the action) and re-inserts `deleted` at its old
+  index, skipping an id that is already present. A later edit of one of those
+  rows is overwritten, as in FullCalendar's store merge; rows other actions
+  added or changed are left alone. A second call does nothing.
+- A drop that changes nothing (start, end, `allDay` and resource all the same)
+  commits nothing and fires no callback, as FullCalendar fires no `eventChange`
+  for it (`_noEventDrop`, `EventDragging.ts:374`, v7.1.1). Before 3.3.1 it fired
+  `onEventUpdate` and `onEventsChange` with an unchanged row.
+- A timed event that becomes all-day is measured from the start of its own day
+  (`EventDragging.ts:454`, v7.1.1); all-day to timed uses the midnight start.
+- Both starts are re-zoned from their instants before their wall clocks are
+  read. A drop in the hour the clocks skip stores an instant whose dayjs object
+  still carries the offset of the hour before, so reading its clock directly
+  gave 02:30 for 01:30 EST and a delta an hour short.
+
+Limits: `revert` writes the calendar's own store. A consumer that controls
+`events` and already saved the change must restore its own state, because a new
+`events` prop replaces the store's rows.
+
 ## Not in this proposal
 
-- **Refusing a change.** FullCalendar's `revert()` lets a consumer undo an
-  action after the fact. Ours would need the store to roll back to its state
-  before the action, which `use-calendar-data` cannot do today. Worth doing
-  next, on top of this, since one callback per action is what makes a single
-  revert possible.
 - **Async confirmation** (waiting for the backend before updating the grid).
 - **Changing how rows are stored** (for example, overrides inside the series
   object, as CalDAV does).

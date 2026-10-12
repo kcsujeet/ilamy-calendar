@@ -1,8 +1,8 @@
-import type { EventsChange } from '@ilamy/calendar'
+import type { EventDelta, EventsChange } from '@ilamy/calendar'
 
 /**
  * An onEventsChange call as the harness publishes it and the specs read it:
- * the action, its scope and the ids of its rows (#309).
+ * the action, its scope, the ids of its rows (#309) and how far the start moved.
  */
 export interface PublishedChange {
 	action: EventsChange['action']
@@ -11,4 +11,5 @@ export interface PublishedChange {
 	added: string[]
 	updated: string[]
 	deleted: string[]
+	delta: EventDelta | null
 }

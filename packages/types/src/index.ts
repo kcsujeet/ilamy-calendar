@@ -180,6 +180,17 @@ export interface PluginMutationResult {
 }
 
 /**
+ * How far an update moved an event's start: whole calendar days plus the change
+ * in wall-clock time of day.
+ */
+export interface EventDelta {
+	/** Whole calendar days, in the calendar's zone. */
+	days: number
+	/** Change in the time of day on the wall clock, in milliseconds. */
+	milliseconds: number
+}
+
+/**
  * One user action and every stored row it touched, reported once through
  * `onEventsChange` (#309). A recurring edit touches several rows (the series,
  * an override, deleted overrides) that the per-row callbacks report one by
@@ -190,7 +201,10 @@ export interface PluginMutationResult {
 export interface EventsChange {
 	/** What the user did. */
 	action: 'add' | 'update' | 'delete'
-	/** The event the user acted on, as it was shown (an occurrence, for a series). */
+	/**
+	 * The event the user acted on, as it was shown before the change (an
+	 * occurrence, for a series). The changed rows are in `updated`.
+	 */
 	event: CalendarEvent
 	/**
 	 * The scope chosen in the plugin's scope dialog, when a plugin manages the
@@ -204,6 +218,21 @@ export interface EventsChange {
 	updated: CalendarEvent[]
 	/** Removed rows, the same ones passed to `onEventDelete`. */
 	deleted: CalendarEvent[]
+	/**
+	 * For `'update'`: how far the event's start moved (zero when it did not).
+	 * Undefined for `'add'` and `'delete'`. A timed event that became all-day is
+	 * measured from the start of its own day.
+	 */
+	delta?: EventDelta
+	/**
+	 * Undoes the whole action in the calendar's own store: removes `added`,
+	 * restores the previous version of every row in `updated`, and puts back
+	 * `deleted`. A later edit of one of those rows is overwritten; rows other
+	 * actions added or changed since are kept. It fires no callbacks, and
+	 * calling it again does nothing. A consumer that controls `events` reverts
+	 * its own state instead.
+	 */
+	revert: () => void
 }
 
 /**

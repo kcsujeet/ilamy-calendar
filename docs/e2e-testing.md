@@ -141,6 +141,9 @@ see that row come back on the next update (#315). It publishes what the
 calendar reports as JSON in two hidden `<script>` elements, read by
 `CalendarPage.eventState()` (`event-state`, the stored rows) and
 `CalendarPage.eventChanges()` (`event-changes`, every `onEventsChange` call).
+With `revertChanges=true` it acts as a server that rejects every save: it persists no
+row and calls `change.revert()` inside `onEventsChange`, so a spec can check the
+calendar puts the event back.
 
 `webServer` in the config boots the harness (`command`, `url`,
 `reuseExistingServer: !process.env.CI`).

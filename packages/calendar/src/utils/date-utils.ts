@@ -132,29 +132,50 @@ interface GetDayHoursOptions {
 
 /**
  * Generates an array of 24 dayjs objects representing hourly slots for a day.
- * Uses .hour(i) so each row maps to "the hour labeled i" — keeping grid rows
- * aligned across columns in week views. On DST spring-forward, .hour(2) returns
- * 3 AM (the non-existent hour is collapsed), but the grid key fix (dayIndex)
- * and per-day generation in views handle this correctly.
+ * Each row maps to "the hour labeled i" — keeping grid rows aligned across
+ * columns in week views. On DST spring-forward the non-existent 2 AM row reads
+ * 3 AM, but the grid key fix (dayIndex) and per-day generation in views handle
+ * this correctly. The day is parsed once, not once per row (docs/performance.md).
  */
 export function getDayHours({
 	referenceDate = dayjs(),
 	length = 24,
 }: GetDayHoursOptions = {}): Dayjs[] {
-	// Each row is rebuilt from a zoneless string, which dayjs anchors in the
-	// configured zone on parse and so derives the offset for THIS day. The
-	// `.hour(i)` setter keeps the clock face but the start-of-day's UTC offset,
-	// so on a day the clocks change a row after the change carried the wrong
-	// offset (docs/timezones.md); the same reason `calculateDropTimes` rebuilds
-	// its target this way.
 	const referenceDay = referenceDate.format('YYYY-MM-DD')
-	return Array.from({ length }, (_, i) => {
-		const hourOfDay = String(i).padStart(2, '0')
-		// `.tz()` with no argument re-reads the instant in the configured zone, so
-		// `format()` and `.hour()` show the right clock on a machine whose own
-		// clocks change that day too.
-		return dayjs(`${referenceDay}T${hourOfDay}:00:00.000`).tz()
-	})
+	const wallClockAt = (hourOfDay: number) =>
+		dayjs(`${referenceDay}T${String(hourOfDay).padStart(2, '0')}:00:00.000`)
+	// `.tz()` with no argument re-reads the instant in the configured zone, so
+	// `format()` and `.hour()` show the right clock on a machine whose own
+	// clocks change that day too. It is the costly step (about 45 us), so it
+	// runs once for the day's first row unless the day needs a row each.
+	const firstRow = wallClockAt(0).tz()
+	const lastHourOfDay = 23
+	const hasCalendarClockChange =
+		firstRow.utcOffset() !== wallClockAt(lastHourOfDay).utcOffset()
+	// dayjs reads a zoned row through the machine's zone, so `add` on it reads
+	// an hour wrong on a day near a change of the MACHINE's clocks, whatever
+	// the calendar's zone does (docs/timezones.md). A change within a day and a
+	// half of the day, either side, rules the cheap path out.
+	const msAroundDay = 36 * 60 * 60 * 1000
+	const machineOffsetBefore = new Date(
+		firstRow.valueOf() - msAroundDay
+	).getTimezoneOffset()
+	const machineOffsetAfter = new Date(
+		firstRow.valueOf() + msAroundDay
+	).getTimezoneOffset()
+	const hasMachineClockChange = machineOffsetBefore !== machineOffsetAfter
+
+	// A day with no clock change anywhere near it has one offset all day, so
+	// every row is the first row moved on by whole hours.
+	if (!hasCalendarClockChange && !hasMachineClockChange) {
+		return Array.from({ length }, (_, i) => firstRow.hour(i))
+	}
+
+	// On a change day a row after the change must carry ITS hour's offset, not
+	// the start of the day's (`.hour(i)` kept the latter, docs/timezones.md), so
+	// each row is rebuilt from its own wall-clock string, which dayjs anchors
+	// in the configured zone; `calculateDropTimes` rebuilds its target this way.
+	return Array.from({ length }, (_, i) => wallClockAt(i).tz())
 }
 
 /** The 6x7 month grid range: first cell of week 1 → last cell of week 6. */

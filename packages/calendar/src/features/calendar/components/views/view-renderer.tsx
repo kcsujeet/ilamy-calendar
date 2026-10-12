@@ -185,6 +185,13 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 		[view, currentDate, config]
 	)
 
+	// Memoized like the specs: an unchanged element is not re-rendered, so the
+	// header's own work (its hour rows) does not rerun on every context change.
+	const header = useMemo(
+		() => view.renderHeader?.({ date: currentDate, config }),
+		[view, currentDate, config]
+	)
+
 	if (!specs || !view.layout) {
 		const EscapeHatch = view.component
 		if (EscapeHatch) {
@@ -211,7 +218,6 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 		? (orientation ?? 'horizontal')
 		: view.layout
 	const variant = composesResourceAxis ? 'resource' : 'regular'
-	const header = view.renderHeader?.({ date: currentDate, config })
 
 	if (isVerticalSpecs(specs, engine)) {
 		return (

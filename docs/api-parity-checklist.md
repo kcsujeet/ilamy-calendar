@@ -18,7 +18,7 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 - [ ] **External event dragging** — `onEventReceive` / `onDrop`. Drag elements from outside the calendar onto a cell to create events. Requires interaction with external `@dnd-kit` sources
 - [x] **`eventAllow(dropInfo, draggedEvent) => boolean`** — vetoes a candidate placement while dragging, with `editable` / `eventStartEditable` and per-event flags (3.3.2). `selectAllow` is still open (4.1.3)
 - [x] **`delta` in DnD callbacks** — done: `EventsChange.delta` is `{ days, milliseconds }` on every update (3.3.1). Was: `onEventUpdate` should include `{ delta: { days: number, hours: number, minutes: number } }` so consumers don't need to manually diff old/new dates
-- [ ] **`slotMinTime` / `slotMaxTime`** — Control visible time range independently of business hours. Currently `hideNonBusinessHours` is all-or-nothing
+- [x] **`slotMinTime` / `slotMaxTime`** — done: `'HH:mm'` bounds on the visible clock range of the hour grids, independent of business hours; the end is exclusive and both stay within one day (3.3.4). Was: control visible time range independently of business hours, when `hideNonBusinessHours` was all-or-nothing
 
 ## Tier 3: Polish
 

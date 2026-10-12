@@ -103,10 +103,20 @@ export function getDayHours({
 	referenceDate = dayjs(),
 	length = 24,
 }: GetDayHoursOptions = {}): Dayjs[] {
-	const startOfDay = referenceDate.startOf('day')
-	return Array.from({ length }, (_, i) =>
-		startOfDay.hour(i).minute(0).second(0).millisecond(0)
-	)
+	// Each row is rebuilt from a zoneless string, which dayjs anchors in the
+	// configured zone on parse and so derives the offset for THIS day. The
+	// `.hour(i)` setter keeps the clock face but the start-of-day's UTC offset,
+	// so on a day the clocks change a row after the change carried the wrong
+	// offset (docs/timezones.md); the same reason `calculateDropTimes` rebuilds
+	// its target this way.
+	const referenceDay = referenceDate.format('YYYY-MM-DD')
+	return Array.from({ length }, (_, i) => {
+		const hourOfDay = String(i).padStart(2, '0')
+		// `.tz()` with no argument re-reads the instant in the configured zone, so
+		// `format()` and `.hour()` show the right clock on a machine whose own
+		// clocks change that day too.
+		return dayjs(`${referenceDay}T${hourOfDay}:00:00.000`).tz()
+	})
 }
 
 /** The 6x7 month grid range: first cell of week 1 → last cell of week 6. */

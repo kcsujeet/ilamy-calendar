@@ -136,6 +136,8 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `businessHours` | `BusinessHours \| BusinessHours[]` | — | Working hours config |
 | `hideExportButton` | `boolean` | `false` | Hide the iCalendar export button in the default header (desktop and mobile) |
 | `hideNonBusinessHours` | `boolean` | `false` | Hide off-hours in day/week views |
+| `slotMinTime` | `string` | `'00:00'` | First visible time in hour grids, `'HH:mm'` or `'HH:mm:ss'` |
+| `slotMaxTime` | `string` | `'24:00'` | End of the visible time in hour grids, exclusive, up to `'24:00'`. Invalid values (or an end not after the start) show the whole day and log one `console.warn` |
 | `slotDuration` | `15 \| 30 \| 60` | `60` | Time-grid granularity (minutes). `60` gives one row per hour with no sub-hour lines; `30` two; `15` four with dashed separators. Applies to day, week, and resource hour views. |
 | `hiddenDays` | `WeekDays[]` | `[]` | Days to hide from vertical week view. Ignored in resource vertical week view with daily granularity (`weekViewGranularity: 'daily'`) — non-contiguous days would break multi-day event positioning. |
 | `allDaySlot` | `boolean` | `true` | Draw the all-day row in day, week and resource time grids. `false` removes it and all-day events are not shown in those views. |

@@ -261,6 +261,10 @@ export interface ViewConfig {
 	hiddenDays?: Set<number>
 	businessHours?: BusinessHours | BusinessHours[]
 	hideNonBusinessHours?: boolean
+	/** First visible time in hour grids, `'HH:mm'`. Unset shows from midnight. */
+	slotMinTime?: string
+	/** End of the visible time in hour grids, exclusive, `'HH:mm'` up to `'24:00'`. */
+	slotMaxTime?: string
 	/** The resource axis. Set only when the calendar renders resources. */
 	resources?: Resource[]
 	/**

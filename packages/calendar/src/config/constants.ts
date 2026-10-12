@@ -13,6 +13,8 @@ export const DAY_MAX_EVENTS_DEFAULT = 4 // Default max events per day
 export const DISABLED_CELL_CLASSNAME =
 	'bg-[color-mix(in_oklch,var(--background),var(--foreground)_3%)] text-muted-foreground pointer-events-none'
 
+export const DAYS_IN_WEEK = 7
+
 export const WEEK_DAYS_NUMBER_MAP: Record<WeekDays, number> = {
 	sunday: 0,
 	monday: 1,

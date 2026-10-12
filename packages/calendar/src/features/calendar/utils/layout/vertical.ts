@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { wallClockDiff } from '@ilamy/utils/helpers'
+import { getDayColumnSpan } from './day-columns'
 import type { VerticalPositionedEvent } from './geometry'
 
 interface VerticalLayoutInput {
@@ -10,6 +11,7 @@ interface VerticalLayoutInput {
 }
 
 interface GridMetrics {
+	days: Dayjs[]
 	gridStart: Dayjs
 	totalUnits: number
 	gridType: 'day' | 'hour' | 'minute'
@@ -43,25 +45,45 @@ const clusterOverlappingEvents = (
 
 // --- Phase 2: geometry ------------------------------------------------------
 
-/** Top/height percentages for an event, clamped to the grid; null if outside. */
-const computeTopHeight = (
-	event: CalendarEvent,
-	{ gridStart, totalUnits, gridType, isDiscrete }: GridMetrics
-): {
+interface TopHeight {
 	top: number
 	height: number
 	isTruncatedStart: boolean
 	isTruncatedEnd: boolean
-} | null => {
+}
+
+/**
+ * A day grid draws whole days, one per row, so a bar covers the rows its days
+ * sit in. The rows come from `days` rather than from counting days off the
+ * first one, because a hidden day is missing from them.
+ */
+const computeDayRowsTopHeight = (
+	event: CalendarEvent,
+	days: Dayjs[]
+): TopHeight | null => {
+	const span = getDayColumnSpan(event, days)
+	if (!span) return null
+	const rowCount = span.endCol - span.startCol + 1
+	return {
+		top: (span.startCol / days.length) * 100,
+		height: (rowCount / days.length) * 100,
+		isTruncatedStart: span.isTruncatedStart,
+		isTruncatedEnd: span.isTruncatedEnd,
+	}
+}
+
+/** Top/height percentages for an event, clamped to the grid; null if outside. */
+const computeTopHeight = (
+	event: CalendarEvent,
+	{ days, gridStart, totalUnits, gridType, isDiscrete }: GridMetrics
+): TopHeight | null => {
+	if (isDiscrete) {
+		return computeDayRowsTopHeight(event, days)
+	}
 	// Clock time, not elapsed time: rows are labelled by clock hour, so on a day
 	// the clocks change, elapsed time put 09:00 beside 8 AM or 10 AM (#311).
 	let startTime = wallClockDiff(event.start, gridStart, gridType)
 	let endTime = wallClockDiff(event.end, gridStart, gridType)
-	if (isDiscrete) {
-		startTime = Math.floor(startTime)
-		endTime = Math.ceil(endTime)
-		if (endTime <= startTime) endTime = startTime + 1
-	}
 	// The clamps below are what truncation IS here: an event reaching past
 	// either edge of the visible range gets drawn at the edge instead, and the
 	// renderer needs to know that the edge is not the event's own boundary.
@@ -156,6 +178,7 @@ export const layoutVertical = ({
 
 	// Grid boundaries and metrics, anchored to the grid unit boundaries.
 	const metrics: GridMetrics = {
+		days,
 		gridStart: days.at(0) || dayjs(),
 		totalUnits: days.length,
 		gridType,

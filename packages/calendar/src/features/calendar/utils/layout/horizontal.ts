@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import type { Dayjs } from '@ilamy/utils/dayjs'
 import { wallClockDiff } from '@ilamy/utils/helpers'
+import { getDayColumnSpan } from './day-columns'
 import type { HorizontalPositionedEvent } from './geometry'
 
 interface HorizontalLayoutInput {
@@ -11,8 +12,6 @@ interface HorizontalLayoutInput {
 }
 
 interface GridBounds {
-	firstUnit: Dayjs
-	lastUnit: Dayjs
 	unitCount: number
 	gridType: 'day' | 'hour'
 	columns: Dayjs[]
@@ -118,36 +117,15 @@ const findHourColumnSpan = (
 /** Column span and truncation of an event, clamped to the grid bounds. */
 const computeColumnSpan = (
 	event: CalendarEvent,
-	{ firstUnit, lastUnit, unitCount, gridType, columns }: GridBounds
+	{ gridType, columns }: GridBounds
 ): ColumnSpan | null => {
+	// Both axes read their columns off `columns` rather than counting from the
+	// first one: a hidden day or a visible-hours window leaves gaps, and counting
+	// would put every bar past a gap in the wrong column.
 	if (gridType === 'hour') {
 		return findHourColumnSpan(event, columns)
 	}
-	const eventStart = dayjs.max(event.start.startOf(gridType), firstUnit)
-	// `end` is exclusive at every granularity: an event ending at midnight stops
-	// as that day begins, so it must not claim the day's column, exactly as one
-	// ending on the hour does not claim that hour's row (#248). The step back is a
-	// MILLISECOND, dayjs's smallest unit, so it lands on the last instant the
-	// event occupies and nothing else. A coarser step silently swallows anything
-	// ending inside it: at a minute, an event running 30 seconds into the next day
-	// lost that day entirely.
-	const adjustedEnd = event.end.subtract(1, 'millisecond')
-	const eventEnd = dayjs.min(adjustedEnd.startOf(gridType), lastUnit)
-	// Clock time, not elapsed time: columns are labelled by clock hour, so on a
-	// day the clocks change, elapsed time put 09:00 in the 8 or 10 AM column (#311).
-	const unitsToStart = Math.trunc(
-		wallClockDiff(eventStart, firstUnit, gridType)
-	)
-	const unitsToEnd = Math.trunc(wallClockDiff(eventEnd, firstUnit, gridType))
-	return {
-		startCol: Math.max(0, unitsToStart),
-		endCol: Math.min(unitCount - 1, unitsToEnd),
-		isTruncatedStart: event.start.startOf(gridType).isBefore(firstUnit),
-		// Read off the SAME exclusive end as the span above. Using the raw `end`
-		// here would disagree with it at the grid's edge, drawing the overrun
-		// indicator on an event that ends exactly where the grid does.
-		isTruncatedEnd: adjustedEnd.startOf(gridType).isAfter(lastUnit),
-	}
+	return getDayColumnSpan(event, columns)
 }
 
 /**
@@ -254,16 +232,9 @@ export const layoutHorizontal = ({
 	dayMaxEvents,
 	gridType = 'day',
 }: HorizontalLayoutInput): HorizontalPositionedEvent[] => {
-	// For hour-based grids, use actual first/last hours from the days array;
-	// for day-based grids, use start/end of day to capture all events.
-	const first = days.at(0)
-	const last = days.at(-1)
-	if (!first || !last) return []
+	if (days.length === 0) return []
 
 	const bounds: GridBounds = {
-		firstUnit:
-			gridType === 'hour' ? first.startOf('hour') : first.startOf('day'),
-		lastUnit: gridType === 'hour' ? last.endOf('hour') : last.endOf('day'),
 		unitCount: days.length,
 		gridType,
 		columns: days,

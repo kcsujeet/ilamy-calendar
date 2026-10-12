@@ -12,6 +12,7 @@ import { parseSlotRange } from '@/features/calendar/utils/view-hours'
 // oxlint-disable-next-line no-duplicates
 import '@ilamy/utils/dayjs'
 import {
+	DAYS_IN_WEEK,
 	EVENT_BAR_HEIGHT,
 	GAP_BETWEEN_ELEMENTS,
 	WEEK_DAYS_NUMBER_MAP,
@@ -74,6 +75,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	slotMinTime,
 	slotMaxTime,
 	hiddenDays,
+	weekends,
 	resources,
 	orientation,
 	...props
@@ -86,6 +88,32 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 		() => normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events),
 		[events]
 	)
+	// Keyed on the hidden values, not on the array the consumer passed: an inline
+	// `hiddenDays={['saturday']}` is a new array every render, and a new Set
+	// would make every navigation callback that reads it change with it.
+	const hiddenDaysKey = [...(toHiddenDaysSet(hiddenDays, weekends) ?? [])]
+		.sort()
+		.join(',')
+	const requestedHiddenDays = useMemo(
+		() =>
+			hiddenDaysKey === ''
+				? undefined
+				: new Set(hiddenDaysKey.split(',').map(Number)),
+		[hiddenDaysKey]
+	)
+	const isEveryDayHidden = requestedHiddenDays?.size === DAYS_IN_WEEK
+	// A calendar with no day to draw is unusable, so the request is dropped.
+	const hiddenDaysToDraw = isEveryDayHidden ? undefined : requestedHiddenDays
+	useEffect(() => {
+		const isDevBuild =
+			typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
+		if (isDevBuild && isEveryDayHidden) {
+			// biome-ignore lint/suspicious/noConsole: deliberate DX guard (view contract)
+			console.warn(
+				'[@ilamy/calendar] `hiddenDays` and `weekends` together hide every day of the week, so they are ignored.'
+			)
+		}
+	}, [isEveryDayHidden])
 	useEffect(() => {
 		// Guarded `typeof process` check: the published bundle ships this line
 		// as-is (no build-time env replacement), so bundler-less ESM consumers
@@ -120,7 +148,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			eventSpacing={eventSpacing}
 			events={normalizedEvents}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
-			hiddenDays={toHiddenDaysSet(hiddenDays)}
+			hiddenDays={hiddenDaysToDraw}
 			hideNonBusinessHours={hideNonBusinessHours}
 			// Raw, not parsed: the engine needs to see whether the value names an
 			// instant or a clock reading, which `safeDate` flattens away.

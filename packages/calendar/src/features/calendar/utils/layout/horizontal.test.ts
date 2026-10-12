@@ -652,6 +652,21 @@ describe('layoutHorizontal on a visible-hours window', () => {
 		expect(placed?.left).toBeCloseTo((7 / 12) * 100, 5)
 		expect(placed?.width).toBeCloseTo((1 / 12) * 100, 5)
 	})
+
+	it('places an event in its own day when a mid-week day is hidden', () => {
+		// Mon 13, Tue 14 and Thu 16, each showing 09:00 and 10:00. Wednesday has no
+		// columns, so Thursday 10:00 is the sixth column, not the eighth hour-pair
+		// a count of elapsed hours from Monday would give.
+		const monday = window(9, 11)
+		const tuesday = monday.map((hour) => hour.add(1, 'day'))
+		const thursday = monday.map((hour) => hour.add(3, 'day'))
+		const [placed] = layout(
+			[...monday, ...tuesday, ...thursday],
+			[mkEvent('e', '2025-01-16T10:00:00.000Z', '2025-01-16T11:00:00.000Z')]
+		)
+		expect(placed?.left).toBeCloseTo((5 / 6) * 100, 5)
+		expect(placed?.width).toBeCloseTo((1 / 6) * 100, 5)
+	})
 })
 
 /**
@@ -749,5 +764,73 @@ describe('findMultiUnitSlot', () => {
 
 	it('returns null when even the last column is taken in every row', () => {
 		expect(findMultiUnitSlot(gridWith(1, [[0, 3]]), span)).toBeNull()
+	})
+})
+
+describe('layoutHorizontal over hidden days', () => {
+	// Noon UTC is the same calendar day in every zone from Vancouver to Tokyo.
+	const noon = (dayOfJanuary: number) =>
+		dayjs('2025-01-01T12:00:00.000Z').add(dayOfJanuary - 1, 'day')
+	// Thu 9, Fri 10, Mon 13, Tue 14: the weekend between Fri and Mon is hidden.
+	const visibleDays = [noon(9), noon(10), noon(13), noon(14)]
+	const place = (startDay: number, endDay: number) =>
+		layoutHorizontal({
+			days: visibleDays,
+			events: [
+				{
+					id: 'e',
+					title: 'e',
+					start: noon(startDay),
+					end: noon(endDay),
+					allDay: true,
+				},
+			],
+			dayMaxEvents: 4,
+		})
+	const edgesOf = (placed: ReturnType<typeof place>) => {
+		const bar = placed.at(0)
+		return {
+			box: [bar?.left, bar?.width],
+			truncated: [bar?.isTruncatedStart, bar?.isTruncatedEnd],
+		}
+	}
+
+	it('draws one bar over the visible columns on either side of the gap', () => {
+		expect(edgesOf(place(10, 13))).toEqual({
+			box: [25, 50],
+			truncated: [false, false],
+		})
+	})
+
+	it('clamps a bar that starts on a hidden day and marks that end truncated', () => {
+		expect(edgesOf(place(11, 14))).toEqual({
+			box: [50, 50],
+			truncated: [true, false],
+		})
+	})
+
+	it('clamps a bar that ends on a hidden day and marks that end truncated', () => {
+		expect(edgesOf(place(10, 12))).toEqual({
+			box: [25, 25],
+			truncated: [false, true],
+		})
+	})
+
+	it('draws nothing for an event that lies entirely on hidden days', () => {
+		expect(place(11, 12)).toEqual([])
+	})
+
+	it('draws nothing for a single-day timed event on a hidden day', () => {
+		const saturdayMeeting = mkEvent(
+			'meeting',
+			'2025-01-11T11:00:00.000Z',
+			'2025-01-11T13:00:00.000Z'
+		)
+		const placed = layoutHorizontal({
+			days: visibleDays,
+			events: [saturdayMeeting],
+			dayMaxEvents: 4,
+		})
+		expect(placed).toEqual([])
 	})
 })

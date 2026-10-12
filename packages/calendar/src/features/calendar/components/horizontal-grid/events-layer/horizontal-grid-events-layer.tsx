@@ -85,11 +85,14 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	dayNumberHeight = DAY_NUMBER_HEIGHT,
 	allDay,
 }) => {
-	const { eventHeight, eventSpacing } = useSmartCalendarContext()
+	const { eventHeight, eventSpacing, hiddenDays } = useSmartCalendarContext()
 	const dragPreview = useDragPreview()
 	const weekStart = days.at(0)?.startOf('day')
 	const rangeStart = days.at(0)
 	const rangeEnd = days.at(-1)?.add(1, gridType)
+	// Day-resolution grids hide whole day columns; hour grids never do.
+	const isHourGrid = gridType === 'hour'
+	const hiddenDaysOfDayGrid = isHourGrid ? undefined : hiddenDays
 
 	// Layout returns the abstract row; the renderer owns the CSS units. Shared
 	// so the preview cannot drift from the bar it mirrors.
@@ -128,6 +131,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 							elementId={elementId}
 							eventHeight={eventHeight}
 							gridType={gridType}
+							hiddenDays={hiddenDaysOfDayGrid}
 							key={keys.listKey(elementId, 'wrapper')}
 							positioned={positioned}
 							range={{ start: rangeStart, end: rangeEnd }}

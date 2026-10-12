@@ -201,7 +201,7 @@ interface IlamyCalendarProps {
   /**
    * Granularity of week-view time slots when `resources` is set.
    * - "hourly": one column per hour (default)
-   * - "daily": one column per day (`hiddenDays` is ignored in daily mode)
+   * - "daily": one column per day
    */
   weekViewGranularity?: 'hourly' | 'daily'
 }

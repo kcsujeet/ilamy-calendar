@@ -112,7 +112,13 @@ export const App = () => {
 
 	// The URL wins over the scenario's own settings, so a fixture can be pushed
 	// into a configuration it was not written for without editing it.
-	const { height, renderEventVariant, resourceCount, ...calendarConfig } = {
+	const {
+		height,
+		renderEventVariant,
+		resourceCount,
+		revertChanges,
+		...calendarConfig
+	} = {
 		...scenario.config,
 		...urlConfig,
 	}
@@ -127,6 +133,7 @@ export const App = () => {
 			plugins={plugins}
 			renderEventVariant={renderEventVariant}
 			resources={resources}
+			revertChanges={revertChanges}
 			scenario={scenario}
 			timezone={timezone}
 			view={viewName}
@@ -146,7 +153,7 @@ const useLocationSearch = (): string => {
 	return search
 }
 
-type HarnessOnly = 'height' | 'renderEventVariant'
+type HarnessOnly = 'height' | 'renderEventVariant' | 'revertChanges'
 
 interface HarnessProps {
 	config: Omit<ReturnType<typeof readUrlConfig>, HarnessOnly>
@@ -156,6 +163,7 @@ interface HarnessProps {
 	orientation?: Orientation
 	plugins: IlamyPlugin[]
 	resources?: Resource[]
+	revertChanges?: boolean
 	scenario: Scenario
 	timezone: string
 	view: ViewName
@@ -179,6 +187,7 @@ const Harness: React.FC<HarnessProps> = ({
 	orientation,
 	plugins,
 	resources,
+	revertChanges,
 	scenario,
 	timezone,
 	view,
@@ -216,9 +225,17 @@ const Harness: React.FC<HarnessProps> = ({
 			added: toIds(change.added),
 			updated: toIds(change.updated),
 			deleted: toIds(change.deleted),
+			delta: change.delta ?? null,
 		}
 		setChanges((current) => [...current, published])
+		if (revertChanges) {
+			change.revert()
+		}
 	}
+
+	// A server that rejects every save persists nothing, so the calendar's own
+	// rows are the only thing `revert` has to put right.
+	const shouldPersistRows = !revertChanges
 
 	const published = events.map((event) => ({
 		id: event.id,
@@ -239,10 +256,10 @@ const Harness: React.FC<HarnessProps> = ({
 				events={events}
 				initialDate={date}
 				initialView={view}
-				onEventAdd={handleAdd}
-				onEventDelete={handleDelete}
+				onEventAdd={shouldPersistRows ? handleAdd : undefined}
+				onEventDelete={shouldPersistRows ? handleDelete : undefined}
 				onEventsChange={handleChange}
-				onEventUpdate={handleUpdate}
+				onEventUpdate={shouldPersistRows ? handleUpdate : undefined}
 				orientation={orientation}
 				plugins={plugins}
 				renderEvent={

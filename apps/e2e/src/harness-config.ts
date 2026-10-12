@@ -48,6 +48,11 @@ export interface UrlConfig {
 	 */
 	renderEventVariant?: 'sticky-title'
 	/**
+	 * Harness-only: act as a server that rejects every save. The harness
+	 * persists nothing and calls `change.revert()` inside `onEventsChange`.
+	 */
+	revertChanges?: boolean
+	/**
 	 * Harness-only: keep the scenario's first N resources. Changed on a mounted
 	 * calendar, it adds or removes a resource the way a consumer's filter does.
 	 */
@@ -283,6 +288,11 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const resourceCount = get('resourceCount')
 	if (resourceCount !== null) {
 		config.resourceCount = positiveInt('resourceCount', resourceCount)
+	}
+
+	const revertChanges = get('revertChanges')
+	if (revertChanges !== null) {
+		config.revertChanges = boolean('revertChanges', revertChanges)
 	}
 
 	const renderEventVariant = get('renderEventVariant')

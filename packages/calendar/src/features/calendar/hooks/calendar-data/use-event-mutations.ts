@@ -4,6 +4,7 @@ import {
 	type ChangeOrigin,
 	type MutationCallbacks,
 	toRowChange,
+	toUpdateDelta,
 } from './event-changes'
 
 interface EventMutationsParams extends MutationCallbacks {
@@ -35,7 +36,11 @@ export const useEventMutations = ({
 		(event: CalendarEvent) => {
 			setCurrentEvents((prev) => [...prev, event])
 			onEventAdd?.(event)
-			onEventsChange?.(toRowChange({ action: 'add', event }, event))
+			const origin: ChangeOrigin = { action: 'add', event }
+			// An add has no earlier rows to restore; its revert only removes it.
+			const context = { previousEvents: [], setCurrentEvents }
+			const change = toRowChange(origin, event, context)
+			onEventsChange?.(change)
 		},
 		[setCurrentEvents, onEventAdd, onEventsChange]
 	)
@@ -52,8 +57,14 @@ export const useEventMutations = ({
 				prev.map((event) => (event.id === eventId ? newEvent : event))
 			)
 			onEventUpdate?.(newEvent)
-			const origin: ChangeOrigin = { action: 'update', event: eventToUpdate }
-			onEventsChange?.(toRowChange(origin, newEvent))
+			const origin: ChangeOrigin = {
+				action: 'update',
+				event: eventToUpdate,
+				delta: toUpdateDelta(eventToUpdate, newEvent),
+			}
+			const context = { previousEvents: currentEvents, setCurrentEvents }
+			const change = toRowChange(origin, newEvent, context)
+			onEventsChange?.(change)
 		},
 		[currentEvents, setCurrentEvents, onEventUpdate, onEventsChange]
 	)
@@ -68,7 +79,9 @@ export const useEventMutations = ({
 			setCurrentEvents((prev) => prev.filter((e) => e.id !== eventId))
 			onEventDelete?.(eventToDelete)
 			const origin: ChangeOrigin = { action: 'delete', event: eventToDelete }
-			onEventsChange?.(toRowChange(origin, eventToDelete))
+			const context = { previousEvents: currentEvents, setCurrentEvents }
+			const change = toRowChange(origin, eventToDelete, context)
+			onEventsChange?.(change)
 		},
 		[currentEvents, setCurrentEvents, onEventDelete, onEventsChange]
 	)

@@ -879,3 +879,211 @@ test.describe('edit permissions', () => {
 		expect(event.start).toMatch(/^2025-03-06/)
 	})
 })
+
+// Change info on onEventsChange: how far the start moved (`delta`) and a
+// `revert()` that undoes the action, as FullCalendar's `eventDrop` info does
+// (https://fullcalendar.io/docs/eventDrop).
+test.describe('change info', () => {
+	/** A bar's box once the header animations are over, so it is the resting one. */
+	const measureAtRest = async (
+		page: import('@playwright/test').Page,
+		bar: import('@playwright/test').Locator
+	) => {
+		await expect(bar).toBeVisible()
+		await page.evaluate(() =>
+			Promise.all(
+				document.getAnimations().map((animation) => animation.finished)
+			)
+		)
+		return bar.boundingBox()
+	}
+
+	test('a drop reports how far the start moved', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+
+		// 09:30 on Wednesday to 10:00 on Thursday: a day right, half an hour down.
+		await dragTo(
+			page,
+			grid.event('Morning stand-up').first(),
+			grid.slotAt('2025-03-13T10:00')
+		)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const [change] = await grid.eventChanges()
+		expect(change.delta).toEqual({ days: 1, milliseconds: 1_800_000 })
+	})
+
+	test('revert puts a dropped event back in the week view', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '09:00', revertChanges: 'true' },
+		})
+		const grid = new TimeGrid(page)
+		const bar = grid.bars('basic-1')
+		const boxBefore = await measureAtRest(page, bar)
+		const rowsBefore = await grid.eventState()
+
+		await dragTo(
+			page,
+			grid.event('Morning stand-up').first(),
+			grid.slotAt('2025-03-13T10:00')
+		)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		await expect.poll(() => bar.boundingBox()).toEqual(boxBefore)
+		expect(await grid.eventState()).toEqual(rowsBefore)
+	})
+
+	test('revert puts a dropped event back in the month view', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			settings: { revertChanges: 'true' },
+		})
+		const month = new MonthGrid(page)
+		const bar = month.bar('basic-3')
+		const boxBefore = await measureAtRest(page, bar)
+
+		await dragTo(
+			page,
+			month.event('Earlier in the month').first(),
+			month.cellOn('2025-03-06')
+		)
+
+		await expect.poll(async () => (await month.eventChanges()).length).toBe(1)
+		await expect.poll(() => bar.boundingBox()).toEqual(boxBefore)
+	})
+
+	test('revert puts a dropped event back in its resource row', async ({
+		page,
+	}) => {
+		// Dropped on another resource's row, one day back (towards the visible
+		// side, so the drag does not auto-scroll the grid), so revert has to
+		// restore the resource as well as the time.
+		await gotoScenario(page, {
+			scenario: 'resources',
+			view: 'month',
+			orientation: 'horizontal',
+			settings: { revertChanges: 'true' },
+		})
+		const grid = new MonthGrid(page)
+		const bar = grid.bar('res-1')
+		const boxBefore = await measureAtRest(page, bar)
+
+		await dragTo(
+			page,
+			bar,
+			page.locator(
+				'[data-resource-id="r2"][data-start="2025-03-11T00:00:00.000Z"]'
+			)
+		)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const [change] = await grid.eventChanges()
+		expect(change.updated).toEqual(['res-1'])
+		await expect.poll(() => bar.boundingBox()).toEqual(boxBefore)
+	})
+	test('a drop on the all-day row measures a timed event from its day start', async ({
+		page,
+	}) => {
+		// FullCalendar measures from the start of the event's day when a drag
+		// turns a timed event all-day (EventDragging.ts:454, v7.1.1): a 09:30
+		// event dropped on the next day's all-day row moved one day.
+		// Tall, so the drag has nothing to auto-scroll and the pointer stays over
+		// the all-day row.
+		await page.setViewportSize({ width: 1280, height: 1800 })
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '00:00' },
+		})
+		const grid = new TimeGrid(page)
+
+		await dragTo(
+			page,
+			grid.event('Morning stand-up').first(),
+			grid.allDayRow
+				.locator('[data-all-day="true"][data-start^="2025-03-13"]')
+				.first()
+		)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const [change] = await grid.eventChanges()
+		expect((await grid.eventNamed('Morning stand-up')).allDay).toBe(true)
+		expect(change.delta).toEqual({ days: 1, milliseconds: 0 })
+	})
+
+	test('a drop that leaves the event where it was fires no callback', async ({
+		page,
+	}) => {
+		// FullCalendar fires no eventChange for it (`_noEventDrop`,
+		// EventDragging.ts:374, v7.1.1).
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+		const rowsBefore = await grid.eventState()
+		const box = await grid.event('Morning stand-up').first().boundingBox()
+		if (!box) {
+			throw new Error('the bar needs a layout to be grabbed')
+		}
+		const centreX = box.x + box.width / 2
+		const centreY = box.y + box.height / 2
+
+		// Pressed, moved far enough to start the drag, and released where it began.
+		await page.mouse.move(centreX, centreY)
+		await page.mouse.down()
+		await page.mouse.move(centreX + 12, centreY)
+		await page.mouse.move(centreX, centreY)
+		await page.mouse.up()
+		await page.waitForTimeout(300)
+
+		expect(await grid.eventChanges()).toEqual([])
+		expect(await grid.eventState()).toEqual(rowsBefore)
+	})
+
+	test('a drop in the skipped spring hour reports the stored clock time', async ({
+		page,
+	}) => {
+		// New York skips 02:00 on 9 March 2025. The grid draws a 02:30 cell there,
+		// and a drop on it stores 06:30Z, which is 01:30 EST. The start kept the
+		// EDT offset of the hour before, so its clock read 02:30 and the delta
+		// came out an hour short whenever the pointer landed in that row.
+		await page.setViewportSize({ width: 1280, height: 1800 })
+		await gotoScenario(page, {
+			scenario: 'recurring-dst',
+			view: 'week',
+			plugins: ['recurrence'],
+			timezone: 'America/New_York',
+			date: '2025-03-12T13:00:00.000Z',
+			settings: { slot: 30, scrollTime: '00:00' },
+		})
+		const grid = new TimeGrid(page)
+		const skippedHourCell = page
+			.locator(
+				'[data-testid^="vertical-cell-"][data-start="2025-03-09T07:30:00.000Z"]'
+			)
+			.first()
+		await expect(skippedHourCell).toBeAttached()
+
+		await dragTo(page, grid.bars('dst-reference').first(), skippedHourCell)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('One-off at nine')
+		expect(row.start).toBe('2025-03-09T06:30:00.000Z')
+		const [change] = await grid.eventChanges()
+		expect(change.delta).toEqual({ days: -3, milliseconds: -27_000_000 })
+	})
+})

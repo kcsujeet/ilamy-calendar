@@ -357,4 +357,18 @@ describe('ResourceDayVertical', () => {
 			expect(scrollSpy).not.toHaveBeenCalled()
 		})
 	})
+
+	describe('allDaySlot', () => {
+		test('false removes every resource all-day row', () => {
+			renderResourceDayVertical()
+			expect(screen.getAllByTestId('all-day-row')).toHaveLength(
+				mockResources.length
+			)
+
+			cleanup()
+			renderResourceDayVertical({ allDaySlot: false })
+
+			expect(screen.queryAllByTestId('all-day-row')).toHaveLength(0)
+		})
+	})
 })

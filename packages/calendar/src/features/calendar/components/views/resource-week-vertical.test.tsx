@@ -460,4 +460,63 @@ describe('ResourceWeekVertical', () => {
 			).toBeInTheDocument()
 		})
 	})
+
+	describe('display toggles', () => {
+		test('shows the week number in the day header unless weekNumbers is false', () => {
+			renderResourceWeekVertical()
+			expect(screen.getByTestId('week-number')).toHaveTextContent(
+				String(initialDate.week())
+			)
+
+			cleanup()
+			renderResourceWeekVertical({ weekNumbers: false })
+			expect(screen.queryByTestId('week-number')).not.toBeInTheDocument()
+		})
+
+		test('weekNumberCalculation supplies the number', () => {
+			renderResourceWeekVertical({ weekNumberCalculation: () => 77 })
+
+			expect(screen.getByTestId('week-number')).toHaveTextContent('77')
+		})
+
+		test('daily granularity shows the week number in the resource header, once', () => {
+			renderResourceWeekVertical({ weekViewGranularity: 'daily' })
+
+			expect(screen.getAllByTestId('week-number')).toHaveLength(1)
+			expect(screen.getByTestId('week-number')).toHaveTextContent(
+				String(initialDate.week())
+			)
+		})
+
+		test('daily granularity: weekNumbers={false} hides the number and the Week label', () => {
+			renderResourceWeekVertical({
+				weekViewGranularity: 'daily',
+				weekNumbers: false,
+			})
+
+			expect(screen.queryByTestId('week-number')).not.toBeInTheDocument()
+			expect(screen.queryByText('Week')).not.toBeInTheDocument()
+		})
+
+		test('hourly granularity: weekNumbers={false} hides the Week label too', () => {
+			renderResourceWeekVertical({ weekNumbers: false })
+
+			expect(screen.queryByText('Week')).not.toBeInTheDocument()
+		})
+
+		test('daily granularity: weekNumberCalculation supplies the number', () => {
+			renderResourceWeekVertical({
+				weekViewGranularity: 'daily',
+				weekNumberCalculation: () => 77,
+			})
+
+			expect(screen.getByTestId('week-number')).toHaveTextContent('77')
+		})
+
+		test('allDaySlot={false} removes every resource all-day row', () => {
+			renderResourceWeekVertical({ allDaySlot: false })
+
+			expect(screen.queryAllByTestId('all-day-row')).toHaveLength(0)
+		})
+	})
 })

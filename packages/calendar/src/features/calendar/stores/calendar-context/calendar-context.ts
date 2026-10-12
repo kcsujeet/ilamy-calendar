@@ -9,6 +9,7 @@ import type {
 	EventSegment,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
+	WeekNumberCalculation,
 } from '@/features/calendar/types'
 import type { TimeFormat } from '@/types'
 
@@ -63,6 +64,11 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	slotDuration: SlotDuration
 	scrollTime?: string
 	scrollToNow?: boolean
+	allDaySlot: boolean
+	nowIndicator: boolean
+	/** Unset keeps the original behaviour: week-view headers only. */
+	weekNumbers?: boolean
+	weekNumberCalculation: WeekNumberCalculation
 	/** Custom render for resource header cells (resource axis presentation). */
 	renderResource?: (resource: Resource) => ReactNode
 }

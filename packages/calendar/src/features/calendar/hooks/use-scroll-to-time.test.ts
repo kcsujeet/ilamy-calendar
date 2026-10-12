@@ -19,8 +19,8 @@ const stubRect = (top: number, left: number) => () =>
 		left,
 		right: 0,
 		bottom: 0,
-		width: 0,
-		height: 0,
+		width: HOUR_PIXEL_SIZE,
+		height: HOUR_PIXEL_SIZE,
 		x: 0,
 		y: 0,
 		toJSON: () => ({}),
@@ -187,10 +187,39 @@ describe('useScrollToTime', () => {
 		expect(scrolledToTop()).toBe(hourIndex(17) * HOUR_PIXEL_SIZE)
 	})
 
-	test('floors minutes to the hour', () => {
+	// The contract moved: minutes used to be floored to the hour. FullCalendar
+	// scrolls to the exact minute, a fraction of the way through the hour row
+	// (TimeGridLayout.tsx:285-296 at v7.1.1), and a deviation from the standard
+	// is a bug even when documented.
+	test('lands a fraction of the way into the row for minutes', () => {
+		renderScrollHook({ scrollTime: '08:30' })
+
+		expect(scrolledToTop()).toBe(hourIndex(8) * HOUR_PIXEL_SIZE + 30)
+	})
+
+	test('counts seconds too', () => {
 		renderScrollHook({ scrollTime: '08:45:30' })
 
-		expect(scrolledToTop()).toBe(hourIndex(8) * HOUR_PIXEL_SIZE)
+		expect(scrolledToTop()).toBe(hourIndex(8) * HOUR_PIXEL_SIZE + 45.5)
+	})
+
+	test('keeps the minutes fraction on the horizontal axis', () => {
+		renderScrollHook({ scrollTime: '10:15', axis: 'horizontal' })
+
+		expect(scrolledToLeft()).toBe(hourIndex(10) * HOUR_PIXEL_SIZE + 15)
+	})
+
+	test('rejects minutes or seconds above 59 like an out-of-range hour', () => {
+		renderScrollHook({ scrollTime: '08:75' })
+		renderScrollHook({ scrollTime: '08:30:99' })
+
+		expect(scrollSpy).not.toHaveBeenCalled()
+	})
+
+	test('a clamped hour lands on the edge of its row, minutes ignored', () => {
+		renderScrollHook({ scrollTime: '03:30' })
+
+		expect(scrolledToTop()).toBe(hourIndex(6) * HOUR_PIXEL_SIZE)
 	})
 
 	test('accepts HH:mm format without seconds', () => {
@@ -263,7 +292,9 @@ describe('useScrollToTime', () => {
 				scrollToNow: true,
 			})
 
-			expect(scrolledToTop()).toBe(4 * HOUR_PIXEL_SIZE)
+			// 10:30 is half way into the 10:00 cell (the exact minute, as for
+			// scrollTime).
+			expect(scrolledToTop()).toBe(4 * HOUR_PIXEL_SIZE + 30)
 		})
 
 		test("scrolls a day-column grid horizontally to today's column", () => {

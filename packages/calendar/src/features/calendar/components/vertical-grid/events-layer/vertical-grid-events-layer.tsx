@@ -27,7 +27,10 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	resource,
 	'data-testid': dataTestId,
 }) => {
-	const resources = useSmartCalendarContext((c) => c.resources)
+	const { resources, nowIndicator } = useSmartCalendarContext((c) => ({
+		resources: c.resources,
+		nowIndicator: c.nowIndicator,
+	}))
 	const dragPreview = useDragPreview()
 	const todayEvents = useProcessedDayEvents({ days, gridType, resourceId })
 	const rangeStart = days.at(0)
@@ -40,7 +43,9 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	// Only show the "now" line in hour-resolution grids. In day-resolution
 	// vertical views (resource month, resource week daily) a sub-day percentage
 	// line is meaningless, so suppress it — mirrors the horizontal events layer.
-	const showNowLine = gridType === 'hour' && Boolean(rangeStart && rangeEnd)
+	const isHourGrid = gridType === 'hour'
+	const hasRange = Boolean(rangeStart && rangeEnd)
+	const showNowLine = nowIndicator && isHourGrid && hasRange
 
 	// An all-day candidate needs no rejection here: `layoutVertical` decides
 	// whether this grid draws all-day events, exactly as it does for real ones.

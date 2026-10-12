@@ -24,6 +24,13 @@ import type { CalendarView, TimeFormat } from '@/types'
 export type SlotDuration = 15 | 30 | 60
 
 /**
+ * How a week number is counted: the locale's own count (`'local'`), ISO 8601
+ * (`'ISO'`), or a function that receives the date the number is shown for (the
+ * first day of a month row, the current date in a week header) and returns it.
+ */
+export type WeekNumberCalculation = 'local' | 'ISO' | ((date: Date) => number)
+
+/**
  * Which slice of an event a `renderEvent` call is drawing.
  *
  * An event too long for the row it starts in is cut at the boundary and drawn
@@ -495,9 +502,10 @@ export interface IlamyCalendarProps {
 	/**
 	 * Initial scroll position for hour-resolution views (day, week, resource
 	 * day, resource week, in both orientations). Accepts `"HH:mm"` or
-	 * `"HH:mm:ss"`. Minutes are floored to the hour. The scroll target is
-	 * clamped to the nearest visible row when `hideNonBusinessHours` hides
-	 * the requested hour.
+	 * `"HH:mm:ss"`. The grid scrolls to the exact minute: `"08:30"` lands
+	 * halfway into the 08:00 row. The scroll target is clamped to the nearest
+	 * visible row (landing on its edge) when `hideNonBusinessHours` hides the
+	 * requested hour.
 	 *
 	 * Reapplied whenever the visible date range changes (navigation, view
 	 * switch), the rendered hours change, or `scrollTime` itself changes, as
@@ -524,8 +532,8 @@ export interface IlamyCalendarProps {
 	scrollTime?: string
 	/**
 	 * Open every scrolling grid on the current moment rather than its start:
-	 * the current hour in time grids (day, week, resource day, hourly resource
-	 * week), and today's column or row in day grids (resource month, daily
+	 * the current moment in time grids (day, week, resource day, hourly
+	 * resource week), down to the minute, and today's column or row in day grids (resource month, daily
 	 * resource week, #285). Month and year grids do not scroll, so it does
 	 * nothing there.
 	 *
@@ -548,6 +556,46 @@ export interface IlamyCalendarProps {
 	 * @default false
 	 */
 	scrollToNow?: boolean
+	/**
+	 * Whether day, week and resource time grids draw the all-day row above the
+	 * hours. When `false` the row is removed and all-day events are not shown in
+	 * those views. Month, year and agenda views are unaffected.
+	 *
+	 * @default true
+	 */
+	allDaySlot?: boolean
+	/**
+	 * Whether time grids draw a line at the current time.
+	 *
+	 * @default true
+	 */
+	nowIndicator?: boolean
+	/**
+	 * Whether week numbers are shown.
+	 *
+	 * - unset (default): the week number appears in the corner of the week and
+	 *   resource week headers, and month view shows none.
+	 * - `true`: additionally shows a number in each row of the month view,
+	 *   counted from the row's first day.
+	 * - `false`: shows week numbers nowhere.
+	 */
+	weekNumbers?: boolean
+	/**
+	 * How week numbers are counted.
+	 *
+	 * - `'local'` (default): the locale's own count.
+	 * - `'ISO'`: ISO 8601, week 1 being the week holding the year's first
+	 *   Thursday. It only changes the number: it does not make weeks start on
+	 *   Monday. Use `firstDayOfWeek` for that.
+	 * - a function: called with the date a week number is shown for (the first
+	 *   day of a month row, the current date in a week header) and returns the
+	 *   number to show. It receives that instant as a JavaScript `Date`, so
+	 *   under a configured `timezone` its local fields follow the machine's
+	 *   zone, not the calendar's.
+	 *
+	 * @default 'local'
+	 */
+	weekNumberCalculation?: WeekNumberCalculation
 	/**
 	 * Optional plugins that add behavior/UI (e.g. recurrence). The core ships
 	 * with no plugins by default — pass `recurrencePlugin()` to enable recurring

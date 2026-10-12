@@ -145,6 +145,25 @@ offsets come from the IANA data the runtime's `Intl` API ships, so a zone that
 moves by 30 minutes (Lord Howe Island) or changes its rules is placed the same
 way. Tests pin both.
 
+### The now-line and week numbers
+
+The now-line is drawn only in hour grids and only while the `nowIndicator` prop
+is `true` (default). `weekNumbers` and `weekNumberCalculation` choose the
+number shown in the week headers and in month rows (`getWeekNumber`,
+`utils/week-number.ts`). `'local'` is dayjs `week()`, the locale's own count,
+which does not follow `firstDayOfWeek`; `'ISO'` is ISO 8601. A month row shows
+the number of its first day.
+
+`scrollTime` and `scrollToNow` scroll to the exact minute: the hour row (or the
+slot cell holding now) plus the fraction of its height or width already
+elapsed (`use-scroll-to-time.ts`). A time clamped to an edge row lands on that
+row's edge, and a whole-day cell is brought to the edge without a fraction.
+
+Limits worth knowing: the horizontal resource timelines have no all-day row, so
+`allDaySlot` does not apply to them, and the horizontal resource month (and
+every other grid that is not a regular month) shows no week numbers even with
+`weekNumbers={true}`; only regular month rows do.
+
 ### Testing
 
 `dayjs.tz.setDefault('America/New_York')` in a unit test exercises a DST zone
@@ -164,7 +183,7 @@ Renders the grid structure: header, optional all-day row, and scrollable body wi
 - `columns`: Array of column definitions, each with `id`, `days` (hour slots), `day` (calendar date), `gridType`, and optional `renderCell`.
 - `gridType`: `'hour'` for time-based grids.
 - `slotDurationMinutes`: Minutes per row (`15`, `30`, or `60`). `60` is one cell per hour with no sub-hour lines; `15` draws four cells per hour with dashed separators. Sourced from the public `slotDuration` prop on `IlamyCalendar` / `IlamyResourceCalendar`.
-- `allDayRow`: Optional all-day event row rendered above the grid.
+- `allDayRow`: Optional all-day event row rendered above the grid. The view renderer leaves it out when the `allDaySlot` prop is `false`. The vertical layout already draws no all-day event in an hour grid (it belongs to the row), so nothing else changes.
 - `variant`: `'regular'` for standard calendar, omit for resource calendar.
 
 ### Column Definition

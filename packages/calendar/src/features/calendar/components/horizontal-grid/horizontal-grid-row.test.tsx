@@ -296,6 +296,36 @@ describe('HorizontalGridRow', () => {
 			expect(screen.getByTestId('current-time-indicator')).toBeInTheDocument()
 		})
 
+		test('does not mount the indicator when nowIndicator is off', () => {
+			const currentHour = dayjs().startOf('hour')
+			render(
+				<CalendarProvider
+					dayMaxEvents={3}
+					events={[]}
+					initialDate={initialDate}
+					nowIndicator={false}
+					resources={[mockResource]}
+				>
+					<HorizontalGridRow
+						columns={[
+							{
+								id: 'off-hour-cell',
+								day: currentHour,
+								gridType: 'hour' as const,
+							},
+						]}
+						gridType="hour"
+						id="row-1"
+						resource={mockResource}
+					/>
+				</CalendarProvider>
+			)
+
+			expect(
+				screen.queryByTestId('current-time-indicator')
+			).not.toBeInTheDocument()
+		})
+
 		test('does not mount the indicator when gridType is "day"', () => {
 			const columns = [
 				{

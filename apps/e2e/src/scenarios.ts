@@ -88,6 +88,27 @@ export const scenarios = {
 		],
 	},
 
+	'edit-permissions': {
+		description:
+			'One event that opts out of editing (`editable: false`) beside one that does not, so a per-event flag is seen to beat a permissive calendar.',
+		views: ['month'],
+		events: [
+			event(
+				'locked-1',
+				'Locked event',
+				'2025-03-04T11:00:00.000Z',
+				'2025-03-04T12:00:00.000Z',
+				{ editable: false }
+			),
+			event(
+				'free-1',
+				'Free event',
+				'2025-03-05T11:00:00.000Z',
+				'2025-03-05T12:00:00.000Z'
+			),
+		],
+	},
+
 	colored: {
 		description:
 			'Events that carry their colour the two different ways the API allows: one in `color` as Tailwind classes (what the playground seed does), one in `backgroundColor` as a CSS value. Anything that repaints an event — the drag mirror above all — has to read both, or it paints everything the same fallback blue.',

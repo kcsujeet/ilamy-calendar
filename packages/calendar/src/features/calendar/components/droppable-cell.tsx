@@ -119,28 +119,23 @@ interface DropTargetInput {
 	/** Published to the drag so a drop can read where — and whether — it landed. */
 	data: DropCellData
 	cellRange: { start: Dayjs; end: Dayjs }
-	disableDragAndDrop: boolean
 }
 
 /**
  * Registers the cell as a drop target and says whether to tint it.
  *
- * A disabled cell stays REGISTERED: the mirror has to keep rendering over it
- * and the pointer has to be releasable there, exactly as FullCalendar draws its
- * mirror over an area its constraints forbid. `data.disabled` is what makes the
- * drop a no-op, decided in `getUpdatedEvent`. Refusing the hit-test instead
- * left `over` null, which blanked the whole preview and swapped the snapped
- * mirror for a floating chip the moment the pointer crossed a closed day.
+ * A disabled cell stays REGISTERED so the pointer can be released there and
+ * the drag keeps a preview to refuse: `data.disabled` makes the drop a no-op
+ * (`getUpdatedEvent`) and marks the placement refused, which draws nothing and
+ * leaves the not-allowed cursor as the signal. Refusing the hit-test instead
+ * left `over` null, which swapped that for a floating chip the moment the
+ * pointer crossed a closed day.
  *
- * So a disabled cell tints too, whether the pointer is over it or the candidate
- * merely spans it — a multi-day drag crosses closed days, and leaving those
- * cells grey makes the bar look like it is crossing unavailable ground.
+ * Over an ALLOWED placement the cells it spans tint, closed ones included: a
+ * multi-day drag crosses closed days, and leaving those cells grey makes the
+ * bar look like it is crossing unavailable ground.
  */
-const useDropTarget = ({
-	data,
-	cellRange,
-	disableDragAndDrop,
-}: DropTargetInput) => {
+const useDropTarget = ({ data, cellRange }: DropTargetInput) => {
 	const { isOver, setNodeRef } = useDroppable({
 		// An id for the cell, not for its date. dnd-kit re-registers a droppable
 		// whenever its id changes and copies its whole registry each time, so a
@@ -148,13 +143,14 @@ const useDropTarget = ({
 		// still carries the date, and the drop reads it from there.
 		id: useId(),
 		data,
-		disabled: disableDragAndDrop,
 	})
 	// `isOver` alone is not enough: a grab offset moves the candidate off the
 	// cell the pointer is on, and the cells it does cover must light up too.
 	const landsHere = useDragLandsHere(cellRange, data.resourceId, data.allDay)
-	const isDropTarget = isOver || landsHere
-	return { setNodeRef, showDropHighlight: isDropTarget && !disableDragAndDrop }
+	// A refused placement draws no tint, not even on the cell under the pointer.
+	const isRefused = useDragPreview()?.isDropAllowed === false
+	const showDropHighlight = (isOver || landsHere) && !isRefused
+	return { setNodeRef, showDropHighlight }
 }
 
 interface CellDataInput {
@@ -242,7 +238,6 @@ export function DroppableCell({
 		isCellDisabled,
 		getCellClassName,
 		getResourceById,
-		disableDragAndDrop,
 		disableCellClick,
 		classesOverride,
 		view,
@@ -268,7 +263,6 @@ export function DroppableCell({
 			disabled: cellDisabled,
 		},
 		cellRange: { start, end },
-		disableDragAndDrop: Boolean(disableDragAndDrop),
 	})
 
 	const handleCellClick = (e: React.MouseEvent) => {

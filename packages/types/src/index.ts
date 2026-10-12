@@ -55,6 +55,26 @@ export interface CalendarEvent {
 	 * @example { meetingType: 'standup', attendees: ['john', 'jane'] }
 	 */
 	data?: Record<string, unknown>
+	/**
+	 * Whether this event can be moved. Beats the calendar's
+	 * `editable`; `startEditable` beats this one (FullCalendar
+	 * `event.editable`).
+	 */
+	editable?: boolean
+	/** Whether this event can be moved. Defaults to `editable`. */
+	startEditable?: boolean
+}
+
+/**
+ * A candidate placement for a dragged event, handed to `eventAllow` (the
+ * counterpart of FullCalendar's `DateSpanApi` plus the resource).
+ */
+export interface EventDropInfo {
+	start: Dayjs
+	end: Dayjs
+	allDay: boolean
+	/** The resource the event would land on, in resource views. */
+	resourceId?: string | number
 }
 
 /**

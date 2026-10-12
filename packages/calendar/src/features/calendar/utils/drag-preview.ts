@@ -39,6 +39,11 @@ export const isPreviewOnTarget = (
 		return false
 	}
 
+	// A refused placement lands nowhere: no mirror, no tint, only the cursor.
+	if (!dragPreview.isDropAllowed) {
+		return false
+	}
+
 	const targetTakesOnlyAllDay = Boolean(allDay)
 	if (targetTakesOnlyAllDay && !dragPreview.allDay) {
 		return false
@@ -81,11 +86,11 @@ export const getDragPreviewEvent = (
 /**
  * The cursor the page should wear for the drag in flight.
  *
- * FullCalendar signals a refused drop with the cursor rather than by hiding the
- * mirror — its bundle toggles `fc-not-allowed` on `document.body` while the
- * pointer sits somewhere its constraints forbid, and `dragRevertDuration`
- * exists because the event visibly goes there and then animates back. This
- * library ships no CSS, so the caller applies the returned value directly.
+ * A refused placement draws nothing else (no mirror, no drop tint), so this is
+ * its only signal. FullCalendar nulls the mutation for an invalid placement
+ * (interaction-plugin/interactions/EventDragging.ts:193-198, v7.1.1) and its
+ * bundle toggles `fc-not-allowed` on `document.body`. This library ships no
+ * CSS, so the caller applies the returned value directly.
  *
  * `undefined` when there is nothing to say, so the caller leaves whatever
  * cursor the page already had alone rather than assigning over it.

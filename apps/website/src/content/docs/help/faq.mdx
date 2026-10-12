@@ -48,12 +48,12 @@ const events = [
 
 ### How do I add drag and drop functionality?
 
-The calendar includes built-in drag and drop support that is enabled by default. To disable it, use the `disableDragAndDrop` prop:
+The calendar includes built-in drag and drop support that is enabled by default. To disable it, use the `editable` prop (`disableDragAndDrop` still works but is deprecated):
 
 ```tsx
 <IlamyCalendar
   events={events}
-  disableDragAndDrop={true}
+  editable={false}
   // ... other props
 />
 ```

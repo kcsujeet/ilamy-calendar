@@ -7,6 +7,7 @@ import { useDropCommit } from '@/features/calendar/hooks/use-drop-commit'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { DragPreviewContext } from '@/features/calendar/stores/drag-preview-context'
 import { pointerWithinLazily } from '@/features/calendar/utils/pointer-within-lazily'
+import { resolveStartEditable } from '@/features/calendar/utils/resolve-editability'
 import { EventDragOverlay } from './event-drag-overlay'
 
 interface CalendarDndContextProps {
@@ -29,16 +30,26 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	 * not have to know any of this.
 	 */
 	const dndContextId = useId()
-	const disableDragAndDrop = useSmartCalendarContext(
-		(context) => context.disableDragAndDrop
-	)
+	const canAnythingMove = useSmartCalendarContext((context) => {
+		const calendarFlags = {
+			editable: context.editable,
+			eventStartEditable: context.eventStartEditable,
+			disableDragAndDrop: context.disableDragAndDrop,
+		}
+		const isMovableByCalendar = resolveStartEditable({}, calendarFlags)
+		const isAnyEventMovable = context.events.some((event) =>
+			resolveStartEditable(event, calendarFlags)
+		)
+		return isMovableByCalendar || isAnyEventMovable
+	})
 	const { commitDrop, scopeDialog } = useDropCommit()
 	const { sensors, dragPreview, overlayRef, handlers } =
 		useCalendarDrag(commitDrop)
 	const isDragging = dragPreview !== null
 
-	// If drag and drop is disabled, just return children without DndContext
-	if (disableDragAndDrop) {
+	// Nothing can move: no dnd-kit context, so no live region, no drag
+	// instructions and no registered droppables.
+	if (!canAnythingMove) {
 		return children as React.ReactElement
 	}
 

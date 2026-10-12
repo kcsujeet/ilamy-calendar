@@ -37,9 +37,9 @@ These are non-negotiable. Violating any of these is a bug.
   the work is done, say what changed, say how to exercise it, and STOP. Wait.
   This applies however obvious the fix looks and however many gates pass.
 - EXCEPTION to the two rules above, and to the "post it" rule below, for the
-  FullCalendar parity program only (`docs/fullcalendar-parity-plan.md`): the
+  roadmap program only (`docs/roadmap.md`): the
   owner has given standing approval for the main session (the "manager") to
-  commit on a `parity/*` branch, push that branch and open its PR against
+  commit on a `roadmap/*` branch, push that branch and open its PR against
   `main`, once the plan's final verification (Delivery process, step 5) passes
   in full. That verification replaces the owner's manual test. The owner merges;
   nobody else does. Still NEVER commit to `main`, never leave work as a

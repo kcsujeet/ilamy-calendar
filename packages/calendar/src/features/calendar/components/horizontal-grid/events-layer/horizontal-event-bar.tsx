@@ -1,5 +1,7 @@
+import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { DraggableEvent } from '@/features/calendar/components/draggable-event/draggable-event'
+import type { ResizeGranularity } from '@/features/calendar/components/draggable-event/resize-handle'
 import { getDragSegment } from '@/features/calendar/utils/grab-offset'
 import { keys } from '@/features/calendar/utils/keys'
 import {
@@ -15,8 +17,31 @@ export const getHorizontalEventKey = (
 ) =>
 	`${positioned.event.id}-${positioned.row}-${weekStart?.toISOString()}-${resourceId ?? 'no-resource'}`
 
+/**
+ * What a resize of this bar snaps to. A grid of hours snaps to its cells; a
+ * grid of days snaps to whole days, except for a single-day timed event, which
+ * reads as a dot there and is not resizable (FullCalendar,
+ * `daygrid/event-rendering.ts:13-26`, v7.1.1).
+ */
+const getResizeGranularity = (
+	event: CalendarEvent,
+	gridType: 'day' | 'hour'
+): ResizeGranularity | undefined => {
+	if (gridType === 'hour') {
+		return 'slot'
+	}
+	const hasSpan = event.end.isAfter(event.start)
+	const lastCoveredInstant = hasSpan
+		? event.end.subtract(1, 'millisecond')
+		: event.start
+	const isSingleDay = event.start.isSame(lastCoveredInstant, 'day')
+	const isDot = !event.allDay && isSingleDay
+	return isDot ? undefined : 'day'
+}
+
 interface HorizontalEventBarProps {
 	positioned: HorizontalPositionedEvent
+	gridType: 'day' | 'hour'
 	elementId: string
 	top: number
 	eventHeight: number
@@ -28,6 +53,7 @@ interface HorizontalEventBarProps {
 /** One event, spanning the columns the layout pass gave it. */
 export function HorizontalEventBar({
 	positioned,
+	gridType,
 	elementId,
 	top,
 	eventHeight,
@@ -54,6 +80,7 @@ export function HorizontalEventBar({
 				isBeingDragged={draggedEventId === event.id}
 				isTruncatedEnd={positioned.isTruncatedEnd}
 				isTruncatedStart={positioned.isTruncatedStart}
+				resizeGranularity={getResizeGranularity(event, gridType)}
 				sourceResourceId={resourceId}
 			/>
 		</div>

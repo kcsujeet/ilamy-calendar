@@ -19,7 +19,7 @@ export interface MutationCallbacks {
 /** The user action a change came from: what was done, to which event, in which scope, how far it moved. */
 export type ChangeOrigin = Pick<
 	EventsChange,
-	'action' | 'event' | 'scope' | 'delta'
+	'action' | 'event' | 'scope' | 'delta' | 'endDelta'
 >
 
 /** A change before its `revert` is attached. */

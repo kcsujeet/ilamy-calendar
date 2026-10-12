@@ -127,6 +127,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 							draggedEventId={dragPreview?.event.id}
 							elementId={elementId}
 							eventHeight={eventHeight}
+							gridType={gridType}
 							key={keys.listKey(elementId, 'wrapper')}
 							positioned={positioned}
 							range={{ start: rangeStart, end: rangeEnd }}

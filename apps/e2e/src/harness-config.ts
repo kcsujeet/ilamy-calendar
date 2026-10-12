@@ -39,6 +39,8 @@ export interface UrlConfig {
 	disableDragAndDrop?: boolean
 	editable?: boolean
 	eventStartEditable?: boolean
+	eventDurationEditable?: boolean
+	eventResizableFromStart?: boolean
 	/** Set from the `eventAllow` parameter, which names a predicate. */
 	eventAllow?: (dropInfo: EventDropInfo) => boolean
 	timeFormat?: TimeFormat
@@ -80,6 +82,13 @@ const EVENT_ALLOW_PREDICATES = {
 	/** Refuses any placement that starts on a Saturday or a Sunday. */
 	'no-weekends': (dropInfo: EventDropInfo) =>
 		!WEEKEND_DAYS.includes(dropInfo.start.day()),
+	/**
+	 * Refuses any placement whose last covered day is a Saturday or a Sunday.
+	 * `end` is exclusive, so that day is the one before it. The start is left
+	 * alone, which is what lets a resize reach a weekend without moving.
+	 */
+	'no-weekend-end': (dropInfo: EventDropInfo) =>
+		!WEEKEND_DAYS.includes(dropInfo.end.subtract(1, 'millisecond').day()),
 } as const
 
 /** Raised for a value the URL got wrong, so the harness can show it rather than guess. */
@@ -305,6 +314,22 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 		config.eventStartEditable = boolean(
 			'eventStartEditable',
 			eventStartEditable
+		)
+	}
+
+	const eventDurationEditable = get('eventDurationEditable')
+	if (eventDurationEditable !== null) {
+		config.eventDurationEditable = boolean(
+			'eventDurationEditable',
+			eventDurationEditable
+		)
+	}
+
+	const eventResizableFromStart = get('eventResizableFromStart')
+	if (eventResizableFromStart !== null) {
+		config.eventResizableFromStart = boolean(
+			'eventResizableFromStart',
+			eventResizableFromStart
 		)
 	}
 

@@ -226,6 +226,7 @@ const Harness: React.FC<HarnessProps> = ({
 			updated: toIds(change.updated),
 			deleted: toIds(change.deleted),
 			delta: change.delta ?? null,
+			endDelta: change.endDelta ?? null,
 		}
 		setChanges((current) => [...current, published])
 		if (revertChanges) {

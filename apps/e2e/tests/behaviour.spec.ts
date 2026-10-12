@@ -394,8 +394,9 @@ test.describe('recurring events', () => {
 				added: [],
 				updated: ['moved-series'],
 				deleted: ['moved-friday'],
-				// An edit that leaves the start alone still reports a (zero) delta.
+				// An edit that leaves the start and the end alone still reports zero deltas.
 				delta: { days: 0, milliseconds: 0 },
+				endDelta: { days: 0, milliseconds: 0 },
 			},
 		])
 	})

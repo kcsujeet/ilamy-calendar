@@ -32,8 +32,9 @@ export class CalendarPage {
 	}
 
 	/**
-	 * The snapped mirror of the event being dragged. Only one is ever on screen:
-	 * a view draws one grid, and each grid draws at most one mirror.
+	 * The snapped mirror of the event being dragged. An event inside one column
+	 * (or one row) draws one; an event that spans several day columns draws one
+	 * per column, so this can match more than one element.
 	 */
 	get dragMirror(): Locator {
 		return this.page.locator('[data-testid^="event-drag-preview-"]')

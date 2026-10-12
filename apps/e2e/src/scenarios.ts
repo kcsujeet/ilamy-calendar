@@ -90,7 +90,7 @@ export const scenarios = {
 
 	'edit-permissions': {
 		description:
-			'One event that opts out of editing (`editable: false`) beside one that does not, so a per-event flag is seen to beat a permissive calendar.',
+			'One event that opts out of editing (`editable: false`) beside one that does not, and an all-day event that opts out of resizing (`durationEditable: false`) beside one that does not, so a per-event flag is seen to beat a permissive calendar.',
 		views: ['month'],
 		events: [
 			event(
@@ -105,6 +105,22 @@ export const scenarios = {
 				'Free event',
 				'2025-03-05T11:00:00.000Z',
 				'2025-03-05T12:00:00.000Z'
+			),
+			// All-day, because a single-day timed event is a dot in the month grid and
+			// has no resize handle whatever its flags say.
+			event(
+				'fixed-length-1',
+				'Fixed length',
+				'2025-03-17T00:00:00.000Z',
+				'2025-03-18T00:00:00.000Z',
+				{ allDay: true, durationEditable: false }
+			),
+			event(
+				'stretchy-1',
+				'Stretchy',
+				'2025-03-18T00:00:00.000Z',
+				'2025-03-19T00:00:00.000Z',
+				{ allDay: true }
 			),
 		],
 	},
@@ -517,6 +533,37 @@ export const scenarios = {
 				'2025-03-12T14:00:00.000Z',
 				'2025-03-12T14:05:00.000Z',
 				{ resourceId: 'r3' }
+			),
+		],
+	},
+
+	'resource-hours': {
+		description:
+			'Two resources with different working hours: Room A is open 09:00-17:00, Room B all day. A resize stays on its own resource, so what is closed is judged on that resource at the hovered time, not on the lane the pointer happens to be over.',
+		views: ['day', 'week'],
+		config: { scrollTime: '08:00' },
+		resources: [
+			{
+				id: 'r1',
+				title: 'Room A',
+				businessHours: { startTime: 9, endTime: 17 },
+			},
+			{ id: 'r2', title: 'Room B' },
+		],
+		events: [
+			event(
+				'hours-1',
+				'Room A hold',
+				'2025-03-12T10:00:00.000Z',
+				'2025-03-12T11:00:00.000Z',
+				{ resourceId: 'r1' }
+			),
+			event(
+				'hours-2',
+				'Room B hold',
+				'2025-03-12T10:00:00.000Z',
+				'2025-03-12T11:00:00.000Z',
+				{ resourceId: 'r2' }
 			),
 		],
 	},

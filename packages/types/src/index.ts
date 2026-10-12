@@ -63,6 +63,8 @@ export interface CalendarEvent {
 	editable?: boolean
 	/** Whether this event can be moved. Defaults to `editable`. */
 	startEditable?: boolean
+	/** Whether this event can be resized by its edges. Defaults to `editable`. */
+	durationEditable?: boolean
 }
 
 /**
@@ -224,6 +226,19 @@ export interface EventsChange {
 	 * measured from the start of its own day.
 	 */
 	delta?: EventDelta
+	/**
+	 * For `'update'`: how far the event's end moved (zero when it did not),
+	 * measured the same way as `delta`, from the two ends as they are. A resize
+	 * from the end edge sets only this one and a resize from the start edge only
+	 * `delta`. A move sets both to the same amount, except that a timed event
+	 * moved onto the all-day row has `delta` measured from the start of its day,
+	 * so the two can differ. Undefined for `'add'` and `'delete'`.
+	 *
+	 * FullCalendar reports a resize through its own `eventResize` callback with
+	 * `startDelta` and `endDelta`; ilamy reports every action once, through
+	 * `onEventsChange` (#309), so `delta` is the `startDelta`.
+	 */
+	endDelta?: EventDelta
 	/**
 	 * Undoes the whole action in the calendar's own store: removes `added`,
 	 * restores the previous version of every row in `updated`, and puts back

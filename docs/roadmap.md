@@ -185,7 +185,7 @@ kcsujeet/ilamy-calendar#101 (15-minute snapping in resource views), #7, #40, #50
 | 3.3.0 | **Truthful docs** | — | `README.md:53` and `packages/calendar/README.md:53` claim resize; the README claims overlap prevention; audit "100% test coverage" and "100+ locales". Same audit on `apps/website`. Ships as a 3.2.2 patch immediately. |
 | 3.3.1 | **Change info** | Core | Add `delta` (`{ days, milliseconds }`, whole calendar days plus wall-clock time) and `revert()` to `EventsChange` (`packages/types/src/index.ts:170`). `revert` restores every row of the action, recurring scopes included (#309), and fires no callbacks. No `oldEvent` field: `EventsChange.event` is already the pre-change event; the docs state the mapping. Touch: `hooks/calendar-data/event-changes.ts`, `use-event-mutations.ts`, `use-plugin-mutations.ts`. |
 | 3.3.2 | **Edit permissions** | Core | `editable`, `eventStartEditable`, `eventDurationEditable`, `eventAllow(info)`; per-event `editable`/`startEditable`/`durationEditable`, per-event over calendar as in FullCalendar. Evaluated on every snap through the existing `isCellDisabled` path in `drag-and-drop/dnd-utils.ts`. `disableDragAndDrop` becomes an alias of `editable={false}`. |
-| 3.3.3 | **Event resize** | Core (shares the drag engine) | End-edge handle on the segment with `isEnd`; start edge only with `eventResizableFromStart`. Snaps to the slot (time grid) or day (day grid); minimum one slot or one day; end stays exclusive (#248). Recurring occurrences go through the scope dialog. `onEventResize` plus `onEventsChange`. e2e: real pointer and touch resize in week, month, horizontal resource day, vertical resource week; refusal by `eventAllow`. |
+| 3.3.3 | **Event resize** | Core (shares the drag engine) | End-edge handle on the segment with `isEnd`; start edge only with `eventResizableFromStart`. Snaps to the slot (time grid) or day (day grid); minimum one slot or one day; end stays exclusive (#248). Recurring occurrences go through the scope dialog. No separate `onEventResize`: a resize is one `onEventsChange` action, with `endDelta` beside `delta` (the `startDelta` of FullCalendar's `eventResize`). e2e: real pointer and touch resize in week, month, horizontal resource day, vertical resource week; refusal by `eventAllow`. |
 | 3.3.4 | **Visible hours** | Core | `slotMinTime`, `slotMaxTime` (`'HH:mm'`), independent of `hideNonBusinessHours`. Touch: `utils/view-hours.ts`. |
 | 3.3.5 | **Slot and snap sizes** | Core | `slotDuration: number` (widens `SlotDuration`; 15/30/60 render identically), `snapDuration` (core of #101), `slotLabelInterval`. |
 | 3.3.6 | **Formats** | Core | `slotLabelFormat`, `eventTimeFormat`, `displayEventTime`, `displayEventEnd`, `dayHeaderFormat`, `titleFormat`, all `Intl.DateTimeFormatOptions`; `timeFormat` stays as shorthand. |
@@ -298,7 +298,7 @@ the Upgrader persona passes on the migrated configuration.
 | Range selection `onSelect` | 4.1.3 |
 | Events as a function | 3.4.1 |
 | `loading` callback | 3.4.1 |
-| Event resize | 3.3.3 |
+| Event resize (`onEventResize`) | 3.3.3, reported through `onEventsChange` + `endDelta` |
 | External dragging | 4.1.4 |
 | `eventAllow` / `selectAllow` | 3.3.2 / 4.1.3 |
 | `delta` | 3.3.1 |

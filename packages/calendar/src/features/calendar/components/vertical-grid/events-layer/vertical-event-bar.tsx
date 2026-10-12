@@ -53,6 +53,7 @@ export function VerticalEventBar({
 				isBeingDragged={draggedEventId === event.id}
 				isTruncatedEnd={positioned.isTruncatedEnd}
 				isTruncatedStart={positioned.isTruncatedStart}
+				resizeGranularity="slot"
 				sourceResourceId={resourceId}
 			/>
 		</div>

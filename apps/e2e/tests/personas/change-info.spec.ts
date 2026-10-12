@@ -69,8 +69,16 @@ const snapshotBars = async (page: Page) => {
 		})
 }
 
-const open = (page: Page, options: ScenarioOptions) =>
-	gotoScenario(page, options)
+/**
+ * Opens a scenario and waits out the header animations: every spec here aims a
+ * pointer at geometry it has just measured, and a bar is still moving for the
+ * first half second. Pressing the centre of a short bar mid-animation could
+ * land on its resize handle.
+ */
+const open = async (page: Page, options: ScenarioOptions) => {
+	await gotoScenario(page, options)
+	await settle(page)
+}
 
 const changeCount = async (grid: CalendarPage) =>
 	(await grid.eventChanges()).length
@@ -564,6 +572,9 @@ const dragAndCheck = async (
 	tz = 'UTC',
 	scopeLabel?: string
 ) => {
+	// A bar slides in again every time its event is stored, and a pointer aimed
+	// at its centre mid-slide can land on a resize handle.
+	await settle(page)
 	const before = (await grid.eventNamed(title)).start
 	const n = (await grid.eventChanges()).length
 	await pressAndMove(page, from, to)

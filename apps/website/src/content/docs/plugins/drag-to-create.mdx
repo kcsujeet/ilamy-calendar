@@ -35,6 +35,7 @@ With no options, a completed drag opens the event form with `start`, `end`, `all
 - **Touch**: a drag starts on a short press-and-hold, then drag. A quick swipe still scrolls the page instead of selecting.
 - **Auto-scroll**: holding the pointer near an edge of the scroll area scrolls it so the selection can extend past what is currently visible. On a resource calendar the scroll is locked to the axis the resources lay out on, so a drag never scrolls across resources.
 - **Single region**: a selection never mixes all-day and timed cells and never spans resources. A cross-day timed drag becomes a multi-day timed range; month and all-day drags span days.
+- **Snapping**: in an hour grid the selection snaps to the calendar's `snapDuration` (by default the slot), so with `slotDuration={60}` and `snapDuration={15}` a drag from a quarter past one to the half hour ends on the quarter hours under the pointer. This holds in the vertical time grid and in the horizontal resource timeline.
 - Pressing **Escape**, or the window losing focus, cancels an in-progress selection.
 
 ## Options

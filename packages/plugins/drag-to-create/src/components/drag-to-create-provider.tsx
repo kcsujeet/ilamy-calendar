@@ -4,9 +4,14 @@ import { type ReactNode, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useDragGesture } from '../hooks/use-drag-gesture'
 import type { DragToCreateOptions } from '../types'
-import { type RawCell, readCell } from '../utils/read-cell'
+import { readCell } from '../utils/read-cell'
 import { intersectRect, type Rect, unionRect } from '../utils/rect'
 import { computeRange, isSameRegion } from '../utils/selection'
+import {
+	getCellBounds,
+	type SnappedCell,
+	snapCellToPoint,
+} from '../utils/snap-cell'
 
 /** Where the selection highlight mounts and the rect (in that box's space). */
 interface Mirror {
@@ -28,13 +33,10 @@ interface Mirror {
  * the fallback selection is scrolled entirely out of view.
  */
 const computeMirror = (
-	startCell: RawCell,
-	lastCell: RawCell
+	startCell: SnappedCell,
+	lastCell: SnappedCell
 ): Mirror | null => {
-	const union = unionRect(
-		startCell.element.getBoundingClientRect(),
-		lastCell.element.getBoundingClientRect()
-	)
+	const union = unionRect(getCellBounds(startCell), getCellBounds(lastCell))
 	const content = startCell.element.closest('[data-calendar-scroll-content]')
 	if (content instanceof HTMLElement) {
 		const box = content.getBoundingClientRect()
@@ -97,7 +99,7 @@ export function DragToCreateProvider({
 	const { openEventForm, resources, timezone, orientation } =
 		useIlamyCalendarContext()
 	const [mirror, setMirror] = useState<Mirror | null>(null)
-	const lastCellRef = useRef<RawCell | null>(null)
+	const lastCellRef = useRef<SnappedCell | null>(null)
 
 	// Resource calendars scroll along the axis their resources are laid out on
 	// (vertical resource grid -> rows -> y; horizontal -> columns -> x). Locking
@@ -112,7 +114,7 @@ export function DragToCreateProvider({
 		setMirror(null)
 	}
 
-	const commit = (startCell: RawCell, lastCell: RawCell) => {
+	const commit = (startCell: SnappedCell, lastCell: SnappedCell) => {
 		const range = computeRange(startCell, lastCell)
 		const resource = resources.find(
 			(item: Resource) => String(item.id) === range.resourceId
@@ -135,17 +137,26 @@ export function DragToCreateProvider({
 		}
 	}
 
-	useDragGesture<RawCell>({
+	// A cell that snaps finer than itself is narrowed to the slice under the pointer.
+	const readSnappedCell = (
+		element: Element | null,
+		point: { clientX: number; clientY: number }
+	): SnappedCell | null => {
+		const cell = readCell(element, timezone)
+		return cell ? snapCellToPoint(cell, point) : null
+	}
+
+	useDragGesture<SnappedCell>({
 		scrollAxis,
-		resolvePress: (event) => readCell(event.target as Element, timezone),
+		resolvePress: (event) => readSnappedCell(event.target as Element, event),
 		onStart: (startCell) => {
 			lastCellRef.current = startCell
 			setMirror(computeMirror(startCell, startCell))
 		},
-		onMove: ({ clientX, clientY }, startCell) => {
-			const candidate = readCell(
-				document.elementFromPoint(clientX, clientY),
-				timezone
+		onMove: (point, startCell) => {
+			const candidate = readSnappedCell(
+				document.elementFromPoint(point.clientX, point.clientY),
+				point
 			)
 			if (candidate && isSameRegion(startCell, candidate)) {
 				lastCellRef.current = candidate

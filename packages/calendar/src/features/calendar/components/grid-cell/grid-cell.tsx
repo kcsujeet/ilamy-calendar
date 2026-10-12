@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
+import type { TimeAxis } from '@ilamy/utils/helpers'
 import type React from 'react'
 import { memo, useRef } from 'react'
 import { useIsCellUnavailable } from '@/features/calendar/hooks/use-is-cell-unavailable'
@@ -32,6 +33,8 @@ interface GridProps {
 	precomputedEvents?: CalendarEvent[]
 	/** Whether this cell draws the dashed sub-hour divider below itself. */
 	isSubDivider?: boolean
+	/** The axis time runs along in the grid, for cells of an hour grid. */
+	axis?: TimeAxis
 }
 
 /**
@@ -68,6 +71,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	showDayNumber = false,
 	weekNumber,
 	isSubDivider = false,
+	axis,
 	children,
 }) => {
 	const allEventsDialogRef = useRef<AllEventDialogHandle>(null)
@@ -83,6 +87,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		<>
 			<DroppableCell
 				allDay={allDay}
+				axis={axis}
 				className={cn(
 					'cursor-pointer overflow-clip p-1 bg-background not-in-data-dragging:hover:bg-accent min-h-[60px] relative min-w-0',
 					className

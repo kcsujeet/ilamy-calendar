@@ -157,3 +157,94 @@ export function readableTextColor(hex: string): '#000000' | '#ffffff' {
 	const brightness = (red * 299 + green * 587 + blue * 114) / 1000
 	return brightness >= 128 ? '#000000' : '#ffffff'
 }
+
+/* ---------------------------------------------------------------------------
+ * Slot and snap sizes
+ *
+ * Shared by the core grids and the drag-to-create plugin, which both narrow an
+ * hour-grid cell to the snap-sized piece the pointer is over.
+ * ------------------------------------------------------------------------ */
+
+export const MINUTES_PER_HOUR = 60
+
+/** The axis time runs along in an hour grid. */
+export type TimeAxis = 'vertical' | 'horizontal'
+
+/**
+ * Whether a slot size can be drawn: an hour row is cut into whole sub-slots, so
+ * the size must be a whole number of minutes that divides an hour. (FullCalendar
+ * accepts any duration and lets a non-divisor overshoot the last row,
+ * `timegrid/time-slat-meta.ts:36-50`, v7.1.1; ilamy draws hour rows, so it
+ * does not.)
+ */
+export const isSupportedSlotDuration = (minutes: number): boolean => {
+	const isWholeMinutes = Number.isInteger(minutes) && minutes > 0
+	const dividesHour = MINUTES_PER_HOUR % minutes === 0
+	return isWholeMinutes && dividesHour
+}
+
+/** The slot size to draw: the given one, or an hour when it cannot be drawn. */
+export const resolveSlotDuration = (minutes: number): number =>
+	isSupportedSlotDuration(minutes) ? minutes : MINUTES_PER_HOUR
+
+/**
+ * How long an hour-grid cell is: its slot when it has a `minute`, an hour
+ * otherwise (a cell of a one-hour row, or a column of a horizontal timeline).
+ */
+export const getCellMinutes = (
+	minute: number | undefined,
+	slotDurationMinutes: number | undefined
+): number => {
+	if (minute === undefined) {
+		return MINUTES_PER_HOUR
+	}
+	return slotDurationMinutes ?? MINUTES_PER_HOUR
+}
+
+/**
+ * The snap size inside a cell of `cellMinutes`. With no snap it is the cell
+ * itself; a snap that does not divide the cell falls back to the cell, as
+ * FullCalendar resets a `snapDuration` that does not divide `slotDuration`
+ * (`TimeGridCols.tsx:162-172`, v7.1.1). It is resolved per cell, so a snap of
+ * 10 is no snap of a 15-minute slot but is one of an hour column.
+ */
+export const resolveSnapDuration = (
+	snapDuration: number | undefined,
+	cellMinutes: number
+): number => {
+	if (snapDuration === undefined) {
+		return cellMinutes
+	}
+	const isWholeMinutes = Number.isInteger(snapDuration) && snapDuration > 0
+	const dividesCell = cellMinutes % snapDuration === 0
+	return isWholeMinutes && dividesCell ? snapDuration : cellMinutes
+}
+
+/** Where `at` sits in a span as 0..1, clamped; a span with no length is 0. */
+export const getFractionAlong = (
+	at: number,
+	spanStart: number,
+	spanLength: number
+): number => {
+	if (spanLength <= 0) {
+		return 0
+	}
+	const fraction = (at - spanStart) / spanLength
+	return Math.min(1, Math.max(0, fraction))
+}
+
+/**
+ * Which snap-sized piece of a cell a pointer `fractionIntoCell` along it is
+ * over: the piece's `index`, out of `count` pieces.
+ */
+export const getSnapBucket = (
+	fractionIntoCell: number,
+	cellMinutes: number,
+	snapMinutes: number
+): { index: number; count: number } => {
+	const count = cellMinutes / snapMinutes
+	const lastIndex = count - 1
+	const clamped = Math.min(1, Math.max(0, fractionIntoCell))
+	const index = Math.min(lastIndex, Math.floor(clamped * count))
+	return { index, count }
+}

@@ -50,6 +50,7 @@ export interface CalendarContextType
 			| 'scrollToNow'
 			| 'weekNumbers'
 			| 'renderResource'
+			| 'snapDuration'
 			| 'slotMaxTime'
 			| 'slotMinTime'
 		> {

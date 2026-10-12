@@ -171,23 +171,6 @@ export const MINUTES_PER_HOUR = 60
 export type TimeAxis = 'vertical' | 'horizontal'
 
 /**
- * Whether a slot size can be drawn: an hour row is cut into whole sub-slots, so
- * the size must be a whole number of minutes that divides an hour. (FullCalendar
- * accepts any duration and lets a non-divisor overshoot the last row,
- * `timegrid/time-slat-meta.ts:36-50`, v7.1.1; ilamy draws hour rows, so it
- * does not.)
- */
-export const isSupportedSlotDuration = (minutes: number): boolean => {
-	const isWholeMinutes = Number.isInteger(minutes) && minutes > 0
-	const dividesHour = MINUTES_PER_HOUR % minutes === 0
-	return isWholeMinutes && dividesHour
-}
-
-/** The slot size to draw: the given one, or an hour when it cannot be drawn. */
-export const resolveSlotDuration = (minutes: number): number =>
-	isSupportedSlotDuration(minutes) ? minutes : MINUTES_PER_HOUR
-
-/**
  * How long an hour-grid cell is: its slot when it has a `minute`, an hour
  * otherwise (a cell of a one-hour row, or a column of a horizontal timeline).
  */
@@ -202,11 +185,10 @@ export const getCellMinutes = (
 }
 
 /**
- * The snap size inside a cell of `cellMinutes`. With no snap it is the cell
- * itself; a snap that does not divide the cell falls back to the cell, as
- * FullCalendar resets a `snapDuration` that does not divide `slotDuration`
- * (`TimeGridCols.tsx:162-172`, v7.1.1). It is resolved per cell, so a snap of
- * 10 is no snap of a 15-minute slot but is one of an hour column.
+ * The snap size inside a cell of `cellMinutes`. A snap takes effect only when it
+ * is finer than the cell and divides it; otherwise the cell itself is the snap.
+ * It is resolved per cell, so a snap of 30 is no snap of a 30-minute slot but is
+ * one of an hour column.
  */
 export const resolveSnapDuration = (
 	snapDuration: number | undefined,
@@ -215,9 +197,9 @@ export const resolveSnapDuration = (
 	if (snapDuration === undefined) {
 		return cellMinutes
 	}
-	const isWholeMinutes = Number.isInteger(snapDuration) && snapDuration > 0
+	const isFinerThanCell = snapDuration < cellMinutes
 	const dividesCell = cellMinutes % snapDuration === 0
-	return isWholeMinutes && dividesCell ? snapDuration : cellMinutes
+	return isFinerThanCell && dividesCell ? snapDuration : cellMinutes
 }
 
 /** Where `at` sits in a span as 0..1, clamped; a span with no length is 0. */

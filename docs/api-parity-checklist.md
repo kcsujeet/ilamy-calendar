@@ -43,7 +43,7 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 - [x] `onViewChange` — matches view change callbacks
 - [x] Recurring event CRUD with scope (this/following/all) — FullCalendar doesn't have this built-in
 - [x] `renderEvent` / `renderResource` / `renderCurrentTimeIndicator` — flexible custom rendering
-- [x] `slotDuration` (any divisor of 60 minutes) and `snapDuration` (finer than the slot, for drag, resize and drag-to-create, vertical grid and horizontal resource timeline) — FullCalendar's `slotDuration`/`snapDuration` for hour-resolution views; `slotLabelInterval`/`slotHeaderInterval` and slots longer than an hour are cut (see roadmap 3.3.5)
+- [x] `slotDuration` (`15 | 30 | 60`) and `snapDuration` (`15 | 30`, finer than the cell, for drag, resize and drag-to-create, vertical grid and horizontal resource timeline) — FullCalendar's `slotDuration`/`snapDuration` for hour-resolution views; `slotLabelInterval`/`slotHeaderInterval` and slots longer than an hour are cut, as are other slot and snap sizes (see roadmap 3.3.5)
 - [x] `hiddenDays` — hide specific weekdays
 - [x] Resource-specific business hours
 - [x] `businessHours` with split shifts

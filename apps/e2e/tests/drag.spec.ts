@@ -614,12 +614,14 @@ test.describe('drag and drop', () => {
 			.toMatch(/^2025-03-11T09:00/)
 	})
 
-	test('keeps the mirror over a cell that refuses the drop', async ({
+	test('draws no mirror and no tint over a cell that refuses the drop', async ({
 		page,
 	}) => {
-		// FullCalendar keeps its mirror over an area its constraints forbid and
-		// signals the refusal with the cursor. Blanking the preview instead
-		// swapped the snapped mirror for a floating chip mid-drag.
+		// The contract moved with 3.3.2: this used to assert the mirror stayed
+		// over a refused cell. FullCalendar nulls the mutation for an invalid
+		// placement (interaction-plugin/interactions/EventDragging.ts:193-198,
+		// v7.1.1), so a refused placement shows only the not-allowed cursor.
+		// Both refusal paths (a disabled cell, `eventAllow`) behave the same.
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'month',
@@ -637,10 +639,11 @@ test.describe('drag and drop', () => {
 			closedDay
 		)
 
-		await expect(month.dragMirror).toBeVisible()
 		await expect
 			.poll(() => page.evaluate(() => document.body.style.cursor))
 			.toBe('not-allowed')
+		await expect(month.dragMirror).toHaveCount(0)
+		await expect(month.dropTargets).toHaveCount(0)
 		await page.mouse.up()
 	})
 
@@ -710,5 +713,169 @@ test.describe('drag and drop', () => {
 		const event = await month.eventNamed('Earlier in the month')
 
 		expect(event.start).toMatch(/^2025-03-04/)
+	})
+})
+
+// `editable`, `eventStartEditable` and `eventAllow` (roadmap 3.3.2): who may
+// move, and where a move may land.
+test.describe('edit permissions', () => {
+	const MOVED_FROM = /^2025-03-04/
+
+	test('editable=false moves nothing and reports no change', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			settings: { editable: 'false' },
+		})
+		const month = new MonthGrid(page)
+
+		await dragTo(
+			page,
+			month.event('Earlier in the month').first(),
+			month.cellOn('2025-03-06')
+		)
+
+		const event = await month.eventNamed('Earlier in the month')
+		expect(event.start).toMatch(MOVED_FROM)
+		expect(await month.eventChanges()).toEqual([])
+	})
+
+	test('eventStartEditable=true lets events move under editable=false', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			settings: { editable: 'false', eventStartEditable: 'true' },
+		})
+		const month = new MonthGrid(page)
+
+		await dragTo(
+			page,
+			month.event('Earlier in the month').first(),
+			month.cellOn('2025-03-06')
+		)
+
+		const event = await month.eventNamed('Earlier in the month')
+		expect(event.start).toMatch(/^2025-03-06/)
+	})
+
+	test('an event with editable=false stays put while its neighbour drags', async ({
+		page,
+	}) => {
+		await gotoScenario(page, { scenario: 'edit-permissions', view: 'month' })
+		const month = new MonthGrid(page)
+
+		await dragTo(
+			page,
+			month.event('Locked event').first(),
+			month.cellOn('2025-03-06')
+		)
+		await dragTo(
+			page,
+			month.event('Free event').first(),
+			month.cellOn('2025-03-07')
+		)
+
+		const locked = await month.eventNamed('Locked event')
+		const free = await month.eventNamed('Free event')
+		expect(locked.start).toMatch(MOVED_FROM)
+		expect(free.start).toMatch(/^2025-03-07/)
+	})
+
+	test('eventAllow refuses a weekend: not-allowed cursor, nothing moves or is reported', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			settings: { eventAllow: 'no-weekends' },
+		})
+		const month = new MonthGrid(page)
+
+		await pressAndMoveTo(
+			page,
+			month.event('Earlier in the month').first(),
+			month.cellOn('2025-03-08')
+		)
+		await expect
+			.poll(() => page.evaluate(() => document.body.style.cursor))
+			.toBe('not-allowed')
+		await expect(month.dragMirror).toHaveCount(0)
+		await expect(month.dropTargets).toHaveCount(0)
+		await page.mouse.up()
+
+		const event = await month.eventNamed('Earlier in the month')
+		expect(event.start).toMatch(MOVED_FROM)
+		expect(await month.eventChanges()).toEqual([])
+	})
+
+	test('a locked bar is a plain clickable event: no drag attributes, a normal click opens it', async ({
+		page,
+	}) => {
+		await gotoScenario(page, { scenario: 'edit-permissions', view: 'month' })
+		const month = new MonthGrid(page)
+		// `bar` is the positioned wrapper; the element dnd-kit decorates is the
+		// one inside it that wears the cursor class.
+		const barOf = (eventId: string) =>
+			month.bar(eventId).locator('[class*="cursor-"]').first()
+		const lockedBar = barOf('locked-1')
+		const freeBar = barOf('free-1')
+
+		const dragAttributesOn = (bar: typeof lockedBar) =>
+			bar.evaluate((element) => ({
+				describedBy: element.hasAttribute('aria-describedby'),
+				disabled: element.hasAttribute('aria-disabled'),
+				role: element.hasAttribute('role'),
+			}))
+		expect(await dragAttributesOn(lockedBar)).toEqual({
+			describedBy: false,
+			disabled: false,
+			role: false,
+		})
+		expect(await dragAttributesOn(freeBar)).toMatchObject({
+			describedBy: true,
+			role: true,
+		})
+
+		await lockedBar.click()
+		await expect(page.getByRole('dialog')).toBeVisible()
+	})
+
+	test('mounts no drag-and-drop live region when nothing can move', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'edit-permissions',
+			view: 'month',
+			settings: { editable: 'false' },
+		})
+		const month = new MonthGrid(page)
+
+		await expect(month.event('Free event').first()).toBeVisible()
+		await expect(page.locator('[id*="DndLiveRegion"]')).toHaveCount(0)
+		await expect(
+			page.locator('[aria-describedby*="DndDescribedBy"]')
+		).toHaveCount(0)
+	})
+
+	test('eventAllow lets a weekday drop through', async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			settings: { eventAllow: 'no-weekends' },
+		})
+		const month = new MonthGrid(page)
+
+		await dragTo(
+			page,
+			month.event('Earlier in the month').first(),
+			month.cellOn('2025-03-06')
+		)
+
+		const event = await month.eventNamed('Earlier in the month')
+		expect(event.start).toMatch(/^2025-03-06/)
 	})
 })

@@ -1,5 +1,6 @@
 import type {
 	BusinessHours,
+	EventDropInfo,
 	SlotDuration,
 	TimeFormat,
 	WeekDays,
@@ -32,6 +33,10 @@ export interface UrlConfig {
 	businessHours?: BusinessHours
 	stickyViewHeader?: boolean
 	disableDragAndDrop?: boolean
+	editable?: boolean
+	eventStartEditable?: boolean
+	/** Set from the `eventAllow` parameter, which names a predicate. */
+	eventAllow?: (dropInfo: EventDropInfo) => boolean
 	timeFormat?: TimeFormat
 	locale?: string
 	/** Harness-only: the height of the box the calendar is given. */
@@ -48,6 +53,19 @@ export interface UrlConfig {
 	 */
 	resourceCount?: number
 }
+
+/** `dayjs().day()` for Sunday and Saturday. */
+const WEEKEND_DAYS = [0, 6]
+
+/**
+ * The named `eventAllow` predicates a URL can pick. A URL cannot carry a
+ * function, so a spec names one of these instead.
+ */
+const EVENT_ALLOW_PREDICATES = {
+	/** Refuses any placement that starts on a Saturday or a Sunday. */
+	'no-weekends': (dropInfo: EventDropInfo) =>
+		!WEEKEND_DAYS.includes(dropInfo.start.day()),
+} as const
 
 /** Raised for a value the URL got wrong, so the harness can show it rather than guess. */
 export class ConfigError extends Error {}
@@ -214,6 +232,32 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 			'disableDragAndDrop',
 			disableDragAndDrop
 		)
+	}
+
+	const editable = get('editable')
+	if (editable !== null) {
+		config.editable = boolean('editable', editable)
+	}
+
+	const eventStartEditable = get('eventStartEditable')
+	if (eventStartEditable !== null) {
+		config.eventStartEditable = boolean(
+			'eventStartEditable',
+			eventStartEditable
+		)
+	}
+
+	const eventAllow = get('eventAllow')
+	if (eventAllow !== null) {
+		const predicateName = oneOf(
+			'eventAllow',
+			eventAllow,
+			Object.keys(EVENT_ALLOW_PREDICATES) as Array<
+				keyof typeof EVENT_ALLOW_PREDICATES
+			>,
+			String
+		)
+		config.eventAllow = EVENT_ALLOW_PREDICATES[predicateName]
 	}
 
 	const timeFormat = get('timeFormat')

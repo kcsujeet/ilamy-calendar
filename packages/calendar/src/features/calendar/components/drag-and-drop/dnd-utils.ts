@@ -15,10 +15,10 @@ export interface DropCellData {
 	allDay?: boolean
 	/**
 	 * Whether this cell refuses drops. A disabled cell is still REGISTERED as a
-	 * droppable so the mirror keeps rendering over it and the pointer can be
-	 * released there; validity is decided at drop time instead, the way
-	 * FullCalendar separates "where would this land" from "is that allowed"
-	 * (`eventAllow`, and the `fc-not-allowed` class it puts on the body).
+	 * droppable so the pointer can be released there and the drag keeps a
+	 * preview to refuse; validity is decided from it, the way FullCalendar
+	 * separates "where would this land" from "is that allowed" (`eventAllow`,
+	 * and the `fc-not-allowed` class it puts on the body).
 	 */
 	disabled?: boolean
 }

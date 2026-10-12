@@ -26,6 +26,16 @@ describe('isPreviewOnTarget', () => {
 		expect(isPreviewOnTarget(mkPreview(), wholeDay)).toBe(true)
 	})
 
+	// The contract moved with 3.3.2: a refused placement is no longer drawn.
+	// FullCalendar nulls the mutation for an invalid placement (interaction-
+	// plugin/interactions/EventDragging.ts:193-198, v7.1.1), so no mirror and no
+	// drop tint remain and the not-allowed cursor is the only signal.
+	test('returns false for a placement that refuses the drop', () => {
+		expect(
+			isPreviewOnTarget(mkPreview({ isDropAllowed: false }), wholeDay)
+		).toBe(false)
+	})
+
 	test('returns false when the preview ends exactly at the range start', () => {
 		const preview = mkPreview({ start: at(8), end: at(10) })
 		const range = { rangeStart: at(10), rangeEnd: at(11) }
@@ -107,9 +117,8 @@ describe('getDragPreviewEvent', () => {
 })
 
 describe('getDragCursor', () => {
-	// FullCalendar signals a refused drop with the cursor rather than by hiding
-	// the mirror: it toggles `fc-not-allowed` on `document.body` while the drag
-	// sits over an area its constraints forbid.
+	// The refusal's one signal: FullCalendar toggles `fc-not-allowed` on
+	// `document.body` while the drag sits over an area its constraints forbid.
 	test('asks for not-allowed while the candidate sits on a closed cell', () => {
 		expect(getDragCursor(mkPreview({ isDropAllowed: false }))).toBe(
 			'not-allowed'

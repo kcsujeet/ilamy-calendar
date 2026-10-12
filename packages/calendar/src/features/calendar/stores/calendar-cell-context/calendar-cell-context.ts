@@ -18,7 +18,6 @@ export type CalendarCellContextType = Pick<
 	| 'onCellClick'
 	| 'isCellDisabled'
 	| 'getCellClassName'
-	| 'disableDragAndDrop'
 	| 'disableCellClick'
 	| 'classesOverride'
 >

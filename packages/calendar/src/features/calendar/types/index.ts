@@ -1,6 +1,7 @@
 import type {
 	BusinessHours,
 	CalendarEvent,
+	EventDropInfo,
 	EventsChange,
 	IlamyPlugin,
 	Resource,
@@ -254,9 +255,34 @@ export interface IlamyCalendarProps {
 	disableEventClick?: boolean
 	/**
 	 * Whether to disable drag-and-drop functionality for calendar events.
-	 * Useful for read-only views or when drag-and-drop is not needed.
+	 * Only sets the `editable` default, so an explicit `eventStartEditable`
+	 * still enables moving.
+	 * @deprecated Use `editable={false}`. Kept until 4.0.
 	 */
 	disableDragAndDrop?: boolean
+	/**
+	 * Whether events can be moved. A per-event `editable` beats it, and
+	 * `eventStartEditable` beats it for moving.
+	 *
+	 * Deliberate deviation: FullCalendar defaults `editable` to `false`
+	 * (`options.ts:495`, v7.1.1). Drag is on by default here, so this defaults
+	 * to `true` until 4.0, when flipping it can be a breaking change.
+	 * @default true
+	 */
+	editable?: boolean
+	/**
+	 * Whether events can be moved.
+	 * @default editable
+	 */
+	eventStartEditable?: boolean
+	/**
+	 * Vetoes a candidate placement while an event is dragged. Called when the
+	 * hovered placement changes, not on every pointer move; returning `false`
+	 * shows the not-allowed cursor and a release there changes nothing.
+	 * `draggedEvent` is the event as it was before the drag. It does not apply
+	 * to the event form or to drag-to-create (FullCalendar's `selectAllow`).
+	 */
+	eventAllow?: (dropInfo: EventDropInfo, draggedEvent: CalendarEvent) => boolean
 	/**
 	 * Maximum number of events to display in one grid cell: a day in month
 	 * view, an hour in the resource day view.

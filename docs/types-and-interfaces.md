@@ -40,6 +40,8 @@ The core event type used throughout the library.
 | `resourceId` | `string \| number` | no | Single resource assignment |
 | `resourceIds` | `(string \| number)[]` | no | Multiple resource assignment |
 | `data` | `Record<string, unknown>` | no | Custom application metadata |
+| `editable` | `boolean` | no | Whether this event can be moved; beats the calendar's `editable` |
+| `startEditable` | `boolean` | no | Whether this event can be moved; defaults to `editable` |
 
 ### `end` is exclusive
 
@@ -131,7 +133,10 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `hiddenDays` | `WeekDays[]` | `[]` | Days to hide from vertical week view. Ignored in resource vertical week view with daily granularity (`weekViewGranularity: 'daily'`) — non-contiguous days would break multi-day event positioning. |
 | `disableCellClick` | `boolean` | — | Disable cell clicks |
 | `disableEventClick` | `boolean` | — | Disable event clicks |
-| `disableDragAndDrop` | `boolean` | — | Disable DnD |
+| `disableDragAndDrop` | `boolean` | — | **Deprecated**, use `editable={false}`. Only sets the `editable` default, so an explicit `eventStartEditable` still enables moving. Kept until 4.0 |
+| `editable` | `boolean` | `true` | Events can be moved |
+| `eventStartEditable` | `boolean` | `editable` | Events can be moved |
+| `eventAllow` | `(dropInfo: EventDropInfo, draggedEvent: CalendarEvent) => boolean` | — | Veto a candidate placement while dragging. `EventDropInfo` is `{ start, end, allDay, resourceId? }`; `draggedEvent` is the event before the drag. Asked once per placement change, not per pointer move. Not applied to the event form or drag-to-create |
 | `dayMaxEvents` | `number` | `4` | Max events per day in month view |
 | `onMoreEventsClick` | `(day: Dayjs, events: CalendarEvent[]) => void` | — | Called when the "+N more" overflow indicator is clicked, with the cell's day and full event list. Overrides the built-in all-events dialog when provided |
 | `eventSpacing` | `number` | `1` | Gap between stacked events (px) |

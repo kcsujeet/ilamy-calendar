@@ -1,6 +1,6 @@
 # API Parity Checklist (vs FullCalendar)
 
-> The plan of record for closing these gaps, and the wider ones found in the 2026-10-11 sweep, is `docs/fullcalendar-parity-plan.md`. Tick items here as they ship.
+> The plan of record for these items and the rest of the roadmap is `docs/roadmap.md`. Tick items here as they ship.
 
 Feature gaps compared to FullCalendar and other mature calendar libraries. Prioritized by impact.
 

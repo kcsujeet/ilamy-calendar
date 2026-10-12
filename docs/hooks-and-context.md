@@ -206,7 +206,7 @@ VerticalGrid / HorizontalGrid
 3. If recurring: opens scope dialog, then calls `updateRecurringEvent()`
 4. If regular: calls `updateEvent()` directly
 
-If `disableDragAndDrop` is `true`, `CalendarDndContext` renders children without any DnD wrapper.
+`CalendarDndContext` mounts dnd-kit only when something can move: when the calendar-level `startEditable` is false (`editable={false}` or the deprecated `disableDragAndDrop`) and no event resolves `startEditable` true it renders children bare (no live region, no droppables). `resolveStartEditable` (`utils/resolve-editability.ts`) decides per event; a bar that cannot move is a plain clickable element with none of dnd-kit's attributes. `eventAllow` is asked in `useCalendarDrag` once per distinct placement, and again from the release itself (cached). A refused placement (a disabled cell or an `eventAllow` veto) draws no mirror and no drop tint, shows the not-allowed cursor, and a release there commits nothing.
 
 ## Key Files
 

@@ -7,6 +7,7 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { EventSegment } from '@/features/calendar/types'
 import type { DragSegment } from '@/features/calendar/utils/grab-offset'
+import { resolveStartEditable } from '@/features/calendar/utils/resolve-editability'
 import {
 	DefaultEventContent,
 	type DefaultEventContentProps,
@@ -108,8 +109,20 @@ function DraggableEventUnmemoized({
 	dragSegment,
 	isBeingDragged = false,
 }: DraggableEventProps) {
-	const { onEventClick, renderEvent, disableEventClick, disableDragAndDrop } =
-		useSmartCalendarContext()
+	const {
+		onEventClick,
+		renderEvent,
+		disableEventClick,
+		disableDragAndDrop,
+		editable,
+		eventStartEditable,
+	} = useSmartCalendarContext()
+	const isStartEditable = resolveStartEditable(event, {
+		editable,
+		eventStartEditable,
+		disableDragAndDrop,
+	})
+	const isMoveBlocked = disableDrag || !isStartEditable
 
 	// Measured on demand rather than read from `active.rect.current.initial`:
 	// dnd-kit's own measurement of a time-grid bar comes back as the label's
@@ -127,7 +140,7 @@ function DraggableEventUnmemoized({
 			dragSegment,
 			getBarRect: () => barRef.current?.getBoundingClientRect(),
 		},
-		disabled: disableDrag || disableDragAndDrop,
+		disabled: isMoveBlocked,
 	})
 
 	const registerBar = (node: HTMLElement | null) => {
@@ -135,10 +148,15 @@ function DraggableEventUnmemoized({
 		setNodeRef(node)
 	}
 
+	// A bar that cannot move is a plain clickable event: dnd-kit's attributes
+	// would announce drag instructions for it and mark it `aria-disabled`.
+	const dragAttributes = isMoveBlocked ? undefined : attributes
+	const dragListeners = isMoveBlocked ? undefined : listeners
+
 	// `isDragging` marks the bar under the pointer; `isBeingDragged` also covers
 	// this event's other bars (a clipped span, or a second resource row).
 	const { cursorClass, draggingClass } = getDragStateClasses({
-		isDragDisabled: Boolean(disableDrag || disableDragAndDrop),
+		isDragDisabled: isMoveBlocked,
 		disableEventClick: Boolean(disableEventClick),
 		isSourceOfDrag: isDragging || isBeingDragged,
 	})
@@ -179,8 +197,8 @@ function DraggableEventUnmemoized({
 			ref={registerBar}
 			style={style}
 			transitionKey={elementId}
-			{...attributes}
-			{...listeners}
+			{...dragAttributes}
+			{...dragListeners}
 		>
 			{content}
 		</AnimatedSection>

@@ -218,7 +218,7 @@ interface IlamyCalendarProps {
 | `weekViewGranularity` | `'hourly' \| 'daily'`               | `'hourly'`     | Week-view slot granularity with resources                            |
 | `initialView`         | `CalendarView`                      | `'month'`      | Initial view mode (Note: 'year' view is not supported for resources) |
 | `firstDayOfWeek`      | `'sunday' \| 'monday'`              | `'sunday'`     | First day of the week                                                |
-| `disableDragAndDrop`  | `boolean`                           | `false`        | Disable event drag-and-drop                                          |
+| `disableDragAndDrop`  | `boolean`                           | `false`        | Deprecated: use `editable={false}`. Disable event drag-and-drop      |
 | `onEventClick`        | `(event: CalendarEvent) => void`    | `undefined`    | Event click handler                                                  |
 | `onCellClick`         | `(info: CellInfo) => void`          | `undefined`    | Cell click handler with `start`, `end`, and optional `resource`      |
 | `onEventAdd`          | `(event: CalendarEvent) => void`    | `undefined`    | Event add callback                                                   |

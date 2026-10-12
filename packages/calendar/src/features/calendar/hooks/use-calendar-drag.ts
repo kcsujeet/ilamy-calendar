@@ -40,6 +40,12 @@ interface CalendarDrag {
 	}
 }
 
+/** The consumer's answer for the last placement it was asked about. */
+interface EventAllowVerdict {
+	placement: DragPreviewState
+	isAllowed: boolean
+}
+
 /**
  * Whether two candidate placements describe the same drop. The preview is
  * recomputed on every drag-over tick, so without this the provider re-renders
@@ -186,14 +192,16 @@ const useDragSensors = () => {
 export const useCalendarDrag = (
 	commitDrop: (event: CalendarEvent, updates: Partial<CalendarEvent>) => void
 ): CalendarDrag => {
-	const slotDuration = useSmartCalendarContext(
-		(context) => context.slotDuration
-	)
+	const { slotDuration, eventAllow } = useSmartCalendarContext((context) => ({
+		slotDuration: context.slotDuration,
+		eventAllow: context.eventAllow,
+	}))
 	const sensors = useDragSensors()
 	const activeEventRef = useRef<CalendarEvent>(null)
 	const grabOffsetRef = useRef<GrabOffset>(NO_GRAB_OFFSET)
 	const pendingGrabRef = useRef<PendingGrab | null>(null)
 	const overlayRef = useRef<DragOverlayHandle | null>(null)
+	const eventAllowVerdictRef = useRef<EventAllowVerdict | null>(null)
 	const [dragPreview, setDragPreview] = useState<DragPreviewState | null>(null)
 	useDragCursor(dragPreview)
 
@@ -201,8 +209,50 @@ export const useCalendarDrag = (
 		activeEventRef.current = null
 		grabOffsetRef.current = NO_GRAB_OFFSET
 		pendingGrabRef.current = null
+		eventAllowVerdictRef.current = null
 		setDragPreview(null)
 		overlayRef.current?.setActiveEvent(null)
+	}
+
+	/**
+	 * The consumer's veto on a placement, asked once per distinct placement: the
+	 * answer is kept while the pointer stays in it, so a consumer's predicate
+	 * runs neither on every pointer move nor again on release.
+	 */
+	const isAllowedByConsumer = (
+		draggedEvent: CalendarEvent,
+		placement: DragPreviewState
+	): boolean => {
+		if (!eventAllow) {
+			return true
+		}
+		const lastVerdict = eventAllowVerdictRef.current
+		if (lastVerdict && isSameDrop(lastVerdict.placement, placement)) {
+			return lastVerdict.isAllowed
+		}
+		const { start, end, allDay, resourceId } = placement
+		const isAllowed =
+			eventAllow({ start, end, allDay, resourceId }, draggedEvent) ?? true
+		eventAllowVerdictRef.current = { placement, isAllowed }
+		return isAllowed
+	}
+
+	/**
+	 * Where the dragged event would land on `overData`, and whether that is
+	 * allowed: the cell must accept drops and the consumer must not veto it.
+	 */
+	const getAllowedPlacement = (
+		draggedEvent: CalendarEvent,
+		overData: DropCellData | undefined
+	): DragPreviewState => {
+		const placement = getCandidatePlacement(
+			draggedEvent,
+			overData,
+			grabOffsetRef.current
+		)
+		const isAllowed =
+			placement.isDropAllowed && isAllowedByConsumer(draggedEvent, placement)
+		return { ...placement, isDropAllowed: isAllowed }
 	}
 
 	const onDragStart = (event: DragStartEvent) => {
@@ -253,10 +303,9 @@ export const useCalendarDrag = (
 			return
 		}
 
-		const nextPreview = getCandidatePlacement(
+		const nextPreview = getAllowedPlacement(
 			activeEvent,
-			event.over.data.current,
-			grabOffsetRef.current
+			event.over.data.current
 		)
 
 		setDragPreview((prev) => {
@@ -273,7 +322,15 @@ export const useCalendarDrag = (
 			activeEventRef.current,
 			grabOffsetRef.current
 		)
-		if (dropped) {
+		// Decided from the release itself, not from the last hover: dnd-kit fires
+		// drag-over from an effect, so a fast release can arrive before it.
+		const activeEvent = activeEventRef.current
+		const releasedOn = event.over?.data.current
+		const placement = activeEvent
+			? getAllowedPlacement(activeEvent, releasedOn)
+			: null
+		const isRefused = placement?.isDropAllowed === false
+		if (dropped && !isRefused) {
 			commitDrop(dropped.activeEvent, dropped.updates)
 		}
 		endDrag()

@@ -97,7 +97,10 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `renderHour` | `(date: dayjs.Dayjs) => ReactNode` | - | Custom function to render hour labels in the time gutter of day and week views. Receives a Dayjs object for the hour. |
 | `disableCellClick` | `boolean` | `false` | Disable cell click interactions |
 | `disableEventClick` | `boolean` | `false` | Disable event click interactions |
-| `disableDragAndDrop` | `boolean` | `false` | Disable drag-and-drop functionality for events |
+| `disableDragAndDrop` | `boolean` | `false` | **Deprecated**, use `editable={false}`. Only sets the `editable` default, so an explicit `eventStartEditable` still enables moving |
+| `editable` | `boolean` | `true` | Whether events can be moved. A per-event `editable` or `startEditable` overrides it. |
+| `eventStartEditable` | `boolean` | `editable` | Whether events can be moved |
+| `eventAllow` | `(dropInfo: EventDropInfo, draggedEvent: CalendarEvent) => boolean` | - | Veto a candidate placement while an event is dragged. `dropInfo` is `{ start, end, allDay, resourceId? }`; `draggedEvent` is the event before the drag. Returning `false` shows the not-allowed cursor and a release there changes nothing |
 | `eventSpacing` | `number` | `2` | Spacing (in pixels) between events in calendar views. Allows customizable gaps between events for better visual clarity. |
 | `eventHeight` | `number` | `24` | Height (in pixels) of event bars in horizontal grid views (month, resource month, resource week horizontal). Increase to show multi-line content like title + time. Does not affect day/week views which scale with event duration. |
 | `businessHours` | `BusinessHours \| BusinessHours[]` | `undefined` | Restrict calendar interactions to specified days and time ranges. Users can only create and edit events within business hours. Supports single object or array for different hours per day. |

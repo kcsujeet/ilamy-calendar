@@ -44,13 +44,8 @@ describe('CalendarDndContext', () => {
 	}
 
 	describe('Context Rendering', () => {
-		it('should render with DndContext when drag and drop is enabled', () => {
-			renderWithCalendarProvider({ disableDragAndDrop: false })
-			expect(screen.getByTestId('calendar-content')).toBeInTheDocument()
-		})
-
-		it('should render without DndContext when drag and drop is disabled', () => {
-			renderWithCalendarProvider({ disableDragAndDrop: true })
+		it('should render children', () => {
+			renderWithCalendarProvider()
 			expect(screen.getByTestId('calendar-content')).toBeInTheDocument()
 		})
 
@@ -79,6 +74,83 @@ describe('CalendarDndContext', () => {
 				</CalendarProvider>
 			)
 			expect(previewValue).toBeNull()
+		})
+	})
+
+	/*
+	 * dnd-kit puts a live region in the page, and drag instructions on every bar, for
+	 * as long as its context is mounted. A calendar where nothing can move must
+	 * not carry them: they announce drag instructions for events that cannot
+	 * be dragged, and every droppable cell would register for nothing.
+	 */
+	describe('Mounting', () => {
+		const movableEvent: CalendarEvent = {
+			id: 'a',
+			title: 'A',
+			start: dayjs('2025-03-12T10:00:00.000Z'),
+			end: dayjs('2025-03-12T11:00:00.000Z'),
+		}
+
+		const renderCalendar = (
+			props: Partial<React.ComponentProps<typeof IlamyCalendar>>,
+			events: CalendarEvent[] = [movableEvent]
+		) => {
+			const { container } = render(
+				<IlamyCalendar
+					events={events}
+					initialDate={dayjs('2025-03-12T00:00:00.000Z')}
+					initialView="week"
+					timezone="UTC"
+					{...props}
+				/>
+			)
+			return {
+				hasLiveRegion: document.querySelector('[id*="DndLiveRegion"]') !== null,
+				describedByCount:
+					container.querySelectorAll('[aria-describedby]').length,
+			}
+		}
+
+		it('mounts when events can move', () => {
+			const page = renderCalendar({})
+
+			expect(page.hasLiveRegion).toBe(true)
+		})
+
+		it('mounts nothing when the calendar is not editable and no event opts in', () => {
+			const page = renderCalendar({ editable: false })
+
+			expect(page.hasLiveRegion).toBe(false)
+			expect(page.describedByCount).toBe(0)
+		})
+
+		it('mounts nothing for the deprecated disableDragAndDrop alias', () => {
+			const page = renderCalendar({ disableDragAndDrop: true })
+
+			expect(page.hasLiveRegion).toBe(false)
+		})
+
+		it('mounts when one event opts in under a non-editable calendar', () => {
+			const optedIn = { ...movableEvent, startEditable: true }
+			const page = renderCalendar({ editable: false }, [optedIn])
+
+			expect(page.hasLiveRegion).toBe(true)
+		})
+
+		it('mounts when eventStartEditable re-enables moving under the alias', () => {
+			const page = renderCalendar({
+				disableDragAndDrop: true,
+				eventStartEditable: true,
+			})
+
+			expect(page.hasLiveRegion).toBe(true)
+		})
+
+		it('marks only the movable bar when one event is locked', () => {
+			const locked = { ...movableEvent, id: 'b', title: 'B', editable: false }
+			const page = renderCalendar({}, [movableEvent, locked])
+
+			expect(page.describedByCount).toBe(1)
 		})
 	})
 

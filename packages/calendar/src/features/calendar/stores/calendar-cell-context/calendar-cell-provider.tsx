@@ -23,7 +23,6 @@ export const CalendarCellProvider: FC<CalendarCellProviderProps> = ({
 		onCellClick,
 		isCellDisabled,
 		getCellClassName,
-		disableDragAndDrop,
 		disableCellClick,
 		classesOverride,
 	} = useSmartCalendarContext()
@@ -38,7 +37,6 @@ export const CalendarCellProvider: FC<CalendarCellProviderProps> = ({
 			onCellClick,
 			isCellDisabled,
 			getCellClassName,
-			disableDragAndDrop,
 			disableCellClick,
 			classesOverride,
 		}),
@@ -51,7 +49,6 @@ export const CalendarCellProvider: FC<CalendarCellProviderProps> = ({
 			onCellClick,
 			isCellDisabled,
 			getCellClassName,
-			disableDragAndDrop,
 			disableCellClick,
 			classesOverride,
 		]

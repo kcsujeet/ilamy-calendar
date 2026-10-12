@@ -67,7 +67,7 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 		firstDayOfWeek: ctx.firstDayOfWeek,
 		getViews: ctx.getViews,
 	}))
-	const { formatDateRange } = useDateTimeFormatters()
+	const { formatDateRange, formatTitle } = useDateTimeFormatters()
 	const [open, setOpen] = useState(false)
 
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
@@ -90,7 +90,16 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 		// A multi-unit/custom window shows its listed range, not a single day.
 		range: formatDateRange(currentRange.start, currentRange.end),
 	}
-	const title = titleByKind[kind]
+	// A single-date kind has one date, so its range starts and ends on it.
+	const titleRangeByKind: Record<PickerKind, [Dayjs, Dayjs]> = {
+		year: [currentDate, currentDate],
+		month: [currentDate, currentDate],
+		week: [weekStart, weekEnd],
+		day: [currentDate, currentDate],
+		range: [currentRange.start, currentRange.end],
+	}
+	const [titleStart, titleEnd] = titleRangeByKind[kind]
+	const title = formatTitle(titleStart, titleEnd) ?? titleByKind[kind]
 
 	// Both 'day' and 'range' navigate within days, so both use the day calendar;
 	// only their titles differ.

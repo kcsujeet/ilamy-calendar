@@ -44,6 +44,14 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	renderEventForm?: (props: EventFormProps) => ReactNode
 	onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
 	timeFormat: TimeFormat
+	/** `timeFormat` only when the consumer passed one; undefined lets the locale decide. */
+	explicitTimeFormat?: TimeFormat
+	slotHeaderFormat?: Intl.DateTimeFormatOptions
+	eventTimeFormat?: Intl.DateTimeFormatOptions
+	displayEventTime?: boolean
+	displayEventEnd?: boolean
+	dayHeaderFormat?: Intl.DateTimeFormatOptions
+	titleFormat?: Intl.DateTimeFormatOptions
 	classesOverride?: CalendarClassesOverride
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps

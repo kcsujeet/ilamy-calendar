@@ -70,6 +70,12 @@ export interface CalendarProviderProps {
 	translations?: Translations
 	translator?: TranslatorFunction
 	timeFormat?: TimeFormat
+	slotHeaderFormat?: Intl.DateTimeFormatOptions
+	eventTimeFormat?: Intl.DateTimeFormatOptions
+	displayEventTime?: boolean
+	displayEventEnd?: boolean
+	dayHeaderFormat?: Intl.DateTimeFormatOptions
+	titleFormat?: Intl.DateTimeFormatOptions
 	classesOverride?: CalendarClassesOverride
 	renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
@@ -137,7 +143,13 @@ const useCalendarContextValue = (
 		renderEventForm,
 		translations,
 		translator,
-		timeFormat = '12-hour',
+		timeFormat: explicitTimeFormat,
+		slotHeaderFormat,
+		eventTimeFormat,
+		displayEventTime,
+		displayEventEnd,
+		dayHeaderFormat,
+		titleFormat,
 		classesOverride,
 		renderCurrentTimeIndicator,
 		renderHour,
@@ -153,6 +165,10 @@ const useCalendarContextValue = (
 		orientation,
 		weekViewGranularity,
 	} = props
+
+	// What every label falls back to; only a consumer-passed value may override
+	// a locale's own 12/24 hour choice (`explicitTimeFormat`).
+	const timeFormat = explicitTimeFormat ?? '12-hour'
 
 	// Called on a click, never while rendering: see useLatestHandler.
 	const onMoreEventsClick = useLatestHandler(props.onMoreEventsClick)
@@ -217,6 +233,13 @@ const useCalendarContextValue = (
 			renderEventForm,
 			onMoreEventsClick,
 			timeFormat,
+			explicitTimeFormat,
+			slotHeaderFormat,
+			eventTimeFormat,
+			displayEventTime,
+			displayEventEnd,
+			dayHeaderFormat,
+			titleFormat,
 			classesOverride,
 			renderCurrentTimeIndicator,
 			renderHour,
@@ -251,6 +274,13 @@ const useCalendarContextValue = (
 		renderEventForm,
 		onMoreEventsClick,
 		timeFormat,
+		explicitTimeFormat,
+		slotHeaderFormat,
+		eventTimeFormat,
+		displayEventTime,
+		displayEventEnd,
+		dayHeaderFormat,
+		titleFormat,
 		classesOverride,
 		renderCurrentTimeIndicator,
 		renderHour,

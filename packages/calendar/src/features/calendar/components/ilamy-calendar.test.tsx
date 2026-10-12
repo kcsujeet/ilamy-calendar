@@ -28,6 +28,7 @@ import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
+import { plainSpaces } from '@/testing/plain-spaces'
 import { IlamyCalendar } from './ilamy-calendar'
 
 const CustomEventForm = (props: EventFormProps) => {
@@ -1560,5 +1561,200 @@ describe('navigation keeps every cell mounted (#300)', () => {
 		)
 		expect(getFirstCellStart()).not.toBe(startBefore)
 		expect(remountedCells).toHaveLength(0)
+	})
+})
+
+describe('formats', () => {
+	const standup: CalendarEvent = {
+		id: 'standup',
+		title: 'Standup',
+		start: dayjs('2025-03-12T09:30:00.000Z'),
+		end: dayjs('2025-03-12T10:30:00.000Z'),
+	}
+	const wednesdayWeek = dayjs('2025-03-12T09:00:00.000Z')
+	const twentyFourHour = {
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false,
+	} as const
+
+	const renderWeek = (props: Partial<IlamyCalendarProps> = {}) => {
+		cleanup()
+		return render(
+			<IlamyCalendar
+				events={[standup]}
+				initialDate={wednesdayWeek}
+				initialView="week"
+				timezone="UTC"
+				{...props}
+			/>
+		)
+	}
+	const readBarText = () =>
+		screen.getAllByTestId('vertical-event-standup').at(0)?.textContent
+	const readGutterLabel = (hour: number) =>
+		screen.getByTestId(`vertical-time-${String(hour).padStart(2, '0')}`)
+			.textContent
+	const readWeekdayHeader = () =>
+		screen.getByTestId('week-header-weekday-wednesday').textContent
+
+	it('changes nothing when no format is set', () => {
+		renderWeek()
+		expect(readBarText()).toBe('Standup')
+		expect(readGutterLabel(9)).toBe('9 AM')
+		expect(readWeekdayHeader()).toBe('Wed12')
+		expect(screen.getByTestId('calendar-title').textContent).toBe('Mar 9 – 15')
+	})
+
+	it('eventTimeFormat puts the start time on the bar', () => {
+		renderWeek({ eventTimeFormat: twentyFourHour })
+		expect(readBarText()).toBe('09:30Standup')
+	})
+
+	it('displayEventTime={false} keeps the bar bare even with a format', () => {
+		renderWeek({ eventTimeFormat: twentyFourHour, displayEventTime: false })
+		expect(readBarText()).toBe('Standup')
+	})
+
+	it('displayEventEnd adds the end time', () => {
+		renderWeek({ eventTimeFormat: twentyFourHour, displayEventEnd: true })
+		expect(plainSpaces(readBarText())).toBe('09:30 – 10:30Standup')
+	})
+
+	it('renderEvent beats eventTimeFormat', () => {
+		renderWeek({
+			eventTimeFormat: twentyFourHour,
+			renderEvent: (event) => <span>{event.title}!</span>,
+		})
+		expect(readBarText()).toBe('Standup!')
+	})
+
+	it('slotHeaderFormat changes only the gutter labels', () => {
+		renderWeek({ slotHeaderFormat: twentyFourHour })
+		expect(readGutterLabel(9)).toBe('09:00')
+		expect(readBarText()).toBe('Standup')
+	})
+
+	it('renderHour beats slotHeaderFormat', () => {
+		renderWeek({
+			slotHeaderFormat: twentyFourHour,
+			renderHour: (date) => <span>H{date.hour()}</span>,
+		})
+		expect(readGutterLabel(9)).toBe('H9')
+	})
+
+	it('dayHeaderFormat is the whole text of a week day header', () => {
+		renderWeek({ dayHeaderFormat: { weekday: 'long' } })
+		expect(readWeekdayHeader()).toBe('Wednesday')
+	})
+
+	it('dayHeaderFormat can carry the day number itself', () => {
+		renderWeek({ dayHeaderFormat: { weekday: 'short', day: 'numeric' } })
+		const expected = new Intl.DateTimeFormat('en', {
+			weekday: 'short',
+			day: 'numeric',
+			timeZone: 'UTC',
+		}).format(new Date('2025-03-12T09:00:00.000Z'))
+		expect(readWeekdayHeader()).toBe(expected)
+		expect(expected).toContain('12')
+	})
+
+	it('dayHeaderFormat keeps the today highlight on the header cell', () => {
+		setSystemTime(new Date('2025-03-12T09:00:00.000Z'))
+		renderWeek({ dayHeaderFormat: { weekday: 'long' } })
+		const todayMarks = screen
+			.getByTestId('week-header-weekday-wednesday')
+			.querySelectorAll('[data-today="true"]')
+		expect(todayMarks).toHaveLength(1)
+		setSystemTime()
+	})
+
+	it('dayHeaderFormat is the whole text of the day view header', () => {
+		cleanup()
+		render(
+			<IlamyCalendar
+				dayHeaderFormat={{ weekday: 'long' }}
+				events={[]}
+				initialDate={wednesdayWeek}
+				initialView="day"
+				timezone="UTC"
+			/>
+		)
+		expect(screen.getByTestId('day-view-header').textContent).not.toContain(
+			'March'
+		)
+		expect(screen.getByTestId('day-view-header').textContent).toContain(
+			'Wednesday'
+		)
+	})
+
+	it('the day view header is unchanged without dayHeaderFormat', () => {
+		cleanup()
+		render(
+			<IlamyCalendar
+				events={[]}
+				initialDate={wednesdayWeek}
+				initialView="day"
+				timezone="UTC"
+			/>
+		)
+		expect(screen.getByTestId('day-view-header').textContent).toContain(
+			'Wednesday, March 12, 2025'
+		)
+	})
+
+	describe('dayHeaderFormat on the resource axis', () => {
+		const rooms: Resource[] = [
+			{ id: 'r1', title: 'Room A' },
+			{ id: 'r2', title: 'Room B' },
+		]
+		const renderResourceView = (
+			view: 'week' | 'month',
+			orientation: 'vertical' | 'horizontal',
+			props: Partial<IlamyCalendarProps> = {}
+		) => {
+			cleanup()
+			return render(
+				<IlamyCalendar
+					dayHeaderFormat={{ weekday: 'long' }}
+					events={[]}
+					initialDate={wednesdayWeek}
+					initialView={view}
+					orientation={orientation}
+					resources={rooms}
+					timezone="UTC"
+					{...props}
+				/>
+			)
+		}
+		const wednesdayHeaders = () => screen.getAllByText('Wednesday')
+
+		it('writes each hourly vertical week column header with the format', () => {
+			renderResourceView('week', 'vertical')
+			expect(wednesdayHeaders()).toHaveLength(rooms.length)
+			expect(screen.queryAllByText('Wed')).toHaveLength(0)
+		})
+
+		it('writes the daily vertical week gutter with the format', () => {
+			renderResourceView('week', 'vertical', { weekViewGranularity: 'daily' })
+			expect(wednesdayHeaders()).toHaveLength(1)
+			expect(screen.queryAllByText('Wed')).toHaveLength(0)
+		})
+
+		it('writes the vertical month gutter with the format', () => {
+			renderResourceView('month', 'vertical')
+			expect(wednesdayHeaders()).toHaveLength(4)
+			expect(screen.queryAllByText('Wed')).toHaveLength(0)
+		})
+
+		it('writes the horizontal week header with the format', () => {
+			renderResourceView('week', 'horizontal')
+			expect(wednesdayHeaders()).toHaveLength(1)
+		})
+	})
+
+	it('titleFormat changes the toolbar title', () => {
+		renderWeek({ titleFormat: { month: 'long', year: 'numeric' } })
+		expect(screen.getByTestId('calendar-title').textContent).toBe('March 2025')
 	})
 })

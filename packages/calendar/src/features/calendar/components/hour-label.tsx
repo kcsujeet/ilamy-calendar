@@ -1,4 +1,5 @@
 import type { Dayjs } from '@ilamy/utils/dayjs'
+import { useDateTimeFormatters } from '@/features/calendar/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 interface HourLabelProps {
@@ -6,11 +7,12 @@ interface HourLabelProps {
 }
 
 export const HourLabel: React.FC<HourLabelProps> = ({ date }) => {
-	const { renderHour, timeFormat } = useSmartCalendarContext()
+	const renderHour = useSmartCalendarContext((ctx) => ctx.renderHour)
+	const { formatSlotHeader } = useDateTimeFormatters()
 
 	if (renderHour) {
 		return <>{renderHour(date)}</>
 	}
 
-	return <>{date.format(timeFormat === '12-hour' ? 'h A' : 'H')}</>
+	return <>{formatSlotHeader(date)}</>
 }

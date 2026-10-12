@@ -26,7 +26,7 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 - [ ] **`el` (DOM element) in callbacks** — Include the target DOM element in callbacks. Enables highlighting, measuring, and custom positioning
 - [ ] **Nav link callbacks** — `onNavLinkDayClick(date)` and `onNavLinkWeekClick(weekStart)`. Customize what happens when clicking day/week numbers in headers (e.g., navigate to day view)
 - [ ] **`allDaySlot` toggle** — Allow hiding the all-day row in day/week views
-- [ ] **`slotLabelFormat` / `eventTimeFormat`** — Customize time label formatting beyond `12-hour` / `24-hour`
+- [x] **`slotLabelFormat` / `eventTimeFormat`** — done as `slotHeaderFormat` (FullCalendar v7's name for v6's `slotLabelFormat`), `eventTimeFormat`, `displayEventTime`, `displayEventEnd`, `dayHeaderFormat` and `titleFormat`, all as `Intl.DateTimeFormatOptions` (3.3.6). No format strings, functions or `meridiem`/`omitZeroMinute`; `renderHour` and `renderEvent` cover custom output
 - [ ] **`resourcesSet` callback** — Fire when resources are initialized or changed (analogous to `datesSet` for dates)
 - [ ] **Resources as function** — Allow `resources` to be an async function for lazy loading, like the proposed `events` function
 

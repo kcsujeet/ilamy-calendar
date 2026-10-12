@@ -4,6 +4,7 @@ import type { CalendarEvent, IlamyPlugin, PluginView } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
+import { plainSpaces } from '@/testing/plain-spaces'
 import { Header } from './base-header'
 
 // Custom render function that wraps Header in CalendarProvider. The header tier
@@ -166,6 +167,61 @@ describe('Calendar header', () => {
 
 		const title = screen.getByTestId('calendar-title')
 		expect(title).toHaveTextContent('Apr 2026')
+	})
+})
+
+// `titleFormat` replaces the title of every picker kind: a single date for
+// year, month and day, a `formatRange` for week and custom windows.
+describe('titleFormat', () => {
+	const aprilFifteenth = dayjs('2026-04-15T12:00:00.000Z')
+	const renderTitled = (providerProps: Record<string, unknown>) => {
+		renderHeader([], {
+			initialDate: aprilFifteenth,
+			timezone: 'UTC',
+			...providerProps,
+		})
+		return screen.getByTestId('calendar-title').textContent
+	}
+
+	it('formats the year view title', () => {
+		expect(
+			renderTitled({ initialView: 'year', titleFormat: { year: '2-digit' } })
+		).toBe('26')
+	})
+
+	it('formats the month view title', () => {
+		expect(
+			renderTitled({
+				initialView: 'month',
+				titleFormat: { month: 'long', year: 'numeric' },
+			})
+		).toBe('April 2026')
+	})
+
+	it('formats the day view title', () => {
+		expect(
+			renderTitled({
+				initialView: 'day',
+				titleFormat: { weekday: 'long', month: 'long', day: 'numeric' },
+			})
+		).toBe('Wednesday, April 15')
+	})
+
+	it('formats the week view title as a range', () => {
+		const title = renderTitled({
+			initialView: 'week',
+			titleFormat: { month: 'long', day: 'numeric' },
+		})
+		expect(plainSpaces(title)).toBe('April 12 – 18')
+	})
+
+	it('formats a custom window title as a range', () => {
+		const title = renderTitled({
+			initialView: 'agenda',
+			plugins: [agendaPlugin({ window: 7 })],
+			titleFormat: { month: 'long', day: 'numeric' },
+		})
+		expect(plainSpaces(title)).toBe('April 15 – 21')
 	})
 })
 

@@ -14,6 +14,7 @@ import {
 	FULL_WIDTH_MINUS_GUTTER,
 	gutterColumn,
 } from '@/features/calendar/components/vertical-grid/gutter'
+import { useDateTimeFormatters } from '@/features/calendar/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
 import {
@@ -32,7 +33,15 @@ import { TimeHeaderRow } from './time-header-row'
 
 const DayViewHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 	const { t } = useSmartCalendarContext((c) => ({ t: c.t }))
+	const { formatDayHeader } = useDateTimeFormatters()
+	const hasDayHeaderFormat = useSmartCalendarContext((c) =>
+		Boolean(c.dayHeaderFormat)
+	)
 	const today = isToday(date)
+	let headerText = date.format('dddd, LL')
+	if (hasDayHeaderFormat) {
+		headerText = formatDayHeader(date)
+	}
 
 	return (
 		<div
@@ -46,7 +55,7 @@ const DayViewHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 				)}
 				transitionKey={dayKey(date)}
 			>
-				{date.format('dddd, LL')}
+				{headerText}
 				{today && (
 					<span className="bg-primary text-primary-foreground ml-2 rounded-full px-1 py-0.5 text-xs sm:px-2 sm:text-sm">
 						{t('today')}

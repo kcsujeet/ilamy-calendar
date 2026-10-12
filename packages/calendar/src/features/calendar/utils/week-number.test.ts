@@ -24,17 +24,4 @@ describe('getWeekNumber', () => {
 	test('ISO puts the last days of December in week 1 of the next year', () => {
 		expect(getWeekNumber(dayjs('2025-12-29T12:00:00.000Z'), 'ISO')).toBe(1)
 	})
-
-	test('a function is called with the date as a Date and its result used', () => {
-		const calls: Date[] = []
-		const calculation = (date: Date) => {
-			calls.push(date)
-			return 42
-		}
-
-		expect(getWeekNumber(midMarch2023, calculation)).toBe(42)
-		expect(calls.map((date) => date.toISOString())).toEqual([
-			'2023-03-08T12:00:00.000Z',
-		])
-	})
 })

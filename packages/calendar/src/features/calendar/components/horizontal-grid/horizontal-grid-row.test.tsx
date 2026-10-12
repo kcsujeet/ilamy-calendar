@@ -12,6 +12,7 @@ import {
 	DragPreviewContext,
 	type DragPreviewState,
 } from '@/features/calendar/stores/drag-preview-context'
+import type { SnapDuration } from '@/features/calendar/types'
 import { keys } from '@/features/calendar/utils/keys'
 import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import { HorizontalGridRow } from './horizontal-grid-row'
@@ -30,7 +31,7 @@ const renderHorizontalGridRow = ({
 	...props
 }: {
 	preview?: DragPreviewState
-	snapDuration?: number
+	snapDuration?: SnapDuration
 } & Record<string, unknown> = {}) => {
 	return render(
 		<CalendarProvider

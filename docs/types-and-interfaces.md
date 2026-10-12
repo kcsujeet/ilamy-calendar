@@ -145,14 +145,14 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `hideNonBusinessHours` | `boolean` | `false` | Hide off-hours in day/week views |
 | `slotMinTime` | `string` | `'00:00'` | First visible time in hour grids, `'HH:mm'` or `'HH:mm:ss'` |
 | `slotMaxTime` | `string` | `'24:00'` | End of the visible time in hour grids, exclusive, up to `'24:00'`. Invalid values (or an end not after the start) show the whole day and log one `console.warn` |
-| `slotDuration` | `number` | `60` | Time-grid granularity (minutes): any divisor of 60 (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60). Any other value falls back to `60` and logs one `console.warn`. `60` gives one row per hour with no sub-hour lines; `30` two; `15` four with dashed separators. Applies to day, week, and resource vertical views; the horizontal resource timeline keeps hour columns. |
-| `snapDuration` | `number` | the cell's size | Minutes a dragged or resized event, and a drag-to-create selection, snaps to. May be finer than `slotDuration` (`slotDuration={60} snapDuration={15}`): the position of the pointer inside the cell picks the quarter hour. Works in the vertical time grid and in the horizontal resource timeline (hour columns). A value that does not divide the cell falls back to the cell's size, silently. This is decided per cell: `slotDuration={15}` with `snapDuration={10}` falls back to 15 in the vertical grid but snaps to 10 in the hourly horizontal timeline. |
+| `slotDuration` | `SlotDuration` | `60` | Time-grid granularity (minutes): `15`, `30` or `60`. `60` gives one row per hour with no sub-hour lines; `30` two; `15` four with dashed separators. Applies to day, week, and resource vertical views; the horizontal resource timeline keeps hour columns. |
+| `snapDuration` | `SnapDuration` | the cell's size | `15` or `30`: minutes a dragged or resized event, and a drag-to-create selection, snaps to. Takes effect only where finer than the cell and dividing it (`slotDuration={60} snapDuration={15}`: the position of the pointer inside the cell picks the quarter hour); otherwise the cell's size is used, silently. Works in the vertical time grid and in the horizontal resource timeline (hour columns). Decided per cell: `slotDuration={30} snapDuration={30}` is no snap in the vertical grid but snaps to 30 in the hourly horizontal timeline. |
 | `hiddenDays` | `WeekDays[]` | `[]` | Days of the week to hide, in the month, week and day views, with or without `resources`, in every orientation and granularity. Not applied to the year view or the agenda plugin. Hiding all seven is ignored with a dev warning. |
 | `weekends` | `boolean` | `true` | `false` hides Saturday and Sunday, as adding both to `hiddenDays` does (the two combine). |
 | `allDaySlot` | `boolean` | `true` | Draw the all-day row in day, week and resource time grids. `false` removes it and all-day events are not shown in those views. |
 | `nowIndicator` | `boolean` | `true` | Draw the current-time line in time grids. |
 | `weekNumbers` | `boolean` | unset | Unset: week number in the week and resource week header corner, none in month view. `true`: also a number in each month row, from the row's first day. `false`: nowhere. |
-| `weekNumberCalculation` | `WeekNumberCalculation` | `'local'` | `'local'` (the locale's count, dayjs `week()`), `'ISO'` (ISO 8601; changes only the number, not the first day of the week) or `(date: Date) => number` (receives the instant as a `Date`). |
+| `weekNumberCalculation` | `WeekNumberCalculation` | `'local'` | `'local'` (the locale's count, dayjs `week()`), or `'ISO'` (ISO 8601; changes only the number, not the first day of the week). |
 | `disableCellClick` | `boolean` | — | Disable cell clicks |
 | `disableEventClick` | `boolean` | — | Disable event clicks |
 | `disableDragAndDrop` | `boolean` | — | **Deprecated**, use `editable={false}`. Only sets the `editable` default, so an explicit `eventStartEditable` still enables moving. Kept until 4.0 |
@@ -347,18 +347,17 @@ nothing. A consumer that controls `events` and has already saved the change reve
 `src/features/calendar/types/index.ts`
 
 ```typescript
-type SlotDuration = number
+type SlotDuration = 15 | 30 | 60
+type SnapDuration = 15 | 30
 ```
 
-The granularity of a time grid in minutes, and the type of the `slotDuration` prop. It is
-`number`, but only a divisor of 60 is drawn: anything else falls back to 60 with one
-`console.warn`. The alias is exported so a consumer can name what they thread through their own
+The granularity of a time grid in minutes, and the type of the `slotDuration` prop; `SnapDuration` is the
+type of `snapDuration`. Both aliases are exported so a consumer can name what they thread through their own
 components.
 
-`snapDuration` is a plain `number` and is resolved per cell, not once: a cell of the vertical grid is
-`slotDuration` long and a column of the horizontal resource timeline is an hour, so `slotDuration={15}`
-with `snapDuration={10}` falls back to 15 in the vertical grid (10 does not divide 15) but snaps to 10 in
-the hourly horizontal timeline.
+`snapDuration` is resolved per cell, not once: a cell of the vertical grid is `slotDuration` long and a
+column of the horizontal resource timeline is an hour, so `slotDuration={30}` with `snapDuration={30}` is no
+snap in the vertical grid (the cell is already 30) but snaps to 30 in the hourly horizontal timeline.
 
 ## EventSegment
 
@@ -390,7 +389,7 @@ See "Keeping the title in view" in the website's calendar docs.
 | Type | File |
 |------|------|
 | `CalendarEvent`, `WeekDays`, `BusinessHours` | `packages/types/src/index.ts` (`@ilamy/types`) |
-| `EventSegment`, `SlotDuration` | `packages/calendar/src/features/calendar/types/index.ts` |
+| `EventSegment`, `SlotDuration`, `SnapDuration` | `packages/calendar/src/features/calendar/types/index.ts` |
 | `IlamyCalendarProps`, `IlamyCalendarPropEvent`, `CellClickInfo`, `CalendarClassesOverride` | `src/features/calendar/types/index.ts` |
 | `Resource` | `packages/types/src/index.ts` (`@ilamy/types`) |
 | `RRuleOptions`, `RecurrenceEditScope`, `RecurrenceEditOptions` | `src/features/recurrence/types/index.ts` |

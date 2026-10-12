@@ -2,6 +2,7 @@ import type {
 	BusinessHours,
 	EventDropInfo,
 	SlotDuration,
+	SnapDuration,
 	TimeFormat,
 	WeekDays,
 } from '@ilamy/calendar'
@@ -18,7 +19,7 @@ export interface UrlConfig {
 	slotDuration?: SlotDuration
 	/** With `fetch` set: fetch only when the range leaves the last fetched one. */
 	lazyFetching?: boolean
-	snapDuration?: number
+	snapDuration?: SnapDuration
 	scrollTime?: string
 	scrollToNow?: boolean
 	allDaySlot?: boolean
@@ -217,12 +218,7 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 
 	const slot = get('slot')
 	if (slot !== null) {
-		config.slotDuration = oneOf(
-			'slot',
-			slot,
-			[1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60],
-			Number
-		) as SlotDuration
+		config.slotDuration = oneOf('slot', slot, [15, 30, 60] as const, Number)
 	}
 
 	const lazyFetching = get('lazyFetching')
@@ -231,7 +227,12 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	}
 	const snapDuration = get('snapDuration')
 	if (snapDuration !== null) {
-		config.snapDuration = positiveInt('snapDuration', snapDuration)
+		config.snapDuration = oneOf(
+			'snapDuration',
+			snapDuration,
+			[15, 30] as const,
+			Number
+		)
 	}
 
 	const scrollTime = get('scrollTime')

@@ -478,12 +478,6 @@ describe('ResourceWeekVertical', () => {
 			expect(screen.queryByTestId('week-number')).not.toBeInTheDocument()
 		})
 
-		test('weekNumberCalculation supplies the number', () => {
-			renderResourceWeekVertical({ weekNumberCalculation: () => 77 })
-
-			expect(screen.getByTestId('week-number')).toHaveTextContent('77')
-		})
-
 		test('daily granularity shows the week number in the resource header, once', () => {
 			renderResourceWeekVertical({ weekViewGranularity: 'daily' })
 
@@ -507,15 +501,6 @@ describe('ResourceWeekVertical', () => {
 			renderResourceWeekVertical({ weekNumbers: false })
 
 			expect(screen.queryByText('Week')).not.toBeInTheDocument()
-		})
-
-		test('daily granularity: weekNumberCalculation supplies the number', () => {
-			renderResourceWeekVertical({
-				weekViewGranularity: 'daily',
-				weekNumberCalculation: () => 77,
-			})
-
-			expect(screen.getByTestId('week-number')).toHaveTextContent('77')
 		})
 
 		test('allDaySlot={false} removes every resource all-day row', () => {

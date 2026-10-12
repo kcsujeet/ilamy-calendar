@@ -1930,13 +1930,14 @@ describe('hidden days in every view', () => {
 			renderCalendar({
 				weekends: false,
 				weekNumbers: true,
-				weekNumberCalculation: (date) => date.getUTCDate(),
+				weekNumberCalculation: 'ISO',
 			})
-			// The week of Sun 9 - Sat 15 starts on Mon 10 once Sunday is hidden.
+			// The week of Sun 9 - Sat 15 starts on Mon 10 once Sunday is hidden, and
+			// ISO week 11 starts on Mon 10 (Sun 9 would be week 10).
 			const weekNumbers = screen
 				.getAllByTestId('week-number')
 				.map((label) => label.textContent)
-			expect(weekNumbers).toEqual(['24', '3', '10', '17', '24', '31'])
+			expect(weekNumbers).toEqual(['9', '10', '11', '12', '13', '14'])
 		})
 	})
 

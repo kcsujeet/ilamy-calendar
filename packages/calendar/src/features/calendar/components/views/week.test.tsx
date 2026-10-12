@@ -1470,15 +1470,5 @@ describe('WeekView', () => {
 
 			expect(screen.getByTestId('week-number')).toHaveTextContent('52')
 		})
-
-		test('a weekNumberCalculation function supplies the number', () => {
-			cleanup()
-			renderWeekView({
-				initialDate: newYearsDay2023,
-				weekNumberCalculation: () => 77,
-			})
-
-			expect(screen.getByTestId('week-number')).toHaveTextContent('77')
-		})
 	})
 })

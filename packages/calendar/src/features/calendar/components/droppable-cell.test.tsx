@@ -7,7 +7,7 @@ import {
 	DragPreviewContext,
 	type DragPreviewState,
 } from '@/features/calendar/stores/drag-preview-context'
-import type { CellInfo } from '@/features/calendar/types'
+import type { CellInfo, SnapDuration } from '@/features/calendar/types'
 import { mkDragPreview as mkPreview } from '@/testing/drag-test-fixtures'
 import type { CalendarView } from '@/types'
 import { DroppableCell } from './droppable-cell'
@@ -21,7 +21,7 @@ interface RenderCellOptions {
 	getCellClassName?: (info: CellInfo) => string
 	onCellClick?: (info: CellInfo) => void
 	resources?: Resource[]
-	snapDuration?: number
+	snapDuration?: SnapDuration
 	// Cell props
 	hour?: number
 	minute?: number
@@ -116,26 +116,30 @@ describe('DroppableCell snap size', () => {
 		expect(cell).toHaveAttribute('data-time-axis', 'horizontal')
 	})
 
-	test('resolves the snap against the cell: a 30-minute slot snaps to 5', () => {
+	test('resolves the snap against the cell: a 30-minute slot snaps to 15', () => {
 		renderCell({
 			hour: 9,
 			minute: 30,
 			slotDurationMinutes: 30,
-			snapDuration: 5,
+			snapDuration: 15,
 			axis: 'vertical',
 		})
 
-		expect(screen.getByTestId('cell')).toHaveAttribute('data-snap-minutes', '5')
+		expect(screen.getByTestId('cell')).toHaveAttribute(
+			'data-snap-minutes',
+			'15'
+		)
 	})
 
 	test.each([
-		['no snap is set', undefined],
-		['the snap is as large as the cell', 60],
-		['the snap does not divide the cell', 45],
-	])('says nothing about snapping when %s', (_label, snapDuration) => {
+		['no snap is set', 60, undefined] as const,
+		['the snap is as large as the cell', 30, 30] as const,
+		['the snap is coarser than the cell', 15, 30] as const,
+	])('says nothing about snapping when %s', (_label, slot, snapDuration) => {
 		renderCell({
 			hour: 9,
-			slotDurationMinutes: 60,
+			minute: 0,
+			slotDurationMinutes: slot,
 			snapDuration,
 			axis: 'vertical',
 		})

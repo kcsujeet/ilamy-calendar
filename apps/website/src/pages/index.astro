@@ -141,7 +141,7 @@ import MainLayout from '@/layouts/main-layout.astro'
           </FeatureCard>
           <FeatureCard
             title="Drag & Drop"
-            description="Intuitive drag and drop interface for creating, moving, and resizing events with ease."
+            description="Drag and drop to move events between days, times and resources. Add the drag-to-create plugin to select a range and create events."
           >
             <DragDropIcon
               slot="icon"
@@ -168,7 +168,7 @@ import MainLayout from '@/layouts/main-layout.astro'
           </FeatureCard>
           <FeatureCard
             title="Timezone Support"
-            description="Full timezone support for international applications and distributed teams."
+            description="Set a timezone and the calendar renders and parses dates in that IANA zone."
           >
             <Clock
               slot="icon"
@@ -381,7 +381,7 @@ import { recurrencePlugin }
               </div>
               <h3 class="text-lg font-semibold mb-2">Dark Mode</h3>
               <p class="text-muted-foreground">
-                Built-in light and dark mode support for better user experience.
+                Follows your design system's light and dark theme tokens; the library ships no CSS of its own.
               </p>
             </CardContent>
           </Card>
@@ -417,7 +417,7 @@ import { recurrencePlugin }
               </div>
               <h3 class="text-lg font-semibold mb-2">Localization</h3>
               <p class="text-muted-foreground">
-                Easy internationalization with built-in locale support.
+                Use any dayjs locale you import, and translate UI text with the translations or translator props.
               </p>
             </CardContent>
           </Card>
@@ -435,7 +435,7 @@ import { recurrencePlugin }
               </div>
               <h3 class="text-lg font-semibold mb-2">Performance Optimized</h3>
               <p class="text-muted-foreground">
-                Built for speed and efficiency, even with thousands of events.
+                In row-based grids such as month, events are filtered and laid out once per row and shared by its cells, not recomputed per cell.
               </p>
             </CardContent>
           </Card>

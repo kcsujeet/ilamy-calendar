@@ -71,6 +71,8 @@ const dayHours = (date: Dayjs, config: ViewConfig) =>
 		referenceDate: date,
 		businessHours: config.businessHours,
 		hideNonBusinessHours: config.hideNonBusinessHours,
+		slotMinTime: config.slotMinTime,
+		slotMaxTime: config.slotMaxTime,
 		allDates: [date],
 		resourceBusinessHours: collectResourceBusinessHours(config.resources ?? []),
 	})

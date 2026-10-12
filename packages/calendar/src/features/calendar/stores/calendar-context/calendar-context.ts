@@ -50,6 +50,8 @@ export interface CalendarContextType
 			| 'scrollToNow'
 			| 'weekNumbers'
 			| 'renderResource'
+			| 'slotMaxTime'
+			| 'slotMinTime'
 		> {
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellInfo) => void

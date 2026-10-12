@@ -1758,3 +1758,43 @@ describe('formats', () => {
 		expect(screen.getByTestId('calendar-title').textContent).toBe('March 2025')
 	})
 })
+
+describe('slotMinTime / slotMaxTime validation', () => {
+	let warnSpy: ReturnType<typeof spyOn>
+
+	beforeEach(() => {
+		warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+	})
+
+	afterEach(() => {
+		warnSpy.mockRestore()
+	})
+
+	const listSlotWarnings = () =>
+		warnSpy.mock.calls.filter((call: unknown[]) =>
+			String(call.at(0)).includes('slotM')
+		)
+
+	it('warns once, naming the prop, and shows all 24 hours for an invalid value', () => {
+		const { rerender } = render(
+			<IlamyCalendar initialView="day" slotMinTime="banana" />
+		)
+		rerender(<IlamyCalendar initialView="day" slotMinTime="banana" />)
+
+		expect(listSlotWarnings()).toHaveLength(1)
+		expect(String(listSlotWarnings().at(0)?.at(0))).toContain('slotMinTime')
+		expect(screen.getByTestId('vertical-time-00')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-23')).toBeInTheDocument()
+	})
+
+	it('does not warn for a valid range', () => {
+		render(
+			<IlamyCalendar
+				initialView="day"
+				slotMaxTime="18:00"
+				slotMinTime="08:00"
+			/>
+		)
+		expect(listSlotWarnings()).toHaveLength(0)
+	})
+})

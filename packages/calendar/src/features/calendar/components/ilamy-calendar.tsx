@@ -8,6 +8,7 @@ import { Header } from '@/features/calendar/components/header/base-header'
 import { ViewRenderer } from '@/features/calendar/components/views/view-renderer'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
+import { parseSlotRange } from '@/features/calendar/utils/view-hours'
 // oxlint-disable-next-line no-duplicates
 import '@ilamy/utils/dayjs'
 import {
@@ -70,6 +71,8 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	stickyViewHeader = true,
 	viewHeaderClassName = '',
 	hideNonBusinessHours = false,
+	slotMinTime,
+	slotMaxTime,
 	hiddenDays,
 	resources,
 	orientation,
@@ -97,6 +100,20 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 		}
 	}, [orientation, hasResources])
 
+	const { invalidProps: invalidSlotProps } = parseSlotRange(
+		slotMinTime,
+		slotMaxTime
+	)
+	const invalidSlotPropNames = invalidSlotProps.join(', ')
+	useEffect(() => {
+		if (invalidSlotPropNames) {
+			// biome-ignore lint/suspicious/noConsole: deliberate DX guard, like the one above
+			console.warn(
+				`[@ilamy/calendar] \`${invalidSlotPropNames}\` is not a usable visible-hours range ('HH:mm' from '00:00' to '24:00', with slotMaxTime after slotMinTime), so the whole day is shown.`
+			)
+		}
+	}, [invalidSlotPropNames])
+
 	return (
 		<CalendarProvider
 			eventHeight={eventHeight}
@@ -111,6 +128,8 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			initialView={initialView}
 			orientation={orientation}
 			resources={resources}
+			slotMaxTime={slotMaxTime}
+			slotMinTime={slotMinTime}
 			stickyViewHeader={stickyViewHeader}
 			viewHeaderClassName={viewHeaderClassName}
 			{...props}

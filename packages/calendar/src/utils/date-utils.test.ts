@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import dayjs from '@ilamy/utils/dayjs'
 import { getDayHours, getMonthWeeks, getWeekDays, isToday } from './date-utils'
 
@@ -88,6 +88,76 @@ describe('getDayHours', () => {
 		hours.forEach((h, i) => {
 			expect(h.hour()).toBe(i)
 		})
+	})
+})
+
+/**
+ * Rows are built from a wall-clock string in the calendar's zone, so each row
+ * carries the offset of ITS hour. Run under TZ=America/New_York (and
+ * America/Vancouver) as well: the `.hour(i)` setter used to give a row after a
+ * clock change the offset of the start of the day, which only shows when the
+ * machine's own clocks change that day.
+ */
+describe('getDayHours on a day the clocks change', () => {
+	const originalTz = dayjs.tz.guess()
+
+	beforeEach(() => {
+		dayjs.tz.setDefault('America/New_York')
+	})
+
+	afterEach(() => {
+		dayjs.tz.setDefault(originalTz)
+	})
+
+	const rowsFor = (zone: string, dayISO: string) =>
+		getDayHours({
+			referenceDate: dayjs(`${dayISO}T17:00:00.000Z`).tz(zone),
+		})
+
+	it('keeps 24 rows labelled by clock hour on the autumn change day', () => {
+		const rows = rowsFor('America/New_York', '2025-11-02')
+		expect(rows.map((row) => Number(row.format('HH')))).toEqual(
+			Array.from({ length: 24 }, (_, i) => i)
+		)
+	})
+
+	it('keeps the spring change day as it was: 24 rows, 2 AM shown as 3 AM', () => {
+		const rows = rowsFor('America/New_York', '2025-03-09')
+		const laterHours = Array.from({ length: 20 }, (_, i) => i + 4)
+		expect(rows.map((row) => Number(row.format('HH')))).toEqual([
+			0,
+			1,
+			3,
+			3,
+			...laterHours,
+		])
+	})
+
+	it('puts the 9 AM row at 9 AM local on both change days', () => {
+		const springRow = rowsFor('America/New_York', '2025-03-09').at(9)
+		const autumnRow = rowsFor('America/New_York', '2025-11-02').at(9)
+		expect(springRow?.toISOString()).toBe('2025-03-09T13:00:00.000Z')
+		expect(autumnRow?.toISOString()).toBe('2025-11-02T14:00:00.000Z')
+	})
+
+	// Cross-zone: with TZ=America/New_York the machine changes its clocks at a
+	// different instant from the calendar's zone on the same date.
+	it('anchors rows in the calendar zone, not the machine zone', () => {
+		dayjs.tz.setDefault('America/Vancouver')
+		const rows = rowsFor('America/Vancouver', '2025-03-09')
+		expect(rows.at(1)?.toISOString()).toBe('2025-03-09T09:00:00.000Z')
+		expect(rows.at(9)?.toISOString()).toBe('2025-03-09T16:00:00.000Z')
+	})
+
+	it('with no timezone set, builds rows on the machine clock', () => {
+		dayjs.tz.setDefault(undefined)
+		const rows = getDayHours({ referenceDate: dayjs('2025-03-09T12:00:00') })
+		expect(rows.at(9)?.toISOString()).toBe(
+			dayjs('2025-03-09T09:00:00').toISOString()
+		)
+		expect(rows.map((row) => row.format('YYYY-MM-DD'))).toEqual(
+			Array.from({ length: 24 }, () => '2025-03-09')
+		)
 	})
 })
 

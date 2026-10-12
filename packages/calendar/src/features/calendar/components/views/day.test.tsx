@@ -624,6 +624,20 @@ describe('DayView', () => {
 		}
 	})
 
+	test('shows only the rows between slotMinTime and slotMaxTime', () => {
+		cleanup()
+		renderDayView({
+			initialDate: dayjs('2025-01-06T00:00:00.000Z'),
+			slotMinTime: '08:00',
+			slotMaxTime: '18:00',
+		})
+
+		expect(screen.getByTestId('vertical-time-08')).toBeInTheDocument()
+		expect(screen.getByTestId('vertical-time-17')).toBeInTheDocument()
+		expect(screen.queryByTestId('vertical-time-07')).not.toBeInTheDocument()
+		expect(screen.queryByTestId('vertical-time-18')).not.toBeInTheDocument()
+	})
+
 	test('hides non-business hours when hideNonBusinessHours is true', () => {
 		cleanup()
 		const monday = dayjs('2025-01-06T00:00:00.000Z')

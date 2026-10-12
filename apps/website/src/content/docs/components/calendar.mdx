@@ -90,6 +90,8 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `dayHeaderFormat` | `Intl.DateTimeFormatOptions` | Weekday over day number | How a day header is written, e.g. `{ weekday: 'long' }` gives "Wednesday". When set, the formatted text is the whole header, with no day number added. Applies to week, day, month and resource headers. |
 | `titleFormat` | `Intl.DateTimeFormatOptions` | Per view | How the toolbar title is written, e.g. `{ month: 'long', year: 'numeric' }`. A range is written with `Intl.DateTimeFormat#formatRange`. |
 | `hideNonBusinessHours` | `boolean` | `false` | Whether to hide hours outside of business hours in day and week views. Requires `businessHours` to be configured. |
+| `slotMinTime` | `string` | `'00:00'` | First visible time in the hour grids (day, week, and resource hour views), `'HH:mm'` or `'HH:mm:ss'`. See [Visible hours](#visible-hours). |
+| `slotMaxTime` | `string` | `'24:00'` | End of the visible time in the hour grids, exclusive, `'HH:mm'` up to `'24:00'`. See [Visible hours](#visible-hours). |
 | `slotDuration` | `15 \| 30 \| 60` | `60` | Granularity of the time grid in minutes for day, week, and resource hour views. `60` shows one row per hour with no sub-hour lines; `30` shows two; `15` shows four with dashed separators. **Note**: in v1.7.0 the day-view and resource-day-vertical defaults flipped from 15-minute to hourly slots; pass `slotDuration={15}` to restore the prior look. |
 | `scrollTime` | `string` | - | Initial scroll position for hour-resolution views. Accepts `"HH:mm"` or `"HH:mm:ss"`. Scrolls to the exact minute: `"08:30"` lands halfway into the 8 AM row. Reapplied on navigation, visible hour changes (not a resource added with the same hours), and whenever `scrollTime` changes. Clamps silently to the edge of the nearest visible row when `hideNonBusinessHours` hides the requested hour. Independent of `businessHours`. Requires a fixed calendar height to scroll. |
 | `scrollToNow` | `boolean` | `false` | Open every scrolling grid on the current moment: the current moment (to the minute) in time grids, today's column or row in resource month and daily resource week. Applies only while now is on screen; otherwise falls back to `scrollTime`, or to the start. Reapplied on navigation, visible hour changes, and when the prop changes, not as the clock moves. Requires a fixed calendar height. |
@@ -549,6 +551,20 @@ When enabled, the calendar will only display the hours defined in the `businessH
   }}
 />
 ```
+
+## Visible hours
+
+`slotMinTime` and `slotMaxTime` choose the clock range the hour grids show: day, week, and the resource hour views in both orientations. Month, year, agenda and `weekViewGranularity: 'daily'` are unaffected. `slotMaxTime` is exclusive, so `'18:00'` ends after the 5 PM row.
+
+```tsx title="Showing 8 AM to 6 PM"
+<IlamyCalendar events={events} slotMinTime="08:00" slotMaxTime="18:00" />
+```
+
+- An event outside the range is not drawn. One that crosses an edge is clipped to it; the event itself keeps its real start and end.
+- A bound inside an hour (`'08:30'`) shows that whole hour row.
+- Combined with `hideNonBusinessHours`, the grid shows the overlap of the two ranges.
+- The current-time line is drawn only while now is inside the range, and a `scrollTime` before `slotMinTime` opens at the top.
+- Values run from `'00:00'` to `'24:00'` within one day. An invalid value, or a `slotMaxTime` that is not after `slotMinTime`, shows the whole day and logs one `console.warn` naming the prop.
 
 ## Hidden Days
 

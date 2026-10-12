@@ -1,5 +1,10 @@
 import { describe, expect, it, mock } from 'bun:test'
-import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
+import type {
+	DragEndEvent,
+	DragMoveEvent,
+	DragOverEvent,
+	DragStartEvent,
+} from '@dnd-kit/core'
 import type { CalendarEvent, EventDropInfo } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { act, renderHook } from '@testing-library/react'
@@ -256,6 +261,13 @@ describe('useCalendarDrag resize', () => {
 						over,
 					} as unknown as DragOverEvent)
 				),
+			moveOver: (over: unknown) =>
+				act(() =>
+					result.current.handlers.onDragMove({
+						active,
+						over,
+					} as unknown as DragMoveEvent)
+				),
 			release: (over: unknown) =>
 				act(() =>
 					result.current.handlers.onDragEnd({
@@ -272,6 +284,14 @@ describe('useCalendarDrag resize', () => {
 		drag.hover(slotCell(11))
 
 		expect(wall(drag.preview()?.start)).toBe('2025-03-12T09:00')
+		expect(wall(drag.preview()?.end)).toBe('2025-03-12T11:30')
+	})
+
+	it('repaints the preview on a drag move, which dnd-kit fires inside one hovered cell', () => {
+		const drag = renderResizeHook()
+		drag.grab()
+		drag.moveOver(slotCell(11))
+
 		expect(wall(drag.preview()?.end)).toBe('2025-03-12T11:30')
 	})
 

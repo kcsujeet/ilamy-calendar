@@ -37,6 +37,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .agents/settings.local.json
 .claude/settings.local.json
 
+# Agent worktrees: full repo copies. Ignored so git does not list them and Biome
+# (vcs.useIgnoreFile) does not lint them as nested projects.
+.claude/worktrees/
+
 # Generated at pack time from the repo-root README (see packages/calendar/scripts/prepack.ts)
 packages/calendar/README.md
 

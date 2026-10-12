@@ -1,7 +1,7 @@
 import type {
 	DragCancelEvent,
 	DragEndEvent,
-	DragOverEvent,
+	DragMoveEvent,
 	DragStartEvent,
 	SensorDescriptor,
 } from '@dnd-kit/core'
@@ -46,7 +46,8 @@ interface CalendarDrag {
 	overlayRef: React.RefObject<DragOverlayHandle | null>
 	handlers: {
 		onDragStart: (event: DragStartEvent) => void
-		onDragOver: (event: DragOverEvent) => void
+		onDragMove: (event: DragMoveEvent) => void
+		onDragOver: (event: DragMoveEvent) => void
 		onDragEnd: (event: DragEndEvent) => void
 		onDragCancel: (event: DragCancelEvent) => void
 	}
@@ -515,7 +516,7 @@ export const useCalendarDrag = (
 		return resolveSnapDuration(snapDuration, cellMinutes)
 	}
 
-	const resolveGrabOffset = (event: DragOverEvent) => {
+	const resolveGrabOffset = (event: DragMoveEvent) => {
 		const pending = pendingGrabRef.current
 		if (!pending) {
 			return
@@ -535,7 +536,15 @@ export const useCalendarDrag = (
 		pendingGrabRef.current = null
 	}
 
-	const onDragOver = (event: DragOverEvent) => {
+	/**
+	 * Paints where the drop would land right now. dnd-kit fires `onDragOver` only
+	 * when the hovered cell changes, so a pointer sliding between snap slices of
+	 * one cell (`snapDuration` finer than the cell) is only seen by `onDragMove`
+	 * (@dnd-kit/core core.esm.js: the drag-over effect depends on `[overId]`, the
+	 * drag-move effect on the scroll-adjusted translate). Both call this; the
+	 * `isSameDrop` bail-out keeps a move inside one slice from committing.
+	 */
+	const updatePreview = (event: DragMoveEvent) => {
 		resolveGrabOffset(event)
 		const activeEvent = activeEventRef.current
 		if (!activeEvent || !event.over) {
@@ -610,6 +619,12 @@ export const useCalendarDrag = (
 		sensors,
 		dragPreview,
 		overlayRef,
-		handlers: { onDragStart, onDragOver, onDragEnd, onDragCancel: endDrag },
+		handlers: {
+			onDragStart,
+			onDragMove: updatePreview,
+			onDragOver: updatePreview,
+			onDragEnd,
+			onDragCancel: endDrag,
+		},
 	}
 }

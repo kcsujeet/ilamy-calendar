@@ -173,12 +173,31 @@ Four rules, each learned from a test that lied:
    process with `TZ` set (`runOnMachineIn` in `packages/utils/src/dayjs.test.ts`);
    in the browser, set Playwright's `timezoneId` (`test.use`).
 
-Note that happy-dom makes `Intl` resolve to `UTC` (`process.env.TZ` is unset),
-so tests run at offset zero unless a developer exports `TZ`. At offset zero a
-wall-clock misreading is a no-op, which is exactly why this class of bug hides.
-Running the suite with an exported non-UTC `TZ` fails tests that hard-code
-UTC-shaped display, e.g. a `09:00Z` event asserted at the 9am row: an IST viewer
-correctly sees that at 14:30.
+### Why the suite runs in UTC, and why that is fine
+
+`bun test` ignores the machine's zone: "By default, `bun test` runs in UTC
+(`Etc/UTC`)" (https://bun.com/docs/test/time). Measured on a Vancouver machine:
+plain `bun` reports `America/Vancouver`, the same code inside `bun test` reports
+`UTC`. CI runs in UTC too. So every developer and CI run the suite at the same
+offset, and it passes everywhere without anyone setting anything.
+
+Most tests are written for that: fixtures are full ISO strings with `Z`, and
+expectations read them on a UTC clock (a `09:00Z` event asserted at the 9am row).
+That is deliberate, not an oversight. It keeps every fixture a full ISO string
+(see the date rules in `AGENTS.md`), and it keeps expectations absolute (rule 3).
+
+What it means: exporting a zone, e.g. `TZ=America/Vancouver bun test`, fails
+about 150 tests in `packages/calendar`. That is expected and is not a bug. With
+no `timezone` prop the calendar correctly shows a `09:00Z` event at 01:00 in
+Vancouver; only the test's UTC-shaped expectation is wrong. Measured on
+2026-10-12: replaying those tests with the calendar's zone set to UTC makes them
+pass on Vancouver, Kolkata and Auckland machines. Do not rewrite fixtures to
+make the suite pass under an exported `TZ`.
+
+The cost: at offset zero a wall-clock misreading is a no-op, so the suite cannot
+catch bugs that only appear on a machine in another zone. Those are tested on
+purpose, one case at a time, in a child process with `TZ` set (rule 4), or in
+the browser with Playwright's `timezoneId`.
 
 ## The machine's zone still leaks through dayjs (Temporal migration required)
 
@@ -224,6 +243,20 @@ nothing extra. The polyfill does not defer to native Temporal by itself; its
 README offers a codemod to move to `Temporal.*` once Safari ships it. Its
 README claims "Less than 20 kB"; measure what it adds to our bundle before
 committing to it.
+
+The migration also fixes a second leak, found on 2026-10-12: the dayjs
+configuration is loaded twice. The patches in `dayjs.ts` modify dayjs's shared
+prototype and assume they run once, but the published bundle holds two copies
+of `@ilamy/utils/dayjs` (`packages/ui/tsconfig.json` has no `paths`, so
+`@ilamy/ui` resolves it through the package exports, not to the source the
+calendar uses), and tests load the source next to the plugins' `dist` copy. The
+second copy wraps the first, and near the machine's own clock change the clock
+reads an hour early: a London calendar on an Auckland machine starts the week of
+1 October 2025 at 23:00 on 27 September, so the month grid repeats a week and
+drops the next (`month.test.tsx` "across a DST transition" fails on an Auckland
+machine). With the function API nothing is patched, so a second copy is
+harmless. The build should still resolve `@ilamy/utils` to one module, or the
+code ships twice and any module-level state (like today's default zone) splits.
 
 The migration's acceptance check: for calendar zones with awkward rules
 (clocks changing at midnight, by half an hour, in the southern hemisphere, and

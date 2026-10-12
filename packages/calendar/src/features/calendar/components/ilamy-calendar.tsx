@@ -20,11 +20,21 @@ import {
 	GAP_BETWEEN_ELEMENTS,
 	WEEK_DAYS_NUMBER_MAP,
 } from '@/config/constants'
+import type { CalendarEventsFetcher } from '@/features/calendar/hooks/calendar-data/use-events-fetcher'
 import type {
+	EventsFetcher,
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
 import { normalizeEvents } from '@/features/calendar/utils/normalize'
+
+/** The consumer's `events` function, answering in the calendar's own rows. */
+const normalizeFetcher =
+	(fetcher: EventsFetcher): CalendarEventsFetcher =>
+	async (info, options) =>
+		normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(
+			await fetcher(info, options)
+		)
 
 const CalendarContent: React.FC = () => {
 	const { view, getViews } = useSmartCalendarContext((c) => ({
@@ -84,9 +94,12 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	// Stable reference while `events` is unchanged. Without this, a fresh array on
 	// every render makes CalendarProvider re-sync (use-event-store) and discard
 	// in-memory edits (recurring overrides/EXDATEs, drags) on any re-render (#197).
+	const eventsFetcher =
+		typeof events === 'function' ? normalizeFetcher(events) : undefined
+	const eventsArray = typeof events === 'function' ? undefined : events
 	const normalizedEvents = useMemo(
-		() => normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events),
-		[events]
+		() => normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(eventsArray),
+		[eventsArray]
 	)
 	const hiddenDaysToDraw = useHiddenDaysToDraw(hiddenDays, weekends)
 	useOrientationWarning(orientation, hasResources)
@@ -97,6 +110,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			eventHeight={eventHeight}
 			eventSpacing={eventSpacing}
 			events={normalizedEvents}
+			eventsFetcher={eventsFetcher}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
 			hiddenDays={hiddenDaysToDraw}
 			hideNonBusinessHours={hideNonBusinessHours}

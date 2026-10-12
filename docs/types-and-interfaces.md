@@ -109,7 +109,10 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `events` | `IlamyCalendarPropEvent[]` | `[]` | Events to display |
+| `events` | `IlamyCalendarPropEvent[] \| EventsFetcher` | `[]` | Events to display, or a function that loads them for the visible range (see [Events as a function](#events-as-a-function)) |
+| `lazyFetching` | `boolean` | `true` | With an `events` function: fetch only when the visible range leaves the last fetched range |
+| `loading` | `(isLoading: boolean) => void` | — | With an `events` function: `true` when a fetch starts, `false` when none is in flight any more; fires on transitions only |
+| `onEventsError` | `(error: unknown) => void` | `console.error` | With an `events` function: a fetch failed; the shown events stay |
 | `firstDayOfWeek` | `WeekDays` | `'sunday'` | First day of week |
 | `initialView` | `CalendarView` | `'month'` | Starting view |
 | `initialDate` | `dayjs \| Date \| string` | today | Starting date |
@@ -161,6 +164,37 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `renderEventForm` | `(props) => ReactNode` | — | Custom event form |
 | `renderCurrentTimeIndicator` | `(props) => ReactNode` | — | Custom time indicator |
 | `classesOverride` | `CalendarClassesOverride` | — | CSS class overrides |
+
+### Events as a function
+
+```ts
+interface EventsFetchInfo {
+  start: Dayjs      // inclusive, in the calendar's zone
+  end: Dayjs        // exclusive: the next midnight after the last visible day
+  startStr: string  // ISO
+  endStr: string    // ISO
+  timezone?: string // the `timezone` prop
+}
+type EventsFetcher = (
+  info: EventsFetchInfo,
+  options: { signal: AbortSignal }
+) => Promise<IlamyCalendarPropEvent[]>
+```
+
+The range is the whole visible grid (a month includes the leading and trailing days of the neighbouring months), as in FullCalendar (`reducers/eventSources.ts:13,29` in v7.1.1); `end` is exclusive like an event's `end`.
+
+Rules, each following FullCalendar v7.1.1 (`packages/preact/src/reducers/eventSources.ts`) unless marked as a deviation:
+
+- **Refetch** when nothing was fetched yet, when a fetch is in flight, when the visible range is not inside the last fetched one, or when `timezone` changes. `lazyFetching={false}` fetches on every navigation (`:70-80,125-134`).
+- **Superseded fetches** are ignored when they land (`:161,216-241`). *Beyond FullCalendar:* the calendar also aborts them through `signal`, so a `fetch(url, { signal })` is cancelled.
+- **`loading`** fires on transitions of "a fetch is in flight" (`CalendarDataManager.ts:322-328,709-717`). An array `events` never triggers it.
+- **Failure** keeps the events on screen, calls `onEventsError` (or `console.error` without it) and does not record the range, so the next navigation retries (`:189-205,58-60`).
+- **`refetchEvents()`** on `useIlamyCalendarContext()` refetches the visible range regardless of `lazyFetching`; the old events stay until the new ones arrive (`CalendarApiImpl.ts:509-511`).
+- **Mutations** are applied in the calendar immediately and reported through the usual callbacks. The next fetch replaces the calendar's events with exactly what the function returns. *Deviation:* FullCalendar keeps source-less client-added events across a refetch; ilamy has one source, so keeping them would duplicate events the server now returns.
+- **Function identity**: a new function does not refetch (an inline `events={() => ...}` would refetch on every render). The latest function is the one called. Call `refetchEvents()` when your query changes.
+- **Not supported:** multiple event sources and JSON-feed URLs (a feed plugin is roadmap 4.3.9).
+
+With a `timezone` prop the first fetch can be aborted and repeated once, because the zone is applied right after mount (`docs/timezones.md`).
 
 ## IlamyResourceCalendarProps (deprecated alias)
 

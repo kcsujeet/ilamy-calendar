@@ -69,7 +69,10 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `events` | `CalendarEvent[]` | `[]` | Array of events to display in the calendar |
+| `events` | `CalendarEvent[] \| EventsFetcher` | `[]` | The events to display: an array, or a function that loads them for the visible range. See [Loading events](#loading-events) |
+| `lazyFetching` | `boolean` | `true` | With an `events` function: fetch only when the visible range leaves the range last fetched |
+| `loading` | `(isLoading: boolean) => void` | - | With an `events` function: called with `true` when a fetch starts and `false` when none is in flight any more |
+| `onEventsError` | `(error: unknown) => void` | `console.error` | With an `events` function: called when a fetch fails. The events on screen stay |
 | `plugins` | `IlamyPlugin[]` | `[]` | Opt-in plugins that add behavior/UI. The core ships none; pass `recurrencePlugin()` for recurring events or `agendaPlugin()` for the agenda view. See [Plugins](#plugins) below. |
 | `resources` | `Resource[]` | `[]` | Resources (rooms, people, equipment) to render as a resource axis. See [Resource Calendar](/docs/components/resource-calendar). |
 | `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Resource axis arrangement. Only applies when `resources` is set. |
@@ -341,6 +344,44 @@ function MyCalendar() {
 :::note
 `eventHeight` affects month view, resource month view, and resource week horizontal view. Day and week views use percentage-based heights that scale with event duration and are unaffected.
 :::
+
+### Loading events
+
+Pass a function as `events` and the calendar calls it with the visible range, so you load only what is on screen. In month view the range includes the leading and trailing days of the neighbouring months, and `end` is exclusive.
+
+```tsx title="Events from an API"
+import { IlamyCalendar, type EventsFetcher } from '@ilamy/calendar';
+import { useState } from 'react';
+
+const fetchEvents: EventsFetcher = async ({ startStr, endStr }, { signal }) => {
+  const response = await fetch(`/api/events?start=${startStr}&end=${endStr}`, { signal });
+  if (!response.ok) throw new Error('Could not load events');
+  return response.json();
+};
+
+function LoadedCalendar() {
+  const [isLoading, setIsLoading] = useState(false);
+
+  return (
+    <>
+      {isLoading && <Spinner />}
+      <IlamyCalendar
+        events={fetchEvents}
+        loading={setIsLoading}
+        onEventsError={(error) => console.error(error)}
+      />
+    </>
+  );
+}
+```
+
+- The calendar fetches again when you navigate outside the range it last fetched, when `timezone` changes, and when you call `refetchEvents()` from [`useIlamyCalendarContext`](/docs/components/use-ilamy-calendar-context). Set `lazyFetching={false}` to fetch on every navigation.
+- A request that is replaced by a newer one is aborted through `signal` and its result is ignored, even if your function never looks at the signal.
+- If a fetch fails, the events already on screen stay and `onEventsError` is called. The next navigation tries again.
+- Edits made in the calendar show immediately and are reported through `onEventAdd`, `onEventUpdate`, `onEventDelete` and `onEventsChange`. The next fetch replaces what the calendar holds with what your function returns, so save changes to your server before it runs.
+- Passing a new function on each render does not refetch. Call `refetchEvents()` when your query changes (a filter, a different calendar).
+- With the recurrence plugin, return the series rows (with their overrides and `exdates`) whose recurrence intersects the range, not only rows whose first occurrence overlaps it. The calendar expands a series from its row, so a series your function leaves out disappears, including its later occurrences.
+- Several event sources and JSON feed URLs are not supported.
 
 ### Initial View and Event Lifecycle
 

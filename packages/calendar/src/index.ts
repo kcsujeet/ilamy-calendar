@@ -55,6 +55,8 @@ export type {
 	CalendarClassesOverride,
 	CellInfo,
 	EventSegment,
+	EventsFetcher,
+	EventsFetchInfo,
 	IlamyCalendarProps,
 	OpenEventFormInput,
 	RenderCurrentTimeIndicatorProps,

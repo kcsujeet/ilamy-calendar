@@ -42,6 +42,12 @@ export interface IlamyCalendarApi {
 	readonly view: CalendarView
 	readonly events: CalendarEvent[]
 	readonly rawEvents: CalendarEvent[]
+	/**
+	 * Fetches the visible range again through the `events` function, whatever
+	 * `lazyFetching` says. The events shown stay until the new ones arrive. Does
+	 * nothing when `events` is an array.
+	 */
+	readonly refetchEvents: () => void
 	readonly isEventFormOpen: boolean
 	readonly selectedEvent: CalendarEvent | null
 	readonly selectedDate: Dayjs | null
@@ -137,6 +143,7 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 		view: context.view,
 		events: context.events,
 		rawEvents: context.rawEvents,
+		refetchEvents: context.refetchEvents,
 		isEventFormOpen: context.isEventFormOpen,
 		selectedEvent: context.selectedEvent,
 		selectedDate: context.selectedDate,

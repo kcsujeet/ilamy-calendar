@@ -5,6 +5,10 @@ import type { PluginRuntime } from '@/lib/plugins/types'
 import { type EventMutations, useEventMutations } from './use-event-mutations'
 import { useEventStore } from './use-event-store'
 import {
+	type CalendarEventsFetcher,
+	useEventsFetcher,
+} from './use-events-fetcher'
+import {
 	type PluginMutations,
 	usePluginMutations,
 } from './use-plugin-mutations'
@@ -15,6 +19,11 @@ import {
 
 interface CalendarDataParams {
 	events: CalendarEvent[]
+	eventsFetcher?: CalendarEventsFetcher
+	lazyFetching?: boolean
+	loading?: (isLoading: boolean) => void
+	onEventsError?: (error: unknown) => void
+	timezone?: string
 	pluginRuntime: PluginRuntime
 	getCurrentViewRange: () => { start: Dayjs; end: Dayjs }
 	resources: Resource[]
@@ -33,6 +42,8 @@ export interface CalendarDataSlice
 	/** The stored rows, as the consumer holds them. */
 	rawEvents: CalendarEvent[]
 	setCurrentEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>
+	/** Fetches the visible range again; a no-op unless `events` is a function. */
+	refetchEvents: () => void
 	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
 }
 
@@ -44,6 +55,11 @@ export interface CalendarDataSlice
  */
 export const useCalendarData = ({
 	events,
+	eventsFetcher,
+	lazyFetching,
+	loading,
+	onEventsError,
+	timezone,
 	pluginRuntime,
 	getCurrentViewRange,
 	resources,
@@ -59,6 +75,16 @@ export const useCalendarData = ({
 		getEventsForDateRange,
 		processedEvents,
 	} = store
+
+	const { refetchEvents } = useEventsFetcher({
+		eventsFetcher,
+		getCurrentViewRange,
+		timezone,
+		lazyFetching,
+		loading,
+		onEventsError,
+		setCurrentEvents,
+	})
 
 	const callbacks = {
 		setCurrentEvents,
@@ -88,6 +114,7 @@ export const useCalendarData = ({
 			events: processedEvents,
 			rawEvents: currentEvents,
 			setCurrentEvents,
+			refetchEvents,
 			getEventsForDateRange,
 			addEvent,
 			updateEvent,
@@ -103,6 +130,7 @@ export const useCalendarData = ({
 			processedEvents,
 			currentEvents,
 			setCurrentEvents,
+			refetchEvents,
 			getEventsForDateRange,
 			addEvent,
 			updateEvent,

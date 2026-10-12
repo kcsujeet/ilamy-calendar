@@ -670,6 +670,44 @@ export const scenarios = {
 			),
 		],
 	},
+
+	'async-events': {
+		description:
+			'One event per month from March to June, and one on the last day of March that the April grid shows too (30 March), so an `events` function can be seen to load, supersede, fail and retry.',
+		views: ['month'],
+		events: [
+			event(
+				'async-1',
+				'March lunch',
+				'2025-03-12T12:00:00.000Z',
+				'2025-03-12T13:00:00.000Z'
+			),
+			event(
+				'async-turn',
+				'Month turn',
+				'2025-03-31T10:00:00.000Z',
+				'2025-03-31T11:00:00.000Z'
+			),
+			event(
+				'async-2',
+				'April review',
+				'2025-04-15T10:00:00.000Z',
+				'2025-04-15T11:00:00.000Z'
+			),
+			event(
+				'async-3',
+				'May kickoff',
+				'2025-05-20T10:00:00.000Z',
+				'2025-05-20T11:00:00.000Z'
+			),
+			event(
+				'async-4',
+				'June demo',
+				'2025-06-25T10:00:00.000Z',
+				'2025-06-25T11:00:00.000Z'
+			),
+		],
+	},
 } as const satisfies Record<string, Scenario>
 
 export type ScenarioName = keyof typeof scenarios

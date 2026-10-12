@@ -2,6 +2,7 @@ import type { CalendarEvent } from '@ilamy/types'
 import type { FC, ReactNode } from 'react'
 import { useMemo } from 'react'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/config/constants'
+import type { CalendarEventsFetcher } from '@/features/calendar/hooks/calendar-data/use-events-fetcher'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
 import type { IlamyCalendarProps } from '@/features/calendar/types'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
@@ -20,6 +21,8 @@ export type CalendarProviderProps = Omit<
 > & {
 	children: ReactNode
 	events?: CalendarEvent[]
+	/** Loads the events for the visible range; used instead of `events` when set. */
+	eventsFetcher?: CalendarEventsFetcher
 	firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
 	hiddenDays?: Set<number>
 }
@@ -37,6 +40,10 @@ const useCalendarContextValue = (
 ): CalendarContextType => {
 	const {
 		events = EMPTY_EVENTS,
+		eventsFetcher,
+		lazyFetching,
+		loading,
+		onEventsError,
 		firstDayOfWeek = 0,
 		initialView = 'month',
 		initialDate,
@@ -111,6 +118,10 @@ const useCalendarContextValue = (
 
 	const engine = useCalendarEngine({
 		events,
+		eventsFetcher,
+		lazyFetching,
+		loading,
+		onEventsError,
 		firstDayOfWeek,
 		initialView,
 		initialDate,

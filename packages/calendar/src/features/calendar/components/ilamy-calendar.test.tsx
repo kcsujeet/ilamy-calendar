@@ -2159,3 +2159,45 @@ describe('hidden days in every view', () => {
 		})
 	})
 })
+
+describe('IlamyCalendar - events as a function', () => {
+	const LOADED = {
+		id: 'loaded',
+		title: 'Loaded Lunch',
+		start: '2025-01-15T12:00:00.000Z',
+		end: '2025-01-15T13:00:00.000Z',
+	}
+
+	// Takes the function itself, so each call site can hand in a new one, the way an
+	// inline `events={() => ...}` arrives on every render.
+	const calendar = (fetcher: () => Promise<(typeof LOADED)[]>) => (
+		<IlamyCalendar
+			events={fetcher}
+			initialDate="2025-01-15T12:00:00.000Z"
+			initialView="week"
+			timezone="UTC"
+		/>
+	)
+
+	it('shows the fetched events, with ISO strings normalized', async () => {
+		const fetcher = mock(() => Promise.resolve([LOADED]))
+
+		render(calendar(fetcher))
+
+		expect(await screen.findByText('Loaded Lunch')).toBeTruthy()
+		expect(fetcher).toHaveBeenCalledTimes(1)
+	})
+
+	it('keeps the fetched events and does not refetch when re-rendered with an inline function', async () => {
+		const fetcher = mock(() => Promise.resolve([LOADED]))
+		const { rerender } = render(calendar(fetcher))
+		await screen.findByText('Loaded Lunch')
+
+		const inlineFetcher = mock(() => Promise.resolve([LOADED]))
+		rerender(calendar(inlineFetcher))
+
+		expect(screen.getByText('Loaded Lunch')).toBeTruthy()
+		expect(fetcher).toHaveBeenCalledTimes(1)
+		expect(inlineFetcher).toHaveBeenCalledTimes(0)
+	})
+})

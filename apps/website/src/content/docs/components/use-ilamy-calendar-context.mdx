@@ -61,6 +61,7 @@ The hook returns an object with the following properties and methods:
 | `view` | `CalendarView` (`string`) | The current view name. In v2 `CalendarView` is `string` so plugins can register extra views |
 | `events` | `CalendarEvent[]` | Expanded events for the current view (recurring instances included when the recurrence plugin is registered) |
 | `rawEvents` | `CalendarEvent[]` | The unexpanded source events as passed in. Use this to find a base recurring series by `uid` |
+| `refetchEvents` | `() => void` | Fetches the visible range again through an `events` function, whatever `lazyFetching` says. The shown events stay until the new ones arrive. Does nothing when `events` is an array |
 | `resources` | `Resource[]` | Resources on the calendar. Empty array when none are set |
 | `orientation` | `'horizontal' \| 'vertical'` | The axis the views lay out along. Defaults to `'horizontal'`; relevant for resource calendars |
 | `isEventFormOpen` | `boolean` | Whether the event form modal is currently open |

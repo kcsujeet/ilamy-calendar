@@ -24,6 +24,7 @@ import {
 	type CalendarDataSlice,
 	useCalendarData,
 } from '@/features/calendar/hooks/calendar-data/use-calendar-data'
+import type { CalendarEventsFetcher } from '@/features/calendar/hooks/calendar-data/use-events-fetcher'
 import {
 	type CalendarConfigSlice,
 	useCalendarConfig,
@@ -49,6 +50,11 @@ const EMPTY_PLUGINS: IlamyPlugin[] = []
 
 interface CalendarEngineConfig {
 	events: CalendarEvent[]
+	/** Loads events for the visible range; used instead of `events` when set. */
+	eventsFetcher?: CalendarEventsFetcher
+	lazyFetching?: boolean
+	loading?: (isLoading: boolean) => void
+	onEventsError?: (error: unknown) => void
 	firstDayOfWeek: number
 	initialView?: CalendarView
 	initialDate?: Dayjs | Date | string
@@ -163,6 +169,10 @@ export const useCalendarEngine = (
 ): CalendarEngineReturn & CalendarEngineHandlers => {
 	const {
 		events,
+		eventsFetcher,
+		lazyFetching,
+		loading,
+		onEventsError,
 		firstDayOfWeek = 0,
 		initialView = 'month',
 		initialDate,
@@ -228,6 +238,11 @@ export const useCalendarEngine = (
 
 	const data = useCalendarData({
 		events,
+		eventsFetcher,
+		lazyFetching,
+		loading,
+		onEventsError,
+		timezone,
 		pluginRuntime,
 		getCurrentViewRange: navigation.getCurrentViewRange,
 		resources: configSlice.resources ?? EMPTY_RESOURCES,

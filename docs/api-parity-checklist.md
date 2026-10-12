@@ -9,8 +9,8 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 - [x] **`revert()` on event drop** — done: `EventsChange.revert()` on `onEventsChange` (3.3.1). Was: `onEventUpdate` should pass a `revert()` function so consumers can undo a failed server save without re-rendering the entire event list
 - [x] **`oldEvent` in mutation callbacks** — done as mapped: `EventsChange.event` is the event before the change, i.e. FullCalendar's `oldEvent`; the new rows are in `updated` (3.3.1). Was: `onEventUpdate`, `onEventDelete` should pass both old and new event state so consumers can diff changes or validate before accepting
 - [ ] **Date range selection (`onSelect`)** — Fire callback when user drag-selects a date range (not just single click). Standard UX for creating multi-day events. Requires `selectable` prop
-- [ ] **Lazy event loading (`events` as function)** — Allow `events` to be an async function `(range, success, failure) => void` for on-demand fetching. Critical for large datasets
-- [ ] **`loading` callback** — `loading(isLoading: boolean)` fires when async event fetch starts/stops. Enables showing a spinner during data loading
+- [x] **Lazy event loading (`events` as function)** — done as `events` accepting `(info, { signal }) => Promise<Event[]>` (3.3.8); `lazyFetching`, `onEventsError` and `refetchEvents()` come with it. Cut: multiple event sources and JSON-feed URLs. Was: allow `events` to be an async function for on-demand fetching
+- [x] **`loading` callback** — done: `loading(isLoading)` fires when a fetch starts and when none is in flight any more (3.3.8). Was: enables showing a spinner during data loading
 
 ## Tier 2: Important for Specific Use Cases
 

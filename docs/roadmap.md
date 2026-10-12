@@ -190,6 +190,7 @@ kcsujeet/ilamy-calendar#101 (15-minute snapping in resource views), #7, #40, #50
 | 3.3.5 | **Slot and snap sizes** | Core | `slotDuration: number` (widens `SlotDuration`; 15/30/60 render identically), `snapDuration` (core of #101), `slotLabelInterval`. |
 | 3.3.6 | **Formats** | Core | `slotLabelFormat`, `eventTimeFormat`, `displayEventTime`, `displayEventEnd`, `dayHeaderFormat`, `titleFormat`, all `Intl.DateTimeFormatOptions`; `timeFormat` stays as shorthand. |
 | 3.3.7 | **Display toggles** | Core | `allDaySlot`; `nowIndicator` (default true, see D3); `weekNumbers` incl. month rows, `weekNumberCalculation`; `weekends`; `hiddenDays` in every view; `scrollTime` and `scrollToNow` scroll to the exact minute (shipped). `hiddenDays` and `weekends` apply to the month, week and day views and to every resource arrangement (part b, shipped): bars clamp to the nearest drawn day, the day view skips hidden days, and the year view and the agenda plugin keep every day. |
+| 3.3.8 | **Async events** | Core (one prop) | Shipped. `events` also accepts `(info, { signal }) => Promise<Event[]>` (`EventsFetcher`); `loading(isLoading)`; `lazyFetching`; superseded fetches are aborted; `onEventsError`; `refetchEvents()` on the context API (the `ref` API, 3.4.3, will surface it too). Touch: `hooks/calendar-data/use-events-fetcher.ts`. Cuts: multiple `eventSources` and JSON-feed URLs (a feed plugin is 4.3.9). |
 
 **Acceptance:** a consumer can resize, reject any move or resize before or after it lands, undo
 it with one call, and configure the time axis.
@@ -200,7 +201,7 @@ The last additive release before 4.0.
 
 | # | Feature | Placement | Notes |
 |---|---|---|---|
-| 3.4.1 | **Async events** | Core (one prop) | `events` also accepts `(range, { signal }) => Promise<Event[]>`; `loading(isLoading)`; `lazyFetching` (verify FullCalendar's exact re-fetch rule); abort superseded fetches; `onEventsError`. Mutation model with a fetcher decided in the task plan, citing FullCalendar's `addEvent` on a function source. Touch: `hooks/calendar-data/use-event-store.ts`. |
+| 3.4.1 | *(moved to 3.3.8)* | | |
 | 3.4.2 | **Async resources** | Core | `resources` as a fetcher; `resourcesSet`. |
 | 3.4.3 | **Ref API** | Core | `ref` prop (React 19 peer floor allows ref as a prop; verify on react.dev). `gotoDate`, `next`, `prev`, `today`, `changeView`, `getEvents`, `getEventById`, `refetchEvents`, `scrollToTime`; `select`/`unselect` land with 4.1.3. Built with `useImperativeHandle` over the existing context API. |
 | 3.4.4 | **Plugin contract hooks** | Core | The six hooks in **Core vs plugin**, each with an internal test plugin. |
@@ -296,8 +297,8 @@ the Upgrader persona passes on the migrated configuration.
 | `revert()` on drop | 3.3.1 |
 | `oldEvent` in callbacks | 3.3.1 |
 | Range selection `onSelect` | 4.1.3 |
-| Events as a function | 3.4.1 |
-| `loading` callback | 3.4.1 |
+| Events as a function | 3.3.8 |
+| `loading` callback | 3.3.8 |
 | Event resize (`onEventResize`) | 3.3.3, reported through `onEventsChange` + `endDelta` |
 | External dragging | 4.1.4 |
 | `eventAllow` / `selectAllow` | 3.3.2 / 4.1.3 |

@@ -14,3 +14,15 @@ export interface PublishedChange {
 	delta: EventDelta | null
 	endDelta: EventDelta | null
 }
+
+/**
+ * One call the calendar made to the harness's `events` function, as the
+ * harness publishes it: the range it asked for and how the call ended.
+ * `aborted` means the calendar signalled the call was superseded.
+ */
+export interface PublishedFetch {
+	id: number
+	start: string
+	end: string
+	status: 'pending' | 'done' | 'failed' | 'aborted'
+}

@@ -48,6 +48,12 @@ export interface IlamyCalendarApi {
 	 * nothing when `events` is an array.
 	 */
 	readonly refetchEvents: () => void
+	/**
+	 * Scrolls the hour grids to a time of day, `'HH:mm'` or `'HH:mm:ss'`, the way
+	 * the `scrollTime` prop does at the start (the minute lands that far into
+	 * the hour). Does nothing in a view without an hour axis, such as month.
+	 */
+	readonly scrollToTime: (time: string) => void
 	readonly isEventFormOpen: boolean
 	readonly selectedEvent: CalendarEvent | null
 	readonly selectedDate: Dayjs | null
@@ -144,6 +150,7 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 		events: context.events,
 		rawEvents: context.rawEvents,
 		refetchEvents: context.refetchEvents,
+		scrollToTime: context.scrollToTime,
 		isEventFormOpen: context.isEventFormOpen,
 		selectedEvent: context.selectedEvent,
 		selectedDate: context.selectedDate,

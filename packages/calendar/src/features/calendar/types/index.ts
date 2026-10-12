@@ -8,12 +8,13 @@ import type {
 	WeekDays,
 } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import type { ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 import type {
 	Translations,
 	TranslatorFunction,
 } from '@/config/translations/types'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
+import type { IlamyCalendarApi } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { CalendarView, TimeFormat } from '@/types'
 
 /**
@@ -175,6 +176,14 @@ export type EventsFetcher = (
 ) => Promise<IlamyCalendarPropEvent[]>
 
 export interface IlamyCalendarProps {
+	/**
+	 * Drives the calendar from outside it: `ref.current` is the object
+	 * `useIlamyCalendarContext()` returns, so a toolbar or sidebar of your own
+	 * calls `ref.current.nextPeriod()`, `setView('week')`, `scrollToTime('13:30')`
+	 * and the rest. Read it in event handlers and effects, not while rendering:
+	 * it is set after the calendar mounts and refreshed after every render.
+	 */
+	ref?: Ref<IlamyCalendarApi>
 	/**
 	 * The events to display: an array, or a function the calendar calls with the
 	 * visible range to load them on demand (see `EventsFetcher`).

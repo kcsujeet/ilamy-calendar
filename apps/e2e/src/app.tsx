@@ -1,8 +1,10 @@
 import {
 	type CalendarEvent,
+	dayjs,
 	type EventsChange,
 	type EventsFetcher,
 	IlamyCalendar,
+	type IlamyCalendarApi,
 	type IlamyPlugin,
 	type Resource,
 } from '@ilamy/calendar'
@@ -118,6 +120,7 @@ export const App = () => {
 		renderEventVariant,
 		resourceCount,
 		revertChanges,
+		externalToolbar,
 		fetch,
 		fetchDelay,
 		...calendarConfig
@@ -131,6 +134,7 @@ export const App = () => {
 		<Harness
 			config={calendarConfig}
 			date={date}
+			externalToolbar={externalToolbar}
 			fetchDelay={fetchDelay}
 			fetchMode={fetch}
 			height={height}
@@ -162,12 +166,14 @@ type HarnessOnly =
 	| 'height'
 	| 'renderEventVariant'
 	| 'revertChanges'
+	| 'externalToolbar'
 	| 'fetch'
 	| 'fetchDelay'
 
 interface HarnessProps {
 	config: Omit<ReturnType<typeof readUrlConfig>, HarnessOnly>
 	date: string
+	externalToolbar?: boolean
 	fetchDelay?: number
 	fetchMode?: 'delayed' | 'failing'
 	renderEventVariant?: ReturnType<typeof readUrlConfig>['renderEventVariant']
@@ -194,6 +200,7 @@ interface HarnessProps {
 const Harness: React.FC<HarnessProps> = ({
 	config,
 	date,
+	externalToolbar,
 	fetchDelay = 0,
 	fetchMode,
 	renderEventVariant,
@@ -206,6 +213,7 @@ const Harness: React.FC<HarnessProps> = ({
 	timezone,
 	view,
 }) => {
+	const calendarRef = useRef<IlamyCalendarApi>(null)
 	const [events, setEvents] = useState<CalendarEvent[]>(() => [
 		...scenario.events,
 	])
@@ -313,6 +321,7 @@ const Harness: React.FC<HarnessProps> = ({
 			data-testid="harness"
 			style={{ height: height ?? '100vh', width: '100vw' }}
 		>
+			{externalToolbar && <ExternalToolbar calendarRef={calendarRef} />}
 			<IlamyCalendar
 				{...config}
 				events={fetchMode ? fetchFromServer : events}
@@ -330,6 +339,7 @@ const Harness: React.FC<HarnessProps> = ({
 				onEventUpdate={shouldPersistRows ? handleUpdate : undefined}
 				orientation={orientation}
 				plugins={plugins}
+				ref={calendarRef}
 				renderEvent={
 					renderEventVariant === 'sticky-title' ? renderStickyTitle : undefined
 				}
@@ -349,6 +359,57 @@ const Harness: React.FC<HarnessProps> = ({
 			<script data-testid="fetch-state" type="application/json">
 				{JSON.stringify(fetchState)}
 			</script>
+		</div>
+	)
+}
+
+/**
+ * Buttons that live outside the calendar and drive it through its `ref`, with
+ * the date and view the ref reports printed beside them. The readout is
+ * refreshed on click, so it shows what `ref.current` says after the update.
+ */
+const ExternalToolbar: React.FC<{
+	calendarRef: React.RefObject<IlamyCalendarApi | null>
+}> = ({ calendarRef }) => {
+	const [readout, setReadout] = useState({ date: '', view: '' })
+	// The ref is not state, so nothing re-renders this when the calendar moves:
+	// poll it, which is also how a consumer would have to read it from outside.
+	useEffect(() => {
+		const timer = setInterval(() => {
+			const api = calendarRef.current
+			if (api) {
+				setReadout({ date: api.currentDate.toISOString(), view: api.view })
+			}
+		}, 50)
+		return () => clearInterval(timer)
+	}, [calendarRef])
+	const actions: Record<string, (api: IlamyCalendarApi) => void> = {
+		next: (api) => api.nextPeriod(),
+		prev: (api) => api.prevPeriod(),
+		today: (api) => api.today(),
+		goto: (api) => api.setCurrentDate(dayjs('2025-07-04T12:00:00.000Z')),
+		week: (api) => api.setView('week'),
+		scroll: (api) => api.scrollToTime('13:30'),
+		refetch: (api) => api.refetchEvents(),
+	}
+	return (
+		<div data-testid="external-toolbar" style={{ display: 'flex', gap: 4 }}>
+			{Object.entries(actions).map(([name, run]) => (
+				<button
+					data-testid={`external-${name}`}
+					key={name}
+					onClick={() => {
+						if (calendarRef.current) {
+							run(calendarRef.current)
+						}
+					}}
+					type="button"
+				>
+					{name}
+				</button>
+			))}
+			<span data-testid="external-date">{readout.date}</span>
+			<span data-testid="external-view">{readout.view}</span>
 		</div>
 	)
 }

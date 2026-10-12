@@ -77,6 +77,8 @@ export interface UrlConfig {
 	 * every call, so changing it on a mounted calendar changes the next fetch.
 	 */
 	fetch?: 'delayed' | 'failing'
+	/** Harness-only: show buttons outside the calendar that drive it through its `ref`. */
+	externalToolbar?: boolean
 	/** Harness-only: how long the `events` function takes to answer, in ms. */
 	fetchDelay?: number
 	/**
@@ -446,6 +448,11 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 			['delayed', 'failing'] as const,
 			String
 		)
+	}
+
+	const externalToolbar = get('externalToolbar')
+	if (externalToolbar !== null) {
+		config.externalToolbar = boolean('externalToolbar', externalToolbar)
 	}
 
 	const fetchDelay = get('fetchDelay')

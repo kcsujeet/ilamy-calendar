@@ -9,6 +9,11 @@ import type {
 } from '@/features/calendar/types'
 import type { TimeFormat } from '@/types'
 
+/** One `scrollToTime(time)` call; a new object each call, so a repeat is a new request. */
+export interface ScrollRequest {
+	time: string
+}
+
 /**
  * The internal calendar context. Extends the engine's full return (state,
  * navigation, CRUD, plugin runtime) and adds the presentation/config props the
@@ -72,6 +77,9 @@ export interface CalendarContextType
 	allDaySlot: boolean
 	nowIndicator: boolean
 	weekNumberCalculation: WeekNumberCalculation
+	/** The latest `scrollToTime(time)` call. */
+	scrollRequest?: ScrollRequest
+	scrollToTime: (time: string) => void
 }
 
 // CalendarContext is kept for internal Provider usage

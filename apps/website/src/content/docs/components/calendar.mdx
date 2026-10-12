@@ -69,6 +69,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
+| `ref` | `Ref<IlamyCalendarApi>` | - | Drives the calendar from outside it: `ref.current` is what `useIlamyCalendarContext()` returns. See [Controlling the calendar from outside](#controlling-the-calendar-from-outside) |
 | `events` | `CalendarEvent[] \| EventsFetcher` | `[]` | The events to display: an array, or a function that loads them for the visible range. See [Loading events](#loading-events) |
 | `lazyFetching` | `boolean` | `true` | With an `events` function: fetch only when the visible range leaves the range last fetched |
 | `loading` | `(isLoading: boolean) => void` | - | With an `events` function: called with `true` when a fetch starts and `false` when none is in flight any more |
@@ -383,6 +384,37 @@ function LoadedCalendar() {
 - Passing a new function on each render does not refetch. Call `refetchEvents()` when your query changes (a filter, a different calendar).
 - With the recurrence plugin, return the series rows (with their overrides and `exdates`) whose recurrence intersects the range, not only rows whose first occurrence overlaps it. The calendar expands a series from its row, so a series your function leaves out disappears, including its later occurrences.
 - Several event sources and JSON feed URLs are not supported.
+
+### Controlling the calendar from outside
+
+Pass a `ref` to drive the calendar from your own toolbar, a sidebar or a "jump to" button. `ref.current` is the same object [`useIlamyCalendarContext`](/docs/components/use-ilamy-calendar-context) returns, so the names are the same.
+
+```tsx title="A toolbar outside the calendar"
+import { IlamyCalendar, type IlamyCalendarApi } from '@ilamy/calendar';
+import { useRef } from 'react';
+
+function Planner() {
+  const calendarRef = useRef<IlamyCalendarApi>(null);
+
+  return (
+    <>
+      <button onClick={() => calendarRef.current?.prevPeriod()}>Back</button>
+      <button onClick={() => calendarRef.current?.today()}>Today</button>
+      <button onClick={() => calendarRef.current?.nextPeriod()}>Forward</button>
+      <button onClick={() => calendarRef.current?.setView('week')}>Week</button>
+      <button onClick={() => calendarRef.current?.scrollToTime('13:30')}>
+        Jump to 1:30 pm
+      </button>
+      <IlamyCalendar events={events} ref={calendarRef} />
+    </>
+  );
+}
+```
+
+- `ref` is a regular prop in React 19, so no `forwardRef` is needed.
+- `ref.current` is `null` until the calendar has mounted. Read it in event handlers and effects, not while rendering.
+- It always holds the latest state: `ref.current.currentDate` is the new date after `nextPeriod()`. `ref.current.events` holds the events in the visible range, the same as the hook's `events`.
+- `scrollToTime` acts on the view that is showing. A view you open afterwards starts where `scrollTime` puts it.
 
 ### Initial View and Event Lifecycle
 

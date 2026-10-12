@@ -61,6 +61,9 @@ The only hook exported for library consumers. Returns a curated subset of contex
 | `nextPeriod()` | Navigate forward by current view unit |
 | `prevPeriod()` | Navigate backward by current view unit |
 | `today()` | Jump to today |
+| `scrollToTime(time)` | Scroll the hour grids to `'HH:mm'` or `'HH:mm:ss'`, like the `scrollTime` prop does at the start; the minute lands that far into the hour. No-op in a view without an hour axis (month) |
+
+**From outside the calendar (the `ref`).** `IlamyCalendar` (and the deprecated `IlamyResourceCalendar`) takes `ref?: Ref<IlamyCalendarApi>`, and `ref.current` is exactly the object `useIlamyCalendarContext()` returns: one API, one set of names. It is a regular prop in React 19, so there is no `forwardRef` (https://react.dev/reference/react/forwardRef), and it is published with `useImperativeHandle(ref, createHandle, deps)` (https://react.dev/reference/react/useImperativeHandle). `useCalendarRefHandle` in `ilamy-calendar.tsx` publishes ONE handle for the calendar's life: its methods call, and its values (`currentDate`, `view`, `events`, ...) read, the latest API, so `ref.current.currentDate` is current after a navigation and a callback ref that sets state is called with the same object every time instead of looping. `ref.current.events` holds the events in the visible range, the same as the hook's `events`. Read it in handlers and effects, not while rendering. `scrollToTime` works by publishing a request (`scrollRequest` in the context) that each hour grid's `useScrollToTime` reacts to once; there is no second scroller. It acts on the view that is showing, like FullCalendar's `scrollToTime` (`api/CalendarApi.ts:83` at v7.1.1): a grid ignores requests made before it mounted, and a view without an hour axis drops it. A multi-day horizontal resource timeline looks the time up in its first day only.
 
 Navigation calls may be sequenced inside one event handler (e.g. `selectDate(d)` then `setView('day')`, or two `nextPeriod()` calls): each call sees the previous call's result, and every `onDateChange` emission reflects the latest date + view — never a stale pre-batch value.
 
@@ -221,6 +224,7 @@ VerticalGrid / HorizontalGrid
 | `src/features/calendar/hooks/use-calendar-navigation.ts` | Navigation slice (date/view, range math) |
 | `src/features/calendar/hooks/calendar-data/use-calendar-data.ts` | Data slice: composes the hooks beside it |
 | `src/features/calendar/hooks/calendar-data/use-event-store.ts` | Stored rows, `events` prop sync, expansion for a date range |
+| `src/features/calendar/components/ilamy-calendar.tsx` | Also `useCalendarRefHandle`: publishes the context API on the `ref` prop |
 | `src/features/calendar/hooks/calendar-data/use-events-fetcher.ts` | Loads events for the visible range when `events` is a function: lazy refetch rule, abort of superseded fetches, `loading`, failures, `refetchEvents` |
 | `src/features/calendar/hooks/calendar-data/use-event-mutations.ts` | Plain add / update / delete |
 | `src/features/calendar/hooks/calendar-data/use-plugin-mutations.ts` | Scoped edit / delete through the managing plugin |

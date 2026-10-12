@@ -10,8 +10,12 @@ import {
 	waitFor,
 	within,
 } from '@testing-library/react'
+import { createRef } from 'react'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
-import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import {
+	type IlamyCalendarApi,
+	useSmartCalendarContext,
+} from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { CellInfo } from '@/features/calendar/types'
 import { IlamyResourceCalendar } from './ilamy-resource-calendar'
 
@@ -1295,5 +1299,26 @@ describe('IlamyResourceCalendar', () => {
 
 			expect(screen.getByTestId('form-open')).toHaveTextContent('closed')
 		})
+	})
+})
+
+describe('IlamyResourceCalendar ref', () => {
+	it('forwards the ref to the same API the main calendar exposes', () => {
+		const ref = createRef<IlamyCalendarApi>()
+
+		render(
+			<IlamyResourceCalendar
+				events={[]}
+				initialDate="2025-03-12T09:00:00.000Z"
+				ref={ref}
+				resources={[{ id: 'r1', title: 'Room 1' }]}
+				timezone="UTC"
+			/>
+		)
+
+		expect(ref.current?.currentDate.toISOString()).toBe(
+			'2025-03-12T09:00:00.000Z'
+		)
+		expect(ref.current?.resources).toHaveLength(1)
 	})
 })

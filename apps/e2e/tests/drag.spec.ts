@@ -1617,3 +1617,90 @@ test.describe('resize', () => {
 		await expect(page.getByRole('dialog')).toBeVisible()
 	})
 })
+
+test.describe('hidden days', () => {
+	test('an event moves across the hidden weekend to the next visible day', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'across-hidden-days',
+			view: 'month',
+			settings: { weekends: 'false' },
+		})
+		const month = new MonthGrid(page)
+
+		// Thursday 13 to Monday 17: the cell beside Friday's is the next week's.
+		await dragTo(
+			page,
+			month.event('Standup').first(),
+			month.cellOn('2025-03-17')
+		)
+
+		await expect
+			.poll(async () => (await month.eventNamed('Standup')).start)
+			.toMatch(/^2025-03-17T10:00/)
+	})
+
+	test('a bar cut by the gap keeps the grab point under the pointer', async ({
+		page,
+	}) => {
+		// "Weekend trip" starts on Friday 14, but its second bar starts on Monday
+		// 17. Grabbing that bar on Monday and releasing on Tuesday moves the event
+		// one day: Friday 14 becomes Saturday 15, a day with no cell, which is
+		// fine for a start as long as the move is by the pointer's delta.
+		await gotoScenario(page, {
+			scenario: 'across-hidden-days',
+			view: 'month',
+			settings: { weekends: 'false' },
+		})
+		const month = new MonthGrid(page)
+
+		await dragTo(page, month.bar('trip-1').nth(1), month.cellOn('2025-03-18'))
+
+		await expect
+			.poll(async () => (await month.eventNamed('Weekend trip')).start)
+			.toMatch(/^2025-03-15T00:00/)
+	})
+
+	test('a bar over a hidden day is grabbed by the days it draws', async ({
+		page,
+	}) => {
+		// "Mid-week trip" covers Wed 12, Thu 13 and Fri 14, with Thursday hidden:
+		// the bar is two columns, Wednesday and Friday. Grabbing the second column
+		// (Friday, two days into the event) and releasing on Monday 17 starts the
+		// event two days before that, on Saturday 15. Reading the bar as three
+		// equal columns would call the grab Thursday and start it on Sunday 16.
+		await gotoScenario(page, {
+			scenario: 'across-hidden-days',
+			view: 'month',
+			settings: { hiddenDays: 'thursday' },
+		})
+		const month = new MonthGrid(page)
+
+		const bar = month.bar('mid-1')
+		const box = await bar.boundingBox()
+		if (!box) {
+			throw new Error('the bar needs a layout to be grabbed')
+		}
+		const grabX = box.x + box.width * 0.6
+		const grabY = box.y + box.height / 2
+		const target = await month.cellOn('2025-03-17').boundingBox()
+		if (!target) {
+			throw new Error('the target cell needs a layout')
+		}
+
+		await page.mouse.move(grabX, grabY)
+		await page.mouse.down()
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(
+				grabX + ((target.x + target.width / 2 - grabX) * step) / 8,
+				grabY + ((target.y + target.height / 2 - grabY) * step) / 8
+			)
+		}
+		await page.mouse.up()
+
+		await expect
+			.poll(async () => (await month.eventNamed('Mid-week trip')).start)
+			.toMatch(/^2025-03-15T00:00/)
+	})
+})

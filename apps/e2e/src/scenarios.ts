@@ -271,6 +271,40 @@ export const scenarios = {
 		],
 	},
 
+	'across-hidden-days': {
+		description:
+			'Events around a hidden weekend or weekday: one that runs over it, one that starts on a hidden day (Saturday) and one lying wholly on it, so the grids prove they clamp, cut and skip the way a gap in the columns requires.',
+		views: ['week', 'month'],
+		events: [
+			event(
+				'trip-1',
+				'Weekend trip',
+				'2025-03-14T00:00:00.000Z',
+				'2025-03-18T00:00:00.000Z',
+				{ allDay: true }
+			),
+			event(
+				'mid-1',
+				'Mid-week trip',
+				'2025-03-12T00:00:00.000Z',
+				'2025-03-15T00:00:00.000Z',
+				{ allDay: true }
+			),
+			event(
+				'standup-1',
+				'Standup',
+				'2025-03-13T10:00:00.000Z',
+				'2025-03-13T11:00:00.000Z'
+			),
+			event(
+				'market-1',
+				'Saturday market',
+				'2025-03-15T10:00:00.000Z',
+				'2025-03-15T12:00:00.000Z'
+			),
+		],
+	},
+
 	'all-day-events': {
 		description:
 			'All-day and multi-day-all-day events, which live in the all-day row rather than the time grid.',

@@ -3,14 +3,21 @@ import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { WEEK_DAYS_NUMBER_MAP } from '@/config/constants'
 
 /**
- * Converts an optional WeekDays[] list into a Set<number> of day indices
- * (0 = Sunday, 1 = Monday, ...), or undefined if the list is empty.
+ * The days of the week (0 = Sunday, 1 = Monday, ...) a calendar does not draw:
+ * the listed `hiddenDays`, plus Sunday and Saturday when `weekends` is false,
+ * as in FullCalendar (`DateProfileGenerator.ts:397-399`, v7.1.1). `undefined`
+ * when nothing is hidden. The consumer's array is read, never changed.
  */
 export const toHiddenDaysSet = (
-	hiddenDays?: WeekDays[]
+	hiddenDays: WeekDays[] = [],
+	weekends = true
 ): Set<number> | undefined => {
-	if (!hiddenDays || hiddenDays.length === 0) return undefined
-	return new Set(hiddenDays.map((day) => WEEK_DAYS_NUMBER_MAP[day]))
+	const hidden = new Set(hiddenDays.map((day) => WEEK_DAYS_NUMBER_MAP[day]))
+	if (!weekends) {
+		hidden.add(WEEK_DAYS_NUMBER_MAP.sunday)
+		hidden.add(WEEK_DAYS_NUMBER_MAP.saturday)
+	}
+	return hidden.size === 0 ? undefined : hidden
 }
 
 /**

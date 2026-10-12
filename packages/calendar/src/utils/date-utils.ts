@@ -1,5 +1,6 @@
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { isSameDay } from '@ilamy/utils/helpers'
+import { DAYS_IN_WEEK } from '@/config/constants'
 import type { TimeFormat } from '@/types'
 
 /**
@@ -85,6 +86,43 @@ export function getMonthDays(monthDate: Dayjs): Dayjs[] {
 	return Array.from({ length: daysInMonth }, (_, i) =>
 		startOfMonth.add(i, 'day')
 	)
+}
+
+/**
+ * The days a grid draws: `days` without those on a hidden weekday
+ * (0 = Sunday). A grid reads its columns from this list, so a hidden day is
+ * simply not there and its neighbours sit side by side.
+ */
+export const withoutHiddenDays = (
+	days: Dayjs[],
+	hiddenDays: Set<number> | undefined
+): Dayjs[] => {
+	if (!hiddenDays) {
+		return days
+	}
+	return days.filter((day) => !hiddenDays.has(day.day()))
+}
+
+/**
+ * `date`, or the nearest day in `direction` that is not hidden. FullCalendar's
+ * day view does the same when its range falls on hidden days: it steps past
+ * them in the direction of travel (`skipHiddenDays`,
+ * `packages/preact/src/DateProfileGenerator.ts:450-457`, v7.1.1). Callers must
+ * If every day is hidden there is none to move to, so `date` comes back as is.
+ */
+export const skipHiddenDays = (
+	date: Dayjs,
+	hiddenDays: Set<number> | undefined,
+	direction: 1 | -1
+): Dayjs => {
+	let day = date
+	for (let step = 0; step < DAYS_IN_WEEK; step++) {
+		if (!hiddenDays?.has(day.day())) {
+			return day
+		}
+		day = day.add(direction, 'day')
+	}
+	return date
 }
 
 interface GetDayHoursOptions {

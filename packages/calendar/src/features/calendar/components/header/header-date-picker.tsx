@@ -12,7 +12,7 @@ import { type ReactNode, useState } from 'react'
 import { Calendar } from '@/components/ui/calendar'
 import { useDateTimeFormatters } from '@/features/calendar/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { getWeekDays } from '@/utils/date-utils'
+import { getWeekDays, withoutHiddenDays } from '@/utils/date-utils'
 import { MonthGrid } from './month-grid'
 import { YearGrid } from './year-grid'
 
@@ -58,6 +58,7 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 		view,
 		selectDate,
 		firstDayOfWeek,
+		hiddenDays,
 		getViews,
 	} = useSmartCalendarContext((ctx) => ({
 		currentDate: ctx.currentDate,
@@ -65,12 +66,17 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 		view: ctx.view,
 		selectDate: ctx.selectDate,
 		firstDayOfWeek: ctx.firstDayOfWeek,
+		hiddenDays: ctx.hiddenDays,
 		getViews: ctx.getViews,
 	}))
 	const { formatDateRange, formatTitle } = useDateTimeFormatters()
 	const [open, setOpen] = useState(false)
 
-	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
+	// The title names the days the view draws, so hidden ones do not count.
+	const weekDays = withoutHiddenDays(
+		getWeekDays(currentDate, firstDayOfWeek),
+		hiddenDays
+	)
 	const weekStart = weekDays.at(0) ?? currentDate
 	const weekEnd = weekDays.at(-1) ?? currentDate
 

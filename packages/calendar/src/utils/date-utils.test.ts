@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import dayjs from '@ilamy/utils/dayjs'
-import { getDayHours, getMonthWeeks, getWeekDays, isToday } from './date-utils'
+import {
+	getDayHours,
+	getMonthWeeks,
+	getWeekDays,
+	isToday,
+	skipHiddenDays,
+	withoutHiddenDays,
+} from './date-utils'
 
 describe('isToday', () => {
 	it('should return true when the date is today', () => {
@@ -858,6 +865,55 @@ describe('fixTimezoneOffset plugin', () => {
 			const result = d2.startOf('day')
 			// Should not force Tokyo offset
 			expect(result.format('HH:mm')).toBe('00:00')
+		})
+	})
+})
+
+describe('hidden days', () => {
+	// Noon UTC is the same calendar day in every zone from Vancouver to Tokyo.
+	const noon = (dayOfMarch: number) =>
+		dayjs('2025-03-01T12:00:00.000Z').add(dayOfMarch - 1, 'day')
+	const weekend = new Set([0, 6])
+	const dayNumbers = (days: ReturnType<typeof noon>[]) =>
+		days.map((day) => day.date())
+
+	describe('withoutHiddenDays', () => {
+		const week = [10, 11, 12, 13, 14, 15, 16].map(noon)
+
+		it('drops the hidden weekdays and keeps the order', () => {
+			expect(dayNumbers(withoutHiddenDays(week, weekend))).toEqual([
+				10, 11, 12, 13, 14,
+			])
+		})
+
+		it('returns every day when nothing is hidden', () => {
+			expect(dayNumbers(withoutHiddenDays(week, undefined))).toEqual([
+				10, 11, 12, 13, 14, 15, 16,
+			])
+		})
+	})
+
+	describe('skipHiddenDays', () => {
+		it('leaves a visible day alone', () => {
+			expect(skipHiddenDays(noon(14), weekend, 1).date()).toBe(14)
+		})
+
+		it('moves a hidden day forward to the next visible one', () => {
+			expect(skipHiddenDays(noon(15), weekend, 1).date()).toBe(17)
+		})
+
+		it('moves a hidden day back to the previous visible one', () => {
+			expect(skipHiddenDays(noon(16), weekend, -1).date()).toBe(14)
+		})
+
+		it('keeps the time of day', () => {
+			expect(skipHiddenDays(noon(15), weekend, 1).hour()).toBe(noon(15).hour())
+		})
+
+		it('returns the date it was given when every day is hidden', () => {
+			const everyDay = new Set([0, 1, 2, 3, 4, 5, 6])
+			expect(skipHiddenDays(noon(15), everyDay, 1).date()).toBe(15)
+			expect(skipHiddenDays(noon(15), everyDay, -1).date()).toBe(15)
 		})
 	})
 })

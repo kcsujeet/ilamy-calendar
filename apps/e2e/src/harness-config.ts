@@ -27,6 +27,7 @@ export interface UrlConfig {
 	eventSpacing?: number
 	firstDayOfWeek?: WeekDays
 	hiddenDays?: WeekDays[]
+	weekends?: boolean
 	weekViewGranularity?: 'hourly' | 'daily'
 	hideNonBusinessHours?: boolean
 	/** Passed through as written, so an invalid value reaches the calendar. */
@@ -239,6 +240,11 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 		config.hiddenDays = hiddenDays
 			.split(',')
 			.map((day) => oneOf('hiddenDays', day, WEEK_DAYS, String))
+	}
+
+	const weekends = get('weekends')
+	if (weekends !== null) {
+		config.weekends = boolean('weekends', weekends)
 	}
 
 	const granularity = get('granularity')

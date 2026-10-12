@@ -139,7 +139,8 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `slotMinTime` | `string` | `'00:00'` | First visible time in hour grids, `'HH:mm'` or `'HH:mm:ss'` |
 | `slotMaxTime` | `string` | `'24:00'` | End of the visible time in hour grids, exclusive, up to `'24:00'`. Invalid values (or an end not after the start) show the whole day and log one `console.warn` |
 | `slotDuration` | `15 \| 30 \| 60` | `60` | Time-grid granularity (minutes). `60` gives one row per hour with no sub-hour lines; `30` two; `15` four with dashed separators. Applies to day, week, and resource hour views. |
-| `hiddenDays` | `WeekDays[]` | `[]` | Days to hide from vertical week view. Ignored in resource vertical week view with daily granularity (`weekViewGranularity: 'daily'`) — non-contiguous days would break multi-day event positioning. |
+| `hiddenDays` | `WeekDays[]` | `[]` | Days of the week to hide, in the month, week and day views, with or without `resources`, in every orientation and granularity. Not applied to the year view or the agenda plugin. Hiding all seven is ignored with a dev warning. |
+| `weekends` | `boolean` | `true` | `false` hides Saturday and Sunday, as adding both to `hiddenDays` does (the two combine). |
 | `allDaySlot` | `boolean` | `true` | Draw the all-day row in day, week and resource time grids. `false` removes it and all-day events are not shown in those views. |
 | `nowIndicator` | `boolean` | `true` | Draw the current-time line in time grids. |
 | `weekNumbers` | `boolean` | unset | Unset: week number in the week and resource week header corner, none in month view. `true`: also a number in each month row, from the row's first day. `false`: nowhere. |

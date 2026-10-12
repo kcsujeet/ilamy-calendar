@@ -228,13 +228,26 @@ describe('layoutVertical', () => {
 	})
 
 	describe('Discrete (day) grid', () => {
-		const dayDays = Array.from({ length: 7 }, (_, i) =>
-			dayjs(BASE).add(i, 'day')
-		)
+		// A day grid is anchored at a calendar day's midnight, and so is each
+		// event here, which keeps these tests independent of the machine's zone.
+		const gridStart = dayjs(BASE).startOf('day')
+		const dayDays = Array.from({ length: 7 }, (_, i) => gridStart.add(i, 'day'))
+		const mkDayEvent = (
+			id: string,
+			startH: number,
+			endH: number,
+			extra: Partial<CalendarEvent> = {}
+		): CalendarEvent => ({
+			id,
+			title: id,
+			start: gridStart.add(startH, 'hour'),
+			end: gridStart.add(endH, 'hour'),
+			...extra,
+		})
 
 		it('floors/ceils fractional day boundaries', () => {
 			// start 6h (0.25d), end +42h (1.75d): floor→0, ceil→2. height = 2/7.
-			const [p] = position([mkEvent('e', 6, 42)], {
+			const [p] = position([mkDayEvent('e', 6, 42)], {
 				days: dayDays,
 				gridType: 'day',
 			})
@@ -247,7 +260,7 @@ describe('layoutVertical', () => {
 		// timed events alike (daygrid/src/DayTable.tsx has no all-day split, v6.1.21).
 		it('keeps an all-day event, across its days up to the exclusive end', () => {
 			// Days 1-3: starts at day 1's midnight, ends at day 4's (exclusive).
-			const [p] = position([mkEvent('all', 24, 96, { allDay: true })], {
+			const [p] = position([mkDayEvent('all', 24, 96, { allDay: true })], {
 				days: dayDays,
 				gridType: 'day',
 			})
@@ -258,7 +271,7 @@ describe('layoutVertical', () => {
 
 		it('ensures at least 1 unit duration for discrete events', () => {
 			// Zero-duration on the same day: floor/ceil both = 0, guard bumps to 1.
-			const [p] = position([mkEvent('e', 10, 10)], {
+			const [p] = position([mkDayEvent('e', 10, 10)], {
 				days: dayDays,
 				gridType: 'day',
 			})
@@ -363,5 +376,52 @@ describe('layoutVertical on a day the clocks change', () => {
 		const { top, height } = placeNineToTen('2025-10-05')
 		expect(top).toBeCloseTo(9, 6)
 		expect(height).toBeCloseTo(1, 6)
+	})
+})
+
+describe('layoutVertical over hidden days (a day grid)', () => {
+	// Noon UTC is the same calendar day in every zone from Vancouver to Tokyo.
+	const noon = (dayOfJanuary: number) =>
+		dayjs('2025-01-01T12:00:00.000Z').add(dayOfJanuary - 1, 'day')
+	// Thu 9, Fri 10, Mon 13, Tue 14: the weekend between Fri and Mon is hidden.
+	const visibleDays = [noon(9), noon(10), noon(13), noon(14)]
+	const place = (startDay: number, endDay: number) =>
+		layoutVertical({
+			days: visibleDays,
+			gridType: 'day',
+			events: [
+				{
+					id: 'e',
+					title: 'e',
+					start: noon(startDay),
+					end: noon(endDay),
+					allDay: true,
+				},
+			],
+		})
+	const edgesOf = (placed: ReturnType<typeof place>) => {
+		const bar = placed.at(0)
+		return {
+			box: [bar?.top, bar?.height],
+			truncated: [bar?.isTruncatedStart, bar?.isTruncatedEnd],
+		}
+	}
+
+	it('draws one bar over the visible rows on either side of the gap', () => {
+		expect(edgesOf(place(10, 13))).toEqual({
+			box: [25, 50],
+			truncated: [false, false],
+		})
+	})
+
+	it('clamps a bar that starts on a hidden day and marks that end truncated', () => {
+		expect(edgesOf(place(11, 14))).toEqual({
+			box: [50, 50],
+			truncated: [true, false],
+		})
+	})
+
+	it('draws nothing for an event that lies entirely on hidden days', () => {
+		expect(place(11, 12)).toEqual([])
 	})
 })

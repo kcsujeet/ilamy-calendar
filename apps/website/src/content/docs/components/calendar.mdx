@@ -95,7 +95,8 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `slotDuration` | `15 \| 30 \| 60` | `60` | Granularity of the time grid in minutes for day, week, and resource hour views. `60` shows one row per hour with no sub-hour lines; `30` shows two; `15` shows four with dashed separators. **Note**: in v1.7.0 the day-view and resource-day-vertical defaults flipped from 15-minute to hourly slots; pass `slotDuration={15}` to restore the prior look. |
 | `scrollTime` | `string` | - | Initial scroll position for hour-resolution views. Accepts `"HH:mm"` or `"HH:mm:ss"`. Scrolls to the exact minute: `"08:30"` lands halfway into the 8 AM row. Reapplied on navigation, visible hour changes (not a resource added with the same hours), and whenever `scrollTime` changes. Clamps silently to the edge of the nearest visible row when `hideNonBusinessHours` hides the requested hour. Independent of `businessHours`. Requires a fixed calendar height to scroll. |
 | `scrollToNow` | `boolean` | `false` | Open every scrolling grid on the current moment: the current moment (to the minute) in time grids, today's column or row in resource month and daily resource week. Applies only while now is on screen; otherwise falls back to `scrollTime`, or to the start. Reapplied on navigation, visible hour changes, and when the prop changes, not as the clock moves. Requires a fixed calendar height. |
-| `hiddenDays` | `WeekDays[]` | `[]` | Days of the week to hide from the week view. Only applies to vertical week views (regular and resource vertical), not month, day, year, or resource horizontal views. |
+| `hiddenDays` | `WeekDays[]` | `[]` | Days of the week to hide. A hidden day gets no column or row, in the month, week and day views, with or without `resources`, in every orientation. Not applied to the year view or the agenda view. Hiding all seven days is ignored, with a warning in development. |
+| `weekends` | `boolean` | `true` | `false` hides Saturday and Sunday, the same as adding both to `hiddenDays`. |
 | `allDaySlot` | `boolean` | `true` | Show the all-day row in day, week and resource time grids. `false` removes the row and all-day events are not shown in those views. Month, year and agenda views are unaffected, and horizontal resource timelines have no all-day row to hide. |
 | `nowIndicator` | `boolean` | `true` | Show a line at the current time in time grids. |
 | `weekNumbers` | `boolean` | - | Unset keeps the default: the week number sits in the corner of the week and resource week headers, and month view shows none. `true` also shows a number at the start of each month row, counted from the row's first day. `false` hides week numbers everywhere. Resource month grids show no week numbers. |
@@ -568,7 +569,9 @@ When enabled, the calendar will only display the hours defined in the `businessH
 
 ## Hidden Days
 
-Hide specific weekdays from the week view. Hidden day columns are removed and the remaining columns expand to fill the available space. This only applies to vertical week views (regular and resource vertical) — it does not affect month, day, year, or resource horizontal week views.
+Hide specific weekdays. A hidden day gets no column or row, and the remaining days expand to fill the available space. It applies to the month, week and day views, with or without resources and in every orientation, but not to the year view or the agenda view.
+
+In the day view, previous, next and today skip hidden days, and the view opens on the next visible day when it is given a hidden one. In the week view the title names only the days that are drawn.
 
 ```tsx title="Hiding Weekends"
 import { IlamyCalendar } from '@ilamy/calendar';
@@ -592,8 +595,16 @@ function BusinessWeekCalendar() {
 />
 ```
 
+`weekends={false}` is shorthand for hiding Saturday and Sunday:
+
+```tsx title="Hiding Weekends with weekends"
+<IlamyCalendar events={events} initialView="month" weekends={false} />
+```
+
+An event that runs across a hidden day is drawn as one bar over the days that are drawn. One that starts or ends on a hidden day is cut at the nearest day that is drawn (`isStart` or `isEnd` in the `renderEvent` segment is `false` there), and one that lies wholly on hidden days is not drawn.
+
 :::note
-Events that fall on hidden days are not deleted — they simply aren't visible in the week view. Switching to month or day view will still show those events.
+Events that fall on hidden days are not deleted — they simply aren't visible while those days are hidden. They are still returned by your callbacks and shown by the year view and the agenda view.
 :::
 
 ## Custom Hour Labels

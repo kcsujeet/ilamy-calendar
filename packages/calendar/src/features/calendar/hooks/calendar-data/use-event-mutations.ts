@@ -3,6 +3,7 @@ import { useCallback } from 'react'
 import {
 	type ChangeOrigin,
 	type MutationCallbacks,
+	toEventDelta,
 	toRowChange,
 	toUpdateDelta,
 } from './event-changes'
@@ -61,6 +62,7 @@ export const useEventMutations = ({
 				action: 'update',
 				event: eventToUpdate,
 				delta: toUpdateDelta(eventToUpdate, newEvent),
+				endDelta: toEventDelta(eventToUpdate.end, newEvent.end),
 			}
 			const context = { previousEvents: currentEvents, setCurrentEvents }
 			const change = toRowChange(origin, newEvent, context)

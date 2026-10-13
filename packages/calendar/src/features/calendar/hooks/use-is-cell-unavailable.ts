@@ -1,3 +1,4 @@
+import type { BusinessHours } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useMemo } from 'react'
 import { useCalendarCellContext } from '@/features/calendar/hooks/use-calendar-cell-context'
@@ -6,6 +7,52 @@ import {
 	isBusinessDay,
 	isBusinessHour,
 } from '@/features/calendar/utils/business-hours'
+
+interface BusinessAvailabilityInput {
+	day: Dayjs
+	gridType: 'day' | 'hour'
+	slotDurationMinutes: number
+	businessHours: BusinessHours | BusinessHours[] | undefined
+}
+
+/**
+ * Whether a cell lies outside business hours. Whole-slot containment: an
+ * hour-grid slot is business only if it fits entirely inside business hours,
+ * so slots partially crossing a sub-hour boundary (e.g. a 9:00 hour cell with
+ * a 9:15 start) count as non-business. A day cell is judged by its day.
+ */
+export const isOutsideBusinessHours = ({
+	day,
+	gridType,
+	slotDurationMinutes,
+	businessHours,
+}: BusinessAvailabilityInput): boolean => {
+	if (gridType === 'hour') {
+		const isBusiness = isBusinessHour({
+			date: day,
+			hour: day.hour(),
+			minute: day.minute(),
+			durationMinutes: slotDurationMinutes,
+			businessHours,
+		})
+		return !isBusiness
+	}
+	return !isBusinessDay(day, businessHours)
+}
+
+/**
+ * Only the month grid pads itself: its first and last rows carry days from
+ * the neighbouring months so every week is seven cells wide, and those are
+ * context rather than part of the month being edited. Every other grid
+ * shows exactly the days it means to, and those days are free to cross a
+ * month boundary — the week of 31 March runs into April, and April is not
+ * padding there.
+ */
+export const isPaddingDay = (
+	day: Dayjs,
+	view: string,
+	currentDate: Dayjs
+): boolean => view === 'month' && day.month() !== currentDate.month()
 
 interface CellAvailabilityInput {
 	day: Dayjs
@@ -28,32 +75,16 @@ export const useIsCellUnavailable = ({
 	const { currentDate, view } = useCalendarCellContext()
 	const effectiveBusinessHours = useEffectiveBusinessHours(resourceId)
 
-	// Only the month grid pads itself: its first and last rows carry days from
-	// the neighbouring months so every week is seven cells wide, and those are
-	// context rather than part of the month being edited. Every other grid
-	// shows exactly the days it means to, and those days are free to cross a
-	// month boundary — the week of 31 March runs into April, and April is not
-	// padding there.
-	const isMonthView = view === 'month'
-	const isOtherMonth = day.month() !== currentDate.month()
-	const isOutsideDisplayedMonth = isMonthView && isOtherMonth
-
-	// Whole-slot containment: an hour-grid slot is business only if it fits
-	// entirely inside business hours, so slots partially crossing a sub-hour
-	// boundary (e.g. a 9:00 hour cell with a 9:15 start) count as non-business.
-	const isBusiness = useMemo(() => {
-		if (gridType === 'hour') {
-			return isBusinessHour({
-				date: day,
-				hour: day.hour(),
-				minute: day.minute(),
-				durationMinutes: slotDurationMinutes,
+	const isClosed = useMemo(
+		() =>
+			isOutsideBusinessHours({
+				day,
+				gridType,
+				slotDurationMinutes,
 				businessHours: effectiveBusinessHours,
-			})
-		}
+			}),
+		[gridType, day, slotDurationMinutes, effectiveBusinessHours]
+	)
 
-		return isBusinessDay(day, effectiveBusinessHours)
-	}, [gridType, day, slotDurationMinutes, effectiveBusinessHours])
-
-	return !isBusiness || isOutsideDisplayedMonth
+	return isClosed || isPaddingDay(day, view, currentDate)
 }

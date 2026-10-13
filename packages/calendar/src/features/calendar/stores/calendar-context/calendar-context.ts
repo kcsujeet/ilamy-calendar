@@ -29,6 +29,8 @@ export interface CalendarContextType
 			| 'disableDragAndDrop'
 			| 'editable'
 			| 'eventStartEditable'
+			| 'eventDurationEditable'
+			| 'eventResizableFromStart'
 			| 'headerComponent'
 			| 'headerClassName'
 			| 'renderEventForm'

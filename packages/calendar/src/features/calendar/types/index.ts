@@ -283,7 +283,20 @@ export interface IlamyCalendarProps {
 	 */
 	eventStartEditable?: boolean
 	/**
-	 * Vetoes a candidate placement while an event is dragged. Called when the
+	 * Whether events can be resized by dragging an edge. Resize needs a mouse
+	 * or a pen: on touch-only devices events can be moved but not resized until
+	 * event selection lands. A per-event `durationEditable` beats it. The end edge always shows a handle when
+	 * allowed; the start edge needs `eventResizableFromStart`.
+	 * @default editable
+	 */
+	eventDurationEditable?: boolean
+	/**
+	 * Also show a resize handle on the start edge of an event.
+	 * @default false
+	 */
+	eventResizableFromStart?: boolean
+	/**
+	 * Vetoes a candidate placement while an event is dragged or resized. Called when the
 	 * hovered placement changes, not on every pointer move; returning `false`
 	 * shows the not-allowed cursor and a release there changes nothing.
 	 * `draggedEvent` is the event as it was before the drag. It does not apply

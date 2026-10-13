@@ -42,6 +42,7 @@ The core event type used throughout the library.
 | `data` | `Record<string, unknown>` | no | Custom application metadata |
 | `editable` | `boolean` | no | Whether this event can be moved; beats the calendar's `editable` |
 | `startEditable` | `boolean` | no | Whether this event can be moved; defaults to `editable` |
+| `durationEditable` | `boolean` | no | Whether this event can be resized by its edges; defaults to `editable` |
 
 ### `end` is exclusive
 
@@ -146,7 +147,9 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `disableDragAndDrop` | `boolean` | — | **Deprecated**, use `editable={false}`. Only sets the `editable` default, so an explicit `eventStartEditable` still enables moving. Kept until 4.0 |
 | `editable` | `boolean` | `true` | Events can be moved |
 | `eventStartEditable` | `boolean` | `editable` | Events can be moved |
-| `eventAllow` | `(dropInfo: EventDropInfo, draggedEvent: CalendarEvent) => boolean` | — | Veto a candidate placement while dragging. `EventDropInfo` is `{ start, end, allDay, resourceId? }`; `draggedEvent` is the event before the drag. Asked once per placement change, not per pointer move. Not applied to the event form or drag-to-create |
+| `eventDurationEditable` | `boolean` | `editable` | Events can be resized by dragging an edge |
+| `eventResizableFromStart` | `boolean` | `false` | Also show a resize handle on the start edge. The end handle shows whenever resizing is allowed. Resize needs a mouse or pen: on touch-only devices events can be moved but not resized until event selection lands |
+| `eventAllow` | `(dropInfo: EventDropInfo, draggedEvent: CalendarEvent) => boolean` | — | Veto a candidate placement while dragging or resizing. `EventDropInfo` is `{ start, end, allDay, resourceId? }`; `draggedEvent` is the event before the drag. Asked once per placement change, not per pointer move. Not applied to the event form or drag-to-create |
 | `dayMaxEvents` | `number` | `4` | Max events per day in month view |
 | `onMoreEventsClick` | `(day: Dayjs, events: CalendarEvent[]) => void` | — | Called when the "+N more" overflow indicator is clicked, with the cell's day and full event list. Overrides the built-in all-events dialog when provided |
 | `eventSpacing` | `number` | `1` | Gap between stacked events (px) |
@@ -269,6 +272,7 @@ interface EventsChange {
   updated: CalendarEvent[]  // the rows onEventUpdate receives
   deleted: CalendarEvent[]  // the rows onEventDelete receives
   delta?: EventDelta        // 'update' only: how far the start moved (zero if it did not)
+  endDelta?: EventDelta     // 'update' only: how far the end moved (zero if it did not)
   revert: () => void        // undoes the whole action in the calendar's store; fires no callbacks
 }
 
@@ -283,6 +287,12 @@ FullCalendar's `diffDayAndTime` counts it, `headless-calendar/src/marker.ts:48-5
 a clock change keeps the event at the same time of day. Both starts are read in the calendar's zone from their
 instants. A timed event that became all-day is measured from the start of its own day
 (`EventDragging.ts:454`, v7.1.1); an all-day event moved to a timed slot from its midnight start.
+
+`endDelta` is the same measure for the end. A resize from the end edge sets only `endDelta`, a resize from the
+start edge only `delta`, and a move sets both to the same amount, except that a timed event moved onto the
+all-day row has `delta` measured from the start of its day, so the two can differ. FullCalendar reports a resize through a separate `eventResize`
+callback with `startDelta` and `endDelta` (`EventResizing.ts:222-229`, v7.1.1); ilamy reports every action once,
+through `onEventsChange` (#309), so `delta` plays the part of `startDelta` and there is no second callback.
 
 `revert` removes `added`, restores the previous version of every row in `updated` and puts `deleted` back
 where it was. If a later action edited one of those rows, that edit is overwritten (a store merge, as

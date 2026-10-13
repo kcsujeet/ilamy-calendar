@@ -5,6 +5,7 @@ import {
 	type ChangeOrigin,
 	dispatchMutationResult,
 	type MutationCallbacks,
+	toEventDelta,
 	toMutationResult,
 	toUpdateDelta,
 } from './event-changes'
@@ -62,7 +63,14 @@ export const usePluginMutations = ({
 			})
 			const updatedEvent = { ...event, ...updates }
 			const delta = toUpdateDelta(event, updatedEvent)
-			const origin: ChangeOrigin = { action: 'update', event, scope, delta }
+			const endDelta = toEventDelta(event.end, updatedEvent.end)
+			const origin: ChangeOrigin = {
+				action: 'update',
+				event,
+				scope,
+				delta,
+				endDelta,
+			}
 			const mutationResult = toMutationResult(editResult, origin, updatedEvent)
 			dispatchMutationResult(mutationResult, origin, callbacks, currentEvents)
 		},

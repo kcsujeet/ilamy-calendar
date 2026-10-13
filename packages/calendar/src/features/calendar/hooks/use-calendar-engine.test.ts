@@ -1305,6 +1305,60 @@ describe('useCalendarEngine', () => {
 			})
 		})
 
+		describe('endDelta', () => {
+			const getChange = (updates: Partial<CalendarEvent>) => {
+				const { engine, onEventsChange } = renderWithChanges([createEvent()])
+				act(() => engine().updateEvent('1', updates))
+				return onEventsChange.mock.calls.at(0)?.at(0)
+			}
+
+			it('is how far the end moved, with a zero delta for a resize', () => {
+				const change = getChange({ end: dayjs('2025-01-15T11:30:00.000Z') })
+				expect(change?.endDelta).toEqual({ days: 0, milliseconds: 1_800_000 })
+				expect(change?.delta).toEqual({ days: 0, milliseconds: 0 })
+			})
+
+			it('is zero for a resize from the start, which sets delta instead', () => {
+				const change = getChange({ start: dayjs('2025-01-15T09:30:00.000Z') })
+				expect(change?.endDelta).toEqual({ days: 0, milliseconds: 0 })
+				expect(change?.delta).toEqual({ days: 0, milliseconds: -1_800_000 })
+			})
+
+			it('is undefined for an add and a delete', () => {
+				const { engine, onEventsChange } = renderWithChanges([createEvent()])
+				act(() => engine().addEvent(createEvent({ id: 'new' })))
+				act(() => engine().deleteEvent('1'))
+				const endDeltas = onEventsChange.mock.calls.map(
+					([change]) => change.endDelta
+				)
+				expect(endDeltas).toEqual([undefined, undefined])
+			})
+
+			it('is the move of the end for a scoped recurring edit', () => {
+				const { engine, onEventsChange } = renderRecurrenceEngine([
+					createRecurringEvent(),
+				])
+				const occurrence = createEvent({
+					id: 'recurring-1_2',
+					uid: 'recurring-1@ilamy.calendar',
+					start: dayjs('2025-01-13T10:00:00.000Z'),
+					end: dayjs('2025-01-13T11:00:00.000Z'),
+				})
+				act(() =>
+					engine().applyScopedEdit(
+						occurrence,
+						{
+							start: dayjs('2025-01-13T10:00:00.000Z'),
+							end: dayjs('2025-01-13T12:00:00.000Z'),
+						},
+						'this'
+					)
+				)
+				const change = onEventsChange.mock.calls.at(0)?.at(0)
+				expect(change?.endDelta).toEqual({ days: 0, milliseconds: 3_600_000 })
+			})
+		})
+
 		describe('revert', () => {
 			const renderReverting = (events: CalendarEvent[]) => {
 				const onEventAdd = vi.fn()

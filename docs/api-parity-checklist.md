@@ -14,7 +14,7 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 
 ## Tier 2: Important for Specific Use Cases
 
-- [ ] **Event resize** — `onEventResize` with delta. User drags event edge to change duration. Currently only drag-to-move is supported
+- [x] **Event resize** — the user drags an event's end edge (and the start edge with `eventResizableFromStart`) to change its duration, gated by `eventDurationEditable` / per-event `durationEditable` (3.3.3). Reported through `onEventsChange` with `delta` and `endDelta`, not a separate `onEventResize`
 - [ ] **External event dragging** — `onEventReceive` / `onDrop`. Drag elements from outside the calendar onto a cell to create events. Requires interaction with external `@dnd-kit` sources
 - [x] **`eventAllow(dropInfo, draggedEvent) => boolean`** — vetoes a candidate placement while dragging, with `editable` / `eventStartEditable` and per-event flags (3.3.2). `selectAllow` is still open (4.1.3)
 - [x] **`delta` in DnD callbacks** — done: `EventsChange.delta` is `{ days, milliseconds }` on every update (3.3.1). Was: `onEventUpdate` should include `{ delta: { days: number, hours: number, minutes: number } }` so consumers don't need to manually diff old/new dates

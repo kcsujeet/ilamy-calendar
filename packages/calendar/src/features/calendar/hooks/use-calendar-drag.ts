@@ -6,13 +6,22 @@ import type {
 	SensorDescriptor,
 } from '@dnd-kit/core'
 import { MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
-import type { CalendarEvent } from '@ilamy/types'
+import type { CalendarEvent, Resource } from '@ilamy/types'
 import { useEffect, useRef, useState } from 'react'
 import {
 	calculateDropTimes,
+	calculateResizeTimes,
 	type DropCellData,
+	getCellSpan,
 	getUpdatedEvent,
+	isTimeSlotDrop,
+	type ResizeEdge,
 } from '@/features/calendar/components/drag-and-drop/dnd-utils'
+import type { ResizeGranularity } from '@/features/calendar/components/draggable-event/resize-handle'
+import {
+	isOutsideBusinessHours,
+	isPaddingDay,
+} from '@/features/calendar/hooks/use-is-cell-unavailable'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { DragPreviewState } from '@/features/calendar/stores/drag-preview-context'
 import { getDragCursor } from '@/features/calendar/utils/drag-preview'
@@ -120,6 +129,67 @@ const readGrab = ({
 	}
 }
 
+/** Which edge of which event a resize handle was grabbed on, and where it was drawn. */
+interface ResizeGrab {
+	edge: ResizeEdge
+	granularity: ResizeGranularity
+	/** The resource lane the handle's bar was drawn in; a resize never leaves it. */
+	sourceResourceId?: string | number
+}
+
+const readResize = ({
+	active,
+}: DragStartEvent): {
+	calendarEvent: CalendarEvent
+	resize: ResizeGrab
+} | null => {
+	const data = active.data.current
+	if (data?.type !== 'calendar-event-resize') {
+		return null
+	}
+	const { edge, granularity, sourceResourceId } = data
+	return {
+		calendarEvent: data.event as CalendarEvent,
+		resize: { edge, granularity, sourceResourceId },
+	}
+}
+
+/**
+ * Where the resized event would land, given the cell under the pointer. A
+ * resize that makes no span, or hovers a cell of the other component (the
+ * all-day row against the time grid), leaves the event as it was: nothing to
+ * commit and nothing to refuse, as FullCalendar confines a resize to the
+ * component it started in (`interaction.ts:44-48`, v7.1.1).
+ */
+const getResizePlacement = (
+	resizedEvent: CalendarEvent,
+	resize: ResizeGrab,
+	overData: DropCellData | undefined,
+	isClosedOnOwnLane: boolean
+): DragPreviewState => {
+	const unchanged: DragPreviewState = {
+		event: resizedEvent,
+		start: resizedEvent.start,
+		end: resizedEvent.end,
+		resourceId: resize.sourceResourceId ?? resizedEvent.resourceId,
+		allDay: Boolean(resizedEvent.allDay),
+		isDropAllowed: true,
+	}
+	if (!overData) {
+		return unchanged
+	}
+	const isSlotBar = resize.granularity === 'slot'
+	const isOverOtherComponent = isTimeSlotDrop(overData) !== isSlotBar
+	if (isOverOtherComponent) {
+		return unchanged
+	}
+	const resized = calculateResizeTimes(resizedEvent, overData, resize.edge)
+	if (!resized) {
+		return unchanged
+	}
+	return { ...unchanged, ...resized, isDropAllowed: !isClosedOnOwnLane }
+}
+
 /** Where the dragged event would land, given the cell under the pointer. */
 const getCandidatePlacement = (
 	activeEvent: CalendarEvent,
@@ -165,6 +235,8 @@ const useDragCursor = (dragPreview: DragPreviewState | null) => {
 	}, [cursor])
 }
 
+type CellSpan = NonNullable<ReturnType<typeof getCellSpan>>
+
 /*
  * Module constants, not inline literals: dnd-kit's useSensor memoizes on the
  * options object's identity, so a fresh literal made a new sensor list on every
@@ -192,13 +264,27 @@ const useDragSensors = () => {
 export const useCalendarDrag = (
 	commitDrop: (event: CalendarEvent, updates: Partial<CalendarEvent>) => void
 ): CalendarDrag => {
-	const { slotDuration, eventAllow } = useSmartCalendarContext((context) => ({
+	const {
+		slotDuration,
+		eventAllow,
+		businessHours,
+		getResourceById,
+		isCellDisabled,
+		view,
+		currentDate,
+	} = useSmartCalendarContext((context) => ({
 		slotDuration: context.slotDuration,
 		eventAllow: context.eventAllow,
+		businessHours: context.businessHours,
+		getResourceById: context.getResourceById,
+		isCellDisabled: context.isCellDisabled,
+		view: context.view,
+		currentDate: context.currentDate,
 	}))
 	const sensors = useDragSensors()
 	const activeEventRef = useRef<CalendarEvent>(null)
 	const grabOffsetRef = useRef<GrabOffset>(NO_GRAB_OFFSET)
+	const resizeRef = useRef<ResizeGrab | null>(null)
 	const pendingGrabRef = useRef<PendingGrab | null>(null)
 	const overlayRef = useRef<DragOverlayHandle | null>(null)
 	const eventAllowVerdictRef = useRef<EventAllowVerdict | null>(null)
@@ -208,6 +294,7 @@ export const useCalendarDrag = (
 	const endDrag = () => {
 		activeEventRef.current = null
 		grabOffsetRef.current = NO_GRAB_OFFSET
+		resizeRef.current = null
 		pendingGrabRef.current = null
 		eventAllowVerdictRef.current = null
 		setDragPreview(null)
@@ -245,6 +332,10 @@ export const useCalendarDrag = (
 		draggedEvent: CalendarEvent,
 		overData: DropCellData | undefined
 	): DragPreviewState => {
+		const resize = resizeRef.current
+		if (resize) {
+			return getAllowedResizePlacement(draggedEvent, resize, overData)
+		}
 		const placement = getCandidatePlacement(
 			draggedEvent,
 			overData,
@@ -255,7 +346,89 @@ export const useCalendarDrag = (
 		return { ...placement, isDropAllowed: isAllowed }
 	}
 
+	const isClosedByBusinessHours = (
+		lane: Resource | undefined,
+		hovered: DropCellData,
+		span: CellSpan
+	): boolean => {
+		const gridType = isTimeSlotDrop(hovered) ? 'hour' : 'day'
+		return isOutsideBusinessHours({
+			day: span.start,
+			gridType,
+			slotDurationMinutes: span.end.diff(span.start, 'minute'),
+			businessHours: lane?.businessHours ?? businessHours,
+		})
+	}
+
+	const isClosedByConsumer = (
+		lane: Resource | undefined,
+		hovered: DropCellData,
+		span: CellSpan
+	): boolean =>
+		Boolean(
+			isCellDisabled?.({ ...span, resource: lane, allDay: hovered.allDay })
+		)
+
+	/**
+	 * Whether the hovered time is closed on the lane the resize started in, which
+	 * is where the event stays: business hours of that lane's resource, the
+	 * month's padding days, and the consumer's `isCellDisabled`. The hovered
+	 * cell's own `disabled` is about ITS lane, which a resize never moves to.
+	 */
+	const isClosedOnLane = (
+		laneResourceId: string | number | undefined,
+		hovered: DropCellData | undefined
+	): boolean => {
+		const span = hovered ? getCellSpan(hovered) : undefined
+		if (!hovered || !span) {
+			return false
+		}
+		const lane =
+			laneResourceId === undefined
+				? undefined
+				: getResourceById?.(laneResourceId)
+		const isPadding = isPaddingDay(span.start, view, currentDate)
+		return (
+			isClosedByBusinessHours(lane, hovered, span) ||
+			isPadding ||
+			isClosedByConsumer(lane, hovered, span)
+		)
+	}
+
+	/**
+	 * Like `getAllowedPlacement`, for a resize. A resize that changes nothing is
+	 * not a placement anyone can refuse, so the consumer is not asked about it.
+	 */
+	const getAllowedResizePlacement = (
+		resizedEvent: CalendarEvent,
+		resize: ResizeGrab,
+		overData: DropCellData | undefined
+	): DragPreviewState => {
+		const laneId = resize.sourceResourceId ?? resizedEvent.resourceId
+		const isClosed = isClosedOnLane(laneId, overData)
+		const placement = getResizePlacement(
+			resizedEvent,
+			resize,
+			overData,
+			isClosed
+		)
+		const isUnchanged =
+			placement.start.isSame(resizedEvent.start) &&
+			placement.end.isSame(resizedEvent.end)
+		const isAllowed =
+			placement.isDropAllowed &&
+			(isUnchanged || isAllowedByConsumer(resizedEvent, placement))
+		return { ...placement, isDropAllowed: isAllowed }
+	}
+
 	const onDragStart = (event: DragStartEvent) => {
+		const resizeGrab = readResize(event)
+		if (resizeGrab) {
+			// No chip for a resize: the snapped preview in the grid is the feedback.
+			activeEventRef.current = resizeGrab.calendarEvent
+			resizeRef.current = resizeGrab.resize
+			return
+		}
 		const grabbed = readGrab(event)
 		if (!grabbed) {
 			return
@@ -316,7 +489,32 @@ export const useCalendarDrag = (
 		})
 	}
 
+	const commitResize = (
+		resizedEvent: CalendarEvent,
+		resize: ResizeGrab,
+		releasedOn: DropCellData | undefined
+	) => {
+		const placement = getAllowedResizePlacement(
+			resizedEvent,
+			resize,
+			releasedOn
+		)
+		const { start, end } = placement
+		const isChanged =
+			!start.isSame(resizedEvent.start) || !end.isSame(resizedEvent.end)
+		if (placement.isDropAllowed && isChanged) {
+			commitDrop(resizedEvent, { start, end })
+		}
+	}
+
 	const onDragEnd = (event: DragEndEvent) => {
+		const resize = resizeRef.current
+		const resizedEvent = activeEventRef.current
+		if (resize && resizedEvent) {
+			commitResize(resizedEvent, resize, event.over?.data.current)
+			endDrag()
+			return
+		}
 		const dropped = getUpdatedEvent(
 			event,
 			activeEventRef.current,

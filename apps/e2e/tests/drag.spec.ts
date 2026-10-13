@@ -1091,3 +1091,496 @@ test.describe('change info', () => {
 		expect(change.delta).toEqual({ days: -3, milliseconds: -27_000_000 })
 	})
 })
+
+// Resizing an event by dragging an edge (kcsujeet/ilamy-calendar#93). A handle
+// is a pointer affordance on the end edge, and on the start edge with
+// `eventResizableFromStart`; FullCalendar's equivalent is `eventResizableFromStart`
+// (https://fullcalendar.io/docs/eventResizableFromStart).
+test.describe('resize', () => {
+	/**
+	 * Opens a scenario and waits out the header animations. A handle is a few
+	 * pixels wide, so a press aimed at a half-faded, still-moving bar lands on
+	 * its body and moves the event instead.
+	 */
+	const openSettled = async (
+		page: import('@playwright/test').Page,
+		options: Parameters<typeof gotoScenario>[1]
+	) => {
+		await gotoScenario(page, options)
+		await page.evaluate(() =>
+			Promise.all(
+				document.getAnimations().map((animation) => animation.finished)
+			)
+		)
+	}
+
+	const handleOf = (
+		bar: import('@playwright/test').Locator,
+		edge: 'start' | 'end'
+	) => bar.locator(`[data-resize-handle="${edge}"]`)
+
+	/** The cell of a lane (resource row or column) whose range opens at this instant. */
+	const laneCell = (
+		page: import('@playwright/test').Page,
+		resourceId: string,
+		startISO: string
+	) =>
+		page
+			.locator(`[data-resource-id="${resourceId}"][data-start="${startISO}"]`)
+			.first()
+
+	test('the end handle drags a timed event longer in the week view', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+
+		// 09:30-10:00 to 09:30-11:00: the pointer ends on the 10:30 slot.
+		await dragTo(
+			page,
+			handleOf(grid.bars('basic-1'), 'end'),
+			grid.slotAt('2025-03-12T10:30')
+		)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Morning stand-up')
+		expect(row.start).toBe('2025-03-12T09:30:00.000Z')
+		expect(row.end).toBe('2025-03-12T11:00:00.000Z')
+		const [change] = await grid.eventChanges()
+		expect(change.endDelta).toEqual({ days: 0, milliseconds: 3_600_000 })
+		expect(change.delta).toEqual({ days: 0, milliseconds: 0 })
+	})
+
+	test('the snapped preview shows the resized bar while the handle is held', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+
+		await pressAndMoveTo(
+			page,
+			handleOf(grid.bars('basic-1'), 'end'),
+			grid.slotAt('2025-03-12T10:30')
+		)
+
+		await expect(grid.dragMirror).toHaveCount(1)
+		await page.mouse.up()
+	})
+
+	test('the start handle needs eventResizableFromStart, then drags the start earlier', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '09:00' },
+		})
+		await expect(page.locator('[data-resize-handle="start"]')).toHaveCount(0)
+
+		// Tall, so dragging up has nothing to auto-scroll.
+		await page.setViewportSize({ width: 1280, height: 1800 })
+		await openSettled(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: {
+				slot: 30,
+				scrollTime: '00:00',
+				eventResizableFromStart: 'true',
+			},
+		})
+		const grid = new TimeGrid(page)
+		await dragTo(
+			page,
+			handleOf(grid.bars('basic-1'), 'start'),
+			grid.slotAt('2025-03-12T08:30')
+		)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Morning stand-up')
+		expect(row.start).toBe('2025-03-12T08:30:00.000Z')
+		expect(row.end).toBe('2025-03-12T10:00:00.000Z')
+		const [change] = await grid.eventChanges()
+		expect(change.delta).toEqual({ days: 0, milliseconds: -3_600_000 })
+		expect(change.endDelta).toEqual({ days: 0, milliseconds: 0 })
+	})
+
+	test('shrinking an event past its start keeps it as it was and reports nothing', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '07:00' },
+		})
+		const grid = new TimeGrid(page)
+
+		await pressAndMoveTo(
+			page,
+			handleOf(grid.bars('basic-1'), 'end'),
+			grid.slotAt('2025-03-12T08:00')
+		)
+		expect(await page.evaluate(() => document.body.style.cursor)).toBe('')
+		await page.mouse.up()
+
+		const row = await grid.eventNamed('Morning stand-up')
+		expect(row.start).toBe('2025-03-12T09:30:00.000Z')
+		expect(row.end).toBe('2025-03-12T10:00:00.000Z')
+		expect(await grid.eventChanges()).toEqual([])
+	})
+
+	test('the end handle drags an all-day event two days longer in the month grid', async ({
+		page,
+	}) => {
+		await openSettled(page, { scenario: 'all-day-events', view: 'month' })
+		const month = new MonthGrid(page)
+
+		// 'Public holiday' is the 12th; the pointer ends on the 14th.
+		await dragTo(
+			page,
+			handleOf(month.bar('allday-1'), 'end'),
+			month.cellOn('2025-03-14')
+		)
+
+		await expect.poll(async () => (await month.eventChanges()).length).toBe(1)
+		const row = await month.eventNamed('Public holiday')
+		expect(row.start).toBe('2025-03-12T00:00:00.000Z')
+		expect(row.end).toBe('2025-03-15T00:00:00.000Z')
+		const [change] = await month.eventChanges()
+		expect(change.endDelta).toEqual({ days: 2, milliseconds: 0 })
+		expect(row.allDay).toBe(true)
+	})
+
+	test('the end handle resizes onto the next week row of the month grid', async ({
+		page,
+	}) => {
+		await openSettled(page, { scenario: 'all-day-events', view: 'month' })
+		const month = new MonthGrid(page)
+
+		await dragTo(
+			page,
+			handleOf(month.bar('allday-2'), 'end'),
+			month.cellOn('2025-03-18')
+		)
+
+		await expect.poll(async () => (await month.eventChanges()).length).toBe(1)
+		const row = await month.eventNamed('Off-site')
+		expect(row.start).toBe('2025-03-13T00:00:00.000Z')
+		expect(row.end).toBe('2025-03-19T00:00:00.000Z')
+	})
+
+	test('the end handle resizes a booking along the horizontal resource day, in its own lane', async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 2400, height: 900 })
+		await openSettled(page, {
+			scenario: 'resources',
+			view: 'day',
+			orientation: 'horizontal',
+		})
+		const grid = new TimeGrid(page)
+		const bar = page.getByTestId('horizontal-event-res-1')
+
+		// Released over ANOTHER resource's 11:00 hour: the end follows the time,
+		// the booking stays with Room A.
+		await dragTo(
+			page,
+			handleOf(bar, 'end'),
+			laneCell(page, 'r2', '2025-03-12T11:00:00.000Z')
+		)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Room A booking')
+		expect(row.resourceId).toBe('r1')
+		expect(row.start).toBe('2025-03-12T09:00:00.000Z')
+		expect(row.end).toBe('2025-03-12T12:00:00.000Z')
+	})
+
+	test('the end handle resizes a booking in the vertical resource week, in its own column', async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 2400, height: 900 })
+		await openSettled(page, {
+			scenario: 'resources',
+			view: 'week',
+			orientation: 'vertical',
+			settings: { slot: 30, scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+		const bar = grid.bars('res-2')
+
+		// Room B 10:00-11:00; released over ANOTHER column's 11:30 slot.
+		await dragTo(
+			page,
+			handleOf(bar, 'end'),
+			laneCell(page, 'r3', '2025-03-12T11:30:00.000Z')
+		)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Room B booking')
+		expect(row.resourceId).toBe('r2')
+		expect(row.end).toBe('2025-03-12T12:00:00.000Z')
+	})
+
+	test('eventDurationEditable=false shows no handle and still moves the event', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: {
+				slot: 30,
+				scrollTime: '09:00',
+				eventDurationEditable: 'false',
+			},
+		})
+		const grid = new TimeGrid(page)
+		await expect(grid.bars('basic-1')).toBeVisible()
+		await expect(page.locator('[data-resize-handle]')).toHaveCount(0)
+
+		await dragTo(
+			page,
+			grid.event('Morning stand-up').first(),
+			grid.slotAt('2025-03-13T10:00')
+		)
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+	})
+
+	test('an event with durationEditable=false has no handle while its neighbour does', async ({
+		page,
+	}) => {
+		await openSettled(page, { scenario: 'edit-permissions', view: 'month' })
+		const month = new MonthGrid(page)
+
+		await expect(month.bar('fixed-length-1')).toBeVisible()
+		await expect(handleOf(month.bar('fixed-length-1'), 'end')).toHaveCount(0)
+		await expect(handleOf(month.bar('stretchy-1'), 'end')).toHaveCount(1)
+	})
+
+	test('a single-day timed event in the month grid has no handle', async ({
+		page,
+	}) => {
+		await openSettled(page, { scenario: 'basic', view: 'month' })
+		const month = new MonthGrid(page)
+
+		await expect(month.event('Earlier in the month').first()).toBeVisible()
+		await expect(page.locator('[data-resize-handle]')).toHaveCount(0)
+	})
+
+	test('eventAllow refuses a resize onto a weekend: not-allowed cursor, nothing changes', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'all-day-events',
+			view: 'month',
+			settings: { eventAllow: 'no-weekend-end' },
+		})
+		const month = new MonthGrid(page)
+
+		// 'Off-site' ends before the 15th; the pointer goes to Saturday the 15th.
+		await pressAndMoveTo(
+			page,
+			handleOf(month.bar('allday-2'), 'end'),
+			month.cellOn('2025-03-15')
+		)
+		await expect
+			.poll(() => page.evaluate(() => document.body.style.cursor))
+			.toBe('not-allowed')
+		await expect(month.dragMirror).toHaveCount(0)
+		await page.mouse.up()
+
+		const row = await month.eventNamed('Off-site')
+		expect(row.end).toBe('2025-03-15T00:00:00.000Z')
+		expect(await month.eventChanges()).toEqual([])
+	})
+
+	test('resizing one occurrence of a series asks which events, and "this event" changes only it', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'recurring',
+			view: 'week',
+			plugins: ['recurrence'],
+			settings: { slot: 30, scrollTime: '08:00' },
+		})
+		const grid = new TimeGrid(page)
+		const occurrence = page
+			.locator('[data-testid^="vertical-event-standup"]')
+			.nth(3)
+
+		// 09:00-09:15 on Wednesday the 12th, to 09:00-10:00.
+		await dragTo(
+			page,
+			handleOf(occurrence, 'end'),
+			grid.slotAt('2025-03-12T09:30')
+		)
+		await page.getByText('This event', { exact: true }).click()
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const [change] = await grid.eventChanges()
+		expect(change.scope).toBe('this')
+		expect(change.endDelta).toEqual({ days: 0, milliseconds: 2_700_000 })
+		const longer = (await grid.eventState()).filter(
+			(row) => row.end === '2025-03-12T10:00:00.000Z'
+		)
+		expect(longer).toHaveLength(1)
+	})
+
+	test('an all-day bar resizes along the all-day row and ignores the time grid below it', async ({
+		page,
+	}) => {
+		// Tall, so the pointer has nothing to auto-scroll while it crosses both.
+		await page.setViewportSize({ width: 1280, height: 1800 })
+		await openSettled(page, {
+			scenario: 'all-day-events',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '00:00' },
+		})
+		const grid = new TimeGrid(page)
+		const handle = handleOf(
+			grid.allDayRow.getByTestId('horizontal-event-allday-1'),
+			'end'
+		)
+
+		// A resize stays in the component it started in (FullCalendar,
+		// interaction.ts:44-48, v7.1.1): over a time slot nothing changes.
+		await dragTo(page, handle, grid.slotAt('2025-03-14T10:00'))
+		expect(await grid.eventChanges()).toEqual([])
+
+		await dragTo(
+			page,
+			handle,
+			grid.allDayRow
+				.locator('[data-all-day="true"][data-start^="2025-03-14"]')
+				.first()
+		)
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Public holiday')
+		expect(row.end).toBe('2025-03-15T00:00:00.000Z')
+		expect(row.allDay).toBe(true)
+	})
+
+	test('a vertical bar draws exactly over its slot span', async ({ page }) => {
+		// The bar's AnimatedSection used to sit on the text baseline, 4-7px below
+		// its positioned wrapper, so everything anchored to the visible bar
+		// (the end handle above all) overhung the next slot.
+		await openSettled(page, {
+			scenario: 'short-events',
+			view: 'week',
+			settings: { slot: 15, scrollTime: '08:00' },
+		})
+		const grid = new TimeGrid(page)
+		const wrapperBox = await grid.bars('short-1').first().boundingBox()
+		const visibleBox = await grid
+			.bars('short-1')
+			.first()
+			.locator('[class*="cursor-"]')
+			.first()
+			.boundingBox()
+		const slotBox = await grid.slotAt('2025-03-12T09:00').boundingBox()
+		if (!wrapperBox || !visibleBox || !slotBox) {
+			throw new Error('the bar and its slot need a layout')
+		}
+
+		expect(visibleBox.y).toBeCloseTo(wrapperBox.y, 0)
+		expect(visibleBox.height).toBeCloseTo(wrapperBox.height, 0)
+		expect(visibleBox.y).toBeCloseTo(slotBox.y, 0)
+	})
+
+	test("a resize is judged on the event's own resource: closed there, refused, though the lane under the pointer is open", async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 2400, height: 1800 })
+		await openSettled(page, {
+			scenario: 'resource-hours',
+			view: 'week',
+			orientation: 'vertical',
+			settings: { slot: 30, scrollTime: '00:00' },
+		})
+		const grid = new TimeGrid(page)
+
+		// Room A closes at 17:00. The pointer goes to Room B's 18:00 slot, which
+		// is open, but the event stays in Room A.
+		await pressAndMoveTo(
+			page,
+			handleOf(grid.bars('hours-1'), 'end'),
+			laneCell(page, 'r2', '2025-03-12T18:00:00.000Z')
+		)
+		await expect
+			.poll(() => page.evaluate(() => document.body.style.cursor))
+			.toBe('not-allowed')
+		await page.mouse.up()
+
+		expect((await grid.eventNamed('Room A hold')).end).toBe(
+			'2025-03-12T11:00:00.000Z'
+		)
+		expect(await grid.eventChanges()).toEqual([])
+	})
+
+	test("a resize is allowed where the event's own resource is open, though the lane under the pointer is closed", async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 2400, height: 1800 })
+		await openSettled(page, {
+			scenario: 'resource-hours',
+			view: 'week',
+			orientation: 'vertical',
+			settings: { slot: 30, scrollTime: '00:00' },
+		})
+		const grid = new TimeGrid(page)
+
+		// Room B is open all day; the pointer is over Room A's closed 18:00 slot.
+		await dragTo(
+			page,
+			handleOf(grid.bars('hours-2'), 'end'),
+			laneCell(page, 'r1', '2025-03-12T18:00:00.000Z')
+		)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Room B hold')
+		expect(row.resourceId).toBe('r2')
+		expect(row.end).toBe('2025-03-12T18:30:00.000Z')
+	})
+
+	test('a click on the handle strip opens the event, and a resize does not', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+		const handle = handleOf(grid.bars('basic-1'), 'end')
+
+		await handle.click()
+		await expect(page.getByRole('dialog')).toBeVisible()
+		await page.keyboard.press('Escape')
+		await expect(page.getByRole('dialog')).toHaveCount(0)
+
+		await dragTo(page, handle, grid.slotAt('2025-03-12T10:30'))
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		await expect(page.getByRole('dialog')).toHaveCount(0)
+	})
+
+	test('a click on the bar body still opens the event', async ({ page }) => {
+		await openSettled(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 30, scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+		await expect(handleOf(grid.bars('basic-1'), 'end')).toHaveCount(1)
+
+		await grid.event('Morning stand-up').first().click()
+
+		await expect(page.getByRole('dialog')).toBeVisible()
+	})
+})

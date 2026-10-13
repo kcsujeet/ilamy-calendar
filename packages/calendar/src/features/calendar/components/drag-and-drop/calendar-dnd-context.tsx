@@ -7,7 +7,10 @@ import { useDropCommit } from '@/features/calendar/hooks/use-drop-commit'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { DragPreviewContext } from '@/features/calendar/stores/drag-preview-context'
 import { pointerWithinLazily } from '@/features/calendar/utils/pointer-within-lazily'
-import { resolveStartEditable } from '@/features/calendar/utils/resolve-editability'
+import {
+	resolveDurationEditable,
+	resolveStartEditable,
+} from '@/features/calendar/utils/resolve-editability'
 import { EventDragOverlay } from './event-drag-overlay'
 
 interface CalendarDndContextProps {
@@ -30,26 +33,30 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	 * not have to know any of this.
 	 */
 	const dndContextId = useId()
-	const canAnythingMove = useSmartCalendarContext((context) => {
+	const canAnythingChange = useSmartCalendarContext((context) => {
 		const calendarFlags = {
 			editable: context.editable,
 			eventStartEditable: context.eventStartEditable,
+			eventDurationEditable: context.eventDurationEditable,
 			disableDragAndDrop: context.disableDragAndDrop,
 		}
 		const isMovableByCalendar = resolveStartEditable({}, calendarFlags)
-		const isAnyEventMovable = context.events.some((event) =>
-			resolveStartEditable(event, calendarFlags)
+		const isResizableByCalendar = resolveDurationEditable({}, calendarFlags)
+		const isAnyEventChangeable = context.events.some(
+			(event) =>
+				resolveStartEditable(event, calendarFlags) ||
+				resolveDurationEditable(event, calendarFlags)
 		)
-		return isMovableByCalendar || isAnyEventMovable
+		return isMovableByCalendar || isResizableByCalendar || isAnyEventChangeable
 	})
 	const { commitDrop, scopeDialog } = useDropCommit()
 	const { sensors, dragPreview, overlayRef, handlers } =
 		useCalendarDrag(commitDrop)
 	const isDragging = dragPreview !== null
 
-	// Nothing can move: no dnd-kit context, so no live region, no drag
+	// Nothing can move or resize: no dnd-kit context, so no live region, no drag
 	// instructions and no registered droppables.
-	if (!canAnythingMove) {
+	if (!canAnythingChange) {
 		return children as React.ReactElement
 	}
 

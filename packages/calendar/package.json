@@ -68,7 +68,8 @@
 		"check:fix": "bunx biome check --write .",
 		"ci": "bun run check && bun run type-check && bun run test && bun run build",
 		"prepack": "bun scripts/prepack.ts",
-		"postpack": "bun scripts/postpack.ts"
+		"postpack": "bun scripts/postpack.ts",
+		"bench:day-hours": "bun scripts/bench-day-hours.tsx"
 	},
 	"peerDependencies": {
 		"dayjs": "^1.11.23",

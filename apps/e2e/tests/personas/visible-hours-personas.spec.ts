@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario } from '../support/harness'
+import { gotoScenario, releasePointer } from '../support/harness'
 import { ResourceAxis, TimeGrid } from '../support/pages'
 
 /**
@@ -33,7 +33,7 @@ const pressAndMoveTo = async (page: Page, from: Locator, to: Locator) => {
 
 const dragTo = async (page: Page, from: Locator, to: Locator) => {
 	await pressAndMoveTo(page, from, to)
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 /** Drags by pointer coordinates, for targets that are a point rather than an element. */
@@ -53,7 +53,7 @@ const dragToPoint = async (
 			startY + ((to.y - startY) * step) / 10
 		)
 	}
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 /** A viewport tall enough that every row is on screen (no drag auto-scroll). */
@@ -247,7 +247,7 @@ test.describe('persona 1: clinic receptionist (08-18, slot=15)', () => {
 			grid.slotAt('2025-03-13T08:00'),
 			grid.slotAt('2025-03-13T08:45')
 		)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect(page.getByRole('dialog')).toBeVisible()
 		await expect(page.getByTestId('time-picker-start-time')).toContainText(
 			'8:00 AM'
@@ -268,7 +268,7 @@ test.describe('persona 1: clinic receptionist (08-18, slot=15)', () => {
 			grid.slotAt('2025-03-13T17:00'),
 			grid.slotAt('2025-03-13T17:45')
 		)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect(page.getByRole('dialog')).toBeVisible()
 		await expect(page.getByTestId('time-picker-start-time')).toContainText(
 			'5:00 PM'
@@ -292,7 +292,7 @@ test.describe('persona 1: clinic receptionist (08-18, slot=15)', () => {
 		for (let i = 1; i <= 8; i += 1) {
 			await page.mouse.move(from.x, from.y - ((from.y - topRow.y + 20) * i) / 8)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect(page.getByRole('dialog')).toBeVisible()
 		const start = await page.getByTestId('time-picker-start-time').textContent()
 		console.log('upward past top:', start)

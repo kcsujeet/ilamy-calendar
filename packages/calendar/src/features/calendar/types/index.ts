@@ -19,19 +19,19 @@ import type { CalendarView, TimeFormat } from '@/types'
 
 /**
  * Granularity of the time grid in minutes for day, week, and resource hour views.
- * Any divisor of 60 (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60); anything else falls
- * back to `60` with a console warning. `60` shows one row per hour with no sub-hour
- * lines. `30` shows two rows per hour. `15` shows four rows per hour with dashed
- * sub-hour separators.
+ * `60` shows one row per hour with no sub-hour lines. `30` shows two rows per
+ * hour. `15` shows four rows per hour with dashed sub-hour separators.
  */
-export type SlotDuration = number
+export type SlotDuration = 15 | 30 | 60
+
+/** The finest sizes a drag, a resize or a drag-to-create selection can snap to. */
+export type SnapDuration = 15 | 30
 
 /**
- * How a week number is counted: the locale's own count (`'local'`), ISO 8601
- * (`'ISO'`), or a function that receives the date the number is shown for (the
- * first day of a month row, the current date in a week header) and returns it.
+ * How a week number is counted: the locale's own count (`'local'`) or ISO 8601
+ * (`'ISO'`).
  */
-export type WeekNumberCalculation = 'local' | 'ISO' | ((date: Date) => number)
+export type WeekNumberCalculation = 'local' | 'ISO'
 
 /**
  * Which slice of an event a `renderEvent` call is drawing.
@@ -618,27 +618,22 @@ export interface IlamyCalendarProps {
 	renderHour?: (date: Dayjs) => ReactNode
 	/**
 	 * Granularity of the time grid in minutes for day, week, and resource hour views.
-	 * Any divisor of 60: `1`, `2`, `3`, `4`, `5`, `6`, `10`, `12`, `15`, `20`, `30` or
-	 * `60`. Any other value falls back to `60` and logs one `console.warn`.
-	 *
 	 * - `60` (default): one row per hour, no sub-hour lines.
 	 * - `30`: two rows per hour (top of hour, half hour).
 	 * - `15`: four rows per hour with dashed sub-hour separators.
-	 * - `20`: three rows per hour.
 	 *
 	 * @default 60
 	 */
 	slotDuration?: SlotDuration
 	/**
 	 * The size, in minutes, a dragged or resized event (and a drag-to-create
-	 * selection) snaps to. May be finer than `slotDuration`: with `slotDuration={60}`
-	 * and `snapDuration={15}` an event dropped halfway down an hour row lands on
-	 * `:30`. Defaults to the size of the cell under the pointer, which is
-	 * `slotDuration` in the vertical time grid and one hour in the horizontal
-	 * resource timeline. A value that does not divide the cell falls back to the
-	 * cell, silently.
+	 * selection) snaps to: `15` or `30`. Takes effect only where it is finer than
+	 * the cell under the pointer (`slotDuration` in the vertical time grid, one
+	 * hour in the horizontal resource timeline) and divides it: with
+	 * `slotDuration={60}` and `snapDuration={15}` an event dropped halfway down an
+	 * hour row lands on `:30`. Otherwise the cell's own size is used.
 	 */
-	snapDuration?: number
+	snapDuration?: SnapDuration
 	/**
 	 * Initial scroll position for hour-resolution views (day, week, resource
 	 * day, resource week, in both orientations). Accepts `"HH:mm"` or
@@ -727,11 +722,6 @@ export interface IlamyCalendarProps {
 	 * - `'ISO'`: ISO 8601, week 1 being the week holding the year's first
 	 *   Thursday. It only changes the number: it does not make weeks start on
 	 *   Monday. Use `firstDayOfWeek` for that.
-	 * - a function: called with the date a week number is shown for (the first
-	 *   day of a month row, the current date in a week header) and returns the
-	 *   number to show. It receives that instant as a JavaScript `Date`, so
-	 *   under a configured `timezone` its local fields follow the machine's
-	 *   zone, not the calendar's.
 	 *
 	 * @default 'local'
 	 */

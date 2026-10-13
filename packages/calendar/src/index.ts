@@ -62,6 +62,7 @@ export type {
 	RenderCurrentTimeIndicatorProps,
 	ResourcesFetcher,
 	SlotDuration,
+	SnapDuration,
 	WeekNumberCalculation,
 } from './features/calendar/types'
 export type { CalendarView, TimeFormat } from './types'

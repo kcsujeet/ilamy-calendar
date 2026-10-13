@@ -639,21 +639,21 @@ describe('useCalendarDrag snapping inside a cell', () => {
 			expect(wall(preview()?.start)).toBe('2025-03-12T13:15')
 		})
 
-		it('keeps a horizontal grab in steps of the snap inside the hour column: slot 30, snap 20', () => {
+		it('keeps a horizontal grab in steps of the snap inside the hour column: slot 30, snap 30', () => {
 			const { drag, preview } = renderSnapHook({
 				slotDuration: 30,
-				snapDuration: 20,
+				snapDuration: 30,
 			})
 			const wideBar = { top: 0, left: 0, width: 120, height: 40 }
 			// The bar is 120px for 120 minutes, so x=50 is minute 50.
 			const dragging = drag(moveOf('horizontal', wideBar), { x: 50, y: 10 })
 			dragging.grab()
 			pointerMovesTo(100, 10)
-			dragging.hover(hourCell('horizontal', 100, { snapMinutes: 20 }))
+			dragging.hover(hourCell('horizontal', 100, { snapMinutes: 30 }))
 
-			// 14:00 less the 40 minutes grabbed (20-minute steps), not the 30 a slot
-			// of 30 would floor it to, which would land off the grabbed point.
-			expect(wall(preview()?.start)).toBe('2025-03-12T13:20')
+			// 14:00 less the 30 minutes grabbed (30-minute steps). An unsnapped grab
+			// would floor to 0.
+			expect(wall(preview()?.start)).toBe('2025-03-12T13:30')
 		})
 	})
 })

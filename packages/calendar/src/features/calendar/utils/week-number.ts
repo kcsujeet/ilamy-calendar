@@ -23,15 +23,11 @@ const getIsoWeekNumber = (date: Dayjs): number => {
  *
  * - `'local'`: the locale's own count, dayjs `week()`.
  * - `'ISO'`: ISO 8601.
- * - a function: receives the date as a `Date`, returns the number.
  */
 export const getWeekNumber = (
 	date: Dayjs,
 	calculation: WeekNumberCalculation
 ): number => {
-	if (typeof calculation === 'function') {
-		return calculation(date.toDate())
-	}
 	if (calculation === 'ISO') {
 		return getIsoWeekNumber(date)
 	}

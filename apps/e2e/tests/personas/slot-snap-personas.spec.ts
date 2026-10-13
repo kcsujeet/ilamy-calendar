@@ -7,7 +7,7 @@ import {
 import { TimeGrid } from '../support/pages'
 
 /**
- * QA personas for 3.3.5 (slotDuration divisors + snapDuration). Real pointer
+ * QA personas for 3.3.5 (slotDuration 15/30/60 + snapDuration 15/30). Real pointer
  * input only. The "oracle" reads the cell under the pointer at release and the
  * snap slice inside it from the DOM, so auto-scrolled drops can be judged.
  */
@@ -159,7 +159,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 		await page.setViewportSize({ width: 2400, height: 900 })
 	})
 
-	for (const snap of [15, 5]) {
+	for (const snap of [15, 30] as const) {
 		for (const across of [0.04, 0.22, 0.4, 0.55, 0.7, 0.96]) {
 			for (const hour of ['10', '13', '17', '21']) {
 				test(`day snap=${snap}: drop at ${across} across the ${hour}:00 column`, async ({
@@ -335,15 +335,15 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 		expect(row.end).toBe('2025-03-12T10:30:00.000Z')
 	})
 
-	test('day snap=5: resize end edge lands on 5 minutes', async ({ page }) => {
+	test('day snap=30: resize end edge lands on 30 minutes', async ({ page }) => {
 		await openSettled(page, {
 			scenario: 'resources',
 			view: 'day',
 			orientation: 'horizontal',
-			settings: { snapDuration: 5, scrollTime: '08:00' },
+			settings: { snapDuration: 30, scrollTime: '08:00' },
 		})
 		const bar = page.getByTestId('horizontal-event-res-1')
-		// 0.52 -> minute 31.2 -> bucket 30 -> end 11:35
+		// 0.52 -> minute 31.2 -> bucket 11:30 -> end of that bucket 12:00
 		const to = await pointIn(
 			laneCell(page, 'r1', '2025-03-12T11:00:00.000Z'),
 			0.52,
@@ -352,7 +352,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 		await dragPointer(page, await pointIn(handleOf(bar, 'end'), 0.5, 0.5), to)
 		await expect.poll(async () => (await changes(page)).length).toBe(1)
 		const row = await state(page, 'Room A booking')
-		expect(row.end).toBe('2025-03-12T11:35:00.000Z')
+		expect(row.end).toBe('2025-03-12T12:00:00.000Z')
 	})
 
 	test('drag-to-create 09:15-10:45 horizontal day', async ({ page }) => {
@@ -442,15 +442,15 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 test.describe('persona 2: office scheduler (vertical)', () => {
 	const slices = [0.1, 0.35, 0.6, 0.85]
 	for (const [slot, snap, view] of [
-		[20, undefined, 'week'],
-		[20, 5, 'week'],
-		[5, undefined, 'day'],
-		[5, undefined, 'week'],
+		[30, undefined, 'week'],
+		[30, 15, 'week'],
+		[15, undefined, 'day'],
+		[15, undefined, 'week'],
 		[60, 15, 'day'],
 		[60, 15, 'week'],
-		[30, 10, 'week'],
-		[20, 10, 'day'],
-		[15, 5, 'week'],
+		[60, 30, 'week'],
+		[30, 15, 'day'],
+		[15, 30, 'week'],
 	] as const) {
 		for (const down of slices) {
 			test(`${view} slot=${slot} snap=${snap ?? '-'}: drop ${down} down the 11:00 cell`, async ({
@@ -474,23 +474,23 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 		}
 	}
 
-	test('slot=20 snap=5: the 11:20 cell, drops land inside that cell', async ({
+	test('slot=30 snap=15: the 11:30 cell, drops land inside that cell', async ({
 		page,
 	}) => {
 		await openSettled(page, {
 			scenario: 'basic',
 			view: 'week',
-			settings: { slot: 20, snapDuration: 5, scrollTime: '09:00' },
+			settings: { slot: 30, snapDuration: 15, scrollTime: '09:00' },
 		})
 		const grid = new TimeGrid(page)
 		await dragPointer(
 			page,
 			await topEdgeOf(grid.bars('basic-1')),
-			await pointIn(grid.slotAt('2025-03-12T11:20'), 0.5, 0.9)
+			await pointIn(grid.slotAt('2025-03-12T11:30'), 0.5, 0.9)
 		)
 		await expect.poll(async () => (await changes(page)).length).toBe(1)
 		expect((await state(page, 'Morning stand-up')).start).toBe(
-			'2025-03-12T11:35:00.000Z'
+			'2025-03-12T11:45:00.000Z'
 		)
 	})
 
@@ -519,22 +519,22 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 		}
 	})
 
-	test('slot=20 snap=5 resize end', async ({ page }) => {
+	test('slot=30 snap=15 resize end', async ({ page }) => {
 		await openSettled(page, {
 			scenario: 'basic',
 			view: 'week',
-			settings: { slot: 20, snapDuration: 5, scrollTime: '09:00' },
+			settings: { slot: 30, snapDuration: 15, scrollTime: '09:00' },
 		})
 		const grid = new TimeGrid(page)
-		// 11:20 cell, 0.6 down -> minute 12 of 20 -> bucket 10 -> end 11:35
+		// 11:30 cell, 0.6 down -> 11:48 -> bucket 11:45 -> end of that bucket 12:00
 		await dragPointer(
 			page,
 			await pointIn(handleOf(grid.bars('basic-1'), 'end'), 0.5, 0.5),
-			await pointIn(grid.slotAt('2025-03-12T11:20'), 0.5, 0.6)
+			await pointIn(grid.slotAt('2025-03-12T11:30'), 0.5, 0.6)
 		)
 		await expect.poll(async () => (await changes(page)).length).toBe(1)
 		expect((await state(page, 'Morning stand-up')).end).toBe(
-			'2025-03-12T11:35:00.000Z'
+			'2025-03-12T12:00:00.000Z'
 		)
 	})
 
@@ -1152,14 +1152,18 @@ test.describe('persona 4: pointer on boundaries, eventAllow, upgrader, fallbacks
 		)
 	})
 
-	for (const snap of [0, 25, 45, 90, 60]) {
-		test(`snapDuration=${snap} with slot=60 falls back to the whole hour (vertical)`, async ({
+	for (const [slot, snap] of [
+		[30, 30],
+		[15, 30],
+		[15, 15],
+	] as const) {
+		test(`snapDuration=${snap} with slot=${slot} is not finer than the cell, so the cell is used (vertical)`, async ({
 			page,
 		}) => {
 			await openSettled(page, {
 				scenario: 'basic',
 				view: 'week',
-				settings: { slot: 60, snapDuration: snap, scrollTime: '09:00' },
+				settings: { slot, snapDuration: snap, scrollTime: '09:00' },
 			})
 			expect(await page.locator('[data-snap-minutes]').count()).toBe(0)
 			const grid = new TimeGrid(page)
@@ -1175,13 +1179,13 @@ test.describe('persona 4: pointer on boundaries, eventAllow, upgrader, fallbacks
 		})
 	}
 
-	test('slot=15 snap=10 (10 does not divide 15): vertical falls back to 15-minute cells', async ({
+	test('slot=15 snap=30 (coarser than the cell): vertical falls back to 15-minute cells', async ({
 		page,
 	}) => {
 		await openSettled(page, {
 			scenario: 'basic',
 			view: 'week',
-			settings: { slot: 15, snapDuration: 10, scrollTime: '09:00' },
+			settings: { slot: 15, snapDuration: 30, scrollTime: '09:00' },
 		})
 		const grid = new TimeGrid(page)
 		await dragPointer(
@@ -1195,7 +1199,7 @@ test.describe('persona 4: pointer on boundaries, eventAllow, upgrader, fallbacks
 		)
 	})
 
-	test('slot=15 snap=10 horizontal resource day: observation of what the hour column does', async ({
+	test('slot=15 snap=30 horizontal resource day: the hour column snaps to the half hour', async ({
 		page,
 	}) => {
 		await page.setViewportSize({ width: 2400, height: 900 })
@@ -1203,7 +1207,7 @@ test.describe('persona 4: pointer on boundaries, eventAllow, upgrader, fallbacks
 			scenario: 'resources',
 			view: 'day',
 			orientation: 'horizontal',
-			settings: { slot: 15, snapDuration: 10, scrollTime: '08:00' },
+			settings: { slot: 15, snapDuration: 30, scrollTime: '08:00' },
 		})
 		const bar = page.getByTestId('horizontal-event-res-1')
 		await dragPointer(
@@ -1212,19 +1216,18 @@ test.describe('persona 4: pointer on boundaries, eventAllow, upgrader, fallbacks
 			await pointIn(laneCell(page, 'r2', '2025-03-12T13:00:00.000Z'), 0.55, 0.5)
 		)
 		await expect.poll(async () => (await changes(page)).length).toBe(1)
-		test.info().annotations.push({
-			type: 'landed',
-			description: (await state(page, 'Room A booking')).start,
-		})
+		expect((await state(page, 'Room A booking')).start).toBe(
+			'2025-03-12T13:30:00.000Z'
+		)
 	})
 
-	test('slot=5 snap=5 explicit equals the cell (no snap attributes needed)', async ({
+	test('slot=15 snap=15 explicit equals the cell (no snap attributes needed)', async ({
 		page,
 	}) => {
 		await openSettled(page, {
 			scenario: 'basic',
 			view: 'day',
-			settings: { slot: 5, snapDuration: 5, scrollTime: '09:00' },
+			settings: { slot: 15, snapDuration: 15, scrollTime: '09:00' },
 		})
 		expect(await page.locator('[data-snap-minutes]').count()).toBe(0)
 	})

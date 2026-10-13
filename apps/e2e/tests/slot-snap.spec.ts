@@ -80,40 +80,6 @@ const laneCell = (page: Page, resourceId: string, startISO: string) =>
 		.first()
 
 test.describe('slotDuration', () => {
-	test('20 minutes draws three rows to the hour', async ({ page }) => {
-		await openSettled(page, {
-			scenario: 'basic',
-			view: 'day',
-			settings: { slot: 20, scrollTime: '09:00' },
-		})
-		const grid = new TimeGrid(page)
-
-		const nineOClockRows = grid.slotAt('2025-03-12T09')
-		await expect(nineOClockRows).toHaveCount(3)
-		await expect(nineOClockRows.nth(0)).toHaveAttribute(
-			'data-start',
-			'2025-03-12T09:00:00.000Z'
-		)
-		await expect(nineOClockRows.nth(1)).toHaveAttribute(
-			'data-start',
-			'2025-03-12T09:20:00.000Z'
-		)
-		await expect(nineOClockRows.nth(2)).toHaveAttribute(
-			'data-start',
-			'2025-03-12T09:40:00.000Z'
-		)
-	})
-
-	test('5 minutes draws twelve rows to the hour', async ({ page }) => {
-		await openSettled(page, {
-			scenario: 'basic',
-			view: 'day',
-			settings: { slot: 5, scrollTime: '09:00' },
-		})
-
-		await expect(new TimeGrid(page).slotAt('2025-03-12T09')).toHaveCount(12)
-	})
-
 	for (const slot of [15, 30, 60]) {
 		test(`${slot} minutes still draws ${60 / slot} rows to the hour`, async ({
 			page,
@@ -199,26 +165,26 @@ test.describe('snapDuration in the vertical time grid', () => {
 		expect(row.start).toBe('2025-03-12T11:00:00.000Z')
 	})
 
-	test('a snap finer than a 30-minute slot lands on the 5 minutes under the pointer', async ({
+	test('a snap finer than a 30-minute slot lands on the 15 minutes under the pointer', async ({
 		page,
 	}) => {
 		await openSettled(page, {
 			scenario: 'basic',
 			view: 'week',
-			settings: { slot: 30, snapDuration: 5, scrollTime: '09:00' },
+			settings: { slot: 30, snapDuration: 15, scrollTime: '09:00' },
 		})
 		const grid = new TimeGrid(page)
 
-		// 0.4 down the 11:00-11:30 slot is minute 12: the 10-minute bucket.
+		// 0.6 down the 11:00-11:30 slot is minute 18: the 15-minute bucket.
 		await dragPointer(
 			page,
 			await topEdgeOf(grid.bars('basic-1')),
-			await pointIn(grid.slotAt('2025-03-12T11:00'), 0.5, 0.4)
+			await pointIn(grid.slotAt('2025-03-12T11:00'), 0.5, 0.6)
 		)
 
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
 		const row = await grid.eventNamed('Morning stand-up')
-		expect(row.start).toBe('2025-03-12T11:10:00.000Z')
+		expect(row.start).toBe('2025-03-12T11:15:00.000Z')
 	})
 })
 

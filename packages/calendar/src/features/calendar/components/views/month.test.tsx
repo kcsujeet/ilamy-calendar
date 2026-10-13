@@ -374,30 +374,5 @@ describe('ResourceMonthHorizontal', () => {
 
 			expect(weekNumbersShown()).toEqual(['52', '1', '2', '3', '4', '5'])
 		})
-
-		test('a weekNumberCalculation function is called with each row first day', () => {
-			cleanup()
-			const firstDays: string[] = []
-			renderMonthView({
-				initialDate: january2023,
-				weekNumbers: true,
-				weekNumberCalculation: (date: Date) => {
-					firstDays.push(date.toISOString().slice(0, 10))
-					return 9
-				},
-			})
-
-			expect(weekNumbersShown()).toEqual(['9', '9', '9', '9', '9', '9'])
-			expect(new Set(firstDays)).toEqual(
-				new Set([
-					'2023-01-01',
-					'2023-01-08',
-					'2023-01-15',
-					'2023-01-22',
-					'2023-01-29',
-					'2023-02-05',
-				])
-			)
-		})
 	})
 })

@@ -36,6 +36,41 @@ interface FetchedRange {
 	timezone?: string
 }
 
+interface FetchDecisionInput {
+	fetched?: FetchedRange
+	visibleStartMs: number
+	visibleEndMs: number
+	timezone?: string
+	isFetchInFlight: boolean
+	lazyFetching: boolean
+	followsRange: boolean
+}
+
+/** Whether the range effect must start a fetch now; see `useRangeFetcher` for the rules. */
+export const mustFetchRange = ({
+	fetched,
+	visibleStartMs,
+	visibleEndMs,
+	timezone,
+	isFetchInFlight,
+	lazyFetching,
+	followsRange,
+}: FetchDecisionInput): boolean => {
+	if (!fetched) {
+		// Data that ignores the range is fetched once, never again because of it.
+		return followsRange || !isFetchInFlight
+	}
+	if (!followsRange) {
+		return false
+	}
+	const isZoneChanged = fetched.timezone !== timezone
+	const isOutsideFetchedRange =
+		visibleStartMs < fetched.startMs || visibleEndMs > fetched.endMs
+	return (
+		isFetchInFlight || isZoneChanged || isOutsideFetchedRange || !lazyFetching
+	)
+}
+
 /**
  * Loads the events, or the resources, for the visible range when the prop is
  * a function. One hook serves both so the abort and latest-wins rules exist once.
@@ -149,19 +184,15 @@ export const useRangeFetcher = <Row>({
 		if (!hasFetcher) {
 			return
 		}
-		const fetched = lastFetched.current
-		const isNeverFetched = fetched === undefined
-		const isFetchInFlight = isLoading.current
-		const isZoneChanged = fetched?.timezone !== timezone
-		const isOutsideFetchedRange =
-			fetched !== undefined &&
-			(rangeStartMs < fetched.startMs || rangeEndMs > fetched.endMs)
-		const mustFetchAgain =
-			isFetchInFlight || isZoneChanged || isOutsideFetchedRange || !lazyFetching
-		// Data that ignores the range is fetched once, never again because of it.
-		const mustFetch = followsRange
-			? isNeverFetched || mustFetchAgain
-			: isNeverFetched && !isFetchInFlight
+		const mustFetch = mustFetchRange({
+			fetched: lastFetched.current,
+			visibleStartMs: rangeStartMs,
+			visibleEndMs: rangeEndMs,
+			timezone,
+			isFetchInFlight: isLoading.current,
+			lazyFetching,
+			followsRange,
+		})
 		if (mustFetch) {
 			refetch?.()
 		}

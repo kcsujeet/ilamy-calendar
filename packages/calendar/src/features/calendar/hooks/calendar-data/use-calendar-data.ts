@@ -16,25 +16,31 @@ import {
 	useResourceLookups,
 } from './use-resource-lookups'
 
-interface CalendarDataParams {
+/** The consumer-facing options the data slice reads; the engine config extends them. */
+export interface CalendarDataOptions {
 	events: CalendarEvent[]
+	/** Loads events for the visible range; used instead of `events` when set. */
 	eventsFetcher?: RangeFetcher<CalendarEvent>
 	lazyFetching?: boolean
 	loading?: (isLoading: boolean) => void
 	onEventsError?: (error: unknown) => void
+	/** Loads resources; used instead of the `resources` array when set. */
 	resourcesFetcher?: RangeFetcher<Resource>
 	refetchResourcesOnNavigate?: boolean
 	resourcesSet?: (resources: Resource[]) => void
 	onResourcesError?: (error: unknown) => void
 	timezone?: string
-	pluginRuntime: PluginRuntime
-	getCurrentViewRange: () => { start: Dayjs; end: Dayjs }
 	/** The `resources` array prop; ignored when a fetcher is set. */
 	resources?: Resource[]
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
 	onEventDelete?: (event: CalendarEvent) => void
 	onEventsChange?: (change: EventsChange) => void
+}
+
+interface CalendarDataParams extends CalendarDataOptions {
+	pluginRuntime: PluginRuntime
+	getCurrentViewRange: () => { start: Dayjs; end: Dayjs }
 }
 
 // Module constant: a fresh `[]` per render would rebuild the lookups every time.
@@ -61,6 +67,46 @@ export interface CalendarDataSlice
 	/** Fetches the resources again; a no-op unless `resources` is a function. */
 	refetchResources: () => void
 	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
+}
+
+/** One `loading` for both fetchers: true while either has a fetch in flight. */
+const useCombinedLoading = (loading?: (isLoading: boolean) => void) => {
+	const reportLoading = useLatestHandler(loading)
+	const loadingSources = useRef({ events: false, resources: false })
+	const wasLoading = useRef(false)
+	return (source: 'events' | 'resources') => {
+		return (isLoading: boolean) => {
+			loadingSources.current[source] = isLoading
+			const isAnyLoading =
+				loadingSources.current.events || loadingSources.current.resources
+			if (isAnyLoading !== wasLoading.current) {
+				wasLoading.current = isAnyLoading
+				reportLoading?.(isAnyLoading)
+			}
+		}
+	}
+}
+
+// Reported when the list's content changes, not its identity: an inline array
+// is new on every render, and a consumer that stores what it is told would
+// otherwise re-render the calendar forever.
+const useReportResources = (
+	resources: Resource[] | undefined,
+	resourcesSet?: (resources: Resource[]) => void
+) => {
+	const reportResources = useLatestHandler(resourcesSet)
+	const lastReported = useRef<Resource[] | undefined>(undefined)
+	useEffect(() => {
+		const previous = lastReported.current
+		const isUnchanged = Boolean(
+			resources && previous && isSameResourceList(previous, resources)
+		)
+		if (!resources || isUnchanged) {
+			return
+		}
+		lastReported.current = resources
+		reportResources?.(resources)
+	}, [resources, reportResources])
 }
 
 /**
@@ -96,21 +142,7 @@ export const useCalendarData = ({
 		processedEvents,
 	} = store
 
-	// One `loading` for both fetchers: true while either has a fetch in flight.
-	const reportLoading = useLatestHandler(loading)
-	const loadingSources = useRef({ events: false, resources: false })
-	const wasLoading = useRef(false)
-	const trackLoading = (source: 'events' | 'resources') => {
-		return (isLoading: boolean) => {
-			loadingSources.current[source] = isLoading
-			const isAnyLoading =
-				loadingSources.current.events || loadingSources.current.resources
-			if (isAnyLoading !== wasLoading.current) {
-				wasLoading.current = isAnyLoading
-				reportLoading?.(isAnyLoading)
-			}
-		}
-	}
+	const trackLoading = useCombinedLoading(loading)
 
 	const { refetch: refetchEvents } = useRangeFetcher({
 		name: 'events',
@@ -141,22 +173,7 @@ export const useCalendarData = ({
 	const hasResourceAxis =
 		Boolean(resourcesFetcher) || Boolean(resources?.length)
 
-	// Reported when the list's content changes, not its identity: an inline array
-	// is new on every render, and a consumer that stores what it is told would
-	// otherwise re-render the calendar forever.
-	const reportResources = useLatestHandler(resourcesSet)
-	const lastReported = useRef<Resource[] | undefined>(undefined)
-	useEffect(() => {
-		const previous = lastReported.current
-		const isUnchanged = Boolean(
-			resources && previous && isSameResourceList(previous, resources)
-		)
-		if (!resources || isUnchanged) {
-			return
-		}
-		lastReported.current = resources
-		reportResources?.(resources)
-	}, [resources, reportResources])
+	useReportResources(resources, resourcesSet)
 
 	const callbacks = {
 		setCurrentEvents,

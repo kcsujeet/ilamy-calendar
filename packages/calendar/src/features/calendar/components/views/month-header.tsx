@@ -1,6 +1,7 @@
 import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
+import { useDateTimeFormatters } from '@/features/calendar/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
 import { getWeekDays } from '@/utils/date-utils'
@@ -12,6 +13,8 @@ interface MonthHeaderProps {
 export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 	const { firstDayOfWeek, stickyViewHeader, viewHeaderClassName, currentDate } =
 		useSmartCalendarContext()
+
+	const { formatDayHeader } = useDateTimeFormatters()
 
 	// Reorder week days based on firstDayOfWeek
 	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
@@ -33,6 +36,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 				// produced it. Keying it by the date remounted all seven cells on
 				// every navigation and replayed the fade over unchanged text.
 				const name = weekDay.format('ddd')
+				const label = formatDayHeader(weekDay)
 
 				return (
 					<div
@@ -40,9 +44,9 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 						data-testid={keys.header.weekday('month', name)}
 						key={name}
 					>
-						<AnimatedSection transitionKey={name}>
+						<AnimatedSection transitionKey={label}>
 							<span className="text-sm capitalize truncate w-full block">
-								{name}
+								{label}
 							</span>
 						</AnimatedSection>
 					</div>

@@ -8,15 +8,14 @@ import type {
 } from '@ilamy/types'
 import { Grid3x3 } from 'lucide-react'
 import type React from 'react'
-import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
 import { gutterColumn } from '@/features/calendar/components/vertical-grid/gutter'
 import { keys } from '@/features/calendar/utils/keys'
 import {
 	getMonthDays,
 	getMonthGridRange,
 	getMonthWeeks,
-	isToday,
 } from '@/utils/date-utils'
+import { DayHeaderLabel } from './day-header-label'
 import { MonthHeader } from './month-header'
 import {
 	ResourceColumnsHeader,
@@ -36,12 +35,7 @@ const resourceMonthVerticalColumns = (
 			days: daysInMonth,
 			gridType: 'day',
 			renderLabel: (day: Dayjs) => (
-				<AnimatedDayLabel
-					className="flex-col-reverse"
-					dayNumber={day.format('D')}
-					today={isToday(day)}
-					weekday={day.format('ddd')}
-				/>
+				<DayHeaderLabel animated className="flex-col-reverse" day={day} />
 			),
 		}),
 		columnsFor: (resource) => ({
@@ -64,19 +58,13 @@ const ResourceMonthHorizontalHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 					// Keyed by position, not by date. Most columns head the same day
 					// number from one month to the next, and those should sit still.
 					const key = keys.listKey('resource-month-day', index)
-					const today = isToday(day)
 
 					return (
 						<div
 							className="flex-1 w-20 bg-background shrink-0 flex items-center justify-center flex-col"
 							key={key}
 						>
-							<AnimatedDayLabel
-								className="flex-col-reverse"
-								dayNumber={day.format('D')}
-								today={today}
-								weekday={day.format('ddd')}
-							/>
+							<DayHeaderLabel animated className="flex-col-reverse" day={day} />
 						</div>
 					)
 				})}

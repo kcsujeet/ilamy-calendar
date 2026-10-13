@@ -69,7 +69,6 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	eventHeight = EVENT_BAR_HEIGHT,
 	stickyViewHeader = true,
 	viewHeaderClassName = '',
-	timeFormat = '12-hour',
 	hideNonBusinessHours = false,
 	hiddenDays,
 	resources,
@@ -113,7 +112,6 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			orientation={orientation}
 			resources={resources}
 			stickyViewHeader={stickyViewHeader}
-			timeFormat={timeFormat}
 			viewHeaderClassName={viewHeaderClassName}
 			{...props}
 		>

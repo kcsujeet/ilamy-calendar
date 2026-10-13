@@ -6,11 +6,9 @@ import type {
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
-import { DayLabel } from '@ilamy/ui/components/day-label'
 import { cn } from '@ilamy/ui/lib/utils'
 import { Columns3 } from 'lucide-react'
 import type React from 'react'
-import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import {
 	gutterColumn,
@@ -24,6 +22,7 @@ import {
 	getViewHours,
 } from '@/features/calendar/utils/view-hours'
 import { getWeekDays, isToday } from '@/utils/date-utils'
+import { DayHeaderLabel } from './day-header-label'
 import {
 	RESOURCE_CELL_WIDTH,
 	ResourcesCornerCell,
@@ -88,7 +87,6 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 
 			{/* Day header cells */}
 			{visibleDays.map((day, index) => {
-				const today = isToday(day)
 				// A column heads the same weekday in every week, so the cell is
 				// keyed by its position. Keying it by the date remounted the whole
 				// label on every navigation, replaying the fade over a weekday
@@ -110,11 +108,7 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 							openEventForm({ start: day })
 						}}
 					>
-						<AnimatedDayLabel
-							dayNumber={day.format('D')}
-							today={today}
-							weekday={day.format('ddd')}
-						/>
+						<DayHeaderLabel animated day={day} />
 					</div>
 				)
 			})}
@@ -172,11 +166,7 @@ const resourceWeekVerticalColumns = (
 			days: weekDays,
 			gridType: 'day',
 			renderLabel: (day: Dayjs) => (
-				<DayLabel
-					dayNumber={day.format('D')}
-					today={isToday(day)}
-					weekday={day.format('ddd')}
-				/>
+				<DayHeaderLabel animated={false} day={day} />
 			),
 		}),
 		columnsFor: (resource) => ({

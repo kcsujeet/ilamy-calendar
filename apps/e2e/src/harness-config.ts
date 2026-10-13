@@ -38,6 +38,12 @@ export interface UrlConfig {
 	/** Set from the `eventAllow` parameter, which names a predicate. */
 	eventAllow?: (dropInfo: EventDropInfo) => boolean
 	timeFormat?: TimeFormat
+	slotHeaderFormat?: Intl.DateTimeFormatOptions
+	eventTimeFormat?: Intl.DateTimeFormatOptions
+	displayEventTime?: boolean
+	displayEventEnd?: boolean
+	dayHeaderFormat?: Intl.DateTimeFormatOptions
+	titleFormat?: Intl.DateTimeFormatOptions
 	locale?: string
 	/** Harness-only: the height of the box the calendar is given. */
 	height?: string
@@ -127,6 +133,27 @@ const boolean = (key: string, raw: string): boolean => {
 	if (raw === 'true') return true
 	if (raw === 'false') return false
 	throw new ConfigError(`${key}: expected true or false, got "${raw}"`)
+}
+
+/** A JSON object, e.g. `{"hour":"2-digit","hour12":false}`, for an Intl options parameter. */
+const parseIntlOptions = (
+	key: string,
+	raw: string
+): Intl.DateTimeFormatOptions => {
+	let parsed: unknown
+	try {
+		parsed = JSON.parse(raw)
+	} catch {
+		throw new ConfigError(`${key}: expected a JSON object, got "${raw}"`)
+	}
+	const isObjectType = typeof parsed === 'object'
+	const isNotNull = parsed !== null
+	const isNotArray = !Array.isArray(parsed)
+	const isPlainObject = isObjectType && isNotNull && isNotArray
+	if (!isPlainObject) {
+		throw new ConfigError(`${key}: expected a JSON object, got "${raw}"`)
+	}
+	return parsed as Intl.DateTimeFormatOptions
 }
 
 const WEEK_DAYS: readonly WeekDays[] = [
@@ -273,6 +300,29 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 			['12-hour', '24-hour'] as const,
 			String
 		)
+	}
+
+	const formatKeys = [
+		'slotHeaderFormat',
+		'eventTimeFormat',
+		'dayHeaderFormat',
+		'titleFormat',
+	] as const
+	for (const formatKey of formatKeys) {
+		const rawFormat = get(formatKey)
+		if (rawFormat !== null) {
+			config[formatKey] = parseIntlOptions(formatKey, rawFormat)
+		}
+	}
+
+	const displayEventTime = get('displayEventTime')
+	if (displayEventTime !== null) {
+		config.displayEventTime = boolean('displayEventTime', displayEventTime)
+	}
+
+	const displayEventEnd = get('displayEventEnd')
+	if (displayEventEnd !== null) {
+		config.displayEventEnd = boolean('displayEventEnd', displayEventEnd)
 	}
 
 	const locale = get('locale')

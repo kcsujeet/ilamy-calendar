@@ -223,10 +223,25 @@ const getCellDataAttributes = ({
 	'data-view': view,
 })
 
+/**
+ * Whether the cell refuses interaction: closed by business hours (`disabled`)
+ * or by the consumer's `isCellDisabled` predicate, when they gave one.
+ */
+const isCellRefusing = (
+	disabled: boolean,
+	isCellDisabled: ((info: CellInfo) => boolean) | undefined,
+	cellInfo: CellInfo
+): boolean => {
+	if (disabled) {
+		return true
+	}
+	return Boolean(isCellDisabled?.(cellInfo))
+}
+
 interface CellClassInput {
 	className?: string
 	customClassName?: string
-	disabledClass: string
+	disabledClassOverride?: string
 	clickBlocked: boolean
 	cellDisabled: boolean
 }
@@ -234,11 +249,12 @@ interface CellClassInput {
 const getCellClasses = ({
 	className,
 	customClassName,
-	disabledClass,
+	disabledClassOverride,
 	clickBlocked,
 	cellDisabled,
-}: CellClassInput) =>
-	cn(
+}: CellClassInput) => {
+	const disabledClass = disabledClassOverride || DISABLED_CELL_CLASSNAME
+	return cn(
 		// `relative` so the drop-target highlight, which is this component's own
 		// `absolute inset-0` child, is positioned against the cell rather than
 		// against whatever happens to be the nearest positioned ancestor. The one
@@ -249,6 +265,7 @@ const getCellClasses = ({
 		clickBlocked ? 'cursor-default' : 'cursor-pointer',
 		cellDisabled && disabledClass
 	)
+}
 
 export function DroppableCell({
 	type,
@@ -282,8 +299,7 @@ export function DroppableCell({
 	const resource = getResourceById?.(resourceId)
 	const cellInfo: CellInfo = { start, end, resource, allDay }
 
-	// Disabled by business hours (`disabled` prop) or the consumer's predicate.
-	const cellDisabled = disabled || Boolean(isCellDisabled?.(cellInfo))
+	const cellDisabled = isCellRefusing(disabled, isCellDisabled, cellInfo)
 	const clickBlocked = disableCellClick || cellDisabled
 
 	const snapMinutes = getFinerSnapMinutes(
@@ -324,7 +340,7 @@ export function DroppableCell({
 			className={getCellClasses({
 				className,
 				customClassName: getCellClassName?.(cellInfo),
-				disabledClass: classesOverride?.disabledCell || DISABLED_CELL_CLASSNAME,
+				disabledClassOverride: classesOverride?.disabledCell,
 				clickBlocked,
 				cellDisabled,
 			})}

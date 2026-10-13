@@ -56,6 +56,52 @@ const getCellTestId = (
 	return keys.cell.day(day)
 }
 
+interface GridCellBodyProps
+	extends Pick<
+			GridProps,
+			'day' | 'resourceId' | 'precomputedEvents' | 'weekNumber' | 'children'
+		>,
+		Required<
+			Pick<
+				GridProps,
+				'gridType' | 'allDay' | 'shouldRenderEvents' | 'showDayNumber'
+			>
+		> {
+	allEventsDialogRef: React.RefObject<AllEventDialogHandle | null>
+}
+
+/** What goes inside the droppable cell: the day header, then its events and any children. */
+const GridCellBody: React.FC<GridCellBodyProps> = ({
+	day,
+	gridType,
+	allDay,
+	resourceId,
+	precomputedEvents,
+	showDayNumber,
+	weekNumber,
+	shouldRenderEvents,
+	allEventsDialogRef,
+	children,
+}) => (
+	<GridCellContent
+		day={day}
+		showDayNumber={showDayNumber}
+		weekNumber={weekNumber}
+	>
+		{shouldRenderEvents && (
+			<GridCellEvents
+				allDay={allDay}
+				allEventsDialogRef={allEventsDialogRef}
+				day={day}
+				gridType={gridType}
+				precomputedEvents={precomputedEvents}
+				resourceId={resourceId}
+			/>
+		)}
+		{children}
+	</GridCellContent>
+)
+
 const NoMemoGridCell: React.FC<GridProps> = ({
 	day,
 	hour,
@@ -102,23 +148,19 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				slotDurationMinutes={slotDurationMinutes}
 				type="day-cell"
 			>
-				<GridCellContent
+				<GridCellBody
+					allDay={allDay}
+					allEventsDialogRef={allEventsDialogRef}
 					day={day}
+					gridType={gridType}
+					precomputedEvents={precomputedEvents}
+					resourceId={resourceId}
+					shouldRenderEvents={shouldRenderEvents}
 					showDayNumber={showDayNumber}
 					weekNumber={weekNumber}
 				>
-					{shouldRenderEvents && (
-						<GridCellEvents
-							allDay={allDay}
-							allEventsDialogRef={allEventsDialogRef}
-							day={day}
-							gridType={gridType}
-							precomputedEvents={precomputedEvents}
-							resourceId={resourceId}
-						/>
-					)}
 					{children}
-				</GridCellContent>
+				</GridCellBody>
 			</DroppableCell>
 
 			{/* Only a cell that draws events can show "+N more", the dialog's one

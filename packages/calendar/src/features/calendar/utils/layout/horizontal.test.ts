@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
-import { layoutHorizontal } from './horizontal'
+import { findMultiUnitSlot, layoutHorizontal } from './horizontal'
 
 const days = Array.from({ length: 7 }, (_, i) =>
 	dayjs('2025-01-12T00:00:00.000Z').add(i, 'day')
@@ -452,33 +452,42 @@ describe('layoutHorizontal', () => {
 		})
 	})
 
+	// These two used to run on the seven DAY columns of `days` with an hour
+	// gridType, which only worked because an event outside the columns was clamped
+	// onto an edge one. An hour axis is hour columns, and an event that overlaps
+	// none of them is dropped, so the fixture is now a real 24-hour axis.
 	describe('Hour Grid Type', () => {
+		const hourColumns = Array.from({ length: 24 }, (_, i) =>
+			dayjs('2025-01-13T00:00:00.000Z').add(i, 'hour')
+		)
+		const runOnHours = (event: CalendarEvent) =>
+			layoutHorizontal({
+				days: hourColumns,
+				events: [event],
+				dayMaxEvents: 4,
+				gridType: 'hour',
+			})
+
 		it('handles hour gridType for single-day events', () => {
-			const result = run(
-				[
-					mkEvent(
-						'single-day',
-						'2025-01-13T10:00:00.000Z',
-						'2025-01-13T10:00:00.000Z'
-					),
-				],
-				{ gridType: 'hour' }
+			const result = runOnHours(
+				mkEvent(
+					'single-day',
+					'2025-01-13T10:00:00.000Z',
+					'2025-01-13T10:00:00.000Z'
+				)
 			)
 
 			expect(result).toHaveLength(1)
-			expect(result.at(0)?.width).toBeCloseTo(14.285714, 2)
+			expect(result.at(0)?.width).toBeCloseTo(100 / 24, 5)
 		})
 
 		it('handles hour gridType for multi-hour events', () => {
-			const result = run(
-				[
-					mkEvent(
-						'single-day',
-						'2025-01-13T10:00:00.000Z',
-						'2025-01-13T13:01:00.000Z'
-					),
-				],
-				{ gridType: 'hour' }
+			const result = runOnHours(
+				mkEvent(
+					'single-day',
+					'2025-01-13T10:00:00.000Z',
+					'2025-01-13T13:01:00.000Z'
+				)
 			)
 
 			expect(result).toHaveLength(1)
@@ -561,6 +570,91 @@ describe('layoutHorizontal', () => {
 })
 
 /**
+ * An event that does not overlap the column range produces no segment, its end
+ * exclusive; one that overlaps is clipped to the range (FullCalendar v7.1.1,
+ * `packages/preact/src/timegrid/DayTimeColsSlicer.ts:7-22`). The columns here
+ * are a visible-hours window, so an event outside it must not be pulled onto an
+ * edge column.
+ */
+describe('layoutHorizontal on a visible-hours window', () => {
+	const DAY = '2025-01-13'
+	// Rows are built from the same instants as the events, so the readings agree
+	// whatever zone the machine is in. The zone-sensitive path through
+	// getViewHours is covered on the clock-change days in vertical.test.ts.
+	const window = (firstHour: number, endHour: number) =>
+		Array.from({ length: endHour - firstHour }, (_, i) =>
+			dayjs(`${DAY}T00:00:00.000Z`).add(firstHour + i, 'hour')
+		)
+	const hourAt = (hour: number, minute = 0) =>
+		`${DAY}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00.000Z`
+	const layout = (
+		columns: ReturnType<typeof window>,
+		events: CalendarEvent[]
+	) =>
+		layoutHorizontal({
+			days: columns,
+			events,
+			dayMaxEvents: 4,
+			gridType: 'hour',
+		})
+
+	it('draws nothing for an event wholly before the window', () => {
+		const events = [mkEvent('e', hourAt(10, 27), hourAt(12, 27))]
+		expect(layout(window(18, 24), events)).toHaveLength(0)
+	})
+
+	it('draws nothing for an event wholly after the window', () => {
+		const events = [mkEvent('e', hourAt(10), hourAt(11))]
+		expect(layout(window(0, 6), events)).toHaveLength(0)
+	})
+
+	it('draws nothing for an event ending exactly at the window start', () => {
+		const events = [mkEvent('e', hourAt(10), hourAt(11))]
+		expect(layout(window(11, 18), events)).toHaveLength(0)
+	})
+
+	it('draws nothing for an event starting exactly at the window end', () => {
+		const events = [mkEvent('e', hourAt(11), hourAt(12))]
+		expect(layout(window(8, 11), events)).toHaveLength(0)
+	})
+
+	it('clips an event crossing the window start to the first column and flags it', () => {
+		const [placed] = layout(window(8, 18), [mkEvent('e', hourAt(7), hourAt(9))])
+		expect(placed?.left).toBe(0)
+		expect(placed?.width).toBeCloseTo(10, 5)
+		expect(placed?.isTruncatedStart).toBe(true)
+	})
+
+	it('clips an event crossing the window end to the last column and flags it', () => {
+		const [placed] = layout(window(8, 18), [
+			mkEvent('e', hourAt(17), hourAt(19)),
+		])
+		expect(placed?.left).toBeCloseTo(90, 5)
+		expect(placed?.width).toBeCloseTo(10, 5)
+		expect(placed?.isTruncatedEnd).toBe(true)
+	})
+
+	it('places an event inside the window from the window start', () => {
+		const [placed] = layout(window(8, 18), [
+			mkEvent('e', hourAt(9), hourAt(10)),
+		])
+		expect(placed?.left).toBeCloseTo(10, 5)
+		expect(placed?.width).toBeCloseTo(10, 5)
+	})
+
+	it('places events by their column when a week of windows has gaps between days', () => {
+		const monday = window(18, 24)
+		const tuesday = monday.map((hour) => hour.add(1, 'day'))
+		const [placed] = layout(
+			[...monday, ...tuesday],
+			[mkEvent('e', '2025-01-14T19:00:00.000Z', '2025-01-14T20:00:00.000Z')]
+		)
+		expect(placed?.left).toBeCloseTo((7 / 12) * 100, 5)
+		expect(placed?.width).toBeCloseTo((1 / 12) * 100, 5)
+	})
+})
+
+/**
  * #311. Hour columns are labelled by clock hour, so a bar starts in the column
  * of its clock time, as FullCalendar's timeline places it. By elapsed time,
  * 09:00 on a 23-hour day started in the 8 AM column, and on a 25-hour day in
@@ -609,5 +703,51 @@ describe('layoutHorizontal on a day the clocks change', () => {
 		const { start, length } = placeNineToTen('2025-11-02')
 		expect(start).toBeCloseTo(9, 6)
 		expect(length).toBeCloseTo(1, 6)
+	})
+})
+
+describe('findMultiUnitSlot', () => {
+	const span = {
+		startCol: 1,
+		endCol: 3,
+		isTruncatedStart: false,
+		isTruncatedEnd: false,
+	}
+	// A grid of `rows` rows by 5 columns with the given [row, col] cells taken.
+	const gridWith = (rows: number, taken: [number, number][]) => {
+		const grid = Array.from({ length: rows }, () =>
+			Array.from({ length: 5 }, () => false)
+		)
+		for (const [row, col] of taken) {
+			grid[row][col] = true
+		}
+		return grid
+	}
+
+	it('keeps the span start when a row is free there', () => {
+		expect(findMultiUnitSlot(gridWith(2, [[0, 2]]), span)).toEqual({
+			row: 1,
+			startCol: 1,
+			isTruncatedStart: false,
+		})
+	})
+
+	it('keeps the span own truncated-start flag on its first try', () => {
+		const clipped = { ...span, isTruncatedStart: true }
+		expect(findMultiUnitSlot(gridWith(1, []), clipped)?.isTruncatedStart).toBe(
+			true
+		)
+	})
+
+	it('truncates to a later start when every row is taken at the start', () => {
+		expect(findMultiUnitSlot(gridWith(1, [[0, 1]]), span)).toEqual({
+			row: 0,
+			startCol: 2,
+			isTruncatedStart: true,
+		})
+	})
+
+	it('returns null when even the last column is taken in every row', () => {
+		expect(findMultiUnitSlot(gridWith(1, [[0, 3]]), span)).toBeNull()
 	})
 })

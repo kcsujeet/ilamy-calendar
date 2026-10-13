@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import type { BusinessHours, WeekDays } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { getViewHours } from './view-hours'
@@ -176,5 +176,146 @@ describe('getViewHours', () => {
 		})
 
 		expect(hours).toHaveLength(0)
+	})
+})
+
+/**
+ * `slotMinTime` / `slotMaxTime` choose the clock range an hour grid shows,
+ * independently of business hours. `slotMaxTime` is exclusive, as in
+ * FullCalendar (v7.1.1 `options.ts:499-500`).
+ */
+describe('getViewHours with slotMinTime / slotMaxTime', () => {
+	const referenceDate = dayjs('2025-01-01T00:00:00.000Z')
+	const getVisibleHours = (slotMinTime?: string, slotMaxTime?: string) =>
+		getViewHours({ referenceDate, slotMinTime, slotMaxTime }).map((h) =>
+			h.hour()
+		)
+
+	test('shows 08:00 to 18:00 as ten hourly rows, the end exclusive', () => {
+		expect(getVisibleHours('08:00', '18:00')).toEqual([
+			8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+		])
+	})
+
+	test('shows all 24 hours when neither is set or they name the whole day', () => {
+		expect(getVisibleHours()).toHaveLength(24)
+		expect(getVisibleHours('00:00', '24:00')).toHaveLength(24)
+	})
+
+	test('accepts a lone slotMinTime or slotMaxTime', () => {
+		expect(getVisibleHours('20:00')).toEqual([20, 21, 22, 23])
+		expect(getVisibleHours(undefined, '03:00')).toEqual([0, 1, 2])
+	})
+
+	test('accepts HH:mm:ss', () => {
+		expect(getVisibleHours('08:00:00', '10:00:00')).toEqual([8, 9])
+	})
+
+	test('rounds a sub-hour bound outward so the hour hosting it stays visible', () => {
+		expect(getVisibleHours('08:30', '10:30')).toEqual([8, 9, 10])
+	})
+
+	test.each([
+		['an unparseable min', 'banana', '18:00'],
+		['an unparseable max', '08:00', 'late'],
+		['a min past 24:00', '25:00', undefined],
+		['a max past 24:00', undefined, '25:00'],
+		['minutes past 59', '08:75', '18:00'],
+		['a max that is not after the min', '18:00', '08:00'],
+		['a max equal to the min', '08:00', '08:00'],
+	])('falls back to all 24 hours for %s', (_name, min, max) => {
+		expect(getVisibleHours(min, max)).toHaveLength(24)
+	})
+
+	test('intersects with hideNonBusinessHours rather than overriding it', () => {
+		const hours = getViewHours({
+			referenceDate,
+			businessHours: { startTime: 9, endTime: 17 },
+			hideNonBusinessHours: true,
+			slotMinTime: '12:00',
+			slotMaxTime: '20:00',
+		})
+		expect(hours.map((h) => h.hour())).toEqual([12, 13, 14, 15, 16])
+	})
+
+	test('leaves business-hours filtering untouched when no slot range is set', () => {
+		const hours = getViewHours({
+			referenceDate,
+			businessHours: { startTime: 9, endTime: 17 },
+			hideNonBusinessHours: true,
+		})
+		expect(hours).toHaveLength(8)
+	})
+
+	describe('when the business hours do not overlap the window', () => {
+		let warnSpy: ReturnType<typeof spyOn>
+		beforeEach(() => {
+			warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+		})
+		afterEach(() => {
+			warnSpy.mockRestore()
+		})
+
+		const getEveningWindowHours = (slotMinTime: string) =>
+			getViewHours({
+				referenceDate,
+				businessHours: { startTime: 9, endTime: 17 },
+				hideNonBusinessHours: true,
+				slotMinTime,
+				slotMaxTime: '24:00',
+			}).map((h) => h.hour())
+
+		test('falls back to the slot window alone instead of an empty grid', () => {
+			expect(getEveningWindowHours('18:00')).toEqual([18, 19, 20, 21, 22, 23])
+		})
+
+		test('warns once, naming both props, however often it is asked', () => {
+			getEveningWindowHours('19:00')
+			getEveningWindowHours('19:00')
+
+			expect(warnSpy).toHaveBeenCalledTimes(1)
+			const message = String(warnSpy.mock.calls.at(0)?.at(0))
+			expect(message).toContain('slotMinTime')
+			expect(message).toContain('hideNonBusinessHours')
+		})
+
+		test('does not warn when the ranges overlap', () => {
+			getEveningWindowHours('12:00')
+
+			expect(warnSpy).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('on a day the clocks change', () => {
+		const originalTz = dayjs.tz.guess()
+		beforeEach(() => {
+			dayjs.tz.setDefault('America/New_York')
+		})
+		afterEach(() => {
+			dayjs.tz.setDefault(originalTz)
+		})
+
+		test.each([
+			['spring forward', '2025-03-09'],
+			['fall back', '2025-11-02'],
+		])('keeps one wall-clock row per hour on %s', (_name, day) => {
+			const hours = getViewHours({
+				referenceDate: dayjs(day),
+				slotMinTime: '08:00',
+				slotMaxTime: '18:00',
+			})
+			expect(hours.map((h) => h.hour())).toEqual([
+				8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+			])
+		})
+
+		test('keeps the same number of rows when the window spans the skipped hour', () => {
+			const hours = getViewHours({
+				referenceDate: dayjs('2025-03-09'),
+				slotMinTime: '01:00',
+				slotMaxTime: '04:00',
+			})
+			expect(hours).toHaveLength(3)
+		})
 	})
 })

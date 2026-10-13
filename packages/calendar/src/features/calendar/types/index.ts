@@ -426,6 +426,33 @@ export interface IlamyCalendarProps {
 	 */
 	hideNonBusinessHours?: boolean
 	/**
+	 * First visible time in the hour grids (day, week, and the resource hour
+	 * views in both orientations), `'HH:mm'` or `'HH:mm:ss'`. A bound that falls
+	 * inside an hour shows that whole hour. Month, year, agenda and
+	 * `weekViewGranularity: 'daily'` ignore it.
+	 *
+	 * An event outside the range is not drawn; one that crosses its edge is
+	 * clipped to it and keeps its real start and end times. Combined with
+	 * `hideNonBusinessHours`, the grid shows the overlap of the two ranges.
+	 *
+	 * Between `'00:00'` and `'24:00'` only. An invalid value, or a range whose
+	 * end is not after its start, shows the whole day and logs one
+	 * `console.warn` naming the prop.
+	 *
+	 * @default '00:00'
+	 * @example slotMinTime="08:00"
+	 */
+	slotMinTime?: string
+	/**
+	 * End of the visible time in the hour grids, exclusive: `'18:00'` shows the
+	 * 5 PM row and stops there. `'HH:mm'` or `'HH:mm:ss'` up to `'24:00'`. See
+	 * `slotMinTime`.
+	 *
+	 * @default '24:00'
+	 * @example slotMaxTime="18:00"
+	 */
+	slotMaxTime?: string
+	/**
 	 * Whether to hide the iCalendar export button in the calendar header.
 	 * Applies to both desktop and mobile header layouts.
 	 * @default false

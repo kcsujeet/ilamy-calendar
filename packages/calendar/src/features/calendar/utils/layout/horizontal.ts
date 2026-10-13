@@ -15,6 +15,14 @@ interface GridBounds {
 	lastUnit: Dayjs
 	unitCount: number
 	gridType: 'day' | 'hour'
+	columns: Dayjs[]
+}
+
+interface ColumnSpan {
+	startCol: number
+	endCol: number
+	isTruncatedStart: boolean
+	isTruncatedEnd: boolean
 }
 
 // --- Phase 1: cluster (partition + sort) ------------------------------------
@@ -58,16 +66,63 @@ const partitionAndSortEvents = (
 
 // --- Phase 2: geometry ------------------------------------------------------
 
+/**
+ * The columns an event overlaps on an hour axis, or null when it overlaps none
+ * (its end is exclusive, so touching a column's start does not count). The
+ * columns are looked up rather than counted from the first one: a visible-hours
+ * window, or a week of them, leaves gaps between days, and an event outside
+ * them must produce no segment instead of landing on an edge column
+ * (FullCalendar v7.1.1, `timegrid/DayTimeColsSlicer.ts:7-22`).
+ *
+ * Offsets are clock time, as everywhere else on this axis (#311). On a day the
+ * clocks change two columns can carry the same hour; the later one counts, as
+ * it did when columns were counted from the first.
+ */
+const findHourColumnSpan = (
+	event: CalendarEvent,
+	columns: Dayjs[]
+): ColumnSpan | null => {
+	const isInstant = event.end.isSame(event.start)
+	const overlappingIndexes = columns.flatMap((column, index) => {
+		const nextColumn = columns.at(index + 1)
+		const isShadowedByNextColumn = nextColumn?.isSame(column) ?? false
+		const hoursIntoColumnAtStart = wallClockDiff(event.start, column, 'hour')
+		const hoursIntoColumnAtEnd = wallClockDiff(event.end, column, 'hour')
+		const startsInsideColumn =
+			hoursIntoColumnAtStart >= 0 && hoursIntoColumnAtStart < 1
+		const reachesIntoColumn =
+			hoursIntoColumnAtStart < 1 && hoursIntoColumnAtEnd > 0
+		const overlaps = isInstant ? startsInsideColumn : reachesIntoColumn
+		return overlaps && !isShadowedByNextColumn ? [index] : []
+	})
+	const startCol = overlappingIndexes.at(0)
+	const endCol = overlappingIndexes.at(-1)
+	const firstColumn = columns.at(0)
+	const lastColumn = columns.at(-1)
+	if (
+		startCol === undefined ||
+		endCol === undefined ||
+		!firstColumn ||
+		!lastColumn
+	) {
+		return null
+	}
+	return {
+		startCol,
+		endCol,
+		isTruncatedStart: wallClockDiff(event.start, firstColumn, 'hour') < 0,
+		isTruncatedEnd: wallClockDiff(event.end, lastColumn, 'hour') > 1,
+	}
+}
+
 /** Column span and truncation of an event, clamped to the grid bounds. */
 const computeColumnSpan = (
 	event: CalendarEvent,
-	{ firstUnit, lastUnit, unitCount, gridType }: GridBounds
-): {
-	startCol: number
-	endCol: number
-	isTruncatedStart: boolean
-	isTruncatedEnd: boolean
-} => {
+	{ firstUnit, lastUnit, unitCount, gridType, columns }: GridBounds
+): ColumnSpan | null => {
+	if (gridType === 'hour') {
+		return findHourColumnSpan(event, columns)
+	}
 	const eventStart = dayjs.max(event.start.startOf(gridType), firstUnit)
 	// `end` is exclusive at every granularity: an event ending at midnight stops
 	// as that day begins, so it must not claim the day's column, exactly as one
@@ -152,6 +207,38 @@ const findAvailableRow = (
 	return -1
 }
 
+/** Where a multi-unit bar landed: its row and the column it starts in. */
+interface MultiUnitSlot {
+	row: number
+	startCol: number
+	isTruncatedStart: boolean
+}
+
+/**
+ * Row for a multi-unit span: from its own start if a row is free there, else
+ * truncated to start on a later day. Null when no start has a free row.
+ */
+export const findMultiUnitSlot = (
+	grid: OccupancyGrid,
+	span: ColumnSpan
+): MultiUnitSlot | null => {
+	const row = findAvailableRow(grid, span.startCol, span.endCol)
+	if (row !== -1) {
+		return {
+			row,
+			startCol: span.startCol,
+			isTruncatedStart: span.isTruncatedStart,
+		}
+	}
+	for (let tryStart = span.startCol + 1; tryStart <= span.endCol; tryStart++) {
+		const truncatedRow = findAvailableRow(grid, tryStart, span.endCol)
+		if (truncatedRow !== -1) {
+			return { row: truncatedRow, startCol: tryStart, isTruncatedStart: true }
+		}
+	}
+	return null
+}
+
 interface PlaceArgs {
 	row: number
 	startCol: number
@@ -179,6 +266,7 @@ export const layoutHorizontal = ({
 		lastUnit: gridType === 'hour' ? last.endOf('hour') : last.endOf('day'),
 		unitCount: days.length,
 		gridType,
+		columns: days,
 	}
 
 	const { sortedMultiUnit, sortedSingleUnit } = partitionAndSortEvents(
@@ -223,39 +311,25 @@ export const layoutHorizontal = ({
 	// Multi-unit events claim rows first.
 	for (const event of sortedMultiUnit) {
 		const span = computeColumnSpan(event, bounds)
+		if (!span) continue
 
-		// First try: place from the original start position.
-		const row = findAvailableRow(grid, span.startCol, span.endCol)
-		if (row !== -1) {
-			place({ row, event, ...span })
-			continue
-		}
-
-		// Fallback: try truncated versions starting from later days.
-		for (
-			let tryStart = span.startCol + 1;
-			tryStart <= span.endCol;
-			tryStart++
-		) {
-			const truncRow = findAvailableRow(grid, tryStart, span.endCol)
-			if (truncRow !== -1) {
-				place({
-					row: truncRow,
-					startCol: tryStart,
-					endCol: span.endCol,
-					event,
-					isTruncatedStart: true,
-					isTruncatedEnd: span.isTruncatedEnd,
-				})
-				break
-			}
-		}
+		const slot = findMultiUnitSlot(grid, span)
+		if (!slot) continue
+		place({
+			row: slot.row,
+			startCol: slot.startCol,
+			endCol: span.endCol,
+			event,
+			isTruncatedStart: slot.isTruncatedStart,
+			isTruncatedEnd: span.isTruncatedEnd,
+		})
 	}
 
 	// Single-unit events fill the remaining gaps. computeColumnSpan already
 	// clamps the span to the grid, so startCol needs no re-clamping here.
 	for (const event of sortedSingleUnit) {
 		const span = computeColumnSpan(event, bounds)
+		if (!span) continue
 		const col = span.startCol
 		const row = findAvailableRow(grid, col, col)
 		if (row !== -1) {

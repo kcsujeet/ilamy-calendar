@@ -29,7 +29,7 @@ getDayHours({ referenceDate, length? })
 // Returns: [referenceDate@00:00, referenceDate@01:00, ..., referenceDate@23:00]
 ```
 
-Uses `startOfDay.hour(i)` so that row N always represents "the hour labeled N". This keeps grid rows aligned across all columns in a week view.
+Builds row N from the wall-clock string `YYYY-MM-DDTHH:00:00.000` (then `.tz()`), so that row N always represents "the hour labeled N" and carries the UTC offset of ITS hour in the calendar's zone. This keeps grid rows aligned across all columns in a week view. The `.hour(i)` setter it replaced kept the start of the day's offset, which on a day the clocks change put a row after the change an hour off whenever the machine's own clocks change that day (the machine's zone leaking through dayjs, `docs/timezones.md`), and only showed once a visible-hours window did not start at midnight. The labels on a spring-forward day are unchanged: the missing 2 AM row still reads 3 AM.
 
 ### getViewHours
 
@@ -41,6 +41,7 @@ Wraps `getDayHours` with optional business hours filtering. When `hideNonBusines
 getViewHours({ referenceDate, businessHours?, hideNonBusinessHours?, allDates?, resourceBusinessHours? })
 ```
 
+- `slotMinTime` / `slotMaxTime`: the visible clock range (`'HH:mm'`, end exclusive, within one day). Applied first, by slicing the 24 labeled rows by index (not by `.hour()`), so a day the clocks change keeps one row per labeled hour, the same count as any other day. A bound inside an hour rounds outward to that whole row. `parseSlotRange` validates: any unusable bound, or an end not after the start, means the whole day, and `IlamyCalendar` logs one `console.warn`. With `hideNonBusinessHours` the business-hours range then narrows it further, so the grid shows the intersection. Events and the now-line are placed against the first and last row actually drawn, so an event crossing an edge is clipped (and flagged truncated) and an event outside draws nothing. `useScrollToTime` already clamps a `scrollTime` before the first row to it. Month, year, agenda and daily granularity never call `getViewHours`. Cut for simplicity: FullCalendar also accepts a max past 24:00 and a negative min (v7.1.1 `options.ts:499-500`), which would draw one event in two columns.
 - `allDates`: For week views, the union of all business hours across days determines the visible range.
 - `resourceBusinessHours`: Additional business hours from resources are merged when calculating the range.
 

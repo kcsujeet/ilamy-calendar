@@ -567,6 +567,37 @@ export const scenarios = {
 			),
 		],
 	},
+	'visible-hours': {
+		description:
+			'3.3.4: events that start before, end after, or sit wholly outside a visible-hours window of 08:00-18:00, plus one inside it.',
+		views: ['day', 'week'],
+		events: [
+			event(
+				'vh-early',
+				'Starts early',
+				'2025-03-12T07:00:00.000Z',
+				'2025-03-12T09:00:00.000Z'
+			),
+			event(
+				'vh-before',
+				'Too early',
+				'2025-03-12T05:00:00.000Z',
+				'2025-03-12T06:00:00.000Z'
+			),
+			event(
+				'vh-midday',
+				'Midday',
+				'2025-03-12T12:00:00.000Z',
+				'2025-03-12T13:00:00.000Z'
+			),
+			event(
+				'vh-late',
+				'Ends late',
+				'2025-03-12T17:00:00.000Z',
+				'2025-03-12T19:00:00.000Z'
+			),
+		],
+	},
 
 	resources: {
 		description:

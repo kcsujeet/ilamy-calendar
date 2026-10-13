@@ -187,6 +187,46 @@ describe('layoutVertical', () => {
 		})
 	})
 
+	describe('Visible-hours window (slotMinTime / slotMaxTime)', () => {
+		// Built from the same instants as the events, so the readings agree
+		// whatever zone the machine is in. The zone-sensitive path through
+		// getViewHours is covered on the clock-change days below.
+		const windowDays = Array.from({ length: 10 }, (_, i) =>
+			dayjs(BASE).add(8 + i, 'hour')
+		)
+		const layoutInWindow = (events: CalendarEvent[]) =>
+			layoutVertical({ days: windowDays, events })
+
+		it('clips an event starting before the window to the top and flags it', () => {
+			const [p] = layoutInWindow([mkEvent('e', 7, 9)])
+			expect(p.top).toBe(0)
+			expect(p.height).toBeCloseTo(10, 5)
+			expect(p.isTruncatedStart).toBe(true)
+			// Clipping is drawing only: the event keeps its real start and end.
+			expect(p.event.start.toISOString()).toBe(at(7).toISOString())
+			expect(p.event.end.toISOString()).toBe(at(9).toISOString())
+		})
+
+		it('clips an event ending after the window and flags it', () => {
+			const [p] = layoutInWindow([mkEvent('e', 17, 19)])
+			expect(p.top).toBeCloseTo(90, 5)
+			expect(p.height).toBeCloseTo(10, 5)
+			expect(p.isTruncatedEnd).toBe(true)
+		})
+
+		it('draws nothing for an event wholly before or after the window', () => {
+			expect(
+				layoutInWindow([mkEvent('early', 5, 6), mkEvent('late', 19, 20)])
+			).toHaveLength(0)
+		})
+
+		it('measures an event inside the window from the window start', () => {
+			const [p] = layoutInWindow([mkEvent('e', 9, 10)])
+			expect(p.top).toBeCloseTo(10, 5)
+			expect(p.height).toBeCloseTo(10, 5)
+		})
+	})
+
 	describe('Discrete (day) grid', () => {
 		const dayDays = Array.from({ length: 7 }, (_, i) =>
 			dayjs(BASE).add(i, 'day')
@@ -252,8 +292,6 @@ describe('layoutVertical', () => {
  */
 describe('layoutVertical on a day the clocks change', () => {
 	const originalTz = dayjs.tz.guess()
-	const HOUR_PERCENT = 100 / 24
-
 	beforeEach(() => {
 		dayjs.tz.setDefault('America/New_York')
 	})
@@ -262,19 +300,29 @@ describe('layoutVertical on a day the clocks change', () => {
 		dayjs.tz.setDefault(originalTz)
 	})
 
-	/** Top and height, in hours, of a 09:00-10:00 event on `dayISO`'s grid. */
-	const placeNineToTen = (dayISO: string) => {
-		const days = getViewHours({ referenceDate: dayjs(dayISO) })
+	/**
+	 * Top and height, in hours of the drawn window, of a 09:00-10:00 event on
+	 * `dayISO`'s grid. Without a window the grid is the whole day.
+	 */
+	const placeNineToTen = (
+		dayISO: string,
+		window: { slotMinTime?: string; slotMaxTime?: string } = {}
+	) => {
+		const days = getViewHours({
+			referenceDate: dayjs(`${dayISO}T17:00:00.000Z`).tz('America/New_York'),
+			...window,
+		})
 		const event = {
 			id: 'nine',
 			title: 'nine',
-			start: dayjs(`${dayISO}T09:00`),
-			end: dayjs(`${dayISO}T10:00`),
+			start: dayjs.tz(`${dayISO}T09:00`, 'America/New_York'),
+			end: dayjs.tz(`${dayISO}T10:00`, 'America/New_York'),
 		}
 		const [placed] = layoutVertical({ days, events: [event] })
+		const hourPercent = 100 / days.length
 		return {
-			top: (placed?.top ?? 0) / HOUR_PERCENT,
-			height: (placed?.height ?? 0) / HOUR_PERCENT,
+			top: (placed?.top ?? 0) / hourPercent,
+			height: (placed?.height ?? 0) / hourPercent,
 		}
 	}
 
@@ -289,6 +337,25 @@ describe('layoutVertical on a day the clocks change', () => {
 		expect(top).toBeCloseTo(9, 6)
 		expect(height).toBeCloseTo(1, 6)
 	})
+
+	// A window not starting at midnight: row 0 is the window's first hour, so the
+	// 09:00 event sits (9 - start) hours down. Run under TZ=America/New_York as
+	// well, where the machine's own clocks change on these days.
+	it.each([
+		['spring', '2025-03-09', '08:00', '11:00', 1],
+		['spring', '2025-03-09', '09:00', '11:00', 0],
+		['spring', '2025-03-09', '08:00', '24:00', 1],
+		['fall', '2025-11-02', '08:00', '11:00', 1],
+		['fall', '2025-11-02', '09:00', '11:00', 0],
+		['fall', '2025-11-02', '08:00', '24:00', 1],
+	])(
+		'puts 09:00 on the 9 AM row on the %s change day in a %s-%s window',
+		(_season, day, slotMinTime, slotMaxTime, hoursDown) => {
+			const { top, height } = placeNineToTen(day, { slotMinTime, slotMaxTime })
+			expect(top).toBeCloseTo(hoursDown, 6)
+			expect(height).toBeCloseTo(1, 6)
+		}
+	)
 
 	it('puts 09:00 on the 9 AM row when the clocks move by half an hour', () => {
 		// Lord Howe Island: 5 October 2025 is 23.5 hours long.

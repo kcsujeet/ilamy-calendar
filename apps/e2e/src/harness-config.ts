@@ -29,6 +29,9 @@ export interface UrlConfig {
 	hiddenDays?: WeekDays[]
 	weekViewGranularity?: 'hourly' | 'daily'
 	hideNonBusinessHours?: boolean
+	/** Passed through as written, so an invalid value reaches the calendar. */
+	slotMinTime?: string
+	slotMaxTime?: string
 	/**
 	 * Weekday business hours, as `startHour-endHour` (e.g. `9-17`). Cells
 	 * outside them are disabled, which is the only way to reach a disabled cell
@@ -254,6 +257,16 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 			'hideNonBusinessHours',
 			hideNonBusinessHours
 		)
+	}
+
+	const slotMinTime = get('slotMinTime')
+	if (slotMinTime !== null) {
+		config.slotMinTime = slotMinTime
+	}
+
+	const slotMaxTime = get('slotMaxTime')
+	if (slotMaxTime !== null) {
+		config.slotMaxTime = slotMaxTime
 	}
 
 	const scrollToNow = get('scrollToNow')

@@ -1061,10 +1061,13 @@ test.describe('change info', () => {
 	test('a drop in the skipped spring hour reports the stored clock time', async ({
 		page,
 	}) => {
-		// New York skips 02:00 on 9 March 2025. The grid draws a 02:30 cell there,
-		// and a drop on it stores 06:30Z, which is 01:30 EST. The start kept the
-		// EDT offset of the hour before, so its clock read 02:30 and the delta
-		// came out an hour short whenever the pointer landed in that row.
+		// New York skips 02:00 on 9 March 2025, and the grid still draws two rows
+		// there. The contract moved with the 3.3.4 `getDayHours` fix: hour rows now
+		// carry their correct UTC offset, so a drop stores the instant of the cell
+		// it landed on (`data-start`), and `delta` is the wall-clock difference to
+		// the original. It used to pin 06:30Z, which only held because the row
+		// carried a stale -05:00 offset. The duplicate 3 AM and missing 2 AM rows
+		// remain a separate task.
 		await page.setViewportSize({ width: 1280, height: 1800 })
 		await gotoScenario(page, {
 			scenario: 'recurring-dst',
@@ -1081,14 +1084,44 @@ test.describe('change info', () => {
 			)
 			.first()
 		await expect(skippedHourCell).toBeAttached()
+		const cellStart = await skippedHourCell.getAttribute('data-start')
+		const originalStart = (await grid.eventNamed('One-off at nine')).start
 
 		await dragTo(page, grid.bars('dst-reference').first(), skippedHourCell)
 
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
 		const row = await grid.eventNamed('One-off at nine')
-		expect(row.start).toBe('2025-03-09T06:30:00.000Z')
+		expect(row.start).toBe(cellStart)
 		const [change] = await grid.eventChanges()
-		expect(change.delta).toEqual({ days: -3, milliseconds: -27_000_000 })
+		const wallClockMs = (iso: string) => {
+			const parts = new Intl.DateTimeFormat('en-US', {
+				timeZone: 'America/New_York',
+				hourCycle: 'h23',
+				year: 'numeric',
+				month: 'numeric',
+				day: 'numeric',
+				hour: 'numeric',
+				minute: 'numeric',
+				second: 'numeric',
+			}).formatToParts(new Date(iso))
+			const part = (type: string) =>
+				Number(parts.find((p) => p.type === type)?.value)
+			return Date.UTC(
+				part('year'),
+				part('month') - 1,
+				part('day'),
+				part('hour'),
+				part('minute'),
+				part('second')
+			)
+		}
+		const totalMs = wallClockMs(row.start) - wallClockMs(originalStart)
+		const msPerDay = 24 * 60 * 60 * 1000
+		const days = Math.trunc(totalMs / msPerDay)
+		expect(change.delta).toEqual({
+			days,
+			milliseconds: totalMs - days * msPerDay,
+		})
 	})
 })
 

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
-import { layoutHorizontal } from './horizontal'
+import { findMultiUnitSlot, layoutHorizontal } from './horizontal'
 
 const days = Array.from({ length: 7 }, (_, i) =>
 	dayjs('2025-01-12T00:00:00.000Z').add(i, 'day')
@@ -703,5 +703,51 @@ describe('layoutHorizontal on a day the clocks change', () => {
 		const { start, length } = placeNineToTen('2025-11-02')
 		expect(start).toBeCloseTo(9, 6)
 		expect(length).toBeCloseTo(1, 6)
+	})
+})
+
+describe('findMultiUnitSlot', () => {
+	const span = {
+		startCol: 1,
+		endCol: 3,
+		isTruncatedStart: false,
+		isTruncatedEnd: false,
+	}
+	// A grid of `rows` rows by 5 columns with the given [row, col] cells taken.
+	const gridWith = (rows: number, taken: [number, number][]) => {
+		const grid = Array.from({ length: rows }, () =>
+			Array.from({ length: 5 }, () => false)
+		)
+		for (const [row, col] of taken) {
+			grid[row][col] = true
+		}
+		return grid
+	}
+
+	it('keeps the span start when a row is free there', () => {
+		expect(findMultiUnitSlot(gridWith(2, [[0, 2]]), span)).toEqual({
+			row: 1,
+			startCol: 1,
+			isTruncatedStart: false,
+		})
+	})
+
+	it('keeps the span own truncated-start flag on its first try', () => {
+		const clipped = { ...span, isTruncatedStart: true }
+		expect(findMultiUnitSlot(gridWith(1, []), clipped)?.isTruncatedStart).toBe(
+			true
+		)
+	})
+
+	it('truncates to a later start when every row is taken at the start', () => {
+		expect(findMultiUnitSlot(gridWith(1, [[0, 1]]), span)).toEqual({
+			row: 0,
+			startCol: 2,
+			isTruncatedStart: true,
+		})
+	})
+
+	it('returns null when even the last column is taken in every row', () => {
+		expect(findMultiUnitSlot(gridWith(1, [[0, 3]]), span)).toBeNull()
 	})
 })

@@ -207,6 +207,38 @@ const findAvailableRow = (
 	return -1
 }
 
+/** Where a multi-unit bar landed: its row and the column it starts in. */
+interface MultiUnitSlot {
+	row: number
+	startCol: number
+	isTruncatedStart: boolean
+}
+
+/**
+ * Row for a multi-unit span: from its own start if a row is free there, else
+ * truncated to start on a later day. Null when no start has a free row.
+ */
+export const findMultiUnitSlot = (
+	grid: OccupancyGrid,
+	span: ColumnSpan
+): MultiUnitSlot | null => {
+	const row = findAvailableRow(grid, span.startCol, span.endCol)
+	if (row !== -1) {
+		return {
+			row,
+			startCol: span.startCol,
+			isTruncatedStart: span.isTruncatedStart,
+		}
+	}
+	for (let tryStart = span.startCol + 1; tryStart <= span.endCol; tryStart++) {
+		const truncatedRow = findAvailableRow(grid, tryStart, span.endCol)
+		if (truncatedRow !== -1) {
+			return { row: truncatedRow, startCol: tryStart, isTruncatedStart: true }
+		}
+	}
+	return null
+}
+
 interface PlaceArgs {
 	row: number
 	startCol: number
@@ -281,32 +313,16 @@ export const layoutHorizontal = ({
 		const span = computeColumnSpan(event, bounds)
 		if (!span) continue
 
-		// First try: place from the original start position.
-		const row = findAvailableRow(grid, span.startCol, span.endCol)
-		if (row !== -1) {
-			place({ row, event, ...span })
-			continue
-		}
-
-		// Fallback: try truncated versions starting from later days.
-		for (
-			let tryStart = span.startCol + 1;
-			tryStart <= span.endCol;
-			tryStart++
-		) {
-			const truncRow = findAvailableRow(grid, tryStart, span.endCol)
-			if (truncRow !== -1) {
-				place({
-					row: truncRow,
-					startCol: tryStart,
-					endCol: span.endCol,
-					event,
-					isTruncatedStart: true,
-					isTruncatedEnd: span.isTruncatedEnd,
-				})
-				break
-			}
-		}
+		const slot = findMultiUnitSlot(grid, span)
+		if (!slot) continue
+		place({
+			row: slot.row,
+			startCol: slot.startCol,
+			endCol: span.endCol,
+			event,
+			isTruncatedStart: slot.isTruncatedStart,
+			isTruncatedEnd: span.isTruncatedEnd,
+		})
 	}
 
 	// Single-unit events fill the remaining gaps. computeColumnSpan already

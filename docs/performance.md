@@ -38,6 +38,18 @@ HorizontalGridRow
                                                                 ← no hook call
 ```
 
+### One Expansion Per Range, One Pass Per Resource Axis
+
+The section above shares work between the cells of a row. A resource calendar has R rows, and each asked `getEventsForDateRange` for the same range, so the plugin chain (`transformEvents`; with recurrence, O(N + series x N)) ran R times per render and again for every row after any add, edit or drag commit. Three pieces now keep the pipeline linear:
+
+- **`useEventStore` keeps the answer per range** (`hooks/calendar-data/use-event-store.ts`). The cache is rebuilt whenever the stored events or the plugin runtime change, keyed on each bound's instant and UTC offset, and holds at most `MAX_CACHED_RANGES` ranges. Callers get the same array back for the same range, so they must not mutate it (none does): `shareInDevBuild` freezes it, and each resource bucket, in a development build, so a mutation throws where it happens; a production build returns the lists as they are. Plugins' `transformEvents` must therefore be pure in `(events, range)`.
+- **`bucketEventsByResource`** (`utils/event-buckets.ts`) groups a range's events by resource in one pass (the `filterEventsForResource` membership rule: `resourceIds` wins over `resourceId`, `0` is a real id). It is keyed on the events array, so the R rows reading one range share one O(N) pass and each takes its bucket. `useProcessedWeekEvents` and `useProcessedDayEvents` read it through `getResourceEvents`.
+- **`getColumnBounds`** reads a column's `startOf`/`endOf` once per Dayjs instance and default zone (a `WeakMap`; an instance with no zone of its own is bounded in the zone `dayjs.tz.setDefault` last set, which `getDefaultZone()` reads once per row), and `bucketEventsByColumn` tests each event against plain instants, the `overlapsRange` rule without a zone conversion per column. Resource rows are built from the same column instances (`resourceHorizontalRows`), so row 2 onwards reads the bounds row 1 computed.
+
+The recurrence plugin groups overrides by series once per events array (`getOverridesBySeries` in `generate-recurring-events.ts`) instead of filtering the whole list for every series, so an expansion is O(N + series), not O(series x N).
+
+Measured with Bun micro-benchmarks, one full render of every row (see the dev log of the change for the scripts): 500 rows x 5,200 events / 200 daily series fell from about 3,050 ms (before) to about 9 ms, and 100 rows x 168 hour columns x 10 events in `America/New_York` from about 5,600 ms to about 10 ms.
+
 ### Grouped Columns (Resource Week Horizontal)
 
 Resource week horizontal view uses "grouped" columns where each column contains multiple days (one day's hourly slots). These need their own `useProcessedWeekEvents` call since events are scoped to each day group. The `GroupedColumn` component handles this — it exists as a separate memo'd component because React hooks can't be called inside map callbacks.

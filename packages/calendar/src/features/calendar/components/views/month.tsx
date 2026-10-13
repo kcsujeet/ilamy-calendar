@@ -10,6 +10,7 @@ import { Grid3x3 } from 'lucide-react'
 import type React from 'react'
 import { gutterColumn } from '@/features/calendar/components/vertical-grid/gutter'
 import { keys } from '@/features/calendar/utils/keys'
+import { viewHasResourceAxis } from '@/features/calendar/utils/resource-list'
 import {
 	getMonthDays,
 	getMonthGridRange,
@@ -84,7 +85,7 @@ const monthRows = (
 ): VerticalColumnSpec[] | HorizontalRowSpec[] => {
 	const resources = config.resources ?? []
 
-	if (resources.length) {
+	if (viewHasResourceAxis(config)) {
 		if (config.orientation === 'vertical') {
 			return resourceMonthVerticalColumns(date, resources, config.hiddenDays)
 		}
@@ -120,7 +121,7 @@ export const monthView: PluginView = {
 	columns: monthRows,
 	renderHeader: ({ date, config }) => {
 		const resources = config.resources ?? []
-		if (!resources.length) {
+		if (!viewHasResourceAxis(config)) {
 			return <MonthHeader className="h-12" />
 		}
 		if (config.orientation === 'vertical') {

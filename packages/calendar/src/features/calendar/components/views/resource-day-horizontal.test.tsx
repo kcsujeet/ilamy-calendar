@@ -427,4 +427,25 @@ describe('ResourceDayHorizontal', () => {
 			expect(indicators.at(0)).toHaveTextContent('+2 more')
 		})
 	})
+
+	test('is a resource calendar with no lanes while a resources function is pending', () => {
+		const neverResolves = () => new Promise<Resource[]>(() => undefined)
+		cleanup()
+		render(
+			<CalendarProvider
+				events={[]}
+				initialDate={initialDate}
+				initialView="day"
+				orientation="horizontal"
+				resourcesFetcher={neverResolves}
+			>
+				<CalendarDndContext>
+					<DayView />
+				</CalendarDndContext>
+			</CalendarProvider>
+		)
+
+		expect(screen.getByText('Resources')).toBeInTheDocument()
+		expect(screen.queryByTestId('day-view-header')).toBeNull()
+	})
 })

@@ -113,6 +113,10 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `lazyFetching` | `boolean` | `true` | With an `events` function: fetch only when the visible range leaves the last fetched range |
 | `loading` | `(isLoading: boolean) => void` | — | With an `events` function: `true` when a fetch starts, `false` when none is in flight any more; fires on transitions only |
 | `onEventsError` | `(error: unknown) => void` | `console.error` | With an `events` function: a fetch failed; the shown events stay |
+| `resources` | `Resource[] \| ResourcesFetcher` | — | The resource axis, or a function `(info, { signal }) => Promise<Resource[]>` called once on mount and on `refetchResources()`. Until it resolves the calendar is a resource calendar with no lanes; `info` is the visible range at that moment, as for `events`. A new function identity does not refetch |
+| `refetchResourcesOnNavigate` | `boolean` | `false` | With a `resources` function: also fetch when the visible range leaves the last fetched one |
+| `resourcesSet` | `(resources: Resource[]) => void` | — | The list is set, and after every change (an array whose content changed, or a fetch result; compared by content, not identity); not while there is no list yet |
+| `onResourcesError` | `(error: unknown) => void` | `console.error` | With a `resources` function: a fetch failed; the shown resources stay |
 | `firstDayOfWeek` | `WeekDays` | `'sunday'` | First day of week |
 | `initialView` | `CalendarView` | `'month'` | Starting view |
 | `initialDate` | `dayjs \| Date \| string` | today | Starting date |

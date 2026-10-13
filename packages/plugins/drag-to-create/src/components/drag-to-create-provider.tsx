@@ -96,7 +96,7 @@ export function DragToCreateProvider({
 	children: ReactNode
 	options: DragToCreateOptions
 }): ReactNode {
-	const { openEventForm, resources, timezone, orientation } =
+	const { openEventForm, resources, hasResourceAxis, timezone, orientation } =
 		useIlamyCalendarContext()
 	const [mirror, setMirror] = useState<Mirror | null>(null)
 	const lastCellRef = useRef<SnappedCell | null>(null)
@@ -105,7 +105,7 @@ export function DragToCreateProvider({
 	// (vertical resource grid -> rows -> y; horizontal -> columns -> x). Locking
 	// the auto-scroll to that axis stops a drag from scrolling across resources.
 	// Regular calendars have a single axis, so both are allowed.
-	const isResourceCalendar = resources.length > 0
+	const isResourceCalendar = hasResourceAxis
 	const resourceScrollAxis = orientation === 'vertical' ? 'y' : 'x'
 	const scrollAxis = isResourceCalendar ? resourceScrollAxis : 'both'
 

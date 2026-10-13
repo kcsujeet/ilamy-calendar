@@ -192,6 +192,7 @@ kcsujeet/ilamy-calendar#101 (15-minute snapping in resource views), #7, #40, #50
 | 3.3.7 | **Display toggles** | Core | `allDaySlot`; `nowIndicator` (default true, see D3); `weekNumbers` incl. month rows, `weekNumberCalculation`; `weekends`; `hiddenDays` in every view; `scrollTime` and `scrollToNow` scroll to the exact minute (shipped). `hiddenDays` and `weekends` apply to the month, week and day views and to every resource arrangement (part b, shipped): bars clamp to the nearest drawn day, the day view skips hidden days, and the year view and the agenda plugin keep every day. |
 | 3.3.8 | **Async events** | Core (one prop) | Shipped. `events` also accepts `(info, { signal }) => Promise<Event[]>` (`EventsFetcher`); `loading(isLoading)`; `lazyFetching`; superseded fetches are aborted; `onEventsError`; `refetchEvents()` on the context API (the `ref` API, 3.3.9, surfaces it too). Touch: `hooks/calendar-data/use-events-fetcher.ts`. Cuts: multiple `eventSources` and JSON-feed URLs (a feed plugin is 4.3.9). |
 | 3.3.9 | **Ref API** | Core | `ref` prop on `IlamyCalendar` and the deprecated alias (a regular prop in React 19, `useImperativeHandle`: https://react.dev/reference/react/useImperativeHandle). `ref.current` is the `useIlamyCalendarContext()` object (D6 keeps ilamy's names: `setCurrentDate`, `nextPeriod`, `setView`, `refetchEvents`, ...), plus `scrollToTime(time)`. Touch: `components/ilamy-calendar.tsx`, `hooks/use-scroll-to-time.ts`. Cuts: `select`/`unselect` (4.1.3); a separate controller hook (the ref plus `headerComponent` cover custom toolbars). |
+| 3.3.10 | **Async resources** | Core | Shipped. `resources` also accepts `(info, { signal }) => Promise<Resource[]>` (`ResourcesFetcher`), called once on mount and on `refetchResources()` (context API; the `ref` from 3.3.9 publishes the whole context API, so it is there too), or on navigation with `refetchResourcesOnNavigate`; `resourcesSet(resources)` after the list is set and after every change; `onResourcesError`; `loading` is one signal for both fetchers. Touch: `hooks/calendar-data/use-range-fetcher.ts` (the abort/latest/loading rules for events and resources, once). |
 
 **Acceptance:** a consumer can resize, reject any move or resize before or after it lands, undo
 it with one call, and configure the time axis.
@@ -203,7 +204,7 @@ The last additive release before 4.0.
 | # | Feature | Placement | Notes |
 |---|---|---|---|
 | 3.4.1 | *(moved to 3.3.8)* | | |
-| 3.4.2 | **Async resources** | Core | `resources` as a fetcher; `resourcesSet`. |
+| 3.4.2 | *(moved to 3.3.10)* | | |
 | 3.4.4 | **Plugin contract hooks** | Core | The six hooks in **Core vs plugin**, each with an internal test plugin. |
 | 3.4.5 | **Deprecation set** | Core | Every name 4.0 removes has its replacement and a `@deprecated` tag. `docs/migration-v4.md` drafted. |
 | 3.4.6 | **Migration guides** | Docs | For users coming from other calendar libraries: option mapping, deliberate deviations, a ported example. Grows with each 4.x release. |
@@ -308,4 +309,4 @@ the Upgrader persona passes on the migrated configuration.
 | Nav link callbacks | 4.3.4 |
 | `allDaySlot` | 3.3.7 |
 | `slotLabelFormat` / `eventTimeFormat` | 3.3.6 |
-| `resourcesSet`, resources as function | 3.4.2 |
+| `resourcesSet`, resources as function | 3.3.10 |

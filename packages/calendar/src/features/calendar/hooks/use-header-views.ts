@@ -5,10 +5,9 @@ import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-cal
 // don't support resources when the calendar has resources. Shared by the
 // desktop switcher and the compact view menu so the filter lives in one place.
 export function useHeaderViews(): PluginView[] {
-	const { getViews, resources } = useSmartCalendarContext((ctx) => ({
+	const { getViews, hasResourceAxis } = useSmartCalendarContext((ctx) => ({
 		getViews: ctx.getViews,
-		resources: ctx.resources,
+		hasResourceAxis: ctx.hasResourceAxis,
 	}))
-	const hasResources = Boolean(resources?.length)
-	return getViews().filter((v) => !hasResources || v.supportsResources)
+	return getViews().filter((v) => !hasResourceAxis || v.supportsResources)
 }

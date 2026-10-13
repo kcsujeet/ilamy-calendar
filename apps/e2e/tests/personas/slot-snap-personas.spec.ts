@@ -1,5 +1,9 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, type ScenarioOptions } from '../support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	type ScenarioOptions,
+} from '../support/harness'
 import { TimeGrid } from '../support/pages'
 
 /**
@@ -51,7 +55,7 @@ const dragPointer = async (page: Page, from: Point, to: Point) => {
 	await page.mouse.move(from.x, from.y)
 	await page.mouse.down()
 	await walk(page, from, to)
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 const openSettled = async (page: Page, options: ScenarioOptions) => {
@@ -140,7 +144,7 @@ const dragExpectOracle = async (
 	await page.mouse.down()
 	await walk(page, from, to)
 	const oracle = await sliceUnder(page, to)
-	await page.mouse.up()
+	await releasePointer(page)
 	await expect.poll(async () => (await changes(page)).length).toBe(1)
 	const after = await state(page, title)
 	expect(oracle).not.toBeNull()
@@ -240,7 +244,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 		const edge = { x: 990, y: from.y }
 		await walk(page, from, edge)
 		await page.waitForTimeout(1500)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect.poll(async () => (await changes(page)).length).toBe(1)
 		const after = await state(page, 'Room A booking')
 		test.info().annotations.push({ type: 'landed', description: after.start })
@@ -274,7 +278,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 			await page.waitForTimeout(400)
 			const stable = await sliceUnder(page, park)
 			expect(stable?.iso, 'grid still scrolling').toBe(before?.iso)
-			await page.mouse.up()
+			await releasePointer(page)
 			await expect.poll(async () => (await changes(page)).length).toBe(1)
 			const after = await state(page, 'Room A booking')
 			test.info().annotations.push({
@@ -563,7 +567,7 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 			await page.waitForTimeout(400)
 			const stable = await sliceUnder(page, park)
 			expect(stable?.iso, 'grid still scrolling').toBe(before?.iso)
-			await page.mouse.up()
+			await releasePointer(page)
 			await expect.poll(async () => (await changes(page)).length).toBe(1)
 			const landed = (await state(page, 'Morning stand-up')).start
 			test.info().annotations.push({
@@ -604,7 +608,7 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 			await walk(page, { x: from.x, y: bottom }, park, 3)
 			await page.waitForTimeout(600)
 			const stable = await sliceUnder(page, park)
-			await page.mouse.up()
+			await releasePointer(page)
 			await expect.poll(async () => (await changes(page)).length).toBe(1)
 			const row = await state(page, 'Morning stand-up')
 			// a resize ends at the END of the hovered slice
@@ -639,7 +643,7 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 		await walk(page, { x: from.x, y: bottom }, park, 3)
 		await page.waitForTimeout(600)
 		const stable = await sliceUnder(page, park)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect.poll(async () => (await changes(page)).length).toBe(1)
 		expect((await state(page, 'Morning stand-up')).start).toBe(stable?.iso)
 	})
@@ -681,7 +685,7 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 			await page.waitForTimeout(400)
 			const stable = await sliceUnder(page, park)
 			expect(stable?.iso, 'grid still scrolling').toBe(before?.iso)
-			await page.mouse.up()
+			await releasePointer(page)
 			await expect.poll(async () => (await changes(page)).length).toBe(1)
 			const landed = (await state(page, 'Morning stand-up')).start
 			test.info().annotations.push({

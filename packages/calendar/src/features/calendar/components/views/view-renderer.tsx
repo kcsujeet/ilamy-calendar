@@ -119,6 +119,28 @@ const HorizontalEngineView: React.FC<
 }
 
 /**
+ * A view without `columns` + `layout`: its own `component` (the escape hatch),
+ * or nothing, with a dev warning, when it declares neither.
+ */
+const GridlessView: React.FC<{ view: PluginView }> = ({ view }) => {
+	const EscapeHatch = view.component
+	if (EscapeHatch) {
+		return <EscapeHatch />
+	}
+	// Guarded `typeof process` check: the published bundle ships this line
+	// as-is, so bundler-less ESM consumers must not crash on bare `process`.
+	const isDevBuild =
+		typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
+	if (isDevBuild) {
+		// biome-ignore lint/suspicious/noConsole: deliberate DX guard (view contract)
+		console.warn(
+			`[@ilamy/calendar] view "${view.name}" declares neither \`columns\` + \`layout\` nor \`component\` — rendering nothing.`
+		)
+	}
+	return null
+}
+
+/**
  * The three-way view dispatcher: 'vertical' → VerticalGrid, 'horizontal' →
  * HorizontalGrid, no columns/layout → the view's `component` (escape hatch).
  * Engine rule: resources + a resource-capable view → the calendar-level
@@ -193,21 +215,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 	)
 
 	if (!specs || !view.layout) {
-		const EscapeHatch = view.component
-		if (EscapeHatch) {
-			return <EscapeHatch />
-		}
-		// Guarded `typeof process` check: the published bundle ships this line
-		// as-is, so bundler-less ESM consumers must not crash on bare `process`.
-		const isDevBuild =
-			typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
-		if (isDevBuild) {
-			// biome-ignore lint/suspicious/noConsole: deliberate DX guard (view contract)
-			console.warn(
-				`[@ilamy/calendar] view "${view.name}" declares neither \`columns\` + \`layout\` nor \`component\` — rendering nothing.`
-			)
-		}
-		return null
+		return <GridlessView view={view} />
 	}
 
 	const composesResourceAxis =

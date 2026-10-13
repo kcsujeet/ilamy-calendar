@@ -8,6 +8,8 @@ import { isToday } from '@/utils/date-utils'
 interface GridCellContentProps {
 	day: Dayjs
 	showDayNumber: boolean
+	/** Shown in line before the day number, so the two never overlap. */
+	weekNumber?: number
 	children?: React.ReactNode
 }
 
@@ -15,6 +17,7 @@ interface GridCellContentProps {
 export const GridCellContent: React.FC<GridCellContentProps> = ({
 	day,
 	showDayNumber,
+	weekNumber,
 	children,
 }) => {
 	// The narrow cell context, not the full one: a time grid has thousands of
@@ -28,12 +31,22 @@ export const GridCellContent: React.FC<GridCellContentProps> = ({
 			style={{ gap: `${eventSpacing}px` }}
 		>
 			{showDayNumber && (
-				<DayLabel
-					className="items-start"
-					data-testid={keys.dayNumber(day)}
-					dayNumber={day.format('D')}
-					today={isToday(day)}
-				/>
+				<div className="flex items-center gap-1">
+					{weekNumber !== undefined && (
+						<span
+							className="pointer-events-none text-[10px] leading-none text-muted-foreground"
+							data-testid="week-number"
+						>
+							{weekNumber}
+						</span>
+					)}
+					<DayLabel
+						className="items-start"
+						data-testid={keys.dayNumber(day)}
+						dayNumber={day.format('D')}
+						today={isToday(day)}
+					/>
+				</div>
 			)}
 			{children}
 		</div>

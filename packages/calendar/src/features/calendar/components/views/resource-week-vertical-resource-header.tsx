@@ -8,6 +8,7 @@ import {
 } from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
+import { getWeekNumber } from '@/features/calendar/utils/week-number'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
 
 interface ResourceWeekVerticalResourceHeaderProps {
@@ -17,8 +18,16 @@ interface ResourceWeekVerticalResourceHeaderProps {
 export const ResourceWeekVerticalResourceHeader: React.FC<
 	ResourceWeekVerticalResourceHeaderProps
 > = ({ resources }) => {
-	const { weekViewGranularity, t, currentDate } = useSmartCalendarContext()
+	const {
+		weekViewGranularity,
+		t,
+		currentDate,
+		weekNumbers,
+		weekNumberCalculation,
+	} = useSmartCalendarContext()
 	const isHourly = weekViewGranularity === 'hourly'
+	const showsWeekNumber = weekNumbers !== false
+	const weekNumber = getWeekNumber(currentDate, weekNumberCalculation)
 
 	return (
 		<div className="flex h-12 gap-px bg-border">
@@ -35,10 +44,15 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 						isHourly ? 'justify-end' : 'justify-center'
 					)}
 				>
-					<span className="truncate w-full">{t('week')}</span>
-					{!isHourly && (
-						<span className="font-medium text-foreground truncate w-full">
-							{currentDate.week()}
+					{showsWeekNumber && (
+						<span className="truncate w-full">{t('week')}</span>
+					)}
+					{showsWeekNumber && !isHourly && (
+						<span
+							className="font-medium text-foreground truncate w-full"
+							data-testid="week-number"
+						>
+							{weekNumber}
 						</span>
 					)}
 				</span>

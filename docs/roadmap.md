@@ -189,7 +189,7 @@ kcsujeet/ilamy-calendar#101 (15-minute snapping in resource views), #7, #40, #50
 | 3.3.4 | **Visible hours** | Core | `slotMinTime`, `slotMaxTime` (`'HH:mm'`), independent of `hideNonBusinessHours`. Touch: `utils/view-hours.ts`. |
 | 3.3.5 | **Slot and snap sizes** | Core | `slotDuration: number` (widens `SlotDuration`; 15/30/60 render identically), `snapDuration` (core of #101), `slotLabelInterval`. |
 | 3.3.6 | **Formats** | Core | `slotLabelFormat`, `eventTimeFormat`, `displayEventTime`, `displayEventEnd`, `dayHeaderFormat`, `titleFormat`, all `Intl.DateTimeFormatOptions`; `timeFormat` stays as shorthand. |
-| 3.3.7 | **Display toggles** | Core | `allDaySlot`; `nowIndicator` (default true, see D3); `weekNumbers` incl. month rows, `weekNumberCalculation`; `weekends`; `hiddenDays` in every view; `scrollTime` with minutes (today floored). |
+| 3.3.7 | **Display toggles** | Core | `allDaySlot`; `nowIndicator` (default true, see D3); `weekNumbers` incl. month rows, `weekNumberCalculation`; `weekends`; `hiddenDays` in every view; `scrollTime` and `scrollToNow` scroll to the exact minute (shipped; `hiddenDays` in every view is part b). |
 
 **Acceptance:** a consumer can resize, reject any move or resize before or after it lands, undo
 it with one call, and configure the time axis.

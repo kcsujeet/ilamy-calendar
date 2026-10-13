@@ -100,6 +100,7 @@ const monthRows = (
 		})),
 		className: 'flex-1',
 		showDayNumber: true,
+		showWeekNumber: true,
 	}))
 }
 

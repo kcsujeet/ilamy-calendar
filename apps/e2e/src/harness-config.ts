@@ -18,6 +18,10 @@ export interface UrlConfig {
 	slotDuration?: SlotDuration
 	scrollTime?: string
 	scrollToNow?: boolean
+	allDaySlot?: boolean
+	nowIndicator?: boolean
+	weekNumbers?: boolean
+	weekNumberCalculation?: 'local' | 'ISO'
 	dayMaxEvents?: number
 	eventHeight?: number
 	eventSpacing?: number
@@ -246,6 +250,31 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const scrollToNow = get('scrollToNow')
 	if (scrollToNow !== null) {
 		config.scrollToNow = boolean('scrollToNow', scrollToNow)
+	}
+
+	const allDaySlot = get('allDaySlot')
+	if (allDaySlot !== null) {
+		config.allDaySlot = boolean('allDaySlot', allDaySlot)
+	}
+
+	const nowIndicator = get('nowIndicator')
+	if (nowIndicator !== null) {
+		config.nowIndicator = boolean('nowIndicator', nowIndicator)
+	}
+
+	const weekNumbers = get('weekNumbers')
+	if (weekNumbers !== null) {
+		config.weekNumbers = boolean('weekNumbers', weekNumbers)
+	}
+
+	const weekNumberCalculation = get('weekNumberCalculation')
+	if (weekNumberCalculation !== null) {
+		config.weekNumberCalculation = oneOf(
+			'weekNumberCalculation',
+			weekNumberCalculation,
+			['local', 'ISO'] as const,
+			String
+		)
 	}
 
 	const stickyViewHeader = get('stickyViewHeader')

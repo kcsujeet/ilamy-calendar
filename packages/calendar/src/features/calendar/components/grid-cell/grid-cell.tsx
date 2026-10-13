@@ -25,6 +25,8 @@ interface GridProps {
 	shouldRenderEvents?: boolean
 	allDay?: boolean
 	showDayNumber?: boolean
+	/** Shown before the day number, for the first cell of a week row. */
+	weekNumber?: number
 	children?: React.ReactNode
 	'data-testid'?: string
 	precomputedEvents?: CalendarEvent[]
@@ -64,6 +66,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	precomputedEvents,
 	'data-testid': dataTestId,
 	showDayNumber = false,
+	weekNumber,
 	isSubDivider = false,
 	children,
 }) => {
@@ -94,7 +97,11 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				slotDurationMinutes={slotDurationMinutes}
 				type="day-cell"
 			>
-				<GridCellContent day={day} showDayNumber={showDayNumber}>
+				<GridCellContent
+					day={day}
+					showDayNumber={showDayNumber}
+					weekNumber={weekNumber}
+				>
 					{shouldRenderEvents && (
 						<GridCellEvents
 							allDay={allDay}

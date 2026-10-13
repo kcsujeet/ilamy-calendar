@@ -980,4 +980,20 @@ describe('DayView', () => {
 			expect(scrollSpy).not.toHaveBeenCalled()
 		})
 	})
+
+	describe('allDaySlot', () => {
+		test('is on by default', () => {
+			cleanup()
+			renderDayView()
+
+			expect(screen.getByTestId('all-day-row')).toBeInTheDocument()
+		})
+
+		test('false removes the all-day row', () => {
+			cleanup()
+			renderDayView({ allDaySlot: false })
+
+			expect(screen.queryByTestId('all-day-row')).not.toBeInTheDocument()
+		})
+	})
 })

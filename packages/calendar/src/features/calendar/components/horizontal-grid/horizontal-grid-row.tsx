@@ -10,6 +10,7 @@ import { memo, useMemo } from 'react'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/use-processed-week-events'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
+import { getWeekNumber } from '@/features/calendar/utils/week-number'
 import { GridCell } from '../grid-cell/grid-cell'
 import { ResourceCell } from '../resource-cell'
 import { HorizontalGridEventsLayer } from './events-layer/horizontal-grid-events-layer'
@@ -26,6 +27,27 @@ export interface HorizontalGridRowProps extends HorizontalRowSpec {
 	allDay?: boolean
 }
 
+/** The sticky resource cell at the start of a resource row. */
+const RowLabel: React.FC<{ resource: Resource }> = ({ resource }) => {
+	const { renderResource } = useSmartCalendarContext((c) => ({
+		renderResource: c.renderResource,
+	}))
+	return (
+		<ResourceCell
+			className="w-20 sm:w-40 border-r sticky left-0 bg-background z-20 h-full"
+			data-sticky-inset="left"
+			data-testid={keys.container.horizontal.rowLabel(resource.id)}
+			resource={resource}
+		>
+			{renderResource ? (
+				renderResource(resource)
+			) : (
+				<div className="wrap-break-word text-sm">{resource.title}</div>
+			)}
+		</ResourceCell>
+	)
+}
+
 const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	id,
 	resource,
@@ -36,8 +58,9 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	columns = [],
 	allDay,
 	showDayNumber = false,
+	showWeekNumber = false,
 }) => {
-	const { renderResource } = useSmartCalendarContext()
+	const { weekNumbers, weekNumberCalculation } = useSmartCalendarContext()
 
 	const isResourceCalendar = variant === 'resource'
 	// Flat columns: each column has col.day (regular month, resource month)
@@ -58,25 +81,19 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 		allDay,
 	})
 
+	const firstDay = flatDays.at(0)
+	const isWeekNumberOn = weekNumbers === true
+	const weekNumber =
+		showWeekNumber && isWeekNumberOn && firstDay
+			? getWeekNumber(firstDay, weekNumberCalculation)
+			: undefined
+
 	return (
 		<div
 			className={cn('flex flex-1 relative min-w-0', className)}
 			data-testid={keys.container.horizontal.row(id)}
 		>
-			{isResourceCalendar && resource && (
-				<ResourceCell
-					className="w-20 sm:w-40 border-r sticky left-0 bg-background z-20 h-full"
-					data-sticky-inset="left"
-					data-testid={keys.container.horizontal.rowLabel(resource.id)}
-					resource={resource}
-				>
-					{renderResource ? (
-						renderResource(resource)
-					) : (
-						<div className="wrap-break-word text-sm">{resource.title}</div>
-					)}
-				</ResourceCell>
-			)}
+			{isResourceCalendar && resource && <RowLabel resource={resource} />}
 			<div className="relative flex-1 flex min-w-0">
 				{/* gap-px + bg-border draws the vertical separators between cells. */}
 				<div className="flex w-full min-w-0 gap-px bg-border">
@@ -114,6 +131,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								)}
 								resourceId={resource?.id}
 								showDayNumber={showDayNumber}
+								weekNumber={columnIndex === 0 ? weekNumber : undefined}
 							/>
 						) : null
 					})}

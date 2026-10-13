@@ -59,5 +59,6 @@ export type {
 	OpenEventFormInput,
 	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
+	WeekNumberCalculation,
 } from './features/calendar/types'
 export type { CalendarView, TimeFormat } from './types'

@@ -1714,10 +1714,18 @@ test.describe('sticky event titles (#290)', () => {
 			throw new Error('"Long shift" is not on screen')
 		}
 
-		// One hour down from the middle of what is visible, clear of the edges
-		// where the drag would auto-scroll the grid.
+		// One hour down from the middle of the part of the bar that is on screen,
+		// clear of the edges where the drag would auto-scroll the grid. (The bar
+		// is taller than the viewport, so its own middle is off screen, and the
+		// pointer must also stay inside the scroller: outside it no cell is
+		// under the pointer, so no mirror is drawn.)
+		const visibleTop = Math.max(barBox.y, viewportBox.y)
+		const visibleBottom = Math.min(
+			barBox.y + barBox.height,
+			viewportBox.y + viewportBox.height
+		)
 		const grabX = barBox.x + barBox.width / 2
-		const grabY = (viewportBox.y + barBox.y + barBox.height) / 2
+		const grabY = (visibleTop + visibleBottom) / 2
 		await page.mouse.move(grabX, grabY)
 		await page.mouse.down()
 		for (let step = 1; step <= 8; step += 1) {

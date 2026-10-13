@@ -3,6 +3,7 @@ import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { act, renderHook } from '@testing-library/react'
 import { StrictMode, useState } from 'react'
+import { mustFetchRange } from '@/features/calendar/hooks/calendar-data/use-range-fetcher'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
 import type { EventsFetchInfo } from '@/features/calendar/types'
 
@@ -566,5 +567,47 @@ describe('resourcesSet reports content, not identity', () => {
 		await calls[1].resolve([mkResource('a')])
 
 		expect(resourcesSet).toHaveBeenCalledTimes(1)
+	})
+})
+
+describe('mustFetchRange', () => {
+	const fetched = { startMs: 100, endMs: 200, timezone: 'UTC' }
+	const decide = (overrides: Partial<Parameters<typeof mustFetchRange>[0]>) =>
+		mustFetchRange({
+			fetched,
+			visibleStartMs: 120,
+			visibleEndMs: 180,
+			timezone: 'UTC',
+			isFetchInFlight: false,
+			lazyFetching: true,
+			followsRange: true,
+			...overrides,
+		})
+
+	it('fetches when nothing was fetched yet', () => {
+		expect(decide({ fetched: undefined })).toBe(true)
+	})
+
+	it('does not fetch inside the fetched range', () => {
+		expect(decide({})).toBe(false)
+	})
+
+	it('fetches when the range leaves the fetched one', () => {
+		expect(decide({ visibleStartMs: 90 })).toBe(true)
+		expect(decide({ visibleEndMs: 210 })).toBe(true)
+	})
+
+	it('fetches when the zone changes, a fetch is in flight, or lazyFetching is off', () => {
+		expect(decide({ timezone: 'Asia/Tokyo' })).toBe(true)
+		expect(decide({ isFetchInFlight: true })).toBe(true)
+		expect(decide({ lazyFetching: false })).toBe(true)
+	})
+
+	it('fetches range-independent data once, and not while one is in flight', () => {
+		expect(decide({ followsRange: false, fetched: undefined })).toBe(true)
+		expect(
+			decide({ followsRange: false, fetched: undefined, isFetchInFlight: true })
+		).toBe(false)
+		expect(decide({ followsRange: false, visibleStartMs: 90 })).toBe(false)
 	})
 })

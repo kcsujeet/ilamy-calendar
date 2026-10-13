@@ -14,7 +14,7 @@ import {
 	SelectValue,
 } from '@ilamy/ui/components/select'
 import { Textarea } from '@ilamy/ui/components/textarea'
-import dayjs from '@ilamy/utils/dayjs'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { readableTextColor } from '@ilamy/utils/helpers'
 import type React from 'react'
 import { useEffect, useState } from 'react'
@@ -156,69 +156,112 @@ const EventFormTextField = ({
 	</div>
 )
 
-export interface EventFormProps {
-	open?: boolean
-	selectedEvent?: CalendarEvent | null
-	onAdd?: (event: CalendarEvent) => void
-	onUpdate?: (event: CalendarEvent) => void
-	onDelete?: (event: CalendarEvent) => void
+interface ResourceSelectProps {
+	value: string | number | undefined
+	onChange: (resourceId: string | number) => void
+}
+
+const ResourceSelect = ({ value, onChange }: ResourceSelectProps) => {
+	const { t, resources } = useSmartCalendarContext((context) => ({
+		t: context.t,
+		resources: context.resources ?? [],
+	}))
+	const resolveResourceId = (selected: string): string | number => {
+		const resource = resources.find((item) => String(item.id) === selected)
+		return resource?.id ?? selected
+	}
+
+	return (
+		<div className="grid gap-1 sm:gap-2">
+			<Label className="text-xs sm:text-sm" htmlFor="resource">
+				{t('resource')}
+			</Label>
+			<Select
+				onValueChange={(selected) => onChange(resolveResourceId(selected))}
+				value={value?.toString()}
+			>
+				<SelectTrigger
+					className="h-8 text-sm sm:h-9"
+					data-testid="resource-select"
+					id="resource"
+				>
+					<SelectValue placeholder={t('selectResource')} />
+				</SelectTrigger>
+				<SelectContent>
+					{resources.map((resource) => (
+						<SelectItem key={String(resource.id)} value={String(resource.id)}>
+							{resource.title}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+		</div>
+	)
+}
+
+interface EventFormFooterProps {
+	isExistingEvent: boolean
+	isSubmitDisabled: boolean
+	onDelete: () => void
 	onClose: () => void
 }
 
-export const EventForm: React.FC<EventFormProps> = ({
-	selectedEvent,
-	onClose,
-	onUpdate,
+const EventFormFooter = ({
+	isExistingEvent,
+	isSubmitDisabled,
 	onDelete,
-	onAdd,
-}) => {
-	const {
-		dialogState,
-		openEditDialog,
-		openDeleteDialog,
-		closeDialog,
-		handleConfirm,
-	} = useScopedEventMutation(onClose)
+	onClose,
+}: EventFormFooterProps) => {
+	const t = useSmartCalendarContext((context) => context.t)
 
-	const { t, timeFormat, getEventManager, resources, hasResourceAxis } =
-		useSmartCalendarContext((context) => ({
-			t: context.t,
-			timeFormat: context.timeFormat,
-			getEventManager: context.getEventManager,
-			resources: context.resources ?? [],
-			hasResourceAxis: context.hasResourceAxis,
-		}))
-	// The selected event's fields, or the new-event defaults.
-	const {
-		id: selectedEventId,
-		resourceId,
-		resourceIds,
-		start = dayjs(),
-		end = dayjs().add(1, 'hour'),
-		allDay: initialAllDay = false,
-		color: initialColor,
-		backgroundColor: initialBackgroundColor,
-		title: initialTitle = '',
-		description: initialDescription = '',
-		location: initialLocation = '',
-	} = selectedEvent ?? {}
+	return (
+		<DialogFooter className="mt-4 shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:gap-0">
+			{isExistingEvent && (
+				<Button
+					className="w-full sm:mr-auto sm:w-auto"
+					onClick={onDelete}
+					size="sm"
+					type="button"
+					variant="destructive"
+				>
+					{t('delete')}
+				</Button>
+			)}
+			<div className="flex w-full gap-2 sm:w-auto">
+				<Button
+					className="flex-1 sm:flex-none"
+					onClick={onClose}
+					size="sm"
+					type="button"
+					variant="outline"
+				>
+					{t('cancel')}
+				</Button>
+				<Button
+					className="flex-1 sm:flex-none"
+					disabled={isSubmitDisabled}
+					size="sm"
+					type="submit"
+				>
+					{isExistingEvent ? t('update') : t('create')}
+				</Button>
+			</div>
+		</DialogFooter>
+	)
+}
 
-	const hasResources = hasResourceAxis
-	const initialSelectedResourceId = resourceId ?? resourceIds?.at(0)
-	const showResourceSelector =
-		hasResources && initialSelectedResourceId === undefined
+interface EventScheduleInput {
+	start: Dayjs
+	end: Dayjs
+	initialAllDay: boolean
+}
 
-	const [selectedResourceId, setSelectedResourceId] = useState<
-		string | number | undefined
-	>(initialSelectedResourceId)
-
-	const effectiveResourceId = hasResources ? selectedResourceId : resourceId
-
-	const effectiveBusinessHours = useEffectiveBusinessHours(effectiveResourceId)
-
-	// Whether a plugin owns this event (gates the scoped edit/delete flow)
-	const eventIsOwned = Boolean(selectedEvent && getEventManager(selectedEvent))
-
+// The form's dates, times and all-day flag, and the rules that keep them consistent.
+const useEventSchedule = ({
+	start,
+	end,
+	initialAllDay,
+}: EventScheduleInput) => {
 	// An all-day `end` is STORED exclusively, as the midnight after the last day
 	// the event covers (#248), but the picker shows the user that last day.
 	// `buildEndDateTime` converts back on save. An end that is not on a midnight
@@ -227,43 +270,13 @@ export const EventForm: React.FC<EventFormProps> = ({
 	const lastCoveredDay =
 		initialAllDay && endsOnMidnight ? end.subtract(1, 'day') : end
 
-	// Form state
 	const [startDate, setStartDate] = useState(start.toDate())
 	const [endDate, setEndDate] = useState(lastCoveredDay.toDate())
 	const [isAllDay, setIsAllDay] = useState(initialAllDay)
-	const [selectedColor, setSelectedColor] = useState(
-		resolveInitialColor(initialBackgroundColor, initialColor)
-	)
-	// Existing events keep their original color (including legacy Tailwind
-	// class-pairs) untouched unless the user actually picks a new one.
-	const [colorPicked, setColorPicked] = useState(false)
-	const hadInitialColor = Boolean(initialColor || initialBackgroundColor)
-
-	const handleColorChange = (color: string) => {
-		setSelectedColor(color)
-		setColorPicked(true)
-	}
 
 	// Time state
 	const [startTime, setStartTime] = useState(start.format('HH:mm'))
 	const [endTime, setEndTime] = useState(end.format('HH:mm'))
-
-	// Initialize form values from selected event or defaults
-	const [formValues, setFormValues] = useState({
-		title: initialTitle,
-		description: initialDescription,
-		location: initialLocation,
-	})
-
-	// Generic draft of plugin-contributed fields (e.g. recurrence's rrule).
-	// Plugins push their fields through the event-form slot's `onChange`.
-	const [pluginUpdates, setPluginUpdates] = useState<Partial<CalendarEvent>>({})
-
-	// The event as the plugin editors see it: the selected event plus any
-	// in-progress plugin fields, so their inputs stay controlled.
-	const draftEvent = { ...selectedEvent, ...pluginUpdates } as CalendarEvent
-	const mergePluginUpdates = (updates: Partial<CalendarEvent>) =>
-		setPluginUpdates((prev) => ({ ...prev, ...updates }))
 
 	// Create wrapper functions to fix TypeScript errors with DatePicker
 	const handleStartDateChange = (date: Date | undefined) => {
@@ -323,14 +336,6 @@ export const EventForm: React.FC<EventFormProps> = ({
 		}
 	}
 
-	// Update form values when input changes
-	const handleInputChange = (
-		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-	) => {
-		const { name, value } = e.target
-		setFormValues((prev) => ({ ...prev, [name]: value }))
-	}
-
 	useEffect(() => {
 		// Reset end time when all day is toggled to on
 		if (isAllDay) {
@@ -338,13 +343,269 @@ export const EventForm: React.FC<EventFormProps> = ({
 		}
 	}, [isAllDay])
 
-	const resolveResourceId = (value: string): string | number => {
-		const resource = resources.find((item) => String(item.id) === value)
-		return resource?.id ?? value
+	return {
+		startDate,
+		endDate,
+		isAllDay,
+		startTime,
+		endTime,
+		handleStartDateChange,
+		handleEndDateChange,
+		handleAllDayChange,
+		handleStartTimeChange,
+		handleEndTimeChange,
+	}
+}
+
+type EventSchedule = ReturnType<typeof useEventSchedule>
+
+interface ScheduleFieldsProps {
+	schedule: EventSchedule
+	businessHours: ReturnType<typeof useEffectiveBusinessHours>
+}
+
+// The all-day checkbox, the date pickers, and the time pickers a timed event needs.
+const ScheduleFields = ({ schedule, businessHours }: ScheduleFieldsProps) => {
+	const { t, timeFormat } = useSmartCalendarContext((context) => ({
+		t: context.t,
+		timeFormat: context.timeFormat,
+	}))
+	const {
+		startDate,
+		endDate,
+		isAllDay,
+		startTime,
+		endTime,
+		handleStartDateChange,
+		handleEndDateChange,
+		handleAllDayChange,
+		handleStartTimeChange,
+		handleEndTimeChange,
+	} = schedule
+
+	let disabledDateMatcher: ((date: Date) => boolean) | undefined
+	if (businessHours) {
+		disabledDateMatcher = (date) => !isBusinessDay(dayjs(date), businessHours)
 	}
 
+	const startConstraints = getTimeConstraints(startDate, businessHours)
+	const endConstraints = getTimeConstraints(endDate, businessHours)
+
+	const dateFields = [
+		['startDate', startDate, handleStartDateChange],
+		['endDate', endDate, handleEndDateChange],
+	] as const
+
+	const timeFields = [
+		[
+			'startTime',
+			'start-time',
+			startTime,
+			handleStartTimeChange,
+			startConstraints,
+		],
+		['endTime', 'end-time', endTime, handleEndTimeChange, endConstraints],
+	] as const
+
+	return (
+		<>
+			<div className="flex items-center space-x-2">
+				<Checkbox
+					checked={isAllDay}
+					id="allDay"
+					onCheckedChange={(checked) => handleAllDayChange(checked === true)}
+				/>
+				<Label className="text-xs sm:text-sm" htmlFor="allDay">
+					{t('allDay')}
+				</Label>
+			</div>
+
+			<div className="grid grid-cols-2 gap-2 sm:gap-4">
+				{dateFields.map(([label, date, onChange]) => (
+					<div key={label}>
+						<Label className="text-xs sm:text-sm">{t(label)}</Label>
+						<DatePicker
+							className="mt-1"
+							closeOnSelect
+							date={date}
+							disabled={disabledDateMatcher}
+							onChange={onChange}
+						/>
+					</div>
+				))}
+			</div>
+
+			{!isAllDay && (
+				<div className="grid grid-cols-2 gap-2 sm:gap-4">
+					{timeFields.map(([label, name, value, onChange, c]) => (
+						<div key={label}>
+							<Label className="text-xs sm:text-sm">{t(label)}</Label>
+							<TimePicker
+								className="mt-1 h-8 text-sm sm:h-9"
+								maxTime={c.max}
+								minTime={c.min}
+								name={name}
+								onChange={onChange}
+								placeholder={t('searchTime')}
+								timeFormat={timeFormat}
+								value={value}
+							/>
+						</div>
+					))}
+				</div>
+			)}
+		</>
+	)
+}
+
+// The selected event's fields, or the new-event defaults.
+const withNewEventDefaults = (
+	selectedEvent: CalendarEvent | null | undefined
+) => {
+	const {
+		start = dayjs(),
+		end = dayjs().add(1, 'hour'),
+		allDay = false,
+		title = '',
+		description = '',
+		location = '',
+		...rest
+	} = selectedEvent ?? {}
+	return { ...rest, start, end, allDay, title, description, location }
+}
+
+interface EventResourceInput {
+	resourceId?: string | number
+	resourceIds?: (string | number)[]
+	hasResourceAxis: boolean
+}
+
+// Which resource the event lands on, and whether the user still has to pick one.
+const useEventResource = ({
+	resourceId,
+	resourceIds,
+	hasResourceAxis,
+}: EventResourceInput) => {
+	const initialSelectedResourceId = resourceId ?? resourceIds?.at(0)
+	const showResourceSelector =
+		hasResourceAxis && initialSelectedResourceId === undefined
+
+	const [selectedResourceId, setSelectedResourceId] = useState<
+		string | number | undefined
+	>(initialSelectedResourceId)
+
+	const effectiveResourceId = hasResourceAxis ? selectedResourceId : resourceId
 	const isResourceMissing =
 		showResourceSelector && selectedResourceId === undefined
+
+	return {
+		selectedResourceId,
+		setSelectedResourceId,
+		effectiveResourceId,
+		showResourceSelector,
+		isResourceMissing,
+	}
+}
+
+export interface EventFormProps {
+	open?: boolean
+	selectedEvent?: CalendarEvent | null
+	onAdd?: (event: CalendarEvent) => void
+	onUpdate?: (event: CalendarEvent) => void
+	onDelete?: (event: CalendarEvent) => void
+	onClose: () => void
+}
+
+export const EventForm: React.FC<EventFormProps> = ({
+	selectedEvent,
+	onClose,
+	onUpdate,
+	onDelete,
+	onAdd,
+}) => {
+	const {
+		dialogState,
+		openEditDialog,
+		openDeleteDialog,
+		closeDialog,
+		handleConfirm,
+	} = useScopedEventMutation(onClose)
+
+	const { t, getEventManager, hasResourceAxis } = useSmartCalendarContext(
+		(context) => ({
+			t: context.t,
+			getEventManager: context.getEventManager,
+			hasResourceAxis: context.hasResourceAxis,
+		})
+	)
+	const {
+		id: selectedEventId,
+		resourceId,
+		resourceIds,
+		start,
+		end,
+		allDay: initialAllDay,
+		color: initialColor,
+		backgroundColor: initialBackgroundColor,
+		title: initialTitle,
+		description: initialDescription,
+		location: initialLocation,
+	} = withNewEventDefaults(selectedEvent)
+
+	const {
+		selectedResourceId,
+		setSelectedResourceId,
+		effectiveResourceId,
+		showResourceSelector,
+		isResourceMissing,
+	} = useEventResource({ resourceId, resourceIds, hasResourceAxis })
+
+	const effectiveBusinessHours = useEffectiveBusinessHours(effectiveResourceId)
+
+	// Whether a plugin owns this event (gates the scoped edit/delete flow)
+	const eventIsOwned = Boolean(selectedEvent && getEventManager(selectedEvent))
+
+	const schedule = useEventSchedule({ start, end, initialAllDay })
+	const { startDate, endDate, startTime, endTime, isAllDay } = schedule
+
+	// Color state
+	const [selectedColor, setSelectedColor] = useState(
+		resolveInitialColor(initialBackgroundColor, initialColor)
+	)
+	// Existing events keep their original color (including legacy Tailwind
+	// class-pairs) untouched unless the user actually picks a new one.
+	const [colorPicked, setColorPicked] = useState(false)
+	const hadInitialColor = Boolean(initialColor || initialBackgroundColor)
+
+	const handleColorChange = (color: string) => {
+		setSelectedColor(color)
+		setColorPicked(true)
+	}
+
+	// Initialize form values from selected event or defaults
+	const [formValues, setFormValues] = useState({
+		title: initialTitle,
+		description: initialDescription,
+		location: initialLocation,
+	})
+
+	// Generic draft of plugin-contributed fields (e.g. recurrence's rrule).
+	// Plugins push their fields through the event-form slot's `onChange`.
+	const [pluginUpdates, setPluginUpdates] = useState<Partial<CalendarEvent>>({})
+
+	// The event as the plugin editors see it: the selected event plus any
+	// in-progress plugin fields, so their inputs stay controlled.
+	const draftEvent = { ...selectedEvent, ...pluginUpdates } as CalendarEvent
+	const mergePluginUpdates = (updates: Partial<CalendarEvent>) =>
+		setPluginUpdates((prev) => ({ ...prev, ...updates }))
+
+	// Update form values when input changes
+	const handleInputChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+	) => {
+		const { name, value } = e.target
+		setFormValues((prev) => ({ ...prev, [name]: value }))
+	}
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
@@ -367,8 +628,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 			initialColor,
 		})
 
-		const eventData: CalendarEvent = {
-			id: selectedEventId || dayjs().format('YYYYMMDDHHmmss'),
+		const editedFields = {
 			title: formValues.title,
 			start: startDateTime,
 			end: endDateTime,
@@ -376,25 +636,19 @@ export const EventForm: React.FC<EventFormProps> = ({
 			description: formValues.description,
 			location: formValues.location,
 			allDay: isAllDay,
-			...colorFields,
 			...pluginUpdates,
 		}
 
 		if (selectedEvent?.id && eventIsOwned) {
-			openEditDialog(selectedEvent, {
-				title: formValues.title,
-				start: startDateTime,
-				end: endDateTime,
-				resourceId: effectiveResourceId,
-				description: formValues.description,
-				location: formValues.location,
-				allDay: isAllDay,
-				color: selectedColor,
-				...pluginUpdates,
-			})
+			openEditDialog(selectedEvent, { color: selectedColor, ...editedFields })
 			return
 		}
 
+		const eventData: CalendarEvent = {
+			id: selectedEventId || dayjs().format('YYYYMMDDHHmmss'),
+			...colorFields,
+			...editedFields,
+		}
 		if (selectedEventId) {
 			onUpdate?.(eventData)
 		} else {
@@ -416,33 +670,6 @@ export const EventForm: React.FC<EventFormProps> = ({
 		onDelete?.(selectedEvent)
 		onClose()
 	}
-
-	let disabledDateMatcher: ((date: Date) => boolean) | undefined
-	if (effectiveBusinessHours) {
-		disabledDateMatcher = (date) =>
-			!isBusinessDay(dayjs(date), effectiveBusinessHours)
-	}
-
-	const startConstraints = getTimeConstraints(startDate, effectiveBusinessHours)
-	const endConstraints = getTimeConstraints(endDate, effectiveBusinessHours)
-
-	const dateFields = [
-		['startDate', startDate, handleStartDateChange],
-		['endDate', endDate, handleEndDateChange],
-	] as const
-
-	const timeFields = [
-		[
-			'startTime',
-			'start-time',
-			startTime,
-			handleStartTimeChange,
-			startConstraints,
-		],
-		['endTime', 'end-time', endTime, handleEndTimeChange, endConstraints],
-	] as const
-
-	const resourceSelectValue = selectedResourceId?.toString()
 
 	return (
 		<>
@@ -467,84 +694,16 @@ export const EventForm: React.FC<EventFormProps> = ({
 						/>
 
 						{showResourceSelector && (
-							<div className="grid gap-1 sm:gap-2">
-								<Label className="text-xs sm:text-sm" htmlFor="resource">
-									{t('resource')}
-								</Label>
-								<Select
-									onValueChange={(value) =>
-										setSelectedResourceId(resolveResourceId(value))
-									}
-									value={resourceSelectValue}
-								>
-									<SelectTrigger
-										className="h-8 text-sm sm:h-9"
-										data-testid="resource-select"
-										id="resource"
-									>
-										<SelectValue placeholder={t('selectResource')} />
-									</SelectTrigger>
-									<SelectContent>
-										{resources.map((resource) => (
-											<SelectItem
-												key={String(resource.id)}
-												value={String(resource.id)}
-											>
-												{resource.title}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-						)}
-
-						<div className="flex items-center space-x-2">
-							<Checkbox
-								checked={isAllDay}
-								id="allDay"
-								onCheckedChange={(checked) =>
-									handleAllDayChange(checked === true)
-								}
+							<ResourceSelect
+								onChange={setSelectedResourceId}
+								value={selectedResourceId}
 							/>
-							<Label className="text-xs sm:text-sm" htmlFor="allDay">
-								{t('allDay')}
-							</Label>
-						</div>
-
-						<div className="grid grid-cols-2 gap-2 sm:gap-4">
-							{dateFields.map(([label, date, onChange]) => (
-								<div key={label}>
-									<Label className="text-xs sm:text-sm">{t(label)}</Label>
-									<DatePicker
-										className="mt-1"
-										closeOnSelect
-										date={date}
-										disabled={disabledDateMatcher}
-										onChange={onChange}
-									/>
-								</div>
-							))}
-						</div>
-
-						{!isAllDay && (
-							<div className="grid grid-cols-2 gap-2 sm:gap-4">
-								{timeFields.map(([label, name, value, onChange, c]) => (
-									<div key={label}>
-										<Label className="text-xs sm:text-sm">{t(label)}</Label>
-										<TimePicker
-											className="mt-1 h-8 text-sm sm:h-9"
-											maxTime={c.max}
-											minTime={c.min}
-											name={name}
-											onChange={onChange}
-											placeholder={t('searchTime')}
-											timeFormat={timeFormat}
-											value={value}
-										/>
-									</div>
-								))}
-							</div>
 						)}
+
+						<ScheduleFields
+							businessHours={effectiveBusinessHours}
+							schedule={schedule}
+						/>
 
 						<div className="grid gap-1 sm:gap-2">
 							<Label className="text-xs sm:text-sm">{t('color')}</Label>
@@ -569,38 +728,12 @@ export const EventForm: React.FC<EventFormProps> = ({
 					</div>
 				</ScrollArea>
 
-				<DialogFooter className="mt-4 shrink-0 flex flex-col-reverse gap-2 sm:flex-row sm:gap-0">
-					{selectedEventId && (
-						<Button
-							className="w-full sm:mr-auto sm:w-auto"
-							onClick={handleDelete}
-							size="sm"
-							type="button"
-							variant="destructive"
-						>
-							{t('delete')}
-						</Button>
-					)}
-					<div className="flex w-full gap-2 sm:w-auto">
-						<Button
-							className="flex-1 sm:flex-none"
-							onClick={onClose}
-							size="sm"
-							type="button"
-							variant="outline"
-						>
-							{t('cancel')}
-						</Button>
-						<Button
-							className="flex-1 sm:flex-none"
-							disabled={isResourceMissing}
-							size="sm"
-							type="submit"
-						>
-							{selectedEventId ? t('update') : t('create')}
-						</Button>
-					</div>
-				</DialogFooter>
+				<EventFormFooter
+					isExistingEvent={Boolean(selectedEventId)}
+					isSubmitDisabled={isResourceMissing}
+					onClose={onClose}
+					onDelete={handleDelete}
+				/>
 			</form>
 
 			{/* Scope dialog, provided by the owning plugin (e.g. recurrence) */}

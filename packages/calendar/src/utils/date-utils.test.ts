@@ -917,3 +917,50 @@ describe('hidden days', () => {
 		})
 	})
 })
+
+/**
+ * `getDayHours` has a cheap path for a day without a clock change and falls
+ * back to one wall-clock parse per row on a change day. Both must give what a
+ * per-row wall-clock parse gives, in every calendar zone, so each day of a
+ * year is compared against that reference (run under TZ=America/New_York too).
+ */
+describe('getDayHours matches a per-row wall-clock parse', () => {
+	const originalTz = dayjs.tz.guess()
+
+	afterEach(() => {
+		dayjs.tz.setDefault(originalTz)
+	})
+
+	const wallClockRows = (dayKey: string) =>
+		Array.from({ length: 24 }, (_, hour) =>
+			dayjs(`${dayKey}T${String(hour).padStart(2, '0')}:00:00.000`).tz()
+		)
+
+	const describeRow = (row: ReturnType<typeof dayjs>) =>
+		`${row.toISOString()} ${row.format('YYYY-MM-DD HH:mm Z')} ${row.hour()}`
+
+	const zones = [
+		'UTC',
+		'America/New_York',
+		'America/Vancouver',
+		'Asia/Kolkata',
+		'Australia/Lord_Howe',
+	]
+
+	for (const zone of zones) {
+		it(`in ${zone}, for every day of 2025`, () => {
+			dayjs.tz.setDefault(zone)
+			const mismatchedDays: string[] = []
+			for (let dayOfYear = 0; dayOfYear < 365; dayOfYear++) {
+				const day = dayjs('2025-01-01T12:00:00.000').add(dayOfYear, 'day')
+				const dayKey = day.format('YYYY-MM-DD')
+				const actual = getDayHours({ referenceDate: day }).map(describeRow)
+				const expected = wallClockRows(dayKey).map(describeRow)
+				if (actual.join('\n') !== expected.join('\n')) {
+					mismatchedDays.push(dayKey)
+				}
+			}
+			expect(mismatchedDays).toEqual([])
+		}, 60_000)
+	}
+})

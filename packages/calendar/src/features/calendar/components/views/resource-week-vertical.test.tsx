@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import type { CalendarEvent } from '@ilamy/types'
+import type {
+	CalendarEvent,
+	VerticalColumnSpec,
+	ViewConfig,
+} from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
+import { weekView } from '@/features/calendar/components/views/week'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import {
 	resourceWeekInitialDate as initialDate,
@@ -517,6 +522,33 @@ describe('ResourceWeekVertical', () => {
 			renderResourceWeekVertical({ allDaySlot: false })
 
 			expect(screen.queryAllByTestId('all-day-row')).toHaveLength(0)
+		})
+	})
+})
+
+describe('resource week vertical column specs', () => {
+	const config: ViewConfig = {
+		firstDayOfWeek: 0,
+		resources: twoResources,
+		orientation: 'vertical',
+		weekViewGranularity: 'hourly',
+	}
+
+	// The hour list of a day is the same for every resource, so it is derived
+	// once per visible day and shared, not rebuilt per resource per day.
+	test('gives every resource the same hour list for a given day', () => {
+		const specs = weekView.columns?.(dayjs(initialDate), config)
+		const columns = (specs ?? []) as VerticalColumnSpec[]
+		const firstResourceColumns = columns.filter(
+			(column) => column.resource?.id === twoResources[0].id
+		)
+		const secondResourceColumns = columns.filter(
+			(column) => column.resource?.id === twoResources[1].id
+		)
+		expect(firstResourceColumns).toHaveLength(7)
+		firstResourceColumns.forEach((column, dayIndex) => {
+			const sameDayOfSecondResource = secondResourceColumns.at(dayIndex)
+			expect(column.days === sameDayOfSecondResource?.days).toBe(true)
 		})
 	})
 })

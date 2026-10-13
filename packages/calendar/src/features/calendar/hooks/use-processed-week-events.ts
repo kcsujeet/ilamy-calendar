@@ -1,9 +1,13 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import { overlapsRange } from '@ilamy/utils/helpers'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { filterEventsForResource } from '@/features/calendar/utils/event-pipeline'
+import {
+	bucketEventsByColumn,
+	getColumnBounds,
+	getDefaultZone,
+	getResourceEvents,
+} from '@/features/calendar/utils/event-buckets'
 import { keys } from '@/features/calendar/utils/keys'
 import type { HorizontalPositionedEvent } from '@/features/calendar/utils/layout/geometry'
 import { layoutHorizontal } from '@/features/calendar/utils/layout/horizontal'
@@ -28,19 +32,22 @@ export const useProcessedWeekEvents = ({
 }: UseProcessedWeekEventsProps): ProcessedWeekEventsResult => {
 	const { getEventsForDateRange, dayMaxEvents } = useSmartCalendarContext()
 
+	const defaultZone = getDefaultZone()
 	const first = days.at(0)
 	const last = days.at(-1)
-	const weekStart = first?.startOf('day')
-	const weekEnd = last?.endOf('day')
+	const weekStart = first && getColumnBounds(first, 'day', defaultZone).start
+	const weekEnd = last && getColumnBounds(last, 'day', defaultZone).end
 
 	const events = useMemo(() => {
 		if (!weekStart || !weekEnd) return []
 
+		// The range's events are computed once and shared by every row; each row
+		// reads its own resource's bucket of them.
 		const rangeEvents = getEventsForDateRange(weekStart, weekEnd)
-		let weekEvents = filterEventsForResource(rangeEvents, resourceId)
+		const weekEvents = getResourceEvents(rangeEvents, resourceId)
 
 		if (allDay) {
-			weekEvents = weekEvents.filter((e) => Boolean(e.allDay))
+			return weekEvents.filter((e) => Boolean(e.allDay))
 		}
 
 		return weekEvents
@@ -50,22 +57,23 @@ export const useProcessedWeekEvents = ({
 		const map = new Map<string, CalendarEvent[]>()
 		const unit = gridType ?? 'day'
 		const hasNoEvents = events.length === 0
-		for (const day of days) {
-			// Every column of an empty row is empty. Bounding a column costs two
-			// zone conversions, and a resource row is usually empty on most days.
-			if (hasNoEvents) {
+		// Every column of an empty row is empty, and a resource row is usually
+		// empty on most days: skip reading the columns' bounds.
+		if (hasNoEvents) {
+			for (const day of days) {
 				map.set(keys.col.events(day), [])
-				continue
 			}
-			const columnStart = day.startOf(unit)
-			const columnEnd = day.endOf(unit)
-			const columnEvents = events.filter((e) =>
-				overlapsRange(e, columnStart, columnEnd)
-			)
-			map.set(keys.col.events(day), columnEvents)
+			return map
 		}
+		const columnBounds = days.map((day) =>
+			getColumnBounds(day, unit, defaultZone)
+		)
+		const eventsPerColumn = bucketEventsByColumn(columnBounds, events)
+		days.forEach((day, index) => {
+			map.set(keys.col.events(day), eventsPerColumn.at(index) ?? [])
+		})
 		return map
-	}, [days, events, gridType])
+	}, [days, events, gridType, defaultZone])
 
 	const positionedEvents = useMemo(() => {
 		return layoutHorizontal({

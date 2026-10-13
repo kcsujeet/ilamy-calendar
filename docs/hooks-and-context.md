@@ -33,7 +33,7 @@ The only hook exported for library consumers. Returns a curated subset of contex
 |-------|------|-------------|
 | `currentDate` | `dayjs.Dayjs` | Currently displayed date |
 | `view` | `CalendarView` | Active view (month/week/day/year) |
-| `events` | `CalendarEvent[]` | Processed events for current view range |
+| `events` | `CalendarEvent[]` | Processed events for current view range. Read-only and shared: the list is the cached answer for that range (also read by every resource row), so copy it before sorting or pushing. A development build freezes it, so a mutation throws; a production build does not freeze it |
 | `isEventFormOpen` | `boolean` | Whether the event form is open |
 | `selectedEvent` | `CalendarEvent \| null` | Currently selected/editing event |
 | `selectedDate` | `dayjs.Dayjs \| null` | Currently selected date |

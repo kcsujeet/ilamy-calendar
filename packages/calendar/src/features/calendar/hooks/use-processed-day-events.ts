@@ -1,7 +1,11 @@
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { filterEventsForResource } from '@/features/calendar/utils/event-pipeline'
+import {
+	getColumnBounds,
+	getDefaultZone,
+	getResourceEvents,
+} from '@/features/calendar/utils/event-buckets'
 import type { VerticalPositionedEvent } from '@/features/calendar/utils/layout/geometry'
 import { layoutVertical } from '@/features/calendar/utils/layout/vertical'
 
@@ -17,10 +21,11 @@ export const useProcessedDayEvents = ({
 	resourceId,
 }: UseProcessedDayEventsProps) => {
 	const { getEventsForDateRange } = useSmartCalendarContext()
+	const defaultZone = getDefaultZone()
 	const first = days.at(0)
 	const last = days.at(-1)
-	const dayStart = first?.startOf('day')
-	const dayEnd = last?.endOf('day')
+	const dayStart = first && getColumnBounds(first, 'day', defaultZone).start
+	const dayEnd = last && getColumnBounds(last, 'day', defaultZone).end
 
 	const events = useMemo(() => {
 		if (!dayStart || !dayEnd) return []
@@ -28,7 +33,7 @@ export const useProcessedDayEvents = ({
 		const rangeEvents = getEventsForDateRange(dayStart, dayEnd)
 		// Which of these the grid draws (all-day ones only on a day grid) is
 		// `layoutVertical`'s rule, kept in one place.
-		return filterEventsForResource(rangeEvents, resourceId)
+		return getResourceEvents(rangeEvents, resourceId)
 	}, [dayStart, dayEnd, getEventsForDateRange, resourceId])
 
 	const todayEvents = useMemo<VerticalPositionedEvent[]>(() => {

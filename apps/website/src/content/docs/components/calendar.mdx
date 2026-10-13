@@ -769,13 +769,19 @@ The per-row callbacks still fire. Use one or the other.
 ```ts
 interface EventsChange {
   action: 'add' | 'update' | 'delete' // what the user did
-  event: CalendarEvent                // the event the user acted on, as shown
+  event: CalendarEvent                // the event the user acted on, as it was shown before the change
   scope?: unknown                     // the scope chosen in the plugin's dialog, if any
   added: CalendarEvent[]              // the rows onEventAdd receives
   updated: CalendarEvent[]            // the rows onEventUpdate receives
   deleted: CalendarEvent[]            // the rows onEventDelete receives
+  delta?: { days: number; milliseconds: number } // 'update' only: how far the start moved
+  revert: () => void                  // undo the whole action in the calendar's own store
 }
 ```
+
+`delta` says how far the event's start moved: whole calendar days plus the change in the time of day on the wall clock (zero when only the title changed). It is `undefined` for an add and a delete. A timed event dropped on an all-day row is measured from the start of its own day. `event` is the event as it was before the change; the new rows are in `updated`.
+
+`revert()` undoes the action in the calendar's own store: it removes `added`, restores the previous version of every row in `updated` and puts `deleted` back, and it fires no callbacks. If a later action edited one of those rows, that edit is overwritten; rows other actions added or changed are kept. Calling it a second time does nothing. Call it when your server rejects a save. If you control `events`, restore your own state instead, because a new `events` prop replaces the calendar's rows.
 
 With the recurrence plugin, `scope` is a `RecurrenceEditScope` (`'this' | 'following' | 'all'`), exported from `@ilamy/calendar/plugins/recurrence`.
 

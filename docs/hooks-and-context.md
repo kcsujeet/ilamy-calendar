@@ -221,7 +221,7 @@ VerticalGrid / HorizontalGrid
 | `src/features/calendar/hooks/calendar-data/use-event-mutations.ts` | Plain add / update / delete |
 | `src/features/calendar/hooks/calendar-data/use-plugin-mutations.ts` | Scoped edit / delete through the managing plugin |
 | `src/features/calendar/hooks/calendar-data/use-resource-lookups.ts` | Resource filters and lookups over the events in view |
-| `src/features/calendar/hooks/calendar-data/event-changes.ts` | Pure helpers: build an `EventsChange`, report a mutation through the callbacks |
+| `src/features/calendar/hooks/calendar-data/event-changes.ts` | Pure helpers: build an `EventsChange` (with its `delta` and `revert`), report a mutation through the callbacks |
 | `src/features/calendar/hooks/use-calendar-interaction.ts` | Interaction slice (selection, event form, click handlers) |
 | `src/features/calendar/stores/calendar-context/calendar-context.ts` | `CalendarContext` + `CalendarContextType` |
 | `src/features/calendar/stores/calendar-cell-context/calendar-cell-context.ts` | `CalendarCellContext` + `CalendarCellContextType` (the cell subset) |

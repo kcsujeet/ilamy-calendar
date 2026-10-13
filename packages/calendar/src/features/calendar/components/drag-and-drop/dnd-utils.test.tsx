@@ -110,6 +110,55 @@ describe('getUpdatedEvent Utility Function', () => {
 		expect(result).toBeNull()
 	})
 
+	// FullCalendar commits nothing for a drop that changes nothing (no
+	// `eventChange`; EventDragging.ts:374, v7.1.1), so no callback fires.
+	describe('a drop that leaves the event where it was', () => {
+		const dropInPlace = () =>
+			getUpdatedEvent(
+				getDragEvent() as unknown as DragEndEvent,
+				getActiveEvent()
+			)
+
+		it('commits nothing on the day cell it already sits on', () => {
+			cellDate = dayjs('2024-06-15T00:00:00')
+			expect(dropInPlace()).toBeNull()
+		})
+
+		it('commits nothing on the time slot it already starts in', () => {
+			start = dayjs('2024-06-15T10:00:00')
+			end = dayjs('2024-06-15T11:00:00')
+			cellDate = dayjs('2024-06-15T00:00:00')
+			hour = 10
+			minute = 0
+			expect(dropInPlace()).toBeNull()
+		})
+
+		it('commits nothing on the all-day cell an all-day event already sits on', () => {
+			start = dayjs('2024-06-15T00:00:00')
+			end = dayjs('2024-06-16T00:00:00')
+			allDay = true
+			allDayCell = true
+			cellDate = dayjs('2024-06-15T00:00:00')
+			expect(dropInPlace()).toBeNull()
+		})
+
+		it('still commits a move to another resource on the same slot', () => {
+			cellDate = dayjs('2024-06-15T00:00:00')
+			resourceId = 'resource-1'
+			cellResourceId = 'resource-2'
+			expect(dropInPlace()).not.toBeNull()
+		})
+
+		it('still commits a drop that only changes the time', () => {
+			start = dayjs('2024-06-15T10:00:00')
+			end = dayjs('2024-06-15T11:00:00')
+			cellDate = dayjs('2024-06-15T00:00:00')
+			hour = 10
+			minute = 30
+			expect(dropInPlace()).not.toBeNull()
+		})
+	})
+
 	it('should calculate new start and end times correctly for day-cell drop', () => {
 		const result = getUpdatedEvent(
 			getDragEvent() as unknown as DragEndEvent,

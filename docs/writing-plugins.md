@@ -567,3 +567,9 @@ it across the host's three callbacks. One edit can be several persistence
 operations at once: a scoped recurrence edit ("this and following") ends the
 original series early, adds a new one, and leaves other rows untouched, which a
 single array cannot express.
+
+The `revert()` on the change that `onEventsChange` receives is exact only for a
+plugin that returns this structured result. A plain array cannot say which
+stored rows changed, so the calendar reads it as the one event acted on being
+updated or deleted, and `revert()` restores only that row. Return the object if
+your edit adds, updates or deletes other rows.

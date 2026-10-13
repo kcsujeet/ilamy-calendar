@@ -253,13 +253,31 @@ interface CellClickInfo {
 ```typescript
 interface EventsChange {
   action: 'add' | 'update' | 'delete'
-  event: CalendarEvent      // the event the user acted on, as shown
+  event: CalendarEvent      // the event the user acted on, as it was shown before the change; the changed rows are in updated
   scope?: unknown           // the plugin's scope; RecurrenceEditScope for recurrence
   added: CalendarEvent[]    // the rows onEventAdd receives
   updated: CalendarEvent[]  // the rows onEventUpdate receives
   deleted: CalendarEvent[]  // the rows onEventDelete receives
+  delta?: EventDelta        // 'update' only: how far the start moved (zero if it did not)
+  revert: () => void        // undoes the whole action in the calendar's store; fires no callbacks
+}
+
+interface EventDelta {
+  days: number          // whole calendar days, in the calendar's zone
+  milliseconds: number  // change in the wall-clock time of day
 }
 ```
+
+`delta` is the difference of the two calendar days plus the difference of the two wall-clock times (as
+FullCalendar's `diffDayAndTime` counts it, `headless-calendar/src/marker.ts:48-58`, v7.1.1), so a move across
+a clock change keeps the event at the same time of day. Both starts are read in the calendar's zone from their
+instants. A timed event that became all-day is measured from the start of its own day
+(`EventDragging.ts:454`, v7.1.1); an all-day event moved to a timed slot from its midnight start.
+
+`revert` removes `added`, restores the previous version of every row in `updated` and puts `deleted` back
+where it was. If a later action edited one of those rows, that edit is overwritten (a store merge, as
+FullCalendar's revert is); rows other actions added or changed are kept. Calling it a second time does
+nothing. A consumer that controls `events` and has already saved the change reverts its own state instead.
 
 ## SlotDuration
 

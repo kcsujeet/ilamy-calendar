@@ -74,6 +74,31 @@ const renderEventContent = ({
 	)
 }
 
+interface ResizeEdgesInput {
+	segment: EventSegment
+	isResizable: boolean
+	isResizableFromStart: boolean | undefined
+}
+
+/**
+ * A handle sits only on an edge the event really has: a bar the grid cut
+ * short has no end to drag there (FullCalendar, StandardEvent.tsx:95-96, v7.1.1).
+ */
+const getResizeEdges = ({
+	segment,
+	isResizable,
+	isResizableFromStart,
+}: ResizeEdgesInput): ResizeEdge[] => {
+	const edges: ResizeEdge[] = []
+	if (isResizable && segment.isStart && isResizableFromStart) {
+		edges.push('start')
+	}
+	if (isResizable && segment.isEnd) {
+		edges.push('end')
+	}
+	return edges
+}
+
 interface DraggableEventProps {
 	elementId: string
 	className?: string
@@ -106,6 +131,58 @@ interface DraggableEventProps {
 	 * timed event in a day grid, which reads as a dot).
 	 */
 	resizeGranularity?: ResizeGranularity
+}
+
+interface DraggableBarInput {
+	elementId: string
+	event: CalendarEvent
+	sourceResourceId?: string | number
+	dragSegment?: DragSegment
+	isMoveBlocked: boolean
+}
+
+/** The dnd-kit wiring of a bar: its node ref, its drag props, and whether it is under the pointer. */
+const useDraggableBar = ({
+	elementId,
+	event,
+	sourceResourceId,
+	dragSegment,
+	isMoveBlocked,
+}: DraggableBarInput) => {
+	// Measured on demand rather than read from `active.rect.current.initial`:
+	// dnd-kit's own measurement of a time-grid bar comes back as the label's
+	// height (28px) instead of the bar's (a full day column is ~1463px), which
+	// clamps the grab fraction to 1 and reads every grab as "the very end of
+	// the segment". The node stays mounted for the whole drag, so measuring it
+	// at the first drag-over gives the real box.
+	const barRef = useRef<HTMLElement | null>(null)
+	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+		id: elementId,
+		data: {
+			event,
+			type: 'calendar-event',
+			sourceResourceId,
+			dragSegment,
+			getBarRect: () => barRef.current?.getBoundingClientRect(),
+		},
+		disabled: isMoveBlocked,
+	})
+
+	const registerBar = (node: HTMLElement | null) => {
+		barRef.current = node
+		setNodeRef(node)
+	}
+
+	// A bar that cannot move is a plain clickable event: dnd-kit's attributes
+	// would announce drag instructions for it and mark it `aria-disabled`.
+	const dragAttributes = isMoveBlocked ? undefined : attributes
+	const dragListeners = isMoveBlocked ? undefined : listeners
+
+	return {
+		registerBar,
+		dragProps: { ...dragAttributes, ...dragListeners },
+		isDragging,
+	}
 }
 
 function DraggableEventUnmemoized({
@@ -141,34 +218,13 @@ function DraggableEventUnmemoized({
 	const isDurationEditable = resolveDurationEditable(event, editFlags)
 	const isMoveBlocked = disableDrag || !isStartEditable
 
-	// Measured on demand rather than read from `active.rect.current.initial`:
-	// dnd-kit's own measurement of a time-grid bar comes back as the label's
-	// height (28px) instead of the bar's (a full day column is ~1463px), which
-	// clamps the grab fraction to 1 and reads every grab as "the very end of
-	// the segment". The node stays mounted for the whole drag, so measuring it
-	// at the first drag-over gives the real box.
-	const barRef = useRef<HTMLElement | null>(null)
-	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-		id: elementId,
-		data: {
-			event,
-			type: 'calendar-event',
-			sourceResourceId,
-			dragSegment,
-			getBarRect: () => barRef.current?.getBoundingClientRect(),
-		},
-		disabled: isMoveBlocked,
+	const { registerBar, dragProps, isDragging } = useDraggableBar({
+		elementId,
+		event,
+		sourceResourceId,
+		dragSegment,
+		isMoveBlocked,
 	})
-
-	const registerBar = (node: HTMLElement | null) => {
-		barRef.current = node
-		setNodeRef(node)
-	}
-
-	// A bar that cannot move is a plain clickable event: dnd-kit's attributes
-	// would announce drag instructions for it and mark it `aria-disabled`.
-	const dragAttributes = isMoveBlocked ? undefined : attributes
-	const dragListeners = isMoveBlocked ? undefined : listeners
 
 	// `isDragging` marks the bar under the pointer; `isBeingDragged` also covers
 	// this event's other bars (a clipped span, or a second resource row).
@@ -186,16 +242,12 @@ function DraggableEventUnmemoized({
 		isStart: !isTruncatedStart,
 		isEnd: !isTruncatedEnd,
 	}
-	// A handle sits only on an edge the event really has: a bar the grid cut
-	// short has no end to drag there (FullCalendar, StandardEvent.tsx:95-96, v7.1.1).
-	const resizeEdges: ResizeEdge[] = []
 	const isResizable = isDurationEditable && resizeGranularity !== undefined
-	if (isResizable && segment.isStart && eventResizableFromStart) {
-		resizeEdges.push('start')
-	}
-	if (isResizable && segment.isEnd) {
-		resizeEdges.push('end')
-	}
+	const resizeEdges = getResizeEdges({
+		segment,
+		isResizable,
+		isResizableFromStart: eventResizableFromStart,
+	})
 	const content = renderEventContent({
 		renderEvent,
 		event,
@@ -226,8 +278,7 @@ function DraggableEventUnmemoized({
 			ref={registerBar}
 			style={style}
 			transitionKey={elementId}
-			{...dragAttributes}
-			{...dragListeners}
+			{...dragProps}
 		>
 			{content}
 			{resizeGranularity &&

@@ -6,7 +6,7 @@ import type {
 	SensorDescriptor,
 } from '@dnd-kit/core'
 import { MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
-import type { CalendarEvent } from '@ilamy/types'
+import type { CalendarEvent, Resource } from '@ilamy/types'
 import { useEffect, useRef, useState } from 'react'
 import {
 	calculateDropTimes,
@@ -235,6 +235,8 @@ const useDragCursor = (dragPreview: DragPreviewState | null) => {
 	}, [cursor])
 }
 
+type CellSpan = NonNullable<ReturnType<typeof getCellSpan>>
+
 /*
  * Module constants, not inline literals: dnd-kit's useSensor memoizes on the
  * options object's identity, so a fresh literal made a new sensor list on every
@@ -344,6 +346,29 @@ export const useCalendarDrag = (
 		return { ...placement, isDropAllowed: isAllowed }
 	}
 
+	const isClosedByBusinessHours = (
+		lane: Resource | undefined,
+		hovered: DropCellData,
+		span: CellSpan
+	): boolean => {
+		const gridType = isTimeSlotDrop(hovered) ? 'hour' : 'day'
+		return isOutsideBusinessHours({
+			day: span.start,
+			gridType,
+			slotDurationMinutes: span.end.diff(span.start, 'minute'),
+			businessHours: lane?.businessHours ?? businessHours,
+		})
+	}
+
+	const isClosedByConsumer = (
+		lane: Resource | undefined,
+		hovered: DropCellData,
+		span: CellSpan
+	): boolean =>
+		Boolean(
+			isCellDisabled?.({ ...span, resource: lane, allDay: hovered.allDay })
+		)
+
 	/**
 	 * Whether the hovered time is closed on the lane the resize started in, which
 	 * is where the event stays: business hours of that lane's resource, the
@@ -362,18 +387,12 @@ export const useCalendarDrag = (
 			laneResourceId === undefined
 				? undefined
 				: getResourceById?.(laneResourceId)
-		const gridType = isTimeSlotDrop(hovered) ? 'hour' : 'day'
-		const isClosed = isOutsideBusinessHours({
-			day: span.start,
-			gridType,
-			slotDurationMinutes: span.end.diff(span.start, 'minute'),
-			businessHours: lane?.businessHours ?? businessHours,
-		})
 		const isPadding = isPaddingDay(span.start, view, currentDate)
-		const isClosedByConsumer = Boolean(
-			isCellDisabled?.({ ...span, resource: lane, allDay: hovered.allDay })
+		return (
+			isClosedByBusinessHours(lane, hovered, span) ||
+			isPadding ||
+			isClosedByConsumer(lane, hovered, span)
 		)
-		return isClosed || isPadding || isClosedByConsumer
 	}
 
 	/**

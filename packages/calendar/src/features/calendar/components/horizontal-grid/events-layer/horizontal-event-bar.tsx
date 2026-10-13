@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
+import { isSameDay } from '@ilamy/utils/helpers'
 import { DraggableEvent } from '@/features/calendar/components/draggable-event/draggable-event'
 import type { ResizeGranularity } from '@/features/calendar/components/draggable-event/resize-handle'
 import { getDragSegment } from '@/features/calendar/utils/grab-offset'
@@ -34,7 +35,10 @@ const getResizeGranularity = (
 	const lastCoveredInstant = hasSpan
 		? event.end.subtract(1, 'millisecond')
 		: event.start
-	const isSingleDay = event.start.isSame(lastCoveredInstant, 'day')
+	// `isSameDay`, not `isSame(…, 'day')`: every bar asks this on every render,
+	// and the unit form goes through dayjs-timezone's `startOf` (see helpers).
+	// Both instants come from one event, so they share its zone.
+	const isSingleDay = isSameDay(event.start, lastCoveredInstant)
 	const isDot = !event.allDay && isSingleDay
 	return isDot ? undefined : 'day'
 }

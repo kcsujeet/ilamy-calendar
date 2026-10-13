@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario } from '../support/harness'
+import { gotoScenario, releasePointer } from '../support/harness'
 import { MonthGrid, TimeGrid } from '../support/pages'
 
 /**
@@ -46,7 +46,7 @@ const pressAndMoveTo = async (page: Page, from: Locator, to: Locator) => {
 
 const dragTo = async (page: Page, from: Locator, to: Locator) => {
 	await pressAndMoveTo(page, from, to)
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 const bodyCursor = (page: Page) =>
@@ -685,7 +685,7 @@ test.describe('persona 3: edge-case hunter', () => {
 		)
 		console.log(`FLIP mirrors while held: ${await grid.dragMirror.count()}`)
 		expect(await bodyCursor(page)).toBe('')
-		await page.mouse.up()
+		await releasePointer(page)
 		await page.waitForTimeout(300)
 		const row = await grid.eventNamed('Night shift')
 		expect(row.start).toBe('2025-03-12T22:00:00.000Z')
@@ -804,7 +804,7 @@ test.describe('persona 3: edge-case hunter', () => {
 				centreOfVisible.y + ((target.y - centreOfVisible.y) * step) / 8
 			)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect
 			.poll(async () => (await grid.eventNamed('Quarter hour')).start)
 			.toBe('2025-03-12T11:00:00.000Z')
@@ -834,7 +834,7 @@ test.describe('persona 3: edge-case hunter', () => {
 				await page.waitForTimeout(40)
 			}
 			await page.waitForTimeout(200)
-			await page.mouse.up()
+			await releasePointer(page)
 			await page.waitForTimeout(300)
 			const row = await grid.eventNamed('Morning stand-up')
 			expect(row.end).toBe('2025-03-12T10:00:00.000Z')
@@ -965,7 +965,7 @@ test.describe('persona 3: edge-case hunter', () => {
 		await expect(grid.dragMirror).toHaveCount(1)
 		await page.keyboard.press('Escape')
 		await expect(grid.dragMirror).toHaveCount(0)
-		await page.mouse.up()
+		await releasePointer(page)
 		await page.waitForTimeout(300)
 		const row = await grid.eventNamed('Morning stand-up')
 		expect(row.end).toBe('2025-03-12T10:00:00.000Z')
@@ -996,7 +996,7 @@ test.describe('persona 3: edge-case hunter', () => {
 		await page.mouse.move(start.x, start.y + 40, { steps: 4 })
 		await page.mouse.move(start.x, 4, { steps: 8 })
 		await page.mouse.move(2, 2, { steps: 4 })
-		await page.mouse.up()
+		await releasePointer(page)
 		await page.waitForTimeout(300)
 		const row = await grid.eventNamed('Morning stand-up')
 		expect(row.end).toBe('2025-03-12T10:00:00.000Z')

@@ -1,8 +1,8 @@
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { wallClockDiff } from '@ilamy/utils/helpers'
-import { getDayColumnSpan } from './day-columns'
-import type { VerticalPositionedEvent } from './geometry'
+import { createDayColumnSpanner } from './day-columns'
+import type { ColumnSpan, VerticalPositionedEvent } from './geometry'
 
 interface VerticalLayoutInput {
 	days: Dayjs[]
@@ -10,12 +10,15 @@ interface VerticalLayoutInput {
 	events: CalendarEvent[]
 }
 
+type DayColumnSpanner = (event: CalendarEvent) => ColumnSpan | null
+
 interface GridMetrics {
 	days: Dayjs[]
 	gridStart: Dayjs
 	totalUnits: number
 	gridType: 'day' | 'hour' | 'minute'
-	isDiscrete: boolean
+	/** Only a day grid has one: it reads the day columns, built once per layout. */
+	spanDayColumns: DayColumnSpanner | null
 }
 
 // --- Phase 1: cluster -------------------------------------------------------
@@ -59,14 +62,15 @@ interface TopHeight {
  */
 const computeDayRowsTopHeight = (
 	event: CalendarEvent,
-	days: Dayjs[]
+	dayCount: number,
+	spanDayColumns: DayColumnSpanner
 ): TopHeight | null => {
-	const span = getDayColumnSpan(event, days)
+	const span = spanDayColumns(event)
 	if (!span) return null
 	const rowCount = span.endCol - span.startCol + 1
 	return {
-		top: (span.startCol / days.length) * 100,
-		height: (rowCount / days.length) * 100,
+		top: (span.startCol / dayCount) * 100,
+		height: (rowCount / dayCount) * 100,
 		isTruncatedStart: span.isTruncatedStart,
 		isTruncatedEnd: span.isTruncatedEnd,
 	}
@@ -75,10 +79,10 @@ const computeDayRowsTopHeight = (
 /** Top/height percentages for an event, clamped to the grid; null if outside. */
 const computeTopHeight = (
 	event: CalendarEvent,
-	{ days, gridStart, totalUnits, gridType, isDiscrete }: GridMetrics
+	{ days, gridStart, totalUnits, gridType, spanDayColumns }: GridMetrics
 ): TopHeight | null => {
-	if (isDiscrete) {
-		return computeDayRowsTopHeight(event, days)
+	if (spanDayColumns) {
+		return computeDayRowsTopHeight(event, days.length, spanDayColumns)
 	}
 	// Clock time, not elapsed time: rows are labelled by clock hour, so on a day
 	// the clocks change, elapsed time put 09:00 beside 8 AM or 10 AM (#311).
@@ -182,7 +186,7 @@ export const layoutVertical = ({
 		gridStart: days.at(0) || dayjs(),
 		totalUnits: days.length,
 		gridType,
-		isDiscrete: gridType === 'day',
+		spanDayColumns: isDayGrid ? createDayColumnSpanner(days) : null,
 	}
 
 	return clusterOverlappingEvents(sortedEvents).flatMap((cluster) =>

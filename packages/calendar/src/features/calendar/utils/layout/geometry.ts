@@ -25,6 +25,18 @@ export interface VerticalPositionedEvent extends PositionedEventBase {
 	zIndex?: number
 }
 
+/** The columns of a grid axis an event covers, as `createDayColumnSpanner` and `createHourColumnSpanner` report them. */
+export interface ColumnSpan {
+	startCol: number
+	endCol: number
+	/** The event starts before its first column (off the grid, or on a hidden day or hour). */
+	isTruncatedStart: boolean
+	/** The event ends after its last column (off the grid, or on a hidden day or hour). */
+	isTruncatedEnd: boolean
+	/** The event's start and last instant fall in different units (days, or hours) of the axis. */
+	spansMultipleUnits: boolean
+}
+
 /**
  * `layoutHorizontal` (month / all-day row): abstract row placement — the
  * renderer derives pixels from `row`.

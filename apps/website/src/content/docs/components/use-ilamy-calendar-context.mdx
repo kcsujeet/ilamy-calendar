@@ -74,6 +74,7 @@ The hook returns an object with the following properties and methods:
 | `nextPeriod` | `() => void` | Navigate to the next period |
 | `prevPeriod` | `() => void` | Navigate to the previous period |
 | `today` | `() => void` | Navigate to today's date |
+| `scrollToTime` | `(time: string) => void` | Scrolls the hour grids to a time of day, `'HH:mm'` or `'HH:mm:ss'`. The minute lands that far into the hour. Does nothing in a view without an hour axis, such as month |
 | `addEvent` | `(event: CalendarEvent) => void` | Add a new event to the calendar |
 | `updateEvent` | `(id: string \| number, updates: Partial<CalendarEvent>) => void` | Update an existing event |
 | `deleteEvent` | `(id: string \| number) => void` | Delete an event from the calendar |

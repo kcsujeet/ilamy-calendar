@@ -13,17 +13,19 @@ import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type { CalendarEvent, IlamyPlugin, Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import {
+	act,
 	cleanup,
 	fireEvent,
 	render,
 	screen,
 	waitFor,
 } from '@testing-library/react'
-import { createContext, useContext } from 'react'
+import { createContext, createRef, useContext, useState } from 'react'
 import { RRule } from 'rrule'
 import { DISABLED_CELL_CLASSNAME } from '@/config/constants'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import {
+	type IlamyCalendarApi,
 	useIlamyCalendarContext,
 	useSmartCalendarContext,
 } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -2199,5 +2201,263 @@ describe('IlamyCalendar - events as a function', () => {
 		expect(screen.getByText('Loaded Lunch')).toBeTruthy()
 		expect(fetcher).toHaveBeenCalledTimes(1)
 		expect(inlineFetcher).toHaveBeenCalledTimes(0)
+	})
+})
+
+// One calendar, driven from outside through its ref, the way a consumer's own
+// toolbar would. React 19 passes `ref` as a prop and
+// `useImperativeHandle(ref, createHandle, deps)` publishes the handle
+// (https://react.dev/reference/react/useImperativeHandle).
+describe('IlamyCalendar ref', () => {
+	const HOUR_PIXELS = 60
+
+	const renderWithRef = (props: Partial<IlamyCalendarProps> = {}) => {
+		const ref = createRef<IlamyCalendarApi>()
+		render(
+			<IlamyCalendar
+				events={[]}
+				initialDate="2025-03-12T09:00:00.000Z"
+				initialView="week"
+				ref={ref}
+				timezone="UTC"
+				{...props}
+			/>
+		)
+		const api = () => {
+			if (!ref.current) {
+				throw new Error('the ref was not set')
+			}
+			return ref.current
+		}
+		return api
+	}
+
+	const sampleEvent: CalendarEvent = {
+		id: 'ref-event',
+		title: 'Ref event',
+		start: dayjs('2025-03-12T10:00:00.000Z'),
+		end: dayjs('2025-03-12T11:00:00.000Z'),
+		uid: 'ref-event@ilamy',
+	}
+
+	it('exposes the same API the hook returns, once mounted', () => {
+		let hookKeys: string[] = []
+		const KeysProbe = () => {
+			hookKeys = Object.keys(useIlamyCalendarContext()).sort()
+			return null
+		}
+		const api = renderWithRef({ headerComponent: <KeysProbe /> })
+
+		expect(Object.keys(api()).sort()).toEqual(hookKeys)
+	})
+
+	it('navigates through the ref and reads the latest date afterwards', () => {
+		const api = renderWithRef()
+
+		act(() => api().nextPeriod())
+		expect(api().currentDate.toISOString()).toBe('2025-03-19T09:00:00.000Z')
+
+		act(() => api().prevPeriod())
+		act(() => api().prevPeriod())
+		expect(api().currentDate.toISOString()).toBe('2025-03-05T09:00:00.000Z')
+
+		act(() => api().setCurrentDate(dayjs('2025-06-01T12:00:00.000Z')))
+		expect(api().currentDate.toISOString()).toBe('2025-06-01T12:00:00.000Z')
+
+		setSystemTime(new Date('2025-03-20T08:15:00.000Z'))
+		act(() => api().today())
+		setSystemTime()
+		expect(api().currentDate.toISOString()).toBe('2025-03-20T08:15:00.000Z')
+	})
+
+	it('changes the rendered view through the ref', () => {
+		const api = renderWithRef({ initialView: 'month' })
+		expect(screen.queryByTestId('vertical-grid-container')).toBeNull()
+
+		act(() => api().setView('week'))
+
+		expect(api().view).toBe('week')
+		expect(screen.getByTestId('vertical-grid-container')).toBeInTheDocument()
+	})
+
+	it('adds, updates and deletes through the ref, firing the usual callbacks', () => {
+		const onEventAdd = mock(() => {})
+		const onEventUpdate = mock(() => {})
+		const onEventDelete = mock(() => {})
+		const api = renderWithRef({ onEventAdd, onEventUpdate, onEventDelete })
+
+		act(() => api().addEvent(sampleEvent))
+		expect(onEventAdd).toHaveBeenCalledTimes(1)
+		expect(api().events.map((event) => event.id)).toEqual(['ref-event'])
+
+		act(() => api().updateEvent('ref-event', { title: 'Renamed' }))
+		expect(onEventUpdate).toHaveBeenCalledTimes(1)
+
+		act(() => api().deleteEvent('ref-event'))
+		expect(onEventDelete).toHaveBeenCalledTimes(1)
+		expect(api().events).toHaveLength(0)
+	})
+
+	it('refetches through the ref when events is a function', async () => {
+		const fetcher = mock(() => Promise.resolve([]))
+		const api = renderWithRef({ events: fetcher })
+		await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1))
+
+		act(() => api().refetchEvents())
+
+		await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2))
+	})
+
+	it('hands a callback ref that sets state the same handle every time, so it does not loop', () => {
+		const received: (IlamyCalendarApi | null)[] = []
+		const Host = () => {
+			const [, setApi] = useState<IlamyCalendarApi | null>(null)
+			return (
+				<IlamyCalendar
+					events={[]}
+					initialDate="2025-03-12T09:00:00.000Z"
+					initialView="week"
+					ref={(api) => {
+						received.push(api)
+						setApi(api)
+					}}
+					timezone="UTC"
+				/>
+			)
+		}
+
+		render(<Host />)
+
+		const handles = new Set(received.filter(Boolean))
+		expect(handles.size).toBe(1)
+	})
+
+	it('calls a stable callback ref exactly once', () => {
+		const received: (IlamyCalendarApi | null)[] = []
+		const onApi = (api: IlamyCalendarApi | null) => {
+			received.push(api)
+		}
+
+		render(
+			<IlamyCalendar
+				events={[]}
+				initialDate="2025-03-12T09:00:00.000Z"
+				ref={onApi}
+				timezone="UTC"
+			/>
+		)
+
+		expect(received.filter(Boolean)).toHaveLength(1)
+	})
+
+	it('keeps method identities across a navigation', () => {
+		const api = renderWithRef()
+		const before = [api().nextPeriod, api().setView, api().scrollToTime]
+
+		act(() => api().nextPeriod())
+
+		const after = [api().nextPeriod, api().setView, api().scrollToTime]
+		expect(after).toEqual(before)
+	})
+
+	describe('scrollToTime', () => {
+		let scrollTo: ReturnType<typeof mock>
+		const originalScrollTo = Element.prototype.scrollTo
+		const originalRect = Element.prototype.getBoundingClientRect
+
+		beforeEach(() => {
+			scrollTo = mock(() => {})
+			Element.prototype.scrollTo = scrollTo as unknown as Element['scrollTo']
+			// happy-dom has no layout: give each hour row the offset a real
+			// 60px-per-hour gutter would have.
+			Element.prototype.getBoundingClientRect = function (this: Element) {
+				const hour = Number(this.getAttribute('data-hour') ?? 0)
+				const top = hour * HOUR_PIXELS
+				return {
+					top,
+					left: top,
+					bottom: top + HOUR_PIXELS,
+					right: top + HOUR_PIXELS,
+					width: HOUR_PIXELS,
+					height: HOUR_PIXELS,
+					x: 0,
+					y: top,
+					toJSON: () => ({}),
+				}
+			}
+		})
+
+		afterEach(() => {
+			Element.prototype.scrollTo = originalScrollTo
+			Element.prototype.getBoundingClientRect = originalRect
+		})
+
+		const lastScroll = () =>
+			scrollTo.mock.calls.at(-1)?.at(0) as ScrollToOptions | undefined
+		const lastScrollTop = () => lastScroll()?.top
+
+		it('scrolls an hour grid to the time, with the minute as a fraction of the row', () => {
+			const api = renderWithRef({ initialView: 'day' })
+			scrollTo.mockClear()
+
+			act(() => api().scrollToTime('13:30'))
+
+			expect(lastScrollTop()).toBe(13 * HOUR_PIXELS + 30)
+		})
+
+		it('does nothing in a view without an hour axis', () => {
+			const api = renderWithRef({ initialView: 'month' })
+			scrollTo.mockClear()
+
+			act(() => api().scrollToTime('13:30'))
+
+			expect(scrollTo).not.toHaveBeenCalled()
+		})
+
+		it('scrolls the sideways hour axis of a resource timeline', () => {
+			const api = renderWithRef({
+				initialView: 'day',
+				orientation: 'horizontal',
+				resources: [{ id: 'r1', title: 'Room 1' }],
+			})
+			scrollTo.mockClear()
+
+			act(() => api().scrollToTime('13:30'))
+
+			expect(lastScroll()?.left).toBe(13 * HOUR_PIXELS + 30)
+		})
+
+		// scrollToTime acts on the view that is showing, like FullCalendar's
+		// (api/CalendarApi.ts:83 at v7.1.1): a view opened later starts where
+		// its own settings put it.
+		it('does not replay an earlier request in a view opened afterwards', () => {
+			const api = renderWithRef({ initialView: 'month' })
+			act(() => api().scrollToTime('15:00'))
+			scrollTo.mockClear()
+
+			act(() => api().setView('week'))
+
+			expect(scrollTo).not.toHaveBeenCalled()
+		})
+
+		it('does not scroll again when the calendar re-renders or navigates', () => {
+			const api = renderWithRef({ initialView: 'day' })
+			scrollTo.mockClear()
+			act(() => api().scrollToTime('13:30'))
+
+			act(() => api().nextPeriod())
+
+			expect(scrollTo).toHaveBeenCalledTimes(1)
+		})
+
+		it('scrolls again when asked for the same time twice', () => {
+			const api = renderWithRef({ initialView: 'day' })
+			act(() => api().scrollToTime('13:30'))
+			scrollTo.mockClear()
+
+			act(() => api().scrollToTime('13:30'))
+
+			expect(lastScrollTop()).toBe(13 * HOUR_PIXELS + 30)
+		})
 	})
 })

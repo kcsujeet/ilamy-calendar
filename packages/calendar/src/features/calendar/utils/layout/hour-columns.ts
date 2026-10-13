@@ -29,6 +29,32 @@ const spansMultipleHours = (
 	return lastHour > startHour
 }
 
+/** The last column in [floor, from] not shadowed by its successor, or floor - 1. */
+const lastUnshadowedDownTo = (
+	isShadowedByNext: boolean[],
+	from: number,
+	floor: number
+): number => {
+	let column = from
+	while (column >= floor && isShadowedByNext.at(column)) {
+		column--
+	}
+	return column
+}
+
+/** The first column in [from, ceiling] not shadowed by its successor, or ceiling + 1. */
+const firstUnshadowedUpTo = (
+	isShadowedByNext: boolean[],
+	from: number,
+	ceiling: number
+): number => {
+	let column = from
+	while (column <= ceiling && isShadowedByNext.at(column)) {
+		column++
+	}
+	return column
+}
+
 /**
  * Reads the columns of an hour axis an event overlaps, or null when it
  * overlaps none (its end is exclusive, so touching a column's start does not
@@ -79,14 +105,16 @@ export const createHourColumnSpanner = (columns: Dayjs[]) => {
 		// skipped from either end. Its twin usually overlaps too, but not always:
 		// Havana's missing midnight leaves "00:00" labelled an hour past the
 		// 23:00 it shares an instant with, and then nothing is left to draw on.
-		let endCol = endOfOverlapping - 1
-		while (endCol >= firstOverlapping && isShadowedByNext.at(endCol)) {
-			endCol--
-		}
-		let startCol = firstOverlapping
-		while (startCol <= endCol && isShadowedByNext.at(startCol)) {
-			startCol++
-		}
+		const endCol = lastUnshadowedDownTo(
+			isShadowedByNext,
+			endOfOverlapping - 1,
+			firstOverlapping
+		)
+		const startCol = firstUnshadowedUpTo(
+			isShadowedByNext,
+			firstOverlapping,
+			endCol
+		)
 		if (startCol > endCol) {
 			return null
 		}

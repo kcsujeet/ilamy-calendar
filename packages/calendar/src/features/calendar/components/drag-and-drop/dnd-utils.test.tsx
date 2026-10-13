@@ -10,6 +10,7 @@ import {
 	calculateDropTimes,
 	calculateResizeTimes,
 	type DropCellData,
+	getPressedResizeEdge,
 	getSnappedOverData,
 	getUpdatedEvent,
 } from './dnd-utils'
@@ -1061,5 +1062,47 @@ describe('snapping inside a cell', () => {
 				at('2025-03-12T09:30:00').format()
 			)
 		})
+	})
+})
+
+describe('getPressedResizeEdge', () => {
+	/** The mousedown dnd-kit reports as the activator, dispatched on `target`. */
+	const pressOn = (target: Element) => {
+		const press = new Event('mousedown')
+		target.dispatchEvent(press)
+		return press
+	}
+	const handle = (edge: string) => {
+		const element = document.createElement('div')
+		element.setAttribute('data-resize-handle', edge)
+		return element
+	}
+
+	it('reads the start edge from a press on the start handle', () => {
+		expect(getPressedResizeEdge(pressOn(handle('start')))).toBe('start')
+	})
+
+	it('reads the end edge from a press on the end handle', () => {
+		expect(getPressedResizeEdge(pressOn(handle('end')))).toBe('end')
+	})
+
+	it('reads the edge from a press on something inside the handle', () => {
+		const inside = document.createElement('span')
+		handle('end').append(inside)
+		expect(getPressedResizeEdge(pressOn(inside))).toBe('end')
+	})
+
+	it('is a move when the press is on the bar itself', () => {
+		expect(
+			getPressedResizeEdge(pressOn(document.createElement('div')))
+		).toBeUndefined()
+	})
+
+	it('is a move when the handle names no edge', () => {
+		expect(getPressedResizeEdge(pressOn(handle('middle')))).toBeUndefined()
+	})
+
+	it('is a move for a keyboard drag, which has no pointer target', () => {
+		expect(getPressedResizeEdge(new Event('keydown'))).toBeUndefined()
 	})
 })

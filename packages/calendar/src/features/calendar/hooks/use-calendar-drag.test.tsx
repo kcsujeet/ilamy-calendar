@@ -186,18 +186,29 @@ describe('useCalendarDrag resize', () => {
 		end: at('2025-03-12T10:00:00'),
 		resourceId: 'room-a',
 	}
-	const grabbedHandle = (edge: 'start' | 'end') => ({
-		id: `event-1-resize-${edge}`,
+	// One draggable per bar: a resize is the same bar pressed on a handle, which
+	// the activator event's target says (FullCalendar tells them apart the same
+	// way, `EventDragging.ts:110`, v7.1.1).
+	const resizableBar = {
+		id: 'event-1',
 		data: {
 			current: {
-				type: 'calendar-event-resize',
+				type: 'calendar-event',
 				event: meeting,
-				edge,
-				granularity: 'slot',
+				resizeGranularity: 'slot',
 				sourceResourceId: 'room-a',
 			},
 		},
-	})
+	}
+	const pressedOn = (edge: 'start' | 'end' | 'bar') => {
+		const target = document.createElement('div')
+		if (edge !== 'bar') {
+			target.setAttribute('data-resize-handle', edge)
+		}
+		const press = new Event('mousedown')
+		target.dispatchEvent(press)
+		return press
+	}
 	const slotCell = (hourOfDay: number, extra = {}) => ({
 		id: 'cell',
 		data: {
@@ -226,7 +237,7 @@ describe('useCalendarDrag resize', () => {
 	>
 
 	const renderResizeHook = (
-		edge: 'start' | 'end' = 'end',
+		edge: 'start' | 'end' | 'bar' = 'end',
 		providerProps: ProviderProps = {}
 	) => {
 		const commitDrop = mock(
@@ -243,7 +254,7 @@ describe('useCalendarDrag resize', () => {
 				</CalendarTestProvider>
 			),
 		})
-		const active = grabbedHandle(edge)
+		const active = resizableBar
 		return {
 			commitDrop,
 			preview: () => result.current.dragPreview,
@@ -251,7 +262,7 @@ describe('useCalendarDrag resize', () => {
 				act(() =>
 					result.current.handlers.onDragStart({
 						active,
-						activatorEvent: new Event('mousedown'),
+						activatorEvent: pressedOn(edge),
 					} as unknown as DragStartEvent)
 				),
 			hover: (over: unknown) =>
@@ -285,6 +296,15 @@ describe('useCalendarDrag resize', () => {
 
 		expect(wall(drag.preview()?.start)).toBe('2025-03-12T09:00')
 		expect(wall(drag.preview()?.end)).toBe('2025-03-12T11:30')
+	})
+
+	it('moves the event instead when the press is on the bar, not on a handle', () => {
+		const drag = renderResizeHook('bar')
+		drag.grab()
+		drag.hover(slotCell(11))
+
+		expect(wall(drag.preview()?.start)).toBe('2025-03-12T11:00')
+		expect(wall(drag.preview()?.end)).toBe('2025-03-12T12:00')
 	})
 
 	it('repaints the preview on a drag move, which dnd-kit fires inside one hovered cell', () => {
@@ -474,17 +494,18 @@ describe('useCalendarDrag snapping inside a cell', () => {
 			},
 		},
 	})
-	const resizedEnd = {
-		id: 'event-1-resize-end',
+	const resizableBar = {
+		id: 'event-1',
 		data: {
 			current: {
-				type: 'calendar-event-resize',
+				type: 'calendar-event',
 				event: meeting,
-				edge: 'end',
-				granularity: 'slot',
+				resizeGranularity: 'slot',
 			},
 		},
 	}
+	const endHandle = document.createElement('div')
+	endHandle.setAttribute('data-resize-handle', 'end')
 	/** A one-hour cell at 14:00 snapping to 15 minutes, 120px along `axis` from `from`. */
 	const hourCell = (
 		axis: 'vertical' | 'horizontal',
@@ -532,10 +553,15 @@ describe('useCalendarDrag snapping inside a cell', () => {
 			),
 		})
 		const drag = (
-			active: ReturnType<typeof moveOf> | typeof resizedEnd,
-			pressedAt: { x: number; y: number }
+			active: ReturnType<typeof moveOf> | typeof resizableBar,
+			pressedAt: { x: number; y: number },
+			target?: Element
 		) => {
-			const activatorEvent = { clientX: pressedAt.x, clientY: pressedAt.y }
+			const activatorEvent = {
+				clientX: pressedAt.x,
+				clientY: pressedAt.y,
+				target,
+			}
 			return {
 				grab: () =>
 					act(() =>
@@ -579,7 +605,7 @@ describe('useCalendarDrag snapping inside a cell', () => {
 
 	it('commits a resize to the end of the quarter hour under the pointer', () => {
 		const { drag, commitDrop } = renderSnapHook()
-		const dragging = drag(resizedEnd, { x: 10, y: 0 })
+		const dragging = drag(resizableBar, { x: 10, y: 0 }, endHandle)
 		dragging.grab()
 		pointerMovesTo(10, 170)
 		dragging.release(hourCell('vertical'))

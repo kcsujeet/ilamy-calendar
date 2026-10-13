@@ -138,16 +138,24 @@ interface DraggableBarInput {
 	event: CalendarEvent
 	sourceResourceId?: string | number
 	dragSegment?: DragSegment
+	resizeGranularity?: ResizeGranularity
 	isMoveBlocked: boolean
+	hasResizeHandles: boolean
 }
 
-/** The dnd-kit wiring of a bar: its node ref, its drag props, and whether it is under the pointer. */
+/**
+ * The dnd-kit wiring of a bar: its node ref, its drag props, and whether it is
+ * under the pointer. The bar is the ONE draggable for a move and for a resize
+ * of either edge; the press target tells them apart (`getPressedResizeEdge`).
+ */
 const useDraggableBar = ({
 	elementId,
 	event,
 	sourceResourceId,
 	dragSegment,
+	resizeGranularity,
 	isMoveBlocked,
+	hasResizeHandles,
 }: DraggableBarInput) => {
 	// Measured on demand rather than read from `active.rect.current.initial`:
 	// dnd-kit's own measurement of a time-grid bar comes back as the label's
@@ -163,9 +171,10 @@ const useDraggableBar = ({
 			type: 'calendar-event',
 			sourceResourceId,
 			dragSegment,
+			resizeGranularity,
 			getBarRect: () => barRef.current?.getBoundingClientRect(),
 		},
-		disabled: isMoveBlocked,
+		disabled: isMoveBlocked && !hasResizeHandles,
 	})
 
 	const registerBar = (node: HTMLElement | null) => {
@@ -174,13 +183,16 @@ const useDraggableBar = ({
 	}
 
 	// A bar that cannot move is a plain clickable event: dnd-kit's attributes
-	// would announce drag instructions for it and mark it `aria-disabled`.
+	// would announce drag instructions for it and mark it `aria-disabled`. Its
+	// handles, if it has any, then carry the listeners, so only they start a drag.
 	const dragAttributes = isMoveBlocked ? undefined : attributes
-	const dragListeners = isMoveBlocked ? undefined : listeners
+	const barListeners = isMoveBlocked ? undefined : listeners
+	const handleListeners = isMoveBlocked ? listeners : undefined
 
 	return {
 		registerBar,
-		dragProps: { ...dragAttributes, ...dragListeners },
+		dragProps: { ...dragAttributes, ...barListeners },
+		handleListeners,
 		isDragging,
 	}
 }
@@ -218,22 +230,6 @@ function DraggableEventUnmemoized({
 	const isDurationEditable = resolveDurationEditable(event, editFlags)
 	const isMoveBlocked = disableDrag || !isStartEditable
 
-	const { registerBar, dragProps, isDragging } = useDraggableBar({
-		elementId,
-		event,
-		sourceResourceId,
-		dragSegment,
-		isMoveBlocked,
-	})
-
-	// `isDragging` marks the bar under the pointer; `isBeingDragged` also covers
-	// this event's other bars (a clipped span, or a second resource row).
-	const { cursorClass, draggingClass } = getDragStateClasses({
-		isDragDisabled: isMoveBlocked,
-		disableEventClick: Boolean(disableEventClick),
-		isSourceOfDrag: isDragging || isBeingDragged,
-	})
-
 	// The default content reads both of these (border radius, the continuation
 	// markers and their padding), so a custom renderer needs them too or it
 	// cannot draw the same thing. Stated positively, matching FullCalendar:
@@ -248,6 +244,25 @@ function DraggableEventUnmemoized({
 		isResizable,
 		isResizableFromStart: eventResizableFromStart,
 	})
+	const { registerBar, dragProps, handleListeners, isDragging } =
+		useDraggableBar({
+			elementId,
+			event,
+			sourceResourceId,
+			dragSegment,
+			resizeGranularity,
+			isMoveBlocked,
+			hasResizeHandles: resizeEdges.length > 0,
+		})
+
+	// `isDragging` marks the bar under the pointer; `isBeingDragged` also covers
+	// this event's other bars (a clipped span, or a second resource row).
+	const { cursorClass, draggingClass } = getDragStateClasses({
+		isDragDisabled: isMoveBlocked,
+		disableEventClick: Boolean(disableEventClick),
+		isSourceOfDrag: isDragging || isBeingDragged,
+	})
+
 	const content = renderEventContent({
 		renderEvent,
 		event,
@@ -283,14 +298,7 @@ function DraggableEventUnmemoized({
 			{content}
 			{resizeGranularity &&
 				resizeEdges.map((edge) => (
-					<ResizeHandle
-						edge={edge}
-						elementId={elementId}
-						event={event}
-						granularity={resizeGranularity}
-						key={edge}
-						sourceResourceId={sourceResourceId}
-					/>
+					<ResizeHandle edge={edge} key={edge} listeners={handleListeners} />
 				))}
 		</AnimatedSection>
 	)

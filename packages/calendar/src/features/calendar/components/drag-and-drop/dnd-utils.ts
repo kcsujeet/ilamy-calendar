@@ -141,6 +141,30 @@ export const calculateDropTimes = (
 export type ResizeEdge = 'start' | 'end'
 
 /**
+ * The edge whose resize handle the press landed on, or undefined when it landed
+ * anywhere else (a move). A bar is one draggable and its handles are plain
+ * elements marked `data-resize-handle`, so the activator event's target is what
+ * tells a resize from a move; FullCalendar decides the same way, from the
+ * pointerdown target (`EventDragging.ts:110`, `EventResizing.ts:64`, v7.1.1).
+ * A keyboard activator has no element target and so is always a move.
+ */
+export const getPressedResizeEdge = (
+	activatorEvent: Event
+): ResizeEdge | undefined => {
+	const { target } = activatorEvent
+	if (!(target instanceof Element)) {
+		return undefined
+	}
+	const edge = target
+		.closest('[data-resize-handle]')
+		?.getAttribute('data-resize-handle')
+	if (edge === 'start' || edge === 'end') {
+		return edge
+	}
+	return undefined
+}
+
+/**
  * A wall-clock time on a day, built from a zoneless string for the reason
  * `calculateDropTimes` gives: the setters would carry the source day's UTC
  * offset onto a day where the clocks change.

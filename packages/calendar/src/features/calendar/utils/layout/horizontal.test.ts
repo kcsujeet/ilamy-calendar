@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
+import { getMonthWeeks } from '@/utils/date-utils'
 import { findMultiUnitSlot, layoutHorizontal } from './horizontal'
 
 const days = Array.from({ length: 7 }, (_, i) =>
@@ -727,6 +728,7 @@ describe('findMultiUnitSlot', () => {
 		endCol: 3,
 		isTruncatedStart: false,
 		isTruncatedEnd: false,
+		spansMultipleUnits: true,
 	}
 	// A grid of `rows` rows by 5 columns with the given [row, col] cells taken.
 	const gridWith = (rows: number, taken: [number, number][]) => {
@@ -834,3 +836,93 @@ describe('layoutHorizontal over hidden days', () => {
 		expect(placed).toEqual([])
 	})
 })
+
+/**
+ * The month view's week rows come from `getMonthWeeks`, whose columns are made
+ * with `.add(n, 'day')` and carry the offset of the week's first day. In a week
+ * the clocks change, later columns read midnight while sitting an hour off it,
+ * so a column must never be trusted to BE its day's start: all-day events came
+ * out one column too wide and a column too far left. Columns here are the real
+ * builder's output, not hand-made ones, which is what hid it.
+ */
+describe.each([
+	['America/New_York', '2025-03-12T12:00:00.000'],
+	['America/New_York', '2025-11-05T12:00:00.000'],
+	['America/Havana', '2025-03-12T12:00:00.000'],
+	['Australia/Lord_Howe', '2025-10-08T12:00:00.000'],
+])(
+	'layoutHorizontal on a week row from getMonthWeeks in %s',
+	(zone, anchor) => {
+		const originalTz = dayjs.tz.guess()
+
+		beforeEach(() => {
+			dayjs.tz.setDefault(zone)
+		})
+
+		afterEach(() => {
+			dayjs.tz.setDefault(originalTz)
+		})
+
+		const weekRow = () => {
+			const weeks = getMonthWeeks(dayjs.tz(anchor, zone), 0)
+			const anchorDay = anchor.slice(0, 10)
+			const rowOfAnchor = weeks.findIndex((week) =>
+				week.some((day) => day.format('YYYY-MM-DD') === anchorDay)
+			)
+			return weeks.at(rowOfAnchor) ?? []
+		}
+
+		const columnAndWidthOf = (
+			event: CalendarEvent,
+			week: ReturnType<typeof weekRow>
+		) => {
+			const [placed] = layoutHorizontal({
+				days: week,
+				events: [event],
+				dayMaxEvents: 3,
+			})
+			const oneColumn = 100 / 7
+			return {
+				column: Math.round((placed?.left ?? -1) / oneColumn),
+				width: Math.round((placed?.width ?? -1) / oneColumn),
+			}
+		}
+
+		it('puts each all-day event in exactly its own day column', () => {
+			const week = weekRow()
+			const placements = week.map((day) => {
+				const dayISO = day.format('YYYY-MM-DD')
+				const nextDayISO = day.add(1, 'day').format('YYYY-MM-DD')
+				return columnAndWidthOf(
+					{
+						id: dayISO,
+						title: dayISO,
+						start: dayjs.tz(`${dayISO}T00:00:00.000`, zone),
+						end: dayjs.tz(`${nextDayISO}T00:00:00.000`, zone),
+					},
+					week
+				)
+			})
+			expect(placements).toEqual(
+				week.map((_, index) => ({ column: index, width: 1 }))
+			)
+		})
+
+		it('puts a timed event just after midnight in its own day column', () => {
+			const week = weekRow()
+			const placements = week.map((day) => {
+				const dayISO = day.format('YYYY-MM-DD')
+				return columnAndWidthOf(
+					{
+						id: dayISO,
+						title: dayISO,
+						start: dayjs.tz(`${dayISO}T00:30:00.000`, zone),
+						end: dayjs.tz(`${dayISO}T00:45:00.000`, zone),
+					},
+					week
+				).column
+			})
+			expect(placements).toEqual(week.map((_, index) => index))
+		})
+	}
+)

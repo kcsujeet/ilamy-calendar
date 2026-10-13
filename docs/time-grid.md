@@ -87,8 +87,9 @@ read the columns rather than counting days from the first one:
 
 - **Bar layout.** On a day grid (`gridType: 'day'`, so a month row, the all-day
   row and the vertical resource month or daily week), `layoutHorizontal` and
-  `layoutVertical` take an event's columns from `getDayColumnSpan`
-  (`utils/layout/day-columns.ts`). It clamps an event to the nearest column that
+  `layoutVertical` take an event's columns from `createDayColumnSpanner`
+  (`utils/layout/day-columns.ts`), which measures each column's day once per layout and
+  places an event by binary search. It clamps an event to the nearest column that
   is drawn and reports `isTruncatedStart` / `isTruncatedEnd` for a cut made at a
   hidden day (the segment's `isStart` / `isEnd`, as in FullCalendar's
   `DaySeriesModel.sliceRange`, v7.1.1). An event wholly on hidden days has no

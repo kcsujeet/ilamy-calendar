@@ -103,6 +103,9 @@ const useCalendarRefHandle = (calendarRef?: Ref<IlamyCalendarApi>) => {
 	useImperativeHandle(calendarRef, () => handle, [handle])
 }
 
+// A prop forwarder with no branching (cyclomatic 1): its cognitive score comes
+// from the prop defaults, and each concern already lives in its own hook.
+// fallow-ignore-next-line complexity
 export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	events,
 	firstDayOfWeek = 'sunday',

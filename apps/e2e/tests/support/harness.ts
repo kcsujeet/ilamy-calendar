@@ -83,3 +83,27 @@ export const setSettings = async (
 		Object.entries(settings).map(([key, value]) => [key, String(value)])
 	)
 }
+
+/**
+ * Lifts the pointer once the drag has caught up with it.
+ *
+ * dnd-kit derives the cell under the pointer (`over`) while rendering, so a
+ * release in the same frame as the last move can land on the cell the drag
+ * showed one move earlier; on a slow runner that happens often enough to make
+ * a spec flaky. The race predates these specs and is tracked as a product
+ * follow-up. Two frames and a task let the render the last move caused commit,
+ * so the spec tests the drop it means to test.
+ */
+export const releasePointer = async (page: Page): Promise<void> => {
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) => {
+				requestAnimationFrame(() => {
+					requestAnimationFrame(() => {
+						setTimeout(resolve, 0)
+					})
+				})
+			})
+	)
+	await page.mouse.up()
+}

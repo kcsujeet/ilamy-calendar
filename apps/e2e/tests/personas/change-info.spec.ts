@@ -1,5 +1,9 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, type ScenarioOptions } from '../support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	type ScenarioOptions,
+} from '../support/harness'
 import { type CalendarPage, MonthGrid, TimeGrid } from '../support/pages'
 
 // A cancelled animation rejects `finished` with an AbortError (MDN,
@@ -36,7 +40,7 @@ const pressAndMove = async (
 		)
 	}
 	if (release) {
-		await page.mouse.up()
+		await releasePointer(page)
 	}
 }
 
@@ -331,7 +335,7 @@ test.describe('persona 1 extras', () => {
 		await page.mouse.down()
 		await page.mouse.move(box.x + box.width / 2 + 12, box.y + box.height / 2)
 		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-		await page.mouse.up()
+		await releasePointer(page)
 		await page.waitForTimeout(400)
 		expect(await snapshotBars(page)).toEqual(before)
 		await pressAndMove(

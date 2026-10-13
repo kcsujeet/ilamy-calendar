@@ -1,13 +1,9 @@
-import type { CalendarEvent, EventDropInfo, Resource } from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
-import { type Context, createContext, type ReactNode } from 'react'
-import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
+import type { CalendarEvent, EventDropInfo } from '@ilamy/types'
+import { type Context, createContext } from 'react'
 import type { CalendarEngineReturn } from '@/features/calendar/hooks/use-calendar-engine'
 import type {
-	CalendarClassesOverride,
 	CellInfo,
-	EventSegment,
-	RenderCurrentTimeIndicatorProps,
+	IlamyCalendarProps,
 	SlotDuration,
 	WeekNumberCalculation,
 } from '@/features/calendar/types'
@@ -19,19 +15,42 @@ import type { TimeFormat } from '@/types'
  * provider threads through from IlamyCalendar. The public, curated surface is
  * `IlamyCalendarApi` (see use-smart-calendar-context).
  */
-export interface CalendarContextType extends CalendarEngineReturn {
-	renderEvent?: (event: CalendarEvent, segment: EventSegment) => ReactNode
+export interface CalendarContextType
+	extends CalendarEngineReturn,
+		Pick<
+			IlamyCalendarProps,
+			| 'renderEvent'
+			| 'isCellDisabled'
+			| 'getCellClassName'
+			| 'locale'
+			| 'timezone'
+			| 'disableCellClick'
+			| 'disableEventClick'
+			| 'disableDragAndDrop'
+			| 'editable'
+			| 'eventStartEditable'
+			| 'headerComponent'
+			| 'headerClassName'
+			| 'renderEventForm'
+			| 'onMoreEventsClick'
+			| 'slotHeaderFormat'
+			| 'eventTimeFormat'
+			| 'displayEventTime'
+			| 'displayEventEnd'
+			| 'dayHeaderFormat'
+			| 'titleFormat'
+			| 'classesOverride'
+			| 'renderCurrentTimeIndicator'
+			| 'renderHour'
+			| 'hideNonBusinessHours'
+			| 'hideExportButton'
+			| 'scrollTime'
+			| 'scrollToNow'
+			| 'weekNumbers'
+			| 'renderResource'
+		> {
 	onEventClick: (event: CalendarEvent) => void
 	onCellClick: (info: CellInfo) => void
-	isCellDisabled?: (info: CellInfo) => boolean
-	getCellClassName?: (info: CellInfo) => string
-	locale?: string
-	timezone?: string
-	disableCellClick?: boolean
-	disableEventClick?: boolean
-	disableDragAndDrop?: boolean
-	editable?: boolean
-	eventStartEditable?: boolean
 	eventAllow?: (
 		dropInfo: EventDropInfo,
 		draggedEvent: CalendarEvent
@@ -40,37 +59,14 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	eventHeight: number
 	stickyViewHeader: boolean
 	viewHeaderClassName: string
-	headerComponent?: ReactNode // Optional custom header component
-	headerClassName?: string // Optional custom header class
-	renderEventForm?: (props: EventFormProps) => ReactNode
-	onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
+	hiddenDays?: Set<number>
 	timeFormat: TimeFormat
 	/** `timeFormat` only when the consumer passed one; undefined lets the locale decide. */
 	explicitTimeFormat?: TimeFormat
-	slotHeaderFormat?: Intl.DateTimeFormatOptions
-	eventTimeFormat?: Intl.DateTimeFormatOptions
-	displayEventTime?: boolean
-	displayEventEnd?: boolean
-	dayHeaderFormat?: Intl.DateTimeFormatOptions
-	titleFormat?: Intl.DateTimeFormatOptions
-	classesOverride?: CalendarClassesOverride
-	renderCurrentTimeIndicator?: (
-		props: RenderCurrentTimeIndicatorProps
-	) => ReactNode
-	renderHour?: (date: Dayjs) => ReactNode
-	hideNonBusinessHours?: boolean
-	hideExportButton?: boolean
-	hiddenDays?: Set<number>
 	slotDuration: SlotDuration
-	scrollTime?: string
-	scrollToNow?: boolean
 	allDaySlot: boolean
 	nowIndicator: boolean
-	/** Unset keeps the original behaviour: week-view headers only. */
-	weekNumbers?: boolean
 	weekNumberCalculation: WeekNumberCalculation
-	/** Custom render for resource header cells (resource axis presentation). */
-	renderResource?: (resource: Resource) => ReactNode
 }
 
 // CalendarContext is kept for internal Provider usage

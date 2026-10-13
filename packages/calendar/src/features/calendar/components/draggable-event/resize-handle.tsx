@@ -1,5 +1,4 @@
-import { useDraggable } from '@dnd-kit/core'
-import type { CalendarEvent } from '@ilamy/types'
+import type { DraggableSyntheticListeners } from '@dnd-kit/core'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { ResizeEdge } from '@/features/calendar/components/drag-and-drop/dnd-utils'
 import { useGridAxis } from '@/features/calendar/stores/grid-axis-context'
@@ -11,11 +10,13 @@ import { useGridAxis } from '@/features/calendar/stores/grid-axis-context'
 export type ResizeGranularity = 'slot' | 'day'
 
 interface ResizeHandleProps {
-	elementId: string
-	event: CalendarEvent
 	edge: ResizeEdge
-	granularity: ResizeGranularity
-	sourceResourceId?: string | number
+	/**
+	 * The bar's drag listeners, given only when the bar cannot move: then the
+	 * handle is the one place a press can start a drag. Otherwise the press
+	 * bubbles to the bar's own listeners.
+	 */
+	listeners?: DraggableSyntheticListeners
 }
 
 /**
@@ -29,30 +30,15 @@ interface ResizeHandleProps {
 const NO_HANDLE_ON_TOUCH = '[@media(hover:none)]:hidden'
 
 /**
- * The strip along one edge of a bar that resizes it. It is a draggable of its
- * own: dnd-kit lets the innermost draggable under the pointer take the press,
- * so the bar's move never starts from here. A pointer affordance only (keyboard
- * resize is a separate feature), hence `aria-hidden`.
+ * The strip along one edge of a bar that resizes it. Not a draggable: the bar
+ * is the only one, and a press whose target is a `data-resize-handle` is what
+ * `useCalendarDrag` reads as a resize rather than a move. A bar with a
+ * draggable per handle cost two more per event, which a 500-event week felt.
+ * A pointer affordance only (keyboard resize is a separate feature), hence
+ * `aria-hidden`.
  */
-export function ResizeHandle({
-	elementId,
-	event,
-	edge,
-	granularity,
-	sourceResourceId,
-}: ResizeHandleProps) {
+export function ResizeHandle({ edge, listeners }: ResizeHandleProps) {
 	const axis = useGridAxis()
-	const { listeners, setNodeRef } = useDraggable({
-		id: `${elementId}-resize-${edge}`,
-		data: {
-			type: 'calendar-event-resize',
-			event,
-			edge,
-			granularity,
-			sourceResourceId,
-		},
-	})
-
 	const isVertical = axis === 'vertical'
 	const sideClass = {
 		start: isVertical ? 'top-0 inset-x-0' : 'left-0 inset-y-0',
@@ -74,7 +60,6 @@ export function ResizeHandle({
 				NO_HANDLE_ON_TOUCH
 			)}
 			data-resize-handle={edge}
-			ref={setNodeRef}
 			{...listeners}
 		/>
 	)

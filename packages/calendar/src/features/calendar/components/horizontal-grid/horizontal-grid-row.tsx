@@ -27,6 +27,27 @@ export interface HorizontalGridRowProps extends HorizontalRowSpec {
 	allDay?: boolean
 }
 
+/** The sticky resource cell at the start of a resource row. */
+const RowLabel: React.FC<{ resource: Resource }> = ({ resource }) => {
+	const { renderResource } = useSmartCalendarContext((c) => ({
+		renderResource: c.renderResource,
+	}))
+	return (
+		<ResourceCell
+			className="w-20 sm:w-40 border-r sticky left-0 bg-background z-20 h-full"
+			data-sticky-inset="left"
+			data-testid={keys.container.horizontal.rowLabel(resource.id)}
+			resource={resource}
+		>
+			{renderResource ? (
+				renderResource(resource)
+			) : (
+				<div className="wrap-break-word text-sm">{resource.title}</div>
+			)}
+		</ResourceCell>
+	)
+}
+
 const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	id,
 	resource,
@@ -39,8 +60,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	showDayNumber = false,
 	showWeekNumber = false,
 }) => {
-	const { renderResource, weekNumbers, weekNumberCalculation } =
-		useSmartCalendarContext()
+	const { weekNumbers, weekNumberCalculation } = useSmartCalendarContext()
 
 	const isResourceCalendar = variant === 'resource'
 	// Flat columns: each column has col.day (regular month, resource month)
@@ -73,20 +93,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 			className={cn('flex flex-1 relative min-w-0', className)}
 			data-testid={keys.container.horizontal.row(id)}
 		>
-			{isResourceCalendar && resource && (
-				<ResourceCell
-					className="w-20 sm:w-40 border-r sticky left-0 bg-background z-20 h-full"
-					data-sticky-inset="left"
-					data-testid={keys.container.horizontal.rowLabel(resource.id)}
-					resource={resource}
-				>
-					{renderResource ? (
-						renderResource(resource)
-					) : (
-						<div className="wrap-break-word text-sm">{resource.title}</div>
-					)}
-				</ResourceCell>
-			)}
+			{isResourceCalendar && resource && <RowLabel resource={resource} />}
 			<div className="relative flex-1 flex min-w-0">
 				{/* gap-px + bg-border draws the vertical separators between cells. */}
 				<div className="flex w-full min-w-0 gap-px bg-border">

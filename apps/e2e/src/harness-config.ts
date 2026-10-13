@@ -73,10 +73,11 @@ export interface UrlConfig {
 	revertChanges?: boolean
 	/**
 	 * Harness-only: pass `events` as a function that answers from the scenario
-	 * after `fetchDelay` ms (`delayed`) or fails after it (`failing`). Read on
-	 * every call, so changing it on a mounted calendar changes the next fetch.
+	 * after `fetchDelay` ms (`delayed`) or fails after it (`failing`), or never
+	 * answers until the mode is changed (`held`). Read on every call, so
+	 * changing it on a mounted calendar changes the next fetch.
 	 */
-	fetch?: 'delayed' | 'failing'
+	fetch?: 'delayed' | 'failing' | 'held'
 	/** Harness-only: show buttons outside the calendar that drive it through its `ref`. */
 	externalToolbar?: boolean
 	/** Harness-only: how long the `events` function takes to answer, in ms. */
@@ -87,7 +88,7 @@ export interface UrlConfig {
 	 * (`failing`). Read on every call, like `fetch`. A button the harness draws
 	 * calls `refetchResources()`.
 	 */
-	resourcesFetch?: 'delayed' | 'failing'
+	resourcesFetch?: 'delayed' | 'failing' | 'held'
 	/** With `resourcesFetch` set: fetch again whenever the range leaves the fetched one. */
 	refetchResourcesOnNavigate?: boolean
 	/**
@@ -454,7 +455,7 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 		config.fetch = oneOf(
 			'fetch',
 			fetchMode,
-			['delayed', 'failing'] as const,
+			['delayed', 'failing', 'held'] as const,
 			String
 		)
 	}
@@ -469,7 +470,7 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 		config.resourcesFetch = oneOf(
 			'resourcesFetch',
 			resourcesFetch,
-			['delayed', 'failing'] as const,
+			['delayed', 'failing', 'held'] as const,
 			String
 		)
 	}

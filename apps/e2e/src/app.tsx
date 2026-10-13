@@ -173,13 +173,18 @@ type HarnessOnly =
 	| 'fetch'
 	| 'fetchDelay'
 
+type FetchMode = 'delayed' | 'failing' | 'held'
+
+/** How often a held fetch checks whether its mode was changed to release it. */
+const HELD_POLL_MS = 25
+
 interface HarnessProps {
 	config: Omit<ReturnType<typeof readUrlConfig>, HarnessOnly>
 	date: string
 	externalToolbar?: boolean
 	fetchDelay?: number
-	fetchMode?: 'delayed' | 'failing'
-	resourcesFetchMode?: 'delayed' | 'failing'
+	fetchMode?: FetchMode
+	resourcesFetchMode?: FetchMode
 	renderEventVariant?: ReturnType<typeof readUrlConfig>['renderEventVariant']
 	height?: string
 	orientation?: Orientation
@@ -436,10 +441,11 @@ const ExternalToolbar: React.FC<{
  * Plays the consumer's server for one function prop (`events` or `resources`):
  * answers after `fetchDelay` ms, or fails, and logs every call and how it ended.
  * The mode and delay are read on every call, so a spec can change them on a
- * mounted calendar.
+ * mounted calendar. In `held` mode the answer is not due until the mode changes,
+ * so a spec can assert the pending state without racing a timer.
  */
 const useServer = <Row,>(
-	getMode: () => 'delayed' | 'failing' | undefined,
+	getMode: () => FetchMode | undefined,
 	getDelay: () => number,
 	answer: (info: EventsFetchInfo) => Row[]
 ): [
@@ -465,15 +471,21 @@ const useServer = <Row,>(
 		])
 
 		return new Promise<Row[]>((resolve, reject) => {
-			const timer = setTimeout(() => {
-				if (getMode() === 'failing') {
+			const answerWhenDue = () => {
+				const mode = getMode()
+				if (mode === 'held') {
+					timer = setTimeout(answerWhenDue, HELD_POLL_MS)
+					return
+				}
+				if (mode === 'failing') {
 					finish('failed')
 					reject(new Error('the harness server failed'))
 					return
 				}
 				finish('done')
 				resolve(answer(info))
-			}, getDelay())
+			}
+			let timer = setTimeout(answerWhenDue, getDelay())
 			signal.addEventListener('abort', () => {
 				clearTimeout(timer)
 				finish('aborted')

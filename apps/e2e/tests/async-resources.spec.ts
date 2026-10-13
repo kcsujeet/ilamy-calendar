@@ -10,6 +10,10 @@ import { ResourceAxis } from './support/pages'
  * calendar has no resource axis.
  */
 const DELAYED = { resourcesFetch: 'delayed', fetchDelay: 300 }
+// Never answers until a spec flips it to `delayed`: a spec that asserts the
+// pending state must not race a timer, and a loaded runner can take seconds
+// between mounting the calendar and the first assertion.
+const HELD = { resourcesFetch: 'held' }
 
 const open = (
 	page: Page,
@@ -28,12 +32,13 @@ for (const orientation of ['vertical', 'horizontal'] as const) {
 		test('draws the lanes once the function resolves, not before', async ({
 			page,
 		}) => {
-			await open(page, orientation)
+			await open(page, orientation, HELD)
 			const axis = new ResourceAxis(page)
 
 			await expect(axis.resource('Room A')).toHaveCount(0)
 			expect((await axis.fetchState()).isLoading).toBe(true)
 
+			await setSettings(page, { resourcesFetch: 'delayed' })
 			await expect(axis.resource('Room A')).toBeVisible()
 			await expect(axis.resource('Room C')).toBeVisible()
 			await expect(axis.event('Room A booking')).toBeVisible()
@@ -44,7 +49,7 @@ for (const orientation of ['vertical', 'horizontal'] as const) {
 		test('is a resource calendar, with no lanes, while the first fetch is pending', async ({
 			page,
 		}) => {
-			await open(page, orientation, { ...DELAYED, fetchDelay: 1500 })
+			await open(page, orientation, HELD)
 			const axis = new ResourceAxis(page)
 
 			expect((await axis.fetchState()).isLoading).toBe(true)
@@ -56,6 +61,7 @@ for (const orientation of ['vertical', 'horizontal'] as const) {
 			).toHaveCount(0)
 			await expect(axis.resource('Room A')).toHaveCount(0)
 
+			await setSettings(page, { resourcesFetch: 'delayed' })
 			await expect(axis.resource('Room A')).toBeVisible()
 			await expect(page.getByTestId('week-view-header')).toHaveCount(0)
 		})

@@ -1,6 +1,7 @@
 import {
 	type CalendarEvent,
 	type EventsChange,
+	type EventsFetcher,
 	IlamyCalendar,
 	type IlamyPlugin,
 	type Resource,
@@ -9,9 +10,9 @@ import { agendaPlugin } from '@ilamy/calendar-agenda'
 import { dragToCreatePlugin } from '@ilamy/calendar-drag-to-create'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type React from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ConfigError, readUrlConfig } from './harness-config'
-import type { PublishedChange } from './published-change'
+import type { PublishedChange, PublishedFetch } from './published-change'
 import {
 	isScenarioName,
 	PINNED_NOW,
@@ -117,6 +118,8 @@ export const App = () => {
 		renderEventVariant,
 		resourceCount,
 		revertChanges,
+		fetch,
+		fetchDelay,
 		...calendarConfig
 	} = {
 		...scenario.config,
@@ -128,6 +131,8 @@ export const App = () => {
 		<Harness
 			config={calendarConfig}
 			date={date}
+			fetchDelay={fetchDelay}
+			fetchMode={fetch}
 			height={height}
 			orientation={orientation ?? undefined}
 			plugins={plugins}
@@ -153,11 +158,18 @@ const useLocationSearch = (): string => {
 	return search
 }
 
-type HarnessOnly = 'height' | 'renderEventVariant' | 'revertChanges'
+type HarnessOnly =
+	| 'height'
+	| 'renderEventVariant'
+	| 'revertChanges'
+	| 'fetch'
+	| 'fetchDelay'
 
 interface HarnessProps {
 	config: Omit<ReturnType<typeof readUrlConfig>, HarnessOnly>
 	date: string
+	fetchDelay?: number
+	fetchMode?: 'delayed' | 'failing'
 	renderEventVariant?: ReturnType<typeof readUrlConfig>['renderEventVariant']
 	height?: string
 	orientation?: Orientation
@@ -182,6 +194,8 @@ interface HarnessProps {
 const Harness: React.FC<HarnessProps> = ({
 	config,
 	date,
+	fetchDelay = 0,
+	fetchMode,
 	renderEventVariant,
 	height,
 	orientation,
@@ -234,6 +248,53 @@ const Harness: React.FC<HarnessProps> = ({
 		}
 	}
 
+	// With `fetch` set, `events` is a function that plays the consumer's server:
+	// it answers from the rows held above, so a saved edit is what the next fetch
+	// returns. Read through a ref so a mounted calendar sees a changed `fetch`.
+	const server = useRef({ events, fetchMode, fetchDelay })
+	server.current = { events, fetchMode, fetchDelay }
+	const nextFetchId = useRef(0)
+	const [fetchLog, setFetchLog] = useState<PublishedFetch[]>([])
+	const [fetchState, setFetchState] = useState({ isLoading: false, errors: 0 })
+
+	const fetchFromServer: EventsFetcher = (info, { signal }) => {
+		const id = nextFetchId.current
+		nextFetchId.current += 1
+		const finish = (status: PublishedFetch['status']) =>
+			setFetchLog((log) =>
+				log.map((entry) => (entry.id === id ? { ...entry, status } : entry))
+			)
+		setFetchLog((log) => [
+			...log,
+			{ id, start: info.startStr, end: info.endStr, status: 'pending' },
+		])
+
+		return new Promise((resolve, reject) => {
+			const timer = setTimeout(() => {
+				if (server.current.fetchMode === 'failing') {
+					finish('failed')
+					reject(new Error('the harness server failed'))
+					return
+				}
+				// A real server returns every row whose recurrence intersects the
+				// range, so a series row always comes back (the harness does not
+				// evaluate the rule); a plain row only when it overlaps.
+				const inRange = server.current.events.filter(
+					(row) =>
+						Boolean(row.rrule) ||
+						(row.start.isBefore(info.end) && row.end.isAfter(info.start))
+				)
+				finish('done')
+				resolve(inRange)
+			}, server.current.fetchDelay)
+			signal.addEventListener('abort', () => {
+				clearTimeout(timer)
+				finish('aborted')
+				reject(new DOMException('superseded', 'AbortError'))
+			})
+		})
+	}
+
 	// A server that rejects every save persists nothing, so the calendar's own
 	// rows are the only thing `revert` has to put right.
 	const shouldPersistRows = !revertChanges
@@ -254,12 +315,18 @@ const Harness: React.FC<HarnessProps> = ({
 		>
 			<IlamyCalendar
 				{...config}
-				events={events}
+				events={fetchMode ? fetchFromServer : events}
 				initialDate={date}
 				initialView={view}
+				loading={(isLoading) =>
+					setFetchState((state) => ({ ...state, isLoading }))
+				}
 				onEventAdd={shouldPersistRows ? handleAdd : undefined}
 				onEventDelete={shouldPersistRows ? handleDelete : undefined}
 				onEventsChange={handleChange}
+				onEventsError={() =>
+					setFetchState((state) => ({ ...state, errors: state.errors + 1 }))
+				}
 				onEventUpdate={shouldPersistRows ? handleUpdate : undefined}
 				orientation={orientation}
 				plugins={plugins}
@@ -275,6 +342,12 @@ const Harness: React.FC<HarnessProps> = ({
 			</script>
 			<script data-testid="event-changes" type="application/json">
 				{JSON.stringify(changes)}
+			</script>
+			<script data-testid="fetch-log" type="application/json">
+				{JSON.stringify(fetchLog)}
+			</script>
+			<script data-testid="fetch-state" type="application/json">
+				{JSON.stringify(fetchState)}
 			</script>
 		</div>
 	)

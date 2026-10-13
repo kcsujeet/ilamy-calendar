@@ -1,5 +1,8 @@
 import { expect, type Locator, type Page } from '@playwright/test'
-import type { PublishedChange } from '../../src/published-change'
+import type {
+	PublishedChange,
+	PublishedFetch,
+} from '../../src/published-change'
 
 /**
  * Page objects wrap the testids the components emit, so a markup change breaks
@@ -84,6 +87,18 @@ export class CalendarPage {
 	async eventChanges(): Promise<PublishedChange[]> {
 		const raw = await this.page.getByTestId('event-changes').textContent()
 		return JSON.parse(raw ?? '[]')
+	}
+
+	/** Every fetch the `events` function received so far, and how each ended. */
+	async fetchLog(): Promise<PublishedFetch[]> {
+		const raw = await this.page.getByTestId('fetch-log').textContent()
+		return JSON.parse(raw ?? '[]')
+	}
+
+	/** Whether a fetch is in flight, and how many failed, as the calendar reported. */
+	async fetchState(): Promise<{ isLoading: boolean; errors: number }> {
+		const raw = await this.page.getByTestId('fetch-state').textContent()
+		return JSON.parse(raw ?? '{}')
 	}
 
 	async eventNamed(title: string) {

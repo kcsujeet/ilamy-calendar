@@ -25,7 +25,9 @@ export const useInvalidSlotPropsWarning = (
 	const invalidSlotPropNames = invalidProps.join(', ')
 	useEffect(() => {
 		if (invalidSlotPropNames) {
-			warnInDev(
+			// Unguarded on purpose, unlike `warnInDev`: its `typeof process` guard
+			// drops the warning in a Vite browser, where `process` is undefined.
+			console.warn(
 				`[@ilamy/calendar] \`${invalidSlotPropNames}\` is not a usable visible-hours range ('HH:mm' from '00:00' to '24:00', with slotMaxTime after slotMinTime), so the whole day is shown.`
 			)
 		}

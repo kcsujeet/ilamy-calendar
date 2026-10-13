@@ -137,6 +137,60 @@ describe('generateRecurringEvents instance ids', () => {
 		).toEqual(['ov_1@2025-03-11T09:00:00.000Z'])
 	})
 
+	it('applies each override to its own series only, among many', () => {
+		const mkSeries = (id: string) =>
+			mkRecurringEvent(
+				id,
+				'2025-03-10T09:00:00.000Z',
+				'2025-03-10T10:00:00.000Z'
+			)
+		const first = mkSeries('first')
+		const second = mkSeries('second')
+		const overrideOfFirst: CalendarEvent = {
+			id: 'first-moved',
+			title: 'moved',
+			uid: 'first@ilamy.calendar',
+			recurrenceId: '2025-03-10T09:00:00.000Z',
+			start: at('2025-03-10T15:00:00.000Z'),
+			end: at('2025-03-10T16:00:00.000Z'),
+		}
+		const allEvents = [first, second, overrideOfFirst]
+		const range = [
+			'2025-03-10T00:00:00.000Z',
+			'2025-03-10T23:59:59.999Z',
+		] as const
+
+		expect(expand(first, ...range, allEvents)).toEqual([])
+		expect(expand(second, ...range, allEvents)).toEqual([
+			'second_0@2025-03-10T09:00:00.000Z',
+		])
+	})
+
+	it('reads the overrides of a new events list, not an earlier one', () => {
+		const daily = mkRecurringEvent(
+			'later',
+			'2025-03-10T09:00:00.000Z',
+			'2025-03-10T10:00:00.000Z'
+		)
+		const override: CalendarEvent = {
+			id: 'later-moved',
+			title: 'moved',
+			uid: 'later@ilamy.calendar',
+			recurrenceId: '2025-03-10T09:00:00.000Z',
+			start: at('2025-03-10T15:00:00.000Z'),
+			end: at('2025-03-10T16:00:00.000Z'),
+		}
+		const range = [
+			'2025-03-10T00:00:00.000Z',
+			'2025-03-10T23:59:59.999Z',
+		] as const
+
+		expect(expand(daily, ...range, [daily])).toEqual([
+			'later_0@2025-03-10T09:00:00.000Z',
+		])
+		expect(expand(daily, ...range, [daily, override])).toEqual([])
+	})
+
 	it('includes an occurrence that starts exactly at the range start', () => {
 		const instant = mkRecurringEvent(
 			'edge',

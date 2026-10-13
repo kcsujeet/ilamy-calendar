@@ -29,6 +29,35 @@ interface FetchedRange {
 	timezone?: string
 }
 
+interface FetchDecisionInput {
+	fetched?: FetchedRange
+	visibleStartMs: number
+	visibleEndMs: number
+	timezone?: string
+	isFetchInFlight: boolean
+	lazyFetching: boolean
+}
+
+/** Whether the range effect must start a fetch now; see `useEventsFetcher` for the rules. */
+export const mustFetchRange = ({
+	fetched,
+	visibleStartMs,
+	visibleEndMs,
+	timezone,
+	isFetchInFlight,
+	lazyFetching,
+}: FetchDecisionInput): boolean => {
+	if (!fetched) {
+		return true
+	}
+	const isZoneChanged = fetched.timezone !== timezone
+	const isOutsideFetchedRange =
+		visibleStartMs < fetched.startMs || visibleEndMs > fetched.endMs
+	return (
+		isFetchInFlight || isZoneChanged || isOutsideFetchedRange || !lazyFetching
+	)
+}
+
 /**
  * Loads the events for the visible range when `events` is a function.
  *
@@ -138,19 +167,14 @@ export const useEventsFetcher = ({
 		if (!hasFetcher) {
 			return
 		}
-		const fetched = lastFetched.current
-		const isNeverFetched = fetched === undefined
-		const isFetchInFlight = isLoading.current
-		const isZoneChanged = fetched?.timezone !== timezone
-		const isOutsideFetchedRange =
-			fetched !== undefined &&
-			(rangeStartMs < fetched.startMs || rangeEndMs > fetched.endMs)
-		const mustFetch =
-			isNeverFetched ||
-			isFetchInFlight ||
-			isZoneChanged ||
-			isOutsideFetchedRange ||
-			!lazyFetching
+		const mustFetch = mustFetchRange({
+			fetched: lastFetched.current,
+			visibleStartMs: rangeStartMs,
+			visibleEndMs: rangeEndMs,
+			timezone,
+			isFetchInFlight: isLoading.current,
+			lazyFetching,
+		})
 		if (mustFetch) {
 			refetchEvents?.()
 		}

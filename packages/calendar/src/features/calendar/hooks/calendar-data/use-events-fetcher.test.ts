@@ -3,6 +3,7 @@ import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { act, renderHook } from '@testing-library/react'
 import { StrictMode } from 'react'
+import { mustFetchRange } from '@/features/calendar/hooks/calendar-data/use-events-fetcher'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
 import type { EventsFetchInfo } from '@/features/calendar/types'
 
@@ -249,5 +250,36 @@ describe('events fetched on demand', () => {
 		act(() => result.current.nextPeriod())
 
 		expect(calls[0].signal.aborted).toBe(false)
+	})
+})
+
+describe('mustFetchRange', () => {
+	const fetched = { startMs: 100, endMs: 200, timezone: 'UTC' }
+	const settled = {
+		fetched,
+		visibleStartMs: 120,
+		visibleEndMs: 180,
+		timezone: 'UTC',
+		isFetchInFlight: false,
+		lazyFetching: true,
+	}
+
+	it('fetches when nothing was fetched yet', () => {
+		expect(mustFetchRange({ ...settled, fetched: undefined })).toBe(true)
+	})
+
+	it('does not fetch inside the fetched range with lazy fetching', () => {
+		expect(mustFetchRange(settled)).toBe(false)
+	})
+
+	it('fetches when the visible range leaves the fetched one', () => {
+		expect(mustFetchRange({ ...settled, visibleEndMs: 201 })).toBe(true)
+		expect(mustFetchRange({ ...settled, visibleStartMs: 99 })).toBe(true)
+	})
+
+	it('fetches when the zone changes, a fetch is in flight, or lazy fetching is off', () => {
+		expect(mustFetchRange({ ...settled, timezone: 'Asia/Tokyo' })).toBe(true)
+		expect(mustFetchRange({ ...settled, isFetchInFlight: true })).toBe(true)
+		expect(mustFetchRange({ ...settled, lazyFetching: false })).toBe(true)
 	})
 })

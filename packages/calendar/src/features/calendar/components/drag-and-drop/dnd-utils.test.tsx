@@ -10,6 +10,7 @@ import {
 	calculateDropTimes,
 	calculateResizeTimes,
 	type DropCellData,
+	getSnappedOverData,
 	getUpdatedEvent,
 } from './dnd-utils'
 
@@ -23,6 +24,8 @@ let sourceResourceId: string | number | undefined
 let disabledCell: boolean | undefined
 
 const getDragEvent = () => ({
+	activatorEvent: {},
+	delta: { x: 0, y: 0 },
 	active: {
 		id: 'event-1',
 		data: {
@@ -34,6 +37,7 @@ const getDragEvent = () => ({
 	},
 	over: {
 		id: 'time-cell-2024-06-15-10-30',
+		rect: { top: 0, left: 0, width: 100, height: 60 },
 		data: {
 			current: {
 				type: cellType,
@@ -969,6 +973,93 @@ describe('calculateResizeTimes', () => {
 				'end'
 			)
 			expect(resized?.end.toISOString()).toBe('2025-03-10T21:00:00.000Z')
+		})
+	})
+})
+
+describe('snapping inside a cell', () => {
+	const at = (iso: string) => dayjs(iso)
+	/** An hour cell with no `minute`, the way a one-hour slot and a timeline column report it. */
+	const hourCell = (hourOfDay: number, snapMinutes?: number): DropCellData => ({
+		type: 'day-cell',
+		date: at('2025-03-12T00:00:00'),
+		hour: hourOfDay,
+		slotDurationMinutes: 60,
+		snapMinutes,
+	})
+	const meeting = {
+		id: 'm',
+		title: 'Meeting',
+		start: at('2025-03-12T14:00:00'),
+		end: at('2025-03-12T15:00:00'),
+	} as CalendarEvent
+
+	describe('getSnappedOverData', () => {
+		const rect = { top: 100, left: 200, width: 80, height: 60 }
+		const overCell = (cell: DropCellData) =>
+			({
+				id: 'cell',
+				rect,
+				data: { current: cell },
+			}) as unknown as DragEndEvent['over']
+
+		it('reads the vertical fraction from the pointer height', () => {
+			const cell: DropCellData = { ...hourCell(9, 15), axis: 'vertical' }
+			// 45 of 60px down the cell
+			const snapped = getSnappedOverData(overCell(cell), { x: 210, y: 145 })
+			expect(snapped?.minute).toBe(45)
+		})
+
+		it('reads the horizontal fraction from the pointer width', () => {
+			const cell: DropCellData = { ...hourCell(9, 15), axis: 'horizontal' }
+			// 20 of 80px across the cell
+			const snapped = getSnappedOverData(overCell(cell), { x: 220, y: 100 })
+			expect(snapped?.minute).toBe(15)
+		})
+
+		it('measures the pointer against the cell where it is now, not where it was', () => {
+			// The same pointer over the same cell, which a scroll has moved 30px up:
+			// the pointer is now further down the cell.
+			const cell: DropCellData = { ...hourCell(9, 15), axis: 'vertical' }
+			const pointer = { x: 210, y: 105 }
+			const before = getSnappedOverData(overCell(cell), pointer)
+			const scrolled = {
+				id: 'cell',
+				rect: { ...rect, top: rect.top - 30 },
+				data: { current: cell },
+			} as unknown as DragEndEvent['over']
+			const after = getSnappedOverData(scrolled, pointer)
+			expect([before?.minute, after?.minute]).toEqual([0, 30])
+		})
+
+		it('keeps the start of the cell for a drag with no pointer (keyboard)', () => {
+			const cell: DropCellData = { ...hourCell(9, 15), axis: 'vertical' }
+			expect(getSnappedOverData(overCell(cell), undefined)?.minute).toBe(0)
+		})
+
+		it('is undefined when nothing is under the pointer', () => {
+			expect(getSnappedOverData(null, { x: 0, y: 0 })).toBeUndefined()
+		})
+	})
+
+	describe('getUpdatedEvent', () => {
+		it('commits the snapped drop', () => {
+			const cell: DropCellData = { ...hourCell(9, 15), axis: 'vertical' }
+			const event = {
+				active: { id: 'm', data: { current: { type: 'calendar-event' } } },
+				over: {
+					id: 'cell',
+					rect: { top: 100, left: 0, width: 80, height: 60 },
+					data: { current: cell },
+				},
+			} as unknown as DragEndEvent
+			const result = getUpdatedEvent(event, meeting, undefined, {
+				x: 0,
+				y: 130,
+			})
+			expect(result?.updates.start?.format()).toBe(
+				at('2025-03-12T09:30:00').format()
+			)
 		})
 	})
 })

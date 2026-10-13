@@ -1,6 +1,7 @@
 import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
+import type { TimeAxis } from '@ilamy/utils/helpers'
 import type React from 'react'
 import { memo, useRef } from 'react'
 import { useIsCellUnavailable } from '@/features/calendar/hooks/use-is-cell-unavailable'
@@ -32,6 +33,8 @@ interface GridProps {
 	precomputedEvents?: CalendarEvent[]
 	/** Whether this cell draws the dashed sub-hour divider below itself. */
 	isSubDivider?: boolean
+	/** The axis time runs along in the grid, for cells of an hour grid. */
+	axis?: TimeAxis
 }
 
 /**
@@ -53,6 +56,52 @@ const getCellTestId = (
 	return keys.cell.day(day)
 }
 
+interface GridCellBodyProps
+	extends Pick<
+			GridProps,
+			'day' | 'resourceId' | 'precomputedEvents' | 'weekNumber' | 'children'
+		>,
+		Required<
+			Pick<
+				GridProps,
+				'gridType' | 'allDay' | 'shouldRenderEvents' | 'showDayNumber'
+			>
+		> {
+	allEventsDialogRef: React.RefObject<AllEventDialogHandle | null>
+}
+
+/** What goes inside the droppable cell: the day header, then its events and any children. */
+const GridCellBody: React.FC<GridCellBodyProps> = ({
+	day,
+	gridType,
+	allDay,
+	resourceId,
+	precomputedEvents,
+	showDayNumber,
+	weekNumber,
+	shouldRenderEvents,
+	allEventsDialogRef,
+	children,
+}) => (
+	<GridCellContent
+		day={day}
+		showDayNumber={showDayNumber}
+		weekNumber={weekNumber}
+	>
+		{shouldRenderEvents && (
+			<GridCellEvents
+				allDay={allDay}
+				allEventsDialogRef={allEventsDialogRef}
+				day={day}
+				gridType={gridType}
+				precomputedEvents={precomputedEvents}
+				resourceId={resourceId}
+			/>
+		)}
+		{children}
+	</GridCellContent>
+)
+
 const NoMemoGridCell: React.FC<GridProps> = ({
 	day,
 	hour,
@@ -68,6 +117,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	showDayNumber = false,
 	weekNumber,
 	isSubDivider = false,
+	axis,
 	children,
 }) => {
 	const allEventsDialogRef = useRef<AllEventDialogHandle>(null)
@@ -83,6 +133,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 		<>
 			<DroppableCell
 				allDay={allDay}
+				axis={axis}
 				className={cn(
 					'cursor-pointer overflow-clip p-1 bg-background not-in-data-dragging:hover:bg-accent min-h-[60px] relative min-w-0',
 					className
@@ -97,23 +148,19 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 				slotDurationMinutes={slotDurationMinutes}
 				type="day-cell"
 			>
-				<GridCellContent
+				<GridCellBody
+					allDay={allDay}
+					allEventsDialogRef={allEventsDialogRef}
 					day={day}
+					gridType={gridType}
+					precomputedEvents={precomputedEvents}
+					resourceId={resourceId}
+					shouldRenderEvents={shouldRenderEvents}
 					showDayNumber={showDayNumber}
 					weekNumber={weekNumber}
 				>
-					{shouldRenderEvents && (
-						<GridCellEvents
-							allDay={allDay}
-							allEventsDialogRef={allEventsDialogRef}
-							day={day}
-							gridType={gridType}
-							precomputedEvents={precomputedEvents}
-							resourceId={resourceId}
-						/>
-					)}
 					{children}
-				</GridCellContent>
+				</GridCellBody>
 			</DroppableCell>
 
 			{/* Only a cell that draws events can show "+N more", the dialog's one

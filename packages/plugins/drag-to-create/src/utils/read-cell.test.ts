@@ -83,6 +83,32 @@ describe('readCell', () => {
 		expect(readCell(cell)).toBeNull()
 	})
 
+	it('reads the snap size and the time axis a cell names', () => {
+		const cell = makeCell({
+			'data-start': '2025-01-01T09:00:00.000Z',
+			'data-end': '2025-01-01T10:00:00.000Z',
+			'data-snap-minutes': '5',
+			'data-time-axis': 'horizontal',
+		})
+
+		const result = readCell(cell)
+
+		expect(result?.snapMinutes).toBe(5)
+		expect(result?.axis).toBe('horizontal')
+	})
+
+	it('leaves the snap size and the time axis undefined on a cell that names neither', () => {
+		const cell = makeCell({
+			'data-start': '2025-01-01T09:00:00.000Z',
+			'data-end': '2025-01-01T10:00:00.000Z',
+		})
+
+		const result = readCell(cell)
+
+		expect(result?.snapMinutes).toBeUndefined()
+		expect(result?.axis).toBeUndefined()
+	})
+
 	// Cells emit data-start/data-end via toISOString() (UTC). readCell must
 	// round-trip them back to the calendar-tz wall-clock the cell represented.
 	// The bug: under the calendar's setDefault, the configured dayjs() reads a

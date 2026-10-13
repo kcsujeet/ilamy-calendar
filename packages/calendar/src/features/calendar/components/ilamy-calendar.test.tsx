@@ -23,8 +23,12 @@ import { createContext, useContext } from 'react'
 import { RRule } from 'rrule'
 import { DISABLED_CELL_CLASSNAME } from '@/config/constants'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
-import { useIlamyCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import {
+	useIlamyCalendarContext,
+	useSmartCalendarContext,
+} from '@/features/calendar/hooks/use-smart-calendar-context'
 import type {
+	EventSegment,
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
@@ -1796,5 +1800,362 @@ describe('slotMinTime / slotMaxTime validation', () => {
 			/>
 		)
 		expect(listSlotWarnings()).toHaveLength(0)
+	})
+})
+
+describe('hidden days in every view', () => {
+	// Wed 12 March 2025. The month grid runs Sun 23 Feb - Sat 5 Apr.
+	const wednesday = dayjs('2025-03-12T09:00:00.000Z')
+	const dayCellIds = () =>
+		screen
+			.queryAllByTestId(/^day-cell-\d{4}-\d{2}-\d{2}$/)
+			.map((cell) => cell.dataset.testid)
+	const renderCalendar = (props: Partial<IlamyCalendarProps> = {}) => {
+		cleanup()
+		return render(
+			<IlamyCalendar
+				events={[]}
+				initialDate={wednesday}
+				initialView="month"
+				timezone="UTC"
+				{...props}
+			/>
+		)
+	}
+	const allDay = (id: string, startISO: string, endISO: string) => ({
+		id,
+		title: id,
+		start: dayjs(startISO),
+		end: dayjs(endISO),
+		allDay: true,
+	})
+	const segmentFlags = (event: CalendarEvent, segment: EventSegment) => (
+		<span data-testid={`bar-${event.id}`}>
+			{`${segment.isStart}/${segment.isEnd}`}
+		</span>
+	)
+
+	describe('month view', () => {
+		it('draws five columns per week when weekends is false', () => {
+			renderCalendar({ weekends: false })
+			const weekdayHeaders = screen.queryAllByTestId(/^month-header-weekday-/)
+			expect(weekdayHeaders.map((header) => header.textContent)).toEqual([
+				'Mon',
+				'Tue',
+				'Wed',
+				'Thu',
+				'Fri',
+			])
+			expect(dayCellIds()).toHaveLength(30)
+			expect(dayCellIds()).not.toContain('day-cell-2025-03-15')
+			expect(dayCellIds()).toContain('day-cell-2025-03-14')
+		})
+
+		it('draws the same grid for weekends false as for hiding Saturday and Sunday', () => {
+			renderCalendar({ hiddenDays: ['saturday', 'sunday'] })
+			expect(dayCellIds()).toHaveLength(30)
+			expect(dayCellIds()).not.toContain('day-cell-2025-03-16')
+		})
+
+		it('hides a single weekday in every week', () => {
+			renderCalendar({ hiddenDays: ['wednesday'] })
+			expect(screen.queryAllByTestId(/^month-header-weekday-/)).toHaveLength(6)
+			expect(dayCellIds()).toHaveLength(36)
+			expect(dayCellIds()).not.toContain('day-cell-2025-03-12')
+		})
+
+		it('draws one bar per week for an event that runs across the hidden weekend', () => {
+			// Fri 14 - Mon 17: two weeks of the grid, so two bars, each cut at the gap.
+			renderCalendar({
+				weekends: false,
+				events: [
+					allDay(
+						'trip',
+						'2025-03-14T00:00:00.000Z',
+						'2025-03-18T00:00:00.000Z'
+					),
+				],
+				renderEvent: segmentFlags,
+			})
+			const bars = screen.getAllByTestId('bar-trip')
+			expect(bars.map((bar) => bar.textContent)).toEqual([
+				'true/false',
+				'false/true',
+			])
+		})
+
+		it('draws nothing for an event that lies entirely on hidden days', () => {
+			renderCalendar({
+				weekends: false,
+				events: [
+					allDay(
+						'weekend',
+						'2025-03-15T00:00:00.000Z',
+						'2025-03-17T00:00:00.000Z'
+					),
+				],
+				renderEvent: segmentFlags,
+			})
+			expect(screen.queryAllByTestId('bar-weekend')).toHaveLength(0)
+		})
+
+		it('clamps an event that starts on a hidden day to the first visible column', () => {
+			// Sat 15 - Tue 18 (exclusive end Wed 19 00:00): starts hidden, so the bar
+			// begins on Mon and is not the event's start.
+			renderCalendar({
+				weekends: false,
+				events: [
+					allDay(
+						'late',
+						'2025-03-15T00:00:00.000Z',
+						'2025-03-19T00:00:00.000Z'
+					),
+				],
+				renderEvent: segmentFlags,
+			})
+			const bar = screen.getByTestId('bar-late')
+			expect(bar.textContent).toBe('false/true')
+			const wrapper = bar.closest<HTMLElement>(
+				'[data-testid="horizontal-event-late"]'
+			)
+			expect([wrapper?.dataset.left, wrapper?.dataset.width]).toEqual([
+				'0',
+				'40',
+			])
+		})
+
+		it('numbers each week from the first day it draws', () => {
+			renderCalendar({
+				weekends: false,
+				weekNumbers: true,
+				weekNumberCalculation: (date) => date.getUTCDate(),
+			})
+			// The week of Sun 9 - Sat 15 starts on Mon 10 once Sunday is hidden.
+			const weekNumbers = screen
+				.getAllByTestId('week-number')
+				.map((label) => label.textContent)
+			expect(weekNumbers).toEqual(['24', '3', '10', '17', '24', '31'])
+		})
+	})
+
+	describe('day view', () => {
+		const dayTitle = () => screen.getByTestId('day-view-header').textContent
+		const press = (name: 'Previous' | 'Next' | 'Today') =>
+			fireEvent.click(screen.getByRole('button', { name }))
+
+		it('steps forward over the hidden weekend', () => {
+			renderCalendar({
+				weekends: false,
+				initialView: 'day',
+				initialDate: dayjs('2025-03-14T09:00:00.000Z'),
+			})
+			expect(dayTitle()).toContain('Friday, March 14, 2025')
+			press('Next')
+			expect(dayTitle()).toContain('Monday, March 17, 2025')
+		})
+
+		it('steps back over the hidden weekend', () => {
+			renderCalendar({
+				weekends: false,
+				initialView: 'day',
+				initialDate: dayjs('2025-03-17T09:00:00.000Z'),
+			})
+			press('Previous')
+			expect(dayTitle()).toContain('Friday, March 14, 2025')
+		})
+
+		it('opens on the next visible day when it is given a hidden one', () => {
+			renderCalendar({
+				weekends: false,
+				initialView: 'day',
+				initialDate: dayjs('2025-03-15T09:00:00.000Z'),
+			})
+			expect(dayTitle()).toContain('Monday, March 17, 2025')
+		})
+
+		it('moves a hidden Today to the next visible day', () => {
+			setSystemTime(new Date('2025-03-16T10:00:00.000Z'))
+			try {
+				renderCalendar({
+					weekends: false,
+					initialView: 'day',
+					initialDate: dayjs('2025-03-12T09:00:00.000Z'),
+				})
+				press('Today')
+				expect(dayTitle()).toContain('Monday, March 17, 2025')
+			} finally {
+				setSystemTime()
+			}
+		})
+
+		it('steps one day at a time when nothing is hidden', () => {
+			renderCalendar({
+				initialView: 'day',
+				initialDate: dayjs('2025-03-14T09:00:00.000Z'),
+			})
+			press('Next')
+			expect(dayTitle()).toContain('Saturday, March 15, 2025')
+		})
+	})
+
+	describe('week view', () => {
+		const title = () => screen.getByTestId('calendar-title').textContent
+
+		it('names in its title the range of the days it draws', () => {
+			renderCalendar({ weekends: false, initialView: 'week' })
+			expect(title()).toBe('Mar 10 – 14')
+		})
+
+		// Only the day view moves its date off a hidden day. A week draws a range,
+		// so a date on a hidden day stays put and the week is the same week.
+		it('keeps the week when the date it was given is a hidden day', () => {
+			renderCalendar({
+				weekends: false,
+				initialView: 'week',
+				initialDate: dayjs('2025-03-15T09:00:00.000Z'),
+			})
+			expect(title()).toBe('Mar 10 – 14')
+			fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+			expect(title()).toBe('Mar 17 – 21')
+		})
+	})
+
+	describe('the set of hidden days', () => {
+		const HiddenDaysProbe = ({ seen }: { seen: Set<number>[] }) => {
+			const { hiddenDays } = useSmartCalendarContext()
+			if (hiddenDays) seen.push(hiddenDays)
+			return null
+		}
+		const renderWith = (hiddenDays: IlamyCalendarProps['hiddenDays']) => {
+			const seen: Set<number>[] = []
+			const calendar = (days: IlamyCalendarProps['hiddenDays']) => (
+				<IlamyCalendar
+					headerComponent={<HiddenDaysProbe seen={seen} />}
+					hiddenDays={days}
+					timezone="UTC"
+				/>
+			)
+			const { rerender } = render(calendar(hiddenDays))
+			return {
+				seen,
+				rerender: (days: typeof hiddenDays) => rerender(calendar(days)),
+			}
+		}
+
+		it('keeps its identity while the hidden values stay the same', () => {
+			cleanup()
+			const { seen, rerender } = renderWith(['saturday', 'sunday'])
+			rerender(['sunday', 'saturday'])
+			expect(new Set(seen).size).toBe(1)
+		})
+
+		it('changes identity when the hidden values change', () => {
+			cleanup()
+			const { seen, rerender } = renderWith(['saturday'])
+			rerender(['sunday'])
+			expect(new Set(seen).size).toBe(2)
+		})
+	})
+
+	describe('resource views', () => {
+		const rooms = [
+			{ id: 'r1', title: 'Room A' },
+			{ id: 'r2', title: 'Room B' },
+		]
+		const renderResources = (
+			view: 'week' | 'month',
+			orientation: 'vertical' | 'horizontal',
+			props: Partial<IlamyCalendarProps> = {}
+		) =>
+			renderCalendar({
+				weekends: false,
+				initialView: view,
+				orientation,
+				resources: rooms,
+				...props,
+			})
+		const cellsOn = (dayISO: string) =>
+			screen.queryAllByTestId(new RegExp(`^(day|vertical)-cell-${dayISO}`))
+
+		// A Friday has one cell per room in a day grid, and 24 per room in an hour
+		// grid. A vertical day grid adds one for the day label in its gutter.
+		const gutterCell = 1
+		it.each([
+			['month', 'vertical', rooms.length + gutterCell],
+			['month', 'horizontal', rooms.length],
+		] as const)(
+			'draws no Saturday or Sunday in the resource %s view, %s',
+			(view, orientation, fridayCells) => {
+				renderResources(view, orientation)
+				expect(cellsOn('2025-03-14')).toHaveLength(fridayCells)
+				expect(cellsOn('2025-03-15')).toHaveLength(0)
+				expect(cellsOn('2025-03-16')).toHaveLength(0)
+			}
+		)
+
+		it.each([
+			['vertical', 'daily', rooms.length + gutterCell],
+			['horizontal', 'daily', rooms.length],
+			['horizontal', 'hourly', 24 * rooms.length],
+		] as const)(
+			'draws no Saturday or Sunday in the %s %s resource week',
+			(orientation, weekViewGranularity, fridayCells) => {
+				renderResources('week', orientation, { weekViewGranularity })
+				expect(cellsOn('2025-03-14')).toHaveLength(fridayCells)
+				expect(cellsOn('2025-03-15')).toHaveLength(0)
+				expect(cellsOn('2025-03-09')).toHaveLength(0)
+			}
+		)
+
+		it('draws one resource month bar across the gap between Friday and Monday', () => {
+			renderResources('month', 'horizontal', {
+				events: [
+					{
+						...allDay(
+							'trip',
+							'2025-03-14T00:00:00.000Z',
+							'2025-03-18T00:00:00.000Z'
+						),
+						resourceId: 'r1',
+					},
+				],
+				renderEvent: segmentFlags,
+			})
+			expect(screen.getAllByTestId('bar-trip')).toHaveLength(1)
+			expect(screen.getByTestId('bar-trip').textContent).toBe('true/true')
+		})
+	})
+
+	describe('hiding every day', () => {
+		let warnSpy: ReturnType<typeof spyOn>
+		beforeEach(() => {
+			warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+		})
+		afterEach(() => {
+			warnSpy.mockRestore()
+		})
+		const everyDay = [
+			'sunday',
+			'monday',
+			'tuesday',
+			'wednesday',
+			'thursday',
+			'friday',
+			'saturday',
+		] as const
+
+		it('ignores the setting and warns once, so the calendar stays usable', () => {
+			renderCalendar({ hiddenDays: [...everyDay] })
+			expect(screen.queryAllByTestId(/^month-header-weekday-/)).toHaveLength(7)
+			const warnings = warnSpy.mock.calls
+				.flat()
+				.filter((message: string) => message.includes('hide every day'))
+			expect(warnings).toHaveLength(1)
+		})
+
+		it('does not warn for a partial hide', () => {
+			renderCalendar({ weekends: false })
+			expect(warnSpy).not.toHaveBeenCalled()
+		})
 	})
 })

@@ -23,6 +23,8 @@ interface VerticalEventBarProps {
 	range: { start: Dayjs | undefined; end: Dayjs | undefined }
 	resourceId?: string | number
 	draggedEventId?: string | number
+	/** The hidden weekdays of a day grid, so a grab counts only drawn rows. */
+	hiddenDays?: Set<number>
 }
 
 /** One event, placed by the layout pass and draggable from where it sits. */
@@ -32,6 +34,7 @@ export function VerticalEventBar({
 	range,
 	resourceId,
 	draggedEventId,
+	hiddenDays,
 }: VerticalEventBarProps) {
 	const { event } = positioned
 	// A bar this short has no room for the default two-line content.
@@ -47,7 +50,7 @@ export function VerticalEventBar({
 				className={cn('pointer-events-auto', {
 					'[&_p]:text-[10px] [&_p]:mt-0': isShortEvent,
 				})}
-				dragSegment={getDragSegment(event, range, 'vertical')}
+				dragSegment={getDragSegment(event, range, 'vertical', hiddenDays)}
 				elementId={elementId}
 				event={event}
 				isBeingDragged={draggedEventId === event.id}

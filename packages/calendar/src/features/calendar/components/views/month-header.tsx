@@ -4,20 +4,28 @@ import { AnimatedSection } from '@/components/animations/animated-section'
 import { useDateTimeFormatters } from '@/features/calendar/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
-import { getWeekDays } from '@/utils/date-utils'
+import { getWeekDays, withoutHiddenDays } from '@/utils/date-utils'
 
 interface MonthHeaderProps {
 	className?: string
 }
 
 export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
-	const { firstDayOfWeek, stickyViewHeader, viewHeaderClassName, currentDate } =
-		useSmartCalendarContext()
+	const {
+		firstDayOfWeek,
+		hiddenDays,
+		stickyViewHeader,
+		viewHeaderClassName,
+		currentDate,
+	} = useSmartCalendarContext()
 
 	const { formatDayHeader } = useDateTimeFormatters()
 
-	// Reorder week days based on firstDayOfWeek
-	const weekDays = getWeekDays(currentDate, firstDayOfWeek)
+	// Reorder week days based on firstDayOfWeek, leaving out the hidden ones
+	const weekDays = withoutHiddenDays(
+		getWeekDays(currentDate, firstDayOfWeek),
+		hiddenDays
+	)
 
 	return (
 		<div

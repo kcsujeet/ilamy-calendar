@@ -52,6 +52,8 @@ interface HorizontalEventBarProps {
 	range: { start: Dayjs | undefined; end: Dayjs | undefined }
 	resourceId?: string | number
 	draggedEventId?: string | number
+	/** The hidden weekdays of a day grid, so a grab counts only drawn columns. */
+	hiddenDays?: Set<number>
 }
 
 /** One event, spanning the columns the layout pass gave it. */
@@ -64,6 +66,7 @@ export function HorizontalEventBar({
 	range,
 	resourceId,
 	draggedEventId,
+	hiddenDays,
 }: HorizontalEventBarProps) {
 	const { event, left, width } = positioned
 
@@ -78,7 +81,7 @@ export function HorizontalEventBar({
 		>
 			<DraggableEvent
 				className="h-full w-full shadow"
-				dragSegment={getDragSegment(event, range, 'horizontal')}
+				dragSegment={getDragSegment(event, range, 'horizontal', hiddenDays)}
 				elementId={elementId}
 				event={event}
 				isBeingDragged={draggedEventId === event.id}

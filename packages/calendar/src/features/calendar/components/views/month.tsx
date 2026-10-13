@@ -14,6 +14,7 @@ import {
 	getMonthDays,
 	getMonthGridRange,
 	getMonthWeeks,
+	withoutHiddenDays,
 } from '@/utils/date-utils'
 import { DayHeaderLabel } from './day-header-label'
 import { MonthHeader } from './month-header'
@@ -26,9 +27,10 @@ import {
 
 const resourceMonthVerticalColumns = (
 	date: Dayjs,
-	resources: Resource[]
+	resources: Resource[],
+	hiddenDays: Set<number> | undefined
 ): VerticalColumnSpec[] => {
-	const daysInMonth = getMonthDays(date)
+	const daysInMonth = withoutHiddenDays(getMonthDays(date), hiddenDays)
 	return resourceVerticalColumns({
 		resources,
 		gutter: gutterColumn({
@@ -47,8 +49,11 @@ const resourceMonthVerticalColumns = (
 	})
 }
 
-const ResourceMonthHorizontalHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
-	const monthDays = getMonthDays(date)
+const ResourceMonthHorizontalHeader: React.FC<{
+	date: Dayjs
+	hiddenDays: Set<number> | undefined
+}> = ({ date, hiddenDays }) => {
+	const monthDays = withoutHiddenDays(getMonthDays(date), hiddenDays)
 
 	return (
 		<>
@@ -81,18 +86,18 @@ const monthRows = (
 
 	if (resources.length) {
 		if (config.orientation === 'vertical') {
-			return resourceMonthVerticalColumns(date, resources)
+			return resourceMonthVerticalColumns(date, resources, config.hiddenDays)
 		}
 		return resourceHorizontalRows({
 			resources,
-			days: getMonthDays(date),
+			days: withoutHiddenDays(getMonthDays(date), config.hiddenDays),
 			gridType: 'day',
 		})
 	}
 
 	return getMonthWeeks(date, config.firstDayOfWeek).map((days, weekIndex) => ({
 		id: keys.listKey('week', weekIndex),
-		columns: days.map((day) => ({
+		columns: withoutHiddenDays(days, config.hiddenDays).map((day) => ({
 			id: keys.col.day(day),
 			day,
 			className: 'w-auto',
@@ -121,6 +126,11 @@ export const monthView: PluginView = {
 		if (config.orientation === 'vertical') {
 			return <ResourceColumnsHeader resources={resources} />
 		}
-		return <ResourceMonthHorizontalHeader date={date} />
+		return (
+			<ResourceMonthHorizontalHeader
+				date={date}
+				hiddenDays={config.hiddenDays}
+			/>
+		)
 	},
 }

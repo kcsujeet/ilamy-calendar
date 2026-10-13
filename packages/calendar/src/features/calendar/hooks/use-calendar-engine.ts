@@ -73,6 +73,8 @@ interface CalendarEngineConfig {
 	resources?: Resource[]
 	orientation?: 'horizontal' | 'vertical'
 	weekViewGranularity?: 'hourly' | 'daily'
+	/** Weekdays (0 = Sunday) the calendar does not draw; the day view skips them. */
+	hiddenDays?: Set<number>
 }
 
 /**
@@ -175,6 +177,7 @@ export const useCalendarEngine = (
 		resources,
 		orientation,
 		weekViewGranularity,
+		hiddenDays,
 	} = config
 
 	const {
@@ -217,6 +220,7 @@ export const useCalendarEngine = (
 		initialDate: anchoredInitialDate,
 		initialView,
 		firstDayOfWeek,
+		hiddenDays,
 		onDateChange,
 		onViewChange,
 		pluginRuntime,

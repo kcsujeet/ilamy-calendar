@@ -305,7 +305,7 @@ const isSameSegment = (a?: DragSegment, b?: DragSegment): boolean => {
 		return a === b
 	}
 	const sameSpan = a.start.isSame(b.start) && a.end.isSame(b.end)
-	return sameSpan && a.axis === b.axis
+	return sameSpan && a.axis === b.axis && a.hiddenDays === b.hiddenDays
 }
 
 /**

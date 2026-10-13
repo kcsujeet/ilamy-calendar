@@ -29,6 +29,12 @@ export interface DragSegment {
 	end: Dayjs
 	/** The axis time runs along in the grid that drew the bar. */
 	axis: 'vertical' | 'horizontal'
+	/**
+	 * Days of the week (0 = Sunday) the grid does not draw. Set by a grid of
+	 * days only: the bar then covers one column per VISIBLE day it spans, so the
+	 * pointer's fraction of its width counts those columns, not elapsed days.
+	 */
+	hiddenDays?: Set<number>
 }
 
 /**
@@ -38,14 +44,15 @@ export interface DragSegment {
 export const getDragSegment = (
 	event: { start: Dayjs; end: Dayjs },
 	range: { start: Dayjs | undefined; end: Dayjs | undefined },
-	axis: DragSegment['axis']
+	axis: DragSegment['axis'],
+	hiddenDays?: Set<number>
 ): DragSegment | undefined => {
 	if (!range.start || !range.end) {
 		return undefined
 	}
 	const start = event.start.isBefore(range.start) ? range.start : event.start
 	const end = event.end.isAfter(range.end) ? range.end : event.end
-	return { start, end, axis }
+	return { start, end, axis, hiddenDays }
 }
 
 /** Where the pointer sat along an axis of the rect, as 0..1. */
@@ -104,9 +111,11 @@ export const calculateGrabOffset = ({
 	const segmentMinutes = segment.end.diff(segment.start, 'minute')
 	const grabbedAt = segment.start.add(fraction * segmentMinutes, 'minute')
 	// Time is linear in pixels down a time column, but NOT across a row of day
-	// columns, so the two axes read the grabbed day differently.
+	// columns, so the two axes read the grabbed day differently. A grid with
+	// hidden days draws only day columns, on either axis.
 	const columnDay = getGrabbedDayColumn(segment, fraction)
-	const grabbedDayAt = isVertical ? grabbedAt : columnDay
+	const drawsDayColumns = !isVertical || Boolean(segment.hiddenDays)
+	const grabbedDayAt = drawsDayColumns ? columnDay : grabbedAt
 
 	return {
 		minutes: getGrabbedMinutesInto(activeEvent, grabbedAt, slotDurationMinutes),
@@ -129,10 +138,15 @@ const getGrabbedDayColumn = (segment: DragSegment, fraction: number): Dayjs => {
 	const firstColumn = segment.start.startOf('day')
 	// `end` is exclusive (#248), so back off an instant before taking the day.
 	const lastColumn = segment.end.subtract(1, 'millisecond').startOf('day')
-	const columnCount = lastColumn.diff(firstColumn, 'day') + 1
-	const grabbedIndex = Math.floor(fraction * columnCount)
-	const clampedIndex = Math.min(Math.max(0, grabbedIndex), columnCount - 1)
-	return firstColumn.add(clampedIndex, 'day')
+	const spanDays = lastColumn.diff(firstColumn, 'day') + 1
+	const spannedColumns = Array.from({ length: spanDays }, (_, offset) =>
+		firstColumn.add(offset, 'day')
+	)
+	const isDrawn = (day: Dayjs) => !segment.hiddenDays?.has(day.day())
+	const columns = spannedColumns.filter(isDrawn)
+	const grabbedIndex = Math.floor(fraction * columns.length)
+	const clampedIndex = Math.min(Math.max(0, grabbedIndex), columns.length - 1)
+	return columns.at(clampedIndex) ?? firstColumn
 }
 
 /**

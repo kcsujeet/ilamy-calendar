@@ -646,6 +646,40 @@ describe('calculateGrabOffset', () => {
 		expect(offset.days).toBe(2)
 	})
 
+	describe('on a bar that spans hidden days', () => {
+		// Fri Jan 10 -> Tue Jan 14, with Sat and Sun hidden: the bar draws three
+		// equal columns (Fri, Mon, Tue). Noon UTC is the same calendar day in
+		// every zone from Vancouver to Tokyo.
+		const fridayToTuesday = {
+			id: 'event-3',
+			title: 'Offsite',
+			start: dayjs('2025-01-10T12:00:00.000Z'),
+			end: dayjs('2025-01-14T18:00:00.000Z'),
+			allDay: true,
+		} as CalendarEvent
+		const grabAt = (clientX: number) =>
+			calculateGrabOffset({
+				activeEvent: fridayToTuesday,
+				initialRect: rect,
+				activatorEvent: pointerAt(clientX, 100),
+				segment: {
+					start: fridayToTuesday.start,
+					end: fridayToTuesday.end,
+					axis: 'horizontal',
+					hiddenDays: new Set([0, 6]),
+				},
+				slotDurationMinutes: 60,
+			})
+
+		it('reads the middle column as Monday, three days into the event', () => {
+			expect(grabAt(550).days).toBe(3)
+		})
+
+		it('reads the last column as Tuesday, four days into the event', () => {
+			expect(grabAt(900).days).toBe(4)
+		})
+	})
+
 	it('keeps the wall clock across a DST transition, not the stale offset', () => {
 		// Moving a timed event between DAY cells keeps its time of day. Building
 		// that with `.hour()/.minute()` holds the clock face but carries the

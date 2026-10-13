@@ -134,6 +134,7 @@ const useCalendarContextValue = (
 		resources,
 		orientation,
 		weekViewGranularity,
+		hiddenDays,
 	})
 
 	return useMemo(() => {

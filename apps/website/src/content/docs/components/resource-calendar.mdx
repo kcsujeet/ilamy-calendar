@@ -208,7 +208,7 @@ These resource props are part of [IlamyCalendar](/docs/components/calendar)'s pr
 | `renderResource` | `(resource: Resource) => ReactNode` | - | Custom function to render resource headers |
 | `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Controls whether resources are displayed as rows (horizontal) or columns (vertical). |
 | `weekViewGranularity` | `'hourly' \| 'daily'` | `'hourly'` | Week view density. `'hourly'` (default) renders hourly time slots per day. `'daily'` renders a single row per day per resource — useful for high-level, non-time-of-day schedules. See [Week View Granularity](#week-view-granularity) below. |
-| `hiddenDays` | `WeekDays[]` | `[]` | (Inherited, resource caveat) Days to hide from the week view. **Ignored** in resource vertical week view with `weekViewGranularity: 'daily'` — non-contiguous visible days would break multi-day event positioning. Respected by the regular vertical week view and hourly resource vertical. |
+| `hiddenDays` | `WeekDays[]` | `[]` | (Inherited) Days of the week to hide. Respected in every resource view: week and month, in both orientations and both week granularities. |
 
 ## Examples
 
@@ -443,7 +443,7 @@ The resource week view supports two density modes via the `weekViewGranularity` 
 
 ### Interactions with other props
 
-- **`hiddenDays`** is **intentionally ignored** when `weekViewGranularity="daily"` is combined with vertical orientation. The daily mode assumes a contiguous week — hiding arbitrary days would break multi-day event positioning. If you need to hide days, stick with `weekViewGranularity="hourly"` or use the horizontal orientation.
+- **`hiddenDays`** and **`weekends`** apply in every resource view, including `weekViewGranularity="daily"`. A booking that runs across a hidden day is drawn over the days that are drawn.
 - **`businessHours`** and **`hideNonBusinessHours`** still apply in `'daily'` mode, but only influence day-level shading (non-business days are dimmed). They don't affect the row structure since daily mode has no time slots to hide.
 - **Drag-and-drop** works in both modes. In `'daily'`, dropping an event on a different day updates `event.start` to that day at the same local time.
 

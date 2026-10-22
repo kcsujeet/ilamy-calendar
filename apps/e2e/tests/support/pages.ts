@@ -101,6 +101,29 @@ export class CalendarPage {
 		return JSON.parse(raw ?? '{}')
 	}
 
+	/** Every call the harness's `resources` function received, and how each ended. */
+	async resourcesFetchLog(): Promise<PublishedFetch[]> {
+		const raw = await this.page.getByTestId('resources-fetch-log').textContent()
+		return JSON.parse(raw ?? '[]')
+	}
+
+	/** The resource ids of every `resourcesSet` call, in order. */
+	async resourcesSetCalls(): Promise<string[][]> {
+		const raw = await this.page.getByTestId('resources-set').textContent()
+		return JSON.parse(raw ?? '[]')
+	}
+
+	/** How many resource fetches `onResourcesError` reported. */
+	async resourcesErrors(): Promise<number> {
+		const raw = await this.page.getByTestId('resources-errors').textContent()
+		return JSON.parse(raw ?? '0')
+	}
+
+	/** The harness's own button: calls `refetchResources()` from the context. */
+	refetchResources(): Promise<void> {
+		return this.page.getByTestId('refetch-resources').click()
+	}
+
 	async eventNamed(title: string) {
 		const state = await this.eventState()
 		const found = state.find((event) => event.title === title)

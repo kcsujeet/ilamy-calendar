@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import { useMemo } from 'react'
-import type { CalendarEventsFetcher } from '@/features/calendar/hooks/calendar-data/use-events-fetcher'
+import type { RangeFetcher } from '@/features/calendar/hooks/calendar-data/use-range-fetcher'
 import type {
 	EventsFetcher,
 	IlamyCalendarPropEvent,
@@ -10,7 +10,7 @@ import { normalizeEvents } from '@/features/calendar/utils/normalize'
 
 /** The consumer's `events` function, answering in the calendar's own rows. */
 const normalizeFetcher =
-	(fetcher: EventsFetcher): CalendarEventsFetcher =>
+	(fetcher: EventsFetcher): RangeFetcher<CalendarEvent> =>
 	async (info, options) =>
 		normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(
 			await fetcher(info, options)

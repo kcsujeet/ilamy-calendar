@@ -75,7 +75,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `loading` | `(isLoading: boolean) => void` | - | With an `events` function: called with `true` when a fetch starts and `false` when none is in flight any more |
 | `onEventsError` | `(error: unknown) => void` | `console.error` | With an `events` function: called when a fetch fails. The events on screen stay |
 | `plugins` | `IlamyPlugin[]` | `[]` | Opt-in plugins that add behavior/UI. The core ships none; pass `recurrencePlugin()` for recurring events or `agendaPlugin()` for the agenda view. See [Plugins](#plugins) below. |
-| `resources` | `Resource[]` | `[]` | Resources (rooms, people, equipment) to render as a resource axis. See [Resource Calendar](/docs/components/resource-calendar). |
+| `resources` | `Resource[] \| ResourcesFetcher` | `[]` | Resources (rooms, people, equipment) to render as a resource axis. See [Resource Calendar](/docs/components/resource-calendar). |
 | `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Resource axis arrangement. Only applies when `resources` is set. |
 | `renderResource` | `(resource: Resource) => ReactNode` | - | Custom renderer for resource header cells. |
 | `weekViewGranularity` | `'hourly' \| 'daily'` | `'hourly'` | Week-view slot granularity when `resources` is set. |

@@ -134,6 +134,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 		slotMinTime,
 		slotMaxTime,
 		resources,
+		hasResourceAxis,
 		orientation,
 		weekViewGranularity,
 	} = useSmartCalendarContext((c) => ({
@@ -145,6 +146,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 		slotMinTime: c.slotMinTime,
 		slotMaxTime: c.slotMaxTime,
 		resources: c.resources,
+		hasResourceAxis: c.hasResourceAxis,
 		orientation: c.orientation,
 		weekViewGranularity: c.weekViewGranularity,
 	}))
@@ -158,6 +160,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 			slotMinTime,
 			slotMaxTime,
 			resources,
+			hasResourceAxis,
 			orientation,
 			weekViewGranularity,
 		}),
@@ -169,6 +172,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 			slotMinTime,
 			slotMaxTime,
 			resources,
+			hasResourceAxis,
 			orientation,
 			weekViewGranularity,
 		]
@@ -199,8 +203,8 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 		return null
 	}
 
-	const hasResources = Boolean(resources?.length)
-	const composesResourceAxis = hasResources && Boolean(view.supportsResources)
+	const composesResourceAxis =
+		hasResourceAxis && Boolean(view.supportsResources)
 	// With resources on a resource-capable view the user's `orientation` picks
 	// the engine; otherwise the view's own `layout` does.
 	const engine = composesResourceAxis

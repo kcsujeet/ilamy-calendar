@@ -29,8 +29,8 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 - [ ] **Nav link callbacks** — `onNavLinkDayClick(date)` and `onNavLinkWeekClick(weekStart)`. Customize what happens when clicking day/week numbers in headers (e.g., navigate to day view)
 - [x] **`allDaySlot` toggle** — done: `allDaySlot={false}` removes the all-day row in day, week and vertical resource views, and all-day events are then not shown there (3.3.7)
 - [x] **`slotLabelFormat` / `eventTimeFormat`** — done as `slotHeaderFormat` (FullCalendar v7's name for v6's `slotLabelFormat`), `eventTimeFormat`, `displayEventTime`, `displayEventEnd`, `dayHeaderFormat` and `titleFormat`, all as `Intl.DateTimeFormatOptions` (3.3.6). No format strings, functions or `meridiem`/`omitZeroMinute`; `renderHour` and `renderEvent` cover custom output
-- [ ] **`resourcesSet` callback** — Fire when resources are initialized or changed (analogous to `datesSet` for dates)
-- [ ] **Resources as function** — Allow `resources` to be an async function for lazy loading, like the proposed `events` function
+- [x] **`resourcesSet` callback** — done: `resourcesSet(resources)` fires after the list is set and after every change (an array prop whose content changed, or a fetch result), not on a re-render that changes nothing (3.3.10)
+- [x] **Resources as function** — done as `resources` accepting `(info, { signal }) => Promise<Resource[]>`; `refetchResourcesOnNavigate`, `onResourcesError` and `refetchResources()` come with it (3.3.10). Cut: JSON-feed URLs and the `(fetchInfo, success, failure)` callback form
 
 ## Already Implemented (Parity or Better)
 

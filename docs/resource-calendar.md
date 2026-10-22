@@ -185,8 +185,17 @@ deprecated alias of `IlamyCalendar` and will be removed in the next major):
 interface IlamyCalendarProps {
   // ... standard calendar props
 
-  /** Resources (people, rooms, equipment) to display as a resource axis */
-  resources?: Resource[]
+  /** Resources (people, rooms, equipment) to display as a resource axis: an array, or a function that loads them */
+  resources?: Resource[] | ResourcesFetcher
+
+  /** With a `resources` function: also fetch when the visible range leaves the last fetched one. @default false */
+  refetchResourcesOnNavigate?: boolean
+
+  /** The list is set, and after every change (a new array identity, or a fetch result) */
+  resourcesSet?: (resources: Resource[]) => void
+
+  /** With a `resources` function: a fetch failed; the shown resources stay */
+  onResourcesError?: (error: unknown) => void
 
   /** Custom render function for resource header cells */
   renderResource?: (resource: Resource) => React.ReactNode
@@ -211,7 +220,7 @@ interface IlamyCalendarProps {
 
 | Prop                  | Type                                | Default        | Description                                                          |
 | --------------------- | ----------------------------------- | -------------- | -------------------------------------------------------------------- |
-| `resources`           | `Resource[]`                        | `undefined`    | Array of resources to display                                        |
+| `resources`           | `Resource[] \| ResourcesFetcher`    | `undefined`    | Resources to display, or a function that loads them                  |
 | `events`              | `CalendarEvent[]`                   | `[]`           | Array of events with resource assignments                            |
 | `renderResource`      | `(resource: Resource) => ReactNode` | `undefined`    | Custom resource rendering function                                   |
 | `orientation`         | `'horizontal' \| 'vertical'`        | `'horizontal'` | Where the resource axis goes                                         |
@@ -226,6 +235,26 @@ interface IlamyCalendarProps {
 | `onEventDelete`       | `(event: CalendarEvent) => void`    | `undefined`    | Event delete callback                                                |
 
 For all inherited props, see the [standard calendar documentation](https://ilamy.dev/docs/calendar).
+
+### Resources as a function
+
+`resources` may be a function `(info, { signal }) => Promise<Resource[]>`. `info` has `start`, `end`
+(exclusive), `startStr`, `endStr` and `timezone`, like the `events` function. It is called once on
+mount and again on `refetchResources()` (from `useIlamyCalendarContext()`); with
+`refetchResourcesOnNavigate` it is also called when the visible range leaves the last fetched one.
+
+- Until the first result the calendar is already a resource calendar (resource header and layout) with no lanes, so nothing switches when the list arrives. Events whose resource is not known yet behave as in any resource calendar.
+- A fetch superseded by a newer one is aborted through `signal`, and a late result is ignored.
+- A failure keeps the resources shown and calls `onResourcesError` (`console.error` without it); the
+  next navigation (with `refetchResourcesOnNavigate`) or `refetchResources()` tries again.
+- `loading(isLoading)` is one signal for the `events` and the `resources` functions together.
+- A new function identity does not refetch; call `refetchResources()` when your query changes.
+- `resourcesSet(resources)` fires once the list is set and after every change. It compares the list's content (length and each
+  resource's fields; `data` one level deep: same keys, each value `===`), so an inline array does not re-fire on every render. Keep objects nested deeper inside `data` stable (a module constant or `useMemo`), or they count as changed.
+
+Behaviour is as in FullCalendar's resource-function docs (https://fullcalendar.io/docs/resources-function,
+https://fullcalendar.io/docs/Calendar-refetchResources, https://fullcalendar.io/docs/resourcesSet);
+the callback form `(fetchInfo, success, failure)` is not supported, only the Promise form.
 
 ## Context API
 

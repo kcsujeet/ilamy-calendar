@@ -1,10 +1,8 @@
 import type {
 	BusinessHours,
 	CalendarEvent,
-	EventsChange,
 	IlamyPlugin,
 	PluginView,
-	Resource,
 } from '@ilamy/types'
 import dayjs, { type Dayjs, isWallClockReading } from '@ilamy/utils/dayjs'
 import { safeDate } from '@ilamy/utils/helpers'
@@ -21,10 +19,10 @@ import type {
 	TranslatorFunction,
 } from '@/config/translations/types'
 import {
+	type CalendarDataOptions,
 	type CalendarDataSlice,
 	useCalendarData,
 } from '@/features/calendar/hooks/calendar-data/use-calendar-data'
-import type { CalendarEventsFetcher } from '@/features/calendar/hooks/calendar-data/use-events-fetcher'
 import {
 	type CalendarConfigSlice,
 	useCalendarConfig,
@@ -43,32 +41,20 @@ import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { createPluginRuntime } from '@/lib/plugins/create-plugin-runtime'
 import type { CalendarView } from '@/types'
 
-// Module constants, not per-render `?? []` defaults: keep the slice and
-// plugin-runtime identities render-stable when the props are absent.
-const EMPTY_RESOURCES: Resource[] = []
+// Module constant, not a per-render `?? []` default: keeps the plugin-runtime
+// identity render-stable when the prop is absent.
 const EMPTY_PLUGINS: IlamyPlugin[] = []
 
-interface CalendarEngineConfig {
-	events: CalendarEvent[]
-	/** Loads events for the visible range; used instead of `events` when set. */
-	eventsFetcher?: CalendarEventsFetcher
-	lazyFetching?: boolean
-	loading?: (isLoading: boolean) => void
-	onEventsError?: (error: unknown) => void
+interface CalendarEngineConfig extends CalendarDataOptions {
 	firstDayOfWeek: number
 	initialView?: CalendarView
 	initialDate?: Dayjs | Date | string
 	/** Max stacked events per day in horizontal grids; the config slice defaults it. */
 	dayMaxEvents?: number
 	businessHours?: BusinessHours | BusinessHours[]
-	onEventAdd?: (event: CalendarEvent) => void
-	onEventUpdate?: (event: CalendarEvent) => void
-	onEventDelete?: (event: CalendarEvent) => void
-	onEventsChange?: (change: EventsChange) => void
 	onDateChange?: (date: Dayjs, range: { start: Dayjs; end: Dayjs }) => void
 	onViewChange?: (view: CalendarView) => void
 	locale?: string
-	timezone?: string
 	translations?: Translations
 	translator?: TranslatorFunction
 	plugins?: IlamyPlugin[]
@@ -76,7 +62,6 @@ interface CalendarEngineConfig {
 	onCellClick?: (info: CellInfo) => void
 	disableEventClick?: boolean
 	disableCellClick?: boolean
-	resources?: Resource[]
 	orientation?: 'horizontal' | 'vertical'
 	weekViewGranularity?: 'hourly' | 'daily'
 	/** Weekdays (0 = Sunday) the calendar does not draw; the day view skips them. */
@@ -173,6 +158,10 @@ export const useCalendarEngine = (
 		lazyFetching,
 		loading,
 		onEventsError,
+		resourcesFetcher,
+		refetchResourcesOnNavigate,
+		resourcesSet,
+		onResourcesError,
 		firstDayOfWeek = 0,
 		initialView = 'month',
 		initialDate,
@@ -213,7 +202,6 @@ export const useCalendarEngine = (
 		locale,
 		translations,
 		translator,
-		resources,
 		orientation,
 		weekViewGranularity,
 	})
@@ -242,10 +230,14 @@ export const useCalendarEngine = (
 		lazyFetching,
 		loading,
 		onEventsError,
+		resourcesFetcher,
+		refetchResourcesOnNavigate,
+		resourcesSet,
+		onResourcesError,
 		timezone,
 		pluginRuntime,
 		getCurrentViewRange: navigation.getCurrentViewRange,
-		resources: configSlice.resources ?? EMPTY_RESOURCES,
+		resources,
 		onEventAdd,
 		onEventUpdate,
 		onEventDelete,

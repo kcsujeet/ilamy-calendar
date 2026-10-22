@@ -20,7 +20,7 @@ unreliable repro for it.
 
 ---
 
-## 1. Feature spec (FullCalendar parity)
+## 1. Feature spec
 
 Reference: FullCalendar [selectable](https://fullcalendar.io/docs/selectable) and
 its date-selection callbacks. The pieces we want:

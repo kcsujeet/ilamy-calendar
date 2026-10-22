@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v3.3.0](https://github.com/kcsujeet/ilamy-calendar/compare/v3.2.1...v3.3.0)
+
+> Unreleased (draft: PR links point at the open stack #335 to #359; re-check numbers at release time)
+
+3.3 is the only minor before 4.0. Everything here is additive: each new option's default reproduces 3.2.1, and `docs/migration-v4.md` lists what 4.0 will remove or change.
+
+##### Features
+
+- feat: events can be resized by dragging their end edge, or the start edge with `eventResizableFromStart`. Time grids snap to the slot and day grids to whole days; a resize stays in its grid and keeps the resource. A resize is one `onEventsChange` action, reported with the new `endDelta`. New `eventDurationEditable` and per-event `durationEditable` ([`#345`](https://github.com/kcsujeet/ilamy-calendar/pull/345)) — Closes [`#93`](https://github.com/kcsujeet/ilamy-calendar/issues/93)
+- feat: new `editable`, `eventStartEditable` and `eventAllow(dropInfo, draggedEvent)` props, and per-event `editable` / `startEditable`, decide what can be moved. An event's own flag beats the calendar's, and a specific flag beats `editable`, as FullCalendar resolves them. `eventAllow` is asked on every placement while dragging and again at drop; a refused placement draws no preview. `disableDragAndDrop` still works and is now an alias of `editable={false}` ([`#340`](https://github.com/kcsujeet/ilamy-calendar/pull/340))
+- feat: `onEventsChange` reports `delta` (`{ days, milliseconds }`: whole calendar days plus the change in time of day) and a `revert()` that undoes the whole action in the calendar's own store, recurring scopes included, without firing callbacks. There is no `oldEvent`: `EventsChange.event` is already the event before the change ([`#342`](https://github.com/kcsujeet/ilamy-calendar/pull/342))
+- feat: new `slotMinTime` and `slotMaxTime` (`'HH:mm'`, end exclusive, up to `'24:00'`) set the visible hours of the day, week and resource hour grids, independently of `hideNonBusinessHours` ([`#346`](https://github.com/kcsujeet/ilamy-calendar/pull/346))
+- feat: new `snapDuration` (`15` or `30`) lets drag, resize and drag-to-create snap finer than the slot, in the vertical grids and the horizontal resource timeline, so `slotDuration={60}` with `snapDuration={15}` gives quarter-hour placement. `slotDuration` stays `15`, `30` or `60` ([`#349`](https://github.com/kcsujeet/ilamy-calendar/pull/349), [`#356`](https://github.com/kcsujeet/ilamy-calendar/pull/356)) — Closes [`#101`](https://github.com/kcsujeet/ilamy-calendar/issues/101), [`#138`](https://github.com/kcsujeet/ilamy-calendar/issues/138)
+- feat: new `slotHeaderFormat`, `eventTimeFormat`, `dayHeaderFormat` and `titleFormat` (`Intl.DateTimeFormatOptions`, rendered in the calendar's locale and zone) and `displayEventTime` / `displayEventEnd` control how times and dates are written. Unset options render exactly as before ([`#343`](https://github.com/kcsujeet/ilamy-calendar/pull/343))
+- feat: new `allDaySlot`, `nowIndicator`, `weekNumbers` (also on month rows) and `weekNumberCalculation` (`'local'` or `'ISO'`). `scrollTime` and `scrollToNow` now scroll to the exact minute instead of the hour ([`#344`](https://github.com/kcsujeet/ilamy-calendar/pull/344))
+- feat: `hiddenDays` now applies to the month, week, day and every resource view, and the new `weekends={false}` hides Saturday and Sunday. Day view navigation skips hidden days; bars over a hidden day are clamped to the days drawn ([`#347`](https://github.com/kcsujeet/ilamy-calendar/pull/347))
+- feat: `events` accepts an async function `(info, { signal }) => Promise<Event[]>` called with the visible range, with `loading`, `lazyFetching`, `onEventsError` and `refetchEvents()`. A superseded fetch is aborted ([`#348`](https://github.com/kcsujeet/ilamy-calendar/pull/348))
+- feat: `resources` accepts an async function too, with `resourcesSet`, `onResourcesError`, `refetchResources()` and `refetchResourcesOnNavigate`. `loading` covers events and resources together ([`#353`](https://github.com/kcsujeet/ilamy-calendar/pull/353))
+- feat: `IlamyCalendar` takes a `ref` whose `current` is the same API as `useIlamyCalendarContext()`, plus `scrollToTime(time)`, so a toolbar or sidebar of your own can drive the calendar ([`#351`](https://github.com/kcsujeet/ilamy-calendar/pull/351))
+
+##### Fixes
+
+- fix: event bars in the time grids sat 4 to 7px below their time slot, because the bar's wrapper sat on the text baseline ([`#345`](https://github.com/kcsujeet/ilamy-calendar/pull/345))
+- fix: in the horizontal resource timeline, an event outside the visible hours was stretched to the edge column or drawn past the grid instead of being left out, and week-mode columns were measured from the first column. Events are now cut to the columns they overlap, end exclusive. Reachable before with `hideNonBusinessHours` ([`#346`](https://github.com/kcsujeet/ilamy-calendar/pull/346))
+- fix: on a daylight-saving change day, in a calendar zone or on a computer whose clocks change, hour rows could be an hour off, so events landed a row away and a drop did not land on the cell it was dropped on. Rows are now built from wall-clock times in the calendar's zone ([`#346`](https://github.com/kcsujeet/ilamy-calendar/pull/346))
+- fix: in a multi-day horizontal resource timeline, `scrollTime` and `scrollToTime` for the last visible hour landed at the end of the range instead of the first day ([`#351`](https://github.com/kcsujeet/ilamy-calendar/pull/351))
+- fix: dropping an event where it already was no longer fires `onEventUpdate` or `onEventsChange`, and no longer opens the recurring scope dialog ([`#342`](https://github.com/kcsujeet/ilamy-calendar/pull/342))
+- fix: `delta` was an hour short for a drop into the hour skipped by the spring clock change ([`#342`](https://github.com/kcsujeet/ilamy-calendar/pull/342))
+- fix: with a `snapDuration` finer than the slot, the drag preview stayed on the slice where the pointer entered a cell while the drop used the pointer's final position; the preview now follows it ([`#352`](https://github.com/kcsujeet/ilamy-calendar/pull/352))
+
+##### Performance
+
+- perf: a day's hour rows are derived once and built once per render, not once per resource. Building the columns of a 500-resource week went from 54 ms (UTC) and 203 ms (New York zone) on 3.2.1 to 4.1 ms and 6.6 ms, measured with `packages/calendar/scripts/bench-day-hours.tsx` ([`#354`](https://github.com/kcsujeet/ilamy-calendar/pull/354))
+- perf: a visible range's events are processed once per render and bucketed by resource and column in one pass, instead of once per resource row, and recurrence overrides are grouped by series once. 500 resource rows with 5,200 events in 200 series: 1,516 ms to 4.7 ms in a benchmark ([`#357`](https://github.com/kcsujeet/ilamy-calendar/pull/357))
+- perf: events are placed by binary search over column start times measured once per layout, with no date object per event. A 100-row resource month in the New York zone lays out in 137 ms, down from 1,051 ms on 3.2.1 ([`#358`](https://github.com/kcsujeet/ilamy-calendar/pull/358))
+- perf: measured in Chromium on a 2,000-event month against 3.2.1, at the 90th percentile: next/previous 310 to 43 ms, opening the event form 328 to 52 ms, dropping an event 670 to 127 ms, and first render 464 to 195 ms (median). A recurring month drops from 911 to 72 ms. Dragging stays under 10 ms of script per pointer step ([`#357`](https://github.com/kcsujeet/ilamy-calendar/pull/357), [`#358`](https://github.com/kcsujeet/ilamy-calendar/pull/358))
+- perf: an event bar is one drag source for moving and for resizing either edge; a press on a resize handle resizes it ([`#359`](https://github.com/kcsujeet/ilamy-calendar/pull/359)). A 500-event week is close to 3.2.1 rather than faster (next/previous 46 to 53 ms at the 90th percentile), because every resizable bar now draws its resize handles
+
+##### Docs
+
+- docs: the README and website no longer claim resize or overlap prevention (neither existed in 3.2.1), "100% test coverage" or "100+ locales", and say what the `timezone`, size and dark-mode claims actually cover ([`#337`](https://github.com/kcsujeet/ilamy-calendar/pull/337))
+- docs: `docs/migration-v4.md` lists every name 4.0 removes and the defaults that may change; `disableDragAndDrop` and `IlamyResourceCalendar` carry a `@deprecated` tag. `docs/roadmap.md` is the plan through 4.3 (this release's documentation PR)
+
+##### Internal
+
+- chore: the core bundle (`dist/index.js` plus the chunks it imports) grows about 20.7% gzipped over 3.2.1, 42.1 KB to 50.8 KB, for the features and performance work above
+- chore: the e2e harness takes its port from `E2E_PORT` so several worktrees can run it at once ([`#336`](https://github.com/kcsujeet/ilamy-calendar/pull/336))
+
 #### [v3.2.1](https://github.com/kcsujeet/ilamy-calendar/compare/v3.2.0...v3.2.1)
 
 > 11 October 2026

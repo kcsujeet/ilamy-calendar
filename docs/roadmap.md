@@ -10,17 +10,28 @@
 scheduler features included, with the core kept small and everything optional shipped as a
 plugin, and without leaving current users stranded at any release.
 
-**Release shape:** two additive minors (3.3, 3.4), one breaking major (4.0), then three
-additive 4.x minors. Bug fixes and small requests from current users ship as patches from
-`main` at any time and never wait for a planned minor. Security or data-loss fixes are
-backported to a 3.x patch for three months after 4.0 (owner may change the window).
+**Release shape:** 3.3 is the only minor before 4.0 (additive), then the breaking 4.0, then
+additive 4.x minors for everything that comes later. Bug fixes and small requests from current
+users ship as patches from `main` at any time and never wait for a planned minor. There is no
+3.x backport window: once 4.0 ships, fixes land on 4.x, and `docs/migration-v4.md` is the way
+across.
+
+### Phase map
+
+| Release | Kind | Theme | Status |
+|---|---|---|---|
+| 3.3 | additive minor | Editing, time axis, formats, display toggles, async data, `ref` API, deprecations and migration docs | Built in the open PR stack #335-#359; release tasks in this PR |
+| 4.0 | breaking major | Temporal date core, ISO/`Date` public dates, smaller core, standard defaults, removals | Planned |
+| 4.1 | additive minor | Scheduling rules and the drag ecosystem; plugin-contract hooks land with their first plugin | Planned |
+| 4.2 | additive minor | Scheduler (resource hierarchy, columns, ordering, timeline, virtualisation) | Planned |
+| 4.3 | additive minor | Views, customisation, accessibility, RTL, print, interop | Planned |
 
 **Behaviour references:** as CLAUDE.md requires, RFC 5545 first, then the established calendar
 conventions: FullCalendar (read at v7.1.1, https://fullcalendar.io/docs/all and its source) and
 Google Calendar. Each feature's task plan cites the exact page or `file:line` it follows.
 
 **Inputs:** a sweep on 2026-10-11 of the v3.2.1 code, established calendar conventions and all
-109 issues on kcsujeet/ilamy-calendar. Supersedes `docs/api-parity-checklist.md` as
+109 issues on kcsujeet/ilamy-calendar. Supersedes `docs/feature-checklist.md` as
 the plan of record; every item on that checklist is mapped to a release below.
 
 ---
@@ -46,7 +57,10 @@ layout or interaction engine, or when it is a baseline every user is owed (acces
 RTL, print, correct dates).
 
 **Contract today:** `transformEvents`, `managesEvent`, `applyEdit`, `applyDelete`,
-`renderSlot`, `contribute`, `views`, `provider`. **Hooks the plan adds** (3.4, additive):
+`renderSlot`, `contribute`, `views`, `provider`. **Hooks the plan adds** (from 4.0.4 and 4.1
+onward, additive;
+each one lands with the first real plugin that needs it, because an unused public hook is a
+liability and adding a hook later is non-breaking):
 
 | Hook | Shape (sketch) | Used by |
 |---|---|---|
@@ -57,8 +71,8 @@ RTL, print, correct dates).
 | Event sources | `contribute('event-sources', range)` returning fetchers | ICS feed, Google Calendar |
 | Resource transforms | `transformResources?(resources) => Resource[]` | scheduler hierarchy, ordering |
 
-Each hook lands with an internal test plugin that exercises it, unit tests, and an e2e spec,
-before any real plugin depends on it.
+Each hook ships in the same PR as its first real plugin (4.1 and later), with unit tests and an
+e2e spec through that plugin. No hook is added to the contract ahead of a plugin that uses it.
 
 **Placement of every feature** is stated in its row below (Core / Plugin `name`).
 
@@ -87,11 +101,31 @@ before any real plugin depends on it.
 - **Prove each fix by reverting it** (`.agents/rules/change-impact.md`).
 - **One feature, one branch, one PR.** A minor ships only when all of its features are merged.
 - **Every feature updates:** its `docs/*.md`, the website docs page, `CHANGELOG`, the dev log,
-  default English strings for new UI text, and `docs/api-parity-checklist.md`.
+  default English strings for new UI text, and `docs/feature-checklist.md`.
 - **Simplicity first.** An option only a power user would miss may be cut; the
   cut is recorded in the feature's task plan.
-- **Bundle budget:** report core `dist/index.js` gzipped size before and after each feature.
-  Core growth over 2% for one feature needs a stated reason; plugins are measured separately.
+- **Scope rule:** every new option must pass "real need versus performance, API and
+  maintenance cost" before it is added. Example: slots stay 15, 30 and 60 minutes (finer
+  slots multiply cells, droppables and layout work, and `snapDuration` already covers
+  quarter-hour placement). A cut is recorded in the feature's row.
+- **Bundle budget:** measured on the core closure, that is `dist/index.js` plus every chunk it
+  imports, gzipped, never on the entry file alone. Report it before and after each feature;
+  core growth over 2% for one feature needs a stated reason. Plugins are measured separately.
+  3.3 grew the core closure by about 20.7% (42.1 KB to 50.8 KB gzip); that is accepted for the
+  features it buys, and the core shrinks in 4.0 through the planned plugin moves (D7).
+  Lazy-loading features behind new entry points was considered and rejected: 3 to 4 KB does not
+  justify a split public API.
+
+### Performance budgets
+
+Absolute numbers, not "no regression versus `main`", measured in the e2e harness or a
+benchmark script and recorded in the PR:
+
+- **Continuous interactions** (drag, resize, scroll, auto-scroll): at most 10 ms of work per
+  frame and never above 16 ms, per the RAIL guidance (https://web.dev/articles/rail).
+- **Discrete interactions** (click, navigate, change view, open the form): at most 100 ms to the
+  next paint at 1x and at most 200 ms at 4x CPU throttling, the "good" Interaction to Next Paint
+  threshold (https://web.dev/articles/inp).
 
 ---
 
@@ -164,7 +198,7 @@ the regular spec files once fixed.
 
 ### Escalation (the only reasons to involve the owner)
 
-- An open decision (D1–D8 below) whose release has started.
+- An open decision (D2–D10 below) whose release has started.
 - A standard that is genuinely ambiguous after FullCalendar, RFC 5545 and Google Calendar are
   checked.
 - Anything outward-facing beyond feature-branch PRs: merging, commenting on or closing
@@ -180,37 +214,41 @@ Mostly what current users have asked for: kcsujeet/ilamy-calendar#93 (resize),
 kcsujeet/ilamy-calendar#101 (15-minute snapping in resource views), #7, #40, #50, #86, #107,
 #138 (visible hours and slot options).
 
-| # | Feature | Placement | Notes |
-|---|---|---|---|
-| 3.3.0 | **Truthful docs** | — | `README.md:53` and `packages/calendar/README.md:53` claim resize; the README claims overlap prevention; audit "100% test coverage" and "100+ locales". Same audit on `apps/website`. Ships as a 3.2.2 patch immediately. |
-| 3.3.1 | **Change info** | Core | Add `delta` (`{ days, milliseconds }`, whole calendar days plus wall-clock time) and `revert()` to `EventsChange` (`packages/types/src/index.ts:170`). `revert` restores every row of the action, recurring scopes included (#309), and fires no callbacks. No `oldEvent` field: `EventsChange.event` is already the pre-change event; the docs state the mapping. Touch: `hooks/calendar-data/event-changes.ts`, `use-event-mutations.ts`, `use-plugin-mutations.ts`. |
-| 3.3.2 | **Edit permissions** | Core | `editable`, `eventStartEditable`, `eventDurationEditable`, `eventAllow(info)`; per-event `editable`/`startEditable`/`durationEditable`, per-event over calendar as in FullCalendar. Evaluated on every snap through the existing `isCellDisabled` path in `drag-and-drop/dnd-utils.ts`. `disableDragAndDrop` becomes an alias of `editable={false}`. |
-| 3.3.3 | **Event resize** | Core (shares the drag engine) | End-edge handle on the segment with `isEnd`; start edge only with `eventResizableFromStart`. Snaps to the slot (time grid) or day (day grid); minimum one slot or one day; end stays exclusive (#248). Recurring occurrences go through the scope dialog. No separate `onEventResize`: a resize is one `onEventsChange` action, with `endDelta` beside `delta` (the `startDelta` of FullCalendar's `eventResize`). e2e: real pointer and touch resize in week, month, horizontal resource day, vertical resource week; refusal by `eventAllow`. |
-| 3.3.4 | **Visible hours** | Core | `slotMinTime`, `slotMaxTime` (`'HH:mm'`), independent of `hideNonBusinessHours`. Touch: `utils/view-hours.ts`. |
-| 3.3.5 | **Slot and snap sizes** | Core | `SlotDuration` stays `15 \| 30 \| 60`; `snapDuration: 15 \| 30` (core of #101, #138): finer than the cell and dividing it, for drag, resize and drag-to-create in the vertical grid and the horizontal resource timeline; otherwise the cell's own size is used. **Cut:** slots longer than an hour (ilamy draws hour rows), slot sizes of 1 to 12 minutes (the stack briefly widened `slotDuration` to any divisor of 60; narrowed back before release since no user needs that granularity and it multiplies cells, droppables and layout work), snap sizes other than 15 and 30, and `slotLabelInterval`/`slotHeaderInterval` (every hour row is labelled). |
-| 3.3.6 | **Formats** | Core | `slotLabelFormat`, `eventTimeFormat`, `displayEventTime`, `displayEventEnd`, `dayHeaderFormat`, `titleFormat`, all `Intl.DateTimeFormatOptions`; `timeFormat` stays as shorthand. |
-| 3.3.7 | **Display toggles** | Core | `allDaySlot`; `nowIndicator` (default true, see D3); `weekNumbers` incl. month rows, `weekNumberCalculation: 'local' \| 'ISO'` (a custom function form was cut before release to keep the API simple); `weekends`; `hiddenDays` in every view; `scrollTime` and `scrollToNow` scroll to the exact minute (shipped). `hiddenDays` and `weekends` apply to the month, week and day views and to every resource arrangement (part b, shipped): bars clamp to the nearest drawn day, the day view skips hidden days, and the year view and the agenda plugin keep every day. |
-| 3.3.8 | **Async events** | Core (one prop) | Shipped. `events` also accepts `(info, { signal }) => Promise<Event[]>` (`EventsFetcher`); `loading(isLoading)`; `lazyFetching`; superseded fetches are aborted; `onEventsError`; `refetchEvents()` on the context API (the `ref` API, 3.3.9, surfaces it too). Touch: `hooks/calendar-data/use-events-fetcher.ts`. Cuts: multiple `eventSources` and JSON-feed URLs (a feed plugin is 4.3.9). |
-| 3.3.9 | **Ref API** | Core | `ref` prop on `IlamyCalendar` and the deprecated alias (a regular prop in React 19, `useImperativeHandle`: https://react.dev/reference/react/useImperativeHandle). `ref.current` is the `useIlamyCalendarContext()` object (D6 keeps ilamy's names: `setCurrentDate`, `nextPeriod`, `setView`, `refetchEvents`, ...), plus `scrollToTime(time)`. Touch: `components/ilamy-calendar.tsx`, `hooks/use-scroll-to-time.ts`. Cuts: `select`/`unselect` (4.1.3); a separate controller hook (the ref plus `headerComponent` cover custom toolbars). |
-| 3.3.10 | **Async resources** | Core | Shipped. `resources` also accepts `(info, { signal }) => Promise<Resource[]>` (`ResourcesFetcher`), called once on mount and on `refetchResources()` (context API; the `ref` from 3.3.9 publishes the whole context API, so it is there too), or on navigation with `refetchResourcesOnNavigate`; `resourcesSet(resources)` after the list is set and after every change; `onResourcesError`; `loading` is one signal for both fetchers. Touch: `hooks/calendar-data/use-range-fetcher.ts` (the abort/latest/loading rules for events and resources, once). |
+Status: every PR below is an open, stacked PR (#335 to #359) awaiting the owner's merge;
+"Shipped" means built, reviewed and verified in the stack.
+
+| # | Feature | Placement | PR | Notes |
+|---|---|---|---|---|
+| 3.3.0 | **Truthful docs** | — | Shipped: #337 | `README.md:53` and `packages/calendar/README.md:53` claim resize; the README claims overlap prevention; audit "100% test coverage" and "100+ locales". Same audit on `apps/website`. Done in #337; ships with 3.3, or earlier as a 3.2.x patch if the owner wants the corrected claims out first. |
+| 3.3.1 | **Change info** | Core | Shipped: #342 | Add `delta` (`{ days, milliseconds }`, whole calendar days plus wall-clock time) and `revert()` to `EventsChange` (`packages/types/src/index.ts:170`). `revert` restores every row of the action, recurring scopes included (#309), and fires no callbacks. No `oldEvent` field: `EventsChange.event` is already the pre-change event; the docs state the mapping. Touch: `hooks/calendar-data/event-changes.ts`, `use-event-mutations.ts`, `use-plugin-mutations.ts`. |
+| 3.3.2 | **Edit permissions** | Core | Shipped: #340 | `editable`, `eventStartEditable`, `eventDurationEditable`, `eventAllow(info)`; per-event `editable`/`startEditable`/`durationEditable`, per-event over calendar as in FullCalendar. Evaluated on every snap through the existing `isCellDisabled` path in `drag-and-drop/dnd-utils.ts`. `disableDragAndDrop` becomes an alias of `editable={false}`. |
+| 3.3.3 | **Event resize** | Core (shares the drag engine) | Shipped: #345 | End-edge handle on the segment with `isEnd`; start edge only with `eventResizableFromStart`. Snaps to the slot (time grid) or day (day grid); minimum one slot or one day; end stays exclusive (#248). Recurring occurrences go through the scope dialog. No separate `onEventResize`: a resize is one `onEventsChange` action, with `endDelta` beside `delta` (the `startDelta` of FullCalendar's `eventResize`). e2e: real pointer and touch resize in week, month, horizontal resource day, vertical resource week; refusal by `eventAllow`. |
+| 3.3.4 | **Visible hours** | Core | Shipped: #346 | `slotMinTime`, `slotMaxTime` (`'HH:mm'`), independent of `hideNonBusinessHours`. Touch: `utils/view-hours.ts`. |
+| 3.3.5 | **Slot and snap sizes** | Core | Shipped: #349, trimmed in #356; drag-preview fix #352 | `SlotDuration` stays `15 \| 30 \| 60`; `snapDuration: 15 \| 30` (core of #101, #138): finer than the cell and dividing it, for drag, resize and drag-to-create in the vertical grid and the horizontal resource timeline; otherwise the cell's own size is used. **Cut:** slots longer than an hour (ilamy draws hour rows), slot sizes of 1 to 12 minutes (the stack briefly widened `slotDuration` to any divisor of 60; narrowed back before release since no user needs that granularity and it multiplies cells, droppables and layout work), snap sizes other than 15 and 30, and `slotLabelInterval`/`slotHeaderInterval` (every hour row is labelled). |
+| 3.3.6 | **Formats** | Core | Shipped: #343 | `slotLabelFormat`, `eventTimeFormat`, `displayEventTime`, `displayEventEnd`, `dayHeaderFormat`, `titleFormat`, all `Intl.DateTimeFormatOptions`; `timeFormat` stays as shorthand. |
+| 3.3.7 | **Display toggles** | Core | Shipped: #344 (part a), #347 (part b) | `allDaySlot`; `nowIndicator` (default true, see D3); `weekNumbers` incl. month rows, `weekNumberCalculation: 'local' \| 'ISO'` (a custom function form was cut before release to keep the API simple); `weekends`; `hiddenDays` in every view; `scrollTime` and `scrollToNow` scroll to the exact minute (shipped). `hiddenDays` and `weekends` apply to the month, week and day views and to every resource arrangement (part b, shipped): bars clamp to the nearest drawn day, the day view skips hidden days, and the year view and the agenda plugin keep every day. |
+| 3.3.8 | **Async events** | Core (one prop) | Shipped: #348 | Shipped. `events` also accepts `(info, { signal }) => Promise<Event[]>` (`EventsFetcher`); `loading(isLoading)`; `lazyFetching`; superseded fetches are aborted; `onEventsError`; `refetchEvents()` on the context API (the `ref` API, 3.3.9, surfaces it too). Touch: `hooks/calendar-data/use-events-fetcher.ts`. Cuts: multiple `eventSources` and JSON-feed URLs (a feed plugin is 4.3.9). |
+| 3.3.9 | **Ref API** | Core | Shipped: #351 | `ref` prop on `IlamyCalendar` and the deprecated alias (a regular prop in React 19, `useImperativeHandle`: https://react.dev/reference/react/useImperativeHandle). `ref.current` is the `useIlamyCalendarContext()` object (D6 keeps ilamy's names: `setCurrentDate`, `nextPeriod`, `setView`, `refetchEvents`, ...), plus `scrollToTime(time)`. Touch: `components/ilamy-calendar.tsx`, `hooks/use-scroll-to-time.ts`. Cuts: `select`/`unselect` (4.1.3); a separate controller hook (the ref plus `headerComponent` cover custom toolbars). |
+| 3.3.10 | **Async resources** | Core | Shipped: #353 | Shipped. `resources` also accepts `(info, { signal }) => Promise<Resource[]>` (`ResourcesFetcher`), called once on mount and on `refetchResources()` (context API; the `ref` from 3.3.9 publishes the whole context API, so it is there too), or on navigation with `refetchResourcesOnNavigate`; `resourcesSet(resources)` after the list is set and after every change; `onResourcesError`; `loading` is one signal for both fetchers. Touch: `hooks/calendar-data/use-range-fetcher.ts` (the abort/latest/loading rules for events and resources, once). |
+
+Performance work in the stack: #354 derives a day's hour rows once and builds them once per
+render (a 500-resource week went from seconds to about 4 to 7 ms; `scripts/bench-day-hours.tsx`
+exits 1 over budget, `bun run bench:day-hours`). #357 processes a range's events once and buckets
+them by resource and column; #358 places events by binary search over column start times; #359
+makes each bar one drag source for move and resize. Measured against 3.2.1 on a 2,000-event month
+(Chromium, 90th percentile): next/previous 310 to 43 ms, open form 328 to 52 ms, drop 670 to
+127 ms. A 500-event week stays close to 3.2.1 (next/previous 46 to 53 ms), the cost of drawing
+resize handles, and was accepted.
+
+**Release tasks of 3.3** (they ship in 3.3, not as separate features):
+
+| # | Task | Notes |
+|---|---|---|
+| 3.3.11 | **Deprecation set** | Every name 4.0 removes whose replacement already works in 3.x has a `@deprecated` TSDoc tag; `docs/migration-v4.md` lists them all (this PR). Tagged: `disableDragAndDrop`, `IlamyResourceCalendar` and its props type. Not tagged: `dayjs`, `Dayjs`, `ManipulateType`, because their replacement (ISO strings or `Date`) only exists in 4.0 and a tag would strike through every consumer's date types. |
+| 3.3.12 | **Migration guides** | For users coming from other calendar libraries: option mapping, deliberate deviations, a ported example. Grows with each 4.x release. |
 
 **Acceptance:** a consumer can resize, reject any move or resize before or after it lands, undo
 it with one call, and configure the time axis.
-
-## Release 3.4 — data, control, contract, deprecations
-
-The last additive release before 4.0.
-
-| # | Feature | Placement | Notes |
-|---|---|---|---|
-| 3.4.1 | *(moved to 3.3.8)* | | |
-| 3.4.2 | *(moved to 3.3.10)* | | |
-| 3.4.4 | **Plugin contract hooks** | Core | The six hooks in **Core vs plugin**, each with an internal test plugin. |
-| 3.4.5 | **Deprecation set** | Core | Every name 4.0 removes has its replacement and a `@deprecated` tag. `docs/migration-v4.md` drafted. |
-| 3.4.6 | **Migration guides** | Docs | For users coming from other calendar libraries: option mapping, deliberate deviations, a ported example. Grows with each 4.x release. |
-
-**Acceptance:** a consumer drives the calendar from outside, loads data by visible range, and a
-third party can write every 4.x plugin against the public contract alone.
 
 ## Release 4.0 — Temporal and a smaller core (breaking)
 
@@ -277,23 +315,33 @@ the Upgrader persona passes on the migrated configuration.
 
 ## Open decisions (escalate when the release that needs one starts)
 
-- **D1 — Resolved:** 4.0 comes after 3.4, so 4.1–4.3 are written on Temporal once.
+Each decision below is listed in `docs/migration-v4.md` as "under consideration" until it is
+settled.
+
+- **D1 — Resolved:** 4.0 comes after 3.3 (the only minor before it), so 4.1–4.3 are written on
+  Temporal once.
 - **D2 — Keep `onEventAdd`/`onEventUpdate`/`onEventDelete` in 4.0?** `onEventsChange` covers
-  them. Needed by 3.4.5.
+  them. Open; needed when 4.0 starts.
 - **D3 — `nowIndicator` default.** FullCalendar defaults false; ilamy always shows it. Flip in
-  4.0 or keep and record the deviation. Needed by 3.4.5.
+  4.0 or keep and record the deviation. Open for 4.0.
 - **D4 — Selection in core vs plugin.** Recommended: core state, plugin UI. Needed by 4.1.
 - **D5 — Framework reach.** Recommended: React only through this plan.
 - **D6 — Clashing names** (`firstDayOfWeek`/`firstDay`, `timezone`/`timeZone`,
-  `onCellClick`/`dateClick`). Recommended: keep ilamy's, document the mapping. Needed by 3.4.5.
-- **D8 — `editable` default.** True in 3.x so nothing breaks; the convention (FullCalendar) is
-  false. Flip in 4.0 or keep and record the deviation. Needed by 3.4.5.
+  `onCellClick`/`dateClick`). Recommended: keep ilamy's, document the mapping. Needed by the
+  migration guides (3.3.12).
 - **D7 — Year view and iCal export out of core in 4.0.** Recommended yes; resource axis only if
-  it fits the contract cleanly. Needed by 3.4.5.
+  it fits the contract cleanly. Needed when 4.0 starts.
+- **D8 — `editable` default.** True in 3.x so nothing breaks; the convention (FullCalendar) is
+  false. Flip in 4.0 or keep and record the deviation. Open for 4.0.
+- **D9 — `displayEventTime` / `displayEventEnd` default.** Unset in 3.x keeps today's
+  title-only bars; the convention's default is true. Make true in 4.0? Open for 4.0.
+- **D10 — `onDateChange` / `currentRange` range.** 3.x leaves the range as it was before
+  `hiddenDays` and `weekends` existed, so no consumer's range changes. Report the range trimmed
+  to the drawn days in 4.0? Open for 4.0.
 
 ## Checklist mapping
 
-| `docs/api-parity-checklist.md` item | Feature |
+| `docs/feature-checklist.md` item | Feature |
 |---|---|
 | `revert()` on drop | 3.3.1 |
 | `oldEvent` in callbacks | 3.3.1 |

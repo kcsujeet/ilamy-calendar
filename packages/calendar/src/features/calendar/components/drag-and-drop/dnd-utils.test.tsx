@@ -421,7 +421,7 @@ describe('getUpdatedEvent Utility Function', () => {
 		// - To fully fix: would need millisecond precision instead of second
 	})
 
-	describe('grab offset and time preservation (FullCalendar / Google Calendar parity)', () => {
+	describe('grab offset and time preservation (FullCalendar and Google Calendar behaviour)', () => {
 		it('should drop a timed event on the hovered hour slot', () => {
 			start = dayjs('2024-10-15T10:00:00.000Z')
 			end = dayjs('2024-10-15T11:00:00.000Z')

@@ -8,7 +8,7 @@ Create and manage repeating events with powerful RRULE-based recurrence patterns
 
 The recurrence system in ilamy Calendar supports creating repeating events using RRULE (Recurrence Rule) patterns based on the iCalendar RFC 5545 specification. Under the hood, it uses the powerful [rrule.js](https://github.com/jakubroztocil/rrule) library to generate recurring event instances, ensuring robust and reliable recurrence handling.
 
-**RFC 5545 Compliant:** The recurrence system uses the industry-standard RRULE format powered by rrule.js, ensuring compatibility with other calendar applications when exporting.
+**RFC 5545 rules:** The recurrence system uses the industry-standard RRULE format powered by rrule.js, and expands a series the way the RFC describes. Recurring events export to `.ics` as RRULEs; see the [export page](/docs/features/ical-export) for what an importer sees for a series in a configured `timezone`.
 
 :::caution[Recurrence is opt-in in v2]
 In v2 the core ships zero plugins. Recurring events are **not** expanded unless you register the recurrence plugin. Import it from the `@ilamy/calendar/plugins/recurrence` subpath and pass it via the `plugins` prop:
@@ -198,7 +198,7 @@ Editing or deleting an occurrence asks which part of the series it applies to. T
 | Scope | Edit | Delete |
 |---|---|---|
 | `'this'` | Excludes the occurrence from the series and adds an override for it | Excludes the occurrence from the series |
-| `'following'` | Ends the series the day before and starts a new one from the occurrence | Ends the series the day before |
+| `'following'` | Ends the series with `until` the day before and starts a new one from the occurrence | Ends the series with `until` the day before |
 | `'all'` | Changes the series; occurrences moved or deleted one by one return to it | Removes the series |
 
 Details of the scopes:
@@ -352,7 +352,7 @@ Use exception dates for simple cancellations and modified instances for changes 
 
 ### iCalendar Export
 
-Recurring events are automatically converted to proper RRULE format when exporting to .ics files, maintaining compatibility with other calendar applications.
+Recurring events are written to .ics files as RRULE, EXDATE and RECURRENCE-ID lines. Times are exported in UTC, so a series in a configured `timezone` can appear an hour off in an importer after a daylight-saving change; see [iCalendar Export](/docs/features/ical-export).
 
 ### Calendar Views
 

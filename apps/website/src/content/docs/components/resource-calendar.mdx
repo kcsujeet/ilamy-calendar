@@ -29,8 +29,7 @@ Visit the [interactive demo](/demo) and toggle to "Resource Calendar" mode to se
 
 ```tsx
 import { IlamyCalendar } from '@ilamy/calendar';
-import type { Resource, CalendarEvent } from '@ilamy/calendar';
-import { dayjs } from '@ilamy/calendar';
+import { dayjs, type Resource, type CalendarEvent } from '@ilamy/calendar';
 
 const resources: Resource[] = [
   {
@@ -111,7 +110,7 @@ The `businessHours` property for a resource follows the same structure as the gl
 The `data` field lets you attach arbitrary metadata to a resource, which you can then access in your custom `renderResource` function:
 
 ```tsx
-const resources = [
+const resources: Resource[] = [
   { id: 'room-a', title: 'Room A', data: { capacity: 10, floor: 2 } },
 ];
 
@@ -121,7 +120,7 @@ const resources = [
     <div>
       <span>{resource.title}</span>
       <span className="text-xs text-muted-foreground">
-        Capacity: {resource.data?.capacity}
+        Capacity: {String(resource.data?.capacity)}
       </span>
     </div>
   )}
@@ -132,6 +131,8 @@ const resources = [
 ### Resource Color System
 
 ```tsx title="Colorful Resources"
+import type { Resource } from '@ilamy/calendar';
+
 const resources: Resource[] = [
   {
     id: 'designer',
@@ -169,6 +170,8 @@ interface CalendarEvent {
 ### Single Resource Events
 
 ```tsx title="Event Assigned to One Resource"
+import { dayjs, type CalendarEvent } from '@ilamy/calendar';
+
 const event: CalendarEvent = {
   id: 'meeting-1',
   title: 'Team Standup',
@@ -184,6 +187,8 @@ const event: CalendarEvent = {
 Events that span multiple resources using the `resourceIds` array:
 
 ```tsx title="Event Spanning Multiple Resources"
+import { dayjs, type CalendarEvent } from '@ilamy/calendar';
+
 const event: CalendarEvent = {
   id: 'all-hands',
   title: 'All Hands Meeting',
@@ -207,7 +212,8 @@ These resource props are part of [IlamyCalendar](/docs/components/calendar)'s pr
 | `refetchResourcesOnNavigate` | `boolean` | `false` | With a `resources` function: also fetch when the visible range leaves the last fetched one |
 | `resourcesSet` | `(resources: Resource[]) => void` | - | Called once the list is set and after every change |
 | `onResourcesError` | `(error: unknown) => void` | `console.error` | With a `resources` function: a fetch failed. The resources on screen stay |
-| `events` | `CalendarEvent[]` | `[]` | Array of events with resource assignments (using resourceId or resourceIds properties) |
+| `events` | `CalendarEvent[] \| EventsFetcher` | `[]` | Events with resource assignments (using `resourceId` or `resourceIds`), or a function that loads them for the visible range |
+| `loading` | `(isLoading: boolean) => void` | - | Called with `true` while an `events` or `resources` fetch is in flight, `false` when none is |
 | `renderResource` | `(resource: Resource) => ReactNode` | - | Custom function to render resource headers |
 | `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Controls whether resources are displayed as rows (horizontal) or columns (vertical). |
 | `weekViewGranularity` | `'hourly' \| 'daily'` | `'hourly'` | Week view density. `'hourly'` (default) renders hourly time slots per day. `'daily'` renders a single row per day per resource — useful for high-level, non-time-of-day schedules. See [Week View Granularity](#week-view-granularity) below. |
@@ -219,9 +225,8 @@ These resource props are part of [IlamyCalendar](/docs/components/calendar)'s pr
 
 ```tsx title="Conference Room Booking"
 import { IlamyCalendar } from '@ilamy/calendar';
-import type { CalendarEvent, CellInfo } from '@ilamy/calendar';
+import type { CalendarEvent, CellInfo, Resource } from '@ilamy/calendar';
 import { useState } from 'react';
-import { dayjs } from '@ilamy/calendar';
 
 const RoomBookingCalendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -289,6 +294,7 @@ Customize how resources are displayed using the `renderResource` prop:
 
 ```tsx title="Custom Resource Headers with Icons"
 import { Calendar, MapPin, Users } from 'lucide-react';
+import type { Resource } from '@ilamy/calendar';
 
 const IconResourceRenderer = (resource: Resource) => {
   const getResourceIcon = (resourceId: string) => {
@@ -300,7 +306,7 @@ const IconResourceRenderer = (resource: Resource) => {
   return (
     <div className="flex items-center gap-2 p-2">
       <div style={{ color: resource.color }}>
-        {getResourceIcon(resource.id)}
+        {getResourceIcon(String(resource.id))}
       </div>
       <div className="flex flex-col">
         <span className="font-medium">{resource.title}</span>
@@ -340,7 +346,7 @@ Pass a function to load the resources from your server. It receives the visible 
 ```
 
 - The function is called once on mount and when you call `refetchResources()` from [`useIlamyCalendarContext`](/docs/components/use-ilamy-calendar-context). With `refetchResourcesOnNavigate` it is also called when you navigate outside the range it last fetched.
-- Until it resolves the calendar is already a resource calendar, with no lanes yet. If a fetch fails, the resources on screen stay and `onResourcesError` is called.
+- Until it resolves the calendar is already a resource calendar, with no lanes yet. If a fetch fails, the resources on screen stay and `onResourcesError` is called. Navigating does not retry a failed fetch (the resources do not depend on the dates), unless `refetchResourcesOnNavigate` is set. Otherwise call `refetchResources()`. A failed events fetch, by contrast, is retried on the next navigation.
 - A newer fetch aborts the previous one through `signal`; a late result is ignored.
 - Passing a new function on each render does not refetch. Call `refetchResources()` when your query changes.
 - `loading` reports `true` while either the `events` or the `resources` function has a fetch in flight.
@@ -355,6 +361,8 @@ You can define working hours for individual resources. This is essential for man
 Resource-specific business hours are defined directly on the `Resource` object. They accept the same formats as the global config: whole-hour numbers or `'HH:mm'` strings for sub-hour boundaries (e.g. `startTime: '09:15'`).
 
 ```tsx title="Defining Resource Availability"
+import type { Resource } from '@ilamy/calendar';
+
 const resources: Resource[] = [
   {
     id: 'dr-smith',
@@ -416,7 +424,7 @@ const unavailable = {
 
 ## Views
 
-The Resource Calendar supports three views, each displaying resources in horizontal rows.
+The Resource Calendar supports month, week and day views, with resources as rows (the default) or as columns (`orientation="vertical"`). The year view is hidden, and so is the agenda view.
 
 ### Month View
 Timeline view with resources as rows and days as columns. Compact event display with scroll for all resources.
@@ -505,6 +513,8 @@ through time. What changes depends on how the event declares its membership:
 
 An event dropped on a row it does not belong to is left unchanged on the resource
 axis (its time still moves), and dropping it back on its own row changes nothing.
+
+Resizing an event stays in its row and keeps its resources. See [Moving and resizing events](/docs/components/calendar#moving-and-resizing-events).
 
 This matches FullCalendar's resource mutation. RFC 5545 does not cover a resource
 axis — its [`RESOURCES` property](https://datatracker.ietf.org/doc/html/rfc5545#section-3.8.1.10)

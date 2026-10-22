@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file. Dates are d
 
 #### [v3.3.0](https://github.com/kcsujeet/ilamy-calendar/compare/v3.2.1...v3.3.0)
 
-> Unreleased (draft: PR links point at the open stack #335 to #359; re-check numbers at release time)
+> Unreleased (draft: re-check numbers at release time)
 
 3.3 is the only minor before 4.0. Each new option's default reproduces 3.2.1, and `docs/migration-v4.md` lists what 4.0 will remove or change. One intentional exception, by the `translations` contract: a full `translations` object must add the nine new keys listed under Fixes.
 
@@ -32,6 +32,16 @@ All notable changes to this project will be documented in this file. Dates are d
 - fix: dropping an event where it already was no longer fires `onEventUpdate` or `onEventsChange`, and no longer opens the recurring scope dialog ([`#342`](https://github.com/kcsujeet/ilamy-calendar/pull/342))
 - fix: `delta` was an hour short for a drop into the hour skipped by the spring clock change ([`#342`](https://github.com/kcsujeet/ilamy-calendar/pull/342))
 - fix: with a `snapDuration` finer than the slot, the drag preview stayed on the slice where the pointer entered a cell while the drop used the pointer's final position; the preview now follows it ([`#352`](https://github.com/kcsujeet/ilamy-calendar/pull/352))
+- fix: an all-day event dropped on a time slot now starts at that slot, wherever its bar was grabbed, and lasts one hour; a timed event dropped on the all-day row now ends at the next midnight. Before, the start depended on the grab point and the end kept the old length (FullCalendar's `defaultTimedEventDuration` / `defaultAllDayEventDuration`) ([`#363`](https://github.com/kcsujeet/ilamy-calendar/pull/363))
+- fix: moving an event across a clock change keeps its wall-clock length, so it no longer grows or shrinks by an hour, `delta` equals `endDelta`, and the drag preview's end time matches what is saved ([`#363`](https://github.com/kcsujeet/ilamy-calendar/pull/363))
+- fix: around a daylight-saving change, week, month and year days, the day view's all-day cell, form times, next/previous and the date picker no longer produce an instant an hour off. Re-saving an unchanged one-day all-day event on a spring-forward day no longer stores a zero-length event, and a picked time no longer saves an hour late ([`#368`](https://github.com/kcsujeet/ilamy-calendar/pull/368))
+- fix: the event form no longer saves an end before its start, and ticking then unticking All day no longer rewrites the end time to 23:59 ([`#368`](https://github.com/kcsujeet/ilamy-calendar/pull/368))
+- fix: a fetch still in flight when `events` changes from a function to an array no longer overwrites the array; a failed first `resources` fetch is no longer retried by plain navigation (only `refetchResources()`, or `refetchResourcesOnNavigate`) ([`#364`](https://github.com/kcsujeet/ilamy-calendar/pull/364))
+- fix: iCal export folds lines longer than 75 octets, ends with CRLF, and writes all-day `UNTIL`, `EXDATE` and `RECURRENCE-ID` as DATE values (RFC 5545 3.1, 3.4, 3.3.10, 3.8.5.1, 3.8.4.4) ([`#365`](https://github.com/kcsujeet/ilamy-calendar/pull/365))
+- fix: the week view's week number now numbers the week drawn, not the current date, so it matches the month row; `titleFormat` in the month and year views names the whole month or year; the agenda lists a timed multi-day or overnight event under every day it covers ([`#366`](https://github.com/kcsujeet/ilamy-calendar/pull/366))
+- fix: in the vertical resource month and daily resource week, two events in one room on the same day no longer cover each other; drag-to-create keeps numeric resource ids, follows the pointer over existing events and is cancelled cleanly by Escape; renaming a multi-resource event no longer adds a `resourceId` ([`#367`](https://github.com/kcsujeet/ilamy-calendar/pull/367))
+- fix: Enter and Space open a focused event, events that cannot move are still reachable by keyboard, bars no longer announce a keyboard drag that does not exist, and the form's date and time pickers and the Repeat checkbox are named by their labels ([`#369`](https://github.com/kcsujeet/ilamy-calendar/pull/369))
+- fix: recurring "this and following" edits and deletes never leave COUNT and UNTIL together, the new series keeps only the remaining COUNT, a moved occurrence is cut correctly, cutting at the first occurrence replaces the series, unticking Repeat stops the series, and deleted occurrences stay deleted after a time change. "All events" keeps the series' weekday and now reports only the time change it stored ([`#370`](https://github.com/kcsujeet/ilamy-calendar/pull/370))
 - fix: the date and time pickers' labels, placeholder and empty state, and the month and year navigation labels of the date pickers, are now translated instead of hard-coded English. Nine new `Translations` keys: `selectTime`, `noTimeFound`, `pickDate`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`. A full `translations` object must add them (`docs/translation-usage.md`)
 
 ##### Performance
@@ -49,8 +59,10 @@ All notable changes to this project will be documented in this file. Dates are d
 
 ##### Internal
 
-- chore: the core bundle (`dist/index.js` plus the chunks it imports) grows about 20.7% gzipped over 3.2.1, 42.1 KB to 50.8 KB, for the features and performance work above
+- chore: the core bundle (`dist/index.js` plus the chunks it imports) grows about 22.8% gzipped over 3.2.1, 42.1 KB to 51.7 KB, for the features and performance work above
 - chore: the e2e harness takes its port from `E2E_PORT` so several worktrees can run it at once ([`#336`](https://github.com/kcsujeet/ilamy-calendar/pull/336))
+- chore: `apps/perf`, a runtime benchmark that measured the performance work above against 3.2.1 ({L(362)})
+- test: the engine tests no longer depend on the machine's time zone ({L(341)}); `docs/timezones.md` explains why the suite runs in UTC ({L(350)})
 
 #### [v3.2.1](https://github.com/kcsujeet/ilamy-calendar/compare/v3.2.0...v3.2.1)
 

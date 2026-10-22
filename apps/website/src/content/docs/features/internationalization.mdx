@@ -37,10 +37,13 @@ function InternationalCalendar() {
 
 For more control over the text displayed in your calendar, you can provide a custom translations object. This allows you to translate button labels, view names, and other UI text.
 
-```tsx title="Custom Translations Object"
-import { IlamyCalendar } from '@ilamy/calendar';
+The `translations` prop takes the full `Translations` type: every key must be present, so a missing translation is a compile error rather than a label that silently stays in English. To change only a few labels, spread `defaultTranslations` first.
 
-const frenchTranslations = {
+```tsx title="Custom Translations Object"
+import { IlamyCalendar, defaultTranslations, type Translations } from '@ilamy/calendar';
+
+const frenchTranslations: Translations = {
+  ...defaultTranslations, // every key, in English, until you translate it
   today: 'Aujourd\'hui',
   month: 'Mois',
   week: 'Semaine',
@@ -48,7 +51,7 @@ const frenchTranslations = {
   year: 'Année',
   previous: 'Précédent',
   next: 'Suivant',
-  // Add more translation keys as needed
+  // Translate the rest of the keys
 };
 
 function TranslatedCalendar() {
@@ -65,33 +68,24 @@ function TranslatedCalendar() {
 
 ## Translator Function
 
-For dynamic translations or integration with existing i18n libraries, you can provide a translator function. This function receives a translation key and optional parameters, and should return the translated string.
+For dynamic translations or integration with existing i18n libraries, you can provide a translator function. It receives a translation key and returns the translated string. Return the key itself for a label you do not translate.
 
 ```tsx title="Translator Function"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar, type TranslatorFunction } from '@ilamy/calendar';
+
+const translations: Record<string, string> = {
+  today: 'Aujourd\'hui',
+  month: 'Mois',
+  week: 'Semaine',
+  day: 'Jour',
+  year: 'Année',
+  previous: 'Précédent',
+  next: 'Suivant',
+};
+
+const translator: TranslatorFunction = (key) => translations[key] ?? key;
 
 function TranslatorCalendar() {
-  const translator = (key, options) => {
-    const translations = {
-      today: 'Aujourd\'hui',
-      month: 'Mois',
-      week: 'Semaine',
-      day: 'Jour',
-      year: 'Année',
-      previous: 'Précédent',
-      next: 'Suivant',
-    };
-
-    // Handle dynamic translations based on options
-    if (options && options.count) {
-      // Pluralization logic
-      if (key === 'events') {
-        return options.count === 1 ? 'événement' : 'événements';
-      }
-    }
-
-    return translations[key] || key;
-  };
 
   return (
     <IlamyCalendar
@@ -117,9 +111,7 @@ import { useTranslation } from 'react-i18next';
 function I18nCalendar() {
   const { t, i18n } = useTranslation();
 
-  const translator = (key, options) => {
-    return t(`calendar.${key}`, options);
-  };
+  const translator = (key: string) => t(`calendar.${key}`);
 
   return (
     <IlamyCalendar
@@ -141,12 +133,7 @@ import { useIntl } from 'react-intl';
 function IntlCalendar() {
   const intl = useIntl();
 
-  const translator = (key, options) => {
-    return intl.formatMessage(
-      { id: `calendar.${key}` },
-      options
-    );
-  };
+  const translator = (key: string) => intl.formatMessage({ id: `calendar.${key}` });
 
   return (
     <IlamyCalendar
@@ -170,10 +157,11 @@ Month and weekday names are **not** translation keys. They are localized through
 :::
 
 ```typescript title="Using TranslationKey Type"
-import { TranslationKey } from '@ilamy/calendar';
+import type { TranslationKey } from '@ilamy/calendar';
 
 // The TranslationKey type includes all available keys:
 // - Common actions: today, create, update, delete, cancel
+// - Pickers: pickDate, selectTime, searchTime, noTimeFound, previousMonth, nextMonth, ...
 // - Event related: event, events, title, description, location, etc.
 // - Recurrence: repeat, daily, weekly, monthly, yearly, etc.
 // - View types: month, week, day, year
@@ -181,9 +169,13 @@ import { TranslationKey } from '@ilamy/calendar';
 
 const myTranslator = (key: TranslationKey) => {
   // Your translation logic here
-  return translations[key] || key;
+  return myDictionary[key] ?? key;
 };
 ```
+
+### Keys added in 3.3
+
+3.3 translates the date and time pickers and the month and year navigation of the date pickers, which were hard-coded in English. That adds nine keys: `selectTime`, `noTimeFound`, `pickDate`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears` and `nextYears`. A `translations` object written for 3.2 does not type-check until it has them; add them, or spread `defaultTranslations` and translate them later. A `translator` function needs no code change, but your dictionary needs these keys too, or the key itself is shown.
 
 ## Types
 
@@ -199,15 +191,16 @@ type TranslationKey = keyof Translations;
 
 // Translator function type
 type TranslatorFunction = (key: TranslationKey | string) => string;
+```
 
-// Example usage
+```typescript title="Using the types"
+import { defaultTranslations, type TranslatorFunction, type Translations } from '@ilamy/calendar';
+
 const frenchTranslations: Translations = {
+  ...defaultTranslations,
   today: 'Aujourd\'hui',
   month: 'Mois',
-  week: 'Semaine',
-  day: 'Jour',
-  year: 'Année',
-  // ... complete all required keys
+  // ... translate the other keys
 };
 
 const dynamicTranslator: TranslatorFunction = (key) => {

@@ -158,6 +158,37 @@ const SLOT_DURATION_OPTIONS = [
 	{ value: '15', label: '15 min (quarter-hour)' },
 ]
 
+const SNAP_DURATION_OPTIONS = [
+	{ value: '0', label: 'Slot (default)' },
+	{ value: '30', label: '30 min' },
+	{ value: '15', label: '15 min' },
+]
+
+const WEEK_NUMBER_OPTIONS = [
+	{
+		value: 'default',
+		label: 'Default',
+		description: 'Week headers show a number; month rows do not.',
+	},
+	{ value: 'show', label: 'Show', description: 'Month rows show one too.' },
+	{ value: 'hide', label: 'Hide', description: 'No week numbers anywhere.' },
+]
+
+const WEEK_NUMBER_CALCULATION_OPTIONS = [
+	{ value: 'local', label: 'Local' },
+	{ value: 'ISO', label: 'ISO' },
+]
+
+// slotMinTime runs from midnight to 23:00, slotMaxTime from 01:00 to 24:00.
+const SLOT_MIN_TIME_OPTIONS = Array.from({ length: 24 }).map((_, hour) => {
+	const time = `${String(hour).padStart(2, '0')}:00`
+	return { value: time, label: time }
+})
+const SLOT_MAX_TIME_OPTIONS = Array.from({ length: 24 }).map((_, index) => {
+	const time = `${String(index + 1).padStart(2, '0')}:00`
+	return { value: time, label: time }
+})
+
 const SCROLL_TIME_OPTIONS = [
 	{ value: 'none', label: 'None (no auto-scroll)' },
 	...Array.from({ length: 24 }).map((_, i) => {
@@ -394,11 +425,46 @@ export function CalendarSettings() {
 				/>
 
 				<FormSelect
+					label="Snap Duration"
+					name="snapDuration"
+					options={SNAP_DURATION_OPTIONS}
+					parse={Number}
+				/>
+
+				<FormSelect
+					label="First visible time (slotMinTime)"
+					name="slotMinTime"
+					options={SLOT_MIN_TIME_OPTIONS}
+				/>
+
+				<FormSelect
+					label="End of visible time (slotMaxTime)"
+					name="slotMaxTime"
+					options={SLOT_MAX_TIME_OPTIONS}
+				/>
+
+				<FormSelect
 					label="Initial Scroll Time"
 					name="scrollTime"
 					options={SCROLL_TIME_OPTIONS}
 				/>
 
+				<FormButtonGroup
+					label="Week Numbers"
+					name="weekNumbers"
+					options={WEEK_NUMBER_OPTIONS}
+				/>
+				<FormButtonGroup
+					label="Week Number Calculation"
+					name="weekNumberCalculation"
+					options={WEEK_NUMBER_CALCULATION_OPTIONS}
+				/>
+
+				<FormCheckbox label="Show weekends" name="weekends" />
+				<FormCheckbox label="Show all-day row" name="allDaySlot" />
+				<FormCheckbox label="Show current time line" name="nowIndicator" />
+				<FormCheckbox label="Show event times" name="showEventTimes" />
+				<FormCheckbox label="Show event end times" name="showEventEnd" />
 				<FormCheckbox label="Scroll to now" name="scrollToNow" />
 				<FormCheckbox label="Enable sticky header" name="stickyViewHeader" />
 				<FormCheckbox label="Hide export button" name="hideExportButton" />
@@ -433,10 +499,7 @@ export function CalendarSettings() {
 					</div>
 				)}
 
-				<WeekdayMultiSelectField
-					label="Hidden Days (Week View)"
-					name="hiddenDays"
-				/>
+				<WeekdayMultiSelectField label="Hidden Days" name="hiddenDays" />
 
 				{/* Custom renderers */}
 				<FormCheckbox
@@ -486,7 +549,14 @@ export function CalendarSettings() {
 				/>
 				<FormCheckbox label="Disable cell clicks" name="disableCellClick" />
 				<FormCheckbox label="Disable event clicks" name="disableEventClick" />
-				<FormCheckbox label="Disable drag & drop" name="disableDragAndDrop" />
+				<FormCheckbox
+					label="Read-only events (editable=false)"
+					name="disableDragAndDrop"
+				/>
+				<FormCheckbox
+					label="Resize from the start edge"
+					name="eventResizableFromStart"
+				/>
 			</CardContent>
 		</Card>
 	)

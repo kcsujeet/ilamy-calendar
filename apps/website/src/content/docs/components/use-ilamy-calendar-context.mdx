@@ -4,7 +4,7 @@ description: Access calendar and resource calendar state and methods with the us
 slug: docs/components/use-ilamy-calendar-context
 ---
 
-A React hook for accessing calendar context and controlling calendar state programmatically. It returns the `IlamyCalendarApi` object.
+A React hook for accessing calendar context and controlling calendar state programmatically. It returns the `IlamyCalendarApi` object. Outside the calendar, pass a `ref` to `IlamyCalendar` to get the same object; see [Controlling the calendar from outside](/docs/components/calendar#controlling-the-calendar-from-outside).
 
 The API is unified: the same shape is returned whether or not the calendar has resources. On a calendar without resources, `resources` is simply an empty array and `getEventsForResource` filters by the events' own `resourceId` / `resourceIds`. There is no separate resource-calendar return type.
 
@@ -58,6 +58,7 @@ The hook returns an object with the following properties and methods:
 | Property | Type | Description |
 |----------|------|-------------|
 | `currentDate` | `Dayjs` | The currently displayed date/month in the calendar view |
+| `currentRange` | `{ start: Dayjs; end: Dayjs }` | The visible date range of the active view, the `range` that `onDateChange` receives |
 | `view` | `CalendarView` (`string`) | The current view name. In v2 `CalendarView` is `string` so plugins can register extra views |
 | `events` | `CalendarEvent[]` | Expanded events for the current view (recurring instances included when the recurrence plugin is registered) |
 | `rawEvents` | `CalendarEvent[]` | The unexpanded source events as passed in. Use this to find a base recurring series by `uid` |

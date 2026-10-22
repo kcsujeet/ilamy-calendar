@@ -9,8 +9,10 @@ import type {
 	RenderCurrentTimeIndicatorProps,
 	Resource,
 	SlotDuration,
+	SnapDuration,
 	TimeFormat,
 	WeekDays,
+	WeekNumberCalculation,
 } from '@ilamy/calendar'
 import { dayjs, IlamyCalendar } from '@ilamy/calendar'
 import { Card, CardContent, CardHeader } from '@ilamy/ui/components/card'
@@ -50,6 +52,14 @@ type BusinessHours = {
 
 type EventHandler = (event: CalendarEvent) => void
 
+// The Week Numbers control's three choices as the `weekNumbers` prop: unset
+// keeps the week headers only, true adds the month rows, false removes all.
+const WEEK_NUMBERS_PROP = {
+	default: undefined,
+	show: true,
+	hide: false,
+} as const
+
 // Lifecycle mutators owned by the Playground (they edit its event state). Gated
 // by the useEventLifecycleCallbacks toggle in resolveSharedCalendarProps.
 type LifecycleHandlers = {
@@ -69,7 +79,8 @@ type SharedCalendarProps = {
 	hideExportButton: boolean
 	plugins: IlamyPlugin[]
 	disableCellClick: boolean
-	disableDragAndDrop: boolean
+	editable: boolean
+	eventResizableFromStart: boolean
 	disableEventClick: boolean
 	firstDayOfWeek: WeekDays
 	hiddenDays: WeekDays[]
@@ -79,6 +90,16 @@ type SharedCalendarProps = {
 	scrollTime: string | undefined
 	scrollToNow: boolean
 	slotDuration: SlotDuration
+	snapDuration: SnapDuration | undefined
+	slotMinTime: string
+	slotMaxTime: string
+	weekends: boolean
+	allDaySlot: boolean
+	nowIndicator: boolean
+	weekNumbers: boolean | undefined
+	weekNumberCalculation: WeekNumberCalculation
+	displayEventTime: boolean | undefined
+	displayEventEnd: boolean | undefined
 	stickyViewHeader: boolean
 	timeFormat: TimeFormat
 	timezone: string
@@ -113,13 +134,17 @@ function RegularCalendar({
 }: RegularCalendarProps) {
 	return (
 		<IlamyCalendar
+			allDaySlot={shared.allDaySlot}
 			businessHours={shared.businessHours}
 			classesOverride={shared.classesOverride}
 			dayMaxEvents={shared.dayMaxEvents}
 			disableCellClick={shared.disableCellClick}
-			disableDragAndDrop={shared.disableDragAndDrop}
 			disableEventClick={shared.disableEventClick}
+			displayEventEnd={shared.displayEventEnd}
+			displayEventTime={shared.displayEventTime}
+			editable={shared.editable}
 			eventHeight={shared.eventHeight}
+			eventResizableFromStart={shared.eventResizableFromStart}
 			eventSpacing={shared.eventSpacing}
 			events={customEvents}
 			firstDayOfWeek={shared.firstDayOfWeek}
@@ -131,6 +156,7 @@ function RegularCalendar({
 			initialView={initialView}
 			key={calendarKey}
 			locale={shared.locale}
+			nowIndicator={shared.nowIndicator}
 			onCellClick={shared.onCellClick}
 			onDateChange={shared.onDateChange}
 			onEventAdd={shared.onEventAdd}
@@ -146,9 +172,15 @@ function RegularCalendar({
 			scrollTime={shared.scrollTime}
 			scrollToNow={shared.scrollToNow}
 			slotDuration={shared.slotDuration}
+			slotMaxTime={shared.slotMaxTime}
+			slotMinTime={shared.slotMinTime}
+			snapDuration={shared.snapDuration}
 			stickyViewHeader={shared.stickyViewHeader}
 			timeFormat={shared.timeFormat}
 			timezone={shared.timezone}
+			weekends={shared.weekends}
+			weekNumberCalculation={shared.weekNumberCalculation}
+			weekNumbers={shared.weekNumbers}
 		/>
 	)
 }
@@ -177,13 +209,17 @@ function ResourceCalendar({
 }: ResourceCalendarProps) {
 	return (
 		<IlamyCalendar
+			allDaySlot={shared.allDaySlot}
 			businessHours={shared.businessHours}
 			classesOverride={shared.classesOverride}
 			dayMaxEvents={shared.dayMaxEvents}
 			disableCellClick={shared.disableCellClick}
-			disableDragAndDrop={shared.disableDragAndDrop}
 			disableEventClick={shared.disableEventClick}
+			displayEventEnd={shared.displayEventEnd}
+			displayEventTime={shared.displayEventTime}
+			editable={shared.editable}
 			eventHeight={shared.eventHeight}
+			eventResizableFromStart={shared.eventResizableFromStart}
 			eventSpacing={shared.eventSpacing}
 			events={resourceEvents}
 			firstDayOfWeek={shared.firstDayOfWeek}
@@ -195,6 +231,7 @@ function ResourceCalendar({
 			initialView={resourceInitialView}
 			key={`resource-${calendarKey}-${orientation}`}
 			locale={shared.locale}
+			nowIndicator={shared.nowIndicator}
 			onCellClick={shared.onCellClick}
 			onDateChange={shared.onDateChange}
 			onEventAdd={shared.onEventAdd}
@@ -213,9 +250,15 @@ function ResourceCalendar({
 			scrollTime={shared.scrollTime}
 			scrollToNow={shared.scrollToNow}
 			slotDuration={shared.slotDuration}
+			slotMaxTime={shared.slotMaxTime}
+			slotMinTime={shared.slotMinTime}
+			snapDuration={shared.snapDuration}
 			stickyViewHeader={shared.stickyViewHeader}
 			timeFormat={shared.timeFormat}
 			timezone={shared.timezone}
+			weekends={shared.weekends}
+			weekNumberCalculation={shared.weekNumberCalculation}
+			weekNumbers={shared.weekNumbers}
 			weekViewGranularity={weekViewGranularity}
 		/>
 	)
@@ -254,7 +297,8 @@ function resolveSharedCalendarProps(
 		hideExportButton: values.hideExportButton,
 		plugins,
 		disableCellClick: values.disableCellClick,
-		disableDragAndDrop: values.disableDragAndDrop,
+		editable: !values.disableDragAndDrop,
+		eventResizableFromStart: values.eventResizableFromStart,
 		disableEventClick: values.disableEventClick,
 		firstDayOfWeek: values.firstDayOfWeek,
 		hiddenDays: values.hiddenDays,
@@ -264,6 +308,16 @@ function resolveSharedCalendarProps(
 		scrollTime: values.scrollTime === 'none' ? undefined : values.scrollTime,
 		scrollToNow: values.scrollToNow,
 		slotDuration: values.slotDuration,
+		snapDuration: values.snapDuration === 0 ? undefined : values.snapDuration,
+		slotMinTime: values.slotMinTime,
+		slotMaxTime: values.slotMaxTime,
+		weekends: values.weekends,
+		allDaySlot: values.allDaySlot,
+		nowIndicator: values.nowIndicator,
+		weekNumbers: WEEK_NUMBERS_PROP[values.weekNumbers],
+		weekNumberCalculation: values.weekNumberCalculation,
+		displayEventTime: values.showEventTimes ? true : undefined,
+		displayEventEnd: values.showEventEnd ? true : undefined,
 		stickyViewHeader: values.stickyViewHeader,
 		timeFormat: values.timeFormat,
 		timezone: values.timezone,

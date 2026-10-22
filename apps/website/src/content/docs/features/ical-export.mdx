@@ -34,12 +34,24 @@ These applications read the syntax; see the timezone note above for recurring se
 ### Desktop Interface
 1. Look for the "Export" button in the top-right corner of the calendar header
 2. Click the button to download the .ics file
-3. The file will be automatically downloaded with a timestamped filename (e.g., `ilamy-calendar-2025-08-04.ics`)
+3. The file downloads as `ilamy-calendar-YYYY-MM-DD.ics`, with today's date (e.g., `ilamy-calendar-2025-08-04.ics`)
+
+To hide the button, pass `hideExportButton` to `IlamyCalendar`. With your own `headerComponent`, the prop has no effect: you provide the export control yourself.
+
+The file holds every event the calendar has, not only the ones in view. A recurring series is one event with an `RRULE`, so the file stays small.
 
 ### Mobile Interface
 1. Tap the menu button (☰) in the top-right corner
 2. Select "Export Calendar (.ics)" from the dropdown menu
 3. The file will be downloaded to your device
+
+## File format details
+
+- Lines are separated by CRLF, and the file ends with a CRLF after `END:VCALENDAR`.
+- A line longer than 75 octets is folded onto the next line, and a multi-byte character is never split.
+- `,`, `;` and `\` in the title, description and location are escaped, and newlines become `\n`.
+- An all-day series writes `UNTIL`, `EXDATE` and `RECURRENCE-ID` as dates (`UNTIL=20250330`, `EXDATE;VALUE=DATE:...`), the same type as its `DTSTART`.
+- Each event also carries `DTSTAMP`, `CREATED`, `LAST-MODIFIED`, `STATUS:CONFIRMED`, `SEQUENCE:0` and `TRANSP:OPAQUE`.
 
 ## Supported Event Properties
 
@@ -66,8 +78,8 @@ VERSION:2.0
 PRODID:-//ilamy//ilamy Calendar//EN
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
-X-WR-CALNAME:My Calendar
-X-WR-CALDESC:Exported from My Calendar
+X-WR-CALNAME:ilamy Calendar
+X-WR-CALDESC:Exported from ilamy Calendar
 BEGIN:VTIMEZONE
 TZID:UTC
 BEGIN:STANDARD
@@ -85,6 +97,11 @@ SUMMARY:Team Meeting
 DESCRIPTION:Weekly team sync
 LOCATION:Conference Room A
 DTSTAMP:20250804T120000Z
+CREATED:20250804T120000Z
+LAST-MODIFIED:20250804T120000Z
+STATUS:CONFIRMED
+SEQUENCE:0
+TRANSP:OPAQUE
 END:VEVENT
 END:VCALENDAR
 ```

@@ -1,8 +1,10 @@
 import type {
 	CalendarView,
 	SlotDuration,
+	SnapDuration,
 	TimeFormat,
 	WeekDays,
+	WeekNumberCalculation,
 } from '@ilamy/calendar'
 import type { AgendaWindow } from '@ilamy/calendar/plugins/agenda'
 
@@ -33,6 +35,11 @@ export interface PlaygroundSettings {
 	eventHeight: number
 	eventSpacing: number
 	slotDuration: SlotDuration
+	// 0 leaves `snapDuration` unset, so a drop snaps to the slot.
+	snapDuration: SnapDuration | 0
+	// 'HH:mm' bounds of the visible hours. '00:00' and '24:00' show the whole day.
+	slotMinTime: string
+	slotMaxTime: string
 	// 'none' (no auto-scroll) or an ISO-ish 'HH:00:00'. Mapped to undefined for
 	// the calendar's `scrollTime` prop in the display.
 	scrollTime: string
@@ -40,6 +47,16 @@ export interface PlaygroundSettings {
 	scrollToNow: boolean
 	hideExportButton: boolean
 	hiddenDays: WeekDays[]
+	weekends: boolean
+	allDaySlot: boolean
+	nowIndicator: boolean
+	// 'default' leaves `weekNumbers` unset: week headers only. 'show' adds the
+	// month rows, 'hide' removes them all.
+	weekNumbers: 'default' | 'show' | 'hide'
+	weekNumberCalculation: WeekNumberCalculation
+	// Unticked leaves `displayEventTime` / `displayEventEnd` unset.
+	showEventTimes: boolean
+	showEventEnd: boolean
 
 	// Business hours
 	enableBusinessHours: boolean
@@ -64,7 +81,9 @@ export interface PlaygroundSettings {
 	useEventLifecycleCallbacks: boolean
 	disableCellClick: boolean
 	disableEventClick: boolean
+	// Maps to `editable={false}`.
 	disableDragAndDrop: boolean
+	eventResizableFromStart: boolean
 }
 
 export const defaultSettings: PlaygroundSettings = {
@@ -83,11 +102,21 @@ export const defaultSettings: PlaygroundSettings = {
 	eventHeight: 24,
 	eventSpacing: 1,
 	slotDuration: 60,
+	snapDuration: 0,
+	slotMinTime: '00:00',
+	slotMaxTime: '24:00',
 	scrollTime: 'none',
 	stickyViewHeader: true,
 	scrollToNow: true,
 	hideExportButton: false,
 	hiddenDays: [],
+	weekends: true,
+	allDaySlot: true,
+	nowIndicator: true,
+	weekNumbers: 'default',
+	weekNumberCalculation: 'local',
+	showEventTimes: false,
+	showEventEnd: false,
 	enableBusinessHours: true,
 	businessHoursDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
 	businessHoursStart: 9,
@@ -107,4 +136,5 @@ export const defaultSettings: PlaygroundSettings = {
 	disableCellClick: false,
 	disableEventClick: false,
 	disableDragAndDrop: false,
+	eventResizableFromStart: false,
 }

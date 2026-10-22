@@ -146,6 +146,28 @@ describe('CalendarDndContext', () => {
 			expect(page.hasLiveRegion).toBe(true)
 		})
 
+		it('mounts when events can only be resized', () => {
+			const page = renderCalendar({
+				editable: false,
+				eventDurationEditable: true,
+			})
+
+			expect(page.hasLiveRegion).toBe(true)
+		})
+
+		it('mounts when events can only be moved', () => {
+			const page = renderCalendar({ eventDurationEditable: false })
+
+			expect(page.hasLiveRegion).toBe(true)
+		})
+
+		it('mounts when one event opts in to resizing under a non-editable calendar', () => {
+			const optedIn = { ...movableEvent, durationEditable: true }
+			const page = renderCalendar({ editable: false }, [optedIn])
+
+			expect(page.hasLiveRegion).toBe(true)
+		})
+
 		it('marks only the movable bar when one event is locked', () => {
 			const locked = { ...movableEvent, id: 'b', title: 'B', editable: false }
 			const page = renderCalendar({}, [movableEvent, locked])

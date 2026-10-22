@@ -258,6 +258,7 @@ export function DroppableCell({
 			date,
 			hour,
 			minute,
+			slotDurationMinutes,
 			resourceId,
 			allDay,
 			disabled: cellDisabled,

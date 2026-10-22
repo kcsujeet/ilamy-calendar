@@ -11,6 +11,11 @@ export interface DropCellData {
 	date?: Dayjs
 	hour?: number
 	minute?: number
+	/**
+	 * Length of the slot a cell with a `minute` covers. An hour cell (no
+	 * `minute`) is always an hour, and a day cell has no slot.
+	 */
+	slotDurationMinutes?: number
 	resourceId?: string | number
 	allDay?: boolean
 	/**
@@ -32,7 +37,8 @@ type ResourceId = string | number
  * cell reports `type: 'day-cell'` (`grid-cell.tsx`), so branching on the type
  * silently sent hour-grid drops down the day path and discarded the hour.
  */
-const isTimeSlotDrop = (data: DropCellData): boolean => data.hour !== undefined
+export const isTimeSlotDrop = (data: DropCellData): boolean =>
+	data.hour !== undefined
 
 /**
  * Calculates candidate start, end, and allDay status when an event is dragged
@@ -89,6 +95,101 @@ export const calculateDropTimes = (
 	const timeOfDay = activeEvent.start.format('HH:mm:ss.SSS')
 	const keptTimeOfDay = dayjs(`${targetDay}T${timeOfDay}`)
 	return { ...withDuration(keptTimeOfDay), allDay: false }
+}
+
+export type ResizeEdge = 'start' | 'end'
+
+const MINUTES_PER_HOUR = 60
+
+/**
+ * A wall-clock time on a day, built from a zoneless string for the reason
+ * `calculateDropTimes` gives: the setters would carry the source day's UTC
+ * offset onto a day where the clocks change.
+ */
+const atTimeOfDay = (day: Dayjs, timeOfDay: string): Dayjs =>
+	dayjs(`${day.format('YYYY-MM-DD')}T${timeOfDay}`)
+
+const MIDNIGHT = '00:00:00.000'
+const TIME_OF_DAY_FORMAT = 'HH:mm:ss.SSS'
+
+/** The span of the time slot a pointer is over; undefined without a date. */
+const getSlotSpan = (data: DropCellData) => {
+	const { date, hour = 0, minute, slotDurationMinutes } = data
+	if (!date) {
+		return undefined
+	}
+	const isHourCell = minute === undefined
+	const slotMinutes = isHourCell
+		? MINUTES_PER_HOUR
+		: (slotDurationMinutes ?? MINUTES_PER_HOUR)
+	const timeOfDay = `${String(hour).padStart(2, '0')}:${String(minute ?? 0).padStart(2, '0')}:00.000`
+	const start = atTimeOfDay(date, timeOfDay)
+	return { start, end: start.add(slotMinutes, 'minute') }
+}
+
+/**
+ * The span a cell covers: its slot in an hour grid, its day otherwise.
+ * Undefined for a cell that says nothing about its date.
+ */
+export const getCellSpan = (
+	data: DropCellData
+): { start: Dayjs; end: Dayjs } | undefined => {
+	const { date } = data
+	if (!date) {
+		return undefined
+	}
+	if (isTimeSlotDrop(data)) {
+		return getSlotSpan(data)
+	}
+	const start = atTimeOfDay(date, MIDNIGHT)
+	return { start, end: atTimeOfDay(date.add(1, 'day'), MIDNIGHT) }
+}
+
+/**
+ * Where an edge of an event lands when the pointer is over a cell, or null
+ * when that would leave no span (end at or before start). FullCalendar makes
+ * the same mutation null, so nothing changes (`EventResizing.ts:249-300`,
+ * v7.1.1).
+ *
+ * A time slot snaps the edge to the slot's boundary: its end for the end
+ * edge (exclusive, RFC 5545 DTEND), its start for the start edge. A day cell
+ * snaps to whole days and keeps a timed block's time of day, so the end edge
+ * of a block ending at 17:00 lands on 17:00 of the hovered day.
+ */
+export const calculateResizeTimes = (
+	event: CalendarEvent,
+	data: DropCellData,
+	edge: ResizeEdge
+): { start: Dayjs; end: Dayjs } | null => {
+	const { date } = data
+	if (!date) {
+		return null
+	}
+
+	let start = event.start
+	let end = event.end
+	const slot = getSlotSpan(data)
+
+	if (isTimeSlotDrop(data) && slot) {
+		if (edge === 'end') {
+			end = slot.end
+		} else {
+			start = slot.start
+		}
+	} else if (edge === 'end') {
+		const endsAtMidnight = event.end.isSame(event.end.startOf('day'))
+		const endsAtDayBoundary = Boolean(event.allDay) || endsAtMidnight
+		end = endsAtDayBoundary
+			? atTimeOfDay(date.add(1, 'day'), MIDNIGHT)
+			: atTimeOfDay(date, event.end.format(TIME_OF_DAY_FORMAT))
+	} else {
+		const startTimeOfDay = event.allDay
+			? MIDNIGHT
+			: event.start.format(TIME_OF_DAY_FORMAT)
+		start = atTimeOfDay(date, startTimeOfDay)
+	}
+
+	return end.isAfter(start) ? { start, end } : null
 }
 
 /**

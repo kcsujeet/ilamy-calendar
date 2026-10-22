@@ -4,14 +4,19 @@ import { cn } from '@ilamy/ui/lib/utils'
 import type { CSSProperties, ReactNode } from 'react'
 import { memo, useRef } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
+import type { ResizeEdge } from '@/features/calendar/components/drag-and-drop/dnd-utils'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { EventSegment } from '@/features/calendar/types'
 import type { DragSegment } from '@/features/calendar/utils/grab-offset'
-import { resolveStartEditable } from '@/features/calendar/utils/resolve-editability'
+import {
+	resolveDurationEditable,
+	resolveStartEditable,
+} from '@/features/calendar/utils/resolve-editability'
 import {
 	DefaultEventContent,
 	type DefaultEventContentProps,
 } from './default-event-content'
+import { type ResizeGranularity, ResizeHandle } from './resize-handle'
 
 interface DragStateClassInput {
 	isDragDisabled: boolean
@@ -69,6 +74,31 @@ const renderEventContent = ({
 	)
 }
 
+interface ResizeEdgesInput {
+	segment: EventSegment
+	isResizable: boolean
+	isResizableFromStart: boolean | undefined
+}
+
+/**
+ * A handle sits only on an edge the event really has: a bar the grid cut
+ * short has no end to drag there (FullCalendar, StandardEvent.tsx:95-96, v7.1.1).
+ */
+const getResizeEdges = ({
+	segment,
+	isResizable,
+	isResizableFromStart,
+}: ResizeEdgesInput): ResizeEdge[] => {
+	const edges: ResizeEdge[] = []
+	if (isResizable && segment.isStart && isResizableFromStart) {
+		edges.push('start')
+	}
+	if (isResizable && segment.isEnd) {
+		edges.push('end')
+	}
+	return edges
+}
+
 interface DraggableEventProps {
 	elementId: string
 	className?: string
@@ -95,35 +125,30 @@ interface DraggableEventProps {
 	 * re-render every bar in the grid on every drag-over tick, through `memo`.
 	 */
 	isBeingDragged?: boolean
+	/**
+	 * What the cells under this bar snap a resize to. Absent when the bar is
+	 * not resizable where it is drawn (the all-events dialog, a single-day
+	 * timed event in a day grid, which reads as a dot).
+	 */
+	resizeGranularity?: ResizeGranularity
 }
 
-function DraggableEventUnmemoized({
+interface DraggableBarInput {
+	elementId: string
+	event: CalendarEvent
+	sourceResourceId?: string | number
+	dragSegment?: DragSegment
+	isMoveBlocked: boolean
+}
+
+/** The dnd-kit wiring of a bar: its node ref, its drag props, and whether it is under the pointer. */
+const useDraggableBar = ({
 	elementId,
 	event,
-	className,
-	style,
-	disableDrag = false,
-	isTruncatedStart = false,
-	isTruncatedEnd = false,
 	sourceResourceId,
 	dragSegment,
-	isBeingDragged = false,
-}: DraggableEventProps) {
-	const {
-		onEventClick,
-		renderEvent,
-		disableEventClick,
-		disableDragAndDrop,
-		editable,
-		eventStartEditable,
-	} = useSmartCalendarContext()
-	const isStartEditable = resolveStartEditable(event, {
-		editable,
-		eventStartEditable,
-		disableDragAndDrop,
-	})
-	const isMoveBlocked = disableDrag || !isStartEditable
-
+	isMoveBlocked,
+}: DraggableBarInput) => {
 	// Measured on demand rather than read from `active.rect.current.initial`:
 	// dnd-kit's own measurement of a time-grid bar comes back as the label's
 	// height (28px) instead of the bar's (a full day column is ~1463px), which
@@ -153,6 +178,54 @@ function DraggableEventUnmemoized({
 	const dragAttributes = isMoveBlocked ? undefined : attributes
 	const dragListeners = isMoveBlocked ? undefined : listeners
 
+	return {
+		registerBar,
+		dragProps: { ...dragAttributes, ...dragListeners },
+		isDragging,
+	}
+}
+
+function DraggableEventUnmemoized({
+	elementId,
+	event,
+	className,
+	style,
+	disableDrag = false,
+	isTruncatedStart = false,
+	isTruncatedEnd = false,
+	sourceResourceId,
+	dragSegment,
+	isBeingDragged = false,
+	resizeGranularity,
+}: DraggableEventProps) {
+	const {
+		onEventClick,
+		renderEvent,
+		disableEventClick,
+		disableDragAndDrop,
+		editable,
+		eventStartEditable,
+		eventDurationEditable,
+		eventResizableFromStart,
+	} = useSmartCalendarContext()
+	const editFlags = {
+		editable,
+		eventStartEditable,
+		eventDurationEditable,
+		disableDragAndDrop,
+	}
+	const isStartEditable = resolveStartEditable(event, editFlags)
+	const isDurationEditable = resolveDurationEditable(event, editFlags)
+	const isMoveBlocked = disableDrag || !isStartEditable
+
+	const { registerBar, dragProps, isDragging } = useDraggableBar({
+		elementId,
+		event,
+		sourceResourceId,
+		dragSegment,
+		isMoveBlocked,
+	})
+
 	// `isDragging` marks the bar under the pointer; `isBeingDragged` also covers
 	// this event's other bars (a clipped span, or a second resource row).
 	const { cursorClass, draggingClass } = getDragStateClasses({
@@ -169,6 +242,12 @@ function DraggableEventUnmemoized({
 		isStart: !isTruncatedStart,
 		isEnd: !isTruncatedEnd,
 	}
+	const isResizable = isDurationEditable && resizeGranularity !== undefined
+	const resizeEdges = getResizeEdges({
+		segment,
+		isResizable,
+		isResizableFromStart: eventResizableFromStart,
+	})
 	const content = renderEventContent({
 		renderEvent,
 		event,
@@ -185,7 +264,9 @@ function DraggableEventUnmemoized({
 				// (https://developer.mozilla.org/en-US/docs/Web/CSS/position#sticky).
 				// `clip` hides the same overflow without being one, and still draws
 				// the ellipsis a plain-text `renderEvent` relies on.
-				'overflow-clip text-ellipsis whitespace-nowrap h-full w-full',
+				// `align-top`: AnimatedSection is inline-block, so it sat on the text
+				// baseline 4-7px below the slot span the bar is positioned over.
+				'relative align-top overflow-clip text-ellipsis whitespace-nowrap h-full w-full',
 				cursorClass,
 				draggingClass,
 				className
@@ -197,10 +278,20 @@ function DraggableEventUnmemoized({
 			ref={registerBar}
 			style={style}
 			transitionKey={elementId}
-			{...dragAttributes}
-			{...dragListeners}
+			{...dragProps}
 		>
 			{content}
+			{resizeGranularity &&
+				resizeEdges.map((edge) => (
+					<ResizeHandle
+						edge={edge}
+						elementId={elementId}
+						event={event}
+						granularity={resizeGranularity}
+						key={edge}
+						sourceResourceId={sourceResourceId}
+					/>
+				))}
 		</AnimatedSection>
 	)
 }
@@ -246,6 +337,7 @@ const COMPARED_PROPS = [
 	'isTruncatedStart',
 	'isTruncatedEnd',
 	'isBeingDragged',
+	'resizeGranularity',
 ] as const satisfies ReadonlyArray<keyof DraggableEventProps>
 
 export const DraggableEvent = memo(

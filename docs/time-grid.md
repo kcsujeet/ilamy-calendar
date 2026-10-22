@@ -172,6 +172,37 @@ whatever the machine's zone (see `wallClockDiff`, `layoutVertical` and
 `?tz=` and the clock from `gotoScenario({ now })`: the `dst-days` scenario pins
 a booking and the now-line on both 2025 change days.
 
+## Resizing
+
+A bar offers a handle on an edge only when that edge is the event's own: the end handle on the segment that
+really ends (`isEnd`), the start handle (with `eventResizableFromStart`) on the segment that really starts
+(`isStart`), as in FullCalendar (`StandardEvent.tsx:95-96`, v7.1.1). A single-day timed event in a grid of days
+(month, resource month) reads as a dot there and has no handle (`daygrid/event-rendering.ts:13-26`); in a grid
+of hours it does.
+
+The pointer's cell decides the new edge (`calculateResizeTimes`):
+
+- In a time grid the end edge snaps to the END of the hovered slot (exclusive, RFC 5545 DTEND) and the start
+  edge to the START of it, in `slotDuration` steps (an hour cell in a horizontal timeline is an hour).
+- In a grid of days both snap to whole days. An all-day event ends at the midnight after the hovered day; a
+  timed block keeps its time of day on the hovered day.
+- The new time is rebuilt from a zoneless string on the hovered day, never with `.hour()` setters, so a slot on
+  a clock-change day is the wall-clock slot and not an hour out.
+- A result with end at or before start is no change (FullCalendar's null mutation, `EventResizing.ts:249-300`):
+  the preview shows the original and nothing is committed or refused.
+- A resize stays in the component it started in (`interaction.ts:44-48`): hovering the all-day row from the
+  time grid, or the reverse, is ignored.
+- A resize never changes the resource; hovering another lane maps to the same time on the event's own. Whether
+  that time is closed (business hours of the event's own resource, the month's padding days, `isCellDisabled`)
+  is judged on the event's own lane too, not on the lane under the pointer.
+- Resize needs a mouse or a pen. On touch-only devices (`@media (hover: none)`) the handles are hidden and
+  events can be moved but not resized until event selection lands (roadmap 4.1.3): FullCalendar only resizes an
+  already-selected event on touch (`EventResizing.ts:86-88`, v7.1.1), and a 6px strip took taps and long-presses
+  from the bar around it.
+- Known limitation: a bar replays its 500ms entrance animation after every commit, and a resize started inside
+  that window (several resizes of one event in quick succession) can be dropped without a trace. Resizes started
+  once the bar has settled always commit.
+
 ## VerticalGrid Component
 
 `src/features/calendar/components/vertical-grid/vertical-grid.tsx`

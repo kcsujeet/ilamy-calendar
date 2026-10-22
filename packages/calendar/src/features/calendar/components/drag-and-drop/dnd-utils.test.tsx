@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import type { ClientRect, DragEndEvent } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
@@ -6,7 +6,12 @@ import {
 	calculateGrabOffset,
 	type DragSegment,
 } from '@/features/calendar/utils/grab-offset'
-import { calculateDropTimes, getUpdatedEvent } from './dnd-utils'
+import {
+	calculateDropTimes,
+	calculateResizeTimes,
+	type DropCellData,
+	getUpdatedEvent,
+} from './dnd-utils'
 
 let cellType = 'day-cell'
 let cellDate = dayjs('2024-10-15T00:00:00')
@@ -710,5 +715,226 @@ describe('calculateGrabOffset', () => {
 		})
 
 		expect(offset).toEqual({ minutes: 0, days: 0 })
+	})
+})
+
+describe('calculateResizeTimes', () => {
+	const originalTz = dayjs.tz.guess()
+	const at = (iso: string) => dayjs(iso)
+	const mk = (startISO: string, endISO: string, extra = {}): CalendarEvent => ({
+		id: 'resized',
+		title: 'Resized',
+		start: at(startISO),
+		end: at(endISO),
+		...extra,
+	})
+	/** The time slot a pointer hovers: `slotMinutes` wide when it has a minute, an hour otherwise. */
+	const slot = (
+		dayISO: string,
+		hourOfDay: number,
+		minuteOfHour?: number,
+		slotMinutes = 60
+	): DropCellData => ({
+		type: 'day-cell',
+		date: at(dayISO),
+		hour: hourOfDay,
+		minute: minuteOfHour,
+		slotDurationMinutes: slotMinutes,
+	})
+	const day = (dayISO: string): DropCellData => ({
+		type: 'day-cell',
+		date: at(dayISO),
+	})
+	const span = (resized: ReturnType<typeof calculateResizeTimes>) =>
+		resized && [resized.start.format(), resized.end.format()]
+
+	describe('the end edge in a time grid', () => {
+		const meeting = mk('2025-03-12T09:00:00', '2025-03-12T10:00:00')
+
+		it.each([
+			[15, 11, 15, '2025-03-12T11:30:00'],
+			[30, 11, 30, '2025-03-12T12:00:00'],
+		])(
+			'ends at the end of the hovered %i-minute slot',
+			(slotMinutes, hovered, minuteOfHour, expected) => {
+				const resized = calculateResizeTimes(
+					meeting,
+					slot('2025-03-12T00:00:00', hovered, minuteOfHour, slotMinutes),
+					'end'
+				)
+				expect(span(resized)).toEqual([
+					at('2025-03-12T09:00:00').format(),
+					at(expected).format(),
+				])
+			}
+		)
+
+		it('ends at the end of the hovered hour when the slot is an hour', () => {
+			const resized = calculateResizeTimes(
+				meeting,
+				slot('2025-03-12T00:00:00', 12),
+				'end'
+			)
+			expect(span(resized)).toEqual([
+				at('2025-03-12T09:00:00').format(),
+				at('2025-03-12T13:00:00').format(),
+			])
+		})
+
+		it('never moves the start', () => {
+			const resized = calculateResizeTimes(
+				meeting,
+				slot('2025-03-13T00:00:00', 8, 0, 30),
+				'end'
+			)
+			expect(resized?.start.isSame(meeting.start)).toBe(true)
+		})
+	})
+
+	describe('the start edge in a time grid', () => {
+		it('starts at the start of the hovered slot', () => {
+			const meeting = mk('2025-03-12T09:00:00', '2025-03-12T10:00:00')
+			const resized = calculateResizeTimes(
+				meeting,
+				slot('2025-03-12T00:00:00', 8, 15, 15),
+				'start'
+			)
+			expect(span(resized)).toEqual([
+				at('2025-03-12T08:15:00').format(),
+				at('2025-03-12T10:00:00').format(),
+			])
+		})
+	})
+
+	describe('in a day grid', () => {
+		it('ends an all-day event at the midnight after the hovered day', () => {
+			const trip = mk('2025-03-12T00:00:00', '2025-03-13T00:00:00', {
+				allDay: true,
+			})
+			const resized = calculateResizeTimes(
+				trip,
+				day('2025-03-14T00:00:00'),
+				'end'
+			)
+			expect(span(resized)).toEqual([
+				at('2025-03-12T00:00:00').format(),
+				at('2025-03-15T00:00:00').format(),
+			])
+		})
+
+		it('starts an all-day event at the hovered day', () => {
+			const trip = mk('2025-03-12T00:00:00', '2025-03-14T00:00:00', {
+				allDay: true,
+			})
+			const resized = calculateResizeTimes(
+				trip,
+				day('2025-03-11T00:00:00'),
+				'start'
+			)
+			expect(span(resized)).toEqual([
+				at('2025-03-11T00:00:00').format(),
+				at('2025-03-14T00:00:00').format(),
+			])
+		})
+
+		it('keeps the time of day of a multi-day timed block', () => {
+			const block = mk('2025-03-12T09:00:00', '2025-03-13T17:00:00')
+			const endResized = calculateResizeTimes(
+				block,
+				day('2025-03-15T00:00:00'),
+				'end'
+			)
+			const startResized = calculateResizeTimes(
+				block,
+				day('2025-03-11T00:00:00'),
+				'start'
+			)
+			expect(span(endResized)).toEqual([
+				at('2025-03-12T09:00:00').format(),
+				at('2025-03-15T17:00:00').format(),
+			])
+			expect(span(startResized)).toEqual([
+				at('2025-03-11T09:00:00').format(),
+				at('2025-03-13T17:00:00').format(),
+			])
+		})
+
+		it('resizes across a week row the same way', () => {
+			const trip = mk('2025-03-14T00:00:00', '2025-03-15T00:00:00', {
+				allDay: true,
+			})
+			const resized = calculateResizeTimes(
+				trip,
+				day('2025-03-18T00:00:00'),
+				'end'
+			)
+			expect(resized?.end.format()).toBe(at('2025-03-19T00:00:00').format())
+		})
+	})
+
+	describe('when the result would not be a span', () => {
+		it('is null when the end edge is dragged to or before the start', () => {
+			const meeting = mk('2025-03-12T09:00:00', '2025-03-12T10:00:00')
+			expect(
+				calculateResizeTimes(
+					meeting,
+					slot('2025-03-12T00:00:00', 8, 0, 30),
+					'end'
+				)
+			).toBeNull()
+		})
+
+		it('is null when the start edge is dragged to or after the end', () => {
+			const meeting = mk('2025-03-12T09:00:00', '2025-03-12T10:00:00')
+			expect(
+				calculateResizeTimes(meeting, slot('2025-03-12T00:00:00', 10), 'start')
+			).toBeNull()
+		})
+
+		it('is null for an all-day event whose start edge passes its end', () => {
+			const trip = mk('2025-03-12T00:00:00', '2025-03-14T00:00:00', {
+				allDay: true,
+			})
+			expect(
+				calculateResizeTimes(trip, day('2025-03-14T00:00:00'), 'start')
+			).toBeNull()
+		})
+
+		it('is null for a cell that says nothing about where it is', () => {
+			const meeting = mk('2025-03-12T09:00:00', '2025-03-12T10:00:00')
+			expect(calculateResizeTimes(meeting, {}, 'end')).toBeNull()
+		})
+	})
+
+	describe('on the day the clocks spring forward (America/New_York, 9 Mar 2025)', () => {
+		beforeEach(() => {
+			dayjs.tz.setDefault('America/New_York')
+		})
+
+		afterEach(() => {
+			dayjs.tz.setDefault(originalTz)
+		})
+
+		it('ends at the wall-clock end of the hovered slot, not an hour out', () => {
+			const overnight = mk('2025-03-08T20:00:00', '2025-03-09T00:30:00')
+			const resized = calculateResizeTimes(
+				overnight,
+				slot('2025-03-09T00:00:00', 10, 0, 30),
+				'end'
+			)
+			// 10:30 EDT is 14:30Z. A slot built with `.hour(10)` on the EST midnight
+			// carries -05:00 and reads 15:30Z.
+			expect(resized?.end.toISOString()).toBe('2025-03-09T14:30:00.000Z')
+		})
+
+		it('keeps an end that follows the change at the same wall-clock time', () => {
+			const block = mk('2025-03-08T09:00:00', '2025-03-08T17:00:00')
+			const resized = calculateResizeTimes(
+				block,
+				day('2025-03-10T00:00:00'),
+				'end'
+			)
+			expect(resized?.end.toISOString()).toBe('2025-03-10T21:00:00.000Z')
+		})
 	})
 })

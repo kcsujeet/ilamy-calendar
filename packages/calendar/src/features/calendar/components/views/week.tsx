@@ -133,6 +133,8 @@ const weekHoursFor = (
 		referenceDate: day,
 		businessHours: config.businessHours,
 		hideNonBusinessHours: config.hideNonBusinessHours,
+		slotMinTime: config.slotMinTime,
+		slotMaxTime: config.slotMaxTime,
 		allDates,
 		resourceBusinessHours: collectResourceBusinessHours(config.resources ?? []),
 	})

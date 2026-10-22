@@ -26,3 +26,30 @@ export interface PublishedFetch {
 	end: string
 	status: 'pending' | 'done' | 'failed' | 'aborted'
 }
+
+/** The ISO strings of a stored series rule, as the specs read it (`until` and `dtstart` are `Date`s in the store). */
+export interface PublishedRule {
+	freq: number
+	interval: number | null
+	count: number | null
+	until: string | null
+	dtstart: string
+	byweekday: string[] | null
+	bymonthday: number | number[] | null
+	bymonth: number | number[] | null
+}
+
+/** A stored event row as the harness publishes it in `event-state`: what the specs assert a mutation stored. */
+export interface PublishedRow {
+	id: string
+	uid: string | null
+	title: string
+	start: string
+	end: string
+	allDay: boolean
+	resourceId: string | number | null
+	resourceIds: Array<string | number> | null
+	recurrenceId: string | null
+	exdates: string[] | null
+	rrule: PublishedRule | null
+}

@@ -1,12 +1,11 @@
 import type { CalendarEvent, PluginMutationResult } from '@ilamy/calendar'
-import type { RRuleOptions } from '../types'
 import {
 	addExdateToBaseEvent,
+	countOccurrencesBefore,
+	cutSeriesBefore,
 	findBaseEventIndex,
 	getEventParentUID,
 	getOccurrenceStartISO,
-	getSeriesTerminationDate,
-	makeIsFollowingOverride,
 } from './series-helpers'
 
 interface DeleteRecurringEventProps {
@@ -62,43 +61,6 @@ const deleteThisScope = ({
 }
 
 /**
- * Scope "following": terminate the series with UNTIL set before the target date,
- * keeping the last pre-target occurrence.
- */
-const deleteFollowingScope = ({
-	targetEvent,
-	updatedEvents,
-	baseEventIndex,
-	baseEvent,
-}: ScopedDeleteContext): PluginMutationResult => {
-	const terminationDate = getSeriesTerminationDate(targetEvent)
-	const terminatedEvent = {
-		...baseEvent,
-		rrule: {
-			...baseEvent.rrule,
-			until: terminationDate,
-		} as RRuleOptions,
-	}
-	updatedEvents[baseEventIndex] = terminatedEvent
-
-	// Moved occurrences after the cut go with the series, as they do for
-	// "edit this and following"; left behind, they stayed drawn (#315).
-	const parentUid = getEventParentUID(baseEvent)
-	const isFollowingOverride = makeIsFollowingOverride(
-		parentUid,
-		terminationDate
-	)
-	const followingOverrides = updatedEvents.filter(isFollowingOverride)
-	const events = updatedEvents.filter((e) => !isFollowingOverride(e))
-	return {
-		events,
-		updated: [terminatedEvent],
-		added: [],
-		deleted: followingOverrides,
-	}
-}
-
-/**
  * Scope "all": remove the entire series (base + every detached override sharing
  * the parent uid), reporting all removed rows in `deleted`.
  */
@@ -118,6 +80,41 @@ const deleteAllScope = ({
 		updated: [],
 		added: [],
 		deleted: deletedSeries,
+	}
+}
+
+/**
+ * Scope "following": cut the series before the target's ORIGINAL occurrence
+ * (see `cutSeriesBefore`), keeping the last pre-target occurrence. Moved
+ * occurrences after the cut go with the series, as they do for "edit this and
+ * following"; left behind, they stayed drawn (#315). On the series' first
+ * occurrence nothing is kept, so the whole series is removed: cut instead, it
+ * would end before it started (RFC 5545 §3.8.5.3: DTSTART is the first
+ * instance).
+ */
+const deleteFollowingScope = (
+	context: ScopedDeleteContext
+): PluginMutationResult => {
+	const { targetEvent, updatedEvents, baseEventIndex, baseEvent } = context
+	const occurrenceStartISO = getOccurrenceStartISO(targetEvent)
+	const isFirstOccurrence =
+		countOccurrencesBefore(baseEvent, occurrenceStartISO) === 0
+	if (isFirstOccurrence) {
+		return deleteAllScope(context)
+	}
+
+	const { terminatedEvent, isFollowingOverride } = cutSeriesBefore(
+		baseEvent,
+		occurrenceStartISO
+	)
+	updatedEvents[baseEventIndex] = terminatedEvent
+	const followingOverrides = updatedEvents.filter(isFollowingOverride)
+	const events = updatedEvents.filter((e) => !isFollowingOverride(e))
+	return {
+		events,
+		updated: [terminatedEvent],
+		added: [],
+		deleted: followingOverrides,
 	}
 }
 

@@ -201,6 +201,15 @@ Editing or deleting an occurrence asks which part of the series it applies to. T
 | `'following'` | Ends the series the day before and starts a new one from the occurrence | Ends the series the day before |
 | `'all'` | Changes the series; occurrences moved or deleted one by one return to it | Removes the series |
 
+Details of the scopes:
+
+- **"This and following" cuts at the occurrence's original day.** An occurrence that was moved to another day is cut where it came from, and the moved row goes with the rest of the series.
+- **The cut ends the old series with `until` and drops its `count`.** RFC 5545 does not allow both in one rule ([section 3.3.10](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10)). The new series keeps the occurrences that were left: cutting a 7-occurrence series before its 4th gives the new one `count: 4`. A `count` you change in the editor is kept as you set it.
+- **Deleted days stay deleted when "this and following" changes the time.** The exclusions of the new series move to its new time of day, so the day you deleted does not come back.
+- **On the first occurrence "this and following" is "all".** There is nothing before it to keep, so deleting removes the series, and editing replaces it.
+- **Unticking Repeat** makes one plain event: with "all events" the series becomes a single event, with "this and following" the old series ends and the occurrence becomes a single event.
+- **"All events" keeps the series on its day.** Dragging an occurrence to another day and choosing "All events" changes the time of day only, and `onEventsChange` reports exactly that in `delta` and `endDelta`. To move the day, use "this" or "this and following".
+
 Every stored row a scope touches is reported, so your backend stays in step: the series is reported to `onEventUpdate`, a new override or series to `onEventAdd`, and anything removed to `onEventDelete`. With "this and following", and with "all", that includes occurrences that were moved one by one and fall in the affected part.
 
 One action can therefore call those callbacks several times. To save it as one unit, use `onEventsChange`, called once per action with every row it touched:

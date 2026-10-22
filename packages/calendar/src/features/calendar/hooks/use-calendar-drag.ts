@@ -14,6 +14,7 @@ import {
 	calculateResizeTimes,
 	type DropCellData,
 	getCellSpan,
+	getPressedResizeEdge,
 	getSnappedOverData,
 	getUpdatedEvent,
 	isTimeSlotDrop,
@@ -141,20 +142,27 @@ interface ResizeGrab {
 	sourceResourceId?: string | number
 }
 
+/**
+ * A press on one of the bar's resize handles resizes the event; a press
+ * anywhere else on the bar moves it. Both are the bar's own draggable, so the
+ * activator's target is what says which one this is.
+ */
 const readResize = ({
 	active,
+	activatorEvent,
 }: DragStartEvent): {
 	calendarEvent: CalendarEvent
 	resize: ResizeGrab
 } | null => {
 	const data = active.data.current
-	if (data?.type !== 'calendar-event-resize') {
+	const edge = getPressedResizeEdge(activatorEvent)
+	const granularity = data?.resizeGranularity as ResizeGranularity | undefined
+	if (data?.type !== 'calendar-event' || !edge || !granularity) {
 		return null
 	}
-	const { edge, granularity, sourceResourceId } = data
 	return {
 		calendarEvent: data.event as CalendarEvent,
-		resize: { edge, granularity, sourceResourceId },
+		resize: { edge, granularity, sourceResourceId: data.sourceResourceId },
 	}
 }
 

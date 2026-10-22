@@ -897,6 +897,20 @@ test.describe('persona 4: upgrader', () => {
 		await expect.poll(async () => (await month.eventChanges()).length).toBe(1)
 	})
 
+	test('editable=false but eventDurationEditable=true: a press on the bar body still does not move it', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'all-day-events',
+			view: 'month',
+			settings: { editable: 'false', eventDurationEditable: 'true' },
+		})
+		const month = new MonthGrid(page)
+		await dragTo(page, month.bar('allday-1'), month.cellOn('2025-03-20'))
+		expect(await month.eventChanges()).toHaveLength(0)
+		await expect(month.dragMirror).toHaveCount(0)
+	})
+
 	for (const view of ['week', 'month'] as const) {
 		test(`disableDragAndDrop=true (${view}): no handles, no mirror`, async ({
 			page,

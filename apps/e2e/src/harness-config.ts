@@ -75,7 +75,7 @@ export interface UrlConfig {
 	 * after `fetchDelay` ms (`delayed`) or fails after it (`failing`). Read on
 	 * every call, so changing it on a mounted calendar changes the next fetch.
 	 */
-	fetch?: 'delayed' | 'failing'
+	fetch?: 'delayed' | 'failing' | 'held'
 	/** Harness-only: how long the `events` function takes to answer, in ms. */
 	fetchDelay?: number
 	/**
@@ -438,7 +438,7 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 		config.fetch = oneOf(
 			'fetch',
 			fetchMode,
-			['delayed', 'failing'] as const,
+			['delayed', 'failing', 'held'] as const,
 			String
 		)
 	}

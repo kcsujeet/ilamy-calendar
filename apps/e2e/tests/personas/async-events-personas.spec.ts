@@ -550,7 +550,9 @@ test.describe('persona 3: scheduler editing while loading', () => {
 		const month = new MonthGrid(page)
 		await expect(month.event('Month turn')).toBeVisible({ timeout: 5000 })
 		await settled(month)
-		await month.next() // April: in flight for 1.5s
+		// Held, not timed: the drag below must happen while April is in flight.
+		await setSettings(page, { fetch: 'held' })
+		await month.next()
 		expect((await month.fetchState()).isLoading).toBe(true)
 		const bar = month.event('Month turn')
 		await expect(bar).toBeVisible()
@@ -559,6 +561,8 @@ test.describe('persona 3: scheduler editing while loading', () => {
 		await expect
 			.poll(async () => (await month.eventNamed('Month turn')).start)
 			.toMatch(/^2025-04-02/)
+		expect((await month.fetchState()).isLoading).toBe(true)
+		await setSettings(page, { fetch: 'delayed' })
 		await settled(month)
 		await expect(month.event('April review')).toBeVisible()
 		await expect(month.event('Month turn')).toBeVisible()
@@ -576,12 +580,16 @@ test.describe('persona 3: scheduler editing while loading', () => {
 		})
 		const month = new MonthGrid(page)
 		await settled(month)
+		// Held, not timed: the form must be submitted while April is in flight.
+		await setSettings(page, { fetch: 'held' })
 		await month.next()
 		expect((await month.fetchState()).isLoading).toBe(true)
 		await page.getByRole('button', { name: 'New' }).click()
 		await page.locator('input[name="title"]').fill('Made while loading')
 		await page.getByRole('button', { name: 'Create' }).click()
 		await expect.poll(async () => (await month.eventChanges()).length).toBe(1)
+		expect((await month.fetchState()).isLoading).toBe(true)
+		await setSettings(page, { fetch: 'delayed' })
 		await settled(month)
 		const titles = (await month.eventState()).map((row) => row.title)
 		expect(titles).toContain('Made while loading')

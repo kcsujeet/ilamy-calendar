@@ -12,24 +12,32 @@ import { MonthGrid } from './support/pages'
  * 5 April, April shows 30 March to 10 May.
  */
 const DELAYED = { fetch: 'delayed', fetchDelay: 300 }
+// Never answers until a spec flips it to `delayed`: a spec that asserts the
+// pending state must not race a timer, and a loaded runner can take seconds
+// between mounting the calendar and the first assertion.
+const HELD = { fetch: 'held' }
 
-const openMarch = (page: Page) =>
+const openMarch = (
+	page: Page,
+	settings: Record<string, string | number> = DELAYED
+) =>
 	gotoScenario(page, {
 		scenario: 'async-events',
 		view: 'month',
-		settings: DELAYED,
+		settings,
 	})
 
 test.describe('events as a function', () => {
 	test('shows the events once the fetch returns, not before', async ({
 		page,
 	}) => {
-		await openMarch(page)
+		await openMarch(page, HELD)
 		const month = new MonthGrid(page)
 
 		await expect(month.event('March lunch')).toHaveCount(0)
 		expect((await month.fetchState()).isLoading).toBe(true)
 
+		await setSettings(page, { fetch: 'delayed' })
 		await expect(month.event('March lunch')).toBeVisible()
 		expect((await month.fetchState()).isLoading).toBe(false)
 		// Dev builds mount twice (StrictMode), so the first call may be the

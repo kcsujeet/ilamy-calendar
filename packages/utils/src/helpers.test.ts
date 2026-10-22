@@ -6,9 +6,7 @@ import {
 	getFractionAlong,
 	getSnapBucket,
 	isSameDay,
-	isSupportedSlotDuration,
 	overlapsRange,
-	resolveSlotDuration,
 	resolveSnapDuration,
 	wallClockDiff,
 } from './helpers'
@@ -242,24 +240,6 @@ describe('wallClockDiff', () => {
 	})
 })
 
-describe('resolveSlotDuration', () => {
-	it.each([1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60])(
-		'keeps %i, a divisor of an hour',
-		(minutes) => {
-			expect(isSupportedSlotDuration(minutes)).toBe(true)
-			expect(resolveSlotDuration(minutes)).toBe(minutes)
-		}
-	)
-
-	it.each([7, 45, 90, 0, -15, 7.5, Number.NaN])(
-		'falls back to 60 for %p, which does not divide an hour',
-		(minutes) => {
-			expect(isSupportedSlotDuration(minutes)).toBe(false)
-			expect(resolveSlotDuration(minutes)).toBe(60)
-		}
-	)
-})
-
 describe('getCellMinutes', () => {
 	it('is an hour for a cell with no minute', () => {
 		expect(getCellMinutes(undefined, 15)).toBe(60)
@@ -280,31 +260,28 @@ describe('resolveSnapDuration', () => {
 	})
 
 	it.each([
-		[5, 30],
 		[15, 60],
 		[30, 60],
-		[30, 30],
+		[15, 30],
 	])('keeps a snap of %i inside a %i-minute cell', (snap, cell) => {
 		expect(resolveSnapDuration(snap, cell)).toBe(snap)
 	})
 
 	it.each([
-		[20, 30],
-		[45, 60],
-		[90, 60],
-		[0, 60],
-		[-5, 60],
-		[7.5, 60],
+		[30, 30],
+		[30, 15],
+		[15, 15],
 	])(
-		'falls back to the cell for a snap of %p in a %i-minute cell',
+		'falls back to the cell for a snap of %i in a %i-minute cell',
 		(snap, cell) => {
 			expect(resolveSnapDuration(snap, cell)).toBe(cell)
 		}
 	)
 
-	it('resolves per cell: 10 is no snap of a 15-minute slot but is one of an hour', () => {
-		expect(resolveSnapDuration(10, 15)).toBe(15)
-		expect(resolveSnapDuration(10, 60)).toBe(10)
+	it('resolves per cell: 30 is no snap of a 30-minute slot but is one of an hour', () => {
+		expect(resolveSnapDuration(30, 30)).toBe(30)
+		expect(resolveSnapDuration(30, 60)).toBe(30)
+		expect(resolveSnapDuration(15, 30)).toBe(15)
 	})
 })
 

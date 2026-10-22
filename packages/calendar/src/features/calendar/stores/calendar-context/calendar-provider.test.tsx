@@ -1,4 +1,4 @@
-import { describe, expect, it, mock, spyOn } from 'bun:test'
+import { describe, expect, it, mock } from 'bun:test'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type {
 	BusinessHours,
@@ -881,12 +881,15 @@ describe('CalendarProvider - slotDuration and snapDuration', () => {
 		expect(getByTestId('slot-and-snap').textContent).toBe('60/undefined')
 	})
 
-	it.each([1, 5, 20, 12])('draws a %i-minute slot as asked', (slotDuration) => {
-		const { getByTestId } = renderSlotAndSnap({ slotDuration })
-		expect(getByTestId('slot-and-snap').textContent).toBe(
-			`${slotDuration}/undefined`
-		)
-	})
+	it.each([15, 30, 60] as const)(
+		'draws a %i-minute slot as asked',
+		(slotDuration) => {
+			const { getByTestId } = renderSlotAndSnap({ slotDuration })
+			expect(getByTestId('slot-and-snap').textContent).toBe(
+				`${slotDuration}/undefined`
+			)
+		}
+	)
 
 	it('hands on the snap duration', () => {
 		const { getByTestId } = renderSlotAndSnap({
@@ -894,34 +897,5 @@ describe('CalendarProvider - slotDuration and snapDuration', () => {
 			snapDuration: 15,
 		})
 		expect(getByTestId('slot-and-snap').textContent).toBe('60/15')
-	})
-
-	it.each([7, 45, 90])(
-		'falls back to an hour for %i and says so once, naming the prop',
-		(slotDuration) => {
-			const warn = spyOn(console, 'warn').mockImplementation(() => {})
-			const { getByTestId, rerender } = render(
-				<CalendarProvider {...defaultProps} slotDuration={slotDuration}>
-					<ReadSlotAndSnap />
-				</CalendarProvider>
-			)
-			rerender(
-				<CalendarProvider {...defaultProps} slotDuration={slotDuration}>
-					<ReadSlotAndSnap />
-				</CalendarProvider>
-			)
-
-			expect(getByTestId('slot-and-snap').textContent).toBe('60/undefined')
-			expect(warn).toHaveBeenCalledTimes(1)
-			expect(String(warn.mock.calls.at(0)?.at(0))).toContain('slotDuration')
-			warn.mockRestore()
-		}
-	)
-
-	it('does not warn for a slot it can draw', () => {
-		const warn = spyOn(console, 'warn').mockImplementation(() => {})
-		renderSlotAndSnap({ slotDuration: 20 })
-		expect(warn).not.toHaveBeenCalled()
-		warn.mockRestore()
 	})
 })

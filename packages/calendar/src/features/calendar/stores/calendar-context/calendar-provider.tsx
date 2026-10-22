@@ -1,10 +1,6 @@
 import type { CalendarEvent, Resource } from '@ilamy/types'
-import {
-	isSupportedSlotDuration,
-	resolveSlotDuration,
-} from '@ilamy/utils/helpers'
 import type { FC, ReactNode } from 'react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/config/constants'
 import type { RangeFetcher } from '@/features/calendar/hooks/calendar-data/use-range-fetcher'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
@@ -17,18 +13,6 @@ import {
 	type CalendarContextType,
 	type ScrollRequest,
 } from './calendar-context'
-
-/** Says once, per value, that a slot size cannot be drawn and an hour is used. */
-const useWarnAboutSlotDuration = (requestedSlotDuration: number) => {
-	useEffect(() => {
-		if (isSupportedSlotDuration(requestedSlotDuration)) {
-			return
-		}
-		console.warn(
-			`[ilamy] slotDuration={${requestedSlotDuration}} is not a divisor of 60 minutes; using 60.`
-		)
-	}, [requestedSlotDuration])
-}
 
 /**
  * The public props, with four the provider receives already resolved:
@@ -121,7 +105,7 @@ const useCalendarContextValue = (
 		slotMaxTime,
 		hideExportButton = false,
 		hiddenDays,
-		slotDuration: requestedSlotDuration = 60,
+		slotDuration = 60,
 		snapDuration,
 		scrollTime,
 		scrollToNow,
@@ -135,9 +119,6 @@ const useCalendarContextValue = (
 		orientation,
 		weekViewGranularity,
 	} = props
-
-	const slotDuration = resolveSlotDuration(requestedSlotDuration)
-	useWarnAboutSlotDuration(requestedSlotDuration)
 
 	// What every label falls back to; only a consumer-passed value may override
 	// a locale's own 12/24 hour choice (`explicitTimeFormat`).

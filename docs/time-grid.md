@@ -180,7 +180,7 @@ The now-line is drawn only in hour grids and only while the `nowIndicator` prop
 is `true` (default). `weekNumbers` and `weekNumberCalculation` choose the
 number shown in the week headers and in month rows (`getWeekNumber`,
 `utils/week-number.ts`). `'local'` is dayjs `week()`, the locale's own count,
-which does not follow `firstDayOfWeek`; `'ISO'` is ISO 8601. A month row shows
+which does not follow `firstDayOfWeek`; `'ISO'` is ISO 8601 (a custom function was cut before release). A month row shows
 the number of its first day.
 
 `scrollTime` and `scrollToNow` scroll to the exact minute: the hour row (or the
@@ -234,21 +234,22 @@ The pointer's cell decides the new edge (`calculateResizeTimes`):
 
 ## Slot and snap sizes
 
-`slotDuration` is any divisor of 60 minutes (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60). An hour row is cut into
-`60 / slotDuration` cells (`vertical-grid-col.tsx`), so a size that does not divide an hour falls back to 60
-with one `console.warn` naming the prop (`isSupportedSlotDuration`, `utils/slot-snap.ts`). FullCalendar accepts
-any duration and lets a non-divisor overshoot the last row (`timegrid/time-slat-meta.ts:36-50`, v7.1.1); ilamy
-draws hour rows, so it does not. Slots longer than an hour are cut.
+`slotDuration` is `15 | 30 | 60`, as it was before 3.3. An hour row is cut into `60 / slotDuration` cells
+(`vertical-grid-col.tsx`). 3.3 briefly widened it to any divisor of 60 (1 to 60 minutes) and narrowed it back
+before release: 1 to 12 minute slots are granularity no user needs, and they multiply cells, droppables and
+layout work. Slots longer than an hour are cut (ilamy draws hour rows).
 
-`snapDuration` is the size a drag, a resize and a drag-to-create selection snap to. FullCalendar's
-`snapDuration` has no default and falls back to `slotDuration`, and one that does not divide `slotDuration`
-resets to it (`TimeGridCols.tsx:162-172`, v7.1.1); ilamy does the same, per cell, with `resolveSnapDuration`.
-The default is the size of the cell under the pointer: `slotDuration` in the vertical grid, and an hour in the
-horizontal resource timeline, whose columns are hours whatever `slotDuration` says (#255). So a calendar with
-no `snapDuration` behaves exactly as before.
+`snapDuration` is `15 | 30`: the size a drag, a resize and a drag-to-create selection snap to. It takes effect
+only where it is finer than the cell and divides it; otherwise the cell's size is used, as FullCalendar falls
+back to `slotDuration` for a `snapDuration` that does not divide it (`TimeGridCols.tsx:162-172`, v7.1.1).
+`resolveSnapDuration` decides it, per cell. The default is the size of the cell under the pointer:
+`slotDuration` in the vertical grid, and an hour in the horizontal resource timeline, whose columns are hours
+whatever `slotDuration` says (#255). So a calendar with no `snapDuration` behaves exactly as before. Other
+sizes (5, 10, 20 minutes) are cut for the same reason as the slot sizes; 15 and 30 cover #101 (quarter-hour
+snapping in the horizontal resource timeline).
 
-Because it is resolved per cell, `slotDuration={15} snapDuration={10}` falls back to 15 in the vertical grid
-(10 does not divide 15) but snaps to 10 in the hourly horizontal timeline. The grab offset of an event grabbed
+Because it is resolved per cell, `slotDuration={30} snapDuration={30}` is no snap in the vertical grid (the
+cell is already 30) but snaps to 30 in the hourly horizontal timeline. The grab offset of an event grabbed
 partway along its bar is floored to the same per-cell step (the segment's axis picks the cell length), so the
 grabbed point stays under the pointer.
 
@@ -284,7 +285,7 @@ Renders the grid structure: header, optional all-day row, and scrollable body wi
 
 - `columns`: Array of column definitions, each with `id`, `days` (hour slots), `day` (calendar date), `gridType`, and optional `renderCell`.
 - `gridType`: `'hour'` for time-based grids.
-- `slotDurationMinutes`: Minutes per row, any divisor of 60 (see "Slot and snap sizes"). `60` is one cell per hour with no sub-hour lines; `15` draws four cells per hour with dashed separators. Sourced from the public `slotDuration` prop on `IlamyCalendar` / `IlamyResourceCalendar`.
+- `slotDurationMinutes`: Minutes per row, `15`, `30` or `60` (see "Slot and snap sizes"). `60` is one cell per hour with no sub-hour lines; `15` draws four cells per hour with dashed separators. Sourced from the public `slotDuration` prop on `IlamyCalendar` / `IlamyResourceCalendar`.
 - `allDayRow`: Optional all-day event row rendered above the grid. The view renderer leaves it out when the `allDaySlot` prop is `false`. The vertical layout already draws no all-day event in an hour grid (it belongs to the row), so nothing else changes.
 - `variant`: `'regular'` for standard calendar, omit for resource calendar.
 

@@ -4,6 +4,7 @@ import { memo, useMemo } from 'react'
 import { DAY_NUMBER_HEIGHT } from '@/config/constants'
 import { GridNowLine } from '@/features/calendar/components/grid-now-line'
 import { useDragPreviewEvent } from '@/features/calendar/hooks/use-drag-preview-event'
+import { useHiddenDaysOfGrid } from '@/features/calendar/hooks/use-hidden-days-of-grid'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { useDragPreview } from '@/features/calendar/stores/drag-preview-context'
 import { GridAxisContext } from '@/features/calendar/stores/grid-axis-context'
@@ -90,6 +91,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 	const weekStart = days.at(0)?.startOf('day')
 	const rangeStart = days.at(0)
 	const rangeEnd = days.at(-1)?.add(1, gridType)
+	const hiddenDaysOfDayGrid = useHiddenDaysOfGrid(gridType)
 
 	// Layout returns the abstract row; the renderer owns the CSS units. Shared
 	// so the preview cannot drift from the bar it mirrors.
@@ -128,6 +130,7 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 							elementId={elementId}
 							eventHeight={eventHeight}
 							gridType={gridType}
+							hiddenDays={hiddenDaysOfDayGrid}
 							key={keys.listKey(elementId, 'wrapper')}
 							positioned={positioned}
 							range={{ start: rangeStart, end: rangeEnd }}

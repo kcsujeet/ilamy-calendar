@@ -1,14 +1,18 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type React from 'react'
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
 import { EventFormDialog } from '@/features/calendar/components/event-form/event-form-dialog'
 import { Header } from '@/features/calendar/components/header/base-header'
 import { ViewRenderer } from '@/features/calendar/components/views/view-renderer'
+import {
+	useInvalidSlotPropsWarning,
+	useOrientationWarning,
+} from '@/features/calendar/hooks/use-calendar-prop-warnings'
+import { useHiddenDaysToDraw } from '@/features/calendar/hooks/use-hidden-days-to-draw'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
-import { parseSlotRange } from '@/features/calendar/utils/view-hours'
 // oxlint-disable-next-line no-duplicates
 import '@ilamy/utils/dayjs'
 import {
@@ -20,10 +24,7 @@ import type {
 	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
-import {
-	normalizeEvents,
-	toHiddenDaysSet,
-} from '@/features/calendar/utils/normalize'
+import { normalizeEvents } from '@/features/calendar/utils/normalize'
 
 const CalendarContent: React.FC = () => {
 	const { view, getViews } = useSmartCalendarContext((c) => ({
@@ -74,6 +75,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	slotMinTime,
 	slotMaxTime,
 	hiddenDays,
+	weekends,
 	resources,
 	orientation,
 	...props
@@ -86,33 +88,9 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 		() => normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events),
 		[events]
 	)
-	useEffect(() => {
-		// Guarded `typeof process` check: the published bundle ships this line
-		// as-is (no build-time env replacement), so bundler-less ESM consumers
-		// must not crash on a bare `process` reference.
-		const isDevBuild =
-			typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
-		if (isDevBuild && orientation && !hasResources) {
-			// biome-ignore lint/suspicious/noConsole: deliberate DX guard (master plan, view contract)
-			console.warn(
-				'[@ilamy/calendar] `orientation` was provided without `resources` — it only applies when the calendar has resources, so it is ignored.'
-			)
-		}
-	}, [orientation, hasResources])
-
-	const { invalidProps: invalidSlotProps } = parseSlotRange(
-		slotMinTime,
-		slotMaxTime
-	)
-	const invalidSlotPropNames = invalidSlotProps.join(', ')
-	useEffect(() => {
-		if (invalidSlotPropNames) {
-			// biome-ignore lint/suspicious/noConsole: deliberate DX guard, like the one above
-			console.warn(
-				`[@ilamy/calendar] \`${invalidSlotPropNames}\` is not a usable visible-hours range ('HH:mm' from '00:00' to '24:00', with slotMaxTime after slotMinTime), so the whole day is shown.`
-			)
-		}
-	}, [invalidSlotPropNames])
+	const hiddenDaysToDraw = useHiddenDaysToDraw(hiddenDays, weekends)
+	useOrientationWarning(orientation, hasResources)
+	useInvalidSlotPropsWarning(slotMinTime, slotMaxTime)
 
 	return (
 		<CalendarProvider
@@ -120,7 +98,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			eventSpacing={eventSpacing}
 			events={normalizedEvents}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
-			hiddenDays={toHiddenDaysSet(hiddenDays)}
+			hiddenDays={hiddenDaysToDraw}
 			hideNonBusinessHours={hideNonBusinessHours}
 			// Raw, not parsed: the engine needs to see whether the value names an
 			// instant or a clock reading, which `safeDate` flattens away.

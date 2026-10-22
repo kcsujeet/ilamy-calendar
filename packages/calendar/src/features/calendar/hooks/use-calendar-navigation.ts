@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { builtInViews } from '@/features/calendar/components/views/built-in-views'
 import type { PluginRuntime } from '@/lib/plugins/types'
 import type { CalendarView } from '@/types'
-import { getMonthGridRange } from '@/utils/date-utils'
+import { getMonthGridRange, skipHiddenDays } from '@/utils/date-utils'
 
 const calculateViewRange = (
 	date: Dayjs,
@@ -19,6 +19,8 @@ interface CalendarNavigationParams {
 	initialDate: Dayjs
 	initialView: CalendarView
 	firstDayOfWeek: number
+	/** Weekdays (0 = Sunday) the day view never shows; it steps past them. */
+	hiddenDays?: Set<number>
 	onDateChange?: (date: Dayjs, range: { start: Dayjs; end: Dayjs }) => void
 	onViewChange?: (view: CalendarView) => void
 	pluginRuntime: PluginRuntime
@@ -49,22 +51,45 @@ interface NavState {
 	view: CalendarView
 }
 
+/**
+ * The day view shows one day, so a hidden one is never shown: the date moves to
+ * the next visible day in the direction of travel, as FullCalendar's does. The
+ * other views draw a range and just leave the hidden days out of it.
+ */
+const settleOnVisibleDay = (
+	nav: NavState,
+	hiddenDays: Set<number> | undefined,
+	direction: 1 | -1
+): NavState => {
+	if (nav.view !== 'day') {
+		return nav
+	}
+	return { ...nav, date: skipHiddenDays(nav.date, hiddenDays, direction) }
+}
+
 /** Navigation slice: current date/view state, period stepping, range math. */
 export const useCalendarNavigation = ({
 	initialDate,
 	initialView,
 	firstDayOfWeek,
+	hiddenDays,
 	onDateChange,
 	onViewChange,
 	pluginRuntime,
 }: CalendarNavigationParams): CalendarNavigationSlice => {
-	const [navState, setNavState] = useState<NavState>(() => ({
-		// Already anchored by `anchorInitialDate` in the engine, which sees the
-		// raw prop and so can tell a clock reading from an instant. This call
-		// only normalises the value; it can no longer change which day it names.
-		date: dayjs(initialDate),
-		view: initialView,
-	}))
+	const [navState, setNavState] = useState<NavState>(() =>
+		settleOnVisibleDay(
+			{
+				// Already anchored by `anchorInitialDate` in the engine, which sees the
+				// raw prop and so can tell a clock reading from an instant. This call
+				// only normalises the value; it can no longer change which day it names.
+				date: dayjs(initialDate),
+				view: initialView,
+			},
+			hiddenDays,
+			1
+		)
+	)
 	// Mutation-time mirror of navState. React state read from a closure is
 	// pre-batch, so navigation calls sequenced in one handler (selectDate +
 	// setView, double nextPeriod, …) would compute their emissions from stale
@@ -73,12 +98,16 @@ export const useCalendarNavigation = ({
 	// uses the mirror, never the closure.
 	const latestNav = useRef(navState)
 
-	const applyNav = useCallback((partial: Partial<NavState>): NavState => {
-		const next = { ...latestNav.current, ...partial }
-		latestNav.current = next
-		setNavState(next)
-		return next
-	}, [])
+	const applyNav = useCallback(
+		(partial: Partial<NavState>, direction: 1 | -1 = 1): NavState => {
+			const requested = { ...latestNav.current, ...partial }
+			const next = settleOnVisibleDay(requested, hiddenDays, direction)
+			latestNav.current = next
+			setNavState(next)
+			return next
+		},
+		[hiddenDays]
+	)
 
 	const getAllViews = useCallback(
 		() => [...builtInViews, ...pluginRuntime.getViews()],
@@ -128,7 +157,7 @@ export const useCalendarNavigation = ({
 				unit: spec?.navigationUnit ?? 'day',
 			}
 			const nextDate = date.add(direction * step.amount, step.unit)
-			notifyDateChange(applyNav({ date: nextDate }))
+			notifyDateChange(applyNav({ date: nextDate }, direction))
 		},
 		[applyNav, notifyDateChange, resolveViewSpec]
 	)

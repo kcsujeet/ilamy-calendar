@@ -22,7 +22,7 @@ import {
 	getViewHours,
 } from '@/features/calendar/utils/view-hours'
 import { getWeekNumber } from '@/features/calendar/utils/week-number'
-import { getWeekDays, isToday } from '@/utils/date-utils'
+import { getWeekDays, isToday, withoutHiddenDays } from '@/utils/date-utils'
 import { DayHeaderLabel } from './day-header-label'
 import {
 	RESOURCE_CELL_WIDTH,
@@ -37,9 +37,7 @@ import { TimeHeaderRow } from './time-header-row'
 
 const getVisibleDays = (date: Dayjs, config: ViewConfig): Dayjs[] => {
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
-	const { hiddenDays } = config
-	if (!hiddenDays) return weekDays
-	return weekDays.filter((day) => !hiddenDays.has(day.day()))
+	return withoutHiddenDays(weekDays, config.hiddenDays)
 }
 
 const isHourlyGranularity = (config: ViewConfig): boolean =>
@@ -145,9 +143,9 @@ const resourceWeekVerticalColumns = (
 	resources: Resource[]
 ): VerticalColumnSpec[] => {
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
+	const visibleDays = getVisibleDays(date, config)
 
 	if (isHourlyGranularity(config)) {
-		const visibleDays = getVisibleDays(date, config)
 		const isTodayVisible = visibleDays.some((day) => isToday(day))
 		return resourceVerticalColumns({
 			resources,
@@ -167,13 +165,10 @@ const resourceWeekVerticalColumns = (
 		})
 	}
 
-	// Uses `weekDays` (all 7) intentionally, not `visibleDays`. Non-contiguous
-	// visible days would break multi-day event positioning, so `hiddenDays` is
-	// not supported in daily granularity.
 	return resourceVerticalColumns({
 		resources,
 		gutter: gutterColumn({
-			days: weekDays,
+			days: visibleDays,
 			gridType: 'day',
 			renderLabel: (day: Dayjs) => (
 				<DayHeaderLabel animated={false} day={day} />
@@ -183,7 +178,7 @@ const resourceWeekVerticalColumns = (
 			id: keys.col.resource('week', resource.id),
 			className: RESOURCE_CELL_WIDTH,
 			day: undefined,
-			days: weekDays,
+			days: visibleDays,
 			gridType: 'day' as const,
 		}),
 	})
@@ -194,10 +189,10 @@ const resourceWeekHorizontalRows = (
 	config: ViewConfig,
 	resources: Resource[]
 ): HorizontalRowSpec[] => {
-	const weekDays = getWeekDays(date, config.firstDayOfWeek)
+	const visibleDays = getVisibleDays(date, config)
 
 	if (isHourlyGranularity(config)) {
-		const weekHours = weekDays.map((day) => weekHoursFor(day, config))
+		const weekHours = visibleDays.map((day) => weekHoursFor(day, config))
 		return resourceHorizontalRows({
 			resources,
 			days: weekHours,
@@ -208,7 +203,7 @@ const resourceWeekHorizontalRows = (
 
 	return resourceHorizontalRows({
 		resources,
-		days: weekDays,
+		days: visibleDays,
 		gridType: 'day',
 		cellClassName: RESOURCE_CELL_WIDTH,
 	})
@@ -240,17 +235,18 @@ const ResourceWeekHorizontalHeader: React.FC<{
 	config: ViewConfig
 	resources: Resource[]
 }> = ({ date, config }) => {
-	const weekDays = getWeekDays(date, config.firstDayOfWeek)
+	const visibleDays = getVisibleDays(date, config)
 	const isHourly = isHourlyGranularity(config)
-	const weekHours = isHourly
-		? weekDays.flatMap((day) => weekHoursFor(day, config))
-		: []
+	const hoursOfVisibleDays = visibleDays.flatMap((day) =>
+		weekHoursFor(day, config)
+	)
+	const weekHours = isHourly ? hoursOfVisibleDays : []
 
 	return (
 		<>
 			<ResourcesCornerCell />
 			<div className="flex-1 flex flex-col">
-				<ResourceWeekHorizontalDayHeader days={weekDays} />
+				<ResourceWeekHorizontalDayHeader days={visibleDays} />
 				{isHourly && <TimeHeaderRow hours={weekHours} view="week" />}
 			</div>
 		</>

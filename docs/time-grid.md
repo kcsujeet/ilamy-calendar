@@ -74,6 +74,34 @@ The shared time column (left gutter) uses a single `getViewHours` call with `cur
 
 Applies to: `views/week.tsx` (both the regular body and the resource arrangements it composes)
 
+## Hidden Days
+
+`hiddenDays` and `weekends={false}` leave days out of every date-based view
+(month, week, day, and the resource arrangements; not the year view or the
+agenda plugin). The views do it by building their columns and rows from
+`withoutHiddenDays` (`src/utils/date-utils.ts`), so a hidden day is absent from
+the list and its neighbours sit side by side.
+
+Two things depend on that list being a gap-free sequence of columns, and both
+read the columns rather than counting days from the first one:
+
+- **Bar layout.** On a day grid (`gridType: 'day'`, so a month row, the all-day
+  row and the vertical resource month or daily week), `layoutHorizontal` and
+  `layoutVertical` take an event's columns from `getDayColumnSpan`
+  (`utils/layout/day-columns.ts`). It clamps an event to the nearest column that
+  is drawn and reports `isTruncatedStart` / `isTruncatedEnd` for a cut made at a
+  hidden day (the segment's `isStart` / `isEnd`, as in FullCalendar's
+  `DaySeriesModel.sliceRange`, v7.1.1). An event wholly on hidden days has no
+  column and draws nothing. Hour grids are untouched: a hidden day is a missing
+  day group there, never a gap inside one.
+- **The grab point.** A bar over a hidden day is drawn as one column per visible
+  day, so a drag reads the pointer's fraction of the bar's width as a fraction of
+  those columns (`DragSegment.hiddenDays`, `utils/grab-offset.ts`).
+
+The day view shows one day, so it moves off a hidden one in the direction of
+travel instead (`skipHiddenDays`, applied by the navigation slice). Hiding all
+seven days is ignored with a development warning.
+
 ## DST Handling
 
 For which zone a date is anchored in before it ever reaches the grid, see

@@ -505,24 +505,35 @@ export interface IlamyCalendarProps {
 		props: RenderCurrentTimeIndicatorProps
 	) => ReactNode
 	/**
-	 * Days of the week to hide from the week view.
-	 * Hidden days won't render as columns, giving remaining days more space.
+	 * Days of the week to hide. A hidden day gets no column or row, so the
+	 * remaining days share the space.
 	 *
-	 * Applies to:
-	 * - Regular vertical week view (always)
-	 * - Resource vertical week view in hourly granularity
+	 * Applies to the month, week and day views, with or without `resources`, in
+	 * every orientation and granularity. The day view skips hidden days when you
+	 * step to the previous or next day, and opens on the next visible day if it
+	 * is given a hidden one.
 	 *
-	 * Does NOT apply to:
-	 * - Resource horizontal week view (layout is days-as-rows)
-	 * - Resource vertical week view in daily granularity
-	 *   (`weekViewGranularity: 'daily'`) — non-contiguous visible days would
-	 *   break multi-day event positioning
-	 * - Month, day, and year views
+	 * An event that runs across a hidden day is drawn as one bar over the visible
+	 * days it covers; one that starts or ends on a hidden day is clamped to the
+	 * nearest visible day (`EventSegment.isStart` / `isEnd` are false there), and
+	 * one that lies wholly on hidden days is not drawn.
+	 *
+	 * Does NOT apply to the year view, which shows every day of each month, or to
+	 * the agenda plugin, which lists events rather than days.
+	 *
+	 * Hiding all seven days is ignored, with a warning in development.
 	 *
 	 * @default []
 	 * @example ['saturday', 'sunday'] // Hide weekends
 	 */
 	hiddenDays?: WeekDays[]
+	/**
+	 * Whether to show Saturday and Sunday. `false` is the same as adding both
+	 * to `hiddenDays`, and is added to it when both are set.
+	 *
+	 * @default true
+	 */
+	weekends?: boolean
 	/**
 	 * Custom render function for the hour labels in the gutter/header.
 	 * Receives a Dayjs object for the hour and should return a React node.
@@ -660,8 +671,7 @@ export interface IlamyCalendarProps {
 	/**
 	 * Granularity of week-view time slots when `resources` is set.
 	 * - "hourly": one column per hour (default)
-	 * - "daily": one column per day. Note: `hiddenDays` is ignored in daily
-	 *   mode (non-contiguous days would break multi-day event positioning).
+	 * - "daily": one column per day
 	 */
 	weekViewGranularity?: 'hourly' | 'daily'
 }

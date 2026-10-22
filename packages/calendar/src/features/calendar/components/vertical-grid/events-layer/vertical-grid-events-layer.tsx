@@ -3,6 +3,7 @@ import type { Dayjs } from '@ilamy/utils/dayjs'
 import { memo, useMemo } from 'react'
 import { GridNowLine } from '@/features/calendar/components/grid-now-line'
 import { useDragPreviewEvent } from '@/features/calendar/hooks/use-drag-preview-event'
+import { useHiddenDaysOfGrid } from '@/features/calendar/hooks/use-hidden-days-of-grid'
 import { useProcessedDayEvents } from '@/features/calendar/hooks/use-processed-day-events'
 import { useDragPreview } from '@/features/calendar/stores/drag-preview-context'
 import { GridAxisContext } from '@/features/calendar/stores/grid-axis-context'
@@ -30,6 +31,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	const todayEvents = useProcessedDayEvents({ days, gridType, resourceId })
 	const rangeStart = days.at(0)
 	const rangeEnd = days.at(-1)?.add(1, gridType)
+	const hiddenDaysOfDayGrid = useHiddenDaysOfGrid(gridType)
 	// An all-day candidate needs no rejection here: `layoutVertical` decides
 	// whether this grid draws all-day events, exactly as it does for real ones.
 	const previewEvent = useDragPreviewEvent({ days, gridType, resourceId })
@@ -69,6 +71,7 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 						<VerticalEventBar
 							draggedEventId={dragPreview?.event.id}
 							elementId={elementId}
+							hiddenDays={hiddenDaysOfDayGrid}
 							key={keys.listKey(elementId, 'wrapper')}
 							positioned={positioned}
 							range={{ start: rangeStart, end: rangeEnd }}

@@ -258,6 +258,7 @@ export interface EventsChange {
  */
 export interface ViewConfig {
 	firstDayOfWeek: number
+	/** Weekdays (0 = Sunday) the view does not draw. Absent when none are hidden. */
 	hiddenDays?: Set<number>
 	businessHours?: BusinessHours | BusinessHours[]
 	hideNonBusinessHours?: boolean

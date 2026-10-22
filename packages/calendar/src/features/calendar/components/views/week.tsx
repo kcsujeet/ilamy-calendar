@@ -125,7 +125,10 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 						className={cn(
 							'hover:bg-accent bg-background flex-1 min-w-0 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 w-20 h-full'
 						)}
-						data-testid={keys.header.weekday('week', day.format('dddd'))}
+						data-testid={keys.header.weekday(
+							'week',
+							day.locale('en').format('dddd')
+						)}
 						key={key}
 						onClick={() => {
 							selectDate(day)

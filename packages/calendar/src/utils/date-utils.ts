@@ -16,8 +16,8 @@ export function isToday(date: Dayjs): boolean {
 /**
  * Calculates the week days for a given date and first day of week setting.
  *
- * This function ensures that the current date is always included in the returned week,
- * even when the first day of week is set to a day after the current date.
+ * The week always contains the current date, whichever day it starts on, and
+ * whatever the dayjs locale's own first weekday is.
  *
  * @param currentDate - The reference date for calculating the week
  * @param firstDayOfWeek - The day number (0-6) representing the first day of the week (0 = Sunday, 1 = Monday, etc.)
@@ -37,23 +37,22 @@ export function getWeekDays(
 	currentDate: Dayjs,
 	firstDayOfWeek: number
 ): Dayjs[] {
-	// `startOf('week')` and `day()` each carry the receiver's offset forward
-	// rather than recomputing it, so composing them across a DST transition lands
-	// an hour off and on the far side of a day boundary. Re-anchoring here keeps
-	// the week this returns the week the caller asked for (#246).
-	const startOfWeekFromCurrentDate = currentDate
-		.startOf('week')
-		.day(firstDayOfWeek)
+	// The week starts on `firstDayOfWeek` and on nothing else: the dayjs locale's
+	// own first weekday (`startOf('week')`: Monday in fr and de, Saturday in ar)
+	// plays no part. FullCalendar's `firstDay` is the locale's default and an
+	// explicit value overrides it (https://fullcalendar.io/docs/firstDay).
+	// `subtract` carries the receiver's offset forward, so `startOf('day')`
+	// re-anchors the result to its own midnight, as it does for every day below
+	// (#246).
+	const daysSinceWeekStart = (currentDate.day() - firstDayOfWeek + 7) % 7
+	const startOfWeek = currentDate
+		.subtract(daysSinceWeekStart, 'day')
 		.startOf('day')
-
-	const adjustedStartOfWeek = currentDate.isBefore(startOfWeekFromCurrentDate)
-		? startOfWeekFromCurrentDate.subtract(1, 'week')
-		: startOfWeekFromCurrentDate
 
 	// `add` keeps the receiver's offset, so a day after a clock change is an
 	// hour off as an instant; `startOf('day')` re-anchors it to its own midnight.
 	return Array.from({ length: 7 }, (_, dayIndex) =>
-		adjustedStartOfWeek.add(dayIndex, 'day').startOf('day')
+		startOfWeek.add(dayIndex, 'day').startOf('day')
 	)
 }
 

@@ -81,7 +81,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `weekViewGranularity` | `'hourly' \| 'daily'` | `'hourly'` | Week-view slot granularity when `resources` is set. |
 | `initialView` | `CalendarView` (`'month' \| 'week' \| 'day' \| 'year'`, or a plugin view name) | `'month'` | Sets the initial view when the calendar loads. `CalendarView` is `string` in v2 so plugins can register extra views. |
 | `initialDate` | `dayjs.Dayjs \| Date \| string \| undefined` | `undefined` (today's date) | Sets the initial date displayed when the calendar loads. When undefined, defaults to today's date |
-| `firstDayOfWeek` | `'sunday' \| 'monday' \| 'tuesday' \| 'wednesday' \| 'thursday' \| 'friday' \| 'saturday'` | `'sunday'` | The first day of the week to display |
+| `firstDayOfWeek` | `'sunday' \| 'monday' \| 'tuesday' \| 'wednesday' \| 'thursday' \| 'friday' \| 'saturday'` | `'sunday'` | The first day of the week to display. It decides the week start whatever the `locale` (fr and de weeks start on Monday, ar on Saturday), so set it to match your locale's convention |
 | `dayMaxEvents` | `number` | `4` | Maximum number of events to display in a day cell |
 | `renderEvent` | `(event: CalendarEvent, segment: EventSegment) => ReactNode` | - | Custom function to render individual events. `segment` says which slice of the event this bar is drawing |
 | `locale` | `string` | `'en'` | Locale for date formatting (e.g., "en", "fr", "de") |

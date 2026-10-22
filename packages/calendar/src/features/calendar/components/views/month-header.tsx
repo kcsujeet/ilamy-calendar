@@ -44,12 +44,14 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 				// produced it. Keying it by the date remounted all seven cells on
 				// every navigation and replayed the fade over unchanged text.
 				const name = weekDay.format('ddd')
+				// English, so a test id reads the same whatever the locale.
+				const testName = weekDay.locale('en').format('ddd')
 				const label = formatDayHeader(weekDay)
 
 				return (
 					<div
 						className="py-2 text-center font-medium bg-background flex-1 min-w-0 flex items-center justify-center"
-						data-testid={keys.header.weekday('month', name)}
+						data-testid={keys.header.weekday('month', testName)}
 						key={name}
 					>
 						<AnimatedSection transitionKey={label}>

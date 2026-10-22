@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen, within } from '@testing-library/react'
+import 'dayjs/locale/de.js'
 import { DISABLED_CELL_CLASSNAME } from '@/config/constants'
 import { STICKY_GUTTER_SHADOW } from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -182,6 +183,17 @@ describe('WeekView', () => {
 		// Should render with English locale by default using test IDs
 		expect(screen.getByTestId('week-header-weekday-sunday')).toBeInTheDocument()
 		expect(screen.getByTestId('week-header-weekday-monday')).toBeInTheDocument()
+	})
+
+	test('keeps English weekday test ids in another locale', () => {
+		cleanup()
+		renderWeekView({ locale: 'de' })
+
+		// A test id is for finding the element, so it must not change with the
+		// language the header is drawn in.
+		expect(
+			screen.getByTestId('week-header-weekday-wednesday')
+		).toBeInTheDocument()
 	})
 
 	test('renders time slots structure', () => {

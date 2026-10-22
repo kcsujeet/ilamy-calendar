@@ -239,5 +239,5 @@ When both `translations` and `translator` are provided, the translator function 
   import 'dayjs/locale/es';
   // etc.
   ```
-- Consider setting `firstDayOfWeek` based on locale conventions.
+- Set `firstDayOfWeek` to your locale's convention. The calendar does not take the week start from the `dayjs` locale (fr and de start on Monday, ar on Saturday): `firstDayOfWeek` decides it, `'sunday'` by default.
 - Use appropriate timezone settings for your users' locations.

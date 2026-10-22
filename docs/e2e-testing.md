@@ -108,6 +108,9 @@ Three things are pinned, and all three are load-bearing:
 - **The zone.** `timezoneId` in the Playwright `use` block, and the `timezone`
   prop on the calendar. Both, because they answer different questions: the first
   is what the browser believes, the second is what the calendar renders against.
+- **dayjs locales.** A locale is data the app registers (`docs/migration-v2.md`),
+  so the harness imports `ar`, `de` and `fr` in `src/app.tsx` for specs that
+  pass `locale=`. A new locale in a spec needs its import there too.
 - **`locale`, `viewport` and `colorScheme`** in `use`, so font metrics and
   layout do not depend on the machine.
 

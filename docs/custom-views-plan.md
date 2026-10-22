@@ -1,6 +1,6 @@
-# Custom Views — FullCalendar parity plan
+# Custom Views plan
 
-**Goal:** Bring ilamy's custom-view system to feature parity with FullCalendar's,
+**Goal:** Grow ilamy's custom-view system toward the established convention,
 so users can define and override views from configuration (not only plugin
 authors), with declarative date-range/navigation knobs and the view families
 FullCalendar ships (dayGrid, timeGrid, list, multiMonth, and — stretch —
@@ -94,7 +94,7 @@ Sources: [custom-view-with-settings](https://fullcalendar.io/docs/custom-view-wi
    every prop, to keep the resolution surface intentional.
 5. **Timeline = separate epic.** It's the biggest single item (a horizontal,
    scrollable time axis with its own layout engine). Recommend treating it as an
-   optional Phase 6, not a blocker for "parity" of the custom-view *system*.
+   optional Phase 6, not a blocker for the custom-view *system*.
 6. **Breaking?** Most of this is additive (new optional fields). The `views`
    prop name does not collide (we expose `plugins`, not `views`, publicly today).
    Any change to `PluginView`'s existing fields gets a migration entry.
@@ -169,7 +169,7 @@ generalizing today's year view.
 - **Files:** new multiMonth arrangement + renderer dispatch; year-view refactor.
 - **Tests:** 12-month render, navigation by year, month-cell click opens the day.
 
-### Phase 5 — Content-injection hooks parity
+### Phase 5 — Content-injection hooks
 **Outcome:** match FullCalendar's per-slot content control.
 
 - Add the missing render hooks as props + plugin slots: day-cell content,
@@ -208,7 +208,7 @@ separately and decide whether to ship after Phases 1–5.
 - Premium licensing model — N/A; everything ships in the one package via plugins.
 - Pixel-identical FullCalendar markup — we use shadcn tokens (bring-your-own CSS).
 - Blanket "every prop is per-view" — curated subset first (Decision 4).
-- Timeline is optional (Phase 6); the custom-view *system* reaches parity at
+- Timeline is optional (Phase 6); the custom-view *system* is complete at
   Phase 5.
 
 ## 6. Risks
@@ -223,4 +223,4 @@ separately and decide whether to ship after Phases 1–5.
 ## 7. Sequencing
 Phases 1 → 2 deliver the bulk of FullCalendar's custom-view *value* (declarative
 views definable from config). 3–5 add the missing engines/hooks. 6 is optional.
-Recommend shipping 1 and 2 first, reassessing parity, then 3–5.
+Recommend shipping 1 and 2 first, reassessing, then 3–5.

@@ -259,7 +259,7 @@ export interface PluginView {
 - The two highest-value extractions need no registry at all and land first: the 5x
   copy-pasted sticky time-gutter column and the `0.05` animation-delay constant
   (6+ files) move into the grid/header components.
-- **Custom-duration views are a design goal of this contract** (FullCalendar parity:
+- **Custom-duration views are a design goal of this contract** (as FullCalendar does:
   `type` + `duration`). A 40-day grid is one `PluginView` entry: `range` returns the
   40-day window, `columns` returns its day rows/columns, `layout` picks the engine, and
   `navigationStep: { amount: 40, unit: 'day' }` makes prev/next jump a full window. The

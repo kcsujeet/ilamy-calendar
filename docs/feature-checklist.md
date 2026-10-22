@@ -1,8 +1,8 @@
-# API Parity Checklist (vs FullCalendar)
+# Feature checklist
 
 > The plan of record for these items and the rest of the roadmap is `docs/roadmap.md`. Tick items here as they ship.
 
-Feature gaps compared to FullCalendar and other mature calendar libraries. Prioritized by impact.
+Features the calendar is still missing or has recently gained, drawn from established calendar conventions (FullCalendar is cited only where a specific behaviour follows it). Prioritized by impact.
 
 ## Tier 1: High-Impact
 
@@ -32,7 +32,7 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 - [x] **`resourcesSet` callback** — done: `resourcesSet(resources)` fires after the list is set and after every change (an array prop whose content changed, or a fetch result), not on a re-render that changes nothing (3.3.10)
 - [x] **Resources as function** — done as `resources` accepting `(info, { signal }) => Promise<Resource[]>`; `refetchResourcesOnNavigate`, `onResourcesError` and `refetchResources()` come with it (3.3.10). Cut: JSON-feed URLs and the `(fetchInfo, success, failure)` callback form
 
-## Already Implemented (Parity or Better)
+## Already implemented
 
 - [x] `onDateChange` with visible range — matches FullCalendar's `datesSet`
 - [x] `onDateChange` fires on view switch — standard behavior

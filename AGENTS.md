@@ -357,6 +357,7 @@ docs/
   custom-views.md                              # Custom view (PluginView) guide
   agenda-view.md                               # Agenda plugin docs
   migration-v2.md                              # v1 → v2 migration guide
+  migration-v4.md                              # v3 → v4: removed names, replacements, defaults under consideration
   monorepo-architecture.md                     # Workspace/build architecture
   logs/                                        # Daily dev logs (see Development Logs)
 ```

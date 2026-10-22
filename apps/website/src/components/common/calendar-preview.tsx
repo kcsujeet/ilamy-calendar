@@ -1,5 +1,6 @@
 import type { IlamyCalendarProps } from '@ilamy/calendar'
 import { dayjs, IlamyCalendar } from '@ilamy/calendar'
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js'
 import timezone from 'dayjs/plugin/timezone.js'
@@ -11,6 +12,9 @@ dayjs.extend(isSameOrAfter)
 dayjs.extend(isSameOrBefore)
 dayjs.extend(timezone)
 dayjs.extend(utc)
+
+// Module-level so the plugins array keeps one identity across renders.
+const previewPlugins = [recurrencePlugin()]
 
 export function CalendarPreview() {
 	// Filter the dummy events to only include short events (1-2 days duration)
@@ -41,6 +45,7 @@ export function CalendarPreview() {
 						dayMaxEvents={3}
 						events={previewEvents}
 						firstDayOfWeek="sunday"
+						plugins={previewPlugins}
 					/>
 				</div>
 			</div>

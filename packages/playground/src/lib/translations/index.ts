@@ -11,10 +11,10 @@ import { pt } from './pt'
 import { ru } from './ru'
 import { zh } from './zh'
 
-// The docs only override a subset of keys; everything else falls back to the
-// calendar's built-in defaults, so new calendar translation keys never break
-// the docs build.
-export const translations: Record<string, Partial<Translations>> = {
+// The playground only overrides a subset of keys; everything else falls back to
+// the calendar's built-in defaults, so a new calendar translation key never
+// breaks the playground build.
+const translations: Record<string, Partial<Translations>> = {
 	en,
 	es,
 	fr,
@@ -32,7 +32,3 @@ export const getTranslations = (locale: string): Translations => ({
 	...defaultTranslations,
 	...(translations[locale] ?? translations.en),
 })
-
-export const supportedLocales = Object.keys(translations)
-
-export { cs, de, en, es, fr, it, ja, ko, pt, ru, zh }

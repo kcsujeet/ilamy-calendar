@@ -90,7 +90,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `renderEvent` | `(event: CalendarEvent, segment: EventSegment) => ReactNode` | - | Custom function to render individual events. `segment` says which slice of the event this bar is drawing |
 | `locale` | `string` | `'en'` | Locale for date formatting (e.g., "en", "fr", "de") |
 | `timezone` | `string` | Whatever your local timezone is | Timezone for date handling (e.g., "UTC", "America/New_York") |
-| `timeFormat` | `'12-hour' \| '24-hour'` | `'12-hour'` | Time format for displaying times in week and day views (e.g., '1:00 PM' vs '13:00') |
+| `timeFormat` | `'12-hour' \| '24-hour'` | `'12-hour'` | Time format for times in week and day views. `'12-hour'` shows '1:00 PM' (and '1 PM' in the hour gutter); `'24-hour'` shows '13:00' on event bars and in the form, but only the hour ('13') in the gutter |
 | `slotHeaderFormat` | `Intl.DateTimeFormatOptions` | - | How the time-gutter labels are written, in your `locale` and `timezone`, e.g. `{ hour: '2-digit', minute: '2-digit', hour12: false }`. When the options leave out `hour12` and `hourCycle`, a `timeFormat` you passed decides; without one, the locale does. `renderHour` takes precedence. Format strings and functions are not supported. |
 | `eventTimeFormat` | `Intl.DateTimeFormatOptions` | - | How the time on an event bar is written. Setting it shows the time unless `displayEventTime` is `false`. `renderEvent` takes precedence. |
 | `displayEventTime` | `boolean` | Shown only when `eventTimeFormat` is set | Whether the built-in event bar shows the event's time. All-day events never show one. |
@@ -206,7 +206,7 @@ function MyCalendar() {
         timeFormat="12-hour"
       />
 
-      {/* 24-hour format: displays as "13:00", "14:30" */}
+      {/* 24-hour format: bars and the form show "13:00", "14:30"; the hour gutter shows "13", "14" */}
       <IlamyCalendar
         events={events}
         initialView="week"

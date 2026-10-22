@@ -11,6 +11,7 @@ import type {
 	SlotDuration,
 	SnapDuration,
 	TimeFormat,
+	Translations,
 	WeekDays,
 	WeekNumberCalculation,
 } from '@ilamy/calendar'
@@ -19,6 +20,7 @@ import { Card, CardContent, CardHeader } from '@ilamy/ui/components/card'
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
+import { getTranslations } from '../lib/translations'
 import {
 	defaultSettings,
 	type PlaygroundSettings,
@@ -103,6 +105,7 @@ type SharedCalendarProps = {
 	stickyViewHeader: boolean
 	timeFormat: TimeFormat
 	timezone: string
+	translations: Translations
 	headerComponent: ReactNode
 	onCellClick: ((info: CellInfo) => void) | undefined
 	onMoreEventsClick: ((day: Dayjs, events: CalendarEvent[]) => void) | undefined
@@ -178,6 +181,7 @@ function RegularCalendar({
 			stickyViewHeader={shared.stickyViewHeader}
 			timeFormat={shared.timeFormat}
 			timezone={shared.timezone}
+			translations={shared.translations}
 			weekends={shared.weekends}
 			weekNumberCalculation={shared.weekNumberCalculation}
 			weekNumbers={shared.weekNumbers}
@@ -256,6 +260,7 @@ function ResourceCalendar({
 			stickyViewHeader={shared.stickyViewHeader}
 			timeFormat={shared.timeFormat}
 			timezone={shared.timezone}
+			translations={shared.translations}
 			weekends={shared.weekends}
 			weekNumberCalculation={shared.weekNumberCalculation}
 			weekNumbers={shared.weekNumbers}
@@ -277,6 +282,7 @@ type CalendarDisplayProps = LifecycleHandlers & {
 function resolveSharedCalendarProps(
 	values: PlaygroundSettings,
 	plugins: IlamyPlugin[],
+	translations: Translations,
 	onDateChange: (date: Dayjs) => void,
 	lifecycle: LifecycleHandlers
 ): SharedCalendarProps {
@@ -321,6 +327,7 @@ function resolveSharedCalendarProps(
 		stickyViewHeader: values.stickyViewHeader,
 		timeFormat: values.timeFormat,
 		timezone: values.timezone,
+		translations,
 		onDateChange,
 		headerComponent: values.useCustomCalendarHeader ? (
 			<CustomCalendarHeader />
@@ -368,15 +375,27 @@ export function CalendarDisplay({
 		() => createDemoPlugins(values.agendaWindow),
 		[values.agendaWindow]
 	)
+	// Bundled dictionaries for the locales the Locale control offers; without
+	// them Today, Export, New, Week and All day stay in English.
+	const translations = useMemo(
+		() => getTranslations(values.locale),
+		[values.locale]
+	)
 	// Persist the navigated date into the form so it survives view-type switches
 	// (issue #172 repro).
 	const onDateChange = (date: Dayjs) =>
 		setValue('initialDate', date.toISOString())
-	const shared = resolveSharedCalendarProps(values, plugins, onDateChange, {
-		onEventAdd,
-		onEventUpdate,
-		onEventDelete,
-	})
+	const shared = resolveSharedCalendarProps(
+		values,
+		plugins,
+		translations,
+		onDateChange,
+		{
+			onEventAdd,
+			onEventUpdate,
+			onEventDelete,
+		}
+	)
 
 	// year and agenda are not resource-axis views; fall back to month on the resource calendar.
 	const isResourceOnlyFallback =
@@ -393,7 +412,7 @@ export function CalendarDisplay({
 	const renderResource = values.useCustomResourceRenderer
 		? createRenderResource(resourceEvents)
 		: undefined
-	const calendarKey = `${values.locale}-${values.initialView}-${values.timeFormat}-${values.useCustomCurrentTimeIndicator}`
+	const calendarKey = `${values.locale}-${values.initialView}-${values.timeFormat}-${values.useCustomCurrentTimeIndicator}-${values.initialDateRevision}`
 
 	return (
 		<Card className="border backdrop-blur-md shadow-lg overflow-clip relative p-2 bg-background">

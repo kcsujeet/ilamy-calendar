@@ -23,6 +23,10 @@ export interface PlaygroundSettings {
 	// ISO string (or undefined for "today"). Stored as a string rather than a
 	// Dayjs because react-hook-form's typing can't resolve the Dayjs class.
 	initialDate: string | undefined
+	// Bumped each time the Initial Date control is used. The calendar reads
+	// `initialDate` only on mount, so this remounts it (navigation writes
+	// `initialDate` too, but must not remount).
+	initialDateRevision: number
 
 	// Locale / format
 	locale: string
@@ -94,6 +98,7 @@ export const defaultSettings: PlaygroundSettings = {
 	initialView: 'month',
 	agendaWindow: 'week',
 	initialDate: undefined,
+	initialDateRevision: 0,
 	locale: 'en',
 	timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 	timeFormat: '12-hour',

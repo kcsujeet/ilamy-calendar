@@ -15,6 +15,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ilamy/ui/components/select'
+import { useId } from 'react'
 import { useController, useFormContext, useWatch } from 'react-hook-form'
 import { FormButtonGroup } from './form/form-button-group'
 import { FormCheckbox } from './form/form-checkbox'
@@ -241,7 +242,7 @@ function optionToInitialDate(option: string): Dayjs | undefined {
 // FormSelect/FormCheckbox (an ISO string behind a preset Select, and an array
 // toggled by many checkboxes), so they bind to the form directly.
 function InitialDateField() {
-	const { control } = useFormContext()
+	const { control, setValue, getValues } = useFormContext()
 	const { field } = useController({ name: 'initialDate', control })
 	const currentDate: Dayjs | undefined = field.value
 		? dayjs(field.value)
@@ -250,9 +251,10 @@ function InitialDateField() {
 		<label className="block text-sm text-left font-medium mb-1">
 			<span>Initial Date</span>
 			<Select
-				onValueChange={(option) =>
+				onValueChange={(option) => {
 					field.onChange(optionToInitialDate(option)?.toISOString())
-				}
+					setValue('initialDateRevision', getValues('initialDateRevision') + 1)
+				}}
 				value={resolveInitialDateOption(currentDate)}
 			>
 				<SelectTrigger className="w-full">
@@ -280,6 +282,9 @@ function WeekdayMultiSelectField({
 }) {
 	const { control } = useFormContext()
 	const { field } = useController({ name, control })
+	// useId keeps the ids unique when the settings panel is mounted twice
+	// (mobile dialog + desktop sidebar).
+	const idPrefix = useId()
 	const selected: WeekDays[] = field.value ?? []
 	const toggleDay = (day: WeekDays, checked: boolean) => {
 		const next = checked
@@ -295,12 +300,12 @@ function WeekdayMultiSelectField({
 					<div className="flex items-center space-x-2" key={day}>
 						<Checkbox
 							checked={selected.includes(day)}
-							id={`${name}-${day}`}
+							id={`${idPrefix}-${day}`}
 							onCheckedChange={(checked) => toggleDay(day, checked === true)}
 						/>
 						<label
 							className="text-sm font-normal leading-none cursor-pointer"
-							htmlFor={`${name}-${day}`}
+							htmlFor={`${idPrefix}-${day}`}
 						>
 							{short}
 						</label>

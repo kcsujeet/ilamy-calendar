@@ -79,7 +79,7 @@ const convertEventToVEvent = (
 		`SUMMARY:${escapeText(event.title)}`,
 		event.description && `DESCRIPTION:${escapeText(event.description)}`,
 		event.location && `LOCATION:${escapeText(event.location)}`,
-	].filter(Boolean)
+	].filter((line): line is string => Boolean(line))
 
 	const extra = collect('ical:vevent-properties', event).filter(
 		(line): line is string => typeof line === 'string'

@@ -59,17 +59,33 @@ describe('useCalendarEngine', () => {
 		firstDayOfWeek: 0,
 	}
 
+	/**
+	 * For tests whose subject is a calendar DAY. A full ISO instant names a
+	 * different day on different machines (noon UTC on 15 January is the 16th in
+	 * Auckland), so these pin the calendar's zone and the machine decides nothing.
+	 */
+	const utcCalendar = { ...defaultConfig, timezone: 'UTC' }
+
+	// The timezone prop writes dayjs's module-global default zone, which would
+	// otherwise outlive the test that set it.
+	afterEach(() => {
+		dayjs.tz.setDefault(undefined)
+	})
+
 	// Mounts the engine with the recurrence plugin and fresh callback spies; each
 	// test destructures only the spies it asserts. Collapses the repeated
 	// renderHook + useCalendarEngine boilerplate across the recurring-event tests.
-	const renderRecurrenceEngine = (events: CalendarEvent[]) => {
+	const renderRecurrenceEngine = (
+		events: CalendarEvent[],
+		config = defaultConfig
+	) => {
 		const onEventUpdate = vi.fn()
 		const onEventAdd = vi.fn()
 		const onEventDelete = vi.fn()
 		const onEventsChange = vi.fn<(change: EventsChange) => void>()
 		const { result } = renderHook(() =>
 			useCalendarEngine({
-				...defaultConfig,
+				...config,
 				events,
 				onEventUpdate,
 				onEventAdd,
@@ -442,7 +458,7 @@ describe('useCalendarEngine', () => {
 			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
-					...defaultConfig,
+					...utcCalendar,
 					initialDate,
 					initialView: 'forty-day',
 					plugins: [fortyDayPlugin],
@@ -485,7 +501,7 @@ describe('useCalendarEngine', () => {
 			const initialDate = dayjs('2026-06-13T00:00:00.000Z')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
-					...defaultConfig,
+					...utcCalendar,
 					initialDate,
 					initialView: 'agenda',
 					plugins: [agendaPlugin({ window: 7 })],
@@ -642,7 +658,7 @@ describe('useCalendarEngine', () => {
 		})
 
 		it('should open event form with specific date', () => {
-			const { result } = renderHook(() => useCalendarEngine(defaultConfig))
+			const { result } = renderHook(() => useCalendarEngine(utcCalendar))
 
 			const date = dayjs('2025-03-15T14:00:00.000Z')
 			act(() => result.current.openEventForm({ start: date }))
@@ -729,8 +745,8 @@ describe('useCalendarEngine', () => {
 			const events = [
 				createEvent({
 					id: '1',
-					start: dayjs('2025-01-14T23:00:00Z'),
-					end: dayjs('2025-01-15T01:00:00Z'),
+					start: dayjs('2025-01-14T23:00:00.000Z'),
+					end: dayjs('2025-01-15T01:00:00.000Z'),
 				}),
 			]
 			const { result } = renderHook(() =>
@@ -738,8 +754,8 @@ describe('useCalendarEngine', () => {
 			)
 
 			const rangeEvents = result.current.getEventsForDateRange(
-				dayjs('2025-01-15'),
-				dayjs('2025-01-16')
+				dayjs('2025-01-15T00:00:00.000Z'),
+				dayjs('2025-01-16T00:00:00.000Z')
 			)
 
 			expect(rangeEvents).toHaveLength(1)
@@ -789,17 +805,19 @@ describe('useCalendarEngine', () => {
 			const { engine } = renderRecurrenceEngine([createRecurringEvent()])
 
 			const rangeEvents = engine().getEventsForDateRange(
-				dayjs('2025-01-01'),
-				dayjs('2025-01-31')
+				dayjs('2025-01-01T00:00:00.000Z'),
+				dayjs('2025-01-31T00:00:00.000Z')
 			)
 
-			// Weekly event starting Jan 6, should have instances on Jan 6, 13, 20, 27
-			expect(rangeEvents).toHaveLength(4)
-			const eventDates = rangeEvents.map((e) => e.start.format('YYYY-MM-DD'))
-			expect(eventDates).toContain('2025-01-06')
-			expect(eventDates).toContain('2025-01-13')
-			expect(eventDates).toContain('2025-01-20')
-			expect(eventDates).toContain('2025-01-27')
+			// Weekly event starting Jan 6 10:00Z. Instants, not dates: at UTC+14
+			// those same instants fall on Jan 7, 14, 21 and 28.
+			const eventStarts = rangeEvents.map((e) => e.start.toISOString())
+			expect(eventStarts).toEqual([
+				'2025-01-06T10:00:00.000Z',
+				'2025-01-13T10:00:00.000Z',
+				'2025-01-20T10:00:00.000Z',
+				'2025-01-27T10:00:00.000Z',
+			])
 		})
 	})
 
@@ -1054,10 +1072,13 @@ describe('useCalendarEngine', () => {
 		const getChanges = (spy: { mock: { calls: [EventsChange][] } }) =>
 			spy.mock.calls.map(([change]) => summarize(change))
 
-		const renderWithChanges = (events: CalendarEvent[] = []) => {
+		const renderWithChanges = (
+			events: CalendarEvent[] = [],
+			config = defaultConfig
+		) => {
 			const onEventsChange = vi.fn<(change: EventsChange) => void>()
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, events, onEventsChange })
+				useCalendarEngine({ ...config, events, onEventsChange })
 			)
 			const engine = () => result.current
 			return { engine, onEventsChange }
@@ -1281,9 +1302,12 @@ describe('useCalendarEngine', () => {
 			})
 
 			it('is the move of the start for a scoped recurring edit', () => {
-				const { engine, onEventsChange } = renderRecurrenceEngine([
-					createRecurringEvent(),
-				])
+				// The subject is a time of day, so the calendar's zone is pinned: at
+				// UTC+14 10:00Z is midnight and two hours earlier is the day before.
+				const { engine, onEventsChange } = renderRecurrenceEngine(
+					[createRecurringEvent()],
+					utcCalendar
+				)
 				const occurrence = createEvent({
 					id: 'recurring-1_2',
 					uid: 'recurring-1@ilamy.calendar',
@@ -1306,10 +1330,13 @@ describe('useCalendarEngine', () => {
 
 			it('is only the time of day for a scoped edit that keeps the series day', () => {
 				// "All events" keeps the series on its own day (docs/hooks-and-context.md),
-				// so a drop one day later and an hour later stored the hour only.
-				const { engine, onEventsChange } = renderRecurrenceEngine([
-					createRecurringEvent(),
-				])
+				// so a drop one day later and an hour later stored the hour only. The
+				// subject is a time of day, so the calendar's zone is pinned: 10:00Z is
+				// 23:00 in Auckland, where an hour later is the next day.
+				const { engine, onEventsChange } = renderRecurrenceEngine(
+					[createRecurringEvent()],
+					utcCalendar
+				)
 				const occurrence = createEvent({
 					id: 'recurring-1_2',
 					uid: 'recurring-1@ilamy.calendar',
@@ -1333,8 +1360,13 @@ describe('useCalendarEngine', () => {
 		})
 
 		describe('endDelta', () => {
+			// Pinned to a UTC calendar: the subject is a time of day, which a
+			// machine at UTC+14 would push across midnight.
 			const getChange = (updates: Partial<CalendarEvent>) => {
-				const { engine, onEventsChange } = renderWithChanges([createEvent()])
+				const { engine, onEventsChange } = renderWithChanges(
+					[createEvent()],
+					utcCalendar
+				)
 				act(() => engine().updateEvent('1', updates))
 				return onEventsChange.mock.calls.at(0)?.at(0)
 			}
@@ -1779,9 +1811,25 @@ describe('useCalendarEngine', () => {
 			}
 		}
 
+		const FRESH_PARSE_ISO = '2026-03-02T00:00:00.000Z'
+
 		/** The zone a date parsed AFTER mounting comes out in. */
-		const zoneOfAFreshParse = () =>
-			dayjs('2026-03-02T00:00:00.000Z').format('Z')
+		const zoneOfAFreshParse = () => dayjs(FRESH_PARSE_ISO).format('Z')
+
+		/**
+		 * The machine's offset at `iso` as `±HH:MM`, read from the native `Date`
+		 * rather than dayjs so it is an independent answer. "Back to the machine
+		 * zone" has no absolute expectation: it is -08:00 in Vancouver and +13:00
+		 * in Auckland in January, and both are right.
+		 */
+		const machineOffsetAt = (iso: string) => {
+			const minutesEastOfUtc = -new Date(iso).getTimezoneOffset()
+			const sign = minutesEastOfUtc < 0 ? '-' : '+'
+			const absoluteMinutes = Math.abs(minutesEastOfUtc)
+			const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, '0')
+			const minutes = String(absoluteMinutes % 60).padStart(2, '0')
+			return `${sign}${hours}:${minutes}`
+		}
 
 		it('should automatically use the default timezone for new dayjs() instances', () => {
 			dayjs.tz.setDefault('America/New_York')
@@ -1816,7 +1864,7 @@ describe('useCalendarEngine', () => {
 
 			moveTo(undefined)
 
-			expect(zoneOfAFreshParse()).toBe('+00:00')
+			expect(zoneOfAFreshParse()).toBe(machineOffsetAt(FRESH_PARSE_ISO))
 		})
 
 		/**
@@ -1830,7 +1878,8 @@ describe('useCalendarEngine', () => {
 
 			moveTo(undefined)
 
-			expect(currentDate().format('Z')).toBe('+00:00')
+			expect(currentDate().format('Z')).toBe(machineOffsetAt(NOON_UTC_ISO))
+			expect(currentDate().toISOString()).toBe(NOON_UTC_ISO)
 		})
 
 		it('should reactive update currentDate when timezone prop changes', () => {
@@ -1865,7 +1914,7 @@ describe('useCalendarEngine', () => {
 
 	describe('onDateChange range reporting (Strict Analysis)', () => {
 		const onDateChange = vi.fn()
-		const initialDate = dayjs('2025-01-15T12:00:00Z') // A Wednesday
+		const initialDate = dayjs('2025-01-15T12:00:00.000Z') // A Wednesday
 
 		beforeEach(() => {
 			onDateChange.mockClear()
@@ -1874,7 +1923,7 @@ describe('useCalendarEngine', () => {
 		it('should report correct 42-day range in month view (Jan 2025, Sunday start)', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
-					...defaultConfig,
+					...utcCalendar,
 					initialDate,
 					initialView: 'month',
 					firstDayOfWeek: 0,
@@ -1899,7 +1948,7 @@ describe('useCalendarEngine', () => {
 		it('should report correct 7-day range in week view (Sunday start)', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
-					...defaultConfig,
+					...utcCalendar,
 					initialDate,
 					initialView: 'week',
 					firstDayOfWeek: 0,
@@ -1918,7 +1967,7 @@ describe('useCalendarEngine', () => {
 		it('should report correct 7-day range in week view (Monday start)', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
-					...defaultConfig,
+					...utcCalendar,
 					initialDate,
 					initialView: 'week',
 					firstDayOfWeek: 1, // Monday
@@ -1937,7 +1986,7 @@ describe('useCalendarEngine', () => {
 		it('should report correct single-day range in day view', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
-					...defaultConfig,
+					...utcCalendar,
 					initialDate,
 					initialView: 'day',
 					onDateChange,
@@ -1958,7 +2007,7 @@ describe('useCalendarEngine', () => {
 		it('should report correct full-year range in year view', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
-					...defaultConfig,
+					...utcCalendar,
 					initialDate,
 					initialView: 'year',
 					onDateChange,
@@ -1976,7 +2025,7 @@ describe('useCalendarEngine', () => {
 			const pastDate = dayjs('2020-01-01T12:00:00Z')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
-					...defaultConfig,
+					...utcCalendar,
 					initialDate: pastDate,
 					initialView: 'month',
 					onDateChange,
@@ -2000,7 +2049,7 @@ describe('useCalendarEngine', () => {
 		it('should report correct range when using selectDate()', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
-					...defaultConfig,
+					...utcCalendar,
 					initialDate,
 					initialView: 'week',
 					firstDayOfWeek: 0,
@@ -2008,7 +2057,7 @@ describe('useCalendarEngine', () => {
 				})
 			)
 
-			const targetDate = dayjs('2025-12-25T12:00:00Z') // Christmas 2025 (Thursday)
+			const targetDate = dayjs('2025-12-25T12:00:00.000Z') // Christmas 2025 (Thursday)
 			act(() => result.current.selectDate(targetDate))
 
 			const [_date, range] = onDateChange.mock.calls[0]
@@ -2020,7 +2069,7 @@ describe('useCalendarEngine', () => {
 		it('should fire onDateChange when view changes (month → week)', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
-					...defaultConfig,
+					...utcCalendar,
 					initialDate, // Jan 15, 2025 (Wednesday)
 					initialView: 'month',
 					firstDayOfWeek: 0,

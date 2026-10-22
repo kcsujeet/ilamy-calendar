@@ -1242,3 +1242,38 @@ describe('getPressedResizeEdge', () => {
 		expect(getPressedResizeEdge(new Event('keydown'))).toBeUndefined()
 	})
 })
+
+// Europe/London, Lisbon and Dublin read 0 in winter; with no `timezone` prop a
+// drop across the 30 March change landed an hour off.
+describe('calculateDropTimes across the 30 March change, no calendar zone', () => {
+	const dropOnMachineIn = (machineZone: string): string[] => {
+		const script = `
+			import dayjs from '@ilamy/utils/dayjs'
+			import { calculateDropTimes } from '${import.meta.dir}/dnd-utils.ts'
+			const allDayEvent = {
+				id: 'a', title: 'a', uid: 'a', allDay: true,
+				start: dayjs('2025-03-29T00:00:00.000'),
+				end: dayjs('2025-03-30T00:00:00.000'),
+			}
+			const dropped = calculateDropTimes(allDayEvent, {
+				date: dayjs('2025-03-30T00:00:00.000'),
+				allDay: false,
+			})
+			console.log(JSON.stringify([dropped.start, dropped.end].map((d) => d.toISOString())))
+		`
+		const child = Bun.spawnSync(['bun', '-e', script], {
+			env: { ...process.env, TZ: machineZone },
+		})
+		return JSON.parse(child.stdout.toString().trim())
+	}
+
+	it.each(['Europe/London', 'Europe/Lisbon', 'Europe/Dublin'])(
+		'a one-day all-day event dropped on the 30th covers that day to the next midnight, 00:00 BST (%s)',
+		(machineZone) => {
+			expect(dropOnMachineIn(machineZone)).toEqual([
+				'2025-03-30T00:00:00.000Z',
+				'2025-03-30T23:00:00.000Z',
+			])
+		}
+	)
+})

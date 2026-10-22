@@ -253,7 +253,15 @@ const timezoneAwareDayjs = (input?: dayjs.ConfigType) => {
 		return instant
 	}
 	if (isWallClockReading(input)) {
-		return dayjs.tz(input)
+		// With no calendar zone the machine's zone anchors the reading, and
+		// dayjs's own local parse already does that (docs/timezones.md, "The
+		// rule"). `dayjs.tz()` must not be used for it: it ends in
+		// `utcOffset(targetOffset)` (dayjs/plugin/timezone, line 193), and an
+		// offset of 0 (London, Lisbon and Dublin in winter) takes
+		// `this.utc()` (dayjs/plugin/utc, lines 123-124), which hands back a
+		// UTC-flagged instance with no zone: `add(1, 'day')` then adds 24 hours
+		// and `startOf('day')` rounds in UTC, an hour off after the spring change.
+		return defaultTimezone ? dayjs.tz(input) : instant
 	}
 	if (!defaultTimezone) {
 		return instant

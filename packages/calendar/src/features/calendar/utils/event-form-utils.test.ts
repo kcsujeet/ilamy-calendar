@@ -283,3 +283,26 @@ describe('building times on the 2025 clock-change days', () => {
 		expect(built.toISOString()).toBe('2025-03-09T07:30:00.000Z')
 	})
 })
+
+// Europe/London, Lisbon and Dublin read 0 in winter; with no `timezone` prop the
+// form's end date was read as a UTC-flagged instance and stepped 24 hours.
+describe('buildEndDateTime on a machine whose winter offset is 0, no calendar zone', () => {
+	const endOnMachineIn = (machineZone: string): string => {
+		const script = `
+			import { buildEndDateTime } from '${import.meta.dir}/event-form-utils.ts'
+			const lastDay = new Date(2025, 2, 30)
+			console.log(buildEndDateTime(lastDay, '00:00', true).toISOString())
+		`
+		const child = Bun.spawnSync(['bun', '-e', script], {
+			env: { ...process.env, TZ: machineZone },
+		})
+		return child.stdout.toString().trim()
+	}
+
+	test.each(['Europe/London', 'Europe/Lisbon', 'Europe/Dublin'])(
+		'an all-day event whose last day is the 30th of March ends at the next midnight, 00:00 BST (%s)',
+		(machineZone) => {
+			expect(endOnMachineIn(machineZone)).toBe('2025-03-30T23:00:00.000Z')
+		}
+	)
+})

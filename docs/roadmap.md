@@ -1,4 +1,4 @@
-# FullCalendar Parity — Master Plan
+# Roadmap
 
 > **For agentic workers:** This is the master plan. Each feature below becomes its own detailed
 > task plan (per `superpowers:writing-plans`, saved to `docs/superpowers/plans/`) when its
@@ -6,40 +6,34 @@
 > and each one is checked against the standard it cites before its task plan is written.
 > Read **Delivery process** before taking any task.
 
-**Goal:** Make `@ilamy/calendar` a complete open-source alternative to FullCalendar, including
-the features FullCalendar sells as premium, with the core kept small and everything optional
-shipped as a plugin, and without leaving current users stranded at any release.
+**Goal:** Make `@ilamy/calendar` a complete, open-source (MIT) scheduling calendar for React,
+scheduler features included, with the core kept small and everything optional shipped as a
+plugin, and without leaving current users stranded at any release.
 
 **Release shape:** two additive minors (3.3, 3.4), one breaking major (4.0), then three
 additive 4.x minors. Bug fixes and small requests from current users ship as patches from
 `main` at any time and never wait for a planned minor. Security or data-loss fixes are
 backported to a 3.x patch for three months after 4.0 (owner may change the window).
 
-**Reference version:** FullCalendar v7.1.1 (released 2026-10-06,
-https://github.com/fullcalendar/fullcalendar/releases). Option index:
-https://fullcalendar.io/docs/all. v7 migration notes: https://fullcalendar.io/docs/upgrading-from-v6.
-Premium list: https://fullcalendar.io/docs/premium. Pricing: https://fullcalendar.io/pricing.
+**Behaviour references:** as CLAUDE.md requires, RFC 5545 first, then the established calendar
+conventions: FullCalendar (read at v7.1.1, https://fullcalendar.io/docs/all and its source) and
+Google Calendar. Each feature's task plan cites the exact page or `file:line` it follows.
 
-**Inputs:** the gap sweep of 2026-10-11 (code inventory of v3.2.1, the FullCalendar v7 docs,
-and all 109 issues on kcsujeet/ilamy-calendar). Supersedes `docs/api-parity-checklist.md` as
+**Inputs:** a sweep on 2026-10-11 of the v3.2.1 code, established calendar conventions and all
+109 issues on kcsujeet/ilamy-calendar. Supersedes `docs/api-parity-checklist.md` as
 the plan of record; every item on that checklist is mapped to a release below.
 
 ---
 
 ## Where we stand (v3.2.1)
 
-**Already ahead of FullCalendar, and protected by every release:**
+**Strengths every release protects:**
 
-- Resource views (vertical columns, and horizontal rows that act as a resource timeline) under
-  MIT. FullCalendar sells timeline, resource timeline, vertical resource views and every
-  resource API as premium ($480+ for 1–10 developers, or AGPLv3).
+- Resource views in both orientations (vertical columns, and horizontal rows that act as a
+  resource timeline), under MIT.
 - RFC 5545 recurrence with per-occurrence overrides (`recurrenceId`), this/following/all scopes
-  and a rule editor. FullCalendar's rrule plugin does not document overrides
-  (https://fullcalendar.io/docs/rrule-plugin) and has open zone/DST bugs (#6815, #7190, #7680).
+  and a rule editor.
 - Zone-correct clock math, with the known dayjs gap recorded in `docs/timezones.md`.
-
-Since v7, FullCalendar is also native React, CSS-free, shadcn-themed and Temporal-based, so
-those are no longer differentiators on their own.
 
 ---
 
@@ -78,12 +72,12 @@ before any real plugin depends on it.
 - **A new name for an old thing lands as an alias, not a rename.** The old name keeps working
   until 4.0 and gains a `@deprecated` TSDoc tag naming the replacement. No runtime warnings.
 - **Match the standard and cite it.** Before a feature's task plan is written, the manager
-  reads the FullCalendar v7.1.1 docs page (and its source where the docs are vague) for every
-  option it mirrors and records the URL or `file:line`. RFC 5545 beats FullCalendar; Google
+  reads the reference docs (FullCalendar v7.1.1 docs and source where they are vague) for every
+  convention it follows and records the URL or `file:line`. RFC 5545 beats FullCalendar; Google
   Calendar decides where both are silent; where all three are silent the plan says so and
   justifies the choice (CLAUDE.md Hard Rules).
-- **Prefer FullCalendar's option names** for new options unless an ilamy name already covers
-  the concept (see D6).
+- **Prefer the conventional option names** (as used by FullCalendar) for new options unless an
+  ilamy name already covers the concept (see D6), so the API is familiar.
 - **New option values survive the Temporal migration:** clock times as `'HH:mm'`, durations as
   minutes or `'HH:mm'`, formats as `Intl.DateTimeFormatOptions`. 3.x callback dates stay
   `Dayjs` for consistency and convert in 4.0 with everything else.
@@ -94,7 +88,7 @@ before any real plugin depends on it.
 - **One feature, one branch, one PR.** A minor ships only when all of its features are merged.
 - **Every feature updates:** its `docs/*.md`, the website docs page, `CHANGELOG`, the dev log,
   default English strings for new UI text, and `docs/api-parity-checklist.md`.
-- **Simplicity first.** An option only a FullCalendar power user would miss may be cut; the
+- **Simplicity first.** An option only a power user would miss may be cut; the
   cut is recorded in the feature's task plan.
 - **Bundle budget:** report core `dist/index.js` gzipped size before and after each feature.
   Core growth over 2% for one feature needs a stated reason; plugins are measured separately.
@@ -121,7 +115,7 @@ under **Escalation**.
 
 1. **Plan** (manager): task plan in `docs/superpowers/plans/`, with API, citations,
    acceptance criteria, the personas that must sign off, and a placement (core/plugin) decision.
-2. **Build** (engineer): branch `parity/<release>-<feature>` in a worktree; failing tests
+2. **Build** (engineer): branch `roadmap/<release>-<feature>` in a worktree; failing tests
    first; implementation; `bun run ci` and `bun run e2e` green; revert proof recorded.
 3. **QA** (personas, parallel): each persona runs its activity script against the branch.
    Every finding is a failing spec. Findings go back to the engineer; QA reruns until clean.
@@ -170,12 +164,12 @@ the regular spec files once fixed.
 
 ### Escalation (the only reasons to involve the owner)
 
-- An open decision (D1–D7 below) whose release has started.
+- An open decision (D1–D8 below) whose release has started.
 - A standard that is genuinely ambiguous after FullCalendar, RFC 5545 and Google Calendar are
   checked.
 - Anything outward-facing beyond feature-branch PRs: merging, commenting on or closing
   issues, posting reviews, publishing to npm, deploying the website. Pushing a
-  `parity/*` branch and opening its PR is pre-approved and is not an escalation.
+  `roadmap/*` branch and opening its PR is pre-approved and is not an escalation.
 - Anything destructive outside a feature branch.
 
 ---
@@ -189,16 +183,16 @@ kcsujeet/ilamy-calendar#101 (15-minute snapping in resource views), #7, #40, #50
 | # | Feature | Placement | Notes |
 |---|---|---|---|
 | 3.3.0 | **Truthful docs** | — | `README.md:53` and `packages/calendar/README.md:53` claim resize; the README claims overlap prevention; audit "100% test coverage" and "100+ locales". Same audit on `apps/website`. Ships as a 3.2.2 patch immediately. |
-| 3.3.1 | **Change info** | Core | Extend `EventsChange` (`packages/types/src/index.ts:170`) with `oldEvent`, `delta: { start, end }` (days + milliseconds; verify FullCalendar's Duration split), and `revert()` that restores every row of the action, recurring scopes included (#309). Touch: `hooks/calendar-data/event-changes.ts`, `use-event-mutations.ts`, `use-drop-commit.ts`. |
+| 3.3.1 | **Change info** | Core | Add `delta` (`{ days, milliseconds }`, whole calendar days plus wall-clock time) and `revert()` to `EventsChange` (`packages/types/src/index.ts:170`). `revert` restores every row of the action, recurring scopes included (#309), and fires no callbacks. No `oldEvent` field: `EventsChange.event` is already the pre-change event; the docs state the mapping. Touch: `hooks/calendar-data/event-changes.ts`, `use-event-mutations.ts`, `use-plugin-mutations.ts`. |
 | 3.3.2 | **Edit permissions** | Core | `editable`, `eventStartEditable`, `eventDurationEditable`, `eventAllow(info)`; per-event `editable`/`startEditable`/`durationEditable`, per-event over calendar as in FullCalendar. Evaluated on every snap through the existing `isCellDisabled` path in `drag-and-drop/dnd-utils.ts`. `disableDragAndDrop` becomes an alias of `editable={false}`. |
-| 3.3.3 | **Event resize** | Core (shares the drag engine; FullCalendar bundles resize with drag) | End-edge handle on the segment with `isEnd`; start edge only with `eventResizableFromStart`. Snaps to the slot (time grid) or day (day grid); minimum one slot or one day; end stays exclusive (#248). Recurring occurrences go through the scope dialog. `onEventResize` plus `onEventsChange`. e2e: real pointer and touch resize in week, month, horizontal resource day, vertical resource week; refusal by `eventAllow`. |
+| 3.3.3 | **Event resize** | Core (shares the drag engine) | End-edge handle on the segment with `isEnd`; start edge only with `eventResizableFromStart`. Snaps to the slot (time grid) or day (day grid); minimum one slot or one day; end stays exclusive (#248). Recurring occurrences go through the scope dialog. `onEventResize` plus `onEventsChange`. e2e: real pointer and touch resize in week, month, horizontal resource day, vertical resource week; refusal by `eventAllow`. |
 | 3.3.4 | **Visible hours** | Core | `slotMinTime`, `slotMaxTime` (`'HH:mm'`), independent of `hideNonBusinessHours`. Touch: `utils/view-hours.ts`. |
 | 3.3.5 | **Slot and snap sizes** | Core | `slotDuration: number` (widens `SlotDuration`; 15/30/60 render identically), `snapDuration` (core of #101), `slotLabelInterval`. |
 | 3.3.6 | **Formats** | Core | `slotLabelFormat`, `eventTimeFormat`, `displayEventTime`, `displayEventEnd`, `dayHeaderFormat`, `titleFormat`, all `Intl.DateTimeFormatOptions`; `timeFormat` stays as shorthand. |
 | 3.3.7 | **Display toggles** | Core | `allDaySlot`; `nowIndicator` (default true, see D3); `weekNumbers` incl. month rows, `weekNumberCalculation`; `weekends`; `hiddenDays` in every view; `scrollTime` with minutes (today floored). |
 
 **Acceptance:** a consumer can resize, reject any move or resize before or after it lands, undo
-it with one call, and configure the time axis as in FullCalendar.
+it with one call, and configure the time axis.
 
 ## Release 3.4 — data, control, contract, deprecations
 
@@ -211,7 +205,7 @@ The last additive release before 4.0.
 | 3.4.3 | **Ref API** | Core | `ref` prop (React 19 peer floor allows ref as a prop; verify on react.dev). `gotoDate`, `next`, `prev`, `today`, `changeView`, `getEvents`, `getEventById`, `refetchEvents`, `scrollToTime`; `select`/`unselect` land with 4.1.3. Built with `useImperativeHandle` over the existing context API. |
 | 3.4.4 | **Plugin contract hooks** | Core | The six hooks in **Core vs plugin**, each with an internal test plugin. |
 | 3.4.5 | **Deprecation set** | Core | Every name 4.0 removes has its replacement and a `@deprecated` tag. `docs/migration-v4.md` drafted. |
-| 3.4.6 | **Migration guide from FullCalendar** | Docs | `docs/migration-from-fullcalendar.md`: option mapping, deliberate deviations, a ported example. Grows with each 4.x release. |
+| 3.4.6 | **Migration guides** | Docs | For users coming from other calendar libraries: option mapping, deliberate deviations, a ported example. Grows with each 4.x release. |
 
 **Acceptance:** a consumer drives the calendar from outside, loads data by visible range, and a
 third party can write every 4.x plugin against the public contract alone.
@@ -246,7 +240,7 @@ the Upgrader persona passes on the migrated configuration.
 | 4.1.4 | **External drag-in, between calendars** | Plugin `external-drag` | `<CalendarDraggable eventData>`, consumer `DndContext`, `drop`, `onEventReceive`, `onEventLeave`. Check dnd-kit's support for draggables outside the context subtree first; study https://fullcalendar.io/docs/external-dragging. |
 | 4.1.5 | **Group moves** | Plugin `constraints` (via `applyEdit` returning related rows) | Moving or resizing one event of a `groupId` moves all of them, one `onEventsChange`. |
 
-## Release 4.2 — scheduler (headline: FullCalendar premium, free)
+## Release 4.2 — scheduler (headline release)
 
 | # | Feature | Placement | Notes |
 |---|---|---|---|
@@ -270,7 +264,7 @@ the Upgrader persona passes on the migrated configuration.
 | 4.3.3 | **Toolbar config** | Core | `headerToolbar: { start, center, end }`, `buttons` (FullCalendar v7 naming), plugin items via the toolbar hook. |
 | 4.3.4 | **Render hooks and callback context** | Core | Public `render*`/`get*ClassName` for day cell, day header, slot label, "more" link, resource label; `navLinks` with callbacks; `jsEvent`/`el` on callbacks; `onEventMouseEnter`/`Leave`. |
 | 4.3.5 | **Sizing and month options** | Core | `height`, `contentHeight`, `aspectRatio`, `expandRows`, `fixedWeekCount`, `showNonCurrentDates`. |
-| 4.3.6 | **Accessibility** | Core | ARIA grid roles, roving tabindex, keyboard move/resize/select via dnd-kit `KeyboardSensor`, translated live-region announcements, Axe in the e2e gate with zero violations. FullCalendar has no keyboard drag (#2535) or keyboard select (#6528). |
+| 4.3.6 | **Accessibility** | Core | ARIA grid roles, roving tabindex, keyboard move/resize/select via dnd-kit `KeyboardSensor`, translated live-region announcements, Axe in the e2e gate with zero violations. |
 | 4.3.7 | **RTL** | Core | `direction` (default: the document's `dir`); logical Tailwind utilities; mirrored layout and drag math; `&direction=rtl` axis in the e2e matrix. |
 | 4.3.8 | **Print** | Core | `@media print` rules; e2e via `page.emulateMedia({ media: 'print' })`. |
 | 4.3.9 | **Interop** | Plugins `ical` (import, TZID+VTIMEZONE export per RFC 5545 §3.6.5), `ics-feed`, `google-calendar` | Feeds use the event-sources hook. Parser chosen per the latest-version rule (check `ical.js`, which FullCalendar uses). |
@@ -290,10 +284,12 @@ the Upgrader persona passes on the migrated configuration.
 - **D5 — Framework reach.** Recommended: React only through this plan.
 - **D6 — Clashing names** (`firstDayOfWeek`/`firstDay`, `timezone`/`timeZone`,
   `onCellClick`/`dateClick`). Recommended: keep ilamy's, document the mapping. Needed by 3.4.5.
+- **D8 — `editable` default.** True in 3.x so nothing breaks; the convention (FullCalendar) is
+  false. Flip in 4.0 or keep and record the deviation. Needed by 3.4.5.
 - **D7 — Year view and iCal export out of core in 4.0.** Recommended yes; resource axis only if
   it fits the contract cleanly. Needed by 3.4.5.
 
-## Parity checklist mapping
+## Checklist mapping
 
 | `docs/api-parity-checklist.md` item | Feature |
 |---|---|

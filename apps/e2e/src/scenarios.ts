@@ -327,6 +327,28 @@ export const scenarios = {
 		],
 	},
 
+	'all-day-in-clock-change-week': {
+		description:
+			'All-day events written as New York midnights (-04:00, the week after the clocks went forward on 9 March), so with `timezone=America/New_York` the month row holds Sunday 9 to Saturday 15 March, a week whose columns carry a stale UTC offset. Each bar must sit in exactly its own day.',
+		views: ['month'],
+		events: [
+			event(
+				'wed-all-day',
+				'Wednesday all-day',
+				'2025-03-12T00:00:00.000-04:00',
+				'2025-03-13T00:00:00.000-04:00',
+				{ allDay: true }
+			),
+			event(
+				'sat-all-day',
+				'Saturday all-day',
+				'2025-03-15T00:00:00.000-04:00',
+				'2025-03-16T00:00:00.000-04:00',
+				{ allDay: true }
+			),
+		],
+	},
+
 	recurring: {
 		description:
 			'Two recurring series (open with plugins=recurrence): a Monday/Wednesday class that began in June 2015, so each expansion walks years of rule, and a daily stand-up. Pins the occurrences the recurrence plugin draws, including after navigating away and back.',

@@ -140,6 +140,27 @@ Grid cells read `CalendarCellContext` (`features/calendar/stores/calendar-cell-c
 
 `pointerWithinLazily` (`features/calendar/utils/pointer-within-lazily.ts`) replaces dnd-kit's `pointerWithin`. It applies the same inclusive point-in-rect test but stops reading a cell's edges once one rules it out, then passes the survivors to `pointerWithin` itself, so hits and ranking are identical. The drag sensors' options are module constants, because dnd-kit's `useSensor` memoizes on the options object's identity.
 
+## Placing Events on a Row's Columns
+
+`layoutHorizontal` (and the day-grid branch of `layoutVertical`) places an event by measuring it against the row's columns. Doing that per event, per column, is O(events x columns) and builds Dayjs objects in the hot loop, which is costly: a zone-aware `startOf` is about ten times a plain one, and an hour axis has 168 columns.
+
+The columns are measured **once per layout call** instead (`utils/layout/day-columns.ts`, `hour-columns.ts`), into plain millisecond arrays, and each event is then placed by binary search (`column-search.ts`), O(events x log columns), with no Dayjs created per event:
+
+- **Day axis.** Each column's day is the half-open range `[dayStart, dayEnd)`. The first column an event reaches is the first whose day ends after the event starts; the last is the last whose day starts at or before the event's last instant (`end` is exclusive, #248). Truncation is whether those columns' days lie beyond the event's. Each `dayStart` is the column's own `startOf('day')`, once per column per layout: a column must never be trusted to read midnight, because `getWeekDays`/`getMonthWeeks` build columns with `.add(n, 'day')` and in a clock-change week they carry a stale offset, read midnight and sit an hour off it (a shortcut that trusted them put all-day bars one column too wide, covered by the `getMonthWeeks` tests in `horizontal.test.ts` and `clock-change-week.spec.ts`). A day ends where the next column's starts unless a hidden day (or the grid's end) follows.
+- **Hour axis.** Each column is its wall-clock reading in ms (`wall-clock.ts`, the same reading as `wallClockDiff`, #311). The columns an event overlaps are one run in clock order, found by two searches. On a day the clocks change, two columns can share an instant and the later one wins, as before.
+- **Multi-unit or single-unit** (which loop places the event) comes out of the same measurements, so the old per-event `startOf`/`subtract` is gone too. Only an hour-axis event that straddles a clock change still asks dayjs.
+
+Measured with `bun` micro-benchmarks (minimum of 4 runs, busy machine), ms:
+
+| Scenario | main, no tz | stack before, no tz | now, no tz | main, New York | stack before, New York | now, New York |
+|---|---|---|---|---|---|---|
+| hour axis, 500 rows x 3 events | 28.9 | 288.7 | 10.2 | 544.1 | 523.3 | 10.4 |
+| hour axis, 100 events in one row | 1.6 | 19.1 | 0.13 | 33.2 | 34.5 | 0.13 |
+| day axis, 7 cols, 500 rows x 5 events | 31.1 | 42.1 | 7.5 | 864.5 | 1336.1 | 169.3 |
+| resource month, 31 cols, 100 rows x 31 events | 40.7 | 153.5 | 5.3 | 1050.5 | 4758.5 | 136.5 |
+
+A change here must keep the layout tests passing and not call `startOf`, `diff` or `wallClockDiff` per event.
+
 ## Timezone Reactive Updates
 
 When the `timezone` prop changes, the engine updates both `currentDate` and stored events with `.tz(timezone)`. This is necessary because:

@@ -100,6 +100,18 @@ export const removeSettings = async (
 }
 
 /**
+ * Waits out every running animation. Bars slide in over 500ms (10px sideways
+ * for an event bar), so a box measured earlier is where the bar is not going
+ * to stay: a press at 95% of an all-day bar landed 1px past its settled edge
+ * on a slow runner and grabbed nothing. Measure geometry only after this.
+ */
+export const settleAnimations = async (page: Page): Promise<void> => {
+	await page.evaluate(() =>
+		Promise.all(document.getAnimations().map((animation) => animation.finished))
+	)
+}
+
+/**
  * Lifts the pointer once the drag has caught up with it.
  *
  * dnd-kit derives the cell under the pointer (`over`) while rendering, so a

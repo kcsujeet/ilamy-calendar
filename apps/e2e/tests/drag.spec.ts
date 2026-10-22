@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { gotoScenario, releasePointer } from './support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	settleAnimations,
+} from './support/harness'
 import { MonthGrid, TimeGrid } from './support/pages'
 
 /**
@@ -52,7 +56,7 @@ const dragTo = async (
 	to: import('@playwright/test').Locator
 ): Promise<void> => {
 	await pressAndMoveTo(page, from, to)
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 /** The fill an event gets when it declares no colour of its own. */
@@ -1761,6 +1765,7 @@ test.describe('a drop that crosses a boundary', () => {
 				settings: { scrollTime: '00:00', slot: 30 },
 			})
 			const grid = new TimeGrid(page)
+			await settleAnimations(page)
 			const from = await at(
 				page.locator('[data-testid="horizontal-event-allday-1"]').first(),
 				grabbedAt,
@@ -1791,6 +1796,7 @@ test.describe('a drop that crosses a boundary', () => {
 			settings: { scrollTime: '00:00', slot: 30 },
 		})
 		const grid = new TimeGrid(page)
+		await settleAnimations(page)
 		const from = await at(grid.bars('basic-1').first(), 0.5, 0.2)
 		const to = await at(grid.allDayRow, 0.7, 0.5)
 
@@ -1817,9 +1823,7 @@ test.describe('a drop that crosses a boundary', () => {
 			date: '2025-03-05T12:00:00.000-05:00',
 		})
 		const grid = new TimeGrid(page)
-		await page.evaluate(() =>
-			Promise.all(document.getAnimations().map((a) => a.finished))
-		)
+		await settleAnimations(page)
 		const from = await at(grid.bars('night-shift').first(), 0.5, 0.02)
 		const to = await at(grid.slotAt('2025-03-09T01:00'), 0.5, 0.1)
 

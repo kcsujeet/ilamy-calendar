@@ -812,7 +812,7 @@ test.describe('edit permissions', () => {
 		expect(await month.eventChanges()).toEqual([])
 	})
 
-	test('a locked bar is a plain clickable event: no drag attributes, a normal click opens it', async ({
+	test('a locked bar is a plain clickable button: no drag attributes, a normal click opens it', async ({
 		page,
 	}) => {
 		await gotoScenario(page, { scenario: 'edit-permissions', view: 'month' })
@@ -830,10 +830,13 @@ test.describe('edit permissions', () => {
 				disabled: element.hasAttribute('aria-disabled'),
 				role: element.hasAttribute('role'),
 			}))
+		// No drag attributes, but still a focusable `role=button`: the keyboard
+		// opens it with Enter or Space (WCAG 2.1.1; accessibility.spec.ts). The
+		// role used to be absent, which left the bar unreachable without a mouse.
 		expect(await dragAttributesOn(lockedBar)).toEqual({
 			describedBy: false,
 			disabled: false,
-			role: false,
+			role: true,
 		})
 		expect(await dragAttributesOn(freeBar)).toMatchObject({
 			describedBy: true,

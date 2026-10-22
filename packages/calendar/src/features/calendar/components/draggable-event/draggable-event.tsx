@@ -1,7 +1,7 @@
 import { useDraggable } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { memo, useRef } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import type { ResizeEdge } from '@/features/calendar/components/drag-and-drop/dnd-utils'
@@ -133,6 +133,46 @@ interface DraggableEventProps {
 	resizeGranularity?: ResizeGranularity
 }
 
+interface KeyboardInput {
+	isMoveBlocked: boolean
+	isClickable: boolean
+	open: () => void
+}
+
+/*
+ * Enter or Space opens the event, as a click does. FullCalendar does the same
+ * for its focusable bars (`createAriaKeyboardAttrs`,
+ * packages/preact/src/util/dom-event.ts, v7.1.1), and `preventDefault()`s so
+ * Space does not scroll the page. A key pressed inside custom content (a
+ * button of the consumer's) belongs to that content, not to the bar.
+ *
+ * A movable bar already has `role=button` and `tabIndex=0` from dnd-kit's
+ * attributes; one that cannot move needs them from here, or the keyboard cannot
+ * reach it. A bar whose click is disabled is not interactive at all.
+ */
+const getKeyboardProps = ({
+	isMoveBlocked,
+	isClickable,
+	open,
+}: KeyboardInput) => {
+	if (!isClickable) {
+		return undefined
+	}
+	const openOnEnterOrSpace = (keyEvent: KeyboardEvent<HTMLDivElement>) => {
+		const isPressedOnBar = keyEvent.target === keyEvent.currentTarget
+		const isActivationKey = keyEvent.key === 'Enter' || keyEvent.key === ' '
+		if (!(isPressedOnBar && isActivationKey)) {
+			return
+		}
+		keyEvent.preventDefault()
+		open()
+	}
+	const focusableButton = isMoveBlocked
+		? { role: 'button', tabIndex: 0 }
+		: undefined
+	return { ...focusableButton, onKeyDown: openOnEnterOrSpace }
+}
+
 interface DraggableBarInput {
 	elementId: string
 	event: CalendarEvent
@@ -183,7 +223,7 @@ const useDraggableBar = ({
 	}
 
 	// A bar that cannot move is a plain clickable event: dnd-kit's attributes
-	// would announce drag instructions for it and mark it `aria-disabled`. Its
+	// would mark it `aria-disabled`. Its
 	// handles, if it has any, then carry the listeners, so only they start a drag.
 	const dragAttributes = isMoveBlocked ? undefined : attributes
 	const barListeners = isMoveBlocked ? undefined : listeners
@@ -263,6 +303,12 @@ function DraggableEventUnmemoized({
 		isSourceOfDrag: isDragging || isBeingDragged,
 	})
 
+	const keyboardProps = getKeyboardProps({
+		isMoveBlocked,
+		isClickable: !disableEventClick,
+		open: () => onEventClick(event),
+	})
+
 	const content = renderEventContent({
 		renderEvent,
 		event,
@@ -293,6 +339,7 @@ function DraggableEventUnmemoized({
 			ref={registerBar}
 			style={style}
 			transitionKey={elementId}
+			{...keyboardProps}
 			{...dragProps}
 		>
 			{content}

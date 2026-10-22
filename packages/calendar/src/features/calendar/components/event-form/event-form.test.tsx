@@ -820,6 +820,85 @@ describe('EventForm', () => {
 			expect(endText).toMatch(/\d{1,2}:\d{2}/)
 		})
 	})
+
+	/*
+	 * WCAG 1.3.1 / 3.3.2 / 4.1.2: each picker is named by its visible label, and
+	 * the date pickers keep their value in the name ("Start Date Aug 15, 2025").
+	 */
+	describe('Accessible names', () => {
+		it('names every date and time picker by its label', () => {
+			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
+
+			expect(
+				screen.getAllByRole('button', { name: /^Start Date/ })
+			).toHaveLength(1)
+			expect(screen.getAllByRole('button', { name: /^End Date/ })).toHaveLength(
+				1
+			)
+			expect(
+				screen.getAllByRole('combobox', { name: /^Start Time/ })
+			).toHaveLength(1)
+			expect(
+				screen.getAllByRole('combobox', { name: /^End Time/ })
+			).toHaveLength(1)
+		})
+
+		it('keeps the date in the date picker name', () => {
+			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
+
+			const startDate = screen.getByRole('button', { name: /^Start Date/ })
+
+			expect(startDate).toHaveAccessibleName('Start Date Aug 15, 2025')
+		})
+
+		it('points no aria-controls at an element that is not there', () => {
+			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
+
+			const startTime = screen.getByRole('combobox', { name: /^Start Time/ })
+			const controlsId = startTime.getAttribute('aria-controls')
+
+			expect(
+				controlsId === null || document.getElementById(controlsId) !== null
+			).toBe(true)
+		})
+	})
+
+	describe('Translated pickers', () => {
+		const renderWithKeysAsText = () =>
+			renderEventForm(
+				{ ...defaultProps, selectedEvent: testNewEvent },
+				{ translator: (key: string) => `[${key}]` }
+			)
+
+		it('translates the date picker month navigation', () => {
+			renderWithKeysAsText()
+			fireEvent.click(screen.getByRole('button', { name: /^\[startDate\]/ }))
+
+			expect(
+				screen.getByRole('button', { name: '[previousMonth]' })
+			).toBeInTheDocument()
+			expect(
+				screen.getByRole('button', { name: '[nextMonth]' })
+			).toBeInTheDocument()
+		})
+
+		it('translates the time picker search box', () => {
+			renderWithKeysAsText()
+			fireEvent.click(screen.getByRole('combobox', { name: /^\[startTime\]/ }))
+
+			expect(screen.getByPlaceholderText('[searchTime]')).toBeInTheDocument()
+		})
+
+		it('translates the time picker empty state', () => {
+			renderWithKeysAsText()
+			fireEvent.click(screen.getByRole('combobox', { name: /^\[startTime\]/ }))
+			fireEvent.change(screen.getByPlaceholderText('[searchTime]'), {
+				target: { value: 'zzz' },
+			})
+
+			expect(screen.getByText('[noTimeFound]')).toBeInTheDocument()
+		})
+	})
 })
 
 /**

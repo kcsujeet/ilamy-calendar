@@ -1,6 +1,7 @@
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { useState } from 'react'
 import { PickerNav } from '@/components/ui/picker-nav'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { PickerGridCell } from './picker-grid-cell'
 
 interface MonthGridProps {
@@ -11,6 +12,7 @@ interface MonthGridProps {
 
 // A Jan–Dec month picker with a year pager, for the Month view's title dropdown.
 export function MonthGrid({ selected, onSelect }: MonthGridProps) {
+	const t = useSmartCalendarContext((context) => context.t)
 	const [year, setYear] = useState(() => selected.year())
 	const now = dayjs()
 
@@ -23,10 +25,10 @@ export function MonthGrid({ selected, onSelect }: MonthGridProps) {
 		<div className="w-72 p-3" data-slot="month-grid">
 			<PickerNav
 				label={year}
-				nextLabel="Next year"
+				nextLabel={t('nextYear')}
 				onNext={() => setYear((y) => y + 1)}
 				onPrev={() => setYear((y) => y - 1)}
-				prevLabel="Previous year"
+				prevLabel={t('previousYear')}
 			/>
 
 			<div className="grid grid-cols-3 gap-1">

@@ -13,6 +13,26 @@ import {
 } from '@/features/calendar/utils/resolve-editability'
 import { EventDragOverlay } from './event-drag-overlay'
 
+/*
+ * dnd-kit's defaults describe a keyboard drag ("press the space bar to pick
+ * up") and announce raw ids ("Picked up draggable item vertical-event-3").
+ * Only the Mouse and Touch sensors are registered, so the first is a promise
+ * nothing keeps (WCAG 4.1.2), and the second is meaningless to a listener and
+ * only fires for pointer drags a screen-reader user does not make. Both are
+ * switched off: an empty instruction, and announcements that return nothing
+ * (dnd-kit's `announce` skips a nullish value). Keyboard moving is a separate
+ * feature; FullCalendar has none either.
+ */
+const NO_SCREEN_READER_TEXT = {
+	screenReaderInstructions: { draggable: '' },
+	announcements: {
+		onDragStart: () => undefined,
+		onDragOver: () => undefined,
+		onDragEnd: () => undefined,
+		onDragCancel: () => undefined,
+	},
+}
+
 interface CalendarDndContextProps {
 	children: React.ReactNode
 }
@@ -63,6 +83,7 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 	return (
 		<DragPreviewContext.Provider value={dragPreview}>
 			<DndContext
+				accessibility={NO_SCREEN_READER_TEXT}
 				collisionDetection={pointerWithinLazily}
 				id={dndContextId}
 				sensors={sensors}

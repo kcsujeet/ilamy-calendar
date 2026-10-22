@@ -1,8 +1,9 @@
 import { cn } from '@ilamy/ui/lib/utils'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { useState } from 'react'
+import { PickerNav } from '@/components/ui/picker-nav'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { getMonthWeeks, getWeekDays, isToday } from '@/utils/date-utils'
-import { PickerNav } from './picker-nav'
 
 interface CalendarProps {
 	selected?: Date
@@ -106,6 +107,7 @@ export function Calendar({
 	weekHover = false,
 	highlightedWeekOf,
 }: CalendarProps) {
+	const t = useSmartCalendarContext((context) => context.t)
 	const [viewMonth, setViewMonth] = useState<Dayjs>(() =>
 		dayjs(defaultMonth ?? selected ?? new Date()).startOf('month')
 	)
@@ -151,10 +153,10 @@ export function Calendar({
 		>
 			<PickerNav
 				label={viewMonth.format('MMMM YYYY')}
-				nextLabel="Next month"
+				nextLabel={t('nextMonth')}
 				onNext={() => setViewMonth((m) => m.add(1, 'month'))}
 				onPrev={() => setViewMonth((m) => m.subtract(1, 'month'))}
-				prevLabel="Previous month"
+				prevLabel={t('previousMonth')}
 			/>
 
 			<table

@@ -33,6 +33,7 @@ import {
 	buildEndDateTime,
 	getTimeConstraints,
 } from '@/features/calendar/utils/event-form-utils'
+import { keys } from '@/features/calendar/utils/keys'
 
 // Default event color, kept as a Tailwind class-pair (theme-aware) like before.
 const DEFAULT_EVENT_COLOR = 'bg-blue-100 text-blue-800'
@@ -407,8 +408,8 @@ const ScheduleFields = ({ schedule, businessHours }: ScheduleFieldsProps) => {
 	const endConstraints = getTimeConstraints(endDate, businessHours)
 
 	const dateFields = [
-		['startDate', startDate, handleStartDateChange],
-		['endDate', endDate, handleEndDateChange],
+		['startDate', 'start-date', startDate, handleStartDateChange],
+		['endDate', 'end-date', endDate, handleEndDateChange],
 	] as const
 
 	const timeFields = [
@@ -436,14 +437,22 @@ const ScheduleFields = ({ schedule, businessHours }: ScheduleFieldsProps) => {
 			</div>
 
 			<div className="grid grid-cols-2 gap-2 sm:gap-4">
-				{dateFields.map(([label, date, onChange]) => (
+				{dateFields.map(([label, name, date, onChange]) => (
 					<div key={label}>
-						<Label className="text-xs sm:text-sm">{t(label)}</Label>
+						<Label
+							className="text-xs sm:text-sm"
+							htmlFor={name}
+							id={keys.fieldLabel(name)}
+						>
+							{t(label)}
+						</Label>
 						<DatePicker
 							className="mt-1"
 							closeOnSelect
 							date={date}
 							disabled={disabledDateMatcher}
+							id={name}
+							labelId={keys.fieldLabel(name)}
 							onChange={onChange}
 						/>
 					</div>
@@ -454,14 +463,21 @@ const ScheduleFields = ({ schedule, businessHours }: ScheduleFieldsProps) => {
 				<div className="grid grid-cols-2 gap-2 sm:gap-4">
 					{timeFields.map(([label, name, value, onChange, c]) => (
 						<div key={label}>
-							<Label className="text-xs sm:text-sm">{t(label)}</Label>
+							<Label
+								className="text-xs sm:text-sm"
+								htmlFor={name}
+								id={keys.fieldLabel(name)}
+							>
+								{t(label)}
+							</Label>
 							<TimePicker
 								className="mt-1 h-8 text-sm sm:h-9"
+								id={name}
+								labelId={keys.fieldLabel(name)}
 								maxTime={c.max}
 								minTime={c.min}
 								name={name}
 								onChange={onChange}
-								placeholder={t('searchTime')}
 								timeFormat={timeFormat}
 								value={value}
 							/>

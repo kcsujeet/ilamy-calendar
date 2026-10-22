@@ -422,10 +422,13 @@ describe('draggable event drag attributes', () => {
 		roleDescription: element?.hasAttribute('aria-roledescription'),
 	})
 
+	// A bar that cannot move carries none of dnd-kit's drag attributes, but it
+	// is still a focusable `role=button`: the keyboard opens it with Enter or
+	// Space (WCAG 2.1.1). It used to be a bare div the keyboard could not reach.
 	const NO_DRAG_ATTRIBUTES = {
 		describedBy: false,
 		disabled: false,
-		role: false,
+		role: true,
 		roleDescription: false,
 	}
 

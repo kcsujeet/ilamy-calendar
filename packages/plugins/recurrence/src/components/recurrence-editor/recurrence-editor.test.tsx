@@ -190,6 +190,14 @@ describe('RecurrenceEditor', () => {
 	})
 
 	describe('🧪 Initial State & Basic Rendering', () => {
+		it('names the Repeat checkbox by its visible label', () => {
+			renderRecurrenceEditor()
+
+			expect(screen.getByRole('checkbox', { name: 'Repeat' })).toBe(
+				screen.getByTestId('toggle-recurrence')
+			)
+		})
+
 		it('should render with repeat checkbox unchecked by default', () => {
 			renderRecurrenceEditor()
 

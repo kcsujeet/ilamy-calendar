@@ -120,7 +120,8 @@ apps/e2e/                       the harness app (Vite, private) and its tests
   src/app.tsx                   reads the URL, mounts IlamyCalendar, publishes its state
   src/harness-config.ts         every calendar setting, parsed from the query string
   src/scenarios.ts              the typed scenario record (the events)
-  src/published-change.ts       the onEventsChange shape the harness publishes
+  src/seed.ts                   the `seed` URL parameter: rows as JSON become the scenario's events
+  src/published-change.ts       the onEventsChange shape and the stored row shape the harness publishes
   tests/support/harness.ts      gotoScenario: pins the clock, builds the URL
   tests/support/pages.ts        page objects: CalendarPage, MonthGrid, TimeGrid, YearGrid, ResourceAxis
   tests/{accessibility,behaviour,clock,drag,matrix}.spec.ts
@@ -146,13 +147,19 @@ The harness behaves like a consumer that controls `events`: it persists every
 `events` prop whenever it changes, so a harness that dropped one of them would
 see that row come back on the next update (#315). It publishes what the
 calendar reports as JSON in two hidden `<script>` elements, read by
-`CalendarPage.eventState()` (`event-state`, the stored rows) and
+`CalendarPage.eventState()` (`event-state`, the stored rows: id, uid, title, start, end, allDay, resourceId,
+recurrenceId, exdates and the rule with ISO strings, so a spec can assert what a scope stored) and
 `CalendarPage.eventChanges()` (`event-changes`, every `onEventsChange` call).
 With `fetch=delayed` (and `fetchDelay=<ms>`) or `fetch=failing` it passes `events` as a function that plays the consumer's server: it answers from the rows the harness holds after the delay, or fails. The mode is read on every call, so `setSettings` can flip it on a mounted calendar. It publishes each call (range and `pending`/`done`/`failed`/`aborted`) in `fetch-log` and the `loading` / `onEventsError` signals in `fetch-state`, read by `CalendarPage.fetchLog()` and `fetchState()`. The harness runs under StrictMode, so a dev mount may log one aborted call before the live one.
 `fetch=held` / `resourcesFetch=held` never answer until `setSettings` changes the mode (a held call re-checks every 25ms), so a spec can assert the pending state without racing `fetchDelay`; a wall-clock delay is only safe when the spec asserts nothing about the pending state. `removeSettings` (next to `setSettings` in `support/harness.ts`) deletes a setting from a mounted calendar's URL: removing `fetch` turns `events` back into an array, and releases any held call.
 `resourcesFetch=delayed|failing|held` does the same for a `resources` function (answering with the scenario's resources, honouring `resourceCount`, with `fetchDelay`); it publishes `resources-fetch-log`, `resources-set` (the ids of every `resourcesSet` call) and `resources-errors` (the `onResourcesError` count; the shared `loading` signal stays in `fetch-state`), and draws a button (`refetch-resources`) that calls `refetchResources()` through a harness-only plugin provider. `refetchResourcesOnNavigate=true` passes straight through. Read by `resourcesFetchLog()`, `resourcesSetCalls()`, `resourcesErrors()` and `refetchResources()`.
 `hideExportButton=true` passes straight through. The `ical-export` scenario (a long-description event and an all-day weekly series with UNTIL, EXDATE and a moved occurrence) backs `tests/ical-export.spec.ts`, which reads the downloaded `.ics` the way an importer would. Its all-day dates are UTC midnights, so the spec runs in the pinned zone; the all-day-in-a-west-of-UTC-machine case is covered by the unit tests under `TZ=America/New_York`.
 With `onSelect=log` the drag-to-create plugin gets an `onSelect` that records each selection it commits (`start`, `end`, `allDay`, `resourceId`) in `window.__selectLog` instead of opening the form, so a spec can read the `CellInfo` the plugin reports. The `venue-rooms` scenario (30 rooms, a multi-room booking, two bookings in one room on one day) and `numeric-resources` (ids 1, 0, 2) cover the resource-axis cases; the `event-state` rows carry `resourceIds` next to `resourceId`.
+With `scenario=seed` (or `seed-resources`) the events come from the `seed=<json>` parameter: an array of ordinary stored
+rows (a series base, its overrides, plain events), with ISO strings where the store holds dates
+(`rrule.dtstart` and `rrule.until` included). A spec states the rows a case starts from instead of adding a fixture,
+which is how `recurrence-scopes.spec.ts` covers the scopes of a series: seed the rows, drive the form or the drag, assert
+the published rows and `onEventsChange` calls.
 With `revertChanges=true` it acts as a server that rejects every save: it persists no
 row and calls `change.revert()` inside `onEventsChange`, so a spec can check the
 calendar puts the event back.

@@ -179,6 +179,13 @@ export interface PluginMutationResult {
 	added: CalendarEvent[]
 	/** Existing rows to persist via `onEventDelete`. */
 	deleted: CalendarEvent[]
+	/**
+	 * The update as it was stored, when that is less than what was asked: a
+	 * scope that keeps its own day applies only the time of day of a drop on
+	 * another day. `delta` and `endDelta` describe these, not the request.
+	 * Omit it when the update was stored as asked.
+	 */
+	appliedUpdates?: Partial<CalendarEvent>
 }
 
 /**

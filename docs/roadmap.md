@@ -309,6 +309,8 @@ the Upgrader persona passes on the migrated configuration.
 | 4.3.8 | **Print** | Core | `@media print` rules; e2e via `page.emulateMedia({ media: 'print' })`. |
 | 4.3.9 | **Interop** | Plugins `ical` (import, TZID+VTIMEZONE export per RFC 5545 §3.6.5), `ics-feed`, `google-calendar` | Feeds use the event-sources hook. Parser chosen per the latest-version rule (check `ical.js`, which FullCalendar uses). The export fix is the known 3.x gap: a recurring series in a configured `timezone` exports as UTC `DTSTART` + `RRULE`, so importers drift an hour after a clock change (RFC 5545 §3.8.5.3); emit `DTSTART;TZID=` and a `VTIMEZONE` for the series' zone (needs the Temporal date core, 4.0.1). |
 
+| 4.3.10 | **Move a whole series to another weekday** | Plugin `recurrence` | Dragging an occurrence with scope "all events" to another weekday keeps the series on its weekday (deliberate in 3.3: the series stays anchored to its original date, and `onEventsChange` reports only the time-of-day change). Move it instead by shifting BYDAY or BYMONTHDAY together with DTSTART, as Google Calendar does. |
+
 4.3 may split into 4.3 and 4.4 if it is too large to ship as one.
 
 ---

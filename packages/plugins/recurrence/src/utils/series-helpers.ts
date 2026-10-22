@@ -1,5 +1,8 @@
 import type { CalendarEvent } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
+import { RRule } from 'rrule'
+import type { RRuleOptions } from '../types'
+import { toFloatingDate } from './floating-time'
 
 export const isRecurringEvent = (event: CalendarEvent): boolean => {
 	return Boolean(event.rrule || event.recurrenceId || event.uid)
@@ -35,39 +38,86 @@ export const findBaseEventIndex = (
 }
 
 /**
- * For the "following" scope: the UNTIL date that terminates the original
- * series is the end of the day BEFORE the target event's start. This keeps
- * the last pre-target occurrence in the terminated series.
- */
-export const getSeriesTerminationDate = (targetEvent: CalendarEvent): Date =>
-	targetEvent.start.subtract(1, 'day').endOf('day').toDate()
-
-/**
- * Predicate factory for the "following" scope of edit and delete: a detached
- * override of the same series whose occurrence falls strictly after the split
- * no longer belongs to the terminated series, so it must be removed and
- * reported, not orphaned in the store (#315).
- */
-export const makeIsFollowingOverride = (
-	parentUid: string,
-	terminationDate: Date
-): ((event: CalendarEvent) => boolean) => {
-	return (event: CalendarEvent): boolean => {
-		const isDetachedOverride = Boolean(event.recurrenceId) && !event.rrule
-		const belongsToSeries = getEventParentUID(event) === parentUid
-		const isAfterSplit =
-			Boolean(event.recurrenceId) &&
-			dayjs(event.recurrenceId).isAfter(terminationDate)
-		return isDetachedOverride && belongsToSeries && isAfterSplit
-	}
-}
-
-/**
  * RFC 5545 RECURRENCE-ID: for detached overrides, the original occurrence
  * start is stored on recurrenceId; generated instances use their start.
  */
 export const getOccurrenceStartISO = (event: CalendarEvent): string =>
 	event.recurrenceId ?? event.start.toISOString()
+
+/**
+ * How many occurrences the series has strictly before `occurrenceStartISO`.
+ * EXDATEd ones count: COUNT is applied before EXDATE removes anything
+ * (RFC 5545 §3.3.10, §3.8.5.3). Zero means the occurrence is the series' first.
+ */
+export const countOccurrencesBefore = (
+	baseEvent: CalendarEvent,
+	occurrenceStartISO: string
+): number => {
+	const { rrule } = baseEvent
+	if (!rrule) {
+		return 0
+	}
+	// Floating time, as `generateRecurringEvents` evaluates the rule.
+	const floatingStart = toFloatingDate(baseEvent.start)
+	const floatingUntil = rrule.until
+		? toFloatingDate(dayjs(rrule.until))
+		: undefined
+	const rule = new RRule({
+		...rrule,
+		dtstart: floatingStart,
+		until: floatingUntil,
+	})
+	const floatingOccurrence = toFloatingDate(dayjs(occurrenceStartISO))
+	// `between` includes its lower bound, so start one millisecond early to count DTSTART.
+	const beforeDtstart = new Date(floatingStart.getTime() - 1)
+	return rule.between(beforeDtstart, floatingOccurrence, false).length
+}
+
+/**
+ * Cuts a series so it ends the day before one of its occurrences, for the
+ * "following" scope of edit and delete. The occurrence is named by its ORIGINAL
+ * start, so a moved occurrence cuts where it came from, not where it now is.
+ *
+ * - UNTIL replaces COUNT: "The UNTIL or COUNT rule parts ... MUST NOT occur in
+ *   the same 'recur'" (RFC 5545 §3.3.10).
+ * - EXDATEs after the cut go, they exclude nothing any more.
+ * - `isFollowingOverride` matches the detached overrides of the series that
+ *   fall after the cut: they no longer belong to it, so the caller removes and
+ *   reports them (#315).
+ */
+export const cutSeriesBefore = (
+	baseEvent: CalendarEvent,
+	occurrenceStartISO: string
+): {
+	terminatedEvent: CalendarEvent
+	isFollowingOverride: (event: CalendarEvent) => boolean
+} => {
+	const terminationDate = dayjs(occurrenceStartISO)
+		.subtract(1, 'day')
+		.endOf('day')
+		.toDate()
+	const keptExdates = (baseEvent.exdates ?? []).filter(
+		(iso) => !dayjs(iso).isAfter(terminationDate)
+	)
+	const terminatedEvent: CalendarEvent = {
+		...baseEvent,
+		exdates: keptExdates,
+		rrule: {
+			...baseEvent.rrule,
+			count: undefined,
+			until: terminationDate,
+		} as RRuleOptions,
+	}
+
+	const parentUid = getEventParentUID(baseEvent)
+	const isFollowingOverride = (event: CalendarEvent): boolean => {
+		const isDetachedOverride = Boolean(event.recurrenceId) && !event.rrule
+		const belongsToSeries = getEventParentUID(event) === parentUid
+		const isAfterCut = dayjs(event.recurrenceId).isAfter(terminationDate)
+		return isDetachedOverride && belongsToSeries && isAfterCut
+	}
+	return { terminatedEvent, isFollowingOverride }
+}
 
 /**
  * Appends the target occurrence's start to the base event's EXDATE list,

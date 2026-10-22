@@ -62,8 +62,13 @@ export const usePluginMutations = ({
 				scope,
 			})
 			const updatedEvent = { ...event, ...updates }
-			const delta = toUpdateDelta(event, updatedEvent)
-			const endDelta = toEventDelta(event.end, updatedEvent.end)
+			// A plugin that stored less than the request says so, and the change
+			// reports what was stored.
+			const isPlainList = Array.isArray(editResult)
+			const appliedUpdates = isPlainList ? undefined : editResult.appliedUpdates
+			const storedEvent = { ...event, ...(appliedUpdates ?? updates) }
+			const delta = toUpdateDelta(event, storedEvent)
+			const endDelta = toEventDelta(event.end, storedEvent.end)
 			const origin: ChangeOrigin = {
 				action: 'update',
 				event,

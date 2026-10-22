@@ -2,6 +2,7 @@ import { expect, type Locator, type Page } from '@playwright/test'
 import type {
 	PublishedChange,
 	PublishedFetch,
+	PublishedRow,
 } from '../../src/published-change'
 
 /**
@@ -69,17 +70,7 @@ export class CalendarPage {
 	 * "where is this event now" is a question the DOM cannot answer; this is
 	 * what `onEventUpdate` has actually handed back.
 	 */
-	async eventState(): Promise<
-		Array<{
-			id: string
-			title: string
-			start: string
-			end: string
-			resourceId: string | number | null
-			resourceIds: Array<string | number> | null
-			allDay: boolean
-		}>
-	> {
+	async eventState(): Promise<PublishedRow[]> {
 		const raw = await this.page.getByTestId('event-state').textContent()
 		return JSON.parse(raw ?? '[]')
 	}

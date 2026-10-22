@@ -4,12 +4,14 @@ import type {
 	PluginMutationResult,
 } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
+import { wallClockDiff } from '@ilamy/utils/helpers'
 import type { RRuleOptions } from '../types'
 import {
+	countOccurrencesBefore,
+	cutSeriesBefore,
 	findBaseEventIndex,
 	getEventParentUID,
-	getSeriesTerminationDate,
-	makeIsFollowingOverride,
+	getOccurrenceStartISO,
 } from './series-helpers'
 
 /**
@@ -30,34 +32,102 @@ const withTimeOfDay = (target: Dayjs, source: Dayjs): Dayjs => {
 }
 
 /**
+ * The form reports `rrule: undefined` when the user unticks Repeat. An update
+ * that never touched the rule has no `rrule` key at all (a drag, an untouched
+ * form), so the key being present is the signal, not its value.
+ */
+const isRepeatRemoved = (updates: Partial<CalendarEvent>): boolean =>
+	'rrule' in updates && updates.rrule === undefined
+
+interface FollowingSeriesArgs {
+	baseEvent: CalendarEvent
+	targetEvent: CalendarEvent
+	updates: Partial<CalendarEvent>
+	occurrencesBefore: number
+}
+
+/**
+ * Where the new series of a "following" edit starts. It is anchored on the
+ * ORIGINAL day of the occurrence, shifted by the days the form (or the drag)
+ * moved it: a moved occurrence edited without changing its day must not start
+ * the series on the day it was moved to, which would lose the days between.
+ */
+const getFollowingSeriesStart = (
+	targetEvent: CalendarEvent,
+	editedStart: Dayjs
+): Dayjs => {
+	const originalStart = dayjs(getOccurrenceStartISO(targetEvent))
+	const targetDay = targetEvent.start.startOf('day')
+	const editedDay = editedStart.startOf('day')
+	const daysMoved = wallClockDiff(editedDay, targetDay, 'day')
+	return withTimeOfDay(originalStart.add(daysMoved, 'day'), editedStart)
+}
+
+/**
+ * The rule of the new series. A rule whose COUNT the user left alone keeps the
+ * occurrences that were left, so cutting a 7-occurrence series after 3 gives
+ * the new one 4, not 7 (RFC 5545 §3.3.10: COUNT is the number of occurrences
+ * of the rule). A COUNT the user changed is what they asked for.
+ */
+const getFollowingRule = ({
+	baseEvent,
+	updates,
+	occurrencesBefore,
+	dtstart,
+}: FollowingSeriesArgs & { dtstart: Date }): RRuleOptions => {
+	const mergedRule = { ...baseEvent.rrule, ...updates.rrule }
+	const submittedCount = mergedRule.count
+	const isCountUnchanged = submittedCount === baseEvent.rrule?.count
+	const count =
+		isCountUnchanged && typeof submittedCount === 'number'
+			? submittedCount - occurrencesBefore
+			: submittedCount
+	return { ...mergedRule, count, dtstart } as RRuleOptions
+}
+
+/**
  * Builds the new base series produced by a "following" edit: a fresh series id/uid
- * anchored at the target (or submitted) start, carrying the submitted updates.
+ * anchored at the edited occurrence, carrying the submitted updates. With Repeat
+ * unticked it is one plain event instead.
  */
 const buildFollowingSeriesEvent = (
-	baseEvent: CalendarEvent,
-	targetEvent: CalendarEvent,
-	updates: Partial<CalendarEvent>
+	args: FollowingSeriesArgs
 ): CalendarEvent => {
-	const originalDuration = baseEvent.end.diff(baseEvent.start)
-	const newSeriesStartTime = updates.start || targetEvent.start
-	const newSeriesEndTime =
-		updates.end || newSeriesStartTime.add(originalDuration)
+	const { baseEvent, targetEvent, updates } = args
+	const editedStart = updates.start ?? targetEvent.start
+	const newSeriesStart = getFollowingSeriesStart(targetEvent, editedStart)
+	const duration = updates.end
+		? updates.end.diff(editedStart)
+		: baseEvent.end.diff(baseEvent.start)
+	const newSeriesEnd = newSeriesStart.add(duration, 'millisecond')
 	const newSeriesId = `${baseEvent.id}_following`
-	const newSeriesUID = `${newSeriesId}@ilamy.calendar`
-
-	return {
+	const newEvent = {
 		...baseEvent,
 		...updates,
-		rrule: {
-			...baseEvent.rrule,
-			...updates.rrule,
-			dtstart: newSeriesStartTime.toDate(),
-		} as RRuleOptions,
 		id: newSeriesId,
-		uid: newSeriesUID,
-		start: newSeriesStartTime,
-		end: newSeriesEndTime,
+		start: newSeriesStart,
+		end: newSeriesEnd,
 		recurrenceId: undefined,
+	}
+
+	if (isRepeatRemoved(updates)) {
+		return { ...newEvent, rrule: undefined, uid: undefined, exdates: undefined }
+	}
+
+	// The exdates after the original occurrence carry over. Its own is not one
+	// of them: a moved occurrence's slot is where the new series begins. They
+	// follow the series to its new time of day, because an EXDATE must match the
+	// instance's start DATE-TIME exactly (RFC 5545 section 3.8.5.1); left at the
+	// old time they match nothing and the deleted days come back.
+	const originalStart = dayjs(getOccurrenceStartISO(targetEvent))
+	const carriedExdates = (baseEvent.exdates ?? [])
+		.filter((iso) => dayjs(iso).isAfter(originalStart))
+		.map((iso) => withTimeOfDay(dayjs(iso), editedStart).toISOString())
+	return {
+		...newEvent,
+		rrule: getFollowingRule({ ...args, dtstart: newSeriesStart.toDate() }),
+		uid: `${newSeriesId}@ilamy.calendar`,
+		exdates: carriedExdates,
 	}
 }
 
@@ -85,7 +155,9 @@ const applyAllScopeUpdates = (
 		newEnd = withTimeOfDay(baseEvent.end, updates.end)
 	}
 
-	const mergedRrule = updates.rrule ?? baseEvent.rrule
+	const mergedRrule = isRepeatRemoved(updates)
+		? undefined
+		: (updates.rrule ?? baseEvent.rrule)
 	let newRrule: RRuleOptions | undefined
 	if (mergedRrule) {
 		newRrule = { ...mergedRrule, dtstart: newStart.toDate() }
@@ -222,9 +294,34 @@ const updateThisScope = ({
 }
 
 /**
- * Scope "following": terminate the original series with UNTIL before the target
- * date and create a new series from the target. Detached overrides of the series
- * whose occurrence falls after the split are cascaded out (reported in `deleted`).
+ * The result of an edit that replaces a series' base row with `replacement`:
+ * the series' detached overrides go with it, reported in `deleted`.
+ */
+const replaceSeriesBase = (
+	updatedEvents: CalendarEvent[],
+	seriesUid: string,
+	replacement: CalendarEvent
+): PluginMutationResult => {
+	const isDetachedOverrideOfSeries = (e: CalendarEvent): boolean => {
+		const isDetachedOverride = Boolean(e.recurrenceId) && !e.rrule
+		const belongsToSeries = getEventParentUID(e) === seriesUid
+		return isDetachedOverride && belongsToSeries
+	}
+	return {
+		events: updatedEvents.filter((e) => !isDetachedOverrideOfSeries(e)),
+		updated: [replacement],
+		added: [],
+		deleted: updatedEvents.filter(isDetachedOverrideOfSeries),
+	}
+}
+
+/**
+ * Scope "following": cut the original series before the target's ORIGINAL
+ * occurrence (see `cutSeriesBefore`) and create a new series from it. Detached
+ * overrides of the series that fall after the cut are cascaded out (reported
+ * in `deleted`). On the series' first occurrence there is nothing to keep, so
+ * the new series replaces the base, like scope "all" (a series that ended
+ * before it started would be left behind otherwise).
  */
 const updateFollowingScope = ({
 	targetEvent,
@@ -233,33 +330,36 @@ const updateFollowingScope = ({
 	baseEventIndex,
 	baseEvent,
 }: ScopedUpdateContext): PluginMutationResult => {
-	const terminationDate = getSeriesTerminationDate(targetEvent)
-	const parentUid = getEventParentUID(baseEvent)
-	const isFollowingOverride = makeIsFollowingOverride(
-		parentUid,
-		terminationDate
+	const occurrenceStartISO = getOccurrenceStartISO(targetEvent)
+	const occurrencesBefore = countOccurrencesBefore(
+		baseEvent,
+		occurrenceStartISO
 	)
-
-	// Update original series with UNTIL to end before target date. Drop the
-	// exdates that now sit beyond UNTIL (the cascaded overrides' occurrences).
-	const cleanedExdates = (baseEvent.exdates ?? []).filter(
-		(iso) => !dayjs(iso).isAfter(terminationDate)
-	)
-	const terminatedEvent = {
-		...baseEvent,
-		exdates: cleanedExdates,
-		rrule: {
-			...baseEvent.rrule,
-			until: terminationDate,
-		} as RRuleOptions,
-	}
-	updatedEvents[baseEventIndex] = terminatedEvent
-
-	const newSeriesEvent = buildFollowingSeriesEvent(
+	const newSeriesEvent = buildFollowingSeriesEvent({
 		baseEvent,
 		targetEvent,
-		updates
+		updates,
+		occurrencesBefore,
+	})
+	const isFirstOccurrence = occurrencesBefore === 0
+
+	if (isFirstOccurrence) {
+		const seriesUid = getEventParentUID(baseEvent)
+		const staysSeries = Boolean(newSeriesEvent.rrule)
+		const replacement: CalendarEvent = {
+			...newSeriesEvent,
+			id: baseEvent.id,
+			uid: staysSeries ? seriesUid : undefined,
+		}
+		updatedEvents[baseEventIndex] = replacement
+		return replaceSeriesBase(updatedEvents, seriesUid, replacement)
+	}
+
+	const { terminatedEvent, isFollowingOverride } = cutSeriesBefore(
+		baseEvent,
+		occurrenceStartISO
 	)
+	updatedEvents[baseEventIndex] = terminatedEvent
 	updatedEvents.push(newSeriesEvent)
 
 	// The new series carries an rrule, so it is never matched as a following
@@ -280,6 +380,7 @@ const updateFollowingScope = ({
  * exceptions cleared, so previously split/deleted occurrences return.
  */
 const updateAllScope = ({
+	targetEvent,
 	updates,
 	updatedEvents,
 	baseEventIndex,
@@ -287,6 +388,7 @@ const updateAllScope = ({
 }: ScopedUpdateContext): PluginMutationResult => {
 	const seriesUid = getEventParentUID(baseEvent)
 	const anchored = applyAllScopeUpdates(baseEvent, updates)
+	const staysSeries = Boolean(anchored.rrule)
 	const updatedBaseEvent: CalendarEvent = {
 		...baseEvent,
 		...updates,
@@ -294,22 +396,17 @@ const updateAllScope = ({
 		end: anchored.end,
 		rrule: anchored.rrule,
 		exdates: undefined,
-		uid: seriesUid,
+		uid: staysSeries ? seriesUid : undefined,
 	}
 	updatedEvents[baseEventIndex] = updatedBaseEvent
 
-	const isDetachedOverrideOfSeries = (e: CalendarEvent): boolean => {
-		const isDetachedOverride = Boolean(e.recurrenceId) && !e.rrule
-		const belongsToSeries = getEventParentUID(e) === seriesUid
-		return isDetachedOverride && belongsToSeries
-	}
-	const events = updatedEvents.filter((e) => !isDetachedOverrideOfSeries(e))
-	const deletedOverrides = updatedEvents.filter(isDetachedOverrideOfSeries)
+	// What was stored is the time of day, on the day the occurrence was shown:
+	// the series keeps its own day, so a drop on another day moved nothing.
+	const appliedStart = withTimeOfDay(targetEvent.start, anchored.start)
+	const appliedEnd = appliedStart.add(anchored.end.diff(anchored.start))
 	return {
-		events,
-		updated: [updatedBaseEvent],
-		added: [],
-		deleted: deletedOverrides,
+		...replaceSeriesBase(updatedEvents, seriesUid, updatedBaseEvent),
+		appliedUpdates: { start: appliedStart, end: appliedEnd },
 	}
 }
 

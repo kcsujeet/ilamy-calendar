@@ -405,10 +405,14 @@ describe('updateRecurringEvent', () => {
 				scope: 'following',
 			}).events
 
-			expect(result).toHaveLength(2)
-
-			// Original should terminate before first occurrence (effectively making it empty)
-			expectTerminatedUntil(result, baseEvent.id, '2025-01-05T23:59:59.999Z')
+			// Contract moved: cutting before the first occurrence used to leave a
+			// series ending before its DTSTART (UNTIL 5 Jan, DTSTART 6 Jan) beside the
+			// new one. The edit now replaces the series (RFC 5545 §3.8.5.3: DTSTART is
+			// the first instance, so there is nothing before it to keep).
+			expect(result).toHaveLength(1)
+			expect(result.at(0)?.id).toBe(baseEvent.id)
+			expect(result.at(0)?.title).toBe('New Series')
+			expect(result.at(0)?.rrule?.until).toBeUndefined()
 		})
 
 		it('should cascade-delete detached overrides whose occurrence is after the split', () => {
@@ -904,11 +908,10 @@ describe('deleteRecurringEvent', () => {
 				scope: 'following',
 			}).events
 
-			const terminatedEvent = result[0]
-			if (!terminatedEvent.rrule) throw new Error('rrule missing')
-			expect(terminatedEvent.rrule.until).toEqual(
-				dayjs('2025-01-05T23:59:59.999Z').toDate()
-			)
+			// Contract moved: this used to leave the series with UNTIL 5 Jan before its
+			// DTSTART of 6 Jan, a row that draws nothing. Deleting from the first
+			// occurrence removes the series.
+			expect(result).toHaveLength(0)
 		})
 
 		it('should handle existing UNTIL in RRULE correctly', () => {
@@ -1186,13 +1189,14 @@ describe('Edge cases and stress tests', () => {
 			scope: 'following',
 		}).events
 
-		expect(currentEvents).toHaveLength(2) // terminated original + new series
+		// "Following" from the first occurrence replaces the series (the old one
+		// would end before it starts), so there is one row, not two.
+		expect(currentEvents).toHaveLength(1)
 
-		// Update "following" from later occurrence in new series
+		// Update "following" from a later occurrence of the replaced series
 		const secondTarget = {
 			...createTargetEvent(),
 			start: dayjs('2025-01-20T09:00:00'),
-			uid: 'recurring-1_following@ilamy.calendar',
 		}
 		currentEvents = updateRecurringEvent({
 			targetEvent: secondTarget,
@@ -1201,7 +1205,7 @@ describe('Edge cases and stress tests', () => {
 			scope: 'following',
 		}).events
 
-		expect(currentEvents).toHaveLength(3) // original terminated + first series terminated + second series
+		expect(currentEvents).toHaveLength(2) // first series terminated + second series
 	})
 
 	it('should preserve duration when creating new series in "following" scope', () => {
@@ -1225,5 +1229,388 @@ describe('Edge cases and stress tests', () => {
 		const newSeries = result.find((e) => e.uid?.includes('_following'))
 		expect(newSeries?.start.format('HH:mm')).toBe('14:00')
 		expect(newSeries?.end.format('HH:mm')).toBe('16:30') // Should preserve 2.5 hour duration
+	})
+})
+
+// A weekly Monday series of 7 occurrences (6 Jan .. 17 Feb 2025, 09:00Z), the
+// shape the "following" scope has to cut. Zulu strings, so the rows read the
+// same on any machine zone.
+const mondayISO = (weeksAfterFirst: number) =>
+	dayjs('2025-01-06T09:00:00.000Z').add(weeksAfterFirst, 'week').toISOString()
+
+const makeCountedSeries = (
+	overrides: Partial<CalendarEvent> = {},
+	rule: Partial<NonNullable<CalendarEvent['rrule']>> = {}
+): CalendarEvent => ({
+	id: 'counted',
+	uid: 'counted@calendar.test',
+	title: 'Counted',
+	start: dayjs(mondayISO(0)),
+	end: dayjs(mondayISO(0)).add(1, 'hour'),
+	rrule: {
+		freq: RRule.WEEKLY,
+		byweekday: [RRule.MO],
+		count: 7,
+		dtstart: new Date(mondayISO(0)),
+		...rule,
+	},
+	...overrides,
+})
+
+const occurrenceOfWeek = (
+	weeksAfterFirst: number,
+	overrides: Partial<CalendarEvent> = {}
+): CalendarEvent => ({
+	id: `counted_${weeksAfterFirst}`,
+	uid: 'counted@calendar.test',
+	title: 'Counted',
+	start: dayjs(mondayISO(weeksAfterFirst)),
+	end: dayjs(mondayISO(weeksAfterFirst)).add(1, 'hour'),
+	...overrides,
+})
+
+// A stored override: the occurrence of `weeksAfterFirst`, moved three days later.
+const movedOccurrence = (weeksAfterFirst: number): CalendarEvent =>
+	occurrenceOfWeek(weeksAfterFirst, {
+		id: `moved_${weeksAfterFirst}`,
+		start: dayjs(mondayISO(weeksAfterFirst)).add(3, 'day'),
+		end: dayjs(mondayISO(weeksAfterFirst)).add(3, 'day').add(1, 'hour'),
+		recurrenceId: mondayISO(weeksAfterFirst),
+	})
+
+// UNTIL is the end of the day before the occurrence, in the zone the calendar
+// reads dates in, which on a unit test is the machine's. Computed rather than
+// written as a UTC literal so the cut reads the same on any machine zone; the
+// zoned cases are in the e2e specs.
+const endOfDayBefore = (iso: string): Date =>
+	dayjs(iso).subtract(1, 'day').endOf('day').toDate()
+
+describe('"this and following" cuts the series (RFC 5545 §3.3.10)', () => {
+	const followingEdit = (
+		targetEvent: CalendarEvent,
+		currentEvents: CalendarEvent[],
+		updates: Partial<CalendarEvent> = { title: 'Edited' }
+	) =>
+		updateRecurringEvent({
+			targetEvent,
+			updates,
+			currentEvents,
+			scope: 'following',
+		})
+
+	const followingDelete = (
+		targetEvent: CalendarEvent,
+		currentEvents: CalendarEvent[]
+	) => deleteRecurringEvent({ targetEvent, currentEvents, scope: 'following' })
+
+	describe('edit', () => {
+		it('ends the old series with UNTIL only, never COUNT and UNTIL together', () => {
+			const { updated } = followingEdit(occurrenceOfWeek(3), [
+				makeCountedSeries(),
+			])
+			expect(updated.at(0)?.rrule?.count).toBeUndefined()
+			expect(updated.at(0)?.rrule?.until).toEqual(endOfDayBefore(mondayISO(3)))
+		})
+
+		it('gives the new series the occurrences that were left, not the full count', () => {
+			// 7 in all, 3 before the 4th: the new series holds the remaining 4.
+			const { added } = followingEdit(occurrenceOfWeek(3), [
+				makeCountedSeries(),
+			])
+			expect(added.at(0)?.rrule?.count).toBe(4)
+		})
+
+		it('counts an excluded occurrence before the cut toward COUNT', () => {
+			// COUNT is applied before EXDATE removes anything (§3.3.10, §3.8.5.3).
+			const series = makeCountedSeries({ exdates: [mondayISO(1)] })
+			const { added } = followingEdit(occurrenceOfWeek(3), [series])
+			expect(added.at(0)?.rrule?.count).toBe(4)
+		})
+
+		it('keeps a count the user typed into the form', () => {
+			const series = makeCountedSeries()
+			const { added } = followingEdit(occurrenceOfWeek(3), [series], {
+				rrule: { ...series.rrule, count: 2 } as CalendarEvent['rrule'],
+			})
+			expect(added.at(0)?.rrule?.count).toBe(2)
+		})
+
+		it('keeps the remaining count when the form resubmits the unchanged rule', () => {
+			const series = makeCountedSeries()
+			const { added } = followingEdit(occurrenceOfWeek(3), [series], {
+				rrule: { ...series.rrule, interval: 1 } as CalendarEvent['rrule'],
+			})
+			expect(added.at(0)?.rrule?.count).toBe(4)
+		})
+
+		it('carries an UNTIL series on unchanged', () => {
+			const until = new Date('2025-03-31T23:59:59.999Z')
+			const series = makeCountedSeries({}, { count: undefined, until })
+			const { added } = followingEdit(occurrenceOfWeek(3), [series])
+			expect(added.at(0)?.rrule?.until).toEqual(until)
+			expect(added.at(0)?.rrule?.count).toBeUndefined()
+		})
+
+		// EXDATE must match the instance's start DATE-TIME exactly (RFC 5545
+		// section 3.8.5.1), so a deleted day stays deleted only if its exdate moves
+		// to the new time of day with the series.
+		describe('with a changed time of day', () => {
+			const oneHourLater = (target: CalendarEvent) => ({
+				start: target.start.add(1, 'hour'),
+				end: target.end.add(1, 'hour'),
+			})
+			const series = makeCountedSeries({
+				exdates: [mondayISO(1), mondayISO(5)],
+			})
+
+			it('moves the exdates kept by the new series to the new time', () => {
+				const target = occurrenceOfWeek(3)
+				const { added } = followingEdit(target, [series], oneHourLater(target))
+				expect(added.at(0)?.exdates).toEqual([
+					dayjs(mondayISO(5)).add(1, 'hour').toISOString(),
+				])
+			})
+
+			it('leaves them as they are when the time of day is unchanged', () => {
+				const { added } = followingEdit(occurrenceOfWeek(3), [series])
+				expect(added.at(0)?.exdates).toEqual([mondayISO(5)])
+			})
+
+			it('keeps the exdates before the cut on the old series, at the old time', () => {
+				const target = occurrenceOfWeek(3)
+				const { updated } = followingEdit(
+					target,
+					[series],
+					oneHourLater(target)
+				)
+				expect(updated.at(0)?.exdates).toEqual([mondayISO(1)])
+			})
+		})
+
+		// A moved occurrence is cut where it came from. Cut at its new day it left
+		// the moved row in the store, drawn on top of the new series.
+		describe('from a moved occurrence', () => {
+			const moved = movedOccurrence(2)
+			const series = makeCountedSeries({ exdates: [mondayISO(2)] })
+
+			it('removes and reports the moved row', () => {
+				const { events, deleted } = followingEdit(moved, [series, moved])
+				expect(deleted.map((row) => row.id)).toEqual(['moved_2'])
+				expect(events.map((row) => row.id)).toEqual([
+					'counted',
+					'counted_following',
+				])
+			})
+
+			it('ends the old series the day before the ORIGINAL occurrence', () => {
+				const { updated } = followingEdit(moved, [series, moved])
+				expect(updated.at(0)?.rrule?.until).toEqual(
+					endOfDayBefore(mondayISO(2))
+				)
+			})
+
+			it('starts the new series on the original day, so the days between are kept', () => {
+				const { added } = followingEdit(moved, [series, moved])
+				expect(added.at(0)?.start.toISOString()).toBe(mondayISO(2))
+				expect(added.at(0)?.rrule?.dtstart.toISOString()).toBe(mondayISO(2))
+			})
+
+			it('keeps the exdate of the moved occurrence off the new series', () => {
+				// Its own slot is the new series' first occurrence.
+				const { added } = followingEdit(moved, [series, moved])
+				expect(added.at(0)?.exdates).toEqual([])
+			})
+
+			it('moves the new series by the days the form moved the start', () => {
+				const dayLater = moved.start.add(1, 'day')
+				const { added } = followingEdit(moved, [series, moved], {
+					start: dayLater,
+					end: dayLater.add(1, 'hour'),
+				})
+				expect(added.at(0)?.start.toISOString()).toBe(
+					dayjs(mondayISO(2)).add(1, 'day').toISOString()
+				)
+			})
+		})
+
+		describe('on the first occurrence', () => {
+			// The old series would end before it starts (§3.8.5.3: DTSTART is the
+			// first instance), so the edit is an edit of the whole series.
+			const first = occurrenceOfWeek(0)
+
+			it('replaces the series instead of leaving a dead one behind', () => {
+				const result = followingEdit(first, [makeCountedSeries()])
+				expect(result.events.map((row) => row.id)).toEqual(['counted'])
+				expect(result.events.at(0)?.title).toBe('Edited')
+				expect(result.events.at(0)?.rrule?.until).toBeUndefined()
+			})
+
+			it('keeps the full count and the series uid', () => {
+				const { events } = followingEdit(first, [makeCountedSeries()])
+				expect(events.at(0)?.rrule?.count).toBe(7)
+				expect(events.at(0)?.uid).toBe('counted@calendar.test')
+			})
+
+			it('reports the replaced row as updated, with the overrides deleted', () => {
+				const moved = movedOccurrence(2)
+				const { updated, added, deleted, events } = followingEdit(first, [
+					makeCountedSeries(),
+					moved,
+				])
+				expect(updated.map((row) => row.id)).toEqual(['counted'])
+				expect(added).toEqual([])
+				expect(deleted.map((row) => row.id)).toEqual(['moved_2'])
+				expect(events.map((row) => row.id)).toEqual(['counted'])
+			})
+		})
+
+		describe('with Repeat unticked', () => {
+			it('ends the old series and leaves one plain event that no longer repeats', () => {
+				const { updated, added } = followingEdit(
+					occurrenceOfWeek(3),
+					[makeCountedSeries()],
+					{ title: 'Once', rrule: undefined }
+				)
+				expect(updated.at(0)?.rrule?.until).toEqual(
+					endOfDayBefore(mondayISO(3))
+				)
+				expect(added.at(0)?.rrule).toBeUndefined()
+				expect(added.at(0)?.uid).toBeUndefined()
+				expect(added.at(0)?.exdates).toBeUndefined()
+			})
+
+			it('on the first occurrence turns the series into a plain event', () => {
+				const { events, updated } = followingEdit(
+					occurrenceOfWeek(0),
+					[makeCountedSeries()],
+					{ title: 'Once', rrule: undefined }
+				)
+				expect(events).toHaveLength(1)
+				expect(events.at(0)?.rrule).toBeUndefined()
+				expect(events.at(0)?.uid).toBeUndefined()
+				expect(updated.map((row) => row.id)).toEqual(['counted'])
+			})
+		})
+	})
+
+	describe('delete', () => {
+		it('ends the series with UNTIL only, never COUNT and UNTIL together', () => {
+			const { updated } = followingDelete(occurrenceOfWeek(3), [
+				makeCountedSeries(),
+			])
+			expect(updated.at(0)?.rrule?.count).toBeUndefined()
+			expect(updated.at(0)?.rrule?.until).toEqual(endOfDayBefore(mondayISO(3)))
+		})
+
+		it('drops the exdates after the cut and keeps those before it', () => {
+			const series = makeCountedSeries({
+				exdates: [mondayISO(1), mondayISO(5)],
+			})
+			const { updated } = followingDelete(occurrenceOfWeek(3), [series])
+			expect(updated.at(0)?.exdates).toEqual([mondayISO(1)])
+		})
+
+		it('from a moved occurrence removes the moved row and cuts at the original day', () => {
+			const moved = movedOccurrence(2)
+			const series = makeCountedSeries({ exdates: [mondayISO(2)] })
+			const { events, deleted, updated } = followingDelete(moved, [
+				series,
+				moved,
+			])
+			expect(deleted.map((row) => row.id)).toEqual(['moved_2'])
+			expect(events.map((row) => row.id)).toEqual(['counted'])
+			expect(updated.at(0)?.rrule?.until).toEqual(endOfDayBefore(mondayISO(2)))
+			expect(updated.at(0)?.exdates).toEqual([])
+		})
+
+		it('on the first occurrence removes the series and reports it as deleted', () => {
+			const moved = movedOccurrence(2)
+			const other = createBaseRecurringEvent({ id: 'other', uid: 'other@test' })
+			const { events, deleted, updated } = followingDelete(
+				occurrenceOfWeek(0),
+				[makeCountedSeries(), moved, other]
+			)
+			expect(events.map((row) => row.id)).toEqual(['other'])
+			expect(deleted.map((row) => row.id)).toEqual(['counted', 'moved_2'])
+			expect(updated).toEqual([])
+		})
+	})
+})
+
+describe('Repeat unticked with scope "all"', () => {
+	// The form reports `rrule: undefined` only when the user toggles Repeat; a
+	// drag or an edit that never touched it has no `rrule` key at all.
+	const editAll = (
+		updates: Partial<CalendarEvent>,
+		extra: CalendarEvent[] = []
+	) =>
+		updateRecurringEvent({
+			targetEvent: occurrenceOfWeek(3),
+			updates,
+			currentEvents: [makeCountedSeries({ exdates: [mondayISO(1)] }), ...extra],
+			scope: 'all',
+		})
+
+	it('turns the base into a plain event: no rule, no exdates, no series uid', () => {
+		const { events } = editAll({ title: 'Once', rrule: undefined })
+		expect(events).toHaveLength(1)
+		expect(events.at(0)?.rrule).toBeUndefined()
+		expect(events.at(0)?.exdates).toBeUndefined()
+		expect(events.at(0)?.uid).toBeUndefined()
+		expect(events.at(0)?.title).toBe('Once')
+	})
+
+	it('reports the base as updated and drops and reports its overrides', () => {
+		const { updated, deleted, events } = editAll({ rrule: undefined }, [
+			movedOccurrence(2),
+		])
+		expect(updated.map((row) => row.id)).toEqual(['counted'])
+		expect(deleted.map((row) => row.id)).toEqual(['moved_2'])
+		expect(events.map((row) => row.id)).toEqual(['counted'])
+	})
+
+	it('keeps the series when the updates carry no rrule key (a drag, an untouched form)', () => {
+		const dragUpdates = {
+			start: dayjs(mondayISO(3)).add(1, 'hour'),
+			end: dayjs(mondayISO(3)).add(2, 'hour'),
+			allDay: false,
+		}
+		const { events } = editAll(dragUpdates)
+		expect(events.at(0)?.rrule?.count).toBe(7)
+		expect(events.at(0)?.uid).toBe('counted@calendar.test')
+	})
+})
+
+describe('what scope "all" reports it stored', () => {
+	// "All events" keeps the series on its day (pinned above), so a drop on
+	// another day must not be reported as a day move.
+	const dropOnNextDayAnHourLater = () => {
+		const target = occurrenceOfWeek(3)
+		return updateRecurringEvent({
+			targetEvent: target,
+			updates: {
+				start: target.start.add(1, 'day').add(1, 'hour'),
+				end: target.end.add(1, 'day').add(1, 'hour'),
+			},
+			currentEvents: [makeCountedSeries()],
+			scope: 'all',
+		})
+	}
+
+	it('is the time of day change on the dragged occurrence`s own day', () => {
+		const stored = dropOnNextDayAnHourLater().appliedUpdates
+		expect(stored?.start?.toISOString()).toBe(
+			dayjs(mondayISO(3)).add(1, 'hour').toISOString()
+		)
+		expect(stored?.end?.toISOString()).toBe(
+			dayjs(mondayISO(3)).add(2, 'hour').toISOString()
+		)
+	})
+
+	it('matches the base that was stored: same time of day', () => {
+		const { appliedUpdates, updated } = dropOnNextDayAnHourLater()
+		expect(appliedUpdates?.start?.format('HH:mm')).toBe(
+			updated.at(0)?.start.format('HH:mm')
+		)
 	})
 })

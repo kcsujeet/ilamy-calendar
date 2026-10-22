@@ -1303,6 +1303,33 @@ describe('useCalendarEngine', () => {
 				const delta = onEventsChange.mock.calls.at(0)?.at(0)?.delta
 				expect(delta).toEqual({ days: 0, milliseconds: -7_200_000 })
 			})
+
+			it('is only the time of day for a scoped edit that keeps the series day', () => {
+				// "All events" keeps the series on its own day (docs/hooks-and-context.md),
+				// so a drop one day later and an hour later stored the hour only.
+				const { engine, onEventsChange } = renderRecurrenceEngine([
+					createRecurringEvent(),
+				])
+				const occurrence = createEvent({
+					id: 'recurring-1_2',
+					uid: 'recurring-1@ilamy.calendar',
+					start: dayjs('2025-01-13T10:00:00.000Z'),
+					end: dayjs('2025-01-13T11:00:00.000Z'),
+				})
+				act(() =>
+					engine().applyScopedEdit(
+						occurrence,
+						{
+							start: dayjs('2025-01-14T11:00:00.000Z'),
+							end: dayjs('2025-01-14T12:00:00.000Z'),
+						},
+						'all'
+					)
+				)
+				const change = onEventsChange.mock.calls.at(0)?.at(0)
+				expect(change?.delta).toEqual({ days: 0, milliseconds: 3_600_000 })
+				expect(change?.endDelta).toEqual({ days: 0, milliseconds: 3_600_000 })
+			})
 		})
 
 		describe('endDelta', () => {

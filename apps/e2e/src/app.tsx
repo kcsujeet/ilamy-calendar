@@ -16,7 +16,11 @@ import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { ConfigError, readUrlConfig } from './harness-config'
-import type { PublishedChange, PublishedFetch } from './published-change'
+import type {
+	PublishedChange,
+	PublishedFetch,
+	PublishedRow,
+} from './published-change'
 import {
 	isScenarioName,
 	PINNED_NOW,
@@ -24,6 +28,7 @@ import {
 	scenarios,
 	type ViewName,
 } from './scenarios'
+import { readSeededEvents } from './seed'
 
 const VIEWS: readonly ViewName[] = ['day', 'week', 'month', 'year', 'agenda']
 
@@ -91,6 +96,36 @@ const isOrientation = (value: string): value is Orientation =>
  * how a consumer changing a prop at runtime looks, and a fresh navigation can
  * never reproduce it: the calendar would mount with the new value instead.
  */
+const toPublishedRow = (event: CalendarEvent): PublishedRow => {
+	const rule = event.rrule
+	return {
+		id: String(event.id),
+		uid: event.uid ?? null,
+		title: event.title,
+		start: event.start.toISOString(),
+		end: event.end.toISOString(),
+		resourceId: event.resourceId ?? null,
+		resourceIds: event.resourceIds ?? null,
+		allDay: Boolean(event.allDay),
+		recurrenceId: event.recurrenceId ?? null,
+		exdates: event.exdates ?? null,
+		rrule: rule
+			? {
+					freq: rule.freq,
+					interval: rule.interval ?? null,
+					count: rule.count ?? null,
+					until: rule.until ? rule.until.toISOString() : null,
+					dtstart: rule.dtstart.toISOString(),
+					byweekday: rule.byweekday
+						? [rule.byweekday].flat().map((day) => String(day))
+						: null,
+					bymonthday: rule.bymonthday ?? null,
+					bymonth: rule.bymonth ?? null,
+				}
+			: null,
+	}
+}
+
 export const App = () => {
 	const search = useLocationSearch()
 	const params = new URLSearchParams(search)
@@ -131,7 +166,10 @@ export const App = () => {
 		})
 
 	// Widened from the `as const` literal so optional keys are readable here.
-	const scenario: Scenario = scenarios[scenarioName]
+	const seed = params.get('seed')
+	const scenario: Scenario = seed
+		? { ...scenarios[scenarioName], events: readSeededEvents(seed) }
+		: scenarios[scenarioName]
 
 	let urlConfig: ReturnType<typeof readUrlConfig>
 	try {
@@ -341,15 +379,7 @@ const Harness: React.FC<HarnessProps> = ({
 	// rows are the only thing `revert` has to put right.
 	const shouldPersistRows = !revertChanges
 
-	const published = events.map((event) => ({
-		id: event.id,
-		title: event.title,
-		start: event.start.toISOString(),
-		end: event.end.toISOString(),
-		resourceId: event.resourceId ?? null,
-		resourceIds: event.resourceIds ?? null,
-		allDay: Boolean(event.allDay),
-	}))
+	const published = events.map(toPublishedRow)
 
 	return (
 		<div

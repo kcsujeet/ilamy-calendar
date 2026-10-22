@@ -583,8 +583,12 @@ interface PluginMutationResult {
 	added: CalendarEvent[]
 	/** Existing rows to persist via `onEventDelete`. */
 	deleted: CalendarEvent[]
+	/** The update as stored, when that is less than what was asked. Optional. */
+	appliedUpdates?: Partial<CalendarEvent>
 }
 ```
+
+`appliedUpdates` is for an edit that stores less than it was given. The recurrence plugin's "all events" scope keeps the series on its own day, so a drop on another day stores only the new time of day; it says so here, and the `delta` and `endDelta` of the change describe what was stored, not what was dropped. Leave it out when the update was stored as asked.
 
 The calendar reports each list row by row through `onEventUpdate`, `onEventAdd` and `onEventDelete`, then reports the whole result once through `onEventsChange`, together with the action, the event acted on and the `scope` your plugin received.
 

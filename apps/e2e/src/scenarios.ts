@@ -88,6 +88,21 @@ export const scenarios = {
 		],
 	},
 
+	seed: {
+		description:
+			'No events of its own: the rows come from the `seed` URL parameter (`seed.ts`), so a spec states the stored rows a case needs (a series, its overrides, plain events) instead of adding a fixture.',
+		views: ['day', 'week', 'month', 'year', 'agenda'],
+		events: [],
+	},
+
+	'seed-resources': {
+		description:
+			'`seed` on the resource axis: three resources, rows from the `seed` URL parameter.',
+		views: ['day', 'week', 'month'],
+		resources: TEAM,
+		events: [],
+	},
+
 	'edit-permissions': {
 		description:
 			'One event that opts out of editing (`editable: false`) beside one that does not, and an all-day event that opts out of resizing (`durationEditable: false`) beside one that does not, so a per-event flag is seen to beat a permissive calendar.',

@@ -431,3 +431,161 @@ test.describe('snapDuration with drag-to-create', () => {
 		expect(await timeOf(page, 'last')).toMatch(/4:45\s?PM/i)
 	})
 })
+
+test.describe('the snapped preview follows the pointer between slices of one cell', () => {
+	/**
+	 * Where the mirror sits inside the cell, as a fraction (0..1) of the cell
+	 * along `axis`: `edge` picks its leading edge (a drag) or trailing edge (a
+	 * resize). The mirror carries no time of its own, so its geometry is what a
+	 * person sees.
+	 */
+	const mirrorWithin = async (
+		page: Page,
+		cell: Locator,
+		axis: 'x' | 'y',
+		edge: 'leading' | 'trailing'
+	) => {
+		const mirror = await page
+			.locator('[data-testid^="event-drag-preview-"]')
+			.first()
+			.boundingBox()
+		const box = await cell.boundingBox()
+		if (!mirror || !box) {
+			throw new Error('the mirror or the cell is not laid out')
+		}
+		const origin = axis === 'y' ? box.y : box.x
+		const size = axis === 'y' ? box.height : box.width
+		const mirrorStart = axis === 'y' ? mirror.y : mirror.x
+		const mirrorSize = axis === 'y' ? mirror.height : mirror.width
+		const at = edge === 'leading' ? mirrorStart : mirrorStart + mirrorSize
+		return (at - origin) / size
+	}
+
+	/** Presses at `from`, enters the cell at `enter`, then slides to `slide` without leaving it. */
+	const pressEnterSlide = async (
+		page: Page,
+		from: Point,
+		enter: Point,
+		slide: Point
+	) => {
+		await page.mouse.move(from.x, from.y)
+		await page.mouse.down()
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(
+				from.x + ((enter.x - from.x) * step) / 8,
+				from.y + ((enter.y - from.y) * step) / 8
+			)
+		}
+		await page.mouse.move(slide.x, slide.y, { steps: 6 })
+	}
+
+	test('a vertical drag preview moves to the slice the pointer slides to', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 60, snapDuration: 15, scrollTime: '09:00' },
+		})
+		const grid = new TimeGrid(page)
+		const cell = grid.slotAt('2025-03-12T11:00')
+
+		await pressEnterSlide(
+			page,
+			await topEdgeOf(grid.bars('basic-1')),
+			await pointIn(cell, 0.5, 0.1),
+			await pointIn(cell, 0.5, 0.9)
+		)
+
+		// 0.9 of the hour is minute 54: the 11:45 slice, three quarters down.
+		expect(await mirrorWithin(page, cell, 'y', 'leading')).toBeCloseTo(0.75, 1)
+		await page.mouse.up()
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Morning stand-up')
+		expect(row.start).toBe('2025-03-12T11:45:00.000Z')
+	})
+
+	test('a horizontal drag preview moves to the slice the pointer slides to', async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 2400, height: 900 })
+		await openSettled(page, {
+			scenario: 'resources',
+			view: 'day',
+			orientation: 'horizontal',
+			settings: { snapDuration: 15, scrollTime: '08:00' },
+		})
+		const grid = new TimeGrid(page)
+		const cell = laneCell(page, 'r2', '2025-03-12T13:00:00.000Z')
+
+		await pressEnterSlide(
+			page,
+			await leftEdgeOf(page.getByTestId('horizontal-event-res-1')),
+			await pointIn(cell, 0.1, 0.5),
+			await pointIn(cell, 0.9, 0.5)
+		)
+
+		expect(await mirrorWithin(page, cell, 'x', 'leading')).toBeCloseTo(0.75, 1)
+		await page.mouse.up()
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Room A booking')
+		expect(row.start).toBe('2025-03-12T13:45:00.000Z')
+	})
+
+	test('a vertical resize preview ends on the slice the pointer slides to', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { slot: 60, snapDuration: 15, scrollTime: '08:00' },
+		})
+		const grid = new TimeGrid(page)
+		const cell = grid.slotAt('2025-03-12T11:00')
+
+		await pressEnterSlide(
+			page,
+			await pointIn(handleOf(grid.bars('basic-1'), 'end'), 0.5, 0.5),
+			await pointIn(cell, 0.5, 0.1),
+			await pointIn(cell, 0.5, 0.9)
+		)
+
+		// Ends with the 11:45 slice: 12:00, the cell's bottom edge.
+		expect(await mirrorWithin(page, cell, 'y', 'trailing')).toBeCloseTo(1, 1)
+		await page.mouse.up()
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Morning stand-up')
+		expect(row.end).toBe('2025-03-12T12:00:00.000Z')
+	})
+
+	test('a horizontal resize preview ends on the slice the pointer slides to', async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 2400, height: 900 })
+		await openSettled(page, {
+			scenario: 'resources',
+			view: 'day',
+			orientation: 'horizontal',
+			settings: { snapDuration: 15, scrollTime: '08:00' },
+		})
+		const grid = new TimeGrid(page)
+		const cell = laneCell(page, 'r1', '2025-03-12T11:00:00.000Z')
+
+		await pressEnterSlide(
+			page,
+			await pointIn(
+				handleOf(page.getByTestId('horizontal-event-res-1'), 'end'),
+				0.5,
+				0.5
+			),
+			await pointIn(cell, 0.1, 0.5),
+			await pointIn(cell, 0.9, 0.5)
+		)
+
+		expect(await mirrorWithin(page, cell, 'x', 'trailing')).toBeCloseTo(1, 1)
+		await page.mouse.up()
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Room A booking')
+		expect(row.end).toBe('2025-03-12T12:00:00.000Z')
+	})
+})

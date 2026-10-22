@@ -1,6 +1,11 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const PORT = 4200
+/*
+ * E2E_PORT lets each git worktree run on its own port. Two worktrees on the
+ * same port would either collide on --strictPort or, worse, share a server
+ * through reuseExistingServer and test the other worktree's code.
+ */
+const PORT = Number(process.env.E2E_PORT ?? 4200)
 
 /*
  * Everything the machine could otherwise decide is pinned here: the zone, the

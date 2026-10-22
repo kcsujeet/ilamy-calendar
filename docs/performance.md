@@ -42,6 +42,18 @@ HorizontalGridRow
 
 Resource week horizontal view uses "grouped" columns where each column contains multiple days (one day's hourly slots). These need their own `useProcessedWeekEvents` call since events are scoped to each day group. The `GroupedColumn` component handles this — it exists as a separate memo'd component because React hooks can't be called inside map callbacks.
 
+## Hour Rows Are Derived Once Per Day
+
+`getDayHours` used to parse a wall-clock string and call `.tz()` for each of the 24 rows (about 45 us each, 1.8 to 3.1 ms a day, against 0.06 to 0.11 ms before). The vertical resource week asked for that once per resource per day, so 50 resources cost over a second a render.
+
+The rule: **a day's hour rows are derived once per day, not parsed per row, and a view builds each visible day's rows once per render, not once per resource.**
+
+- `getDayHours` parses only the day's first row and moves it on by whole hours, falling back to one parse per row only on a day near a clock change (`docs/time-grid.md`).
+- `resourceWeekVerticalColumns` builds one hour list per visible day and every resource's column shares it; the resources' business hours are collected once per render and passed in, not re-collected per day.
+- `ViewRenderer` memoizes the header element on `[view, currentDate, config]`, like the column specs, so a context change that touches neither does not rebuild the header's rows.
+
+`bun scripts/bench-day-hours.tsx` (run it under `TZ=UTC` and `TZ=America/New_York America/New_York`) exits non-zero when building every column of a 50-resource vertical week exceeds 10 ms, or `getDayHours` exceeds 0.25 ms a day.
+
 ## Event Key Strategy
 
 Event wrapper elements use `event.id + resourceId` as React keys rather than including date/position information. This ensures that recurring events (like "Daily Standup") that persist across month navigation **reconcile** instead of unmounting/remounting. This avoids unnecessary `useDraggable` re-registration cascades through DndContext.

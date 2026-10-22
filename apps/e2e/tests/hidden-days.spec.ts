@@ -274,12 +274,16 @@ test.describe('resource views', () => {
 		const bar = page.getByTestId('horizontal-event-res-4')
 		const column = cellsStartingOn(page, '2025-03-13T14:00').first()
 		await expect(bar).toHaveCount(1)
-		const barBox = await bar.boundingBox()
-		const columnBox = await column.boundingBox()
-		if (!barBox || !columnBox) {
-			throw new Error('the bar and its column need a layout')
+		// Polled: the bar animates in, and a slow runner can measure it mid-way.
+		const barOffsetFromColumn = async () => {
+			const barBox = await bar.boundingBox()
+			const columnBox = await column.boundingBox()
+			if (!barBox || !columnBox) {
+				return Number.POSITIVE_INFINITY
+			}
+			return Math.abs(barBox.x - columnBox.x)
 		}
-		expect(Math.abs(barBox.x - columnBox.x)).toBeLessThan(WIDTH_TOLERANCE_PX)
+		await expect.poll(barOffsetFromColumn).toBeLessThan(WIDTH_TOLERANCE_PX)
 	})
 
 	test('hourly horizontal week: the now-line sits in the visible Thursday column', async ({

@@ -752,6 +752,116 @@ export const scenarios = {
 		],
 	},
 
+	'venue-rooms': {
+		description:
+			'30 rooms (ids v1..v30, titles Room 1..30): single-room bookings, one booking in three rooms (resourceIds), one in no room, four stacked on one room, and two bookings in one room on the same day at different hours (09:00 and 20:00 to next day 04:00).',
+		views: ['day', 'week', 'month'],
+		config: { scrollTime: '08:00' },
+		resources: Array.from({ length: 30 }, (_, i) => ({
+			id: `v${i + 1}`,
+			title: `Room ${i + 1}`,
+		})),
+		events: [
+			event(
+				'q-single',
+				'Single A',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ resourceId: 'v2' }
+			),
+			event(
+				'q-multi',
+				'Multi',
+				'2025-03-12T13:00:00.000Z',
+				'2025-03-12T15:00:00.000Z',
+				{ resourceIds: ['v1', 'v3', 'v28'] }
+			),
+			event(
+				'q-none',
+				'No room',
+				'2025-03-12T11:00:00.000Z',
+				'2025-03-12T12:00:00.000Z'
+			),
+			event(
+				'q-p1',
+				'Pile 1',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ resourceId: 'v5' }
+			),
+			event(
+				'q-p2',
+				'Pile 2',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ resourceId: 'v5' }
+			),
+			event(
+				'q-p3',
+				'Pile 3',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ resourceId: 'v5' }
+			),
+			event(
+				'q-p4',
+				'Pile 4',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ resourceId: 'v5' }
+			),
+			event(
+				'q-last',
+				'Last room',
+				'2025-03-12T16:00:00.000Z',
+				'2025-03-12T17:00:00.000Z',
+				{ resourceId: 'v30' }
+			),
+			event(
+				'q-span',
+				'Two days',
+				'2025-03-12T20:00:00.000Z',
+				'2025-03-13T04:00:00.000Z',
+				{ resourceId: 'v2' }
+			),
+		],
+	},
+
+	'numeric-resources': {
+		description:
+			'Resources with numeric ids 1, 0 and 2 (resource ids are `string | number`), with single and cross-resource events (resourceIds [0, 2]).',
+		views: ['day', 'week', 'month'],
+		config: { scrollTime: '08:00' },
+		resources: [
+			{ id: 1, title: 'Room One' },
+			{ id: 0, title: 'Room Zero' },
+			{ id: 2, title: 'Room Two' },
+		],
+		events: [
+			event(
+				'n-zero',
+				'Zero booking',
+				'2025-03-12T09:00:00.000Z',
+				'2025-03-12T10:00:00.000Z',
+				{ resourceId: 0 }
+			),
+			event(
+				'n-one',
+				'One booking',
+				'2025-03-12T11:00:00.000Z',
+				'2025-03-12T12:00:00.000Z',
+				{ resourceId: 1 }
+			),
+			event(
+				'n-multi',
+				'Zero and Two',
+				'2025-03-12T14:00:00.000Z',
+				'2025-03-12T15:00:00.000Z',
+				{ resourceIds: [0, 2] }
+			),
+		],
+	},
+
 	'async-events': {
 		description:
 			'One event per month from March to June, and one on the last day of March that the April grid shows too (30 March), so an `events` function can be seen to load, supersede, fail and retry.',

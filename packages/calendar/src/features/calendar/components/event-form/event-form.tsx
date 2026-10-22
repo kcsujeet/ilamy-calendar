@@ -498,10 +498,19 @@ const useEventResource = ({
 	const isResourceMissing =
 		showResourceSelector && selectedResourceId === undefined
 
+	// A cross-resource event is a member of every room in `resourceIds`, and the
+	// form shows none of them as its one room, so saving leaves them as they are
+	// rather than adding a `resourceId` (src/features/calendar/utils/event-pipeline.ts).
+	const hasResourceIds = resourceIds !== undefined
+	const resourceFields = hasResourceIds
+		? {}
+		: { resourceId: effectiveResourceId }
+
 	return {
 		selectedResourceId,
 		setSelectedResourceId,
 		effectiveResourceId,
+		resourceFields,
 		showResourceSelector,
 		isResourceMissing,
 	}
@@ -556,6 +565,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 		selectedResourceId,
 		setSelectedResourceId,
 		effectiveResourceId,
+		resourceFields,
 		showResourceSelector,
 		isResourceMissing,
 	} = useEventResource({ resourceId, resourceIds, hasResourceAxis })
@@ -632,7 +642,7 @@ export const EventForm: React.FC<EventFormProps> = ({
 			title: formValues.title,
 			start: startDateTime,
 			end: endDateTime,
-			resourceId: effectiveResourceId,
+			...resourceFields,
 			description: formValues.description,
 			location: formValues.location,
 			allDay: isAllDay,

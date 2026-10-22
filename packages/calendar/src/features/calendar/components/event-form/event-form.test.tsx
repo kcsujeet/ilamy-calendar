@@ -715,6 +715,30 @@ describe('EventForm', () => {
 				)
 			})
 		})
+
+		// `resourceIds` is the event's membership; the form cannot show a single
+		// room for it, so saving writes neither resource field and the update
+		// merges over the stored event, which keeps `resourceIds` as it was
+		// (docs/resource-calendar.md: a cross-resource event carries resourceIds only).
+		it('saves without writing a resourceId or resourceIds', async () => {
+			let saved: CalendarEvent | undefined
+			renderEventForm(
+				{
+					...defaultProps,
+					onUpdate: (event) => {
+						saved = event
+					},
+					selectedEvent: { ...testEvent, resourceIds: ['room-a', 'room-b'] },
+				},
+				{ resources: mockResources }
+			)
+
+			fireEvent.click(screen.getByRole('button', { name: 'Update' }))
+
+			await waitFor(() => expect(saved?.id).toBe('test-event-1'))
+			expect(saved).not.toHaveProperty('resourceId')
+			expect(saved).not.toHaveProperty('resourceIds')
+		})
 	})
 
 	describe('24-Hour Time Format', () => {

@@ -75,7 +75,8 @@ export class CalendarPage {
 			title: string
 			start: string
 			end: string
-			resourceId: string | null
+			resourceId: string | number | null
+			resourceIds: Array<string | number> | null
 			allDay: boolean
 		}>
 	> {

@@ -55,6 +55,7 @@ starts. Until then 3.x keeps today's behaviour. The IDs match
 | D8 | `editable` defaults to `true` | Possibly `false` (read-only unless enabled), the convention | Pass `editable` explicitly |
 | D9 | `displayEventTime` and `displayEventEnd` unset keep today's title-only bars | Possibly default `true`, the convention | Pass both explicitly |
 | D10 | `onDateChange` and the `currentRange` keep the range as it was before `hiddenDays` and `weekends` existed | Possibly trimmed to the days actually drawn | Do not depend on the range including hidden days |
+| D11 | Month cells report `allDay: false` in `onCellClick` and in a drag-to-create selection, and a form opened from one is timed | Possibly `true`, so a month click or selection reports and creates an all-day event, as FullCalendar's day grid does (`DayGridRows.tsx:256`, v7.1.1) | Do not rely on `allDay` being `false` for a month cell; read `view` as well |
 | D7 | iCal export and the year view are built into the core | Possibly moved to plugins (`plugins/ical`, `plugins/year`); the resource axis only if the plugin contract carries it cleanly | Nothing yet; imports will change if it happens |
 
 ## Default changes planned for 4.0

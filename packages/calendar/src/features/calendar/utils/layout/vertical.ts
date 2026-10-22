@@ -46,6 +46,35 @@ const clusterOverlappingEvents = (
 	return clusters
 }
 
+/**
+ * A day grid draws every event over whole day rows, so two events overlap when
+ * their rows do, whatever their clock times: 09:00 and 14:00 on one day share a
+ * row and must be laid out side by side, not drawn on top of each other. An
+ * event on no drawn row (a hidden day) draws nothing and joins no cluster.
+ */
+const clusterOverlappingDayRows = (
+	sortedEvents: CalendarEvent[],
+	spanDayColumns: DayColumnSpanner
+): CalendarEvent[][] => {
+	const clusters: CalendarEvent[][] = []
+	let currentCluster: CalendarEvent[] = []
+	let lastEndCol = -1
+	for (const event of sortedEvents) {
+		const span = spanDayColumns(event)
+		if (!span) continue
+		if (span.startCol > lastEndCol && currentCluster.length > 0) {
+			clusters.push(currentCluster)
+			currentCluster = []
+		}
+		currentCluster.push(event)
+		lastEndCol = Math.max(lastEndCol, span.endCol)
+	}
+	if (currentCluster.length > 0) {
+		clusters.push(currentCluster)
+	}
+	return clusters
+}
+
 // --- Phase 2: geometry ------------------------------------------------------
 
 interface TopHeight {
@@ -189,7 +218,8 @@ export const layoutVertical = ({
 		spanDayColumns: isDayGrid ? createDayColumnSpanner(days) : null,
 	}
 
-	return clusterOverlappingEvents(sortedEvents).flatMap((cluster) =>
-		placeCluster(cluster, metrics)
-	)
+	const clusters = metrics.spanDayColumns
+		? clusterOverlappingDayRows(sortedEvents, metrics.spanDayColumns)
+		: clusterOverlappingEvents(sortedEvents)
+	return clusters.flatMap((cluster) => placeCluster(cluster, metrics))
 }

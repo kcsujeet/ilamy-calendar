@@ -23,6 +23,18 @@ export interface RawCell {
 }
 
 /**
+ * The grid cell under a point, even when an event bar is drawn over it:
+ * `elementFromPoint` would return the bar, which carries no cell attributes.
+ */
+export const cellElementAt = (point: {
+	clientX: number
+	clientY: number
+}): Element | null => {
+	const stack = document.elementsFromPoint(point.clientX, point.clientY)
+	return stack.find((element) => element.hasAttribute('data-start')) ?? null
+}
+
+/**
  * Find the grid cell at or above `el` and read its range/identity. Returns null
  * when `el` is not inside a cell (e.g. pointer over an event or empty gutter), or
  * the cell is disabled.

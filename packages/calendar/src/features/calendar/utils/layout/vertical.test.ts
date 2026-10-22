@@ -269,6 +269,41 @@ describe('layoutVertical', () => {
 			expect(p.height).toBeCloseTo((3 / 7) * 100, 5)
 		})
 
+		// A day grid draws each event over whole day rows, so two events inside one
+		// day cover the same row whatever their clock times. Clustering by clock time
+		// put 09:00 and 14:00 in separate clusters, each full width, one exactly on
+		// top of the other.
+		it('lays two same-day events side by side though their times do not overlap', () => {
+			const placed = position(
+				[mkDayEvent('morning', 33, 34), mkDayEvent('afternoon', 38, 39)],
+				{ days: dayDays, gridType: 'day' }
+			)
+			const lefts = placed.map((p) => p.left)
+			expect(placed.map((p) => p.event.id)).toEqual(['morning', 'afternoon'])
+			expect(lefts.at(0)).toBe(0)
+			expect(lefts.at(1)).toBeGreaterThan(0)
+		})
+
+		it('keeps events on different days full width', () => {
+			const placed = position(
+				[mkDayEvent('monday', 9, 10), mkDayEvent('tuesday', 33, 34)],
+				{ days: dayDays, gridType: 'day' }
+			)
+			expect(placed.map((p) => [p.left, p.width])).toEqual([
+				[0, 100],
+				[0, 100],
+			])
+		})
+
+		it('clusters a multi-day event with the day-row events it covers', () => {
+			// 'span' ends at 02:00 on day 2; 'late' starts at 10:00 on day 2.
+			const placed = position(
+				[mkDayEvent('span', 9, 50), mkDayEvent('late', 58, 59)],
+				{ days: dayDays, gridType: 'day' }
+			)
+			expect(placed.map((p) => p.left).at(1)).toBeGreaterThan(0)
+		})
+
 		it('ensures at least 1 unit duration for discrete events', () => {
 			// Zero-duration on the same day: floor/ceil both = 0, guard bumps to 1.
 			const [p] = position([mkDayEvent('e', 10, 10)], {

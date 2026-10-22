@@ -161,6 +161,52 @@ describe('useDragGesture', () => {
 		})
 	})
 
+	describe('click after a cancelled drag', () => {
+		const click = () => {
+			const event = new MouseEvent('click', { bubbles: true, cancelable: true })
+			window.dispatchEvent(event)
+			return event
+		}
+		const pressEscape = () =>
+			window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+
+		// Escape then release inside the press cell still ends in the browser's
+		// click on that cell; left alone it opens the form the user just cancelled.
+		it('swallows the click that follows releasing after Escape, once', () => {
+			renderGesture()
+
+			down()
+			move({ clientX: 10 })
+			pressEscape()
+			up({ clientX: 10 })
+
+			expect(click().defaultPrevented).toBe(true)
+			expect(click().defaultPrevented).toBe(false)
+		})
+
+		it('lets the click of a later press through when no click followed the cancel', () => {
+			renderGesture()
+
+			down()
+			move({ clientX: 10 })
+			pressEscape()
+			up({ clientX: 10 })
+
+			down()
+			up()
+			expect(click().defaultPrevented).toBe(false)
+		})
+
+		it('does not swallow a click after cancelling a press that never became a drag', () => {
+			renderGesture()
+
+			down()
+			pressEscape()
+
+			expect(click().defaultPrevented).toBe(false)
+		})
+	})
+
 	describe('touch (long-press)', () => {
 		it('starts after the hold, then tracks and ends', async () => {
 			const { rec } = renderGesture({ longPressMs: 1 })

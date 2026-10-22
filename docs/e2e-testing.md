@@ -124,6 +124,8 @@ apps/e2e/                       the harness app (Vite, private) and its tests
   tests/support/harness.ts      gotoScenario: pins the clock, builds the URL
   tests/support/pages.ts        page objects: CalendarPage, MonthGrid, TimeGrid, YearGrid, ResourceAxis
   tests/{behaviour,clock,drag,matrix}.spec.ts
+  tests/clock-change-instants.spec.ts   instants around a clock change: form, grids, year view, navigation
+  tests/support/event-form.ts   the event form's pickers as questions (pickDay, pickTime, saveForm)
 ```
 
 Page objects wrap the `keys.*` testids the components already emit, so

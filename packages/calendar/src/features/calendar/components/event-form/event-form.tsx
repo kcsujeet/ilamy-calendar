@@ -17,7 +17,7 @@ import { Textarea } from '@ilamy/ui/components/textarea'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { readableTextColor } from '@ilamy/utils/helpers'
 import type React from 'react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
 	EventFormSlot,
 	EventMutationScopeSlot,
@@ -55,6 +55,8 @@ const EVENT_COLOR_SWATCHES = [
 	{ value: 'bg-teal-100 text-teal-800', label: 'Teal' },
 	{ value: 'bg-orange-100 text-orange-800', label: 'Orange' },
 ]
+
+const END_OF_DAY = '23:59'
 
 const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
 
@@ -267,8 +269,13 @@ const useEventSchedule = ({
 	// `buildEndDateTime` converts back on save. An end that is not on a midnight
 	// boundary predates this and is already inclusive, so it is shown untouched.
 	const endsOnMidnight = end.isSame(end.startOf('day'))
+	// `startOf('day')` re-anchors after `subtract`, which keeps the receiver's
+	// offset: across a clock change the end would otherwise step back to the
+	// previous day's 23:00 and read as the start's own day.
 	const lastCoveredDay =
-		initialAllDay && endsOnMidnight ? end.subtract(1, 'day') : end
+		initialAllDay && endsOnMidnight
+			? end.subtract(1, 'day').startOf('day')
+			: end
 
 	const [startDate, setStartDate] = useState(start.toDate())
 	const [endDate, setEndDate] = useState(lastCoveredDay.toDate())
@@ -276,22 +283,35 @@ const useEventSchedule = ({
 
 	// Time state
 	const [startTime, setStartTime] = useState(start.format('HH:mm'))
-	const [endTime, setEndTime] = useState(end.format('HH:mm'))
+	// An all-day event's end is a midnight, which reads as 23:59 of the last
+	// day it covers, so unticking All day leaves a whole-day timed range.
+	const [endTime, setEndTime] = useState(
+		initialAllDay ? END_OF_DAY : end.format('HH:mm')
+	)
 
-	// Create wrapper functions to fix TypeScript errors with DatePicker
+	// RFC 5545 section 3.8.2.2: DTEND "MUST be later in time than" DTSTART. The
+	// handlers below keep a same-day range that way by moving the field the user
+	// did NOT touch, as the time handlers always have. The times are hidden and
+	// ignored while All day is on, so they are left alone then.
 	const handleStartDateChange = (date: Date | undefined) => {
 		if (!date) return
 		setStartDate(date)
-		if (dayjs(date).isAfter(dayjs(endDate))) {
-			setEndDate(date)
+		const endDay = dayjs(date).isAfter(dayjs(endDate)) ? date : endDate
+		setEndDate(endDay)
+		const sameDay = dayjs(date).isSame(dayjs(endDay), 'day')
+		if (sameDay && !isAllDay && startTime > endTime) {
+			setEndTime(startTime)
 		}
 	}
 
 	const handleEndDateChange = (date: Date | undefined) => {
 		if (!date) return
 		setEndDate(date)
-		if (date && dayjs(date).isBefore(dayjs(startDate))) {
-			setStartDate(date)
+		const startDay = dayjs(date).isBefore(dayjs(startDate)) ? date : startDate
+		setStartDate(startDay)
+		const sameDay = dayjs(startDay).isSame(dayjs(date), 'day')
+		if (sameDay && !isAllDay && endTime < startTime) {
+			setStartTime(endTime)
 		}
 	}
 
@@ -299,9 +319,10 @@ const useEventSchedule = ({
 	 * The End Date input means different things in the two modes: a boundary for a
 	 * timed event, the last day COVERED for an all-day one. Switching to all-day
 	 * therefore has to reinterpret it, and a midnight end covers through the
-	 * previous day. Without this step back, clicking a month cell (whose range
-	 * ends at the next midnight) and ticking All day saved a two-day event for a
-	 * single day (#248).
+	 * previous day, which is 23:59 in the end time that unticking brings back.
+	 * Without this step back, clicking a month cell (whose range ends at the next
+	 * midnight) and ticking All day saved a two-day event for a single day (#248).
+	 * A timed event's other times are not touched, so unticking restores them.
 	 */
 	const handleAllDayChange = (checked: boolean) => {
 		setIsAllDay(checked)
@@ -311,12 +332,13 @@ const useEventSchedule = ({
 		// Only when the end sits on a LATER day. A same-day midnight end means a
 		// zero-length event, and stepping that back would put the end before the
 		// start, saving another zero-length event where a one-day one was asked for.
-		setEndDate((previous) => {
-			const endsOnALaterDay = dayjs(previous).isAfter(dayjs(startDate), 'day')
-			return endsOnALaterDay
-				? dayjs(previous).subtract(1, 'day').toDate()
-				: previous
-		})
+		const endsOnALaterDay = dayjs(endDate).isAfter(dayjs(startDate), 'day')
+		if (!endsOnALaterDay) {
+			return
+		}
+		// `startOf('day')` re-anchors after `subtract` (see `lastCoveredDay`).
+		setEndDate(dayjs(endDate).subtract(1, 'day').startOf('day').toDate())
+		setEndTime(END_OF_DAY)
 	}
 
 	// Time validation handlers - only validate when dates are the same
@@ -335,13 +357,6 @@ const useEventSchedule = ({
 			setStartTime(time)
 		}
 	}
-
-	useEffect(() => {
-		// Reset end time when all day is toggled to on
-		if (isAllDay) {
-			setEndTime('23:59')
-		}
-	}, [isAllDay])
 
 	return {
 		startDate,

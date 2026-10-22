@@ -63,7 +63,14 @@ function getCellRange(
 	minute: number | undefined,
 	slotDurationMinutes: number
 ): { start: Dayjs; end: Dayjs } {
-	const start = date.hour(hour ?? 0).minute(minute ?? 0)
+	// A day cell is given any time of day (the day view passes `currentDate`),
+	// and `.hour(0)` would keep that moment's UTC offset: on the day the clocks
+	// spring forward the day would start an hour early, on the previous day.
+	// `startOf('day')` finds the day's own midnight.
+	const start =
+		hour === undefined
+			? date.startOf('day')
+			: date.hour(hour).minute(minute ?? 0)
 
 	if (hour !== undefined && minute !== undefined) {
 		return { start, end: start.add(slotDurationMinutes, 'minute') }

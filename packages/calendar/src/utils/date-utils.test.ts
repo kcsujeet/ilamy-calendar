@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import dayjs from '@ilamy/utils/dayjs'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import {
 	getDayHours,
+	getMonthDays,
 	getMonthWeeks,
 	getWeekDays,
 	isToday,
 	skipHiddenDays,
+	withOwnOffset,
 	withoutHiddenDays,
 } from './date-utils'
 
@@ -963,4 +965,113 @@ describe('getDayHours matches a per-row wall-clock parse', () => {
 			expect(mismatchedDays).toEqual([])
 		}, 60_000)
 	}
+})
+
+/**
+ * `add(n, 'day')` keeps the receiver's UTC offset across a clock change, so a
+ * day after the change reads as the right date but is an hour off as an
+ * instant (the previous day at midnight, for a zone that springs forward).
+ * Every day a helper returns must be that day's midnight in the calendar's
+ * zone, whatever the machine's own zone is. Run under TZ=America/New_York and
+ * TZ=UTC: the result must not depend on either.
+ */
+describe('day lists across the 2025 clock changes', () => {
+	const clockChanges = [
+		{ zone: 'America/New_York', changeDay: '2025-03-09' },
+		{ zone: 'America/New_York', changeDay: '2025-11-02' },
+		{ zone: 'Europe/London', changeDay: '2025-03-30' },
+		{ zone: 'Europe/London', changeDay: '2025-10-26' },
+		{ zone: 'Australia/Sydney', changeDay: '2025-04-06' },
+		{ zone: 'Australia/Sydney', changeDay: '2025-10-05' },
+	]
+
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	// A day is wrong when it is not midnight of its own date in the zone.
+	const wrongDays = (days: Dayjs[]) =>
+		days
+			.filter((day) => {
+				const dateKey = day.format('YYYY-MM-DD')
+				const midnightOfDate = dayjs(`${dateKey}T00:00:00.000`)
+				return day.toISOString() !== midnightOfDate.toISOString()
+			})
+			.map((day) => day.format('YYYY-MM-DD'))
+
+	for (const { zone, changeDay } of clockChanges) {
+		const inZone = () => {
+			dayjs.tz.setDefault(zone)
+			return dayjs(`${changeDay}T12:00:00.000`)
+		}
+
+		for (const firstDayOfWeek of [0, 1, 6]) {
+			it(`getWeekDays: ${zone} around ${changeDay}, week starting ${firstDayOfWeek}`, () => {
+				const changeNoon = inZone()
+				const weeks = [-7, 0, 7].map((offset) =>
+					getWeekDays(
+						dayjs(
+							`${changeNoon.add(offset, 'day').format('YYYY-MM-DD')}T12:00:00.000`
+						),
+						firstDayOfWeek
+					)
+				)
+				expect(wrongDays(weeks.flat())).toEqual([])
+			})
+		}
+
+		it(`getMonthDays: ${zone} in the month of ${changeDay}`, () => {
+			expect(wrongDays(getMonthDays(inZone().startOf('month')))).toEqual([])
+		})
+
+		it(`getMonthWeeks: ${zone} in the month of ${changeDay}`, () => {
+			const weeks = getMonthWeeks(inZone().startOf('month'), 0)
+			expect(wrongDays(weeks.flat())).toEqual([])
+		})
+	}
+})
+
+/**
+ * `add` keeps the receiver's UTC offset, so a date stepped across a clock
+ * change reads the right clock face but is an hour off as an instant, and
+ * the instant is what `onDateChange` and `api.currentDate` hand a consumer.
+ * Within the hour after midnight the instant is the previous day.
+ */
+describe('withOwnOffset', () => {
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	it('re-reads a stepped date at its own offset, keeping the clock face', () => {
+		dayjs.tz.setDefault('America/New_York')
+		const lateNight = dayjs('2025-11-02T00:30:00.000')
+		const stepped = withOwnOffset(lateNight.add(1, 'day'))
+		expect(stepped.toISOString()).toBe('2025-11-03T05:30:00.000Z')
+	})
+
+	it('keeps milliseconds', () => {
+		dayjs.tz.setDefault('Europe/London')
+		const stepped = withOwnOffset(
+			dayjs('2025-10-25T12:34:56.789').add(1, 'day')
+		)
+		expect(stepped.format('HH:mm:ss.SSS')).toBe('12:34:56.789')
+	})
+})
+
+describe('skipHiddenDays across a clock change', () => {
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	it('steps back over a hidden weekend to Friday, at its own offset', () => {
+		dayjs.tz.setDefault('America/New_York')
+		const weekendHidden = new Set([0, 6])
+		const mondayJustAfterMidnight = dayjs('2025-03-10T00:30:00.000')
+		const settled = skipHiddenDays(
+			mondayJustAfterMidnight.subtract(1, 'day'),
+			weekendHidden,
+			-1
+		)
+		expect(settled.toISOString()).toBe('2025-03-07T05:30:00.000Z')
+	})
 })

@@ -667,6 +667,22 @@ describe('calculateDropTimes', () => {
 			expect(landed.end).toBe('2025-03-09T03:30')
 		})
 	})
+
+	// A time-slot drop reports its column's date. On a clock-change day that
+	// date can carry the offset of the day's midnight, and `.hour()` keeps it.
+	it('puts a drop on the 10:00 slot of New York spring-forward day at 14:00Z', () => {
+		dayjs.tz.setDefault('America/New_York')
+		const midnightEST = dayjs('2025-03-09T00:00:00.000')
+		const result = calculateDropTimes(timedEvent, {
+			type: 'time-cell',
+			date: midnightEST,
+			hour: 10,
+			minute: 0,
+		})
+		dayjs.tz.setDefault()
+
+		expect(result.start.toISOString()).toBe('2025-03-09T14:00:00.000Z')
+	})
 })
 
 describe('calculateGrabOffset', () => {

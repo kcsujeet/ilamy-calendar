@@ -1640,6 +1640,68 @@ describe('useCalendarEngine', () => {
 		})
 	})
 
+	/**
+	 * `add` keeps the receiver's UTC offset, so stepping a day across a clock
+	 * change gave a date with the right clock face an hour off as an instant,
+	 * and within the hour after midnight the instant was the previous day. The
+	 * instant is what `currentDate` and `onDateChange` hand a consumer.
+	 */
+	describe('navigation across a clock change', () => {
+		const originalTz = dayjs.tz.guess()
+
+		afterEach(() => {
+			dayjs.tz.setDefault(originalTz)
+		})
+
+		const clockChanges = [
+			{ zone: 'America/New_York', changeDay: '2025-03-09' },
+			{ zone: 'America/New_York', changeDay: '2025-11-02' },
+			{ zone: 'Europe/London', changeDay: '2025-03-30' },
+			{ zone: 'Europe/London', changeDay: '2025-10-26' },
+			{ zone: 'Australia/Sydney', changeDay: '2025-04-06' },
+			{ zone: 'Australia/Sydney', changeDay: '2025-10-05' },
+		]
+
+		const justAfterMidnight = (day: string) => dayjs(`${day}T00:30:00.000`)
+
+		const dayAround = (day: string, offset: number) =>
+			dayjs(`${day}T12:00:00.000`).add(offset, 'day').format('YYYY-MM-DD')
+
+		for (const { zone, changeDay } of clockChanges) {
+			it(`steps a day over ${changeDay} in ${zone} to the same clock time`, () => {
+				dayjs.tz.setDefault(zone)
+				const dayBefore = dayAround(changeDay, -1)
+				const dayAfter = dayAround(changeDay, 1)
+				const stepped: string[] = []
+				const expected: string[] = []
+				for (const [from, direction, to] of [
+					[dayBefore, 1, changeDay],
+					[changeDay, 1, dayAfter],
+					[dayAfter, -1, changeDay],
+					[changeDay, -1, dayBefore],
+				] as const) {
+					const initialDate = justAfterMidnight(from)
+					const { result } = renderHook(() =>
+						useCalendarEngine({
+							...defaultConfig,
+							initialDate,
+							initialView: 'day',
+							timezone: zone,
+						})
+					)
+					act(() =>
+						direction === 1
+							? result.current.nextPeriod()
+							: result.current.prevPeriod()
+					)
+					stepped.push(result.current.currentDate.toISOString())
+					expected.push(justAfterMidnight(to).toISOString())
+				}
+				expect(stepped).toEqual(expected)
+			})
+		}
+	})
+
 	describe('timezone support', () => {
 		const originalTz = dayjs.tz.guess()
 

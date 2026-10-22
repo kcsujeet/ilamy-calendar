@@ -150,7 +150,8 @@ export const calculateDropTimes = (
 	})
 
 	if (isTimeSlotDrop(data)) {
-		const slotTime = dayjs(date).hour(hour).minute(minute)
+		const slotClock = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00.000`
+		const slotTime = atTimeOfDay(dayjs(date), slotClock)
 		if (eventIsAllDay) {
 			// Across the all-day boundary the grab point does not matter: the start
 			// is the slot (EventDragging.ts:447-460, v7.1.1).

@@ -145,6 +145,20 @@ Three consequences worth knowing:
   same copy gets this behaviour outside the calendar too. The same is already
   true of `fixTimezoneOffset`.
 
+**Building a day or a clock time: re-anchor, do not step.** `add`, `subtract`
+and the `.hour()` setter keep the UTC offset of the date they start from, so on a
+day the clocks change they give the right clock face but an instant an hour off
+(the previous day at midnight, or 10:00 for a picked 9:00), and `format()` hides
+it. This is independent of the machine's zone and is not the machine-zone gap
+below. Anything that becomes an instant (a cell's `data-start`, a saved event, a
+date handed to `onDateChange`) is re-anchored after stepping: `startOf('day')`
+for a day, `withOwnOffset` (`utils/date-utils.ts`) for a date that keeps its
+time of day, or a zoneless wall-clock string for a clock time (as the event form
+and `calculateDropTimes` do). A wall-clock time the clocks skip reads with the
+offset before the gap, a repeated one is its first occurrence (RFC 5545
+section 3.3.5), so 02:30 on a spring-forward day is 03:30. `date-utils.test.ts`
+pins every day of the 2025 New York, London and Sydney changes.
+
 **Comparing calendar DAYS is a different question.** `isSame(x, 'day')` carries
 a unit, so it still routes through dayjs-timezone's `startOf` at ~101µs. Use
 `isSameDay` from `@ilamy/utils/helpers` instead, which compares rendered

@@ -63,16 +63,14 @@ export const YearView = () => {
 			dayjs().year(currentYear).month(monthIndex).startOf('month')
 		)
 		// A mini calendar starts on the first day of the week containing the 1st.
-		// `dayDate` is deliberately left un-normalized, exactly as before: after a
-		// DST fall-back `add(n, 'day')` carries a stale offset, and the cell's
-		// label, its click target and its event window all derive from that one
-		// instant, so they agree with each other. Normalizing only some of them
-		// would shift the grid by a day.
+		// Each cell is re-anchored to its own midnight: `add` keeps the receiver's
+		// offset, so across a clock change it would read the right date but be an
+		// hour off as an instant, and the click target and event window with it.
 		const monthGrids = monthStarts.map((monthStart) => {
 			const gridStart = getWeekDays(monthStart, firstDayOfWeek).at(0)
 			const firstDayOfCalendar = gridStart ?? monthStart
 			return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) =>
-				firstDayOfCalendar.add(dayIndex, 'day')
+				firstDayOfCalendar.add(dayIndex, 'day').startOf('day')
 			)
 		})
 

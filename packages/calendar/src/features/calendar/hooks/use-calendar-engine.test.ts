@@ -75,14 +75,17 @@ describe('useCalendarEngine', () => {
 	// Mounts the engine with the recurrence plugin and fresh callback spies; each
 	// test destructures only the spies it asserts. Collapses the repeated
 	// renderHook + useCalendarEngine boilerplate across the recurring-event tests.
-	const renderRecurrenceEngine = (events: CalendarEvent[]) => {
+	const renderRecurrenceEngine = (
+		events: CalendarEvent[],
+		config = defaultConfig
+	) => {
 		const onEventUpdate = vi.fn()
 		const onEventAdd = vi.fn()
 		const onEventDelete = vi.fn()
 		const onEventsChange = vi.fn<(change: EventsChange) => void>()
 		const { result } = renderHook(() =>
 			useCalendarEngine({
-				...defaultConfig,
+				...config,
 				events,
 				onEventUpdate,
 				onEventAdd,
@@ -1069,10 +1072,13 @@ describe('useCalendarEngine', () => {
 		const getChanges = (spy: { mock: { calls: [EventsChange][] } }) =>
 			spy.mock.calls.map(([change]) => summarize(change))
 
-		const renderWithChanges = (events: CalendarEvent[] = []) => {
+		const renderWithChanges = (
+			events: CalendarEvent[] = [],
+			config = defaultConfig
+		) => {
 			const onEventsChange = vi.fn<(change: EventsChange) => void>()
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, events, onEventsChange })
+				useCalendarEngine({ ...config, events, onEventsChange })
 			)
 			const engine = () => result.current
 			return { engine, onEventsChange }
@@ -1296,9 +1302,12 @@ describe('useCalendarEngine', () => {
 			})
 
 			it('is the move of the start for a scoped recurring edit', () => {
-				const { engine, onEventsChange } = renderRecurrenceEngine([
-					createRecurringEvent(),
-				])
+				// The subject is a time of day, so the calendar's zone is pinned: at
+				// UTC+14 10:00Z is midnight and two hours earlier is the day before.
+				const { engine, onEventsChange } = renderRecurrenceEngine(
+					[createRecurringEvent()],
+					utcCalendar
+				)
 				const occurrence = createEvent({
 					id: 'recurring-1_2',
 					uid: 'recurring-1@ilamy.calendar',
@@ -1321,10 +1330,13 @@ describe('useCalendarEngine', () => {
 
 			it('is only the time of day for a scoped edit that keeps the series day', () => {
 				// "All events" keeps the series on its own day (docs/hooks-and-context.md),
-				// so a drop one day later and an hour later stored the hour only.
-				const { engine, onEventsChange } = renderRecurrenceEngine([
-					createRecurringEvent(),
-				])
+				// so a drop one day later and an hour later stored the hour only. The
+				// subject is a time of day, so the calendar's zone is pinned: 10:00Z is
+				// 23:00 in Auckland, where an hour later is the next day.
+				const { engine, onEventsChange } = renderRecurrenceEngine(
+					[createRecurringEvent()],
+					utcCalendar
+				)
 				const occurrence = createEvent({
 					id: 'recurring-1_2',
 					uid: 'recurring-1@ilamy.calendar',
@@ -1348,8 +1360,13 @@ describe('useCalendarEngine', () => {
 		})
 
 		describe('endDelta', () => {
+			// Pinned to a UTC calendar: the subject is a time of day, which a
+			// machine at UTC+14 would push across midnight.
 			const getChange = (updates: Partial<CalendarEvent>) => {
-				const { engine, onEventsChange } = renderWithChanges([createEvent()])
+				const { engine, onEventsChange } = renderWithChanges(
+					[createEvent()],
+					utcCalendar
+				)
 				act(() => engine().updateEvent('1', updates))
 				return onEventsChange.mock.calls.at(0)?.at(0)
 			}

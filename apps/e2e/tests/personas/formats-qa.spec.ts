@@ -550,7 +550,9 @@ test.describe('persona 2: designer', () => {
 		for (const [view, expected] of [
 			['day', 'March 2025'],
 			['month', 'March 2025'],
-			['year', 'March 2025'],
+			// Contract moved: titleFormat formats the view's range (FullCalendar
+			// title-formatting.ts:15-16, 25-31), so the year view names the year.
+			['year', 'January – December 2025'],
 		] as const) {
 			const grid = await open(page, {
 				scenario: 'basic',

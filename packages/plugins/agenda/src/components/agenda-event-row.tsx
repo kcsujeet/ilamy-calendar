@@ -14,8 +14,7 @@ const getTimePattern = (format: TimeFormat): string =>
 export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	const { t, timeFormat, onEventClick } = useIlamyCalendarContext()
 
-	const startTime = event.start.format(getTimePattern(timeFormat))
-	const timeLabel = event.allDay ? t('allDay') : startTime
+	const timePattern = getTimePattern(timeFormat)
 
 	const eventStartDay = event.start.startOf('day')
 	// `end` is exclusive (#248), so the count runs to the last day the event
@@ -24,9 +23,19 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	const lastCoveredDay = event.end.subtract(1, 'millisecond').startOf('day')
 	const totalDays = lastCoveredDay.diff(eventStartDay, 'day') + 1
 	const dayIndex = day.startOf('day').diff(eventStartDay, 'day') + 1
-	const isMultiDayAllDay = Boolean(event.allDay) && totalDays > 1
+	const isMultiDay = totalDays > 1
+	const isFirstDay = dayIndex === 1
+	const isLastDay = dayIndex === totalDays
+
+	// FullCalendar ListEvent.tsx:21-22: all-day events, and days that hold
+	// neither the real start nor the real end, read "all day"; the first day
+	// reads the start time and the last day the end time.
+	const isAllDayLabel =
+		Boolean(event.allDay) || (isMultiDay && !isFirstDay && !isLastDay)
+	const edgeTime = isMultiDay && isLastDay ? event.end : event.start
+	const timeLabel = isAllDayLabel ? t('allDay') : edgeTime.format(timePattern)
 	const dayLabel = `(${t('day')} ${dayIndex}/${totalDays})`
-	const dayCounter = isMultiDayAllDay ? dayLabel : null
+	const dayCounter = isMultiDay ? dayLabel : null
 
 	return (
 		<button

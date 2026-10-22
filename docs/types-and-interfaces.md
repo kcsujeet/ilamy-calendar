@@ -139,7 +139,7 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `displayEventTime` | `boolean` | shown only when `eventTimeFormat` is set | Whether the default event bar shows a time. All-day events never do. FullCalendar defaults it on; flipping is a 4.0 candidate |
 | `displayEventEnd` | `boolean` | `false` | Whether the bar's time runs to the end (`09:30 – 10:30`) |
 | `dayHeaderFormat` | `Intl.DateTimeFormatOptions` | weekday over day number | When set, the formatted text is the whole day header (`{weekday:'long'}` gives "Wednesday", no number). Week, day, month and resource headers; not agenda |
-| `titleFormat` | `Intl.DateTimeFormatOptions` | per view | The toolbar title; a range is written with `formatRange` |
+| `titleFormat` | `Intl.DateTimeFormatOptions` | per view | The toolbar title, written with `formatRange` over the view's range: the month's first to last day in month view, the year's in year view, the days drawn in week view (FullCalendar `title-formatting.ts:15-16, 25-31`) |
 | `businessHours` | `BusinessHours \| BusinessHours[]` | — | Working hours config |
 | `hideExportButton` | `boolean` | `false` | Hide the iCalendar export button in the default header (desktop and mobile) |
 | `hideNonBusinessHours` | `boolean` | `false` | Hide off-hours in day/week views |
@@ -151,7 +151,7 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `weekends` | `boolean` | `true` | `false` hides Saturday and Sunday, as adding both to `hiddenDays` does (the two combine). |
 | `allDaySlot` | `boolean` | `true` | Draw the all-day row in day, week and resource time grids. `false` removes it and all-day events are not shown in those views. |
 | `nowIndicator` | `boolean` | `true` | Draw the current-time line in time grids. |
-| `weekNumbers` | `boolean` | unset | Unset: week number in the week and resource week header corner, none in month view. `true`: also a number in each month row, from the row's first day. `false`: nowhere. |
+| `weekNumbers` | `boolean` | unset | Unset: week number in the week and resource week header corner, none in month view. The number is that of the week drawn, counted from its first drawn day, not of the current date. `true`: also a number in each month row, from the row's first day. `false`: nowhere. |
 | `weekNumberCalculation` | `WeekNumberCalculation` | `'local'` | `'local'` (the locale's count, dayjs `week()`), or `'ISO'` (ISO 8601; changes only the number, not the first day of the week). |
 | `disableCellClick` | `boolean` | — | Disable cell clicks |
 | `disableEventClick` | `boolean` | — | Disable event clicks |

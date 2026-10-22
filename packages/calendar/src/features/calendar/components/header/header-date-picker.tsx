@@ -96,11 +96,19 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 		// A multi-unit/custom window shows its listed range, not a single day.
 		range: formatDateRange(currentRange.start, currentRange.end),
 	}
-	// A single-date kind has one date, so its range starts and ends on it.
+	// The range is the view's own, ending on its last day (not the instant after
+	// it): FullCalendar title-formatting.ts:15-16, 25-31 formats currentRange.
 	const titleRangeByKind: Record<PickerKind, [Dayjs, Dayjs]> = {
-		year: [currentDate, currentDate],
-		month: [currentDate, currentDate],
+		year: [
+			currentDate.startOf('year'),
+			currentDate.endOf('year').startOf('day'),
+		],
+		month: [
+			currentDate.startOf('month'),
+			currentDate.endOf('month').startOf('day'),
+		],
 		week: [weekStart, weekEnd],
+		// A single day has one date, so its range starts and ends on it.
 		day: [currentDate, currentDate],
 		range: [currentRange.start, currentRange.end],
 	}

@@ -12,7 +12,7 @@ Features the calendar is still missing or has recently gained, drawn from establ
 - [x] **Lazy event loading (`events` as function)** — done as `events` accepting `(info, { signal }) => Promise<Event[]>` (3.3.8); `lazyFetching`, `onEventsError` and `refetchEvents()` come with it. Cut: multiple event sources and JSON-feed URLs. Was: allow `events` to be an async function for on-demand fetching
 - [x] **`loading` callback** — done: `loading(isLoading)` fires when a fetch starts and when none is in flight any more (3.3.8). Was: enables showing a spinner during data loading
 
-- [x] **Imperative `ref` API** — done as `ref` on `IlamyCalendar` whose `current` is the `useIlamyCalendarContext()` object, plus `scrollToTime(time)` (3.3.9). Ilamy's names are kept (`setCurrentDate`, `nextPeriod`, `setView`, ...). Cut: `getEventById` (find it in `events`), `select`/`unselect` (4.1.3). Was: control the calendar from outside it
+- [x] **Imperative `ref` API** — done as `ref` on `IlamyCalendar` whose `current` is the `useIlamyCalendarContext()` object, plus `scrollToTime(time)` (3.3.9). Ilamy's names are kept (`selectDate` is FullCalendar's `gotoDate` and fires `onDateChange`; `setCurrentDate` is the silent raw setter; `nextPeriod`, `setView`, ...). Cut: `getEventById` (find it in `events`), `select`/`unselect` (4.1.3). Was: control the calendar from outside it
 
 ## Tier 2: Important for Specific Use Cases
 

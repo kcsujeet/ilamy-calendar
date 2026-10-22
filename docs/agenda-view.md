@@ -38,10 +38,14 @@ agendaPlugin({ window: 14 })
 ## Behaviour
 
 - **Empty days are skipped** — only days with at least one event render.
-- **Multi-day events repeat under each day they span** within the window, each
-  showing a `Day N/M` indicator (matching Google Calendar's Schedule view).
+- **Multi-day events repeat under each day they span** within the window, timed
+  or all-day, each showing a `Day N/M` indicator (matching Google Calendar's
+  Schedule view and FullCalendar's list view). An event ending at midnight is
+  not listed under the next day: `end` is exclusive.
 - **All-day events** show an "All day" label (localized) instead of a time, and sort
-  before timed events within a day.
+  before timed events within a day. A timed multi-day event shows its start time on
+  the first day, the end time on the last day and the "All day" label in between
+  (FullCalendar `ListEvent.tsx:21-22`).
 - **Clicking an event** opens the event form (and the recurrence scope dialog for
   recurring events), the same as the other views.
 - When the recurrence plugin is also registered, recurring occurrences are expanded

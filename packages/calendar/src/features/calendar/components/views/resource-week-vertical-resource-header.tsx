@@ -8,26 +8,19 @@ import {
 } from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
-import { getWeekNumber } from '@/features/calendar/utils/week-number'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
 
 interface ResourceWeekVerticalResourceHeaderProps {
 	resources: Resource[]
+	weekNumber: number
 }
 
 export const ResourceWeekVerticalResourceHeader: React.FC<
 	ResourceWeekVerticalResourceHeaderProps
-> = ({ resources }) => {
-	const {
-		weekViewGranularity,
-		t,
-		currentDate,
-		weekNumbers,
-		weekNumberCalculation,
-	} = useSmartCalendarContext()
+> = ({ resources, weekNumber }) => {
+	const { weekViewGranularity, t, weekNumbers } = useSmartCalendarContext()
 	const isHourly = weekViewGranularity === 'hourly'
 	const showsWeekNumber = weekNumbers !== false
-	const weekNumber = getWeekNumber(currentDate, weekNumberCalculation)
 
 	return (
 		<div className="flex h-12 gap-px bg-border">

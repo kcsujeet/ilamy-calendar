@@ -109,6 +109,24 @@ describe('AgendaView', () => {
 		expect(screen.queryByText('Day 1/1')).not.toBeInTheDocument()
 	})
 
+	/**
+	 * FullCalendar ListEvent.tsx:21-22: a segment that holds neither the real start
+	 * nor the real end shows the all-day text; the first day shows the start time.
+	 * The last day shows the end time.
+	 */
+	it('labels a timed multi-day event by start time, All day, then end time', () => {
+		renderAgenda([
+			mkEvent('c', 'Camp', '2026-06-13T09:00:00', '2026-06-15T17:30:00'),
+		])
+
+		expect(screen.getAllByText('Camp')).toHaveLength(3)
+		expect(screen.getByText('9:00 AM')).toBeInTheDocument()
+		expect(screen.getByText('All day')).toBeInTheDocument()
+		expect(screen.getByText('5:30 PM')).toBeInTheDocument()
+		expect(screen.getByText('(Day 1/3)')).toBeInTheDocument()
+		expect(screen.getByText('(Day 3/3)')).toBeInTheDocument()
+	})
+
 	it('opens the clicked event for editing', () => {
 		render(
 			<CalendarTestProvider events={seed} initialDate={dayjs('2026-06-13')}>

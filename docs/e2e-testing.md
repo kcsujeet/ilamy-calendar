@@ -141,6 +141,8 @@ see that row come back on the next update (#315). It publishes what the
 calendar reports as JSON in two hidden `<script>` elements, read by
 `CalendarPage.eventState()` (`event-state`, the stored rows) and
 `CalendarPage.eventChanges()` (`event-changes`, every `onEventsChange` call).
+With `fetch=delayed` (and `fetchDelay=<ms>`) or `fetch=failing` it passes `events` as a function that plays the consumer's server: it answers from the rows the harness holds after the delay, or fails. The mode is read on every call, so `setSettings` can flip it on a mounted calendar. It publishes each call (range and `pending`/`done`/`failed`/`aborted`) in `fetch-log` and the `loading` / `onEventsError` signals in `fetch-state`, read by `CalendarPage.fetchLog()` and `fetchState()`. The harness runs under StrictMode, so a dev mount may log one aborted call before the live one.
+`fetch=held` never answers until `setSettings` changes the mode (a held call re-checks every 25ms), so a spec can assert the pending state without racing `fetchDelay`; a wall-clock delay is only safe when the spec asserts nothing about the pending state.
 With `revertChanges=true` it acts as a server that rejects every save: it persists no
 row and calls `change.revert()` inside `onEventsChange`, so a spec can check the
 calendar puts the event back.

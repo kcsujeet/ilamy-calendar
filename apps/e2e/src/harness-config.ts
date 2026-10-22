@@ -16,6 +16,8 @@ import type {
  */
 export interface UrlConfig {
 	slotDuration?: SlotDuration
+	/** With `fetch` set: fetch only when the range leaves the last fetched one. */
+	lazyFetching?: boolean
 	scrollTime?: string
 	scrollToNow?: boolean
 	allDaySlot?: boolean
@@ -68,6 +70,14 @@ export interface UrlConfig {
 	 * persists nothing and calls `change.revert()` inside `onEventsChange`.
 	 */
 	revertChanges?: boolean
+	/**
+	 * Harness-only: pass `events` as a function that answers from the scenario
+	 * after `fetchDelay` ms (`delayed`) or fails after it (`failing`). Read on
+	 * every call, so changing it on a mounted calendar changes the next fetch.
+	 */
+	fetch?: 'delayed' | 'failing' | 'held'
+	/** Harness-only: how long the `events` function takes to answer, in ms. */
+	fetchDelay?: number
 	/**
 	 * Harness-only: keep the scenario's first N resources. Changed on a mounted
 	 * calendar, it adds or removes a resource the way a consumer's filter does.
@@ -200,6 +210,11 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 			[15, 30, 60],
 			Number
 		) as SlotDuration
+	}
+
+	const lazyFetching = get('lazyFetching')
+	if (lazyFetching !== null) {
+		config.lazyFetching = boolean('lazyFetching', lazyFetching)
 	}
 
 	const scrollTime = get('scrollTime')
@@ -416,6 +431,21 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const revertChanges = get('revertChanges')
 	if (revertChanges !== null) {
 		config.revertChanges = boolean('revertChanges', revertChanges)
+	}
+
+	const fetchMode = get('fetch')
+	if (fetchMode !== null) {
+		config.fetch = oneOf(
+			'fetch',
+			fetchMode,
+			['delayed', 'failing', 'held'] as const,
+			String
+		)
+	}
+
+	const fetchDelay = get('fetchDelay')
+	if (fetchDelay !== null) {
+		config.fetchDelay = positiveInt('fetchDelay', fetchDelay)
 	}
 
 	const renderEventVariant = get('renderEventVariant')

@@ -143,11 +143,66 @@ export interface RenderCurrentTimeIndicatorProps {
 	view: CalendarView
 }
 
+/**
+ * What the calendar asks an `events` function for: the visible range, in the
+ * calendar's time zone. `end` is exclusive (the next midnight after the last
+ * visible day), like an event's own `end`. In month view the range is the whole
+ * grid, including the leading and trailing days of the neighbouring months.
+ */
+export interface EventsFetchInfo {
+	/** Start of the visible range, inclusive. */
+	start: Dayjs
+	/** End of the visible range, exclusive. */
+	end: Dayjs
+	/** `start` as an ISO string. */
+	startStr: string
+	/** `end` as an ISO string. */
+	endStr: string
+	/** The `timezone` prop, when one is set. */
+	timezone?: string
+}
+
+/**
+ * Loads the events for a visible range. `options.signal` aborts when a newer
+ * request supersedes this one, so a `fetch` can be cancelled by passing it on.
+ * A result that arrives after being superseded is ignored either way.
+ */
+export type EventsFetcher = (
+	info: EventsFetchInfo,
+	options: { signal: AbortSignal }
+) => Promise<IlamyCalendarPropEvent[]>
+
 export interface IlamyCalendarProps {
 	/**
-	 * Array of events to display in the calendar.
+	 * The events to display: an array, or a function the calendar calls with the
+	 * visible range to load them on demand (see `EventsFetcher`).
+	 *
+	 * With a function, the calendar refetches when the visible range leaves the
+	 * last fetched one (unless `lazyFetching` is off), when `timezone` changes,
+	 * and when `refetchEvents()` is called. A new function identity does NOT
+	 * refetch: an inline function would refetch on every render. Call
+	 * `refetchEvents()` when your query changes. Edits made in the calendar are
+	 * applied immediately and reported through the `onEvent*` callbacks; the next
+	 * fetch replaces them with exactly what your function returns.
 	 */
-	events?: IlamyCalendarPropEvent[]
+	events?: IlamyCalendarPropEvent[] | EventsFetcher
+	/**
+	 * With an `events` function: fetch only when the visible range is not inside
+	 * the range last fetched. When `false`, every navigation fetches.
+	 * @default true
+	 */
+	lazyFetching?: boolean
+	/**
+	 * With an `events` function: called with `true` when a fetch starts and
+	 * `false` when none is in flight any more. Fires on those transitions only.
+	 */
+	loading?: (isLoading: boolean) => void
+	/**
+	 * With an `events` function: called when a fetch fails. The events already
+	 * shown stay, and the next navigation retries. Without it, the error goes to
+	 * `console.error`.
+	 */
+	onEventsError?: (error: unknown) => void
 	/**
 	 * The first day of the week to display in the calendar.
 	 * Can be 'sunday', 'monday', etc. Defaults to 'sunday'.

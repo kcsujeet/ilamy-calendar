@@ -1,6 +1,4 @@
-import type { CalendarEvent } from '@ilamy/types'
 import type React from 'react'
-import { useMemo } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
 import { EventFormDialog } from '@/features/calendar/components/event-form/event-form-dialog'
@@ -10,6 +8,7 @@ import {
 	useInvalidSlotPropsWarning,
 	useOrientationWarning,
 } from '@/features/calendar/hooks/use-calendar-prop-warnings'
+import { useEventsSource } from '@/features/calendar/hooks/use-events-source'
 import { useHiddenDaysToDraw } from '@/features/calendar/hooks/use-hidden-days-to-draw'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
@@ -20,11 +19,7 @@ import {
 	GAP_BETWEEN_ELEMENTS,
 	WEEK_DAYS_NUMBER_MAP,
 } from '@/config/constants'
-import type {
-	IlamyCalendarPropEvent,
-	IlamyCalendarProps,
-} from '@/features/calendar/types'
-import { normalizeEvents } from '@/features/calendar/utils/normalize'
+import type { IlamyCalendarProps } from '@/features/calendar/types'
 
 const CalendarContent: React.FC = () => {
 	const { view, getViews } = useSmartCalendarContext((c) => ({
@@ -81,13 +76,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 	...props
 }) => {
 	const hasResources = Boolean(resources?.length)
-	// Stable reference while `events` is unchanged. Without this, a fresh array on
-	// every render makes CalendarProvider re-sync (use-event-store) and discard
-	// in-memory edits (recurring overrides/EXDATEs, drags) on any re-render (#197).
-	const normalizedEvents = useMemo(
-		() => normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(events),
-		[events]
-	)
+	const { normalizedEvents, eventsFetcher } = useEventsSource(events)
 	const hiddenDaysToDraw = useHiddenDaysToDraw(hiddenDays, weekends)
 	useOrientationWarning(orientation, hasResources)
 	useInvalidSlotPropsWarning(slotMinTime, slotMaxTime)
@@ -97,6 +86,7 @@ export const IlamyCalendar: React.FC<IlamyCalendarProps> = ({
 			eventHeight={eventHeight}
 			eventSpacing={eventSpacing}
 			events={normalizedEvents}
+			eventsFetcher={eventsFetcher}
 			firstDayOfWeek={WEEK_DAYS_NUMBER_MAP[firstDayOfWeek]}
 			hiddenDays={hiddenDaysToDraw}
 			hideNonBusinessHours={hideNonBusinessHours}

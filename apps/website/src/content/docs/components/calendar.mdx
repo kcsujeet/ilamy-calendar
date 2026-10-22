@@ -92,7 +92,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `displayEventTime` | `boolean` | Shown only when `eventTimeFormat` is set | Whether the built-in event bar shows the event's time. All-day events never show one. |
 | `displayEventEnd` | `boolean` | `false` | Whether the time on an event bar runs to the end, e.g. `09:30 – 10:30`. |
 | `dayHeaderFormat` | `Intl.DateTimeFormatOptions` | Weekday over day number | How a day header is written, e.g. `{ weekday: 'long' }` gives "Wednesday". When set, the formatted text is the whole header, with no day number added. Applies to week, day, month and resource headers. |
-| `titleFormat` | `Intl.DateTimeFormatOptions` | Per view | How the toolbar title is written, e.g. `{ month: 'long', year: 'numeric' }`. A range is written with `Intl.DateTimeFormat#formatRange`. |
+| `titleFormat` | `Intl.DateTimeFormatOptions` | Per view | How the toolbar title is written, e.g. `{ month: 'long', year: 'numeric' }`. The title is the view's whole range written with `Intl.DateTimeFormat#formatRange`: the first to last day of the month in month view, of the year in year view. |
 | `hideNonBusinessHours` | `boolean` | `false` | Whether to hide hours outside of business hours in day and week views. Requires `businessHours` to be configured. |
 | `slotMinTime` | `string` | `'00:00'` | First visible time in the hour grids (day, week, and resource hour views), `'HH:mm'` or `'HH:mm:ss'`. See [Visible hours](#visible-hours). |
 | `slotMaxTime` | `string` | `'24:00'` | End of the visible time in the hour grids, exclusive, `'HH:mm'` up to `'24:00'`. See [Visible hours](#visible-hours). |
@@ -104,7 +104,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `weekends` | `boolean` | `true` | `false` hides Saturday and Sunday, the same as adding both to `hiddenDays`. |
 | `allDaySlot` | `boolean` | `true` | Show the all-day row in day, week and resource time grids. `false` removes the row and all-day events are not shown in those views. Month, year and agenda views are unaffected, and horizontal resource timelines have no all-day row to hide. |
 | `nowIndicator` | `boolean` | `true` | Show a line at the current time in time grids. |
-| `weekNumbers` | `boolean` | - | Unset keeps the default: the week number sits in the corner of the week and resource week headers, and month view shows none. `true` also shows a number at the start of each month row, counted from the row's first day. `false` hides week numbers everywhere. Resource month grids show no week numbers. |
+| `weekNumbers` | `boolean` | - | Unset keeps the default: the week number sits in the corner of the week and resource week headers (the number of the week's first drawn day), and month view shows none. `true` also shows a number at the start of each month row, counted from the row's first day. `false` hides week numbers everywhere. Resource month grids show no week numbers. |
 | `weekNumberCalculation` | `'local' \| 'ISO'` | `'local'` | How a week is counted: the locale's own count, ISO 8601 (week 1 holds the first Thursday; it only changes the number, set `firstDayOfWeek` for Monday weeks). |
 | `stickyViewHeader` | `boolean` | `true` | Whether to stick the view header to the top |
 | `viewHeaderClassName` | `string` | `''` | Custom class name for the view header |
@@ -143,7 +143,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `onEventUpdate` | `(event: CalendarEvent) => void` | Called when an existing event is updated |
 | `onEventDelete` | `(event: CalendarEvent) => void` | Called when an event is deleted |
 | `onEventsChange` | `(change: EventsChange) => void` | Called once per user action with every stored row it touched (`added`, `updated`, `deleted`), for saving a recurring edit as one unit. The per-row callbacks above still fire. See [onEventsChange](#oneventschange) |
-| `onDateChange` | `(date: dayjs.Dayjs, range: { start: dayjs.Dayjs; end: dayjs.Dayjs }) => void` | Called when the calendar date changes or the view changes. The `range` contains the visible date range for the current view. When date and view change together (e.g. clicking a day in the year view), it fires once with the final date and range. |
+| `onDateChange` | `(date: dayjs.Dayjs, range: { start: dayjs.Dayjs; end: dayjs.Dayjs }) => void` | Called when the calendar date changes or the view changes, through the buttons, the date picker or `selectDate`, `nextPeriod`, `prevPeriod`, `today` and `setView` on the ref or the hook. `setCurrentDate` does not call it. The `range` contains the visible date range for the current view. When date and view change together (e.g. clicking a day in the year view), it fires once with the final date and range. |
 
 ## Examples
 
@@ -414,6 +414,7 @@ function Planner() {
 - `ref` is a regular prop in React 19, so no `forwardRef` is needed.
 - `ref.current` is `null` until the calendar has mounted. Read it in event handlers and effects, not while rendering.
 - It always holds the latest state: `ref.current.currentDate` is the new date after `nextPeriod()`. `ref.current.events` holds the events in the visible range, the same as the hook's `events`.
+- To jump to a date, call `selectDate(date)` (FullCalendar's `gotoDate`): it calls `onDateChange`, so a URL or sidebar kept in sync from that callback follows. `setCurrentDate(date)` moves the calendar silently and never calls `onDateChange`.
 - `scrollToTime` acts on the view that is showing. A view you open afterwards starts where `scrollTime` puts it.
 
 ### Initial View and Event Lifecycle
@@ -914,7 +915,7 @@ With the recurrence plugin, `scope` is a `RecurrenceEditScope` (`'this' | 'follo
 
 #### onDateChange
 
-Fired when the user navigates to a different date or time period, or when the view changes. The second argument provides the visible date range for the current view, enabling efficient data fetching.
+Fired when the user navigates to a different date or time period, or when the view changes, and by `selectDate`, `nextPeriod`, `prevPeriod`, `today` and `setView` called from the ref or the hook. It is not fired by `setCurrentDate`, which moves the calendar silently. The second argument provides the visible date range for the current view, enabling efficient data fetching.
 
 **Type:** `(date: dayjs.Dayjs, range: { start: dayjs.Dayjs; end: dayjs.Dayjs }) => void`
 

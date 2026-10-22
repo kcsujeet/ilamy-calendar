@@ -369,7 +369,7 @@ function MyPluginView() {
     businessHours,     // BusinessHours | BusinessHours[] | undefined
 
     // Navigation
-    setCurrentDate,    // (date: Dayjs) => void
+    setCurrentDate,    // (date: Dayjs) => void, silent: no onDateChange (use selectDate)
     selectDate,        // (date: Dayjs) => void
     setView,           // (view: string, date?: Dayjs) => void
     nextPeriod,        // () => void

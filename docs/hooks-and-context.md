@@ -57,8 +57,8 @@ The only hook exported for library consumers. Returns a curated subset of contex
 
 | Method | Description |
 |--------|-------------|
-| `setCurrentDate(date)` | Jump to a specific date |
-| `selectDate(date)` | Set current date (fires `onDateChange`) |
+| `setCurrentDate(date)` | Raw setter: moves the calendar to `date` and does NOT fire `onDateChange`. The engine uses it to re-anchor the date on a locale or timezone change, where nothing the consumer asked for moved |
+| `selectDate(date)` | Go to `date` and fire `onDateChange`. This is what FullCalendar's `gotoDate` does; use it from a toolbar, a sidebar or a "jump to" button |
 | `setView(view, date?)` | Switch view, optionally moving to `date` atomically (fires `onViewChange`, then one `onDateChange`) |
 | `nextPeriod()` | Navigate forward by current view unit |
 | `prevPeriod()` | Navigate backward by current view unit |

@@ -16,6 +16,7 @@ import {
 	STICKY_GUTTER_SHADOW,
 } from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import type { WeekNumberCalculation } from '@/features/calendar/types'
 import { keys } from '@/features/calendar/utils/keys'
 import { viewHasResourceAxis } from '@/features/calendar/utils/resource-list'
 import {
@@ -41,6 +42,20 @@ const getVisibleDays = (date: Dayjs, config: ViewConfig): Dayjs[] => {
 	return withoutHiddenDays(weekDays, config.hiddenDays)
 }
 
+// The number belongs to the week drawn, counted from its first drawn day like
+// a month row (FullCalendar TimeGridWeekNumber.tsx:44-50 numbers
+// renderRange.start). Numbering the current date instead made one grid read
+// two numbers, and disagree with the month row, depending on which of its days
+// was current.
+const getDrawnWeekNumber = (
+	date: Dayjs,
+	config: ViewConfig,
+	calculation: WeekNumberCalculation
+): number => {
+	const firstDrawnDay = getVisibleDays(date, config).at(0) ?? date
+	return getWeekNumber(firstDrawnDay, calculation)
+}
+
 const isHourlyGranularity = (config: ViewConfig): boolean =>
 	(config.weekViewGranularity ?? 'hourly') === 'hourly'
 
@@ -58,7 +73,9 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 		}))
 	const visibleDays = getVisibleDays(date, config)
 	const showsWeekNumber = weekNumbers !== false
-	const weekNumber = String(getWeekNumber(date, weekNumberCalculation))
+	const weekNumber = String(
+		getDrawnWeekNumber(date, config, weekNumberCalculation)
+	)
 
 	return (
 		<div
@@ -229,8 +246,10 @@ const ResourceWeekVerticalHeader: React.FC<{
 	config: ViewConfig
 	resources: Resource[]
 }> = ({ date, config, resources }) => {
+	const { weekNumberCalculation } = useSmartCalendarContext()
 	const visibleDays = getVisibleDays(date, config)
 	const isHourly = isHourlyGranularity(config)
+	const weekNumber = getDrawnWeekNumber(date, config, weekNumberCalculation)
 	const dayHeaderColumns = isHourly
 		? resources.flatMap((resource) =>
 				visibleDays.map((day) => ({ day, resourceId: resource.id }))
@@ -239,8 +258,16 @@ const ResourceWeekVerticalHeader: React.FC<{
 
 	return (
 		<div className="flex-1 flex flex-col">
-			<ResourceWeekVerticalResourceHeader resources={resources} />
-			{isHourly && <ResourceWeekVerticalDayHeader columns={dayHeaderColumns} />}
+			<ResourceWeekVerticalResourceHeader
+				resources={resources}
+				weekNumber={weekNumber}
+			/>
+			{isHourly && (
+				<ResourceWeekVerticalDayHeader
+					columns={dayHeaderColumns}
+					weekNumber={weekNumber}
+				/>
+			)}
 		</div>
 	)
 }

@@ -50,9 +50,24 @@ describe('groupEventsByDay', () => {
 		])
 	})
 
-	it('places a timed event only on its start day, even across midnight', () => {
+	/**
+	 * Contract moved: commit 928fad64 narrowed the repeat to all-day events and a
+	 * test pinned that, but docs/agenda-view.md and docs/agenda-plugin-plan.md
+	 * (decision 5) say multi-day events repeat under every day they span, and
+	 * FullCalendar's list view slices every event across each day it covers
+	 * (ListView.tsx eventRangeToSegs).
+	 */
+	it('repeats a timed event that crosses midnight under every day it covers', () => {
 		const events = [
 			mkEvent('overnight', '2026-06-02T23:00:00', '2026-06-03T01:00:00'),
+		]
+		const groups = run(events, '2026-06-01T00:00:00', '2026-06-05T23:59:59')
+		expect(groups.map((g) => g.key)).toEqual(['2026-06-02', '2026-06-03'])
+	})
+
+	it('does not list a timed event under the day it ends at midnight (exclusive end)', () => {
+		const events = [
+			mkEvent('late', '2026-06-02T22:00:00', '2026-06-03T00:00:00'),
 		]
 		const groups = run(events, '2026-06-01T00:00:00', '2026-06-05T23:59:59')
 		expect(groups.map((g) => g.key)).toEqual(['2026-06-02'])
@@ -185,15 +200,16 @@ describe('groupEventsByDay under a configured timezone', () => {
 		expect(groups.map((g) => g.key)).toEqual(['2026-06-01'])
 	})
 
-	it('keeps a timed event on its start day across the DST fall-back', () => {
-		// 2025-11-02 is a 25-hour day in New York.
+	it('lists a timed event under each of its two days across the DST fall-back', () => {
+		// 2025-11-02 is a 25-hour day in New York. The event crosses midnight, so
+		// it covers both days (contract moved: see the midnight-crossing test above).
 		const events = [zoned('dst', '2025-11-02T23:30:00', '2025-11-03T00:30:00')]
 		const groups = runZoned(
 			events,
 			'2025-11-01T00:00:00',
 			'2025-11-04T23:59:59'
 		)
-		expect(groups.map((g) => g.key)).toEqual(['2025-11-02'])
+		expect(groups.map((g) => g.key)).toEqual(['2025-11-02', '2025-11-03'])
 	})
 
 	/**

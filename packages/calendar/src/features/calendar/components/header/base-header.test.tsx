@@ -198,6 +198,25 @@ describe('titleFormat', () => {
 		).toBe('April 2026')
 	})
 
+	// FullCalendar title-formatting.ts:15-16, 25-31 formats the view's whole
+	// range with titleFormat, so a format that shows days or months names the
+	// month or the year, not the current date.
+	it('formats the month view title as the month range', () => {
+		const title = renderTitled({
+			initialView: 'month',
+			titleFormat: { month: 'short', day: 'numeric', year: 'numeric' },
+		})
+		expect(plainSpaces(title)).toBe('Apr 1 – 30, 2026')
+	})
+
+	it('formats the year view title as the year range', () => {
+		const title = renderTitled({
+			initialView: 'year',
+			titleFormat: { month: 'long', year: 'numeric' },
+		})
+		expect(plainSpaces(title)).toBe('January – December 2026')
+	})
+
 	it('formats the day view title', () => {
 		expect(
 			renderTitled({

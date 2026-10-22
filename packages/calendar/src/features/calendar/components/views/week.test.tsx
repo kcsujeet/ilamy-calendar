@@ -1470,5 +1470,35 @@ describe('WeekView', () => {
 
 			expect(screen.getByTestId('week-number')).toHaveTextContent('52')
 		})
+
+		// The number belongs to the week DRAWN, counted from its first day like a
+		// month row (FullCalendar TimeGridWeekNumber.tsx:44-50 numbers
+		// renderRange.start), so no day inside the week changes it.
+		test('numbers the first drawn day, whichever day of the week is current', () => {
+			const numberFor = (iso: string, extra = {}) => {
+				cleanup()
+				renderWeekView({
+					initialDate: dayjs(iso),
+					weekNumberCalculation: 'ISO',
+					...extra,
+				})
+				return screen.getByTestId('week-number').textContent
+			}
+
+			// Sun 9 - Sat 15 March 2025: ISO week of Sunday 9 is 10, of Wednesday 12 is 11.
+			const sundayFirst = ['2025-03-09', '2025-03-12', '2025-03-15'].map(
+				(day) => numberFor(`${day}T12:00:00.000Z`)
+			)
+			expect(sundayFirst).toEqual(['10', '10', '10'])
+
+			// Sun 27 Dec 2026 - Sat 2 Jan 2027 is ISO week 52 by its Sunday, not 53.
+			expect(numberFor('2027-01-01T12:00:00.000Z')).toBe('52')
+
+			// Mon 3 - Sun 9 March 2025 with a Sunday current date is the same week.
+			const mondayFirst = ['2025-03-05', '2025-03-09'].map((day) =>
+				numberFor(`${day}T12:00:00.000Z`, { firstDayOfWeek: 1 })
+			)
+			expect(mondayFirst).toEqual(['10', '10'])
+		})
 	})
 })

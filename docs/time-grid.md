@@ -182,7 +182,9 @@ is `true` (default). `weekNumbers` and `weekNumberCalculation` choose the
 number shown in the week headers and in month rows (`getWeekNumber`,
 `utils/week-number.ts`). `'local'` is dayjs `week()`, the locale's own count,
 which does not follow `firstDayOfWeek`; `'ISO'` is ISO 8601 (a custom function was cut before release). A month row shows
-the number of its first day.
+the number of its first day, and a week header the number of the week's first
+drawn day, so a week and its month row agree whichever day is current
+(FullCalendar `TimeGridWeekNumber.tsx:44-50`).
 
 `scrollTime` and `scrollToNow` scroll to the exact minute: the hour row (or the
 slot cell holding now) plus the fraction of its height or width already

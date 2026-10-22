@@ -478,6 +478,19 @@ describe('ResourceWeekVertical', () => {
 			expect(screen.queryByTestId('week-number')).not.toBeInTheDocument()
 		})
 
+		test('numbers the first drawn day of the week, not the current date, in both headers', () => {
+			// Sun 29 Dec 2024 - Sat 4 Jan 2025: ISO week 52 by its Sunday, 1 by Wednesday.
+			renderResourceWeekVertical({ weekNumberCalculation: 'ISO' })
+			expect(screen.getByTestId('week-number')).toHaveTextContent('52')
+
+			cleanup()
+			renderResourceWeekVertical({
+				weekNumberCalculation: 'ISO',
+				weekViewGranularity: 'daily',
+			})
+			expect(screen.getByTestId('week-number')).toHaveTextContent('52')
+		})
+
 		test('daily granularity shows the week number in the resource header, once', () => {
 			renderResourceWeekVertical({ weekViewGranularity: 'daily' })
 

@@ -231,6 +231,70 @@ test.describe('scrollTime minutes', () => {
 	})
 })
 
+/*
+ * The number belongs to the week drawn, counted from its first drawn day like a
+ * month row (FullCalendar TimeGridWeekNumber.tsx:44-50 numbers
+ * renderRange.start), so the day that is current inside the week changes nothing.
+ */
+test.describe('the week view numbers the week drawn', () => {
+	const weekNumberOn = async (
+		page: Page,
+		date: string,
+		settings: Record<string, string>
+	) => {
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'week',
+			date: `${date}T12:00:00.000Z`,
+			settings: { weekNumbers: 'true', ...settings },
+		})
+		return (await page.getByTestId('week-number').innerText()).trim()
+	}
+
+	test('ISO, Sunday first: Sun 9 - Sat 15 March reads the month row number, whichever day is current', async ({
+		page,
+	}) => {
+		const settings = { weekNumberCalculation: 'ISO', firstDayOfWeek: 'sunday' }
+		const shown = []
+		for (const date of ['2025-03-09', '2025-03-12', '2025-03-15']) {
+			shown.push(await weekNumberOn(page, date, settings))
+		}
+
+		// The month rows above show ISO 10 for the row starting Sunday 9 March.
+		expect(shown).toEqual(['10', '10', '10'])
+	})
+
+	test('ISO, Sunday first, at the year end: 27 Dec 2026 - 2 Jan 2027 is week 52, as its month row', async ({
+		page,
+	}) => {
+		const settings = { weekNumberCalculation: 'ISO', firstDayOfWeek: 'sunday' }
+		const inWeekView = await weekNumberOn(page, '2027-01-01', settings)
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			date: '2026-12-31T12:00:00.000Z',
+			settings: { weekNumbers: 'true', ...settings },
+		})
+		const monthRows = await new MonthGrid(page).weekNumbers.allTextContents()
+
+		expect(inWeekView).toBe('52')
+		expect(monthRows.map((text) => text.trim())).toContain(inWeekView)
+	})
+
+	test('local, Monday first: a Sunday current date reads the same number as the Wednesday', async ({
+		page,
+	}) => {
+		const settings = {
+			weekNumberCalculation: 'local',
+			firstDayOfWeek: 'monday',
+		}
+		const onWednesday = await weekNumberOn(page, '2025-03-05', settings)
+		const onSunday = await weekNumberOn(page, '2025-03-09', settings)
+
+		expect(onSunday).toBe(onWednesday)
+	})
+})
+
 test.describe('weekNumbers in the daily resource week', () => {
 	test('shows the week number once, in the resource header', async ({
 		page,

@@ -11,25 +11,18 @@ export interface AgendaDayGroupData {
 }
 
 /**
- * All-day events repeat under each day they span (matching Google's Schedule
- * view); a timed event appears once, under its start day, even if it crosses
- * midnight.
+ * Every event repeats under each day it covers, timed or all-day: the agenda
+ * docs say so (docs/agenda-view.md) and FullCalendar's list view slices each
+ * event across its days (ListView.tsx eventRangeToSegs). The shared predicate
+ * keeps the end exclusive, so an event ending at midnight is not on the next
+ * day, and keeps the agenda and the grid from disagreeing about which days an
+ * event covers. A private copy of it drifted once already (#248).
  */
 const appearsOnDay = (
 	event: CalendarEvent,
 	dayStart: Dayjs,
 	dayEnd: Dayjs
-): boolean => {
-	if (event.allDay) {
-		// The shared predicate, so the agenda and the grid cannot disagree about
-		// which days an event covers. A private copy of it drifted once already
-		// (#248), listing a one-day event under two days.
-		return overlapsRange(event, dayStart, dayEnd)
-	}
-	return (
-		event.start.isSameOrAfter(dayStart) && event.start.isSameOrBefore(dayEnd)
-	)
-}
+): boolean => overlapsRange(event, dayStart, dayEnd)
 
 const byAllDayThenStart = (a: CalendarEvent, b: CalendarEvent): number => {
 	const aRank = a.allDay ? 0 : 1
@@ -41,9 +34,8 @@ const byAllDayThenStart = (a: CalendarEvent, b: CalendarEvent): number => {
 }
 
 /**
- * Groups events by calendar day across `range`, dropping empty days. All-day
- * events repeat under each day they span (clamped to the window); timed events
- * appear once under their start day. Matches the agenda's per-day scanning model.
+ * Groups events by calendar day across `range`, dropping empty days. An event
+ * repeats under each day it spans (clamped to the window).
  */
 export const groupEventsByDay = (
 	events: CalendarEvent[],

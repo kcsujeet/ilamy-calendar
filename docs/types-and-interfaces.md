@@ -329,7 +329,9 @@ interface EventDelta {
 FullCalendar's `diffDayAndTime` counts it, `headless-calendar/src/marker.ts:48-58`, v7.1.1), so a move across
 a clock change keeps the event at the same time of day. Both starts are read in the calendar's zone from their
 instants. A timed event that became all-day is measured from the start of its own day
-(`EventDragging.ts:454`, v7.1.1); an all-day event moved to a timed slot from its midnight start.
+(`EventDragging.ts:454`, v7.1.1); an all-day event moved to a timed slot from its midnight start. Across that boundary the length is reset, as
+FullCalendar does by default: an all-day event dropped on a time slot starts at the slot and lasts one hour, a timed
+event dropped on the all-day row ends at the next midnight.
 
 `endDelta` is the same measure for the end. A resize from the end edge sets only `endDelta`, a resize from the
 start edge only `delta`, and a move sets both to the same amount, except that a timed event moved onto the

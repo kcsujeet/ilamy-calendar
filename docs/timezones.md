@@ -239,6 +239,17 @@ such zones: `main` gave 38 wrong results on a UTC machine, 92 on Vancouver and
 change at midnight, where dayjs picks the wrong one of a repeated midnight),
 plus up to 27 more depending on the machine (Havana, London, Beirut, New York).
 
+## A moved event keeps its wall-clock length
+
+A drag applies one delta to both edges (FullCalendar `event-mutation.ts:110-114`
+with `marker.ts:48-58`, v7.1.1), so a moved event keeps its length on the
+clock, not on the stopwatch: its elapsed length changes by an hour when the
+move crosses a clock change (a 12 hour overnight shift moved over the spring
+change then lasts 11 elapsed hours), and `delta` equals `endDelta`. An end
+that would land in the skipped hour is read forward by the zone, as a
+clock reads it. Resize and drag-to-create snap an edge to a slot boundary, an
+exact slot length, so they have no such length to keep.
+
 ## Key files
 
 - `packages/utils/src/dayjs.ts` — the configured constructor, the offset rule, and `compareByInstant`

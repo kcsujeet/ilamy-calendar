@@ -82,6 +82,50 @@ export const getSnappedOverData = (
 }
 
 /**
+ * A wall-clock time on a day, built from a zoneless string for the reason
+ * `calculateDropTimes` gives: the setters would carry the source day's UTC
+ * offset onto a day where the clocks change.
+ */
+const atTimeOfDay = (day: Dayjs, timeOfDay: string): Dayjs =>
+	dayjs(`${day.format('YYYY-MM-DD')}T${timeOfDay}`)
+
+const MIDNIGHT = '00:00:00.000'
+const TIME_OF_DAY_FORMAT = 'HH:mm:ss.SSS'
+
+const WALL_CLOCK_FORMAT = 'YYYY-MM-DDTHH:mm:ss.SSS'
+const HOUR_MS = 3_600_000
+
+/**
+ * FullCalendar's fixed defaults for an event that crosses the all-day
+ * boundary: an all-day event dropped on a time slot becomes one hour long
+ * (`defaultTimedEventDuration` '01:00:00', `options.ts:486`) and a timed event
+ * dropped on the all-day row becomes one day long (`defaultAllDayEventDuration`
+ * {day:1}, `options.ts:487`), because `allDayMaintainDuration` is false by
+ * default (`options.ts:511`) and `event-mutation.ts:131-134` then resets the
+ * end. They are fixed here, not options: no consumer has asked to change them.
+ */
+const DEFAULT_TIMED_DURATION_MS = HOUR_MS
+
+/** A date's wall clock, read as if it were UTC so a length can be taken from it. */
+const getWallClockMs = (date: Dayjs): number =>
+	dayjs.utc(date.format(WALL_CLOCK_FORMAT)).valueOf()
+
+/**
+ * How long an event is on the clock, not on the stopwatch. A move applies one
+ * delta to both edges (`event-mutation.ts:110-114`, `marker.ts:48-58`, v7.1.1),
+ * so the event keeps its clock length and its elapsed length changes by an hour
+ * across a clock change (`docs/timezones.md`).
+ */
+const getWallClockLength = (event: CalendarEvent): number =>
+	getWallClockMs(event.end) - getWallClockMs(event.start)
+
+/** `start` plus a clock length, anchored in the configured zone like a start. */
+const addWallClockLength = (start: Dayjs, wallClockLength: number): Dayjs => {
+	const endWallClock = dayjs.utc(getWallClockMs(start) + wallClockLength)
+	return dayjs(endWallClock.format(WALL_CLOCK_FORMAT))
+}
+
+/**
  * Calculates candidate start, end, and allDay status when an event is dragged
  * over a cell, respecting the grab offset and preserving time of day when a
  * timed event moves between day cells (matching FullCalendar and Google
@@ -93,21 +137,28 @@ export const calculateDropTimes = (
 	grabOffset: GrabOffset = NO_GRAB_OFFSET
 ): { start: Dayjs; end: Dayjs; allDay: boolean } => {
 	const { date, hour = 0, minute = 0, allDay } = data
-	const eventDuration = activeEvent.end.diff(activeEvent.start, 'second')
+	const eventIsAllDay = Boolean(activeEvent.allDay)
+	const wallClockLength = getWallClockLength(activeEvent)
 
 	// An end landing on midnight is kept: `end` is exclusive (#248), so it is a
 	// legitimate end and the layout paints it on the day it actually covers.
 	// Snapping it back to the previous 23:59:59.999, as this used to, resized
 	// the event on every drag.
-	const withDuration = (start: Dayjs) => ({
+	const keepingLength = (start: Dayjs) => ({
 		start,
-		end: start.add(eventDuration, 'second'),
+		end: addWallClockLength(start, wallClockLength),
 	})
 
 	if (isTimeSlotDrop(data)) {
 		const slotTime = dayjs(date).hour(hour).minute(minute)
+		if (eventIsAllDay) {
+			// Across the all-day boundary the grab point does not matter: the start
+			// is the slot (EventDragging.ts:447-460, v7.1.1).
+			const end = addWallClockLength(slotTime, DEFAULT_TIMED_DURATION_MS)
+			return { start: slotTime, end, allDay: false }
+		}
 		const grabbedSlot = slotTime.subtract(grabOffset.minutes, 'minute')
-		return { ...withDuration(grabbedSlot), allDay: false }
+		return { ...keepingLength(grabbedSlot), allDay: false }
 	}
 
 	// A drop changes an event's kind only when it crosses between a timed area
@@ -118,11 +169,18 @@ export const calculateDropTimes = (
 	// `allDay: false`, which is why this must not read `false` as "timed" (#322).
 	const targetDate = dayjs(date).subtract(grabOffset.days, 'day')
 	const droppedOnAllDayCell = allDay === true
-	const eventIsAllDay = Boolean(activeEvent.allDay)
 	const staysAllDay = droppedOnAllDayCell || eventIsAllDay
 
 	if (staysAllDay) {
-		return { ...withDuration(targetDate.startOf('day')), allDay: true }
+		const dayStart = atTimeOfDay(targetDate, MIDNIGHT)
+		const becomesAllDay = !eventIsAllDay
+		if (becomesAllDay) {
+			// A timed event on the all-day row is one whole day long, ending at the
+			// next midnight (RFC 5545 3.6.1; `defaultAllDayEventDuration`).
+			const nextMidnight = atTimeOfDay(targetDate.add(1, 'day'), MIDNIGHT)
+			return { start: dayStart, end: nextMidnight, allDay: true }
+		}
+		return { ...keepingLength(dayStart), allDay: true }
 	}
 
 	// Rebuilt from a zoneless string rather than with `.hour()/.minute()`
@@ -132,10 +190,9 @@ export const calculateDropTimes = (
 	// 10:00 is 14:00Z. A string with no offset is anchored in the configured
 	// zone on parse, which re-derives the offset for the TARGET day
 	// (`docs/timezones.md`).
-	const targetDay = targetDate.format('YYYY-MM-DD')
-	const timeOfDay = activeEvent.start.format('HH:mm:ss.SSS')
-	const keptTimeOfDay = dayjs(`${targetDay}T${timeOfDay}`)
-	return { ...withDuration(keptTimeOfDay), allDay: false }
+	const timeOfDay = activeEvent.start.format(TIME_OF_DAY_FORMAT)
+	const keptTimeOfDay = atTimeOfDay(targetDate, timeOfDay)
+	return { ...keepingLength(keptTimeOfDay), allDay: false }
 }
 
 export type ResizeEdge = 'start' | 'end'
@@ -163,17 +220,6 @@ export const getPressedResizeEdge = (
 	}
 	return undefined
 }
-
-/**
- * A wall-clock time on a day, built from a zoneless string for the reason
- * `calculateDropTimes` gives: the setters would carry the source day's UTC
- * offset onto a day where the clocks change.
- */
-const atTimeOfDay = (day: Dayjs, timeOfDay: string): Dayjs =>
-	dayjs(`${day.format('YYYY-MM-DD')}T${timeOfDay}`)
-
-const MIDNIGHT = '00:00:00.000'
-const TIME_OF_DAY_FORMAT = 'HH:mm:ss.SSS'
 
 /** The span of the time slot a pointer is over; undefined without a date. */
 const getSlotSpan = (data: DropCellData) => {

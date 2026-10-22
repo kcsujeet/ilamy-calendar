@@ -1,6 +1,7 @@
 import type {
 	BusinessHours,
 	CalendarEvent,
+	EventDropInfo,
 	EventsChange,
 	IlamyPlugin,
 	Resource,
@@ -51,6 +52,9 @@ export interface CalendarProviderProps {
 	disableCellClick?: boolean
 	disableEventClick?: boolean
 	disableDragAndDrop?: boolean
+	editable?: boolean
+	eventStartEditable?: boolean
+	eventAllow?: (dropInfo: EventDropInfo, draggedEvent: CalendarEvent) => boolean
 	/** Max stacked events per day in horizontal grids; the engine defaults it. */
 	dayMaxEvents?: number
 	eventSpacing?: number
@@ -120,6 +124,8 @@ const useCalendarContextValue = (
 		disableCellClick,
 		disableEventClick,
 		disableDragAndDrop,
+		editable,
+		eventStartEditable,
 		dayMaxEvents,
 		eventSpacing = GAP_BETWEEN_ELEMENTS,
 		eventHeight = EVENT_BAR_HEIGHT,
@@ -150,6 +156,8 @@ const useCalendarContextValue = (
 
 	// Called on a click, never while rendering: see useLatestHandler.
 	const onMoreEventsClick = useLatestHandler(props.onMoreEventsClick)
+	// Called while a drag hovers a placement, never while rendering.
+	const eventAllow = useLatestHandler(props.eventAllow)
 
 	const engine = useCalendarEngine({
 		events,
@@ -197,6 +205,9 @@ const useCalendarContextValue = (
 			disableCellClick,
 			disableEventClick,
 			disableDragAndDrop,
+			editable,
+			eventStartEditable,
+			eventAllow,
 			eventSpacing,
 			eventHeight,
 			stickyViewHeader,
@@ -228,6 +239,9 @@ const useCalendarContextValue = (
 		disableCellClick,
 		disableEventClick,
 		disableDragAndDrop,
+		editable,
+		eventStartEditable,
+		eventAllow,
 		eventSpacing,
 		eventHeight,
 		stickyViewHeader,

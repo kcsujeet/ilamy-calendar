@@ -16,11 +16,11 @@ export interface DragPreviewState {
 	allDay: boolean
 	/**
 	 * Whether releasing here would actually move the event. False over a cell
-	 * that refuses drops: the mirror is still drawn, because the candidate is
-	 * still where the pointer says, and the release simply commits nothing.
-	 * FullCalendar draws its mirror over an invalid area too and signals the
-	 * refusal with the cursor (`fc-not-allowed` on the body) rather than by
-	 * hiding it.
+	 * that refuses drops, or when the consumer's `eventAllow` vetoes the
+	 * placement. A refused placement is not drawn (no mirror, no drop tint): the
+	 * not-allowed cursor is the only signal and the release commits nothing,
+	 * as FullCalendar nulls the mutation for an invalid placement
+	 * (interaction-plugin/interactions/EventDragging.ts:193-198, v7.1.1).
 	 */
 	isDropAllowed: boolean
 }

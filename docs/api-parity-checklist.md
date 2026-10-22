@@ -16,7 +16,7 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 
 - [ ] **Event resize** — `onEventResize` with delta. User drags event edge to change duration. Currently only drag-to-move is supported
 - [ ] **External event dragging** — `onEventReceive` / `onDrop`. Drag elements from outside the calendar onto a cell to create events. Requires interaction with external `@dnd-kit` sources
-- [ ] **Pre-validation hooks** — `eventAllow(info) => boolean` and `selectAllow(info) => boolean`. Prevent invalid mutations before they happen (e.g., no events on weekends, no overlaps). Currently mutations are applied immediately with no way to prevent them
+- [x] **`eventAllow(dropInfo, draggedEvent) => boolean`** — vetoes a candidate placement while dragging, with `editable` / `eventStartEditable` and per-event flags (3.3.2). `selectAllow` is still open (4.1.3)
 - [ ] **`delta` in DnD callbacks** — `onEventUpdate` should include `{ delta: { days: number, hours: number, minutes: number } }` so consumers don't need to manually diff old/new dates
 - [ ] **`slotMinTime` / `slotMaxTime`** — Control visible time range independently of business hours. Currently `hideNonBusinessHours` is all-or-nothing
 
@@ -45,7 +45,7 @@ Feature gaps compared to FullCalendar and other mature calendar libraries. Prior
 - [x] `hiddenDays` — hide specific weekdays
 - [x] Resource-specific business hours
 - [x] `businessHours` with split shifts
-- [x] `disableCellClick` / `disableEventClick` / `disableDragAndDrop` — interaction control
+- [x] `disableCellClick` / `disableEventClick` — interaction control (`disableDragAndDrop` is a deprecated alias of `editable={false}`)
 - [x] `firstDayOfWeek` — configurable week start
 - [x] Full timezone support via `timezone` prop
 - [x] i18n via `translations` / `translator` props

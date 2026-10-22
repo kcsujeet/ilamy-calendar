@@ -294,14 +294,21 @@ describe('draggable event drag-state classes', () => {
 			settings?: {
 				disableDragAndDrop?: boolean
 				disableEventClick?: boolean
+				editable?: boolean
+				eventStartEditable?: boolean
 			}
+			eventOverrides?: Partial<CalendarEvent>
 		} = {}
 	) => {
 		cleanup()
+		const events = booking.map((event) => ({
+			...event,
+			...options.eventOverrides,
+		}))
 		render(
 			<CalendarProvider
 				dayMaxEvents={5}
-				events={booking}
+				events={events}
 				firstDayOfWeek={1}
 				initialDate={dayjs('2025-03-01T00:00:00.000Z')}
 				{...options.settings}
@@ -315,22 +322,25 @@ describe('draggable event drag-state classes', () => {
 		const wrapper = screen
 			.getAllByTestId(keys.container.horizontal.event('long'))
 			.at(0)
-		return wrapper?.querySelector('[class*="cursor-"]')?.className ?? ''
+		return wrapper?.querySelector('[class*="cursor-"]') ?? null
 	}
 
+	const renderBarClasses = (options: Parameters<typeof renderBar>[0] = {}) =>
+		renderBar(options)?.className ?? ''
+
 	test('offers a grab handle when the event can be dragged', () => {
-		expect(renderBar()).toContain('cursor-grab')
+		expect(renderBarClasses()).toContain('cursor-grab')
 	})
 
 	test('offers a pointer when dragging is off but clicking is not', () => {
-		const classes = renderBar({ settings: { disableDragAndDrop: true } })
+		const classes = renderBarClasses({ settings: { disableDragAndDrop: true } })
 
 		expect(classes).toContain('cursor-pointer')
 		expect(classes).not.toContain('cursor-grab')
 	})
 
 	test('offers nothing when neither dragging nor clicking is available', () => {
-		const classes = renderBar({
+		const classes = renderBarClasses({
 			settings: { disableDragAndDrop: true, disableEventClick: true },
 		})
 
@@ -350,7 +360,7 @@ describe('draggable event drag-state classes', () => {
 			allDay: false,
 		})
 
-		expect(renderBar({ preview })).toContain('opacity-50')
+		expect(renderBarClasses({ preview })).toContain('opacity-50')
 	})
 
 	test('leaves other events undimmed', () => {
@@ -361,6 +371,107 @@ describe('draggable event drag-state classes', () => {
 			allDay: false,
 		})
 
-		expect(renderBar({ preview })).not.toContain('opacity-50')
+		expect(renderBarClasses({ preview })).not.toContain('opacity-50')
+	})
+})
+
+/*
+ * A bar that cannot move is a plain clickable event. dnd-kit's attributes on
+ * it would announce drag instructions to a screen reader for something that
+ * cannot be dragged, and `aria-disabled` makes assistive tech (and Playwright's
+ * `click()`) treat it as inert although it still opens the form.
+ */
+describe('draggable event drag attributes', () => {
+	const booking: CalendarEvent = {
+		id: 'long',
+		title: 'Long booking',
+		start: dayjs('2025-03-01T09:00:00.000Z'),
+		end: dayjs('2025-03-01T17:00:00.000Z'),
+	}
+
+	const renderBarElement = (
+		settings: {
+			editable?: boolean
+			eventStartEditable?: boolean
+			disableDragAndDrop?: boolean
+		} = {},
+		eventOverrides: Partial<CalendarEvent> = {}
+	) => {
+		cleanup()
+		render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				events={[{ ...booking, ...eventOverrides }]}
+				firstDayOfWeek={1}
+				initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+				{...settings}
+			>
+				<MonthView />
+			</CalendarProvider>
+		)
+		const wrapper = screen
+			.getAllByTestId(keys.container.horizontal.event('long'))
+			.at(0)
+		return wrapper?.querySelector('[class*="cursor-"]') ?? null
+	}
+
+	const dragAttributesOf = (element: Element | null) => ({
+		describedBy: element?.hasAttribute('aria-describedby'),
+		disabled: element?.hasAttribute('aria-disabled'),
+		role: element?.hasAttribute('role'),
+		roleDescription: element?.hasAttribute('aria-roledescription'),
+	})
+
+	const NO_DRAG_ATTRIBUTES = {
+		describedBy: false,
+		disabled: false,
+		role: false,
+		roleDescription: false,
+	}
+
+	test('a movable bar carries the drag attributes', () => {
+		const attributes = dragAttributesOf(renderBarElement())
+
+		expect(attributes).toMatchObject({
+			describedBy: true,
+			role: true,
+			roleDescription: true,
+		})
+	})
+
+	test('an event with editable=false is a plain bar', () => {
+		const bar = renderBarElement({}, { editable: false })
+
+		expect(dragAttributesOf(bar)).toEqual(NO_DRAG_ATTRIBUTES)
+	})
+
+	test('an event with startEditable=false is a plain bar', () => {
+		const bar = renderBarElement({}, { startEditable: false })
+
+		expect(dragAttributesOf(bar)).toEqual(NO_DRAG_ATTRIBUTES)
+	})
+
+	test('every bar is plain when the calendar is not editable', () => {
+		expect(dragAttributesOf(renderBarElement({ editable: false }))).toEqual(
+			NO_DRAG_ATTRIBUTES
+		)
+		expect(
+			dragAttributesOf(renderBarElement({ disableDragAndDrop: true }))
+		).toEqual(NO_DRAG_ATTRIBUTES)
+	})
+
+	test('an event can opt back in under a non-editable calendar', () => {
+		const bar = renderBarElement({ editable: false }, { startEditable: true })
+
+		expect(dragAttributesOf(bar).roleDescription).toBe(true)
+	})
+
+	test('eventStartEditable=true beats the disableDragAndDrop alias', () => {
+		const bar = renderBarElement({
+			disableDragAndDrop: true,
+			eventStartEditable: true,
+		})
+
+		expect(dragAttributesOf(bar).roleDescription).toBe(true)
 	})
 })

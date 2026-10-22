@@ -1,4 +1,4 @@
-import type { CalendarEvent, Resource } from '@ilamy/types'
+import type { CalendarEvent, EventDropInfo, Resource } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { type Context, createContext, type ReactNode } from 'react'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
@@ -29,6 +29,12 @@ export interface CalendarContextType extends CalendarEngineReturn {
 	disableCellClick?: boolean
 	disableEventClick?: boolean
 	disableDragAndDrop?: boolean
+	editable?: boolean
+	eventStartEditable?: boolean
+	eventAllow?: (
+		dropInfo: EventDropInfo,
+		draggedEvent: CalendarEvent
+	) => boolean | undefined
 	eventSpacing: number
 	eventHeight: number
 	stickyViewHeader: boolean

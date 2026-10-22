@@ -6,6 +6,7 @@ export type {
 	BusinessHours,
 	CalendarEvent,
 	ColumnSpec,
+	EventDropInfo,
 	EventFormSlotContext,
 	EventMutationScopeSlotContext,
 	EventsChange,

@@ -41,6 +41,8 @@ interface FetchDecisionInput {
 	visibleStartMs: number
 	visibleEndMs: number
 	timezone?: string
+	/** Whether a fetch ever started, so a failure (no `fetched`) is not "never tried". */
+	hasAttempted: boolean
 	isFetchInFlight: boolean
 	lazyFetching: boolean
 	followsRange: boolean
@@ -52,13 +54,17 @@ export const mustFetchRange = ({
 	visibleStartMs,
 	visibleEndMs,
 	timezone,
+	hasAttempted,
 	isFetchInFlight,
 	lazyFetching,
 	followsRange,
 }: FetchDecisionInput): boolean => {
 	if (!fetched) {
-		// Data that ignores the range is fetched once, never again because of it.
-		return followsRange || !isFetchInFlight
+		// Data that ignores the range is tried once, and a failure is not retried
+		// by navigation: only `refetch()` does. FullCalendar's resource function
+		// is likewise called again on a range change only with
+		// `refetchResourcesOnNavigate` (@fullcalendar/resource 6.1.22).
+		return followsRange || !hasAttempted
 	}
 	if (!followsRange) {
 		return false
@@ -81,7 +87,7 @@ export const mustFetchRange = ({
  * Starting a fetch aborts the one before it, and a result that is not the
  * latest request's is ignored even if the consumer never honoured the signal.
  * A failure keeps the events on screen and does not record the range, so the
- * next navigation retries it.
+ * next navigation retries it (range-following data only).
  *
  * The function is read through `useLatestHandler`: a new identity (an inline
  * function) never refetches by itself.
@@ -106,6 +112,7 @@ export const useRangeFetcher = <Row>({
 	const inFlight = useRef<AbortController | undefined>(undefined)
 	const isLoading = useRef(false)
 	const lastFetched = useRef<FetchedRange | undefined>(undefined)
+	const hasAttempted = useRef(false)
 
 	const { start, end } = getCurrentViewRange()
 	const rangeStartMs = start.valueOf()
@@ -125,6 +132,7 @@ export const useRangeFetcher = <Row>({
 		inFlight.current?.abort()
 		const controller = new AbortController()
 		inFlight.current = controller
+		hasAttempted.current = true
 		latestRequestId.current += 1
 		const requestId = latestRequestId.current
 		const isLatest = () => requestId === latestRequestId.current
@@ -179,9 +187,22 @@ export const useRangeFetcher = <Row>({
 		void fetchVisibleRange()
 	})
 
+	// Whatever is in flight when the fetcher goes away (the calendar unmounts,
+	// or `events` becomes an array) must not land, a parent that outlives it
+	// must not keep its spinner, and a fetcher that comes back starts afresh.
+	const cancelFetching = useLatestHandler(() => {
+		latestRequestId.current += 1
+		inFlight.current?.abort()
+		inFlight.current = undefined
+		lastFetched.current = undefined
+		hasAttempted.current = false
+		setLoading(false)
+	})
+
 	const hasFetcher = Boolean(fetchRows)
 	useEffect(() => {
 		if (!hasFetcher) {
+			cancelFetching?.()
 			return
 		}
 		const mustFetch = mustFetchRange({
@@ -189,6 +210,7 @@ export const useRangeFetcher = <Row>({
 			visibleStartMs: rangeStartMs,
 			visibleEndMs: rangeEndMs,
 			timezone,
+			hasAttempted: hasAttempted.current,
 			isFetchInFlight: isLoading.current,
 			lazyFetching,
 			followsRange,
@@ -204,19 +226,14 @@ export const useRangeFetcher = <Row>({
 		lazyFetching,
 		followsRange,
 		refetch,
+		cancelFetching,
 	])
 
-	// Whatever is still in flight when the calendar goes away must not land,
-	// and a parent that outlives the calendar must not keep its spinner.
-	const stopLoading = useLatestHandler(() => setLoading(false))
 	useEffect(
 		() => () => {
-			latestRequestId.current += 1
-			inFlight.current?.abort()
-			inFlight.current = undefined
-			stopLoading?.()
+			cancelFetching?.()
 		},
-		[stopLoading]
+		[cancelFetching]
 	)
 
 	return { refetch: refetch ?? doNothing }

@@ -84,6 +84,21 @@ export const setSettings = async (
 	)
 }
 
+/** Removes settings from a mounted calendar's URL, as `setSettings` sets them. */
+export const removeSettings = async (
+	page: Page,
+	keys: readonly string[]
+): Promise<void> => {
+	await page.evaluate((names) => {
+		const url = new URL(window.location.href)
+		for (const key of names) {
+			url.searchParams.delete(key)
+		}
+		window.history.pushState(null, '', url)
+		window.dispatchEvent(new PopStateEvent('popstate'))
+	}, keys)
+}
+
 /**
  * Lifts the pointer once the drag has caught up with it.
  *

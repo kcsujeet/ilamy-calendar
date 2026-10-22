@@ -90,6 +90,26 @@ for (const orientation of ['vertical', 'horizontal'] as const) {
 				['r1', 'r2'],
 			])
 		})
+
+		test('a failed first fetch is not retried by navigating', async ({
+			page,
+		}) => {
+			await open(page, orientation, {
+				resourcesFetch: 'failing',
+				fetchDelay: 30,
+			})
+			const axis = new ResourceAxis(page)
+			await expect.poll(() => axis.resourcesErrors()).toBe(1)
+
+			await axis.next()
+			await axis.next()
+			await page.waitForTimeout(300)
+
+			expect(await axis.resourcesErrors()).toBe(1)
+			expect(
+				(await axis.resourcesFetchLog()).filter((e) => e.status === 'failed')
+			).toHaveLength(1)
+		})
 	})
 }
 

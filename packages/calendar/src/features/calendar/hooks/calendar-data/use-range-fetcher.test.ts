@@ -18,6 +18,9 @@ const mkEvent = (id: string): CalendarEvent => ({
 	end: dayjs('2025-01-15T11:00:00.000Z'),
 })
 
+// Stable, like the consumer's own array.
+const OWN_EVENTS: CalendarEvent[] = [mkEvent('own')]
+
 interface FetchCall<Row = CalendarEvent> {
 	info: EventsFetchInfo
 	signal: AbortSignal
@@ -234,6 +237,28 @@ describe('events fetched on demand', () => {
 		expect(loading.mock.calls).toEqual([[true], [false]])
 	})
 
+	it('ignores a fetch still in flight when events becomes an array', async () => {
+		const { result, calls, rerender, loading } = renderEngine()
+
+		rerender({ eventsFetcher: undefined, events: OWN_EVENTS })
+		await calls[0].resolve([mkEvent('stale')])
+
+		expect(ids(result.current.rawEvents)).toEqual(['own'])
+		expect(calls[0].signal.aborted).toBe(true)
+		expect(loading.mock.calls).toEqual([[true], [false]])
+	})
+
+	it('fetches again when a function replaces an array that replaced a function', async () => {
+		const { calls, rerender, loading } = renderEngine()
+		await calls[0].resolve([mkEvent('a')])
+
+		rerender({ eventsFetcher: undefined, events: OWN_EVENTS })
+		rerender({ events: NO_EVENTS })
+
+		expect(calls).toHaveLength(2)
+		expect(loading.mock.calls).toEqual([[true], [false], [true]])
+	})
+
 	it('still fetches after a StrictMode remount', async () => {
 		const { result, calls } = renderEngine({}, { wrapper: StrictMode })
 		const live = calls.at(-1)
@@ -340,6 +365,41 @@ describe('resources fetched on demand', () => {
 		act(() => result.current.nextPeriod())
 
 		expect(calls).toHaveLength(1)
+	})
+
+	it('does not retry a failed first fetch on navigation by default', async () => {
+		const { result, calls } = renderResourcesEngine({
+			onResourcesError: vi.fn(),
+		})
+		await calls[0].reject(new Error('network down'))
+
+		act(() => result.current.nextPeriod())
+		act(() => result.current.nextPeriod())
+
+		expect(calls).toHaveLength(1)
+	})
+
+	it('retries a failed first fetch on navigation with refetchResourcesOnNavigate', async () => {
+		const { result, calls } = renderResourcesEngine({
+			onResourcesError: vi.fn(),
+			refetchResourcesOnNavigate: true,
+		})
+		await calls[0].reject(new Error('network down'))
+
+		act(() => result.current.nextPeriod())
+
+		expect(calls).toHaveLength(2)
+	})
+
+	it('refetchResources retries a failed first fetch', async () => {
+		const { result, calls } = renderResourcesEngine({
+			onResourcesError: vi.fn(),
+		})
+		await calls[0].reject(new Error('network down'))
+
+		act(() => result.current.refetchResources())
+
+		expect(calls).toHaveLength(2)
 	})
 
 	it('refetches when the view leaves the fetched range with refetchResourcesOnNavigate', async () => {
@@ -578,6 +638,7 @@ describe('mustFetchRange', () => {
 			visibleStartMs: 120,
 			visibleEndMs: 180,
 			timezone: 'UTC',
+			hasAttempted: true,
 			isFetchInFlight: false,
 			lazyFetching: true,
 			followsRange: true,
@@ -585,7 +646,7 @@ describe('mustFetchRange', () => {
 		})
 
 	it('fetches when nothing was fetched yet', () => {
-		expect(decide({ fetched: undefined })).toBe(true)
+		expect(decide({ fetched: undefined, hasAttempted: false })).toBe(true)
 	})
 
 	it('does not fetch inside the fetched range', () => {
@@ -603,11 +664,24 @@ describe('mustFetchRange', () => {
 		expect(decide({ lazyFetching: false })).toBe(true)
 	})
 
-	it('fetches range-independent data once, and not while one is in flight', () => {
-		expect(decide({ followsRange: false, fetched: undefined })).toBe(true)
+	it('fetches range-independent data once, and never again because of the range', () => {
 		expect(
-			decide({ followsRange: false, fetched: undefined, isFetchInFlight: true })
-		).toBe(false)
+			decide({ followsRange: false, fetched: undefined, hasAttempted: false })
+		).toBe(true)
 		expect(decide({ followsRange: false, visibleStartMs: 90 })).toBe(false)
+	})
+
+	// Was "fetched: undefined -> true", which could not tell never tried from
+	// tried and failed. A failure records no range, so the retry belongs to
+	// refetch(); FullCalendar's resource-function docs call the function once
+	// and again only with refetchResourcesOnNavigate.
+	it('does not retry range-independent data that was attempted and failed', () => {
+		expect(
+			decide({ followsRange: false, fetched: undefined, hasAttempted: true })
+		).toBe(false)
+	})
+
+	it('retries a failed range for range-following data', () => {
+		expect(decide({ fetched: undefined, hasAttempted: true })).toBe(true)
 	})
 })

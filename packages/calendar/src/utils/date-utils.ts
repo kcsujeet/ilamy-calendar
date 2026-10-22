@@ -106,14 +106,19 @@ export const withoutHiddenDays = (
 }
 
 /**
- * `date` read again at its own UTC offset, with the same clock face. `add` and
- * `subtract` keep the receiver's offset, so a date stepped across a clock
- * change reads right but is an hour off as an instant; within the hour after
- * midnight that instant is the previous day. A zoneless string is anchored in
- * the calendar's zone on parse, which derives the offset for the new time.
+ * `timeOfDay` ('HH:mm:ss.SSS') on the calendar day `day` reads, built from a
+ * zoneless string, which dayjs anchors in the calendar's zone on parse and so
+ * gives the UTC offset in force at that time. `add`, `subtract` and the
+ * `.hour()`/`.minute()` setters keep the receiver's offset instead, so a value
+ * stepped across a clock change reads right but is an hour off as an instant
+ * (`docs/timezones.md`). A time the clocks skip moves forward (RFC 5545 3.3.5).
  */
+export const atTimeOfDay = (day: Dayjs, timeOfDay: string): Dayjs =>
+	dayjs(`${day.format('YYYY-MM-DD')}T${timeOfDay}`)
+
+/** `date` read again at its own UTC offset, with the same clock face. */
 export const withOwnOffset = (date: Dayjs): Dayjs =>
-	dayjs(date.format('YYYY-MM-DDTHH:mm:ss.SSS'))
+	atTimeOfDay(date, date.format('HH:mm:ss.SSS'))
 
 /**
  * `date`, or the nearest day in `direction` that is not hidden. FullCalendar's

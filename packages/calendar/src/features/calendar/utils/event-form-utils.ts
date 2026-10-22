@@ -1,6 +1,7 @@
 import type { BusinessHours } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { calculateBusinessHoursRange } from '@/features/calendar/utils/business-hours'
+import { atTimeOfDay } from '@/utils/date-utils'
 
 /**
  * `time` on the calendar day `date` falls on, built from a zoneless wall-clock
@@ -22,10 +23,8 @@ import { calculateBusinessHoursRange } from '@/features/calendar/utils/business-
  * long, which `layoutHorizontal` then read as a single-day event because
  * `end.diff(start, 'day')` truncates below 24h (#248).
  */
-const atTime = (date: Date, time: string): Dayjs => {
-	const dayKey = dayjs(date).format('YYYY-MM-DD')
-	return dayjs(`${dayKey}T${time}:00.000`)
-}
+const atTime = (date: Date, time: string): Dayjs =>
+	atTimeOfDay(dayjs(date), `${time}:00.000`)
 
 const MIDNIGHT = '00:00'
 

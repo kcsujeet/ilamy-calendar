@@ -11,6 +11,7 @@ import {
 	type SnappableCell,
 	snapDropCell,
 } from '@/features/calendar/utils/snap-drop-cell'
+import { atTimeOfDay } from '@/utils/date-utils'
 
 export interface DropCellData extends SnappableCell {
 	type?: string
@@ -80,14 +81,6 @@ export const getSnappedOverData = (
 	)
 	return snapDropCell(cell, fractionIntoCell)
 }
-
-/**
- * A wall-clock time on a day, built from a zoneless string for the reason
- * `calculateDropTimes` gives: the setters would carry the source day's UTC
- * offset onto a day where the clocks change.
- */
-const atTimeOfDay = (day: Dayjs, timeOfDay: string): Dayjs =>
-	dayjs(`${day.format('YYYY-MM-DD')}T${timeOfDay}`)
 
 const MIDNIGHT = '00:00:00.000'
 const TIME_OF_DAY_FORMAT = 'HH:mm:ss.SSS'

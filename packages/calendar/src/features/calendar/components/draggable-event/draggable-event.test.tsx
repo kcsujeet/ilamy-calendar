@@ -159,3 +159,84 @@ describe('resize handles', () => {
 		expect(onEventClick).toHaveBeenCalledTimes(1)
 	})
 })
+
+/*
+ * WCAG 2.1.1 / 4.1.2: a bar is a focusable `role=button`, so Enter and Space
+ * must open it. FullCalendar does the same (`createAriaKeyboardAttrs`,
+ * packages/preact/src/util/dom-event.ts, v7.1.1: Enter or ' ' calls the click
+ * handler and `preventDefault()`s so Space does not scroll the page).
+ */
+describe('keyboard', () => {
+	const standUp: CalendarEvent = {
+		id: 'stand-up',
+		title: 'Stand-up',
+		start: dayjs('2025-03-12T09:00:00'),
+		end: dayjs('2025-03-12T10:00:00'),
+	}
+
+	const renderWeekBar = (
+		settings: Pick<
+			IlamyCalendarProps,
+			'editable' | 'disableEventClick' | 'onEventClick'
+		> = {}
+	) => {
+		cleanup()
+		render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				events={[standUp]}
+				firstDayOfWeek={1}
+				initialDate={dayjs('2025-03-12T00:00:00')}
+				initialView="week"
+				{...settings}
+			>
+				<WeekView />
+			</CalendarProvider>
+		)
+		const bar = document.querySelector(
+			'[data-testid="vertical-event-stand-up"]'
+		)
+		const barButton = bar?.querySelector('[role="button"]')
+		if (!barButton) {
+			throw new Error('the bar is not a button')
+		}
+		return barButton
+	}
+
+	test.each(['Enter', ' '])('%j opens the event', (key) => {
+		const onEventClick = mock((_event: CalendarEvent) => {})
+		const barButton = renderWeekBar({ onEventClick })
+
+		fireEvent.keyDown(barButton, { key })
+
+		expect(onEventClick).toHaveBeenCalledTimes(1)
+	})
+
+	test('another key does nothing', () => {
+		const onEventClick = mock((_event: CalendarEvent) => {})
+		const barButton = renderWeekBar({ onEventClick })
+
+		fireEvent.keyDown(barButton, { key: 'a' })
+
+		expect(onEventClick).toHaveBeenCalledTimes(0)
+	})
+
+	test('a bar that cannot move is still a focusable button that opens', () => {
+		const onEventClick = mock((_event: CalendarEvent) => {})
+		const barButton = renderWeekBar({ editable: false, onEventClick })
+
+		fireEvent.keyDown(barButton, { key: 'Enter' })
+
+		expect(barButton.getAttribute('tabindex')).toBe('0')
+		expect(onEventClick).toHaveBeenCalledTimes(1)
+	})
+
+	test('disableEventClick keeps the keyboard from opening it too', () => {
+		const onEventClick = mock((_event: CalendarEvent) => {})
+		const barButton = renderWeekBar({ disableEventClick: true, onEventClick })
+
+		fireEvent.keyDown(barButton, { key: 'Enter' })
+
+		expect(onEventClick).toHaveBeenCalledTimes(0)
+	})
+})

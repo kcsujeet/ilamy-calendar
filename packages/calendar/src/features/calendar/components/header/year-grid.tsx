@@ -1,6 +1,7 @@
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { useState } from 'react'
 import { PickerNav } from '@/components/ui/picker-nav'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { PickerGridCell } from './picker-grid-cell'
 
 const BLOCK = 12
@@ -13,6 +14,7 @@ interface YearGridProps {
 
 // A 12-year block picker with a pager, for the Year view's title dropdown.
 export function YearGrid({ selected, onSelect }: YearGridProps) {
+	const t = useSmartCalendarContext((context) => context.t)
 	// Align blocks to multiples of 12 so the active year sits in a stable grid.
 	const [blockStart, setBlockStart] = useState(
 		() => selected.year() - (selected.year() % BLOCK)
@@ -25,10 +27,10 @@ export function YearGrid({ selected, onSelect }: YearGridProps) {
 		<div className="w-72 p-3" data-slot="year-grid">
 			<PickerNav
 				label={`${blockStart} – ${blockStart + BLOCK - 1}`}
-				nextLabel="Next years"
+				nextLabel={t('nextYears')}
 				onNext={() => setBlockStart((s) => s + BLOCK)}
 				onPrev={() => setBlockStart((s) => s - BLOCK)}
-				prevLabel="Previous years"
+				prevLabel={t('previousYears')}
 			/>
 
 			<div className="grid grid-cols-3 gap-1">

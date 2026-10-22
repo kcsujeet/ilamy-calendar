@@ -117,6 +117,20 @@ describe('CalendarDndContext', () => {
 			expect(page.hasLiveRegion).toBe(true)
 		})
 
+		// Only the Mouse and Touch sensors are registered, so dnd-kit's default
+		// "press the space bar to pick up" text would promise a keyboard drag that
+		// does nothing (WCAG 4.1.2). Keyboard moving is not offered.
+		it('does not describe a keyboard drag the bars cannot do', () => {
+			renderCalendar({})
+			const describedBars = document.querySelectorAll('[aria-describedby]')
+			const descriptions = [...describedBars].map((bar) => {
+				const descriptionId = bar.getAttribute('aria-describedby') ?? ''
+				return document.getElementById(descriptionId)?.textContent?.trim()
+			})
+
+			expect(descriptions).toEqual([''])
+		})
+
 		it('mounts nothing when the calendar is not editable and no event opts in', () => {
 			const page = renderCalendar({ editable: false })
 

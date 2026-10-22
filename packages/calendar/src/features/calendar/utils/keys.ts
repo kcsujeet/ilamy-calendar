@@ -133,4 +133,7 @@ export const keys = {
 
 	// Form element testid for time pickers (name = 'start' / 'end' etc.)
 	timePicker: (name: string | undefined) => `time-picker-${name ?? ''}`,
+
+	// Id of the visible label of a form field, which names its picker trigger
+	fieldLabel: (field: string) => `${field}-label`,
 } as const

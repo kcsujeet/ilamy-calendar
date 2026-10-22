@@ -280,7 +280,7 @@ Every event must have a globally unique `uid`. EXDATE uses ISO strings in `exdat
 
 ### i18n
 
-`CalendarProvider` handles translations. Props: `translations?: Translations` or `translator?: TranslatorFunction`. Falls back to English. All components access via `useIlamyCalendarContext().t()`. 85 translation keys. See `docs/translation-usage.md` for full details.
+`CalendarProvider` handles translations. Props: `translations?: Translations` or `translator?: TranslatorFunction`. Falls back to English. All components access via `useIlamyCalendarContext().t()`. 94 translation keys. See `docs/translation-usage.md` for full details.
 
 ## Key Paths
 
@@ -306,7 +306,7 @@ packages/calendar/src/                         # (= @/… via tsconfig paths). B
       drag-and-drop/                           # @dnd-kit integration + the drag mirror card
       draggable-event/                         # Draggable event bar + default content
       calendar-slots.tsx                       # SLOT_* mount points + host slot components (context shapes in @ilamy/types)
-      droppable-cell.tsx, resource-cell.tsx, current-time-marker.tsx, hour-label.tsx, date-picker.tsx, time-picker.tsx
+      calendar.tsx (the popover day picker), droppable-cell.tsx, resource-cell.tsx, current-time-marker.tsx, hour-label.tsx, date-picker.tsx, time-picker.tsx
     hooks/                                     # use-calendar-engine composer + engine slices (use-calendar-{config,navigation,interaction}),
                                                #   use-smart-calendar-context, use-processed-{day,week}-events, use-effective-business-hours,
                                                #   drag hooks (use-calendar-drag, use-drop-commit, use-drag-preview-event), use-scoped-event-mutation, …
@@ -321,7 +321,7 @@ packages/calendar/src/                         # (= @/… via tsconfig paths). B
                                                #   keys, normalize, export-ical, drag-preview, grab-offset, event-surface, pointer-within-lazily
       layout/                                  #   geometry.ts (PositionedEvent), vertical.ts, horizontal.ts
     types/
-  components/                                 # Shared, feature-independent UI: animations/, ui/ (calendar, picker-nav)
+  components/                                 # Shared, feature-independent UI: animations/, ui/ (picker-nav)
   hooks/                                      # Shared hooks: use-latest-handler, use-autocomplete-timepicker
   lib/plugins/                                # Plugin kernel; PluginRuntime (contract types live in @ilamy/types)
   config/                                     # constants.ts, translations/ (default translations, types)

@@ -123,10 +123,15 @@ apps/e2e/                       the harness app (Vite, private) and its tests
   src/published-change.ts       the onEventsChange shape the harness publishes
   tests/support/harness.ts      gotoScenario: pins the clock, builds the URL
   tests/support/pages.ts        page objects: CalendarPage, MonthGrid, TimeGrid, YearGrid, ResourceAxis
-  tests/{behaviour,clock,drag,matrix}.spec.ts
+  tests/{accessibility,behaviour,clock,drag,matrix}.spec.ts
   tests/clock-change-instants.spec.ts   instants around a clock change: form, grids, year view, navigation
   tests/support/event-form.ts   the event form's pickers as questions (pickDay, pickTime, saveForm)
 ```
+
+`accessibility.spec.ts` pins keyboard and screen-reader behaviour (Enter and Space
+open a focused bar, no bar describes a keyboard drag it cannot do, the event
+form's pickers and the Repeat checkbox have accessible names) as roles and
+accessible names, not an axe scan: axe is not a dependency of this repo.
 
 Page objects wrap the `keys.*` testids the components already emit, so
 selectors have one home. A markup change breaks one page object rather than

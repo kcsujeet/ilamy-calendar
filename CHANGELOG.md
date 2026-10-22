@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file. Dates are d
 
 > Unreleased (draft: PR links point at the open stack #335 to #359; re-check numbers at release time)
 
-3.3 is the only minor before 4.0. Everything here is additive: each new option's default reproduces 3.2.1, and `docs/migration-v4.md` lists what 4.0 will remove or change.
+3.3 is the only minor before 4.0. Each new option's default reproduces 3.2.1, and `docs/migration-v4.md` lists what 4.0 will remove or change. One intentional exception, by the `translations` contract: a full `translations` object must add the nine new keys listed under Fixes.
 
 ##### Features
 
@@ -31,6 +31,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - fix: dropping an event where it already was no longer fires `onEventUpdate` or `onEventsChange`, and no longer opens the recurring scope dialog ([`#342`](https://github.com/kcsujeet/ilamy-calendar/pull/342))
 - fix: `delta` was an hour short for a drop into the hour skipped by the spring clock change ([`#342`](https://github.com/kcsujeet/ilamy-calendar/pull/342))
 - fix: with a `snapDuration` finer than the slot, the drag preview stayed on the slice where the pointer entered a cell while the drop used the pointer's final position; the preview now follows it ([`#352`](https://github.com/kcsujeet/ilamy-calendar/pull/352))
+- fix: the date and time pickers' labels, placeholder and empty state, and the month and year navigation labels of the date pickers, are now translated instead of hard-coded English. Nine new `Translations` keys: `selectTime`, `noTimeFound`, `pickDate`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`. A full `translations` object must add them (`docs/translation-usage.md`)
 
 ##### Performance
 

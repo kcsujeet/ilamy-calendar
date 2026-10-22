@@ -1,11 +1,7 @@
 import { useIlamyCalendarContext } from '@ilamy/calendar'
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from '@ilamy/ui/components/card'
+import { Card, CardContent, CardHeader } from '@ilamy/ui/components/card'
 import { Checkbox } from '@ilamy/ui/components/checkbox'
+import { Label } from '@ilamy/ui/components/label'
 import dayjs from '@ilamy/utils/dayjs'
 import { useEffect, useState } from 'react'
 import { RRule, type Weekday } from 'rrule'
@@ -186,7 +182,9 @@ export const RecurrenceEditor: React.FC<Props> = ({
 							id="recurring"
 							onCheckedChange={toggle}
 						/>
-						<CardTitle className="text-sm">{t('repeat')}</CardTitle>
+						<Label className="font-semibold" htmlFor="recurring">
+							{t('repeat')}
+						</Label>
 					</div>
 					{showSummary && (
 						<p className="text-xs text-muted-foreground">

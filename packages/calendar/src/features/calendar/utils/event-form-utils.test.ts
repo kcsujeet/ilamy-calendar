@@ -4,7 +4,10 @@ import dayjs from '@ilamy/utils/dayjs'
 import {
 	buildDateTime,
 	buildEndDateTime,
+	type FormSchedule,
 	getTimeConstraints,
+	keepEndAfterStart,
+	openedLengthMinutes,
 } from './event-form-utils'
 
 describe('event-form-utils', () => {
@@ -305,4 +308,99 @@ describe('buildEndDateTime on a machine whose winter offset is 0, no calendar zo
 			expect(endOnMachineIn(machineZone)).toBe('2025-03-30T23:00:00.000Z')
 		}
 	)
+})
+
+describe('keepEndAfterStart', () => {
+	// A picked day is midnight on the calendar's clock, whatever zone that is.
+	const day = dayjs('2025-01-15T00:00:00.000').toDate()
+	const nextDay = dayjs('2025-01-16T00:00:00.000').toDate()
+	const hourLong: FormSchedule = {
+		startDate: day,
+		startTime: '09:00',
+		endDate: day,
+		endTime: '10:00',
+	}
+	const times = (schedule: FormSchedule) => [
+		dayjs(schedule.startDate).format('YYYY-MM-DD'),
+		schedule.startTime,
+		dayjs(schedule.endDate).format('YYYY-MM-DD'),
+		schedule.endTime,
+	]
+
+	test('leaves an end that is later than the start alone', () => {
+		expect(keepEndAfterStart(hourLong, 'start', 60)).toBe(hourLong)
+	})
+
+	test('moves the end to keep the length when the start reaches it', () => {
+		const moved = keepEndAfterStart(
+			{ ...hourLong, startTime: '10:00' },
+			'start',
+			90
+		)
+
+		expect(times(moved)).toEqual(['2025-01-15', '10:00', '2025-01-15', '11:30'])
+	})
+
+	test('moves the end to keep the length when the start passes it', () => {
+		const moved = keepEndAfterStart(
+			{ ...hourLong, startTime: '14:00' },
+			'start',
+			60
+		)
+
+		expect(times(moved)).toEqual(['2025-01-15', '14:00', '2025-01-15', '15:00'])
+	})
+
+	test('moves the start to keep the length when the end reaches it', () => {
+		const moved = keepEndAfterStart(
+			{ ...hourLong, endTime: '09:00' },
+			'end',
+			60
+		)
+
+		expect(times(moved)).toEqual(['2025-01-15', '08:00', '2025-01-15', '09:00'])
+	})
+
+	test('carries the end over midnight', () => {
+		const moved = keepEndAfterStart(
+			{ ...hourLong, startTime: '23:30' },
+			'start',
+			60
+		)
+
+		expect(times(moved)).toEqual(['2025-01-15', '23:30', '2025-01-16', '00:30'])
+	})
+
+	test('carries the start back over midnight', () => {
+		const moved = keepEndAfterStart(
+			{ ...hourLong, endTime: '00:15' },
+			'end',
+			60
+		)
+
+		expect(times(moved)).toEqual(['2025-01-14', '23:15', '2025-01-15', '00:15'])
+	})
+
+	test('treats an end on a later day as later whatever the clock times say', () => {
+		const spansDays = { ...hourLong, endDate: nextDay, endTime: '08:00' }
+
+		expect(keepEndAfterStart(spansDays, 'end', 60)).toBe(spansDays)
+	})
+})
+
+describe('openedLengthMinutes', () => {
+	test('is the length the event opened with', () => {
+		const length = openedLengthMinutes(
+			dayjs('2025-01-15T09:00:00.000Z'),
+			dayjs('2025-01-15T10:30:00.000Z')
+		)
+
+		expect(length).toBe(90)
+	})
+
+	test('falls back to an hour for an event whose end is not after its start', () => {
+		const sameInstant = dayjs('2025-01-15T09:00:00.000Z')
+
+		expect(openedLengthMinutes(sameInstant, sameInstant)).toBe(60)
+	})
 })

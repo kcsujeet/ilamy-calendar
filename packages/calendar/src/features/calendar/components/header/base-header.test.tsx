@@ -158,6 +158,35 @@ describe('Calendar header', () => {
 		expect(title).toHaveTextContent('Apr 12 – 18')
 	})
 
+	// The agenda lists every day of its window; `hiddenDays` does not apply to it,
+	// so its title must not drop them (the week grid's title does).
+	const hiddenWeekDays = new Set([3, 6, 0])
+
+	it('titles a week-window agenda with every day it lists, hidden days included', () => {
+		renderHeader([], {
+			initialView: 'agenda',
+			initialDate: dayjs('2026-04-15T12:00:00.000Z'),
+			plugins: [agendaPlugin({ window: 'week' })],
+			hiddenDays: hiddenWeekDays,
+		})
+
+		expect(screen.getByTestId('calendar-title')).toHaveTextContent(
+			'Apr 12 – 18'
+		)
+	})
+
+	it('titles the week view with only the days it draws', () => {
+		renderHeader([], {
+			initialView: 'week',
+			initialDate: dayjs('2026-04-15T12:00:00.000Z'),
+			hiddenDays: hiddenWeekDays,
+		})
+
+		expect(screen.getByTestId('calendar-title')).toHaveTextContent(
+			'Apr 13 – 17'
+		)
+	})
+
 	it('mirrors the month-view title for a month-window agenda', () => {
 		renderHeader([], {
 			initialView: 'agenda',

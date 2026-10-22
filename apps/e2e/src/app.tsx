@@ -160,18 +160,6 @@ export const App = () => {
 	if (unknownPlugin !== undefined) {
 		return <Problem>Unknown plugin: {unknownPlugin}</Problem>
 	}
-	// `onSelect=log` records what drag-to-create hands a consumer's `onSelect`
-	// in `window.__selectLog`, so a spec can read the CellInfo it reports.
-	const logsSelections = params.get('onSelect') === 'log'
-	const plugins: IlamyPlugin[] = pluginNames
-		.filter(isPluginName)
-		.map((name) => {
-			if (name === 'drag-to-create' && logsSelections) {
-				return dragToCreatePlugin({ onSelect: recordSelection })
-			}
-			return PLUGINS[name]()
-		})
-
 	// Widened from the `as const` literal so optional keys are readable here.
 	const seed = params.get('seed')
 	const scenario: Scenario = seed
@@ -188,6 +176,21 @@ export const App = () => {
 		throw error
 	}
 
+	// `onSelect=log` records what drag-to-create hands a consumer's `onSelect`
+	// in `window.__selectLog`, so a spec can read the CellInfo it reports.
+	const logsSelections = params.get('onSelect') === 'log'
+	const plugins: IlamyPlugin[] = pluginNames
+		.filter(isPluginName)
+		.map((name) => {
+			if (name === 'drag-to-create' && logsSelections) {
+				return dragToCreatePlugin({ onSelect: recordSelection })
+			}
+			if (name === 'agenda') {
+				return agendaPlugin({ window: urlConfig.agendaWindow })
+			}
+			return PLUGINS[name]()
+		})
+
 	// The URL wins over the scenario's own settings, so a fixture can be pushed
 	// into a configuration it was not written for without editing it.
 	const {
@@ -199,6 +202,7 @@ export const App = () => {
 		fetch,
 		fetchDelay,
 		resourcesFetch,
+		agendaWindow: _agendaWindow,
 		...calendarConfig
 	} = {
 		...scenario.config,
@@ -246,6 +250,7 @@ type HarnessOnly =
 	| 'externalToolbar'
 	| 'fetch'
 	| 'fetchDelay'
+	| 'agendaWindow'
 
 type FetchMode = 'delayed' | 'failing' | 'held'
 

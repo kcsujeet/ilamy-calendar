@@ -94,6 +94,12 @@ export interface UrlConfig {
 	/** With `resourcesFetch` set: fetch again whenever the range leaves the fetched one. */
 	refetchResourcesOnNavigate?: boolean
 	/**
+	 * Harness-only: the window the agenda plugin lists and steps over. Read when
+	 * the calendar mounts, with `plugins=agenda`; the plugin's own default is
+	 * `month`.
+	 */
+	agendaWindow?: 'day' | 'week' | 'month'
+	/**
 	 * Harness-only: keep the scenario's first N resources. Changed on a mounted
 	 * calendar, it adds or removes a resource the way a consumer's filter does.
 	 */
@@ -493,6 +499,16 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const fetchDelay = get('fetchDelay')
 	if (fetchDelay !== null) {
 		config.fetchDelay = positiveInt('fetchDelay', fetchDelay)
+	}
+
+	const agendaWindow = get('agendaWindow')
+	if (agendaWindow !== null) {
+		config.agendaWindow = oneOf(
+			'agendaWindow',
+			agendaWindow,
+			['day', 'week', 'month'] as const,
+			String
+		)
 	}
 
 	const renderEventVariant = get('renderEventVariant')

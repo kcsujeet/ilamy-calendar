@@ -429,3 +429,211 @@ describe('useCalendarDrag resize', () => {
 		expect(eventAllow).not.toHaveBeenCalled()
 	})
 })
+
+describe('useCalendarDrag snapping inside a cell', () => {
+	const at = (wallClock: string) => dayjs(wallClock)
+	const wall = (date: Dayjs | undefined) => date?.format('YYYY-MM-DDTHH:mm')
+
+	const meeting: CalendarEvent = {
+		id: 'event-1',
+		title: 'Meeting',
+		start: at('2025-03-12T09:00:00'),
+		end: at('2025-03-12T11:00:00'),
+	}
+	type Box = { top: number; left: number; width: number; height: number }
+	const barBox: Box = { top: 0, left: 0, width: 100, height: 120 }
+	/** A move of the meeting, as dnd-kit reports it for a bar drawn along `axis`. */
+	const moveOf = (axis: 'vertical' | 'horizontal', bar: Box = barBox) => ({
+		id: 'event-1',
+		data: {
+			current: {
+				type: 'calendar-event',
+				event: meeting,
+				dragSegment: { start: meeting.start, end: meeting.end, axis },
+				getBarRect: () => bar,
+			},
+		},
+	})
+	const resizedEnd = {
+		id: 'event-1-resize-end',
+		data: {
+			current: {
+				type: 'calendar-event-resize',
+				event: meeting,
+				edge: 'end',
+				granularity: 'slot',
+			},
+		},
+	}
+	/** A one-hour cell at 14:00 snapping to 15 minutes, 120px along `axis` from `from`. */
+	const hourCell = (
+		axis: 'vertical' | 'horizontal',
+		from = 100,
+		extra: Record<string, unknown> = {}
+	) => ({
+		id: 'cell',
+		rect:
+			axis === 'vertical'
+				? { top: from, left: 0, width: 80, height: 120 }
+				: { top: 0, left: from, width: 120, height: 80 },
+		data: {
+			current: {
+				type: 'day-cell',
+				date: at('2025-03-12T00:00:00'),
+				hour: 14,
+				slotDurationMinutes: 60,
+				snapMinutes: 15,
+				axis,
+				...extra,
+			},
+		},
+	})
+
+	/** The pointer as the window sees it: the hook follows it, whatever dnd-kit's delta says. */
+	const pointerMovesTo = (x: number, y: number) =>
+		act(() => {
+			window.dispatchEvent(
+				new MouseEvent('pointermove', { clientX: x, clientY: y })
+			)
+		})
+
+	const renderSnapHook = (providerProps: Record<string, unknown> = {}) => {
+		const commitDrop = mock(
+			(_event: CalendarEvent, _updates: Partial<CalendarEvent>) => {}
+		)
+		const { result } = renderHook(() => useCalendarDrag(commitDrop), {
+			wrapper: ({ children }: { children: ReactNode }) => (
+				<CalendarTestProvider
+					initialDate={at('2025-03-12T00:00:00')}
+					{...providerProps}
+				>
+					{children}
+				</CalendarTestProvider>
+			),
+		})
+		const drag = (
+			active: ReturnType<typeof moveOf> | typeof resizedEnd,
+			pressedAt: { x: number; y: number }
+		) => {
+			const activatorEvent = { clientX: pressedAt.x, clientY: pressedAt.y }
+			return {
+				grab: () =>
+					act(() =>
+						result.current.handlers.onDragStart({
+							active,
+							activatorEvent,
+						} as unknown as DragStartEvent)
+					),
+				hover: (over: unknown) =>
+					act(() =>
+						result.current.handlers.onDragOver({
+							active,
+							over,
+							activatorEvent,
+						} as unknown as DragOverEvent)
+					),
+				release: (over: unknown) =>
+					act(() =>
+						result.current.handlers.onDragEnd({
+							active,
+							over,
+							activatorEvent,
+						} as unknown as DragEndEvent)
+					),
+			}
+		}
+		return { commitDrop, preview: () => result.current.dragPreview, drag }
+	}
+
+	it('previews a move on the quarter hour under the pointer', () => {
+		const { drag, preview } = renderSnapHook()
+		const dragging = drag(moveOf('vertical'), { x: 10, y: 0 })
+		dragging.grab()
+		pointerMovesTo(10, 170)
+		dragging.hover(hourCell('vertical'))
+
+		// 70 of 120px is 35 of 60 minutes: the 30-minute bucket.
+		expect(wall(preview()?.start)).toBe('2025-03-12T14:30')
+		expect(wall(preview()?.end)).toBe('2025-03-12T16:30')
+	})
+
+	it('commits a resize to the end of the quarter hour under the pointer', () => {
+		const { drag, commitDrop } = renderSnapHook()
+		const dragging = drag(resizedEnd, { x: 10, y: 0 })
+		dragging.grab()
+		pointerMovesTo(10, 170)
+		dragging.release(hourCell('vertical'))
+
+		const [, updates] = commitDrop.mock.calls.at(0) ?? []
+		expect(wall(updates?.end)).toBe('2025-03-12T14:45')
+	})
+
+	it('reads the pointer against the cell as it is after a scroll, not as it was', () => {
+		// The pointer parks while the grid scrolls 60px under it (auto-scroll or a
+		// wheel): dnd-kit re-measures the cell, and its delta already includes the
+		// scroll, so only the live pointer and the live rect agree.
+		const { drag, preview } = renderSnapHook()
+		const dragging = drag(moveOf('vertical'), { x: 10, y: 0 })
+		dragging.grab()
+		pointerMovesTo(10, 110)
+		dragging.hover(hourCell('vertical', 100))
+		const beforeScroll = wall(preview()?.start)
+		dragging.hover(hourCell('vertical', 40))
+
+		expect([beforeScroll, wall(preview()?.start)]).toEqual([
+			'2025-03-12T14:00',
+			'2025-03-12T14:30',
+		])
+	})
+
+	it('stops following the pointer once the drag has ended', () => {
+		const { drag, preview } = renderSnapHook()
+		const first = drag(moveOf('vertical'), { x: 10, y: 0 })
+		first.grab()
+		first.release(hourCell('vertical'))
+		pointerMovesTo(10, 190)
+		// A keyboard drag carries no pointer, so it must not inherit the old one.
+		const keyboard = drag(moveOf('vertical'), {
+			x: undefined as unknown as number,
+			y: undefined as unknown as number,
+		})
+		keyboard.grab()
+		keyboard.hover(hourCell('vertical'))
+
+		expect(wall(preview()?.start)).toBe('2025-03-12T14:00')
+	})
+
+	describe('grabbing an event partway along its bar', () => {
+		it('keeps a vertical grab in snap steps: 50 minutes in is 45', () => {
+			const { drag, preview } = renderSnapHook({
+				slotDuration: 60,
+				snapDuration: 15,
+			})
+			// The bar is 120px for 120 minutes, so y=50 is minute 50.
+			const dragging = drag(moveOf('vertical'), { x: 10, y: 50 })
+			dragging.grab()
+			pointerMovesTo(10, 100)
+			dragging.hover(hourCell('vertical'))
+
+			// 14:00 less the 45 minutes grabbed. An unsnapped grab would floor to 0.
+			expect(wall(preview()?.start)).toBe('2025-03-12T13:15')
+		})
+
+		it('keeps a horizontal grab in steps of the snap inside the hour column: slot 30, snap 20', () => {
+			const { drag, preview } = renderSnapHook({
+				slotDuration: 30,
+				snapDuration: 20,
+			})
+			const wideBar = { top: 0, left: 0, width: 120, height: 40 }
+			// The bar is 120px for 120 minutes, so x=50 is minute 50.
+			const dragging = drag(moveOf('horizontal', wideBar), { x: 50, y: 10 })
+			dragging.grab()
+			pointerMovesTo(100, 10)
+			dragging.hover(hourCell('horizontal', 100, { snapMinutes: 20 }))
+
+			// 14:00 less the 40 minutes grabbed (20-minute steps), not the 30 a slot
+			// of 30 would floor it to, which would land off the grabbed point.
+			expect(wall(preview()?.start)).toBe('2025-03-12T13:20')
+		})
+	})
+})

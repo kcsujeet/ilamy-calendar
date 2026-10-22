@@ -7,14 +7,17 @@ import type {
 } from '@dnd-kit/core'
 import { MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { CalendarEvent, Resource } from '@ilamy/types'
+import { MINUTES_PER_HOUR, resolveSnapDuration } from '@ilamy/utils/helpers'
 import { useEffect, useRef, useState } from 'react'
 import {
 	calculateDropTimes,
 	calculateResizeTimes,
 	type DropCellData,
 	getCellSpan,
+	getSnappedOverData,
 	getUpdatedEvent,
 	isTimeSlotDrop,
+	type Pointer,
 	type ResizeEdge,
 } from '@/features/calendar/components/drag-and-drop/dnd-utils'
 import type { ResizeGranularity } from '@/features/calendar/components/draggable-event/resize-handle'
@@ -237,6 +240,54 @@ const useDragCursor = (dragPreview: DragPreviewState | null) => {
 
 type CellSpan = NonNullable<ReturnType<typeof getCellSpan>>
 
+/** A pointer or touch event's viewport position, when it carries one. */
+const readPointer = (event: Event): Pointer | undefined => {
+	const { clientX, clientY, touches } = event as Partial<
+		MouseEvent & TouchEvent
+	>
+	const point = touches?.item(0) ?? { clientX, clientY }
+	if (point.clientX === undefined || point.clientY === undefined) {
+		return undefined
+	}
+	return { x: point.clientX, y: point.clientY }
+}
+
+/**
+ * The pointer's live viewport position for the length of a drag, which the
+ * snapped drop reads against the cell's live rect. dnd-kit's own `delta` cannot
+ * stand in for it: it already includes the scroll since the drag began
+ * (see `getSnappedOverData`). A keyboard drag has no pointer, and reads
+ * undefined.
+ */
+const useLivePointer = () => {
+	const pointerRef = useRef<Pointer | undefined>(undefined)
+	const stopFollowingRef = useRef<() => void>(() => {})
+
+	const stopFollowing = () => {
+		stopFollowingRef.current()
+		stopFollowingRef.current = () => {}
+		pointerRef.current = undefined
+	}
+
+	const follow = (pressedWith: Event) => {
+		stopFollowing()
+		pointerRef.current = readPointer(pressedWith)
+		const onMove = (moved: Event) => {
+			pointerRef.current = readPointer(moved) ?? pointerRef.current
+		}
+		window.addEventListener('pointermove', onMove)
+		window.addEventListener('touchmove', onMove)
+		stopFollowingRef.current = () => {
+			window.removeEventListener('pointermove', onMove)
+			window.removeEventListener('touchmove', onMove)
+		}
+	}
+
+	useEffect(() => () => stopFollowingRef.current(), [])
+
+	return { pointerRef, follow, stopFollowing }
+}
+
 /*
  * Module constants, not inline literals: dnd-kit's useSensor memoizes on the
  * options object's identity, so a fresh literal made a new sensor list on every
@@ -266,6 +317,7 @@ export const useCalendarDrag = (
 ): CalendarDrag => {
 	const {
 		slotDuration,
+		snapDuration,
 		eventAllow,
 		businessHours,
 		getResourceById,
@@ -274,6 +326,7 @@ export const useCalendarDrag = (
 		currentDate,
 	} = useSmartCalendarContext((context) => ({
 		slotDuration: context.slotDuration,
+		snapDuration: context.snapDuration,
 		eventAllow: context.eventAllow,
 		businessHours: context.businessHours,
 		getResourceById: context.getResourceById,
@@ -287,11 +340,13 @@ export const useCalendarDrag = (
 	const resizeRef = useRef<ResizeGrab | null>(null)
 	const pendingGrabRef = useRef<PendingGrab | null>(null)
 	const overlayRef = useRef<DragOverlayHandle | null>(null)
+	const { pointerRef, follow, stopFollowing } = useLivePointer()
 	const eventAllowVerdictRef = useRef<EventAllowVerdict | null>(null)
 	const [dragPreview, setDragPreview] = useState<DragPreviewState | null>(null)
 	useDragCursor(dragPreview)
 
 	const endDrag = () => {
+		stopFollowing()
 		activeEventRef.current = null
 		grabOffsetRef.current = NO_GRAB_OFFSET
 		resizeRef.current = null
@@ -422,6 +477,7 @@ export const useCalendarDrag = (
 	}
 
 	const onDragStart = (event: DragStartEvent) => {
+		follow(event.activatorEvent)
 		const resizeGrab = readResize(event)
 		if (resizeGrab) {
 			// No chip for a resize: the snapped preview in the grid is the feedback.
@@ -448,6 +504,17 @@ export const useCalendarDrag = (
 	 * because dnd-kit's own `active.rect.current.initial` (the fallback) is
 	 * still null at drag start.
 	 */
+	/**
+	 * The step a grab is floored to: the snap inside the cell the bar's grid
+	 * draws, which is a slot in the vertical grid and an hour column in a
+	 * horizontal one, whatever `slotDuration` says. A drop snaps to the same
+	 * step, so the grabbed point lands under the pointer.
+	 */
+	const getGrabSnapMinutes = (axis: DragSegment['axis']): number => {
+		const cellMinutes = axis === 'vertical' ? slotDuration : MINUTES_PER_HOUR
+		return resolveSnapDuration(snapDuration, cellMinutes)
+	}
+
 	const resolveGrabOffset = (event: DragOverEvent) => {
 		const pending = pendingGrabRef.current
 		if (!pending) {
@@ -463,7 +530,7 @@ export const useCalendarDrag = (
 			initialRect,
 			activatorEvent: pending.activatorEvent,
 			segment: pending.segment,
-			slotDurationMinutes: slotDuration,
+			slotDurationMinutes: getGrabSnapMinutes(pending.segment.axis),
 		})
 		pendingGrabRef.current = null
 	}
@@ -478,7 +545,7 @@ export const useCalendarDrag = (
 
 		const nextPreview = getAllowedPlacement(
 			activeEvent,
-			event.over.data.current
+			getSnappedOverData(event.over, pointerRef.current)
 		)
 
 		setDragPreview((prev) => {
@@ -511,19 +578,24 @@ export const useCalendarDrag = (
 		const resize = resizeRef.current
 		const resizedEvent = activeEventRef.current
 		if (resize && resizedEvent) {
-			commitResize(resizedEvent, resize, event.over?.data.current)
+			commitResize(
+				resizedEvent,
+				resize,
+				getSnappedOverData(event.over, pointerRef.current)
+			)
 			endDrag()
 			return
 		}
 		const dropped = getUpdatedEvent(
 			event,
 			activeEventRef.current,
-			grabOffsetRef.current
+			grabOffsetRef.current,
+			pointerRef.current
 		)
 		// Decided from the release itself, not from the last hover: dnd-kit fires
 		// drag-over from an effect, so a fast release can arrive before it.
 		const activeEvent = activeEventRef.current
-		const releasedOn = event.over?.data.current
+		const releasedOn = getSnappedOverData(event.over, pointerRef.current)
 		const placement = activeEvent
 			? getAllowedPlacement(activeEvent, releasedOn)
 			: null

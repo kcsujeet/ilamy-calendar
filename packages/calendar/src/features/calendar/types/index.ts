@@ -18,10 +18,12 @@ import type { CalendarView, TimeFormat } from '@/types'
 
 /**
  * Granularity of the time grid in minutes for day, week, and resource hour views.
- * Quarter-hour increments only. `60` shows one row per hour with no sub-hour lines.
- * `30` shows two rows per hour. `15` shows four rows per hour with dashed sub-hour separators.
+ * Any divisor of 60 (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60); anything else falls
+ * back to `60` with a console warning. `60` shows one row per hour with no sub-hour
+ * lines. `30` shows two rows per hour. `15` shows four rows per hour with dashed
+ * sub-hour separators.
  */
-export type SlotDuration = 15 | 30 | 60
+export type SlotDuration = number
 
 /**
  * How a week number is counted: the locale's own count (`'local'`), ISO 8601
@@ -596,15 +598,27 @@ export interface IlamyCalendarProps {
 	renderHour?: (date: Dayjs) => ReactNode
 	/**
 	 * Granularity of the time grid in minutes for day, week, and resource hour views.
-	 * Quarter-hour increments only: `15`, `30`, or `60`.
+	 * Any divisor of 60: `1`, `2`, `3`, `4`, `5`, `6`, `10`, `12`, `15`, `20`, `30` or
+	 * `60`. Any other value falls back to `60` and logs one `console.warn`.
 	 *
 	 * - `60` (default): one row per hour, no sub-hour lines.
 	 * - `30`: two rows per hour (top of hour, half hour).
 	 * - `15`: four rows per hour with dashed sub-hour separators.
+	 * - `20`: three rows per hour.
 	 *
 	 * @default 60
 	 */
 	slotDuration?: SlotDuration
+	/**
+	 * The size, in minutes, a dragged or resized event (and a drag-to-create
+	 * selection) snaps to. May be finer than `slotDuration`: with `slotDuration={60}`
+	 * and `snapDuration={15}` an event dropped halfway down an hour row lands on
+	 * `:30`. Defaults to the size of the cell under the pointer, which is
+	 * `slotDuration` in the vertical time grid and one hour in the horizontal
+	 * resource timeline. A value that does not divide the cell falls back to the
+	 * cell, silently.
+	 */
+	snapDuration?: number
 	/**
 	 * Initial scroll position for hour-resolution views (day, week, resource
 	 * day, resource week, in both orientations). Accepts `"HH:mm"` or

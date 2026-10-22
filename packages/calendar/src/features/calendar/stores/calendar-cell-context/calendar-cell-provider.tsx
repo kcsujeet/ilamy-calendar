@@ -25,6 +25,7 @@ export const CalendarCellProvider: FC<CalendarCellProviderProps> = ({
 		getCellClassName,
 		disableCellClick,
 		classesOverride,
+		snapDuration,
 	} = useSmartCalendarContext()
 
 	const cellContextValue = useMemo(
@@ -39,6 +40,7 @@ export const CalendarCellProvider: FC<CalendarCellProviderProps> = ({
 			getCellClassName,
 			disableCellClick,
 			classesOverride,
+			snapDuration,
 		}),
 		[
 			currentDate,
@@ -51,6 +53,7 @@ export const CalendarCellProvider: FC<CalendarCellProviderProps> = ({
 			getCellClassName,
 			disableCellClick,
 			classesOverride,
+			snapDuration,
 		]
 	)
 

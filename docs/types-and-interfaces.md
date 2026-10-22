@@ -141,7 +141,8 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `hideNonBusinessHours` | `boolean` | `false` | Hide off-hours in day/week views |
 | `slotMinTime` | `string` | `'00:00'` | First visible time in hour grids, `'HH:mm'` or `'HH:mm:ss'` |
 | `slotMaxTime` | `string` | `'24:00'` | End of the visible time in hour grids, exclusive, up to `'24:00'`. Invalid values (or an end not after the start) show the whole day and log one `console.warn` |
-| `slotDuration` | `15 \| 30 \| 60` | `60` | Time-grid granularity (minutes). `60` gives one row per hour with no sub-hour lines; `30` two; `15` four with dashed separators. Applies to day, week, and resource hour views. |
+| `slotDuration` | `number` | `60` | Time-grid granularity (minutes): any divisor of 60 (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60). Any other value falls back to `60` and logs one `console.warn`. `60` gives one row per hour with no sub-hour lines; `30` two; `15` four with dashed separators. Applies to day, week, and resource vertical views; the horizontal resource timeline keeps hour columns. |
+| `snapDuration` | `number` | the cell's size | Minutes a dragged or resized event, and a drag-to-create selection, snaps to. May be finer than `slotDuration` (`slotDuration={60} snapDuration={15}`): the position of the pointer inside the cell picks the quarter hour. Works in the vertical time grid and in the horizontal resource timeline (hour columns). A value that does not divide the cell falls back to the cell's size, silently. This is decided per cell: `slotDuration={15}` with `snapDuration={10}` falls back to 15 in the vertical grid but snaps to 10 in the hourly horizontal timeline. |
 | `hiddenDays` | `WeekDays[]` | `[]` | Days of the week to hide, in the month, week and day views, with or without `resources`, in every orientation and granularity. Not applied to the year view or the agenda plugin. Hiding all seven is ignored with a dev warning. |
 | `weekends` | `boolean` | `true` | `false` hides Saturday and Sunday, as adding both to `hiddenDays` does (the two combine). |
 | `allDaySlot` | `boolean` | `true` | Draw the all-day row in day, week and resource time grids. `false` removes it and all-day events are not shown in those views. |
@@ -341,12 +342,18 @@ nothing. A consumer that controls `events` and has already saved the change reve
 `src/features/calendar/types/index.ts`
 
 ```typescript
-type SlotDuration = 15 | 30 | 60
+type SlotDuration = number
 ```
 
-The granularity of a time grid in minutes, and the value of the `slotDuration`
-prop. Exported so a consumer can type a variable it is threading through their
-own component rather than widening it to `number`.
+The granularity of a time grid in minutes, and the type of the `slotDuration` prop. It is
+`number`, but only a divisor of 60 is drawn: anything else falls back to 60 with one
+`console.warn`. The alias is exported so a consumer can name what they thread through their own
+components.
+
+`snapDuration` is a plain `number` and is resolved per cell, not once: a cell of the vertical grid is
+`slotDuration` long and a column of the horizontal resource timeline is an hour, so `slotDuration={15}`
+with `snapDuration={10}` falls back to 15 in the vertical grid (10 does not divide 15) but snaps to 10 in
+the hourly horizontal timeline.
 
 ## EventSegment
 

@@ -1,4 +1,4 @@
-import { describe, expect, it, mock } from 'bun:test'
+import { describe, expect, it, mock, spyOn } from 'bun:test'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type {
 	BusinessHours,
@@ -863,5 +863,65 @@ describe('firstDayOfWeek functionality', () => {
 		// Verify month grid ends on Sunday
 		expect(getByTestId('month-end-day').textContent).toBe('Sunday')
 		expect(getByTestId('month-end-date').textContent).toBe('Nov 2')
+	})
+})
+
+describe('CalendarProvider - slotDuration and snapDuration', () => {
+	const ReadSlotAndSnap = () => {
+		const { slotDuration, snapDuration } = useSmartCalendarContext()
+		return (
+			<div data-testid="slot-and-snap">{`${slotDuration}/${snapDuration}`}</div>
+		)
+	}
+	const renderSlotAndSnap = (props: Partial<CalendarProviderProps>) =>
+		renderProvider(<ReadSlotAndSnap />, props)
+
+	it('defaults to hourly slots with no snap of its own', () => {
+		const { getByTestId } = renderSlotAndSnap({})
+		expect(getByTestId('slot-and-snap').textContent).toBe('60/undefined')
+	})
+
+	it.each([1, 5, 20, 12])('draws a %i-minute slot as asked', (slotDuration) => {
+		const { getByTestId } = renderSlotAndSnap({ slotDuration })
+		expect(getByTestId('slot-and-snap').textContent).toBe(
+			`${slotDuration}/undefined`
+		)
+	})
+
+	it('hands on the snap duration', () => {
+		const { getByTestId } = renderSlotAndSnap({
+			slotDuration: 60,
+			snapDuration: 15,
+		})
+		expect(getByTestId('slot-and-snap').textContent).toBe('60/15')
+	})
+
+	it.each([7, 45, 90])(
+		'falls back to an hour for %i and says so once, naming the prop',
+		(slotDuration) => {
+			const warn = spyOn(console, 'warn').mockImplementation(() => {})
+			const { getByTestId, rerender } = render(
+				<CalendarProvider {...defaultProps} slotDuration={slotDuration}>
+					<ReadSlotAndSnap />
+				</CalendarProvider>
+			)
+			rerender(
+				<CalendarProvider {...defaultProps} slotDuration={slotDuration}>
+					<ReadSlotAndSnap />
+				</CalendarProvider>
+			)
+
+			expect(getByTestId('slot-and-snap').textContent).toBe('60/undefined')
+			expect(warn).toHaveBeenCalledTimes(1)
+			expect(String(warn.mock.calls.at(0)?.at(0))).toContain('slotDuration')
+			warn.mockRestore()
+		}
+	)
+
+	it('does not warn for a slot it can draw', () => {
+		const warn = spyOn(console, 'warn').mockImplementation(() => {})
+		renderSlotAndSnap({ slotDuration: 20 })
+		expect(warn).not.toHaveBeenCalled()
+		warn.mockRestore()
 	})
 })

@@ -20,6 +20,7 @@ export type CalendarCellContextType = Pick<
 	| 'getCellClassName'
 	| 'disableCellClick'
 	| 'classesOverride'
+	| 'snapDuration'
 >
 
 export const CalendarCellContext: Context<CalendarCellContextType | undefined> =

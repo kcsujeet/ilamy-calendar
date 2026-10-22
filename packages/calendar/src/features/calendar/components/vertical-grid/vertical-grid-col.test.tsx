@@ -7,7 +7,7 @@ import { VerticalGridCol } from './vertical-grid-col'
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
 const mockDays = [initialDate.hour(9), initialDate.hour(10)]
 
-const renderVerticalGridCol = (props = {}) => {
+const renderVerticalGridCol = (props = {}, providerProps = {}) => {
 	const defaultProps = {
 		id: 'test-col',
 		day: initialDate,
@@ -21,6 +21,7 @@ const renderVerticalGridCol = (props = {}) => {
 			events={[]}
 			initialDate={initialDate}
 			resources={[]}
+			{...providerProps}
 		>
 			<VerticalGridCol {...defaultProps} {...props} />
 		</CalendarProvider>
@@ -199,5 +200,37 @@ describe('VerticalGridCol', () => {
 		expect(
 			screen.queryByTestId('vertical-events-test-col')
 		).not.toBeInTheDocument()
+	})
+
+	test.each([
+		[20, ['00', '20', '40']],
+		[
+			5,
+			['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'],
+		],
+	])(
+		'renders a %i-minute slot as one cell per slot in the hour',
+		(slotDurationMinutes, minutes) => {
+			const dateStr = initialDate.format('YYYY-MM-DD')
+			renderVerticalGridCol({ slotDurationMinutes })
+
+			for (const mm of minutes) {
+				expect(
+					screen.getByTestId(`vertical-cell-${dateStr}-09-${mm}`)
+				).toBeInTheDocument()
+			}
+			expect(
+				screen.queryByTestId(`vertical-cell-${dateStr}-09-01`)
+			).not.toBeInTheDocument()
+		}
+	)
+
+	test('tells each cell the axis time runs along and the size it snaps to', () => {
+		const dateStr = initialDate.format('YYYY-MM-DD')
+		renderVerticalGridCol({}, { snapDuration: 15 })
+
+		const cell = screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
+		expect(cell).toHaveAttribute('data-time-axis', 'vertical')
+		expect(cell).toHaveAttribute('data-snap-minutes', '15')
 	})
 })

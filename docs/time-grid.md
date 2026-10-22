@@ -232,6 +232,48 @@ The pointer's cell decides the new edge (`calculateResizeTimes`):
   that window (several resizes of one event in quick succession) can be dropped without a trace. Resizes started
   once the bar has settled always commit.
 
+## Slot and snap sizes
+
+`slotDuration` is any divisor of 60 minutes (1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60). An hour row is cut into
+`60 / slotDuration` cells (`vertical-grid-col.tsx`), so a size that does not divide an hour falls back to 60
+with one `console.warn` naming the prop (`isSupportedSlotDuration`, `utils/slot-snap.ts`). FullCalendar accepts
+any duration and lets a non-divisor overshoot the last row (`timegrid/time-slat-meta.ts:36-50`, v7.1.1); ilamy
+draws hour rows, so it does not. Slots longer than an hour are cut.
+
+`snapDuration` is the size a drag, a resize and a drag-to-create selection snap to. FullCalendar's
+`snapDuration` has no default and falls back to `slotDuration`, and one that does not divide `slotDuration`
+resets to it (`TimeGridCols.tsx:162-172`, v7.1.1); ilamy does the same, per cell, with `resolveSnapDuration`.
+The default is the size of the cell under the pointer: `slotDuration` in the vertical grid, and an hour in the
+horizontal resource timeline, whose columns are hours whatever `slotDuration` says (#255). So a calendar with
+no `snapDuration` behaves exactly as before.
+
+Because it is resolved per cell, `slotDuration={15} snapDuration={10}` falls back to 15 in the vertical grid
+(10 does not divide 15) but snaps to 10 in the hourly horizontal timeline. The grab offset of an event grabbed
+partway along its bar is floored to the same per-cell step (the segment's axis picks the cell length), so the
+grabbed point stays under the pointer.
+
+A finer snap needs the pointer's position INSIDE the cell, which the cell alone does not carry:
+
+- A cell with a finer snap publishes `snapMinutes` and `axis` (the axis its time runs along) in its drop data
+  and as `data-snap-minutes` / `data-time-axis`. A cell that snaps to itself publishes neither.
+- Drag and resize: `getSnappedOverData` (`dnd-utils.ts`) takes the pointer's LIVE viewport position and the
+  cell's live rect from dnd-kit, and narrows the cell to the snap-sized piece under it (`snapDropCell`,
+  `utils/snap-drop-cell.ts`). The pointer is tracked by `useCalendarDrag` from `pointermove`/`touchmove`
+  (seeded from the press), not read from the drag event's `delta`: dnd-kit hands handlers
+  `scrollAdjustedTranslate`, which already includes the scroll since the drag began
+  (`@dnd-kit/core` `core.esm.js`, `onDragMove`/`onDragEnd`), while `over.rect` is re-measured after that
+  scroll, so using `delta` counted the scroll twice and clamped a drop to the first or last slice after any
+  auto-scroll or wheel scroll. A live pointer and a live rect agree however far the grid scrolls. Drop and resize times are computed from that piece, so a resize
+  still ends at the END of the hovered piece and a start edge at its start. The grab offset is floored to the
+  snap, so an event grabbed mid-bar keeps its offset in snap steps. A keyboard drag has no pointer and keeps the
+  start of the cell.
+- Drag-to-create: `snapCellToPoint` (`drag-to-create/utils/snap-cell.ts`) does the same to the cell read from
+  the DOM, at the press and on every move; the selection runs from the start of the first piece to the end of
+  the last, and the mirror is the union of the pieces, measured from the live element each time.
+- On a clock-change day a snapped drop is the cell's own wall-clock hour plus the snap offset: the drop still
+  sets `.hour()`/`.minute()` on the cell's date (the grid builds that date with the offset in force at the
+  hour), and a resize still rebuilds its edge from a zoneless string (`docs/timezones.md`).
+
 ## VerticalGrid Component
 
 `src/features/calendar/components/vertical-grid/vertical-grid.tsx`
@@ -242,7 +284,7 @@ Renders the grid structure: header, optional all-day row, and scrollable body wi
 
 - `columns`: Array of column definitions, each with `id`, `days` (hour slots), `day` (calendar date), `gridType`, and optional `renderCell`.
 - `gridType`: `'hour'` for time-based grids.
-- `slotDurationMinutes`: Minutes per row (`15`, `30`, or `60`). `60` is one cell per hour with no sub-hour lines; `15` draws four cells per hour with dashed separators. Sourced from the public `slotDuration` prop on `IlamyCalendar` / `IlamyResourceCalendar`.
+- `slotDurationMinutes`: Minutes per row, any divisor of 60 (see "Slot and snap sizes"). `60` is one cell per hour with no sub-hour lines; `15` draws four cells per hour with dashed separators. Sourced from the public `slotDuration` prop on `IlamyCalendar` / `IlamyResourceCalendar`.
 - `allDayRow`: Optional all-day event row rendered above the grid. The view renderer leaves it out when the `allDaySlot` prop is `false`. The vertical layout already draws no all-day event in an hour grid (it belongs to the row), so nothing else changes.
 - `variant`: `'regular'` for standard calendar, omit for resource calendar.
 

@@ -404,6 +404,31 @@ function MyPluginView() {
 
 ---
 
+## Grid cell attributes plugins may read
+
+A plugin that works on the grid itself (the drag-to-create plugin turns a pointer position into a range)
+cannot get that from the React context, so every grid cell describes itself on the element. These
+attributes are a stable contract: a plugin may read them, and a change to one is a breaking change.
+`DroppableCell` (`droppable-cell.tsx`) is the only place that writes them.
+
+| Attribute | Present | Meaning |
+|---|---|---|
+| `data-start` | always | The first instant the cell covers, as a UTC ISO string (`toISOString()`). Parse it with `dayjs.utc(value)` and render it in the calendar's `timezone`; reading it as a plain string drifts by the zone offset. |
+| `data-end` | always | The cell's EXCLUSIVE end (RFC 5545 `DTEND`), as a UTC ISO string. A day cell ends at the next midnight, an hour-grid cell at the end of its slot. |
+| `data-resource-id` | on a resource calendar's cells | The id of the resource the cell belongs to, as a string. |
+| `data-all-day` | `"true"` on all-day cells, absent otherwise | The cell is in the all-day row. Selections never mix all-day and timed cells. |
+| `data-disabled` | always, `"true"` or `"false"` | The cell refuses interaction (outside business hours, `isCellDisabled`, a month's padding days). |
+| `data-snap-minutes` | only on an hour-grid cell that snaps finer than itself | The size in minutes a selection, drag or resize snaps to inside the cell, already resolved against the cell (`snapDuration` that divides it, else absent). |
+| `data-time-axis` | with `data-snap-minutes` | `"vertical"` or `"horizontal"`: the axis time runs along inside the cell. Use it with `getBoundingClientRect()` to find the snap-sized piece under the pointer. |
+
+Not part of the contract, only styling and test hooks: `data-view`, `data-slot-divider`, `data-drop-target`,
+`data-testid`.
+
+The snap math the drag-to-create plugin and the core share (`getFractionAlong`, `getSnapBucket`,
+`resolveSnapDuration`, `getCellMinutes`) lives in `@ilamy/utils/helpers`, not in the core's internals.
+
+---
+
 ## Packaging a third-party plugin
 
 Create a separate npm package. Declare `@ilamy/calendar` as a `peerDependency` (not a regular dependency) so consumers don't get a duplicate copy:

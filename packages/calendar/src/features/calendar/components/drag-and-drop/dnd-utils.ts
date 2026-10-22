@@ -1,21 +1,20 @@
-import type { DragEndEvent } from '@dnd-kit/core'
+import type { DragEndEvent, DragOverEvent } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import { getCellMinutes, getFractionAlong } from '@ilamy/utils/helpers'
 import {
 	type GrabOffset,
 	NO_GRAB_OFFSET,
 } from '@/features/calendar/utils/grab-offset'
+import {
+	hasFinerSnapThanCell,
+	type SnappableCell,
+	snapDropCell,
+} from '@/features/calendar/utils/snap-drop-cell'
 
-export interface DropCellData {
+export interface DropCellData extends SnappableCell {
 	type?: string
 	date?: Dayjs
-	hour?: number
-	minute?: number
-	/**
-	 * Length of the slot a cell with a `minute` covers. An hour cell (no
-	 * `minute`) is always an hour, and a day cell has no slot.
-	 */
-	slotDurationMinutes?: number
 	resourceId?: string | number
 	allDay?: boolean
 	/**
@@ -39,6 +38,48 @@ type ResourceId = string | number
  */
 export const isTimeSlotDrop = (data: DropCellData): boolean =>
 	data.hour !== undefined
+
+/** The pointer's position in the viewport, as `clientX`/`clientY` report it. */
+export interface Pointer {
+	x: number
+	y: number
+}
+
+/**
+ * The cell under the pointer, narrowed to the snap-sized piece the pointer is
+ * over. This, not the raw cell, is what a drop or resize is computed from.
+ *
+ * `pointer` is the pointer's LIVE viewport position and `over.rect` is dnd-kit's
+ * own live measurement of the cell, so the two are in one frame however far the
+ * grid has scrolled. The drag event's `delta` must not stand in for the
+ * pointer: dnd-kit hands handlers `scrollAdjustedTranslate` (core.esm.js,
+ * `onDragMove`/`onDragEnd`: `delta: scrollAdjustedTranslate`), which already
+ * includes the scroll since the drag began, and `over.rect` is re-measured
+ * after that scroll too (`useDroppableMeasuring`), so the scroll would count
+ * twice. A drag with no pointer (keyboard) keeps the start of the cell.
+ */
+export const getSnappedOverData = (
+	over: DragOverEvent['over'],
+	pointer: Pointer | undefined
+): DropCellData | undefined => {
+	const cell = over?.data.current as DropCellData | undefined
+	if (!over || !cell || !hasFinerSnapThanCell(cell)) {
+		return cell
+	}
+	if (!pointer) {
+		return snapDropCell(cell, 0)
+	}
+	const isHorizontal = cell.axis === 'horizontal'
+	const pointerAlongAxis = isHorizontal ? pointer.x : pointer.y
+	const cellStart = isHorizontal ? over.rect.left : over.rect.top
+	const cellLength = isHorizontal ? over.rect.width : over.rect.height
+	const fractionIntoCell = getFractionAlong(
+		pointerAlongAxis,
+		cellStart,
+		cellLength
+	)
+	return snapDropCell(cell, fractionIntoCell)
+}
 
 /**
  * Calculates candidate start, end, and allDay status when an event is dragged
@@ -99,8 +140,6 @@ export const calculateDropTimes = (
 
 export type ResizeEdge = 'start' | 'end'
 
-const MINUTES_PER_HOUR = 60
-
 /**
  * A wall-clock time on a day, built from a zoneless string for the reason
  * `calculateDropTimes` gives: the setters would carry the source day's UTC
@@ -118,10 +157,7 @@ const getSlotSpan = (data: DropCellData) => {
 	if (!date) {
 		return undefined
 	}
-	const isHourCell = minute === undefined
-	const slotMinutes = isHourCell
-		? MINUTES_PER_HOUR
-		: (slotDurationMinutes ?? MINUTES_PER_HOUR)
+	const slotMinutes = getCellMinutes(minute, slotDurationMinutes)
 	const timeOfDay = `${String(hour).padStart(2, '0')}:${String(minute ?? 0).padStart(2, '0')}:00.000`
 	const start = atTimeOfDay(date, timeOfDay)
 	return { start, end: start.add(slotMinutes, 'minute') }
@@ -236,7 +272,8 @@ const getResourceUpdates = (
 export const getUpdatedEvent = (
 	event: DragEndEvent,
 	activeEvent: CalendarEvent | null,
-	grabOffset: GrabOffset = NO_GRAB_OFFSET
+	grabOffset: GrabOffset = NO_GRAB_OFFSET,
+	pointer?: Pointer
 ) => {
 	const { active, over } = event
 
@@ -244,7 +281,7 @@ export const getUpdatedEvent = (
 		return null
 	}
 
-	const data = (over.data.current || {}) as DropCellData
+	const data = getSnappedOverData(over, pointer) ?? {}
 	// Released on a cell that refuses drops: commit nothing, so the event
 	// reverts to where it started.
 	if (data.disabled) {

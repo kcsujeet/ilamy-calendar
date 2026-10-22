@@ -246,7 +246,8 @@ mount and again on `refetchResources()` (from `useIlamyCalendarContext()`); with
 - Until the first result the calendar is already a resource calendar (resource header and layout) with no lanes, so nothing switches when the list arrives. Events whose resource is not known yet behave as in any resource calendar.
 - A fetch superseded by a newer one is aborted through `signal`, and a late result is ignored.
 - A failure keeps the resources shown and calls `onResourcesError` (`console.error` without it); the
-  next navigation (with `refetchResourcesOnNavigate`) or `refetchResources()` tries again.
+  next navigation (with `refetchResourcesOnNavigate`) or `refetchResources()` tries again. Plain
+  navigation never retries a failed first fetch.
 - `loading(isLoading)` is one signal for the `events` and the `resources` functions together.
 - A new function identity does not refetch; call `refetchResources()` when your query changes.
 - `resourcesSet(resources)` fires once the list is set and after every change. It compares the list's content (length and each

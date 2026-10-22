@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { gotoScenario, setSettings } from './support/harness'
+import { gotoScenario, removeSettings, setSettings } from './support/harness'
 import { MonthGrid } from './support/pages'
 
 /*
@@ -143,5 +143,24 @@ test.describe('events as a function', () => {
 
 		await expect(week.event('Long-running class').first()).toBeVisible()
 		await expect(week.event('Daily stand-up').first()).toBeVisible()
+	})
+
+	test('a fetch in flight when events becomes an array does not overwrite the array', async ({
+		page,
+	}) => {
+		await openMarch(page, HELD)
+		const month = new MonthGrid(page)
+		expect((await month.fetchState()).isLoading).toBe(true)
+
+		// The consumer now passes an array: every row of the scenario.
+		await removeSettings(page, ['fetch'])
+		await expect(month.event('March lunch')).toBeVisible()
+		expect((await month.fetchState()).isLoading).toBe(false)
+
+		// With no `fetch` the harness's held call is released at once; it must
+		// not replace the array's rows, which include next month's.
+		await page.waitForTimeout(300)
+		await month.next()
+		await expect(month.event('April review')).toBeVisible()
 	})
 })

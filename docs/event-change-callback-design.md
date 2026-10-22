@@ -173,6 +173,13 @@ Mapping, deliberately not a copy of FullCalendar's names:
   `onEventUpdate` and `onEventsChange` with an unchanged row.
 - A timed event that becomes all-day is measured from the start of its own day
   (`EventDragging.ts:454`, v7.1.1); all-day to timed uses the midnight start.
+  Across the all-day boundary the grab point does not matter and the length is
+  reset: an all-day event dropped on a time slot starts at the slot and lasts
+  one hour (`defaultTimedEventDuration`, `options.ts:486`), a timed event
+  dropped on the all-day row ends at the next midnight
+  (`defaultAllDayEventDuration`, `options.ts:487`), as
+  `allDayMaintainDuration` is false by default (`options.ts:511`,
+  `event-mutation.ts:131-134`). Both defaults are fixed, not props.
 - Both starts are re-zoned from their instants before their wall clocks are
   read. A drop in the hour the clocks skip stores an instant whose dayjs object
   still carries the offset of the hour before, so reading its clock directly

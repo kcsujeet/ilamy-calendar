@@ -198,9 +198,11 @@ describe('getUpdatedEvent Utility Function', () => {
 			if (!updates) return
 			expect(updates.allDay).toBe(true)
 			expect(updates.start.format()).toBe(dayjs(cellDate).format())
-			expect(updates.end.diff(updates.start, 'second')).toBe(
-				end.diff(start, 'second')
-			)
+			// This used to expect the old timed length (23:59:59) to be kept. An
+			// all-day end is the next midnight (RFC 5545 3.6.1), and FullCalendar
+			// resets the length when a drop crosses the all-day boundary
+			// (`defaultAllDayEventDuration` {day:1}, `event-mutation.ts:131-134`).
+			expect(updates.end.format()).toBe(dayjs(cellDate).add(1, 'day').format())
 		})
 
 		// #322. This used to expect `false`: an all-day event dropped on a whole-day
@@ -406,19 +408,13 @@ describe('getUpdatedEvent Utility Function', () => {
 		const updates = result?.updates
 		if (!updates) return
 
-		// CURRENT BEHAVIOR (with second precision):
-		// - Original duration: 2 days 23h 59m 59.999s (using endOf('day'))
-		// - Duration in seconds: 259199 (loses millisecond precision)
-		// - Start: Nov 4 01:00:00
-		// - End: Nov 4 01:00:00 + 259199 sec = Nov 7 00:59:59
+		// This used to keep the 3 day length (to the second). Across the all-day
+		// boundary FullCalendar resets the length to the default timed duration,
+		// one hour (`event-mutation.ts:131-134`, `defaultTimedEventDuration`,
+		// `options.ts:486`, v7.1.1).
 		expect(updates.start.toISOString()).toBe('2024-11-04T01:00:00.000Z')
-		expect(updates.end.toISOString()).toBe('2024-11-07T00:59:59.000Z')
+		expect(updates.end.toISOString()).toBe('2024-11-04T02:00:00.000Z')
 		expect(updates.allDay).toBe(false)
-
-		// NOTE: Still 1 second off from ideal behavior due to millisecond truncation
-		// - Ideal: Nov 7 01:00:00 (3 full days later)
-		// - Actual: Nov 7 00:59:59 (loses .999ms when using second precision)
-		// - To fully fix: would need millisecond precision instead of second
 	})
 
 	describe('grab offset and time preservation (FullCalendar and Google Calendar behaviour)', () => {
@@ -546,6 +542,130 @@ describe('calculateDropTimes', () => {
 
 		expect(result.start.toISOString()).toBe('2024-10-16T00:00:00.000Z')
 		expect(result.allDay).toBe(true)
+	})
+
+	describe('across the all-day boundary', () => {
+		const allDayEvent = {
+			id: 'event-2',
+			title: 'Day off',
+			allDay: true,
+			start: dayjs('2024-10-15T00:00:00.000'),
+			end: dayjs('2024-10-16T00:00:00.000'),
+		} as CalendarEvent
+		const slot = (grabMinutes: number) =>
+			calculateDropTimes(
+				allDayEvent,
+				{
+					type: 'day-cell',
+					date: dayjs('2024-10-17T00:00:00.000'),
+					hour: 11,
+					minute: 0,
+				},
+				{ minutes: grabMinutes, days: 0 }
+			)
+
+		it('starts an all-day event at the slot wherever it was grabbed', () => {
+			expect(slot(0).start.format('YYYY-MM-DDTHH:mm:ss.SSS')).toBe(
+				'2024-10-17T11:00:00.000'
+			)
+			expect(slot(600).start.format('YYYY-MM-DDTHH:mm:ss.SSS')).toBe(
+				'2024-10-17T11:00:00.000'
+			)
+		})
+
+		it('makes an all-day event dropped on a time slot one hour long', () => {
+			expect(slot(0).end.format('YYYY-MM-DDTHH:mm:ss.SSS')).toBe(
+				'2024-10-17T12:00:00.000'
+			)
+			expect(slot(0).allDay).toBe(false)
+		})
+
+		it('makes a timed event dropped on the all-day row end at the next midnight', () => {
+			const result = calculateDropTimes(timedEvent, {
+				type: 'day-cell',
+				date: dayjs('2024-10-16T00:00:00.000'),
+				allDay: true,
+			})
+			expect(result.end.format('YYYY-MM-DDTHH:mm:ss.SSS')).toBe(
+				'2024-10-17T00:00:00.000'
+			)
+		})
+
+		it('keeps a multi-day all-day event its length on an all-day cell', () => {
+			const threeDays = {
+				...allDayEvent,
+				end: dayjs('2024-10-18T00:00:00.000'),
+			} as CalendarEvent
+			const result = calculateDropTimes(threeDays, {
+				type: 'day-cell',
+				date: dayjs('2024-10-20T00:00:00.000'),
+				allDay: true,
+			})
+			expect(result.end.format('YYYY-MM-DDTHH:mm:ss.SSS')).toBe(
+				'2024-10-23T00:00:00.000'
+			)
+		})
+	})
+
+	describe('across a clock change (America/New_York)', () => {
+		beforeEach(() => {
+			dayjs.tz.setDefault('America/New_York')
+		})
+
+		afterEach(() => {
+			dayjs.tz.setDefault()
+		})
+
+		// A move applies one delta to both edges (`event-mutation.ts:110-114`,
+		// `marker.ts:48-58`, v7.1.1), so the event keeps its WALL-CLOCK length.
+		const move = (
+			startWallClock: string,
+			endWallClock: string,
+			targetDay: string
+		) => {
+			const event = {
+				id: 'event-3',
+				title: 'Shift',
+				start: dayjs(startWallClock),
+				end: dayjs(endWallClock),
+			} as CalendarEvent
+			const result = calculateDropTimes(event, {
+				type: 'day-cell',
+				date: dayjs(`${targetDay}T00:00:00`),
+			})
+			return {
+				start: result.start.format('YYYY-MM-DDTHH:mm'),
+				end: result.end.format('YYYY-MM-DDTHH:mm'),
+				endOffset: result.end.format('Z'),
+			}
+		}
+
+		it('keeps a 12 hour shift 12 hours on the clock when it moves over the spring change', () => {
+			expect(
+				move('2025-03-07T20:00:00', '2025-03-08T08:00:00', '2025-03-08')
+			).toEqual({
+				start: '2025-03-08T20:00',
+				end: '2025-03-09T08:00',
+				endOffset: '-04:00',
+			})
+		})
+
+		it('keeps the end on the clock when it falls in the repeated hour (2 Nov 2025)', () => {
+			expect(
+				move('2025-11-01T20:00:00', '2025-11-01T23:30:00', '2025-11-02')
+			).toMatchObject({ start: '2025-11-02T20:00', end: '2025-11-02T23:30' })
+		})
+
+		it('moves an end that lands in the skipped hour forward, as a clock would', () => {
+			// 01:00 to 02:30 on 8 March, moved to 9 March, where 02:30 does not exist.
+			const landed = move(
+				'2025-03-08T00:00:00',
+				'2025-03-08T02:30:00',
+				'2025-03-09'
+			)
+			expect(landed.start).toBe('2025-03-09T00:00')
+			expect(landed.end).toBe('2025-03-09T03:30')
+		})
 	})
 })
 

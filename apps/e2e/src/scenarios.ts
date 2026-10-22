@@ -327,6 +327,20 @@ export const scenarios = {
 		],
 	},
 
+	'clock-change-shift': {
+		description:
+			'A Friday night shift written in New York offsets, 20:00 EST to 08:00 EST (12 wall-clock hours), for moving it over the spring clock change (Sunday 9 March 2025). Use `timezone=America/New_York`.',
+		views: ['week'],
+		events: [
+			event(
+				'night-shift',
+				'Friday night shift',
+				'2025-03-07T20:00:00.000-05:00',
+				'2025-03-08T08:00:00.000-05:00'
+			),
+		],
+	},
+
 	'all-day-in-clock-change-week': {
 		description:
 			'All-day events written as New York midnights (-04:00, the week after the clocks went forward on 9 March), so with `timezone=America/New_York` the month row holds Sunday 9 to Saturday 15 March, a week whose columns carry a stale UTC offset. Each bar must sit in exactly its own day.',

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { gotoScenario } from './support/harness'
+import { gotoScenario, releasePointer } from './support/harness'
 import { MonthGrid, TimeGrid } from './support/pages'
 
 /**
@@ -1702,5 +1702,136 @@ test.describe('hidden days', () => {
 		await expect
 			.poll(async () => (await month.eventNamed('Mid-week trip')).start)
 			.toMatch(/^2025-03-15T00:00/)
+	})
+})
+
+// Where a drop lands is decided by what it crosses. Across the all-day
+// boundary the grab point is irrelevant and the length is reset to a default
+// (FullCalendar, `EventDragging.ts:447-460` and `event-mutation.ts:131-134`,
+// v7.1.1); across a clock change one delta moves both edges, so the event keeps
+// its clock length (`event-mutation.ts:110-114`, `marker.ts:48-58`).
+test.describe('a drop that crosses a boundary', () => {
+	const TALL = { width: 1280, height: 2400 }
+
+	const at = async (
+		locator: import('@playwright/test').Locator,
+		fractionX: number,
+		fractionY: number
+	) => {
+		const box = await locator.boundingBox()
+		if (!box) {
+			throw new Error('needs a layout to be dragged')
+		}
+		return {
+			x: box.x + box.width * fractionX,
+			y: box.y + box.height * fractionY,
+		}
+	}
+
+	/** Presses at `from`, moves to `to`, reports the mirror's text, releases. */
+	const dragPoints = async (
+		page: import('@playwright/test').Page,
+		from: { x: number; y: number },
+		to: { x: number; y: number }
+	) => {
+		await page.mouse.move(from.x, from.y)
+		await page.mouse.down()
+		for (let step = 1; step <= 10; step += 1) {
+			await page.mouse.move(
+				from.x + ((to.x - from.x) * step) / 10,
+				from.y + ((to.y - from.y) * step) / 10
+			)
+		}
+		const mirrorText = await new TimeGrid(page).dragMirror.allTextContents()
+		await releasePointer(page)
+		return mirrorText.join(' ')
+	}
+
+	for (const grabbedAt of [0.05, 0.5, 0.95]) {
+		test(`an all-day event dropped on a time slot starts at the slot and lasts an hour, grabbed ${grabbedAt * 100}% along`, async ({
+			page,
+		}) => {
+			await page.setViewportSize(TALL)
+			await gotoScenario(page, {
+				scenario: 'all-day-events',
+				view: 'week',
+				settings: { scrollTime: '00:00', slot: 30 },
+			})
+			const grid = new TimeGrid(page)
+			const from = await at(
+				page.locator('[data-testid="horizontal-event-allday-1"]').first(),
+				grabbedAt,
+				0.5
+			)
+			const to = await at(grid.slotAt('2025-03-14T11:00'), 0.5, 0.2)
+
+			await dragPoints(page, from, to)
+
+			const [moved] = (await grid.eventState()).filter(
+				(event) => event.id === 'allday-1'
+			)
+			expect(moved).toMatchObject({
+				start: '2025-03-14T11:00:00.000Z',
+				end: '2025-03-14T12:00:00.000Z',
+				allDay: false,
+			})
+		})
+	}
+
+	test('a timed event dropped on the all-day row ends at the next midnight', async ({
+		page,
+	}) => {
+		await page.setViewportSize(TALL)
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'week',
+			settings: { scrollTime: '00:00', slot: 30 },
+		})
+		const grid = new TimeGrid(page)
+		const from = await at(grid.bars('basic-1').first(), 0.5, 0.2)
+		const to = await at(grid.allDayRow, 0.7, 0.5)
+
+		await dragPoints(page, from, to)
+
+		const [moved] = (await grid.eventState()).filter(
+			(event) => event.id === 'basic-1'
+		)
+		expect(moved).toMatchObject({
+			start: '2025-03-13T00:00:00.000Z',
+			end: '2025-03-14T00:00:00.000Z',
+			allDay: true,
+		})
+	})
+
+	test('a shift moved over the spring clock change keeps its clock length, in the preview and in the callback', async ({
+		page,
+	}) => {
+		await page.setViewportSize(TALL)
+		await gotoScenario(page, {
+			scenario: 'clock-change-shift',
+			view: 'week',
+			timezone: 'America/New_York',
+			date: '2025-03-05T12:00:00.000-05:00',
+		})
+		const grid = new TimeGrid(page)
+		await page.evaluate(() =>
+			Promise.all(document.getAnimations().map((a) => a.finished))
+		)
+		const from = await at(grid.bars('night-shift').first(), 0.5, 0.02)
+		const to = await at(grid.slotAt('2025-03-09T01:00'), 0.5, 0.1)
+
+		const mirrorText = await dragPoints(page, from, to)
+
+		// The slot is 20:00 EST Saturday (01:00Z; the harness names slots by their
+		// instant). Plus 12 clock hours the shift ends at 08:00 EDT Sunday, 12:00Z.
+		// Twelve elapsed hours would end at 09:00 EDT, and the mirror's end kept
+		// the start's EST offset, so it read an hour off the committed end.
+		const [moved] = (await grid.eventState()).filter(
+			(event) => event.id === 'night-shift'
+		)
+		expect(moved?.end).toBe('2025-03-09T12:00:00.000Z')
+		expect(mirrorText).toContain('8:00pm – 8:00am')
+		const [change] = await grid.eventChanges()
+		expect(change?.endDelta).toEqual(change?.delta)
 	})
 })

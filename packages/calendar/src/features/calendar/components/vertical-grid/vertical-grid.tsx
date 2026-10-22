@@ -43,7 +43,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 	// render an empty time grid.
 	const expandAllDayRow = columns.every((c) => !c.days?.length)
 
-	const { currentDate, view, scrollTime, scrollToNow } =
+	const { currentDate, view, scrollTime, scrollToNow, scrollRequest } =
 		useSmartCalendarContext()
 	const rootRef = useRef<HTMLDivElement | null>(null)
 	const viewportRef = useRef<HTMLDivElement | null>(null)
@@ -58,6 +58,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 		viewportRef,
 		scrollTime,
 		scrollToNow,
+		scrollRequest,
 		enabled: hasRowsToScroll,
 		scrollKey,
 	})

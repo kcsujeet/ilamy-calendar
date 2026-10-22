@@ -3,6 +3,10 @@ import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 
 const CRLF = '\r\n'
 
+const MAX_LINE_OCTETS = 75
+
+const utf8Encoder = new TextEncoder()
+
 const UTC_VTIMEZONE = [
 	'BEGIN:VTIMEZONE',
 	'TZID:UTC',
@@ -13,7 +17,30 @@ const UTC_VTIMEZONE = [
 	'TZOFFSETTO:+0000',
 	'END:STANDARD',
 	'END:VTIMEZONE',
-].join(CRLF)
+]
+
+// RFC 5545 3.1: a content line SHOULD NOT exceed 75 octets; a longer one is
+// folded by inserting CRLF and one space, and a multi-octet UTF-8 character
+// must never be split. The continuation's leading space counts toward its 75.
+const foldLine = (line: string): string => {
+	const pieces: string[] = []
+	let piece = ''
+	let pieceOctets = 0
+	for (const character of line) {
+		const characterOctets = utf8Encoder.encode(character).length
+		const maxOctets =
+			pieces.length === 0 ? MAX_LINE_OCTETS : MAX_LINE_OCTETS - 1
+		if (pieceOctets + characterOctets > maxOctets) {
+			pieces.push(piece)
+			piece = ''
+			pieceOctets = 0
+		}
+		piece += character
+		pieceOctets += characterOctets
+	}
+	pieces.push(piece)
+	return pieces.join(`${CRLF} `)
+}
 
 const escapeText = (text: string): string => {
 	return text
@@ -40,7 +67,7 @@ type CollectFn = (point: string, event: CalendarEvent) => unknown[]
 const convertEventToVEvent = (
 	event: CalendarEvent,
 	collect: CollectFn
-): string => {
+): string[] => {
 	const timestamp = dayjs().utc().format('YYYYMMDD[T]HHmmss[Z]')
 	const dateParam = event.allDay ? ';VALUE=DATE' : ''
 
@@ -68,7 +95,7 @@ const convertEventToVEvent = (
 		'END:VEVENT',
 	]
 
-	return [...coreLines, ...extra, ...trailingLines].join(CRLF)
+	return [...coreLines, ...extra, ...trailingLines]
 }
 
 export const exportToICalendar = (
@@ -77,11 +104,11 @@ export const exportToICalendar = (
 	calendarName = 'ilamy Calendar'
 ): string => {
 	const name = escapeText(calendarName)
-	const veventStrings = events.map((event) =>
+	const veventLines = events.flatMap((event) =>
 		convertEventToVEvent(event, collect)
 	)
 
-	return [
+	const lines = [
 		'BEGIN:VCALENDAR',
 		'VERSION:2.0',
 		'PRODID:-//ilamy//ilamy Calendar//EN',
@@ -89,10 +116,13 @@ export const exportToICalendar = (
 		'METHOD:PUBLISH',
 		`X-WR-CALNAME:${name}`,
 		`X-WR-CALDESC:Exported from ${name}`,
-		UTC_VTIMEZONE,
-		...veventStrings,
+		...UTC_VTIMEZONE,
+		...veventLines,
 		'END:VCALENDAR',
-	].join(CRLF)
+	]
+
+	// RFC 5545 3.4: the object ends with CRLF after "END:VCALENDAR".
+	return `${lines.map(foldLine).join(CRLF)}${CRLF}`
 }
 
 export const downloadICalendar = (

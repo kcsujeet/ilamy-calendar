@@ -44,6 +44,7 @@ export interface UrlConfig {
 	 */
 	businessHours?: BusinessHours
 	stickyViewHeader?: boolean
+	hideExportButton?: boolean
 	disableDragAndDrop?: boolean
 	editable?: boolean
 	eventStartEditable?: boolean
@@ -341,6 +342,11 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const stickyViewHeader = get('stickyViewHeader')
 	if (stickyViewHeader !== null) {
 		config.stickyViewHeader = boolean('stickyViewHeader', stickyViewHeader)
+	}
+
+	const hideExportButton = get('hideExportButton')
+	if (hideExportButton !== null) {
+		config.hideExportButton = boolean('hideExportButton', hideExportButton)
 	}
 
 	const businessHours = get('businessHours')

@@ -242,7 +242,56 @@ describe('iCalendar Export', () => {
 	})
 })
 
+const utf8Length = (text: string): number =>
+	new TextEncoder().encode(text).length
+
+const unfold = (ical: string): string => ical.replaceAll('\r\n ', '')
+
 describe('RFC 5545 Compliance', () => {
+	it('ends the object with CRLF (3.4: "END:VCALENDAR" CRLF)', () => {
+		const ical = exportToICalendar([createEvent()], noCollect)
+		expect(ical.endsWith('END:VCALENDAR\r\n')).toBe(true)
+		expect(ical.endsWith('\r\n\r\n')).toBe(false)
+	})
+
+	it('folds lines longer than 75 octets and unfolds back to the original (3.1)', () => {
+		const title = `Quarterly planning ${'x'.repeat(200)}`
+		const ical = exportToICalendar([createEvent({ title })], noCollect)
+		const lines = ical.split('\r\n')
+		expect(lines.map(utf8Length).filter((length) => length > 75)).toEqual([])
+		expect(lines).toContain(`SUMMARY:${title}`.slice(0, 75))
+		expect(unfold(ical)).toContain(`SUMMARY:${title}`)
+	})
+
+	it('continuation lines start with one space (3.1)', () => {
+		const ical = exportToICalendar(
+			[createEvent({ title: 'y'.repeat(200) })],
+			noCollect
+		)
+		const summaryIndex = ical
+			.split('\r\n')
+			.findIndex((line) => line.startsWith('SUMMARY:'))
+		const continuation = ical.split('\r\n').at(summaryIndex + 1)
+		expect(continuation?.startsWith(' y')).toBe(true)
+	})
+
+	it('never splits a multi-octet UTF-8 character when folding (3.1)', () => {
+		// 2-octet, 3-octet and 4-octet characters, so every fold offset is hit.
+		const title = 'é€😀'.repeat(60)
+		const ical = exportToICalendar([createEvent({ title })], noCollect)
+		const lines = ical.split('\r\n')
+		expect(lines.map(utf8Length).filter((length) => length > 75)).toEqual([])
+		expect(unfold(ical)).toContain(`SUMMARY:${title}`)
+		const hasNoLoneSurrogate = (line: string) => line.isWellFormed()
+		expect(lines.every(hasNoLoneSurrogate)).toBe(true)
+	})
+
+	it('leaves a line of exactly 75 octets unfolded (3.1)', () => {
+		const title = 'z'.repeat(75 - 'SUMMARY:'.length)
+		const ical = exportToICalendar([createEvent({ title })], noCollect)
+		expect(ical.split('\r\n')).toContain(`SUMMARY:${title}`)
+	})
+
 	it('should use CRLF line endings as per RFC 5545', () => {
 		const ical = exportToICalendar([createEvent()], noCollect)
 		// RFC 5545 requires CRLF (\r\n) line endings
@@ -627,7 +676,8 @@ describe('Edge Cases', () => {
 		const longTitle = 'A'.repeat(200)
 		const event = createEvent({ title: longTitle })
 		const ical = exportToICalendar([event], noCollect)
-		expect(ical).toContain(`SUMMARY:${longTitle}`)
+		// The title is folded at 75 octets (RFC 5545 3.1), so read it unfolded.
+		expect(unfold(ical)).toContain(`SUMMARY:${longTitle}`)
 	})
 
 	it('should include standard VEVENT fields', () => {

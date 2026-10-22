@@ -307,7 +307,7 @@ the Upgrader persona passes on the migrated configuration.
 | 4.3.6 | **Accessibility** | Core | ARIA grid roles, roving tabindex, keyboard move/resize/select via dnd-kit `KeyboardSensor`, translated live-region announcements, Axe in the e2e gate with zero violations. |
 | 4.3.7 | **RTL** | Core | `direction` (default: the document's `dir`); logical Tailwind utilities; mirrored layout and drag math; `&direction=rtl` axis in the e2e matrix. |
 | 4.3.8 | **Print** | Core | `@media print` rules; e2e via `page.emulateMedia({ media: 'print' })`. |
-| 4.3.9 | **Interop** | Plugins `ical` (import, TZID+VTIMEZONE export per RFC 5545 §3.6.5), `ics-feed`, `google-calendar` | Feeds use the event-sources hook. Parser chosen per the latest-version rule (check `ical.js`, which FullCalendar uses). |
+| 4.3.9 | **Interop** | Plugins `ical` (import, TZID+VTIMEZONE export per RFC 5545 §3.6.5), `ics-feed`, `google-calendar` | Feeds use the event-sources hook. Parser chosen per the latest-version rule (check `ical.js`, which FullCalendar uses). The export fix is the known 3.x gap: a recurring series in a configured `timezone` exports as UTC `DTSTART` + `RRULE`, so importers drift an hour after a clock change (RFC 5545 §3.8.5.3); emit `DTSTART;TZID=` and a `VTIMEZONE` for the series' zone (needs the Temporal date core, 4.0.1). |
 
 4.3 may split into 4.3 and 4.4 if it is too large to ship as one.
 

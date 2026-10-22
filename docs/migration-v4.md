@@ -72,6 +72,12 @@ starts. Until then 3.x keeps today's behaviour. The IDs match
   props and the plugin contract. `EventsChange.delta` is unaffected: it is
   plain numbers.
 
+- **iCal export writes `TZID` for a recurring series in a configured zone**
+  (planned, with the iCal plugin). In 3.x such a series is exported as a UTC
+  `DTSTART` and `RRULE` (see `docs/export-ical.md`); the file's `DTSTART` lines
+  will change for those series, and importers will then keep the wall-clock time
+  across a clock change.
+
 ## Upgrade checklist
 
 1. On the latest 3.x, search your code for the names in the first table and move

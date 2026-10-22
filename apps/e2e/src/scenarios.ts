@@ -397,6 +397,51 @@ export const scenarios = {
 		],
 	},
 
+	'ical-export': {
+		description:
+			'The iCal export: a timed event with a title and description long enough to need line folding (some of it multi-octet UTF-8), and an all-day weekly series (open with plugins=recurrence) cut by "this and following" (UNTIL, as the delete stores it), with one EXDATE and one moved occurrence. Every DATE-valued property must stay DATE-valued.',
+		views: ['month'],
+		events: [
+			event(
+				'folding-1',
+				'Quarterly planning review',
+				'2025-03-13T10:00:00.000Z',
+				'2025-03-13T11:00:00.000Z',
+				{
+					uid: 'folding-1',
+					description: `${'Agenda é€ '.repeat(20)}end`,
+				}
+			),
+			event(
+				'holiday-series',
+				'Holiday',
+				'2025-03-10T00:00:00.000Z',
+				'2025-03-11T00:00:00.000Z',
+				{
+					uid: 'holiday-series',
+					allDay: true,
+					exdates: ['2025-03-17T00:00:00.000Z'],
+					rrule: {
+						freq: RRule.WEEKLY,
+						dtstart: at('2025-03-10T00:00:00.000Z').toDate(),
+						until: at('2025-03-30T23:59:59.999Z').toDate(),
+					},
+				}
+			),
+			event(
+				'holiday-moved',
+				'Holiday (moved)',
+				'2025-03-25T00:00:00.000Z',
+				'2025-03-26T00:00:00.000Z',
+				{
+					uid: 'holiday-series',
+					allDay: true,
+					recurrenceId: '2025-03-24T00:00:00.000Z',
+				}
+			),
+		],
+	},
+
 	'recurring-dst': {
 		description:
 			'#307: a daily 09:00 series in America/New_York (open with plugins=recurrence and tz=America/New_York) that starts before the 9 March 2025 change to daylight time, beside a one-off at 09:00 EDT. Every occurrence keeps its 09:00 wall-clock time across the change, as RFC 5545 requires of a DTSTART with a TZID, so every occurrence shares the row of a one-off at 09:00 EDT.',

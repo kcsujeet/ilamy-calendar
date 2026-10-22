@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file. Dates are d
 
 #### [v3.3.0](https://github.com/kcsujeet/ilamy-calendar/compare/v3.2.1...v3.3.0)
 
-> Unreleased (draft: PR links point at the open stack #335 to #356; re-check numbers and the performance placeholders at release time)
+> Unreleased (draft: PR links point at the open stack #335 to #359; re-check numbers at release time)
 
 3.3 is the only minor before 4.0. Everything here is additive: each new option's default reproduces 3.2.1, and `docs/migration-v4.md` lists what 4.0 will remove or change.
 
@@ -35,8 +35,10 @@ All notable changes to this project will be documented in this file. Dates are d
 ##### Performance
 
 - perf: a day's hour rows are derived once and built once per render, not once per resource. Building the columns of a 500-resource week went from 54 ms (UTC) and 203 ms (New York zone) on 3.2.1 to 4.1 ms and 6.6 ms, measured with `packages/calendar/scripts/bench-day-hours.tsx` ([`#354`](https://github.com/kcsujeet/ilamy-calendar/pull/354))
-- perf: PLACEHOLDER, row pipeline: per-row event pipeline work (PR not opened yet; fill in the PR number and the measured before and after, or delete this line)
-- perf: PLACEHOLDER, layout engine: layout engine work (PR not opened yet; fill in the PR number and the measured before and after, or delete this line)
+- perf: a visible range's events are processed once per render and bucketed by resource and column in one pass, instead of once per resource row, and recurrence overrides are grouped by series once. 500 resource rows with 5,200 events in 200 series: 1,516 ms to 4.7 ms in a benchmark ([`#357`](https://github.com/kcsujeet/ilamy-calendar/pull/357))
+- perf: events are placed by binary search over column start times measured once per layout, with no date object per event. A 100-row resource month in the New York zone lays out in 137 ms, down from 1,051 ms on 3.2.1 ([`#358`](https://github.com/kcsujeet/ilamy-calendar/pull/358))
+- perf: measured in Chromium on a 2,000-event month against 3.2.1, at the 90th percentile: next/previous 310 to 43 ms, opening the event form 328 to 52 ms, dropping an event 670 to 127 ms, and first render 464 to 195 ms (median). A recurring month drops from 911 to 72 ms. Dragging stays under 10 ms of script per pointer step ([`#357`](https://github.com/kcsujeet/ilamy-calendar/pull/357), [`#358`](https://github.com/kcsujeet/ilamy-calendar/pull/358))
+- perf: an event bar is one drag source for moving and for resizing either edge; a press on a resize handle resizes it ([`#359`](https://github.com/kcsujeet/ilamy-calendar/pull/359)). A 500-event week is close to 3.2.1 rather than faster (next/previous 46 to 53 ms at the 90th percentile), because every resizable bar now draws its resize handles
 
 ##### Docs
 
@@ -45,7 +47,7 @@ All notable changes to this project will be documented in this file. Dates are d
 
 ##### Internal
 
-- chore: the core bundle (`dist/index.js` plus the chunks it imports) grows about 15.7% gzipped over 3.2.1, 42.1 KB to 48.7 KB, for the features above
+- chore: the core bundle (`dist/index.js` plus the chunks it imports) grows about 20.7% gzipped over 3.2.1, 42.1 KB to 50.8 KB, for the features and performance work above
 - chore: the e2e harness takes its port from `E2E_PORT` so several worktrees can run it at once ([`#336`](https://github.com/kcsujeet/ilamy-calendar/pull/336))
 
 #### [v3.2.1](https://github.com/kcsujeet/ilamy-calendar/compare/v3.2.0...v3.2.1)

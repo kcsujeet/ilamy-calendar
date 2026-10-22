@@ -20,7 +20,7 @@ across.
 
 | Release | Kind | Theme | Status |
 |---|---|---|---|
-| 3.3 | additive minor | Editing, time axis, formats, display toggles, async data, `ref` API, deprecations and migration docs | Built in the open PR stack #335-#356; release tasks in this PR |
+| 3.3 | additive minor | Editing, time axis, formats, display toggles, async data, `ref` API, deprecations and migration docs | Built in the open PR stack #335-#359; release tasks in this PR |
 | 4.0 | breaking major | Temporal date core, ISO/`Date` public dates, smaller core, standard defaults, removals | Planned |
 | 4.1 | additive minor | Scheduling rules and the drag ecosystem; plugin-contract hooks land with their first plugin | Planned |
 | 4.2 | additive minor | Scheduler (resource hierarchy, columns, ordering, timeline, virtualisation) | Planned |
@@ -111,7 +111,7 @@ e2e spec through that plugin. No hook is added to the contract ahead of a plugin
 - **Bundle budget:** measured on the core closure, that is `dist/index.js` plus every chunk it
   imports, gzipped, never on the entry file alone. Report it before and after each feature;
   core growth over 2% for one feature needs a stated reason. Plugins are measured separately.
-  3.3 grew the core closure by about 15.7% (42.1 KB to 48.7 KB gzip); that is accepted for the
+  3.3 grew the core closure by about 20.7% (42.1 KB to 50.8 KB gzip); that is accepted for the
   features it buys, and the core shrinks in 4.0 through the planned plugin moves (D7).
   Lazy-loading features behind new entry points was considered and rejected: 3 to 4 KB does not
   justify a split public API.
@@ -214,7 +214,7 @@ Mostly what current users have asked for: kcsujeet/ilamy-calendar#93 (resize),
 kcsujeet/ilamy-calendar#101 (15-minute snapping in resource views), #7, #40, #50, #86, #107,
 #138 (visible hours and slot options).
 
-Status: every PR below is an open, stacked PR (#335 to #356) awaiting the owner's merge;
+Status: every PR below is an open, stacked PR (#335 to #359) awaiting the owner's merge;
 "Shipped" means built, reviewed and verified in the stack.
 
 | # | Feature | Placement | PR | Notes |
@@ -233,7 +233,12 @@ Status: every PR below is an open, stacked PR (#335 to #356) awaiting the owner'
 
 Performance work in the stack: #354 derives a day's hour rows once and builds them once per
 render (a 500-resource week went from seconds to about 4 to 7 ms; `scripts/bench-day-hours.tsx`
-exits 1 over budget). The row-pipeline and layout-engine performance PRs are still in review.
+exits 1 over budget, `bun run bench:day-hours`). #357 processes a range's events once and buckets
+them by resource and column; #358 places events by binary search over column start times; #359
+makes each bar one drag source for move and resize. Measured against 3.2.1 on a 2,000-event month
+(Chromium, 90th percentile): next/previous 310 to 43 ms, open form 328 to 52 ms, drop 670 to
+127 ms. A 500-event week stays close to 3.2.1 (next/previous 46 to 53 ms), the cost of drawing
+resize handles, and was accepted.
 
 **Release tasks of 3.3** (they ship in 3.3, not as separate features):
 

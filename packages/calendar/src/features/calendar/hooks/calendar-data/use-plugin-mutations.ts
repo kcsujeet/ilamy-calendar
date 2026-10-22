@@ -6,6 +6,7 @@ import {
 	dispatchMutationResult,
 	type MutationCallbacks,
 	toMutationResult,
+	toUpdateDelta,
 } from './event-changes'
 
 interface PluginMutationsParams extends MutationCallbacks {
@@ -59,10 +60,11 @@ export const usePluginMutations = ({
 				currentEvents,
 				scope,
 			})
-			const origin: ChangeOrigin = { action: 'update', event, scope }
 			const updatedEvent = { ...event, ...updates }
+			const delta = toUpdateDelta(event, updatedEvent)
+			const origin: ChangeOrigin = { action: 'update', event, scope, delta }
 			const mutationResult = toMutationResult(editResult, origin, updatedEvent)
-			dispatchMutationResult(mutationResult, origin, callbacks)
+			dispatchMutationResult(mutationResult, origin, callbacks, currentEvents)
 		},
 		[currentEvents, pluginRuntime, callbacks]
 	)
@@ -76,7 +78,7 @@ export const usePluginMutations = ({
 			const deleteResult = manager.applyDelete({ event, currentEvents, scope })
 			const origin: ChangeOrigin = { action: 'delete', event, scope }
 			const mutationResult = toMutationResult(deleteResult, origin, event)
-			dispatchMutationResult(mutationResult, origin, callbacks)
+			dispatchMutationResult(mutationResult, origin, callbacks, currentEvents)
 		},
 		[currentEvents, pluginRuntime, callbacks]
 	)

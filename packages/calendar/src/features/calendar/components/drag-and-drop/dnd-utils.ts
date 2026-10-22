@@ -160,12 +160,22 @@ export const getUpdatedEvent = (
 		active.data.current as { sourceResourceId?: ResourceId } | undefined
 	)?.sourceResourceId
 
-	// Update the event with new times and resource if changed
-	const updates = {
-		start,
-		end,
-		...getResourceUpdates(activeEvent, sourceResourceId, resourceId),
-		allDay,
+	const resourceUpdates = getResourceUpdates(
+		activeEvent,
+		sourceResourceId,
+		resourceId
+	)
+	const isSameSpan =
+		start.isSame(activeEvent.start) && end.isSame(activeEvent.end)
+	const isSameKind = allDay === Boolean(activeEvent.allDay)
+	const isSameResource = Object.keys(resourceUpdates).length === 0
+	// A drop that changes nothing commits nothing, so no callback fires:
+	// FullCalendar fires no `eventChange` for it (`_noEventDrop`,
+	// EventDragging.ts:374, v7.1.1).
+	if (isSameSpan && isSameKind && isSameResource) {
+		return null
 	}
+
+	const updates = { start, end, ...resourceUpdates, allDay }
 	return { activeEvent, updates }
 }

@@ -36,7 +36,9 @@ Every member of `IlamyPlugin` except `name` is optional. A plugin implements onl
 transformEvents?: (events: CalendarEvent[], range: PluginDateRange) => CalendarEvent[]
 ```
 
-Called once per render cycle. The output of each plugin is fed to the next one (sequential chain). Use it to expand, filter, or decorate events before they are displayed.
+Called once per render cycle. The output of each plugin is fed to the next one (sequential chain).
+
+**`transformEvents` must be a pure function of `(events, range)`.** The host caches each range's result and recomputes it only when the stored events or the plugin list change, so one render asks once per range however many resource rows read it. A plugin that reads a clock, a random value or any state outside its arguments gets a stale answer until one of those two changes. Do not mutate `events` or its items, and do not keep the array you return: the host hands it (frozen in a development build) to every reader. Use it to expand, filter, or decorate events before they are displayed.
 
 - **Expand** — generate in-range instances from a base event (e.g. recurrence expansion).
 - **Filter** — remove events based on custom business rules.

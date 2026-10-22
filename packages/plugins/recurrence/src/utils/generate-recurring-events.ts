@@ -152,6 +152,41 @@ const getOccurrenceInstant = (
 	return instant
 }
 
+const overridesByEvents = new WeakMap<
+	CalendarEvent[],
+	Map<string, CalendarEvent[]>
+>()
+
+/**
+ * Every override (a row with a RECURRENCE-ID) grouped by the series it
+ * belongs to. Filtering the whole list per series made an expansion
+ * O(series x events); this is one pass per list, shared by every series and
+ * every range asked of it.
+ */
+const getOverridesBySeries = (
+	events: CalendarEvent[]
+): Map<string, CalendarEvent[]> => {
+	const known = overridesByEvents.get(events)
+	if (known) {
+		return known
+	}
+	const overridesBySeries = new Map<string, CalendarEvent[]>()
+	for (const event of events) {
+		if (!event.recurrenceId) {
+			continue
+		}
+		const seriesUid = getEventParentUID(event)
+		const seriesOverrides = overridesBySeries.get(seriesUid)
+		if (seriesOverrides) {
+			seriesOverrides.push(event)
+		} else {
+			overridesBySeries.set(seriesUid, [event])
+		}
+	}
+	overridesByEvents.set(events, overridesBySeries)
+	return overridesBySeries
+}
+
 export const generateRecurringEvents = ({
 	event,
 	currentEvents,
@@ -186,11 +221,7 @@ export const generateRecurringEvents = ({
 		})
 
 		const parentUid = getEventParentUID(event)
-		const overrides = currentEvents.filter((candidate) => {
-			const isOverride = Boolean(candidate.recurrenceId)
-			const belongsToSeries = getEventParentUID(candidate) === parentUid
-			return isOverride && belongsToSeries
-		})
+		const overrides = getOverridesBySeries(currentEvents).get(parentUid) ?? []
 		// `isSame` with no unit compares instants, so a set of instants answers
 		// the same question without re-parsing every RECURRENCE-ID per occurrence.
 		const overriddenInstants = new Set<number>()

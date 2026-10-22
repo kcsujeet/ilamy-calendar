@@ -587,8 +587,9 @@ describe('YearView', () => {
  * a bound would drift upward unnoticed, and wall-clock timing is too noisy on
  * shared CI runners to gate on.
  *
- * Four is two queries per render (the engine's own view-range memo, plus the
- * year grid) across the provider's two render passes. It was 1034.
+ * Two is one query per range (the engine's own view-range memo, plus the
+ * year grid). The provider's second render pass is answered from the
+ * range cache in `useEventStore`, which is why it is two, not four. It was 1034.
  */
 describe('YearView query count', () => {
 	beforeEach(() => {
@@ -614,7 +615,7 @@ describe('YearView query count', () => {
 			events: createTestEvents(year),
 			initialDate: dayjs(`${year}-01-15`),
 		})
-		expect(getQueryCount()).toBe(4)
+		expect(getQueryCount()).toBe(2)
 	})
 
 	test('does not scale queries with the number of mini-calendar cells', () => {
@@ -623,7 +624,7 @@ describe('YearView query count', () => {
 			events: [],
 			initialDate: dayjs(`${year}-06-15`),
 		})
-		expect(getQueryCount()).toBe(4)
+		expect(getQueryCount()).toBe(2)
 	})
 })
 

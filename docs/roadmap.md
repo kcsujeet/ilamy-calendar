@@ -338,6 +338,10 @@ settled.
 - **D10 — `onDateChange` / `currentRange` range.** 3.x leaves the range as it was before
   `hiddenDays` and `weekends` existed, so no consumer's range changes. Report the range trimmed
   to the drawn days in 4.0? Open for 4.0.
+- **D11 — Month cells report `allDay`.** 3.x reports `allDay: false` for a month click or
+  drag-to-create selection; FullCalendar's day grid reports `true` (`DayGridRows.tsx:256`,
+  v7.1.1). Changing it changes `onCellClick` and the form it opens, so it waits for 4.0.
+  Make month cells all-day in 4.0? Open for 4.0.
 
 ## Checklist mapping
 

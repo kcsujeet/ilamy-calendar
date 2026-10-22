@@ -4,7 +4,7 @@ import { type ReactNode, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useDragGesture } from '../hooks/use-drag-gesture'
 import type { DragToCreateOptions } from '../types'
-import { readCell } from '../utils/read-cell'
+import { cellElementAt, readCell } from '../utils/read-cell'
 import { intersectRect, type Rect, unionRect } from '../utils/rect'
 import { computeRange, isSameRegion } from '../utils/selection'
 import {
@@ -116,6 +116,8 @@ export function DragToCreateProvider({
 
 	const commit = (startCell: SnappedCell, lastCell: SnappedCell) => {
 		const range = computeRange(startCell, lastCell)
+		// The cell attribute is always a string, but ids are `string | number`:
+		// hand the form the resource's own id, not the attribute's text.
 		const resource = resources.find(
 			(item: Resource) => String(item.id) === range.resourceId
 		)
@@ -132,7 +134,7 @@ export function DragToCreateProvider({
 				start: range.start,
 				end: range.end,
 				allDay: range.allDay,
-				resourceId: range.resourceId,
+				resourceId: resource?.id,
 			})
 		}
 	}
@@ -154,10 +156,7 @@ export function DragToCreateProvider({
 			setMirror(computeMirror(startCell, startCell))
 		},
 		onMove: (point, startCell) => {
-			const candidate = readSnappedCell(
-				document.elementFromPoint(point.clientX, point.clientY),
-				point
-			)
+			const candidate = readSnappedCell(cellElementAt(point), point)
 			if (candidate && isSameRegion(startCell, candidate)) {
 				lastCellRef.current = candidate
 			}

@@ -146,11 +146,20 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 		}
 
 		// Swallow the click synthesized after a drag so the press target's own click
-		// handler doesn't also fire.
+		// handler doesn't also fire. A drag that is cancelled and then released in
+		// the press cell ends in that click too, so cancelling arms this as well.
+		// The next press disarms it, so it can never swallow a later real click
+		// (a cancel by pointercancel or blur is followed by no click at all).
+		const disarmClickSuppression = () => {
+			window.removeEventListener('click', suppressClickOnce, { capture: true })
+		}
 		const suppressClickOnce = (event: MouseEvent) => {
 			event.stopImmediatePropagation()
 			event.preventDefault()
-			window.removeEventListener('click', suppressClickOnce, { capture: true })
+			disarmClickSuppression()
+		}
+		const armClickSuppression = () => {
+			window.addEventListener('click', suppressClickOnce, { capture: true })
 		}
 
 		// Tear down the current gesture's listeners/timer/locks (no callback).
@@ -167,7 +176,11 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 		// Abort an in-progress or pending gesture (Escape, blur, cancel, swipe).
 		const cancel = () => {
 			const wasPending = gestureRef.current !== null
+			const wasActive = gestureRef.current?.active === true
 			teardown()
+			if (wasActive) {
+				armClickSuppression()
+			}
 			if (wasPending) {
 				optionsRef.current.onCancel?.()
 			}
@@ -188,6 +201,7 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 		}
 
 		const onPointerDown = (event: PointerEvent) => {
+			disarmClickSuppression()
 			if (event.button !== 0 || !event.isPrimary) {
 				return
 			}
@@ -271,7 +285,7 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 				teardown()
 				return
 			}
-			window.addEventListener('click', suppressClickOnce, { capture: true })
+			armClickSuppression()
 			const { payload } = gesture
 			teardown()
 			optionsRef.current.onEnd(payload)
@@ -296,7 +310,7 @@ export function useDragGesture<T>(options: UseDragGestureOptions<T>): void {
 			window.removeEventListener('pointercancel', cancel)
 			window.removeEventListener('blur', cancel)
 			window.removeEventListener('keydown', onKeyDown)
-			window.removeEventListener('click', suppressClickOnce, { capture: true })
+			disarmClickSuppression()
 			window.removeEventListener('touchmove', preventTouchScroll)
 			clearLongPress()
 			stopAutoScroll()

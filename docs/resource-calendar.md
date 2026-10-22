@@ -409,6 +409,10 @@ const crossResourceEvent: CalendarEvent = {
 }
 ```
 
+Editing a cross-resource event through the event form leaves `resourceIds` exactly as
+it was and does not add a `resourceId`: the event belongs to every listed resource, and
+the form has no single room to show for it.
+
 ### Visual Representation
 
 Cross-resource events are displayed across all assigned resource rows:

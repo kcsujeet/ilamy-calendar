@@ -1,5 +1,6 @@
 import {
 	type CalendarEvent,
+	type CellInfo,
 	dayjs,
 	type EventsChange,
 	type EventsFetchInfo,
@@ -39,6 +40,26 @@ const PLUGINS = {
 } as const
 
 type PluginName = keyof typeof PLUGINS
+
+interface LoggedSelection {
+	start: string
+	end: string
+	allDay: boolean | null
+	resourceId: string | number | null
+}
+
+const recordSelection = (selection: CellInfo): void => {
+	const logged = window as unknown as { __selectLog?: LoggedSelection[] }
+	logged.__selectLog = [
+		...(logged.__selectLog ?? []),
+		{
+			start: selection.start.toISOString(),
+			end: selection.end.toISOString(),
+			allDay: selection.allDay ?? null,
+			resourceId: selection.resource?.id ?? null,
+		},
+	]
+}
 
 const isPluginName = (value: string): value is PluginName =>
 	Object.hasOwn(PLUGINS, value)
@@ -97,9 +118,17 @@ export const App = () => {
 	if (unknownPlugin !== undefined) {
 		return <Problem>Unknown plugin: {unknownPlugin}</Problem>
 	}
+	// `onSelect=log` records what drag-to-create hands a consumer's `onSelect`
+	// in `window.__selectLog`, so a spec can read the CellInfo it reports.
+	const logsSelections = params.get('onSelect') === 'log'
 	const plugins: IlamyPlugin[] = pluginNames
 		.filter(isPluginName)
-		.map((name) => PLUGINS[name]())
+		.map((name) => {
+			if (name === 'drag-to-create' && logsSelections) {
+				return dragToCreatePlugin({ onSelect: recordSelection })
+			}
+			return PLUGINS[name]()
+		})
 
 	// Widened from the `as const` literal so optional keys are readable here.
 	const scenario: Scenario = scenarios[scenarioName]
@@ -318,6 +347,7 @@ const Harness: React.FC<HarnessProps> = ({
 		start: event.start.toISOString(),
 		end: event.end.toISOString(),
 		resourceId: event.resourceId ?? null,
+		resourceIds: event.resourceIds ?? null,
 		allDay: Boolean(event.allDay),
 	}))
 

@@ -36,7 +36,8 @@ With no options, a completed drag opens the event form with `start`, `end`, `all
 - **Auto-scroll**: holding the pointer near an edge of the scroll area scrolls it so the selection can extend past what is currently visible. On a resource calendar the scroll is locked to the axis the resources lay out on, so a drag never scrolls across resources.
 - **Single region**: a selection never mixes all-day and timed cells and never spans resources. A cross-day timed drag becomes a multi-day timed range; month and all-day drags span days.
 - **Snapping**: in an hour grid the selection snaps to the calendar's `snapDuration` (by default the slot), so with `slotDuration={60}` and `snapDuration={15}` a drag from a quarter past one to the half hour ends on the quarter hours under the pointer. This holds in the vertical time grid and in the horizontal resource timeline.
-- Pressing **Escape**, or the window losing focus, cancels an in-progress selection.
+- **Event bars**: pressing a bar drags the event, never starts a selection. Releasing a selection over a bar ends it in the cell under the bar.
+- Pressing **Escape**, or the window losing focus, cancels an in-progress selection, and releasing the pointer afterwards opens nothing.
 
 ## Options
 
@@ -86,7 +87,7 @@ interface CellInfo {
   start: Dayjs;        // start of the selected range
   end: Dayjs;          // end of the selected range
   resource?: Resource; // the resource on a resource calendar; undefined otherwise
-  allDay?: boolean;    // true for an all-day / month selection
+  allDay?: boolean;    // true for a selection in the all-day row; false in the time grid and in month
 }
 ```
 

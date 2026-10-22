@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'bun:test'
+import { afterEach, describe, expect, it } from 'bun:test'
 import dayjs from '@ilamy/utils/dayjs'
-import { readCell } from './read-cell'
+import { cellElementAt, readCell } from './read-cell'
 
 const makeCell = (attrs: Record<string, string>): HTMLElement => {
 	const el = document.createElement('div')
@@ -163,5 +163,33 @@ describe('readCell', () => {
 			expect(result?.start.toISOString()).toBe('2026-06-01T03:00:00.000Z')
 			expect(result?.end.toISOString()).toBe('2026-06-30T02:59:00.000Z')
 		})
+	})
+})
+
+describe('cellElementAt', () => {
+	const originalElementsFromPoint = document.elementsFromPoint
+	afterEach(() => {
+		document.elementsFromPoint = originalElementsFromPoint
+	})
+
+	const stubElementsFromPoint = (stack: Element[]) => {
+		document.elementsFromPoint = () => stack
+	}
+
+	// FullCalendar finds the cell under the pointer from the cells' rectangles,
+	// so an event bar drawn over the cell never hides it (HitDragging.queryHit,
+	// v7.1.1 interaction/src/interactions/HitDragging.ts:181).
+	it('finds the cell beneath an event bar drawn over it', () => {
+		const bar = makeCell({ 'data-testid': 'bar' })
+		const cell = makeCell({ 'data-start': '2025-01-01T09:00:00.000Z' })
+		stubElementsFromPoint([bar, cell, document.body])
+
+		expect(cellElementAt({ clientX: 1, clientY: 1 })).toBe(cell)
+	})
+
+	it('returns null when no cell lies under the point', () => {
+		stubElementsFromPoint([makeCell({}), document.body])
+
+		expect(cellElementAt({ clientX: 1, clientY: 1 })).toBeNull()
 	})
 })

@@ -94,7 +94,10 @@ read the columns rather than counting days from the first one:
   hidden day (the segment's `isStart` / `isEnd`, as in FullCalendar's
   `DaySeriesModel.sliceRange`, v7.1.1). An event wholly on hidden days has no
   column and draws nothing. Hour grids are untouched: a hidden day is a missing
-  day group there, never a gap inside one.
+  day group there, never a gap inside one. A day grid also clusters overlapping
+  events by the rows they cover, not by clock time (`clusterOverlappingDayRows`
+  in `layout/vertical.ts`): a 09:00 and a 14:00 event on one day share a row, so
+  they are laid out together, layered, not drawn on top of each other.
 - **The grab point.** A bar over a hidden day is drawn as one column per visible
   day, so a drag reads the pointer's fraction of the bar's width as a fraction of
   those columns (`DragSegment.hiddenDays`, `utils/grab-offset.ts`).

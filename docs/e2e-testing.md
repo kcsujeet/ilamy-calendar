@@ -142,7 +142,7 @@ selectors have one home. A markup change breaks one page object rather than
 twenty specs.
 
 `gotoScenario` takes the scenario, view, orientation, `timezone` (the `tz`
-parameter), `date`, `now` (the pinned clock, `PINNED_NOW` by default),
+parameter; `'none'` leaves the calendar's `timezone` prop unset, so it falls back to the browser's zone), `date`, `now` (the pinned clock, `PINNED_NOW` by default),
 `plugins` and any other setting as a query parameter.
 
 The harness behaves like a consumer that controls `events`: it persists every

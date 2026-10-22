@@ -295,6 +295,47 @@ test.describe('the week view numbers the week drawn', () => {
 	})
 })
 
+/*
+ * 'local' week numbers come from dayjs `week()`, which read a zone whose offset
+ * is 0 in winter (London) an hour short after the spring change, so the rows
+ * from April on were a week early. They are US weeks here: Sunday start, week 1
+ * holds 1 January (29 Dec 2024 to 4 Jan 2025), so Sunday 30 March 2025 is
+ * week 14. The rows are the same with the zone on the prop and with none.
+ */
+test.describe('local week numbers of a London calendar', () => {
+	const monthRows = [
+		['2025-04-15T12:00:00.000Z', ['14', '15', '16', '17', '18', '19']],
+		['2025-10-15T12:00:00.000Z', ['40', '41', '42', '43', '44', '45']],
+	] as const
+
+	const setups = [
+		{ browserZone: 'UTC', timezone: 'Europe/London' },
+		{ browserZone: 'Europe/London', timezone: 'Europe/London' },
+		{ browserZone: 'Europe/London', timezone: 'none' },
+	]
+
+	for (const { browserZone, timezone } of setups) {
+		test.describe(`browser ${browserZone}, timezone ${timezone}`, () => {
+			test.use({ timezoneId: browserZone })
+
+			for (const [date, expected] of monthRows) {
+				test(`numbers the rows of ${date.slice(0, 7)}`, async ({ page }) => {
+					await gotoScenario(page, {
+						scenario: 'basic',
+						view: 'month',
+						timezone,
+						date,
+						settings: { weekNumbers: 'true', weekNumberCalculation: 'local' },
+					})
+					await expect(new MonthGrid(page).weekNumbers).toHaveText([
+						...expected,
+					])
+				})
+			}
+		})
+	}
+})
+
 test.describe('weekNumbers in the daily resource week', () => {
 	test('shows the week number once, in the resource header', async ({
 		page,

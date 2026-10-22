@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file. Dates are d
 
 ##### Fixes
 
+- fix: with a `locale` whose week starts on another day than Sunday (fr, de, ar) and the default `firstDayOfWeek`, the week view showed the previous week on a Sunday, the month grid started a week early so the month's last days were never drawn, and the event form's date picker offered no 30th or 31st. `firstDayOfWeek` now alone decides where a week starts, whatever the locale
 - fix: event bars in the time grids sat 4 to 7px below their time slot, because the bar's wrapper sat on the text baseline ([`#345`](https://github.com/kcsujeet/ilamy-calendar/pull/345))
 - fix: in the horizontal resource timeline, an event outside the visible hours was stretched to the edge column or drawn past the grid instead of being left out, and week-mode columns were measured from the first column. Events are now cut to the columns they overlap, end exclusive. Reachable before with `hideNonBusinessHours` ([`#346`](https://github.com/kcsujeet/ilamy-calendar/pull/346))
 - fix: on a daylight-saving change day, in a calendar zone or on a computer whose clocks change, hour rows could be an hour off, so events landed a row away and a drop did not land on the cell it was dropped on. Rows are now built from wall-clock times in the calendar's zone ([`#346`](https://github.com/kcsujeet/ilamy-calendar/pull/346))

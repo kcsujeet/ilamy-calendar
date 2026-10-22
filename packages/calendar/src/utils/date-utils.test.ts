@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import 'dayjs/locale/ar.js'
+import 'dayjs/locale/de.js'
+import 'dayjs/locale/fr.js'
 import {
 	getDayHours,
 	getMonthDays,
@@ -585,6 +588,51 @@ describe('getWeekDays', () => {
 			})
 		})
 	})
+})
+
+describe('week start under a dayjs locale', () => {
+	/*
+	 * `firstDayOfWeek` decides the first day of the week, whatever the dayjs
+	 * locale says. FullCalendar: `firstDay` is the locale's default and an
+	 * explicit value overrides it (https://fullcalendar.io/docs/firstDay).
+	 * fr and de start Monday, ar starts Saturday: `startOf('week').day(0)`
+	 * stepped back from the locale's start to the Sunday before it.
+	 */
+	const SUNDAY = 0
+	const MONDAY = 1
+	const dayNumbers = (days: Dayjs[]) => days.map((day) => day.date())
+
+	afterEach(() => {
+		dayjs.locale('en')
+	})
+
+	for (const locale of ['fr', 'de', 'ar']) {
+		it(`${locale}: Sunday-first week of a Sunday starts on that Sunday`, () => {
+			dayjs.locale(locale)
+			const sunday = dayjs('2025-03-09T12:00:00.000Z')
+			expect(dayNumbers(getWeekDays(sunday, SUNDAY))).toEqual([
+				9, 10, 11, 12, 13, 14, 15,
+			])
+		})
+
+		it(`${locale}: Monday-first week of a Sunday ends on that Sunday`, () => {
+			dayjs.locale(locale)
+			const sunday = dayjs('2025-03-09T12:00:00.000Z')
+			expect(dayNumbers(getWeekDays(sunday, MONDAY))).toEqual([
+				3, 4, 5, 6, 7, 8, 9,
+			])
+		})
+
+		it(`${locale}: the March 2025 month grid runs 23 Feb to 5 Apr`, () => {
+			dayjs.locale(locale)
+			const days = getMonthWeeks(
+				dayjs('2025-03-12T12:00:00.000Z'),
+				SUNDAY
+			).flat()
+			expect(days.at(0)?.format('YYYY-MM-DD')).toBe('2025-02-23')
+			expect(days.at(-1)?.format('YYYY-MM-DD')).toBe('2025-04-05')
+		})
+	}
 })
 
 describe('getMonthWeeks', () => {

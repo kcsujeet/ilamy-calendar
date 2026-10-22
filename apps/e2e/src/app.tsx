@@ -10,6 +10,11 @@ import {
 	type Resource,
 	useIlamyCalendarContext,
 } from '@ilamy/calendar'
+// A dayjs locale is data the consumer registers (docs/migration-v2.md), so the
+// harness registers the ones its specs name with `locale=`.
+import 'dayjs/locale/ar.js'
+import 'dayjs/locale/de.js'
+import 'dayjs/locale/fr.js'
 import { agendaPlugin } from '@ilamy/calendar-agenda'
 import { dragToCreatePlugin } from '@ilamy/calendar-drag-to-create'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'

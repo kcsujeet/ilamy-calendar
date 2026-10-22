@@ -170,6 +170,16 @@ When the `timezone` prop changes, the engine updates both `currentDate` and stor
 - Without `.tz()` on stored events, they would display in the original timezone forever
 - The same applies on **mount**, not just on change: the first render resolves dates before this effect runs, so the conversion is what puts them on the calendar's clock. That is the tradeoff for keeping the global write out of render, where it would also execute during SSR. See `docs/timezones.md`.
 
+## Measuring
+
+`apps/perf` is the runtime benchmark: it drives the same scenarios (a 2,000-event
+month, a 500-event week, resource days and weeks up to 500 rows, a recurring
+month, a year) on two builds and reports medians, p90s, noise and budget
+verdicts (RAIL and INP, see `docs/roadmap.md`), plus scripts that profile one
+interaction. Its README says how to run it and what each number means. It is not
+part of the e2e gate: a full run takes hours, and absolute numbers only mean
+something against a build measured on the same machine.
+
 ## Tips for Consumers
 
 ### Memoize Event Arrays

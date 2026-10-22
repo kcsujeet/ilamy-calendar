@@ -4,7 +4,11 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { builtInViews } from '@/features/calendar/components/views/built-in-views'
 import type { PluginRuntime } from '@/lib/plugins/types'
 import type { CalendarView } from '@/types'
-import { getMonthGridRange, skipHiddenDays } from '@/utils/date-utils'
+import {
+	getMonthGridRange,
+	skipHiddenDays,
+	withOwnOffset,
+} from '@/utils/date-utils'
 
 const calculateViewRange = (
 	date: Dayjs,
@@ -156,7 +160,9 @@ export const useCalendarNavigation = ({
 				amount: 1,
 				unit: spec?.navigationUnit ?? 'day',
 			}
-			const nextDate = date.add(direction * step.amount, step.unit)
+			const nextDate = withOwnOffset(
+				date.add(direction * step.amount, step.unit)
+			)
 			notifyDateChange(applyNav({ date: nextDate }, direction))
 		},
 		[applyNav, notifyDateChange, resolveViewSpec]

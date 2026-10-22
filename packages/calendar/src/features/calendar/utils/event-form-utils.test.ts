@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
 import type { BusinessHours } from '@ilamy/types'
+import dayjs from '@ilamy/utils/dayjs'
 import {
 	buildDateTime,
 	buildEndDateTime,
@@ -195,5 +196,90 @@ describe('event-form-utils', () => {
 			// Should take earliest start (10) and latest end (16 -> max 15:45)
 			expect(result).toEqual({ min: '10:00', max: '15:45' })
 		})
+	})
+})
+
+/**
+ * `.hour()` keeps the UTC offset of the date it is called on, so building a
+ * time on a day the clocks change from a `date` that sits before the change
+ * saved an instant an hour off. The form's `date` is what a picker hands over:
+ * a day's midnight, in the offset of that midnight. Run under TZ=UTC and
+ * TZ=America/New_York.
+ */
+describe('building times on the 2025 clock-change days', () => {
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	const clockChanges = [
+		{
+			zone: 'America/New_York',
+			changeDay: '2025-03-09',
+			nextDay: '2025-03-10',
+		},
+		{
+			zone: 'America/New_York',
+			changeDay: '2025-11-02',
+			nextDay: '2025-11-03',
+		},
+		{ zone: 'Europe/London', changeDay: '2025-03-30', nextDay: '2025-03-31' },
+		{ zone: 'Europe/London', changeDay: '2025-10-26', nextDay: '2025-10-27' },
+		{
+			zone: 'Australia/Sydney',
+			changeDay: '2025-04-06',
+			nextDay: '2025-04-07',
+		},
+		{
+			zone: 'Australia/Sydney',
+			changeDay: '2025-10-05',
+			nextDay: '2025-10-06',
+		},
+	]
+
+	for (const { zone, changeDay, nextDay } of clockChanges) {
+		describe(`${zone}, ${changeDay}`, () => {
+			const wallClock = (day: string, time: string) => {
+				dayjs.tz.setDefault(zone)
+				return dayjs(`${day}T${time}:00.000`)
+			}
+			const midnightOfChangeDay = () => wallClock(changeDay, '00:00').toDate()
+
+			test('9:00 is 9:00 on the day', () => {
+				const built = buildDateTime(midnightOfChangeDay(), '09:00', false)
+				expect(built.toISOString()).toBe(
+					wallClock(changeDay, '09:00').toISOString()
+				)
+			})
+
+			test('an all-day start is the midnight of the day', () => {
+				const built = buildDateTime(midnightOfChangeDay(), '09:00', true)
+				expect(built.toISOString()).toBe(
+					wallClock(changeDay, '00:00').toISOString()
+				)
+			})
+
+			test('an all-day end is the midnight of the next day', () => {
+				const built = buildEndDateTime(midnightOfChangeDay(), '23:59', true)
+				expect(built.toISOString()).toBe(
+					wallClock(nextDay, '00:00').toISOString()
+				)
+			})
+
+			test('a timed end is that time on the day', () => {
+				const built = buildEndDateTime(midnightOfChangeDay(), '17:30', false)
+				expect(built.toISOString()).toBe(
+					wallClock(changeDay, '17:30').toISOString()
+				)
+			})
+		})
+	}
+
+	// RFC 5545 section 3.3.5: a time the clocks skip is read with the offset in
+	// effect before the gap, so 02:30 on New York's spring-forward day is 03:30.
+	test('a time inside the skipped hour lands after the gap', () => {
+		dayjs.tz.setDefault('America/New_York')
+		const midnight = dayjs('2025-03-09T00:00:00.000').toDate()
+		const built = buildDateTime(midnight, '02:30', false)
+		expect(built.toISOString()).toBe('2025-03-09T07:30:00.000Z')
 	})
 })

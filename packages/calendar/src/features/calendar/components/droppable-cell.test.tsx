@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import {
@@ -22,7 +22,10 @@ interface RenderCellOptions {
 	onCellClick?: (info: CellInfo) => void
 	resources?: Resource[]
 	snapDuration?: SnapDuration
+	/** The calendar's `timezone` prop. */
+	timezone?: string
 	// Cell props
+	date?: Dayjs
 	hour?: number
 	minute?: number
 	slotDurationMinutes?: number
@@ -47,13 +50,14 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 			onCellClick={opts.onCellClick}
 			resources={opts.resources}
 			snapDuration={opts.snapDuration}
+			timezone={opts.timezone}
 		>
 			<DragPreviewContext.Provider value={opts.preview ?? null}>
 				<DroppableCell
 					allDay={opts.allDay}
 					axis={opts.axis}
 					data-testid="cell"
-					date={initialDate}
+					date={opts.date ?? initialDate}
 					hour={opts.hour}
 					isSubDivider={opts.isSubDivider}
 					minute={opts.minute}
@@ -324,6 +328,64 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 
 		expect(screen.getByTestId('cell').hasAttribute('data-all-day')).toBe(false)
 	})
+})
+
+/**
+ * The day view hands its cell the raw `currentDate`, which is any time of day.
+ * `.hour(0)` on it keeps that moment's UTC offset, so on the day the clocks
+ * spring forward the all-day cell started an hour before its own midnight:
+ * the previous day, and the form opened on it. The cell must report its own
+ * day, midnight to midnight in the calendar's zone, whatever time of day the
+ * date it was given carries.
+ */
+describe('DroppableCell all-day range across the 2025 clock changes', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	const clockChanges = [
+		{ zone: 'America/New_York', changeDay: '2025-03-09' },
+		{ zone: 'America/New_York', changeDay: '2025-11-02' },
+		{ zone: 'Europe/London', changeDay: '2025-03-30' },
+		{ zone: 'Europe/London', changeDay: '2025-10-26' },
+		{ zone: 'Australia/Sydney', changeDay: '2025-04-06' },
+		{ zone: 'Australia/Sydney', changeDay: '2025-10-05' },
+	]
+
+	for (const { zone, changeDay } of clockChanges) {
+		test(`each day within three of ${changeDay} in ${zone} runs midnight to midnight`, () => {
+			dayjs.tz.setDefault(zone)
+			const reported: string[][] = []
+			const expected: string[][] = []
+			for (const offset of [-3, -2, -1, 0, 1, 2, 3]) {
+				const dayKey = dayjs(`${changeDay}T12:00:00.000`)
+					.add(offset, 'day')
+					.format('YYYY-MM-DD')
+				const nextDayKey = dayjs(`${dayKey}T12:00:00.000`)
+					.add(1, 'day')
+					.format('YYYY-MM-DD')
+				expected.push([
+					dayjs(`${dayKey}T00:00:00.000`).toISOString(),
+					dayjs(`${nextDayKey}T00:00:00.000`).toISOString(),
+				])
+				cleanup()
+				renderCell({
+					date: dayjs(`${dayKey}T12:34:56.000`),
+					timezone: zone,
+				})
+				const cell = screen.getByTestId('cell')
+				reported.push([
+					cell.getAttribute('data-start') ?? '',
+					cell.getAttribute('data-end') ?? '',
+				])
+			}
+			expect(reported).toEqual(expected)
+		})
+	}
 })
 
 describe('DroppableCell getCellClassName', () => {

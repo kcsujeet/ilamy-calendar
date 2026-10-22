@@ -1,7 +1,13 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import type { CalendarEvent, Resource } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { EventForm } from './event-form'
 
@@ -201,7 +207,7 @@ describe('EventForm', () => {
 			expect(screen.getByTestId('time-picker-end-time')).toBeInTheDocument()
 		})
 
-		it('should set end time to 23:59 when all day is enabled', () => {
+		it('should show the time pickers again after All day is unticked', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
 			const allDayCheckbox = screen.getByLabelText('All day')
@@ -814,4 +820,335 @@ describe('EventForm', () => {
 			expect(endText).toMatch(/\d{1,2}:\d{2}/)
 		})
 	})
+})
+
+/**
+ * The schedule fields: the date and time pickers and the All day box, and what
+ * they save. `pickDay` and `pickTime` drive the real popovers.
+ */
+const pickDay = (which: 'start' | 'end', day: number) => {
+	const triggerIndex = which === 'start' ? 0 : 1
+	const dateButtons = screen
+		.getAllByRole('button')
+		.filter((button) =>
+			/^[A-Z][a-z]{2} \d+, \d{4}$/.test(button.textContent ?? '')
+		)
+	fireEvent.click(dateButtons.at(triggerIndex) as HTMLElement)
+	const dayButton = Array.from(
+		document.querySelectorAll(
+			'[data-slot="calendar"] td[data-outside="false"] button'
+		)
+	).find((button) => button.textContent === String(day))
+	fireEvent.click(dayButton as Element)
+}
+
+const pickTime = (which: 'start' | 'end', label: string) => {
+	fireEvent.click(screen.getByTestId(`time-picker-${which}-time`))
+	const option = screen
+		.getAllByRole('button')
+		.find((button) => button.textContent === label)
+	fireEvent.click(option as HTMLElement)
+}
+
+const dateButtonTexts = () =>
+	screen
+		.getAllByRole('button')
+		.map((button) => button.textContent ?? '')
+		.filter((text) => /^[A-Z][a-z]{2} \d+, \d{4}$/.test(text))
+
+const save = (onSave: ReturnType<typeof mock>) => {
+	fireEvent.click(screen.getByRole('button', { name: /update|create/i }))
+	return onSave.mock.calls.at(0)?.at(0) as CalendarEvent
+}
+
+describe('EventForm schedule consistency', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	const timedEvent: CalendarEvent = {
+		id: 'timed',
+		title: 'Timed',
+		start: dayjs('2025-08-15T10:00:00'),
+		end: dayjs('2025-08-15T11:00:00'),
+		allDay: false,
+	}
+
+	/**
+	 * RFC 5545 section 3.8.2.2: DTEND "MUST be later in time than" DTSTART. The
+	 * time handlers already hold that on one day; the date handlers have to as
+	 * well, or an earlier time chosen on a later day is left behind when the
+	 * date comes back.
+	 */
+	it('does not save an end before the start after End Date returns to the start day', () => {
+		const onUpdate = mock((_event: CalendarEvent) => {})
+		render(
+			<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
+				<EventForm
+					onClose={() => {}}
+					onUpdate={onUpdate}
+					selectedEvent={timedEvent}
+				/>
+			</CalendarProvider>
+		)
+		pickDay('end', 16)
+		pickTime('end', '9:00 AM')
+		pickDay('end', 15)
+
+		const saved = save(onUpdate)
+		expect(saved.start.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 09:00')
+		expect(saved.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 09:00')
+	})
+
+	it('does not save an end before the start after Start Date moves to the end day', () => {
+		const onUpdate = mock((_event: CalendarEvent) => {})
+		render(
+			<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
+				<EventForm
+					onClose={() => {}}
+					onUpdate={onUpdate}
+					selectedEvent={timedEvent}
+				/>
+			</CalendarProvider>
+		)
+		pickDay('end', 16)
+		pickTime('end', '9:00 AM')
+		pickDay('start', 16)
+
+		const saved = save(onUpdate)
+		expect(saved.start.format('YYYY-MM-DD HH:mm')).toBe('2025-08-16 10:00')
+		expect(saved.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-16 10:00')
+	})
+
+	it('leaves the times alone when the days differ', () => {
+		const onUpdate = mock((_event: CalendarEvent) => {})
+		render(
+			<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
+				<EventForm
+					onClose={() => {}}
+					onUpdate={onUpdate}
+					selectedEvent={timedEvent}
+				/>
+			</CalendarProvider>
+		)
+		pickDay('end', 16)
+		pickTime('end', '9:00 AM')
+
+		const saved = save(onUpdate)
+		expect(saved.start.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 10:00')
+		expect(saved.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-16 09:00')
+	})
+
+	/**
+	 * Ticking All day hides the times; unticking brings them back as they were.
+	 * Google Calendar does the same (its all-day toggle keeps the times and
+	 * shows them again, unverified against its source). It used to rewrite End
+	 * Time to 23:59.
+	 */
+	describe('the All day box', () => {
+		const renderForm = (selectedEvent: CalendarEvent) => {
+			const onSave = mock((_event: CalendarEvent) => {})
+			render(
+				<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
+					<EventForm
+						onClose={() => {}}
+						onUpdate={onSave}
+						selectedEvent={selectedEvent}
+					/>
+				</CalendarProvider>
+			)
+			return onSave
+		}
+
+		it('gives a timed event its times back when unticked', () => {
+			const onSave = renderForm({
+				...timedEvent,
+				start: dayjs('2025-08-15T13:00:00'),
+				end: dayjs('2025-08-15T14:00:00'),
+			})
+			fireEvent.click(screen.getByLabelText('All day'))
+			fireEvent.click(screen.getByLabelText('All day'))
+
+			expect(screen.getByTestId('time-picker-start-time')).toHaveTextContent(
+				'1:00 PM'
+			)
+			expect(screen.getByTestId('time-picker-end-time')).toHaveTextContent(
+				'2:00 PM'
+			)
+			const saved = save(onSave)
+			expect(saved.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 14:00')
+		})
+
+		it('shows a midnight-to-midnight range as that day, whole, when unticked', () => {
+			const onSave = renderForm({
+				...timedEvent,
+				start: dayjs('2025-08-15T00:00:00'),
+				end: dayjs('2025-08-16T00:00:00'),
+			})
+			fireEvent.click(screen.getByLabelText('All day'))
+			fireEvent.click(screen.getByLabelText('All day'))
+
+			expect(dateButtonTexts()).toEqual(['Aug 15, 2025', 'Aug 15, 2025'])
+			const saved = save(onSave)
+			expect(saved.start.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 00:00')
+			expect(saved.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 23:59')
+		})
+
+		it('shows an all-day event as its whole days when unticked', () => {
+			const onSave = renderForm({
+				...timedEvent,
+				allDay: true,
+				start: dayjs('2025-08-15T00:00:00'),
+				end: dayjs('2025-08-17T00:00:00'),
+			})
+			fireEvent.click(screen.getByLabelText('All day'))
+
+			const saved = save(onSave)
+			expect(saved.start.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 00:00')
+			expect(saved.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-16 23:59')
+		})
+
+		it('still steps a second tick back to the last covered day', () => {
+			const onSave = renderForm({
+				...timedEvent,
+				start: dayjs('2025-08-15T00:00:00'),
+				end: dayjs('2025-08-16T00:00:00'),
+			})
+			for (let ticks = 0; ticks < 3; ticks++) {
+				fireEvent.click(screen.getByLabelText('All day'))
+			}
+
+			const saved = save(onSave)
+			expect(saved.start.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 00:00')
+			expect(saved.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-16 00:00')
+		})
+	})
+})
+
+/**
+ * On a day the clocks change, `.hour()`, `.add()` and `.subtract()` keep the
+ * UTC offset of the date they start from, so the form read the right clock
+ * face but saved an instant an hour off: the previous day at midnight, or
+ * 10:00 for a picked 9:00. Every value it saves is built from the day and the
+ * clock time in the calendar's zone. Run under TZ=UTC and TZ=America/New_York.
+ */
+describe('EventForm across the 2025 clock changes', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	const clockChanges = [
+		{ zone: 'America/New_York', changeDay: '2025-03-09' },
+		{ zone: 'America/New_York', changeDay: '2025-11-02' },
+		{ zone: 'Europe/London', changeDay: '2025-03-30' },
+		{ zone: 'Europe/London', changeDay: '2025-10-26' },
+		{ zone: 'Australia/Sydney', changeDay: '2025-04-06' },
+		{ zone: 'Australia/Sydney', changeDay: '2025-10-05' },
+	]
+
+	const wallClock = (day: string, time: string) =>
+		dayjs(`${day}T${time}:00.000`)
+
+	const nextDay = (day: string) =>
+		wallClock(day, '12:00').add(1, 'day').format('YYYY-MM-DD')
+
+	const renderForm = (zone: string, selectedEvent: CalendarEvent) => {
+		dayjs.tz.setDefault(zone)
+		const onSave = mock((_event: CalendarEvent) => {})
+		render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				events={[]}
+				firstDayOfWeek={0}
+				timezone={zone}
+			>
+				<EventForm
+					onClose={() => {}}
+					onUpdate={onSave}
+					selectedEvent={selectedEvent}
+				/>
+			</CalendarProvider>
+		)
+		return onSave
+	}
+
+	const isoRange = (event: CalendarEvent) => [
+		event.start.toISOString(),
+		event.end.toISOString(),
+	]
+
+	for (const { zone, changeDay } of clockChanges) {
+		describe(`${zone}, ${changeDay}`, () => {
+			const dayAfter = () => nextDay(changeDay)
+			const allDayRange = () => [
+				wallClock(changeDay, '00:00').toISOString(),
+				wallClock(dayAfter(), '00:00').toISOString(),
+			]
+			const allDayEvent = (): CalendarEvent => {
+				dayjs.tz.setDefault(zone)
+				return {
+					id: 'all-day',
+					title: 'All day',
+					allDay: true,
+					start: wallClock(changeDay, '00:00'),
+					end: wallClock(dayAfter(), '00:00'),
+				}
+			}
+
+			it('re-saves an untouched one-day all-day event unchanged', () => {
+				const onSave = renderForm(zone, allDayEvent())
+
+				expect(isoRange(save(onSave))).toEqual(allDayRange())
+			})
+
+			it('shows a one-day all-day event on its own day', () => {
+				renderForm(zone, allDayEvent())
+
+				const shownDay = wallClock(changeDay, '12:00').format('ll')
+				expect(dateButtonTexts()).toEqual([shownDay, shownDay])
+			})
+
+			it('saves a month-cell range ticked All day as that one day', () => {
+				const onSave = renderForm(zone, {
+					...allDayEvent(),
+					allDay: false,
+				})
+				fireEvent.click(screen.getByLabelText('All day'))
+
+				expect(isoRange(save(onSave))).toEqual(allDayRange())
+			})
+
+			it('saves a timed event ticked All day from its own midnight', () => {
+				dayjs.tz.setDefault(zone)
+				const onSave = renderForm(zone, {
+					id: 'timed',
+					title: 'Timed',
+					start: wallClock(changeDay, '10:00'),
+					end: wallClock(changeDay, '11:00'),
+				})
+				fireEvent.click(screen.getByLabelText('All day'))
+
+				expect(isoRange(save(onSave))).toEqual(allDayRange())
+			})
+
+			it('saves a picked 9:00 AM as 9:00 on that day', () => {
+				dayjs.tz.setDefault(zone)
+				const onSave = renderForm(zone, {
+					id: 'timed',
+					title: 'Timed',
+					start: wallClock(changeDay, '00:00'),
+					end: wallClock(changeDay, '01:00'),
+				})
+				pickTime('start', '9:00 AM')
+
+				expect(save(onSave).start.toISOString()).toBe(
+					wallClock(changeDay, '09:00').toISOString()
+				)
+			})
+		})
+	}
 })

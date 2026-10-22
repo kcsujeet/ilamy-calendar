@@ -50,8 +50,10 @@ export function getWeekDays(
 		? startOfWeekFromCurrentDate.subtract(1, 'week')
 		: startOfWeekFromCurrentDate
 
+	// `add` keeps the receiver's offset, so a day after a clock change is an
+	// hour off as an instant; `startOf('day')` re-anchors it to its own midnight.
 	return Array.from({ length: 7 }, (_, dayIndex) =>
-		adjustedStartOfWeek.add(dayIndex, 'day')
+		adjustedStartOfWeek.add(dayIndex, 'day').startOf('day')
 	)
 }
 
@@ -84,7 +86,7 @@ export function getMonthDays(monthDate: Dayjs): Dayjs[] {
 	const daysInMonth = monthDate.daysInMonth()
 	const startOfMonth = monthDate.startOf('month')
 	return Array.from({ length: daysInMonth }, (_, i) =>
-		startOfMonth.add(i, 'day')
+		startOfMonth.add(i, 'day').startOf('day')
 	)
 }
 
@@ -104,6 +106,16 @@ export const withoutHiddenDays = (
 }
 
 /**
+ * `date` read again at its own UTC offset, with the same clock face. `add` and
+ * `subtract` keep the receiver's offset, so a date stepped across a clock
+ * change reads right but is an hour off as an instant; within the hour after
+ * midnight that instant is the previous day. A zoneless string is anchored in
+ * the calendar's zone on parse, which derives the offset for the new time.
+ */
+export const withOwnOffset = (date: Dayjs): Dayjs =>
+	dayjs(date.format('YYYY-MM-DDTHH:mm:ss.SSS'))
+
+/**
  * `date`, or the nearest day in `direction` that is not hidden. FullCalendar's
  * day view does the same when its range falls on hidden days: it steps past
  * them in the direction of travel (`skipHiddenDays`,
@@ -120,7 +132,7 @@ export const skipHiddenDays = (
 		if (!hiddenDays?.has(day.day())) {
 			return day
 		}
-		day = day.add(direction, 'day')
+		day = withOwnOffset(day.add(direction, 'day'))
 	}
 	return date
 }

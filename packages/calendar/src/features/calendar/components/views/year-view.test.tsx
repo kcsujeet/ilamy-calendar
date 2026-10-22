@@ -685,3 +685,58 @@ describe('YearView today highlight', () => {
 		).not.toContain(TODAY_CLASS)
 	})
 })
+
+/**
+ * A mini-calendar cell hands the day it shows to the calendar when clicked. On
+ * a day after a clock change that has to be the day's own midnight in the
+ * calendar's zone, not an hour off as an instant (previous day at midnight
+ * for a zone that springs forward).
+ */
+describe('YearView day click across the 2025 clock changes', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	const clockChanges = [
+		{ zone: 'America/New_York', changeDay: '2025-03-09' },
+		{ zone: 'America/New_York', changeDay: '2025-11-02' },
+		{ zone: 'Europe/London', changeDay: '2025-03-30' },
+		{ zone: 'Europe/London', changeDay: '2025-10-26' },
+		{ zone: 'Australia/Sydney', changeDay: '2025-04-06' },
+		{ zone: 'Australia/Sydney', changeDay: '2025-10-05' },
+	]
+
+	for (const { zone, changeDay } of clockChanges) {
+		test(`every day within three of ${changeDay} in ${zone} is handed over at its own midnight`, () => {
+			dayjs.tz.setDefault(zone)
+			const handedOver: string[] = []
+			const expected: string[] = []
+			render(
+				<CalendarProvider
+					dayMaxEvents={3}
+					events={[]}
+					firstDayOfWeek={0}
+					initialDate={dayjs(`${changeDay}T12:00:00.000`)}
+					locale="en"
+					onDateChange={(date) => handedOver.push(date.toISOString())}
+					timezone={zone}
+				>
+					<YearView />
+				</CalendarProvider>
+			)
+			for (const offset of [-3, -2, -1, 0, 1, 2, 3]) {
+				const dayKey = dayjs(`${changeDay}T12:00:00.000`)
+					.add(offset, 'day')
+					.format('YYYY-MM-DD')
+				const monthKey = dayKey.slice(0, 7)
+				expected.push(dayjs(`${dayKey}T00:00:00.000`).toISOString())
+				fireEvent.click(screen.getByTestId(`year-day-${monthKey}-${dayKey}`))
+			}
+			expect(handedOver).toEqual(expected)
+		}, 30_000)
+	}
+})

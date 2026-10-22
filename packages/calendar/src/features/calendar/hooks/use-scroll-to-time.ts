@@ -10,7 +10,10 @@ interface UseScrollToTimeOptions {
 	 * The hook scrolls this element directly so the parent page is not affected.
 	 */
 	viewportRef: RefObject<HTMLElement | null>
-	/** The hour to open on. A grid without hour rows or columns ignores it. */
+	/**
+	 * The time to open on, down to the second: `"08:30"` lands halfway into the
+	 * 08:00 row. A grid without hour rows or columns ignores it.
+	 */
 	scrollTime?: string
 	/**
 	 * Open on the cell holding the current moment instead, whenever that cell is
@@ -28,21 +31,35 @@ interface UseScrollToTimeOptions {
 	axis?: ScrollToTimeAxis
 }
 
-const HOUR_PATTERN = /^(\d{1,2})(?::\d{1,2})?(?::\d{1,2})?$/
+const TIME_PATTERN = /^(\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?$/
+const SECONDS_PER_HOUR = 3600
+const MS_PER_DAY = 24 * 60 * 60 * 1000
 const HOUR_SELECTOR = '[data-hour]'
 // Every droppable cell reports its own `[start, end)`. All-day cells are left
 // out: they contain now in every time grid, and sit outside its time area.
 const TIMED_CELL_SELECTOR = '[data-start]:not([data-all-day="true"])'
 
-const parseHour = (time: string): number | null => {
-	const match = HOUR_PATTERN.exec(time)
+interface ParsedTime {
+	hour: number
+	/** How far through the hour, from 0 up to but excluding 1. */
+	hourFraction: number
+}
+
+const parseTime = (time: string): ParsedTime | null => {
+	const match = TIME_PATTERN.exec(time)
 	const hourDigits = match?.at(1)
 	if (!hourDigits) {
 		return null
 	}
 	const hour = Number.parseInt(hourDigits, 10)
-	const isInRange = hour >= 0 && hour <= 23
-	return isInRange ? hour : null
+	const minute = Number.parseInt(match?.at(2) ?? '0', 10)
+	const second = Number.parseInt(match?.at(3) ?? '0', 10)
+	const isInRange = hour <= 23 && minute <= 59 && second <= 59
+	if (!isInRange) {
+		return null
+	}
+	const secondsIntoHour = minute * 60 + second
+	return { hour, hourFraction: secondsIntoHour / SECONDS_PER_HOUR }
 }
 
 const readRowHour = (row: HTMLElement): number =>
@@ -71,6 +88,12 @@ interface ScrollTarget {
 	target: HTMLElement
 	/** The first element of the time area; the target is lined up with it. */
 	origin: HTMLElement
+	/**
+	 * How far through the target to land, 0 up to but excluding 1. The exact
+	 * minute is a fraction of the row, as FullCalendar scrolls
+	 * (TimeGridLayout.tsx:285-296 at v7.1.1).
+	 */
+	fraction: number
 }
 
 // A missing attribute reads as `''`, which dayjs parses as invalid, so the cell
@@ -100,30 +123,39 @@ const findNowTarget = (viewport: HTMLElement): ScrollTarget | null => {
 	if (!origin || !target) {
 		return null
 	}
-	return { target, origin }
+	const { start, end } = readCellInterval(target)
+	const cellMs = end.diff(start)
+	// A whole-day cell is a column to bring into view, not a time to land in.
+	const isTimeCell = cellMs < MS_PER_DAY
+	const fraction = isTimeCell ? now.diff(start) / cellMs : 0
+	return { target, origin, fraction }
 }
 
 const findScrollTimeTarget = (
 	viewport: HTMLElement,
 	scrollTime: string | undefined
 ): ScrollTarget | null => {
-	const targetHour = scrollTime ? parseHour(scrollTime) : null
-	if (targetHour === null) {
+	const parsed = scrollTime ? parseTime(scrollTime) : null
+	if (parsed === null) {
 		return null
 	}
 	const rows = Array.from(viewport.querySelectorAll<HTMLElement>(HOUR_SELECTOR))
 	const origin = rows.at(0)
-	const target = findTargetRow(rows, targetHour)
+	const target = findTargetRow(rows, parsed.hour)
 	if (!origin || !target) {
 		return null
 	}
-	return { target, origin }
+	// A time outside the visible hours lands on the edge row, not inside it.
+	const isTargetHourVisible = readRowHour(target) === parsed.hour
+	const fraction = isTargetHourVisible ? parsed.hourFraction : 0
+	return { target, origin, fraction }
 }
 
 const scrollViewportToRow = (
 	viewport: HTMLElement,
 	targetRow: HTMLElement,
 	firstRow: HTMLElement,
+	fraction: number,
 	axis: ScrollToTimeAxis
 ) => {
 	// Use the first row as the reference for "starting position of the time
@@ -137,7 +169,8 @@ const scrollViewportToRow = (
 	const horizontalOffset = targetRect.left - firstRect.left
 	const verticalOffset = targetRect.top - firstRect.top
 	const offset = axis === 'horizontal' ? horizontalOffset : verticalOffset
-	scrollViewportAlong(viewport, axis, offset)
+	const extent = axis === 'horizontal' ? targetRect.width : targetRect.height
+	scrollViewportAlong(viewport, axis, offset + fraction * extent)
 }
 
 const scrollViewportAlong = (
@@ -168,6 +201,7 @@ const applyScroll = (
 			viewport,
 			scrollTarget.target,
 			scrollTarget.origin,
+			scrollTarget.fraction,
 			axis
 		)
 		return true

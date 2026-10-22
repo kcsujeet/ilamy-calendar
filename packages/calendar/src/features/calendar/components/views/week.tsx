@@ -21,6 +21,7 @@ import {
 	collectResourceBusinessHours,
 	getViewHours,
 } from '@/features/calendar/utils/view-hours'
+import { getWeekNumber } from '@/features/calendar/utils/week-number'
 import { getWeekDays, isToday } from '@/utils/date-utils'
 import { DayHeaderLabel } from './day-header-label'
 import {
@@ -48,13 +49,17 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 	date,
 	config,
 }) => {
-	const { t, selectDate, openEventForm } = useSmartCalendarContext((c) => ({
-		t: c.t,
-		selectDate: c.selectDate,
-		openEventForm: c.openEventForm,
-	}))
+	const { t, selectDate, openEventForm, weekNumbers, weekNumberCalculation } =
+		useSmartCalendarContext((c) => ({
+			t: c.t,
+			selectDate: c.selectDate,
+			openEventForm: c.openEventForm,
+			weekNumbers: c.weekNumbers,
+			weekNumberCalculation: c.weekNumberCalculation,
+		}))
 	const visibleDays = getVisibleDays(date, config)
-	const weekNumber = String(date.week())
+	const showsWeekNumber = weekNumbers !== false
+	const weekNumber = String(getWeekNumber(date, weekNumberCalculation))
 
 	return (
 		<div
@@ -69,20 +74,23 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 					STICKY_GUTTER_SHADOW
 				)}
 			>
-				<div className="flex flex-col items-center justify-center min-w-0 w-full">
-					<span className="text-muted-foreground text-xs truncate w-full text-center">
-						{t('week')}
-					</span>
-					{/* Same rule as the day numbers beside it: the word stays put and
-					    the number animates, so the fade plays on the one part that
-					    moved. */}
-					<AnimatedSection
-						className="font-medium truncate w-full text-center"
-						transitionKey={weekNumber}
-					>
-						{weekNumber}
-					</AnimatedSection>
-				</div>
+				{showsWeekNumber && (
+					<div className="flex flex-col items-center justify-center min-w-0 w-full">
+						<span className="text-muted-foreground text-xs truncate w-full text-center">
+							{t('week')}
+						</span>
+						{/* Same rule as the day numbers beside it: the word stays put and
+						    the number animates, so the fade plays on the one part that
+						    moved. */}
+						<AnimatedSection
+							className="font-medium truncate w-full text-center"
+							data-testid="week-number"
+							transitionKey={weekNumber}
+						>
+							{weekNumber}
+						</AnimatedSection>
+					</div>
+				)}
 			</div>
 
 			{/* Day header cells */}

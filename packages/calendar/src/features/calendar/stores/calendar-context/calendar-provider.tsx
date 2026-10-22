@@ -1,101 +1,27 @@
-import type {
-	BusinessHours,
-	CalendarEvent,
-	EventDropInfo,
-	EventsChange,
-	IlamyPlugin,
-	Resource,
-} from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import type { CalendarEvent } from '@ilamy/types'
 import type { FC, ReactNode } from 'react'
 import { useMemo } from 'react'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/config/constants'
-import type {
-	Translations,
-	TranslatorFunction,
-} from '@/config/translations/types'
-import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
-import type {
-	CalendarClassesOverride,
-	CellInfo,
-	DateRange,
-	EventSegment,
-	RenderCurrentTimeIndicatorProps,
-	SlotDuration,
-} from '@/features/calendar/types'
+import type { IlamyCalendarProps } from '@/features/calendar/types'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { composePluginProviders } from '@/lib/plugins/compose-plugin-providers'
-import type { CalendarView, TimeFormat } from '@/types'
 import { CalendarCellProvider } from '../calendar-cell-context/calendar-cell-provider'
 import { CalendarContext, type CalendarContextType } from './calendar-context'
 
-export interface CalendarProviderProps {
+/**
+ * The public props, with the three the provider receives already resolved:
+ * `events` as stored events, `firstDayOfWeek` as a day number and
+ * `hiddenDays` as a set of day numbers.
+ */
+export type CalendarProviderProps = Omit<
+	IlamyCalendarProps,
+	'events' | 'firstDayOfWeek' | 'hiddenDays'
+> & {
 	children: ReactNode
 	events?: CalendarEvent[]
 	firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
-	initialView?: CalendarView
-	initialDate?: Dayjs | Date | string
-	renderEvent?: (event: CalendarEvent, segment: EventSegment) => ReactNode
-	onEventClick?: (event: CalendarEvent) => void
-	onCellClick?: (info: CellInfo) => void
-	isCellDisabled?: (info: CellInfo) => boolean
-	getCellClassName?: (info: CellInfo) => string
-	onViewChange?: (view: CalendarView) => void
-	onEventAdd?: (event: CalendarEvent) => void
-	onEventUpdate?: (event: CalendarEvent) => void
-	onEventDelete?: (event: CalendarEvent) => void
-	onEventsChange?: (change: EventsChange) => void
-	onDateChange?: (date: Dayjs, range: DateRange) => void
-	locale?: string
-	timezone?: string
-	disableCellClick?: boolean
-	disableEventClick?: boolean
-	disableDragAndDrop?: boolean
-	editable?: boolean
-	eventStartEditable?: boolean
-	eventAllow?: (dropInfo: EventDropInfo, draggedEvent: CalendarEvent) => boolean
-	/** Max stacked events per day in horizontal grids; the engine defaults it. */
-	dayMaxEvents?: number
-	eventSpacing?: number
-	eventHeight?: number
-	stickyViewHeader?: boolean
-	viewHeaderClassName?: string
-	headerComponent?: ReactNode // Optional custom header component
-	headerClassName?: string // Optional custom header class
-	businessHours?: BusinessHours | BusinessHours[]
-	renderEventForm?: (props: EventFormProps) => ReactNode
-	onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
-	// Translation options - provide either translations object OR translator function
-	translations?: Translations
-	translator?: TranslatorFunction
-	timeFormat?: TimeFormat
-	slotHeaderFormat?: Intl.DateTimeFormatOptions
-	eventTimeFormat?: Intl.DateTimeFormatOptions
-	displayEventTime?: boolean
-	displayEventEnd?: boolean
-	dayHeaderFormat?: Intl.DateTimeFormatOptions
-	titleFormat?: Intl.DateTimeFormatOptions
-	classesOverride?: CalendarClassesOverride
-	renderCurrentTimeIndicator?: (
-		props: RenderCurrentTimeIndicatorProps
-	) => ReactNode
-	renderHour?: (date: Dayjs) => ReactNode
-	hideNonBusinessHours?: boolean
-	hideExportButton?: boolean
 	hiddenDays?: Set<number>
-	slotDuration?: SlotDuration
-	scrollTime?: string
-	scrollToNow?: boolean
-	plugins?: IlamyPlugin[]
-	/** The resource axis. Absent/empty → a regular calendar (no filtering, no resource columns). */
-	resources?: Resource[]
-	/** Custom render for resource header cells. */
-	renderResource?: (resource: Resource) => ReactNode
-	/** Resource arrangement preference. Only applies when `resources` is set. @default 'horizontal' */
-	orientation?: 'horizontal' | 'vertical'
-	/** Week-view granularity for resource weeks. @default 'hourly' */
-	weekViewGranularity?: 'hourly' | 'daily'
 }
 
 // Module constant, not a per-render `?? []`: keeps the engine's event store
@@ -159,6 +85,10 @@ const useCalendarContextValue = (
 		slotDuration = 60,
 		scrollTime,
 		scrollToNow,
+		allDaySlot = true,
+		nowIndicator = true,
+		weekNumbers,
+		weekNumberCalculation = 'local',
 		plugins,
 		resources,
 		renderResource,
@@ -249,6 +179,10 @@ const useCalendarContextValue = (
 			slotDuration,
 			scrollTime,
 			scrollToNow,
+			allDaySlot,
+			nowIndicator,
+			weekNumbers,
+			weekNumberCalculation,
 			renderResource,
 		}
 	}, [
@@ -290,6 +224,10 @@ const useCalendarContextValue = (
 		slotDuration,
 		scrollTime,
 		scrollToNow,
+		allDaySlot,
+		nowIndicator,
+		weekNumbers,
+		weekNumberCalculation,
 	])
 }
 

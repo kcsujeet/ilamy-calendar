@@ -303,6 +303,11 @@ export interface HorizontalRowSpec {
 	columns?: HorizontalCellSpec[]
 	className?: string
 	showDayNumber?: boolean
+	/**
+	 * Marks the row as one calendar week, so it shows its week number at its
+	 * start when the calendar's `weekNumbers` is `true`.
+	 */
+	showWeekNumber?: boolean
 	/** Resource-axis identity when the row belongs to one resource. */
 	resource?: Resource
 }

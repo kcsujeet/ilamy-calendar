@@ -117,6 +117,11 @@ export class MonthGrid extends CalendarPage {
 		return this.page.getByTestId(`horizontal-event-${eventId}`)
 	}
 
+	/** The week number of each row, when `weekNumbers` is on. */
+	get weekNumbers(): Locator {
+		return this.page.getByTestId('week-number')
+	}
+
 	/** The cell whose range starts on this date, e.g. '2025-03-12'. */
 	cellOn(date: string): Locator {
 		return this.page.locator(

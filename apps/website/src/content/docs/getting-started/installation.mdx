@@ -39,9 +39,9 @@ Get started with ilamy Calendar by installing it via your preferred package mana
 
 ilamy Calendar declares a few packages as **peer dependencies** so your app and the calendar share a single copy. This matters most for `dayjs`: the calendar's API uses `dayjs` objects (e.g. `CalendarEvent.start`), and date labels are localized through your app's `dayjs` instance. A shared copy means the `dayjs` locale you import in your app also applies to the calendar (no extra wiring).
 
-- `dayjs` (`^1.11.20`)
-- `react` and `react-dom` (`^19`)
-- `tailwindcss` (`^4`) and `tailwindcss-animate`
+- `dayjs` (`^1.11.23`)
+- `react` and `react-dom` (`^19.2.0`)
+- `tailwindcss` (`^4.2.2`) and `tailwindcss-animate` (`^1.0.7`)
 
 The install command above already adds `dayjs`. Your React and Tailwind setup typically provides the rest (`react`, `react-dom`, `tailwindcss`, `tailwindcss-animate`); install any that are missing.
 

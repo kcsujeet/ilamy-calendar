@@ -1,5 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
+import { useDateTimeFormatters } from '@/features/calendar/hooks/use-date-time-formatters'
 import { useGridAxis } from '@/features/calendar/stores/grid-axis-context'
 import {
 	getEventSurfaceClasses,
@@ -20,6 +21,8 @@ export function DefaultEventContent({
 	isTruncatedEnd,
 }: DefaultEventContentProps) {
 	const axis = useGridAxis()
+	const { formatEventTime } = useDateTimeFormatters()
+	const eventTimeText = formatEventTime(event)
 
 	// A stripe at `left-0`/`right-0` says "this span continues sideways", which
 	// is what a month row cuts along. A time column cuts along the other axis —
@@ -54,6 +57,9 @@ export function DefaultEventContent({
 					showEndMarker && 'pr-1'
 				)}
 			>
+				{eventTimeText && (
+					<span className="mr-1 font-normal">{eventTimeText}</span>
+				)}
 				{event.title}
 			</p>
 

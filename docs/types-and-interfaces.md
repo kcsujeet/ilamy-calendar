@@ -126,6 +126,12 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `translations` | `Translations` | — | Translation object |
 | `translator` | `TranslatorFunction` | — | Translator function |
 | `timeFormat` | `TimeFormat` | `'12-hour'` | Time display format |
+| `slotHeaderFormat` | `Intl.DateTimeFormatOptions` | - | Gutter labels, in the calendar's `locale` and `timezone`. a `timeFormat` you passed fills `hour12` when the options omit `hour12`/`hourCycle`; without one the locale decides. `renderHour` wins |
+| `eventTimeFormat` | `Intl.DateTimeFormatOptions` | - | Time on the event bar. Setting it shows the time unless `displayEventTime` is `false`. `renderEvent` wins |
+| `displayEventTime` | `boolean` | shown only when `eventTimeFormat` is set | Whether the default event bar shows a time. All-day events never do. FullCalendar defaults it on; flipping is a 4.0 candidate |
+| `displayEventEnd` | `boolean` | `false` | Whether the bar's time runs to the end (`09:30 – 10:30`) |
+| `dayHeaderFormat` | `Intl.DateTimeFormatOptions` | weekday over day number | When set, the formatted text is the whole day header (`{weekday:'long'}` gives "Wednesday", no number). Week, day, month and resource headers; not agenda |
+| `titleFormat` | `Intl.DateTimeFormatOptions` | per view | The toolbar title; a range is written with `formatRange` |
 | `businessHours` | `BusinessHours \| BusinessHours[]` | — | Working hours config |
 | `hideExportButton` | `boolean` | `false` | Hide the iCalendar export button in the default header (desktop and mobile) |
 | `hideNonBusinessHours` | `boolean` | `false` | Hide off-hours in day/week views |

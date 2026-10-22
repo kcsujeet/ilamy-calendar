@@ -351,6 +351,55 @@ export interface IlamyCalendarProps {
 	 */
 	timeFormat?: TimeFormat
 	/**
+	 * How the labels in the time gutter are written, as `Intl.DateTimeFormat`
+	 * options, formatted with the calendar's `locale` and `timezone`. When the
+	 * options carry neither `hour12` nor `hourCycle`, a `timeFormat` you passed
+	 * decides; without one, the locale does.
+	 * Unset keeps the built-in label. `renderHour` takes precedence.
+	 *
+	 * Only the `Intl.DateTimeFormatOptions` form is supported: no format
+	 * strings, no functions, and none of FullCalendar's extras (`meridiem`,
+	 * `omitZeroMinute`). Use `renderHour` for anything else.
+	 * (FullCalendar v7 calls this `slotHeaderFormat` too.)
+	 */
+	slotHeaderFormat?: Intl.DateTimeFormatOptions
+	/**
+	 * How the time on an event bar is written, as `Intl.DateTimeFormat`
+	 * options. Same rules as `slotHeaderFormat`. Setting it shows the time
+	 * unless `displayEventTime` is `false`. `renderEvent` takes precedence.
+	 */
+	eventTimeFormat?: Intl.DateTimeFormatOptions
+	/**
+	 * Whether the built-in event bar shows the event's time. All-day events
+	 * never do. Unset: shown only when `eventTimeFormat` is set, so existing
+	 * calendars look as they did. Shown with no `eventTimeFormat`, it reads
+	 * like "9:30 AM".
+	 *
+	 * FullCalendar defaults this to on; flipping it here is a 4.0 candidate.
+	 */
+	displayEventTime?: boolean
+	/**
+	 * Whether the time on an event bar runs to the end ("9:30 – 10:30").
+	 * Needs the time to be shown. FullCalendar defaults the end on when the
+	 * event has one; flipping it here is a 4.0 candidate.
+	 * @default false
+	 */
+	displayEventEnd?: boolean
+	/**
+	 * How a day header is written, as `Intl.DateTimeFormat` options. When set,
+	 * the formatted text is the whole header: `{ weekday: 'long' }` gives
+	 * "Wednesday" with no day number, and `{ weekday: 'short', day: 'numeric' }`
+	 * gives "Wed 12". Applies to the week, day, month and resource headers
+	 * (not the agenda plugin). Unset keeps the weekday over the day number.
+	 */
+	dayHeaderFormat?: Intl.DateTimeFormatOptions
+	/**
+	 * How the toolbar title is written, as `Intl.DateTimeFormat` options.
+	 * A range (week, custom window) is written with `formatRange`. Unset keeps
+	 * the built-in title for each view.
+	 */
+	titleFormat?: Intl.DateTimeFormatOptions
+	/**
 	 * Whether to hide non-business hours in Day and Week views.
 	 * Requires businessHours to be configured.
 	 * @default false

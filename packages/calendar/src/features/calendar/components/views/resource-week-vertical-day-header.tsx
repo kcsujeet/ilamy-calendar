@@ -1,14 +1,13 @@
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
-import { AnimatedDayLabel } from '@/components/animations/animated-day-label'
 import {
 	GUTTER_WIDTH,
 	STICKY_GUTTER_SHADOW,
 } from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
-import { isToday } from '@/utils/date-utils'
+import { DayHeaderLabel } from './day-header-label'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
 
 interface ResourceWeekVerticalDayHeaderProps {
@@ -36,7 +35,6 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 			{columns.map((col, index) => {
 				const day = col.day
 				if (!day) return null
-				const today = isToday(day)
 				// Keyed by position, not by date: the column heads the same weekday
 				// in every week, and only the number inside it changes.
 				const key = keys.listKey(
@@ -57,11 +55,7 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 						)}
 						key={key}
 					>
-						<AnimatedDayLabel
-							dayNumber={day.format('D')}
-							today={today}
-							weekday={day.format('ddd')}
-						/>
+						<DayHeaderLabel animated day={day} />
 					</div>
 				)
 			})}

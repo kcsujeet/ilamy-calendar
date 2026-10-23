@@ -1123,3 +1123,85 @@ describe('skipHiddenDays across a clock change', () => {
 		expect(settled.toISOString()).toBe('2025-03-07T05:30:00.000Z')
 	})
 })
+
+// Europe/London, Lisbon and Dublin read 0 in winter. With no `timezone` prop a
+// zoneless string went through `dayjs.tz()`, which turns a zero offset into a
+// UTC-flagged instance, so `add(1, 'day')` added 24 hours and `startOf('day')`
+// rounded in UTC. Each case runs on a machine in that zone with no calendar
+// zone, across the 2025 spring change (Sunday 30 March, 01:00 GMT to 02:00 BST).
+describe('day math on a machine whose winter offset is 0, no calendar zone', () => {
+	const MACHINE_ZONES = ['Europe/London', 'Europe/Lisbon', 'Europe/Dublin']
+
+	/** What `expression` gives on a machine in `machineZone`, as ISO strings. */
+	const isoOnMachineIn = (
+		machineZone: string,
+		expression: string
+	): string[] => {
+		const script = `
+			import dayjs from '@ilamy/utils/dayjs'
+			import { atTimeOfDay, getWeekDays, withOwnOffset } from '${import.meta.dir}/date-utils.ts'
+			const result = [${expression}].flat()
+			console.log(JSON.stringify(result.map((day) => day.toISOString())))
+		`
+		const child = Bun.spawnSync(['bun', '-e', script], {
+			env: { ...process.env, TZ: machineZone },
+		})
+		return JSON.parse(child.stdout.toString().trim())
+	}
+
+	it.each(MACHINE_ZONES)(
+		'atTimeOfDay builds midnight of the 30th at GMT and of the 31st at BST (%s)',
+		(machineZone) => {
+			const midnights = isoOnMachineIn(
+				machineZone,
+				`atTimeOfDay(dayjs('2025-03-30T12:00:00.000'), '00:00:00.000'),
+				 atTimeOfDay(dayjs('2025-03-31T12:00:00.000'), '00:00:00.000')`
+			)
+			expect(midnights).toEqual([
+				'2025-03-30T00:00:00.000Z',
+				'2025-03-30T23:00:00.000Z',
+			])
+		}
+	)
+
+	it.each(MACHINE_ZONES)(
+		'a day stepped across the change starts at its own midnight (%s)',
+		(machineZone) => {
+			const nextMidnight = isoOnMachineIn(
+				machineZone,
+				"dayjs('2025-03-30T00:00:00.000').add(1, 'day').startOf('day')"
+			)
+			expect(nextMidnight).toEqual(['2025-03-30T23:00:00.000Z'])
+		}
+	)
+
+	it.each(MACHINE_ZONES)(
+		'withOwnOffset keeps midnight of the 31st at BST (%s)',
+		(machineZone) => {
+			const settled = isoOnMachineIn(
+				machineZone,
+				"withOwnOffset(dayjs('2025-03-30T00:00:00.000').add(1, 'day'))"
+			)
+			expect(settled).toEqual(['2025-03-30T23:00:00.000Z'])
+		}
+	)
+
+	it.each(MACHINE_ZONES)(
+		'getWeekDays gives the week of the change one midnight per day (%s)',
+		(machineZone) => {
+			const weekStarts = isoOnMachineIn(
+				machineZone,
+				"getWeekDays(dayjs('2025-03-30T12:00:00.000'), 0)"
+			)
+			expect(weekStarts).toEqual([
+				'2025-03-30T00:00:00.000Z',
+				'2025-03-30T23:00:00.000Z',
+				'2025-03-31T23:00:00.000Z',
+				'2025-04-01T23:00:00.000Z',
+				'2025-04-02T23:00:00.000Z',
+				'2025-04-03T23:00:00.000Z',
+				'2025-04-04T23:00:00.000Z',
+			])
+		}
+	)
+})

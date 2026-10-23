@@ -32,6 +32,17 @@ depends on whether it carries an instant of its own:
 | `Date`, number, `Dayjs` | already an instant; only the display zone changes | — |
 | Unparseable | nothing; an invalid Dayjs comes back | `'not-a-date'` → `isValid() === false` |
 
+With no `timezone` prop an offset-less string is read by dayjs's own local parse,
+the machine's zone, and never by `dayjs.tz()`. `dayjs.tz()` ends in
+`utcOffset(targetOffset)`, and an offset of 0 takes `utc()`
+(`dayjs/plugin/utc`, `proto.utcOffset`, v1.11.23), which returns a UTC-flagged
+instance with no zone. Europe/London, Lisbon and Dublin read 0 in winter, so a
+date in winter came back flagged: `add(1, 'day')` added 24 hours and
+`startOf('day')` rounded in UTC, and across the 30 March 2025 change an all-day
+event ended at 01:00 BST and the month grid's cells started an hour late. Zones
+that are never at 0 (New York) were unaffected, and so was a London calendar
+WITH the prop, where the zone name lets the patched `startOf` repair the day.
+
 Both string rules serve the same rule at the top. An offset-carrying string
 already names a moment, so re-reading its digits in the calendar's zone would
 invent a different moment (that was #247: in Europe/Vienna a `…T22:00Z` all-day

@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { gotoScenario, releasePointer } from './support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	settleAnimations,
+} from './support/harness'
 import { MonthGrid, TimeGrid } from './support/pages'
 
 /**
@@ -52,7 +56,7 @@ const dragTo = async (
 	to: import('@playwright/test').Locator
 ): Promise<void> => {
 	await pressAndMoveTo(page, from, to)
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 /** The fill an event gets when it declares no colour of its own. */
@@ -130,7 +134,7 @@ test.describe('cell hover tint', () => {
 			getCellFill(neighbour),
 		])
 		expect(targetFill).toBe(restingFill)
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 
 	test('the time slot under a drag keeps its resting fill', async ({
@@ -153,7 +157,7 @@ test.describe('cell hover tint', () => {
 			getCellFill(neighbour),
 		])
 		expect(targetFill).toBe(restingFill)
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 })
 
@@ -338,7 +342,7 @@ test.describe('drag and drop', () => {
 		await expect
 			.poll(() => getMirrorColour(month.dragMirror))
 			.toBe('rgb(245, 158, 11)')
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 
 	test('paints the mirror for an event coloured by class', async ({ page }) => {
@@ -355,7 +359,7 @@ test.describe('drag and drop', () => {
 		await expect
 			.poll(() => getMirrorColour(month.dragMirror))
 			.not.toBe(FALLBACK_FILL)
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 
 	test("tints the drop target in FullCalendar's highlight colour", async ({
@@ -380,7 +384,7 @@ test.describe('drag and drop', () => {
 				})
 			)
 			.toBe('rgba(188, 232, 241, 0.3)')
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 
 	test('keeps the grab point under the pointer across day columns', async ({
@@ -415,7 +419,7 @@ test.describe('drag and drop', () => {
 		for (let step = 1; step <= 8; step += 1) {
 			await page.mouse.move(grabX + (columnWidth * step) / 8, grabY)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 
 		// Moved exactly one day, and the duration is untouched.
 		await expect
@@ -453,7 +457,7 @@ test.describe('drag and drop', () => {
 		for (let step = 1; step <= 8; step += 1) {
 			await page.mouse.move(grabX + (columnWidth * step) / 8, grabY)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 
 		// One day later, not jumped to the column released on.
 		await expect
@@ -497,7 +501,7 @@ test.describe('drag and drop', () => {
 		for (let step = 1; step <= 10; step += 1) {
 			await page.mouse.move(grabX + (columnWidth * step) / 10, grabY)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 
 		// Exactly one day later at both ends: translated, not re-anchored.
 		await expect
@@ -570,7 +574,7 @@ test.describe('drag and drop', () => {
 		)
 
 		await expect(grid.dragMirror).toHaveText('Site survey')
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 
 	test('drops an event whose body spans disabled cells', async ({ page }) => {
@@ -606,7 +610,7 @@ test.describe('drag and drop', () => {
 		for (let step = 1; step <= 10; step += 1) {
 			await page.mouse.move(grabX + (barBox.width * step) / 10, grabY)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 
 		// It moved: the nights under the event never had a say.
 		await expect
@@ -644,7 +648,7 @@ test.describe('drag and drop', () => {
 			.toBe('not-allowed')
 		await expect(month.dragMirror).toHaveCount(0)
 		await expect(month.dropTargets).toHaveCount(0)
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 
 	test('commits nothing when released on a cell that refuses drops', async ({
@@ -689,7 +693,7 @@ test.describe('drag and drop', () => {
 				})
 			)
 			.toBe('dimmed')
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 
 	test('leaves the event alone when drag and drop is disabled', async ({
@@ -805,7 +809,7 @@ test.describe('edit permissions', () => {
 			.toBe('not-allowed')
 		await expect(month.dragMirror).toHaveCount(0)
 		await expect(month.dropTargets).toHaveCount(0)
-		await page.mouse.up()
+		await releasePointer(page)
 
 		const event = await month.eventNamed('Earlier in the month')
 		expect(event.start).toMatch(MOVED_FROM)
@@ -1054,7 +1058,7 @@ test.describe('change info', () => {
 		await page.mouse.down()
 		await page.mouse.move(centreX + 12, centreY)
 		await page.mouse.move(centreX, centreY)
-		await page.mouse.up()
+		await releasePointer(page)
 		await page.waitForTimeout(300)
 
 		expect(await grid.eventChanges()).toEqual([])
@@ -1208,7 +1212,7 @@ test.describe('resize', () => {
 		)
 
 		await expect(grid.dragMirror).toHaveCount(1)
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 
 	test('the start handle needs eventResizableFromStart, then drags the start earlier', async ({
@@ -1264,7 +1268,7 @@ test.describe('resize', () => {
 			grid.slotAt('2025-03-12T08:00')
 		)
 		expect(await page.evaluate(() => document.body.style.cursor)).toBe('')
-		await page.mouse.up()
+		await releasePointer(page)
 
 		const row = await grid.eventNamed('Morning stand-up')
 		expect(row.start).toBe('2025-03-12T09:30:00.000Z')
@@ -1430,7 +1434,7 @@ test.describe('resize', () => {
 			.poll(() => page.evaluate(() => document.body.style.cursor))
 			.toBe('not-allowed')
 		await expect(month.dragMirror).toHaveCount(0)
-		await page.mouse.up()
+		await releasePointer(page)
 
 		const row = await month.eventNamed('Off-site')
 		expect(row.end).toBe('2025-03-15T00:00:00.000Z')
@@ -1552,7 +1556,7 @@ test.describe('resize', () => {
 		await expect
 			.poll(() => page.evaluate(() => document.body.style.cursor))
 			.toBe('not-allowed')
-		await page.mouse.up()
+		await releasePointer(page)
 
 		expect((await grid.eventNamed('Room A hold')).end).toBe(
 			'2025-03-12T11:00:00.000Z'
@@ -1700,7 +1704,7 @@ test.describe('hidden days', () => {
 				grabY + ((target.y + target.height / 2 - grabY) * step) / 8
 			)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 
 		await expect
 			.poll(async () => (await month.eventNamed('Mid-week trip')).start)
@@ -1761,6 +1765,7 @@ test.describe('a drop that crosses a boundary', () => {
 				settings: { scrollTime: '00:00', slot: 30 },
 			})
 			const grid = new TimeGrid(page)
+			await settleAnimations(page)
 			const from = await at(
 				page.locator('[data-testid="horizontal-event-allday-1"]').first(),
 				grabbedAt,
@@ -1791,6 +1796,7 @@ test.describe('a drop that crosses a boundary', () => {
 			settings: { scrollTime: '00:00', slot: 30 },
 		})
 		const grid = new TimeGrid(page)
+		await settleAnimations(page)
 		const from = await at(grid.bars('basic-1').first(), 0.5, 0.2)
 		const to = await at(grid.allDayRow, 0.7, 0.5)
 
@@ -1817,9 +1823,7 @@ test.describe('a drop that crosses a boundary', () => {
 			date: '2025-03-05T12:00:00.000-05:00',
 		})
 		const grid = new TimeGrid(page)
-		await page.evaluate(() =>
-			Promise.all(document.getAnimations().map((a) => a.finished))
-		)
+		await settleAnimations(page)
 		const from = await at(grid.bars('night-shift').first(), 0.5, 0.02)
 		const to = await at(grid.slotAt('2025-03-09T01:00'), 0.5, 0.1)
 

@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { gotoScenario } from './support/harness'
+import { gotoScenario, releasePointer } from './support/harness'
 
 interface Point {
 	x: number
@@ -18,7 +18,7 @@ const dragBetween = async (page: Page, from: Point, to: Point) => {
 	await page.mouse.move(from.x, from.y)
 	await page.mouse.down()
 	await page.mouse.move(to.x, to.y, { steps: 10 })
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 const loggedSelections = (page: Page) =>
@@ -91,7 +91,7 @@ test.describe('drag-to-create in the time grid', () => {
 		await page.mouse.down()
 		await page.mouse.move(cell.x + 5, cell.y + 5, { steps: 3 })
 		await page.keyboard.press('Escape')
-		await page.mouse.up()
+		await releasePointer(page)
 		await page.waitForTimeout(300)
 		await expect(page.locator('[role=dialog]')).toHaveCount(0)
 	})
@@ -105,7 +105,7 @@ test.describe('drag-to-create in the time grid', () => {
 		await page.mouse.down()
 		await page.mouse.move(cell.x + 5, cell.y + 5, { steps: 3 })
 		await page.keyboard.press('Escape')
-		await page.mouse.up()
+		await releasePointer(page)
 		await page.mouse.click(cell.x, cell.y)
 		await expect(page.locator('[role=dialog]')).toHaveCount(1)
 	})

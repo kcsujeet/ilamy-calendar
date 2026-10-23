@@ -1,5 +1,9 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, type ScenarioOptions } from './support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	type ScenarioOptions,
+} from './support/harness'
 import { TimeGrid } from './support/pages'
 
 /**
@@ -38,7 +42,7 @@ const dragPointer = async (page: Page, from: Point, to: Point) => {
 			from.y + ((to.y - from.y) * step) / 8
 		)
 	}
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 /**
@@ -299,7 +303,7 @@ test.describe('snapDuration while the grid scrolls under a held pointer', () => 
 		await page.mouse.wheel(0, 120)
 		await page.waitForTimeout(300)
 		const expected = await sliceUnder(page, to, 'y')
-		await page.mouse.up()
+		await releasePointer(page)
 
 		expect(expected).not.toBeNull()
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
@@ -335,7 +339,7 @@ test.describe('snapDuration while the grid scrolls under a held pointer', () => 
 		await page.mouse.wheel(0, 120)
 		await page.waitForTimeout(300)
 		const sliceStart = await sliceUnder(page, to, 'y')
-		await page.mouse.up()
+		await releasePointer(page)
 
 		expect(sliceStart).not.toBeNull()
 		const expectedEnd = new Date(
@@ -465,7 +469,7 @@ test.describe('the snapped preview follows the pointer between slices of one cel
 
 		// 0.9 of the hour is minute 54: the 11:45 slice, three quarters down.
 		expect(await mirrorWithin(page, cell, 'y', 'leading')).toBeCloseTo(0.75, 1)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
 		const row = await grid.eventNamed('Morning stand-up')
 		expect(row.start).toBe('2025-03-12T11:45:00.000Z')
@@ -492,7 +496,7 @@ test.describe('the snapped preview follows the pointer between slices of one cel
 		)
 
 		expect(await mirrorWithin(page, cell, 'x', 'leading')).toBeCloseTo(0.75, 1)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
 		const row = await grid.eventNamed('Room A booking')
 		expect(row.start).toBe('2025-03-12T13:45:00.000Z')
@@ -518,7 +522,7 @@ test.describe('the snapped preview follows the pointer between slices of one cel
 
 		// Ends with the 11:45 slice: 12:00, the cell's bottom edge.
 		expect(await mirrorWithin(page, cell, 'y', 'trailing')).toBeCloseTo(1, 1)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
 		const row = await grid.eventNamed('Morning stand-up')
 		expect(row.end).toBe('2025-03-12T12:00:00.000Z')
@@ -549,7 +553,7 @@ test.describe('the snapped preview follows the pointer between slices of one cel
 		)
 
 		expect(await mirrorWithin(page, cell, 'x', 'trailing')).toBeCloseTo(1, 1)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
 		const row = await grid.eventNamed('Room A booking')
 		expect(row.end).toBe('2025-03-12T12:00:00.000Z')

@@ -1,5 +1,10 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario } from '../support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	setSettings,
+	settleAnimations,
+} from '../support/harness'
 import { CalendarPage, MonthGrid, TimeGrid } from '../support/pages'
 
 /** QA personas for 3.3.7b (hiddenDays / weekends in every view). Real pointer only. */
@@ -29,20 +34,15 @@ const pressAndMoveTo = async (
 
 const dragTo = async (page: Page, from: Locator, to: Locator) => {
 	await pressAndMoveTo(page, await centre(from), await centre(to))
-	await page.mouse.up()
+	await releasePointer(page)
 }
-
-const settle = (page: Page) =>
-	page.evaluate(() =>
-		Promise.all(document.getAnimations().map((a) => a.finished))
-	)
 
 const open = async (
 	page: Page,
 	options: Parameters<typeof gotoScenario>[1]
 ) => {
 	await gotoScenario(page, options)
-	await settle(page)
+	await settleAnimations(page)
 }
 
 const collectErrors = (page: Page) => {
@@ -53,6 +53,16 @@ const collectErrors = (page: Page) => {
 
 const handleOf = (bar: Locator, edge: 'start' | 'end') =>
 	bar.locator(`[data-resize-handle="${edge}"]`)
+
+const WEEKDAY_NAMES = [
+	'sunday',
+	'monday',
+	'tuesday',
+	'wednesday',
+	'thursday',
+	'friday',
+	'saturday',
+]
 
 const dayOfWeek = (iso: string) => new Date(iso).getUTCDay()
 
@@ -111,7 +121,7 @@ test.describe('persona 1: office worker (weekends=false)', () => {
 				}
 			}
 			await month.next()
-			await settle(page)
+			await settleAnimations(page)
 		}
 		expect(errors).toEqual([])
 	})
@@ -134,15 +144,15 @@ test.describe('persona 1: office worker (weekends=false)', () => {
 		)
 		await expect(month.todayMarker).toHaveCount(1)
 		await month.next()
-		await settle(page)
+		await settleAnimations(page)
 		await month.today()
-		await settle(page)
+		await settleAnimations(page)
 		await expect(month.todayMarker).toHaveCount(1)
 		await month.previous()
-		await settle(page)
+		await settleAnimations(page)
 		await expect(month.title).toContainText('Feb')
 		await month.today()
-		await settle(page)
+		await settleAnimations(page)
 		await expect(month.title).toContainText('Mar')
 	})
 
@@ -263,7 +273,7 @@ test.describe('persona 1: office worker (weekends=false)', () => {
 			month.cellOn('2025-03-14')
 		)
 		await expect.poll(async () => (await month.eventChanges()).length).toBe(1)
-		await settle(page)
+		await settleAnimations(page)
 		const row = await month.eventNamed('Public holiday')
 		console.log('RESIZE to Fri', row.start, row.end)
 		expect(row.end).toBe('2025-03-15T00:00:00.000Z')
@@ -362,7 +372,7 @@ test.describe('persona 1: office worker (weekends=false)', () => {
 		const from = grid.slotAt('2025-03-11T13:00')
 		const to = grid.slotAt('2025-03-13T15:00')
 		await pressAndMoveTo(page, await centre(from), await centre(to))
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect(page.getByRole('dialog')).toBeVisible()
 	})
 
@@ -381,7 +391,7 @@ test.describe('persona 1: office worker (weekends=false)', () => {
 			await centre(month.cellOn('2025-03-20')),
 			await centre(month.cellOn('2025-03-25'))
 		)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect(page.getByRole('dialog')).toBeVisible()
 		const inputs = await page
 			.getByRole('dialog')
@@ -534,10 +544,14 @@ test.describe('persona 2: rota planner (hiddenDays=wednesday)', () => {
 		})
 		const grid = new TimeGrid(page)
 		const bar = page.getByTestId('vertical-event-res-4').first()
-		await dragTo(page, bar, lane(page, 'r3', '2025-03-11T15'))
+		// r2, not r3: r3's Tuesday sits within the grid's auto-scroll zone at the
+		// 1280px viewport, so the held pointer scrolls the grid sideways for as
+		// long as the drag lasts and the drop lands on whichever day is under it
+		// by then. A slow runner holds it longer, so it landed on Mon or Thu.
+		await dragTo(page, bar, lane(page, 'r2', '2025-03-11T15'))
 		await expect
 			.poll(async () => (await grid.eventNamed('Room A, later')).resourceId)
-			.toBe('r3')
+			.toBe('r2')
 		const row = await grid.eventNamed('Room A, later')
 		console.log('XRES hourly vert', row.start, row.end)
 		expect(row.start).toMatch(/^2025-03-11T1[45]/)
@@ -580,38 +594,39 @@ test.describe('persona 2: rota planner (hiddenDays=wednesday)', () => {
 		expect(starts.map(dayOfWeek).slice(0, 6)).toEqual([1, 2, 4, 5, 6, 0])
 	})
 
-	test('hide each single weekday x firstDayOfWeek: month columns and no hidden date', async ({
-		page,
-	}) => {
-		const names = [
-			'sunday',
-			'monday',
-			'tuesday',
-			'wednesday',
-			'thursday',
-			'friday',
-			'saturday',
-		]
-		for (const first of ['sunday', 'monday', 'saturday']) {
-			for (const hidden of names) {
-				await open(page, {
-					scenario: 'basic',
-					view: 'month',
-					settings: { hiddenDays: hidden, firstDayOfWeek: first },
-				})
-				const month = new MonthGrid(page)
-				const starts = await cellStarts(month.cells)
-				const hiddenIndex = names.indexOf(hidden)
-				expect(starts.length % 6, `${first}/${hidden} n=${starts.length}`).toBe(
-					0
-				)
-				expect(
-					starts.map(dayOfWeek).includes(hiddenIndex),
-					`${first}/${hidden}`
-				).toBe(false)
+	// One test per firstDayOfWeek, each opening the calendar once and changing
+	// `hiddenDays` on the mounted calendar: a goto and a settle per combination
+	// (21 in one test) outlasted the 30s timeout on a slow runner.
+	for (const first of ['sunday', 'monday', 'saturday']) {
+		test(`hide each single weekday, firstDayOfWeek=${first}: month columns and no hidden date`, async ({
+			page,
+		}) => {
+			await open(page, {
+				scenario: 'basic',
+				view: 'month',
+				settings: { hiddenDays: 'sunday', firstDayOfWeek: first },
+			})
+			const month = new MonthGrid(page)
+			for (const hidden of WEEKDAY_NAMES) {
+				await setSettings(page, { hiddenDays: hidden })
+				const hiddenIndex = WEEKDAY_NAMES.indexOf(hidden)
+				// Polled: the grid re-renders after the setting changes, and the
+				// previous grid still draws this weekday, so a stale read fails
+				// the condition instead of passing it.
+				await expect
+					.poll(
+						async () => {
+							const starts = await cellStarts(month.cells)
+							const isWholeRows = starts.length % 6 === 0
+							const hidesWeekday = !starts.map(dayOfWeek).includes(hiddenIndex)
+							return isWholeRows && hidesWeekday
+						},
+						{ message: `${first}/${hidden}` }
+					)
+					.toBe(true)
 			}
-		}
-	})
+		})
+	}
 
 	test('week view hiddenDays=wednesday multi-day all-day event spanning it draws one bar', async ({
 		page,
@@ -674,7 +689,7 @@ test.describe('persona 3: edge-case hunter', () => {
 					await expect(new TimeGrid(page).dayColumns).toHaveCount(7)
 				}
 				await cal.next()
-				await settle(page)
+				await settleAnimations(page)
 				await cal.previous()
 				await cal.today()
 				// NOTE: the warning is guarded by `typeof process`, which is undefined
@@ -958,7 +973,7 @@ test.describe('persona 3: edge-case hunter', () => {
 			}
 			await expect(month.weekNumbers, `month ${i}`).toHaveText(expected)
 			await month.next()
-			await settle(page)
+			await settleAnimations(page)
 		}
 	})
 
@@ -1267,9 +1282,9 @@ test.describe('extra probes', () => {
 		const cal = new CalendarPage(page)
 		await expect(cal.todayMarker).toHaveCount(0)
 		await cal.next()
-		await settle(page)
+		await settleAnimations(page)
 		await cal.today()
-		await settle(page)
+		await settleAnimations(page)
 		await expect(cal.title).toContainText('Mar')
 	})
 
@@ -1296,7 +1311,7 @@ test.describe('extra probes', () => {
 		console.log('SAT15 buttons', await sat.count())
 		if (await sat.count()) {
 			await sat.click()
-			await settle(page)
+			await settleAnimations(page)
 			console.log(
 				'DAY after pick Sat 15',
 				(await page.getByTestId('day-view-header').innerText()).replace(
@@ -1422,7 +1437,7 @@ test.describe('extra probes', () => {
 			await centre(month.cellOn('2025-03-20')),
 			await centre(month.cellOn('2025-03-25'))
 		)
-		await page.mouse.up()
+		await releasePointer(page)
 		const dialog = page.getByRole('dialog')
 		await expect(dialog).toBeVisible()
 		console.log(

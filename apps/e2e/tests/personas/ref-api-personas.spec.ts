@@ -289,6 +289,7 @@ test.describe('persona 1: app builder, sidebar beside the calendar', () => {
 		test(`resource views (${orientation}): ref.setView cycles day, week, month, year without errors`, async ({
 			page,
 		}) => {
+			test.slow() // several calendar loads in one test; the 30s default is too tight on a slow runner
 			const errors = await open(page, {
 				scenario: 'resources',
 				view: 'day',

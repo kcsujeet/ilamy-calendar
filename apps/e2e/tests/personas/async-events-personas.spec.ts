@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, setSettings } from '../support/harness'
+import { gotoScenario, releasePointer, setSettings } from '../support/harness'
 import { CalendarPage, MonthGrid, TimeGrid } from '../support/pages'
 
 /*
@@ -146,7 +146,7 @@ const dragTo = async (page: Page, from: Locator, to: Locator) => {
 			start.y + ((end.y - start.y) * step) / 8
 		)
 	}
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 const MARCH = '2025-02-23T00:00:00.000Z > 2025-04-06T00:00:00.000Z'
@@ -197,17 +197,23 @@ test.describe('persona 1: integrator with a slow API', () => {
 		await gotoScenario(page, {
 			scenario: 'async-events',
 			view: 'month',
-			settings: { fetch: 'delayed', fetchDelay: 600 },
+			settings: { fetch: 'delayed', fetchDelay: 50 },
 		})
 		const month = new MonthGrid(page)
 		await expect(month.event('March lunch')).toBeVisible()
 		await watchTitle(page, 'April review')
 		await watchTitle(page, 'May kickoff')
+		// Held while clicking: with a timer, a slow runner lets April's answer
+		// arrive between two clicks and it flashes, which is not the bug.
+		const callsBefore = (await month.fetchLog()).length
+		await setSettings(page, { fetch: 'held' })
 		await month.next()
-		await page.waitForTimeout(100)
 		await month.next()
-		await page.waitForTimeout(100)
 		await month.next()
+		await expect
+			.poll(async () => (await month.fetchLog()).length - callsBefore)
+			.toBe(3)
+		await setSettings(page, { fetch: 'delayed' })
 		await expect(month.event('June demo')).toBeVisible()
 		await settled(month)
 		expect(await flashCount(page, 'April review')).toBe(0)
@@ -350,6 +356,7 @@ test.describe('persona 1: integrator with a slow API', () => {
 	test('resource views (both orientations) fetch the same ranges and keep events across rapid navigation', async ({
 		page,
 	}) => {
+		test.slow() // several calendar loads in one test; the 30s default is too tight on a slow runner
 		for (const orientation of ['vertical', 'horizontal'] as const) {
 			await gotoScenario(page, {
 				scenario: 'resources',

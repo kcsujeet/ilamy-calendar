@@ -109,3 +109,4 @@ import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create';
 
 - The plugin is bundled into `@ilamy/calendar` and exposed at the `@ilamy/calendar/plugins/drag-to-create` subpath. There is no separate package to install.
 - Selection reuses the public `CellInfo` and `openEventForm`, so it stays consistent with `onCellClick` and the rest of the calendar API.
+- A selection in the month view reports `allDay: false` and opens a timed event in 3.x, the same as a month `onCellClick`. Read the `view` as well if you need to tell a month selection from a time-grid one.

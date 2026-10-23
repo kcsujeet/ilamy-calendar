@@ -111,7 +111,7 @@ e2e spec through that plugin. No hook is added to the contract ahead of a plugin
 - **Bundle budget:** measured on the core closure, that is `dist/index.js` plus every chunk it
   imports, gzipped, never on the entry file alone. Report it before and after each feature;
   core growth over 2% for one feature needs a stated reason. Plugins are measured separately.
-  3.3 grew the core closure by about 20.7% (42.1 KB to 50.8 KB gzip); that is accepted for the
+  3.3 grew the core closure by about 22.8% (42.1 KB to 51.7 KB gzip); that is accepted for the
   features it buys, and the core shrinks in 4.0 through the planned plugin moves (D7).
   Lazy-loading features behind new entry points was considered and rejected: 3 to 4 KB does not
   justify a split public API.

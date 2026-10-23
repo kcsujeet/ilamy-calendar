@@ -183,7 +183,7 @@ export const dummyEvents = [
 	{
 		id: '18',
 		title: 'Hackathon',
-		description: '48-hour coding challenge',
+		description: 'Five-day coding challenge',
 		start: baseDate.date(21).startOf('day'),
 		end: baseDate.date(25).endOf('day'),
 		color: 'bg-green-100 text-green-800',

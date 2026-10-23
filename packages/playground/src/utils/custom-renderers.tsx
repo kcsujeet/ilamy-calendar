@@ -15,33 +15,48 @@ import { useEffect, useState } from 'react'
 // eventHeight without recreating an inline closure inside the page component.
 export function createRenderEvent(eventHeight: number) {
 	return function renderEvent(event: CalendarEvent) {
-		const backgroundColor = event.backgroundColor || 'bg-blue-500'
-		const color = event.color || 'text-blue-800'
-		const isCompact = eventHeight <= 24
-		const isLarge = eventHeight >= 36
-		const titleSize = isLarge ? 'text-xs' : 'text-[10px]'
-		const timeSize = isLarge ? 'text-[10px]' : 'text-[8px]'
-
-		return (
-			<div
-				className={cn(
-					'border-primary border border-l-2 px-2 w-full h-full overflow-clip',
-					backgroundColor,
-					color
-				)}
-				style={{ backgroundColor, color }}
-			>
-				<p className={cn('font-semibold truncate leading-tight', titleSize)}>
-					{event.title}
-				</p>
-				{!isCompact && (
-					<p className={cn('truncate opacity-80 leading-tight', timeSize)}>
-						{event.start.format('h:mm A')} - {event.end.format('h:mm A')}
-					</p>
-				)}
-			</div>
-		)
+		return <CustomEvent event={event} eventHeight={eventHeight} />
 	}
+}
+
+// A component (not part of renderEvent itself) so it can read the calendar's
+// `t` for the all-day label.
+function CustomEvent({
+	event,
+	eventHeight,
+}: {
+	event: CalendarEvent
+	eventHeight: number
+}) {
+	const { t } = useIlamyCalendarContext()
+	const backgroundColor = event.backgroundColor || 'bg-blue-500'
+	const color = event.color || 'text-blue-800'
+	const isCompact = eventHeight <= 24
+	const isLarge = eventHeight >= 36
+	const titleSize = isLarge ? 'text-xs' : 'text-[10px]'
+	const timeSize = isLarge ? 'text-[10px]' : 'text-[8px]'
+	const timeRange = `${event.start.format('h:mm A')} - ${event.end.format('h:mm A')}`
+	const timeLabel = event.allDay ? t('allDay') : timeRange
+
+	return (
+		<div
+			className={cn(
+				'border-primary border border-l-2 px-2 w-full h-full overflow-clip',
+				backgroundColor,
+				color
+			)}
+			style={{ backgroundColor, color }}
+		>
+			<p className={cn('font-semibold truncate leading-tight', titleSize)}>
+				{event.title}
+			</p>
+			{!isCompact && (
+				<p className={cn('truncate opacity-80 leading-tight', timeSize)}>
+					{timeLabel}
+				</p>
+			)}
+		</div>
+	)
 }
 
 // Custom resource renderer — counts the events on each resource. Returned as a
@@ -152,22 +167,25 @@ export function renderHour(date: Dayjs) {
 // Custom calendar header — reads the live date/view from context to show a
 // bespoke header (demonstrates the headerComponent prop + useIlamyCalendarContext).
 export function CustomCalendarHeader() {
-	const { currentDate, setView } = useIlamyCalendarContext()
-	const views: Array<'month' | 'week' | 'day' | 'year'> = [
-		'month',
-		'week',
-		'day',
-		'year',
-	]
+	const { currentDate, setView, getViews, hasResourceAxis, openEventForm, t } =
+		useIlamyCalendarContext()
+	// The views the default header offers: resource calendars drop the ones
+	// that do not support resources (year, agenda).
+	const views = getViews().filter(
+		(view) => !hasResourceAxis || view.supportsResources
+	)
 	return (
 		<div className="text-center text-2xl font-semibold p-4 text-amber-500">
 			Current Date: {currentDate.format('MMMM YYYY')}
 			<div className="flex justify-center space-x-2">
 				{views.map((view) => (
-					<Button key={view} onClick={() => setView(view)} size="sm">
-						{view.charAt(0).toUpperCase() + view.slice(1)} View
+					<Button key={view.name} onClick={() => setView(view.name)} size="sm">
+						{t(view.label ?? view.name)}
 					</Button>
 				))}
+				<Button onClick={() => openEventForm()} size="sm" variant="outline">
+					{t('new')}
+				</Button>
 			</div>
 			<div className="text-sm mt-2">
 				Custom header using useIlamyCalendarContext hook

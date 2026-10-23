@@ -52,7 +52,7 @@ import MainLayout from '@/layouts/main-layout.astro'
             </h1>
             <p class="text-xl text-muted-foreground mb-8">
               The ultimate full calendar alternative built with TypeScript,
-              Tailwind CSS, and shadcn/ui. A lightweight (~40 KB gzipped),
+              Tailwind CSS, and shadcn/ui. A lightweight (~52 KB gzipped),
               highly pluggable React calendar with drag-and-drop, resource
               scheduling, and opt-in plugins — and it ships no CSS, so your
               design system controls the look. Built for Next.js, Astro, and
@@ -141,7 +141,7 @@ import MainLayout from '@/layouts/main-layout.astro'
           </FeatureCard>
           <FeatureCard
             title="Drag & Drop"
-            description="Drag and drop to move events between days, times and resources. Add the drag-to-create plugin to select a range and create events."
+            description="Drag events between days, times and resources, and drag an edge to resize. Add the drag-to-create plugin to select a range and create events."
           >
             <DragDropIcon
               slot="icon"
@@ -195,7 +195,7 @@ import MainLayout from '@/layouts/main-layout.astro'
           </FeatureCard>
           <FeatureCard
             title="Lightweight"
-            description="A small ~40 KB gzipped core. Plugins are opt-in and tree-shakeable, so you only ship the features you actually use."
+            description="A small ~52 KB gzipped core. Plugins are opt-in and tree-shakeable, so you only ship the features you actually use."
           >
             <Feather
               slot="icon"
@@ -291,7 +291,7 @@ import MainLayout from '@/layouts/main-layout.astro'
                 class="bg-muted/70 backdrop-blur-sm p-4 rounded-lg text-sm overflow-x-auto border border-muted-foreground/10 shadow-inner">
                 {`
 interface CalendarEvent {
-  id: string;
+  id: string | number;
   title: string;
   start: dayjs.Dayjs;
   end: dayjs.Dayjs;

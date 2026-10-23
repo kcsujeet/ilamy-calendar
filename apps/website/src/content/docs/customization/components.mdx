@@ -23,26 +23,36 @@ Use the `headerClassName` prop to apply custom styles to the calendar header:
 
 ### Custom Header Component
 
-For complete control, you can replace the default header with your own component:
+For complete control, you can replace the default header with your own element. It renders inside the calendar, so it can read and drive the calendar through [`useIlamyCalendarContext`](/docs/components/use-ilamy-calendar-context):
 
 ```tsx
-const CustomHeader = ({ currentDate, onNavigate }) => (
-  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-purple-600">
-    <button onClick={() => onNavigate('prev')}>← Previous</button>
-    <h2 className="text-white font-bold">{currentDate.format('MMMM YYYY')}</h2>
-    <button onClick={() => onNavigate('next')}>Next →</button>
-  </div>
-);
+import { useIlamyCalendarContext } from '@ilamy/calendar';
+
+const CustomHeader = () => {
+  const { currentDate, prevPeriod, nextPeriod } = useIlamyCalendarContext();
+
+  return (
+    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-purple-600">
+      <button onClick={prevPeriod}>← Previous</button>
+      <h2 className="text-white font-bold">{currentDate.format('MMMM YYYY')}</h2>
+      <button onClick={nextPeriod}>Next →</button>
+    </div>
+  );
+};
 
 <IlamyCalendar
-  headerComponent={CustomHeader}
+  headerComponent={<CustomHeader />}
   // ... other props
 />
 ```
 
+To drive the calendar from a toolbar you render yourself, outside the calendar, pass a `ref` instead; see [Controlling the calendar from outside](/docs/components/calendar#controlling-the-calendar-from-outside).
+
 ## View Headers Customization
 
 Customize the day headers (Mon, Tue, Wed, etc.) that appear at the top of the calendar grid.
+
+To change the text of the day headers rather than their style, use `dayHeaderFormat`; see [Formatting times and dates](/docs/components/calendar#formatting-times-and-dates).
 
 ```tsx
 <IlamyCalendar
@@ -108,13 +118,15 @@ const renderEvent = (event) => (
 
 ### Event Props
 
-The event object passed to your custom renderer includes:
+`renderEvent` receives the event and a `segment`. The event includes:
 - `title` - Event title
 - `start` - Start date/time
-- `end` - End date/time (optional)
+- `end` - End date/time (exclusive)
 - `color` - Event color/theme
 - `allDay` - Whether it's an all-day event
 - `data` - Any custom properties you include in your event data
+
+`segment` is `{ isStart, isEnd }`. An event too long for its row is drawn as one bar per row, and these say whether this bar holds the event's real start or end, so you can square the cut edges. See [Drawing a cut event](/docs/components/calendar#drawing-a-cut-event). Your own markup does not keep its title in view while the bar is partly scrolled out; see [Keeping the title in view](/docs/components/calendar#keeping-the-title-in-view).
 
 ## More Events Overflow
 

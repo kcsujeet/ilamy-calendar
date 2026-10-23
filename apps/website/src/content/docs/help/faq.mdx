@@ -48,7 +48,7 @@ const events = [
 
 ### How do I add drag and drop functionality?
 
-The calendar includes built-in drag and drop support that is enabled by default. To disable it, use the `editable` prop (`disableDragAndDrop` still works but is deprecated):
+The calendar includes built-in drag and drop support, and resizing by dragging an event's edge, both enabled by default. To disable them, use the `editable` prop (`disableDragAndDrop` still works but is deprecated). A flag on one event, such as `editable: true`, overrides it for that event:
 
 ```tsx
 <IlamyCalendar
@@ -57,6 +57,31 @@ The calendar includes built-in drag and drop support that is enabled by default.
   // ... other props
 />
 ```
+
+See [Moving and resizing events](/docs/components/calendar#moving-and-resizing-events) for `eventAllow`, `snapDuration` and the other options.
+
+### How do I load events from my server?
+
+Pass an async function as `events`. It is called with the visible range, and again when the range leaves what was fetched:
+
+```tsx
+<IlamyCalendar
+  events={async ({ startStr, endStr }, { signal }) => {
+    const response = await fetch(`/api/events?start=${startStr}&end=${endStr}`, { signal })
+    return response.json()
+  }}
+/>
+```
+
+See [Loading events](/docs/components/calendar#loading-events). Resources can be loaded the same way ([Loading resources](/docs/components/resource-calendar#loading-resources)).
+
+### How do I control the calendar from my own buttons?
+
+Pass a `ref` and call the same methods the hook offers, such as `nextPeriod()`, `setView('week')` and `scrollToTime('13:30')`. See [Controlling the calendar from outside](/docs/components/calendar#controlling-the-calendar-from-outside).
+
+### Can I open, move or resize events with the keyboard?
+
+You can focus an event bar and open it with Enter or Space. Moving and resizing need a pointer for now.
 
 ## Framework Integration
 

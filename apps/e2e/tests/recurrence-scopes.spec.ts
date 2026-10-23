@@ -1,5 +1,10 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import {
+	dateButtons,
+	pickDay,
+	pickTime as pickFormTime,
+} from './support/event-form'
+import {
 	gotoScenario,
 	releasePointer,
 	type ScenarioOptions,
@@ -19,6 +24,7 @@ import { CalendarPage, TimeGrid } from './support/pages'
 
 const DAILY = 3
 const WEEKLY = 2
+const MONTHLY = 1
 
 const TALL = { width: 1280, height: 2400 }
 
@@ -449,6 +455,98 @@ test.describe('drag an occurrence with "All events" (week view, UTC)', () => {
 	})
 })
 
+test.describe('"this and following" moved to another weekday or day (week view, UTC)', () => {
+	// Weekly on Wednesdays from 5 March, and monthly on the 12th from January.
+	// The series continues on the day the occurrence was put, as Google Calendar
+	// moves a "this and following" edit; the new DTSTART must be one of its own
+	// instances (RFC 5545 3.8.5.3), or rrule.js skips it and the occurrence vanishes.
+	const weekly = () =>
+		seedRow(
+			'W',
+			'Weekly',
+			'2025-03-05T09:00:00.000Z',
+			'2025-03-05T09:30:00.000Z',
+			{
+				uid: 'W',
+				rrule: {
+					freq: WEEKLY,
+					byweekday: [2],
+					dtstart: '2025-03-05T09:00:00.000Z',
+				},
+			}
+		)
+
+	test('a weekly series dragged from Wednesday to Thursday continues on Thursdays', async ({
+		page,
+	}) => {
+		await page.setViewportSize(TALL)
+		await open(page, [weekly()])
+		await pressAndMove(
+			page,
+			bar(page, 'Weekly').first(),
+			new TimeGrid(page).slotAt('2025-03-13T10:00')
+		)
+		await chooseScope(page, 'following')
+		await expect.poll(async () => (await rows(page)).length).toBe(2)
+
+		const [, next] = await rows(page)
+		expect(next.start).toBe('2025-03-13T10:00:00.000Z')
+		expect(next.rrule?.byweekday).toEqual(['TH']) // serialised as in the published rows
+		await expect(bar(page, 'Weekly')).toHaveCount(1)
+	})
+
+	test('a monthly series dragged from the 12th to the 13th continues on the 13th', async ({
+		page,
+	}) => {
+		const monthly = seedRow(
+			'M',
+			'Monthly',
+			'2025-01-12T09:00:00.000Z',
+			'2025-01-12T09:30:00.000Z',
+			{
+				uid: 'M',
+				rrule: {
+					freq: MONTHLY,
+					bymonthday: [12],
+					dtstart: '2025-01-12T09:00:00.000Z',
+				},
+			}
+		)
+		await page.setViewportSize(TALL)
+		await open(page, [monthly])
+		await pressAndMove(
+			page,
+			bar(page, 'Monthly').first(),
+			new TimeGrid(page).slotAt('2025-03-13T10:00')
+		)
+		await chooseScope(page, 'following')
+		await expect.poll(async () => (await rows(page)).length).toBe(2)
+
+		const [, next] = await rows(page)
+		expect(next.rrule?.bymonthday).toEqual([13])
+		await expect(bar(page, 'Monthly')).toHaveCount(1)
+	})
+
+	test('moving the Start Date in the form from Wednesday to Thursday continues on Thursdays', async ({
+		page,
+	}) => {
+		await page.setViewportSize(TALL)
+		await open(page, [weekly()])
+		await openForm(page, 'Weekly', 0)
+		await pickDay(page, 0, 13)
+		await expect(dateButtons(page).nth(1)).toHaveText('Mar 13, 2025')
+		await pickFormTime(page, 'start', '10:00 AM')
+		await pickFormTime(page, 'end', '10:30 AM')
+		await page.getByRole('button', { name: 'Update' }).click()
+		await chooseScope(page, 'following')
+		await expect.poll(async () => (await rows(page)).length).toBe(2)
+
+		const [, next] = await rows(page)
+		expect(next.rrule?.byweekday).toEqual(['TH']) // serialised as in the published rows
+		await expect(bar(page, 'Weekly')).toHaveCount(1)
+	})
+})
+
 test.describe('export of a cut series (week view, UTC)', () => {
 	test('the RRULE has UNTIL and no COUNT', async ({ page }) => {
 		await open(page, [standup()])
@@ -511,6 +609,46 @@ test.describe('this and following in America/New_York', () => {
 		expect(next.start).toBe('2025-03-12T13:00:00.000Z')
 		await expect(bar(page, 'Check-in')).toHaveCount(3)
 		await expect(bar(page, 'Renamed')).toHaveCount(4)
+	})
+
+	test('a late-evening Wednesday series dragged to Thursday continues on Thursdays, by the calendar weekday', async ({
+		page,
+	}) => {
+		// 22:00 New York on a Wednesday is already Thursday in UTC, so a weekday
+		// read in the machine's zone instead of the calendar's would pick the
+		// wrong entry of the rule.
+		const lateWeekly = seedRow(
+			'L',
+			'Late',
+			'2025-03-06T03:00:00.000Z',
+			'2025-03-06T03:30:00.000Z',
+			{
+				uid: 'L',
+				rrule: {
+					freq: WEEKLY,
+					byweekday: [2],
+					dtstart: '2025-03-06T03:00:00.000Z',
+				},
+			}
+		)
+		await page.setViewportSize(TALL)
+		await open(page, [lateWeekly], {
+			view: 'week',
+			timezone: 'America/New_York',
+			date: '2025-03-12T16:00:00.000Z',
+		})
+		await pressAndMove(
+			page,
+			bar(page, 'Late').first(),
+			new TimeGrid(page).slotAt('2025-03-14T03:00') // Thu 13 23:00 in New York (cells read UTC)
+		)
+		await chooseScope(page, 'following')
+		await expect.poll(async () => (await rows(page)).length).toBe(2)
+
+		const [, next] = await rows(page)
+		expect(next.start).toBe('2025-03-14T03:00:00.000Z')
+		expect(next.rrule?.byweekday).toEqual(['TH'])
+		await expect(bar(page, 'Late')).toHaveCount(1)
 	})
 })
 

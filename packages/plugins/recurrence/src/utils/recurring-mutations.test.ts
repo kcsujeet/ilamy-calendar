@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
-import { RRule } from 'rrule'
+import { RRule, type Weekday } from 'rrule'
 import { recurrencePlugin } from '../recurrence-plugin'
+import type { RRuleOptions } from '../types'
 import { deleteRecurringEvent } from './delete-recurring-event'
 import { updateRecurringEvent } from './update-recurring-event'
 
@@ -331,6 +332,172 @@ describe('recurring mutations', () => {
 			const overridden = generated?.filter((e) => e.start.isSame(overrideDate))
 			expect(overridden).toHaveLength(1)
 			expect(overridden?.at(0)?.title).toBe('Overridden Title')
+		})
+	})
+
+	describe('"following" edit that moves the occurrence to another day', () => {
+		// A series from Wed 5 March 2025 09:00Z. Its 12th occurrence is edited
+		// "this and following" and moved a day (Thursday 13th) or a week (19th).
+		const SEED_START = '2025-03-05T09:00:00.000Z'
+		const MARCH_12 = '2025-03-12T09:00:00.000Z'
+		// Starts well before the edited occurrence, so it is never the first one.
+		const seriesWith = (
+			rrule: Partial<RRuleOptions>,
+			seedStart = SEED_START
+		): CalendarEvent => ({
+			id: 'series',
+			title: 'Series',
+			start: dayjs(seedStart),
+			end: dayjs(seedStart).add(30, 'minute'),
+			rrule: {
+				freq: RRule.WEEKLY,
+				dtstart: new Date(seedStart),
+				...rrule,
+			},
+		})
+		const moveFollowing = (
+			base: CalendarEvent,
+			occurrence: string,
+			movedTo: string
+		) => {
+			const occurrenceStart = dayjs(occurrence)
+			const targetEvent: CalendarEvent = {
+				...base,
+				id: 'series_1',
+				start: occurrenceStart,
+				end: occurrenceStart.add(30, 'minute'),
+				rrule: undefined,
+				uid: 'series@ilamy.calendar',
+			}
+			const start = dayjs(movedTo)
+			const result = updateRecurringEvent({
+				targetEvent,
+				updates: { start, end: start.add(30, 'minute') },
+				currentEvents: [{ ...base, uid: 'series@ilamy.calendar' }],
+				scope: 'following',
+			})
+			const added = result.added.at(0)
+			const movedStart = start.toISOString()
+			const generated = recurrencePlugin().transformEvents?.(result.events, {
+				start: dayjs('2025-03-09T00:00:00.000Z'),
+				end: dayjs('2025-04-30T00:00:00.000Z'),
+			})
+			const starts = (generated ?? [])
+				.map((e) => e.start.toISOString())
+				.filter((iso) => iso >= movedStart)
+			return { rule: added?.rrule, starts }
+		}
+		const weekdays = (rule?: RRuleOptions) =>
+			[rule?.byweekday ?? []].flat().map((day) => {
+				if (typeof day === 'number') {
+					return day
+				}
+				const { weekday, n } = day as Weekday
+				return n === undefined ? weekday : `${weekday}:${n}`
+			})
+
+		it('moves a weekly series to the new weekday and keeps the moved occurrence', () => {
+			const { rule, starts } = moveFollowing(
+				seriesWith({ byweekday: [2] }),
+				MARCH_12,
+				'2025-03-13T10:00:00.000Z'
+			)
+			expect(weekdays(rule)).toEqual([3])
+			expect(starts.slice(0, 3)).toEqual([
+				'2025-03-13T10:00:00.000Z',
+				'2025-03-20T10:00:00.000Z',
+				'2025-03-27T10:00:00.000Z',
+			])
+		})
+
+		it('moves only the weekday that named the occurrence in a multi-day rule', () => {
+			const { rule } = moveFollowing(
+				seriesWith({ byweekday: [0, 2, 4] }),
+				MARCH_12,
+				'2025-03-13T10:00:00.000Z'
+			)
+			expect(weekdays(rule)).toEqual([0, 3, 4])
+		})
+
+		it('reads weekdays given as rrule constants', () => {
+			const { rule } = moveFollowing(
+				seriesWith({ byweekday: [RRule.WE] }),
+				MARCH_12,
+				'2025-03-13T10:00:00.000Z'
+			)
+			expect(weekdays(rule)).toEqual([3])
+		})
+
+		it('leaves a rule that already names the new weekday', () => {
+			const { rule } = moveFollowing(
+				seriesWith({ byweekday: [2, 3] }),
+				MARCH_12,
+				'2025-03-13T10:00:00.000Z'
+			)
+			expect(weekdays(rule)).toEqual([2, 3])
+		})
+
+		it('leaves the weekdays alone when only the time changes', () => {
+			const { rule } = moveFollowing(
+				seriesWith({ byweekday: [2] }),
+				MARCH_12,
+				'2025-03-12T11:00:00.000Z'
+			)
+			expect(weekdays(rule)).toEqual([2])
+		})
+
+		it('moves a monthly series to the new day of the month', () => {
+			const { rule, starts } = moveFollowing(
+				seriesWith(
+					{ freq: RRule.MONTHLY, bymonthday: [12] },
+					'2025-01-12T09:00:00.000Z'
+				),
+				MARCH_12,
+				'2025-03-13T10:00:00.000Z'
+			)
+			expect(rule?.bymonthday).toEqual([13])
+			// April's start depends on the zone's clock (same wall time), so only
+			// its day is pinned.
+			expect(starts.at(0)).toBe('2025-03-13T10:00:00.000Z')
+			expect(starts.at(1)?.slice(0, 10)).toBe('2025-04-13')
+		})
+
+		it('moves a yearly series to the new month and day', () => {
+			const { rule } = moveFollowing(
+				seriesWith(
+					{ freq: RRule.YEARLY, bymonth: [3], bymonthday: [12] },
+					'2024-03-12T09:00:00.000Z'
+				),
+				MARCH_12,
+				'2025-04-13T10:00:00.000Z'
+			)
+			expect(rule?.bymonth).toEqual([4])
+			expect(rule?.bymonthday).toEqual([13])
+		})
+
+		it('moves an nth weekday of the month to the nth of the new date', () => {
+			const { rule } = moveFollowing(
+				seriesWith(
+					{ freq: RRule.MONTHLY, byweekday: [RRule.WE.nth(2)] },
+					'2025-02-12T09:00:00.000Z'
+				),
+				MARCH_12,
+				'2025-03-13T10:00:00.000Z'
+			)
+			expect(weekdays(rule)).toEqual(['3:2'])
+		})
+
+		it('moves an nth weekday of the month when the weekday stays but the week changes', () => {
+			const { rule, starts } = moveFollowing(
+				seriesWith(
+					{ freq: RRule.MONTHLY, byweekday: [RRule.WE.nth(2)] },
+					'2025-02-12T09:00:00.000Z'
+				),
+				MARCH_12,
+				'2025-03-19T10:00:00.000Z'
+			)
+			expect(weekdays(rule)).toEqual(['2:3'])
+			expect(starts.at(0)).toBe('2025-03-19T10:00:00.000Z')
 		})
 	})
 })

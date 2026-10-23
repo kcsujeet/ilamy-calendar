@@ -5,7 +5,9 @@ import type {
 } from '@ilamy/calendar'
 import dayjs from '@ilamy/utils/dayjs'
 import { wallClockDiff } from '@ilamy/utils/helpers'
+import { type ByWeekday, RRule, Weekday } from 'rrule'
 import type { RRuleOptions } from '../types'
+import { getNthWeekdayOfMonth } from './recurrence-presets'
 import {
 	countOccurrencesBefore,
 	cutSeriesBefore,
@@ -63,6 +65,93 @@ const getFollowingSeriesStart = (
 	return withTimeOfDay(originalStart.add(daysMoved, 'day'), editedStart)
 }
 
+const toWeekday = (day: ByWeekday): Weekday => {
+	if (typeof day === 'number') {
+		return new Weekday(day)
+	}
+	return typeof day === 'string' ? RRule[day] : day
+}
+
+// rrule numbers weekdays from Monday (0); dayjs from Sunday (0).
+const getRRuleWeekdayNumber = (day: Dayjs): number => (day.day() + 6) % 7
+
+const weekdayOccursOn = (entry: ByWeekday, day: Dayjs): boolean => {
+	const { weekday, n } = toWeekday(entry)
+	const isSameWeekday = weekday === getRRuleWeekdayNumber(day)
+	const isSameNth = n === undefined || n === getNthWeekdayOfMonth(day.toDate())
+	return isSameWeekday && isSameNth
+}
+
+const moveWeekday = (entry: ByWeekday, to: Dayjs): Weekday => {
+	const { n } = toWeekday(entry)
+	const nth = n === undefined ? undefined : getNthWeekdayOfMonth(to.toDate())
+	return new Weekday(getRRuleWeekdayNumber(to), nth)
+}
+
+/**
+ * Moves the entries of a by-rule that name `from`'s day onto `to`'s day, so a
+ * series that starts on `to` has a DTSTART that is one of its own instances.
+ * A rule that already names `to`'s day is the user's choice and is left alone.
+ */
+const moveEntries = <T>(
+	entries: T[],
+	occursOn: (entry: T, day: Dayjs) => boolean,
+	move: (entry: T) => T,
+	{ from, to }: { from: Dayjs; to: Dayjs }
+): T[] => {
+	const namesNewDay = entries.some((entry) => occursOn(entry, to))
+	if (namesNewDay) {
+		return entries
+	}
+	return entries.map((entry) => (occursOn(entry, from) ? move(entry) : entry))
+}
+
+const toArray = <T>(value: T | T[]): T[] =>
+	Array.isArray(value) ? value : [value]
+
+/**
+ * A "following" edit that moves the occurrence to another weekday or day of the
+ * month starts the new series there, so the rule's by-weekday, by-month-day and
+ * by-month entries that named the old day follow it. RFC 5545 §3.8.5.3: DTSTART
+ * is the first instance and "SHOULD be synchronized with the recurrence rule";
+ * rrule.js skips a DTSTART the rule does not match, so the moved occurrence
+ * vanished. Rules counted from the end (a negative day) and BYSETPOS are left as
+ * written. Unverified: whether Google Calendar moves only the entry that named
+ * the old day (as here) or every weekday of a multi-day rule.
+ */
+const moveRuleToStart = (
+	rule: RRuleOptions,
+	days: { from: Dayjs; to: Dayjs }
+): RRuleOptions => {
+	const { to } = days
+	const moved = { ...rule }
+	if (rule.byweekday != null) {
+		moved.byweekday = moveEntries(
+			toArray(rule.byweekday),
+			weekdayOccursOn,
+			(entry) => moveWeekday(entry, to),
+			days
+		)
+	}
+	if (rule.bymonthday != null) {
+		moved.bymonthday = moveEntries(
+			toArray(rule.bymonthday),
+			(date, day) => date === day.date(),
+			() => to.date(),
+			days
+		)
+	}
+	if (rule.bymonth != null) {
+		moved.bymonth = moveEntries(
+			toArray(rule.bymonth),
+			(month, day) => month === day.month() + 1,
+			() => to.month() + 1,
+			days
+		)
+	}
+	return moved
+}
+
 /**
  * The rule of the new series. A rule whose COUNT the user left alone keeps the
  * occurrences that were left, so cutting a 7-occurrence series after 3 gives
@@ -71,11 +160,16 @@ const getFollowingSeriesStart = (
  */
 const getFollowingRule = ({
 	baseEvent,
+	targetEvent,
 	updates,
 	occurrencesBefore,
 	dtstart,
 }: FollowingSeriesArgs & { dtstart: Date }): RRuleOptions => {
-	const mergedRule = { ...baseEvent.rrule, ...updates.rrule }
+	const originalStart = dayjs(getOccurrenceStartISO(targetEvent))
+	const mergedRule = moveRuleToStart(
+		{ ...baseEvent.rrule, ...updates.rrule } as RRuleOptions,
+		{ from: originalStart, to: dayjs(dtstart) }
+	)
 	const submittedCount = mergedRule.count
 	const isCountUnchanged = submittedCount === baseEvent.rrule?.count
 	const count =

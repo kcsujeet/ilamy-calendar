@@ -366,3 +366,44 @@ test.describe('weekNumbers in the daily resource week', () => {
 		).toHaveCount(0)
 	})
 })
+
+/*
+ * The week number fades in again on navigation, like the day numbers beside it.
+ * `AnimatedSection` replays its animation by remounting on a new key, so the
+ * check is that the element is replaced by an animated one, not a race against
+ * the 500ms fade.
+ */
+test.describe('the week number animates on navigation', () => {
+	const cases = [
+		{ name: 'week view', orientation: undefined, granularity: undefined },
+		{
+			name: 'resource week, vertical hourly',
+			orientation: 'vertical' as const,
+			granularity: 'hourly',
+		},
+		{
+			name: 'resource week, vertical daily',
+			orientation: 'vertical' as const,
+			granularity: 'daily',
+		},
+	]
+
+	for (const { name, orientation, granularity } of cases) {
+		test(`${name}: a new, animated number replaces the old one`, async ({
+			page,
+		}) => {
+			await gotoScenario(page, {
+				scenario: orientation ? 'resources' : 'basic',
+				view: 'week',
+				orientation,
+				settings: granularity ? { granularity } : {},
+			})
+			const before = await page.getByTestId('week-number').elementHandle()
+			await page.getByLabel('Next').click()
+
+			await expect(page.getByTestId('week-number')).toHaveText('12')
+			expect(await before?.evaluate((node) => node.isConnected)).toBe(false)
+			await expect(page.getByTestId('week-number')).toHaveClass(/animate-in/)
+		})
+	}
+})

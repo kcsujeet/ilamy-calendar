@@ -1,6 +1,7 @@
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import {
 	GUTTER_WIDTH,
 	STICKY_GUTTER_SHADOW,
@@ -20,6 +21,7 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 > = ({ columns, weekNumber }) => {
 	const { weekNumbers } = useSmartCalendarContext()
 	const showsWeekNumber = weekNumbers !== false
+	const weekNumberText = String(weekNumber)
 
 	return (
 		<div className="flex h-12 gap-px bg-border">
@@ -30,13 +32,18 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 					STICKY_GUTTER_SHADOW
 				)}
 			>
+				{/* Animated like the day labels beside it and the week view's number
+				    (week.tsx): a new number fades in on navigation. */}
 				{showsWeekNumber && (
-					<span
-						className="px-2 h-full w-full flex justify-center items-start font-medium"
-						data-testid="week-number"
-					>
-						{weekNumber}
-					</span>
+					<div className="px-2 h-full w-full flex justify-center items-start">
+						<AnimatedSection
+							className="font-medium text-center"
+							data-testid="week-number"
+							transitionKey={weekNumberText}
+						>
+							{weekNumberText}
+						</AnimatedSection>
+					</div>
 				)}
 			</div>
 			{columns.map((col, index) => {

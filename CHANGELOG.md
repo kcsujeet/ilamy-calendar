@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file. Dates are d
 
 ##### Fixes
 
+- fix: in the vertical resource week (hourly and daily), the week number now fades in on navigation like the day labels beside it and the week view's number; it used to change without animating
 - fix: with a `locale` whose week starts on another day than Sunday (fr, de, ar) and the default `firstDayOfWeek`, the week view showed the previous week on a Sunday, the month grid started a week early so the month's last days were never drawn, and the event form's date picker offered no 30th or 31st. `firstDayOfWeek` now alone decides where a week starts, whatever the locale
 - fix: dragging a recurring occurrence to another weekday or day of the month and choosing "This and following events" now continues the series on that day; before, the new series kept the old weekday or date and the moved occurrence disappeared
 - fix: event bars in the time grids sat 4 to 7px below their time slot, because the bar's wrapper sat on the text baseline ([`#345`](https://github.com/kcsujeet/ilamy-calendar/pull/345))

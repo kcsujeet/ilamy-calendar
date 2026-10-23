@@ -1,6 +1,7 @@
 import type { Resource } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type React from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
 import { ResourceCell } from '@/features/calendar/components/resource-cell'
 import {
 	GUTTER_WIDTH,
@@ -21,6 +22,7 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 	const { weekViewGranularity, t, weekNumbers } = useSmartCalendarContext()
 	const isHourly = weekViewGranularity === 'hourly'
 	const showsWeekNumber = weekNumbers !== false
+	const weekNumberText = String(weekNumber)
 
 	return (
 		<div className="flex h-12 gap-px bg-border">
@@ -40,13 +42,16 @@ export const ResourceWeekVerticalResourceHeader: React.FC<
 					{showsWeekNumber && (
 						<span className="truncate w-full">{t('week')}</span>
 					)}
+					{/* The word stays put and the number animates, as in the week
+					    view's header (week.tsx). */}
 					{showsWeekNumber && !isHourly && (
-						<span
+						<AnimatedSection
 							className="font-medium text-foreground truncate w-full"
 							data-testid="week-number"
+							transitionKey={weekNumberText}
 						>
-							{weekNumber}
-						</span>
+							{weekNumberText}
+						</AnimatedSection>
 					)}
 				</span>
 			</div>

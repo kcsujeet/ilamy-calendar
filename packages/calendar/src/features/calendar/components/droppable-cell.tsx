@@ -454,8 +454,8 @@ export function SlotCell({
 	// A ref callback, not an effect: it runs on every commit of the cell like an
 	// effect without dependencies would, for a fraction of the cost (an effect
 	// per slot added 0.8 s to mounting 20,000 of them).
-	const publish = () => {
-		slots[slotIndex] = cell.data
+	const publish = (element: HTMLElement | null) => {
+		slots[slotIndex] = element ? { data: cell.data, element } : undefined
 	}
 	const showDropHighlight = dragLandsOnCell({
 		dragPreview,

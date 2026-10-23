@@ -695,18 +695,26 @@ describe('useCalendarDrag over a time column', () => {
 		id: 'event-1',
 		data: { current: { type: 'calendar-event', event: dragged } },
 	}
-	const slotAt = (hour: number) => ({
-		type: 'day-cell',
-		date: dayjs('2025-03-15T00:00:00.000Z').hour(hour),
-		hour,
-		minute: 0,
-		slotDurationMinutes: 60,
-	})
-	// Two one-hour rows 4px apart: 100-160 and 164-224.
+	// Two one-hour rows 4px apart, drawn at 100-160 and 164-224.
+	const slotAt = (hour: number) => {
+		const top = 100 + (hour - 9) * 64
+		return {
+			data: {
+				type: 'day-cell',
+				date: dayjs('2025-03-15T00:00:00.000Z').hour(hour),
+				hour,
+				minute: 0,
+				slotDurationMinutes: 60,
+			},
+			element: {
+				getBoundingClientRect: () => ({ top, bottom: top + 60, height: 60 }),
+			},
+		}
+	}
 	const columnOf = (slots: Array<ReturnType<typeof slotAt> | undefined>) => ({
 		id: 'column',
 		rect: { top: 100, left: 0, width: 80, height: 124 },
-		data: { current: { slots, slotsPerRow: 1, rowGap: 4 } },
+		data: { current: { slots } },
 	})
 	const column = columnOf([slotAt(9), slotAt(10)])
 

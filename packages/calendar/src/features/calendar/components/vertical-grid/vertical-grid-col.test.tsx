@@ -286,16 +286,19 @@ describe('VerticalGridCol drop target', () => {
 		const registered = renderColumnInDnd(30)
 
 		const published = registered().at(0)?.data.current as {
-			slots: Array<{ hour?: number; minute?: number }>
-			slotsPerRow: number
+			slots: Array<{
+				data: { hour?: number; minute?: number }
+				element: Element
+			}>
 		}
-		expect(published.slotsPerRow).toBe(2)
-		expect(published.slots.map(({ hour, minute }) => [hour, minute])).toEqual([
-			[9, 0],
-			[9, 30],
-			[10, 0],
-			[10, 30],
-		])
+		expect(published.slots.map(({ data }) => [data.hour, data.minute])).toEqual(
+			[
+				[9, 0],
+				[9, 30],
+				[10, 0],
+				[10, 30],
+			]
+		)
 	})
 })
 

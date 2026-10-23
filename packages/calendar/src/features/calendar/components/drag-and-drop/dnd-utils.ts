@@ -46,26 +46,27 @@ export interface Pointer {
 	y: number
 }
 
+/** A slot of a time column: what a drop reads from it, and the element it is drawn as. */
+export interface DropSlot {
+	data: DropCellData
+	element: Pick<HTMLElement, 'getBoundingClientRect'>
+}
+
 /**
- * What a time column registers with dnd-kit: its slots, each the `DropCellData`
- * a droppable slot would have published, and how they are laid out. The slot
- * cells fill the array in themselves.
+ * What a time column registers with dnd-kit: its slots, row after row. The
+ * slot cells fill the array in themselves.
  *
  * One drop target per column, not one per slot, because dnd-kit copies its
  * whole droppable registry on every registration: a droppable per slot made
  * mounting a resource week O(slots²), 7 s for the 20,000 slots of 30 resources
- * at 15 minutes. The slot under the pointer is found from its height instead.
+ * at 15 minutes. The slot under the pointer is found from where the slots are
+ * drawn instead (`findSlotInColumn`).
  */
 export interface DropColumnData {
-	/** Every slot of the column, row after row. */
-	slots: Array<DropCellData | undefined>
-	/** How many slots each row holds. */
-	slotsPerRow: number
-	/** The gap between two rows, in px. Rows are equal, so this is all the geometry there is. */
-	rowGap: number
+	slots: Array<DropSlot | undefined>
 }
 
-/** The box of a drop target, as dnd-kit measures it. */
+/** The box of a drop target. */
 interface DropRect {
 	top: number
 	left: number
@@ -101,37 +102,78 @@ const snapWithinCell = (
 	return snapDropCell(cell, fractionIntoCell)
 }
 
+const EMPTY_RECT: DropRect = { top: 0, left: 0, width: 0, height: 0 }
+
+/** The box a slot is drawn in now; undefined for one that has not published itself. */
+const getSlotRect = (
+	slots: DropColumnData['slots'],
+	index: number
+): DOMRect | undefined => {
+	const isInColumn = index >= 0 && index < slots.length
+	return isInColumn
+		? slots.at(index)?.element.getBoundingClientRect()
+		: undefined
+}
+
 /**
- * The slot of a column the pointer is over, and the box that slot occupies.
- * The rows are equal and `rowGap` apart. The gap belongs to the row above it:
- * dnd-kit hit-tests the whole-pixel coordinates of mouse events, which are never
- * in a 1px gap, so the cells this stands in for covered it; the pointer position
- * read here is fractional for a pointer event and can be. An edge shared by two
- * slots belongs to the earlier, as it did when each cell contained its own edges
- * and the first registered won a point on both.
+ * The index of the last slot that starts at or above `pointerY`, or 0 when
+ * none does: a binary search over where the slots are drawn now, so a handful
+ * of reads however many slots there are. A slot that has not published itself
+ * counts as starting below everything.
+ */
+const findLastSlotStartingAtOrAbove = (
+	slots: DropColumnData['slots'],
+	pointerY: number
+): number => {
+	let first = 0
+	let last = slots.length - 1
+	while (first < last) {
+		const middle = Math.ceil((first + last) / 2)
+		const middleTop =
+			getSlotRect(slots, middle)?.top ?? Number.POSITIVE_INFINITY
+		if (middleTop <= pointerY) {
+			first = middle
+		} else {
+			last = middle - 1
+		}
+	}
+	return first
+}
+
+/** Whether the pointer is exactly where the slot starts, and the slot above it ends there too. */
+const isOnEdgeSharedWithEarlier = (
+	slots: DropColumnData['slots'],
+	index: number,
+	pointerY: number
+): boolean => {
+	const startsAtPointer = getSlotRect(slots, index)?.top === pointerY
+	const earlierBottom = getSlotRect(slots, index - 1)?.bottom ?? Number.NaN
+	return startsAtPointer && earlierBottom >= pointerY
+}
+
+/**
+ * The slot of a column the pointer is over, and the box it is drawn in. The
+ * slots are not equal (the last of an hour gives 1px to the line below it) and
+ * a slot's height is not its drop's to assume, so each is read from its own
+ * element, as it is now (`findLastSlotStartingAtOrAbove`).
+ *
+ * The 1px gap between two rows belongs to the row above it: dnd-kit hit-tests
+ * the whole-pixel coordinates of mouse events, which are never in a 1px gap, so
+ * the cells this stands in for covered it; the pointer position read here is
+ * fractional for a pointer event and can be. An edge shared by two slots
+ * belongs to the earlier, as it did when each cell contained its own edges and
+ * the first registered won a point on both.
  */
 const findSlotInColumn = (
-	{ slots, slotsPerRow, rowGap }: DropColumnData,
-	rect: DropRect,
+	{ slots }: DropColumnData,
 	pointer: Pointer | undefined
 ): { slot: DropCellData | undefined; slotRect: DropRect } => {
-	const rowCount = slots.length / slotsPerRow
-	const rowHeight = (rect.height - (rowCount - 1) * rowGap) / rowCount
-	const slotHeight = rowHeight / slotsPerRow
-	const pointerDown = pointer ? Math.max(0, pointer.y - rect.top) : 0
-	const rowStride = rowHeight + rowGap
-	const rowIndex = Math.min(Math.floor(pointerDown / rowStride), rowCount - 1)
-	const downTheRow = pointerDown - rowIndex * rowStride
-	const slotInRow = Math.min(
-		Math.max(Math.ceil(downTheRow / slotHeight) - 1, 0),
-		slotsPerRow - 1
-	)
-	const slotRect = {
-		...rect,
-		top: rect.top + rowIndex * rowStride + slotInRow * slotHeight,
-		height: slotHeight,
-	}
-	return { slot: slots.at(rowIndex * slotsPerRow + slotInRow), slotRect }
+	const pointerY = pointer ? pointer.y : Number.NEGATIVE_INFINITY
+	const found = findLastSlotStartingAtOrAbove(slots, pointerY)
+	const isSharedWithEarlier = isOnEdgeSharedWithEarlier(slots, found, pointerY)
+	const index = isSharedWithEarlier ? found - 1 : found
+	const slotRect = getSlotRect(slots, index) ?? EMPTY_RECT
+	return { slot: slots.at(index)?.data, slotRect }
 }
 
 /**
@@ -148,8 +190,9 @@ const findSlotInColumn = (
  * twice. A drag with no pointer (keyboard) keeps the start of the cell.
  *
  * Over a time column the cell is first picked from the column's slots by the
- * pointer's height (`findSlotInColumn`), and a slot is then snapped like any
- * other cell.
+ * pointer's height against where each slot is drawn now (`findSlotInColumn`;
+ * the column's own `over.rect` is not read), and a slot is then snapped like
+ * any other cell.
  */
 export const getSnappedOverData = (
 	over: DragOverEvent['over'],
@@ -163,7 +206,7 @@ export const getSnappedOverData = (
 		return undefined
 	}
 	if (isDropColumn(dropped)) {
-		const { slot, slotRect } = findSlotInColumn(dropped, over.rect, pointer)
+		const { slot, slotRect } = findSlotInColumn(dropped, pointer)
 		return snapWithinCell(slot, slotRect, pointer)
 	}
 	return snapWithinCell(dropped, over.rect, pointer)

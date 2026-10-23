@@ -24,9 +24,6 @@ export interface VerticalGridColProps extends VerticalColumnSpec {
 	slotDurationMinutes?: number
 }
 
-/** The 1px of Tailwind's `gap-px`, which draws the lines between a column's rows. */
-const ROW_GAP_PX = 1
-
 /** The minute each slot of an hour starts at: `[0, 15, 30, 45]` for 15-minute slots. */
 const getSlotOffsets = (slotDurationMinutes: number): number[] =>
 	Array.from(
@@ -173,7 +170,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 
 	const { setNodeRef } = useDroppable({
 		id: useId(),
-		data: { slots, slotsPerRow, rowGap: ROW_GAP_PX },
+		data: { slots },
 		disabled: renderCell !== undefined,
 	})
 

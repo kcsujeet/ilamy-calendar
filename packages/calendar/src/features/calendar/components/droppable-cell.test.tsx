@@ -574,11 +574,15 @@ describe('SlotCell (a slot of a time column)', () => {
 	test('publishes what a drop reads at its place in the column', () => {
 		const slots = renderSlot()
 
-		expect(slots.map((slot) => slot && [slot.hour, slot.minute])).toEqual([
-			undefined,
-			undefined,
-			[10, 30],
-		])
+		expect(
+			slots.map((slot) => slot && [slot.data.hour, slot.data.minute])
+		).toEqual([undefined, undefined, [10, 30]])
+	})
+
+	test('publishes the element it is drawn as, which is where a drop finds it', () => {
+		const slots = renderSlot()
+
+		expect(slots.at(2)?.element).toBe(screen.getByTestId('slot'))
 	})
 
 	test('publishes that it refuses drops when it is disabled', () => {
@@ -602,7 +606,7 @@ describe('SlotCell (a slot of a time column)', () => {
 			</CalendarProvider>
 		)
 
-		expect(slots.at(0)?.disabled).toBe(true)
+		expect(slots.at(0)?.data.disabled).toBe(true)
 	})
 
 	test('keeps the attributes of a droppable cell', () => {

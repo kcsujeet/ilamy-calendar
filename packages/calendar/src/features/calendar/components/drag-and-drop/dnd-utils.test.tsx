@@ -10,6 +10,7 @@ import {
 	calculateDropTimes,
 	calculateResizeTimes,
 	type DropCellData,
+	type DropSlot,
 	getPressedResizeEdge,
 	getSnappedOverData,
 	getUpdatedEvent,
@@ -1179,26 +1180,57 @@ describe('snapping inside a cell', () => {
 		})
 
 		describe('over a time column (one drop target for all its slots)', () => {
-			// Two hour rows of two 30-minute slots, 4px apart: rows span 100-160 and
-			// 164-224, a slot is 30px, and the column is 124px tall in all.
-			const column = { top: 100, left: 200, width: 80, height: 124 }
-			const slotAt = (hour: number, minute: number): DropCellData => ({
-				type: 'day-cell',
-				date: at('2025-03-12T00:00:00').hour(hour).minute(minute),
-				hour,
-				minute,
-				slotDurationMinutes: 30,
-				axis: 'vertical',
+			// Two hour rows of two 30-minute slots, as the grid draws them: the first
+			// slot of an hour is 30.5px and the last gives 1px to the line below it,
+			// so a row is 60px and the next starts 1px after it. Rows span 100-160
+			// and 161-221.
+			const tops = [100, 130.5, 161, 191.5]
+			const heights = [30.5, 29.5, 30.5, 29.5]
+			let scrolledBy = 0
+			beforeEach(() => {
+				scrolledBy = 0
 			})
-			const slots = [slotAt(9, 0), slotAt(9, 30), slotAt(10, 0), slotAt(10, 30)]
-			const overColumn = (
-				published: Array<DropCellData | undefined>,
-				columnRect = column
-			) =>
+			const slotAt = (
+				index: number,
+				hour: number,
+				minute: number
+			): DropSlot => ({
+				data: {
+					type: 'day-cell',
+					date: at('2025-03-12T00:00:00').hour(hour).minute(minute),
+					hour,
+					minute,
+					slotDurationMinutes: 30,
+					axis: 'vertical',
+				},
+				// Read where it is now, as the grid draws it after any scroll.
+				element: {
+					getBoundingClientRect: () => {
+						const top = tops[index] - scrolledBy
+						const height = heights[index]
+						return {
+							top,
+							bottom: top + height,
+							left: 200,
+							right: 280,
+							width: 80,
+							height,
+						} as DOMRect
+					},
+				},
+			})
+			const slots = [
+				slotAt(0, 9, 0),
+				slotAt(1, 9, 30),
+				slotAt(2, 10, 0),
+				slotAt(3, 10, 30),
+			]
+			const overColumn = (published: Array<DropSlot | undefined>) =>
 				({
 					id: 'column',
-					rect: columnRect,
-					data: { current: { slots: published, slotsPerRow: 2, rowGap: 4 } },
+					// Not where the slots are drawn: it must not be what a slot is read from.
+					rect: { top: 0, left: 0, width: 1, height: 1 },
+					data: { current: { slots: published } },
 				}) as unknown as DragEndEvent['over']
 			const slotAtY = (y: number) =>
 				getSnappedOverData(overColumn(slots), { x: 210, y })
@@ -1207,14 +1239,15 @@ describe('snapping inside a cell', () => {
 				return slot && [slot.hour, slot.minute]
 			}
 
-			it('resolves the slot from the pointer height within its row', () => {
-				expect([100, 129, 131, 159].map(startAt)).toEqual([
+			it('resolves the slot from the pointer height, at the edges the slots are drawn with', () => {
+				// The 9:30 slot starts at 130.5, not at the 130 an equal split gives.
+				expect([100, 130.4, 130.6, 160].map(startAt)).toEqual([
 					[9, 0],
 					[9, 0],
 					[9, 30],
 					[9, 30],
 				])
-				expect([165, 193, 195, 224].map(startAt)).toEqual([
+				expect([161, 191.4, 191.6, 221].map(startAt)).toEqual([
 					[10, 0],
 					[10, 0],
 					[10, 30],
@@ -1225,7 +1258,7 @@ describe('snapping inside a cell', () => {
 			it('gives the gap between two rows to the row above', () => {
 				// dnd-kit hit-tests whole-pixel mouse coordinates, so the gap, which
 				// the pointer can only be in by a fraction, was the last slot above it.
-				expect([161, 162, 163].map(startAt)).toEqual([
+				expect([160.2, 160.5, 160.9].map(startAt)).toEqual([
 					[9, 30],
 					[9, 30],
 					[9, 30],
@@ -1235,17 +1268,20 @@ describe('snapping inside a cell', () => {
 			it('gives an edge shared by two slots to the earlier one', () => {
 				// Registered cells each contained their own edges, and the one
 				// registered first won a point on both.
-				expect([130, 160, 194].map(startAt)).toEqual([
+				expect([130.5, 191.5].map(startAt)).toEqual([
 					[9, 0],
-					[9, 30],
 					[10, 0],
 				])
 			})
 
-			it('measures the pointer against the column where it is now, not where it was', () => {
-				const scrolled = overColumn(slots, { ...column, top: column.top - 30 })
-				const snapped = getSnappedOverData(scrolled, { x: 210, y: 105 })
-				expect(snapped?.minute).toBe(30)
+			it('gives the first edge after a gap to the row below', () => {
+				expect(startAt(161)).toEqual([10, 0])
+			})
+
+			it('reads the slots where they are drawn now, not where they were', () => {
+				scrolledBy = 30
+				// The pointer has not moved, the grid has: 105 is now over the 9:30 slot.
+				expect(startAt(105)).toEqual([9, 30])
 			})
 
 			it('keeps the start of the first slot for a drag with no pointer (keyboard)', () => {
@@ -1254,17 +1290,20 @@ describe('snapping inside a cell', () => {
 			})
 
 			it('still snaps finer than the slot it picked', () => {
-				const finer = slots.map((slot) => ({ ...slot, snapMinutes: 10 }))
-				// 28 of the 30px of the 9:30 slot is its last 10-minute piece.
+				const finer = slots.map((slot) => ({
+					...slot,
+					data: { ...slot.data, snapMinutes: 10 },
+				}))
+				// 28 of the 29.5px of the 9:30 slot is its last 10-minute piece.
 				const snapped = getSnappedOverData(overColumn(finer), {
 					x: 210,
-					y: 158,
+					y: 158.5,
 				})
 				expect(snapped?.minute).toBe(50)
 			})
 
-			it('is undefined for a slot that has not published itself', () => {
-				const unpublished = [slots.at(0), undefined, undefined, undefined]
+			it('is undefined for slots that have not published themselves', () => {
+				const unpublished = [undefined, undefined, undefined, undefined]
 				expect(
 					getSnappedOverData(overColumn(unpublished), { x: 210, y: 140 })
 				).toBeUndefined()
@@ -1298,13 +1337,7 @@ describe('snapping inside a cell', () => {
 				over: {
 					id: 'column',
 					rect: { top: 100, left: 0, width: 80, height: 124 },
-					data: {
-						current: {
-							slots: [undefined, undefined],
-							slotsPerRow: 1,
-							rowGap: 4,
-						},
-					},
+					data: { current: { slots: [undefined, undefined] } },
 				},
 			} as unknown as DragEndEvent
 			expect(getUpdatedEvent(event, meeting, undefined, { x: 0, y: 130 })).toBe(

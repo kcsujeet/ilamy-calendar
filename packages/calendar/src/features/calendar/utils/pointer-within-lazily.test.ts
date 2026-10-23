@@ -38,6 +38,26 @@ describe('pointerWithinLazily', () => {
 		return { rect, counter }
 	}
 
+	// A container whose element is drawn at `drawnAt`, 10px square: where it
+	// really is, which dnd-kit's rect can lag behind.
+	const mkContainer = (
+		id: UniqueIdentifier,
+		drawnAt: { left: number; top: number }
+	) => {
+		const { left, top } = drawnAt
+		const element = {
+			getBoundingClientRect: () => ({
+				left,
+				top,
+				right: left + 10,
+				bottom: top + 10,
+				width: 10,
+				height: 10,
+			}),
+		}
+		return { id, node: { current: element } } as unknown as DroppableContainer
+	}
+
 	// A 4 x 4 grid of 10px cells, ids `cell-<column>-<row>`, in row order.
 	const detectWith = (
 		detect: CollisionDetection,
@@ -47,13 +67,17 @@ describe('pointerWithinLazily', () => {
 			const column = index % 4
 			const row = Math.floor(index / 4)
 			const id = `cell-${column}-${row}`
-			return { id, ...mkRect(column * 10, row * 10, 10) }
+			return {
+				id,
+				drawnAt: { left: column * 10, top: row * 10 },
+				...mkRect(column * 10, row * 10, 10),
+			}
 		})
 		const droppableRects = new Map<UniqueIdentifier, ClientRect>(
 			cells.map((cell) => [cell.id, cell.rect])
 		)
-		const droppableContainers = cells.map(
-			(cell) => ({ id: cell.id }) as unknown as DroppableContainer
+		const droppableContainers = cells.map((cell) =>
+			mkContainer(cell.id, cell.drawnAt)
 		)
 		const collisions = detect({
 			active: {} as Active,
@@ -75,9 +99,13 @@ describe('pointerWithinLazily', () => {
 	]
 
 	it.each(pointers)('returns what pointerWithin returns at %o', (pointer) => {
-		const expected = detectWith(pointerWithin, pointer).collisions
-		const actual = detectWith(pointerWithinLazily, pointer).collisions
-		expect(actual).toEqual(expected)
+		// Each call draws its own containers, so compare who hit and how they rank.
+		const rank = (detect: CollisionDetection) =>
+			detectWith(detect, pointer).collisions.map(({ id, data }) => [
+				id,
+				data?.value,
+			])
+		expect(rank(pointerWithinLazily)).toEqual(rank(pointerWithin))
 	})
 
 	it('returns no collisions without a pointer', () => {
@@ -90,5 +118,27 @@ describe('pointerWithinLazily', () => {
 		// the one it hit to rank it.
 		expect(detectWith(pointerWithin, pointer).reads).toBe(66)
 		expect(detectWith(pointerWithinLazily, pointer).reads).toBe(40)
+	})
+
+	// A sticky element does not scroll with its container, but dnd-kit moves its
+	// rect with the scroll as if it did: after a wheel turn the all-day strip is
+	// measured 120px below where it is drawn, over the pointer.
+	it('ignores a cell that is no longer drawn where dnd-kit measured it', () => {
+		const droppableRects = new Map<UniqueIdentifier, ClientRect>([
+			['strip', mkRect(0, 20, 10).rect],
+			['slot', mkRect(0, 20, 10).rect],
+		])
+		const collisions = pointerWithinLazily({
+			active: {} as Active,
+			collisionRect: mkRect(0, 0, 0).rect,
+			droppableRects,
+			droppableContainers: [
+				mkContainer('strip', { left: 0, top: 0 }),
+				mkContainer('slot', { left: 0, top: 20 }),
+			],
+			pointerCoordinates: { x: 5, y: 25 },
+		})
+
+		expect(collisions.map((collision) => collision.id)).toEqual(['slot'])
 	})
 })

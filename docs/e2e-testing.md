@@ -199,6 +199,35 @@ colour, an invisible element, a collapsed bar. That would be evidence the
 behaviour assertions have a blind spot worth the maintenance cost, and the
 decision should turn on that evidence rather than on the idea being appealing.
 
+## Writing specs that survive a slow runner
+
+CI runs on a slower machine than yours, and a spec that is only right when the
+browser keeps up fails there and nowhere else. To reproduce one locally, throttle
+the CPU (CDP `Emulation.setCPUThrottlingRate`, 4 to 6x) and run with 4 workers.
+Four patterns have caused every such failure so far; the helpers live in
+`tests/support/harness.ts`, so use them instead of writing a local copy.
+
+- **Measure after animations.** Bars slide in over 500ms, so a box read earlier is
+  not where the bar settles. Call `settleAnimations(page)` before any
+  `boundingBox()` that a press or a drop depends on.
+- **Lift the pointer with `releasePointer(page)`, never a bare
+  `page.mouse.up()`.** A release in the same frame as the last move can drop on
+  the cell the drag showed one move earlier. A touch drag has no `mouse.up()`:
+  call `waitForDragRender(page)` before its `touchEnd`. Also keep a drop target out of the
+  grid's auto-scroll zone (near the edge of a scrolling grid): the held pointer
+  scrolls the grid for as long as the drag lasts, so the drop lands somewhere
+  that depends on how slow the runner is.
+- **Do not race a timer to assert a pending or abandoned fetch.** A `fetchDelay`
+  that is long enough locally is over between two clicks on a slow runner. Use
+  `fetch: 'held'` (or `resourcesFetch: 'held'`) while acting, wait for the calls
+  to register (poll `fetchLog()`), then `setSettings(page, { fetch: 'delayed' })`
+  to release them.
+- **Do not loop `gotoScenario` inside one test.** Every pass pays a navigation and
+  a settle, and 21 of them outlast the 30s test timeout. Open once and change the
+  setting with `setSettings`, polling for the result, or split the loop into one
+  test per outer value. Where a test is long by nature, mark it `test.slow()` and
+  say why in a comment.
+
 ## CI
 
 A fourth job in `ci.yml`, on `ubuntu-latest` like the others, installing the

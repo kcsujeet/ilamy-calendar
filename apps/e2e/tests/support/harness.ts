@@ -112,16 +112,16 @@ export const settleAnimations = async (page: Page): Promise<void> => {
 }
 
 /**
- * Lifts the pointer once the drag has caught up with it.
+ * Waits until the render the last pointer move caused has committed.
  *
  * dnd-kit derives the cell under the pointer (`over`) while rendering, so a
  * release in the same frame as the last move can land on the cell the drag
  * showed one move earlier; on a slow runner that happens often enough to make
  * a spec flaky. The race predates these specs and is tracked as a product
- * follow-up. Two frames and a task let the render the last move caused commit,
- * so the spec tests the drop it means to test.
+ * follow-up. Two frames and a task let that render commit, so the spec tests
+ * the drop it means to test.
  */
-export const releasePointer = async (page: Page): Promise<void> => {
+export const waitForDragRender = async (page: Page): Promise<void> => {
 	await page.evaluate(
 		() =>
 			new Promise<void>((resolve) => {
@@ -132,5 +132,10 @@ export const releasePointer = async (page: Page): Promise<void> => {
 				})
 			})
 	)
+}
+
+/** Lifts the mouse once the drag has caught up with it (see `waitForDragRender`). */
+export const releasePointer = async (page: Page): Promise<void> => {
+	await waitForDragRender(page)
 	await page.mouse.up()
 }

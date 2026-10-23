@@ -2,7 +2,7 @@ import { expect, type Page, test } from '@playwright/test'
 
 type Box = { x: number; y: number; width: number; height: number }
 
-import { gotoScenario } from './support/harness'
+import { gotoScenario, releasePointer } from './support/harness'
 import { ResourceAxis, TimeGrid } from './support/pages'
 
 /*
@@ -109,7 +109,7 @@ test.describe('visible hours: events', () => {
 		for (let step = 1; step <= 8; step += 1) {
 			await page.mouse.move(grabX, grabY + ((dropY - grabY) * step) / 8)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 
 		const moved = await grid.eventNamed('Midday')
 		expect(moved.start).toMatch(/^2025-03-12T17:/)

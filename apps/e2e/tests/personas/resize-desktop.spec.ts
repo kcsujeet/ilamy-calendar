@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario } from '../support/harness'
+import { gotoScenario, releasePointer } from '../support/harness'
 import { MonthGrid, TimeGrid } from '../support/pages'
 
 /** QA personas for 3.3.3 event resize. Real pointer drags only. */
@@ -27,7 +27,7 @@ const pressAndMoveTo = async (page: Page, from: Locator, to: Locator) => {
 
 const dragTo = async (page: Page, from: Locator, to: Locator) => {
 	await pressAndMoveTo(page, from, to)
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 const bodyCursor = (page: Page) =>
@@ -148,7 +148,7 @@ test.describe('persona 1: office scheduler', () => {
 			grid.slotAt('2025-03-12T12:00')
 		)
 		expect(await bodyCursor(page)).toBe('')
-		await page.mouse.up()
+		await releasePointer(page)
 		const row = await grid.eventNamed('Design review')
 		expect(row.start).toBe('2025-03-12T14:00:00.000Z')
 		expect(row.end).toBe('2025-03-12T15:30:00.000Z')
@@ -567,7 +567,7 @@ test.describe('persona 2: resource planner', () => {
 		await page.mouse.move(box.x + 33, y, { steps: 5 })
 		await page.mouse.move(1590, y, { steps: 10 })
 		await page.waitForTimeout(1500)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect.poll(changeCount(grid)).toBe(1)
 		const row = await grid.eventNamed('Room A, later')
 		expect(row.resourceId).toBe('r1')
@@ -646,7 +646,7 @@ test.describe('persona 2: resource planner', () => {
 		// Park at the right viewport edge for a while, let auto-scroll run.
 		await page.mouse.move(995, start.y, { steps: 5 })
 		await page.waitForTimeout(1500)
-		await page.mouse.up()
+		await releasePointer(page)
 		const changes = await grid.eventChanges()
 		const row = await grid.eventNamed('Room A booking')
 		console.log('edge scroll', JSON.stringify({ changes: changes.length, row }))
@@ -829,7 +829,7 @@ test.describe('persona 3: month planner', () => {
 		const friday = await centre(month.cellOn('2025-03-14'))
 		await page.mouse.move(friday.x, friday.y, { steps: 6 })
 		await expect.poll(() => bodyCursor(page)).toBe('')
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect.poll(async () => (await month.eventChanges()).length).toBe(1)
 		const row = await month.eventNamed('Public holiday')
 		expect(row.end).toBe('2025-03-15T00:00:00.000Z')
@@ -1026,7 +1026,7 @@ test.describe('persona 4: upgrader', () => {
 		await page.mouse.move(point.x, point.y)
 		await page.mouse.down()
 		await page.mouse.move(point.x + 1, point.y)
-		await page.mouse.up()
+		await releasePointer(page)
 		expect(await month.eventChanges()).toEqual([])
 		const row = await month.eventNamed('Off-site')
 		expect(row.end).toBe('2025-03-15T00:00:00.000Z')

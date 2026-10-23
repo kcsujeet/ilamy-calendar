@@ -1,5 +1,10 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, setSettings } from '../support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	setSettings,
+	waitForDragRender,
+} from '../support/harness'
 import { CalendarPage, MonthGrid, TimeGrid } from '../support/pages'
 
 /**
@@ -43,7 +48,7 @@ const moveOnto = async (page: Page, to: Locator, from: Locator) => {
 
 const dragTo = async (page: Page, from: Locator, to: Locator) => {
 	await pressAndMoveTo(page, from, to)
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 /** A real pointer click; dnd-kit marks a non-draggable bar aria-disabled, which Playwright's click() refuses to act on. */
@@ -83,7 +88,7 @@ test.describe('persona 1: upgrader (disableDragAndDrop=true)', () => {
 			await expect(grid.dragMirror).toHaveCount(0)
 			await expect(grid.dropTargets).toHaveCount(0)
 			expect(await bodyCursor(page)).toBe('')
-			await page.mouse.up()
+			await releasePointer(page)
 
 			expect((await grid.eventNamed('Free event')).start).toMatch(/^2025-03-05/)
 			expect((await grid.eventNamed('Free event')).start).toBe(
@@ -149,7 +154,7 @@ test.describe('persona 1: upgrader (disableDragAndDrop=true)', () => {
 		const from = grid.slotAt('2025-03-06T13:00')
 		const to = grid.slotAt('2025-03-06T15:00')
 		await pressAndMoveTo(page, from, to)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect(page.getByRole('dialog')).toBeVisible()
 	})
 
@@ -195,7 +200,7 @@ test.describe('persona 2: office scheduler', () => {
 
 			await pressAndMoveTo(page, lockedBar, target)
 			await expect(grid.dragMirror).toHaveCount(0)
-			await page.mouse.up()
+			await releasePointer(page)
 			expect((await grid.eventNamed('Locked event')).start).toBe(
 				'2025-03-04T11:00:00.000Z'
 			)
@@ -253,7 +258,7 @@ test.describe('persona 2: office scheduler', () => {
 		await expect.poll(() => bodyCursor(page)).not.toBe('not-allowed')
 		await moveOnto(page, fri, thu)
 		await expect.poll(() => bodyCursor(page)).not.toBe('not-allowed')
-		await page.mouse.up()
+		await releasePointer(page)
 
 		await expect
 			.poll(async () => (await grid.eventNamed('Free event')).start)
@@ -265,7 +270,7 @@ test.describe('persona 2: office scheduler', () => {
 		const bar2 = grid.event('Free event').first()
 		await pressAndMoveTo(page, bar2, sat)
 		await expect.poll(() => bodyCursor(page)).toBe('not-allowed')
-		await page.mouse.up()
+		await releasePointer(page)
 		expect((await grid.eventNamed('Free event')).start).toBe(
 			'2025-03-07T13:00:00.000Z'
 		)
@@ -300,7 +305,7 @@ test.describe('persona 2: office scheduler', () => {
 		await expect.poll(() => bodyCursor(page)).toBe('not-allowed')
 		await moveOnto(page, mon, sat)
 		await expect.poll(() => bodyCursor(page)).not.toBe('not-allowed')
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect
 			.poll(async () => (await month.eventNamed('Free event')).start)
 			.toMatch(/^2025-03-10/)
@@ -308,7 +313,7 @@ test.describe('persona 2: office scheduler', () => {
 		const bar2 = month.event('Free event').first()
 		await pressAndMoveTo(page, bar2, month.cellOn('2025-03-09'))
 		await expect.poll(() => bodyCursor(page)).toBe('not-allowed')
-		await page.mouse.up()
+		await releasePointer(page)
 		expect((await month.eventNamed('Free event')).start).toMatch(/^2025-03-10/)
 		expect(await month.eventChanges()).toHaveLength(1)
 
@@ -341,7 +346,7 @@ test.describe('persona 2: office scheduler', () => {
 		// A refused placement draws nothing but the cursor (no mirror, no tint).
 		await expect(month.dropTargets).toHaveCount(0)
 		await expect(month.dragMirror).toHaveCount(0)
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 })
 
@@ -401,7 +406,7 @@ test.describe('persona 3: resource dispatcher', () => {
 					resourceCell(page, 'r3', '2025-03-12T15')
 				)
 				await expect(grid.dragMirror).toHaveCount(0)
-				await page.mouse.up()
+				await releasePointer(page)
 				expect((await grid.eventNamed('Room A booking')).resourceId).toBe('r1')
 				expect(await grid.eventChanges()).toEqual([])
 			})
@@ -425,7 +430,7 @@ test.describe('persona 3: resource dispatcher', () => {
 			)
 			await expect(grid.dragMirror).toHaveCount(0)
 			await expect(grid.dropTargets).toHaveCount(0)
-			await page.mouse.up()
+			await releasePointer(page)
 			const after = await grid.eventNamed('Room A booking')
 			expect(after.resourceId).toBe('r1')
 			expect(after.start).toBe('2025-03-12T09:00:00.000Z')
@@ -460,7 +465,7 @@ test.describe('persona 3: resource dispatcher', () => {
 			await expect.poll(() => bodyCursor(page)).not.toBe('not-allowed')
 			await moveOnto(page, sat, fri)
 			await expect.poll(() => bodyCursor(page)).toBe('not-allowed')
-			await page.mouse.up()
+			await releasePointer(page)
 			const refused = await grid.eventNamed('Room A booking')
 			expect(refused.resourceId).toBe('r1')
 			expect(refused.start).toBe('2025-03-12T09:00:00.000Z')
@@ -498,7 +503,7 @@ test.describe('persona 4: edge-case hunter', () => {
 
 		await pressAndMoveTo(page, bar, satAllDay)
 		await expect.poll(() => bodyCursor(page)).toBe('not-allowed')
-		await page.mouse.up()
+		await releasePointer(page)
 		expect((await grid.eventNamed('Morning stand-up')).allDay).toBe(false)
 		expect(await grid.eventChanges()).toEqual([])
 
@@ -523,7 +528,7 @@ test.describe('persona 4: edge-case hunter', () => {
 		const bar = grid.event('Public holiday').first()
 		await pressAndMoveTo(page, bar, grid.slotAt('2025-03-15T10'))
 		await expect.poll(() => bodyCursor(page)).toBe('not-allowed')
-		await page.mouse.up()
+		await releasePointer(page)
 		expect((await grid.eventNamed('Public holiday')).allDay).toBe(true)
 		expect(await grid.eventChanges()).toEqual([])
 
@@ -577,7 +582,7 @@ test.describe('persona 4: edge-case hunter', () => {
 		await expect.poll(() => bodyCursor(page)).toBe('not-allowed')
 		console.log('multi-day: cursor hovering Sat =', JSON.stringify(cursorOnSat))
 		expect(cursorOnSat).not.toBe('not-allowed')
-		await page.mouse.up()
+		await releasePointer(page)
 		expect((await month.eventNamed('Conference fortnight')).start).toBe(
 			'2025-03-05T09:00:00.000Z'
 		)
@@ -621,14 +626,14 @@ test.describe('persona 4: edge-case hunter', () => {
 		await page.keyboard.press('Escape')
 		await expect.poll(() => bodyCursor(page)).toBe('')
 		await expect(month.dragMirror).toHaveCount(0)
-		await page.mouse.up()
+		await releasePointer(page)
 		expect(await month.eventChanges()).toEqual([])
 		expect((await month.eventNamed('Free event')).start).toMatch(/^2025-03-05/)
 
 		// New drag whose FIRST hover is the same Saturday placement: still refused
 		await pressAndMoveTo(page, month.event('Free event').first(), sat)
 		await expect.poll(() => bodyCursor(page)).toBe('not-allowed')
-		await page.mouse.up()
+		await releasePointer(page)
 		expect(await month.eventChanges()).toEqual([])
 
 		// ...and a weekday still commits
@@ -658,7 +663,7 @@ test.describe('persona 4: edge-case hunter', () => {
 		)
 		await expect.poll(() => bodyCursor(page)).toBe('not-allowed')
 		await page.mouse.move(640, 5, { steps: 6 })
-		await page.mouse.up()
+		await releasePointer(page)
 		expect(await month.eventChanges()).toEqual([])
 		expect((await month.eventNamed('Free event')).start).toMatch(/^2025-03-05/)
 		expect(await bodyCursor(page)).toBe('')
@@ -693,7 +698,7 @@ test.describe('persona 4: edge-case hunter', () => {
 			month.cellOn('2025-03-08')
 		)
 		await expect.poll(() => bodyCursor(page)).toBe('not-allowed')
-		await page.mouse.up()
+		await releasePointer(page)
 		expect((await month.eventNamed('Free event')).start).toMatch(/^2025-03-05/)
 
 		await dragTo(
@@ -794,6 +799,7 @@ test.describe('persona 5: touch user (CDP touch events, dnd-kit TouchSensor: 100
 			await page.waitForTimeout(20)
 		}
 		if (release) {
+			await waitForDragRender(page)
 			await cdp.send('Input.dispatchTouchEvent', {
 				type: 'touchEnd',
 				touchPoints: [],
@@ -910,7 +916,7 @@ test.describe('persona 6: misc interplay', () => {
 			grid.slotAt('2025-03-06T13:00'),
 			grid.slotAt('2025-03-06T15:00')
 		)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect(page.getByRole('dialog')).toBeVisible()
 	})
 
@@ -930,7 +936,7 @@ test.describe('persona 6: misc interplay', () => {
 			grid.slotAt('2025-03-08T13:00'),
 			grid.slotAt('2025-03-08T15:00')
 		)
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect(page.getByRole('dialog')).toBeVisible()
 	})
 
@@ -980,7 +986,7 @@ test.describe('persona 6: misc interplay', () => {
 			month.event('Free event').first(),
 			month.cellOn('2025-03-08')
 		)
-		await page.mouse.up()
+		await releasePointer(page)
 		await dragTo(
 			page,
 			month.event('Free event').first(),
@@ -1007,7 +1013,7 @@ test.describe('persona 6: misc interplay', () => {
 		const first = dialog.getByText(/^Event \d$/).first()
 		await pressAndMoveTo(page, first, month.cellOn('2025-03-20'))
 		await expect(month.dragMirror).toHaveCount(0)
-		await page.mouse.up()
+		await releasePointer(page)
 		expect(await month.eventChanges()).toEqual([])
 	})
 })
@@ -1030,7 +1036,7 @@ test('control: overflow dialog event is draggable when editable (so the locked v
 		'overflow control: mirror count while dragging from dialog =',
 		mirrors
 	)
-	await page.mouse.up()
+	await releasePointer(page)
 })
 
 test('after a refused release the source bar is back to its resting look and still opens the form', async ({
@@ -1056,7 +1062,7 @@ test('after a refused release the source bar is back to its resting look and sti
 		month.event('Free event').first(),
 		month.cellOn('2025-03-08')
 	)
-	await page.mouse.up()
+	await releasePointer(page)
 	await page.waitForTimeout(600)
 	expect(await resting()).toBe(before)
 	await expect(month.dragMirror).toHaveCount(0)

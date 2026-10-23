@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { gotoScenario, setSettings } from '../support/harness'
+import { gotoScenario, releasePointer, setSettings } from '../support/harness'
 import { MonthGrid, ResourceAxis } from '../support/pages'
 
 /*
@@ -342,7 +342,7 @@ test.describe('persona 3: planner dragging while resources reload', () => {
 				source.y + ((target.y - source.y) * step) / 8 + target.height / 2
 			)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 		return month
 	}
 
@@ -414,7 +414,7 @@ test.describe('persona 3: planner dragging while resources reload', () => {
 				source.y + ((target.y - source.y) * step) / 8 + target.height / 2
 			)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect.poll(async () => (await month.eventChanges()).length).toBe(1)
 		expect((await month.eventNamed('Room A booking')).resourceId).toBe('r2')
 		expect(await month.resourcesSetCalls()).toEqual([['r1', 'r2', 'r3']])
@@ -456,7 +456,7 @@ test.describe('persona 3: planner dragging while resources reload', () => {
 				source.y + ((target.y - source.y) * step) / 8 + target.height / 2
 			)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect.poll(async () => (await month.eventChanges()).length).toBe(1)
 	})
 

@@ -1,5 +1,10 @@
 import { expect, type Page, test } from '@playwright/test'
-import { gotoScenario, removeSettings, setSettings } from './support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	removeSettings,
+	setSettings,
+} from './support/harness'
 import { MonthGrid } from './support/pages'
 
 /*
@@ -55,10 +60,18 @@ test.describe('events as a function', () => {
 		await expect(month.event('March lunch')).toBeVisible()
 		const callsBefore = (await month.fetchLog()).length
 
+		// Held, so no answer is due while the clicks are still arriving: with a
+		// timer, a slow runner lets an in-between fetch finish before the next
+		// click, and it is `done` rather than abandoned.
+		await setSettings(page, HELD)
 		await month.next()
 		await month.next()
 		await month.next()
+		await expect
+			.poll(async () => (await month.fetchLog()).length - callsBefore)
+			.toBe(3)
 
+		await setSettings(page, { fetch: 'delayed' })
 		await expect(month.event('June demo')).toBeVisible()
 		await expect(month.event('April review')).toHaveCount(0)
 		await expect(month.event('May kickoff')).toHaveCount(0)
@@ -117,7 +130,7 @@ test.describe('events as a function', () => {
 				source.y + ((target.y - source.y) * step) / 8 + target.height / 2
 			)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 
 		await expect.poll(async () => (await month.eventChanges()).length).toBe(1)
 		await expect

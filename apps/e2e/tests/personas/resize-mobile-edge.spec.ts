@@ -1,5 +1,9 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, releasePointer } from '../support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	waitForDragRender,
+} from '../support/harness'
 import { MonthGrid, TimeGrid } from '../support/pages'
 
 /**
@@ -83,6 +87,7 @@ const touchDrag = async (
 		await page.waitForTimeout(20)
 	}
 	if (release) {
+		await waitForDragRender(page)
 		await cdp.send('Input.dispatchTouchEvent', {
 			type: 'touchEnd',
 			touchPoints: [],
@@ -215,12 +220,21 @@ test.describe('persona 1: mobile user (375x812, touch)', () => {
 		const bodyPoint = await centre(grid.bars('basic-1'))
 		for (const from of [bottomPoint, bodyPoint]) {
 			const cdp = await page.context().newCDPSession(page)
-			await cdp.send('Input.dispatchTouchEvent', {
-				type: 'touchStart',
-				touchPoints: [touchPoint(from)],
-			})
-			// A swipe: far beyond the 5px tolerance within the first ~20ms.
-			for (let i = 1; i <= 10; i += 1) {
+			// A swipe has to leave the 5px tolerance before the 100ms touch delay
+			// fires. Sent together, the first move is already queued when the
+			// press is handled; sent one round trip later, a slow runner takes
+			// longer than the delay, the drag starts, and the event moves.
+			await Promise.all([
+				cdp.send('Input.dispatchTouchEvent', {
+					type: 'touchStart',
+					touchPoints: [touchPoint(from)],
+				}),
+				cdp.send('Input.dispatchTouchEvent', {
+					type: 'touchMove',
+					touchPoints: [touchPoint({ x: from.x, y: from.y - 12 })],
+				}),
+			])
+			for (let i = 2; i <= 10; i += 1) {
 				await cdp.send('Input.dispatchTouchEvent', {
 					type: 'touchMove',
 					touchPoints: [touchPoint({ x: from.x, y: from.y - i * 12 })],

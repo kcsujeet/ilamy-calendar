@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { gotoScenario } from './support/harness'
+import { gotoScenario, releasePointer } from './support/harness'
 import { MonthGrid } from './support/pages'
 
 /**
@@ -98,7 +98,7 @@ test.describe('event bars', () => {
 				source.y + source.height / 2 + ((target.y - source.y) * step) / 8
 			)
 		}
-		await page.mouse.up()
+		await releasePointer(page)
 
 		const liveRegionText = await page
 			.locator('[aria-live="assertive"]')

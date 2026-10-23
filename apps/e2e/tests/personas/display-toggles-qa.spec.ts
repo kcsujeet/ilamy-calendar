@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, setSettings } from '../support/harness'
+import { gotoScenario, releasePointer, setSettings } from '../support/harness'
 import { CalendarPage, MonthGrid, TimeGrid } from '../support/pages'
 
 /**
@@ -37,7 +37,7 @@ const dragToPoint = async (
 	await page.mouse.move(start.x, start.y)
 	await page.mouse.down()
 	await walk(page, start, end)
-	await page.mouse.up()
+	await releasePointer(page)
 }
 
 const dragTo = async (page: Page, from: Locator, to: Locator) =>
@@ -239,7 +239,7 @@ test.describe('persona 1: shift planner (allDaySlot=false)', () => {
 			await page.mouse.move(start.x, start.y)
 			await page.mouse.down()
 			await walk(page, start, end)
-			await page.mouse.up()
+			await releasePointer(page)
 			await expect(page.getByRole('dialog')).toBeVisible()
 			await page.keyboard.press('Escape')
 		}

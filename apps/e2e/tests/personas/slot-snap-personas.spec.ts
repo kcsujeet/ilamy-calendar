@@ -3,6 +3,7 @@ import {
 	gotoScenario,
 	releasePointer,
 	type ScenarioOptions,
+	waitForDragRender,
 } from '../support/harness'
 import { TimeGrid } from '../support/pages'
 
@@ -495,6 +496,7 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 	})
 
 	test('slot=60 snap=15 resize end to every slice', async ({ page }) => {
+		test.slow() // several calendar loads in one test; the 30s default is too tight on a slow runner
 		for (const [down, end] of [
 			[0.1, '11:15'],
 			[0.3, '11:30'],
@@ -761,6 +763,7 @@ test.describe('persona 3: mobile user (touch)', () => {
 			})
 			await page.waitForTimeout(20)
 		}
+		await waitForDragRender(page)
 		const oracle = await sliceUnder(page, to)
 		await cdp.send('Input.dispatchTouchEvent', {
 			type: 'touchEnd',
@@ -799,6 +802,11 @@ test.describe('persona 3: mobile user (touch)', () => {
 		test(`horizontal day snap=15: long-press drag lands on slice (${across})`, async ({
 			page,
 		}) => {
+			// Wider than the 375px persona viewport: at 375 the 10:00 cell's 0.8
+			// point (x=307) is inside the 20% auto-scroll zone at the right edge,
+			// so the held finger scrolls the grid for as long as the drag lasts and
+			// the drop lands one slice from where it was aimed.
+			await page.setViewportSize({ width: 480, height: 812 })
 			await openSettled(page, {
 				scenario: 'resources',
 				view: 'day',
@@ -951,11 +959,12 @@ for (const browserZone of ['UTC', 'America/New_York']) {
 }
 
 test.describe('persona 4: pointer on boundaries, eventAllow, upgrader, fallbacks', () => {
-	test('pointer sweeping +-3px across an hour boundary (slot=60 snap=15) lands on the slice either side, never elsewhere', async ({
-		page,
-	}) => {
-		const landed: string[] = []
-		for (const dy of [-3, -2, -1, 0, 1, 2, 3]) {
+	// One test per offset: seven calendar loads in a single test outlasted the
+	// 30s timeout on a slow runner.
+	for (const dy of [-3, -2, -1, 0, 1, 2, 3]) {
+		test(`pointer ${dy}px from an hour boundary (slot=60 snap=15) lands on the slice either side, never elsewhere`, async ({
+			page,
+		}) => {
 			await openSettled(page, {
 				scenario: 'basic',
 				view: 'week',
@@ -972,16 +981,10 @@ test.describe('persona 4: pointer on boundaries, eventAllow, upgrader, fallbacks
 			}
 			await dragPointer(page, from, to)
 			await expect.poll(async () => (await changes(page)).length).toBe(1)
-			landed.push(
-				`${dy}:${(await state(page, 'Morning stand-up')).start.slice(11, 16)}`
-			)
-		}
-		test
-			.info()
-			.annotations.push({ type: 'sweep', description: landed.join(' ') })
-		for (const entry of landed)
-			expect(['11:45', '12:00']).toContain(entry.split(':').slice(1).join(':'))
-	})
+			const landed = (await state(page, 'Morning stand-up')).start.slice(11, 16)
+			expect(['11:45', '12:00']).toContain(landed)
+		})
+	}
 
 	test('eventAllow=no-weekends: snapped drop on Saturday is refused, on Friday lands on the slice (incl. 23:45)', async ({
 		page,

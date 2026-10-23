@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, setSettings } from './support/harness'
+import { gotoScenario, releasePointer, setSettings } from './support/harness'
 import {
 	CalendarPage,
 	MonthGrid,
@@ -1689,7 +1689,7 @@ test.describe('sticky event titles (#290)', () => {
 				}
 			})
 			.toEqual({ mirrorRunsUnderEdge: true, titleStart: 4 })
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 
 	test("a dragged time-grid event's mirror keeps its title in view", async ({
@@ -1753,7 +1753,7 @@ test.describe('sticky event titles (#290)', () => {
 				}
 			})
 			.toEqual({ mirrorRunsUnderEdge: true, titleStart: 2 })
-		await page.mouse.up()
+		await releasePointer(page)
 	})
 
 	// A calendar taller than the window scrolls with the PAGE, not only inside
@@ -2018,7 +2018,7 @@ test.describe('an off-the-hour event on the hourly timeline', () => {
 		const mirrorBox = await calendar.dragMirror.boundingBox()
 		expect(Math.round(mirrorBox?.width ?? 0)).toBe(Math.round(barBox.width))
 
-		await page.mouse.up()
+		await releasePointer(page)
 		await expect
 			.poll(async () => {
 				const { start, end } = await calendar.eventNamed('Yoga class')

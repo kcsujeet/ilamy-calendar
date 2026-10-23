@@ -76,3 +76,71 @@ export const getTimeConstraints = (
 		max: `${(maxEnd - 1).toString().padStart(2, '0')}:45`,
 	}
 }
+
+/** The form's four schedule fields: a day and a clock time for each edge. */
+export interface FormSchedule {
+	startDate: Date
+	startTime: string
+	endDate: Date
+	endTime: string
+}
+
+const MS_PER_MINUTE = 60_000
+const FALLBACK_LENGTH_MINUTES = 60
+
+/**
+ * A day and clock time as minutes on a line with no clock changes: the digits
+ * are read as UTC, so adding minutes never skips or repeats an hour. Only the
+ * ordering and the length of the two edges are asked of it, never an instant.
+ */
+const wallMinutes = (date: Date, time: string): number => {
+	const day = dayjs(date).format('YYYY-MM-DD')
+	return Date.parse(`${day}T${time}:00.000Z`) / MS_PER_MINUTE
+}
+
+const fromWallMinutes = (minutes: number): { date: Date; time: string } => {
+	const wall = new Date(minutes * MS_PER_MINUTE).toISOString()
+	const day = wall.slice(0, 10)
+	return {
+		date: dayjs(`${day}T00:00:00.000`).toDate(),
+		time: wall.slice(11, 16),
+	}
+}
+
+/**
+ * The length, in clock minutes, the form keeps an event at when one edge is
+ * moved past the other: the length it opened with, or an hour when that was
+ * not a positive length (a new event, or one stored with end == start).
+ */
+export const openedLengthMinutes = (start: Dayjs, end: Dayjs): number => {
+	const startMinutes = wallMinutes(start.toDate(), start.format('HH:mm'))
+	const endMinutes = wallMinutes(end.toDate(), end.format('HH:mm'))
+	const length = endMinutes - startMinutes
+	return length > 0 ? length : FALLBACK_LENGTH_MINUTES
+}
+
+/**
+ * `schedule` with an end that is later than its start. RFC 5545 section 3.8.2.2:
+ * DTEND "MUST be later in time than" DTSTART, and an event whose end equals its
+ * start is not drawn. When the edge the user just moved (`movedEdge`) reaches or
+ * passes the other, the OTHER edge follows so the event keeps `lengthMinutes`,
+ * as Google Calendar's form moves the end with the start (unverified against
+ * its source). The edge the user chose is never overridden.
+ */
+export const keepEndAfterStart = (
+	schedule: FormSchedule,
+	movedEdge: 'start' | 'end',
+	lengthMinutes: number
+): FormSchedule => {
+	const start = wallMinutes(schedule.startDate, schedule.startTime)
+	const end = wallMinutes(schedule.endDate, schedule.endTime)
+	if (end > start) {
+		return schedule
+	}
+	if (movedEdge === 'start') {
+		const movedEnd = fromWallMinutes(start + lengthMinutes)
+		return { ...schedule, endDate: movedEnd.date, endTime: movedEnd.time }
+	}
+	const movedStart = fromWallMinutes(end - lengthMinutes)
+	return { ...schedule, startDate: movedStart.date, startTime: movedStart.time }
+}

@@ -46,6 +46,9 @@ agendaPlugin({ window: 14 })
   before timed events within a day. A timed multi-day event shows its start time on
   the first day, the end time on the last day and the "All day" label in between
   (FullCalendar `ListEvent.tsx:21-22`).
+- **`hiddenDays` and `weekends` do not apply** to the agenda: it lists every day of its
+  window, so a Week window's title names the whole week even when the week view's would
+  leave days out. The title describes what the view draws.
 - **Clicking an event** opens the event form (and the recurrence scope dialog for
   recurring events), the same as the other views.
 - When the recurrence plugin is also registered, recurring occurrences are expanded

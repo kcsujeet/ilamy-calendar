@@ -313,7 +313,10 @@ test.describe('the form date picker after a clock change', () => {
 })
 
 test.describe('the event form keeps its dates and times consistent', () => {
-	// RFC 5545 section 3.8.2.2: DTEND "MUST be later in time than" DTSTART.
+	// RFC 5545 section 3.8.2.2: DTEND "MUST be later in time than" DTSTART. The
+	// first two specs used to pin start == end; the contract moved deliberately:
+	// the edge the user did not touch moves to keep the length the form opened
+	// with (the slot's hour), so the event is never zero-length.
 	test('End Date moved back to the start day after an earlier End Time does not invert the event', async ({
 		page,
 	}) => {
@@ -330,7 +333,7 @@ test.describe('the event form keeps its dates and times consistent', () => {
 		await pickDay(page, 1, 12)
 		await saveForm(page)
 		const row = await lastRow(grid)
-		expect(row?.start).toBe('2025-03-12T09:00:00.000Z')
+		expect(row?.start).toBe('2025-03-12T08:00:00.000Z')
 		expect(row?.end).toBe('2025-03-12T09:00:00.000Z')
 	})
 
@@ -351,7 +354,7 @@ test.describe('the event form keeps its dates and times consistent', () => {
 		await saveForm(page)
 		const row = await lastRow(grid)
 		expect(row?.start).toBe('2025-03-13T13:00:00.000Z')
-		expect(row?.end).toBe('2025-03-13T13:00:00.000Z')
+		expect(row?.end).toBe('2025-03-13T14:00:00.000Z')
 	})
 
 	test('unticking All day gives the times back as they were', async ({

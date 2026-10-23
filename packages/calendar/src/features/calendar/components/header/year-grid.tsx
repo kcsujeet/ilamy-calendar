@@ -2,6 +2,7 @@ import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { useState } from 'react'
 import { PickerNav } from '@/components/ui/picker-nav'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { withOwnOffset } from '@/utils/date-utils'
 import { PickerGridCell } from './picker-grid-cell'
 
 const BLOCK = 12
@@ -43,7 +44,7 @@ export function YearGrid({ selected, onSelect }: YearGridProps) {
 							isSelected={isSelected}
 							key={year}
 							label={year}
-							onSelect={() => onSelect(selected.year(year))}
+							onSelect={() => onSelect(withOwnOffset(selected.year(year)))}
 						/>
 					)
 				})}

@@ -954,10 +954,11 @@ describe('EventForm schedule consistency', () => {
 	}
 
 	/**
-	 * RFC 5545 section 3.8.2.2: DTEND "MUST be later in time than" DTSTART. The
-	 * time handlers already hold that on one day; the date handlers have to as
-	 * well, or an earlier time chosen on a later day is left behind when the
-	 * date comes back.
+	 * RFC 5545 section 3.8.2.2: DTEND "MUST be later in time than" DTSTART, so
+	 * an edit that leaves the end at or before the start moves the edge the user
+	 * did NOT touch, to keep the length the event opened with (here one hour).
+	 * The first two cases used to pin start == end (an event nothing draws);
+	 * that contract moved deliberately.
 	 */
 	it('does not save an end before the start after End Date returns to the start day', () => {
 		const onUpdate = mock((_event: CalendarEvent) => {})
@@ -975,7 +976,7 @@ describe('EventForm schedule consistency', () => {
 		pickDay('end', 15)
 
 		const saved = save(onUpdate)
-		expect(saved.start.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 09:00')
+		expect(saved.start.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 08:00')
 		expect(saved.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-15 09:00')
 	})
 
@@ -996,7 +997,66 @@ describe('EventForm schedule consistency', () => {
 
 		const saved = save(onUpdate)
 		expect(saved.start.format('YYYY-MM-DD HH:mm')).toBe('2025-08-16 10:00')
-		expect(saved.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-16 10:00')
+		expect(saved.end.format('YYYY-MM-DD HH:mm')).toBe('2025-08-16 11:00')
+	})
+
+	const renderTimed = () => {
+		const onUpdate = mock((_event: CalendarEvent) => {})
+		render(
+			<CalendarProvider dayMaxEvents={5} events={[]} firstDayOfWeek={0}>
+				<EventForm
+					onClose={() => {}}
+					onUpdate={onUpdate}
+					selectedEvent={timedEvent}
+				/>
+			</CalendarProvider>
+		)
+		return onUpdate
+	}
+
+	const savedRange = (event: CalendarEvent) => [
+		event.start.format('YYYY-MM-DD HH:mm'),
+		event.end.format('YYYY-MM-DD HH:mm'),
+	]
+
+	it('moves the start earlier, keeping the length, when End Time is picked before it', () => {
+		const onUpdate = renderTimed()
+		pickTime('end', '8:00 AM')
+
+		expect(savedRange(save(onUpdate))).toEqual([
+			'2025-08-15 07:00',
+			'2025-08-15 08:00',
+		])
+	})
+
+	it('moves the end later, keeping the length, when Start Time is picked after it', () => {
+		const onUpdate = renderTimed()
+		pickTime('start', '1:00 PM')
+
+		expect(savedRange(save(onUpdate))).toEqual([
+			'2025-08-15 13:00',
+			'2025-08-15 14:00',
+		])
+	})
+
+	it('never saves an end equal to the start when the same time is picked', () => {
+		const onUpdate = renderTimed()
+		pickTime('end', '10:00 AM')
+
+		expect(savedRange(save(onUpdate))).toEqual([
+			'2025-08-15 09:00',
+			'2025-08-15 10:00',
+		])
+	})
+
+	it('carries the end onto the next day when the new start is late in the evening', () => {
+		const onUpdate = renderTimed()
+		pickTime('start', '11:30 PM')
+
+		expect(savedRange(save(onUpdate))).toEqual([
+			'2025-08-15 23:30',
+			'2025-08-16 00:30',
+		])
 	})
 
 	it('leaves the times alone when the days differ', () => {
@@ -1230,4 +1290,100 @@ describe('EventForm across the 2025 clock changes', () => {
 			})
 		})
 	}
+})
+
+/**
+ * An existing event saved with its schedule untouched keeps the start, end and
+ * all-day flag it came with. All-day events stored as UTC midnights, opened in
+ * a New York calendar, used to come back 48 hours long: the form showed them
+ * as New York days and built them back from those days.
+ */
+describe('EventForm saving an untouched schedule', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	afterEach(() => {
+		dayjs.tz.setDefault()
+	})
+
+	const utcAllDay: CalendarEvent = {
+		id: 'utc-all-day',
+		title: 'Holiday',
+		allDay: true,
+		start: dayjs('2025-03-12T00:00:00.000Z'),
+		end: dayjs('2025-03-13T00:00:00.000Z'),
+	}
+
+	const renderInNewYork = (selectedEvent: CalendarEvent) => {
+		dayjs.tz.setDefault('America/New_York')
+		const onSave = mock((_event: CalendarEvent) => {})
+		render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				events={[]}
+				firstDayOfWeek={0}
+				timezone="America/New_York"
+			>
+				<EventForm
+					onClose={() => {}}
+					onUpdate={onSave}
+					selectedEvent={selectedEvent}
+				/>
+			</CalendarProvider>
+		)
+		return onSave
+	}
+
+	const isoRange = (event: CalendarEvent) => [
+		event.start.toISOString(),
+		event.end.toISOString(),
+	]
+
+	it('keeps the stored range of an all-day event in another zone', () => {
+		const onSave = renderInNewYork(utcAllDay)
+
+		const saved = save(onSave)
+		expect(isoRange(saved)).toEqual([
+			'2025-03-12T00:00:00.000Z',
+			'2025-03-13T00:00:00.000Z',
+		])
+		expect(saved.allDay).toBe(true)
+	})
+
+	it('keeps the stored range when only the title changes', () => {
+		const onSave = renderInNewYork(utcAllDay)
+		fireEvent.change(screen.getByPlaceholderText('Event title'), {
+			target: { name: 'title', value: 'Renamed' },
+		})
+
+		const saved = save(onSave)
+		expect(saved.title).toBe('Renamed')
+		expect(isoRange(saved)).toEqual([
+			'2025-03-12T00:00:00.000Z',
+			'2025-03-13T00:00:00.000Z',
+		])
+	})
+
+	it('keeps the seconds of a stored start the form cannot show', () => {
+		const onSave = renderInNewYork({
+			id: 'with-seconds',
+			title: 'Odd',
+			start: dayjs('2025-03-12T14:00:30.000Z'),
+			end: dayjs('2025-03-12T15:00:00.000Z'),
+		})
+
+		expect(save(onSave).start.toISOString()).toBe('2025-03-12T14:00:30.000Z')
+	})
+
+	it('writes the form values once a schedule field is edited', () => {
+		const onSave = renderInNewYork(utcAllDay)
+		fireEvent.click(screen.getByLabelText('All day'))
+		fireEvent.click(screen.getByLabelText('All day'))
+
+		expect(save(onSave).allDay).toBe(true)
+		expect(save(onSave).start.format('YYYY-MM-DD HH:mm')).toBe(
+			'2025-03-11 00:00'
+		)
+	})
 })

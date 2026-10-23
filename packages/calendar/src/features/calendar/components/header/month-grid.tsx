@@ -2,6 +2,7 @@ import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { useState } from 'react'
 import { PickerNav } from '@/components/ui/picker-nav'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { withOwnOffset } from '@/utils/date-utils'
 import { PickerGridCell } from './picker-grid-cell'
 
 interface MonthGridProps {
@@ -15,6 +16,11 @@ export function MonthGrid({ selected, onSelect }: MonthGridProps) {
 	const t = useSmartCalendarContext((context) => context.t)
 	const [year, setYear] = useState(() => selected.year())
 	const now = dayjs()
+
+	// The setters keep the receiver's UTC offset, so a month picked across a
+	// clock change would be an hour off as an instant (docs/timezones.md).
+	const firstOfMonth = (monthIndex: number) =>
+		withOwnOffset(selected.year(year).month(monthIndex).date(1))
 
 	const months = Array.from({ length: 12 }, (_, index) => ({
 		index,
@@ -43,9 +49,7 @@ export function MonthGrid({ selected, onSelect }: MonthGridProps) {
 							isSelected={isSelected}
 							key={month.index}
 							label={month.label}
-							onSelect={() =>
-								onSelect(selected.year(year).month(month.index).date(1))
-							}
+							onSelect={() => onSelect(firstOfMonth(month.index))}
 						/>
 					)
 				})}

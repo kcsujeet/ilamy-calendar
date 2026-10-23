@@ -31,7 +31,10 @@ import { isBusinessDay } from '@/features/calendar/utils/business-hours'
 import {
 	buildDateTime,
 	buildEndDateTime,
+	type FormSchedule,
 	getTimeConstraints,
+	keepEndAfterStart,
+	openedLengthMinutes,
 } from '@/features/calendar/utils/event-form-utils'
 import { keys } from '@/features/calendar/utils/keys'
 
@@ -257,6 +260,7 @@ interface EventScheduleInput {
 	start: Dayjs
 	end: Dayjs
 	initialAllDay: boolean
+	isExistingEvent: boolean
 }
 
 // The form's dates, times and all-day flag, and the rules that keep them consistent.
@@ -264,6 +268,7 @@ const useEventSchedule = ({
 	start,
 	end,
 	initialAllDay,
+	isExistingEvent,
 }: EventScheduleInput) => {
 	// An all-day `end` is STORED exclusively, as the midnight after the last day
 	// the event covers (#248), but the picker shows the user that last day.
@@ -290,30 +295,44 @@ const useEventSchedule = ({
 		initialAllDay ? END_OF_DAY : end.format('HH:mm')
 	)
 
-	// RFC 5545 section 3.8.2.2: DTEND "MUST be later in time than" DTSTART. The
-	// handlers below keep a same-day range that way by moving the field the user
-	// did NOT touch, as the time handlers always have. The times are hidden and
-	// ignored while All day is on, so they are left alone then.
+	// Whether the user touched any schedule field. An existing event saved with
+	// its schedule untouched keeps the start and end it came with (see
+	// `buildScheduleFields`): rebuilding them from the days and times the form shows
+	// would rewrite values the form can only show in the calendar's zone.
+	const [isScheduleEdited, setIsScheduleEdited] = useState(false)
+
+	const lengthMinutes = openedLengthMinutes(start, end)
+
+	// RFC 5545 section 3.8.2.2: DTEND "MUST be later in time than" DTSTART. Every
+	// handler below applies its edit, then `keepEndAfterStart` moves the edge the
+	// user did NOT touch if the edit left the end at or before the start. The
+	// times are hidden and ignored while All day is on, so they are left alone.
+	const applySchedule = (
+		schedule: FormSchedule,
+		movedEdge: 'start' | 'end'
+	) => {
+		const ordered = isAllDay
+			? schedule
+			: keepEndAfterStart(schedule, movedEdge, lengthMinutes)
+		setStartDate(ordered.startDate)
+		setStartTime(ordered.startTime)
+		setEndDate(ordered.endDate)
+		setEndTime(ordered.endTime)
+		setIsScheduleEdited(true)
+	}
+
+	const current: FormSchedule = { startDate, startTime, endDate, endTime }
+
 	const handleStartDateChange = (date: Date | undefined) => {
 		if (!date) return
-		setStartDate(date)
 		const endDay = dayjs(date).isAfter(dayjs(endDate)) ? date : endDate
-		setEndDate(endDay)
-		const sameDay = dayjs(date).isSame(dayjs(endDay), 'day')
-		if (sameDay && !isAllDay && startTime > endTime) {
-			setEndTime(startTime)
-		}
+		applySchedule({ ...current, startDate: date, endDate: endDay }, 'start')
 	}
 
 	const handleEndDateChange = (date: Date | undefined) => {
 		if (!date) return
-		setEndDate(date)
 		const startDay = dayjs(date).isBefore(dayjs(startDate)) ? date : startDate
-		setStartDate(startDay)
-		const sameDay = dayjs(startDay).isSame(dayjs(date), 'day')
-		if (sameDay && !isAllDay && endTime < startTime) {
-			setStartTime(endTime)
-		}
+		applySchedule({ ...current, endDate: date, startDate: startDay }, 'end')
 	}
 
 	/**
@@ -327,6 +346,7 @@ const useEventSchedule = ({
 	 */
 	const handleAllDayChange = (checked: boolean) => {
 		setIsAllDay(checked)
+		setIsScheduleEdited(true)
 		if (!(checked && endTime === '00:00')) {
 			return
 		}
@@ -342,27 +362,33 @@ const useEventSchedule = ({
 		setEndTime(END_OF_DAY)
 	}
 
-	// Time validation handlers - only validate when dates are the same
-	const handleStartTimeChange = (time: string) => {
-		setStartTime(time)
-		// Only validate if same day
-		if (dayjs(startDate).isSame(dayjs(endDate), 'day') && time > endTime) {
-			setEndTime(time)
+	// An existing event whose schedule was not edited keeps the start, end and
+	// all-day flag it came with. The form can only show them as days and times
+	// in the calendar's zone, and building them back from that rewrote a UTC
+	// all-day event (midnight to midnight) as a longer one in another zone.
+	// A new event is always built, which also drops the seconds of "now".
+	const buildScheduleFields = () => {
+		if (isExistingEvent && !isScheduleEdited) {
+			return { start, end, allDay: initialAllDay }
+		}
+		return {
+			start: buildDateTime(startDate, startTime, isAllDay),
+			end: buildEndDateTime(endDate, endTime, isAllDay),
+			allDay: isAllDay,
 		}
 	}
 
-	const handleEndTimeChange = (time: string) => {
-		setEndTime(time)
-		// Only validate if same day
-		if (dayjs(startDate).isSame(dayjs(endDate), 'day') && time < startTime) {
-			setStartTime(time)
-		}
-	}
+	const handleStartTimeChange = (time: string) =>
+		applySchedule({ ...current, startTime: time }, 'start')
+
+	const handleEndTimeChange = (time: string) =>
+		applySchedule({ ...current, endTime: time }, 'end')
 
 	return {
 		startDate,
 		endDate,
 		isAllDay,
+		buildScheduleFields,
 		startTime,
 		endTime,
 		handleStartDateChange,
@@ -606,8 +632,13 @@ export const EventForm: React.FC<EventFormProps> = ({
 	// Whether a plugin owns this event (gates the scoped edit/delete flow)
 	const eventIsOwned = Boolean(selectedEvent && getEventManager(selectedEvent))
 
-	const schedule = useEventSchedule({ start, end, initialAllDay })
-	const { startDate, endDate, startTime, endTime, isAllDay } = schedule
+	const schedule = useEventSchedule({
+		start,
+		end,
+		initialAllDay,
+		isExistingEvent: Boolean(selectedEventId),
+	})
+	const { buildScheduleFields } = schedule
 
 	// Color state
 	const [selectedColor, setSelectedColor] = useState(
@@ -655,9 +686,6 @@ export const EventForm: React.FC<EventFormProps> = ({
 			return
 		}
 
-		const startDateTime = buildDateTime(startDate, startTime, isAllDay)
-		const endDateTime = buildEndDateTime(endDate, endTime, isAllDay)
-
 		// Only write the new hex model when the user picked a color. Otherwise an
 		// existing event keeps its original color (legacy class-pair included) so
 		// editing other fields never rewrites its appearance.
@@ -671,12 +699,10 @@ export const EventForm: React.FC<EventFormProps> = ({
 
 		const editedFields = {
 			title: formValues.title,
-			start: startDateTime,
-			end: endDateTime,
+			...buildScheduleFields(),
 			...resourceFields,
 			description: formValues.description,
 			location: formValues.location,
-			allDay: isAllDay,
 			...pluginUpdates,
 		}
 

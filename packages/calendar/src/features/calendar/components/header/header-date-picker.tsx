@@ -72,11 +72,18 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 	const { formatDateRange, formatTitle } = useDateTimeFormatters()
 	const [open, setOpen] = useState(false)
 
-	// The title names the days the view draws, so hidden ones do not count.
-	const weekDays = withoutHiddenDays(
-		getWeekDays(currentDate, firstDayOfWeek),
-		hiddenDays
-	)
+	// Title and picker are keyed by the derived picker kind, not the view name.
+	const activeView = getViews().find((v) => v.name === view)
+	const kind = pickerKind(activeView)
+
+	// The title names the days the view draws. The shared grid engine (a view
+	// that declares `columns`) leaves hidden days out; a view that renders
+	// itself, like the agenda, lists every day of its window.
+	const viewDropsHiddenDays = Boolean(activeView?.columns)
+	const weekDaysIncludingHidden = getWeekDays(currentDate, firstDayOfWeek)
+	const weekDays = viewDropsHiddenDays
+		? withoutHiddenDays(weekDaysIncludingHidden, hiddenDays)
+		: weekDaysIncludingHidden
 	const weekStart = weekDays.at(0) ?? currentDate
 	const weekEnd = weekDays.at(-1) ?? currentDate
 
@@ -84,9 +91,6 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 		selectDate(date)
 		setOpen(false)
 	}
-
-	// Title and picker are keyed by the derived picker kind, not the view name.
-	const kind = pickerKind(getViews().find((v) => v.name === view))
 
 	const titleByKind: Record<PickerKind, string> = {
 		year: currentDate.format('YYYY'),

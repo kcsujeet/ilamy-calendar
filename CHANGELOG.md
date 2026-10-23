@@ -46,6 +46,12 @@ All notable changes to this project will be documented in this file. Dates are d
 - fix: `weekNumberCalculation: 'local'` showed week numbers a week early in a London, Lisbon or Dublin calendar (and some machine zones) from April to October. Week numbers are now counted from the calendar day alone
 - fix: with no `timezone` prop in a browser in London, Dublin or Lisbon, an all-day event created on 30 March 2025 ended an hour late, and after next and previous in the month view the cells from 31 March on started an hour late
 
+- fix: the title dropdown's month and year pickers kept the UTC offset of the date they started from, so picking June from a January date was an hour off in a `timezone` with daylight saving, and a date just after midnight picked into January landed on 31 December
+- fix: the event form saved an event whose end equalled its start (nothing draws it) when an End Time before the start or a Start Time after the end was picked. The other time now follows, so the event keeps the length it opened with (RFC 5545 section 3.8.2.2)
+- fix: saving an existing event with its schedule untouched, or with only its title changed, no longer rewrites its `start` and `end`: an all-day event stored as UTC midnights grew from 24 to 48 hours in a New York calendar
+- fix: the title of an agenda with a Week window named only the days `hiddenDays` left in, while the list showed the whole week; the title now matches the list
+- fix: closing the event form, opened from an event bar or from a "+N more" list, now returns keyboard focus to the element that opened it instead of the page body (WCAG 2.4.3)
+
 ##### Performance
 
 - perf: a day's hour rows are derived once and built once per render, not once per resource. Building the columns of a 500-resource week went from 54 ms (UTC) and 203 ms (New York zone) on 3.2.1 to 4.1 ms and 6.6 ms, measured with `packages/calendar/scripts/bench-day-hours.tsx` ([`#354`](https://github.com/kcsujeet/ilamy-calendar/pull/354))

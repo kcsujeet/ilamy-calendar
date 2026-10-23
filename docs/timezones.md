@@ -168,7 +168,20 @@ time of day, or a zoneless wall-clock string for a clock time (as the event form
 and `calculateDropTimes` do). A wall-clock time the clocks skip reads with the
 offset before the gap, a repeated one is its first occurrence (RFC 5545
 section 3.3.5), so 02:30 on a spring-forward day is 03:30. `date-utils.test.ts`
-pins every day of the 2025 New York, London and Sydney changes.
+pins every day of the 2025 New York, London and Sydney changes. The title
+dropdown's month and year grids hand over `withOwnOffset(...)` of the date they
+rebuilt, for the same reason.
+
+**The event form does not rewrite a schedule the user did not touch.** The form
+shows an event as days and times in the calendar's zone and builds `start` and
+`end` back from them, which cannot reproduce a value the zone does not represent:
+an all-day event stored as UTC midnights (`T00:00Z` to the next `T00:00Z`) read in
+a New York calendar came back 48 hours long. An existing event saved with no
+schedule field edited keeps its `start`, `end` and `allDay` exactly as stored. Once
+a field is edited the form's values are written, so an all-day event edited in a
+zone other than the one it was stored in is rebuilt from that zone's days. How an
+all-day event should be anchored across zones (FullCalendar treats its dates as
+zoneless) is not decided; see the dev log of 2026-10-22.
 
 **Comparing calendar DAYS is a different question.** `isSame(x, 'day')` carries
 a unit, so it still routes through dayjs-timezone's `startOf` at ~101µs. Use

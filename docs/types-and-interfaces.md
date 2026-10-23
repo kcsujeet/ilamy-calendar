@@ -152,7 +152,7 @@ Top-level props for `<IlamyCalendar>`. Key props summarized below — see source
 | `allDaySlot` | `boolean` | `true` | Draw the all-day row in day, week and resource time grids. `false` removes it and all-day events are not shown in those views. |
 | `nowIndicator` | `boolean` | `true` | Draw the current-time line in time grids. |
 | `weekNumbers` | `boolean` | unset | Unset: week number in the week and resource week header corner, none in month view. The number is that of the week drawn, counted from its first drawn day, not of the current date. `true`: also a number in each month row, from the row's first day. `false`: nowhere. |
-| `weekNumberCalculation` | `WeekNumberCalculation` | `'local'` | `'local'` (the locale's count, dayjs `week()`), or `'ISO'` (ISO 8601; changes only the number, not the first day of the week). |
+| `weekNumberCalculation` | `WeekNumberCalculation` | `'local'` | `'local'` (the locale's own count, the one dayjs `week()` gives), or `'ISO'` (ISO 8601; changes only the number, not the first day of the week). |
 | `disableCellClick` | `boolean` | — | Disable cell clicks |
 | `disableEventClick` | `boolean` | — | Disable event clicks |
 | `disableDragAndDrop` | `boolean` | — | **Deprecated**, use `editable={false}`. Only sets the `editable` default, so an explicit `eventStartEditable` still enables moving. Kept until 4.0 |

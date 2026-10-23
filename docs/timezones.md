@@ -238,6 +238,14 @@ machine. That is a symptom fix. Other readings can still be an hour wrong, for
 roughly one hour a year, when the calendar's zone and the machine's change
 their clocks at different times.
 
+The same leak reached week numbers: dayjs `week()` diffs two instants, and the
+utc plugin flags a zone whose offset is 0 (London in winter) as UTC but not the
+same zone in summer, so `diff` falls back to the machine's zone and the number
+was a week early from April to October on a UTC machine
+(`dayjs/plugin/utc` `proto.diff`, `dayjs/plugin/timezone` `proto.tz`: `isUTC = !Number(offset)`,
+v1.11.23). `getWeekNumber` therefore counts days on a plain UTC calendar and
+calls no dayjs date math.
+
 Each patch here covers one symptom of the same design, so the fix is not more
 patches. FullCalendar keeps clock times in UTC "date markers" and converts at
 the edges through the zone database, with Temporal since v7

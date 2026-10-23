@@ -43,6 +43,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - fix: Enter and Space open a focused event, events that cannot move are still reachable by keyboard, bars no longer announce a keyboard drag that does not exist, and the form's date and time pickers and the Repeat checkbox are named by their labels ([`#369`](https://github.com/kcsujeet/ilamy-calendar/pull/369))
 - fix: recurring "this and following" edits and deletes never leave COUNT and UNTIL together, the new series keeps only the remaining COUNT, a moved occurrence is cut correctly, cutting at the first occurrence replaces the series, unticking Repeat stops the series, and deleted occurrences stay deleted after a time change. "All events" keeps the series' weekday and now reports only the time change it stored ([`#370`](https://github.com/kcsujeet/ilamy-calendar/pull/370))
 - fix: the date and time pickers' labels, placeholder and empty state, and the month and year navigation labels of the date pickers, are now translated instead of hard-coded English. Nine new `Translations` keys: `selectTime`, `noTimeFound`, `pickDate`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`. A full `translations` object must add them (`docs/translation-usage.md`)
+- fix: `weekNumberCalculation: 'local'` showed week numbers a week early in a London, Lisbon or Dublin calendar (and some machine zones) from April to October. Week numbers are now counted from the calendar day alone
 
 ##### Performance
 

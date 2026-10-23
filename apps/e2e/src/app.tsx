@@ -138,7 +138,9 @@ export const App = () => {
 	const scenarioName = params.get('scenario') ?? 'basic'
 	const viewName = params.get('view') ?? 'month'
 	const orientation = params.get('orientation')
-	const timezone = params.get('tz') ?? 'UTC'
+	const timezoneParam = params.get('tz') ?? 'UTC'
+	// `tz=none` leaves the calendar's `timezone` prop unset.
+	const timezone = timezoneParam === 'none' ? undefined : timezoneParam
 	const date = params.get('date') ?? PINNED_NOW
 
 	if (!isScenarioName(scenarioName)) {
@@ -264,7 +266,7 @@ interface HarnessProps {
 	resources?: Resource[]
 	revertChanges?: boolean
 	scenario: Scenario
-	timezone: string
+	timezone?: string
 	view: ViewName
 }
 

@@ -500,6 +500,19 @@ describe('ResourceWeekVertical', () => {
 			)
 		})
 
+		// The standard week view animates its number like the day numbers beside
+		// it (week.tsx); the resource weeks drew theirs static, so it jumped.
+		test.each(['hourly', 'daily'] as const)(
+			'%s granularity animates the week number like the standard week view',
+			(weekViewGranularity) => {
+				renderResourceWeekVertical({ weekViewGranularity })
+
+				expect(screen.getByTestId('week-number').className).toContain(
+					'animate-in'
+				)
+			}
+		)
+
 		test('daily granularity: weekNumbers={false} hides the number and the Week label', () => {
 			renderResourceWeekVertical({
 				weekViewGranularity: 'daily',

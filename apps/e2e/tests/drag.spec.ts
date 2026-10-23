@@ -1843,6 +1843,26 @@ test.describe('a drop that crosses a boundary', () => {
 	})
 })
 
+/** Waits until the grid's scroll position has stopped moving: a wheel scrolls smoothly. */
+const settleScroll = async (page: Page) => {
+	let last = Number.NaN
+	let still = 0
+	while (still < 4) {
+		const now = await page.evaluate(() => {
+			const cell = document.querySelector('[data-testid^="vertical-cell-"]')
+			let scroller = cell?.parentElement ?? null
+			while (scroller && scroller.scrollHeight <= scroller.clientHeight + 1) {
+				scroller = scroller.parentElement
+			}
+			return scroller?.scrollTop ?? -1
+		})
+		still = now === last ? still + 1 : 0
+		last = now
+		await page.waitForTimeout(100)
+	}
+	return last
+}
+
 /*
  * A wheel turned during a drag moves the grid under a pointer that stays where
  * it is, and the drop has to follow the slot now under it. The sticky all-day
@@ -1866,25 +1886,6 @@ test.describe('the wheel turned while a drag is held', () => {
 				...(resourceId ? { resourceId } : {}),
 			},
 		])
-
-	/** Waits until the grid's scroll position has stopped moving: a wheel scrolls smoothly. */
-	const settleScroll = async (page: Page) => {
-		let last = Number.NaN
-		let still = 0
-		while (still < 4) {
-			const now = await page.evaluate(() => {
-				const cell = document.querySelector('[data-testid^="vertical-cell-"]')
-				let scroller = cell?.parentElement ?? null
-				while (scroller && scroller.scrollHeight <= scroller.clientHeight + 1) {
-					scroller = scroller.parentElement
-				}
-				return scroller?.scrollTop ?? -1
-			})
-			still = now === last ? still + 1 : 0
-			last = now
-			await page.waitForTimeout(100)
-		}
-	}
 
 	/**
 	 * Grabs the probe bar (or its start handle), moves to height `y`, turns the
@@ -2011,5 +2012,215 @@ test.describe('the wheel turned while a drag is held', () => {
 				30
 			)
 		})
+	}
+})
+
+/*
+ * The all-day strip sits in the sticky header, so it stays where it is drawn
+ * while the grid scrolls under it. dnd-kit moves a droppable's measured box
+ * with the scroll of its scrollable ancestors, sticky or not, so once the grid
+ * has scrolled since the drag began (a wheel turn, or the drag scrolling itself
+ * as the pointer nears the strip at the top edge) the strip is measured below
+ * where it is drawn and a drop on it hit nothing.
+ */
+test.describe('a drop on the all-day strip after the grid has scrolled', () => {
+	type ScrolledAt = 'before the drag' | 'during the drag'
+
+	const TIMED_PROBE = {
+		id: 'P',
+		uid: 'P',
+		title: 'Probe',
+		start: '2025-03-12T09:00:00.000Z',
+		end: '2025-03-12T11:00:00.000Z',
+	}
+	const ALL_DAY_PROBE = {
+		id: 'A',
+		uid: 'A',
+		title: 'Probe all-day',
+		start: '2025-03-12T00:00:00.000Z',
+		end: '2025-03-13T00:00:00.000Z',
+		allDay: true,
+	}
+	const WHEEL = 100
+
+	const seedRow = (row: object, isResource: boolean) =>
+		JSON.stringify([isResource ? { ...row, resourceId: 'r1' } : row])
+
+	const openCalendar = async (
+		page: Page,
+		options: { isResource: boolean; view: 'day' | 'week'; row: object }
+	) => {
+		const { isResource, view, row } = options
+		await gotoScenario(page, {
+			scenario: isResource ? 'seed-resources' : 'seed',
+			view,
+			orientation: 'vertical',
+			settings: {
+				slot: 30,
+				scrollTime: '06:00',
+				height: '420px',
+				seed: seedRow(row, isResource),
+			},
+		})
+		await settleAnimations(page)
+	}
+
+	const getBox = async (locator: import('@playwright/test').Locator) => {
+		const box = await locator.boundingBox()
+		if (!box) {
+			throw new Error('needs a layout to be dragged')
+		}
+		return box
+	}
+
+	/** Turns the wheel over the visible grid, just below the strip. */
+	const turnWheel = async (page: Page) => {
+		const scrolledBefore = await settleScroll(page)
+		const strip = await getBox(page.locator('[data-all-day="true"]').first())
+		await page.mouse.move(
+			strip.x + strip.width / 2,
+			strip.y + strip.height + 100
+		)
+		await page.mouse.wheel(0, WHEEL)
+		const scrolledAfter = await settleScroll(page)
+		expect(scrolledAfter).toBe(scrolledBefore + WHEEL)
+	}
+
+	const stripCell = (page: Page, day: string, resourceId?: string) => {
+		const resource = resourceId ? `[data-resource-id="${resourceId}"]` : ''
+		return page.locator(
+			`[data-all-day="true"][data-start^="${day}"]${resource}`
+		)
+	}
+
+	/** Presses `from`, moves in steps to `to`, and returns after turning the wheel on request. */
+	const dragWith = async (
+		page: Page,
+		grid: TimeGrid,
+		options: {
+			from: { x: number; y: number }
+			via: { x: number; y: number }
+			to: { x: number; y: number }
+			scrolledAt: ScrolledAt
+		}
+	) => {
+		const { from, via, to, scrolledAt } = options
+		await page.mouse.move(from.x, from.y)
+		await page.mouse.down()
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(
+				from.x + ((via.x - from.x) * step) / 8,
+				from.y + ((via.y - from.y) * step) / 8
+			)
+		}
+		if (scrolledAt === 'during the drag') {
+			await page.mouse.wheel(0, WHEEL)
+			await settleScroll(page)
+		}
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(
+				via.x + ((to.x - via.x) * step) / 8,
+				via.y + ((to.y - via.y) * step) / 8
+			)
+		}
+		// Near the strip the drag scrolls the grid by itself; let it finish so the
+		// drop does not depend on timing.
+		await settleScroll(page)
+		await releasePointer(page)
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+	}
+
+	const targets = [
+		{ label: 'week', isResource: false, view: 'week', day: '2025-03-13' },
+		{ label: 'resource day', isResource: true, view: 'day', day: '2025-03-12' },
+		{
+			label: 'resource week',
+			isResource: true,
+			view: 'week',
+			day: '2025-03-13',
+		},
+	] as const
+
+	for (const { label, isResource, view, day } of targets) {
+		for (const scrolledAt of ['before the drag', 'during the drag'] as const) {
+			test(`a timed event dropped on the strip becomes all-day, scrolled ${scrolledAt} (${label})`, async ({
+				page,
+			}) => {
+				await openCalendar(page, { isResource, view, row: TIMED_PROBE })
+				const grid = new TimeGrid(page)
+				if (scrolledAt === 'before the drag') {
+					await turnWheel(page)
+				}
+				const resourceId = isResource ? 'r2' : undefined
+				const bar = await getBox(grid.bars('P').first())
+				const strip = await getBox(stripCell(page, day, resourceId))
+				const from = { x: bar.x + bar.width / 2, y: bar.y + 20 }
+				const via = {
+					x: strip.x + strip.width / 2,
+					y: strip.y + strip.height + 60,
+				}
+				const to = {
+					x: strip.x + strip.width / 2,
+					y: strip.y + strip.height / 2,
+				}
+
+				await dragWith(page, grid, { from, via, to, scrolledAt })
+
+				const [stored] = await grid.eventState()
+				expect(stored).toMatchObject({
+					start: `${day}T00:00:00.000Z`,
+					end: new Date(
+						Date.parse(`${day}T00:00:00.000Z`) + 86_400_000
+					).toISOString(),
+					allDay: true,
+				})
+				if (isResource) {
+					expect(stored.resourceId).toBe('r2')
+				}
+			})
+		}
+	}
+
+	for (const { label, isResource, view } of targets) {
+		for (const scrolledAt of ['before the drag', 'during the drag'] as const) {
+			test(`an all-day event dropped on a slot lands on the slot under the pointer, scrolled ${scrolledAt} (${label})`, async ({
+				page,
+			}) => {
+				await openCalendar(page, { isResource, view, row: ALL_DAY_PROBE })
+				const grid = new TimeGrid(page)
+				if (scrolledAt === 'before the drag') {
+					await turnWheel(page)
+				}
+				const bar = await getBox(
+					page.locator('[data-testid^="horizontal-event-A"]').first()
+				)
+				const strip = await getBox(
+					page.locator('[data-all-day="true"]').first()
+				)
+				const from = { x: bar.x + bar.width / 2, y: bar.y + bar.height / 2 }
+				const slotsY = strip.y + strip.height + 100
+				const to = { x: from.x, y: slotsY }
+				const via = { x: from.x, y: strip.y + strip.height + 20 }
+
+				await dragWith(page, grid, { from, via, to, scrolledAt })
+
+				const slotUnder = await page.evaluate(
+					([px, py]) =>
+						document
+							.elementsFromPoint(px, py)
+							.find((el) =>
+								(el.getAttribute('data-testid') ?? '').startsWith(
+									'vertical-cell-'
+								)
+							)
+							?.getAttribute('data-start') ?? null,
+					[to.x, to.y]
+				)
+				const [stored] = await grid.eventState()
+				expect(slotUnder).not.toBeNull()
+				expect(stored.allDay).toBe(false)
+				expect(stored.start).toBe(slotUnder)
+			})
+		}
 	}
 })

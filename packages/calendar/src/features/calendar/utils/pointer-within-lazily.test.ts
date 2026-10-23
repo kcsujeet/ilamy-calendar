@@ -42,7 +42,8 @@ describe('pointerWithinLazily', () => {
 	// really is, which dnd-kit's rect can lag behind.
 	const mkContainer = (
 		id: UniqueIdentifier,
-		drawnAt: { left: number; top: number }
+		drawnAt: { left: number; top: number },
+		data?: { allDay: boolean }
 	) => {
 		const { left, top } = drawnAt
 		const element = {
@@ -55,7 +56,11 @@ describe('pointerWithinLazily', () => {
 				height: 10,
 			}),
 		}
-		return { id, node: { current: element } } as unknown as DroppableContainer
+		return {
+			id,
+			node: { current: element },
+			data: { current: data },
+		} as unknown as DroppableContainer
 	}
 
 	// A 4 x 4 grid of 10px cells, ids `cell-<column>-<row>`, in row order.
@@ -140,5 +145,54 @@ describe('pointerWithinLazily', () => {
 		})
 
 		expect(collisions.map((collision) => collision.id)).toEqual(['slot'])
+	})
+
+	// The strip is the other half of that fact: dnd-kit's rect for it is wrong
+	// whenever the grid has scrolled, so it is hit-tested where it is drawn. The
+	// strip below is drawn at 20 (over the pointer) and measured at 220; the
+	// time column's measured rect, which dnd-kit gets right, covers the pointer.
+	describe('an all-day cell', () => {
+		const detectOverStrip = () =>
+			pointerWithinLazily({
+				active: {} as Active,
+				collisionRect: mkRect(0, 0, 0).rect,
+				droppableRects: new Map<UniqueIdentifier, ClientRect>([
+					['strip', mkRect(0, 220, 10).rect],
+					['column', mkRect(0, 0, 400).rect],
+				]),
+				droppableContainers: [
+					mkContainer('strip', { left: 0, top: 20 }, { allDay: true }),
+					mkContainer('column', { left: 0, top: 20 }),
+				],
+				pointerCoordinates: { x: 5, y: 25 },
+			})
+
+		it('is hit where it is drawn, though dnd-kit measured it elsewhere', () => {
+			const hitIds = detectOverStrip().map((collision) => collision.id)
+
+			expect(hitIds).toContain('strip')
+		})
+
+		it('beats the time column drawn under it', () => {
+			const hitIds = detectOverStrip().map((collision) => collision.id)
+
+			expect(hitIds).toEqual(['strip'])
+		})
+
+		it('is not hit by a pointer that is outside where it is drawn', () => {
+			const collisions = pointerWithinLazily({
+				active: {} as Active,
+				collisionRect: mkRect(0, 0, 0).rect,
+				droppableRects: new Map<UniqueIdentifier, ClientRect>([
+					['strip', mkRect(0, 20, 10).rect],
+				]),
+				droppableContainers: [
+					mkContainer('strip', { left: 0, top: 220 }, { allDay: true }),
+				],
+				pointerCoordinates: { x: 5, y: 25 },
+			})
+
+			expect(collisions).toEqual([])
+		})
 	})
 })

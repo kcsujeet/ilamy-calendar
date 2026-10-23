@@ -3,6 +3,7 @@ import {
 	gotoScenario,
 	releasePointer,
 	type ScenarioOptions,
+	waitForDragRender,
 } from './support/harness'
 import { TimeGrid } from './support/pages'
 
@@ -557,5 +558,193 @@ test.describe('the snapped preview follows the pointer between slices of one cel
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
 		const row = await grid.eventNamed('Room A booking')
 		expect(row.end).toBe('2025-03-12T12:00:00.000Z')
+	})
+})
+
+/*
+ * A time column is ONE drop target and finds the slot under the pointer itself,
+ * so its edges have to be the edges the cells are drawn with. They are not
+ * equal: the last slot of an hour gives 1px to the line below it (15.9, 15.9,
+ * 15.9, 14.9px at 15 minutes; 30.5 and 29.5px at 30), and a whole-pixel pointer
+ * is what a mouse reports.
+ */
+test.describe('the slot under the pointer, as the cells are drawn', () => {
+	const probe = JSON.stringify([
+		{
+			id: 'P',
+			uid: 'P',
+			title: 'Probe',
+			start: '2025-03-12T08:00:00.000Z',
+			end: '2025-03-12T09:00:00.000Z',
+		},
+	])
+
+	test('a 30-minute slot with a 15-minute snap, pointer a quarter pixel above its middle, lands on the first quarter', async ({
+		page,
+	}) => {
+		await openSettled(page, {
+			scenario: 'seed',
+			view: 'day',
+			orientation: 'vertical',
+			settings: {
+				slot: 30,
+				snapDuration: 15,
+				scrollTime: '07:00',
+				height: '700px',
+				seed: probe,
+			},
+		})
+		const grid = new TimeGrid(page)
+		const slot = grid.slotAt('2025-03-12T10:00').first()
+		const box = await slot.boundingBox()
+		if (!box) {
+			throw new Error('the slot is not laid out')
+		}
+		// The largest whole pixel still above the middle line of the drawn slot.
+		const middle = box.y + box.height / 2
+		const y = Math.ceil(middle) - 1
+		expect(y).toBeGreaterThanOrEqual(box.y)
+		expect(y).toBeLessThan(middle)
+
+		await dragPointer(page, await topEdgeOf(grid.bars('P').first()), {
+			x: box.x + box.width / 2,
+			y,
+		})
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Probe')
+		expect(row.start).toBe('2025-03-12T10:00:00.000Z')
+	})
+
+	const sweepRow = (extra: Record<string, unknown> = {}) =>
+		JSON.stringify([
+			{
+				id: 'sweep-1',
+				uid: 'sweep-1',
+				title: 'Sweep',
+				start: '2025-03-12T08:00:00.000Z',
+				end: '2025-03-12T09:30:00.000Z',
+				...extra,
+			},
+		])
+
+	/**
+	 * Walks the pointer down a column a pixel at a time and records the pixels
+	 * where the cell under it changes, and where the lit slot changes.
+	 */
+	const edgesDownColumn = async (
+		page: Page,
+		options: ScenarioOptions,
+		column: Locator
+	) => {
+		await page.setViewportSize({ width: 1280, height: 1700 })
+		await openSettled(page, options)
+		const first = await column.boundingBox()
+		const bar = await page
+			.getByTestId('vertical-event-sweep-1')
+			.first()
+			.boundingBox()
+		if (!(first && bar)) {
+			throw new Error('the column or the bar is not laid out')
+		}
+		const x = first.x + first.width / 2
+		await page.mouse.move(bar.x + bar.width / 2, bar.y + 1)
+		await page.mouse.down()
+		await page.mouse.move(bar.x + bar.width / 2 + 4, bar.y + 8, { steps: 3 })
+		await page.mouse.move(x, first.y + 4, { steps: 5 })
+		const cellEdges: number[] = []
+		const litEdges: number[] = []
+		let lastCell = ''
+		let lastLit = ''
+		for (let y = Math.ceil(first.y) + 2; y < first.y + 200; y += 1) {
+			await page.mouse.move(x, y)
+			await waitForDragRender(page)
+			const seen = await page.evaluate(
+				([px, py]) => {
+					const cell = document
+						.elementsFromPoint(px, py)
+						.find((el) =>
+							(el as HTMLElement).dataset.testid?.startsWith('vertical-cell-')
+						) as HTMLElement | undefined
+					const lit = [
+						...document.querySelectorAll('[data-drop-target="true"]'),
+					]
+						.map((el) => (el as HTMLElement).dataset.start ?? '')
+						.sort()
+					return { cell: cell?.dataset.start ?? '', lit: lit.at(0) ?? '' }
+				},
+				[x, y]
+			)
+			if (seen.cell && lastCell && seen.cell !== lastCell) {
+				cellEdges.push(y)
+			}
+			lastCell = seen.cell || lastCell
+			if (seen.lit && lastLit && seen.lit !== lastLit) {
+				litEdges.push(y)
+			}
+			lastLit = seen.lit || lastLit
+		}
+		await page.mouse.up()
+		return { cellEdges, litEdges }
+	}
+
+	/** How far each lit-slot edge sits from the cell edge it belongs to. */
+	const lags = ({
+		cellEdges,
+		litEdges,
+	}: Awaited<ReturnType<typeof edgesDownColumn>>) =>
+		litEdges.map((edge, index) => edge - (cellEdges.at(index) ?? Number.NaN))
+
+	test.describe('the lit slot changes at the pixel the cell under the pointer changes', () => {
+		test.setTimeout(240_000)
+
+		test('in a week at 15 minutes', async ({ page }) => {
+			const edges = await edgesDownColumn(
+				page,
+				{
+					scenario: 'seed',
+					view: 'week',
+					settings: {
+						slot: 15,
+						scrollTime: '00:00',
+						seed: sweepRow(),
+					},
+				},
+				page
+					.locator(
+						'[data-testid^="vertical-cell-"][data-start^="2025-03-13T00:00"]'
+					)
+					.first()
+			)
+
+			expect(edges.litEdges.length).toBeGreaterThan(5)
+			expect(edges.litEdges).toHaveLength(edges.cellEdges.length)
+			expect(new Set(lags(edges)).size).toBe(1)
+		})
+
+		test('in a resource day at 15 minutes', async ({ page }) => {
+			const edges = await edgesDownColumn(
+				page,
+				{
+					scenario: 'seed-resources',
+					view: 'day',
+					orientation: 'vertical',
+					settings: {
+						slot: 15,
+						scrollTime: '00:00',
+						seed: sweepRow({ resourceId: 'r1' }),
+					},
+				},
+				page
+					.locator(
+						'[data-testid^="vertical-cell-"][data-resource-id="r2"][data-start^="2025-03-12T00:00"]'
+					)
+					.first()
+			)
+
+			expect(edges.litEdges.length).toBeGreaterThan(5)
+			expect(edges.litEdges).toHaveLength(edges.cellEdges.length)
+			expect(new Set(lags(edges)).size).toBe(1)
+		})
 	})
 })

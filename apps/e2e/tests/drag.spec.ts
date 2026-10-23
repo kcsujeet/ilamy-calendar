@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
 import {
 	gotoScenario,
 	releasePointer,
@@ -1841,4 +1841,175 @@ test.describe('a drop that crosses a boundary', () => {
 		const [change] = await grid.eventChanges()
 		expect(change?.endDelta).toEqual(change?.delta)
 	})
+})
+
+/*
+ * A wheel turned during a drag moves the grid under a pointer that stays where
+ * it is, and the drop has to follow the slot now under it. The sticky all-day
+ * strip is what makes that hard: dnd-kit moves its measured box with the scroll
+ * though the strip stays put, so after the wheel it sits over the pointer in
+ * dnd-kit's eyes and a drop landed on it (the event turned all-day, or a start
+ * resize did nothing). The pointer is held in the middle of the grid: near an
+ * edge the drag scrolls itself, and the drop then depends on timing.
+ */
+test.describe('the wheel turned while a drag is held', () => {
+	type Mode = 'move' | 'resize-start'
+
+	const probeRow = (resourceId?: string) =>
+		JSON.stringify([
+			{
+				id: 'P',
+				uid: 'P',
+				title: 'Probe',
+				start: '2025-03-12T10:00:00.000Z',
+				end: '2025-03-12T12:00:00.000Z',
+				...(resourceId ? { resourceId } : {}),
+			},
+		])
+
+	/** Waits until the grid's scroll position has stopped moving: a wheel scrolls smoothly. */
+	const settleScroll = async (page: Page) => {
+		let last = Number.NaN
+		let still = 0
+		while (still < 4) {
+			const now = await page.evaluate(() => {
+				const cell = document.querySelector('[data-testid^="vertical-cell-"]')
+				let scroller = cell?.parentElement ?? null
+				while (scroller && scroller.scrollHeight <= scroller.clientHeight + 1) {
+					scroller = scroller.parentElement
+				}
+				return scroller?.scrollTop ?? -1
+			})
+			still = now === last ? still + 1 : 0
+			last = now
+			await page.waitForTimeout(100)
+		}
+	}
+
+	/**
+	 * Grabs the probe bar (or its start handle), moves to height `y`, turns the
+	 * wheel by `wheel` with the pointer still, nudges the pointer 1px back to `y`
+	 * and releases. Returns the slot drawn under the pointer, and the stored row.
+	 */
+	const dragAndTurnWheel = async (
+		page: Page,
+		options: {
+			scenario: 'seed' | 'seed-resources'
+			view: 'day' | 'week'
+			slot?: number
+			mode: Mode
+			wheel: number
+		}
+	) => {
+		const { scenario, view, slot = 30, mode, wheel } = options
+		await gotoScenario(page, {
+			scenario,
+			view,
+			orientation: 'vertical',
+			settings: {
+				slot,
+				snapDuration: 15,
+				scrollTime: '07:00',
+				height: '420px',
+				eventResizableFromStart: 'true',
+				seed: probeRow(scenario === 'seed-resources' ? 'r1' : undefined),
+			},
+		})
+		await settleAnimations(page)
+		const grid = new TimeGrid(page)
+		// Just inside where dnd-kit will measure the all-day strip once the wheel
+		// has turned: its drawn bottom edge, moved down by the scroll.
+		const strip = await page
+			.locator('[data-all-day="true"]')
+			.first()
+			.boundingBox()
+		if (!strip) {
+			throw new Error('the all-day strip is not laid out')
+		}
+		const y = Math.round(strip.y + strip.height - wheel - 6)
+		const bar = grid.bars('P').first()
+		const grabbed =
+			mode === 'move' ? bar : bar.locator('[data-resize-handle="start"]')
+		const box = await grabbed.boundingBox()
+		if (!box) {
+			throw new Error('there is nothing to grab')
+		}
+		const from = {
+			x: box.x + box.width / 2,
+			y: mode === 'move' ? box.y + 20 : box.y + box.height / 2,
+		}
+		await page.mouse.move(from.x, from.y)
+		await page.mouse.down()
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(from.x, from.y + ((y - from.y) * step) / 8)
+		}
+		await page.mouse.wheel(0, wheel)
+		await settleScroll(page)
+		await page.mouse.move(from.x, y + 1)
+		await page.mouse.move(from.x, y)
+		const slotUnder = await page.evaluate(
+			([px, py]) => {
+				const cell = document
+					.elementsFromPoint(px, py)
+					.find((el) =>
+						(el.getAttribute('data-testid') ?? '').startsWith('vertical-cell-')
+					)
+				return cell?.getAttribute('data-start') ?? null
+			},
+			[from.x, y]
+		)
+		await releasePointer(page)
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const [stored] = await grid.eventState()
+		return { slotUnder, stored }
+	}
+
+	const minutesBetween = (a: string, b: string) =>
+		Math.abs(new Date(a).getTime() - new Date(b).getTime()) / 60_000
+
+	for (const [scenario, view] of [
+		['seed', 'day'],
+		['seed', 'week'],
+		['seed-resources', 'day'],
+		['seed-resources', 'week'],
+	] as const) {
+		for (const slot of [30, 60]) {
+			test(`a move after a wheel turn lands on the slot under the pointer (${scenario} ${view}, ${slot}-minute slots)`, async ({
+				page,
+			}) => {
+				const { slotUnder, stored } = await dragAndTurnWheel(page, {
+					scenario,
+					view,
+					slot,
+					mode: 'move',
+					wheel: -120,
+				})
+
+				expect(slotUnder).not.toBeNull()
+				expect(stored.allDay).toBe(false)
+				// The grab point sits up to one slot into the bar.
+				expect(
+					minutesBetween(stored.start, slotUnder ?? '')
+				).toBeLessThanOrEqual(slot)
+			})
+		}
+	}
+
+	for (const view of ['day', 'week'] as const) {
+		test(`resizing the start after a wheel turn follows the slot under the pointer (resource ${view})`, async ({
+			page,
+		}) => {
+			const { slotUnder, stored } = await dragAndTurnWheel(page, {
+				scenario: 'seed-resources',
+				view,
+				mode: 'resize-start',
+				wheel: -120,
+			})
+
+			expect(slotUnder).not.toBeNull()
+			expect(minutesBetween(stored.start, slotUnder ?? '')).toBeLessThanOrEqual(
+				30
+			)
+		})
+	}
 })

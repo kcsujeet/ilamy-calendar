@@ -46,6 +46,136 @@ export interface Pointer {
 	y: number
 }
 
+/** A slot of a time column: what a drop reads from it, and the element it is drawn as. */
+export interface DropSlot {
+	data: DropCellData
+	element: Pick<HTMLElement, 'getBoundingClientRect'>
+}
+
+/**
+ * What a time column registers with dnd-kit: its slots, row after row. The
+ * slot cells fill the array in themselves.
+ *
+ * One drop target per column, not one per slot, because dnd-kit copies its
+ * whole droppable registry on every registration: a droppable per slot made
+ * mounting a resource week O(slots²), 7 s for the 20,000 slots of 30 resources
+ * at 15 minutes. The slot under the pointer is found from where the slots are
+ * drawn instead (`findSlotInColumn`).
+ */
+export interface DropColumnData {
+	slots: Array<DropSlot | undefined>
+}
+
+/** The box of a drop target. */
+interface DropRect {
+	top: number
+	left: number
+	width: number
+	height: number
+}
+
+const isDropColumn = (
+	data: DropCellData | DropColumnData
+): data is DropColumnData => 'slots' in data
+
+/** `cell`, narrowed to the snap-sized piece of `rect` that the pointer is over. */
+const snapWithinCell = (
+	cell: DropCellData | undefined,
+	rect: DropRect,
+	pointer: Pointer | undefined
+): DropCellData | undefined => {
+	if (!cell || !hasFinerSnapThanCell(cell)) {
+		return cell
+	}
+	if (!pointer) {
+		return snapDropCell(cell, 0)
+	}
+	const isHorizontal = cell.axis === 'horizontal'
+	const pointerAlongAxis = isHorizontal ? pointer.x : pointer.y
+	const cellStart = isHorizontal ? rect.left : rect.top
+	const cellLength = isHorizontal ? rect.width : rect.height
+	const fractionIntoCell = getFractionAlong(
+		pointerAlongAxis,
+		cellStart,
+		cellLength
+	)
+	return snapDropCell(cell, fractionIntoCell)
+}
+
+const EMPTY_RECT: DropRect = { top: 0, left: 0, width: 0, height: 0 }
+
+/** The box a slot is drawn in now; undefined for one that has not published itself. */
+const getSlotRect = (
+	slots: DropColumnData['slots'],
+	index: number
+): DOMRect | undefined => {
+	const isInColumn = index >= 0 && index < slots.length
+	return isInColumn
+		? slots.at(index)?.element.getBoundingClientRect()
+		: undefined
+}
+
+/**
+ * The index of the last slot that starts at or above `pointerY`, or 0 when
+ * none does: a binary search over where the slots are drawn now, so a handful
+ * of reads however many slots there are. A slot that has not published itself
+ * counts as starting below everything.
+ */
+const findLastSlotStartingAtOrAbove = (
+	slots: DropColumnData['slots'],
+	pointerY: number
+): number => {
+	let first = 0
+	let last = slots.length - 1
+	while (first < last) {
+		const middle = Math.ceil((first + last) / 2)
+		const middleTop =
+			getSlotRect(slots, middle)?.top ?? Number.POSITIVE_INFINITY
+		if (middleTop <= pointerY) {
+			first = middle
+		} else {
+			last = middle - 1
+		}
+	}
+	return first
+}
+
+/** Whether the pointer is exactly where the slot starts, and the slot above it ends there too. */
+const isOnEdgeSharedWithEarlier = (
+	slots: DropColumnData['slots'],
+	index: number,
+	pointerY: number
+): boolean => {
+	const startsAtPointer = getSlotRect(slots, index)?.top === pointerY
+	const earlierBottom = getSlotRect(slots, index - 1)?.bottom ?? Number.NaN
+	return startsAtPointer && earlierBottom >= pointerY
+}
+
+/**
+ * The slot of a column the pointer is over, and the box it is drawn in. The
+ * slots are not equal (the last of an hour gives 1px to the line below it) and
+ * a slot's height is not its drop's to assume, so each is read from its own
+ * element, as it is now (`findLastSlotStartingAtOrAbove`).
+ *
+ * The 1px gap between two rows belongs to the row above it: dnd-kit hit-tests
+ * the whole-pixel coordinates of mouse events, which are never in a 1px gap, so
+ * the cells this stands in for covered it; the pointer position read here is
+ * fractional for a pointer event and can be. An edge shared by two slots
+ * belongs to the earlier, as it did when each cell contained its own edges and
+ * the first registered won a point on both.
+ */
+const findSlotInColumn = (
+	{ slots }: DropColumnData,
+	pointer: Pointer | undefined
+): { slot: DropCellData | undefined; slotRect: DropRect } => {
+	const pointerY = pointer ? pointer.y : Number.NEGATIVE_INFINITY
+	const found = findLastSlotStartingAtOrAbove(slots, pointerY)
+	const isSharedWithEarlier = isOnEdgeSharedWithEarlier(slots, found, pointerY)
+	const index = isSharedWithEarlier ? found - 1 : found
+	const slotRect = getSlotRect(slots, index) ?? EMPTY_RECT
+	return { slot: slots.at(index)?.data, slotRect }
+}
+
 /**
  * The cell under the pointer, narrowed to the snap-sized piece the pointer is
  * over. This, not the raw cell, is what a drop or resize is computed from.
@@ -58,28 +188,28 @@ export interface Pointer {
  * includes the scroll since the drag began, and `over.rect` is re-measured
  * after that scroll too (`useDroppableMeasuring`), so the scroll would count
  * twice. A drag with no pointer (keyboard) keeps the start of the cell.
+ *
+ * Over a time column the cell is first picked from the column's slots by the
+ * pointer's height against where each slot is drawn now (`findSlotInColumn`;
+ * the column's own `over.rect` is not read), and a slot is then snapped like
+ * any other cell.
  */
 export const getSnappedOverData = (
 	over: DragOverEvent['over'],
 	pointer: Pointer | undefined
 ): DropCellData | undefined => {
-	const cell = over?.data.current as DropCellData | undefined
-	if (!over || !cell || !hasFinerSnapThanCell(cell)) {
-		return cell
+	const dropped = over?.data.current as
+		| DropCellData
+		| DropColumnData
+		| undefined
+	if (!over || !dropped) {
+		return undefined
 	}
-	if (!pointer) {
-		return snapDropCell(cell, 0)
+	if (isDropColumn(dropped)) {
+		const { slot, slotRect } = findSlotInColumn(dropped, pointer)
+		return snapWithinCell(slot, slotRect, pointer)
 	}
-	const isHorizontal = cell.axis === 'horizontal'
-	const pointerAlongAxis = isHorizontal ? pointer.x : pointer.y
-	const cellStart = isHorizontal ? over.rect.left : over.rect.top
-	const cellLength = isHorizontal ? over.rect.width : over.rect.height
-	const fractionIntoCell = getFractionAlong(
-		pointerAlongAxis,
-		cellStart,
-		cellLength
-	)
-	return snapDropCell(cell, fractionIntoCell)
+	return snapWithinCell(dropped, over.rect, pointer)
 }
 
 const MIDNIGHT = '00:00:00.000'
@@ -345,10 +475,11 @@ export const getUpdatedEvent = (
 		return null
 	}
 
-	const data = getSnappedOverData(over, pointer) ?? {}
-	// Released on a cell that refuses drops: commit nothing, so the event
-	// reverts to where it started.
-	if (data.disabled) {
+	const data = getSnappedOverData(over, pointer)
+	// Released over no cell (a slot that has not published itself), or on one
+	// that refuses drops: commit nothing, so the event reverts to where it
+	// started.
+	if (!data || data.disabled) {
 		return null
 	}
 	const { resourceId } = data

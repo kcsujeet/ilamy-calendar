@@ -39,6 +39,8 @@ const THROTTLES = (process.env.PERF_THROTTLES ?? '1,4').split(',').map(Number)
 const ONLY = process.env.PERF_SCENARIOS?.split(',')
 /** Time one scenario x throttle may spend on repetitions (PERF_CELL_BUDGET_MIN); at least one always runs. */
 const CELL_BUDGET_MS = Number(process.env.PERF_CELL_BUDGET_MIN ?? 10) * 60_000
+/** PERF_INTERACTIONS (comma separated rep keys, e.g. "nav"): run only these after the mount. Default: all. */
+const INTERACTIONS = process.env.PERF_INTERACTIONS?.split(',')
 const OUT_FILE = resolve(process.env.PERF_OUT ?? 'results', `${LABEL}.json`)
 
 /** Pointer steps while dragging, and the number of 100 ms windows an auto-scroll is held for. */
@@ -556,6 +558,8 @@ const attempt = async <T>(
 	}
 }
 
+const runs = (key: string) => !INTERACTIONS || INTERACTIONS.includes(key)
+
 const runRep = async (
 	browser: Browser,
 	plan: Plan,
@@ -584,20 +588,34 @@ const runRep = async (
 	}
 	await page.waitForTimeout(SETTLE_AFTER_MOUNT_MS)
 
-	rep.nav = (await attempt(() => measureNav(page, cdp))) as Rep['nav']
-	rep.viewSwitch = (await attempt(() =>
-		measureViewSwitch(page, cdp, plan)
-	)) as Rep['viewSwitch']
-	rep.formOpen = (await attempt(() =>
-		measureFormOpen(page, cdp, plan)
-	)) as Rep['formOpen']
-	rep.resize = (await attempt(() =>
-		measureResize(page, cdp, plan)
-	)) as Rep['resize']
-	rep.drag = (await attempt(() => measureDrag(page, cdp, plan))) as Rep['drag']
-	rep.autoscroll = (await attempt(() =>
-		measureAutoscroll(page, cdp, plan)
-	)) as Rep['autoscroll']
+	if (runs('nav')) {
+		rep.nav = (await attempt(() => measureNav(page, cdp))) as Rep['nav']
+	}
+	if (runs('viewSwitch')) {
+		rep.viewSwitch = (await attempt(() =>
+			measureViewSwitch(page, cdp, plan)
+		)) as Rep['viewSwitch']
+	}
+	if (runs('formOpen')) {
+		rep.formOpen = (await attempt(() =>
+			measureFormOpen(page, cdp, plan)
+		)) as Rep['formOpen']
+	}
+	if (runs('resize')) {
+		rep.resize = (await attempt(() =>
+			measureResize(page, cdp, plan)
+		)) as Rep['resize']
+	}
+	if (runs('drag')) {
+		rep.drag = (await attempt(() =>
+			measureDrag(page, cdp, plan)
+		)) as Rep['drag']
+	}
+	if (runs('autoscroll')) {
+		rep.autoscroll = (await attempt(() =>
+			measureAutoscroll(page, cdp, plan)
+		)) as Rep['autoscroll']
+	}
 	await context.close()
 	return rep
 }

@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { gotoScenario, releasePointer } from './support/harness'
-import { CalendarPage } from './support/pages'
+import { CalendarPage, TimeGrid } from './support/pages'
 
 const lane = (resourceId: string, startISO: string) =>
 	`[data-resource-id="${resourceId}"][data-start="${startISO}"]`
@@ -136,5 +136,135 @@ test.describe('editing a cross-resource event', () => {
 		const row = await calendar.eventNamed('Multi renamed')
 		expect(row.resourceIds).toEqual(['v1', 'v3', 'v28'])
 		expect(row.resourceId).toBeNull()
+	})
+})
+
+/*
+ * A column of the vertical resource week is ONE drop target; its slots are not
+ * registered with dnd-kit one by one (30 rooms at 15 minutes mounted 20,000
+ * droppables, 7 s of dnd-kit copying its registry). The slot under the pointer
+ * is found from the pointer's height in the column, so what this pins is that
+ * the drop still lands on the exact slot and the exact room under the pointer.
+ */
+test.describe('dropping onto a slot of a vertical resource week', () => {
+	const settings = { slot: 15, scrollTime: '08:00' }
+
+	/** The slot of a room whose range opens at this instant. */
+	const slotOf = (page: Page, resourceId: string, startISO: string) =>
+		page.locator(
+			`[data-testid^="vertical-cell-"][data-resource-id="${resourceId}"][data-start="${startISO}"]`
+		)
+
+	const centerOf = async (target: ReturnType<typeof slotOf>) => {
+		const box = await target.boundingBox()
+		if (!box) {
+			throw new Error('the slot is not laid out')
+		}
+		return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+	}
+
+	/** Presses the top edge of a bar and moves to `to` in steps, leaving the pointer down. */
+	const dragBarTo = async (
+		page: Page,
+		barId: string,
+		to: { x: number; y: number }
+	) => {
+		const box = await page.getByTestId(barId).first().boundingBox()
+		if (!box) {
+			throw new Error(`no box for ${barId}`)
+		}
+		const from = { x: box.x + box.width / 2, y: box.y + 2 }
+		await page.mouse.move(from.x, from.y)
+		await page.mouse.down()
+		for (let step = 1; step <= 8; step += 1) {
+			await page.mouse.move(
+				from.x + ((to.x - from.x) * step) / 8,
+				from.y + ((to.y - from.y) * step) / 8
+			)
+		}
+	}
+
+	test.beforeEach(async ({ page }) => {
+		await gotoScenario(page, {
+			scenario: 'resources',
+			view: 'week',
+			orientation: 'vertical',
+			settings,
+		})
+		await page.evaluate(() =>
+			Promise.all(
+				document.getAnimations().map((animation) => animation.finished)
+			)
+		)
+	})
+
+	test('an event dropped on a 15-minute slot of another room lands on that room and slot', async ({
+		page,
+	}) => {
+		const grid = new TimeGrid(page)
+		const target = slotOf(page, 'r2', '2025-03-12T11:15:00.000Z')
+
+		await dragBarTo(page, 'vertical-event-res-1', await centerOf(target))
+		await releasePointer(page)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Room A booking')
+		expect([row.resourceId, row.start]).toEqual([
+			'r2',
+			'2025-03-12T11:15:00.000Z',
+		])
+	})
+
+	// A 1px line separates the hours. dnd-kit hit-tests whole pixels, which are
+	// never on it, so the cells covered the line and a drop on it landed on the
+	// slot above; one that read no cell would land on today, which the pinned
+	// clock makes Wednesday the 12th, so the event is one from Thursday the 13th.
+	test('an event released on the line between two hours lands on the slot above it', async ({
+		page,
+	}) => {
+		const grid = new TimeGrid(page)
+		const above = await slotOf(
+			page,
+			'r2',
+			'2025-03-13T10:45:00.000Z'
+		).boundingBox()
+		const below = await slotOf(
+			page,
+			'r2',
+			'2025-03-13T11:00:00.000Z'
+		).boundingBox()
+		if (!(above && below)) {
+			throw new Error('the slots are not laid out')
+		}
+		const line = {
+			x: above.x + above.width / 2,
+			y: (above.y + above.height + below.y) / 2,
+		}
+
+		await dragBarTo(page, 'vertical-event-res-4', line)
+		await releasePointer(page)
+
+		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
+		const row = await grid.eventNamed('Room A, later')
+		expect([row.resourceId, row.start]).toEqual([
+			'r2',
+			'2025-03-13T10:45:00.000Z',
+		])
+	})
+
+	test('tints the slots the drop covers in the room under the pointer, and no other room', async ({
+		page,
+	}) => {
+		const grid = new TimeGrid(page)
+		const target = slotOf(page, 'r2', '2025-03-12T11:15:00.000Z')
+
+		await dragBarTo(page, 'vertical-event-res-1', await centerOf(target))
+
+		await expect(target).toHaveAttribute('data-drop-target', 'true')
+		const tintedRooms = await grid.dropTargets.evaluateAll((cells) => [
+			...new Set(cells.map((cell) => cell.getAttribute('data-resource-id'))),
+		])
+		expect(tintedRooms).toEqual(['r2'])
+		await releasePointer(page)
 	})
 })

@@ -555,15 +555,15 @@ export const useCalendarDrag = (
 	const updatePreview = (event: DragMoveEvent) => {
 		resolveGrabOffset(event)
 		const activeEvent = activeEventRef.current
-		if (!activeEvent || !event.over) {
+		// Over a target but not over a cell of it (a time column's slot that has
+		// not published itself) is over nothing; reading no cell would read today.
+		const overData = getSnappedOverData(event.over, pointerRef.current)
+		if (!activeEvent || !overData) {
 			setDragPreview(null)
 			return
 		}
 
-		const nextPreview = getAllowedPlacement(
-			activeEvent,
-			getSnappedOverData(event.over, pointerRef.current)
-		)
+		const nextPreview = getAllowedPlacement(activeEvent, overData)
 
 		setDragPreview((prev) => {
 			if (isSameDrop(prev, nextPreview)) {

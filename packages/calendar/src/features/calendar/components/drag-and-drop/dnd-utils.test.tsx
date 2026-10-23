@@ -1177,6 +1177,99 @@ describe('snapping inside a cell', () => {
 		it('is undefined when nothing is under the pointer', () => {
 			expect(getSnappedOverData(null, { x: 0, y: 0 })).toBeUndefined()
 		})
+
+		describe('over a time column (one drop target for all its slots)', () => {
+			// Two hour rows of two 30-minute slots, 4px apart: rows span 100-160 and
+			// 164-224, a slot is 30px, and the column is 124px tall in all.
+			const column = { top: 100, left: 200, width: 80, height: 124 }
+			const slotAt = (hour: number, minute: number): DropCellData => ({
+				type: 'day-cell',
+				date: at('2025-03-12T00:00:00').hour(hour).minute(minute),
+				hour,
+				minute,
+				slotDurationMinutes: 30,
+				axis: 'vertical',
+			})
+			const slots = [slotAt(9, 0), slotAt(9, 30), slotAt(10, 0), slotAt(10, 30)]
+			const overColumn = (
+				published: Array<DropCellData | undefined>,
+				columnRect = column
+			) =>
+				({
+					id: 'column',
+					rect: columnRect,
+					data: { current: { slots: published, slotsPerRow: 2, rowGap: 4 } },
+				}) as unknown as DragEndEvent['over']
+			const slotAtY = (y: number) =>
+				getSnappedOverData(overColumn(slots), { x: 210, y })
+			const startAt = (y: number) => {
+				const slot = slotAtY(y)
+				return slot && [slot.hour, slot.minute]
+			}
+
+			it('resolves the slot from the pointer height within its row', () => {
+				expect([100, 129, 131, 159].map(startAt)).toEqual([
+					[9, 0],
+					[9, 0],
+					[9, 30],
+					[9, 30],
+				])
+				expect([165, 193, 195, 224].map(startAt)).toEqual([
+					[10, 0],
+					[10, 0],
+					[10, 30],
+					[10, 30],
+				])
+			})
+
+			it('gives the gap between two rows to the row above', () => {
+				// dnd-kit hit-tests whole-pixel mouse coordinates, so the gap, which
+				// the pointer can only be in by a fraction, was the last slot above it.
+				expect([161, 162, 163].map(startAt)).toEqual([
+					[9, 30],
+					[9, 30],
+					[9, 30],
+				])
+			})
+
+			it('gives an edge shared by two slots to the earlier one', () => {
+				// Registered cells each contained their own edges, and the one
+				// registered first won a point on both.
+				expect([130, 160, 194].map(startAt)).toEqual([
+					[9, 0],
+					[9, 30],
+					[10, 0],
+				])
+			})
+
+			it('measures the pointer against the column where it is now, not where it was', () => {
+				const scrolled = overColumn(slots, { ...column, top: column.top - 30 })
+				const snapped = getSnappedOverData(scrolled, { x: 210, y: 105 })
+				expect(snapped?.minute).toBe(30)
+			})
+
+			it('keeps the start of the first slot for a drag with no pointer (keyboard)', () => {
+				const snapped = getSnappedOverData(overColumn(slots), undefined)
+				expect([snapped?.hour, snapped?.minute]).toEqual([9, 0])
+			})
+
+			it('still snaps finer than the slot it picked', () => {
+				const finer = slots.map((slot) => ({ ...slot, snapMinutes: 10 }))
+				// 28 of the 30px of the 9:30 slot is its last 10-minute piece.
+				const snapped = getSnappedOverData(overColumn(finer), {
+					x: 210,
+					y: 158,
+				})
+				expect(snapped?.minute).toBe(50)
+			})
+
+			it('is undefined for a slot that has not published itself', () => {
+				const unpublished = [slots.at(0), undefined, undefined, undefined]
+				expect(
+					getSnappedOverData(overColumn(unpublished), { x: 210, y: 140 })
+				).toBeUndefined()
+			})
+		})
 	})
 
 	describe('getUpdatedEvent', () => {
@@ -1196,6 +1289,26 @@ describe('snapping inside a cell', () => {
 			})
 			expect(result?.updates.start?.format()).toBe(
 				at('2025-03-12T09:30:00').format()
+			)
+		})
+
+		it('commits nothing when released over a slot that has not published itself', () => {
+			const event = {
+				active: { id: 'm', data: { current: { type: 'calendar-event' } } },
+				over: {
+					id: 'column',
+					rect: { top: 100, left: 0, width: 80, height: 124 },
+					data: {
+						current: {
+							slots: [undefined, undefined],
+							slotsPerRow: 1,
+							rowGap: 4,
+						},
+					},
+				},
+			} as unknown as DragEndEvent
+			expect(getUpdatedEvent(event, meeting, undefined, { x: 0, y: 130 })).toBe(
+				null
 			)
 		})
 	})

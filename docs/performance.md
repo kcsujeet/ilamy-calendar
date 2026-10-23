@@ -88,6 +88,21 @@ Every grid cell is a `@dnd-kit/core` droppable, and dnd-kit copies its whole dro
 
 `navigation keeps every cell mounted (#300)` in `ilamy-calendar.test.tsx` covers every view and orientation; the e2e harness checks the same in a real browser.
 
+## One Drop Target Per Time Column
+
+The rule above bounds re-registration, but registering N droppables once is still O(N²) (a copy of the registry per registration), and dnd-kit re-renders every droppable whenever the hovered target changes (`useDroppable` reads `over` from its context). A vertical resource week of 30 rooms is 210 columns x 24 hours x 2 to 4 slots, up to 20,000 cells: with a droppable per slot, 7.1 s of a 8.5 s mount in a CPU profile was dnd-kit's `DroppableContainersMap` constructor, and every drag step re-rendered all of them.
+
+A column of the vertical grid (`VerticalGridCol`) is therefore the one drop target, and its slots are plain cells (`SlotCell`, `droppable-cell.tsx`) that are not registered:
+
+- The column registers `{ slots }` (`DropColumnData`, `drag-and-drop/dnd-utils.ts`), an array each `SlotCell` fills in with the data it would have published as a droppable (`DropCellData`, including `disabled`). It does so from a ref callback, not an effect: an effect per slot added 0.8 s to mounting 20,000 of them.
+- `getSnappedOverData`, the single place a drag or resize reads `over`, picks the slot from the pointer's height (`findSlotInColumn`): the rows are equal and `rowGap` (the 1px of `gap-px`) apart, the gap belongs to the row above, and an edge two slots share belongs to the earlier. Those are the rules the cells gave, measured on 3.2.1: dnd-kit hit-tests the whole-pixel coordinates of mouse events, which are never inside a 1px gap, so a pointer 416.9px down, in the gap above a row at 417px, landed on the slot above it; the pointer read here comes from `pointermove` and is fractional. A first cut that treated the gap as no cell dropped an event on today's date (a release with no cell to read) in the benchmark's 15-minute week, and the e2e spec on the line between two hours pins it. A slot that has not published itself is no cell either: no preview, no commit. The slot is then snapped finer like any other cell. Everything downstream (`getUpdatedEvent`, previews, resize) still sees the same `DropCellData` it saw from a per-slot droppable.
+- A slot is tinted from the drag it is **given**, not from the context. The column reads the drag once (`useDragPreviewEvent`, the same question the events layer asks) and hands it to its slots only when it lands on that column; the rows are a memoized component, so every other column's slots bail out of a drag step. Only the column the drag lands on re-renders its slots.
+- The cell's `data-*` attributes, classes and click are unchanged. The one difference is the tint on the slot under the pointer, which now comes from the candidate placement alone (`isOver` no longer exists for a slot). The candidate is placed so the grabbed point is under the pointer, and the e2e spec in `resources.spec.ts` pins that the slot under the pointer is tinted.
+
+Every other grid still registers one droppable per cell (month, the all-day row, the horizontal timeline: `hres-day-500` is 12,000), so they keep the O(N²) mount; they are the next candidates for the same treatment, per row.
+
+`vres-week-30-slot60`, `-slot30` and `-slot15` in `apps/perf` measure it (Chromium, 1x, median of 3; 3.2.1 then now, slots 60 / 30 / 15): mount 757 / 1,826 / 6,235 ms then 437 / 583 / 845; next/previous 145 / 199 / 307 then 142 / 197 / 294 (linear in the cells, unchanged); drag step, mean JS, 39 / 56 / 95 then 18 / 16 / 22, and the worst step 98 / 118 / 221 then 40 / 35 / 37; drop commit 258 / 387 / 691 then 151 / 165 / 191. main measured the same as 3.2.1 (6,543 ms mount at slot 15), so the slowness was not a 3.3 regression. A crossing drag step is still about 34 ms against a 10 ms budget: each of the 210 columns' events layers reads the drag and recomputes `days.at(-1).add(...)` (a dayjs `tz`) on every step; handing the layer the drag only for the column it lands on, as the slots are, is the next step.
+
 ## Engine Effect Guards
 
 ### Problem

@@ -10,7 +10,8 @@ import {
 import type { CellInfo, SnapDuration } from '@/features/calendar/types'
 import { mkDragPreview as mkPreview } from '@/testing/drag-test-fixtures'
 import type { CalendarView } from '@/types'
-import { DroppableCell } from './droppable-cell'
+import type { DropColumnData } from './drag-and-drop/dnd-utils'
+import { DroppableCell, SlotCell } from './droppable-cell'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
 
@@ -542,5 +543,89 @@ describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)'
 			'data-drop-target',
 			'true'
 		)
+	})
+})
+
+describe('SlotCell (a slot of a time column)', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	const renderSlot = (dragPreview: DragPreviewState | null = null) => {
+		const slots: DropColumnData['slots'] = [undefined, undefined, undefined]
+		render(
+			<CalendarProvider initialDate={initialDate} initialView="week">
+				<SlotCell
+					data-testid="slot"
+					date={initialDate.hour(10).minute(30)}
+					dragPreview={dragPreview}
+					hour={10}
+					minute={30}
+					slotDurationMinutes={30}
+					slotIndex={2}
+					slots={slots}
+					type="day-cell"
+				/>
+			</CalendarProvider>
+		)
+		return slots
+	}
+
+	test('publishes what a drop reads at its place in the column', () => {
+		const slots = renderSlot()
+
+		expect(slots.map((slot) => slot && [slot.hour, slot.minute])).toEqual([
+			undefined,
+			undefined,
+			[10, 30],
+		])
+	})
+
+	test('publishes that it refuses drops when it is disabled', () => {
+		const slots: DropColumnData['slots'] = [undefined]
+		render(
+			<CalendarProvider
+				initialDate={initialDate}
+				initialView="week"
+				isCellDisabled={() => true}
+			>
+				<SlotCell
+					date={initialDate.hour(10)}
+					dragPreview={null}
+					hour={10}
+					minute={0}
+					slotDurationMinutes={30}
+					slotIndex={0}
+					slots={slots}
+					type="day-cell"
+				/>
+			</CalendarProvider>
+		)
+
+		expect(slots.at(0)?.disabled).toBe(true)
+	})
+
+	test('keeps the attributes of a droppable cell', () => {
+		renderSlot()
+
+		expect(screen.getByTestId('slot')).toHaveAttribute(
+			'data-start',
+			'2025-01-01T10:30:00.000Z'
+		)
+	})
+
+	test('tints when the drag it is given lands on it', () => {
+		renderSlot(mkPreview())
+
+		expect(screen.getByTestId('slot')).toHaveAttribute(
+			'data-drop-target',
+			'true'
+		)
+	})
+
+	test('is not tinted when it is given no drag', () => {
+		renderSlot(null)
+
+		expect(screen.getByTestId('slot')).not.toHaveAttribute('data-drop-target')
 	})
 })

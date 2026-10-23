@@ -5,8 +5,14 @@ import type { TimeAxis } from '@ilamy/utils/helpers'
 import type React from 'react'
 import { memo, useRef } from 'react'
 import { useIsCellUnavailable } from '@/features/calendar/hooks/use-is-cell-unavailable'
+import type { DragPreviewState } from '@/features/calendar/stores/drag-preview-context'
 import { keys } from '@/features/calendar/utils/keys'
-import { DroppableCell } from '../droppable-cell'
+import type { DropColumnData } from '../drag-and-drop/dnd-utils'
+import {
+	DroppableCell,
+	type DroppableCellProps,
+	SlotCell,
+} from '../droppable-cell'
 import { AllEventDialog, type AllEventDialogHandle } from './all-events-dialog'
 import { GridCellContent } from './grid-cell-content'
 import { GridCellEvents } from './grid-cell-events'
@@ -35,6 +41,14 @@ interface GridProps {
 	isSubDivider?: boolean
 	/** The axis time runs along in the grid, for cells of an hour grid. */
 	axis?: TimeAxis
+	/**
+	 * Set when the cell is one slot of a time column, which is the drop target:
+	 * the column's slots, and this cell's place among them.
+	 */
+	dropSlots?: DropColumnData['slots']
+	slotIndex?: number
+	/** The drag, given only when it lands on the cell's column. */
+	dragPreview?: DragPreviewState | null
 }
 
 /**
@@ -102,6 +116,29 @@ const GridCellBody: React.FC<GridCellBodyProps> = ({
 	</GridCellContent>
 )
 
+type GridCellTargetProps = DroppableCellProps &
+	Pick<GridProps, 'dropSlots' | 'slotIndex' | 'dragPreview'>
+
+/** The cell's element: a slot of its column's drop target when it has one, a drop target of its own otherwise. */
+const GridCellTarget: React.FC<GridCellTargetProps> = ({
+	dropSlots,
+	slotIndex,
+	dragPreview = null,
+	...cellProps
+}) => {
+	if (dropSlots === undefined || slotIndex === undefined) {
+		return <DroppableCell {...cellProps} />
+	}
+	return (
+		<SlotCell
+			{...cellProps}
+			dragPreview={dragPreview}
+			slotIndex={slotIndex}
+			slots={dropSlots}
+		/>
+	)
+}
+
 const NoMemoGridCell: React.FC<GridProps> = ({
 	day,
 	hour,
@@ -119,6 +156,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	isSubDivider = false,
 	axis,
 	children,
+	...columnSlot
 }) => {
 	const allEventsDialogRef = useRef<AllEventDialogHandle>(null)
 	const isUnavailable = useIsCellUnavailable({
@@ -129,39 +167,44 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	})
 	const testId = getCellTestId(day, gridType, dataTestId)
 
+	const cellProps = {
+		allDay,
+		axis,
+		className: cn(
+			'cursor-pointer overflow-clip p-1 bg-background not-in-data-dragging:hover:bg-accent min-h-[60px] relative min-w-0',
+			className
+		),
+		'data-testid': testId,
+		date: day,
+		disabled: isUnavailable,
+		hour,
+		isSubDivider,
+		minute,
+		resourceId,
+		slotDurationMinutes,
+		type: 'day-cell' as const,
+	}
+	const body = (
+		<GridCellBody
+			allDay={allDay}
+			allEventsDialogRef={allEventsDialogRef}
+			day={day}
+			gridType={gridType}
+			precomputedEvents={precomputedEvents}
+			resourceId={resourceId}
+			shouldRenderEvents={shouldRenderEvents}
+			showDayNumber={showDayNumber}
+			weekNumber={weekNumber}
+		>
+			{children}
+		</GridCellBody>
+	)
+
 	return (
 		<>
-			<DroppableCell
-				allDay={allDay}
-				axis={axis}
-				className={cn(
-					'cursor-pointer overflow-clip p-1 bg-background not-in-data-dragging:hover:bg-accent min-h-[60px] relative min-w-0',
-					className
-				)}
-				data-testid={testId}
-				date={day}
-				disabled={isUnavailable}
-				hour={hour}
-				isSubDivider={isSubDivider}
-				minute={minute}
-				resourceId={resourceId}
-				slotDurationMinutes={slotDurationMinutes}
-				type="day-cell"
-			>
-				<GridCellBody
-					allDay={allDay}
-					allEventsDialogRef={allEventsDialogRef}
-					day={day}
-					gridType={gridType}
-					precomputedEvents={precomputedEvents}
-					resourceId={resourceId}
-					shouldRenderEvents={shouldRenderEvents}
-					showDayNumber={showDayNumber}
-					weekNumber={weekNumber}
-				>
-					{children}
-				</GridCellBody>
-			</DroppableCell>
+			<GridCellTarget {...cellProps} {...columnSlot}>
+				{body}
+			</GridCellTarget>
 
 			{/* Only a cell that draws events can show "+N more", the dialog's one
 			    opener. Time-grid slots draw none, and a closed dialog in each of

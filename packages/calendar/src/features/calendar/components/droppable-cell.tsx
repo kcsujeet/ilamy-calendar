@@ -10,12 +10,15 @@ import type React from 'react'
 import { useId } from 'react'
 import { DISABLED_CELL_CLASSNAME } from '@/config/constants'
 import { useCalendarCellContext } from '@/features/calendar/hooks/use-calendar-cell-context'
-import { useDragPreview } from '@/features/calendar/stores/drag-preview-context'
+import {
+	type DragPreviewState,
+	useDragPreview,
+} from '@/features/calendar/stores/drag-preview-context'
 import type { CellInfo } from '@/features/calendar/types'
 import { isPreviewOnTarget } from '@/features/calendar/utils/drag-preview'
-import type { DropCellData } from './drag-and-drop/dnd-utils'
+import type { DropCellData, DropColumnData } from './drag-and-drop/dnd-utils'
 
-interface DroppableCellProps {
+export interface DroppableCellProps {
 	type: 'day-cell' | 'time-cell'
 	date: Dayjs
 	hour?: number
@@ -126,6 +129,12 @@ const DropTargetHighlight = () => (
 	/>
 )
 
+interface DragLandsOnCellInput {
+	dragPreview: DragPreviewState | null
+	cellRange: { start: Dayjs; end: Dayjs }
+	data: DropCellData
+}
+
 /**
  * Whether the in-flight drag would land on this cell. `end` is exclusive
  * (#248); `isPreviewOnTarget` takes the last instant the cell covers.
@@ -134,28 +143,49 @@ const DropTargetHighlight = () => (
  * `data-drop-target` carries no payload either, so neither reader wants the
  * candidate itself.
  */
-const useDragLandsHere = (
-	cellRange: { start: Dayjs; end: Dayjs },
-	resourceId: string | number | undefined,
-	allDay: boolean | undefined
-): boolean => {
-	const dragPreview = useDragPreview()
-	return isPreviewOnTarget(dragPreview, {
+const dragLandsOnCell = ({
+	dragPreview,
+	cellRange,
+	data,
+}: DragLandsOnCellInput): boolean =>
+	isPreviewOnTarget(dragPreview, {
 		rangeStart: cellRange.start,
 		rangeEnd: cellRange.end.subtract(1, 'millisecond'),
-		resourceId,
-		allDay,
+		resourceId: data.resourceId,
+		allDay: data.allDay,
 	})
-}
 
-interface DropTargetInput {
-	/** Published to the drag so a drop can read where — and whether — it landed. */
-	data: DropCellData
+interface DropHighlightInput {
+	/** Whether dnd-kit says the pointer is over this very cell. */
+	isOver: boolean
 	cellRange: { start: Dayjs; end: Dayjs }
+	data: DropCellData
 }
 
 /**
- * Registers the cell as a drop target and says whether to tint it.
+ * Whether to tint the cell: the drag would land across it.
+ *
+ * `isOver` alone is not enough: a grab offset moves the candidate off the
+ * cell the pointer is on, and the cells it does cover must light up too. A
+ * refused placement draws no tint, not even on the cell under the pointer.
+ *
+ * Over an ALLOWED placement the cells it spans tint, closed ones included: a
+ * multi-day drag crosses closed days, and leaving those cells grey makes the
+ * bar look like it is crossing unavailable ground.
+ */
+const useShowDropHighlight = ({
+	isOver,
+	cellRange,
+	data,
+}: DropHighlightInput): boolean => {
+	const dragPreview = useDragPreview()
+	const landsHere = dragLandsOnCell({ dragPreview, cellRange, data })
+	const isRefused = dragPreview?.isDropAllowed === false
+	return (isOver || landsHere) && !isRefused
+}
+
+/**
+ * Registers the cell as a drop target of its own.
  *
  * A disabled cell stays REGISTERED so the pointer can be released there and
  * the drag keeps a preview to refuse: `data.disabled` makes the drop a no-op
@@ -163,12 +193,8 @@ interface DropTargetInput {
  * leaves the not-allowed cursor as the signal. Refusing the hit-test instead
  * left `over` null, which swapped that for a floating chip the moment the
  * pointer crossed a closed day.
- *
- * Over an ALLOWED placement the cells it spans tint, closed ones included: a
- * multi-day drag crosses closed days, and leaving those cells grey makes the
- * bar look like it is crossing unavailable ground.
  */
-const useDropTarget = ({ data, cellRange }: DropTargetInput) => {
+const useDropTarget = (data: DropCellData) => {
 	const { isOver, setNodeRef } = useDroppable({
 		// An id for the cell, not for its date. dnd-kit re-registers a droppable
 		// whenever its id changes and copies its whole registry each time, so a
@@ -177,13 +203,7 @@ const useDropTarget = ({ data, cellRange }: DropTargetInput) => {
 		id: useId(),
 		data,
 	})
-	// `isOver` alone is not enough: a grab offset moves the candidate off the
-	// cell the pointer is on, and the cells it does cover must light up too.
-	const landsHere = useDragLandsHere(cellRange, data.resourceId, data.allDay)
-	// A refused placement draws no tint, not even on the cell under the pointer.
-	const isRefused = useDragPreview()?.isDropAllowed === false
-	const showDropHighlight = (isOver || landsHere) && !isRefused
-	return { setNodeRef, showDropHighlight }
+	return { isOver, setNodeRef }
 }
 
 interface CellDataInput {
@@ -274,7 +294,11 @@ const getCellClasses = ({
 	)
 }
 
-export function DroppableCell({
+/**
+ * What a cell works out about itself, whichever way it takes part in a drop:
+ * the span it covers, whether it refuses interaction, and the data a drop reads.
+ */
+const useCellModel = ({
 	type,
 	date,
 	hour,
@@ -283,28 +307,15 @@ export function DroppableCell({
 	axis,
 	resourceId,
 	allDay,
-	children,
-	className,
-	style,
-	'data-testid': dataTestId,
 	disabled = false,
-	isSubDivider = false,
-}: DroppableCellProps) {
-	const {
-		onCellClick,
-		isCellDisabled,
-		getCellClassName,
-		getResourceById,
-		disableCellClick,
-		classesOverride,
-		snapDuration,
-		view,
-	} = useCalendarCellContext()
+}: DroppableCellProps) => {
+	const { isCellDisabled, getResourceById, disableCellClick, snapDuration } =
+		useCalendarCellContext()
 
-	const { start, end } = getCellRange(date, hour, minute, slotDurationMinutes)
+	const range = getCellRange(date, hour, minute, slotDurationMinutes)
 	// `getResourceById` is only present on resource calendars; regular calendars resolve to undefined.
 	const resource = getResourceById?.(resourceId)
-	const cellInfo: CellInfo = { start, end, resource, allDay }
+	const cellInfo: CellInfo = { ...range, resource, allDay }
 
 	const cellDisabled = isCellRefusing(disabled, isCellDisabled, cellInfo)
 	const clickBlocked = disableCellClick || cellDisabled
@@ -316,21 +327,44 @@ export function DroppableCell({
 		snapDuration
 	)
 
-	const { setNodeRef, showDropHighlight } = useDropTarget({
-		data: {
-			type,
-			date,
-			hour,
-			minute,
-			slotDurationMinutes,
-			snapMinutes,
-			axis,
-			resourceId,
-			allDay,
-			disabled: cellDisabled,
-		},
-		cellRange: { start, end },
-	})
+	const data: DropCellData = {
+		type,
+		date,
+		hour,
+		minute,
+		slotDurationMinutes,
+		snapMinutes,
+		axis,
+		resourceId,
+		allDay,
+		disabled: cellDisabled,
+	}
+	return { range, cellInfo, cellDisabled, clickBlocked, snapMinutes, data }
+}
+
+interface CellFrameProps extends DroppableCellProps {
+	cell: ReturnType<typeof useCellModel>
+	showDropHighlight: boolean
+	elementRef?: (node: HTMLElement | null) => void
+}
+
+/** The cell's element: its attributes, classes, click and the tint it wears under a drag. */
+const CellFrame = ({
+	cell,
+	showDropHighlight,
+	elementRef,
+	axis,
+	resourceId,
+	allDay,
+	children,
+	className,
+	style,
+	'data-testid': dataTestId,
+	isSubDivider = false,
+}: CellFrameProps) => {
+	const { onCellClick, getCellClassName, classesOverride, view } =
+		useCalendarCellContext()
+	const { range, cellInfo, cellDisabled, clickBlocked, snapMinutes } = cell
 
 	const handleCellClick = (e: React.MouseEvent) => {
 		e.stopPropagation()
@@ -358,17 +392,82 @@ export function DroppableCell({
 				isSubDivider,
 				snapMinutes,
 				axis,
-				range: { start, end },
+				range,
 				resourceId,
 				dataTestId,
 				view,
 			})}
 			onClick={handleCellClick}
-			ref={setNodeRef}
+			ref={elementRef}
 			style={style}
 		>
 			{showDropHighlight && <DropTargetHighlight />}
 			{children}
 		</div>
+	)
+}
+
+/** A cell that is a drop target of its own: a day cell, an all-day cell, a timeline hour. */
+export function DroppableCell(props: DroppableCellProps) {
+	const cell = useCellModel(props)
+	const { isOver, setNodeRef } = useDropTarget(cell.data)
+	const showDropHighlight = useShowDropHighlight({
+		isOver,
+		cellRange: cell.range,
+		data: cell.data,
+	})
+	return (
+		<CellFrame
+			{...props}
+			cell={cell}
+			elementRef={setNodeRef}
+			showDropHighlight={showDropHighlight}
+		/>
+	)
+}
+
+interface SlotCellProps extends DroppableCellProps {
+	/** The column's slots, which the column registered as its one drop target. */
+	slots: DropColumnData['slots']
+	slotIndex: number
+	/** The drag, given only when it lands on this cell's column. */
+	dragPreview: DragPreviewState | null
+}
+
+/**
+ * A slot of a time column: it looks and behaves as a `DroppableCell` does, but
+ * is not registered with dnd-kit. It publishes its data to the column's drop
+ * target, which finds it from the pointer (`getSnappedOverData`).
+ *
+ * It tints only where the candidate lands, and is told the drag by its column
+ * rather than reading it: a cell reading the context re-rendered all 20,000
+ * slots of a 30-resource week on every drag step, and a column hands the drag
+ * only to the slots it lands on, so every other column's slots bail out.
+ */
+export function SlotCell({
+	slots,
+	slotIndex,
+	dragPreview,
+	...props
+}: SlotCellProps) {
+	const cell = useCellModel(props)
+	// A ref callback, not an effect: it runs on every commit of the cell like an
+	// effect without dependencies would, for a fraction of the cost (an effect
+	// per slot added 0.8 s to mounting 20,000 of them).
+	const publish = () => {
+		slots[slotIndex] = cell.data
+	}
+	const showDropHighlight = dragLandsOnCell({
+		dragPreview,
+		cellRange: cell.range,
+		data: cell.data,
+	})
+	return (
+		<CellFrame
+			{...props}
+			cell={cell}
+			elementRef={publish}
+			showDropHighlight={showDropHighlight}
+		/>
 	)
 }

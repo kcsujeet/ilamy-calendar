@@ -683,3 +683,98 @@ describe('useCalendarDrag snapping inside a cell', () => {
 		})
 	})
 })
+
+describe('useCalendarDrag over a time column', () => {
+	const dragged: CalendarEvent = {
+		id: 'event-1',
+		title: 'Event',
+		start: dayjs('2025-03-12T09:00:00.000Z'),
+		end: dayjs('2025-03-12T10:00:00.000Z'),
+	}
+	const active = {
+		id: 'event-1',
+		data: { current: { type: 'calendar-event', event: dragged } },
+	}
+	const slotAt = (hour: number) => ({
+		type: 'day-cell',
+		date: dayjs('2025-03-15T00:00:00.000Z').hour(hour),
+		hour,
+		minute: 0,
+		slotDurationMinutes: 60,
+	})
+	// Two one-hour rows 4px apart: 100-160 and 164-224.
+	const columnOf = (slots: Array<ReturnType<typeof slotAt> | undefined>) => ({
+		id: 'column',
+		rect: { top: 100, left: 0, width: 80, height: 124 },
+		data: { current: { slots, slotsPerRow: 1, rowGap: 4 } },
+	})
+	const column = columnOf([slotAt(9), slotAt(10)])
+
+	/** A drag with the pointer at height `y`, hovering and releasing over `target`. */
+	const dragWithPointerAt = (y: number, target = column) => {
+		const commitDrop = mock(() => {})
+		const { result } = renderHook(() => useCalendarDrag(commitDrop), {
+			wrapper,
+		})
+		act(() =>
+			result.current.handlers.onDragStart({
+				active,
+				activatorEvent: new MouseEvent('mousedown', {
+					clientX: 10,
+					clientY: y,
+				}),
+			} as unknown as DragStartEvent)
+		)
+		act(() =>
+			result.current.handlers.onDragOver({
+				active,
+				over: target,
+			} as unknown as DragOverEvent)
+		)
+		const hovered = result.current.dragPreview
+		act(() =>
+			result.current.handlers.onDragEnd({
+				active,
+				over: target,
+			} as unknown as DragEndEvent)
+		)
+		return { hovered, commitDrop }
+	}
+
+	it('previews the slot under the pointer', () => {
+		const { hovered } = dragWithPointerAt(170)
+
+		expect(hovered?.start.toISOString()).toBe('2025-03-15T10:00:00.000Z')
+	})
+
+	it('commits the slot under the pointer', () => {
+		const { commitDrop } = dragWithPointerAt(170)
+
+		expect(commitDrop).toHaveBeenCalledTimes(1)
+	})
+
+	it('previews the slot above while the pointer is in the gap between two rows', () => {
+		const { hovered } = dragWithPointerAt(162)
+
+		expect(hovered?.start.toISOString()).toBe('2025-03-15T09:00:00.000Z')
+	})
+
+	// A slot publishes itself when it mounts. Over one that has not, there is no
+	// cell to read: no preview, and a release there commits nothing rather than
+	// reading no date, which is today.
+	describe('over a slot that has not published itself', () => {
+		const unpublished = columnOf([undefined, undefined])
+
+		it('previews nothing', () => {
+			const { hovered } = dragWithPointerAt(130, unpublished)
+
+			expect(hovered).toBeNull()
+		})
+
+		it('commits nothing when released', () => {
+			const { commitDrop } = dragWithPointerAt(130, unpublished)
+
+			expect(commitDrop).not.toHaveBeenCalled()
+		})
+	})
+})

@@ -1,7 +1,14 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { DndContext, useDndContext } from '@dnd-kit/core'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
+import {
+	DragPreviewContext,
+	type DragPreviewState,
+} from '@/features/calendar/stores/drag-preview-context'
+import type { CellInfo } from '@/features/calendar/types'
+import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import { VerticalGridCol } from './vertical-grid-col'
 
 const initialDate = dayjs('2025-01-01T00:00:00.000Z')
@@ -232,5 +239,149 @@ describe('VerticalGridCol', () => {
 		const cell = screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
 		expect(cell).toHaveAttribute('data-time-axis', 'vertical')
 		expect(cell).toHaveAttribute('data-snap-minutes', '15')
+	})
+})
+
+// dnd-kit copies its whole droppable registry on every registration, so a
+// droppable per slot made mounting a resource week O(slots²): 7 s for the 20,000
+// slots of 30 resources at 15 minutes. The column is the one drop target and
+// its slots publish themselves into it.
+describe('VerticalGridCol drop target', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	const renderColumnInDnd = (slotDurationMinutes: number) => {
+		let registered: ReturnType<
+			ReturnType<typeof useDndContext>['droppableContainers']['toArray']
+		> = []
+		const ReadRegistry = () => {
+			registered = useDndContext().droppableContainers.toArray()
+			return null
+		}
+		render(
+			<CalendarProvider events={[]} initialDate={initialDate} resources={[]}>
+				<DndContext>
+					<VerticalGridCol
+						days={mockDays}
+						gridType="hour"
+						id="test-col"
+						slotDurationMinutes={slotDurationMinutes}
+					/>
+					<ReadRegistry />
+				</DndContext>
+			</CalendarProvider>
+		)
+		return () => registered
+	}
+
+	test('registers one drop target for all of its slots', () => {
+		const registered = renderColumnInDnd(15)
+
+		// Two hours of four 15-minute slots: eight cells, one droppable.
+		expect(registered()).toHaveLength(1)
+	})
+
+	test('publishes every slot, in order, under that drop target', () => {
+		const registered = renderColumnInDnd(30)
+
+		const published = registered().at(0)?.data.current as {
+			slots: Array<{ hour?: number; minute?: number }>
+			slotsPerRow: number
+		}
+		expect(published.slotsPerRow).toBe(2)
+		expect(published.slots.map(({ hour, minute }) => [hour, minute])).toEqual([
+			[9, 0],
+			[9, 30],
+			[10, 0],
+			[10, 30],
+		])
+	})
+})
+
+describe('VerticalGridCol drag preview', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	// One object, so swapping the drag is the only thing a rerender changes.
+	const roomB = { id: 'room-b', title: 'room-b' }
+	const resources = [roomB]
+	const previewAt = (hour: number, resourceId?: string): DragPreviewState =>
+		mkDragPreview({
+			start: initialDate.hour(hour),
+			end: initialDate.hour(hour + 1),
+			resourceId,
+		})
+
+	/** One column of `room-b`, drawn under a drag preview that can be swapped. */
+	const renderColumnUnderDrag = (initial: DragPreviewState | null) => {
+		const getCellClassName = mock((_info: CellInfo) => '')
+		const buildColumn = (dragPreview: DragPreviewState | null) => (
+			<CalendarProvider
+				events={[]}
+				getCellClassName={getCellClassName}
+				initialDate={initialDate}
+				resources={resources}
+			>
+				<DragPreviewContext.Provider value={dragPreview}>
+					<VerticalGridCol
+						days={mockDays}
+						gridType="hour"
+						id="col"
+						resource={roomB}
+						slotDurationMinutes={30}
+					/>
+				</DragPreviewContext.Provider>
+			</CalendarProvider>
+		)
+		const view = render(buildColumn(initial))
+		const dragTo = (dragPreview: DragPreviewState | null) =>
+			view.rerender(buildColumn(dragPreview))
+		return { getCellClassName, dragTo }
+	}
+
+	const dateStr = initialDate.format('YYYY-MM-DD')
+	const tintedTestIds = () =>
+		screen
+			.getAllByTestId(new RegExp(`^vertical-cell-${dateStr}-`))
+			.filter((cell) => cell.hasAttribute('data-drop-target'))
+			.map((cell) => cell.getAttribute('data-testid'))
+
+	test('tints the slots a drag lands on, and only those', () => {
+		renderColumnUnderDrag(previewAt(9, 'room-b'))
+
+		expect(tintedTestIds()).toEqual([
+			`vertical-cell-${dateStr}-09-00-resource-room-b`,
+			`vertical-cell-${dateStr}-09-30-resource-room-b`,
+		])
+	})
+
+	test('tints nothing when the drag lands on another resource', () => {
+		renderColumnUnderDrag(previewAt(9, 'room-a'))
+
+		expect(tintedTestIds()).toEqual([])
+	})
+
+	// A drag step used to re-render every slot of the week, 20,000 of them for
+	// 30 resources at 15 minutes. Only the column it lands on is told about it.
+	test('does not re-render its slots when the drag moves elsewhere', () => {
+		const { getCellClassName, dragTo } = renderColumnUnderDrag(
+			previewAt(9, 'room-a')
+		)
+		const callsBefore = getCellClassName.mock.calls.length
+
+		dragTo(previewAt(10, 'room-a'))
+
+		expect(getCellClassName.mock.calls.length).toBe(callsBefore)
+	})
+
+	test('re-renders its slots when the drag lands on it', () => {
+		const { getCellClassName, dragTo } = renderColumnUnderDrag(null)
+		const callsBefore = getCellClassName.mock.calls.length
+
+		dragTo(previewAt(9, 'room-b'))
+
+		expect(getCellClassName.mock.calls.length).toBeGreaterThan(callsBefore)
 	})
 })

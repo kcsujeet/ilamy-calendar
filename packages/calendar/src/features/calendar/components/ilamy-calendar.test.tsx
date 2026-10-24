@@ -20,7 +20,16 @@ import {
 	screen,
 	waitFor,
 } from '@testing-library/react'
-import { createContext, createRef, useContext, useState } from 'react'
+import {
+	createContext,
+	createRef,
+	Suspense,
+	startTransition,
+	use,
+	useContext,
+	useLayoutEffect,
+	useState,
+} from 'react'
 import { RRule } from 'rrule'
 import { DISABLED_CELL_CLASSNAME } from '@/config/constants'
 import type { EventFormProps } from '@/features/calendar/components/event-form/event-form'
@@ -2359,6 +2368,76 @@ describe('IlamyCalendar ref', () => {
 
 		const after = [api().nextPeriod, api().setView, api().scrollToTime]
 		expect(after).toEqual(before)
+	})
+
+	// The handle reads the API through a ref the calendar writes. Written during
+	// render, a render React throws away would leave the consumer reading an API
+	// from UI that never committed (https://react.dev/reference/react/useRef,
+	// Caveats: "Do not write or read ref.current during rendering").
+	describe('the API the ref reports', () => {
+		const INITIAL_DATE = '2025-03-12T09:00:00.000Z'
+		const NEXT_WEEK = '2025-03-19T09:00:00.000Z'
+
+		it('is the committed one when the consumer reads it in its own layout effect', () => {
+			const ref = createRef<IlamyCalendarApi>()
+			const reads: { rendered?: string; viaRef?: string }[] = []
+			const Consumer = () => {
+				const { currentDate } = useIlamyCalendarContext()
+				useLayoutEffect(() => {
+					reads.push({
+						rendered: currentDate.toISOString(),
+						viaRef: ref.current?.currentDate.toISOString(),
+					})
+				}, [currentDate])
+				return null
+			}
+			render(
+				<IlamyCalendar
+					headerComponent={<Consumer />}
+					initialDate={INITIAL_DATE}
+					initialView="week"
+					ref={ref}
+					timezone="UTC"
+				/>
+			)
+
+			act(() => ref.current?.nextPeriod())
+
+			expect(reads.at(-1)).toEqual({ rendered: NEXT_WEEK, viaRef: NEXT_WEEK })
+		})
+
+		it('stays the committed one when a transition render is thrown away', async () => {
+			const ref = createRef<IlamyCalendarApi>()
+			const neverResolves = new Promise<never>(() => undefined)
+			// Suspends on the new week, below the component that publishes the handle,
+			// so that component has already rendered with the new date when the
+			// transition is abandoned.
+			const SuspendsOnNextWeek = () => {
+				const { currentDate } = useIlamyCalendarContext()
+				const isNextWeek = currentDate.toISOString() === NEXT_WEEK
+				if (isNextWeek) {
+					use(neverResolves)
+				}
+				return null
+			}
+			render(
+				<Suspense fallback="loading">
+					<IlamyCalendar
+						headerComponent={<SuspendsOnNextWeek />}
+						initialDate={INITIAL_DATE}
+						initialView="week"
+						ref={ref}
+						timezone="UTC"
+					/>
+				</Suspense>
+			)
+
+			await act(async () => {
+				startTransition(() => ref.current?.nextPeriod())
+			})
+
+			expect(ref.current?.currentDate.toISOString()).toBe(INITIAL_DATE)
+		})
 	})
 
 	describe('scrollToTime', () => {

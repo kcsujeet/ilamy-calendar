@@ -1,5 +1,11 @@
 import type React from 'react'
-import { type Ref, useImperativeHandle, useMemo, useRef } from 'react'
+import {
+	type Ref,
+	useImperativeHandle,
+	useInsertionEffect,
+	useMemo,
+	useRef,
+} from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
 import { EventFormDialog } from '@/features/calendar/components/event-form/event-form-dialog'
@@ -95,7 +101,12 @@ const createApiHandle = (readLatestApi: () => IlamyCalendarApi) => {
 const useCalendarRefHandle = (calendarRef?: Ref<IlamyCalendarApi>) => {
 	const api = useIlamyCalendarContext()
 	const latestApiRef = useRef(api)
-	latestApiRef.current = api
+	// Written in an insertion effect, as `useLatestHandler` does: a render React
+	// discards never reaches it, and it runs before any layout effect, so a
+	// consumer's callback ref or layout effect reads the committed API.
+	useInsertionEffect(() => {
+		latestApiRef.current = api
+	})
 	// Created once: React re-runs the factory whenever the ref's identity
 	// changes (an inline callback ref is new every render), and must get the
 	// same object back each time.

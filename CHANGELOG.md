@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file. Dates are d
 
 > Unreleased (draft: re-check numbers at release time)
 
-3.3 is the only minor before 4.0. Each new option's default reproduces 3.2.1, and `docs/migration-v4.md` lists what 4.0 will remove or change. One intentional exception, by the `translations` contract: a full `translations` object must add the nine new keys listed under Fixes.
+3.3 is the only minor before 4.0. Each new option's default reproduces 3.2.1, and `docs/migration-v4.md` lists what 4.0 will remove or change. One intentional exception, by the `translations` contract: a full `translations` object should add the nine new keys listed under Fixes. Until it does they show in English, not as raw key names.
 
 ##### Features
 
@@ -44,7 +44,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - fix: in the vertical resource month and daily resource week, two events in one room on the same day no longer cover each other; drag-to-create keeps numeric resource ids, follows the pointer over existing events and is cancelled cleanly by Escape; renaming a multi-resource event no longer adds a `resourceId` ([`#367`](https://github.com/kcsujeet/ilamy-calendar/pull/367))
 - fix: Enter and Space open a focused event, events that cannot move are still reachable by keyboard, bars no longer announce a keyboard drag that does not exist, and the form's date and time pickers and the Repeat checkbox are named by their labels ([`#369`](https://github.com/kcsujeet/ilamy-calendar/pull/369))
 - fix: recurring "this and following" edits and deletes never leave COUNT and UNTIL together, the new series keeps only the remaining COUNT, a moved occurrence is cut correctly, cutting at the first occurrence replaces the series, unticking Repeat stops the series, and deleted occurrences stay deleted after a time change. "All events" keeps the series' weekday and now reports only the time change it stored ([`#370`](https://github.com/kcsujeet/ilamy-calendar/pull/370))
-- fix: the date and time pickers' labels, placeholder and empty state, and the month and year navigation labels of the date pickers, are now translated instead of hard-coded English. Nine new `Translations` keys: `selectTime`, `noTimeFound`, `pickDate`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`. A full `translations` object must add them (`docs/translation-usage.md`)
+- fix: the date and time pickers' labels, placeholder and empty state, and the month and year navigation labels of the date pickers, are now translated instead of hard-coded English. Nine new `Translations` keys: `selectTime`, `noTimeFound`, `pickDate`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`. A full `translations` object should add them (`docs/translation-usage.md`); a key it lacks shows in English until it does
 - fix: `weekNumberCalculation: 'local'` showed week numbers a week early in a London, Lisbon or Dublin calendar (and some machine zones) from April to October. Week numbers are now counted from the calendar day alone
 - fix: with no `timezone` prop in a browser in London, Dublin or Lisbon, an all-day event created on 30 March 2025 ended an hour late, and after next and previous in the month view the cells from 31 March on started an hour late
 
@@ -71,10 +71,10 @@ All notable changes to this project will be documented in this file. Dates are d
 
 ##### Internal
 
-- chore: the core bundle (`dist/index.js` plus the chunks it imports) grows about 22.8% gzipped over 3.2.1, 42.1 KB to 51.7 KB, for the features and performance work above
+- chore: the core bundle (`dist/index.js` plus the chunks it imports) grows about 26.3% gzipped over 3.2.1, 42.1 KB to 53.2 KB, for the features and performance work above
 - chore: the e2e harness takes its port from `E2E_PORT` so several worktrees can run it at once ([`#336`](https://github.com/kcsujeet/ilamy-calendar/pull/336))
-- chore: `apps/perf`, a runtime benchmark that measured the performance work above against 3.2.1 ({L(362)})
-- test: the engine tests no longer depend on the machine's time zone ({L(341)}); `docs/timezones.md` explains why the suite runs in UTC ({L(350)})
+- chore: `apps/perf`, a runtime benchmark that measured the performance work above against 3.2.1 ([`#362`](https://github.com/kcsujeet/ilamy-calendar/pull/362))
+- test: the engine tests no longer depend on the machine's time zone ([`#341`](https://github.com/kcsujeet/ilamy-calendar/pull/341)); `docs/timezones.md` explains why the suite runs in UTC ([`#350`](https://github.com/kcsujeet/ilamy-calendar/pull/350))
 
 #### [v3.2.1](https://github.com/kcsujeet/ilamy-calendar/compare/v3.2.0...v3.2.1)
 

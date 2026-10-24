@@ -1,10 +1,12 @@
-import type {
-	BusinessHours,
-	EventDropInfo,
-	SlotDuration,
-	SnapDuration,
-	TimeFormat,
-	WeekDays,
+import {
+	type BusinessHours,
+	defaultTranslations,
+	type EventDropInfo,
+	type SlotDuration,
+	type SnapDuration,
+	type TimeFormat,
+	type Translations,
+	type WeekDays,
 } from '@ilamy/calendar'
 
 /**
@@ -60,6 +62,12 @@ export interface UrlConfig {
 	dayHeaderFormat?: Intl.DateTimeFormatOptions
 	titleFormat?: Intl.DateTimeFormatOptions
 	locale?: string
+	/**
+	 * Harness-only: `pre-3.3` passes the full object a 3.2.1 app wrote, which
+	 * lacks the nine keys 3.3 added, and Spanish for the search box so a spec can
+	 * tell the object was used.
+	 */
+	translations?: Translations
 	/** Harness-only: the height of the box the calendar is given. */
 	height?: string
 	/**
@@ -104,6 +112,29 @@ export interface UrlConfig {
 	 * calendar, it adds or removes a resource the way a consumer's filter does.
 	 */
 	resourceCount?: number
+}
+
+/** The keys 3.3 added to `Translations`; a 3.2.1 app's object has none of them. */
+const KEYS_ADDED_IN_3_3 = [
+	'selectTime',
+	'noTimeFound',
+	'pickDate',
+	'previousMonth',
+	'nextMonth',
+	'previousYear',
+	'nextYear',
+	'previousYears',
+	'nextYears',
+]
+
+const preThreeThreeTranslations = (): Translations => {
+	const kept = Object.entries(defaultTranslations).filter(
+		([key]) => !KEYS_ADDED_IN_3_3.includes(key)
+	)
+	return {
+		...Object.fromEntries(kept),
+		searchTime: 'Buscar hora',
+	} as Translations
 }
 
 /** `dayjs().day()` for Sunday and Saturday. */
@@ -446,6 +477,16 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const locale = get('locale')
 	if (locale !== null) {
 		config.locale = locale
+	}
+
+	const translations = get('translations')
+	if (translations !== null) {
+		if (translations !== 'pre-3.3') {
+			throw new ConfigError(
+				`translations: expected pre-3.3, got "${translations}"`
+			)
+		}
+		config.translations = preThreeThreeTranslations()
 	}
 
 	const height = get('height')

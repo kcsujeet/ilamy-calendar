@@ -50,8 +50,14 @@ export const useCalendarConfig = ({
 
 	const t: TranslatorFunction = useMemo(() => {
 		if (translator) return translator
-		const dict = translations || defaultTranslations
-		return (key: string) => dict[key as keyof Translations] || key
+		// The type requires every key, but a plain-JS or cast object written
+		// before a key existed lacks it: show English, not the raw key. An empty
+		// string counts as missing, as it always has.
+		return (key: string) => {
+			const translationKey = key as keyof Translations
+			const translated = translations?.[translationKey]
+			return translated || defaultTranslations[translationKey] || key
+		}
 	}, [translations, translator])
 
 	return useMemo(

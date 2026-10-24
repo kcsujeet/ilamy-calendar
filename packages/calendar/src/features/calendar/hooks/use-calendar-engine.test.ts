@@ -6,6 +6,7 @@ import dayjs from '@ilamy/utils/dayjs'
 import { act, renderHook } from '@testing-library/react'
 import { RRule } from 'rrule'
 import 'dayjs/locale/fr.js'
+import { defaultTranslations } from '@/config/translations/default'
 import type { Translations } from '@/config/translations/types'
 import type { CalendarView } from '@/types'
 import { getMonthWeeks } from '@/utils/date-utils'
@@ -1623,6 +1624,40 @@ describe('useCalendarEngine', () => {
 
 			expect(result.current.t('today')).toBe('Hoy')
 			expect(result.current.t('newEvent')).toBe('Nuevo Evento')
+		})
+
+		// A 3.2.1 app passes a full object that lacks the keys 3.3 added; the type
+		// forbids that, plain JS or a cast does not.
+		it('falls back to English for a key the translations object lacks at runtime', () => {
+			const translations = { today: 'Hoy' } as Translations
+			const { result } = renderHook(() =>
+				useCalendarEngine({ ...defaultConfig, translations })
+			)
+
+			expect(result.current.t('today')).toBe('Hoy')
+			expect(result.current.t('selectTime')).toBe(
+				defaultTranslations.selectTime
+			)
+		})
+
+		it('returns the key itself when neither the object nor English has it', () => {
+			const translations = { today: 'Hoy' } as Translations
+			const { result } = renderHook(() =>
+				useCalendarEngine({ ...defaultConfig, translations })
+			)
+
+			expect(result.current.t('notARealKey')).toBe('notARealKey')
+		})
+
+		// An empty string was never a way to blank a label: it already fell through
+		// to the key. It now falls through to English instead of the raw key.
+		it('treats an empty translation as missing and shows English', () => {
+			const translations = { today: '' } as Translations
+			const { result } = renderHook(() =>
+				useCalendarEngine({ ...defaultConfig, translations })
+			)
+
+			expect(result.current.t('today')).toBe(defaultTranslations.today)
 		})
 
 		it('should use custom translator function', () => {

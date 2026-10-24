@@ -32,6 +32,10 @@ renders in English. As a consequence, **adding a translation key to the library
 is an intentional (minor) breaking change**, localizers must add the new key.
 That is by design; do not relax this to `Partial<Translations>`.
 
+At runtime a key the object lacks (plain JavaScript, or a cast) falls back to the
+English default instead of rendering the raw key; the type still requires every
+key, so add the new ones when you upgrade.
+
 If you only want to override a few labels (not fully localize), spread the
 exported defaults so you still satisfy the full type:
 

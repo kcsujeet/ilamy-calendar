@@ -304,6 +304,30 @@ machine). With the function API nothing is patched, so a second copy is
 harmless. The build should still resolve `@ilamy/utils` to one module, or the
 code ships twice and any module-level state (like today's default zone) splits.
 
+The plan for the public API, so consumers and plugins stop depending on a date
+library:
+
+- **Date math** runs on `temporal-polyfill`'s `fns` API inside `@ilamy/utils`,
+  the way that package wraps dayjs today. **Formatting** uses `Intl`. `Intl`
+  alone can display a moment in a zone but cannot do date arithmetic (start of
+  day, add a day, a clock time in a zone), which is why Temporal is needed.
+- **Public dates become ISO strings or `Date`**, not a library type:
+  `CalendarEvent.start`/`end`, cell info, `renderCell(date)` and callback
+  arguments. Consumers then need no date library, and native Temporal can
+  replace the polyfill later without another breaking change. Exposing
+  Temporal objects instead was considered: more precise, but it ties every
+  consumer to the polyfill's types until Safari ships Temporal.
+- **The `dayjs`, `Dayjs` and `ManipulateType` exports are removed.** They exist
+  so consumers can build event dates and third-party plugins can do math in
+  the calendar's zone; ISO strings cover the first.
+- **`timezone` on the context API** (`IlamyCalendarApi.timezone`, already
+  there since v2) covers the second: a plugin reads the calendar's zone and
+  uses Temporal, or any library, itself.
+- **Scope at the time of writing (2026-10-11):** 81 source files and 64 test files import
+  the configured dayjs.
+- **Before starting:** check what FullCalendar v7 exposes publicly for dates
+  (unverified so far), and measure the polyfill's bundle cost.
+
 The migration's acceptance check: for calendar zones with awkward rules
 (clocks changing at midnight, by half an hour, in the southern hemisphere, and
 offsets that are not whole hours), around every clock change of a year, every

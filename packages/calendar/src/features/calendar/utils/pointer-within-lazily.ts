@@ -3,7 +3,12 @@ import {
 	type CollisionDetection,
 	type DroppableContainer,
 	pointerWithin,
+	type UniqueIdentifier,
 } from '@dnd-kit/core'
+
+/** A cell of the all-day strip, which sits in the sticky header. */
+const isAllDayCell = (container: DroppableContainer) =>
+	container.data.current?.allDay === true
 
 /**
  * `pointerWithin`, answering the same question with fewer reads, and refusing
@@ -23,6 +28,12 @@ import {
  * is in fact on a time slot. Ranking by distance to the corners, a strip that
  * small beat a time column 1463px tall. So each remaining cell is checked once
  * more against where its element is drawn now.
+ *
+ * That check can only remove a false hit; it cannot add the strip, which dnd-kit
+ * measured out of reach of the pointer. So the all-day cells, a handful, skip
+ * dnd-kit's measurement altogether: they are tested against where they are
+ * drawn, and one under the pointer wins, because the header is drawn over the
+ * grid that scrolls beneath it.
  */
 export const pointerWithinLazily: CollisionDetection = (args) => {
 	const { droppableContainers, droppableRects, pointerCoordinates } = args
@@ -50,6 +61,22 @@ export const pointerWithinLazily: CollisionDetection = (args) => {
 	const isDrawnUnderPointer = (container: DroppableContainer) => {
 		const drawnRect = container.node.current?.getBoundingClientRect()
 		return drawnRect !== undefined && containsPointer(drawnRect)
+	}
+	const allDayCells = droppableContainers.filter(isAllDayCell)
+	const drawnRects = new Map<UniqueIdentifier, ClientRect>()
+	for (const cell of allDayCells) {
+		const drawnRect = cell.node.current?.getBoundingClientRect()
+		if (drawnRect) {
+			drawnRects.set(cell.id, drawnRect)
+		}
+	}
+	const allDayHits = pointerWithin({
+		...args,
+		droppableContainers: allDayCells,
+		droppableRects: drawnRects,
+	})
+	if (allDayHits.length > 0) {
+		return allDayHits
 	}
 	const hits = droppableContainers.filter((container) => {
 		const rect = droppableRects.get(container.id)

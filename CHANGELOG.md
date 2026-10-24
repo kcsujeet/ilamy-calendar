@@ -53,6 +53,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - fix: saving an existing event with its schedule untouched, or with only its title changed, no longer rewrites its `start` and `end`: an all-day event stored as UTC midnights grew from 24 to 48 hours in a New York calendar
 - fix: the title of an agenda with a Week window named only the days `hiddenDays` left in, while the list showed the whole week; the title now matches the list
 - fix: closing the event form, opened from an event bar or from a "+N more" list, now returns keyboard focus to the element that opened it instead of the page body (WCAG 2.4.3)
+- fix: in the resource day and week views, dragging a timed event onto the all-day strip after turning the wheel during the drag dropped nothing (or on a time slot); the strip is now hit where it is drawn. Present in 3.2.1
 
 ##### Performance
 

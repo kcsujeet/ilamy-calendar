@@ -74,7 +74,8 @@ These are non-negotiable. Violating any of these is a bug.
   fixture under near-default settings; the demo combines a 600px scrolling
   calendar, `dayMaxEvents`, `scrollToNow`, business hours, a `timezone`, all
   three plugins and dense overlapping events. A bug that needs that combination
-  passes every harness spec.
+  passes every harness spec, and so does behaviour that is correct but that a
+  person meeting the demo reads as broken.
   - For every user-facing feature a change adds or touches, drive it in the
     demo with a real pointer (Playwright `page.mouse`, small steps), with the
     target verified under the pointer (`document.elementFromPoint`), and check
@@ -87,13 +88,19 @@ These are non-negotiable. Violating any of these is a bug.
     it first where the behaviour is known to work. A handle scrolled out of the
     grid's viewport, under a sticky header, or a drag that leaves the grid all
     read as "nothing happened" and are not bugs.
-  - Example: 3.3.0 shipped with event resize as its headline feature, and on
-    the day of release resizing a timed event in the demo's week view did
-    nothing. Before that, 19 resize specs, two QA rounds, a regression check
-    against 3.2.1, and a smoke test of the Vite example had all passed. Every
-    one of them ran in the harness or only loaded the page; none dragged an
-    edge in the demo. The owner found it by hand, in minutes. The fix had to
-    ship as 3.3.1.
+  - Example: 3.3.0 shipped event resize as its headline feature, and on release
+    day the owner tried it in the demo and could not resize anything. 19 resize
+    specs, two QA rounds, a regression check against 3.2.1 and a smoke test of
+    the Vite example had all passed, and none had dragged an edge in the demo.
+    Resize worked. The demo turns business hours on (Mon-Fri 9:00-17:00),
+    business hours refuse a drop on a closed cell, and release day was a
+    Sunday, so the events a person reaches for first were refused with only a
+    not-allowed cursor. Nobody had seen the feature through the demo's defaults
+    before release, so nobody had seen that. Then the first investigation
+    reported a bug that did not exist: its probes pressed handles scrolled out
+    of view or under the sticky header, and measured width on a vertical
+    resize. Checked properly, the same drag on the live demo stayed at 371px
+    with business hours on and grew to 497px with them off.
 - ALWAYS match the established standard, never invent your own semantics. This library is RFC 5545 compliant, and where the RFC is silent its behavior must match FullCalendar and Google Calendar. A deviation is a bug even when it is self-consistent and even when the tests pass. Before choosing behavior for anything a calendar already has a convention for (event boundaries, recurrence and overrides, all-day handling, drag/drop across a resource axis, scheduling semantics), look it up and cite it: the RFC section, the FullCalendar docs or source, or Google Calendar's documented behavior. Two deviations already shipped and had to be undone — an inclusive `end` (the RFC's DTEND is exclusive, #248), and a recurrence override emitted from two places at once. If the standard genuinely does not cover the case, say so explicitly and justify the choice; do not quietly pick one.
 - ALWAYS read all the docs in `docs/` (every `.md` file; `docs/logs/` is covered
   under Session Start) before changing code. They hold contracts and known gaps

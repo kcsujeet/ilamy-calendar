@@ -44,8 +44,14 @@ live-clock app rebuilds that trap with slower feedback.
 
 Known gap: `apps/e2e` can be green while `apps/demo` is visibly broken, since
 the harness does not exercise the demo's own wiring, Tailwind build or the
-published package surface. Two shallow smoke tests against the demo close that
-later. They are not the foundation.
+published package surface. That gap shipped once: the demo defaulted
+`enableBusinessHours` to true, so on a weekend every seed event a visitor
+grabbed refused to move or resize, and it was reported as "resize is broken"
+while every harness spec passed. The `demo` Playwright project
+(`demo-tests/`) now drives the real demo with its default settings and seed
+events, the clock pinned to a Sunday: a resize in week and month view and a
+move, each by a real pointer. It is a small smoke layer, not the foundation:
+anything that needs a fixture or a setting belongs in the harness.
 
 ### Two axes, not one
 
@@ -130,7 +136,17 @@ apps/e2e/                       the harness app (Vite, private) and its tests
   tests/{accessibility,behaviour,clock,drag,matrix}.spec.ts
   tests/clock-change-instants.spec.ts   instants around a clock change: form, grids, year view, navigation
   tests/support/event-form.ts   the event form's pickers as questions (pickDay, pickTime, saveForm)
+  demo-tests/demo-defaults.spec.ts   the `demo` project: the real apps/demo at its defaults, pinned to a Sunday
 ```
+
+`playwright.config.ts` has two projects and two web servers: `chromium` runs
+`tests/` against the harness, `demo` runs `demo-tests/` against `apps/demo`
+(`bunx vite` in that folder). `bun run e2e` runs both, so CI runs both; pass
+`--project=chromium` or `--project=demo` to run one. Playwright starts every
+configured web server whichever project runs.
+The demo page runs an infinite background animation, so the demo specs wait
+out animations inside the calendar only, not the page-wide
+`settleAnimations`.
 
 `accessibility.spec.ts` pins keyboard and screen-reader behaviour (Enter and Space
 open a focused bar, no bar describes a keyboard drag it cannot do, the event
@@ -243,8 +259,9 @@ Bun at all.
 
 ## Running from several worktrees
 
-The server port comes from `E2E_PORT` (default 4200). Give each worktree its
-own: `E2E_PORT=4311 bun run e2e`. Locally `webServer.reuseExistingServer` is
+The server port comes from `E2E_PORT` (default 4200), and the demo's from
+`E2E_DEMO_PORT` (default 4210). Give each worktree its own pair:
+`E2E_PORT=4311 E2E_DEMO_PORT=4312 bun run e2e`. Locally `webServer.reuseExistingServer` is
 true (https://playwright.dev/docs/test-webserver), so Playwright attaches to
 whatever already listens on the port and starts nothing. Two worktrees on the
 same port therefore do not collide: the second silently tests the first one's

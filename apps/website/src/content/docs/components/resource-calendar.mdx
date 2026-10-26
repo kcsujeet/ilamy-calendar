@@ -391,6 +391,10 @@ const resources: Resource[] = [
 2. **Resource Shading**: Each resource row (or column) will only enable the time slots that match its specific `businessHours`. Slots outside its specific availability will be shaded/disabled.
 3. **Fallback**: If a resource does not have specific `businessHours` defined, it falls back to using the global `businessHours` configuration.
 
+:::caution[Changing in 4.0]
+In 4.0, business hours (global or per resource) only shade; the grid and the event form stop refusing closed time unless you opt in with `eventConstraint="businessHours"` and `selectConstraint="businessHours"`. `isCellDisabled` keeps refusing. See [Business Hours](/docs/components/calendar#business-hours).
+:::
+
 ### Automatic Form Validation
 
 The built-in `EventForm` is fully resource-aware. When you select a resource for an event:

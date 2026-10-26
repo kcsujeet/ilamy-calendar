@@ -39,6 +39,8 @@ For more control over the text displayed in your calendar, you can provide a cus
 
 The `translations` prop takes the full `Translations` type: every key must be present, so a missing translation is a compile error rather than a label that silently stays in English. To change only a few labels, spread `defaultTranslations` first.
 
+At runtime, a key the object lacks (plain JavaScript, a cast, or an object written before the key existed) shows the English default rather than the raw key name. The type still requires every key, so add new keys when you upgrade: 3.3 added nine for the date and time pickers.
+
 ```tsx title="Custom Translations Object"
 import { IlamyCalendar, defaultTranslations, type Translations } from '@ilamy/calendar';
 

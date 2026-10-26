@@ -67,6 +67,33 @@ These are non-negotiable. Violating any of these is a bug.
     a claim turns out wrong, retract it explicitly and fix every place it was
     written (code comments, docs, the dev log).
 - ALWAYS hunt the repercussions of a change before claiming it is done. Name the meaning you are changing, sweep for everything that depends on it (duplicated predicates in plugins, siblings in the same function, compensating hacks, tests and docs pinning the old contract), and prove the fix by reverting it and watching a test fail. Passing tests only prove that nothing *covered* broke. See `.agents/rules/change-impact.md`.
+- NEVER call a feature done, or a release ready, until it has been exercised in
+  the app people actually use: `apps/demo` with its default settings and seed
+  events, and after a website deploy the live demo at https://ilamy.dev/demo.
+  The e2e harness is not that app. Each harness spec loads a small, clean
+  fixture under near-default settings; the demo combines a 600px scrolling
+  calendar, `dayMaxEvents`, `scrollToNow`, business hours, a `timezone`, all
+  three plugins and dense overlapping events. A bug that needs that combination
+  passes every harness spec.
+  - For every user-facing feature a change adds or touches, drive it in the
+    demo with a real pointer (Playwright `page.mouse`, small steps), with the
+    target verified under the pointer (`document.elementFromPoint`), and check
+    the result in the published `onEventsChange`/`onEventUpdate`, not in a
+    screenshot. Then record it as a spec that runs against the demo's own
+    configuration, so it gates from then on.
+  - "Renders with no console errors" is not "works". A smoke check that never
+    drags, types or saves proves only that the page loads.
+  - A probe is evidence only once you have shown it can fail and succeed: run
+    it first where the behaviour is known to work. A handle scrolled out of the
+    grid's viewport, under a sticky header, or a drag that leaves the grid all
+    read as "nothing happened" and are not bugs.
+  - Example: 3.3.0 shipped with event resize as its headline feature, and on
+    the day of release resizing a timed event in the demo's week view did
+    nothing. Before that, 19 resize specs, two QA rounds, a regression check
+    against 3.2.1, and a smoke test of the Vite example had all passed. Every
+    one of them ran in the harness or only loaded the page; none dragged an
+    edge in the demo. The owner found it by hand, in minutes. The fix had to
+    ship as 3.3.1.
 - ALWAYS match the established standard, never invent your own semantics. This library is RFC 5545 compliant, and where the RFC is silent its behavior must match FullCalendar and Google Calendar. A deviation is a bug even when it is self-consistent and even when the tests pass. Before choosing behavior for anything a calendar already has a convention for (event boundaries, recurrence and overrides, all-day handling, drag/drop across a resource axis, scheduling semantics), look it up and cite it: the RFC section, the FullCalendar docs or source, or Google Calendar's documented behavior. Two deviations already shipped and had to be undone — an inclusive `end` (the RFC's DTEND is exclusive, #248), and a recurrence override emitted from two places at once. If the standard genuinely does not cover the case, say so explicitly and justify the choice; do not quietly pick one.
 - ALWAYS read all the docs in `docs/` (every `.md` file; `docs/logs/` is covered
   under Session Start) before changing code. They hold contracts and known gaps
@@ -491,6 +518,11 @@ the semver table, the changelog with its contributor-credit sweep, the lightweig
 the GitHub release, the npm publish hand-off and registry check, the website update and
 deploy, and the "Fixed in" comments on closed issues. Where it conflicts with the Hard
 Rules, the Hard Rules win: the release commit goes through a PR, not straight to `main`.
+
+A release is not ready until every feature and fix in its changelog has been exercised in
+`apps/demo` (Hard Rules: "NEVER call a feature done…"), and it is not done until the same
+pass has run against https://ilamy.dev/demo after the website deploy. If the owner planned
+to test by hand and has not, say so and wait; a green suite does not stand in for it.
 
 Other repo workflows also live in `.agents/skills/` (refactor review, bundle size,
 React checks). Check there before improvising one.

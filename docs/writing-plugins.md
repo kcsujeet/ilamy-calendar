@@ -419,7 +419,7 @@ attributes are a stable contract: a plugin may read them, and a change to one is
 | `data-end` | always | The cell's EXCLUSIVE end (RFC 5545 `DTEND`), as a UTC ISO string. A day cell ends at the next midnight, an hour-grid cell at the end of its slot. |
 | `data-resource-id` | on a resource calendar's cells | The id of the resource the cell belongs to, as a string. Resource ids are `string \| number`, so a numeric id arrives as its text (`0` as `"0"`): find the `Resource` whose `String(id)` matches and use its own `id`, never the attribute text, when you write a `resourceId` back. |
 | `data-all-day` | `"true"` on all-day cells, absent otherwise | The cell is in the all-day row. Selections never mix all-day and timed cells. |
-| `data-disabled` | always, `"true"` or `"false"` | The cell refuses interaction (outside business hours, `isCellDisabled`, a month's padding days). |
+| `data-disabled` | always, `"true"` or `"false"` | The cell refuses interaction (outside business hours, `isCellDisabled`, a month's padding days). Planned for 4.0: business hours and padding days stop disabling a cell unless `eventConstraint`/`selectConstraint` is `'businessHours'` (`docs/migration-v4.md`). |
 | `data-snap-minutes` | only on an hour-grid cell that snaps finer than itself | The size in minutes a selection, drag or resize snaps to inside the cell, already resolved against the cell (`snapDuration` that divides it, else absent). |
 | `data-time-axis` | with `data-snap-minutes` | `"vertical"` or `"horizontal"`: the axis time runs along inside the cell. Use it with `getBoundingClientRect()` to find the snap-sized piece under the pointer. |
 

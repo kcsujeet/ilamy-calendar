@@ -127,7 +127,7 @@ The only valid import entry points are `@ilamy/calendar`, `@ilamy/calendar/plugi
 | `eventAllow` | `(dropInfo: EventDropInfo, draggedEvent: CalendarEvent) => boolean` | - | Veto a candidate placement while an event is dragged or resized. `dropInfo` is `{ start, end, allDay, resourceId? }`; `draggedEvent` is the event before the drag. Returning `false` shows the not-allowed cursor and a release there changes nothing |
 | `eventSpacing` | `number` | `1` | Spacing (in pixels) between events in calendar views. Allows customizable gaps between events for better visual clarity. |
 | `eventHeight` | `number` | `24` | Height (in pixels) of event bars in horizontal grid views (month, resource month, resource week horizontal). Increase to show multi-line content like title + time. Does not affect day/week views which scale with event duration. |
-| `businessHours` | `BusinessHours \| BusinessHours[]` | `undefined` | Restrict calendar interactions to specified days and time ranges. Users can only create and edit events within business hours. Supports single object or array for different hours per day. |
+| `businessHours` | `BusinessHours \| BusinessHours[]` | `undefined` | Restrict calendar interactions to specified days and time ranges. Users can only create and edit events within business hours. Supports single object or array for different hours per day. In 4.0 it only shades; see [Business Hours](#business-hours). |
 | `renderEventForm` | `(props: EventFormProps) => ReactNode` | `undefined` | Custom function to render the event form for creating and editing events. When provided, replaces the default event form. |
 | `classesOverride` | `CalendarClassesOverride` | `undefined` | Custom class names to override default styling for various calendar elements, including disabled cells. |
 | `translations` | `Translations` | - | Translations object for internationalization. If both translations and translator are provided, translator takes priority. |
@@ -530,6 +530,10 @@ Annual overview showing all 12 months for long-term planning.
 ## Business Hours
 
 Restrict calendar interactions to specific days and time ranges. When configured, users can only create and edit events within business hours. This is particularly useful for appointment booking, scheduling applications, and enforcing availability constraints.
+
+:::caution[Changing in 4.0]
+In 4.0, business hours only shade the closed time (and `hideNonBusinessHours` still hides it); they stop refusing clicks, drops, resizes and drag-to-create, as FullCalendar's `businessHours` does. Restricting becomes opt-in with `eventConstraint="businessHours"` (moves and resizes, the whole event inside business hours) and `selectConstraint="businessHours"` (drag-to-create). Month padding days stop refusing too. The rest of this section describes 3.x, which keeps the restriction. See the [v4 migration notes](https://github.com/kcsujeet/ilamy-calendar/blob/main/docs/migration-v4.md).
+:::
 
 ```tsx title="Configuring Business Hours"
 import { IlamyCalendar } from '@ilamy/calendar';

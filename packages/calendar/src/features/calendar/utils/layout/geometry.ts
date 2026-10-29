@@ -43,10 +43,20 @@ export interface ColumnSpan {
  */
 export interface HorizontalPositionedEvent extends PositionedEventBase {
 	kind: 'horizontal'
+	/** Inclusive visible column indices, before conversion to percentages. */
+	startCol: number
+	endCol: number
 	/** Stacking row index. */
 	row: number
 	isTruncatedStart: boolean
 	isTruncatedEnd: boolean
+}
+
+/** The events in a cell and the space their row's layout actually uses. */
+export interface HorizontalCellLayout {
+	events: CalendarEvent[]
+	rowCount: number
+	hiddenCount: number
 }
 
 /**

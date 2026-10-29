@@ -606,3 +606,108 @@ describe('HorizontalGridRow', () => {
 		})
 	})
 })
+
+describe('hourly row sizing and overflow', () => {
+	const hours = Array.from({ length: 6 }, (_, index) =>
+		dayjs('2026-10-28T07:00:00.000Z').add(index, 'hour')
+	)
+	const resource = { id: 'packing-room', title: 'Packing room' }
+	const eventAt = (id: string, start: string, end: string): CalendarEvent => ({
+		id,
+		title: id,
+		uid: `${id}@packing.test`,
+		resourceId: resource.id,
+		start: dayjs(`2026-10-28T${start}:00.000Z`),
+		end: dayjs(`2026-10-28T${end}:00.000Z`),
+	})
+	const renderHours = (
+		events: CalendarEvent[],
+		limit: number,
+		grouped = false
+	) => {
+		const columns = grouped
+			? [{ id: 'group', days: hours, gridType: 'hour' as const }]
+			: hours.map((day, index) => ({
+					id: `hour-${index}`,
+					day,
+					gridType: 'hour' as const,
+				}))
+		return render(
+			<CalendarProvider
+				dayMaxEvents={limit}
+				events={events}
+				initialDate={hours[0]}
+				resources={[resource]}
+			>
+				<HorizontalGridRow
+					columns={columns}
+					dayNumberHeight={0}
+					gridType="hour"
+					id="packing"
+					resource={resource}
+				/>
+			</CalendarProvider>
+		)
+	}
+	const contentAt = (hour: number) => {
+		const day = hours[hour - 7]
+		const cell = screen.getByTestId(keys.cell.day(day, day.format('HH'), '00'))
+		const content = cell.querySelector('[data-testid="grid-cell-content"]')
+		if (!content) throw new Error('Cell content missing')
+		return content
+	}
+
+	test('counts a clipped event only where its visible suffix is missing', () => {
+		renderHours(
+			[eventAt('a', '07:00', '09:17'), eventAt('b', '09:16', '11:00')],
+			1
+		)
+		expect(contentAt(9).textContent).toBe('+1 more')
+		expect(contentAt(10).textContent).toBe('')
+		expect(contentAt(10).children).toHaveLength(1)
+	})
+
+	for (const grouped of [false, true]) {
+		test(`adjacent events use one placeholder and no false overflow (grouped=${grouped})`, () => {
+			renderHours(
+				[eventAt('a', '09:01', '09:17'), eventAt('b', '09:17', '09:59')],
+				1,
+				grouped
+			)
+			expect(screen.getAllByTestId(/^horizontal-event-/)).toHaveLength(2)
+			expect(contentAt(9).children).toHaveLength(1)
+			expect(
+				screen.queryByRole('button', { name: /More/i })
+			).not.toBeInTheDocument()
+		})
+
+		test(`counts only genuinely hidden events (grouped=${grouped})`, () => {
+			renderHours(
+				[
+					eventAt('a', '09:01', '09:17'),
+					eventAt('b', '09:17', '09:59'),
+					eventAt('hidden', '09:18', '09:45'),
+				],
+				1,
+				grouped
+			)
+			expect(screen.getAllByTestId(/^horizontal-event-/)).toHaveLength(2)
+			expect(
+				screen.getByRole('button', { name: '+1 more' })
+			).toBeInTheDocument()
+		})
+
+		test(`reserves the highest occupied row even with only one event in a cell (grouped=${grouped})`, () => {
+			renderHours(
+				[
+					eventAt('a', '07:00', '09:17'),
+					eventAt('b', '07:00', '09:17'),
+					eventAt('c', '08:00', '11:00'),
+				],
+				3,
+				grouped
+			)
+			expect(contentAt(10).children).toHaveLength(3)
+		})
+	}
+})

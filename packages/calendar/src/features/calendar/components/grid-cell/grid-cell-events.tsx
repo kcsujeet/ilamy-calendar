@@ -1,10 +1,10 @@
-import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type React from 'react'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { filterEventsForResource } from '@/features/calendar/utils/event-pipeline'
 import { keys } from '@/features/calendar/utils/keys'
+import type { HorizontalCellLayout } from '@/features/calendar/utils/layout/geometry'
 import type { AllEventDialogHandle } from './all-events-dialog'
 import { MoreEventsButton } from './more-events-button'
 
@@ -14,7 +14,7 @@ interface GridCellEventsProps {
 	gridType: 'day' | 'hour'
 	allDay: boolean
 	resourceId?: string | number
-	precomputedEvents?: CalendarEvent[]
+	precomputedLayout?: HorizontalCellLayout
 }
 
 /**
@@ -31,7 +31,7 @@ export const GridCellEvents: React.FC<GridCellEventsProps> = ({
 	gridType,
 	allDay,
 	resourceId,
-	precomputedEvents,
+	precomputedLayout,
 }) => {
 	const {
 		dayMaxEvents = 0,
@@ -43,8 +43,8 @@ export const GridCellEvents: React.FC<GridCellEventsProps> = ({
 
 	const cellEvents = useMemo(() => {
 		// Use pre-computed events from the row level when available
-		if (precomputedEvents) {
-			return precomputedEvents
+		if (precomputedLayout) {
+			return precomputedLayout.events
 		}
 
 		let cellEvents = getEventsForDateRange(
@@ -58,7 +58,7 @@ export const GridCellEvents: React.FC<GridCellEventsProps> = ({
 
 		return filterEventsForResource(cellEvents, resourceId)
 	}, [
-		precomputedEvents,
+		precomputedLayout,
 		day,
 		resourceId,
 		getEventsForDateRange,
@@ -80,21 +80,29 @@ export const GridCellEvents: React.FC<GridCellEventsProps> = ({
 		allEventsDialogRef.current?.open()
 	}
 
-	const hiddenEventsCount = cellEvents.length - dayMaxEvents
+	const hiddenEventsCount =
+		precomputedLayout?.hiddenCount ?? cellEvents.length - dayMaxEvents
 	const hasHiddenEvents = hiddenEventsCount > 0
-	const visibleEvents = cellEvents.slice(0, dayMaxEvents)
+	const rowCount =
+		precomputedLayout?.rowCount ?? Math.min(cellEvents.length, dayMaxEvents)
+	const placeholderRows = Array.from({ length: rowCount }, (_, index) => index)
 
 	return (
 		<>
 			{/* Placeholders for the events drawn over this cell, so its height follows dayMaxEvents. */}
-			{visibleEvents.map((event, rowIndex) => (
-				<div
-					className="w-full shrink-0"
-					data-testid={event?.title}
-					key={keys.listKey('empty', rowIndex, event.id)}
-					style={{ height: `${eventHeight}px` }}
-				/>
-			))}
+			{placeholderRows.map((rowIndex) => {
+				const placeholderTitle = cellEvents[rowIndex]?.title
+				const placeholderKey = keys.listKey('empty', rowIndex)
+				const placeholderStyle = { height: `${eventHeight}px` }
+				return (
+					<div
+						className="w-full shrink-0"
+						data-testid={placeholderTitle}
+						key={placeholderKey}
+						style={placeholderStyle}
+					/>
+				)
+			})}
 
 			{hasHiddenEvents && (
 				<MoreEventsButton

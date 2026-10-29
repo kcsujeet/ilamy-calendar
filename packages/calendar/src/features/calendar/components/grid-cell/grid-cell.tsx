@@ -1,4 +1,3 @@
-import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type { TimeAxis } from '@ilamy/utils/helpers'
@@ -7,6 +6,7 @@ import { memo, useRef } from 'react'
 import { useIsCellUnavailable } from '@/features/calendar/hooks/use-is-cell-unavailable'
 import type { DragPreviewState } from '@/features/calendar/stores/drag-preview-context'
 import { keys } from '@/features/calendar/utils/keys'
+import type { HorizontalCellLayout } from '@/features/calendar/utils/layout/geometry'
 import type { DropColumnData } from '../drag-and-drop/dnd-utils'
 import {
 	DroppableCell,
@@ -36,7 +36,7 @@ interface GridProps {
 	weekNumber?: number
 	children?: React.ReactNode
 	'data-testid'?: string
-	precomputedEvents?: CalendarEvent[]
+	precomputedLayout?: HorizontalCellLayout
 	/** Whether this cell draws the dashed sub-hour divider below itself. */
 	isSubDivider?: boolean
 	/** The axis time runs along in the grid, for cells of an hour grid. */
@@ -73,7 +73,7 @@ const getCellTestId = (
 interface GridCellBodyProps
 	extends Pick<
 			GridProps,
-			'day' | 'resourceId' | 'precomputedEvents' | 'weekNumber' | 'children'
+			'day' | 'resourceId' | 'precomputedLayout' | 'weekNumber' | 'children'
 		>,
 		Required<
 			Pick<
@@ -90,7 +90,7 @@ const GridCellBody: React.FC<GridCellBodyProps> = ({
 	gridType,
 	allDay,
 	resourceId,
-	precomputedEvents,
+	precomputedLayout,
 	showDayNumber,
 	weekNumber,
 	shouldRenderEvents,
@@ -108,7 +108,7 @@ const GridCellBody: React.FC<GridCellBodyProps> = ({
 				allEventsDialogRef={allEventsDialogRef}
 				day={day}
 				gridType={gridType}
-				precomputedEvents={precomputedEvents}
+				precomputedLayout={precomputedLayout}
 				resourceId={resourceId}
 			/>
 		)}
@@ -149,7 +149,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	gridType = 'day',
 	shouldRenderEvents = true,
 	allDay = false,
-	precomputedEvents,
+	precomputedLayout,
 	'data-testid': dataTestId,
 	showDayNumber = false,
 	weekNumber,
@@ -190,7 +190,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 			allEventsDialogRef={allEventsDialogRef}
 			day={day}
 			gridType={gridType}
-			precomputedEvents={precomputedEvents}
+			precomputedLayout={precomputedLayout}
 			resourceId={resourceId}
 			shouldRenderEvents={shouldRenderEvents}
 			showDayNumber={showDayNumber}

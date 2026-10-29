@@ -926,3 +926,119 @@ describe.each([
 		})
 	}
 )
+
+describe('hour-axis row reuse', () => {
+	const hours = Array.from({ length: 12 }, (_, index) =>
+		dayjs('2026-10-28T07:00:00.000Z').add(index, 'hour')
+	)
+	const eventAt = (id: string, start: string, end: string) =>
+		mkEvent(id, `2026-10-28T${start}:00.000Z`, `2026-10-28T${end}:00.000Z`)
+	const pack = (events: CalendarEvent[], dayMaxEvents = 4) =>
+		layoutHorizontal({ days: hours, events, dayMaxEvents, gridType: 'hour' })
+
+	for (const [end, start, expectedRows] of [
+		['09:00', '09:00', [0, 0]],
+		['09:17', '09:17', [0, 0]],
+		['09:17', '09:45', [0, 0]],
+		['09:17', '09:16', [0, 1]],
+	] as const) {
+		it(`places 07:00–${end} and ${start}–11:00 in rows ${expectedRows}`, () => {
+			const events = [eventAt('a', '07:00', end), eventAt('b', start, '11:00')]
+			expect(pack(events).map(({ row }) => row)).toEqual([...expectedRows])
+		})
+	}
+
+	it('reuses one row for successive events inside the same hour, even at the limit', () => {
+		const events = [
+			eventAt('a', '09:01', '09:17'),
+			eventAt('b', '09:17', '09:31'),
+			eventAt('c', '09:31', '09:59'),
+		]
+		const placed = pack(events, 1)
+		expect(placed).toHaveLength(3)
+		expect(placed.map(({ row }) => row)).toEqual([0, 0, 0])
+	})
+
+	it('keeps genuine same-hour overlaps on different rows', () => {
+		const events = [
+			eventAt('a', '09:01', '09:18'),
+			eventAt('b', '09:17', '09:59'),
+		]
+		expect(pack(events).map(({ row }) => row)).toEqual([0, 1])
+		expect(pack(events, 1).map(({ event }) => event.id)).toEqual(['a'])
+	})
+
+	for (const reverse of [false, true]) {
+		it(`packs nested and chained events chronologically (reversed=${reverse})`, () => {
+			const events = [
+				eventAt('long', '07:00', '12:00'),
+				eventAt('a', '08:00', '09:17'),
+				eventAt('b', '09:17', '10:00'),
+				eventAt('c', '09:18', '09:19'),
+				eventAt('d', '10:00', '11:00'),
+			]
+			const input = reverse ? events.toReversed() : events
+			const placed = pack(input)
+			expect(placed.map(({ event, row }) => [event.id, row])).toEqual([
+				['long', 0],
+				['a', 1],
+				['b', 1],
+				['c', 2],
+				['d', 1],
+			])
+		})
+	}
+
+	it('counts an instant event as its drawn full-hour interval', () => {
+		const events = [
+			eventAt('instant', '09:00', '09:00'),
+			eventAt('b', '09:17', '10:00'),
+		]
+		expect(pack(events).map(({ row }) => row)).toEqual([0, 1])
+	})
+
+	it('still reserves whole days on a day axis', () => {
+		const events = [
+			eventAt('a', '07:00', '09:17'),
+			eventAt('b', '09:17', '11:00'),
+		]
+		const placed = layoutHorizontal({
+			days: [hours[0]],
+			events,
+			dayMaxEvents: 2,
+			gridType: 'day',
+		})
+		expect(placed.map(({ row }) => row)).toEqual([0, 1])
+	})
+})
+
+describe('hourly overflow clipping', () => {
+	it('keeps the visible suffix when the row is occupied in the first hour', () => {
+		const hours = Array.from({ length: 4 }, (_, index) =>
+			dayjs('2026-10-28T07:00:00.000Z').add(index, 'hour')
+		)
+		const events = [
+			mkEvent(
+				'blocker',
+				'2026-10-28T07:00:00.000Z',
+				'2026-10-28T09:17:00.000Z'
+			),
+			mkEvent('suffix', '2026-10-28T09:16:00.000Z', '2026-10-28T11:00:00.000Z'),
+		]
+		const placed = layoutHorizontal({
+			days: hours,
+			events,
+			dayMaxEvents: 1,
+			gridType: 'hour',
+		})
+		expect(placed).toHaveLength(2)
+		expect(placed[1]).toMatchObject({
+			row: 0,
+			startCol: 3,
+			endCol: 3,
+			left: 75,
+			width: 25,
+			isTruncatedStart: true,
+		})
+	})
+})

@@ -178,6 +178,21 @@ offsets come from the IANA data the runtime's `Intl` API ships, so a zone that
 moves by 30 minutes (Lord Howe Island) or changes its rules is placed the same
 way. Tests pin both.
 
+### Horizontal hour rows
+
+Hour-axis bars reserve their exact half-open intervals when sharing rows: a
+07:00–09:17 event and a 09:17–11:00 event can occupy the same row. Hourly events
+are placed by start time, with longer events first at an equal start, so a
+short event can reuse a row underneath a longer one. This follows the
+[exclusive end convention](https://fullcalendar.io/docs/event-parsing).
+
+`useProcessedWeekEvents` supplies the cells with their event lists, required
+row counts and hidden counts from the same placements the bars use. A cell
+reserves space through its highest occupied row; multiple successive events
+in one hour do not add rows or produce a false “more” count. A bar truncated
+to later columns counts as hidden only in the earlier columns it cannot draw.
+The day axis continues to reserve whole days and use its existing overflow rule.
+
 ### The now-line and week numbers
 
 The now-line is drawn only in hour grids and only while the `nowIndicator` prop

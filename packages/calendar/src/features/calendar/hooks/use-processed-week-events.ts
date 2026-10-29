@@ -1,4 +1,3 @@
-import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -9,7 +8,10 @@ import {
 	getResourceEvents,
 } from '@/features/calendar/utils/event-buckets'
 import { keys } from '@/features/calendar/utils/keys'
-import type { HorizontalPositionedEvent } from '@/features/calendar/utils/layout/geometry'
+import type {
+	HorizontalCellLayout,
+	HorizontalPositionedEvent,
+} from '@/features/calendar/utils/layout/geometry'
 import { layoutHorizontal } from '@/features/calendar/utils/layout/horizontal'
 
 interface UseProcessedWeekEventsProps {
@@ -21,7 +23,7 @@ interface UseProcessedWeekEventsProps {
 
 interface ProcessedWeekEventsResult {
 	positionedEvents: HorizontalPositionedEvent[]
-	columnEventsMap: Map<string, CalendarEvent[]>
+	columnLayouts: Map<string, HorizontalCellLayout>
 }
 
 export const useProcessedWeekEvents = ({
@@ -53,36 +55,46 @@ export const useProcessedWeekEvents = ({
 		return weekEvents
 	}, [getEventsForDateRange, weekStart, weekEnd, resourceId, allDay])
 
-	const columnEventsMap = useMemo(() => {
-		const map = new Map<string, CalendarEvent[]>()
-		const unit = gridType ?? 'day'
-		const hasNoEvents = events.length === 0
-		// Every column of an empty row is empty, and a resource row is usually
-		// empty on most days: skip reading the columns' bounds.
-		if (hasNoEvents) {
-			for (const day of days) {
-				map.set(keys.col.events(day), [])
-			}
-			return map
-		}
-		const columnBounds = days.map((day) =>
-			getColumnBounds(day, unit, defaultZone)
-		)
-		const eventsPerColumn = bucketEventsByColumn(columnBounds, events)
-		days.forEach((day, index) => {
-			map.set(keys.col.events(day), eventsPerColumn.at(index) ?? [])
-		})
-		return map
-	}, [days, events, gridType, defaultZone])
-
 	const positionedEvents = useMemo(() => {
-		return layoutHorizontal({
-			days,
-			events,
-			dayMaxEvents,
-			gridType,
-		})
+		return layoutHorizontal({ days, events, dayMaxEvents, gridType })
 	}, [days, dayMaxEvents, events, gridType])
 
-	return { positionedEvents, columnEventsMap }
+	const columnLayouts = useMemo(() => {
+		const map = new Map<string, HorizontalCellLayout>()
+		const unit = gridType ?? 'day'
+		const hasNoEvents = events.length === 0
+		const columnBounds = hasNoEvents
+			? []
+			: days.map((day) => getColumnBounds(day, unit, defaultZone))
+		const eventsPerColumn = bucketEventsByColumn(columnBounds, events)
+		const rowCounts = days.map(() => 0)
+		const visibleCounts = days.map(() => 0)
+		const isHourAxis = gridType === 'hour'
+		if (isHourAxis) {
+			for (const placement of positionedEvents) {
+				for (let col = placement.startCol; col <= placement.endCol; col++) {
+					const requiredRows = placement.row + 1
+					rowCounts[col] = Math.max(rowCounts[col], requiredRows)
+					visibleCounts[col] += 1
+				}
+			}
+		}
+		days.forEach((day, index) => {
+			const cellEvents = eventsPerColumn.at(index) ?? []
+			const rowCount = isHourAxis
+				? rowCounts[index]
+				: Math.min(cellEvents.length, dayMaxEvents)
+			const visibleCount = isHourAxis ? visibleCounts[index] : rowCount
+			const hiddenCount = Math.max(0, cellEvents.length - visibleCount)
+			const columnKey = keys.col.events(day)
+			map.set(columnKey, {
+				events: cellEvents,
+				rowCount,
+				hiddenCount,
+			})
+		})
+		return map
+	}, [days, events, gridType, defaultZone, dayMaxEvents, positionedEvents])
+
+	return { positionedEvents, columnLayouts }
 }

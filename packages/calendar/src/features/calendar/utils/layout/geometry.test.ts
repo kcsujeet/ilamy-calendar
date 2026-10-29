@@ -15,6 +15,8 @@ const event: CalendarEvent = {
 
 const placement: HorizontalPositionedEvent = {
 	kind: 'horizontal',
+	startCol: 0,
+	endCol: 0,
 	event,
 	left: 10,
 	width: 0.3,

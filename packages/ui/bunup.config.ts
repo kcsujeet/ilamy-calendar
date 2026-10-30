@@ -34,6 +34,8 @@ export default defineConfig({
 	dts: {
 		inferTypes: true,
 	},
+	// Without the source paths of tsconfig.json; see tsconfig.build.json.
+	preferredTsconfig: 'tsconfig.build.json',
 	external: [
 		'react',
 		'react-dom',

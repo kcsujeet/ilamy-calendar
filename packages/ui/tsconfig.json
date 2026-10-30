@@ -2,7 +2,17 @@
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
 		// `bun:test` in the co-located tests, as in @ilamy/utils.
-		"types": ["bun"]
+		"types": ["bun"],
+		// Resolve @ilamy/utils to source, as the calendar and plugins do. Bun
+		// resolves a file's imports through the tsconfig nearest that file
+		// (observed on Bun 1.3.14; bunup passes Bun.build no tsconfig unless
+		// `preferredTsconfig` is set), so without these the
+		// calendar build bundled packages/utils/dist: a second, possibly stale,
+		// copy of the dayjs configuration (docs/timezones.md).
+		"paths": {
+			"@ilamy/utils/dayjs": ["../utils/src/dayjs.ts"],
+			"@ilamy/utils/helpers": ["../utils/src/helpers.ts"]
+		}
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],
 	"exclude": ["dist", "node_modules", "bunup.config.ts"]

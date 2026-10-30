@@ -91,6 +91,7 @@ chosen because it has broken before or spans a boundary:
 | `business-hours` | A restricted `viewHours` range, clipping at both edges |
 | `recurring-series` | An rrule series with one modified instance |
 | `dst-boundary` | A day that gains or loses an hour |
+| `horizontal-packing` | Exact-minute handoffs on one resource, beside an independent resource (#388) |
 
 Not every pairing is meaningful — `business-hours` says nothing in `year` — so
 the matrix is declared per fixture as the views it applies to, and the specs are
@@ -135,6 +136,7 @@ apps/e2e/                       the harness app (Vite, private) and its tests
   tests/support/pages.ts        page objects: CalendarPage, MonthGrid, TimeGrid, YearGrid, ResourceAxis
   tests/{accessibility,behaviour,clock,drag,matrix}.spec.ts
   tests/clock-change-instants.spec.ts   instants around a clock change: form, grids, year view, navigation
+  tests/resources.spec.ts        resource-axis behavior and horizontal packing regressions
   tests/support/event-form.ts   the event form's pickers as questions (pickDay, pickTime, saveForm)
   demo-tests/demo-defaults.spec.ts   the `demo` project: the real apps/demo at its defaults, pinned to a Sunday
 ```
@@ -160,6 +162,13 @@ twenty specs.
 `gotoScenario` takes the scenario, view, orientation, `timezone` (the `tz`
 parameter; `'none'` leaves the calendar's `timezone` prop unset, so it falls back to the browser's zone), `date`, `now` (the pinned clock, `PINNED_NOW` by default),
 `plugins` and any other setting as a query parameter.
+
+The horizontal packing cases open `scenario=horizontal-packing` with `view=day`
+and `orientation=horizontal` to reproduce the 07:00–09:17 / 09:17–11:00 handoff.
+URL settings and seeded event lists cover nested chains, row heights, overflow
+and day-grid behavior. Pointer edits and resizes read the harness's published
+event state and change log; these fixture-driven tests do not inspect React's
+internal tree. The demo project keeps its default-settings smoke tests.
 
 The harness behaves like a consumer that controls `events`: it persists every
 `onEventAdd`, `onEventUpdate` and `onEventDelete`. The calendar resets to the

@@ -74,7 +74,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	}, [columns, isGrouped])
 
 	// Compute events once at the row level — shared between GridCells and events layer
-	const { positionedEvents, columnEventsMap } = useProcessedWeekEvents({
+	const { positionedEvents, columnLayouts } = useProcessedWeekEvents({
 		days: flatDays,
 		gridType,
 		resourceId: resource?.id,
@@ -118,7 +118,10 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 							)
 						}
 
-						return col.day ? (
+						if (!col.day) return null
+						const layoutKey = keys.col.events(col.day)
+						const cellLayout = columnLayouts.get(layoutKey)
+						return (
 							<GridCell
 								allDay={allDay}
 								axis="horizontal"
@@ -127,14 +130,12 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 								gridType={gridType}
 								hour={gridType === 'hour' ? col.day.hour() : undefined}
 								key={columnKey}
-								precomputedEvents={columnEventsMap.get(
-									keys.col.events(col.day)
-								)}
+								precomputedLayout={cellLayout}
 								resourceId={resource?.id}
 								showDayNumber={showDayNumber}
 								weekNumber={columnIndex === 0 ? weekNumber : undefined}
 							/>
-						) : null
+						)
 					})}
 				</div>
 
@@ -183,7 +184,7 @@ const GroupedColumn = memo(
 		id: string | number
 	}) => {
 		const days = col.days ?? []
-		const { positionedEvents } = useProcessedWeekEvents({
+		const { positionedEvents, columnLayouts } = useProcessedWeekEvents({
 			days,
 			gridType,
 			resourceId,
@@ -194,19 +195,24 @@ const GroupedColumn = memo(
 			<div className="flex relative w-full">
 				{/* gap-px + bg-border draws the day separators within the group. */}
 				<div className="flex w-full gap-px bg-border">
-					{days.map((day, dayIndex) => (
-						<GridCell
-							allDay={allDay}
-							axis="horizontal"
-							className={cn('flex-1 w-20', col.className)}
-							day={day}
-							gridType={gridType}
-							hour={gridType === 'hour' ? day.hour() : undefined}
-							key={keys.listKey('day', dayIndex)}
-							resourceId={resourceId}
-							showDayNumber={showDayNumber}
-						/>
-					))}
+					{days.map((day, dayIndex) => {
+						const layoutKey = keys.col.events(day)
+						const cellLayout = columnLayouts.get(layoutKey)
+						return (
+							<GridCell
+								allDay={allDay}
+								axis="horizontal"
+								className={cn('flex-1 w-20', col.className)}
+								day={day}
+								gridType={gridType}
+								hour={gridType === 'hour' ? day.hour() : undefined}
+								key={keys.listKey('day', dayIndex)}
+								precomputedLayout={cellLayout}
+								resourceId={resourceId}
+								showDayNumber={showDayNumber}
+							/>
+						)
+					})}
 				</div>
 
 				<div className="absolute inset-0 z-10 pointer-events-none">

@@ -3,6 +3,7 @@ import type { CalendarEvent } from '@ilamy/types'
 import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { EVENT_BAR_HEIGHT } from '@/config/constants'
+import { useProcessedWeekEvents } from '@/features/calendar/hooks/use-processed-week-events'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { GridCell } from './grid-cell'
 
@@ -26,6 +27,14 @@ type RenderGridCellOptions = {
 	onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
 }
 
+const EventCell = () => {
+	const { columnLayouts } = useProcessedWeekEvents({ days: [initialDate] })
+	const layout = columnLayouts.values().next().value
+	return (
+		<GridCell day={initialDate} precomputedLayout={layout} shouldRenderEvents />
+	)
+}
+
 // Shared harness for GridCell. Each suite varies only the CalendarProvider props
 // it cares about; everything else falls back to sensible defaults.
 const renderGridCell = ({
@@ -44,7 +53,7 @@ const renderGridCell = ({
 			initialDate={initialDate}
 			onMoreEventsClick={onMoreEventsClick}
 		>
-			<GridCell day={initialDate} shouldRenderEvents={true} />
+			<EventCell />
 		</CalendarProvider>
 	)
 }

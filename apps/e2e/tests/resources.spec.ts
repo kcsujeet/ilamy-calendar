@@ -1,9 +1,489 @@
-import { expect, type Page, test } from '@playwright/test'
-import { gotoScenario, releasePointer } from './support/harness'
+import { expect, type Locator, type Page, test } from '@playwright/test'
+import { formDialog, pickTime, saveForm } from './support/event-form'
+import {
+	gotoScenario,
+	releasePointer,
+	setSettings,
+	settleAnimations,
+} from './support/harness'
 import { CalendarPage, TimeGrid } from './support/pages'
 
 const lane = (resourceId: string, startISO: string) =>
 	`[data-resource-id="${resourceId}"][data-start="${startISO}"]`
+
+test.describe('horizontal row packing', () => {
+	const bar = (page: Page, id: string) =>
+		page.getByTestId(`horizontal-event-${id}`)
+	const row = (page: Page, resourceId = 'r1') =>
+		page.getByTestId(`horizontal-row-${resourceId}`)
+	const boundsOf = async (element: Locator) => {
+		const bounds = await element.boundingBox()
+		if (!bounds) throw new Error('Element has no geometry')
+		return bounds
+	}
+	const rowDifference = async (
+		page: Page,
+		firstId: string,
+		secondId: string
+	) => {
+		const first = await boundsOf(bar(page, firstId))
+		const second = await boundsOf(bar(page, secondId))
+		return second.y - first.y
+	}
+	const expectFitsRow = async (page: Page, id: string, resourceId = 'r1') => {
+		const event = await boundsOf(bar(page, id))
+		const resource = await boundsOf(row(page, resourceId))
+		expect(event.y).toBeGreaterThanOrEqual(resource.y)
+		expect(event.y + event.height).toBeLessThanOrEqual(
+			resource.y + resource.height
+		)
+	}
+	const packingEvent = (
+		id: string,
+		start: string,
+		end: string,
+		resourceId = 'r1'
+	) => ({
+		id,
+		title: id,
+		start: `2025-03-12T${start}:00.000Z`,
+		end: `2025-03-12T${end}:00.000Z`,
+		resourceId,
+	})
+
+	const countEvent = (id: string, start: string, end: string) => ({
+		id: `counts-${id}`,
+		title: `Counts ${id}`,
+		start,
+		end,
+		resourceId: 'r1',
+	})
+
+	for (const view of ['day', 'week', 'month'] as const) {
+		test(`${view}: cell counts follow placed rows and missing prefixes`, async ({
+			page,
+		}) => {
+			const isHourAxis = view === 'day'
+			const events = isHourAxis
+				? [
+						countEvent(
+							'A',
+							'2025-03-12T07:00:00.000Z',
+							'2025-03-12T09:17:00.000Z'
+						),
+						countEvent(
+							'B',
+							'2025-03-12T09:16:00.000Z',
+							'2025-03-12T11:00:00.000Z'
+						),
+					]
+				: [
+						countEvent(
+							'A',
+							'2025-03-10T00:00:00.000Z',
+							'2025-03-12T00:00:00.000Z'
+						),
+						countEvent(
+							'B',
+							'2025-03-11T00:00:00.000Z',
+							'2025-03-14T00:00:00.000Z'
+						),
+					]
+			const seed = JSON.stringify(events)
+			const settings = {
+				seed,
+				dayMaxEvents: 1,
+				granularity: 'daily',
+				eventHeight: 48,
+			}
+			await gotoScenario(page, {
+				scenario: 'seed-resources',
+				view,
+				orientation: 'horizontal',
+				settings,
+			})
+			await settleAnimations(page)
+			const row = page.getByTestId('horizontal-row-r1')
+			const lostCellId = isHourAxis
+				? 'day-cell-2025-03-12-09-00'
+				: 'day-cell-2025-03-11'
+			const visibleCellId = isHourAxis
+				? 'day-cell-2025-03-12-10-00'
+				: 'day-cell-2025-03-12'
+			const lostCell = row.getByTestId(lostCellId)
+			const visibleCell = row.getByTestId(visibleCellId)
+			await expect(
+				lostCell.getByRole('button', { name: '+1 more', exact: true })
+			).toHaveCount(1)
+			await expect(
+				visibleCell.getByRole('button', { name: /more/i })
+			).toHaveCount(0)
+			const placeholders = visibleCell
+				.getByTestId('grid-cell-content')
+				.locator(':scope > div.w-full.shrink-0')
+			await expect(placeholders).toHaveCount(1)
+			const height = await placeholders
+				.first()
+				.evaluate((element) => element.getBoundingClientRect().height)
+			expect(height).toBe(48)
+			const button = lostCell.getByRole('button', {
+				name: '+1 more',
+				exact: true,
+			})
+			await button.scrollIntoViewIfNeeded()
+			const bounds = await button.boundingBox()
+			if (!bounds) throw new Error('Overflow button has no geometry')
+			const point = {
+				x: bounds.x + bounds.width / 2,
+				y: bounds.y + bounds.height / 2,
+			}
+			const isButtonUnderPointer = await button.evaluate(
+				(element, position) =>
+					element.contains(document.elementFromPoint(position.x, position.y)),
+				point
+			)
+			expect(isButtonUnderPointer).toBe(true)
+			await page.mouse.move(point.x, point.y, { steps: 8 })
+			await page.mouse.click(point.x, point.y)
+			const dialog = page.getByRole('dialog')
+			await expect(dialog.getByText('Counts A', { exact: true })).toBeVisible()
+			await expect(dialog.getByText('Counts B', { exact: true })).toBeVisible()
+		})
+	}
+
+	for (const view of ['week', 'month'] as const) {
+		test(`${view}: continuing events retain space for their allocated row`, async ({
+			page,
+		}) => {
+			const events = [
+				countEvent('A', '2025-03-10T00:00:00.000Z', '2025-03-12T00:00:00.000Z'),
+				countEvent('B', '2025-03-10T00:00:00.000Z', '2025-03-12T00:00:00.000Z'),
+				countEvent('C', '2025-03-11T00:00:00.000Z', '2025-03-14T00:00:00.000Z'),
+			]
+			const seed = JSON.stringify(events)
+			const settings = {
+				seed,
+				dayMaxEvents: 3,
+				granularity: 'daily',
+				eventHeight: 48,
+			}
+			await gotoScenario(page, {
+				scenario: 'seed-resources',
+				view,
+				orientation: 'horizontal',
+				settings,
+			})
+			await settleAnimations(page)
+			const row = page.getByTestId('horizontal-row-r1')
+			const cell = row.getByTestId('day-cell-2025-03-12')
+			const placeholders = cell
+				.getByTestId('grid-cell-content')
+				.locator(':scope > div.w-full.shrink-0')
+			await expect(placeholders).toHaveCount(3)
+			await expect(cell.getByRole('button', { name: /more/i })).toHaveCount(0)
+			const bar = row.getByTestId('horizontal-event-counts-C')
+			const barBox = await bar.boundingBox()
+			const cellBox = await cell.boundingBox()
+			if (!(barBox && cellBox)) throw new Error('Event and cell need geometry')
+			expect(barBox.y + barBox.height).toBeLessThanOrEqual(
+				cellBox.y + cellBox.height
+			)
+		})
+	}
+
+	for (const [view, granularity, firstEndTime, secondStart, expectedOffset] of [
+		['day', 'hourly', '09:00', '09:00', 0],
+		['day', 'hourly', '09:17', '09:17', 0],
+		['day', 'hourly', '09:17', '09:45', 0],
+		['day', 'hourly', '09:17', '09:16', 25],
+		['week', 'hourly', '09:17', '09:17', 0],
+		['week', 'daily', '09:17', '09:17', 25],
+		['month', 'daily', '09:17', '09:17', 25],
+	] as const) {
+		test(`${view} ${granularity}: ${firstEndTime}/${secondStart} keeps the existing rows`, async ({
+			page,
+		}) => {
+			const firstEnd = `2025-03-12T${firstEndTime}:00.000Z`
+			const secondStartISO = `2025-03-12T${secondStart}:00.000Z`
+			const events = [
+				{
+					id: 'packing-a',
+					title: 'Packing A',
+					start: '2025-03-12T07:00:00.000Z',
+					end: firstEnd,
+					resourceId: 'r1',
+				},
+				{
+					id: 'packing-b',
+					title: 'Packing B',
+					start: secondStartISO,
+					end: '2025-03-12T11:00:00.000Z',
+					resourceId: 'r1',
+				},
+			]
+			const seed = JSON.stringify(events)
+			const settings = {
+				seed,
+				granularity,
+				dayMaxEvents: 2,
+				eventHeight: 24,
+				eventSpacing: 1,
+			}
+			await gotoScenario(page, {
+				scenario: 'horizontal-packing',
+				view,
+				orientation: 'horizontal',
+				settings,
+			})
+			await settleAnimations(page)
+
+			const first = page.getByTestId('horizontal-event-packing-a')
+			const second = page.getByTestId('horizontal-event-packing-b')
+			const firstBox = await first.boundingBox()
+			const secondBox = await second.boundingBox()
+			if (!(firstBox && secondBox)) {
+				throw new Error('Both events must have a rendered bar')
+			}
+			const offset = secondBox.y - firstBox.y
+			expect(offset).toBeCloseTo(expectedOffset, 5)
+
+			const calendar = new CalendarPage(page)
+			const firstEvent = await calendar.eventNamed('Packing A')
+			const secondEvent = await calendar.eventNamed('Packing B')
+			expect(firstEvent.end).toBe(firstEnd)
+			expect(secondEvent.start).toBe(secondStartISO)
+			await expectFitsRow(page, 'packing-b')
+			const isExactMinuteHandoff =
+				view === 'day' && firstEndTime === '09:17' && secondStart === '09:17'
+			if (isExactMinuteHandoff) {
+				await page.setViewportSize({ width: 390, height: 844 })
+				await second.scrollIntoViewIfNeeded()
+				await settleAnimations(page)
+				const mobileOffset = await rowDifference(page, 'packing-a', 'packing-b')
+				expect(mobileOffset).toBe(0)
+				await expectFitsRow(page, 'packing-b')
+			}
+		})
+	}
+
+	test('nested chains reuse rows and keep resources independent', async ({
+		page,
+	}) => {
+		const events = [
+			packingEvent('packing-long', '07:00', '12:00'),
+			packingEvent('packing-a', '08:00', '09:17'),
+			packingEvent('packing-b', '09:17', '10:00'),
+			packingEvent('packing-c', '09:18', '09:45'),
+			packingEvent('packing-d', '10:00', '11:00'),
+			packingEvent('packing-independent', '07:00', '12:00', 'r2'),
+		]
+		const seed = JSON.stringify(events)
+		await gotoScenario(page, {
+			scenario: 'horizontal-packing',
+			view: 'day',
+			orientation: 'horizontal',
+			settings: { seed },
+		})
+		await settleAnimations(page)
+		for (const [id, offset] of [
+			['packing-a', 25],
+			['packing-b', 25],
+			['packing-c', 50],
+			['packing-d', 25],
+		] as const) {
+			const actualOffset = await rowDifference(page, 'packing-long', id)
+			expect(actualOffset).toBe(offset)
+			await expectFitsRow(page, id)
+		}
+		const independent = await boundsOf(bar(page, 'packing-independent'))
+		const resource = await boundsOf(row(page, 'r2'))
+		expect(independent.y - resource.y).toBe(1)
+		await expectFitsRow(page, 'packing-independent', 'r2')
+	})
+
+	for (const hidden of [false, true]) {
+		test(`same-hour handoffs reserve one row and count only real overflow (hidden=${hidden})`, async ({
+			page,
+		}) => {
+			const events = [
+				packingEvent('packing-a', '09:01', '09:17'),
+				packingEvent('packing-b', '09:17', '09:59'),
+			]
+			if (hidden) events.push(packingEvent('packing-hidden', '09:18', '09:45'))
+			const seed = JSON.stringify(events)
+			const settings = {
+				seed,
+				dayMaxEvents: 1,
+				eventHeight: 48,
+				height: '200px',
+			}
+			await gotoScenario(page, {
+				scenario: 'horizontal-packing',
+				view: 'day',
+				orientation: 'horizontal',
+				settings,
+			})
+			await settleAnimations(page)
+			const offset = await rowDifference(page, 'packing-a', 'packing-b')
+			expect(offset).toBe(0)
+			const content = row(page)
+				.getByTestId('day-cell-2025-03-12-09-00')
+				.getByTestId('grid-cell-content')
+			const placeholders = content.locator(':scope > div.w-full.shrink-0')
+			await expect(placeholders).toHaveCount(1)
+			const placeholder = await boundsOf(placeholders.first())
+			expect(placeholder.height).toBe(48)
+			if (hidden) {
+				await expect(bar(page, 'packing-hidden')).toHaveCount(0)
+				const more = row(page).getByRole('button', {
+					name: '+1 more',
+					exact: true,
+				})
+				await more.click()
+				await expect(
+					page.getByRole('dialog').getByText('packing-hidden', { exact: true })
+				).toBeVisible()
+			} else {
+				await expect(
+					row(page).getByRole('button', { name: /more/i })
+				).toHaveCount(0)
+				const bounds = await boundsOf(row(page))
+				expect(bounds.height).toBe(60)
+			}
+		})
+	}
+
+	test('reserves height for a high row after its blockers end', async ({
+		page,
+	}) => {
+		const events = [
+			packingEvent('packing-a', '07:00', '09:17'),
+			packingEvent('packing-b', '07:00', '09:17'),
+			packingEvent('packing-c', '08:00', '11:00'),
+		]
+		const seed = JSON.stringify(events)
+		const settings = { seed, eventHeight: 48, height: '200px' }
+		await gotoScenario(page, {
+			scenario: 'horizontal-packing',
+			view: 'day',
+			orientation: 'horizontal',
+			settings,
+		})
+		await settleAnimations(page)
+		const offset = await rowDifference(page, 'packing-a', 'packing-c')
+		expect(offset).toBe(98)
+		await expectFitsRow(page, 'packing-c')
+		const bounds = await boundsOf(row(page))
+		expect(bounds.height).toBe(154)
+	})
+
+	for (const interaction of ['edit', 'resize'] as const) {
+		test(`pointer ${interaction} publishes the new end and repacks a real overlap`, async ({
+			page,
+		}) => {
+			await gotoScenario(page, {
+				scenario: 'horizontal-packing',
+				view: 'day',
+				orientation: 'horizontal',
+				settings: { slot: 60 },
+			})
+			await settleAnimations(page)
+			const initialOffset = await rowDifference(page, 'packing-a', 'packing-b')
+			expect(initialOffset).toBe(0)
+			const target =
+				interaction === 'edit'
+					? bar(page, 'packing-a')
+					: bar(page, 'packing-a').locator('[data-resize-handle="end"]')
+			await target.scrollIntoViewIfNeeded()
+			await settleAnimations(page)
+			const bounds = await boundsOf(target)
+			const point = {
+				x: bounds.x + bounds.width / 2,
+				y: bounds.y + bounds.height / 2,
+			}
+			const isTargetUnderPointer = await target.evaluate(
+				(element, position) =>
+					element.contains(document.elementFromPoint(position.x, position.y)),
+				point
+			)
+			expect(isTargetUnderPointer).toBe(true)
+			await page.mouse.move(point.x, point.y)
+			if (interaction === 'edit') {
+				await page.mouse.click(point.x, point.y)
+				await expect(formDialog(page)).toBeVisible()
+				await pickTime(page, 'end', '9:30 AM')
+				await saveForm(page)
+			} else {
+				const cell = row(page).locator(
+					'[data-start="2025-03-12T09:00:00.000Z"]'
+				)
+				const cellBounds = await boundsOf(cell)
+				const destination = {
+					x: cellBounds.x + cellBounds.width * 0.7,
+					y: cellBounds.y + cellBounds.height - 8,
+				}
+				const isCellUnderPointer = await cell.evaluate(
+					(element, position) =>
+						element.contains(document.elementFromPoint(position.x, position.y)),
+					destination
+				)
+				expect(isCellUnderPointer).toBe(true)
+				await page.mouse.down()
+				await page.mouse.move(destination.x, destination.y, { steps: 12 })
+				await releasePointer(page)
+			}
+			const calendar = new CalendarPage(page)
+			await expect
+				.poll(async () => (await calendar.eventChanges()).length)
+				.toBe(1)
+			const updated = await calendar.eventNamed('Packing A')
+			const expectedEnd =
+				interaction === 'edit'
+					? '2025-03-12T09:30:00.000Z'
+					: '2025-03-12T10:00:00.000Z'
+			expect(updated.start).toBe('2025-03-12T07:00:00.000Z')
+			expect(updated.end).toBe(expectedEnd)
+			expect(updated.resourceId).toBe('r1')
+			const [change] = await calendar.eventChanges()
+			expect(change).toMatchObject({
+				action: 'update',
+				event: 'packing-a',
+				updated: ['packing-a'],
+				added: [],
+				deleted: [],
+			})
+			await expect
+				.poll(() => rowDifference(page, 'packing-a', 'packing-b'))
+				.toBe(25)
+			await expectFitsRow(page, 'packing-b')
+		})
+	}
+
+	test('switching to a day grid preserves whole-day stacking and overflow', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'horizontal-packing',
+			view: 'day',
+			orientation: 'horizontal',
+		})
+		await settleAnimations(page)
+		const initialOffset = await rowDifference(page, 'packing-a', 'packing-b')
+		expect(initialOffset).toBe(0)
+		const calendar = new CalendarPage(page)
+		await calendar.root
+			.getByRole('radio', { name: 'Month', exact: true })
+			.click()
+		await settleAnimations(page)
+		const dayOffset = await rowDifference(page, 'packing-a', 'packing-b')
+		expect(dayOffset).toBe(25)
+		await setSettings(page, { dayMaxEvents: 1 })
+		await expect(bar(page, 'packing-b')).toHaveCount(0)
+		await expect(
+			row(page).getByRole('button', { name: '+1 more', exact: true })
+		).toHaveCount(1)
+	})
+})
 
 /**
  * The bar drawn on top a few pixels inside a bar's left edge, as a pointer

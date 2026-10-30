@@ -178,6 +178,39 @@ offsets come from the IANA data the runtime's `Intl` API ships, so a zone that
 moves by 30 minutes (Lord Howe Island) or changes its rules is placed the same
 way. Tests pin both.
 
+### Horizontal row packing
+
+Day and hour axes share one half-open range packer. `computeBarEdges` supplies
+whole-column ranges for day grids and fractional-column ranges for hour grids.
+The same overlap check finds the first free row for either, and the selected
+edges are used both to reserve that row and to emit the bar's placement.
+When a full span cannot fit, the slot search still tries later start columns
+to preserve its visible suffix. Day-spanning events retain priority over
+single-day entries; hourly events retain chronological placement.
+
+Hour-axis bars reserve their exact half-open intervals when sharing rows: a
+07:00–09:17 event and a 09:17–11:00 event can occupy the same row. Hourly events
+are placed by start time, with longer events first at an equal start, so a
+short event can reuse a row underneath a longer one. This follows the
+[exclusive end convention](https://fullcalendar.io/docs/event-parsing).
+
+`layoutHorizontal` returns `positionedEvents` and a `columnLayouts` entry for
+each input column. Each entry contains the full cell event list, `rowCount`
+and `hiddenCount`. All events initially count as hidden; placing a bar subtracts
+it from the hidden count in each column it draws over and reserves space through
+its highest occupied row. This same calculation serves day and hour axes.
+Multiple successive events in one hour do not add rows or produce a false
+“more” count. A bar truncated to later columns counts as hidden only in the
+earlier columns it cannot draw. Day-axis bars still reserve whole days.
+
+`useProcessedWeekEvents` keys these entries for the cells, without scanning the
+placements again. Cells display the supplied counts and use the full event
+list for the overflow dialog; they do not fetch or calculate counts themselves.
+
+The CSS minimum width can still enlarge short hourly bars beyond their reserved
+ranges. Minimum-width-aware packing is a separate follow-up; the shared-packer
+refactor does not change bar styling.
+
 ### The now-line and week numbers
 
 The now-line is drawn only in hour grids and only while the `nowIndicator` prop

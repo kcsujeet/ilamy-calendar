@@ -1,4 +1,3 @@
-import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import type { Dayjs } from '@ilamy/utils/dayjs'
 import type { TimeAxis } from '@ilamy/utils/helpers'
@@ -7,6 +6,7 @@ import { memo, useRef } from 'react'
 import { useIsCellUnavailable } from '@/features/calendar/hooks/use-is-cell-unavailable'
 import type { DragPreviewState } from '@/features/calendar/stores/drag-preview-context'
 import { keys } from '@/features/calendar/utils/keys'
+import type { HorizontalCellLayout } from '@/features/calendar/utils/layout/geometry'
 import type { DropColumnData } from '../drag-and-drop/dnd-utils'
 import {
 	DroppableCell,
@@ -36,7 +36,7 @@ interface GridProps {
 	weekNumber?: number
 	children?: React.ReactNode
 	'data-testid'?: string
-	precomputedEvents?: CalendarEvent[]
+	precomputedLayout?: HorizontalCellLayout
 	/** Whether this cell draws the dashed sub-hour divider below itself. */
 	isSubDivider?: boolean
 	/** The axis time runs along in the grid, for cells of an hour grid. */
@@ -73,48 +73,40 @@ const getCellTestId = (
 interface GridCellBodyProps
 	extends Pick<
 			GridProps,
-			'day' | 'resourceId' | 'precomputedEvents' | 'weekNumber' | 'children'
+			'day' | 'precomputedLayout' | 'weekNumber' | 'children'
 		>,
-		Required<
-			Pick<
-				GridProps,
-				'gridType' | 'allDay' | 'shouldRenderEvents' | 'showDayNumber'
-			>
-		> {
+		Required<Pick<GridProps, 'shouldRenderEvents' | 'showDayNumber'>> {
 	allEventsDialogRef: React.RefObject<AllEventDialogHandle | null>
 }
 
 /** What goes inside the droppable cell: the day header, then its events and any children. */
 const GridCellBody: React.FC<GridCellBodyProps> = ({
 	day,
-	gridType,
-	allDay,
-	resourceId,
-	precomputedEvents,
+	precomputedLayout,
 	showDayNumber,
 	weekNumber,
 	shouldRenderEvents,
 	allEventsDialogRef,
 	children,
-}) => (
-	<GridCellContent
-		day={day}
-		showDayNumber={showDayNumber}
-		weekNumber={weekNumber}
-	>
-		{shouldRenderEvents && (
-			<GridCellEvents
-				allDay={allDay}
-				allEventsDialogRef={allEventsDialogRef}
-				day={day}
-				gridType={gridType}
-				precomputedEvents={precomputedEvents}
-				resourceId={resourceId}
-			/>
-		)}
-		{children}
-	</GridCellContent>
-)
+}) => {
+	const showsEvents = shouldRenderEvents && precomputedLayout !== undefined
+	return (
+		<GridCellContent
+			day={day}
+			showDayNumber={showDayNumber}
+			weekNumber={weekNumber}
+		>
+			{showsEvents && (
+				<GridCellEvents
+					allEventsDialogRef={allEventsDialogRef}
+					day={day}
+					precomputedLayout={precomputedLayout}
+				/>
+			)}
+			{children}
+		</GridCellContent>
+	)
+}
 
 type GridCellTargetProps = DroppableCellProps &
 	Pick<GridProps, 'dropSlots' | 'slotIndex' | 'dragPreview'>
@@ -149,7 +141,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	gridType = 'day',
 	shouldRenderEvents = true,
 	allDay = false,
-	precomputedEvents,
+	precomputedLayout,
 	'data-testid': dataTestId,
 	showDayNumber = false,
 	weekNumber,
@@ -186,12 +178,9 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	}
 	const body = (
 		<GridCellBody
-			allDay={allDay}
 			allEventsDialogRef={allEventsDialogRef}
 			day={day}
-			gridType={gridType}
-			precomputedEvents={precomputedEvents}
-			resourceId={resourceId}
+			precomputedLayout={precomputedLayout}
 			shouldRenderEvents={shouldRenderEvents}
 			showDayNumber={showDayNumber}
 			weekNumber={weekNumber}

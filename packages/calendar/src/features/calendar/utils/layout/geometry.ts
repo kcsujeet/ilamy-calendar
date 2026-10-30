@@ -49,6 +49,13 @@ export interface HorizontalPositionedEvent extends PositionedEventBase {
 	isTruncatedEnd: boolean
 }
 
+/** The events in a cell and the space their row's layout actually uses. */
+export interface HorizontalCellLayout {
+	events: CalendarEvent[]
+	rowCount: number
+	hiddenCount: number
+}
+
 /**
  * Where a horizontal bar sits. The real bar and the drag mirror both read this,
  * so the mirror cannot land anywhere the bar would not: they were two identical

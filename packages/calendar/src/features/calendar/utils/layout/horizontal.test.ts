@@ -47,10 +47,223 @@ const run = (
 		events,
 		dayMaxEvents: opts.dayMaxEvents ?? 4,
 		gridType: opts.gridType,
-	})
+	}).positionedEvents
 
 /** Column count a placement covers, derived from its percentage width. */
 const columnsOf = (width: number) => Math.round(width / (100 / days.length))
+
+describe('horizontal column layouts', () => {
+	const columns = Array.from({ length: 5 }, (_, index) =>
+		dayjs('2025-03-12T07:00:00.000Z').add(index, 'hour')
+	)
+	const at = (id: string, start: string, end: string) =>
+		mkEvent(id, `2025-03-12T${start}:00.000Z`, `2025-03-12T${end}:00.000Z`)
+	const counts = (events: CalendarEvent[], dayMaxEvents = 3) => {
+		const { columnLayouts } = layoutHorizontal({
+			days: columns,
+			events,
+			dayMaxEvents,
+			gridType: 'hour',
+		})
+		return columnLayouts.map(({ rowCount, hiddenCount }) => [
+			rowCount,
+			hiddenCount,
+		])
+	}
+
+	it('reports every column, including an empty grid', () => {
+		expect(counts([])).toEqual([
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+		])
+		expect(layoutHorizontal({ days: [], events: [], dayMaxEvents: 3 })).toEqual(
+			{
+				positionedEvents: [],
+				columnLayouts: [],
+			}
+		)
+	})
+
+	it('counts adjacent chains once per row and genuine overlaps as hidden', () => {
+		const events = [
+			at('a', '09:01', '09:17'),
+			at('b', '09:17', '09:31'),
+			at('c', '09:31', '09:59'),
+			at('hidden', '09:18', '09:30'),
+		]
+		expect(counts(events, 1)).toEqual([
+			[0, 0],
+			[0, 0],
+			[1, 1],
+			[0, 0],
+			[0, 0],
+		])
+	})
+
+	it('reserves the highest row after its blockers end', () => {
+		const events = [
+			at('a', '07:00', '09:17'),
+			at('b', '07:00', '09:17'),
+			at('c', '08:00', '11:00'),
+		]
+		expect(counts(events)).toEqual([
+			[2, 0],
+			[3, 0],
+			[3, 0],
+			[3, 0],
+			[0, 0],
+		])
+	})
+
+	it('counts a start-truncated event only in the columns it lost', () => {
+		const events = [at('a', '07:00', '09:17'), at('b', '09:16', '11:00')]
+		expect(counts(events, 1)).toEqual([
+			[1, 0],
+			[1, 0],
+			[1, 1],
+			[1, 0],
+			[0, 0],
+		])
+	})
+
+	it('counts fully hidden events with no rows available', () => {
+		expect(counts([at('a', '09:01', '09:17')], 0)).toEqual([
+			[0, 0],
+			[0, 0],
+			[0, 1],
+			[0, 0],
+			[0, 0],
+		])
+	})
+
+	it('keeps all cell events in input order for the overflow dialog', () => {
+		const events = [at('b', '09:17', '09:59'), at('a', '09:01', '09:17')]
+		const { columnLayouts } = layoutHorizontal({
+			days: columns,
+			events,
+			dayMaxEvents: 1,
+			gridType: 'hour',
+		})
+		expect(columnLayouts.at(2)?.events).toEqual(events)
+	})
+
+	it('counts only events within the configured visible-hours window', () => {
+		const referenceDate = dayjs('2025-03-12T00:00:00.000Z')
+		const visibleHours = getViewHours({
+			referenceDate,
+			slotMinTime: '09:00',
+			slotMaxTime: '11:00',
+		})
+		const events = [
+			at('outside', '07:00', '08:00'),
+			at('clipped', '08:00', '10:00'),
+			at('next', '10:00', '11:00'),
+		]
+		const { columnLayouts } = layoutHorizontal({
+			days: visibleHours,
+			events,
+			dayMaxEvents: 1,
+			gridType: 'hour',
+		})
+		expect(
+			columnLayouts.map(({ events, rowCount, hiddenCount }) => ({
+				ids: events.map((event) => event.id),
+				rowCount,
+				hiddenCount,
+			}))
+		).toEqual([
+			{ ids: ['clipped'], rowCount: 1, hiddenCount: 0 },
+			{ ids: ['next'], rowCount: 1, hiddenCount: 0 },
+		])
+	})
+
+	it('omits hidden days from counts and overflow event lists', () => {
+		const referenceDate = dayjs('2025-03-12T00:00:00.000Z')
+		const week = getMonthWeeks(referenceDate, 0).find((row) =>
+			row.some((day) => day.isSame(referenceDate, 'day'))
+		)
+		if (!week) throw new Error('Expected the reference week')
+		const visibleDays = week.filter((day) => day.day() === 1 || day.day() === 3)
+		const events = [
+			mkEvent(
+				'spanning',
+				'2025-03-10T00:00:00.000Z',
+				'2025-03-13T00:00:00.000Z'
+			),
+			mkEvent(
+				'hidden-day',
+				'2025-03-11T08:00:00.000Z',
+				'2025-03-11T09:00:00.000Z'
+			),
+		]
+		const { columnLayouts } = layoutHorizontal({
+			days: visibleDays,
+			events,
+			dayMaxEvents: 1,
+		})
+		expect(
+			columnLayouts.map(({ events, rowCount, hiddenCount }) => ({
+				ids: events.map((event) => event.id),
+				rowCount,
+				hiddenCount,
+			}))
+		).toEqual([
+			{ ids: ['spanning'], rowCount: 1, hiddenCount: 0 },
+			{ ids: ['spanning'], rowCount: 1, hiddenCount: 0 },
+		])
+	})
+
+	it('reports actual occupied rows on a day axis', () => {
+		const events = [
+			mkEvent('a', '2025-01-13T00:00:00.000Z', '2025-01-15T00:00:00.000Z'),
+			mkEvent('b', '2025-01-13T00:00:00.000Z', '2025-01-15T00:00:00.000Z'),
+			mkEvent('c', '2025-01-14T00:00:00.000Z', '2025-01-17T00:00:00.000Z'),
+		]
+		const { columnLayouts } = layoutHorizontal({
+			days,
+			events,
+			dayMaxEvents: 3,
+		})
+		expect(
+			columnLayouts.map(({ rowCount, hiddenCount }) => [rowCount, hiddenCount])
+		).toEqual([
+			[0, 0],
+			[2, 0],
+			[3, 0],
+			[3, 0],
+			[3, 0],
+			[0, 0],
+			[0, 0],
+		])
+	})
+
+	it('keeps day-axis hidden counts for missing prefixes and whole events', () => {
+		const events = [
+			mkEvent('a', '2025-01-13T00:00:00.000Z', '2025-01-15T00:00:00.000Z'),
+			mkEvent('b', '2025-01-14T00:00:00.000Z', '2025-01-17T00:00:00.000Z'),
+			mkEvent('hidden', '2025-01-14T08:00:00.000Z', '2025-01-14T09:00:00.000Z'),
+		]
+		const { columnLayouts } = layoutHorizontal({
+			days,
+			events,
+			dayMaxEvents: 1,
+		})
+		expect(
+			columnLayouts.map(({ rowCount, hiddenCount }) => [rowCount, hiddenCount])
+		).toEqual([
+			[0, 0],
+			[1, 0],
+			[1, 2],
+			[1, 0],
+			[1, 0],
+			[0, 0],
+			[0, 0],
+		])
+	})
+})
 
 describe('layoutHorizontal', () => {
 	/**
@@ -130,7 +343,7 @@ describe('layoutHorizontal', () => {
 				events: [event],
 				dayMaxEvents: 4,
 				gridType: 'hour',
-			})
+			}).positionedEvents
 
 			// An hour axis now draws exact times, so the bar no longer fills the
 			// second hour. What this pins still holds: it reaches into it, 30s past.
@@ -204,7 +417,7 @@ describe('layoutHorizontal', () => {
 				events: [crossesTheHour],
 				dayMaxEvents: 4,
 				gridType: 'hour',
-			})
+			}).positionedEvents
 
 			// Exact times now, not whole hours: the bar runs from 09:30 into the
 			// 10:00 hour and stops at 10:15, rather than vanishing from it.
@@ -375,6 +588,49 @@ describe('layoutHorizontal', () => {
 	})
 
 	describe('Complex Scenarios - Gap Filling', () => {
+		it('reuses a row when one day span ends exactly where the next begins', () => {
+			const first = mkEvent(
+				'first',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-15T00:00:00.000Z'
+			)
+			const second = mkEvent(
+				'second',
+				'2025-01-15T00:00:00.000Z',
+				'2025-01-17T00:00:00.000Z'
+			)
+			const result = run([second, first], { dayMaxEvents: 1 })
+			const placements = result.map(({ event, row, left, width }) => ({
+				id: event.id,
+				row,
+				column: Math.round(left / (100 / days.length)),
+				columns: columnsOf(width),
+			}))
+
+			expect(placements).toEqual([
+				{ id: 'first', row: 0, column: 1, columns: 2 },
+				{ id: 'second', row: 0, column: 3, columns: 2 },
+			])
+		})
+
+		it('gives a later day-spanning event priority over an earlier single-day event', () => {
+			const single = mkEvent(
+				'single',
+				'2025-01-13T08:00:00.000Z',
+				'2025-01-13T09:00:00.000Z'
+			)
+			const spanning = mkEvent(
+				'spanning',
+				'2025-01-13T12:00:00.000Z',
+				'2025-01-15T00:00:00.000Z'
+			)
+			const result = run([single, spanning], { dayMaxEvents: 1 })
+
+			expect(result.map(({ event, row }) => [event.id, row])).toEqual([
+				['spanning', 0],
+			])
+		})
+
 		it('fills gaps with single-day events', () => {
 			const result = run([
 				multiDayEvent,
@@ -467,7 +723,7 @@ describe('layoutHorizontal', () => {
 				events: [event],
 				dayMaxEvents: 4,
 				gridType: 'hour',
-			})
+			}).positionedEvents
 
 		it('handles hour gridType for single-day events', () => {
 			const result = runOnHours(
@@ -513,7 +769,7 @@ describe('layoutHorizontal', () => {
 				events: [mkEvent('timed', startISO, endISO)],
 				dayMaxEvents: 4,
 				gridType: 'hour',
-			})
+			}).positionedEvents
 			return placement
 		}
 		/** Left edge and width, in hours, read back off the percentages. */
@@ -597,7 +853,7 @@ describe('layoutHorizontal on a visible-hours window', () => {
 			events,
 			dayMaxEvents: 4,
 			gridType: 'hour',
-		})
+		}).positionedEvents
 
 	it('draws nothing for an event wholly before the window', () => {
 		const events = [mkEvent('e', hourAt(10, 27), hourAt(12, 27))]
@@ -702,7 +958,7 @@ describe('layoutHorizontal on a day the clocks change', () => {
 			events: [event],
 			dayMaxEvents: 4,
 			gridType: 'hour',
-		})
+		}).positionedEvents
 		return {
 			start: (placed?.left ?? 0) / HOUR_PERCENT,
 			length: (placed?.width ?? 0) / HOUR_PERCENT,
@@ -723,6 +979,11 @@ describe('layoutHorizontal on a day the clocks change', () => {
 })
 
 describe('findMultiUnitSlot', () => {
+	const event = mkEvent(
+		'spanning',
+		'2025-01-13T00:00:00.000Z',
+		'2025-01-16T00:00:00.000Z'
+	)
 	const span = {
 		startCol: 1,
 		endCol: 3,
@@ -730,42 +991,83 @@ describe('findMultiUnitSlot', () => {
 		isTruncatedEnd: false,
 		spansMultipleUnits: true,
 	}
-	// A grid of `rows` rows by 5 columns with the given [row, col] cells taken.
-	const gridWith = (rows: number, taken: [number, number][]) => {
-		const grid = Array.from({ length: rows }, () =>
-			Array.from({ length: 5 }, () => false)
+	// The same occupied day columns, expressed as half-open ranges.
+	const rowsWith = (count: number, taken: [number, number][]) => {
+		const rows: Parameters<typeof findMultiUnitSlot>[0] = Array.from(
+			{ length: count },
+			() => []
 		)
 		for (const [row, col] of taken) {
-			grid[row][col] = true
+			const range = { start: col, end: col + 1 }
+			rows.at(row)?.push(range)
 		}
-		return grid
+		return rows
 	}
 
 	it('keeps the span start when a row is free there', () => {
-		expect(findMultiUnitSlot(gridWith(2, [[0, 2]]), span)).toEqual({
+		const rows = rowsWith(2, [[0, 2]])
+		const spanned = { event, span }
+		const slot = findMultiUnitSlot(rows, spanned, null)
+		expect(slot).toEqual({
 			row: 1,
 			startCol: 1,
 			isTruncatedStart: false,
+			edges: { start: 1, end: 4 },
 		})
 	})
 
 	it('keeps the span own truncated-start flag on its first try', () => {
 		const clipped = { ...span, isTruncatedStart: true }
-		expect(findMultiUnitSlot(gridWith(1, []), clipped)?.isTruncatedStart).toBe(
-			true
-		)
+		const rows = rowsWith(1, [])
+		const spanned = { event, span: clipped }
+		const slot = findMultiUnitSlot(rows, spanned, null)
+		expect(slot).toEqual({
+			row: 0,
+			startCol: 1,
+			isTruncatedStart: true,
+			edges: { start: 1, end: 4 },
+		})
 	})
 
 	it('truncates to a later start when every row is taken at the start', () => {
-		expect(findMultiUnitSlot(gridWith(1, [[0, 1]]), span)).toEqual({
+		const rows = rowsWith(1, [[0, 1]])
+		const spanned = { event, span }
+		const slot = findMultiUnitSlot(rows, spanned, null)
+		expect(slot).toEqual({
 			row: 0,
 			startCol: 2,
 			isTruncatedStart: true,
+			edges: { start: 2, end: 4 },
 		})
 	})
 
 	it('returns null when even the last column is taken in every row', () => {
-		expect(findMultiUnitSlot(gridWith(1, [[0, 3]]), span)).toBeNull()
+		const rows = rowsWith(1, [[0, 3]])
+		const spanned = { event, span }
+		const slot = findMultiUnitSlot(rows, spanned, null)
+		expect(slot).toBeNull()
+	})
+
+	it('uses the same slot search for touching fractional hour ranges', () => {
+		const hours = Array.from({ length: 4 }, (_, index) =>
+			dayjs('2025-01-13T07:00:00.000Z').add(index, 'hour').valueOf()
+		)
+		const event = mkEvent(
+			'handoff',
+			'2025-01-13T09:17:00.000Z',
+			'2025-01-13T11:00:00.000Z'
+		)
+		const handoff = 2 + 17 / 60
+		const rows = [[{ start: 0, end: handoff }]]
+		const hourSpan = { ...span, startCol: 2 }
+		const spanned = { event, span: hourSpan }
+		const slot = findMultiUnitSlot(rows, spanned, hours)
+		expect(slot).toEqual({
+			row: 0,
+			startCol: 2,
+			isTruncatedStart: false,
+			edges: { start: handoff, end: 4 },
+		})
 	})
 })
 
@@ -788,7 +1090,7 @@ describe('layoutHorizontal over hidden days', () => {
 				},
 			],
 			dayMaxEvents: 4,
-		})
+		}).positionedEvents
 	const edgesOf = (placed: ReturnType<typeof place>) => {
 		const bar = placed.at(0)
 		return {
@@ -832,7 +1134,7 @@ describe('layoutHorizontal over hidden days', () => {
 			days: visibleDays,
 			events: [saturdayMeeting],
 			dayMaxEvents: 4,
-		})
+		}).positionedEvents
 		expect(placed).toEqual([])
 	})
 })
@@ -880,7 +1182,7 @@ describe.each([
 				days: week,
 				events: [event],
 				dayMaxEvents: 3,
-			})
+			}).positionedEvents
 			const oneColumn = 100 / 7
 			return {
 				column: Math.round((placed?.left ?? -1) / oneColumn),
@@ -926,3 +1228,118 @@ describe.each([
 		})
 	}
 )
+
+describe('hour-axis row reuse', () => {
+	const hours = Array.from({ length: 12 }, (_, index) =>
+		dayjs('2026-10-28T07:00:00.000Z').add(index, 'hour')
+	)
+	const eventAt = (id: string, start: string, end: string) =>
+		mkEvent(id, `2026-10-28T${start}:00.000Z`, `2026-10-28T${end}:00.000Z`)
+	const pack = (events: CalendarEvent[], dayMaxEvents = 4) =>
+		layoutHorizontal({ days: hours, events, dayMaxEvents, gridType: 'hour' })
+			.positionedEvents
+
+	for (const [end, start, expectedRows] of [
+		['09:00', '09:00', [0, 0]],
+		['09:17', '09:17', [0, 0]],
+		['09:17', '09:45', [0, 0]],
+		['09:17', '09:16', [0, 1]],
+	] as const) {
+		it(`places 07:00–${end} and ${start}–11:00 in rows ${expectedRows}`, () => {
+			const events = [eventAt('a', '07:00', end), eventAt('b', start, '11:00')]
+			expect(pack(events).map(({ row }) => row)).toEqual([...expectedRows])
+		})
+	}
+
+	it('reuses one row for successive events inside the same hour, even at the limit', () => {
+		const events = [
+			eventAt('a', '09:01', '09:17'),
+			eventAt('b', '09:17', '09:31'),
+			eventAt('c', '09:31', '09:59'),
+		]
+		const placed = pack(events, 1)
+		expect(placed).toHaveLength(3)
+		expect(placed.map(({ row }) => row)).toEqual([0, 0, 0])
+	})
+
+	it('keeps genuine same-hour overlaps on different rows', () => {
+		const events = [
+			eventAt('a', '09:01', '09:18'),
+			eventAt('b', '09:17', '09:59'),
+		]
+		expect(pack(events).map(({ row }) => row)).toEqual([0, 1])
+		expect(pack(events, 1).map(({ event }) => event.id)).toEqual(['a'])
+	})
+
+	for (const reverse of [false, true]) {
+		it(`packs nested and chained events chronologically (reversed=${reverse})`, () => {
+			const events = [
+				eventAt('long', '07:00', '12:00'),
+				eventAt('a', '08:00', '09:17'),
+				eventAt('b', '09:17', '10:00'),
+				eventAt('c', '09:18', '09:19'),
+				eventAt('d', '10:00', '11:00'),
+			]
+			const input = reverse ? events.toReversed() : events
+			const placed = pack(input)
+			expect(placed.map(({ event, row }) => [event.id, row])).toEqual([
+				['long', 0],
+				['a', 1],
+				['b', 1],
+				['c', 2],
+				['d', 1],
+			])
+		})
+	}
+
+	it('counts an instant event as its drawn full-hour interval', () => {
+		const events = [
+			eventAt('instant', '09:00', '09:00'),
+			eventAt('b', '09:17', '10:00'),
+		]
+		expect(pack(events).map(({ row }) => row)).toEqual([0, 1])
+	})
+
+	it('still reserves whole days on a day axis', () => {
+		const events = [
+			eventAt('a', '07:00', '09:17'),
+			eventAt('b', '09:17', '11:00'),
+		]
+		const placed = layoutHorizontal({
+			days: [hours[0]],
+			events,
+			dayMaxEvents: 2,
+			gridType: 'day',
+		}).positionedEvents
+		expect(placed.map(({ row }) => row)).toEqual([0, 1])
+	})
+})
+
+describe('hourly overflow clipping', () => {
+	it('keeps the visible suffix when the row is occupied in the first hour', () => {
+		const hours = Array.from({ length: 4 }, (_, index) =>
+			dayjs('2026-10-28T07:00:00.000Z').add(index, 'hour')
+		)
+		const events = [
+			mkEvent(
+				'blocker',
+				'2026-10-28T07:00:00.000Z',
+				'2026-10-28T09:17:00.000Z'
+			),
+			mkEvent('suffix', '2026-10-28T09:16:00.000Z', '2026-10-28T11:00:00.000Z'),
+		]
+		const placed = layoutHorizontal({
+			days: hours,
+			events,
+			dayMaxEvents: 1,
+			gridType: 'hour',
+		}).positionedEvents
+		expect(placed).toHaveLength(2)
+		expect(placed[1]).toMatchObject({
+			row: 0,
+			left: 75,
+			width: 25,
+			isTruncatedStart: true,
+		})
+	})
+})

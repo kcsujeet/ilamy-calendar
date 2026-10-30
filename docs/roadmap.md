@@ -142,7 +142,7 @@ under **Escalation**.
 | Manager | main session (Opus) | Writes each feature's task plan with verified citations; dispatches; runs final verification; commits, pushes and opens the PR; writes the dev log; keeps this plan current | Delegate final verification; merge |
 | Engineer | Sonnet, own git worktree | Implements the task plan by TDD (unit + e2e), runs the gates, reports the diff with test output and the revert proof | Commit; change scope; touch other features' files |
 | QA | Sonnet, several in parallel, one per persona | Exercises the feature through the e2e harness as its persona, writes each finding as a failing Playwright spec plus repro steps | Edit `src/` |
-| Reviewer | the `code-review:review-code` gates (`.claude/review-conventions.md` included) | Grades the diff per rule | Fix code |
+| Reviewer | the `kc-gates:kc-code-review` gates (`.claude/review-conventions.md` included) | Grades the diff per rule | Fix code |
 | Spec auditor | Sonnet | Checks the implementation against the cited FullCalendar/RFC behaviour, line by line | Edit code |
 
 ### Per-feature loop

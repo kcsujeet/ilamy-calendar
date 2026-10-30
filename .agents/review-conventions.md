@@ -1,6 +1,6 @@
 # Review conventions: @ilamy/calendar
 
-Read by the `project-conventions` gate of the kc-claude-kit `code-review:review-code` skill, as `.claude/review-conventions.md` (a symlink to this file, like the rest of `.claude/`). It holds only what is specific to this repo; the kit's built-in gates already cover naming, clarity, ternaries, structure, DRY/YAGNI/KISS and generic date handling.
+Read by the `project-conventions` gate of the kc-claude-kit `kc-gates:kc-code-review` skill, as `.claude/review-conventions.md` (a symlink to this file, like the rest of `.claude/`). It holds only what is specific to this repo; the kit's built-in gates already cover naming, clarity, ternaries, structure, DRY/YAGNI/KISS and generic date handling.
 
 The rules are stated once, in `AGENTS.md` and `.agents/rules/*.md`. Each section below points at its source rather than restating it; when the two disagree, the source wins and this file is what gets corrected.
 
@@ -63,7 +63,7 @@ Canonical: `packages/calendar/src/features/calendar/components/views/resource-we
 Not a gate; it applies when the user asks to post. Two PreToolUse hooks guard GitHub writes here, and both must pass:
 
 - **This repo's hook** (`.claude/hooks/check-pr-post-approval.sh`) blocks any `gh` command that posts public content (PR and issue comments, reviews, `gh pr create`, `gh issue create`) unless the same Bash command contains `touch .claude/state/pr-post-approved.flag` before the `gh` part.
-- **The kc-claude-kit code-review hook** blocks GitHub review writes (`gh pr comment`, `gh pr review`, `gh issue comment`, and `gh api` writes to comments or reviews) unless the command carries `KC_REVIEW_POST_APPROVED=1`. It does not cover `gh pr create` or issue creation, which is why this repo keeps its own hook.
+- **The kc-claude-kit `kc-gates` hook** blocks GitHub review writes (`gh pr comment`, `gh pr review`, `gh issue comment`, and `gh api` writes to comments or reviews) unless the command carries `KC_REVIEW_POST_APPROVED=1`. It does not cover `gh pr create` or issue creation, which is why this repo keeps its own hook.
 
 Both markers are typed only after a fresh "post it" in the user's latest message. A review comment therefore needs both:
 
@@ -71,7 +71,7 @@ Both markers are typed only after a fresh "post it" in the user's latest message
 touch .claude/state/pr-post-approved.flag && KC_REVIEW_POST_APPROVED=1 gh api repos/kcsujeet/ilamy-calendar/pulls/<N>/comments -X POST --input <file>
 ```
 
-Draft comments with `/code-review:post-review`, which validates each comment's file and line against the diff (`build-comment-payloads.sh`) and prints the exact commands to approve. Inline comments anchored to a line are the default; a top-level body is written only when it says something the inline comments do not.
+Draft comments with `/kc-gates:kc-post-review`, which validates each comment's file and line against the diff (`build-comment-payloads.sh`) and prints the exact commands to approve. Inline comments anchored to a line are the default; a top-level body is written only when it says something the inline comments do not.
 
 ## Gate checklist
 

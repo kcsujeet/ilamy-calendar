@@ -43,9 +43,6 @@ export interface ColumnSpan {
  */
 export interface HorizontalPositionedEvent extends PositionedEventBase {
 	kind: 'horizontal'
-	/** Inclusive visible column indices, before conversion to percentages. */
-	startCol: number
-	endCol: number
 	/** Stacking row index. */
 	row: number
 	isTruncatedStart: boolean

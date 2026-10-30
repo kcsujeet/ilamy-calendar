@@ -73,48 +73,40 @@ const getCellTestId = (
 interface GridCellBodyProps
 	extends Pick<
 			GridProps,
-			'day' | 'resourceId' | 'precomputedLayout' | 'weekNumber' | 'children'
+			'day' | 'precomputedLayout' | 'weekNumber' | 'children'
 		>,
-		Required<
-			Pick<
-				GridProps,
-				'gridType' | 'allDay' | 'shouldRenderEvents' | 'showDayNumber'
-			>
-		> {
+		Required<Pick<GridProps, 'shouldRenderEvents' | 'showDayNumber'>> {
 	allEventsDialogRef: React.RefObject<AllEventDialogHandle | null>
 }
 
 /** What goes inside the droppable cell: the day header, then its events and any children. */
 const GridCellBody: React.FC<GridCellBodyProps> = ({
 	day,
-	gridType,
-	allDay,
-	resourceId,
 	precomputedLayout,
 	showDayNumber,
 	weekNumber,
 	shouldRenderEvents,
 	allEventsDialogRef,
 	children,
-}) => (
-	<GridCellContent
-		day={day}
-		showDayNumber={showDayNumber}
-		weekNumber={weekNumber}
-	>
-		{shouldRenderEvents && (
-			<GridCellEvents
-				allDay={allDay}
-				allEventsDialogRef={allEventsDialogRef}
-				day={day}
-				gridType={gridType}
-				precomputedLayout={precomputedLayout}
-				resourceId={resourceId}
-			/>
-		)}
-		{children}
-	</GridCellContent>
-)
+}) => {
+	const showsEvents = shouldRenderEvents && precomputedLayout !== undefined
+	return (
+		<GridCellContent
+			day={day}
+			showDayNumber={showDayNumber}
+			weekNumber={weekNumber}
+		>
+			{showsEvents && (
+				<GridCellEvents
+					allEventsDialogRef={allEventsDialogRef}
+					day={day}
+					precomputedLayout={precomputedLayout}
+				/>
+			)}
+			{children}
+		</GridCellContent>
+	)
+}
 
 type GridCellTargetProps = DroppableCellProps &
 	Pick<GridProps, 'dropSlots' | 'slotIndex' | 'dragPreview'>
@@ -186,12 +178,9 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	}
 	const body = (
 		<GridCellBody
-			allDay={allDay}
 			allEventsDialogRef={allEventsDialogRef}
 			day={day}
-			gridType={gridType}
 			precomputedLayout={precomputedLayout}
-			resourceId={resourceId}
 			shouldRenderEvents={shouldRenderEvents}
 			showDayNumber={showDayNumber}
 			weekNumber={weekNumber}

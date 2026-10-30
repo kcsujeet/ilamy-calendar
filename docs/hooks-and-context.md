@@ -143,7 +143,7 @@ const positionedEvents = useProcessedWeekEvents({
 })
 ```
 
-Calls `layoutHorizontal()` (`features/calendar/utils/layout/horizontal.ts`) for multi-day row packing with `dayMaxEvents`; the events layer derives pixel offsets from the returned `row`.
+Calls `layoutHorizontal()` (`features/calendar/utils/layout/horizontal.ts`) for horizontal row packing with `dayMaxEvents`. The layout returns placements and per-column event lists, row counts and hidden counts for both day and hour axes. The hook keys those column layouts for the cells; the events layer derives pixel offsets from each placement's `row`.
 
 ### useRecurringEventActions()
 

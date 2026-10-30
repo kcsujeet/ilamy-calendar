@@ -1,7 +1,16 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
+import {
+	bucketEventsByColumn,
+	getColumnBounds,
+	getDefaultZone,
+} from '../event-buckets'
 import { createDayColumnSpanner } from './day-columns'
-import type { ColumnSpan, HorizontalPositionedEvent } from './geometry'
+import type {
+	ColumnSpan,
+	HorizontalCellLayout,
+	HorizontalPositionedEvent,
+} from './geometry'
 import { createHourColumnSpanner } from './hour-columns'
 import { MS_PER_HOUR } from './wall-clock'
 
@@ -10,6 +19,11 @@ interface HorizontalLayoutInput {
 	events: CalendarEvent[]
 	dayMaxEvents: number
 	gridType?: 'day' | 'hour'
+}
+
+interface HorizontalLayoutResult {
+	positionedEvents: HorizontalPositionedEvent[]
+	columnLayouts: HorizontalCellLayout[]
 }
 
 // --- Phase 1: cluster (sort) -------------------------------------------------
@@ -138,8 +152,19 @@ export const layoutHorizontal = ({
 	events,
 	dayMaxEvents,
 	gridType = 'day',
-}: HorizontalLayoutInput): HorizontalPositionedEvent[] => {
-	if (days.length === 0) return []
+}: HorizontalLayoutInput): HorizontalLayoutResult => {
+	if (days.length === 0) return { positionedEvents: [], columnLayouts: [] }
+
+	const defaultZone = getDefaultZone()
+	const hasNoEvents = events.length === 0
+	const columnBounds = hasNoEvents
+		? []
+		: days.map((day) => getColumnBounds(day, gridType, defaultZone))
+	const eventsPerColumn = bucketEventsByColumn(columnBounds, events)
+	const columnLayouts = days.map((_, index): HorizontalCellLayout => {
+		const cellEvents = eventsPerColumn.at(index) ?? []
+		return { events: cellEvents, rowCount: 0, hiddenCount: cellEvents.length }
+	})
 
 	const unitCount = days.length
 	// Both axes read their columns off `days` rather than counting from the
@@ -182,14 +207,20 @@ export const layoutHorizontal = ({
 		edges,
 	}: PlaceArgs) => {
 		rows.at(row)?.push(edges)
+		const requiredRows = row + 1
+		for (let col = startCol; col <= endCol; col++) {
+			const cell = columnLayouts.at(col)
+			if (!cell) continue
+			const remainingHiddenCount = cell.hiddenCount - 1
+			cell.rowCount = Math.max(cell.rowCount, requiredRows)
+			cell.hiddenCount = Math.max(0, remainingHiddenCount)
+		}
 		const spanUnits = edges.end - edges.start
 		const left = (edges.start / unitCount) * 100
 		const width = (spanUnits / unitCount) * 100
 		placedEvents.push({
 			kind: 'horizontal',
 			event,
-			startCol,
-			endCol,
 			left,
 			width,
 			row,
@@ -234,5 +265,5 @@ export const layoutHorizontal = ({
 		}
 	}
 
-	return placedEvents
+	return { positionedEvents: placedEvents, columnLayouts }
 }

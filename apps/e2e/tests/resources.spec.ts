@@ -10,6 +10,146 @@ const lane = (resourceId: string, startISO: string) =>
 	`[data-resource-id="${resourceId}"][data-start="${startISO}"]`
 
 test.describe('horizontal row packing', () => {
+	const countEvent = (id: string, start: string, end: string) => ({
+		id: `counts-${id}`,
+		title: `Counts ${id}`,
+		start,
+		end,
+		resourceId: 'r1',
+	})
+
+	for (const view of ['day', 'week', 'month'] as const) {
+		test(`${view}: cell counts follow placed rows and missing prefixes`, async ({
+			page,
+		}) => {
+			const isHourAxis = view === 'day'
+			const events = isHourAxis
+				? [
+						countEvent(
+							'A',
+							'2025-03-12T07:00:00.000Z',
+							'2025-03-12T09:17:00.000Z'
+						),
+						countEvent(
+							'B',
+							'2025-03-12T09:16:00.000Z',
+							'2025-03-12T11:00:00.000Z'
+						),
+					]
+				: [
+						countEvent(
+							'A',
+							'2025-03-10T00:00:00.000Z',
+							'2025-03-12T00:00:00.000Z'
+						),
+						countEvent(
+							'B',
+							'2025-03-11T00:00:00.000Z',
+							'2025-03-14T00:00:00.000Z'
+						),
+					]
+			const seed = JSON.stringify(events)
+			const settings = {
+				seed,
+				dayMaxEvents: 1,
+				granularity: 'daily',
+				eventHeight: 48,
+			}
+			await gotoScenario(page, {
+				scenario: 'seed-resources',
+				view,
+				orientation: 'horizontal',
+				settings,
+			})
+			await settleAnimations(page)
+			const row = page.getByTestId('horizontal-row-r1')
+			const lostCellId = isHourAxis
+				? 'day-cell-2025-03-12-09-00'
+				: 'day-cell-2025-03-11'
+			const visibleCellId = isHourAxis
+				? 'day-cell-2025-03-12-10-00'
+				: 'day-cell-2025-03-12'
+			const lostCell = row.getByTestId(lostCellId)
+			const visibleCell = row.getByTestId(visibleCellId)
+			await expect(
+				lostCell.getByRole('button', { name: '+1 more', exact: true })
+			).toHaveCount(1)
+			await expect(
+				visibleCell.getByRole('button', { name: /more/i })
+			).toHaveCount(0)
+			const placeholders = visibleCell
+				.getByTestId('grid-cell-content')
+				.locator(':scope > div.w-full.shrink-0')
+			await expect(placeholders).toHaveCount(1)
+			const height = await placeholders
+				.first()
+				.evaluate((element) => element.getBoundingClientRect().height)
+			expect(height).toBe(48)
+			const button = lostCell.getByRole('button', {
+				name: '+1 more',
+				exact: true,
+			})
+			await button.scrollIntoViewIfNeeded()
+			const bounds = await button.boundingBox()
+			if (!bounds) throw new Error('Overflow button has no geometry')
+			const point = {
+				x: bounds.x + bounds.width / 2,
+				y: bounds.y + bounds.height / 2,
+			}
+			const isButtonUnderPointer = await button.evaluate(
+				(element, position) =>
+					element.contains(document.elementFromPoint(position.x, position.y)),
+				point
+			)
+			expect(isButtonUnderPointer).toBe(true)
+			await page.mouse.move(point.x, point.y, { steps: 8 })
+			await page.mouse.click(point.x, point.y)
+			const dialog = page.getByRole('dialog')
+			await expect(dialog.getByText('Counts A', { exact: true })).toBeVisible()
+			await expect(dialog.getByText('Counts B', { exact: true })).toBeVisible()
+		})
+	}
+
+	for (const view of ['week', 'month'] as const) {
+		test(`${view}: continuing events retain space for their allocated row`, async ({
+			page,
+		}) => {
+			const events = [
+				countEvent('A', '2025-03-10T00:00:00.000Z', '2025-03-12T00:00:00.000Z'),
+				countEvent('B', '2025-03-10T00:00:00.000Z', '2025-03-12T00:00:00.000Z'),
+				countEvent('C', '2025-03-11T00:00:00.000Z', '2025-03-14T00:00:00.000Z'),
+			]
+			const seed = JSON.stringify(events)
+			const settings = {
+				seed,
+				dayMaxEvents: 3,
+				granularity: 'daily',
+				eventHeight: 48,
+			}
+			await gotoScenario(page, {
+				scenario: 'seed-resources',
+				view,
+				orientation: 'horizontal',
+				settings,
+			})
+			await settleAnimations(page)
+			const row = page.getByTestId('horizontal-row-r1')
+			const cell = row.getByTestId('day-cell-2025-03-12')
+			const placeholders = cell
+				.getByTestId('grid-cell-content')
+				.locator(':scope > div.w-full.shrink-0')
+			await expect(placeholders).toHaveCount(3)
+			await expect(cell.getByRole('button', { name: /more/i })).toHaveCount(0)
+			const bar = row.getByTestId('horizontal-event-counts-C')
+			const barBox = await bar.boundingBox()
+			const cellBox = await cell.boundingBox()
+			if (!(barBox && cellBox)) throw new Error('Event and cell need geometry')
+			expect(barBox.y + barBox.height).toBeLessThanOrEqual(
+				cellBox.y + cellBox.height
+			)
+		})
+	}
+
 	for (const [view, granularity, secondStart, expectedOffset] of [
 		['day', 'hourly', '09:17', 0],
 		['day', 'hourly', '09:16', 25],

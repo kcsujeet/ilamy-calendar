@@ -607,6 +607,41 @@ describe('HorizontalGridRow', () => {
 	})
 })
 
+describe('day-axis row sizing', () => {
+	beforeEach(cleanup)
+	test('reserves a continuing event’s row after earlier rows end', () => {
+		const days = Array.from({ length: 5 }, (_, index) =>
+			dayjs('2025-03-10T00:00:00.000Z').add(index, 'day')
+		)
+		const [monday, tuesday, wednesday, , friday] = days
+		const events: CalendarEvent[] = [
+			{ id: 'a', title: 'a', start: monday, end: wednesday },
+			{ id: 'b', title: 'b', start: monday, end: wednesday },
+			{ id: 'c', title: 'c', start: tuesday, end: friday },
+		]
+		const columns = days.map((day, index) => ({
+			id: String(index),
+			day,
+			gridType: 'day' as const,
+		}))
+		render(
+			<CalendarProvider dayMaxEvents={3} events={events} initialDate={monday}>
+				<HorizontalGridRow
+					columns={columns}
+					id="day-counts"
+					variant="regular"
+				/>
+			</CalendarProvider>
+		)
+		const cell = screen.getByTestId('day-cell-2025-03-12')
+		const content = cell.querySelector('[data-testid="grid-cell-content"]')
+		expect(content?.children).toHaveLength(3)
+		expect(
+			screen.queryByRole('button', { name: /more/i })
+		).not.toBeInTheDocument()
+	})
+})
+
 describe('hourly row sizing and overflow', () => {
 	const hours = Array.from({ length: 6 }, (_, index) =>
 		dayjs('2026-10-28T07:00:00.000Z').add(index, 'hour')

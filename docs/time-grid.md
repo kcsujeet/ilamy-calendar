@@ -194,12 +194,18 @@ are placed by start time, with longer events first at an equal start, so a
 short event can reuse a row underneath a longer one. This follows the
 [exclusive end convention](https://fullcalendar.io/docs/event-parsing).
 
-`useProcessedWeekEvents` supplies the cells with their event lists, required
-row counts and hidden counts from the same placements the bars use. A cell
-reserves space through its highest occupied row; multiple successive events
-in one hour do not add rows or produce a false “more” count. A bar truncated
-to later columns counts as hidden only in the earlier columns it cannot draw.
-The day axis continues to reserve whole days and use its existing overflow rule.
+`layoutHorizontal` returns `positionedEvents` and a `columnLayouts` entry for
+each input column. Each entry contains the full cell event list, `rowCount`
+and `hiddenCount`. All events initially count as hidden; placing a bar subtracts
+it from the hidden count in each column it draws over and reserves space through
+its highest occupied row. This same calculation serves day and hour axes.
+Multiple successive events in one hour do not add rows or produce a false
+“more” count. A bar truncated to later columns counts as hidden only in the
+earlier columns it cannot draw. Day-axis bars still reserve whole days.
+
+`useProcessedWeekEvents` keys these entries for the cells, without scanning the
+placements again. Cells display the supplied counts and use the full event
+list for the overflow dialog; they do not fetch or calculate counts themselves.
 
 The CSS minimum width can still enlarge short hourly bars beyond their reserved
 ranges. Minimum-width-aware packing is a separate follow-up; the shared-packer

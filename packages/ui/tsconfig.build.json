@@ -1,0 +1,10 @@
+{
+	// This package's own build (bunup.config.ts). It keeps @ilamy/utils external,
+	// as the package exports promise, so it drops the source `paths` that
+	// tsconfig.json adds: with them the declaration build would try to inline
+	// ../utils/src, which is outside this program.
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"paths": {}
+	}
+}

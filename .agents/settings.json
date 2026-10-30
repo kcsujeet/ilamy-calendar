@@ -2,8 +2,8 @@
 	"extraKnownMarketplaces": {
 		"kc-claude-kit": {
 			"source": {
-				"source": "github",
-				"repo": "kcsujeet/kc-claude-kit"
+				"source": "git",
+				"url": "https://github.com/kcsujeet/kc-claude-kit.git"
 			}
 		}
 	},

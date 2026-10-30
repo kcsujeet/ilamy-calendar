@@ -37,6 +37,12 @@ const sortSingleUnit = (spanned: SpannedEvent[]): SpannedEvent[] =>
 
 // --- Phase 2: geometry ------------------------------------------------------
 
+/** A half-open interval in columns: whole days or fractional hours. */
+interface Range {
+	start: number
+	end: number
+}
+
 /**
  * Where a bar starts and ends, in columns. A day axis draws whole days, as a
  * month row does. An hour axis draws the event's exact times, as FullCalendar's
@@ -51,7 +57,7 @@ const computeBarEdges = (
 	startCol: number,
 	endCol: number,
 	columnInstants: number[] | null
-): { start: number; end: number } => {
+): Range => {
 	const wholeColumns = { start: startCol, end: endCol + 1 }
 	const startColumnInstant = columnInstants?.at(startCol)
 	const endColumnInstant = columnInstants?.at(endCol)
@@ -72,86 +78,46 @@ const computeBarEdges = (
 	return hasLength ? { start, end } : wholeColumns
 }
 
-// --- Phase 3: place (occupancy grid) ----------------------------------------
+// --- Phase 3: place (shared row ranges) -------------------------------------
 
-type OccupancyGrid = boolean[][]
-
-/** First row where every column from startCol..endCol is free; -1 if none. */
-const findAvailableRow = (
-	grid: OccupancyGrid,
-	startCol: number,
-	endCol: number
-): number => {
-	for (let row = 0; row < grid.length; row++) {
-		let canPlace = true
-		for (let col = startCol; col <= endCol; col++) {
-			if (grid[row][col]) {
-				canPlace = false
-				break
-			}
-		}
-		if (canPlace) return row
-	}
-	return -1
+const overlaps = (a: Range, b: Range): boolean => {
+	const startsBeforeEnd = a.start < b.end
+	const endsAfterStart = b.start < a.end
+	return startsBeforeEnd && endsAfterStart
 }
 
-/** Where a multi-unit bar landed: its row and the column it starts in. */
+/** First row with no overlapping range; -1 if every row is taken. */
+const findFreeRow = (rows: Range[][], edges: Range): number =>
+	rows.findIndex((row) => {
+		const hasOverlap = row.some((taken) => overlaps(taken, edges))
+		return !hasOverlap
+	})
+
+/** The selected row, visible start column and edges used to reserve it. */
 interface MultiUnitSlot {
 	row: number
 	startCol: number
 	isTruncatedStart: boolean
+	edges: Range
 }
 
 /**
- * Row for a multi-unit span: from its own start if a row is free there, else
- * truncated to start on a later day. Null when no start has a free row.
+ * Row for either axis: from its own start if a row is free there, else
+ * truncated to start on a later column. Null when no start has a free row.
  */
 export const findMultiUnitSlot = (
-	grid: OccupancyGrid,
-	span: ColumnSpan
-): MultiUnitSlot | null => {
-	const row = findAvailableRow(grid, span.startCol, span.endCol)
-	if (row !== -1) {
-		return {
-			row,
-			startCol: span.startCol,
-			isTruncatedStart: span.isTruncatedStart,
-		}
-	}
-	for (let tryStart = span.startCol + 1; tryStart <= span.endCol; tryStart++) {
-		const truncatedRow = findAvailableRow(grid, tryStart, span.endCol)
-		if (truncatedRow !== -1) {
-			return { row: truncatedRow, startCol: tryStart, isTruncatedStart: true }
-		}
-	}
-	return null
-}
-
-interface HourRange {
-	start: number
-	end: number
-}
-
-/** Hour rows reserve the same half-open ranges that their bars draw. */
-const findHourSlot = (
-	rows: HourRange[][],
+	rows: Range[][],
 	{ event, span }: SpannedEvent,
-	columnInstants: number[]
+	columnInstants: number[] | null
 ): MultiUnitSlot | null => {
 	for (let startCol = span.startCol; startCol <= span.endCol; startCol++) {
 		const edges = computeBarEdges(event, startCol, span.endCol, columnInstants)
-		const row = rows.findIndex((ranges) =>
-			ranges.every((range) => {
-				const endsBefore = edges.end <= range.start
-				const startsAfter = edges.start >= range.end
-				return endsBefore || startsAfter
-			})
-		)
+		const row = findFreeRow(rows, edges)
 		const hasAvailableRow = row !== -1
 		if (hasAvailableRow) {
 			const startsLater = startCol > span.startCol
 			const isTruncatedStart = span.isTruncatedStart || startsLater
-			return { row, startCol, isTruncatedStart }
+			return { row, startCol, isTruncatedStart, edges }
 		}
 	}
 	return null
@@ -164,6 +130,7 @@ interface PlaceArgs {
 	event: CalendarEvent
 	isTruncatedStart: boolean
 	isTruncatedEnd: boolean
+	edges: Range
 }
 
 export const layoutHorizontal = ({
@@ -202,12 +169,7 @@ export const layoutHorizontal = ({
 		: spannedEvents.filter(({ span }) => !span.spansMultipleUnits)
 	const sortedSingleUnit = sortSingleUnit(singleDayEvents)
 
-	const dayRowCount = isHourAxis ? 0 : dayMaxEvents
-	const grid: OccupancyGrid = Array.from({ length: dayRowCount }, () =>
-		Array.from({ length: unitCount }, () => false)
-	)
-	const hourRowCount = isHourAxis ? dayMaxEvents : 0
-	const hourRows: HourRange[][] = Array.from({ length: hourRowCount }, () => [])
+	const rows: Range[][] = Array.from({ length: dayMaxEvents }, () => [])
 	const placedEvents: HorizontalPositionedEvent[] = []
 
 	const place = ({
@@ -217,23 +179,19 @@ export const layoutHorizontal = ({
 		event,
 		isTruncatedStart,
 		isTruncatedEnd,
+		edges,
 	}: PlaceArgs) => {
-		const edges = computeBarEdges(event, startCol, endCol, columnInstants)
-		if (isHourAxis) {
-			hourRows[row].push(edges)
-		} else {
-			for (let col = startCol; col <= endCol; col++) {
-				grid[row][col] = true
-			}
-		}
+		rows.at(row)?.push(edges)
 		const spanUnits = edges.end - edges.start
+		const left = (edges.start / unitCount) * 100
+		const width = (spanUnits / unitCount) * 100
 		placedEvents.push({
 			kind: 'horizontal',
 			event,
 			startCol,
 			endCol,
-			left: (edges.start / unitCount) * 100,
-			width: (spanUnits / unitCount) * 100,
+			left,
+			width,
 			row,
 			isTruncatedStart,
 			isTruncatedEnd,
@@ -242,9 +200,8 @@ export const layoutHorizontal = ({
 
 	// Day-spanning events claim rows first; hour events all compete by start time.
 	for (const { event, span } of sortedPrimaryEvents) {
-		const slot = columnInstants
-			? findHourSlot(hourRows, { event, span }, columnInstants)
-			: findMultiUnitSlot(grid, span)
+		const spanned = { event, span }
+		const slot = findMultiUnitSlot(rows, spanned, columnInstants)
 		if (!slot) continue
 		place({
 			row: slot.row,
@@ -253,6 +210,7 @@ export const layoutHorizontal = ({
 			event,
 			isTruncatedStart: slot.isTruncatedStart,
 			isTruncatedEnd: span.isTruncatedEnd,
+			edges: slot.edges,
 		})
 	}
 
@@ -260,8 +218,10 @@ export const layoutHorizontal = ({
 	// the grid, so startCol needs no re-clamping here.
 	for (const { event, span } of sortedSingleUnit) {
 		const col = span.startCol
-		const row = findAvailableRow(grid, col, col)
-		if (row !== -1) {
+		const edges = computeBarEdges(event, col, col, columnInstants)
+		const row = findFreeRow(rows, edges)
+		const hasAvailableRow = row !== -1
+		if (hasAvailableRow) {
 			place({
 				row,
 				startCol: col,
@@ -269,6 +229,7 @@ export const layoutHorizontal = ({
 				event,
 				isTruncatedStart: false,
 				isTruncatedEnd: false,
+				edges,
 			})
 		}
 	}

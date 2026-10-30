@@ -1,9 +1,77 @@
 import { expect, type Page, test } from '@playwright/test'
-import { gotoScenario, releasePointer } from './support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	settleAnimations,
+} from './support/harness'
 import { CalendarPage, TimeGrid } from './support/pages'
 
 const lane = (resourceId: string, startISO: string) =>
 	`[data-resource-id="${resourceId}"][data-start="${startISO}"]`
+
+test.describe('horizontal row packing', () => {
+	for (const [view, granularity, secondStart, expectedOffset] of [
+		['day', 'hourly', '09:17', 0],
+		['day', 'hourly', '09:16', 25],
+		['week', 'hourly', '09:17', 0],
+		['week', 'daily', '09:17', 25],
+		['month', 'daily', '09:17', 25],
+	] as const) {
+		test(`${view} ${granularity}: 09:17/${secondStart} keeps the existing rows`, async ({
+			page,
+		}) => {
+			const firstEnd = '2025-03-12T09:17:00.000Z'
+			const secondStartISO = `2025-03-12T${secondStart}:00.000Z`
+			const events = [
+				{
+					id: 'packing-a',
+					title: 'Packing A',
+					start: '2025-03-12T07:00:00.000Z',
+					end: firstEnd,
+					resourceId: 'r1',
+				},
+				{
+					id: 'packing-b',
+					title: 'Packing B',
+					start: secondStartISO,
+					end: '2025-03-12T11:00:00.000Z',
+					resourceId: 'r1',
+				},
+			]
+			const seed = JSON.stringify(events)
+			const settings = {
+				seed,
+				granularity,
+				dayMaxEvents: 2,
+				eventHeight: 24,
+				eventSpacing: 1,
+			}
+			await gotoScenario(page, {
+				scenario: 'seed-resources',
+				view,
+				orientation: 'horizontal',
+				settings,
+			})
+			await settleAnimations(page)
+
+			const first = page.getByTestId('horizontal-event-packing-a')
+			const second = page.getByTestId('horizontal-event-packing-b')
+			const firstBox = await first.boundingBox()
+			const secondBox = await second.boundingBox()
+			if (!(firstBox && secondBox)) {
+				throw new Error('Both events must have a rendered bar')
+			}
+			const offset = secondBox.y - firstBox.y
+			expect(offset).toBeCloseTo(expectedOffset, 5)
+
+			const calendar = new CalendarPage(page)
+			const firstEvent = await calendar.eventNamed('Packing A')
+			const secondEvent = await calendar.eventNamed('Packing B')
+			expect(firstEvent.end).toBe(firstEnd)
+			expect(secondEvent.start).toBe(secondStartISO)
+		})
+	}
+})
 
 /**
  * The bar drawn on top a few pixels inside a bar's left edge, as a pointer

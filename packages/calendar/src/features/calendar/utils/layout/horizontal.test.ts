@@ -375,6 +375,49 @@ describe('layoutHorizontal', () => {
 	})
 
 	describe('Complex Scenarios - Gap Filling', () => {
+		it('reuses a row when one day span ends exactly where the next begins', () => {
+			const first = mkEvent(
+				'first',
+				'2025-01-13T00:00:00.000Z',
+				'2025-01-15T00:00:00.000Z'
+			)
+			const second = mkEvent(
+				'second',
+				'2025-01-15T00:00:00.000Z',
+				'2025-01-17T00:00:00.000Z'
+			)
+			const result = run([second, first], { dayMaxEvents: 1 })
+			const placements = result.map(({ event, row, startCol, endCol }) => ({
+				id: event.id,
+				row,
+				startCol,
+				endCol,
+			}))
+
+			expect(placements).toEqual([
+				{ id: 'first', row: 0, startCol: 1, endCol: 2 },
+				{ id: 'second', row: 0, startCol: 3, endCol: 4 },
+			])
+		})
+
+		it('gives a later day-spanning event priority over an earlier single-day event', () => {
+			const single = mkEvent(
+				'single',
+				'2025-01-13T08:00:00.000Z',
+				'2025-01-13T09:00:00.000Z'
+			)
+			const spanning = mkEvent(
+				'spanning',
+				'2025-01-13T12:00:00.000Z',
+				'2025-01-15T00:00:00.000Z'
+			)
+			const result = run([single, spanning], { dayMaxEvents: 1 })
+
+			expect(result.map(({ event, row }) => [event.id, row])).toEqual([
+				['spanning', 0],
+			])
+		})
+
 		it('fills gaps with single-day events', () => {
 			const result = run([
 				multiDayEvent,
@@ -723,6 +766,11 @@ describe('layoutHorizontal on a day the clocks change', () => {
 })
 
 describe('findMultiUnitSlot', () => {
+	const event = mkEvent(
+		'spanning',
+		'2025-01-13T00:00:00.000Z',
+		'2025-01-16T00:00:00.000Z'
+	)
 	const span = {
 		startCol: 1,
 		endCol: 3,
@@ -730,42 +778,83 @@ describe('findMultiUnitSlot', () => {
 		isTruncatedEnd: false,
 		spansMultipleUnits: true,
 	}
-	// A grid of `rows` rows by 5 columns with the given [row, col] cells taken.
-	const gridWith = (rows: number, taken: [number, number][]) => {
-		const grid = Array.from({ length: rows }, () =>
-			Array.from({ length: 5 }, () => false)
+	// The same occupied day columns, expressed as half-open ranges.
+	const rowsWith = (count: number, taken: [number, number][]) => {
+		const rows: Parameters<typeof findMultiUnitSlot>[0] = Array.from(
+			{ length: count },
+			() => []
 		)
 		for (const [row, col] of taken) {
-			grid[row][col] = true
+			const range = { start: col, end: col + 1 }
+			rows.at(row)?.push(range)
 		}
-		return grid
+		return rows
 	}
 
 	it('keeps the span start when a row is free there', () => {
-		expect(findMultiUnitSlot(gridWith(2, [[0, 2]]), span)).toEqual({
+		const rows = rowsWith(2, [[0, 2]])
+		const spanned = { event, span }
+		const slot = findMultiUnitSlot(rows, spanned, null)
+		expect(slot).toEqual({
 			row: 1,
 			startCol: 1,
 			isTruncatedStart: false,
+			edges: { start: 1, end: 4 },
 		})
 	})
 
 	it('keeps the span own truncated-start flag on its first try', () => {
 		const clipped = { ...span, isTruncatedStart: true }
-		expect(findMultiUnitSlot(gridWith(1, []), clipped)?.isTruncatedStart).toBe(
-			true
-		)
+		const rows = rowsWith(1, [])
+		const spanned = { event, span: clipped }
+		const slot = findMultiUnitSlot(rows, spanned, null)
+		expect(slot).toEqual({
+			row: 0,
+			startCol: 1,
+			isTruncatedStart: true,
+			edges: { start: 1, end: 4 },
+		})
 	})
 
 	it('truncates to a later start when every row is taken at the start', () => {
-		expect(findMultiUnitSlot(gridWith(1, [[0, 1]]), span)).toEqual({
+		const rows = rowsWith(1, [[0, 1]])
+		const spanned = { event, span }
+		const slot = findMultiUnitSlot(rows, spanned, null)
+		expect(slot).toEqual({
 			row: 0,
 			startCol: 2,
 			isTruncatedStart: true,
+			edges: { start: 2, end: 4 },
 		})
 	})
 
 	it('returns null when even the last column is taken in every row', () => {
-		expect(findMultiUnitSlot(gridWith(1, [[0, 3]]), span)).toBeNull()
+		const rows = rowsWith(1, [[0, 3]])
+		const spanned = { event, span }
+		const slot = findMultiUnitSlot(rows, spanned, null)
+		expect(slot).toBeNull()
+	})
+
+	it('uses the same slot search for touching fractional hour ranges', () => {
+		const hours = Array.from({ length: 4 }, (_, index) =>
+			dayjs('2025-01-13T07:00:00.000Z').add(index, 'hour').valueOf()
+		)
+		const event = mkEvent(
+			'handoff',
+			'2025-01-13T09:17:00.000Z',
+			'2025-01-13T11:00:00.000Z'
+		)
+		const handoff = 2 + 17 / 60
+		const rows = [[{ start: 0, end: handoff }]]
+		const hourSpan = { ...span, startCol: 2 }
+		const spanned = { event, span: hourSpan }
+		const slot = findMultiUnitSlot(rows, spanned, hours)
+		expect(slot).toEqual({
+			row: 0,
+			startCol: 2,
+			isTruncatedStart: false,
+			edges: { start: handoff, end: 4 },
+		})
 	})
 })
 

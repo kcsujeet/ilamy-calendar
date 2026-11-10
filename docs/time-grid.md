@@ -185,8 +185,9 @@ whole-column ranges for day grids and fractional-column ranges for hour grids.
 The same overlap check finds the first free row for either, and the selected
 edges are used both to reserve that row and to emit the bar's placement.
 When a full span cannot fit, the slot search still tries later start columns
-to preserve its visible suffix. Day-spanning events retain priority over
-single-day entries; hourly events retain chronological placement.
+to preserve its visible suffix. Every event goes through one placement loop in
+one order: by start, then longer first. On a day axis, day-spanning events go
+before every single-day one.
 
 Hour-axis bars reserve their displayed half-open intervals when sharing rows:
 a 07:00–09:17 event and a 09:17–11:00 event can occupy the same row. Hourly events
@@ -196,15 +197,19 @@ short event can reuse a row underneath a longer one. This follows the
 
 `layoutHorizontal` returns `positionedEvents` and a `columnLayouts` entry for
 each input column. Each entry contains the full cell event list, `rowCount`
-and `hiddenCount`. All events initially count as hidden; placing a bar subtracts
-it from the hidden count in each column it draws over and reserves space through
-its highest occupied row. This same calculation serves day and hour axes.
+and `hiddenCount`. All three come from the span the bar is placed with: a cell
+lists the events whose span covers its column, and an event counts as hidden in
+each of those columns where it has no bar. A placed bar reserves space through
+its highest occupied row. This same calculation serves day and hour axes. On
+the day the clocks spring forward two hour columns share an instant; the span
+names the one that draws the bar, so only that cell lists and counts the event.
 Successive events whose displayed ranges do not overlap reuse a row without
 producing a false “more” count. A bar truncated to later columns counts as
 hidden only in the earlier columns it cannot draw. Day-axis bars still reserve
 whole days.
 
-`useProcessedWeekEvents` keys these entries for the cells, without scanning the
+`useProcessedWeekEvents` keys these entries by column for the cells (by the
+column's `Dayjs` instance, since two columns can share an instant), without scanning the
 placements again. Cells display the supplied counts and use the full event
 list for the overflow dialog; they do not fetch or calculate counts themselves.
 

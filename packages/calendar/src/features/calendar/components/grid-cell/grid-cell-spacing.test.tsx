@@ -29,7 +29,7 @@ type RenderGridCellOptions = {
 
 const EventCell = () => {
 	const { columnLayouts } = useProcessedWeekEvents({ days: [initialDate] })
-	const layout = columnLayouts.values().next().value
+	const layout = columnLayouts.get(initialDate)
 	return (
 		<GridCell day={initialDate} precomputedLayout={layout} shouldRenderEvents />
 	)

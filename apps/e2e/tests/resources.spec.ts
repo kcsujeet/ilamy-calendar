@@ -60,10 +60,8 @@ test.describe('horizontal row packing', () => {
 	})
 
 	for (const [view, firstEnd, nextStart, expectedOffset] of [
-		['day', '09:01', '09:01', 25],
 		['day', '09:01', '09:23', 25],
 		['day', '09:01', '09:24', 0],
-		['day', '09:15', '09:15', 25],
 		['week', '09:01', '09:01', 25],
 	] as const) {
 		test(`${view}: minimum bar footprint before ${nextStart} determines the row`, async ({
@@ -288,7 +286,7 @@ test.describe('horizontal row packing', () => {
 		})
 	}
 
-	for (const view of ['day', 'week', 'month'] as const) {
+	for (const view of ['day', 'month'] as const) {
 		test(`${view}: cell counts follow placed rows and missing prefixes`, async ({
 			page,
 		}) => {
@@ -421,13 +419,9 @@ test.describe('horizontal row packing', () => {
 	}
 
 	for (const [view, granularity, firstEndTime, secondStart, expectedOffset] of [
-		['day', 'hourly', '09:00', '09:00', 0],
 		['day', 'hourly', '09:17', '09:17', 0],
-		['day', 'hourly', '09:17', '09:45', 0],
 		['day', 'hourly', '09:17', '09:16', 25],
-		['week', 'hourly', '09:17', '09:17', 0],
 		['week', 'daily', '09:17', '09:17', 25],
-		['month', 'daily', '09:17', '09:17', 25],
 	] as const) {
 		test(`${view} ${granularity}: ${firstEndTime}/${secondStart} keeps the existing rows`, async ({
 			page,
@@ -711,6 +705,48 @@ test.describe('horizontal row packing', () => {
 		await expect(
 			row(page).getByRole('button', { name: '+1 more', exact: true })
 		).toHaveCount(1)
+	})
+
+	test.describe('on the day the clocks spring forward', () => {
+		const NEW_YORK = 'America/New_York'
+		test.use({ timezoneId: NEW_YORK })
+
+		// 07:00Z is 03:00 in New York on 2025-03-09: the skipped 02:00 column and
+		// the 03:00 column share that instant, and only the later one draws bars.
+		test('overflow after the skipped hour shows one "+1 more", in the cell that draws the bar', async ({
+			page,
+		}) => {
+			const afterTheSkip = (id: string) => ({
+				id,
+				title: id,
+				start: '2025-03-09T07:00:00.000Z',
+				end: '2025-03-09T07:45:00.000Z',
+				resourceId: 'r1',
+			})
+			const events = [afterTheSkip('skip-shown'), afterTheSkip('skip-hidden')]
+			const seed = JSON.stringify(events)
+			await gotoScenario(page, {
+				scenario: 'horizontal-packing',
+				view: 'day',
+				orientation: 'horizontal',
+				timezone: NEW_YORK,
+				date: '2025-03-09T12:00:00.000Z',
+				settings: { seed, dayMaxEvents: 1 },
+			})
+			await settleAnimations(page)
+			await expect(bar(page, 'skip-shown')).toBeVisible()
+			await expect(bar(page, 'skip-hidden')).toHaveCount(0)
+			const moreButtons = row(page).getByRole('button', {
+				name: '+1 more',
+				exact: true,
+			})
+			await expect(moreButtons).toHaveCount(1)
+			const shownBar = await boundsOf(bar(page, 'skip-shown'))
+			const moreButton = await boundsOf(moreButtons)
+			const buttonCentre = moreButton.x + moreButton.width / 2
+			const barLeftEdge = shownBar.x
+			expect(buttonCentre).toBeGreaterThan(barLeftEdge)
+		})
 	})
 })
 

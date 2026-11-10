@@ -119,8 +119,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 						}
 
 						if (!col.day) return null
-						const layoutKey = keys.col.events(col.day)
-						const cellLayout = columnLayouts.get(layoutKey)
+						const cellLayout = columnLayouts.get(col.day)
 						return (
 							<GridCell
 								allDay={allDay}
@@ -196,8 +195,7 @@ const GroupedColumn = memo(
 				{/* gap-px + bg-border draws the day separators within the group. */}
 				<div className="flex w-full gap-px bg-border">
 					{days.map((day, dayIndex) => {
-						const layoutKey = keys.col.events(day)
-						const cellLayout = columnLayouts.get(layoutKey)
+						const cellLayout = columnLayouts.get(day)
 						return (
 							<GridCell
 								allDay={allDay}

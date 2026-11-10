@@ -1,10 +1,5 @@
 import type { CalendarEvent } from '@ilamy/types'
 import type { Dayjs } from '@ilamy/utils/dayjs'
-import {
-	bucketEventsByColumn,
-	getColumnBounds,
-	getDefaultZone,
-} from '../event-buckets'
 import { createDayColumnSpanner } from './day-columns'
 import type {
 	ColumnSpan,
@@ -33,9 +28,22 @@ interface SpannedEvent {
 	span: ColumnSpan
 }
 
-/** By start, then longer events first. */
-const sortByStartAndDuration = (spanned: SpannedEvent[]): SpannedEvent[] =>
+/**
+ * The order events claim rows in: by start, then longer first. On a day axis
+ * a day-spanning event goes before every single-day one, so a long bar keeps
+ * one row across the days it covers.
+ */
+const sortForPlacement = (
+	spanned: SpannedEvent[],
+	isHourAxis: boolean
+): SpannedEvent[] =>
 	spanned.toSorted((a, b) => {
+		const aSpanningRank = isHourAxis || a.span.spansMultipleUnits ? 0 : 1
+		const bSpanningRank = isHourAxis || b.span.spansMultipleUnits ? 0 : 1
+		const spanningDiff = aSpanningRank - bSpanningRank
+		if (spanningDiff !== 0) {
+			return spanningDiff
+		}
 		const startDiff = a.event.start.valueOf() - b.event.start.valueOf()
 		if (startDiff !== 0) {
 			return startDiff
@@ -45,18 +53,22 @@ const sortByStartAndDuration = (spanned: SpannedEvent[]): SpannedEvent[] =>
 		return bLength - aLength
 	})
 
-/** Single-unit: by start time. */
-const sortSingleUnit = (spanned: SpannedEvent[]): SpannedEvent[] =>
-	spanned.toSorted((a, b) => a.event.start.valueOf() - b.event.start.valueOf())
-
 // --- Phase 2: geometry ------------------------------------------------------
 
 /** A half-open interval in columns: whole days or fractional hours. */
-interface Range {
+interface ColumnRange {
 	start: number
 	end: number
 }
 
+/**
+ * The shortest bar an hour axis draws, as a share of one column: 24 minutes.
+ * A share, not pixels, so it grows and shrinks with the column and the row a
+ * bar is packed into is the row it is drawn in at any column width. 0.4 of
+ * the narrowest hour column (`w-20`, 80px) is the 32px the CSS minimum it
+ * replaces used to give; FullCalendar's timeline has the same idea in pixels
+ * (`eventMinWidth`).
+ */
 const MINIMUM_BAR_COLUMNS = 0.4
 
 /**
@@ -74,7 +86,7 @@ const computeBarEdges = (
 	startCol: number,
 	endCol: number,
 	columnInstants: number[] | null
-): Range => {
+): ColumnRange => {
 	const wholeColumns = { start: startCol, end: endCol + 1 }
 	if (!columnInstants) return wholeColumns
 	const startColumnInstant = columnInstants.at(startCol)
@@ -104,36 +116,36 @@ const computeBarEdges = (
 
 // --- Phase 3: place (shared row ranges) -------------------------------------
 
-const overlaps = (a: Range, b: Range): boolean => {
+const overlaps = (a: ColumnRange, b: ColumnRange): boolean => {
 	const startsBeforeEnd = a.start < b.end
 	const endsAfterStart = b.start < a.end
 	return startsBeforeEnd && endsAfterStart
 }
 
 /** First row with no overlapping range; -1 if every row is taken. */
-const findFreeRow = (rows: Range[][], edges: Range): number =>
+const findFreeRow = (rows: ColumnRange[][], edges: ColumnRange): number =>
 	rows.findIndex((row) => {
 		const hasOverlap = row.some((taken) => overlaps(taken, edges))
 		return !hasOverlap
 	})
 
 /** The selected row, visible start column and edges used to reserve it. */
-interface MultiUnitSlot {
+interface RowSlot {
 	row: number
 	startCol: number
 	isTruncatedStart: boolean
-	edges: Range
+	edges: ColumnRange
 }
 
 /**
- * Row for either axis: from its own start if a row is free there, else
- * truncated to start on a later column. Null when no start has a free row.
+ * Row for an event on either axis: from its own start if a row is free there,
+ * else truncated to start on a later column. Null when no start has a free row.
  */
-export const findMultiUnitSlot = (
-	rows: Range[][],
+export const findRowSlot = (
+	rows: ColumnRange[][],
 	{ event, span }: SpannedEvent,
 	columnInstants: number[] | null
-): MultiUnitSlot | null => {
+): RowSlot | null => {
 	for (let startCol = span.startCol; startCol <= span.endCol; startCol++) {
 		const edges = computeBarEdges(event, startCol, span.endCol, columnInstants)
 		const row = findFreeRow(rows, edges)
@@ -147,14 +159,58 @@ export const findMultiUnitSlot = (
 	return null
 }
 
-interface PlaceArgs {
+// --- Phase 4: what each cell shows -------------------------------------------
+
+/**
+ * One layout per column, each listing the events whose span covers it: the
+ * same span the bar is placed with, so a cell and the bars over it cannot
+ * disagree.
+ */
+const listEventsPerColumn = (
+	columnCount: number,
+	spannedEvents: SpannedEvent[]
+): HorizontalCellLayout[] => {
+	const columnLayouts = Array.from(
+		{ length: columnCount },
+		(): HorizontalCellLayout => ({ events: [], rowCount: 0, hiddenCount: 0 })
+	)
+	for (const { event, span } of spannedEvents) {
+		for (let col = span.startCol; col <= span.endCol; col++) {
+			columnLayouts.at(col)?.events.push(event)
+		}
+	}
+	return columnLayouts
+}
+
+/** Counts an event as hidden in each column from `fromCol` up to, not including, `beforeCol`. */
+const countHiddenIn = (
+	columnLayouts: HorizontalCellLayout[],
+	fromCol: number,
+	beforeCol: number
+) => {
+	for (let col = fromCol; col < beforeCol; col++) {
+		const cell = columnLayouts.at(col)
+		if (cell) cell.hiddenCount += 1
+	}
+}
+
+/**
+ * Reserves a bar's row in every column it is drawn over. A bar widened to the
+ * minimum can reach into the next column, which then needs the row's height
+ * though the event is not in its cell.
+ */
+const reserveRowUnder = (
+	columnLayouts: HorizontalCellLayout[],
+	edges: ColumnRange,
 	row: number
-	startCol: number
-	endCol: number
-	event: CalendarEvent
-	isTruncatedStart: boolean
-	isTruncatedEnd: boolean
-	edges: Range
+) => {
+	const requiredRows = row + 1
+	const firstCoveredCol = Math.floor(edges.start)
+	const lastCoveredCol = Math.ceil(edges.end) - 1
+	for (let col = firstCoveredCol; col <= lastCoveredCol; col++) {
+		const cell = columnLayouts.at(col)
+		if (cell) cell.rowCount = Math.max(cell.rowCount, requiredRows)
+	}
 }
 
 export const layoutHorizontal = ({
@@ -163,19 +219,6 @@ export const layoutHorizontal = ({
 	dayMaxEvents,
 	gridType = 'day',
 }: HorizontalLayoutInput): HorizontalLayoutResult => {
-	if (days.length === 0) return { positionedEvents: [], columnLayouts: [] }
-
-	const defaultZone = getDefaultZone()
-	const hasNoEvents = events.length === 0
-	const columnBounds = hasNoEvents
-		? []
-		: days.map((day) => getColumnBounds(day, gridType, defaultZone))
-	const eventsPerColumn = bucketEventsByColumn(columnBounds, events)
-	const columnLayouts = days.map((_, index): HorizontalCellLayout => {
-		const cellEvents = eventsPerColumn.at(index) ?? []
-		return { events: cellEvents, rowCount: 0, hiddenCount: cellEvents.length }
-	})
-
 	const unitCount = days.length
 	// Both axes read their columns off `days` rather than counting from the
 	// first one: a hidden day or a visible-hours window leaves gaps, and counting
@@ -186,102 +229,43 @@ export const layoutHorizontal = ({
 		: createDayColumnSpanner(days)
 	const columnInstants = isHourAxis ? days.map((day) => day.valueOf()) : null
 
-	// An event with no column draws nothing, in either group.
+	// An event with no column draws nothing and is in no cell.
 	const spannedEvents = events.flatMap((event) => {
 		const span = spanOf(event)
 		return span ? [{ event, span }] : []
 	})
-	// Spanning is a question about BOUNDARIES, not duration: anything shorter than
-	// a whole unit used to take the single-column path, so an 18:00-to-06:00 event
-	// vanished from its second day. `spansMultipleUnits` compares the start's unit
-	// with the last unit the event OCCUPIES (its exclusive end, stepped back).
-	const primaryEvents = isHourAxis
-		? spannedEvents
-		: spannedEvents.filter(({ span }) => span.spansMultipleUnits)
-	const sortedPrimaryEvents = sortByStartAndDuration(primaryEvents)
-	const singleDayEvents = isHourAxis
-		? []
-		: spannedEvents.filter(({ span }) => !span.spansMultipleUnits)
-	const sortedSingleUnit = sortSingleUnit(singleDayEvents)
 
-	const rows: Range[][] = Array.from({ length: dayMaxEvents }, () => [])
-	const placedEvents: HorizontalPositionedEvent[] = []
+	const columnLayouts = listEventsPerColumn(unitCount, spannedEvents)
+	const rows: ColumnRange[][] = Array.from({ length: dayMaxEvents }, () => [])
+	const positionedEvents: HorizontalPositionedEvent[] = []
 
-	const place = ({
-		row,
-		startCol,
-		endCol,
-		event,
-		isTruncatedStart,
-		isTruncatedEnd,
-		edges,
-	}: PlaceArgs) => {
+	for (const spanned of sortForPlacement(spannedEvents, isHourAxis)) {
+		const { event, span } = spanned
+		const slot = findRowSlot(rows, spanned, columnInstants)
+
+		// Hidden wherever the event has no bar: every column when no row is
+		// free, else the columns before a bar that starts late.
+		const firstDrawnCol = slot ? slot.startCol : span.endCol + 1
+		countHiddenIn(columnLayouts, span.startCol, firstDrawnCol)
+		if (!slot) continue
+
+		const { row, edges } = slot
 		rows.at(row)?.push(edges)
-		const requiredRows = row + 1
-		const displayedStartCol = Math.floor(edges.start)
-		const displayedEndCol = Math.ceil(edges.end) - 1
-		for (let col = displayedStartCol; col <= displayedEndCol; col++) {
-			const cell = columnLayouts.at(col)
-			if (!cell) continue
-			cell.rowCount = Math.max(cell.rowCount, requiredRows)
-		}
-		// Displayed extensions reserve height but do not add scheduled events to
-		// another column's overflow list or reduce its hidden count.
-		for (let col = startCol; col <= endCol; col++) {
-			const cell = columnLayouts.at(col)
-			if (!cell) continue
-			const remainingHiddenCount = cell.hiddenCount - 1
-			cell.hiddenCount = Math.max(0, remainingHiddenCount)
-		}
+		reserveRowUnder(columnLayouts, edges, row)
+
 		const spanUnits = edges.end - edges.start
 		const left = (edges.start / unitCount) * 100
 		const width = (spanUnits / unitCount) * 100
-		placedEvents.push({
+		positionedEvents.push({
 			kind: 'horizontal',
 			event,
 			left,
 			width,
 			row,
-			isTruncatedStart,
-			isTruncatedEnd,
-		})
-	}
-
-	// Day-spanning events claim rows first; hour events all compete by start time.
-	for (const { event, span } of sortedPrimaryEvents) {
-		const spanned = { event, span }
-		const slot = findMultiUnitSlot(rows, spanned, columnInstants)
-		if (!slot) continue
-		place({
-			row: slot.row,
-			startCol: slot.startCol,
-			endCol: span.endCol,
-			event,
 			isTruncatedStart: slot.isTruncatedStart,
 			isTruncatedEnd: span.isTruncatedEnd,
-			edges: slot.edges,
 		})
 	}
 
-	// Single-unit events fill the remaining gaps. The span is already clamped to
-	// the grid, so startCol needs no re-clamping here.
-	for (const { event, span } of sortedSingleUnit) {
-		const col = span.startCol
-		const edges = computeBarEdges(event, col, col, columnInstants)
-		const row = findFreeRow(rows, edges)
-		const hasAvailableRow = row !== -1
-		if (hasAvailableRow) {
-			place({
-				row,
-				startCol: col,
-				endCol: col,
-				event,
-				isTruncatedStart: false,
-				isTruncatedEnd: false,
-				edges,
-			})
-		}
-	}
-
-	return { positionedEvents: placedEvents, columnLayouts }
+	return { positionedEvents, columnLayouts }
 }

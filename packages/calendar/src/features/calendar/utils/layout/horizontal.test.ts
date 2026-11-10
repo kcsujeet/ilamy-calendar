@@ -3,7 +3,7 @@ import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
 import { getViewHours } from '@/features/calendar/utils/view-hours'
 import { getMonthWeeks } from '@/utils/date-utils'
-import { findMultiUnitSlot, layoutHorizontal } from './horizontal'
+import { findRowSlot, layoutHorizontal } from './horizontal'
 
 const days = Array.from({ length: 7 }, (_, i) =>
 	dayjs('2025-01-12T00:00:00.000Z').add(i, 'day')
@@ -644,6 +644,22 @@ describe('layoutHorizontal', () => {
 			expect(result.map((p) => p.row)).toEqual([0, 0])
 		})
 
+		it('puts the longer of two single-day events with one start on the upper row', () => {
+			const result = run([
+				mkEvent(
+					'short',
+					'2025-01-13T10:00:00.000Z',
+					'2025-01-13T10:30:00.000Z'
+				),
+				mkEvent('long', '2025-01-13T10:00:00.000Z', '2025-01-13T12:00:00.000Z'),
+			])
+
+			expect(result.map((p) => [p.event.id, p.row])).toEqual([
+				['long', 0],
+				['short', 1],
+			])
+		})
+
 		it('places non-overlapping events in same row', () => {
 			const result = run([
 				multiDayEvent,
@@ -976,9 +992,39 @@ describe('layoutHorizontal on a day the clocks change', () => {
 		expect(start).toBeCloseTo(9, 6)
 		expect(length).toBeCloseTo(1, 6)
 	})
+
+	// The skipped 02:00 column and the 03:00 column share an instant; the bar
+	// is drawn in the later one, so only that cell lists and counts the event.
+	it('counts an event only in the column that draws its bar on the spring change day', () => {
+		const hours = getViewHours({ referenceDate: dayjs('2025-03-09') })
+		const event = mkEvent(
+			'after-the-skip',
+			'2025-03-09T07:00:00.000Z',
+			'2025-03-09T07:45:00.000Z'
+		)
+		const { columnLayouts } = layoutHorizontal({
+			days: hours,
+			events: [event],
+			dayMaxEvents: 3,
+			gridType: 'hour',
+		})
+		const countsPerColumn = columnLayouts
+			.slice(1, 5)
+			.map(({ events, rowCount, hiddenCount }) => [
+				events.length,
+				rowCount,
+				hiddenCount,
+			])
+		expect(countsPerColumn).toEqual([
+			[0, 0, 0],
+			[0, 0, 0],
+			[1, 1, 0],
+			[0, 0, 0],
+		])
+	})
 })
 
-describe('findMultiUnitSlot', () => {
+describe('findRowSlot', () => {
 	const event = mkEvent(
 		'spanning',
 		'2025-01-13T00:00:00.000Z',
@@ -993,7 +1039,7 @@ describe('findMultiUnitSlot', () => {
 	}
 	// The same occupied day columns, expressed as half-open ranges.
 	const rowsWith = (count: number, taken: [number, number][]) => {
-		const rows: Parameters<typeof findMultiUnitSlot>[0] = Array.from(
+		const rows: Parameters<typeof findRowSlot>[0] = Array.from(
 			{ length: count },
 			() => []
 		)
@@ -1007,7 +1053,7 @@ describe('findMultiUnitSlot', () => {
 	it('keeps the span start when a row is free there', () => {
 		const rows = rowsWith(2, [[0, 2]])
 		const spanned = { event, span }
-		const slot = findMultiUnitSlot(rows, spanned, null)
+		const slot = findRowSlot(rows, spanned, null)
 		expect(slot).toEqual({
 			row: 1,
 			startCol: 1,
@@ -1020,7 +1066,7 @@ describe('findMultiUnitSlot', () => {
 		const clipped = { ...span, isTruncatedStart: true }
 		const rows = rowsWith(1, [])
 		const spanned = { event, span: clipped }
-		const slot = findMultiUnitSlot(rows, spanned, null)
+		const slot = findRowSlot(rows, spanned, null)
 		expect(slot).toEqual({
 			row: 0,
 			startCol: 1,
@@ -1032,7 +1078,7 @@ describe('findMultiUnitSlot', () => {
 	it('truncates to a later start when every row is taken at the start', () => {
 		const rows = rowsWith(1, [[0, 1]])
 		const spanned = { event, span }
-		const slot = findMultiUnitSlot(rows, spanned, null)
+		const slot = findRowSlot(rows, spanned, null)
 		expect(slot).toEqual({
 			row: 0,
 			startCol: 2,
@@ -1044,7 +1090,7 @@ describe('findMultiUnitSlot', () => {
 	it('returns null when even the last column is taken in every row', () => {
 		const rows = rowsWith(1, [[0, 3]])
 		const spanned = { event, span }
-		const slot = findMultiUnitSlot(rows, spanned, null)
+		const slot = findRowSlot(rows, spanned, null)
 		expect(slot).toBeNull()
 	})
 
@@ -1061,7 +1107,7 @@ describe('findMultiUnitSlot', () => {
 		const rows = [[{ start: 0, end: handoff }]]
 		const hourSpan = { ...span, startCol: 2 }
 		const spanned = { event, span: hourSpan }
-		const slot = findMultiUnitSlot(rows, spanned, hours)
+		const slot = findRowSlot(rows, spanned, hours)
 		expect(slot).toEqual({
 			row: 0,
 			startCol: 2,

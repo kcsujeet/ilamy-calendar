@@ -75,7 +75,7 @@ interface GridCellBodyProps
 			GridProps,
 			'day' | 'precomputedLayout' | 'weekNumber' | 'children'
 		>,
-		Required<Pick<GridProps, 'shouldRenderEvents' | 'showDayNumber'>> {
+		Required<Pick<GridProps, 'showDayNumber'>> {
 	allEventsDialogRef: React.RefObject<AllEventDialogHandle | null>
 }
 
@@ -85,18 +85,16 @@ const GridCellBody: React.FC<GridCellBodyProps> = ({
 	precomputedLayout,
 	showDayNumber,
 	weekNumber,
-	shouldRenderEvents,
 	allEventsDialogRef,
 	children,
 }) => {
-	const showsEvents = shouldRenderEvents && precomputedLayout !== undefined
 	return (
 		<GridCellContent
 			day={day}
 			showDayNumber={showDayNumber}
 			weekNumber={weekNumber}
 		>
-			{showsEvents && (
+			{precomputedLayout && (
 				<GridCellEvents
 					allEventsDialogRef={allEventsDialogRef}
 					day={day}
@@ -181,7 +179,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 			allEventsDialogRef={allEventsDialogRef}
 			day={day}
 			precomputedLayout={precomputedLayout}
-			shouldRenderEvents={shouldRenderEvents}
 			showDayNumber={showDayNumber}
 			weekNumber={weekNumber}
 		>

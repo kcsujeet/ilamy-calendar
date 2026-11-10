@@ -6,7 +6,6 @@ import {
 	getDefaultZone,
 	getResourceEvents,
 } from '@/features/calendar/utils/event-buckets'
-import { keys } from '@/features/calendar/utils/keys'
 import type {
 	HorizontalCellLayout,
 	HorizontalPositionedEvent,
@@ -22,7 +21,7 @@ interface UseProcessedWeekEventsProps {
 
 interface ProcessedWeekEventsResult {
 	positionedEvents: HorizontalPositionedEvent[]
-	columnLayouts: Map<string, HorizontalCellLayout>
+	columnLayouts: Map<Dayjs, HorizontalCellLayout>
 }
 
 export const useProcessedWeekEvents = ({
@@ -58,15 +57,15 @@ export const useProcessedWeekEvents = ({
 		return layoutHorizontal({ days, events, dayMaxEvents, gridType })
 	}, [days, dayMaxEvents, events, gridType])
 
+	// Keyed by the column itself, not its instant: on the day the clocks spring
+	// forward two columns share an instant, and each needs its own layout.
 	const columnLayouts = useMemo(() => {
-		const map = new Map<string, HorizontalCellLayout>()
+		const layoutByColumn = new Map<Dayjs, HorizontalCellLayout>()
 		days.forEach((day, index) => {
 			const layout = layouts.at(index)
-			if (!layout) return
-			const columnKey = keys.col.events(day)
-			map.set(columnKey, layout)
+			if (layout) layoutByColumn.set(day, layout)
 		})
-		return map
+		return layoutByColumn
 	}, [days, layouts])
 
 	return { positionedEvents, columnLayouts }

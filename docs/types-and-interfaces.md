@@ -382,6 +382,11 @@ resuming a cut one, `isEnd` when it holds the real end rather than running past
 it. Both are `true` for an event that fits in one row. The names and their
 meaning match FullCalendar's event render hook.
 
+The agenda plugin calls `renderEvent` once per listed day, in place of the
+row's title and day counter; the time label and colour dot stay. `isStart` is
+`true` on the event's first day and `isEnd` on its last, as FullCalendar's list
+view hands only its title cell to `eventContent` (`ListViewEventRow.tsx`, v6.1.19).
+
 A custom `renderEvent` title does not stick on scroll the way the default one
 does. It opts in by reading `--ilamy-sticky-left` / `--ilamy-sticky-top`, which
 each grid publishes on its scroll viewport (`src/features/calendar/hooks/use-sticky-insets.ts`).

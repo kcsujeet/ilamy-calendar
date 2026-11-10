@@ -15,6 +15,7 @@ import {
 } from '@/features/calendar/stores/calendar-context/calendar-context'
 import type {
 	DateRange,
+	EventSegment,
 	OpenEventFormInput,
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
@@ -89,6 +90,15 @@ export interface IlamyCalendarApi {
 	 * views (e.g. agenda) handle event clicks identically to the built-in views.
 	 */
 	readonly onEventClick: (event: CalendarEvent) => void
+	/**
+	 * The consumer's custom event renderer, if provided. Lets plugin views
+	 * (e.g. agenda) draw events with the same `renderEvent` the built-in views
+	 * use, passing the slice of the event each call draws.
+	 */
+	readonly renderEvent?: (
+		event: CalendarEvent,
+		segment: EventSegment
+	) => React.ReactNode
 	/**
 	 * The consumer's custom current-time-indicator renderer, if provided. Lets
 	 * plugin views (e.g. agenda) render the indicator consistently with the
@@ -178,6 +188,7 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 		openEventForm: context.openEventForm,
 		closeEventForm: context.closeEventForm,
 		onEventClick: context.onEventClick,
+		renderEvent: context.renderEvent,
 		renderCurrentTimeIndicator: context.renderCurrentTimeIndicator,
 		getEventsForResource: context.getEventsForResource,
 		businessHours: context.businessHours,

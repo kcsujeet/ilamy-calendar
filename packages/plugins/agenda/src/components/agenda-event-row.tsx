@@ -1,4 +1,9 @@
-import type { CalendarEvent, Dayjs, TimeFormat } from '@ilamy/calendar'
+import type {
+	CalendarEvent,
+	Dayjs,
+	EventSegment,
+	TimeFormat,
+} from '@ilamy/calendar'
 import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { cn } from '@ilamy/ui/lib/utils'
 
@@ -10,6 +15,38 @@ interface AgendaEventRowProps {
 
 const getTimePattern = (format: TimeFormat): string =>
 	format === '24-hour' ? 'HH:mm' : 'h:mm A'
+
+interface AgendaEventRowContentProps {
+	event: CalendarEvent
+	segment: EventSegment
+	dayCounter: string | null
+}
+
+/**
+ * The consumer's `renderEvent` when there is one, otherwise the title and day
+ * counter. FullCalendar's list view hands only its title cell to
+ * `eventContent` and keeps the time and dot (ListViewEventRow.tsx, v6.1.19).
+ */
+const AgendaEventRowContent = ({
+	event,
+	segment,
+	dayCounter,
+}: AgendaEventRowContentProps) => {
+	const { renderEvent } = useIlamyCalendarContext()
+	if (renderEvent) {
+		return renderEvent(event, segment)
+	}
+	return (
+		<>
+			<span className="truncate">{event.title}</span>
+			{dayCounter && (
+				<span className="text-muted-foreground shrink-0 text-xs">
+					{dayCounter}
+				</span>
+			)}
+		</>
+	)
+}
 
 export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	const { t, timeFormat, onEventClick } = useIlamyCalendarContext()
@@ -36,6 +73,7 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	const timeLabel = isAllDayLabel ? t('allDay') : edgeTime.format(timePattern)
 	const dayLabel = `(${t('day')} ${dayIndex}/${totalDays})`
 	const dayCounter = isMultiDay ? dayLabel : null
+	const segment: EventSegment = { isStart: isFirstDay, isEnd: isLastDay }
 
 	return (
 		<button
@@ -52,12 +90,11 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 				)}
 				style={{ backgroundColor: event.backgroundColor }}
 			/>
-			<span className="truncate">{event.title}</span>
-			{dayCounter && (
-				<span className="text-muted-foreground shrink-0 text-xs">
-					{dayCounter}
-				</span>
-			)}
+			<AgendaEventRowContent
+				dayCounter={dayCounter}
+				event={event}
+				segment={segment}
+			/>
 		</button>
 	)
 }

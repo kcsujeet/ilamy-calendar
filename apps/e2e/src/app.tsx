@@ -2,6 +2,7 @@ import {
 	type CalendarEvent,
 	type CellInfo,
 	dayjs,
+	type EventSegment,
 	type EventsChange,
 	type EventsFetchInfo,
 	IlamyCalendar,
@@ -303,6 +304,9 @@ const Harness: React.FC<HarnessProps> = ({
 	view,
 }) => {
 	const calendarRef = useRef<IlamyCalendarApi>(null)
+	const customRenderer = renderEventVariant
+		? customRenderers[renderEventVariant]
+		: undefined
 	const [events, setEvents] = useState<CalendarEvent[]>(() => [
 		...scenario.events,
 	])
@@ -420,9 +424,7 @@ const Harness: React.FC<HarnessProps> = ({
 					resourcesFetchMode ? [...plugins, refetchButtonPlugin] : plugins
 				}
 				ref={calendarRef}
-				renderEvent={
-					renderEventVariant === 'sticky-title' ? renderStickyTitle : undefined
-				}
+				renderEvent={customRenderer}
 				resources={resourcesFetchMode ? fetchResourcesFromServer : resources}
 				resourcesSet={(set) =>
 					setResourceSets((current) => [
@@ -617,6 +619,18 @@ const renderStickyTitle = (event: CalendarEvent) => (
 		</span>
 	</div>
 )
+
+/** The segment flags as text, so a spec can read which slice each call drew. */
+const renderSegmentFlags = (event: CalendarEvent, segment: EventSegment) => (
+	<span data-testid="segment-flags">
+		{`${event.title} start:${segment.isStart} end:${segment.isEnd}`}
+	</span>
+)
+
+const customRenderers = {
+	'sticky-title': renderStickyTitle,
+	'segment-flags': renderSegmentFlags,
+}
 
 /** Renders the mistake rather than a plausible-looking wrong screen. */
 const Problem = ({ children }: { children: React.ReactNode }) => (

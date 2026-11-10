@@ -103,6 +103,36 @@ export const scenarios = {
 		events: [],
 	},
 
+	'horizontal-packing': {
+		description:
+			'#388: same-resource events meeting at 09:17, beside an independent resource. Hour columns reuse a row at the exact boundary; day columns still reserve whole days.',
+		views: ['day', 'week', 'month'],
+		resources: TEAM,
+		events: [
+			event(
+				'packing-a',
+				'Packing A',
+				'2025-03-12T07:00:00.000Z',
+				'2025-03-12T09:17:00.000Z',
+				{ resourceId: 'r1' }
+			),
+			event(
+				'packing-b',
+				'Packing B',
+				'2025-03-12T09:17:00.000Z',
+				'2025-03-12T11:00:00.000Z',
+				{ resourceId: 'r1' }
+			),
+			event(
+				'packing-independent',
+				'Independent booking',
+				'2025-03-12T07:00:00.000Z',
+				'2025-03-12T12:00:00.000Z',
+				{ resourceId: 'r2' }
+			),
+		],
+	},
+
 	'edit-permissions': {
 		description:
 			'One event that opts out of editing (`editable: false`) beside one that does not, and an all-day event that opts out of resizing (`durationEditable: false`) beside one that does not, so a per-event flag is seen to beat a permissive calendar.',

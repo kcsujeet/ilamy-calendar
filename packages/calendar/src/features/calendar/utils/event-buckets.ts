@@ -127,31 +127,3 @@ export const getResourceEvents = (
 	}
 	return bucketEventsByResource(events).get(resourceId) ?? NO_EVENTS
 }
-
-/**
- * Events per column, by the same test as `overlapsRange` run on instants:
- * starts inside the column, ends inside it (after its start), or spans it.
- */
-export const bucketEventsByColumn = (
-	columns: ColumnBounds[],
-	events: CalendarEvent[]
-): CalendarEvent[][] => {
-	const spans = events.map((event) => ({
-		event,
-		startMs: event.start.valueOf(),
-		endMs: event.end.valueOf(),
-	}))
-	return columns.map((column) => {
-		const columnEvents: CalendarEvent[] = []
-		for (const { event, startMs, endMs } of spans) {
-			const startsInColumn =
-				startMs >= column.startMs && startMs <= column.endMs
-			const endsInColumn = endMs > column.startMs && endMs <= column.endMs
-			const spansColumn = startMs < column.startMs && endMs > column.endMs
-			if (startsInColumn || endsInColumn || spansColumn) {
-				columnEvents.push(event)
-			}
-		}
-		return columnEvents
-	})
-}

@@ -492,17 +492,21 @@ The resource week view supports two density modes via the `weekViewGranularity` 
 ### How an event sits on an hourly timeline
 
 On an hourly timeline (resource day or week in horizontal orientation), an
-event's bar starts and ends at its exact times. A 10:27–12:27 booking begins
+event's bar starts at its exact time and uses its duration. A 10:27–12:27 booking begins
 27 minutes into the 10 AM column and ends 27 minutes into the 12 PM column; it
 is not rounded out to whole hours. This matches FullCalendar's timeline, and
 the vertical time grids, which already place events by the minute. Day-based
 rows (resource month, and `weekViewGranularity="daily"`) still draw whole days.
 
-A very short event keeps a minimum width so it stays visible and clickable:
-`calc(var(--spacing) * 8)`, which is 32px with Tailwind's default spacing. It
-uses your theme's `--spacing`, like the hour columns themselves
-(`min-w-20`), so the two keep their proportion however you size them.
-FullCalendar has the same floor as its `eventMinWidth` option.
+A very short event reserves at least 0.4 of an hourly column before normal
+spacing, so its target scales with the timeline's columns. The layout uses
+that same displayed range for row allocation: two events with adjacent times
+can need separate rows when their minimum bar lengths would overlap. Longer
+events whose boundaries meet still share a row.
+
+The bar keeps its exact start and is clipped at the visible timeline's right
+edge, where it can appear narrower than the minimum. Its stored start and end
+times are unchanged, including when shown in the event form or overflow dialog.
 
 ## Dragging events between resources
 

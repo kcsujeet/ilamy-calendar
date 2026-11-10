@@ -361,12 +361,13 @@ Features:
 
 - 7-day view with resource rows
 - Hourly time slots (24-hour format)
-- Precise event positioning: on an hourly timeline a bar starts and ends at
-  the event's exact times rather than whole hours, as FullCalendar's timeline
+- Precise event positioning: on an hourly timeline a bar starts at the event's
+  exact time and uses its duration rather than whole hours, as FullCalendar's timeline
   does (`computeBarEdges` in `src/features/calendar/utils/layout/horizontal.ts`). Day rows still
-  draw whole days. A short bar keeps a minimum width of
-  `calc(var(--spacing) * 8)`, on the consumer's spacing scale like the
-  `min-w-20` hour columns (FullCalendar: `eventMinWidth`)
+  draw whole days. Short bars reserve at least 0.4 of an hourly column before
+  normal spacing, clipped at the visible timeline's right edge. Packing uses
+  that same displayed range, so short bars move to separate rows when their
+  minimum lengths would overlap. Their stored times are unchanged.
 - Drag-and-drop between resources and time slots
 - Collision detection and overlapping event handling
 

@@ -1979,16 +1979,25 @@ test.describe('an off-the-hour event on the hourly timeline', () => {
 			.toEqual({ start: 10 * 60 + 27, end: 12 * 60 + 27 })
 	})
 
-	test('a very short event keeps a minimum width', async ({ page }) => {
-		// FullCalendar keeps timeline events at least `eventMinWidth` wide. Ours
-		// is eight spacing units: 32px at the harness's default theme, where the
-		// five-minute event would otherwise be about 7px of an 80px hour.
+	test('a very short event keeps a column-relative minimum width', async ({
+		page,
+	}) => {
 		await openTimeline(page)
 		const bar = page.getByTestId('horizontal-event-long-res-4')
+		await expect(bar).toBeVisible()
+		const expectedWidth = await bar.evaluate((element) => {
+			const layer = element.parentElement
+			if (!layer) throw new Error('Event layer missing')
+			const columnWidth = layer.getBoundingClientRect().width / 24
+			// The layout reserves 0.4 columns; the default theme adds a 4px gutter.
+			return columnWidth * 0.4 - 4
+		})
+		const roundedExpectedWidth = Math.round(expectedWidth)
 
 		await expect
 			.poll(async () => Math.round((await bar.boundingBox())?.width ?? 0))
-			.toBe(32)
+			.toBe(roundedExpectedWidth)
+		await expect(bar).toHaveCSS('min-width', '0px')
 	})
 
 	test('a drag keeps its length in the mirror and after the drop', async ({

@@ -58,7 +58,10 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	// COVERS. Taken from the raw end, a conventionally stored three-day event read
 	// "Day 1/4" and a one-day event read "Day 1/2".
 	const lastCoveredDay = event.end.subtract(1, 'millisecond').startOf('day')
-	const totalDays = lastCoveredDay.diff(eventStartDay, 'day') + 1
+	const coveredDayCount = lastCoveredDay.diff(eventStartDay, 'day') + 1
+	// A zero-length event at midnight ends before its own start day, yet it is
+	// listed on that day, so it covers one day, not zero.
+	const totalDays = Math.max(coveredDayCount, 1)
 	const dayIndex = day.startOf('day').diff(eventStartDay, 'day') + 1
 	const isMultiDay = totalDays > 1
 	const isFirstDay = dayIndex === 1

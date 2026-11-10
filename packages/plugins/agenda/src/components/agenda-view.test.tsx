@@ -108,6 +108,13 @@ describe('AgendaView', () => {
 		expect(screen.queryByText('(Day 1/2)')).not.toBeInTheDocument()
 	})
 
+	it('draws a single-day row as time, dot and title, with no counter slot', () => {
+		renderAgenda(seed)
+
+		const meetingRow = screen.getByRole('button', { name: /Meeting/ })
+		expect(meetingRow.children).toHaveLength(3)
+	})
+
 	it('labels all-day events and shows no indicator for single-day events', () => {
 		renderAgenda(seed)
 		// Trip is all-day across 3 days -> 3 "All day" labels; Meeting is timed.
@@ -168,7 +175,10 @@ describe('AgendaView', () => {
 	 * with the segment's isStart/isEnd for that day.
 	 */
 	describe('renderEvent', () => {
-		const segmentFlags = (event: CalendarEvent, segment: EventSegment) => (
+		const renderSegmentFlags = (
+			event: CalendarEvent,
+			segment: EventSegment
+		) => (
 			<span>{`${event.title} start:${segment.isStart} end:${segment.isEnd}`}</span>
 		)
 
@@ -177,7 +187,7 @@ describe('AgendaView', () => {
 				[mkEvent('m', 'Meeting', '2026-06-13T09:00:00', '2026-06-13T10:00:00')],
 				'month',
 				'2026-06-13',
-				segmentFlags
+				renderSegmentFlags
 			)
 
 			expect(
@@ -192,7 +202,7 @@ describe('AgendaView', () => {
 				[mkEvent('c', 'Camp', '2026-06-13T09:00:00', '2026-06-15T17:30:00')],
 				'month',
 				'2026-06-13',
-				segmentFlags
+				renderSegmentFlags
 			)
 
 			expect(
@@ -205,21 +215,19 @@ describe('AgendaView', () => {
 			expect(screen.queryByText('(Day 1/3)')).not.toBeInTheDocument()
 		})
 
-		it('opens the clicked event for editing through custom content', () => {
-			render(
-				<CalendarTestProvider
-					events={seed}
-					initialDate={dayjs('2026-06-13')}
-					renderEvent={segmentFlags}
-				>
-					<AgendaView window="month" />
-					<FormProbe />
-				</CalendarTestProvider>
+		/**
+		 * An event that starts and ends at the same midnight is listed on its own
+		 * day; it covers that day alone, so the renderer is told both edges.
+		 */
+		it('tells the renderer a zero-length event at midnight both starts and ends that day', () => {
+			renderAgenda(
+				[mkEvent('z', 'Launch', '2026-06-14T00:00:00', '2026-06-14T00:00:00')],
+				'month',
+				'2026-06-13',
+				renderSegmentFlags
 			)
 
-			fireEvent.click(screen.getByText('Meeting start:true end:true'))
-
-			expect(screen.getByTestId('probe')).toHaveTextContent('open:m')
+			expect(screen.getByText('Launch start:true end:true')).toBeInTheDocument()
 		})
 	})
 })

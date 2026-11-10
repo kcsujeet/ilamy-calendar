@@ -304,9 +304,8 @@ const Harness: React.FC<HarnessProps> = ({
 	view,
 }) => {
 	const calendarRef = useRef<IlamyCalendarApi>(null)
-	const customRenderer = renderEventVariant
-		? customRenderers[renderEventVariant]
-		: undefined
+	const customRenderer =
+		renderEventVariant && customRenderers[renderEventVariant]
 	const [events, setEvents] = useState<CalendarEvent[]>(() => [
 		...scenario.events,
 	])

@@ -178,6 +178,55 @@ offsets come from the IANA data the runtime's `Intl` API ships, so a zone that
 moves by 30 minutes (Lord Howe Island) or changes its rules is placed the same
 way. Tests pin both.
 
+### Horizontal row packing
+
+Day and hour axes share one half-open range packer. `computeBarEdges` supplies
+whole-column ranges for day grids and fractional-column ranges for hour grids.
+The same overlap check finds the first free row for either, and the selected
+edges are used both to reserve that row and to emit the bar's placement.
+When a full span cannot fit, the slot search still tries later start columns
+to preserve its visible suffix. Every event goes through one placement loop in
+one order: by start, then longer first. On a day axis, day-spanning events go
+before every single-day one.
+
+Hour-axis bars reserve their displayed half-open intervals when sharing rows:
+a 07:00–09:17 event and a 09:17–11:00 event can occupy the same row. Hourly events
+are placed by start time, with longer events first at an equal start, so a
+short event can reuse a row underneath a longer one. This follows the
+[exclusive end convention](https://fullcalendar.io/docs/event-parsing).
+
+`layoutHorizontal` returns `positionedEvents` and a `columnLayouts` entry for
+each input column. Each entry contains the full cell event list, `rowCount`
+and `hiddenCount`. All three come from the span the bar is placed with: a cell
+lists the events whose span covers its column, and an event counts as hidden in
+each of those columns where it has no bar. A placed bar reserves space through
+its highest occupied row. This same calculation serves day and hour axes. On
+the day the clocks spring forward two hour columns share an instant; the span
+names the one that draws the bar, so only that cell lists and counts the event.
+Successive events whose displayed ranges do not overlap reuse a row without
+producing a false “more” count. A bar truncated to later columns counts as
+hidden only in the earlier columns it cannot draw. Day-axis bars still reserve
+whole days.
+
+`useProcessedWeekEvents` keys these entries by column for the cells (by the
+column's `Dayjs` instance, since two columns can share an instant), without scanning the
+placements again. Cells display the supplied counts and use the full event
+list for the overflow dialog; they do not fetch or calculate counts themselves.
+
+Short hourly bars reserve at least 0.4 of a column (24 minutes on an hour axis),
+before the renderer's normal spacing insets. The layout applies this minimum
+once, using the same edges to choose a row and draw the bar; there is no CSS
+`minWidth`. A short bar can therefore require another row even when its actual
+times do not overlap its neighbor. Its start stays accurate, and the minimum
+is clipped at the visible grid's right edge rather than shifting the bar left.
+Day axes still use whole columns, and zero-duration events keep their existing
+whole-column fallback.
+
+A minimum-length extension into another column reserves height there but does
+not add the event to that column's scheduled event list or reduce its hidden
+count. Event timestamps, overflow dialog membership and edit callbacks retain
+the original times. Drag mirrors consume the same adjusted layout and styling.
+
 ### The now-line and week numbers
 
 The now-line is drawn only in hour grids and only while the `nowIndicator` prop

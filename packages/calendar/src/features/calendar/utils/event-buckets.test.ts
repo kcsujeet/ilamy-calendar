@@ -1,9 +1,7 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
 import dayjs from '@ilamy/utils/dayjs'
-import { overlapsRange } from '@ilamy/utils/helpers'
 import {
-	bucketEventsByColumn,
 	bucketEventsByResource,
 	getColumnBounds,
 	getDefaultZone,
@@ -11,8 +9,6 @@ import {
 	shareInDevBuild,
 } from './event-buckets'
 import { filterEventsForResource } from './event-pipeline'
-
-const ZONES = ['UTC', 'America/New_York', 'America/Vancouver', 'Asia/Kolkata']
 
 const mkEvent = (
 	id: string,
@@ -115,67 +111,6 @@ describe('getColumnBounds and the default zone', () => {
 		expect(getDefaultZone()).toBe('Asia/Tokyo')
 		dayjs.tz.setDefault()
 		expect(getDefaultZone()).toBeUndefined()
-	})
-})
-
-describe('bucketEventsByColumn', () => {
-	// Reference: the per-column `startOf`/`endOf` + `overlapsRange` filter this
-	// replaces. Both read the same wall-clock columns in each configured zone,
-	// across the 9 March 2025 clock change in New York and Vancouver.
-	const columnsFor = (zone: string, unit: 'day' | 'hour') => {
-		const first = dayjs.tz('2025-03-08T00:00:00', zone)
-		const count = unit === 'day' ? 5 : 72
-		return Array.from({ length: count }, (_, i) => first.add(i, unit))
-	}
-	const eventsAt = (zone: string): CalendarEvent[] => {
-		const midnight = dayjs.tz('2025-03-08T00:00:00', zone)
-		const spans = [
-			[0, 1],
-			[30, 90],
-			[59, 60],
-			[60, 60],
-			[95, 400],
-			[-600, 30],
-			[1700, 6000],
-			[2, 2000],
-		]
-		return spans.map(([startMin, endMin], i) =>
-			mkEvent(
-				`e${i}`,
-				midnight.add(startMin, 'minute').toISOString(),
-				midnight.add(endMin, 'minute').toISOString()
-			)
-		)
-	}
-
-	for (const zone of ZONES) {
-		for (const unit of ['day', 'hour'] as const) {
-			it(`matches overlapsRange per column (${unit} columns, ${zone})`, () => {
-				const columns = columnsFor(zone, unit)
-				const events = eventsAt(zone)
-				const bounds = columns.map((column) =>
-					getColumnBounds(column, unit, undefined)
-				)
-				const expected = columns.map((column) => {
-					const columnStart = column.startOf(unit)
-					const columnEnd = column.endOf(unit)
-					return events
-						.filter((event) => overlapsRange(event, columnStart, columnEnd))
-						.map((event) => event.id)
-				})
-				const actual = bucketEventsByColumn(bounds, events).map((column) =>
-					column.map((event) => event.id)
-				)
-				expect(actual).toEqual(expected)
-			})
-		}
-	}
-
-	it('gives an empty column to a row with no events', () => {
-		const bounds = columnsFor('UTC', 'day').map((column) =>
-			getColumnBounds(column, 'day', undefined)
-		)
-		expect(bucketEventsByColumn(bounds, [])).toEqual([[], [], [], [], []])
 	})
 })
 

@@ -67,6 +67,40 @@ These are non-negotiable. Violating any of these is a bug.
     a claim turns out wrong, retract it explicitly and fix every place it was
     written (code comments, docs, the dev log).
 - ALWAYS hunt the repercussions of a change before claiming it is done. Name the meaning you are changing, sweep for everything that depends on it (duplicated predicates in plugins, siblings in the same function, compensating hacks, tests and docs pinning the old contract), and prove the fix by reverting it and watching a test fail. Passing tests only prove that nothing *covered* broke. See `.agents/rules/change-impact.md`.
+- NEVER call a feature done, or a release ready, until it has been exercised in
+  the app people actually use: `apps/demo` with its default settings and seed
+  events, and after a website deploy the live demo at https://ilamy.dev/demo.
+  The e2e harness is not that app. Each harness spec loads a small, clean
+  fixture under near-default settings; the demo combines a 600px scrolling
+  calendar, `dayMaxEvents`, `scrollToNow`, business hours, a `timezone`, all
+  three plugins and dense overlapping events. A bug that needs that combination
+  passes every harness spec, and so does behaviour that is correct but that a
+  person meeting the demo reads as broken.
+  - For every user-facing feature a change adds or touches, drive it in the
+    demo with a real pointer (Playwright `page.mouse`, small steps), with the
+    target verified under the pointer (`document.elementFromPoint`), and check
+    the result in the published `onEventsChange`/`onEventUpdate`, not in a
+    screenshot. Then record it as a spec that runs against the demo's own
+    configuration, so it gates from then on.
+  - "Renders with no console errors" is not "works". A smoke check that never
+    drags, types or saves proves only that the page loads.
+  - A probe is evidence only once you have shown it can fail and succeed: run
+    it first where the behaviour is known to work. A handle scrolled out of the
+    grid's viewport, under a sticky header, or a drag that leaves the grid all
+    read as "nothing happened" and are not bugs.
+  - Example: 3.3.0 shipped event resize as its headline feature, and on release
+    day the owner tried it in the demo and could not resize anything. 19 resize
+    specs, two QA rounds, a regression check against 3.2.1 and a smoke test of
+    the Vite example had all passed, and none had dragged an edge in the demo.
+    Resize worked. The demo turns business hours on (Mon-Fri 9:00-17:00),
+    business hours refuse a drop on a closed cell, and release day was a
+    Sunday, so the events a person reaches for first were refused with only a
+    not-allowed cursor. Nobody had seen the feature through the demo's defaults
+    before release, so nobody had seen that. Then the first investigation
+    reported a bug that did not exist: its probes pressed handles scrolled out
+    of view or under the sticky header, and measured width on a vertical
+    resize. Checked properly, the same drag on the live demo stayed at 371px
+    with business hours on and grew to 497px with them off.
 - ALWAYS match the established standard, never invent your own semantics. This library is RFC 5545 compliant, and where the RFC is silent its behavior must match FullCalendar and Google Calendar. A deviation is a bug even when it is self-consistent and even when the tests pass. Before choosing behavior for anything a calendar already has a convention for (event boundaries, recurrence and overrides, all-day handling, drag/drop across a resource axis, scheduling semantics), look it up and cite it: the RFC section, the FullCalendar docs or source, or Google Calendar's documented behavior. Two deviations already shipped and had to be undone — an inclusive `end` (the RFC's DTEND is exclusive, #248), and a recurrence override emitted from two places at once. If the standard genuinely does not cover the case, say so explicitly and justify the choice; do not quietly pick one.
 - ALWAYS read all the docs in `docs/` (every `.md` file; `docs/logs/` is covered
   under Session Start) before changing code. They hold contracts and known gaps
@@ -132,15 +166,20 @@ Installing is a deliberate step because a plugin runs code with your user privil
 this repo leaves it to you. Once per machine:
 
 ```bash
-claude plugin install code-review@kc-claude-kit
-claude plugin install conventions@kc-claude-kit
-claude plugin install instructions@kc-claude-kit
-claude plugin install testing@kc-claude-kit
-claude plugin install usage-band@kc-claude-kit
-claude plugin install image-preview@kc-claude-kit
+claude plugin install kc-gates@kc-claude-kit
+claude plugin install kc-conventions@kc-claude-kit
+claude plugin install kc-instructions@kc-claude-kit
+claude plugin install kc-verify@kc-claude-kit
+claude plugin install kc-usage-band@kc-claude-kit
+claude plugin install kc-image-preview@kc-claude-kit
 ```
 
-They load from the next session, or after `/reload-plugins`.
+`claude plugin install` takes one plugin per call, so run each line. They load from the
+next session, or after `/reload-plugins`. A plugin cannot ship rules, so the kit's
+conventions load only as rule files: run `/kc-conventions:kc-init` once to copy them into
+this repo's `.claude/rules/`, or install them for every project into `~/.claude/rules/`
+as the kit's README describes. The kit's session-start hook says when they are missing or
+older than the plugin.
 
 ## Commands
 
@@ -245,7 +284,7 @@ examples/       standalone consumer apps (astro, nextjs, vite) depending on the 
 
 `@ilamy/calendar` ships these entry points: `.` (core), `./testing` (test harness), `./plugins/recurrence`, `./plugins/agenda`, `./plugins/drag-to-create`. The plugin subpaths' `import … from '@ilamy/calendar'` self-references the same package at runtime. **It ships no CSS** — "bring your own design system": components use the conventional shadcn token classes, and consumers `@source` the package's `dist` so Tailwind generates the utilities, styled by their own tokens. The demo (`apps/demo/src/styles/globals.css`) is the reference consumer that supplies a shadcn theme.
 
-Paths in the **Key Paths** section below are relative to `packages/calendar/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via tsconfig `paths`) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the plugin packages + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
+Paths in the **Key Paths** section below are relative to `packages/calendar/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via each package's own tsconfig `paths`: Bun reads the tsconfig nearest the importing file) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the plugin packages + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
 
 ### Data Flow
 
@@ -464,8 +503,8 @@ different setting.
 
 ## Code review
 
-Reviews use the `code-review:review-code` skill from the `kc-claude-kit` plugin
-([source](https://github.com/kcsujeet/kc-claude-kit/tree/main/plugins/code-review)),
+Reviews use the `kc-gates:kc-code-review` skill from the `kc-claude-kit` marketplace
+([source](https://github.com/kcsujeet/kc-claude-kit/tree/main/plugins/kc-gates)),
 installed as described under Session Start. It triggers on "review this PR", a PR URL
 or a branch name, runs one gate agent per rule file, and never posts to GitHub on its
 own. Two competitors are switched off for this repo in `.claude/settings.json`: the
@@ -491,6 +530,11 @@ the semver table, the changelog with its contributor-credit sweep, the lightweig
 the GitHub release, the npm publish hand-off and registry check, the website update and
 deploy, and the "Fixed in" comments on closed issues. Where it conflicts with the Hard
 Rules, the Hard Rules win: the release commit goes through a PR, not straight to `main`.
+
+A release is not ready until every feature and fix in its changelog has been exercised in
+`apps/demo` (Hard Rules: "NEVER call a feature done…"), and it is not done until the same
+pass has run against https://ilamy.dev/demo after the website deploy. If the owner planned
+to test by hand and has not, say so and wait; a green suite does not stand in for it.
 
 Other repo workflows also live in `.agents/skills/` (refactor review, bundle size,
 React checks). Check there before improvising one.

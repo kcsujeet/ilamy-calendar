@@ -67,6 +67,69 @@ starts. Until then 3.x keeps today's behaviour. The IDs match
   `packages/calendar/src/features/calendar/utils/business-hours.ts`) defaults it
   to Monday to Friday, and ignores an array entry that omits it. To keep a
   seven-day schedule after upgrading, list all seven days in `daysOfWeek` now.
+- **Business hours shade; they no longer refuse.** In 3.x a cell outside
+  `businessHours` (a resource's own, or the calendar's) refuses clicks
+  (`onCellClick` and the form it opens), drops, resizes and drag-to-create,
+  and so does a month view's padding day from the neighbouring month. In 4.0
+  `businessHours` only shades the closed time, and `hideNonBusinessHours`
+  still hides it; every cell takes clicks, drops, resizes and drag-to-create.
+  `isCellDisabled` is unchanged: it is your own refusal and keeps refusing.
+  Restricting becomes opt-in, with FullCalendar's options:
+  - `eventConstraint: 'businessHours'` limits moves and resizes. The whole
+    event must fit inside business hours, not just the cell under the pointer
+    (a 10:00 to 12:00 event cannot be dropped at 16:00 when business hours end
+    at 17:00).
+  - `selectConstraint: 'businessHours'` limits drag-to-create the same way.
+  - The event form's business-hours limits (the resource-aware day and time
+    pickers) follow these options too, so the form and the grid give one
+    answer. FullCalendar has no event form, so this part is ilamy's choice,
+    made to match the roadmap's "one answer for drag, resize, select and form"
+    (`docs/roadmap.md`, 4.1.2).
+
+  The standard, read on 2026-10-25 (RFC 5545 has no notion of business hours,
+  so FullCalendar decides):
+  - https://fullcalendar.io/docs/businessHours: business hours "emphasize"
+    time slots; the default is `false` and the page states no restriction.
+  - https://fullcalendar.io/docs/eventConstraint: with `"businessHours"`,
+    dragged or resized events "must be fully contained within the week's
+    business hours".
+  - https://fullcalendar.io/docs/selectConstraint: the same values, for
+    selection.
+  - https://fullcalendar.io/docs/dateClick and
+    https://fullcalendar.io/docs/showNonCurrentDates: neither states a
+    restriction; the source settles both (below).
+
+  What the v7.1.1 source does (`packages/preact/src/`, tag `v7.1.1`, commit
+  `786d1b2`):
+  - Business hours are parsed into background events, `display:
+    'inverse-background'`, Monday to Friday 09:00 to 17:00 by default
+    (`structs/business-hours.ts:12-19`). Validation consults them only for the
+    `'businessHours'` constraint (`validation.ts:273-277`), and a constraint
+    exists only when `eventConstraint` or `selectConstraint` is set
+    (`reducers/CalendarDataManager.ts:690` and `:701`,
+    `component-util/event-ui.ts:68`). A move or resize is checked by
+    `isInteractionValid` (`EventDragging.ts:193`, `EventResizing.ts:150`, in
+    `interaction-plugin/interactions/`), a selection by `isDateSelectionValid`
+    (`DateSelecting.ts:85`); both test `validRange` and the constraints, and
+    nothing else about business hours (`validation.ts:23-46`). Containment is
+    of the whole range (`validation.ts:307-319`).
+  - `dateClick` fires outside business hours. `DateClicking.ts` gates only on
+    a `dateClick` handler existing and the press not being on an event, a
+    "+more" link, a nav link or a popover (`DateClicking.ts:48-53`,
+    `component/DateComponent.ts:46-53`), then fires whenever the press and
+    release land on the same hit (`DateClicking.ts:64-73`), with no
+    validation call.
+  - Padding days take drops, resizes, clicks and selection by default. A hit
+    counts only inside the view's `activeRange`
+    (`interaction-plugin/interactions/HitDragging.ts:184-185`), and
+    `activeRange` is the whole rendered range, padding days included, unless
+    `showNonCurrentDates` is `false` (`DateProfileGenerator.ts:127-131`;
+    default `true` at `options.ts:501`). With `showNonCurrentDates: false`
+    they become dead cells (`daygrid/DayTableModel.ts:91-93`). So in 4.0 a
+    padding day refuses nothing; it stays styled as another month's day.
+    (`showNonCurrentDates` itself is roadmap 4.3.5.)
+
+  These are readings of the source, not runs of FullCalendar.
 - **Public dates are ISO strings or `Date`** (see above). That touches every
   field and callback that currently carries a `Dayjs`: an event's `start` and
   `end`, `CellInfo`, `EventDropInfo`, the `onDateChange` arguments, the render
@@ -88,7 +151,11 @@ starts. Until then 3.x keeps today's behaviour. The IDs match
    default you rely on.
 3. If you use `BusinessHours`, add `daysOfWeek` wherever you rely on the
    seven-day default.
-4. Wrap `dayjs`/`Dayjs` usage at your boundaries so dates cross them as ISO
+4. If you use `businessHours` to stop people booking closed time, add
+   `eventConstraint="businessHours"` and `selectConstraint="businessHours"`
+   when you upgrade; without them 4.0 only shades the closed time. If you
+   relied on month padding days refusing drops, refuse them in `isCellDisabled`.
+5. Wrap `dayjs`/`Dayjs` usage at your boundaries so dates cross them as ISO
    strings.
 
 This file grows with each decision: a row moves from **Under consideration** to

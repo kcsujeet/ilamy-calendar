@@ -17,9 +17,9 @@ In month view, both GridCells (42 total) and event overlay layers (6 total) inde
 `useProcessedWeekEvents` is called once at the `HorizontalGridRow` level. It returns:
 
 - `positionedEvents` — passed to `HorizontalGridEventsLayer` for the event overlay
-- `columnEventsMap` — a `Map<string, CalendarEvent[]>` grouped by the column's own unit (a day, or an hour on an hour grid), passed to each `GridCell` via the `precomputedEvents` prop
+- `columnLayouts` — a `Map<Dayjs, HorizontalCellLayout>` holding, for each column (a day, or an hour on an hour grid), the cell's events, the rows it must reserve and its hidden count, passed to each `GridCell` via the `precomputedLayout` prop
 
-This reduces **48 filter passes to 6** (one per row) plus 6 small per-day groupings over an already-filtered list.
+This reduces **48 filter passes to 6** (one per row). The per-column lists and counts come out of the positioning pass itself, so no cell filters or counts anything.
 
 ### How It Works
 
@@ -27,11 +27,11 @@ This reduces **48 filter passes to 6** (one per row) plus 6 small per-day groupi
 HorizontalGridRow
   ├── useProcessedWeekEvents({ days, gridType, resourceId, ... })
   │     ├── events = getEventsForDateRange(weekStart, weekEnd)  ← 1 filter pass
-  │     ├── columnEventsMap = group events per column           ← 1 small pass
-  │     └── positionedEvents = layoutHorizontal(events)         ← 1 positioning pass
+  │     └── { positionedEvents, columnLayouts }
+  │           = layoutHorizontal(events)                        ← 1 positioning pass
   │
-  ├── GridCell day="Mon" precomputedEvents={columnEventsMap.get(key(mon))}
-  ├── GridCell day="Tue" precomputedEvents={columnEventsMap.get(key(tue))}
+  ├── GridCell day="Mon" precomputedLayout={columnLayouts.get(mon)}
+  ├── GridCell day="Tue" precomputedLayout={columnLayouts.get(tue)}
   ├── ...                                                       ← no filtering
   │
   └── HorizontalGridEventsLayer positionedEvents={positionedEvents}
@@ -44,7 +44,7 @@ The section above shares work between the cells of a row. A resource calendar ha
 
 - **`useEventStore` keeps the answer per range** (`hooks/calendar-data/use-event-store.ts`). The cache is rebuilt whenever the stored events or the plugin runtime change, keyed on each bound's instant and UTC offset, and holds at most `MAX_CACHED_RANGES` ranges. Callers get the same array back for the same range, so they must not mutate it (none does): `shareInDevBuild` freezes it, and each resource bucket, in a development build, so a mutation throws where it happens; a production build returns the lists as they are. Plugins' `transformEvents` must therefore be pure in `(events, range)`.
 - **`bucketEventsByResource`** (`utils/event-buckets.ts`) groups a range's events by resource in one pass (the `filterEventsForResource` membership rule: `resourceIds` wins over `resourceId`, `0` is a real id). It is keyed on the events array, so the R rows reading one range share one O(N) pass and each takes its bucket. `useProcessedWeekEvents` and `useProcessedDayEvents` read it through `getResourceEvents`.
-- **`getColumnBounds`** reads a column's `startOf`/`endOf` once per Dayjs instance and default zone (a `WeakMap`; an instance with no zone of its own is bounded in the zone `dayjs.tz.setDefault` last set, which `getDefaultZone()` reads once per row), and `bucketEventsByColumn` tests each event against plain instants, the `overlapsRange` rule without a zone conversion per column. Resource rows are built from the same column instances (`resourceHorizontalRows`), so row 2 onwards reads the bounds row 1 computed.
+- **`getColumnBounds`** reads a column's `startOf`/`endOf` once per Dayjs instance and default zone (a `WeakMap`; an instance with no zone of its own is bounded in the zone `dayjs.tz.setDefault` last set, which `getDefaultZone()` reads once per row). The hooks read a row's first and last bound from it to fetch the range's events. Which events a column holds is not asked of the bounds: `layoutHorizontal` lists each event in the columns its span covers, the span its bar is placed with. Resource rows are built from the same column instances (`resourceHorizontalRows`), so row 2 onwards reads the bounds row 1 computed.
 
 The recurrence plugin groups overrides by series once per events array (`getOverridesBySeries` in `generate-recurring-events.ts`) instead of filtering the whole list for every series, so an expansion is O(N + series), not O(series x N).
 

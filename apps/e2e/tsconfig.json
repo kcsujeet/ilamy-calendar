@@ -9,6 +9,7 @@
 		"src/**/*.ts",
 		"src/**/*.tsx",
 		"tests/**/*.ts",
+		"demo-tests/**/*.ts",
 		"vite.config.ts",
 		"playwright.config.ts"
 	],

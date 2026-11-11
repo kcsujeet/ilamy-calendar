@@ -122,7 +122,11 @@ export const defaultSettings: PlaygroundSettings = {
 	weekNumberCalculation: 'local',
 	showEventTimes: false,
 	showEventEnd: false,
-	enableBusinessHours: true,
+	// Off, as FullCalendar's `businessHours` is by default. In 3.x business hours
+	// refuse clicks, moves and resizes on closed cells, so on by default the
+	// demo's events would not budge on a weekend or after hours. Spec:
+	// apps/e2e/demo-tests/demo-defaults.spec.ts.
+	enableBusinessHours: false,
 	businessHoursDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
 	businessHoursStart: 9,
 	businessHoursEnd: 17,

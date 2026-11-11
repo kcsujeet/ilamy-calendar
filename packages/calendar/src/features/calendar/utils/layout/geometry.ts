@@ -49,6 +49,13 @@ export interface HorizontalPositionedEvent extends PositionedEventBase {
 	isTruncatedEnd: boolean
 }
 
+/** The events in a cell and the space their row's layout actually uses. */
+export interface HorizontalCellLayout {
+	events: CalendarEvent[]
+	rowCount: number
+	hiddenCount: number
+}
+
 /**
  * Where a horizontal bar sits. The real bar and the drag mirror both read this,
  * so the mirror cannot land anywhere the bar would not: they were two identical
@@ -62,10 +69,6 @@ export const getHorizontalBarStyle = (
 ): CSSProperties => ({
 	left: `calc(${positioned.left}% + var(--spacing) * 0.25)`,
 	width: `calc(${positioned.width}% - var(--spacing) * 1)`,
-	// An hour axis sizes a bar by its exact time, so a short event would be a
-	// sliver. FullCalendar's timeline keeps a minimum (`eventMinWidth`); ours is
-	// on the consumer's spacing scale, like the `min-w-20` hour columns.
-	minWidth: 'calc(var(--spacing) * 8)',
 	top: `${top}px`,
 	height: `${eventHeight}px`,
 })

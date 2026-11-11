@@ -64,13 +64,13 @@ const useDragPreviewPositioned = ({
 		if (!previewEvent) {
 			return null
 		}
-		const positioned = layoutHorizontal({
+		const { positionedEvents } = layoutHorizontal({
 			days,
 			gridType,
 			events: [previewEvent],
 			dayMaxEvents: PREVIEW_ROW_CAP,
 		})
-		return positioned.at(0) ?? null
+		return positionedEvents.at(0) ?? null
 	}, [previewEvent, days, gridType])
 }
 

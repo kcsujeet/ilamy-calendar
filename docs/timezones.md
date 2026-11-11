@@ -290,17 +290,32 @@ README offers a codemod to move to `Temporal.*` once Safari ships it. Its
 README claims "Less than 20 kB"; measure what it adds to our bundle before
 committing to it.
 
-The migration also fixes a second leak, found on 2026-10-12: the dayjs
-configuration is loaded twice. The patches in `dayjs.ts` modify dayjs's shared
-prototype and assume they run once, but the published bundle holds two copies
-of `@ilamy/utils/dayjs` (`packages/ui/tsconfig.json` has no `paths`, so
-`@ilamy/ui` resolves it through the package exports, not to the source the
-calendar uses), and tests load the source next to the plugins' `dist` copy. The
-second copy wraps the first, and near the machine's own clock change the clock
-reads an hour early: a London calendar on an Auckland machine starts the week of
-1 October 2025 at 23:00 on 27 September, so the month grid repeats a week and
-drops the next (`month.test.tsx` "across a DST transition" fails on an Auckland
-machine). With the function API nothing is patched, so a second copy is
+The migration also removes a second hazard, found on 2026-10-12: the dayjs
+configuration can load twice. The patches in `dayjs.ts` modify dayjs's shared
+prototype and assume they run once, and a second copy wraps the first.
+
+- **The published bundle** held two copies up to 3.3.0. Bun resolves an import
+  through the tsconfig nearest the importing file, and `packages/ui/tsconfig.json`
+  had no `paths`, so `@ilamy/ui` reached `@ilamy/utils` through its package
+  exports (`packages/utils/dist`), not the source the calendar uses. That copy
+  was whatever `dist` was lying around: 3.3.0 shipped one built before #378. A
+  fresh clone could not run `build:lib` at all. Fixed on 2026-10-25: ui maps
+  `@ilamy/utils/*` to source like the calendar and plugins do (its own build
+  drops the mapping, see `packages/ui/tsconfig.build.json`), and the build has
+  one copy (one `dayjs/plugin/timezone.js` import in `dist`).
+- **Tests** still load two copies when they load a plugin: a plugin imports the
+  host through `@ilamy/calendar`, which resolves to the built `dist` and its
+  bundled copy, next to the source the test imports. That is deliberate, since
+  plugins consume only the public API.
+
+The 2026-10-12 note reported a symptom: near the machine's own clock change the
+second copy read an hour early, so a London calendar on an Auckland machine
+started the week of 1 October 2025 at 23:00 on 27 September, and the month grid
+repeated a week and dropped the next (`month.test.tsx` "across a DST
+transition"). Checked on 2026-10-25 with `TZ=Pacific/Auckland`, that test passes
+with and without the fix above, and also with a `utils` `dist` built from before
+#378 and from before #328. It does not reproduce, and what fixed it is
+unverified. With the function API nothing is patched, so a second copy is
 harmless. The build should still resolve `@ilamy/utils` to one module, or the
 code ships twice and any module-level state (like today's default zone) splits.
 

@@ -1,4 +1,9 @@
-import type { CalendarEvent, Dayjs, TimeFormat } from '@ilamy/calendar'
+import type {
+	CalendarEvent,
+	Dayjs,
+	EventSegment,
+	TimeFormat,
+} from '@ilamy/calendar'
 import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { cn } from '@ilamy/ui/lib/utils'
 
@@ -11,6 +16,38 @@ interface AgendaEventRowProps {
 const getTimePattern = (format: TimeFormat): string =>
 	format === '24-hour' ? 'HH:mm' : 'h:mm A'
 
+interface AgendaEventRowContentProps {
+	event: CalendarEvent
+	segment: EventSegment
+	dayCounter: string | null
+}
+
+/**
+ * The consumer's `renderEvent` when there is one, otherwise the title and day
+ * counter. FullCalendar's list view hands only its title cell to
+ * `eventContent` and keeps the time and dot (ListViewEventRow.tsx, v6.1.19).
+ */
+const AgendaEventRowContent = ({
+	event,
+	segment,
+	dayCounter,
+}: AgendaEventRowContentProps) => {
+	const { renderEvent } = useIlamyCalendarContext()
+	if (renderEvent) {
+		return renderEvent(event, segment)
+	}
+	return (
+		<>
+			<span className="truncate">{event.title}</span>
+			{dayCounter && (
+				<span className="text-muted-foreground shrink-0 text-xs">
+					{dayCounter}
+				</span>
+			)}
+		</>
+	)
+}
+
 export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	const { t, timeFormat, onEventClick } = useIlamyCalendarContext()
 
@@ -21,7 +58,10 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	// COVERS. Taken from the raw end, a conventionally stored three-day event read
 	// "Day 1/4" and a one-day event read "Day 1/2".
 	const lastCoveredDay = event.end.subtract(1, 'millisecond').startOf('day')
-	const totalDays = lastCoveredDay.diff(eventStartDay, 'day') + 1
+	const coveredDayCount = lastCoveredDay.diff(eventStartDay, 'day') + 1
+	// A zero-length event at midnight ends before its own start day, yet it is
+	// listed on that day, so it covers one day, not zero.
+	const totalDays = Math.max(coveredDayCount, 1)
 	const dayIndex = day.startOf('day').diff(eventStartDay, 'day') + 1
 	const isMultiDay = totalDays > 1
 	const isFirstDay = dayIndex === 1
@@ -36,6 +76,7 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 	const timeLabel = isAllDayLabel ? t('allDay') : edgeTime.format(timePattern)
 	const dayLabel = `(${t('day')} ${dayIndex}/${totalDays})`
 	const dayCounter = isMultiDay ? dayLabel : null
+	const segment: EventSegment = { isStart: isFirstDay, isEnd: isLastDay }
 
 	return (
 		<button
@@ -52,12 +93,11 @@ export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
 				)}
 				style={{ backgroundColor: event.backgroundColor }}
 			/>
-			<span className="truncate">{event.title}</span>
-			{dayCounter && (
-				<span className="text-muted-foreground shrink-0 text-xs">
-					{dayCounter}
-				</span>
-			)}
+			<AgendaEventRowContent
+				dayCounter={dayCounter}
+				event={event}
+				segment={segment}
+			/>
 		</button>
 	)
 }

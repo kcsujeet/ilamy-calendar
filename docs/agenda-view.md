@@ -49,6 +49,11 @@ agendaPlugin({ window: 14 })
 - **`hiddenDays` and `weekends` do not apply** to the agenda: it lists every day of its
   window, so a Week window's title names the whole week even when the week view's would
   leave days out. The title describes what the view draws.
+- **A custom `renderEvent`** draws each row's title, in place of the title and the
+  `Day N/M` indicator; the time label and colour dot stay (FullCalendar's list view
+  hands only its title cell to `eventContent`, `ListViewEventRow.tsx` v6.1.19). Each
+  day's call gets its own `segment`: `isStart` on the event's first day, `isEnd` on
+  its last.
 - **Clicking an event** opens the event form (and the recurrence scope dialog for
   recurring events), the same as the other views.
 - When the recurrence plugin is also registered, recurring occurrences are expanded

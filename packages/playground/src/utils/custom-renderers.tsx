@@ -29,8 +29,6 @@ function CustomEvent({
 	eventHeight: number
 }) {
 	const { t } = useIlamyCalendarContext()
-	const backgroundColor = event.backgroundColor || 'bg-blue-500'
-	const color = event.color || 'text-blue-800'
 	const isCompact = eventHeight <= 24
 	const isLarge = eventHeight >= 36
 	const titleSize = isLarge ? 'text-xs' : 'text-[10px]'
@@ -38,17 +36,17 @@ function CustomEvent({
 	const timeRange = `${event.start.format('h:mm A')} - ${event.end.format('h:mm A')}`
 	const timeLabel = event.allDay ? t('allDay') : timeRange
 
+	// Deliberately unlike the built-in bar (black, dashed, uppercase) so a glance
+	// shows whether a view draws through the custom renderer.
 	return (
-		<div
-			className={cn(
-				'border-primary border border-l-2 px-2 w-full h-full overflow-clip',
-				backgroundColor,
-				color
-			)}
-			style={{ backgroundColor, color }}
-		>
-			<p className={cn('font-semibold truncate leading-tight', titleSize)}>
-				{event.title}
+		<div className="w-full h-full overflow-clip rounded-full border-2 border-dashed border-yellow-400 bg-black px-2 text-yellow-300">
+			<p
+				className={cn(
+					'font-mono font-bold uppercase tracking-wider truncate leading-tight',
+					titleSize
+				)}
+			>
+				★ {event.title}
 			</p>
 			{!isCompact && (
 				<p className={cn('truncate opacity-80 leading-tight', timeSize)}>

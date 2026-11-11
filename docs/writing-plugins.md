@@ -397,6 +397,10 @@ function MyPluginView() {
     collect,           // (point: string, context: unknown) => unknown[]
     getViews,          // () => PluginView[]
 
+    // Consumer renderers (draw events the way the built-in views do)
+    renderEvent,       // ((event, segment: EventSegment) => ReactNode) | undefined
+    renderCurrentTimeIndicator, // ((props) => ReactNode) | undefined
+
     // i18n
     t,                 // TranslatorFunction
   } = useIlamyCalendarContext()

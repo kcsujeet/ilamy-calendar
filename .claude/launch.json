@@ -1,0 +1,11 @@
+{
+	"version": "0.0.1",
+	"configurations": [
+		{
+			"name": "demo",
+			"runtimeExecutable": "bunx",
+			"runtimeArgs": ["--cwd", "apps/demo", "vite"],
+			"port": 4100
+		}
+	]
+}

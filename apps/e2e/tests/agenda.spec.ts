@@ -84,3 +84,33 @@ test.describe('agenda: the title with hidden days', () => {
 		await expect(page.getByTestId('calendar-title')).toHaveText('Mar 9 – 15')
 	})
 })
+
+/*
+ * #394. A custom `renderEvent` draws the agenda row's title the way
+ * FullCalendar's list view hands its title cell to `eventContent`
+ * (ListViewEventRow.tsx, v6.1.19): the time label stays, and each day's call
+ * says whether it holds the event's real start and end.
+ */
+test.describe('agenda: custom renderEvent', () => {
+	test('each day of a multi-day event is drawn by the renderer with its own segment', async ({
+		page,
+	}) => {
+		await gotoScenario(page, {
+			scenario: 'overnight-event',
+			view: 'agenda',
+			plugins: ['agenda'],
+			settings: { renderEventVariant: 'segment-flags' },
+		})
+
+		const firstDay = page.getByTestId('agenda-day-2025-03-12')
+		const lastDay = page.getByTestId('agenda-day-2025-03-13')
+		await expect(firstDay.getByTestId('segment-flags')).toHaveText(
+			'Night shift start:true end:false'
+		)
+		await expect(lastDay.getByTestId('segment-flags')).toHaveText(
+			'Night shift start:false end:true'
+		)
+		await expect(firstDay).toContainText('10:00 PM')
+		await expect(firstDay).not.toContainText('(Day 1/2)')
+	})
+})

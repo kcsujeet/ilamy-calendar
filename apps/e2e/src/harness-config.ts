@@ -74,8 +74,10 @@ export interface UrlConfig {
 	 * Harness-only: a custom `renderEvent` to draw events with. `sticky-title`
 	 * is the pattern the docs give consumers for keeping their own title in
 	 * view, so the custom properties it reads are pinned as public contract.
+	 * `segment-flags` writes the title with the segment's `isStart`/`isEnd`, so
+	 * a spec can read which slice of an event each call drew.
 	 */
-	renderEventVariant?: 'sticky-title'
+	renderEventVariant?: 'sticky-title' | 'segment-flags'
 	/**
 	 * Harness-only: act as a server that rejects every save. The harness
 	 * persists nothing and calls `change.revert()` inside `onEventsChange`.
@@ -557,7 +559,7 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 		config.renderEventVariant = oneOf(
 			'renderEventVariant',
 			renderEventVariant,
-			['sticky-title'] as const,
+			['sticky-title', 'segment-flags'] as const,
 			String
 		)
 	}

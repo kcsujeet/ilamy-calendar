@@ -39,7 +39,6 @@
 			"Bash(cat:*)"
 		],
 		"deny": [],
-		"ask": ["Bash(git commit *)"],
 		"defaultMode": "acceptEdits"
 	},
 	"hooks": {

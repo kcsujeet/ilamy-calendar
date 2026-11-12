@@ -224,6 +224,31 @@ export const isWallClockReading = (input?: dayjs.ConfigType): input is string =>
 	typeof input === 'string' && !hasExplicitOffset(input)
 
 /**
+ * Reads a wall-clock string in `zone`, taking the first of a reading the
+ * autumn change repeats (RFC 5545 section 3.3.5, #395).
+ *
+ * `dayjs.tz()` picks between the two readings by the zone's offset TODAY
+ * (`tzOffset(+d(), timezone)`, dayjs/plugin/timezone), so the same string gave
+ * another instant from November to March. The reading is retried with the
+ * offset in force a day earlier, and kept when that offset is the one in force
+ * at it, which holds only for the first of a repeated reading. A reading the
+ * spring change skips never passes, and keeps dayjs's answer: the offset
+ * before the gap.
+ */
+const readInZone = (input: string, zone: string): dayjs.Dayjs => {
+	const reading = dayjs.tz(input, zone)
+	const offsetDayBefore = reading.subtract(1, 'day').tz(zone).utcOffset()
+	const offsetShift = reading.utcOffset() - offsetDayBefore
+	const isOffsetUnchanged = offsetShift === 0
+	if (isOffsetUnchanged) {
+		return reading
+	}
+	const earlierReading = reading.add(offsetShift, 'minute').tz(zone)
+	const isEarlierReadingValid = earlierReading.utcOffset() === offsetDayBefore
+	return isEarlierReadingValid ? earlierReading : reading
+}
+
+/**
  * Custom dayjs constructor that resolves every input in the timezone set via
  * `dayjs.tz.setDefault()`, so `dayjs()` calls throughout the codebase honor the
  * calendar's zone, and in the machine's zone when the calendar has none.
@@ -261,7 +286,7 @@ const timezoneAwareDayjs = (input?: dayjs.ConfigType) => {
 		// `this.utc()` (dayjs/plugin/utc, lines 123-124), which hands back a
 		// UTC-flagged instance with no zone: `add(1, 'day')` then adds 24 hours
 		// and `startOf('day')` rounds in UTC, an hour off after the spring change.
-		return defaultTimezone ? dayjs.tz(input) : instant
+		return defaultTimezone ? readInZone(input, defaultTimezone) : instant
 	}
 	if (!defaultTimezone) {
 		return instant

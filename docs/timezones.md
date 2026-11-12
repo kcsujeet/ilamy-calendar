@@ -43,6 +43,15 @@ event ended at 01:00 BST and the month grid's cells started an hour late. Zones
 that are never at 0 (New York) were unaffected, and so was a London calendar
 WITH the prop, where the zone name lets the patched `startOf` repair the day.
 
+With the prop, an offset-less string the autumn change repeats (01:30 on
+2 November 2025 in New York) is its first occurrence, and one the spring change
+skips takes the offset before the gap (RFC 5545 section 3.3.5). `dayjs.tz()`
+alone picks between two readings by the zone's offset on the day the code runs
+(`tzOffset(+d(), timezone)`, `dayjs/plugin/timezone`, v1.11.23), so from
+November to March it took the second (#395). `readInZone` retries the reading
+with the offset in force a day earlier and keeps it when that offset holds at
+it. Without the prop, the native parse already takes the first.
+
 Both string rules serve the same rule at the top. An offset-carrying string
 already names a moment, so re-reading its digits in the calendar's zone would
 invent a different moment (that was #247: in Europe/Vienna a `…T22:00Z` all-day
@@ -194,7 +203,7 @@ answers false.
 
 ## Writing timezone tests
 
-Four rules, each learned from a test that lied:
+Five rules, each learned from a test that lied:
 
 1. **Set the zone explicitly.** `dayjs.tz.setDefault('Asia/Tokyo')` in the test.
    Without it the misparse cannot manifest and the test is falsely green.
@@ -210,6 +219,10 @@ Four rules, each learned from a test that lied:
    this way proves nothing. To test on another machine zone, start a child
    process with `TZ` set (`runOnMachineIn` in `packages/utils/src/dayjs.test.ts`);
    in the browser, set Playwright's `timezoneId` (`test.use`).
+5. **Pin "now" when the answer could depend on the season.** dayjs reads the
+   zone's current offset in places (#395), so a test of a clock-change day can
+   pass in July and fail in January. Run it with `setSystemTime` (bun:test) in
+   both, or with the harness's `now` in a spec.
 
 ### Why the suite runs in UTC, and why that is fine
 

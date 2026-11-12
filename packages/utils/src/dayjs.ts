@@ -224,6 +224,26 @@ export const isWallClockReading = (input?: dayjs.ConfigType): input is string =>
 	typeof input === 'string' && !hasExplicitOffset(input)
 
 /**
+ * Reads a wall-clock string in `zone`, a repeated autumn time as its first
+ * occurrence (RFC 5545 section 3.3.5). `dayjs.tz()` picks by the zone's offset
+ * today (`tzOffset(+d(), timezone)`), so the reading is retried with the day
+ * before's offset and kept when that offset holds at it.
+ */
+export const readInZone = (input: string, zone: string): dayjs.Dayjs => {
+	const reading = dayjs.tz(input, zone)
+	const dayBefore = reading.subtract(1, 'day').tz(zone)
+	const offsetDayBefore = dayBefore.utcOffset()
+	const offsetShift = reading.utcOffset() - offsetDayBefore
+	const isOffsetUnchanged = offsetShift === 0
+	if (isOffsetUnchanged) {
+		return reading
+	}
+	const earlierReading = reading.add(offsetShift, 'minute').tz(zone)
+	const isEarlierReadingValid = earlierReading.utcOffset() === offsetDayBefore
+	return isEarlierReadingValid ? earlierReading : reading
+}
+
+/**
  * Custom dayjs constructor that resolves every input in the timezone set via
  * `dayjs.tz.setDefault()`, so `dayjs()` calls throughout the codebase honor the
  * calendar's zone, and in the machine's zone when the calendar has none.
@@ -261,7 +281,7 @@ const timezoneAwareDayjs = (input?: dayjs.ConfigType) => {
 		// `this.utc()` (dayjs/plugin/utc, lines 123-124), which hands back a
 		// UTC-flagged instance with no zone: `add(1, 'day')` then adds 24 hours
 		// and `startOf('day')` rounds in UTC, an hour off after the spring change.
-		return defaultTimezone ? dayjs.tz(input) : instant
+		return defaultTimezone ? readInZone(input, defaultTimezone) : instant
 	}
 	if (!defaultTimezone) {
 		return instant
@@ -299,7 +319,8 @@ type DayjsStatics = { [K in keyof typeof dayjs]: (typeof dayjs)[K] }
  * keeps it a compile error either way. Format parsing would additionally need the
  * CustomParseFormat plugin, which this module deliberately does not extend
  * (https://day.js.org/docs/en/parse/string-format). To read a bare wall-clock
- * string as a time in a given zone, call `dayjs.tz(input, timezone)`.
+ * string as a time in a given zone, call `readInZone(input, timezone)`:
+ * `dayjs.tz(input, timezone)` reads a repeated autumn time by today's offset.
  */
 type ConfiguredDayjs = ((date?: ConfigType) => DayjsInstance) & DayjsStatics
 

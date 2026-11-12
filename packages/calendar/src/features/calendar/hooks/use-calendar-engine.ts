@@ -4,7 +4,11 @@ import type {
 	IlamyPlugin,
 	PluginView,
 } from '@ilamy/types'
-import dayjs, { type Dayjs, isWallClockReading } from '@ilamy/utils/dayjs'
+import dayjs, {
+	type Dayjs,
+	isWallClockReading,
+	readInZone,
+} from '@ilamy/utils/dayjs'
 import { safeDate } from '@ilamy/utils/helpers'
 import {
 	type ComponentType,
@@ -126,7 +130,7 @@ const anchorInitialDate = (
 		return dayjs().tz(timezone)
 	}
 	if (isWallClockReading(initialDate)) {
-		return dayjs.tz(initialDate, timezone)
+		return readInZone(initialDate, timezone)
 	}
 	const instant = safeDate(initialDate) ?? dayjs()
 	return instant.tz(timezone)

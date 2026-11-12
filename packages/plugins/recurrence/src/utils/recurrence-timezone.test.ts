@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	setSystemTime,
+} from 'bun:test'
 import dayjs from '@ilamy/utils/dayjs'
 import { RRule } from 'rrule'
 import { generateRecurringEvents } from './generate-recurring-events'
@@ -138,6 +145,7 @@ describe('Recurrence across a daylight-saving change', () => {
 
 	afterEach(() => {
 		dayjs.tz.setDefault(originalTz)
+		setSystemTime()
 	})
 
 	/** A daily series from `startISO`, expanded over `[fromISO, toISO]`, as `local time | instant`. */
@@ -197,20 +205,28 @@ describe('Recurrence across a daylight-saving change', () => {
 		])
 	})
 
-	it('takes the first of a time repeated by the autumn change', () => {
-		// 2 November 2025: 01:30 happens in EDT and again in EST; §3.3.5 picks
-		// the first, EDT.
-		const occurrences = expandDaily(
-			'2025-11-01T05:30:00.000Z',
-			'2025-11-01T00:00:00.000Z',
-			'2025-11-03T23:59:59.999Z'
-		)
-		expect(occurrences).toEqual([
-			'11-01 01:30-04:00 | 2025-11-01T05:30:00.000Z',
-			'11-02 01:30-04:00 | 2025-11-02T05:30:00.000Z',
-			'11-03 01:30-05:00 | 2025-11-03T06:30:00.000Z',
-		])
-	})
+	// "Now" in both seasons: dayjs.tz() picks a repeated time by today's offset.
+	it.each([
+		['summer', '2026-07-01T12:00:00.000Z'],
+		['winter', '2026-01-15T12:00:00.000Z'],
+	])(
+		'takes the first of a time repeated by the autumn change, run in %s',
+		(_season, today) => {
+			// 2 November 2025: 01:30 happens in EDT and again in EST; §3.3.5 picks
+			// the first, EDT.
+			setSystemTime(new Date(today))
+			const occurrences = expandDaily(
+				'2025-11-01T05:30:00.000Z',
+				'2025-11-01T00:00:00.000Z',
+				'2025-11-03T23:59:59.999Z'
+			)
+			expect(occurrences).toEqual([
+				'11-01 01:30-04:00 | 2025-11-01T05:30:00.000Z',
+				'11-02 01:30-04:00 | 2025-11-02T05:30:00.000Z',
+				'11-03 01:30-05:00 | 2025-11-03T06:30:00.000Z',
+			])
+		}
+	)
 
 	it('excludes an occurrence after the change by its local-time instant', () => {
 		// An EXDATE written for 10 March at 09:00 EDT removes exactly that day.

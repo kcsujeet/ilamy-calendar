@@ -233,6 +233,32 @@ test.describe('New York, the week the clocks go back, in the year view', () => {
 	})
 })
 
+// 1:30 AM happens twice on 2 November; the first (EDT) is the one kept. "Now"
+// is in January, when dayjs.tz() alone picked the second by today's offset.
+test.describe('New York, a time the clocks go back over, picked in winter', () => {
+	test('a picked 1:30 AM is saved as the first 1:30 AM', async ({
+		browser,
+	}) => {
+		const { context, page } = await newYorkPage(browser)
+		await gotoScenario(page, {
+			scenario: 'basic',
+			view: 'month',
+			timezone: NEW_YORK,
+			date: '2025-11-01T12:00:00.000Z',
+			now: '2026-01-15T12:00:00.000Z',
+		})
+		const month = new MonthGrid(page)
+		await month.cellOn('2025-11-02').click()
+		await formDialog(page).waitFor()
+		await pickTime(page, 'start', '1:30 AM')
+		await saveForm(page)
+		const row = await lastRow(month)
+		// 1:30 EDT.
+		expect(row?.start).toBe('2025-11-02T05:30:00.000Z')
+		await context.close()
+	})
+})
+
 test.describe('New York, navigating over the day the clocks go back', () => {
 	// 00:30 EDT on Sunday 2 Nov. One day on is 00:30 EST, which `add` used to
 	// give as 23:30 EST on the 2nd (the previous day) because it kept EDT's offset.

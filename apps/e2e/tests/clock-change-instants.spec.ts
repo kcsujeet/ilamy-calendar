@@ -233,10 +233,8 @@ test.describe('New York, the week the clocks go back, in the year view', () => {
 	})
 })
 
-// 1:30 AM happens twice on 2 November, first in EDT and then in EST; RFC 5545
-// section 3.3.5 takes the first. dayjs chose by the zone's offset on the day
-// the code ran, so from November to March it saved the second (#395). The
-// clock is pinned in January to reproduce that.
+// 1:30 AM happens twice on 2 November; the first (EDT) is the one kept. "Now"
+// is in January, when dayjs.tz() alone picked the second by today's offset.
 test.describe('New York, a time the clocks go back over, picked in winter', () => {
 	test('a picked 1:30 AM is saved as the first 1:30 AM', async ({
 		browser,

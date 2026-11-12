@@ -50,7 +50,8 @@ alone picks between two readings by the zone's offset on the day the code runs
 (`tzOffset(+d(), timezone)`, `dayjs/plugin/timezone`, v1.11.23), so from
 November to March it took the second (#395). `readInZone` retries the reading
 with the offset in force a day earlier and keeps it when that offset holds at
-it. Without the prop, the native parse already takes the first.
+it; the engine's `initialDate` goes through it too. Without the prop, the
+native parse already takes the first.
 
 Both string rules serve the same rule at the top. An offset-carrying string
 already names a moment, so re-reading its digits in the calendar's zone would
@@ -71,9 +72,10 @@ Two consequences worth knowing:
 
 ### Saying it explicitly
 
-- `dayjs.tz(value)` — read a wall-clock string in the calendar's zone on
-  purpose. Use it when the value IS a clock reading, e.g. the `'YYYY-MM-DD'` an
-  `<input type="date">` reports.
+- `dayjs(value)` with the zone set, or `readInZone(value, zone)` — read a
+  wall-clock string in the calendar's zone on purpose. Use it when the value IS
+  a clock reading, e.g. the `'YYYY-MM-DD'` an `<input type="date">` reports.
+  `dayjs.tz(value)` alone reads a repeated autumn time by today's offset (#395).
 - `dayjs.utc(iso).tz(zone)` — parse an instant and render it in a zone named
   explicitly, depending on no global at all. `read-cell.ts` in the
   drag-to-create plugin does this for the `data-start`/`data-end` attributes.
@@ -124,8 +126,8 @@ it is read. Telling those apart needs the raw value, because a parse has already
 thrown the distinction away. The engine therefore takes the prop unparsed and
 applies the same rule the constructor does, with the zone passed in rather than
 read from the module default (`setDefault` runs in an effect, too late for the
-first render). The shared predicate is `isWallClockReading` in
-`packages/utils/src/dayjs.ts`.
+first render). The shared predicate is `isWallClockReading` and the shared
+reader `readInZone`, both in `packages/utils/src/dayjs.ts`.
 
 This is FullCalendar's `timeZone` rule too: a string without an offset is
 "parsed (and thus displayed) as if it were" in the configured zone, one with an

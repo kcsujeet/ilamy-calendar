@@ -90,49 +90,44 @@ describe('configured dayjs', () => {
 		expect(parsed.toISOString()).toBe('2026-03-02T00:00:00.000Z')
 	})
 
-	/**
-	 * #395. RFC 5545 section 3.3.5: a reading the autumn change repeats is its
-	 * first occurrence, and one the spring change skips takes the offset before
-	 * the gap. `dayjs.tz()` chose between two readings by the zone's offset
-	 * TODAY, so the answer flipped with the season the code ran in. Each case
-	 * runs with the clock in July and in January.
-	 */
+	// RFC 5545 section 3.3.5 (repeated: first; skipped: offset before the gap),
+	// with "now" in both seasons, since dayjs.tz() picks by today's offset.
 	describe.each([
 		['July', '2026-07-01T12:00:00.000Z'],
 		['January', '2026-01-15T12:00:00.000Z'],
 	])('on a clock-change day, run in %s', (_month, today) => {
-		const parsedOnDay = (zone: string, value: string) => {
+		const parseWithClockSet = (zone: string, value: string) => {
 			setSystemTime(new Date(today))
 			return parsedIn(zone, value).toISOString()
 		}
 
 		it('reads a repeated time as its first occurrence', () => {
-			expect(parsedOnDay('America/New_York', '2025-11-02T01:30')).toBe(
+			expect(parseWithClockSet('America/New_York', '2025-11-02T01:30')).toBe(
 				'2025-11-02T05:30:00.000Z'
 			)
-			expect(parsedOnDay('Europe/London', '2025-10-26T01:30')).toBe(
+			expect(parseWithClockSet('Europe/London', '2025-10-26T01:30')).toBe(
 				'2025-10-26T00:30:00.000Z'
 			)
 			// Lord Howe Island moves back by 30 minutes.
-			expect(parsedOnDay('Australia/Lord_Howe', '2025-04-06T01:45')).toBe(
+			expect(parseWithClockSet('Australia/Lord_Howe', '2025-04-06T01:45')).toBe(
 				'2025-04-05T14:45:00.000Z'
 			)
 		})
 
 		it('reads a skipped time with the offset before the gap', () => {
-			expect(parsedOnDay('America/New_York', '2025-03-09T02:30')).toBe(
+			expect(parseWithClockSet('America/New_York', '2025-03-09T02:30')).toBe(
 				'2025-03-09T07:30:00.000Z'
 			)
 		})
 
 		it('leaves readings either side of the repeated hour alone', () => {
-			expect(parsedOnDay('America/New_York', '2025-11-02T00:30')).toBe(
+			expect(parseWithClockSet('America/New_York', '2025-11-02T00:30')).toBe(
 				'2025-11-02T04:30:00.000Z'
 			)
-			expect(parsedOnDay('America/New_York', '2025-11-02T02:30')).toBe(
+			expect(parseWithClockSet('America/New_York', '2025-11-02T02:30')).toBe(
 				'2025-11-02T07:30:00.000Z'
 			)
-			expect(parsedOnDay('America/New_York', '2025-11-03T01:30')).toBe(
+			expect(parseWithClockSet('America/New_York', '2025-11-03T01:30')).toBe(
 				'2025-11-03T06:30:00.000Z'
 			)
 		})

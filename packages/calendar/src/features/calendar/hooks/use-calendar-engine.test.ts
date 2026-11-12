@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	setSystemTime,
+	vi,
+} from 'bun:test'
 import { agendaPlugin } from '@ilamy/calendar-agenda'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
 import type { CalendarEvent, EventsChange, IlamyPlugin } from '@ilamy/types'
@@ -1805,6 +1813,7 @@ describe('useCalendarEngine', () => {
 
 		afterEach(() => {
 			dayjs.tz.setDefault(originalTz)
+			setSystemTime()
 		})
 
 		const NOON_UTC_ISO = '2025-01-15T12:00:00.000Z'
@@ -1893,6 +1902,32 @@ describe('useCalendarEngine', () => {
 
 			expect(currentDate().format('Z')).toBe('+09:00')
 		})
+
+		// RFC 5545 section 3.3.5: a time the autumn change repeats is its first
+		// occurrence, whatever season the calendar is opened in.
+		it.each([
+			['July', '2026-07-01T12:00:00.000Z'],
+			['January', '2026-01-15T12:00:00.000Z'],
+		])(
+			'opens a repeated wall-clock date on its first occurrence, in %s',
+			(_month, today) => {
+				setSystemTime(new Date(today))
+				dayjs.tz.setDefault(undefined)
+				const initialDate = '2025-11-02T01:30'
+
+				const { result } = renderHook(() =>
+					useCalendarEngine({
+						...defaultConfig,
+						initialDate,
+						timezone: 'America/New_York',
+					})
+				)
+
+				expect(result.current.currentDate.toISOString()).toBe(
+					'2025-11-02T05:30:00.000Z'
+				)
+			}
+		)
 
 		it('returns to the machine zone when the timezone prop is removed', () => {
 			const { moveTo } = renderZonedEngineHook('Asia/Tokyo')

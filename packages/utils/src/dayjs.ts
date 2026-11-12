@@ -224,20 +224,15 @@ export const isWallClockReading = (input?: dayjs.ConfigType): input is string =>
 	typeof input === 'string' && !hasExplicitOffset(input)
 
 /**
- * Reads a wall-clock string in `zone`, taking the first of a reading the
- * autumn change repeats (RFC 5545 section 3.3.5, #395).
- *
- * `dayjs.tz()` picks between the two readings by the zone's offset TODAY
- * (`tzOffset(+d(), timezone)`, dayjs/plugin/timezone), so the same string gave
- * another instant from November to March. The reading is retried with the
- * offset in force a day earlier, and kept when that offset is the one in force
- * at it, which holds only for the first of a repeated reading. A reading the
- * spring change skips never passes, and keeps dayjs's answer: the offset
- * before the gap.
+ * Reads a wall-clock string in `zone`, a repeated autumn time as its first
+ * occurrence (RFC 5545 section 3.3.5). `dayjs.tz()` picks by the zone's offset
+ * today (`tzOffset(+d(), timezone)`), so the reading is retried with the day
+ * before's offset and kept when that offset holds at it.
  */
-const readInZone = (input: string, zone: string): dayjs.Dayjs => {
+export const readInZone = (input: string, zone: string): dayjs.Dayjs => {
 	const reading = dayjs.tz(input, zone)
-	const offsetDayBefore = reading.subtract(1, 'day').tz(zone).utcOffset()
+	const dayBefore = reading.subtract(1, 'day').tz(zone)
+	const offsetDayBefore = dayBefore.utcOffset()
 	const offsetShift = reading.utcOffset() - offsetDayBefore
 	const isOffsetUnchanged = offsetShift === 0
 	if (isOffsetUnchanged) {
@@ -324,7 +319,8 @@ type DayjsStatics = { [K in keyof typeof dayjs]: (typeof dayjs)[K] }
  * keeps it a compile error either way. Format parsing would additionally need the
  * CustomParseFormat plugin, which this module deliberately does not extend
  * (https://day.js.org/docs/en/parse/string-format). To read a bare wall-clock
- * string as a time in a given zone, call `dayjs.tz(input, timezone)`.
+ * string as a time in a given zone, call `readInZone(input, timezone)`:
+ * `dayjs.tz(input, timezone)` reads a repeated autumn time by today's offset.
  */
 type ConfiguredDayjs = ((date?: ConfigType) => DayjsInstance) & DayjsStatics
 

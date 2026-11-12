@@ -205,8 +205,7 @@ describe('Recurrence across a daylight-saving change', () => {
 		])
 	})
 
-	// dayjs.tz() resolves a repeated time by the zone's offset TODAY, so the
-	// answer used to depend on the season the suite ran in (#395).
+	// "Now" in both seasons: dayjs.tz() picks a repeated time by today's offset.
 	it.each([
 		['summer', '2026-07-01T12:00:00.000Z'],
 		['winter', '2026-01-15T12:00:00.000Z'],
@@ -221,7 +220,6 @@ describe('Recurrence across a daylight-saving change', () => {
 				'2025-11-01T00:00:00.000Z',
 				'2025-11-03T23:59:59.999Z'
 			)
-			setSystemTime()
 			expect(occurrences).toEqual([
 				'11-01 01:30-04:00 | 2025-11-01T05:30:00.000Z',
 				'11-02 01:30-04:00 | 2025-11-02T05:30:00.000Z',

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [v3.3.1](https://github.com/kcsujeet/ilamy-calendar/compare/v3.3.0...v3.3.1)
+
+> 17 November 2026
+
+##### Fixes
+
+- fix: in a calendar with a `timezone`, a time the autumn clock change repeats (01:30 on 2 November in New York) now reads as its first occurrence, as RFC 5545 3.3.5 says. From November to March it read as the second, so the event form, drops, recurrence and the starting `date` prop could place it an hour late ([`#398`](https://github.com/kcsujeet/ilamy-calendar/pull/398)) — Closes [`#395`](https://github.com/kcsujeet/ilamy-calendar/issues/395)
+- fix: the agenda view now uses a custom `renderEvent` for each row's title, keeping its time label and colour dot. `IlamyCalendarApi` gains a read-only `renderEvent` so plugins can read it ([`#397`](https://github.com/kcsujeet/ilamy-calendar/pull/397)) — Closes [`#394`](https://github.com/kcsujeet/ilamy-calendar/issues/394)
+- fix: in the horizontal resource timeline with hourly columns, events that meet at a time between hours (07:00–09:17 and 09:17–11:00) now share a row instead of stacking ([`#389`](https://github.com/kcsujeet/ilamy-calendar/pull/389)) — Closes [`#388`](https://github.com/kcsujeet/ilamy-calendar/issues/388) — Thanks [@ChrisWangg](https://github.com/ChrisWangg)!
+- fix: the published build carries one copy of the dayjs configuration instead of two, one of them built from a stale checkout ([`#391`](https://github.com/kcsujeet/ilamy-calendar/pull/391))
+
 #### [v3.3.0](https://github.com/kcsujeet/ilamy-calendar/compare/v3.2.1...v3.3.0)
 
 > 26 October 2026

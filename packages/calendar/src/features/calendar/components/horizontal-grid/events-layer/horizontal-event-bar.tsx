@@ -1,22 +1,30 @@
-import type { CalendarEvent } from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
-import { isSameDay } from '@ilamy/utils/helpers'
-import { DraggableEvent } from '@/features/calendar/components/draggable-event/draggable-event'
-import type { ResizeGranularity } from '@/features/calendar/components/draggable-event/resize-handle'
-import { getDragSegment } from '@/features/calendar/utils/grab-offset'
-import { keys } from '@/features/calendar/utils/keys'
 import {
 	getHorizontalBarStyle,
 	type HorizontalPositionedEvent,
-} from '@/features/calendar/utils/layout/geometry'
+} from '@ilamy/core'
+import type { CalendarEvent } from '@ilamy/types'
+import {
+	isAfter,
+	isSameDay,
+	parseDate,
+	resolveZone,
+	subtract,
+	toUtcIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
+import { DraggableEvent } from '@/features/calendar/components/draggable-event/draggable-event'
+import type { ResizeGranularity } from '@/features/calendar/components/draggable-event/resize-handle'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { getDragSegment } from '@/features/calendar/utils/grab-offset'
+import { keys } from '@/features/calendar/utils/keys'
 
 /** Identifies one bar: a row draws an event once per stacking row and resource. */
 export const getHorizontalEventKey = (
 	positioned: HorizontalPositionedEvent,
-	weekStart: Dayjs | undefined,
+	weekStart: ZonedDate | undefined,
 	resourceId?: string | number
 ) =>
-	`${positioned.event.id}-${positioned.row}-${weekStart?.toISOString()}-${resourceId ?? 'no-resource'}`
+	`${positioned.event.id}-${positioned.row}-${weekStart ? toUtcIso(weekStart) : undefined}-${resourceId ?? 'no-resource'}`
 
 /**
  * What a resize of this bar snaps to. A grid of hours snaps to its cells; a
@@ -26,19 +34,20 @@ export const getHorizontalEventKey = (
  */
 const getResizeGranularity = (
 	event: CalendarEvent,
-	gridType: 'day' | 'hour'
+	gridType: 'day' | 'hour',
+	timezone: string
 ): ResizeGranularity | undefined => {
 	if (gridType === 'hour') {
 		return 'slot'
 	}
-	const hasSpan = event.end.isAfter(event.start)
-	const lastCoveredInstant = hasSpan
-		? event.end.subtract(1, 'millisecond')
-		: event.start
-	// `isSameDay`, not `isSame(…, 'day')`: every bar asks this on every render,
-	// and the unit form goes through dayjs-timezone's `startOf` (see helpers).
-	// Both instants come from one event, so they share its zone.
-	const isSingleDay = isSameDay(event.start, lastCoveredInstant)
+	const start = parseDate(event.start, timezone)
+	const end = parseDate(event.end, timezone)
+	if (!(start && end)) {
+		return 'day'
+	}
+	const hasSpan = isAfter(end, start)
+	const lastCoveredInstant = hasSpan ? subtract(end, 1, 'millisecond') : start
+	const isSingleDay = isSameDay(start, lastCoveredInstant)
 	const isDot = !event.allDay && isSingleDay
 	return isDot ? undefined : 'day'
 }
@@ -49,14 +58,12 @@ interface HorizontalEventBarProps {
 	elementId: string
 	top: number
 	eventHeight: number
-	range: { start: Dayjs | undefined; end: Dayjs | undefined }
+	range: { start: ZonedDate | undefined; end: ZonedDate | undefined }
 	resourceId?: string | number
 	draggedEventId?: string | number
-	/** The hidden weekdays of a day grid, so a grab counts only drawn columns. */
 	hiddenDays?: Set<number>
 }
 
-/** One event, spanning the columns the layout pass gave it. */
 export function HorizontalEventBar({
 	positioned,
 	gridType,
@@ -68,6 +75,8 @@ export function HorizontalEventBar({
 	draggedEventId,
 	hiddenDays,
 }: HorizontalEventBarProps) {
+	const timezone = useSmartCalendarContext((c) => c.timezone)
+	const zone = resolveZone(timezone)
 	const { event, left, width } = positioned
 
 	return (
@@ -87,7 +96,7 @@ export function HorizontalEventBar({
 				isBeingDragged={draggedEventId === event.id}
 				isTruncatedEnd={positioned.isTruncatedEnd}
 				isTruncatedStart={positioned.isTruncatedStart}
-				resizeGranularity={getResizeGranularity(event, gridType)}
+				resizeGranularity={getResizeGranularity(event, gridType, zone)}
 				sourceResourceId={resourceId}
 			/>
 		</div>

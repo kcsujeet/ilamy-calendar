@@ -12,6 +12,7 @@ interface DeleteRecurringEventProps {
 	targetEvent: CalendarEvent
 	currentEvents: CalendarEvent[]
 	scope: 'this' | 'following' | 'all'
+	timezone?: string
 }
 
 interface ScopedDeleteContext {
@@ -19,13 +20,9 @@ interface ScopedDeleteContext {
 	updatedEvents: CalendarEvent[]
 	baseEventIndex: number
 	baseEvent: CalendarEvent
+	timezone?: string
 }
 
-/**
- * Scope "this": EXDATE the occurrence on the base and drop any detached override
- * for it. Persistence callbacks are mutually exclusive — report `deleted` when a
- * stored override is removed, otherwise report `updated` with the new EXDATE.
- */
 const deleteThisScope = ({
 	targetEvent,
 	updatedEvents,
@@ -47,8 +44,6 @@ const deleteThisScope = ({
 		return isDetachedOverride && belongsToSeries && isThisOccurrence
 	}
 
-	// Capture the dropped override before filtering so it can be reported as a
-	// real stored deletion rather than silently vanishing from `events`.
 	const droppedOverride = updatedEvents.find(isThisOccurrenceOverride)
 	const events = updatedEvents.filter((e) => !isThisOccurrenceOverride(e))
 
@@ -60,10 +55,6 @@ const deleteThisScope = ({
 	}
 }
 
-/**
- * Scope "all": remove the entire series (base + every detached override sharing
- * the parent uid), reporting all removed rows in `deleted`.
- */
 const deleteAllScope = ({
 	targetEvent,
 	updatedEvents,
@@ -83,29 +74,22 @@ const deleteAllScope = ({
 	}
 }
 
-/**
- * Scope "following": cut the series before the target's ORIGINAL occurrence
- * (see `cutSeriesBefore`), keeping the last pre-target occurrence. Moved
- * occurrences after the cut go with the series, as they do for "edit this and
- * following"; left behind, they stayed drawn (#315). On the series' first
- * occurrence nothing is kept, so the whole series is removed: cut instead, it
- * would end before it started (RFC 5545 §3.8.5.3: DTSTART is the first
- * instance).
- */
 const deleteFollowingScope = (
 	context: ScopedDeleteContext
 ): PluginMutationResult => {
-	const { targetEvent, updatedEvents, baseEventIndex, baseEvent } = context
+	const { targetEvent, updatedEvents, baseEventIndex, baseEvent, timezone } =
+		context
 	const occurrenceStartISO = getOccurrenceStartISO(targetEvent)
 	const isFirstOccurrence =
-		countOccurrencesBefore(baseEvent, occurrenceStartISO) === 0
+		countOccurrencesBefore(baseEvent, occurrenceStartISO, timezone) === 0
 	if (isFirstOccurrence) {
 		return deleteAllScope(context)
 	}
 
 	const { terminatedEvent, isFollowingOverride } = cutSeriesBefore(
 		baseEvent,
-		occurrenceStartISO
+		occurrenceStartISO,
+		timezone
 	)
 	updatedEvents[baseEventIndex] = terminatedEvent
 	const followingOverrides = updatedEvents.filter(isFollowingOverride)
@@ -131,10 +115,14 @@ export const deleteRecurringEvent = ({
 	targetEvent,
 	currentEvents,
 	scope,
+	timezone,
 }: DeleteRecurringEventProps): PluginMutationResult => {
 	const updatedEvents = [...currentEvents]
 	const baseEventIndex = findBaseEventIndex(updatedEvents, targetEvent)
 	const baseEvent = updatedEvents[baseEventIndex]
+	if (!baseEvent) {
+		throw new Error('Base recurring event not found')
+	}
 
 	const handler = scopedDeleteHandlers[scope]
 	if (!handler) {
@@ -148,5 +136,6 @@ export const deleteRecurringEvent = ({
 		updatedEvents,
 		baseEventIndex,
 		baseEvent,
+		timezone,
 	})
 }

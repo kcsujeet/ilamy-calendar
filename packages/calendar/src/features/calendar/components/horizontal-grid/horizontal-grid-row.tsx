@@ -4,13 +4,17 @@ import type {
 	Resource,
 } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import {
+	getWeekNumber,
+	parseDate,
+	resolveZone,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import type React from 'react'
 import { memo, useMemo } from 'react'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/use-processed-week-events'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
-import { getWeekNumber } from '@/features/calendar/utils/week-number'
 import { GridCell } from '../grid-cell/grid-cell'
 import { ResourceCell } from '../resource-cell'
 import { HorizontalGridEventsLayer } from './events-layer/horizontal-grid-events-layer'
@@ -60,20 +64,34 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	showDayNumber = false,
 	showWeekNumber = false,
 }) => {
-	const { weekNumbers, weekNumberCalculation } = useSmartCalendarContext()
+	const { weekNumbers, weekNumberCalculation, timezone, currentLocale } =
+		useSmartCalendarContext((c) => ({
+			weekNumbers: c.weekNumbers,
+			weekNumberCalculation: c.weekNumberCalculation,
+			timezone: c.timezone,
+			currentLocale: c.currentLocale,
+		}))
+	const zone = resolveZone(timezone)
 
 	const isResourceCalendar = variant === 'resource'
-	// Flat columns: each column has col.day (regular month, resource month)
-	// Grouped columns: each column has col.days[] (resource week horizontal)
 	const isGrouped = columns.some((col) => col.days)
 
-	// Collect all days for flat rows
+	const parsedColumns = useMemo(
+		() =>
+			columns.map((col) => ({
+				col,
+				zonedDay: col.day ? parseDate(col.day, zone) : undefined,
+			})),
+		[columns, zone]
+	)
+
 	const flatDays = useMemo(() => {
 		if (isGrouped) return []
-		return columns.map((col) => col.day).filter((d): d is Dayjs => Boolean(d))
-	}, [columns, isGrouped])
+		return parsedColumns
+			.map((entry) => entry.zonedDay)
+			.filter((d): d is ZonedDate => Boolean(d))
+	}, [parsedColumns, isGrouped])
 
-	// Compute events once at the row level — shared between GridCells and events layer
 	const { positionedEvents, columnLayouts } = useProcessedWeekEvents({
 		days: flatDays,
 		gridType,
@@ -85,7 +103,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	const isWeekNumberOn = weekNumbers === true
 	const weekNumber =
 		showWeekNumber && isWeekNumberOn && firstDay
-			? getWeekNumber(firstDay, weekNumberCalculation)
+			? getWeekNumber(firstDay, weekNumberCalculation, currentLocale)
 			: undefined
 
 	return (
@@ -97,10 +115,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 			<div className="relative flex-1 flex min-w-0">
 				{/* gap-px + bg-border draws the vertical separators between cells. */}
 				<div className="flex w-full min-w-0 gap-px bg-border">
-					{/* Keyed by position, not by date, so navigating keeps every cell
-					    mounted: a remount re-registers its droppable, and dnd-kit copies
-					    its whole registry for each one (#300). */}
-					{columns.map((col, columnIndex) => {
+					{parsedColumns.map(({ col, zonedDay }, columnIndex) => {
 						const columnKey = keys.listKey('col', columnIndex)
 						if (col.days) {
 							return (
@@ -114,20 +129,21 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 									resource={resource}
 									resourceId={resource?.id}
 									showDayNumber={showDayNumber}
+									timezone={zone}
 								/>
 							)
 						}
 
-						if (!col.day) return null
-						const cellLayout = columnLayouts.get(col.day)
+						if (!zonedDay) return null
+						const cellLayout = columnLayouts.get(zonedDay)
 						return (
 							<GridCell
 								allDay={allDay}
 								axis="horizontal"
 								className={cn('flex-1 w-20', col.className)}
-								day={col.day}
+								day={zonedDay}
 								gridType={gridType}
-								hour={gridType === 'hour' ? col.day.hour() : undefined}
+								hour={gridType === 'hour' ? zonedDay.hour : undefined}
 								key={columnKey}
 								precomputedLayout={cellLayout}
 								resourceId={resource?.id}
@@ -138,7 +154,6 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 					})}
 				</div>
 
-				{/* Events layer positioned absolutely over the row */}
 				{!isGrouped && (
 					<div className="absolute inset-0 z-10 pointer-events-none">
 						<HorizontalGridEventsLayer
@@ -158,10 +173,6 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 	)
 }
 
-/**
- * A column containing multiple days (e.g., one day's hourly slots in resource week view).
- * Needs its own useProcessedWeekEvents call since events are scoped to this day group.
- */
 const GroupedColumn = memo(
 	({
 		col,
@@ -172,6 +183,7 @@ const GroupedColumn = memo(
 		dayNumberHeight,
 		showDayNumber,
 		id,
+		timezone,
 	}: {
 		col: HorizontalGridColumn
 		gridType?: 'day' | 'hour'
@@ -181,8 +193,15 @@ const GroupedColumn = memo(
 		dayNumberHeight?: number
 		showDayNumber: boolean
 		id: string | number
+		timezone: string
 	}) => {
-		const days = col.days ?? []
+		const days = useMemo(
+			() =>
+				(col.days ?? [])
+					.map((dayIso) => parseDate(dayIso, timezone))
+					.filter((d): d is ZonedDate => Boolean(d)),
+			[col.days, timezone]
+		)
 		const { positionedEvents, columnLayouts } = useProcessedWeekEvents({
 			days,
 			gridType,
@@ -192,7 +211,6 @@ const GroupedColumn = memo(
 
 		return (
 			<div className="flex relative w-full">
-				{/* gap-px + bg-border draws the day separators within the group. */}
 				<div className="flex w-full gap-px bg-border">
 					{days.map((day, dayIndex) => {
 						const cellLayout = columnLayouts.get(day)
@@ -203,7 +221,7 @@ const GroupedColumn = memo(
 								className={cn('flex-1 w-20', col.className)}
 								day={day}
 								gridType={gridType}
-								hour={gridType === 'hour' ? day.hour() : undefined}
+								hour={gridType === 'hour' ? day.hour : undefined}
 								key={keys.listKey('day', dayIndex)}
 								precomputedLayout={cellLayout}
 								resourceId={resourceId}

@@ -1,5 +1,13 @@
-import { afterEach, describe, expect, it } from 'bun:test'
-import dayjs from '@ilamy/utils/dayjs'
+import { describe, expect, it } from 'bun:test'
+import { CalendarTestProvider } from '@ilamy/calendar/testing'
+import {
+	dayKey,
+	endOf,
+	isBefore,
+	parseDate,
+	resolveZone,
+	withTime,
+} from '@ilamy/utils/temporal'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { DateInput } from './date-input'
 
@@ -8,19 +16,23 @@ import { DateInput } from './date-input'
  * (`recurrence-end-fields.tsx`), so every one of these paths is user-reachable.
  */
 describe('DateInput', () => {
-	const renderPicker = (date?: Date) => {
+	const renderPicker = (date?: Date, timezone?: string) => {
+		const zone = resolveZone(timezone)
+		const parsedInitial = date ? parseDate(date, zone) : undefined
 		const received: (Date | undefined)[] = []
 		render(
-			<DateInput
-				date={date}
-				onChange={(value) => {
-					received.push(value)
-				}}
-			/>
+			<CalendarTestProvider timezone={timezone}>
+				<DateInput
+					date={date}
+					onChange={(value) => {
+						received.push(value)
+					}}
+				/>
+			</CalendarTestProvider>
 		)
 		return {
 			input: screen.getByDisplayValue(
-				date ? dayjs(date).format('YYYY-MM-DD') : ''
+				parsedInitial ? dayKey(parsedInitial) : ''
 			),
 			received,
 		}
@@ -31,13 +43,6 @@ describe('DateInput', () => {
 		expect(input).toBeInTheDocument()
 	})
 
-	/**
-	 * Regression test. The component called `dayjs(raw, 'YYYY-MM-DD')`, but the
-	 * configured dayjs wrapper forwards every argument to `dayjs.tz()`, whose
-	 * second parameter is a TIMEZONE rather than a parse format. That made the
-	 * format string be read as a zone name and threw
-	 * `RangeError: invalid time zone: YYYY-MM-DD` on every keystroke.
-	 */
 	it('parses typed input without throwing', () => {
 		const { input, received } = renderPicker()
 		expect(() => {
@@ -46,7 +51,8 @@ describe('DateInput', () => {
 		expect(received).toHaveLength(1)
 		const parsed = received.at(0)
 		expect(parsed).toBeInstanceOf(Date)
-		expect(dayjs(parsed).format('YYYY-MM-DD')).toBe('2026-03-02')
+		const zoned = parsed ? parseDate(parsed, resolveZone()) : undefined
+		expect(zoned ? dayKey(zoned) : '').toBe('2026-03-02')
 	})
 
 	it('reports undefined when the field is cleared', () => {
@@ -64,25 +70,14 @@ describe('DateInput', () => {
 	it('handles a leap day', () => {
 		const { input, received } = renderPicker()
 		fireEvent.change(input, { target: { value: '2028-02-29' } })
-		expect(dayjs(received.at(0)).format('YYYY-MM-DD')).toBe('2028-02-29')
+		const parsed = received.at(0)
+		const zoned = parsed ? parseDate(parsed, resolveZone()) : undefined
+		expect(zoned ? dayKey(zoned) : '').toBe('2028-02-29')
 	})
 
-	/**
-	 * The reported instant is start of day in the CONFIGURED timezone, which the
-	 * calendar sets through `dayjs.tz.setDefault` (`use-calendar-engine.ts`).
-	 * East of UTC that instant lands on the previous UTC day, so these pin the
-	 * contract the sole consumer relies on: `recurrence-editor`'s `setUntil`
-	 * normalizes with `endOf('day')` in the same zone, which must land the
-	 * series end back on the day the user picked.
-	 */
 	describe('configured timezone', () => {
-		afterEach(() => {
-			dayjs.tz.setDefault(undefined)
-		})
-
-		it('reports start of day in the configured timezone', () => {
-			dayjs.tz.setDefault('Asia/Tokyo')
-			const { input, received } = renderPicker()
+		it('reports start of day in the calendar timezone', () => {
+			const { input, received } = renderPicker(undefined, 'Asia/Tokyo')
 
 			fireEvent.change(input, { target: { value: '2026-03-02' } })
 
@@ -90,15 +85,20 @@ describe('DateInput', () => {
 		})
 
 		it('survives the endOf-day round trip its consumer applies', () => {
-			dayjs.tz.setDefault('Asia/Tokyo')
-			const { input, received } = renderPicker()
+			const { input, received } = renderPicker(undefined, 'Asia/Tokyo')
 
 			fireEvent.change(input, { target: { value: '2026-03-02' } })
-			const until = dayjs(received.at(0)).endOf('day')
-			const lastOccurrence = dayjs('2026-03-02').hour(23)
+			const parsed = received.at(0)
+			const untilStart = parsed ? parseDate(parsed, 'Asia/Tokyo') : undefined
+			const lastOccurrenceDay = parseDate('2026-03-02', 'Asia/Tokyo')
+			if (!(untilStart && lastOccurrenceDay)) {
+				throw new Error('Expected parsed Tokyo dates')
+			}
+			const until = endOf(untilStart, 'day')
+			const lastOccurrence = withTime(lastOccurrenceDay, { hour: 23 })
 
-			expect(until.format('YYYY-MM-DD')).toBe('2026-03-02')
-			expect(lastOccurrence.isBefore(until)).toBe(true)
+			expect(dayKey(until)).toBe('2026-03-02')
+			expect(isBefore(lastOccurrence, until)).toBe(true)
 		})
 	})
 })

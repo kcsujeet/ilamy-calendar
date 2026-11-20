@@ -1,5 +1,6 @@
+import { type HorizontalPositionedEvent, layoutHorizontal } from '@ilamy/core'
 import type { Resource } from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import { add, startOf, type ZonedDate } from '@ilamy/utils/temporal'
 import { memo, useMemo } from 'react'
 import { DAY_NUMBER_HEIGHT } from '@/config/constants'
 import { GridNowLine } from '@/features/calendar/components/grid-now-line'
@@ -9,45 +10,32 @@ import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-cal
 import { useDragPreview } from '@/features/calendar/stores/drag-preview-context'
 import { GridAxisContext } from '@/features/calendar/stores/grid-axis-context'
 import { keys } from '@/features/calendar/utils/keys'
-import type { HorizontalPositionedEvent } from '@/features/calendar/utils/layout/geometry'
-import { layoutHorizontal } from '@/features/calendar/utils/layout/horizontal'
 import { HorizontalDragPreview } from './horizontal-drag-preview'
 import {
 	getHorizontalEventKey,
 	HorizontalEventBar,
 } from './horizontal-event-bar'
 
-/**
- * The preview is a single bar, so it never competes for a row and is never the
- * one that overflows. `layoutHorizontal` still wants a cap.
- */
 const PREVIEW_ROW_CAP = 1
 
 interface HorizontalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
-	days: Dayjs[]
+	days: ZonedDate[]
 	resourceId?: string | number
 	resource?: Resource
 	'data-testid'?: string
 	positionedEvents: HorizontalPositionedEvent[]
-	/** Pixel offset reserved above the bars (the day-number strip). */
 	dayNumberHeight?: number
-	/**
-	 * True for the all-day band, which shows only all-day events. A month row
-	 * leaves it unset and shows both kinds — same rule the real events take
-	 * through `useProcessedWeekEvents`.
-	 */
 	allDay?: boolean
 }
 
 interface DragPreviewInput {
-	days: Dayjs[]
+	days: ZonedDate[]
 	gridType: 'day' | 'hour'
 	resourceId?: string | number
 	allDay?: boolean
 }
 
-/** The in-flight drag candidate laid out on this layer, or null when none lands here. */
 const useDragPreviewPositioned = ({
 	days,
 	gridType,
@@ -88,13 +76,13 @@ const NoMemoHorizontalGridEventsLayer: React.FC<
 }) => {
 	const { eventHeight, eventSpacing } = useSmartCalendarContext()
 	const dragPreview = useDragPreview()
-	const weekStart = days.at(0)?.startOf('day')
-	const rangeStart = days.at(0)
-	const rangeEnd = days.at(-1)?.add(1, gridType)
+	const firstDay = days.at(0)
+	const lastDay = days.at(-1)
+	const weekStart = firstDay ? startOf(firstDay, 'day') : undefined
+	const rangeStart = firstDay
+	const rangeEnd = lastDay ? add(lastDay, 1, gridType) : undefined
 	const hiddenDaysOfDayGrid = useHiddenDaysOfGrid(gridType)
 
-	// Layout returns the abstract row; the renderer owns the CSS units. Shared
-	// so the preview cannot drift from the bar it mirrors.
 	const getRowTop = (row: number) =>
 		dayNumberHeight + eventSpacing + row * (eventHeight + eventSpacing)
 

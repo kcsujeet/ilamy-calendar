@@ -1,10 +1,20 @@
-import type {
-	CalendarEvent,
-	Dayjs,
-	PluginMutationResult,
-} from '@ilamy/calendar'
-import dayjs from '@ilamy/utils/dayjs'
-import { wallClockDiff } from '@ilamy/utils/helpers'
+import type { CalendarEvent, PluginMutationResult } from '@ilamy/calendar'
+import {
+	add,
+	elapsedDiff,
+	getFields,
+	isAfter,
+	now,
+	parseDate,
+	resolveZone,
+	startOf,
+	toDate,
+	toOffsetIso,
+	toUtcIso,
+	wallClockDiff,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { type ByWeekday, RRule, Weekday } from 'rrule'
 import type { RRuleOptions } from '../types'
 import { getNthWeekdayOfMonth } from './recurrence-presets'
@@ -16,28 +26,17 @@ import {
 	getOccurrenceStartISO,
 } from './series-helpers'
 
-/**
- * Keeps the calendar day from `target` while applying the time-of-day from `source`.
- * Used to edit recurring series anchors without shifting the series to an instance day.
- *
- * The time of day is the CLOCK time, not the time elapsed since midnight: on a
- * clock-change day 09:30 is 8.5 or 10.5 hours after midnight, which moved the
- * series an hour (the grid reads clock time too since #311).
- */
-const withTimeOfDay = (target: Dayjs, source: Dayjs): Dayjs => {
-	const targetDay = target.format('YYYY-MM-DD')
-	const sourceTime = source.format('HH:mm:ss.SSS')
-	// Offset-less, so it is read in the calendar's zone with the offset in
-	// force at that clock time.
-	const wallClock = `${targetDay}T${sourceTime}`
-	return dayjs(wallClock)
-}
+const mustZoned = (value: string | Date | undefined, zone: string): ZonedDate =>
+	parseDate(value, zone) ?? now(zone)
 
-/**
- * The form reports `rrule: undefined` when the user unticks Repeat. An update
- * that never touched the rule has no `rrule` key at all (a drag, an untouched
- * form), so the key being present is the signal, not its value.
- */
+const withTimeOfDay = (target: ZonedDate, source: ZonedDate): ZonedDate =>
+	withTime(target, {
+		hour: source.hour,
+		minute: source.minute,
+		second: source.second,
+		millisecond: source.millisecond,
+	})
+
 const isRepeatRemoved = (updates: Partial<CalendarEvent>): boolean =>
 	'rrule' in updates && updates.rrule === undefined
 
@@ -46,23 +45,19 @@ interface FollowingSeriesArgs {
 	targetEvent: CalendarEvent
 	updates: Partial<CalendarEvent>
 	occurrencesBefore: number
+	zone: string
 }
 
-/**
- * Where the new series of a "following" edit starts. It is anchored on the
- * ORIGINAL day of the occurrence, shifted by the days the form (or the drag)
- * moved it: a moved occurrence edited without changing its day must not start
- * the series on the day it was moved to, which would lose the days between.
- */
 const getFollowingSeriesStart = (
 	targetEvent: CalendarEvent,
-	editedStart: Dayjs
-): Dayjs => {
-	const originalStart = dayjs(getOccurrenceStartISO(targetEvent))
-	const targetDay = targetEvent.start.startOf('day')
-	const editedDay = editedStart.startOf('day')
-	const daysMoved = wallClockDiff(editedDay, targetDay, 'day')
-	return withTimeOfDay(originalStart.add(daysMoved, 'day'), editedStart)
+	editedStart: ZonedDate,
+	zone: string
+): ZonedDate => {
+	const originalStart = mustZoned(getOccurrenceStartISO(targetEvent), zone)
+	const targetDay = startOf(mustZoned(targetEvent.start, zone), 'day')
+	const editedDay = startOf(editedStart, 'day')
+	const daysMoved = Math.round(wallClockDiff(editedDay, targetDay, 'day'))
+	return withTimeOfDay(add(originalStart, daysMoved, 'day'), editedStart)
 }
 
 const toWeekday = (day: ByWeekday): Weekday => {
@@ -72,32 +67,31 @@ const toWeekday = (day: ByWeekday): Weekday => {
 	return typeof day === 'string' ? RRule[day] : day
 }
 
-// rrule numbers weekdays from Monday (0); dayjs from Sunday (0).
-const getRRuleWeekdayNumber = (day: Dayjs): number => (day.day() + 6) % 7
+const getRRuleWeekdayNumber = (day: ZonedDate): number =>
+	(getFields(day).dayOfWeek + 6) % 7
 
-const weekdayOccursOn = (entry: ByWeekday, day: Dayjs): boolean => {
+const weekdayOccursOn = (entry: ByWeekday, day: ZonedDate): boolean => {
 	const { weekday, n } = toWeekday(entry)
 	const isSameWeekday = weekday === getRRuleWeekdayNumber(day)
-	const isSameNth = n === undefined || n === getNthWeekdayOfMonth(day.toDate())
+	const isSameNth =
+		n === undefined || n === getNthWeekdayOfMonth(toDate(day), day.timeZoneId)
 	return isSameWeekday && isSameNth
 }
 
-const moveWeekday = (entry: ByWeekday, to: Dayjs): Weekday => {
+const moveWeekday = (entry: ByWeekday, to: ZonedDate): Weekday => {
 	const { n } = toWeekday(entry)
-	const nth = n === undefined ? undefined : getNthWeekdayOfMonth(to.toDate())
+	const nth =
+		n === undefined
+			? undefined
+			: getNthWeekdayOfMonth(toDate(to), to.timeZoneId)
 	return new Weekday(getRRuleWeekdayNumber(to), nth)
 }
 
-/**
- * Moves the entries of a by-rule that name `from`'s day onto `to`'s day, so a
- * series that starts on `to` has a DTSTART that is one of its own instances.
- * A rule that already names `to`'s day is the user's choice and is left alone.
- */
 const moveEntries = <T>(
 	entries: T[],
-	occursOn: (entry: T, day: Dayjs) => boolean,
+	occursOn: (entry: T, day: ZonedDate) => boolean,
 	move: (entry: T) => T,
-	{ from, to }: { from: Dayjs; to: Dayjs }
+	{ from, to }: { from: ZonedDate; to: ZonedDate }
 ): T[] => {
 	const namesNewDay = entries.some((entry) => occursOn(entry, to))
 	if (namesNewDay) {
@@ -109,19 +103,9 @@ const moveEntries = <T>(
 const toArray = <T>(value: T | T[]): T[] =>
 	Array.isArray(value) ? value : [value]
 
-/**
- * A "following" edit that moves the occurrence to another weekday or day of the
- * month starts the new series there, so the rule's by-weekday, by-month-day and
- * by-month entries that named the old day follow it. RFC 5545 §3.8.5.3: DTSTART
- * is the first instance and "SHOULD be synchronized with the recurrence rule";
- * rrule.js skips a DTSTART the rule does not match, so the moved occurrence
- * vanished. Rules counted from the end (a negative day) and BYSETPOS are left as
- * written. Unverified: whether Google Calendar moves only the entry that named
- * the old day (as here) or every weekday of a multi-day rule.
- */
 const moveRuleToStart = (
 	rule: RRuleOptions,
-	days: { from: Dayjs; to: Dayjs }
+	days: { from: ZonedDate; to: ZonedDate }
 ): RRuleOptions => {
 	const { to } = days
 	const moved = { ...rule }
@@ -136,39 +120,34 @@ const moveRuleToStart = (
 	if (rule.bymonthday != null) {
 		moved.bymonthday = moveEntries(
 			toArray(rule.bymonthday),
-			(date, day) => date === day.date(),
-			() => to.date(),
+			(date, day) => date === day.day,
+			() => to.day,
 			days
 		)
 	}
 	if (rule.bymonth != null) {
 		moved.bymonth = moveEntries(
 			toArray(rule.bymonth),
-			(month, day) => month === day.month() + 1,
-			() => to.month() + 1,
+			(month, day) => month === day.month,
+			() => to.month,
 			days
 		)
 	}
 	return moved
 }
 
-/**
- * The rule of the new series. A rule whose COUNT the user left alone keeps the
- * occurrences that were left, so cutting a 7-occurrence series after 3 gives
- * the new one 4, not 7 (RFC 5545 §3.3.10: COUNT is the number of occurrences
- * of the rule). A COUNT the user changed is what they asked for.
- */
 const getFollowingRule = ({
 	baseEvent,
 	targetEvent,
 	updates,
 	occurrencesBefore,
 	dtstart,
-}: FollowingSeriesArgs & { dtstart: Date }): RRuleOptions => {
-	const originalStart = dayjs(getOccurrenceStartISO(targetEvent))
+	zone,
+}: FollowingSeriesArgs & { dtstart: ZonedDate }): RRuleOptions => {
+	const originalStart = mustZoned(getOccurrenceStartISO(targetEvent), zone)
 	const mergedRule = moveRuleToStart(
 		{ ...baseEvent.rrule, ...updates.rrule } as RRuleOptions,
-		{ from: originalStart, to: dayjs(dtstart) }
+		{ from: originalStart, to: dtstart }
 	)
 	const submittedCount = mergedRule.count
 	const isCountUnchanged = submittedCount === baseEvent.rrule?.count
@@ -176,31 +155,28 @@ const getFollowingRule = ({
 		isCountUnchanged && typeof submittedCount === 'number'
 			? submittedCount - occurrencesBefore
 			: submittedCount
-	return { ...mergedRule, count, dtstart } as RRuleOptions
+	return { ...mergedRule, count, dtstart: toDate(dtstart) } as RRuleOptions
 }
 
-/**
- * Builds the new base series produced by a "following" edit: a fresh series id/uid
- * anchored at the edited occurrence, carrying the submitted updates. With Repeat
- * unticked it is one plain event instead.
- */
 const buildFollowingSeriesEvent = (
 	args: FollowingSeriesArgs
 ): CalendarEvent => {
-	const { baseEvent, targetEvent, updates } = args
-	const editedStart = updates.start ?? targetEvent.start
-	const newSeriesStart = getFollowingSeriesStart(targetEvent, editedStart)
-	const duration = updates.end
-		? updates.end.diff(editedStart)
-		: baseEvent.end.diff(baseEvent.start)
-	const newSeriesEnd = newSeriesStart.add(duration, 'millisecond')
+	const { baseEvent, targetEvent, updates, zone } = args
+	const baseStart = mustZoned(baseEvent.start, zone)
+	const baseEnd = mustZoned(baseEvent.end, zone)
+	const editedStart = mustZoned(updates.start ?? targetEvent.start, zone)
+	const newSeriesStart = getFollowingSeriesStart(targetEvent, editedStart, zone)
+	const durationMs = updates.end
+		? elapsedDiff(mustZoned(updates.end, zone), editedStart, 'millisecond')
+		: elapsedDiff(baseEnd, baseStart, 'millisecond')
+	const newSeriesEnd = add(newSeriesStart, durationMs, 'millisecond')
 	const newSeriesId = `${baseEvent.id}_following`
-	const newEvent = {
+	const newEvent: CalendarEvent = {
 		...baseEvent,
 		...updates,
 		id: newSeriesId,
-		start: newSeriesStart,
-		end: newSeriesEnd,
+		start: toOffsetIso(newSeriesStart),
+		end: toOffsetIso(newSeriesEnd),
 		recurrenceId: undefined,
 	}
 
@@ -208,54 +184,54 @@ const buildFollowingSeriesEvent = (
 		return { ...newEvent, rrule: undefined, uid: undefined, exdates: undefined }
 	}
 
-	// The exdates after the original occurrence carry over. Its own is not one
-	// of them: a moved occurrence's slot is where the new series begins. They
-	// follow the series to its new time of day, because an EXDATE must match the
-	// instance's start DATE-TIME exactly (RFC 5545 section 3.8.5.1); left at the
-	// old time they match nothing and the deleted days come back.
-	const originalStart = dayjs(getOccurrenceStartISO(targetEvent))
+	const originalStart = mustZoned(getOccurrenceStartISO(targetEvent), zone)
 	const carriedExdates = (baseEvent.exdates ?? [])
-		.filter((iso) => dayjs(iso).isAfter(originalStart))
-		.map((iso) => withTimeOfDay(dayjs(iso), editedStart).toISOString())
+		.filter((iso) => {
+			const parsed = parseDate(iso, zone)
+			return Boolean(parsed && isAfter(parsed, originalStart))
+		})
+		.map((iso) => toUtcIso(withTimeOfDay(mustZoned(iso, zone), editedStart)))
 	return {
 		...newEvent,
-		rrule: getFollowingRule({ ...args, dtstart: newSeriesStart.toDate() }),
+		rrule: getFollowingRule({ ...args, dtstart: newSeriesStart }),
 		uid: `${newSeriesId}@ilamy.calendar`,
 		exdates: carriedExdates,
 	}
 }
 
-/**
- * For scope "all": apply the submitted wall-clock time to the base event anchor.
- * This keeps the series anchored to its original date while changing its time.
- */
 const applyAllScopeUpdates = (
 	baseEvent: CalendarEvent,
-	updates: Partial<CalendarEvent>
-): { start: Dayjs; end: Dayjs; rrule: RRuleOptions | undefined } => {
-	let newStart = baseEvent.start
-	// if the start has changed keep the same calendar day but with the new time
+	updates: Partial<CalendarEvent>,
+	zone: string
+): { start: ZonedDate; end: ZonedDate; rrule: RRuleOptions | undefined } => {
+	const baseStart = mustZoned(baseEvent.start, zone)
+	const baseEnd = mustZoned(baseEvent.end, zone)
+	let newStart = baseStart
 	if (updates.start) {
-		newStart = withTimeOfDay(baseEvent.start, updates.start)
+		newStart = withTimeOfDay(baseStart, mustZoned(updates.start, zone))
 	}
 
-	let newEnd = baseEvent.end
-	// ensure the new end is compute so the duration is preserved
+	let newEnd = baseEnd
 	if (updates.start && updates.end) {
-		newEnd = newStart.add(updates.end.diff(updates.start), 'millisecond')
+		const durationMs = elapsedDiff(
+			mustZoned(updates.end, zone),
+			mustZoned(updates.start, zone),
+			'millisecond'
+		)
+		newEnd = add(newStart, durationMs, 'millisecond')
 	} else if (updates.start) {
-		newEnd = newStart.add(baseEvent.end.diff(baseEvent.start), 'millisecond')
+		const durationMs = elapsedDiff(baseEnd, baseStart, 'millisecond')
+		newEnd = add(newStart, durationMs, 'millisecond')
 	} else if (updates.end) {
-		newEnd = withTimeOfDay(baseEvent.end, updates.end)
+		newEnd = withTimeOfDay(baseEnd, mustZoned(updates.end, zone))
 	}
 
 	const mergedRrule = isRepeatRemoved(updates)
 		? undefined
 		: (updates.rrule ?? baseEvent.rrule)
-	let newRrule: RRuleOptions | undefined
-	if (mergedRrule) {
-		newRrule = { ...mergedRrule, dtstart: newStart.toDate() }
-	}
+	const newRrule = mergedRrule
+		? { ...mergedRrule, dtstart: toDate(newStart) }
+		: undefined
 
 	return { start: newStart, end: newEnd, rrule: newRrule }
 }
@@ -265,6 +241,7 @@ interface UpdateRecurringEventProps {
 	updates: Partial<CalendarEvent>
 	currentEvents: CalendarEvent[]
 	scope: 'this' | 'following' | 'all'
+	timezone?: string
 }
 
 interface ScopedUpdateContext {
@@ -273,20 +250,18 @@ interface ScopedUpdateContext {
 	updatedEvents: CalendarEvent[]
 	baseEventIndex: number
 	baseEvent: CalendarEvent
+	zone: string
 }
 
-/**
- * The EXDATE key for a "this"-scope edit: a stored override keys by its original
- * occurrence (`recurrenceId`); a generated instance keys by its own start.
- */
 const getThisScopeRecurrenceId = (
 	targetEvent: CalendarEvent,
-	isOverrideEvent: boolean
+	isOverrideEvent: boolean,
+	zone: string
 ): string => {
 	if (isOverrideEvent && targetEvent.recurrenceId) {
 		return targetEvent.recurrenceId
 	}
-	return targetEvent.start.toISOString()
+	return toUtcIso(mustZoned(targetEvent.start, zone))
 }
 
 interface ReplaceStoredOverrideArgs {
@@ -296,12 +271,6 @@ interface ReplaceStoredOverrideArgs {
 	updatedBaseEvent: CalendarEvent
 	baseChanged: boolean
 }
-
-/**
- * Replaces a stored override in place. The base is reported in `updated` only when
- * it actually changed — a consistent store already exdates the occurrence and
- * carries the uid, so reporting it would fire a redundant no-op onEventUpdate.
- */
 
 const replaceStoredOverride = ({
 	updatedEvents,
@@ -325,22 +294,23 @@ const replaceStoredOverride = ({
 	}
 }
 
-/**
- * Scope "this": EXDATE on base + a detached override for this occurrence.
- * A generated instance adds a new override row; a stored override updates in place.
- */
 const updateThisScope = ({
 	targetEvent,
 	updates,
 	updatedEvents,
 	baseEventIndex,
 	baseEvent,
+	zone,
 }: ScopedUpdateContext): PluginMutationResult => {
 	const seriesUid = getEventParentUID(baseEvent)
 	const isOverrideEvent = Boolean(
 		targetEvent.recurrenceId && !targetEvent.rrule
 	)
-	const recurrenceId = getThisScopeRecurrenceId(targetEvent, isOverrideEvent)
+	const recurrenceId = getThisScopeRecurrenceId(
+		targetEvent,
+		isOverrideEvent,
+		zone
+	)
 
 	const existingExdates = baseEvent.exdates || []
 	const nextExdates = existingExdates.includes(recurrenceId)
@@ -387,10 +357,6 @@ const updateThisScope = ({
 	}
 }
 
-/**
- * The result of an edit that replaces a series' base row with `replacement`:
- * the series' detached overrides go with it, reported in `deleted`.
- */
 const replaceSeriesBase = (
 	updatedEvents: CalendarEvent[],
 	seriesUid: string,
@@ -409,31 +375,26 @@ const replaceSeriesBase = (
 	}
 }
 
-/**
- * Scope "following": cut the original series before the target's ORIGINAL
- * occurrence (see `cutSeriesBefore`) and create a new series from it. Detached
- * overrides of the series that fall after the cut are cascaded out (reported
- * in `deleted`). On the series' first occurrence there is nothing to keep, so
- * the new series replaces the base, like scope "all" (a series that ended
- * before it started would be left behind otherwise).
- */
 const updateFollowingScope = ({
 	targetEvent,
 	updates,
 	updatedEvents,
 	baseEventIndex,
 	baseEvent,
+	zone,
 }: ScopedUpdateContext): PluginMutationResult => {
 	const occurrenceStartISO = getOccurrenceStartISO(targetEvent)
 	const occurrencesBefore = countOccurrencesBefore(
 		baseEvent,
-		occurrenceStartISO
+		occurrenceStartISO,
+		zone
 	)
 	const newSeriesEvent = buildFollowingSeriesEvent({
 		baseEvent,
 		targetEvent,
 		updates,
 		occurrencesBefore,
+		zone,
 	})
 	const isFirstOccurrence = occurrencesBefore === 0
 
@@ -451,13 +412,12 @@ const updateFollowingScope = ({
 
 	const { terminatedEvent, isFollowingOverride } = cutSeriesBefore(
 		baseEvent,
-		occurrenceStartISO
+		occurrenceStartISO,
+		zone
 	)
 	updatedEvents[baseEventIndex] = terminatedEvent
 	updatedEvents.push(newSeriesEvent)
 
-	// The new series carries an rrule, so it is never matched as a following
-	// override; filter after the push so only the orphaned overrides drop out.
 	const followingOverrides = updatedEvents.filter(isFollowingOverride)
 	const events = updatedEvents.filter((e) => !isFollowingOverride(e))
 	return {
@@ -468,39 +428,38 @@ const updateFollowingScope = ({
 	}
 }
 
-/**
- * Scope "all": reset the base recurring event (Google-Calendar behavior). Anchor
- * dates change but the series day is kept; detached overrides are dropped and
- * exceptions cleared, so previously split/deleted occurrences return.
- */
 const updateAllScope = ({
 	targetEvent,
 	updates,
 	updatedEvents,
 	baseEventIndex,
 	baseEvent,
+	zone,
 }: ScopedUpdateContext): PluginMutationResult => {
 	const seriesUid = getEventParentUID(baseEvent)
-	const anchored = applyAllScopeUpdates(baseEvent, updates)
+	const anchored = applyAllScopeUpdates(baseEvent, updates, zone)
 	const staysSeries = Boolean(anchored.rrule)
 	const updatedBaseEvent: CalendarEvent = {
 		...baseEvent,
 		...updates,
-		start: anchored.start,
-		end: anchored.end,
+		start: toOffsetIso(anchored.start),
+		end: toOffsetIso(anchored.end),
 		rrule: anchored.rrule,
 		exdates: undefined,
 		uid: staysSeries ? seriesUid : undefined,
 	}
 	updatedEvents[baseEventIndex] = updatedBaseEvent
 
-	// What was stored is the time of day, on the day the occurrence was shown:
-	// the series keeps its own day, so a drop on another day moved nothing.
-	const appliedStart = withTimeOfDay(targetEvent.start, anchored.start)
-	const appliedEnd = appliedStart.add(anchored.end.diff(anchored.start))
+	const targetStart = mustZoned(targetEvent.start, zone)
+	const appliedStart = withTimeOfDay(targetStart, anchored.start)
+	const durationMs = elapsedDiff(anchored.end, anchored.start, 'millisecond')
+	const appliedEnd = add(appliedStart, durationMs, 'millisecond')
 	return {
 		...replaceSeriesBase(updatedEvents, seriesUid, updatedBaseEvent),
-		appliedUpdates: { start: appliedStart, end: appliedEnd },
+		appliedUpdates: {
+			start: toOffsetIso(appliedStart),
+			end: toOffsetIso(appliedEnd),
+		},
 	}
 }
 
@@ -518,10 +477,14 @@ export const updateRecurringEvent = ({
 	updates,
 	currentEvents,
 	scope,
+	timezone,
 }: UpdateRecurringEventProps): PluginMutationResult => {
 	const updatedEvents = [...currentEvents]
 	const baseEventIndex = findBaseEventIndex(updatedEvents, targetEvent)
 	const baseEvent = updatedEvents[baseEventIndex]
+	if (!baseEvent) {
+		throw new Error('Base recurring event not found')
+	}
 
 	const handler = scopedUpdateHandlers[scope]
 	if (!handler) {
@@ -530,11 +493,13 @@ export const updateRecurringEvent = ({
 		)
 	}
 
+	const zone = baseEvent.timezone ?? resolveZone(timezone)
 	return handler({
 		targetEvent,
 		updates,
 		updatedEvents,
 		baseEventIndex,
 		baseEvent,
+		zone,
 	})
 }

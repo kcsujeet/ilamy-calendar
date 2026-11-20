@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
+import type React from 'react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { ResourceCell } from './resource-cell'
 
-const initialDate = dayjs('2025-01-01T00:00:00.000Z')
+const initialDate = '2025-01-01T00:00:00Z'
 const mockResources: Resource[] = [
 	{ id: '1', title: 'Resource 1' },
 	{ id: '2', title: 'Resource 2' },
@@ -22,7 +22,10 @@ const renderResourceCell = (
 	renderResource?: (resource: Resource) => React.ReactNode,
 	children?: React.ReactNode
 ) => {
-	// Use CalendarProvider to ensure getEventsForResource is available
+	const firstResource = mockResources.at(0)
+	if (!firstResource) {
+		throw new Error('Missing mock resource')
+	}
 	return render(
 		<CalendarProvider
 			dayMaxEvents={3}
@@ -30,8 +33,9 @@ const renderResourceCell = (
 			initialDate={initialDate}
 			renderResource={renderResource}
 			resources={mockResources}
+			timezone="UTC"
 		>
-			<ResourceCell data-testid="resource-cell" resource={mockResources[0]}>
+			<ResourceCell data-testid="resource-cell" resource={firstResource}>
 				{children}
 			</ResourceCell>
 		</CalendarProvider>
@@ -57,15 +61,12 @@ describe('ResourceCell', () => {
 	})
 
 	test('renders with children if provided', () => {
-		renderResourceCell(undefined, <div data-testid="with-children"></div>)
+		renderResourceCell(undefined, <div data-testid="with-children" />)
 		expect(screen.getByTestId('with-children')).toBeInTheDocument()
 	})
 
 	test('renders with renderResource if renderResource and children provided', () => {
-		renderResourceCell(
-			mockRenderResource,
-			<div data-testid="with-children"></div>
-		)
+		renderResourceCell(mockRenderResource, <div data-testid="with-children" />)
 		expect(screen.getByTestId('with-render-resource')).toBeInTheDocument()
 	})
 
@@ -95,6 +96,7 @@ describe('ResourceCell', () => {
 				initialDate={initialDate}
 				renderResource={renderWithMeta}
 				resources={[resourceWithData]}
+				timezone="UTC"
 			>
 				<ResourceCell data-testid="meta-cell" resource={resourceWithData} />
 			</CalendarProvider>

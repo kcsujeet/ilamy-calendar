@@ -1,14 +1,26 @@
 import type {
 	CalendarEvent,
-	Dayjs,
 	EventFormProps,
+	IsoDateString,
 	RenderCurrentTimeIndicatorProps,
 	Resource,
 } from '@ilamy/calendar'
-import { dayjs, useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { Button } from '@ilamy/ui/components/button'
 import { cn } from '@ilamy/ui/lib/utils'
 import { useEffect, useState } from 'react'
+
+const formatTime = (iso: IsoDateString, locale?: string, timezone?: string) =>
+	new Intl.DateTimeFormat(locale, {
+		timeZone: timezone,
+		hour: 'numeric',
+		minute: '2-digit',
+	}).format(new Date(iso))
+
+const parseIsoHour = (iso: IsoDateString): number => {
+	const match = /T(\d{2}):/.exec(iso)
+	return match ? Number(match[1]) : new Date(iso).getHours()
+}
 
 // Custom event renderer — adapts its typography to the configured eventHeight.
 // Returned as a factory so the demo can vary the renderer with the current
@@ -28,12 +40,12 @@ function CustomEvent({
 	event: CalendarEvent
 	eventHeight: number
 }) {
-	const { t } = useIlamyCalendarContext()
+	const { t, timezone } = useIlamyCalendarContext()
 	const isCompact = eventHeight <= 24
 	const isLarge = eventHeight >= 36
 	const titleSize = isLarge ? 'text-xs' : 'text-[10px]'
 	const timeSize = isLarge ? 'text-[10px]' : 'text-[8px]'
-	const timeRange = `${event.start.format('h:mm A')} - ${event.end.format('h:mm A')}`
+	const timeRange = `${formatTime(event.start, undefined, timezone)} - ${formatTime(event.end, undefined, timezone)}`
 	const timeLabel = event.allDay ? t('allDay') : timeRange
 
 	// Deliberately unlike the built-in bar (black, dashed, uppercase) so a glance
@@ -115,7 +127,7 @@ export function renderCurrentTimeIndicator({
 	// cluttering the indicator with multiple identical time badges per row/column.
 	const isPrimaryResource = !resource || resource.id === 'room-a'
 	const showBadge = view === 'day' ? isPrimaryResource : true
-	const badgeLabel = currentTime.format('h:mm A')
+	const badgeLabel = formatTime(currentTime)
 
 	if (axis === 'horizontal') {
 		return (
@@ -151,12 +163,15 @@ export function renderCurrentTimeIndicator({
 }
 
 // Custom hour renderer — stacks the hour number above its AM/PM marker.
-export function renderHour(date: Dayjs) {
+export function renderHour(date: IsoDateString) {
+	const hour24 = parseIsoHour(date)
+	const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12
+	const period = hour24 < 12 ? 'AM' : 'PM'
 	return (
 		<div className="flex flex-col items-center leading-tight">
-			<span className="font-bold text-sm">{date.format('h')}</span>
+			<span className="font-bold text-sm">{hour12}</span>
 			<span className="text-[10px] opacity-60 uppercase font-medium">
-				{date.format('A')}
+				{period}
 			</span>
 		</div>
 	)
@@ -165,16 +180,28 @@ export function renderHour(date: Dayjs) {
 // Custom calendar header — reads the live date/view from context to show a
 // bespoke header (demonstrates the headerComponent prop + useIlamyCalendarContext).
 export function CustomCalendarHeader() {
-	const { currentDate, setView, getViews, hasResourceAxis, openEventForm, t } =
-		useIlamyCalendarContext()
+	const {
+		currentDate,
+		timezone,
+		setView,
+		getViews,
+		hasResourceAxis,
+		openEventForm,
+		t,
+	} = useIlamyCalendarContext()
 	// The views the default header offers: resource calendars drop the ones
 	// that do not support resources (year, agenda).
 	const views = getViews().filter(
 		(view) => !hasResourceAxis || view.supportsResources
 	)
+	const formattedMonth = new Intl.DateTimeFormat(undefined, {
+		timeZone: timezone,
+		month: 'long',
+		year: 'numeric',
+	}).format(new Date(currentDate))
 	return (
 		<div className="text-center text-2xl font-semibold p-4 text-amber-500">
-			Current Date: {currentDate.format('MMMM YYYY')}
+			Current Date: {formattedMonth}
 			<div className="flex justify-center space-x-2">
 				{views.map((view) => (
 					<Button key={view.name} onClick={() => setView(view.name)} size="sm">
@@ -213,11 +240,12 @@ export function CustomEventForm({
 
 	const handleSubmit = (event: React.FormEvent) => {
 		event.preventDefault()
+		const nowIso = new Date().toISOString()
 		const base: CalendarEvent = {
-			id: selectedEvent?.id || `event-${dayjs().valueOf()}`,
+			id: selectedEvent?.id || `event-${Date.now()}`,
 			title: title || 'New Event',
-			start: selectedEvent?.start || dayjs(),
-			end: selectedEvent?.end || dayjs(),
+			start: selectedEvent?.start || nowIso,
+			end: selectedEvent?.end || nowIso,
 			...selectedEvent,
 		}
 		if (selectedEvent?.id && onUpdate) {

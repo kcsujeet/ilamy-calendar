@@ -1,23 +1,39 @@
 import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	parseDate,
+	resolveZone,
+	toOffsetIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { groupEventsByDay } from './group-events-by-day'
+
+const mustParse = (iso: string, zone = resolveZone()): ZonedDate => {
+	const parsed = parseDate(iso, zone)
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
 
 const mkEvent = (
 	id: string,
-	startISO: string,
-	endISO: string,
+	start: string,
+	end: string,
 	extra: Partial<CalendarEvent> = {}
 ): CalendarEvent => ({
 	id,
 	title: `Event ${id}`,
-	start: dayjs(startISO),
-	end: dayjs(endISO),
+	start,
+	end,
 	...extra,
 })
 
 const run = (events: CalendarEvent[], startISO: string, endISO: string) =>
-	groupEventsByDay(events, { start: dayjs(startISO), end: dayjs(endISO) })
+	groupEventsByDay(events, {
+		start: mustParse(startISO),
+		end: mustParse(endISO),
+	})
 
 describe('groupEventsByDay', () => {
 	it('returns an empty array when there are no events', () => {
@@ -170,7 +186,7 @@ describe('groupEventsByDay', () => {
  */
 describe('groupEventsByDay under a configured timezone', () => {
 	const TZ = 'America/New_York'
-	const at = (local: string) => dayjs.tz(local, TZ)
+	const at = (local: string) => mustParse(local, TZ)
 	const zoned = (
 		id: string,
 		startLocal: string,
@@ -179,8 +195,8 @@ describe('groupEventsByDay under a configured timezone', () => {
 	): CalendarEvent => ({
 		id,
 		title: `Event ${id}`,
-		start: at(startLocal),
-		end: at(endLocal),
+		start: toOffsetIso(at(startLocal)),
+		end: toOffsetIso(at(endLocal)),
 		...extra,
 	})
 	const runZoned = (

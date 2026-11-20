@@ -1,21 +1,29 @@
-import { describe, expect, it, mock } from 'bun:test'
+import { beforeEach, describe, expect, it, mock } from 'bun:test'
 import { agendaPlugin } from '@ilamy/calendar-agenda'
+import { yearPlugin } from '@ilamy/calendar-year'
 import type { CalendarEvent, IlamyPlugin, PluginView } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { add, parseDate, toOffsetIso } from '@ilamy/utils/temporal'
+import {
+	act,
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react'
+import { SLOT_TOOLBAR } from '@/features/calendar/components/calendar-slots'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { plainSpaces } from '@/testing/plain-spaces'
 import { Header } from './base-header'
 
-// Custom render function that wraps Header in CalendarProvider. The header tier
-// defaults to 'desktop' in tests (no layout for ResizeObserver to measure), so
-// these exercise the desktop layout: segmented switcher + inline Export button.
 const renderHeader = (events: CalendarEvent[] = [], providerProps = {}) => {
+	cleanup()
 	return render(
 		<CalendarProvider
 			dayMaxEvents={3}
 			events={events}
 			firstDayOfWeek={0}
+			timezone="UTC"
 			{...providerProps}
 		>
 			<Header />
@@ -23,71 +31,63 @@ const renderHeader = (events: CalendarEvent[] = [], providerProps = {}) => {
 	)
 }
 
-const mockDownloadICalendar = mock()
-
-mock.module('@/features/calendar/utils/export-ical', () => ({
-	downloadICalendar: mockDownloadICalendar,
-}))
-
 describe('Calendar header', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
 	const testEvents: CalendarEvent[] = [
 		{
 			id: 'test-1',
 			title: 'Test Event',
-			start: dayjs('2025-08-04T09:00:00.000Z'),
-			end: dayjs('2025-08-04T10:00:00.000Z'),
+			start: '2025-08-04T09:00:00+00:00',
+			end: '2025-08-04T10:00:00+00:00',
 			uid: 'test-1@ilamy.calendar',
 		},
 		{
 			id: 'test-2',
 			title: 'Another Event',
-			start: dayjs('2025-08-05T14:00:00.000Z'),
-			end: dayjs('2025-08-05T15:00:00.000Z'),
+			start: '2025-08-05T14:00:00+00:00',
+			end: '2025-08-05T15:00:00+00:00',
 			description: 'Test description',
 		},
 	]
 
-	it('should render the export button', () => {
+	it('does not render an export button without icalPlugin (D7)', () => {
 		renderHeader(testEvents)
-
-		const exportButton = screen.getByRole('button', { name: /export/i })
-		expect(exportButton).toBeInTheDocument()
-		expect(exportButton).toHaveTextContent('Export')
-	})
-
-	it('should call downloadICalendar when export is clicked', () => {
-		renderHeader(testEvents)
-
-		fireEvent.click(screen.getByRole('button', { name: /export/i }))
-
-		expect(mockDownloadICalendar).toHaveBeenCalledWith(
-			expect.arrayContaining([
-				expect.objectContaining({ id: 'test-1', title: 'Test Event' }),
-				expect.objectContaining({ id: 'test-2', title: 'Another Event' }),
-			]),
-			expect.any(Function),
-			expect.stringMatching(/calendar-\d{4}-\d{2}-\d{2}\.ics/),
-			'ilamy Calendar'
-		)
-	})
-
-	it('should not render the export button when hideExportButton is true', () => {
-		renderHeader(testEvents, { hideExportButton: true })
 
 		expect(
 			screen.queryByRole('button', { name: /export/i })
 		).not.toBeInTheDocument()
 	})
 
-	it('should call onDateChange when picking a month from the title date picker', async () => {
+	it('renders plugin-contributed toolbar actions via SLOT_TOOLBAR (D7)', () => {
+		const onExport = mock(() => {})
+		const toolbarPlugin: IlamyPlugin = {
+			name: 'test-toolbar-action',
+			renderSlot: (slotName) =>
+				slotName === SLOT_TOOLBAR ? (
+					<button onClick={onExport} type="button">
+						Export
+					</button>
+				) : null,
+		}
+		renderHeader(testEvents, { plugins: [toolbarPlugin] })
+
+		const exportButton = screen.getByRole('button', { name: /export/i })
+		expect(exportButton).toBeInTheDocument()
+		fireEvent.click(exportButton)
+		expect(onExport).toHaveBeenCalledTimes(1)
+	})
+
+	it('should call onDateChange with an ISO string when picking a month from the title date picker', async () => {
 		const onDateChange = mock()
 
 		renderHeader([], {
-			initialDate: dayjs('2025-08-04T09:00:00.000Z'),
+			initialDate: '2025-08-04T09:00:00Z',
 			onDateChange,
 		})
 
-		// Title shows "August 2025" in month view; clicking it opens the month grid.
 		await act(async () => {
 			fireEvent.click(screen.getByTestId('calendar-title'))
 		})
@@ -99,10 +99,11 @@ describe('Calendar header', () => {
 			expect(onDateChange).toHaveBeenCalledTimes(1)
 		})
 
-		const calledDate = onDateChange.mock.calls[0][0]
-		expect(dayjs.isDayjs(calledDate)).toBe(true)
-		expect(calledDate.month()).toBe(8)
-		expect(calledDate.year()).toBe(2025)
+		const calledDate = onDateChange.mock.calls.at(0)?.at(0) as string
+		expect(typeof calledDate).toBe('string')
+		const parsed = parseDate(calledDate, 'UTC')
+		expect(parsed?.month).toBe(9)
+		expect(parsed?.year).toBe(2025)
 	})
 
 	it('should switch the active view from the segmented switcher', async () => {
@@ -121,12 +122,9 @@ describe('Calendar header', () => {
 	it('renders the week range in the title using Intl.DateTimeFormat.formatRange', () => {
 		renderHeader([], {
 			initialView: 'week',
-			initialDate: dayjs('2026-04-29T12:00:00.000Z'),
+			initialDate: '2026-04-29T12:00:00Z',
 		})
 
-		// firstDayOfWeek defaults to 0 (Sunday), so the week containing Apr 29 2026
-		// is Sun Apr 26 - Sat May 2. formatRange returns "Apr 26 – May 2" in English
-		// (en-dash separator, U+2013) with no year suffix.
 		const title = screen.getByTestId('calendar-title')
 		expect(title).toHaveTextContent('Apr 26 – May 2')
 		expect(title.textContent).not.toContain('2026')
@@ -135,12 +133,10 @@ describe('Calendar header', () => {
 	it('renders a custom-window agenda range (not a single day) in the title', () => {
 		renderHeader([], {
 			initialView: 'agenda',
-			initialDate: dayjs('2026-04-15T12:00:00.000Z'),
+			initialDate: '2026-04-15T12:00:00Z',
 			plugins: [agendaPlugin({ window: 7 })],
 		})
 
-		// A custom 7-day window starting at Apr 15 lists Apr 15 - 21, so the title
-		// shows that range rather than just "Apr 15".
 		const title = screen.getByTestId('calendar-title')
 		expect(title).toHaveTextContent('Apr 15 – 21')
 	})
@@ -148,24 +144,20 @@ describe('Calendar header', () => {
 	it('mirrors the week-view title for a week-window agenda', () => {
 		renderHeader([], {
 			initialView: 'agenda',
-			initialDate: dayjs('2026-04-15T12:00:00.000Z'),
+			initialDate: '2026-04-15T12:00:00Z',
 			plugins: [agendaPlugin({ window: 'week' })],
 		})
 
-		// firstDayOfWeek 0: the week containing Apr 15 2026 (a Wednesday) is
-		// Sun Apr 12 - Sat Apr 18, exactly as week view would title it.
 		const title = screen.getByTestId('calendar-title')
 		expect(title).toHaveTextContent('Apr 12 – 18')
 	})
 
-	// The agenda lists every day of its window; `hiddenDays` does not apply to it,
-	// so its title must not drop them (the week grid's title does).
 	const hiddenWeekDays = new Set([3, 6, 0])
 
 	it('titles a week-window agenda with every day it lists, hidden days included', () => {
 		renderHeader([], {
 			initialView: 'agenda',
-			initialDate: dayjs('2026-04-15T12:00:00.000Z'),
+			initialDate: '2026-04-15T12:00:00Z',
 			plugins: [agendaPlugin({ window: 'week' })],
 			hiddenDays: hiddenWeekDays,
 		})
@@ -178,7 +170,7 @@ describe('Calendar header', () => {
 	it('titles the week view with only the days it draws', () => {
 		renderHeader([], {
 			initialView: 'week',
-			initialDate: dayjs('2026-04-15T12:00:00.000Z'),
+			initialDate: '2026-04-15T12:00:00Z',
 			hiddenDays: hiddenWeekDays,
 		})
 
@@ -190,7 +182,7 @@ describe('Calendar header', () => {
 	it('mirrors the month-view title for a month-window agenda', () => {
 		renderHeader([], {
 			initialView: 'agenda',
-			initialDate: dayjs('2026-04-15T12:00:00.000Z'),
+			initialDate: '2026-04-15T12:00:00Z',
 			plugins: [agendaPlugin({ window: 'month' })],
 		})
 
@@ -199,14 +191,13 @@ describe('Calendar header', () => {
 	})
 })
 
-// `titleFormat` replaces the title of every picker kind: a single date for
-// year, month and day, a `formatRange` for week and custom windows.
 describe('titleFormat', () => {
-	const aprilFifteenth = dayjs('2026-04-15T12:00:00.000Z')
+	const aprilFifteenth = '2026-04-15T12:00:00Z'
 	const renderTitled = (providerProps: Record<string, unknown>) => {
 		renderHeader([], {
 			initialDate: aprilFifteenth,
 			timezone: 'UTC',
+			plugins: [yearPlugin()],
 			...providerProps,
 		})
 		return screen.getByTestId('calendar-title').textContent
@@ -227,9 +218,6 @@ describe('titleFormat', () => {
 		).toBe('April 2026')
 	})
 
-	// FullCalendar title-formatting.ts:15-16, 25-31 formats the view's whole
-	// range with titleFormat, so a format that shows days or months names the
-	// month or the year, not the current date.
 	it('formats the month view title as the month range', () => {
 		const title = renderTitled({
 			initialView: 'month',
@@ -273,18 +261,11 @@ describe('titleFormat', () => {
 	})
 })
 
-// The header date picker must derive its title + picker form generically from a
-// view's navigation metadata, never from the view's name. These exercise a
-// throwaway third-party view (named 'sprint', not 'agenda') to prove core stays
-// plugin-agnostic: the same nav step that drives prev/next also picks the picker.
 describe('header date picker (plugin-agnostic)', () => {
-	// Apr 15 2026 is a Wednesday; firstDayOfWeek defaults to 0 (Sunday), so its
-	// week is Sun Apr 12 - Sat Apr 18.
-	const at = dayjs('2026-04-15T12:00:00.000Z')
+	const at = '2026-04-15T12:00:00Z'
 
 	const StubIcon = () => null
 
-	// A one-view plugin with arbitrary navigation metadata and an optional range.
 	const customViewPlugin = (
 		view: Partial<PluginView> & Pick<PluginView, 'name'>
 	): IlamyPlugin => ({
@@ -326,18 +307,28 @@ describe('header date picker (plugin-agnostic)', () => {
 	it('titles a multi-day-window custom view as its range', () => {
 		renderSprint({
 			navigationStep: { amount: 3, unit: 'day' },
-			range: (date) => ({ start: date, end: date.add(2, 'day') }),
+			range: (date) => {
+				const d = parseDate(date, 'UTC')
+				return {
+					start: date,
+					end: d ? toOffsetIso(add(d, 2, 'day')) : date,
+				}
+			},
 		})
-		// A 3-day window Apr 15 - 17: not a single day, not a grid week.
 		expect(titleText()).toContain('Apr 15 – 17')
 	})
 
 	it('treats navigationStep as winning over navigationUnit', () => {
-		// A view that labels itself week but steps a 10-day window is a range.
 		renderSprint({
 			navigationUnit: 'week',
 			navigationStep: { amount: 10, unit: 'day' },
-			range: (date) => ({ start: date, end: date.add(9, 'day') }),
+			range: (date) => {
+				const d = parseDate(date, 'UTC')
+				return {
+					start: date,
+					end: d ? toOffsetIso(add(d, 9, 'day')) : date,
+				}
+			},
 		})
 		expect(titleText()).toContain('Apr 15 – 24')
 	})
@@ -354,7 +345,6 @@ describe('header date picker (plugin-agnostic)', () => {
 		await act(async () => {
 			fireEvent.click(screen.getByTestId('calendar-title'))
 		})
-		// The month grid shows month buttons; the day calendar would not.
 		await act(async () => {
 			fireEvent.click(screen.getByRole('button', { name: 'Sep' }))
 		})
@@ -362,7 +352,8 @@ describe('header date picker (plugin-agnostic)', () => {
 		await waitFor(() => {
 			expect(onDateChange).toHaveBeenCalledTimes(1)
 		})
-		expect(onDateChange.mock.calls[0][0].month()).toBe(8)
+		const calledDate = onDateChange.mock.calls.at(0)?.at(0) as string
+		expect(parseDate(calledDate, 'UTC')?.month).toBe(9)
 	})
 
 	it('opens the year grid for a year-navigating view', async () => {
@@ -372,7 +363,6 @@ describe('header date picker (plugin-agnostic)', () => {
 		await act(async () => {
 			fireEvent.click(screen.getByTestId('calendar-title'))
 		})
-		// The year grid lists selectable years; pick the next one.
 		await act(async () => {
 			fireEvent.click(screen.getByRole('button', { name: '2027' }))
 		})
@@ -380,6 +370,7 @@ describe('header date picker (plugin-agnostic)', () => {
 		await waitFor(() => {
 			expect(onDateChange).toHaveBeenCalledTimes(1)
 		})
-		expect(onDateChange.mock.calls[0][0].year()).toBe(2027)
+		const calledDate = onDateChange.mock.calls.at(0)?.at(0) as string
+		expect(parseDate(calledDate, 'UTC')?.year).toBe(2027)
 	})
 })

@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import dayjs from '@ilamy/utils/dayjs'
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import {
@@ -15,12 +14,12 @@ import {
 } from '@/testing/scroll-test-fixtures'
 import { VerticalGrid } from './vertical-grid'
 
-const initialDate = dayjs('2025-01-01T00:00:00.000Z')
+const initialDate = '2025-01-01T00:00:00+00:00'
 const mockColumns = [
 	{
 		id: 'col-1',
 		day: initialDate,
-		days: [initialDate.hour(9), initialDate.hour(10)],
+		days: ['2025-01-01T09:00:00+00:00', '2025-01-01T10:00:00+00:00'],
 	},
 ]
 
@@ -29,6 +28,7 @@ const renderVerticalGrid = (props = {}, providerProps = {}) => {
 		<CalendarProvider
 			dayMaxEvents={3}
 			initialDate={initialDate}
+			timezone="UTC"
 			{...providerProps}
 		>
 			<VerticalGrid columns={mockColumns} {...props}>
@@ -118,13 +118,12 @@ describe('VerticalGrid', () => {
 
 		testScrollingWhenHoursChange('vertical', getScrollTo)
 
-		// `null` leaves a column with no hours at all.
 		const buildGrid = (startTimes: Array<number | null>) => {
 			const columns = startTimes.map((startTime, index) => {
 				const hours = startTime === null ? [] : getVisibleHours(startTime)
 				return {
 					id: String(index),
-					day: dayjs(SCROLL_TEST_NOW),
+					day: SCROLL_TEST_NOW,
 					days: hours,
 					gridType: 'hour' as const,
 				}
@@ -154,9 +153,6 @@ describe('VerticalGrid', () => {
 			expect(getScrollTo()).toHaveBeenCalledTimes(0)
 		})
 
-		// A vertical week shares one column of hour rows across its days, built
-		// from the whole week's hours (`weekHoursFor`), so Wednesday opening
-		// earlier inside that range leaves every row where it was.
 		test("leaves the scroll alone when a day's hours change inside the week's shared rows", () => {
 			const { rerender } = render(
 				buildScrollWeek('vertical', NARROW_BUSINESS_START_HOUR)
@@ -168,9 +164,6 @@ describe('VerticalGrid', () => {
 	})
 
 	describe('sticky insets', () => {
-		// happy-dom lays nothing out, so every rect is empty. The layout the
-		// measurement reads is faked here: the sticky header sits at the window's
-		// top, and the scroll viewport wherever a test puts it.
 		const originalRect = HTMLElement.prototype.getBoundingClientRect
 		const OriginalResizeObserver = globalThis.ResizeObserver
 		const HEADER_HEIGHT = 97
@@ -216,8 +209,6 @@ describe('VerticalGrid', () => {
 		})
 
 		test('a header that grows after mount is re-measured', () => {
-			// happy-dom never resizes anything, so the observer is captured and
-			// fired by hand, the way a browser would once the all-day row grows.
 			const resizeCallbacks: ResizeObserverCallback[] = []
 			globalThis.ResizeObserver = class {
 				constructor(callback: ResizeObserverCallback) {
@@ -248,8 +239,6 @@ describe('VerticalGrid', () => {
 		})
 
 		test('a regular grid keeps its header outside the scroller', () => {
-			// The viewport starts where the header above it ends. The header is
-			// measured by position now, not size, so it covers none of it.
 			viewportTop = HEADER_HEIGHT
 			renderVerticalGrid({ variant: 'regular', allDayRow: <div>All Day</div> })
 
@@ -257,8 +246,6 @@ describe('VerticalGrid', () => {
 		})
 
 		test('a page scrolled under a header stuck to the window', () => {
-			// The page is scrolled 200px past the grid's top while the header
-			// stays pinned at the window's: it reaches 297px into the viewport.
 			viewportTop = -200
 			renderVerticalGrid({ variant: 'regular', allDayRow: <div>All Day</div> })
 
@@ -266,7 +253,6 @@ describe('VerticalGrid', () => {
 		})
 
 		test('a page scrolled past the grid with no sticky header', () => {
-			// Nothing covers the grid, but the window's own top hides 200px of it.
 			viewportTop = -200
 			renderVerticalGrid(
 				{ variant: 'regular', allDayRow: <div>All Day</div> },

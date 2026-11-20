@@ -5,9 +5,9 @@ before 4.0, and every name listed under **Removed in 4.0** already works the new
 way in 3.3 and carries a `@deprecated` TSDoc tag, so you can migrate before
 upgrading. Nothing here prints a runtime warning.
 
-The plan behind this list is `docs/roadmap.md` (Release 4.0). Dates in the
-roadmap's open decisions are not fixed until 4.0 starts; the **Under
-consideration** section says which defaults may change.
+The plan behind this list is `docs/roadmap.md` (Release 4.0). All 4.0 design
+decisions (D2, D3, D7–D11) are settled and match FullCalendar's documented
+behaviour.
 
 ## Removed in 4.0
 
@@ -41,24 +41,35 @@ become ISO strings or `Date`.
 Also in 4.0 (not a rename): the context API gains `timezone`, and several zones
 can be shown on one page.
 
-## Under consideration for 4.0
+## Moved to plugins in 4.0
 
-These are open decisions. Each is a default or a behaviour that would change
-output for code that did nothing wrong, so it is decided by the owner when 4.0
-starts. Until then 3.x keeps today's behaviour. The IDs match
-`docs/roadmap.md`.
+- **Year view (`plugins/year`) and iCal export (`plugins/ical`)** move out of
+  core into plugins (D7), matching FullCalendar (`multimonth`, `icalendar`).
+  `onEventAdd`, `onEventUpdate` and `onEventDelete` are **kept** alongside
+  `onEventsChange` (D2), matching FullCalendar (`eventAdd`, `eventChange`,
+  `eventRemove` alongside `eventsSet`).
 
-| ID | Today (3.x) | Proposed 4.0 | What to do now to be safe |
-|---|---|---|---|
-| D2 | `onEventAdd`, `onEventUpdate`, `onEventDelete` fire one call per row | Possibly removed: `onEventsChange` reports the whole action once and covers them | Prefer `onEventsChange` in new code |
-| D3 | `nowIndicator` defaults to `true` (the current time marker always shows) | Possibly `false`, the convention FullCalendar follows | Pass `nowIndicator` explicitly |
-| D8 | `editable` defaults to `true` | Possibly `false` (read-only unless enabled), the convention | Pass `editable` explicitly |
-| D9 | `displayEventTime` and `displayEventEnd` unset keep today's title-only bars | Possibly default `true`, the convention | Pass both explicitly |
-| D10 | `onDateChange` and the `currentRange` keep the range as it was before `hiddenDays` and `weekends` existed | Possibly trimmed to the days actually drawn | Do not depend on the range including hidden days |
-| D11 | Month cells report `allDay: false` in `onCellClick` and in a drag-to-create selection, and a form opened from one is timed | Possibly `true`, so a month click or selection reports and creates an all-day event, as FullCalendar's day grid does (`DayGridRows.tsx:256`, v7.1.1) | Do not rely on `allDay` being `false` for a month cell; read `view` as well |
-| D7 | iCal export and the year view are built into the core | Possibly moved to plugins (`plugins/ical`, `plugins/year`); the resource axis only if the plugin contract carries it cleanly | Nothing yet; imports will change if it happens |
+## Default changes in 4.0
 
-## Default changes planned for 4.0
+- **`nowIndicator` defaults to `false`** (D3; was `true` in 3.x), matching
+  FullCalendar (`https://fullcalendar.io/docs/nowIndicator`). Pass
+  `nowIndicator` to show the current-time line.
+- **`editable` defaults to `false`** (D8; was `true` in 3.x), matching
+  FullCalendar (`https://fullcalendar.io/docs/editable`). Pass `editable` to
+  enable drag and resize.
+- **`displayEventTime` and `displayEventEnd` defaults** (D9; were off unless
+  set or `eventTimeFormat` was passed in 3.x): `displayEventTime` defaults to
+  `true`, and `displayEventEnd` defaults to `false` in month view and `true`
+  in week/day time-grid views, matching FullCalendar
+  (`https://fullcalendar.io/docs/displayEventTime`, `displayEventEnd`).
+- **`onDateChange` and `currentRange` trim to drawn days** when `hiddenDays`
+  or `weekends` hide days (D10; 3.x kept the full un-trimmed range), matching
+  FullCalendar's `activeStart` / exclusive `activeEnd` on `datesSet`
+  (`https://fullcalendar.io/docs/datesSet`, `view-object`).
+- **Month cells report `allDay: true`** in `onCellClick` and drag-to-create
+  selections, and a form opened from one defaults to all-day (D11; was
+  `allDay: false` in 3.x), matching FullCalendar's day grid
+  (`https://fullcalendar.io/docs/dateClick`, `DayGridRows.tsx:256`, v7.1.1).
 
 - **`BusinessHours.daysOfWeek` defaults to Monday to Friday.** In 3.x a
   `BusinessHours` without `daysOfWeek` applies to every day, weekends included
@@ -147,8 +158,8 @@ starts. Until then 3.x keeps today's behaviour. The IDs match
 1. On the latest 3.x, search your code for the names in the first table and move
    each to its replacement. A `@deprecated` tag makes editors strike them
    through.
-2. Pass explicitly any option listed under **Under consideration** whose
-   default you rely on.
+2. Pass `nowIndicator`, `editable`, `displayEventTime` and `displayEventEnd`
+   explicitly if you want the 3.x defaults.
 3. If you use `BusinessHours`, add `daysOfWeek` wherever you rely on the
    seven-day default.
 4. If you use `businessHours` to stop people booking closed time, add
@@ -157,7 +168,7 @@ starts. Until then 3.x keeps today's behaviour. The IDs match
    relied on month padding days refusing drops, refuse them in `isCellDisabled`.
 5. Wrap `dayjs`/`Dayjs` usage at your boundaries so dates cross them as ISO
    strings.
-
-This file grows with each decision: a row moves from **Under consideration** to
-**Removed in 4.0** or **Default changes** (or is dropped) when the owner
-settles it.
+6. Update imports for the year view (`@ilamy/calendar/plugins/year`) and iCal
+   export (`@ilamy/calendar/plugins/ical`).
+7. Do not rely on `onDateChange`/`currentRange` including hidden days or on
+   month cell clicks reporting `allDay: false`.

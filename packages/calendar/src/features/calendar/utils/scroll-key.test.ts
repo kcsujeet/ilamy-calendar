@@ -1,9 +1,18 @@
 import { describe, expect, test } from 'bun:test'
-import dayjs from '@ilamy/utils/dayjs'
+import { add, parseDate, withTime, type ZonedDate } from '@ilamy/utils/temporal'
 import { getScrollKey } from './scroll-key'
 
-const SCROLL_KEY_TEST_DATE = dayjs('2025-03-12T00:00:00.000Z')
-const buildDateAtHour = (hour: number) => SCROLL_KEY_TEST_DATE.hour(hour)
+const mustUtc = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const SCROLL_KEY_TEST_DATE = mustUtc('2025-03-12T00:00:00.000Z')
+const buildDateAtHour = (hour: number) =>
+	withTime(SCROLL_KEY_TEST_DATE, { hour })
 const buildHourColumn = (hour: number) => ({ day: buildDateAtHour(hour) })
 const buildGroupedColumn = (...hours: number[]) => ({
 	days: hours.map(buildDateAtHour),
@@ -51,7 +60,7 @@ describe('getScrollKey', () => {
 	test('changes with the date, even when the hours read the same', () => {
 		const columns = [buildHourColumn(9)]
 		expect(
-			getTestScrollKey(columns, { date: SCROLL_KEY_TEST_DATE.add(1, 'day') })
+			getTestScrollKey(columns, { date: add(SCROLL_KEY_TEST_DATE, 1, 'day') })
 		).not.toBe(getTestScrollKey(columns))
 	})
 

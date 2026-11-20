@@ -246,4 +246,363 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 			})
 			.toBe(1)
 	})
+
+	test('week view: 3-dot resize handle is hidden at rest and appears on hover (4.0.9)', async ({
+		page,
+	}) => {
+		await openDemo(page)
+		await switchToWeekView(page)
+		const yoga = page.getByTestId(`vertical-event-${YOGA_ID}`)
+		const handle = endHandleOf(yoga)
+
+		await expect(handle).toHaveCSS('opacity', '0')
+		const barCentre = await centreOf(yoga)
+		await page.mouse.move(barCentre.x, barCentre.y)
+		await expect
+			.poll(async () =>
+				Number(await handle.evaluate((el) => getComputedStyle(el).opacity))
+			)
+			.toBeGreaterThan(0.4)
+	})
+
+	test('business hours shading allows weekend resize; enabling eventConstraint refuses it (4.0.5)', async ({
+		page,
+	}) => {
+		await openDemo(page)
+		await page.getByTestId('settings-tab-schedule').click()
+		await page.getByLabel('Enable business hours').click()
+		await switchToWeekView(page)
+
+		// Sunday is outside Mon-Fri business hours, so shaded but NOT blocking without constraint
+		const noonSlot = timeSlot(page, '2026-10-25T12:00')
+		await expect(noonSlot).toHaveAttribute('data-non-business', 'true')
+		await expect(noonSlot).toHaveAttribute('data-disabled', 'false')
+
+		// Enable constraint: Sunday resize is now refused
+		await page.getByLabel('Constrain drops/resizes to business hours').click()
+		const yoga = page.getByTestId(`vertical-event-${YOGA_ID}`)
+		await yoga.scrollIntoViewIfNeeded()
+		const handle = endHandleOf(yoga)
+		const elevenSlot = timeSlot(page, '2026-10-25T11:00')
+		const handleCentre = await centreOf(handle)
+		const noonSlotCentre = await centreOf(noonSlot)
+
+		await dragWithPointer(
+			page,
+			{ target: handle, at: handleCentre },
+			{ target: noonSlot, at: { x: handleCentre.x, y: noonSlotCentre.y } }
+		)
+
+		const bar = await boxOf(yoga)
+		const eleven = await boxOf(elevenSlot)
+		expect(wholeCellsPast(bottomOf(bar), bottomOf(eleven), eleven.height)).toBe(
+			0
+		)
+	})
+
+	test('year view (yearPlugin) and iCal export button (icalPlugin) work in the demo (D7)', async ({
+		page,
+	}) => {
+		await openDemo(page)
+		const calendar = page.getByTestId('ilamy-calendar')
+		await expect(
+			calendar.getByRole('button', { name: /export/i })
+		).toBeVisible()
+
+		await calendar.getByRole('button', { name: 'Month', exact: true }).click()
+		await page.getByRole('menuitem', { name: 'Year' }).click()
+		await expect(calendar.getByTestId('calendar-title')).toHaveText('2026')
+	})
+
+	test('design system switcher applies Material UI, StyleX, and Unstyled+slotProps live (D5)', async ({
+		page,
+	}) => {
+		await openDemo(page)
+
+		// Switch to Material UI theme — renders native MUI button primitives
+		await page.getByTestId('theme-mui').click()
+		await expect(page.locator('[data-active-theme="mui"]')).toBeVisible()
+		await expect(
+			page.getByTestId('ilamy-calendar').locator('.MuiButton-root').first()
+		).toBeVisible()
+
+		// Switch to StyleX theme — injects --ilamy-bg CSS custom property on calendar root
+		await page.getByTestId('theme-stylex').click()
+		await expect(page.locator('[data-active-theme="stylex"]')).toBeVisible()
+		const hasStylexVar = await page
+			.getByTestId('ilamy-calendar')
+			.evaluate((el) => Boolean(el.style.getPropertyValue('--ilamy-bg')))
+		expect(hasStylexVar).toBe(true)
+
+		// Switch to Unstyled — strips default border class on calendar body
+		await page.getByTestId('theme-unstyled').click()
+		await expect(page.locator('[data-active-theme="unstyled"]')).toBeVisible()
+		const hasDefaultBorder = await page
+			.getByTestId('calendar-body')
+			.evaluate((el) => el.classList.contains('border'))
+		expect(hasDefaultBorder).toBe(false)
+
+		// Opt in to custom slotProps demo from the Theme tab
+		await page.getByTestId('settings-tab-theme').click()
+		await page.getByLabel('Apply custom slotProps theme').click()
+		const hasSlotBorder = await page
+			.getByTestId('ilamy-calendar')
+			.evaluate((el) => el.style.borderRadius === '14px')
+		expect(hasSlotBorder).toBe(true)
+	})
+
+	test('multi-zone preset renders two live calendars side-by-side with isolated timezones', async ({
+		page,
+	}) => {
+		await openDemo(page)
+		await page.getByTestId('preset-multi-zone').click()
+		const stage = page.getByTestId('multi-zone-stage')
+		await expect(stage).toBeVisible()
+		await expect(stage.getByTestId('ilamy-calendar')).toHaveCount(2)
+		await expect(stage.getByText('America/New_York')).toBeVisible()
+		await expect(stage.getByText('Asia/Tokyo')).toBeVisible()
+	})
+
+	test('framework switcher mounts live Vue 3.5, Svelte 5, Solid 2, and Angular 22 calendars with StyleX and zero duplicate controls', async ({
+		page,
+	}) => {
+		const consoleErrors: string[] = []
+		page.on('console', (msg) => {
+			if (msg.type() === 'error') consoleErrors.push(msg.text())
+		})
+		page.on('pageerror', (err) => consoleErrors.push(err.message))
+
+		await openDemo(page)
+
+		// Verify redundant sidebar controls were removed
+		await page.getByTestId('settings-tab-theme').click()
+		await expect(page.getByText('Active Theme')).toHaveCount(0)
+		await page.getByTestId('settings-tab-general').click()
+		await expect(page.getByText('Calendar Mode')).toHaveCount(0)
+
+		// Open Code & Events drawer so we can verify framework-specific code updates
+		await page.getByRole('button', { name: /Code & Events/i }).click()
+
+		const frameworks: Array<{
+			id: 'vue' | 'svelte' | 'solid' | 'angular'
+			importSpec: string
+		}> = [
+			{ id: 'vue', importSpec: '@ilamy/calendar/vue' },
+			{ id: 'svelte', importSpec: '@ilamy/calendar/svelte' },
+			{ id: 'solid', importSpec: '@ilamy/calendar/solid' },
+			{ id: 'angular', importSpec: '@ilamy/calendar/angular' },
+		]
+
+		for (const fw of frameworks) {
+			await page.getByTestId(`framework-${fw.id}`).click()
+			const stage = page.getByTestId(`framework-stage-${fw.id}`)
+			await expect(stage).toBeVisible()
+			await expect(
+				stage.locator(`[data-ilamy-framework="${fw.id}"]`)
+			).toBeVisible()
+			await expect(stage.getByTestId('ilamy-dom-calendar')).toBeVisible()
+			await expect(page.getByTestId('theme-mui')).toBeDisabled()
+			await expect(page.locator('pre code')).toContainText(fw.importSpec)
+
+			// Exercise view switching inside the mounted framework calendar
+			await stage.getByTestId('view-btn-week').click()
+			await expect(stage.getByTestId('dom-week-view')).toBeVisible()
+			await stage.getByTestId('view-btn-agenda').click()
+			await expect(stage.getByTestId('dom-agenda-view')).toBeVisible()
+			await stage.getByTestId('view-btn-month').click()
+			await expect(stage.getByTestId('dom-month-view')).toBeVisible()
+		}
+
+		// Verify StyleX theme applies cleanly to a non-React framework too (Angular 22)
+		await page.getByTestId('theme-stylex').click()
+		const angularRoot = page
+			.getByTestId('framework-stage-angular')
+			.getByTestId('ilamy-dom-calendar')
+		const hasStylexToken = await angularRoot.evaluate((el) =>
+			Boolean(el.style.getPropertyValue('--ilamy-bg'))
+		)
+		expect(hasStylexToken).toBe(true)
+
+		// Switch back to React 19 and verify MUI re-enables
+		await page.getByTestId('framework-react').click()
+		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
+		await expect(page.getByTestId('theme-mui')).toBeEnabled()
+
+		expect(consoleErrors).toEqual([])
+	})
+
+	test('sticky headers stay opaque on scroll, StyleX/MUI dark stay legible, and +N more works in unstyled/StyleX', async ({
+		page,
+	}) => {
+		await openDemo(page)
+
+		// 1. Page-level dark mode toggle works on the first click
+		await page.getByRole('button', { name: 'Toggle theme' }).click()
+		await expect(page.locator('html')).toHaveClass(/dark/)
+		await page.getByRole('button', { name: 'Toggle theme' }).click()
+		await expect(page.locator('html')).not.toHaveClass(/dark/)
+
+		// 2. Angular + Tailwind scrolled Month view keeps an opaque z-30 sticky header
+		await page.getByTestId('framework-angular').click()
+		const monthView = page.getByTestId('dom-month-view')
+		await expect(monthView).toBeVisible()
+		const headerMetrics = await monthView.evaluate((view) => {
+			view.scrollTop = 260
+			const headerRow = view.firstElementChild as HTMLElement
+			const cs = getComputedStyle(headerRow)
+			return {
+				position: cs.position,
+				zIndex: Number(cs.zIndex),
+				bg: cs.backgroundColor,
+			}
+		})
+		expect(headerMetrics.position).toBe('sticky')
+		expect(headerMetrics.zIndex).toBeGreaterThanOrEqual(30)
+		expect(headerMetrics.bg).not.toMatch(/\/\s*0?\.\d+\s*\)$/)
+		expect(headerMetrics.bg).not.toBe('rgba(0, 0, 0, 0)')
+
+		// 3. Vue + StyleX Dark: visible cell borders, distinct event colors, clickable +N more
+		await page.getByTestId('framework-vue').click()
+		await page.getByTestId('theme-stylex').click()
+		await page.getByTestId('settings-tab-theme').click()
+		await page.getByRole('button', { name: 'Dark', exact: true }).click()
+
+		const stylexChecks = await page
+			.getByTestId('dom-month-view')
+			.evaluate((view) => {
+				const cell = view.querySelector<HTMLElement>('[data-cell="true"]')
+				const bars = [
+					...view.querySelectorAll<HTMLElement>(
+						'[data-testid^="calendar-event-"]'
+					),
+				]
+				const distinctBgs = new Set(
+					bars.slice(0, 20).map((bar) => getComputedStyle(bar).backgroundColor)
+				)
+				return {
+					cellBorderBottom: cell
+						? getComputedStyle(cell).borderBottomWidth
+						: '0px',
+					distinctBgCount: distinctBgs.size,
+				}
+			})
+		expect(stylexChecks.cellBorderBottom).not.toBe('0px')
+		expect(stylexChecks.distinctBgCount).toBeGreaterThan(2)
+
+		await page.locator('[data-testid^="more-events-"]').first().click()
+		await expect(page.getByTestId('dom-overflow-dialog')).toBeVisible()
+		await page
+			.getByTestId('dom-overflow-dialog')
+			.getByRole('button', { name: 'Close' })
+			.click()
+
+		// 4. React + MUI Dark: Dialog portals inherit dark CSS vars (legible Repeat label)
+		await page.getByTestId('framework-react').click()
+		await page.getByTestId('theme-mui').click()
+		const reactCalendar = page.getByTestId('ilamy-calendar')
+		await reactCalendar.getByRole('button', { name: 'New' }).click()
+		const dialog = page.getByRole('dialog')
+		await expect(dialog).toBeVisible()
+		const dialogFg = await dialog.evaluate((el) =>
+			getComputedStyle(el).getPropertyValue('--foreground').trim()
+		)
+		expect(dialogFg).not.toBe('')
+		await page.keyboard.press('Escape')
+
+		// 5. Preset tab bar has no vertical scrollbar, React+StyleX colored bars have no outer bg bleed,
+		//    and Svelte StyleX -> Tailwind clears stale inline root CSS variables
+		const navVOverflow = await page
+			.locator('nav[aria-label="Demo presets"]')
+			.evaluate((el) => el.scrollHeight - el.clientHeight)
+		expect(navVOverflow).toBe(0)
+
+		await page.getByTestId('theme-stylex').click()
+		const reactColoredOuterBg = await reactCalendar
+			.locator('[data-testid^="horizontal-event-"] [role="button"]')
+			.first()
+			.evaluate((el) => getComputedStyle(el).backgroundColor)
+		expect(reactColoredOuterBg).toBe('rgba(0, 0, 0, 0)')
+
+		await page.getByTestId('framework-svelte').click()
+		await expect(
+			page.locator('[data-truncated-end="true"]').first()
+		).toBeVisible()
+		await page.getByTestId('view-btn-week').click()
+		const timeAxisBorder = await page
+			.getByTestId('dom-time-axis')
+			.evaluate((el) => getComputedStyle(el).borderRightWidth)
+		expect(timeAxisBorder).toBe('1px')
+		await page.getByTestId('theme-tailwind').click()
+		const stalePrimary = await page
+			.getByTestId('ilamy-dom-calendar')
+			.evaluate((el) => el.style.getPropertyValue('--primary'))
+		expect(stalePrimary).toBe('')
+	})
+
+	test('header date picker, full event form, recurring scope modal, and borderless header match across React and non-React frameworks', async ({
+		page,
+	}) => {
+		await openDemo(page)
+
+		for (const fw of ['react', 'vue', 'solid'] as const) {
+			await page.getByTestId(`framework-${fw}`).click()
+			const titleBtn = page.getByTestId('calendar-title').first()
+			await expect(titleBtn).toBeVisible()
+
+			// Borderless root/header, bordered grid body
+			const borders = await titleBtn.evaluate((el) => {
+				const header = el.closest('header, [data-testid="calendar-header"]')
+				const root = header?.parentElement
+				const body = root?.querySelector('[data-testid="calendar-body"]')
+				return {
+					rootBorder: root ? getComputedStyle(root).borderTopWidth : '',
+					headerBorder: header
+						? getComputedStyle(header).borderBottomWidth
+						: '',
+					bodyBorder: body ? getComputedStyle(body).borderTopWidth : '',
+				}
+			})
+			expect(borders).toEqual({
+				rootBorder: '0px',
+				headerBorder: '0px',
+				bodyBorder: '1px',
+			})
+
+			// Title Date Picker opens MonthGrid and navigates to December
+			await titleBtn.click()
+			const monthGrid = page.locator('[data-slot="month-grid"]')
+			await expect(monthGrid).toBeVisible()
+			await monthGrid.getByRole('button', { name: 'Dec' }).click()
+			await expect(titleBtn).toContainText('Dec')
+			await page
+				.locator(
+					fw === 'react'
+						? '[data-testid="calendar-header"]'
+						: '[data-testid="ilamy-dom-calendar"]'
+				)
+				.getByRole('button', { name: 'Today', exact: true })
+				.click()
+
+			// Create Event Form includes interactive DatePicker, TimePicker, Location, and submits cleanly
+			const newBtn =
+				fw === 'react'
+					? page
+							.locator(
+								'[data-testid="calendar-header"] button[aria-label="New"]'
+							)
+							.first()
+					: page.getByTestId('new-event-btn')
+			await newBtn.click()
+			await expect(page.locator('#start-date')).toBeVisible()
+			await expect(page.locator('#start-time')).toBeVisible()
+			await expect(page.locator('input[name="location"]')).toBeVisible()
+			await page.locator('#start-date').click()
+			await expect(page.locator('[role="grid"]').first()).toBeVisible()
+			await page.keyboard.press('Escape')
+			await expect(page.locator('input[name="title"]')).toBeVisible()
+			await page.locator('input[name="title"]').fill(`E2E Parity ${fw}`)
+			await page.locator('button[type="submit"]').first().click()
+			await expect(page.locator('input[name="title"]')).toHaveCount(0)
+		}
+	})
 })

@@ -1,95 +1,102 @@
 ---
-title: Styling
-description: Customize the look and feel of ilamy Calendar with Tailwind CSS.
+title: Styling & Themes
+description: Customize ilamy Calendar with Tailwind CSS, unstyled mode, slotProps, custom components, MUI, StyleX, or the headless core.
 slug: docs/customization/styling
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-Customize styles using Tailwind CSS v4's theming system. ilamy Calendar ships no CSS - it relies entirely on your Tailwind configuration and the @source directive.
+ilamy Calendar ships zero CSS. Out of the box it uses Tailwind CSS v4 + shadcn tokens, and in v4.0 it also supports **unstyled mode**, **`slotProps`**, swappable **`components`**, first-party **MUI** and **StyleX** theme adapters, and a framework-agnostic **headless core**.
 
-## How ilamy Calendar Uses Colors
-
-ilamy Calendar is built with Tailwind CSS v4 and ships zero CSS. Instead, it uses Tailwind utility classes and CSS custom properties exclusively. This means you have complete control over the visual appearance using your Tailwind configuration.
+## Default: Tailwind CSS v4 & shadcn/ui
 
 <Aside type="caution">
-You must register ilamy Calendar as a source using Tailwind's `@source` directive so Tailwind can scan the library for utility classes.
+When using the default Tailwind styling, register ilamy Calendar with Tailwind's `@source` directive so Tailwind scans its utility classes.
 </Aside>
 
-```css title="Required: Register ilamy Calendar with Tailwind"
-/* In your main CSS file (e.g., globals.css) */
+```css title="globals.css"
 @source "../node_modules/@ilamy/calendar/dist";
+```
+
+## Unstyled Mode, `slotProps`, and Custom `components`
+
+Pass `unstyled` to strip all default visual styling while keeping structural layout geometry intact. Style any slot with `slotProps`, or swap UI primitives (`Button`, `Input`, `Textarea`, `Label`, `Checkbox`, `Dialog`, `Select`, `Popover`) via `components`:
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar'
+
+<IlamyCalendar
+  events={events}
+  unstyled
+  slotProps={{
+    root: { className: 'my-calendar' },
+    header: { className: 'my-header' },
+    cell: { className: 'my-cell' },
+    event: { className: 'my-event' },
+    resizeHandle: { className: 'my-resize-handle' },
+  }}
+  components={{
+    Button: MyDesignSystemButton,
+  }}
+/>
+```
+
+## Material UI (MUI) Adapter
+
+Use `@ilamy/calendar/themes/mui` to render `@mui/material` primitives (`Button`, `TextField`, `Checkbox`, `Dialog`, `Select`, `Popover`) and MUI palette/surface tokens with zero Tailwind required:
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar'
+import { createMuiTheme } from '@ilamy/calendar/themes/mui'
+
+const muiTheme = createMuiTheme()
+
+<IlamyCalendar events={events} {...muiTheme} />
+```
+
+## StyleX Adapter
+
+Use `@ilamy/calendar/themes/stylex` to style the calendar with atomic StyleX styles:
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar'
+import { createStylexTheme } from '@ilamy/calendar/themes/stylex'
+
+const stylexTheme = createStylexTheme()
+
+<IlamyCalendar events={events} {...stylexTheme} />
+```
+
+## Headless Core (`@ilamy/calendar/core`)
+
+Building a calendar UI in Vue, Svelte, Solid, Web Components, or a fully bespoke React layout? Import the zero-React, zero-CSS engine directly from `@ilamy/calendar/core`:
+
+```ts
+import {
+  createCalendarController,
+  layoutHorizontal,
+  layoutVertical,
+  isRangeWithinBusinessHours,
+} from '@ilamy/calendar/core'
+
+const controller = createCalendarController({
+  events,
+  timezone: 'America/New_York',
+  initialView: 'week',
+})
 ```
 
 ## Cells During a Drag
 
-While an event is dragged over the calendar, an element around the grid carries `data-dragging="true"`. Day cells and time slots use it to drop their hover tint, so only the drop tint shows under the dragged event (`not-in-data-dragging:hover:bg-accent`). Use the same attribute for your own styles, with Tailwind v4's `in-*` and `not-*` variants on classes you pass in, or a plain selector:
-
-```css
-/* Dim every cell while any event is being dragged */
-[data-dragging] .droppable-cell {
-  opacity: 0.9;
-}
-```
+While an event is dragged over the calendar, the grid wrapper carries `data-dragging="true"`. Day cells and time slots use it to suppress hover tints during drags (`not-in-data-dragging:hover:bg-accent`).
 
 ## Scrollbar Layout Shift (Optional)
 
-ilamy Calendar uses Radix UI primitives (Select, Dialog, Popover) for its dropdowns and dialogs. When one opens, Radix locks body scroll via `react-remove-scroll`, which hides the page scrollbar and can shift your layout sideways by the scrollbar's width.
-
-<Aside type="tip">
-This is completely optional. Add it only if the layout shift bothers you - the calendar works fine without it.
-</Aside>
-
-To keep the scrollbar visible and avoid the shift, add this rule to your global CSS:
+When Radix dialogs or popovers open, `react-remove-scroll` locks body scroll. If you prefer to keep the scrollbar visible:
 
 ```css title="Optional: keep the scrollbar on dropdown/dialog open"
 [data-scroll-locked][data-scroll-locked] {
   overflow-y: scroll !important;
   margin-right: 0 !important;
 }
-```
-
-The doubled `[data-scroll-locked]` selector raises specificity above Radix's own scroll-lock rule so the scrollbar stays and the compensation margin is dropped. See the upstream discussion for context: [shadcn-ui/ui#4227](https://github.com/shadcn-ui/ui/issues/4227).
-
-## Learn More
-
-For comprehensive color customization options, theming strategies, and advanced techniques, refer to the official Tailwind CSS documentation:
-
-### Color Customization
-Learn about color palettes, custom colors, and opacity modifiers.
-[View Color Documentation](https://tailwindcss.com/docs/colors#customizing-colors)
-
-### @source Directive
-Learn how to use the @source directive to scan npm packages for classes.
-[View @source Documentation](https://tailwindcss.com/docs/v4-beta#scanning-files-from-npm-packages)
-
-### v4 Upgrade Guide
-Migrating from v3? Learn about CSS-based configuration and removed features.
-[View Upgrade Guide](https://tailwindcss.com/docs/upgrade-guide)
-
-## Event Colors
-
-Individual events can have custom colors by setting the `color` property:
-
-```tsx title="Custom Event Colors"
-const events = [
-  {
-    id: '1',
-    title: 'Team Meeting',
-    start: new Date(),
-    end: new Date(),
-    backgroundColor: '#3b82f6', // Custom blue color
-    color: 'black'
-  },
-  {
-    id: '2',
-    title: 'Personal Task',
-    start: new Date(),
-    end: new Date(),
-    backgroundColor: '#ef4444', // Custom red color
-    color: 'black'
-  },
-];
-
-<IlamyCalendar events={events} />
 ```

@@ -1,0 +1,43 @@
+---
+title: iCal Export Plugin
+description: Export events to RFC 5545 .ics files with VTIMEZONE and TZID support.
+slug: docs/plugins/ical
+---
+
+In v4.0, RFC 5545 iCalendar (`.ics`) export lives in the opt-in `@ilamy/calendar/plugins/ical` plugin.
+
+## Usage
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar'
+import { icalPlugin } from '@ilamy/calendar/plugins/ical'
+
+const plugins = [
+  icalPlugin({
+    calendarName: 'Team Schedule',
+    filenamePrefix: 'team-schedule',
+    showToolbarButton: true, // default: true
+  }),
+]
+
+export function App() {
+  return <IlamyCalendar events={events} plugins={plugins} />
+}
+```
+
+## RFC 5545 Timezones (`VTIMEZONE` & `TZID`)
+
+When a calendar or individual event (`event.timezone`) specifies an IANA timezone, `icalPlugin()` emits RFC 5545 §3.6.5 `VTIMEZONE` blocks and `DTSTART;TZID=...` / `DTEND;TZID=...` properties alongside RFC 5545 §3.1 75-octet UTF-8 line folding and exclusive `VALUE=DATE` all-day endpoints.
+
+## Programmatic Export
+
+```ts
+import { exportToICalendar, downloadICalendar } from '@ilamy/calendar/plugins/ical'
+
+const ics = exportToICalendar(events, {
+  calendarName: 'Team Schedule',
+  timezone: 'America/New_York',
+})
+
+downloadICalendar(events, { filenamePrefix: 'team-schedule' })
+```

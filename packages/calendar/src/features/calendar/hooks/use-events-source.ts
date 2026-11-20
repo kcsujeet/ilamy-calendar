@@ -1,35 +1,36 @@
+import { normalizeEvents } from '@ilamy/core'
 import type { CalendarEvent } from '@ilamy/types'
 import { useMemo } from 'react'
 import type { RangeFetcher } from '@/features/calendar/hooks/calendar-data/use-range-fetcher'
 import type {
 	EventsFetcher,
-	IlamyCalendarPropEvent,
 	IlamyCalendarProps,
 } from '@/features/calendar/types'
-import { normalizeEvents } from '@/features/calendar/utils/normalize'
 
-/** The consumer's `events` function, answering in the calendar's own rows. */
 const normalizeFetcher =
-	(fetcher: EventsFetcher): RangeFetcher<CalendarEvent> =>
+	(fetcher: EventsFetcher, timezone?: string): RangeFetcher<CalendarEvent> =>
 	async (info, options) =>
-		normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(
-			await fetcher(info, options)
-		)
+		normalizeEvents(await fetcher(info, options), timezone)
 
 /**
- * Splits the `events` prop into the calendar's rows (an array) or its fetcher
- * (a function); the other is undefined.
+ * Splits the `events` prop into normalized canonical ISO `CalendarEvent[]` or
+ * a normalizing `RangeFetcher`, anchored in `timezone`.
  */
-export const useEventsSource = (events: IlamyCalendarProps['events']) => {
-	const eventsFetcher =
-		typeof events === 'function' ? normalizeFetcher(events) : undefined
+export const useEventsSource = (
+	events: IlamyCalendarProps['events'],
+	timezone?: string
+) => {
+	const eventsFetcher = useMemo(
+		() =>
+			typeof events === 'function'
+				? normalizeFetcher(events, timezone)
+				: undefined,
+		[events, timezone]
+	)
 	const eventsArray = typeof events === 'function' ? undefined : events
-	// Stable reference while `events` is unchanged. Without this, a fresh array on
-	// every render makes CalendarProvider re-sync (use-event-store) and discard
-	// in-memory edits (recurring overrides/EXDATEs, drags) on any re-render (#197).
 	const normalizedEvents = useMemo(
-		() => normalizeEvents<IlamyCalendarPropEvent, CalendarEvent>(eventsArray),
-		[eventsArray]
+		() => normalizeEvents(eventsArray, timezone),
+		[eventsArray, timezone]
 	)
 	return { normalizedEvents, eventsFetcher }
 }

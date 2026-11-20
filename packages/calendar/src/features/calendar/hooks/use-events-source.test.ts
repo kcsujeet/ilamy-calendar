@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test'
+import { parseDate, toUtcIso } from '@ilamy/utils/temporal'
 import { renderHook } from '@testing-library/react'
 import type { IlamyCalendarProps } from '@/features/calendar/types'
 import { useEventsSource } from './use-events-source'
@@ -10,8 +11,13 @@ const ROW = {
 	end: '2025-01-15T11:00:00.000Z',
 }
 
+const utcIso = (iso: string | undefined): string => {
+	const parsed = iso ? parseDate(iso, 'UTC') : undefined
+	return parsed ? toUtcIso(parsed) : ''
+}
+
 const renderSourceHook = (events: IlamyCalendarProps['events']) =>
-	renderHook(({ value }) => useEventsSource(value), {
+	renderHook(({ value }) => useEventsSource(value, 'UTC'), {
 		initialProps: { value: events },
 	})
 
@@ -20,7 +26,7 @@ describe('useEventsSource', () => {
 		const { result } = renderSourceHook([ROW])
 		expect(result.current.eventsFetcher).toBeUndefined()
 		expect(result.current.normalizedEvents.map((e) => e.id)).toEqual(['a'])
-		expect(result.current.normalizedEvents.at(0)?.start.toISOString()).toBe(
+		expect(utcIso(result.current.normalizedEvents.at(0)?.start)).toBe(
 			'2025-01-15T10:00:00.000Z'
 		)
 	})
@@ -41,6 +47,6 @@ describe('useEventsSource', () => {
 			{} as Parameters<NonNullable<typeof fetcher>>[0],
 			{ signal: new AbortController().signal }
 		)
-		expect(rows?.at(0)?.start.toISOString()).toBe('2025-01-15T10:00:00.000Z')
+		expect(utcIso(rows?.at(0)?.start)).toBe('2025-01-15T10:00:00.000Z')
 	})
 })

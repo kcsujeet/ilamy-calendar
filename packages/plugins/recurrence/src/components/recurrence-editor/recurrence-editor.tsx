@@ -2,7 +2,14 @@ import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { Card, CardContent, CardHeader } from '@ilamy/ui/components/card'
 import { Checkbox } from '@ilamy/ui/components/checkbox'
 import { Label } from '@ilamy/ui/components/label'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	add,
+	endOf,
+	now,
+	parseDate,
+	resolveZone,
+	toDate,
+} from '@ilamy/utils/temporal'
 import { useEffect, useState } from 'react'
 import { RRule, type Weekday } from 'rrule'
 import {
@@ -44,8 +51,6 @@ const getDescription = (
 interface Props {
 	value?: RRuleOptions | null
 	onChange: (v: RRuleOptions | null) => void
-	// Anchor for presets and the "nth weekday" math (the event's start). Falls
-	// back to the rule's own dtstart, then today.
 	referenceDate?: Date
 }
 
@@ -54,14 +59,15 @@ export const RecurrenceEditor: React.FC<Props> = ({
 	onChange,
 	referenceDate,
 }) => {
-	const { t } = useIlamyCalendarContext()
+	const { t, timezone } = useIlamyCalendarContext()
+	const zone = resolveZone(timezone)
 	const getReferenceDate = (rule: RRuleOptions | null) =>
-		rule?.dtstart ?? referenceDate ?? dayjs().toDate()
+		rule?.dtstart ?? referenceDate ?? toDate(now(zone))
 	const [show, setShow] = useState(Boolean(value))
 	const [opts, setOpts] = useState<RRuleOptions | null>(() => value || null)
 	const [custom, setCustom] = useState(
 		() =>
-			detectPreset(value ?? null, getReferenceDate(value ?? null)) ===
+			detectPreset(value ?? null, getReferenceDate(value ?? null), zone) ===
 			'customize'
 	)
 
@@ -69,10 +75,10 @@ export const RecurrenceEditor: React.FC<Props> = ({
 		setShow(Boolean(value))
 		if (value) {
 			setOpts(value)
-			const ref = value.dtstart ?? referenceDate ?? dayjs().toDate()
-			setCustom(detectPreset(value, ref) === 'customize')
+			const ref = value.dtstart ?? referenceDate ?? toDate(now(zone))
+			setCustom(detectPreset(value, ref, zone) === 'customize')
 		}
-	}, [value, referenceDate])
+	}, [value, referenceDate, zone])
 
 	const reference = getReferenceDate(opts)
 
@@ -95,22 +101,19 @@ export const RecurrenceEditor: React.FC<Props> = ({
 			onChange(opts)
 			return
 		}
-		// The form section anchors dtstart from the event's start; the editor's
-		// default carries just the pattern.
 		const def = { freq: RRule.DAILY, interval: 1 } as RRuleOptions
 		setOpts(def)
 		setCustom(false)
 		onChange(def)
 	}
 
-	// Apply a preset, preserving any end condition (presets only set the pattern).
 	const selectPreset = (chosen: RecurrencePreset) => {
 		if (chosen === 'customize') {
 			setCustom(true)
 			return
 		}
 		setCustom(false)
-		const rule = getPresetRRule(chosen, reference)
+		const rule = getPresetRRule(chosen, reference, zone)
 		if (!rule) {
 			return
 		}
@@ -136,25 +139,24 @@ export const RecurrenceEditor: React.FC<Props> = ({
 		}
 		if (type === 'until') {
 			changes.until =
-				opts?.until || dayjs().add(1, 'month').endOf('day').toDate()
+				opts?.until || toDate(endOf(add(now(zone), 1, 'month'), 'day'))
 		}
 		update(changes)
 	}
 
 	const setUntil = (d: Date | undefined) => {
-		const until = d ? dayjs(d).endOf('day').toDate() : undefined
+		const parsed = d ? parseDate(d, zone) : undefined
+		const until = parsed ? toDate(endOf(parsed, 'day')) : undefined
 		update({ until })
 	}
 
-	// Monthly "on day N" vs "on the Nth weekday" — reuse the preset builders so
-	// the weekday/position math lives in one place.
 	const setMonthlyMode = (mode: 'day' | 'weekday') => {
 		if (mode === 'weekday') {
-			const rule = getPresetRRule('monthlyOnWeekday', reference)
+			const rule = getPresetRRule('monthlyOnWeekday', reference, zone)
 			update({ byweekday: rule?.byweekday, bymonthday: undefined })
 			return
 		}
-		const rule = getPresetRRule('monthlyOnDay', reference)
+		const rule = getPresetRRule('monthlyOnDay', reference, zone)
 		update({ bymonthday: rule?.bymonthday, byweekday: undefined })
 	}
 

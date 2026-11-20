@@ -3,14 +3,16 @@
 How `@ilamy/calendar` decides what clock a date is shown on. Read this before
 touching anything that parses a date.
 
-> History: the parsing half of this was an open bug until #247 — the configured
-> `dayjs()` was aliased to `dayjs.tz()`, which discards the offset on an ISO
-> string. That is upstream dayjs behavior for strings
-> ([timezone plugin docs](https://day.js.org/docs/en/plugin/timezone), and the
-> report [iamkun/dayjs#2946](https://github.com/iamkun/dayjs/issues/2946) with
-> proposed fix [#2949](https://github.com/iamkun/dayjs/pull/2949)); the wrapper
-> now branches instead of forwarding blindly, so the workarounds that used to be
-> needed at call sites are not.
+> **v4.0 update:** Date and timezone operations run on TC39 Temporal
+> (`@ilamy/utils/temporal`, backed by `temporal-polyfill/fns/*`) with **zero
+> module-global timezone state** and **no `dayjs` dependency**. Multiple
+> calendars with different `timezone` props render side-by-side in one page
+> (and during SSR) with no interference, and `now(zone)` reads `Date.now()` so
+> fake clocks (`page.clock.install`, `vi.useFakeTimers`, `setSystemTime`) work
+> deterministically. Per-event `event.timezone?: string` is supported for
+> recurring expansion and `.ics` `VTIMEZONE`/`TZID` export. The v3 dayjs notes
+> below remain for historical context on the DST edge cases that the Temporal
+> suite still regression-tests.
 
 ## The rule
 

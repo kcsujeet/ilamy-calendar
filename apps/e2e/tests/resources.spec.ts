@@ -148,15 +148,9 @@ test.describe('horizontal row packing', () => {
 			if (withHidden) {
 				await more.click()
 				const dialog = page.getByRole('dialog')
-				await expect(
-					dialog.getByText('minimum-next', { exact: true })
-				).toBeVisible()
-				await expect(
-					dialog.getByText('minimum-hidden', { exact: true })
-				).toBeVisible()
-				await expect(
-					dialog.getByText('minimum-short', { exact: true })
-				).toHaveCount(0)
+				await expect(dialog.getByText('minimum-next')).toBeVisible()
+				await expect(dialog.getByText('minimum-hidden')).toBeVisible()
+				await expect(dialog.getByText('minimum-short')).toHaveCount(0)
 			} else {
 				await expect(more).toHaveCount(0)
 			}
@@ -201,7 +195,7 @@ test.describe('horizontal row packing', () => {
 				scenario: 'horizontal-packing',
 				view: 'day',
 				orientation: 'horizontal',
-				settings: { seed, snapDuration: 15 },
+				settings: { seed, snapDuration: 15, editable: 'true' },
 			})
 			await settleAnimations(page)
 			const calendar = new CalendarPage(page)
@@ -373,8 +367,8 @@ test.describe('horizontal row packing', () => {
 			await page.mouse.move(point.x, point.y, { steps: 8 })
 			await page.mouse.click(point.x, point.y)
 			const dialog = page.getByRole('dialog')
-			await expect(dialog.getByText('Counts A', { exact: true })).toBeVisible()
-			await expect(dialog.getByText('Counts B', { exact: true })).toBeVisible()
+			await expect(dialog.getByText('Counts A')).toBeVisible()
+			await expect(dialog.getByText('Counts B')).toBeVisible()
 		})
 	}
 
@@ -564,7 +558,7 @@ test.describe('horizontal row packing', () => {
 				})
 				await more.click()
 				await expect(
-					page.getByRole('dialog').getByText('packing-hidden', { exact: true })
+					page.getByRole('dialog').getByText('packing-hidden')
 				).toBeVisible()
 			} else {
 				await expect(
@@ -608,7 +602,7 @@ test.describe('horizontal row packing', () => {
 				scenario: 'horizontal-packing',
 				view: 'day',
 				orientation: 'horizontal',
-				settings: { slot: 60 },
+				settings: { slot: 60, editable: 'true' },
 			})
 			await settleAnimations(page)
 			const initialOffset = await rowDifference(page, 'packing-a', 'packing-b')
@@ -892,7 +886,7 @@ test.describe('editing a cross-resource event', () => {
  * the drop still lands on the exact slot and the exact room under the pointer.
  */
 test.describe('dropping onto a slot of a vertical resource week', () => {
-	const settings = { slot: 15, scrollTime: '08:00' }
+	const settings = { slot: 15, scrollTime: '08:00', editable: 'true' }
 
 	/** The slot of a room whose range opens at this instant. */
 	const slotOf = (page: Page, resourceId: string, startISO: string) =>

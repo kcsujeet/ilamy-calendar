@@ -1,12 +1,26 @@
+import {
+	collectResourceBusinessHours,
+	getViewHours,
+	getVisibleDateRange,
+	isToday,
+} from '@ilamy/core'
 import type {
-	Dayjs,
 	HorizontalRowSpec,
+	IsoDateString,
 	PluginView,
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
-import { dayKey } from '@ilamy/utils/helpers'
+import {
+	dayKey,
+	formatDate,
+	now,
+	parseDate,
+	resolveZone,
+	toOffsetIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { Square } from 'lucide-react'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
@@ -16,13 +30,9 @@ import {
 } from '@/features/calendar/components/vertical-grid/gutter'
 import { useDateTimeFormatters } from '@/features/calendar/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useSlotProps } from '@/features/calendar/stores/calendar-theme-context'
 import { keys } from '@/features/calendar/utils/keys'
 import { viewHasResourceAxis } from '@/features/calendar/utils/resource-list'
-import {
-	collectResourceBusinessHours,
-	getViewHours,
-} from '@/features/calendar/utils/view-hours'
-import { isToday } from '@/utils/date-utils'
 import {
 	RESOURCE_CELL_WIDTH,
 	ResourceColumnsHeader,
@@ -32,22 +42,45 @@ import {
 } from './resource-axis'
 import { TimeHeaderRow } from './time-header-row'
 
-const DayViewHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
-	const { t } = useSmartCalendarContext((c) => ({ t: c.t }))
-	const { formatDayHeader } = useDateTimeFormatters()
-	const hasDayHeaderFormat = useSmartCalendarContext((c) =>
-		Boolean(c.dayHeaderFormat)
+const parseViewDate = (
+	dateIso: IsoDateString,
+	timezone?: string
+): ZonedDate => {
+	const zone = resolveZone(timezone)
+	return parseDate(dateIso, zone) ?? now(zone)
+}
+
+const DayViewHeader: React.FC<{ date: ZonedDate }> = ({ date }) => {
+	const { t, currentLocale, hasDayHeaderFormat } = useSmartCalendarContext(
+		(c) => ({
+			t: c.t,
+			currentLocale: c.currentLocale,
+			hasDayHeaderFormat: Boolean(c.dayHeaderFormat),
+		})
 	)
+	const { formatDayHeader } = useDateTimeFormatters()
+	const headerSlot = useSlotProps('dayHeader', {
+		structuralClassName: 'flex flex-1 justify-center items-center min-h-12',
+	})
 	const today = isToday(date)
-	let headerText = date.format('dddd, LL')
-	if (hasDayHeaderFormat) {
-		headerText = formatDayHeader(date)
-	}
+	const headerText = hasDayHeaderFormat
+		? formatDayHeader(date)
+		: formatDate(
+				date,
+				{
+					weekday: 'long',
+					month: 'long',
+					day: 'numeric',
+					year: 'numeric',
+				},
+				currentLocale
+			)
 
 	return (
 		<div
-			className={'flex flex-1 justify-center items-center min-h-12'}
+			className={headerSlot.className}
 			data-testid="day-view-header"
+			style={headerSlot.style}
 		>
 			<AnimatedSection
 				className={cn(
@@ -67,7 +100,7 @@ const DayViewHeader: React.FC<{ date: Dayjs }> = ({ date }) => {
 	)
 }
 
-const dayHours = (date: Dayjs, config: ViewConfig) =>
+const dayHours = (date: ZonedDate, config: ViewConfig): ZonedDate[] =>
 	getViewHours({
 		referenceDate: date,
 		businessHours: config.businessHours,
@@ -79,7 +112,7 @@ const dayHours = (date: Dayjs, config: ViewConfig) =>
 	})
 
 const ResourceDayHorizontalHeader: React.FC<{
-	date: Dayjs
+	date: ZonedDate
 	config: ViewConfig
 }> = ({ date, config }) => {
 	const hours = dayHours(date, config)
@@ -95,20 +128,27 @@ const ResourceDayHorizontalHeader: React.FC<{
 }
 
 const dayColumns = (
-	date: Dayjs,
+	dateIso: IsoDateString,
 	config: ViewConfig
 ): VerticalColumnSpec[] | HorizontalRowSpec[] => {
+	const date = parseViewDate(dateIso, config.timezone)
 	const resources = config.resources ?? []
 	const hours = dayHours(date, config)
+	const hourIsos = hours.map(toOffsetIso)
 	const isDayToday = isToday(date)
 
 	if (!viewHasResourceAxis(config)) {
 		return [
-			gutterColumn({ days: hours, gridType: 'hour', showsToday: isDayToday }),
+			gutterColumn({
+				days: hourIsos,
+				gridType: 'hour',
+				timezone: config.timezone,
+				showsToday: isDayToday,
+			}),
 			{
 				id: keys.col.day(date),
-				day: date,
-				days: hours,
+				day: dateIso,
+				days: hourIsos,
 				className: cn(FULL_WIDTH_MINUS_GUTTER, 'flex-1'),
 				gridType: 'hour',
 			},
@@ -119,14 +159,15 @@ const dayColumns = (
 		return resourceVerticalColumns({
 			resources,
 			gutter: gutterColumn({
-				days: hours,
+				days: hourIsos,
 				gridType: 'hour',
+				timezone: config.timezone,
 				showsToday: isDayToday,
 			}),
 			columnsFor: (resource) => ({
 				id: keys.col.day(date, resource.id),
-				days: hours,
-				day: date,
+				days: hourIsos,
+				day: dateIso,
 				gridType: 'hour' as const,
 			}),
 		})
@@ -147,9 +188,19 @@ export const dayView: PluginView = {
 	navigationUnit: 'day',
 	layout: 'vertical',
 	supportsResources: true,
-	range: (date) => ({ start: date.startOf('day'), end: date.endOf('day') }),
+	range: (dateIso, config) => {
+		const zoned = parseViewDate(dateIso, config.timezone)
+		const { start, end } = getVisibleDateRange(
+			zoned,
+			'day',
+			config.firstDayOfWeek,
+			config.hiddenDays
+		)
+		return { start: toOffsetIso(start), end: toOffsetIso(end) }
+	},
 	columns: dayColumns,
-	renderHeader: ({ date, config }) => {
+	renderHeader: ({ date: dateIso, config }) => {
+		const date = parseViewDate(dateIso, config.timezone)
 		const resources = config.resources ?? []
 		if (!viewHasResourceAxis(config)) {
 			return <DayViewHeader date={date} />

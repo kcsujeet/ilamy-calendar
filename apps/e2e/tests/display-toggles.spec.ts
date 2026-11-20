@@ -51,20 +51,20 @@ test.describe('allDaySlot', () => {
 })
 
 test.describe('nowIndicator', () => {
-	test('is on by default', async ({ page }) => {
+	test('is off by default (D3)', async ({ page }) => {
 		await gotoScenario(page, { scenario: 'basic', view: 'week' })
 
-		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
+		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 	})
 
-	test('false removes the now line', async ({ page }) => {
+	test('true shows the now line', async ({ page }) => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'week',
-			settings: { nowIndicator: 'false' },
+			settings: { nowIndicator: 'true' },
 		})
 
-		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
+		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
 	})
 })
 

@@ -1,33 +1,37 @@
 import { describe, expect, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
-import dayjs from '@ilamy/utils/dayjs'
+import { parseDate, toEpochMs } from '@ilamy/utils/temporal'
 import { RRule } from 'rrule'
 import { recurrencePlugin } from './recurrence-plugin'
+
+const sameInstant = (a: string, b: string): boolean => {
+	const pa = parseDate(a, 'UTC')
+	const pb = parseDate(b, 'UTC')
+	return Boolean(pa && pb && toEpochMs(pa) === toEpochMs(pb))
+}
 
 const base: CalendarEvent = {
 	id: 'daily-1',
 	uid: 'daily-1@ilamy.calendar',
 	title: 'Daily',
-	start: dayjs('2025-01-06T09:00:00.000Z'),
-	end: dayjs('2025-01-06T10:00:00.000Z'),
+	start: '2025-01-06T09:00:00.000Z',
+	end: '2025-01-06T10:00:00.000Z',
 	rrule: {
 		freq: RRule.DAILY,
 		interval: 1,
 		dtstart: new Date('2025-01-06T09:00:00.000Z'),
 	},
-} as CalendarEvent
+}
 
 const range = {
-	start: dayjs('2025-01-06T00:00:00.000Z'),
-	end: dayjs('2025-01-08T23:59:59.999Z'),
+	start: '2025-01-06T00:00:00.000Z',
+	end: '2025-01-08T23:59:59.999Z',
+	timezone: 'UTC',
 }
 
 describe('recurrencePlugin', () => {
 	test('managesEvent matches the previous isRecurringEvent gate', () => {
 		const plugin = recurrencePlugin()
-		// An event is managed if it has an rrule (base), a recurrenceId (modified
-		// instance), or a uid (generated instance). A plain event with none of
-		// those is not managed.
 		expect(plugin.managesEvent?.(base)).toBe(true)
 		expect(
 			plugin.managesEvent?.({
@@ -37,12 +41,12 @@ describe('recurrencePlugin', () => {
 				uid: undefined,
 			})
 		).toBe(true)
-		const plain = {
+		const plain: CalendarEvent = {
 			id: 'plain',
 			title: 'Plain',
 			start: base.start,
 			end: base.end,
-		} as CalendarEvent
+		}
 		expect(plugin.managesEvent?.(plain)).toBe(false)
 	})
 
@@ -54,18 +58,18 @@ describe('recurrencePlugin', () => {
 
 	test('transformEvents merges a detached override into its occurrence', () => {
 		const plugin = recurrencePlugin()
-		const override = {
+		const override: CalendarEvent = {
 			...base,
 			id: 'daily-1_override',
 			title: 'Moved',
-			start: dayjs('2025-01-07T14:00:00.000Z'),
-			end: dayjs('2025-01-07T15:00:00.000Z'),
+			start: '2025-01-07T14:00:00.000Z',
+			end: '2025-01-07T15:00:00.000Z',
 			recurrenceId: '2025-01-07T09:00:00.000Z',
 			rrule: undefined,
-		} as CalendarEvent
+		}
 		const occurrences = plugin.transformEvents?.([base, override], range)
 		const moved = occurrences?.find((e) =>
-			e.start.isSame(dayjs('2025-01-07T14:00:00.000Z'))
+			sameInstant(e.start, '2025-01-07T14:00:00.000Z')
 		)
 		expect(moved?.title).toBe('Moved')
 	})
@@ -73,44 +77,43 @@ describe('recurrencePlugin', () => {
 	test('transformEvents emits a moved override exactly once', () => {
 		const plugin = recurrencePlugin()
 		const occurrenceISO = '2025-01-07T09:00:00.000Z'
-		const movedStart = dayjs('2025-01-07T14:00:00.000Z')
-		const baseWithExdate = {
+		const movedStart = '2025-01-07T14:00:00.000Z'
+		const baseWithExdate: CalendarEvent = {
 			...base,
 			exdates: [occurrenceISO],
-		} as CalendarEvent
-		const override = {
+		}
+		const override: CalendarEvent = {
 			...base,
 			id: 'daily-1_modified_1',
 			title: 'Moved',
 			start: movedStart,
-			end: dayjs('2025-01-07T15:00:00.000Z'),
+			end: '2025-01-07T15:00:00.000Z',
 			recurrenceId: occurrenceISO,
 			rrule: undefined,
-		} as CalendarEvent
+		}
 		const occurrences = plugin.transformEvents?.(
 			[baseWithExdate, override],
 			range
 		)
-		const moved = occurrences?.filter((e) => e.start.isSame(movedStart))
+		const moved = occurrences?.filter((e) => sameInstant(e.start, movedStart))
 		expect(moved).toHaveLength(1)
 	})
 
 	test('transformEvents fills a sparse override from its base', () => {
 		const plugin = recurrencePlugin()
-		const colouredBase = {
+		const colouredBase: CalendarEvent = {
 			...base,
 			description: 'Series description',
 			backgroundColor: '#123456',
-		} as CalendarEvent
-		// An imported VEVENT override carries only what it changes.
-		const sparseOverride = {
+		}
+		const sparseOverride: CalendarEvent = {
 			id: 'daily-1_sparse',
 			uid: 'daily-1@ilamy.calendar',
 			title: 'Moved',
-			start: dayjs('2025-01-07T14:00:00.000Z'),
-			end: dayjs('2025-01-07T15:00:00.000Z'),
+			start: '2025-01-07T14:00:00.000Z',
+			end: '2025-01-07T15:00:00.000Z',
 			recurrenceId: '2025-01-07T09:00:00.000Z',
-		} as CalendarEvent
+		}
 		const occurrences = plugin.transformEvents?.(
 			[colouredBase, sparseOverride],
 			range
@@ -123,7 +126,7 @@ describe('recurrencePlugin', () => {
 
 	test('transformEvents passes a non-rrule event through untouched', () => {
 		const plugin = recurrencePlugin()
-		const plain = { ...base, id: 'plain', rrule: undefined } as CalendarEvent
+		const plain: CalendarEvent = { ...base, id: 'plain', rrule: undefined }
 		expect(plugin.transformEvents?.([plain], range)).toEqual([plain])
 	})
 
@@ -135,10 +138,10 @@ describe('recurrencePlugin', () => {
 
 	test('contribute returns the EXDATE line for an event with exdates', () => {
 		const plugin = recurrencePlugin()
-		const withExdates = {
+		const withExdates: CalendarEvent = {
 			...base,
 			exdates: ['2025-01-07T09:00:00.000Z', '2025-01-08T09:00:00.000Z'],
-		} as CalendarEvent
+		}
 		const lines = plugin.contribute?.('ical:vevent-properties', withExdates)
 		expect(lines).toEqual([
 			'RRULE:FREQ=DAILY;INTERVAL=1',
@@ -148,11 +151,11 @@ describe('recurrencePlugin', () => {
 
 	test('contribute returns the RECURRENCE-ID line for a modified instance', () => {
 		const plugin = recurrencePlugin()
-		const modified = {
+		const modified: CalendarEvent = {
 			...base,
 			rrule: undefined,
 			recurrenceId: '2025-01-07T09:00:00.000Z',
-		} as CalendarEvent
+		}
 		const lines = plugin.contribute?.('ical:vevent-properties', modified)
 		expect(lines).toEqual(['RECURRENCE-ID:20250107T090000Z'])
 	})

@@ -17,18 +17,9 @@ import { generateRecurringEvents } from './utils/generate-recurring-events'
 import { getEventParentUID, isRecurringEvent } from './utils/series-helpers'
 import { updateRecurringEvent } from './utils/update-recurring-event'
 
-/**
- * Built-in recurrence plugin. Implements the generic IlamyPlugin contract by
- * delegating to the existing recurrence handler functions and editor
- * components.
- */
 export const recurrencePlugin = (): IlamyPlugin => ({
 	name: 'recurrence',
 
-	// Expand each base (rrule) event into its in-range instances. The expansion
-	// SKIPS occurrences that have a detached override; the override is emitted
-	// here instead, exactly once, merged over its base. Emitting it from both
-	// places put a moved override on the grid twice. Plain events pass through.
 	transformEvents: (events, range) => {
 		const baseBySeriesUid = new Map<string, CalendarEvent>()
 		for (const event of events) {
@@ -44,13 +35,10 @@ export const recurrencePlugin = (): IlamyPlugin => ({
 					currentEvents: events,
 					startDate: range.start,
 					endDate: range.end,
+					timezone: range.timezone,
 				})
 			}
 
-			// Merging over the base keeps the fields an override omits — an
-			// imported VEVENT carries only what it changes. `rrule` is forced off:
-			// an override is an instance, and a sparse one has no key of its own to
-			// shadow the base's.
 			if (event.recurrenceId) {
 				const baseEvent = baseBySeriesUid.get(getEventParentUID(event))
 				if (baseEvent) {
@@ -62,23 +50,34 @@ export const recurrencePlugin = (): IlamyPlugin => ({
 		})
 	},
 
-	// Mirrors the previous `isRecurringEvent` gate (rrule, recurrenceId, or uid)
-	// so drag/edit routing is unchanged.
 	managesEvent: (event) => isRecurringEvent(event),
 
-	applyEdit: ({ event, updates, currentEvents, scope }: PluginMutationArgs) =>
+	applyEdit: ({
+		event,
+		updates,
+		currentEvents,
+		scope,
+		timezone,
+	}: PluginMutationArgs) =>
 		updateRecurringEvent({
 			targetEvent: event,
 			updates: updates ?? {},
 			currentEvents,
 			scope: scope as RecurrenceEditScope,
+			timezone,
 		}),
 
-	applyDelete: ({ event, currentEvents, scope }: PluginMutationArgs) =>
+	applyDelete: ({
+		event,
+		currentEvents,
+		scope,
+		timezone,
+	}: PluginMutationArgs) =>
 		deleteRecurringEvent({
 			targetEvent: event,
 			currentEvents,
 			scope: scope as RecurrenceEditScope,
+			timezone,
 		}),
 
 	contribute: (point: string, context: unknown): unknown[] => {

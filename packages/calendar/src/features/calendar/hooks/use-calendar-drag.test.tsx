@@ -6,14 +6,52 @@ import type {
 	DragStartEvent,
 } from '@dnd-kit/core'
 import type { CalendarEvent, EventDropInfo } from '@ilamy/types'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import {
+	dayKey,
+	parseDate,
+	toEpochMs,
+	toOffsetIso,
+	toUtcIso,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { act, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { CalendarTestProvider } from '@/testing'
 import { useCalendarDrag } from './use-calendar-drag'
 
+const mustUtc = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const pad2 = (value: number): string => String(value).padStart(2, '0')
+const wall = (date: ZonedDate | string | undefined): string | undefined => {
+	if (!date) return undefined
+	const parsed = typeof date === 'string' ? mustUtc(date) : date
+	return `${dayKey(parsed)}T${pad2(parsed.hour)}:${pad2(parsed.minute)}`
+}
+
+const utcIso = (date: ZonedDate | string | undefined): string | undefined => {
+	if (!date) return undefined
+	return toUtcIso(typeof date === 'string' ? mustUtc(date) : date)
+}
+
+const sameInstant = (
+	a: ZonedDate | string | undefined,
+	b: ZonedDate | string | undefined
+): boolean => {
+	if (!(a && b)) return false
+	const pa = typeof a === 'string' ? mustUtc(a) : a
+	const pb = typeof b === 'string' ? mustUtc(b) : b
+	return toEpochMs(pa) === toEpochMs(pb)
+}
+
 const wrapper = ({ children }: { children: ReactNode }) => (
-	<CalendarTestProvider>{children}</CalendarTestProvider>
+	<CalendarTestProvider timezone="UTC">{children}</CalendarTestProvider>
 )
 
 /** The sensors the hook hands dnd-kit, before and after a re-render. */
@@ -39,13 +77,13 @@ describe('useCalendarDrag eventAllow', () => {
 	const dragged: CalendarEvent = {
 		id: 'event-1',
 		title: 'Event',
-		start: dayjs('2025-03-12T09:00:00.000Z'),
-		end: dayjs('2025-03-12T10:00:00.000Z'),
+		start: '2025-03-12T09:00:00.000Z',
+		end: '2025-03-12T10:00:00.000Z',
 		resourceId: 'room-a',
 	}
 	const cell = {
 		type: 'day-cell',
-		date: dayjs('2025-03-15T00:00:00.000Z'),
+		date: mustUtc('2025-03-15T00:00:00.000Z'),
 		hour: 14,
 		minute: 0,
 		resourceId: 'room-b',
@@ -68,7 +106,7 @@ describe('useCalendarDrag eventAllow', () => {
 		const commitDrop = mock(() => {})
 		const { result } = renderHook(() => useCalendarDrag(commitDrop), {
 			wrapper: ({ children }: { children: ReactNode }) => (
-				<CalendarTestProvider eventAllow={eventAllow}>
+				<CalendarTestProvider eventAllow={eventAllow} timezone="UTC">
 					{children}
 				</CalendarTestProvider>
 			),
@@ -108,8 +146,8 @@ describe('useCalendarDrag eventAllow', () => {
 		drag.hover()
 
 		const [info, draggedEvent] = eventAllow.mock.calls.at(0) ?? []
-		expect(info?.start.toISOString()).toBe('2025-03-15T14:00:00.000Z')
-		expect(info?.end.toISOString()).toBe('2025-03-15T15:00:00.000Z')
+		expect(utcIso(info?.start)).toBe('2025-03-15T14:00:00.000Z')
+		expect(utcIso(info?.end)).toBe('2025-03-15T15:00:00.000Z')
 		expect(info?.allDay).toBe(false)
 		expect(info?.resourceId).toBe('room-b')
 		expect(draggedEvent).toBe(dragged)
@@ -174,21 +212,15 @@ describe('useCalendarDrag eventAllow', () => {
 })
 
 describe('useCalendarDrag resize', () => {
-	// Zoneless strings are read in the calendar's zone, which is the machine's
-	// here, so the fixtures and the wall-clock assertions agree under any TZ.
-	const at = (wallClock: string) => dayjs(wallClock)
-	const wall = (date: Dayjs | undefined) => date?.format('YYYY-MM-DDTHH:mm')
+	const at = (wallClock: string) => mustUtc(wallClock)
 
 	const meeting: CalendarEvent = {
 		id: 'event-1',
 		title: 'Meeting',
-		start: at('2025-03-12T09:00:00'),
-		end: at('2025-03-12T10:00:00'),
+		start: toOffsetIso(at('2025-03-12T09:00:00')),
+		end: toOffsetIso(at('2025-03-12T10:00:00')),
 		resourceId: 'room-a',
 	}
-	// One draggable per bar: a resize is the same bar pressed on a handle, which
-	// the activator event's target says (FullCalendar tells them apart the same
-	// way, `EventDragging.ts:110`, v7.1.1).
 	const resizableBar = {
 		id: 'event-1',
 		data: {
@@ -246,8 +278,9 @@ describe('useCalendarDrag resize', () => {
 		const { result } = renderHook(() => useCalendarDrag(commitDrop), {
 			wrapper: ({ children }: { children: ReactNode }) => (
 				<CalendarTestProvider
-					initialDate={at('2025-03-12T00:00:00')}
+					initialDate="2025-03-12T00:00:00Z"
 					initialView="week"
+					timezone="UTC"
 					{...providerProps}
 				>
 					{children}
@@ -352,8 +385,8 @@ describe('useCalendarDrag resize', () => {
 		const hovered = drag.preview()
 		drag.release(slotCell(7))
 
-		expect(hovered?.start.isSame(meeting.start)).toBe(true)
-		expect(hovered?.end.isSame(meeting.end)).toBe(true)
+		expect(sameInstant(hovered?.start, meeting.start)).toBe(true)
+		expect(sameInstant(hovered?.end, meeting.end)).toBe(true)
 		expect(hovered?.isDropAllowed).toBe(true)
 		expect(drag.commitDrop).not.toHaveBeenCalled()
 	})
@@ -365,16 +398,30 @@ describe('useCalendarDrag resize', () => {
 		const hovered = drag.preview()
 		drag.release(dayCell)
 
-		expect(hovered?.end.isSame(meeting.end)).toBe(true)
+		expect(sameInstant(hovered?.end, meeting.end)).toBe(true)
 		expect(drag.commitDrop).not.toHaveBeenCalled()
 	})
 
 	describe('where the calendar is closed', () => {
-		// Open 09:00-10:00 only, so the 11:00 slot is closed.
+		// Open 09:00-10:00 only, so the 11:00 slot is outside business hours.
 		const closedAfterTen = { businessHours: { startTime: 9, endTime: 10 } }
 
-		it('refuses a closed slot', () => {
+		it('allows resizing outside business hours by default (business hours only shade)', () => {
 			const drag = renderResizeHook('end', closedAfterTen)
+			drag.grab()
+			drag.hover(slotCell(11))
+			const hovered = drag.preview()
+			drag.release(slotCell(11))
+
+			expect(hovered?.isDropAllowed).toBe(true)
+			expect(drag.commitDrop).toHaveBeenCalledTimes(1)
+		})
+
+		it('refuses a closed slot when eventConstraint is businessHours', () => {
+			const drag = renderResizeHook('end', {
+				...closedAfterTen,
+				eventConstraint: 'businessHours',
+			})
 			drag.grab()
 			drag.hover(slotCell(11))
 			const hovered = drag.preview()
@@ -394,7 +441,6 @@ describe('useCalendarDrag resize', () => {
 	})
 
 	describe("on the event's own lane", () => {
-		// Room A closes after 10:00, Room B is always open.
 		const resources = [
 			{
 				id: 'room-a',
@@ -404,8 +450,11 @@ describe('useCalendarDrag resize', () => {
 			{ id: 'room-b', title: 'Room B' },
 		]
 
-		it("refuses a time the event's own lane is closed at, although the hovered lane is open", () => {
-			const drag = renderResizeHook('end', { resources })
+		it("refuses a time the event's own lane is closed at under eventConstraint, although the hovered lane is open", () => {
+			const drag = renderResizeHook('end', {
+				resources,
+				eventConstraint: 'businessHours',
+			})
 			drag.grab()
 			drag.hover(slotCell(11, { resourceId: 'room-b', disabled: false }))
 			const hovered = drag.preview()
@@ -425,6 +474,7 @@ describe('useCalendarDrag resize', () => {
 						businessHours: { startTime: 9, endTime: 10 },
 					},
 				],
+				eventConstraint: 'businessHours',
 			})
 			drag.grab()
 			drag.hover(slotCell(11, { resourceId: 'room-b', disabled: true }))
@@ -471,25 +521,27 @@ describe('useCalendarDrag resize', () => {
 })
 
 describe('useCalendarDrag snapping inside a cell', () => {
-	const at = (wallClock: string) => dayjs(wallClock)
-	const wall = (date: Dayjs | undefined) => date?.format('YYYY-MM-DDTHH:mm')
+	const at = (wallClock: string) => mustUtc(wallClock)
 
 	const meeting: CalendarEvent = {
 		id: 'event-1',
 		title: 'Meeting',
-		start: at('2025-03-12T09:00:00'),
-		end: at('2025-03-12T11:00:00'),
+		start: toOffsetIso(at('2025-03-12T09:00:00')),
+		end: toOffsetIso(at('2025-03-12T11:00:00')),
 	}
 	type Box = { top: number; left: number; width: number; height: number }
 	const barBox: Box = { top: 0, left: 0, width: 100, height: 120 }
-	/** A move of the meeting, as dnd-kit reports it for a bar drawn along `axis`. */
 	const moveOf = (axis: 'vertical' | 'horizontal', bar: Box = barBox) => ({
 		id: 'event-1',
 		data: {
 			current: {
 				type: 'calendar-event',
 				event: meeting,
-				dragSegment: { start: meeting.start, end: meeting.end, axis },
+				dragSegment: {
+					start: at('2025-03-12T09:00:00'),
+					end: at('2025-03-12T11:00:00'),
+					axis,
+				},
 				getBarRect: () => bar,
 			},
 		},
@@ -506,7 +558,6 @@ describe('useCalendarDrag snapping inside a cell', () => {
 	}
 	const endHandle = document.createElement('div')
 	endHandle.setAttribute('data-resize-handle', 'end')
-	/** A one-hour cell at 14:00 snapping to 15 minutes, 120px along `axis` from `from`. */
 	const hourCell = (
 		axis: 'vertical' | 'horizontal',
 		from = 100,
@@ -530,7 +581,6 @@ describe('useCalendarDrag snapping inside a cell', () => {
 		},
 	})
 
-	/** The pointer as the window sees it: the hook follows it, whatever dnd-kit's delta says. */
 	const pointerMovesTo = (x: number, y: number) =>
 		act(() => {
 			window.dispatchEvent(
@@ -545,7 +595,8 @@ describe('useCalendarDrag snapping inside a cell', () => {
 		const { result } = renderHook(() => useCalendarDrag(commitDrop), {
 			wrapper: ({ children }: { children: ReactNode }) => (
 				<CalendarTestProvider
-					initialDate={at('2025-03-12T00:00:00')}
+					initialDate="2025-03-12T00:00:00Z"
+					timezone="UTC"
 					{...providerProps}
 				>
 					{children}
@@ -688,8 +739,8 @@ describe('useCalendarDrag over a time column', () => {
 	const dragged: CalendarEvent = {
 		id: 'event-1',
 		title: 'Event',
-		start: dayjs('2025-03-12T09:00:00.000Z'),
-		end: dayjs('2025-03-12T10:00:00.000Z'),
+		start: '2025-03-12T09:00:00.000Z',
+		end: '2025-03-12T10:00:00.000Z',
 	}
 	const active = {
 		id: 'event-1',
@@ -701,7 +752,7 @@ describe('useCalendarDrag over a time column', () => {
 		return {
 			data: {
 				type: 'day-cell',
-				date: dayjs('2025-03-15T00:00:00.000Z').hour(hour),
+				date: withTime(mustUtc('2025-03-15T00:00:00.000Z'), { hour }),
 				hour,
 				minute: 0,
 				slotDurationMinutes: 60,
@@ -718,7 +769,6 @@ describe('useCalendarDrag over a time column', () => {
 	})
 	const column = columnOf([slotAt(9), slotAt(10)])
 
-	/** A drag with the pointer at height `y`, hovering and releasing over `target`. */
 	const dragWithPointerAt = (y: number, target = column) => {
 		const commitDrop = mock(() => {})
 		const { result } = renderHook(() => useCalendarDrag(commitDrop), {
@@ -752,7 +802,7 @@ describe('useCalendarDrag over a time column', () => {
 	it('previews the slot under the pointer', () => {
 		const { hovered } = dragWithPointerAt(170)
 
-		expect(hovered?.start.toISOString()).toBe('2025-03-15T10:00:00.000Z')
+		expect(utcIso(hovered?.start)).toBe('2025-03-15T10:00:00.000Z')
 	})
 
 	it('commits the slot under the pointer', () => {
@@ -764,7 +814,7 @@ describe('useCalendarDrag over a time column', () => {
 	it('previews the slot above while the pointer is in the gap between two rows', () => {
 		const { hovered } = dragWithPointerAt(162)
 
-		expect(hovered?.start.toISOString()).toBe('2025-03-15T09:00:00.000Z')
+		expect(utcIso(hovered?.start)).toBe('2025-03-15T09:00:00.000Z')
 	})
 
 	// A slot publishes itself when it mounts. Over one that has not, there is no

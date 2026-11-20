@@ -45,6 +45,7 @@
 		"react-dom": "^19.2.0"
 	},
 	"dependencies": {
+		"@ilamy/core": "workspace:*",
 		"@ilamy/utils": "workspace:*"
 	}
 }

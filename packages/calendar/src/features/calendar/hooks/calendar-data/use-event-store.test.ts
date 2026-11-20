@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
 import { renderHook } from '@testing-library/react'
 import { createPluginRuntime } from '@/lib/plugins/create-plugin-runtime'
 import { useEventStore } from './use-event-store'
 
-const at = (day: number, hour = 9) =>
-	dayjs(
-		`2025-03-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:00:00.000Z`
-	)
+const at = (day: number, hour = 9): string =>
+	`2025-03-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:00:00.000Z`
 const mkEvent = (id: string, day: number): CalendarEvent => ({
 	id,
 	title: id,
@@ -33,6 +30,7 @@ const renderStoreHook = (initialEvents: CalendarEvent[]) => {
 				events: props.events,
 				pluginRuntime,
 				getCurrentViewRange,
+				timezone: 'UTC',
 			}),
 		{ initialProps: { events: initialEvents } }
 	)

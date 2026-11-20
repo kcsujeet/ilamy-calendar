@@ -1,19 +1,28 @@
-import type { CalendarEvent } from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
-import { useCallback, useMemo, useState } from 'react'
+import type { CalendarEvent, IsoDateString } from '@ilamy/types'
+import {
+	add,
+	now,
+	parseDate,
+	resolveZone,
+	toOffsetIso,
+	withTime,
+} from '@ilamy/utils/temporal'
+import {
+	type Dispatch,
+	type SetStateAction,
+	useCallback,
+	useMemo,
+	useState,
+} from 'react'
 import type { TranslatorFunction } from '@/config/translations/types'
 import type { CellInfo, OpenEventFormInput } from '@/features/calendar/types'
 
-/**
- * A new-event draft intentionally has no `id` yet — the form assigns one on
- * save. The context's `selectedEvent` slot carries drafts as CalendarEvent,
- * so this builder owns the single, documented widening.
- */
 const buildEventDraft = (draft: Omit<CalendarEvent, 'id'>): CalendarEvent =>
 	draft as CalendarEvent
 
 interface CalendarInteractionParams {
-	currentDate: Dayjs
+	currentDate: IsoDateString
+	timezone?: string
 	t: TranslatorFunction
 	disableEventClick?: boolean
 	disableCellClick?: boolean
@@ -24,19 +33,19 @@ interface CalendarInteractionParams {
 export interface CalendarInteractionSlice {
 	isEventFormOpen: boolean
 	selectedEvent: CalendarEvent | null
-	selectedDate: Dayjs | null
-	setIsEventFormOpen: React.Dispatch<React.SetStateAction<boolean>>
-	setSelectedEvent: React.Dispatch<React.SetStateAction<CalendarEvent | null>>
-	setSelectedDate: React.Dispatch<React.SetStateAction<Dayjs | null>>
+	selectedDate: IsoDateString | null
+	setIsEventFormOpen: Dispatch<SetStateAction<boolean>>
+	setSelectedEvent: Dispatch<SetStateAction<CalendarEvent | null>>
+	setSelectedDate: Dispatch<SetStateAction<IsoDateString | null>>
 	openEventForm: (eventData?: OpenEventFormInput) => void
 	closeEventForm: () => void
 	handleEventClick: (event: CalendarEvent) => void
 	handleDateClick: (info: CellInfo) => void
 }
 
-/** Interaction slice: selection state and the event form lifecycle. */
 export const useCalendarInteraction = ({
 	currentDate,
+	timezone,
 	t,
 	disableEventClick,
 	disableCellClick,
@@ -45,7 +54,7 @@ export const useCalendarInteraction = ({
 }: CalendarInteractionParams): CalendarInteractionSlice => {
 	const [isEventFormOpen, setIsEventFormOpen] = useState(false)
 	const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
-	const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null)
+	const [selectedDate, setSelectedDate] = useState<IsoDateString | null>(null)
 
 	const openEventForm = useCallback(
 		(eventData: OpenEventFormInput = {}) => {
@@ -53,16 +62,18 @@ export const useCalendarInteraction = ({
 			if (start) {
 				setSelectedDate(start)
 			}
-			// Truncated to the minute because the form offers nothing finer, and an
-			// unpicked `start` falls back to `currentDate`, which came from `dayjs()`
-			// and carries the seconds of page load. Left in, that residue makes a
-			// midnight-to-midnight event 23:59:27 long (#248).
-			const draftStart = (start ?? currentDate).second(0).millisecond(0)
+			const zone = resolveZone(timezone)
+			const baseStart = parseDate(start ?? currentDate, zone) ?? now(zone)
+			const draftStart = withTime(baseStart, { second: 0, millisecond: 0 })
+			const draftEnd = end
+				? (parseDate(end, zone) ?? add(draftStart, 1, 'hour'))
+				: add(draftStart, 1, 'hour')
+
 			setSelectedEvent(
 				buildEventDraft({
 					title: t('newEvent'),
-					start: draftStart,
-					end: end ?? draftStart.add(1, 'hour'),
+					start: toOffsetIso(draftStart),
+					end: toOffsetIso(draftEnd),
 					resourceId: resourceId ?? resource?.id,
 					description: '',
 					allDay: allDay ?? false,
@@ -70,7 +81,7 @@ export const useCalendarInteraction = ({
 			)
 			setIsEventFormOpen(true)
 		},
-		[currentDate, t]
+		[currentDate, timezone, t]
 	)
 
 	const closeEventForm = useCallback(() => {
@@ -79,7 +90,6 @@ export const useCalendarInteraction = ({
 		setIsEventFormOpen(false)
 	}, [])
 
-	// Internal: open the form pre-filled with an EXISTING event (clicked event).
 	const editEvent = useCallback((event: CalendarEvent) => {
 		setSelectedEvent(event)
 		setIsEventFormOpen(true)
@@ -104,7 +114,6 @@ export const useCalendarInteraction = ({
 			if (disableCellClick) {
 				return
 			}
-
 			if (onCellClick) {
 				onCellClick(info)
 			} else {

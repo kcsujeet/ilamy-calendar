@@ -1,12 +1,29 @@
+import {
+	collectResourceBusinessHours,
+	getViewHours,
+	getVisibleDateRange,
+	getWeekDays,
+	isToday,
+	withoutHiddenDays,
+} from '@ilamy/core'
 import type {
-	Dayjs,
 	HorizontalRowSpec,
+	IsoDateString,
 	PluginView,
 	Resource,
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
+import {
+	formatDate,
+	getWeekNumber,
+	now,
+	parseDate,
+	resolveZone,
+	toOffsetIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { Columns3 } from 'lucide-react'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
@@ -16,19 +33,15 @@ import {
 	STICKY_GUTTER_SHADOW,
 } from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useSlotProps } from '@/features/calendar/stores/calendar-theme-context'
 import type { WeekNumberCalculation } from '@/features/calendar/types'
 import { keys } from '@/features/calendar/utils/keys'
 import { viewHasResourceAxis } from '@/features/calendar/utils/resource-list'
-import {
-	collectResourceBusinessHours,
-	getViewHours,
-} from '@/features/calendar/utils/view-hours'
-import { getWeekNumber } from '@/features/calendar/utils/week-number'
-import { getWeekDays, isToday, withoutHiddenDays } from '@/utils/date-utils'
 import { DayHeaderLabel } from './day-header-label'
 import {
 	RESOURCE_CELL_WIDTH,
 	ResourcesCornerCell,
+	resolveResourceLayout,
 	resourceHorizontalRows,
 	resourceVerticalColumns,
 } from './resource-axis'
@@ -37,44 +50,60 @@ import { ResourceWeekVerticalDayHeader } from './resource-week-vertical-day-head
 import { ResourceWeekVerticalResourceHeader } from './resource-week-vertical-resource-header'
 import { TimeHeaderRow } from './time-header-row'
 
-const getVisibleDays = (date: Dayjs, config: ViewConfig): Dayjs[] => {
+const parseViewDate = (
+	dateIso: IsoDateString,
+	timezone?: string
+): ZonedDate => {
+	const zone = resolveZone(timezone)
+	return parseDate(dateIso, zone) ?? now(zone)
+}
+
+const getVisibleDays = (date: ZonedDate, config: ViewConfig): ZonedDate[] => {
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
 	return withoutHiddenDays(weekDays, config.hiddenDays)
 }
 
-// The number belongs to the week drawn, counted from its first drawn day like
-// a month row (FullCalendar TimeGridWeekNumber.tsx:44-50 numbers
-// renderRange.start). Numbering the current date instead made one grid read
-// two numbers, and disagree with the month row, depending on which of its days
-// was current.
 const getDrawnWeekNumber = (
-	date: Dayjs,
+	date: ZonedDate,
 	config: ViewConfig,
-	calculation: WeekNumberCalculation
+	calculation: WeekNumberCalculation,
+	locale?: string
 ): number => {
 	const firstDrawnDay = getVisibleDays(date, config).at(0) ?? date
-	return getWeekNumber(firstDrawnDay, calculation)
+	return getWeekNumber(firstDrawnDay, calculation, locale)
 }
 
 const isHourlyGranularity = (config: ViewConfig): boolean =>
 	(config.weekViewGranularity ?? 'hourly') === 'hourly'
 
-const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
+const WeekViewHeader: React.FC<{ date: ZonedDate; config: ViewConfig }> = ({
 	date,
 	config,
 }) => {
-	const { t, selectDate, openEventForm, weekNumbers, weekNumberCalculation } =
-		useSmartCalendarContext((c) => ({
-			t: c.t,
-			selectDate: c.selectDate,
-			openEventForm: c.openEventForm,
-			weekNumbers: c.weekNumbers,
-			weekNumberCalculation: c.weekNumberCalculation,
-		}))
+	const {
+		t,
+		selectDate,
+		openEventForm,
+		weekNumbers,
+		weekNumberCalculation,
+		currentLocale,
+	} = useSmartCalendarContext((c) => ({
+		t: c.t,
+		selectDate: c.selectDate,
+		openEventForm: c.openEventForm,
+		weekNumbers: c.weekNumbers,
+		weekNumberCalculation: c.weekNumberCalculation,
+		currentLocale: c.currentLocale,
+	}))
+	const dayHeaderSlot = useSlotProps('dayHeader', {
+		structuralClassName:
+			'flex-1 min-w-0 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 w-20 h-full',
+		defaultClassName: 'hover:bg-accent bg-background',
+	})
 	const visibleDays = getVisibleDays(date, config)
 	const showsWeekNumber = weekNumbers !== false
 	const weekNumber = String(
-		getDrawnWeekNumber(date, config, weekNumberCalculation)
+		getDrawnWeekNumber(date, config, weekNumberCalculation, currentLocale)
 	)
 
 	return (
@@ -82,7 +111,6 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 			className={'flex h-18 flex-1 gap-px bg-border'}
 			data-testid="week-view-header"
 		>
-			{/* Corner cell with week number — mirrors the responsive gutter width. */}
 			<div
 				className={cn(
 					RESPONSIVE_GUTTER_WIDTH,
@@ -95,9 +123,6 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 						<span className="text-muted-foreground text-xs truncate w-full text-center">
 							{t('week')}
 						</span>
-						{/* Same rule as the day numbers beside it: the word stays put and
-						    the number animates, so the fade plays on the one part that
-						    moved. */}
 						<AnimatedSection
 							className="font-medium truncate w-full text-center"
 							data-testid="week-number"
@@ -109,31 +134,23 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 				)}
 			</div>
 
-			{/* Day header cells */}
 			{visibleDays.map((day, index) => {
-				// A column heads the same weekday in every week, so the cell is
-				// keyed by its position. Keying it by the date remounted the whole
-				// label on every navigation, replaying the fade over a weekday
-				// that had not changed; only the number moves, and it animates
-				// itself (see AnimatedDayLabel).
 				const key = keys.listKey('week-header-day', index)
+				const dayIso = toOffsetIso(day)
+				const englishWeekday = formatDate(day, { weekday: 'long' }, 'en')
 
 				return (
 					// biome-ignore lint/a11y/noStaticElementInteractions: day header is clickable, unchanged behavior
 					// biome-ignore lint/a11y/useKeyWithClickEvents: keyboard access is handled by the day cells
 					<div
-						className={cn(
-							'hover:bg-accent bg-background flex-1 min-w-0 flex flex-col justify-center cursor-pointer p-1 text-center sm:p-2 w-20 h-full'
-						)}
-						data-testid={keys.header.weekday(
-							'week',
-							day.locale('en').format('dddd')
-						)}
+						className={dayHeaderSlot.className}
+						data-testid={keys.header.weekday('week', englishWeekday)}
 						key={key}
 						onClick={() => {
-							selectDate(day)
-							openEventForm({ start: day })
+							selectDate(dayIso)
+							openEventForm({ start: dayIso })
 						}}
+						style={dayHeaderSlot.style}
 					>
 						<DayHeaderLabel animated day={day} />
 					</div>
@@ -143,17 +160,12 @@ const WeekViewHeader: React.FC<{ date: Dayjs; config: ViewConfig }> = ({
 	)
 }
 
-/**
- * The hour rows of one day. The caller collects the resources' business hours
- * ONCE per render and passes them in: collecting them here would walk every
- * resource for every day of every resource column.
- */
 const weekHoursFor = (
-	day: Dayjs,
+	day: ZonedDate,
 	config: ViewConfig,
 	resourceBusinessHours: ReturnType<typeof collectResourceBusinessHours>,
-	allDates?: Dayjs[]
-): Dayjs[] =>
+	allDates?: ZonedDate[]
+): ZonedDate[] =>
 	getViewHours({
 		referenceDate: day,
 		businessHours: config.businessHours,
@@ -165,7 +177,7 @@ const weekHoursFor = (
 	})
 
 const resourceWeekVerticalColumns = (
-	date: Dayjs,
+	date: ZonedDate,
 	config: ViewConfig,
 	resources: Resource[]
 ): VerticalColumnSpec[] => {
@@ -175,49 +187,63 @@ const resourceWeekVerticalColumns = (
 	if (isHourlyGranularity(config)) {
 		const isTodayVisible = visibleDays.some((day) => isToday(day))
 		const resourceBusinessHours = collectResourceBusinessHours(resources)
-		// One hour list per visible day, shared by every resource's column.
 		const hoursOfVisibleDays = visibleDays.map((day) =>
-			weekHoursFor(day, config, resourceBusinessHours, weekDays)
+			weekHoursFor(day, config, resourceBusinessHours, weekDays).map(
+				toOffsetIso
+			)
 		)
+		const gutterDays = weekHoursFor(
+			date,
+			config,
+			resourceBusinessHours,
+			weekDays
+		).map(toOffsetIso)
+
 		return resourceVerticalColumns({
 			resources,
 			gutter: gutterColumn({
-				days: weekHoursFor(date, config, resourceBusinessHours, weekDays),
+				days: gutterDays,
 				gridType: 'hour',
+				timezone: config.timezone,
 				showsToday: isTodayVisible,
 			}),
 			columnsFor: (resource) =>
 				visibleDays.map((day, dayIndex) => ({
 					id: keys.col.day(day, resource.id),
 					className: RESOURCE_CELL_WIDTH,
-					day,
-					days: hoursOfVisibleDays[dayIndex],
+					day: toOffsetIso(day),
+					days: hoursOfVisibleDays.at(dayIndex) ?? [],
 					gridType: 'hour' as const,
 				})),
 		})
 	}
 
+	const visibleDayIsos = visibleDays.map(toOffsetIso)
+	const zone = resolveZone(config.timezone)
+
 	return resourceVerticalColumns({
 		resources,
 		gutter: gutterColumn({
-			days: visibleDays,
+			days: visibleDayIsos,
 			gridType: 'day',
-			renderLabel: (day: Dayjs) => (
-				<DayHeaderLabel animated={false} day={day} />
-			),
+			timezone: config.timezone,
+			renderLabel: (dayIso: IsoDateString) => {
+				const parsed = parseDate(dayIso, zone)
+				return parsed ? <DayHeaderLabel animated={false} day={parsed} /> : null
+			},
 		}),
 		columnsFor: (resource) => ({
 			id: keys.col.resource('week', resource.id),
 			className: RESOURCE_CELL_WIDTH,
 			day: undefined,
-			days: visibleDays,
+			days: visibleDayIsos,
 			gridType: 'day' as const,
 		}),
 	})
 }
 
 const resourceWeekHorizontalRows = (
-	date: Dayjs,
+	date: ZonedDate,
 	config: ViewConfig,
 	resources: Resource[]
 ): HorizontalRowSpec[] => {
@@ -245,14 +271,24 @@ const resourceWeekHorizontalRows = (
 }
 
 const ResourceWeekVerticalHeader: React.FC<{
-	date: Dayjs
+	date: ZonedDate
 	config: ViewConfig
 	resources: Resource[]
 }> = ({ date, config, resources }) => {
-	const { weekNumberCalculation } = useSmartCalendarContext()
+	const { weekNumberCalculation, currentLocale } = useSmartCalendarContext(
+		(c) => ({
+			weekNumberCalculation: c.weekNumberCalculation,
+			currentLocale: c.currentLocale,
+		})
+	)
 	const visibleDays = getVisibleDays(date, config)
 	const isHourly = isHourlyGranularity(config)
-	const weekNumber = getDrawnWeekNumber(date, config, weekNumberCalculation)
+	const weekNumber = getDrawnWeekNumber(
+		date,
+		config,
+		weekNumberCalculation,
+		currentLocale
+	)
 	const dayHeaderColumns = isHourly
 		? resources.flatMap((resource) =>
 				visibleDays.map((day) => ({ day, resourceId: resource.id }))
@@ -276,7 +312,7 @@ const ResourceWeekVerticalHeader: React.FC<{
 }
 
 const ResourceWeekHorizontalHeader: React.FC<{
-	date: Dayjs
+	date: ZonedDate
 	config: ViewConfig
 	resources: Resource[]
 }> = ({ date, config, resources }) => {
@@ -300,36 +336,41 @@ const ResourceWeekHorizontalHeader: React.FC<{
 }
 
 const weekColumns = (
-	date: Dayjs,
+	dateIso: IsoDateString,
 	config: ViewConfig
 ): VerticalColumnSpec[] | HorizontalRowSpec[] => {
-	const resources = config.resources ?? []
-
-	if (viewHasResourceAxis(config)) {
-		if (config.orientation === 'vertical') {
-			return resourceWeekVerticalColumns(date, config, resources)
-		}
-		return resourceWeekHorizontalRows(date, config, resources)
+	const date = parseViewDate(dateIso, config.timezone)
+	const resourceLayout = resolveResourceLayout(config, {
+		vertical: (resources) =>
+			resourceWeekVerticalColumns(date, config, resources),
+		horizontal: (resources) =>
+			resourceWeekHorizontalRows(date, config, resources),
+	})
+	if (resourceLayout) {
+		return resourceLayout
 	}
 
 	const weekDays = getWeekDays(date, config.firstDayOfWeek)
 	const visibleDays = getVisibleDays(date, config)
 	const isTodayVisible = visibleDays.some((day) => isToday(day))
-	// This branch has no resources, so there are no resource business hours.
 	const noResourceBusinessHours = collectResourceBusinessHours([])
 
 	return [
 		gutterColumn({
-			days: weekHoursFor(date, config, noResourceBusinessHours, weekDays),
+			days: weekHoursFor(date, config, noResourceBusinessHours, weekDays).map(
+				toOffsetIso
+			),
 			gridType: 'hour',
+			timezone: config.timezone,
 			widthClassName: RESPONSIVE_GUTTER_WIDTH,
 			showsToday: isTodayVisible,
 		}),
-		// Each day column gets its own hours on the correct date.
 		...visibleDays.map((day) => ({
 			id: keys.col.day(day),
-			day,
-			days: weekHoursFor(day, config, noResourceBusinessHours, weekDays),
+			day: toOffsetIso(day),
+			days: weekHoursFor(day, config, noResourceBusinessHours, weekDays).map(
+				toOffsetIso
+			),
 			className: 'flex-1 min-w-0',
 			gridType: 'hour' as const,
 		})),
@@ -343,14 +384,19 @@ export const weekView: PluginView = {
 	navigationUnit: 'week',
 	layout: 'vertical',
 	supportsResources: true,
-	range: (date, config) => {
-		const days = getWeekDays(date, config.firstDayOfWeek)
-		const weekStart = days.at(0) ?? date
-		const weekEnd = days.at(-1) ?? date
-		return { start: weekStart.startOf('day'), end: weekEnd.endOf('day') }
+	range: (dateIso, config) => {
+		const zoned = parseViewDate(dateIso, config.timezone)
+		const { start, end } = getVisibleDateRange(
+			zoned,
+			'week',
+			config.firstDayOfWeek,
+			config.hiddenDays
+		)
+		return { start: toOffsetIso(start), end: toOffsetIso(end) }
 	},
 	columns: weekColumns,
-	renderHeader: ({ date, config }) => {
+	renderHeader: ({ date: dateIso, config }) => {
+		const date = parseViewDate(dateIso, config.timezone)
 		const resources = config.resources ?? []
 		if (!viewHasResourceAxis(config)) {
 			return <WeekViewHeader config={config} date={date} />

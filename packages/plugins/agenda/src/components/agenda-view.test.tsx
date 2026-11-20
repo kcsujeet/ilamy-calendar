@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent, EventSegment } from '@ilamy/calendar'
 import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { CalendarTestProvider } from '@ilamy/calendar/testing'
-import dayjs from '@ilamy/utils/dayjs'
 import { fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import type { AgendaWindow } from '../utils/agenda-window'
@@ -21,14 +20,14 @@ const FormProbe = () => {
 const mkEvent = (
 	id: string,
 	title: string,
-	startISO: string,
-	endISO: string,
+	start: string,
+	end: string,
 	extra: Partial<CalendarEvent> = {}
 ): CalendarEvent => ({
 	id,
 	title,
-	start: dayjs(startISO),
-	end: dayjs(endISO),
+	start,
+	end,
 	...extra,
 })
 
@@ -41,7 +40,7 @@ const renderAgenda = (
 	render(
 		<CalendarTestProvider
 			events={events}
-			initialDate={dayjs(initialDateISO)}
+			initialDate={initialDateISO}
 			renderEvent={renderEvent}
 		>
 			<AgendaView window={window} />
@@ -142,7 +141,7 @@ describe('AgendaView', () => {
 
 	it('opens the clicked event for editing', () => {
 		render(
-			<CalendarTestProvider events={seed} initialDate={dayjs('2026-06-13')}>
+			<CalendarTestProvider events={seed} initialDate="2026-06-13">
 				<AgendaView window="month" />
 				<FormProbe />
 			</CalendarTestProvider>

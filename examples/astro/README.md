@@ -34,32 +34,15 @@ export default defineConfig({
 })
 ```
 
-### 3. Dayjs Configuration
-
-Configure dayjs with required plugins in your React component:
-
-```tsx
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
-
-dayjs.extend(utc)
-dayjs.extend(timezone)
-dayjs.extend(isSameOrAfter)
-dayjs.extend(isSameOrBefore)
-```
-
-### 4. Dependencies
+### 3. Dependencies
 
 Make sure to install all required dependencies:
 
 ```bash
-npm install @astrojs/react @ilamy/calendar astro dayjs react react-dom tailwindcss
+npm install @astrojs/react @ilamy/calendar astro react react-dom tailwindcss
 npm install -D @tailwindcss/vite @types/react @types/react-dom typescript
 # or
-bun install @astrojs/react @ilamy/calendar astro dayjs react react-dom tailwindcss
+bun install @astrojs/react @ilamy/calendar astro react react-dom tailwindcss
 bun install -D @tailwindcss/vite @types/react @types/react-dom typescript
 ```
 
@@ -83,7 +66,6 @@ This will install:
 - React and React DOM
 - ilamy Calendar package
 - Tailwind CSS v4 and Vite plugin
-- All required dayjs plugins
 
 > **Note for Bun users:** This example uses [isolated installs](https://bun.com/docs/pm/isolated-installs) via `bunfig.toml` to avoid lockfile conflicts with parent directories.
 

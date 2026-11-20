@@ -1,0 +1,28 @@
+---
+title: Year View Plugin
+description: Opt-in 12-month year overview plugin for ilamy Calendar.
+slug: docs/plugins/year
+---
+
+In v4.0, the Year view is an opt-in plugin exported from `@ilamy/calendar/plugins/year`, keeping the default core bundle lighter when you only need Month, Week, and Day views.
+
+## Usage
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar'
+import { yearPlugin } from '@ilamy/calendar/plugins/year'
+
+const plugins = [yearPlugin()]
+
+export function App() {
+  return (
+    <IlamyCalendar
+      events={events}
+      initialView="year"
+      plugins={plugins}
+    />
+  )
+}
+```
+
+Memoize or hoist the `plugins` array outside the component so its identity remains stable across renders.

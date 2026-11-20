@@ -1,21 +1,14 @@
 import type { PluginView } from '@ilamy/calendar'
+import { now, parseDate, resolveZone, toOffsetIso } from '@ilamy/utils/temporal'
 import { List } from 'lucide-react'
 import { createElement } from 'react'
 import { AgendaView } from '../components/agenda-view'
 import { type AgendaWindow, windowRange, windowStep } from './agenda-window'
 
 export interface AgendaViewOptions {
-	/**
-	 * The date window the agenda lists and that prev/next steps over. Default 'month'.
-	 * A named period ('day' | 'week' | 'month') is the calendar period *containing*
-	 * the current date, so it can include earlier days of that period (and aligns
-	 * with the matching grid view + header label). A number is a rolling window of
-	 * that many days starting *at* the current date and counting forward.
-	 */
 	window?: AgendaWindow
 }
 
-/** Builds the agenda `PluginView` for the given window. */
 export const createAgendaView = ({
 	window = 'month',
 }: AgendaViewOptions = {}): PluginView => ({
@@ -23,7 +16,12 @@ export const createAgendaView = ({
 	label: 'agenda',
 	icon: List,
 	navigationStep: windowStep(window),
-	range: (date, config) => windowRange(date, window, config.firstDayOfWeek),
+	range: (dateIso, config) => {
+		const zone = resolveZone(config.timezone)
+		const zoned = parseDate(dateIso, zone) ?? now(zone)
+		const { start, end } = windowRange(zoned, window, config.firstDayOfWeek)
+		return { start: toOffsetIso(start), end: toOffsetIso(end) }
+	},
 	supportsResources: false,
 	component: () => createElement(AgendaView, { window }),
 })

@@ -60,7 +60,7 @@ test.describe('month view', () => {
 		await gotoScenario(page, {
 			scenario: 'across-hidden-days',
 			view: 'month',
-			settings: { hiddenDays: 'wednesday' },
+			settings: { hiddenDays: 'wednesday', nowIndicator: 'true' },
 		})
 		const month = new MonthGrid(page)
 
@@ -268,7 +268,7 @@ test.describe('resource views', () => {
 			scenario: 'resources',
 			view: 'week',
 			orientation: 'horizontal',
-			settings: { hiddenDays: 'wednesday' },
+			settings: { hiddenDays: 'wednesday', nowIndicator: 'true' },
 		})
 
 		const bar = page.getByTestId('horizontal-event-res-4')
@@ -296,7 +296,7 @@ test.describe('resource views', () => {
 			orientation: 'horizontal',
 			now: thursdayNow,
 			date: thursdayNow,
-			settings: { hiddenDays: 'wednesday' },
+			settings: { hiddenDays: 'wednesday', nowIndicator: 'true' },
 		})
 
 		const line = page.getByTestId('current-time-indicator').first()

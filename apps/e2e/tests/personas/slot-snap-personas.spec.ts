@@ -60,7 +60,10 @@ const dragPointer = async (page: Page, from: Point, to: Point) => {
 }
 
 const openSettled = async (page: Page, options: ScenarioOptions) => {
-	await gotoScenario(page, options)
+	await gotoScenario(page, {
+		...options,
+		settings: { editable: 'true', ...options.settings },
+	})
 	await page.evaluate(() =>
 		Promise.all(document.getAnimations().map((animation) => animation.finished))
 	)
@@ -1053,6 +1056,7 @@ test.describe('persona 4: pointer on boundaries, eventAllow, upgrader, fallbacks
 			snapDuration: 15,
 			scrollTime: '07:00',
 			businessHours: '9-17',
+			eventConstraint: 'businessHours',
 		}
 		await openSettled(page, { scenario: 'basic', view: 'week', settings })
 		let grid = new TimeGrid(page)

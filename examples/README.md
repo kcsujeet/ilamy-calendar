@@ -55,26 +55,13 @@ Both examples include a `bunfig.toml` file that enables [isolated installs](http
 
 ## Common Integration Requirements
 
-All examples require the calendar package and its dependencies:
+All examples require the calendar package and its peer dependencies:
 
 ```bash
-npm install @ilamy/calendar react react-dom tailwindcss dayjs
+npm install @ilamy/calendar react react-dom tailwindcss
 ```
 
-And dayjs configuration with required plugins:
-
-```tsx
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
-
-dayjs.extend(utc)
-dayjs.extend(timezone)
-dayjs.extend(isSameOrAfter)
-dayjs.extend(isSameOrBefore)
-```
+No `dayjs` installation or plugin setup is required — pass ISO 8601 strings or native `Date` objects directly.
 
 ## Framework-Specific Notes
 

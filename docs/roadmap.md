@@ -20,8 +20,8 @@ across.
 
 | Release | Kind | Theme | Status |
 |---|---|---|---|
-| 3.3 | additive minor | Editing, time axis, formats, display toggles, async data, `ref` API, deprecations and migration docs | Built in the open PR stack #335-#359; release tasks in this PR |
-| 4.0 | breaking major | Temporal date core, ISO/`Date` public dates, smaller core, standard defaults, removals | Planned |
+| 3.3 | additive minor | Editing, time axis, formats, display toggles, async data, `ref` API, deprecations and migration docs | Shipped (`v3.3.0`, `v3.3.1`) |
+| 4.0 | breaking major | Temporal date core, ISO/`Date` public dates, smaller core, standard defaults, removals, visible resize handles | In progress |
 | 4.1 | additive minor | Scheduling rules and the drag ecosystem; plugin-contract hooks land with their first plugin | Planned |
 | 4.2 | additive minor | Scheduler (resource hierarchy, columns, ordering, timeline, virtualisation) | Planned |
 | 4.3 | additive minor | Views, customisation, accessibility, RTL, print, interop | Planned |
@@ -261,10 +261,11 @@ dayjs"), then moves optional built-ins out of core.
 | 4.0.2 | **Public dates as ISO strings or `Date`** | Events, cell info, render props, callbacks, the plugin contract. Remove `dayjs`, `Dayjs`, `ManipulateType` exports. Add `timezone` to the context API. |
 | 4.0.3 | **Several zones per page** | Falls out of 4.0.1 (today one global zone, `docs/timezones.md:89`). e2e spec. |
 | 4.0.4 | **Optional built-ins become plugins** | iCal export becomes `plugins/ical` (its header button through the toolbar-items hook); year view becomes `plugins/year` (D7). Evaluate the resource axis as a plugin (listed as future work in `docs/monorepo-architecture.md:100-103`); move it only if the contract carries it without contortion. |
-| 4.0.5 | **Standard defaults** | `BusinessHours.daysOfWeek` defaults to Monday–Friday (TODO in `utils/business-hours.ts:152`); `nowIndicator` per D3. Business hours (and month padding days) stop refusing clicks, drops, resizes and drag-to-create; they only shade. In the same release, so no version removes the restriction without its replacement, core gains `eventConstraint` and `selectConstraint` accepting `'businessHours'`: the whole moved, resized or selected range must fit inside business hours, and the event form's business-hours limits follow them. `isCellDisabled` keeps refusing. Citations (FullCalendar docs and v7.1.1 source) in `docs/migration-v4.md`. 4.1.2 widens the same props to the other constraint values. |
-| 4.0.6 | **Remove deprecated names** | Everything in `docs/migration-v4.md`, including `IlamyResourceCalendar` and `disableDragAndDrop`. |
+| 4.0.5 | **Standard defaults** | `BusinessHours.daysOfWeek` defaults to Monday–Friday (TODO in `utils/business-hours.ts:152`); `nowIndicator` defaults `false` (D3); `editable` defaults `false` (D8); `displayEventTime` defaults `true` and `displayEventEnd` defaults `false` in month / `true` in time-grid views (D9); `onDateChange`/`currentRange` trim to drawn days when `hiddenDays`/`weekends` hide days (D10); month cell clicks and drag-to-create selections report `allDay: true` (D11). Business hours (and month padding days) stop refusing clicks, drops, resizes and drag-to-create; they only shade. In the same release, so no version removes the restriction without its replacement, core gains `eventConstraint` and `selectConstraint` accepting `'businessHours'`: the whole moved, resized or selected range must fit inside business hours, and the event form's business-hours limits follow them. `isCellDisabled` keeps refusing. Citations (FullCalendar docs and v7.1.1 source) in `docs/migration-v4.md`. 4.1.2 widens the same props to the other constraint values. |
+| 4.0.6 | **Remove deprecated names** | Everything in `docs/migration-v4.md`, including `IlamyResourceCalendar` and `disableDragAndDrop`. Keep `onEventAdd`/`onEventUpdate`/`onEventDelete` alongside `onEventsChange` (D2). |
 | 4.0.7 | **Plugins on new date types** | Recurrence keeps RFC 5545 floating-time correctness. |
 | 4.0.8 | **kcsujeet/ilamy-calendar#314** | Verify whether the Temporal core fixes it; do not assume. |
+| 4.0.9 | **Visible resize handles** | Make event resize handles discoverable: invisible at rest, faint 3-dot grip along the resizable edge on event bar hover (`group-hover`), full opacity with subtle edge tint on handle hover. Uses `currentColor` (adapts to event color and light/dark themes) and CSS / minimal DOM so a 500-event week stays within render budget. |
 
 **Acceptance:** `bun run ci` and `bun run e2e` green with the machine zone at UTC, Vancouver,
 London and Havana; every app in `examples/` upgraded by following `docs/migration-v4.md` alone;
@@ -322,28 +323,34 @@ settled.
 
 - **D1 — Resolved:** 4.0 comes after 3.3 (the only minor before it), so 4.1–4.3 are written on
   Temporal once.
-- **D2 — Keep `onEventAdd`/`onEventUpdate`/`onEventDelete` in 4.0?** `onEventsChange` covers
-  them. Open; needed when 4.0 starts.
-- **D3 — `nowIndicator` default.** FullCalendar defaults false; ilamy always shows it. Flip in
-  4.0 or keep and record the deviation. Open for 4.0.
+- **D2 — Resolved (4.0):** Keep `onEventAdd`, `onEventUpdate` and `onEventDelete` alongside
+  `onEventsChange`, matching FullCalendar (`eventAdd`, `eventChange`, `eventRemove` alongside
+  `eventsSet`).
+- **D3 — Resolved (4.0):** Flip `nowIndicator` default to `false`, matching FullCalendar
+  (`https://fullcalendar.io/docs/nowIndicator`).
 - **D4 — Selection in core vs plugin.** Recommended: core state, plugin UI. Needed by 4.1.
-- **D5 — Framework reach.** Recommended: React only through this plan.
+- **D5 — Resolved (4.0):** Headless, framework-agnostic `@ilamy/core` (zero React, zero CSS:
+  Temporal date engine, event/resource store, layout math, plugins) with thin native UI
+  adapters (React first in 4.0; Vue, Svelte, Solid later) and a slot `{ className, style }` +
+  primitive component-override contract so shadcn/Tailwind, MUI, and StyleX plug in without
+  duplicating calendar views.
 - **D6 — Clashing names** (`firstDayOfWeek`/`firstDay`, `timezone`/`timeZone`,
   `onCellClick`/`dateClick`). Recommended: keep ilamy's, document the mapping. Needed by the
   migration guides (3.3.12).
-- **D7 — Year view and iCal export out of core in 4.0.** Recommended yes; resource axis only if
-  it fits the contract cleanly. Needed when 4.0 starts.
-- **D8 — `editable` default.** True in 3.x so nothing breaks; the convention (FullCalendar) is
-  false. Flip in 4.0 or keep and record the deviation. Open for 4.0.
-- **D9 — `displayEventTime` / `displayEventEnd` default.** Unset in 3.x keeps today's
-  title-only bars; the convention's default is true. Make true in 4.0? Open for 4.0.
-- **D10 — `onDateChange` / `currentRange` range.** 3.x leaves the range as it was before
-  `hiddenDays` and `weekends` existed, so no consumer's range changes. Report the range trimmed
-  to the drawn days in 4.0? Open for 4.0.
-- **D11 — Month cells report `allDay`.** 3.x reports `allDay: false` for a month click or
-  drag-to-create selection; FullCalendar's day grid reports `true` (`DayGridRows.tsx:256`,
-  v7.1.1). Changing it changes `onCellClick` and the form it opens, so it waits for 4.0.
-  Make month cells all-day in 4.0? Open for 4.0.
+- **D7 — Resolved (4.0):** Move year view (`plugins/year`) and iCal export (`plugins/ical`)
+  out of core into plugins, matching FullCalendar (`multimonth`, `icalendar`); evaluate the
+  resource axis and move it only if the plugin contract carries it cleanly.
+- **D8 — Resolved (4.0):** Flip `editable` default to `false` (read-only unless enabled),
+  matching FullCalendar (`https://fullcalendar.io/docs/editable`).
+- **D9 — Resolved (4.0):** Default `displayEventTime` to `true`, and `displayEventEnd` to
+  `false` in month view and `true` in time-grid (week/day) views, matching FullCalendar
+  (`https://fullcalendar.io/docs/displayEventTime`, `displayEventEnd`).
+- **D10 — Resolved (4.0):** Trim `onDateChange` and `currentRange` to the drawn (visible)
+  days when `hiddenDays` or `weekends` hide days, matching FullCalendar's `activeStart` /
+  exclusive `activeEnd` on `datesSet` (`https://fullcalendar.io/docs/datesSet`, `view-object`).
+- **D11 — Resolved (4.0):** Month cell clicks and drag-to-create selections report
+  `allDay: true`, matching FullCalendar's day grid (`https://fullcalendar.io/docs/dateClick`,
+  `DayGridRows.tsx:256`, v7.1.1).
 
 ## Checklist mapping
 

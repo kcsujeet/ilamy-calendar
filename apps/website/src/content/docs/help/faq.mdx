@@ -48,17 +48,17 @@ const events = [
 
 ### How do I add drag and drop functionality?
 
-The calendar includes built-in drag and drop support, and resizing by dragging an event's edge, both enabled by default. To disable them, use the `editable` prop (`disableDragAndDrop` still works but is deprecated). A flag on one event, such as `editable: true`, overrides it for that event:
+The calendar includes built-in drag and drop support and edge resizing, both **off by default** in v4.0 (matching FullCalendar). Pass `editable` to enable them, or set `editable: true` on an individual event to override the calendar setting:
 
 ```tsx
 <IlamyCalendar
   events={events}
-  editable={false}
+  editable
   // ... other props
 />
 ```
 
-See [Moving and resizing events](/docs/components/calendar#moving-and-resizing-events) for `eventAllow`, `snapDuration` and the other options.
+See [Moving and resizing events](/docs/components/calendar#moving-and-resizing-events) for `eventAllow`, `eventConstraint`, `snapDuration` and the other options.
 
 ### How do I load events from my server?
 
@@ -142,7 +142,7 @@ Yes, ilamy Calendar supports internationalization with locale-based formatting a
 
 ### Can I export events to iCalendar format?
 
-Yes, ilamy Calendar includes built-in iCalendar export functionality. See the [iCalendar export guide](/docs/features/ical-export) for details.
+Yes — register the opt-in [`icalPlugin()`](/docs/plugins/ical) (`@ilamy/calendar/plugins/ical`). See the [iCalendar export guide](/docs/features/ical-export) for details.
 
 ### Does it support recurring events?
 
@@ -172,15 +172,13 @@ Instants never move; only the clock they are shown on changes. Removing the prop
 
 ### How do I handle locale support?
 
-Locale is handled with the `locale` prop. Changing it while the calendar is mounted applies the new locale's month and weekday names and formats, so no `key` or remount is needed:
+Locale is handled with the `locale` prop. Changing it while the calendar is mounted applies the new locale's month and weekday names and formats via `Intl.DateTimeFormat`, with no external locale imports and no `key` or remount needed:
 
 ```tsx
 const [locale, setLocale] = useState('en');
 
 <IlamyCalendar locale={locale} events={events} />
 ```
-
-Load the dayjs locale first (`import 'dayjs/locale/fr'`).
 
 ### Why isn't `@ilamy/calendar/plugins/recurrence` found after installing?
 
@@ -213,7 +211,7 @@ See the [useIlamyCalendarContext reference](/docs/components/use-ilamy-calendar-
 
 ### Why aren't calendar styles showing up?
 
-Make sure you've registered the calendar package in your Tailwind CSS configuration using the `@source` directive:
+Make sure you've registered the calendar package in your Tailwind CSS configuration using the `@source` directive (or use the `unstyled` / `slotProps` / `components` API, or the MUI / StyleX theme adapters — see [Styling & Themes](/docs/customization/styling)):
 
 ```css
 @source "../node_modules/@ilamy/calendar/dist";
@@ -221,23 +219,6 @@ Make sure you've registered the calendar package in your Tailwind CSS configurat
 
 See the [usage guide](/docs/getting-started/usage) for more details.
 
-### Why am I getting "isSameOrBefore is not a function" error?
+### Do I need Day.js?
 
-This error occurs when you have Day.js installed as a dependency in your project and the required plugins are not loaded. Although Day.js is exported from this library, your Day.js instance will be used, which may cause errors if the required plugins are not loaded.
-
-To fix this, you need to extend Day.js with the required plugins in your application:
-
-```tsx
-import dayjs from 'dayjs';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js';
-import timezone from 'dayjs/plugin/timezone.js';
-import utc from 'dayjs/plugin/utc.js';
-
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
-dayjs.extend(timezone);
-dayjs.extend(utc);
-```
-
-Add this configuration early in your application, preferably in your main entry file (e.g., main.tsx, index.tsx, or _app.tsx).
+No. In v4.0, `@ilamy/calendar` runs on TC39 Temporal and `Intl.DateTimeFormat` with zero `dayjs` dependency. Pass ISO 8601 strings (e.g. `'2026-03-02T09:00:00-05:00'`) or native `Date` objects directly. See the [v4.0 migration guide](/docs/help/migration-to-v4) if you are upgrading from v3.

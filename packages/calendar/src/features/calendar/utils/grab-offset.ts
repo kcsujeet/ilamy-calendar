@@ -1,14 +1,17 @@
 import type { ClientRect } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import {
+	add,
+	elapsedDiff,
+	getFields,
+	isAfter,
+	isBefore,
+	parseDate,
+	startOf,
+	wallClockDiff,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 
-/**
- * How far into the event the user grabbed it, so the drop puts the GRABBED
- * point under the pointer rather than the event's start. FullCalendar moves an
- * event by a delta rather than re-anchoring it ("Delta Object that represents
- * the amount of time the event was moved by",
- * https://fullcalendar.io/docs/eventDrop); Google Calendar behaves the same.
- */
 export interface GrabOffset {
 	minutes: number
 	days: number
@@ -16,46 +19,33 @@ export interface GrabOffset {
 
 export const NO_GRAB_OFFSET: GrabOffset = { minutes: 0, days: 0 }
 
-/**
- * The bar the drag started from, as time. A grid draws an event clipped to the
- * range it shows, so the rendered rect covers THIS span, not the whole event.
- * Measuring a pointer fraction against the rect and then scaling it by the
- * event's full duration mixes two units and lands days off on a clipped bar.
- */
 export interface DragSegment {
-	/** First instant the bar covers (the event clamped to the grid's start). */
-	start: Dayjs
-	/** Exclusive end of what the bar covers (clamped to the grid's end). */
-	end: Dayjs
-	/** The axis time runs along in the grid that drew the bar. */
+	start: ZonedDate
+	end: ZonedDate
 	axis: 'vertical' | 'horizontal'
-	/**
-	 * Days of the week (0 = Sunday) the grid does not draw. Set by a grid of
-	 * days only: the bar then covers one column per VISIBLE day it spans, so the
-	 * pointer's fraction of its width counts those columns, not elapsed days.
-	 */
 	hiddenDays?: Set<number>
 }
 
-/**
- * The span a rendered bar covers: the event as the grid clipped it to its own
- * range. Returns undefined when the grid has no range to clip against.
- */
 export const getDragSegment = (
-	event: { start: Dayjs; end: Dayjs },
-	range: { start: Dayjs | undefined; end: Dayjs | undefined },
+	event: { start: string; end: string },
+	range: { start: ZonedDate | undefined; end: ZonedDate | undefined },
 	axis: DragSegment['axis'],
 	hiddenDays?: Set<number>
 ): DragSegment | undefined => {
 	if (!range.start || !range.end) {
 		return undefined
 	}
-	const start = event.start.isBefore(range.start) ? range.start : event.start
-	const end = event.end.isAfter(range.end) ? range.end : event.end
+	const zone = range.start.timeZoneId
+	const eventStart = parseDate(event.start, zone)
+	const eventEnd = parseDate(event.end, zone)
+	if (!eventStart || !eventEnd) {
+		return undefined
+	}
+	const start = isBefore(eventStart, range.start) ? range.start : eventStart
+	const end = isAfter(eventEnd, range.end) ? range.end : eventEnd
 	return { start, end, axis, hiddenDays }
 }
 
-/** Where the pointer sat along an axis of the rect, as 0..1. */
 const getFractionWithin = (
 	pointer: number,
 	rectStart: number,
@@ -70,20 +60,62 @@ interface GrabOffsetInput {
 	initialRect: ClientRect | null
 	activatorEvent: Event
 	segment: DragSegment
-	/** The grid's snap unit, so a grab lands on a droppable boundary. */
 	slotDurationMinutes: number
 }
 
-/**
- * Resolves how far into the event the user grabbed it. The pointer fraction is
- * measured against the SEGMENT the bar draws (same unit as the rect), and the
- * instant that yields is then expressed relative to the EVENT's start, which is
- * what a drop subtracts from the target cell. A bar the grid clipped begins
- * mid-event, so the two are not the same reference point.
- *
- * A keyboard drag has no pointer coordinates; it grabs the event at its start,
- * which is the offset-free case.
- */
+const getGrabbedDayColumn = (
+	segment: DragSegment,
+	fraction: number
+): ZonedDate => {
+	const firstColumn = startOf(segment.start, 'day')
+	const lastColumn = startOf(add(segment.end, -1, 'millisecond'), 'day')
+	const spanDays = Math.max(
+		1,
+		Math.round(wallClockDiff(lastColumn, firstColumn, 'day')) + 1
+	)
+	const spannedColumns = Array.from({ length: spanDays }, (_, offset) =>
+		startOf(add(firstColumn, offset, 'day'), 'day')
+	)
+	const isDrawn = (day: ZonedDate) =>
+		!segment.hiddenDays?.has(getFields(day).dayOfWeek)
+	const columns = spannedColumns.filter(isDrawn)
+	const grabbedIndex = Math.floor(fraction * columns.length)
+	const clampedIndex = Math.min(Math.max(0, grabbedIndex), columns.length - 1)
+	return columns.at(clampedIndex) ?? firstColumn
+}
+
+const getGrabbedMinutesInto = (
+	eventStart: ZonedDate,
+	eventEnd: ZonedDate,
+	grabbedAt: ZonedDate,
+	slotDurationMinutes: number
+): number => {
+	const eventMinutes = elapsedDiff(eventEnd, eventStart, 'minute')
+	const lastSlotStart = Math.max(0, eventMinutes - slotDurationMinutes)
+	const grabbedMinutes = elapsedDiff(grabbedAt, eventStart, 'minute')
+	const snapped =
+		Math.floor(grabbedMinutes / slotDurationMinutes) * slotDurationMinutes
+	return Math.min(Math.max(0, snapped), lastSlotStart)
+}
+
+const getGrabbedDaysInto = (
+	eventStart: ZonedDate,
+	eventEnd: ZonedDate,
+	grabbedAt: ZonedDate
+): number => {
+	const firstDay = startOf(eventStart, 'day')
+	const lastDay = startOf(add(eventEnd, -1, 'millisecond'), 'day')
+	const occupiedDays = Math.max(
+		0,
+		Math.round(wallClockDiff(lastDay, firstDay, 'day'))
+	)
+	const grabbedDays = Math.round(
+		wallClockDiff(startOf(grabbedAt, 'day'), firstDay, 'day')
+	)
+	return Math.min(Math.max(0, grabbedDays), occupiedDays)
+}
+
+/** Resolves how far into the event the user grabbed it. */
 export const calculateGrabOffset = ({
 	activeEvent,
 	initialRect,
@@ -97,9 +129,6 @@ export const calculateGrabOffset = ({
 	const rectStart = isVertical ? initialRect?.top : initialRect?.left
 	const rectLength = isVertical ? initialRect?.height : initialRect?.width
 
-	// Each guard narrows the value it checks, so the call below needs no cast:
-	// `(rectLength ?? 0) > 0` reads as a rect check but leaves `rectLength`
-	// possibly undefined, which is what forced an `as number` here before.
 	if (pointer === undefined || rectStart === undefined) {
 		return NO_GRAB_OFFSET
 	}
@@ -107,78 +136,31 @@ export const calculateGrabOffset = ({
 		return NO_GRAB_OFFSET
 	}
 
+	const zone = segment.start.timeZoneId
+	const eventStart = parseDate(activeEvent.start, zone)
+	const eventEnd = parseDate(activeEvent.end, zone)
+	if (!eventStart || !eventEnd) {
+		return NO_GRAB_OFFSET
+	}
+
 	const fraction = getFractionWithin(pointer, rectStart, rectLength)
-	const segmentMinutes = segment.end.diff(segment.start, 'minute')
-	const grabbedAt = segment.start.add(fraction * segmentMinutes, 'minute')
-	// Time is linear in pixels down a time column, but NOT across a row of day
-	// columns, so the two axes read the grabbed day differently. A grid with
-	// hidden days draws only day columns, on either axis.
+	const segmentMinutes = elapsedDiff(segment.end, segment.start, 'minute')
+	const grabbedAt = add(
+		segment.start,
+		Math.round(fraction * segmentMinutes),
+		'minute'
+	)
 	const columnDay = getGrabbedDayColumn(segment, fraction)
 	const drawsDayColumns = !isVertical || Boolean(segment.hiddenDays)
 	const grabbedDayAt = drawsDayColumns ? columnDay : grabbedAt
 
 	return {
-		minutes: getGrabbedMinutesInto(activeEvent, grabbedAt, slotDurationMinutes),
-		days: getGrabbedDaysInto(activeEvent, grabbedDayAt),
+		minutes: getGrabbedMinutesInto(
+			eventStart,
+			eventEnd,
+			grabbedAt,
+			slotDurationMinutes
+		),
+		days: getGrabbedDaysInto(eventStart, eventEnd, grabbedDayAt),
 	}
-}
-
-/**
- * The day whose column the pointer grabbed, on a horizontal grid.
- *
- * Such a grid draws a multi-day bar across WHOLE, EQUAL columns, so a fraction
- * of the bar's width is a fraction of its COLUMNS. Reading it as a fraction of
- * elapsed time agrees only when the span is midnight-aligned: for a timed span
- * the first and last columns are full width but partial time, so the pointer
- * crosses into the next day's worth of minutes while still inside the previous
- * day's column, and the drop lands a day out. A Jan 1 09:00 -> Jan 4 17:00 bar
- * is wrong across 11% of its width this way, an 18:00 -> 06:00 one across 33%.
- */
-const getGrabbedDayColumn = (segment: DragSegment, fraction: number): Dayjs => {
-	const firstColumn = segment.start.startOf('day')
-	// `end` is exclusive (#248), so back off an instant before taking the day.
-	const lastColumn = segment.end.subtract(1, 'millisecond').startOf('day')
-	const spanDays = lastColumn.diff(firstColumn, 'day') + 1
-	const spannedColumns = Array.from({ length: spanDays }, (_, offset) =>
-		firstColumn.add(offset, 'day')
-	)
-	const isDrawn = (day: Dayjs) => !segment.hiddenDays?.has(day.day())
-	const columns = spannedColumns.filter(isDrawn)
-	const grabbedIndex = Math.floor(fraction * columns.length)
-	const clampedIndex = Math.min(Math.max(0, grabbedIndex), columns.length - 1)
-	return columns.at(clampedIndex) ?? firstColumn
-}
-
-/**
- * The grab as whole slots into the event. Clamped to the last slot, so grabbing
- * the bar's final pixel grabs its final slot rather than one past the event.
- */
-const getGrabbedMinutesInto = (
-	activeEvent: CalendarEvent,
-	grabbedAt: Dayjs,
-	slotDurationMinutes: number
-): number => {
-	const eventMinutes = activeEvent.end.diff(activeEvent.start, 'minute')
-	const lastSlotStart = Math.max(0, eventMinutes - slotDurationMinutes)
-	const grabbedMinutes = grabbedAt.diff(activeEvent.start, 'minute')
-	const snapped =
-		Math.floor(grabbedMinutes / slotDurationMinutes) * slotDurationMinutes
-	return Math.min(Math.max(0, snapped), lastSlotStart)
-}
-
-/**
- * The grab as whole days into the event. Counted between calendar days rather
- * than by elapsed hours, so a bar grabbed anywhere inside a day reports that
- * day. Clamped to the last day the event occupies: `end` is exclusive (#248),
- * so a Jan 1 -> Jan 4 event occupies Jan 1 through Jan 3.
- */
-const getGrabbedDaysInto = (
-	activeEvent: CalendarEvent,
-	grabbedAt: Dayjs
-): number => {
-	const firstDay = activeEvent.start.startOf('day')
-	const lastDay = activeEvent.end.subtract(1, 'millisecond').startOf('day')
-	const occupiedDays = Math.max(0, lastDay.diff(firstDay, 'day'))
-	const grabbedDays = grabbedAt.startOf('day').diff(firstDay, 'day')
-	return Math.min(Math.max(0, grabbedDays), occupiedDays)
 }

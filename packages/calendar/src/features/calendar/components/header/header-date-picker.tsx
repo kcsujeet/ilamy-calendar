@@ -1,18 +1,25 @@
+import { getWeekDays, withoutHiddenDays } from '@ilamy/core'
 import type { PluginView } from '@ilamy/types'
-import { Button } from '@ilamy/ui/components/button'
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from '@ilamy/ui/components/popover'
-import { cn } from '@ilamy/ui/lib/utils'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+	endOf,
+	formatDate,
+	now,
+	parseDate,
+	resolveZone,
+	startOf,
+	toDate,
+	toOffsetIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { ChevronDown } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { Calendar } from '@/features/calendar/components/calendar'
 import { useDateTimeFormatters } from '@/features/calendar/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { getWeekDays, withoutHiddenDays } from '@/utils/date-utils'
+import {
+	useCalendarComponents,
+	useSlotProps,
+} from '@/features/calendar/stores/calendar-theme-context'
 import { MonthGrid } from './month-grid'
 import { YearGrid } from './year-grid'
 
@@ -22,7 +29,6 @@ interface HeaderDatePickerProps {
 
 type PickerKind = 'day' | 'week' | 'month' | 'year' | 'range'
 
-// A single navigation unit maps to that grid's picker; everything else is a range.
 const PICKER_BY_UNIT: Partial<Record<string, PickerKind>> = {
 	day: 'day',
 	week: 'week',
@@ -30,14 +36,6 @@ const PICKER_BY_UNIT: Partial<Record<string, PickerKind>> = {
 	year: 'year',
 }
 
-// The title dropdown is a jump-to-date aid, so its picker form (and the title
-// format) follow how far the view navigates — metadata every view already
-// declares for prev/next via `navigationStep` / `navigationUnit`. A view that
-// steps a single day/week/month/year borrows that grid's picker; anything else
-// (a multi-unit or custom window) has no single cell to pick, so it shows the day
-// picker over the view's range. Nothing here references a view by name, so core
-// stays agnostic of agenda or any third-party view. Mirrors the step resolution
-// in use-calendar-navigation.
 function pickerKind(view: PluginView | undefined): PickerKind {
 	const step = view?.navigationStep ?? {
 		amount: 1,
@@ -49,12 +47,12 @@ function pickerKind(view: PluginView | undefined): PickerKind {
 	return PICKER_BY_UNIT[step.unit] ?? 'range'
 }
 
-// The header title doubles as a navigation dropdown: clicking it opens a
-// view-appropriate picker (day grid, week grid, month grid, or year grid).
 export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 	const {
-		currentDate,
+		currentDate: currentDateIso,
 		currentRange,
+		currentLocale,
+		timezone,
 		view,
 		selectDate,
 		firstDayOfWeek,
@@ -63,22 +61,30 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 	} = useSmartCalendarContext((ctx) => ({
 		currentDate: ctx.currentDate,
 		currentRange: ctx.currentRange,
+		currentLocale: ctx.currentLocale,
+		timezone: ctx.timezone,
 		view: ctx.view,
 		selectDate: ctx.selectDate,
 		firstDayOfWeek: ctx.firstDayOfWeek,
 		hiddenDays: ctx.hiddenDays,
 		getViews: ctx.getViews,
 	}))
+	const { Button, Popover } = useCalendarComponents()
+	const triggerSlot = useSlotProps('navButton', {
+		defaultClassName: 'font-semibold',
+		extraClassName: className,
+	})
 	const { formatDateRange, formatTitle } = useDateTimeFormatters()
 	const [open, setOpen] = useState(false)
 
-	// Title and picker are keyed by the derived picker kind, not the view name.
+	const zone = resolveZone(timezone)
+	const currentDate = parseDate(currentDateIso, zone) ?? now(zone)
+	const rangeStart = parseDate(currentRange.start, zone) ?? currentDate
+	const rangeEnd = parseDate(currentRange.end, zone) ?? currentDate
+
 	const activeView = getViews().find((v) => v.name === view)
 	const kind = pickerKind(activeView)
 
-	// The title names the days the view draws. The shared grid engine (a view
-	// that declares `columns`) leaves hidden days out; a view that renders
-	// itself, like the agenda, lists every day of its window.
 	const viewDropsHiddenDays = Boolean(activeView?.columns)
 	const weekDaysIncludingHidden = getWeekDays(currentDate, firstDayOfWeek)
 	const weekDays = viewDropsHiddenDays
@@ -87,46 +93,57 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 	const weekStart = weekDays.at(0) ?? currentDate
 	const weekEnd = weekDays.at(-1) ?? currentDate
 
-	const handleSelect = (date: Dayjs) => {
-		selectDate(date)
+	const handleSelect = (date: ZonedDate) => {
+		selectDate(toOffsetIso(date))
 		setOpen(false)
 	}
 
-	const titleByKind: Record<PickerKind, string> = {
-		year: currentDate.format('YYYY'),
-		month: currentDate.format('MMM YYYY'),
-		week: formatDateRange(weekStart, weekEnd),
-		day: currentDate.format('ddd, MMM D, YYYY'),
-		// A multi-unit/custom window shows its listed range, not a single day.
-		range: formatDateRange(currentRange.start, currentRange.end),
+	const handlePickerDate = (date: Date | undefined) => {
+		if (!date) return
+		const parsed = parseDate(date, zone)
+		if (parsed) {
+			handleSelect(parsed)
+		}
 	}
-	// The range is the view's own, ending on its last day (not the instant after
-	// it): FullCalendar title-formatting.ts:15-16, 25-31 formats currentRange.
-	const titleRangeByKind: Record<PickerKind, [Dayjs, Dayjs]> = {
+
+	const titleByKind: Record<PickerKind, string> = {
+		year: formatDate(currentDate, { year: 'numeric' }, currentLocale),
+		month: formatDate(
+			currentDate,
+			{ month: 'short', year: 'numeric' },
+			currentLocale
+		),
+		week: formatDateRange(weekStart, weekEnd),
+		day: formatDate(
+			currentDate,
+			{ weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' },
+			currentLocale
+		),
+		range: formatDateRange(rangeStart, rangeEnd),
+	}
+	const titleRangeByKind: Record<PickerKind, [ZonedDate, ZonedDate]> = {
 		year: [
-			currentDate.startOf('year'),
-			currentDate.endOf('year').startOf('day'),
+			startOf(currentDate, 'year'),
+			startOf(endOf(currentDate, 'year'), 'day'),
 		],
 		month: [
-			currentDate.startOf('month'),
-			currentDate.endOf('month').startOf('day'),
+			startOf(currentDate, 'month'),
+			startOf(endOf(currentDate, 'month'), 'day'),
 		],
 		week: [weekStart, weekEnd],
-		// A single day has one date, so its range starts and ends on it.
 		day: [currentDate, currentDate],
-		range: [currentRange.start, currentRange.end],
+		range: [rangeStart, rangeEnd],
 	}
 	const [titleStart, titleEnd] = titleRangeByKind[kind]
 	const title = formatTitle(titleStart, titleEnd) ?? titleByKind[kind]
 
-	// Both 'day' and 'range' navigate within days, so both use the day calendar;
-	// only their titles differ.
+	const selectedAsDate = toDate(currentDate)
 	const dayPicker = (
 		<Calendar
-			defaultMonth={currentDate.toDate()}
+			defaultMonth={selectedAsDate}
 			firstDayOfWeek={firstDayOfWeek}
-			onSelect={(d) => d && handleSelect(dayjs(d))}
-			selected={currentDate.toDate()}
+			onSelect={handlePickerDate}
+			selected={selectedAsDate}
 		/>
 	)
 	const contentByKind: Record<PickerKind, ReactNode> = {
@@ -134,33 +151,38 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 		month: <MonthGrid onSelect={handleSelect} selected={currentDate} />,
 		week: (
 			<Calendar
-				defaultMonth={currentDate.toDate()}
+				defaultMonth={selectedAsDate}
 				firstDayOfWeek={firstDayOfWeek}
 				highlightedWeekOf={currentDate}
-				onSelect={(d) => d && handleSelect(dayjs(d))}
+				onSelect={handlePickerDate}
 				weekHover
 			/>
 		),
 		day: dayPicker,
 		range: dayPicker,
 	}
-	const content = contentByKind[kind]
+
+	const trigger = (
+		<Button
+			className={triggerSlot.className}
+			data-testid="calendar-title"
+			style={triggerSlot.style}
+			type="button"
+			variant="outline"
+		>
+			{title}
+			<ChevronDown className="size-4 shrink-0 opacity-50" />
+		</Button>
+	)
 
 	return (
-		<Popover onOpenChange={setOpen} open={open}>
-			<PopoverTrigger asChild>
-				<Button
-					className={cn('font-semibold', className)}
-					data-testid="calendar-title"
-					variant="outline"
-				>
-					{title}
-					<ChevronDown className="size-4 shrink-0 opacity-50" />
-				</Button>
-			</PopoverTrigger>
-			<PopoverContent align="start" className="w-auto p-0">
-				{content}
-			</PopoverContent>
-		</Popover>
+		<Popover
+			align="start"
+			className="w-auto p-0"
+			content={contentByKind[kind]}
+			onOpenChange={setOpen}
+			open={open}
+			trigger={trigger}
+		/>
 	)
 }

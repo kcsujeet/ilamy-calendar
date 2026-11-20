@@ -1,7 +1,7 @@
 {
 	"name": "@ilamy/calendar",
-	"version": "3.3.1",
-	"description": "A full-featured React calendar component library built with Shadcn-Ui, Tailwind CSS, and TypeScript.",
+	"version": "4.0.0",
+	"description": "A headless-core React calendar component library with Temporal timezones, RFC 5545 recurrence, and Tailwind/shadcn, MUI, and StyleX themes.",
 	"author": "Sujeet Kc",
 	"license": "MIT",
 	"homepage": "https://ilamy.dev",
@@ -15,11 +15,13 @@
 	"keywords": [
 		"react",
 		"calendar",
+		"headless",
+		"temporal",
 		"typescript",
 		"tailwind",
-		"components",
 		"shadcn",
-		"radix-ui",
+		"mui",
+		"stylex",
 		"dnd-kit",
 		"events",
 		"scheduling",
@@ -34,6 +36,10 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./core": {
+			"types": "./dist/core.d.ts",
+			"import": "./dist/core.js"
 		},
 		"./testing": {
 			"types": "./dist/testing/index.d.ts",
@@ -50,6 +56,38 @@
 		"./plugins/drag-to-create": {
 			"types": "./dist/plugins/drag-to-create.d.ts",
 			"import": "./dist/plugins/drag-to-create.js"
+		},
+		"./plugins/year": {
+			"types": "./dist/plugins/year.d.ts",
+			"import": "./dist/plugins/year.js"
+		},
+		"./plugins/ical": {
+			"types": "./dist/plugins/ical.d.ts",
+			"import": "./dist/plugins/ical.js"
+		},
+		"./themes/mui": {
+			"types": "./dist/themes/mui.d.ts",
+			"import": "./dist/themes/mui.js"
+		},
+		"./themes/stylex": {
+			"types": "./dist/themes/stylex.d.ts",
+			"import": "./dist/themes/stylex.js"
+		},
+		"./vue": {
+			"types": "./dist/adapters/vue.d.ts",
+			"import": "./dist/adapters/vue.js"
+		},
+		"./svelte": {
+			"types": "./dist/adapters/svelte.d.ts",
+			"import": "./dist/adapters/svelte.js"
+		},
+		"./solid": {
+			"types": "./dist/adapters/solid.d.ts",
+			"import": "./dist/adapters/solid.js"
+		},
+		"./angular": {
+			"types": "./dist/adapters/angular.d.ts",
+			"import": "./dist/adapters/angular.js"
 		}
 	},
 	"files": [
@@ -72,11 +110,48 @@
 		"bench:day-hours": "bun scripts/bench-day-hours.tsx"
 	},
 	"peerDependencies": {
-		"dayjs": "^1.11.23",
+		"@angular/core": "^22.0.0",
+		"@mui/material": "^6.0.0 || ^7.0.0 || ^8.0.0 || ^9.0.0",
+		"@stylexjs/stylex": ">=0.10.0",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
+		"solid-js": "^2.0.0",
+		"svelte": "^5.0.0",
 		"tailwindcss": "^4.2.2",
-		"tailwindcss-animate": "^1.0.7"
+		"tailwindcss-animate": "^1.0.7",
+		"vue": "^3.5.0"
+	},
+	"peerDependenciesMeta": {
+		"@angular/core": {
+			"optional": true
+		},
+		"@mui/material": {
+			"optional": true
+		},
+		"@stylexjs/stylex": {
+			"optional": true
+		},
+		"react": {
+			"optional": true
+		},
+		"react-dom": {
+			"optional": true
+		},
+		"solid-js": {
+			"optional": true
+		},
+		"svelte": {
+			"optional": true
+		},
+		"tailwindcss": {
+			"optional": true
+		},
+		"tailwindcss-animate": {
+			"optional": true
+		},
+		"vue": {
+			"optional": true
+		}
 	},
 	"dependencies": {
 		"@dnd-kit/core": "^6.3.1",
@@ -95,16 +170,25 @@
 		"clsx": "^2.1.1",
 		"lucide-react": "^0.475.0",
 		"rrule": "^2.8.1",
-		"tailwind-merge": "^3.5.0"
+		"tailwind-merge": "^3.5.0",
+		"temporal-polyfill": "1.0.8"
 	},
 	"devDependencies": {
+		"@ilamy/adapter-angular": "workspace:*",
+		"@ilamy/adapter-solid": "workspace:*",
+		"@ilamy/adapter-svelte": "workspace:*",
+		"@ilamy/adapter-vue": "workspace:*",
 		"@ilamy/calendar-agenda": "workspace:*",
 		"@ilamy/calendar-drag-to-create": "workspace:*",
+		"@ilamy/calendar-ical": "workspace:*",
 		"@ilamy/calendar-recurrence": "workspace:*",
+		"@ilamy/calendar-year": "workspace:*",
+		"@ilamy/core": "workspace:*",
+		"@ilamy/theme-mui": "workspace:*",
+		"@ilamy/theme-stylex": "workspace:*",
 		"@ilamy/types": "workspace:*",
 		"@ilamy/ui": "workspace:*",
-		"@ilamy/utils": "workspace:*",
-		"dayjs": "^1.11.23"
+		"@ilamy/utils": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"

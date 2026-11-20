@@ -1,28 +1,57 @@
 import type {
 	CalendarEvent,
 	CellInfo,
-	Dayjs,
 	IlamyPlugin,
+	IsoDateString,
 	Resource,
 } from '@ilamy/calendar'
 import { type AgendaWindow, agendaPlugin } from '@ilamy/calendar/plugins/agenda'
 import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create'
+import { icalPlugin } from '@ilamy/calendar/plugins/ical'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
+import { yearPlugin } from '@ilamy/calendar/plugins/year'
 import { dummyEvents } from '../lib/seed'
 
-// Recurrence, agenda, and drag-to-create are opt-in plugins. The seed data has
-// recurring events, so recurrence expands them; agenda adds the upcoming-events
-// list view scoped to `agendaWindow`; drag-to-create lets you drag across empty
-// cells (any view) to open the event form preselected with that range. Built
-// per-window so the demo can change the window live; memoize the result in the
-// caller to keep the array reference stable.
-export const createDemoPlugins = (
+export interface DemoPluginOptions {
 	agendaWindow: AgendaWindow
-): IlamyPlugin[] => [
-	recurrencePlugin(),
-	agendaPlugin({ window: agendaWindow }),
-	dragToCreatePlugin(),
-]
+	showExportButton: boolean
+	enableRecurrencePlugin: boolean
+	enableAgendaPlugin: boolean
+	enableDragToCreatePlugin: boolean
+	enableYearPlugin: boolean
+	enableIcalPlugin: boolean
+}
+
+// Recurrence, agenda, drag-to-create, year view, and iCal export are opt-in
+// plugins in v4.0. Built from the active settings; memoize the result in the
+// caller to keep the array reference stable.
+export const createDemoPlugins = ({
+	agendaWindow,
+	showExportButton,
+	enableRecurrencePlugin,
+	enableAgendaPlugin,
+	enableDragToCreatePlugin,
+	enableYearPlugin,
+	enableIcalPlugin,
+}: DemoPluginOptions): IlamyPlugin[] => {
+	const plugins: IlamyPlugin[] = []
+	if (enableRecurrencePlugin) {
+		plugins.push(recurrencePlugin())
+	}
+	if (enableAgendaPlugin) {
+		plugins.push(agendaPlugin({ window: agendaWindow }))
+	}
+	if (enableDragToCreatePlugin) {
+		plugins.push(dragToCreatePlugin())
+	}
+	if (enableYearPlugin) {
+		plugins.push(yearPlugin())
+	}
+	if (enableIcalPlugin) {
+		plugins.push(icalPlugin({ showToolbarButton: showExportButton }))
+	}
+	return plugins
+}
 
 // Event handlers kept module-level to avoid recreation across renders.
 export const handleEventClick = (event: CalendarEvent) => {
@@ -33,8 +62,16 @@ export const handleDateClick = (info: CellInfo) => {
 	alert(JSON.stringify(info))
 }
 
-export const handleMoreEventsClick = (day: Dayjs, events: CalendarEvent[]) => {
-	alert(`${events.length} events on ${day.format('MMMM D, YYYY')}`)
+export const handleMoreEventsClick = (
+	day: IsoDateString,
+	events: CalendarEvent[]
+) => {
+	const formattedDay = new Intl.DateTimeFormat(undefined, {
+		month: 'long',
+		day: 'numeric',
+		year: 'numeric',
+	}).format(new Date(day))
+	alert(`${events.length} events on ${formattedDay}`)
 }
 
 // Demo resources

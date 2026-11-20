@@ -1,57 +1,80 @@
-import type {
-	Dayjs,
-	HorizontalRowSpec,
-	PluginView,
-	Resource,
-	VerticalColumnSpec,
-	ViewConfig,
-} from '@ilamy/types'
-import { Grid3x3 } from 'lucide-react'
-import type React from 'react'
-import { gutterColumn } from '@/features/calendar/components/vertical-grid/gutter'
-import { keys } from '@/features/calendar/utils/keys'
-import { viewHasResourceAxis } from '@/features/calendar/utils/resource-list'
 import {
 	getMonthDays,
 	getMonthGridRange,
 	getMonthWeeks,
 	withoutHiddenDays,
-} from '@/utils/date-utils'
+} from '@ilamy/core'
+import type {
+	HorizontalRowSpec,
+	IsoDateString,
+	PluginView,
+	Resource,
+	VerticalColumnSpec,
+	ViewConfig,
+} from '@ilamy/types'
+import {
+	now,
+	parseDate,
+	resolveZone,
+	toOffsetIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
+import { Grid3x3 } from 'lucide-react'
+import type React from 'react'
+import { gutterColumn } from '@/features/calendar/components/vertical-grid/gutter'
+import { keys } from '@/features/calendar/utils/keys'
+import { viewHasResourceAxis } from '@/features/calendar/utils/resource-list'
 import { DayHeaderLabel } from './day-header-label'
 import { MonthHeader } from './month-header'
 import {
 	ResourceColumnsHeader,
 	ResourcesCornerCell,
+	resolveResourceLayout,
 	resourceHorizontalRows,
 	resourceVerticalColumns,
 } from './resource-axis'
 
+const parseViewDate = (
+	dateIso: IsoDateString,
+	timezone?: string
+): ZonedDate => {
+	const zone = resolveZone(timezone)
+	return parseDate(dateIso, zone) ?? now(zone)
+}
+
 const resourceMonthVerticalColumns = (
-	date: Dayjs,
+	date: ZonedDate,
 	resources: Resource[],
-	hiddenDays: Set<number> | undefined
+	hiddenDays: Set<number> | undefined,
+	timezone?: string
 ): VerticalColumnSpec[] => {
 	const daysInMonth = withoutHiddenDays(getMonthDays(date), hiddenDays)
+	const dayIsos = daysInMonth.map(toOffsetIso)
+	const zone = resolveZone(timezone)
 	return resourceVerticalColumns({
 		resources,
 		gutter: gutterColumn({
-			days: daysInMonth,
+			days: dayIsos,
 			gridType: 'day',
-			renderLabel: (day: Dayjs) => (
-				<DayHeaderLabel animated className="flex-col-reverse" day={day} />
-			),
+			timezone,
+			renderLabel: (dayIso: IsoDateString) => {
+				const parsed = parseDate(dayIso, zone)
+				return parsed ? (
+					<DayHeaderLabel animated className="flex-col-reverse" day={parsed} />
+				) : null
+			},
 		}),
 		columnsFor: (resource) => ({
 			id: keys.col.resource('month', resource.id),
 			day: undefined,
-			days: daysInMonth,
+			days: dayIsos,
 			gridType: 'day' as const,
 		}),
 	})
 }
 
 const ResourceMonthHorizontalHeader: React.FC<{
-	date: Dayjs
+	date: ZonedDate
 	hiddenDays: Set<number> | undefined
 }> = ({ date, hiddenDays }) => {
 	const monthDays = withoutHiddenDays(getMonthDays(date), hiddenDays)
@@ -61,8 +84,6 @@ const ResourceMonthHorizontalHeader: React.FC<{
 			<ResourcesCornerCell />
 			<div className="flex flex-1 gap-px bg-border border-b">
 				{monthDays.map((day, index) => {
-					// Keyed by position, not by date. Most columns head the same day
-					// number from one month to the next, and those should sit still.
 					const key = keys.listKey('resource-month-day', index)
 
 					return (
@@ -80,27 +101,34 @@ const ResourceMonthHorizontalHeader: React.FC<{
 }
 
 const monthRows = (
-	date: Dayjs,
+	dateIso: IsoDateString,
 	config: ViewConfig
 ): VerticalColumnSpec[] | HorizontalRowSpec[] => {
-	const resources = config.resources ?? []
-
-	if (viewHasResourceAxis(config)) {
-		if (config.orientation === 'vertical') {
-			return resourceMonthVerticalColumns(date, resources, config.hiddenDays)
-		}
-		return resourceHorizontalRows({
-			resources,
-			days: withoutHiddenDays(getMonthDays(date), config.hiddenDays),
-			gridType: 'day',
-		})
+	const date = parseViewDate(dateIso, config.timezone)
+	const resourceLayout = resolveResourceLayout(config, {
+		vertical: (resources) =>
+			resourceMonthVerticalColumns(
+				date,
+				resources,
+				config.hiddenDays,
+				config.timezone
+			),
+		horizontal: (resources) =>
+			resourceHorizontalRows({
+				resources,
+				days: withoutHiddenDays(getMonthDays(date), config.hiddenDays),
+				gridType: 'day',
+			}),
+	})
+	if (resourceLayout) {
+		return resourceLayout
 	}
 
 	return getMonthWeeks(date, config.firstDayOfWeek).map((days, weekIndex) => ({
 		id: keys.listKey('week', weekIndex),
 		columns: withoutHiddenDays(days, config.hiddenDays).map((day) => ({
 			id: keys.col.day(day),
-			day,
+			day: toOffsetIso(day),
 			className: 'w-auto',
 			gridType: 'day' as const,
 		})),
@@ -117,9 +145,18 @@ export const monthView: PluginView = {
 	navigationUnit: 'month',
 	layout: 'horizontal',
 	supportsResources: true,
-	range: (date, config) => getMonthGridRange(date, config.firstDayOfWeek),
+	range: (dateIso, config) => {
+		const zoned = parseViewDate(dateIso, config.timezone)
+		const { start, end } = getMonthGridRange(
+			zoned,
+			config.firstDayOfWeek,
+			config.hiddenDays
+		)
+		return { start: toOffsetIso(start), end: toOffsetIso(end) }
+	},
 	columns: monthRows,
-	renderHeader: ({ date, config }) => {
+	renderHeader: ({ date: dateIso, config }) => {
+		const date = parseViewDate(dateIso, config.timezone)
 		const resources = config.resources ?? []
 		if (!viewHasResourceAxis(config)) {
 			return <MonthHeader className="h-12" />

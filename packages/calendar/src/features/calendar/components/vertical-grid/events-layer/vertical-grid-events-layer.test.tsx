@@ -1,7 +1,16 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import {
+	add,
+	now,
+	parseDate,
+	startOf,
+	toOffsetIso,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { cleanup, render, screen } from '@testing-library/react'
+import type React from 'react'
 import { CalendarContext } from '@/features/calendar/stores/calendar-context/calendar-context'
 import {
 	DragPreviewContext,
@@ -13,22 +22,25 @@ import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import type { CalendarView } from '@/types'
 import { VerticalGridEventsLayer } from './vertical-grid-events-layer'
 
-/**
- * Shared custom render implementation for tests.
- */
+const atUtc = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
 const TEST_CUSTOM_RENDER = ({ resource }: RenderCurrentTimeIndicatorProps) => (
 	<div data-testid="custom-indicator">
 		<span data-testid="resource-id">{resource?.id || 'none'}</span>
 	</div>
 )
 
-// Mutable test configuration - can be changed per test
 let customRenderFn:
 	| ((props: RenderCurrentTimeIndicatorProps) => React.ReactNode)
 	| undefined
 let nowIndicator = true
 
-// Test wrapper using CalendarContext.Provider directly
 const TestWrapper: React.FC<{
 	children: React.ReactNode
 	view?: CalendarView
@@ -43,6 +55,7 @@ const TestWrapper: React.FC<{
 				events: [],
 				getEventsForDateRange: () => [],
 				timeFormat: '12-hour',
+				timezone: 'UTC',
 				view,
 				resources,
 			} as never
@@ -59,7 +72,7 @@ const renderEventsLayer = ({
 	resources,
 	...props
 }: {
-	days: Dayjs[]
+	days: ZonedDate[]
 	resource?: Resource
 	resourceId?: string | number
 	resources?: Resource[]
@@ -83,8 +96,7 @@ describe('VerticalGridEventsLayer', () => {
 	})
 
 	test('renders current time indicator when current time is within range', () => {
-		const now = dayjs()
-		const rangeStart = now.startOf('hour')
+		const rangeStart = startOf(now('UTC'), 'hour')
 		const hours = [rangeStart]
 
 		renderEventsLayer({ days: hours, 'data-testid': 'events-layer' })
@@ -93,8 +105,7 @@ describe('VerticalGridEventsLayer', () => {
 	})
 
 	test('renders the indicator in hour-resolution grids', () => {
-		const now = dayjs()
-		const rangeStart = now.startOf('hour')
+		const rangeStart = startOf(now('UTC'), 'hour')
 
 		renderEventsLayer({
 			days: [rangeStart],
@@ -106,9 +117,7 @@ describe('VerticalGridEventsLayer', () => {
 	})
 
 	test('draws the dot only for the first resource, even when another has id 0', () => {
-		// A truthy check read id 0 as "no resource axis", so a resource 0 that
-		// is not first drew a second dot on the shared now-line.
-		const days = [dayjs().startOf('hour')]
+		const days = [startOf(now('UTC'), 'hour')]
 		const resources = [
 			{ id: 1, title: 'Room One' },
 			{ id: 0, title: 'Room Zero' },
@@ -124,10 +133,7 @@ describe('VerticalGridEventsLayer', () => {
 	})
 
 	test('does not render the indicator in day-resolution grids (issue #123)', () => {
-		// Day-resolution vertical views (resource month, resource week daily) span
-		// whole days, so a sub-day "now" line is meaningless and should be hidden,
-		// even though the current day is within range.
-		const today = dayjs().startOf('day')
+		const today = startOf(now('UTC'), 'day')
 
 		renderEventsLayer({
 			days: [today],
@@ -141,7 +147,7 @@ describe('VerticalGridEventsLayer', () => {
 	})
 
 	test('does not render current time indicator when current time is outside range', () => {
-		const futureDate = dayjs('2099-01-01T10:00:00.000Z')
+		const futureDate = atUtc('2099-01-01T10:00:00.000Z')
 		const hours = [futureDate]
 
 		renderEventsLayer({ days: hours, 'data-testid': 'events-layer' })
@@ -155,7 +161,7 @@ describe('VerticalGridEventsLayer', () => {
 		nowIndicator = false
 
 		renderEventsLayer({
-			days: [dayjs().startOf('hour')],
+			days: [startOf(now('UTC'), 'hour')],
 			gridType: 'hour',
 			'data-testid': 'events-layer',
 		})
@@ -168,8 +174,7 @@ describe('VerticalGridEventsLayer', () => {
 	test('uses custom renderCurrentTimeIndicator from context', () => {
 		customRenderFn = TEST_CUSTOM_RENDER
 
-		const now = dayjs()
-		const rangeStart = now.startOf('hour')
+		const rangeStart = startOf(now('UTC'), 'hour')
 		const hours = [rangeStart]
 		const resource = { id: 'res-2', title: 'Resource 2' }
 
@@ -194,8 +199,7 @@ describe('VerticalGridEventsLayer', () => {
 			return TEST_CUSTOM_RENDER(props)
 		}
 
-		const now = dayjs()
-		const rangeStart = now.startOf('hour')
+		const rangeStart = startOf(now('UTC'), 'hour')
 		const hours = [rangeStart]
 		const resource = { id: 'res-5', title: 'Resource 5' }
 
@@ -216,8 +220,7 @@ describe('VerticalGridEventsLayer', () => {
 			return TEST_CUSTOM_RENDER(props)
 		}
 
-		const now = dayjs()
-		const rangeStart = now.startOf('hour')
+		const rangeStart = startOf(now('UTC'), 'hour')
 		const hours = [rangeStart]
 
 		renderEventsLayer({ days: hours, 'data-testid': 'events-layer' })
@@ -226,17 +229,19 @@ describe('VerticalGridEventsLayer', () => {
 	})
 
 	test('renders the snapped mirror when the candidate overlaps the column', () => {
-		const day = dayjs('2025-01-01T00:00:00.000Z')
-		const hours = Array.from({ length: 24 }, (_, i) => day.add(i, 'hour'))
+		const day = atUtc('2025-01-01T00:00:00.000Z')
+		const hours = Array.from({ length: 24 }, (_, i) => add(day, i, 'hour'))
+		const start = withTime(day, { hour: 10 })
+		const end = withTime(day, { hour: 12 })
 		const preview = mkDragPreview({
 			event: {
 				id: 'event-dragged',
 				title: 'Dragging Meeting',
-				start: day.hour(10),
-				end: day.hour(12),
+				start: toOffsetIso(start),
+				end: toOffsetIso(end),
 			},
-			start: day.hour(10),
-			end: day.hour(12),
+			start,
+			end,
 			allDay: false,
 		})
 
@@ -244,51 +249,49 @@ describe('VerticalGridEventsLayer', () => {
 
 		expect(screen.getByTestId(keys.dragPreview('vertical'))).toBeInTheDocument()
 		expect(screen.getByText('Dragging Meeting')).toBeInTheDocument()
-		expect(screen.getByText(/10:00am/)).toBeInTheDocument()
-		expect(screen.getByText(/12:00pm/)).toBeInTheDocument()
+		expect(screen.getByText(/10:00\s*AM/i)).toBeInTheDocument()
+		expect(screen.getByText(/12:00\s*PM/i)).toBeInTheDocument()
 	})
 
 	test('draws the mirror opaque, as the strongest surface in the grid', () => {
-		// FullCalendar puts no opacity rule on `.fc-event-mirror` at all; only the
-		// bar left behind is dimmed. A translucent mirror inverts the hierarchy —
-		// the thing being moved ends up fainter than the grid it crosses, which is
-		// how it became impossible to tell what was being dragged.
-		const day = dayjs('2025-01-01T00:00:00.000Z')
-		const hours = Array.from({ length: 24 }, (_, i) => day.add(i, 'hour'))
+		const day = atUtc('2025-01-01T00:00:00.000Z')
+		const hours = Array.from({ length: 24 }, (_, i) => add(day, i, 'hour'))
+		const start = withTime(day, { hour: 10 })
+		const end = withTime(day, { hour: 12 })
 		const preview = mkDragPreview({
 			event: {
 				id: 'event-dragged',
 				title: 'Dragging Meeting',
-				start: day.hour(10),
-				end: day.hour(12),
+				start: toOffsetIso(start),
+				end: toOffsetIso(end),
 			},
-			start: day.hour(10),
-			end: day.hour(12),
+			start,
+			end,
 			allDay: false,
 		})
 
 		renderEventsLayer({ days: hours, gridType: 'hour', preview })
 
 		const mirror = screen.getByTestId(keys.dragPreview('vertical'))
-
 		expect(mirror.className).not.toContain('opacity-')
-		// Inset, so the layer's `overflow-clip` cannot shave it off.
 		expect(mirror.className.split(/\s+/)).toContain('inset-ring-2')
 	})
 
 	test('draws no mirror for an all-day candidate on an hour grid, which leaves those to its all-day row', () => {
-		const day = dayjs('2025-01-01T00:00:00.000Z')
-		const hours = Array.from({ length: 24 }, (_, i) => day.add(i, 'hour'))
+		const day = atUtc('2025-01-01T00:00:00.000Z')
+		const hours = Array.from({ length: 24 }, (_, i) => add(day, i, 'hour'))
+		const start = startOf(day, 'day')
+		const end = startOf(add(day, 1, 'day'), 'day')
 		const preview = mkDragPreview({
 			event: {
 				id: 'event-dragged',
 				title: 'Company Offsite',
-				start: day.startOf('day'),
-				end: day.add(1, 'day').startOf('day'),
+				start: toOffsetIso(start),
+				end: toOffsetIso(end),
 				allDay: true,
 			},
-			start: day.startOf('day'),
-			end: day.add(1, 'day').startOf('day'),
+			start,
+			end,
 			allDay: true,
 		})
 
@@ -299,22 +302,21 @@ describe('VerticalGridEventsLayer', () => {
 		).not.toBeInTheDocument()
 	})
 
-	// #322. A day grid draws all-day events, so it mirrors them too, and like
-	// FullCalendar shows no time for them: "Events that are all-day will never
-	// display time text anyhow" (https://fullcalendar.io/docs/displayEventTime).
 	test('mirrors an all-day candidate on a day grid with its title and no time', () => {
-		const day = dayjs('2025-01-01T00:00:00.000Z')
-		const days = Array.from({ length: 7 }, (_, i) => day.add(i, 'day'))
+		const day = atUtc('2025-01-01T00:00:00.000Z')
+		const days = Array.from({ length: 7 }, (_, i) => add(day, i, 'day'))
+		const start = add(day, 1, 'day')
+		const end = add(day, 3, 'day')
 		const preview = mkDragPreview({
 			event: {
 				id: 'event-dragged',
 				title: 'Company Offsite',
-				start: day.add(1, 'day'),
-				end: day.add(3, 'day'),
+				start: toOffsetIso(start),
+				end: toOffsetIso(end),
 				allDay: true,
 			},
-			start: day.add(1, 'day'),
-			end: day.add(3, 'day'),
+			start,
+			end,
 			allDay: true,
 		})
 
@@ -325,23 +327,27 @@ describe('VerticalGridEventsLayer', () => {
 	})
 
 	test('mirrors a timed candidate on a day grid with its time', () => {
-		const day = dayjs('2025-01-01T00:00:00.000Z')
-		const days = Array.from({ length: 7 }, (_, i) => day.add(i, 'day'))
+		const day = atUtc('2025-01-01T00:00:00.000Z')
+		const days = Array.from({ length: 7 }, (_, i) => add(day, i, 'day'))
+		const start = withTime(add(day, 1, 'day'), { hour: 9 })
+		const end = withTime(add(day, 2, 'day'), { hour: 17 })
 		const preview = mkDragPreview({
 			event: {
 				id: 'event-dragged',
 				title: 'Field trip',
-				start: day.add(1, 'day').hour(9),
-				end: day.add(2, 'day').hour(17),
+				start: toOffsetIso(start),
+				end: toOffsetIso(end),
 			},
-			start: day.add(1, 'day').hour(9),
-			end: day.add(2, 'day').hour(17),
+			start,
+			end,
 			allDay: false,
 		})
 
 		renderEventsLayer({ days, gridType: 'day', preview })
 
 		const mirror = screen.getByTestId(keys.dragPreview('vertical'))
-		expect(mirror.textContent).toBe('9:00am – 5:00pmField trip')
+		expect(mirror.textContent?.replace(/\s+/g, ' ')).toBe(
+			'9:00 AM – 5:00 PMField trip'
+		)
 	})
 })

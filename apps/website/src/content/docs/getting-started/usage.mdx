@@ -27,54 +27,47 @@ Once you've installed the package, follow these steps to configure and use the c
    This tells Tailwind to scan the calendar package for classes and include them in your build. This is especially important since node_modules are typically ignored by Tailwind by default.
    </Aside>
 
-2. ### Configure Day.js (Optional)
+2. ### Import and Use the Calendar
 
-   If you are using Day.js and have installed it as a dependency in your project, you might need to extend the plugins that are required for this library.
-
-   ```tsx title="dayjs-config.ts"
-   import dayjs from 'dayjs';
-   import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js';
-   import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js';
-   import timezone from 'dayjs/plugin/timezone.js';
-   import utc from 'dayjs/plugin/utc.js';
-
-   dayjs.extend(isSameOrAfter);
-   dayjs.extend(isSameOrBefore);
-   dayjs.extend(timezone);
-   dayjs.extend(utc);
-   ```
-
-   These plugins are required for proper date handling and timezone support within the calendar component.
-
-3. ### Import and Use the Calendar
-
-   Now you can start using the calendar with minimal configuration:
+   Now you can start using the calendar with minimal configuration. Events accept plain ISO 8601 strings or native JavaScript `Date` objects — no `dayjs` setup or plugin registration is needed:
 
    ```tsx title="MyCalendar.tsx"
    import { IlamyCalendar } from '@ilamy/calendar';
 
+   const events = [
+     {
+       id: '1',
+       title: 'Team Standup',
+       start: '2026-03-02T09:00:00-05:00',
+       end: '2026-03-02T09:30:00-05:00',
+     },
+   ];
+
    export default function MyCalendar() {
      return (
        <div className="p-6">
-         <IlamyCalendar />
+         <IlamyCalendar events={events} editable />
        </div>
      );
    }
    ```
 
-4. ### Add plugins (optional)
+3. ### Add plugins (optional)
 
-   The v2 core ships **no plugins** by default. Capabilities like recurring events and the agenda view are opt-in: import them from their subpath and register them via the `plugins` prop. Skip this step if you don't need them.
+   The core ships **no plugins** by default. Capabilities like recurring events, agenda view, year view, iCalendar export, and drag-to-create are opt-in: import them from their subpath and register them via the `plugins` prop. Skip this step if you don't need them.
 
    ```tsx title="MyCalendar.tsx"
    import { IlamyCalendar } from '@ilamy/calendar';
    import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence';
+   import { yearPlugin } from '@ilamy/calendar/plugins/year';
+   import { icalPlugin } from '@ilamy/calendar/plugins/ical';
 
    export default function MyCalendar() {
      return (
        <div className="p-6">
-         {/* recurrencePlugin expands events that have an `rrule` */}
-         <IlamyCalendar plugins={[recurrencePlugin()]} />
+         <IlamyCalendar
+           plugins={[recurrencePlugin(), yearPlugin(), icalPlugin()]}
+         />
        </div>
      );
    }

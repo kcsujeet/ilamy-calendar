@@ -51,7 +51,10 @@ const dragPointer = async (page: Page, from: Point, to: Point) => {
  * pixels wide, so a press aimed at a half-faded, still-moving bar misses it.
  */
 const openSettled = async (page: Page, options: ScenarioOptions) => {
-	await gotoScenario(page, options)
+	await gotoScenario(page, {
+		...options,
+		settings: { editable: 'true', ...options.settings },
+	})
 	await page.evaluate(() =>
 		Promise.all(document.getAnimations().map((animation) => animation.finished))
 	)

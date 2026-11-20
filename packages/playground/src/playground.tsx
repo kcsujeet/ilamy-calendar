@@ -1,6 +1,9 @@
-import './lib/dayjs-locales'
-
-import type { CalendarEvent } from '@ilamy/calendar'
+import type {
+	CalendarEvent,
+	DateRange,
+	EventsChange,
+	IsoDateString,
+} from '@ilamy/calendar'
 import { Button } from '@ilamy/ui/components/button'
 import {
 	Dialog,
@@ -8,30 +11,48 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from '@ilamy/ui/components/dialog'
-import { type ReactNode, useMemo, useState } from 'react'
-import { FormProvider, useForm, useWatch } from 'react-hook-form'
+import { SlidersHorizontal } from 'lucide-react'
+import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import { FormProvider, useForm } from 'react-hook-form'
 import { CalendarDisplay } from './components/calendar-display'
-import { CalendarSettings } from './components/calendar-settings'
-import { ResourcePicker } from './components/resource-picker'
+import {
+	GeneralPanel,
+	PluginsPanel,
+	SchedulePanel,
+	ThemePanel,
+} from './components/calendar-settings-panels'
+import {
+	type ActivityLogEntry,
+	CodeAndLogPanel,
+} from './components/code-and-log-panel'
+import { PlaygroundToolbar } from './components/playground-toolbar'
+import { type SettingsTabId, SettingsTabs } from './components/settings-tabs'
 import { dummyEvents } from './lib/seed'
 import { defaultSettings, type PlaygroundSettings } from './types/settings-form'
 import { createResourceEvents, demoResources } from './utils/demo-data'
 
-// On mobile the tall settings panel would push the calendar far down the page, so
-// it lives behind a sticky trigger that opens a scrollable dialog; the calendar
-// stays full-width and immediately visible. Hidden at lg, where the inline sidebar
-// takes over (pure CSS, no JS breakpoint check).
+const MAX_LOG_ENTRIES = 12
+
+const formatLogClock = (): string =>
+	new Intl.DateTimeFormat(undefined, {
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		hour12: false,
+	}).format(new Date())
+
 function MobileSettings({ children }: { children: ReactNode }) {
 	return (
-		<div className="sticky top-2 z-20 mb-4 lg:hidden">
+		<div className="sticky top-2 z-20 mb-3 lg:hidden">
 			<Dialog>
 				<DialogTrigger asChild>
-					<Button className="w-full shadow-lg" size="lg" variant="outline">
-						Calendar Settings
+					<Button className="w-full shadow-md" size="default" variant="outline">
+						<SlidersHorizontal className="size-4 mr-2" />
+						Calendar Inspector
 					</Button>
 				</DialogTrigger>
-				<DialogContent className="max-h-[90dvh] gap-0 overflow-y-auto p-0">
-					<DialogTitle className="sr-only">Calendar Settings</DialogTitle>
+				<DialogContent className="max-h-[90dvh] gap-0 overflow-hidden p-0 flex flex-col">
+					<DialogTitle className="sr-only">Calendar Inspector</DialogTitle>
 					{children}
 				</DialogContent>
 			</Dialog>
@@ -39,19 +60,32 @@ function MobileSettings({ children }: { children: ReactNode }) {
 	)
 }
 
-// The shared interactive calendar demo. One react-hook-form drives every
-// setting; components read what they need from the provider via useWatch.
-// Consumed by both the demo app and the docs website.
 export function Playground() {
 	const form = useForm<PlaygroundSettings>({ defaultValues: defaultSettings })
-	const calendarType = useWatch({ control: form.control, name: 'calendarType' })
+	const [activeTab, setActiveTab] = useState<SettingsTabId>('general')
+	const [showInspector, setShowInspector] = useState(false)
+	const [logs, setLogs] = useState<ActivityLogEntry[]>([])
 
-	// Event state — the lifecycle callbacks (when enabled) mutate this so
-	// add/update/delete are reflected live.
 	const [customEvents, setCustomEvents] = useState<CalendarEvent[]>(dummyEvents)
 	const resourceEvents = useMemo(
 		() => createResourceEvents(customEvents),
 		[customEvents]
+	)
+
+	const appendLog = useCallback(
+		(kind: string, summary: string, payload: unknown) => {
+			setLogs((prev) => {
+				const entry: ActivityLogEntry = {
+					id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+					time: formatLogClock(),
+					kind,
+					summary,
+					payload: JSON.stringify(payload),
+				}
+				return [entry, ...prev].slice(0, MAX_LOG_ENTRIES)
+			})
+		},
+		[]
 	)
 
 	const onEventAdd = (event: CalendarEvent) => {
@@ -64,11 +98,35 @@ export function Playground() {
 		setCustomEvents((prev) => prev.filter((e) => e.id !== event.id))
 	}
 
-	// Resource picker — lets the user swap the resources prop at runtime to verify
-	// the resource calendar reacts to prop changes (issue #153).
+	const onEventsChange = useCallback(
+		(change: EventsChange) => {
+			appendLog(`onEventsChange:${change.action}`, change.event.title, {
+				action: change.action,
+				event: {
+					id: change.event.id,
+					start: change.event.start,
+					end: change.event.end,
+				},
+				delta: change.delta,
+				endDelta: change.endDelta,
+				added: change.added.length,
+				updated: change.updated.length,
+				deleted: change.deleted.length,
+			})
+		},
+		[appendLog]
+	)
+
+	const onDateNavigate = useCallback(
+		(date: IsoDateString, range: DateRange) => {
+			appendLog('onDateChange', date.slice(0, 10), { date, range })
+		},
+		[appendLog]
+	)
+
 	const [selectedResourceIds, setSelectedResourceIds] = useState<
 		Set<string | number>
-	>(new Set(demoResources.map((r) => r.id)))
+	>(() => new Set(demoResources.map((r) => r.id)))
 	const activeResources = demoResources.filter((r) =>
 		selectedResourceIds.has(r.id)
 	)
@@ -81,63 +139,74 @@ export function Playground() {
 		})
 	}
 
-	const settings = (
-		<>
-			<CalendarSettings />
-			{calendarType === 'resource' && (
-				<ResourcePicker
-					onToggleResource={toggleResource}
-					resources={demoResources}
-					selectedResourceIds={selectedResourceIds}
-				/>
-			)}
-		</>
-	)
+	const handleReset = () => {
+		setCustomEvents(dummyEvents)
+		setSelectedResourceIds(new Set(demoResources.map((r) => r.id)))
+		setLogs([])
+	}
+
+	const tabPanels = {
+		general: (
+			<GeneralPanel
+				onToggleResource={toggleResource}
+				resources={demoResources}
+				selectedResourceIds={selectedResourceIds}
+			/>
+		),
+		theme: <ThemePanel />,
+		plugins: <PluginsPanel />,
+		schedule: <SchedulePanel />,
+	}
 
 	return (
 		<FormProvider {...form}>
 			<div
-				// The playground is always 100% width; consumers (the demo app, the docs
-				// website) own the max-width / centering so the width constraint lives with
-				// them. overflow-x-clip keeps a wide view (e.g. month/week, whose columns
-				// have a min-width floor) from overflowing the viewport and adding a
-				// horizontal page scroll. `clip` (not `hidden`) is deliberate: per MDN it
-				// is not a scroll container, so it leaves the calendar's sticky view header
-				// and the sticky settings trigger resolving against the viewport.
-				className="w-full px-4 py-8 relative overflow-x-clip"
+				className="w-full px-3 sm:px-4 py-4 sm:py-6 relative overflow-x-clip"
 				data-testid="playground"
 			>
-				<div className="mb-8">
-					<h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-linear-to-br from-blue-600 to-indigo-700 dark:from-blue-400 dark:to-indigo-500">
-						Interactive Demo
-					</h1>
-					<p className="text-muted-foreground">
-						Try out the ilamy Calendar components with different configurations
-					</p>
-				</div>
+				<PlaygroundToolbar
+					logCount={logs.length}
+					onReset={handleReset}
+					onSelectTab={setActiveTab}
+					onToggleInspector={() => setShowInspector((prev) => !prev)}
+					showInspector={showInspector}
+				/>
 
-				{/* Fixed-width settings sidebar + flexible calendar column. A fixed
-				    sidebar keeps the controls comfortable (a `lg:col-span-1` of 4 was too
-				    narrow and truncated the button groups); minmax(0,1fr) lets the calendar
-				    column shrink instead of overflowing the grid. */}
-				<div className="lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-8">
-					{/* Settings appear behind a dialog trigger on mobile and as an inline
-					    sidebar at lg, switched purely by CSS. Both render the same form;
-					    the fields bind via useController, so the two instances safely share
-					    one form state (and each FormCheckbox gets a useId-unique id, so the
-					    duplicate mount has no colliding control ids). */}
-					<MobileSettings>{settings}</MobileSettings>
-					<div className="hidden space-y-6 lg:block">{settings}</div>
+				<div className="lg:grid lg:grid-cols-[20.5rem_minmax(0,1fr)] lg:gap-5 items-start">
+					<MobileSettings>
+						<SettingsTabs
+							activeTab={activeTab}
+							className="border-0 shadow-none max-h-[85dvh]"
+							onTabChange={setActiveTab}
+							panels={tabPanels}
+						/>
+					</MobileSettings>
+
+					{/* Sticky self-scrolling inspector keeps the calendar in view at all times */}
+					<div className="hidden lg:block sticky top-4">
+						<SettingsTabs
+							activeTab={activeTab}
+							className="max-h-[calc(100dvh-2rem)]"
+							onTabChange={setActiveTab}
+							panels={tabPanels}
+						/>
+					</div>
 
 					<div className="min-w-0">
 						<CalendarDisplay
 							activeResources={activeResources}
 							customEvents={customEvents}
+							onDateNavigate={onDateNavigate}
 							onEventAdd={onEventAdd}
 							onEventDelete={onEventDelete}
+							onEventsChange={onEventsChange}
 							onEventUpdate={onEventUpdate}
 							resourceEvents={resourceEvents}
 						/>
+
+						{showInspector && (
+							<CodeAndLogPanel logs={logs} onClearLogs={() => setLogs([])} />
+						)}
 					</div>
 				</div>
 			</div>

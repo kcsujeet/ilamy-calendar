@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'bun:test'
-import dayjs from '@ilamy/utils/dayjs'
+import { now, parseDate, type ZonedDate } from '@ilamy/utils/temporal'
 import { keys } from './keys'
 
-const monday = dayjs('2025-10-13T00:00:00.000Z')
+const mustUtc = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const monday = mustUtc('2025-10-13T00:00:00.000Z')
 
 describe('keys.col', () => {
 	it('returns stable constants for time/date columns', () => {
@@ -142,13 +150,13 @@ describe('keys.allDayRow', () => {
 describe('keys.dayNumber (DayNumber component testid)', () => {
 	it('returns "day-number-{D}" for any non-today date', () => {
 		expect(keys.dayNumber(monday)).toBe('day-number-13')
-		expect(keys.dayNumber(dayjs('2025-10-05T00:00:00.000Z'))).toBe(
+		expect(keys.dayNumber(mustUtc('2025-10-05T00:00:00.000Z'))).toBe(
 			'day-number-5'
 		)
 	})
 
 	it('returns "day-number-today" when the date is today', () => {
-		expect(keys.dayNumber(dayjs())).toBe('day-number-today')
+		expect(keys.dayNumber(now('UTC'))).toBe('day-number-today')
 	})
 })
 

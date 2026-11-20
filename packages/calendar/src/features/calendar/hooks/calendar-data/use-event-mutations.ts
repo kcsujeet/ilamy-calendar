@@ -10,6 +10,7 @@ import {
 
 interface EventMutationsParams extends MutationCallbacks {
 	currentEvents: CalendarEvent[]
+	timezone?: string
 }
 
 export interface EventMutations {
@@ -21,10 +22,6 @@ export interface EventMutations {
 	deleteEvent: (eventId: string | number) => void
 }
 
-/**
- * Add, update and delete for one stored row, each reported through its
- * per-row callback and then once through `onEventsChange`.
- */
 export const useEventMutations = ({
 	currentEvents,
 	setCurrentEvents,
@@ -32,13 +29,13 @@ export const useEventMutations = ({
 	onEventUpdate,
 	onEventDelete,
 	onEventsChange,
+	timezone,
 }: EventMutationsParams): EventMutations => {
 	const addEvent = useCallback(
 		(event: CalendarEvent) => {
 			setCurrentEvents((prev) => [...prev, event])
 			onEventAdd?.(event)
 			const origin: ChangeOrigin = { action: 'add', event }
-			// An add has no earlier rows to restore; its revert only removes it.
 			const context = { previousEvents: [], setCurrentEvents }
 			const change = toRowChange(origin, event, context)
 			onEventsChange?.(change)
@@ -61,14 +58,14 @@ export const useEventMutations = ({
 			const origin: ChangeOrigin = {
 				action: 'update',
 				event: eventToUpdate,
-				delta: toUpdateDelta(eventToUpdate, newEvent),
-				endDelta: toEventDelta(eventToUpdate.end, newEvent.end),
+				delta: toUpdateDelta(eventToUpdate, newEvent, timezone),
+				endDelta: toEventDelta(eventToUpdate.end, newEvent.end, timezone),
 			}
 			const context = { previousEvents: currentEvents, setCurrentEvents }
 			const change = toRowChange(origin, newEvent, context)
 			onEventsChange?.(change)
 		},
-		[currentEvents, setCurrentEvents, onEventUpdate, onEventsChange]
+		[currentEvents, setCurrentEvents, onEventUpdate, onEventsChange, timezone]
 	)
 
 	const deleteEvent = useCallback(

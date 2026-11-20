@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { HorizontalGrid } from './horizontal-grid'
 
-const initialDate = dayjs('2025-01-01T00:00:00.000Z')
+const initialDate = '2025-01-01T00:00:00+00:00'
 const mockRows = [
 	{
 		id: 'row-1',
@@ -27,6 +26,7 @@ const renderGrid = () => {
 			events={[]}
 			initialDate={initialDate}
 			resources={[]}
+			timezone="UTC"
 		>
 			<HorizontalGrid rows={mockRows}>
 				<div>Header</div>
@@ -44,18 +44,14 @@ describe('HorizontalGrid Layout Regression', () => {
 		renderGrid()
 		const row = screen.getByTestId('horizontal-row-row-1')
 
-		// The row should be fluid. If we have min-h-[60px] here, it fighting the cell's expansion.
 		expect(row.className).not.toContain('min-h-[60px]')
 		expect(row.className).toContain('flex-1')
 	})
 
 	test('GridCell (DroppableCell) SHOULD have min-h-[60px] to maintain default cell structure', () => {
 		renderGrid()
-		const cell = screen.getByTestId(
-			`day-cell-${initialDate.format('YYYY-MM-DD')}`
-		)
+		const cell = screen.getByTestId('day-cell-2025-01-01')
 
-		// The cell itself should have the min-height to ensure the grid doesn't collapse to 0 when empty.
 		expect(cell.className).toContain('min-h-[60px]')
 	})
 
@@ -63,7 +59,6 @@ describe('HorizontalGrid Layout Regression', () => {
 		renderGrid()
 		const content = screen.getByTestId('grid-cell-content')
 
-		// This ensures the content fills the potentially expanded row height and matches parent width.
 		expect(content.className).toContain('h-full')
 		expect(content.className).toContain('w-full')
 	})

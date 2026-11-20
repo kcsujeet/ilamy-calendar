@@ -10,11 +10,11 @@ Anything a calendar already has a convention for (event boundaries, recurrence a
 
 Source: `AGENTS.md` (Hard Rules, "match the established standard"). Canonical: the exclusive `end` rule in `packages/utils/src/helpers.ts` (`overlapsRange`, citing RFC 5545's non-inclusive DTEND, #248).
 
-## §K2. Dates go through the configured dayjs
+## §K2. Dates go through the Temporal engine
 
-`dayjs` is imported from `@ilamy/utils/dayjs`, never from the `dayjs` package, and rrule's `datetime` is never used. Values are stored and passed as ISO strings, not `YYYY-MM-DD`. A string without an offset is anchored in the calendar's zone, and `Intl.DateTimeFormat` without the calendar's `timeZone` formats in the machine's zone, which is wrong here.
+Date parsing, arithmetic, comparison, and formatting go through `@ilamy/utils/temporal` (`temporal-polyfill/fns/*` named imports), never `dayjs` or rrule's `datetime`. Public values are stored and passed as ISO 8601 strings with explicit offset, not `YYYY-MM-DD`. A string without an offset is anchored in `event.timezone ?? calendar.timezone`, and `Intl.DateTimeFormat` without an explicit `timeZone` formats in the machine's zone, which is wrong here.
 
-Source: `AGENTS.md` (Hard Rules, Code Rules > Dates), `docs/timezones.md`. Canonical: `packages/utils/src/dayjs.ts`.
+Source: `AGENTS.md` (Hard Rules, Code Rules > Dates), `docs/timezones.md`. Canonical: `packages/utils/src/temporal.ts`.
 
 ## §K3. Shared code lives in the shared packages
 
@@ -76,7 +76,7 @@ Draft comments with `/kc-gates:kc-post-review`, which validates each comment's f
 ## Gate checklist
 
 - [ ] §K1 Calendar behavior with an existing convention follows RFC 5545, then FullCalendar, then Google Calendar, and the diff cites the source (or states that none covers it and justifies the choice). (N/A: no calendar-semantics behavior in diff)
-- [ ] §K2 dayjs is imported only from `@ilamy/utils/dayjs`; no rrule `datetime`; ISO strings for storage and transmission; no `Intl.DateTimeFormat` without the calendar's `timeZone`. (N/A: no date handling in diff)
+- [ ] §K2 Dates go through `@ilamy/utils/temporal` (`temporal-polyfill/fns/*`); no `dayjs`; no rrule `datetime`; ISO 8601 strings with offset for storage and transmission; no `Intl.DateTimeFormat` without explicit `timeZone`. (N/A: no date handling in diff)
 - [ ] §K3 No shared component, helper or type kept in a feature or plugin; no plugin import of `@/features/...`; no `@ilamy/calendar` export widened to share an internal; new helpers checked against the shared packages first. (N/A: no new module, export or cross-package import in diff)
 - [ ] §K4 `.at()` over index access, no `!`, `Boolean(x)` over `!!x`, no `any`, named exports only, multi-clause `cn()` conditions named, verb-prefixed helpers; no fix suggested as a conditionally-built options spread. (N/A: no source code in diff)
 - [ ] §K5 A behavior change has a unit test in the existing co-located test file and an e2e spec in `apps/e2e/tests/`; assertions are exact; gates are tested both ways; the PR states the revert proof. (N/A: no behavior change in diff)

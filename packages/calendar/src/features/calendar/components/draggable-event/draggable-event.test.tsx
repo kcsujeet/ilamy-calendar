@@ -1,6 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import type { IlamyCalendarProps } from '@/features/calendar/types'
@@ -8,28 +7,29 @@ import { MonthView, WeekView } from '@/testing/view-harnesses'
 
 /*
  * A bar offers a handle on an edge only when that edge is the event's own
- * (not one the grid cut) and the event may be resized. The end handle is on by
- * default; the start handle needs `eventResizableFromStart`.
+ * (not one the grid cut) and the event may be resized. In v4.0 (D8), `editable`
+ * defaults to `false`; when `editable` is true (or `eventDurationEditable` is
+ * true), the end handle is on and `eventResizableFromStart` adds the start handle.
  */
 describe('resize handles', () => {
 	const timed = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
 		id: 'timed',
 		title: 'Timed',
-		start: dayjs('2025-03-12T09:00:00'),
-		end: dayjs('2025-03-12T10:00:00'),
+		start: '2025-03-12T09:00:00+00:00',
+		end: '2025-03-12T10:00:00+00:00',
 		...extra,
 	})
 	const overnight: CalendarEvent = timed({
-		end: dayjs('2025-03-13T02:00:00'),
-		start: dayjs('2025-03-12T20:00:00'),
+		start: '2025-03-12T20:00:00+00:00',
+		end: '2025-03-13T02:00:00+00:00',
 	})
 	// Saturday to the following Tuesday: the month grid draws it as two bars.
 	const acrossTheWeekend: CalendarEvent = {
 		id: 'long',
 		title: 'Long',
 		allDay: true,
-		start: dayjs('2025-03-01T00:00:00'),
-		end: dayjs('2025-03-05T00:00:00'),
+		start: '2025-03-01T00:00:00+00:00',
+		end: '2025-03-05T00:00:00+00:00',
 	}
 
 	/** The handle on each bar, in document order: 'start', 'end', or 'none'. */
@@ -39,7 +39,7 @@ describe('resize handles', () => {
 		settings: Pick<
 			IlamyCalendarProps,
 			'editable' | 'eventDurationEditable' | 'eventResizableFromStart'
-		> = {}
+		> = { editable: true }
 	): string[][] => {
 		cleanup()
 		const { container } = render(
@@ -47,8 +47,9 @@ describe('resize handles', () => {
 				dayMaxEvents={5}
 				events={events}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-03-12T00:00:00')}
+				initialDate="2025-03-12T00:00:00Z"
 				initialView={view}
+				timezone="UTC"
 				{...settings}
 			>
 				{view === 'week' ? <WeekView /> : <MonthView />}
@@ -64,12 +65,45 @@ describe('resize handles', () => {
 		)
 	}
 
-	test('a timed event in the time grid has an end handle', () => {
+	test('has no resize handles by default when editable is omitted (D8)', () => {
+		expect(handlesPerBar('week', [timed()], {})).toEqual([[]])
+	})
+
+	test('a timed event in the time grid has an end handle when editable', () => {
 		expect(handlesPerBar('week', [timed()])).toEqual([['end']])
+	})
+
+	test('renders a hover-revealed 3-dot CSS grip inside the resize handle (4.0.9)', () => {
+		cleanup()
+		const { container } = render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				editable={true}
+				events={[timed()]}
+				firstDayOfWeek={1}
+				initialDate="2025-03-12T00:00:00Z"
+				initialView="week"
+				timezone="UTC"
+			>
+				<WeekView />
+			</CalendarProvider>
+		)
+		const handle = container.querySelector('[data-resize-handle="end"]')
+		expect(handle).not.toBeNull()
+		expect(handle?.className).toContain('opacity-0')
+		expect(handle?.className).toContain('group-hover/event:opacity-60')
+		expect(handle?.className).toContain('hover:!opacity-100')
+		expect(handle?.className).toContain('cursor-ns-resize')
+		const dots = handle?.firstElementChild as HTMLElement | null
+		expect(dots).not.toBeNull()
+		expect(dots?.style.backgroundImage).toContain('radial-gradient')
+		expect(dots?.style.width).toBe('12px')
+		expect(dots?.style.height).toBe('2px')
 	})
 
 	test('eventResizableFromStart adds the start handle', () => {
 		const handles = handlesPerBar('week', [timed()], {
+			editable: true,
 			eventResizableFromStart: true,
 		})
 		expect(handles).toEqual([['start', 'end']])
@@ -77,6 +111,7 @@ describe('resize handles', () => {
 
 	test('an overnight bar cut by the day has no end handle, its continuation has', () => {
 		const handles = handlesPerBar('week', [overnight], {
+			editable: true,
 			eventResizableFromStart: true,
 		})
 		expect(handles).toEqual([['start'], ['end']])
@@ -88,6 +123,7 @@ describe('resize handles', () => {
 
 	test('eventResizableFromStart puts the start handle on the first bar only', () => {
 		const handles = handlesPerBar('month', [acrossTheWeekend], {
+			editable: true,
 			eventResizableFromStart: true,
 		})
 		expect(handles).toEqual([['start'], ['end']])
@@ -104,8 +140,8 @@ describe('resize handles', () => {
 	test('a single-day all-day event in the month grid is resizable', () => {
 		const holiday = timed({
 			allDay: true,
-			start: dayjs('2025-03-12T00:00:00'),
-			end: dayjs('2025-03-13T00:00:00'),
+			start: '2025-03-12T00:00:00+00:00',
+			end: '2025-03-13T00:00:00+00:00',
 		})
 		expect(handlesPerBar('month', [holiday])).toEqual([['end']])
 	})
@@ -116,7 +152,10 @@ describe('resize handles', () => {
 
 	test('eventDurationEditable=false removes the handles but not the move', () => {
 		expect(
-			handlesPerBar('week', [timed()], { eventDurationEditable: false })
+			handlesPerBar('week', [timed()], {
+				editable: true,
+				eventDurationEditable: false,
+			})
 		).toEqual([[]])
 	})
 
@@ -140,11 +179,13 @@ describe('resize handles', () => {
 		const { container } = render(
 			<CalendarProvider
 				dayMaxEvents={5}
+				editable={true}
 				events={[timed()]}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-03-12T00:00:00')}
+				initialDate="2025-03-12T00:00:00Z"
 				initialView="week"
 				onEventClick={onEventClick}
+				timezone="UTC"
 			>
 				<WeekView />
 			</CalendarProvider>
@@ -158,20 +199,75 @@ describe('resize handles', () => {
 
 		expect(onEventClick).toHaveBeenCalledTimes(1)
 	})
+
+	test('resize handles remain hidden at rest (opacity-0) in unstyled mode', () => {
+		cleanup()
+		const { container } = render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				editable={true}
+				events={[timed()]}
+				firstDayOfWeek={1}
+				initialDate="2025-03-12T00:00:00Z"
+				initialView="week"
+				timezone="UTC"
+				unstyled={true}
+			>
+				<WeekView />
+			</CalendarProvider>
+		)
+		const handle = container.querySelector('[data-resize-handle="end"]')
+		expect(handle?.className).toContain('opacity-0')
+		expect(handle?.className).toContain('group-hover/event:opacity-60')
+	})
+
+	test('colored events omit theme eventBar backgroundColor on outer bar so corners never bleed', () => {
+		cleanup()
+		const colored = timed({
+			id: 'colored',
+			color: 'bg-cyan-100 text-cyan-800',
+		})
+		const uncolored = timed({ id: 'uncolored' })
+		const { container } = render(
+			<CalendarProvider
+				dayMaxEvents={5}
+				editable={true}
+				events={[colored, uncolored]}
+				firstDayOfWeek={1}
+				initialDate="2025-03-12T00:00:00Z"
+				initialView="week"
+				slotProps={{
+					eventBar: {
+						style: { backgroundColor: '#4f46e5', borderRadius: '6px' },
+					},
+				}}
+				timezone="UTC"
+				unstyled={true}
+			>
+				<WeekView />
+			</CalendarProvider>
+		)
+		const coloredOuter = container.querySelector<HTMLElement>(
+			'[data-testid="vertical-event-colored"] [role="button"]'
+		)
+		const uncoloredOuter = container.querySelector<HTMLElement>(
+			'[data-testid="vertical-event-uncolored"] [role="button"]'
+		)
+		expect(coloredOuter?.style.backgroundColor).toBe('')
+		expect(uncoloredOuter?.style.backgroundColor).toBe('#4f46e5')
+	})
 })
 
 /*
  * WCAG 2.1.1 / 4.1.2: a bar is a focusable `role=button`, so Enter and Space
- * must open it. FullCalendar does the same (`createAriaKeyboardAttrs`,
- * packages/preact/src/util/dom-event.ts, v7.1.1: Enter or ' ' calls the click
- * handler and `preventDefault()`s so Space does not scroll the page).
+ * must open it.
  */
 describe('keyboard', () => {
 	const standUp: CalendarEvent = {
 		id: 'stand-up',
 		title: 'Stand-up',
-		start: dayjs('2025-03-12T09:00:00'),
-		end: dayjs('2025-03-12T10:00:00'),
+		start: '2025-03-12T09:00:00+00:00',
+		end: '2025-03-12T10:00:00+00:00',
 	}
 
 	const renderWeekBar = (
@@ -186,8 +282,9 @@ describe('keyboard', () => {
 				dayMaxEvents={5}
 				events={[standUp]}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-03-12T00:00:00')}
+				initialDate="2025-03-12T00:00:00Z"
 				initialView="week"
+				timezone="UTC"
 				{...settings}
 			>
 				<WeekView />
@@ -233,7 +330,11 @@ describe('keyboard', () => {
 
 	test('disableEventClick keeps the keyboard from opening it too', () => {
 		const onEventClick = mock((_event: CalendarEvent) => {})
-		const barButton = renderWeekBar({ disableEventClick: true, onEventClick })
+		const barButton = renderWeekBar({
+			editable: true,
+			disableEventClick: true,
+			onEventClick,
+		})
 
 		fireEvent.keyDown(barButton, { key: 'Enter' })
 

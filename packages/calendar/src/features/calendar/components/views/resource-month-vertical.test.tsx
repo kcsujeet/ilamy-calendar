@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import type { CalendarEvent, Resource } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
@@ -12,7 +11,7 @@ const mockResources: Resource[] = [
 ]
 
 const mockEvents: CalendarEvent[] = []
-const initialDate = dayjs('2025-01-01T00:00:00.000Z')
+const initialDate = '2025-01-01T00:00:00Z'
 
 const renderResourceMonthVertical = (props = {}) => {
 	return render(
@@ -23,6 +22,7 @@ const renderResourceMonthVertical = (props = {}) => {
 			initialView="month"
 			orientation="vertical"
 			resources={mockResources}
+			timezone="UTC"
 			{...props}
 		>
 			<CalendarDndContext>
@@ -40,54 +40,30 @@ describe('ResourceMonthVertical', () => {
 	test('renders vertical resource month view structure', () => {
 		renderResourceMonthVertical()
 
-		// Should render resource headers
-
 		expect(screen.getByText('Resource 1')).toBeInTheDocument()
-
 		expect(screen.getByText('Resource 2')).toBeInTheDocument()
-
-		// Should render time column (which shows dates in month view)
-
-		// firstCol id is 'date-col'
-
 		expect(screen.getByTestId('vertical-col-date-col')).toBeInTheDocument()
 	})
 
 	test('renders day cells for each resource', () => {
 		renderResourceMonthVertical()
 
-		// Check for some day cells
-
-		// VerticalGridCol uses vertical-cell-{date}-{hour}-{minute}-resource-{resourceId}
-
-		const firstDay = initialDate.format('YYYY-MM-DD')
-
 		expect(
-			screen.getByTestId(`vertical-cell-${firstDay}-00-00-resource-1`)
+			screen.getByTestId('vertical-cell-2025-01-01-00-00-resource-1')
 		).toBeInTheDocument()
-
 		expect(
-			screen.getByTestId(`vertical-cell-${firstDay}-00-00-resource-2`)
+			screen.getByTestId('vertical-cell-2025-01-01-00-00-resource-2')
 		).toBeInTheDocument()
 	})
 
 	test('renders correct number of cells based on days in month', () => {
 		renderResourceMonthVertical()
 
-		const firstDay = initialDate.format('YYYY-MM-DD')
-
-		const lastDay = initialDate.endOf('month').format('YYYY-MM-DD')
-
 		expect(
-			screen.getByTestId(`vertical-cell-${firstDay}-00-00-resource-1`)
+			screen.getByTestId('vertical-cell-2025-01-01-00-00-resource-1')
 		).toBeInTheDocument()
-
 		expect(
-			screen.getByTestId(`vertical-cell-${lastDay}-00-00-resource-1`)
+			screen.getByTestId('vertical-cell-2025-01-31-00-00-resource-1')
 		).toBeInTheDocument()
-
-		// If Jan 2025 has 31 days, there should be 31 cells for each resource in the body
-
-		// but let's just check the boundaries for now.
 	})
 })

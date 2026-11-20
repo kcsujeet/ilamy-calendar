@@ -1,81 +1,117 @@
-import type { PluginView } from '@ilamy/types'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import { getMonthGridRange, skipHiddenDays } from '@ilamy/core'
+import type {
+	DateRange,
+	IsoDateString,
+	PluginView,
+	PublicDateInput,
+} from '@ilamy/types'
+import {
+	add,
+	now,
+	parseDate,
+	resolveZone,
+	toOffsetIso,
+} from '@ilamy/utils/temporal'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { builtInViews } from '@/features/calendar/components/views/built-in-views'
 import type { PluginRuntime } from '@/lib/plugins/types'
 import type { CalendarView } from '@/types'
-import {
-	getMonthGridRange,
-	skipHiddenDays,
-	withOwnOffset,
-} from '@/utils/date-utils'
 
 const calculateViewRange = (
-	date: Dayjs,
+	dateIso: IsoDateString,
 	viewSpec: PluginView | undefined,
-	firstDayOfWeek: number
-): { start: Dayjs; end: Dayjs } =>
-	// Views without `range` keep today's fallback: the month 6x7 grid range.
-	viewSpec?.range?.(date, { firstDayOfWeek }) ??
-	getMonthGridRange(date, firstDayOfWeek)
+	firstDayOfWeek: number,
+	timezone: string | undefined,
+	hiddenDays: Set<number> | undefined
+): DateRange => {
+	const customRange = viewSpec?.range?.(dateIso, {
+		firstDayOfWeek,
+		timezone,
+		hiddenDays,
+	})
+	if (customRange) {
+		return customRange
+	}
+	const zone = resolveZone(timezone)
+	const zoned = parseDate(dateIso, zone) ?? now(zone)
+	const { start, end } = getMonthGridRange(zoned, firstDayOfWeek, hiddenDays)
+	return { start: toOffsetIso(start), end: toOffsetIso(end) }
+}
 
 interface CalendarNavigationParams {
-	initialDate: Dayjs
+	initialDate: IsoDateString
 	initialView: CalendarView
 	firstDayOfWeek: number
-	/** Weekdays (0 = Sunday) the day view never shows; it steps past them. */
+	timezone?: string
 	hiddenDays?: Set<number>
-	onDateChange?: (date: Dayjs, range: { start: Dayjs; end: Dayjs }) => void
+	onDateChange?: (date: IsoDateString, range: DateRange) => void
 	onViewChange?: (view: CalendarView) => void
 	pluginRuntime: PluginRuntime
 }
 
 export interface CalendarNavigationSlice {
-	currentDate: Dayjs
-	setCurrentDate: React.Dispatch<React.SetStateAction<Dayjs>>
+	currentDate: IsoDateString
+	setCurrentDate: (
+		action: PublicDateInput | ((prev: IsoDateString) => PublicDateInput)
+	) => void
 	view: CalendarView
-	/**
-	 * Switches the view, optionally moving to `date` in the same update so both
-	 * settle atomically. Side effects: fires `onViewChange(newView)`, then one
-	 * `onDateChange(date ?? currentDate, range)` because the visible range changes.
-	 */
-	setView: (view: CalendarView, date?: Dayjs) => void
-	selectDate: (date: Dayjs) => void
+	setView: (view: CalendarView, date?: PublicDateInput) => void
+	selectDate: (date: PublicDateInput) => void
 	nextPeriod: () => void
 	prevPeriod: () => void
 	today: () => void
-	getCurrentViewRange: () => { start: Dayjs; end: Dayjs }
-	/** The one resolution path: built-in view specs prepended, then plugin views. */
+	getCurrentViewRange: () => DateRange
 	getAllViews: () => PluginView[]
 }
 
-/** Date + view as one value so a navigation step can move both atomically. */
 interface NavState {
-	date: Dayjs
+	date: IsoDateString
 	view: CalendarView
 }
 
-/**
- * The day view shows one day, so a hidden one is never shown: the date moves to
- * the next visible day in the direction of travel, as FullCalendar's does. The
- * other views draw a range and just leave the hidden days out of it.
- */
 const settleOnVisibleDay = (
 	nav: NavState,
+	timezone: string | undefined,
 	hiddenDays: Set<number> | undefined,
 	direction: 1 | -1
 ): NavState => {
-	if (nav.view !== 'day') {
+	if (nav.view !== 'day' || !hiddenDays) {
 		return nav
 	}
-	return { ...nav, date: skipHiddenDays(nav.date, hiddenDays, direction) }
+	const zone = resolveZone(timezone)
+	const parsed = parseDate(nav.date, zone) ?? now(zone)
+	const visible = skipHiddenDays(parsed, hiddenDays, direction)
+	return { ...nav, date: toOffsetIso(visible) }
 }
 
-/** Navigation slice: current date/view state, period stepping, range math. */
+const toDateIsoInZone = (
+	input: PublicDateInput,
+	timezone: string | undefined
+): IsoDateString => {
+	const zone = resolveZone(timezone)
+	return toOffsetIso(parseDate(input, zone) ?? now(zone))
+}
+
+const advanceViewDate = (
+	date: IsoDateString,
+	spec: PluginView | undefined,
+	direction: 1 | -1,
+	timezone: string | undefined
+): IsoDateString => {
+	const step = spec?.navigationStep ?? {
+		amount: 1,
+		unit: spec?.navigationUnit ?? 'day',
+	}
+	const zone = resolveZone(timezone)
+	const current = parseDate(date, zone) ?? now(zone)
+	return toOffsetIso(add(current, direction * step.amount, step.unit))
+}
+
 export const useCalendarNavigation = ({
 	initialDate,
 	initialView,
 	firstDayOfWeek,
+	timezone,
 	hiddenDays,
 	onDateChange,
 	onViewChange,
@@ -83,120 +119,116 @@ export const useCalendarNavigation = ({
 }: CalendarNavigationParams): CalendarNavigationSlice => {
 	const [navState, setNavState] = useState<NavState>(() =>
 		settleOnVisibleDay(
-			{
-				// Already anchored by `anchorInitialDate` in the engine, which sees the
-				// raw prop and so can tell a clock reading from an instant. This call
-				// only normalises the value; it can no longer change which day it names.
-				date: dayjs(initialDate),
-				view: initialView,
-			},
+			{ date: initialDate, view: initialView },
+			timezone,
 			hiddenDays,
 			1
 		)
 	)
-	// Mutation-time mirror of navState. React state read from a closure is
-	// pre-batch, so navigation calls sequenced in one handler (selectDate +
-	// setView, double nextPeriod, …) would compute their emissions from stale
-	// values (issue #231). Every write goes through applyNav, which updates the
-	// mirror synchronously; every read that feeds a mutation or an emission
-	// uses the mirror, never the closure.
 	const latestNav = useRef(navState)
 
 	const applyNav = useCallback(
 		(partial: Partial<NavState>, direction: 1 | -1 = 1): NavState => {
 			const requested = { ...latestNav.current, ...partial }
-			const next = settleOnVisibleDay(requested, hiddenDays, direction)
+			const next = settleOnVisibleDay(
+				requested,
+				timezone,
+				hiddenDays,
+				direction
+			)
 			latestNav.current = next
 			setNavState(next)
 			return next
 		},
-		[hiddenDays]
+		[timezone, hiddenDays]
 	)
 
 	const getAllViews = useCallback(
 		() => [...builtInViews, ...pluginRuntime.getViews()],
 		[pluginRuntime]
 	)
+
 	const resolveViewSpec = useCallback(
 		(name: CalendarView) => getAllViews().find((v) => v.name === name),
 		[getAllViews]
 	)
 
-	// Render-facing: reads the committed state so it stays consistent with what
-	// is on screen.
-	const getCurrentViewRange = useCallback(() => {
-		return calculateViewRange(
-			navState.date,
-			resolveViewSpec(navState.view),
-			firstDayOfWeek
-		)
-	}, [navState, firstDayOfWeek, resolveViewSpec])
+	const getCurrentViewRange = useCallback(
+		() =>
+			calculateViewRange(
+				navState.date,
+				resolveViewSpec(navState.view),
+				firstDayOfWeek,
+				timezone,
+				hiddenDays
+			),
+		[navState, firstDayOfWeek, timezone, hiddenDays, resolveViewSpec]
+	)
 
 	const notifyDateChange = useCallback(
 		(next: NavState) => {
 			const range = calculateViewRange(
 				next.date,
 				resolveViewSpec(next.view),
-				firstDayOfWeek
+				firstDayOfWeek,
+				timezone,
+				hiddenDays
 			)
 			onDateChange?.(next.date, range)
 		},
-		[onDateChange, firstDayOfWeek, resolveViewSpec]
+		[onDateChange, firstDayOfWeek, timezone, hiddenDays, resolveViewSpec]
 	)
 
 	const selectDate = useCallback(
-		(date: Dayjs) => {
-			notifyDateChange(applyNav({ date }))
+		(date: PublicDateInput) => {
+			notifyDateChange(applyNav({ date: toDateIsoInZone(date, timezone) }))
 		},
-		[applyNav, notifyDateChange]
+		[applyNav, notifyDateChange, timezone]
 	)
 
 	const navigatePeriod = useCallback(
 		(direction: 1 | -1) => {
 			const { date, view } = latestNav.current
-			const spec = resolveViewSpec(view)
-			// navigationStep wins; else one navigationUnit; else one day (today's default).
-			const step = spec?.navigationStep ?? {
-				amount: 1,
-				unit: spec?.navigationUnit ?? 'day',
-			}
-			const nextDate = withOwnOffset(
-				date.add(direction * step.amount, step.unit)
+			const nextDate = advanceViewDate(
+				date,
+				resolveViewSpec(view),
+				direction,
+				timezone
 			)
 			notifyDateChange(applyNav({ date: nextDate }, direction))
 		},
-		[applyNav, notifyDateChange, resolveViewSpec]
+		[applyNav, notifyDateChange, resolveViewSpec, timezone]
 	)
 
 	const nextPeriod = useCallback(() => navigatePeriod(1), [navigatePeriod])
 	const prevPeriod = useCallback(() => navigatePeriod(-1), [navigatePeriod])
 
-	const today = useCallback(
-		() => notifyDateChange(applyNav({ date: dayjs() })),
-		[applyNav, notifyDateChange]
-	)
+	const today = useCallback(() => {
+		const zone = resolveZone(timezone)
+		notifyDateChange(applyNav({ date: toOffsetIso(now(zone)) }))
+	}, [applyNav, notifyDateChange, timezone])
 
 	const handleViewChange = useCallback(
-		(newView: CalendarView, date?: Dayjs) => {
-			const next = applyNav(date ? { view: newView, date } : { view: newView })
+		(newView: CalendarView, date?: PublicDateInput) => {
+			const partial: Partial<NavState> =
+				date !== undefined
+					? { view: newView, date: toDateIsoInZone(date, timezone) }
+					: { view: newView }
+			const next = applyNav(partial)
 			onViewChange?.(newView)
-			// View change affects visible range — notify consumers
 			notifyDateChange(next)
 		},
-		[applyNav, onViewChange, notifyDateChange]
+		[applyNav, onViewChange, notifyDateChange, timezone]
 	)
 
-	// Raw setter (no onDateChange): funneled through applyNav so the mutation
-	// mirror never drifts. Supports functional updaters like React's dispatch.
-	const setCurrentDate: React.Dispatch<React.SetStateAction<Dayjs>> =
-		useCallback(
-			(action) => {
-				const nextDate =
-					typeof action === 'function' ? action(latestNav.current.date) : action
-				applyNav({ date: nextDate })
-			},
-			[applyNav]
-		)
+	const setCurrentDate = useCallback(
+		(action: PublicDateInput | ((prev: IsoDateString) => PublicDateInput)) => {
+			const nextDate =
+				typeof action === 'function' ? action(latestNav.current.date) : action
+			applyNav({ date: toDateIsoInZone(nextDate, timezone) })
+		},
+		[applyNav, timezone]
+	)
 
 	return useMemo(
 		() => ({

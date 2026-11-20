@@ -1,19 +1,35 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import {
+	add,
+	isSameDay,
+	parseDate,
+	toOffsetIso,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { EVENT_BAR_HEIGHT } from '@/config/constants'
 import { useProcessedWeekEvents } from '@/features/calendar/hooks/use-processed-week-events'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { GridCell } from './grid-cell'
 
-const initialDate = dayjs('2025-01-01T00:00:00.000Z')
+const atUtc = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const initialDate = atUtc('2025-01-01T00:00:00.000Z')
+const initialDateIso = toOffsetIso(initialDate)
 
 const mkEvent = (id: string): CalendarEvent => ({
 	id,
 	title: `Event ${id}`,
-	start: initialDate,
-	end: initialDate.add(1, 'hour'),
+	start: initialDateIso,
+	end: toOffsetIso(add(initialDate, 1, 'hour')),
 })
 
 const twoEvents = [mkEvent('1'), mkEvent('2')]
@@ -24,7 +40,7 @@ type RenderGridCellOptions = {
 	eventSpacing?: number
 	eventHeight?: number
 	events?: CalendarEvent[]
-	onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
+	onMoreEventsClick?: (day: string, events: CalendarEvent[]) => void
 }
 
 const EventCell = () => {
@@ -35,8 +51,6 @@ const EventCell = () => {
 	)
 }
 
-// Shared harness for GridCell. Each suite varies only the CalendarProvider props
-// it cares about; everything else falls back to sensible defaults.
 const renderGridCell = ({
 	dayMaxEvents = 3,
 	eventSpacing,
@@ -50,8 +64,9 @@ const renderGridCell = ({
 			eventHeight={eventHeight}
 			eventSpacing={eventSpacing}
 			events={events}
-			initialDate={initialDate}
+			initialDate={initialDateIso}
 			onMoreEventsClick={onMoreEventsClick}
+			timezone="UTC"
 		>
 			<EventCell />
 		</CalendarProvider>
@@ -76,8 +91,8 @@ describe('GridCell Event Spacing', () => {
 		const placeholders = screen.queryAllByTestId(/Event/i)
 
 		expect(placeholders.length).toBe(2)
-		expect(placeholders[0].style.height).toBe(`${EVENT_BAR_HEIGHT}px`)
-		expect(placeholders[1].style.height).toBe(`${EVENT_BAR_HEIGHT}px`)
+		expect(placeholders.at(0)?.style.height).toBe(`${EVENT_BAR_HEIGHT}px`)
+		expect(placeholders.at(1)?.style.height).toBe(`${EVENT_BAR_HEIGHT}px`)
 	})
 
 	test('event placeholders should use custom eventHeight when provided', () => {
@@ -86,8 +101,8 @@ describe('GridCell Event Spacing', () => {
 		const placeholders = screen.queryAllByTestId(/Event/i)
 
 		expect(placeholders.length).toBe(2)
-		expect(placeholders[0].style.height).toBe(`${customHeight}px`)
-		expect(placeholders[1].style.height).toBe(`${customHeight}px`)
+		expect(placeholders.at(0)?.style.height).toBe(`${customHeight}px`)
+		expect(placeholders.at(1)?.style.height).toBe(`${customHeight}px`)
 	})
 })
 
@@ -96,10 +111,8 @@ describe('GridCell "+N more" overflow handling', () => {
 		cleanup()
 	})
 
-	// Three events with dayMaxEvents=1 → two are hidden, so the "+N more"
-	// overflow indicator is rendered.
 	const renderOverflowCell = (
-		onMoreEventsClick?: (day: Dayjs, events: CalendarEvent[]) => void
+		onMoreEventsClick?: (day: string, events: CalendarEvent[]) => void
 	) =>
 		renderGridCell({ dayMaxEvents: 1, events: threeEvents, onMoreEventsClick })
 
@@ -117,20 +130,21 @@ describe('GridCell "+N more" overflow handling', () => {
 		expect(screen.getByRole('dialog')).toBeInTheDocument()
 	})
 
-	test('calls onMoreEventsClick with the day and events, and does NOT open the dialog', () => {
+	test('calls onMoreEventsClick with ISO date string and events, and does NOT open the dialog', () => {
 		const onMoreEventsClick = mock<
-			(day: Dayjs, events: CalendarEvent[]) => void
+			(day: string, events: CalendarEvent[]) => void
 		>(() => {})
 		renderOverflowCell(onMoreEventsClick)
 
 		fireEvent.click(screen.getByText(/more/i))
 
 		expect(onMoreEventsClick).toHaveBeenCalledTimes(1)
-		const [day, events] = onMoreEventsClick.mock.calls[0]
-		expect(day.isSame(initialDate, 'day')).toBe(true)
+		const call = onMoreEventsClick.mock.calls.at(0)
+		const day = call?.at(0) as string
+		const events = call?.at(1) as CalendarEvent[]
+		expect(isSameDay(atUtc(day), initialDate)).toBe(true)
 		expect(events).toHaveLength(3)
 
-		// The built-in dialog must be bypassed when the callback is provided.
 		expect(screen.queryByRole('dialog')).toBeNull()
 	})
 })
@@ -141,9 +155,13 @@ describe('GridCell droppable ID uniqueness', () => {
 	})
 
 	test('all-day cell and midnight time cell for the same date render as separate droppable elements', () => {
-		const midnightDate = dayjs('2025-01-13T00:00:00.000Z')
+		const midnightDate = atUtc('2025-01-13T00:00:00.000Z')
 		render(
-			<CalendarProvider dayMaxEvents={3} initialDate={midnightDate}>
+			<CalendarProvider
+				dayMaxEvents={3}
+				initialDate={toOffsetIso(midnightDate)}
+				timezone="UTC"
+			>
 				<GridCell allDay day={midnightDate} gridType="day" />
 				<GridCell
 					day={midnightDate}
@@ -154,11 +172,9 @@ describe('GridCell droppable ID uniqueness', () => {
 			</CalendarProvider>
 		)
 
-		// Both cells render with distinct test IDs
 		expect(screen.getByTestId('day-cell-2025-01-13')).toBeInTheDocument()
 		expect(screen.getByTestId('day-cell-2025-01-13-00-00')).toBeInTheDocument()
 
-		// They are separate droppable cell DOM nodes (not sharing the same @dnd-kit registration)
 		const allDayDroppable = screen
 			.getByTestId('day-cell-2025-01-13')
 			.closest('.droppable-cell')
@@ -169,17 +185,21 @@ describe('GridCell droppable ID uniqueness', () => {
 	})
 
 	test('time cells for different hours on the same day render as separate droppable elements', () => {
-		const date = dayjs('2025-01-13T00:00:00.000Z')
+		const date = atUtc('2025-01-13T00:00:00.000Z')
 		render(
-			<CalendarProvider dayMaxEvents={3} initialDate={date}>
+			<CalendarProvider
+				dayMaxEvents={3}
+				initialDate={toOffsetIso(date)}
+				timezone="UTC"
+			>
 				<GridCell
-					day={date.hour(9)}
+					day={withTime(date, { hour: 9 })}
 					gridType="hour"
 					hour={9}
 					shouldRenderEvents={false}
 				/>
 				<GridCell
-					day={date.hour(10)}
+					day={withTime(date, { hour: 10 })}
 					gridType="hour"
 					hour={10}
 					shouldRenderEvents={false}

@@ -1,0 +1,40 @@
+{
+	"name": "@ilamy/adapter-vue",
+	"version": "4.0.0",
+	"private": true,
+	"description": "Vue 3.5+ component and composable adapter for @ilamy/calendar.",
+	"author": "Sujeet Kc",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/kcsujeet/ilamy-calendar.git"
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "CI=true NODE_ENV=production bunx bunup",
+		"test": "bun test",
+		"type-check": "bunx tsc --noEmit",
+		"lint": "bunx biome lint . --diagnostic-level=error",
+		"check": "bunx biome check . --diagnostic-level=error",
+		"ci": "bun run check && bun run type-check && bun run test && bun run build"
+	},
+	"dependencies": {
+		"@ilamy/core": "workspace:*",
+		"@ilamy/dom": "workspace:*"
+	},
+	"peerDependencies": {
+		"vue": "^3.5.0"
+	},
+	"devDependencies": {
+		"vue": "3.5.45"
+	}
+}

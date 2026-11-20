@@ -1,7 +1,18 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { beforeEach, describe, expect, it } from 'bun:test'
 import type { ClientRect, DragEndEvent } from '@dnd-kit/core'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	add,
+	elapsedDiff,
+	getOffsetString,
+	isSameInstant,
+	parseDate,
+	resolveZone,
+	toOffsetIso,
+	toUtcIso,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import {
 	calculateGrabOffset,
 	type DragSegment,
@@ -16,8 +27,27 @@ import {
 	getUpdatedEvent,
 } from './dnd-utils'
 
+const at = (iso: string, zone = 'UTC'): ZonedDate => {
+	const parsed = parseDate(iso, zone)
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const isoAt = (iso: string, zone = 'UTC'): string => toOffsetIso(at(iso, zone))
+
+const formatWallClock = (d: ZonedDate, includeMs = false): string => {
+	const date = `${String(d.year).padStart(4, '0')}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+	const time = `${String(d.hour).padStart(2, '0')}:${String(d.minute).padStart(2, '0')}`
+	if (!includeMs) {
+		return `${date}T${time}`
+	}
+	return `${date}T${time}:${String(d.second).padStart(2, '0')}.${String(d.millisecond).padStart(3, '0')}`
+}
+
 let cellType = 'day-cell'
-let cellDate = dayjs('2024-10-15T00:00:00')
+let cellDate = at('2024-10-15T00:00:00')
 let cellResourceId: string | number | undefined
 let allDayCell: boolean | undefined = false
 let hour: number | undefined
@@ -46,27 +76,27 @@ const getDragEvent = () => ({
 				date: cellDate,
 				allDay: allDayCell,
 				resourceId: cellResourceId,
-				hour: hour,
-				minute: minute,
+				hour,
+				minute,
 				disabled: disabledCell,
 			},
 		},
 	},
 })
 
-let start = dayjs('2024-06-15T00:00:00')
-let end = dayjs('2024-06-15T23:59:59')
+let start = at('2024-06-15T00:00:00')
+let end = at('2024-06-15T23:59:59')
 let allDay = false
 let resourceId: string | number | undefined
 let resourceIds: (string | number)[] | undefined
-const getActiveEvent = () => ({
+const getActiveEvent = (): CalendarEvent => ({
 	id: 'event-1',
 	title: 'Sample Event',
-	start: start,
-	end: end,
-	allDay: allDay,
-	resourceId: resourceId,
-	resourceIds: resourceIds,
+	start: toOffsetIso(start),
+	end: toOffsetIso(end),
+	allDay,
+	resourceId,
+	resourceIds,
 })
 
 // These fixtures are module-level and mutated per test; `hour` in particular
@@ -74,15 +104,15 @@ const getActiveEvent = () => ({
 // silently change what the next one exercises.
 beforeEach(() => {
 	cellType = 'day-cell'
-	cellDate = dayjs('2024-10-15T00:00:00')
+	cellDate = at('2024-10-15T00:00:00')
 	cellResourceId = undefined
 	allDayCell = false
 	hour = undefined
 	minute = undefined
 	sourceResourceId = undefined
 	disabledCell = undefined
-	start = dayjs('2024-06-15T00:00:00')
-	end = dayjs('2024-06-15T23:59:59')
+	start = at('2024-06-15T00:00:00')
+	end = at('2024-06-15T23:59:59')
 	allDay = false
 	resourceId = undefined
 	resourceIds = undefined
@@ -131,39 +161,39 @@ describe('getUpdatedEvent Utility Function', () => {
 			)
 
 		it('commits nothing on the day cell it already sits on', () => {
-			cellDate = dayjs('2024-06-15T00:00:00')
+			cellDate = at('2024-06-15T00:00:00')
 			expect(dropInPlace()).toBeNull()
 		})
 
 		it('commits nothing on the time slot it already starts in', () => {
-			start = dayjs('2024-06-15T10:00:00')
-			end = dayjs('2024-06-15T11:00:00')
-			cellDate = dayjs('2024-06-15T00:00:00')
+			start = at('2024-06-15T10:00:00')
+			end = at('2024-06-15T11:00:00')
+			cellDate = at('2024-06-15T00:00:00')
 			hour = 10
 			minute = 0
 			expect(dropInPlace()).toBeNull()
 		})
 
 		it('commits nothing on the all-day cell an all-day event already sits on', () => {
-			start = dayjs('2024-06-15T00:00:00')
-			end = dayjs('2024-06-16T00:00:00')
+			start = at('2024-06-15T00:00:00')
+			end = at('2024-06-16T00:00:00')
 			allDay = true
 			allDayCell = true
-			cellDate = dayjs('2024-06-15T00:00:00')
+			cellDate = at('2024-06-15T00:00:00')
 			expect(dropInPlace()).toBeNull()
 		})
 
 		it('still commits a move to another resource on the same slot', () => {
-			cellDate = dayjs('2024-06-15T00:00:00')
+			cellDate = at('2024-06-15T00:00:00')
 			resourceId = 'resource-1'
 			cellResourceId = 'resource-2'
 			expect(dropInPlace()).not.toBeNull()
 		})
 
 		it('still commits a drop that only changes the time', () => {
-			start = dayjs('2024-06-15T10:00:00')
-			end = dayjs('2024-06-15T11:00:00')
-			cellDate = dayjs('2024-06-15T00:00:00')
+			start = at('2024-06-15T10:00:00')
+			end = at('2024-06-15T11:00:00')
+			cellDate = at('2024-06-15T00:00:00')
 			hour = 10
 			minute = 30
 			expect(dropInPlace()).not.toBeNull()
@@ -178,16 +208,17 @@ describe('getUpdatedEvent Utility Function', () => {
 		expect(result).not.toBeNull()
 		const updates = result?.updates
 		if (!updates) return
-		expect(updates.start.format()).toBe(cellDate.format())
-		expect(updates.end.format()).toBe(
-			cellDate.add(end.diff(start, 'second'), 'second').format()
+		expect(updates.start).toBe(toOffsetIso(cellDate))
+		const durationMs = elapsedDiff(end, start, 'millisecond')
+		expect(updates.end).toBe(
+			toOffsetIso(add(cellDate, durationMs, 'millisecond'))
 		)
 		expect(updates.allDay).toBe(false)
 	})
 
 	describe('should handle all-day conversions correctly', () => {
 		it('should convert timed event to all-day when dropped on all-day cell', () => {
-			cellDate = dayjs('2024-10-25T00:00:00')
+			cellDate = at('2024-10-25T00:00:00')
 			allDayCell = true
 
 			const result = getUpdatedEvent(
@@ -198,21 +229,14 @@ describe('getUpdatedEvent Utility Function', () => {
 			const updates = result?.updates
 			if (!updates) return
 			expect(updates.allDay).toBe(true)
-			expect(updates.start.format()).toBe(dayjs(cellDate).format())
-			// This used to expect the old timed length (23:59:59) to be kept. An
-			// all-day end is the next midnight (RFC 5545 3.6.1), and FullCalendar
-			// resets the length when a drop crosses the all-day boundary
-			// (`defaultAllDayEventDuration` {day:1}, `event-mutation.ts:131-134`).
-			expect(updates.end.format()).toBe(dayjs(cellDate).add(1, 'day').format())
+			expect(updates.start).toBe(toOffsetIso(cellDate))
+			// RFC 5545 3.6.1: exclusive next midnight; FullCalendar resets length
+			// when crossing the all-day boundary (`defaultAllDayEventDuration` {day:1}).
+			expect(updates.end).toBe(toOffsetIso(add(cellDate, 1, 'day')))
 		})
 
-		// #322. This used to expect `false`: an all-day event dropped on a whole-day
-		// cell turned timed. But `allDay: false` with no hour is exactly what a
-		// month or resource day-grid cell reports, so every all-day event dragged
-		// in a month grid lost its all-day status. A drop changes an event's kind
-		// only when it crosses between an all-day area and a timed one
-		// (FullCalendar, interaction/src/interactions/EventDragging.ts:450,
-		// v6.1.21); a whole-day cell is neither, so the event keeps its own.
+		// #322. A drop changes an event's kind only when it crosses between an
+		// all-day area and a timed one (FullCalendar `EventDragging.ts:450`).
 		it('keeps an all-day event all-day when dropped on a whole-day cell that is not an all-day cell', () => {
 			allDay = true
 			allDayCell = false
@@ -225,10 +249,14 @@ describe('getUpdatedEvent Utility Function', () => {
 			const updates = result?.updates
 			if (!updates) return
 			expect(updates.allDay).toBe(true)
-			expect(updates.start.format()).toBe(dayjs(cellDate).format())
-			expect(updates.end.diff(updates.start, 'second')).toBe(
-				end.diff(start, 'second')
-			)
+			expect(updates.start).toBe(toOffsetIso(cellDate))
+			expect(
+				elapsedDiff(
+					at(updates.end ?? ''),
+					at(updates.start ?? ''),
+					'millisecond'
+				)
+			).toBe(elapsedDiff(end, start, 'millisecond'))
 		})
 
 		it('should retain all-day status when dropping all-day event on cell with all-day flag not defined', () => {
@@ -261,10 +289,7 @@ describe('getUpdatedEvent Utility Function', () => {
 		expect(updates.resourceId).toBe(cellResourceId)
 	})
 
-	// Cross-resource membership follows FullCalendar's resource mutation: remove
-	// the row the drag started from, add the drop target, dedupe, and leave an
-	// event that was not in the source row untouched.
-	// premium/packages/preact-scheduler/src/resource/EventDragging.ts
+	// Cross-resource membership follows FullCalendar's resource mutation.
 	describe('cross-resource drops (resourceIds)', () => {
 		it('should swap the source resource for the target and keep the others', () => {
 			resourceId = undefined
@@ -325,7 +350,7 @@ describe('getUpdatedEvent Utility Function', () => {
 	})
 
 	it('should calculate new start and end times correctly for time-cell drop', () => {
-		cellDate = dayjs('2024-10-20T00:00:00.000Z')
+		cellDate = at('2024-10-20T00:00:00.000Z')
 		cellType = 'time-cell'
 		hour = 14
 		minute = 30
@@ -337,10 +362,14 @@ describe('getUpdatedEvent Utility Function', () => {
 		expect(result).not.toBeNull()
 		const updates = result?.updates
 		if (!updates) return
-		const expectedStart = dayjs(cellDate).hour(hour).minute(minute)
-		const expectedEnd = expectedStart.add(end.diff(start, 'second'), 'second')
-		expect(updates.start.toISOString()).toBe(expectedStart.toISOString())
-		expect(updates.end.toISOString()).toBe(expectedEnd.toISOString())
+		const expectedStart = withTime(cellDate, { hour, minute })
+		const expectedEnd = add(
+			expectedStart,
+			elapsedDiff(end, start, 'millisecond'),
+			'millisecond'
+		)
+		expect(toUtcIso(at(updates.start ?? ''))).toBe(toUtcIso(expectedStart))
+		expect(toUtcIso(at(updates.end ?? ''))).toBe(toUtcIso(expectedEnd))
 		expect(updates.allDay).toBe(false)
 	})
 
@@ -361,18 +390,14 @@ describe('getUpdatedEvent Utility Function', () => {
 	})
 
 	/**
-	 * #248. A drag moves an event; it must not resize it. An end landing on
-	 * midnight used to be snapped back to the previous day's 23:59:59.999, which
-	 * shortened this two-hour event to 1h59m59.999s and reintroduced the
-	 * sub-second residue the form no longer produces. `end` is exclusive, so
-	 * midnight is a legitimate end and the layout already paints it on the right
-	 * day.
+	 * #248. A drag moves an event; it must not resize it. `end` is exclusive,
+	 * so midnight is a legitimate end and preserves the exact 2-hour duration.
 	 */
 	it('keeps an end that lands on midnight, preserving the duration', () => {
-		start = dayjs('2024-06-15T22:00:00')
-		end = dayjs('2024-06-16T00:00:00') // 2 hour duration
+		start = at('2024-06-15T22:00:00')
+		end = at('2024-06-16T00:00:00') // 2 hour duration
 		cellType = 'day-cell'
-		cellDate = dayjs('2024-10-22T22:00:00')
+		cellDate = at('2024-10-22T22:00:00')
 		allDay = false
 		hour = undefined
 		minute = undefined
@@ -384,19 +409,19 @@ describe('getUpdatedEvent Utility Function', () => {
 		expect(result).not.toBeNull()
 		const updates = result?.updates
 		if (!updates) return
-		expect(updates.start.format()).toBe(cellDate.format())
-		expect(updates.end.format()).toBe(cellDate.add(2, 'hour').format())
-		expect(updates.end.diff(updates.start, 'second')).toBe(7200)
+		expect(updates.start).toBe(toOffsetIso(cellDate))
+		expect(updates.end).toBe(toOffsetIso(add(cellDate, 2, 'hour')))
+		expect(
+			elapsedDiff(at(updates.end ?? ''), at(updates.start ?? ''), 'millisecond')
+		).toBe(7_200_000)
 	})
 
 	it('should handle dragging multi-day all-day event to time cell correctly', () => {
-		// Event ID 15 from seed.ts: Conference Nov 4-6 (all-day)
-		// Using endOf('day') for all-day events: Nov 4 00:00:00 to Nov 6 23:59:59.999
-		start = dayjs('2024-11-04T00:00:00.000Z')
-		end = dayjs('2024-11-06T23:59:59.999Z')
+		start = at('2024-11-04T00:00:00.000Z')
+		end = at('2024-11-06T23:59:59.999Z')
 		allDay = true
 		cellType = 'time-cell'
-		cellDate = dayjs('2024-11-04T00:00:00.000Z')
+		cellDate = at('2024-11-04T00:00:00.000Z')
 		hour = 1
 		minute = 0
 		cellResourceId = undefined
@@ -409,20 +434,18 @@ describe('getUpdatedEvent Utility Function', () => {
 		const updates = result?.updates
 		if (!updates) return
 
-		// This used to keep the 3 day length (to the second). Across the all-day
-		// boundary FullCalendar resets the length to the default timed duration,
-		// one hour (`event-mutation.ts:131-134`, `defaultTimedEventDuration`,
-		// `options.ts:486`, v7.1.1).
-		expect(updates.start.toISOString()).toBe('2024-11-04T01:00:00.000Z')
-		expect(updates.end.toISOString()).toBe('2024-11-04T02:00:00.000Z')
+		// Across the all-day boundary FullCalendar resets the length to the default
+		// timed duration, one hour (`defaultTimedEventDuration`, v7.1.1).
+		expect(toUtcIso(at(updates.start ?? ''))).toBe('2024-11-04T01:00:00.000Z')
+		expect(toUtcIso(at(updates.end ?? ''))).toBe('2024-11-04T02:00:00.000Z')
 		expect(updates.allDay).toBe(false)
 	})
 
 	describe('grab offset and time preservation (FullCalendar and Google Calendar behaviour)', () => {
 		it('should drop a timed event on the hovered hour slot', () => {
-			start = dayjs('2024-10-15T10:00:00.000Z')
-			end = dayjs('2024-10-15T11:00:00.000Z')
-			cellDate = dayjs('2024-10-15T00:00:00.000Z')
+			start = at('2024-10-15T10:00:00.000Z')
+			end = at('2024-10-15T11:00:00.000Z')
+			cellDate = at('2024-10-15T00:00:00.000Z')
 			hour = 14
 			minute = 0
 
@@ -431,20 +454,19 @@ describe('getUpdatedEvent Utility Function', () => {
 				getActiveEvent()
 			)
 
-			// An hour grid publishes `hour`; the drop must take it, not keep the
-			// event's own 10:00. Every cell reports type 'day-cell', so branching
-			// on the type sent this down the day path and never moved the event.
-			expect(result?.updates.start.toISOString()).toBe(
+			expect(toUtcIso(at(result?.updates.start ?? ''))).toBe(
 				'2024-10-15T14:00:00.000Z'
 			)
-			expect(result?.updates.end.toISOString()).toBe('2024-10-15T15:00:00.000Z')
+			expect(toUtcIso(at(result?.updates.end ?? ''))).toBe(
+				'2024-10-15T15:00:00.000Z'
+			)
 			expect(result?.updates.allDay).toBe(false)
 		})
 
 		it('should preserve grab offset in minutes when dropping on an hour slot', () => {
-			start = dayjs('2024-10-15T10:00:00.000Z')
-			end = dayjs('2024-10-15T12:00:00.000Z') // 2-hour event
-			cellDate = dayjs('2024-10-15T00:00:00.000Z')
+			start = at('2024-10-15T10:00:00.000Z')
+			end = at('2024-10-15T12:00:00.000Z') // 2-hour event
+			cellDate = at('2024-10-15T00:00:00.000Z')
 			hour = 14
 			minute = 0 // Hovering over 14:00 cell
 
@@ -456,17 +478,19 @@ describe('getUpdatedEvent Utility Function', () => {
 			)
 
 			// 14:00 - 30 minutes = 13:30
-			expect(result?.updates.start.toISOString()).toBe(
+			expect(toUtcIso(at(result?.updates.start ?? ''))).toBe(
 				'2024-10-15T13:30:00.000Z'
 			)
-			expect(result?.updates.end.toISOString()).toBe('2024-10-15T15:30:00.000Z')
+			expect(toUtcIso(at(result?.updates.end ?? ''))).toBe(
+				'2024-10-15T15:30:00.000Z'
+			)
 		})
 
 		it('should preserve grab offset in days when dropping on a day cell', () => {
-			start = dayjs('2024-10-15T00:00:00.000Z')
-			end = dayjs('2024-10-18T00:00:00.000Z') // 3-day event
+			start = at('2024-10-15T00:00:00.000Z')
+			end = at('2024-10-18T00:00:00.000Z') // 3-day event
 			allDay = true
-			cellDate = dayjs('2024-10-22T00:00:00.000Z') // Hovering over Oct 22
+			cellDate = at('2024-10-22T00:00:00.000Z') // Hovering over Oct 22
 			allDayCell = undefined
 
 			// Grabbed 1 day in (e.g. the middle day of the 3-day event)
@@ -477,16 +501,18 @@ describe('getUpdatedEvent Utility Function', () => {
 			)
 
 			// Oct 22 - 1 day = Oct 21
-			expect(result?.updates.start.toISOString()).toBe(
+			expect(toUtcIso(at(result?.updates.start ?? ''))).toBe(
 				'2024-10-21T00:00:00.000Z'
 			)
-			expect(result?.updates.end.toISOString()).toBe('2024-10-24T00:00:00.000Z')
+			expect(toUtcIso(at(result?.updates.end ?? ''))).toBe(
+				'2024-10-24T00:00:00.000Z'
+			)
 		})
 
 		it('should preserve time of day when moving a timed event between day cells', () => {
-			start = dayjs('2024-10-15T15:45:00.000Z') // 3:45 PM
-			end = dayjs('2024-10-15T17:15:00.000Z') // 5:15 PM
-			cellDate = dayjs('2024-10-25T00:00:00.000Z') // Dropping onto Oct 25
+			start = at('2024-10-15T15:45:00.000Z') // 3:45 PM
+			end = at('2024-10-15T17:15:00.000Z') // 5:15 PM
+			cellDate = at('2024-10-25T00:00:00.000Z') // Dropping onto Oct 25
 			allDayCell = undefined
 
 			const result = getUpdatedEvent(
@@ -495,70 +521,72 @@ describe('getUpdatedEvent Utility Function', () => {
 			)
 
 			// Keeps 15:45 on the new date, matching Google Calendar and FullCalendar
-			expect(result?.updates.start.toISOString()).toBe(
+			expect(toUtcIso(at(result?.updates.start ?? ''))).toBe(
 				'2024-10-25T15:45:00.000Z'
 			)
-			expect(result?.updates.end.toISOString()).toBe('2024-10-25T17:15:00.000Z')
+			expect(toUtcIso(at(result?.updates.end ?? ''))).toBe(
+				'2024-10-25T17:15:00.000Z'
+			)
 			expect(result?.updates.allDay).toBe(false)
 		})
 	})
 })
 
 describe('calculateDropTimes', () => {
-	const timedEvent = {
+	const timedEvent: CalendarEvent = {
 		id: 'event-1',
 		title: 'Sample Event',
-		start: dayjs('2024-10-15T10:00:00.000Z'),
-		end: dayjs('2024-10-15T11:00:00.000Z'),
-	} as CalendarEvent
+		start: '2024-10-15T10:00:00+00:00',
+		end: '2024-10-15T11:00:00+00:00',
+	}
 
 	it('takes the slot when the cell reports an hour', () => {
 		const result = calculateDropTimes(timedEvent, {
 			type: 'day-cell',
-			date: dayjs('2024-10-16T00:00:00.000Z'),
+			date: at('2024-10-16T00:00:00.000Z'),
 			hour: 9,
 			minute: 30,
 		})
 
-		expect(result.start.toISOString()).toBe('2024-10-16T09:30:00.000Z')
+		expect(toUtcIso(result.start)).toBe('2024-10-16T09:30:00.000Z')
 		expect(result.allDay).toBe(false)
 	})
 
 	it('keeps the clock when the cell reports no hour', () => {
 		const result = calculateDropTimes(timedEvent, {
 			type: 'day-cell',
-			date: dayjs('2024-10-16T00:00:00.000Z'),
+			date: at('2024-10-16T00:00:00.000Z'),
 		})
 
-		expect(result.start.toISOString()).toBe('2024-10-16T10:00:00.000Z')
+		expect(toUtcIso(result.start)).toBe('2024-10-16T10:00:00.000Z')
 		expect(result.allDay).toBe(false)
 	})
 
 	it('anchors to midnight when the cell is an all-day cell', () => {
 		const result = calculateDropTimes(timedEvent, {
 			type: 'day-cell',
-			date: dayjs('2024-10-16T00:00:00.000Z'),
+			date: at('2024-10-16T00:00:00.000Z'),
 			allDay: true,
 		})
 
-		expect(result.start.toISOString()).toBe('2024-10-16T00:00:00.000Z')
+		expect(toUtcIso(result.start)).toBe('2024-10-16T00:00:00.000Z')
 		expect(result.allDay).toBe(true)
 	})
 
 	describe('across the all-day boundary', () => {
-		const allDayEvent = {
+		const allDayEvent: CalendarEvent = {
 			id: 'event-2',
 			title: 'Day off',
 			allDay: true,
-			start: dayjs('2024-10-15T00:00:00.000'),
-			end: dayjs('2024-10-16T00:00:00.000'),
-		} as CalendarEvent
+			start: isoAt('2024-10-15T00:00:00.000'),
+			end: isoAt('2024-10-16T00:00:00.000'),
+		}
 		const slot = (grabMinutes: number) =>
 			calculateDropTimes(
 				allDayEvent,
 				{
 					type: 'day-cell',
-					date: dayjs('2024-10-17T00:00:00.000'),
+					date: at('2024-10-17T00:00:00.000'),
 					hour: 11,
 					minute: 0,
 				},
@@ -566,56 +594,44 @@ describe('calculateDropTimes', () => {
 			)
 
 		it('starts an all-day event at the slot wherever it was grabbed', () => {
-			expect(slot(0).start.format('YYYY-MM-DDTHH:mm:ss.SSS')).toBe(
+			expect(formatWallClock(slot(0).start, true)).toBe(
 				'2024-10-17T11:00:00.000'
 			)
-			expect(slot(600).start.format('YYYY-MM-DDTHH:mm:ss.SSS')).toBe(
+			expect(formatWallClock(slot(600).start, true)).toBe(
 				'2024-10-17T11:00:00.000'
 			)
 		})
 
 		it('makes an all-day event dropped on a time slot one hour long', () => {
-			expect(slot(0).end.format('YYYY-MM-DDTHH:mm:ss.SSS')).toBe(
-				'2024-10-17T12:00:00.000'
-			)
+			expect(formatWallClock(slot(0).end, true)).toBe('2024-10-17T12:00:00.000')
 			expect(slot(0).allDay).toBe(false)
 		})
 
 		it('makes a timed event dropped on the all-day row end at the next midnight', () => {
 			const result = calculateDropTimes(timedEvent, {
 				type: 'day-cell',
-				date: dayjs('2024-10-16T00:00:00.000'),
+				date: at('2024-10-16T00:00:00.000'),
 				allDay: true,
 			})
-			expect(result.end.format('YYYY-MM-DDTHH:mm:ss.SSS')).toBe(
-				'2024-10-17T00:00:00.000'
-			)
+			expect(formatWallClock(result.end, true)).toBe('2024-10-17T00:00:00.000')
 		})
 
 		it('keeps a multi-day all-day event its length on an all-day cell', () => {
-			const threeDays = {
+			const threeDays: CalendarEvent = {
 				...allDayEvent,
-				end: dayjs('2024-10-18T00:00:00.000'),
-			} as CalendarEvent
+				end: isoAt('2024-10-18T00:00:00.000'),
+			}
 			const result = calculateDropTimes(threeDays, {
 				type: 'day-cell',
-				date: dayjs('2024-10-20T00:00:00.000'),
+				date: at('2024-10-20T00:00:00.000'),
 				allDay: true,
 			})
-			expect(result.end.format('YYYY-MM-DDTHH:mm:ss.SSS')).toBe(
-				'2024-10-23T00:00:00.000'
-			)
+			expect(formatWallClock(result.end, true)).toBe('2024-10-23T00:00:00.000')
 		})
 	})
 
 	describe('across a clock change (America/New_York)', () => {
-		beforeEach(() => {
-			dayjs.tz.setDefault('America/New_York')
-		})
-
-		afterEach(() => {
-			dayjs.tz.setDefault()
-		})
+		const nyZone = 'America/New_York'
 
 		// A move applies one delta to both edges (`event-mutation.ts:110-114`,
 		// `marker.ts:48-58`, v7.1.1), so the event keeps its WALL-CLOCK length.
@@ -624,20 +640,20 @@ describe('calculateDropTimes', () => {
 			endWallClock: string,
 			targetDay: string
 		) => {
-			const event = {
+			const event: CalendarEvent = {
 				id: 'event-3',
 				title: 'Shift',
-				start: dayjs(startWallClock),
-				end: dayjs(endWallClock),
-			} as CalendarEvent
+				start: isoAt(startWallClock, nyZone),
+				end: isoAt(endWallClock, nyZone),
+			}
 			const result = calculateDropTimes(event, {
 				type: 'day-cell',
-				date: dayjs(`${targetDay}T00:00:00`),
+				date: at(`${targetDay}T00:00:00`, nyZone),
 			})
 			return {
-				start: result.start.format('YYYY-MM-DDTHH:mm'),
-				end: result.end.format('YYYY-MM-DDTHH:mm'),
-				endOffset: result.end.format('Z'),
+				start: formatWallClock(result.start),
+				end: formatWallClock(result.end),
+				endOffset: getOffsetString(result.end),
 			}
 		}
 
@@ -658,7 +674,7 @@ describe('calculateDropTimes', () => {
 		})
 
 		it('moves an end that lands in the skipped hour forward, as a clock would', () => {
-			// 01:00 to 02:30 on 8 March, moved to 9 March, where 02:30 does not exist.
+			// 00:00 to 02:30 on 8 March, moved to 9 March, where 02:30 does not exist.
 			const landed = move(
 				'2025-03-08T00:00:00',
 				'2025-03-08T02:30:00',
@@ -669,20 +685,16 @@ describe('calculateDropTimes', () => {
 		})
 	})
 
-	// A time-slot drop reports its column's date. On a clock-change day that
-	// date can carry the offset of the day's midnight, and `.hour()` keeps it.
 	it('puts a drop on the 10:00 slot of New York spring-forward day at 14:00Z', () => {
-		dayjs.tz.setDefault('America/New_York')
-		const midnightEST = dayjs('2025-03-09T00:00:00.000')
+		const midnightEST = at('2025-03-09T00:00:00', 'America/New_York')
 		const result = calculateDropTimes(timedEvent, {
 			type: 'time-cell',
 			date: midnightEST,
 			hour: 10,
 			minute: 0,
 		})
-		dayjs.tz.setDefault()
 
-		expect(result.start.toISOString()).toBe('2025-03-09T14:00:00.000Z')
+		expect(toUtcIso(result.start)).toBe('2025-03-09T14:00:00.000Z')
 	})
 })
 
@@ -693,24 +705,28 @@ describe('calculateGrabOffset', () => {
 
 	// A 3-day event (Jan 1..Jan 3; `end` is exclusive, #248) whose row shows
 	// only its last two days, so the rendered bar starts mid-event.
-	const multiDayEvent = {
+	const multiDayStart = at('2025-01-01T00:00:00.000Z')
+	const multiDayEnd = at('2025-01-04T00:00:00.000Z')
+	const multiDayEvent: CalendarEvent = {
 		id: 'event-1',
 		title: 'Conference',
-		start: dayjs('2025-01-01T00:00:00.000Z'),
-		end: dayjs('2025-01-04T00:00:00.000Z'),
+		start: toOffsetIso(multiDayStart),
+		end: toOffsetIso(multiDayEnd),
 		allDay: true,
-	} as CalendarEvent
+	}
 
-	const twoHourEvent = {
+	const twoHourStart = at('2025-01-01T10:00:00.000Z')
+	const twoHourEnd = at('2025-01-01T12:00:00.000Z')
+	const twoHourEvent: CalendarEvent = {
 		id: 'event-2',
 		title: 'Workshop',
-		start: dayjs('2025-01-01T10:00:00.000Z'),
-		end: dayjs('2025-01-01T12:00:00.000Z'),
-	} as CalendarEvent
+		start: toOffsetIso(twoHourStart),
+		end: toOffsetIso(twoHourEnd),
+	}
 
 	const verticalSegment: DragSegment = {
-		start: twoHourEvent.start,
-		end: twoHourEvent.end,
+		start: twoHourStart,
+		end: twoHourEnd,
 		axis: 'vertical',
 	}
 
@@ -753,16 +769,13 @@ describe('calculateGrabOffset', () => {
 	})
 
 	it('measures a clipped bar against the span it draws, not the whole event', () => {
-		// The row shows Jan 2..Jan 3, so the bar's midpoint is Jan 3, two days
-		// into the event. Scaling the fraction by the event's own 3-day span
-		// would report one day and drop the event a day early.
 		const offset = calculateGrabOffset({
 			activeEvent: multiDayEvent,
 			initialRect: rect,
 			activatorEvent: pointerAt(550, 100),
 			segment: {
-				start: dayjs('2025-01-02T00:00:00.000Z'),
-				end: dayjs('2025-01-04T00:00:00.000Z'),
+				start: at('2025-01-02T00:00:00.000Z'),
+				end: at('2025-01-04T00:00:00.000Z'),
 				axis: 'horizontal',
 			},
 			slotDurationMinutes: 60,
@@ -777,8 +790,8 @@ describe('calculateGrabOffset', () => {
 			initialRect: rect,
 			activatorEvent: pointerAt(900, 100),
 			segment: {
-				start: multiDayEvent.start,
-				end: multiDayEvent.end,
+				start: multiDayStart,
+				end: multiDayEnd,
 				axis: 'horizontal',
 			},
 			slotDurationMinutes: 60,
@@ -790,23 +803,24 @@ describe('calculateGrabOffset', () => {
 
 	describe('on a bar that spans hidden days', () => {
 		// Fri Jan 10 -> Tue Jan 14, with Sat and Sun hidden: the bar draws three
-		// equal columns (Fri, Mon, Tue). Noon UTC is the same calendar day in
-		// every zone from Vancouver to Tokyo.
-		const fridayToTuesday = {
+		// equal columns (Fri, Mon, Tue).
+		const fridayStart = at('2025-01-10T12:00:00.000Z')
+		const tuesdayEnd = at('2025-01-14T18:00:00.000Z')
+		const fridayToTuesday: CalendarEvent = {
 			id: 'event-3',
 			title: 'Offsite',
-			start: dayjs('2025-01-10T12:00:00.000Z'),
-			end: dayjs('2025-01-14T18:00:00.000Z'),
+			start: toOffsetIso(fridayStart),
+			end: toOffsetIso(tuesdayEnd),
 			allDay: true,
-		} as CalendarEvent
+		}
 		const grabAt = (clientX: number) =>
 			calculateGrabOffset({
 				activeEvent: fridayToTuesday,
 				initialRect: rect,
 				activatorEvent: pointerAt(clientX, 100),
 				segment: {
-					start: fridayToTuesday.start,
-					end: fridayToTuesday.end,
+					start: fridayStart,
+					end: tuesdayEnd,
 					axis: 'horizontal',
 					hiddenDays: new Set([0, 6]),
 				},
@@ -823,56 +837,42 @@ describe('calculateGrabOffset', () => {
 	})
 
 	it('keeps the wall clock across a DST transition, not the stale offset', () => {
-		// Moving a timed event between DAY cells keeps its time of day. Building
-		// that with `.hour()/.minute()` holds the clock face but carries the
-		// SOURCE day's UTC offset, so landing on a spring-forward day serialises
-		// an hour late: the grid shows 10:00 while `onEventUpdate` reports 15:00Z
-		// where New York 10:00 is 14:00Z. `docs/timezones.md` documents the
-		// re-anchor this relies on.
-		dayjs.tz.setDefault('America/New_York')
-		const march9 = dayjs.tz('2025-03-09T00:00:00', 'America/New_York')
-		const tenAm = dayjs.tz('2025-03-05T10:00:00', 'America/New_York')
+		const nyZone = 'America/New_York'
+		const march9 = at('2025-03-09T00:00:00', nyZone)
+		const tenAm = at('2025-03-05T10:00:00', nyZone)
 
 		const result = calculateDropTimes(
 			{
 				id: 'timed',
 				title: 'Timed',
-				start: tenAm,
-				end: tenAm.add(1, 'hour'),
-			} as CalendarEvent,
+				start: toOffsetIso(tenAm),
+				end: toOffsetIso(add(tenAm, 1, 'hour')),
+			},
 			{ type: 'day-cell', date: march9 },
 			{ minutes: 0, days: 0 }
 		)
 
-		const trueTenAm = dayjs.tz('2025-03-09T10:00:00', 'America/New_York')
-		expect(result.start.toISOString()).toBe(trueTenAm.toISOString())
-		dayjs.tz.setDefault()
+		const trueTenAm = at('2025-03-09T10:00:00', nyZone)
+		expect(toUtcIso(result.start)).toBe(toUtcIso(trueTenAm))
 	})
 
 	it('reads the grabbed day from the column, not from elapsed time', () => {
-		// A month row draws a multi-day bar across WHOLE, EQUAL day columns, so
-		// the pointer's fraction across the bar is a fraction of columns. Mapping
-		// it through elapsed time instead only agrees when the event is
-		// midnight-aligned (which every other fixture here is). For a timed span
-		// the two diverge and the drop lands a day out.
-		//
-		// Jan 1 09:00 -> Jan 4 17:00 draws 4 columns over the 700px rect at
-		// left 200, so column 0 (Jan 1) is x 200..375. x=370 is inside it.
-		// Time-proportionally that same fraction is 19.4h past 09:00, i.e. Jan 2.
-		const timedMultiDay = {
+		const timedStart = at('2025-01-01T09:00:00.000Z')
+		const timedEnd = at('2025-01-04T17:00:00.000Z')
+		const timedMultiDay: CalendarEvent = {
 			id: 'timed-multi-day',
 			title: 'Timed multi-day',
-			start: dayjs('2025-01-01T09:00:00.000Z'),
-			end: dayjs('2025-01-04T17:00:00.000Z'),
-		} as CalendarEvent
+			start: toOffsetIso(timedStart),
+			end: toOffsetIso(timedEnd),
+		}
 
 		const offset = calculateGrabOffset({
 			activeEvent: timedMultiDay,
 			initialRect: rect,
 			activatorEvent: pointerAt(370, 100),
 			segment: {
-				start: timedMultiDay.start,
-				end: timedMultiDay.end,
+				start: timedStart,
+				end: timedEnd,
 				axis: 'horizontal',
 			},
 			slotDurationMinutes: 60,
@@ -895,13 +895,16 @@ describe('calculateGrabOffset', () => {
 })
 
 describe('calculateResizeTimes', () => {
-	const originalTz = dayjs.tz.guess()
-	const at = (iso: string) => dayjs(iso)
-	const mk = (startISO: string, endISO: string, extra = {}): CalendarEvent => ({
+	const mk = (
+		startISO: string,
+		endISO: string,
+		extra: Partial<CalendarEvent> = {},
+		zone = 'UTC'
+	): CalendarEvent => ({
 		id: 'resized',
 		title: 'Resized',
-		start: at(startISO),
-		end: at(endISO),
+		start: isoAt(startISO, zone),
+		end: isoAt(endISO, zone),
 		...extra,
 	})
 	/** The time slot a pointer hovers: `slotMinutes` wide when it has a minute, an hour otherwise. */
@@ -909,20 +912,21 @@ describe('calculateResizeTimes', () => {
 		dayISO: string,
 		hourOfDay: number,
 		minuteOfHour?: number,
-		slotMinutes = 60
+		slotMinutes = 60,
+		zone = 'UTC'
 	): DropCellData => ({
 		type: 'day-cell',
-		date: at(dayISO),
+		date: at(dayISO, zone),
 		hour: hourOfDay,
 		minute: minuteOfHour,
 		slotDurationMinutes: slotMinutes,
 	})
-	const day = (dayISO: string): DropCellData => ({
+	const day = (dayISO: string, zone = 'UTC'): DropCellData => ({
 		type: 'day-cell',
-		date: at(dayISO),
+		date: at(dayISO, zone),
 	})
 	const span = (resized: ReturnType<typeof calculateResizeTimes>) =>
-		resized && [resized.start.format(), resized.end.format()]
+		resized && [toOffsetIso(resized.start), toOffsetIso(resized.end)]
 
 	describe('the end edge in a time grid', () => {
 		const meeting = mk('2025-03-12T09:00:00', '2025-03-12T10:00:00')
@@ -939,8 +943,8 @@ describe('calculateResizeTimes', () => {
 					'end'
 				)
 				expect(span(resized)).toEqual([
-					at('2025-03-12T09:00:00').format(),
-					at(expected).format(),
+					isoAt('2025-03-12T09:00:00'),
+					isoAt(expected),
 				])
 			}
 		)
@@ -952,8 +956,8 @@ describe('calculateResizeTimes', () => {
 				'end'
 			)
 			expect(span(resized)).toEqual([
-				at('2025-03-12T09:00:00').format(),
-				at('2025-03-12T13:00:00').format(),
+				isoAt('2025-03-12T09:00:00'),
+				isoAt('2025-03-12T13:00:00'),
 			])
 		})
 
@@ -963,7 +967,9 @@ describe('calculateResizeTimes', () => {
 				slot('2025-03-13T00:00:00', 8, 0, 30),
 				'end'
 			)
-			expect(resized?.start.isSame(meeting.start)).toBe(true)
+			expect(
+				resized !== null && isSameInstant(resized.start, at(meeting.start))
+			).toBe(true)
 		})
 	})
 
@@ -976,8 +982,8 @@ describe('calculateResizeTimes', () => {
 				'start'
 			)
 			expect(span(resized)).toEqual([
-				at('2025-03-12T08:15:00').format(),
-				at('2025-03-12T10:00:00').format(),
+				isoAt('2025-03-12T08:15:00'),
+				isoAt('2025-03-12T10:00:00'),
 			])
 		})
 	})
@@ -993,8 +999,8 @@ describe('calculateResizeTimes', () => {
 				'end'
 			)
 			expect(span(resized)).toEqual([
-				at('2025-03-12T00:00:00').format(),
-				at('2025-03-15T00:00:00').format(),
+				isoAt('2025-03-12T00:00:00'),
+				isoAt('2025-03-15T00:00:00'),
 			])
 		})
 
@@ -1008,8 +1014,8 @@ describe('calculateResizeTimes', () => {
 				'start'
 			)
 			expect(span(resized)).toEqual([
-				at('2025-03-11T00:00:00').format(),
-				at('2025-03-14T00:00:00').format(),
+				isoAt('2025-03-11T00:00:00'),
+				isoAt('2025-03-14T00:00:00'),
 			])
 		})
 
@@ -1026,12 +1032,12 @@ describe('calculateResizeTimes', () => {
 				'start'
 			)
 			expect(span(endResized)).toEqual([
-				at('2025-03-12T09:00:00').format(),
-				at('2025-03-15T17:00:00').format(),
+				isoAt('2025-03-12T09:00:00'),
+				isoAt('2025-03-15T17:00:00'),
 			])
 			expect(span(startResized)).toEqual([
-				at('2025-03-11T09:00:00').format(),
-				at('2025-03-13T17:00:00').format(),
+				isoAt('2025-03-11T09:00:00'),
+				isoAt('2025-03-13T17:00:00'),
 			])
 		})
 
@@ -1044,7 +1050,9 @@ describe('calculateResizeTimes', () => {
 				day('2025-03-18T00:00:00'),
 				'end'
 			)
-			expect(resized?.end.format()).toBe(at('2025-03-19T00:00:00').format())
+			expect(resized && toOffsetIso(resized.end)).toBe(
+				isoAt('2025-03-19T00:00:00')
+			)
 		})
 	})
 
@@ -1083,40 +1091,37 @@ describe('calculateResizeTimes', () => {
 	})
 
 	describe('on the day the clocks spring forward (America/New_York, 9 Mar 2025)', () => {
-		beforeEach(() => {
-			dayjs.tz.setDefault('America/New_York')
-		})
-
-		afterEach(() => {
-			dayjs.tz.setDefault(originalTz)
-		})
+		const nyZone = 'America/New_York'
 
 		it('ends at the wall-clock end of the hovered slot, not an hour out', () => {
-			const overnight = mk('2025-03-08T20:00:00', '2025-03-09T00:30:00')
+			const overnight = mk(
+				'2025-03-08T20:00:00',
+				'2025-03-09T00:30:00',
+				{},
+				nyZone
+			)
 			const resized = calculateResizeTimes(
 				overnight,
-				slot('2025-03-09T00:00:00', 10, 0, 30),
+				slot('2025-03-09T00:00:00', 10, 0, 30, nyZone),
 				'end'
 			)
-			// 10:30 EDT is 14:30Z. A slot built with `.hour(10)` on the EST midnight
-			// carries -05:00 and reads 15:30Z.
-			expect(resized?.end.toISOString()).toBe('2025-03-09T14:30:00.000Z')
+			// 10:30 EDT is 14:30Z.
+			expect(resized && toUtcIso(resized.end)).toBe('2025-03-09T14:30:00.000Z')
 		})
 
 		it('keeps an end that follows the change at the same wall-clock time', () => {
-			const block = mk('2025-03-08T09:00:00', '2025-03-08T17:00:00')
+			const block = mk('2025-03-08T09:00:00', '2025-03-08T17:00:00', {}, nyZone)
 			const resized = calculateResizeTimes(
 				block,
-				day('2025-03-10T00:00:00'),
+				day('2025-03-10T00:00:00', nyZone),
 				'end'
 			)
-			expect(resized?.end.toISOString()).toBe('2025-03-10T21:00:00.000Z')
+			expect(resized && toUtcIso(resized.end)).toBe('2025-03-10T21:00:00.000Z')
 		})
 	})
 })
 
 describe('snapping inside a cell', () => {
-	const at = (iso: string) => dayjs(iso)
 	/** An hour cell with no `minute`, the way a one-hour slot and a timeline column report it. */
 	const hourCell = (hourOfDay: number, snapMinutes?: number): DropCellData => ({
 		type: 'day-cell',
@@ -1125,12 +1130,12 @@ describe('snapping inside a cell', () => {
 		slotDurationMinutes: 60,
 		snapMinutes,
 	})
-	const meeting = {
+	const meeting: CalendarEvent = {
 		id: 'm',
 		title: 'Meeting',
-		start: at('2025-03-12T14:00:00'),
-		end: at('2025-03-12T15:00:00'),
-	} as CalendarEvent
+		start: isoAt('2025-03-12T14:00:00'),
+		end: isoAt('2025-03-12T15:00:00'),
+	}
 
 	describe('getSnappedOverData', () => {
 		const rect = { top: 100, left: 200, width: 80, height: 60 }
@@ -1156,8 +1161,6 @@ describe('snapping inside a cell', () => {
 		})
 
 		it('measures the pointer against the cell where it is now, not where it was', () => {
-			// The same pointer over the same cell, which a scroll has moved 30px up:
-			// the pointer is now further down the cell.
 			const cell: DropCellData = { ...hourCell(9, 15), axis: 'vertical' }
 			const pointer = { x: 210, y: 105 }
 			const before = getSnappedOverData(overCell(cell), pointer)
@@ -1180,10 +1183,6 @@ describe('snapping inside a cell', () => {
 		})
 
 		describe('over a time column (one drop target for all its slots)', () => {
-			// Two hour rows of two 30-minute slots, as the grid draws them: the first
-			// slot of an hour is 30.5px and the last gives 1px to the line below it,
-			// so a row is 60px and the next starts 1px after it. Rows span 100-160
-			// and 161-221.
 			const tops = [100, 130.5, 161, 191.5]
 			const heights = [30.5, 29.5, 30.5, 29.5]
 			let scrolledBy = 0
@@ -1192,22 +1191,24 @@ describe('snapping inside a cell', () => {
 			})
 			const slotAt = (
 				index: number,
-				hour: number,
-				minute: number
+				slotHour: number,
+				slotMinute: number
 			): DropSlot => ({
 				data: {
 					type: 'day-cell',
-					date: at('2025-03-12T00:00:00').hour(hour).minute(minute),
-					hour,
-					minute,
+					date: withTime(at('2025-03-12T00:00:00'), {
+						hour: slotHour,
+						minute: slotMinute,
+					}),
+					hour: slotHour,
+					minute: slotMinute,
 					slotDurationMinutes: 30,
 					axis: 'vertical',
 				},
-				// Read where it is now, as the grid draws it after any scroll.
 				element: {
 					getBoundingClientRect: () => {
-						const top = tops[index] - scrolledBy
-						const height = heights[index]
+						const top = (tops.at(index) ?? 0) - scrolledBy
+						const height = heights.at(index) ?? 0
 						return {
 							top,
 							bottom: top + height,
@@ -1228,19 +1229,17 @@ describe('snapping inside a cell', () => {
 			const overColumn = (published: Array<DropSlot | undefined>) =>
 				({
 					id: 'column',
-					// Not where the slots are drawn: it must not be what a slot is read from.
 					rect: { top: 0, left: 0, width: 1, height: 1 },
 					data: { current: { slots: published } },
 				}) as unknown as DragEndEvent['over']
 			const slotAtY = (y: number) =>
 				getSnappedOverData(overColumn(slots), { x: 210, y })
 			const startAt = (y: number) => {
-				const slot = slotAtY(y)
-				return slot && [slot.hour, slot.minute]
+				const resolved = slotAtY(y)
+				return resolved && [resolved.hour, resolved.minute]
 			}
 
 			it('resolves the slot from the pointer height, at the edges the slots are drawn with', () => {
-				// The 9:30 slot starts at 130.5, not at the 130 an equal split gives.
 				expect([100, 130.4, 130.6, 160].map(startAt)).toEqual([
 					[9, 0],
 					[9, 0],
@@ -1256,8 +1255,6 @@ describe('snapping inside a cell', () => {
 			})
 
 			it('gives the gap between two rows to the row above', () => {
-				// dnd-kit hit-tests whole-pixel mouse coordinates, so the gap, which
-				// the pointer can only be in by a fraction, was the last slot above it.
 				expect([160.2, 160.5, 160.9].map(startAt)).toEqual([
 					[9, 30],
 					[9, 30],
@@ -1266,8 +1263,6 @@ describe('snapping inside a cell', () => {
 			})
 
 			it('gives an edge shared by two slots to the earlier one', () => {
-				// Registered cells each contained their own edges, and the one
-				// registered first won a point on both.
 				expect([130.5, 191.5].map(startAt)).toEqual([
 					[9, 0],
 					[10, 0],
@@ -1280,7 +1275,6 @@ describe('snapping inside a cell', () => {
 
 			it('reads the slots where they are drawn now, not where they were', () => {
 				scrolledBy = 30
-				// The pointer has not moved, the grid has: 105 is now over the 9:30 slot.
 				expect(startAt(105)).toEqual([9, 30])
 			})
 
@@ -1290,9 +1284,9 @@ describe('snapping inside a cell', () => {
 			})
 
 			it('still snaps finer than the slot it picked', () => {
-				const finer = slots.map((slot) => ({
-					...slot,
-					data: { ...slot.data, snapMinutes: 10 },
+				const finer = slots.map((entry) => ({
+					...entry,
+					data: { ...entry.data, snapMinutes: 10 },
 				}))
 				// 28 of the 29.5px of the 9:30 slot is its last 10-minute piece.
 				const snapped = getSnappedOverData(overColumn(finer), {
@@ -1326,9 +1320,7 @@ describe('snapping inside a cell', () => {
 				x: 0,
 				y: 130,
 			})
-			expect(result?.updates.start?.format()).toBe(
-				at('2025-03-12T09:30:00').format()
-			)
+			expect(result?.updates.start).toBe(isoAt('2025-03-12T09:30:00'))
 		})
 
 		it('commits nothing when released over a slot that has not published itself', () => {
@@ -1348,7 +1340,6 @@ describe('snapping inside a cell', () => {
 })
 
 describe('getPressedResizeEdge', () => {
-	/** The mousedown dnd-kit reports as the activator, dispatched on `target`. */
 	const pressOn = (target: Element) => {
 		const press = new Event('mousedown')
 		target.dispatchEvent(press)
@@ -1390,22 +1381,24 @@ describe('getPressedResizeEdge', () => {
 })
 
 // Europe/London, Lisbon and Dublin read 0 in winter; with no `timezone` prop a
-// drop across the 30 March change landed an hour off.
+// drop across the 30 March change landed an hour off under dayjs. Temporal
+// resolves the machine zone cleanly without offset drift.
 describe('calculateDropTimes across the 30 March change, no calendar zone', () => {
 	const dropOnMachineIn = (machineZone: string): string[] => {
 		const script = `
-			import dayjs from '@ilamy/utils/dayjs'
+			import { parseDate, resolveZone, toOffsetIso, toUtcIso } from '@ilamy/utils/temporal'
 			import { calculateDropTimes } from '${import.meta.dir}/dnd-utils.ts'
+			const zone = resolveZone()
 			const allDayEvent = {
 				id: 'a', title: 'a', uid: 'a', allDay: true,
-				start: dayjs('2025-03-29T00:00:00.000'),
-				end: dayjs('2025-03-30T00:00:00.000'),
+				start: toOffsetIso(parseDate('2025-03-29T00:00:00', zone)),
+				end: toOffsetIso(parseDate('2025-03-30T00:00:00', zone)),
 			}
 			const dropped = calculateDropTimes(allDayEvent, {
-				date: dayjs('2025-03-30T00:00:00.000'),
+				date: parseDate('2025-03-30T00:00:00', zone),
 				allDay: false,
 			})
-			console.log(JSON.stringify([dropped.start, dropped.end].map((d) => d.toISOString())))
+			console.log(JSON.stringify([dropped.start, dropped.end].map(toUtcIso)))
 		`
 		const child = Bun.spawnSync(['bun', '-e', script], {
 			env: { ...process.env, TZ: machineZone },
@@ -1416,6 +1409,7 @@ describe('calculateDropTimes across the 30 March change, no calendar zone', () =
 	it.each(['Europe/London', 'Europe/Lisbon', 'Europe/Dublin'])(
 		'a one-day all-day event dropped on the 30th covers that day to the next midnight, 00:00 BST (%s)',
 		(machineZone) => {
+			expect(resolveZone()).toBeTruthy()
 			expect(dropOnMachineIn(machineZone)).toEqual([
 				'2025-03-30T00:00:00.000Z',
 				'2025-03-30T23:00:00.000Z',

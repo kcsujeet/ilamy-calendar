@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import type { Resource } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import { add, dayKey, parseDate, toOffsetIso } from '@ilamy/utils/temporal'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import {
@@ -15,8 +15,19 @@ import {
 } from '@/testing/scroll-test-fixtures'
 import { HorizontalGrid } from './horizontal-grid'
 
-const initialDate = dayjs('2025-01-01T00:00:00.000Z')
-const mockDays = [initialDate, initialDate.add(1, 'day')]
+const atUtc = (iso: string) => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const initialZoned = atUtc('2025-01-01T00:00:00.000Z')
+const initialDate = toOffsetIso(initialZoned)
+const mockZonedDays = [initialZoned, add(initialZoned, 1, 'day')]
+const mockDays = mockZonedDays.map(toOffsetIso)
+
 const mockRows = [
 	{
 		id: 'res-1',
@@ -25,7 +36,7 @@ const mockRows = [
 		columns: [
 			{
 				id: 'label-col',
-				day: dayjs(),
+				day: '2025-02-01T00:00:00+00:00',
 				gridType: 'day' as const,
 				renderCell: ({ resource }: { resource?: Resource }) => (
 					<div data-testid={`horizontal-row-label-${resource?.id}`}>
@@ -34,7 +45,7 @@ const mockRows = [
 				),
 			},
 			...mockDays.map((day) => ({
-				id: `col-${day.toISOString()}`,
+				id: `col-${day}`,
 				day,
 				gridType: 'day' as const,
 			})),
@@ -49,6 +60,7 @@ const renderHorizontalGrid = (props = {}, providerProps = {}) => {
 			events={[]}
 			initialDate={initialDate}
 			resources={[]}
+			timezone="UTC"
 			{...providerProps}
 		>
 			<HorizontalGrid rows={mockRows} {...props}>
@@ -85,14 +97,15 @@ describe('HorizontalGrid', () => {
 	test('renders cells in rows', () => {
 		renderHorizontalGrid()
 
-		// GridCell by default has data-testid="day-cell-{YYYY-MM-DD}"
-
 		expect(
-			screen.getByTestId(`day-cell-${mockDays[0].format('YYYY-MM-DD')}`)
+			screen.getByTestId(
+				`day-cell-${dayKey(mockZonedDays.at(0) ?? initialZoned)}`
+			)
 		).toBeInTheDocument()
-
 		expect(
-			screen.getByTestId(`day-cell-${mockDays[1].format('YYYY-MM-DD')}`)
+			screen.getByTestId(
+				`day-cell-${dayKey(mockZonedDays.at(1) ?? initialZoned)}`
+			)
 		).toBeInTheDocument()
 	})
 
@@ -117,7 +130,6 @@ describe('HorizontalGrid', () => {
 
 		testScrollingWhenHoursChange('horizontal', getScrollTo)
 
-		// `asDays` groups each row's hours into one column instead of one per hour.
 		const buildGrid = (
 			startTimes: number[],
 			{
@@ -133,7 +145,7 @@ describe('HorizontalGrid', () => {
 					gridType: 'hour' as const,
 				}
 				const hourColumns = hours.map((hour) => ({
-					id: hour.toISOString(),
+					id: hour,
 					day: hour,
 					gridType: 'hour' as const,
 				}))
@@ -174,7 +186,6 @@ describe('HorizontalGrid', () => {
 				</ScrollTestProvider>
 			)
 
-			// With no cell holding now and no hour for scrollTime, it opens at the start.
 			expect(getScrollTo()).toHaveBeenLastCalledWith({
 				left: 0,
 				behavior: 'auto',
@@ -190,9 +201,6 @@ describe('HorizontalGrid', () => {
 			expect(getScrollTo()).toHaveBeenCalledTimes(0)
 		})
 
-		// A horizontal week lays each day's own hours out side by side, so
-		// Wednesday opening earlier adds columns even though Sunday already
-		// opens at six.
 		test("reapplies when a later day's hours change", () => {
 			const { rerender } = render(
 				buildScrollWeek('horizontal', NARROW_BUSINESS_START_HOUR)
@@ -204,8 +212,6 @@ describe('HorizontalGrid', () => {
 	})
 
 	describe('sticky insets', () => {
-		// happy-dom lays nothing out, so every rect is empty. Only elements the
-		// grid marks as sticky get a size, which is all the measurement reads.
 		const originalRect = HTMLElement.prototype.getBoundingClientRect
 		const RESOURCE_COLUMN_WIDTH = 160
 		const HEADER_HEIGHT = 48

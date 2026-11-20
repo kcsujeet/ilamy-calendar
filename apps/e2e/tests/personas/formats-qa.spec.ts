@@ -135,7 +135,8 @@ test.describe('persona 1: international user', () => {
 						locale,
 						opts,
 						'2025-03-12T09:30:00.000Z',
-						timezone
+						timezone,
+						'2025-03-12T10:00:00.000Z'
 					)
 					const expectedGutter = await intl(
 						page,
@@ -163,7 +164,8 @@ test.describe('persona 1: international user', () => {
 					locale,
 					JSON.parse(HM),
 					'2025-03-12T09:30:00.000Z',
-					timezone
+					timezone,
+					'2025-03-12T10:00:00.000Z'
 				)
 				await expect(grid.bars('short-2')).toContainText(expectedBar)
 			})
@@ -557,6 +559,7 @@ test.describe('persona 2: designer', () => {
 			const grid = await open(page, {
 				scenario: 'basic',
 				view,
+				plugins: view === 'year' ? ['year'] : undefined,
 				settings: { titleFormat: format },
 			})
 			await expect(grid.title, view).toHaveText(expected)
@@ -565,7 +568,7 @@ test.describe('persona 2: designer', () => {
 })
 
 test.describe('persona 3: upgrader', () => {
-	test('week: gutter, header, bar, title exactly as before', async ({
+	test('week: gutter, header, bar (D9 default times), title', async ({
 		page,
 	}) => {
 		const grid = await open(page, { scenario: 'short-events', view: 'week' })
@@ -576,12 +579,14 @@ test.describe('persona 3: upgrader', () => {
 		await expect(page.getByTestId('week-header-weekday-wednesday')).toHaveText(
 			'Wed12'
 		)
-		await expect(grid.bars('short-1')).toHaveText('Quarter hour')
-		await expect(grid.bars('short-3')).toHaveText('Off the slot boundary')
+		await expect(grid.bars('short-1')).toContainText('Quarter hour')
+		await expect(grid.bars('short-1')).toContainText(/9:00/)
+		await expect(grid.bars('short-3')).toContainText('Off the slot boundary')
+		await expect(grid.bars('short-3')).toContainText(/10:50/)
 		await expect(grid.title).toHaveText('Mar 9 – 15')
 	})
 
-	test('week timeFormat=24-hour: gutter is plain 0..23 as before', async ({
+	test('week timeFormat=24-hour: gutter is plain 0..23 and bar shows 24h range', async ({
 		page,
 	}) => {
 		const grid = await open(page, {
@@ -592,10 +597,11 @@ test.describe('persona 3: upgrader', () => {
 		const labels = await grid.hourLabels.allTextContents()
 		expect(labels.slice(0, 3)).toEqual(['0', '1', '2'])
 		expect(labels.at(23)).toBe('23')
-		await expect(grid.bars('short-2')).toHaveText('Half hour')
+		await expect(grid.bars('short-2')).toContainText('Half hour')
+		await expect(grid.bars('short-2')).toContainText(/09:30/)
 	})
 
-	test('day, month, year, resource views: bar text carries no time', async ({
+	test('day, month, resource views: displayEventTime=false hides time on every bar', async ({
 		page,
 	}) => {
 		for (const [scenario, view, orientation, title] of [
@@ -606,7 +612,12 @@ test.describe('persona 3: upgrader', () => {
 			['resources', 'day', 'vertical', 'Room A booking'],
 			['resources', 'month', 'horizontal', 'Room A booking'],
 		] as const) {
-			await open(page, { scenario, view, orientation })
+			await open(page, {
+				scenario,
+				view,
+				orientation,
+				settings: { displayEventTime: 'false' },
+			})
 			const bar = page
 				.locator(
 					'[data-testid^="vertical-event-"], [data-testid^="horizontal-event-"]'
@@ -646,7 +657,11 @@ test.describe('persona 3: upgrader', () => {
 			['month', 'Mar 2025'],
 			['year', '2025'],
 		] as const) {
-			const grid = await open(page, { scenario: 'basic', view })
+			const grid = await open(page, {
+				scenario: 'basic',
+				view,
+				plugins: view === 'year' ? ['year'] : undefined,
+			})
 			await expect(grid.title, view).toHaveText(expected)
 		}
 	})
@@ -672,18 +687,19 @@ test.describe('persona 3: upgrader', () => {
 		await expect(grid.bars('short-2')).toHaveText('Half hour')
 	})
 
-	test('displayEventEnd alone (no displayEventTime, no format) changes nothing', async ({
+	test('displayEventEnd=false in week view shows start time only (D9)', async ({
 		page,
 	}) => {
 		const grid = await open(page, {
 			scenario: 'short-events',
 			view: 'week',
-			settings: { displayEventEnd: 'true' },
+			settings: { displayEventEnd: 'false' },
 		})
-		await expect(grid.bars('short-2')).toHaveText('Half hour')
+		await expect(grid.bars('short-2')).toContainText(/9:30\s?AM/)
+		await expect(grid.bars('short-2')).not.toContainText(/10:00/)
 	})
 
-	test('displayEventTime=true alone (no format) shows a time', async ({
+	test('displayEventTime=true alone (no format) shows start and end time in week view (D9)', async ({
 		page,
 	}) => {
 		const grid = await open(page, {
@@ -691,7 +707,7 @@ test.describe('persona 3: upgrader', () => {
 			view: 'week',
 			settings: { displayEventTime: 'true' },
 		})
-		await expect(grid.bars('short-2')).toContainText(/9:30\s?AM/)
+		await expect(grid.bars('short-2')).toContainText(/9:30.*10:00\s?AM/)
 	})
 
 	test('renderEvent still wins over eventTimeFormat', async ({ page }) => {

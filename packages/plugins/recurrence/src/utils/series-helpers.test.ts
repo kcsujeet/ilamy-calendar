@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	add,
+	endOf,
+	parseDate,
+	subtract,
+	toDate,
+	toUtcIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { RRule } from 'rrule'
 import {
 	countOccurrencesBefore,
@@ -8,8 +16,16 @@ import {
 	getOccurrenceStartISO,
 } from './series-helpers'
 
-const dailyISO = (day: number) =>
-	dayjs('2025-03-09T09:00:00.000Z').add(day, 'day').toISOString()
+const mustUtc = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const dailyISO = (day: number): string =>
+	toUtcIso(add(mustUtc('2025-03-09T09:00:00.000Z'), day, 'day'))
 
 const makeDailySeries = (
 	overrides: Partial<CalendarEvent> = {},
@@ -18,8 +34,8 @@ const makeDailySeries = (
 	id: 'S',
 	uid: 'S',
 	title: 'Stand-up',
-	start: dayjs(dailyISO(0)),
-	end: dayjs(dailyISO(0)).add(30, 'minute'),
+	start: dailyISO(0),
+	end: toUtcIso(add(mustUtc(dailyISO(0)), 30, 'minute')),
 	rrule: {
 		freq: RRule.DAILY,
 		count: 7,
@@ -31,54 +47,66 @@ const makeDailySeries = (
 
 describe('countOccurrencesBefore', () => {
 	it('is zero for the first occurrence', () => {
-		expect(countOccurrencesBefore(makeDailySeries(), dailyISO(0))).toBe(0)
+		expect(countOccurrencesBefore(makeDailySeries(), dailyISO(0), 'UTC')).toBe(
+			0
+		)
 	})
 
 	it('counts the occurrences strictly before the one asked about', () => {
-		expect(countOccurrencesBefore(makeDailySeries(), dailyISO(3))).toBe(3)
+		expect(countOccurrencesBefore(makeDailySeries(), dailyISO(3), 'UTC')).toBe(
+			3
+		)
 	})
 
 	it('counts excluded occurrences (COUNT is applied before EXDATE)', () => {
 		const series = makeDailySeries({ exdates: [dailyISO(1)] })
-		expect(countOccurrencesBefore(series, dailyISO(3))).toBe(3)
+		expect(countOccurrencesBefore(series, dailyISO(3), 'UTC')).toBe(3)
 	})
 
 	it('follows the rule, not the calendar days', () => {
 		const everyOtherDay = makeDailySeries({}, { interval: 2 })
-		expect(countOccurrencesBefore(everyOtherDay, dailyISO(6))).toBe(3)
+		expect(countOccurrencesBefore(everyOtherDay, dailyISO(6), 'UTC')).toBe(3)
 	})
 
 	it('is zero for an event with no rule', () => {
 		const plain = makeDailySeries({ rrule: undefined })
-		expect(countOccurrencesBefore(plain, dailyISO(3))).toBe(0)
+		expect(countOccurrencesBefore(plain, dailyISO(3), 'UTC')).toBe(0)
 	})
 })
 
 describe('cutSeriesBefore', () => {
 	it('ends the series at the end of the day before the occurrence', () => {
-		const { terminatedEvent } = cutSeriesBefore(makeDailySeries(), dailyISO(3))
-		const endOfDayBefore = dayjs(dailyISO(3))
-			.subtract(1, 'day')
-			.endOf('day')
-			.toDate()
+		const { terminatedEvent } = cutSeriesBefore(
+			makeDailySeries(),
+			dailyISO(3),
+			'UTC'
+		)
+		const endOfDayBefore = toDate(
+			endOf(subtract(mustUtc(dailyISO(3)), 1, 'day'), 'day')
+		)
 		expect(terminatedEvent.rrule?.until).toEqual(endOfDayBefore)
 	})
 
 	it('drops COUNT, which MUST NOT occur with UNTIL (RFC 5545 §3.3.10)', () => {
-		const { terminatedEvent } = cutSeriesBefore(makeDailySeries(), dailyISO(3))
+		const { terminatedEvent } = cutSeriesBefore(
+			makeDailySeries(),
+			dailyISO(3),
+			'UTC'
+		)
 		expect(terminatedEvent.rrule?.count).toBeUndefined()
 	})
 
 	it('keeps only the exdates before the cut', () => {
 		const series = makeDailySeries({ exdates: [dailyISO(1), dailyISO(5)] })
-		const { terminatedEvent } = cutSeriesBefore(series, dailyISO(3))
+		const { terminatedEvent } = cutSeriesBefore(series, dailyISO(3), 'UTC')
 		expect(terminatedEvent.exdates).toEqual([dailyISO(1)])
 	})
 
 	it('recognises the detached overrides of the series after the cut', () => {
 		const { isFollowingOverride } = cutSeriesBefore(
 			makeDailySeries(),
-			dailyISO(3)
+			dailyISO(3),
+			'UTC'
 		)
 		const override = (uid: string, occurrence: number): CalendarEvent => ({
 			...makeDailySeries(),
@@ -98,7 +126,7 @@ describe('getOccurrenceStartISO', () => {
 	it('is the RECURRENCE-ID of an override, not where it was moved to', () => {
 		const moved = makeDailySeries({
 			rrule: undefined,
-			start: dayjs(dailyISO(5)),
+			start: dailyISO(5),
 			recurrenceId: dailyISO(2),
 		})
 		expect(getOccurrenceStartISO(moved)).toBe(dailyISO(2))

@@ -91,7 +91,7 @@ test.describe('visible hours: events', () => {
 	})
 
 	test('a drag onto the last row lands in that hour', async ({ page }) => {
-		await openDay(page)
+		await openDay(page, { ...WINDOW, editable: 'true' })
 		const grid = new TimeGrid(page)
 		const source = await grid.bars('vh-midday').first().boundingBox()
 		const target = await grid.slotAt('2025-03-12T17:00').boundingBox()
@@ -118,7 +118,7 @@ test.describe('visible hours: events', () => {
 
 test.describe('visible hours: now and scroll', () => {
 	test('the now-line shows when now is inside the window', async ({ page }) => {
-		await openDay(page)
+		await openDay(page, { ...WINDOW, nowIndicator: 'true' })
 
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
 	})
@@ -126,7 +126,11 @@ test.describe('visible hours: now and scroll', () => {
 	test('the now-line is hidden when now is outside the window', async ({
 		page,
 	}) => {
-		await openDay(page, { slotMinTime: '10:00', slotMaxTime: '18:00' })
+		await openDay(page, {
+			slotMinTime: '10:00',
+			slotMaxTime: '18:00',
+			nowIndicator: 'true',
+		})
 
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 	})

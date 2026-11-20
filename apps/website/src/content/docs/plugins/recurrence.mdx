@@ -50,21 +50,20 @@ The `@ilamy/calendar/plugins/recurrence` subpath requires **v2.0.0 or later**. O
 Create a recurring event by adding an `rrule` property to your event object:
 
 ```tsx
-import { dayjs } from '@ilamy/calendar'
 import { RRule } from '@ilamy/calendar/plugins/recurrence'
 
 const weeklyMeeting = {
   id: 'weekly-standup',
   title: 'Weekly Team Standup',
-  start: dayjs('2025-08-04T09:00:00'),
-  end: dayjs('2025-08-04T10:00:00'),
+  start: '2025-08-04T09:00:00Z',
+  end: '2025-08-04T10:00:00Z',
   description: 'Weekly team sync meeting',
   rrule: {
     freq: RRule.WEEKLY,
     interval: 1,
     byweekday: [RRule.MO], // Every Monday
-    dtstart: dayjs('2025-08-04T09:00:00').toDate(),
-    until: dayjs('2025-12-31T23:59:59').toDate()
+    dtstart: new Date('2025-08-04T09:00:00Z'),
+    until: new Date('2025-12-31T23:59:59Z'),
   }
 }
 ```
@@ -124,19 +123,19 @@ When the recurrence plugin is registered, the calendar generates recurring event
 
 ```tsx
 import { IlamyCalendar } from '@ilamy/calendar'
-import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
+import { recurrencePlugin, RRule } from '@ilamy/calendar/plugins/recurrence'
 
 const events = [
   {
     id: 'weekly-standup',
     title: 'Weekly Team Standup',
-    start: dayjs('2025-08-04T09:00:00'),
-    end: dayjs('2025-08-04T10:00:00'),
+    start: '2025-08-04T09:00:00Z',
+    end: '2025-08-04T10:00:00Z',
     rrule: {
       freq: RRule.WEEKLY,
       byweekday: [RRule.MO],
-      dtstart: dayjs('2025-08-04T09:00:00').toDate(),
-      until: dayjs('2025-12-31T23:59:59').toDate()
+      dtstart: new Date('2025-08-04T09:00:00Z'),
+      until: new Date('2025-12-31T23:59:59Z'),
     }
   }
 ]
@@ -162,9 +161,9 @@ including outside the range the series was expanded over. You do not also need a
 const modifiedInstance = {
   id: 'weekly-standup-modified',
   title: 'Extended Team Standup',
-  start: dayjs('2025-08-11T09:00:00'),
-  end: dayjs('2025-08-11T11:00:00'), // Extended duration
-  recurrenceId: '2025-08-11T09:00:00.000Z', // Original occurrence time
+  start: '2025-08-11T09:00:00Z',
+  end: '2025-08-11T11:00:00Z', // Extended duration
+  recurrenceId: '2025-08-11T09:00:00Z', // Original occurrence time
   uid: 'weekly-standup' // Same UID as base event
 }
 ```
@@ -173,8 +172,8 @@ const modifiedInstance = {
 
 Use `exdates` to skip specific occurrences without creating modified instances.
 Entries are **ISO strings** (`exdates?: string[]`) keyed to the *original*
-occurrence time, so they must be produced with `.toISOString()` — a `Date` never
-matches.
+occurrence time, so they must be produced with `.toISOString()` or an ISO 8601
+string with offset — a `Date` never matches.
 
 ```tsx
 const recurringEvent = {
@@ -182,11 +181,11 @@ const recurringEvent = {
   rrule: {
     freq: RRule.WEEKLY,
     byweekday: [RRule.MO],
-    dtstart: new Date('2025-08-04T09:00:00')
+    dtstart: new Date('2025-08-04T09:00:00Z')
   },
   exdates: [
-    dayjs('2025-08-18T09:00:00').toISOString(), // Skip this Monday
-    dayjs('2025-08-25T09:00:00').toISOString()  // Skip this Monday too
+    '2025-08-18T09:00:00Z', // Skip this Monday
+    '2025-08-25T09:00:00Z'  // Skip this Monday too
   ]
 }
 ```
@@ -265,13 +264,13 @@ First Monday of every quarter:
 const quarterlyMeeting = {
   id: 'quarterly-review',
   title: 'Quarterly Business Review',
-  start: dayjs('2025-01-06T14:00:00'), // First Monday of 2025
-  end: dayjs('2025-01-06T16:00:00'),
+  start: '2025-01-06T14:00:00Z', // First Monday of 2025
+  end: '2025-01-06T16:00:00Z',
   rrule: {
     freq: RRule.MONTHLY,
     interval: 3, // Every 3 months
     byweekday: [RRule.MO.nth(1)], // First Monday
-    dtstart: dayjs('2025-01-06T14:00:00').toDate()
+    dtstart: new Date('2025-01-06T14:00:00Z')
   }
 }
 ```
@@ -283,21 +282,20 @@ const quarterlyMeeting = {
 const weeklyStandup = {
   id: 'standup',
   title: 'Team Standup',
-  start: dayjs('2025-08-04T09:00:00'),
-  end: dayjs('2025-08-04T09:30:00'),
+  start: '2025-08-04T09:00:00Z',
+  end: '2025-08-04T09:30:00Z',
   uid: 'standup-series',
   rrule: {
     freq: RRule.WEEKLY,
     byweekday: [RRule.MO, RRule.WE, RRule.FR],
-    dtstart: dayjs('2025-08-04T09:00:00').toDate(),
-    until: dayjs('2025-12-31T23:59:59').toDate()
+    dtstart: new Date('2025-08-04T09:00:00Z'),
+    until: new Date('2025-12-31T23:59:59Z')
   },
   exdates: [
-    // Skip these occurrences. Each is the occurrence's start as an ISO string,
-    // exactly as the series produces it: a Date, or another time of day,
-    // matches nothing.
-    dayjs('2025-08-15T09:00:00').toISOString(), // Summer vacation
-    dayjs('2025-11-28T09:00:00').toISOString()  // Thanksgiving week
+    // Skip these occurrences. Each is the occurrence's start as an ISO string
+    // with offset matching the occurrence instant.
+    '2025-08-15T09:00:00Z', // Summer vacation
+    '2025-11-28T09:00:00Z'  // Thanksgiving week
   ]
 }
 
@@ -305,24 +303,25 @@ const weeklyStandup = {
 const modifiedStandup = {
   id: 'standup-modified-aug-20',
   title: 'Extended Team Standup + Planning',
-  start: dayjs('2025-08-20T10:00:00'), // Different time
-  end: dayjs('2025-08-20T11:00:00'),   // Longer duration
-  recurrenceId: '2025-08-20T09:00:00.000Z', // Original time
+  start: '2025-08-20T10:00:00Z', // Different time
+  end: '2025-08-20T11:00:00Z',   // Longer duration
+  recurrenceId: '2025-08-20T09:00:00Z', // Original time
   uid: 'standup-series'
 }
 ```
 
 ### Working with Multiple Time Zones
 
-A series repeats at the same **clock time** in the calendar's zone (the `timezone` prop, or the browser's zone without one), including across a daylight-saving change. This is what RFC 5545 asks of a start with a time zone: instances "start at the same local time regardless of time zone changes" (§3.8.5.3). A clock time skipped by the spring change moves forward by the gap, and one repeated by the autumn change takes its first occurrence (§3.3.5).
+A series repeats at the same **clock time** in the event's `timezone` (or the calendar's `timezone` prop, or the browser's zone without one), including across a daylight-saving change. This is what RFC 5545 asks of a start with a time zone: instances "start at the same local time regardless of time zone changes" (§3.8.5.3). A clock time skipped by the spring change moves forward by the gap, and one repeated by the autumn change takes its first occurrence (§3.3.5).
 
 ```tsx
 // In a calendar with timezone="America/New_York"
 const morningSync = {
   id: 'morning-sync',
   title: 'Morning Sync',
-  start: dayjs('2025-03-03T09:00'), // 09:00 New York (EST, 14:00 UTC)
-  end: dayjs('2025-03-03T09:30'),
+  start: '2025-03-03T09:00:00-05:00', // 09:00 New York (EST, 14:00 UTC)
+  end: '2025-03-03T09:30:00-05:00',
+  timezone: 'America/New_York',
   rrule: { freq: RRule.WEEKLY, byweekday: [RRule.MO], count: 26 }
 }
 // Every Monday at 09:00 New York time: 14:00 UTC until 9 March,
@@ -353,7 +352,7 @@ Use exception dates for simple cancellations and modified instances for changes 
 
 ### iCalendar Export
 
-Recurring events are written to .ics files as RRULE, EXDATE and RECURRENCE-ID lines. Times are exported in UTC, so a series in a configured `timezone` can appear an hour off in an importer after a daylight-saving change; see [iCalendar Export](/docs/features/ical-export).
+When combined with [`icalPlugin()`](/docs/plugins/ical), recurring events are written to `.ics` files as `RRULE`, `EXDATE`, and `RECURRENCE-ID` lines alongside `TZID` and `VTIMEZONE` definitions so DST transitions stay aligned in every importer; see [iCalendar Export](/docs/features/ical-export).
 
 ### Calendar Views
 

@@ -12,7 +12,7 @@ describe('@ilamy/utils from @ilamy/ui', () => {
 	const utilsSource = path.resolve(import.meta.dir, '../../utils/src')
 
 	test.each([
-		['@ilamy/utils/dayjs', 'dayjs.ts'],
+		['@ilamy/utils/temporal', 'temporal.ts'],
 		['@ilamy/utils/helpers', 'helpers.ts'],
 	])('%s resolves to source, not dist', (specifier, sourceFile) => {
 		const resolved = Bun.resolveSync(specifier, import.meta.dir)

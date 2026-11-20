@@ -62,4 +62,151 @@ describe('DragToCreateProvider', () => {
 		dragAcrossCell()
 		expect(screen.getByTestId('probe').textContent).toBe('"room-a"')
 	})
+
+	describe('selectConstraint: businessHours', () => {
+		const SelectionProbe = () => {
+			const { selectedEvent, isEventFormOpen } = useIlamyCalendarContext()
+			return (
+				<div data-testid="selection">
+					{isEventFormOpen
+						? `${selectedEvent?.start}|${selectedEvent?.end}|${Boolean(selectedEvent?.allDay)}`
+						: 'closed'}
+				</div>
+			)
+		}
+
+		const dragBetween = (from: HTMLElement, to: HTMLElement) => {
+			const pointer = {
+				button: 0,
+				isPrimary: true,
+				pointerId: 1,
+				bubbles: true,
+			}
+			document.elementsFromPoint = () => [to]
+			act(() => {
+				from.dispatchEvent(
+					new PointerEvent('pointerdown', {
+						...pointer,
+						clientX: 0,
+						clientY: 0,
+					})
+				)
+				window.dispatchEvent(
+					new PointerEvent('pointermove', {
+						...pointer,
+						clientX: 10,
+						clientY: 10,
+					})
+				)
+				window.dispatchEvent(
+					new PointerEvent('pointerup', {
+						...pointer,
+						clientX: 10,
+						clientY: 10,
+					})
+				)
+			})
+		}
+
+		it('allows selecting outside business hours when selectConstraint is unset', () => {
+			render(
+				<CalendarTestProvider
+					businessHours={{ startTime: 9, endTime: 17 }}
+					timezone="UTC"
+				>
+					<DragToCreateProvider options={{}}>
+						<div
+							data-end="2025-03-12T08:00:00Z"
+							data-start="2025-03-12T07:00:00Z"
+							data-testid="early"
+						/>
+						<SelectionProbe />
+					</DragToCreateProvider>
+				</CalendarTestProvider>
+			)
+
+			const early = screen.getByTestId('early')
+			dragBetween(early, early)
+			expect(screen.getByTestId('selection').textContent).toBe(
+				'2025-03-12T07:00:00+00:00|2025-03-12T08:00:00+00:00|false'
+			)
+		})
+
+		it('refuses starting a selection outside business hours when selectConstraint is businessHours', () => {
+			render(
+				<CalendarTestProvider
+					businessHours={{ startTime: 9, endTime: 17 }}
+					selectConstraint="businessHours"
+					timezone="UTC"
+				>
+					<DragToCreateProvider options={{}}>
+						<div
+							data-end="2025-03-12T08:00:00Z"
+							data-start="2025-03-12T07:00:00Z"
+							data-testid="early"
+						/>
+						<SelectionProbe />
+					</DragToCreateProvider>
+				</CalendarTestProvider>
+			)
+
+			const early = screen.getByTestId('early')
+			dragBetween(early, early)
+			expect(screen.getByTestId('selection').textContent).toBe('closed')
+		})
+
+		it('clamps the selection to business hours when dragging across the closing hour', () => {
+			render(
+				<CalendarTestProvider
+					businessHours={{ startTime: 9, endTime: 17 }}
+					selectConstraint="businessHours"
+					timezone="UTC"
+				>
+					<DragToCreateProvider options={{}}>
+						<div
+							data-end="2025-03-12T17:00:00Z"
+							data-start="2025-03-12T16:00:00Z"
+							data-testid="in-hours"
+						/>
+						<div
+							data-end="2025-03-12T18:00:00Z"
+							data-start="2025-03-12T17:00:00Z"
+							data-testid="after-hours"
+						/>
+						<SelectionProbe />
+					</DragToCreateProvider>
+				</CalendarTestProvider>
+			)
+
+			dragBetween(
+				screen.getByTestId('in-hours'),
+				screen.getByTestId('after-hours')
+			)
+			expect(screen.getByTestId('selection').textContent).toBe(
+				'2025-03-12T16:00:00+00:00|2025-03-12T17:00:00+00:00|false'
+			)
+		})
+
+		it('passes allDay: true for month-grid cells marked data-all-day="true"', () => {
+			render(
+				<CalendarTestProvider timezone="UTC">
+					<DragToCreateProvider options={{}}>
+						<div
+							data-all-day="true"
+							data-end="2025-03-13T00:00:00Z"
+							data-start="2025-03-12T00:00:00Z"
+							data-testid="month-day"
+						/>
+						<SelectionProbe />
+					</DragToCreateProvider>
+				</CalendarTestProvider>
+			)
+
+			const day = screen.getByTestId('month-day')
+			dragBetween(day, day)
+			expect(screen.getByTestId('selection').textContent).toBe(
+				'2025-03-12T00:00:00+00:00|2025-03-13T00:00:00+00:00|true'
+			)
+		})
+	})
 })

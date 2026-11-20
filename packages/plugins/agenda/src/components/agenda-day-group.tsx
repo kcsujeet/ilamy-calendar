@@ -4,8 +4,14 @@ import {
 	type CurrentTimeIndicatorRenderProps,
 } from '@ilamy/ui/components/current-time-indicator'
 import { DayLabel } from '@ilamy/ui/components/day-label'
-import dayjs from '@ilamy/utils/dayjs'
-import { isSameDay, listKey } from '@ilamy/utils/helpers'
+import { listKey } from '@ilamy/utils/helpers'
+import {
+	endOf,
+	formatDate,
+	isSameDay,
+	now,
+	startOf,
+} from '@ilamy/utils/temporal'
 import type { ReactNode } from 'react'
 import type { AgendaDayGroupData } from '../utils/group-events-by-day'
 import { AgendaEventRow } from './agenda-event-row'
@@ -15,8 +21,9 @@ interface AgendaDayGroupProps {
 }
 
 export const AgendaDayGroup = ({ group }: AgendaDayGroupProps) => {
-	const { view, renderCurrentTimeIndicator } = useIlamyCalendarContext()
-	const isToday = isSameDay(group.date, dayjs())
+	const { view, renderCurrentTimeIndicator, currentLocale } =
+		useIlamyCalendarContext()
+	const isToday = isSameDay(group.date, now(group.date.timeZoneId))
 
 	let renderIndicator:
 		| ((props: CurrentTimeIndicatorRenderProps) => ReactNode)
@@ -33,18 +40,16 @@ export const AgendaDayGroup = ({ group }: AgendaDayGroupProps) => {
 			<div className="text-muted-foreground flex w-16 shrink-0 flex-col items-center text-center">
 				<DayLabel
 					className="flex-col-reverse"
-					dayNumber={group.date.format('D')}
+					dayNumber={String(group.date.day)}
 					today={isToday}
-					weekday={group.date.format('ddd')}
+					weekday={formatDate(group.date, { weekday: 'short' }, currentLocale)}
 				/>
 			</div>
-			{/* Treat the day group as a full day: the shared indicator positions a
-			    red line at the current time's % through the day (today only). */}
 			<div className="relative flex flex-1 flex-col gap-1">
 				{isToday && (
 					<CurrentTimeIndicator
-						rangeEnd={group.date.endOf('day')}
-						rangeStart={group.date.startOf('day')}
+						rangeEnd={endOf(group.date, 'day')}
+						rangeStart={startOf(group.date, 'day')}
 						render={renderIndicator}
 					/>
 				)}

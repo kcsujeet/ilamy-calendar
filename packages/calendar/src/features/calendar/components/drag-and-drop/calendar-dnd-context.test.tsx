@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test'
 import { isRecurringEvent } from '@ilamy/calendar-recurrence'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
+import type React from 'react'
 import { renderToString } from 'react-dom/server'
 import { RRule } from 'rrule'
 import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
@@ -14,24 +14,25 @@ describe('CalendarDndContext', () => {
 	const createRecurringEvent = (): CalendarEvent => ({
 		id: 'recurring-event-1',
 		title: 'Weekly Meeting',
-		start: dayjs('2025-01-15T09:00:00.000Z'),
-		end: dayjs('2025-01-15T10:00:00.000Z'),
+		start: '2025-01-15T09:00:00+00:00',
+		end: '2025-01-15T10:00:00+00:00',
 		color: 'bg-green-500',
 		allDay: false,
 		rrule: {
 			freq: RRule.WEEKLY,
 			byweekday: [RRule.MO],
 			interval: 1,
-			dtstart: dayjs('2025-01-15T00:00:00.000Z').toDate(),
+			dtstart: new Date('2025-01-15T00:00:00.000Z'),
 		},
 		uid: 'recurring-event-1@calendar',
 	})
 
 	const renderWithCalendarProvider = (providerProps = {}) => {
+		cleanup()
 		return render(
 			<CalendarProvider
 				dayMaxEvents={5}
-				disableDragAndDrop={false}
+				editable={true}
 				events={[]}
 				firstDayOfWeek={0}
 				{...providerProps}
@@ -56,6 +57,7 @@ describe('CalendarDndContext', () => {
 		})
 
 		it('should provide a drag preview that is null before any drag', () => {
+			cleanup()
 			let previewValue: unknown = 'uninitialized'
 			function TestPreviewConsumer() {
 				previewValue = useDragPreview()
@@ -64,7 +66,7 @@ describe('CalendarDndContext', () => {
 			render(
 				<CalendarProvider
 					dayMaxEvents={5}
-					disableDragAndDrop={false}
+					editable={true}
 					events={[]}
 					firstDayOfWeek={0}
 				>
@@ -80,25 +82,25 @@ describe('CalendarDndContext', () => {
 	/*
 	 * dnd-kit puts a live region in the page, and drag instructions on every bar, for
 	 * as long as its context is mounted. A calendar where nothing can move must
-	 * not carry them: they announce drag instructions for events that cannot
-	 * be dragged, and every droppable cell would register for nothing.
+	 * not carry them. In v4.0 (D8), `editable` defaults to `false`.
 	 */
 	describe('Mounting', () => {
 		const movableEvent: CalendarEvent = {
 			id: 'a',
 			title: 'A',
-			start: dayjs('2025-03-12T10:00:00.000Z'),
-			end: dayjs('2025-03-12T11:00:00.000Z'),
+			start: '2025-03-12T10:00:00+00:00',
+			end: '2025-03-12T11:00:00+00:00',
 		}
 
 		const renderCalendar = (
 			props: Partial<React.ComponentProps<typeof IlamyCalendar>>,
 			events: CalendarEvent[] = [movableEvent]
 		) => {
+			cleanup()
 			const { container } = render(
 				<IlamyCalendar
 					events={events}
-					initialDate={dayjs('2025-03-12T00:00:00.000Z')}
+					initialDate="2025-03-12T00:00:00Z"
 					initialView="week"
 					timezone="UTC"
 					{...props}
@@ -111,8 +113,15 @@ describe('CalendarDndContext', () => {
 			}
 		}
 
-		it('mounts when events can move', () => {
+		it('mounts nothing by default because editable defaults to false (D8)', () => {
 			const page = renderCalendar({})
+
+			expect(page.hasLiveRegion).toBe(false)
+			expect(page.describedByCount).toBe(0)
+		})
+
+		it('mounts when editable is true', () => {
+			const page = renderCalendar({ editable: true })
 
 			expect(page.hasLiveRegion).toBe(true)
 		})
@@ -121,7 +130,7 @@ describe('CalendarDndContext', () => {
 		// "press the space bar to pick up" text would promise a keyboard drag that
 		// does nothing (WCAG 4.1.2). Keyboard moving is not offered.
 		it('does not describe a keyboard drag the bars cannot do', () => {
-			renderCalendar({})
+			renderCalendar({ editable: true })
 			const describedBars = document.querySelectorAll('[aria-describedby]')
 			const descriptions = [...describedBars].map((bar) => {
 				const descriptionId = bar.getAttribute('aria-describedby') ?? ''
@@ -138,12 +147,6 @@ describe('CalendarDndContext', () => {
 			expect(page.describedByCount).toBe(0)
 		})
 
-		it('mounts nothing for the deprecated disableDragAndDrop alias', () => {
-			const page = renderCalendar({ disableDragAndDrop: true })
-
-			expect(page.hasLiveRegion).toBe(false)
-		})
-
 		it('mounts when one event opts in under a non-editable calendar', () => {
 			const optedIn = { ...movableEvent, startEditable: true }
 			const page = renderCalendar({ editable: false }, [optedIn])
@@ -151,9 +154,9 @@ describe('CalendarDndContext', () => {
 			expect(page.hasLiveRegion).toBe(true)
 		})
 
-		it('mounts when eventStartEditable re-enables moving under the alias', () => {
+		it('mounts when eventStartEditable re-enables moving under editable=false', () => {
 			const page = renderCalendar({
-				disableDragAndDrop: true,
+				editable: false,
 				eventStartEditable: true,
 			})
 
@@ -170,7 +173,10 @@ describe('CalendarDndContext', () => {
 		})
 
 		it('mounts when events can only be moved', () => {
-			const page = renderCalendar({ eventDurationEditable: false })
+			const page = renderCalendar({
+				editable: true,
+				eventDurationEditable: false,
+			})
 
 			expect(page.hasLiveRegion).toBe(true)
 		})
@@ -184,7 +190,7 @@ describe('CalendarDndContext', () => {
 
 		it('marks only the movable bar when one event is locked', () => {
 			const locked = { ...movableEvent, id: 'b', title: 'B', editable: false }
-			const page = renderCalendar({}, [movableEvent, locked])
+			const page = renderCalendar({ editable: true }, [movableEvent, locked])
 
 			expect(page.describedByCount).toBe(1)
 		})
@@ -195,8 +201,8 @@ describe('CalendarDndContext', () => {
 			const regularEvent: CalendarEvent = {
 				id: 'regular',
 				title: 'Regular',
-				start: dayjs('2025-01-15T09:00:00.000Z'),
-				end: dayjs('2025-01-15T10:00:00.000Z'),
+				start: '2025-01-15T09:00:00+00:00',
+				end: '2025-01-15T10:00:00+00:00',
 				allDay: false,
 			}
 
@@ -218,8 +224,8 @@ describe('CalendarDndContext', () => {
 			const instance: CalendarEvent = {
 				id: 'instance',
 				title: 'Instance',
-				start: dayjs('2025-01-15T09:00:00.000Z'),
-				end: dayjs('2025-01-15T10:00:00.000Z'),
+				start: '2025-01-15T09:00:00+00:00',
+				end: '2025-01-15T10:00:00+00:00',
 				uid: 'recurring@calendar',
 				allDay: false,
 			}
@@ -232,8 +238,8 @@ describe('CalendarDndContext', () => {
 			const modifiedInstance: CalendarEvent = {
 				id: 'modified',
 				title: 'Modified',
-				start: dayjs('2025-01-15T09:00:00.000Z'),
-				end: dayjs('2025-01-15T10:00:00.000Z'),
+				start: '2025-01-15T09:00:00+00:00',
+				end: '2025-01-15T10:00:00+00:00',
 				uid: 'recurring@calendar',
 				recurrenceId: '2025-01-15T09:00:00.000Z',
 				allDay: false,
@@ -243,29 +249,26 @@ describe('CalendarDndContext', () => {
 			expect(modifiedInstance.recurrenceId).toBe('2025-01-15T09:00:00.000Z')
 		})
 	})
+
 	/*
 	 * dnd-kit numbers the ids behind `aria-describedby` from a module-level
-	 * counter. A browser gets a fresh module per page load; a server does not,
-	 * so the counter carries from one request to the next and the markup drifts
-	 * away from what the client will produce. Rendering twice in one process is
-	 * exactly what two successive requests do, so it is what this asserts.
+	 * counter. Passing a stable React `useId()` to DndContext keeps SSR markup
+	 * identical across requests.
 	 */
 	describe('Server Rendering', () => {
 		const ssrEvent: CalendarEvent = {
 			id: 'a',
 			title: 'A',
-			start: dayjs('2025-03-31T10:00:00.000Z'),
-			end: dayjs('2025-03-31T11:00:00.000Z'),
+			start: '2025-03-31T10:00:00+00:00',
+			end: '2025-03-31T11:00:00+00:00',
 		}
 
-		// Draggables are what carry the attribute, so the calendar needs an
-		// event on screen for this to be testing anything at all. The zone is
-		// pinned so the event lands in the rendered week wherever this runs.
 		const renderOnce = () =>
 			renderToString(
 				<IlamyCalendar
+					editable={true}
 					events={[ssrEvent]}
-					initialDate={dayjs('2025-03-31T00:00:00.000Z')}
+					initialDate="2025-03-31T00:00:00Z"
 					initialView="week"
 					timezone="UTC"
 				/>

@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { DndContext, useDndContext } from '@dnd-kit/core'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import {
+	elapsedDiff,
+	parseDate,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import {
@@ -11,8 +16,23 @@ import type { CellInfo } from '@/features/calendar/types'
 import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import { VerticalGridCol } from './vertical-grid-col'
 
-const initialDate = dayjs('2025-01-01T00:00:00.000Z')
-const mockDays = [initialDate.hour(9), initialDate.hour(10)]
+const atUtc = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const initialZoned = atUtc('2025-01-01T00:00:00.000Z')
+const initialDate = '2025-01-01T00:00:00+00:00'
+const mockDays = ['2025-01-01T09:00:00+00:00', '2025-01-01T10:00:00+00:00']
+const dateStr = '2025-01-01'
+
+const formatHHmm = (iso: string): string => {
+	const d = atUtc(iso)
+	return `${String(d.hour).padStart(2, '0')}:${String(d.minute).padStart(2, '0')}`
+}
 
 const renderVerticalGridCol = (props = {}, providerProps = {}) => {
 	const defaultProps = {
@@ -21,13 +41,13 @@ const renderVerticalGridCol = (props = {}, providerProps = {}) => {
 		days: mockDays,
 		gridType: 'hour' as const,
 	}
-	// Use CalendarProvider to ensure getEventsForResource is available
 	return render(
 		<CalendarProvider
 			dayMaxEvents={3}
 			events={[]}
 			initialDate={initialDate}
 			resources={[]}
+			timezone="UTC"
 			{...providerProps}
 		>
 			<VerticalGridCol {...defaultProps} {...props} />
@@ -53,7 +73,7 @@ describe('VerticalGridCol', () => {
 	test('renders time labels when id is time-col', () => {
 		renderVerticalGridCol({
 			id: 'time-col',
-			renderCell: (date: Dayjs) => <span>{date.format('HH:mm')}</span>,
+			renderCell: (date: string) => <span>{formatHHmm(date)}</span>,
 		})
 
 		expect(screen.getByTestId('vertical-time-09')).toHaveTextContent('09:00')
@@ -61,11 +81,7 @@ describe('VerticalGridCol', () => {
 	})
 
 	test('hour separators come from the grid gap, not per-cell borders', () => {
-		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol()
-		// Approach G: the grid container draws the hour/column lines via the
-		// gaps (gap-px) filled with the border color (bg-border). Cells carry no
-		// per-cell separators.
 		const cell = screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
 		const gridContainer = cell.closest('div.grid')
 		expect(gridContainer).not.toBeNull()
@@ -81,10 +97,7 @@ describe('VerticalGridCol', () => {
 	})
 
 	test('no day cell carries a per-cell separator regardless of position', () => {
-		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol()
-		// mockDays = [09:00, 10:00]; with gap-based lines neither the first nor
-		// the last row gets a per-cell border-r/border-b.
 		const firstHour = screen
 			.getByTestId(`vertical-cell-${dateStr}-09-00`)
 			.className.split(' ')
@@ -102,7 +115,7 @@ describe('VerticalGridCol', () => {
 			id: 'time-col',
 			className:
 				'shadow-[1px_0_0_0_color-mix(in_oklch,var(--background),var(--foreground)_10%)]',
-			renderCell: (date: Dayjs) => <span>{date.format('HH:mm')}</span>,
+			renderCell: (date: string) => <span>{formatHHmm(date)}</span>,
 		})
 		const gutter = screen.getByTestId('vertical-col-time-col')
 		expect(gutter.className).toContain('shadow-[1px_0_0_0')
@@ -110,7 +123,6 @@ describe('VerticalGridCol', () => {
 	})
 
 	test('renders cells with correct IDs', () => {
-		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol()
 
 		expect(
@@ -122,7 +134,6 @@ describe('VerticalGridCol', () => {
 	})
 
 	test('includes the resource id in cell IDs when a resource is provided', () => {
-		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol({ resource: { id: 'res-1', title: 'Resource 1' } })
 
 		expect(
@@ -131,10 +142,7 @@ describe('VerticalGridCol', () => {
 	})
 
 	test('renders minute slots when slotDurationMinutes is provided', () => {
-		const dateStr = initialDate.format('YYYY-MM-DD')
-		renderVerticalGridCol({
-			slotDurationMinutes: 30,
-		})
+		renderVerticalGridCol({ slotDurationMinutes: 30 })
 
 		expect(
 			screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
@@ -151,29 +159,21 @@ describe('VerticalGridCol', () => {
 	})
 
 	test('groups quarter-hour cells under one hour wrapper that shares the row equally', () => {
-		const dateStr = initialDate.format('YYYY-MM-DD')
-		renderVerticalGridCol({
-			slotDurationMinutes: 15,
-		})
+		renderVerticalGridCol({ slotDurationMinutes: 15 })
 
 		const nineZero = screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
 		const nineFifteen = screen.getByTestId(`vertical-cell-${dateStr}-09-15`)
 		const nineThirty = screen.getByTestId(`vertical-cell-${dateStr}-09-30`)
 		const nineFortyFive = screen.getByTestId(`vertical-cell-${dateStr}-09-45`)
 
-		// All 4 quarter-hour cells for 09:00 must share the same direct parent
-		// so CSS Grid treats them as one row, not four scattered children.
 		const wrapper = nineZero.parentElement
 		expect(wrapper).not.toBeNull()
 		expect(nineFifteen.parentElement).toBe(wrapper)
 		expect(nineThirty.parentElement).toBe(wrapper)
 		expect(nineFortyFive.parentElement).toBe(wrapper)
 
-		// The wrapper must be a flex column so the 4 cells split the hour evenly.
 		expect(wrapper?.className).toMatch(/\bflex-col\b/)
 
-		// Each quarter-hour cell must use flex-1 (1/N share) and NOT a fixed
-		// h-[15px] that would bunch cells at the bottom of taller rows.
 		for (const cell of [nineZero, nineFifteen, nineThirty, nineFortyFive]) {
 			expect(cell.className).toMatch(/\bflex-1\b/)
 			expect(cell.className).not.toMatch(/\bh-\[15px\]\b/)
@@ -181,11 +181,6 @@ describe('VerticalGridCol', () => {
 	})
 
 	test('daily cells (gridType="day") describe a full-day range, not a 1-hour slot', () => {
-		// A daily-granularity vertical cell (resource month, week-daily) must span
-		// the whole day like the horizontal grid does, so drag-to-create's
-		// full-day-span region rule lets a selection cross days. Passing the hour
-		// through made it a 00:00-01:00 slot and broke multi-day selection.
-		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol({ gridType: 'day', days: [initialDate] })
 
 		const cell = screen.getByTestId(`vertical-cell-${dateStr}-00-00`)
@@ -193,8 +188,9 @@ describe('VerticalGridCol', () => {
 		const endISO = cell.getAttribute('data-end')
 		expect(startISO).not.toBeNull()
 		expect(endISO).not.toBeNull()
-		// A whole day, exclusive of the next midnight (#248).
-		expect(dayjs(endISO).diff(dayjs(startISO), 'hour')).toBe(24)
+		expect(
+			elapsedDiff(atUtc(endISO ?? ''), atUtc(startISO ?? ''), 'hour')
+		).toBe(24)
 	})
 
 	test('renders events layer by default', () => {
@@ -218,7 +214,6 @@ describe('VerticalGridCol', () => {
 	])(
 		'renders a %i-minute slot as one cell per slot in the hour',
 		(slotDurationMinutes, minutes) => {
-			const dateStr = initialDate.format('YYYY-MM-DD')
 			renderVerticalGridCol({ slotDurationMinutes })
 
 			for (const mm of minutes) {
@@ -233,7 +228,6 @@ describe('VerticalGridCol', () => {
 	)
 
 	test('tells each cell the axis time runs along and the size it snaps to', () => {
-		const dateStr = initialDate.format('YYYY-MM-DD')
 		renderVerticalGridCol({}, { snapDuration: 15 })
 
 		const cell = screen.getByTestId(`vertical-cell-${dateStr}-09-00`)
@@ -242,10 +236,6 @@ describe('VerticalGridCol', () => {
 	})
 })
 
-// dnd-kit copies its whole droppable registry on every registration, so a
-// droppable per slot made mounting a resource week O(slots²): 7 s for the 20,000
-// slots of 30 resources at 15 minutes. The column is the one drop target and
-// its slots publish themselves into it.
 describe('VerticalGridCol drop target', () => {
 	beforeEach(() => {
 		cleanup()
@@ -260,7 +250,12 @@ describe('VerticalGridCol drop target', () => {
 			return null
 		}
 		render(
-			<CalendarProvider events={[]} initialDate={initialDate} resources={[]}>
+			<CalendarProvider
+				events={[]}
+				initialDate={initialDate}
+				resources={[]}
+				timezone="UTC"
+			>
 				<DndContext>
 					<VerticalGridCol
 						days={mockDays}
@@ -277,8 +272,6 @@ describe('VerticalGridCol drop target', () => {
 
 	test('registers one drop target for all of its slots', () => {
 		const registered = renderColumnInDnd(15)
-
-		// Two hours of four 15-minute slots: eight cells, one droppable.
 		expect(registered()).toHaveLength(1)
 	})
 
@@ -307,17 +300,15 @@ describe('VerticalGridCol drag preview', () => {
 		cleanup()
 	})
 
-	// One object, so swapping the drag is the only thing a rerender changes.
 	const roomB = { id: 'room-b', title: 'room-b' }
 	const resources = [roomB]
 	const previewAt = (hour: number, resourceId?: string): DragPreviewState =>
 		mkDragPreview({
-			start: initialDate.hour(hour),
-			end: initialDate.hour(hour + 1),
+			start: withTime(initialZoned, { hour }),
+			end: withTime(initialZoned, { hour: hour + 1 }),
 			resourceId,
 		})
 
-	/** One column of `room-b`, drawn under a drag preview that can be swapped. */
 	const renderColumnUnderDrag = (initial: DragPreviewState | null) => {
 		const getCellClassName = mock((_info: CellInfo) => '')
 		const buildColumn = (dragPreview: DragPreviewState | null) => (
@@ -326,6 +317,7 @@ describe('VerticalGridCol drag preview', () => {
 				getCellClassName={getCellClassName}
 				initialDate={initialDate}
 				resources={resources}
+				timezone="UTC"
 			>
 				<DragPreviewContext.Provider value={dragPreview}>
 					<VerticalGridCol
@@ -344,7 +336,6 @@ describe('VerticalGridCol drag preview', () => {
 		return { getCellClassName, dragTo }
 	}
 
-	const dateStr = initialDate.format('YYYY-MM-DD')
 	const tintedTestIds = () =>
 		screen
 			.getAllByTestId(new RegExp(`^vertical-cell-${dateStr}-`))
@@ -366,8 +357,6 @@ describe('VerticalGridCol drag preview', () => {
 		expect(tintedTestIds()).toEqual([])
 	})
 
-	// A drag step used to re-render every slot of the week, 20,000 of them for
-	// 30 resources at 15 minutes. Only the column it lands on is told about it.
 	test('does not re-render its slots when the drag moves elsewhere', () => {
 		const { getCellClassName, dragTo } = renderColumnUnderDrag(
 			previewAt(9, 'room-a')

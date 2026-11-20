@@ -9,8 +9,7 @@
     "preview": "bunx vite preview"
   },
   "dependencies": {
-    "@ilamy/calendar": "^1.7.0",
-    "dayjs": "^1.11.21",
+    "@ilamy/calendar": "^4.0.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "tailwindcss": "^4.3.0",

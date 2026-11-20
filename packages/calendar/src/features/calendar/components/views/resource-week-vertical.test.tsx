@@ -4,7 +4,12 @@ import type {
 	VerticalColumnSpec,
 	ViewConfig,
 } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	dayKey,
+	getWeekNumber,
+	parseDate,
+	startOf,
+} from '@ilamy/utils/temporal'
 import { cleanup, render, screen } from '@testing-library/react'
 import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
 import { weekView } from '@/features/calendar/components/views/week'
@@ -16,6 +21,17 @@ import {
 } from '@/testing/resource-test-fixtures'
 import { WeekView } from '@/testing/view-harnesses'
 
+const initialZoned = parseDate(initialDate, 'UTC')
+if (!initialZoned) {
+	throw new Error(`Invalid resourceWeekInitialDate: ${initialDate}`)
+}
+const dateStr = dayKey(initialZoned)
+const firstDayOfInitialWeek = dayKey(startOf(initialZoned, 'week', 0))
+const initialWeekNumber = getWeekNumber(
+	startOf(initialZoned, 'week', 0),
+	'local'
+)
+
 const renderResourceWeekVertical = (props = {}) => {
 	return render(
 		<CalendarProvider
@@ -25,6 +41,7 @@ const renderResourceWeekVertical = (props = {}) => {
 			initialView="week"
 			orientation="vertical"
 			resources={twoResources}
+			timezone="UTC"
 			{...props}
 		>
 			<CalendarDndContext>
@@ -42,31 +59,22 @@ describe('ResourceWeekVertical', () => {
 	test('renders vertical resource week view structure', () => {
 		renderResourceWeekVertical()
 
-		// Should render resource headers
 		expect(screen.getByText('Resource 1')).toBeInTheDocument()
 		expect(screen.getByText('Resource 2')).toBeInTheDocument()
-
-		// Should render All Day row label (case insensitive)
 		expect(screen.getByText(/All day/i)).toBeInTheDocument()
-
-		// Should render time column
 		expect(screen.getByTestId('vertical-col-time-col')).toBeInTheDocument()
 	})
 
 	test('day headers show only the day number, not the M/D slash format (issue #157)', () => {
 		renderResourceWeekVertical()
 
-		// No header should render the M/D slash format (e.g. "1/1", "12/29")
 		expect(screen.queryAllByText(/^\d{1,2}\/\d{1,2}$/)).toHaveLength(0)
-
-		// Weekday labels still render, so the headers themselves are intact
 		expect(screen.getAllByText('Wed').length).toBeGreaterThan(0)
 	})
 
 	test('daily-mode day column shows only the day number, not M/D (issue #157)', () => {
 		renderResourceWeekVertical({ weekViewGranularity: 'daily' })
 
-		// The daily-mode first column must not use the M/D slash format either
 		expect(screen.queryAllByText(/^\d{1,2}\/\d{1,2}$/)).toHaveLength(0)
 		expect(screen.getAllByText('Wed').length).toBeGreaterThan(0)
 	})
@@ -74,209 +82,134 @@ describe('ResourceWeekVertical', () => {
 	test('renders day columns for each resource', () => {
 		renderResourceWeekVertical()
 
-		// Check for some day columns
-		// Format: vertical-col-day-col-{date}-resource-{id}
-		const dateStr = initialDate.format('YYYY-MM-DD')
-		const col1 = screen.getByTestId(
-			`vertical-col-day-col-${dateStr}-resource-1`
-		)
-		expect(col1).toBeInTheDocument()
+		expect(
+			screen.getByTestId(`vertical-col-day-col-${dateStr}-resource-1`)
+		).toBeInTheDocument()
 	})
 
 	test('renders all-day row for each resource', () => {
 		renderResourceWeekVertical()
-		const allDayRows = screen.getAllByTestId('all-day-row')
-		// 1 for Resource 1, 1 for Resource 2
-		expect(allDayRows.length).toBe(2)
+		expect(screen.getAllByTestId('all-day-row').length).toBe(2)
 	})
 
 	test('renders dates header row', () => {
 		renderResourceWeekVertical()
-		// Initial date is Wednesday Jan 1, 2025.
-		// Default firstDayOfWeek is Sunday, so week starts Dec 29, 2024.
-		// Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday
-		// Appears multiple times because of multiple resources
 		expect(screen.getAllByText('Sun').length).toBeGreaterThan(0)
 		expect(screen.getAllByText('Sat').length).toBeGreaterThan(0)
 	})
 
-	// hideNonBusinessHours backwards compatibility tests
-	test('shows all 24 hours when hideNonBusinessHours is false (default behavior)', () => {
-		cleanup()
+	test('shows all 24 hours when hideNonBusinessHours is false or omitted', () => {
 		const businessHours = {
 			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
 			startTime: 9,
 			endTime: 17,
 		}
 
-		renderResourceWeekVertical({
-			businessHours,
-			hideNonBusinessHours: false, // Explicitly false
-		})
-
-		// All 24 hours should be present
-		expect(screen.getByTestId('vertical-time-00')).toBeInTheDocument()
-		expect(screen.getByTestId('vertical-time-08')).toBeInTheDocument()
-		expect(screen.getByTestId('vertical-time-09')).toBeInTheDocument()
-		expect(screen.getByTestId('vertical-time-17')).toBeInTheDocument()
-		expect(screen.getByTestId('vertical-time-23')).toBeInTheDocument()
-	})
-
-	test('shows all 24 hours when hideNonBusinessHours is not provided (backwards compatibility)', () => {
-		cleanup()
-		const businessHours = {
-			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-			startTime: 9,
-			endTime: 17,
+		renderResourceWeekVertical({ businessHours, hideNonBusinessHours: false })
+		for (const hh of ['00', '08', '09', '17', '23']) {
+			expect(screen.getByTestId(`vertical-time-${hh}`)).toBeInTheDocument()
 		}
 
-		renderResourceWeekVertical({
-			businessHours,
-			// hideNonBusinessHours is NOT provided - should default to false
-		})
-
-		// All 24 hours should be present (backwards compatible behavior)
-		expect(screen.getByTestId('vertical-time-00')).toBeInTheDocument()
-		expect(screen.getByTestId('vertical-time-08')).toBeInTheDocument()
-		expect(screen.getByTestId('vertical-time-09')).toBeInTheDocument()
-		expect(screen.getByTestId('vertical-time-17')).toBeInTheDocument()
-		expect(screen.getByTestId('vertical-time-23')).toBeInTheDocument()
+		cleanup()
+		renderResourceWeekVertical({ businessHours })
+		for (const hh of ['00', '08', '09', '17', '23']) {
+			expect(screen.getByTestId(`vertical-time-${hh}`)).toBeInTheDocument()
+		}
 	})
 
 	test('hides non-business hours when hideNonBusinessHours is true', () => {
-		cleanup()
-		const businessHours = {
-			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-			startTime: 9,
-			endTime: 17,
-		}
-
 		renderResourceWeekVertical({
-			businessHours,
+			businessHours: {
+				daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+				startTime: 9,
+				endTime: 17,
+			},
 			hideNonBusinessHours: true,
 		})
 
-		// Business hours should be present
 		expect(screen.getByTestId('vertical-time-09')).toBeInTheDocument()
 		expect(screen.getByTestId('vertical-time-16')).toBeInTheDocument()
-
-		// Non-business hours should NOT be present
 		expect(screen.queryByTestId('vertical-time-08')).not.toBeInTheDocument()
 		expect(screen.queryByTestId('vertical-time-17')).not.toBeInTheDocument()
 		expect(screen.queryByTestId('vertical-time-23')).not.toBeInTheDocument()
 	})
 
-	// Event positioning tests - CRITICAL for hideNonBusinessHours
 	test('positions event at 0% top when event starts at business hour start with hideNonBusinessHours true', () => {
-		cleanup()
-		const monday = dayjs('2025-01-06T00:00:00.000Z')
-		const businessHours = {
-			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-			startTime: 9,
-			endTime: 17,
-		}
-		// Create an event that starts at 9am (business start) for resource 1
 		const testEvent: CalendarEvent = {
 			id: 'test-event-resource-week-9am',
 			title: 'Resource Week Morning',
-			start: dayjs('2025-01-06T09:00:00.000Z'),
-			end: dayjs('2025-01-06T10:00:00.000Z'),
+			start: '2025-01-06T09:00:00+00:00',
+			end: '2025-01-06T10:00:00+00:00',
 			resourceId: '1',
 		}
 
 		renderResourceWeekVertical({
-			initialDate: monday,
-			businessHours,
+			initialDate: '2025-01-06T00:00:00Z',
+			businessHours: {
+				daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+				startTime: 9,
+				endTime: 17,
+			},
 			hideNonBusinessHours: true,
 			events: [testEvent],
 		})
 
-		// Event should be rendered
-		const eventElement = screen.getByText('Resource Week Morning')
-		expect(eventElement).toBeInTheDocument()
-
-		// Find the event wrapper with positioning
-		const eventWrapper = eventElement.closest('[style*="top"]')
-		expect(eventWrapper).not.toBeNull()
-
-		// Event starting at 9am should be at top: 0%
-		const style = eventWrapper?.getAttribute('style') || ''
-		expect(style).toContain('top: 0%')
+		const eventWrapper = screen
+			.getByText('Resource Week Morning')
+			.closest('[style*="top"]')
+		expect(eventWrapper?.getAttribute('style') || '').toContain('top: 0%')
 	})
 
 	test('positions event correctly when hideNonBusinessHours is false in ResourceWeekVertical', () => {
-		cleanup()
-		const monday = dayjs('2025-01-06T00:00:00.000Z')
-		const businessHours = {
-			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-			startTime: 9,
-			endTime: 17,
-		}
-		// Create an event that starts at 9am
 		const testEvent: CalendarEvent = {
 			id: 'test-event-resource-week-9am-full',
 			title: 'Resource Week Full',
-			start: dayjs('2025-01-06T09:00:00.000Z'),
-			end: dayjs('2025-01-06T10:00:00.000Z'),
+			start: '2025-01-06T09:00:00+00:00',
+			end: '2025-01-06T10:00:00+00:00',
 			resourceId: '1',
 		}
 
 		renderResourceWeekVertical({
-			initialDate: monday,
-			businessHours,
+			initialDate: '2025-01-06T00:00:00Z',
+			businessHours: {
+				daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+				startTime: 9,
+				endTime: 17,
+			},
 			hideNonBusinessHours: false,
 			events: [testEvent],
 		})
 
-		// Event should be rendered
-		const eventElement = screen.getByText('Resource Week Full')
-		expect(eventElement).toBeInTheDocument()
-
-		// Find the event wrapper with positioning
-		const eventWrapper = eventElement.closest('[style*="top"]')
-		expect(eventWrapper).not.toBeNull()
-
-		// Event starting at 9am in a 24-hour grid should NOT be at top 0%
-		const style = eventWrapper?.getAttribute('style') || ''
-		expect(style).not.toContain('top: 0%')
+		const eventWrapper = screen
+			.getByText('Resource Week Full')
+			.closest('[style*="top"]')
+		expect(eventWrapper?.getAttribute('style') || '').not.toContain('top: 0%')
 	})
 
 	test('positions event at correct percentage when event is in middle of business hours in ResourceWeekVertical', () => {
-		cleanup()
-		const monday = dayjs('2025-01-06T00:00:00.000Z')
-		const businessHours = {
-			daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-			startTime: 9,
-			endTime: 17,
-		}
-		// Create an event that starts at 1pm (13:00), which is 4 hours after 9am
-		// With 8 business hours (9-17), 1pm should be at 50% (4/8 * 100)
 		const testEvent: CalendarEvent = {
 			id: 'test-event-resource-week-1pm',
 			title: 'Resource Week Afternoon',
-			start: dayjs('2025-01-06T13:00:00.000Z'),
-			end: dayjs('2025-01-06T14:00:00.000Z'),
+			start: '2025-01-06T13:00:00+00:00',
+			end: '2025-01-06T14:00:00+00:00',
 			resourceId: '1',
 		}
 
 		renderResourceWeekVertical({
-			initialDate: monday,
-			businessHours,
+			initialDate: '2025-01-06T00:00:00Z',
+			businessHours: {
+				daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+				startTime: 9,
+				endTime: 17,
+			},
 			hideNonBusinessHours: true,
 			events: [testEvent],
 		})
 
-		// Event should be rendered
-		const eventElement = screen.getByText('Resource Week Afternoon')
-		expect(eventElement).toBeInTheDocument()
-
-		// Find the event wrapper with positioning
-		const eventWrapper = eventElement.closest('[style*="top"]')
-		expect(eventWrapper).not.toBeNull()
-
-		// Event starting at 1pm (4 hours into 8-hour grid) should be at 50%
-		const style = eventWrapper?.getAttribute('style') || ''
-		expect(style).toContain('top: 50%')
+		const eventWrapper = screen
+			.getByText('Resource Week Afternoon')
+			.closest('[style*="top"]')
+		expect(eventWrapper?.getAttribute('style') || '').toContain('top: 50%')
 	})
 
 	describe('weekViewGranularity', () => {
@@ -292,15 +225,12 @@ describe('ResourceWeekVertical', () => {
 
 			test('renders all-day rows for each resource in hourly mode', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'hourly' })
-
-				const allDayRows = screen.getAllByTestId('all-day-row')
-				expect(allDayRows).toHaveLength(2)
+				expect(screen.getAllByTestId('all-day-row')).toHaveLength(2)
 			})
 
 			test('renders resource x day columns (7 days x 2 resources = 14) in hourly mode', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'hourly' })
 
-				const dateStr = initialDate.format('YYYY-MM-DD')
 				expect(
 					screen.getByTestId(`vertical-col-day-col-${dateStr}-resource-1`)
 				).toBeInTheDocument()
@@ -311,10 +241,9 @@ describe('ResourceWeekVertical', () => {
 
 			test('renders the date sub-header row in hourly mode', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'hourly' })
-
-				// 7 days × 2 resources = 14 sub-header cells, all with HH=00
-				const subHeaders = screen.getAllByTestId('resource-week-time-label-00')
-				expect(subHeaders).toHaveLength(14)
+				expect(
+					screen.getAllByTestId('resource-week-time-label-00')
+				).toHaveLength(14)
 			})
 		})
 
@@ -330,24 +259,18 @@ describe('ResourceWeekVertical', () => {
 
 			test('does not render all-day rows in daily mode', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'daily' })
-
-				const allDayRows = screen.queryAllByTestId('all-day-row')
-				expect(allDayRows).toHaveLength(0)
+				expect(screen.queryAllByTestId('all-day-row')).toHaveLength(0)
 			})
 
 			test('renders one column per resource (not resource x day) in daily mode', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'daily' })
 
-				// Daily mode: one column per resource
 				expect(
 					screen.getByTestId('vertical-col-week-col-resource-1')
 				).toBeInTheDocument()
 				expect(
 					screen.getByTestId('vertical-col-week-col-resource-2')
 				).toBeInTheDocument()
-
-				// Hourly resource x day columns must be absent
-				const dateStr = initialDate.format('YYYY-MM-DD')
 				expect(
 					screen.queryByTestId(`vertical-col-day-col-${dateStr}-resource-1`)
 				).not.toBeInTheDocument()
@@ -355,21 +278,17 @@ describe('ResourceWeekVertical', () => {
 
 			test('does not render the date sub-header row in daily mode', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'daily' })
-
-				const subHeaders = screen.queryAllByTestId(/resource-week-time-label-/)
-				expect(subHeaders).toHaveLength(0)
+				expect(
+					screen.queryAllByTestId(/resource-week-time-label-/)
+				).toHaveLength(0)
 			})
 
 			test('shows week number in the header in daily mode', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'daily' })
 
-				// Header renders "Week" label and week number as sibling spans in the
-				// same gutter. Scope to that gutter so the week number isn't confused
-				// with a bare day number now that day headers show only "D" (issue #157).
-				const weekNumber = initialDate.week()
 				const weekLabel = screen.getByText('Week')
 				expect(weekLabel.parentElement?.textContent).toContain(
-					String(weekNumber)
+					String(initialWeekNumber)
 				)
 			})
 
@@ -377,26 +296,15 @@ describe('ResourceWeekVertical', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'daily' })
 
 				const dateCol = screen.getByTestId('vertical-col-date-col')
-
-				// initialDate is Wed Jan 1, 2025. Default firstDayOfWeek is Sunday,
-				// so the week is Sun Dec 29, 2024 → Sat Jan 4, 2025.
-				const expectedDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-				for (const day of expectedDays) {
+				for (const day of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']) {
 					expect(dateCol.textContent).toContain(day)
 				}
 			})
 
 			test('firstCol (date-col) does not render hour labels (regression: duplicate HourLabel bug)', () => {
-				// Regression test: before the fix, daily mode firstCol rendered
-				// <HourLabel date={date} /> in addition to the day name + date,
-				// producing "12 AM" after every day label. The fix removed the
-				// stray HourLabel; this test locks in that behavior.
 				renderResourceWeekVertical({ weekViewGranularity: 'daily' })
 
 				const dateCol = screen.getByTestId('vertical-col-date-col')
-
-				// HourLabel in 12-hour format (default) renders "12 AM", "1 AM", etc.
-				// If the bug returns, AM/PM text would appear in every cell.
 				expect(dateCol.textContent).not.toMatch(/AM|PM/)
 			})
 		})
@@ -405,22 +313,18 @@ describe('ResourceWeekVertical', () => {
 			test('hourly mode renders expanded header: resource row + date sub-header row', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'hourly' })
 
-				// The expanded h-24 header is built from two rows:
-				// 1. Resource name row (always rendered)
-				// 2. Date sub-header row (hourly only – 7 days x 2 resources = 14 cells)
-				const subHeaders = screen.getAllByTestId('resource-week-time-label-00')
-				expect(subHeaders).toHaveLength(14)
+				expect(
+					screen.getAllByTestId('resource-week-time-label-00')
+				).toHaveLength(14)
 				expect(screen.getAllByTestId('all-day-row')).toHaveLength(2)
 			})
 
 			test('daily mode uses a compact header (h-12 class) and no h-24 in header', () => {
 				renderResourceWeekVertical({ weekViewGranularity: 'daily' })
 
-				// Date sub-header row is absent and header height is h-12, not h-24
-				const subHeaders = screen.queryAllByTestId(/resource-week-time-label-/)
-				expect(subHeaders).toHaveLength(0)
-
-				// All-day row is absent (no extra header space needed)
+				expect(
+					screen.queryAllByTestId(/resource-week-time-label-/)
+				).toHaveLength(0)
 				expect(screen.queryAllByTestId('all-day-row')).toHaveLength(0)
 			})
 		})
@@ -429,40 +333,31 @@ describe('ResourceWeekVertical', () => {
 	describe('slotDuration', () => {
 		test('renders only hour slots by default', () => {
 			renderResourceWeekVertical()
-			const startOfWeek = initialDate.startOf('week')
-			const firstDay = startOfWeek.format('YYYY-MM-DD')
 
 			expect(
-				screen.getByTestId(`vertical-cell-${firstDay}-09-00-resource-1`)
+				screen.getByTestId(
+					`vertical-cell-${firstDayOfInitialWeek}-09-00-resource-1`
+				)
 			).toBeInTheDocument()
-			expect(
-				screen.queryByTestId(`vertical-cell-${firstDay}-09-15-resource-1`)
-			).not.toBeInTheDocument()
-			expect(
-				screen.queryByTestId(`vertical-cell-${firstDay}-09-30-resource-1`)
-			).not.toBeInTheDocument()
-			expect(
-				screen.queryByTestId(`vertical-cell-${firstDay}-09-45-resource-1`)
-			).not.toBeInTheDocument()
+			for (const mm of ['15', '30', '45']) {
+				expect(
+					screen.queryByTestId(
+						`vertical-cell-${firstDayOfInitialWeek}-09-${mm}-resource-1`
+					)
+				).not.toBeInTheDocument()
+			}
 		})
 
 		test('renders quarter-hour slots when slotDuration is 15', () => {
 			renderResourceWeekVertical({ slotDuration: 15 })
-			const startOfWeek = initialDate.startOf('week')
-			const firstDay = startOfWeek.format('YYYY-MM-DD')
 
-			expect(
-				screen.getByTestId(`vertical-cell-${firstDay}-09-00-resource-1`)
-			).toBeInTheDocument()
-			expect(
-				screen.getByTestId(`vertical-cell-${firstDay}-09-15-resource-1`)
-			).toBeInTheDocument()
-			expect(
-				screen.getByTestId(`vertical-cell-${firstDay}-09-30-resource-1`)
-			).toBeInTheDocument()
-			expect(
-				screen.getByTestId(`vertical-cell-${firstDay}-09-45-resource-1`)
-			).toBeInTheDocument()
+			for (const mm of ['00', '15', '30', '45']) {
+				expect(
+					screen.getByTestId(
+						`vertical-cell-${firstDayOfInitialWeek}-09-${mm}-resource-1`
+					)
+				).toBeInTheDocument()
+			}
 		})
 	})
 
@@ -470,7 +365,7 @@ describe('ResourceWeekVertical', () => {
 		test('shows the week number in the day header unless weekNumbers is false', () => {
 			renderResourceWeekVertical()
 			expect(screen.getByTestId('week-number')).toHaveTextContent(
-				String(initialDate.week())
+				String(initialWeekNumber)
 			)
 
 			cleanup()
@@ -479,7 +374,6 @@ describe('ResourceWeekVertical', () => {
 		})
 
 		test('numbers the first drawn day of the week, not the current date, in both headers', () => {
-			// Sun 29 Dec 2024 - Sat 4 Jan 2025: ISO week 52 by its Sunday, 1 by Wednesday.
 			renderResourceWeekVertical({ weekNumberCalculation: 'ISO' })
 			expect(screen.getByTestId('week-number')).toHaveTextContent('52')
 
@@ -496,12 +390,10 @@ describe('ResourceWeekVertical', () => {
 
 			expect(screen.getAllByTestId('week-number')).toHaveLength(1)
 			expect(screen.getByTestId('week-number')).toHaveTextContent(
-				String(initialDate.week())
+				String(initialWeekNumber)
 			)
 		})
 
-		// The standard week view animates its number like the day numbers beside
-		// it (week.tsx); the resource weeks drew theirs static, so it jumped.
 		test.each(['hourly', 'daily'] as const)(
 			'%s granularity animates the week number like the standard week view',
 			(weekViewGranularity) => {
@@ -525,13 +417,11 @@ describe('ResourceWeekVertical', () => {
 
 		test('hourly granularity: weekNumbers={false} hides the Week label too', () => {
 			renderResourceWeekVertical({ weekNumbers: false })
-
 			expect(screen.queryByText('Week')).not.toBeInTheDocument()
 		})
 
 		test('allDaySlot={false} removes every resource all-day row', () => {
 			renderResourceWeekVertical({ allDaySlot: false })
-
 			expect(screen.queryAllByTestId('all-day-row')).toHaveLength(0)
 		})
 	})
@@ -543,18 +433,17 @@ describe('resource week vertical column specs', () => {
 		resources: twoResources,
 		orientation: 'vertical',
 		weekViewGranularity: 'hourly',
+		timezone: 'UTC',
 	}
 
-	// The hour list of a day is the same for every resource, so it is derived
-	// once per visible day and shared, not rebuilt per resource per day.
 	test('gives every resource the same hour list for a given day', () => {
-		const specs = weekView.columns?.(dayjs(initialDate), config)
+		const specs = weekView.columns?.(initialDate, config)
 		const columns = (specs ?? []) as VerticalColumnSpec[]
 		const firstResourceColumns = columns.filter(
-			(column) => column.resource?.id === twoResources[0].id
+			(column) => column.resource?.id === twoResources.at(0)?.id
 		)
 		const secondResourceColumns = columns.filter(
-			(column) => column.resource?.id === twoResources[1].id
+			(column) => column.resource?.id === twoResources.at(1)?.id
 		)
 		expect(firstResourceColumns).toHaveLength(7)
 		firstResourceColumns.forEach((column, dayIndex) => {

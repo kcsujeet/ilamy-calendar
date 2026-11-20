@@ -1,9 +1,9 @@
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import { toOffsetIso, type ZonedDate } from '@ilamy/utils/temporal'
 import { useDateTimeFormatters } from '@/features/calendar/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 interface HourLabelProps {
-	date: Dayjs
+	date: ZonedDate
 }
 
 export const HourLabel: React.FC<HourLabelProps> = ({ date }) => {
@@ -11,7 +11,7 @@ export const HourLabel: React.FC<HourLabelProps> = ({ date }) => {
 	const { formatSlotHeader } = useDateTimeFormatters()
 
 	if (renderHour) {
-		return <>{renderHour(date)}</>
+		return <>{renderHour(toOffsetIso(date))}</>
 	}
 
 	return <>{formatSlotHeader(date)}</>

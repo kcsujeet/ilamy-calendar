@@ -1,26 +1,24 @@
 import type { CalendarEvent } from '@ilamy/calendar'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	endOf,
+	isAfter,
+	now,
+	parseDate,
+	resolveZone,
+	subtract,
+	toDate,
+	toUtcIso,
+} from '@ilamy/utils/temporal'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from '../types'
 import { toFloatingDate } from './floating-time'
 
-export const isRecurringEvent = (event: CalendarEvent): boolean => {
-	return Boolean(event.rrule || event.recurrenceId || event.uid)
-}
+export const isRecurringEvent = (event: CalendarEvent): boolean =>
+	Boolean(event.rrule || event.recurrenceId || event.uid)
 
-/**
- * Consistently derives a parent UID from an event.
- * Uses the explicit `uid` if available, otherwise falls back to `${id}@ilamy.calendar`.
- */
-export const getEventParentUID = (event: CalendarEvent): string => {
-	return event.uid || `${event.id}@ilamy.calendar`
-}
+export const getEventParentUID = (event: CalendarEvent): string =>
+	event.uid || `${event.id}@ilamy.calendar`
 
-/**
- * Finds the base recurring event (the one with rrule and no recurrenceId)
- * that shares the same parent UID as the target event.
- * Throws if not found — callers assume the series exists.
- */
 export const findBaseEventIndex = (
 	events: CalendarEvent[],
 	targetEvent: CalendarEvent
@@ -39,66 +37,60 @@ export const findBaseEventIndex = (
 
 /**
  * RFC 5545 RECURRENCE-ID: for detached overrides, the original occurrence
- * start is stored on recurrenceId; generated instances use their start.
+ * start is stored on `recurrenceId`; generated instances use their start in UTC ISO.
  */
-export const getOccurrenceStartISO = (event: CalendarEvent): string =>
-	event.recurrenceId ?? event.start.toISOString()
+export const getOccurrenceStartISO = (event: CalendarEvent): string => {
+	if (event.recurrenceId) {
+		return event.recurrenceId
+	}
+	const parsed = parseDate(event.start, event.timezone)
+	return parsed ? toUtcIso(parsed) : event.start
+}
 
-/**
- * How many occurrences the series has strictly before `occurrenceStartISO`.
- * EXDATEd ones count: COUNT is applied before EXDATE removes anything
- * (RFC 5545 §3.3.10, §3.8.5.3). Zero means the occurrence is the series' first.
- */
 export const countOccurrencesBefore = (
 	baseEvent: CalendarEvent,
-	occurrenceStartISO: string
+	occurrenceStartISO: string,
+	timezone?: string
 ): number => {
 	const { rrule } = baseEvent
 	if (!rrule) {
 		return 0
 	}
-	// Floating time, as `generateRecurringEvents` evaluates the rule.
-	const floatingStart = toFloatingDate(baseEvent.start)
-	const floatingUntil = rrule.until
-		? toFloatingDate(dayjs(rrule.until))
-		: undefined
+	const zone = baseEvent.timezone ?? resolveZone(timezone)
+	const baseStart = parseDate(baseEvent.start, zone)
+	const occurrenceStart = parseDate(occurrenceStartISO, zone)
+	if (!(baseStart && occurrenceStart)) {
+		return 0
+	}
+	const floatingStart = toFloatingDate(baseStart)
+	const parsedUntil = rrule.until ? parseDate(rrule.until, zone) : undefined
+	const floatingUntil = parsedUntil ? toFloatingDate(parsedUntil) : undefined
 	const rule = new RRule({
 		...rrule,
 		dtstart: floatingStart,
 		until: floatingUntil,
 	})
-	const floatingOccurrence = toFloatingDate(dayjs(occurrenceStartISO))
-	// `between` includes its lower bound, so start one millisecond early to count DTSTART.
+	const floatingOccurrence = toFloatingDate(occurrenceStart)
 	const beforeDtstart = new Date(floatingStart.getTime() - 1)
 	return rule.between(beforeDtstart, floatingOccurrence, false).length
 }
 
-/**
- * Cuts a series so it ends the day before one of its occurrences, for the
- * "following" scope of edit and delete. The occurrence is named by its ORIGINAL
- * start, so a moved occurrence cuts where it came from, not where it now is.
- *
- * - UNTIL replaces COUNT: "The UNTIL or COUNT rule parts ... MUST NOT occur in
- *   the same 'recur'" (RFC 5545 §3.3.10).
- * - EXDATEs after the cut go, they exclude nothing any more.
- * - `isFollowingOverride` matches the detached overrides of the series that
- *   fall after the cut: they no longer belong to it, so the caller removes and
- *   reports them (#315).
- */
 export const cutSeriesBefore = (
 	baseEvent: CalendarEvent,
-	occurrenceStartISO: string
+	occurrenceStartISO: string,
+	timezone?: string
 ): {
 	terminatedEvent: CalendarEvent
 	isFollowingOverride: (event: CalendarEvent) => boolean
 } => {
-	const terminationDate = dayjs(occurrenceStartISO)
-		.subtract(1, 'day')
-		.endOf('day')
-		.toDate()
-	const keptExdates = (baseEvent.exdates ?? []).filter(
-		(iso) => !dayjs(iso).isAfter(terminationDate)
-	)
+	const zone = baseEvent.timezone ?? resolveZone(timezone)
+	const occurrenceStart = parseDate(occurrenceStartISO, zone) ?? now(zone)
+	const terminationZoned = endOf(subtract(occurrenceStart, 1, 'day'), 'day')
+	const terminationDate = toDate(terminationZoned)
+	const keptExdates = (baseEvent.exdates ?? []).filter((iso) => {
+		const parsed = parseDate(iso, zone)
+		return parsed ? !isAfter(parsed, terminationZoned) : true
+	})
 	const terminatedEvent: CalendarEvent = {
 		...baseEvent,
 		exdates: keptExdates,
@@ -113,17 +105,17 @@ export const cutSeriesBefore = (
 	const isFollowingOverride = (event: CalendarEvent): boolean => {
 		const isDetachedOverride = Boolean(event.recurrenceId) && !event.rrule
 		const belongsToSeries = getEventParentUID(event) === parentUid
-		const isAfterCut = dayjs(event.recurrenceId).isAfter(terminationDate)
+		const parsedRecurrenceId = event.recurrenceId
+			? parseDate(event.recurrenceId, zone)
+			: undefined
+		const isAfterCut = Boolean(
+			parsedRecurrenceId && isAfter(parsedRecurrenceId, terminationZoned)
+		)
 		return isDetachedOverride && belongsToSeries && isAfterCut
 	}
 	return { terminatedEvent, isFollowingOverride }
 }
 
-/**
- * Appends the target occurrence's start to the base event's EXDATE list,
- * excluding that single occurrence from the series. Shared by the "this" scope
- * of both edit and delete.
- */
 export const addExdateToBaseEvent = (
 	baseEvent: CalendarEvent,
 	targetEvent: CalendarEvent

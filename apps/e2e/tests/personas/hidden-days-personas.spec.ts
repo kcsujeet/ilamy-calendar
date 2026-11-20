@@ -41,7 +41,15 @@ const open = async (
 	page: Page,
 	options: Parameters<typeof gotoScenario>[1]
 ) => {
-	await gotoScenario(page, options)
+	const plugins =
+		options.view === 'year'
+			? [...new Set([...(options.plugins ?? []), 'year'])]
+			: options.plugins
+	await gotoScenario(page, {
+		...options,
+		plugins,
+		settings: { editable: 'true', ...options.settings },
+	})
 	await settleAnimations(page)
 }
 

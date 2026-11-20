@@ -9,24 +9,65 @@ import {
 } from 'bun:test'
 import { agendaPlugin } from '@ilamy/calendar-agenda'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
+import { yearPlugin } from '@ilamy/calendar-year'
+import { getMonthWeeks } from '@ilamy/core'
 import type { CalendarEvent, EventsChange, IlamyPlugin } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	add,
+	dayKey,
+	elapsedDiff,
+	endOf,
+	formatDate,
+	getOffsetString,
+	now,
+	parseDate,
+	startOf,
+	toOffsetIso,
+	toUtcIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { act, renderHook } from '@testing-library/react'
 import { RRule } from 'rrule'
-import 'dayjs/locale/fr.js'
 import { defaultTranslations } from '@/config/translations/default'
 import type { Translations } from '@/config/translations/types'
 import type { CalendarView } from '@/types'
-import { getMonthWeeks } from '@/utils/date-utils'
 import { useCalendarEngine } from './use-calendar-engine'
+
+const mustParse = (iso: string, zone = 'UTC'): ZonedDate => {
+	const parsed = parseDate(iso, zone)
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const pad2 = (value: number): string => String(value).padStart(2, '0')
+const pad3 = (value: number): string => String(value).padStart(3, '0')
+const isoDay = (iso: string | undefined, zone = 'UTC'): string =>
+	iso ? dayKey(mustParse(iso, zone)) : ''
+const isoHHmm = (iso: string | undefined, zone = 'UTC'): string => {
+	if (!iso) return ''
+	const parsed = mustParse(iso, zone)
+	return `${pad2(parsed.hour)}:${pad2(parsed.minute)}`
+}
+const isoSsMs = (iso: string | undefined, zone = 'UTC'): string => {
+	if (!iso) return ''
+	const parsed = mustParse(iso, zone)
+	return `${pad2(parsed.second)}.${pad3(parsed.millisecond)}`
+}
+const isoOffset = (iso: string | undefined): string => {
+	if (!iso) return ''
+	const match = /([+-]\d{2}:\d{2}|Z)$/.exec(iso)
+	return match ? (match[1] === 'Z' ? '+00:00' : match[1]) : ''
+}
 
 const createEvent = (
 	overrides: Partial<CalendarEvent> = {}
 ): CalendarEvent => ({
 	id: '1',
 	title: 'Test Event',
-	start: dayjs('2025-01-15T10:00:00.000Z'),
-	end: dayjs('2025-01-15T11:00:00.000Z'),
+	start: '2025-01-15T10:00:00.000Z',
+	end: '2025-01-15T11:00:00.000Z',
 	...overrides,
 })
 
@@ -36,8 +77,8 @@ const createRecurringEvent = (
 	id: 'recurring-1',
 	uid: 'recurring-1@ilamy.calendar',
 	title: 'Weekly Meeting',
-	start: dayjs('2025-01-06T10:00:00.000Z'),
-	end: dayjs('2025-01-06T11:00:00.000Z'),
+	start: '2025-01-06T10:00:00.000Z',
+	end: '2025-01-06T11:00:00.000Z',
 	rrule: {
 		freq: RRule.WEEKLY,
 		interval: 1,
@@ -54,10 +95,14 @@ const fortyDayPlugin: IlamyPlugin = {
 			name: 'forty-day',
 			icon: () => null,
 			navigationStep: { amount: 40, unit: 'day' },
-			range: (date) => ({
-				start: date.startOf('day'),
-				end: date.add(39, 'day').endOf('day'),
-			}),
+			range: (dateIso, config) => {
+				const parsed =
+					parseDate(dateIso, config.timezone) ?? now(config.timezone)
+				return {
+					start: toOffsetIso(startOf(parsed, 'day')),
+					end: toOffsetIso(endOf(add(parsed, 39, 'day'), 'day')),
+				}
+			},
 		},
 	],
 }
@@ -66,24 +111,11 @@ describe('useCalendarEngine', () => {
 	const defaultConfig = {
 		events: [] as CalendarEvent[],
 		firstDayOfWeek: 0,
+		timezone: 'UTC',
 	}
 
-	/**
-	 * For tests whose subject is a calendar DAY. A full ISO instant names a
-	 * different day on different machines (noon UTC on 15 January is the 16th in
-	 * Auckland), so these pin the calendar's zone and the machine decides nothing.
-	 */
 	const utcCalendar = { ...defaultConfig, timezone: 'UTC' }
 
-	// The timezone prop writes dayjs's module-global default zone, which would
-	// otherwise outlive the test that set it.
-	afterEach(() => {
-		dayjs.tz.setDefault(undefined)
-	})
-
-	// Mounts the engine with the recurrence plugin and fresh callback spies; each
-	// test destructures only the spies it asserts. Collapses the repeated
-	// renderHook + useCalendarEngine boilerplate across the recurring-event tests.
 	const renderRecurrenceEngine = (
 		events: CalendarEvent[],
 		config = defaultConfig
@@ -108,12 +140,8 @@ describe('useCalendarEngine', () => {
 	}
 
 	describe('locale', () => {
-		afterEach(() => {
-			dayjs.locale('en')
-		})
-
 		it('applies locale on initial mount', () => {
-			const initialDate = dayjs('2025-06-15T12:00:00.000Z')
+			const initialDate = '2025-06-15T12:00:00.000Z'
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
@@ -123,11 +151,17 @@ describe('useCalendarEngine', () => {
 			)
 
 			expect(result.current.currentLocale).toBe('fr')
-			expect(result.current.currentDate.format('MMMM')).toBe('juin')
+			expect(
+				formatDate(
+					mustParse(result.current.currentDate, 'UTC'),
+					{ month: 'long' },
+					result.current.currentLocale
+				)
+			).toBe('juin')
 		})
 
 		it('updates locale when the locale prop changes', () => {
-			const initialDate = dayjs('2025-06-15T12:00:00.000Z')
+			const initialDate = '2025-06-15T12:00:00.000Z'
 			const { result, rerender } = renderHook(
 				({ locale }: { locale: string }) =>
 					useCalendarEngine({
@@ -138,12 +172,24 @@ describe('useCalendarEngine', () => {
 				{ initialProps: { locale: 'en' } }
 			)
 
-			expect(result.current.currentDate.format('MMMM')).toBe('June')
+			expect(
+				formatDate(
+					mustParse(result.current.currentDate, 'UTC'),
+					{ month: 'long' },
+					result.current.currentLocale
+				)
+			).toBe('June')
 
 			rerender({ locale: 'fr' })
 
 			expect(result.current.currentLocale).toBe('fr')
-			expect(result.current.currentDate.format('MMMM')).toBe('juin')
+			expect(
+				formatDate(
+					mustParse(result.current.currentDate, 'UTC'),
+					{ month: 'long' },
+					result.current.currentLocale
+				)
+			).toBe('juin')
 		})
 	})
 
@@ -168,11 +214,10 @@ describe('useCalendarEngine', () => {
 		})
 
 		it('should initialize with custom initialDate', () => {
-			const customDate = dayjs('2025-06-15')
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, initialDate: customDate })
+				useCalendarEngine({ ...defaultConfig, initialDate: '2025-06-15' })
 			)
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-06-15')
+			expect(isoDay(result.current.currentDate)).toBe('2025-06-15')
 		})
 
 		it('should initialize with events', () => {
@@ -194,153 +239,154 @@ describe('useCalendarEngine', () => {
 
 	describe('navigation', () => {
 		it('should navigate to next month in month view', () => {
-			const initialDate = dayjs('2025-01-15')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
-					initialDate,
+					initialDate: '2025-01-15',
 					initialView: 'month',
 				})
 			)
 
 			act(() => result.current.nextPeriod())
 
-			expect(result.current.currentDate.month()).toBe(1) // February
+			expect(mustParse(result.current.currentDate).month).toBe(2)
 		})
 
 		it('should navigate to previous month in month view', () => {
-			const initialDate = dayjs('2025-02-15')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
-					initialDate,
+					initialDate: '2025-02-15',
 					initialView: 'month',
 				})
 			)
 
 			act(() => result.current.prevPeriod())
 
-			expect(result.current.currentDate.month()).toBe(0) // January
+			expect(mustParse(result.current.currentDate).month).toBe(1)
 		})
 
 		it('should navigate to next week in week view', () => {
-			const initialDate = dayjs('2025-01-15')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
-					initialDate,
+					initialDate: '2025-01-15',
 					initialView: 'week',
 				})
 			)
 
 			act(() => result.current.nextPeriod())
 
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-01-22')
+			expect(isoDay(result.current.currentDate)).toBe('2025-01-22')
 		})
 
 		it('should navigate to previous week in week view', () => {
-			const initialDate = dayjs('2025-01-15')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
-					initialDate,
+					initialDate: '2025-01-15',
 					initialView: 'week',
 				})
 			)
 
 			act(() => result.current.prevPeriod())
 
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-01-08')
+			expect(isoDay(result.current.currentDate)).toBe('2025-01-08')
 		})
 
 		it('should navigate to next day in day view', () => {
-			const initialDate = dayjs('2025-01-15')
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, initialDate, initialView: 'day' })
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate: '2025-01-15',
+					initialView: 'day',
+				})
 			)
 
 			act(() => result.current.nextPeriod())
 
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-01-16')
+			expect(isoDay(result.current.currentDate)).toBe('2025-01-16')
 		})
 
 		it('should navigate to previous day in day view', () => {
-			const initialDate = dayjs('2025-01-15')
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, initialDate, initialView: 'day' })
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate: '2025-01-15',
+					initialView: 'day',
+				})
 			)
 
 			act(() => result.current.prevPeriod())
 
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-01-14')
+			expect(isoDay(result.current.currentDate)).toBe('2025-01-14')
 		})
 
-		it('should navigate to next year in year view', () => {
-			const initialDate = dayjs('2025-01-15')
+		it('should navigate to next year in year view (with yearPlugin)', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
-					initialDate,
+					initialDate: '2025-01-15',
 					initialView: 'year',
+					plugins: [yearPlugin()],
 				})
 			)
 
 			act(() => result.current.nextPeriod())
 
-			expect(result.current.currentDate.year()).toBe(2026)
+			expect(mustParse(result.current.currentDate).year).toBe(2026)
 		})
 
-		it('should navigate to previous year in year view', () => {
-			const initialDate = dayjs('2025-01-15')
+		it('should navigate to previous year in year view (with yearPlugin)', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
-					initialDate,
+					initialDate: '2025-01-15',
 					initialView: 'year',
+					plugins: [yearPlugin()],
 				})
 			)
 
 			act(() => result.current.prevPeriod())
 
-			expect(result.current.currentDate.year()).toBe(2024)
+			expect(mustParse(result.current.currentDate).year).toBe(2024)
 		})
 
 		it('should navigate to today', () => {
-			const initialDate = dayjs('2020-01-15')
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, initialDate })
+				useCalendarEngine({ ...defaultConfig, initialDate: '2020-01-15' })
 			)
 
 			act(() => result.current.today())
 
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe(
-				dayjs().format('YYYY-MM-DD')
-			)
+			expect(isoDay(result.current.currentDate)).toBe(dayKey(now('UTC')))
 		})
 
 		it('should call onDateChange callback when navigating', () => {
 			const onDateChange = vi.fn()
-			const initialDate = dayjs('2025-01-15')
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, initialDate, onDateChange })
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate: '2025-01-15',
+					onDateChange,
+				})
 			)
 
 			act(() => result.current.nextPeriod())
 
 			expect(onDateChange).toHaveBeenCalledTimes(1)
 			const [calledDate, range] = onDateChange.mock.calls[0]
-			expect(calledDate.format('YYYY-MM-DD')).toBe('2025-02-15')
-			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-26')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2025-03-08')
+			expect(isoDay(calledDate)).toBe('2025-02-15')
+			expect(isoDay(range.start)).toBe('2025-01-26')
+			expect(isoDay(range.end)).toBe('2025-03-08')
 		})
 
 		it('should call onDateChange with correct range in day view', () => {
 			const onDateChange = vi.fn()
-			const initialDate = dayjs('2025-01-15')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
-					initialDate,
+					initialDate: '2025-01-15',
 					onDateChange,
 					initialView: 'day',
 				})
@@ -349,9 +395,9 @@ describe('useCalendarEngine', () => {
 			act(() => result.current.nextPeriod())
 
 			const [calledDate, range] = onDateChange.mock.calls[0]
-			expect(calledDate.format('YYYY-MM-DD')).toBe('2025-01-16')
-			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-16')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2025-01-16')
+			expect(isoDay(calledDate)).toBe('2025-01-16')
+			expect(isoDay(range.start)).toBe('2025-01-16')
+			expect(isoDay(range.end)).toBe('2025-01-16')
 		})
 
 		it('should select a specific date', () => {
@@ -360,51 +406,46 @@ describe('useCalendarEngine', () => {
 				useCalendarEngine({ ...defaultConfig, onDateChange })
 			)
 
-			const newDate = dayjs('2025-06-20')
-			act(() => result.current.selectDate(newDate))
+			act(() => result.current.selectDate('2025-06-20'))
 
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-06-20')
+			expect(isoDay(result.current.currentDate)).toBe('2025-06-20')
 			const [calledDate, range] = onDateChange.mock.calls[0]
-			expect(calledDate).toEqual(newDate)
-			expect(range.start.format('YYYY-MM-DD')).toBe('2025-06-01')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2025-07-12')
+			expect(isoDay(calledDate)).toBe('2025-06-20')
+			expect(isoDay(range.start)).toBe('2025-06-01')
+			expect(isoDay(range.end)).toBe('2025-07-12')
 		})
 
 		it('setView with a target date updates date and view atomically and emits one onDateChange', () => {
 			const onDateChange = vi.fn()
-			const initialDate = dayjs('2025-01-15')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
-					initialDate,
+					initialDate: '2025-01-15',
 					initialView: 'year',
+					plugins: [yearPlugin()],
 					onDateChange,
 				})
 			)
 
-			act(() => result.current.setView('day', dayjs('2025-03-10')))
+			act(() => result.current.setView('day', '2025-03-10'))
 
 			expect(result.current.view).toBe('day')
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(isoDay(result.current.currentDate)).toBe('2025-03-10')
 			expect(onDateChange).toHaveBeenCalledTimes(1)
 			const [calledDate, range] = onDateChange.mock.calls[0]
-			expect(calledDate.format('YYYY-MM-DD')).toBe('2025-03-10')
-			expect(range.start.format('YYYY-MM-DD')).toBe('2025-03-10')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(isoDay(calledDate)).toBe('2025-03-10')
+			expect(isoDay(range.start)).toBe('2025-03-10')
+			expect(isoDay(range.end)).toBe('2025-03-10')
 		})
 
-		// Navigation state is mirrored at mutation time, so navigation calls
-		// sequenced inside ONE handler must each see the previous call's result —
-		// closure reads of pre-batch React state would emit stale payloads.
-		// Shared harness for the sequencing tests: engine mounted at Jan 15 2025
-		// with an onDateChange spy; each test varies only the initial view.
 		const renderNavEngine = (initialView: CalendarView) => {
 			const onDateChange = vi.fn()
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
-					initialDate: dayjs('2025-01-15'),
+					initialDate: '2025-01-15',
 					initialView,
+					plugins: [yearPlugin()],
 					onDateChange,
 				})
 			)
@@ -413,13 +454,13 @@ describe('useCalendarEngine', () => {
 
 		const expectSecondEmissionDay = (
 			onDateChange: ReturnType<typeof vi.fn>,
-			isoDay: string
+			expectedDay: string
 		) => {
 			expect(onDateChange).toHaveBeenCalledTimes(2)
 			const [calledDate, range] = onDateChange.mock.calls.at(1) ?? []
-			expect(calledDate?.format('YYYY-MM-DD')).toBe(isoDay)
-			expect(range?.start.format('YYYY-MM-DD')).toBe(isoDay)
-			expect(range?.end.format('YYYY-MM-DD')).toBe(isoDay)
+			expect(isoDay(calledDate)).toBe(expectedDay)
+			expect(isoDay(range?.start)).toBe(expectedDay)
+			expect(isoDay(range?.end)).toBe(expectedDay)
 		}
 
 		it('emits the latest range when selectDate follows setView in one handler', () => {
@@ -427,11 +468,11 @@ describe('useCalendarEngine', () => {
 
 			act(() => {
 				result.current.setView('day')
-				result.current.selectDate(dayjs('2025-03-10'))
+				result.current.selectDate('2025-03-10')
 			})
 
 			expect(result.current.view).toBe('day')
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(isoDay(result.current.currentDate)).toBe('2025-03-10')
 			expectSecondEmissionDay(onDateChange, '2025-03-10')
 		})
 
@@ -439,12 +480,12 @@ describe('useCalendarEngine', () => {
 			const { result, onDateChange } = renderNavEngine('year')
 
 			act(() => {
-				result.current.selectDate(dayjs('2025-03-10'))
+				result.current.selectDate('2025-03-10')
 				result.current.setView('day')
 			})
 
 			expect(result.current.view).toBe('day')
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-10')
+			expect(isoDay(result.current.currentDate)).toBe('2025-03-10')
 			expectSecondEmissionDay(onDateChange, '2025-03-10')
 		})
 
@@ -456,80 +497,85 @@ describe('useCalendarEngine', () => {
 				result.current.nextPeriod()
 			})
 
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-03-15')
+			expect(isoDay(result.current.currentDate)).toBe('2025-03-15')
 			expect(onDateChange).toHaveBeenCalledTimes(2)
 			const [calledDate] = onDateChange.mock.calls.at(1) ?? []
-			expect(calledDate?.format('YYYY-MM-DD')).toBe('2025-03-15')
+			expect(isoDay(calledDate)).toBe('2025-03-15')
 		})
 
 		it('navigates by navigationStep and reports the custom range for views that declare them', () => {
 			const onDateChange = vi.fn()
-			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...utcCalendar,
-					initialDate,
+					initialDate: '2025-01-15T00:00:00.000Z',
 					initialView: 'forty-day',
 					plugins: [fortyDayPlugin],
 					onDateChange,
 				})
 			)
 
-			act(() => result.current.nextPeriod()) // Jan 15 + 40 days
+			act(() => result.current.nextPeriod())
 
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2025-02-24')
+			expect(isoDay(result.current.currentDate)).toBe('2025-02-24')
 			const [, range] = onDateChange.mock.calls[0]
-			expect(range.start.format('YYYY-MM-DD')).toBe('2025-02-24')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2025-04-04')
+			expect(isoDay(range.start)).toBe('2025-02-24')
+			expect(isoDay(range.end)).toBe('2025-04-04')
 		})
 
-		it('prepends the four built-in view specs ahead of plugin views in getViews()', () => {
+		it('prepends the three built-in view specs ahead of plugin views in getViews()', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({ ...defaultConfig, plugins: [fortyDayPlugin] })
 			)
 
 			const names = result.current.getViews().map((v) => v.name)
 
-			expect(names).toEqual(['day', 'week', 'month', 'year', 'forty-day'])
+			expect(names).toEqual(['day', 'week', 'month', 'forty-day'])
 		})
 
-		it('registers the agenda view only when the agenda plugin is provided', () => {
+		it('registers the year and agenda views only when their plugins are provided', () => {
 			const without = renderHook(() => useCalendarEngine(defaultConfig))
 			const withoutNames = without.result.current.getViews().map((v) => v.name)
 			expect(withoutNames).not.toContain('agenda')
+			expect(withoutNames).not.toContain('year')
 
-			const withPlugin = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, plugins: [agendaPlugin()] })
+			const withPlugins = renderHook(() =>
+				useCalendarEngine({
+					...defaultConfig,
+					plugins: [yearPlugin(), agendaPlugin()],
+				})
 			)
-			const withNames = withPlugin.result.current.getViews().map((v) => v.name)
+			const withNames = withPlugins.result.current.getViews().map((v) => v.name)
+			expect(withNames).toContain('year')
 			expect(withNames).toContain('agenda')
 		})
 
 		it('steps the agenda window and reports its range on navigation', () => {
 			const onDateChange = vi.fn()
-			const initialDate = dayjs('2026-06-13T00:00:00.000Z')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...utcCalendar,
-					initialDate,
+					initialDate: '2026-06-13T00:00:00.000Z',
 					initialView: 'agenda',
 					plugins: [agendaPlugin({ window: 7 })],
 					onDateChange,
 				})
 			)
 
-			act(() => result.current.nextPeriod()) // +7 days
+			act(() => result.current.nextPeriod())
 
-			expect(result.current.currentDate.format('YYYY-MM-DD')).toBe('2026-06-20')
+			expect(isoDay(result.current.currentDate)).toBe('2026-06-20')
 			const [, range] = onDateChange.mock.calls[0]
-			expect(range.start.format('YYYY-MM-DD')).toBe('2026-06-20')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2026-06-26')
+			expect(isoDay(range.start)).toBe('2026-06-20')
+			expect(isoDay(range.end)).toBe('2026-06-26')
 		})
 	})
 
 	describe('view management', () => {
 		it('should change view', () => {
-			const { result } = renderHook(() => useCalendarEngine(defaultConfig))
+			const { result } = renderHook(() =>
+				useCalendarEngine({ ...defaultConfig, plugins: [yearPlugin()] })
+			)
 
 			act(() => result.current.setView('week'))
 			expect(result.current.view).toBe('week')
@@ -645,50 +691,41 @@ describe('useCalendarEngine', () => {
 			expect(result.current.selectedEvent?.title).toBe('New Event')
 		})
 
-		/**
-		 * #248. With no `start` the draft falls back to `currentDate`, which comes
-		 * from `dayjs()` and carries the seconds and milliseconds of page load. The
-		 * form only offers hours and minutes, and a consumer's `renderEventForm`
-		 * receives this draft directly and can save it without passing through the
-		 * form's own builders, so the residue has to be cleared here too.
-		 */
 		it('seeds the draft on a whole minute', () => {
-			const initialDate = dayjs('2025-03-15T14:32:44.567Z')
 			const { result } = renderHook(() =>
-				useCalendarEngine({ ...defaultConfig, initialDate })
+				useCalendarEngine({
+					...defaultConfig,
+					initialDate: '2025-03-15T14:32:44.567Z',
+				})
 			)
 
 			act(() => result.current.openEventForm())
 
-			expect(result.current.selectedEvent?.start.format('ss.SSS')).toBe(
-				'00.000'
-			)
-			expect(result.current.selectedEvent?.end.format('ss.SSS')).toBe('00.000')
+			expect(isoSsMs(result.current.selectedEvent?.start)).toBe('00.000')
+			expect(isoSsMs(result.current.selectedEvent?.end)).toBe('00.000')
 		})
 
 		it('should open event form with specific date', () => {
 			const { result } = renderHook(() => useCalendarEngine(utcCalendar))
 
-			const date = dayjs('2025-03-15T14:00:00.000Z')
-			act(() => result.current.openEventForm({ start: date }))
+			act(() =>
+				result.current.openEventForm({ start: '2025-03-15T14:00:00.000Z' })
+			)
 
 			expect(result.current.isEventFormOpen).toBe(true)
-			expect(result.current.selectedDate?.format('YYYY-MM-DD')).toBe(
+			expect(isoDay(result.current.selectedDate ?? undefined)).toBe(
 				'2025-03-15'
 			)
-			expect(result.current.selectedEvent?.start.format('YYYY-MM-DD')).toBe(
-				'2025-03-15'
-			)
+			expect(isoDay(result.current.selectedEvent?.start)).toBe('2025-03-15')
 		})
 
 		it('should carry the clicked cell resource into the new event', () => {
 			const { result } = renderHook(() => useCalendarEngine(defaultConfig))
 
-			const start = dayjs('2025-03-15T14:00:00.000Z')
 			act(() =>
 				result.current.openEventForm({
-					start,
-					end: start.add(30, 'minute'),
+					start: '2025-03-15T14:00:00.000Z',
+					end: '2025-03-15T14:30:00.000Z',
 					allDay: true,
 					resource: { id: 'room-1', title: 'Room 1' },
 				})
@@ -728,13 +765,13 @@ describe('useCalendarEngine', () => {
 			const events = [
 				createEvent({
 					id: '1',
-					start: dayjs('2025-01-15T10:00:00Z'),
-					end: dayjs('2025-01-15T11:00:00Z'),
+					start: '2025-01-15T10:00:00Z',
+					end: '2025-01-15T11:00:00Z',
 				}),
 				createEvent({
 					id: '2',
-					start: dayjs('2025-01-20T10:00:00Z'),
-					end: dayjs('2025-01-20T11:00:00Z'),
+					start: '2025-01-20T10:00:00Z',
+					end: '2025-01-20T11:00:00Z',
 				}),
 			]
 			const { result } = renderHook(() =>
@@ -742,8 +779,8 @@ describe('useCalendarEngine', () => {
 			)
 
 			const rangeEvents = result.current.getEventsForDateRange(
-				dayjs('2025-01-14'),
-				dayjs('2025-01-16')
+				'2025-01-14',
+				'2025-01-16'
 			)
 
 			expect(rangeEvents).toHaveLength(1)
@@ -754,8 +791,8 @@ describe('useCalendarEngine', () => {
 			const events = [
 				createEvent({
 					id: '1',
-					start: dayjs('2025-01-14T23:00:00.000Z'),
-					end: dayjs('2025-01-15T01:00:00.000Z'),
+					start: '2025-01-14T23:00:00.000Z',
+					end: '2025-01-15T01:00:00.000Z',
 				}),
 			]
 			const { result } = renderHook(() =>
@@ -763,8 +800,8 @@ describe('useCalendarEngine', () => {
 			)
 
 			const rangeEvents = result.current.getEventsForDateRange(
-				dayjs('2025-01-15T00:00:00.000Z'),
-				dayjs('2025-01-16T00:00:00.000Z')
+				'2025-01-15T00:00:00.000Z',
+				'2025-01-16T00:00:00.000Z'
 			)
 
 			expect(rangeEvents).toHaveLength(1)
@@ -774,8 +811,8 @@ describe('useCalendarEngine', () => {
 			const events = [
 				createEvent({
 					id: '1',
-					start: dayjs('2025-01-10T10:00:00Z'),
-					end: dayjs('2025-01-20T11:00:00Z'),
+					start: '2025-01-10T10:00:00Z',
+					end: '2025-01-20T11:00:00Z',
 				}),
 			]
 			const { result } = renderHook(() =>
@@ -783,8 +820,8 @@ describe('useCalendarEngine', () => {
 			)
 
 			const rangeEvents = result.current.getEventsForDateRange(
-				dayjs('2025-01-14'),
-				dayjs('2025-01-16')
+				'2025-01-14',
+				'2025-01-16'
 			)
 
 			expect(rangeEvents).toHaveLength(1)
@@ -794,8 +831,8 @@ describe('useCalendarEngine', () => {
 			const events = [
 				createEvent({
 					id: '1',
-					start: dayjs('2025-01-10T10:00:00Z'),
-					end: dayjs('2025-01-10T11:00:00Z'),
+					start: '2025-01-10T10:00:00Z',
+					end: '2025-01-10T11:00:00Z',
 				}),
 			]
 			const { result } = renderHook(() =>
@@ -803,8 +840,8 @@ describe('useCalendarEngine', () => {
 			)
 
 			const rangeEvents = result.current.getEventsForDateRange(
-				dayjs('2025-01-14'),
-				dayjs('2025-01-16')
+				'2025-01-14',
+				'2025-01-16'
 			)
 
 			expect(rangeEvents).toHaveLength(0)
@@ -814,13 +851,11 @@ describe('useCalendarEngine', () => {
 			const { engine } = renderRecurrenceEngine([createRecurringEvent()])
 
 			const rangeEvents = engine().getEventsForDateRange(
-				dayjs('2025-01-01T00:00:00.000Z'),
-				dayjs('2025-01-31T00:00:00.000Z')
+				'2025-01-01T00:00:00.000Z',
+				'2025-01-31T00:00:00.000Z'
 			)
 
-			// Weekly event starting Jan 6 10:00Z. Instants, not dates: at UTC+14
-			// those same instants fall on Jan 7, 14, 21 and 28.
-			const eventStarts = rangeEvents.map((e) => e.start.toISOString())
+			const eventStarts = rangeEvents.map((e) => toUtcIso(mustParse(e.start)))
 			expect(eventStarts).toEqual([
 				'2025-01-06T10:00:00.000Z',
 				'2025-01-13T10:00:00.000Z',
@@ -853,8 +888,8 @@ describe('useCalendarEngine', () => {
 			const instance = {
 				...base,
 				id: 'recurring-1_1',
-				start: dayjs('2025-01-13T10:00:00.000Z'),
-				end: dayjs('2025-01-13T11:00:00.000Z'),
+				start: '2025-01-13T10:00:00.000Z',
+				end: '2025-01-13T11:00:00.000Z',
 				rrule: undefined,
 			}
 			const { engine, onEventUpdate, onEventAdd } = renderRecurrenceEngine([
@@ -884,9 +919,9 @@ describe('useCalendarEngine', () => {
 			const instance = {
 				...base,
 				id: baseId,
-				uid: uid,
-				start: dayjs('2025-01-13T10:00:00.000Z'),
-				end: dayjs('2025-01-13T11:00:00.000Z'),
+				uid,
+				start: '2025-01-13T10:00:00.000Z',
+				end: '2025-01-13T11:00:00.000Z',
 				rrule: undefined,
 			}
 			const { engine, onEventUpdate } = renderRecurrenceEngine([base])
@@ -907,8 +942,8 @@ describe('useCalendarEngine', () => {
 			const instance = {
 				...base,
 				id: baseId,
-				start: dayjs('2025-01-13T10:00:00.000Z'),
-				end: dayjs('2025-01-13T11:00:00.000Z'),
+				start: '2025-01-13T10:00:00.000Z',
+				end: '2025-01-13T11:00:00.000Z',
 				rrule: undefined,
 			}
 			const { engine, onEventAdd } = renderRecurrenceEngine([base])
@@ -930,8 +965,8 @@ describe('useCalendarEngine', () => {
 			const instance = {
 				...base,
 				id: 'recurring-1_2',
-				start: dayjs('2025-01-20T10:00:00.000Z'),
-				end: dayjs('2025-01-20T11:00:00.000Z'),
+				start: '2025-01-20T10:00:00.000Z',
+				end: '2025-01-20T11:00:00.000Z',
 				rrule: undefined,
 			}
 			const { engine, onEventUpdate, onEventAdd } = renderRecurrenceEngine([
@@ -966,7 +1001,6 @@ describe('useCalendarEngine', () => {
 			const baseEvent = createRecurringEvent({ uid: undefined })
 			const { engine, onEventDelete } = renderRecurrenceEngine([baseEvent])
 
-			// Get an instance from the engine (it will have a generated UID)
 			const instances = engine().events
 			const targetInstance = instances[0]
 
@@ -999,8 +1033,8 @@ describe('useCalendarEngine', () => {
 			const instance: CalendarEvent = {
 				...base,
 				id: 'recurring-1_1',
-				start: dayjs('2025-01-13T10:00:00.000Z'),
-				end: dayjs('2025-01-13T11:00:00.000Z'),
+				start: '2025-01-13T10:00:00.000Z',
+				end: '2025-01-13T11:00:00.000Z',
 				rrule: undefined,
 			}
 			const { engine, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
@@ -1025,8 +1059,8 @@ describe('useCalendarEngine', () => {
 				id: 'recurring-1_override',
 				recurrenceId: occurrenceISO,
 				rrule: undefined,
-				start: dayjs(occurrenceISO),
-				end: dayjs('2025-01-13T11:00:00.000Z'),
+				start: occurrenceISO,
+				end: '2025-01-13T11:00:00.000Z',
 			}
 			const { engine, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
 				base,
@@ -1045,8 +1079,8 @@ describe('useCalendarEngine', () => {
 			const instance: CalendarEvent = {
 				...base,
 				id: 'recurring-1_2',
-				start: dayjs('2025-01-20T10:00:00.000Z'),
-				end: dayjs('2025-01-20T11:00:00.000Z'),
+				start: '2025-01-20T10:00:00.000Z',
+				end: '2025-01-20T11:00:00.000Z',
 				rrule: undefined,
 			}
 			const { engine, onEventUpdate, onEventDelete } = renderRecurrenceEngine([
@@ -1171,14 +1205,14 @@ describe('useCalendarEngine', () => {
 				recurrenceId: occurrenceISO,
 				rrule: undefined,
 				exdates: undefined,
-				start: dayjs('2025-01-13T12:00:00.000Z'),
-				end: dayjs('2025-01-13T13:00:00.000Z'),
+				start: '2025-01-13T12:00:00.000Z',
+				end: '2025-01-13T13:00:00.000Z',
 			}
 			const occurrence: CalendarEvent = {
 				...base,
 				id: 'recurring-1_2',
-				start: dayjs('2025-01-20T10:00:00.000Z'),
-				end: dayjs('2025-01-20T11:00:00.000Z'),
+				start: '2025-01-20T10:00:00.000Z',
+				end: '2025-01-20T11:00:00.000Z',
 				rrule: undefined,
 				exdates: undefined,
 			}
@@ -1250,8 +1284,8 @@ describe('useCalendarEngine', () => {
 
 			it('is the move of the start, in days and wall-clock time', () => {
 				const delta = getDelta({
-					start: dayjs('2025-01-16T10:30:00.000Z'),
-					end: dayjs('2025-01-16T11:30:00.000Z'),
+					start: '2025-01-16T10:30:00.000Z',
+					end: '2025-01-16T11:30:00.000Z',
 				})
 				expect(delta).toEqual({ days: 1, milliseconds: 1_800_000 })
 			})
@@ -1264,19 +1298,15 @@ describe('useCalendarEngine', () => {
 			})
 
 			it('measures a timed event moved to the next all-day row from its day start', () => {
-				// FullCalendar measures from the start of the event's day when a drag
-				// turns a timed event all-day (EventDragging.ts:454, v7.1.1), so a
-				// 10:00 event dropped on the next day's all-day row moved one day.
-				// Zoneless strings, so the clock reads the same on any machine zone.
 				const timedEvent = createEvent({
-					start: dayjs('2025-01-15T10:00:00'),
-					end: dayjs('2025-01-15T11:00:00'),
+					start: '2025-01-15T10:00:00.000Z',
+					end: '2025-01-15T11:00:00.000Z',
 				})
 				const { engine, onEventsChange } = renderWithChanges([timedEvent])
 				act(() =>
 					engine().updateEvent('1', {
-						start: dayjs('2025-01-16T00:00:00'),
-						end: dayjs('2025-01-17T00:00:00'),
+						start: '2025-01-16T00:00:00.000Z',
+						end: '2025-01-17T00:00:00.000Z',
 						allDay: true,
 					})
 				)
@@ -1286,15 +1316,15 @@ describe('useCalendarEngine', () => {
 
 			it('measures an all-day event moved to a timed slot from its midnight start', () => {
 				const allDayEvent = createEvent({
-					start: dayjs('2025-01-15T00:00:00'),
-					end: dayjs('2025-01-16T00:00:00'),
+					start: '2025-01-15T00:00:00.000Z',
+					end: '2025-01-16T00:00:00.000Z',
 					allDay: true,
 				})
 				const { engine, onEventsChange } = renderWithChanges([allDayEvent])
 				act(() =>
 					engine().updateEvent('1', {
-						start: dayjs('2025-01-16T11:00:00'),
-						end: dayjs('2025-01-16T12:00:00'),
+						start: '2025-01-16T11:00:00.000Z',
+						end: '2025-01-16T12:00:00.000Z',
 						allDay: false,
 					})
 				)
@@ -1311,8 +1341,6 @@ describe('useCalendarEngine', () => {
 			})
 
 			it('is the move of the start for a scoped recurring edit', () => {
-				// The subject is a time of day, so the calendar's zone is pinned: at
-				// UTC+14 10:00Z is midnight and two hours earlier is the day before.
 				const { engine, onEventsChange } = renderRecurrenceEngine(
 					[createRecurringEvent()],
 					utcCalendar
@@ -1320,15 +1348,15 @@ describe('useCalendarEngine', () => {
 				const occurrence = createEvent({
 					id: 'recurring-1_2',
 					uid: 'recurring-1@ilamy.calendar',
-					start: dayjs('2025-01-13T10:00:00.000Z'),
-					end: dayjs('2025-01-13T11:00:00.000Z'),
+					start: '2025-01-13T10:00:00.000Z',
+					end: '2025-01-13T11:00:00.000Z',
 				})
 				act(() =>
 					engine().applyScopedEdit(
 						occurrence,
 						{
-							start: dayjs('2025-01-13T08:00:00.000Z'),
-							end: dayjs('2025-01-13T09:00:00.000Z'),
+							start: '2025-01-13T08:00:00.000Z',
+							end: '2025-01-13T09:00:00.000Z',
 						},
 						'this'
 					)
@@ -1338,10 +1366,6 @@ describe('useCalendarEngine', () => {
 			})
 
 			it('is only the time of day for a scoped edit that keeps the series day', () => {
-				// "All events" keeps the series on its own day (docs/hooks-and-context.md),
-				// so a drop one day later and an hour later stored the hour only. The
-				// subject is a time of day, so the calendar's zone is pinned: 10:00Z is
-				// 23:00 in Auckland, where an hour later is the next day.
 				const { engine, onEventsChange } = renderRecurrenceEngine(
 					[createRecurringEvent()],
 					utcCalendar
@@ -1349,15 +1373,15 @@ describe('useCalendarEngine', () => {
 				const occurrence = createEvent({
 					id: 'recurring-1_2',
 					uid: 'recurring-1@ilamy.calendar',
-					start: dayjs('2025-01-13T10:00:00.000Z'),
-					end: dayjs('2025-01-13T11:00:00.000Z'),
+					start: '2025-01-13T10:00:00.000Z',
+					end: '2025-01-13T11:00:00.000Z',
 				})
 				act(() =>
 					engine().applyScopedEdit(
 						occurrence,
 						{
-							start: dayjs('2025-01-14T11:00:00.000Z'),
-							end: dayjs('2025-01-14T12:00:00.000Z'),
+							start: '2025-01-14T11:00:00.000Z',
+							end: '2025-01-14T12:00:00.000Z',
 						},
 						'all'
 					)
@@ -1369,8 +1393,6 @@ describe('useCalendarEngine', () => {
 		})
 
 		describe('endDelta', () => {
-			// Pinned to a UTC calendar: the subject is a time of day, which a
-			// machine at UTC+14 would push across midnight.
 			const getChange = (updates: Partial<CalendarEvent>) => {
 				const { engine, onEventsChange } = renderWithChanges(
 					[createEvent()],
@@ -1381,13 +1403,13 @@ describe('useCalendarEngine', () => {
 			}
 
 			it('is how far the end moved, with a zero delta for a resize', () => {
-				const change = getChange({ end: dayjs('2025-01-15T11:30:00.000Z') })
+				const change = getChange({ end: '2025-01-15T11:30:00.000Z' })
 				expect(change?.endDelta).toEqual({ days: 0, milliseconds: 1_800_000 })
 				expect(change?.delta).toEqual({ days: 0, milliseconds: 0 })
 			})
 
 			it('is zero for a resize from the start, which sets delta instead', () => {
-				const change = getChange({ start: dayjs('2025-01-15T09:30:00.000Z') })
+				const change = getChange({ start: '2025-01-15T09:30:00.000Z' })
 				expect(change?.endDelta).toEqual({ days: 0, milliseconds: 0 })
 				expect(change?.delta).toEqual({ days: 0, milliseconds: -1_800_000 })
 			})
@@ -1409,15 +1431,15 @@ describe('useCalendarEngine', () => {
 				const occurrence = createEvent({
 					id: 'recurring-1_2',
 					uid: 'recurring-1@ilamy.calendar',
-					start: dayjs('2025-01-13T10:00:00.000Z'),
-					end: dayjs('2025-01-13T11:00:00.000Z'),
+					start: '2025-01-13T10:00:00.000Z',
+					end: '2025-01-13T11:00:00.000Z',
 				})
 				act(() =>
 					engine().applyScopedEdit(
 						occurrence,
 						{
-							start: dayjs('2025-01-13T10:00:00.000Z'),
-							end: dayjs('2025-01-13T12:00:00.000Z'),
+							start: '2025-01-13T10:00:00.000Z',
+							end: '2025-01-13T12:00:00.000Z',
 						},
 						'this'
 					)
@@ -1534,14 +1556,14 @@ describe('useCalendarEngine', () => {
 					recurrenceId: occurrenceISO,
 					rrule: undefined,
 					exdates: undefined,
-					start: dayjs('2025-01-20T12:00:00.000Z'),
-					end: dayjs('2025-01-20T13:00:00.000Z'),
+					start: '2025-01-20T12:00:00.000Z',
+					end: '2025-01-20T13:00:00.000Z',
 				}
 				const occurrence: CalendarEvent = {
 					...base,
 					id: 'recurring-1_2',
-					start: dayjs('2025-01-13T10:00:00.000Z'),
-					end: dayjs('2025-01-13T11:00:00.000Z'),
+					start: '2025-01-13T10:00:00.000Z',
+					end: '2025-01-13T11:00:00.000Z',
 					rrule: undefined,
 					exdates: undefined,
 				}
@@ -1714,47 +1736,33 @@ describe('useCalendarEngine', () => {
 
 	describe('processedEvents', () => {
 		it('should return processed events for current view range', () => {
-			const initialDate = dayjs('2025-01-15')
 			const events = [
 				createEvent({
 					id: '1',
-					start: dayjs('2025-01-15T10:00:00Z'),
-					end: dayjs('2025-01-15T11:00:00Z'),
+					start: '2025-01-15T10:00:00Z',
+					end: '2025-01-15T11:00:00Z',
 				}),
 				createEvent({
 					id: '2',
-					start: dayjs('2025-03-15T10:00:00Z'),
-					end: dayjs('2025-03-15T11:00:00Z'),
+					start: '2025-03-15T10:00:00Z',
+					end: '2025-03-15T11:00:00Z',
 				}),
 			]
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...defaultConfig,
 					events,
-					initialDate,
+					initialDate: '2025-01-15',
 					initialView: 'month',
 				})
 			)
 
-			// Only January event should be in processed events
 			expect(result.current.events.some((e) => e.id === '1')).toBe(true)
 			expect(result.current.events.some((e) => e.id === '2')).toBe(false)
 		})
 	})
 
-	/**
-	 * `add` keeps the receiver's UTC offset, so stepping a day across a clock
-	 * change gave a date with the right clock face an hour off as an instant,
-	 * and within the hour after midnight the instant was the previous day. The
-	 * instant is what `currentDate` and `onDateChange` hand a consumer.
-	 */
 	describe('navigation across a clock change', () => {
-		const originalTz = dayjs.tz.guess()
-
-		afterEach(() => {
-			dayjs.tz.setDefault(originalTz)
-		})
-
 		const clockChanges = [
 			{ zone: 'America/New_York', changeDay: '2025-03-09' },
 			{ zone: 'America/New_York', changeDay: '2025-11-02' },
@@ -1764,16 +1772,16 @@ describe('useCalendarEngine', () => {
 			{ zone: 'Australia/Sydney', changeDay: '2025-10-05' },
 		]
 
-		const justAfterMidnight = (day: string) => dayjs(`${day}T00:30:00.000`)
+		const justAfterMidnight = (day: string, zone: string) =>
+			mustParse(`${day}T00:30:00`, zone)
 
-		const dayAround = (day: string, offset: number) =>
-			dayjs(`${day}T12:00:00.000`).add(offset, 'day').format('YYYY-MM-DD')
+		const dayAround = (day: string, offset: number, zone: string) =>
+			dayKey(add(mustParse(`${day}T12:00:00`, zone), offset, 'day'))
 
 		for (const { zone, changeDay } of clockChanges) {
 			it(`steps a day over ${changeDay} in ${zone} to the same clock time`, () => {
-				dayjs.tz.setDefault(zone)
-				const dayBefore = dayAround(changeDay, -1)
-				const dayAfter = dayAround(changeDay, 1)
+				const dayBefore = dayAround(changeDay, -1, zone)
+				const dayAfter = dayAround(changeDay, 1, zone)
 				const stepped: string[] = []
 				const expected: string[] = []
 				for (const [from, direction, to] of [
@@ -1782,7 +1790,7 @@ describe('useCalendarEngine', () => {
 					[dayAfter, -1, changeDay],
 					[changeDay, -1, dayBefore],
 				] as const) {
-					const initialDate = justAfterMidnight(from)
+					const initialDate = toOffsetIso(justAfterMidnight(from, zone))
 					const { result } = renderHook(() =>
 						useCalendarEngine({
 							...defaultConfig,
@@ -1796,50 +1804,32 @@ describe('useCalendarEngine', () => {
 							? result.current.nextPeriod()
 							: result.current.prevPeriod()
 					)
-					stepped.push(result.current.currentDate.toISOString())
-					expected.push(justAfterMidnight(to).toISOString())
+					stepped.push(toUtcIso(mustParse(result.current.currentDate, zone)))
+					expected.push(toUtcIso(justAfterMidnight(to, zone)))
 				}
 				expect(stepped).toEqual(expected)
 			})
 		}
 	})
 
-	describe('timezone support', () => {
-		const originalTz = dayjs.tz.guess()
-
-		beforeEach(() => {
-			dayjs.tz.setDefault('UTC')
-		})
-
+	describe('timezone support (multi-zone isolated)', () => {
 		afterEach(() => {
-			dayjs.tz.setDefault(originalTz)
 			setSystemTime()
 		})
 
 		const NOON_UTC_ISO = '2025-01-15T12:00:00.000Z'
 		const noEvents: CalendarEvent[] = []
 
-		/**
-		 * Mounts the engine in `timezone` (pass `undefined` for no prop at all) and
-		 * hands back the clocks these tests read, plus `moveTo` for a later zone.
-		 * Every case here is "mount in a zone, maybe move to another, then read a
-		 * clock", so only the zones and the clock read differ between them.
-		 *
-		 * `events` and `initialDate` are created ONCE per call because the hook
-		 * re-runs on every render, and a fresh array each time would loop the
-		 * events sync into an endless re-render.
-		 */
 		const renderZonedEngineHook = (
 			timezone: string | undefined,
 			events: CalendarEvent[] = noEvents
 		) => {
-			const initialDate = dayjs(NOON_UTC_ISO)
 			const { result, rerender } = renderHook(
 				({ timezone: zone }: { timezone?: string }) =>
 					useCalendarEngine({
-						...defaultConfig,
 						events,
-						initialDate,
+						firstDayOfWeek: 0,
+						initialDate: NOON_UTC_ISO,
 						timezone: zone,
 					}),
 				{ initialProps: { timezone } }
@@ -1855,17 +1845,6 @@ describe('useCalendarEngine', () => {
 			}
 		}
 
-		const FRESH_PARSE_ISO = '2026-03-02T00:00:00.000Z'
-
-		/** The zone a date parsed AFTER mounting comes out in. */
-		const zoneOfAFreshParse = () => dayjs(FRESH_PARSE_ISO).format('Z')
-
-		/**
-		 * The machine's offset at `iso` as `±HH:MM`, read from the native `Date`
-		 * rather than dayjs so it is an independent answer. "Back to the machine
-		 * zone" has no absolute expectation: it is -08:00 in Vancouver and +13:00
-		 * in Auckland in January, and both are right.
-		 */
 		const machineOffsetAt = (iso: string) => {
 			const minutesEastOfUtc = -new Date(iso).getTimezoneOffset()
 			const sign = minutesEastOfUtc < 0 ? '-' : '+'
@@ -1875,36 +1854,22 @@ describe('useCalendarEngine', () => {
 			return `${sign}${hours}:${minutes}`
 		}
 
-		it('should automatically use the default timezone for new dayjs() instances', () => {
-			dayjs.tz.setDefault('America/New_York')
-			const now = dayjs()
-			expect(['-05:00', '-04:00']).toContain(now.format('Z'))
-		})
-
-		/**
-		 * The zone has to be in force for the FIRST render, not from the second one
-		 * on: every date the calendar shows is parsed before any effect that runs
-		 * after mount. These mount with no default zone set, so nothing but the
-		 * prop can put the calendar in Tokyo.
-		 */
-		it('applies the timezone prop on mount', () => {
-			dayjs.tz.setDefault(undefined)
-
-			renderZonedEngineHook('Asia/Tokyo')
-
-			expect(zoneOfAFreshParse()).toBe('+09:00')
-		})
-
 		it('renders the initial date in the timezone prop on mount', () => {
-			dayjs.tz.setDefault(undefined)
-
 			const { currentDate } = renderZonedEngineHook('Asia/Tokyo')
 
-			expect(currentDate().format('Z')).toBe('+09:00')
+			expect(isoOffset(currentDate())).toBe('+09:00')
 		})
 
-		// RFC 5545 section 3.3.5: a time the autumn change repeats is its first
-		// occurrence, whatever season the calendar is opened in.
+		it('isolates two concurrent engines in different timezones on first paint', () => {
+			const ny = renderZonedEngineHook('America/New_York')
+			const tokyo = renderZonedEngineHook('Asia/Tokyo')
+
+			expect(isoOffset(ny.currentDate())).toBe('-05:00')
+			expect(isoHHmm(ny.currentDate(), 'America/New_York')).toBe('07:00')
+			expect(isoOffset(tokyo.currentDate())).toBe('+09:00')
+			expect(isoHHmm(tokyo.currentDate(), 'Asia/Tokyo')).toBe('21:00')
+		})
+
 		it.each([
 			['July', '2026-07-01T12:00:00.000Z'],
 			['January', '2026-01-15T12:00:00.000Z'],
@@ -1912,7 +1877,6 @@ describe('useCalendarEngine', () => {
 			'opens a repeated wall-clock date on its first occurrence, in %s',
 			(_month, today) => {
 				setSystemTime(new Date(today))
-				dayjs.tz.setDefault(undefined)
 				const initialDate = '2025-11-02T01:30'
 
 				const { result } = renderHook(() =>
@@ -1923,68 +1887,58 @@ describe('useCalendarEngine', () => {
 					})
 				)
 
-				expect(result.current.currentDate.toISOString()).toBe(
-					'2025-11-02T05:30:00.000Z'
-				)
+				expect(
+					toUtcIso(mustParse(result.current.currentDate, 'America/New_York'))
+				).toBe('2025-11-02T05:30:00.000Z')
 			}
 		)
 
-		it('returns to the machine zone when the timezone prop is removed', () => {
-			const { moveTo } = renderZonedEngineHook('Asia/Tokyo')
-
-			moveTo(undefined)
-
-			expect(zoneOfAFreshParse()).toBe(machineOffsetAt(FRESH_PARSE_ISO))
-		})
-
-		/**
-		 * Dropping the prop has to carry the dates the calendar is already holding
-		 * back with it, or the view keeps rendering on the old clock while every
-		 * newly parsed date uses the machine's.
-		 */
 		it('converts held dates back when the timezone prop is removed', () => {
 			const { currentDate, moveTo } = renderZonedEngineHook('Asia/Tokyo')
-			expect(currentDate().format('Z')).toBe('+09:00')
+			expect(isoOffset(currentDate())).toBe('+09:00')
 
 			moveTo(undefined)
 
-			expect(currentDate().format('Z')).toBe(machineOffsetAt(NOON_UTC_ISO))
-			expect(currentDate().toISOString()).toBe(NOON_UTC_ISO)
+			expect(isoOffset(currentDate())).toBe(machineOffsetAt(NOON_UTC_ISO))
+			expect(toUtcIso(mustParse(currentDate()))).toBe(NOON_UTC_ISO)
 		})
 
-		it('should reactive update currentDate when timezone prop changes', () => {
+		it('should reactively update currentDate when timezone prop changes', () => {
 			const { currentDate, moveTo } = renderZonedEngineHook('UTC')
-			expect(currentDate().format('HH:mm')).toBe('12:00')
+			expect(isoHHmm(currentDate(), 'UTC')).toBe('12:00')
 
 			moveTo('America/New_York')
 
-			expect(currentDate().format('HH:mm')).toBe('07:00')
-			expect(currentDate().format('Z')).toBe('-05:00')
+			expect(isoHHmm(currentDate(), 'America/New_York')).toBe('07:00')
+			expect(isoOffset(currentDate())).toBe('-05:00')
 		})
 
-		it('should reactive update event times when timezone prop changes', () => {
+		it('should reactively update event times when timezone prop changes', () => {
 			const tenAmEvents = [
 				createEvent({
-					start: dayjs('2025-01-15T10:00:00.000Z'),
-					end: dayjs('2025-01-15T11:00:00.000Z'),
+					start: '2025-01-15T10:00:00.000Z',
+					end: '2025-01-15T11:00:00.000Z',
 				}),
 			]
 			const { firstEventStart, moveTo } = renderZonedEngineHook(
 				'UTC',
 				tenAmEvents
 			)
-			expect(firstEventStart()?.format('HH:mm')).toBe('10:00')
+			expect(isoHHmm(firstEventStart(), 'UTC')).toBe('10:00')
 
 			moveTo('Asia/Tokyo')
 
-			expect(firstEventStart()?.format('HH:mm')).toBe('19:00')
-			expect(firstEventStart()?.format('Z')).toBe('+09:00')
+			expect(isoHHmm(firstEventStart(), 'Asia/Tokyo')).toBe('19:00')
+			expect(isoOffset(firstEventStart())).toBe('+09:00')
+			expect(
+				getOffsetString(mustParse(firstEventStart() ?? '', 'Asia/Tokyo'))
+			).toBe('+09:00')
 		})
 	})
 
 	describe('onDateChange range reporting (Strict Analysis)', () => {
 		const onDateChange = vi.fn()
-		const initialDate = dayjs('2025-01-15T12:00:00.000Z') // A Wednesday
+		const initialDate = '2025-01-15T12:00:00.000Z'
 
 		beforeEach(() => {
 			onDateChange.mockClear()
@@ -2001,18 +1955,17 @@ describe('useCalendarEngine', () => {
 				})
 			)
 
-			act(() => result.current.nextPeriod()) // Move to Feb
+			act(() => result.current.nextPeriod())
 
 			const [_date, range] = onDateChange.mock.calls[0]
-			// Feb 2025 starts on Saturday.
-			// Month view with Sunday start (0):
-			// Week 1 starts on Jan 26 (Sunday)
-			// Jan 26 + 42 days = March 8
-			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-26')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2025-03-08')
+			expect(isoDay(range.start)).toBe('2025-01-26')
+			expect(isoDay(range.end)).toBe('2025-03-08')
 
-			const daysDiff = range.end.diff(range.start, 'day') + 1
-			expect(daysDiff).toBe(42) // Strict 6-week check
+			const daysDiff =
+				Math.floor(
+					elapsedDiff(mustParse(range.end), mustParse(range.start), 'day')
+				) + 1
+			expect(daysDiff).toBe(42)
 		})
 
 		it('should report correct 7-day range in week view (Sunday start)', () => {
@@ -2026,12 +1979,30 @@ describe('useCalendarEngine', () => {
 				})
 			)
 
-			act(() => result.current.nextPeriod()) // Jan 15 -> Jan 22
+			act(() => result.current.nextPeriod())
 
 			const [_date, range] = onDateChange.mock.calls[0]
-			// Jan 22 is Wednesday. Week starts Sunday Jan 19, ends Saturday Jan 25
-			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-19')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2025-01-25')
+			expect(isoDay(range.start)).toBe('2025-01-19')
+			expect(isoDay(range.end)).toBe('2025-01-25')
+		})
+
+		it('trims week range to visible days when hiddenDays hides edges (D10)', () => {
+			const { result } = renderHook(() =>
+				useCalendarEngine({
+					...utcCalendar,
+					initialDate,
+					initialView: 'week',
+					firstDayOfWeek: 0,
+					hiddenDays: new Set([0, 6]),
+					onDateChange,
+				})
+			)
+
+			act(() => result.current.nextPeriod())
+
+			const [_date, range] = onDateChange.mock.calls[0]
+			expect(isoDay(range.start)).toBe('2025-01-20')
+			expect(isoDay(range.end)).toBe('2025-01-24')
 		})
 
 		it('should report correct 7-day range in week view (Monday start)', () => {
@@ -2040,17 +2011,16 @@ describe('useCalendarEngine', () => {
 					...utcCalendar,
 					initialDate,
 					initialView: 'week',
-					firstDayOfWeek: 1, // Monday
+					firstDayOfWeek: 1,
 					onDateChange,
 				})
 			)
 
-			act(() => result.current.nextPeriod()) // Jan 15 -> Jan 22
+			act(() => result.current.nextPeriod())
 
 			const [_date, range] = onDateChange.mock.calls[0]
-			// Jan 22 is Wednesday. Week starts Monday Jan 20, ends Sunday Jan 26
-			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-20')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2025-01-26')
+			expect(isoDay(range.start)).toBe('2025-01-20')
+			expect(isoDay(range.end)).toBe('2025-01-26')
 		})
 
 		it('should report correct single-day range in day view', () => {
@@ -2063,40 +2033,42 @@ describe('useCalendarEngine', () => {
 				})
 			)
 
-			act(() => result.current.nextPeriod()) // Jan 15 -> Jan 16
+			act(() => result.current.nextPeriod())
 
 			const [_date, range] = onDateChange.mock.calls[0]
-			expect(range.start.format('YYYY-MM-DD HH:mm:ss')).toBe(
-				'2025-01-16 00:00:00'
-			)
-			expect(range.end.format('YYYY-MM-DD HH:mm:ss')).toBe(
-				'2025-01-16 23:59:59'
-			)
+			const start = mustParse(range.start)
+			const end = mustParse(range.end)
+			expect(
+				`${dayKey(start)} ${pad2(start.hour)}:${pad2(start.minute)}:${pad2(start.second)}`
+			).toBe('2025-01-16 00:00:00')
+			expect(
+				`${dayKey(end)} ${pad2(end.hour)}:${pad2(end.minute)}:${pad2(end.second)}`
+			).toBe('2025-01-16 23:59:59')
 		})
 
-		it('should report correct full-year range in year view', () => {
+		it('should report correct full-year range in year view (with yearPlugin)', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...utcCalendar,
 					initialDate,
 					initialView: 'year',
+					plugins: [yearPlugin()],
 					onDateChange,
 				})
 			)
 
-			act(() => result.current.nextPeriod()) // 2025 -> 2026
+			act(() => result.current.nextPeriod())
 
 			const [_date, range] = onDateChange.mock.calls[0]
-			expect(range.start.format('YYYY-MM-DD')).toBe('2026-01-01')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2026-12-31')
+			expect(isoDay(range.start)).toBe('2026-01-01')
+			expect(isoDay(range.end)).toBe('2026-12-31')
 		})
 
 		it('should report correct range when using today()', () => {
-			const pastDate = dayjs('2020-01-01T12:00:00Z')
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...utcCalendar,
-					initialDate: pastDate,
+					initialDate: '2020-01-01T12:00:00Z',
 					initialView: 'month',
 					onDateChange,
 				})
@@ -2105,15 +2077,10 @@ describe('useCalendarEngine', () => {
 			act(() => result.current.today())
 
 			const [_date, range] = onDateChange.mock.calls[0]
-			const today = dayjs()
-			const expectedMonthWeeks = getMonthWeeks(today, 0)
+			const expectedMonthWeeks = getMonthWeeks(now('UTC'), 0)
 
-			expect(range.start.format('YYYY-MM-DD')).toBe(
-				expectedMonthWeeks[0][0].format('YYYY-MM-DD')
-			)
-			expect(range.end.format('YYYY-MM-DD')).toBe(
-				expectedMonthWeeks[5][6].format('YYYY-MM-DD')
-			)
+			expect(isoDay(range.start)).toBe(dayKey(expectedMonthWeeks[0][0]))
+			expect(isoDay(range.end)).toBe(dayKey(expectedMonthWeeks[5][6]))
 		})
 
 		it('should report correct range when using selectDate()', () => {
@@ -2127,39 +2094,32 @@ describe('useCalendarEngine', () => {
 				})
 			)
 
-			const targetDate = dayjs('2025-12-25T12:00:00.000Z') // Christmas 2025 (Thursday)
-			act(() => result.current.selectDate(targetDate))
+			act(() => result.current.selectDate('2025-12-25T12:00:00.000Z'))
 
 			const [_date, range] = onDateChange.mock.calls[0]
-			// Dec 25 2025 is Thursday. Week starts Sunday Dec 21, ends Saturday Dec 27
-			expect(range.start.format('YYYY-MM-DD')).toBe('2025-12-21')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2025-12-27')
+			expect(isoDay(range.start)).toBe('2025-12-21')
+			expect(isoDay(range.end)).toBe('2025-12-27')
 		})
 
 		it('should fire onDateChange when view changes (month → week)', () => {
 			const { result } = renderHook(() =>
 				useCalendarEngine({
 					...utcCalendar,
-					initialDate, // Jan 15, 2025 (Wednesday)
+					initialDate,
 					initialView: 'month',
 					firstDayOfWeek: 0,
 					onDateChange,
 				})
 			)
 
-			// Switch from month to week — visible range changes from 42 days to 7 days
 			act(() => result.current.setView('week'))
 
 			expect(onDateChange).toHaveBeenCalledTimes(1)
 			const [date, range] = onDateChange.mock.calls[0]
 
-			// Date should be the same (Jan 15)
-			expect(date.format('YYYY-MM-DD')).toBe('2025-01-15')
-
-			// Range should be the week containing Jan 15 (Sunday start)
-			// Jan 12 (Sun) to Jan 18 (Sat)
-			expect(range.start.format('YYYY-MM-DD')).toBe('2025-01-12')
-			expect(range.end.format('YYYY-MM-DD')).toBe('2025-01-18')
+			expect(isoDay(date)).toBe('2025-01-15')
+			expect(isoDay(range.start)).toBe('2025-01-12')
+			expect(isoDay(range.end)).toBe('2025-01-18')
 		})
 	})
 })

@@ -1,15 +1,9 @@
-import { Button } from '@ilamy/ui/components/button'
-import { Input } from '@ilamy/ui/components/input'
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from '@ilamy/ui/components/popover'
 import { ScrollArea } from '@ilamy/ui/components/scroll-area'
 import { cn } from '@ilamy/ui/lib/utils'
 import { Clock } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useCalendarComponents } from '@/features/calendar/stores/calendar-theme-context'
 import { keys } from '@/features/calendar/utils/keys'
 import { useAutocompleteTimepicker } from '@/hooks/use-autocomplete-timepicker'
 import type { TimeFormat } from '@/types'
@@ -50,6 +44,7 @@ function TimePanel({
 	onSelect,
 }: TimePanelProps) {
 	const t = useSmartCalendarContext((context) => context.t)
+	const { Input } = useCalendarComponents()
 	const [search, setSearch] = useState('')
 	const inputRef = useRef<HTMLInputElement>(null)
 
@@ -104,6 +99,19 @@ function TimePanel({
 	)
 }
 
+const useMeasuredTriggerWidth = (
+	triggerRef: React.RefObject<HTMLButtonElement | null>,
+	open: boolean
+): number => {
+	const [triggerWidth, setTriggerWidth] = useState<number>(0)
+	useEffect(() => {
+		if (open) {
+			setTriggerWidth(triggerRef.current?.offsetWidth ?? 0)
+		}
+	}, [open, triggerRef])
+	return triggerWidth
+}
+
 export function TimePicker({
 	value,
 	onChange,
@@ -117,9 +125,10 @@ export function TimePicker({
 	name,
 }: TimePickerProps) {
 	const t = useSmartCalendarContext((context) => context.t)
+	const { Button, Popover } = useCalendarComponents()
 	const [open, setOpen] = useState(false)
 	const triggerRef = useRef<HTMLButtonElement>(null)
-	const [triggerWidth, setTriggerWidth] = useState<number>(0)
+	const triggerWidth = useMeasuredTriggerWidth(triggerRef, open)
 
 	const { timeOptions, formatTime } = useAutocompleteTimepicker({
 		timeFormat,
@@ -132,46 +141,45 @@ export function TimePicker({
 		setOpen(false)
 	}
 
-	// Measure the trigger when the popover opens, so the list is as wide.
-	useEffect(() => {
-		if (open) {
-			setTriggerWidth(triggerRef.current?.offsetWidth ?? 0)
-		}
-	}, [open])
-
 	const valueId = useId()
 	const currentTimeString = value ? formatTime(value) : t('selectTime')
 
+	const trigger = (
+		<Button
+			aria-expanded={open}
+			aria-labelledby={`${labelId} ${valueId}`}
+			className={cn('w-full justify-start', className)}
+			data-testid={keys.timePicker(name)}
+			disabled={disabled}
+			id={id}
+			ref={triggerRef}
+			role="combobox"
+			type="button"
+			variant="outline"
+		>
+			<Clock className="mr-2 h-4 w-4" />
+			<span id={valueId}>{currentTimeString}</span>
+		</Button>
+	)
+
+	const content = (
+		<TimePanel
+			formatTime={formatTime}
+			onSelect={handleSelect}
+			options={timeOptions}
+			selected={value}
+		/>
+	)
+
 	return (
-		<Popover onOpenChange={setOpen} open={open}>
-			<PopoverTrigger asChild>
-				<Button
-					aria-expanded={open}
-					aria-labelledby={`${labelId} ${valueId}`}
-					className={cn('w-full justify-start', className)}
-					data-testid={keys.timePicker(name)}
-					disabled={disabled}
-					id={id}
-					ref={triggerRef}
-					role="combobox"
-					variant="outline"
-				>
-					<Clock className="mr-2 h-4 w-4" />
-					<span id={valueId}>{currentTimeString}</span>
-				</Button>
-			</PopoverTrigger>
-			<PopoverContent
-				align="start"
-				className="p-0"
-				style={{ width: triggerWidth }}
-			>
-				<TimePanel
-					formatTime={formatTime}
-					onSelect={handleSelect}
-					options={timeOptions}
-					selected={value}
-				/>
-			</PopoverContent>
-		</Popover>
+		<Popover
+			align="start"
+			className="p-0"
+			content={content}
+			contentStyle={triggerWidth > 0 ? { width: triggerWidth } : undefined}
+			onOpenChange={setOpen}
+			open={open}
+			trigger={trigger}
+		/>
 	)
 }

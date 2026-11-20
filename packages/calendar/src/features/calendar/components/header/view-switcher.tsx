@@ -2,6 +2,7 @@ import { ToggleGroup, ToggleGroupItem } from '@ilamy/ui/components/toggle-group'
 import { cn } from '@ilamy/ui/lib/utils'
 import { useHeaderViews } from '@/features/calendar/hooks/use-header-views'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useSlotProps } from '@/features/calendar/stores/calendar-theme-context'
 
 interface ViewSwitcherProps {
 	className?: string
@@ -14,27 +15,40 @@ export function ViewSwitcher({ className }: ViewSwitcherProps) {
 		setView: ctx.setView,
 		t: ctx.t,
 	}))
+	const inactiveSlot = useSlotProps('viewButton', {
+		structuralClassName: 'rounded-md px-3',
+		defaultClassName:
+			'text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground font-medium data-[state=on]:shadow-sm',
+	})
+	const activeSlot = useSlotProps('viewButtonActive', {
+		structuralClassName: 'rounded-md px-3',
+		defaultClassName:
+			'text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground font-medium data-[state=on]:shadow-sm',
+	})
 	const views = useHeaderViews()
 
 	return (
 		<ToggleGroup
-			// p-0.5 track + sm (h-8) items = h-9 total: the active pill sits inset
-			// inside the muted track while the control still matches the h-9 buttons.
 			className={cn('bg-muted gap-0 rounded-lg p-0.75', className)}
 			onValueChange={(next) => next && setView(next)}
 			size="sm"
 			type="single"
 			value={view}
 		>
-			{views.map((v) => (
-				<ToggleGroupItem
-					className="text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground rounded-md px-3 font-medium data-[state=on]:shadow-sm"
-					key={v.name}
-					value={v.name}
-				>
-					{t(v.label ?? v.name)}
-				</ToggleGroupItem>
-			))}
+			{views.map((v) => {
+				const isActive = v.name === view
+				const slot = isActive ? activeSlot : inactiveSlot
+				return (
+					<ToggleGroupItem
+						className={slot.className}
+						key={v.name}
+						style={slot.style}
+						value={v.name}
+					>
+						{t(v.label ?? v.name)}
+					</ToggleGroupItem>
+				)
+			})}
 		</ToggleGroup>
 	)
 }

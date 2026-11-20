@@ -2,10 +2,16 @@ import type {
 	HorizontalRowSpec,
 	Resource,
 	VerticalColumnSpec,
+	ViewConfig,
 } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
-import type { Dayjs } from '@ilamy/utils/dayjs'
-import { dayKey } from '@ilamy/utils/helpers'
+import {
+	dayKey,
+	parseDate,
+	resolveZone,
+	toOffsetIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import type React from 'react'
 import { AllDayCell } from '@/features/calendar/components/all-day-row/all-day-cell'
 import { AllDayRow } from '@/features/calendar/components/all-day-row/all-day-row'
@@ -16,25 +22,37 @@ import {
 } from '@/features/calendar/components/vertical-grid/gutter'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { keys } from '@/features/calendar/utils/keys'
+import { viewHasResourceAxis } from '@/features/calendar/utils/resource-list'
+
+export const RESOURCE_CELL_WIDTH = 'min-w-20 flex-1'
 
 /**
- * Width contract of one resource cell: header cells and body columns must
- * use the same utilities or the axis misaligns.
+ * Returns the vertical or horizontal resource layout when `config` carries a
+ * resource axis, or `null` so the caller renders its non-resource layout.
  */
-export const RESOURCE_CELL_WIDTH = 'min-w-20 flex-1'
+export const resolveResourceLayout = (
+	config: ViewConfig,
+	builders: {
+		vertical: (resources: Resource[]) => VerticalColumnSpec[]
+		horizontal: (resources: Resource[]) => HorizontalRowSpec[]
+	}
+): VerticalColumnSpec[] | HorizontalRowSpec[] | null => {
+	if (!viewHasResourceAxis(config)) {
+		return null
+	}
+	const resources = config.resources ?? []
+	return config.orientation === 'vertical'
+		? builders.vertical(resources)
+		: builders.horizontal(resources)
+}
 
 interface ResourceHorizontalRowsOptions {
 	resources: Resource[]
-	/** Flat cells (one date each) or grouped cells (e.g. one day's hour slots). */
-	days: Dayjs[] | Dayjs[][]
+	days: ZonedDate[] | ZonedDate[][]
 	gridType: 'day' | 'hour'
 	cellClassName?: string
 }
 
-/**
- * Horizontal arrangement of the resource axis: one row per resource over the
- * same date cells (resources as rows, time flows across).
- */
 export const resourceHorizontalRows = ({
 	resources,
 	days,
@@ -46,8 +64,8 @@ export const resourceHorizontalRows = ({
 		const refDay = isArray ? day.at(0) : day
 		return {
 			id: refDay ? keys.col.day(refDay) : 'day-col-unknown',
-			day: isArray ? undefined : day,
-			days: isArray ? day : undefined,
+			day: isArray ? undefined : toOffsetIso(day),
+			days: isArray ? day.map(toOffsetIso) : undefined,
 			className: cellClassName,
 			gridType,
 		}
@@ -60,20 +78,14 @@ export const resourceHorizontalRows = ({
 	}))
 }
 
-/** Column spec(s) for one resource; `resourceVerticalColumns` attaches the resource. */
 type ResourceColumnSeed = Omit<VerticalColumnSpec, 'resource'>
 
 interface ResourceVerticalColumnsOptions {
 	resources: Resource[]
-	/** The leading label column (time or date gutter), built via `gutterColumn`. */
 	gutter: VerticalColumnSpec
 	columnsFor: (resource: Resource) => ResourceColumnSeed | ResourceColumnSeed[]
 }
 
-/**
- * Vertical arrangement of the resource axis: the gutter column followed by
- * each resource's column(s) (resources as columns, time flows down).
- */
 export const resourceVerticalColumns = ({
 	resources,
 	gutter,
@@ -87,10 +99,6 @@ export const resourceVerticalColumns = ({
 	}),
 ]
 
-/**
- * Header row for vertical resource arrangements (day/month): a gutter-width
- * corner plus one ResourceCell per resource column.
- */
 export const ResourceColumnsHeader: React.FC<{ resources: Resource[] }> = ({
 	resources,
 }) => (
@@ -115,7 +123,6 @@ export const ResourceColumnsHeader: React.FC<{ resources: Resource[] }> = ({
 	</div>
 )
 
-/** The sticky "Resources" corner cell of horizontal resource arrangements. */
 export const ResourcesCornerCell: React.FC = () => {
 	const { t } = useSmartCalendarContext((c) => ({ t: c.t }))
 	return (
@@ -127,23 +134,24 @@ export const ResourcesCornerCell: React.FC = () => {
 
 interface ResourceAllDayGroup {
 	resource: Resource
-	days: Dayjs[]
+	days: ZonedDate[]
 	seenDayKeys: Set<string>
 }
 
-/**
- * The all-day block of vertical resource arrangements: the "All day" label
- * cell plus one AllDayRow per resource, derived from the resource identity the
- * column specs already carry (column order is preserved).
- */
 export const ResourceAllDayRows: React.FC<{
 	columns: VerticalColumnSpec[]
 }> = ({ columns }) => {
+	const timezone = useSmartCalendarContext((c) => c.timezone)
+	const zone = resolveZone(timezone)
 	const groups: ResourceAllDayGroup[] = []
 	const groupsByResourceId = new Map<string | number, ResourceAllDayGroup>()
 
 	for (const column of columns) {
 		if (!column.resource || column.noEvents || !column.day) {
+			continue
+		}
+		const zonedDay = parseDate(column.day, zone)
+		if (!zonedDay) {
 			continue
 		}
 		let group = groupsByResourceId.get(column.resource.id)
@@ -152,10 +160,10 @@ export const ResourceAllDayRows: React.FC<{
 			groupsByResourceId.set(column.resource.id, group)
 			groups.push(group)
 		}
-		const columnKey = dayKey(column.day)
+		const columnKey = dayKey(zonedDay)
 		if (!group.seenDayKeys.has(columnKey)) {
 			group.seenDayKeys.add(columnKey)
-			group.days.push(column.day)
+			group.days.push(zonedDay)
 		}
 	}
 

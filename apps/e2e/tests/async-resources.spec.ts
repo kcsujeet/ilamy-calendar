@@ -153,7 +153,7 @@ test.describe('resources as a function', () => {
 		// Six weeks on from the week the calendar opened on (Sun 9 March).
 		await expect
 			.poll(async () => (await axis.resourcesFetchLog()).at(-1))
-			.toMatchObject({ start: '2025-04-20T00:00:00.000Z', status: 'done' })
+			.toMatchObject({ start: '2025-04-20T00:00:00+00:00', status: 'done' })
 		await expect(axis.resource('Room A')).toBeVisible()
 	})
 

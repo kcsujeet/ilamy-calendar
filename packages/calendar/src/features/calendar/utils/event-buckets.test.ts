@@ -1,25 +1,38 @@
 import { afterEach, describe, expect, it } from 'bun:test'
+import { filterEventsForResource } from '@ilamy/core'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	endOf,
+	parseDate,
+	startOf,
+	toEpochMs,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import {
 	bucketEventsByResource,
 	getColumnBounds,
-	getDefaultZone,
 	getResourceEvents,
 	shareInDevBuild,
 } from './event-buckets'
-import { filterEventsForResource } from './event-pipeline'
+
+const mustParse = (iso: string, zone = 'UTC'): ZonedDate => {
+	const parsed = parseDate(iso, zone)
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
 
 const mkEvent = (
 	id: string,
-	startISO: string,
-	endISO: string,
+	start: string,
+	end: string,
 	extra: Partial<CalendarEvent> = {}
 ): CalendarEvent => ({
 	id,
 	title: id,
-	start: dayjs(startISO),
-	end: dayjs(endISO),
+	start,
+	end,
 	...extra,
 })
 
@@ -68,49 +81,30 @@ describe('bucketEventsByResource', () => {
 
 describe('getColumnBounds', () => {
 	it('returns the same bounds object for the same column instance', () => {
-		const day = dayjs('2025-03-10T10:30:00Z')
-		expect(getColumnBounds(day, 'hour', undefined)).toBe(
-			getColumnBounds(day, 'hour', undefined)
-		)
+		const day = mustParse('2025-03-10T10:30:00Z', 'UTC')
+		expect(getColumnBounds(day, 'hour')).toBe(getColumnBounds(day, 'hour'))
 	})
 
-	it('reads the span of the unit asked for', () => {
-		const day = dayjs('2025-03-10T10:30:00Z').tz('UTC')
-		const hour = getColumnBounds(day, 'hour', undefined)
-		const wholeDay = getColumnBounds(day, 'day', undefined)
+	it('reads the span of the unit asked for in the date timezone', () => {
+		const day = mustParse('2025-03-10T10:30:00Z', 'UTC')
+		const hour = getColumnBounds(day, 'hour')
+		const wholeDay = getColumnBounds(day, 'day')
 		expect([hour.startMs, hour.endMs]).toEqual([
-			day.startOf('hour').valueOf(),
-			day.endOf('hour').valueOf(),
+			toEpochMs(startOf(day, 'hour')),
+			toEpochMs(endOf(day, 'hour')),
 		])
 		expect([wholeDay.startMs, wholeDay.endMs]).toEqual([
-			day.startOf('day').valueOf(),
-			day.endOf('day').valueOf(),
+			toEpochMs(startOf(day, 'day')),
+			toEpochMs(endOf(day, 'day')),
 		])
 	})
-})
 
-describe('getColumnBounds and the default zone', () => {
-	afterEach(() => {
-		dayjs.tz.setDefault()
-	})
-
-	it('reads a plain instance again after the default zone changes', () => {
-		const plainDay = dayjs('2025-03-10T10:30:00Z')
-		const inMachineZone = getColumnBounds(plainDay, 'day', getDefaultZone())
-
-		dayjs.tz.setDefault('Asia/Tokyo')
-		const inTokyo = getColumnBounds(plainDay, 'day', getDefaultZone())
-
-		expect(inTokyo.startMs).toBe(plainDay.startOf('day').valueOf())
-		expect(inTokyo.endMs).toBe(plainDay.endOf('day').valueOf())
-		expect(inTokyo.startMs).not.toBe(inMachineZone.startMs)
-	})
-
-	it('reports the default zone as set', () => {
-		dayjs.tz.setDefault('Asia/Tokyo')
-		expect(getDefaultZone()).toBe('Asia/Tokyo')
-		dayjs.tz.setDefault()
-		expect(getDefaultZone()).toBeUndefined()
+	it('computes distinct day spans for the same instant in different zones', () => {
+		const inUtc = mustParse('2025-03-10T10:30:00Z', 'UTC')
+		const inTokyo = mustParse('2025-03-10T10:30:00Z', 'Asia/Tokyo')
+		expect(getColumnBounds(inTokyo, 'day').startMs).not.toBe(
+			getColumnBounds(inUtc, 'day').startMs
+		)
 	})
 })
 

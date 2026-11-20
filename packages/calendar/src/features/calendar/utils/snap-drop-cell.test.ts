@@ -1,6 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	parseDate,
+	toOffsetIso,
+	toUtcIso,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import {
 	calculateDropTimes,
 	calculateResizeTimes,
@@ -8,10 +14,16 @@ import {
 } from '@/features/calendar/components/drag-and-drop/dnd-utils'
 import { snapDropCell } from './snap-drop-cell'
 
+const mustParse = (iso: string, zone = 'UTC'): ZonedDate => {
+	const parsed = parseDate(iso, zone)
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
 describe('snapping inside a cell', () => {
-	const originalTz = dayjs.tz.guess()
-	const at = (iso: string) => dayjs(iso)
-	/** An hour cell with no `minute`, the way a one-hour slot and a timeline column report it. */
+	const at = (iso: string) => mustParse(iso, 'UTC')
 	const hourCell = (hourOfDay: number, snapMinutes?: number): DropCellData => ({
 		type: 'day-cell',
 		date: at('2025-03-12T00:00:00'),
@@ -32,16 +44,18 @@ describe('snapping inside a cell', () => {
 		slotDurationMinutes: slotMinutes,
 		snapMinutes,
 	})
-	const meeting = {
+	const meeting: CalendarEvent = {
 		id: 'm',
 		title: 'Meeting',
-		start: at('2025-03-12T14:00:00'),
-		end: at('2025-03-12T15:00:00'),
-	} as CalendarEvent
+		start: toOffsetIso(at('2025-03-12T14:00:00')),
+		end: toOffsetIso(at('2025-03-12T15:00:00')),
+	}
 	const dropStart = (data: DropCellData) =>
-		calculateDropTimes(meeting, data).start.format()
-	const resizeEnd = (data: DropCellData) =>
-		calculateResizeTimes(meeting, data, 'end')?.end.format()
+		toOffsetIso(calculateDropTimes(meeting, data).start)
+	const resizeEnd = (data: DropCellData) => {
+		const resized = calculateResizeTimes(meeting, data, 'end')
+		return resized ? toOffsetIso(resized.end) : undefined
+	}
 
 	describe('snapDropCell', () => {
 		it.each([
@@ -88,13 +102,13 @@ describe('snapping inside a cell', () => {
 	describe('what a snapped cell does to a drop', () => {
 		it('lands the event on the quarter hour under the pointer', () => {
 			expect(dropStart(snapDropCell(hourCell(9, 15), 0.6))).toBe(
-				at('2025-03-12T09:30:00').format()
+				toOffsetIso(at('2025-03-12T09:30:00'))
 			)
 		})
 
 		it('keeps the hour-cell drop when the pointer is at the top of the cell', () => {
 			expect(dropStart(snapDropCell(hourCell(9, 15), 0))).toBe(
-				at('2025-03-12T09:00:00').format()
+				toOffsetIso(at('2025-03-12T09:00:00'))
 			)
 		})
 	})
@@ -102,49 +116,41 @@ describe('snapping inside a cell', () => {
 	describe('what a snapped cell does to a resize', () => {
 		it('ends the event at the end of the snap bucket under the pointer', () => {
 			expect(resizeEnd(snapDropCell(hourCell(16, 15), 0.3))).toBe(
-				at('2025-03-12T16:30:00').format()
+				toOffsetIso(at('2025-03-12T16:30:00'))
 			)
 		})
 
 		it('ends at the end of a 5-minute bucket inside a 30-minute slot', () => {
 			expect(resizeEnd(snapDropCell(slotCell(16, 30, 30, 5), 0.4))).toBe(
-				at('2025-03-12T16:45:00').format()
+				toOffsetIso(at('2025-03-12T16:45:00'))
 			)
 		})
 	})
 
 	describe('on the day the clocks spring forward (America/New_York, 9 Mar 2025)', () => {
-		beforeEach(() => {
-			dayjs.tz.setDefault('America/New_York')
-		})
-
-		afterEach(() => {
-			dayjs.tz.setDefault(originalTz)
-		})
-
-		// The cell's date is the grid's own: the day's midnight set to the hour, as
-		// `getDayHours` builds it, so it carries the offset in force at 10:00.
+		const zone = 'America/New_York'
 		const springForwardCell = (): DropCellData => ({
 			type: 'day-cell',
-			date: dayjs.tz('2025-03-09T00:00:00', 'America/New_York').hour(10),
+			date: withTime(mustParse('2025-03-09T00:00:00', zone), { hour: 10 }),
 			hour: 10,
 			slotDurationMinutes: 60,
 			snapMinutes: 15,
 		})
 
 		it('resizes to the wall-clock quarter hour', () => {
-			const overnight = {
+			const overnight: CalendarEvent = {
 				...meeting,
-				start: dayjs.tz('2025-03-08T20:00:00', 'America/New_York'),
-				end: dayjs.tz('2025-03-09T00:30:00', 'America/New_York'),
+				start: toOffsetIso(mustParse('2025-03-08T20:00:00', zone)),
+				end: toOffsetIso(mustParse('2025-03-09T00:30:00', zone)),
 			}
 			const resized = calculateResizeTimes(
 				overnight,
 				snapDropCell(springForwardCell(), 0.5),
 				'end'
 			)
-			// 10:45 EDT is 14:45Z.
-			expect(resized?.end.toISOString()).toBe('2025-03-09T14:45:00.000Z')
+			expect(resized ? toUtcIso(resized.end) : '').toBe(
+				'2025-03-09T14:45:00.000Z'
+			)
 		})
 
 		it('drops on the wall-clock quarter hour', () => {
@@ -152,8 +158,7 @@ describe('snapping inside a cell', () => {
 				meeting,
 				snapDropCell(springForwardCell(), 0.5)
 			)
-			// 10:30 EDT is 14:30Z.
-			expect(dropped.start.toISOString()).toBe('2025-03-09T14:30:00.000Z')
+			expect(toUtcIso(dropped.start)).toBe('2025-03-09T14:30:00.000Z')
 		})
 	})
 })

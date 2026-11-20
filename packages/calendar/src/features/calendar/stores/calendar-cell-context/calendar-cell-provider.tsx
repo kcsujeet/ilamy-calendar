@@ -7,16 +7,13 @@ interface CalendarCellProviderProps {
 	children: ReactNode
 }
 
-/**
- * Provides the cell subset of the calendar context, rebuilt only when one of
- * its fields changes. Rendered by CalendarProvider, inside CalendarContext.
- */
 export const CalendarCellProvider: FC<CalendarCellProviderProps> = ({
 	children,
 }) => {
 	const {
 		currentDate,
 		view,
+		timezone,
 		eventSpacing,
 		businessHours,
 		getResourceById,
@@ -32,6 +29,7 @@ export const CalendarCellProvider: FC<CalendarCellProviderProps> = ({
 		() => ({
 			currentDate,
 			view,
+			timezone,
 			eventSpacing,
 			businessHours,
 			getResourceById,
@@ -45,6 +43,7 @@ export const CalendarCellProvider: FC<CalendarCellProviderProps> = ({
 		[
 			currentDate,
 			view,
+			timezone,
 			eventSpacing,
 			businessHours,
 			getResourceById,

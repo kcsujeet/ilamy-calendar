@@ -1,11 +1,5 @@
 import { expect } from 'bun:test'
 import type { BusinessHours, CalendarEvent, Resource } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
-
-/**
- * Shared fixtures for the resource/business-hours test suites. Test files
- * import construction from here; each suite keeps its own assertions.
- */
 
 /** Monday-to-Friday business hours over the given hour range. */
 export const weekdayBusinessHours = (
@@ -30,19 +24,10 @@ export const twoResources: Resource[] = [
 export const noEvents: CalendarEvent[] = []
 
 /** Wednesday, Jan 1 2025 — the anchor date of the resource week-view suites. */
-export const resourceWeekInitialDate = dayjs('2025-01-01T00:00:00.000Z')
-
-// ---------------------------------------------------------------------------
-// Shared assertion helpers — dedupe the business-hours test clone groups.
-// ---------------------------------------------------------------------------
+export const resourceWeekInitialDate = '2025-01-01T00:00:00.000Z'
 
 const paddedHour = (n: number): string => String(n).padStart(2, '0')
 
-/**
- * Core of the business-hour range assertions: the first/last visible hours
- * must satisfy the visible expectation, the first/last hidden hours the
- * hidden one. The view-specific helpers below supply the expectations.
- */
 function assertHourRange(
 	expectVisible: (hour: string) => void,
 	expectHidden: (hour: string) => void,
@@ -57,10 +42,6 @@ function assertHourRange(
 	expectHidden(paddedHour(lastHidden))
 }
 
-/**
- * Assert that a vertical day-view shows only the given business hour range.
- * Used by both the regular and resource "weekend fallback" business-hours tests.
- */
 export function assertVerticalBusinessHourRange(
 	screen: {
 		getByTestId: (id: string) => unknown
@@ -85,11 +66,6 @@ export function assertVerticalBusinessHourRange(
 	)
 }
 
-/**
- * Assert that a resource-week horizontal view shows only the given business
- * hour range. Used by the resource-business-hours and resource-week-horizontal
- * test suites.
- */
 export function assertResourceWeekBusinessHourRange(
 	screen: {
 		getAllByTestId: (id: string) => unknown[]

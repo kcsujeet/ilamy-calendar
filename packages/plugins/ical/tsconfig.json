@@ -1,0 +1,12 @@
+{
+	"extends": "../../../tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["bun"],
+		"paths": {
+			"@ilamy/utils/ical-format": ["../../utils/src/ical-format.ts"],
+			"@ilamy/utils/temporal": ["../../utils/src/temporal.ts"]
+		}
+	},
+	"include": ["**/*.ts", "**/*.tsx"],
+	"exclude": ["dist", "node_modules", "bunup.config.ts"]
+}

@@ -1,0 +1,52 @@
+{
+	"name": "@ilamy/theme-mui",
+	"version": "4.0.0",
+	"private": true,
+	"description": "Material UI (MUI) theme adapter and native component bindings for @ilamy/calendar.",
+	"author": "Sujeet Kc",
+	"license": "MIT",
+	"homepage": "https://ilamy.dev",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/kcsujeet/ilamy-calendar.git"
+	},
+	"keywords": [
+		"react",
+		"calendar",
+		"mui",
+		"material-ui",
+		"theme",
+		"ilamy"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"scripts": {
+		"build": "CI=true NODE_ENV=production bunx bunup",
+		"test": "bun test",
+		"type-check": "bunx tsc --noEmit",
+		"lint": "bunx biome lint . --diagnostic-level=error",
+		"check": "bunx biome check . --diagnostic-level=error",
+		"ci": "bun run check && bun run type-check && bun run test && bun run build"
+	},
+	"peerDependencies": {
+		"@ilamy/calendar": "workspace:*",
+		"@mui/material": "^6.0.0 || ^7.0.0 || ^8.0.0 || ^9.0.0",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0"
+	},
+	"devDependencies": {
+		"@emotion/react": "11.14.0",
+		"@emotion/styled": "11.14.1",
+		"@mui/material": "9.5.0"
+	}
+}

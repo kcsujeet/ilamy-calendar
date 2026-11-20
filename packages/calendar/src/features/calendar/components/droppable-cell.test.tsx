@@ -1,6 +1,15 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { yearPlugin } from '@ilamy/calendar-year'
 import type { Resource } from '@ilamy/types'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import {
+	add,
+	parseDate,
+	startOf,
+	toOffsetIso,
+	toUtcIso,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import {
@@ -13,7 +22,16 @@ import type { CalendarView } from '@/types'
 import type { DropColumnData } from './drag-and-drop/dnd-utils'
 import { DroppableCell, SlotCell } from './droppable-cell'
 
-const initialDate = dayjs('2025-01-01T00:00:00.000Z')
+const at = (iso: string, zone = 'UTC'): ZonedDate => {
+	const parsed = parseDate(iso, zone)
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const initialDate = at('2025-01-01T00:00:00.000Z')
+const initialDateIso = toOffsetIso(initialDate)
 
 interface RenderCellOptions {
 	// Calendar (provider) props
@@ -26,7 +44,7 @@ interface RenderCellOptions {
 	/** The calendar's `timezone` prop. */
 	timezone?: string
 	// Cell props
-	date?: Dayjs
+	date?: ZonedDate
 	hour?: number
 	minute?: number
 	slotDurationMinutes?: number
@@ -36,22 +54,22 @@ interface RenderCellOptions {
 	/** The in-flight drag this cell should react to, if any. */
 	preview?: DragPreviewState
 	isSubDivider?: boolean
+	shaded?: boolean
 }
 
-// One CalendarProvider + DroppableCell setup for every test; pass only the
-// calendar/cell props the case under test varies. The cell's testid is "cell".
 const renderCell = (opts: RenderCellOptions = {}) =>
 	render(
 		<CalendarProvider
 			dayMaxEvents={3}
 			getCellClassName={opts.getCellClassName}
-			initialDate={initialDate}
+			initialDate={initialDateIso}
 			initialView={opts.view ?? 'month'}
 			isCellDisabled={opts.isCellDisabled}
 			onCellClick={opts.onCellClick}
+			plugins={[yearPlugin()]}
 			resources={opts.resources}
 			snapDuration={opts.snapDuration}
-			timezone={opts.timezone}
+			timezone={opts.timezone ?? 'UTC'}
 		>
 			<DragPreviewContext.Provider value={opts.preview ?? null}>
 				<DroppableCell
@@ -63,6 +81,7 @@ const renderCell = (opts: RenderCellOptions = {}) =>
 					isSubDivider={opts.isSubDivider}
 					minute={opts.minute}
 					resourceId={opts.resourceId}
+					shaded={opts.shaded}
 					slotDurationMinutes={opts.slotDurationMinutes ?? 15}
 					type="day-cell"
 				/>
@@ -88,10 +107,11 @@ describe('DroppableCell data-view attribute', () => {
 })
 
 describe('DroppableCell sub-hour divider hook', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
 	test('marks a cell that draws the dashed divider', () => {
-		// The library ships no CSS, so the only way to hide or restyle just the
-		// sub-hour lines is a stable selector. Keyed off the SAME flag that draws
-		// the border, so the last slot of each hour, which has none, is excluded.
 		renderCell({ isSubDivider: true })
 
 		expect(screen.getByTestId('cell')).toHaveAttribute(
@@ -108,6 +128,10 @@ describe('DroppableCell sub-hour divider hook', () => {
 })
 
 describe('DroppableCell snap size', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
 	test('names the snap size and the time axis of a cell with a finer snap', () => {
 		renderCell({
 			hour: 9,
@@ -161,7 +185,7 @@ describe('DroppableCell snap size', () => {
 	})
 })
 
-describe('DroppableCell isCellDisabled (issue #79)', () => {
+describe('DroppableCell isCellDisabled (issue #79) & shaded (4.0.5)', () => {
 	beforeEach(() => {
 		cleanup()
 	})
@@ -182,6 +206,18 @@ describe('DroppableCell isCellDisabled (issue #79)', () => {
 		)
 	})
 
+	test('shaded cells mark data-non-business="true" while remaining clickable', () => {
+		const onCellClick = mock()
+		renderCell({ shaded: true, onCellClick })
+
+		const cell = screen.getByTestId('cell')
+		expect(cell.getAttribute('data-non-business')).toBe('true')
+		expect(cell.getAttribute('data-disabled')).toBe('false')
+
+		fireEvent.click(cell)
+		expect(onCellClick).toHaveBeenCalledTimes(1)
+	})
+
 	test('does not call onCellClick when the cell is disabled', () => {
 		const onCellClick = mock()
 		renderCell({ isCellDisabled: () => true, onCellClick })
@@ -200,7 +236,7 @@ describe('DroppableCell isCellDisabled (issue #79)', () => {
 		expect(onCellClick).toHaveBeenCalledTimes(1)
 	})
 
-	test('passes the cell start/end range to isCellDisabled', () => {
+	test('passes the cell start/end range and allDay=true in month view to isCellDisabled (D11)', () => {
 		let received: CellInfo | undefined
 		renderCell({
 			isCellDisabled: (info) => {
@@ -209,9 +245,9 @@ describe('DroppableCell isCellDisabled (issue #79)', () => {
 			},
 		})
 
-		// Month day-cell spans the full day, ending at the exclusive next midnight.
-		expect(received?.start.toISOString()).toBe('2025-01-01T00:00:00.000Z')
-		expect(received?.end.toISOString()).toBe('2025-01-02T00:00:00.000Z')
+		expect(received?.start).toBe('2025-01-01T00:00:00+00:00')
+		expect(received?.end).toBe('2025-01-02T00:00:00+00:00')
+		expect(received?.allDay).toBe(true)
 	})
 
 	test('regular calendar leaves info.resource undefined', () => {
@@ -249,20 +285,15 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 		cleanup()
 	})
 
-	/**
-	 * The end is exclusive, the same way the hour and minute cells below already
-	 * report theirs (09:00 to 10:00, 09:15 to 09:30): a day cell runs to the next
-	 * midnight, not to 23:59 (#248).
-	 */
 	test('exposes a full-day range on a day cell (no hour)', () => {
 		renderCell()
 
 		const cell = screen.getByTestId('cell')
 		expect(cell.getAttribute('data-start')).toBe(
-			initialDate.startOf('day').toISOString()
+			toUtcIso(startOf(initialDate, 'day'))
 		)
 		expect(cell.getAttribute('data-end')).toBe(
-			initialDate.add(1, 'day').startOf('day').toISOString()
+			toUtcIso(startOf(add(initialDate, 1, 'day'), 'day'))
 		)
 	})
 
@@ -271,10 +302,10 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 
 		const cell = screen.getByTestId('cell')
 		expect(cell.getAttribute('data-start')).toBe(
-			initialDate.hour(9).minute(0).toISOString()
+			toUtcIso(withTime(initialDate, { hour: 9, minute: 0 }))
 		)
 		expect(cell.getAttribute('data-end')).toBe(
-			initialDate.hour(10).minute(0).toISOString()
+			toUtcIso(withTime(initialDate, { hour: 10, minute: 0 }))
 		)
 	})
 
@@ -283,10 +314,10 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 
 		const cell = screen.getByTestId('cell')
 		expect(cell.getAttribute('data-start')).toBe(
-			initialDate.hour(9).minute(15).toISOString()
+			toUtcIso(withTime(initialDate, { hour: 9, minute: 15 }))
 		)
 		expect(cell.getAttribute('data-end')).toBe(
-			initialDate.hour(9).minute(30).toISOString()
+			toUtcIso(withTime(initialDate, { hour: 9, minute: 30 }))
 		)
 	})
 
@@ -295,10 +326,10 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 
 		const cell = screen.getByTestId('cell')
 		expect(cell.getAttribute('data-start')).toBe(
-			initialDate.hour(9).minute(30).toISOString()
+			toUtcIso(withTime(initialDate, { hour: 9, minute: 30 }))
 		)
 		expect(cell.getAttribute('data-end')).toBe(
-			initialDate.hour(10).minute(0).toISOString()
+			toUtcIso(withTime(initialDate, { hour: 10, minute: 0 }))
 		)
 	})
 
@@ -318,34 +349,25 @@ describe('DroppableCell self-describing attributes (drag-create)', () => {
 		)
 	})
 
-	test('exposes data-all-day="true" only on an all-day cell', () => {
-		renderCell({ allDay: true })
+	test('exposes data-all-day="true" on an all-day cell and on a month day cell (D11)', () => {
+		renderCell({ allDay: true, view: 'week' })
+		expect(screen.getByTestId('cell').getAttribute('data-all-day')).toBe('true')
 
+		cleanup()
+		renderCell({ view: 'month' })
 		expect(screen.getByTestId('cell').getAttribute('data-all-day')).toBe('true')
 	})
 
 	test('omits data-all-day on a timed cell', () => {
-		renderCell({ hour: 9 })
+		renderCell({ hour: 9, view: 'week' })
 
 		expect(screen.getByTestId('cell').hasAttribute('data-all-day')).toBe(false)
 	})
 })
 
-/**
- * The day view hands its cell the raw `currentDate`, which is any time of day.
- * `.hour(0)` on it keeps that moment's UTC offset, so on the day the clocks
- * spring forward the all-day cell started an hour before its own midnight:
- * the previous day, and the form opened on it. The cell must report its own
- * day, midnight to midnight in the calendar's zone, whatever time of day the
- * date it was given carries.
- */
 describe('DroppableCell all-day range across the 2025 clock changes', () => {
 	beforeEach(() => {
 		cleanup()
-	})
-
-	afterEach(() => {
-		dayjs.tz.setDefault()
 	})
 
 	const clockChanges = [
@@ -359,23 +381,17 @@ describe('DroppableCell all-day range across the 2025 clock changes', () => {
 
 	for (const { zone, changeDay } of clockChanges) {
 		test(`each day within three of ${changeDay} in ${zone} runs midnight to midnight`, () => {
-			dayjs.tz.setDefault(zone)
 			const reported: string[][] = []
 			const expected: string[][] = []
+			const anchorNoon = at(`${changeDay}T12:00:00`, zone)
 			for (const offset of [-3, -2, -1, 0, 1, 2, 3]) {
-				const dayKey = dayjs(`${changeDay}T12:00:00.000`)
-					.add(offset, 'day')
-					.format('YYYY-MM-DD')
-				const nextDayKey = dayjs(`${dayKey}T12:00:00.000`)
-					.add(1, 'day')
-					.format('YYYY-MM-DD')
-				expected.push([
-					dayjs(`${dayKey}T00:00:00.000`).toISOString(),
-					dayjs(`${nextDayKey}T00:00:00.000`).toISOString(),
-				])
+				const dayNoon = add(anchorNoon, offset, 'day')
+				const dayStart = startOf(dayNoon, 'day')
+				const nextDayStart = startOf(add(dayStart, 1, 'day'), 'day')
+				expected.push([toUtcIso(dayStart), toUtcIso(nextDayStart)])
 				cleanup()
 				renderCell({
-					date: dayjs(`${dayKey}T12:34:56.000`),
+					date: withTime(dayNoon, { hour: 12, minute: 34, second: 56 }),
 					timezone: zone,
 				})
 				const cell = screen.getByTestId('cell')
@@ -421,8 +437,8 @@ describe('DroppableCell getCellClassName', () => {
 			},
 		})
 
-		expect(received?.start.toISOString()).toBe('2025-01-01T00:00:00.000Z')
-		expect(received?.end.toISOString()).toBe('2025-01-02T00:00:00.000Z')
+		expect(received?.start).toBe('2025-01-01T00:00:00+00:00')
+		expect(received?.end).toBe('2025-01-02T00:00:00+00:00')
 	})
 })
 
@@ -441,14 +457,6 @@ describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)'
 	})
 
 	test("tints the target in FullCalendar's own highlight colour", () => {
-		// FullCalendar's own highlight: v6 ships
-		// `--fc-highlight-color:rgba(188,232,241,.3)` behind
-		// `.fc .fc-highlight{background:var(--fc-highlight-color)}`.
-		//
-		// A fixed literal rather than a theme token, because it is the one shade
-		// that collides with neither the dragged event's own fill nor the
-		// disabled and hover greys, which in a monochrome theme sit on the same
-		// axis as each other.
 		renderCell({ preview: mkPreview(), hour: 10, minute: 30, view: 'week' })
 
 		const highlight = screen.getByTestId('cell').firstElementChild
@@ -459,14 +467,6 @@ describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)'
 	})
 
 	test('tints a disabled cell the candidate spans across', () => {
-		// A multi-day span crosses days you cannot drop ONTO -- weekends, closed
-		// days -- and the mirror is already drawn across them. Leaving those cells
-		// grey makes the bar look like it is crossing unavailable ground.
-		//
-		// Not "you may release here": a disabled cell registers as a droppable so
-		// the mirror can keep rendering over it, and the refusal is decided at
-		// drop time in `getUpdatedEvent`. The tint says only that the candidate
-		// spans this cell.
 		renderCell({
 			preview: mkPreview(),
 			hour: 10,
@@ -501,12 +501,9 @@ describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)'
 	})
 
 	test('leaves the cell ending exactly at the candidate start alone', () => {
-		// The cell's own `end` is exclusive (#248), so the candidate beginning at
-		// that instant occupies none of this cell. Handing the exclusive end to
-		// `isPreviewOnTarget`, which takes the LAST instant, lights it up wrongly.
 		const preview = mkPreview({
-			start: initialDate.hour(10).minute(15),
-			end: initialDate.hour(12),
+			start: withTime(initialDate, { hour: 10, minute: 15 }),
+			end: withTime(initialDate, { hour: 12 }),
 		})
 		renderCell({ preview, hour: 10, minute: 0, view: 'week' })
 
@@ -533,8 +530,8 @@ describe('DroppableCell drag preview highlight (FullCalendar / Google Calendar)'
 
 	test('highlights the all-day cell while an all-day event is dragged', () => {
 		const preview = mkPreview({
-			start: initialDate.startOf('day'),
-			end: initialDate.add(1, 'day').startOf('day'),
+			start: startOf(initialDate, 'day'),
+			end: startOf(add(initialDate, 1, 'day'), 'day'),
 			allDay: true,
 		})
 		renderCell({ preview, allDay: true, view: 'week' })
@@ -554,10 +551,14 @@ describe('SlotCell (a slot of a time column)', () => {
 	const renderSlot = (dragPreview: DragPreviewState | null = null) => {
 		const slots: DropColumnData['slots'] = [undefined, undefined, undefined]
 		render(
-			<CalendarProvider initialDate={initialDate} initialView="week">
+			<CalendarProvider
+				initialDate={initialDateIso}
+				initialView="week"
+				timezone="UTC"
+			>
 				<SlotCell
 					data-testid="slot"
-					date={initialDate.hour(10).minute(30)}
+					date={withTime(initialDate, { hour: 10, minute: 30 })}
 					dragPreview={dragPreview}
 					hour={10}
 					minute={30}
@@ -589,12 +590,13 @@ describe('SlotCell (a slot of a time column)', () => {
 		const slots: DropColumnData['slots'] = [undefined]
 		render(
 			<CalendarProvider
-				initialDate={initialDate}
+				initialDate={initialDateIso}
 				initialView="week"
 				isCellDisabled={() => true}
+				timezone="UTC"
 			>
 				<SlotCell
-					date={initialDate.hour(10)}
+					date={withTime(initialDate, { hour: 10 })}
 					dragPreview={null}
 					hour={10}
 					minute={0}

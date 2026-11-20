@@ -14,8 +14,6 @@ import {
 	type RecurrencePreset,
 } from '../../utils/recurrence-presets'
 
-// Presets offered in the picker. `once` is represented by the disabled toggle,
-// so it is not listed here; `customize` reveals the detailed controls.
 const PRESET_OPTIONS: RecurrencePreset[] = [
 	'daily',
 	'weekdays',
@@ -26,9 +24,9 @@ const PRESET_OPTIONS: RecurrencePreset[] = [
 ]
 
 export const RecurrencePresetSelect: React.FC = () => {
-	const { t } = useIlamyCalendarContext()
+	const { t, currentLocale, timezone } = useIlamyCalendarContext()
 	const { opts, custom, reference, selectPreset } = useRecurrenceEditor()
-	const preset = custom ? 'customize' : detectPreset(opts, reference)
+	const preset = custom ? 'customize' : detectPreset(opts, reference, timezone)
 	return (
 		<div>
 			<Label className="text-xs" htmlFor="recurrence-preset">
@@ -48,7 +46,7 @@ export const RecurrencePresetSelect: React.FC = () => {
 				<SelectContent>
 					{PRESET_OPTIONS.map((p) => (
 						<SelectItem key={p} value={p}>
-							{getPresetLabel(p, reference, t)}
+							{getPresetLabel(p, reference, t, currentLocale, timezone)}
 						</SelectItem>
 					))}
 				</SelectContent>

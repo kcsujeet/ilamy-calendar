@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { CalendarEvent, IlamyPlugin } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import { add, parseDate, toUtcIso } from '@ilamy/utils/temporal'
 import type { ReactNode } from 'react'
 import { createElement } from 'react'
 import { createPluginRuntime } from './create-plugin-runtime'
@@ -10,18 +10,24 @@ import { createPluginRuntime } from './create-plugin-runtime'
 const A_SLOT = 'a-slot'
 const ANOTHER_SLOT = 'another-slot'
 
-const ev = (id: string, startISO: string, special = false): CalendarEvent =>
-	({
+const ev = (id: string, startISO: string, special = false): CalendarEvent => {
+	const parsed = parseDate(startISO, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid date: ${startISO}`)
+	}
+	return {
 		id,
 		title: id,
-		start: dayjs(startISO),
-		end: dayjs(startISO).add(1, 'hour'),
+		start: startISO,
+		end: toUtcIso(add(parsed, 1, 'hour')),
 		special,
-	}) as unknown as CalendarEvent
+	} as unknown as CalendarEvent
+}
 
 const range = {
-	start: dayjs('2025-01-01T00:00:00.000Z'),
-	end: dayjs('2025-01-31T23:59:59.999Z'),
+	start: '2025-01-01T00:00:00.000Z',
+	end: '2025-01-31T23:59:59.999Z',
+	timezone: 'UTC',
 }
 
 const isSpecial = (e: CalendarEvent): boolean =>

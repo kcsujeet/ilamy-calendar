@@ -1,10 +1,10 @@
 import type { Resource } from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import { add, type ZonedDate } from '@ilamy/utils/temporal'
 import { CurrentTimeMarker } from '@/features/calendar/components/current-time-marker'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
 interface GridNowLineProps {
-	days: Dayjs[]
+	days: ZonedDate[]
 	gridType: 'day' | 'hour'
 	axis: 'vertical' | 'horizontal'
 	resourceId?: string | number
@@ -28,7 +28,8 @@ export const GridNowLine: React.FC<GridNowLineProps> = ({
 		nowIndicator: c.nowIndicator,
 	}))
 	const rangeStart = days.at(0)
-	const rangeEnd = days.at(-1)?.add(1, gridType)
+	const lastSlot = days.at(-1)
+	const rangeEnd = lastSlot ? add(lastSlot, 1, gridType) : undefined
 	const isHourGrid = gridType === 'hour'
 	const hasRange = Boolean(rangeStart && rangeEnd)
 	const showNowLine = nowIndicator && isHourGrid && hasRange

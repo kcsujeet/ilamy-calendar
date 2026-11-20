@@ -16,7 +16,10 @@ type Opts = Parameters<typeof gotoScenario>[1]
 
 /** Opens a scenario and waits out the 500ms header animations before anything is measured or pressed. */
 const openSettled = async (page: Page, options: Opts) => {
-	await gotoScenario(page, options)
+	await gotoScenario(page, {
+		...options,
+		settings: { editable: 'true', ...options.settings },
+	})
 	await page.evaluate(() =>
 		Promise.all(document.getAnimations().map((a) => a.finished))
 	)

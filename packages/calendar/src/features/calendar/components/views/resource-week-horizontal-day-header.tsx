@@ -1,5 +1,5 @@
 import { cn } from '@ilamy/ui/lib/utils'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import type { ZonedDate } from '@ilamy/utils/temporal'
 import type React from 'react'
 import { HEADER_ROW_HEIGHT } from '@/config/constants'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
@@ -7,7 +7,7 @@ import { keys } from '@/features/calendar/utils/keys'
 import { DayHeaderLabel } from './day-header-label'
 
 interface ResourceWeekHorizontalDayHeaderProps {
-	days: Dayjs[]
+	days: ZonedDate[]
 }
 
 export const ResourceWeekHorizontalDayHeader: React.FC<
@@ -19,8 +19,6 @@ export const ResourceWeekHorizontalDayHeader: React.FC<
 	return (
 		<div className={cn('flex gap-px bg-border border-b', HEADER_ROW_HEIGHT)}>
 			{days.map((day, index) => {
-				// Keyed by position, not by date: the column heads the same weekday
-				// in every week, and only the number inside it changes.
 				const key = keys.listKey('resource-week-day', index)
 
 				return (
@@ -34,10 +32,6 @@ export const ResourceWeekHorizontalDayHeader: React.FC<
 						<DayHeaderLabel
 							animated
 							className={cn(
-								// Sticks mid-timeline, so where midnight crosses the middle the
-								// outgoing day's label is pushed against its day's end and the
-								// incoming one sits at its day's start. The padding keeps the
-								// two apart when they meet, instead of reading as "WedThu".
 								isHourly ? 'sticky left-1/2 px-2' : 'w-full text-center'
 							)}
 							day={day}

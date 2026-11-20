@@ -1,7 +1,6 @@
-import type { Dayjs } from '@ilamy/utils/dayjs'
-import { dayKey } from '@ilamy/utils/helpers'
+import { isToday } from '@ilamy/core'
+import { dayKey, toUtcIso, type ZonedDate } from '@ilamy/utils/temporal'
 import type { CalendarView } from '@/types'
-import { isToday } from '@/utils/date-utils'
 
 type Id = string | number
 
@@ -9,34 +8,27 @@ const pad2 = (n: number | string): string => String(n).padStart(2, '0')
 const padHourIfNumber = (hour: number | string): string =>
 	typeof hour === 'number' ? pad2(hour) : hour
 
-/**
- * Centralized factory for keys, ids, and data-testids. Each entry returns a
- * semantic string identified by its concept prefix (e.g. `day-col-`,
- * `day-cell-`, `week-header-day-`). The call site chooses the role — the
- * same string can serve as a React `key=`, an `id`, or a `data-testid`.
- *
- * Inspired by https://tkdodo.eu/blog/effective-react-query-keys#use-query-key-factories.
- * Prevents ad-hoc string concatenation so cross-cutting changes (prefix,
- * separator, format) are one-point.
- */
+/** Centralized factory for React keys, ids, and data-testids. */
 export const keys = {
-	// Grid column configuration ids
 	col: {
 		time: 'time-col',
 		date: 'date-col',
-		day: (day: Dayjs, resourceId?: Id) => {
+		day: (day: ZonedDate, resourceId?: Id) => {
 			const base = `day-col-${dayKey(day)}`
 			return resourceId != null ? `${base}-resource-${resourceId}` : base
 		},
 		resource: (scope: 'week' | 'month', resourceId: Id) =>
 			`${scope}-col-resource-${resourceId}`,
-		allDay: (day: Dayjs, index: number) =>
+		allDay: (day: ZonedDate, index: number) =>
 			`all-day-col-${dayKey(day)}-${index}`,
 	},
 
-	// Grid cell identifiers
 	cell: {
-		day: (day: Dayjs, hour?: number | string, minute: number | string = 0) => {
+		day: (
+			day: ZonedDate,
+			hour?: number | string,
+			minute: number | string = 0
+		) => {
 			const k = dayKey(day)
 			return hour != null
 				? `day-cell-${k}-${pad2(hour)}-${pad2(minute)}`
@@ -44,7 +36,7 @@ export const keys = {
 		},
 		verticalTime: (hour: number | string) => `vertical-time-${pad2(hour)}`,
 		vertical: (
-			day: Dayjs,
+			day: ZonedDate,
 			hour: number | string,
 			minute: number | string,
 			resourceId?: Id
@@ -54,7 +46,6 @@ export const keys = {
 		},
 	},
 
-	// Container (wrapper) identifiers
 	container: {
 		vertical: {
 			col: (id: Id) => `vertical-col-${id}`,
@@ -64,68 +55,56 @@ export const keys = {
 			rowLabel: (resourceId: Id) => `horizontal-row-label-${resourceId}`,
 			event: (eventId: Id) => `horizontal-event-${eventId}`,
 		},
-		// One per day column, so a multi-day event yields several; they appear in
-		// column order, which is what lets a test grab a chosen column.
 		verticalEvent: (eventId: Id) => `vertical-event-${eventId}`,
 		eventsLayer: (orientation: 'vertical' | 'horizontal', id: Id) =>
 			`${orientation}-events-${id}`,
 	},
 
-	// Header identifiers
 	header: {
 		resource: {
 			weekDay: 'resource-week-day-header',
-			// The vertical-arrangement resource header (day AND month views).
 			columnsHeader: 'resource-columns-header',
-			monthDay: (day: Dayjs) => `resource-month-header-${day.toISOString()}`,
+			monthDay: (day: ZonedDate) => `resource-month-header-${toUtcIso(day)}`,
 			timeLabel: (view: 'week' | 'day', hour: number | string) =>
 				`resource-${view}-time-label-${padHourIfNumber(hour)}`,
 		},
 		weekday: (view: 'week' | 'month', name: string) =>
 			`${view}-header-weekday-${name.toLowerCase()}`,
 		week: {
-			day: (day: Dayjs) => `week-header-day-${day.toISOString()}`,
-			hour: (day: Dayjs, ref: Id) =>
-				`week-header-hour-${day.toISOString()}-${ref}`,
+			day: (day: ZonedDate) => `week-header-day-${toUtcIso(day)}`,
+			hour: (day: ZonedDate, ref: Id) =>
+				`week-header-hour-${toUtcIso(day)}-${ref}`,
 			resource: (resourceId: Id) => `week-header-resource-${resourceId}`,
 		},
 		year: {
 			month: (monthKey: string, part?: 'title' | 'count' | 'mini') =>
 				part ? `year-month-${part}-${monthKey}` : `year-month-${monthKey}`,
-			day: (monthKey: string, dayKey: string) =>
-				`year-day-${monthKey}-${dayKey}`,
+			day: (monthKey: string, dayStr: string) =>
+				`year-day-${monthKey}-${dayStr}`,
 		},
 	},
 
-	// Resource-scoped all-day row id (falls back to 'main' when unscoped).
 	allDayRow: (resourceId?: Id) => `allday-row-${resourceId ?? 'main'}`,
 
-	// Generic iteration key composer for React `key=` props, list markers,
-	// and suffixed wrapper keys (e.g. `listKey(base, 'animated')`).
 	listKey: (...parts: Array<string | number>) => parts.join('-'),
 
-	// DayNumber component testid — `day-number-today` when the date is today,
-	// otherwise `day-number-{D}`.
-	dayNumber: (date: Dayjs) =>
-		isToday(date) ? 'day-number-today' : `day-number-${date.format('D')}`,
+	dayNumber: (date: ZonedDate) =>
+		isToday(date) ? 'day-number-today' : `day-number-${date.day}`,
 
-	// What a grid's sticky insets depend on (see useStickyInsets): a change to
-	// any part replaces the elements that mark them.
 	stickyInsets: (
 		view: CalendarView,
-		date: Dayjs,
+		date: ZonedDate | string,
 		isHeaderSticky: boolean,
 		laneCount: number
-	) =>
-		`sticky-insets-${view}-${dayKey(date)}-${isHeaderSticky ? 'sticky' : 'static'}-${laneCount}`,
+	) => {
+		const datePart = typeof date === 'string' ? date.slice(0, 10) : dayKey(date)
+		return `sticky-insets-${view}-${datePart}-${isHeaderSticky ? 'sticky' : 'static'}-${laneCount}`
+	},
 
-	// The snapped mirror of a dragged event, one per grid orientation.
 	dragPreview: (orientation: 'vertical' | 'horizontal') =>
 		`event-drag-preview-${orientation}`,
 
-	// Form element testid for time pickers (name = 'start' / 'end' etc.)
 	timePicker: (name: string | undefined) => `time-picker-${name ?? ''}`,
 
-	// Id of the visible label of a form field, which names its picker trigger
 	fieldLabel: (field: string) => `${field}-label`,
 } as const

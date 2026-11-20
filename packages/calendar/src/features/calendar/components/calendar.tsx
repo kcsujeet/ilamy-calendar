@@ -1,9 +1,22 @@
+import { getMonthWeeks, getWeekDays, isToday } from '@ilamy/core'
 import { cn } from '@ilamy/ui/lib/utils'
-import dayjs, { type Dayjs } from '@ilamy/utils/dayjs'
+import {
+	add,
+	dayKey,
+	formatDate,
+	isAfter,
+	isBefore,
+	now,
+	parseDate,
+	resolveZone,
+	startOf,
+	subtract,
+	toDate,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { useState } from 'react'
 import { PickerNav } from '@/components/ui/picker-nav'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { getMonthWeeks, getWeekDays, isToday } from '@/utils/date-utils'
 
 interface CalendarProps {
 	selected?: Date
@@ -17,7 +30,7 @@ interface CalendarProps {
 	weekHover?: boolean
 	/** Statically highlight the week containing this day (the current week). The
 	 *  hover preview takes over while the pointer is over the calendar. */
-	highlightedWeekOf?: Dayjs
+	highlightedWeekOf?: ZonedDate
 }
 
 interface DayState {
@@ -66,7 +79,7 @@ function DayCell({
 	state,
 	onSelect,
 }: {
-	day: Dayjs
+	day: ZonedDate
 	state: DayState
 	onSelect?: (date: Date | undefined) => void
 }) {
@@ -87,11 +100,11 @@ function DayCell({
 				data-disabled={state.isDisabled}
 				data-selected={state.isSelected}
 				disabled={state.isDisabled || state.isOutside}
-				onClick={() => onSelect?.(day.toDate())}
+				onClick={() => onSelect?.(toDate(day))}
 				tabIndex={state.isOutside ? -1 : 0}
 				type="button"
 			>
-				{day.format('D')}
+				{day.day}
 			</button>
 		</td>
 	)
@@ -107,39 +120,47 @@ export function Calendar({
 	weekHover = false,
 	highlightedWeekOf,
 }: CalendarProps) {
-	const t = useSmartCalendarContext((context) => context.t)
-	const [viewMonth, setViewMonth] = useState<Dayjs>(() =>
-		dayjs(defaultMonth ?? selected ?? new Date()).startOf('month')
-	)
+	const { currentLocale, t, timezone } = useSmartCalendarContext((context) => ({
+		currentLocale: context.currentLocale,
+		t: context.t,
+		timezone: context.timezone,
+	}))
+	const zone = resolveZone(timezone)
+	const [viewMonth, setViewMonth] = useState<ZonedDate>(() => {
+		const seed =
+			parseDate(defaultMonth ?? selected ?? undefined, zone) ?? now(zone)
+		return startOf(seed, 'month')
+	})
 
 	const weeks = getMonthWeeks(viewMonth, firstDayOfWeek)
-	const selectedKey = selected
-		? dayjs(selected).format('YYYY-MM-DD')
-		: undefined
-	const weekdayHeaders = getWeekDays(dayjs(), firstDayOfWeek).map((d) =>
-		d.format('dd')
+	const parsedSelected = selected ? parseDate(selected, zone) : undefined
+	const selectedKey = parsedSelected ? dayKey(parsedSelected) : undefined
+	const weekdayHeaders = getWeekDays(now(zone), firstDayOfWeek).map((d) =>
+		formatDate(d, { weekday: 'short' }, currentLocale).slice(0, 2)
 	)
 
-	let highlightStart: Dayjs | undefined
-	let highlightEnd: Dayjs | undefined
+	let highlightStart: ZonedDate | undefined
+	let highlightEnd: ZonedDate | undefined
 	if (highlightedWeekOf) {
 		const highlightedWeek = getWeekDays(highlightedWeekOf, firstDayOfWeek)
 		highlightStart = highlightedWeek.at(0)
 		highlightEnd = highlightedWeek.at(-1)
 	}
 
-	const toDayState = (day: Dayjs): DayState => {
-		const isSelected = day.format('YYYY-MM-DD') === selectedKey
+	const toDayState = (day: ZonedDate): DayState => {
+		const isSelected = dayKey(day) === selectedKey
 		let isCurrentWeek = false
 		if (highlightStart && highlightEnd) {
-			const onOrAfterStart = !day.isBefore(highlightStart, 'day')
-			const onOrBeforeEnd = !day.isAfter(highlightEnd, 'day')
+			const onOrAfterStart = !isBefore(day, highlightStart, 'day')
+			const onOrBeforeEnd = !isAfter(day, highlightEnd, 'day')
 			isCurrentWeek = onOrAfterStart && onOrBeforeEnd
 		}
+		const isSameMonth =
+			day.year === viewMonth.year && day.month === viewMonth.month
 		return {
-			isOutside: !day.isSame(viewMonth, 'month'),
+			isOutside: !isSameMonth,
 			isSelected,
-			isDisabled: disabled?.(day.toDate()) ?? false,
+			isDisabled: disabled?.(toDate(day)) ?? false,
 			isCurrent: isToday(day) && !isSelected,
 			isCurrentWeek,
 			weekHover,
@@ -152,10 +173,14 @@ export function Calendar({
 			data-slot="calendar"
 		>
 			<PickerNav
-				label={viewMonth.format('MMMM YYYY')}
+				label={formatDate(
+					viewMonth,
+					{ month: 'long', year: 'numeric' },
+					currentLocale
+				)}
 				nextLabel={t('nextMonth')}
-				onNext={() => setViewMonth((m) => m.add(1, 'month'))}
-				onPrev={() => setViewMonth((m) => m.subtract(1, 'month'))}
+				onNext={() => setViewMonth((m) => add(m, 1, 'month'))}
+				onPrev={() => setViewMonth((m) => subtract(m, 1, 'month'))}
 				prevLabel={t('previousMonth')}
 			/>
 
@@ -187,7 +212,7 @@ export function Calendar({
 							{week.map((day) => (
 								<DayCell
 									day={day}
-									key={day.toISOString()}
+									key={dayKey(day)}
 									onSelect={onSelect}
 									state={toDayState(day)}
 								/>

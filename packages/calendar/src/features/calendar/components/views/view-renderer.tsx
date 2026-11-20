@@ -5,7 +5,7 @@ import type {
 	ViewConfig,
 } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import { parseDate, resolveZone, type ZonedDate } from '@ilamy/utils/temporal'
 import type React from 'react'
 import { useMemo } from 'react'
 import { GROUPED_HEADER_HEIGHT } from '@/config/constants'
@@ -16,8 +16,6 @@ import { VerticalGrid } from '@/features/calendar/components/vertical-grid/verti
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { ResourceAllDayRows } from './resource-axis'
 
-// Contract rule, not a runtime check: a view declaring `layout: 'vertical'`
-// returns VerticalColumnSpec[] from columns() (see PluginView.columns TSDoc).
 const isVerticalSpecs = (
 	_specs: VerticalColumnSpec[] | HorizontalRowSpec[],
 	engine: 'vertical' | 'horizontal'
@@ -29,24 +27,26 @@ interface EngineViewProps {
 	variant: 'resource' | 'regular'
 }
 
-/** The 'vertical' engine branch: column specs → VerticalGrid. */
 const VerticalEngineView: React.FC<
 	EngineViewProps & { specs: VerticalColumnSpec[] }
 > = ({ specs, header, composesResourceAxis, variant }) => {
-	const { slotDuration, allDaySlot } = useSmartCalendarContext((c) => ({
-		slotDuration: c.slotDuration,
-		allDaySlot: c.allDaySlot,
-	}))
+	const { slotDuration, allDaySlot, timezone } = useSmartCalendarContext(
+		(c) => ({
+			slotDuration: c.slotDuration,
+			allDaySlot: c.allDaySlot,
+			timezone: c.timezone,
+		})
+	)
+	const zone = resolveZone(timezone)
 	const gridType = specs.some((col) => col.gridType === 'hour') ? 'hour' : 'day'
-	const eventDays = specs
-		.filter((col) => !col.noEvents)
-		.map((col) => col.day)
-		.filter((day): day is Dayjs => Boolean(day))
-	// The all-day spacer must mirror the gutter column's width. Views on the
-	// responsive gutter (week) need the matching responsive spacer plus
-	// shrinkable cells — regardless of how many days hiddenDays leaves
-	// visible; views on the fixed-width gutter (day) align with the
-	// AllDayCell default already.
+	const eventDays = useMemo(
+		() =>
+			specs
+				.filter((col) => !col.noEvents && col.day)
+				.map((col) => (col.day ? parseDate(col.day, zone) : undefined))
+				.filter((day): day is ZonedDate => Boolean(day)),
+		[specs, zone]
+	)
 	const gutterCol = specs.find((col) => col.noEvents)
 	const usesResponsiveGutter = Boolean(
 		gutterCol?.className?.includes(RESPONSIVE_GUTTER_WIDTH)
@@ -54,8 +54,6 @@ const VerticalEngineView: React.FC<
 	const allDayClasses = usesResponsiveGutter
 		? { cell: 'flex-1 min-w-0', spacer: RESPONSIVE_GUTTER_WIDTH }
 		: undefined
-	// Resource columns get one all-day row per resource (derived from the
-	// resource identity the specs carry); regular columns share one row.
 	let allDayRow: React.ReactNode
 	const showsAllDayRow = gridType === 'hour' && allDaySlot
 	if (showsAllDayRow) {
@@ -65,8 +63,6 @@ const VerticalEngineView: React.FC<
 			<AllDayRow classes={allDayClasses} days={eventDays} />
 		)
 	}
-	// Resource grids rely on the min-w-full/w-fit defaults so wide column
-	// sets keep header and body aligned while scrolling.
 	const verticalClasses = composesResourceAxis
 		? undefined
 		: { header: 'w-full', body: 'w-full', allDay: 'w-full' }
@@ -85,7 +81,6 @@ const VerticalEngineView: React.FC<
 	)
 }
 
-/** The 'horizontal' engine branch: row specs → HorizontalGrid. */
 const HorizontalEngineView: React.FC<
 	EngineViewProps & { specs: HorizontalRowSpec[] }
 > = ({ specs, header, composesResourceAxis, variant }) => {
@@ -94,7 +89,6 @@ const HorizontalEngineView: React.FC<
 	)
 		? 'hour'
 		: 'day'
-	// Grouped cells (a day's hour slots) need the taller two-row header.
 	const hasGroupedCells = specs.some((row) =>
 		row.columns?.some((cell) => cell.days)
 	)
@@ -118,17 +112,11 @@ const HorizontalEngineView: React.FC<
 	)
 }
 
-/**
- * A view without `columns` + `layout`: its own `component` (the escape hatch),
- * or nothing, with a dev warning, when it declares neither.
- */
 const GridlessView: React.FC<{ view: PluginView }> = ({ view }) => {
 	const EscapeHatch = view.component
 	if (EscapeHatch) {
 		return <EscapeHatch />
 	}
-	// Guarded `typeof process` check: the published bundle ships this line
-	// as-is, so bundler-less ESM consumers must not crash on bare `process`.
 	const isDevBuild =
 		typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
 	if (isDevBuild) {
@@ -140,12 +128,6 @@ const GridlessView: React.FC<{ view: PluginView }> = ({ view }) => {
 	return null
 }
 
-/**
- * The three-way view dispatcher: 'vertical' → VerticalGrid, 'horizontal' →
- * HorizontalGrid, no columns/layout → the view's `component` (escape hatch).
- * Engine rule: resources + a resource-capable view → the calendar-level
- * `orientation`; otherwise the view's own `layout`.
- */
 export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 	const {
 		currentDate,
@@ -159,6 +141,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 		hasResourceAxis,
 		orientation,
 		weekViewGranularity,
+		timezone,
 	} = useSmartCalendarContext((c) => ({
 		currentDate: c.currentDate,
 		firstDayOfWeek: c.firstDayOfWeek,
@@ -171,6 +154,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 		hasResourceAxis: c.hasResourceAxis,
 		orientation: c.orientation,
 		weekViewGranularity: c.weekViewGranularity,
+		timezone: c.timezone,
 	}))
 
 	const config = useMemo<ViewConfig>(
@@ -185,6 +169,7 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 			hasResourceAxis,
 			orientation,
 			weekViewGranularity,
+			timezone,
 		}),
 		[
 			firstDayOfWeek,
@@ -197,18 +182,15 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 			hasResourceAxis,
 			orientation,
 			weekViewGranularity,
+			timezone,
 		]
 	)
 
-	// Memoized so the grids' memo()d columns/rows see stable references;
-	// deps are exhaustive.
 	const specs = useMemo(
 		() => view.columns?.(currentDate, config),
 		[view, currentDate, config]
 	)
 
-	// Memoized like the specs: an unchanged element is not re-rendered, so the
-	// header's own work (its hour rows) does not rerun on every context change.
 	const header = useMemo(
 		() => view.renderHeader?.({ date: currentDate, config }),
 		[view, currentDate, config]
@@ -220,8 +202,6 @@ export const ViewRenderer: React.FC<{ view: PluginView }> = ({ view }) => {
 
 	const composesResourceAxis =
 		hasResourceAxis && Boolean(view.supportsResources)
-	// With resources on a resource-capable view the user's `orientation` picks
-	// the engine; otherwise the view's own `layout` does.
 	const engine = composesResourceAxis
 		? (orientation ?? 'horizontal')
 		: view.layout

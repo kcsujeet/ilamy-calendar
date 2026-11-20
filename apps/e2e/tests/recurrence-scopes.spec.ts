@@ -75,11 +75,12 @@ const open = async (
 ) => {
 	await gotoScenario(page, {
 		scenario: 'seed',
-		plugins: ['recurrence'],
+		plugins: ['recurrence', 'ical'],
 		...options,
 		settings: {
 			seed: JSON.stringify(seed),
 			dayMaxEvents: 10,
+			editable: 'true',
 			scrollTime: '00:00',
 			slot: 30,
 			...options.settings,

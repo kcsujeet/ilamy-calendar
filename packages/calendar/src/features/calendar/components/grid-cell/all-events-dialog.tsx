@@ -1,22 +1,16 @@
 import type { CalendarEvent } from '@ilamy/types'
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-} from '@ilamy/ui/components/dialog'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import { formatDate, type ZonedDate } from '@ilamy/utils/temporal'
 import type React from 'react'
 import { useImperativeHandle, useState } from 'react'
 import { DraggableEvent } from '@/features/calendar/components/draggable-event/draggable-event'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useCalendarComponents } from '@/features/calendar/stores/calendar-theme-context'
 
 export interface SelectedDayEvents {
-	day: Dayjs
+	day: ZonedDate
 	events: CalendarEvent[]
 }
 
-/** What a cell can do with its dialog: fill it with a day's events and open it. */
 export interface AllEventDialogHandle {
 	open: () => void
 	close: () => void
@@ -31,7 +25,8 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [selectedDayEvents, setSelectedDayEvents] =
 		useState<SelectedDayEvents | null>(null)
-	const { eventHeight } = useSmartCalendarContext()
+	const { eventHeight, currentLocale } = useSmartCalendarContext()
+	const { Dialog } = useCalendarComponents()
 
 	useImperativeHandle(ref, () => ({
 		open: () => setDialogOpen(true),
@@ -40,28 +35,32 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 			setSelectedDayEvents(dayEvents),
 	}))
 
+	const title = selectedDayEvents
+		? formatDate(
+				selectedDayEvents.day,
+				{ month: 'long', day: 'numeric', year: 'numeric' },
+				currentLocale
+			)
+		: undefined
+
 	return (
-		<Dialog onOpenChange={setDialogOpen} open={dialogOpen}>
-			<DialogContent className="max-h-[80vh] max-w-md overflow-y-auto">
-				<DialogHeader>
-					<DialogTitle>
-						{selectedDayEvents?.day.format('MMMM D, YYYY')}
-					</DialogTitle>
-				</DialogHeader>
-				<div className="mt-4 space-y-3">
-					{selectedDayEvents?.events.map((event) => {
-						return (
-							<DraggableEvent
-								className="relative my-1"
-								elementId={`all-events-dialog-event-${event.id}`}
-								event={event}
-								key={event.id}
-								style={{ height: `${eventHeight}px` }}
-							/>
-						)
-					})}
-				</div>
-			</DialogContent>
+		<Dialog
+			className="max-h-[80vh] max-w-md overflow-y-auto"
+			onOpenChange={setDialogOpen}
+			open={dialogOpen}
+			title={title}
+		>
+			<div className="mt-4 space-y-3">
+				{selectedDayEvents?.events.map((event) => (
+					<DraggableEvent
+						className="relative my-1"
+						elementId={`all-events-dialog-event-${event.id}`}
+						event={event}
+						key={event.id}
+						style={{ height: `${eventHeight}px` }}
+					/>
+				))}
+			</div>
 		</Dialog>
 	)
 }

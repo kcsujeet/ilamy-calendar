@@ -1,5 +1,6 @@
 import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { ScrollArea } from '@ilamy/ui/components/scroll-area'
+import { now, parseDate, resolveZone, toOffsetIso } from '@ilamy/utils/temporal'
 import { type AgendaWindow, windowRange } from '../utils/agenda-window'
 import { groupEventsByDay } from '../utils/group-events-by-day'
 import { AgendaDayGroup } from './agenda-day-group'
@@ -8,21 +9,24 @@ interface AgendaViewProps {
 	window: AgendaWindow
 }
 
-/**
- * Renders the agenda: a chronological, day-grouped list of the windowed events,
- * skipping empty days. Fetches its own window via `getEventsForDateRange` (like
- * the year view) so it is independent of the active view's range.
- */
 export const AgendaView = ({ window }: AgendaViewProps) => {
-	const { currentDate, getEventsForDateRange, t, firstDayOfWeek } =
-		useIlamyCalendarContext()
+	const {
+		currentDate: currentDateIso,
+		timezone,
+		getEventsForDateRange,
+		t,
+		firstDayOfWeek,
+	} = useIlamyCalendarContext()
+	const zone = resolveZone(timezone)
+	const currentDate = parseDate(currentDateIso, zone) ?? now(zone)
 
 	const range = windowRange(currentDate, window, firstDayOfWeek)
-	const events = getEventsForDateRange(range.start, range.end)
+	const events = getEventsForDateRange(
+		toOffsetIso(range.start),
+		toOffsetIso(range.end)
+	)
 	const groups = groupEventsByDay(events, range)
 
-	// An empty window (common for short windows like a day agenda) centers the
-	// message in the available space rather than pinning it to the corner.
 	if (groups.length === 0) {
 		return (
 			<div
@@ -34,8 +38,6 @@ export const AgendaView = ({ window }: AgendaViewProps) => {
 		)
 	}
 
-	// A sparse list flows from the top and scrolls when it overflows; the empty
-	// space below a short list reads as a normal list (like an inbox), not broken.
 	return (
 		<ScrollArea className="h-full" data-testid="agenda-view">
 			<div className="flex flex-col">

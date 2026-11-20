@@ -1,14 +1,16 @@
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import { add, endOf, now, startOf, toOffsetIso } from '@ilamy/utils/temporal'
 
-export function generateMockEvents({ count = 5 } = {}) {
+export function generateMockEvents({ count = 5 } = {}): CalendarEvent[] {
+	const weekStart = startOf(now(), 'week', 0)
 	const events: CalendarEvent[] = []
 	for (let i = 0; i < count; i++) {
+		const day = add(weekStart, i, 'day')
 		events.push({
 			id: i.toString(),
 			title: `Mock Event ${i + 1}`,
-			start: dayjs().startOf('week').add(i, 'day').startOf('day'),
-			end: dayjs().startOf('week').add(i, 'day').endOf('day'),
+			start: toOffsetIso(startOf(day, 'day')),
+			end: toOffsetIso(endOf(day, 'day')),
 			color: 'bg-gray-100 text-gray-800',
 		})
 	}

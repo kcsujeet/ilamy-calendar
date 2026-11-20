@@ -48,8 +48,8 @@ test.describe('events as a function', () => {
 		// Dev builds mount twice (StrictMode), so the first call may be the
 		// abandoned one; either way it asked for the same grid.
 		const [first] = await month.fetchLog()
-		expect(first.start).toBe('2025-02-23T00:00:00.000Z')
-		expect(first.end).toBe('2025-04-06T00:00:00.000Z')
+		expect(first.start).toBe('2025-02-23T00:00:00+00:00')
+		expect(first.end).toBe('2025-04-06T00:00:00+00:00')
 	})
 
 	test('rapid navigation shows only the last range, and abandons the ones in between', async ({
@@ -81,7 +81,7 @@ test.describe('events as a function', () => {
 			'aborted',
 			'done',
 		])
-		expect(fetches.at(-1)?.start).toBe('2025-06-01T00:00:00.000Z')
+		expect(fetches.at(-1)?.start).toBe('2025-06-01T00:00:00+00:00')
 	})
 
 	test('a failed fetch keeps the shown events, reports it, and is retried', async ({
@@ -108,7 +108,7 @@ test.describe('events as a function', () => {
 	test('a drag is reported and sticks while the events come from a function', async ({
 		page,
 	}) => {
-		await openMarch(page)
+		await openMarch(page, { editable: 'true' })
 		const month = new MonthGrid(page)
 		const bar = month.event('March lunch')
 		await expect(bar).toBeVisible()

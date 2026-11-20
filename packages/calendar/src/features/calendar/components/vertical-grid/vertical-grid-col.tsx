@@ -1,9 +1,16 @@
 import { useDroppable } from '@dnd-kit/core'
-import type { VerticalColumnSpec } from '@ilamy/types'
+import type { IsoDateString, VerticalColumnSpec } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
+import {
+	parseDate,
+	resolveZone,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import type React from 'react'
 import { memo, useId, useMemo } from 'react'
 import { useDragPreviewEvent } from '@/features/calendar/hooks/use-drag-preview-event'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { StickyInsetSide } from '@/features/calendar/hooks/use-sticky-insets'
 import {
 	type DragPreviewState,
@@ -17,41 +24,34 @@ import { VerticalGridEventsLayer } from './events-layer/vertical-grid-events-lay
 export interface VerticalGridColProps extends VerticalColumnSpec {
 	'data-testid'?: string
 	'data-sticky-inset'?: StickyInsetSide
-	/**
-	 * Granularity of each hour row in minutes. `60` renders one cell per hour with
-	 * no sub-hour lines. `30` renders two. `15` renders four with dashed separators.
-	 */
 	slotDurationMinutes?: number
 }
 
-/** The minute each slot of an hour starts at: `[0, 15, 30, 45]` for 15-minute slots. */
 const getSlotOffsets = (slotDurationMinutes: number): number[] =>
 	Array.from(
 		{ length: Math.floor(60 / slotDurationMinutes) },
 		(_, i) => i * slotDurationMinutes
 	)
 
-interface ColumnRowsProps
-	extends Pick<
-		VerticalGridColProps,
-		'id' | 'days' | 'gridType' | 'renderCell'
-	> {
+interface ParsedDayEntry {
+	iso: IsoDateString
+	zoned: ZonedDate
+}
+
+interface ColumnRowsProps {
+	id: string
+	entries: ParsedDayEntry[]
+	gridType?: 'day' | 'hour'
+	renderCell?: (date: IsoDateString) => React.ReactNode
 	resourceId?: string | number
 	slotDurationMinutes: number
 	slots: DropColumnData['slots']
-	/** The drag, given only when it lands on this column. */
 	dragPreview: DragPreviewState | null
 }
 
-/**
- * The rows of a column: its cells, or what `renderCell` draws in their place.
- * Memoized apart from the column, which re-renders on every drag step to learn
- * whether the drag lands on it, so that a step that changes nothing here does
- * not rebuild thousands of cells.
- */
 const NoMemoColumnRows: React.FC<ColumnRowsProps> = ({
 	id,
-	days,
+	entries,
 	gridType,
 	renderCell,
 	resourceId,
@@ -63,14 +63,14 @@ const NoMemoColumnRows: React.FC<ColumnRowsProps> = ({
 	const hasSubHourSlots = cellOffsets.length > 1
 	return (
 		<>
-			{days.map((day, dayIndex) => {
-				const hourStr = day.format('HH')
+			{entries.map(({ iso, zoned }, dayIndex) => {
+				const hourStr = String(zoned.hour).padStart(2, '0')
 
 				if (renderCell) {
 					const isTimeGutter = id === keys.col.time
 					const testId = isTimeGutter
 						? keys.cell.verticalTime(hourStr)
-						: keys.cell.vertical(day, hourStr, '00', resourceId)
+						: keys.cell.vertical(zoned, hourStr, '00', resourceId)
 					return (
 						<div
 							className="min-h-[60px] bg-background"
@@ -78,7 +78,7 @@ const NoMemoColumnRows: React.FC<ColumnRowsProps> = ({
 							data-testid={testId}
 							key={keys.listKey(dayIndex, hourStr)}
 						>
-							{renderCell(day)}
+							{renderCell(iso)}
 						</div>
 					)
 				}
@@ -90,10 +90,7 @@ const NoMemoColumnRows: React.FC<ColumnRowsProps> = ({
 					>
 						{cellOffsets.map((minute, offsetIndex) => {
 							const mm = String(minute).padStart(2, '0')
-							const testId = keys.cell.vertical(day, hourStr, mm, resourceId)
-							// Sub-hour slots keep a dashed divider (the documented gap
-							// exception) between sub-slots within an hour; the solid hour
-							// lines come from the grid's gap-px.
+							const testId = keys.cell.vertical(zoned, hourStr, mm, resourceId)
 							const isSubDivider =
 								hasSubHourSlots && offsetIndex < cellOffsets.length - 1
 
@@ -105,19 +102,15 @@ const NoMemoColumnRows: React.FC<ColumnRowsProps> = ({
 										isSubDivider && 'border-b border-dashed'
 									)}
 									data-testid={testId}
-									day={hasSubHourSlots ? day.minute(minute) : day}
+									day={hasSubHourSlots ? withTime(zoned, { minute }) : zoned}
 									dragPreview={dragPreview}
 									dropSlots={slots}
 									gridType={gridType}
-									// Match the horizontal grid: a daily cell describes the
-									// whole day (hour undefined); an hourly cell its slot.
-									// Passing the hour for daily cells made them 00:00-01:00
-									// slots, breaking drag-to-create's cross-day selection.
-									hour={gridType === 'hour' ? day.hour() : undefined}
+									hour={gridType === 'hour' ? zoned.hour : undefined}
 									isSubDivider={isSubDivider}
 									key={keys.listKey(dayIndex, mm)}
 									minute={hasSubHourSlots ? minute : undefined}
-									resourceId={resourceId} // Events are rendered in a separate layer
+									resourceId={resourceId}
 									shouldRenderEvents={false}
 									slotDurationMinutes={slotDurationMinutes}
 									slotIndex={dayIndex * cellOffsets.length + offsetIndex}
@@ -133,6 +126,45 @@ const NoMemoColumnRows: React.FC<ColumnRowsProps> = ({
 
 const ColumnRows = memo(NoMemoColumnRows)
 
+const parseColumnEntries = (
+	days: IsoDateString[],
+	zone: string
+): ParsedDayEntry[] => {
+	const parsed: ParsedDayEntry[] = []
+	for (const iso of days) {
+		const zoned = parseDate(iso, zone)
+		if (zoned) {
+			parsed.push({ iso, zoned })
+		}
+	}
+	return parsed
+}
+
+const createEmptySlots = (count: number): DropColumnData['slots'] =>
+	Array.from({ length: count }, () => undefined)
+
+const useColumnGridData = (
+	days: IsoDateString[],
+	slotDurationMinutes: number
+) => {
+	const timezone = useSmartCalendarContext((c) => c.timezone)
+	const zone = resolveZone(timezone)
+	const entries = useMemo<ParsedDayEntry[]>(
+		() => parseColumnEntries(days, zone),
+		[days, zone]
+	)
+	const zonedDays = useMemo(
+		() => entries.map((entry) => entry.zoned),
+		[entries]
+	)
+	const totalSlots = entries.length * getSlotOffsets(slotDurationMinutes).length
+	const slots = useMemo<DropColumnData['slots']>(
+		() => createEmptySlots(totalSlots),
+		[totalSlots]
+	)
+	return { entries, zonedDays, slots }
+}
+
 const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	id,
 	days,
@@ -145,27 +177,18 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	noEvents,
 	slotDurationMinutes = 60,
 }) => {
-	// The spec carries `resource` as the single source; derive the id here.
 	const resourceId = resource?.id
-
-	// The column is the one drop target; its slots publish themselves into
-	// `slots` (see DropColumnData). The time gutter draws no slots, so it is no
-	// target.
-	const slotsPerRow = getSlotOffsets(slotDurationMinutes).length
-	const totalSlots = days.length * slotsPerRow
-	const slots = useMemo<DropColumnData['slots']>(
-		() => Array.from({ length: totalSlots }, () => undefined),
-		[totalSlots]
+	const { entries, zonedDays, slots } = useColumnGridData(
+		days,
+		slotDurationMinutes
 	)
-	// The drag, for the slots of a column it lands on only; for every other
-	// column the slots see none, so a drag step re-renders one column's slots,
-	// not all of them.
 	const dragPreview = useDragPreview()
-	// Asked as the events layer asks it (its `hour` default), so both agree on
-	// which column the drag lands on.
 	const dragLandsOnColumn =
-		useDragPreviewEvent({ days, gridType: gridType ?? 'hour', resourceId }) !==
-		null
+		useDragPreviewEvent({
+			days: zonedDays,
+			gridType: gridType ?? 'hour',
+			resourceId,
+		}) !== null
 	const columnDragPreview = dragLandsOnColumn ? dragPreview : null
 
 	const { setNodeRef } = useDroppable({
@@ -177,25 +200,22 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	return (
 		<div
 			className={cn(
-				// Opaque column; grid lines come from the gaps in the containers
-				// (this one for vertical separators between columns is the parent's job).
 				'flex flex-col flex-1 items-center min-w-20 justify-center bg-background relative',
 				className
 			)}
 			data-sticky-inset={stickyInset}
 			data-testid={dataTestId || keys.container.vertical.col(id)}
 		>
-			{/* Time slots. gap-px + bg-border draws the hour lines through the gaps. */}
 			<div
 				className="w-full h-full relative grid gap-px bg-border"
 				ref={setNodeRef}
 				style={{
-					gridTemplateRows: `repeat(${days.length}, minmax(0, 1fr))`,
+					gridTemplateRows: `repeat(${entries.length}, minmax(0, 1fr))`,
 				}}
 			>
 				<ColumnRows
-					days={days}
 					dragPreview={columnDragPreview}
+					entries={entries}
 					gridType={gridType}
 					id={id}
 					renderCell={renderCell}
@@ -204,12 +224,11 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 					slots={slots}
 				/>
 
-				{/* Event blocks layer */}
 				{!noEvents && (
 					<div className="absolute inset-0 z-10 pointer-events-none">
 						<VerticalGridEventsLayer
 							data-testid={keys.container.eventsLayer('vertical', id)}
-							days={days}
+							days={zonedDays}
 							gridType={gridType}
 							resource={resource}
 							resourceId={resourceId}

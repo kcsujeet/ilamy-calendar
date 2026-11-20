@@ -14,9 +14,8 @@ import {
 	resolveByweekday,
 } from '../../utils/recurrence-presets'
 
-// "On day N" vs "on the Nth weekday", shown only for a custom monthly rule.
 export const RecurrenceMonthlyMode: React.FC = () => {
-	const { t } = useIlamyCalendarContext()
+	const { t, currentLocale, timezone } = useIlamyCalendarContext()
 	const { opts, custom, reference, setMonthlyMode } = useRecurrenceEditor()
 	if (!custom || opts?.freq !== RRule.MONTHLY) {
 		return null
@@ -43,10 +42,22 @@ export const RecurrenceMonthlyMode: React.FC = () => {
 				</SelectTrigger>
 				<SelectContent>
 					<SelectItem value="day">
-						{getPresetLabel('monthlyOnDay', reference, t)}
+						{getPresetLabel(
+							'monthlyOnDay',
+							reference,
+							t,
+							currentLocale,
+							timezone
+						)}
 					</SelectItem>
 					<SelectItem value="weekday">
-						{getPresetLabel('monthlyOnWeekday', reference, t)}
+						{getPresetLabel(
+							'monthlyOnWeekday',
+							reference,
+							t,
+							currentLocale,
+							timezone
+						)}
 					</SelectItem>
 				</SelectContent>
 			</Select>

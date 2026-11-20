@@ -1,20 +1,36 @@
-import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
-import dayjs from '@ilamy/utils/dayjs'
+import type { CalendarEvent } from '@ilamy/calendar'
+import {
+	formatICalAllDayDate,
+	formatICalLocalDateTime,
+	formatICalUtcDateTime,
+	resolveICalTzid,
+} from '@ilamy/utils/ical-format'
+import { parseDate } from '@ilamy/utils/temporal'
 import { RRule } from 'rrule'
 import type { RRuleOptions } from './types'
 
-const formatDate = (date: Dayjs, isAllDay = false): string => {
+const formatICalDate = (
+	value: string | Date,
+	isAllDay: boolean,
+	eventZone: string | undefined
+): string => {
 	if (isAllDay) {
-		return date.format('YYYYMMDD')
+		return formatICalAllDayDate(value, eventZone)
 	}
-	return date.utc().format('YYYYMMDD[T]HHmmss[Z]')
+	const parsed = parseDate(value, eventZone ?? 'UTC')
+	if (!parsed) {
+		return ''
+	}
+	return eventZone
+		? formatICalLocalDateTime(parsed)
+		: formatICalUtcDateTime(parsed)
 }
 
-// RFC 5545 3.3.10: UNTIL "MUST have the same value type as the DTSTART
-// property", so an all-day series ends on a DATE. RRule.toString() writes a Date
-// `until` as a UTC DATE-TIME, so it is left out of the options and appended here
-// as the same calendar day formatDate gives the series' other dates.
-const formatRRule = (rruleOptions: RRuleOptions, isAllDay: boolean): string => {
+const formatRRule = (
+	rruleOptions: RRuleOptions,
+	isAllDay: boolean,
+	eventZone: string | undefined
+): string => {
 	try {
 		const { until, ...optionsWithoutUntil } = rruleOptions
 		const hasDateUntil = isAllDay && Boolean(until)
@@ -22,8 +38,8 @@ const formatRRule = (rruleOptions: RRuleOptions, isAllDay: boolean): string => {
 		const rruleString = new RRule(options).toString()
 		const rruleLine =
 			rruleString.split('\n').find((line) => line.startsWith('RRULE:')) || ''
-		if (hasDateUntil && rruleLine) {
-			return `${rruleLine};UNTIL=${formatDate(dayjs(until), true)}`
+		if (hasDateUntil && until && rruleLine) {
+			return `${rruleLine};UNTIL=${formatICalDate(until, true, eventZone)}`
 		}
 		return rruleLine
 	} catch {
@@ -31,20 +47,24 @@ const formatRRule = (rruleOptions: RRuleOptions, isAllDay: boolean): string => {
 	}
 }
 
-// RFC 5545 3.8.5.1 (EXDATE) and 3.8.4.4 (RECURRENCE-ID): the value type
-// defaults to DATE-TIME, so a series whose DTSTART is a DATE must say so.
-const dateParam = (isAllDay: boolean): string => (isAllDay ? ';VALUE=DATE' : '')
+const buildDateParam = (
+	isAllDay: boolean,
+	eventZone: string | undefined
+): string => {
+	if (isAllDay) {
+		return ';VALUE=DATE'
+	}
+	return eventZone ? `;TZID=${eventZone}` : ''
+}
 
-/**
- * Returns the recurrence-specific VEVENT property lines for an event: an
- * `RRULE:` line when the event has an rrule, an `EXDATE:` line when it has
- * exdates, and a `RECURRENCE-ID:` line when it is a modified instance.
- */
 export const recurrenceICalProperties = (event: CalendarEvent): string[] => {
 	const lines: string[] = []
+	const isAllDay = Boolean(event.allDay)
+	const eventZone = resolveICalTzid(event.timezone)
+	const param = buildDateParam(isAllDay, eventZone)
 
 	const rruleLine = event.rrule
-		? formatRRule(event.rrule, Boolean(event.allDay))
+		? formatRRule(event.rrule, isAllDay, eventZone)
 		: ''
 	if (rruleLine) {
 		lines.push(rruleLine)
@@ -52,16 +72,19 @@ export const recurrenceICalProperties = (event: CalendarEvent): string[] => {
 
 	if (event.exdates?.length) {
 		const exdates = event.exdates
-			.map((date) => formatDate(dayjs(date), event.allDay))
+			.map((date) => formatICalDate(date, isAllDay, eventZone))
+			.filter(Boolean)
 			.join(',')
-		lines.push(`EXDATE${dateParam(Boolean(event.allDay))}:${exdates}`)
+		if (exdates) {
+			lines.push(`EXDATE${param}:${exdates}`)
+		}
 	}
 
 	if (event.recurrenceId) {
-		const recurrenceId = formatDate(dayjs(event.recurrenceId), event.allDay)
-		lines.push(
-			`RECURRENCE-ID${dateParam(Boolean(event.allDay))}:${recurrenceId}`
-		)
+		const recurrenceId = formatICalDate(event.recurrenceId, isAllDay, eventZone)
+		if (recurrenceId) {
+			lines.push(`RECURRENCE-ID${param}:${recurrenceId}`)
+		}
 	}
 
 	return lines

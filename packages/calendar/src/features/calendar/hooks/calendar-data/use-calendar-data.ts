@@ -1,6 +1,18 @@
-import type { CalendarEvent, EventsChange, Resource } from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import type {
+	CalendarEvent,
+	DateRange,
+	EventsChange,
+	PublicDateInput,
+	Resource,
+} from '@ilamy/types'
+import {
+	type Dispatch,
+	type SetStateAction,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react'
 import { isSameResourceList } from '@/features/calendar/utils/resource-list'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
 import type { PluginRuntime } from '@/lib/plugins/types'
@@ -16,21 +28,17 @@ import {
 	useResourceLookups,
 } from './use-resource-lookups'
 
-/** The consumer-facing options the data slice reads; the engine config extends them. */
 export interface CalendarDataOptions {
 	events: CalendarEvent[]
-	/** Loads events for the visible range; used instead of `events` when set. */
 	eventsFetcher?: RangeFetcher<CalendarEvent>
 	lazyFetching?: boolean
 	loading?: (isLoading: boolean) => void
 	onEventsError?: (error: unknown) => void
-	/** Loads resources; used instead of the `resources` array when set. */
 	resourcesFetcher?: RangeFetcher<Resource>
 	refetchResourcesOnNavigate?: boolean
 	resourcesSet?: (resources: Resource[]) => void
 	onResourcesError?: (error: unknown) => void
 	timezone?: string
-	/** The `resources` array prop; ignored when a fetcher is set. */
 	resources?: Resource[]
 	onEventAdd?: (event: CalendarEvent) => void
 	onEventUpdate?: (event: CalendarEvent) => void
@@ -40,36 +48,28 @@ export interface CalendarDataOptions {
 
 interface CalendarDataParams extends CalendarDataOptions {
 	pluginRuntime: PluginRuntime
-	getCurrentViewRange: () => { start: Dayjs; end: Dayjs }
+	getCurrentViewRange: () => DateRange
 }
 
-// Module constant: a fresh `[]` per render would rebuild the lookups every time.
 const EMPTY_RESOURCES: Resource[] = []
 
 export interface CalendarDataSlice
 	extends EventMutations,
 		PluginMutations,
 		ResourceLookups {
-	/** The events in view, after plugins expand them. */
 	events: CalendarEvent[]
-	/** The stored rows, as the consumer holds them. */
 	rawEvents: CalendarEvent[]
-	setCurrentEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>
-	/** Fetches the visible range again; a no-op unless `events` is a function. */
+	setCurrentEvents: Dispatch<SetStateAction<CalendarEvent[]>>
 	refetchEvents: () => void
-	/**
-	 * The resource axis: the array prop, or what the `resources` function last
-	 * returned. `undefined` until there is one, like an absent `resources` prop.
-	 */
 	resources?: Resource[]
-	/** Whether this is a resource calendar: it has resources, or is loading them. */
 	hasResourceAxis: boolean
-	/** Fetches the resources again; a no-op unless `resources` is a function. */
 	refetchResources: () => void
-	getEventsForDateRange: (startDate: Dayjs, endDate: Dayjs) => CalendarEvent[]
+	getEventsForDateRange: (
+		startDate: PublicDateInput,
+		endDate: PublicDateInput
+	) => CalendarEvent[]
 }
 
-/** One `loading` for both fetchers: true while either has a fetch in flight. */
 const useCombinedLoading = (loading?: (isLoading: boolean) => void) => {
 	const reportLoading = useLatestHandler(loading)
 	const loadingSources = useRef({ events: false, resources: false })
@@ -87,9 +87,6 @@ const useCombinedLoading = (loading?: (isLoading: boolean) => void) => {
 	}
 }
 
-// Reported when the list's content changes, not its identity: an inline array
-// is new on every render, and a consumer that stores what it is told would
-// otherwise re-render the calendar forever.
 const useReportResources = (
 	resources: Resource[] | undefined,
 	resourcesSet?: (resources: Resource[]) => void
@@ -109,12 +106,6 @@ const useReportResources = (
 	}, [resources, reportResources])
 }
 
-/**
- * Data slice: the event store and everything that reads or changes it.
- * Each part is its own hook in this folder: the store (`use-event-store`),
- * plain mutations (`use-event-mutations`), plugin-scoped mutations
- * (`use-plugin-mutations`) and resource lookups (`use-resource-lookups`).
- */
 export const useCalendarData = ({
 	events,
 	eventsFetcher,
@@ -134,7 +125,12 @@ export const useCalendarData = ({
 	onEventDelete,
 	onEventsChange,
 }: CalendarDataParams): CalendarDataSlice => {
-	const store = useEventStore({ events, pluginRuntime, getCurrentViewRange })
+	const store = useEventStore({
+		events,
+		pluginRuntime,
+		getCurrentViewRange,
+		timezone,
+	})
 	const {
 		currentEvents,
 		setCurrentEvents,
@@ -168,8 +164,6 @@ export const useCalendarData = ({
 	})
 	const resources = resourcesFetcher ? fetchedResources : resourcesProp
 
-	// A resource calendar from the first render, even while the first list is
-	// still on its way, so the layout does not switch when it arrives.
 	const hasResourceAxis =
 		Boolean(resourcesFetcher) || Boolean(resources?.length)
 
@@ -181,6 +175,7 @@ export const useCalendarData = ({
 		onEventUpdate,
 		onEventDelete,
 		onEventsChange,
+		timezone,
 	}
 	const { addEvent, updateEvent, deleteEvent } = useEventMutations({
 		currentEvents,

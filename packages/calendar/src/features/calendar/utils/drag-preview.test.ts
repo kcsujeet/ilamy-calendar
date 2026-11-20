@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	endOf,
+	parseDate,
+	toUtcIso,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { mkDragPreview as mkPreview } from '@/testing/drag-test-fixtures'
 import {
 	getDragCursor,
@@ -7,14 +13,12 @@ import {
 	isPreviewOnTarget,
 } from './drag-preview'
 
-const at = (hour: number, minute = 0) =>
-	dayjs('2025-01-01T00:00:00.000Z').hour(hour).minute(minute)
+const baseDay = parseDate('2025-01-01T00:00:00.000Z', 'UTC') as ZonedDate
+const at = (hour: number, minute = 0) => withTime(baseDay, { hour, minute })
 
-// The grid range the preview is tested against: `rangeEnd` is the LAST instant
-// shown, matching `overlapsRange`'s inclusive convention.
 const wholeDay = {
 	rangeStart: at(0),
-	rangeEnd: at(23, 59).second(59).millisecond(999),
+	rangeEnd: endOf(baseDay, 'day'),
 }
 
 describe('isPreviewOnTarget', () => {
@@ -105,8 +109,12 @@ describe('getDragPreviewEvent', () => {
 
 		expect(previewEvent?.id).toBe('event-1')
 		expect(previewEvent?.title).toBe('Team Sync')
-		expect(previewEvent?.start.toISOString()).toBe('2025-01-01T10:00:00.000Z')
-		expect(previewEvent?.end.toISOString()).toBe('2025-01-01T12:00:00.000Z')
+		const start = previewEvent
+			? parseDate(previewEvent.start, 'UTC')
+			: undefined
+		const end = previewEvent ? parseDate(previewEvent.end, 'UTC') : undefined
+		expect(start ? toUtcIso(start) : '').toBe('2025-01-01T10:00:00.000Z')
+		expect(end ? toUtcIso(end) : '').toBe('2025-01-01T12:00:00.000Z')
 	})
 
 	test('carries the candidate all-day flag, not the original one', () => {

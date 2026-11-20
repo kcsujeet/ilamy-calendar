@@ -1,6 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent, EventsChange } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
 import {
 	type MutationCallbacks,
 	toEventDelta,
@@ -12,8 +11,8 @@ import {
 const mkEvent = (id: string): CalendarEvent => ({
 	id,
 	title: id,
-	start: dayjs('2025-01-15T10:00:00.000Z'),
-	end: dayjs('2025-01-15T11:00:00.000Z'),
+	start: '2025-01-15T10:00:00.000Z',
+	end: '2025-01-15T11:00:00.000Z',
 })
 
 /** The ids in each list of a change or result. */
@@ -75,96 +74,78 @@ describe('toMutationResult', () => {
 })
 
 describe('toEventDelta', () => {
-	// The calendar's zone is the configured default, as the provider sets it.
-	// UTC here so the expected wall-clock times hold on any machine zone.
-	beforeEach(() => {
-		dayjs.tz.setDefault('UTC')
-	})
-	afterEach(() => {
-		dayjs.tz.setDefault()
-	})
-
 	const deltaBetween = (before: string, after: string) =>
-		toEventDelta(dayjs.tz(before, 'UTC'), dayjs.tz(after, 'UTC'))
+		toEventDelta(before, after, 'UTC')
 
 	it('reports a move within the day as milliseconds only', () => {
 		expect(
-			deltaBetween('2025-03-12T09:00:00.000', '2025-03-12T10:30:00.000')
+			deltaBetween('2025-03-12T09:00:00.000Z', '2025-03-12T10:30:00.000Z')
 		).toEqual({ days: 0, milliseconds: 5_400_000 })
 	})
 
 	it('reports a move of whole days at the same time as days only', () => {
 		expect(
-			deltaBetween('2025-03-12T09:00:00.000', '2025-03-13T09:00:00.000')
+			deltaBetween('2025-03-12T09:00:00.000Z', '2025-03-13T09:00:00.000Z')
 		).toEqual({ days: 1, milliseconds: 0 })
 	})
 
 	it('reports an earlier day and time as negative parts', () => {
 		expect(
-			deltaBetween('2025-03-12T09:00:00.000', '2025-03-10T08:30:00.000')
+			deltaBetween('2025-03-12T09:00:00.000Z', '2025-03-10T08:30:00.000Z')
 		).toEqual({ days: -2, milliseconds: -1_800_000 })
 	})
 
 	it('splits a move across midnight into a day and a negative time', () => {
 		expect(
-			deltaBetween('2025-03-12T23:00:00.000', '2025-03-13T01:00:00.000')
+			deltaBetween('2025-03-12T23:00:00.000Z', '2025-03-13T01:00:00.000Z')
 		).toEqual({ days: 1, milliseconds: -79_200_000 })
 	})
 
 	it('reports no move as zero', () => {
 		expect(
-			deltaBetween('2025-03-12T09:00:00.000', '2025-03-12T09:00:00.000')
+			deltaBetween('2025-03-12T09:00:00.000Z', '2025-03-12T09:00:00.000Z')
 		).toEqual({ days: 0, milliseconds: 0 })
 	})
 
 	it('keeps the clock time across a daylight-saving change', () => {
-		// New York springs forward on 2025-03-09: 10:00 local is a different UTC
-		// instant the day after, but the same wall-clock time (FullCalendar's
-		// diffDayAndTime compares wall-clock times).
-		dayjs.tz.setDefault('America/New_York')
-		const before = dayjs.tz('2025-03-08T10:00:00', 'America/New_York')
-		const after = dayjs.tz('2025-03-09T10:00:00', 'America/New_York')
-		expect(toEventDelta(before, after)).toEqual({ days: 1, milliseconds: 0 })
+		expect(
+			toEventDelta(
+				'2025-03-08T10:00:00-05:00',
+				'2025-03-09T10:00:00-04:00',
+				'America/New_York'
+			)
+		).toEqual({ days: 1, milliseconds: 0 })
 	})
 
 	it('keeps the clock time across the autumn change', () => {
-		dayjs.tz.setDefault('America/New_York')
-		const before = dayjs.tz('2025-11-01T10:00:00', 'America/New_York')
-		const after = dayjs.tz('2025-11-02T10:00:00', 'America/New_York')
-		expect(toEventDelta(before, after)).toEqual({ days: 1, milliseconds: 0 })
+		expect(
+			toEventDelta(
+				'2025-11-01T10:00:00-04:00',
+				'2025-11-02T10:00:00-05:00',
+				'America/New_York'
+			)
+		).toEqual({ days: 1, milliseconds: 0 })
 	})
 })
 
-describe('toEventDelta for a start that carries a stale offset', () => {
-	// The grid draws a cell for 02:00-02:59 on the spring-forward day, a wall
-	// time that does not exist. A drop there stores 06:30Z (01:30 EST) but the
-	// start keeps the EDT offset of the hour before, so reading its clock gives
-	// 02:30. The e2e spec 'a drop in the skipped spring hour reports the
-	// stored clock time' reaches it through the real drag; the object is built
-	// here with `utcOffset` so the test does not depend on the machine's zone.
-	afterEach(() => {
-		dayjs.tz.setDefault()
-	})
+describe('toEventDelta for a start that carries a different offset', () => {
+	const wednesdayNine = '2025-03-12T09:00:00-04:00'
+	const sundayInstant = '2025-03-09T06:30:00.000Z'
 
-	const wednesdayNine = () =>
-		dayjs.tz('2025-03-12T09:00:00', 'America/New_York')
-	const sundayStaleStart = () =>
-		dayjs.utc('2025-03-09T06:30:00.000Z').utcOffset(-240)
-
-	it('reads the wall clock of the instant, 01:30 EST', () => {
-		dayjs.tz.setDefault('America/New_York')
+	it('reads the wall clock of the instant in the calendar zone, 01:30 EST', () => {
 		const sevenAndAHalfHoursBack = -27_000_000
-		expect(toEventDelta(wednesdayNine(), sundayStaleStart())).toEqual({
+		expect(
+			toEventDelta(wednesdayNine, sundayInstant, 'America/New_York')
+		).toEqual({
 			days: -3,
 			milliseconds: sevenAndAHalfHoursBack,
 		})
 	})
 
-	it('reads a start that carries the right offset the same way', () => {
-		dayjs.tz.setDefault('America/New_York')
-		const start = dayjs.tz('2025-03-09T01:30:00', 'America/New_York')
-		expect(toEventDelta(wednesdayNine(), start)).toEqual(
-			toEventDelta(wednesdayNine(), sundayStaleStart())
+	it('reads a start that carries the local offset the same way', () => {
+		const start = '2025-03-09T01:30:00-05:00'
+		expect(toEventDelta(wednesdayNine, start, 'America/New_York')).toEqual(
+			toEventDelta(wednesdayNine, sundayInstant, 'America/New_York')
 		)
 	})
 })

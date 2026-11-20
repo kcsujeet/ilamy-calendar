@@ -112,9 +112,9 @@ test.describe('drag-to-create in the time grid', () => {
 })
 
 test.describe('drag-to-create in the month grid', () => {
-	// Month cells report allDay false in 3.x (FullCalendar's day grid reports
-	// true, DayGridRows.tsx:256); docs/migration-v4.md lists the change.
-	test('a selection reports allDay false', async ({ page }) => {
+	// Month cells report allDay true in v4.0 (D11, matching FullCalendar's day
+	// grid DayGridRows.tsx:256).
+	test('a selection reports allDay true (D11)', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 1700 })
 		await gotoScenario(page, {
 			scenario: 'basic',
@@ -131,6 +131,6 @@ test.describe('drag-to-create in the month grid', () => {
 			{ x: to.x, y: to.y + 20 }
 		)
 		const [selection] = await loggedSelections(page)
-		expect(selection?.allDay).toBe(false)
+		expect(selection?.allDay).toBe(true)
 	})
 })

@@ -1,12 +1,62 @@
 import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/calendar'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	add,
+	type DateUnit,
+	dayKey,
+	endOf,
+	parseDate,
+	subtract,
+	toDate,
+	toEpochMs,
+	toUtcIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { RRule } from 'rrule'
 import { recurrencePlugin } from '../recurrence-plugin'
-import { deleteRecurringEvent } from './delete-recurring-event'
-import { generateRecurringEvents } from './generate-recurring-events'
+import { deleteRecurringEvent as rawDeleteRecurringEvent } from './delete-recurring-event'
+import { generateRecurringEvents as rawGenerateRecurringEvents } from './generate-recurring-events'
 import { isRecurringEvent } from './series-helpers'
-import { updateRecurringEvent } from './update-recurring-event'
+import { updateRecurringEvent as rawUpdateRecurringEvent } from './update-recurring-event'
+
+const mustUtc = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const shiftUtc = (iso: string, amount: number, unit: DateUnit): string =>
+	toUtcIso(add(mustUtc(iso), amount, unit))
+
+const utcIso = (iso: string | undefined): string | undefined =>
+	iso ? toUtcIso(mustUtc(iso)) : undefined
+
+const utcDay = (iso: string): string => dayKey(mustUtc(iso))
+
+const utcHHmm = (iso: string | undefined): string => {
+	if (!iso) {
+		return ''
+	}
+	const parsed = mustUtc(iso)
+	return `${String(parsed.hour).padStart(2, '0')}:${String(parsed.minute).padStart(2, '0')}`
+}
+
+const sameInstant = (a: string | undefined, b: string): boolean =>
+	Boolean(a && toEpochMs(mustUtc(a)) === toEpochMs(mustUtc(b)))
+
+const generateRecurringEvents = (
+	args: Parameters<typeof rawGenerateRecurringEvents>[0]
+) => rawGenerateRecurringEvents({ timezone: 'UTC', ...args })
+
+const updateRecurringEvent = (
+	args: Parameters<typeof rawUpdateRecurringEvent>[0]
+) => rawUpdateRecurringEvent({ timezone: 'UTC', ...args })
+
+const deleteRecurringEvent = (
+	args: Parameters<typeof rawDeleteRecurringEvent>[0]
+) => rawDeleteRecurringEvent({ timezone: 'UTC', ...args })
 
 // Test helper to create a base recurring event
 const createBaseRecurringEvent = (
@@ -14,13 +64,13 @@ const createBaseRecurringEvent = (
 ): CalendarEvent => ({
 	id: 'recurring-1',
 	title: 'Weekly Meeting',
-	start: dayjs('2025-01-06T09:00:00'),
-	end: dayjs('2025-01-06T10:00:00'),
+	start: '2025-01-06T09:00:00.000Z',
+	end: '2025-01-06T10:00:00.000Z',
 	rrule: {
 		freq: RRule.WEEKLY,
 		byweekday: [RRule.MO],
 		interval: 1,
-		dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+		dtstart: new Date('2025-01-06T09:00:00.000Z'),
 	},
 	uid: 'recurring-1@calendar.test',
 	...overrides,
@@ -32,8 +82,8 @@ const createTargetEvent = (
 ): CalendarEvent => ({
 	id: 'recurring-1_2',
 	title: 'Weekly Meeting',
-	start: dayjs('2025-01-20T09:00:00'),
-	end: dayjs('2025-01-20T10:00:00'),
+	start: '2025-01-20T09:00:00.000Z',
+	end: '2025-01-20T10:00:00.000Z',
 	uid: 'recurring-1@calendar.test',
 	...overrides,
 })
@@ -45,12 +95,12 @@ const makeDailySeries = (
 ): CalendarEvent => ({
 	id: 'daily-1',
 	title: 'Daily Standup',
-	start: dayjs('2025-01-06T09:00:00.000Z'),
-	end: dayjs('2025-01-06T10:00:00.000Z'),
+	start: '2025-01-06T09:00:00.000Z',
+	end: '2025-01-06T10:00:00.000Z',
 	rrule: {
 		freq: RRule.DAILY,
 		interval: 1,
-		dtstart: dayjs('2025-01-06T09:00:00.000Z').toDate(),
+		dtstart: new Date('2025-01-06T09:00:00.000Z'),
 	},
 	uid: 'daily-1@calendar.test',
 	...overrides,
@@ -76,7 +126,7 @@ const expectTerminatedUntil = (
 	if (!terminatedEvent?.rrule) {
 		throw new Error('terminatedEvent.rrule missing')
 	}
-	expect(terminatedEvent.rrule.until).toEqual(dayjs(untilISO).toDate())
+	expect(terminatedEvent.rrule.until).toEqual(new Date(untilISO))
 }
 
 describe('isRecurringEvent', () => {
@@ -106,8 +156,8 @@ describe('isRecurringEvent', () => {
 describe('generateRecurringEvents', () => {
 	it('should generate weekly recurring events correctly', () => {
 		const baseEvent = createBaseRecurringEvent()
-		const startDate = dayjs('2025-01-01')
-		const endDate = dayjs('2025-01-31')
+		const startDate = '2025-01-01T00:00:00.000Z'
+		const endDate = '2025-01-31T23:59:59.999Z'
 
 		const result = generateRecurringEvents({
 			event: baseEvent,
@@ -116,13 +166,12 @@ describe('generateRecurringEvents', () => {
 			endDate,
 		})
 
-		expect(result).toHaveLength(4) // 4 Mondays in January 2025
-		expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06')
-		expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-13')
-		expect(result[2].start.format('YYYY-MM-DD')).toBe('2025-01-20')
-		expect(result[3].start.format('YYYY-MM-DD')).toBe('2025-01-27')
+		expect(result).toHaveLength(4)
+		expect(utcDay(result[0].start)).toBe('2025-01-06')
+		expect(utcDay(result[1].start)).toBe('2025-01-13')
+		expect(utcDay(result[2].start)).toBe('2025-01-20')
+		expect(utcDay(result[3].start)).toBe('2025-01-27')
 
-		// Each instance should have unique ID and no rrule
 		result.forEach((event, index) => {
 			expect(event.id).toBe(`recurring-1_${index}`)
 			expect(event.rrule).toBeUndefined()
@@ -134,8 +183,8 @@ describe('generateRecurringEvents', () => {
 		const baseEvent = createBaseRecurringEvent({
 			exdates: ['2025-01-13T09:00:00.000Z', '2025-01-27T09:00:00.000Z'],
 		})
-		const startDate = dayjs('2025-01-01')
-		const endDate = dayjs('2025-01-31')
+		const startDate = '2025-01-01T00:00:00.000Z'
+		const endDate = '2025-01-31T23:59:59.999Z'
 
 		const result = generateRecurringEvents({
 			event: baseEvent,
@@ -144,35 +193,31 @@ describe('generateRecurringEvents', () => {
 			endDate,
 		})
 
-		expect(result).toHaveLength(2) // 4 Mondays - 2 excluded = 2
-		expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06')
-		expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-20')
+		expect(result).toHaveLength(2)
+		expect(utcDay(result[0].start)).toBe('2025-01-06')
+		expect(utcDay(result[1].start)).toBe('2025-01-20')
 	})
 
-	// Contract moved: the expansion SKIPS an overridden occurrence rather than
-	// emitting a merged copy of it. The override is emitted once, by the
-	// plugin's transformEvents (asserted in the sibling test below). Emitting it
-	// from both places rendered a moved override twice on the grid.
 	it('should skip an overridden occurrence rather than emit it', () => {
 		const baseEvent = createBaseRecurringEvent()
 		const overrideEvent: CalendarEvent = {
 			...createTargetEvent(),
 			recurrenceId: '2025-01-13T09:00:00.000Z',
 			title: 'Modified Meeting',
-			start: dayjs('2025-01-13T14:00:00'),
-			end: dayjs('2025-01-13T15:00:00'),
+			start: '2025-01-13T14:00:00.000Z',
+			end: '2025-01-13T15:00:00.000Z',
 		}
 
 		const result = generateRecurringEvents({
 			event: baseEvent,
 			currentEvents: [overrideEvent],
-			startDate: dayjs('2025-01-01'),
-			endDate: dayjs('2025-01-31'),
+			startDate: '2025-01-01T00:00:00.000Z',
+			endDate: '2025-01-31T23:59:59.999Z',
 		})
 
-		expect(result).toHaveLength(3) // 4 Mondays - the overridden one
+		expect(result).toHaveLength(3)
 		const modifiedEvent = result.find((e) =>
-			e.start.isSame(dayjs('2025-01-13T14:00:00'))
+			sameInstant(e.start, '2025-01-13T14:00:00.000Z')
 		)
 		expect(modifiedEvent).toBeUndefined()
 	})
@@ -183,17 +228,21 @@ describe('generateRecurringEvents', () => {
 			...createTargetEvent(),
 			recurrenceId: '2025-01-13T09:00:00.000Z',
 			title: 'Modified Meeting',
-			start: dayjs('2025-01-13T14:00:00'),
-			end: dayjs('2025-01-13T15:00:00'),
+			start: '2025-01-13T14:00:00.000Z',
+			end: '2025-01-13T15:00:00.000Z',
 		}
 
 		const result = recurrencePlugin().transformEvents?.(
 			[baseEvent, overrideEvent],
-			{ start: dayjs('2025-01-01'), end: dayjs('2025-01-31') }
+			{
+				start: '2025-01-01T00:00:00.000Z',
+				end: '2025-01-31T23:59:59.999Z',
+				timezone: 'UTC',
+			}
 		)
 
 		const modifiedEvents = result?.filter((e) =>
-			e.start.isSame(dayjs('2025-01-13T14:00:00'))
+			sameInstant(e.start, '2025-01-13T14:00:00.000Z')
 		)
 		expect(modifiedEvents).toHaveLength(1)
 		expect(modifiedEvents?.at(0)?.title).toBe('Modified Meeting')
@@ -205,8 +254,8 @@ describe('generateRecurringEvents', () => {
 		const result = generateRecurringEvents({
 			event: regularEvent,
 			currentEvents: [],
-			startDate: dayjs('2025-01-01'),
-			endDate: dayjs('2025-01-31'),
+			startDate: '2025-01-01T00:00:00.000Z',
+			endDate: '2025-01-31T23:59:59.999Z',
 		})
 
 		expect(result).toHaveLength(0)
@@ -221,7 +270,7 @@ describe('updateRecurringEvent', () => {
 			const currentEvents = [baseEvent]
 			const updates = {
 				title: 'Modified Meeting',
-				start: dayjs('2025-01-20T14:00:00'),
+				start: '2025-01-20T14:00:00.000Z',
 			}
 
 			const result = updateRecurringEvent({
@@ -365,7 +414,7 @@ describe('updateRecurringEvent', () => {
 			const currentEvents = [baseEvent]
 			const updates = {
 				title: 'Modified Series',
-				start: dayjs('2025-01-20T14:00:00'),
+				start: '2025-01-20T14:00:00.000Z',
 			}
 
 			const result = updateRecurringEvent({
@@ -375,15 +424,13 @@ describe('updateRecurringEvent', () => {
 				scope: 'following',
 			}).events
 
-			expect(result).toHaveLength(2) // terminated original + new series
+			expect(result).toHaveLength(2)
 
-			// Original series should be terminated with UNTIL
 			expectTerminatedUntil(result, baseEvent.id, '2025-01-19T23:59:59.999Z')
 
-			// New series should start from target date
 			const newSeries = result.find((e) => e.id !== baseEvent.id)
 			expect(newSeries?.title).toBe('Modified Series')
-			expect(newSeries?.start.isSame(dayjs('2025-01-20T14:00:00'))).toEqual(
+			expect(sameInstant(newSeries?.start, '2025-01-20T14:00:00.000Z')).toBe(
 				true
 			)
 			expect(newSeries?.uid).toBe('recurring-1_following@ilamy.calendar')
@@ -394,7 +441,7 @@ describe('updateRecurringEvent', () => {
 			const baseEvent = createBaseRecurringEvent()
 			const firstOccurrence = {
 				...createTargetEvent(),
-				start: dayjs('2025-01-06T09:00:00'),
+				start: '2025-01-06T09:00:00.000Z',
 			}
 			const currentEvents = [baseEvent]
 
@@ -405,10 +452,6 @@ describe('updateRecurringEvent', () => {
 				scope: 'following',
 			}).events
 
-			// Contract moved: cutting before the first occurrence used to leave a
-			// series ending before its DTSTART (UNTIL 5 Jan, DTSTART 6 Jan) beside the
-			// new one. The edit now replaces the series (RFC 5545 §3.8.5.3: DTSTART is
-			// the first instance, so there is nothing before it to keep).
 			expect(result).toHaveLength(1)
 			expect(result.at(0)?.id).toBe(baseEvent.id)
 			expect(result.at(0)?.title).toBe('New Series')
@@ -424,19 +467,19 @@ describe('updateRecurringEvent', () => {
 			const overrideE = createTargetEvent({
 				id: 'recurring-1_overrideE',
 				title: 'Override E',
-				start: dayjs(occurrenceDISO),
+				start: occurrenceDISO,
 				recurrenceId: occurrenceDISO,
 				rrule: undefined,
 			})
 			const overrideF = createTargetEvent({
 				id: 'recurring-1_overrideF',
 				title: 'Override F',
-				start: dayjs(occurrenceFISO),
+				start: occurrenceFISO,
 				recurrenceId: occurrenceFISO,
 				rrule: undefined,
 			})
 			const targetEvent = createTargetEvent({
-				start: dayjs(occurrenceDISO),
+				start: occurrenceDISO,
 			})
 
 			const { events, updated, added, deleted } = updateRecurringEvent({
@@ -482,7 +525,7 @@ describe('updateRecurringEvent', () => {
 				rrule: {
 					freq: RRule.DAILY,
 					interval: 1,
-					dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+					dtstart: new Date('2025-01-06T09:00:00.000Z'),
 				},
 			}
 
@@ -547,32 +590,32 @@ describe('updateRecurringEvent', () => {
 			const mondayStartISO = '2025-01-06T09:00:00.000Z'
 			const fridayStartISO = '2025-01-10T09:00:00.000Z'
 			const baseEvent = createBaseRecurringEvent({
-				start: dayjs(mondayStartISO),
-				end: dayjs('2025-01-06T10:00:00.000Z'),
+				start: mondayStartISO,
+				end: '2025-01-06T10:00:00.000Z',
 				rrule: {
 					freq: RRule.WEEKLY,
 					interval: 1,
 					byweekday: [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR],
-					dtstart: dayjs(mondayStartISO).toDate(),
+					dtstart: new Date(mondayStartISO),
 				},
 			})
 			const fridayInstance = createTargetEvent({
 				id: 'recurring-1_4',
-				start: dayjs(fridayStartISO),
-				end: dayjs('2025-01-10T10:00:00.000Z'),
+				start: fridayStartISO,
+				end: '2025-01-10T10:00:00.000Z',
 			})
 
 			const result = updateRecurringEvent({
 				targetEvent: fridayInstance,
 				updates: {
 					title: 'Updated Weekdays',
-					start: dayjs(fridayStartISO),
-					end: dayjs('2025-01-10T10:00:00.000Z'),
+					start: fridayStartISO,
+					end: '2025-01-10T10:00:00.000Z',
 					rrule: {
 						freq: RRule.WEEKLY,
 						interval: 1,
 						byweekday: [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR],
-						dtstart: dayjs(fridayStartISO).toDate(),
+						dtstart: new Date(fridayStartISO),
 					},
 				},
 				currentEvents: [baseEvent],
@@ -581,52 +624,52 @@ describe('updateRecurringEvent', () => {
 
 			const updatedBase = result[0]
 			expect(updatedBase.title).toBe('Updated Weekdays')
-			expect(updatedBase.start.toISOString()).toBe(mondayStartISO)
+			expect(utcIso(updatedBase.start)).toBe(mondayStartISO)
 			if (!updatedBase.rrule) throw new Error('updatedBase.rrule missing')
 			expect(updatedBase.rrule.dtstart?.toISOString()).toBe(mondayStartISO)
 
 			const instances = generateRecurringEvents({
 				event: updatedBase,
 				currentEvents: result,
-				startDate: dayjs('2025-01-06T00:00:00.000Z'),
-				endDate: dayjs('2025-01-12T23:59:59.999Z'),
+				startDate: '2025-01-06T00:00:00.000Z',
+				endDate: '2025-01-12T23:59:59.999Z',
 			})
 			expect(instances).toHaveLength(5)
-			expect(instances[0].start.toISOString()).toBe(mondayStartISO)
-			expect(instances[4].start.toISOString()).toBe(fridayStartISO)
+			expect(utcIso(instances[0].start)).toBe(mondayStartISO)
+			expect(utcIso(instances[4].start)).toBe(fridayStartISO)
 		})
 
 		it('should apply time delta from target instance to base (scope: all)', () => {
 			const mondayStartISO = '2025-01-06T09:00:00.000Z'
 			const baseEvent = createBaseRecurringEvent({
-				start: dayjs(mondayStartISO),
-				end: dayjs('2025-01-06T10:00:00.000Z'),
+				start: mondayStartISO,
+				end: '2025-01-06T10:00:00.000Z',
 			})
 			const fridayInstance = createTargetEvent({
-				start: dayjs('2025-01-10T09:00:00.000Z'),
-				end: dayjs('2025-01-10T10:00:00.000Z'),
+				start: '2025-01-10T09:00:00.000Z',
+				end: '2025-01-10T10:00:00.000Z',
 			})
 
 			const result = updateRecurringEvent({
 				targetEvent: fridayInstance,
 				updates: {
-					start: dayjs('2025-01-10T11:00:00.000Z'),
-					end: dayjs('2025-01-10T12:00:00.000Z'),
+					start: '2025-01-10T11:00:00.000Z',
+					end: '2025-01-10T12:00:00.000Z',
 				},
 				currentEvents: [baseEvent],
 				scope: 'all',
 			}).events
 
-			expect(result[0].start.toISOString()).toBe('2025-01-06T11:00:00.000Z')
-			expect(result[0].end.toISOString()).toBe('2025-01-06T12:00:00.000Z')
+			expect(utcIso(result[0].start)).toBe('2025-01-06T11:00:00.000Z')
+			expect(utcIso(result[0].end)).toBe('2025-01-06T12:00:00.000Z')
 		})
 
 		it('should return exactly one base row with exdates cleared', () => {
 			const baseEvent = makeDailySeries()
 			const targetEvent = makeDailySeries({
 				id: 'daily-1_2',
-				start: dayjs('2025-01-08T09:00:00.000Z'),
-				end: dayjs('2025-01-08T10:00:00.000Z'),
+				start: '2025-01-08T09:00:00.000Z',
+				end: '2025-01-08T10:00:00.000Z',
 				rrule: undefined,
 			})
 			const unrelated = createBaseRecurringEvent({
@@ -659,8 +702,8 @@ describe('updateRecurringEvent', () => {
 			})
 			const targetEvent = makeDailySeries({
 				id: 'daily-1_2',
-				start: dayjs('2025-01-08T09:00:00.000Z'),
-				end: dayjs('2025-01-08T10:00:00.000Z'),
+				start: '2025-01-08T09:00:00.000Z',
+				end: '2025-01-08T10:00:00.000Z',
 				rrule: undefined,
 			})
 
@@ -680,33 +723,29 @@ describe('updateRecurringEvent', () => {
 			const baseEvent = makeDailySeries()
 			const targetEvent = makeDailySeries({
 				id: 'daily-1_2',
-				start: dayjs('2025-01-08T09:00:00.000Z'),
-				end: dayjs('2025-01-08T10:00:00.000Z'),
+				start: '2025-01-08T09:00:00.000Z',
+				end: '2025-01-08T10:00:00.000Z',
 				rrule: undefined,
 			})
 
 			const result = updateRecurringEvent({
 				targetEvent,
-				updates: { start: dayjs('2025-01-08T14:30:00.000Z') },
+				updates: { start: '2025-01-08T14:30:00.000Z' },
 				currentEvents: [baseEvent],
 				scope: 'all',
 			}).events
 
-			// keeps original anchor date (Jan 6), new time-of-day (14:30)
-			expect(result[0].start.toISOString()).toBe('2025-01-06T14:30:00.000Z')
-			// duration preserved (1 hour) since no end submitted
-			expect(result[0].end.toISOString()).toBe('2025-01-06T15:30:00.000Z')
+			expect(utcIso(result[0].start)).toBe('2025-01-06T14:30:00.000Z')
+			expect(utcIso(result[0].end)).toBe('2025-01-06T15:30:00.000Z')
 		})
 
 		it('should resurrect a previously-deleted occurrence by clearing exdates (Google-Calendar reset behavior)', () => {
-			// 1. Start a daily series
 			const baseEvent = makeDailySeries()
 
-			// 2. Delete one occurrence with scope "this" -> produces an EXDATE
 			const occurrenceToDelete = makeDailySeries({
 				id: 'daily-1_1',
-				start: dayjs('2025-01-07T09:00:00.000Z'),
-				end: dayjs('2025-01-07T10:00:00.000Z'),
+				start: '2025-01-07T09:00:00.000Z',
+				end: '2025-01-07T10:00:00.000Z',
 				rrule: undefined,
 			})
 			const afterDelete = deleteRecurringEvent({
@@ -716,12 +755,11 @@ describe('updateRecurringEvent', () => {
 			}).events
 			expect(afterDelete[0].exdates).toContain('2025-01-07T09:00:00.000Z')
 
-			// 3. Edit the series with scope "all" -> the deleted occurrence is resurrected
 			const afterAllEdit = updateRecurringEvent({
 				targetEvent: makeDailySeries({
 					id: 'daily-1_2',
-					start: dayjs('2025-01-08T09:00:00.000Z'),
-					end: dayjs('2025-01-08T10:00:00.000Z'),
+					start: '2025-01-08T09:00:00.000Z',
+					end: '2025-01-08T10:00:00.000Z',
 					rrule: undefined,
 				}),
 				updates: { title: 'Reset Series' },
@@ -852,8 +890,8 @@ describe('deleteRecurringEvent', () => {
 			const mkOverride = (id: string, occurrenceISO: string) =>
 				createTargetEvent({
 					id,
-					start: dayjs(occurrenceISO).add(2, 'hour'),
-					end: dayjs(occurrenceISO).add(3, 'hour'),
+					start: shiftUtc(occurrenceISO, 2, 'hour'),
+					end: shiftUtc(occurrenceISO, 3, 'hour'),
 					recurrenceId: occurrenceISO,
 				})
 			const earlier = mkOverride('override-earlier', earlierISO)
@@ -889,7 +927,7 @@ describe('deleteRecurringEvent', () => {
 			const terminatedEvent = result[0]
 			if (!terminatedEvent.rrule) throw new Error('rrule missing')
 			expect(terminatedEvent.rrule.until).toEqual(
-				dayjs('2025-01-19T23:59:59.999Z').toDate()
+				new Date('2025-01-19T23:59:59.999Z')
 			)
 			expect(terminatedEvent.id).toBe(baseEvent.id)
 		})
@@ -898,7 +936,7 @@ describe('deleteRecurringEvent', () => {
 			const baseEvent = createBaseRecurringEvent()
 			const firstOccurrence = {
 				...createTargetEvent(),
-				start: dayjs('2025-01-06T09:00:00'),
+				start: '2025-01-06T09:00:00.000Z',
 			}
 			const currentEvents = [baseEvent]
 
@@ -908,9 +946,6 @@ describe('deleteRecurringEvent', () => {
 				scope: 'following',
 			}).events
 
-			// Contract moved: this used to leave the series with UNTIL 5 Jan before its
-			// DTSTART of 6 Jan, a row that draws nothing. Deleting from the first
-			// occurrence removes the series.
 			expect(result).toHaveLength(0)
 		})
 
@@ -919,9 +954,9 @@ describe('deleteRecurringEvent', () => {
 				rrule: {
 					freq: RRule.WEEKLY,
 					byweekday: [RRule.MO],
-					until: dayjs('2025-12-31T00:00:00Z').toDate(),
+					until: new Date('2025-12-31T00:00:00Z'),
 					interval: 1,
-					dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+					dtstart: new Date('2025-01-06T09:00:00.000Z'),
 				},
 			})
 			const targetEvent = createTargetEvent()
@@ -934,10 +969,9 @@ describe('deleteRecurringEvent', () => {
 			}).events
 
 			const terminatedEvent = result[0]
-			// Should replace existing UNTIL with earlier termination date
 			if (!terminatedEvent.rrule) throw new Error('rrule missing')
 			expect(terminatedEvent.rrule.until).toEqual(
-				dayjs('2025-01-19T23:59:59.999Z').toDate()
+				new Date('2025-01-19T23:59:59.999Z')
 			)
 		})
 	})
@@ -1049,15 +1083,15 @@ describe('Edge cases and stress tests', () => {
 				byweekday: [RRule.MO, RRule.WE, RRule.FR],
 				count: 10,
 				interval: 1,
-				dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+				dtstart: new Date('2025-01-06T09:00:00.000Z'),
 			},
 		})
 
 		const result = generateRecurringEvents({
 			event: baseEvent,
 			currentEvents: [],
-			startDate: dayjs('2025-01-01'),
-			endDate: dayjs('2025-02-28'),
+			startDate: '2025-01-01T00:00:00.000Z',
+			endDate: '2025-02-28T23:59:59.999Z',
 		})
 
 		expect(result).toHaveLength(10)
@@ -1068,21 +1102,21 @@ describe('Edge cases and stress tests', () => {
 			rrule: {
 				freq: RRule.DAILY,
 				interval: 3,
-				dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+				dtstart: new Date('2025-01-06T09:00:00.000Z'),
 			},
 		})
 
 		const result = generateRecurringEvents({
 			event: baseEvent,
 			currentEvents: [],
-			startDate: dayjs('2025-01-06'),
-			endDate: dayjs('2025-01-20'),
+			startDate: '2025-01-06T00:00:00.000Z',
+			endDate: '2025-01-20T23:59:59.999Z',
 		})
 
-		expect(result).toHaveLength(5) // Every 3 days: 6, 9, 12, 15, 18
-		expect(result[0].start.format('YYYY-MM-DD')).toBe('2025-01-06')
-		expect(result[1].start.format('YYYY-MM-DD')).toBe('2025-01-09')
-		expect(result[2].start.format('YYYY-MM-DD')).toBe('2025-01-12')
+		expect(result).toHaveLength(5)
+		expect(utcDay(result[0].start)).toBe('2025-01-06')
+		expect(utcDay(result[1].start)).toBe('2025-01-09')
+		expect(utcDay(result[2].start)).toBe('2025-01-12')
 	})
 
 	it('should handle monthly recurring event', () => {
@@ -1091,18 +1125,18 @@ describe('Edge cases and stress tests', () => {
 				freq: RRule.MONTHLY,
 				bymonthday: [15],
 				interval: 1,
-				dtstart: dayjs('2025-01-06T09:00:00').toDate(), // Match event start time
+				dtstart: new Date('2025-01-06T09:00:00.000Z'),
 			},
 		})
 
 		const result = generateRecurringEvents({
 			event: baseEvent,
 			currentEvents: [],
-			startDate: dayjs('2025-01-01'),
-			endDate: dayjs('2025-06-30'),
+			startDate: '2025-01-01T00:00:00.000Z',
+			endDate: '2025-06-30T23:59:59.999Z',
 		})
 
-		expect(result).toHaveLength(6) // Jan 15, Feb 15, Mar 15, Apr 15, May 15, Jun 15
+		expect(result).toHaveLength(6)
 	})
 
 	it('should handle updating and then deleting same event', () => {
@@ -1110,7 +1144,6 @@ describe('Edge cases and stress tests', () => {
 		const targetEvent = createTargetEvent()
 		let currentEvents = [baseEvent]
 
-		// First update "this" event
 		currentEvents = updateRecurringEvent({
 			targetEvent,
 			updates: { title: 'Modified' },
@@ -1118,9 +1151,8 @@ describe('Edge cases and stress tests', () => {
 			scope: 'this',
 		}).events
 
-		expect(currentEvents).toHaveLength(2) // base + modified
+		expect(currentEvents).toHaveLength(2)
 
-		// Then delete the same occurrence
 		const finalResult = deleteRecurringEvent({
 			targetEvent,
 			currentEvents,
@@ -1142,8 +1174,8 @@ describe('Edge cases and stress tests', () => {
 			targetEvent,
 			updates: {
 				title: 'Modified Title',
-				start: dayjs('2025-01-20T14:00:00'),
-				end: dayjs('2025-01-20T15:00:00'),
+				start: '2025-01-20T14:00:00.000Z',
+				end: '2025-01-20T15:00:00.000Z',
 			},
 			currentEvents,
 			scope: 'this',
@@ -1164,11 +1196,11 @@ describe('Edge cases and stress tests', () => {
 		const visibleOccurrences = generateRecurringEvents({
 			event: finalResult[0],
 			currentEvents: finalResult,
-			startDate: dayjs('2025-01-13T00:00:00'),
-			endDate: dayjs('2025-01-27T00:00:00'),
+			startDate: '2025-01-13T00:00:00.000Z',
+			endDate: '2025-01-27T00:00:00.000Z',
 		})
-		const deletedDayOccurrences = visibleOccurrences.filter((e) =>
-			e.start.isSame(dayjs('2025-01-20T00:00:00'), 'day')
+		const deletedDayOccurrences = visibleOccurrences.filter(
+			(e) => utcDay(e.start) === '2025-01-20'
 		)
 		expect(deletedDayOccurrences).toHaveLength(0)
 	})
@@ -1177,10 +1209,9 @@ describe('Edge cases and stress tests', () => {
 		const baseEvent = createBaseRecurringEvent()
 		let currentEvents = [baseEvent]
 
-		// Update "following" from first occurrence
 		const firstTarget = {
 			...createTargetEvent(),
-			start: dayjs('2025-01-06T09:00:00'),
+			start: '2025-01-06T09:00:00.000Z',
 		}
 		currentEvents = updateRecurringEvent({
 			targetEvent: firstTarget,
@@ -1189,14 +1220,11 @@ describe('Edge cases and stress tests', () => {
 			scope: 'following',
 		}).events
 
-		// "Following" from the first occurrence replaces the series (the old one
-		// would end before it starts), so there is one row, not two.
 		expect(currentEvents).toHaveLength(1)
 
-		// Update "following" from a later occurrence of the replaced series
 		const secondTarget = {
 			...createTargetEvent(),
-			start: dayjs('2025-01-20T09:00:00'),
+			start: '2025-01-20T09:00:00.000Z',
 		}
 		currentEvents = updateRecurringEvent({
 			targetEvent: secondTarget,
@@ -1205,38 +1233,35 @@ describe('Edge cases and stress tests', () => {
 			scope: 'following',
 		}).events
 
-		expect(currentEvents).toHaveLength(2) // first series terminated + second series
+		expect(currentEvents).toHaveLength(2)
 	})
 
 	it('should preserve duration when creating new series in "following" scope', () => {
 		const baseEvent = createBaseRecurringEvent({
-			start: dayjs('2025-01-06T09:00:00'),
-			end: dayjs('2025-01-06T11:30:00'), // 2.5 hour duration
+			start: '2025-01-06T09:00:00.000Z',
+			end: '2025-01-06T11:30:00.000Z',
 		})
 		const targetEvent = {
 			...createTargetEvent(),
-			start: dayjs('2025-01-20T09:00:00'),
-			end: dayjs('2025-01-20T11:30:00'),
+			start: '2025-01-20T09:00:00.000Z',
+			end: '2025-01-20T11:30:00.000Z',
 		}
 
 		const result = updateRecurringEvent({
 			targetEvent,
-			updates: { start: dayjs('2025-01-20T14:00:00') }, // Change start time
+			updates: { start: '2025-01-20T14:00:00.000Z' },
 			currentEvents: [baseEvent],
 			scope: 'following',
 		}).events
 
 		const newSeries = result.find((e) => e.uid?.includes('_following'))
-		expect(newSeries?.start.format('HH:mm')).toBe('14:00')
-		expect(newSeries?.end.format('HH:mm')).toBe('16:30') // Should preserve 2.5 hour duration
+		expect(utcHHmm(newSeries?.start)).toBe('14:00')
+		expect(utcHHmm(newSeries?.end)).toBe('16:30')
 	})
 })
 
-// A weekly Monday series of 7 occurrences (6 Jan .. 17 Feb 2025, 09:00Z), the
-// shape the "following" scope has to cut. Zulu strings, so the rows read the
-// same on any machine zone.
-const mondayISO = (weeksAfterFirst: number) =>
-	dayjs('2025-01-06T09:00:00.000Z').add(weeksAfterFirst, 'week').toISOString()
+const mondayISO = (weeksAfterFirst: number): string =>
+	shiftUtc('2025-01-06T09:00:00.000Z', weeksAfterFirst, 'week')
 
 const makeCountedSeries = (
 	overrides: Partial<CalendarEvent> = {},
@@ -1245,8 +1270,8 @@ const makeCountedSeries = (
 	id: 'counted',
 	uid: 'counted@calendar.test',
 	title: 'Counted',
-	start: dayjs(mondayISO(0)),
-	end: dayjs(mondayISO(0)).add(1, 'hour'),
+	start: mondayISO(0),
+	end: shiftUtc(mondayISO(0), 1, 'hour'),
 	rrule: {
 		freq: RRule.WEEKLY,
 		byweekday: [RRule.MO],
@@ -1264,26 +1289,23 @@ const occurrenceOfWeek = (
 	id: `counted_${weeksAfterFirst}`,
 	uid: 'counted@calendar.test',
 	title: 'Counted',
-	start: dayjs(mondayISO(weeksAfterFirst)),
-	end: dayjs(mondayISO(weeksAfterFirst)).add(1, 'hour'),
+	start: mondayISO(weeksAfterFirst),
+	end: shiftUtc(mondayISO(weeksAfterFirst), 1, 'hour'),
 	...overrides,
 })
 
-// A stored override: the occurrence of `weeksAfterFirst`, moved three days later.
-const movedOccurrence = (weeksAfterFirst: number): CalendarEvent =>
-	occurrenceOfWeek(weeksAfterFirst, {
+const movedOccurrence = (weeksAfterFirst: number): CalendarEvent => {
+	const movedStart = shiftUtc(mondayISO(weeksAfterFirst), 3, 'day')
+	return occurrenceOfWeek(weeksAfterFirst, {
 		id: `moved_${weeksAfterFirst}`,
-		start: dayjs(mondayISO(weeksAfterFirst)).add(3, 'day'),
-		end: dayjs(mondayISO(weeksAfterFirst)).add(3, 'day').add(1, 'hour'),
+		start: movedStart,
+		end: shiftUtc(movedStart, 1, 'hour'),
 		recurrenceId: mondayISO(weeksAfterFirst),
 	})
+}
 
-// UNTIL is the end of the day before the occurrence, in the zone the calendar
-// reads dates in, which on a unit test is the machine's. Computed rather than
-// written as a UTC literal so the cut reads the same on any machine zone; the
-// zoned cases are in the e2e specs.
 const endOfDayBefore = (iso: string): Date =>
-	dayjs(iso).subtract(1, 'day').endOf('day').toDate()
+	toDate(endOf(subtract(mustUtc(iso), 1, 'day'), 'day'))
 
 describe('"this and following" cuts the series (RFC 5545 §3.3.10)', () => {
 	const followingEdit = (
@@ -1356,8 +1378,8 @@ describe('"this and following" cuts the series (RFC 5545 §3.3.10)', () => {
 		// to the new time of day with the series.
 		describe('with a changed time of day', () => {
 			const oneHourLater = (target: CalendarEvent) => ({
-				start: target.start.add(1, 'hour'),
-				end: target.end.add(1, 'hour'),
+				start: shiftUtc(target.start, 1, 'hour'),
+				end: shiftUtc(target.end, 1, 'hour'),
 			})
 			const series = makeCountedSeries({
 				exdates: [mondayISO(1), mondayISO(5)],
@@ -1367,7 +1389,7 @@ describe('"this and following" cuts the series (RFC 5545 §3.3.10)', () => {
 				const target = occurrenceOfWeek(3)
 				const { added } = followingEdit(target, [series], oneHourLater(target))
 				expect(added.at(0)?.exdates).toEqual([
-					dayjs(mondayISO(5)).add(1, 'hour').toISOString(),
+					shiftUtc(mondayISO(5), 1, 'hour'),
 				])
 			})
 
@@ -1411,24 +1433,23 @@ describe('"this and following" cuts the series (RFC 5545 §3.3.10)', () => {
 
 			it('starts the new series on the original day, so the days between are kept', () => {
 				const { added } = followingEdit(moved, [series, moved])
-				expect(added.at(0)?.start.toISOString()).toBe(mondayISO(2))
+				expect(utcIso(added.at(0)?.start)).toBe(mondayISO(2))
 				expect(added.at(0)?.rrule?.dtstart.toISOString()).toBe(mondayISO(2))
 			})
 
 			it('keeps the exdate of the moved occurrence off the new series', () => {
-				// Its own slot is the new series' first occurrence.
 				const { added } = followingEdit(moved, [series, moved])
 				expect(added.at(0)?.exdates).toEqual([])
 			})
 
 			it('moves the new series by the days the form moved the start', () => {
-				const dayLater = moved.start.add(1, 'day')
+				const dayLater = shiftUtc(moved.start, 1, 'day')
 				const { added } = followingEdit(moved, [series, moved], {
 					start: dayLater,
-					end: dayLater.add(1, 'hour'),
+					end: shiftUtc(dayLater, 1, 'hour'),
 				})
-				expect(added.at(0)?.start.toISOString()).toBe(
-					dayjs(mondayISO(2)).add(1, 'day').toISOString()
+				expect(utcIso(added.at(0)?.start)).toBe(
+					shiftUtc(mondayISO(2), 1, 'day')
 				)
 			})
 		})
@@ -1571,8 +1592,8 @@ describe('Repeat unticked with scope "all"', () => {
 
 	it('keeps the series when the updates carry no rrule key (a drag, an untouched form)', () => {
 		const dragUpdates = {
-			start: dayjs(mondayISO(3)).add(1, 'hour'),
-			end: dayjs(mondayISO(3)).add(2, 'hour'),
+			start: shiftUtc(mondayISO(3), 1, 'hour'),
+			end: shiftUtc(mondayISO(3), 2, 'hour'),
 			allDay: false,
 		}
 		const { events } = editAll(dragUpdates)
@@ -1582,15 +1603,13 @@ describe('Repeat unticked with scope "all"', () => {
 })
 
 describe('what scope "all" reports it stored', () => {
-	// "All events" keeps the series on its day (pinned above), so a drop on
-	// another day must not be reported as a day move.
 	const dropOnNextDayAnHourLater = () => {
 		const target = occurrenceOfWeek(3)
 		return updateRecurringEvent({
 			targetEvent: target,
 			updates: {
-				start: target.start.add(1, 'day').add(1, 'hour'),
-				end: target.end.add(1, 'day').add(1, 'hour'),
+				start: shiftUtc(shiftUtc(target.start, 1, 'day'), 1, 'hour'),
+				end: shiftUtc(shiftUtc(target.end, 1, 'day'), 1, 'hour'),
 			},
 			currentEvents: [makeCountedSeries()],
 			scope: 'all',
@@ -1599,18 +1618,12 @@ describe('what scope "all" reports it stored', () => {
 
 	it('is the time of day change on the dragged occurrence`s own day', () => {
 		const stored = dropOnNextDayAnHourLater().appliedUpdates
-		expect(stored?.start?.toISOString()).toBe(
-			dayjs(mondayISO(3)).add(1, 'hour').toISOString()
-		)
-		expect(stored?.end?.toISOString()).toBe(
-			dayjs(mondayISO(3)).add(2, 'hour').toISOString()
-		)
+		expect(utcIso(stored?.start)).toBe(shiftUtc(mondayISO(3), 1, 'hour'))
+		expect(utcIso(stored?.end)).toBe(shiftUtc(mondayISO(3), 2, 'hour'))
 	})
 
 	it('matches the base that was stored: same time of day', () => {
 		const { appliedUpdates, updated } = dropOnNextDayAnHourLater()
-		expect(appliedUpdates?.start?.format('HH:mm')).toBe(
-			updated.at(0)?.start.format('HH:mm')
-		)
+		expect(utcHHmm(appliedUpdates?.start)).toBe(utcHHmm(updated.at(0)?.start))
 	})
 })

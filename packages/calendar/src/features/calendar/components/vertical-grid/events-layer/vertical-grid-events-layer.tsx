@@ -1,5 +1,6 @@
+import { layoutVertical } from '@ilamy/core'
 import type { Resource } from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import { add, type ZonedDate } from '@ilamy/utils/temporal'
 import { memo, useMemo } from 'react'
 import { GridNowLine } from '@/features/calendar/components/grid-now-line'
 import { useDragPreviewEvent } from '@/features/calendar/hooks/use-drag-preview-event'
@@ -8,13 +9,12 @@ import { useProcessedDayEvents } from '@/features/calendar/hooks/use-processed-d
 import { useDragPreview } from '@/features/calendar/stores/drag-preview-context'
 import { GridAxisContext } from '@/features/calendar/stores/grid-axis-context'
 import { keys } from '@/features/calendar/utils/keys'
-import { layoutVertical } from '@/features/calendar/utils/layout/vertical'
 import { VerticalDragPreview } from './vertical-drag-preview'
 import { getVerticalEventKey, VerticalEventBar } from './vertical-event-bar'
 
 interface VerticalGridEventsLayerProps {
 	gridType?: 'day' | 'hour'
-	days: Dayjs[] // The specific day this layer represents
+	days: ZonedDate[]
 	resourceId?: string | number
 	resource?: Resource
 	'data-testid'?: string
@@ -30,10 +30,9 @@ const NoMemoVerticalGridEventsLayer: React.FC<VerticalGridEventsLayerProps> = ({
 	const dragPreview = useDragPreview()
 	const todayEvents = useProcessedDayEvents({ days, gridType, resourceId })
 	const rangeStart = days.at(0)
-	const rangeEnd = days.at(-1)?.add(1, gridType)
+	const lastSlot = days.at(-1)
+	const rangeEnd = lastSlot ? add(lastSlot, 1, gridType) : undefined
 	const hiddenDaysOfDayGrid = useHiddenDaysOfGrid(gridType)
-	// An all-day candidate needs no rejection here: `layoutVertical` decides
-	// whether this grid draws all-day events, exactly as it does for real ones.
 	const previewEvent = useDragPreviewEvent({ days, gridType, resourceId })
 	const previewPositioned = useMemo(() => {
 		if (!previewEvent) {

@@ -1,6 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'bun:test'
+import { describe, expect, it, vi } from 'bun:test'
 import type { CalendarEvent, Resource } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
 import { act, renderHook } from '@testing-library/react'
 import { StrictMode, useState } from 'react'
 import { mustFetchRange } from '@/features/calendar/hooks/calendar-data/use-range-fetcher'
@@ -14,8 +13,8 @@ const OPENS_ON_MID_JANUARY = '2025-01-15T12:00:00.000Z'
 const mkEvent = (id: string): CalendarEvent => ({
 	id,
 	title: id,
-	start: dayjs('2025-01-15T10:00:00.000Z'),
-	end: dayjs('2025-01-15T11:00:00.000Z'),
+	start: '2025-01-15T10:00:00.000Z',
+	end: '2025-01-15T11:00:00.000Z',
 })
 
 // Stable, like the consumer's own array.
@@ -43,7 +42,7 @@ const mkFetcher = <Row = CalendarEvent>() => {
 	return { fetcher, calls }
 }
 
-const day = (value: EventsFetchInfo['start']) => value.format('YYYY-MM-DD')
+const day = (value: EventsFetchInfo['start']) => value.slice(0, 10)
 const ids = (rows: CalendarEvent[]) => rows.map((row) => row.id)
 
 const renderEngine = (
@@ -58,7 +57,8 @@ const renderEngine = (
 			useCalendarEngine({
 				events: NO_EVENTS,
 				firstDayOfWeek: 0,
-				initialDate: dayjs(OPENS_ON_MID_JANUARY),
+				initialDate: OPENS_ON_MID_JANUARY,
+				timezone: 'UTC',
 				eventsFetcher: fetcher,
 				loading,
 				onEventsError,
@@ -70,18 +70,14 @@ const renderEngine = (
 }
 
 describe('events fetched on demand', () => {
-	afterEach(() => {
-		dayjs.tz.setDefault()
-	})
-
 	it('fetches the visible month grid, padding days included, end exclusive', () => {
 		const { calls } = renderEngine()
 
 		expect(calls).toHaveLength(1)
 		expect(day(calls[0].info.start)).toBe('2024-12-29')
 		expect(day(calls[0].info.end)).toBe('2025-02-09')
-		expect(calls[0].info.startStr).toBe(calls[0].info.start.toISOString())
-		expect(calls[0].info.endStr).toBe(calls[0].info.end.toISOString())
+		expect(calls[0].info.startStr).toBe(calls[0].info.start)
+		expect(calls[0].info.endStr).toBe(calls[0].info.end)
 	})
 
 	it('shows what the fetcher returns', async () => {
@@ -292,7 +288,8 @@ const renderResourcesEngine = (extra: Record<string, unknown> = {}) => {
 			useCalendarEngine({
 				events: NO_EVENTS,
 				firstDayOfWeek: 0,
-				initialDate: dayjs(OPENS_ON_MID_JANUARY),
+				initialDate: OPENS_ON_MID_JANUARY,
+				timezone: 'UTC',
 				resourcesFetcher: fetcher,
 				loading,
 				onResourcesError,
@@ -305,10 +302,6 @@ const renderResourcesEngine = (extra: Record<string, unknown> = {}) => {
 }
 
 describe('resources fetched on demand', () => {
-	afterEach(() => {
-		dayjs.tz.setDefault()
-	})
-
 	it('keeps an array of resources as it is and reports it once', () => {
 		const rooms = [mkResource('a')]
 		const { result, resourcesSet, rerender } = renderResourcesEngine({
@@ -564,7 +557,8 @@ describe('resourcesSet reports content, not identity', () => {
 				return useCalendarEngine({
 					events: NO_EVENTS,
 					firstDayOfWeek: 0,
-					initialDate: dayjs(OPENS_ON_MID_JANUARY),
+					initialDate: OPENS_ON_MID_JANUARY,
+					timezone: 'UTC',
 					resources: [
 						{ id: 'a', title: props.title, data: { role: props.role } },
 					],

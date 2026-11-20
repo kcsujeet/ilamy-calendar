@@ -1,16 +1,14 @@
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import { layoutVertical, type VerticalPositionedEvent } from '@ilamy/core'
+import { toOffsetIso, type ZonedDate } from '@ilamy/utils/temporal'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import {
 	getColumnBounds,
-	getDefaultZone,
 	getResourceEvents,
 } from '@/features/calendar/utils/event-buckets'
-import type { VerticalPositionedEvent } from '@/features/calendar/utils/layout/geometry'
-import { layoutVertical } from '@/features/calendar/utils/layout/vertical'
 
 interface UseProcessedDayEventsProps {
-	days: Dayjs[] // The specific day this column represents
+	days: ZonedDate[]
 	gridType?: 'day' | 'hour'
 	resourceId?: string | number
 }
@@ -19,30 +17,24 @@ export const useProcessedDayEvents = ({
 	days,
 	gridType,
 	resourceId,
-}: UseProcessedDayEventsProps) => {
+}: UseProcessedDayEventsProps): VerticalPositionedEvent[] => {
 	const { getEventsForDateRange } = useSmartCalendarContext()
-	const defaultZone = getDefaultZone()
 	const first = days.at(0)
 	const last = days.at(-1)
-	const dayStart = first && getColumnBounds(first, 'day', defaultZone).start
-	const dayEnd = last && getColumnBounds(last, 'day', defaultZone).end
+	const dayStart = first && getColumnBounds(first, 'day').start
+	const dayEnd = last && getColumnBounds(last, 'day').end
 
 	const events = useMemo(() => {
 		if (!dayStart || !dayEnd) return []
-
-		const rangeEvents = getEventsForDateRange(dayStart, dayEnd)
-		// Which of these the grid draws (all-day ones only on a day grid) is
-		// `layoutVertical`'s rule, kept in one place.
+		const rangeEvents = getEventsForDateRange(
+			toOffsetIso(dayStart),
+			toOffsetIso(dayEnd)
+		)
 		return getResourceEvents(rangeEvents, resourceId)
 	}, [dayStart, dayEnd, getEventsForDateRange, resourceId])
 
-	const todayEvents = useMemo<VerticalPositionedEvent[]>(() => {
-		return layoutVertical({
-			days,
-			events,
-			gridType,
-		})
-	}, [days, gridType, events])
-
-	return todayEvents
+	return useMemo<VerticalPositionedEvent[]>(
+		() => layoutVertical({ days, events, gridType }),
+		[days, gridType, events]
+	)
 }

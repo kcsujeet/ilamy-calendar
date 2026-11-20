@@ -1,0 +1,12 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["bun"],
+		"paths": {
+			"@ilamy/core": ["../core/src/index.ts"],
+			"@ilamy/utils/*": ["../utils/src/*"]
+		}
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["dist", "node_modules", "bunup.config.ts"]
+}

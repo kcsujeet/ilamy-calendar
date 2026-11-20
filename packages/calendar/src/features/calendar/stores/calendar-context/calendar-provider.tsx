@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/config/constants'
 import type { RangeFetcher } from '@/features/calendar/hooks/calendar-data/use-range-fetcher'
 import { useCalendarEngine } from '@/features/calendar/hooks/use-calendar-engine'
+import { CalendarThemeProvider } from '@/features/calendar/stores/calendar-theme-context'
 import type { IlamyCalendarProps } from '@/features/calendar/types'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { composePluginProviders } from '@/lib/plugins/compose-plugin-providers'
@@ -14,35 +15,21 @@ import {
 	type ScrollRequest,
 } from './calendar-context'
 
-/**
- * The public props, with four the provider receives already resolved:
- * `events` as stored events, `firstDayOfWeek` as a day number,
- * `hiddenDays` as a set of day numbers and `resources` as an array.
- */
 export type CalendarProviderProps = Omit<
 	IlamyCalendarProps,
 	'events' | 'firstDayOfWeek' | 'hiddenDays' | 'resources'
 > & {
 	children: ReactNode
 	events?: CalendarEvent[]
-	/** Loads the events for the visible range; used instead of `events` when set. */
 	eventsFetcher?: RangeFetcher<CalendarEvent>
-	/** The resolved resource array; a `resources` function arrives as `resourcesFetcher`. */
 	resources?: Resource[]
-	/** Loads the resources; used instead of `resources` when set. */
 	resourcesFetcher?: RangeFetcher<Resource>
-	firstDayOfWeek?: number // 0 for Sunday, 1 for Monday, etc.
+	firstDayOfWeek?: number
 	hiddenDays?: Set<number>
 }
 
-// Module constant, not a per-render `?? []`: keeps the engine's event store
-// from re-syncing (and the context value from churning) when `events` is absent.
 const EMPTY_EVENTS: CalendarEvent[] = []
 
-/**
- * Builds the shared context value: engine slices (including the resource
- * axis) + presentation props. The single assembly point for the ONE provider.
- */
 const useCalendarContextValue = (
 	props: Omit<CalendarProviderProps, 'children'>
 ): CalendarContextType => {
@@ -74,11 +61,12 @@ const useCalendarContextValue = (
 		timezone,
 		disableCellClick,
 		disableEventClick,
-		disableDragAndDrop,
-		editable,
+		editable = false,
 		eventStartEditable,
 		eventDurationEditable,
 		eventResizableFromStart,
+		eventConstraint,
+		selectConstraint,
 		dayMaxEvents,
 		eventSpacing = GAP_BETWEEN_ELEMENTS,
 		eventHeight = EVENT_BAR_HEIGHT,
@@ -103,14 +91,13 @@ const useCalendarContextValue = (
 		hideNonBusinessHours = false,
 		slotMinTime,
 		slotMaxTime,
-		hideExportButton = false,
 		hiddenDays,
 		slotDuration = 60,
 		snapDuration,
 		scrollTime,
 		scrollToNow,
 		allDaySlot = true,
-		nowIndicator = true,
+		nowIndicator = false,
 		weekNumbers,
 		weekNumberCalculation = 'local',
 		plugins,
@@ -120,16 +107,10 @@ const useCalendarContextValue = (
 		weekViewGranularity,
 	} = props
 
-	// What every label falls back to; only a consumer-passed value may override
-	// a locale's own 12/24 hour choice (`explicitTimeFormat`).
 	const timeFormat = explicitTimeFormat ?? '12-hour'
-
-	// Called on a click, never while rendering: see useLatestHandler.
 	const onMoreEventsClick = useLatestHandler(props.onMoreEventsClick)
-	// Called while a drag hovers a placement, never while rendering.
 	const eventAllow = useLatestHandler(props.eventAllow)
 
-	// The grids own the scrolling elements, so a request is state they watch.
 	const [scrollRequest, setScrollRequest] = useState<ScrollRequest>()
 	const scrollToTime = useCallback((time: string) => {
 		setScrollRequest({ time })
@@ -172,11 +153,6 @@ const useCalendarContextValue = (
 	})
 
 	return useMemo(() => {
-		// The engine returns the context core plus the two click handlers; the
-		// handlers are destructured OFF so the spread below keeps the exact v1
-		// context shape (they re-enter as onEventClick / onCellClick). Fields the
-		// engine already provides (businessHours, dayMaxEvents, …) ride the
-		// spread — only presentation props are added here.
 		const { handleEventClick, handleDateClick, ...calendarEngine } = engine
 		return {
 			...calendarEngine,
@@ -189,11 +165,12 @@ const useCalendarContextValue = (
 			timezone,
 			disableCellClick,
 			disableEventClick,
-			disableDragAndDrop,
 			editable,
 			eventStartEditable,
 			eventDurationEditable,
 			eventResizableFromStart,
+			eventConstraint,
+			selectConstraint,
 			eventAllow,
 			eventSpacing,
 			eventHeight,
@@ -217,7 +194,6 @@ const useCalendarContextValue = (
 			hideNonBusinessHours,
 			slotMinTime,
 			slotMaxTime,
-			hideExportButton,
 			hiddenDays,
 			slotDuration,
 			snapDuration,
@@ -241,11 +217,12 @@ const useCalendarContextValue = (
 		timezone,
 		disableCellClick,
 		disableEventClick,
-		disableDragAndDrop,
 		editable,
 		eventStartEditable,
 		eventDurationEditable,
 		eventResizableFromStart,
+		eventConstraint,
+		selectConstraint,
 		eventAllow,
 		eventSpacing,
 		eventHeight,
@@ -269,7 +246,6 @@ const useCalendarContextValue = (
 		hideNonBusinessHours,
 		slotMinTime,
 		slotMaxTime,
-		hideExportButton,
 		hiddenDays,
 		slotDuration,
 		snapDuration,
@@ -286,6 +262,9 @@ const useCalendarContextValue = (
 
 export const CalendarProvider: FC<CalendarProviderProps> = ({
 	children,
+	unstyled,
+	slotProps,
+	components,
 	...props
 }) => {
 	const contextValue = useCalendarContextValue(props)
@@ -296,8 +275,14 @@ export const CalendarProvider: FC<CalendarProviderProps> = ({
 	)
 
 	return (
-		<CalendarContext.Provider value={contextValue}>
-			<CalendarCellProvider>{wrappedChildren}</CalendarCellProvider>
-		</CalendarContext.Provider>
+		<CalendarThemeProvider
+			components={components}
+			slotProps={slotProps}
+			unstyled={unstyled}
+		>
+			<CalendarContext.Provider value={contextValue}>
+				<CalendarCellProvider>{wrappedChildren}</CalendarCellProvider>
+			</CalendarContext.Provider>
+		</CalendarThemeProvider>
 	)
 }

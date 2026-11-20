@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test'
+import { toUtcIso } from '@ilamy/utils/temporal'
 import { type RawCell, readCell } from './read-cell'
 import { getCellBounds, snapCellToPoint } from './snap-cell'
 
@@ -44,10 +45,7 @@ const readSnapCell = (
 	return cell
 }
 
-const span = (cell: RawCell) => [
-	cell.start.toISOString(),
-	cell.end.toISOString(),
-]
+const span = (cell: RawCell) => [toUtcIso(cell.start), toUtcIso(cell.end)]
 
 describe('snapCellToPoint', () => {
 	it.each([
@@ -113,7 +111,7 @@ describe('snapCellToPoint', () => {
 		const top = snapCellToPoint(cell, { clientX: 210, clientY: 100 })
 		const bottom = snapCellToPoint(cell, { clientX: 210, clientY: 219 })
 
-		expect([top.start.toISOString(), bottom.start.toISOString()]).toEqual([
+		expect([toUtcIso(top.start), toUtcIso(bottom.start)]).toEqual([
 			'2025-03-12T09:00:00.000Z',
 			'2025-03-12T09:45:00.000Z',
 		])

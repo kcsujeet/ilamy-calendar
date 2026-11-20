@@ -48,23 +48,6 @@ Add `@source` pointing at the ilamy dist folder so Tailwind v4 scans and generat
 import './index.css'
 ```
 
-### 4. Dayjs Plugins
-
-Configure dayjs with the required plugins in your component:
-
-```tsx
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
-
-dayjs.extend(utc)
-dayjs.extend(timezone)
-dayjs.extend(isSameOrAfter)
-dayjs.extend(isSameOrBefore)
-```
-
 ## Getting Started
 
 1. **Install dependencies:**
@@ -89,7 +72,7 @@ bun run dev
 vite/
 ├── src/
 │   ├── components/
-│   │   └── Calendar.tsx     # Calendar component with dayjs setup
+│   │   └── Calendar.tsx     # Calendar component
 │   ├── App.tsx              # Root app component
 │   ├── main.tsx             # Entry point
 │   └── index.css            # Global styles with Tailwind v4 + @source

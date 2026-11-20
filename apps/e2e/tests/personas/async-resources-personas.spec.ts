@@ -353,7 +353,11 @@ test.describe('persona 3: planner dragging while resources reload', () => {
 		await open(page, {
 			view: 'month',
 			orientation: 'horizontal',
-			settings: { resourcesFetch: 'delayed', fetchDelay: 200 },
+			settings: {
+				resourcesFetch: 'delayed',
+				fetchDelay: 200,
+				editable: 'true',
+			},
 		})
 		const month = await (async () => {
 			await expect(new ResourceAxis(page).resource('Room B')).toBeVisible()
@@ -382,7 +386,11 @@ test.describe('persona 3: planner dragging while resources reload', () => {
 		await open(page, {
 			view: 'month',
 			orientation: 'horizontal',
-			settings: { resourcesFetch: 'delayed', fetchDelay: 150 },
+			settings: {
+				resourcesFetch: 'delayed',
+				fetchDelay: 150,
+				editable: 'true',
+			},
 		})
 		const axis = new ResourceAxis(page)
 		await expect(axis.resource('Room B')).toBeVisible()
@@ -427,7 +435,11 @@ test.describe('persona 3: planner dragging while resources reload', () => {
 		await open(page, {
 			view: 'month',
 			orientation: 'horizontal',
-			settings: { resourcesFetch: 'delayed', fetchDelay: 150 },
+			settings: {
+				resourcesFetch: 'delayed',
+				fetchDelay: 150,
+				editable: 'true',
+			},
 		})
 		const axis = new ResourceAxis(page)
 		await expect(axis.resource('Room B')).toBeVisible()

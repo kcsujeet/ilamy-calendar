@@ -13,10 +13,7 @@
 	"dependencies": {
 		"@ilamy/calendar": "workspace:*",
 		"react": "^19.2.0",
-		"react-dom": "^19.2.0",
-		"@ilamy/calendar-agenda": "workspace:*",
-		"@ilamy/calendar-recurrence": "workspace:*",
-		"@ilamy/calendar-drag-to-create": "workspace:*"
+		"react-dom": "^19.2.0"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.63.0",

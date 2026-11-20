@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import { parseDate, type ZonedDate } from '@ilamy/utils/temporal'
 import { renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import {
@@ -9,6 +9,14 @@ import {
 } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import { plainSpaces } from '@/testing/plain-spaces'
 import { useDateTimeFormatters } from './use-date-time-formatters'
+
+const mustParse = (iso: string, zone = 'UTC'): ZonedDate => {
+	const parsed = parseDate(iso, zone)
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
 
 const renderFormatters = (props: Partial<CalendarProviderProps> = {}) => {
 	const wrapper = ({ children }: { children: ReactNode }) => (
@@ -33,12 +41,12 @@ const renderFormattersHook = (
 const mkEvent = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
 	id: 'e1',
 	title: 'Standup',
-	start: dayjs('2025-03-12T09:30:00.000Z').tz('UTC'),
-	end: dayjs('2025-03-12T10:30:00.000Z').tz('UTC'),
+	start: '2025-03-12T09:30:00.000Z',
+	end: '2025-03-12T10:30:00.000Z',
 	...extra,
 })
 
-const d = (iso: string) => dayjs(iso)
+const d = (iso: string) => mustParse(iso, 'UTC')
 
 describe('useDateTimeFormatters', () => {
 	describe('formatDateRange', () => {
@@ -64,14 +72,14 @@ describe('useDateTimeFormatters', () => {
 
 		it('uses the calendar timezone so dates near midnight do not shift days', () => {
 			const fmt = renderFormattersHook({ timezone: 'America/Los_Angeles' })
-			const start = dayjs.tz('2026-04-26T00:30:00', 'America/Los_Angeles')
-			const end = dayjs.tz('2026-05-02T23:30:00', 'America/Los_Angeles')
+			const start = mustParse('2026-04-26T00:30:00', 'America/Los_Angeles')
+			const end = mustParse('2026-05-02T23:30:00', 'America/Los_Angeles')
 			expect(fmt(start, end)).toBe('Apr 26 – May 2')
 		})
 	})
 
 	describe('formatSlotHeader', () => {
-		const nineAm = dayjs('2025-03-12T09:00:00.000Z').tz('UTC')
+		const nineAm = mustParse('2025-03-12T09:00:00.000Z', 'UTC')
 
 		it('keeps the existing label when no format is set', () => {
 			expect(renderFormatters().formatSlotHeader(nineAm)).toBe('9 AM')
@@ -140,7 +148,7 @@ describe('useDateTimeFormatters', () => {
 	})
 
 	describe('formatDayHeader', () => {
-		const wednesday = dayjs('2025-03-12T09:00:00.000Z').tz('UTC')
+		const wednesday = mustParse('2025-03-12T09:00:00.000Z', 'UTC')
 
 		it('keeps the short weekday when no format is set', () => {
 			expect(renderFormatters().formatDayHeader(wednesday)).toBe('Wed')
@@ -163,17 +171,30 @@ describe('useDateTimeFormatters', () => {
 	})
 
 	describe('formatEventTime', () => {
-		it('shows no time by default, as the bar always did', () => {
-			expect(renderFormatters().formatEventTime(mkEvent())).toBeUndefined()
+		it('defaults to start time only in month view and start–end range in week/day views (D9)', () => {
+			expect(
+				plainSpaces(
+					renderFormatters({ initialView: 'month' }).formatEventTime(mkEvent())
+				)
+			).toBe('9:30 AM')
+			expect(
+				plainSpaces(
+					renderFormatters({ initialView: 'week' }).formatEventTime(mkEvent())
+				)
+			).toBe('9:30 – 10:30 AM')
 		})
 
 		it('shows the start time when displayEventTime is on', () => {
-			const { formatEventTime } = renderFormatters({ displayEventTime: true })
+			const { formatEventTime } = renderFormatters({
+				initialView: 'month',
+				displayEventTime: true,
+			})
 			expect(plainSpaces(formatEventTime(mkEvent()))).toBe('9:30 AM')
 		})
 
 		it('shows the start time when only eventTimeFormat is given', () => {
 			const { formatEventTime } = renderFormatters({
+				initialView: 'month',
 				eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
 			})
 			expect(formatEventTime(mkEvent())).toBe('09:30')
@@ -212,7 +233,7 @@ describe('useDateTimeFormatters', () => {
 				hour: '2-digit',
 				minute: '2-digit',
 				timeZone: 'UTC',
-			}).formatRange(event.start.toDate(), event.end.toDate())
+			}).formatRange(new Date(event.start), new Date(event.end))
 			expect(formatEventTime(event)).toBe(expected)
 			expect(expected).not.toContain(' – ')
 		})
@@ -223,8 +244,8 @@ describe('useDateTimeFormatters', () => {
 				eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
 			})
 			const overnight = mkEvent({
-				start: dayjs('2025-03-12T21:30:00.000Z').tz('UTC'),
-				end: dayjs('2025-03-13T01:00:00.000Z').tz('UTC'),
+				start: '2025-03-12T21:30:00.000Z',
+				end: '2025-03-13T01:00:00.000Z',
 			})
 			expect(plainSpaces(formatEventTime(overnight))).toBe('21:30 – 01:00')
 		})
@@ -240,6 +261,7 @@ describe('useDateTimeFormatters', () => {
 
 		it('lets the locale decide 12 or 24 hour when timeFormat was not passed', () => {
 			const { formatEventTime } = renderFormatters({
+				initialView: 'month',
 				locale: 'de-DE',
 				eventTimeFormat: { hour: '2-digit', minute: '2-digit' },
 			})
@@ -248,6 +270,7 @@ describe('useDateTimeFormatters', () => {
 
 		it('writes the time on the calendar timezone clock', () => {
 			const { formatEventTime } = renderFormatters({
+				initialView: 'month',
 				timezone: 'Asia/Tokyo',
 				eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
 			})
@@ -256,8 +279,8 @@ describe('useDateTimeFormatters', () => {
 	})
 
 	describe('formatTitle', () => {
-		const start = dayjs('2025-03-12T09:00:00.000Z')
-		const end = dayjs('2025-03-12T09:00:00.000Z')
+		const start = mustParse('2025-03-12T09:00:00.000Z', 'UTC')
+		const end = mustParse('2025-03-12T09:00:00.000Z', 'UTC')
 
 		it('is undefined when no format is set, so the built-in title stays', () => {
 			expect(renderFormatters().formatTitle(start, end)).toBeUndefined()
@@ -274,7 +297,7 @@ describe('useDateTimeFormatters', () => {
 			const { formatTitle } = renderFormatters({
 				titleFormat: { month: 'long', day: 'numeric' },
 			})
-			const rangeEnd = dayjs('2025-03-15T09:00:00.000Z')
+			const rangeEnd = mustParse('2025-03-15T09:00:00.000Z', 'UTC')
 			expect(plainSpaces(formatTitle(start, rangeEnd))).toBe('March 12 – 15')
 		})
 	})

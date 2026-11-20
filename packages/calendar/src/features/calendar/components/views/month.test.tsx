@@ -1,6 +1,15 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { beforeEach, describe, expect, test } from 'bun:test'
 import type { CalendarEvent, Resource } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	dayKey,
+	endOf,
+	formatDate,
+	now,
+	parseDate,
+	startOf,
+	toOffsetIso,
+	withTime,
+} from '@ilamy/utils/temporal'
 import {
 	cleanup,
 	fireEvent,
@@ -8,6 +17,7 @@ import {
 	screen,
 	within,
 } from '@testing-library/react'
+import type React from 'react'
 import { CalendarDndContext } from '@/features/calendar/components/drag-and-drop/calendar-dnd-context'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
@@ -16,13 +26,11 @@ import { MonthView } from '@/testing/view-harnesses'
 
 const weekDays: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-// Mock events for testing
 const mockEvents: CalendarEvent[] = generateMockEvents()
-const firstDayOfWeek = 0 // Default to Sunday
-const dayMaxEvents = 3 // Default max events per day
-let locale = 'en' // Default locale
+const firstDayOfWeek = 0
+const dayMaxEvents = 3
+let locale = 'en'
 
-// Test component to capture context values
 const TestWrapper = ({
 	children,
 	testId,
@@ -31,11 +39,12 @@ const TestWrapper = ({
 	testId: string
 }) => {
 	const { currentDate } = useSmartCalendarContext()
+	const parsed = parseDate(currentDate, 'UTC')
 	return (
 		<>
-			<div data-testid={`${testId}-year`}>{currentDate.year()}</div>
-			<div data-testid={`${testId}-month`}>{currentDate.month()}</div>
-			<div data-testid={`${testId}-date`}>{currentDate.date()}</div>
+			<div data-testid={`${testId}-year`}>{parsed?.year}</div>
+			<div data-testid={`${testId}-month`}>{parsed?.month}</div>
+			<div data-testid={`${testId}-date`}>{parsed?.day}</div>
 			{children}
 		</>
 	)
@@ -49,6 +58,7 @@ const renderMonthView = (props = {}) => {
 			events={mockEvents}
 			firstDayOfWeek={firstDayOfWeek}
 			locale={locale}
+			timezone="UTC"
 			{...props}
 		>
 			<TestWrapper testId={testId}>
@@ -59,78 +69,53 @@ const renderMonthView = (props = {}) => {
 }
 
 describe('MonthView', () => {
-	/*
-	 * #246. The grid is built by stepping a week at a time, and both the step and
-	 * the week-start calculation carried the receiver's UTC offset forward rather
-	 * than recomputing it. Across an autumn transition the anchor landed an hour
-	 * early, in the previous week, so the grid repeated one week and dropped
-	 * another. An event in the dropped week rendered nowhere.
-	 */
 	describe('across a DST transition', () => {
-		afterEach(() => {
-			dayjs.tz.setDefault()
-		})
-
 		test('renders 42 distinct days and the events in every week', () => {
-			cleanup() // the suite's beforeEach already rendered a default grid
-			dayjs.tz.setDefault('Europe/London')
-
-			// October 2025: the UK falls back on the 26th. Before the fix the grid
-			// repeated 26 October to 1 November and dropped the week after it.
+			cleanup()
 			const inTheDroppedWeek: CalendarEvent[] = [
 				{
 					id: 'dropped',
 					title: 'Event in the dropped week',
-					start: dayjs('2025-11-04T10:00:00.000Z'),
-					end: dayjs('2025-11-04T11:00:00.000Z'),
+					start: '2025-11-04T10:00:00+00:00',
+					end: '2025-11-04T11:00:00+00:00',
 				},
 			]
 			renderMonthView({
 				events: inTheDroppedWeek,
 				firstDayOfWeek: 1,
-				initialDate: dayjs('2025-10-15T12:00:00.000Z'),
+				initialDate: '2025-10-15T12:00:00Z',
 				initialView: 'month',
 				timezone: 'Europe/London',
 			})
 
 			const cells = screen.getAllByTestId(/^day-cell-/)
 			const dates = cells.map((cell) =>
-				cell.getAttribute('data-start')?.slice(0, 10)
+				cell.getAttribute('data-testid')?.replace('day-cell-', '')
 			)
 
 			expect(new Set(dates).size).toBe(42)
 			expect(screen.getByText('Event in the dropped week')).toBeInTheDocument()
 		})
 	})
-	beforeEach(() => {
-		// Reset the dayjs locale to default before each test
-		locale = 'en'
 
-		// render the MonthView with default props
+	beforeEach(() => {
+		cleanup()
+		locale = 'en'
 		renderMonthView()
 	})
 
 	test('renders calendar structure with proper layout', () => {
-		// Should have the main container structure
-		const container = screen.getByTestId('horizontal-grid-scroll')
-		expect(container).toBeInTheDocument()
-
-		// Should have weekday header structure
-		const headerContainer = screen.getByTestId('month-header')
-		expect(headerContainer).toBeInTheDocument()
-
-		// Should have calendar grid structure
-		const gridContainer = screen.getByTestId('horizontal-grid-body')
-		expect(gridContainer).toBeInTheDocument()
+		expect(screen.getByTestId('horizontal-grid-scroll')).toBeInTheDocument()
+		expect(screen.getByTestId('month-header')).toBeInTheDocument()
+		expect(screen.getByTestId('horizontal-grid-body')).toBeInTheDocument()
 	})
 
 	test('renders MonthView with correct weekday headers starting from Sunday', () => {
-		// Check that all weekday headers are present using test IDs
-		weekDays.forEach((day) => {
+		for (const day of weekDays) {
 			expect(
 				screen.getByTestId(`month-header-weekday-${day.toLowerCase()}`)
 			).toBeInTheDocument()
-		})
+		}
 	})
 
 	test('animates the weekday label only, leaving the header cell static', () => {
@@ -140,31 +125,24 @@ describe('MonthView', () => {
 		const cell = screen.getByTestId('month-header-weekday-mon')
 		const animated = cell.querySelector('.animate-in')
 
-		// The cell keeps its background and layout; only the text inside enters,
-		// matching the year view. No stagger.
 		expect(cell.className).not.toContain('animate-in')
 		expect(animated).not.toBeNull()
 		expect(animated?.textContent).toBe('Mon')
 		expect((animated as HTMLElement).style.animationDelay).toBe('0s')
-
-		// The cell centers the wrapper. Without this the inline-block wrapper
-		// sits on the text baseline and the label rides high in the row.
 		expect(cell.className).toContain('items-center')
 	})
 
 	test('renders MonthView with correct weekday headers starting from Monday', () => {
-		cleanup() // Clean up previous renders
-		const { container } = renderMonthView({ firstDayOfWeek: 1 }) // Set Monday as first day of week
+		cleanup()
+		const { container } = renderMonthView({ firstDayOfWeek: 1 })
 
-		// When starting from Monday, all weekdays should still be present
-		weekDays.forEach((day) => {
+		for (const day of weekDays) {
 			expect(
 				screen.getByTestId(`month-header-weekday-${day.toLowerCase()}`)
 			).toBeInTheDocument()
-		})
+		}
 
 		const monthHeader = container.querySelector('[data-testid="month-header"]')
-		// first day of week should be Monday
 		if (!monthHeader) throw new Error('monthHeader not found')
 		expect(monthHeader.firstChild).toHaveAttribute(
 			'data-testid',
@@ -173,129 +151,109 @@ describe('MonthView', () => {
 	})
 
 	test('displays current month structure correctly', () => {
-		// Check that the current month's structure is displayed
-		const currentMonth = dayjs()
-		const firstDayOfMonth = currentMonth.startOf('month').date()
-		const lastDayOfMonth = currentMonth.endOf('month').date()
+		const currentMonth = now('UTC')
+		const firstDayOfMonth = startOf(currentMonth, 'month').day
+		const lastDayOfMonth = endOf(currentMonth, 'month').day
 
-		// Should find day 1 and the last day of the current month
-		// Using getAllByText since dates might appear multiple times
-		const firstDayElements = screen.getAllByText(firstDayOfMonth.toString())
-		const lastDayElements = screen.getAllByText(lastDayOfMonth.toString())
-
-		expect(firstDayElements.length).toBeGreaterThan(0)
-		expect(lastDayElements.length).toBeGreaterThan(0)
+		expect(screen.getAllByText(String(firstDayOfMonth)).length).toBeGreaterThan(
+			0
+		)
+		expect(screen.getAllByText(String(lastDayOfMonth)).length).toBeGreaterThan(
+			0
+		)
 	})
 
 	test('initializes with specified initial date - different month', () => {
 		cleanup()
-		const initialDate = dayjs('2025-06-15T10:00:00.000Z')
-		renderMonthView({ initialDate })
+		renderMonthView({ initialDate: '2025-06-15T10:00:00Z' })
 
-		// Should have currentDate set to June 2025 (month 5, 0-indexed)
 		expect(screen.getByTestId('current-date-year')).toHaveTextContent('2025')
-		expect(screen.getByTestId('current-date-month')).toHaveTextContent('5')
+		expect(screen.getByTestId('current-date-month')).toHaveTextContent('6')
 		expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
-
-		// Should have the specific date cell for June 15, 2025
-		const june15Cell = screen.getByTestId('day-cell-2025-06-15')
-		expect(june15Cell).toBeInTheDocument()
+		expect(screen.getByTestId('day-cell-2025-06-15')).toBeInTheDocument()
 	})
 
 	test('initializes with specified initial date - past date', () => {
 		cleanup()
-		const initialDate = dayjs('2020-01-15T10:00:00.000Z')
-		renderMonthView({ initialDate })
+		renderMonthView({ initialDate: '2020-01-15T10:00:00Z' })
 
-		// Should have currentDate set to January 2020 (month 0)
 		expect(screen.getByTestId('current-date-year')).toHaveTextContent('2020')
-		expect(screen.getByTestId('current-date-month')).toHaveTextContent('0')
+		expect(screen.getByTestId('current-date-month')).toHaveTextContent('1')
 		expect(screen.getByTestId('current-date-date')).toHaveTextContent('15')
-
-		// Should have the specific date cell for January 15, 2020
-		const jan15Cell = screen.getByTestId('day-cell-2020-01-15')
-		expect(jan15Cell).toBeInTheDocument()
+		expect(screen.getByTestId('day-cell-2020-01-15')).toBeInTheDocument()
 	})
 
 	test('initializes with specified initial date - future date', () => {
 		cleanup()
-		const initialDate = dayjs('2030-12-25T10:00:00.000Z')
-		renderMonthView({ initialDate })
+		renderMonthView({ initialDate: '2030-12-25T10:00:00Z' })
 
-		// Should have currentDate set to December 2030 (month 11)
 		expect(screen.getByTestId('current-date-year')).toHaveTextContent('2030')
-		expect(screen.getByTestId('current-date-month')).toHaveTextContent('11')
+		expect(screen.getByTestId('current-date-month')).toHaveTextContent('12')
 		expect(screen.getByTestId('current-date-date')).toHaveTextContent('25')
-
-		// Should have the specific date cell for December 25, 2030
-		const dec25Cell = screen.getByTestId('day-cell-2030-12-25')
-		expect(dec25Cell).toBeInTheDocument()
+		expect(screen.getByTestId('day-cell-2030-12-25')).toBeInTheDocument()
 	})
 
 	test('defaults to current month when no initial date provided', () => {
 		cleanup()
-		const today = dayjs()
+		const today = now('UTC')
 		renderMonthView()
 
-		// Should have currentDate set to today
 		expect(screen.getByTestId('current-date-year')).toHaveTextContent(
-			today.year().toString()
+			String(today.year)
 		)
 		expect(screen.getByTestId('current-date-month')).toHaveTextContent(
-			today.month().toString()
+			String(today.month)
 		)
 		expect(screen.getByTestId('current-date-date')).toHaveTextContent(
-			today.date().toString()
+			String(today.day)
 		)
-
-		// Should have the specific date cell for today
-		const todayCell = screen.getByTestId(
-			`day-cell-${today.format('YYYY-MM-DD')}`
-		)
-		expect(todayCell).toBeInTheDocument()
+		expect(screen.getByTestId(`day-cell-${dayKey(today)}`)).toBeInTheDocument()
 	})
 
 	test('opens all-events dialog listing every event of the day via the more link', () => {
 		cleanup()
-		const day = dayjs('2025-06-10T00:00:00.000Z')
+		const day = parseDate('2025-06-10T00:00:00Z', 'UTC')
+		if (!day) throw new Error('Invalid date')
 		const titles = ['Standup', 'Design Sync', 'Code Review', 'Retro']
 		const dayEvents: CalendarEvent[] = titles.map((title, index) => ({
 			id: `dialog-event-${index}`,
 			title,
-			start: day.hour(9 + index),
-			end: day.hour(10 + index),
+			start: toOffsetIso(withTime(day, { hour: 9 + index })),
+			end: toOffsetIso(withTime(day, { hour: 10 + index })),
 		}))
 
-		renderMonthView({ events: dayEvents, initialDate: day })
+		renderMonthView({ events: dayEvents, initialDate: toOffsetIso(day) })
 
-		// dayMaxEvents is 3, so one event overflows into the more link
 		fireEvent.click(screen.getByText('+1 more'))
 
 		const dialog = screen.getByRole('dialog')
 		expect(
-			within(dialog).getByText(day.format('MMMM D, YYYY'))
+			within(dialog).getByText(
+				formatDate(
+					day,
+					{ month: 'long', day: 'numeric', year: 'numeric' },
+					'en'
+				)
+			)
 		).toBeInTheDocument()
-		titles.forEach((title) => {
+		for (const title of titles) {
 			expect(within(dialog).getByText(title)).toBeInTheDocument()
-		})
+		}
 	})
 
-	// The month grid pads its first and last rows with days from the
-	// neighbouring months so every week is seven cells wide. Those cells are
-	// context, not part of the month being edited, and stay disabled. Pinned
-	// because the same check used to run in week and day view, where the days
-	// are not padding at all.
-	test('disables the days padded in from the neighbouring months', () => {
+	// In v4.0 (4.0.5), month padding days shade via data-non-business="true"
+	// while remaining clickable (data-disabled="false").
+	test('shades the days padded in from the neighbouring months without disabling them (4.0.5)', () => {
 		cleanup()
-		// March 2025 starts on a Saturday, so the first row is padded with
-		// 23-28 February and the last with 1-5 April.
-		renderMonthView({ initialDate: dayjs('2025-03-15T00:00:00.000Z') })
+		renderMonthView({ initialDate: '2025-03-15T00:00:00Z' })
 
 		const cellOn = (date: string) => screen.getByTestId(`day-cell-${date}`)
 
-		expect(cellOn('2025-02-26').dataset.disabled).toBe('true')
-		expect(cellOn('2025-04-02').dataset.disabled).toBe('true')
-		// A day the month actually owns stays interactive.
+		expect(cellOn('2025-02-26').dataset.nonBusiness).toBe('true')
+		expect(cellOn('2025-02-26').dataset.disabled).toBe('false')
+		expect(cellOn('2025-04-02').dataset.nonBusiness).toBe('true')
+		expect(cellOn('2025-04-02').dataset.disabled).toBe('false')
+		expect(cellOn('2025-03-12').dataset.nonBusiness).toBeUndefined()
 		expect(cellOn('2025-03-12').dataset.disabled).toBe('false')
 	})
 })
@@ -313,6 +271,7 @@ const renderResourceMonthHorizontal = (props = {}) =>
 			initialView="month"
 			orientation="horizontal"
 			resources={resourceList}
+			timezone="UTC"
 			{...props}
 		>
 			<CalendarDndContext>
@@ -322,24 +281,21 @@ const renderResourceMonthHorizontal = (props = {}) =>
 	)
 
 describe('ResourceMonthHorizontal', () => {
-	// Regression for #205: the resource month (horizontal) header must highlight
-	// today, the same way the resource week header does. Only the header renders a
-	// today-aware DayLabel in this arrangement, so exactly one cell is highlighted.
 	test('highlights today in the day header', () => {
 		cleanup()
-		const today = dayjs()
+		const today = now('UTC')
 
-		const { container } = renderResourceMonthHorizontal({ initialDate: today })
+		const { container } = renderResourceMonthHorizontal({
+			initialDate: toOffsetIso(today),
+		})
 
 		const highlighted = container.querySelectorAll('[data-today="true"]')
 		expect(highlighted).toHaveLength(1)
-		expect(highlighted.item(0)).toHaveTextContent(today.format('D'))
+		expect(highlighted.item(0)).toHaveTextContent(String(today.day))
 	})
 
 	describe('week numbers', () => {
-		// January 2023 opens on Sunday the 1st: the grid's six rows start on
-		// 1, 8, 15, 22 and 29 January and 5 February.
-		const january2023 = dayjs('2023-01-15T12:00:00.000Z')
+		const january2023 = '2023-01-15T12:00:00Z'
 		const weekNumbersShown = () =>
 			screen.queryAllByTestId('week-number').map((node) => node.textContent)
 

@@ -1,20 +1,19 @@
-import type {
-	CalendarEvent,
-	Dayjs,
-	EventSegment,
-	TimeFormat,
-} from '@ilamy/calendar'
+import type { CalendarEvent, EventSegment } from '@ilamy/calendar'
 import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { cn } from '@ilamy/ui/lib/utils'
+import {
+	formatDate,
+	parseDate,
+	startOf,
+	subtract,
+	wallClockDiff,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 
 interface AgendaEventRowProps {
 	event: CalendarEvent
-	/** The day this row appears under (an all-day event renders one row per day). */
-	day: Dayjs
+	day: ZonedDate
 }
-
-const getTimePattern = (format: TimeFormat): string =>
-	format === '24-hour' ? 'HH:mm' : 'h:mm A'
 
 interface AgendaEventRowContentProps {
 	event: CalendarEvent
@@ -22,11 +21,6 @@ interface AgendaEventRowContentProps {
 	dayCounter: string | null
 }
 
-/**
- * The consumer's `renderEvent` when there is one, otherwise the title and day
- * counter. FullCalendar's list view hands only its title cell to
- * `eventContent` and keeps the time and dot (ListViewEventRow.tsx, v6.1.19).
- */
 const AgendaEventRowContent = ({
 	event,
 	segment,
@@ -49,31 +43,36 @@ const AgendaEventRowContent = ({
 }
 
 export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
-	const { t, timeFormat, onEventClick } = useIlamyCalendarContext()
+	const { t, timeFormat, currentLocale, onEventClick } =
+		useIlamyCalendarContext()
+	const zone = day.timeZoneId
+	const start = parseDate(event.start, zone) ?? day
+	const end = parseDate(event.end, zone) ?? start
 
-	const timePattern = getTimePattern(timeFormat)
-
-	const eventStartDay = event.start.startOf('day')
-	// `end` is exclusive (#248), so the count runs to the last day the event
-	// COVERS. Taken from the raw end, a conventionally stored three-day event read
-	// "Day 1/4" and a one-day event read "Day 1/2".
-	const lastCoveredDay = event.end.subtract(1, 'millisecond').startOf('day')
-	const coveredDayCount = lastCoveredDay.diff(eventStartDay, 'day') + 1
-	// A zero-length event at midnight ends before its own start day, yet it is
-	// listed on that day, so it covers one day, not zero.
+	const eventStartDay = startOf(start, 'day')
+	const lastCoveredDay = startOf(subtract(end, 1, 'millisecond'), 'day')
+	const coveredDayCount =
+		Math.round(wallClockDiff(lastCoveredDay, eventStartDay, 'day')) + 1
 	const totalDays = Math.max(coveredDayCount, 1)
-	const dayIndex = day.startOf('day').diff(eventStartDay, 'day') + 1
+	const dayIndex =
+		Math.round(wallClockDiff(startOf(day, 'day'), eventStartDay, 'day')) + 1
 	const isMultiDay = totalDays > 1
 	const isFirstDay = dayIndex === 1
 	const isLastDay = dayIndex === totalDays
 
-	// FullCalendar ListEvent.tsx:21-22: all-day events, and days that hold
-	// neither the real start nor the real end, read "all day"; the first day
-	// reads the start time and the last day the end time.
 	const isAllDayLabel =
 		Boolean(event.allDay) || (isMultiDay && !isFirstDay && !isLastDay)
-	const edgeTime = isMultiDay && isLastDay ? event.end : event.start
-	const timeLabel = isAllDayLabel ? t('allDay') : edgeTime.format(timePattern)
+	const edgeTime = isMultiDay && isLastDay ? end : start
+	const formattedTime = formatDate(
+		edgeTime,
+		{
+			hour: 'numeric',
+			minute: '2-digit',
+			hour12: timeFormat === '12-hour',
+		},
+		currentLocale
+	)
+	const timeLabel = isAllDayLabel ? t('allDay') : formattedTime
 	const dayLabel = `(${t('day')} ${dayIndex}/${totalDays})`
 	const dayCounter = isMultiDay ? dayLabel : null
 	const segment: EventSegment = { isStart: isFirstDay, isEnd: isLastDay }

@@ -8,29 +8,46 @@ import type {
 } from '@ilamy/calendar'
 import type { AgendaWindow } from '@ilamy/calendar/plugins/agenda'
 
-// The single react-hook-form shape backing the playground settings panel. Every
-// control in CalendarSettings reads/writes one of these fields.
+export type FrameworkId = 'react' | 'vue' | 'svelte' | 'solid' | 'angular'
+export type ThemePreset = 'tailwind' | 'mui' | 'stylex' | 'unstyled'
+export type ThemeColorMode = 'auto' | 'light' | 'dark'
+export type ThemeAccent = 'indigo' | 'emerald' | 'rose' | 'amber'
+export type CalendarMode = 'regular' | 'resource' | 'multi-zone'
+
+// The single react-hook-form shape backing the playground settings panel.
 export interface PlaygroundSettings {
-	// Calendar type + resource axis
-	calendarType: 'regular' | 'resource'
+	// Active UI framework runtime (v4.0)
+	framework: FrameworkId
+
+	// Calendar mode + resource axis
+	calendarType: CalendarMode
 	orientation: 'horizontal' | 'vertical'
 	weekViewGranularity: 'hourly' | 'daily'
+
+	// Design system & theme adapters (v4.0)
+	themePreset: ThemePreset
+	themeMode: ThemeColorMode
+	themeAccent: ThemeAccent
+	useCustomSlotProps: boolean
+
+	// Opt-in plugins (v4.0)
+	enableRecurrencePlugin: boolean
+	enableAgendaPlugin: boolean
+	enableDragToCreatePlugin: boolean
+	enableYearPlugin: boolean
+	enableIcalPlugin: boolean
 
 	// View + date
 	firstDayOfWeek: WeekDays
 	initialView: CalendarView
 	agendaWindow: AgendaWindow
-	// ISO string (or undefined for "today"). Stored as a string rather than a
-	// Dayjs because react-hook-form's typing can't resolve the Dayjs class.
 	initialDate: string | undefined
-	// Bumped each time the Initial Date control is used. The calendar reads
-	// `initialDate` only on mount, so this remounts it (navigation writes
-	// `initialDate` too, but must not remount).
 	initialDateRevision: number
 
-	// Locale / format
+	// Locale / format / multi-zone
 	locale: string
 	timezone: string
+	secondaryTimezone: string
 	timeFormat: TimeFormat
 
 	// Layout / sizing
@@ -39,13 +56,9 @@ export interface PlaygroundSettings {
 	eventHeight: number
 	eventSpacing: number
 	slotDuration: SlotDuration
-	// 0 leaves `snapDuration` unset, so a drop snaps to the slot.
 	snapDuration: SnapDuration | 0
-	// 'HH:mm' bounds of the visible hours. '00:00' and '24:00' show the whole day.
 	slotMinTime: string
 	slotMaxTime: string
-	// 'none' (no auto-scroll) or an ISO-ish 'HH:00:00'. Mapped to undefined for
-	// the calendar's `scrollTime` prop in the display.
 	scrollTime: string
 	stickyViewHeader: boolean
 	scrollToNow: boolean
@@ -54,22 +67,21 @@ export interface PlaygroundSettings {
 	weekends: boolean
 	allDaySlot: boolean
 	nowIndicator: boolean
-	// 'default' leaves `weekNumbers` unset: week headers only. 'show' adds the
-	// month rows, 'hide' removes them all.
 	weekNumbers: 'default' | 'show' | 'hide'
 	weekNumberCalculation: WeekNumberCalculation
-	// Unticked leaves `displayEventTime` / `displayEventEnd` unset.
 	showEventTimes: boolean
 	showEventEnd: boolean
 
-	// Business hours
+	// Business hours & constraints (v4.0)
 	enableBusinessHours: boolean
 	businessHoursDays: WeekDays[]
 	businessHoursStart: number
 	businessHoursEnd: number
 	hideNonBusinessHours: boolean
+	constrainEventsToBusinessHours: boolean
+	constrainSelectToBusinessHours: boolean
 
-	// Custom renderers / behaviors (each toggles a render-prop or callback demo)
+	// Custom renderers
 	useCustomEventRenderer: boolean
 	useCustomResourceRenderer: boolean
 	useCustomCalendarHeader: boolean
@@ -85,15 +97,24 @@ export interface PlaygroundSettings {
 	useEventLifecycleCallbacks: boolean
 	disableCellClick: boolean
 	disableEventClick: boolean
-	// Maps to `editable={false}`.
 	disableDragAndDrop: boolean
 	eventResizableFromStart: boolean
 }
 
 export const defaultSettings: PlaygroundSettings = {
+	framework: 'react',
 	calendarType: 'regular',
 	orientation: 'horizontal',
 	weekViewGranularity: 'hourly',
+	themePreset: 'tailwind',
+	themeMode: 'auto',
+	themeAccent: 'indigo',
+	useCustomSlotProps: false,
+	enableRecurrencePlugin: true,
+	enableAgendaPlugin: true,
+	enableDragToCreatePlugin: true,
+	enableYearPlugin: true,
+	enableIcalPlugin: true,
 	firstDayOfWeek: 'sunday',
 	initialView: 'month',
 	agendaWindow: 'week',
@@ -101,6 +122,7 @@ export const defaultSettings: PlaygroundSettings = {
 	initialDateRevision: 0,
 	locale: 'en',
 	timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+	secondaryTimezone: 'Asia/Tokyo',
 	timeFormat: '12-hour',
 	calendarHeight: '600px',
 	dayMaxEvents: 3,
@@ -120,17 +142,17 @@ export const defaultSettings: PlaygroundSettings = {
 	nowIndicator: true,
 	weekNumbers: 'default',
 	weekNumberCalculation: 'local',
-	showEventTimes: false,
+	showEventTimes: true,
 	showEventEnd: false,
-	// Off, as FullCalendar's `businessHours` is by default. In 3.x business hours
-	// refuse clicks, moves and resizes on closed cells, so on by default the
-	// demo's events would not budge on a weekend or after hours. Spec:
-	// apps/e2e/demo-tests/demo-defaults.spec.ts.
+	// Off by default; when enabled in v4.0 business hours shade non-business
+	// cells without blocking drops unless eventConstraint/selectConstraint is on.
 	enableBusinessHours: false,
 	businessHoursDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
 	businessHoursStart: 9,
 	businessHoursEnd: 17,
 	hideNonBusinessHours: false,
+	constrainEventsToBusinessHours: false,
+	constrainSelectToBusinessHours: false,
 	useCustomEventRenderer: false,
 	useCustomResourceRenderer: false,
 	useCustomCalendarHeader: false,
@@ -141,7 +163,7 @@ export const defaultSettings: PlaygroundSettings = {
 	useCustomOnDateClick: false,
 	useCustomOnEventClick: false,
 	useCustomOnMoreEventsClick: false,
-	useEventLifecycleCallbacks: false,
+	useEventLifecycleCallbacks: true,
 	disableCellClick: false,
 	disableEventClick: false,
 	disableDragAndDrop: false,

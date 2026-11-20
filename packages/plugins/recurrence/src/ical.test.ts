@@ -1,19 +1,29 @@
 import { describe, expect, it } from 'bun:test'
-import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
-import dayjs from '@ilamy/utils/dayjs'
+import type { CalendarEvent } from '@ilamy/calendar'
+import {
+	parseDate,
+	resolveZone,
+	toDate,
+	toOffsetIso,
+	toUtcIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { RRule, rrulestr } from 'rrule'
 import { recurrenceICalProperties } from './ical'
 
-// All-day dates are wall-clock days of the calendar's zone (the machine's here),
-// so they are built without an offset; a UTC midnight is another day west of UTC.
-const localDay = (day: string, time = '00:00:00.000'): Dayjs =>
-	dayjs(`${day}T${time}`)
+const localDay = (day: string, time = '00:00:00.000'): ZonedDate => {
+	const parsed = parseDate(`${day}T${time}`, resolveZone())
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${day}T${time}`)
+	}
+	return parsed
+}
 
 const timedSeries = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
 	id: 'series',
 	title: 'Stand-up',
-	start: dayjs('2025-03-10T09:00:00.000Z'),
-	end: dayjs('2025-03-10T09:30:00.000Z'),
+	start: '2025-03-10T09:00:00.000Z',
+	end: '2025-03-10T09:30:00.000Z',
 	rrule: {
 		freq: RRule.WEEKLY,
 		dtstart: new Date('2025-03-10T09:00:00.000Z'),
@@ -24,11 +34,11 @@ const timedSeries = (extra: Partial<CalendarEvent> = {}): CalendarEvent => ({
 const allDaySeries = (extra: Partial<CalendarEvent> = {}): CalendarEvent =>
 	timedSeries({
 		allDay: true,
-		start: localDay('2025-03-10'),
-		end: localDay('2025-03-11'),
+		start: toOffsetIso(localDay('2025-03-10')),
+		end: toOffsetIso(localDay('2025-03-11')),
 		rrule: {
 			freq: RRule.WEEKLY,
-			dtstart: localDay('2025-03-10').toDate(),
+			dtstart: toDate(localDay('2025-03-10')),
 		},
 		...extra,
 	})
@@ -39,8 +49,8 @@ describe('recurrenceICalProperties', () => {
 			const event = allDaySeries({
 				rrule: {
 					freq: RRule.WEEKLY,
-					dtstart: localDay('2025-03-10').toDate(),
-					until: localDay('2025-03-23', '23:59:59.999').toDate(),
+					dtstart: toDate(localDay('2025-03-10')),
+					until: toDate(localDay('2025-03-23', '23:59:59.999')),
 				},
 			})
 			expect(recurrenceICalProperties(event)).toEqual([
@@ -67,8 +77,8 @@ describe('recurrenceICalProperties', () => {
 					freq: RRule.WEEKLY,
 					interval: 2,
 					byweekday: [RRule.MO],
-					dtstart: localDay('2025-03-10').toDate(),
-					until: localDay('2025-03-23', '23:59:59.999').toDate(),
+					dtstart: toDate(localDay('2025-03-10')),
+					until: toDate(localDay('2025-03-23', '23:59:59.999')),
 				},
 			})
 			const [line] = recurrenceICalProperties(event)
@@ -86,7 +96,7 @@ describe('recurrenceICalProperties', () => {
 				rrule: {
 					freq: RRule.WEEKLY,
 					count: 3,
-					dtstart: localDay('2025-03-10').toDate(),
+					dtstart: toDate(localDay('2025-03-10')),
 				},
 			})
 			expect(recurrenceICalProperties(event)).toEqual([
@@ -98,13 +108,11 @@ describe('recurrenceICalProperties', () => {
 			const event = allDaySeries({
 				rrule: {
 					freq: RRule.DAILY,
-					dtstart: localDay('2025-03-10').toDate(),
-					until: localDay('2025-03-12', '23:59:59.999').toDate(),
+					dtstart: toDate(localDay('2025-03-10')),
+					until: toDate(localDay('2025-03-12', '23:59:59.999')),
 				},
 			})
 			const [line] = recurrenceICalProperties(event)
-			// rrule.js ignores VALUE=DATE on DTSTART, so the start is given as a
-			// UTC midnight; it reads the DATE UNTIL as that day's midnight.
 			const parsed = rrulestr(`DTSTART:20250310T000000Z\n${line}`)
 			const days = parsed.all().map((date) => date.toISOString().slice(0, 10))
 			expect(days).toEqual(['2025-03-10', '2025-03-11', '2025-03-12'])
@@ -115,8 +123,8 @@ describe('recurrenceICalProperties', () => {
 		it('writes EXDATE as DATE values', () => {
 			const event = allDaySeries({
 				exdates: [
-					localDay('2025-03-17').toISOString(),
-					localDay('2025-03-24').toISOString(),
+					toUtcIso(localDay('2025-03-17')),
+					toUtcIso(localDay('2025-03-24')),
 				],
 			})
 			expect(recurrenceICalProperties(event)).toContain(
@@ -127,7 +135,7 @@ describe('recurrenceICalProperties', () => {
 		it('writes RECURRENCE-ID as a DATE value', () => {
 			const event = allDaySeries({
 				rrule: undefined,
-				recurrenceId: localDay('2025-03-17').toISOString(),
+				recurrenceId: toUtcIso(localDay('2025-03-17')),
 			})
 			expect(recurrenceICalProperties(event)).toEqual([
 				'RECURRENCE-ID;VALUE=DATE:20250317',
@@ -142,6 +150,21 @@ describe('recurrenceICalProperties', () => {
 			const lines = recurrenceICalProperties(event)
 			expect(lines).toContain('EXDATE:20250317T090000Z')
 			expect(lines).toContain('RECURRENCE-ID:20250324T090000Z')
+		})
+
+		it('emits TZID parameter on EXDATE and RECURRENCE-ID when event.timezone is set (#314)', () => {
+			const event = timedSeries({
+				timezone: 'America/New_York',
+				start: '2025-03-10T09:00:00-04:00',
+				end: '2025-03-10T09:30:00-04:00',
+				exdates: ['2025-03-17T13:00:00.000Z'],
+				recurrenceId: '2025-03-24T13:00:00.000Z',
+			})
+			const lines = recurrenceICalProperties(event)
+			expect(lines).toContain('EXDATE;TZID=America/New_York:20250317T090000')
+			expect(lines).toContain(
+				'RECURRENCE-ID;TZID=America/New_York:20250324T090000'
+			)
 		})
 	})
 })

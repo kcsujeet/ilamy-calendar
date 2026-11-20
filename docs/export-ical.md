@@ -1,73 +1,47 @@
 # iCalendar Export Feature
 
-This document describes the iCalendar export functionality added to the ilamy Calendar.
+This document describes the iCalendar export functionality in `@ilamy/calendar`, provided as the opt-in `@ilamy/calendar/plugins/ical` plugin (`icalPlugin()`).
 
 ## Overview
 
-The calendar now supports exporting events to iCalendar (.ics) format, which popular calendar applications such as Google Calendar, Apple Calendar and Outlook can import. See "Known limitation: timezones" below before relying on a recurring series in a configured `timezone`.
+`@ilamy/calendar/plugins/ical` exports calendar events to RFC 5545 iCalendar (`.ics`) format for Google Calendar, Apple Calendar, Outlook, Thunderbird, and CalDAV servers. When a calendar or event `timezone` is set, timed events emit `DTSTART;TZID=` / `DTEND;TZID=` paired with RFC 5545 §3.6.5 `VTIMEZONE` definitions so recurring series preserve local wall-clock time across DST transitions.
 
 ## Features
 
-- **Follows RFC 5545 for the syntax**: CRLF line ends, lines folded at 75 octets (§3.1), the object ends with CRLF (§3.4), `UNTIL`, `EXDATE` and `RECURRENCE-ID` carry the same value type as `DTSTART` (§3.3.10, §3.8.5.1, §3.8.4.4). It is not fully compliant for recurring series in a configured timezone; see the known limitation below
-- **Full Event Support**: Exports all event types including:
-  - Simple events with title, description, location
-  - All-day events
-  - Recurring events with RRULE patterns
-  - Events with exception dates (EXDATE)
-  - Modified recurring instances (RECURRENCE-ID)
-- **Desktop and Mobile**: Export button available on both desktop and mobile interfaces (can be hidden via `hideExportButton`)
-- **Automatic Filename**: Generates timestamped filenames (e.g., `ilamy-calendar-2025-08-04.ics`)
+- **Full RFC 5545 compliance**: CRLF line ends, lines folded at 75 octets without splitting UTF-8 code points (§3.1), trailing CRLF (§3.4), `VTIMEZONE` + `TZID` (§3.6.5), and typed `UNTIL` / `EXDATE` / `RECURRENCE-ID` (§3.3.10, §3.8.5.1, §3.8.4.4).
+- **Full Event Support**: Simple events, all-day events (`VALUE=DATE`), recurring series (`RRULE`), `EXDATE`, and `RECURRENCE-ID` overrides.
+- **Opt-in Toolbar Action**: Registers the header Export button (desktop + mobile) via `SLOT_TOOLBAR`. Omit `icalPlugin()` to omit the button, or call `exportToICalendar` / `downloadICalendar` directly.
+- **Automatic Filename**: Timestamped filenames (`ilamy-calendar-YYYY-MM-DD.ics`).
 
 ## Usage
 
-### Hiding the export button
-
-Pass `hideExportButton` to `IlamyCalendar` or `IlamyResourceCalendar` to remove the export control from the default header (desktop and mobile). Defaults to `false`.
-
 ```tsx
-<IlamyCalendar events={events} hideExportButton />
+import { IlamyCalendar } from '@ilamy/calendar'
+import { icalPlugin } from '@ilamy/calendar/plugins/ical'
+
+<IlamyCalendar events={events} plugins={[icalPlugin()]} />
 ```
-
-When using a custom `headerComponent`, this prop has no effect — you control export UI yourself.
-
-### Desktop
-
-1. Look for the "Export" button in the top-right corner of the calendar header
-2. Click the button to download the `.ics` file
-
-### Mobile
-
-1. Tap the menu button (☰) in the top-right corner
-2. Select "Export Calendar (.ics)" from the dropdown menu
-3. The file will be downloaded to your device
 
 ## Technical Implementation
 
 ### Core Files
 
-- `packages/calendar/src/features/calendar/utils/export-ical.ts` - Main export functionality (escaping, line folding, the VCALENDAR wrapper)
-- `packages/calendar/src/features/calendar/hooks/use-export-calendar.ts` - the header button's handler and the filename
-- `packages/plugins/recurrence/src/ical.ts` - the `RRULE`, `EXDATE` and `RECURRENCE-ID` lines
-- `packages/calendar/src/features/calendar/utils/export-ical.test.ts`, `packages/plugins/recurrence/src/ical.test.ts` - tests
-- `apps/e2e/tests/ical-export.spec.ts` - the downloaded file, read as an importer would
+- `packages/plugins/ical/src/export-ical.ts` — RFC 5545 serializer (`VTIMEZONE`, escaping, line folding, `VCALENDAR` wrapper)
+- `packages/plugins/ical/src/ical-plugin.tsx` — `icalPlugin()` + `SLOT_TOOLBAR` Export button
+- `packages/utils/src/ical-format.ts` — shared RFC 5545 date/time & `TZID` formatting helpers
+- `packages/plugins/recurrence/src/ical.ts` — `RRULE`, `EXDATE`, and `RECURRENCE-ID` property emitter
+- `packages/plugins/ical/src/export-ical.test.ts`, `packages/plugins/ical/src/ical-plugin.test.tsx`, `packages/plugins/recurrence/src/ical.test.ts` — unit tests
+- `apps/e2e/tests/ical-export.spec.ts` — downloaded `.ics` verification
 
 ### Key Functions
 
-#### `exportToICalendar(events, calendarName)`
+#### `exportToICalendar(events, collect?, options?)`
 
-Converts an array of CalendarEvent objects to RFC 5545 compliant iCalendar format.
+Converts an array of `CalendarEvent` objects to an RFC 5545 `.ics` string. `options` accepts `{ calendarName?: string; timezone?: string }` (or a `calendarName` string).
 
-```typescript
-const icalContent = exportToICalendar(events, 'My Calendar')
-```
+#### `downloadICalendar(events, collect?, filename?, options?)`
 
-#### `downloadICalendar(events, filename, calendarName)`
-
-Exports events and triggers download in the browser.
-
-```typescript
-downloadICalendar(events, 'my-calendar.ics', 'My Calendar')
-```
+Exports events and triggers a browser `.ics` download.
 
 ## Supported Event Properties
 
@@ -134,48 +108,13 @@ dates too, on the same calendar day the calendar shows (§3.3.10, §3.8.5.1,
 
 ## Timezone Handling
 
-- All times are exported in UTC format (`DTSTART:20250804T100000Z`)
-- Date-only events use `VALUE=DATE` format for all-day events
-
-### Known limitation: timezones
-
-The export has no `TZID` and writes no real `VTIMEZONE` (the `UTC` one in the
-header only names UTC). A recurring series in a configured `timezone` is
-therefore exported as a UTC `DTSTART` and `RRULE`. An importer repeats it at
-that fixed UTC time, so after a daylight-saving change the series appears an
-hour off from what the calendar shows. RFC 5545 §3.8.5.3 says a recurring
-`DTSTART` should be a local time with a time zone reference. One-off events are
-unaffected: their instant is exact.
-
-Exporting `DTSTART;TZID=...` with a `VTIMEZONE` is planned for 4.x, with the
-iCal plugin (`docs/roadmap.md`, 4.3.9). Until then, do not rely on the file to
-round-trip a recurring series across a clock change.
+- When `event.timezone` or `options.timezone` is set to a non-UTC IANA timezone, timed events emit `DTSTART;TZID=<zone>:YYYYMMDDTHHMMSS` and `DTEND;TZID=<zone>:YYYYMMDDTHHMMSS`, paired with an RFC 5545 §3.6.5 `VTIMEZONE` component generated from Temporal DST transitions.
+- When UTC or no timezone is set, timed events emit UTC timestamps (`DTSTART:20250804T100000Z`).
+- All-day events use `VALUE=DATE` format (`DTSTART;VALUE=DATE:20250804`).
 
 ## Testing
 
-The export functionality includes comprehensive tests covering:
-
-- Basic event export
-- Recurring event patterns
-- All-day events
-- Special character escaping
-- EXDATE handling
-- RECURRENCE-ID support
-- Multiple event export
-- Header/footer generation
-
-Run tests with:
-
 ```bash
-bun test src/lib/export-ical.test.ts
+cd packages/plugins/ical && bun test
+cd packages/plugins/recurrence && bun test src/ical.test.ts
 ```
-
-## Future Enhancements
-
-Potential improvements for future versions:
-
-- `TZID` and `VTIMEZONE` export (custom timezone support), see above
-- Selective export (date range, specific calendars)
-- Import functionality
-- Additional iCalendar properties (PRIORITY, CATEGORIES, etc.)
-- Calendar color export via X-properties

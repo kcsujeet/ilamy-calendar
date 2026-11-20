@@ -1,27 +1,23 @@
+import { isToday } from '@ilamy/core'
 import { DayLabel } from '@ilamy/ui/components/day-label'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import type { ZonedDate } from '@ilamy/utils/temporal'
 import type React from 'react'
 import { useCalendarCellContext } from '@/features/calendar/hooks/use-calendar-cell-context'
 import { keys } from '@/features/calendar/utils/keys'
-import { isToday } from '@/utils/date-utils'
 
 interface GridCellContentProps {
-	day: Dayjs
+	day: ZonedDate
 	showDayNumber: boolean
-	/** Shown in line before the day number, so the two never overlap. */
 	weekNumber?: number
 	children?: React.ReactNode
 }
 
-/** The inside of a cell: its day number, if shown, above its contents. */
 export const GridCellContent: React.FC<GridCellContentProps> = ({
 	day,
 	showDayNumber,
 	weekNumber,
 	children,
 }) => {
-	// The narrow cell context, not the full one: a time grid has thousands of
-	// these cells, and the full context changes whenever any event does.
 	const { eventSpacing } = useCalendarCellContext()
 
 	return (
@@ -43,7 +39,7 @@ export const GridCellContent: React.FC<GridCellContentProps> = ({
 					<DayLabel
 						className="items-start"
 						data-testid={keys.dayNumber(day)}
-						dayNumber={day.format('D')}
+						dayNumber={String(day.day)}
 						today={isToday(day)}
 					/>
 				</div>

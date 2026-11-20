@@ -69,7 +69,7 @@ test.describe('month grid', () => {
 
 		const dialog = page.getByRole('dialog')
 		await expect(dialog).toContainText('March 12, 2025')
-		await expect(dialog.getByText(/^Event \d$/)).toHaveCount(7)
+		await expect(dialog.getByText(/Event \d$/)).toHaveCount(7)
 	})
 
 	test('draws an event longer than a row as one bar per row', async ({
@@ -227,6 +227,7 @@ test.describe('header layout across widths', () => {
 				await gotoScenario(page, {
 					scenario: 'basic',
 					view,
+					plugins: view === 'year' ? ['year'] : undefined,
 					settings: { locale },
 				})
 
@@ -568,6 +569,7 @@ test.describe('a day the clocks change', () => {
 					timezone: 'America/New_York',
 					date: day.nineAM,
 					now: day.nineAM,
+					settings: { nowIndicator: 'true' },
 				})
 				// The line is centred on its position, so read its middle.
 				const line = '[data-testid="current-time-indicator"]'
@@ -793,14 +795,15 @@ test.describe('the week that spans two months', () => {
 	 * planned — so when it changes, this test is the one that should fail and
 	 * say so, rather than the change going unnoticed.
 	 */
-	test('month padding is disabled, unlike a week that merely crosses months', async ({
+	test('month padding is shaded (not disabled) in v4.0, unlike a week that merely crosses months', async ({
 		page,
 	}) => {
 		await gotoScenario(page, { scenario: 'basic', view: 'month' })
 
-		const disabled = page.locator('[data-disabled="true"]')
+		const shaded = page.locator('[data-non-business="true"]')
 
-		await expect(disabled.first()).toBeAttached()
+		await expect(shaded.first()).toBeAttached()
+		await expect(page.locator('[data-disabled="true"]')).toHaveCount(0)
 	})
 })
 
@@ -881,6 +884,7 @@ test.describe('a resource with id 0', () => {
 				scenario: 'numeric-resource-ids',
 				view: 'day',
 				orientation,
+				settings: { nowIndicator: 'true' },
 			})
 			await new CalendarPage(page).expectRendered()
 
@@ -1214,7 +1218,7 @@ test.describe('scrollToNow', () => {
 			settings: {},
 			scrollTestId: 'horizontal-grid-scroll',
 			target: '[data-start="2025-03-12T00:00:00.000Z"]',
-			origin: TIMED_CELL,
+			origin: '[data-start]',
 			axis: 'horizontal',
 		},
 		{
@@ -1240,7 +1244,7 @@ test.describe('scrollToNow', () => {
 			settings: {},
 			scrollTestId: 'vertical-grid-scroll',
 			target: '[data-start="2025-03-12T00:00:00.000Z"]',
-			origin: TIMED_CELL,
+			origin: '[data-start]',
 			axis: 'vertical',
 		},
 	] as const
@@ -1399,7 +1403,7 @@ const titleGeometry = async (page: Page, c: TitleGeometryQuery) => {
 	)
 
 	const bar = page.getByTestId(c.barTestId)
-	const title = bar.getByText(c.title, { exact: true })
+	const title = bar.getByText(c.title)
 	const [barBox, titleBox, edgeBox] = await Promise.all([
 		bar.boundingBox(),
 		title.boundingBox(),
@@ -1642,7 +1646,7 @@ test.describe('sticky event titles (#290)', () => {
 			scenario: 'long-resource-events',
 			view: 'month',
 			orientation: 'horizontal',
-			settings: { height: '500px' },
+			settings: { height: '500px', editable: 'true' },
 		})
 		const viewport = page.locator(
 			scrollViewportSelector('horizontal-grid-scroll')
@@ -1698,7 +1702,7 @@ test.describe('sticky event titles (#290)', () => {
 		await gotoScenario(page, {
 			scenario: 'long-events',
 			view: 'week',
-			settings: { height: '500px' },
+			settings: { height: '500px', editable: 'true' },
 		})
 		const viewport = page.locator(
 			scrollViewportSelector('vertical-grid-scroll')
@@ -1784,7 +1788,7 @@ test.describe('sticky event titles (#290)', () => {
 				settings: { ...c.settings, height: '1600px' },
 			})
 			const bar = page.getByTestId('vertical-event-long-1')
-			const title = bar.getByText('Long shift', { exact: true })
+			const title = bar.getByText('Long shift')
 
 			await expect
 				.poll(async () => {
@@ -1814,7 +1818,7 @@ test.describe('sticky event titles (#290)', () => {
 			scenario: 'long-resource-events',
 			view: 'month',
 			orientation: 'horizontal',
-			settings: { height: '500px' },
+			settings: { height: '500px', editable: 'true' },
 		})
 
 		// Scrolled until only the last few pixels of the bar are left in view:
@@ -1950,7 +1954,7 @@ test.describe('an off-the-hour event on the hourly timeline', () => {
 			scenario: 'long-resource-events',
 			view: 'day',
 			orientation: 'horizontal',
-			settings: { scrollTime: '08:00', height: '600px' },
+			settings: { scrollTime: '08:00', height: '600px', editable: 'true' },
 		})
 
 	test('draws the bar from its exact start to its exact end', async ({

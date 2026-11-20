@@ -18,24 +18,7 @@ export default function Calendar() {
 }
 ```
 
-### 2. Dayjs Configuration
-
-Configure dayjs with required plugins before using the calendar:
-
-```tsx
-import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
-
-dayjs.extend(utc)
-dayjs.extend(timezone)
-dayjs.extend(isSameOrAfter)
-dayjs.extend(isSameOrBefore)
-```
-
-### 3. Peer Dependencies
+### 2. Peer Dependencies
 
 Make sure to install all required peer dependencies:
 
@@ -69,7 +52,6 @@ This will install:
 - React and React DOM
 - ilamy Calendar package
 - Tailwind CSS v4
-- All required dayjs plugins
 
 > **Note for Bun users:** This example uses [isolated installs](https://bun.com/docs/pm/isolated-installs) via `bunfig.toml` to avoid lockfile conflicts with parent directories.
 

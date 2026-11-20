@@ -1,78 +1,56 @@
 import type {
 	BusinessHours,
+	CalendarConstraint,
 	CalendarEvent,
+	DateRange,
 	IlamyPlugin,
+	IsoDateString,
 	PluginView,
+	PublicDateInput,
 	Resource,
 } from '@ilamy/types'
 import { useRequiredContext } from '@ilamy/ui/hooks/use-required-context'
-import type { Dayjs } from '@ilamy/utils/dayjs'
-import type React from 'react'
+import type { ReactNode } from 'react'
 import type { TranslatorFunction } from '@/config/translations/types'
 import {
 	CalendarContext,
 	type CalendarContextType,
 } from '@/features/calendar/stores/calendar-context/calendar-context'
 import type {
-	DateRange,
 	EventSegment,
 	OpenEventFormInput,
 	RenderCurrentTimeIndicatorProps,
 } from '@/features/calendar/types'
 import type { CalendarView, TimeFormat } from '@/types'
 
-// Module constant, not a per-call `|| []`: keeps the public API's `resources`
-// identity stable on calendars without a resource axis.
 const EMPTY_RESOURCES: Resource[] = []
 
-/**
- * Full internal context type used by library components. Since the unified
- * provider carries the resource axis, this is simply the calendar context:
- * resource utilities are always defined; `resources` is honestly optional.
- */
 type SmartCalendarContextType = CalendarContextType
 
 /**
- * The public calendar API surface exposed by useIlamyCalendarContext() — for consumers and plugin
- * components. The full internal context is intentionally not exported.
+ * Public calendar API surface exposed by `useIlamyCalendarContext()` and `ref.current`.
+ * Every date field is a canonical ISO 8601 string with offset; navigation/query
+ * inputs accept either an ISO string or a `Date`.
  */
 export interface IlamyCalendarApi {
-	readonly currentDate: Dayjs
-	/** The active view's current visible date range (what is on screen). */
+	readonly currentDate: IsoDateString
 	readonly currentRange: DateRange
 	readonly view: CalendarView
 	readonly events: CalendarEvent[]
 	readonly rawEvents: CalendarEvent[]
-	/**
-	 * Fetches the visible range again through the `events` function, whatever
-	 * `lazyFetching` says. The events shown stay until the new ones arrive. Does
-	 * nothing when `events` is an array.
-	 */
 	readonly refetchEvents: () => void
-	/**
-	 * Scrolls the hour grids to a time of day, `'HH:mm'` or `'HH:mm:ss'`, the way
-	 * the `scrollTime` prop does at the start (the minute lands that far into
-	 * the hour). Does nothing in a view without an hour axis, such as month.
-	 */
 	readonly scrollToTime: (time: string) => void
-	/**
-	 * Calls the `resources` function again. The resources shown stay until the
-	 * new ones arrive. Does nothing when `resources` is an array.
-	 */
 	readonly refetchResources: () => void
 	readonly isEventFormOpen: boolean
 	readonly selectedEvent: CalendarEvent | null
-	readonly selectedDate: Dayjs | null
+	readonly selectedDate: IsoDateString | null
 	readonly firstDayOfWeek: number
 	readonly resources: Resource[]
-	/** Whether the calendar lays out a resource axis: it has resources, or is still loading them. */
 	readonly hasResourceAxis: boolean
-	/** Axis the views lay out along: 'horizontal' (columns) or 'vertical' (rows). */
 	readonly orientation: 'horizontal' | 'vertical'
-	readonly setCurrentDate: (date: Dayjs) => void
-	readonly selectDate: (date: Dayjs) => void
-	/** Switch view; pass `date` to move there atomically in the same update. */
-	readonly setView: (view: CalendarView, date?: Dayjs) => void
+	readonly setCurrentDate: (date: PublicDateInput) => void
+	readonly selectDate: (date: PublicDateInput) => void
+	readonly setView: (view: CalendarView, date?: PublicDateInput) => void
 	readonly nextPeriod: () => void
 	readonly prevPeriod: () => void
 	readonly today: () => void
@@ -84,43 +62,28 @@ export interface IlamyCalendarApi {
 	readonly deleteEvent: (eventId: string | number) => void
 	readonly openEventForm: (eventData?: OpenEventFormInput) => void
 	readonly closeEventForm: () => void
-	/**
-	 * Handle a click on an existing event: runs the consumer's `onEventClick`
-	 * callback if provided, otherwise opens the event for editing. Lets plugin
-	 * views (e.g. agenda) handle event clicks identically to the built-in views.
-	 */
 	readonly onEventClick: (event: CalendarEvent) => void
-	/**
-	 * The consumer's custom event renderer, if provided. Lets plugin views
-	 * (e.g. agenda) draw events with the same `renderEvent` the built-in views
-	 * use, passing the slice of the event each call draws.
-	 */
 	readonly renderEvent?: (
 		event: CalendarEvent,
 		segment: EventSegment
-	) => React.ReactNode
-	/**
-	 * The consumer's custom current-time-indicator renderer, if provided. Lets
-	 * plugin views (e.g. agenda) render the indicator consistently with the
-	 * built-in views via the shared `@ilamy/ui` CurrentTimeIndicator.
-	 */
+	) => ReactNode
 	readonly renderCurrentTimeIndicator?: (
 		props: RenderCurrentTimeIndicatorProps
-	) => React.ReactNode
-	/**
-	 * Events whose resource membership (`resourceIds`, falling back to
-	 * `resourceId`) contains the given resource. On a calendar without
-	 * resources this simply filters by the events' own resource fields.
-	 */
+	) => ReactNode
 	readonly getEventsForResource: (
 		resourceId: string | number
 	) => CalendarEvent[]
 	readonly businessHours?: BusinessHours | BusinessHours[]
+	readonly eventConstraint?: CalendarConstraint
+	readonly selectConstraint?: CalendarConstraint
 	readonly t: TranslatorFunction
 	readonly timeFormat: TimeFormat
 	readonly timezone?: string
 	readonly currentLocale: string
-	readonly getEventsForDateRange: (start: Dayjs, end: Dayjs) => CalendarEvent[]
+	readonly getEventsForDateRange: (
+		start: PublicDateInput,
+		end: PublicDateInput
+	) => CalendarEvent[]
 	readonly applyScopedEdit: (
 		event: CalendarEvent,
 		updates: Partial<CalendarEvent>,
@@ -128,15 +91,11 @@ export interface IlamyCalendarApi {
 	) => void
 	readonly applyScopedDelete: (event: CalendarEvent, scope: unknown) => void
 	readonly getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
-	readonly renderSlot: (slotName: string, context: unknown) => React.ReactNode[]
+	readonly renderSlot: (slotName: string, context: unknown) => ReactNode[]
 	readonly collect: (point: string, context: unknown) => unknown[]
 	readonly getViews: () => PluginView[]
 }
 
-/**
- * Internal hook that returns the full context.
- * Used by internal views, headers, and grid components.
- */
 export function useSmartCalendarContext(): SmartCalendarContextType
 export function useSmartCalendarContext<T>(
 	selector: (context: SmartCalendarContextType) => T
@@ -153,10 +112,6 @@ export function useSmartCalendarContext<T>(
 	return selector ? selector(context) : context
 }
 
-/**
- * Public hook exported for library users.
- * Returns a limited set of commonly used properties and methods.
- */
 export function useIlamyCalendarContext(): IlamyCalendarApi {
 	const context = useSmartCalendarContext()
 
@@ -192,6 +147,8 @@ export function useIlamyCalendarContext(): IlamyCalendarApi {
 		renderCurrentTimeIndicator: context.renderCurrentTimeIndicator,
 		getEventsForResource: context.getEventsForResource,
 		businessHours: context.businessHours,
+		eventConstraint: context.eventConstraint,
+		selectConstraint: context.selectConstraint,
 		t: context.t,
 		timeFormat: context.timeFormat,
 		timezone: context.timezone,

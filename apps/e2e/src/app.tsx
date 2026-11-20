@@ -1,7 +1,8 @@
 import {
+	type CalendarComponents,
 	type CalendarEvent,
+	type CalendarSlotProps,
 	type CellInfo,
-	dayjs,
 	type EventSegment,
 	type EventsChange,
 	type EventsFetchInfo,
@@ -11,14 +12,11 @@ import {
 	type Resource,
 	useIlamyCalendarContext,
 } from '@ilamy/calendar'
-// A dayjs locale is data the consumer registers (docs/migration-v2.md), so the
-// harness registers the ones its specs name with `locale=`.
-import 'dayjs/locale/ar.js'
-import 'dayjs/locale/de.js'
-import 'dayjs/locale/fr.js'
-import { agendaPlugin } from '@ilamy/calendar-agenda'
-import { dragToCreatePlugin } from '@ilamy/calendar-drag-to-create'
-import { recurrencePlugin } from '@ilamy/calendar-recurrence'
+import { agendaPlugin } from '@ilamy/calendar/plugins/agenda'
+import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create'
+import { icalPlugin } from '@ilamy/calendar/plugins/ical'
+import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
+import { yearPlugin } from '@ilamy/calendar/plugins/year'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { ConfigError, readUrlConfig } from './harness-config'
@@ -48,9 +46,13 @@ const PLUGINS = {
 	agenda: agendaPlugin,
 	recurrence: recurrencePlugin,
 	'drag-to-create': dragToCreatePlugin,
+	year: yearPlugin,
+	ical: icalPlugin,
 } as const
 
 type PluginName = keyof typeof PLUGINS
+
+const toUtcIso = (iso: string): string => new Date(iso).toISOString()
 
 interface LoggedSelection {
 	start: string
@@ -64,8 +66,8 @@ const recordSelection = (selection: CellInfo): void => {
 	logged.__selectLog = [
 		...(logged.__selectLog ?? []),
 		{
-			start: selection.start.toISOString(),
-			end: selection.end.toISOString(),
+			start: toUtcIso(selection.start),
+			end: toUtcIso(selection.end),
 			allDay: selection.allDay ?? null,
 			resourceId: selection.resource?.id ?? null,
 		},
@@ -108,8 +110,8 @@ const toPublishedRow = (event: CalendarEvent): PublishedRow => {
 		id: String(event.id),
 		uid: event.uid ?? null,
 		title: event.title,
-		start: event.start.toISOString(),
-		end: event.end.toISOString(),
+		start: toUtcIso(event.start),
+		end: toUtcIso(event.end),
 		resourceId: event.resourceId ?? null,
 		resourceIds: event.resourceIds ?? null,
 		allDay: Boolean(event.allDay),
@@ -204,12 +206,45 @@ export const App = () => {
 		fetchDelay,
 		resourcesFetch,
 		agendaWindow: _agendaWindow,
+		multiZone,
+		themeVariant,
 		...calendarConfig
 	} = {
 		...scenario.config,
 		...urlConfig,
 	}
 	const resources = scenario.resources?.slice(0, resourceCount)
+
+	if (multiZone) {
+		const multiZoneEvents = [...scenario.events]
+		return (
+			<div
+				data-testid="multi-zone-harness"
+				style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
+			>
+				<div data-testid="zone-ny" style={{ height: '700px' }}>
+					<IlamyCalendar
+						{...calendarConfig}
+						events={multiZoneEvents}
+						initialDate={date}
+						initialView={viewName}
+						plugins={plugins}
+						timezone="America/New_York"
+					/>
+				</div>
+				<div data-testid="zone-tokyo" style={{ height: '700px' }}>
+					<IlamyCalendar
+						{...calendarConfig}
+						events={multiZoneEvents}
+						initialDate={date}
+						initialView={viewName}
+						plugins={plugins}
+						timezone="Asia/Tokyo"
+					/>
+				</div>
+			</div>
+		)
+	}
 
 	return (
 		<Harness
@@ -226,6 +261,7 @@ export const App = () => {
 			resourcesFetchMode={resourcesFetch}
 			revertChanges={revertChanges}
 			scenario={scenario}
+			themeVariant={themeVariant}
 			timezone={timezone}
 			view={viewName}
 		/>
@@ -252,6 +288,8 @@ type HarnessOnly =
 	| 'fetch'
 	| 'fetchDelay'
 	| 'agendaWindow'
+	| 'multiZone'
+	| 'themeVariant'
 
 type FetchMode = 'delayed' | 'failing' | 'held'
 
@@ -272,8 +310,29 @@ interface HarnessProps {
 	resources?: Resource[]
 	revertChanges?: boolean
 	scenario: Scenario
+	themeVariant?: 'slot-props' | 'custom-button'
 	timezone?: string
 	view: ViewName
+}
+
+const CUSTOM_SLOT_PROPS: CalendarSlotProps = {
+	root: { className: 'harness-custom-root', style: { borderWidth: '2px' } },
+	header: { className: 'harness-custom-header' },
+	cell: { className: 'harness-custom-cell' },
+}
+
+const CUSTOM_COMPONENTS: CalendarComponents = {
+	Button: ({ children, className, onClick, ...props }) => (
+		<button
+			className={className}
+			data-custom-button="true"
+			onClick={onClick}
+			type="button"
+			{...props}
+		>
+			{children}
+		</button>
+	),
 }
 
 /**
@@ -300,6 +359,7 @@ const Harness: React.FC<HarnessProps> = ({
 	resources,
 	revertChanges,
 	scenario,
+	themeVariant,
 	timezone,
 	view,
 }) => {
@@ -381,7 +441,8 @@ const Harness: React.FC<HarnessProps> = ({
 			server.current.events.filter(
 				(row) =>
 					Boolean(row.rrule) ||
-					(row.start.isBefore(info.end) && row.end.isAfter(info.start))
+					(Date.parse(row.start) < Date.parse(info.end) &&
+						Date.parse(row.end) > Date.parse(info.start))
 			)
 	)
 	const [resourcesFetchLog, fetchResourcesFromServer] = useServer(
@@ -404,6 +465,9 @@ const Harness: React.FC<HarnessProps> = ({
 			{externalToolbar && <ExternalToolbar calendarRef={calendarRef} />}
 			<IlamyCalendar
 				{...config}
+				components={
+					themeVariant === 'custom-button' ? CUSTOM_COMPONENTS : undefined
+				}
 				events={fetchMode ? fetchFromServer : events}
 				initialDate={date}
 				initialView={view}
@@ -430,6 +494,9 @@ const Harness: React.FC<HarnessProps> = ({
 						...current,
 						set.map((resource) => String(resource.id)),
 					])
+				}
+				slotProps={
+					themeVariant === 'slot-props' ? CUSTOM_SLOT_PROPS : undefined
 				}
 				timezone={timezone}
 			/>
@@ -474,7 +541,7 @@ const ExternalToolbar: React.FC<{
 		const timer = setInterval(() => {
 			const api = calendarRef.current
 			if (api) {
-				setReadout({ date: api.currentDate.toISOString(), view: api.view })
+				setReadout({ date: toUtcIso(api.currentDate), view: api.view })
 			}
 		}, 50)
 		return () => clearInterval(timer)
@@ -483,7 +550,7 @@ const ExternalToolbar: React.FC<{
 		next: (api) => api.nextPeriod(),
 		prev: (api) => api.prevPeriod(),
 		today: (api) => api.today(),
-		goto: (api) => api.setCurrentDate(dayjs('2025-07-04T12:00:00.000Z')),
+		goto: (api) => api.setCurrentDate('2025-07-04T12:00:00.000Z'),
 		week: (api) => api.setView('week'),
 		scroll: (api) => api.scrollToTime('13:30'),
 		refetch: (api) => api.refetchEvents(),

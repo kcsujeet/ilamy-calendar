@@ -1,33 +1,23 @@
+import { useIlamyCalendarContext } from '@ilamy/calendar'
 import { cn } from '@ilamy/ui/lib/utils'
-import dayjs from '@ilamy/utils/dayjs'
+import { dayKey, parseDate, resolveZone, toDate } from '@ilamy/utils/temporal'
 import type * as React from 'react'
 
 interface DateInputProps {
 	date: Date | undefined
-	/**
-	 * Receives start of day in the calendar's configured timezone, which east of
-	 * UTC is the previous UTC day. Callers that need a whole-day boundary must
-	 * normalize (`dayjs(value).endOf('day')`) rather than use the instant as-is.
-	 */
 	onChange?: (date: Date | undefined) => void
 	className?: string
 }
-
-/**
- * `<input type="date">` both renders and reports its value in this shape, so it
- * is used for display formatting only — never as a parse format. The configured
- * dayjs (`@ilamy/utils/dayjs`) forwards extra constructor arguments to
- * `dayjs.tz()`, whose second parameter is a TIMEZONE, so passing this as a parse
- * format throws `RangeError: invalid time zone`.
- */
-const DATE_INPUT_FORMAT = 'YYYY-MM-DD'
 
 export const DateInput: React.FC<DateInputProps> = ({
 	date,
 	onChange,
 	className,
 }) => {
-	const inputValue = date ? dayjs(date).format(DATE_INPUT_FORMAT) : ''
+	const { timezone } = useIlamyCalendarContext()
+	const zone = resolveZone(timezone)
+	const parsedDate = date ? parseDate(date, zone) : undefined
+	const inputValue = parsedDate ? dayKey(parsedDate) : ''
 
 	const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
 		const raw = event.target.value
@@ -35,11 +25,8 @@ export const DateInput: React.FC<DateInputProps> = ({
 			onChange?.(undefined)
 			return
 		}
-		// `raw` is already an ISO date ('YYYY-MM-DD') from the native date input, so
-		// the single-argument constructor parses it correctly and honours the
-		// calendar's configured timezone.
-		const parsed = dayjs(raw)
-		onChange?.(parsed.isValid() ? parsed.toDate() : undefined)
+		const parsed = parseDate(raw, zone)
+		onChange?.(parsed ? toDate(parsed) : undefined)
 	}
 
 	return (

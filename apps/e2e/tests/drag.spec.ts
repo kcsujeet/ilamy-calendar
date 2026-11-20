@@ -1,10 +1,21 @@
 import { expect, type Page, test } from '@playwright/test'
 import {
-	gotoScenario,
+	gotoScenario as gotoRawScenario,
 	releasePointer,
+	type ScenarioOptions,
 	settleAnimations,
 } from './support/harness'
 import { MonthGrid, TimeGrid } from './support/pages'
+
+/**
+ * In v4.0 `editable` defaults to `false` (D8); drag/resize tests opt into
+ * `editable: 'true'` by default unless they override it or call `gotoRawScenario`.
+ */
+const gotoScenario = (page: Page, options: ScenarioOptions) =>
+	gotoRawScenario(page, {
+		...options,
+		settings: { editable: 'true', ...options.settings },
+	})
 
 /**
  * Drag and drop, deliberately last and deliberately narrow.
@@ -590,9 +601,10 @@ test.describe('drag and drop', () => {
 		})
 		const grid = new TimeGrid(page)
 
-		// The nights this event covers are refused cells, and it starts anyway.
+		// The nights this event covers are shaded non-business cells; in v4.0
+		// business hours only shade without blocking drops unless constrained.
 		const nightCell = grid.slotAt('2025-03-11T02:00')
-		await expect(nightCell).toHaveAttribute('data-disabled', 'true')
+		await expect(nightCell).toHaveAttribute('data-non-business', 'true')
 
 		const businessSlot = grid.slotAt('2025-03-11T10:00')
 		const slotBox = await businessSlot.boundingBox()
@@ -629,13 +641,16 @@ test.describe('drag and drop', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'month',
-			settings: { businessHours: '9-17' },
+			settings: {
+				businessHours: '9-17',
+				eventConstraint: 'businessHours',
+			},
 		})
 		const month = new MonthGrid(page)
 
-		// 2025-03-08 is a Saturday, so business hours leave it disabled.
+		// 2025-03-08 is a Saturday: shaded by businessHours and refused by eventConstraint.
 		const closedDay = month.cellOn('2025-03-08')
-		await expect(closedDay).toHaveAttribute('data-disabled', 'true')
+		await expect(closedDay).toHaveAttribute('data-non-business', 'true')
 
 		await pressAndMoveTo(
 			page,
@@ -657,7 +672,10 @@ test.describe('drag and drop', () => {
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'month',
-			settings: { businessHours: '9-17' },
+			settings: {
+				businessHours: '9-17',
+				eventConstraint: 'businessHours',
+			},
 		})
 		const month = new MonthGrid(page)
 
@@ -696,13 +714,12 @@ test.describe('drag and drop', () => {
 		await releasePointer(page)
 	})
 
-	test('leaves the event alone when drag and drop is disabled', async ({
+	test('leaves the event alone by default when editable is omitted (D8)', async ({
 		page,
 	}) => {
-		await gotoScenario(page, {
+		await gotoRawScenario(page, {
 			scenario: 'basic',
 			view: 'month',
-			settings: { disableDragAndDrop: 'true' },
 		})
 		const month = new MonthGrid(page)
 
@@ -1542,7 +1559,11 @@ test.describe('resize', () => {
 			scenario: 'resource-hours',
 			view: 'week',
 			orientation: 'vertical',
-			settings: { slot: 30, scrollTime: '00:00' },
+			settings: {
+				slot: 30,
+				scrollTime: '00:00',
+				eventConstraint: 'businessHours',
+			},
 		})
 		const grid = new TimeGrid(page)
 
@@ -1572,7 +1593,11 @@ test.describe('resize', () => {
 			scenario: 'resource-hours',
 			view: 'week',
 			orientation: 'vertical',
-			settings: { slot: 30, scrollTime: '00:00' },
+			settings: {
+				slot: 30,
+				scrollTime: '00:00',
+				eventConstraint: 'businessHours',
+			},
 		})
 		const grid = new TimeGrid(page)
 
@@ -1837,7 +1862,7 @@ test.describe('a drop that crosses a boundary', () => {
 			(event) => event.id === 'night-shift'
 		)
 		expect(moved?.end).toBe('2025-03-09T12:00:00.000Z')
-		expect(mirrorText).toContain('8:00pm – 8:00am')
+		expect(mirrorText).toContain('8:00 PM – 8:00 AM')
 		const [change] = await grid.eventChanges()
 		expect(change?.endDelta).toEqual(change?.delta)
 	})

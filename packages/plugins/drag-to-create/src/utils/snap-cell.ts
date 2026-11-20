@@ -1,4 +1,5 @@
 import { getFractionAlong, getSnapBucket } from '@ilamy/utils/helpers'
+import { add, elapsedDiff } from '@ilamy/utils/temporal'
 import type { RawCell } from './read-cell'
 import type { Rect } from './rect'
 
@@ -7,22 +8,15 @@ interface PointerPoint {
 	clientY: number
 }
 
-/** The snap-sized slice of a cell, as 0..1 along the cell's time axis. */
 interface CellSlice {
 	from: number
 	to: number
 }
 
-/** A cell narrowed to the snap-sized slice a pointer is over. */
 export interface SnappedCell extends RawCell {
 	slice?: CellSlice
 }
 
-/**
- * A cell narrowed to the snap-sized slice of its time axis the pointer is over:
- * the 15 minutes under the pointer in a one-hour cell, for example. A cell that
- * does not name a finer snap is returned as it is.
- */
 export const snapCellToPoint = (
 	cell: RawCell,
 	point: PointerPoint
@@ -41,26 +35,21 @@ export const snapCellToPoint = (
 		cellStart,
 		cellLength
 	)
-	const cellMinutes = cell.end.diff(cell.start, 'minute')
+	const cellMinutes = elapsedDiff(cell.end, cell.start, 'minute')
 	const { index: slice, count: sliceCount } = getSnapBucket(
 		fractionIntoCell,
 		cellMinutes,
 		snapMinutes
 	)
-	const start = cell.start.add(slice * snapMinutes, 'minute')
+	const start = add(cell.start, slice * snapMinutes, 'minute')
 	return {
 		...cell,
 		start,
-		end: start.add(snapMinutes, 'minute'),
+		end: add(start, snapMinutes, 'minute'),
 		slice: { from: slice / sliceCount, to: (slice + 1) / sliceCount },
 	}
 }
 
-/**
- * Where the cell, or the slice of it that was snapped to, is on screen right
- * now. Read from the element each time: the grid scrolls while a selection is
- * held, and a box kept from the press would be stale.
- */
 export const getCellBounds = (cell: SnappedCell): Rect => {
 	const box = cell.element.getBoundingClientRect()
 	const { slice, axis } = cell

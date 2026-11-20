@@ -1,35 +1,39 @@
 import type { CalendarEvent } from '@ilamy/types'
-import type { Dayjs } from '@ilamy/utils/dayjs'
-import { isSameDay } from '@ilamy/utils/helpers'
+import {
+	formatDate,
+	formatDateRange as formatTemporalRange,
+	isSameDay,
+	parseDate,
+	resolveZone,
+	withZone,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
-/** What an event bar shows when `displayEventTime` is on and no format is set. */
 const DEFAULT_EVENT_TIME_FORMAT: Intl.DateTimeFormatOptions = {
 	hour: 'numeric',
 	minute: '2-digit',
 }
 
-// Building an Intl.DateTimeFormat costs about 100 times what formatting with
-// one does, and a grid asks for one per cell on every render.
-const formatterCache = new Map<string, Intl.DateTimeFormat>()
-
-const getFormatter = (
+const formatEventTimeSpan = (
+	start: ZonedDate,
+	end: ZonedDate,
+	options: Intl.DateTimeFormatOptions,
 	locale: string,
-	timeZone: string | undefined,
-	options: Intl.DateTimeFormatOptions
-) => {
-	const cacheKey = JSON.stringify([locale, timeZone, options])
-	const cachedFormatter = formatterCache.get(cacheKey)
-	if (cachedFormatter) {
-		return cachedFormatter
+	showsEnd: boolean
+): string => {
+	if (!showsEnd) {
+		return formatDate(start, options, locale)
 	}
-	const formatter = new Intl.DateTimeFormat(locale, { ...options, timeZone })
-	formatterCache.set(cacheKey, formatter)
-	return formatter
+	if (isSameDay(start, end)) {
+		return formatTemporalRange(start, end, options, locale)
+	}
+	return `${formatDate(start, options, locale)} – ${formatDate(end, options, locale)}`
 }
 
 export function useDateTimeFormatters() {
 	const {
+		view,
 		currentLocale,
 		timezone,
 		timeFormat,
@@ -41,6 +45,7 @@ export function useDateTimeFormatters() {
 		dayHeaderFormat,
 		titleFormat,
 	} = useSmartCalendarContext((ctx) => ({
+		view: ctx.view,
 		currentLocale: ctx.currentLocale,
 		timezone: ctx.timezone,
 		timeFormat: ctx.timeFormat,
@@ -53,84 +58,99 @@ export function useDateTimeFormatters() {
 		titleFormat: ctx.titleFormat,
 	}))
 
-	const createFormatter = (options: Intl.DateTimeFormatOptions) =>
-		getFormatter(currentLocale, timezone, options)
+	const zone = resolveZone(timezone)
 
-	// A time format that leaves 12/24 hour open follows a `timeFormat` the
-	// consumer passed; without one the locale decides, as plain Intl does.
-	const createTimeFormatter = (options: Intl.DateTimeFormatOptions) => {
-		const hasHour12 = options.hour12 !== undefined
-		const hasHourCycle = options.hourCycle !== undefined
-		const choosesHourCycle = hasHour12 || hasHourCycle
-		if (choosesHourCycle || !explicitTimeFormat) {
-			return createFormatter(options)
+	const toZoned = (value: ZonedDate | string): ZonedDate | undefined => {
+		if (typeof value === 'string') {
+			return parseDate(value, zone)
 		}
-		return createFormatter({
-			...options,
-			hour12: explicitTimeFormat === '12-hour',
-		})
+		return value.timeZoneId === zone ? value : withZone(value, zone)
 	}
 
-	const formatDateRange = (start: Dayjs, end: Dayjs) => {
-		const formatter = createFormatter({ month: 'short', day: 'numeric' })
-		// `formatRange` shows whichever fields distinguish the two dates, so a
-		// week spanning two years renders the year on BOTH ends ("Dec 30, 2026 –
-		// Jan 5, 2027"), which wraps the header. A cross-year week always spans two
-		// different months, so dropping the year stays unambiguous ("Dec 30 – Jan
-		// 5"). Same-year ranges keep `formatRange`'s concise collapsing.
-		if (start.year() === end.year()) {
-			return formatter.formatRange(start.toDate(), end.toDate())
+	const resolveTimeOptions = (
+		options: Intl.DateTimeFormatOptions
+	): Intl.DateTimeFormatOptions => {
+		const hasExplicitCycle =
+			options.hour12 !== undefined || options.hourCycle !== undefined
+		if (hasExplicitCycle || !explicitTimeFormat) {
+			return options
 		}
-		return `${formatter.format(start.toDate())} – ${formatter.format(end.toDate())}`
+		return { ...options, hour12: explicitTimeFormat === '12-hour' }
 	}
 
-	const formatSlotHeader = (date: Dayjs) => {
+	const formatDateRange = (
+		startInput: ZonedDate | string,
+		endInput: ZonedDate | string
+	): string => {
+		const start = toZoned(startInput)
+		const end = toZoned(endInput)
+		if (!start || !end) return ''
+		const options: Intl.DateTimeFormatOptions = {
+			month: 'short',
+			day: 'numeric',
+		}
+		if (start.year === end.year) {
+			return formatTemporalRange(start, end, options, currentLocale)
+		}
+		return `${formatDate(start, options, currentLocale)} – ${formatDate(end, options, currentLocale)}`
+	}
+
+	const formatSlotHeader = (dateInput: ZonedDate | string): string => {
+		const date = toZoned(dateInput)
+		if (!date) return ''
 		if (!slotHeaderFormat) {
-			return date.format(timeFormat === '12-hour' ? 'h A' : 'H')
+			if (timeFormat === '24-hour') {
+				return String(date.hour)
+			}
+			const hour12 = date.hour % 12 === 0 ? 12 : date.hour % 12
+			const period = date.hour < 12 ? 'AM' : 'PM'
+			return `${hour12} ${period}`
 		}
-		return createTimeFormatter(slotHeaderFormat).format(date.toDate())
+		return formatDate(date, resolveTimeOptions(slotHeaderFormat), currentLocale)
 	}
 
-	const formatDayHeader = (date: Dayjs) => {
-		if (!dayHeaderFormat) {
-			return date.format('ddd')
+	const formatDayHeader = (dateInput: ZonedDate | string): string => {
+		const date = toZoned(dateInput)
+		if (!date) return ''
+		const options: Intl.DateTimeFormatOptions = dayHeaderFormat ?? {
+			weekday: 'short',
 		}
-		return createFormatter(dayHeaderFormat).format(date.toDate())
+		return formatDate(date, options, currentLocale)
 	}
 
-	/** The time text of an event bar, or undefined when the bar shows none. */
-	const formatEventTime = (event: CalendarEvent) => {
-		const showsTime = displayEventTime ?? Boolean(eventTimeFormat)
-		if (!showsTime || event.allDay) {
+	/**
+	 * Event bar time text, or `undefined` when hidden (D9, FullCalendar):
+	 * - `displayEventTime` defaults to `true`.
+	 * - `displayEventEnd` defaults to `false` in month view and `true` in
+	 *   time-grid (week/day) views.
+	 */
+	const formatEventTime = (event: CalendarEvent): string | undefined => {
+		if (displayEventTime === false || event.allDay) {
 			return undefined
 		}
-		const formatter = createTimeFormatter(
+		const start = parseDate(event.start, zone)
+		const end = parseDate(event.end, zone)
+		if (!start || !end) {
+			return undefined
+		}
+		const options = resolveTimeOptions(
 			eventTimeFormat ?? DEFAULT_EVENT_TIME_FORMAT
 		)
-		const startDate = event.start.toDate()
-		const endDate = event.end.toDate()
-		if (!displayEventEnd) {
-			return formatter.format(startDate)
-		}
-		const endsOnSameDay = isSameDay(event.start, event.end)
-		if (endsOnSameDay) {
-			// The locale's own range ("15:00–15:30 Uhr"), times only.
-			return formatter.formatRange(startDate, endDate)
-		}
-		// `formatRange` would add the dates of an event that ends on another day,
-		// and the bar shows times only: write start and end apart.
-		return `${formatter.format(startDate)} – ${formatter.format(endDate)}`
+		const showsEnd = displayEventEnd ?? view !== 'month'
+		return formatEventTimeSpan(start, end, options, currentLocale, showsEnd)
 	}
 
-	/** The toolbar title, or undefined when the built-in one stays. */
-	const formatTitle = (start: Dayjs, end: Dayjs) => {
+	const formatTitle = (
+		startInput: ZonedDate | string,
+		endInput: ZonedDate | string
+	): string | undefined => {
 		if (!titleFormat) {
 			return undefined
 		}
-		return createFormatter(titleFormat).formatRange(
-			start.toDate(),
-			end.toDate()
-		)
+		const start = toZoned(startInput)
+		const end = toZoned(endInput)
+		if (!start || !end) return undefined
+		return formatTemporalRange(start, end, titleFormat, currentLocale)
 	}
 
 	return {

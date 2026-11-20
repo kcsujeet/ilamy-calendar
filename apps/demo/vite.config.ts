@@ -32,14 +32,33 @@ export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '')
 
 	return {
+		define: {
+			__VUE_OPTIONS_API__: true,
+			__VUE_PROD_DEVTOOLS__: false,
+			__VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
+		},
 		plugins: [react(), tailwindcss()],
 		resolve: {
 			tsconfigPaths: true,
 			alias: {
 				'@ilamy/playground': pkg('playground/src'),
+				'@ilamy/calendar/vue': pkg('adapters/vue/src'),
+				'@ilamy/calendar/svelte': pkg('adapters/svelte/src'),
+				'@ilamy/calendar/solid': pkg('adapters/solid/src'),
+				'@ilamy/calendar/angular': pkg('adapters/angular/src'),
+				'@ilamy/adapter-vue': pkg('adapters/vue/src'),
+				'@ilamy/adapter-svelte': pkg('adapters/svelte/src'),
+				'@ilamy/adapter-solid': pkg('adapters/solid/src'),
+				'@ilamy/adapter-angular': pkg('adapters/angular/src'),
 				'@ilamy/calendar-agenda': pkg('plugins/agenda/src'),
 				'@ilamy/calendar-drag-to-create': pkg('plugins/drag-to-create/src'),
+				'@ilamy/calendar-ical': pkg('plugins/ical/src'),
 				'@ilamy/calendar-recurrence': pkg('plugins/recurrence/src'),
+				'@ilamy/calendar-year': pkg('plugins/year/src'),
+				'@ilamy/theme-mui': pkg('themes/mui/src'),
+				'@ilamy/theme-stylex': pkg('themes/stylex/src'),
+				'@ilamy/dom': pkg('dom/src'),
+				'@ilamy/core': pkg('core/src'),
 				'@ilamy/calendar': pkg('calendar/src'),
 				'@ilamy/ui': pkg('ui/src'),
 				'@ilamy/utils': pkg('utils/src'),

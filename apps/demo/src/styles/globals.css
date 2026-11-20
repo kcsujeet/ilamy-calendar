@@ -5,6 +5,7 @@
 @source "../../../../packages/playground/src";
 @source "../../../../packages/ui/src";
 @source "../../../../packages/calendar/src";
+@source "../../../../packages/dom/src";
 
 @plugin "tailwindcss-animate";
 

@@ -37,7 +37,10 @@ const openSettled = async (
 	page: Page,
 	options: Parameters<typeof gotoScenario>[1]
 ) => {
-	await gotoScenario(page, options)
+	await gotoScenario(page, {
+		...options,
+		settings: { editable: 'true', ...options.settings },
+	})
 	await page.evaluate(() =>
 		Promise.all(document.getAnimations().map((animation) => animation.finished))
 	)
@@ -912,13 +915,13 @@ test.describe('persona 4: upgrader', () => {
 	})
 
 	for (const view of ['week', 'month'] as const) {
-		test(`disableDragAndDrop=true (${view}): no handles, no mirror`, async ({
+		test(`editable=false (${view}): no handles, no mirror`, async ({
 			page,
 		}) => {
 			await openSettled(page, {
 				scenario: view === 'week' ? 'basic' : 'all-day-events',
 				view,
-				settings: { slot: 30, scrollTime: '09:00', disableDragAndDrop: 'true' },
+				settings: { slot: 30, scrollTime: '09:00', editable: 'false' },
 			})
 			await expect(page.locator('[data-resize-handle]')).toHaveCount(0)
 			const grid = new TimeGrid(page)
@@ -926,13 +929,13 @@ test.describe('persona 4: upgrader', () => {
 		})
 	}
 
-	test('disableDragAndDrop=true: does not mount dnd-kit (no aria-roledescription=draggable)', async ({
+	test('editable omitted (v4 default false): does not mount dnd-kit (no aria-roledescription=draggable)', async ({
 		page,
 	}) => {
-		await openSettled(page, {
+		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'week',
-			settings: { slot: 30, scrollTime: '09:00', disableDragAndDrop: 'true' },
+			settings: { slot: 30, scrollTime: '09:00' },
 		})
 		await expect(
 			page.locator('[aria-roledescription="draggable"]')

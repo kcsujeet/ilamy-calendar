@@ -12,15 +12,12 @@ The calendar supports comprehensive internationalization through multiple approa
 
 The simplest way to internationalize your calendar is by setting the locale and timezone props. This will automatically format dates according to the specified locale.
 
-:::important
-For proper date formatting, you must explicitly import the corresponding `dayjs` locale in your application. The calendar component uses `dayjs` internally but does not bundle all locales to keep the bundle size small.
-
-`dayjs` is a [peer dependency](/docs/getting-started/installation#peer-dependencies), so the calendar shares your app's `dayjs` instance. Importing the locale once in your app registers it for the calendar too — no extra syncing of locale data between copies is needed.
+:::tip[Zero locale imports required in v4.0]
+Date, month, and weekday formatting runs on the browser's built-in `Intl.DateTimeFormat` with explicit `timeZone` support. Pass any BCP 47 locale tag (such as `'fr'`, `'de'`, `'ja'`, `'ar-SA'`) to `locale` — no external locale files or `dayjs` imports are needed.
 :::
 
-```tsx title="Importing Locales"
+```tsx title="Locale and Timezone"
 import { IlamyCalendar } from '@ilamy/calendar';
-import 'dayjs/locale/fr'; // Import the French locale
 
 function InternationalCalendar() {
   return (
@@ -153,9 +150,7 @@ function IntlCalendar() {
 The calendar supports a comprehensive set of translation keys for static UI text — common actions, event properties, recurrence options, and view types. You can find the complete list of available keys via the `TranslationKey` type which is exported from the calendar package.
 
 :::important
-Month and weekday names are **not** translation keys. They are localized through the active `dayjs` locale, so set the `locale` prop and import the matching `dayjs` locale (see [Basic Locale Setup](#basic-locale-setup)). Providing `january`/`monday`/`mon`-style keys via `translations` has no effect.
-
-**Changed in v1.8.0:** the month-name and day-name keys were removed from the `Translations` type. If you previously localized month or weekday names through `translations`, switch to a `dayjs` locale instead (e.g. `import 'dayjs/locale/de'` then `locale="de"`).
+Month and weekday names are **not** translation keys. They are localized automatically via `Intl.DateTimeFormat` for the active `locale` prop (see [Basic Locale Setup](#basic-locale-setup)). Providing `january`/`monday`/`mon`-style keys via `translations` has no effect.
 :::
 
 ```typescript title="Using TranslationKey Type"
@@ -167,7 +162,7 @@ import type { TranslationKey } from '@ilamy/calendar';
 // - Event related: event, events, title, description, location, etc.
 // - Recurrence: repeat, daily, weekly, monthly, yearly, etc.
 // - View types: month, week, day, year
-// (Month and weekday names come from the dayjs locale, not these keys.)
+// (Month and weekday names come from Intl.DateTimeFormat for `locale`, not these keys.)
 
 const myTranslator = (key: TranslationKey) => {
   // Your translation logic here
@@ -225,14 +220,6 @@ When both `translations` and `translator` are provided, the translator function 
 - Consider lazy loading translations for large applications
 
 ### Locale Setup
-- Always set the `locale` prop for proper date formatting.
-- **Import necessary `dayjs` locales** in your entry file or component.
-- If your application supports many languages, you might need to import multiple locales:
-  ```tsx
-  import 'dayjs/locale/en';
-  import 'dayjs/locale/fr';
-  import 'dayjs/locale/es';
-  // etc.
-  ```
-- Set `firstDayOfWeek` to your locale's convention. The calendar does not take the week start from the `dayjs` locale (fr and de start on Monday, ar on Saturday): `firstDayOfWeek` decides it, `'sunday'` by default.
-- Use appropriate timezone settings for your users' locations.
+- Set the `locale` prop to any BCP 47 tag (e.g. `'en-US'`, `'fr'`, `'de'`, `'ja'`). No external locale bundles are needed.
+- Set `firstDayOfWeek` to your locale's convention (`'sunday'` by default).
+- Use appropriate IANA `timezone` settings for your users' locations (e.g. `'Europe/Paris'`, `'America/New_York'`, `'Asia/Tokyo'`).

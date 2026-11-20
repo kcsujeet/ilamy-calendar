@@ -1,17 +1,16 @@
 import { useDraggable } from '@dnd-kit/core'
+import { resolveDurationEditable, resolveStartEditable } from '@ilamy/core'
 import type { CalendarEvent } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
+import { isSameInstant } from '@ilamy/utils/temporal'
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { memo, useRef } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import type { ResizeEdge } from '@/features/calendar/components/drag-and-drop/dnd-utils'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useSlotProps } from '@/features/calendar/stores/calendar-theme-context'
 import type { EventSegment } from '@/features/calendar/types'
 import type { DragSegment } from '@/features/calendar/utils/grab-offset'
-import {
-	resolveDurationEditable,
-	resolveStartEditable,
-} from '@/features/calendar/utils/resolve-editability'
 import {
 	DefaultEventContent,
 	type DefaultEventContentProps,
@@ -24,18 +23,6 @@ interface DragStateClassInput {
 	isSourceOfDrag: boolean
 }
 
-/**
- * How the bar reads to the pointer: what it offers, and whether it is in flight.
- *
- * The in-flight ghost sits at 0.5, which is a DELIBERATE deviation from
- * FullCalendar's `.fc-event-dragging:not(.fc-event-selected){opacity:.75}`.
- * 0.75 is the right number for FullCalendar's mirror, which carries no outline
- * of its own and so needs the grid around it to stay quiet to be found. This
- * mirror is opaque AND hard-ringed (`DragPreviewCard`), so it wins the
- * hierarchy on its own, and the bar left behind can recede further than the RFC
- * -silent standard suggests. It still has to read as "the event is here, and it
- * is moving" rather than as deleted, which is what rules out going lower.
- */
 const getDragStateClasses = ({
 	isDragDisabled,
 	disableEventClick,
@@ -54,7 +41,6 @@ interface EventContentInput extends DefaultEventContentProps {
 	segment: EventSegment
 }
 
-/** The consumer's renderer when there is one, otherwise the built-in bar. */
 const renderEventContent = ({
 	renderEvent,
 	event,
@@ -80,10 +66,17 @@ interface ResizeEdgesInput {
 	isResizableFromStart: boolean | undefined
 }
 
-/**
- * A handle sits only on an edge the event really has: a bar the grid cut
- * short has no end to drag there (FullCalendar, StandardEvent.tsx:95-96, v7.1.1).
- */
+const resolveEventBarStyle = (
+	event: CalendarEvent,
+	style: CSSProperties | undefined
+): CSSProperties | undefined => {
+	const hasOwnEventColor = Boolean(event.backgroundColor || event.color)
+	if (hasOwnEventColor && style?.backgroundColor !== undefined) {
+		return { ...style, backgroundColor: undefined }
+	}
+	return style
+}
+
 const getResizeEdges = ({
 	segment,
 	isResizable,
@@ -105,31 +98,11 @@ interface DraggableEventProps {
 	style?: CSSProperties
 	event: CalendarEvent
 	disableDrag?: boolean
-	/**
-	 * The resource row this instance is rendered in. A cross-resource event is
-	 * rendered once per resource, so the drop needs to know which one the drag
-	 * started from in order to swap that one for the target.
-	 */
 	sourceResourceId?: string | number
-	/** Set by the events layer when the visible range cut this bar. */
 	isTruncatedStart?: boolean
 	isTruncatedEnd?: boolean
-	/**
-	 * The span this bar draws, which the grid clipped to its own range. The drop
-	 * needs it to read the grab point in the same unit as the rendered rect.
-	 */
 	dragSegment?: DragSegment
-	/**
-	 * Whether this event is the one being dragged. Passed by the events layer,
-	 * which already reads the drag preview: subscribing here instead would
-	 * re-render every bar in the grid on every drag-over tick, through `memo`.
-	 */
 	isBeingDragged?: boolean
-	/**
-	 * What the cells under this bar snap a resize to. Absent when the bar is
-	 * not resizable where it is drawn (the all-events dialog, a single-day
-	 * timed event in a day grid, which reads as a dot).
-	 */
 	resizeGranularity?: ResizeGranularity
 }
 
@@ -139,17 +112,6 @@ interface KeyboardInput {
 	open: () => void
 }
 
-/*
- * Enter or Space opens the event, as a click does. FullCalendar does the same
- * for its focusable bars (`createAriaKeyboardAttrs`,
- * packages/preact/src/util/dom-event.ts, v7.1.1), and `preventDefault()`s so
- * Space does not scroll the page. A key pressed inside custom content (a
- * button of the consumer's) belongs to that content, not to the bar.
- *
- * A movable bar already has `role=button` and `tabIndex=0` from dnd-kit's
- * attributes; one that cannot move needs them from here, or the keyboard cannot
- * reach it. A bar whose click is disabled is not interactive at all.
- */
 const getKeyboardProps = ({
 	isMoveBlocked,
 	isClickable,
@@ -183,11 +145,6 @@ interface DraggableBarInput {
 	hasResizeHandles: boolean
 }
 
-/**
- * The dnd-kit wiring of a bar: its node ref, its drag props, and whether it is
- * under the pointer. The bar is the ONE draggable for a move and for a resize
- * of either edge; the press target tells them apart (`getPressedResizeEdge`).
- */
 const useDraggableBar = ({
 	elementId,
 	event,
@@ -197,12 +154,6 @@ const useDraggableBar = ({
 	isMoveBlocked,
 	hasResizeHandles,
 }: DraggableBarInput) => {
-	// Measured on demand rather than read from `active.rect.current.initial`:
-	// dnd-kit's own measurement of a time-grid bar comes back as the label's
-	// height (28px) instead of the bar's (a full day column is ~1463px), which
-	// clamps the grab fraction to 1 and reads every grab as "the very end of
-	// the segment". The node stays mounted for the whole drag, so measuring it
-	// at the first drag-over gives the real box.
 	const barRef = useRef<HTMLElement | null>(null)
 	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
 		id: elementId,
@@ -222,9 +173,6 @@ const useDraggableBar = ({
 		setNodeRef(node)
 	}
 
-	// A bar that cannot move is a plain clickable event: dnd-kit's attributes
-	// would mark it `aria-disabled`. Its
-	// handles, if it has any, then carry the listeners, so only they start a drag.
 	const dragAttributes = isMoveBlocked ? undefined : attributes
 	const barListeners = isMoveBlocked ? undefined : listeners
 	const handleListeners = isMoveBlocked ? listeners : undefined
@@ -254,7 +202,6 @@ function DraggableEventUnmemoized({
 		onEventClick,
 		renderEvent,
 		disableEventClick,
-		disableDragAndDrop,
 		editable,
 		eventStartEditable,
 		eventDurationEditable,
@@ -264,16 +211,11 @@ function DraggableEventUnmemoized({
 		editable,
 		eventStartEditable,
 		eventDurationEditable,
-		disableDragAndDrop,
 	}
 	const isStartEditable = resolveStartEditable(event, editFlags)
 	const isDurationEditable = resolveDurationEditable(event, editFlags)
 	const isMoveBlocked = disableDrag || !isStartEditable
 
-	// The default content reads both of these (border radius, the continuation
-	// markers and their padding), so a custom renderer needs them too or it
-	// cannot draw the same thing. Stated positively, matching FullCalendar:
-	// the flags say what the bar HOLDS, not what was cut off it.
 	const segment: EventSegment = {
 		isStart: !isTruncatedStart,
 		isEnd: !isTruncatedEnd,
@@ -295,8 +237,6 @@ function DraggableEventUnmemoized({
 			hasResizeHandles: resizeEdges.length > 0,
 		})
 
-	// `isDragging` marks the bar under the pointer; `isBeingDragged` also covers
-	// this event's other bars (a clipped span, or a second resource row).
 	const { cursorClass, draggingClass } = getDragStateClasses({
 		isDragDisabled: isMoveBlocked,
 		disableEventClick: Boolean(disableEventClick),
@@ -309,6 +249,17 @@ function DraggableEventUnmemoized({
 		open: () => onEventClick(event),
 	})
 
+	const eventBarSlot = useSlotProps('eventBar', {
+		structuralClassName: cn(
+			'group/event relative align-top overflow-clip text-ellipsis whitespace-nowrap h-full w-full',
+			cursorClass,
+			draggingClass
+		),
+		extraClassName: className,
+		style,
+	})
+	const resolvedBarStyle = resolveEventBarStyle(event, eventBarSlot.style)
+
 	const content = renderEventContent({
 		renderEvent,
 		event,
@@ -319,25 +270,13 @@ function DraggableEventUnmemoized({
 
 	return (
 		<AnimatedSection
-			className={cn(
-				// `truncate` minus its `overflow: hidden`, which would make this box
-				// the scroller a sticky title inside it sticks to, so it never moves
-				// (https://developer.mozilla.org/en-US/docs/Web/CSS/position#sticky).
-				// `clip` hides the same overflow without being one, and still draws
-				// the ellipsis a plain-text `renderEvent` relies on.
-				// `align-top`: AnimatedSection is inline-block, so it sat on the text
-				// baseline 4-7px below the slot span the bar is positioned over.
-				'relative align-top overflow-clip text-ellipsis whitespace-nowrap h-full w-full',
-				cursorClass,
-				draggingClass,
-				className
-			)}
+			className={eventBarSlot.className}
 			onClick={(e) => {
 				e.stopPropagation()
 				onEventClick(event)
 			}}
 			ref={registerBar}
-			style={style}
+			style={resolvedBarStyle}
 			transitionKey={elementId}
 			{...keyboardProps}
 			{...dragProps}
@@ -351,25 +290,15 @@ function DraggableEventUnmemoized({
 	)
 }
 
-/**
- * Compared by value: the events layer rebuilds the segment on every render, so
- * comparing by identity would defeat `memo` for every bar in the grid.
- */
 const isSameSegment = (a?: DragSegment, b?: DragSegment): boolean => {
 	if (!a || !b) {
 		return a === b
 	}
-	const sameSpan = a.start.isSame(b.start) && a.end.isSame(b.end)
+	const sameSpan =
+		isSameInstant(a.start, b.start) && isSameInstant(a.end, b.end)
 	return sameSpan && a.axis === b.axis && a.hiddenDays === b.hiddenDays
 }
 
-/**
- * Compared by value, not identity. Both events layers rebuild `style` every
- * render, so comparing by reference would defeat `memo` for every bar in the
- * grid; but it cannot be skipped either, because `AllEventsDialog` passes the
- * bar's whole height through it, and a `eventHeight` change there reaches the
- * bar through nothing else.
- */
 const isSameStyle = (a?: CSSProperties, b?: CSSProperties): boolean => {
 	if (!a || !b) {
 		return a === b
@@ -380,10 +309,6 @@ const isSameStyle = (a?: CSSProperties, b?: CSSProperties): boolean => {
 	)
 }
 
-/**
- * The props that change what a bar looks like. `style` is compared separately,
- * by value, for the reason above.
- */
 const COMPARED_PROPS = [
 	'elementId',
 	'disableDrag',

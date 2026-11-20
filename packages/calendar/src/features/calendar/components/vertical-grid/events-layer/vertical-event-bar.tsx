@@ -1,33 +1,36 @@
+import { getVerticalBarStyle, type VerticalPositionedEvent } from '@ilamy/core'
 import { cn } from '@ilamy/ui/lib/utils'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import {
+	elapsedDiff,
+	parseDate,
+	resolveZone,
+	toUtcIso,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { DraggableEvent } from '@/features/calendar/components/draggable-event/draggable-event'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { getDragSegment } from '@/features/calendar/utils/grab-offset'
 import { keys } from '@/features/calendar/utils/keys'
-import {
-	getVerticalBarStyle,
-	type VerticalPositionedEvent,
-} from '@/features/calendar/utils/layout/geometry'
 
-/** Identifies one bar: an event can be drawn once per column and per resource. */
 export const getVerticalEventKey = (
 	eventId: string | number,
 	index: number,
-	days: Dayjs[],
+	days: ZonedDate[],
 	resourceId?: string | number
-) =>
-	`event-${eventId}-${index}-${days.at(0)?.toISOString()}-${resourceId ?? 'no-resource'}`
+) => {
+	const firstDay = days.at(0)
+	return `event-${eventId}-${index}-${firstDay ? toUtcIso(firstDay) : undefined}-${resourceId ?? 'no-resource'}`
+}
 
 interface VerticalEventBarProps {
 	positioned: VerticalPositionedEvent
 	elementId: string
-	range: { start: Dayjs | undefined; end: Dayjs | undefined }
+	range: { start: ZonedDate | undefined; end: ZonedDate | undefined }
 	resourceId?: string | number
 	draggedEventId?: string | number
-	/** The hidden weekdays of a day grid, so a grab counts only drawn rows. */
 	hiddenDays?: Set<number>
 }
 
-/** One event, placed by the layout pass and draggable from where it sits. */
 export function VerticalEventBar({
 	positioned,
 	elementId,
@@ -36,9 +39,14 @@ export function VerticalEventBar({
 	draggedEventId,
 	hiddenDays,
 }: VerticalEventBarProps) {
+	const timezone = useSmartCalendarContext((c) => c.timezone)
+	const zone = resolveZone(timezone)
 	const { event } = positioned
-	// A bar this short has no room for the default two-line content.
-	const isShortEvent = event.end.diff(event.start, 'minute') <= 15
+	const start = parseDate(event.start, zone)
+	const end = parseDate(event.end, zone)
+	const isShortEvent = Boolean(
+		start && end && elapsedDiff(end, start, 'minute') <= 15
+	)
 
 	return (
 		<div

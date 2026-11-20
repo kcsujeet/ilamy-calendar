@@ -6,9 +6,17 @@ import type {
 	SensorDescriptor,
 } from '@dnd-kit/core'
 import { MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { isRangeWithinBusinessHours } from '@ilamy/core'
 import type { CalendarEvent, Resource } from '@ilamy/types'
 import { MINUTES_PER_HOUR, resolveSnapDuration } from '@ilamy/utils/helpers'
-import { useEffect, useRef, useState } from 'react'
+import {
+	isSameInstant,
+	now,
+	parseDate,
+	resolveZone,
+	toOffsetIso,
+} from '@ilamy/utils/temporal'
+import { type RefObject, useEffect, useRef, useState } from 'react'
 import {
 	calculateDropTimes,
 	calculateResizeTimes,
@@ -22,10 +30,6 @@ import {
 	type ResizeEdge,
 } from '@/features/calendar/components/drag-and-drop/dnd-utils'
 import type { ResizeGranularity } from '@/features/calendar/components/draggable-event/resize-handle'
-import {
-	isOutsideBusinessHours,
-	isPaddingDay,
-} from '@/features/calendar/hooks/use-is-cell-unavailable'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import type { DragPreviewState } from '@/features/calendar/stores/drag-preview-context'
 import { getDragCursor } from '@/features/calendar/utils/drag-preview'
@@ -36,7 +40,6 @@ import {
 	NO_GRAB_OFFSET,
 } from '@/features/calendar/utils/grab-offset'
 
-/** The overlay the drag chip renders into, imperatively driven by the drag. */
 interface DragOverlayHandle {
 	setActiveEvent: (event: CalendarEvent | null) => void
 }
@@ -44,7 +47,7 @@ interface DragOverlayHandle {
 interface CalendarDrag {
 	sensors: SensorDescriptor<Record<string, unknown>>[]
 	dragPreview: DragPreviewState | null
-	overlayRef: React.RefObject<DragOverlayHandle | null>
+	overlayRef: RefObject<DragOverlayHandle | null>
 	handlers: {
 		onDragStart: (event: DragStartEvent) => void
 		onDragMove: (event: DragMoveEvent) => void
@@ -54,17 +57,11 @@ interface CalendarDrag {
 	}
 }
 
-/** The consumer's answer for the last placement it was asked about. */
 interface EventAllowVerdict {
 	placement: DragPreviewState
 	isAllowed: boolean
 }
 
-/**
- * Whether two candidate placements describe the same drop. The preview is
- * recomputed on every drag-over tick, so without this the provider re-renders
- * the whole grid for a pointer move inside one cell.
- */
 const isSameDrop = (
 	previous: DragPreviewState | null,
 	next: DragPreviewState
@@ -73,32 +70,18 @@ const isSameDrop = (
 		return false
 	}
 	const sameSpan =
-		previous.start.isSame(next.start) && previous.end.isSame(next.end)
+		isSameInstant(previous.start, next.start) &&
+		isSameInstant(previous.end, next.end)
 	const sameTarget =
 		previous.resourceId === next.resourceId && previous.allDay === next.allDay
-	// Validity is part of the identity: crossing from an open day to a closed one
-	// can leave the span untouched, and skipping the update there would strand
-	// the not-allowed cursor on the wrong half of the drag.
 	const sameValidity = previous.isDropAllowed === next.isDropAllowed
 	return sameSpan && sameTarget && sameValidity
 }
 
-/**
- * What a drag start says: which event, and how far into it the pointer grabbed.
- * Only a bar drawn by a grid reports the span it covers; without one (the "all
- * events" dialog) the event is grabbed at its start.
- */
-/** Everything the grab needs except the rect, which does not exist yet. */
 interface PendingGrab {
 	calendarEvent: CalendarEvent
 	segment: DragSegment
 	activatorEvent: Event
-	/**
-	 * The bar's box as it was when the pointer went down. Measured then, not
-	 * later: the pointer coordinate is from that instant, and pairing it with a
-	 * rect read after a scroll or reflow computes the grab against geometry the
-	 * pointer never saw.
-	 */
 	barRect?: DOMRect
 }
 
@@ -112,17 +95,14 @@ const readGrab = ({
 	if (active.data.current?.type !== 'calendar-event') {
 		return null
 	}
-
 	const calendarEvent = active.data.current.event as CalendarEvent
 	const segment = active.data.current.dragSegment as DragSegment | undefined
 	if (!segment) {
 		return { calendarEvent, pending: null }
 	}
-
 	const getBarRect = active.data.current.getBarRect as
 		| (() => DOMRect | undefined)
 		| undefined
-
 	return {
 		calendarEvent,
 		pending: {
@@ -134,19 +114,12 @@ const readGrab = ({
 	}
 }
 
-/** Which edge of which event a resize handle was grabbed on, and where it was drawn. */
 interface ResizeGrab {
 	edge: ResizeEdge
 	granularity: ResizeGranularity
-	/** The resource lane the handle's bar was drawn in; a resize never leaves it. */
 	sourceResourceId?: string | number
 }
 
-/**
- * A press on one of the bar's resize handles resizes the event; a press
- * anywhere else on the bar moves it. Both are the bar's own draggable, so the
- * activator's target is what says which one this is.
- */
 const readResize = ({
 	active,
 	activatorEvent,
@@ -166,23 +139,19 @@ const readResize = ({
 	}
 }
 
-/**
- * Where the resized event would land, given the cell under the pointer. A
- * resize that makes no span, or hovers a cell of the other component (the
- * all-day row against the time grid), leaves the event as it was: nothing to
- * commit and nothing to refuse, as FullCalendar confines a resize to the
- * component it started in (`interaction.ts:44-48`, v7.1.1).
- */
 const getResizePlacement = (
 	resizedEvent: CalendarEvent,
 	resize: ResizeGrab,
 	overData: DropCellData | undefined,
-	isClosedOnOwnLane: boolean
+	isClosedOnOwnLane: boolean,
+	zone: string
 ): DragPreviewState => {
+	const eventStart = parseDate(resizedEvent.start, zone) ?? now(zone)
+	const eventEnd = parseDate(resizedEvent.end, zone) ?? eventStart
 	const unchanged: DragPreviewState = {
 		event: resizedEvent,
-		start: resizedEvent.start,
-		end: resizedEvent.end,
+		start: eventStart,
+		end: eventEnd,
 		resourceId: resize.sourceResourceId ?? resizedEvent.resourceId,
 		allDay: Boolean(resizedEvent.allDay),
 		isDropAllowed: true,
@@ -202,13 +171,25 @@ const getResizePlacement = (
 	return { ...unchanged, ...resized, isDropAllowed: !isClosedOnOwnLane }
 }
 
-/** Where the dragged event would land, given the cell under the pointer. */
 const getCandidatePlacement = (
 	activeEvent: CalendarEvent,
 	overData: DropCellData | undefined,
-	grabOffset: GrabOffset
+	grabOffset: GrabOffset,
+	zone: string
 ): DragPreviewState => {
 	const data = overData ?? {}
+	if (!data.date) {
+		const start = parseDate(activeEvent.start, zone) ?? now(zone)
+		const end = parseDate(activeEvent.end, zone) ?? start
+		return {
+			event: activeEvent,
+			start,
+			end,
+			resourceId: data.resourceId ?? activeEvent.resourceId,
+			allDay: Boolean(activeEvent.allDay),
+			isDropAllowed: false,
+		}
+	}
 	const { start, end, allDay } = calculateDropTimes(
 		activeEvent,
 		data,
@@ -224,13 +205,6 @@ const getCandidatePlacement = (
 	}
 }
 
-/**
- * Wears the drag's cursor for the whole page while one is in flight, so the
- * refusal is visible wherever the pointer happens to be rather than only over
- * the cell it is refusing. FullCalendar does the same thing by toggling
- * `fc-not-allowed` on `document.body`; this sets the style directly because
- * the library ships no CSS of its own.
- */
 const useDragCursor = (dragPreview: DragPreviewState | null) => {
 	const cursor = getDragCursor(dragPreview)
 	useEffect(() => {
@@ -239,8 +213,6 @@ const useDragCursor = (dragPreview: DragPreviewState | null) => {
 		}
 		const previous = document.body.style.cursor
 		document.body.style.cursor = cursor
-		// Restores on drop, on cancel, and on unmount mid-drag — leaving a
-		// `not-allowed` cursor behind on the whole page would outlive the drag.
 		return () => {
 			document.body.style.cursor = previous
 		}
@@ -249,7 +221,6 @@ const useDragCursor = (dragPreview: DragPreviewState | null) => {
 
 type CellSpan = NonNullable<ReturnType<typeof getCellSpan>>
 
-/** A pointer or touch event's viewport position, when it carries one. */
 const readPointer = (event: Event): Pointer | undefined => {
 	const { clientX, clientY, touches } = event as Partial<
 		MouseEvent & TouchEvent
@@ -261,13 +232,6 @@ const readPointer = (event: Event): Pointer | undefined => {
 	return { x: point.clientX, y: point.clientY }
 }
 
-/**
- * The pointer's live viewport position for the length of a drag, which the
- * snapped drop reads against the cell's live rect. dnd-kit's own `delta` cannot
- * stand in for it: it already includes the scroll since the drag began
- * (see `getSnappedOverData`). A keyboard drag has no pointer, and reads
- * undefined.
- */
 const useLivePointer = () => {
 	const pointerRef = useRef<Pointer | undefined>(undefined)
 	const stopFollowingRef = useRef<() => void>(() => {})
@@ -297,30 +261,17 @@ const useLivePointer = () => {
 	return { pointerRef, follow, stopFollowing }
 }
 
-/*
- * Module constants, not inline literals: dnd-kit's useSensor memoizes on the
- * options object's identity, so a fresh literal made a new sensor list on every
- * render. That rebuilt dnd-kit's internal context, which re-rendered every
- * droppable cell and draggable event whenever this hook's component rendered.
- */
 const MOUSE_SENSOR_OPTIONS = { activationConstraint: { distance: 2 } }
 const TOUCH_SENSOR_OPTIONS = {
 	activationConstraint: { delay: 100, tolerance: 5 },
 }
 
-/** Small movement thresholds, so a drag starts without feeling sticky. */
 const useDragSensors = () => {
 	const mouseSensor = useSensor(MouseSensor, MOUSE_SENSOR_OPTIONS)
 	const touchSensor = useSensor(TouchSensor, TOUCH_SENSOR_OPTIONS)
 	return useSensors(mouseSensor, touchSensor)
 }
 
-/**
- * One drag, from grab to drop: what is being dragged, how far into it the user
- * grabbed, and where it would land right now. The candidate placement is state
- * because the grids paint it; the rest are refs because only the handlers read
- * them, and a re-render per pointer move would cost the whole grid.
- */
 export const useCalendarDrag = (
 	commitDrop: (event: CalendarEvent, updates: Partial<CalendarEvent>) => void
 ): CalendarDrag => {
@@ -328,21 +279,22 @@ export const useCalendarDrag = (
 		slotDuration,
 		snapDuration,
 		eventAllow,
+		eventConstraint,
 		businessHours,
 		getResourceById,
 		isCellDisabled,
-		view,
-		currentDate,
+		timezone,
 	} = useSmartCalendarContext((context) => ({
 		slotDuration: context.slotDuration,
 		snapDuration: context.snapDuration,
 		eventAllow: context.eventAllow,
+		eventConstraint: context.eventConstraint,
 		businessHours: context.businessHours,
 		getResourceById: context.getResourceById,
 		isCellDisabled: context.isCellDisabled,
-		view: context.view,
-		currentDate: context.currentDate,
+		timezone: context.timezone,
 	}))
+	const zone = resolveZone(timezone)
 	const sensors = useDragSensors()
 	const activeEventRef = useRef<CalendarEvent>(null)
 	const grabOffsetRef = useRef<GrabOffset>(NO_GRAB_OFFSET)
@@ -365,11 +317,23 @@ export const useCalendarDrag = (
 		overlayRef.current?.setActiveEvent(null)
 	}
 
-	/**
-	 * The consumer's veto on a placement, asked once per distinct placement: the
-	 * answer is kept while the pointer stays in it, so a consumer's predicate
-	 * runs neither on every pointer move nor again on release.
-	 */
+	const isAllowedByConstraint = (placement: DragPreviewState): boolean => {
+		if (eventConstraint !== 'businessHours') {
+			return true
+		}
+		const targetResource =
+			placement.resourceId !== undefined
+				? getResourceById?.(placement.resourceId)
+				: undefined
+		const effectiveHours = targetResource?.businessHours ?? businessHours
+		return isRangeWithinBusinessHours({
+			start: placement.start,
+			end: placement.end,
+			allDay: placement.allDay,
+			businessHours: effectiveHours,
+		})
+	}
+
 	const isAllowedByConsumer = (
 		draggedEvent: CalendarEvent,
 		placement: DragPreviewState
@@ -383,45 +347,17 @@ export const useCalendarDrag = (
 		}
 		const { start, end, allDay, resourceId } = placement
 		const isAllowed =
-			eventAllow({ start, end, allDay, resourceId }, draggedEvent) ?? true
+			eventAllow(
+				{
+					start: toOffsetIso(start),
+					end: toOffsetIso(end),
+					allDay,
+					resourceId,
+				},
+				draggedEvent
+			) ?? true
 		eventAllowVerdictRef.current = { placement, isAllowed }
 		return isAllowed
-	}
-
-	/**
-	 * Where the dragged event would land on `overData`, and whether that is
-	 * allowed: the cell must accept drops and the consumer must not veto it.
-	 */
-	const getAllowedPlacement = (
-		draggedEvent: CalendarEvent,
-		overData: DropCellData | undefined
-	): DragPreviewState => {
-		const resize = resizeRef.current
-		if (resize) {
-			return getAllowedResizePlacement(draggedEvent, resize, overData)
-		}
-		const placement = getCandidatePlacement(
-			draggedEvent,
-			overData,
-			grabOffsetRef.current
-		)
-		const isAllowed =
-			placement.isDropAllowed && isAllowedByConsumer(draggedEvent, placement)
-		return { ...placement, isDropAllowed: isAllowed }
-	}
-
-	const isClosedByBusinessHours = (
-		lane: Resource | undefined,
-		hovered: DropCellData,
-		span: CellSpan
-	): boolean => {
-		const gridType = isTimeSlotDrop(hovered) ? 'hour' : 'day'
-		return isOutsideBusinessHours({
-			day: span.start,
-			gridType,
-			slotDurationMinutes: span.end.diff(span.start, 'minute'),
-			businessHours: lane?.businessHours ?? businessHours,
-		})
 	}
 
 	const isClosedByConsumer = (
@@ -430,15 +366,14 @@ export const useCalendarDrag = (
 		span: CellSpan
 	): boolean =>
 		Boolean(
-			isCellDisabled?.({ ...span, resource: lane, allDay: hovered.allDay })
+			isCellDisabled?.({
+				start: toOffsetIso(span.start),
+				end: toOffsetIso(span.end),
+				resource: lane,
+				allDay: hovered.allDay,
+			})
 		)
 
-	/**
-	 * Whether the hovered time is closed on the lane the resize started in, which
-	 * is where the event stays: business hours of that lane's resource, the
-	 * month's padding days, and the consumer's `isCellDisabled`. The hovered
-	 * cell's own `disabled` is about ITS lane, which a resize never moves to.
-	 */
 	const isClosedOnLane = (
 		laneResourceId: string | number | undefined,
 		hovered: DropCellData | undefined
@@ -451,18 +386,9 @@ export const useCalendarDrag = (
 			laneResourceId === undefined
 				? undefined
 				: getResourceById?.(laneResourceId)
-		const isPadding = isPaddingDay(span.start, view, currentDate)
-		return (
-			isClosedByBusinessHours(lane, hovered, span) ||
-			isPadding ||
-			isClosedByConsumer(lane, hovered, span)
-		)
+		return isClosedByConsumer(lane, hovered, span)
 	}
 
-	/**
-	 * Like `getAllowedPlacement`, for a resize. A resize that changes nothing is
-	 * not a placement anyone can refuse, so the consumer is not asked about it.
-	 */
 	const getAllowedResizePlacement = (
 		resizedEvent: CalendarEvent,
 		resize: ResizeGrab,
@@ -474,14 +400,42 @@ export const useCalendarDrag = (
 			resizedEvent,
 			resize,
 			overData,
-			isClosed
+			isClosed,
+			zone
 		)
+		const prevStart = parseDate(resizedEvent.start, zone)
+		const prevEnd = parseDate(resizedEvent.end, zone)
 		const isUnchanged =
-			placement.start.isSame(resizedEvent.start) &&
-			placement.end.isSame(resizedEvent.end)
+			prevStart !== undefined &&
+			prevEnd !== undefined &&
+			isSameInstant(placement.start, prevStart) &&
+			isSameInstant(placement.end, prevEnd)
+		const passesConstraint = isUnchanged || isAllowedByConstraint(placement)
+		const passesConsumer =
+			isUnchanged || isAllowedByConsumer(resizedEvent, placement)
+		const isAllowed =
+			placement.isDropAllowed && passesConstraint && passesConsumer
+		return { ...placement, isDropAllowed: isAllowed }
+	}
+
+	const getAllowedPlacement = (
+		draggedEvent: CalendarEvent,
+		overData: DropCellData | undefined
+	): DragPreviewState => {
+		const resize = resizeRef.current
+		if (resize) {
+			return getAllowedResizePlacement(draggedEvent, resize, overData)
+		}
+		const placement = getCandidatePlacement(
+			draggedEvent,
+			overData,
+			grabOffsetRef.current,
+			zone
+		)
 		const isAllowed =
 			placement.isDropAllowed &&
-			(isUnchanged || isAllowedByConsumer(resizedEvent, placement))
+			isAllowedByConstraint(placement) &&
+			isAllowedByConsumer(draggedEvent, placement)
 		return { ...placement, isDropAllowed: isAllowed }
 	}
 
@@ -489,7 +443,6 @@ export const useCalendarDrag = (
 		follow(event.activatorEvent)
 		const resizeGrab = readResize(event)
 		if (resizeGrab) {
-			// No chip for a resize: the snapped preview in the grid is the feedback.
 			activeEventRef.current = resizeGrab.calendarEvent
 			resizeRef.current = resizeGrab.resize
 			return
@@ -504,21 +457,6 @@ export const useCalendarDrag = (
 		pendingGrabRef.current = grabbed.pending
 	}
 
-	/**
-	 * Measures the grab as soon as there is a rect to measure it against.
-	 *
-	 * The RECT is captured at drag start, where the pointer coordinate also comes
-	 * from, so the two describe the same instant. Only the arithmetic waits: it
-	 * runs here because this is the first moment the offset is needed, and
-	 * because dnd-kit's own `active.rect.current.initial` (the fallback) is
-	 * still null at drag start.
-	 */
-	/**
-	 * The step a grab is floored to: the snap inside the cell the bar's grid
-	 * draws, which is a slot in the vertical grid and an hour column in a
-	 * horizontal one, whatever `slotDuration` says. A drop snaps to the same
-	 * step, so the grabbed point lands under the pointer.
-	 */
 	const getGrabSnapMinutes = (axis: DragSegment['axis']): number => {
 		const cellMinutes = axis === 'vertical' ? slotDuration : MINUTES_PER_HOUR
 		return resolveSnapDuration(snapDuration, cellMinutes)
@@ -529,7 +467,6 @@ export const useCalendarDrag = (
 		if (!pending) {
 			return
 		}
-		// The bar's own box first: dnd-kit measures a time-grid bar as its label.
 		const initialRect = pending.barRect ?? event.active.rect.current.initial
 		if (!initialRect) {
 			return
@@ -544,19 +481,9 @@ export const useCalendarDrag = (
 		pendingGrabRef.current = null
 	}
 
-	/**
-	 * Paints where the drop would land right now. dnd-kit fires `onDragOver` only
-	 * when the hovered cell changes, so a pointer sliding between snap slices of
-	 * one cell (`snapDuration` finer than the cell) is only seen by `onDragMove`
-	 * (@dnd-kit/core core.esm.js: the drag-over effect depends on `[overId]`, the
-	 * drag-move effect on the scroll-adjusted translate). Both call this; the
-	 * `isSameDrop` bail-out keeps a move inside one slice from committing.
-	 */
 	const updatePreview = (event: DragMoveEvent) => {
 		resolveGrabOffset(event)
 		const activeEvent = activeEventRef.current
-		// Over a target but not over a cell of it (a time column's slot that has
-		// not published itself) is over nothing; reading no cell would read today.
 		const overData = getSnappedOverData(event.over, pointerRef.current)
 		if (!activeEvent || !overData) {
 			setDragPreview(null)
@@ -564,13 +491,9 @@ export const useCalendarDrag = (
 		}
 
 		const nextPreview = getAllowedPlacement(activeEvent, overData)
-
-		setDragPreview((prev) => {
-			if (isSameDrop(prev, nextPreview)) {
-				return prev
-			}
-			return nextPreview
-		})
+		setDragPreview((prev) =>
+			isSameDrop(prev, nextPreview) ? prev : nextPreview
+		)
 	}
 
 	const commitResize = (
@@ -583,11 +506,18 @@ export const useCalendarDrag = (
 			resize,
 			releasedOn
 		)
-		const { start, end } = placement
+		const prevStart = parseDate(resizedEvent.start, zone)
+		const prevEnd = parseDate(resizedEvent.end, zone)
 		const isChanged =
-			!start.isSame(resizedEvent.start) || !end.isSame(resizedEvent.end)
+			!prevStart ||
+			!prevEnd ||
+			!isSameInstant(placement.start, prevStart) ||
+			!isSameInstant(placement.end, prevEnd)
 		if (placement.isDropAllowed && isChanged) {
-			commitDrop(resizedEvent, { start, end })
+			commitDrop(resizedEvent, {
+				start: toOffsetIso(placement.start),
+				end: toOffsetIso(placement.end),
+			})
 		}
 	}
 
@@ -609,8 +539,6 @@ export const useCalendarDrag = (
 			grabOffsetRef.current,
 			pointerRef.current
 		)
-		// Decided from the release itself, not from the last hover: dnd-kit fires
-		// drag-over from an effect, so a fast release can arrive before it.
 		const activeEvent = activeEventRef.current
 		const releasedOn = getSnappedOverData(event.over, pointerRef.current)
 		const placement = activeEvent

@@ -1,9 +1,6 @@
+import { filterEventsForResource, getEventResourceIds } from '@ilamy/core'
 import type { CalendarEvent, Resource } from '@ilamy/types'
 import { useCallback } from 'react'
-import {
-	filterEventsForResource,
-	getEventResourceIds,
-} from '@/features/calendar/utils/event-pipeline'
 
 export interface ResourceLookups {
 	getEventsForResource: (resourceId: string | number) => CalendarEvent[]

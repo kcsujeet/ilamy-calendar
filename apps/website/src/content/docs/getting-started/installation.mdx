@@ -13,36 +13,41 @@ Get started with ilamy Calendar by installing it via your preferred package mana
 <Tabs>
   <TabItem label="npm">
     ```bash
-    npm install @ilamy/calendar dayjs
+    npm install @ilamy/calendar
     ```
   </TabItem>
   <TabItem label="pnpm">
     ```bash
-    pnpm add @ilamy/calendar dayjs
+    pnpm add @ilamy/calendar
     ```
   </TabItem>
   <TabItem label="yarn">
     ```bash
-    yarn add @ilamy/calendar dayjs
+    yarn add @ilamy/calendar
     ```
   </TabItem>
   <TabItem label="bun">
     ```bash
-    bun add @ilamy/calendar dayjs
+    bun add @ilamy/calendar
     ```
   </TabItem>
 </Tabs>
 
-`dayjs` is included above because it is a peer dependency (see below).
+No external date library (`dayjs`, `moment`, `date-fns`) is required — v4.0 runs on TC39 Temporal and `Intl.DateTimeFormat` with plain ISO 8601 strings and `Date` inputs.
 
 ## Peer dependencies
 
-ilamy Calendar declares a few packages as **peer dependencies** so your app and the calendar share a single copy. This matters most for `dayjs`: the calendar's API uses `dayjs` objects (e.g. `CalendarEvent.start`), and date labels are localized through your app's `dayjs` instance. A shared copy means the `dayjs` locale you import in your app also applies to the calendar (no extra wiring).
+All framework peers are **optional** — install only the framework you use:
 
-- `dayjs` (`^1.11.23`)
-- `react` and `react-dom` (`^19.2.0`)
-- `tailwindcss` (`^4.2.2`) and `tailwindcss-animate` (`^1.0.7`)
+- `react` and `react-dom` (`^19.2.0`) — for `@ilamy/calendar` (React 19)
+- `vue` (`^3.5.0`) — for `@ilamy/calendar/vue` (Vue 3.5+, zero React dependency)
+- `svelte` (`^5.0.0`) — for `@ilamy/calendar/svelte` (Svelte 5+, zero React dependency)
+- `solid-js` (`^2.0.0`) — for `@ilamy/calendar/solid` (Solid 2.0+, zero React dependency)
+- `@angular/core` (`^22.0.0`) — for `@ilamy/calendar/angular` (Angular 22+, zero React dependency)
+- `tailwindcss` (`^4.2.2`) and `tailwindcss-animate` (`^1.0.7`) — optional if using `unstyled`, `@ilamy/calendar/themes/mui`, `@ilamy/calendar/themes/stylex`, or `@ilamy/calendar/core`
+- `@mui/material` (`>=6`) — optional peer dependency for `@ilamy/calendar/themes/mui`
+- `@stylexjs/stylex` (`>=0.10`) — optional peer dependency for `@ilamy/calendar/themes/stylex`
 
-The install command above already adds `dayjs`. Your React and Tailwind setup typically provides the rest (`react`, `react-dom`, `tailwindcss`, `tailwindcss-animate`); install any that are missing.
+See [Multi-Framework Support](/docs/frameworks/overview) for Vue, Svelte, Solid, and Angular guides.
 
-To localize date labels, set the `locale` prop and import the matching `dayjs` locale once in your app. See [Internationalization](/docs/features/internationalization).
+To localize date labels, set the `locale` prop to any BCP 47 locale tag (such as `"fr"`, `"de"`, `"ja"`, `"ar"`). No locale imports are needed. See [Internationalization](/docs/features/internationalization).

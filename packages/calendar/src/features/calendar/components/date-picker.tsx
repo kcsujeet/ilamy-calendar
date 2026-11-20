@@ -1,16 +1,10 @@
-import { Button } from '@ilamy/ui/components/button'
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from '@ilamy/ui/components/popover'
 import { cn } from '@ilamy/ui/lib/utils'
-import dayjs from '@ilamy/utils/dayjs'
-import { PopoverClose } from '@radix-ui/react-popover'
+import { formatDate, parseDate, resolveZone } from '@ilamy/utils/temporal'
 import { Calendar as CalendarIcon } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Calendar } from '@/features/calendar/components/calendar'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useCalendarComponents } from '@/features/calendar/stores/calendar-theme-context'
 
 interface DatePickerProps {
 	date: Date | undefined
@@ -33,57 +27,74 @@ export function DatePicker({
 	className,
 	disabled,
 }: DatePickerProps) {
-	const { firstDayOfWeek, t } = useSmartCalendarContext((context) => ({
-		firstDayOfWeek: context.firstDayOfWeek,
-		t: context.t,
-	}))
-	const popOverRef = useRef<HTMLButtonElement | null>(null)
+	const { firstDayOfWeek, currentLocale, t, timezone } =
+		useSmartCalendarContext((context) => ({
+			firstDayOfWeek: context.firstDayOfWeek,
+			currentLocale: context.currentLocale,
+			t: context.t,
+			timezone: context.timezone,
+		}))
+	const { Button, Popover } = useCalendarComponents()
+	const [open, setOpen] = useState(false)
 	const [selectedDate, setSelectedDate] = useState<Date | undefined>(date)
 
 	useEffect(() => {
 		setSelectedDate(date)
 	}, [date])
 
-	const handleDateSelect = (date: Date | undefined) => {
-		setSelectedDate(date)
+	const handleDateSelect = (nextDate: Date | undefined) => {
+		setSelectedDate(nextDate)
 		if (closeOnSelect) {
-			popOverRef.current?.click()
+			setOpen(false)
 		}
-		onChange?.(date)
+		onChange?.(nextDate)
 	}
 
 	const valueId = useId()
+	const zone = resolveZone(timezone)
+	const parsedSelected = selectedDate
+		? parseDate(selectedDate, zone)
+		: undefined
+	const formattedDate = parsedSelected
+		? formatDate(parsedSelected, { dateStyle: 'medium' }, currentLocale)
+		: t('pickDate')
+
+	const trigger = (
+		<Button
+			aria-labelledby={`${labelId} ${valueId}`}
+			className={cn(
+				'data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal'
+			)}
+			data-empty={!date}
+			id={id}
+			type="button"
+			variant="outline"
+		>
+			<CalendarIcon />
+			<span id={valueId}>{formattedDate}</span>
+		</Button>
+	)
+
+	const content = (
+		<Calendar
+			defaultMonth={selectedDate}
+			disabled={disabled}
+			firstDayOfWeek={firstDayOfWeek}
+			onSelect={handleDateSelect}
+			selected={selectedDate}
+		/>
+	)
 
 	return (
 		<div className={className}>
-			<Popover>
-				<PopoverTrigger asChild>
-					<Button
-						aria-labelledby={`${labelId} ${valueId}`}
-						className={cn(
-							'data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal'
-						)}
-						data-empty={!date}
-						id={id}
-						variant="outline"
-					>
-						<CalendarIcon />
-						<span id={valueId}>
-							{selectedDate ? dayjs(selectedDate).format('ll') : t('pickDate')}
-						</span>
-					</Button>
-				</PopoverTrigger>
-				<PopoverContent align="start" className="w-auto p-0">
-					<PopoverClose ref={popOverRef} style={{ display: 'none' }} />
-					<Calendar
-						defaultMonth={selectedDate}
-						disabled={disabled}
-						firstDayOfWeek={firstDayOfWeek}
-						onSelect={handleDateSelect}
-						selected={selectedDate}
-					/>
-				</PopoverContent>
-			</Popover>
+			<Popover
+				align="start"
+				className="w-auto p-0"
+				content={content}
+				onOpenChange={setOpen}
+				open={open}
+				trigger={trigger}
+			/>
 		</div>
 	)
 }

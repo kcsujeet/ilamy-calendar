@@ -13,6 +13,7 @@ import {
 interface PluginMutationsParams extends MutationCallbacks {
 	currentEvents: CalendarEvent[]
 	pluginRuntime: PluginRuntime
+	timezone?: string
 }
 
 export interface PluginMutations {
@@ -24,11 +25,6 @@ export interface PluginMutations {
 	applyScopedDelete: (event: CalendarEvent, scope: unknown) => void
 }
 
-/**
- * Edit and delete for an event a plugin manages (a recurring series): the
- * plugin works out which stored rows the chosen scope touches, and the result
- * is reported like any other mutation.
- */
 export const usePluginMutations = ({
 	currentEvents,
 	pluginRuntime,
@@ -37,6 +33,7 @@ export const usePluginMutations = ({
 	onEventUpdate,
 	onEventDelete,
 	onEventsChange,
+	timezone,
 }: PluginMutationsParams): PluginMutations => {
 	const callbacks: MutationCallbacks = useMemo(
 		() => ({
@@ -60,15 +57,14 @@ export const usePluginMutations = ({
 				updates,
 				currentEvents,
 				scope,
+				timezone,
 			})
 			const updatedEvent = { ...event, ...updates }
-			// A plugin that stored less than the request says so, and the change
-			// reports what was stored.
 			const isPlainList = Array.isArray(editResult)
 			const appliedUpdates = isPlainList ? undefined : editResult.appliedUpdates
 			const storedEvent = { ...event, ...(appliedUpdates ?? updates) }
-			const delta = toUpdateDelta(event, storedEvent)
-			const endDelta = toEventDelta(event.end, storedEvent.end)
+			const delta = toUpdateDelta(event, storedEvent, timezone)
+			const endDelta = toEventDelta(event.end, storedEvent.end, timezone)
 			const origin: ChangeOrigin = {
 				action: 'update',
 				event,
@@ -79,7 +75,7 @@ export const usePluginMutations = ({
 			const mutationResult = toMutationResult(editResult, origin, updatedEvent)
 			dispatchMutationResult(mutationResult, origin, callbacks, currentEvents)
 		},
-		[currentEvents, pluginRuntime, callbacks]
+		[currentEvents, pluginRuntime, callbacks, timezone]
 	)
 
 	const applyScopedDelete = useCallback(
@@ -88,12 +84,17 @@ export const usePluginMutations = ({
 			if (!manager?.applyDelete) {
 				return
 			}
-			const deleteResult = manager.applyDelete({ event, currentEvents, scope })
+			const deleteResult = manager.applyDelete({
+				event,
+				currentEvents,
+				scope,
+				timezone,
+			})
 			const origin: ChangeOrigin = { action: 'delete', event, scope }
 			const mutationResult = toMutationResult(deleteResult, origin, event)
 			dispatchMutationResult(mutationResult, origin, callbacks, currentEvents)
 		},
-		[currentEvents, pluginRuntime, callbacks]
+		[currentEvents, pluginRuntime, callbacks, timezone]
 	)
 
 	return { applyScopedEdit, applyScopedDelete }

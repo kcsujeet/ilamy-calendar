@@ -18,7 +18,7 @@
 # points (each package's `exports`) are left to auto-detection via package.json.
 
 ignorePatterns = ["examples/**", "apps/**"]
-entry = ["packages/*/bunup.config.ts", "packages/plugins/*/bunup.config.ts"]
+entry = ["packages/*/bunup.config.ts", "packages/plugins/*/bunup.config.ts", "packages/themes/*/bunup.config.ts", "packages/adapters/*/bunup.config.ts"]
 
 # Dependency findings that are false positives of fallow's per-package static view
 # of this bundled, hoisted workspace:
@@ -29,8 +29,11 @@ entry = ["packages/*/bunup.config.ts", "packages/plugins/*/bunup.config.ts"]
 #     by @ilamy/ui, which is bundled into the published @ilamy/calendar (its
 #     third-party deps stay external). They are declared in calendar's dependencies
 #     so consumers install them, even though calendar's own source reaches them
-#     only through the bundled @ilamy/ui. (@radix-ui/react-popover is omitted: it is
-#     imported by calendar source directly, so fallow already sees it as used.)
+#     only through the bundled @ilamy/ui.
+#   - temporal-polyfill is imported by @ilamy/utils (bundled into @ilamy/calendar)
+#     and declared in calendar's dependencies so consumers install and dedupe it.
+#   - @emotion/react and @emotion/styled are MUI v9 peer dependencies required by
+#     @mui/material at test runtime in packages/themes/mui, not imported directly.
 #   - @tailwindcss/vite is the Vite plugin for apps/demo (an ignored playground),
 #     declared at the workspace root for hoisting, not a source import.
 #   - @testing-library/react and @testing-library/jest-dom are test-only
@@ -47,6 +50,7 @@ ignoreDependencies = [
 	"@radix-ui/react-dialog",
 	"@radix-ui/react-dropdown-menu",
 	"@radix-ui/react-label",
+	"@radix-ui/react-popover",
 	"@radix-ui/react-scroll-area",
 	"@radix-ui/react-select",
 	"@radix-ui/react-slot",
@@ -55,6 +59,9 @@ ignoreDependencies = [
 	"class-variance-authority",
 	"clsx",
 	"tailwind-merge",
+	"temporal-polyfill",
+	"@emotion/react",
+	"@emotion/styled",
 	"@tailwindcss/vite",
 	"@testing-library/react",
 	"@testing-library/jest-dom",

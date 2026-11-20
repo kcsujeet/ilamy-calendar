@@ -1,5 +1,5 @@
-import { type CalendarEvent, dayjs } from '@ilamy/calendar'
-import type { RRuleOptions } from '@ilamy/calendar-recurrence'
+import type { CalendarEvent } from '@ilamy/calendar'
+import type { RRuleOptions } from '@ilamy/calendar/plugins/recurrence'
 
 /** A series rule as JSON carries it: the two dates are ISO strings. */
 type SeededRule = Omit<RRuleOptions, 'dtstart' | 'until'> & {
@@ -24,8 +24,8 @@ export const readSeededEvents = (seed: string): CalendarEvent[] => {
 	const rows: SeededRow[] = JSON.parse(seed)
 	return rows.map(({ rrule, ...row }) => ({
 		...row,
-		start: dayjs(row.start),
-		end: dayjs(row.end),
+		start: row.start,
+		end: row.end,
 		rrule: rrule && {
 			...rrule,
 			dtstart: new Date(rrule.dtstart),

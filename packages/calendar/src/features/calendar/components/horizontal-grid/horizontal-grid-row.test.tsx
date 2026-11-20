@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import type { CalendarEvent, Resource } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	add,
+	dayKey,
+	now,
+	parseDate,
+	startOf,
+	subtract,
+	toOffsetIso,
+	withTime,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 import { cleanup, render, screen } from '@testing-library/react'
 import {
 	DAY_NUMBER_HEIGHT,
@@ -17,7 +27,16 @@ import { keys } from '@/features/calendar/utils/keys'
 import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import { HorizontalGridRow } from './horizontal-grid-row'
 
-const initialDate = dayjs('2025-01-01T00:00:00.000Z')
+const atUtc = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const initialZoned = atUtc('2025-01-01T00:00:00.000Z')
+const initialDate = toOffsetIso(initialZoned)
 
 const mockResource: Resource = {
 	id: 'res-1',
@@ -28,18 +47,22 @@ const mockResource: Resource = {
 const renderHorizontalGridRow = ({
 	preview,
 	snapDuration,
+	nowIndicator,
 	...props
 }: {
 	preview?: DragPreviewState
 	snapDuration?: SnapDuration
+	nowIndicator?: boolean
 } & Record<string, unknown> = {}) => {
 	return render(
 		<CalendarProvider
 			dayMaxEvents={3}
 			events={[]}
 			initialDate={initialDate}
+			nowIndicator={nowIndicator}
 			resources={[mockResource]}
 			snapDuration={snapDuration}
+			timezone="UTC"
 		>
 			<DragPreviewContext.Provider value={preview ?? null}>
 				<HorizontalGridRow id="row-1" resource={mockResource} {...props} />
@@ -86,7 +109,7 @@ describe('HorizontalGridRow', () => {
 	describe('hour columns', () => {
 		const hourColumn = {
 			id: 'col-9',
-			day: initialDate.hour(9),
+			day: toOffsetIso(withTime(initialZoned, { hour: 9 })),
 			gridType: 'hour' as const,
 		}
 
@@ -114,21 +137,17 @@ describe('HorizontalGridRow', () => {
 
 	describe('flat columns (single day per column)', () => {
 		test('renders grid cells for flat day columns', () => {
-			const days = [initialDate, initialDate.add(1, 'day')]
+			const days = [initialZoned, add(initialZoned, 1, 'day')]
 			const columns = days.map((day) => ({
-				id: `col-${day.toISOString()}`,
-				day,
+				id: `col-${toOffsetIso(day)}`,
+				day: toOffsetIso(day),
 				gridType: 'day' as const,
 			}))
 
 			renderHorizontalGridRow({ columns })
 
-			expect(
-				screen.getByTestId(`day-cell-${days[0].format('YYYY-MM-DD')}`)
-			).toBeInTheDocument()
-			expect(
-				screen.getByTestId(`day-cell-${days[1].format('YYYY-MM-DD')}`)
-			).toBeInTheDocument()
+			expect(screen.getByTestId('day-cell-2025-01-01')).toBeInTheDocument()
+			expect(screen.getByTestId('day-cell-2025-01-02')).toBeInTheDocument()
 		})
 
 		test('draws cell separators via gap-px bg-border (no per-cell borders)', () => {
@@ -146,18 +165,16 @@ describe('HorizontalGridRow', () => {
 			expect(cellsContainer).toHaveClass('gap-px')
 			expect(cellsContainer).toHaveClass('bg-border')
 
-			const cell = screen.getByTestId(
-				`day-cell-${initialDate.format('YYYY-MM-DD')}`
-			)
+			const cell = screen.getByTestId('day-cell-2025-01-01')
 			expect(cell).not.toHaveClass('border-b')
 			expect(cell).not.toHaveClass('border-b-0')
 		})
 
 		test('uses gap-based separators instead of per-column right borders', () => {
-			const days = [initialDate, initialDate.add(1, 'day')]
+			const days = [initialZoned, add(initialZoned, 1, 'day')]
 			const columns = days.map((day) => ({
-				id: `col-${day.format('YYYY-MM-DD')}`,
-				day,
+				id: `col-${dayKey(day)}`,
+				day: toOffsetIso(day),
 				gridType: 'day' as const,
 			}))
 
@@ -167,12 +184,8 @@ describe('HorizontalGridRow', () => {
 			expect(cellsContainer).toHaveClass('gap-px')
 			expect(cellsContainer).toHaveClass('bg-border')
 
-			const first = screen.getByTestId(
-				`day-cell-${days[0].format('YYYY-MM-DD')}`
-			)
-			const last = screen.getByTestId(
-				`day-cell-${days[1].format('YYYY-MM-DD')}`
-			)
+			const first = screen.getByTestId('day-cell-2025-01-01')
+			const last = screen.getByTestId('day-cell-2025-01-02')
 			expect(first).not.toHaveClass('border-r')
 			expect(first).not.toHaveClass('border-r-0')
 			expect(last).not.toHaveClass('border-r')
@@ -182,17 +195,13 @@ describe('HorizontalGridRow', () => {
 
 	describe('grouped columns (multiple days per column - week view)', () => {
 		test('renders grid cells for grouped day columns', () => {
-			// Each column contains multiple hours for a single day
-			const day1Hours = [
-				initialDate.hour(9).minute(0),
-				initialDate.hour(10).minute(0),
-				initialDate.hour(11).minute(0),
-			]
-			const day2Hours = [
-				initialDate.add(1, 'day').hour(9).minute(0),
-				initialDate.add(1, 'day').hour(10).minute(0),
-				initialDate.add(1, 'day').hour(11).minute(0),
-			]
+			const day1Hours = [9, 10, 11].map((hour) =>
+				toOffsetIso(withTime(initialZoned, { hour, minute: 0 }))
+			)
+			const day2 = add(initialZoned, 1, 'day')
+			const day2Hours = [9, 10, 11].map((hour) =>
+				toOffsetIso(withTime(day2, { hour, minute: 0 }))
+			)
 
 			const columns = [
 				{
@@ -209,7 +218,6 @@ describe('HorizontalGridRow', () => {
 
 			renderHorizontalGridRow({ columns, gridType: 'hour' })
 
-			// Should render cells for each hour - testid format: day-cell-YYYY-MM-DD-HH-mm
 			expect(
 				screen.getByTestId('day-cell-2025-01-01-09-00')
 			).toBeInTheDocument()
@@ -222,14 +230,13 @@ describe('HorizontalGridRow', () => {
 		})
 
 		test('draws grouped column separators via gap-px bg-border (no per-cell borders)', () => {
-			const day1Hours = [
-				initialDate.hour(9).minute(0),
-				initialDate.hour(10).minute(0),
-			]
-			const day2Hours = [
-				initialDate.add(1, 'day').hour(9).minute(0),
-				initialDate.add(1, 'day').hour(10).minute(0),
-			]
+			const day1Hours = [9, 10].map((hour) =>
+				toOffsetIso(withTime(initialZoned, { hour, minute: 0 }))
+			)
+			const day2 = add(initialZoned, 1, 'day')
+			const day2Hours = [9, 10].map((hour) =>
+				toOffsetIso(withTime(day2, { hour, minute: 0 }))
+			)
 
 			const columns = [
 				{
@@ -251,11 +258,9 @@ describe('HorizontalGridRow', () => {
 				gridType: 'hour',
 			})
 
-			// The grouped column inner container draws the day separators.
 			const groupedContainer = container.querySelector('.flex.w-full.gap-px')
 			expect(groupedContainer).toHaveClass('bg-border')
 
-			// Cells no longer carry a per-cell right border.
 			const firstColCell = screen.getByTestId('day-cell-2025-01-01-09-00')
 			expect(firstColCell).not.toHaveClass('border-r!')
 
@@ -264,10 +269,9 @@ describe('HorizontalGridRow', () => {
 		})
 
 		test('grouped column container has full width', () => {
-			const dayHours = [
-				initialDate.hour(9).minute(0),
-				initialDate.hour(10).minute(0),
-			]
+			const dayHours = [9, 10].map((hour) =>
+				toOffsetIso(withTime(initialZoned, { hour, minute: 0 }))
+			)
 
 			const columns = [
 				{
@@ -282,7 +286,6 @@ describe('HorizontalGridRow', () => {
 				gridType: 'hour',
 			})
 
-			// Find the grouped column container div
 			const groupedContainer = container.querySelector('.flex.relative.w-full')
 			expect(groupedContainer).toBeInTheDocument()
 		})
@@ -293,68 +296,80 @@ describe('HorizontalGridRow', () => {
 			const columns = [
 				{
 					id: 'col-grouped',
-					days: [initialDate.hour(9).minute(0), initialDate.hour(10).minute(0)],
+					days: [9, 10].map((hour) =>
+						toOffsetIso(withTime(initialZoned, { hour, minute: 0 }))
+					),
 					gridType: 'hour' as const,
 				},
 			]
 
 			renderHorizontalGridRow({ columns, gridType: 'hour' })
 
-			// When grouped, events layer should be inside each column group
-			// The non-grouped events layer should not be rendered
 			const row = screen.getByTestId('horizontal-row-row-1')
 			expect(row).toBeInTheDocument()
 		})
 	})
 
-	describe('current time indicator gating', () => {
-		// The events layer reads "now" from real-time `dayjs()` (no test-injection
-		// prop), so the hour-grid case uses a 2-hour window starting at the current
-		// hour to stay resilient against second-level timing drift during the test.
-		test('mounts the indicator when gridType is "hour"', () => {
-			const currentHour = dayjs().startOf('hour')
+	describe('current time indicator gating (D3)', () => {
+		test('does not mount the indicator by default because nowIndicator defaults to false', () => {
+			const currentHour = startOf(now('UTC'), 'hour')
 			const columns = [
 				{
 					id: 'gate-hour-cell-1',
-					day: currentHour,
+					day: toOffsetIso(currentHour),
 					gridType: 'hour' as const,
 				},
 				{
 					id: 'gate-hour-cell-2',
-					day: currentHour.add(1, 'hour'),
+					day: toOffsetIso(add(currentHour, 1, 'hour')),
 					gridType: 'hour' as const,
 				},
 			]
 
 			renderHorizontalGridRow({ columns, gridType: 'hour' })
 
+			expect(
+				screen.queryByTestId('current-time-indicator')
+			).not.toBeInTheDocument()
+		})
+
+		test('mounts the indicator when gridType is "hour" and nowIndicator is true', () => {
+			const currentHour = startOf(now('UTC'), 'hour')
+			const columns = [
+				{
+					id: 'gate-hour-cell-1',
+					day: toOffsetIso(currentHour),
+					gridType: 'hour' as const,
+				},
+				{
+					id: 'gate-hour-cell-2',
+					day: toOffsetIso(add(currentHour, 1, 'hour')),
+					gridType: 'hour' as const,
+				},
+			]
+
+			renderHorizontalGridRow({
+				columns,
+				gridType: 'hour',
+				nowIndicator: true,
+			})
+
 			expect(screen.getByTestId('current-time-indicator')).toBeInTheDocument()
 		})
 
 		test('does not mount the indicator when nowIndicator is off', () => {
-			const currentHour = dayjs().startOf('hour')
-			render(
-				<CalendarProvider
-					dayMaxEvents={3}
-					events={[]}
-					initialDate={initialDate}
-					nowIndicator={false}
-					resources={[mockResource]}
-				>
-					<HorizontalGridRow
-						columns={[
-							{
-								id: 'off-hour-cell',
-								day: currentHour,
-								gridType: 'hour' as const,
-							},
-						]}
-						gridType="hour"
-						id="row-1"
-						resource={mockResource}
-					/>
-				</CalendarProvider>
-			)
+			const currentHour = startOf(now('UTC'), 'hour')
+			renderHorizontalGridRow({
+				columns: [
+					{
+						id: 'off-hour-cell',
+						day: toOffsetIso(currentHour),
+						gridType: 'hour' as const,
+					},
+				],
+				gridType: 'hour',
+				nowIndicator: false,
+			})
 
 			expect(
 				screen.queryByTestId('current-time-indicator')
@@ -370,7 +385,11 @@ describe('HorizontalGridRow', () => {
 				},
 			]
 
-			renderHorizontalGridRow({ columns, gridType: 'day' })
+			renderHorizontalGridRow({
+				columns,
+				gridType: 'day',
+				nowIndicator: true,
+			})
 
 			expect(
 				screen.queryByTestId('current-time-indicator')
@@ -379,12 +398,15 @@ describe('HorizontalGridRow', () => {
 	})
 
 	describe('event bar pixel placement (math owned by the events layer)', () => {
-		// Hour-long event on the grid's day; ids double as titles.
 		const mkEvent = (id: string, startHour: number): CalendarEvent => ({
 			id,
 			title: id,
-			start: initialDate.hour(startHour).minute(0),
-			end: initialDate.hour(startHour + 1).minute(0),
+			start: toOffsetIso(
+				withTime(initialZoned, { hour: startHour, minute: 0 })
+			),
+			end: toOffsetIso(
+				withTime(initialZoned, { hour: startHour + 1, minute: 0 })
+			),
 		})
 
 		const renderRowWithEvents = ({
@@ -409,6 +431,7 @@ describe('HorizontalGridRow', () => {
 					events={events}
 					initialDate={initialDate}
 					resources={[]}
+					timezone="UTC"
 				>
 					<HorizontalGridRow
 						columns={columns}
@@ -469,22 +492,26 @@ describe('HorizontalGridRow', () => {
 	})
 
 	describe('drag preview mirror rendering (FullCalendar / Google Calendar)', () => {
-		const week = Array.from({ length: 7 }, (_, i) => initialDate.add(i, 'day'))
+		const week = Array.from({ length: 7 }, (_, i) =>
+			toOffsetIso(add(initialZoned, i, 'day'))
+		)
 		const columns = [{ id: 'col-week', days: week, gridType: 'day' as const }]
 
-		const mkPreview = (allDay: boolean) =>
-			mkDragPreview({
+		const mkPreview = (allDay: boolean) => {
+			const endZoned = add(initialZoned, 3, 'day')
+			return mkDragPreview({
 				event: {
 					id: 'event-preview',
 					title: 'Multi-day Conference',
 					start: initialDate,
-					end: initialDate.add(3, 'day'),
+					end: toOffsetIso(endZoned),
 					allDay,
 				},
-				start: initialDate,
-				end: initialDate.add(3, 'day'),
+				start: initialZoned,
+				end: endZoned,
 				allDay,
 			})
+		}
 
 		test('renders the snapped mirror bar when the candidate overlaps the row', () => {
 			renderHorizontalGridRow({
@@ -500,19 +527,18 @@ describe('HorizontalGridRow', () => {
 		})
 
 		test('squares the mirror on whichever side the row cut it', () => {
-			// The mirror is a bar like any other, so it has to admit the same thing
-			// a real bar admits: this span continues past the edge of the row. A
-			// mirror that stays fully rounded claims the drop ends inside the week.
+			const startZoned = subtract(initialZoned, 2, 'day')
+			const endZoned = add(initialZoned, 10, 'day')
 			const spillsBothWays = mkDragPreview({
 				event: {
 					id: 'event-preview',
 					title: 'Multi-day Conference',
-					start: initialDate.subtract(2, 'day'),
-					end: initialDate.add(10, 'day'),
+					start: toOffsetIso(startZoned),
+					end: toOffsetIso(endZoned),
 					allDay: true,
 				},
-				start: initialDate.subtract(2, 'day'),
-				end: initialDate.add(10, 'day'),
+				start: startZoned,
+				end: endZoned,
 				allDay: true,
 			})
 			renderHorizontalGridRow({
@@ -522,7 +548,6 @@ describe('HorizontalGridRow', () => {
 			})
 
 			const mirror = screen.getByTestId(keys.dragPreview('horizontal'))
-
 			expect(mirror.className).toContain('rounded-none')
 		})
 
@@ -534,22 +559,10 @@ describe('HorizontalGridRow', () => {
 			})
 
 			const mirror = screen.getByTestId(keys.dragPreview('horizontal'))
-
 			expect(mirror.className).toContain('rounded-md')
 		})
 
 		test('outlines the mirror so it cannot blend into the bars behind it', () => {
-			// A fill-only mirror is invisible against a grid of same-hue bars: the
-			// pastel it copies is the pastel it is standing on. The ring is drawn in
-			// a theme token rather than the event's colour, so it contrasts whatever
-			// the event is filled with.
-			//
-			// INSET, not an outside ring. Tailwind's `ring` is a box-shadow painted
-			// outside the border box, and both events layers wrap their subtree in
-			// `overflow-clip` — so an outside ring is cut away on every edge the
-			// mirror sits flush against (its left at `left: 0%`, its bottom when the
-			// span runs past the visible hours), leaving a partial outline round
-			// two sides. An inset ring paints inside the box and cannot be clipped.
 			renderHorizontalGridRow({
 				columns,
 				id: 'row-preview',
@@ -566,22 +579,18 @@ describe('HorizontalGridRow', () => {
 		})
 
 		test('does not let the content layer paint over the outline', () => {
-			// `event.color` may carry the whole fill, not just text: the playground
-			// seeds `'bg-amber-100 text-amber-800'`. The card's inner layer is
-			// `h-full w-full`, and an inset box-shadow paints BELOW child content —
-			// so re-applying the fill there covers the outline exactly. The colour
-			// belongs on the card, once; the content layer is layout only.
+			const endZoned = add(initialZoned, 3, 'day')
 			const coloured = mkDragPreview({
 				event: {
 					id: 'event-preview',
 					title: 'Multi-day Conference',
 					start: initialDate,
-					end: initialDate.add(3, 'day'),
+					end: toOffsetIso(endZoned),
 					allDay: true,
 					color: 'bg-amber-100 text-amber-800',
 				},
-				start: initialDate,
-				end: initialDate.add(3, 'day'),
+				start: initialZoned,
+				end: endZoned,
 				allDay: true,
 			})
 			renderHorizontalGridRow({ columns, id: 'row-preview', preview: coloured })
@@ -610,8 +619,9 @@ describe('HorizontalGridRow', () => {
 describe('day-axis row sizing', () => {
 	beforeEach(cleanup)
 	test('reserves a continuing event’s row after earlier rows end', () => {
+		const base = atUtc('2025-03-10T00:00:00.000Z')
 		const days = Array.from({ length: 5 }, (_, index) =>
-			dayjs('2025-03-10T00:00:00.000Z').add(index, 'day')
+			toOffsetIso(add(base, index, 'day'))
 		)
 		const [monday, tuesday, wednesday, , friday] = days
 		const events: CalendarEvent[] = [
@@ -625,7 +635,12 @@ describe('day-axis row sizing', () => {
 			gridType: 'day' as const,
 		}))
 		render(
-			<CalendarProvider dayMaxEvents={3} events={events} initialDate={monday}>
+			<CalendarProvider
+				dayMaxEvents={3}
+				events={events}
+				initialDate={monday}
+				timezone="UTC"
+			>
 				<HorizontalGridRow
 					columns={columns}
 					id="day-counts"
@@ -643,17 +658,20 @@ describe('day-axis row sizing', () => {
 })
 
 describe('hourly row sizing and overflow', () => {
-	const hours = Array.from({ length: 6 }, (_, index) =>
-		dayjs('2026-10-28T07:00:00.000Z').add(index, 'hour')
+	beforeEach(cleanup)
+	const base = atUtc('2026-10-28T07:00:00.000Z')
+	const hourZoned = Array.from({ length: 6 }, (_, index) =>
+		add(base, index, 'hour')
 	)
+	const hours = hourZoned.map(toOffsetIso)
 	const resource = { id: 'packing-room', title: 'Packing room' }
 	const eventAt = (id: string, start: string, end: string): CalendarEvent => ({
 		id,
 		title: id,
 		uid: `${id}@packing.test`,
 		resourceId: resource.id,
-		start: dayjs(`2026-10-28T${start}:00.000Z`),
-		end: dayjs(`2026-10-28T${end}:00.000Z`),
+		start: `2026-10-28T${start}:00+00:00`,
+		end: `2026-10-28T${end}:00+00:00`,
 	})
 	const renderHours = (
 		events: CalendarEvent[],
@@ -671,8 +689,9 @@ describe('hourly row sizing and overflow', () => {
 			<CalendarProvider
 				dayMaxEvents={limit}
 				events={events}
-				initialDate={hours[0]}
+				initialDate={hours.at(0)}
 				resources={[resource]}
+				timezone="UTC"
 			>
 				<HorizontalGridRow
 					columns={columns}
@@ -685,8 +704,10 @@ describe('hourly row sizing and overflow', () => {
 		)
 	}
 	const contentAt = (hour: number) => {
-		const day = hours[hour - 7]
-		const cell = screen.getByTestId(keys.cell.day(day, day.format('HH'), '00'))
+		const day = hourZoned.at(hour - 7) ?? base
+		const cell = screen.getByTestId(
+			keys.cell.day(day, String(day.hour).padStart(2, '0'), '00')
+		)
 		const content = cell.querySelector('[data-testid="grid-cell-content"]')
 		if (!content) throw new Error('Cell content missing')
 		return content

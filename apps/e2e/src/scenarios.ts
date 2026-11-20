@@ -1,10 +1,5 @@
-import {
-	type CalendarEvent,
-	dayjs,
-	type Resource,
-	type SlotDuration,
-} from '@ilamy/calendar'
-import { RRule } from '@ilamy/calendar-recurrence'
+import type { CalendarEvent, Resource, SlotDuration } from '@ilamy/calendar'
+import { RRule } from '@ilamy/calendar/plugins/recurrence'
 
 /**
  * The instant the harness pretends it is. Must match `PINNED_NOW` in the test
@@ -38,7 +33,7 @@ export interface Scenario {
 	readonly config?: Partial<HarnessConfig>
 }
 
-const at = (iso: string) => dayjs(iso)
+const asDate = (iso: string) => new Date(iso)
 
 const event = (
 	id: string,
@@ -46,7 +41,7 @@ const event = (
 	start: string,
 	end: string,
 	extra: Partial<CalendarEvent> = {}
-): CalendarEvent => ({ id, title, start: at(start), end: at(end), ...extra })
+): CalendarEvent => ({ id, title, start, end, ...extra })
 
 const TEAM: readonly Resource[] = [
 	{ id: 'r1', title: 'Room A' },
@@ -423,7 +418,7 @@ export const scenarios = {
 					rrule: {
 						freq: RRule.WEEKLY,
 						byweekday: [RRule.MO, RRule.WE],
-						dtstart: at('2015-06-01T11:00:00.000Z').toDate(),
+						dtstart: asDate('2015-06-01T11:00:00.000Z'),
 					},
 				}
 			),
@@ -435,7 +430,7 @@ export const scenarios = {
 				{
 					rrule: {
 						freq: RRule.DAILY,
-						dtstart: at('2025-03-01T09:00:00.000Z').toDate(),
+						dtstart: asDate('2025-03-01T09:00:00.000Z'),
 					},
 				}
 			),
@@ -468,8 +463,8 @@ export const scenarios = {
 					exdates: ['2025-03-17T00:00:00.000Z'],
 					rrule: {
 						freq: RRule.WEEKLY,
-						dtstart: at('2025-03-10T00:00:00.000Z').toDate(),
-						until: at('2025-03-30T23:59:59.999Z').toDate(),
+						dtstart: asDate('2025-03-10T00:00:00.000Z'),
+						until: asDate('2025-03-30T23:59:59.999Z'),
 					},
 				}
 			),
@@ -502,7 +497,7 @@ export const scenarios = {
 				{
 					rrule: {
 						freq: RRule.DAILY,
-						dtstart: at('2025-03-06T14:00:00.000Z').toDate(),
+						dtstart: asDate('2025-03-06T14:00:00.000Z'),
 					},
 				}
 			),
@@ -566,7 +561,7 @@ export const scenarios = {
 					rrule: {
 						freq: RRule.DAILY,
 						count: 7,
-						dtstart: at('2025-03-10T09:00:00.000Z').toDate(),
+						dtstart: asDate('2025-03-10T09:00:00.000Z'),
 					},
 				}
 			),

@@ -1,7 +1,8 @@
 import { describe, expect, mock, test } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import { parseDate, type ZonedDate } from '@ilamy/utils/temporal'
 import { cleanup, render, screen } from '@testing-library/react'
+import type React from 'react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
 import {
 	DragPreviewContext,
@@ -15,21 +16,21 @@ import { keys } from '@/features/calendar/utils/keys'
 import { mkDragPreview } from '@/testing/drag-test-fixtures'
 import { MonthView, WeekView } from '@/testing/view-harnesses'
 
-/*
- * The built-in event content reads the whole segment — border radius, both
- * continuation markers, and the padding that keeps text off them. A custom
- * renderer that cannot see it has no way to draw the same thing, so every one
- * of those affordances is lost the moment a consumer supplies `renderEvent`.
- */
+const atUtc = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
 describe('renderEvent segment', () => {
-	// A booking from Saturday to the following Tuesday, so the month grid cuts
-	// it at the week boundary and draws it as two bars.
 	const acrossTheWeekend: CalendarEvent[] = [
 		{
 			id: 'long',
 			title: 'Long booking',
-			start: dayjs('2025-03-01T09:00:00.000Z'),
-			end: dayjs('2025-03-04T17:00:00.000Z'),
+			start: '2025-03-01T09:00:00+00:00',
+			end: '2025-03-04T17:00:00+00:00',
 		},
 	]
 
@@ -45,8 +46,9 @@ describe('renderEvent segment', () => {
 				dayMaxEvents={5}
 				events={acrossTheWeekend}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+				initialDate="2025-03-01T00:00:00Z"
 				renderEvent={renderEvent}
+				timezone="UTC"
 			>
 				<MonthView />
 			</CalendarProvider>
@@ -64,37 +66,27 @@ describe('renderEvent segment', () => {
 			</span>
 		))
 
-		// The first bar really starts but is cut by the boundary; the second
-		// resumes and really ends.
 		expect(segmentsSeen()).toEqual(['start-real/end-cut', 'start-cut/end-real'])
 	})
 
 	test('leaves a one-argument renderer working', () => {
-		// The signature is additive: existing consumers pass a function that
-		// ignores the second argument, and nothing about them changes.
 		const oneArgument = mock((event: CalendarEvent) => (
 			<span data-testid="segment">{event.title}</span>
 		))
 		renderWithRenderer(oneArgument)
 
 		expect(segmentsSeen()).toEqual(['Long booking', 'Long booking'])
-		// Two bars, so two calls: the count is the point, since a renderer that
-		// ran once would mean the booking stopped being cut in two.
 		expect(oneArgument).toHaveBeenCalledTimes(2)
 	})
 
-	// Not only the month grid cuts events. A day column shows a fixed span of
-	// hours, so an event running past either edge is drawn clipped there too,
-	// and a renderer that believed such a bar was whole would round an edge the
-	// event does not actually have.
 	test('tells a time-column bar when the visible hours cut it', () => {
 		cleanup()
 		const overnight: CalendarEvent[] = [
 			{
 				id: 'overnight',
 				title: 'Overnight',
-				start: dayjs('2025-01-06T22:00:00.000Z'),
-				end: dayjs('2025-01-07T02:00:00.000Z'),
+				start: '2025-01-06T22:00:00+00:00',
+				end: '2025-01-07T02:00:00+00:00',
 			},
 		]
 		render(
@@ -102,7 +94,7 @@ describe('renderEvent segment', () => {
 				dayMaxEvents={5}
 				events={overnight}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-01-06T00:00:00.000Z')}
+				initialDate="2025-01-06T00:00:00Z"
 				initialView="week"
 				renderEvent={(_event, segment) => (
 					<span data-testid="segment">
@@ -116,16 +108,9 @@ describe('renderEvent segment', () => {
 			</CalendarProvider>
 		)
 
-		// Monday holds the real 22:00 start and is cut at midnight; Tuesday
-		// resumes and holds the real 02:00 end.
 		expect(segmentsSeen()).toEqual(['start-real/end-cut', 'start-cut/end-real'])
 	})
 
-	// Whether an old renderer still fits is a question for the compiler, not
-	// for anything that can run: dropping the second argument at the call site
-	// leaves every runtime assertion above green. `tsc` is the only thing that
-	// catches it, so this is where that guarantee is pinned, the same way
-	// `packages/utils/src/dayjs.test.ts` pins its constructor narrowing.
 	test('accepts a one-argument renderer and rejects a three-argument one', () => {
 		const oneArgument: NonNullable<IlamyCalendarProps['renderEvent']> = (
 			event
@@ -143,34 +128,21 @@ describe('renderEvent segment', () => {
 	})
 })
 
-/*
- * Which corners a bar squares, and on which axis. FullCalendar squares a cut
- * side only in daygrid
- * (`.fc-daygrid-block-event:not(.fc-event-start){border-top-left-radius:0;…}`);
- * timegrid carries no such rule and leaves its events fully rounded. Squaring
- * the LEFT and RIGHT of a time-column bar is meaningless twice over: that bar
- * is cut along the vertical axis, and it is horizontally complete inside its
- * own column.
- */
 describe('event bar truncation affordances', () => {
-	// Saturday to the following Tuesday, so the month grid cuts it at the week
-	// boundary and draws it as two bars.
 	const acrossTheWeekend: CalendarEvent[] = [
 		{
 			id: 'long',
 			title: 'Long booking',
-			start: dayjs('2025-03-01T09:00:00.000Z'),
-			end: dayjs('2025-03-04T17:00:00.000Z'),
+			start: '2025-03-01T09:00:00+00:00',
+			end: '2025-03-04T17:00:00+00:00',
 		},
 	]
 
-	/** The styled surface each bar draws, found through its title. */
 	const cornersOf = (title: string) =>
 		screen
 			.getAllByText(title)
 			.map((node) => node.parentElement?.className ?? '')
 
-	/** The full-height stripes that mark a span continuing past the bar. */
 	const continuationMarkers = (container: HTMLElement) =>
 		container.querySelectorAll('[class*="bg-foreground/25"]').length
 
@@ -181,7 +153,8 @@ describe('event bar truncation affordances', () => {
 				dayMaxEvents={5}
 				events={acrossTheWeekend}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+				initialDate="2025-03-01T00:00:00Z"
+				timezone="UTC"
 			>
 				<MonthView />
 			</CalendarProvider>
@@ -200,29 +173,24 @@ describe('event bar truncation affordances', () => {
 				dayMaxEvents={5}
 				events={acrossTheWeekend}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+				initialDate="2025-03-01T00:00:00Z"
+				timezone="UTC"
 			>
 				<MonthView />
 			</CalendarProvider>
 		)
 
-		// Two bars, each cut once: the first at its right edge, the second at
-		// its left.
 		expect(continuationMarkers(container)).toBe(2)
 	})
 
 	test('gives a time-column bar no continuation stripe at all', () => {
-		// The stripe sits at `left-0` / `right-0`, full height. That says "this
-		// span continues sideways", which is true of a month row and false of a
-		// time column -- an overnight event continues DOWNWARD, past midnight.
-		// FullCalendar marks continuation only in daygrid; timegrid gets none.
 		cleanup()
 		const overnight: CalendarEvent[] = [
 			{
 				id: 'overnight',
 				title: 'Overnight',
-				start: dayjs('2025-01-06T22:00:00.000Z'),
-				end: dayjs('2025-01-07T02:00:00.000Z'),
+				start: '2025-01-06T22:00:00+00:00',
+				end: '2025-01-07T02:00:00+00:00',
 			},
 		]
 		const { container } = render(
@@ -230,7 +198,7 @@ describe('event bar truncation affordances', () => {
 				dayMaxEvents={5}
 				events={overnight}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-01-06T00:00:00.000Z')}
+				initialDate="2025-01-06T00:00:00Z"
 				initialView="week"
 				timezone="UTC"
 			>
@@ -247,8 +215,8 @@ describe('event bar truncation affordances', () => {
 			{
 				id: 'overnight',
 				title: 'Overnight',
-				start: dayjs('2025-01-06T22:00:00.000Z'),
-				end: dayjs('2025-01-07T02:00:00.000Z'),
+				start: '2025-01-06T22:00:00+00:00',
+				end: '2025-01-07T02:00:00+00:00',
 			},
 		]
 		render(
@@ -256,7 +224,7 @@ describe('event bar truncation affordances', () => {
 				dayMaxEvents={5}
 				events={overnight}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-01-06T00:00:00.000Z')}
+				initialDate="2025-01-06T00:00:00Z"
 				initialView="week"
 				timezone="UTC"
 			>
@@ -272,19 +240,13 @@ describe('event bar truncation affordances', () => {
 	})
 })
 
-/*
- * What the bar says about itself to the pointer. These are the only observable
- * of the drag-state classes, and nothing pinned them: the derivation was once
- * extracted into a helper that was never called, and the whole suite stayed
- * green while the two copies sat side by side.
- */
 describe('draggable event drag-state classes', () => {
 	const booking: CalendarEvent[] = [
 		{
 			id: 'long',
 			title: 'Long booking',
-			start: dayjs('2025-03-01T09:00:00.000Z'),
-			end: dayjs('2025-03-01T17:00:00.000Z'),
+			start: '2025-03-01T09:00:00+00:00',
+			end: '2025-03-01T17:00:00+00:00',
 		},
 	]
 
@@ -292,7 +254,6 @@ describe('draggable event drag-state classes', () => {
 		options: {
 			preview?: DragPreviewState
 			settings?: {
-				disableDragAndDrop?: boolean
 				disableEventClick?: boolean
 				editable?: boolean
 				eventStartEditable?: boolean
@@ -310,7 +271,8 @@ describe('draggable event drag-state classes', () => {
 				dayMaxEvents={5}
 				events={events}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+				initialDate="2025-03-01T00:00:00Z"
+				timezone="UTC"
 				{...options.settings}
 			>
 				<DragPreviewContext.Provider value={options.preview ?? null}>
@@ -328,12 +290,21 @@ describe('draggable event drag-state classes', () => {
 	const renderBarClasses = (options: Parameters<typeof renderBar>[0] = {}) =>
 		renderBar(options)?.className ?? ''
 
+	test('offers a pointer by default because editable defaults to false (D8)', () => {
+		const classes = renderBarClasses()
+
+		expect(classes).toContain('cursor-pointer')
+		expect(classes).not.toContain('cursor-grab')
+	})
+
 	test('offers a grab handle when the event can be dragged', () => {
-		expect(renderBarClasses()).toContain('cursor-grab')
+		expect(renderBarClasses({ settings: { editable: true } })).toContain(
+			'cursor-grab'
+		)
 	})
 
 	test('offers a pointer when dragging is off but clicking is not', () => {
-		const classes = renderBarClasses({ settings: { disableDragAndDrop: true } })
+		const classes = renderBarClasses({ settings: { editable: false } })
 
 		expect(classes).toContain('cursor-pointer')
 		expect(classes).not.toContain('cursor-grab')
@@ -341,60 +312,52 @@ describe('draggable event drag-state classes', () => {
 
 	test('offers nothing when neither dragging nor clicking is available', () => {
 		const classes = renderBarClasses({
-			settings: { disableDragAndDrop: true, disableEventClick: true },
+			settings: { editable: false, disableEventClick: true },
 		})
 
 		expect(classes).toContain('cursor-default')
 	})
 
-	// 0.5, below FullCalendar's 0.75 ghost
-	// (`.fc-event-dragging:not(.fc-event-selected){opacity:.75}`), on purpose:
-	// that number assumes an un-outlined mirror competing for attention, and
-	// this mirror is opaque and hard-ringed. The bar must still read as "here,
-	// and moving" rather than as deleted, which is the floor.
 	test('dims the source bar while its event is being dragged', () => {
 		const preview = mkDragPreview({
 			event: booking.at(0) as CalendarEvent,
-			start: dayjs('2025-03-05T09:00:00.000Z'),
-			end: dayjs('2025-03-05T17:00:00.000Z'),
+			start: atUtc('2025-03-05T09:00:00.000Z'),
+			end: atUtc('2025-03-05T17:00:00.000Z'),
 			allDay: false,
 		})
 
-		expect(renderBarClasses({ preview })).toContain('opacity-50')
+		expect(
+			renderBarClasses({ preview, settings: { editable: true } })
+		).toContain('opacity-50')
 	})
 
 	test('leaves other events undimmed', () => {
 		const preview = mkDragPreview({
 			event: { id: 'other', title: 'Another' } as CalendarEvent,
-			start: dayjs('2025-03-05T09:00:00.000Z'),
-			end: dayjs('2025-03-05T17:00:00.000Z'),
+			start: atUtc('2025-03-05T09:00:00.000Z'),
+			end: atUtc('2025-03-05T17:00:00.000Z'),
 			allDay: false,
 		})
 
-		expect(renderBarClasses({ preview })).not.toContain('opacity-50')
+		expect(
+			renderBarClasses({ preview, settings: { editable: true } })
+		).not.toContain('opacity-50')
 	})
 })
 
-/*
- * A bar that cannot move is a plain clickable event. dnd-kit's attributes on
- * it would announce drag instructions to a screen reader for something that
- * cannot be dragged, and `aria-disabled` makes assistive tech (and Playwright's
- * `click()`) treat it as inert although it still opens the form.
- */
 describe('draggable event drag attributes', () => {
 	const booking: CalendarEvent = {
 		id: 'long',
 		title: 'Long booking',
-		start: dayjs('2025-03-01T09:00:00.000Z'),
-		end: dayjs('2025-03-01T17:00:00.000Z'),
+		start: '2025-03-01T09:00:00+00:00',
+		end: '2025-03-01T17:00:00+00:00',
 	}
 
 	const renderBarElement = (
 		settings: {
 			editable?: boolean
 			eventStartEditable?: boolean
-			disableDragAndDrop?: boolean
-		} = {},
+		} = { editable: true },
 		eventOverrides: Partial<CalendarEvent> = {}
 	) => {
 		cleanup()
@@ -403,7 +366,8 @@ describe('draggable event drag attributes', () => {
 				dayMaxEvents={5}
 				events={[{ ...booking, ...eventOverrides }]}
 				firstDayOfWeek={1}
-				initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+				initialDate="2025-03-01T00:00:00Z"
+				timezone="UTC"
 				{...settings}
 			>
 				<MonthView />
@@ -422,9 +386,6 @@ describe('draggable event drag attributes', () => {
 		roleDescription: element?.hasAttribute('aria-roledescription'),
 	})
 
-	// A bar that cannot move carries none of dnd-kit's drag attributes, but it
-	// is still a focusable `role=button`: the keyboard opens it with Enter or
-	// Space (WCAG 2.1.1). It used to be a bare div the keyboard could not reach.
 	const NO_DRAG_ATTRIBUTES = {
 		describedBy: false,
 		disabled: false,
@@ -433,7 +394,7 @@ describe('draggable event drag attributes', () => {
 	}
 
 	test('a movable bar carries the drag attributes', () => {
-		const attributes = dragAttributesOf(renderBarElement())
+		const attributes = dragAttributesOf(renderBarElement({ editable: true }))
 
 		expect(attributes).toMatchObject({
 			describedBy: true,
@@ -443,24 +404,22 @@ describe('draggable event drag attributes', () => {
 	})
 
 	test('an event with editable=false is a plain bar', () => {
-		const bar = renderBarElement({}, { editable: false })
+		const bar = renderBarElement({ editable: true }, { editable: false })
 
 		expect(dragAttributesOf(bar)).toEqual(NO_DRAG_ATTRIBUTES)
 	})
 
 	test('an event with startEditable=false is a plain bar', () => {
-		const bar = renderBarElement({}, { startEditable: false })
+		const bar = renderBarElement({ editable: true }, { startEditable: false })
 
 		expect(dragAttributesOf(bar)).toEqual(NO_DRAG_ATTRIBUTES)
 	})
 
-	test('every bar is plain when the calendar is not editable', () => {
+	test('every bar is plain when the calendar is not editable (including default)', () => {
+		expect(dragAttributesOf(renderBarElement({}))).toEqual(NO_DRAG_ATTRIBUTES)
 		expect(dragAttributesOf(renderBarElement({ editable: false }))).toEqual(
 			NO_DRAG_ATTRIBUTES
 		)
-		expect(
-			dragAttributesOf(renderBarElement({ disableDragAndDrop: true }))
-		).toEqual(NO_DRAG_ATTRIBUTES)
 	})
 
 	test('an event can opt back in under a non-editable calendar', () => {
@@ -469,9 +428,9 @@ describe('draggable event drag attributes', () => {
 		expect(dragAttributesOf(bar).roleDescription).toBe(true)
 	})
 
-	test('eventStartEditable=true beats the disableDragAndDrop alias', () => {
+	test('eventStartEditable=true enables moving under editable=false', () => {
 		const bar = renderBarElement({
-			disableDragAndDrop: true,
+			editable: false,
 			eventStartEditable: true,
 		})
 

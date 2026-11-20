@@ -1,4 +1,5 @@
 import { DndContext } from '@dnd-kit/core'
+import { resolveDurationEditable, resolveStartEditable } from '@ilamy/core'
 import type React from 'react'
 import { useId } from 'react'
 import { EventMutationScopeSlot } from '@/features/calendar/components/calendar-slots'
@@ -7,10 +8,6 @@ import { useDropCommit } from '@/features/calendar/hooks/use-drop-commit'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { DragPreviewContext } from '@/features/calendar/stores/drag-preview-context'
 import { pointerWithinLazily } from '@/features/calendar/utils/pointer-within-lazily'
-import {
-	resolveDurationEditable,
-	resolveStartEditable,
-} from '@/features/calendar/utils/resolve-editability'
 import { EventDragOverlay } from './event-drag-overlay'
 
 /*
@@ -58,7 +55,6 @@ export function CalendarDndContext({ children }: CalendarDndContextProps) {
 			editable: context.editable,
 			eventStartEditable: context.eventStartEditable,
 			eventDurationEditable: context.eventDurationEditable,
-			disableDragAndDrop: context.disableDragAndDrop,
 		}
 		const isMovableByCalendar = resolveStartEditable({}, calendarFlags)
 		const isResizableByCalendar = resolveDurationEditable({}, calendarFlags)

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
 import { render } from '@testing-library/react'
 import { useCalendarCellContext } from '@/features/calendar/hooks/use-calendar-cell-context'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
@@ -8,8 +7,8 @@ import { CalendarProvider } from '@/features/calendar/stores/calendar-context/ca
 const mkEvent = (id: string): CalendarEvent => ({
 	id,
 	title: id,
-	start: dayjs('2025-07-01T09:00:00.000Z'),
-	end: dayjs('2025-07-01T10:00:00.000Z'),
+	start: '2025-07-01T09:00:00.000Z',
+	end: '2025-07-01T10:00:00.000Z',
 })
 
 /** Renders a cell-context reader under CalendarProvider, which mounts CalendarCellProvider. */

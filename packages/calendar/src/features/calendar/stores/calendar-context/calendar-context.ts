@@ -14,12 +14,6 @@ export interface ScrollRequest {
 	time: string
 }
 
-/**
- * The internal calendar context. Extends the engine's full return (state,
- * navigation, CRUD, plugin runtime) and adds the presentation/config props the
- * provider threads through from IlamyCalendar. The public, curated surface is
- * `IlamyCalendarApi` (see use-smart-calendar-context).
- */
 export interface CalendarContextType
 	extends CalendarEngineReturn,
 		Pick<
@@ -31,11 +25,12 @@ export interface CalendarContextType
 			| 'timezone'
 			| 'disableCellClick'
 			| 'disableEventClick'
-			| 'disableDragAndDrop'
 			| 'editable'
 			| 'eventStartEditable'
 			| 'eventDurationEditable'
 			| 'eventResizableFromStart'
+			| 'eventConstraint'
+			| 'selectConstraint'
 			| 'headerComponent'
 			| 'headerClassName'
 			| 'renderEventForm'
@@ -50,7 +45,6 @@ export interface CalendarContextType
 			| 'renderCurrentTimeIndicator'
 			| 'renderHour'
 			| 'hideNonBusinessHours'
-			| 'hideExportButton'
 			| 'scrollTime'
 			| 'scrollToNow'
 			| 'weekNumbers'
@@ -71,17 +65,14 @@ export interface CalendarContextType
 	viewHeaderClassName: string
 	hiddenDays?: Set<number>
 	timeFormat: TimeFormat
-	/** `timeFormat` only when the consumer passed one; undefined lets the locale decide. */
 	explicitTimeFormat?: TimeFormat
 	slotDuration: SlotDuration
 	allDaySlot: boolean
 	nowIndicator: boolean
 	weekNumberCalculation: WeekNumberCalculation
-	/** The latest `scrollToTime(time)` call. */
 	scrollRequest?: ScrollRequest
 	scrollToTime: (time: string) => void
 }
 
-// CalendarContext is kept for internal Provider usage
 export const CalendarContext: Context<CalendarContextType | undefined> =
 	createContext<CalendarContextType | undefined>(undefined)

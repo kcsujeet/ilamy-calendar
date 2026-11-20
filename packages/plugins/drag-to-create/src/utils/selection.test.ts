@@ -1,15 +1,23 @@
 import { describe, expect, it } from 'bun:test'
-import dayjs from '@ilamy/utils/dayjs'
+import { parseDate, toUtcIso, type ZonedDate } from '@ilamy/utils/temporal'
 import type { RawCell } from './read-cell'
 import { computeRange, exceedsThreshold, isSameRegion } from './selection'
+
+const mustParse = (iso: string): ZonedDate => {
+	const parsed = parseDate(iso, 'UTC')
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
 
 const cell = (
 	startISO: string,
 	endISO: string,
 	extra: Partial<Pick<RawCell, 'allDay' | 'resourceId'>> = {}
 ): RawCell => ({
-	start: dayjs(startISO),
-	end: dayjs(endISO),
+	start: mustParse(startISO),
+	end: mustParse(endISO),
 	allDay: extra.allDay ?? false,
 	resourceId: extra.resourceId,
 	element: document.createElement('div'),
@@ -106,8 +114,8 @@ describe('computeRange', () => {
 
 		const range = computeRange(a, b)
 
-		expect(range.start.toISOString()).toBe('2025-01-01T09:00:00.000Z')
-		expect(range.end.toISOString()).toBe('2025-01-01T12:00:00.000Z')
+		expect(toUtcIso(range.start)).toBe('2025-01-01T09:00:00.000Z')
+		expect(toUtcIso(range.end)).toBe('2025-01-01T12:00:00.000Z')
 	})
 
 	it('spans across days for a cross-day timed drag', () => {
@@ -116,8 +124,8 @@ describe('computeRange', () => {
 
 		const range = computeRange(a, b)
 
-		expect(range.start.toISOString()).toBe('2025-01-01T12:00:00.000Z')
-		expect(range.end.toISOString()).toBe('2025-01-02T15:00:00.000Z')
+		expect(toUtcIso(range.start)).toBe('2025-01-01T12:00:00.000Z')
+		expect(toUtcIso(range.end)).toBe('2025-01-02T15:00:00.000Z')
 	})
 
 	it('normalizes a reverse drag', () => {
@@ -130,8 +138,8 @@ describe('computeRange', () => {
 
 		const range = computeRange(a, b)
 
-		expect(range.start.toISOString()).toBe('2025-01-01T09:00:00.000Z')
-		expect(range.end.toISOString()).toBe('2025-01-01T12:00:00.000Z')
+		expect(toUtcIso(range.start)).toBe('2025-01-01T09:00:00.000Z')
+		expect(toUtcIso(range.end)).toBe('2025-01-01T12:00:00.000Z')
 		expect(range.resourceId).toBe('room-a')
 	})
 
@@ -149,7 +157,7 @@ describe('computeRange', () => {
 
 		expect(range.allDay).toBe(true)
 		expect(range.resourceId).toBe('room-a')
-		expect(range.end.toISOString()).toBe('2025-01-02T23:59:00.000Z')
+		expect(toUtcIso(range.end)).toBe('2025-01-02T23:59:00.000Z')
 	})
 
 	it('runs from the start of the first snapped slice to the end of the last', () => {
@@ -158,7 +166,7 @@ describe('computeRange', () => {
 
 		const range = computeRange(first, last)
 
-		expect([range.start.toISOString(), range.end.toISOString()]).toEqual([
+		expect([toUtcIso(range.start), toUtcIso(range.end)]).toEqual([
 			'2025-03-12T09:15:00.000Z',
 			'2025-03-12T10:15:00.000Z',
 		])

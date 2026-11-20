@@ -1,27 +1,38 @@
+import { getVerticalBarStyle, type VerticalPositionedEvent } from '@ilamy/core'
 import { cn } from '@ilamy/ui/lib/utils'
+import { formatDate, parseDate, resolveZone } from '@ilamy/utils/temporal'
 import { DragPreviewCard } from '@/features/calendar/components/drag-and-drop/drag-preview-card'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { STICKY_TITLE_CLASS } from '@/features/calendar/utils/event-surface'
-import {
-	getVerticalBarStyle,
-	type VerticalPositionedEvent,
-} from '@/features/calendar/utils/layout/geometry'
-import { getTimeOfDayPattern } from '@/utils/date-utils'
 
 interface VerticalDragPreviewProps {
 	previewPositioned: VerticalPositionedEvent
 }
 
-/** The snapped mirror, placed by the same layout pass that places real bars. */
 export function VerticalDragPreview({
 	previewPositioned,
 }: VerticalDragPreviewProps) {
-	const timeFormat = useSmartCalendarContext((c) => c.timeFormat)
+	const { timeFormat, currentLocale, timezone } = useSmartCalendarContext(
+		(c) => ({
+			timeFormat: c.timeFormat,
+			currentLocale: c.currentLocale,
+			timezone: c.timezone,
+		})
+	)
+	const zone = resolveZone(timezone)
 	const { event, isTruncatedStart, isTruncatedEnd } = previewPositioned
-	const pattern = getTimeOfDayPattern(timeFormat)
-	// "Events that are all-day will never display time text anyhow"
-	// (https://fullcalendar.io/docs/displayEventTime). A day grid mirrors them.
 	const isTimed = !event.allDay
+	const timeOptions: Intl.DateTimeFormatOptions = {
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: timeFormat === '12-hour',
+	}
+	const start = parseDate(event.start, zone)
+	const end = parseDate(event.end, zone)
+	const formattedStart = start
+		? formatDate(start, timeOptions, currentLocale)
+		: ''
+	const formattedEnd = end ? formatDate(end, timeOptions, currentLocale) : ''
 
 	return (
 		<DragPreviewCard
@@ -34,7 +45,7 @@ export function VerticalDragPreview({
 		>
 			{isTimed && (
 				<p className="text-[10px] font-semibold sm:text-xs">
-					{event.start.format(pattern)} – {event.end.format(pattern)}
+					{formattedStart} – {formattedEnd}
 				</p>
 			)}
 			<p

@@ -10,8 +10,19 @@ import {
 	test,
 } from 'bun:test'
 import { recurrencePlugin } from '@ilamy/calendar-recurrence'
+import { yearPlugin } from '@ilamy/calendar-year'
 import type { CalendarEvent, IlamyPlugin, Resource } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
+import {
+	add,
+	dayKey,
+	endOf,
+	getOffsetString,
+	parseDate,
+	startOf,
+	toOffsetIso,
+	toUtcIso,
+	withTime,
+} from '@ilamy/utils/temporal'
 import {
 	act,
 	cleanup,
@@ -46,6 +57,20 @@ import type {
 import { plainSpaces } from '@/testing/plain-spaces'
 import { IlamyCalendar } from './ilamy-calendar'
 
+const at = (iso: string, zone = 'UTC') => {
+	const parsed = parseDate(iso, zone)
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
+
+const formatYmdHm = (iso: string, zone = 'UTC'): string => {
+	const d = at(iso, zone)
+	const pad = (n: number) => String(n).padStart(2, '0')
+	return `${d.year}-${pad(d.month)}-${pad(d.day)} ${pad(d.hour)}:${pad(d.minute)}`
+}
+
 const CustomEventForm = (props: EventFormProps) => {
 	return (
 		<div data-testid="custom-event-form">
@@ -62,31 +87,42 @@ const CustomEventForm = (props: EventFormProps) => {
 					props.onAdd?.({
 						id: 'new-event-1',
 						title: 'New Event From Custom Form',
-						start: dayjs('2025-01-15T14:00:00.000Z'),
-						end: dayjs('2025-01-15T15:00:00.000Z'),
+						start: '2025-01-15T14:00:00+00:00',
+						end: '2025-01-15T15:00:00+00:00',
 					})
 				}
+				type="button"
 			>
 				Add Event
 			</button>
 			<button
 				data-testid="update-event-btn"
-				onClick={() =>
+				onClick={() => {
+					if (!props.selectedEvent) return
 					props.onUpdate?.({
-						...props.selectedEvent!,
+						...props.selectedEvent,
 						title: 'Updated Event Title',
 					})
-				}
+				}}
+				type="button"
 			>
 				Update Event
 			</button>
 			<button
 				data-testid="delete-event-btn"
-				onClick={() => props.onDelete?.(props.selectedEvent!)}
+				onClick={() => {
+					if (!props.selectedEvent) return
+					props.onDelete?.(props.selectedEvent)
+				}}
+				type="button"
 			>
 				Delete Event
 			</button>
-			<button data-testid="close-form-btn" onClick={props.onClose}>
+			<button
+				data-testid="close-form-btn"
+				onClick={props.onClose}
+				type="button"
+			>
 				Close
 			</button>
 		</div>
@@ -94,16 +130,17 @@ const CustomEventForm = (props: EventFormProps) => {
 }
 
 describe('IlamyCalendar', () => {
-	// The drag-to-create plugin clips its selection overlay to the element
-	// carrying `data-calendar-viewport`. It's an implicit cross-package contract,
-	// so removing the marker would silently break that plugin with no other test
-	// failing. This locks it in.
+	beforeEach(() => {
+		cleanup()
+	})
+
 	describe('plugin DOM contract', () => {
 		it('marks the calendar body with data-calendar-viewport', () => {
 			render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialDate="2025-01-15T00:00:00Z"
+					timezone="UTC"
 				/>
 			)
 
@@ -112,12 +149,11 @@ describe('IlamyCalendar', () => {
 		})
 
 		it('renders grid cells carrying data-start/data-end so plugins can hit-test the DOM', () => {
-			// End-to-end: a view refactor that stopped rendering DroppableCell would
-			// break drag-to-create even though droppable-cell.test still passes.
 			const { container } = render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialDate="2025-01-15T00:00:00Z"
+					timezone="UTC"
 				/>
 			)
 
@@ -127,14 +163,11 @@ describe('IlamyCalendar', () => {
 		})
 
 		it('marks the grid scroll content with data-calendar-scroll-content', () => {
-			// The drag-to-create plugin mounts its selection overlay inside the
-			// element carrying `data-calendar-scroll-content` (so it scrolls with the
-			// cells and stays under the sticky chrome). Another cross-package marker
-			// that nothing else would fail on if it were removed.
 			const { container } = render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialDate="2025-01-15T00:00:00Z"
+					timezone="UTC"
 				/>
 			)
 
@@ -151,8 +184,8 @@ describe('IlamyCalendar', () => {
 		): CalendarEvent => ({
 			id: `event-${Date.now()}`,
 			title: 'Test Event',
-			start: dayjs('2025-01-15T10:00:00.000Z'),
-			end: dayjs('2025-01-15T11:00:00.000Z'),
+			start: '2025-01-15T10:00:00+00:00',
+			end: '2025-01-15T11:00:00+00:00',
 			...overrides,
 		})
 
@@ -161,6 +194,7 @@ describe('IlamyCalendar', () => {
 		const mockOnEventDelete = mock(() => {})
 
 		beforeEach(() => {
+			cleanup()
 			mockOnEventAdd.mockClear()
 			mockOnEventUpdate.mockClear()
 			mockOnEventDelete.mockClear()
@@ -171,12 +205,12 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						renderEventForm={(props) => <CustomEventForm {...props} />}
+						timezone="UTC"
 					/>
 				)
 
-				// Custom form should always be rendered (controls visibility via open prop)
 				expect(screen.getByTestId('custom-event-form')).toBeInTheDocument()
 			})
 
@@ -184,8 +218,9 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						renderEventForm={(props) => <CustomEventForm {...props} />}
+						timezone="UTC"
 					/>
 				)
 
@@ -196,21 +231,19 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
 						renderEventForm={(props) => <CustomEventForm {...props} />}
+						timezone="UTC"
 					/>
 				)
 
-				// Click on a specific day cell using correct testid format
-				const dayCell = screen.getByTestId('day-cell-2025-01-15')
-				fireEvent.click(dayCell)
+				fireEvent.click(screen.getByTestId('day-cell-2025-01-15'))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('form-open')).toHaveTextContent('open')
 				})
 
-				// selectedEvent should have a title (new event)
 				expect(
 					screen.getByTestId('selected-event-title')
 				).not.toHaveTextContent('none')
@@ -220,22 +253,19 @@ describe('IlamyCalendar', () => {
 				const existingEvent = createEvent({
 					id: 'existing-1',
 					title: 'Existing Event',
-					start: dayjs('2025-01-15T10:00:00.000Z'),
-					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
 				render(
 					<IlamyCalendar
 						events={[existingEvent]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
 						renderEventForm={(props) => <CustomEventForm {...props} />}
+						timezone="UTC"
 					/>
 				)
 
-				// Find and click the event
-				const eventElement = screen.getByText('Existing Event')
-				fireEvent.click(eventElement)
+				fireEvent.click(screen.getByText('Existing Event'))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('form-open')).toHaveTextContent('open')
@@ -253,21 +283,19 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
 						renderEventForm={(props) => <CustomEventForm {...props} />}
+						timezone="UTC"
 					/>
 				)
 
-				// Open form by clicking a cell
-				const dayCell = screen.getByTestId('day-cell-2025-01-15')
-				fireEvent.click(dayCell)
+				fireEvent.click(screen.getByTestId('day-cell-2025-01-15'))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('form-open')).toHaveTextContent('open')
 				})
 
-				// Close the form
 				fireEvent.click(screen.getByTestId('close-form-btn'))
 
 				await waitFor(() => {
@@ -281,32 +309,28 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
 						onEventAdd={mockOnEventAdd}
 						renderEventForm={(props) => <CustomEventForm {...props} />}
+						timezone="UTC"
 					/>
 				)
 
-				// Open form
-				const dayCell = screen.getByTestId('day-cell-2025-01-15')
-				fireEvent.click(dayCell)
+				fireEvent.click(screen.getByTestId('day-cell-2025-01-15'))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('form-open')).toHaveTextContent('open')
 				})
 
-				// Add event using custom form
 				fireEvent.click(screen.getByTestId('add-event-btn'))
 
-				// Event should appear on calendar
 				await waitFor(() => {
 					expect(
 						screen.getByText('New Event From Custom Form')
 					).toBeInTheDocument()
 				})
 
-				// Callback should be called
 				expect(mockOnEventAdd).toHaveBeenCalledTimes(1)
 				expect(mockOnEventAdd).toHaveBeenCalledWith(
 					expect.objectContaining({
@@ -322,37 +346,35 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
 						renderEventForm={(props) => {
 							addEventFn = props.onAdd
 							return <CustomEventForm {...props} />
 						}}
+						timezone="UTC"
 					/>
 				)
 
-				// Open form
-				const dayCell = screen.getByTestId('day-cell-2025-01-15')
-				fireEvent.click(dayCell)
+				fireEvent.click(screen.getByTestId('day-cell-2025-01-15'))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('form-open')).toHaveTextContent('open')
 				})
 
-				// Add first event
-				addEventFn?.({
-					id: 'event-1',
-					title: 'First Event',
-					start: dayjs('2025-01-15T10:00:00.000Z'),
-					end: dayjs('2025-01-15T11:00:00.000Z'),
-				})
-
-				// Add second event
-				addEventFn?.({
-					id: 'event-2',
-					title: 'Second Event',
-					start: dayjs('2025-01-16T10:00:00.000Z'),
-					end: dayjs('2025-01-16T11:00:00.000Z'),
+				act(() => {
+					addEventFn?.({
+						id: 'event-1',
+						title: 'First Event',
+						start: '2025-01-15T10:00:00+00:00',
+						end: '2025-01-15T11:00:00+00:00',
+					})
+					addEventFn?.({
+						id: 'event-2',
+						title: 'Second Event',
+						start: '2025-01-16T10:00:00+00:00',
+						end: '2025-01-16T11:00:00+00:00',
+					})
 				})
 
 				await waitFor(() => {
@@ -367,24 +389,20 @@ describe('IlamyCalendar', () => {
 				const existingEvent = createEvent({
 					id: 'update-test-1',
 					title: 'Original Title',
-					start: dayjs('2025-01-15T10:00:00.000Z'),
-					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
 				render(
 					<IlamyCalendar
 						events={[existingEvent]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
 						onEventUpdate={mockOnEventUpdate}
 						renderEventForm={(props) => <CustomEventForm {...props} />}
+						timezone="UTC"
 					/>
 				)
 
-				// Verify original event is shown
 				expect(screen.getByText('Original Title')).toBeInTheDocument()
-
-				// Click event to open form
 				fireEvent.click(screen.getByText('Original Title'))
 
 				await waitFor(() => {
@@ -394,15 +412,12 @@ describe('IlamyCalendar', () => {
 					)
 				})
 
-				// Update event using custom form
 				fireEvent.click(screen.getByTestId('update-event-btn'))
 
-				// Event should be updated on calendar - check that new title appears
 				await waitFor(() => {
 					expect(screen.getByText('Updated Event Title')).toBeInTheDocument()
 				})
 
-				// Callback should be called with correct data
 				expect(mockOnEventUpdate).toHaveBeenCalledTimes(1)
 				expect(mockOnEventUpdate).toHaveBeenCalledWith(
 					expect.objectContaining({
@@ -419,8 +434,6 @@ describe('IlamyCalendar', () => {
 					description: 'Important description',
 					location: 'Meeting Room A',
 					color: 'bg-blue-100 text-blue-800',
-					start: dayjs('2025-01-15T10:00:00.000Z'),
-					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
 				let updateFn: EventFormProps['onUpdate']
@@ -428,30 +441,30 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[existingEvent]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
 						onEventUpdate={mockOnEventUpdate}
 						renderEventForm={(props) => {
 							updateFn = props.onUpdate
 							return <CustomEventForm {...props} />
 						}}
+						timezone="UTC"
 					/>
 				)
 
-				// Click event to open form
 				fireEvent.click(screen.getByText('Event With Details'))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('form-open')).toHaveTextContent('open')
 				})
 
-				// Update only the title
-				updateFn?.({
-					...existingEvent,
-					title: 'New Title Only',
+				act(() => {
+					updateFn?.({
+						...existingEvent,
+						title: 'New Title Only',
+					})
 				})
 
-				// Callback should have all original properties plus new title
 				await waitFor(() => {
 					expect(mockOnEventUpdate).toHaveBeenCalledWith(
 						expect.objectContaining({
@@ -471,34 +484,27 @@ describe('IlamyCalendar', () => {
 				const existingEvent = createEvent({
 					id: 'delete-test-1',
 					title: 'Event To Delete',
-					start: dayjs('2025-01-15T10:00:00.000Z'),
-					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
 				render(
 					<IlamyCalendar
 						events={[existingEvent]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
 						onEventDelete={mockOnEventDelete}
 						renderEventForm={(props) => <CustomEventForm {...props} />}
+						timezone="UTC"
 					/>
 				)
 
-				// Verify event is shown on calendar
-				expect(screen.getByText('Event To Delete')).toBeInTheDocument()
-
-				// Click event to open form
 				fireEvent.click(screen.getByText('Event To Delete'))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('form-open')).toHaveTextContent('open')
 				})
 
-				// Delete event using custom form
 				fireEvent.click(screen.getByTestId('delete-event-btn'))
 
-				// Callback should be called with correct data
 				expect(mockOnEventDelete).toHaveBeenCalledTimes(1)
 				expect(mockOnEventDelete).toHaveBeenCalledWith(
 					expect.objectContaining({
@@ -512,38 +518,28 @@ describe('IlamyCalendar', () => {
 				const existingEvent = createEvent({
 					id: 'delete-test-2',
 					title: 'DeleteMe',
-					start: dayjs('2025-01-15T10:00:00.000Z'),
-					end: dayjs('2025-01-15T11:00:00.000Z'),
 				})
 
 				render(
 					<IlamyCalendar
 						events={[existingEvent]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
 						renderEventForm={(props) => <CustomEventForm {...props} />}
+						timezone="UTC"
 					/>
 				)
 
-				// Verify event exists
-				expect(screen.getByText('DeleteMe')).toBeInTheDocument()
-
-				// Click event to open form
 				fireEvent.click(screen.getByText('DeleteMe'))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('form-open')).toHaveTextContent('open')
 				})
 
-				// Delete event
 				fireEvent.click(screen.getByTestId('delete-event-btn'))
-
-				// Event should be removed (only custom form's selected-event-title might have it)
-				// Close the form first to clear the selected event
 				fireEvent.click(screen.getByTestId('close-form-btn'))
 
 				await waitFor(() => {
-					// After closing form, the event text should not appear anywhere
 					const monthView = screen.getByTestId('horizontal-grid-scroll')
 					expect(monthView).not.toHaveTextContent('DeleteMe')
 				})
@@ -557,26 +553,27 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="week"
 						renderEventForm={(props) => {
 							addEventFn = props.onAdd
 							return <CustomEventForm {...props} />
 						}}
+						timezone="UTC"
 					/>
 				)
 
-				// Wait for week view to render
 				await waitFor(() => {
 					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
 				})
 
-				// Add event directly via captured function
-				addEventFn?.({
-					id: 'week-event-1',
-					title: 'Week View Event',
-					start: dayjs('2025-01-15T10:00:00.000Z'),
-					end: dayjs('2025-01-15T11:00:00.000Z'),
+				act(() => {
+					addEventFn?.({
+						id: 'week-event-1',
+						title: 'Week View Event',
+						start: '2025-01-15T10:00:00+00:00',
+						end: '2025-01-15T11:00:00+00:00',
+					})
 				})
 
 				await waitFor(async () => {
@@ -591,26 +588,27 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="day"
 						renderEventForm={(props) => {
 							addEventFn = props.onAdd
 							return <CustomEventForm {...props} />
 						}}
+						timezone="UTC"
 					/>
 				)
 
-				// Wait for day view to render
 				await waitFor(() => {
 					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
 				})
 
-				// Add event directly
-				addEventFn?.({
-					id: 'day-event-1',
-					title: 'Day View Event',
-					start: dayjs('2025-01-15T10:00:00.000Z'),
-					end: dayjs('2025-01-15T11:00:00.000Z'),
+				act(() => {
+					addEventFn?.({
+						id: 'day-event-1',
+						title: 'Day View Event',
+						start: '2025-01-15T10:00:00+00:00',
+						end: '2025-01-15T11:00:00+00:00',
+					})
 				})
 
 				await waitFor(async () => {
@@ -625,26 +623,27 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
 						renderEventForm={(props) => {
 							addEventFn = props.onAdd
 							return <CustomEventForm {...props} />
 						}}
+						timezone="UTC"
 					/>
 				)
 
-				// Wait for form function to be captured
 				await waitFor(() => {
 					expect(addEventFn).toBeDefined()
 				})
 
-				// Add event
-				addEventFn?.({
-					id: 'persist-event',
-					title: 'Persistent Event',
-					start: dayjs('2025-01-15T10:00:00.000Z'),
-					end: dayjs('2025-01-15T11:00:00.000Z'),
+				act(() => {
+					addEventFn?.({
+						id: 'persist-event',
+						title: 'Persistent Event',
+						start: '2025-01-15T10:00:00+00:00',
+						end: '2025-01-15T11:00:00+00:00',
+					})
 				})
 
 				await waitFor(async () => {
@@ -652,14 +651,12 @@ describe('IlamyCalendar', () => {
 					expect(events.length).toBeGreaterThan(0)
 				})
 
-				// The segmented view switcher renders single-select toggles (radios).
 				fireEvent.click(screen.getByRole('radio', { name: /^week$/i }))
 
 				await waitFor(() => {
 					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
 				})
 
-				// Event should still be visible
 				await waitFor(async () => {
 					const events = await screen.findAllByText('Persistent Event')
 					expect(events.length).toBeGreaterThan(0)
@@ -671,7 +668,6 @@ describe('IlamyCalendar', () => {
 					expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
 				})
 
-				// Event should still be visible
 				await waitFor(async () => {
 					const events = await screen.findAllByText('Persistent Event')
 					expect(events.length).toBeGreaterThan(0)
@@ -684,21 +680,18 @@ describe('IlamyCalendar', () => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+						initialDate="2025-01-15T00:00:00Z"
 						initialView="month"
+						timezone="UTC"
 					/>
 				)
 
-				// Custom form should not be present
 				expect(
 					screen.queryByTestId('custom-event-form')
 				).not.toBeInTheDocument()
 
-				// Click a cell to open form
-				const dayCell = screen.getByTestId('day-cell-2025-01-15')
-				fireEvent.click(dayCell)
+				fireEvent.click(screen.getByTestId('day-cell-2025-01-15'))
 
-				// Default form should appear (has "Create Event" title)
 				await waitFor(() => {
 					expect(screen.getByText('Create Event')).toBeInTheDocument()
 				})
@@ -707,259 +700,189 @@ describe('IlamyCalendar', () => {
 	})
 
 	describe('onCellClick', () => {
-		const mockOnCellClick = mock(() => {})
+		const mockOnCellClick = mock(
+			(_info: {
+				start: string
+				end: string
+				allDay?: boolean
+				resource?: Resource
+			}) => {}
+		)
 
 		beforeEach(() => {
+			cleanup()
 			mockOnCellClick.mockClear()
 		})
 
-		it('should call onCellClick with correct arguments in month view', async () => {
+		it('should call onCellClick with ISO strings and allDay=true in month view (D11)', () => {
 			render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialDate="2025-01-15T00:00:00Z"
 					initialView="month"
 					onCellClick={mockOnCellClick}
+					timezone="UTC"
 				/>
 			)
 
-			const dayCell = screen.getByTestId('day-cell-2025-01-15')
-			fireEvent.click(dayCell)
+			fireEvent.click(screen.getByTestId('day-cell-2025-01-15'))
 
 			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
-			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
-			expect(callArgs.start.toISOString()).toBe('2025-01-15T00:00:00.000Z')
-			// Month view full day (hour and minute are undefined)
-			// Exclusive end: the day cell runs to the next midnight (#248).
-			expect(callArgs.end.toISOString()).toBe('2025-01-16T00:00:00.000Z')
-			expect(callArgs.allDay).toBe(false)
-			expect(callArgs.resource).toBeUndefined()
+			const callArgs = mockOnCellClick.mock.calls.at(0)?.at(0)
+			expect(callArgs?.start).toBe('2025-01-15T00:00:00+00:00')
+			expect(callArgs?.end).toBe('2025-01-16T00:00:00+00:00')
+			expect(callArgs?.allDay).toBe(true)
+			expect(callArgs?.resource).toBeUndefined()
 		})
 
-		it('should call onCellClick with correct hour in week view', async () => {
-			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
+		it('should call onCellClick with correct hour in week view', () => {
 			render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={initialDate}
+					initialDate="2025-01-15T00:00:00Z"
 					initialView="week"
 					onCellClick={mockOnCellClick}
+					timezone="UTC"
 				/>
 			)
 
-			const dateStr = initialDate.format('YYYY-MM-DD')
-			const timeCell = screen.getByTestId(`vertical-cell-${dateStr}-10-00`)
-			fireEvent.click(timeCell)
+			fireEvent.click(screen.getByTestId('vertical-cell-2025-01-15-10-00'))
 
 			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
-			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
-			expect(callArgs.start.toISOString()).toBe('2025-01-15T10:00:00.000Z')
-			// Week view time slots are 1 hour (minute is undefined)
-			expect(callArgs.end.toISOString()).toBe('2025-01-15T11:00:00.000Z')
-			expect(callArgs.allDay).toBe(false)
-			expect(callArgs.resource).toBeUndefined()
+			const callArgs = mockOnCellClick.mock.calls.at(0)?.at(0)
+			expect(callArgs?.start).toBe('2025-01-15T10:00:00+00:00')
+			expect(callArgs?.end).toBe('2025-01-15T11:00:00+00:00')
+			expect(callArgs?.allDay).toBe(false)
+			expect(callArgs?.resource).toBeUndefined()
 		})
 
-		it('should call onCellClick with correct arguments in day view', async () => {
-			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
+		it('should call onCellClick with correct arguments in day view', () => {
 			render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={initialDate}
+					initialDate="2025-01-15T00:00:00Z"
 					initialView="day"
 					onCellClick={mockOnCellClick}
 					slotDuration={15}
+					timezone="UTC"
 				/>
 			)
 
-			const dateStr = initialDate.format('YYYY-MM-DD')
-			// Day view uses VerticalGrid with time cells
-			const timeCell = screen.getByTestId(`vertical-cell-${dateStr}-14-00`)
-			fireEvent.click(timeCell)
+			fireEvent.click(screen.getByTestId('vertical-cell-2025-01-15-14-00'))
 
 			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
-			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
-			expect(callArgs.start.toISOString()).toBe('2025-01-15T14:00:00.000Z')
-			// slotDuration=15 → end is 15 minutes after start
-			expect(callArgs.end.toISOString()).toBe('2025-01-15T14:15:00.000Z')
-			expect(callArgs.allDay).toBe(false)
-			expect(callArgs.resource).toBeUndefined()
+			const callArgs = mockOnCellClick.mock.calls.at(0)?.at(0)
+			expect(callArgs?.start).toBe('2025-01-15T14:00:00+00:00')
+			expect(callArgs?.end).toBe('2025-01-15T14:15:00+00:00')
+			expect(callArgs?.allDay).toBe(false)
+			expect(callArgs?.resource).toBeUndefined()
 		})
 
-		it('should call onCellClick with correct arguments in day view for slotDuration=30', async () => {
-			// Goes through the real GridCell wiring, not DroppableCell directly.
-			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
+		it('should call onCellClick with correct arguments in day view for slotDuration=30', () => {
 			render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={initialDate}
+					initialDate="2025-01-15T00:00:00Z"
 					initialView="day"
 					onCellClick={mockOnCellClick}
 					slotDuration={30}
+					timezone="UTC"
 				/>
 			)
 
-			const dateStr = initialDate.format('YYYY-MM-DD')
-			const timeCell = screen.getByTestId(`vertical-cell-${dateStr}-14-00`)
-			fireEvent.click(timeCell)
+			fireEvent.click(screen.getByTestId('vertical-cell-2025-01-15-14-00'))
 
 			expect(mockOnCellClick).toHaveBeenCalledTimes(1)
-			const callArgs = (mockOnCellClick.mock.calls as any)[0][0]
-			expect(callArgs.start.toISOString()).toBe('2025-01-15T14:00:00.000Z')
-			// slotDuration=30 → end is 30 minutes after start
-			expect(callArgs.end.toISOString()).toBe('2025-01-15T14:30:00.000Z')
-			expect(callArgs.allDay).toBe(false)
-			expect(callArgs.resource).toBeUndefined()
+			const callArgs = mockOnCellClick.mock.calls.at(0)?.at(0)
+			expect(callArgs?.start).toBe('2025-01-15T14:00:00+00:00')
+			expect(callArgs?.end).toBe('2025-01-15T14:30:00+00:00')
+			expect(callArgs?.allDay).toBe(false)
+			expect(callArgs?.resource).toBeUndefined()
 		})
 	})
 
 	describe('custom disabled state classesOverride', () => {
-		it('should apply default disabled state classes when no custom className is provided', async () => {
+		it('should apply default disabled state classes to isCellDisabled cells', () => {
 			render(
 				<IlamyCalendar
-					businessHours={{
-						daysOfWeek: [
-							'monday',
-							'tuesday',
-							'wednesday',
-							'thursday',
-							'friday',
-						],
-						startTime: 9,
-						endTime: 17,
-					}}
 					events={[]}
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialDate="2025-01-15T00:00:00Z"
 					initialView="month"
+					isCellDisabled={(info) => info.start.startsWith('2025-01-18')}
+					timezone="UTC"
 				/>
 			)
 
-			await waitFor(() => {
-				expect(screen.getByTestId('horizontal-grid-scroll')).toBeInTheDocument()
-			})
-
-			// Find a Saturday cell (non-business day) - should have default disabled styling
 			const saturdayCell = screen.getByTestId('day-cell-2025-01-18')
 			expect(saturdayCell).toHaveClass(DISABLED_CELL_CLASSNAME)
 		})
 
-		it('should apply custom disabledCell className when provided', async () => {
+		it('should apply custom disabledCell className when provided', () => {
 			render(
 				<IlamyCalendar
-					businessHours={{
-						daysOfWeek: [
-							'monday',
-							'tuesday',
-							'wednesday',
-							'thursday',
-							'friday',
-						],
-						startTime: 9,
-						endTime: 17,
-					}}
 					classesOverride={{
 						disabledCell: 'bg-gray-100 text-gray-400 cursor-not-allowed',
 					}}
 					events={[]}
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialDate="2025-01-15T00:00:00Z"
 					initialView="month"
+					isCellDisabled={(info) => info.start.startsWith('2025-01-18')}
+					timezone="UTC"
 				/>
 			)
 
-			await waitFor(() => {
-				expect(screen.getByTestId('horizontal-grid-scroll')).toBeInTheDocument()
-			})
-
-			// Find a Saturday cell (non-business day)
 			const saturdayCell = screen.getByTestId('day-cell-2025-01-18')
 			expect(saturdayCell).toHaveClass('bg-gray-100')
 			expect(saturdayCell).toHaveClass('text-gray-400')
 			expect(saturdayCell).toHaveClass('cursor-not-allowed')
-			// Should NOT have default classes
 			expect(saturdayCell).not.toHaveClass('bg-secondary')
 			expect(saturdayCell).not.toHaveClass('text-muted-foreground')
 		})
 
-		it('should apply custom disabledCell className in week view', async () => {
-			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
+		it('should apply custom disabledCell className in week view', () => {
 			render(
 				<IlamyCalendar
-					businessHours={{
-						daysOfWeek: [
-							'monday',
-							'tuesday',
-							'wednesday',
-							'thursday',
-							'friday',
-						],
-						startTime: 9,
-						endTime: 17,
-					}}
 					classesOverride={{
 						disabledCell: 'bg-red-50 text-red-300',
 					}}
 					events={[]}
-					initialDate={initialDate}
+					initialDate="2025-01-15T00:00:00Z"
 					initialView="week"
+					isCellDisabled={(info) => info.start.startsWith('2025-01-15T08:')}
+					timezone="UTC"
 				/>
 			)
 
-			await waitFor(() => {
-				expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
-			})
-
-			// Find a time cell outside business hours (e.g., 8 AM)
-			// Week view uses time cells with format: vertical-cell-{date}-{hour}-{minute}
-			const dateStr = initialDate.format('YYYY-MM-DD')
-			const nonBusinessTimeCell = screen.getByTestId(
-				`vertical-cell-${dateStr}-08-00`
+			const disabledTimeCell = screen.getByTestId(
+				'vertical-cell-2025-01-15-08-00'
 			)
-			expect(nonBusinessTimeCell).toHaveClass('bg-red-50')
-			expect(nonBusinessTimeCell).toHaveClass('text-red-300')
-			// Should NOT have default classes
-			expect(nonBusinessTimeCell).not.toHaveClass('bg-secondary')
-			expect(nonBusinessTimeCell).not.toHaveClass('text-muted-foreground')
+			expect(disabledTimeCell).toHaveClass('bg-red-50')
+			expect(disabledTimeCell).toHaveClass('text-red-300')
+			expect(disabledTimeCell).not.toHaveClass('bg-secondary')
+			expect(disabledTimeCell).not.toHaveClass('text-muted-foreground')
 		})
 
-		it('should apply custom disabledCell className in day view', async () => {
-			const initialDate = dayjs('2025-01-15T00:00:00.000Z')
+		it('should apply custom disabledCell className in day view', () => {
 			render(
 				<IlamyCalendar
-					businessHours={{
-						daysOfWeek: [
-							'monday',
-							'tuesday',
-							'wednesday',
-							'thursday',
-							'friday',
-						],
-						startTime: 9,
-						endTime: 17,
-					}}
 					classesOverride={{
 						disabledCell: 'bg-yellow-50 text-yellow-300',
 					}}
 					events={[]}
-					initialDate={initialDate}
+					initialDate="2025-01-15T00:00:00Z"
 					initialView="day"
+					isCellDisabled={(info) => info.start.startsWith('2025-01-15T08:')}
+					timezone="UTC"
 				/>
 			)
 
-			await waitFor(() => {
-				expect(screen.getByTestId('vertical-grid-body')).toBeInTheDocument()
-			})
-
-			// Find a time cell outside business hours (e.g., 8:00 AM)
-			// Day view uses time cells with format: vertical-cell-{date}-{hour}-{minute}
-			const dateStr = initialDate.format('YYYY-MM-DD')
-			const nonBusinessTimeCell = screen.getByTestId(
-				`vertical-cell-${dateStr}-08-00`
+			const disabledTimeCell = screen.getByTestId(
+				'vertical-cell-2025-01-15-08-00'
 			)
-			expect(nonBusinessTimeCell).toHaveClass('bg-yellow-50')
-			expect(nonBusinessTimeCell).toHaveClass('text-yellow-300')
-			// Should NOT have default classes
-			expect(nonBusinessTimeCell).not.toHaveClass('bg-secondary')
-			expect(nonBusinessTimeCell).not.toHaveClass('text-muted-foreground')
+			expect(disabledTimeCell).toHaveClass('bg-yellow-50')
+			expect(disabledTimeCell).toHaveClass('text-yellow-300')
+			expect(disabledTimeCell).not.toHaveClass('bg-secondary')
+			expect(disabledTimeCell).not.toHaveClass('text-muted-foreground')
 		})
 	})
 
@@ -970,11 +893,12 @@ describe('IlamyCalendar', () => {
 				<IlamyCalendar
 					events={[]}
 					getCellClassName={(info) =>
-						info.start.date() === 20 ? 'bg-amber-100' : ''
+						at(info.start).day === 20 ? 'bg-amber-100' : ''
 					}
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialDate="2025-01-15T00:00:00Z"
 					initialView="month"
 					onCellClick={onCellClick}
+					timezone="UTC"
 				/>
 			)
 
@@ -996,10 +920,11 @@ describe('IlamyCalendar', () => {
 			render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={dayjs('2025-01-15T00:00:00.000Z')}
+					initialDate="2025-01-15T00:00:00Z"
 					initialView="month"
-					isCellDisabled={(info) => info.start.date() === 20}
+					isCellDisabled={(info) => at(info.start).day === 20}
 					onCellClick={onCellClick}
+					timezone="UTC"
 				/>
 			)
 
@@ -1009,7 +934,6 @@ describe('IlamyCalendar', () => {
 			expect(disabledCell.getAttribute('data-disabled')).toBe('true')
 			expect(enabledCell.getAttribute('data-disabled')).toBe('false')
 
-			// Disabled cell blocks creation; enabled cell still fires onCellClick.
 			fireEvent.click(disabledCell)
 			expect(onCellClick).toHaveBeenCalledTimes(0)
 
@@ -1020,6 +944,7 @@ describe('IlamyCalendar', () => {
 })
 
 test('renders a plugin view and exposes the plugin provider context to it', () => {
+	cleanup()
 	const FakeContext = createContext('default')
 	const FakeView = () => {
 		const value = useContext(FakeContext)
@@ -1051,6 +976,7 @@ test('renders a plugin view and exposes the plugin provider context to it', () =
 })
 
 test('renders a spec-driven plugin view that declares no component', () => {
+	cleanup()
 	const specOnlyPlugin: IlamyPlugin = {
 		name: 'spec-only',
 		views: [
@@ -1060,23 +986,38 @@ test('renders a spec-driven plugin view that declares no component', () => {
 				icon: () => null,
 				layout: 'vertical',
 				navigationStep: { amount: 3, unit: 'day' },
-				range: (date) => ({
-					start: date.startOf('day'),
-					end: date.add(2, 'day').endOf('day'),
-				}),
-				columns: (date) => [
-					{
-						id: 'three-day-col',
-						day: date,
-						days: [date.startOf('day').hour(9), date.startOf('day').hour(10)],
-						gridType: 'hour',
-					},
-				],
+				range: (date) => {
+					const zoned = at(date)
+					return {
+						start: toOffsetIso(startOf(zoned, 'day')),
+						end: toOffsetIso(endOf(add(zoned, 2, 'day'), 'day')),
+					}
+				},
+				columns: (date) => {
+					const zoned = at(date)
+					return [
+						{
+							id: 'three-day-col',
+							day: date,
+							days: [
+								toOffsetIso(withTime(zoned, { hour: 9 })),
+								toOffsetIso(withTime(zoned, { hour: 10 })),
+							],
+							gridType: 'hour',
+						},
+					]
+				},
 			},
 		],
 	}
 
-	render(<IlamyCalendar initialView="three-day" plugins={[specOnlyPlugin]} />)
+	render(
+		<IlamyCalendar
+			initialView="three-day"
+			plugins={[specOnlyPlugin]}
+			timezone="UTC"
+		/>
+	)
 
 	expect(screen.getByTestId('vertical-col-three-day-col')).toBeDefined()
 })
@@ -1085,6 +1026,7 @@ describe('orientation without resources', () => {
 	let warnSpy: ReturnType<typeof spyOn>
 
 	beforeEach(() => {
+		cleanup()
 		warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
 	})
 
@@ -1141,11 +1083,15 @@ describe('orientation without resources', () => {
 })
 
 describe('IlamyCalendar - internal edits survive re-render (issue #197)', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
 	const STANDUP: CalendarEvent = {
 		id: 'standup',
 		title: 'Daily Standup',
-		start: dayjs('2025-01-06T10:00:00.000Z'),
-		end: dayjs('2025-01-06T11:00:00.000Z'),
+		start: '2025-01-06T10:00:00+00:00',
+		end: '2025-01-06T11:00:00+00:00',
 		rrule: {
 			freq: RRule.WEEKLY,
 			interval: 1,
@@ -1154,36 +1100,31 @@ describe('IlamyCalendar - internal edits survive re-render (issue #197)', () => 
 		},
 		exdates: [],
 	}
-	// Stable references across renders, mirroring a consumer holding events/plugins
-	// in state. The bug was a fresh array from normalizeEvents on every render.
 	const EVENTS: CalendarEvent[] = [STANDUP]
 	const PLUGINS = [recurrencePlugin()]
-	const WED_PREFIX = '2025-01-08' // Wednesday of the rendered week
+	const WED_PREFIX = '2025-01-08'
 
-	// Rendered inside the provider (headerComponent), so it reads the live context:
-	// extends the Wednesday occurrence by 1h (scope "this") and reports its end.
 	const EditHarness = () => {
 		const { events, applyScopedEdit } = useIlamyCalendarContext()
 		const wednesdayStandups = events.filter(
-			(e) =>
-				e.title === 'Daily Standup' &&
-				e.start.toISOString().startsWith(WED_PREFIX)
+			(e) => e.title === 'Daily Standup' && e.start.startsWith(WED_PREFIX)
 		)
 		const target = wednesdayStandups.at(0)
 		return (
 			<div>
 				<button
 					data-testid="extend-wed"
-					onClick={() =>
-						target &&
-						applyScopedEdit(target, { end: target.end.add(1, 'hour') }, 'this')
-					}
+					onClick={() => {
+						if (!target) return
+						const nextEnd = toOffsetIso(add(at(target.end), 1, 'hour'))
+						applyScopedEdit(target, { end: nextEnd }, 'this')
+					}}
 					type="button"
 				>
 					extend
 				</button>
 				<span data-testid="wed-ends">
-					{wednesdayStandups.map((e) => e.end.toISOString()).join('|')}
+					{wednesdayStandups.map((e) => toUtcIso(at(e.end))).join('|')}
 				</span>
 			</div>
 		)
@@ -1193,7 +1134,7 @@ describe('IlamyCalendar - internal edits survive re-render (issue #197)', () => 
 		<IlamyCalendar
 			events={EVENTS}
 			headerComponent={<EditHarness />}
-			initialDate={dayjs('2025-01-08T12:00:00.000Z')}
+			initialDate="2025-01-08T12:00:00Z"
 			initialView="week"
 			plugins={PLUGINS}
 			timezone="UTC"
@@ -1212,8 +1153,6 @@ describe('IlamyCalendar - internal edits survive re-render (issue #197)', () => 
 			'2025-01-08T12:00:00.000Z'
 		)
 
-		// A re-render of IlamyCalendar (what the demo triggers on navigation via a
-		// controlled initialDate) must not discard the in-memory override.
 		rerender(calendar())
 		expect(screen.getByTestId('wed-ends').textContent).toBe(
 			'2025-01-08T12:00:00.000Z'
@@ -1221,24 +1160,30 @@ describe('IlamyCalendar - internal edits survive re-render (issue #197)', () => 
 	})
 })
 
-/**
- * With a `timezone` prop, nothing about what the calendar shows may depend on
- * where the browser happens to be. `IlamyCalendar` normalizes events and
- * `initialDate` in its OWN render, above the provider that applies the zone, so
- * these pin the ordering as much as the conversion (#247).
- */
-describe('IlamyCalendar - timezone prop', () => {
-	afterEach(() => {
-		dayjs.tz.setDefault(undefined)
+describe('IlamyCalendar - timezone prop & multi-zone isolation (4.0.1)', () => {
+	beforeEach(() => {
+		cleanup()
 	})
 
-	const StartProbe = () => (
-		<span data-testid="probe-start">
-			{useIlamyCalendarContext().events.at(0)?.start.format('HH:mm Z')}
-		</span>
-	)
+	const StartProbe = ({ testId = 'probe-start' }: { testId?: string }) => {
+		const event = useIlamyCalendarContext().events.at(0)
+		const zone = useIlamyCalendarContext().timezone ?? 'UTC'
+		const parsed = event ? at(event.start, zone) : undefined
+		const formatted = parsed
+			? `${String(parsed.hour).padStart(2, '0')}:${String(parsed.minute).padStart(2, '0')} ${getOffsetString(parsed)}`
+			: ''
+		return <span data-testid={testId}>{formatted}</span>
+	}
 
 	const renderWithTokyo = (start: IlamyCalendarPropEvent['start']) => {
+		cleanup()
+		const endIso = toUtcIso(
+			add(
+				at(typeof start === 'string' ? start : start.toISOString()),
+				1,
+				'hour'
+			)
+		)
 		render(
 			<IlamyCalendar
 				events={[
@@ -1246,7 +1191,7 @@ describe('IlamyCalendar - timezone prop', () => {
 						id: '1',
 						title: 'Standup',
 						start,
-						end: dayjs(start).add(1, 'hour'),
+						end: endIso,
 					},
 				]}
 				headerComponent={<StartProbe />}
@@ -1261,26 +1206,19 @@ describe('IlamyCalendar - timezone prop', () => {
 		expect(renderWithTokyo('2025-01-15T12:00:00.000Z')).toBe('21:00 +09:00')
 	})
 
-	it('renders an event the consumer already parsed on the calendar clock', () => {
-		const parsedBeforeMount = dayjs('2025-01-15T12:00:00.000Z')
-
-		expect(renderWithTokyo(parsedBeforeMount)).toBe('21:00 +09:00')
+	it('renders a Date event on the calendar clock', () => {
+		expect(renderWithTokyo(new Date('2025-01-15T12:00:00.000Z'))).toBe(
+			'21:00 +09:00'
+		)
 	})
 
-	/*
-	 * The same question asked of the date the calendar OPENS on. `initialDate`
-	 * is parsed before the zone is known, so the calendar was showing whichever
-	 * day that date fell on in the machine's zone — off by one for any reader
-	 * far enough from the workspace, which is the case the prop exists for.
-	 *
-	 * Two zones either side of every machine, so neither passes by accident.
-	 */
-	const DayProbe = () => {
-		const { currentDate } = useIlamyCalendarContext()
+	const DayProbe = ({ prefix = 'probe' }: { prefix?: string }) => {
+		const { currentDate, timezone } = useIlamyCalendarContext()
+		const parsed = at(currentDate, timezone ?? 'UTC')
 		return (
 			<>
-				<span data-testid="probe-day">{currentDate.format('YYYY-MM-DD')}</span>
-				<span data-testid="probe-instant">{currentDate.toISOString()}</span>
+				<span data-testid={`${prefix}-day`}>{dayKey(parsed)}</span>
+				<span data-testid={`${prefix}-instant`}>{toUtcIso(parsed)}</span>
 			</>
 		)
 	}
@@ -1304,81 +1242,105 @@ describe('IlamyCalendar - timezone prop', () => {
 	}
 
 	it('opens on the date it was given, wherever the reader is', () => {
-		// A clock reading, not a moment: the consumer named 10 March, so 10 March
-		// is what opens, in Kiritimati (+14) and in Midway (-11) alike.
 		expect(dayShownFor('Pacific/Kiritimati', '2025-03-10')).toBe('2025-03-10')
 		expect(dayShownFor('Pacific/Midway', '2025-03-10')).toBe('2025-03-10')
 	})
 
-	// The other half of the rule, and the half a machine-zone bug hides in: a
-	// value that already names an instant keeps it, and only the clock it is
-	// read against changes. 22:00Z on 10 March is the 11th in Kiritimati (+14),
-	// whatever the reader's own zone says.
 	it('keeps the instant of a value that already names one', () => {
 		const iso = '2025-03-10T22:00:00.000Z'
 
-		for (const given of [iso, new Date(iso), dayjs(iso)]) {
+		for (const given of [iso, new Date(iso)]) {
 			expect(dayShownFor('Pacific/Kiritimati', given)).toBe('2025-03-11')
 			expect(instantShown()).toBe(iso)
 		}
 	})
 
 	it("opens on the calendar's today when given no date", () => {
-		// No date is a different question: "now", answered on the calendar's
-		// clock rather than the machine's. Pinned to an instant where the two
-		// zones genuinely disagree, so the expectations can be absolute: at
-		// 12:30 UTC it is already the 11th in Kiritimati (+14) and still the
-		// 10th in Midway (-11).
 		setSystemTime(new Date('2025-03-10T12:30:00.000Z'))
+		try {
+			expect(dayShownFor('Pacific/Kiritimati')).toBe('2025-03-11')
+			expect(dayShownFor('Pacific/Midway')).toBe('2025-03-10')
+		} finally {
+			setSystemTime()
+		}
+	})
 
-		expect(dayShownFor('Pacific/Kiritimati')).toBe('2025-03-11')
-		expect(dayShownFor('Pacific/Midway')).toBe('2025-03-10')
+	it('renders two calendars with different timezones side-by-side without interference', () => {
+		const sharedInstant = '2025-03-10T22:00:00.000Z'
+		const sharedEvent: IlamyCalendarPropEvent = {
+			id: 'global-call',
+			title: 'Global Call',
+			start: sharedInstant,
+			end: '2025-03-10T23:00:00.000Z',
+		}
 
-		setSystemTime()
+		render(
+			<div>
+				<IlamyCalendar
+					events={[sharedEvent]}
+					headerComponent={
+						<>
+							<DayProbe prefix="ny" />
+							<StartProbe testId="ny-start" />
+						</>
+					}
+					initialDate={sharedInstant}
+					initialView="day"
+					timezone="America/New_York"
+				/>
+				<IlamyCalendar
+					events={[sharedEvent]}
+					headerComponent={
+						<>
+							<DayProbe prefix="tokyo" />
+							<StartProbe testId="tokyo-start" />
+						</>
+					}
+					initialDate={sharedInstant}
+					initialView="day"
+					timezone="Asia/Tokyo"
+				/>
+			</div>
+		)
+
+		// 2025-03-10T22:00Z is 18:00 EDT (-04:00) on Mar 10 in NY, and 07:00 JST (+09:00) on Mar 11 in Tokyo
+		expect(screen.getByTestId('ny-day').textContent).toBe('2025-03-10')
+		expect(screen.getByTestId('ny-start').textContent).toBe('18:00 -04:00')
+		expect(screen.getByTestId('tokyo-day').textContent).toBe('2025-03-11')
+		expect(screen.getByTestId('tokyo-start').textContent).toBe('07:00 +09:00')
 	})
 })
 
-/**
- * #248 review. A day cell reports an exclusive range, so its End Date prefills
- * as the FOLLOWING day. That date means a boundary for a timed event but the
- * last covered day for an all-day one, so checking "All day" has to reinterpret
- * it. Without that, saving added a day and a single-day click produced a
- * two-day event.
- */
-describe('IlamyCalendar - cell click then All day', () => {
-	it('creates a one-day event for the day that was clicked', () => {
+describe('IlamyCalendar - cell click then All day (D11)', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	it('creates a one-day all-day event directly when clicking a month cell', () => {
 		const added: CalendarEvent[] = []
 		render(
 			<IlamyCalendar
 				events={[]}
 				initialDate="2026-05-13T12:00:00.000Z"
 				onEventAdd={(event) => added.push(event)}
+				timezone="UTC"
 			/>
 		)
 
 		fireEvent.click(screen.getByTestId('day-cell-2026-05-13'))
-		fireEvent.click(screen.getByLabelText('All day'))
+		expect(screen.getByLabelText('All day')).toBeChecked()
 		fireEvent.click(screen.getByRole('button', { name: /create|add|save/i }))
 
 		const created = added.at(0)
-		expect(created?.start.format('YYYY-MM-DD HH:mm')).toBe('2026-05-13 00:00')
-		expect(created?.end.format('YYYY-MM-DD HH:mm')).toBe('2026-05-14 00:00')
+		expect(created?.allDay).toBe(true)
+		expect(created && formatYmdHm(created.start)).toBe('2026-05-13 00:00')
+		expect(created && formatYmdHm(created.end)).toBe('2026-05-14 00:00')
 	})
 })
 
-/**
- * Regression test for the report in #247: an all-day event given as UTC ISO
- * strings showed up one day early for a viewer east of UTC. `22:00Z` is midnight
- * the NEXT day in Europe/Vienna, so the bar must start in the Aug 18 column; it
- * used to start in Aug 17's because the offset was discarded.
- *
- * The month grid reports each bar's placement as a percentage in `data-left`,
- * which is `column / 7 * 100`. August 18 2026 is a Tuesday, so in a Sunday-start
- * week (Aug 16..22) the expected column is 2.
- */
 describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
-	afterEach(() => {
-		dayjs.tz.setDefault(undefined)
+	beforeEach(() => {
+		cleanup()
 	})
 
 	const columnOfFirstEventBar = (): number => {
@@ -1404,16 +1366,9 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 			/>
 		)
 
-		const AUGUST_18_COLUMN = 2
-
-		expect(columnOfFirstEventBar()).toBe(AUGUST_18_COLUMN)
+		expect(columnOfFirstEventBar()).toBe(2)
 	})
 
-	// The header animation is a CSS `animate-in` that replays whenever its node
-	// is remounted. Keying a header cell by the date remounted it on every
-	// navigation, so labels that had not changed faded in again and read as a
-	// blink. These assert node identity rather than class names: identity is
-	// what decides whether the animation plays at all.
 	describe('header animation', () => {
 		const goToNextPeriod = () => fireEvent.click(screen.getByLabelText('Next'))
 
@@ -1421,7 +1376,7 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 			render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={dayjs('2025-03-15T00:00:00.000Z')}
+					initialDate="2025-03-15T00:00:00Z"
 					initialView="month"
 					timezone="UTC"
 				/>
@@ -1432,7 +1387,6 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 			const before = firstWeekday()
 			goToNextPeriod()
 
-			// Every month shows the same seven names, so nothing should move.
 			expect(firstWeekday()?.textContent).toBe(before?.textContent)
 			expect(firstWeekday()).toBe(before)
 		})
@@ -1441,7 +1395,7 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 			render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={dayjs('2025-03-03T00:00:00.000Z')}
+					initialDate="2025-03-03T00:00:00Z"
 					initialView="week"
 					timezone="UTC"
 				/>
@@ -1453,7 +1407,6 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 			const textBefore = dayCell().textContent
 			goToNextPeriod()
 
-			// The column still heads Sunday; only the date it carries moved.
 			expect(dayCell().textContent).not.toBe(textBefore)
 			expect(weekday()).toBe(weekdayBefore)
 		})
@@ -1462,7 +1415,7 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 			render(
 				<IlamyCalendar
 					events={[]}
-					initialDate={dayjs('2025-03-03T00:00:00.000Z')}
+					initialDate="2025-03-03T00:00:00Z"
 					initialView="week"
 					timezone="UTC"
 				/>
@@ -1476,22 +1429,18 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 			const numberBefore = number()
 			goToNextPeriod()
 
-			// Week 10 becomes week 11, so the number has something to show and
-			// the word 'Week' does not.
 			expect(corner()?.textContent).toBe('Week11')
 			expect(label()).toBe(labelBefore)
 			expect(number()).not.toBe(numberBefore)
 		})
 
-		// A month header is the mirror image of a week header: the first column
-		// is day 1 of every month, and the weekday under it is what moves.
 		it.each(['vertical', 'horizontal'] as const)(
 			'animates the weekday but not the number in the %s resource month header',
 			(orientation) => {
 				render(
 					<IlamyCalendar
 						events={[]}
-						initialDate={dayjs('2025-03-01T00:00:00.000Z')}
+						initialDate="2025-03-01T00:00:00Z"
 						initialView="month"
 						orientation={orientation}
 						resources={[{ id: '1', title: 'Resource 1' }]}
@@ -1506,7 +1455,6 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 				const numberBefore = dayNumber()
 				goToNextPeriod()
 
-				// 1 March is a Saturday, 1 April a Tuesday.
 				expect(label()?.textContent).toBe('Tue1')
 				expect(weekday()).not.toBe(weekdayBefore)
 				expect(dayNumber()).toBe(numberBefore)
@@ -1515,17 +1463,15 @@ describe('IlamyCalendar - all-day ISO strings east of UTC (#247)', () => {
 	})
 })
 
-// Every cell is a dnd-kit droppable, and dnd-kit copies its whole registry
-// on each register and unregister. A cell keyed by its date remounted on
-// every navigation, so a big grid re-registered thousands of droppables and
-// froze for seconds (#300). A kept cell takes its new date as a prop.
 describe('navigation keeps every cell mounted (#300)', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
 	const RESOURCES = [
 		{ id: 'r1', title: 'Room A' },
 		{ id: 'r2', title: 'Room B' },
 	]
-	// The last day of a month, so each "next" also crosses into August, which
-	// has as many days as July: a resource month keeps its cell count.
 	const LAST_DAY_OF_JULY = '2025-07-31T09:00:00.000Z'
 
 	const getCells = () => [...document.querySelectorAll('.droppable-cell')]
@@ -1566,8 +1512,6 @@ describe('navigation keeps every cell mounted (#300)', () => {
 
 		fireEvent.click(screen.getByLabelText('Next'))
 
-		// A month grid can gain or lose a week row; the cells both months draw
-		// come first, so those are the ones that must have stayed.
 		const cellsAfter = getCells()
 		const sharedCellCount = Math.min(cellsBefore.length, cellsAfter.length)
 		const sharedCellsAfter = cellsAfter.slice(0, sharedCellCount)
@@ -1579,14 +1523,14 @@ describe('navigation keeps every cell mounted (#300)', () => {
 	})
 })
 
-describe('formats', () => {
+describe('formats (D9)', () => {
 	const standup: CalendarEvent = {
 		id: 'standup',
 		title: 'Standup',
-		start: dayjs('2025-03-12T09:30:00.000Z'),
-		end: dayjs('2025-03-12T10:30:00.000Z'),
+		start: '2025-03-12T09:30:00+00:00',
+		end: '2025-03-12T10:30:00+00:00',
 	}
-	const wednesdayWeek = dayjs('2025-03-12T09:00:00.000Z')
+	const wednesdayWeek = '2025-03-12T09:00:00Z'
 	const twentyFourHour = {
 		hour: '2-digit',
 		minute: '2-digit',
@@ -1613,27 +1557,41 @@ describe('formats', () => {
 	const readWeekdayHeader = () =>
 		screen.getByTestId('week-header-weekday-wednesday').textContent
 
-	it('changes nothing when no format is set', () => {
+	it('shows start and end time by default in week view (D9)', () => {
 		renderWeek()
-		expect(readBarText()).toBe('Standup')
+		expect(plainSpaces(readBarText())).toBe('9:30 – 10:30 AMStandup')
 		expect(readGutterLabel(9)).toBe('9 AM')
 		expect(readWeekdayHeader()).toBe('Wed12')
 		expect(screen.getByTestId('calendar-title').textContent).toBe('Mar 9 – 15')
 	})
 
-	it('eventTimeFormat puts the start time on the bar', () => {
+	it('shows start time only by default in month view (D9)', () => {
+		cleanup()
+		render(
+			<IlamyCalendar
+				events={[standup]}
+				initialDate={wednesdayWeek}
+				initialView="month"
+				timezone="UTC"
+			/>
+		)
+		const bar = screen.getAllByTestId('horizontal-event-standup').at(0)
+		expect(plainSpaces(bar?.textContent)).toBe('9:30 AMStandup')
+	})
+
+	it('eventTimeFormat formats the bar time range in week view', () => {
 		renderWeek({ eventTimeFormat: twentyFourHour })
+		expect(plainSpaces(readBarText())).toBe('09:30 – 10:30Standup')
+	})
+
+	it('displayEventEnd={false} hides the end time in week view', () => {
+		renderWeek({ eventTimeFormat: twentyFourHour, displayEventEnd: false })
 		expect(readBarText()).toBe('09:30Standup')
 	})
 
 	it('displayEventTime={false} keeps the bar bare even with a format', () => {
 		renderWeek({ eventTimeFormat: twentyFourHour, displayEventTime: false })
 		expect(readBarText()).toBe('Standup')
-	})
-
-	it('displayEventEnd adds the end time', () => {
-		renderWeek({ eventTimeFormat: twentyFourHour, displayEventEnd: true })
-		expect(plainSpaces(readBarText())).toBe('09:30 – 10:30Standup')
 	})
 
 	it('renderEvent beats eventTimeFormat', () => {
@@ -1645,7 +1603,7 @@ describe('formats', () => {
 	})
 
 	it('slotHeaderFormat changes only the gutter labels', () => {
-		renderWeek({ slotHeaderFormat: twentyFourHour })
+		renderWeek({ slotHeaderFormat: twentyFourHour, displayEventTime: false })
 		expect(readGutterLabel(9)).toBe('09:00')
 		expect(readBarText()).toBe('Standup')
 	})
@@ -1653,7 +1611,7 @@ describe('formats', () => {
 	it('renderHour beats slotHeaderFormat', () => {
 		renderWeek({
 			slotHeaderFormat: twentyFourHour,
-			renderHour: (date) => <span>H{date.hour()}</span>,
+			renderHour: (iso) => <span>H{at(iso).hour}</span>,
 		})
 		expect(readGutterLabel(9)).toBe('H9')
 	})
@@ -1676,12 +1634,15 @@ describe('formats', () => {
 
 	it('dayHeaderFormat keeps the today highlight on the header cell', () => {
 		setSystemTime(new Date('2025-03-12T09:00:00.000Z'))
-		renderWeek({ dayHeaderFormat: { weekday: 'long' } })
-		const todayMarks = screen
-			.getByTestId('week-header-weekday-wednesday')
-			.querySelectorAll('[data-today="true"]')
-		expect(todayMarks).toHaveLength(1)
-		setSystemTime()
+		try {
+			renderWeek({ dayHeaderFormat: { weekday: 'long' } })
+			const todayMarks = screen
+				.getByTestId('week-header-weekday-wednesday')
+				.querySelectorAll('[data-today="true"]')
+			expect(todayMarks).toHaveLength(1)
+		} finally {
+			setSystemTime()
+		}
 	})
 
 	it('dayHeaderFormat is the whole text of the day view header', () => {
@@ -1778,6 +1739,7 @@ describe('slotMinTime / slotMaxTime validation', () => {
 	let warnSpy: ReturnType<typeof spyOn>
 
 	beforeEach(() => {
+		cleanup()
 		warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
 	})
 
@@ -1815,8 +1777,7 @@ describe('slotMinTime / slotMaxTime validation', () => {
 })
 
 describe('hidden days in every view', () => {
-	// Wed 12 March 2025. The month grid runs Sun 23 Feb - Sat 5 Apr.
-	const wednesday = dayjs('2025-03-12T09:00:00.000Z')
+	const wednesday = '2025-03-12T09:00:00Z'
 	const dayCellIds = () =>
 		screen
 			.queryAllByTestId(/^day-cell-\d{4}-\d{2}-\d{2}$/)
@@ -1836,8 +1797,8 @@ describe('hidden days in every view', () => {
 	const allDay = (id: string, startISO: string, endISO: string) => ({
 		id,
 		title: id,
-		start: dayjs(startISO),
-		end: dayjs(endISO),
+		start: startISO,
+		end: endISO,
 		allDay: true,
 	})
 	const segmentFlags = (event: CalendarEvent, segment: EventSegment) => (
@@ -1876,7 +1837,6 @@ describe('hidden days in every view', () => {
 		})
 
 		it('draws one bar per week for an event that runs across the hidden weekend', () => {
-			// Fri 14 - Mon 17: two weeks of the grid, so two bars, each cut at the gap.
 			renderCalendar({
 				weekends: false,
 				events: [
@@ -1911,8 +1871,6 @@ describe('hidden days in every view', () => {
 		})
 
 		it('clamps an event that starts on a hidden day to the first visible column', () => {
-			// Sat 15 - Tue 18 (exclusive end Wed 19 00:00): starts hidden, so the bar
-			// begins on Mon and is not the event's start.
 			renderCalendar({
 				weekends: false,
 				events: [
@@ -1941,8 +1899,6 @@ describe('hidden days in every view', () => {
 				weekNumbers: true,
 				weekNumberCalculation: 'ISO',
 			})
-			// The week of Sun 9 - Sat 15 starts on Mon 10 once Sunday is hidden, and
-			// ISO week 11 starts on Mon 10 (Sun 9 would be week 10).
 			const weekNumbers = screen
 				.getAllByTestId('week-number')
 				.map((label) => label.textContent)
@@ -1959,7 +1915,7 @@ describe('hidden days in every view', () => {
 			renderCalendar({
 				weekends: false,
 				initialView: 'day',
-				initialDate: dayjs('2025-03-14T09:00:00.000Z'),
+				initialDate: '2025-03-14T09:00:00Z',
 			})
 			expect(dayTitle()).toContain('Friday, March 14, 2025')
 			press('Next')
@@ -1970,7 +1926,7 @@ describe('hidden days in every view', () => {
 			renderCalendar({
 				weekends: false,
 				initialView: 'day',
-				initialDate: dayjs('2025-03-17T09:00:00.000Z'),
+				initialDate: '2025-03-17T09:00:00Z',
 			})
 			press('Previous')
 			expect(dayTitle()).toContain('Friday, March 14, 2025')
@@ -1980,7 +1936,7 @@ describe('hidden days in every view', () => {
 			renderCalendar({
 				weekends: false,
 				initialView: 'day',
-				initialDate: dayjs('2025-03-15T09:00:00.000Z'),
+				initialDate: '2025-03-15T09:00:00Z',
 			})
 			expect(dayTitle()).toContain('Monday, March 17, 2025')
 		})
@@ -1991,7 +1947,7 @@ describe('hidden days in every view', () => {
 				renderCalendar({
 					weekends: false,
 					initialView: 'day',
-					initialDate: dayjs('2025-03-12T09:00:00.000Z'),
+					initialDate: '2025-03-12T09:00:00Z',
 				})
 				press('Today')
 				expect(dayTitle()).toContain('Monday, March 17, 2025')
@@ -2003,7 +1959,7 @@ describe('hidden days in every view', () => {
 		it('steps one day at a time when nothing is hidden', () => {
 			renderCalendar({
 				initialView: 'day',
-				initialDate: dayjs('2025-03-14T09:00:00.000Z'),
+				initialDate: '2025-03-14T09:00:00Z',
 			})
 			press('Next')
 			expect(dayTitle()).toContain('Saturday, March 15, 2025')
@@ -2018,13 +1974,11 @@ describe('hidden days in every view', () => {
 			expect(title()).toBe('Mar 10 – 14')
 		})
 
-		// Only the day view moves its date off a hidden day. A week draws a range,
-		// so a date on a hidden day stays put and the week is the same week.
 		it('keeps the week when the date it was given is a hidden day', () => {
 			renderCalendar({
 				weekends: false,
 				initialView: 'week',
-				initialDate: dayjs('2025-03-15T09:00:00.000Z'),
+				initialDate: '2025-03-15T09:00:00Z',
 			})
 			expect(title()).toBe('Mar 10 – 14')
 			fireEvent.click(screen.getByRole('button', { name: 'Next' }))
@@ -2089,8 +2043,6 @@ describe('hidden days in every view', () => {
 		const cellsOn = (dayISO: string) =>
 			screen.queryAllByTestId(new RegExp(`^(day|vertical)-cell-${dayISO}`))
 
-		// A Friday has one cell per room in a day grid, and 24 per room in an hour
-		// grid. A vertical day grid adds one for the day label in its gutter.
 		const gutterCell = 1
 		it.each([
 			['month', 'vertical', rooms.length + gutterCell],
@@ -2173,6 +2125,10 @@ describe('hidden days in every view', () => {
 })
 
 describe('IlamyCalendar - events as a function', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
 	const LOADED = {
 		id: 'loaded',
 		title: 'Loaded Lunch',
@@ -2180,8 +2136,6 @@ describe('IlamyCalendar - events as a function', () => {
 		end: '2025-01-15T13:00:00.000Z',
 	}
 
-	// Takes the function itself, so each call site can hand in a new one, the way an
-	// inline `events={() => ...}` arrives on every render.
 	const calendar = (fetcher: () => Promise<(typeof LOADED)[]>) => (
 		<IlamyCalendar
 			events={fetcher}
@@ -2214,11 +2168,11 @@ describe('IlamyCalendar - events as a function', () => {
 	})
 })
 
-// One calendar, driven from outside through its ref, the way a consumer's own
-// toolbar would. React 19 passes `ref` as a prop and
-// `useImperativeHandle(ref, createHandle, deps)` publishes the handle
-// (https://react.dev/reference/react/useImperativeHandle).
 describe('IlamyCalendar ref', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
 	const HOUR_PIXELS = 60
 
 	const renderWithRef = (props: Partial<IlamyCalendarProps> = {}) => {
@@ -2245,8 +2199,8 @@ describe('IlamyCalendar ref', () => {
 	const sampleEvent: CalendarEvent = {
 		id: 'ref-event',
 		title: 'Ref event',
-		start: dayjs('2025-03-12T10:00:00.000Z'),
-		end: dayjs('2025-03-12T11:00:00.000Z'),
+		start: '2025-03-12T10:00:00+00:00',
+		end: '2025-03-12T11:00:00+00:00',
 		uid: 'ref-event@ilamy',
 	}
 
@@ -2261,23 +2215,26 @@ describe('IlamyCalendar ref', () => {
 		expect(Object.keys(api()).sort()).toEqual(hookKeys)
 	})
 
-	it('navigates through the ref and reads the latest date afterwards', () => {
+	it('navigates through the ref and reads the latest ISO date afterwards', () => {
 		const api = renderWithRef()
 
 		act(() => api().nextPeriod())
-		expect(api().currentDate.toISOString()).toBe('2025-03-19T09:00:00.000Z')
+		expect(toUtcIso(at(api().currentDate))).toBe('2025-03-19T09:00:00.000Z')
 
 		act(() => api().prevPeriod())
 		act(() => api().prevPeriod())
-		expect(api().currentDate.toISOString()).toBe('2025-03-05T09:00:00.000Z')
+		expect(toUtcIso(at(api().currentDate))).toBe('2025-03-05T09:00:00.000Z')
 
-		act(() => api().setCurrentDate(dayjs('2025-06-01T12:00:00.000Z')))
-		expect(api().currentDate.toISOString()).toBe('2025-06-01T12:00:00.000Z')
+		act(() => api().setCurrentDate('2025-06-01T12:00:00.000Z'))
+		expect(toUtcIso(at(api().currentDate))).toBe('2025-06-01T12:00:00.000Z')
 
 		setSystemTime(new Date('2025-03-20T08:15:00.000Z'))
-		act(() => api().today())
-		setSystemTime()
-		expect(api().currentDate.toISOString()).toBe('2025-03-20T08:15:00.000Z')
+		try {
+			act(() => api().today())
+			expect(toUtcIso(at(api().currentDate))).toBe('2025-03-20T08:15:00.000Z')
+		} finally {
+			setSystemTime()
+		}
 	})
 
 	it('changes the rendered view through the ref', () => {
@@ -2370,10 +2327,6 @@ describe('IlamyCalendar ref', () => {
 		expect(after).toEqual(before)
 	})
 
-	// The handle reads the API through a ref the calendar writes. Written during
-	// render, a render React throws away would leave the consumer reading an API
-	// from UI that never committed (https://react.dev/reference/react/useRef,
-	// Caveats: "Do not write or read ref.current during rendering").
 	describe('the API the ref reports', () => {
 		const INITIAL_DATE = '2025-03-12T09:00:00.000Z'
 		const NEXT_WEEK = '2025-03-19T09:00:00.000Z'
@@ -2385,8 +2338,10 @@ describe('IlamyCalendar ref', () => {
 				const { currentDate } = useIlamyCalendarContext()
 				useLayoutEffect(() => {
 					reads.push({
-						rendered: currentDate.toISOString(),
-						viaRef: ref.current?.currentDate.toISOString(),
+						rendered: toUtcIso(at(currentDate)),
+						viaRef: ref.current
+							? toUtcIso(at(ref.current.currentDate))
+							: undefined,
 					})
 				}, [currentDate])
 				return null
@@ -2409,12 +2364,9 @@ describe('IlamyCalendar ref', () => {
 		it('stays the committed one when a transition render is thrown away', async () => {
 			const ref = createRef<IlamyCalendarApi>()
 			const neverResolves = new Promise<never>(() => undefined)
-			// Suspends on the new week, below the component that publishes the handle,
-			// so that component has already rendered with the new date when the
-			// transition is abandoned.
 			const SuspendsOnNextWeek = () => {
 				const { currentDate } = useIlamyCalendarContext()
-				const isNextWeek = currentDate.toISOString() === NEXT_WEEK
+				const isNextWeek = toUtcIso(at(currentDate)) === NEXT_WEEK
 				if (isNextWeek) {
 					use(neverResolves)
 				}
@@ -2436,7 +2388,9 @@ describe('IlamyCalendar ref', () => {
 				startTransition(() => ref.current?.nextPeriod())
 			})
 
-			expect(ref.current?.currentDate.toISOString()).toBe(INITIAL_DATE)
+			expect(ref.current && toUtcIso(at(ref.current.currentDate))).toBe(
+				INITIAL_DATE
+			)
 		})
 	})
 
@@ -2448,8 +2402,6 @@ describe('IlamyCalendar ref', () => {
 		beforeEach(() => {
 			scrollTo = mock(() => {})
 			Element.prototype.scrollTo = scrollTo as unknown as Element['scrollTo']
-			// happy-dom has no layout: give each hour row the offset a real
-			// 60px-per-hour gutter would have.
 			Element.prototype.getBoundingClientRect = function (this: Element) {
 				const hour = Number(this.getAttribute('data-hour') ?? 0)
 				const top = hour * HOUR_PIXELS
@@ -2507,9 +2459,6 @@ describe('IlamyCalendar ref', () => {
 			expect(lastScroll()?.left).toBe(13 * HOUR_PIXELS + 30)
 		})
 
-		// scrollToTime acts on the view that is showing, like FullCalendar's
-		// (api/CalendarApi.ts:83 at v7.1.1): a view opened later starts where
-		// its own settings put it.
 		it('does not replay an earlier request in a view opened afterwards', () => {
 			const api = renderWithRef({ initialView: 'month' })
 			act(() => api().scrollToTime('15:00'))
@@ -2539,5 +2488,78 @@ describe('IlamyCalendar ref', () => {
 
 			expect(lastScrollTop()).toBe(13 * HOUR_PIXELS + 30)
 		})
+	})
+})
+
+describe('IlamyCalendar v4.0 theming & optional plugins (D5, D7)', () => {
+	beforeEach(() => {
+		cleanup()
+	})
+
+	it('applies slotProps and unstyled mode to root, header, and cells', () => {
+		render(
+			<IlamyCalendar
+				events={[]}
+				initialDate="2025-03-12T00:00:00Z"
+				initialView="month"
+				slotProps={{
+					root: { className: 'my-root', style: { padding: '4px' } },
+					header: { className: 'my-header' },
+					cell: { className: 'my-cell' },
+				}}
+				timezone="UTC"
+				unstyled={true}
+			/>
+		)
+
+		const root = screen.getByTestId('ilamy-calendar')
+		expect(root).toHaveClass('my-root')
+		expect(root.style.padding).toBe('4px')
+		expect(root.className).not.toContain('bg-background')
+
+		expect(screen.getByTestId('calendar-header')).toHaveClass('my-header')
+		expect(screen.getByTestId('day-cell-2025-03-12')).toHaveClass('my-cell')
+	})
+
+	it('swaps primitive Button via the components prop', () => {
+		render(
+			<IlamyCalendar
+				components={{
+					Button: ({ children, ...rest }) => (
+						<button data-custom-btn="true" {...rest}>
+							{children}
+						</button>
+					),
+				}}
+				events={[]}
+				initialDate="2025-03-12T00:00:00Z"
+				timezone="UTC"
+			/>
+		)
+
+		const todayBtn = screen.getByRole('button', { name: 'Today' })
+		expect(todayBtn.getAttribute('data-custom-btn')).toBe('true')
+	})
+
+	it('only registers year view when yearPlugin is provided (D7)', () => {
+		render(
+			<IlamyCalendar
+				events={[]}
+				initialDate="2025-03-12T00:00:00Z"
+				timezone="UTC"
+			/>
+		)
+		expect(screen.queryByRole('radio', { name: /^year$/i })).toBeNull()
+
+		cleanup()
+		render(
+			<IlamyCalendar
+				events={[]}
+				initialDate="2025-03-12T00:00:00Z"
+				plugins={[yearPlugin()]}
+				timezone="UTC"
+			/>
+		)
+		expect(screen.getByRole('radio', { name: /^year$/i })).toBeInTheDocument()
 	})
 })

@@ -1,5 +1,5 @@
 import type { IlamyPlugin } from '@ilamy/types'
-import { overlapsRange } from '@ilamy/utils/helpers'
+import { overlapsRange, parseDate, resolveZone } from '@ilamy/utils/temporal'
 import {
 	type ComponentType,
 	createElement,
@@ -9,18 +9,26 @@ import {
 import type { PluginRuntime } from './types'
 
 export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({
-	// Sequential transform chain, then the core applies the range-overlap filter
-	// (the baseline every view expects) so plugins only worry about producing
-	// events, not range-trimming.
 	transformEvents: (events, range) => {
 		const transformed = plugins.reduce(
 			(acc, plugin) =>
 				plugin.transformEvents ? plugin.transformEvents(acc, range) : acc,
 			events
 		)
-		return transformed.filter((event) =>
-			overlapsRange(event, range.start, range.end)
-		)
+		const zone = resolveZone(range.timezone)
+		const rangeStart = parseDate(range.start, zone)
+		const rangeEnd = parseDate(range.end, zone)
+		if (!(rangeStart && rangeEnd)) {
+			return transformed
+		}
+		return transformed.filter((event) => {
+			const start = parseDate(event.start, zone)
+			const end = parseDate(event.end, zone)
+			if (!(start && end)) {
+				return false
+			}
+			return overlapsRange({ start, end }, rangeStart, rangeEnd)
+		})
 	},
 
 	getEventManager: (event) =>
@@ -29,8 +37,6 @@ export const createPluginRuntime = (plugins: IlamyPlugin[]): PluginRuntime => ({
 	collect: (point, context) =>
 		plugins.flatMap((plugin) => plugin.contribute?.(point, context) ?? []),
 
-	// Every plugin may contribute to a slot. Each node is keyed by plugin name
-	// so consumers can render the returned array directly.
 	renderSlot: (slotName, context) => {
 		const nodes: ReactNode[] = []
 		for (const plugin of plugins) {

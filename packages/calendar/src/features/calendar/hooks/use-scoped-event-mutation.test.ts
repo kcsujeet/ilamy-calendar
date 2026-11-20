@@ -5,7 +5,6 @@ import type {
 	PluginMutationArgs,
 	PluginMutationResult,
 } from '@ilamy/types'
-import dayjs from '@ilamy/utils/dayjs'
 import { act, renderHook } from '@testing-library/react'
 import { createElement, type ReactNode, StrictMode } from 'react'
 import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
@@ -14,8 +13,8 @@ import { useScopedEventMutation } from './use-scoped-event-mutation'
 const managedEvent: CalendarEvent = {
 	id: 'managed-1',
 	title: 'Managed Event',
-	start: dayjs('2025-01-15T10:00:00.000Z'),
-	end: dayjs('2025-01-15T11:00:00.000Z'),
+	start: '2025-01-15T10:00:00.000Z',
+	end: '2025-01-15T11:00:00.000Z',
 }
 
 const EDITED = [{ ...managedEvent, title: 'edited-sentinel' }]

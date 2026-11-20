@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url'
 import { expect, type Page, test } from '@playwright/test'
 import { gotoScenario, type ScenarioOptions } from '../support/harness'
 import { CalendarPage, MonthGrid } from '../support/pages'
@@ -10,16 +9,18 @@ import { CalendarPage, MonthGrid } from '../support/pages'
  * integrator's `ref.current.x()` does.
  */
 
-const DAYJS_MODULE = `/@fs${fileURLToPath(new URL('../../../../packages/utils/src/dayjs.ts', import.meta.url))}`
-
 const open = async (page: Page, options: ScenarioOptions) => {
 	const errors: string[] = []
 	page.on('pageerror', (error) => errors.push(error.message))
+	const plugins = options.orientation
+		? options.plugins
+		: [...new Set([...(options.plugins ?? []), 'year'])]
 	await gotoScenario(page, {
 		...options,
+		plugins,
 		settings: { externalToolbar: 'true', height: '600px', ...options.settings },
 	})
-	await page.evaluate(async (dayjsModule) => {
+	await page.evaluate(() => {
 		const button = document.querySelector('[data-testid="external-next"]')
 		const win = window as unknown as Record<string, unknown>
 		const fiberKey = Object.keys(button ?? {}).find((key) =>
@@ -31,24 +32,22 @@ const open = async (page: Page, options: ScenarioOptions) => {
 			fiber = fiber.return
 		}
 		win.__ref = fiber.memoizedProps.calendarRef
-		win.__dayjs = (await import(/* @vite-ignore */ dayjsModule)).default
-	}, DAYJS_MODULE)
+	})
 	// Headers animate in over 500ms.
 	await page.waitForTimeout(600)
 	return errors
 }
 
-/** Calls `ref.current[method](...args)`; a Dayjs-looking string arg `@iso` becomes dayjs(iso). */
+/** Calls `ref.current[method](...args)`; a date string arg `@iso` passes the ISO string. */
 const call = (page: Page, method: string, ...args: unknown[]) =>
 	page.evaluate(
 		([name, rawArgs]) => {
 			const win = window as unknown as {
 				__ref: { current: Record<string, (...a: unknown[]) => unknown> }
-				__dayjs: (iso: string) => unknown
 			}
 			const resolve = (arg: unknown): unknown => {
 				if (typeof arg === 'string' && arg.startsWith('@')) {
-					return win.__dayjs(arg.slice(1))
+					return arg.slice(1)
 				}
 				if (arg && typeof arg === 'object') {
 					return Object.fromEntries(
@@ -68,11 +67,11 @@ const refState = (page: Page) =>
 		const api = (
 			window as unknown as {
 				__ref: {
-					current: { currentDate: { toISOString(): string }; view: string }
+					current: { currentDate: string; view: string }
 				}
 			}
 		).__ref.current
-		return { date: api.currentDate.toISOString(), view: api.view }
+		return { date: new Date(api.currentDate).toISOString(), view: api.view }
 	})
 
 const press = (page: Page, name: string) =>
@@ -653,12 +652,11 @@ test.describe('persona 3: integrator', () => {
 				__ref: {
 					current: { updateEvent(id: string | number, p: unknown): void }
 				}
-				__dayjs: (iso: string) => unknown
 			}
 			win.__ref.current.updateEvent('ref-new', {
 				title: 'Renamed by ref',
-				start: win.__dayjs('2025-03-13T10:00:00.000Z'),
-				end: win.__dayjs('2025-03-13T11:00:00.000Z'),
+				start: '2025-03-13T10:00:00.000Z',
+				end: '2025-03-13T11:00:00.000Z',
 			})
 		})
 		await expect(cal.event('Renamed by ref')).toBeVisible()

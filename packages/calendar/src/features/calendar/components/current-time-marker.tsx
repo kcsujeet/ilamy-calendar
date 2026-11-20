@@ -3,14 +3,15 @@ import {
 	CurrentTimeIndicator,
 	type CurrentTimeIndicatorRenderProps,
 } from '@ilamy/ui/components/current-time-indicator'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import type { ZonedDate } from '@ilamy/utils/temporal'
 import { memo, type ReactNode } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { useSlotProps } from '@/features/calendar/stores/calendar-theme-context'
 
 interface CurrentTimeMarkerProps {
-	rangeStart: Dayjs
-	rangeEnd: Dayjs
-	now?: Dayjs
+	rangeStart: ZonedDate
+	rangeEnd: ZonedDate
+	now?: ZonedDate
 	resource?: Resource
 	axis?: 'vertical' | 'horizontal'
 	withDot?: boolean
@@ -18,8 +19,8 @@ interface CurrentTimeMarkerProps {
 
 /**
  * Calendar wrapper over the shared `@ilamy/ui` CurrentTimeIndicator: wires the
- * consumer's `renderCurrentTimeIndicator` and the current `view` from context,
- * adding `view`/`resource` to the shared component's computed position.
+ * consumer's `renderCurrentTimeIndicator`, slot styling, and the current `view`
+ * from context, adding `view`/`resource` to the computed position.
  */
 const NoMemoCurrentTimeMarker = ({
 	rangeStart,
@@ -35,6 +36,7 @@ const NoMemoCurrentTimeMarker = ({
 			view: state.view,
 		})
 	)
+	const indicatorSlot = useSlotProps('nowIndicator')
 
 	let render:
 		| ((props: CurrentTimeIndicatorRenderProps) => ReactNode)
@@ -46,10 +48,12 @@ const NoMemoCurrentTimeMarker = ({
 	return (
 		<CurrentTimeIndicator
 			axis={axis}
+			className={indicatorSlot.className}
 			now={now}
 			rangeEnd={rangeEnd}
 			rangeStart={rangeStart}
 			render={render}
+			style={indicatorSlot.style}
 			withDot={withDot}
 		/>
 	)

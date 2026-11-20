@@ -97,11 +97,12 @@ const hourCells = (): FixtureElement[] =>
 		end: `2025-01-01T${padHour(hour + 1)}:00:00.000Z`,
 	}))
 
-/** Whole-day cells for 1 to 10 January 2025. */
+/** Whole-day cells for 1 to 10 January 2025 (carry data-all-day="true" in v4.0, D11). */
 const dayCells = (): FixtureElement[] =>
 	[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((day) => ({
 		start: `2025-01-${String(day).padStart(2, '0')}T00:00:00.000Z`,
 		end: `2025-01-${String(day + 1).padStart(2, '0')}T00:00:00.000Z`,
+		allDay: true,
 	}))
 
 afterEach(() => {

@@ -1,9 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import dayjs from '@ilamy/utils/dayjs'
+import { afterEach, describe, expect, it } from 'bun:test'
+import { parseDate } from '@ilamy/utils/temporal'
 import { cleanup, render } from '@testing-library/react'
-// `dayjs.tz` types: this package reads @ilamy/utils from its built declarations.
-import type {} from 'dayjs/plugin/timezone'
 import { CurrentTimeIndicator } from './current-time-indicator'
+
+const NEW_YORK = 'America/New_York'
+
+const mustParse = (iso: string) => {
+	const parsed = parseDate(iso, NEW_YORK)
+	if (!parsed) {
+		throw new Error(`Invalid test date: ${iso}`)
+	}
+	return parsed
+}
 
 /** The `progress` the indicator hands its renderer for `nowISO` between two midnights. */
 const readProgress = (
@@ -14,9 +22,9 @@ const readProgress = (
 	let progress = Number.NaN
 	render(
 		<CurrentTimeIndicator
-			now={dayjs(nowISO)}
-			rangeEnd={dayjs(nextMidnightISO)}
-			rangeStart={dayjs(midnightISO)}
+			now={mustParse(nowISO)}
+			rangeEnd={mustParse(nextMidnightISO)}
+			rangeStart={mustParse(midnightISO)}
 			render={(props) => {
 				progress = props.progress
 				return null
@@ -32,16 +40,10 @@ const readProgress = (
  * elapsed time it sat beside 8 AM on a 23-hour day and 10 AM on a 25-hour one.
  */
 describe('CurrentTimeIndicator on a day the clocks change', () => {
-	const originalTz = dayjs.tz.guess()
 	const NINE_O_CLOCK_PERCENT = (9 / 24) * 100
-
-	beforeEach(() => {
-		dayjs.tz.setDefault('America/New_York')
-	})
 
 	afterEach(() => {
 		cleanup()
-		dayjs.tz.setDefault(originalTz)
 	})
 
 	it('marks 09:00 at the 9 AM row on the spring change day', () => {

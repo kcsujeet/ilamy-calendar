@@ -1,12 +1,12 @@
-import { cn } from '@ilamy/ui/lib/utils'
-import { DragPreviewCard } from '@/features/calendar/components/drag-and-drop/drag-preview-card'
-import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import { STICKY_TITLE_CLASS } from '@/features/calendar/utils/event-surface'
 import {
 	getHorizontalBarStyle,
 	type HorizontalPositionedEvent,
-} from '@/features/calendar/utils/layout/geometry'
-import { getTimeOfDayPattern } from '@/utils/date-utils'
+} from '@ilamy/core'
+import { cn } from '@ilamy/ui/lib/utils'
+import { formatDate, parseDate, resolveZone } from '@ilamy/utils/temporal'
+import { DragPreviewCard } from '@/features/calendar/components/drag-and-drop/drag-preview-card'
+import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { STICKY_TITLE_CLASS } from '@/features/calendar/utils/event-surface'
 
 interface HorizontalDragPreviewProps {
 	previewPositioned: HorizontalPositionedEvent
@@ -18,11 +18,26 @@ export function HorizontalDragPreview({
 	previewPositioned,
 	top,
 }: HorizontalDragPreviewProps) {
-	const { timeFormat, eventHeight } = useSmartCalendarContext((c) => ({
-		timeFormat: c.timeFormat,
-		eventHeight: c.eventHeight,
-	}))
+	const { timeFormat, eventHeight, currentLocale, timezone } =
+		useSmartCalendarContext((c) => ({
+			timeFormat: c.timeFormat,
+			eventHeight: c.eventHeight,
+			currentLocale: c.currentLocale,
+			timezone: c.timezone,
+		}))
 	const { event, isTruncatedStart, isTruncatedEnd } = previewPositioned
+	const start = parseDate(event.start, resolveZone(timezone))
+	const formattedStart = start
+		? formatDate(
+				start,
+				{
+					hour: 'numeric',
+					minute: '2-digit',
+					hour12: timeFormat === '12-hour',
+				},
+				currentLocale
+			)
+		: ''
 
 	return (
 		<DragPreviewCard
@@ -35,7 +50,7 @@ export function HorizontalDragPreview({
 		>
 			{!event.allDay && (
 				<span className="text-[10px] font-semibold sm:text-xs">
-					{event.start.format(getTimeOfDayPattern(timeFormat))}
+					{formattedStart}
 				</span>
 			)}
 			<span

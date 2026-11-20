@@ -1,15 +1,20 @@
+import { getEventResourceIds } from '@ilamy/core'
 import type {
 	BusinessHours,
 	CalendarEvent,
+	DateRange,
 	IlamyPlugin,
+	IsoDateString,
 	PluginView,
+	PublicDateInput,
 } from '@ilamy/types'
-import dayjs, {
-	type Dayjs,
-	isWallClockReading,
-	readInZone,
-} from '@ilamy/utils/dayjs'
-import { safeDate } from '@ilamy/utils/helpers'
+import {
+	now,
+	parseDate,
+	resolveZone,
+	toOffsetIso,
+	withZone,
+} from '@ilamy/utils/temporal'
 import {
 	type ComponentType,
 	type ReactNode,
@@ -39,24 +44,20 @@ import {
 	type CalendarNavigationSlice,
 	useCalendarNavigation,
 } from '@/features/calendar/hooks/use-calendar-navigation'
-import type { CellInfo, DateRange } from '@/features/calendar/types'
-import { getEventResourceIds } from '@/features/calendar/utils/event-pipeline'
+import type { CellInfo } from '@/features/calendar/types'
 import { useLatestHandler } from '@/hooks/use-latest-handler'
 import { createPluginRuntime } from '@/lib/plugins/create-plugin-runtime'
 import type { CalendarView } from '@/types'
 
-// Module constant, not a per-render `?? []` default: keeps the plugin-runtime
-// identity render-stable when the prop is absent.
 const EMPTY_PLUGINS: IlamyPlugin[] = []
 
 interface CalendarEngineConfig extends CalendarDataOptions {
 	firstDayOfWeek: number
 	initialView?: CalendarView
-	initialDate?: Dayjs | Date | string
-	/** Max stacked events per day in horizontal grids; the config slice defaults it. */
+	initialDate?: PublicDateInput
 	dayMaxEvents?: number
 	businessHours?: BusinessHours | BusinessHours[]
-	onDateChange?: (date: Dayjs, range: { start: Dayjs; end: Dayjs }) => void
+	onDateChange?: (date: IsoDateString, range: DateRange) => void
 	onViewChange?: (view: CalendarView) => void
 	locale?: string
 	translations?: Translations
@@ -68,80 +69,44 @@ interface CalendarEngineConfig extends CalendarDataOptions {
 	disableCellClick?: boolean
 	orientation?: 'horizontal' | 'vertical'
 	weekViewGranularity?: 'hourly' | 'daily'
-	/** Weekdays (0 = Sunday) the calendar does not draw; the day view skips them. */
 	hiddenDays?: Set<number>
 }
 
-/**
- * The engine's public surface, composed from the four slice contracts so each
- * signature is declared exactly once. Omitted members are slice-internal
- * (cross-cutting setters the composer wires, the handlers returned separately)
- * or renamed (`getAllViews` surfaces as `getViews`). The plugin-runtime
- * passthroughs and `getEventResourceIds` are the engine's own additions.
- */
 export interface CalendarEngineReturn
 	extends Omit<CalendarConfigSlice, 'setCurrentLocale'>,
 		Omit<CalendarNavigationSlice, 'getCurrentViewRange' | 'getAllViews'>,
 		Omit<CalendarDataSlice, 'setCurrentEvents'>,
 		Omit<CalendarInteractionSlice, 'handleEventClick' | 'handleDateClick'> {
-	/** The navigation slice's `getAllViews` under its public name. */
 	getViews: () => PluginView[]
 	getEventManager: (event: CalendarEvent) => IlamyPlugin | undefined
 	renderSlot: (slotName: string, context: unknown) => ReactNode[]
 	collect: (point: string, context: unknown) => unknown[]
 	getProviders: () => Array<ComponentType<{ children: ReactNode }>>
 	getEventResourceIds: (event: CalendarEvent) => (string | number)[]
-	/** The active view's current visible date range (what is on screen). */
 	currentRange: DateRange
 }
 
-/**
- * Click handlers the engine derives from the interaction slice. Returned
- * ALONGSIDE CalendarEngineReturn and destructured off by the provider before
- * the context spread, so the merged context value keeps its exact v1 shape
- * (the handlers surface as `onEventClick` / `onCellClick`).
- */
 interface CalendarEngineHandlers {
 	handleEventClick: (event: CalendarEvent) => void
 	handleDateClick: (info: CellInfo) => void
 }
 
-/**
- * The date the calendar opens on, read on the calendar's clock rather than the
- * machine's.
- *
- * Applies the same rule as the configured constructor, with one difference: the
- * zone arrives as an argument rather than from the module default, because
- * `setDefault` runs in an effect and has not fired during the first render.
- *
- * A string with no offset names a clock reading, so the calendar's zone anchors
- * it and 10 March opens on 10 March wherever it is read. Anything else already
- * names an instant, so only the clock it renders against changes. With no date
- * at all the answer is "now", on the calendar's clock rather than the reader's.
- */
 const anchorInitialDate = (
-	initialDate: Dayjs | Date | string | undefined,
+	initialDate: PublicDateInput | undefined,
 	timezone: string | undefined
-): Dayjs => {
-	if (!timezone) {
-		return safeDate(initialDate) ?? dayjs()
-	}
-	if (!initialDate) {
-		return dayjs().tz(timezone)
-	}
-	if (isWallClockReading(initialDate)) {
-		return readInZone(initialDate, timezone)
-	}
-	const instant = safeDate(initialDate) ?? dayjs()
-	return instant.tz(timezone)
+): IsoDateString => {
+	const zone = resolveZone(timezone)
+	const parsed = initialDate
+		? (parseDate(initialDate, zone) ?? now(zone))
+		: now(zone)
+	return toOffsetIso(parsed)
 }
 
-/**
- * The consumer's event handlers, each with a stable identity that always calls
- * the newest one. They run only in response to events, never during render, so
- * their identity must not rebuild the context: an inline `onEventUpdate`
- * otherwise re-renders every grid cell on each of the consumer's renders.
- */
+const projectIsoToZone = (iso: string, zone: string): string => {
+	const parsed = parseDate(iso, zone)
+	return parsed ? toOffsetIso(withZone(parsed, zone)) : iso
+}
+
 const useStableConfigHandlers = (config: CalendarEngineConfig) => ({
 	onEventAdd: useLatestHandler(config.onEventAdd),
 	onEventUpdate: useLatestHandler(config.onEventUpdate),
@@ -196,9 +161,6 @@ export const useCalendarEngine = (
 
 	const { plugins = EMPTY_PLUGINS } = config
 
-	// Slices, composed in order: config → pluginRuntime → navigation → data →
-	// interaction. pluginRuntime is the named fifth cross-cutting dependency
-	// (data, navigation, AND the provider's renderSlot/getProviders consume it).
 	const configSlice = useCalendarConfig({
 		firstDayOfWeek,
 		dayMaxEvents,
@@ -212,8 +174,6 @@ export const useCalendarEngine = (
 
 	const pluginRuntime = useMemo(() => createPluginRuntime(plugins), [plugins])
 
-	// Once per mount, not per render: the navigation slice reads this only in
-	// its lazy state initializer, so every later call is thrown away.
 	const [anchoredInitialDate] = useState(() =>
 		anchorInitialDate(initialDate, timezone)
 	)
@@ -222,6 +182,7 @@ export const useCalendarEngine = (
 		initialDate: anchoredInitialDate,
 		initialView,
 		firstDayOfWeek,
+		timezone,
 		hiddenDays,
 		onDateChange,
 		onViewChange,
@@ -250,6 +211,7 @@ export const useCalendarEngine = (
 
 	const interaction = useCalendarInteraction({
 		currentDate: navigation.currentDate,
+		timezone,
 		t: configSlice.t,
 		disableEventClick,
 		disableCellClick,
@@ -257,58 +219,36 @@ export const useCalendarEngine = (
 		onCellClick,
 	})
 
-	// Cross-cutting effects: a config-prop trigger mutates navigation AND data
-	// state, so they live here in the composer, not inside any single slice.
 	const { setCurrentLocale } = configSlice
 	const { setCurrentDate } = navigation
 	const { setCurrentEvents } = data
 
-	const lastLocaleProp = useRef<string | undefined>(undefined)
+	const lastLocaleProp = useRef(locale)
 	useEffect(() => {
 		if (locale && locale !== lastLocaleProp.current) {
 			setCurrentLocale(locale)
-			dayjs.locale(locale)
-			setCurrentDate((prevDate) => prevDate.locale(locale))
 			lastLocaleProp.current = locale
 		}
-	}, [locale, setCurrentLocale, setCurrentDate])
+	}, [locale, setCurrentLocale])
 
-	// The ref starts at `undefined`, NOT at `timezone`: seeding it with the prop
-	// made this effect's own guard false on mount, so `setDefault` never ran at
-	// all and the prop only worked if it later changed (#247).
-	//
-	// Applying the zone in an effect rather than during render is deliberate.
-	// `dayjs.tz.setDefault` is a module-global write, and a component renders on
-	// the server too — Next.js prerenders `'use client'` components — where one
-	// global would be shared across concurrent requests. Effects never run during
-	// SSR, so the write stays on the client. The cost is that mount renders once
-	// in the machine's zone before this converts, which is why the conversion
-	// below has to cover the dates the calendar is already holding, in BOTH
-	// directions: dropping the prop returns them to the machine's zone instead of
-	// stranding the view on the old clock. Instants never move, only the clock
-	// they render on.
-	const lastTimezoneProp = useRef<string | undefined>(undefined)
+	// Zero global timezone state: if `timezone` changes dynamically after mount,
+	// re-project held ISO dates to the new zone's offset (keeping instants fixed).
+	const lastTimezoneProp = useRef(timezone)
 	useEffect(() => {
 		if (timezone !== lastTimezoneProp.current) {
-			dayjs.tz.setDefault(timezone)
-			const toCalendarZone = (date: Dayjs): Dayjs =>
-				timezone ? date.tz(timezone) : date.local()
-			setCurrentDate((prevDate) => toCalendarZone(prevDate))
+			const nextZone = resolveZone(timezone)
+			setCurrentDate((prev) => projectIsoToZone(prev, nextZone))
 			setCurrentEvents((prev) =>
-				prev.map((e) => ({
-					...e,
-					start: toCalendarZone(e.start),
-					end: toCalendarZone(e.end),
+				prev.map((event) => ({
+					...event,
+					start: projectIsoToZone(event.start, nextZone),
+					end: projectIsoToZone(event.end, nextZone),
 				}))
 			)
 			lastTimezoneProp.current = timezone
 		}
 	}, [timezone, setCurrentDate, setCurrentEvents])
 
-	// The memoized composition keeps the engine object referentially stable so
-	// the provider's own `useMemo([engine, …])` can hold the context value
-	// steady across re-renders with identical props. Slice-internal members are
-	// destructured OFF; `getAllViews` surfaces under its public name.
 	return useMemo(() => {
 		const { setCurrentLocale: _configInternal, ...configValues } = configSlice
 		const {

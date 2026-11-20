@@ -1,5 +1,5 @@
+import { parseSlotRange } from '@ilamy/core'
 import { useEffect } from 'react'
-import { parseSlotRange } from '@/features/calendar/utils/view-hours'
 import { warnInDev } from '@/features/calendar/utils/warn-in-dev'
 
 /** `orientation` only means something on a calendar that has a resource axis. */

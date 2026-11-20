@@ -1,9 +1,11 @@
-import { Button } from '@ilamy/ui/components/button'
-import { cn } from '@ilamy/ui/lib/utils'
-import { ChevronLeft, ChevronRight, Download, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import type React from 'react'
-import { useExportCalendar } from '@/features/calendar/hooks/use-export-calendar'
+import { ToolbarSlot } from '@/features/calendar/components/calendar-slots'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import {
+	useCalendarComponents,
+	useSlotProps,
+} from '@/features/calendar/stores/calendar-theme-context'
 import { HeaderDatePicker } from './header-date-picker'
 import { ViewMenu } from './view-menu'
 import { ViewSwitcher } from './view-switcher'
@@ -21,7 +23,6 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		headerComponent,
 		headerClassName,
 		t,
-		hideExportButton,
 	} = useSmartCalendarContext((ctx) => ({
 		nextPeriod: ctx.nextPeriod,
 		prevPeriod: ctx.prevPeriod,
@@ -30,64 +31,66 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		headerComponent: ctx.headerComponent,
 		headerClassName: ctx.headerClassName,
 		t: ctx.t,
-		hideExportButton: ctx.hideExportButton,
 	}))
-	const exportCalendar = useExportCalendar()
+	const { Button } = useCalendarComponents()
+	const headerSlot = useSlotProps('header', {
+		structuralClassName: '@container/base-header w-full',
+		extraClassName: headerClassName,
+	})
+	const toolbarSlot = useSlotProps('toolbar', {
+		structuralClassName:
+			'flex flex-col items-center gap-2 @xl/base-header:flex-row @xl/base-header:justify-between',
+		extraClassName: className,
+	})
+	const navButtonSlot = useSlotProps('navButton', {
+		structuralClassName: 'h-full',
+	})
+	const groupedArrowStyle = navButtonSlot.style
+		? { ...navButtonSlot.style, border: 'none', borderRadius: 0 }
+		: undefined
 
 	if (headerComponent) {
 		return headerComponent
 	}
 
-	// Container queries drive both the control variants and the row/stack decision.
-	// The row vs. two-row layout is keyed to the container width (@xl), NOT to
-	// flex-wrap: wrapping would key off content width, so the date title changing
-	// per view (e.g. "Jun 2026" vs "Jun 28 - Jul 4") could flip a fixed-width
-	// container between one and two rows. No JS measurement needed.
-	//
-	// Each breakpoint sits where its row measurably fits (#298), with the day
-	// view's title, the longest, in English and German: the compact row needs
-	// ~562px (@xl, 576px); with Export/New labels ~651px (@2xl, 672px); with the
-	// segmented switcher ~770px (@4xl, 896px). Earlier breakpoints let the
-	// navigation cluster spill under, or wrap beside, the actions.
 	return (
 		<div
-			className={cn('@container/base-header w-full', headerClassName)}
+			className={headerSlot.className}
 			data-testid="calendar-header"
+			style={headerSlot.style}
 		>
-			<div
-				className={cn(
-					// Below @xl (phones): stack the two clusters, each centered on its
-					// own line. At @xl and up the compact row fits: lay out in a single
-					// row and spread to the edges.
-					'flex flex-col items-center gap-2 @xl/base-header:flex-row @xl/base-header:justify-between',
-					className
-				)}
-			>
-				{/* In the stacked layout, wraps only when it cannot fit: on a narrow
-				    phone the day view's long label (or a longer locale's) would
-				    otherwise push the outer buttons past both edges (#298). */}
-				<div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
-					<div className="bg-background flex h-9 items-center rounded-lg border">
+			<div className={toolbarSlot.className} style={toolbarSlot.style}>
+				<div className="flex min-w-0 flex-wrap @xl/base-header:flex-nowrap items-center justify-center gap-2">
+					<div className="bg-background flex h-9 shrink-0 items-center overflow-hidden rounded-lg border">
 						<Button
 							aria-label={t('previous')}
-							className="h-full"
+							className={navButtonSlot.className}
 							onClick={prevPeriod}
 							size="icon"
+							style={groupedArrowStyle}
+							type="button"
 							variant="ghost"
 						>
 							<ChevronLeft className="size-4" />
 						</Button>
 						<Button
 							aria-label={t('next')}
-							className="h-full"
+							className={navButtonSlot.className}
 							onClick={nextPeriod}
 							size="icon"
+							style={groupedArrowStyle}
+							type="button"
 							variant="ghost"
 						>
 							<ChevronRight className="size-4" />
 						</Button>
 					</div>
-					<Button onClick={today} size="default" variant="outline">
+					<Button
+						onClick={today}
+						size="default"
+						type="button"
+						variant="outline"
+					>
 						{t('today')}
 					</Button>
 					<HeaderDatePicker />
@@ -98,24 +101,14 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 					<ViewSwitcher className="hidden @4xl/base-header:flex" />
 					<ViewMenu className="@4xl/base-header:hidden" />
 
-					{/* Export + New show a label when there's room, icon-only when narrow. */}
-					{!hideExportButton && (
-						<Button
-							aria-label={t('export')}
-							onClick={exportCalendar}
-							size="default"
-							variant="outline"
-						>
-							<Download className="size-4" />
-							<span className="hidden @2xl/base-header:inline">
-								{t('export')}
-							</span>
-						</Button>
-					)}
+					{/* Plugin-contributed toolbar actions (e.g. @ilamy/calendar/plugins/ical). */}
+					<ToolbarSlot placement="desktop" />
+
 					<Button
 						aria-label={t('new')}
 						onClick={() => openEventForm()}
 						size="default"
+						type="button"
 					>
 						<Plus className="size-4" />
 						<span className="hidden @2xl/base-header:inline">{t('new')}</span>

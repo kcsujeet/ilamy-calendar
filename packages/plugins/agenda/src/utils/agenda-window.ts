@@ -1,32 +1,24 @@
-import type { Dayjs } from '@ilamy/calendar'
+import { add, endOf, startOf, type ZonedDate } from '@ilamy/utils/temporal'
 
-/**
- * The date window the agenda lists (and that prev/next steps over).
- *
- * A named period is the calendar period *containing* the reference date, so it
- * can extend backward to the period's start (e.g. 'month' on the 14th lists from
- * the 1st) and stays aligned with the matching grid view and header label. A
- * number is a rolling window of that many days starting *at* the reference date
- * and counting forward (e.g. 8 on the 14th lists the 14th–21st) — there is no
- * calendar boundary to anchor it to, so it does not look backward.
- */
 export type AgendaWindow = 'day' | 'week' | 'month' | number
 
 type NamedWindow = Exclude<AgendaWindow, number>
-type Range = { start: Dayjs; end: Dayjs }
+export type AgendaZonedRange = { start: ZonedDate; end: ZonedDate }
 type Step = { amount: number; unit: 'day' | 'week' | 'month' }
 
 const namedRange: Record<
 	NamedWindow,
-	(date: Dayjs, firstDayOfWeek: number) => Range
+	(date: ZonedDate, firstDayOfWeek: number) => AgendaZonedRange
 > = {
-	day: (date) => ({ start: date.startOf('day'), end: date.endOf('day') }),
+	day: (date) => ({ start: startOf(date, 'day'), end: endOf(date, 'day') }),
 	week: (date, firstDayOfWeek) => {
-		const offset = (date.day() - firstDayOfWeek + 7) % 7
-		const start = date.subtract(offset, 'day').startOf('day')
-		return { start, end: start.add(6, 'day').endOf('day') }
+		const start = startOf(date, 'week', firstDayOfWeek)
+		return { start, end: endOf(add(start, 6, 'day'), 'day') }
 	},
-	month: (date) => ({ start: date.startOf('month'), end: date.endOf('month') }),
+	month: (date) => ({
+		start: startOf(date, 'month'),
+		end: endOf(date, 'month'),
+	}),
 }
 
 const namedStep: Record<NamedWindow, Step> = {
@@ -35,25 +27,20 @@ const namedStep: Record<NamedWindow, Step> = {
 	month: { amount: 1, unit: 'month' },
 }
 
-/**
- * The date window the agenda lists, derived from the reference date.
- * `firstDayOfWeek` aligns the 'week' window; ignored for other windows.
- */
 export const windowRange = (
-	date: Dayjs,
+	date: ZonedDate,
 	window: AgendaWindow,
 	firstDayOfWeek = 0
-): Range => {
+): AgendaZonedRange => {
 	if (typeof window === 'number') {
 		return {
-			start: date.startOf('day'),
-			end: date.add(window - 1, 'day').endOf('day'),
+			start: startOf(date, 'day'),
+			end: endOf(add(date, window - 1, 'day'), 'day'),
 		}
 	}
 	return namedRange[window](date, firstDayOfWeek)
 }
 
-/** How far prev/next steps for the window. */
 export const windowStep = (window: AgendaWindow): Step => {
 	if (typeof window === 'number') {
 		return { amount: window, unit: 'day' }

@@ -1,64 +1,77 @@
-import type { CalendarEvent, Dayjs } from '@ilamy/calendar'
-import { overlapsRange } from '@ilamy/utils/helpers'
+import type { CalendarEvent } from '@ilamy/calendar'
+import {
+	add,
+	dayKey,
+	endOf,
+	isSameOrBefore,
+	overlapsRange,
+	parseDate,
+	startOf,
+	toEpochMs,
+	type ZonedDate,
+} from '@ilamy/utils/temporal'
 
 export interface AgendaDayGroupData {
 	/** 'YYYY-MM-DD' for the day. */
 	key: string
 	/** Start-of-day for the group. */
-	date: Dayjs
+	date: ZonedDate
 	/** Events overlapping the day, sorted all-day first then by start. */
 	events: CalendarEvent[]
 }
 
-/**
- * Every event repeats under each day it covers, timed or all-day: the agenda
- * docs say so (docs/agenda-view.md) and FullCalendar's list view slices each
- * event across its days (ListView.tsx eventRangeToSegs). The shared predicate
- * keeps the end exclusive, so an event ending at midnight is not on the next
- * day, and keeps the agenda and the grid from disagreeing about which days an
- * event covers. A private copy of it drifted once already (#248).
- */
-const appearsOnDay = (
-	event: CalendarEvent,
-	dayStart: Dayjs,
-	dayEnd: Dayjs
-): boolean => overlapsRange(event, dayStart, dayEnd)
+interface ParsedAgendaEvent {
+	event: CalendarEvent
+	start: ZonedDate
+	end: ZonedDate
+	startMs: number
+}
 
-const byAllDayThenStart = (a: CalendarEvent, b: CalendarEvent): number => {
-	const aRank = a.allDay ? 0 : 1
-	const bRank = b.allDay ? 0 : 1
+const byAllDayThenStart = (
+	a: ParsedAgendaEvent,
+	b: ParsedAgendaEvent
+): number => {
+	const aRank = a.event.allDay ? 0 : 1
+	const bRank = b.event.allDay ? 0 : 1
 	if (aRank !== bRank) {
 		return aRank - bRank
 	}
-	return a.start.valueOf() - b.start.valueOf()
+	return a.startMs - b.startMs
 }
 
-/**
- * Groups events by calendar day across `range`, dropping empty days. An event
- * repeats under each day it spans (clamped to the window).
- */
 export const groupEventsByDay = (
 	events: CalendarEvent[],
-	range: { start: Dayjs; end: Dayjs }
+	range: { start: ZonedDate; end: ZonedDate }
 ): AgendaDayGroupData[] => {
-	const groups: AgendaDayGroupData[] = []
-	const lastDay = range.end.startOf('day')
-	let cursor = range.start.startOf('day')
+	const zone = range.start.timeZoneId
+	const parsedEvents: ParsedAgendaEvent[] = []
+	for (const event of events) {
+		const start = parseDate(event.start, zone)
+		const end = parseDate(event.end, zone)
+		if (start && end) {
+			parsedEvents.push({ event, start, end, startMs: toEpochMs(start) })
+		}
+	}
 
-	while (cursor.isSameOrBefore(lastDay)) {
-		const dayStart = cursor.startOf('day')
-		const dayEnd = cursor.endOf('day')
-		const dayEvents = events
-			.filter((event) => appearsOnDay(event, dayStart, dayEnd))
+	const groups: AgendaDayGroupData[] = []
+	const lastDay = startOf(range.end, 'day')
+	let cursor = startOf(range.start, 'day')
+
+	while (isSameOrBefore(cursor, lastDay, 'day')) {
+		const dayStart = startOf(cursor, 'day')
+		const dayEnd = endOf(cursor, 'day')
+		const dayEvents = parsedEvents
+			.filter((entry) => overlapsRange(entry, dayStart, dayEnd))
 			.sort(byAllDayThenStart)
+			.map((entry) => entry.event)
 		if (dayEvents.length > 0) {
 			groups.push({
-				key: cursor.format('YYYY-MM-DD'),
+				key: dayKey(cursor),
 				date: dayStart,
 				events: dayEvents,
 			})
 		}
-		cursor = cursor.add(1, 'day')
+		cursor = startOf(add(cursor, 1, 'day'), 'day')
 	}
 	return groups
 }

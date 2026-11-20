@@ -1,5 +1,5 @@
 import { cn } from '@ilamy/ui/lib/utils'
-import type { Dayjs } from '@ilamy/utils/dayjs'
+import type { ZonedDate } from '@ilamy/utils/temporal'
 import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import {
@@ -12,7 +12,7 @@ import { DayHeaderLabel } from './day-header-label'
 import { RESOURCE_CELL_WIDTH } from './resource-axis'
 
 interface ResourceWeekVerticalDayHeaderProps {
-	columns: Array<{ day?: Dayjs; resourceId?: string | number }>
+	columns: Array<{ day?: ZonedDate; resourceId?: string | number }>
 	weekNumber: number
 }
 
@@ -32,8 +32,6 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 					STICKY_GUTTER_SHADOW
 				)}
 			>
-				{/* Animated like the day labels beside it and the week view's number
-				    (week.tsx): a new number fades in on navigation. */}
 				{showsWeekNumber && (
 					<div className="px-2 h-full w-full flex justify-center items-start">
 						<AnimatedSection
@@ -49,13 +47,12 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 			{columns.map((col, index) => {
 				const day = col.day
 				if (!day) return null
-				// Keyed by position, not by date: the column heads the same weekday
-				// in every week, and only the number inside it changes.
 				const key = keys.listKey(
 					'resource-week-day',
 					col.resourceId ?? '',
 					index
 				)
+				const hourStr = String(day.hour).padStart(2, '0')
 
 				return (
 					<div
@@ -63,10 +60,7 @@ export const ResourceWeekVerticalDayHeader: React.FC<
 							RESOURCE_CELL_WIDTH,
 							'flex flex-col items-center justify-center text-xs shrink-0 bg-background'
 						)}
-						data-testid={keys.header.resource.timeLabel(
-							'week',
-							day.format('HH')
-						)}
+						data-testid={keys.header.resource.timeLabel('week', hourStr)}
 						key={key}
 					>
 						<DayHeaderLabel animated day={day} />

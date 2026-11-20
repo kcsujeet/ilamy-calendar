@@ -67,7 +67,7 @@ const open = async (
 	await gotoScenario(page, {
 		scenario: 'visible-hours',
 		view,
-		settings,
+		settings: { editable: 'true', ...settings },
 		...extra,
 	})
 	// Headers animate in over 500ms; measuring before then reads moving boxes.
@@ -313,7 +313,12 @@ const openResources = async (
 	scenario = 'long-resource-events'
 ) => {
 	await page.setViewportSize({ width: 1280, height: 900 })
-	await gotoScenario(page, { scenario, view, orientation, settings })
+	await gotoScenario(page, {
+		scenario,
+		view,
+		orientation,
+		settings: { editable: 'true', ...settings },
+	})
 	await new ResourceAxis(page).expectRendered()
 }
 
@@ -524,7 +529,7 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 			scenario: 'long-resource-events',
 			view: 'day',
 			orientation: 'vertical',
-			settings: NIGHT,
+			settings: { ...NIGHT, editable: 'true' },
 		})
 		const grid = new TimeGrid(page)
 		const bar = grid.bars('long-res-2').first()
@@ -548,7 +553,7 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 			scenario: 'long-resource-events',
 			view: 'day',
 			orientation: 'vertical',
-			settings: SMALL_HOURS,
+			settings: { ...SMALL_HOURS, editable: 'true' },
 		})
 		const grid = new TimeGrid(page)
 		const bar = grid.bars('long-res-2').first()
@@ -1044,7 +1049,11 @@ test.describe('persona 3: edge-case hunter, scrollTime and the now-line', () => 
 	test('now-line: shown inside, at the right height; hidden at max (exclusive); shown at min', async ({
 		page,
 	}) => {
-		await open(page, 'day', { slotMinTime: '08:00', slotMaxTime: '18:00' })
+		await open(page, 'day', {
+			slotMinTime: '08:00',
+			slotMaxTime: '18:00',
+			nowIndicator: 'true',
+		})
 		const first = await page.getByTestId('vertical-time-08').boundingBox()
 		const last = await page.getByTestId('vertical-time-17').boundingBox()
 		const line = await page.getByTestId('current-time-indicator').boundingBox()
@@ -1054,24 +1063,44 @@ test.describe('persona 3: edge-case hunter, scrollTime and the now-line', () => 
 		console.log('now-line y/expected', line.y, expectedY)
 		expect(Math.abs(line.y - expectedY)).toBeLessThan(SUBPIXEL + 3)
 
-		await open(page, 'day', { slotMinTime: '06:00', slotMaxTime: '09:00' })
+		await open(page, 'day', {
+			slotMinTime: '06:00',
+			slotMaxTime: '09:00',
+			nowIndicator: 'true',
+		})
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 
-		await open(page, 'day', { slotMinTime: '09:00', slotMaxTime: '12:00' })
+		await open(page, 'day', {
+			slotMinTime: '09:00',
+			slotMaxTime: '12:00',
+			nowIndicator: 'true',
+		})
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
 	})
 
 	test('now-line in week view follows the same rule', async ({ page }) => {
-		await open(page, 'week', { slotMinTime: '10:00', slotMaxTime: '18:00' })
+		await open(page, 'week', {
+			slotMinTime: '10:00',
+			slotMaxTime: '18:00',
+			nowIndicator: 'true',
+		})
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
-		await open(page, 'week', { slotMinTime: '08:00', slotMaxTime: '18:00' })
+		await open(page, 'week', {
+			slotMinTime: '08:00',
+			slotMaxTime: '18:00',
+			nowIndicator: 'true',
+		})
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
 	})
 
 	test('now-line at 09:00 sits at the very bottom edge of a 06-10 window? no: 09:00 is inside, so it is shown', async ({
 		page,
 	}) => {
-		await open(page, 'day', { slotMinTime: '06:00', slotMaxTime: '10:00' })
+		await open(page, 'day', {
+			slotMinTime: '06:00',
+			slotMaxTime: '10:00',
+			nowIndicator: 'true',
+		})
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(1)
 	})
 
@@ -1081,11 +1110,13 @@ test.describe('persona 3: edge-case hunter, scrollTime and the now-line', () => 
 		await openResources(page, 'day', 'vertical', {
 			slotMinTime: '10:00',
 			slotMaxTime: '18:00',
+			nowIndicator: 'true',
 		})
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 		await openResources(page, 'day', 'vertical', {
 			slotMinTime: '08:00',
 			slotMaxTime: '18:00',
+			nowIndicator: 'true',
 		})
 		const shown = await page.getByTestId('current-time-indicator').count()
 		console.log('resource vertical now-lines inside window:', shown)

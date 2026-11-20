@@ -1,10 +1,16 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import {
-	gotoScenario,
+	gotoScenario as gotoRawScenario,
 	releasePointer,
 	type ScenarioOptions,
 } from '../support/harness'
 import { type CalendarPage, MonthGrid, TimeGrid } from '../support/pages'
+
+const gotoScenario = (page: Page, options: ScenarioOptions) =>
+	gotoRawScenario(page, {
+		...options,
+		settings: { editable: 'true', ...options.settings },
+	})
 
 // A cancelled animation rejects `finished` with an AbortError (MDN,
 // Animation.cancel()); for "wait until at rest" it counts as finished.

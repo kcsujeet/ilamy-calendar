@@ -105,19 +105,15 @@ These are non-negotiable. Violating any of these is a bug.
 - ALWAYS read all the docs in `docs/` (every `.md` file; `docs/logs/` is covered
   under Session Start) before changing code. They hold contracts and known gaps
   the code does not show, and they are what stops a fix from contradicting an
-  earlier decision. In particular, `docs/timezones.md` records a known gap that
-  matters on any date or time work: dayjs still reads zoned dates through the
-  machine's zone, so a bug can appear only on a machine whose own clocks
-  change. The decided fix is a Temporal migration (with `temporal-polyfill`)
-  in the next major, and it is required. Until then, do not pile more patches
-  onto `packages/utils/src/dayjs.ts` without raising it with the user first,
-  and reproduce date bugs with the machine zone set (Playwright `timezoneId`,
-  or a child process with `TZ`), not only in UTC.
+  earlier decision. Date and timezone operations run on TC39 Temporal
+  (`@ilamy/utils/temporal`, backed by `temporal-polyfill/fns/*`) with zero
+  module-global timezone state; still reproduce date bugs with the machine zone
+  set (Playwright `timezoneId`, or a child process with `TZ`), not only in UTC.
 - NEVER use npm/node/pnpm as the package manager or runtime. Always use `bun` (invoke tools via `bunx`, e.g. the demo dev server runs `bunx vite`).
 - ALWAYS use the latest published version when adding a dependency. Check `npm view <pkg> version` for the true latest — never copy version numbers from existing in-repo examples or from memory. Verify peer/engine compatibility and confirm the new major has no breaking changes for the APIs used (per the docs-first rule).
-- NEVER use `YYYY-MM-DD` format for storage/transmission. Always use ISO strings.
-- NEVER import dayjs directly. Always import the configured instance from `@ilamy/utils/dayjs`.
-- NEVER import `datetime` from rrule. Use dayjs.
+- NEVER use `YYYY-MM-DD` format for storage/transmission. Always use ISO 8601 strings with explicit offset.
+- NEVER use `dayjs`. Always use `@ilamy/utils/temporal` (`ZonedDate`, `parseDate`, `toOffsetIso`, etc.).
+- NEVER import `datetime` from rrule. Use `@ilamy/utils/temporal`.
 - NEVER add Claude/AI as co-author in commits.
 - NEVER commit directly to main. Use feature branches.
 - ALWAYS update the dev log (`docs/logs/`) after making any codebase changes. This is mandatory — not optional. See "Development Logs" section below. Review-only sessions (no `src/` changes) don't require a log entry — the stop hook (`.claude/hooks/check-dev-log.sh`) checks `git diff --quiet HEAD -- src` and skips for clean trees.
@@ -268,21 +264,33 @@ React calendar component library. TypeScript, Shadcn-UI, Tailwind CSS, @dnd-kit,
 ```
 packages/
   types/        @ilamy/types        (private)  shared plugin-contract types (no runtime)
-  utils/        @ilamy/utils        (private)  configured dayjs (./dayjs) + helpers (./helpers: safeDate, overlapsRange, …)
+  utils/        @ilamy/utils        (private)  Temporal date core (./temporal) + helpers (./helpers: listKey, readableTextColor, …)
+  core/         @ilamy/core         (private)  framework-agnostic headless engine (zero React, zero CSS)
+  dom/          @ilamy/dom          (private)  zero-React full-parity DOM calendar renderer built on @ilamy/core
   ui/           @ilamy/ui           (private)  shadcn primitives
   playground/   @ilamy/playground   (private)  shared interactive demo UI, source-only; consumed by apps/demo + apps/website
+  adapters/
+    vue/            @ilamy/adapter-vue             (private)  Vue 3.5+ component & composable adapter
+    svelte/         @ilamy/adapter-svelte          (private)  Svelte 5 attachment, action & reactivity adapter
+    solid/          @ilamy/adapter-solid           (private)  Solid 2.0 signal & component adapter
+    angular/        @ilamy/adapter-angular         (private)  Angular 22 signals & <ilamy-calendar> custom element adapter
   plugins/
     recurrence/     @ilamy/calendar-recurrence     (private)  RFC 5545 recurrence plugin
     agenda/         @ilamy/calendar-agenda         (private)  agenda view plugin
     drag-to-create/ @ilamy/calendar-drag-to-create (private)  drag-to-create plugin
-  calendar/     @ilamy/calendar     (PUBLISHED) the core; bundles the internal packages above
+    year/           @ilamy/calendar-year           (private)  12-month year overview plugin
+    ical/           @ilamy/calendar-ical           (private)  RFC 5545 iCalendar (.ics) export plugin with VTIMEZONE/TZID
+  themes/
+    mui/            @ilamy/theme-mui               (private)  Material UI (MUI) adapter
+    stylex/         @ilamy/theme-stylex            (private)  StyleX atomic CSS adapter
+  calendar/     @ilamy/calendar     (PUBLISHED) the React UI adapter; bundles the internal packages above
 apps/
   demo/         @ilamy/demo         (private)  Vite demo app; consumes @ilamy/calendar's public API
   website/      @ilamy/website      (private)  docs website (deployed via `bun run deploy:website`)
 examples/       standalone consumer apps (astro, nextjs, vite) depending on the published package
 ```
 
-`@ilamy/calendar` ships these entry points: `.` (core), `./testing` (test harness), `./plugins/recurrence`, `./plugins/agenda`, `./plugins/drag-to-create`. The plugin subpaths' `import … from '@ilamy/calendar'` self-references the same package at runtime. **It ships no CSS** — "bring your own design system": components use the conventional shadcn token classes, and consumers `@source` the package's `dist` so Tailwind generates the utilities, styled by their own tokens. The demo (`apps/demo/src/styles/globals.css`) is the reference consumer that supplies a shadcn theme.
+`@ilamy/calendar` ships these entry points: `.` (React UI), `./core` (headless engine), `./vue` (Vue 3.5+), `./svelte` (Svelte 5+), `./solid` (Solid 2.0+), `./angular` (Angular 22+), `./testing` (test harness), `./plugins/recurrence`, `./plugins/agenda`, `./plugins/drag-to-create`, `./plugins/year`, `./plugins/ical`, `./themes/mui`, `./themes/stylex`. The plugin subpaths' `import … from '@ilamy/calendar'` self-references the same package at runtime. **It ships no CSS** — "bring your own design system": components use the conventional shadcn token classes by default, and consumers `@source` the package's `dist` so Tailwind generates the utilities, or use `unstyled`, `slotProps`, `components`, or the MUI / StyleX theme adapters. The demo (`apps/demo/src/styles/globals.css`) is the reference consumer that supplies a shadcn theme.
 
 Paths in the **Key Paths** section below are relative to `packages/calendar/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via each package's own tsconfig `paths`: Bun reads the tsconfig nearest the importing file) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the plugin packages + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
 
@@ -403,21 +411,21 @@ docs/
 
 ### Public API (`src/index.ts`)
 
-**Components**: `IlamyCalendar` (+ `IlamyResourceCalendar` deprecated alias)
+**Components**: `IlamyCalendar`
 **Hooks**: `useIlamyCalendarContext()` (returns `IlamyCalendarApi`)
-**Plugin SDK**: `SLOT_EVENT_FORM`, `SLOT_EVENT_MUTATION_SCOPE`, configured `dayjs`, contract types (`IlamyPlugin`, `PluginView`, `ViewConfig`, …)
-**Types**: `CalendarEvent`, `CalendarView`, `TimeFormat`, `BusinessHours`, `WeekDays`, `Resource`, `Translations`, `TranslatorFunction`, `CellInfo`, `IlamyCalendarProps`
+**Plugin SDK**: `SLOT_EVENT_FORM`, `SLOT_EVENT_MUTATION_SCOPE`, `SLOT_TOOLBAR`, contract types (`IlamyPlugin`, `PluginView`, `ViewConfig`, …)
+**Types**: `CalendarEvent`, `CalendarView`, `IsoDateString`, `TimeFormat`, `BusinessHours`, `WeekDays`, `Resource`, `Translations`, `TranslatorFunction`, `CellInfo`, `IlamyCalendarProps`, `CalendarSlotProps`, `CalendarComponents`
 
-Recurrence exports live on the plugin subpath, NOT the core: `generateRecurringEvents()`, `isRecurringEvent()`, `RRule`, `RRuleOptions`, `recurrencePlugin` come from `@ilamy/calendar/plugins/recurrence`.
+Optional feature exports live on subpaths, NOT the core: `recurrencePlugin`/`RRule` on `@ilamy/calendar/plugins/recurrence`, `agendaPlugin` on `@ilamy/calendar/plugins/agenda`, `dragToCreatePlugin` on `@ilamy/calendar/plugins/drag-to-create`, `yearPlugin` on `@ilamy/calendar/plugins/year`, `icalPlugin`/`exportToICalendar` on `@ilamy/calendar/plugins/ical`, headless engine on `@ilamy/calendar/core`, and themes on `@ilamy/calendar/themes/mui` and `@ilamy/calendar/themes/stylex`.
 
 ## Code Rules
 
 ### Dates
 
-- Storage/transmission: `dayjs().toISOString()` — always ISO strings
-- Display only: `YYYY-MM-DD` format is acceptable in UI
-- Tests: use `'2025-10-13T00:00:00.000Z'` or `dayjs().toISOString()`, never `'2025-10-13'`
-- Timezones: with a `timezone` prop the machine's zone decides nothing; without one everything falls back to it. A string carrying `Z`/`±HH:MM` keeps its instant, a string carrying no offset is anchored in the configured zone, and the zone must be applied DURING render (an effect is too late). Read `docs/timezones.md` before touching anything that parses a date or calls `dayjs.tz.setDefault` (see the Hard Rules: the machine's zone still leaks through dayjs until the Temporal migration).
+- Storage/transmission: ISO 8601 strings with explicit offset (`toOffsetIso(date)`) — never `YYYY-MM-DD`
+- Display only: `Intl.DateTimeFormat` with explicit `timeZone`
+- Tests: use `'2025-10-13T00:00:00+00:00'` or `'2025-10-13T00:00:00Z'`, never `'2025-10-13'`
+- Timezones: with a `timezone` prop the machine's zone decides nothing; without one everything falls back to it. A string carrying `Z`/`±HH:MM` keeps its instant, a string carrying no offset is anchored in `event.timezone ?? calendar.timezone`. Zero module-global timezone state. Read `docs/timezones.md` before changing date parsing or DST logic.
 
 ### Code Quality
 

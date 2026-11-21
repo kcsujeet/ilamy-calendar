@@ -105,8 +105,10 @@ export interface CalendarEvent {
 }
 
 /** Public event input accepting ISO strings or native `Date` objects. */
-export interface CalendarEventInput
-	extends Omit<CalendarEvent, 'start' | 'end'> {
+export interface CalendarEventInput extends Omit<
+	CalendarEvent,
+	'start' | 'end'
+> {
 	start: PublicDateInput
 	end: PublicDateInput
 }

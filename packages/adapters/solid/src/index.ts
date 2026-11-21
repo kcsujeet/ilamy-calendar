@@ -58,8 +58,7 @@ export const createIlamyCalendar = (
 }
 
 export type SolidCalendarOptionsInput =
-	| DomCalendarOptions
-	| Accessor<DomCalendarOptions>
+	DomCalendarOptions | Accessor<DomCalendarOptions>
 
 const resolveOptions = (
 	input: SolidCalendarOptionsInput

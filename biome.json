@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
 	"root": true,
 	"vcs": {
 		"enabled": true,
@@ -18,9 +18,7 @@
 		]
 	},
 	"formatter": {
-		"enabled": true,
-		"indentStyle": "tab",
-		"lineWidth": 80
+		"enabled": false
 	},
 	"assist": {
 		"actions": {
@@ -306,9 +304,17 @@
 			}
 		},
 		{
-			"includes": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"],
+			"includes": [
+				"**/*.test.ts",
+				"**/*.test.tsx",
+				"**/*.spec.ts",
+				"**/*.spec.tsx"
+			],
 			"linter": {
 				"rules": {
+					"correctness": {
+						"noComponentHookFactories": "off"
+					},
 					"suspicious": {
 						"noConsole": "off"
 					}

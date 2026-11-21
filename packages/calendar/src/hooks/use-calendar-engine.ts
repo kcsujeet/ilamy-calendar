@@ -74,7 +74,8 @@ interface CalendarEngineConfig extends CalendarDataOptions {
 }
 
 export interface CalendarEngineReturn
-	extends Omit<CalendarConfigSlice, 'setCurrentLocale'>,
+	extends
+		Omit<CalendarConfigSlice, 'setCurrentLocale'>,
 		Omit<CalendarNavigationSlice, 'getCurrentViewRange' | 'getAllViews'>,
 		Omit<CalendarDataSlice, 'setCurrentEvents'>,
 		Omit<CalendarInteractionSlice, 'handleEventClick' | 'handleDateClick'> {

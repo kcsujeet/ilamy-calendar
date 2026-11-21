@@ -15,7 +15,8 @@ export interface ScrollRequest {
 }
 
 export interface CalendarContextType
-	extends CalendarEngineReturn,
+	extends
+		CalendarEngineReturn,
 		Pick<
 			IlamyCalendarProps,
 			| 'renderEvent'

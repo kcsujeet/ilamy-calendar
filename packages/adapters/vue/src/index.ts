@@ -288,17 +288,13 @@ export const IlamyCalendar: DefineComponent<VueIlamyCalendarProps> =
 				assignIfDefined('className', props.calendarClass)
 
 				const eventSlot = slots.event as
-					| ((ctx: DomEventRenderContext) => VNode[])
-					| undefined
+					((ctx: DomEventRenderContext) => VNode[]) | undefined
 				const headerSlot = slots.header as
-					| ((ctx: DomHeaderRenderContext) => VNode[])
-					| undefined
+					((ctx: DomHeaderRenderContext) => VNode[]) | undefined
 				const resourceSlot = slots.resource as
-					| ((ctx: DomResourceRenderContext) => VNode[])
-					| undefined
+					((ctx: DomResourceRenderContext) => VNode[]) | undefined
 				const formSlot = slots['event-form'] as
-					| ((ctx: DomEventFormRenderContext) => VNode[])
-					| undefined
+					((ctx: DomEventFormRenderContext) => VNode[]) | undefined
 
 				return {
 					...base,

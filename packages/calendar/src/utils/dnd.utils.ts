@@ -143,9 +143,7 @@ export const getSnappedOverData = (
 	pointer: Pointer | undefined
 ): DropCellData | undefined => {
 	const dropped = over?.data.current as
-		| DropCellData
-		| DropColumnData
-		| undefined
+		DropCellData | DropColumnData | undefined
 	if (!over || !dropped) {
 		return undefined
 	}

@@ -10,7 +10,7 @@
 		"perf": "bunx playwright test",
 		"perf:compare": "bun scripts/compare.ts",
 		"perf:both": "bun scripts/run-both.ts",
-		"type-check": "bunx tsc --noEmit"
+		"type-check": "bun check --no-script"
 	},
 	"dependencies": {
 		"@ilamy/calendar": "workspace:*",

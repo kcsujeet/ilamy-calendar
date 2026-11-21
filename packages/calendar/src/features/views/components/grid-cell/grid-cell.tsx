@@ -55,10 +55,8 @@ const getCellTestId = (
 }
 
 interface GridCellBodyProps
-	extends Pick<
-			GridProps,
-			'day' | 'precomputedLayout' | 'weekNumber' | 'children'
-		>,
+	extends
+		Pick<GridProps, 'day' | 'precomputedLayout' | 'weekNumber' | 'children'>,
 		Required<Pick<GridProps, 'showDayNumber'>> {
 	allEventsDialogRef: React.RefObject<AllEventDialogHandle | null>
 }

@@ -2,3 +2,25 @@
 # behavior (new Bun workspaces default to "isolated"); revisit later.
 [install]
 linker = "hoisted"
+
+[fmt]
+printWidth = 80
+useTabs = true
+semi = false
+singleQuote = true
+trailingComma = "es5"
+ignorePatterns = [
+	"examples/",
+	"dist/",
+	"dist-*/",
+	"coverage/",
+	"out/",
+	"**/*.css",
+	"**/*.md",
+	"**/*.mdx",
+	"**/*.astro",
+	"**/*.yml",
+	"**/*.yaml",
+	"**/*.html",
+	"**/*.toml",
+]

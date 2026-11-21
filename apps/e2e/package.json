@@ -10,7 +10,7 @@
 		"e2e": "bunx playwright test",
 		"e2e:a11y": "bunx playwright test tests/accessibility.spec.ts demo-tests/demo-a11y.spec.ts",
 		"e2e:ui": "bunx playwright test --ui",
-		"type-check": "bunx tsc --noEmit"
+		"type-check": "bun check --no-script"
 	},
 	"dependencies": {
 		"@ilamy/calendar": "workspace:*",

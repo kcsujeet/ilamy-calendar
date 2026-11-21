@@ -39,8 +39,7 @@ const NoMemoCurrentTimeMarker = ({
 	const indicatorSlot = useSlotProps('nowIndicator')
 
 	let render:
-		| ((props: CurrentTimeIndicatorRenderProps) => ReactNode)
-		| undefined
+		((props: CurrentTimeIndicatorRenderProps) => ReactNode) | undefined
 	if (renderCurrentTimeIndicator) {
 		render = (props) => renderCurrentTimeIndicator({ ...props, resource, view })
 	}

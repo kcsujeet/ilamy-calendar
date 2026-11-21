@@ -8,7 +8,7 @@
 		".": "./src/index.ts"
 	},
 	"scripts": {
-		"type-check": "bunx tsc --noEmit"
+		"type-check": "bun check --no-script"
 	},
 	"dependencies": {
 		"@emotion/react": "11.14.0",

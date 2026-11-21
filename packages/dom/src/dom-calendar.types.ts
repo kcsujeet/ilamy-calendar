@@ -41,8 +41,10 @@ export interface DomCalendarEvent extends CalendarEvent {
 	recurrenceId?: string
 }
 
-export interface DomCalendarEventInput
-	extends Omit<CalendarEventInput, 'rrule'> {
+export interface DomCalendarEventInput extends Omit<
+	CalendarEventInput,
+	'rrule'
+> {
 	rrule?: DomRRuleInput
 	exdates?: string[]
 	recurrenceId?: string

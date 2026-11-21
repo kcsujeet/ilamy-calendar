@@ -1,3 +1,6 @@
 {
-	"*.{js,ts,jsx,tsx,json,jsonc}": ["biome check --write --staged"]
+	"*.{js,ts,jsx,tsx,json,jsonc}": [
+		"bun fmt --no-script",
+		"biome lint --write --staged"
+	]
 }

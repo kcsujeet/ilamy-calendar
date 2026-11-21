@@ -8,7 +8,7 @@
 		"dev": "bunx vite",
 		"build": "bunx vite build",
 		"preview": "bunx vite preview",
-		"type-check": "bunx tsc --noEmit"
+		"type-check": "bun check --no-script"
 	},
 	"dependencies": {
 		"@ilamy/calendar": "workspace:*",

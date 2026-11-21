@@ -44,8 +44,7 @@ const TEST_CUSTOM_RENDER = ({
 )
 
 let customRenderFn:
-	| ((props: RenderCurrentTimeIndicatorProps) => React.ReactNode)
-	| undefined
+	((props: RenderCurrentTimeIndicatorProps) => React.ReactNode) | undefined
 
 const TestWrapper: React.FC<{
 	children: React.ReactNode

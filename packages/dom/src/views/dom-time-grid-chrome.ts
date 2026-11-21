@@ -72,9 +72,9 @@ const renderAllDayStrip = (
 			const e = parseDate(event.end, state.timezone)
 			return Boolean(
 				s &&
-					e &&
-					toOffsetIso(s) < toOffsetIso(dayEnd) &&
-					toOffsetIso(e) > toOffsetIso(dayStart)
+				e &&
+				toOffsetIso(s) < toOffsetIso(dayEnd) &&
+				toOffsetIso(e) > toOffsetIso(dayStart)
 			)
 		})
 

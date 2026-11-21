@@ -201,12 +201,12 @@ const renderTimeSlotCell = (
 	const isDisabled = Boolean(options.isCellDisabled?.(cellInfo))
 	const isNonBusiness = Boolean(
 		effHours &&
-			!isBusinessHour({
-				date: col.day,
-				hour: hourNum,
-				minute,
-				businessHours: effHours,
-			})
+		!isBusinessHour({
+			date: col.day,
+			hour: hourNum,
+			minute,
+			businessHours: effHours,
+		})
 	)
 	const { slotName, slotBg } = resolveTimeSlotAppearance(
 		isDisabled,

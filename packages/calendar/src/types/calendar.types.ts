@@ -65,21 +65,14 @@ export interface CalendarClassesOverride {
 }
 
 /** Primitive button override props (implemented by shadcn, MUI, or custom UI kits). */
-export interface CalendarButtonProps
-	extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface CalendarButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 	ref?: Ref<HTMLButtonElement>
 	variant?:
-		| 'default'
-		| 'destructive'
-		| 'outline'
-		| 'secondary'
-		| 'ghost'
-		| 'link'
+		'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
 	size?: 'default' | 'sm' | 'lg' | 'icon'
 }
 
-export interface CalendarInputProps
-	extends InputHTMLAttributes<HTMLInputElement> {
+export interface CalendarInputProps extends InputHTMLAttributes<HTMLInputElement> {
 	ref?: Ref<HTMLInputElement>
 }
 

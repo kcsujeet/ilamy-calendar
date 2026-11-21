@@ -101,8 +101,7 @@ const readGrab = ({
 		return { calendarEvent, pending: null }
 	}
 	const getBarRect = active.data.current.getBarRect as
-		| (() => DOMRect | undefined)
-		| undefined
+		(() => DOMRect | undefined) | undefined
 	return {
 		calendarEvent,
 		pending: {

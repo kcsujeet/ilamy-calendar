@@ -90,8 +90,7 @@ export interface SharedCalendarProps {
 	headerComponent: ReactNode
 	onCellClick: ((info: import('@ilamy/calendar').CellInfo) => void) | undefined
 	onMoreEventsClick:
-		| ((day: IsoDateString, events: CalendarEvent[]) => void)
-		| undefined
+		((day: IsoDateString, events: CalendarEvent[]) => void) | undefined
 	onDateChange: (date: IsoDateString, range: DateRange) => void
 	onEventAdd: EventHandler | undefined
 	onEventUpdate: EventHandler | undefined
@@ -101,8 +100,7 @@ export interface SharedCalendarProps {
 	renderEventForm: ((props: EventFormProps) => ReactNode) | undefined
 	renderHour: ((date: IsoDateString) => ReactNode) | undefined
 	renderCurrentTimeIndicator:
-		| ((props: RenderCurrentTimeIndicatorProps) => ReactNode)
-		| undefined
+		((props: RenderCurrentTimeIndicatorProps) => ReactNode) | undefined
 }
 
 const CUSTOM_CALENDAR_CLASSES_OVERRIDE: CalendarClassesOverride = {
@@ -231,8 +229,7 @@ export function buildDomCalendarOptions(params: {
 	shared: SharedCalendarProps
 	customEvents: CalendarEvent[]
 	themeAdapter:
-		| { unstyled?: boolean; slotProps?: CalendarSlotProps }
-		| undefined
+		{ unstyled?: boolean; slotProps?: CalendarSlotProps } | undefined
 	onDateChange: (date: IsoDateString, range: DateRange) => void
 	lifecycle: Pick<
 		LifecycleHandlers,

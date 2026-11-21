@@ -23,7 +23,7 @@
 	],
 	"scripts": {
 		"build": "CI=true NODE_ENV=production bunx bunup",
-		"type-check": "bunx tsc --noEmit",
+		"type-check": "bun check --no-script",
 		"test": "bun test",
 		"lint": "bunx biome lint . --diagnostic-level=error",
 		"check": "bunx biome check . --diagnostic-level=error",

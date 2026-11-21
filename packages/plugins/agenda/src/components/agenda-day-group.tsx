@@ -26,8 +26,7 @@ export const AgendaDayGroup = ({ group }: AgendaDayGroupProps) => {
 	const isToday = isSameDay(group.date, now(group.date.timeZoneId))
 
 	let renderIndicator:
-		| ((props: CurrentTimeIndicatorRenderProps) => ReactNode)
-		| undefined
+		((props: CurrentTimeIndicatorRenderProps) => ReactNode) | undefined
 	if (renderCurrentTimeIndicator) {
 		renderIndicator = (props) => renderCurrentTimeIndicator({ ...props, view })
 	}

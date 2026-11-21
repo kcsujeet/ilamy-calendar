@@ -64,9 +64,8 @@ async function mountFrameworkRuntime(
 
 		createRoot((dispose) => {
 			disposeRoot = dispose
-			const [opts, setOpts] = createSignal<DomCalendarOptions>(
-				getLatestOptions()
-			)
+			const [opts, setOpts] =
+				createSignal<DomCalendarOptions>(getLatestOptions())
 			setOptions = (next) => {
 				setOpts(() => next)
 				flush()
@@ -86,9 +85,8 @@ async function mountFrameworkRuntime(
 	}
 
 	// Angular 22 standalone Custom Element + Signals
-	const { registerIlamyCalendarElement } = await import(
-		'@ilamy/calendar/angular'
-	)
+	const { registerIlamyCalendarElement } =
+		await import('@ilamy/calendar/angular')
 	if (isCancelled()) return null
 	registerIlamyCalendarElement()
 	const el = document.createElement('ilamy-calendar') as HTMLElement & {

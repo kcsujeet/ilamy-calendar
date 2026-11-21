@@ -4,11 +4,7 @@ import {
 } from '../types/settings-form.types'
 
 export type DemoPresetId =
-	| 'standard'
-	| 'resource'
-	| 'business-hours'
-	| 'multi-zone'
-	| 'read-only'
+	'standard' | 'resource' | 'business-hours' | 'multi-zone' | 'read-only'
 
 export interface DemoPreset {
 	id: DemoPresetId

@@ -185,14 +185,14 @@ bun run test                       # All tests (fans out per package via --filte
 # bunfig happy-dom preload and fails en masse. Inside a package it's fine.
 bun test --coverage                # Tests with coverage (run inside a package)
 bun run lint                       # Lint (Biome)
-bun run lint:fix                   # Fix lint issues
-bun run format:check               # Check formatting (Biome)
-bun run format                     # Fix formatting
-bun run check:fix                  # Combined lint + format fixes
+bun run lint:fix                   # Fix lint issues (Biome)
+bun run format:check               # Check formatting (bun fmt --check)
+bun run format                     # Fix formatting (bun fmt)
+bun run check:fix                  # Combined format (bun fmt) + lint (Biome) fixes
 bun run pre-commit                 # = check:fix
 bun run build                      # Production build (bunup)
-bun run type-check                 # TypeScript check
-bun run check:dist-types           # Strict tsc over the BUILT dist/*.d.ts (run after build)
+bun run type-check                 # TypeScript check (bun check across workspaces + astro check)
+bun run check:dist-types           # Strict bun check over the BUILT dist/*.d.ts (run after build)
 bun run ci                         # Full CI: check + build + check:dist-types + type-check + test
 
 # Match the CI gate locally (Fallow static analysis; CI runs fallow-rs/fallow@v3

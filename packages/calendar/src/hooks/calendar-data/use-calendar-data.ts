@@ -54,9 +54,7 @@ interface CalendarDataParams extends CalendarDataOptions {
 const EMPTY_RESOURCES: Resource[] = []
 
 export interface CalendarDataSlice
-	extends EventMutations,
-		PluginMutations,
-		ResourceLookups {
+	extends EventMutations, PluginMutations, ResourceLookups {
 	events: CalendarEvent[]
 	rawEvents: CalendarEvent[]
 	setCurrentEvents: Dispatch<SetStateAction<CalendarEvent[]>>

@@ -1,5 +1,10 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, releasePointer } from '../support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	settleAnimations,
+	waitForDragRender,
+} from '../support/harness'
 import { ResourceAxis, TimeGrid } from '../support/pages'
 
 /**
@@ -71,7 +76,8 @@ const open = async (
 		...extra,
 	})
 	// Headers animate in over 500ms; measuring before then reads moving boxes.
-	await page.waitForTimeout(650)
+	await settleAnimations(page)
+	await waitForDragRender(page)
 }
 
 /** An empty weekday: the scenario's events are all on Wednesday the 12th. */
@@ -450,7 +456,7 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 		page,
 	}) => {
 		await openResources(page, 'week', 'horizontal', NIGHT)
-		await page.waitForTimeout(700) // the headers animate in over 500ms
+		await settleAnimations(page)
 		const viewport = page.locator(
 			'[data-testid="horizontal-grid-scroll"] [data-radix-scroll-area-viewport]'
 		)
@@ -732,7 +738,7 @@ test.describe('persona 3: edge-case hunter, DST (America/New_York)', () => {
 					date,
 					settings: { slotMinTime, slotMaxTime },
 				})
-				await page.waitForTimeout(700)
+				await settleAnimations(page)
 				const bar = await new TimeGrid(page).bars(eventId).first().boundingBox()
 				const nineLabel = await page
 					.getByTestId('vertical-time-09')
@@ -786,12 +792,12 @@ test.describe('persona 3: edge-case hunter, equivalences', () => {
 			page,
 		}) => {
 			await open(page, view, {})
-			await page.waitForTimeout(700)
+			await settleAnimations(page)
 			const plain = stripVolatile(
 				await page.getByTestId('calendar-body').innerHTML()
 			)
 			await open(page, view, { slotMinTime: '00:00', slotMaxTime: '24:00' })
-			await page.waitForTimeout(700)
+			await settleAnimations(page)
 			const explicit = stripVolatile(
 				await page.getByTestId('calendar-body').innerHTML()
 			)
@@ -804,7 +810,7 @@ test.describe('persona 3: edge-case hunter, equivalences', () => {
 			page,
 		}) => {
 			await openResources(page, 'day', orientation, {})
-			await page.waitForTimeout(700)
+			await settleAnimations(page)
 			const plain = stripVolatile(
 				await page.getByTestId('calendar-body').innerHTML()
 			)
@@ -812,7 +818,7 @@ test.describe('persona 3: edge-case hunter, equivalences', () => {
 				slotMinTime: '00:00',
 				slotMaxTime: '24:00',
 			})
-			await page.waitForTimeout(700)
+			await settleAnimations(page)
 			const explicit = stripVolatile(
 				await page.getByTestId('calendar-body').innerHTML()
 			)

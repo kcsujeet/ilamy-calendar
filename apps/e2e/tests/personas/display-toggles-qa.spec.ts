@@ -1,5 +1,10 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, releasePointer, setSettings } from '../support/harness'
+import {
+	gotoScenario,
+	releasePointer,
+	setSettings,
+	settleAnimations,
+} from '../support/harness'
 import { CalendarPage, MonthGrid, TimeGrid } from '../support/pages'
 
 /**
@@ -830,7 +835,7 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 			'13'
 		)
 		await grid.next()
-		await page.waitForTimeout(700)
+		await settleAnimations(page)
 		await expect(page.getByTestId('current-time-indicator')).toHaveCount(0)
 		const afterNext = await measure(
 			page,
@@ -839,7 +844,7 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 			'13'
 		)
 		await grid.previous()
-		await page.waitForTimeout(700)
+		await settleAnimations(page)
 		const afterPrev = await measure(
 			page,
 			'vertical-grid-scroll',
@@ -1023,7 +1028,7 @@ test.describe('persona 4: defaults (no new params)', () => {
 				view: 'week',
 				settings,
 			})
-			await page.waitForTimeout(800)
+			await settleAnimations(page)
 			return page.getByTestId('ilamy-calendar').evaluate((el) => el.outerHTML)
 		}
 		const bare = await html({})

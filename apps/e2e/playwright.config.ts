@@ -39,6 +39,7 @@ export default defineConfig({
 		timezoneId: 'UTC',
 		locale: 'en-US',
 		colorScheme: 'light',
+		reducedMotion: 'reduce',
 		viewport: { width: 1280, height: 900 },
 		trace: 'on-first-retry',
 	},
@@ -59,13 +60,17 @@ export default defineConfig({
 	],
 	webServer: [
 		{
-			command: `bun x vite --port ${PORT} --strictPort`,
+			command: process.env.CI
+				? `bun x vite preview --port ${PORT} --strictPort`
+				: `bun x vite --port ${PORT} --strictPort`,
 			url: `http://localhost:${PORT}`,
 			reuseExistingServer: !process.env.CI,
 			timeout: 120_000,
 		},
 		{
-			command: `bun x vite --port ${DEMO_PORT} --strictPort`,
+			command: process.env.CI
+				? `bun x vite preview --port ${DEMO_PORT} --strictPort`
+				: `bun x vite --port ${DEMO_PORT} --strictPort`,
 			cwd: '../demo',
 			url: `http://localhost:${DEMO_PORT}`,
 			reuseExistingServer: !process.env.CI,

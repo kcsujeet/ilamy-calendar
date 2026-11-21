@@ -59,6 +59,46 @@ const dragPointer = async (page: Page, from: Point, to: Point) => {
 	await releasePointer(page)
 }
 
+const waitForScrollEdge = async (
+	page: Page,
+	edge: 'right' | 'bottom' | 'top'
+): Promise<void> => {
+	await expect
+		.poll(
+			() =>
+				page.evaluate((dir) => {
+					const sel =
+						dir === 'right'
+							? '[data-resource-id][data-start], [data-start][data-end]'
+							: '[data-testid^="vertical-cell-"]'
+					let el: HTMLElement | null = document.querySelector(sel)
+					while (el) {
+						const cs = getComputedStyle(el)
+						if (
+							dir === 'right' &&
+							/(auto|scroll)/.test(cs.overflowX) &&
+							el.scrollWidth > el.clientWidth + 1
+						) {
+							return el.scrollLeft >= el.scrollWidth - el.clientWidth - 4
+						}
+						if (
+							dir !== 'right' &&
+							/(auto|scroll)/.test(cs.overflowY) &&
+							el.scrollHeight > el.clientHeight + 1
+						) {
+							return dir === 'bottom'
+								? el.scrollTop >= el.scrollHeight - el.clientHeight - 4
+								: el.scrollTop <= 4
+						}
+						el = el.parentElement
+					}
+					return false
+				}, edge),
+			{ timeout: 5000, intervals: [50] }
+		)
+		.toBe(true)
+}
+
 const openSettled = async (page: Page, options: ScenarioOptions) => {
 	await gotoScenario(page, {
 		...options,
@@ -67,8 +107,26 @@ const openSettled = async (page: Page, options: ScenarioOptions) => {
 	await page.evaluate(() =>
 		Promise.all(document.getAnimations().map((animation) => animation.finished))
 	)
-	// scrollTime scrolls the grid after the first paint; let it land.
-	await page.waitForTimeout(700)
+	const scrollTime = options.settings?.scrollTime
+	if (scrollTime && scrollTime !== '00:00') {
+		await expect
+			.poll(
+				() =>
+					page.evaluate(() => {
+						const nodes = document.querySelectorAll<HTMLElement>(
+							'[data-testid="ilamy-calendar"] *'
+						)
+						for (const node of nodes) {
+							if (node.scrollTop > 0 || node.scrollLeft > 0) return true
+						}
+						return false
+					}),
+				{ timeout: 1000, intervals: [20] }
+			)
+			.toBe(true)
+			.catch(() => {})
+	}
+	await waitForDragRender(page)
 }
 
 const topEdgeOf = (bar: Locator) => boxPoint(bar, 0.5, 0, 0, 2)
@@ -274,12 +332,12 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 			await page.mouse.down()
 			const edge = { x: 995, y: from.y }
 			await walk(page, from, edge)
-			await page.waitForTimeout(2500)
+			await waitForScrollEdge(page, 'right')
 			const park = { x: edge.x - inset, y: edge.y }
 			await walk(page, edge, park, 3)
-			await page.waitForTimeout(400)
+			await waitForDragRender(page)
 			const before = await sliceUnder(page, park)
-			await page.waitForTimeout(400)
+			await waitForDragRender(page)
 			const stable = await sliceUnder(page, park)
 			expect(stable?.iso, 'grid still scrolling').toBe(before?.iso)
 			await releasePointer(page)
@@ -564,12 +622,12 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 			const root = await page.getByTestId('ilamy-calendar').boundingBox()
 			const bottom = Math.floor((root?.y ?? 0) + (root?.height ?? 300) - 4)
 			await walk(page, from, { x: from.x, y: bottom })
-			await page.waitForTimeout(2500)
+			await waitForScrollEdge(page, 'bottom')
 			const park = { x: from.x, y: bottom - inset }
 			await walk(page, { x: from.x, y: bottom }, park, 3)
-			await page.waitForTimeout(400)
+			await waitForDragRender(page)
 			const before = await sliceUnder(page, park)
-			await page.waitForTimeout(400)
+			await waitForDragRender(page)
 			const stable = await sliceUnder(page, park)
 			expect(stable?.iso, 'grid still scrolling').toBe(before?.iso)
 			await releasePointer(page)
@@ -608,10 +666,10 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 			const root = await page.getByTestId('ilamy-calendar').boundingBox()
 			const bottom = Math.floor((root?.y ?? 0) + (root?.height ?? 300) - 4)
 			await walk(page, from, { x: from.x, y: bottom })
-			await page.waitForTimeout(2500)
+			await waitForScrollEdge(page, 'bottom')
 			const park = { x: from.x, y: bottom - inset }
 			await walk(page, { x: from.x, y: bottom }, park, 3)
-			await page.waitForTimeout(600)
+			await waitForDragRender(page)
 			const stable = await sliceUnder(page, park)
 			await releasePointer(page)
 			await expect.poll(async () => (await changes(page)).length).toBe(1)
@@ -643,10 +701,10 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 		const root = await page.getByTestId('ilamy-calendar').boundingBox()
 		const bottom = Math.floor((root?.y ?? 0) + (root?.height ?? 300) - 4)
 		await walk(page, from, { x: from.x, y: bottom })
-		await page.waitForTimeout(2500)
+		await waitForScrollEdge(page, 'bottom')
 		const park = { x: from.x, y: bottom - 45 }
 		await walk(page, { x: from.x, y: bottom }, park, 3)
-		await page.waitForTimeout(600)
+		await waitForDragRender(page)
 		const stable = await sliceUnder(page, park)
 		await releasePointer(page)
 		await expect.poll(async () => (await changes(page)).length).toBe(1)
@@ -682,12 +740,12 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 			})
 			const top = Math.floor(scrollerTop + 3)
 			await walk(page, from, { x: from.x, y: top })
-			await page.waitForTimeout(2500)
+			await waitForScrollEdge(page, 'top')
 			const park = { x: from.x, y: top + inset }
 			await walk(page, { x: from.x, y: top }, park, 3)
-			await page.waitForTimeout(400)
+			await waitForDragRender(page)
 			const before = await sliceUnder(page, park)
-			await page.waitForTimeout(400)
+			await waitForDragRender(page)
 			const stable = await sliceUnder(page, park)
 			expect(stable?.iso, 'grid still scrolling').toBe(before?.iso)
 			await releasePointer(page)
@@ -924,21 +982,35 @@ for (const browserZone of ['UTC', 'America/New_York']) {
 						page,
 					}) => {
 						test.setTimeout(120000)
+						const plain = await dropOnRow(page, {
+							orientation,
+							date,
+							title,
+							label,
+							hh,
+							frac: 0.5,
+						})
+						if (!plain) {
+							test.info().annotations.push({
+								type: 'no-row',
+								description: `${hh} absent`,
+							})
+							return
+						}
 						for (const [frac, minute] of [
 							[0.1, 0],
 							[0.6, 30],
 							[0.9, 45],
 						] as const) {
-							const base = { orientation, date, title, label, hh, frac }
-							const plain = await dropOnRow(page, base)
-							if (!plain) {
-								test.info().annotations.push({
-									type: 'no-row',
-									description: `${hh} absent`,
-								})
-								return
-							}
-							const snapped = await dropOnRow(page, { ...base, snap: 15 })
+							const snapped = await dropOnRow(page, {
+								orientation,
+								date,
+								title,
+								label,
+								hh,
+								frac,
+								snap: 15,
+							})
 							expect(snapped, `frac ${frac}`).not.toBeNull()
 							const s = snapped as NonNullable<typeof snapped>
 							expect(

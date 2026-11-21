@@ -1,5 +1,9 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { gotoScenario, type ScenarioOptions } from '../support/harness'
+import {
+	gotoScenario,
+	type ScenarioOptions,
+	settleAnimations,
+} from '../support/harness'
 import { TimeGrid } from '../support/pages'
 
 /**
@@ -352,7 +356,7 @@ test.describe('persona 2: designer', () => {
 					orientation,
 					settings: { dayHeaderFormat: LONG, granularity: 'daily' },
 				})
-				await page.waitForTimeout(700)
+				await settleAnimations(page)
 				const header = page.getByTestId(testid).first()
 				expect(await isClipped(header)).toEqual([])
 			})
@@ -370,7 +374,7 @@ test.describe('persona 2: designer', () => {
 				orientation: 'horizontal',
 				settings: { dayHeaderFormat: LONG, granularity },
 			})
-			await page.waitForTimeout(700)
+			await settleAnimations(page)
 			const cells = page.getByTestId('resource-week-day-header')
 			const outside = await cells.evaluateAll((headerCells) =>
 				headerCells.flatMap((cell) => {

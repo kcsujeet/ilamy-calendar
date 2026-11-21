@@ -1,5 +1,9 @@
 import { expect, type Page, test } from '@playwright/test'
-import { gotoScenario } from './support/harness'
+import {
+	gotoScenario,
+	settleAnimations,
+	waitForDragRender,
+} from './support/harness'
 import { MonthGrid } from './support/pages'
 
 /*
@@ -72,7 +76,8 @@ test.describe('controlling the calendar through its ref', () => {
 		await open(page, 'day')
 		const viewport = gridViewport(page)
 		await expect(viewport).toBeVisible()
-		await page.waitForTimeout(600)
+		await settleAnimations(page)
+		await waitForDragRender(page)
 
 		await press(page, 'scroll')
 

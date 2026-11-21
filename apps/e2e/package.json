@@ -6,6 +6,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "bunx vite",
+		"build": "bunx vite build",
 		"e2e": "bunx playwright test",
 		"e2e:ui": "bunx playwright test --ui",
 		"type-check": "bunx tsc --noEmit"

@@ -791,7 +791,7 @@ test.describe('vertical resource grids with whole-day rows', () => {
 				orientation: 'vertical',
 				settings,
 			})
-			await page.waitForTimeout(800)
+			await settleAnimations(page)
 			// "Single A" (Room 2, 09:00-10:00) and "Two days" (Room 2, 12 March
 			// 20:00 to 13 March 04:00) share Wednesday in the same room column.
 			expect(await topmostBarAtLeftEdge(page, 'vertical-event-q-single')).toBe(
@@ -818,7 +818,7 @@ test.describe('numeric resource ids', () => {
 				settings: { height: '900px' },
 			})
 			const calendar = new CalendarPage(page)
-			await page.waitForTimeout(800)
+			await settleAnimations(page)
 			const first = await page
 				.locator(lane('0', '2025-03-12T17:00:00.000Z'))
 				.first()
@@ -866,7 +866,7 @@ test.describe('editing a cross-resource event', () => {
 			settings: { height: '700px' },
 		})
 		const calendar = new CalendarPage(page)
-		await page.waitForTimeout(800)
+		await settleAnimations(page)
 		await page.getByTestId('horizontal-event-q-multi').nth(1).click()
 		await page.getByLabel('Title').fill('Multi renamed')
 		await page.getByRole('button', { name: /update|save/i }).click()

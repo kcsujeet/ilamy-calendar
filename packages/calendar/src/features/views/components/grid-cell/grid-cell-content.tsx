@@ -3,6 +3,7 @@ import { DayLabel } from '@ilamy/ui/components/day-label'
 import type { ZonedDate } from '@ilamy/utils/temporal'
 import type React from 'react'
 import { useCalendarCellContext } from '@/hooks/use-calendar-cell-context'
+import { useCalendarTheme } from '@/stores/calendar-theme-context'
 import { keys } from '@/utils/keys.utils'
 
 interface GridCellContentProps {
@@ -19,6 +20,7 @@ export const GridCellContent: React.FC<GridCellContentProps> = ({
 	children,
 }) => {
 	const { eventSpacing } = useCalendarCellContext()
+	const { unstyled } = useCalendarTheme()
 
 	return (
 		<div
@@ -41,6 +43,7 @@ export const GridCellContent: React.FC<GridCellContentProps> = ({
 						data-testid={keys.dayNumber(day)}
 						dayNumber={String(day.day)}
 						today={isToday(day)}
+						unstyled={unstyled}
 					/>
 				</div>
 			)}

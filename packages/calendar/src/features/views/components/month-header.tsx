@@ -5,7 +5,7 @@ import type React from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { useDateTimeFormatters } from '@/hooks/use-date-time-formatters'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import { useSlotProps } from '@/stores/calendar-theme-context'
+import { useCalendarTheme, useSlotProps } from '@/stores/calendar-theme-context'
 import { keys } from '@/utils/keys.utils'
 
 interface MonthHeaderProps {
@@ -22,6 +22,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 		currentLocale,
 		timezone,
 	} = useSmartCalendarContext()
+	const { unstyled } = useCalendarTheme()
 	const dayHeaderSlot = useSlotProps('dayHeader', {
 		structuralClassName:
 			'py-2 text-center flex-1 min-w-0 flex items-center justify-center',
@@ -40,7 +41,8 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 	return (
 		<div
 			className={cn(
-				'flex w-full gap-px bg-border border-b',
+				'flex w-full',
+				!unstyled && 'gap-px bg-border border-b',
 				stickyViewHeader && 'sticky top-0 z-20',
 				viewHeaderClassName,
 				className

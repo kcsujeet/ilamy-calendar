@@ -2,7 +2,7 @@ import { ToggleGroup, ToggleGroupItem } from '@ilamy/ui/components/toggle-group'
 import { cn } from '@ilamy/ui/lib/utils'
 import { useHeaderViews } from '@/features/header/hooks/use-header-views'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import { useSlotProps } from '@/stores/calendar-theme-context'
+import { useCalendarTheme, useSlotProps } from '@/stores/calendar-theme-context'
 
 interface ViewSwitcherProps {
 	className?: string
@@ -15,17 +15,44 @@ export function ViewSwitcher({ className }: ViewSwitcherProps) {
 		setView: ctx.setView,
 		t: ctx.t,
 	}))
+	const { unstyled } = useCalendarTheme()
 	const inactiveSlot = useSlotProps('viewButton', {
-		structuralClassName: 'rounded-md px-3',
 		defaultClassName:
-			'text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground font-medium data-[state=on]:shadow-sm',
+			'rounded-md px-3 text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground font-medium data-[state=on]:shadow-sm',
 	})
 	const activeSlot = useSlotProps('viewButtonActive', {
-		structuralClassName: 'rounded-md px-3',
 		defaultClassName:
-			'text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground font-medium data-[state=on]:shadow-sm',
+			'rounded-md px-3 text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground font-medium data-[state=on]:shadow-sm',
 	})
 	const views = useHeaderViews()
+
+	if (unstyled) {
+		return (
+			<div
+				aria-label="Calendar view"
+				className={cn('flex items-center gap-1', className)}
+				role="group"
+			>
+				{views.map((v) => {
+					const isActive = v.name === view
+					const slot = isActive ? activeSlot : inactiveSlot
+					return (
+						<button
+							aria-pressed={isActive}
+							className={slot.className}
+							data-state={isActive ? 'on' : 'off'}
+							key={v.name}
+							onClick={() => setView(v.name)}
+							style={slot.style}
+							type="button"
+						>
+							{t(v.label ?? v.name)}
+						</button>
+					)
+				})}
+			</div>
+		)
+	}
 
 	return (
 		<ToggleGroup

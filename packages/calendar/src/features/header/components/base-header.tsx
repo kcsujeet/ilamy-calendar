@@ -1,9 +1,11 @@
+import { cn } from '@ilamy/ui/lib/utils'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import type React from 'react'
 import { ToolbarSlot } from '@/components/calendar-slots'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 import {
 	useCalendarComponents,
+	useCalendarTheme,
 	useSlotProps,
 } from '@/stores/calendar-theme-context'
 import { HeaderDatePicker } from './header-date-picker'
@@ -33,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		t: ctx.t,
 	}))
 	const { Button } = useCalendarComponents()
+	const { unstyled } = useCalendarTheme()
 	const headerSlot = useSlotProps('header', {
 		structuralClassName: '@container/base-header w-full',
 		extraClassName: headerClassName,
@@ -66,7 +69,12 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		>
 			<div className={toolbarSlot.className} style={toolbarSlot.style}>
 				<div className="flex min-w-0 flex-wrap @xl/base-header:flex-nowrap items-center justify-center gap-2">
-					<div className="bg-background flex h-9 shrink-0 items-center overflow-hidden rounded-lg border">
+					<div
+						className={cn(
+							'flex shrink-0 items-center',
+							!unstyled && 'bg-background h-9 overflow-hidden rounded-lg border'
+						)}
+					>
 						<Button
 							aria-label={t('previous')}
 							className={navButtonSlot.className}

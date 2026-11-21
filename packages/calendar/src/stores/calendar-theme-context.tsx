@@ -14,6 +14,7 @@ import {
 import {
 	DEFAULT_CALENDAR_COMPONENTS,
 	PortalThemeStyleContext,
+	UNSTYLED_CALENDAR_COMPONENTS,
 } from '@/components/default-calendar-components'
 import type { CalendarComponents } from '@/types/calendar.types'
 
@@ -61,17 +62,19 @@ export const CalendarThemeProvider = ({
 	components,
 	children,
 }: CalendarThemeProviderProps): ReactNode => {
-	const value = useMemo<CalendarThemeValue>(
-		() => ({
+	const value = useMemo<CalendarThemeValue>(() => {
+		const baseComponents = unstyled
+			? UNSTYLED_CALENDAR_COMPONENTS
+			: DEFAULT_CALENDAR_COMPONENTS
+		return {
 			unstyled,
 			slotProps: slotProps ?? {},
 			components: {
-				...DEFAULT_CALENDAR_COMPONENTS,
+				...baseComponents,
 				...components,
 			},
-		}),
-		[unstyled, slotProps, components]
-	)
+		}
+	}, [unstyled, slotProps, components])
 
 	const portalStyle = useMemo(
 		() => extractPortalThemeStyle(slotProps?.root?.style),

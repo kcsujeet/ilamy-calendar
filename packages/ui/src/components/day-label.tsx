@@ -16,6 +16,8 @@ interface DayLabelProps {
 	 * stack the number above the weekday (e.g. month / agenda headers).
 	 */
 	className?: string
+	/** Omit default Tailwind visual styling when the calendar is in unstyled mode. */
+	unstyled?: boolean
 	/** Test id forwarded to the number badge. */
 	'data-testid'?: string
 }
@@ -33,6 +35,7 @@ export const DayLabel = ({
 	dayNumber,
 	weekday,
 	className,
+	unstyled = false,
 	'data-testid': dataTestId,
 }: DayLabelProps) => {
 	return (
@@ -44,8 +47,9 @@ export const DayLabel = ({
 			{weekday != null && (
 				<div
 					className={cn(
-						'w-full truncate text-center text-xs text-muted-foreground',
-						today && 'text-primary'
+						'w-full truncate text-center',
+						!unstyled && 'text-xs text-muted-foreground',
+						!unstyled && today && 'text-primary'
 					)}
 				>
 					{weekday}
@@ -53,8 +57,9 @@ export const DayLabel = ({
 			)}
 			<div
 				className={cn(
-					'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-medium',
-					today && 'bg-primary text-primary-foreground'
+					'flex shrink-0 items-center justify-center',
+					!unstyled && 'h-5 w-5 rounded-full text-xs font-medium',
+					!unstyled && today && 'bg-primary text-primary-foreground'
 				)}
 			>
 				{dayNumber}

@@ -6,6 +6,7 @@ import { useScrollToTime } from '@/features/views/hooks/use-scroll-to-time'
 import { useStickyInsets } from '@/features/views/hooks/use-sticky-insets'
 import { getScrollKey } from '@/features/views/utils/scroll-key.utils'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useCalendarTheme } from '@/stores/calendar-theme-context'
 import { HorizontalGridHeaderContainer } from './horizontal-grid-header-container'
 import {
 	HorizontalGridRow,
@@ -33,6 +34,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 }) => {
 	const { currentDate, view, scrollTime, scrollToNow, scrollRequest } =
 		useSmartCalendarContext()
+	const { unstyled } = useCalendarTheme()
 	const rootRef = useRef<HTMLDivElement | null>(null)
 	const viewportRef = useRef<HTMLDivElement | null>(null)
 
@@ -91,7 +93,10 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 					data-testid="horizontal-grid-body"
 				>
 					<div
-						className="relative w-full flex flex-col flex-1 gap-px bg-border"
+						className={cn(
+							'relative w-full flex flex-col flex-1',
+							!unstyled && 'gap-px bg-border'
+						)}
 						data-calendar-scroll-content="true"
 					>
 						{rows.map((row) => (

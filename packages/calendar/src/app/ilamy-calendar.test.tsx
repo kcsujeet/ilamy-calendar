@@ -2524,6 +2524,21 @@ describe('IlamyCalendar v4.0 theming & optional plugins (D5, D7)', () => {
 
 		expect(screen.getByTestId('calendar-header')).toHaveClass('my-header')
 		expect(screen.getByTestId('day-cell-2025-03-12')).toHaveClass('my-cell')
+
+		const monthHeader = screen.getByTestId('month-header')
+		expect(monthHeader.className).not.toContain('bg-border')
+		expect(monthHeader.className).not.toContain('border-b')
+
+		const todayBtn = screen.getByRole('button', { name: 'Today' })
+		expect(todayBtn.className).not.toContain('rounded-md')
+		expect(todayBtn.className).not.toContain('border')
+
+		const newBtn = screen.getByRole('button', { name: 'New' })
+		expect(newBtn.className).not.toContain('bg-primary')
+
+		const viewGroup = screen.getByRole('group', { name: 'Calendar view' })
+		expect(viewGroup.className).not.toContain('bg-muted')
+		expect(viewGroup.className).not.toContain('rounded-lg')
 	})
 
 	it('swaps primitive Button via the components prop', () => {

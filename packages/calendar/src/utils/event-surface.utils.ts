@@ -13,8 +13,15 @@ import { cn } from '@ilamy/ui/lib/utils'
  * `backgroundColor`), and a reader that misses it paints every event the same
  * fallback blue.
  */
-export const getEventSurfaceClasses = (event: CalendarEvent): string =>
-	cn(event.backgroundColor || 'bg-blue-600', event.color || 'text-white')
+export const getEventSurfaceClasses = (
+	event: CalendarEvent,
+	includeFallback = true
+): string => {
+	if (!includeFallback) {
+		return cn(event.backgroundColor, event.color)
+	}
+	return cn(event.backgroundColor || 'bg-blue-600', event.color || 'text-white')
+}
 
 export const getEventSurfaceStyle = (event: CalendarEvent) => ({
 	backgroundColor: event.backgroundColor,

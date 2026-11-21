@@ -25,11 +25,15 @@ import {
 import { Textarea } from '@ilamy/ui/components/textarea'
 import { type CSSProperties, createContext, useContext } from 'react'
 import type {
+	CalendarButtonProps,
 	CalendarCheckboxProps,
 	CalendarComponents,
 	CalendarDialogProps,
+	CalendarInputProps,
+	CalendarLabelProps,
 	CalendarPopoverProps,
 	CalendarSelectProps,
+	CalendarTextareaProps,
 } from '@/types/calendar.types'
 
 /** Carries theme CSS custom properties (e.g. StyleX / slotProps vars) into portaled primitives. */
@@ -148,5 +152,80 @@ export const DEFAULT_CALENDAR_COMPONENTS: Required<CalendarComponents> = {
 	Checkbox: DefaultCheckbox,
 	Dialog: DefaultDialog,
 	Select: DefaultSelect,
+	Popover: DefaultPopover,
+}
+
+const UnstyledButton = ({
+	variant: _variant,
+	size: _size,
+	type = 'button',
+	...rest
+}: CalendarButtonProps) => <button type={type} {...rest} />
+
+const UnstyledInput = (props: CalendarInputProps) => <input {...props} />
+
+const UnstyledTextarea = (props: CalendarTextareaProps) => (
+	<textarea {...props} />
+)
+
+const UnstyledLabel = (props: CalendarLabelProps) => <label {...props} />
+
+const UnstyledCheckbox = ({
+	checked,
+	onCheckedChange,
+	...rest
+}: CalendarCheckboxProps) => (
+	<input
+		checked={checked}
+		onChange={(event) => onCheckedChange(event.target.checked)}
+		type="checkbox"
+		{...rest}
+	/>
+)
+
+const UnstyledSelect = ({
+	id,
+	value,
+	onValueChange,
+	options,
+	placeholder,
+	disabled,
+	className,
+	'aria-label': ariaLabel,
+}: CalendarSelectProps) => (
+	<select
+		aria-label={ariaLabel}
+		className={className}
+		disabled={disabled}
+		id={id}
+		onChange={(event) => onValueChange(event.target.value)}
+		value={value}
+	>
+		{placeholder && (
+			<option disabled value="">
+				{placeholder}
+			</option>
+		)}
+		{options.map((option) => (
+			<option
+				disabled={option.disabled}
+				key={option.value}
+				value={option.value}
+			>
+				{option.label}
+			</option>
+		))}
+	</select>
+)
+
+/** Bare HTML primitives used when `unstyled` is true and no `components` override is given. */
+export const UNSTYLED_CALENDAR_COMPONENTS: Required<CalendarComponents> = {
+	Button: UnstyledButton,
+	Input: UnstyledInput,
+	Textarea: UnstyledTextarea,
+	Label: UnstyledLabel,
+	Checkbox: UnstyledCheckbox,
+	Dialog: DefaultDialog,
+	Select: UnstyledSelect,
 	Popover: DefaultPopover,
 }

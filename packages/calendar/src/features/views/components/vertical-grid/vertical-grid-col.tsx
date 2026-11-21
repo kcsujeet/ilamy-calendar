@@ -14,6 +14,7 @@ import { VerticalGridEventsLayer } from '@/features/views/components/vertical-gr
 import type { StickyInsetSide } from '@/features/views/hooks/use-sticky-insets'
 import { useDragPreviewEvent } from '@/hooks/use-drag-preview-event'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useCalendarTheme } from '@/stores/calendar-theme-context'
 import {
 	type DragPreviewState,
 	useDragPreview,
@@ -177,6 +178,7 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	noEvents,
 	slotDurationMinutes = 60,
 }) => {
+	const { unstyled } = useCalendarTheme()
 	const resourceId = resource?.id
 	const { entries, zonedDays, slots } = useColumnGridData(
 		days,
@@ -200,14 +202,18 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	return (
 		<div
 			className={cn(
-				'flex flex-col flex-1 items-center min-w-20 justify-center bg-background relative',
+				'flex flex-col flex-1 items-center min-w-20 justify-center relative',
+				!unstyled && 'bg-background',
 				className
 			)}
 			data-sticky-inset={stickyInset}
 			data-testid={dataTestId || keys.container.vertical.col(id)}
 		>
 			<div
-				className="w-full h-full relative grid gap-px bg-border"
+				className={cn(
+					'w-full h-full relative grid',
+					!unstyled && 'gap-px bg-border'
+				)}
 				ref={setNodeRef}
 				style={{
 					gridTemplateRows: `repeat(${entries.length}, minmax(0, 1fr))`,

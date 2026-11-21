@@ -17,6 +17,7 @@ import { HorizontalGridEventsLayer } from '@/features/views/components/horizonta
 import { ResourceCell } from '@/features/views/components/resource-cell'
 import { useProcessedWeekEvents } from '@/features/views/hooks/use-processed-week-events'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { useCalendarTheme } from '@/stores/calendar-theme-context'
 import { keys } from '@/utils/keys.utils'
 
 interface HorizontalGridColumn extends HorizontalCellSpec {
@@ -75,6 +76,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 			timezone: c.timezone,
 			currentLocale: c.currentLocale,
 		}))
+	const { unstyled } = useCalendarTheme()
 	const zone = resolveZone(timezone)
 
 	const isResourceCalendar = variant === 'resource'
@@ -118,7 +120,9 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 			{isResourceCalendar && resource && <RowLabel resource={resource} />}
 			<div className="relative flex-1 flex min-w-0">
 				{/* gap-px + bg-border draws the vertical separators between cells. */}
-				<div className="flex w-full min-w-0 gap-px bg-border">
+				<div
+					className={cn('flex w-full min-w-0', !unstyled && 'gap-px bg-border')}
+				>
 					{parsedColumns.map(({ col, zonedDay }, columnIndex) => {
 						const columnKey = keys.listKey('col', columnIndex)
 						if (col.days) {
@@ -206,6 +210,7 @@ const GroupedColumn = memo(
 					.filter((d): d is ZonedDate => Boolean(d)),
 			[col.days, timezone]
 		)
+		const { unstyled } = useCalendarTheme()
 		const { positionedEvents, columnLayouts } = useProcessedWeekEvents({
 			days,
 			gridType,
@@ -215,7 +220,7 @@ const GroupedColumn = memo(
 
 		return (
 			<div className="flex relative w-full">
-				<div className="flex w-full gap-px bg-border">
+				<div className={cn('flex w-full', !unstyled && 'gap-px bg-border')}>
 					{days.map((day, dayIndex) => {
 						const cellLayout = columnLayouts.get(day)
 						return (

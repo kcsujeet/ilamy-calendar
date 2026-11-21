@@ -22,7 +22,7 @@ export function DefaultEventContent({
 	isTruncatedEnd,
 }: DefaultEventContentProps) {
 	const axis = useGridAxis()
-	const { slotProps } = useCalendarTheme()
+	const { unstyled, slotProps } = useCalendarTheme()
 	const { formatEventTime } = useDateTimeFormatters()
 	const eventTimeText = formatEventTime(event)
 	const usesThemeSlotBg =
@@ -42,25 +42,27 @@ export function DefaultEventContent({
 	return (
 		<div
 			className={cn(
-				!usesThemeSlotBg && getEventSurfaceClasses(event),
-				'h-full w-full px-1 border-[1.5px] border-card text-left overflow-clip relative',
-				getEventSurfaceRadius({ axis, isTruncatedStart, isTruncatedEnd })
+				getEventSurfaceClasses(event, !unstyled && !usesThemeSlotBg),
+				'h-full w-full text-left overflow-clip relative',
+				!unstyled && 'px-1 border-[1.5px] border-card',
+				!unstyled &&
+					getEventSurfaceRadius({ axis, isTruncatedStart, isTruncatedEnd })
 			)}
 			style={getEventSurfaceStyle(event)}
 		>
 			{/* Left continuation indicator */}
-			{showStartMarker && (
+			{showStartMarker && !unstyled && (
 				<div className="absolute left-0 top-0 bottom-0 w-0.5 bg-foreground/25"></div>
 			)}
 
 			{/* Event title */}
 			<p
 				className={cn(
-					'text-[10px] font-semibold sm:text-xs mt-0.5',
+					!unstyled && 'text-[10px] font-semibold sm:text-xs mt-0.5',
 					STICKY_TITLE_CLASS[axis],
 					// Add slight padding to avoid overlap with indicators
-					showStartMarker && 'pl-1',
-					showEndMarker && 'pr-1'
+					showStartMarker && !unstyled && 'pl-1',
+					showEndMarker && !unstyled && 'pr-1'
 				)}
 			>
 				{eventTimeText && (
@@ -70,7 +72,7 @@ export function DefaultEventContent({
 			</p>
 
 			{/* Right continuation indicator */}
-			{showEndMarker && (
+			{showEndMarker && !unstyled && (
 				<div className="absolute right-0 top-0 bottom-0 w-0.5 bg-foreground/25"></div>
 			)}
 		</div>

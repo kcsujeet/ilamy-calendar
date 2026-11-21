@@ -15,7 +15,7 @@ import {
 	toOffsetIso,
 	type ZonedDate,
 } from '@ilamy/utils/temporal'
-import { weekView } from '@/features/calendar/components/views/week'
+import { weekView } from '@/features/views/components/week'
 
 const calendarZone = process.argv[2]
 const zone = resolveZone(calendarZone)

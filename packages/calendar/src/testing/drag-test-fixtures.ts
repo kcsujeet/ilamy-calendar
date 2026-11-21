@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@ilamy/types'
 import { parseDate, toOffsetIso, type ZonedDate } from '@ilamy/utils/temporal'
-import type { DragPreviewState } from '@/features/calendar/stores/drag-preview-context'
+import type { DragPreviewState } from '@/stores/drag-preview-context'
 
 const mustParseUtc = (iso: string): ZonedDate => {
 	const parsed = parseDate(iso, 'UTC')

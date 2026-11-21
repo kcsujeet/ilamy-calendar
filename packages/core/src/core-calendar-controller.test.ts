@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { createCalendarController } from './core-calendar-controller'
-import { normalizeEvent } from './core-normalize'
+import { normalizeEvent } from './utils/core-normalize.utils'
 
 describe('headless calendar controller', () => {
 	it('runs multiple independent timezone controllers simultaneously with zero leakage', () => {

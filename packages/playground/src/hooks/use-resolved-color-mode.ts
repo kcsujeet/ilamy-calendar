@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ThemeColorMode } from '../types/settings-form'
+import type { ThemeColorMode } from '../types/settings-form.types'
 
 const readDocumentDarkMode = (): boolean => {
 	if (typeof document === 'undefined') {

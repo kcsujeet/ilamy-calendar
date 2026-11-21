@@ -6,28 +6,35 @@ import {
 	normalizeEvent,
 	parseDate,
 } from '@ilamy/core'
-import { renderDomAgendaView } from './dom-agenda-view'
-import { openDomEventDialog, openDomOverflowDialog } from './dom-dialogs'
 import {
 	applyScopedEventDelete,
 	applyScopedEventUpdate,
 	expandRecurringEvents,
-	generateDomIcal,
 	normalizeDomRRule,
-} from './dom-events'
-import { renderDomHeader } from './dom-header'
-import { attachDomInteractions } from './dom-interactions'
-import { renderDomMonthView } from './dom-month-view'
-import { applySlot, createCleanupRegistry, createEl } from './dom-styles'
-import { renderDomTimeGrid } from './dom-time-grid'
+} from './core/dom-events.utils'
+import { generateDomIcal } from './core/dom-ical.utils'
+import {
+	applySlot,
+	createCleanupRegistry,
+	createEl,
+} from './core/dom-styles.utils'
+import {
+	openDomEventDialog,
+	openDomOverflowDialog,
+} from './dialogs/dom-dialogs'
 import type {
 	DomCalendarEvent,
 	DomCalendarEventInput,
 	DomCalendarOptions,
 	DomRuntime,
 	MountedCalendar,
-} from './dom-types'
-import { renderDomYearView } from './dom-year-view'
+} from './dom-calendar.types'
+import { renderDomHeader } from './header/dom-header'
+import { attachDomInteractions } from './interactions/dom-interactions'
+import { renderDomAgendaView } from './views/dom-agenda-view'
+import { renderDomMonthView } from './views/dom-month-view'
+import { renderDomTimeGrid } from './views/dom-time-grid'
+import { renderDomYearView } from './views/dom-year-view'
 
 const triggerIcalDownload = (ics: string, filename: string): void => {
 	if (typeof URL.createObjectURL !== 'function') return
@@ -67,6 +74,14 @@ const preserveRecurrenceFields = (
 			recurrenceId: raw.recurrenceId,
 		}
 	})
+}
+
+const VIEW_RENDERERS: Record<string, (runtime: DomRuntime) => HTMLElement> = {
+	day: (runtime) => renderDomTimeGrid(runtime, 'day'),
+	week: (runtime) => renderDomTimeGrid(runtime, 'week'),
+	year: renderDomYearView,
+	agenda: renderDomAgendaView,
+	month: renderDomMonthView,
 }
 
 const buildControllerPatch = (nextOptions: Partial<DomCalendarOptions>) => {
@@ -245,11 +260,8 @@ export const mountCalendar = (
 
 	const renderViewBody = (): HTMLElement => {
 		const { view } = controller.getState()
-		if (view === 'day') return renderDomTimeGrid(runtime, 'day')
-		if (view === 'week') return renderDomTimeGrid(runtime, 'week')
-		if (view === 'year') return renderDomYearView(runtime)
-		if (view === 'agenda') return renderDomAgendaView(runtime)
-		return renderDomMonthView(runtime)
+		const renderView = VIEW_RENDERERS[view] ?? renderDomMonthView
+		return renderView(runtime)
 	}
 
 	const liveRegion = createEl('div', {

@@ -86,8 +86,16 @@
 				"packages/calendar/src/config/**",
 				"packages/calendar/src/hooks/**",
 				"packages/calendar/src/lib/**",
+				"packages/calendar/src/stores/**",
 				"packages/calendar/src/types/**",
-				"packages/calendar/src/utils/**"
+				"packages/calendar/src/utils/**",
+				"packages/playground/src/components/**",
+				"packages/playground/src/hooks/**",
+				"packages/playground/src/lib/**",
+				"packages/playground/src/types/**",
+				"packages/playground/src/utils/**",
+				"!**/*.test.ts",
+				"!**/*.test.tsx"
 			],
 			"linter": {
 				"rules": {
@@ -100,8 +108,184 @@
 								},
 								"patterns": [
 									{
-										"group": ["@/features/*", "@/features/**"],
-										"message": "Shared code cannot import a feature (Bulletproof React: shared -> features -> app). Move this file into the feature, or move what it needs into a shared folder."
+										"group": [
+											"@/features/*",
+											"@/features/**",
+											"@/app/*",
+											"@/app/**",
+											"../features/*",
+											"../features/**",
+											"../../features/*",
+											"../../features/**",
+											"../app/*",
+											"../app/**",
+											"../../app/*",
+											"../../app/**"
+										],
+										"message": "Shared code cannot import a feature or app layer (Bulletproof React: shared -> features -> app). Move this file into the feature, or move what it needs into a shared folder."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"packages/calendar/src/features/header/**",
+				"!**/*.test.ts",
+				"!**/*.test.tsx"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": [
+											"@/app/*",
+											"@/app/**",
+											"@/features/event-form/*",
+											"@/features/event-form/**",
+											"@/features/drag-and-drop/*",
+											"@/features/drag-and-drop/**",
+											"@/features/views/*",
+											"@/features/views/**"
+										],
+										"message": "Features cannot import app or sibling features (Bulletproof React: shared -> features -> app)."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"packages/calendar/src/features/event-form/**",
+				"!**/*.test.ts",
+				"!**/*.test.tsx"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": [
+											"@/app/*",
+											"@/app/**",
+											"@/features/header/*",
+											"@/features/header/**",
+											"@/features/drag-and-drop/*",
+											"@/features/drag-and-drop/**",
+											"@/features/views/*",
+											"@/features/views/**"
+										],
+										"message": "Features cannot import app or sibling features (Bulletproof React: shared -> features -> app)."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"packages/calendar/src/features/drag-and-drop/**",
+				"!**/*.test.ts",
+				"!**/*.test.tsx"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": [
+											"@/app/*",
+											"@/app/**",
+											"@/features/header/*",
+											"@/features/header/**",
+											"@/features/event-form/*",
+											"@/features/event-form/**",
+											"@/features/views/*",
+											"@/features/views/**"
+										],
+										"message": "Features cannot import app or sibling features (Bulletproof React: shared -> features -> app)."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"packages/calendar/src/features/views/**",
+				"!**/*.test.ts",
+				"!**/*.test.tsx"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": [
+											"@/app/*",
+											"@/app/**",
+											"@/features/header/*",
+											"@/features/header/**",
+											"@/features/event-form/*",
+											"@/features/event-form/**",
+											"@/features/drag-and-drop/*",
+											"@/features/drag-and-drop/**"
+										],
+										"message": "Features cannot import app or sibling features (Bulletproof React: shared -> features -> app)."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": ["packages/playground/src/features/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"patterns": [
+									{
+										"group": ["../../../app/*", "../../../app/**"],
+										"message": "Features cannot import from the app layer (Bulletproof React: shared -> features -> app)."
+									},
+									{
+										"group": [
+											"../../calendar-preview/*",
+											"../../calendar-preview/**",
+											"../../code-and-log/*",
+											"../../code-and-log/**",
+											"../../settings/*",
+											"../../settings/**"
+										],
+										"message": "Features cannot import other features directly (Bulletproof React). Compose features in src/app/ or move shared code to src/{components,hooks,lib,types,utils}/."
 									}
 								]
 							}

@@ -1,0 +1,79 @@
+import type { Resource } from '@ilamy/types'
+import { cn } from '@ilamy/ui/lib/utils'
+import type React from 'react'
+import { AnimatedSection } from '@/components/animations/animated-section'
+import {
+	GUTTER_WIDTH,
+	STICKY_GUTTER_SHADOW,
+} from '@/features/views/components/vertical-grid/gutter'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+import { keys } from '@/utils/keys.utils'
+import { RESOURCE_CELL_WIDTH } from './resource-axis'
+import { ResourceCell } from './resource-cell'
+
+interface ResourceWeekVerticalResourceHeaderProps {
+	resources: Resource[]
+	weekNumber: number
+}
+
+export const ResourceWeekVerticalResourceHeader: React.FC<
+	ResourceWeekVerticalResourceHeaderProps
+> = ({ resources, weekNumber }) => {
+	const { weekViewGranularity, t, weekNumbers } = useSmartCalendarContext()
+	const isHourly = weekViewGranularity === 'hourly'
+	const showsWeekNumber = weekNumbers !== false
+	const weekNumberText = String(weekNumber)
+
+	return (
+		<div className="flex h-12 gap-px bg-border">
+			<div
+				className={cn(
+					'shrink-0 z-20 bg-background sticky left-0',
+					GUTTER_WIDTH,
+					STICKY_GUTTER_SHADOW
+				)}
+			>
+				<span
+					className={cn(
+						'px-2 h-full w-full flex flex-col justify-center text-xs text-muted-foreground text-center min-w-0',
+						isHourly ? 'justify-end' : 'justify-center'
+					)}
+				>
+					{showsWeekNumber && (
+						<span className="truncate w-full">{t('week')}</span>
+					)}
+					{/* The word stays put and the number animates, as in the week
+					    view's header (week.tsx). */}
+					{showsWeekNumber && !isHourly && (
+						<AnimatedSection
+							className="font-medium text-foreground truncate w-full"
+							data-testid="week-number"
+							transitionKey={weekNumberText}
+						>
+							{weekNumberText}
+						</AnimatedSection>
+					)}
+				</span>
+			</div>
+
+			{resources.map((resource) => {
+				return (
+					<ResourceCell
+						className={cn(RESOURCE_CELL_WIDTH, 'bg-background border-b')}
+						key={keys.listKey('resource-cell', resource.id)}
+						resource={resource}
+					>
+						<div
+							className={cn(
+								'sticky text-sm font-medium truncate',
+								isHourly ? 'left-1/4' : 'left-1'
+							)}
+						>
+							{resource.title}
+						</div>
+					</ResourceCell>
+				)
+			})}
+		</div>
+	)
+}

@@ -1,0 +1,13 @@
+import type { PluginView } from '@ilamy/types'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
+
+// The views the header should offer: all registered views, minus the ones that
+// don't support resources when the calendar has resources. Shared by the
+// desktop switcher and the compact view menu so the filter lives in one place.
+export function useHeaderViews(): PluginView[] {
+	const { getViews, hasResourceAxis } = useSmartCalendarContext((ctx) => ({
+		getViews: ctx.getViews,
+		hasResourceAxis: ctx.hasResourceAxis,
+	}))
+	return getViews().filter((v) => !hasResourceAxis || v.supportsResources)
+}

@@ -6,13 +6,6 @@ import {
 	resolveZone,
 	toOffsetIso,
 } from '@ilamy/utils/temporal'
-import {
-	getVisibleDateRange,
-	skipHiddenDays,
-	toHiddenDaysSet,
-	WEEK_DAYS_NUMBER_MAP,
-} from './core-date-grid'
-import { normalizeEvent, normalizeEvents } from './core-normalize'
 import type {
 	CalendarEvent,
 	CalendarEventInput,
@@ -25,7 +18,14 @@ import type {
 	NavigationStep,
 	PublicDateInput,
 	Resource,
-} from './core-types'
+} from './core-calendar.types'
+import {
+	getVisibleDateRange,
+	skipHiddenDays,
+	toHiddenDaysSet,
+	WEEK_DAYS_NUMBER_MAP,
+} from './utils/core-date-grid.utils'
+import { normalizeEvent, normalizeEvents } from './utils/core-normalize.utils'
 
 export const pickControllerActions = (
 	controller: HeadlessCalendarController

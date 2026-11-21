@@ -1,5 +1,4 @@
-export { generateDomIcal } from './dom-events'
-export { mountCalendar } from './dom-mount'
+export { generateDomIcal } from './core/dom-ical.utils'
 export type {
 	DomCalendarEvent,
 	DomCalendarEventInput,
@@ -11,4 +10,5 @@ export type {
 	DomRenderCleanup,
 	DomResourceRenderContext,
 	MountedCalendar,
-} from './dom-types'
+} from './dom-calendar.types'
+export { mountCalendar } from './dom-mount'

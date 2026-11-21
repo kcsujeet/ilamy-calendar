@@ -44,78 +44,6 @@ export {
 	type ZonedDate,
 	type ZonedInterval,
 } from '@ilamy/utils/temporal'
-export {
-	type BusinessHoursRange,
-	calculateBusinessHoursRange,
-	DEFAULT_BUSINESS_DAYS,
-	type IsBusinessHourOptions,
-	isBusinessDay,
-	isBusinessHour,
-	isRangeWithinBusinessHours,
-} from './core-business-hours'
-export {
-	createCalendarController,
-	pickControllerActions,
-} from './core-calendar-controller'
-export {
-	DAYS_IN_WEEK,
-	type GetDayHoursOptions,
-	getDayHours,
-	getMonthDays,
-	getMonthGridRange,
-	getMonthWeeks,
-	getVisibleDateRange,
-	getWeekDays,
-	HOURS_IN_DAY,
-	isToday,
-	MONTH_GRID_WEEKS,
-	skipHiddenDays,
-	toHiddenDaysSet,
-	WEEK_DAYS_NUMBER_MAP,
-	withoutHiddenDays,
-} from './core-date-grid'
-export {
-	resolveDurationEditable,
-	resolveStartEditable,
-} from './core-editability'
-export {
-	countAtOrBelow,
-	countBelow,
-	createDayColumnSpanner,
-	createHourColumnSpanner,
-	MS_PER_HOUR,
-	wallClockMs,
-	type ZonedBounds,
-} from './core-layout-columns'
-export {
-	type ColumnSpan,
-	getHorizontalBarStyle,
-	getVerticalBarStyle,
-	type HorizontalCellLayout,
-	type HorizontalPositionedEvent,
-	type VerticalPositionedEvent,
-} from './core-layout-geometry'
-export {
-	type HorizontalLayoutInput,
-	type HorizontalLayoutResult,
-	layoutHorizontal,
-} from './core-layout-horizontal'
-export {
-	layoutVertical,
-	type VerticalLayoutInput,
-} from './core-layout-vertical'
-export {
-	normalizeEvent,
-	normalizeEvents,
-	resolveEventDate,
-} from './core-normalize'
-export {
-	bucketEventsByResource,
-	filterEventsForResource,
-	getEventResourceIds,
-	getResourceEvents,
-	shareInDevBuild,
-} from './core-resource-filter'
 export type {
 	BusinessHours,
 	CalendarConstraint,
@@ -150,10 +78,82 @@ export type {
 	ViewConfig,
 	WeekDays,
 	WeekNumberCalculation,
-} from './core-types'
+} from './core-calendar.types'
+export {
+	createCalendarController,
+	pickControllerActions,
+} from './core-calendar-controller'
+export {
+	countAtOrBelow,
+	countBelow,
+	createDayColumnSpanner,
+	createHourColumnSpanner,
+	MS_PER_HOUR,
+	wallClockMs,
+	type ZonedBounds,
+} from './layout/core-layout-columns.utils'
+export {
+	type ColumnSpan,
+	getHorizontalBarStyle,
+	getVerticalBarStyle,
+	type HorizontalCellLayout,
+	type HorizontalPositionedEvent,
+	type VerticalPositionedEvent,
+} from './layout/core-layout-geometry.utils'
+export {
+	type HorizontalLayoutInput,
+	type HorizontalLayoutResult,
+	layoutHorizontal,
+} from './layout/core-layout-horizontal.utils'
+export {
+	layoutVertical,
+	type VerticalLayoutInput,
+} from './layout/core-layout-vertical.utils'
+export {
+	type BusinessHoursRange,
+	calculateBusinessHoursRange,
+	DEFAULT_BUSINESS_DAYS,
+	type IsBusinessHourOptions,
+	isBusinessDay,
+	isBusinessHour,
+	isRangeWithinBusinessHours,
+} from './utils/core-business-hours.utils'
+export {
+	DAYS_IN_WEEK,
+	type GetDayHoursOptions,
+	getDayHours,
+	getMonthDays,
+	getMonthGridRange,
+	getMonthWeeks,
+	getVisibleDateRange,
+	getWeekDays,
+	HOURS_IN_DAY,
+	isToday,
+	MONTH_GRID_WEEKS,
+	skipHiddenDays,
+	toHiddenDaysSet,
+	WEEK_DAYS_NUMBER_MAP,
+	withoutHiddenDays,
+} from './utils/core-date-grid.utils'
+export {
+	resolveDurationEditable,
+	resolveStartEditable,
+} from './utils/core-editability.utils'
+export {
+	normalizeEvent,
+	normalizeEvents,
+	resolveEventDate,
+} from './utils/core-normalize.utils'
+export {
+	bucketEventsByResource,
+	filterEventsForResource,
+	getEventResourceIds,
+	getResourceEvents,
+	shareInDevBuild,
+} from './utils/core-resource-filter.utils'
 export {
 	collectResourceBusinessHours,
 	type GetViewHoursOptions,
 	getViewHours,
 	parseSlotRange,
-} from './core-view-hours'
+} from './utils/core-view-hours.utils'

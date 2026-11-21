@@ -1,9 +1,9 @@
 import type { FC } from 'react'
-import { dayView } from '@/features/calendar/components/views/day'
-import { monthView } from '@/features/calendar/components/views/month'
-import { ViewRenderer } from '@/features/calendar/components/views/view-renderer'
-import { weekView } from '@/features/calendar/components/views/week'
-import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
+import { dayView } from '@/features/views/components/day'
+import { monthView } from '@/features/views/components/month'
+import { ViewRenderer } from '@/features/views/components/view-renderer'
+import { weekView } from '@/features/views/components/week'
+import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
 
 /**
  * Test-only render harnesses for the built-in views. Production wires these

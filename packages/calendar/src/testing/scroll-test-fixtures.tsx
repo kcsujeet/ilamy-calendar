@@ -11,9 +11,9 @@ import type { BusinessHours, Resource, WeekDays } from '@ilamy/types'
 import { parseDate, toOffsetIso } from '@ilamy/utils/temporal'
 import { cleanup, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { IlamyCalendar } from '@/features/calendar/components/ilamy-calendar'
-import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
-import type { IlamyCalendarProps } from '@/features/calendar/types'
+import { CalendarProvider } from '@/app/calendar-provider'
+import { IlamyCalendar } from '@/app/ilamy-calendar'
+import type { IlamyCalendarProps } from '@/types/calendar.types'
 
 /** A Wednesday, 09:00 UTC: the "now" every scroll test runs at. */
 export const SCROLL_TEST_NOW = '2025-03-12T09:00:00.000Z'

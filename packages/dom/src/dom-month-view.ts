@@ -28,6 +28,8 @@ import type { DomCalendarEvent, DomRuntime } from './dom-types'
 const ROW_BAR_HEIGHT_PX = 24
 const ROW_BAR_GAP_PX = 2
 const HEADER_OFFSET_PX = 28
+const DEFAULT_DAY_MAX_EVENTS = 4
+const MORE_LINK_RESERVE_PX = 24
 
 const resolveMonthCellSlot = (
 	isDisabled: boolean,
@@ -53,8 +55,9 @@ const resolveMonthCellStateClass = (
 
 const computeMonthCellMinHeight = (dayMaxEvents: number | undefined): number =>
 	HEADER_OFFSET_PX +
-	(dayMaxEvents ?? 4) * (ROW_BAR_HEIGHT_PX + ROW_BAR_GAP_PX) +
-	24
+	(dayMaxEvents ?? DEFAULT_DAY_MAX_EVENTS) *
+		(ROW_BAR_HEIGHT_PX + ROW_BAR_GAP_PX) +
+	MORE_LINK_RESERVE_PX
 
 const createMonthCellData = (
 	day: ZonedDate,
@@ -98,6 +101,7 @@ const buildMonthCell = (
 	const minCellHeightPx = computeMonthCellMinHeight(options.dayMaxEvents)
 
 	const cell = createEl('div', {
+		attrs: isTodayCell ? { 'aria-current': 'date' } : undefined,
 		style: { minHeight: `${minCellHeightPx}px` },
 		data: createMonthCellData(day, cellInfo, isNonBusiness, isDisabled),
 	})
@@ -117,19 +121,25 @@ const buildMonthCell = (
 	)
 
 	const isOutsideMonth = day.month !== currentMonth
+	let dayTextColor = 'text-foreground'
+	if (isTodayCell) {
+		dayTextColor = ''
+	} else if (isOutsideMonth) {
+		dayTextColor = 'text-muted-foreground'
+	}
+	const dayBadgeBase =
+		'inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium tabular-nums'
+	let dayBadgeStruct = dayBadgeBase
+	if (isTodayCell) {
+		dayBadgeStruct = `${dayBadgeBase} bg-primary text-primary-foreground`
+	}
 	const dayNum = createEl('span', {
 		text: String(day.day),
 		className: mergeClassNames(
 			options.unstyled,
-			isTodayCell
-				? ''
-				: isOutsideMonth
-					? 'text-muted-foreground'
-					: 'text-foreground',
+			dayTextColor,
 			undefined,
-			isTodayCell
-				? 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground tabular-nums'
-				: 'inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium tabular-nums'
+			dayBadgeStruct
 		),
 	})
 	cell.appendChild(dayNum)
@@ -151,7 +161,7 @@ const renderEventOverlay = (
 ): HTMLElement => {
 	const options = runtime.getOptions()
 	const state = runtime.controller.getState()
-	const dayMaxEvents = options.dayMaxEvents ?? 4
+	const dayMaxEvents = options.dayMaxEvents ?? DEFAULT_DAY_MAX_EVENTS
 	const layout = layoutHorizontal({
 		events,
 		days: weekDays,
@@ -352,13 +362,14 @@ const renderMonthWeekRow = (
 	})
 	if (showWeekNumbers) {
 		const firstDay = week.at(0)
-		const weekNum = firstDay
-			? getWeekNumber(
-					firstDay,
-					options.weekNumberCalculation ?? 'ISO',
-					state.locale
-				)
-			: ''
+		let weekNum: number | string = ''
+		if (firstDay) {
+			weekNum = getWeekNumber(
+				firstDay,
+				options.weekNumberCalculation ?? 'ISO',
+				state.locale
+			)
+		}
 		const stripChrome = Boolean(options.unstyled && !options.slotProps?.cell)
 		row.appendChild(
 			createEl('div', {
@@ -372,6 +383,10 @@ const renderMonthWeekRow = (
 			})
 		)
 	}
+	let gridColumn = `1 / span ${colCount}`
+	if (showWeekNumbers) {
+		gridColumn = `2 / span ${colCount}`
+	}
 	const cellsContainer = createEl('div', {
 		className: mergeClassNames(
 			options.unstyled,
@@ -380,9 +395,7 @@ const renderMonthWeekRow = (
 			'relative grid col-span-full'
 		),
 		style: {
-			gridColumn: showWeekNumbers
-				? `2 / span ${colCount}`
-				: `1 / span ${colCount}`,
+			gridColumn,
 			gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
 		},
 	})
@@ -427,9 +440,10 @@ export const renderDomMonthView = (runtime: DomRuntime): HTMLElement => {
 	const firstWeek = visibleWeeks.at(0) ?? []
 	const colCount = Math.max(1, firstWeek.length)
 	const showWeekNumbers = Boolean(options.weekNumbers)
-	const colTemplate = showWeekNumbers
-		? `36px repeat(${colCount}, minmax(0, 1fr))`
-		: `repeat(${colCount}, minmax(0, 1fr))`
+	let colTemplate = `repeat(${colCount}, minmax(0, 1fr))`
+	if (showWeekNumbers) {
+		colTemplate = `36px repeat(${colCount}, minmax(0, 1fr))`
+	}
 
 	grid.appendChild(
 		renderMonthHeaderRow(firstWeek, colTemplate, showWeekNumbers, runtime)

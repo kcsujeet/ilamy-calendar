@@ -52,12 +52,20 @@ export function DatePicker({
 
 	const valueId = useId()
 	const zone = resolveZone(timezone)
-	const parsedSelected = selectedDate
-		? parseDate(selectedDate, zone)
-		: undefined
-	const formattedDate = parsedSelected
-		? formatDate(parsedSelected, { dateStyle: 'medium' }, currentLocale)
-		: t('pickDate')
+	let parsedSelected: ReturnType<typeof parseDate>
+	if (selectedDate) {
+		parsedSelected = parseDate(selectedDate, zone)
+	}
+	let formattedDate: string
+	if (parsedSelected) {
+		formattedDate = formatDate(
+			parsedSelected,
+			{ dateStyle: 'medium' },
+			currentLocale
+		)
+	} else {
+		formattedDate = t('pickDate')
+	}
 
 	const trigger = (
 		<Button

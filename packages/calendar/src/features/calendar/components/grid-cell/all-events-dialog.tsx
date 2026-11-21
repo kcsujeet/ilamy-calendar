@@ -35,13 +35,14 @@ export const AllEventDialog: React.FC<AllEventDialogProps> = ({ ref }) => {
 			setSelectedDayEvents(dayEvents),
 	}))
 
-	const title = selectedDayEvents
-		? formatDate(
-				selectedDayEvents.day,
-				{ month: 'long', day: 'numeric', year: 'numeric' },
-				currentLocale
-			)
-		: undefined
+	let title: string | undefined
+	if (selectedDayEvents) {
+		title = formatDate(
+			selectedDayEvents.day,
+			{ month: 'long', day: 'numeric', year: 'numeric' },
+			currentLocale
+		)
+	}
 
 	return (
 		<Dialog

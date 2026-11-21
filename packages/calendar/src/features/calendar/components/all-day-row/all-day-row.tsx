@@ -1,7 +1,7 @@
 import type { Resource } from '@ilamy/types'
 import { cn } from '@ilamy/ui/lib/utils'
 import { toOffsetIso, type ZonedDate } from '@ilamy/utils/temporal'
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { HorizontalGridRow } from '@/features/calendar/components/horizontal-grid/horizontal-grid-row'
 import { useSlotProps } from '@/features/calendar/stores/calendar-theme-context'
 import { keys } from '@/features/calendar/utils/keys'
@@ -26,12 +26,17 @@ const NoMemoAllDayRow: React.FC<AllDayRowProps> = ({
 		extraClassName: classes?.row,
 	})
 
-	const columns = days.map((day, index) => ({
-		id: keys.col.allDay(day, index),
-		day: toOffsetIso(day),
-		gridType: 'day' as const,
-		className: cn('h-full min-h-12 bg-background', classes?.cell),
-	}))
+	const cellClassName = classes?.cell
+	const columns = useMemo(
+		() =>
+			days.map((day, index) => ({
+				id: keys.col.allDay(day, index),
+				day: toOffsetIso(day),
+				gridType: 'day' as const,
+				className: cn('h-full min-h-12 bg-background', cellClassName),
+			})),
+		[days, cellClassName]
+	)
 
 	return (
 		<div

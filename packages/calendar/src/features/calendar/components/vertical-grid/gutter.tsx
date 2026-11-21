@@ -52,13 +52,17 @@ export const gutterColumn = ({
 			const nowHour = now(zone).hour
 			const isNowHourOfDay = Boolean(date && date.hour === nowHour)
 			const isCurrentHour = isHourGutter && showsToday && isNowHourOfDay
-			const labelColorClass = isCurrentHour
-				? CURRENT_HOUR_LABEL_CLASS
-				: 'text-muted-foreground'
+			let labelColorClass = 'text-muted-foreground'
+			if (isCurrentHour) {
+				labelColorClass = CURRENT_HOUR_LABEL_CLASS
+			}
 			const currentMarker = isCurrentHour ? 'time' : undefined
-			const label = renderLabel
-				? renderLabel(dateIso)
-				: date && <HourLabel date={date} />
+			let label: React.ReactNode
+			if (renderLabel) {
+				label = renderLabel(dateIso)
+			} else if (date) {
+				label = <HourLabel date={date} />
+			}
 
 			return (
 				<div

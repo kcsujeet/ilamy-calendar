@@ -11,96 +11,17 @@ import {
 	toOffsetIso,
 	type ZonedDate,
 } from '@ilamy/core'
+import { MINUTES_PER_HOUR } from '@ilamy/utils/helpers'
+import { createSvgIcon } from './dom-icons'
+import { mountFloatingPopover } from './dom-popover'
 import { createEl } from './dom-styles'
 import type { DomRuntime } from './dom-types'
 
-const SVG_NS = 'http://www.w3.org/2000/svg'
 const YEAR_BLOCK_SIZE = 12
 const TIME_STEP_MINUTES = 15
-
-export type DomIconName =
-	| 'chevron-left'
-	| 'chevron-right'
-	| 'chevron-down'
-	| 'calendar'
-	| 'clock'
-	| 'download'
-	| 'plus'
-	| 'x'
-
-const ICON_PATHS: Record<DomIconName, string[]> = {
-	'chevron-left': ['m15 18-6-6 6-6'],
-	'chevron-right': ['m9 18 6-6-6-6'],
-	'chevron-down': ['m6 9 6 6 6-6'],
-	calendar: [
-		'M8 2v4',
-		'M16 2v4',
-		'M3 10h18',
-		'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z',
-	],
-	clock: ['M12 6v6l4 2', 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z'],
-	download: [
-		'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4',
-		'm7 10 5 5 5-5',
-		'M12 15V3',
-	],
-	plus: ['M5 12h14', 'M12 5v14'],
-	x: ['M18 6 6 18', 'm6 6 12 12'],
-}
-
-export const createSvgIcon = (
-	name: DomIconName,
-	className = 'size-4 shrink-0'
-): SVGSVGElement => {
-	const svg = document.createElementNS(SVG_NS, 'svg')
-	svg.setAttribute('viewBox', '0 0 24 24')
-	svg.setAttribute('fill', 'none')
-	svg.setAttribute('stroke', 'currentColor')
-	svg.setAttribute('stroke-width', '2')
-	svg.setAttribute('stroke-linecap', 'round')
-	svg.setAttribute('stroke-linejoin', 'round')
-	svg.setAttribute('aria-hidden', 'true')
-	svg.setAttribute('class', className)
-	for (const d of ICON_PATHS[name]) {
-		const path = document.createElementNS(SVG_NS, 'path')
-		path.setAttribute('d', d)
-		svg.appendChild(path)
-	}
-	return svg
-}
-
-export const copyThemeCssVars = (
-	source: HTMLElement,
-	target: HTMLElement
-): void => {
-	const inline = source.style
-	for (let i = 0; i < inline.length; i += 1) {
-		const prop = inline.item(i)
-		if (
-			prop.startsWith('--') ||
-			prop === 'color-scheme' ||
-			prop === 'font-family'
-		) {
-			target.style.setProperty(prop, inline.getPropertyValue(prop))
-		}
-	}
-}
-
-const positionPopover = (popover: HTMLElement, anchor: HTMLElement): void => {
-	const rect = anchor.getBoundingClientRect()
-	const popWidth = popover.offsetWidth || 288
-	const popHeight = popover.offsetHeight || 260
-	const margin = 8
-	const maxLeft = Math.max(margin, window.innerWidth - popWidth - margin)
-	const left = Math.min(Math.max(margin, rect.left), maxLeft)
-	const spaceBelow = window.innerHeight - rect.bottom - margin
-	const top =
-		spaceBelow >= popHeight || rect.top < popHeight
-			? rect.bottom + 6
-			: Math.max(margin, rect.top - popHeight - 6)
-	popover.style.left = `${Math.round(left)}px`
-	popover.style.top = `${Math.round(top)}px`
-}
+const HOURS_PER_DAY = 24
+// Clamping to 28 avoids month-end overflow (e.g. Feb 29 -> Mar 1) when switching years.
+const MAX_SAFE_COMMON_MONTH_DAY = 28
 
 const createPickerNav = (
 	label: string,
@@ -141,22 +62,31 @@ const createPickerNav = (
 	)
 }
 
+const resolvePickerCellClass = (
+	isSelected: boolean,
+	isCurrent: boolean
+): string => {
+	if (isSelected) {
+		return 'bg-primary text-primary-foreground hover:bg-primary/90'
+	}
+	if (isCurrent) {
+		return 'bg-accent text-accent-foreground'
+	}
+	return 'text-foreground hover:bg-accent hover:text-accent-foreground'
+}
+
 const createPickerCellButton = (
 	label: string,
 	isSelected: boolean,
 	isCurrent: boolean,
 	onClick: () => void
 ): HTMLButtonElement => {
-	const stateClass = isSelected
-		? 'bg-primary text-primary-foreground hover:bg-primary/90'
-		: isCurrent
-			? 'bg-accent text-accent-foreground'
-			: 'text-foreground hover:bg-accent hover:text-accent-foreground'
+	const stateClass = resolvePickerCellClass(isSelected, isCurrent)
 	return createEl('button', {
 		text: label,
 		attrs: {
 			type: 'button',
-			...(isSelected ? { 'aria-current': 'date' } : {}),
+			'aria-current': isSelected ? 'date' : undefined,
 		},
 		className: `h-9 rounded-md text-sm font-medium transition-colors cursor-pointer ${stateClass}`,
 		onClick,
@@ -271,7 +201,7 @@ const renderYearGridContent = (
 							{
 								year,
 								month: selected.month,
-								day: Math.min(selected.day, 28),
+								day: Math.min(selected.day, MAX_SAFE_COMMON_MONTH_DAY),
 								hour: selected.hour,
 								minute: selected.minute,
 								second: selected.second,
@@ -308,6 +238,17 @@ const resolveDayButtonClass = (
 	return 'text-foreground hover:bg-accent hover:text-accent-foreground'
 }
 
+const resolveWeekRowClass = (
+	isActiveWeek: boolean,
+	highlightWeek: boolean
+): string => {
+	if (isActiveWeek) return 'grid grid-cols-7 rounded-md bg-accent/80'
+	if (highlightWeek) {
+		return 'grid grid-cols-7 rounded-md hover:bg-accent/50 transition-colors'
+	}
+	return 'grid grid-cols-7'
+}
+
 const renderDayGridContent = (params: {
 	selected: ZonedDate
 	locale: string
@@ -315,7 +256,8 @@ const renderDayGridContent = (params: {
 	highlightWeek?: boolean
 	onSelect: (date: ZonedDate) => void
 }): HTMLElement => {
-	const { selected, locale, firstDayOfWeek, highlightWeek, onSelect } = params
+	const { selected, locale, firstDayOfWeek, onSelect } = params
+	const highlightWeek = Boolean(params.highlightWeek)
 	const wrapper = createEl('div', {
 		className: 'w-72 p-3',
 		data: { slot: 'day-grid' },
@@ -326,11 +268,13 @@ const renderDayGridContent = (params: {
 	)
 	const todayKeyStr = dayKey(now(selected.timeZoneId))
 	const selectedKeyStr = dayKey(selected)
-	const activeWeekKeys = new Set(
-		highlightWeek
-			? getWeekDays(selected, firstDayOfWeek).map((d) => dayKey(d))
-			: []
-	)
+	let activeWeekKeysList: string[] = []
+	if (highlightWeek) {
+		activeWeekKeysList = getWeekDays(selected, firstDayOfWeek).map((d) =>
+			dayKey(d)
+		)
+	}
+	const activeWeekKeys = new Set(activeWeekKeysList)
 
 	const redraw = () => {
 		wrapper.replaceChildren()
@@ -375,14 +319,10 @@ const renderDayGridContent = (params: {
 		})
 		for (const week of weeks) {
 			const isActiveWeek =
-				Boolean(highlightWeek) &&
-				week.some((d) => activeWeekKeys.has(dayKey(d)))
-			const rowClass = isActiveWeek
-				? 'grid grid-cols-7 rounded-md bg-accent/80'
-				: highlightWeek
-					? 'grid grid-cols-7 rounded-md hover:bg-accent/50 transition-colors'
-					: 'grid grid-cols-7'
-			const row = createEl('div', { className: rowClass })
+				highlightWeek && week.some((d) => activeWeekKeys.has(dayKey(d)))
+			const row = createEl('div', {
+				className: resolveWeekRowClass(isActiveWeek, highlightWeek),
+			})
 			for (const day of week) {
 				const key = dayKey(day)
 				const isSelected = key === selectedKeyStr
@@ -392,14 +332,14 @@ const renderDayGridContent = (params: {
 					isSelected,
 					isTodayCell,
 					isOutside,
-					Boolean(highlightWeek)
+					highlightWeek
 				)
 				row.appendChild(
 					createEl('button', {
 						text: String(day.day),
 						attrs: {
 							type: 'button',
-							...(isSelected ? { 'aria-selected': 'true' } : {}),
+							'aria-selected': isSelected ? 'true' : undefined,
 						},
 						className: `flex h-8 w-full items-center justify-center rounded-md text-xs tabular-nums transition-colors cursor-pointer ${btnClass}`,
 						onClick: () => {
@@ -430,60 +370,29 @@ const renderDayGridContent = (params: {
 	return wrapper
 }
 
-const mountFloatingPopover = (params: {
-	host: HTMLElement
-	themeSource: HTMLElement
-	anchor: HTMLElement
-	content: HTMLElement
-	onClose?: () => void
-}): (() => void) => {
-	const popover = createEl(
-		'div',
-		{
-			className:
-				'fixed z-50 rounded-md border border-border bg-popover text-popover-foreground shadow-md outline-none',
-			data: { testid: 'dom-date-picker-popover' },
-		},
-		[params.content]
-	)
-	copyThemeCssVars(params.themeSource, popover)
-	params.host.appendChild(popover)
-	positionPopover(popover, params.anchor)
-
-	let closed = false
-	const close = () => {
-		if (closed) return
-		closed = true
-		document.removeEventListener('pointerdown', handleOutside, true)
-		document.removeEventListener('keydown', handleKeyDown, true)
-		window.removeEventListener('resize', handleReposition)
-		popover.remove()
-		params.onClose?.()
+const buildHeaderPickerContent = (
+	view: string,
+	current: ZonedDate,
+	locale: string,
+	firstDayOfWeek: number,
+	onSelect: (picked: ZonedDate) => void
+): HTMLElement => {
+	if (view === 'month') {
+		return renderMonthGridContent(current, locale, onSelect)
 	}
-
-	const handleOutside = (evt: Event) => {
-		const target = evt.target
-		if (!(target instanceof Node)) return
-		if (popover.contains(target) || params.anchor.contains(target)) return
-		close()
+	if (view === 'year') {
+		return renderYearGridContent(current, onSelect)
 	}
-
-	const handleKeyDown = (evt: KeyboardEvent) => {
-		if (evt.key === 'Escape') {
-			evt.preventDefault()
-			evt.stopPropagation()
-			close()
-		}
-	}
-
-	const handleReposition = () => positionPopover(popover, params.anchor)
-
-	document.addEventListener('pointerdown', handleOutside, true)
-	document.addEventListener('keydown', handleKeyDown, true)
-	window.addEventListener('resize', handleReposition)
-	return close
+	return renderDayGridContent({
+		selected: current,
+		locale,
+		firstDayOfWeek,
+		highlightWeek: view === 'week',
+		onSelect,
+	})
 }
 
+/** Opens the anchored header title date picker popover matching the active calendar view. */
 export const openDomHeaderDatePicker = (
 	runtime: DomRuntime,
 	anchorEl: HTMLElement,
@@ -499,18 +408,13 @@ export const openDomHeaderDatePicker = (
 		runtime.controller.setCurrentDate(toOffsetIso(picked))
 	}
 
-	const content =
-		state.view === 'month'
-			? renderMonthGridContent(current, state.locale, handleSelect)
-			: state.view === 'year'
-				? renderYearGridContent(current, handleSelect)
-				: renderDayGridContent({
-						selected: current,
-						locale: state.locale,
-						firstDayOfWeek: state.firstDayOfWeek,
-						highlightWeek: state.view === 'week',
-						onSelect: handleSelect,
-					})
+	const content = buildHeaderPickerContent(
+		state.view,
+		current,
+		state.locale,
+		state.firstDayOfWeek,
+		handleSelect
+	)
 
 	closePopover = mountFloatingPopover({
 		host: document.body,
@@ -532,6 +436,7 @@ export interface DomDatePickerField {
 	closePopover: () => void
 }
 
+/** Creates an interactive date-picker button and popover for the DOM event form. */
 export const createDomDatePickerField = (params: {
 	id: string
 	initialDate: ZonedDate
@@ -628,6 +533,7 @@ export interface DomTimePickerField {
 	closePopover: () => void
 }
 
+/** Creates a scrollable 15-minute interval time-picker button and popover for the DOM event form. */
 export const createDomTimePickerField = (params: {
 	id: string
 	initialHour: number
@@ -681,18 +587,20 @@ export const createDomTimePickerField = (params: {
 			data: { slot: 'time-list' },
 		})
 		let selectedBtn: HTMLButtonElement | undefined
-		for (let mins = 0; mins < 24 * 60; mins += TIME_STEP_MINUTES) {
-			const h = Math.floor(mins / 60)
-			const m = mins % 60
+		const totalMinutes = HOURS_PER_DAY * MINUTES_PER_HOUR
+		for (let mins = 0; mins < totalMinutes; mins += TIME_STEP_MINUTES) {
+			const h = Math.floor(mins / MINUTES_PER_HOUR)
+			const m = mins % MINUTES_PER_HOUR
 			const isSelected = h === currentHour && m === currentMinute
+			let itemState =
+				'text-foreground hover:bg-accent hover:text-accent-foreground'
+			if (isSelected) {
+				itemState = 'bg-primary text-primary-foreground font-medium'
+			}
 			const itemBtn = createEl('button', {
 				text: formatClockDisplay(h, m, params.timeFormat),
 				attrs: { type: 'button' },
-				className: `flex w-full items-center rounded-sm px-2.5 py-1.5 text-left text-sm tabular-nums transition-colors cursor-pointer ${
-					isSelected
-						? 'bg-primary text-primary-foreground font-medium'
-						: 'text-foreground hover:bg-accent hover:text-accent-foreground'
-				}`,
+				className: `flex w-full items-center rounded-sm px-2.5 py-1.5 text-left text-sm tabular-nums transition-colors cursor-pointer ${itemState}`,
 				onClick: () => {
 					setTime(h, m)
 					closePopover()

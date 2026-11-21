@@ -34,19 +34,24 @@ const toBoundaryMinutes = (
 		return Math.round(value) * MINUTES_PER_HOUR
 	}
 
-	if (typeof value === 'string') {
-		const match = value.match(TIME_STRING_PATTERN)
-		if (match) {
-			const hours = Number(match[1])
-			const minutes = Number(match[2])
-			const totalMinutes = hours * MINUTES_PER_HOUR + minutes
-			if (minutes <= 59 && totalMinutes <= MINUTES_PER_DAY) {
-				return totalMinutes
-			}
-		}
+	const fallback = fallbackHours * MINUTES_PER_HOUR
+	if (typeof value !== 'string') {
+		return fallback
 	}
 
-	return fallbackHours * MINUTES_PER_HOUR
+	const match = value.match(TIME_STRING_PATTERN)
+	if (!match) {
+		return fallback
+	}
+
+	const hours = Number(match[1])
+	const minutes = Number(match[2])
+	const totalMinutes = hours * MINUTES_PER_HOUR + minutes
+	if (minutes > 59 || totalMinutes > MINUTES_PER_DAY) {
+		return fallback
+	}
+
+	return totalMinutes
 }
 
 const toEndBoundaryMinutes = (
@@ -55,6 +60,14 @@ const toEndBoundaryMinutes = (
 ): number => {
 	const minutes = toBoundaryMinutes(value, fallbackHours)
 	return minutes === 0 ? MINUTES_PER_DAY : minutes
+}
+
+const resolveConfigDays = (
+	config: BusinessHours,
+	isArrayForm: boolean
+): readonly WeekDays[] | undefined => {
+	if (config.daysOfWeek) return config.daysOfWeek
+	return isArrayForm ? undefined : DEFAULT_BUSINESS_DAYS
 }
 
 /**
@@ -77,12 +90,7 @@ const processBusinessHours = (
 	const configs = isArrayForm ? bh : [bh]
 
 	for (const config of configs) {
-		const resolvedDays = config.daysOfWeek
-			? config.daysOfWeek
-			: isArrayForm
-				? undefined
-				: DEFAULT_BUSINESS_DAYS
-
+		const resolvedDays = resolveConfigDays(config, isArrayForm)
 		if (!resolvedDays) {
 			continue
 		}
@@ -158,9 +166,10 @@ export const isBusinessHour = ({
 			)
 			const endMinutes = toEndBoundaryMinutes(config.endTime, DEFAULT_END_HOUR)
 			const startsInside = currentMinutes >= startMinutes
-			const endsInside = durationMinutes
-				? currentMinutes + durationMinutes <= endMinutes
-				: currentMinutes < endMinutes
+			let endsInside = currentMinutes < endMinutes
+			if (durationMinutes) {
+				endsInside = currentMinutes + durationMinutes <= endMinutes
+			}
 
 			if (startsInside && endsInside) {
 				isWithin = true
@@ -203,12 +212,14 @@ const isDaySliceWithinBusinessHours = (
 	end: ZonedDate,
 	businessHours: BusinessHours | BusinessHours[]
 ): boolean => {
-	const sliceStartMinutes = isBefore(dayCursor, start)
-		? start.hour * MINUTES_PER_HOUR + start.minute
-		: 0
-	const sliceEndMinutes = isBefore(end, nextDayStart)
-		? end.hour * MINUTES_PER_HOUR + end.minute
-		: MINUTES_PER_DAY
+	let sliceStartMinutes = 0
+	if (isBefore(dayCursor, start)) {
+		sliceStartMinutes = start.hour * MINUTES_PER_HOUR + start.minute
+	}
+	let sliceEndMinutes = MINUTES_PER_DAY
+	if (isBefore(end, nextDayStart)) {
+		sliceEndMinutes = end.hour * MINUTES_PER_HOUR + end.minute
+	}
 	const sliceDuration = sliceEndMinutes - sliceStartMinutes
 	if (sliceDuration <= 0) {
 		return true
@@ -259,20 +270,27 @@ export const isRangeWithinBusinessHours = (options: {
 
 	const isEmptyRange = !isBefore(start, end)
 	if (isEmptyRange) {
-		return allDay
-			? isBusinessDay(start, businessHours)
-			: isBusinessHour({
-					date: start,
-					hour: start.hour,
-					minute: start.minute,
-					businessHours,
-				})
+		if (allDay) {
+			return isBusinessDay(start, businessHours)
+		}
+		return isBusinessHour({
+			date: start,
+			hour: start.hour,
+			minute: start.minute,
+			businessHours,
+		})
 	}
 
 	const lastDayStart = startOf(add(end, -1, 'millisecond'), 'day')
-	return allDay
-		? isAllDayRangeWithinBusinessHours(start, lastDayStart, businessHours)
-		: isTimedRangeWithinBusinessHours(start, end, lastDayStart, businessHours)
+	if (allDay) {
+		return isAllDayRangeWithinBusinessHours(start, lastDayStart, businessHours)
+	}
+	return isTimedRangeWithinBusinessHours(
+		start,
+		end,
+		lastDayStart,
+		businessHours
+	)
 }
 
 export interface BusinessHoursRange {

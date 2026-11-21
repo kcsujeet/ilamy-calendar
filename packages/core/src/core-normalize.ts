@@ -31,9 +31,10 @@ export const resolveEventDate = (
 	if (!anchored) {
 		return undefined
 	}
-	return anchored.timeZoneId === displayZone
-		? anchored
-		: withZone(anchored, displayZone)
+	if (anchored.timeZoneId === displayZone) {
+		return anchored
+	}
+	return withZone(anchored, displayZone)
 }
 
 /** Normalizes a single public event input into a canonical `CalendarEvent`. */

@@ -1,11 +1,4 @@
-import {
-	bucketEventsByResource,
-	getResourceEvents,
-	shareInDevBuild,
-} from '@ilamy/core'
 import { endOf, startOf, type ZonedDate } from '@ilamy/utils/temporal'
-
-export { bucketEventsByResource, getResourceEvents, shareInDevBuild }
 
 /** Span of one column (a day or an hour), cached per `ZonedDate` instance. */
 export interface ColumnBounds {

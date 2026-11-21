@@ -65,9 +65,7 @@ export const useCalendarInteraction = ({
 			const zone = resolveZone(timezone)
 			const baseStart = parseDate(start ?? currentDate, zone) ?? now(zone)
 			const draftStart = withTime(baseStart, { second: 0, millisecond: 0 })
-			const draftEnd = end
-				? (parseDate(end, zone) ?? add(draftStart, 1, 'hour'))
-				: add(draftStart, 1, 'hour')
+			const draftEnd = parseDate(end, zone) ?? add(draftStart, 1, 'hour')
 
 			setSelectedEvent(
 				buildEventDraft({

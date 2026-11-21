@@ -132,32 +132,38 @@ const EventFormTextField = ({
 	onChange,
 }: EventFormTextFieldProps) => {
 	const { Input, Label, Textarea } = useCalendarComponents()
+	let field: React.ReactNode
+	if (multiline) {
+		field = (
+			<Textarea
+				className="min-h-16 text-sm"
+				id={name}
+				name={name}
+				onChange={onChange}
+				placeholder={placeholder}
+				required={required}
+				value={value}
+			/>
+		)
+	} else {
+		field = (
+			<Input
+				className="h-8 text-sm sm:h-9"
+				id={name}
+				name={name}
+				onChange={onChange}
+				placeholder={placeholder}
+				required={required}
+				value={value}
+			/>
+		)
+	}
 	return (
 		<div className="grid gap-1 sm:gap-2">
 			<Label className="text-xs sm:text-sm" htmlFor={name}>
 				{label}
 			</Label>
-			{multiline ? (
-				<Textarea
-					className="min-h-16 text-sm"
-					id={name}
-					name={name}
-					onChange={onChange}
-					placeholder={placeholder}
-					required={required}
-					value={value}
-				/>
-			) : (
-				<Input
-					className="h-8 text-sm sm:h-9"
-					id={name}
-					name={name}
-					onChange={onChange}
-					placeholder={placeholder}
-					required={required}
-					value={value}
-				/>
-			)}
+			{field}
 		</div>
 	)
 }
@@ -277,10 +283,10 @@ const useEventSchedule = ({
 	// `buildEndDateTime` converts back on save. An end that is not on a midnight
 	// boundary predates this and is already inclusive, so it is shown untouched.
 	const endsOnMidnight = isSameInstant(endZoned, startOf(endZoned, 'day'))
-	const lastCoveredDay =
-		initialAllDay && endsOnMidnight
-			? startOf(subtract(endZoned, 1, 'day'), 'day')
-			: endZoned
+	let lastCoveredDay = endZoned
+	if (initialAllDay && endsOnMidnight) {
+		lastCoveredDay = startOf(subtract(endZoned, 1, 'day'), 'day')
+	}
 
 	const [startDate, setStartDate] = useState(() => toDate(startZoned))
 	const [endDate, setEndDate] = useState(() => toDate(lastCoveredDay))
@@ -289,9 +295,12 @@ const useEventSchedule = ({
 	const [startTime, setStartTime] = useState(() => formatClockTime(startZoned))
 	// An all-day event's end is a midnight, which reads as 23:59 of the last
 	// day it covers, so unticking All day leaves a whole-day timed range.
-	const [endTime, setEndTime] = useState(() =>
-		initialAllDay ? END_OF_DAY : formatClockTime(endZoned)
-	)
+	const [endTime, setEndTime] = useState(() => {
+		if (initialAllDay) {
+			return END_OF_DAY
+		}
+		return formatClockTime(endZoned)
+	})
 
 	// Whether the user touched any schedule field. An existing event saved with
 	// its schedule untouched keeps the start and end it came with.
@@ -304,9 +313,10 @@ const useEventSchedule = ({
 		schedule: FormSchedule,
 		movedEdge: 'start' | 'end'
 	) => {
-		const ordered = isAllDay
-			? schedule
-			: keepEndAfterStart(schedule, movedEdge, lengthMinutes, timezone)
+		let ordered = schedule
+		if (!isAllDay) {
+			ordered = keepEndAfterStart(schedule, movedEdge, lengthMinutes, timezone)
+		}
 		setStartDate(ordered.startDate)
 		setStartTime(ordered.startTime)
 		setEndDate(ordered.endDate)
@@ -560,9 +570,10 @@ const useEventResource = ({
 		showResourceSelector && selectedResourceId === undefined
 
 	const hasResourceIds = resourceIds !== undefined
-	const resourceFields = hasResourceIds
-		? {}
-		: { resourceId: effectiveResourceId }
+	let resourceFields: { resourceId?: string | number } = {}
+	if (!hasResourceIds) {
+		resourceFields = { resourceId: effectiveResourceId }
+	}
 
 	return {
 		selectedResourceId,
@@ -661,9 +672,10 @@ export const EventForm: React.FC<EventFormProps> = ({
 		eventConstraint,
 		selectConstraint
 	)
-	const constrainedBusinessHours = isBusinessHoursConstrained
-		? effectiveBusinessHours
-		: undefined
+	let constrainedBusinessHours: typeof effectiveBusinessHours
+	if (isBusinessHoursConstrained) {
+		constrainedBusinessHours = effectiveBusinessHours
+	}
 
 	const eventIsOwned = Boolean(selectedEvent && getEventManager(selectedEvent))
 

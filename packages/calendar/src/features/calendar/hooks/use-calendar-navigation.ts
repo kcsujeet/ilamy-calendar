@@ -210,10 +210,10 @@ export const useCalendarNavigation = ({
 
 	const handleViewChange = useCallback(
 		(newView: CalendarView, date?: PublicDateInput) => {
-			const partial: Partial<NavState> =
-				date !== undefined
-					? { view: newView, date: toDateIsoInZone(date, timezone) }
-					: { view: newView }
+			const partial: Partial<NavState> = { view: newView }
+			if (date !== undefined) {
+				partial.date = toDateIsoInZone(date, timezone)
+			}
 			const next = applyNav(partial)
 			onViewChange?.(newView)
 			notifyDateChange(next)
@@ -223,8 +223,12 @@ export const useCalendarNavigation = ({
 
 	const setCurrentDate = useCallback(
 		(action: PublicDateInput | ((prev: IsoDateString) => PublicDateInput)) => {
-			const nextDate =
-				typeof action === 'function' ? action(latestNav.current.date) : action
+			let nextDate: PublicDateInput
+			if (typeof action === 'function') {
+				nextDate = action(latestNav.current.date)
+			} else {
+				nextDate = action
+			}
 			applyNav({ date: toDateIsoInZone(nextDate, timezone) })
 		},
 		[applyNav, timezone]

@@ -10,7 +10,8 @@ import {
 	toOffsetIso,
 	type ZonedDate,
 } from '@ilamy/core'
-import { createSvgIcon, openDomHeaderDatePicker } from './dom-date-picker'
+import { openDomHeaderDatePicker } from './dom-date-picker'
+import { createSvgIcon } from './dom-icons'
 import { applySlot, createEl, mergeClassNames } from './dom-styles'
 import type { DomCalendarOptions, DomRuntime } from './dom-types'
 
@@ -305,12 +306,18 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 			data: { testid: `view-btn-${view}`, view },
 			onClick: () => runtime.controller.setView(view),
 		})
+		let viewSlot: 'viewButtonActive' | 'viewButton' = 'viewButton'
+		let viewClass =
+			'h-full rounded-md px-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors'
+		if (isActive) {
+			viewSlot = 'viewButtonActive'
+			viewClass =
+				'h-full rounded-md bg-background px-3 text-sm font-medium text-foreground shadow-xs'
+		}
 		applySlot(
 			viewBtn,
-			isActive ? 'viewButtonActive' : 'viewButton',
-			isActive
-				? 'h-full rounded-md bg-background px-3 text-sm font-medium text-foreground shadow-xs'
-				: 'h-full rounded-md px-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors',
+			viewSlot,
+			viewClass,
 			options,
 			'inline-flex h-full items-center cursor-pointer whitespace-nowrap'
 		)

@@ -249,21 +249,20 @@ const renderDayBannerHeader = (
 		options,
 		'flex min-h-12 w-full items-center justify-center'
 	)
+	let todayBadge: HTMLElement | null = null
+	if (today) {
+		todayBadge = createEl('span', {
+			text: 'Today',
+			className:
+				'bg-primary text-primary-foreground ml-2 rounded-full px-2 py-0.5 text-xs sm:text-sm',
+		})
+	}
 	const inner = createEl(
 		'div',
 		{
 			className: `flex items-center justify-center text-center text-sm font-semibold sm:text-xl ${today ? 'text-primary' : 'text-foreground'}`,
 		},
-		[
-			headerText,
-			today
-				? createEl('span', {
-						text: 'Today',
-						className:
-							'bg-primary text-primary-foreground ml-2 rounded-full px-2 py-0.5 text-xs sm:text-sm',
-					})
-				: null,
-		]
+		[headerText, todayBadge]
 	)
 	banner.appendChild(inner)
 	return banner
@@ -333,9 +332,11 @@ const renderTimeGridColumnHeader = (
 	)
 	if (col.sublabel) {
 		const todayBadgeSize = col.sublabel.length <= 2 ? 'h-5 w-5' : 'h-6 px-2'
-		const sublabelClass = isTodayCol
-			? `mt-0.5 inline-flex ${todayBadgeSize} items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground tabular-nums whitespace-nowrap`
-			: 'mt-0.5 text-xs font-medium text-foreground tabular-nums whitespace-nowrap'
+		let sublabelClass =
+			'mt-0.5 text-xs font-medium text-foreground tabular-nums whitespace-nowrap'
+		if (isTodayCol) {
+			sublabelClass = `mt-0.5 inline-flex ${todayBadgeSize} items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground tabular-nums whitespace-nowrap`
+		}
 		headerCell.appendChild(
 			createEl('span', {
 				text: col.sublabel,
@@ -602,10 +603,10 @@ export const renderDomTimeGrid = (
 		runtime
 	)
 
-	const resourceBusinessHours =
-		state.resources.length > 0
-			? collectResourceBusinessHours(state.resources)
-			: []
+	let resourceBusinessHours: Array<BusinessHours | BusinessHours[]> = []
+	if (state.resources.length > 0) {
+		resourceBusinessHours = collectResourceBusinessHours(state.resources)
+	}
 	const hours = getViewHours({
 		referenceDate: effectiveDays.at(0) ?? current,
 		businessHours: options.businessHours,
@@ -633,11 +634,12 @@ export const renderDomTimeGrid = (
 
 	const colMinWidth = state.resources.length > 0 ? '128px' : '110px'
 	const colTemplate = `64px repeat(${columns.length}, minmax(${colMinWidth}, 1fr))`
+	let stickyHeaderClass = 'bg-background'
+	if (options.stickyViewHeader !== false) {
+		stickyHeaderClass = 'sticky top-0 z-30 bg-background'
+	}
 	const stickyHeaderWrap = createEl('div', {
-		className:
-			options.stickyViewHeader !== false
-				? 'sticky top-0 z-30 bg-background'
-				: 'bg-background',
+		className: stickyHeaderClass,
 	})
 	stickyHeaderWrap.appendChild(
 		renderTimeGridHeader(columns, colTemplate, mode, runtime)

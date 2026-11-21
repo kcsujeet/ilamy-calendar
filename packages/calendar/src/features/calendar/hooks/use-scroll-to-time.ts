@@ -100,17 +100,20 @@ const findNowTarget = (viewport: HTMLElement): ScrollTarget | null => {
 	const timedCells = Array.from(
 		viewport.querySelectorAll<HTMLElement>(TIMED_CELL_SELECTOR)
 	)
-	const cells =
-		timedCells.length > 0
-			? timedCells
-			: Array.from(viewport.querySelectorAll<HTMLElement>(ANY_CELL_SELECTOR))
+	let cells = timedCells
+	if (cells.length === 0) {
+		cells = Array.from(
+			viewport.querySelectorAll<HTMLElement>(ANY_CELL_SELECTOR)
+		)
+	}
 	const origin = cells.at(0)
 	const currentMoment = now('UTC')
 	const target = cells.find((cell) => {
 		const interval = readCellInterval(cell)
-		return interval
-			? overlapsRange(interval, currentMoment, currentMoment)
-			: false
+		if (!interval) {
+			return false
+		}
+		return overlapsRange(interval, currentMoment, currentMoment)
 	})
 	if (!origin || !target) {
 		return null
@@ -121,9 +124,11 @@ const findNowTarget = (viewport: HTMLElement): ScrollTarget | null => {
 	}
 	const cellMs = elapsedDiff(interval.end, interval.start, 'millisecond')
 	const isTimeCell = cellMs > 0 && cellMs < MS_PER_DAY
-	const fraction = isTimeCell
-		? elapsedDiff(currentMoment, interval.start, 'millisecond') / cellMs
-		: 0
+	let fraction = 0
+	if (isTimeCell) {
+		fraction =
+			elapsedDiff(currentMoment, interval.start, 'millisecond') / cellMs
+	}
 	return { target, origin, fraction }
 }
 
@@ -166,10 +171,12 @@ const scrollViewportToRow = (
 ) => {
 	const targetRect = targetRow.getBoundingClientRect()
 	const firstRect = firstRow.getBoundingClientRect()
-	const offset =
-		axis === 'horizontal'
-			? targetRect.left - firstRect.left
-			: targetRect.top - firstRect.top
+	let offset: number
+	if (axis === 'horizontal') {
+		offset = targetRect.left - firstRect.left
+	} else {
+		offset = targetRect.top - firstRect.top
+	}
 	const extent = axis === 'horizontal' ? targetRect.width : targetRect.height
 	scrollViewportAlong(viewport, axis, offset + fraction * extent)
 }

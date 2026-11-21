@@ -102,10 +102,15 @@ describe('iCalendar Export (RFC 5545)', () => {
 	})
 
 	it('collects plugin-contributed VEVENT properties (e.g. RRULE / EXDATE)', () => {
-		const collect = (point: string) =>
-			point === 'ical:vevent-properties'
-				? ['RRULE:FREQ=WEEKLY;BYDAY=MO;INTERVAL=1', 'EXDATE:20250811T090000Z']
-				: []
+		const collect = (point: string) => {
+			if (point === 'ical:vevent-properties') {
+				return [
+					'RRULE:FREQ=WEEKLY;BYDAY=MO;INTERVAL=1',
+					'EXDATE:20250811T090000Z',
+				]
+			}
+			return []
+		}
 		const ical = exportToICalendar([createEvent()], collect)
 
 		expect(ical).toContain('RRULE:FREQ=WEEKLY;BYDAY=MO;INTERVAL=1')

@@ -29,6 +29,7 @@ export function ViewSwitcher({ className }: ViewSwitcherProps) {
 
 	return (
 		<ToggleGroup
+			aria-label="Calendar view"
 			className={cn('bg-muted gap-0 rounded-lg p-0.75', className)}
 			onValueChange={(next) => next && setView(next)}
 			size="sm"

@@ -29,6 +29,13 @@ const DEMO_PORT = Number(process.env.E2E_DEMO_PORT ?? 4210)
  * it turns a real signal into a ritual. Layout is asserted through behaviour
  * and geometry instead. See docs/e2e-testing.md.
  */
+let harnessServerCommand = `bun x vite --port ${PORT} --strictPort`
+let demoServerCommand = `bun x vite --port ${DEMO_PORT} --strictPort`
+if (process.env.CI) {
+	harnessServerCommand = `bun x vite preview --port ${PORT} --strictPort`
+	demoServerCommand = `bun x vite preview --port ${DEMO_PORT} --strictPort`
+}
+
 export default defineConfig({
 	fullyParallel: true,
 	forbidOnly: Boolean(process.env.CI),
@@ -60,17 +67,13 @@ export default defineConfig({
 	],
 	webServer: [
 		{
-			command: process.env.CI
-				? `bun x vite preview --port ${PORT} --strictPort`
-				: `bun x vite --port ${PORT} --strictPort`,
+			command: harnessServerCommand,
 			url: `http://localhost:${PORT}`,
 			reuseExistingServer: !process.env.CI,
 			timeout: 120_000,
 		},
 		{
-			command: process.env.CI
-				? `bun x vite preview --port ${DEMO_PORT} --strictPort`
-				: `bun x vite --port ${DEMO_PORT} --strictPort`,
+			command: demoServerCommand,
 			cwd: '../demo',
 			url: `http://localhost:${DEMO_PORT}`,
 			reuseExistingServer: !process.env.CI,

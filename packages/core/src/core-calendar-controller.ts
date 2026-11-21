@@ -1,6 +1,5 @@
 import {
 	add,
-	type DateUnit,
 	now,
 	overlapsRange,
 	parseDate,
@@ -90,7 +89,7 @@ const DEFAULT_VIEW_STEP: Record<string, NavigationStep> = {
 }
 
 const getDefaultStepForView = (view: CalendarView): NavigationStep =>
-	DEFAULT_VIEW_STEP[view] ?? { amount: 1, unit: 'month' as DateUnit }
+	DEFAULT_VIEW_STEP[view] ?? { amount: 1, unit: 'month' }
 
 const computeRange = (
 	dateIso: string,
@@ -125,13 +124,12 @@ export const createCalendarController = (
 		WEEK_DAYS_NUMBER_MAP[options.firstDayOfWeek ?? 'sunday']
 	const hiddenDays = toHiddenDaysSet(options.hiddenDays, options.weekends)
 	const initialView: CalendarView = options.initialView ?? 'month'
-	const parsedInitial = options.initialDate
-		? (parseDate(options.initialDate, timezone) ?? now(timezone))
-		: now(timezone)
-	const anchoredInitial =
-		initialView === 'day'
-			? skipHiddenDays(parsedInitial, hiddenDays, 1)
-			: parsedInitial
+	const parsedInitial =
+		parseDate(options.initialDate, timezone) ?? now(timezone)
+	let anchoredInitial = parsedInitial
+	if (initialView === 'day') {
+		anchoredInitial = skipHiddenDays(parsedInitial, hiddenDays, 1)
+	}
 	const initialDateIso = toOffsetIso(anchoredInitial)
 
 	let state: HeadlessCalendarState = {
@@ -213,13 +211,13 @@ export const createCalendarController = (
 		},
 
 		setView: (view, date) => {
-			const baseDate = date
-				? (parseDate(date, state.timezone) ?? now(state.timezone))
-				: (parseDate(state.currentDate, state.timezone) ?? now(state.timezone))
-			const adjusted =
-				view === 'day'
-					? skipHiddenDays(baseDate, state.hiddenDays, 1)
-					: baseDate
+			const baseDate =
+				parseDate(date ?? state.currentDate, state.timezone) ??
+				now(state.timezone)
+			let adjusted = baseDate
+			if (view === 'day') {
+				adjusted = skipHiddenDays(baseDate, state.hiddenDays, 1)
+			}
 			const iso = toOffsetIso(adjusted)
 			const visibleRange = computeRange(
 				iso,
@@ -246,10 +244,10 @@ export const createCalendarController = (
 
 		today: () => {
 			const todayDate = now(state.timezone)
-			const adjusted =
-				state.view === 'day'
-					? skipHiddenDays(todayDate, state.hiddenDays, 1)
-					: todayDate
+			let adjusted = todayDate
+			if (state.view === 'day') {
+				adjusted = skipHiddenDays(todayDate, state.hiddenDays, 1)
+			}
 			updateDate(toOffsetIso(adjusted), true)
 		},
 
@@ -301,14 +299,14 @@ export const createCalendarController = (
 		},
 
 		updateConfig: (config) => {
-			const nextZone =
-				config.timezone !== undefined
-					? resolveZone(config.timezone)
-					: state.timezone
-			const nextFirstDay =
-				config.firstDayOfWeek !== undefined
-					? WEEK_DAYS_NUMBER_MAP[config.firstDayOfWeek]
-					: state.firstDayOfWeek
+			let nextZone = state.timezone
+			if (config.timezone !== undefined) {
+				nextZone = resolveZone(config.timezone)
+			}
+			let nextFirstDay = state.firstDayOfWeek
+			if (config.firstDayOfWeek !== undefined) {
+				nextFirstDay = WEEK_DAYS_NUMBER_MAP[config.firstDayOfWeek]
+			}
 			const nextHidden = mergeHiddenDays(config, state.hiddenDays)
 			if ('onDateChange' in config) callbacks.onDateChange = config.onDateChange
 			if ('onViewChange' in config) callbacks.onViewChange = config.onViewChange

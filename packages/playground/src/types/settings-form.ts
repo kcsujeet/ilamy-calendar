@@ -9,6 +9,20 @@ import type {
 import type { AgendaWindow } from '@ilamy/calendar/plugins/agenda'
 
 export type FrameworkId = 'react' | 'vue' | 'svelte' | 'solid' | 'angular'
+
+export interface FrameworkOption {
+	value: FrameworkId
+	label: string
+	version: string
+}
+
+export const FRAMEWORK_OPTIONS: FrameworkOption[] = [
+	{ value: 'react', label: 'React', version: '19' },
+	{ value: 'vue', label: 'Vue', version: '3.5' },
+	{ value: 'svelte', label: 'Svelte', version: '5' },
+	{ value: 'solid', label: 'Solid', version: '2' },
+	{ value: 'angular', label: 'Angular', version: '22' },
+]
 export type ThemePreset = 'tailwind' | 'mui' | 'stylex' | 'unstyled'
 export type ThemeColorMode = 'auto' | 'light' | 'dark'
 export type ThemeAccent = 'indigo' | 'emerald' | 'rose' | 'amber'

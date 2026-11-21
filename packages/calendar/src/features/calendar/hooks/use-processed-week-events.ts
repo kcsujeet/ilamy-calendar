@@ -1,4 +1,5 @@
 import {
+	getResourceEvents,
 	type HorizontalCellLayout,
 	type HorizontalPositionedEvent,
 	layoutHorizontal,
@@ -6,10 +7,7 @@ import {
 import { toOffsetIso, type ZonedDate } from '@ilamy/utils/temporal'
 import { useMemo } from 'react'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
-import {
-	getColumnBounds,
-	getResourceEvents,
-} from '@/features/calendar/utils/event-buckets'
+import { getColumnBounds } from '@/features/calendar/utils/event-buckets'
 
 interface UseProcessedWeekEventsProps {
 	days: ZonedDate[]

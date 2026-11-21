@@ -26,7 +26,7 @@ const createResizeGrip = (
 	const options = runtime.getOptions()
 	const posClass = RESIZE_GRIP_POSITIONS[`${axis}:${edge}`] ?? ''
 	const handle = createEl('div', {
-		attrs: { role: 'separator', 'aria-label': `Resize event ${edge}` },
+		attrs: { 'aria-hidden': 'true' },
 		data: {
 			resizeHandle: edge,
 			resizeAxis: axis,
@@ -86,15 +86,16 @@ const appendEventContent = (
 	}
 
 	const showTime = options.displayEventTime !== false && !event.allDay
-	const timeLabel = showTime
-		? formatEventTimeRange(
-				event,
-				state.timezone,
-				state.locale,
-				timeFormat,
-				options.displayEventEnd === true
-			)
-		: ''
+	let timeLabel = ''
+	if (showTime) {
+		timeLabel = formatEventTimeRange(
+			event,
+			state.timezone,
+			state.locale,
+			timeFormat,
+			options.displayEventEnd === true
+		)
+	}
 	if (timeLabel) {
 		bar.appendChild(
 			createEl('span', {
@@ -158,9 +159,10 @@ const applyBarBackground = (
 		return
 	}
 	const cssBg = bg ?? '#dbeafe'
-	const textColor = isTailwindToken(fg)
-		? undefined
-		: (fg ?? readableTextColor(cssBg))
+	let textColor: string | undefined
+	if (!isTailwindToken(fg)) {
+		textColor = fg ?? readableTextColor(cssBg)
+	}
 	applyInlineStyle(bar, { backgroundColor: cssBg, color: textColor })
 }
 
@@ -256,13 +258,24 @@ const attachBarKeyboardOpen = (
 	event: DomCalendarEvent,
 	runtime: DomRuntime
 ): void => {
-	bar.addEventListener('keydown', (keyboardEvent) => {
-		if (keyboardEvent.key !== 'Enter' && keyboardEvent.key !== ' ') return
-		keyboardEvent.preventDefault()
+	const openFromKeyboard = () => {
 		const options = runtime.getOptions()
 		if (options.disableEventClick) return
 		options.onEventClick?.(event)
 		runtime.openEditDialog(event)
+	}
+	bar.addEventListener('keydown', (keyboardEvent) => {
+		if (keyboardEvent.key === 'Enter') {
+			keyboardEvent.preventDefault()
+			openFromKeyboard()
+		} else if (keyboardEvent.key === ' ') {
+			keyboardEvent.preventDefault()
+		}
+	})
+	bar.addEventListener('keyup', (keyboardEvent) => {
+		if (keyboardEvent.key === ' ') {
+			openFromKeyboard()
+		}
 	})
 }
 
@@ -296,25 +309,36 @@ export const renderDomEventBar = (
 		isHorizontal && layout.segment && !layout.segment.isEnd
 	)
 
+	let dataEventId: string | undefined = String(event.id)
+	let eventTestId = `calendar-event-${event.id}`
+	if (layout.staticPill) {
+		dataEventId = undefined
+		eventTestId = `all-events-dialog-event-${event.id}`
+	}
+
 	const bar = createEl('div', {
-		attrs: { role: 'button', tabindex: '0', title: event.title },
+		attrs: {
+			role: 'button',
+			tabindex: '0',
+			title: event.title,
+		},
 		data: {
-			eventId: layout.staticPill ? undefined : String(event.id),
-			testid: layout.staticPill
-				? `all-events-dialog-event-${event.id}`
-				: `calendar-event-${event.id}`,
+			eventId: dataEventId,
+			testid: eventTestId,
 			draggable: String(draggable),
 			truncatedStart: isTruncatedStart ? 'true' : undefined,
 			truncatedEnd: isTruncatedEnd ? 'true' : undefined,
 		},
 	})
 	const horizontalPad = `${isTruncatedStart ? 'pl-2' : 'pl-1.5'} ${isTruncatedEnd ? 'pr-2' : 'pr-1.5'}`
-	const layoutClass = layout.compact
-		? `items-center gap-1 ${horizontalPad} py-0.5`
-		: 'flex-col gap-0.5 px-2 py-1'
-	const cursorClass = draggable
-		? 'cursor-grab active:cursor-grabbing'
-		: 'cursor-pointer'
+	let layoutClass = 'flex-col gap-0.5 px-2 py-1'
+	if (layout.compact) {
+		layoutClass = `items-center gap-1 ${horizontalPad} py-0.5`
+	}
+	let cursorClass = 'cursor-pointer'
+	if (draggable) {
+		cursorClass = 'cursor-grab active:cursor-grabbing'
+	}
 	const radiusClass = resolveBarRadiusClass(
 		layout.axis,
 		isTruncatedStart,
@@ -325,7 +349,7 @@ export const renderDomEventBar = (
 	applySlot(
 		bar,
 		'eventBar',
-		`font-medium ${cursorClass}`,
+		`font-medium ${cursorClass} focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring`,
 		options,
 		`group relative flex ${layoutClass} ${radiusClass} ${separationBorder} w-full h-full overflow-hidden select-none text-xs leading-tight`.trim()
 	)

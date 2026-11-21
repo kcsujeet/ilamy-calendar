@@ -45,8 +45,10 @@ const foldLine = (line: string): string => {
 	let pieceOctets = 0
 	for (const character of line) {
 		const characterOctets = utf8Encoder.encode(character).length
-		const maxOctets =
-			pieces.length === 0 ? MAX_LINE_OCTETS : MAX_LINE_OCTETS - 1
+		let maxOctets = MAX_LINE_OCTETS - 1
+		if (pieces.length === 0) {
+			maxOctets = MAX_LINE_OCTETS
+		}
 		if (pieceOctets + characterOctets > maxOctets) {
 			pieces.push(piece)
 			piece = ''
@@ -264,12 +266,12 @@ export const exportToICalendar = (
 		convertEventToVEvent(event, collect, timezone, zoneYears, timestamp)
 	)
 
-	const vtimezoneLines =
-		zoneYears.size === 0
-			? UTC_VTIMEZONE
-			: [...zoneYears.entries()]
-					.sort(([a], [b]) => a.localeCompare(b))
-					.flatMap(([tzid, span]) => buildVTimezone(tzid, span.min, span.max))
+	let vtimezoneLines = UTC_VTIMEZONE
+	if (zoneYears.size > 0) {
+		vtimezoneLines = [...zoneYears.entries()]
+			.sort(([a], [b]) => a.localeCompare(b))
+			.flatMap(([tzid, span]) => buildVTimezone(tzid, span.min, span.max))
+	}
 
 	const lines = [
 		'BEGIN:VCALENDAR',
@@ -299,9 +301,10 @@ export const downloadICalendar = (
 		type: 'text/calendar;charset=utf-8',
 	})
 	const url = URL.createObjectURL(blob)
-	const normalizedFilename = filename.endsWith('.ics')
-		? filename
-		: `${filename}.ics`
+	let normalizedFilename = `${filename}.ics`
+	if (filename.endsWith('.ics')) {
+		normalizedFilename = filename
+	}
 
 	const link = document.createElement('a')
 	link.href = url

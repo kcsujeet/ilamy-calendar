@@ -36,6 +36,14 @@ const RowLabel: React.FC<{ resource: Resource }> = ({ resource }) => {
 	const { renderResource } = useSmartCalendarContext((c) => ({
 		renderResource: c.renderResource,
 	}))
+	let labelContent: React.ReactNode
+	if (renderResource) {
+		labelContent = renderResource(resource)
+	} else {
+		labelContent = (
+			<div className="wrap-break-word text-sm">{resource.title}</div>
+		)
+	}
 	return (
 		<ResourceCell
 			className="w-20 sm:w-40 border-r sticky left-0 bg-background z-20 h-full"
@@ -43,11 +51,7 @@ const RowLabel: React.FC<{ resource: Resource }> = ({ resource }) => {
 			data-testid={keys.container.horizontal.rowLabel(resource.id)}
 			resource={resource}
 		>
-			{renderResource ? (
-				renderResource(resource)
-			) : (
-				<div className="wrap-break-word text-sm">{resource.title}</div>
-			)}
+			{labelContent}
 		</ResourceCell>
 	)
 }
@@ -101,10 +105,10 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 
 	const firstDay = flatDays.at(0)
 	const isWeekNumberOn = weekNumbers === true
-	const weekNumber =
-		showWeekNumber && isWeekNumberOn && firstDay
-			? getWeekNumber(firstDay, weekNumberCalculation, currentLocale)
-			: undefined
+	let weekNumber: number | undefined
+	if (showWeekNumber && isWeekNumberOn && firstDay) {
+		weekNumber = getWeekNumber(firstDay, weekNumberCalculation, currentLocale)
+	}
 
 	return (
 		<div

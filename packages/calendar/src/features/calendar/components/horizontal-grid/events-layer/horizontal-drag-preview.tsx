@@ -27,17 +27,18 @@ export function HorizontalDragPreview({
 		}))
 	const { event, isTruncatedStart, isTruncatedEnd } = previewPositioned
 	const start = parseDate(event.start, resolveZone(timezone))
-	const formattedStart = start
-		? formatDate(
-				start,
-				{
-					hour: 'numeric',
-					minute: '2-digit',
-					hour12: timeFormat === '12-hour',
-				},
-				currentLocale
-			)
-		: ''
+	let formattedStart = ''
+	if (start) {
+		formattedStart = formatDate(
+			start,
+			{
+				hour: 'numeric',
+				minute: '2-digit',
+				hour12: timeFormat === '12-hour',
+			},
+			currentLocale
+		)
+	}
 
 	return (
 		<DragPreviewCard

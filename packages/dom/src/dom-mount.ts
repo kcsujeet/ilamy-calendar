@@ -2,8 +2,11 @@ import {
 	type CalendarEventInput,
 	createCalendarController,
 	type EventsChange,
+	formatDate,
 	normalizeEvent,
+	parseDate,
 } from '@ilamy/core'
+import { renderDomAgendaView } from './dom-agenda-view'
 import { openDomEventDialog, openDomOverflowDialog } from './dom-dialogs'
 import {
 	applyScopedEventDelete,
@@ -12,7 +15,6 @@ import {
 	generateDomIcal,
 	normalizeDomRRule,
 } from './dom-events'
-import { renderDomAgendaView, renderDomYearView } from './dom-extra-views'
 import { renderDomHeader } from './dom-header'
 import { attachDomInteractions } from './dom-interactions'
 import { renderDomMonthView } from './dom-month-view'
@@ -25,6 +27,7 @@ import type {
 	DomRuntime,
 	MountedCalendar,
 } from './dom-types'
+import { renderDomYearView } from './dom-year-view'
 
 const triggerIcalDownload = (ics: string, filename: string): void => {
 	if (typeof URL.createObjectURL !== 'function') return
@@ -66,21 +69,23 @@ const preserveRecurrenceFields = (
 	})
 }
 
-const buildControllerPatch = (nextOptions: Partial<DomCalendarOptions>) => ({
-	...('timezone' in nextOptions ? { timezone: nextOptions.timezone } : {}),
-	...('locale' in nextOptions ? { locale: nextOptions.locale } : {}),
-	...('firstDayOfWeek' in nextOptions
-		? { firstDayOfWeek: nextOptions.firstDayOfWeek }
-		: {}),
-	...('hiddenDays' in nextOptions
-		? { hiddenDays: nextOptions.hiddenDays }
-		: {}),
-	...('weekends' in nextOptions ? { weekends: nextOptions.weekends } : {}),
-	...('resources' in nextOptions ? { resources: nextOptions.resources } : {}),
-	...(nextOptions.events !== undefined
-		? { events: toBaseEventInputs(nextOptions.events) }
-		: {}),
-})
+const buildControllerPatch = (nextOptions: Partial<DomCalendarOptions>) => {
+	const patch: Parameters<
+		ReturnType<typeof createCalendarController>['updateConfig']
+	>[0] = {}
+	if ('timezone' in nextOptions) patch.timezone = nextOptions.timezone
+	if ('locale' in nextOptions) patch.locale = nextOptions.locale
+	if ('firstDayOfWeek' in nextOptions) {
+		patch.firstDayOfWeek = nextOptions.firstDayOfWeek
+	}
+	if ('hiddenDays' in nextOptions) patch.hiddenDays = nextOptions.hiddenDays
+	if ('weekends' in nextOptions) patch.weekends = nextOptions.weekends
+	if ('resources' in nextOptions) patch.resources = nextOptions.resources
+	if (nextOptions.events !== undefined) {
+		patch.events = toBaseEventInputs(nextOptions.events)
+	}
+	return patch
+}
 
 export const mountCalendar = (
 	container: HTMLElement,
@@ -247,6 +252,38 @@ export const mountCalendar = (
 		return renderDomMonthView(runtime)
 	}
 
+	const liveRegion = createEl('div', {
+		attrs: { 'aria-live': 'polite', 'aria-atomic': 'true' },
+		className: 'sr-only',
+		data: { testid: 'calendar-live-region' },
+	})
+	let lastAnnouncedKey = ''
+
+	const LIVE_DATE_FORMATS: Record<string, Intl.DateTimeFormatOptions> = {
+		year: { year: 'numeric' },
+		month: { month: 'long', year: 'numeric' },
+	}
+	const DEFAULT_LIVE_DATE_FORMAT: Intl.DateTimeFormatOptions = {
+		month: 'long',
+		day: 'numeric',
+		year: 'numeric',
+	}
+
+	const updateLiveRegion = () => {
+		const state = controller.getState()
+		const nextKey = `${state.view}:${state.currentDate}`
+		if (!lastAnnouncedKey) {
+			lastAnnouncedKey = nextKey
+			return
+		}
+		if (nextKey === lastAnnouncedKey) return
+		lastAnnouncedKey = nextKey
+		const parsed = parseDate(state.currentDate, state.timezone)
+		if (!parsed) return
+		const format = LIVE_DATE_FORMATS[state.view] ?? DEFAULT_LIVE_DATE_FORMAT
+		liveRegion.textContent = `${state.view}, ${formatDate(parsed, format, state.locale)}`
+	}
+
 	const render = () => {
 		renderCleanups.flush()
 		root.replaceChildren()
@@ -259,6 +296,8 @@ export const mountCalendar = (
 			options,
 			'flex h-full w-full flex-col'
 		)
+		updateLiveRegion()
+		root.appendChild(liveRegion)
 		root.appendChild(renderDomHeader(runtime))
 		const bodyWrapper = createEl('div', {
 			data: {

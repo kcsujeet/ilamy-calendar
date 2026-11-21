@@ -164,6 +164,8 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 
 	const trigger = (
 		<Button
+			aria-expanded={open}
+			aria-haspopup="dialog"
 			className={triggerSlot.className}
 			data-testid="calendar-title"
 			style={triggerSlot.style}
@@ -171,7 +173,7 @@ export function HeaderDatePicker({ className }: HeaderDatePickerProps) {
 			variant="outline"
 		>
 			{title}
-			<ChevronDown className="size-4 shrink-0 opacity-50" />
+			<ChevronDown aria-hidden="true" className="size-4 shrink-0 opacity-50" />
 		</Button>
 	)
 

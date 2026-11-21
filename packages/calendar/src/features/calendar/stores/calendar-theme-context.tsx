@@ -92,8 +92,10 @@ export const useCalendarTheme = (): CalendarThemeValue =>
 	useContext(CalendarThemeContext)
 
 /** Returns the active UI primitive set (default shadcn/Radix merged with overrides). */
-export const useCalendarComponents = (): Required<CalendarComponents> =>
-	useContext(CalendarThemeContext).components
+export const useCalendarComponents = (): Required<CalendarComponents> => {
+	const theme = useContext(CalendarThemeContext)
+	return theme.components
+}
 
 /**
  * Merges a slot's structural classes (always applied), visual Tailwind defaults
@@ -119,9 +121,13 @@ export const useSlotProps = (
 		) || undefined
 
 	const hasStyle = Boolean(options.style || override?.style)
-	const style: CSSProperties | undefined = hasStyle
-		? { ...options.style, ...(override?.style as CSSProperties | undefined) }
-		: undefined
+	let style: CSSProperties | undefined
+	if (hasStyle) {
+		style = {
+			...options.style,
+			...(override?.style as CSSProperties | undefined),
+		}
+	}
 
 	return { className, style }
 }

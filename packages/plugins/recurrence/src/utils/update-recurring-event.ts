@@ -80,10 +80,10 @@ const weekdayOccursOn = (entry: ByWeekday, day: ZonedDate): boolean => {
 
 const moveWeekday = (entry: ByWeekday, to: ZonedDate): Weekday => {
 	const { n } = toWeekday(entry)
-	const nth =
-		n === undefined
-			? undefined
-			: getNthWeekdayOfMonth(toDate(to), to.timeZoneId)
+	let nth: number | undefined
+	if (n !== undefined) {
+		nth = getNthWeekdayOfMonth(toDate(to), to.timeZoneId)
+	}
 	return new Weekday(getRRuleWeekdayNumber(to), nth)
 }
 
@@ -151,10 +151,10 @@ const getFollowingRule = ({
 	)
 	const submittedCount = mergedRule.count
 	const isCountUnchanged = submittedCount === baseEvent.rrule?.count
-	const count =
-		isCountUnchanged && typeof submittedCount === 'number'
-			? submittedCount - occurrencesBefore
-			: submittedCount
+	let count = submittedCount
+	if (isCountUnchanged && typeof submittedCount === 'number') {
+		count = submittedCount - occurrencesBefore
+	}
 	return { ...mergedRule, count, dtstart: toDate(dtstart) } as RRuleOptions
 }
 
@@ -166,9 +166,14 @@ const buildFollowingSeriesEvent = (
 	const baseEnd = mustZoned(baseEvent.end, zone)
 	const editedStart = mustZoned(updates.start ?? targetEvent.start, zone)
 	const newSeriesStart = getFollowingSeriesStart(targetEvent, editedStart, zone)
-	const durationMs = updates.end
-		? elapsedDiff(mustZoned(updates.end, zone), editedStart, 'millisecond')
-		: elapsedDiff(baseEnd, baseStart, 'millisecond')
+	let durationMs = elapsedDiff(baseEnd, baseStart, 'millisecond')
+	if (updates.end) {
+		durationMs = elapsedDiff(
+			mustZoned(updates.end, zone),
+			editedStart,
+			'millisecond'
+		)
+	}
 	const newSeriesEnd = add(newSeriesStart, durationMs, 'millisecond')
 	const newSeriesId = `${baseEvent.id}_following`
 	const newEvent: CalendarEvent = {
@@ -226,12 +231,14 @@ const applyAllScopeUpdates = (
 		newEnd = withTimeOfDay(baseEnd, mustZoned(updates.end, zone))
 	}
 
-	const mergedRrule = isRepeatRemoved(updates)
-		? undefined
-		: (updates.rrule ?? baseEvent.rrule)
-	const newRrule = mergedRrule
-		? { ...mergedRrule, dtstart: toDate(newStart) }
-		: undefined
+	let mergedRrule = updates.rrule ?? baseEvent.rrule
+	if (isRepeatRemoved(updates)) {
+		mergedRrule = undefined
+	}
+	let newRrule: RRuleOptions | undefined
+	if (mergedRrule) {
+		newRrule = { ...mergedRrule, dtstart: toDate(newStart) }
+	}
 
 	return { start: newStart, end: newEnd, rrule: newRrule }
 }
@@ -284,11 +291,13 @@ const replaceStoredOverride = ({
 		throw new Error('Detached override not found')
 	}
 	updatedEvents[overrideIndex] = detachedOverride
+	let updated = [detachedOverride]
+	if (baseChanged) {
+		updated = [updatedBaseEvent, detachedOverride]
+	}
 	return {
 		events: updatedEvents,
-		updated: baseChanged
-			? [updatedBaseEvent, detachedOverride]
-			: [detachedOverride],
+		updated,
 		added: [],
 		deleted: [],
 	}
@@ -313,9 +322,10 @@ const updateThisScope = ({
 	)
 
 	const existingExdates = baseEvent.exdates || []
-	const nextExdates = existingExdates.includes(recurrenceId)
-		? existingExdates
-		: [...existingExdates, recurrenceId]
+	let nextExdates = existingExdates
+	if (!existingExdates.includes(recurrenceId)) {
+		nextExdates = [...existingExdates, recurrenceId]
+	}
 	const baseChanged =
 		nextExdates !== existingExdates || baseEvent.uid !== seriesUid
 

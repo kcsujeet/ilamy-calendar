@@ -29,10 +29,14 @@ export function VerticalDragPreview({
 	}
 	const start = parseDate(event.start, zone)
 	const end = parseDate(event.end, zone)
-	const formattedStart = start
-		? formatDate(start, timeOptions, currentLocale)
-		: ''
-	const formattedEnd = end ? formatDate(end, timeOptions, currentLocale) : ''
+	const formatTime = (value: ReturnType<typeof parseDate>) => {
+		if (!value) {
+			return ''
+		}
+		return formatDate(value, timeOptions, currentLocale)
+	}
+	const formattedStart = formatTime(start)
+	const formattedEnd = formatTime(end)
 
 	return (
 		<DragPreviewCard

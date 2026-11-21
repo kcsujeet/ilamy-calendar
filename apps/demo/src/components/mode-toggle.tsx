@@ -27,12 +27,12 @@ export function ModeToggle() {
 		setTheme(nextTheme)
 	}
 
-	const getThemeIcon = () =>
-		theme === 'dark' ? (
-			<Sun className="h-4 w-4 transition-all text-amber-500" />
-		) : (
-			<Moon className="h-4 w-4 transition-all text-indigo-400" />
-		)
+	const getThemeIcon = () => {
+		if (theme === 'dark') {
+			return <Sun className="h-4 w-4 transition-all text-amber-500" />
+		}
+		return <Moon className="h-4 w-4 transition-all text-indigo-400" />
+	}
 
 	return (
 		<Button

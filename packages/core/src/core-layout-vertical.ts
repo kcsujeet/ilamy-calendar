@@ -48,9 +48,11 @@ const clusterOverlappingEvents = (
 			currentCluster = []
 		}
 		currentCluster.push(item)
-		lastEventEnd = lastEventEnd
-			? maxDate(lastEventEnd, item.bounds.end)
-			: item.bounds.end
+		if (lastEventEnd) {
+			lastEventEnd = maxDate(lastEventEnd, item.bounds.end)
+		} else {
+			lastEventEnd = item.bounds.end
+		}
 	}
 	if (currentCluster.length > 0) {
 		clusters.push(currentCluster)
@@ -219,8 +221,11 @@ export const layoutVertical = ({
 		spanDayColumns: isDayGrid ? createDayColumnSpanner(days) : null,
 	}
 
-	const clusters = metrics.spanDayColumns
-		? clusterOverlappingDayRows(sortedEvents, metrics.spanDayColumns)
-		: clusterOverlappingEvents(sortedEvents)
+	let clusters: ParsedEvent[][]
+	if (metrics.spanDayColumns) {
+		clusters = clusterOverlappingDayRows(sortedEvents, metrics.spanDayColumns)
+	} else {
+		clusters = clusterOverlappingEvents(sortedEvents)
+	}
 	return clusters.flatMap((cluster) => placeCluster(cluster, metrics))
 }

@@ -21,11 +21,13 @@ export const useDragPreviewEvent = ({
 
 	const range = useMemo(() => {
 		const last = days.at(-1)
+		let rangeEnd: ZonedDate | undefined
+		if (last) {
+			rangeEnd = add(add(last, 1, gridType), -1, 'millisecond')
+		}
 		return {
 			rangeStart: days.at(0),
-			rangeEnd: last
-				? add(add(last, 1, gridType), -1, 'millisecond')
-				: undefined,
+			rangeEnd,
 		}
 	}, [days, gridType])
 

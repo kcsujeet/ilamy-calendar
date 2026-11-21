@@ -65,12 +65,16 @@ describe('Calendar header', () => {
 		const onExport = mock(() => {})
 		const toolbarPlugin: IlamyPlugin = {
 			name: 'test-toolbar-action',
-			renderSlot: (slotName) =>
-				slotName === SLOT_TOOLBAR ? (
+			renderSlot: (slotName) => {
+				if (slotName !== SLOT_TOOLBAR) {
+					return null
+				}
+				return (
 					<button onClick={onExport} type="button">
 						Export
 					</button>
-				) : null,
+				)
+			},
 		}
 		renderHeader(testEvents, { plugins: [toolbarPlugin] })
 

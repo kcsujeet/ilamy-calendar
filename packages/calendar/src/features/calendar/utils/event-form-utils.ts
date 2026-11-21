@@ -3,11 +3,13 @@ import type { BusinessHours } from '@ilamy/types'
 import {
 	add,
 	dayKey,
+	now,
 	parseDate,
 	resolveZone,
 	startOf,
 	toDate,
 	toOffsetIso,
+	wallClockDiff,
 	type ZonedDate,
 } from '@ilamy/utils/temporal'
 
@@ -20,14 +22,17 @@ const pad2 = (value: number): string => String(value).padStart(2, '0')
 const atTime = (date: Date, time: string, timezone?: string): ZonedDate => {
 	const zone = resolveZone(timezone)
 	const zonedDay = parseDate(date, zone)
-	const datePrefix = zonedDay
-		? dayKey(zonedDay)
-		: date.toISOString().slice(0, 10)
+	let datePrefix: string
+	if (zonedDay) {
+		datePrefix = dayKey(zonedDay)
+	} else {
+		datePrefix = date.toISOString().slice(0, 10)
+	}
 	const parsed = parseDate(`${datePrefix}T${time}:00`, zone)
 	if (parsed) {
 		return parsed
 	}
-	return zonedDay ?? (parseDate(date.getTime(), zone) as ZonedDate)
+	return zonedDay ?? parseDate(date.getTime(), zone) ?? now(zone)
 }
 
 export const buildDateTime = (
@@ -121,11 +126,7 @@ export const openedLengthMinutes = (
 	const start = parseDate(startIso, timezone)
 	const end = parseDate(endIso, timezone)
 	if (!start || !end) return FALLBACK_LENGTH_MINUTES
-	const startTime = `${pad2(start.hour)}:${pad2(start.minute)}`
-	const endTime = `${pad2(end.hour)}:${pad2(end.minute)}`
-	const length =
-		wallMinutes(toDate(end), endTime, timezone) -
-		wallMinutes(toDate(start), startTime, timezone)
+	const length = Math.round(wallClockDiff(end, start, 'minute'))
 	return length > 0 ? length : FALLBACK_LENGTH_MINUTES
 }
 

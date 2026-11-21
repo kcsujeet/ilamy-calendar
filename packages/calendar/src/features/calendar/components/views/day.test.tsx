@@ -101,15 +101,15 @@ describe('DayView', () => {
 		renderDayView({ initialDate: dateIso })
 
 		const header = screen.getByTestId('day-view-header')
-		expect(header).toHaveTextContent(
-			zoned
-				? formatDate(
-						zoned,
-						{ month: 'long', day: 'numeric', year: 'numeric' },
-						'en'
-					)
-				: ''
-		)
+		let expectedHeader = ''
+		if (zoned) {
+			expectedHeader = formatDate(
+				zoned,
+				{ month: 'long', day: 'numeric', year: 'numeric' },
+				'en'
+			)
+		}
+		expect(header).toHaveTextContent(expectedHeader)
 
 		expect(screen.getByTestId('current-date-year')).toHaveTextContent('2025')
 		expect(screen.getByTestId('current-date-month')).toHaveTextContent('6')

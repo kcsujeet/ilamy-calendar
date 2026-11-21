@@ -297,7 +297,7 @@ describe('EventForm', () => {
 		it('should render the Tailwind class-pair swatches in the picker', () => {
 			renderEventForm({ ...defaultProps, selectedEvent: testNewEvent })
 
-			fireEvent.click(screen.getByRole('button', { name: 'Color' }))
+			fireEvent.click(screen.getByRole('button', { name: /^Color/ }))
 
 			expect(screen.getByLabelText('Red')).toBeInTheDocument()
 			expect(screen.getByLabelText('Green')).toBeInTheDocument()
@@ -311,7 +311,7 @@ describe('EventForm', () => {
 			}
 			renderEventForm({ ...defaultProps, selectedEvent: legacyEvent })
 
-			fireEvent.click(screen.getByRole('button', { name: 'Color' }))
+			fireEvent.click(screen.getByRole('button', { name: /^Color/ }))
 
 			expect(screen.getByLabelText('Red')).toHaveAttribute(
 				'aria-pressed',
@@ -327,7 +327,7 @@ describe('EventForm', () => {
 			}
 			renderEventForm({ ...defaultProps, selectedEvent: cyanEvent })
 
-			expect(screen.getByRole('button', { name: 'Color' })).toHaveTextContent(
+			expect(screen.getByRole('button', { name: /^Color/ })).toHaveTextContent(
 				'Cyan'
 			)
 		})
@@ -359,7 +359,7 @@ describe('EventForm', () => {
 				target: { value: 'Swatch Event' },
 			})
 
-			fireEvent.click(screen.getByRole('button', { name: 'Color' }))
+			fireEvent.click(screen.getByRole('button', { name: /^Color/ }))
 			fireEvent.click(screen.getByLabelText('Red'))
 
 			fireEvent.click(screen.getByRole('button', { name: 'Create' }))
@@ -381,7 +381,7 @@ describe('EventForm', () => {
 				target: { value: 'Custom Event' },
 			})
 
-			fireEvent.click(screen.getByRole('button', { name: 'Color' }))
+			fireEvent.click(screen.getByRole('button', { name: /^Color/ }))
 			fireEvent.change(screen.getByLabelText('Hex color'), {
 				target: { value: '#ef4444' },
 			})

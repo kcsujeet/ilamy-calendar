@@ -13,6 +13,14 @@ import type { PluginRuntime } from '@/lib/plugins/types'
 
 const MAX_CACHED_RANGES = 32
 
+const toRangeIso = (input: PublicDateInput, timezone?: string): string => {
+	const parsed = parseDate(input, timezone)
+	if (parsed) {
+		return toOffsetIso(parsed)
+	}
+	return String(input)
+}
+
 interface EventStoreParams {
 	events: CalendarEvent[]
 	pluginRuntime: PluginRuntime
@@ -52,12 +60,8 @@ export const useEventStore = ({
 			startInput: PublicDateInput,
 			endInput: PublicDateInput
 		): CalendarEvent[] => {
-			const startParsed = parseDate(startInput, timezone)
-			const endParsed = parseDate(endInput, timezone)
-			const startIso = startParsed
-				? toOffsetIso(startParsed)
-				: String(startInput)
-			const endIso = endParsed ? toOffsetIso(endParsed) : String(endInput)
+			const startIso = toRangeIso(startInput, timezone)
+			const endIso = toRangeIso(endInput, timezone)
 			const rangeKey = `${startIso}|${endIso}`
 			const knownAnswer = rangeAnswers.get(rangeKey)
 			if (knownAnswer) {

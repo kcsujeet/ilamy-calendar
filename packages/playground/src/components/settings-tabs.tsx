@@ -25,6 +25,16 @@ interface SettingsTabsProps {
 	className?: string
 }
 
+const TAB_KEY_HANDLERS: Record<
+	string,
+	(index: number, count: number) => number
+> = {
+	ArrowRight: (index, count) => (index + 1) % count,
+	ArrowLeft: (index, count) => (index - 1 + count) % count,
+	Home: () => 0,
+	End: (_index, count) => count - 1,
+}
+
 /**
  * Accessible single-row tabbed settings card:
  * - Keyboard ArrowLeft/ArrowRight/Home/End roving tabindex on `role="tablist"`
@@ -44,14 +54,10 @@ export function SettingsTabs({
 		event: KeyboardEvent<HTMLButtonElement>,
 		index: number
 	) => {
-		const count = SETTINGS_TABS.length
-		let nextIndex: number | null = null
-		if (event.key === 'ArrowRight') nextIndex = (index + 1) % count
-		else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + count) % count
-		else if (event.key === 'Home') nextIndex = 0
-		else if (event.key === 'End') nextIndex = count - 1
-		if (nextIndex === null) return
+		const resolveNext = TAB_KEY_HANDLERS[event.key]
+		if (!resolveNext) return
 
+		const nextIndex = resolveNext(index, SETTINGS_TABS.length)
 		event.preventDefault()
 		const nextTab = SETTINGS_TABS.at(nextIndex)
 		if (!nextTab) return
@@ -104,7 +110,7 @@ export function SettingsTabs({
 								tabIndex={isSelected ? 0 : -1}
 								type="button"
 							>
-								<Icon className="size-3.5 shrink-0" />
+								<Icon aria-hidden="true" className="size-3.5 shrink-0" />
 								{tab.label}
 							</button>
 						)

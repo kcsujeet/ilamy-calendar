@@ -66,7 +66,7 @@ export const dummyEvents: CalendarEvent[] = [
 		description: 'Fill as a Tailwind class, no text colour',
 		start: monthIso(13, 10),
 		end: monthIso(13, 12),
-		backgroundColor: 'bg-rose-500',
+		backgroundColor: 'bg-rose-600',
 	},
 	{
 		id: '5.5',
@@ -82,7 +82,7 @@ export const dummyEvents: CalendarEvent[] = [
 		description: 'Fill and text as Tailwind classes',
 		start: monthIso(14, 9),
 		end: monthIso(14, 10),
-		backgroundColor: 'bg-violet-500',
+		backgroundColor: 'bg-violet-600',
 		color: 'text-violet-50',
 	},
 	{
@@ -100,8 +100,8 @@ export const dummyEvents: CalendarEvent[] = [
 		description: 'Mixed forms in one event',
 		start: monthIso(15, 9),
 		end: monthIso(15, 10),
-		backgroundColor: 'bg-emerald-500',
-		color: '#022c22',
+		backgroundColor: 'bg-emerald-700',
+		color: '#ffffff',
 	},
 	{
 		id: '5.9',

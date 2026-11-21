@@ -16,6 +16,11 @@ import { VerticalGrid } from '@/features/calendar/components/vertical-grid/verti
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 import { ResourceAllDayRows } from './resource-axis'
 
+const RESPONSIVE_ALL_DAY_CLASSES = {
+	cell: 'flex-1 min-w-0',
+	spacer: RESPONSIVE_GUTTER_WIDTH,
+}
+
 const isVerticalSpecs = (
 	_specs: VerticalColumnSpec[] | HorizontalRowSpec[],
 	engine: 'vertical' | 'horizontal'
@@ -51,9 +56,10 @@ const VerticalEngineView: React.FC<
 	const usesResponsiveGutter = Boolean(
 		gutterCol?.className?.includes(RESPONSIVE_GUTTER_WIDTH)
 	)
-	const allDayClasses = usesResponsiveGutter
-		? { cell: 'flex-1 min-w-0', spacer: RESPONSIVE_GUTTER_WIDTH }
-		: undefined
+	let allDayClasses: typeof RESPONSIVE_ALL_DAY_CLASSES | undefined
+	if (usesResponsiveGutter) {
+		allDayClasses = RESPONSIVE_ALL_DAY_CLASSES
+	}
 	let allDayRow: React.ReactNode
 	const showsAllDayRow = gridType === 'hour' && allDaySlot
 	if (showsAllDayRow) {

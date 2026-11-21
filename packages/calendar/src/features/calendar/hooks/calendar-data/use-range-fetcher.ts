@@ -70,9 +70,10 @@ const buildFetchPayload = (
 ): { info: EventsFetchInfo; fetchedRange: FetchedRange } => {
 	const startZoned = parseDate(visible.start, timezone)
 	const endZoned = parseDate(visible.end, timezone)
-	const exclusiveEndIso = endZoned
-		? toOffsetIso(add(endZoned, 1, 'millisecond'))
-		: visible.end
+	let exclusiveEndIso = visible.end
+	if (endZoned) {
+		exclusiveEndIso = toOffsetIso(add(endZoned, 1, 'millisecond'))
+	}
 	return {
 		info: {
 			start: visible.start,

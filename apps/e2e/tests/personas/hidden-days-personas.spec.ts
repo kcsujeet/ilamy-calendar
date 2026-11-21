@@ -41,10 +41,10 @@ const open = async (
 	page: Page,
 	options: Parameters<typeof gotoScenario>[1]
 ) => {
-	const plugins =
-		options.view === 'year'
-			? [...new Set([...(options.plugins ?? []), 'year'])]
-			: options.plugins
+	let plugins = options.plugins
+	if (options.view === 'year') {
+		plugins = [...new Set([...(options.plugins ?? []), 'year'])]
+	}
 	await gotoScenario(page, {
 		...options,
 		plugins,

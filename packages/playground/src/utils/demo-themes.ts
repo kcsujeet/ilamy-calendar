@@ -4,12 +4,7 @@ import {
 	STYLEX_DARK_TOKENS,
 	STYLEX_LIGHT_TOKENS,
 } from '@ilamy/calendar/themes/stylex'
-import { useEffect, useState } from 'react'
-import type {
-	ThemeAccent,
-	ThemeColorMode,
-	ThemePreset,
-} from '../types/settings-form'
+import type { ThemeAccent, ThemePreset } from '../types/settings-form'
 
 export interface AccentPalette {
 	label: string
@@ -294,37 +289,6 @@ const CUSTOM_SLOT_PROPS_DARK: CalendarSlotProps = {
 	},
 }
 
-const readDocumentDarkMode = (): boolean => {
-	if (typeof document === 'undefined') {
-		return false
-	}
-	return document.documentElement.classList.contains('dark')
-}
-
-/** Tracks the host document's `.dark` class so `themeMode: 'auto'` stays synced. */
-export function useResolvedColorMode(mode: ThemeColorMode): 'light' | 'dark' {
-	const [isDocDark, setIsDocDark] = useState(readDocumentDarkMode)
-
-	useEffect(() => {
-		if (typeof document === 'undefined') {
-			return
-		}
-		const sync = () => setIsDocDark(readDocumentDarkMode())
-		sync()
-		const observer = new MutationObserver(sync)
-		observer.observe(document.documentElement, {
-			attributes: true,
-			attributeFilter: ['class'],
-		})
-		return () => observer.disconnect()
-	}, [])
-
-	if (mode === 'auto') {
-		return isDocDark ? 'dark' : 'light'
-	}
-	return mode
-}
-
 export interface ResolvedDemoTheme {
 	adapter: CalendarThemeAdapter | undefined
 	label: string
@@ -364,14 +328,15 @@ export function resolveDemoTheme(options: {
 	}
 
 	if (preset === 'unstyled') {
+		let modeSlotProps = CUSTOM_SLOT_PROPS_LIGHT
+		if (mode === 'dark') {
+			modeSlotProps = CUSTOM_SLOT_PROPS_DARK
+		}
+		const slotProps = useCustomSlotProps ? modeSlotProps : undefined
 		return {
 			adapter: {
 				unstyled: true,
-				slotProps: useCustomSlotProps
-					? mode === 'dark'
-						? CUSTOM_SLOT_PROPS_DARK
-						: CUSTOM_SLOT_PROPS_LIGHT
-					: undefined,
+				slotProps,
 			},
 			label: useCustomSlotProps ? 'Unstyled + slotProps' : 'Bare Unstyled',
 		}

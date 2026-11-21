@@ -20,13 +20,12 @@ export const useEventsSource = (
 	events: IlamyCalendarProps['events'],
 	timezone?: string
 ) => {
-	const eventsFetcher = useMemo(
-		() =>
-			typeof events === 'function'
-				? normalizeFetcher(events, timezone)
-				: undefined,
-		[events, timezone]
-	)
+	const eventsFetcher = useMemo(() => {
+		if (typeof events === 'function') {
+			return normalizeFetcher(events, timezone)
+		}
+		return undefined
+	}, [events, timezone])
 	const eventsArray = typeof events === 'function' ? undefined : events
 	const normalizedEvents = useMemo(
 		() => normalizeEvents(eventsArray, timezone),

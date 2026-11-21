@@ -67,10 +67,10 @@ const waitForScrollEdge = async (
 		.poll(
 			() =>
 				page.evaluate((dir) => {
-					const sel =
-						dir === 'right'
-							? '[data-resource-id][data-start], [data-start][data-end]'
-							: '[data-testid^="vertical-cell-"]'
+					let sel = '[data-testid^="vertical-cell-"]'
+					if (dir === 'right') {
+						sel = '[data-resource-id][data-start], [data-start][data-end]'
+					}
 					let el: HTMLElement | null = document.querySelector(sel)
 					while (el) {
 						const cs = getComputedStyle(el)
@@ -86,9 +86,10 @@ const waitForScrollEdge = async (
 							/(auto|scroll)/.test(cs.overflowY) &&
 							el.scrollHeight > el.clientHeight + 1
 						) {
-							return dir === 'bottom'
-								? el.scrollTop >= el.scrollHeight - el.clientHeight - 4
-								: el.scrollTop <= 4
+							if (dir === 'bottom') {
+								return el.scrollTop >= el.scrollHeight - el.clientHeight - 4
+							}
+							return el.scrollTop <= 4
 						}
 						el = el.parentElement
 					}
@@ -153,14 +154,16 @@ const sliceUnder = (page: Page, point: Point) =>
 		const start = new Date(cell.dataset.start ?? '').getTime()
 		const end = new Date(cell.dataset.end ?? '').getTime()
 		const cellMinutes = (end - start) / 60000
-		const snap = cell.dataset.snapMinutes
-			? Number(cell.dataset.snapMinutes)
-			: cellMinutes
+		let snap = cellMinutes
+		if (cell.dataset.snapMinutes) {
+			snap = Number(cell.dataset.snapMinutes)
+		}
 		const rect = cell.getBoundingClientRect()
 		const horizontal = cell.dataset.timeAxis === 'horizontal'
-		const fraction = horizontal
-			? (x - rect.left) / rect.width
-			: (y - rect.top) / rect.height
+		let fraction = (y - rect.top) / rect.height
+		if (horizontal) {
+			fraction = (x - rect.left) / rect.width
+		}
 		const bucket = Math.min(
 			cellMinutes / snap - 1,
 			Math.max(0, Math.floor(fraction * (cellMinutes / snap)))
@@ -951,22 +954,21 @@ for (const browserZone of ['UTC', 'America/New_York']) {
 			})
 			const day = o.date.slice(0, 10)
 			const bar = page.getByTestId(`${o.orientation}-event-${o.label}`).first()
-			const cell = page
-				.getByTestId(
-					o.orientation === 'vertical'
-						? `vertical-cell-${day}-${o.hh}-00-resource-r1`
-						: `day-cell-${day}-${o.hh}-00`
-				)
-				.first()
+			let cellTestId = `day-cell-${day}-${o.hh}-00`
+			if (o.orientation === 'vertical') {
+				cellTestId = `vertical-cell-${day}-${o.hh}-00-resource-r1`
+			}
+			const cell = page.getByTestId(cellTestId).first()
 			if ((await cell.count()) === 0) return null
-			const from =
-				o.orientation === 'vertical'
-					? await topEdgeOf(bar)
-					: await leftEdgeOf(bar)
-			const to =
-				o.orientation === 'vertical'
-					? await pointIn(cell, 0.5, o.frac)
-					: await pointIn(cell, o.frac, 0.5)
+			let from: Point
+			let to: Point
+			if (o.orientation === 'vertical') {
+				from = await topEdgeOf(bar)
+				to = await pointIn(cell, 0.5, o.frac)
+			} else {
+				from = await leftEdgeOf(bar)
+				to = await pointIn(cell, o.frac, 0.5)
+			}
 			await dragPointer(page, from, to)
 			await expect.poll(async () => (await changes(page)).length).toBe(1)
 			return state(page, o.title)

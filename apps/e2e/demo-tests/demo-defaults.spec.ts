@@ -479,10 +479,12 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 				const distinctBgs = new Set(
 					bars.slice(0, 20).map((bar) => getComputedStyle(bar).backgroundColor)
 				)
+				let cellBorderBottom = '0px'
+				if (cell) {
+					cellBorderBottom = getComputedStyle(cell).borderBottomWidth
+				}
 				return {
-					cellBorderBottom: cell
-						? getComputedStyle(cell).borderBottomWidth
-						: '0px',
+					cellBorderBottom,
 					distinctBgCount: distinctBgs.size,
 				}
 			})
@@ -554,11 +556,13 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 				const header = el.closest('header, [data-testid="calendar-header"]')
 				const root = header?.parentElement
 				const body = root?.querySelector('[data-testid="calendar-body"]')
+				let headerBorder = ''
+				if (header) {
+					headerBorder = getComputedStyle(header).borderBottomWidth
+				}
 				return {
 					rootBorder: root ? getComputedStyle(root).borderTopWidth : '',
-					headerBorder: header
-						? getComputedStyle(header).borderBottomWidth
-						: '',
+					headerBorder,
 					bodyBorder: body ? getComputedStyle(body).borderTopWidth : '',
 				}
 			})
@@ -574,24 +578,22 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 			await expect(monthGrid).toBeVisible()
 			await monthGrid.getByRole('button', { name: 'Dec' }).click()
 			await expect(titleBtn).toContainText('Dec')
+			let todayContainerSelector = '[data-testid="ilamy-dom-calendar"]'
+			if (fw === 'react') {
+				todayContainerSelector = '[data-testid="calendar-header"]'
+			}
 			await page
-				.locator(
-					fw === 'react'
-						? '[data-testid="calendar-header"]'
-						: '[data-testid="ilamy-dom-calendar"]'
-				)
+				.locator(todayContainerSelector)
 				.getByRole('button', { name: 'Today', exact: true })
 				.click()
 
 			// Create Event Form includes interactive DatePicker, TimePicker, Location, and submits cleanly
-			const newBtn =
-				fw === 'react'
-					? page
-							.locator(
-								'[data-testid="calendar-header"] button[aria-label="New"]'
-							)
-							.first()
-					: page.getByTestId('new-event-btn')
+			let newBtn = page.getByTestId('new-event-btn')
+			if (fw === 'react') {
+				newBtn = page
+					.locator('[data-testid="calendar-header"] button[aria-label="New"]')
+					.first()
+			}
 			await newBtn.click()
 			await expect(page.locator('#start-date')).toBeVisible()
 			await expect(page.locator('#start-time')).toBeVisible()
@@ -604,5 +606,37 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 			await page.locator('button[type="submit"]').first().click()
 			await expect(page.locator('input[name="title"]')).toHaveCount(0)
 		}
+	})
+
+	test('exposes landmarks, skip link, labeled dialogs, and polite live announcements', async ({
+		page,
+	}) => {
+		await page.goto('/')
+		await expect(page.locator('main')).toHaveCount(1)
+		await expect(
+			page.locator('aside[aria-label="Calendar inspector"]')
+		).toHaveCount(1)
+		await expect(
+			page.getByRole('link', { name: 'Skip to calendar' })
+		).toHaveAttribute('href', '#calendar-stage')
+
+		// React live region announces on period navigation
+		const reactLive = page.getByTestId('calendar-live-region')
+		await page
+			.locator('[data-testid="calendar-header"] button[aria-label="Next"]')
+			.click()
+		await expect(reactLive).not.toHaveText('')
+
+		// Vue DOM calendar wires dialog aria-labelledby and hides pointer resize handles
+		await page.getByTestId('framework-vue').click()
+		const domCalendar = page.getByTestId('ilamy-dom-calendar')
+		await expect(domCalendar).toBeVisible()
+		await domCalendar.getByTestId('new-event-btn').click()
+		const domDialog = page.getByTestId('dom-event-dialog')
+		await expect(domDialog).toBeVisible()
+		const labelledBy = await domDialog.getAttribute('aria-labelledby')
+		expect(labelledBy).toBeTruthy()
+		await expect(domDialog.locator(`#${labelledBy}`)).toHaveText('Create Event')
+		await page.keyboard.press('Escape')
 	})
 })

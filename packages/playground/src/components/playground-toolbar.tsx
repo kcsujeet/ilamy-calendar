@@ -12,7 +12,6 @@ import {
 import { useFormContext, useWatch } from 'react-hook-form'
 import {
 	defaultSettings,
-	type FrameworkId,
 	type PlaygroundSettings,
 } from '../types/settings-form'
 import {
@@ -29,18 +28,6 @@ const PRESET_ICONS: Record<DemoPresetId, typeof Calendar> = {
 	'read-only': Lock,
 }
 
-export const FRAMEWORK_OPTIONS: {
-	value: FrameworkId
-	label: string
-	version: string
-}[] = [
-	{ value: 'react', label: 'React', version: '19' },
-	{ value: 'vue', label: 'Vue', version: '3.5' },
-	{ value: 'svelte', label: 'Svelte', version: '5' },
-	{ value: 'solid', label: 'Solid', version: '2' },
-	{ value: 'angular', label: 'Angular', version: '22' },
-]
-
 interface PlaygroundToolbarProps {
 	showInspector: boolean
 	onToggleInspector: () => void
@@ -56,7 +43,7 @@ export function PlaygroundToolbar({
 	onReset,
 	onSelectTab,
 }: PlaygroundToolbarProps) {
-	const { control, setValue, reset } = useFormContext<PlaygroundSettings>()
+	const { control, reset } = useFormContext<PlaygroundSettings>()
 	const watched = useWatch({ control })
 	const values: PlaygroundSettings = { ...defaultSettings, ...watched }
 	const activePreset = detectActivePreset(values)
@@ -66,9 +53,7 @@ export function PlaygroundToolbar({
 		if (!preset) {
 			return
 		}
-		for (const [key, value] of Object.entries(preset.patch)) {
-			setValue(key as keyof PlaygroundSettings, value as never)
-		}
+		reset({ ...values, ...preset.patch })
 		if (presetId === 'business-hours') {
 			onSelectTab?.('schedule')
 		}
@@ -105,7 +90,7 @@ export function PlaygroundToolbar({
 						type="button"
 						variant={showInspector ? 'default' : 'outline'}
 					>
-						<Code2 className="size-4 mr-1.5" />
+						<Code2 aria-hidden="true" className="size-4 mr-1.5" />
 						Code &amp; Events
 						{logCount > 0 && (
 							<span className="ml-1.5 font-mono text-[11px] opacity-80">
@@ -120,7 +105,7 @@ export function PlaygroundToolbar({
 						type="button"
 						variant="ghost"
 					>
-						<RotateCcw className="size-4 mr-1" />
+						<RotateCcw aria-hidden="true" className="size-4 mr-1" />
 						Reset
 					</Button>
 				</div>
@@ -134,14 +119,17 @@ export function PlaygroundToolbar({
 				{DEMO_PRESETS.map((preset) => {
 					const Icon = PRESET_ICONS[preset.id]
 					const isActive = activePreset === preset.id
+					let activeTabClass =
+						'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+					if (isActive) {
+						activeTabClass = 'border-primary text-foreground'
+					}
 					return (
 						<button
 							aria-pressed={isActive}
 							className={cn(
 								'relative inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors cursor-pointer border-b-2',
-								isActive
-									? 'border-primary text-foreground'
-									: 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+								activeTabClass
 							)}
 							data-testid={`preset-${preset.id}`}
 							key={preset.id}
@@ -149,7 +137,7 @@ export function PlaygroundToolbar({
 							title={preset.description}
 							type="button"
 						>
-							<Icon className="size-3.5 shrink-0" />
+							<Icon aria-hidden="true" className="size-3.5 shrink-0" />
 							{preset.label}
 						</button>
 					)

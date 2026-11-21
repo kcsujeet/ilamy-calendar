@@ -17,10 +17,10 @@ export interface MuiCalendarThemeOptions {
 }
 
 const buildMuiSlotProps = (theme: Theme): CalendarSlotProps => {
-	const borderRadius =
-		typeof theme.shape.borderRadius === 'number'
-			? `${theme.shape.borderRadius}px`
-			: theme.shape.borderRadius
+	let borderRadius: string | number = theme.shape.borderRadius
+	if (typeof theme.shape.borderRadius === 'number') {
+		borderRadius = `${theme.shape.borderRadius}px`
+	}
 
 	return {
 		root: {

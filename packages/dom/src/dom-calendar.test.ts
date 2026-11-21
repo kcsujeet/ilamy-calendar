@@ -566,4 +566,73 @@ describe('@ilamy/dom mountCalendar', () => {
 
 		cal.destroy()
 	})
+
+	it('wires dialog aria-labelledby/describedby, hides pointer resize handles, announces navigation, and opens bars on Space keyup', () => {
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: '2026-11-15T09:00:00Z',
+			initialView: 'month',
+			timezone: 'UTC',
+			editable: true,
+			events: [
+				{
+					id: 'a11y-1',
+					title: 'Accessibility Audit',
+					start: '2026-11-15T09:00:00Z',
+					end: '2026-11-15T10:00:00Z',
+				},
+			],
+		})
+
+		const resizeHandles = container.querySelectorAll('[data-resize-handle]')
+		expect(resizeHandles.length).toBeGreaterThan(0)
+		for (const handle of resizeHandles) {
+			expect(handle.getAttribute('aria-hidden')).toBe('true')
+			expect(handle.getAttribute('role')).toBeNull()
+		}
+
+		// Polite live region stays empty on initial mount and announces on navigation
+		const liveRegion = container.querySelector(
+			'[data-testid="calendar-live-region"]'
+		)
+		expect(liveRegion?.getAttribute('aria-live')).toBe('polite')
+		expect(liveRegion?.textContent).toBe('')
+		cal.controller.nextPeriod()
+		expect(liveRegion?.textContent).toContain('December 2026')
+		cal.controller.prevPeriod()
+
+		// Space keyup opens the event dialog and wires aria-labelledby/aria-describedby
+		const bar = container.querySelector<HTMLElement>(
+			'[data-testid="calendar-event-a11y-1"]'
+		)
+		expect(bar?.textContent).toContain('Accessibility Audit')
+		bar?.dispatchEvent(
+			new KeyboardEvent('keydown', {
+				key: ' ',
+				bubbles: true,
+				cancelable: true,
+			})
+		)
+		expect(
+			container.querySelector('[data-testid="dom-event-dialog"]')
+		).toBeNull()
+		bar?.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }))
+		const dialog = container.querySelector<HTMLDialogElement>(
+			'[data-testid="dom-event-dialog"]'
+		)
+		expect(dialog).not.toBeNull()
+		const titleId = dialog?.getAttribute('aria-labelledby')
+		const descId = dialog?.getAttribute('aria-describedby')
+		expect(titleId).toBeTruthy()
+		expect(descId).toBeTruthy()
+		expect(dialog?.querySelector(`#${titleId}`)?.textContent).toBe('Edit Event')
+		expect(dialog?.querySelector(`#${descId}`)?.textContent).toBe(
+			'Edit Event Details'
+		)
+		expect(
+			dialog?.querySelector('input[name="title"]')?.hasAttribute('autofocus')
+		).toBe(true)
+
+		cal.destroy()
+	})
 })

@@ -321,10 +321,10 @@ export const useCalendarDrag = (
 		if (eventConstraint !== 'businessHours') {
 			return true
 		}
-		const targetResource =
-			placement.resourceId !== undefined
-				? getResourceById?.(placement.resourceId)
-				: undefined
+		let targetResource: Resource | undefined
+		if (placement.resourceId !== undefined) {
+			targetResource = getResourceById?.(placement.resourceId)
+		}
 		const effectiveHours = targetResource?.businessHours ?? businessHours
 		return isRangeWithinBusinessHours({
 			start: placement.start,
@@ -382,10 +382,10 @@ export const useCalendarDrag = (
 		if (!hovered || !span) {
 			return false
 		}
-		const lane =
-			laneResourceId === undefined
-				? undefined
-				: getResourceById?.(laneResourceId)
+		let lane: Resource | undefined
+		if (laneResourceId !== undefined) {
+			lane = getResourceById?.(laneResourceId)
+		}
 		return isClosedByConsumer(lane, hovered, span)
 	}
 
@@ -541,9 +541,10 @@ export const useCalendarDrag = (
 		)
 		const activeEvent = activeEventRef.current
 		const releasedOn = getSnappedOverData(event.over, pointerRef.current)
-		const placement = activeEvent
-			? getAllowedPlacement(activeEvent, releasedOn)
-			: null
+		let placement: DragPreviewState | null = null
+		if (activeEvent) {
+			placement = getAllowedPlacement(activeEvent, releasedOn)
+		}
 		const isRefused = placement?.isDropAllowed === false
 		if (dropped && !isRefused) {
 			commitDrop(dropped.activeEvent, dropped.updates)

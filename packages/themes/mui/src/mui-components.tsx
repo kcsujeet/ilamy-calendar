@@ -20,16 +20,16 @@ import MuiFormLabel from '@mui/material/FormLabel'
 import MuiMenuItem from '@mui/material/MenuItem'
 import MuiPopover from '@mui/material/Popover'
 import MuiSelect from '@mui/material/Select'
-import { type Theme, useTheme } from '@mui/material/styles'
+import { type SxProps, type Theme, useTheme } from '@mui/material/styles'
 import MuiTextField from '@mui/material/TextField'
-import { type CSSProperties, useRef, useState } from 'react'
+import { type CSSProperties, useState } from 'react'
 
 /** Maps a Material UI Theme palette to the CSS variables used by portal children. */
 export const buildMuiCssVars = (theme: Theme): Record<string, string> => {
-	const mutedBg =
-		theme.palette.mode === 'dark'
-			? theme.palette.background.default
-			: theme.palette.action.hover
+	let mutedBg = theme.palette.action.hover
+	if (theme.palette.mode === 'dark') {
+		mutedBg = theme.palette.background.default
+	}
 	return {
 		'--background': theme.palette.background.paper,
 		'--foreground': theme.palette.text.primary,
@@ -94,22 +94,24 @@ const MuiCalendarButton = ({
 	ref,
 	children,
 	...rest
-}: CalendarButtonProps) => (
-	<MuiButton
-		color={BUTTON_COLOR_MAP[variant]}
-		ref={ref}
-		size={BUTTON_SIZE_MAP[size]}
-		sx={
-			size === 'icon'
-				? { minWidth: 36, px: 1 }
-				: { gap: 0.75, textTransform: 'none' }
-		}
-		variant={BUTTON_VARIANT_MAP[variant]}
-		{...rest}
-	>
-		{children}
-	</MuiButton>
-)
+}: CalendarButtonProps) => {
+	let buttonSx: SxProps<Theme> = { gap: 0.75, textTransform: 'none' }
+	if (size === 'icon') {
+		buttonSx = { minWidth: 36, px: 1 }
+	}
+	return (
+		<MuiButton
+			color={BUTTON_COLOR_MAP[variant]}
+			ref={ref}
+			size={BUTTON_SIZE_MAP[size]}
+			sx={buttonSx}
+			variant={BUTTON_VARIANT_MAP[variant]}
+			{...rest}
+		>
+			{children}
+		</MuiButton>
+	)
+}
 
 const MuiCalendarInput = ({
 	className,
@@ -292,7 +294,7 @@ const MuiCalendarPopover = ({
 	contentStyle,
 }: CalendarPopoverProps) => {
 	const theme = useTheme()
-	const anchorRef = useRef<HTMLSpanElement | null>(null)
+	const [anchorEl, setAnchorEl] = useState<HTMLSpanElement | null>(null)
 	const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
 	const isOpen = controlledOpen ?? uncontrolledOpen
 	const setOpen = (next: boolean) => {
@@ -309,13 +311,13 @@ const MuiCalendarPopover = ({
 			{/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation lives on the child button trigger */}
 			<span
 				onClick={() => setOpen(!isOpen)}
-				ref={anchorRef}
+				ref={setAnchorEl}
 				style={{ display: 'inline-flex', width: '100%' }}
 			>
 				{trigger}
 			</span>
 			<MuiPopover
-				anchorEl={anchorRef.current}
+				anchorEl={anchorEl}
 				anchorOrigin={{ vertical: 'bottom', horizontal }}
 				onClose={() => setOpen(false)}
 				open={isOpen}

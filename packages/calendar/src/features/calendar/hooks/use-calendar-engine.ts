@@ -96,9 +96,7 @@ const anchorInitialDate = (
 	timezone: string | undefined
 ): IsoDateString => {
 	const zone = resolveZone(timezone)
-	const parsed = initialDate
-		? (parseDate(initialDate, zone) ?? now(zone))
-		: now(zone)
+	const parsed = parseDate(initialDate, zone) ?? now(zone)
 	return toOffsetIso(parsed)
 }
 

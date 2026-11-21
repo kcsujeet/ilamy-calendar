@@ -4,6 +4,7 @@ import {
 	diffDayAndTime,
 	type EventDropInfo,
 	parseDate,
+	type Resource,
 	toOffsetIso,
 	wallClockDiff,
 } from '@ilamy/core'
@@ -16,12 +17,26 @@ import {
 import type { DomCalendarEvent, DomRuntime } from './dom-types'
 
 const DRAG_THRESHOLD_PX = 5
+const MINUTES_PER_DAY = 24 * 60
+const DEFAULT_SNAP_MINUTES = 30
+
+const resolveSnapMinutes = (
+	snapDuration: number | undefined,
+	slotDuration: number | undefined
+): number => {
+	if (snapDuration !== undefined) return snapDuration
+	if (slotDuration !== undefined) return slotDuration
+	return DEFAULT_SNAP_MINUTES
+}
 
 const findCellAtPoint = (x: number, y: number): HTMLElement | null => {
-	const stack =
-		typeof document.elementsFromPoint === 'function'
-			? document.elementsFromPoint(x, y)
-			: [document.elementFromPoint(x, y)].filter(Boolean)
+	let stack: Element[]
+	if (typeof document.elementsFromPoint === 'function') {
+		stack = document.elementsFromPoint(x, y)
+	} else {
+		const hit = document.elementFromPoint(x, y)
+		stack = hit ? [hit] : []
+	}
 	for (const node of stack) {
 		if (node instanceof HTMLElement) {
 			const cell = node.closest<HTMLElement>('[data-cell="true"]')
@@ -39,11 +54,12 @@ const cellElementToInfo = (
 	const end = cellEl.dataset.end
 	if (!start || !end) return null
 	const resId = cellEl.dataset.resourceId
-	const resource = resId
-		? runtime.controller
-				.getState()
-				.resources.find((r) => String(r.id) === resId)
-		: undefined
+	let resource: Resource | undefined
+	if (resId) {
+		resource = runtime.controller
+			.getState()
+			.resources.find((r) => String(r.id) === resId)
+	}
 	return {
 		start,
 		end,
@@ -68,9 +84,11 @@ const computeMovedBounds = (
 	)
 	const nextAllDay = Boolean(targetCell.allDay)
 	const nextStart = cellStart
-	const nextEnd = nextAllDay
-		? add(nextStart, Math.max(1, Math.round(durationMinutes / 1440)), 'day')
-		: add(nextStart, durationMinutes, 'minute')
+	let nextEnd = add(nextStart, durationMinutes, 'minute')
+	if (nextAllDay) {
+		const daySpan = Math.max(1, Math.round(durationMinutes / MINUTES_PER_DAY))
+		nextEnd = add(nextStart, daySpan, 'day')
+	}
 
 	return {
 		start: toOffsetIso(nextStart),
@@ -93,7 +111,7 @@ const computeResizedBounds = (
 	const targetEnd = parseDate(targetCell.end, timezone)
 	if (!oldStart || !oldEnd || !targetStart || !targetEnd) return null
 
-	const minStepMinutes = event.allDay ? 1440 : snapMinutes
+	const minStepMinutes = event.allDay ? MINUTES_PER_DAY : snapMinutes
 
 	if (edge === 'start') {
 		const candidate = targetStart
@@ -156,21 +174,27 @@ export const attachDomInteractions = (runtime: DomRuntime): (() => void) => {
 const findVisibleEvent = (
 	runtime: DomRuntime,
 	eventId: string | undefined
-): DomCalendarEvent | undefined =>
-	eventId
-		? runtime.getVisibleEvents().find((item) => String(item.id) === eventId)
-		: undefined
+): DomCalendarEvent | undefined => {
+	if (!eventId) {
+		return undefined
+	}
+	return runtime.getVisibleEvents().find((item) => String(item.id) === eventId)
+}
 
 const markDropTarget = (
 	cellEl: HTMLElement,
 	allowed: boolean,
 	activeCursor: string
 ) => {
+	let outline = '2px dashed hsl(var(--destructive, 0 84% 60%))'
+	let cursor = 'not-allowed'
+	if (allowed) {
+		outline = '2px solid hsl(var(--primary, 221 83% 53%))'
+		cursor = activeCursor
+	}
 	cellEl.dataset.dropTarget = allowed ? 'valid' : 'invalid'
-	cellEl.style.outline = allowed
-		? '2px solid hsl(var(--primary, 221 83% 53%))'
-		: '2px dashed hsl(var(--destructive, 0 84% 60%))'
-	document.body.style.cursor = allowed ? activeCursor : 'not-allowed'
+	cellEl.style.outline = outline
+	document.body.style.cursor = cursor
 }
 
 const clearDropHighlights = (root: HTMLElement) => {
@@ -205,9 +229,10 @@ const startDragOrClickSession = (
 		clearDropHighlights(runtime.root)
 		const cellEl = findCellAtPoint(clientX, clientY)
 		const cellInfo = cellEl ? cellElementToInfo(cellEl, runtime) : null
-		const drop = cellInfo
-			? computeMovedBounds(targetEvent, cellInfo, state.timezone)
-			: null
+		let drop: EventDropInfo | null = null
+		if (cellInfo) {
+			drop = computeMovedBounds(targetEvent, cellInfo, state.timezone)
+		}
 		if (!cellEl || !cellInfo || !drop) {
 			lastDrop = null
 			return
@@ -297,7 +322,10 @@ const startResizeSession = (
 	const state = runtime.controller.getState()
 	if (!canResizeEvent(targetEvent, options)) return
 
-	const snapMinutes = options.snapDuration ?? options.slotDuration ?? 30
+	const snapMinutes = resolveSnapMinutes(
+		options.snapDuration,
+		options.slotDuration
+	)
 	let lastDrop: EventDropInfo | null = null
 	let lastAllowed = false
 
@@ -305,15 +333,16 @@ const startResizeSession = (
 		clearDropHighlights(runtime.root)
 		const cellEl = findCellAtPoint(moveEvent.clientX, moveEvent.clientY)
 		const cellInfo = cellEl ? cellElementToInfo(cellEl, runtime) : null
-		const drop = cellInfo
-			? computeResizedBounds(
-					targetEvent,
-					edge,
-					cellInfo,
-					state.timezone,
-					snapMinutes
-				)
-			: null
+		let drop: EventDropInfo | null = null
+		if (cellInfo) {
+			drop = computeResizedBounds(
+				targetEvent,
+				edge,
+				cellInfo,
+				state.timezone,
+				snapMinutes
+			)
+		}
 		if (!cellEl || !drop) return
 
 		const resource = state.resources.find(
@@ -345,14 +374,14 @@ const startResizeSession = (
 		const newStart = parseDate(lastDrop.start, state.timezone)
 		const oldEnd = parseDate(targetEvent.end, state.timezone)
 		const newEnd = parseDate(lastDrop.end, state.timezone)
-		const delta =
-			edge === 'start' && oldStart && newStart
-				? diffDayAndTime(newStart, oldStart)
-				: undefined
-		const endDelta =
-			edge === 'end' && oldEnd && newEnd
-				? diffDayAndTime(newEnd, oldEnd)
-				: undefined
+		let delta: ReturnType<typeof diffDayAndTime> | undefined
+		if (edge === 'start' && oldStart && newStart) {
+			delta = diffDayAndTime(newStart, oldStart)
+		}
+		let endDelta: ReturnType<typeof diffDayAndTime> | undefined
+		if (edge === 'end' && oldEnd && newEnd) {
+			endDelta = diffDayAndTime(newEnd, oldEnd)
+		}
 
 		runtime.commitUpdate(
 			targetEvent,
@@ -411,12 +440,14 @@ const startCreateDragSession = (
 	const onUp = () => {
 		cleanup()
 		if (!dragging) return
-		const startIso =
-			originCell.start <= currentEndCell.start
-				? originCell.start
-				: currentEndCell.start
-		const endIso =
-			originCell.end >= currentEndCell.end ? originCell.end : currentEndCell.end
+		let startIso = currentEndCell.start
+		if (originCell.start <= currentEndCell.start) {
+			startIso = originCell.start
+		}
+		let endIso = currentEndCell.end
+		if (originCell.end >= currentEndCell.end) {
+			endIso = originCell.end
+		}
 		const selection: CellInfo = {
 			start: startIso,
 			end: endIso,

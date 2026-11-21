@@ -21,9 +21,10 @@ const formatICalDate = (
 	if (!parsed) {
 		return ''
 	}
-	return eventZone
-		? formatICalLocalDateTime(parsed)
-		: formatICalUtcDateTime(parsed)
+	if (eventZone) {
+		return formatICalLocalDateTime(parsed)
+	}
+	return formatICalUtcDateTime(parsed)
 }
 
 const formatRRule = (
@@ -63,11 +64,11 @@ export const recurrenceICalProperties = (event: CalendarEvent): string[] => {
 	const eventZone = resolveICalTzid(event.timezone)
 	const param = buildDateParam(isAllDay, eventZone)
 
-	const rruleLine = event.rrule
-		? formatRRule(event.rrule, isAllDay, eventZone)
-		: ''
-	if (rruleLine) {
-		lines.push(rruleLine)
+	if (event.rrule) {
+		const rruleLine = formatRRule(event.rrule, isAllDay, eventZone)
+		if (rruleLine) {
+			lines.push(rruleLine)
+		}
 	}
 
 	if (event.exdates?.length) {

@@ -14,7 +14,7 @@ interface MuiThemeWrapperProps {
 	children: (adapter: CalendarThemeAdapter) => ReactNode
 }
 
-export default function MuiThemeWrapper({
+export function MuiThemeWrapper({
 	mode,
 	accent,
 	children,

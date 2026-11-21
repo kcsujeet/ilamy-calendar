@@ -105,9 +105,10 @@ export const cutSeriesBefore = (
 	const isFollowingOverride = (event: CalendarEvent): boolean => {
 		const isDetachedOverride = Boolean(event.recurrenceId) && !event.rrule
 		const belongsToSeries = getEventParentUID(event) === parentUid
-		const parsedRecurrenceId = event.recurrenceId
-			? parseDate(event.recurrenceId, zone)
-			: undefined
+		let parsedRecurrenceId: ReturnType<typeof parseDate>
+		if (event.recurrenceId) {
+			parsedRecurrenceId = parseDate(event.recurrenceId, zone)
+		}
 		const isAfterCut = Boolean(
 			parsedRecurrenceId && isAfter(parsedRecurrenceId, terminationZoned)
 		)
@@ -122,9 +123,10 @@ export const addExdateToBaseEvent = (
 ): { baseEvent: CalendarEvent; targetEventStartISO: string } => {
 	const targetEventStartISO = getOccurrenceStartISO(targetEvent)
 	const existingExdates = baseEvent.exdates || []
-	const updatedExdates = existingExdates.includes(targetEventStartISO)
-		? existingExdates
-		: [...existingExdates, targetEventStartISO]
+	let updatedExdates = existingExdates
+	if (!existingExdates.includes(targetEventStartISO)) {
+		updatedExdates = [...existingExdates, targetEventStartISO]
+	}
 	return {
 		baseEvent: { ...baseEvent, exdates: updatedExdates },
 		targetEventStartISO,

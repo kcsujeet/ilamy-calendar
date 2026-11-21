@@ -93,9 +93,10 @@ const getSlotRect = (
 	index: number
 ): DOMRect | undefined => {
 	const isInColumn = index >= 0 && index < slots.length
-	return isInColumn
-		? slots.at(index)?.element.getBoundingClientRect()
-		: undefined
+	if (!isInColumn) {
+		return undefined
+	}
+	return slots.at(index)?.element.getBoundingClientRect()
 }
 
 const findLastSlotStartingAtOrAbove = (
@@ -310,14 +311,20 @@ const resolveDayResizeRange = (
 	if (edge === 'end') {
 		const endsAtMidnight = isSameInstant(eventEnd, startOf(eventEnd, 'day'))
 		const endsAtDayBoundary = Boolean(event.allDay) || endsAtMidnight
-		const end = endsAtDayBoundary
-			? startOf(add(date, 1, 'day'), 'day')
-			: copyTimeOntoDate(date, eventEnd)
+		let end: ZonedDate
+		if (endsAtDayBoundary) {
+			end = startOf(add(date, 1, 'day'), 'day')
+		} else {
+			end = copyTimeOntoDate(date, eventEnd)
+		}
 		return { start: eventStart, end }
 	}
-	const start = event.allDay
-		? startOf(date, 'day')
-		: copyTimeOntoDate(date, eventStart)
+	let start: ZonedDate
+	if (event.allDay) {
+		start = startOf(date, 'day')
+	} else {
+		start = copyTimeOntoDate(date, eventStart)
+	}
 	return { start, end: eventEnd }
 }
 
@@ -342,15 +349,21 @@ export const calculateResizeTimes = (
 	}
 
 	const slot = getSlotSpan(data)
-	const next =
-		isTimeSlotDrop(data) && slot
-			? {
-					start: edge === 'end' ? eventStart : slot.start,
-					end: edge === 'end' ? slot.end : eventEnd,
-				}
-			: resolveDayResizeRange(event, date, edge, eventStart, eventEnd)
+	let next: { start: ZonedDate; end: ZonedDate }
+	if (isTimeSlotDrop(data) && slot) {
+		if (edge === 'end') {
+			next = { start: eventStart, end: slot.end }
+		} else {
+			next = { start: slot.start, end: eventEnd }
+		}
+	} else {
+		next = resolveDayResizeRange(event, date, edge, eventStart, eventEnd)
+	}
 
-	return isAfter(next.end, next.start) ? next : null
+	if (!isAfter(next.end, next.start)) {
+		return null
+	}
+	return next
 }
 
 const getResourceUpdates = (

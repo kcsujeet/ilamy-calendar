@@ -1,5 +1,6 @@
 import type { Resource } from '@ilamy/types'
 import { add, type ZonedDate } from '@ilamy/utils/temporal'
+import { useMemo } from 'react'
 import { CurrentTimeMarker } from '@/features/calendar/components/current-time-marker'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
@@ -29,7 +30,10 @@ export const GridNowLine: React.FC<GridNowLineProps> = ({
 	}))
 	const rangeStart = days.at(0)
 	const lastSlot = days.at(-1)
-	const rangeEnd = lastSlot ? add(lastSlot, 1, gridType) : undefined
+	const rangeEnd = useMemo(
+		() => (lastSlot ? add(lastSlot, 1, gridType) : undefined),
+		[lastSlot, gridType]
+	)
 	const isHourGrid = gridType === 'hour'
 	const hasRange = Boolean(rangeStart && rangeEnd)
 	const showNowLine = nowIndicator && isHourGrid && hasRange

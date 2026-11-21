@@ -66,13 +66,11 @@ describe('DragToCreateProvider', () => {
 	describe('selectConstraint: businessHours', () => {
 		const SelectionProbe = () => {
 			const { selectedEvent, isEventFormOpen } = useIlamyCalendarContext()
-			return (
-				<div data-testid="selection">
-					{isEventFormOpen
-						? `${selectedEvent?.start}|${selectedEvent?.end}|${Boolean(selectedEvent?.allDay)}`
-						: 'closed'}
-				</div>
-			)
+			let selectionText = 'closed'
+			if (isEventFormOpen) {
+				selectionText = `${selectedEvent?.start}|${selectedEvent?.end}|${Boolean(selectedEvent?.allDay)}`
+			}
+			return <div data-testid="selection">{selectionText}</div>
 		}
 
 		const dragBetween = (from: HTMLElement, to: HTMLElement) => {

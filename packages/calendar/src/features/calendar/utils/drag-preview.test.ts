@@ -109,10 +109,12 @@ describe('getDragPreviewEvent', () => {
 
 		expect(previewEvent?.id).toBe('event-1')
 		expect(previewEvent?.title).toBe('Team Sync')
-		const start = previewEvent
-			? parseDate(previewEvent.start, 'UTC')
-			: undefined
-		const end = previewEvent ? parseDate(previewEvent.end, 'UTC') : undefined
+		let start: ReturnType<typeof parseDate>
+		let end: ReturnType<typeof parseDate>
+		if (previewEvent) {
+			start = parseDate(previewEvent.start, 'UTC')
+			end = parseDate(previewEvent.end, 'UTC')
+		}
 		expect(start ? toUtcIso(start) : '').toBe('2025-01-01T10:00:00.000Z')
 		expect(end ? toUtcIso(end) : '').toBe('2025-01-01T12:00:00.000Z')
 	})

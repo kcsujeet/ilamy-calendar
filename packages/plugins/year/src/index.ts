@@ -1,12 +1,12 @@
 import type { IlamyPlugin } from '@ilamy/calendar'
-import {
+import { createYearView, type YearPluginOptions } from './create-year-view'
+
+export {
 	createYearView,
 	type YearPluginOptions,
 	yearView,
 } from './create-year-view'
-
 export { YearView } from './year-view'
-export { createYearView, type YearPluginOptions, yearView }
 
 /**
  * Adds the 12-month year overview view to `<IlamyCalendar>`.

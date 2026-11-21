@@ -41,11 +41,16 @@ const isPaddingDay = (
 	if (view !== 'month') {
 		return false
 	}
-	const ref =
-		typeof currentDate === 'string'
-			? parseDate(currentDate, day.timeZoneId)
-			: currentDate
-	return ref ? day.month !== ref.month : false
+	let ref: ZonedDate | undefined
+	if (typeof currentDate === 'string') {
+		ref = parseDate(currentDate, day.timeZoneId)
+	} else {
+		ref = currentDate
+	}
+	if (!ref) {
+		return false
+	}
+	return day.month !== ref.month
 }
 
 interface CellAvailabilityInput {

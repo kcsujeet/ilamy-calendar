@@ -16,16 +16,14 @@ import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { CalendarDisplay } from './components/calendar-display'
 import {
-	GeneralPanel,
-	PluginsPanel,
-	SchedulePanel,
-	ThemePanel,
-} from './components/calendar-settings-panels'
-import {
 	type ActivityLogEntry,
 	CodeAndLogPanel,
 } from './components/code-and-log-panel'
 import { PlaygroundToolbar } from './components/playground-toolbar'
+import { GeneralPanel } from './components/settings-panels/general-panel'
+import { PluginsPanel } from './components/settings-panels/plugins-panel'
+import { SchedulePanel } from './components/settings-panels/schedule-panel'
+import { ThemePanel } from './components/settings-panels/theme-panel'
 import { type SettingsTabId, SettingsTabs } from './components/settings-tabs'
 import { dummyEvents } from './lib/seed'
 import { defaultSettings, type PlaygroundSettings } from './types/settings-form'
@@ -183,16 +181,23 @@ export function Playground() {
 					</MobileSettings>
 
 					{/* Sticky self-scrolling inspector keeps the calendar in view at all times */}
-					<div className="hidden lg:block sticky top-4">
+					<aside
+						aria-label="Calendar inspector"
+						className="hidden lg:block sticky top-4"
+					>
 						<SettingsTabs
 							activeTab={activeTab}
 							className="max-h-[calc(100dvh-2rem)]"
 							onTabChange={setActiveTab}
 							panels={tabPanels}
 						/>
-					</div>
+					</aside>
 
-					<div className="min-w-0">
+					<div
+						className="min-w-0 outline-none"
+						id="calendar-stage"
+						tabIndex={-1}
+					>
 						<CalendarDisplay
 							activeResources={activeResources}
 							customEvents={customEvents}

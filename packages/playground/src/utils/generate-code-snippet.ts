@@ -1,5 +1,14 @@
 import type { FrameworkId, PlaygroundSettings } from '../types/settings-form'
 
+const resolveStylexMode = (
+	themeMode: PlaygroundSettings['themeMode']
+): 'dark' | 'light' => {
+	if (themeMode === 'dark') {
+		return 'dark'
+	}
+	return 'light'
+}
+
 const buildPluginImportsAndList = (
 	values: PlaygroundSettings
 ): { imports: string[]; calls: string[] } => {
@@ -16,10 +25,10 @@ const buildPluginImportsAndList = (
 		imports.push(
 			"import { agendaPlugin } from '@ilamy/calendar/plugins/agenda'"
 		)
-		const win =
-			typeof values.agendaWindow === 'number'
-				? values.agendaWindow
-				: `'${values.agendaWindow}'`
+		let win: number | string = `'${values.agendaWindow}'`
+		if (typeof values.agendaWindow === 'number') {
+			win = values.agendaWindow
+		}
 		calls.push(`agendaPlugin({ window: ${win} })`)
 	}
 	if (values.enableDragToCreatePlugin) {
@@ -34,11 +43,11 @@ const buildPluginImportsAndList = (
 	}
 	if (values.enableIcalPlugin) {
 		imports.push("import { icalPlugin } from '@ilamy/calendar/plugins/ical'")
-		calls.push(
-			values.hideExportButton
-				? 'icalPlugin({ showToolbarButton: false })'
-				: 'icalPlugin()'
-		)
+		let icalCall = 'icalPlugin()'
+		if (values.hideExportButton) {
+			icalCall = 'icalPlugin({ showToolbarButton: false })'
+		}
+		calls.push(icalCall)
 	}
 
 	return { imports, calls }
@@ -57,23 +66,26 @@ const buildThemeSetup = (
 		}
 	}
 	if (values.themePreset === 'stylex') {
+		const mode = resolveStylexMode(values.themeMode)
 		return {
 			imports: [
 				"import { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'",
 			],
 			preamble: [
-				`const stylexTheme = createStylexCalendarTheme({ mode: '${values.themeMode === 'dark' ? 'dark' : 'light'}' })`,
+				`const stylexTheme = createStylexCalendarTheme({ mode: '${mode}' })`,
 			],
 			propLines: ['{...stylexTheme}'],
 		}
 	}
 	if (values.themePreset === 'unstyled') {
+		const propLines = ['unstyled']
+		if (values.useCustomSlotProps) {
+			propLines.push('slotProps={customSlotProps}')
+		}
 		return {
 			imports: [],
 			preamble: [],
-			propLines: values.useCustomSlotProps
-				? ['unstyled', 'slotProps={customSlotProps}']
-				: ['unstyled'],
+			propLines,
 		}
 	}
 	return { imports: [], preamble: [], propLines: [] }
@@ -126,14 +138,14 @@ const buildDomOptionEntries = (values: PlaygroundSettings): string[] => {
 }
 
 const generateVueSnippet = (values: PlaygroundSettings): string => {
-	const stylexImport =
-		values.themePreset === 'stylex'
-			? "\nimport { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'"
-			: ''
-	const stylexLine =
-		values.themePreset === 'stylex'
-			? `\nconst stylexTheme = createStylexCalendarTheme({ mode: '${values.themeMode === 'dark' ? 'dark' : 'light'}' })`
-			: ''
+	let stylexImport = ''
+	let stylexLine = ''
+	if (values.themePreset === 'stylex') {
+		const mode = resolveStylexMode(values.themeMode)
+		stylexImport =
+			"\nimport { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'"
+		stylexLine = `\nconst stylexTheme = createStylexCalendarTheme({ mode: '${mode}' })`
+	}
 	const attrs: string[] = [':events="events"']
 	if (values.calendarType === 'resource') attrs.push(':resources="resources"')
 	if (values.themePreset === 'stylex') attrs.push('v-bind="stylexTheme"')
@@ -165,14 +177,14 @@ const handleEventsChange = (change) => console.log(change)
 }
 
 const generateSvelteSnippet = (values: PlaygroundSettings): string => {
-	const stylexImport =
-		values.themePreset === 'stylex'
-			? "\n  import { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'"
-			: ''
-	const stylexLine =
-		values.themePreset === 'stylex'
-			? `\n  const stylexTheme = createStylexCalendarTheme({ mode: '${values.themeMode === 'dark' ? 'dark' : 'light'}' })`
-			: ''
+	let stylexImport = ''
+	let stylexLine = ''
+	if (values.themePreset === 'stylex') {
+		const mode = resolveStylexMode(values.themeMode)
+		stylexImport =
+			"\n  import { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'"
+		stylexLine = `\n  const stylexTheme = createStylexCalendarTheme({ mode: '${mode}' })`
+	}
 	const opts = buildDomOptionEntries(values)
 		.map((line) => `    ${line},`)
 		.join('\n')
@@ -193,14 +205,14 @@ ${opts}
 }
 
 const generateSolidSnippet = (values: PlaygroundSettings): string => {
-	const stylexImport =
-		values.themePreset === 'stylex'
-			? "\nimport { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'"
-			: ''
-	const stylexLine =
-		values.themePreset === 'stylex'
-			? `\n  const stylexTheme = createStylexCalendarTheme({ mode: '${values.themeMode === 'dark' ? 'dark' : 'light'}' })`
-			: ''
+	let stylexImport = ''
+	let stylexLine = ''
+	if (values.themePreset === 'stylex') {
+		const mode = resolveStylexMode(values.themeMode)
+		stylexImport =
+			"\nimport { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'"
+		stylexLine = `\n  const stylexTheme = createStylexCalendarTheme({ mode: '${mode}' })`
+	}
 	const props: string[] = []
 	if (values.themePreset === 'stylex') props.push('{...stylexTheme}')
 	if (values.themePreset === 'unstyled') props.push('unstyled')
@@ -229,14 +241,14 @@ export function CalendarDemo() {
 }
 
 const generateAngularSnippet = (values: PlaygroundSettings): string => {
-	const stylexImport =
-		values.themePreset === 'stylex'
-			? "\nimport { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'"
-			: ''
-	const stylexLine =
-		values.themePreset === 'stylex'
-			? `\n  readonly stylexTheme = createStylexCalendarTheme({ mode: '${values.themeMode === 'dark' ? 'dark' : 'light'}' })`
-			: ''
+	let stylexImport = ''
+	let stylexLine = ''
+	if (values.themePreset === 'stylex') {
+		const mode = resolveStylexMode(values.themeMode)
+		stylexImport =
+			"\nimport { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'"
+		stylexLine = `\n  readonly stylexTheme = createStylexCalendarTheme({ mode: '${mode}' })`
+	}
 	const opts = buildDomOptionEntries(values)
 		.map((line) => `      ${line.replace('stylexTheme', 'this.stylexTheme')},`)
 		.join('\n')
@@ -369,17 +381,20 @@ export function generateCodeSnippet(values: PlaygroundSettings): string {
 	}
 
 	const propIndent = '    '
-	const preambleBlock =
-		theme.preamble.length > 0 ? `\n  ${theme.preamble.join('\n  ')}\n` : ''
+	let preambleBlock = ''
+	if (theme.preamble.length > 0) {
+		preambleBlock = `\n  ${theme.preamble.join('\n  ')}\n`
+	}
 
 	if (values.calendarType === 'multi-zone') {
 		const primaryProps = props.map((line) => `      ${line}`).join('\n')
 		const secondaryProps = props
-			.map((line) =>
-				line.startsWith('timezone=')
-					? `timezone="${values.secondaryTimezone}"`
-					: line
-			)
+			.map((line) => {
+				if (line.startsWith('timezone=')) {
+					return `timezone="${values.secondaryTimezone}"`
+				}
+				return line
+			})
 			.map((line) => `      ${line}`)
 			.join('\n')
 		return `${imports.join('\n')}

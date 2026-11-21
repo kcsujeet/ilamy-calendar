@@ -12,6 +12,7 @@ import {
 	type Resource,
 	resolveDurationEditable,
 	resolveStartEditable,
+	toEpochMs,
 	toOffsetIso,
 	wallClockDiff,
 	type ZonedDate,
@@ -235,15 +236,23 @@ const buildNormalizedPrimary = (
 		},
 		timezone
 	)
+	let rrule = target.rrule
+	if ('rrule' in updates) {
+		rrule = normalizeDomRRule(updatedRrule, normalizedBase.start, timezone)
+	}
+	let exdates = target.exdates
+	if ('exdates' in updates) {
+		exdates = updates.exdates
+	}
+	let recurrenceId = target.recurrenceId
+	if ('recurrenceId' in updates) {
+		recurrenceId = updates.recurrenceId
+	}
 	return {
 		...normalizedBase,
-		rrule:
-			'rrule' in updates
-				? normalizeDomRRule(updatedRrule, normalizedBase.start, timezone)
-				: target.rrule,
-		exdates: 'exdates' in updates ? updates.exdates : target.exdates,
-		recurrenceId:
-			'recurrenceId' in updates ? updates.recurrenceId : target.recurrenceId,
+		rrule,
+		exdates,
+		recurrenceId,
 	}
 }
 
@@ -253,14 +262,17 @@ const trimRuleUntilBefore = (
 	timezone: string
 ): DomCalendarEvent => {
 	const cutoff = parseDate(cutoffIso, timezone)
-	const untilDate = cutoff
-		? toFloatingUtcDate(add(cutoff, -1, 'second'))
-		: undefined
+	let untilDate: Date | undefined
+	if (cutoff) {
+		untilDate = toFloatingUtcDate(add(cutoff, -1, 'second'))
+	}
+	let nextRule: DomRRuleOptions | undefined
+	if (baseEvent.rrule) {
+		nextRule = { ...baseEvent.rrule, until: untilDate, count: undefined }
+	}
 	return {
 		...baseEvent,
-		rrule: baseEvent.rrule
-			? { ...baseEvent.rrule, until: untilDate, count: undefined }
-			: undefined,
+		rrule: nextRule,
 	}
 }
 
@@ -421,18 +433,33 @@ export const applyScopedEventDelete = (
 	return { events, updated: [], deleted }
 }
 
+export interface ParsedDomEventRange {
+	event: DomCalendarEvent
+	start: ZonedDate
+	end: ZonedDate
+	startMs: number
+}
+
+export const parseDomEventRanges = (
+	events: DomCalendarEvent[],
+	timezone: string
+): ParsedDomEventRange[] => {
+	const result: ParsedDomEventRange[] = []
+	for (const event of events) {
+		const start = parseDate(event.start, timezone)
+		const end = parseDate(event.end, timezone)
+		if (start && end) {
+			result.push({ event, start, end, startMs: toEpochMs(start) })
+		}
+	}
+	return result
+}
+
 export const resolveEffectiveBusinessHours = (
 	options: DomCalendarOptions,
 	resource?: Resource
 ): BusinessHours | BusinessHours[] | undefined =>
 	resource?.businessHours ?? options.businessHours
-
-const isRangeAllowedByBusinessHours = (
-	start: ZonedDate,
-	end: ZonedDate,
-	allDay: boolean,
-	businessHours: BusinessHours | BusinessHours[] | undefined
-): boolean => isRangeWithinBusinessHours({ start, end, allDay, businessHours })
 
 export const canCommitEventPlacement = (
 	event: CalendarEvent,
@@ -457,8 +484,14 @@ export const canCommitEventPlacement = (
 	}
 
 	if (options.eventConstraint === 'businessHours') {
-		const hours = resolveEffectiveBusinessHours(options, resource)
-		if (!isRangeAllowedByBusinessHours(start, end, dropInfo.allDay, hours)) {
+		const businessHours = resolveEffectiveBusinessHours(options, resource)
+		const allowed = isRangeWithinBusinessHours({
+			start,
+			end,
+			allDay: dropInfo.allDay,
+			businessHours,
+		})
+		if (!allowed) {
 			return false
 		}
 	}
@@ -477,8 +510,13 @@ export const canCommitSelection = (
 	const start = parseDate(cell.start, timezone)
 	const end = parseDate(cell.end, timezone)
 	if (!start || !end) return false
-	const hours = resolveEffectiveBusinessHours(options, cell.resource)
-	return isRangeAllowedByBusinessHours(start, end, Boolean(cell.allDay), hours)
+	const businessHours = resolveEffectiveBusinessHours(options, cell.resource)
+	return isRangeWithinBusinessHours({
+		start,
+		end,
+		allDay: Boolean(cell.allDay),
+		businessHours,
+	})
 }
 
 export const canDragEvent = (

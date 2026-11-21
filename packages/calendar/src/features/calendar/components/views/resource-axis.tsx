@@ -41,9 +41,10 @@ export const resolveResourceLayout = (
 		return null
 	}
 	const resources = config.resources ?? []
-	return config.orientation === 'vertical'
-		? builders.vertical(resources)
-		: builders.horizontal(resources)
+	if (config.orientation === 'vertical') {
+		return builders.vertical(resources)
+	}
+	return builders.horizontal(resources)
 }
 
 interface ResourceHorizontalRowsOptions {

@@ -63,18 +63,21 @@ const DayViewHeader: React.FC<{ date: ZonedDate }> = ({ date }) => {
 		structuralClassName: 'flex flex-1 justify-center items-center min-h-12',
 	})
 	const today = isToday(date)
-	const headerText = hasDayHeaderFormat
-		? formatDayHeader(date)
-		: formatDate(
-				date,
-				{
-					weekday: 'long',
-					month: 'long',
-					day: 'numeric',
-					year: 'numeric',
-				},
-				currentLocale
-			)
+	let headerText: string
+	if (hasDayHeaderFormat) {
+		headerText = formatDayHeader(date)
+	} else {
+		headerText = formatDate(
+			date,
+			{
+				weekday: 'long',
+				month: 'long',
+				day: 'numeric',
+				year: 'numeric',
+			},
+			currentLocale
+		)
+	}
 
 	return (
 		<div

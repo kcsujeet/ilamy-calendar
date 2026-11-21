@@ -169,12 +169,12 @@ export const layoutHorizontal = ({
 	const unitCount = days.length
 	const zone = days.at(0)?.timeZoneId
 	const isHourAxis = gridType === 'hour'
-	const spanOf = isHourAxis
-		? createHourColumnSpanner(days)
-		: createDayColumnSpanner(days)
-	const columnInstants = isHourAxis
-		? days.map((day) => day.epochMilliseconds)
-		: null
+	let spanOf = createDayColumnSpanner(days)
+	let columnInstants: number[] | null = null
+	if (isHourAxis) {
+		spanOf = createHourColumnSpanner(days)
+		columnInstants = days.map((day) => day.epochMilliseconds)
+	}
 
 	const spannedEvents: SpannedEvent[] = []
 	for (const event of events) {

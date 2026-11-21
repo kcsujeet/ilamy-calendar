@@ -74,7 +74,7 @@ function ColorPicker({
 	return (
 		<Popover>
 			<PopoverTrigger
-				aria-label={ariaLabel}
+				aria-label={`${ariaLabel}: ${triggerLabel}`}
 				className={cn(
 					'border-input focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px]',
 					className

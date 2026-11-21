@@ -25,31 +25,17 @@ import {
 import { Textarea } from '@ilamy/ui/components/textarea'
 import { type CSSProperties, createContext, useContext } from 'react'
 import type {
-	CalendarButtonProps,
 	CalendarCheckboxProps,
 	CalendarComponents,
 	CalendarDialogProps,
-	CalendarInputProps,
-	CalendarLabelProps,
 	CalendarPopoverProps,
 	CalendarSelectProps,
-	CalendarTextareaProps,
 } from '@/features/calendar/types'
 
 /** Carries theme CSS custom properties (e.g. StyleX / slotProps vars) into portaled primitives. */
 export const PortalThemeStyleContext = createContext<CSSProperties | undefined>(
 	undefined
 )
-
-const DefaultButton = (props: CalendarButtonProps) => <Button {...props} />
-
-const DefaultInput = (props: CalendarInputProps) => <Input {...props} />
-
-const DefaultTextarea = (props: CalendarTextareaProps) => (
-	<Textarea {...props} />
-)
-
-const DefaultLabel = (props: CalendarLabelProps) => <Label {...props} />
 
 const DefaultCheckbox = ({
 	checked,
@@ -139,10 +125,10 @@ const DefaultPopover = ({
 	contentStyle,
 }: CalendarPopoverProps) => {
 	const portalStyle = useContext(PortalThemeStyleContext)
-	const mergedStyle =
-		portalStyle || contentStyle
-			? { ...portalStyle, ...contentStyle }
-			: undefined
+	let mergedStyle: CSSProperties | undefined
+	if (portalStyle || contentStyle) {
+		mergedStyle = { ...portalStyle, ...contentStyle }
+	}
 	return (
 		<Popover onOpenChange={onOpenChange} open={open}>
 			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
@@ -155,10 +141,10 @@ const DefaultPopover = ({
 
 /** Built-in shadcn/Radix UI primitives used when no theme overrides them. */
 export const DEFAULT_CALENDAR_COMPONENTS: Required<CalendarComponents> = {
-	Button: DefaultButton,
-	Input: DefaultInput,
-	Textarea: DefaultTextarea,
-	Label: DefaultLabel,
+	Button,
+	Input,
+	Textarea,
+	Label,
 	Checkbox: DefaultCheckbox,
 	Dialog: DefaultDialog,
 	Select: DefaultSelect,

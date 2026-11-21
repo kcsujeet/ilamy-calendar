@@ -183,12 +183,12 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 		slotDurationMinutes
 	)
 	const dragPreview = useDragPreview()
-	const dragLandsOnColumn =
-		useDragPreviewEvent({
-			days: zonedDays,
-			gridType: gridType ?? 'hour',
-			resourceId,
-		}) !== null
+	const previewEvent = useDragPreviewEvent({
+		days: zonedDays,
+		gridType: gridType ?? 'hour',
+		resourceId,
+	})
+	const dragLandsOnColumn = previewEvent !== null
 	const columnDragPreview = dragLandsOnColumn ? dragPreview : null
 
 	const { setNodeRef } = useDroppable({

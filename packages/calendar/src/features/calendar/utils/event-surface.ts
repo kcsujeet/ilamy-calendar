@@ -14,7 +14,7 @@ import { cn } from '@ilamy/ui/lib/utils'
  * fallback blue.
  */
 export const getEventSurfaceClasses = (event: CalendarEvent): string =>
-	cn(event.backgroundColor || 'bg-blue-500', event.color || 'text-white')
+	cn(event.backgroundColor || 'bg-blue-600', event.color || 'text-white')
 
 export const getEventSurfaceStyle = (event: CalendarEvent) => ({
 	backgroundColor: event.backgroundColor,

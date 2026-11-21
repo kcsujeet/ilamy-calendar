@@ -19,9 +19,10 @@ export const applyInlineStyle = (
 	for (const [key, rawValue] of Object.entries(style)) {
 		if (rawValue === undefined) continue
 		const stringValue = String(rawValue)
-		const cssKey = key.startsWith('--')
-			? key
-			: key.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`)
+		let cssKey = key
+		if (!key.startsWith('--')) {
+			cssKey = key.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`)
+		}
 		element.style.setProperty(cssKey, stringValue)
 	}
 }
@@ -35,18 +36,14 @@ export const applySlot = (
 ): HTMLElement => {
 	element.dataset.slot = slotName
 	const slotEntry = options.slotProps?.[slotName]
-	const classes: string[] = []
-	if (structuralClass) {
-		classes.push(structuralClass)
-	}
-	if (!options.unstyled && defaultClass) {
-		classes.push(defaultClass)
-	}
-	if (slotEntry?.className) {
-		classes.push(slotEntry.className)
-	}
-	if (classes.length > 0) {
-		element.className = classes.join(' ')
+	const merged = mergeClassNames(
+		options.unstyled,
+		defaultClass,
+		slotEntry?.className,
+		structuralClass
+	)
+	if (merged) {
+		element.className = merged
 	}
 	applyInlineStyle(element, slotEntry?.style)
 	return element
@@ -73,12 +70,14 @@ export const mergeClassNames = (
 
 const applyElementAttributes = (
 	node: HTMLElement,
-	attrs: Record<string, string> | undefined,
+	attrs: Record<string, string | undefined> | undefined,
 	data: Record<string, string | undefined> | undefined
 ): void => {
 	if (attrs) {
 		for (const [key, value] of Object.entries(attrs)) {
-			node.setAttribute(key, value)
+			if (value !== undefined) {
+				node.setAttribute(key, value)
+			}
 		}
 	}
 	if (data) {
@@ -108,7 +107,7 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
 	attrs?: {
 		className?: string
 		text?: string
-		attrs?: Record<string, string>
+		attrs?: Record<string, string | undefined>
 		data?: Record<string, string | undefined>
 		style?: StyleRecord
 		onClick?: (event: MouseEvent) => void

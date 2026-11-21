@@ -59,9 +59,12 @@ const resourceMonthVerticalColumns = (
 			timezone,
 			renderLabel: (dayIso: IsoDateString) => {
 				const parsed = parseDate(dayIso, zone)
-				return parsed ? (
+				if (!parsed) {
+					return null
+				}
+				return (
 					<DayHeaderLabel animated className="flex-col-reverse" day={parsed} />
-				) : null
+				)
 			},
 		}),
 		columnsFor: (resource) => ({

@@ -1,11 +1,14 @@
 import { WEEK_DAYS_NUMBER_MAP } from '@ilamy/core'
+import { formatDate, parseDate, resolveZone } from '@ilamy/utils/temporal'
 import type React from 'react'
 import {
 	type Ref,
+	useEffect,
 	useImperativeHandle,
 	useInsertionEffect,
 	useMemo,
 	useRef,
+	useState,
 } from 'react'
 import { AnimatedSection } from '@/components/animations/animated-section'
 import { EVENT_BAR_HEIGHT, GAP_BETWEEN_ELEMENTS } from '@/config/constants'
@@ -28,14 +31,55 @@ import { CalendarProvider } from '@/features/calendar/stores/calendar-context/ca
 import { useSlotProps } from '@/features/calendar/stores/calendar-theme-context'
 import type { IlamyCalendarProps } from '@/features/calendar/types'
 
+const LIVE_DATE_FORMATS: Record<string, Intl.DateTimeFormatOptions> = {
+	year: { year: 'numeric' },
+	month: { month: 'long', year: 'numeric' },
+}
+const DEFAULT_LIVE_DATE_FORMAT: Intl.DateTimeFormatOptions = {
+	month: 'long',
+	day: 'numeric',
+	year: 'numeric',
+}
+
+const useCalendarLiveAnnouncement = (
+	currentDate: string,
+	view: string,
+	locale: string,
+	timezone: string | undefined,
+	viewLabel: string
+): string => {
+	const [announcement, setAnnouncement] = useState('')
+	const hasMountedRef = useRef(false)
+
+	useEffect(() => {
+		if (!hasMountedRef.current) {
+			hasMountedRef.current = true
+			return
+		}
+		const zone = resolveZone(timezone)
+		const parsed = parseDate(currentDate, zone)
+		if (!parsed) return
+		const format = LIVE_DATE_FORMATS[view] ?? DEFAULT_LIVE_DATE_FORMAT
+		const dateText = formatDate(parsed, format, locale)
+		setAnnouncement(`${viewLabel}, ${dateText}`)
+	}, [currentDate, view, locale, timezone, viewLabel])
+
+	return announcement
+}
+
 const CalendarContent: React.FC<{ calendarRef?: Ref<IlamyCalendarApi> }> = ({
 	calendarRef,
 }) => {
 	useCalendarRefHandle(calendarRef)
-	const { view, getViews } = useSmartCalendarContext((c) => ({
-		view: c.view,
-		getViews: c.getViews,
-	}))
+	const { view, currentDate, currentLocale, timezone, getViews, t } =
+		useSmartCalendarContext((c) => ({
+			view: c.view,
+			currentDate: c.currentDate,
+			currentLocale: c.currentLocale,
+			timezone: c.timezone,
+			getViews: c.getViews,
+			t: c.t,
+		}))
 	const rootSlot = useSlotProps('root', {
 		structuralClassName: 'flex flex-col w-full h-full',
 	})
@@ -46,6 +90,14 @@ const CalendarContent: React.FC<{ calendarRef?: Ref<IlamyCalendarApi> }> = ({
 
 	const spec = getViews().find((v) => v.name === view)
 	const activeView = spec ? <ViewRenderer key={view} view={spec} /> : null
+	const viewLabel = t(spec?.label ?? view)
+	const announcement = useCalendarLiveAnnouncement(
+		currentDate,
+		view,
+		currentLocale,
+		timezone,
+		viewLabel
+	)
 
 	return (
 		<div
@@ -53,6 +105,14 @@ const CalendarContent: React.FC<{ calendarRef?: Ref<IlamyCalendarApi> }> = ({
 			data-testid="ilamy-calendar"
 			style={rootSlot.style}
 		>
+			<div
+				aria-atomic="true"
+				aria-live="polite"
+				className="sr-only"
+				data-testid="calendar-live-region"
+			>
+				{announcement}
+			</div>
 			<Header className="p-1 shrink-0 mb-1" />
 			<CalendarDndContext>
 				<AnimatedSection

@@ -60,13 +60,15 @@ export interface ZonedDate {
 const isZonedDateValue = (value: unknown): value is ZonedDate =>
 	isZonedDate(value)
 
-const toZdtRecord = (date: ZonedDate): ZonedDateTimeRecord =>
-	isZonedDate(date)
-		? date
-		: instantToZonedDateTime(
-				instantFromEpochMs(date.epochMilliseconds),
-				date.timeZoneId
-			)
+const toZdtRecord = (date: ZonedDate): ZonedDateTimeRecord => {
+	if (isZonedDate(date)) {
+		return date
+	}
+	return instantToZonedDateTime(
+		instantFromEpochMs(date.epochMilliseconds),
+		date.timeZoneId
+	)
+}
 
 export type DateInput = ZonedDate | Date | string | number
 
@@ -167,9 +169,10 @@ export const parseDate = (
 	const zone = resolveZone(timezone)
 
 	if (isZonedDateValue(input)) {
-		return input.timeZoneId === zone
-			? input
-			: withTimeZone(toZdtRecord(input), zone)
+		if (input.timeZoneId === zone) {
+			return input
+		}
+		return withTimeZone(toZdtRecord(input), zone)
 	}
 
 	if (input instanceof Date) {
@@ -224,10 +227,12 @@ export const fromFields = (
 	)
 
 /** Converts `date` to display in `timezone` without moving its instant. */
-export const withZone = (date: ZonedDate, timezone: string): ZonedDate =>
-	date.timeZoneId === timezone
-		? date
-		: withTimeZone(toZdtRecord(date), timezone)
+export const withZone = (date: ZonedDate, timezone: string): ZonedDate => {
+	if (date.timeZoneId === timezone) {
+		return date
+	}
+	return withTimeZone(toZdtRecord(date), timezone)
+}
 
 const ADD_BY_UNIT: Record<
 	DateUnit,

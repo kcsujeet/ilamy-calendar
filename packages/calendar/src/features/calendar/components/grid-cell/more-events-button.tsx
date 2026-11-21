@@ -18,34 +18,23 @@ export const MoreEventsButton: React.FC<MoreEventsButtonProps> = ({
 	onOpen,
 }) => {
 	const slot = useSlotProps('moreLink', {
-		structuralClassName: 'cursor-pointer whitespace-nowrap shrink-0 mt-1',
+		structuralClassName:
+			'cursor-pointer whitespace-nowrap shrink-0 mt-1 border-0 bg-transparent p-0 text-left',
 		defaultClassName:
-			'text-muted-foreground hover:text-foreground text-[10px] sm:text-xs',
+			'text-muted-foreground hover:text-foreground text-[10px] sm:text-xs focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring rounded-xs',
 	})
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: Using div as button
-		<div
+		<button
 			className={slot.className}
 			onClick={(e) => {
 				e.stopPropagation()
 				onOpen()
 			}}
-			onKeyDown={(e) => {
-				const isEnterKey = e.key === 'Enter'
-				const isSpaceKey = e.key === ' '
-				const isActivationKey = isEnterKey || isSpaceKey
-				if (isActivationKey) {
-					e.preventDefault()
-					e.stopPropagation()
-					onOpen()
-				}
-			}}
-			role="button"
 			style={slot.style}
-			tabIndex={0}
+			type="button"
 		>
 			+{hiddenCount} {label}
-		</div>
+		</button>
 	)
 }

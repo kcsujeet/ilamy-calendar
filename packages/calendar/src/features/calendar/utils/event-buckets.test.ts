@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from 'bun:test'
-import { filterEventsForResource } from '@ilamy/core'
+import {
+	bucketEventsByResource,
+	filterEventsForResource,
+	getResourceEvents,
+	shareInDevBuild,
+} from '@ilamy/core'
 import type { CalendarEvent } from '@ilamy/types'
 import {
 	endOf,
@@ -8,12 +13,7 @@ import {
 	toEpochMs,
 	type ZonedDate,
 } from '@ilamy/utils/temporal'
-import {
-	bucketEventsByResource,
-	getColumnBounds,
-	getResourceEvents,
-	shareInDevBuild,
-} from './event-buckets'
+import { getColumnBounds } from './event-buckets'
 
 const mustParse = (iso: string, zone = 'UTC'): ZonedDate => {
 	const parsed = parseDate(iso, zone)

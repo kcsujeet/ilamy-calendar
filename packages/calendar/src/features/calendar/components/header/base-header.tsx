@@ -45,9 +45,14 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 	const navButtonSlot = useSlotProps('navButton', {
 		structuralClassName: 'h-full',
 	})
-	const groupedArrowStyle = navButtonSlot.style
-		? { ...navButtonSlot.style, border: 'none', borderRadius: 0 }
-		: undefined
+	let groupedArrowStyle: React.CSSProperties | undefined
+	if (navButtonSlot.style) {
+		groupedArrowStyle = {
+			...navButtonSlot.style,
+			border: 'none',
+			borderRadius: 0,
+		}
+	}
 
 	if (headerComponent) {
 		return headerComponent
@@ -71,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 							type="button"
 							variant="ghost"
 						>
-							<ChevronLeft className="size-4" />
+							<ChevronLeft aria-hidden="true" className="size-4" />
 						</Button>
 						<Button
 							aria-label={t('next')}
@@ -82,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 							type="button"
 							variant="ghost"
 						>
-							<ChevronRight className="size-4" />
+							<ChevronRight aria-hidden="true" className="size-4" />
 						</Button>
 					</div>
 					<Button
@@ -110,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 						size="default"
 						type="button"
 					>
-						<Plus className="size-4" />
+						<Plus aria-hidden="true" className="size-4" />
 						<span className="hidden @2xl/base-header:inline">{t('new')}</span>
 					</Button>
 				</div>

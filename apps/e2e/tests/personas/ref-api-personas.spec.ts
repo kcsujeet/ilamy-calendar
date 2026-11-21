@@ -12,9 +12,10 @@ import { CalendarPage, MonthGrid } from '../support/pages'
 const open = async (page: Page, options: ScenarioOptions) => {
 	const errors: string[] = []
 	page.on('pageerror', (error) => errors.push(error.message))
-	const plugins = options.orientation
-		? options.plugins
-		: [...new Set([...(options.plugins ?? []), 'year'])]
+	let plugins = options.plugins
+	if (!options.orientation) {
+		plugins = [...new Set([...(options.plugins ?? []), 'year'])]
+	}
 	await gotoScenario(page, {
 		...options,
 		plugins,
@@ -121,9 +122,10 @@ const expectedOffset = (
 			const isV = axis === 'vertical'
 			const offset = isV ? a.top - b.top : a.left - b.left
 			const extent = isV ? a.height : a.width
-			const max = isV
-				? node.scrollHeight - node.clientHeight
-				: node.scrollWidth - node.clientWidth
+			let max = node.scrollWidth - node.clientWidth
+			if (isV) {
+				max = node.scrollHeight - node.clientHeight
+			}
 			return Math.min(offset + fraction * extent, max)
 		},
 		[kind, hhmm] as const

@@ -169,9 +169,10 @@ export const createHourColumnSpanner = (columns: ZonedDate[]) => {
 		const isInstant = endMs === startMs
 
 		const firstOverlapping = countAtOrBelow(clocks, startClock - MS_PER_HOUR)
-		const endOfOverlapping = isInstant
-			? countAtOrBelow(clocks, startClock)
-			: countBelow(clocks, endClock)
+		let endOfOverlapping = countBelow(clocks, endClock)
+		if (isInstant) {
+			endOfOverlapping = countAtOrBelow(clocks, startClock)
+		}
 		if (firstOverlapping >= endOfOverlapping) {
 			return null
 		}

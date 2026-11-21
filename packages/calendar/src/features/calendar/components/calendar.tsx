@@ -14,7 +14,7 @@ import {
 	toDate,
 	type ZonedDate,
 } from '@ilamy/utils/temporal'
-import { useState } from 'react'
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { PickerNav } from '@/components/ui/picker-nav'
 import { useSmartCalendarContext } from '@/features/calendar/hooks/use-smart-calendar-context'
 
@@ -38,8 +38,16 @@ interface DayState {
 	isSelected: boolean
 	isDisabled: boolean
 	isCurrent: boolean
+	isTodayDay: boolean
 	isCurrentWeek: boolean
 	weekHover: boolean
+}
+
+const DAY_GRID_KEY_OFFSET: Record<string, number> = {
+	ArrowLeft: -1,
+	ArrowRight: 1,
+	ArrowUp: -7,
+	ArrowDown: 7,
 }
 
 // Range fill lives on the cell and only the row's ends are rounded, so a week
@@ -76,13 +84,22 @@ function getDayButtonClass(state: DayState): string {
 
 function DayCell({
 	day,
+	locale,
 	state,
 	onSelect,
+	onKeyDown,
 }: {
 	day: ZonedDate
+	locale: string
 	state: DayState
 	onSelect?: (date: Date | undefined) => void
+	onKeyDown: (event: KeyboardEvent<HTMLButtonElement>, day: ZonedDate) => void
 }) {
+	const fullLabel = formatDate(
+		day,
+		{ weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' },
+		locale
+	)
 	return (
 		<td
 			className={getCellClass(state)}
@@ -94,13 +111,18 @@ function DayCell({
 			tabIndex={-1}
 		>
 			<button
+				aria-current={state.isTodayDay ? 'date' : undefined}
 				aria-disabled={state.isDisabled}
 				aria-hidden={state.isOutside}
+				aria-label={fullLabel}
+				aria-pressed={state.isSelected}
 				className={getDayButtonClass(state)}
+				data-day-key={dayKey(day)}
 				data-disabled={state.isDisabled}
 				data-selected={state.isSelected}
 				disabled={state.isDisabled || state.isOutside}
 				onClick={() => onSelect?.(toDate(day))}
+				onKeyDown={(event) => onKeyDown(event, day)}
 				tabIndex={state.isOutside ? -1 : 0}
 				type="button"
 			>
@@ -127,10 +149,50 @@ export function Calendar({
 	}))
 	const zone = resolveZone(timezone)
 	const [viewMonth, setViewMonth] = useState<ZonedDate>(() => {
-		const seed =
-			parseDate(defaultMonth ?? selected ?? undefined, zone) ?? now(zone)
+		const seed = parseDate(defaultMonth ?? selected, zone) ?? now(zone)
 		return startOf(seed, 'month')
 	})
+	const gridRef = useRef<HTMLTableElement | null>(null)
+	const [pendingFocusKey, setPendingFocusKey] = useState<string | null>(null)
+
+	useEffect(() => {
+		if (!pendingFocusKey) return
+		const button = gridRef.current?.querySelector<HTMLButtonElement>(
+			`button[data-day-key="${pendingFocusKey}"]:not(:disabled)`
+		)
+		button?.focus()
+		setPendingFocusKey(null)
+	}, [pendingFocusKey])
+
+	const handleDayKeyDown = (
+		event: KeyboardEvent<HTMLButtonElement>,
+		day: ZonedDate
+	) => {
+		let target: ZonedDate | null = null
+		const offset = DAY_GRID_KEY_OFFSET[event.key]
+		if (offset !== undefined) {
+			target = add(day, offset, 'day')
+		} else if (event.key === 'Home') {
+			target = getWeekDays(day, firstDayOfWeek).at(0) ?? day
+		} else if (event.key === 'End') {
+			target = getWeekDays(day, firstDayOfWeek).at(-1) ?? day
+		}
+		if (!target) return
+
+		event.preventDefault()
+		const targetKey = dayKey(target)
+		const sameMonth =
+			target.year === viewMonth.year && target.month === viewMonth.month
+		if (sameMonth) {
+			const button = gridRef.current?.querySelector<HTMLButtonElement>(
+				`button[data-day-key="${targetKey}"]:not(:disabled)`
+			)
+			button?.focus()
+			return
+		}
+		setPendingFocusKey(targetKey)
+		setViewMonth(startOf(target, 'month'))
+	}
 
 	const weeks = getMonthWeeks(viewMonth, firstDayOfWeek)
 	const parsedSelected = selected ? parseDate(selected, zone) : undefined
@@ -157,11 +219,13 @@ export function Calendar({
 		}
 		const isSameMonth =
 			day.year === viewMonth.year && day.month === viewMonth.month
+		const isTodayDay = isToday(day)
 		return {
 			isOutside: !isSameMonth,
 			isSelected,
 			isDisabled: disabled?.(toDate(day)) ?? false,
-			isCurrent: isToday(day) && !isSelected,
+			isCurrent: isTodayDay && !isSelected,
+			isTodayDay,
 			isCurrentWeek,
 			weekHover,
 		}
@@ -186,6 +250,7 @@ export function Calendar({
 
 			<table
 				className="w-full border-collapse"
+				ref={gridRef}
 				// biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: date-picker pattern — WAI-ARIA grid role on a table is canonical for calendars
 				role="grid"
 			>
@@ -196,6 +261,7 @@ export function Calendar({
 								className="text-muted-foreground text-xs font-medium select-none py-1"
 								// biome-ignore lint/suspicious/noArrayIndexKey: weekday header order is stable
 								key={i}
+								scope="col"
 							>
 								{label}
 							</th>
@@ -213,6 +279,8 @@ export function Calendar({
 								<DayCell
 									day={day}
 									key={dayKey(day)}
+									locale={currentLocale}
+									onKeyDown={handleDayKeyDown}
 									onSelect={onSelect}
 									state={toDayState(day)}
 								/>

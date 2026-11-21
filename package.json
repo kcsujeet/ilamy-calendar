@@ -24,6 +24,7 @@
 		"build:lib": "bun run --filter '@ilamy/calendar' build",
 		"test": "bun run --filter '*' --if-present test",
 		"e2e": "bun run --filter '@ilamy/e2e' e2e",
+		"e2e:a11y": "bun run --filter '@ilamy/e2e' e2e:a11y",
 		"e2e:ui": "bun run --filter '@ilamy/e2e' e2e:ui",
 		"type-check": "bun run --filter '*' --if-present type-check",
 		"lint": "bunx biome lint . --diagnostic-level=error",

@@ -1169,9 +1169,12 @@ describe('IlamyCalendar - timezone prop & multi-zone isolation (4.0.1)', () => {
 		const event = useIlamyCalendarContext().events.at(0)
 		const zone = useIlamyCalendarContext().timezone ?? 'UTC'
 		const parsed = event ? at(event.start, zone) : undefined
-		const formatted = parsed
-			? `${String(parsed.hour).padStart(2, '0')}:${String(parsed.minute).padStart(2, '0')} ${getOffsetString(parsed)}`
-			: ''
+		let formatted = ''
+		if (parsed) {
+			const hour = String(parsed.hour).padStart(2, '0')
+			const minute = String(parsed.minute).padStart(2, '0')
+			formatted = `${hour}:${minute} ${getOffsetString(parsed)}`
+		}
 		return <span data-testid={testId}>{formatted}</span>
 	}
 
@@ -2337,11 +2340,13 @@ describe('IlamyCalendar ref', () => {
 			const Consumer = () => {
 				const { currentDate } = useIlamyCalendarContext()
 				useLayoutEffect(() => {
+					let viaRef: string | undefined
+					if (ref.current) {
+						viaRef = toUtcIso(at(ref.current.currentDate))
+					}
 					reads.push({
 						rendered: toUtcIso(at(currentDate)),
-						viaRef: ref.current
-							? toUtcIso(at(ref.current.currentDate))
-							: undefined,
+						viaRef,
 					})
 				}, [currentDate])
 				return null

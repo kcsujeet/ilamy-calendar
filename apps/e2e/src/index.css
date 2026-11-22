@@ -1,3 +1,4 @@
+@import '@ilamy/calendar/styles.css';
 @import 'tailwindcss';
 
 /*
@@ -12,7 +13,7 @@
 
 /* vite aliases @ilamy/* to source, so Tailwind must scan source to generate
    the utilities those components reference. */
-@source "../../../packages/calendar/src";
+@source "../../../packages/adapters/react/src";
 @source "../../../packages/ui/src";
 @source "../../../packages/plugins";
 

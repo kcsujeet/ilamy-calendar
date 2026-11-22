@@ -1,5 +1,5 @@
-import type { IlamyCalendarProps } from '@ilamy/calendar'
-import { IlamyCalendar } from '@ilamy/calendar'
+import type { IlamyCalendarProps } from '@ilamy/calendar/react'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 import { Card } from '@/components'
 import dummyEvents from '@/lib/seed'

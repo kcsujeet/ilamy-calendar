@@ -1,33 +1,66 @@
 ---
 title: Multi-Framework Support
-description: Use @ilamy/calendar out of the box in React 19, Vue 3.5, Svelte 5, Solid 2.0, and Angular 22 with zero React dependency for non-React frameworks.
+description: Use @ilamy/calendar out of the box in React 19, Vue 3.5, Svelte 5, Solid 2.0, Angular 22, and Vanilla DOM from one shared headless core.
 slug: docs/frameworks/overview
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-`@ilamy/calendar` v4.0 ships first-party, ready-to-use adapters for **React 19**, **Vue 3.5**, **Svelte 5**, **Solid 2.0**, and **Angular 22** from one package — plus the framework-agnostic headless engine at `@ilamy/calendar/core`.
+`@ilamy/calendar` v4.0 follows a symmetric entry-point design: the root `@ilamy/calendar` export is the pure headless framework-agnostic core, paired with equal sibling wrappers for **React 19**, **Vue 3.5**, **Svelte 5**, **Solid 2.0**, **Angular 22**, and **Vanilla DOM** — all sharing one CSS contract at `@ilamy/calendar/styles.css`.
 
-Every adapter runs on the same TC39 Temporal date core, layout engine, RFC 5545 recurrence engine, business-hours & constraint validator, and styling primitives (`unstyled`, `slotProps`, Tailwind/shadcn default tokens, and `@ilamy/calendar/themes/stylex`). **Vue, Svelte, Solid, and Angular bundles import zero React code.**
+Every adapter runs on the same TC39 Temporal date core, shared view-model builders, layout engine, RFC 5545 recurrence engine, business-hours & constraint validator, and styling contract (`--ilamy-*` tokens, `unstyled`, `slotProps`, and `@ilamy/calendar/themes/stylex`). **Vue, Svelte, Solid, Angular, and DOM bundles import zero React code and require zero Tailwind.**
 
 ## Entry Points
 
-| Framework | Import | Version | What it exports |
+| Target | Import | Version | What it exports |
 | --- | --- | --- | --- |
-| **React** | `@ilamy/calendar` | React 19.2+ | `<IlamyCalendar />`, `useIlamyCalendarContext`, MUI & StyleX theme adapters, plugins |
+| **Headless Core** | `@ilamy/calendar` | Any JS/TS | `createCalendarController`, Temporal helpers, layout engines, shared view-model builders, `defaultTranslations`, `createTranslator`, shared domain types (`CalendarEvent`, `Resource`, `BusinessHours`, `Translations`, etc.) |
+| **React** | `@ilamy/calendar/react` | React 19.2+ | `<IlamyCalendar />`, `useIlamyCalendarContext`, `CalendarThemeProvider`, `useSlotProps`, `useCalendarComponents`, `SLOT_*`, `IlamyPlugin` |
 | **Vue** | `@ilamy/calendar/vue` | Vue 3.5+ | `<IlamyCalendar />` component (props, emits, scoped slots `#event`/`#header`/`#resource`/`#event-form`, `expose()`), `useIlamyCalendar` composable |
-| **Svelte** | `@ilamy/calendar/svelte` | Svelte 5+ | `ilamyCalendar` Svelte 5 Attachment (`{@attach}`), `ilamyCalendarAction` (`use:`), `mountIlamyCalendar`, `createIlamyCalendar` (`svelte/reactivity`) |
-| **Solid** | `@ilamy/calendar/solid` | Solid 2.0+ | `<IlamyCalendar />` component, `mountSolidCalendar`, `createIlamyCalendar` (Solid 2 signals & memos) |
-| **Angular** | `@ilamy/calendar/angular` | Angular 22+ | `registerIlamyCalendarElement` (`<ilamy-calendar>` Custom Element with `[options]`/`[events]` & typed `CustomEvent`s), `createAngularCalendar` (Angular 22 Signals), `mountAngularCalendar` |
-| **Headless Core** | `@ilamy/calendar/core` | Any JS/TS | `createCalendarController`, Temporal helpers, `layoutHorizontal`, `layoutVertical`, business hours & constraints |
+| **Svelte** | `@ilamy/calendar/svelte` | Svelte 5+ | `ilamyCalendar` Svelte 5 Attachment (`{@attach}`), `ilamyCalendarAction` (`use:`), `createIlamyCalendar` (`svelte/reactivity`) |
+| **Solid** | `@ilamy/calendar/solid` | Solid 2.0+ | `<IlamyCalendar />` component, `createIlamyCalendar` (Solid 2 signals & memos) |
+| **Angular** | `@ilamy/calendar/angular` | Angular 22+ | `registerIlamyCalendarElement`, `IlamyCalendarElement` (`<ilamy-calendar>` Custom Element with `[options]`/`[events]` & typed `CustomEvent`s), `createAngularCalendar` |
+| **Vanilla DOM** | `@ilamy/calendar/dom` | Browser DOM | `mountCalendar`, `generateDomIcal`, `DomCalendarOptions`, `MountedCalendar`, render-context types |
+| **Stylesheet** | `@ilamy/calendar/styles.css` | Pure CSS | Combined layered CSS (`@layer ilamy.base, ilamy.theme`) — works standalone without Tailwind and auto-bridges shadcn CSS variables |
 
 ## Quick Start by Framework
 
 <Tabs>
+  <TabItem label="React 19">
+    ```tsx
+    import { IlamyCalendar } from '@ilamy/calendar/react'
+    import type { CalendarEvent } from '@ilamy/calendar'
+    import '@ilamy/calendar/styles.css'
+
+    const events: CalendarEvent[] = [
+      {
+        id: '1',
+        title: 'Team Sync',
+        start: '2026-11-19T10:00:00-05:00',
+        end: '2026-11-19T11:00:00-05:00',
+      },
+    ]
+
+    export function CalendarDemo() {
+      return (
+        <div style={{ height: '600px' }}>
+          <IlamyCalendar
+            events={events}
+            timezone="America/New_York"
+            editable
+            nowIndicator
+            onEventsChange={(change) => console.log(change)}
+          />
+        </div>
+      )
+    }
+    ```
+  </TabItem>
   <TabItem label="Vue 3.5">
     ```vue
     <script setup lang="ts">
     import { IlamyCalendar } from '@ilamy/calendar/vue'
+    import '@ilamy/calendar/styles.css'
     import { ref } from 'vue'
 
     const events = ref([
@@ -41,7 +74,7 @@ Every adapter runs on the same TC39 Temporal date core, layout engine, RFC 5545 
     </script>
 
     <template>
-      <div class="h-[600px]">
+      <div style="height: 600px">
         <IlamyCalendar
           :events="events"
           timezone="America/New_York"
@@ -62,6 +95,7 @@ Every adapter runs on the same TC39 Temporal date core, layout engine, RFC 5545 
     ```svelte
     <script lang="ts">
       import { ilamyCalendar } from '@ilamy/calendar/svelte'
+      import '@ilamy/calendar/styles.css'
 
       let events = $state([
         {
@@ -74,7 +108,7 @@ Every adapter runs on the same TC39 Temporal date core, layout engine, RFC 5545 
     </script>
 
     <div
-      class="h-[600px]"
+      style="height: 600px"
       {@attach ilamyCalendar({
         events,
         timezone: 'America/New_York',
@@ -90,6 +124,7 @@ Every adapter runs on the same TC39 Temporal date core, layout engine, RFC 5545 
     ```tsx
     import { createSignal } from 'solid-js'
     import { IlamyCalendar } from '@ilamy/calendar/solid'
+    import '@ilamy/calendar/styles.css'
 
     export function CalendarDemo() {
       const [events] = createSignal([
@@ -102,7 +137,7 @@ Every adapter runs on the same TC39 Temporal date core, layout engine, RFC 5545 
       ])
 
       return (
-        <div class="h-[600px]">
+        <div style={{ height: '600px' }}>
           <IlamyCalendar
             events={events()}
             timezone="America/New_York"
@@ -125,6 +160,7 @@ Every adapter runs on the same TC39 Temporal date core, layout engine, RFC 5545 
       signal,
     } from '@angular/core'
     import { registerIlamyCalendarElement } from '@ilamy/calendar/angular'
+    import '@ilamy/calendar/styles.css'
 
     registerIlamyCalendarElement()
 
@@ -134,7 +170,7 @@ Every adapter runs on the same TC39 Temporal date core, layout engine, RFC 5545 
       schemas: [CUSTOM_ELEMENTS_SCHEMA],
       template: `
         <ilamy-calendar
-          class="block h-[600px]"
+          style="display: block; height: 600px"
           [options]="calendarOptions()"
           (eventsChange)="onEventsChange($event)"
         ></ilamy-calendar>
@@ -164,14 +200,36 @@ Every adapter runs on the same TC39 Temporal date core, layout engine, RFC 5545 
     }
     ```
   </TabItem>
+  <TabItem label="Vanilla DOM">
+    ```ts
+    import { mountCalendar } from '@ilamy/calendar/dom'
+    import '@ilamy/calendar/styles.css'
+
+    const calendar = mountCalendar(document.getElementById('calendar')!, {
+      events: [
+        {
+          id: '1',
+          title: 'Team Sync',
+          start: '2026-11-19T10:00:00-05:00',
+          end: '2026-11-19T11:00:00-05:00',
+        },
+      ],
+      timezone: 'America/New_York',
+      editable: true,
+      nowIndicator: true,
+      enableIcalExport: true,
+      onEventsChange: (change) => console.log(change),
+    })
+    ```
+  </TabItem>
 </Tabs>
 
 ## Bring Your Own Design System (Every Framework)
 
-All five frameworks share the exact same customization contract:
+All frameworks share the exact same customization contract:
 
-- **Tailwind / Shadcn (default):** Add `@source "../node_modules/@ilamy/calendar/dist";` to your CSS file.
-- **StyleX:** Pass `createStylexCalendarTheme({ mode: 'light' | 'dark' })` from `@ilamy/calendar/themes/stylex` to React, Vue, Svelte, Solid, or Angular.
-- **Unstyled + `slotProps`:** Pass `unstyled: true` with `slotProps` (`root`, `header`, `toolbar`, `navButton`, `viewButton`, `viewButtonActive`, `grid`, `dayHeader`, `cell`, `cellToday`, `cellDisabled`, `cellNonBusiness`, `allDayRow`, `eventBar`, `resizeHandle`, `nowIndicator`, `moreLink`, `resourceHeader`) to style with CSS Modules, Vanilla Extract, UnoCSS, or plain CSS.
+- **Zero-config layered CSS:** `import '@ilamy/calendar/styles.css'` works with zero Tailwind installed and automatically bridges shadcn CSS variables (`--background`, `--foreground`, `--border`, `--primary`, `--muted`, `--radius`, `.dark`). For Tailwind v4, `@import '@ilamy/calendar/styles.css';` before `@import 'tailwindcss';` requires no `@source` directive.
+- **StyleX:** Pass `createStylexCalendarTheme({ mode: 'light' | 'dark' })` from `@ilamy/calendar/themes/stylex` to React, Vue, Svelte, Solid, Angular, or Vanilla DOM.
+- **Unstyled + `slotProps` + `[data-ilamy-slot]`:** Import `@ilamy/calendar/styles/base.css` (structural layout only) or pass `unstyled: true` with `slotProps` (`root`, `header`, `toolbar`, `navButton`, `viewButton`, `viewButtonActive`, `grid`, `dayHeader`, `cell`, `cellToday`, `cellDisabled`, `cellNonBusiness`, `allDayRow`, `eventBar`, `resizeHandle`, `nowIndicator`, `moreLink`, `resourceHeader`) or override `[data-ilamy-slot="..."]` directly in CSS.
 - **Custom renderers:** Override events, headers, resources, and event forms using native React props, Vue scoped slots (`#event`, `#header`, `#resource`, `#event-form`), or DOM mount hooks (`renderEvent`, `renderHeader`, `renderResource`, `renderEventForm`).
-- **Material UI (`@ilamy/calendar/themes/mui`):** Native MUI component adapter for React consumers.
+- **Material UI (`@ilamy/calendar/themes/mui`):** Native MUI theme bridge (`useMuiCalendarTheme` / `createMuiCalendarTheme`) and MUI component primitives (`muiCalendarComponents`) for React consumers.

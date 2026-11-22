@@ -80,13 +80,13 @@
 	"overrides": [
 		{
 			"includes": [
-				"packages/calendar/src/components/**",
-				"packages/calendar/src/config/**",
-				"packages/calendar/src/hooks/**",
-				"packages/calendar/src/lib/**",
-				"packages/calendar/src/stores/**",
-				"packages/calendar/src/types/**",
-				"packages/calendar/src/utils/**",
+				"packages/adapters/react/src/components/**",
+				"packages/adapters/react/src/config/**",
+				"packages/adapters/react/src/hooks/**",
+				"packages/adapters/react/src/lib/**",
+				"packages/adapters/react/src/stores/**",
+				"packages/adapters/react/src/types/**",
+				"packages/adapters/react/src/utils/**",
 				"packages/playground/src/components/**",
 				"packages/playground/src/hooks/**",
 				"packages/playground/src/lib/**",
@@ -131,7 +131,7 @@
 		},
 		{
 			"includes": [
-				"packages/calendar/src/features/header/**",
+				"packages/adapters/react/src/features/header/**",
 				"!**/*.test.ts",
 				"!**/*.test.tsx"
 			],
@@ -164,7 +164,7 @@
 		},
 		{
 			"includes": [
-				"packages/calendar/src/features/event-form/**",
+				"packages/adapters/react/src/features/event-form/**",
 				"!**/*.test.ts",
 				"!**/*.test.tsx"
 			],
@@ -197,7 +197,7 @@
 		},
 		{
 			"includes": [
-				"packages/calendar/src/features/drag-and-drop/**",
+				"packages/adapters/react/src/features/drag-and-drop/**",
 				"!**/*.test.ts",
 				"!**/*.test.tsx"
 			],
@@ -230,7 +230,7 @@
 		},
 		{
 			"includes": [
-				"packages/calendar/src/features/views/**",
+				"packages/adapters/react/src/features/views/**",
 				"!**/*.test.ts",
 				"!**/*.test.tsx"
 			],

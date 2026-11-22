@@ -13,7 +13,7 @@ The API is unified: the same shape is returned whether or not the calendar has r
 The `useIlamyCalendarContext` hook provides access to the calendar's internal state and methods. It must be used within components that are descendants of the `IlamyCalendar` component.
 
 ```tsx title="Basic Usage"
-import { useIlamyCalendarContext } from '@ilamy/calendar';
+import { useIlamyCalendarContext } from '@ilamy/calendar/react';
 
 // Method 1: Via headerComponent prop
 function CustomHeader() {
@@ -121,7 +121,7 @@ The API also exposes lower-level plugin-routing helpers — `getEventManager`, `
 ### Resource Usage
 
 ```tsx title="Via headerComponent"
-import { useIlamyCalendarContext } from '@ilamy/calendar';
+import { useIlamyCalendarContext } from '@ilamy/calendar/react';
 
 function CustomHeader() {
   const { currentDate, nextPeriod, prevPeriod, resources } = useIlamyCalendarContext();

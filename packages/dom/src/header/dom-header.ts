@@ -139,7 +139,7 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 		'header',
 		'bg-background',
 		options,
-		'p-1 mb-1 shrink-0 flex flex-wrap items-center justify-between gap-2'
+		'shrink-0 flex flex-wrap items-center justify-between gap-2'
 	)
 
 	if (options.renderHeader) {
@@ -159,6 +159,7 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 	}
 
 	const navGroup = createEl('div', {
+		data: { ilamySlot: 'nav-group' },
 		className: mergeClassNames(
 			options.unstyled,
 			'',
@@ -166,15 +167,15 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 			'flex items-center gap-2'
 		),
 	})
-	const hasSlotTheme = Boolean(options.slotProps?.navButton)
 	const navButtonDefault =
 		'h-9 rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground transition-colors'
 	const navButtonStructure =
 		'inline-flex h-9 items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap'
 
 	const arrowGroup = createEl('div', {
+		data: { ilamySlot: 'arrow-group' },
 		className: mergeClassNames(
-			options.unstyled && !hasSlotTheme,
+			options.unstyled,
 			'bg-background rounded-lg border border-border',
 			undefined,
 			'inline-flex h-9 shrink-0 items-center overflow-hidden'
@@ -197,12 +198,6 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 		options,
 		'inline-flex h-full items-center justify-center cursor-pointer'
 	)
-	if (hasSlotTheme) {
-		prevBtn.style.border = 'none'
-		prevBtn.style.borderRadius = '0'
-		prevBtn.style.height = '100%'
-		prevBtn.style.padding = '0 10px'
-	}
 
 	const nextBtn = createEl(
 		'button',
@@ -220,12 +215,6 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 		options,
 		'inline-flex h-full items-center justify-center cursor-pointer'
 	)
-	if (hasSlotTheme) {
-		nextBtn.style.border = 'none'
-		nextBtn.style.borderRadius = '0'
-		nextBtn.style.height = '100%'
-		nextBtn.style.padding = '0 10px'
-	}
 
 	arrowGroup.append(prevBtn, nextBtn)
 
@@ -289,12 +278,23 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 		'toolbar',
 		'',
 		options,
-		'flex flex-wrap items-center gap-2'
+		'flex w-full flex-wrap items-center justify-between gap-2'
 	)
 
-	const viewGroup = createEl('div', {
+	const actionsGroup = createEl('div', {
+		data: { ilamySlot: 'actions-group' },
 		className: mergeClassNames(
-			options.unstyled && !options.slotProps?.viewButton,
+			options.unstyled,
+			'',
+			undefined,
+			'flex flex-wrap items-center gap-2'
+		),
+	})
+
+	const viewGroup = createEl('div', {
+		data: { ilamySlot: 'view-switcher' },
+		className: mergeClassNames(
+			options.unstyled,
 			'rounded-lg bg-muted p-0.75',
 			undefined,
 			'inline-flex h-9 items-center gap-0.5'
@@ -310,7 +310,11 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 				type: 'button',
 				'aria-pressed': String(isActive),
 			},
-			data: { testid: `view-btn-${view}`, view },
+			data: {
+				testid: `view-btn-${view}`,
+				view,
+				state: isActive ? 'active' : 'inactive',
+			},
 			onClick: () => runtime.controller.setView(view),
 		})
 		let viewSlot: 'viewButtonActive' | 'viewButton' = 'viewButton'
@@ -330,7 +334,7 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 		)
 		viewGroup.appendChild(viewBtn)
 	}
-	toolbar.appendChild(viewGroup)
+	actionsGroup.appendChild(viewGroup)
 
 	if (options.enableIcalExport) {
 		const exportLabel = translateDom(options, 'export', 'Export')
@@ -350,7 +354,7 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 			options,
 			navButtonStructure
 		)
-		toolbar.appendChild(exportBtn)
+		actionsGroup.appendChild(exportBtn)
 	}
 
 	if (!options.disableCellClick) {
@@ -359,21 +363,22 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 			'button',
 			{
 				attrs: { type: 'button', 'aria-label': newLabel },
-				data: { testid: 'new-event-btn' },
+				data: { testid: 'new-event-btn', variant: 'primary' },
 				onClick: openNewEventForm,
 			},
 			[createSvgIcon('plus', 'size-4 shrink-0'), newLabel]
 		)
 		applySlot(
 			newBtn,
-			'viewButtonActive',
+			'navButton',
 			'h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90',
 			options,
 			'inline-flex h-9 items-center gap-1.5 cursor-pointer whitespace-nowrap'
 		)
-		toolbar.appendChild(newBtn)
+		actionsGroup.appendChild(newBtn)
 	}
 
-	headerEl.append(navGroup, toolbar)
+	toolbar.append(navGroup, actionsGroup)
+	headerEl.appendChild(toolbar)
 	return headerEl
 }

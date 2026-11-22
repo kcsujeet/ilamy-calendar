@@ -1,4 +1,4 @@
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 import { Input } from '@ilamy/ui/components/input'
 import { Label } from '@ilamy/ui/components/label'
 import {

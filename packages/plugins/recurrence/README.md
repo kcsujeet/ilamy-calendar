@@ -7,7 +7,7 @@ Recurring-events plugin powered by [rrule](https://github.com/jkbrzt/rrule).
 ## Usage (consumer-facing, via @ilamy/calendar)
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 
 <IlamyCalendar plugins={[recurrencePlugin()]} events={events} />

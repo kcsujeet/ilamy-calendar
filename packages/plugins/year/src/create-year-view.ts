@@ -1,4 +1,4 @@
-import type { PluginView } from '@ilamy/calendar'
+import type { PluginView } from '@ilamy/calendar/react'
 import {
 	endOf,
 	now,

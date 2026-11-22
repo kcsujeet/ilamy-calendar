@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import type { CalendarEvent, EventSegment } from '@ilamy/calendar'
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 import { CalendarTestProvider } from '@ilamy/calendar/testing'
 import { fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'

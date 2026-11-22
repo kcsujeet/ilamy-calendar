@@ -14,7 +14,7 @@ The recurrence system in ilamy Calendar supports creating repeating events using
 In v2 the core ships zero plugins. Recurring events are **not** expanded unless you register the recurrence plugin. Import it from the `@ilamy/calendar/plugins/recurrence` subpath and pass it via the `plugins` prop:
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 
 <IlamyCalendar events={events} plugins={[recurrencePlugin()]} />
@@ -122,7 +122,7 @@ rrule: {
 When the recurrence plugin is registered, the calendar generates recurring event instances within the current view range using rrule.js internally. This happens transparently when navigating between different calendar views. Without the plugin, a base event with an `rrule` is rendered as a single event and never expanded.
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import { recurrencePlugin, RRule } from '@ilamy/calendar/plugins/recurrence'
 
 const events = [

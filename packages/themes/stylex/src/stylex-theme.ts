@@ -1,12 +1,13 @@
 import type {
-	CalendarComponents,
 	CalendarSlotName,
 	CalendarSlotProps,
-	CalendarThemeAdapter,
 	SlotStyleProps,
 	StyleRecord,
 } from '@ilamy/calendar'
-import { stylexCalendarComponents } from './stylex-components'
+import type {
+	CalendarComponents,
+	CalendarThemeAdapter,
+} from '@ilamy/calendar/react'
 
 /**
  * Shape returned by `stylex.props(...)` from `@stylexjs/stylex`.
@@ -111,14 +112,13 @@ export const createStylexSlotProps = (
 
 const buildTokenVars = (tokens: CalendarStylexTokens): StyleRecord => ({
 	'--ilamy-bg': tokens.background,
+	'--ilamy-fg': tokens.text,
 	'--ilamy-surface': tokens.surface,
-	'--ilamy-surface-muted': tokens.surfaceMuted,
+	'--ilamy-muted': tokens.surfaceMuted,
+	'--ilamy-muted-fg': tokens.textMuted,
 	'--ilamy-border': tokens.border,
-	'--ilamy-text': tokens.text,
-	'--ilamy-text-muted': tokens.textMuted,
 	'--ilamy-primary': tokens.primary,
 	'--ilamy-primary-fg': tokens.primaryForeground,
-	'--ilamy-today-bg': tokens.todayBackground,
 	'--ilamy-danger': tokens.danger,
 	'--ilamy-radius': tokens.radius,
 	'--ilamy-font': tokens.fontFamily,
@@ -142,10 +142,6 @@ const buildTokenVars = (tokens: CalendarStylexTokens): StyleRecord => ({
 	'--ring': tokens.primary,
 })
 
-const STYLEX_CELL_BASE_STYLE: StyleRecord = {
-	padding: '4px',
-}
-
 const buildDefaultStylexSlots = (
 	tokens: CalendarStylexTokens,
 	mode: 'light' | 'dark'
@@ -154,129 +150,6 @@ const buildDefaultStylexSlots = (
 		style: {
 			...buildTokenVars(tokens),
 			colorScheme: mode,
-			backgroundColor: 'var(--ilamy-bg)',
-			color: 'var(--ilamy-text)',
-			fontFamily: 'var(--ilamy-font)',
-		},
-	},
-	header: {
-		style: {
-			backgroundColor: 'var(--ilamy-bg)',
-		},
-	},
-	toolbar: {
-		style: {
-			gap: '8px',
-		},
-	},
-	navButton: {
-		style: {
-			backgroundColor: 'var(--ilamy-bg)',
-			color: 'var(--ilamy-text)',
-			border: '1px solid var(--ilamy-border)',
-			borderRadius: '6px',
-			height: '36px',
-			padding: '0 12px',
-			fontSize: '0.875rem',
-			fontWeight: 500,
-		},
-	},
-	grid: {
-		style: {
-			backgroundColor: 'var(--ilamy-bg)',
-			border: '1px solid var(--ilamy-border)',
-		},
-	},
-	dayHeader: {
-		style: {
-			backgroundColor: 'var(--ilamy-surface)',
-			color: 'var(--ilamy-text-muted)',
-			padding: '8px 0',
-			fontWeight: 500,
-			fontSize: '0.875rem',
-			textAlign: 'center',
-		},
-	},
-	resourceHeader: {
-		style: {
-			backgroundColor: 'var(--ilamy-surface)',
-			color: 'var(--ilamy-text)',
-			padding: '8px 10px',
-			fontWeight: 600,
-			fontSize: '0.875rem',
-		},
-	},
-	cell: {
-		style: {
-			...STYLEX_CELL_BASE_STYLE,
-			backgroundColor: 'var(--ilamy-bg)',
-		},
-	},
-	cellToday: {
-		style: {
-			...STYLEX_CELL_BASE_STYLE,
-			backgroundColor: 'var(--ilamy-bg)',
-		},
-	},
-	cellNonBusiness: {
-		style: {
-			...STYLEX_CELL_BASE_STYLE,
-			backgroundColor: 'var(--ilamy-surface-muted)',
-			color: 'var(--ilamy-text-muted)',
-		},
-	},
-	cellDisabled: {
-		style: {
-			...STYLEX_CELL_BASE_STYLE,
-			backgroundColor: 'var(--ilamy-surface-muted)',
-			color: 'var(--ilamy-text-muted)',
-			opacity: 0.55,
-		},
-	},
-	eventBar: {
-		style: {
-			backgroundColor: 'var(--ilamy-primary)',
-			color: 'var(--ilamy-primary-fg)',
-			borderRadius: '6px',
-			fontSize: '0.75rem',
-		},
-	},
-	allDayRow: {
-		style: {
-			backgroundColor: 'var(--ilamy-surface)',
-			borderBottom: '1px solid var(--ilamy-border)',
-		},
-	},
-	nowIndicator: {
-		style: {
-			color: 'var(--ilamy-danger)',
-		},
-	},
-	moreLink: {
-		style: {
-			color: 'var(--ilamy-primary)',
-			fontSize: '0.75rem',
-			fontWeight: 500,
-		},
-	},
-	viewButton: {
-		style: {
-			backgroundColor: 'transparent',
-			color: 'var(--ilamy-text-muted)',
-			borderRadius: '6px',
-			padding: '0 12px',
-			fontSize: '0.875rem',
-			fontWeight: 500,
-		},
-	},
-	viewButtonActive: {
-		style: {
-			backgroundColor: 'var(--ilamy-primary)',
-			color: 'var(--ilamy-primary-fg)',
-			borderRadius: '6px',
-			padding: '0 12px',
-			fontSize: '0.875rem',
-			fontWeight: 600,
 		},
 	},
 })
@@ -296,8 +169,8 @@ export interface StylexCalendarThemeOptions {
 }
 
 /**
- * Builds a StyleX-compatible `CalendarThemeAdapter` (`unstyled: true`,
- * CSS custom property tokens, and deterministic `stylex.props(...)` slot merging).
+ * Builds a StyleX-compatible `CalendarThemeAdapter` (`unstyled: false`,
+ * `--ilamy-*` CSS custom property tokens, and deterministic `stylex.props(...)` slot merging).
  *
  * @example
  * const theme = createStylexCalendarTheme({
@@ -327,12 +200,9 @@ export const createStylexCalendarTheme = (
 	}
 
 	return {
-		unstyled: true,
+		unstyled: false,
 		slotProps: mergedSlots,
-		components: {
-			...stylexCalendarComponents,
-			...options.components,
-		},
+		components: options.components,
 	}
 }
 

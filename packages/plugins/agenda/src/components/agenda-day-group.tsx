@@ -1,4 +1,4 @@
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 import {
 	CurrentTimeIndicator,
 	type CurrentTimeIndicatorRenderProps,
@@ -52,11 +52,10 @@ export const AgendaDayGroup = ({ group }: AgendaDayGroupProps) => {
 						render={renderIndicator}
 					/>
 				)}
-				{group.events.map((event) => (
+				{group.entries.map((entry) => (
 					<AgendaEventRow
-						day={group.date}
-						event={event}
-						key={listKey(group.key, event.id)}
+						entry={entry}
+						key={listKey(group.key, entry.event.id)}
 					/>
 				))}
 			</div>

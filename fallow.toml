@@ -18,7 +18,7 @@
 # points (each package's `exports`) are left to auto-detection via package.json.
 
 ignorePatterns = ["examples/**", "apps/**"]
-entry = ["packages/*/bunup.config.ts", "packages/plugins/*/bunup.config.ts", "packages/themes/*/bunup.config.ts", "packages/adapters/*/bunup.config.ts"]
+entry = ["packages/*/bunup.config.ts", "packages/plugins/*/bunup.config.ts", "packages/themes/*/bunup.config.ts", "packages/adapters/*/bunup.config.ts", "packages/calendar/styles/*.css"]
 
 # Dependency findings that are false positives of fallow's per-package static view
 # of this bundled, hoisted workspace:
@@ -46,6 +46,10 @@ ignoreDependencies = [
 	"bun-plugin-tailwind",
 	"bunup",
 	"@happy-dom/global-registrator",
+	"@dnd-kit/core",
+	"@dnd-kit/modifiers",
+	"lucide-react",
+	"rrule",
 	"@radix-ui/react-checkbox",
 	"@radix-ui/react-dialog",
 	"@radix-ui/react-dropdown-menu",

@@ -1,0 +1,287 @@
+@layer ilamy.base {
+	/*
+	 * Core design tokens.
+	 * Automatically bridge shadcn/Tailwind CSS variables when present on the page,
+	 * with clean light/dark fallbacks so the calendar works with zero Tailwind.
+	 */
+	:where([data-ilamy-root]) {
+		--ilamy-bg-light: #ffffff;
+		--ilamy-bg-dark: #09090b;
+		--ilamy-fg-light: #09090b;
+		--ilamy-fg-dark: #fafafa;
+		--ilamy-surface-light: #f8fafc;
+		--ilamy-surface-dark: #18181b;
+		--ilamy-muted-light: #f4f4f5;
+		--ilamy-muted-dark: #27272a;
+		--ilamy-muted-fg-light: #71717a;
+		--ilamy-muted-fg-dark: #a1a1aa;
+		--ilamy-border-light: #e4e4e7;
+		--ilamy-border-dark: #27272a;
+		--ilamy-primary-light: #18181b;
+		--ilamy-primary-dark: #fafafa;
+		--ilamy-primary-fg-light: #fafafa;
+		--ilamy-primary-fg-dark: #18181b;
+		--ilamy-danger-light: #ef4444;
+		--ilamy-danger-dark: #f87171;
+		--ilamy-scrollbar-thumb-light: #a1a1aa;
+		--ilamy-scrollbar-thumb-dark: #52525b;
+
+		--ilamy-bg: var(--background, var(--ilamy-bg-light));
+		--ilamy-fg: var(--foreground, var(--ilamy-fg-light));
+		--ilamy-surface: var(--card, var(--ilamy-surface-light));
+		--ilamy-muted: var(--muted, var(--ilamy-muted-light));
+		--ilamy-muted-fg: var(--muted-foreground, var(--ilamy-muted-fg-light));
+		--ilamy-border: var(--border, var(--ilamy-border-light));
+		--ilamy-primary: var(--primary, var(--ilamy-primary-light));
+		--ilamy-primary-fg: var(--primary-foreground, var(--ilamy-primary-fg-light));
+		--ilamy-danger: var(--destructive, var(--ilamy-danger-light));
+		--ilamy-radius: var(--radius, 0.5rem);
+		--ilamy-font: var(--font-sans, inherit);
+		--ilamy-scrollbar-thumb: var(--ilamy-scrollbar-thumb-light);
+
+		color-scheme: light dark;
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+		box-sizing: border-box;
+	}
+
+	:where([data-ilamy-root]) :where([data-ilamy-slot]) {
+		box-sizing: border-box;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:where([data-ilamy-root]:not([data-color-scheme='light'])) {
+			--ilamy-bg: var(--background, var(--ilamy-bg-dark));
+			--ilamy-fg: var(--foreground, var(--ilamy-fg-dark));
+			--ilamy-surface: var(--card, var(--ilamy-surface-dark));
+			--ilamy-muted: var(--muted, var(--ilamy-muted-dark));
+			--ilamy-muted-fg: var(--muted-foreground, var(--ilamy-muted-fg-dark));
+			--ilamy-border: var(--border, var(--ilamy-border-dark));
+			--ilamy-primary: var(--primary, var(--ilamy-primary-dark));
+			--ilamy-primary-fg: var(--primary-foreground, var(--ilamy-primary-fg-dark));
+			--ilamy-danger: var(--destructive, var(--ilamy-danger-dark));
+			--ilamy-scrollbar-thumb: var(--ilamy-scrollbar-thumb-dark);
+		}
+	}
+
+	:where(.dark [data-ilamy-root], [data-ilamy-root][data-color-scheme='dark']) {
+		color-scheme: dark;
+	}
+
+	:where([data-ilamy-root][data-color-scheme='light']) {
+		color-scheme: light;
+	}
+
+	@supports (color: light-dark(white, black)) {
+		:where([data-ilamy-root]) {
+			--ilamy-bg: var(--background, light-dark(var(--ilamy-bg-light), var(--ilamy-bg-dark)));
+			--ilamy-fg: var(--foreground, light-dark(var(--ilamy-fg-light), var(--ilamy-fg-dark)));
+			--ilamy-surface: var(--card, light-dark(var(--ilamy-surface-light), var(--ilamy-surface-dark)));
+			--ilamy-muted: var(--muted, light-dark(var(--ilamy-muted-light), var(--ilamy-muted-dark)));
+			--ilamy-muted-fg: var(--muted-foreground, light-dark(var(--ilamy-muted-fg-light), var(--ilamy-muted-fg-dark)));
+			--ilamy-border: var(--border, light-dark(var(--ilamy-border-light), var(--ilamy-border-dark)));
+			--ilamy-primary: var(--primary, light-dark(var(--ilamy-primary-light), var(--ilamy-primary-dark)));
+			--ilamy-primary-fg: var(--primary-foreground, light-dark(var(--ilamy-primary-fg-light), var(--ilamy-primary-fg-dark)));
+			--ilamy-danger: var(--destructive, light-dark(var(--ilamy-danger-light), var(--ilamy-danger-dark)));
+			--ilamy-scrollbar-thumb: light-dark(var(--ilamy-scrollbar-thumb-light), var(--ilamy-scrollbar-thumb-dark));
+		}
+	}
+
+	/* Header & Toolbar structure */
+	:where([data-ilamy-slot='header']) {
+		container-type: inline-size;
+		container-name: ilamy-header;
+		width: 100%;
+		flex-shrink: 0;
+		padding: 0.25rem;
+		margin-block-end: 0.25rem;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	:where([data-ilamy-slot='toolbar']) {
+		width: 100%;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	:where([data-ilamy-slot='nav-group']),
+	:where([data-ilamy-slot='actions-group']) {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-slot='arrow-group']) {
+		display: inline-flex;
+		align-items: center;
+		flex-shrink: 0;
+		height: 2.25rem;
+		overflow: hidden;
+	}
+
+	:where([data-ilamy-slot='nav-button']) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
+		height: 2.25rem;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	:where([data-ilamy-slot='arrow-group']) > :where([data-ilamy-slot='nav-button']) {
+		height: 100%;
+	}
+
+	:where([data-ilamy-slot='view-switcher']) {
+		display: inline-flex;
+		align-items: center;
+		height: 2.25rem;
+		gap: 0.125rem;
+	}
+
+	:where([data-ilamy-slot='view-button']) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	/* Calendar body & independent scroll viewport */
+	:where([data-ilamy-slot='grid']) {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 0%;
+		min-height: 0;
+		width: 100%;
+		overflow: hidden;
+	}
+
+	:where([data-ilamy-slot='grid-scroll']) {
+		flex: 1 1 0%;
+		min-height: 0;
+		width: 100%;
+		overflow: auto;
+		position: relative;
+		scrollbar-width: thin;
+		scrollbar-color: var(--ilamy-scrollbar-thumb) transparent;
+	}
+
+	@supports not (scrollbar-color: auto) {
+		:where([data-ilamy-slot='grid-scroll']) {
+			scrollbar-width: auto;
+		}
+
+		:where([data-ilamy-slot='grid-scroll'])::-webkit-scrollbar {
+			width: 8px;
+			height: 8px;
+		}
+
+		:where([data-ilamy-slot='grid-scroll'])::-webkit-scrollbar-thumb {
+			background: var(--ilamy-scrollbar-thumb);
+			border-radius: 9999px;
+		}
+
+		:where([data-ilamy-slot='grid-scroll'])::-webkit-scrollbar-track {
+			background: transparent;
+		}
+	}
+
+	/* Month / Day / Resource grid structural rows */
+	:where([data-ilamy-slot='month-header']) {
+		display: flex;
+		width: 100%;
+		flex-shrink: 0;
+	}
+
+	:where([data-ilamy-slot='month-header'][data-sticky='true']),
+	:where([data-ilamy-slot='grid-header'][data-sticky='true']) {
+		position: sticky;
+		top: 0;
+		z-index: 20;
+	}
+
+	:where([data-ilamy-slot='day-header']) {
+		flex: 1 1 0%;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+	}
+
+	:where([data-ilamy-slot='resource-header']) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	:where([data-ilamy-slot='resource-header'][data-sticky='true']) {
+		position: sticky;
+		inset-inline-start: 0;
+		z-index: 20;
+	}
+
+	:where([data-ilamy-slot='grid-row']) {
+		display: flex;
+		flex: 1 1 0%;
+		min-width: 0;
+		position: relative;
+	}
+
+	:where([data-ilamy-grid-lines='true']) {
+		gap: 1px;
+	}
+
+	:where([data-ilamy-slot='cell']) {
+		flex: 1 1 0%;
+		min-width: 0;
+		position: relative;
+		display: flex;
+		flex-direction: column;
+	}
+
+	:where([data-ilamy-slot='all-day-row']) {
+		display: flex;
+		width: 100%;
+		min-height: 3rem;
+	}
+
+	:where([data-ilamy-slot='event-bar']) {
+		display: flex;
+		align-items: center;
+		min-width: 0;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		cursor: pointer;
+	}
+
+	:where([data-ilamy-slot='now-indicator']) {
+		position: absolute;
+		pointer-events: none;
+		z-index: 15;
+	}
+
+	:where([data-ilamy-slot='more-link']) {
+		display: inline-flex;
+		align-items: center;
+		cursor: pointer;
+		background: transparent;
+		border: 0;
+	}
+}

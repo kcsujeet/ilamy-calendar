@@ -6,5 +6,11 @@ export default defineConfig({
 	outDir: 'dist',
 	minify: true,
 	clean: true,
-	external: ['react', 'react-dom', '@ilamy/calendar', '@stylexjs/stylex'],
+	external: [
+		'react',
+		'react-dom',
+		'@ilamy/calendar',
+		'@ilamy/calendar/react',
+		'@stylexjs/stylex',
+	],
 })

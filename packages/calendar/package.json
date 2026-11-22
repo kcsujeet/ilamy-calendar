@@ -1,7 +1,7 @@
 {
 	"name": "@ilamy/calendar",
 	"version": "4.0.0",
-	"description": "A headless-core React calendar component library with Temporal timezones, RFC 5545 recurrence, and Tailwind/shadcn, MUI, and StyleX themes.",
+	"description": "A framework-agnostic headless calendar engine with Temporal timezones, layered CSS tokens, and first-class React, Vue, Svelte, Solid, and Angular adapters.",
 	"author": "Sujeet Kc",
 	"license": "MIT",
 	"homepage": "https://ilamy.dev",
@@ -14,6 +14,10 @@
 	},
 	"keywords": [
 		"react",
+		"vue",
+		"svelte",
+		"solid",
+		"angular",
 		"calendar",
 		"headless",
 		"temporal",
@@ -37,9 +41,13 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
 		},
-		"./core": {
-			"types": "./dist/core.d.ts",
-			"import": "./dist/core.js"
+		"./react": {
+			"types": "./dist/adapters/react.d.ts",
+			"import": "./dist/adapters/react.js"
+		},
+		"./dom": {
+			"types": "./dist/dom.d.ts",
+			"import": "./dist/dom.js"
 		},
 		"./testing": {
 			"types": "./dist/testing/index.d.ts",
@@ -88,7 +96,10 @@
 		"./angular": {
 			"types": "./dist/adapters/angular.d.ts",
 			"import": "./dist/adapters/angular.js"
-		}
+		},
+		"./styles.css": "./dist/styles.css",
+		"./styles/base.css": "./dist/styles/base.css",
+		"./styles/theme.css": "./dist/styles/theme.css"
 	},
 	"files": [
 		"dist",
@@ -96,7 +107,7 @@
 		"LICENSE"
 	],
 	"scripts": {
-		"build": "CI=true NODE_ENV=production bunx bunup",
+		"build": "CI=true NODE_ENV=production bunx bunup && bun scripts/build-styles.ts",
 		"test": "bun test",
 		"test:coverage": "bun test --coverage",
 		"type-check": "bun check --no-script",
@@ -106,8 +117,7 @@
 		"check:fix": "bunx biome check --write .",
 		"ci": "bun run check && bun run type-check && bun run test && bun run build",
 		"prepack": "bun scripts/prepack.ts",
-		"postpack": "bun scripts/postpack.ts",
-		"bench:day-hours": "bun scripts/bench-day-hours.tsx"
+		"postpack": "bun scripts/postpack.ts"
 	},
 	"peerDependencies": {
 		"@angular/core": "^22.0.0",
@@ -175,6 +185,7 @@
 	},
 	"devDependencies": {
 		"@ilamy/adapter-angular": "workspace:*",
+		"@ilamy/adapter-react": "workspace:*",
 		"@ilamy/adapter-solid": "workspace:*",
 		"@ilamy/adapter-svelte": "workspace:*",
 		"@ilamy/adapter-vue": "workspace:*",
@@ -184,11 +195,9 @@
 		"@ilamy/calendar-recurrence": "workspace:*",
 		"@ilamy/calendar-year": "workspace:*",
 		"@ilamy/core": "workspace:*",
+		"@ilamy/dom": "workspace:*",
 		"@ilamy/theme-mui": "workspace:*",
-		"@ilamy/theme-stylex": "workspace:*",
-		"@ilamy/types": "workspace:*",
-		"@ilamy/ui": "workspace:*",
-		"@ilamy/utils": "workspace:*"
+		"@ilamy/theme-stylex": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"

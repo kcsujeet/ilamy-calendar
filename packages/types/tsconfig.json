@@ -2,6 +2,7 @@
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
 		"paths": {
+			"@ilamy/calendar": ["../core/src/index.ts"],
 			"@ilamy/core": ["../core/src/index.ts"],
 			"@ilamy/utils/*": ["../utils/src/*"]
 		}

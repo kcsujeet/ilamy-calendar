@@ -283,9 +283,7 @@ const resolveSeparationBorder = (
 	options: ReturnType<DomRuntime['getOptions']>
 ): string => {
 	const hasCustomBorder = Boolean(options.slotProps?.eventBar?.style?.border)
-	const shouldShow =
-		!hasCustomBorder &&
-		(!options.unstyled || Boolean(options.slotProps?.eventBar))
+	const shouldShow = !hasCustomBorder && !options.unstyled
 	return shouldShow ? 'border-[1.5px] border-card' : ''
 }
 
@@ -316,6 +314,7 @@ export const renderDomEventBar = (
 		eventTestId = `all-events-dialog-event-${event.id}`
 	}
 
+	const hasCustomColor = Boolean(event.backgroundColor || event.color)
 	const bar = createEl('div', {
 		attrs: {
 			role: 'button',
@@ -326,6 +325,7 @@ export const renderDomEventBar = (
 			eventId: dataEventId,
 			testid: eventTestId,
 			draggable: String(draggable),
+			customColor: hasCustomColor ? 'true' : undefined,
 			truncatedStart: isTruncatedStart ? 'true' : undefined,
 			truncatedEnd: isTruncatedEnd ? 'true' : undefined,
 		},

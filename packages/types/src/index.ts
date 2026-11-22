@@ -8,11 +8,12 @@ import type {
 	PluginMutationResult,
 	Resource,
 	ViewConfig,
-} from '@ilamy/core'
+} from '@ilamy/calendar'
 import type { ComponentType, ReactNode } from 'react'
 
-// Re-export framework-agnostic domain types from `@ilamy/core` so React
-// consumers and plugins have a single canonical contract with zero dayjs types.
+// Re-export framework-agnostic domain types from `@ilamy/calendar` (root core)
+// so `@ilamy/calendar/react` and plugins share the single canonical `CalendarEvent`
+// interface for TypeScript declaration merging (e.g. `recurrencePlugin`).
 export type {
 	BusinessHours,
 	CalendarConstraint,
@@ -44,10 +45,12 @@ export type {
 	SnapDuration,
 	StyleRecord,
 	TimeFormat,
+	Translations,
+	TranslatorFunction,
 	ViewConfig,
 	WeekDays,
 	WeekNumberCalculation,
-} from '@ilamy/core'
+} from '@ilamy/calendar'
 
 // --- React Plugin UI contract ----------------------------------------------
 

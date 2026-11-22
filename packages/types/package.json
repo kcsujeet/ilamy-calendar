@@ -28,10 +28,8 @@
 		"check": "bunx biome check . --diagnostic-level=error",
 		"ci": "bun run check && bun run type-check && bun run build"
 	},
-	"dependencies": {
-		"@ilamy/core": "workspace:*"
-	},
 	"peerDependencies": {
+		"@ilamy/calendar": "workspace:*",
 		"react": "^19.2.0"
 	}
 }

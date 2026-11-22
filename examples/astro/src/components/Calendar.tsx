@@ -1,5 +1,4 @@
-import type { IlamyCalendarProps } from '@ilamy/calendar'
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar, type IlamyCalendarProps } from '@ilamy/calendar/react'
 
 const todayAt = (hour: number, minute = 0, dayOffset = 0): Date => {
 	const now = new Date()

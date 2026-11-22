@@ -4,12 +4,12 @@ import {
 	type CellInfo,
 	dayKey,
 	formatDate,
-	getResourceEvents,
+	type HourlyTimelineBar,
 	isBusinessHour,
 	isToday,
 	now,
-	parseDate,
 	type Resource,
+	type ResourceTimelineRowViewModel,
 	toOffsetIso,
 	withTime,
 	type ZonedDate,
@@ -18,23 +18,88 @@ import {
 	canCommitSelection,
 	resolveEffectiveBusinessHours,
 } from '../core/dom-constraints.utils'
-import { applySlot, createEl, mergeClassNames } from '../core/dom-styles.utils'
+import {
+	applySlot,
+	createEl,
+	mergeClassNames,
+	translateDom,
+} from '../core/dom-styles.utils'
 import type { DomCalendarEvent, DomRuntime } from '../dom-calendar.types'
 import { renderDomEventBar } from './dom-event-bar'
-import { renderResourceLabel } from './dom-resource-horizontal-grid'
+import {
+	buildDomResourceTimeline,
+	renderResourceLabel,
+} from './dom-resource-horizontal-grid'
 
 const HOUR_COL_WIDTH_PX = 80
 const RESOURCE_COL_WIDTH_PX = 160
 const ROW_MIN_HEIGHT_PX = 80
 
-const buildHourSlots = (days: ZonedDate[], hours: ZonedDate[]): ZonedDate[] => {
-	const slots: ZonedDate[] = []
-	for (const day of days) {
-		for (const hour of hours) {
-			slots.push(withTime(day, { hour: hour.hour, minute: 0, second: 0 }))
-		}
+const renderHourlyDayGroup = (
+	day: ZonedDate,
+	hours: ZonedDate[],
+	startCol: number,
+	currentNow: ZonedDate,
+	runtime: DomRuntime
+): HTMLElement[] => {
+	const options = runtime.getOptions()
+	const state = runtime.controller.getState()
+	const dayCell = createEl('div', {
+		style: {
+			gridRow: '1',
+			gridColumn: `${startCol} / span ${hours.length}`,
+		},
+	})
+	applySlot(
+		dayCell,
+		'dayHeader',
+		'border-r border-b border-border bg-background py-1.5 text-center text-xs font-medium text-foreground',
+		options,
+		'flex flex-col items-center justify-center gap-0.5'
+	)
+	dayCell.appendChild(
+		createEl('span', {
+			text: formatDate(day, { weekday: 'short' }, state.locale),
+			className: mergeClassNames(options.unstyled, 'text-xs'),
+		})
+	)
+	const isTodayDay = isToday(day)
+	let numBadgeClass = 'text-xs text-muted-foreground'
+	if (isTodayDay) {
+		numBadgeClass =
+			'inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-semibold'
 	}
-	return slots
+	dayCell.appendChild(
+		createEl('span', {
+			text: String(day.day),
+			data: isTodayDay ? { ilamyTodayBadge: '' } : undefined,
+			className: mergeClassNames(options.unstyled, numBadgeClass),
+		})
+	)
+
+	const cells: HTMLElement[] = [dayCell]
+	for (let hIdx = 0; hIdx < hours.length; hIdx += 1) {
+		const hourDate = withTime(day, {
+			hour: hours[hIdx].hour,
+			minute: 0,
+			second: 0,
+		})
+		const isCurrentHour = isTodayDay && hourDate.hour === currentNow.hour
+		const hourCell = createEl('div', {
+			text: formatDate(
+				hourDate,
+				{ hour: 'numeric', hour12: options.timeFormat !== '24-hour' },
+				state.locale
+			),
+			style: { gridRow: '2', gridColumn: String(startCol + hIdx) },
+		})
+		const hourClasses = isCurrentHour
+			? 'border-r border-border bg-primary/10 py-2 text-center text-xs font-medium text-primary'
+			: 'border-r border-border bg-background py-2 text-center text-xs text-muted-foreground'
+		applySlot(hourCell, 'dayHeader', hourClasses, options)
+		cells.push(hourCell)
+	}
+	return cells
 }
 
 const renderHourlyHeader = (
@@ -47,10 +112,14 @@ const renderHourlyHeader = (
 	const totalCols = days.length * hours.length
 	const colTemplate = `${RESOURCE_COL_WIDTH_PX}px repeat(${totalCols}, ${HOUR_COL_WIDTH_PX}px)`
 	const currentNow = now(state.timezone)
-	const stickyStruct =
-		options.stickyViewHeader !== false ? 'grid sticky top-0 z-30' : 'grid'
+	const isSticky = options.stickyViewHeader !== false
+	const stickyStruct = isSticky ? 'grid sticky top-0 z-30' : 'grid'
 
 	const header = createEl('div', {
+		data: {
+			ilamySlot: 'grid-header',
+			sticky: isSticky ? 'true' : undefined,
+		},
 		className: mergeClassNames(
 			options.unstyled,
 			'border-b border-border bg-background',
@@ -61,7 +130,7 @@ const renderHourlyHeader = (
 	})
 
 	const corner = createEl('div', {
-		text: options.translations?.resources ?? 'Resources',
+		text: translateDom(options, 'resources', 'Resources'),
 		style: { gridRow: '1 / span 2', gridColumn: '1' },
 	})
 	applySlot(
@@ -74,59 +143,14 @@ const renderHourlyHeader = (
 	header.appendChild(corner)
 
 	for (let dIdx = 0; dIdx < days.length; dIdx += 1) {
-		const day = days[dIdx]
-		const startCol = 2 + dIdx * hours.length
-		const dayCell = createEl('div', {
-			style: {
-				gridRow: '1',
-				gridColumn: `${startCol} / span ${hours.length}`,
-			},
-		})
-		applySlot(
-			dayCell,
-			'dayHeader',
-			'border-r border-b border-border bg-background py-1.5 text-center text-xs font-medium text-foreground',
-			options,
-			'flex flex-col items-center justify-center gap-0.5'
+		const cells = renderHourlyDayGroup(
+			days[dIdx],
+			hours,
+			2 + dIdx * hours.length,
+			currentNow,
+			runtime
 		)
-		dayCell.appendChild(
-			createEl('span', {
-				text: formatDate(day, { weekday: 'short' }, state.locale),
-				className: mergeClassNames(options.unstyled, 'text-xs'),
-			})
-		)
-		const numBadgeClass = isToday(day)
-			? 'inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[11px] font-semibold'
-			: 'text-xs text-muted-foreground'
-		dayCell.appendChild(
-			createEl('span', {
-				text: String(day.day),
-				className: mergeClassNames(options.unstyled, numBadgeClass),
-			})
-		)
-		header.appendChild(dayCell)
-
-		for (let hIdx = 0; hIdx < hours.length; hIdx += 1) {
-			const hourDate = withTime(day, {
-				hour: hours[hIdx].hour,
-				minute: 0,
-				second: 0,
-			})
-			const isCurrentHour = isToday(day) && hourDate.hour === currentNow.hour
-			const hourCell = createEl('div', {
-				text: formatDate(
-					hourDate,
-					{ hour: 'numeric', hour12: options.timeFormat !== '24-hour' },
-					state.locale
-				),
-				style: { gridRow: '2', gridColumn: String(startCol + hIdx) },
-			})
-			const hourClasses = isCurrentHour
-				? 'border-r border-border bg-primary/10 py-2 text-center text-xs font-medium text-primary'
-				: 'border-r border-border bg-background py-2 text-center text-xs text-muted-foreground'
-			applySlot(hourCell, 'dayHeader', hourClasses, options)
-			header.appendChild(hourCell)
-		}
+		header.append(...cells)
 	}
 
 	return header
@@ -194,87 +218,62 @@ const renderHourlySlotCell = (
 
 const appendHourlyNowLine = (
 	overlay: HTMLElement,
-	rangeStartMs: number,
-	rangeEndMs: number,
-	totalMs: number,
+	nowIndicatorPercent: number | null,
 	runtime: DomRuntime
 ): void => {
+	if (nowIndicatorPercent === null) return
 	const options = runtime.getOptions()
-	if (!options.nowIndicator) return
-	const nowMs = now(runtime.controller.getState().timezone).epochMilliseconds
-	if (nowMs < rangeStartMs || nowMs > rangeEndMs) return
-	overlay.appendChild(
-		createEl('div', {
-			data: { testid: 'now-indicator' },
-			style: {
-				position: 'absolute',
-				top: '0',
-				bottom: '0',
-				left: `${((nowMs - rangeStartMs) / totalMs) * 100}%`,
-				width: '2px',
-				backgroundColor: '#ef4444',
-				pointerEvents: 'none',
-				zIndex: '15',
-			},
-		})
-	)
+	const line = createEl('div', {
+		data: { testid: 'now-indicator' },
+		style: {
+			position: 'absolute',
+			top: '0',
+			bottom: '0',
+			left: `${nowIndicatorPercent}%`,
+			width: '2px',
+			pointerEvents: 'none',
+			zIndex: '15',
+		},
+	})
+	applySlot(line, 'nowIndicator', 'bg-destructive', options)
+	overlay.appendChild(line)
 }
 
 const renderHourlyOverlay = (
-	resource: Resource,
-	hourSlots: ZonedDate[],
-	visibleEvents: DomCalendarEvent[],
+	bars: HourlyTimelineBar[],
+	nowIndicatorPercent: number | null,
 	runtime: DomRuntime
 ): HTMLElement => {
 	const overlay = createEl('div', {
 		className: 'pointer-events-none absolute inset-0 z-10',
 	})
-	const firstSlot = hourSlots.at(0)
-	const lastSlot = hourSlots.at(-1)
-	if (!firstSlot || !lastSlot) return overlay
 
-	const state = runtime.controller.getState()
-	const rangeStartMs = firstSlot.epochMilliseconds
-	const rangeEndMs = add(lastSlot, 1, 'hour').epochMilliseconds
-	const totalMs = Math.max(1, rangeEndMs - rangeStartMs)
-	const resEvents = getResourceEvents(
-		visibleEvents,
-		resource.id
-	) as DomCalendarEvent[]
-
-	for (let i = 0; i < resEvents.length; i += 1) {
-		const evt = resEvents[i]
-		const start = parseDate(evt.start, state.timezone)
-		const end = parseDate(evt.end, state.timezone)
-		if (!start || !end) continue
-		const clampedStart = Math.max(start.epochMilliseconds, rangeStartMs)
-		const clampedEnd = Math.min(end.epochMilliseconds, rangeEndMs)
-		if (clampedEnd <= clampedStart) continue
-
-		const bar = renderDomEventBar(evt, runtime, {
+	for (const item of bars) {
+		const bar = renderDomEventBar(item.event as DomCalendarEvent, runtime, {
 			axis: 'horizontal',
 			compact: true,
 		})
 		bar.style.position = 'absolute'
 		bar.style.pointerEvents = 'auto'
-		bar.style.top = `${4 + (i % 3) * 24}px`
-		bar.style.left = `${((clampedStart - rangeStartMs) / totalMs) * 100}%`
-		bar.style.width = `${Math.max(((clampedEnd - clampedStart) / totalMs) * 100, 1.5)}%`
+		bar.style.top = `${4 + item.lane * 24}px`
+		bar.style.left = `${item.leftPercent}%`
+		bar.style.width = `${item.widthPercent}%`
 		bar.style.height = '22px'
 		overlay.appendChild(bar)
 	}
 
-	appendHourlyNowLine(overlay, rangeStartMs, rangeEndMs, totalMs, runtime)
+	appendHourlyNowLine(overlay, nowIndicatorPercent, runtime)
 	return overlay
 }
 
 const renderResourceHourlyRow = (
-	resource: Resource,
+	rowModel: ResourceTimelineRowViewModel,
 	hourSlots: ZonedDate[],
-	visibleEvents: DomCalendarEvent[],
+	nowIndicatorPercent: number | null,
 	runtime: DomRuntime
 ): HTMLElement => {
 	const options = runtime.getOptions()
+	const { resource, hourlyBars } = rowModel
 	const effHours = resolveEffectiveBusinessHours(options, resource)
 	const colTemplate = `${RESOURCE_COL_WIDTH_PX}px repeat(${hourSlots.length}, ${HOUR_COL_WIDTH_PX}px)`
 
@@ -289,6 +288,7 @@ const renderResourceHourlyRow = (
 	row.appendChild(renderResourceLabel(resource, runtime))
 
 	const track = createEl('div', {
+		data: { ilamySlot: 'grid-row' },
 		className: mergeClassNames(
 			options.unstyled,
 			'',
@@ -306,7 +306,7 @@ const renderResourceHourlyRow = (
 		)
 	}
 	track.appendChild(
-		renderHourlyOverlay(resource, hourSlots, visibleEvents, runtime)
+		renderHourlyOverlay(hourlyBars, nowIndicatorPercent, runtime)
 	)
 	row.appendChild(track)
 	return row
@@ -317,28 +317,34 @@ const renderResourceHourlyRow = (
  */
 export const renderResourceHorizontalHourlyGrid = (
 	grid: HTMLElement,
-	days: ZonedDate[],
-	hours: ZonedDate[],
-	visibleEvents: DomCalendarEvent[],
+	mode: 'day' | 'week',
 	runtime: DomRuntime
 ): HTMLElement => {
 	const state = runtime.controller.getState()
-	const hourSlots = buildHourSlots(days, hours)
+	const { model } = buildDomResourceTimeline(mode, runtime)
 	grid.dataset.testid = 'dom-resource-hourly-grid'
 
-	grid.appendChild(renderHourlyHeader(days, hours, runtime))
-	for (const resource of state.resources) {
+	grid.appendChild(renderHourlyHeader(model.days, model.hours, runtime))
+	for (const row of model.rows) {
 		grid.appendChild(
-			renderResourceHourlyRow(resource, hourSlots, visibleEvents, runtime)
+			renderResourceHourlyRow(
+				row,
+				model.hourSlots,
+				model.nowIndicatorPercent,
+				runtime
+			)
 		)
 	}
 
-	if (typeof requestAnimationFrame === 'function' && hourSlots.length > 0) {
+	if (
+		typeof requestAnimationFrame === 'function' &&
+		model.hourSlots.length > 0
+	) {
 		const currentNow = now(state.timezone)
-		const todayIndex = hourSlots.findIndex(
+		const todayIndex = model.hourSlots.findIndex(
 			(s) => isToday(s) && s.hour === currentNow.hour
 		)
-		const fallbackIndex = Math.min(8, Math.max(0, hourSlots.length - 1))
+		const fallbackIndex = Math.min(8, Math.max(0, model.hourSlots.length - 1))
 		const targetIndex =
 			todayIndex >= 0 ? Math.max(0, todayIndex - 3) : fallbackIndex
 		requestAnimationFrame(() => {

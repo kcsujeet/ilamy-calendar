@@ -1,4 +1,5 @@
-import type { CalendarSlotProps, CalendarThemeAdapter } from '@ilamy/calendar'
+import type { CalendarSlotProps } from '@ilamy/calendar'
+import type { CalendarThemeAdapter } from '@ilamy/calendar/react'
 import {
 	createStylexCalendarTheme,
 	STYLEX_DARK_TOKENS,

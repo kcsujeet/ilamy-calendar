@@ -11,6 +11,7 @@ export default defineConfig({
 		'react-dom',
 		'lucide-react',
 		'@ilamy/calendar',
+		'@ilamy/calendar/react',
 		'@ilamy/core',
 		/^@ilamy\/ui/,
 		/^@ilamy\/utils/,

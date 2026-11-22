@@ -3,6 +3,7 @@
 	"compilerOptions": {
 		"paths": {
 			"@/*": ["./src/*"],
+			"@ilamy/calendar/dom": ["../dom/src/index.ts"],
 			"@ilamy/calendar/vue": ["../adapters/vue/src/index.ts"],
 			"@ilamy/calendar/svelte": ["../adapters/svelte/src/index.ts"],
 			"@ilamy/calendar/solid": ["../adapters/solid/src/index.ts"],

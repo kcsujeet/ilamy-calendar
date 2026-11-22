@@ -1,14 +1,9 @@
 import type {
-	CalendarClassesOverride,
-	CalendarComponents,
 	CalendarEvent,
 	CalendarSlotProps,
 	DateRange,
-	EventFormProps,
 	EventsChange,
-	IlamyPlugin,
 	IsoDateString,
-	RenderCurrentTimeIndicatorProps,
 	SlotDuration,
 	SnapDuration,
 	TimeFormat,
@@ -16,7 +11,14 @@ import type {
 	WeekDays,
 	WeekNumberCalculation,
 } from '@ilamy/calendar'
-import type { DomCalendarOptions } from '@ilamy/calendar/vue'
+import type { DomCalendarOptions } from '@ilamy/calendar/dom'
+import type {
+	CalendarClassesOverride,
+	CalendarComponents,
+	EventFormProps,
+	IlamyPlugin,
+	RenderCurrentTimeIndicatorProps,
+} from '@ilamy/calendar/react'
 import type { ReactNode } from 'react'
 import { createElement } from 'react'
 import type { PlaygroundSettings } from '../../../types/settings-form.types'

@@ -9,5 +9,12 @@ export default defineConfig({
 	outDir: 'dist',
 	minify: true,
 	clean: true,
-	external: ['react', 'react-dom', '@ilamy/calendar', /^@ilamy\/ui/, 'rrule'],
+	external: [
+		'react',
+		'react-dom',
+		'@ilamy/calendar',
+		'@ilamy/calendar/react',
+		/^@ilamy\/ui/,
+		'rrule',
+	],
 })

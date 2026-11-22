@@ -1,4 +1,4 @@
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 import { Button } from '@ilamy/ui/components/button'
 import {
 	Dialog,

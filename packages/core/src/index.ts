@@ -84,6 +84,13 @@ export {
 	pickControllerActions,
 } from './core-calendar-controller'
 export {
+	createTranslator,
+	defaultTranslations,
+	type TranslationKey,
+	type Translations,
+	type TranslatorFunction,
+} from './i18n/core-translations'
+export {
 	countAtOrBelow,
 	countBelow,
 	createDayColumnSpanner,
@@ -157,3 +164,46 @@ export {
 	getViewHours,
 	parseSlotRange,
 } from './utils/core-view-hours.utils'
+export {
+	type AgendaDayGroup,
+	type AgendaEventEntry,
+	type AgendaStep,
+	type AgendaViewModel,
+	type AgendaWindow,
+	type AgendaZonedRange,
+	type BuildAgendaViewModelInput,
+	buildAgendaViewModel,
+	resolveAgendaWindowRange,
+	resolveAgendaWindowStep,
+} from './views/core-agenda-view-model'
+export {
+	type BuildMonthViewModelInput,
+	buildMonthViewModel,
+	type MonthCellViewModel,
+	type MonthViewModel,
+	type MonthWeekViewModel,
+} from './views/core-month-view-model'
+export {
+	type BuildResourceTimelineViewModelInput,
+	buildResourceTimelineViewModel,
+	type HourlyTimelineBar,
+	type ResourceTimelineRowViewModel,
+	type ResourceTimelineViewModel,
+	resolveTimelineGranularity,
+	type TimelineGranularity,
+} from './views/core-resource-timeline-view-model'
+export {
+	type BuildTimeGridViewModelInput,
+	buildTimeGridViewModel,
+	isAllDayOrMultiDay,
+	type TimeGridColumnViewModel,
+	type TimeGridViewModel,
+} from './views/core-time-grid-view-model'
+export {
+	type BuildYearViewModelInput,
+	buildYearViewModel,
+	type YearDayViewModel,
+	type YearMonthViewModel,
+	type YearViewModel,
+	type YearWeekdayHeader,
+} from './views/core-year-view-model'

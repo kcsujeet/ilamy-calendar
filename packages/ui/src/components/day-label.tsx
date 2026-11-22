@@ -61,6 +61,7 @@ export const DayLabel = ({
 					!unstyled && 'h-5 w-5 rounded-full text-xs font-medium',
 					!unstyled && today && 'bg-primary text-primary-foreground'
 				)}
+				data-ilamy-today-badge={today ? '' : undefined}
 			>
 				{dayNumber}
 			</div>

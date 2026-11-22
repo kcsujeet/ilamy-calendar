@@ -2,7 +2,7 @@ import {
 	useCalendarComponents,
 	useIlamyCalendarContext,
 	useSlotProps,
-} from '@ilamy/calendar'
+} from '@ilamy/calendar/react'
 import { dayKey, now, resolveZone } from '@ilamy/utils/temporal'
 import { Download } from 'lucide-react'
 import type { ReactNode } from 'react'

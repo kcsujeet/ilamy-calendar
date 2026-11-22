@@ -1,4 +1,4 @@
-import type { IlamyPlugin } from '@ilamy/calendar'
+import type { IlamyPlugin } from '@ilamy/calendar/react'
 import { createYearView, type YearPluginOptions } from './create-year-view'
 
 export {

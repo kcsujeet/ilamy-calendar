@@ -1,4 +1,4 @@
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 import { cn } from '@ilamy/ui/lib/utils'
 import { dayKey, parseDate, resolveZone, toDate } from '@ilamy/utils/temporal'
 import type * as React from 'react'

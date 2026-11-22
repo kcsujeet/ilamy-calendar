@@ -2,10 +2,16 @@
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
 		"paths": {
-			"@/*": ["./src/*"],
+			"@/*": ["../adapters/react/src/*"],
 			"@ilamy/calendar": ["./src/index.ts"],
+			"@ilamy/calendar/react": ["../adapters/react/src/index.ts"],
+			"@ilamy/calendar/dom": ["../dom/src/index.ts"],
 			"@ilamy/core": ["../core/src/index.ts"],
 			"@ilamy/dom": ["../dom/src/index.ts"],
+			"@ilamy/adapter-react": ["../adapters/react/src/index.ts"],
+			"@ilamy/adapter-react/testing": [
+				"../adapters/react/src/testing/index.tsx"
+			],
 			"@ilamy/adapter-vue": ["../adapters/vue/src/index.ts"],
 			"@ilamy/adapter-svelte": ["../adapters/svelte/src/index.ts"],
 			"@ilamy/adapter-solid": ["../adapters/solid/src/index.ts"],

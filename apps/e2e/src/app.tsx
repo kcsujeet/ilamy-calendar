@@ -1,22 +1,24 @@
-import {
-	type CalendarComponents,
-	type CalendarEvent,
-	type CalendarSlotProps,
-	type CellInfo,
-	type EventSegment,
-	type EventsChange,
-	type EventsFetchInfo,
-	IlamyCalendar,
-	type IlamyCalendarApi,
-	type IlamyPlugin,
-	type Resource,
-	useIlamyCalendarContext,
+import type {
+	CalendarEvent,
+	CalendarSlotProps,
+	CellInfo,
+	EventSegment,
+	EventsChange,
+	Resource,
 } from '@ilamy/calendar'
 import { agendaPlugin } from '@ilamy/calendar/plugins/agenda'
 import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create'
 import { icalPlugin } from '@ilamy/calendar/plugins/ical'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 import { yearPlugin } from '@ilamy/calendar/plugins/year'
+import {
+	type CalendarComponents,
+	type EventsFetchInfo,
+	IlamyCalendar,
+	type IlamyCalendarApi,
+	type IlamyPlugin,
+	useIlamyCalendarContext,
+} from '@ilamy/calendar/react'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { ConfigError, readUrlConfig } from './harness-config'

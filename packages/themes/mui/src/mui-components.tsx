@@ -8,7 +8,7 @@ import type {
 	CalendarPopoverProps,
 	CalendarSelectProps,
 	CalendarTextareaProps,
-} from '@ilamy/calendar'
+} from '@ilamy/calendar/react'
 import MuiButton from '@mui/material/Button'
 import MuiCheckbox from '@mui/material/Checkbox'
 import MuiDialog from '@mui/material/Dialog'
@@ -24,13 +24,28 @@ import { type SxProps, type Theme, useTheme } from '@mui/material/styles'
 import MuiTextField from '@mui/material/TextField'
 import { type CSSProperties, useState } from 'react'
 
-/** Maps a Material UI Theme palette to the CSS variables used by portal children. */
+/** Maps a Material UI Theme palette to the CSS variables used by calendar slots and portal children. */
 export const buildMuiCssVars = (theme: Theme): Record<string, string> => {
-	let mutedBg = theme.palette.action.hover
+	let mutedBg = theme.palette.grey[100]
 	if (theme.palette.mode === 'dark') {
 		mutedBg = theme.palette.background.default
 	}
+	let borderRadius = String(theme.shape.borderRadius)
+	if (typeof theme.shape.borderRadius === 'number') {
+		borderRadius = `${theme.shape.borderRadius}px`
+	}
 	return {
+		'--ilamy-bg': theme.palette.background.paper,
+		'--ilamy-fg': theme.palette.text.primary,
+		'--ilamy-surface': theme.palette.background.default,
+		'--ilamy-muted': mutedBg,
+		'--ilamy-muted-fg': theme.palette.text.secondary,
+		'--ilamy-border': theme.palette.divider,
+		'--ilamy-primary': theme.palette.primary.main,
+		'--ilamy-primary-fg': theme.palette.primary.contrastText,
+		'--ilamy-danger': theme.palette.error.main,
+		'--ilamy-radius': borderRadius,
+		'--ilamy-font': theme.typography.fontFamily ?? 'inherit',
 		'--background': theme.palette.background.paper,
 		'--foreground': theme.palette.text.primary,
 		'--card': theme.palette.background.paper,

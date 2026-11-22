@@ -1,7 +1,6 @@
 import type {
 	CalendarEvent,
 	CellInfo,
-	IlamyPlugin,
 	IsoDateString,
 	Resource,
 } from '@ilamy/calendar'
@@ -10,6 +9,7 @@ import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create'
 import { icalPlugin } from '@ilamy/calendar/plugins/ical'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 import { yearPlugin } from '@ilamy/calendar/plugins/year'
+import type { IlamyPlugin } from '@ilamy/calendar/react'
 import { dummyEvents } from '../lib/seed'
 
 export interface DemoPluginOptions {

@@ -218,7 +218,8 @@ const generateReactSnippet = (values: PlaygroundSettings): string => {
 		buildPluginImportsAndList(values)
 	const theme = THEME_SETUP_BUILDERS[values.themePreset](values)
 	const imports = [
-		"import { IlamyCalendar } from '@ilamy/calendar'",
+		"import { IlamyCalendar } from '@ilamy/calendar/react'",
+		"import '@ilamy/calendar/styles.css'",
 		...theme.imports,
 		...pluginImports,
 	]
@@ -284,6 +285,7 @@ const generateVueSnippet = (values: PlaygroundSettings): string => {
 	])
 
 	return `<script setup lang="ts">
+import '@ilamy/calendar/styles.css'
 import { IlamyCalendar } from '@ilamy/calendar/vue'${stylex.importLine}
 import { ref } from 'vue'${stylex.declLine}
 
@@ -305,6 +307,7 @@ const generateSvelteSnippet = (values: PlaygroundSettings): string => {
 		.join('\n')
 
 	return `<script lang="ts">
+  import '@ilamy/calendar/styles.css'
   import { ilamyCalendar } from '@ilamy/calendar/svelte'${stylex.importLine}${stylex.declLine}
 
   let events = $state(initialEvents)
@@ -333,7 +336,8 @@ const generateSolidSnippet = (values: PlaygroundSettings): string => {
 		[true, 'onEventsChange={(change) => console.log(change)}'],
 	])
 
-	return `import { createSignal } from 'solid-js'
+	return `import '@ilamy/calendar/styles.css'
+import { createSignal } from 'solid-js'
 import { IlamyCalendar } from '@ilamy/calendar/solid'${stylex.importLine}
 
 export function CalendarDemo() {
@@ -353,7 +357,8 @@ const generateAngularSnippet = (values: PlaygroundSettings): string => {
 		.map((line) => `      ${line.replace('stylexTheme', 'this.stylexTheme')},`)
 		.join('\n')
 
-	return `import { Component, CUSTOM_ELEMENTS_SCHEMA, computed, signal } from '@angular/core'
+	return `import '@ilamy/calendar/styles.css'
+import { Component, CUSTOM_ELEMENTS_SCHEMA, computed, signal } from '@angular/core'
 import { registerIlamyCalendarElement } from '@ilamy/calendar/angular'${stylex.importLine}
 
 registerIlamyCalendarElement()

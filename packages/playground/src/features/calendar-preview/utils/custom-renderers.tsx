@@ -1,11 +1,9 @@
-import type {
-	CalendarEvent,
-	EventFormProps,
-	IsoDateString,
-	RenderCurrentTimeIndicatorProps,
-	Resource,
-} from '@ilamy/calendar'
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import type { CalendarEvent, IsoDateString, Resource } from '@ilamy/calendar'
+import {
+	type EventFormProps,
+	type RenderCurrentTimeIndicatorProps,
+	useIlamyCalendarContext,
+} from '@ilamy/calendar/react'
 import { Button } from '@ilamy/ui/components/button'
 import { cn } from '@ilamy/ui/lib/utils'
 import { useEffect, useState } from 'react'

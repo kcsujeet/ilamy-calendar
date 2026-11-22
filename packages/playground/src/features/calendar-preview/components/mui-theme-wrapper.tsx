@@ -1,4 +1,4 @@
-import type { CalendarThemeAdapter } from '@ilamy/calendar'
+import type { CalendarThemeAdapter } from '@ilamy/calendar/react'
 import { createMuiCalendarTheme } from '@ilamy/calendar/themes/mui'
 import {
 	createTheme,

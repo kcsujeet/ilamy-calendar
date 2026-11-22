@@ -109,14 +109,3 @@ export const mountIlamyCalendar = (
 	element.dataset.ilamyFramework = 'svelte'
 	return mountCalendar(element, options)
 }
-
-export type {
-	DomCalendarEvent,
-	DomCalendarEventInput,
-	DomCalendarOptions,
-	DomEventFormRenderContext,
-	DomEventRenderContext,
-	DomHeaderRenderContext,
-	DomResourceRenderContext,
-	MountedCalendar,
-} from '@ilamy/dom'

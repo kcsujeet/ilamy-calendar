@@ -3,11 +3,12 @@
  * directory as cwd.
  *
  * 1. Rewrites package.json (restored by postpack):
- *    - Injects "sideEffects": false. bun's bundler incorrectly applies
- *      sideEffects from the package's own package.json during builds,
- *      tree-shaking all re-exports into an empty bundle. Keeping it out of
- *      source and injecting only at publish time gives correct builds AND a
- *      tree-shakeable published package.
+ *    - Injects "sideEffects" for CSS globs so JS stays 100% tree-shakeable
+ *      while preventing bundlers from dropping `import '@ilamy/calendar/styles.css'`.
+ *      bun's bundler incorrectly applies sideEffects from the package's own
+ *      package.json during builds, tree-shaking all re-exports into an empty
+ *      bundle. Keeping it out of source and injecting only at publish time gives
+ *      correct builds AND a tree-shakeable published JS package.
  *    - Drops devDependencies. They include the private workspace packages
  *      (@ilamy/ui, @ilamy/utils, @ilamy/types, @ilamy/calendar-recurrence,
  *      @ilamy/calendar-agenda) that are bundled into dist and never published;
@@ -28,7 +29,7 @@ const BACKUP = 'package.json.backup'
 copyFileSync(PKG, BACKUP)
 
 const pkg = JSON.parse(readFileSync(PKG, 'utf8'))
-pkg.sideEffects = false
+pkg.sideEffects = ['**/*.css']
 delete pkg.devDependencies
 writeFileSync(PKG, `${JSON.stringify(pkg, null, '\t')}\n`)
 

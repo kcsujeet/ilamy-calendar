@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'bun:test'
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import { cleanup, render, screen } from '@testing-library/react'
 import { icalPlugin } from './index'
 

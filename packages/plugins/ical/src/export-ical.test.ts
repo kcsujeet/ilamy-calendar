@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test'
-import { type CalendarEvent, SLOT_TOOLBAR } from '@ilamy/calendar'
+import type { CalendarEvent } from '@ilamy/calendar'
+import { SLOT_TOOLBAR } from '@ilamy/calendar/react'
 import { exportToICalendar, icalPlugin } from './index'
 
 const noCollect = (): unknown[] => []

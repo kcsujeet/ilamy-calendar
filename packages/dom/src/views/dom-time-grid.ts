@@ -1,21 +1,15 @@
 import {
 	add,
 	type BusinessHours,
+	buildTimeGridViewModel,
 	type CellInfo,
-	collectResourceBusinessHours,
 	dayKey,
 	formatDate,
-	getResourceEvents,
 	getVerticalBarStyle,
-	getViewHours,
-	getWeekDays,
 	isBusinessHour,
-	isToday,
-	layoutVertical,
-	now,
-	parseDate,
+	resolveTimelineGranularity,
+	type TimeGridColumnViewModel,
 	toOffsetIso,
-	withoutHiddenDays,
 	withTime,
 	type ZonedDate,
 } from '@ilamy/core'
@@ -23,17 +17,23 @@ import {
 	canCommitSelection,
 	resolveEffectiveBusinessHours,
 } from '../core/dom-constraints.utils'
-import { applySlot, createEl, mergeClassNames } from '../core/dom-styles.utils'
-import type { DomCalendarEvent, DomRuntime } from '../dom-calendar.types'
+import {
+	applySlot,
+	createEl,
+	createGridScrollContainer,
+	mergeClassNames,
+	resolveCurrentZonedDate,
+} from '../core/dom-styles.utils'
+import type {
+	DomCalendarEvent,
+	DomCalendarOptions,
+	DomRuntime,
+} from '../dom-calendar.types'
 import { renderDomEventBar } from './dom-event-bar'
 import { buildMonthCell, renderEventOverlay } from './dom-month-view'
 import { renderResourceHorizontalGrid } from './dom-resource-horizontal-grid'
 import { renderResourceHorizontalHourlyGrid } from './dom-resource-horizontal-hourly-grid'
-import {
-	isAllDayOrMultiDay,
-	renderTimeGridStickyChrome,
-	type TimeColumnSpec,
-} from './dom-time-grid-chrome'
+import { renderTimeGridStickyChrome } from './dom-time-grid-chrome'
 
 const HOUR_ROW_HEIGHT_PX = 56
 
@@ -56,60 +56,11 @@ const resolveTimeSlotAppearance = (
 	return { slotName: 'cell', slotBg: 'bg-background hover:bg-accent/20' }
 }
 
-const buildTimeColumns = (
-	days: ZonedDate[],
-	visibleEvents: DomCalendarEvent[],
-	runtime: DomRuntime
-): TimeColumnSpec[] => {
-	const state = runtime.controller.getState()
-
-	if (state.resources.length === 0) {
-		return days.map((day) => ({
-			day,
-			label: formatDate(day, { weekday: 'short' }, state.locale),
-			sublabel: String(day.day),
-			events: visibleEvents,
-		}))
-	}
-
-	const columns: TimeColumnSpec[] = []
-	for (const resource of state.resources) {
-		const resEvents = getResourceEvents(
-			visibleEvents,
-			resource.id
-		) as DomCalendarEvent[]
-		for (const day of days) {
-			columns.push({
-				day,
-				resource,
-				label: resource.title,
-				sublabel: formatDate(
-					day,
-					{ weekday: 'short', day: 'numeric' },
-					state.locale
-				),
-				events: resEvents,
-			})
-		}
-	}
-	return columns
-}
-
 const renderNowLine = (
-	day: ZonedDate,
-	hours: ZonedDate[],
-	runtime: DomRuntime
+	nowIndicatorPercent: number | null,
+	options: DomCalendarOptions
 ): HTMLElement | null => {
-	const options = runtime.getOptions()
-	const state = runtime.controller.getState()
-	if (!options.nowIndicator || !isToday(day)) return null
-	const firstHour = hours.at(0)
-	if (!firstHour) return null
-	const currentNow = now(state.timezone)
-	const offsetMinutes =
-		(currentNow.hour - firstHour.hour) * 60 + currentNow.minute
-	const totalMinutes = hours.length * 60
-	if (offsetMinutes < 0 || offsetMinutes > totalMinutes) return null
+	if (nowIndicatorPercent === null) return null
 
 	const line = createEl(
 		'div',
@@ -119,7 +70,7 @@ const renderNowLine = (
 				position: 'absolute',
 				left: '0',
 				right: '0',
-				top: `${(offsetMinutes / totalMinutes) * 100}%`,
+				top: `${nowIndicatorPercent}%`,
 				zIndex: '15',
 			},
 		},
@@ -148,7 +99,7 @@ const renderTimeAxis = (
 ): HTMLElement => {
 	const options = runtime.getOptions()
 	const state = runtime.controller.getState()
-	const stripChrome = Boolean(options.unstyled && !options.slotProps?.cell)
+	const stripChrome = Boolean(options.unstyled)
 	const timeAxisCol = createEl('div', {
 		data: { testid: 'dom-time-axis' },
 		className: mergeClassNames(
@@ -181,7 +132,7 @@ const renderTimeAxis = (
 }
 
 const renderTimeSlotCell = (
-	col: TimeColumnSpec,
+	col: TimeGridColumnViewModel,
 	hourNum: number,
 	minute: number,
 	slotMinutes: number,
@@ -247,23 +198,10 @@ const renderTimeSlotCell = (
 }
 
 const renderColumnEventsLayer = (
-	col: TimeColumnSpec,
-	hours: ZonedDate[],
+	col: TimeGridColumnViewModel,
 	runtime: DomRuntime
 ): HTMLElement => {
 	const options = runtime.getOptions()
-	const state = runtime.controller.getState()
-	const colHours = hours.map((h) =>
-		withTime(col.day, { hour: h.hour, minute: 0, second: 0 })
-	)
-	const positioned = layoutVertical({
-		events: col.events.filter(
-			(event) => !isAllDayOrMultiDay(event, state.timezone)
-		),
-		days: colHours,
-		gridType: 'hour',
-	})
-
 	const eventsLayer = createEl('div', {
 		className: mergeClassNames(
 			options.unstyled,
@@ -272,7 +210,7 @@ const renderColumnEventsLayer = (
 			'pointer-events-none absolute inset-0'
 		),
 	})
-	for (const item of positioned) {
+	for (const item of col.positionedEvents) {
 		const barStyle = getVerticalBarStyle(item)
 		const wrapper = createEl('div', {
 			className: mergeClassNames(
@@ -299,7 +237,7 @@ const renderColumnEventsLayer = (
 }
 
 const renderTimeColumn = (
-	col: TimeColumnSpec,
+	col: TimeGridColumnViewModel,
 	hours: ZonedDate[],
 	slotMinutes: number,
 	runtime: DomRuntime
@@ -345,8 +283,8 @@ const renderTimeColumn = (
 		}
 	}
 
-	colEl.appendChild(renderColumnEventsLayer(col, hours, runtime))
-	const nowLine = renderNowLine(col.day, hours, runtime)
+	colEl.appendChild(renderColumnEventsLayer(col, runtime))
+	const nowLine = renderNowLine(col.nowIndicatorPercent, options)
 	if (nowLine) colEl.appendChild(nowLine)
 	return colEl
 }
@@ -354,33 +292,18 @@ const renderTimeColumn = (
 const renderHorizontalResourceTimeGrid = (
 	grid: HTMLElement,
 	mode: 'day' | 'week',
-	effectiveDays: ZonedDate[],
-	hours: ZonedDate[],
-	currentMonth: number,
 	runtime: DomRuntime
 ): HTMLElement => {
 	const options = runtime.getOptions()
-	const visibleEvents = runtime.getVisibleEvents()
-	if (mode === 'day' || options.weekViewGranularity !== 'daily') {
-		return renderResourceHorizontalHourlyGrid(
-			grid,
-			effectiveDays,
-			hours,
-			visibleEvents,
-			runtime
-		)
+	if (
+		resolveTimelineGranularity(mode, options.weekViewGranularity) === 'hourly'
+	) {
+		return renderResourceHorizontalHourlyGrid(grid, mode, runtime)
 	}
-	return renderResourceHorizontalGrid(
-		grid,
-		effectiveDays,
-		visibleEvents,
-		currentMonth,
-		runtime,
-		{
-			buildCell: buildMonthCell,
-			renderOverlay: renderEventOverlay,
-		}
-	)
+	return renderResourceHorizontalGrid(grid, mode, runtime, {
+		buildCell: buildMonthCell,
+		renderOverlay: renderEventOverlay,
+	})
 }
 
 export const renderDomTimeGrid = (
@@ -389,66 +312,50 @@ export const renderDomTimeGrid = (
 ): HTMLElement => {
 	const options = runtime.getOptions()
 	const state = runtime.controller.getState()
-	const current =
-		parseDate(state.currentDate, state.timezone) ?? now(state.timezone)
-	const rawDays =
-		mode === 'day' ? [current] : getWeekDays(current, state.firstDayOfWeek)
-	const days = withoutHiddenDays(rawDays, state.hiddenDays)
-	const effectiveDays = days.length > 0 ? days : [current]
-	const columns = buildTimeColumns(
-		effectiveDays,
-		runtime.getVisibleEvents(),
-		runtime
-	)
+	const current = resolveCurrentZonedDate(state.currentDate, state.timezone)
 
-	let resourceBusinessHours: Array<BusinessHours | BusinessHours[]> = []
-	if (state.resources.length > 0) {
-		resourceBusinessHours = collectResourceBusinessHours(state.resources)
+	const grid = createGridScrollContainer(mode, options)
+
+	if (state.resources.length > 0 && options.orientation === 'horizontal') {
+		return renderHorizontalResourceTimeGrid(grid, mode, runtime)
 	}
-	const hours = getViewHours({
-		referenceDate: effectiveDays.at(0) ?? current,
+
+	const model = buildTimeGridViewModel({
+		mode,
+		currentDate: current,
+		events: runtime.getVisibleEvents(),
+		resources: state.resources,
+		firstDayOfWeek: state.firstDayOfWeek,
+		timezone: state.timezone,
+		locale: state.locale,
+		hiddenDays: state.hiddenDays,
 		businessHours: options.businessHours,
-		resourceBusinessHours,
 		hideNonBusinessHours: options.hideNonBusinessHours,
 		slotMinTime: options.slotMinTime,
 		slotMaxTime: options.slotMaxTime,
-		allDates: effectiveDays,
+		nowIndicator: options.nowIndicator,
 	})
-
-	const grid = createEl('div', {
-		data: { view: mode, testid: `dom-${mode}-view` },
-	})
-	applySlot(grid, 'grid', 'bg-background', options, 'flex-1 overflow-auto')
-
-	if (state.resources.length > 0 && options.orientation === 'horizontal') {
-		return renderHorizontalResourceTimeGrid(
-			grid,
-			mode,
-			effectiveDays,
-			hours,
-			current.month,
-			runtime
-		)
-	}
 
 	const colMinWidth = state.resources.length > 0 ? '128px' : '110px'
-	const colTemplate = `64px repeat(${columns.length}, minmax(${colMinWidth}, 1fr))`
+	const colTemplate = `64px repeat(${model.columns.length}, minmax(${colMinWidth}, 1fr))`
 	grid.appendChild(
-		renderTimeGridStickyChrome(columns, colTemplate, mode, runtime)
+		renderTimeGridStickyChrome(model.columns, colTemplate, mode, runtime)
 	)
 
 	const bodyGrid = createEl('div', {
 		className: mergeClassNames(options.unstyled, '', undefined, 'grid'),
 		style: { gridTemplateColumns: colTemplate },
 	})
-	bodyGrid.appendChild(renderTimeAxis(hours, runtime))
+	bodyGrid.appendChild(renderTimeAxis(model.hours, runtime))
 	const slotMinutes = options.slotDuration ?? 60
-	for (const col of columns) {
-		bodyGrid.appendChild(renderTimeColumn(col, hours, slotMinutes, runtime))
+	for (const col of model.columns) {
+		bodyGrid.appendChild(
+			renderTimeColumn(col, model.hours, slotMinutes, runtime)
+		)
 	}
 	grid.appendChild(bodyGrid)
 
-	const firstHourNum = hours.at(0)?.hour ?? 0
+	const firstHourNum = model.hours.at(0)?.hour ?? 0
 	const targetHour = Math.max(firstHourNum, 8)
 	const initialOffsetPx = (targetHour - firstHourNum) * HOUR_ROW_HEIGHT_PX
 	if (initialOffsetPx > 0 && typeof requestAnimationFrame === 'function') {

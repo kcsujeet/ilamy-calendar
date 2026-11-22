@@ -7,7 +7,7 @@ the view switcher when you register it.
 ## Usage
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import { agendaPlugin } from '@ilamy/calendar/plugins/agenda'
 
 <IlamyCalendar

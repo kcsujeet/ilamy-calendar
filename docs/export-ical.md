@@ -16,7 +16,7 @@ This document describes the iCalendar export functionality in `@ilamy/calendar`,
 ## Usage
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import { icalPlugin } from '@ilamy/calendar/plugins/ical'
 
 <IlamyCalendar events={events} plugins={[icalPlugin()]} />

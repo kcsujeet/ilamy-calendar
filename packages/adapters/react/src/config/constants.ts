@@ -1,0 +1,22 @@
+export const GAP_BETWEEN_ELEMENTS = 1 // px (gap-1)
+export const DAY_NUMBER_HEIGHT = 24 // px (h-6)
+export const EVENT_BAR_HEIGHT = 24 // px (h-[24px])
+export const DAY_MAX_EVENTS_DEFAULT = 4 // Default max events per day
+// A faint, opaque shade mixed from the theme's own background/foreground so it
+// adapts to any theme. bg-secondary sat right on the (faint) border lightness
+// in the dark shadcn palette, hiding the grid lines on disabled cells. The grid
+// line sits between background and foreground in lightness, so a SMALL mix keeps
+// the fill near the background and clear of the border line in both light and
+// dark; mixing further would drift the fill onto the line and hide it again.
+export const DISABLED_CELL_CLASSNAME =
+	'bg-[color-mix(in_oklch,var(--background),var(--foreground)_3%)] text-muted-foreground pointer-events-none'
+
+// Header height contract: one header row (day labels, hour labels) is h-12;
+// the grouped two-row header (day row stacked on hour row) must be exactly
+// 2x that — h-24. Change them together.
+export const HEADER_ROW_HEIGHT = 'h-12'
+
+// The hour label holding now, in every time axis: the resource timeline's
+// header row and the time grids' gutter. One look, so the two cannot drift.
+export const CURRENT_HOUR_LABEL_CLASS = 'bg-blue-50 text-blue-600 font-medium'
+export const GROUPED_HEADER_HEIGHT = 'h-24'

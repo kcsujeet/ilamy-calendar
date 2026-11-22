@@ -17,29 +17,15 @@ export default defineConfig({
 })
 ```
 
-### 2. CSS — `@source` Directive
+### 2. CSS — Import `@ilamy/calendar/styles.css`
 
-Add `@source` pointing at the ilamy dist folder so Tailwind v4 scans and generates all the utility classes used by the calendar:
+Import `@ilamy/calendar/styles.css` before `@import 'tailwindcss'` so the layer order is preserved:
 
 ```css
 /* src/index.css */
+@import '@ilamy/calendar/styles.css';
 @import 'tailwindcss';
-@source "../node_modules/@ilamy/calendar/dist";
 ```
-
-> [!IMPORTANT]
-> The `@source` path is **relative to your CSS file**, not the project root.
-> The correct depth depends on where your CSS lives:
->
-> ```css
-> /* CSS at src/index.css — one level deep */
-> @source "../node_modules/@ilamy/calendar/dist";
->
-> /* CSS at src/styles/global.css — two levels deep */
-> @source "../../node_modules/@ilamy/calendar/dist";
-> ```
->
-> A wrong depth silently points at a non-existent directory and Tailwind generates no classes.
 
 ### 3. Import CSS in your entry point
 
@@ -75,7 +61,7 @@ vite/
 │   │   └── Calendar.tsx     # Calendar component
 │   ├── App.tsx              # Root app component
 │   ├── main.tsx             # Entry point
-│   └── index.css            # Global styles with Tailwind v4 + @source
+│   └── index.css            # Global styles with @ilamy/calendar/styles.css + Tailwind v4
 ├── index.html
 ├── vite.config.ts
 ├── tsconfig.json

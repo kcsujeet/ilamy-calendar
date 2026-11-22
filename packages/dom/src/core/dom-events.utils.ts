@@ -3,7 +3,6 @@ import {
 	normalizeEvent,
 	overlapsRange,
 	parseDate,
-	toEpochMs,
 	toOffsetIso,
 	wallClockDiff,
 	type ZonedDate,
@@ -415,26 +414,4 @@ export const applyScopedEventDelete = (
 		(item) => item.id !== baseEvent.id && item.uid !== uid
 	)
 	return { events, updated: [], deleted }
-}
-
-export interface ParsedDomEventRange {
-	event: DomCalendarEvent
-	start: ZonedDate
-	end: ZonedDate
-	startMs: number
-}
-
-export const parseDomEventRanges = (
-	events: DomCalendarEvent[],
-	timezone: string
-): ParsedDomEventRange[] => {
-	const result: ParsedDomEventRange[] = []
-	for (const event of events) {
-		const start = parseDate(event.start, timezone)
-		const end = parseDate(event.end, timezone)
-		if (start && end) {
-			result.push({ event, start, end, startMs: toEpochMs(start) })
-		}
-	}
-	return result
 }

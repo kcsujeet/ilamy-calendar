@@ -1,17 +1,20 @@
-import { type CalendarEvent, useIlamyCalendarContext } from '@ilamy/calendar'
-import { getWeekDays } from '@ilamy/core'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
+import {
+	buildYearViewModel,
+	getWeekDays,
+	type YearDayViewModel,
+	type YearMonthViewModel,
+	type YearWeekdayHeader,
+} from '@ilamy/core'
 import { ScrollArea, ScrollBar } from '@ilamy/ui/components/scroll-area'
 import { cn } from '@ilamy/ui/lib/utils'
 import { listKey } from '@ilamy/utils/helpers'
 import {
 	add,
-	dayKey,
 	endOf,
 	formatDate,
 	fromFields,
-	getFields,
 	now,
-	overlapsRange,
 	parseDate,
 	resolveZone,
 	startOf,
@@ -25,38 +28,7 @@ const EVENT_DOT_COLORS = ['bg-primary', 'bg-blue-500', 'bg-green-500']
 const DAYS_IN_MINI_CALENDAR = 42
 const MAX_YEAR_DOTS = 3
 
-interface MonthData {
-	date: ZonedDate
-	name: string
-	eventCount: number
-	monthKey: string
-	yearMonthKey: string
-	days: DayData[]
-}
-
-interface DayData {
-	date: ZonedDate
-	dayKey: string
-	isInCurrentMonth: boolean
-	isToday: boolean
-	isSelected: boolean
-	eventCount: number
-}
-
-interface WeekdayHeader {
-	id: string
-	label: string
-}
-
-interface ParsedYearEvent {
-	event: CalendarEvent
-	start: ZonedDate
-	end: ZonedDate
-}
-
-const pad2 = (value: number): string => String(value).padStart(2, '0')
-
-const getDayClassName = (day: DayData): string => {
+const getDayClassName = (day: YearDayViewModel): string => {
 	const baseClass =
 		'relative flex aspect-square w-full cursor-pointer flex-col items-center justify-center hover:bg-accent rounded-sm transition-colors duration-200'
 	const outsideMonthClass = day.isInCurrentMonth ? '' : 'text-muted-foreground'
@@ -86,9 +58,9 @@ const getEventDotClassName = (color: string, isToday: boolean): string =>
 	cn('h-[3px] w-[3px] rounded-full', isToday ? 'bg-primary-foreground' : color)
 
 interface YearMonthCardProps {
-	month: MonthData
+	month: YearMonthViewModel
 	locale: string
-	weekdayHeaders: WeekdayHeader[]
+	weekdayHeaders: YearWeekdayHeader[]
 	formatEventCount: (count: number) => string
 	onNavigate: (
 		date: ZonedDate,
@@ -212,92 +184,37 @@ export const YearView = (): React.ReactNode => {
 		firstDayOfWeek,
 	} = useIlamyCalendarContext()
 	const zone = resolveZone(timezone)
-	const currentDate = parseDate(currentDateIso, zone) ?? now(zone)
-	const currentYear = currentDate.year
-	const selectedKey = dayKey(currentDate)
-
-	const weekdayHeaders = getWeekDays(now(zone), firstDayOfWeek).map((d) => ({
-		id: String(getFields(d).dayOfWeek),
-		label: formatDate(d, { weekday: 'short' }, currentLocale).slice(0, 2),
-	}))
 
 	/**
 	 * One query for the whole visible year, then every cell and badge is counted
 	 * from that single list (#245).
 	 */
-	const monthsData = useMemo((): MonthData[] => {
-		const todayKey = dayKey(now(zone))
-
-		const monthStarts = Array.from({ length: 12 }, (_, monthIndex) =>
-			fromFields({ year: currentYear, month: monthIndex + 1, day: 1 }, zone)
+	const yearModel = useMemo(() => {
+		const anchor = parseDate(currentDateIso, zone) ?? now(zone)
+		const year = anchor.year
+		const janStart = fromFields({ year, month: 1, day: 1 }, zone)
+		const decStart = fromFields({ year, month: 12, day: 1 }, zone)
+		const firstVisibleDay =
+			getWeekDays(janStart, firstDayOfWeek).at(0) ?? janStart
+		const decFirstCell = getWeekDays(decStart, firstDayOfWeek).at(0) ?? decStart
+		const lastVisibleDay = startOf(
+			add(decFirstCell, DAYS_IN_MINI_CALENDAR - 1, 'day'),
+			'day'
 		)
-		const monthGrids = monthStarts.map((monthStart) => {
-			const gridStart = getWeekDays(monthStart, firstDayOfWeek).at(0)
-			const firstDayOfCalendar = gridStart ?? monthStart
-			return Array.from({ length: DAYS_IN_MINI_CALENDAR }, (_, dayIndex) =>
-				startOf(add(firstDayOfCalendar, dayIndex, 'day'), 'day')
-			)
-		})
+		const yearEvents = getEventsForDateRange(
+			toOffsetIso(startOf(firstVisibleDay, 'day')),
+			toOffsetIso(endOf(lastVisibleDay, 'day'))
+		)
 
-		const firstVisibleDay = monthGrids.at(0)?.at(0)
-		const lastVisibleDay = monthGrids.at(-1)?.at(-1)
-		let rawYearEvents: CalendarEvent[] = []
-		if (firstVisibleDay && lastVisibleDay) {
-			rawYearEvents = getEventsForDateRange(
-				toOffsetIso(startOf(firstVisibleDay, 'day')),
-				toOffsetIso(endOf(lastVisibleDay, 'day'))
-			)
-		}
-
-		const parsedEvents: ParsedYearEvent[] = []
-		for (const event of rawYearEvents) {
-			const start = parseDate(event.start, zone)
-			const end = parseDate(event.end, zone)
-			if (start && end) {
-				parsedEvents.push({ event, start, end })
-			}
-		}
-
-		return monthStarts.map((monthDate, monthIndex) => {
-			const gridDays = monthGrids.at(monthIndex) ?? []
-			const days = gridDays.map((dayDate): DayData => {
-				const dayStart = startOf(dayDate, 'day')
-				const dayEnd = endOf(dayDate, 'day')
-				const cellKey = dayKey(dayDate)
-				const eventsOnDay = parsedEvents.filter((entry) =>
-					overlapsRange(entry, dayStart, dayEnd)
-				)
-
-				return {
-					date: dayDate,
-					dayKey: cellKey,
-					isInCurrentMonth:
-						dayDate.year === monthDate.year &&
-						dayDate.month === monthDate.month,
-					isToday: cellKey === todayKey,
-					isSelected: cellKey === selectedKey,
-					eventCount: eventsOnDay.length,
-				}
-			})
-
-			const monthEnd = endOf(monthDate, 'month')
-			const eventsInMonth = parsedEvents.filter((entry) =>
-				overlapsRange(entry, monthDate, monthEnd)
-			)
-			const monthKey = pad2(monthDate.month)
-
-			return {
-				date: monthDate,
-				name: formatDate(monthDate, { month: 'long' }, currentLocale),
-				eventCount: eventsInMonth.length,
-				monthKey,
-				yearMonthKey: `${monthDate.year}-${monthKey}`,
-				days,
-			}
+		return buildYearViewModel({
+			currentDate: anchor,
+			events: yearEvents,
+			firstDayOfWeek,
+			timezone: zone,
+			locale: currentLocale,
 		})
 	}, [
-		currentYear,
-		selectedKey,
+		currentDateIso,
 		currentLocale,
 		firstDayOfWeek,
 		getEventsForDateRange,
@@ -324,14 +241,14 @@ export const YearView = (): React.ReactNode => {
 				className="grid auto-rows-fr grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3"
 				data-testid="year-grid"
 			>
-				{monthsData.map((month) => (
+				{yearModel.months.map((month) => (
 					<YearMonthCard
 						formatEventCount={formatEventCount}
 						key={month.monthKey}
 						locale={currentLocale}
 						month={month}
 						onNavigate={navigateToDate}
-						weekdayHeaders={weekdayHeaders}
+						weekdayHeaders={yearModel.weekdayHeaders}
 					/>
 				))}
 			</div>

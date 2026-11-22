@@ -430,8 +430,8 @@ describe('@ilamy/dom mountCalendar', () => {
 			},
 		})
 		const timeAxis = container.querySelector('[data-testid="dom-time-axis"]')
-		expect(timeAxis?.className).toContain('border-r')
 		expect(timeAxis?.className).toContain('sticky')
+		expect(timeAxis?.className).not.toContain('border-r')
 
 		cal.update({ initialView: 'day' })
 		expect(
@@ -793,7 +793,7 @@ describe('@ilamy/dom mountCalendar', () => {
 		cal.destroy()
 	})
 
-	it('keeps structural header spacing (p-1 mb-1) in unstyled/StyleX mode so header-to-grid gap matches Tailwind', () => {
+	it('delegates header spacing and arrow-group sizing to CSS slots without hardcoded inline overrides', () => {
 		const container = createContainer()
 		const cal = mountCalendar(container, {
 			initialDate: '2026-11-19T09:00:00Z',
@@ -808,13 +808,161 @@ describe('@ilamy/dom mountCalendar', () => {
 		})
 
 		const header = container.querySelector('header')
-		expect(header?.className).toContain('p-1')
-		expect(header?.className).toContain('mb-1')
+		expect(header?.dataset.ilamySlot).toBe('header')
+		expect(header?.className).not.toContain('p-1')
+		expect(header?.className).not.toContain('mb-1')
+
+		const arrowGroup = container.querySelector(
+			'[data-ilamy-slot="arrow-group"]'
+		)
+		expect(arrowGroup).not.toBeNull()
 
 		const prevBtn = container.querySelector<HTMLButtonElement>(
 			'[data-testid="prev-period-btn"]'
 		)
-		expect(prevBtn?.style.height).toBe('100%')
+		expect(prevBtn?.dataset.ilamySlot).toBe('nav-button')
+		expect(prevBtn?.style.border).not.toBe('none')
+
+		cal.destroy()
+	})
+
+	it('emits data-ilamy-root, data-unstyled, separated grid/grid-scroll, header slot states, and token now-indicator', () => {
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: new Date().toISOString(),
+			initialView: 'month',
+			timezone: 'UTC',
+			nowIndicator: true,
+			events: [],
+		})
+
+		const rootEl = container.querySelector<HTMLElement>('[data-ilamy-root]')
+		expect(rootEl).not.toBeNull()
+		expect(rootEl?.getAttribute('data-ilamy-root')).toBe('')
+		expect(rootEl?.hasAttribute('data-unstyled')).toBe(false)
+
+		cal.update({ unstyled: true })
+		expect(rootEl?.getAttribute('data-unstyled')).toBe('true')
+		cal.update({ unstyled: false })
+		expect(rootEl?.hasAttribute('data-unstyled')).toBe(false)
+
+		// Header slot attributes & view button active/inactive state
+		const headerEl = container.querySelector<HTMLElement>(
+			'[data-ilamy-slot="header"]'
+		)
+		expect(headerEl?.tagName).toBe('HEADER')
+		expect(
+			container.querySelector('[data-ilamy-slot="nav-group"]')
+		).not.toBeNull()
+		expect(
+			container.querySelector('[data-ilamy-slot="view-switcher"]')
+		).not.toBeNull()
+
+		const newBtn = container.querySelector<HTMLElement>(
+			'[data-testid="new-event-btn"]'
+		)
+		expect(newBtn?.dataset.ilamySlot).toBe('nav-button')
+		expect(newBtn?.dataset.variant).toBe('primary')
+
+		const monthViewBtn = container.querySelector<HTMLElement>(
+			'[data-testid="view-btn-month"]'
+		)
+		const weekViewBtn = container.querySelector<HTMLElement>(
+			'[data-testid="view-btn-week"]'
+		)
+		expect(monthViewBtn?.dataset.ilamySlot).toBe('view-button')
+		expect(monthViewBtn?.dataset.state).toBe('active')
+		expect(weekViewBtn?.dataset.ilamySlot).toBe('view-button')
+		expect(weekViewBtn?.dataset.state).toBe('inactive')
+
+		// Outer grid vs inner grid-scroll separation across all 5 views
+		const bodyEl = container.querySelector<HTMLElement>(
+			'[data-testid="calendar-body"]'
+		)
+		expect(bodyEl?.dataset.ilamySlot).toBe('grid')
+		for (const view of ['month', 'week', 'day', 'year', 'agenda'] as const) {
+			cal.controller.setView(view)
+			const gridEls = container.querySelectorAll('[data-ilamy-slot="grid"]')
+			expect(gridEls.length).toBe(1)
+			const viewScroller = container.querySelector<HTMLElement>(
+				`[data-testid="dom-${view}-view"]`
+			)
+			expect(viewScroller?.dataset.ilamySlot).toBe('grid-scroll')
+		}
+
+		// Hourly resource now-indicator uses CSS slot without hardcoded #ef4444
+		cal.update({
+			initialView: 'week',
+			orientation: 'horizontal',
+			weekViewGranularity: 'hourly',
+			resources: [{ id: 'room-a', title: 'Room A' }],
+		})
+		const nowLine = container.querySelector<HTMLElement>(
+			'[data-testid="now-indicator"]'
+		)
+		expect(nowLine).not.toBeNull()
+		expect(nowLine?.dataset.ilamySlot).toBe('now-indicator')
+		expect(nowLine?.style.backgroundColor).toBe('')
+
+		cal.destroy()
+	})
+
+	it('uses @ilamy/core translator defaults and view-model outputs across month weekNumbers, year counts, and hourly lanes', () => {
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: '2026-11-19T09:00:00Z',
+			initialView: 'month',
+			timezone: 'UTC',
+			weekNumbers: true,
+			translations: { today: 'Hoy' },
+			resources: undefined,
+			events: [
+				{
+					id: 'overlap-1',
+					title: 'Overlap One',
+					start: '2026-11-19T10:00:00Z',
+					end: '2026-11-19T12:00:00Z',
+					resourceId: 'room-a',
+				},
+				{
+					id: 'overlap-2',
+					title: 'Overlap Two',
+					start: '2026-11-19T10:30:00Z',
+					end: '2026-11-19T11:30:00Z',
+					resourceId: 'room-a',
+				},
+			],
+		})
+
+		// Partial translations fall back to @ilamy/core defaultTranslations
+		expect(
+			container.querySelector('[data-testid="today-btn"]')?.textContent
+		).toBe('Hoy')
+		expect(
+			container.querySelector('[data-testid="view-btn-agenda"]')?.textContent
+		).toBe('Agenda')
+		expect(container.textContent).toContain('Wk')
+
+		// Year view displays event count badge and day dots from buildYearViewModel
+		cal.controller.setView('year')
+		expect(container.textContent).toContain('2 Events')
+
+		// Hourly resource view places overlapping bars in distinct lanes via buildResourceTimelineViewModel
+		cal.update({
+			initialView: 'day',
+			orientation: 'horizontal',
+			resources: [{ id: 'room-a', title: 'Room A' }],
+			translator: (key) => (key === 'resources' ? 'Salas' : key),
+		})
+		expect(container.textContent).toContain('Salas')
+		const bar1 = container.querySelector<HTMLElement>(
+			'[data-testid="calendar-event-overlap-1"]'
+		)
+		const bar2 = container.querySelector<HTMLElement>(
+			'[data-testid="calendar-event-overlap-2"]'
+		)
+		expect(bar1?.style.top).toBe('4px')
+		expect(bar2?.style.top).toBe('28px')
 
 		cal.destroy()
 	})

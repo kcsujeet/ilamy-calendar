@@ -377,14 +377,3 @@ export const IlamyCalendar: DefineComponent<VueIlamyCalendarProps> =
 				})
 		},
 	}) as unknown as DefineComponent<VueIlamyCalendarProps>
-
-export type {
-	DomCalendarEvent,
-	DomCalendarEventInput,
-	DomCalendarOptions,
-	DomEventFormRenderContext,
-	DomEventRenderContext,
-	DomHeaderRenderContext,
-	DomResourceRenderContext,
-	MountedCalendar,
-} from '@ilamy/dom'

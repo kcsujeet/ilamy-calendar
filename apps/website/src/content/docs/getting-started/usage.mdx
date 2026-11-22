@@ -11,30 +11,39 @@ Get up and running with ilamy Calendar in just a few minutes.
 
 ## Basic Setup
 
-Once you've installed the package, follow these steps to configure and use the calendar:
+Once you've installed `@ilamy/calendar`, follow these steps to configure and use the calendar:
 
 <Steps>
 
-1. ### Configure Tailwind CSS
+1. ### Import the Layered Stylesheet
 
-   Since ilamy Calendar is built with Tailwind CSS v4, you need to register the source path in your CSS file to ensure all component styles are included:
+   Import `@ilamy/calendar/styles.css` once in your application. It ships `@layer ilamy.base, ilamy.theme` and works standalone with **zero Tailwind installed** — no `@source` directive needed:
+
+   ```ts title="main.tsx"
+   import '@ilamy/calendar/styles.css';
+   ```
+
+   If your app uses Tailwind CSS v4 (or shadcn/ui), import it **before** `@import 'tailwindcss';` in your CSS file:
 
    ```css title="globals.css"
-   @source "../node_modules/@ilamy/calendar/dist";
+   @import '@ilamy/calendar/styles.css';
+   @import 'tailwindcss';
    ```
 
    <Aside>
-   This tells Tailwind to scan the calendar package for classes and include them in your build. This is especially important since node_modules are typically ignored by Tailwind by default.
+   When shadcn CSS variables (`--background`, `--foreground`, `--border`, `--primary`, `--muted`, `--radius`, `.dark`) are present on the page, `--ilamy-*` tokens inherit them automatically.
    </Aside>
 
 2. ### Import and Use the Calendar
 
-   Now you can start using the calendar with minimal configuration. Events accept plain ISO 8601 strings or native JavaScript `Date` objects — no `dayjs` setup or plugin registration is needed:
+   Import `IlamyCalendar` from `@ilamy/calendar/react` (or use `@ilamy/calendar/vue`, `@ilamy/calendar/svelte`, `@ilamy/calendar/solid`, `@ilamy/calendar/angular`, or `@ilamy/calendar/dom`). Events accept plain ISO 8601 strings or native JavaScript `Date` objects:
 
    ```tsx title="MyCalendar.tsx"
-   import { IlamyCalendar } from '@ilamy/calendar';
+   import { IlamyCalendar } from '@ilamy/calendar/react';
+   import type { CalendarEvent } from '@ilamy/calendar';
+   import '@ilamy/calendar/styles.css';
 
-   const events = [
+   const events: CalendarEvent[] = [
      {
        id: '1',
        title: 'Team Standup',
@@ -45,7 +54,7 @@ Once you've installed the package, follow these steps to configure and use the c
 
    export default function MyCalendar() {
      return (
-       <div className="p-6">
+       <div style={{ height: '600px' }}>
          <IlamyCalendar events={events} editable />
        </div>
      );
@@ -57,14 +66,14 @@ Once you've installed the package, follow these steps to configure and use the c
    The core ships **no plugins** by default. Capabilities like recurring events, agenda view, year view, iCalendar export, and drag-to-create are opt-in: import them from their subpath and register them via the `plugins` prop. Skip this step if you don't need them.
 
    ```tsx title="MyCalendar.tsx"
-   import { IlamyCalendar } from '@ilamy/calendar';
+   import { IlamyCalendar } from '@ilamy/calendar/react';
    import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence';
    import { yearPlugin } from '@ilamy/calendar/plugins/year';
    import { icalPlugin } from '@ilamy/calendar/plugins/ical';
 
    export default function MyCalendar() {
      return (
-       <div className="p-6">
+       <div style={{ height: '600px' }}>
          <IlamyCalendar
            plugins={[recurrencePlugin(), yearPlugin(), icalPlugin()]}
          />

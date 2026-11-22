@@ -58,7 +58,7 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 				}
 			})
 
-			expect(metrics.headerH, `${theme} header height`).toBe(48)
+			expect(metrics.headerH, `${theme} header height`).toBe(44)
 			expect(metrics.btnToGridGap, `${theme} header-to-grid gap`).toBe(8)
 			expect(metrics.arrowGroupH, `${theme} arrow group height`).toBe(36)
 			expect(metrics.todayH, `${theme} Today height`).toBe(36)

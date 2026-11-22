@@ -1,103 +1,77 @@
-# Monorepo Architecture (design spec)
+# Monorepo Architecture
 
-**Goal:** Convert the single-package repo into a Bun-workspaces monorepo where the core calendar, the shared UI primitives, and each plugin are separate packages. This makes the plugin dogfooding boundary *structural* (package boundaries, not a custom lint test) and removes per-plugin UI duplication (one shared, shadcn-managed `@ilamy/ui`).
-
-**Status:** design, pending approval. No files move until this is approved and an implementation plan is written.
-
-**Toolchain (decided):** Bun workspaces only. No Turborepo, no Changesets. Builds with `bunup` per package; scripts orchestrated with `bun run --filter`.
+**Status:** Implemented (v4.0)
+**Toolchain:** Bun workspaces only (no Turborepo, no Changesets). Builds with `bunup` per package; scripts orchestrated with `bun run --filter`.
 
 ---
 
-## Final layout
+## Layout
+
+Only `@ilamy/calendar` is published to npm; every other workspace package is `private: true` and bundled into `@ilamy/calendar` at build time.
 
 ```
-ilamy/                         root (private, not published)
-  package.json                 workspaces: ["packages/*", "apps/*"]
+ilamy-calendar/                root (private, not published)
+  package.json                 workspaces: ["packages/*", "packages/adapters/*", "packages/plugins/*", "packages/themes/*", "apps/*"]
   tsconfig.base.json           shared compiler options
-  biome.json                   shared lint/format
+  biome.json                   shared lint/format + Bulletproof React boundaries
   bun.lock
   packages/
-    ui/                        @ilamy/ui                  (published)
-    calendar/                  @ilamy/calendar            (published)
-    recurrence/                @ilamy/calendar-recurrence (published)
+    types/                     @ilamy/types                    (private)  shared React plugin-contract & re-exported domain types
+    utils/                     @ilamy/utils                    (private)  TC39 Temporal core (./temporal) + helpers (./helpers)
+    core/                      @ilamy/core                     (private)  framework-agnostic headless engine + shared view-models
+    dom/                       @ilamy/dom                      (private)  zero-React full-parity DOM calendar renderer
+    ui/                        @ilamy/ui                       (private)  shadcn primitives
+    playground/                @ilamy/playground               (private)  shared interactive demo UI
+    adapters/
+      react/                   @ilamy/adapter-react            (private)  React 19 UI adapter & test harness
+      vue/                     @ilamy/adapter-vue              (private)  Vue 3.5+ wrapper
+      svelte/                  @ilamy/adapter-svelte           (private)  Svelte 5 wrapper
+      solid/                   @ilamy/adapter-solid            (private)  Solid 2.0 wrapper
+      angular/                 @ilamy/adapter-angular          (private)  Angular 22 wrapper
+    plugins/
+      recurrence/              @ilamy/calendar-recurrence      (private)  RFC 5545 recurrence plugin
+      agenda/                  @ilamy/calendar-agenda          (private)  agenda view plugin
+      drag-to-create/          @ilamy/calendar-drag-to-create  (private)  drag-to-create plugin
+      year/                    @ilamy/calendar-year            (private)  12-month year overview plugin
+      ical/                    @ilamy/calendar-ical            (private)  RFC 5545 iCalendar (.ics) export plugin
+    themes/
+      mui/                     @ilamy/theme-mui                (private)  Material UI theme bridge
+      stylex/                  @ilamy/theme-stylex             (private)  StyleX token contract
+    calendar/                  @ilamy/calendar                 (PUBLISHED) pure thin publishing facade + shared layered CSS (`styles/`)
   apps/
-    demo/                      private Vite playground (never published)
+    demo/                      private Vite playground
+    website/                   docs site & interactive demo (ilamy.dev)
   docs/                        shared docs + dev logs
 ```
 
-Internal dependencies use the `workspace:*` protocol; Bun rewrites them to the real version on publish (`workspace:*` → `1.x.y`). `bun install` symlinks local packages into `node_modules`, so `import … from '@ilamy/calendar'` resolves to `packages/calendar` during development.
+---
 
-## Packages
+## Published Entry Points (`@ilamy/calendar`)
 
-### `@ilamy/ui` (packages/ui) — published
+`packages/calendar/package.json` exposes symmetric, `motion`-style entry points:
 
-Generic, **self-contained** shadcn primitives, managed by the shadcn CLI. Its own `components.json` using the [shadcn monorepo](https://ui.shadcn.com/docs/monorepo) alias convention:
+| Subpath | Contents |
+|---|---|
+| `.` (`@ilamy/calendar`) | Pure headless core (`@ilamy/core`: `createCalendarController`, Temporal helpers, layout engines, view-model builders, `defaultTranslations`, `createTranslator`, shared domain types) |
+| `./react` | React 19 UI wrapper (`IlamyCalendar`, `useIlamyCalendarContext`, `CalendarThemeProvider`, `useSlotProps`, `useCalendarComponents`, `SLOT_*`, `IlamyPlugin`, React prop/component types) |
+| `./vue` | Vue 3.5+ wrapper (`IlamyCalendar`, `useIlamyCalendar`) |
+| `./svelte` | Svelte 5 wrapper (`ilamyCalendar`, `ilamyCalendarAction`, `createIlamyCalendar`) |
+| `./solid` | Solid 2.0 wrapper (`IlamyCalendar`, `createIlamyCalendar`) |
+| `./angular` | Angular 22 wrapper (`registerIlamyCalendarElement`, `IlamyCalendarElement`, `createAngularCalendar`) |
+| `./dom` | Vanilla DOM renderer (`mountCalendar`, `generateDomIcal`, `DomCalendarOptions`, `MountedCalendar`, render-context types) |
+| `./styles.css` | Combined layered CSS (`@layer ilamy.base, ilamy.theme`) — works standalone with zero Tailwind and auto-bridges shadcn CSS variables |
+| `./styles/base.css` | Structural layout only (`@layer ilamy.base`, zero visual chrome) |
+| `./styles/theme.css` | Theme layer only (`@layer ilamy.theme`) |
+| `./themes/mui` | Material UI theme bridge (`createMuiCalendarTheme`, `useMuiCalendarTheme`, `muiCalendarComponents`) |
+| `./themes/stylex` | StyleX token contract (`createStylexCalendarTheme`, `stylexCalendarTheme`, `stylexCalendarDarkTheme`, `stylexSlot`, `createStylexSlotProps`) |
+| `./plugins/{recurrence,agenda,drag-to-create,year,ical}` | Opt-in plugins |
+| `./testing` | `CalendarTestProvider` + test fixtures |
 
-```json
-{ "aliases": { "components": "@ilamy/ui/components", "ui": "@ilamy/ui/components", "utils": "@ilamy/ui/lib/utils", "lib": "@ilamy/ui/lib", "hooks": "@ilamy/ui/hooks" } }
-```
+---
 
-- Holds: `button`, `card`, `checkbox`, `input`, `label`, `select`, `dialog`, `popover`, `badge`, `scroll-area`, `textarea`, `calendar`, `input-group`, and `lib/utils.ts` (`cn`). These are pure shadcn, no calendar coupling.
-- `cn` lives here; everything else imports it from `@ilamy/ui`.
-- `select`/`dialog` are the real Radix shadcn versions (so `@radix-ui/*` lands here as a real dependency, shared, not duplicated). The recurrence plugin's hand-rolled native `select`/`date-picker` are deleted in favor of these.
-- Adding/updating a primitive later: `cd packages/ui && bunx shadcn@latest add <name>`.
+## Cross-Cutting Mechanics
 
-### `@ilamy/calendar` (packages/calendar) — published, **name unchanged**
-
-The core, plugin-agnostic library. Everything currently in `src/` **except** the recurrence plugin, the demo, and the generic UI primitives.
-
-- Keeps: `features/calendar` (everything calendar-specific: the views, header, form, grids, drag and drop, stores, hooks and utils, including `components/calendar-slots.tsx`, the host slot catalog), the shared folders (`components`, `hooks`, `config`, `utils`, `types`), and the plugin **kernel** (`lib/plugins`: `createPluginRuntime`, `types`, `compose-plugin-providers`).
-- **Context-coupled composites stay here:** `date-picker` and `time-picker` use `useSmartCalendarContext` / `use-autocomplete-timepicker`, so they live in `@ilamy/calendar` and import primitives (`Button`, `Calendar`, `Popover`) from `@ilamy/ui`.
-- Depends on `@ilamy/ui` (`workspace:*`), plus `react`, `dayjs`, `@dnd-kit/*`.
-- Public API `src/index.ts` is unchanged from post-v2 (recurrence already removed). The `@ilamy/calendar/plugins/recurrence` **subpath is removed** — recurrence is now its own package.
-- Build: `bunup`, single entry (no more recurrence multi-entry).
-
-### `@ilamy/calendar-recurrence` (packages/recurrence) — published
-
-The recurrence plugin as a standalone package. Everything in `src/features/plugins/recurrence/` **except its hand-rolled `ui/`** (deleted; uses `@ilamy/ui`).
-
-- Keeps: `recurrence-plugin.tsx`, entry `index.ts` (was `recurrence.ts`), `augment.ts`, `ical.ts`, `utils/recurrence-handler.ts` + helpers, `components/{recurrence-editor,recurrence-edit-dialog,recurrence-form-section}`, `types`.
-- Deps: `@ilamy/calendar` (`workspace:*`), `@ilamy/ui` (`workspace:*`), `rrule`. Imports `dayjs`/`CalendarEvent`/`useIlamyCalendarContext` from `@ilamy/calendar`; UI from `@ilamy/ui`.
-- `augment.ts`'s `declare module '@ilamy/calendar' { … }` still works — it targets the published package name.
-- Build: `bunup`, single entry.
-
-### `apps/demo` — private Vite playground
-
-The current `src/components/demo/*` plus the Vite entry (`index.html`, `main.tsx`). `private: true`, never published. Depends on `@ilamy/calendar` + `@ilamy/calendar-recurrence` (`workspace:*`). This is what `bunx vite` (the already-running dev server) serves.
-
-## What gets deleted (the payoff)
-
-- `src/features/plugins/plugins-import-boundary.test.ts` — package boundaries enforce it now.
-- The biome `noRestrictedImports` override for plugins.
-- The `@/`-alias self-reference hacks in `tsconfig.json` (`"@ilamy/calendar": ["./src/index.ts"]`, the recurrence subpath path).
-- The recurrence subpath from `package.json` `exports` and `bunup.config.ts` multi-entry.
-- The recurrence plugin's hand-rolled `ui/` (9 files) — replaced by `@ilamy/ui`.
-
-## Cross-cutting mechanics
-
-- **Root scripts:** `build` → `bun run --filter '*' build` (Bun respects dependency order: ui → calendar → recurrence); `test` → `bun test` per package via `--filter`; `type-check`, `lint`, `ci` likewise. `dev` → the demo app.
-- **TypeScript:** a `tsconfig.base.json` with shared options; each package extends it. For editor/type-check to resolve cross-package types to source (not built `dist`), each package's own `tsconfig.json` maps the `@ilamy/*` packages it imports to their `src` via `paths` (the base has none); published `exports`/`types` point to `dist`. Bun resolves an import through the tsconfig nearest the importing file, so this mapping also decides what the calendar's build bundles: a package bundled into `@ilamy/calendar` without it pulls in the other package's `dist` (a stale second copy of the dayjs configuration in 3.3.0, see `docs/timezones.md`). `packages/ui` builds its own `dist` with `tsconfig.build.json`, which drops the mapping so `@ilamy/utils` stays external there.
-- **Published declarations:** source type-checking resolves to `src`, so it cannot see a bug the declaration bundler introduces in `dist/*.d.ts`. `bun run check:dist-types` type-checks the built declarations with `skipLibCheck: false`, as a strict consumer would (`packages/calendar/tsconfig.dist.json`). It runs in CI after the build and in `release` before publishing. Prefer named type imports (`import type { Dayjs } from 'dayjs'`) over qualified names (`dayjs.Dayjs`, `React.ReactNode`) in exported types: bunup's bundler renamed the member of a qualified name along with a clashing local alias, shipping `dayjs.Dayjs3` (#302).
-- **Tailwind:** `@ilamy/ui` ships components styled with Tailwind classes; consumers must add the package to their Tailwind `content` globs. Documented in each package README + migration notes.
-- **Publishing (manual, fixed/lockstep version):** bump all three packages together; publish in order `@ilamy/ui` → `@ilamy/calendar` → `@ilamy/calendar-recurrence`; `workspace:*` is rewritten to the real version on `bun publish`. The existing `release-new-version` skill will need a monorepo rewrite (separate follow-up).
-- **History:** use `git mv` for moves so blame/history survive.
-- **fallow.toml / CI:** move config to root and rescope globs to `packages/*`; CI still runs `bun run ci`.
-
-## Decisions (recommended defaults, confirm before plan)
-
-1. Plugin naming: **`@ilamy/calendar-recurrence`**. (Confirmed.)
-2. Versioning: **fixed/lockstep** across packages (simpler with manual publish).
-3. `@ilamy/ui`: **published to npm** (plugins depend on it as a normal dep; avoids re-duplicating it in shipped bundles).
-
-## Risks / call-outs
-
-- **Largest mechanical change in the repo's history.** It touches every file's location. Mitigated by `git mv` + the existing test suite (must stay green at each step).
-- **`@ilamy/ui` becomes public API** — its primitives' props are now a versioned contract. Low churn (stock shadcn).
-- **Radix returns** to the recurrence UI via `@ilamy/ui`'s real shadcn `select`/`dialog`. Accepted: shared, not duplicated.
-- **Consumer-facing churn:** importers of `@ilamy/calendar/plugins/recurrence` must switch to `@ilamy/calendar-recurrence`. This is a new major (the v2 subpath was just shipped), so it must be called out loudly in the changelog/migration notes.
-- **Release tooling** (`release-new-version` skill) assumes a single package; needs a monorepo-aware rewrite as a follow-up.
-
-## Out of scope (future)
-
-- Migrating the resource calendar and iCal export into their own plugin packages.
-- Turborepo/Changesets adoption if the package count grows.
+- **Root scripts:** `bun run build` builds the package and its CSS layers (`bunup && bun scripts/build-styles.ts`); `bun run test` fans out via `--filter`; `bun run ci` runs check, build, `check:dist-types`, type-check, and tests.
+- **TypeScript:** `tsconfig.base.json` holds shared compiler options; each package's `tsconfig.json` maps the internal `@ilamy/*` packages it imports to their `src/` via `paths` so editor type-checking and `bunup` resolve to source. Published `exports`/`types` point to `dist/`.
+- **Published declarations:** `bun run check:dist-types` type-checks the built `dist/*.d.ts` with `skipLibCheck: false` (`packages/calendar/tsconfig.dist.json`).
+- **Styling:** `packages/calendar/styles/{base,theme}.css` compiles to `dist/styles.css`, `dist/styles/base.css`, and `dist/styles/theme.css`. Both React (`packages/calendar/src/`) and `@ilamy/dom` emit matching `data-ilamy-slot` and state attributes, so one stylesheet drives every framework with zero Tailwind required.

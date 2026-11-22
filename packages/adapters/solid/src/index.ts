@@ -172,14 +172,3 @@ export const IlamyCalendar = (
 	props.ref?.(mounted)
 	return host
 }
-
-export type {
-	DomCalendarEvent,
-	DomCalendarEventInput,
-	DomCalendarOptions,
-	DomEventFormRenderContext,
-	DomEventRenderContext,
-	DomHeaderRenderContext,
-	DomResourceRenderContext,
-	MountedCalendar,
-} from '@ilamy/dom'

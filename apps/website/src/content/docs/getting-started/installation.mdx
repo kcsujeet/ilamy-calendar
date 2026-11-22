@@ -35,19 +35,36 @@ Get started with ilamy Calendar by installing it via your preferred package mana
 
 No external date library (`dayjs`, `moment`, `date-fns`) is required — v4.0 runs on TC39 Temporal and `Intl.DateTimeFormat` with plain ISO 8601 strings and `Date` inputs.
 
+## Stylesheet (`@ilamy/calendar/styles.css`)
+
+Import the layered stylesheet once in your app entry (works standalone with **zero Tailwind installed**, and no `@source` directive is needed):
+
+```ts
+import '@ilamy/calendar/styles.css';
+```
+
+If your app uses Tailwind CSS v4, import `@ilamy/calendar/styles.css` **before** `@import 'tailwindcss';` so Tailwind utilities sit in a higher cascade layer and shadcn variables (`--background`, `--foreground`, `--border`, `--primary`, `--muted`, `--radius`, `.dark`) are inherited automatically:
+
+```css title="globals.css"
+@import '@ilamy/calendar/styles.css';
+@import 'tailwindcss';
+```
+
+For completely custom or unstyled builds, import only the structural layout layer (`@ilamy/calendar/styles/base.css`). See [Styling & Themes](/docs/customization/styling).
+
 ## Peer dependencies
 
-All framework peers are **optional** — install only the framework you use:
+All framework and styling peers are **optional** — install only what you use:
 
-- `react` and `react-dom` (`^19.2.0`) — for `@ilamy/calendar` (React 19)
+- `react` and `react-dom` (`^19.2.0`) — for `@ilamy/calendar/react` (React 19)
 - `vue` (`^3.5.0`) — for `@ilamy/calendar/vue` (Vue 3.5+, zero React dependency)
 - `svelte` (`^5.0.0`) — for `@ilamy/calendar/svelte` (Svelte 5+, zero React dependency)
 - `solid-js` (`^2.0.0`) — for `@ilamy/calendar/solid` (Solid 2.0+, zero React dependency)
 - `@angular/core` (`^22.0.0`) — for `@ilamy/calendar/angular` (Angular 22+, zero React dependency)
-- `tailwindcss` (`^4.2.2`) and `tailwindcss-animate` (`^1.0.7`) — optional if using `unstyled`, `@ilamy/calendar/themes/mui`, `@ilamy/calendar/themes/stylex`, or `@ilamy/calendar/core`
+- `tailwindcss` (`^4.2.2`) — genuinely optional; `@ilamy/calendar/styles.css` renders with zero Tailwind
 - `@mui/material` (`>=6`) — optional peer dependency for `@ilamy/calendar/themes/mui`
 - `@stylexjs/stylex` (`>=0.10`) — optional peer dependency for `@ilamy/calendar/themes/stylex`
 
-See [Multi-Framework Support](/docs/frameworks/overview) for Vue, Svelte, Solid, and Angular guides.
+The headless core (`@ilamy/calendar`) and Vanilla DOM renderer (`@ilamy/calendar/dom`) require zero framework peer dependencies. See [Multi-Framework Support](/docs/frameworks/overview) for guides across all frameworks.
 
 To localize date labels, set the `locale` prop to any BCP 47 locale tag (such as `"fr"`, `"de"`, `"ja"`, `"ar"`). No locale imports are needed. See [Internationalization](/docs/features/internationalization).

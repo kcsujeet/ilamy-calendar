@@ -270,6 +270,7 @@ packages/
   ui/           @ilamy/ui           (private)  shadcn primitives
   playground/   @ilamy/playground   (private)  shared interactive demo UI, source-only; consumed by apps/demo + apps/website
   adapters/
+    react/          @ilamy/adapter-react           (private)  React 19 UI adapter & test harness
     vue/            @ilamy/adapter-vue             (private)  Vue 3.5+ component & composable adapter
     svelte/         @ilamy/adapter-svelte          (private)  Svelte 5 attachment, action & reactivity adapter
     solid/          @ilamy/adapter-solid           (private)  Solid 2.0 signal & component adapter
@@ -283,16 +284,16 @@ packages/
   themes/
     mui/            @ilamy/theme-mui               (private)  Material UI (MUI) adapter
     stylex/         @ilamy/theme-stylex            (private)  StyleX atomic CSS adapter
-  calendar/     @ilamy/calendar     (PUBLISHED) the React UI adapter; bundles the internal packages above
+  calendar/     @ilamy/calendar     (PUBLISHED) pure thin publishing facade + shared layered CSS (`styles/`); bundles the internal packages above
 apps/
   demo/         @ilamy/demo         (private)  Vite demo app; consumes @ilamy/calendar's public API
   website/      @ilamy/website      (private)  docs website (deployed via `bun run deploy:website`)
 examples/       standalone consumer apps (astro, nextjs, vite) depending on the published package
 ```
 
-`@ilamy/calendar` ships these entry points: `.` (React UI), `./core` (headless engine), `./vue` (Vue 3.5+), `./svelte` (Svelte 5+), `./solid` (Solid 2.0+), `./angular` (Angular 22+), `./testing` (test harness), `./plugins/recurrence`, `./plugins/agenda`, `./plugins/drag-to-create`, `./plugins/year`, `./plugins/ical`, `./themes/mui`, `./themes/stylex`. The plugin subpaths' `import … from '@ilamy/calendar'` self-references the same package at runtime. **It ships no CSS** — "bring your own design system": components use the conventional shadcn token classes by default, and consumers `@source` the package's `dist` so Tailwind generates the utilities, or use `unstyled`, `slotProps`, `components`, or the MUI / StyleX theme adapters. The demo (`apps/demo/src/styles/globals.css`) is the reference consumer that supplies a shadcn theme.
+`@ilamy/calendar` ships these entry points (`motion` pattern): `.` (pure headless core — Temporal dates, controller, layout, view-models, i18n, shared domain types; zero UI/framework code), `./react` (React 19 UI wrapper), `./vue` (Vue 3.5+), `./svelte` (Svelte 5+), `./solid` (Solid 2.0+), `./angular` (Angular 22+), `./dom` (vanilla DOM mount API), `./styles.css` (combined layered CSS `@layer ilamy.base, ilamy.theme`), `./styles/base.css` (structural layout only), `./styles/theme.css`, `./testing` (test harness), `./plugins/recurrence`, `./plugins/agenda`, `./plugins/drag-to-create`, `./plugins/year`, `./plugins/ical`, `./themes/mui`, `./themes/stylex`. Plugin and theme subpaths self-reference `@ilamy/calendar` and `@ilamy/calendar/react` at runtime (`tsconfig.build.json` keeps them external in both JS and `.d.ts` so there is one canonical `CalendarEvent` interface for declaration merging). Tailwind is genuinely optional: `@ilamy/calendar/styles.css` works standalone with zero Tailwind and auto-bridges shadcn CSS variables (`--background`, `--foreground`, `--border`, `--primary`, `--muted`, `--radius`, `.dark`). The demo (`apps/demo/src/styles/globals.css`) imports `@ilamy/calendar/styles.css` before `@import 'tailwindcss'`.
 
-Paths in the **Key Paths** section below are relative to `packages/calendar/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via each package's own tsconfig `paths`: Bun reads the tsconfig nearest the importing file) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the plugin packages + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
+Paths in the **Key Paths** section below are relative to `packages/adapters/react/`. Run scripts at the repo root (they fan out via `bun run --filter '*' …`) or inside a single package. Build resolution: calendar's bunup `noExternal`s the internal `@ilamy/*` packages (resolved to source via each package's own tsconfig `paths`: Bun reads the tsconfig nearest the importing file) so they're bundled in; their third-party deps (react, radix, clsx, rrule, …) stay external and are declared in calendar's `dependencies`. **`bun run ci` builds before type-check/test** (the plugin packages + demo resolve `@ilamy/calendar` through its built `dist/*.d.ts`).
 
 ### Data Flow
 
@@ -332,16 +333,14 @@ Every event must have a globally unique `uid`. EXDATE uses ISO strings in `exdat
 ## Key Paths
 
 ```
-packages/calendar/src/                         # (= @/… via tsconfig paths). Bulletproof React layout: imports flow
+packages/adapters/react/src/                   # (= @/… via tsconfig paths). Bulletproof React layout: imports flow
                                                #   shared -> features -> app; biome.json forbids shared -> features/app
                                                #   and cross-feature imports between header, event-form, drag-and-drop, views
-  index.ts                                    # Public API exports (app layer)
+  index.ts                                    # React public API exports (app layer; re-exported by packages/calendar/src/adapters/react.ts)
   app/                                        # App layer: composes providers & features
     calendar-provider.tsx                      #   Wires useCalendarEngine(builtInViews) + contexts
     ilamy-calendar.tsx                         #   Main component (composes DndContext, Header, ViewRenderer, EventFormDialog)
-    ilamy-resource-calendar.tsx                #   DEPRECATED alias of IlamyCalendar
   testing/                                    # CalendarTestProvider (@ilamy/calendar/testing, app layer) + test fixtures
-  plugins/, adapters/, themes/                # Subpath entries (@ilamy/calendar/{plugins,themes}/*, ./vue, ./svelte, ./solid, ./angular)
   features/                                   # 4 independent vertical features (zero cross-feature imports):
     header/                                    #   Calendar header, date-picker navigation, view switcher/menu + use-header-views
     event-form/                                #   Create/edit event dialog & form + use-event-{schedule,resource} + event-form*.utils
@@ -397,7 +396,7 @@ docs/
 **Plugin SDK**: `SLOT_EVENT_FORM`, `SLOT_EVENT_MUTATION_SCOPE`, `SLOT_TOOLBAR`, contract types (`IlamyPlugin`, `PluginView`, `ViewConfig`, …)
 **Types**: `CalendarEvent`, `CalendarView`, `IsoDateString`, `TimeFormat`, `BusinessHours`, `WeekDays`, `Resource`, `Translations`, `TranslatorFunction`, `CellInfo`, `IlamyCalendarProps`, `CalendarSlotProps`, `CalendarComponents`
 
-Optional feature exports live on subpaths, NOT the core: `recurrencePlugin`/`RRule` on `@ilamy/calendar/plugins/recurrence`, `agendaPlugin` on `@ilamy/calendar/plugins/agenda`, `dragToCreatePlugin` on `@ilamy/calendar/plugins/drag-to-create`, `yearPlugin` on `@ilamy/calendar/plugins/year`, `icalPlugin`/`exportToICalendar` on `@ilamy/calendar/plugins/ical`, headless engine on `@ilamy/calendar/core`, and themes on `@ilamy/calendar/themes/mui` and `@ilamy/calendar/themes/stylex`.
+Optional feature exports live on subpaths, NOT the headless root `@ilamy/calendar`: React UI on `@ilamy/calendar/react`, framework adapters on `@ilamy/calendar/{vue,svelte,solid,angular,dom}`, styles on `@ilamy/calendar/styles.css` / `@ilamy/calendar/styles/base.css`, `recurrencePlugin`/`RRule` on `@ilamy/calendar/plugins/recurrence`, `agendaPlugin` on `@ilamy/calendar/plugins/agenda`, `dragToCreatePlugin` on `@ilamy/calendar/plugins/drag-to-create`, `yearPlugin` on `@ilamy/calendar/plugins/year`, `icalPlugin`/`exportToICalendar` on `@ilamy/calendar/plugins/ical`, and themes on `@ilamy/calendar/themes/mui` and `@ilamy/calendar/themes/stylex`.
 
 ## Code Rules
 

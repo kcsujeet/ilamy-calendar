@@ -1,11 +1,19 @@
 import {
+	buildResourceTimelineViewModel,
 	formatDate,
-	getResourceEvents,
+	type HorizontalLayoutResult,
 	type Resource,
+	type ResourceTimelineViewModel,
 	type ZonedDate,
 } from '@ilamy/core'
-import { applySlot, createEl, mergeClassNames } from '../core/dom-styles.utils'
-import type { DomCalendarEvent, DomRuntime } from '../dom-calendar.types'
+import {
+	applySlot,
+	createEl,
+	mergeClassNames,
+	resolveCurrentZonedDate,
+	translateDom,
+} from '../core/dom-styles.utils'
+import type { DomRuntime } from '../dom-calendar.types'
 
 export interface HorizontalGridCellRenderers {
 	buildCell: (
@@ -16,7 +24,7 @@ export interface HorizontalGridCellRenderers {
 	) => HTMLElement
 	renderOverlay: (
 		weekDays: ZonedDate[],
-		events: DomCalendarEvent[],
+		layout: HorizontalLayoutResult,
 		runtime: DomRuntime,
 		resource?: Resource
 	) => HTMLElement
@@ -31,6 +39,7 @@ export const renderResourceLabel = (
 	const cell = createEl('div', {
 		data: {
 			resourceId: String(resource.id),
+			sticky: 'true',
 			testid: `resource-header-${resource.id}`,
 		},
 	})
@@ -61,23 +70,54 @@ export const renderResourceLabel = (
 	return cell
 }
 
+export const buildDomResourceTimeline = (
+	mode: 'day' | 'week' | 'month',
+	runtime: DomRuntime
+): { model: ResourceTimelineViewModel; currentMonth: number } => {
+	const options = runtime.getOptions()
+	const state = runtime.controller.getState()
+	const current = resolveCurrentZonedDate(state.currentDate, state.timezone)
+	const model = buildResourceTimelineViewModel({
+		mode,
+		currentDate: current,
+		events: runtime.getVisibleEvents(),
+		resources: state.resources,
+		firstDayOfWeek: state.firstDayOfWeek,
+		timezone: state.timezone,
+		hiddenDays: state.hiddenDays,
+		dayMaxEvents: options.dayMaxEvents,
+		businessHours: options.businessHours,
+		hideNonBusinessHours: options.hideNonBusinessHours,
+		slotMinTime: options.slotMinTime,
+		slotMaxTime: options.slotMaxTime,
+		weekViewGranularity: options.weekViewGranularity,
+		nowIndicator: options.nowIndicator,
+	})
+	return { model, currentMonth: current.month }
+}
+
 export const renderResourceHorizontalGrid = (
 	grid: HTMLElement,
-	days: ZonedDate[],
-	visibleEvents: DomCalendarEvent[],
-	currentMonth: number,
+	mode: 'day' | 'week' | 'month',
 	runtime: DomRuntime,
 	renderers: HorizontalGridCellRenderers
 ): HTMLElement => {
 	const options = runtime.getOptions()
 	const state = runtime.controller.getState()
+	const { model, currentMonth } = buildDomResourceTimeline(mode, runtime)
+	const days = model.days
 	const minDayWidth = days.length <= 7 ? '110px' : '72px'
+	const isSticky = options.stickyViewHeader !== false
 	let stickyStruct = 'grid'
-	if (options.stickyViewHeader !== false) {
+	if (isSticky) {
 		stickyStruct = 'grid sticky top-0 z-30'
 	}
 
 	const headerRow = createEl('div', {
+		data: {
+			ilamySlot: 'grid-header',
+			sticky: isSticky ? 'true' : undefined,
+		},
 		className: mergeClassNames(
 			options.unstyled,
 			'border-b border-border bg-muted',
@@ -88,7 +128,10 @@ export const renderResourceHorizontalGrid = (
 			gridTemplateColumns: `176px repeat(${days.length}, minmax(${minDayWidth}, 1fr))`,
 		},
 	})
-	const cornerCell = createEl('div', { text: 'Resource' })
+	const cornerCell = createEl('div', {
+		text: translateDom(options, 'resource', 'Resource'),
+		data: { sticky: 'true' },
+	})
 	applySlot(
 		cornerCell,
 		'resourceHeader',
@@ -111,11 +154,8 @@ export const renderResourceHorizontalGrid = (
 	}
 	grid.appendChild(headerRow)
 
-	for (const resource of state.resources) {
-		const resEvents = getResourceEvents(
-			visibleEvents,
-			resource.id
-		) as DomCalendarEvent[]
+	for (const rowModel of model.rows) {
+		const { resource, dailyLayout } = rowModel
 		const row = createEl('div', {
 			className: mergeClassNames(options.unstyled, '', undefined, 'grid'),
 			style: {
@@ -125,6 +165,7 @@ export const renderResourceHorizontalGrid = (
 		row.appendChild(renderResourceLabel(resource, runtime))
 
 		const cellsTrack = createEl('div', {
+			data: { ilamySlot: 'grid-row' },
 			className: mergeClassNames(
 				options.unstyled,
 				'',
@@ -141,9 +182,11 @@ export const renderResourceHorizontalGrid = (
 				renderers.buildCell(day, currentMonth, runtime, resource)
 			)
 		}
-		cellsTrack.appendChild(
-			renderers.renderOverlay(days, resEvents, runtime, resource)
-		)
+		if (dailyLayout) {
+			cellsTrack.appendChild(
+				renderers.renderOverlay(days, dailyLayout, runtime, resource)
+			)
+		}
 		row.appendChild(cellsTrack)
 		grid.appendChild(row)
 	}

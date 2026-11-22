@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import { render, screen } from '@testing-library/react'
 import {
 	createStylexCalendarTheme,
@@ -35,37 +35,75 @@ describe('@ilamy/theme-stylex', () => {
 		})
 	})
 
-	test('createStylexCalendarTheme supports light/dark tokens and StyleX slot overrides', () => {
+	test('createStylexCalendarTheme emits --ilamy-* tokens and zero default per-slot inline styles', () => {
 		const theme = createStylexCalendarTheme({
 			mode: 'dark',
 			tokens: { primary: '#a855f7' },
-			slots: {
-				root: { className: 'sx-root-class' },
-				eventBar: { className: 'sx-bar-class', style: { fontWeight: 700 } },
-			},
 		})
 
-		expect(theme.unstyled).toBe(true)
-		const s = (name: keyof NonNullable<typeof theme.slotProps>) =>
-			theme.slotProps?.[name]?.style ?? {}
-		expect(theme.slotProps?.root?.className).toBe('sx-root-class')
-		expect(s('root')).toMatchObject({
+		expect(theme.unstyled).toBe(false)
+		expect(theme.components).toBeUndefined()
+		expect(theme.slotProps?.root?.style).toMatchObject({
 			'--ilamy-bg': STYLEX_DARK_TOKENS.background,
+			'--ilamy-fg': STYLEX_DARK_TOKENS.text,
+			'--ilamy-surface': STYLEX_DARK_TOKENS.surface,
+			'--ilamy-muted': STYLEX_DARK_TOKENS.surfaceMuted,
+			'--ilamy-muted-fg': STYLEX_DARK_TOKENS.textMuted,
+			'--ilamy-border': STYLEX_DARK_TOKENS.border,
 			'--ilamy-primary': '#a855f7',
+			'--ilamy-primary-fg': STYLEX_DARK_TOKENS.primaryForeground,
+			'--ilamy-danger': STYLEX_DARK_TOKENS.danger,
+			'--ilamy-radius': STYLEX_DARK_TOKENS.radius,
+			'--ilamy-font': STYLEX_DARK_TOKENS.fontFamily,
+			colorScheme: 'dark',
 			'--background': STYLEX_DARK_TOKENS.background,
 			'--muted': STYLEX_DARK_TOKENS.surfaceMuted,
 			'--foreground': STYLEX_DARK_TOKENS.text,
 		})
-		expect(s('navButton').padding).toBeDefined()
-		expect(s('grid').border).toContain('solid')
-		expect(s('cell').borderRight).toBeUndefined()
-		expect(s('dayHeader').borderRight).toBeUndefined()
-		expect(s('dayHeader').backgroundColor).toBe('var(--ilamy-surface)')
-		expect(theme.slotProps?.eventBar?.className).toBe('sx-bar-class')
-		expect(s('eventBar').fontWeight).toBe(700)
+		const slots = theme.slotProps ?? {}
+		for (const key of [
+			'header',
+			'toolbar',
+			'navButton',
+			'grid',
+			'dayHeader',
+			'resourceHeader',
+			'cell',
+			'cellToday',
+			'cellNonBusiness',
+			'cellDisabled',
+			'eventBar',
+			'allDayRow',
+			'nowIndicator',
+			'moreLink',
+			'viewButton',
+			'viewButtonActive',
+		] as const) {
+			expect(slots[key]).toBeUndefined()
+		}
 	})
 
-	test('renders IlamyCalendar unstyled with StyleX theme classes and tokens', () => {
+	test('createStylexCalendarTheme merges options.slots on top of root tokens', () => {
+		const theme = createStylexCalendarTheme({
+			mode: 'dark',
+			tokens: { primary: '#a855f7' },
+			slots: {
+				root: { className: 'sx-root-class', style: { padding: 8 } },
+				eventBar: { className: 'sx-bar-class', style: { fontWeight: 700 } },
+			},
+		})
+
+		expect(theme.slotProps?.root?.className).toBe('sx-root-class')
+		expect(theme.slotProps?.root?.style).toMatchObject({
+			'--ilamy-bg': STYLEX_DARK_TOKENS.background,
+			'--ilamy-primary': '#a855f7',
+			padding: 8,
+		})
+		expect(theme.slotProps?.eventBar?.className).toBe('sx-bar-class')
+		expect(theme.slotProps?.eventBar?.style).toEqual({ fontWeight: 700 })
+	})
+
+	test('renders IlamyCalendar with StyleX theme classes and --ilamy-* tokens', () => {
 		const theme = createStylexCalendarTheme({
 			slots: {
 				root: { className: 'sx-calendar-root' },
@@ -92,26 +130,9 @@ describe('@ilamy/theme-stylex', () => {
 
 		const root = screen.getByTestId('ilamy-calendar')
 		expect(root.className).toContain('sx-calendar-root')
+		expect(root.style.getPropertyValue('--ilamy-bg')).not.toBe('')
 		expect(screen.getByText('StyleX Event')).toBeInTheDocument()
-		expect(stylexCalendarTheme.unstyled).toBe(true)
-		expect(stylexCalendarDarkTheme.unstyled).toBe(true)
-	})
-
-	test('keeps visual parity with Tailwind: no double header gap, square grid border, non-tinted today cell, styled form primitives', () => {
-		const theme = createStylexCalendarTheme({ mode: 'light' })
-		const slots = theme.slotProps ?? {}
-		const headerStyle = slots.header?.style ?? {}
-		const gridStyle = slots.grid?.style ?? {}
-
-		expect(headerStyle.padding).toBeUndefined()
-		expect(headerStyle.marginBottom).toBeUndefined()
-		expect(gridStyle.borderRadius).toBeUndefined()
-		expect(gridStyle.overflow).toBeUndefined()
-		expect(slots.cellToday?.style?.backgroundColor).toBe(
-			slots.cell?.style?.backgroundColor
-		)
-		expect(Object.keys(theme.components ?? {})).toEqual(
-			expect.arrayContaining(['Button', 'Input', 'Textarea'])
-		)
+		expect(stylexCalendarTheme.unstyled).toBe(false)
+		expect(stylexCalendarDarkTheme.unstyled).toBe(false)
 	})
 })

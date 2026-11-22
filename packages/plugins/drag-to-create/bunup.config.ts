@@ -14,6 +14,7 @@ export default defineConfig({
 		'react',
 		'react-dom',
 		'@ilamy/calendar',
+		'@ilamy/calendar/react',
 		'@ilamy/core',
 		/^@ilamy\/utils/,
 	],

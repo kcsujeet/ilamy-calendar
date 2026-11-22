@@ -151,6 +151,29 @@
         "@angular/core": "^22.0.0",
       },
     },
+    "packages/adapters/react": {
+      "name": "@ilamy/adapter-react",
+      "version": "4.0.0",
+      "dependencies": {
+        "@dnd-kit/core": "^6.3.1",
+        "@dnd-kit/modifiers": "^9.0.0",
+        "@ilamy/core": "workspace:*",
+        "@ilamy/types": "workspace:*",
+        "@ilamy/ui": "workspace:*",
+        "@ilamy/utils": "workspace:*",
+        "lucide-react": "^0.475.0",
+      },
+      "devDependencies": {
+        "@ilamy/calendar-agenda": "workspace:*",
+        "@ilamy/calendar-recurrence": "workspace:*",
+        "@ilamy/calendar-year": "workspace:*",
+        "rrule": "^2.8.1",
+      },
+      "peerDependencies": {
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+      },
+    },
     "packages/adapters/solid": {
       "name": "@ilamy/adapter-solid",
       "version": "4.0.0",
@@ -218,6 +241,7 @@
       },
       "devDependencies": {
         "@ilamy/adapter-angular": "workspace:*",
+        "@ilamy/adapter-react": "workspace:*",
         "@ilamy/adapter-solid": "workspace:*",
         "@ilamy/adapter-svelte": "workspace:*",
         "@ilamy/adapter-vue": "workspace:*",
@@ -227,11 +251,9 @@
         "@ilamy/calendar-recurrence": "workspace:*",
         "@ilamy/calendar-year": "workspace:*",
         "@ilamy/core": "workspace:*",
+        "@ilamy/dom": "workspace:*",
         "@ilamy/theme-mui": "workspace:*",
         "@ilamy/theme-stylex": "workspace:*",
-        "@ilamy/types": "workspace:*",
-        "@ilamy/ui": "workspace:*",
-        "@ilamy/utils": "workspace:*",
       },
       "peerDependencies": {
         "@angular/core": "^22.0.0",
@@ -299,6 +321,7 @@
       "name": "@ilamy/calendar-agenda",
       "version": "1.8.1",
       "dependencies": {
+        "@ilamy/core": "workspace:*",
         "@ilamy/ui": "workspace:*",
         "@ilamy/utils": "workspace:*",
         "lucide-react": "^0.475.0",
@@ -391,10 +414,8 @@
     "packages/types": {
       "name": "@ilamy/types",
       "version": "4.0.0",
-      "dependencies": {
-        "@ilamy/core": "workspace:*",
-      },
       "peerDependencies": {
+        "@ilamy/calendar": "workspace:*",
         "react": "^19.2.0",
       },
     },
@@ -729,6 +750,8 @@
     "@hookform/resolvers": ["@hookform/resolvers@5.9.1", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "@sinclair/typebox": ">=0.25.24", "@standard-schema/spec": "^1.0.0", "@typeschema/main": ">=0.13.7", "@vinejs/vine": "^2.0.0 || ^3.0.0 || ^4.0.0", "ajv": "^8.12.0", "ajv-errors": "^3.0.0", "ajv-formats": "^2.1.1", "arktype": "^2.0.0", "ata-validator": "^1.2.0", "class-transformer": ">=0.4.0", "class-validator": ">=0.12.0", "computed-types": "^1.0.0", "effect": "^3.10.3", "fluentvalidation-ts": "^3.0.0", "fp-ts": "^2.7.0", "io-ts": "^2.0.0", "joi": "^17.0.0 || ^18.0.0", "nope-validator": ">=0.12.0", "react-hook-form": "^7.55.0", "superstruct": ">=0.12.0", "typanion": "^3.3.2", "valibot": ">=0.31.0 || ^1.0.0-beta.4 || ^1.0.0-rc", "vest": ">=6.0.0", "yup": "^1.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["@sinclair/typebox", "@standard-schema/spec", "@typeschema/main", "@vinejs/vine", "ajv", "ajv-errors", "ajv-formats", "arktype", "ata-validator", "class-transformer", "class-validator", "computed-types", "effect", "fluentvalidation-ts", "fp-ts", "io-ts", "joi", "nope-validator", "superstruct", "typanion", "valibot", "vest", "yup", "zod"] }, "sha512-7b7vsbraJxKgjVSA1Nur9tLwj539WGJUBLA7QNvXnFoT2pM5Z7G+6rlukk4B2/QrTZy6huRtH6wKeESPKuIr6w=="],
 
     "@ilamy/adapter-angular": ["@ilamy/adapter-angular@workspace:packages/adapters/angular"],
+
+    "@ilamy/adapter-react": ["@ilamy/adapter-react@workspace:packages/adapters/react"],
 
     "@ilamy/adapter-solid": ["@ilamy/adapter-solid@workspace:packages/adapters/solid"],
 

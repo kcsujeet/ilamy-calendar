@@ -5,7 +5,7 @@ import type {
 	IsoDateString,
 	Resource,
 } from '@ilamy/calendar'
-import type { DomCalendarOptions } from '@ilamy/calendar/vue'
+import type { DomCalendarOptions } from '@ilamy/calendar/dom'
 import { Card, CardContent } from '@ilamy/ui/components/card'
 import { lazy, Suspense, useMemo } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'

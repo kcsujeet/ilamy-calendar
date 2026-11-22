@@ -1,26 +1,13 @@
 import {
-	add,
-	dayKey,
-	endOf,
+	type AgendaDayGroup,
+	type AgendaEventEntry,
+	buildAgendaViewModel,
 	formatDate,
-	getWeekDays,
-	isSameDay,
-	isSameOrBefore,
-	isToday,
-	now,
-	overlapsRange,
-	startOf,
-	subtract,
-	wallClockDiff,
-	type ZonedDate,
 } from '@ilamy/core'
-import {
-	type ParsedDomEventRange,
-	parseDomEventRanges,
-} from '../core/dom-events.utils'
 import {
 	applySlot,
 	createEl,
+	createGridScrollContainer,
 	mergeClassNames,
 	resolveCurrentZonedDate,
 } from '../core/dom-styles.utils'
@@ -29,33 +16,6 @@ import type {
 	DomCalendarOptions,
 	DomRuntime,
 } from '../dom-calendar.types'
-
-const MINUTES_PER_HOUR = 60
-const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR
-
-const resolveAgendaWindowRange = (
-	current: ZonedDate,
-	firstDayOfWeek: number,
-	agendaWindow: DomCalendarOptions['agendaWindow']
-): { start: ZonedDate; end: ZonedDate } => {
-	if (agendaWindow === 'day') {
-		return { start: startOf(current, 'day'), end: endOf(current, 'day') }
-	}
-	if (agendaWindow === 'month') {
-		return { start: startOf(current, 'month'), end: endOf(current, 'month') }
-	}
-	if (typeof agendaWindow === 'number') {
-		const days = Math.max(1, agendaWindow)
-		return {
-			start: startOf(current, 'day'),
-			end: endOf(add(current, days - 1, 'day'), 'day'),
-		}
-	}
-	const weekDays = getWeekDays(current, firstDayOfWeek)
-	const first = weekDays.at(0) ?? current
-	const last = weekDays.at(-1) ?? current
-	return { start: startOf(first, 'day'), end: endOf(last, 'day') }
-}
 
 const createEventColorDot = (event: DomCalendarEvent): HTMLElement => {
 	const dot = createEl('span', {
@@ -82,44 +42,41 @@ const createEventColorDot = (event: DomCalendarEvent): HTMLElement => {
 	return dot
 }
 
+const formatAgendaEntryTime = (
+	entry: AgendaEventEntry,
+	timeFormat: DomCalendarOptions['timeFormat'],
+	locale: string
+): string => {
+	if (entry.isAllDayLabel) return 'All Day'
+	const edgeTime = entry.isMultiDay && entry.isLastDay ? entry.end : entry.start
+	return formatDate(
+		edgeTime,
+		{
+			hour: 'numeric',
+			minute: '2-digit',
+			hour12: (timeFormat ?? '12-hour') === '12-hour',
+		},
+		locale
+	)
+}
+
 const renderAgendaRow = (
-	entry: ParsedDomEventRange,
-	day: ZonedDate,
+	entry: AgendaEventEntry,
 	runtime: DomRuntime
 ): HTMLElement => {
 	const options = runtime.getOptions()
 	const state = runtime.controller.getState()
-	const { event, start, end } = entry
-
-	const eventStartDay = startOf(start, 'day')
-	const lastCoveredDay = startOf(subtract(end, 1, 'millisecond'), 'day')
-	const totalDays = Math.max(
-		Math.round(wallClockDiff(lastCoveredDay, eventStartDay, 'day')) + 1,
-		1
+	const event = entry.event as DomCalendarEvent
+	const timeLabel = formatAgendaEntryTime(
+		entry,
+		options.timeFormat,
+		state.locale
 	)
-	const dayIndex =
-		Math.round(wallClockDiff(startOf(day, 'day'), eventStartDay, 'day')) + 1
-	const isMultiDay = totalDays > 1
-	const isAllDayLabel =
-		Boolean(event.allDay) ||
-		(isMultiDay && dayIndex > 1 && dayIndex < totalDays)
-	const edgeTime = isMultiDay && dayIndex === totalDays ? end : start
-	let timeLabel = 'All Day'
-	if (!isAllDayLabel) {
-		timeLabel = formatDate(
-			edgeTime,
-			{
-				hour: 'numeric',
-				minute: '2-digit',
-				hour12: (options.timeFormat ?? '12-hour') === '12-hour',
-			},
-			state.locale
-		)
-	}
+
 	let multiDayBadge: HTMLElement | null = null
-	if (isMultiDay) {
+	if (entry.isMultiDay) {
 		multiDayBadge = createEl('span', {
-			text: `(Day ${dayIndex}/${totalDays})`,
+			text: `(Day ${entry.dayIndex}/${entry.totalDays})`,
 			className: 'text-muted-foreground shrink-0 text-xs',
 		})
 	}
@@ -153,16 +110,11 @@ const renderAgendaRow = (
 }
 
 const renderAgendaNowLine = (
-	day: ZonedDate,
-	runtime: DomRuntime
+	nowIndicatorPercent: number | null,
+	options: DomCalendarOptions
 ): HTMLElement | null => {
-	const options = runtime.getOptions()
-	const state = runtime.controller.getState()
-	const currentNow = now(state.timezone)
-	if (!options.nowIndicator || !isSameDay(day, currentNow)) return null
+	if (nowIndicatorPercent === null) return null
 
-	const elapsedMinutes = currentNow.hour * MINUTES_PER_HOUR + currentNow.minute
-	const progress = (elapsedMinutes / MINUTES_PER_DAY) * 100
 	const line = createEl(
 		'div',
 		{
@@ -170,7 +122,7 @@ const renderAgendaNowLine = (
 				position: 'absolute',
 				left: '0',
 				right: '0',
-				top: `${progress}%`,
+				top: `${nowIndicatorPercent}%`,
 				zIndex: '10',
 			},
 		},
@@ -193,27 +145,16 @@ const renderAgendaNowLine = (
 	return line
 }
 
-const sortAgendaEntries = (
-	a: ParsedDomEventRange,
-	b: ParsedDomEventRange
-): number => {
-	const aRank = a.event.allDay ? 0 : 1
-	const bRank = b.event.allDay ? 0 : 1
-	if (aRank !== bRank) return aRank - bRank
-	return a.startMs - b.startMs
-}
-
 const renderAgendaDayGroup = (
-	dayStart: ZonedDate,
-	dayEntries: ParsedDomEventRange[],
+	group: AgendaDayGroup,
 	locale: string,
 	runtime: DomRuntime
 ): HTMLElement => {
-	const isTodayDay = isToday(dayStart)
+	const options = runtime.getOptions()
 	let dayBadgeClass =
 		'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-medium text-foreground'
 	let weekdayClass = 'w-full truncate text-center text-xs text-muted-foreground'
-	if (isTodayDay) {
+	if (group.isToday) {
 		dayBadgeClass =
 			'flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground'
 		weekdayClass = 'w-full truncate text-center text-xs text-primary'
@@ -226,9 +167,13 @@ const renderAgendaDayGroup = (
 				'text-muted-foreground flex w-16 shrink-0 flex-col items-center text-center',
 		},
 		[
-			createEl('div', { text: String(dayStart.day), className: dayBadgeClass }),
 			createEl('div', {
-				text: formatDate(dayStart, { weekday: 'short' }, locale),
+				text: String(group.date.day),
+				data: group.isToday ? { ilamyTodayBadge: '' } : undefined,
+				className: dayBadgeClass,
+			}),
+			createEl('div', {
+				text: formatDate(group.date, { weekday: 'short' }, locale),
 				className: weekdayClass,
 			}),
 		]
@@ -236,16 +181,16 @@ const renderAgendaDayGroup = (
 	const eventsCol = createEl('div', {
 		className: 'relative flex flex-1 flex-col gap-1',
 	})
-	const nowLine = renderAgendaNowLine(dayStart, runtime)
+	const nowLine = renderAgendaNowLine(group.nowIndicatorPercent, options)
 	if (nowLine) eventsCol.appendChild(nowLine)
-	for (const entry of dayEntries) {
-		eventsCol.appendChild(renderAgendaRow(entry, dayStart, runtime))
+	for (const entry of group.entries) {
+		eventsCol.appendChild(renderAgendaRow(entry, runtime))
 	}
 	return createEl(
 		'div',
 		{
 			className: 'flex gap-4 border-b border-border px-2 py-3',
-			data: { testid: `agenda-day-${dayKey(dayStart)}` },
+			data: { testid: `agenda-day-${group.key}` },
 		},
 		[dayCol, eventsCol]
 	)
@@ -255,38 +200,18 @@ export const renderDomAgendaView = (runtime: DomRuntime): HTMLElement => {
 	const options = runtime.getOptions()
 	const state = runtime.controller.getState()
 	const current = resolveCurrentZonedDate(state.currentDate, state.timezone)
-	const range = resolveAgendaWindowRange(
-		current,
-		state.firstDayOfWeek,
-		options.agendaWindow
-	)
-	const parsed = parseDomEventRanges(runtime.getVisibleEvents(), state.timezone)
-
-	const container = createEl('div', {
-		data: { view: 'agenda', testid: 'dom-agenda-view' },
+	const model = buildAgendaViewModel({
+		currentDate: current,
+		events: runtime.getVisibleEvents(),
+		window: options.agendaWindow ?? 'week',
+		firstDayOfWeek: state.firstDayOfWeek,
+		timezone: state.timezone,
+		nowIndicator: options.nowIndicator,
 	})
-	applySlot(container, 'grid', 'bg-background', options, 'flex-1 overflow-auto')
 
-	const list = createEl('div', { className: 'flex flex-col' })
-	let cursor = startOf(range.start, 'day')
-	const lastDay = startOf(range.end, 'day')
+	const container = createGridScrollContainer('agenda', options)
 
-	while (isSameOrBefore(cursor, lastDay, 'day')) {
-		const dayStart = startOf(cursor, 'day')
-		const dayEnd = endOf(cursor, 'day')
-		const dayEntries = parsed
-			.filter((entry) => overlapsRange(entry, dayStart, dayEnd))
-			.sort(sortAgendaEntries)
-
-		if (dayEntries.length > 0) {
-			list.appendChild(
-				renderAgendaDayGroup(dayStart, dayEntries, state.locale, runtime)
-			)
-		}
-		cursor = startOf(add(cursor, 1, 'day'), 'day')
-	}
-
-	if (list.childElementCount === 0) {
+	if (model.groups.length === 0) {
 		container.appendChild(
 			createEl('div', {
 				text: 'No events scheduled in this period.',
@@ -301,6 +226,10 @@ export const renderDomAgendaView = (runtime: DomRuntime): HTMLElement => {
 		return container
 	}
 
+	const list = createEl('div', { className: 'flex flex-col' })
+	for (const group of model.groups) {
+		list.appendChild(renderAgendaDayGroup(group, state.locale, runtime))
+	}
 	container.appendChild(list)
 	return container
 }

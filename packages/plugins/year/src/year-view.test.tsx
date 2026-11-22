@@ -6,13 +6,11 @@ import {
 	setSystemTime,
 	test,
 } from 'bun:test'
+import type { CalendarEvent, DateRange, IsoDateString } from '@ilamy/calendar'
 import {
-	type CalendarEvent,
-	type DateRange,
 	type IlamyPlugin,
-	type IsoDateString,
 	useIlamyCalendarContext,
-} from '@ilamy/calendar'
+} from '@ilamy/calendar/react'
 import { CalendarTestProvider } from '@ilamy/calendar/testing'
 import {
 	add,

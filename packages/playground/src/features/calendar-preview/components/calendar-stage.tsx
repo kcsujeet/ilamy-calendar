@@ -1,11 +1,6 @@
-import type {
-	CalendarEvent,
-	CalendarThemeAdapter,
-	CalendarView,
-	Resource,
-} from '@ilamy/calendar'
-import { IlamyCalendar } from '@ilamy/calendar'
-import type { DomCalendarOptions } from '@ilamy/calendar/vue'
+import type { CalendarEvent, CalendarView, Resource } from '@ilamy/calendar'
+import type { DomCalendarOptions } from '@ilamy/calendar/dom'
+import { type CalendarThemeAdapter, IlamyCalendar } from '@ilamy/calendar/react'
 import { Globe2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type {

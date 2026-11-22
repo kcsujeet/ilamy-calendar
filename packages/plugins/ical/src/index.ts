@@ -1,4 +1,4 @@
-import { type IlamyPlugin, SLOT_TOOLBAR } from '@ilamy/calendar'
+import { type IlamyPlugin, SLOT_TOOLBAR } from '@ilamy/calendar/react'
 import { createElement } from 'react'
 import { IcalExportButton } from './ical-export-button'
 

@@ -1,6 +1,7 @@
-import { type CalendarEvent, IlamyCalendar } from '@ilamy/calendar'
+import type { CalendarEvent } from '@ilamy/calendar'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 import { yearPlugin } from '@ilamy/calendar/plugins/year'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import {
 	Profiler,
 	type ProfilerOnRenderCallback,

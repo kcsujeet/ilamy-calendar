@@ -42,10 +42,30 @@ export default defineConfig(({ mode }) => {
 			tsconfigPaths: true,
 			alias: {
 				'@ilamy/playground': pkg('playground/src'),
+				'@ilamy/calendar/styles.css': pkg('calendar/dist/styles.css'),
+				'@ilamy/calendar/styles/base.css': pkg('calendar/dist/styles/base.css'),
+				'@ilamy/calendar/styles/theme.css': pkg(
+					'calendar/dist/styles/theme.css'
+				),
+				'@ilamy/calendar/react': pkg('adapters/react/src/index.ts'),
+				'@ilamy/calendar/dom': pkg('dom/src/index.ts'),
 				'@ilamy/calendar/vue': pkg('adapters/vue/src'),
 				'@ilamy/calendar/svelte': pkg('adapters/svelte/src'),
 				'@ilamy/calendar/solid': pkg('adapters/solid/src'),
 				'@ilamy/calendar/angular': pkg('adapters/angular/src'),
+				'@ilamy/calendar/themes/mui': pkg('themes/mui/src'),
+				'@ilamy/calendar/themes/stylex': pkg('themes/stylex/src'),
+				'@ilamy/calendar/plugins/recurrence': pkg('plugins/recurrence/src'),
+				'@ilamy/calendar/plugins/agenda': pkg('plugins/agenda/src'),
+				'@ilamy/calendar/plugins/drag-to-create': pkg(
+					'plugins/drag-to-create/src'
+				),
+				'@ilamy/calendar/plugins/year': pkg('plugins/year/src'),
+				'@ilamy/calendar/plugins/ical': pkg('plugins/ical/src'),
+				'@ilamy/adapter-react/testing': pkg(
+					'adapters/react/src/testing/index.tsx'
+				),
+				'@ilamy/adapter-react': pkg('adapters/react/src'),
 				'@ilamy/adapter-vue': pkg('adapters/vue/src'),
 				'@ilamy/adapter-svelte': pkg('adapters/svelte/src'),
 				'@ilamy/adapter-solid': pkg('adapters/solid/src'),
@@ -59,7 +79,7 @@ export default defineConfig(({ mode }) => {
 				'@ilamy/theme-stylex': pkg('themes/stylex/src'),
 				'@ilamy/dom': pkg('dom/src'),
 				'@ilamy/core': pkg('core/src'),
-				'@ilamy/calendar': pkg('calendar/src'),
+				'@ilamy/calendar': pkg('calendar/src/index.ts'),
 				'@ilamy/ui': pkg('ui/src'),
 				'@ilamy/utils': pkg('utils/src'),
 				'@ilamy/types': pkg('types/src'),

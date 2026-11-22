@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test'
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 import { CalendarTestProvider } from '@ilamy/calendar/testing'
 import { act, render, screen } from '@testing-library/react'
 import { DragToCreateProvider } from './drag-to-create-provider'

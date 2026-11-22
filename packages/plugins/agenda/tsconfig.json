@@ -3,6 +3,7 @@
 	"compilerOptions": {
 		"types": ["bun"],
 		"paths": {
+			"@ilamy/core": ["../../core/src/index.ts"],
 			"@ilamy/utils/temporal": ["../../utils/src/temporal.ts"],
 			"@ilamy/utils/helpers": ["../../utils/src/helpers.ts"],
 			"@ilamy/ui/components/*": ["../../ui/src/components/*"],

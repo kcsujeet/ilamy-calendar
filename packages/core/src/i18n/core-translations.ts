@@ -1,0 +1,136 @@
+export const defaultTranslations = {
+	// Common actions
+	today: 'Today',
+	create: 'Create',
+	new: 'New',
+	update: 'Update',
+	delete: 'Delete',
+	cancel: 'Cancel',
+	export: 'Export',
+	previous: 'Previous',
+	next: 'Next',
+
+	// Event related
+	event: 'Event',
+	events: 'Events',
+	newEvent: 'New Event',
+	title: 'Title',
+	description: 'Description',
+	location: 'Location',
+	allDay: 'All day',
+	startDate: 'Start Date',
+	endDate: 'End Date',
+	startTime: 'Start Time',
+	searchTime: 'Search time...',
+	selectTime: 'Select time...',
+	noTimeFound: 'N/A',
+	pickDate: 'Pick a date',
+	previousMonth: 'Previous month',
+	nextMonth: 'Next month',
+	previousYear: 'Previous year',
+	nextYear: 'Next year',
+	previousYears: 'Previous years',
+	nextYears: 'Next years',
+	endTime: 'End Time',
+	color: 'Color',
+
+	// Event form
+	createEvent: 'Create Event',
+	editEvent: 'Edit Event',
+	addNewEvent: 'Add a new event to your calendar',
+	editEventDetails: 'Edit your event details',
+	eventTitlePlaceholder: 'Event title',
+	eventDescriptionPlaceholder: 'Event description (optional)',
+	eventLocationPlaceholder: 'Event location (optional)',
+
+	// Recurrence
+	repeat: 'Repeat',
+	repeats: 'Repeats',
+	customRecurrence: 'Custom recurrence',
+	frequency: 'Frequency',
+	everyWeekday: 'Every weekday',
+	weeklyOn: 'Weekly on',
+	monthlyOnDay: 'Monthly on day',
+	monthlyOnThe: 'Monthly on the',
+	first: 'first',
+	second: 'second',
+	third: 'third',
+	fourth: 'fourth',
+	last: 'last',
+	daily: 'Daily',
+	weekly: 'Weekly',
+	monthly: 'Monthly',
+	yearly: 'Yearly',
+	interval: 'Interval',
+	repeatOn: 'Repeat on',
+	never: 'Never',
+	count: 'Count',
+	every: 'Every',
+	ends: 'Ends',
+	after: 'After',
+	occurrences: 'occurrences',
+	on: 'On',
+
+	// Recurrence edit dialog
+	editRecurringEvent: 'Edit recurring event',
+	deleteRecurringEvent: 'Delete recurring event',
+	editRecurringEventQuestion:
+		'is a recurring event. How would you like to edit it?',
+	deleteRecurringEventQuestion:
+		'is a recurring event. How would you like to delete it?',
+	thisEvent: 'This event',
+	thisEventDescription: 'Only change this specific occurrence',
+	thisAndFollowingEvents: 'This and following events',
+	thisAndFollowingEventsDescription: 'Edit this and all future occurrences',
+	allEvents: 'All events',
+	allEventsDescription: 'Edit the entire recurring series',
+	onlyChangeThis: 'Only change this specific occurrence',
+	changeThisAndFuture: 'Change this and all future occurrences',
+	changeEntireSeries: 'Change the entire recurring series',
+	onlyDeleteThis: 'Only delete this specific occurrence',
+	deleteThisAndFuture: 'Delete this and all future occurrences',
+	deleteEntireSeries: 'Delete the entire recurring series',
+
+	// View types
+	month: 'Month',
+	week: 'Week',
+	day: 'Day',
+	year: 'Year',
+	agenda: 'Agenda',
+	agendaNoEvents: 'No upcoming events',
+	more: 'more',
+
+	// Resource calendar
+	resources: 'Resources',
+	resource: 'Resource',
+	selectResource: 'Select a resource',
+	time: 'Time',
+	date: 'Date',
+	noResourcesVisible: 'No resources visible',
+	addResourcesOrShowExisting: 'Add resources or show existing ones',
+} satisfies Record<string, string>
+
+export type Translations = Record<keyof typeof defaultTranslations, string>
+export type TranslationKey = keyof Translations
+export type TranslatorFunction = (key: TranslationKey | string) => string
+
+const defaultTranslationLookup: Record<string, string> = defaultTranslations
+
+/**
+ * Builds a translation lookup function with precedence:
+ * custom `translator` -> `translations[key]` -> `defaultTranslations[key]` -> `fallback` -> `key`.
+ */
+export const createTranslator = (
+	translations?: Partial<Translations> | Record<string, string>,
+	translator?: TranslatorFunction
+): ((key: TranslationKey | string, fallback?: string) => string) => {
+	const customLookup: Partial<Record<string, string>> | undefined = translations
+	return (key, fallback) => {
+		if (translator) {
+			return translator(key)
+		}
+		return (
+			customLookup?.[key] || defaultTranslationLookup[key] || fallback || key
+		)
+	}
+}

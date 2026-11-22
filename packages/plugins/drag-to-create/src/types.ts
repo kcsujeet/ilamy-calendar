@@ -1,4 +1,5 @@
-import type { CellInfo, OpenEventFormInput } from '@ilamy/calendar'
+import type { CellInfo } from '@ilamy/calendar'
+import type { OpenEventFormInput } from '@ilamy/calendar/react'
 
 export interface DragToCreateOptions {
 	/**

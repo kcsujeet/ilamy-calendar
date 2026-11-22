@@ -1,5 +1,5 @@
 import type { CellInfo, Resource } from '@ilamy/calendar'
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 import { isRangeWithinBusinessHours } from '@ilamy/core'
 import { toOffsetIso } from '@ilamy/utils/temporal'
 import { type ReactNode, useRef, useState } from 'react'

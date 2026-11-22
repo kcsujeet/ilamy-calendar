@@ -17,7 +17,7 @@ Date, month, and weekday formatting runs on the browser's built-in `Intl.DateTim
 :::
 
 ```tsx title="Locale and Timezone"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function InternationalCalendar() {
   return (
@@ -39,7 +39,8 @@ The `translations` prop takes the full `Translations` type: every key must be pr
 At runtime, a key the object lacks (plain JavaScript, a cast, or an object written before the key existed) shows the English default rather than the raw key name. The type still requires every key, so add new keys when you upgrade: 3.3 added nine for the date and time pickers.
 
 ```tsx title="Custom Translations Object"
-import { IlamyCalendar, defaultTranslations, type Translations } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
+import { defaultTranslations, type Translations } from '@ilamy/calendar';
 
 const frenchTranslations: Translations = {
   ...defaultTranslations, // every key, in English, until you translate it
@@ -70,7 +71,8 @@ function TranslatedCalendar() {
 For dynamic translations or integration with existing i18n libraries, you can provide a translator function. It receives a translation key and returns the translated string. Return the key itself for a label you do not translate.
 
 ```tsx title="Translator Function"
-import { IlamyCalendar, type TranslatorFunction } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
+import type { TranslatorFunction } from '@ilamy/calendar';
 
 const translations: Record<string, string> = {
   today: 'Aujourd\'hui',
@@ -104,7 +106,7 @@ You can easily integrate the calendar with popular i18n libraries like react-i18
 ### react-i18next Integration
 
 ```tsx title="react-i18next Integration"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 import { useTranslation } from 'react-i18next';
 
 function I18nCalendar() {
@@ -126,7 +128,7 @@ function I18nCalendar() {
 ### react-intl Integration
 
 ```tsx title="react-intl Integration"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 import { useIntl } from 'react-intl';
 
 function IntlCalendar() {

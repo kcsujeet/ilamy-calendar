@@ -11,7 +11,7 @@ Since ilamy Calendar is a client-side component, you must use the `'use client'`
 ```tsx
 'use client'
 
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 
 export default function Calendar() {
   // ...

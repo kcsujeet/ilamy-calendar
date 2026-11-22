@@ -1,4 +1,4 @@
-import type { PluginView } from '@ilamy/calendar'
+import type { PluginView } from '@ilamy/calendar/react'
 import { now, parseDate, resolveZone, toOffsetIso } from '@ilamy/utils/temporal'
 import { List } from 'lucide-react'
 import { createElement } from 'react'

@@ -1,12 +1,12 @@
 import './augment'
-import type {
-	CalendarEvent,
-	EventFormSlotContext,
-	EventMutationScopeSlotContext,
-	IlamyPlugin,
-	PluginMutationArgs,
-} from '@ilamy/calendar'
-import { SLOT_EVENT_FORM, SLOT_EVENT_MUTATION_SCOPE } from '@ilamy/calendar'
+import type { CalendarEvent, PluginMutationArgs } from '@ilamy/calendar'
+import {
+	type EventFormSlotContext,
+	type EventMutationScopeSlotContext,
+	type IlamyPlugin,
+	SLOT_EVENT_FORM,
+	SLOT_EVENT_MUTATION_SCOPE,
+} from '@ilamy/calendar/react'
 import type { ReactNode } from 'react'
 import { RecurrenceEditDialog } from './components/recurrence-edit-dialog/recurrence-edit-dialog'
 import { RecurrenceFormSection } from './components/recurrence-form-section'

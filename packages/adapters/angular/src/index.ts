@@ -228,14 +228,3 @@ export const registerIlamyCalendarElement = (
 	}
 	return IlamyCalendarElement
 }
-
-export type {
-	DomCalendarEvent,
-	DomCalendarEventInput,
-	DomCalendarOptions,
-	DomEventFormRenderContext,
-	DomEventRenderContext,
-	DomHeaderRenderContext,
-	DomResourceRenderContext,
-	MountedCalendar,
-} from '@ilamy/dom'

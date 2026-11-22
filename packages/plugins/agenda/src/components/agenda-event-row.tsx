@@ -1,18 +1,11 @@
 import type { CalendarEvent, EventSegment } from '@ilamy/calendar'
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
+import type { AgendaEventEntry } from '@ilamy/core'
 import { cn } from '@ilamy/ui/lib/utils'
-import {
-	formatDate,
-	parseDate,
-	startOf,
-	subtract,
-	wallClockDiff,
-	type ZonedDate,
-} from '@ilamy/utils/temporal'
+import { formatDate } from '@ilamy/utils/temporal'
 
 interface AgendaEventRowProps {
-	event: CalendarEvent
-	day: ZonedDate
+	entry: AgendaEventEntry
 }
 
 interface AgendaEventRowContentProps {
@@ -42,26 +35,21 @@ const AgendaEventRowContent = ({
 	)
 }
 
-export const AgendaEventRow = ({ event, day }: AgendaEventRowProps) => {
+export const AgendaEventRow = ({ entry }: AgendaEventRowProps) => {
 	const { t, timeFormat, currentLocale, onEventClick } =
 		useIlamyCalendarContext()
-	const zone = day.timeZoneId
-	const start = parseDate(event.start, zone) ?? day
-	const end = parseDate(event.end, zone) ?? start
+	const {
+		event,
+		start,
+		end,
+		dayIndex,
+		totalDays,
+		isMultiDay,
+		isFirstDay,
+		isLastDay,
+		isAllDayLabel,
+	} = entry
 
-	const eventStartDay = startOf(start, 'day')
-	const lastCoveredDay = startOf(subtract(end, 1, 'millisecond'), 'day')
-	const coveredDayCount =
-		Math.round(wallClockDiff(lastCoveredDay, eventStartDay, 'day')) + 1
-	const totalDays = Math.max(coveredDayCount, 1)
-	const dayIndex =
-		Math.round(wallClockDiff(startOf(day, 'day'), eventStartDay, 'day')) + 1
-	const isMultiDay = totalDays > 1
-	const isFirstDay = dayIndex === 1
-	const isLastDay = dayIndex === totalDays
-
-	const isAllDayLabel =
-		Boolean(event.allDay) || (isMultiDay && !isFirstDay && !isLastDay)
 	const edgeTime = isMultiDay && isLastDay ? end : start
 	const formattedTime = formatDate(
 		edgeTime,

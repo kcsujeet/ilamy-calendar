@@ -26,15 +26,19 @@ Use the `headerClassName` prop to apply custom styles to the calendar header:
 For complete control, you can replace the default header with your own element. It renders inside the calendar, so it can read and drive the calendar through [`useIlamyCalendarContext`](/docs/components/use-ilamy-calendar-context):
 
 ```tsx
-import { useIlamyCalendarContext } from '@ilamy/calendar';
+import { IlamyCalendar, useIlamyCalendarContext } from '@ilamy/calendar/react';
 
 const CustomHeader = () => {
   const { currentDate, prevPeriod, nextPeriod } = useIlamyCalendarContext();
+  const label = new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(currentDate));
 
   return (
     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-purple-600">
       <button onClick={prevPeriod}>← Previous</button>
-      <h2 className="text-white font-bold">{currentDate.format('MMMM YYYY')}</h2>
+      <h2 className="text-white font-bold">{label}</h2>
       <button onClick={nextPeriod}>Next →</button>
     </div>
   );
@@ -137,7 +141,7 @@ When a day cell holds more events than `dayMaxEvents` (default `4`), the calenda
   events={events}
   dayMaxEvents={3}
   onMoreEventsClick={(day, events) => {
-    // day: the cell's day (Dayjs); events: all events for that day
+    // day: ISO date string for the cell's day; events: all events for that day
     openDayDrawer(day, events);
   }}
 />

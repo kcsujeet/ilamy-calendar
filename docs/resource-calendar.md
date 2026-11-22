@@ -23,7 +23,7 @@ The Resource Calendar extends the standard calendar with resource-based event or
 ## Basic Usage
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import type { Resource, CalendarEvent } from '@ilamy/calendar'
 
 const resources: Resource[] = [
@@ -266,7 +266,7 @@ the callback form `(fetchInfo, success, failure)` is not supported, only the Pro
 Access the resource calendar context from within custom components:
 
 ```tsx
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 
 function CustomComponent() {
   const {
@@ -431,7 +431,7 @@ Cross-resource events are displayed across all assigned resource rows:
 ### Working with Cross-Resource Events
 
 ```tsx
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 
 function EventManager() {
   const { events, resources } = useIlamyCalendarContext()
@@ -468,7 +468,7 @@ Customize how resources are displayed using the `renderResource` prop:
 ### Basic Custom Rendering
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import type { Resource } from '@ilamy/calendar'
 
 const CustomResourceRenderer = (resource: Resource) => (
@@ -617,10 +617,9 @@ const CustomEventRenderer = (event: CalendarEvent) => {
 ### Room Booking System
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar'
+import { IlamyCalendar } from '@ilamy/calendar/react'
 import type { CalendarEvent, CellInfo, Resource } from '@ilamy/calendar'
 import { useState } from 'react'
-import dayjs from 'dayjs'
 
 const RoomBookingCalendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([])
@@ -974,7 +973,7 @@ const recurringMeeting: CalendarEvent = {
 Export resource calendar events to iCalendar format:
 
 ```tsx
-import { downloadICalendar } from '@ilamy/calendar'
+import { downloadICalendar } from '@ilamy/calendar/plugins/ical'
 
 const handleExport = () => {
   const { events } = useIlamyCalendarContext()
@@ -989,13 +988,8 @@ See the [iCalendar Export Guide](./export-ical.md) for more details.
 The Resource Calendar is fully typed with comprehensive TypeScript definitions:
 
 ```typescript
-import type {
-  Resource,
-  CalendarEvent,
-  CellInfo,
-  IlamyCalendarProps,
-  IlamyCalendarApi,
-} from '@ilamy/calendar'
+import type { Resource, CalendarEvent, CellInfo } from '@ilamy/calendar'
+import type { IlamyCalendarProps, IlamyCalendarApi } from '@ilamy/calendar/react'
 
 // Type-safe resource definition
 const typedResource: Resource = {

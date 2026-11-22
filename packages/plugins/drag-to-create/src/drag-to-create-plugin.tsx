@@ -1,4 +1,4 @@
-import type { IlamyPlugin } from '@ilamy/calendar'
+import type { IlamyPlugin } from '@ilamy/calendar/react'
 import { DragToCreateProvider } from './components/drag-to-create-provider'
 import type { DragToCreateOptions } from './types'
 

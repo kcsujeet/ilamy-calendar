@@ -11,7 +11,8 @@ A comprehensive React calendar component with month, week, day, and year views, 
 The Calendar component is the main component for displaying calendar views. It supports various props for customization and event handling. Events should follow the [CalendarEvent interface](#calendarevent-interface).
 
 ```tsx title="Basic Calendar"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
+import '@ilamy/calendar/styles.css';
 
 const events = [
   {
@@ -46,7 +47,7 @@ function MyCalendar() {
 The core is plugin-agnostic and ships **no plugins by default**. Capabilities like recurring events, agenda view, year view, iCalendar export, and drag-to-create are opt-in plugins you register through the `plugins` prop. Each plugin is imported from its own subpath so you only ship the code you use.
 
 ```tsx
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence';
 import { agendaPlugin } from '@ilamy/calendar/plugins/agenda';
 import { yearPlugin } from '@ilamy/calendar/plugins/year';
@@ -71,7 +72,7 @@ import { icalPlugin } from '@ilamy/calendar/plugins/ical';
 | `yearPlugin()` | `@ilamy/calendar/plugins/year` | 12-month year overview grid. See [Year View](/docs/plugins/year). |
 | `icalPlugin()` | `@ilamy/calendar/plugins/ical` | Header `.ics` export button + `exportToICalendar` / `downloadICalendar` with RFC 5545 `VTIMEZONE` & `TZID`. See [iCalendar Plugin](/docs/plugins/ical). |
 
-Valid package entry points are `@ilamy/calendar`, `@ilamy/calendar/core`, `@ilamy/calendar/testing`, `@ilamy/calendar/plugins/{recurrence,agenda,drag-to-create,year,ical}`, and `@ilamy/calendar/themes/{mui,stylex}`. Deep imports into package internals are blocked.
+Valid package entry points are `@ilamy/calendar` (headless core), `@ilamy/calendar/react`, `@ilamy/calendar/vue`, `@ilamy/calendar/svelte`, `@ilamy/calendar/solid`, `@ilamy/calendar/angular`, `@ilamy/calendar/dom`, `@ilamy/calendar/styles.css`, `@ilamy/calendar/styles/base.css`, `@ilamy/calendar/testing`, `@ilamy/calendar/plugins/{recurrence,agenda,drag-to-create,year,ical}`, and `@ilamy/calendar/themes/{mui,stylex}`. Deep imports into package internals are blocked.
 
 ## Props
 
@@ -166,7 +167,7 @@ Valid package entry points are `@ilamy/calendar`, `@ilamy/calendar/core`, `@ilam
 ### With Event Handlers
 
 ```tsx title="Event Handlers Example"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function MyCalendar() {
   const handleEventClick = (event) => {
@@ -206,7 +207,7 @@ The calendar supports comprehensive internationalization including locale-based 
 Configure whether times are displayed in 12-hour or 24-hour format in week and day views.
 
 ```tsx title="12-Hour and 24-Hour Time Formats"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function MyCalendar() {
   return (
@@ -232,7 +233,7 @@ function MyCalendar() {
 ### Custom Event Rendering
 
 ```tsx title="Custom Event Renderer"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function CustomCalendar() {
   // `segment` says which slice of the event this bar draws; see
@@ -339,7 +340,7 @@ resource column instead of beside it:
 By default, event bars in month view are 24px tall — enough for a single line of text. Use `eventHeight` to increase the height and show more content, such as a title and time range on separate lines. Pair with `renderEvent` for full control over what's displayed.
 
 ```tsx title="Multi-Line Event Bars"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function MyCalendar() {
   return (
@@ -369,7 +370,7 @@ function MyCalendar() {
 Pass a function as `events` and the calendar calls it with the visible range, so you load only what is on screen. In month view the range includes the leading and trailing days of the neighbouring months, and `end` is exclusive.
 
 ```tsx title="Events from an API"
-import { IlamyCalendar, type EventsFetcher } from '@ilamy/calendar';
+import { IlamyCalendar, type EventsFetcher } from '@ilamy/calendar/react';
 import { useState } from 'react';
 
 const fetchEvents: EventsFetcher = async ({ startStr, endStr }, { signal }) => {
@@ -408,7 +409,7 @@ function LoadedCalendar() {
 Pass a `ref` to drive the calendar from your own toolbar, a sidebar or a "jump to" button. `ref.current` is the same object [`useIlamyCalendarContext`](/docs/components/use-ilamy-calendar-context) returns, so the names are the same.
 
 ```tsx title="A toolbar outside the calendar"
-import { IlamyCalendar, type IlamyCalendarApi } from '@ilamy/calendar';
+import { IlamyCalendar, type IlamyCalendarApi } from '@ilamy/calendar/react';
 import { useRef } from 'react';
 
 function Planner() {
@@ -438,7 +439,8 @@ function Planner() {
 ### Initial View and Event Lifecycle
 
 ```tsx title="Advanced Calendar Configuration"
-import { IlamyCalendar, type CalendarEvent, type DateRange, type IsoDateString } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
+import type { CalendarEvent, DateRange, IsoDateString } from '@ilamy/calendar';
 import { useState } from 'react';
 
 function AdvancedCalendar() {
@@ -533,7 +535,7 @@ import { yearPlugin } from '@ilamy/calendar/plugins/year';
 Shade working days and hours on the calendar grid (and optionally hide closed hours with `hideNonBusinessHours`). Matching FullCalendar, `businessHours` is visual shading by default — to also block moves, resizes, selections, or form edits outside working hours, opt in with `eventConstraint="businessHours"` and/or `selectConstraint="businessHours"`. See the [v4.0 migration guide](/docs/help/migration-to-v4).
 
 ```tsx title="Configuring Business Hours"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function BusinessCalendar() {
   const events = [/* your events */];
@@ -655,7 +657,7 @@ Hide specific weekdays. A hidden day gets no column or row, and the remaining da
 In the day view, previous, next and today skip hidden days, and the view opens on the next visible day when it is given a hidden one. In the week view the title names only the days that are drawn.
 
 ```tsx title="Hiding Weekends"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function BusinessWeekCalendar() {
   return (
@@ -784,7 +786,7 @@ Only the options object is supported: no format strings or functions. Use `rende
 Customize how hour labels are displayed in the time gutter of day and week views using the `renderHour` prop.
 
 ```tsx title="Custom Hour Labels"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 
 function MyCalendar() {
   return (
@@ -816,7 +818,7 @@ You can fully customize the "current time" line that appears in day and week vie
 Branch on `axis`: horizontal resource hour grids (resource day/week horizontal) pass `axis === 'horizontal'` and expect a **vertical** line positioned with `left`; vertical day/week grids pass `axis === 'vertical'` and expect a **horizontal** line positioned with `top`. Ignoring `axis` draws a horizontal line in every view, which renders incorrectly in horizontal resource grids.
 
 ```tsx title="Resource-Aware Custom Current Time Indicator"
-import type { RenderCurrentTimeIndicatorProps } from '@ilamy/calendar';
+import type { RenderCurrentTimeIndicatorProps } from '@ilamy/calendar/react';
 
 const CustomIndicator = ({ currentTime, progress, resource, axis }: RenderCurrentTimeIndicatorProps) => {
   const label = new Date(currentTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -881,7 +883,8 @@ The renderer receives a context object with the following properties:
 Replace the default event form with your own custom implementation using the `renderEventForm` prop. This gives you full control over the event creation and editing experience.
 
 ```tsx title="Custom Event Form Implementation"
-import { IlamyCalendar, type EventFormProps, type CalendarEvent } from '@ilamy/calendar';
+import { IlamyCalendar, type EventFormProps } from '@ilamy/calendar/react';
+import type { CalendarEvent } from '@ilamy/calendar';
 
 const CustomEventForm = ({
   open,
@@ -1031,7 +1034,8 @@ Fired when the user navigates to a different date or time period, or when the vi
 ### Complete Integration Example
 
 ```tsx title="Full Event Lifecycle Management"
-import { IlamyCalendar, type CalendarEvent, type DateRange, type IsoDateString } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
+import type { CalendarEvent, DateRange, IsoDateString } from '@ilamy/calendar';
 import { useState } from 'react';
 
 function CalendarWithAPI() {
@@ -1363,7 +1367,8 @@ interface CellInfo {
 Handle cell clicks with the CellInfo object:
 
 ```typescript
-import { useIlamyCalendarContext, type CellInfo } from '@ilamy/calendar';
+import { useIlamyCalendarContext } from '@ilamy/calendar/react';
+import type { CellInfo } from '@ilamy/calendar';
 
 // Inside a component rendered by the calendar (see useIlamyCalendarContext)
 const { openEventForm } = useIlamyCalendarContext();
@@ -1451,7 +1456,7 @@ Currently, `CalendarClassesOverride` only supports customizing disabled cells. I
 Customize the styling of disabled cells:
 
 ```typescript
-import type { CalendarClassesOverride } from '@ilamy/calendar';
+import type { CalendarClassesOverride } from '@ilamy/calendar/react';
 
 const classesOverride: CalendarClassesOverride = {
   disabledCell: 'opacity-30 bg-gray-100 cursor-not-allowed',
@@ -1499,7 +1504,7 @@ interface EventFormProps {
 Implementing a custom event form with EventFormProps:
 
 ```typescript
-import type { EventFormProps } from '@ilamy/calendar';
+import type { EventFormProps } from '@ilamy/calendar/react';
 
 const MyEventForm = (props: EventFormProps) => {
   const { open, selectedEvent, onAdd, onUpdate, onDelete, onClose } = props;

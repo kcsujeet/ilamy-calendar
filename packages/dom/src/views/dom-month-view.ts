@@ -1,13 +1,15 @@
 import {
 	add,
+	buildMonthViewModel,
 	type CellInfo,
 	dayKey,
 	formatDate,
 	getHorizontalBarStyle,
-	getWeekNumber,
+	type HorizontalLayoutResult,
 	isBusinessDay,
 	isToday,
-	layoutHorizontal,
+	type MonthCellViewModel,
+	type MonthWeekViewModel,
 	type Resource,
 	startOf,
 	toOffsetIso,
@@ -20,7 +22,7 @@ import {
 import {
 	applySlot,
 	createEl,
-	getVisibleMonthWeeks,
+	createGridScrollContainer,
 	mergeClassNames,
 	resolveCurrentZonedDate,
 } from '../core/dom-styles.utils'
@@ -63,57 +65,44 @@ const computeMonthCellMinHeight = (dayMaxEvents: number | undefined): number =>
 	MORE_LINK_RESERVE_PX
 
 const createMonthCellData = (
-	day: ZonedDate,
-	cellInfo: CellInfo,
-	isNonBusiness: boolean,
-	isDisabled: boolean
+	cellModel: MonthCellViewModel
 ): Record<string, string | undefined> => ({
 	cell: 'true',
-	date: dayKey(day),
-	start: cellInfo.start,
-	end: cellInfo.end,
+	date: cellModel.key,
+	start: cellModel.cellInfo.start,
+	end: cellModel.cellInfo.end,
 	allDay: 'true',
-	resourceId: cellInfo.resource ? String(cellInfo.resource.id) : undefined,
-	nonBusiness: isNonBusiness ? 'true' : undefined,
-	disabled: isDisabled ? 'true' : undefined,
-	testid: `day-cell-${dayKey(day)}`,
+	resourceId: cellModel.cellInfo.resource
+		? String(cellModel.cellInfo.resource.id)
+		: undefined,
+	outsideMonth: cellModel.isOutsideMonth ? 'true' : undefined,
+	nonBusiness: cellModel.isNonBusiness ? 'true' : undefined,
+	disabled: cellModel.isDisabled ? 'true' : undefined,
+	testid: `day-cell-${cellModel.key}`,
 })
 
-export const buildMonthCell = (
-	day: ZonedDate,
-	currentMonth: number,
-	runtime: DomRuntime,
-	resource?: Resource
+const renderMonthCellFromModel = (
+	cellModel: MonthCellViewModel,
+	runtime: DomRuntime
 ): HTMLElement => {
 	const options = runtime.getOptions()
 	const state = runtime.controller.getState()
-	const cellStart = startOf(day, 'day')
-	const cellInfo: CellInfo = {
-		start: toOffsetIso(cellStart),
-		end: toOffsetIso(add(cellStart, 1, 'day')),
-		allDay: true,
-		resource,
-	}
-	const businessHours = resolveEffectiveBusinessHours(options, resource)
-	const isNonBusiness = Boolean(
-		businessHours && !isBusinessDay(day, businessHours)
-	)
-	const isDisabled = Boolean(options.isCellDisabled?.(cellInfo))
-	const isTodayCell = isToday(day)
+	const { date, cellInfo, isToday: isTodayCell, isOutsideMonth } = cellModel
+	const { isNonBusiness, isDisabled } = cellModel
 	const customClass = options.getCellClassName?.(cellInfo) ?? ''
 	const minCellHeightPx = computeMonthCellMinHeight(options.dayMaxEvents)
 
 	const cell = createEl('div', {
 		attrs: isTodayCell ? { 'aria-current': 'date' } : undefined,
 		style: { minHeight: `${minCellHeightPx}px` },
-		data: createMonthCellData(day, cellInfo, isNonBusiness, isDisabled),
+		data: createMonthCellData(cellModel),
 	})
 
 	const slotName = resolveMonthCellSlot(isDisabled, isTodayCell, isNonBusiness)
 	const stateClass = resolveMonthCellStateClass(
 		isDisabled,
 		isNonBusiness,
-		day.month !== currentMonth
+		isOutsideMonth
 	)
 	applySlot(
 		cell,
@@ -123,7 +112,6 @@ export const buildMonthCell = (
 		'relative'
 	)
 
-	const isOutsideMonth = day.month !== currentMonth
 	let dayTextColor = 'text-foreground'
 	if (isTodayCell) {
 		dayTextColor = ''
@@ -137,7 +125,8 @@ export const buildMonthCell = (
 		dayBadgeStruct = `${dayBadgeBase} bg-primary text-primary-foreground`
 	}
 	const dayNum = createEl('span', {
-		text: String(day.day),
+		text: String(date.day),
+		data: isTodayCell ? { ilamyTodayBadge: '' } : undefined,
 		className: mergeClassNames(
 			options.unstyled,
 			dayTextColor,
@@ -156,20 +145,45 @@ export const buildMonthCell = (
 	return cell
 }
 
+export const buildMonthCell = (
+	day: ZonedDate,
+	currentMonth: number,
+	runtime: DomRuntime,
+	resource?: Resource
+): HTMLElement => {
+	const options = runtime.getOptions()
+	const cellStart = startOf(day, 'day')
+	const cellInfo: CellInfo = {
+		start: toOffsetIso(cellStart),
+		end: toOffsetIso(add(cellStart, 1, 'day')),
+		allDay: true,
+		resource,
+	}
+	const businessHours = resolveEffectiveBusinessHours(options, resource)
+	return renderMonthCellFromModel(
+		{
+			date: day,
+			key: dayKey(day),
+			cellInfo,
+			isToday: isToday(day),
+			isOutsideMonth: day.month !== currentMonth,
+			isNonBusiness: Boolean(
+				businessHours && !isBusinessDay(day, businessHours)
+			),
+			isDisabled: Boolean(options.isCellDisabled?.(cellInfo)),
+		},
+		runtime
+	)
+}
+
 export const renderEventOverlay = (
 	weekDays: ZonedDate[],
-	events: DomCalendarEvent[],
+	layout: HorizontalLayoutResult,
 	runtime: DomRuntime,
 	resource?: Resource
 ): HTMLElement => {
 	const options = runtime.getOptions()
 	const state = runtime.controller.getState()
-	const dayMaxEvents = options.dayMaxEvents ?? DEFAULT_DAY_MAX_EVENTS
-	const layout = layoutHorizontal({
-		events,
-		days: weekDays,
-		dayMaxEvents,
-	})
 
 	const overlay = createEl('div', {
 		className: mergeClassNames(
@@ -256,16 +270,19 @@ export const renderEventOverlay = (
 }
 
 const renderMonthHeaderRow = (
-	firstWeek: ZonedDate[],
+	weekdayHeaders: string[],
 	colTemplate: string,
 	showWeekNumbers: boolean,
 	runtime: DomRuntime
 ): HTMLElement => {
 	const options = runtime.getOptions()
-	const state = runtime.controller.getState()
-	const stickyStruct =
-		options.stickyViewHeader !== false ? 'grid sticky top-0 z-30' : 'grid'
+	const isSticky = options.stickyViewHeader !== false
+	const stickyStruct = isSticky ? 'grid sticky top-0 z-30' : 'grid'
 	const headerRow = createEl('div', {
+		data: {
+			ilamySlot: 'month-header',
+			sticky: isSticky ? 'true' : undefined,
+		},
 		className: mergeClassNames(
 			options.unstyled,
 			'border-b border-border bg-background',
@@ -284,10 +301,8 @@ const renderMonthHeaderRow = (
 		)
 		headerRow.appendChild(wkHeader)
 	}
-	for (const day of firstWeek) {
-		const dayHeader = createEl('div', {
-			text: formatDate(day, { weekday: 'short' }, state.locale),
-		})
+	for (const label of weekdayHeaders) {
+		const dayHeader = createEl('div', { text: label })
 		applySlot(
 			dayHeader,
 			'dayHeader',
@@ -300,16 +315,13 @@ const renderMonthHeaderRow = (
 }
 
 const renderMonthWeekRow = (
-	week: ZonedDate[],
-	currentMonth: number,
+	week: MonthWeekViewModel,
 	colCount: number,
 	colTemplate: string,
 	showWeekNumbers: boolean,
-	visibleEvents: DomCalendarEvent[],
 	runtime: DomRuntime
 ): HTMLElement => {
 	const options = runtime.getOptions()
-	const state = runtime.controller.getState()
 	const row = createEl('div', {
 		className: mergeClassNames(
 			options.unstyled,
@@ -320,19 +332,12 @@ const renderMonthWeekRow = (
 		style: { gridTemplateColumns: colTemplate },
 	})
 	if (showWeekNumbers) {
-		const firstDay = week.at(0)
-		let weekNum: number | string = ''
-		if (firstDay) {
-			weekNum = getWeekNumber(
-				firstDay,
-				options.weekNumberCalculation ?? 'ISO',
-				state.locale
-			)
-		}
-		const stripChrome = Boolean(options.unstyled && !options.slotProps?.cell)
+		const stripChrome = Boolean(options.unstyled)
+		const weekText =
+			week.weekNumber !== undefined ? String(week.weekNumber) : ''
 		row.appendChild(
 			createEl('div', {
-				text: String(weekNum),
+				text: weekText,
 				className: mergeClassNames(
 					stripChrome,
 					'border-r border-b border-border bg-muted/20 text-muted-foreground',
@@ -347,6 +352,7 @@ const renderMonthWeekRow = (
 		gridColumn = `2 / span ${colCount}`
 	}
 	const cellsContainer = createEl('div', {
+		data: { ilamySlot: 'grid-row' },
 		className: mergeClassNames(
 			options.unstyled,
 			'',
@@ -358,10 +364,16 @@ const renderMonthWeekRow = (
 			gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
 		},
 	})
-	for (const day of week) {
-		cellsContainer.appendChild(buildMonthCell(day, currentMonth, runtime))
+	for (const dayModel of week.days) {
+		cellsContainer.appendChild(renderMonthCellFromModel(dayModel, runtime))
 	}
-	cellsContainer.appendChild(renderEventOverlay(week, visibleEvents, runtime))
+	cellsContainer.appendChild(
+		renderEventOverlay(
+			week.days.map((d) => d.date),
+			week.layout,
+			runtime
+		)
+	)
 	row.appendChild(cellsContainer)
 	return row
 }
@@ -370,56 +382,49 @@ export const renderDomMonthView = (runtime: DomRuntime): HTMLElement => {
 	const options = runtime.getOptions()
 	const state = runtime.controller.getState()
 	const current = resolveCurrentZonedDate(state.currentDate, state.timezone)
-	const visibleWeeks = getVisibleMonthWeeks(
-		current,
-		state.firstDayOfWeek,
-		state.hiddenDays
-	)
-	const visibleEvents = runtime.getVisibleEvents()
 
-	const grid = createEl('div', {
-		data: { view: 'month', testid: 'dom-month-view' },
-	})
-	applySlot(grid, 'grid', 'bg-background', options, 'flex-1 overflow-auto')
+	const grid = createGridScrollContainer('month', options)
 
 	if (state.resources.length > 0) {
-		const monthDays = visibleWeeks
-			.flat()
-			.filter((day) => day.month === current.month)
-		const days = monthDays.length > 0 ? monthDays : (visibleWeeks.at(0) ?? [])
-		return renderResourceHorizontalGrid(
-			grid,
-			days,
-			visibleEvents,
-			current.month,
-			runtime,
-			{
-				buildCell: buildMonthCell,
-				renderOverlay: renderEventOverlay,
-			}
-		)
+		return renderResourceHorizontalGrid(grid, 'month', runtime, {
+			buildCell: buildMonthCell,
+			renderOverlay: renderEventOverlay,
+		})
 	}
 
-	const firstWeek = visibleWeeks.at(0) ?? []
-	const colCount = Math.max(1, firstWeek.length)
 	const showWeekNumbers = Boolean(options.weekNumbers)
-	let colTemplate = `repeat(${colCount}, minmax(0, 1fr))`
+	const model = buildMonthViewModel({
+		currentDate: current,
+		events: runtime.getVisibleEvents(),
+		firstDayOfWeek: state.firstDayOfWeek,
+		locale: state.locale,
+		hiddenDays: state.hiddenDays,
+		weekNumbers: showWeekNumbers,
+		weekNumberCalculation: options.weekNumberCalculation,
+		dayMaxEvents: options.dayMaxEvents,
+		businessHours: options.businessHours,
+		isCellDisabled: options.isCellDisabled,
+	})
+	let colTemplate = `repeat(${model.colCount}, minmax(0, 1fr))`
 	if (showWeekNumbers) {
-		colTemplate = `36px repeat(${colCount}, minmax(0, 1fr))`
+		colTemplate = `36px repeat(${model.colCount}, minmax(0, 1fr))`
 	}
 
 	grid.appendChild(
-		renderMonthHeaderRow(firstWeek, colTemplate, showWeekNumbers, runtime)
+		renderMonthHeaderRow(
+			model.weekdayHeaders,
+			colTemplate,
+			showWeekNumbers,
+			runtime
+		)
 	)
-	for (const week of visibleWeeks) {
+	for (const week of model.weeks) {
 		grid.appendChild(
 			renderMonthWeekRow(
 				week,
-				current.month,
-				colCount,
+				model.colCount,
 				colTemplate,
 				showWeekNumbers,
-				visibleEvents,
 				runtime
 			)
 		)

@@ -21,7 +21,8 @@ Visit the [interactive demo](/demo) and toggle to "Resource Calendar" mode to se
 ### Simple Resource Calendar
 
 ```tsx
-import { IlamyCalendar, type Resource, type CalendarEvent } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
+import type { Resource, CalendarEvent } from '@ilamy/calendar';
 
 const resources: Resource[] = [
   {
@@ -216,7 +217,7 @@ These resource props are part of [IlamyCalendar](/docs/components/calendar)'s pr
 ### Room Booking System
 
 ```tsx title="Conference Room Booking"
-import { IlamyCalendar } from '@ilamy/calendar';
+import { IlamyCalendar } from '@ilamy/calendar/react';
 import type { CalendarEvent, CellInfo, Resource } from '@ilamy/calendar';
 import { useState } from 'react';
 

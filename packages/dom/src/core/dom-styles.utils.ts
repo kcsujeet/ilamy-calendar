@@ -1,12 +1,11 @@
 import {
 	type CalendarSlotName,
+	createTranslator,
 	formatDate,
-	getMonthWeeks,
 	now,
 	parseDate,
 	type StyleRecord,
 	type TimeFormat,
-	withoutHiddenDays,
 	type ZonedDate,
 } from '@ilamy/core'
 import type {
@@ -17,13 +16,9 @@ import type {
 export const translateDom = (
 	options: Pick<DomCalendarOptions, 'translations' | 'translator'>,
 	key: string,
-	fallback: string
-): string => {
-	if (options.translator) {
-		return options.translator(key)
-	}
-	return options.translations?.[key] ?? fallback
-}
+	fallback?: string
+): string =>
+	createTranslator(options.translations, options.translator)(key, fallback)
 
 export const applyInlineStyle = (
 	element: HTMLElement,
@@ -41,14 +36,26 @@ export const applyInlineStyle = (
 	}
 }
 
-const GRID_BORDERED_SLOTS = new Set<CalendarSlotName>([
-	'dayHeader',
-	'resourceHeader',
-	'cell',
-	'cellToday',
-	'cellNonBusiness',
-	'cellDisabled',
-])
+const SLOT_TO_ILAMY_SLOT: Record<CalendarSlotName, string> = {
+	root: 'root',
+	header: 'header',
+	toolbar: 'toolbar',
+	navButton: 'nav-button',
+	viewButton: 'view-button',
+	viewButtonActive: 'view-button',
+	grid: 'grid',
+	dayHeader: 'day-header',
+	resourceHeader: 'resource-header',
+	cell: 'cell',
+	cellToday: 'cell',
+	cellNonBusiness: 'cell',
+	cellDisabled: 'cell',
+	eventBar: 'event-bar',
+	allDayRow: 'all-day-row',
+	nowIndicator: 'now-indicator',
+	moreLink: 'more-link',
+	resizeHandle: 'resize-handle',
+}
 
 export const applySlot = (
 	element: HTMLElement,
@@ -58,39 +65,18 @@ export const applySlot = (
 	structuralClass = ''
 ): HTMLElement => {
 	element.dataset.slot = slotName
+	element.dataset.ilamySlot = SLOT_TO_ILAMY_SLOT[slotName]
 	const slotEntry = options.slotProps?.[slotName]
-	let themeBorderClass = ''
-	if (
-		options.unstyled &&
-		options.slotProps?.grid?.style?.border &&
-		GRID_BORDERED_SLOTS.has(slotName)
-	) {
-		themeBorderClass = 'border-r last:border-r-0 border-b border-border'
-	}
 	const merged = mergeClassNames(
 		options.unstyled,
 		defaultClass,
 		slotEntry?.className,
-		themeBorderClass
-			? `${structuralClass} ${themeBorderClass}`.trim()
-			: structuralClass
+		structuralClass
 	)
 	if (merged) {
 		element.className = merged
 	}
 	applyInlineStyle(element, slotEntry?.style)
-	if (slotName === 'grid') {
-		// `@ilamy/dom` views apply the `grid` slot directly to the scroll container,
-		// so a theme's `overflow: hidden` must never disable scrolling.
-		if (element.style.overflow === 'hidden') {
-			element.style.removeProperty('overflow')
-		}
-		if (!options.unstyled || options.slotProps?.grid) {
-			element.style.scrollbarWidth = 'thin'
-			element.style.scrollbarColor =
-				'var(--border, rgba(128, 128, 128, 0.35)) transparent'
-		}
-	}
 	return element
 }
 
@@ -174,14 +160,23 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
 	return node
 }
 
-export const getVisibleMonthWeeks = (
-	anchor: ZonedDate,
-	firstDayOfWeek: number,
-	hiddenDays: Set<number> | undefined
-): ZonedDate[][] =>
-	getMonthWeeks(anchor, firstDayOfWeek)
-		.map((week) => withoutHiddenDays(week, hiddenDays))
-		.filter((week) => week.length > 0)
+export const createGridScrollContainer = (
+	view: string,
+	options: Pick<DomCalendarOptions, 'unstyled'>
+): HTMLElement =>
+	createEl('div', {
+		data: {
+			ilamySlot: 'grid-scroll',
+			view,
+			testid: `dom-${view}-view`,
+		},
+		className: mergeClassNames(
+			options.unstyled,
+			'bg-background',
+			undefined,
+			'flex-1 min-h-0 overflow-auto'
+		),
+	})
 
 export const resolveCurrentZonedDate = (
 	dateIso: string,

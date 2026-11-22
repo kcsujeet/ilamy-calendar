@@ -301,6 +301,12 @@ export const mountCalendar = (
 		root.replaceChildren()
 		root.removeAttribute('style')
 		root.className = ''
+		root.setAttribute('data-ilamy-root', '')
+		if (options.unstyled) {
+			root.setAttribute('data-unstyled', 'true')
+		} else {
+			root.removeAttribute('data-unstyled')
+		}
 		applySlot(
 			root,
 			'root',

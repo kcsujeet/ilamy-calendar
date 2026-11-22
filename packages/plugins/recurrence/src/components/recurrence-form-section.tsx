@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@ilamy/calendar'
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 import { parseDate, resolveZone, toDate } from '@ilamy/utils/temporal'
 import { useState } from 'react'
 import { RecurrenceEditor } from '../components/recurrence-editor/recurrence-editor'

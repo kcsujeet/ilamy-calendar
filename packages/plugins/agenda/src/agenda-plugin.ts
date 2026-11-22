@@ -1,4 +1,4 @@
-import type { IlamyPlugin } from '@ilamy/calendar'
+import type { IlamyPlugin } from '@ilamy/calendar/react'
 import {
 	type AgendaViewOptions,
 	createAgendaView,

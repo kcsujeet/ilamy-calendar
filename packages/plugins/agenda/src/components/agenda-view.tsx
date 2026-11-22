@@ -1,4 +1,4 @@
-import { useIlamyCalendarContext } from '@ilamy/calendar'
+import { useIlamyCalendarContext } from '@ilamy/calendar/react'
 import { ScrollArea } from '@ilamy/ui/components/scroll-area'
 import { now, parseDate, resolveZone, toOffsetIso } from '@ilamy/utils/temporal'
 import { type AgendaWindow, windowRange } from '../utils/agenda-window'

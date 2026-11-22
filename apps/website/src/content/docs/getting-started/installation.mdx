@@ -33,7 +33,7 @@ Get started with ilamy Calendar by installing it via your preferred package mana
   </TabItem>
 </Tabs>
 
-No external date library (`dayjs`, `moment`, `date-fns`) is required — v4.0 runs on TC39 Temporal and `Intl.DateTimeFormat` with plain ISO 8601 strings and `Date` inputs.
+No external date library (`dayjs`, `moment`, `date-fns`) or UI component library (`@radix-ui/*`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`, `tailwindcss`) is required — `temporal-polyfill` is the only runtime dependency, and v4.0 runs on TC39 Temporal and `Intl.DateTimeFormat` with plain ISO 8601 strings and `Date` inputs.
 
 ## Stylesheet (`@ilamy/calendar/styles.css`)
 
@@ -54,16 +54,27 @@ For completely custom or unstyled builds, import only the structural layout laye
 
 ## Peer dependencies
 
-All framework and styling peers are **optional** — install only what you use:
+`temporal-polyfill` is the **only** required runtime dependency. Zero UI component libraries (`@radix-ui/*`), icon packs (`lucide-react`), or Tailwind packages are bundled.
 
+All framework, feature, styling, and UI-library peer dependencies are **optional** — install only what you use:
+
+### Frameworks
 - `react` and `react-dom` (`^19.2.0`) — for `@ilamy/calendar/react` (React 19)
 - `vue` (`^3.5.0`) — for `@ilamy/calendar/vue` (Vue 3.5+, zero React dependency)
 - `svelte` (`^5.0.0`) — for `@ilamy/calendar/svelte` (Svelte 5+, zero React dependency)
 - `solid-js` (`^2.0.0`) — for `@ilamy/calendar/solid` (Solid 2.0+, zero React dependency)
 - `@angular/core` (`^22.0.0`) — for `@ilamy/calendar/angular` (Angular 22+, zero React dependency)
-- `tailwindcss` (`^4.2.2`) — genuinely optional; `@ilamy/calendar/styles.css` renders with zero Tailwind
-- `@mui/material` (`>=6`) — optional peer dependency for `@ilamy/calendar/themes/mui`
-- `@stylexjs/stylex` (`>=0.10`) — optional peer dependency for `@ilamy/calendar/themes/stylex`
+
+### Optional Features
+- `@dnd-kit/core` and `@dnd-kit/modifiers` — optional peer dependencies for React drag-and-drop & resize (`editable` in `@ilamy/calendar/react`). Vue, Svelte, Solid, Angular, and Vanilla DOM use a built-in zero-dependency pointer drag/resize engine.
+- `rrule` — optional peer dependency needed only when using `@ilamy/calendar/plugins/recurrence`.
+
+### Styling (CSS — framework-agnostic)
+- `tailwindcss` — genuinely optional; `@ilamy/calendar/styles.css` renders standalone with zero Tailwind
+- `@stylexjs/stylex` — optional peer dependency for `@ilamy/calendar/styles/stylex`
+
+### UI Component Libraries (framework-specific)
+- `@mui/material` — optional peer dependency for `@ilamy/calendar/react/mui` (React Material UI integration)
 
 The headless core (`@ilamy/calendar`) and Vanilla DOM renderer (`@ilamy/calendar/dom`) require zero framework peer dependencies. See [Multi-Framework Support](/docs/frameworks/overview) for guides across all frameworks.
 

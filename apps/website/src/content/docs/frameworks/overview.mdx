@@ -8,7 +8,7 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 `@ilamy/calendar` v4.0 follows a symmetric entry-point design: the root `@ilamy/calendar` export is the pure headless framework-agnostic core, paired with equal sibling wrappers for **React 19**, **Vue 3.5**, **Svelte 5**, **Solid 2.0**, **Angular 22**, and **Vanilla DOM** — all sharing one CSS contract at `@ilamy/calendar/styles.css`.
 
-Every adapter runs on the same TC39 Temporal date core, shared view-model builders, layout engine, RFC 5545 recurrence engine, business-hours & constraint validator, and styling contract (`--ilamy-*` tokens, `unstyled`, `slotProps`, and `@ilamy/calendar/themes/stylex`). **Vue, Svelte, Solid, Angular, and DOM bundles import zero React code and require zero Tailwind.**
+Every adapter runs on the same TC39 Temporal date core, shared view-model builders, layout engine, RFC 5545 recurrence engine, business-hours & constraint validator, and CSS styling contract (`--ilamy-*` tokens, `unstyled`, `slotProps`, and `@ilamy/calendar/styles/stylex`). **Vue, Svelte, Solid, Angular, and DOM bundles import zero React code, zero Radix UI, zero `@dnd-kit`, and zero Tailwind** — all framework, drag-and-drop, recurrence, and UI-library peers are optional, and non-React adapters use a built-in zero-dependency pointer drag/resize engine.
 
 ## Entry Points
 
@@ -226,10 +226,16 @@ Every adapter runs on the same TC39 Temporal date core, shared view-model builde
 
 ## Bring Your Own Design System (Every Framework)
 
-All frameworks share the exact same customization contract:
+All frameworks separate **framework-agnostic CSS styling** from **framework-specific component UI integrations**:
+
+### CSS Styling (All Frameworks & Vanilla DOM)
 
 - **Zero-config layered CSS:** `import '@ilamy/calendar/styles.css'` works with zero Tailwind installed and automatically bridges shadcn CSS variables (`--background`, `--foreground`, `--border`, `--primary`, `--muted`, `--radius`, `.dark`). For Tailwind v4, `@import '@ilamy/calendar/styles.css';` before `@import 'tailwindcss';` requires no `@source` directive.
-- **StyleX:** Pass `createStylexCalendarTheme({ mode: 'light' | 'dark' })` from `@ilamy/calendar/themes/stylex` to React, Vue, Svelte, Solid, Angular, or Vanilla DOM.
+- **StyleX (`@ilamy/calendar/styles/stylex`):** Pass `createStylexCalendarTheme({ mode: 'light' | 'dark' })` to React, Vue, Svelte, Solid, Angular, or Vanilla DOM.
 - **Unstyled + `slotProps` + `[data-ilamy-slot]`:** Import `@ilamy/calendar/styles/base.css` (structural layout only) or pass `unstyled: true` with `slotProps` (`root`, `header`, `toolbar`, `navButton`, `viewButton`, `viewButtonActive`, `grid`, `dayHeader`, `cell`, `cellToday`, `cellDisabled`, `cellNonBusiness`, `allDayRow`, `eventBar`, `resizeHandle`, `nowIndicator`, `moreLink`, `resourceHeader`) or override `[data-ilamy-slot="..."]` directly in CSS.
-- **Custom renderers:** Override events, headers, resources, and event forms using native React props, Vue scoped slots (`#event`, `#header`, `#resource`, `#event-form`), or DOM mount hooks (`renderEvent`, `renderHeader`, `renderResource`, `renderEventForm`).
-- **Material UI (`@ilamy/calendar/themes/mui`):** Native MUI theme bridge (`useMuiCalendarTheme` / `createMuiCalendarTheme`) and MUI component primitives (`muiCalendarComponents`) for React consumers.
+
+### Component UI Integrations (Framework-Specific)
+
+- **Zero-dependency native HTML defaults:** Built-in dialogs, popovers, inputs, selects, and checkboxes use native HTML elements styled by `styles.css` across React and DOM (zero Radix UI or icon-pack dependencies).
+- **Custom renderers & `components` prop:** Override events, headers, resources, and event forms using React's `components` prop (works cleanly with shadcn/ui + Base UI, shadcn/ui + Radix, React Aria, etc.) and `renderEvent` / `renderHeader` / `renderEventForm` / `renderResource`, Vue scoped slots (`#event`, `#header`, `#resource`, `#event-form`), or DOM mount hooks (`renderEvent`, `renderHeader`, `renderResource`, `renderEventForm`).
+- **Material UI (`@ilamy/calendar/react/mui`):** Native MUI theme bridge (`useMuiCalendarTheme` / `createMuiCalendarTheme`) and MUI component primitives (`muiCalendarComponents`) for React consumers.

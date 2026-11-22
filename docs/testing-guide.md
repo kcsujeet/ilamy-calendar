@@ -48,8 +48,8 @@ Most tests wrap the component under test in `CalendarProvider`. Each test file d
 
 ```typescript
 import { render, screen } from '@testing-library/react'
-import { CalendarProvider } from '@/features/calendar/stores/calendar-context/calendar-provider'
-import dayjs from '@ilamy/utils/dayjs'
+import { CalendarProvider } from '@/app/calendar-provider'
+import { now, parseDate, toOffsetIso } from '@ilamy/calendar' // packages/calendar/src/utils/temporal.ts
 
 const renderWeekView = (props = {}) => {
   return render(
@@ -57,7 +57,7 @@ const renderWeekView = (props = {}) => {
       dayMaxEvents={3}
       events={mockEvents}
       firstDayOfWeek={0}
-      initialDate={dayjs()}
+      initialDate={toOffsetIso(now('UTC'))}
       locale="en"
       {...props}
     >
@@ -72,9 +72,10 @@ To inspect context values inside tests, use a `TestWrapper` that reads from `use
 ```typescript
 const TestWrapper = ({ children, testId }: { children: React.ReactNode; testId: string }) => {
   const { currentDate } = useSmartCalendarContext()
+  const parsed = parseDate(currentDate, 'UTC')
   return (
     <>
-      <div data-testid={`${testId}-year`}>{currentDate.year()}</div>
+      <div data-testid={`${testId}-year`}>{parsed?.year}</div>
       {children}
     </>
   )
@@ -127,8 +128,8 @@ Many test files define a local `createEvent` or `createRecurringEvent`:
 const createEvent = (overrides: Partial<CalendarEvent> = {}): CalendarEvent => ({
   id: `event-${Date.now()}`,
   title: 'Test Event',
-  start: dayjs('2025-01-15T10:00:00.000Z'),
-  end: dayjs('2025-01-15T11:00:00.000Z'),
+  start: '2025-01-15T10:00:00.000Z',
+  end: '2025-01-15T11:00:00.000Z',
   ...overrides,
 })
 
@@ -136,8 +137,8 @@ const createRecurringEvent = (overrides: Partial<CalendarEvent> = {}): CalendarE
   id: 'recurring-1',
   uid: 'recurring-1@ilamy.calendar',
   title: 'Weekly Meeting',
-  start: dayjs('2025-01-06T10:00:00.000Z'),
-  end: dayjs('2025-01-06T11:00:00.000Z'),
+  start: '2025-01-06T10:00:00.000Z',
+  end: '2025-01-06T11:00:00.000Z',
   rrule: {
     freq: RRule.WEEKLY,
     interval: 1,
@@ -149,15 +150,15 @@ const createRecurringEvent = (overrides: Partial<CalendarEvent> = {}): CalendarE
 
 ## Date Handling in Tests
 
-Always use full ISO strings. Never use `YYYY-MM-DD` format.
+Always use full ISO strings with explicit offsets. Never use `YYYY-MM-DD` format.
 
 ```typescript
 // Correct
-start: dayjs('2025-01-15T10:00:00.000Z')
-expect(event.start.toISOString()).toBe('2025-01-15T10:00:00.000Z')
+start: '2025-01-15T10:00:00.000Z'
+expect(toUtcIso(parseDate(event.start, 'UTC')!)).toBe('2025-01-15T10:00:00.000Z')
 
 // Wrong — will cause subtle timezone bugs
-start: dayjs('2025-01-15')
+start: '2025-01-15'
 ```
 
 ### Timezone tests
@@ -166,15 +167,15 @@ Tests run at offset zero (happy-dom makes `Intl` resolve to `UTC`), where a
 wall-clock misreading is a no-op. That is how #247 survived 1127 tests. Four
 rules keep a timezone test honest — see `docs/timezones.md` for the reasoning:
 
-1. Set the zone explicitly with `dayjs.tz.setDefault('Asia/Tokyo')`; without it
-   nothing can manifest.
-2. Assert an instant at least once (`toISOString()` / `valueOf()`), not only
-   `format()` — a shifted instant hides behind a matching format.
+1. Pass the zone explicitly via the `timezone` prop (e.g. `timezone="Asia/Tokyo"`)
+   or run with `TZ=Asia/Tokyo`; without it nothing can manifest.
+2. Assert an instant at least once (`toUtcIso(parsed)` / `parsed.epochMilliseconds`),
+   not only formatted text — a shifted instant hides behind a matching format.
 3. Keep expectations absolute, never "whatever the machine would say", so they
    hold on CI and on a laptop in any zone.
-4. Do not try to vary the machine zone mid-test. dayjs's timezone plugin caches
-   an `Intl.DateTimeFormat` per zone, so a `process.env.TZ` change is ignored
-   once that formatter exists.
+4. `packages/calendar/src/utils/temporal.ts` has zero module-global timezone state —
+   pass explicit `timezone` arguments to Temporal helpers (`parseDate(iso, 'Asia/Tokyo')`,
+   `now('Asia/Tokyo')`) instead of relying on global defaults.
 
 ## Recurring Event Testing
 
@@ -243,7 +244,7 @@ happy-dom provides `ResizeObserver` and `IntersectionObserver` out of the box �
 | Test passes alone but fails in suite | Check `beforeEach` cleanup — each test should set up its own state |
 | Portal-rendered content not found | Dialogs/popovers render outside the component tree — use `screen.getByRole()` which searches the whole document |
 | Events not appearing in rendered view | Ensure `initialDate` matches the event dates and `events` are passed to the provider |
-| Import errors on `dayjs` | Always import from `@ilamy/utils/dayjs`, never from `dayjs` directly |
+| Date/timezone helper imports | Always import Temporal helpers from `packages/calendar/src/utils/temporal.ts` (or `@ilamy/calendar`), never use `dayjs` or `temporal-polyfill` directly |
 | Suite fails only with an exported non-UTC `TZ` | Expected for tests that hard-code UTC-shaped display (a `09:00Z` event asserted at the 9am row is 14:30 for an IST viewer). CI and default local runs resolve to UTC. |
 | A hook test hangs instead of failing | A fresh `[]`/object literal passed on every render loops the events sync. Hoist it so the reference is stable across re-renders. |
 

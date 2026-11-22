@@ -22,7 +22,7 @@ interop. Bug fixes and small requests ship as patches without waiting on a plann
 | Release | Kind | Theme | Status |
 |---|---|---|---|
 | 3.3 | additive minor | Editing, time axis, formats, display toggles, async data, `ref` API, deprecations and migration docs | Shipped (`v3.3.0`, `v3.3.1`) |
-| 4.0 | major | Temporal date core, ISO/`Date` public dates, layered CSS token contract (`styles.css`), explicit `/core` + symmetric framework wrappers (`/react`, `/vue`, `/svelte`, `/solid`, `/angular`), standard defaults, scheduling rules, scheduler/virtualisation, accessibility, RTL, print, interop | In progress |
+| 4.0 | major | Temporal date core, ISO/`Date` public dates, layered CSS token contract (`styles.css`), explicit headless core + symmetric framework wrappers (`/react`, `/vue`, `/svelte`, `/solid`, `/angular`, `/dom`), zero UI-library dependencies + collapsed 2-package monorepo, Styling vs Component UI split, standard defaults, scheduling rules, scheduler/virtualisation, accessibility, RTL, print, interop | In progress |
 
 **Behaviour references:** as CLAUDE.md requires, RFC 5545 first, then the established calendar
 conventions: FullCalendar (read at v7.1.1, https://fullcalendar.io/docs/all and its source) and
@@ -48,8 +48,8 @@ the plan of record; every item on that checklist is mapped to a release below.
 
 ## Core vs plugin
 
-The core stays small. **The rule:** a feature is a plugin when it can be built on the public
-plugin contract (`IlamyPlugin`, `packages/types/src/index.ts:366`) plus a small, general hook
+The core stays small. **Rule:** a feature is a plugin when it can be built on the public
+plugin contract (`IlamyPlugin`, canonical `packages/calendar/src/types/` in the v4.0 target layout) plus a small, general hook
 that other plugins could also use. It stays in core only when it is woven into the core's
 layout or interaction engine, or when it is a baseline every user is owed (accessibility,
 RTL, print, correct dates).
@@ -249,13 +249,15 @@ it with one call, and configure the time axis.
 
 ## Release 4.0 — Complete v4 platform (Temporal, Layered CSS, Multi-Framework, Scheduler & Reach)
 
-All v4 work ships under **4.0** (no separate 4.1/4.2/4.3 roadmap). Detailed architecture plan for the CSS token contract, core view-models, and symmetric wrappers: `docs/superpowers/plans/2026-11-22-v4-css-tokens-and-symmetric-core-plan.md`.
+All v4 work ships under **4.0** (no separate 4.1/4.2/4.3 roadmap). Detailed architecture plans:
+- CSS token contract, core view-models, and symmetric wrappers: `docs/superpowers/plans/2026-11-22-v4-css-tokens-and-symmetric-core-plan.md`
+- Zero UI-library dependencies, Styling vs Component UI split, and collapsed 2-package monorepo: `docs/superpowers/plans/2026-11-22-v4-zero-ui-deps-and-collapsed-monorepo-plan.md`
 
 ### 4.0A — Temporal core, standard defaults & architecture foundation
 
 | # | Change | Placement | Notes |
 |---|---|---|---|
-| 4.0.1 | **Date core on `temporal-polyfill`** | Core | `fns` API inside `@ilamy/utils`; formatting through `Intl`. Acceptance check as written in `docs/timezones.md` (awkward zones × every clock change × several machine zones vs an `Intl`-only reference). |
+| 4.0.1 | **Date core on `temporal-polyfill`** | Core | `fns` API inside shared utils (`src/utils/temporal/`); formatting through `Intl`. Acceptance check as written in `docs/timezones.md` (awkward zones × every clock change × several machine zones vs an `Intl`-only reference). |
 | 4.0.2 | **Public dates as ISO strings or `Date`** | Core | Events, cell info, render props, callbacks, the plugin contract. Remove `dayjs`, `Dayjs`, `ManipulateType` exports. Add `timezone` to the context API. |
 | 4.0.3 | **Several zones per page** | Core | Falls out of 4.0.1 (zero module-global zone state). e2e spec. |
 | 4.0.4 | **Optional built-ins become plugins** | Plugins | iCal export becomes `plugins/ical` (header button via toolbar-items hook); year view becomes `plugins/year` (D7). |
@@ -264,8 +266,9 @@ All v4 work ships under **4.0** (no separate 4.1/4.2/4.3 roadmap). Detailed arch
 | 4.0.7 | **Plugins on new date types** | Plugins | Recurrence keeps RFC 5545 floating-time correctness. |
 | 4.0.8 | **kcsujeet/ilamy-calendar#314** | Core | Verify whether the Temporal core fixes it; do not assume. |
 | 4.0.9 | **Visible resize handles** | Core | Discoverable event resize handles: invisible at rest, subtle 3-dot grip on event hover, full opacity on handle hover (`currentColor`, adapts to light/dark). |
-| 4.0.10 | **Layered CSS contract & semantic tokens (`styles.css` + `styles/base.css`)** | Styles | `@layer ilamy.base` (structural layout/grid/sticky/scroll, zero Tailwind dependency) + `@layer ilamy.theme` (`--ilamy-*` CSS tokens with automatic shadcn fallbacks). Delete hardcoded colors/pixels in theme JS and boolean styling heuristics. `themes/mui` and `themes/stylex` become thin CSS-var token mappers (+ optional native MUI primitives). |
-| 4.0.11 | **Shared view-models in `@ilamy/core` & symmetric framework wrappers (`motion` pattern)** | Core + Adapters | Lift view-model generation (month, week/day, `weekViewGranularity`, resource timelines, constraints, translations, recurrence) into `@ilamy/core`. Symmetric entry points: `.` (headless core, zero framework), `./react`, `./vue`, `./svelte`, `./solid`, `./angular`, `./styles.css`, `./styles/base.css`. |
+| 4.0.10 | **Layered CSS contract & semantic tokens (`styles.css` + `styles/base.css`)** | Styles | `@layer ilamy.base` (structural layout/grid/sticky/scroll, plus dialogs, popovers, inputs, selects, and checkboxes; zero Tailwind dependency) + `@layer ilamy.theme` (`--ilamy-*` CSS tokens with automatic shadcn fallbacks). Delete hardcoded colors/pixels in theme JS and boolean styling heuristics. Separate framework-agnostic Styling (`./styles.css`, `./styles/stylex`) from framework-specific Component UI (`./react/mui`). |
+| 4.0.11 | **Shared view-models in core & symmetric framework wrappers (`motion` pattern)** | Core + Adapters | Lift view-model generation (month, week/day, `weekViewGranularity`, resource timelines, constraints, translations, recurrence) into `src/lib/` and `src/utils/`. Symmetric entry points: `.` (headless core, zero framework), `./react`, `./vue`, `./svelte`, `./solid`, `./angular`, `./dom`, `./styles.css`, `./styles/base.css`, `./styles/theme.css`, `./styles/stylex`, `./react/mui`. |
+| 4.0.11b | **Zero UI-library dependencies, optional peers & collapsed 2-package monorepo** | Core + Adapters + Monorepo | Collapse 18 redundant micro-packages into `packages/calendar/src/` following a fractal Bulletproof React layout (`config/`, `types/`, `utils/`, `lib/{controller,layout,view-models,dom}/`, `features/{styling,adapters,plugins}/`) and move demo-only shadcn chrome to `packages/playground/src/components/ui/` with Biome `noRestrictedImports` boundaries. Remove `@radix-ui/*`, `class-variance-authority`, `clsx`, `tailwind-merge`, and `lucide-react`; ship accessible native HTML React primitives and route all React core & plugin UI through `CalendarComponents` (enabling Base UI / #401, Radix, MUI). Only `temporal-polyfill` stays in `dependencies`; `@dnd-kit/*`, `rrule` (lazy-loaded in `src/lib/dom/`), framework runtimes, `@mui/material`, and `@stylexjs/stylex` become optional `peerDependencies`. Split playground switcher into Styling vs UI Components. |
 
 ### 4.0B — Scheduling rules & drag ecosystem
 
@@ -320,14 +323,7 @@ settled.
 - **D3 — Resolved (4.0):** Flip `nowIndicator` default to `false`, matching FullCalendar
   (`https://fullcalendar.io/docs/nowIndicator`).
 - **D4 — Selection in core vs plugin.** Recommended: core state, plugin UI.
-- **D5 — Resolved (4.0):** Headless, framework-agnostic core on `@ilamy/calendar` root `.` (`motion`
-  pattern: zero React, zero CSS — Temporal date engine, event/resource store, layout math,
-  view-models, recurrence, types, `defaultTranslations`), ONE shared layered CSS contract
-  (`@ilamy/calendar/styles.css` + `@ilamy/calendar/styles/base.css`, `@layer ilamy.base,
-  ilamy.theme`, `--ilamy-*` tokens with automatic shadcn fallbacks, zero Tailwind requirement), and
-  symmetric framework wrappers (`@ilamy/calendar/{react,vue,svelte,solid,angular}`). UI library
-  adapters (`themes/mui`, `themes/stylex`) are thin `--ilamy-*` CSS-var token mappers (+ optional
-  native primitives) with zero hardcoded layout or hex palettes in JS.
+- **D5 — Resolved (4.0):** Collapsed 2-package monorepo (`packages/calendar` for the published `@ilamy/calendar` library with fractal Bulletproof React layout under `src/{config,types,utils,lib,features}/`; `packages/playground` for the private demo app and demo-only shadcn chrome under `src/components/ui/`). Headless, framework-agnostic core on `@ilamy/calendar` root `.` (`motion` pattern: zero React, zero CSS — Temporal date engine, event/resource store, layout math, view-models, types, `defaultTranslations`), ONE shared layered CSS contract (`@ilamy/calendar/styles.css`, `./styles/base.css`, `./styles/theme.css` covering grids, dialogs, popovers, and form controls with zero Tailwind requirement), framework-agnostic StyleX CSS-var bridge (`./styles/stylex`), and symmetric framework wrappers (`@ilamy/calendar/{react,vue,svelte,solid,angular,dom}`). Component UI adapters (`./react/mui`, user-supplied `components`) are strictly framework-specific and separate from CSS styling libraries.
 - **D6 — Clashing names** (`firstDayOfWeek`/`firstDay`, `timezone`/`timeZone`,
   `onCellClick`/`dateClick`). Recommended: keep ilamy's, document the mapping. Needed by the
   migration guides (3.3.12).
@@ -345,6 +341,15 @@ settled.
 - **D11 — Resolved (4.0):** Month cell clicks and drag-to-create selections report
   `allDay: true`, matching FullCalendar's day grid (`https://fullcalendar.io/docs/dateClick`,
   `DayGridRows.tsx:256`, v7.1.1).
+- **D12 — Resolved (4.0):** Zero UI-library dependencies in `@ilamy/calendar`: remove `@radix-ui/*`,
+  `class-variance-authority`, `clsx`, `tailwind-merge`, and `lucide-react`; ship accessible native
+  HTML defaults + inline SVGs styled by `@ilamy/calendar/styles.css`, and route all React core and
+  plugin UI through `CalendarComponents` (enabling shadcn/Base UI #401, shadcn/Radix, React Aria,
+  or MUI without Radix coupling). Keep `temporal-polyfill` as the sole direct runtime dependency;
+  make `@dnd-kit/core`, `@dnd-kit/modifiers`, `rrule` (lazy-loaded in `src/lib/dom/` when events carry
+  `rrule`), framework runtimes, `@mui/material`, and `@stylexjs/stylex` optional `peerDependencies`;
+  and separate framework-agnostic Styling Systems (`./styles.css`, `./styles/stylex`) from
+  framework-specific Component UI Libraries (`./react/mui`, `components` prop).
 
 ## Checklist mapping
 

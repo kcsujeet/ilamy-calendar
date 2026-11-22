@@ -419,7 +419,7 @@ attributes are a stable contract: a plugin may read them, and a change to one is
 
 | Attribute | Present | Meaning |
 |---|---|---|
-| `data-start` | always | The first instant the cell covers, as a UTC ISO string (`toISOString()`). Parse it with `dayjs.utc(value)` and render it in the calendar's `timezone`; reading it as a plain string drifts by the zone offset. |
+| `data-start` | always | The first instant the cell covers, as a UTC ISO string (`toISOString()`). Parse it with `parseDate(value, timezone)` (from `@ilamy/calendar`) and render it in the calendar's `timezone`; reading it as a plain string drifts by the zone offset. |
 | `data-end` | always | The cell's EXCLUSIVE end (RFC 5545 `DTEND`), as a UTC ISO string. A day cell ends at the next midnight, an hour-grid cell at the end of its slot. |
 | `data-resource-id` | on a resource calendar's cells | The id of the resource the cell belongs to, as a string. Resource ids are `string \| number`, so a numeric id arrives as its text (`0` as `"0"`): find the `Resource` whose `String(id)` matches and use its own `id`, never the attribute text, when you write a `resourceId` back. |
 | `data-all-day` | `"true"` on all-day cells, absent otherwise | The cell is in the all-day row. Selections never mix all-day and timed cells. |
@@ -431,7 +431,7 @@ Not part of the contract, only styling and test hooks: `data-view`, `data-slot-d
 `data-testid`.
 
 The snap math the drag-to-create plugin and the core share (`getFractionAlong`, `getSnapBucket`,
-`resolveSnapDuration`, `getCellMinutes`) lives in `@ilamy/utils/helpers`, not in the core's internals.
+`resolveSnapDuration`, `getCellMinutes`) lives in `packages/calendar/src/utils/helpers.ts` (exported from `@ilamy/calendar`), not in React view internals.
 
 ---
 

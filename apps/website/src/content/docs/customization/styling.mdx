@@ -1,14 +1,20 @@
 ---
 title: Styling & Themes
-description: Customize ilamy Calendar with layered CSS tokens (@ilamy/calendar/styles.css), shadcn auto-bridging, unstyled mode, slotProps, MUI, StyleX, or the headless core.
+description: Customize ilamy Calendar with framework-agnostic CSS styling systems (styles.css tokens, slot overrides, base.css, StyleX) and framework-specific UI component integrations (native HTML, shadcn/ui with Base UI or Radix, MUI).
 slug: docs/customization/styling
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-ilamy Calendar ships a layered CSS contract at `@ilamy/calendar/styles.css` (`@layer ilamy.base, ilamy.theme`) that works standalone with **zero Tailwind installed** and automatically bridges shadcn/ui CSS variables when present. It also supports **structural-only CSS** (`@ilamy/calendar/styles/base.css`), **`unstyled` mode**, **`slotProps`**, swappable **`components`**, zero-Tailwind **MUI** and **StyleX** theme bridges, and the framework-agnostic **headless core** (`@ilamy/calendar`).
+ilamy Calendar separates **framework-agnostic CSS styling systems** from **framework-specific component UI libraries**. The core stylesheet at `@ilamy/calendar/styles.css` (`@layer ilamy.base, ilamy.theme`) works across React, Vue, Svelte, Solid, Angular, and Vanilla DOM with **zero Tailwind and zero UI-library dependencies** installed.
 
-## Default: Layered CSS (`@ilamy/calendar/styles.css`)
+---
+
+## Layer 1: Styling Systems (CSS — Framework-Agnostic)
+
+Everything in this layer applies across all framework adapters and Vanilla DOM with zero React or UI-library code.
+
+### Default: Layered CSS (`@ilamy/calendar/styles.css`)
 
 Import `@ilamy/calendar/styles.css` once in your app — **no Tailwind installation or `@source` directive is required**:
 
@@ -23,7 +29,7 @@ If you use Tailwind CSS v4 (or shadcn/ui), import it **before** `@import 'tailwi
 @import 'tailwindcss';
 ```
 
-### Design Tokens & shadcn/ui Auto-Bridging
+#### Design Tokens & shadcn/ui Auto-Bridging
 
 Inside `@layer ilamy.base`, `[data-ilamy-root]` reads `--ilamy-*` tokens that automatically fall back to your page's shadcn variables (`--background`, `--foreground`, `--card`, `--muted`, `--muted-foreground`, `--border`, `--primary`, `--primary-foreground`, `--destructive`, `--radius`, `--font-sans`, and `.dark`), with clean light/dark defaults when no theme is present:
 
@@ -43,7 +49,7 @@ Inside `@layer ilamy.base`, `[data-ilamy-root]` reads `--ilamy-*` tokens that au
 
 Override any `--ilamy-*` token on `[data-ilamy-root]` or a wrapper element to theme the calendar without writing component overrides.
 
-## Slot Overrides (`[data-ilamy-slot="..."]`)
+### Slot Overrides (`[data-ilamy-slot="..."]`)
 
 All built-in rules in `@layer ilamy.base` and `@layer ilamy.theme` are wrapped in `:where(...)` (zero specificity) inside CSS layers. Any normal selector targeting `[data-ilamy-slot="..."]` overrides them cleanly **without `!important`**:
 
@@ -56,13 +62,17 @@ All built-in rules in `@layer ilamy.base` and `@layer ilamy.theme` are wrapped i
 [data-ilamy-slot='cell'][data-non-business='true'] {
   background-color: #f9fafb;
 }
+
+[data-ilamy-slot='dialog'] {
+  border-radius: 0.75rem;
+}
 ```
 
-Semantic slots include `root`, `header`, `toolbar`, `nav-group`, `arrow-group`, `nav-button`, `view-switcher`, `view-button`, `grid`, `grid-scroll`, `month-header`, `day-header`, `resource-header`, `all-day-row`, `grid-row`, `cell`, `event-bar`, `now-indicator`, `more-link`, `input`, and `textarea`.
+Semantic slots include `root`, `header`, `toolbar`, `nav-group`, `arrow-group`, `nav-button`, `view-switcher`, `view-button`, `grid`, `grid-scroll`, `month-header`, `day-header`, `resource-header`, `all-day-row`, `grid-row`, `cell`, `event-bar`, `now-indicator`, `more-link`, `dialog`, `popover`, `input`, `textarea`, `select`, and `checkbox`.
 
-## Structural-Only CSS, `unstyled`, `slotProps`, and `components`
+### Structural-Only CSS, `unstyled`, and `slotProps`
 
-For fully custom visual chrome while keeping structural layout (flex/grid geometry, sticky headers/gutters, and scrolling), import `@ilamy/calendar/styles/base.css` (`@layer ilamy.base`, zero visual chrome) and/or pass `unstyled`:
+For fully custom visual chrome while keeping structural layout (flex/grid geometry, sticky headers/gutters, and scrolling), import `@ilamy/calendar/styles/base.css` (`@layer ilamy.base`, zero visual chrome) and/or pass `unstyled` with `slotProps`:
 
 ```tsx
 import { IlamyCalendar } from '@ilamy/calendar/react'
@@ -78,37 +88,17 @@ import '@ilamy/calendar/styles/base.css'
     eventBar: { className: 'my-event' },
     resizeHandle: { className: 'my-resize-handle' },
   }}
-  components={{
-    Button: MyDesignSystemButton,
-  }}
 />
 ```
 
-## Material UI (MUI) Adapter (Zero Tailwind)
+### StyleX (`@ilamy/calendar/styles/stylex`)
 
-`@ilamy/calendar/themes/mui` bridges your MUI `Theme` (`useTheme()`) directly into `--ilamy-*` CSS custom properties and provides native `@mui/material` primitives (`Button`, `TextField`, `Checkbox`, `Dialog`, `Select`, `Popover`) via `muiCalendarComponents`:
-
-```tsx
-import { IlamyCalendar } from '@ilamy/calendar/react'
-import { useMuiCalendarTheme } from '@ilamy/calendar/themes/mui'
-import '@ilamy/calendar/styles.css'
-
-export function MuiCalendar({ events }) {
-  const muiTheme = useMuiCalendarTheme()
-  return <IlamyCalendar {...muiTheme} events={events} />
-}
-```
-
-Outside a MUI `<ThemeProvider>`, use `createMuiCalendarTheme({ theme })` directly.
-
-## StyleX Adapter (Zero Tailwind)
-
-`@ilamy/calendar/themes/stylex` exposes `--ilamy-*` token presets (`createStylexCalendarTheme`, `stylexCalendarTheme`, `stylexCalendarDarkTheme`) and helpers (`stylexSlot`, `createStylexSlotProps`) for merging compiled `stylex.props(...)` outputs across React, Vue, Svelte, Solid, Angular, and DOM:
+`@ilamy/calendar/styles/stylex` is a **framework-agnostic CSS styling system** (an alternative to Tailwind or plain CSS, with zero React dependency). It exposes `--ilamy-*` token presets (`createStylexCalendarTheme`, `stylexCalendarTheme`, `stylexCalendarDarkTheme`) and helpers (`stylexSlot`, `createStylexSlotProps`) for merging compiled `stylex.props(...)` outputs across React, Vue, Svelte, Solid, Angular, and Vanilla DOM:
 
 ```tsx
 import * as stylex from '@stylexjs/stylex'
 import { IlamyCalendar } from '@ilamy/calendar/react'
-import { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'
+import { createStylexCalendarTheme } from '@ilamy/calendar/styles/stylex'
 import '@ilamy/calendar/styles.css'
 
 const styles = stylex.create({
@@ -122,6 +112,68 @@ const stylexTheme = createStylexCalendarTheme({
 
 <IlamyCalendar events={events} {...stylexTheme} />
 ```
+
+---
+
+## Layer 2: Component UI Libraries (Framework-Specific)
+
+### Zero-Dependency Native HTML Defaults
+
+Out of the box, `@ilamy/calendar` ships **zero UI-library dependencies** — no Radix UI, no icon packages, no CVA, and no Tailwind runtime helpers. Built-in dialogs, popovers, buttons, inputs, textareas, selects, and checkboxes render using semantic native HTML elements (`<dialog>`, `<button>`, `<input>`, `<select>`, etc.) styled by `@ilamy/calendar/styles.css` across both React and Vanilla DOM.
+
+### Bring Your Own Primitives (`components` prop in React)
+
+In React (`@ilamy/calendar/react`), swap any interactive primitive (`Button`, `Dialog`, `Popover`, `Input`, `Textarea`, `Select`, `Checkbox`) via the `components` prop. Because `@ilamy/calendar` bundles zero Radix, your own design system primitives work seamlessly without version conflicts — whether you use **shadcn/ui with Base UI**, **shadcn/ui with Radix**, React Aria, or Chakra UI:
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar/react'
+import '@ilamy/calendar/styles.css'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+
+<IlamyCalendar
+  events={events}
+  components={{
+    Button,
+    Input,
+    Dialog: ({ open, onOpenChange, title, children }) => (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          {title ? (
+            <DialogHeader>
+              <DialogTitle>{title}</DialogTitle>
+            </DialogHeader>
+          ) : null}
+          {children}
+        </DialogContent>
+      </Dialog>
+    ),
+  }}
+/>
+```
+
+### Material UI (`@ilamy/calendar/react/mui`)
+
+`@ilamy/calendar/react/mui` is a **React component library integration** that bridges your MUI `Theme` (`useTheme()`) directly into `--ilamy-*` CSS custom properties and provides `@mui/material` primitives (`Button`, `TextField`, `Checkbox`, `Dialog`, `Select`, `Popover`) via `muiCalendarComponents`:
+
+```tsx
+import { IlamyCalendar } from '@ilamy/calendar/react'
+import { useMuiCalendarTheme } from '@ilamy/calendar/react/mui'
+import '@ilamy/calendar/styles.css'
+
+export function MuiCalendar({ events }) {
+  const muiTheme = useMuiCalendarTheme()
+  return <IlamyCalendar {...muiTheme} events={events} />
+}
+```
+
+Outside a MUI `<ThemeProvider>`, use `createMuiCalendarTheme({ theme })` directly.
 
 ## Headless Core (`@ilamy/calendar`)
 
@@ -145,14 +197,3 @@ const controller = createCalendarController({
 ## Cells During a Drag
 
 While an event is dragged over the calendar, the grid wrapper carries `data-dragging="true"`. Day cells and time slots use it to suppress hover tints during drags.
-
-## Scrollbar Layout Shift (Optional)
-
-When Radix dialogs or popovers open, `react-remove-scroll` locks body scroll. If you prefer to keep the scrollbar visible:
-
-```css title="Optional: keep the scrollbar on dropdown/dialog open"
-[data-scroll-locked][data-scroll-locked] {
-  overflow-y: scroll !important;
-  margin-right: 0 !important;
-}
-```

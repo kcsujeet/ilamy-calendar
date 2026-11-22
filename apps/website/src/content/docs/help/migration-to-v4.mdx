@@ -27,7 +27,15 @@ Import `@ilamy/calendar/styles.css` once and remove any Tailwind `@source` direc
 
 Everything else in the React API — `useIlamyCalendarContext`, `renderEvent`, `renderHeader` / `headerComponent`, `renderEventForm`, `renderResource`, `components`, `slotProps`, shadcn `--background`/`--primary`/`--border`/`.dark` tokens, and all plugins — stays the same.
 
-## 2. Remove `dayjs` and pass ISO strings or `Date`
+## 2. Zero UI-library dependencies & optional peers
+
+v4.0 removes all bundled UI-library dependencies (`@radix-ui/*`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`, and `tailwindcss`) — `temporal-polyfill` is the only required runtime dependency.
+
+- **Native HTML defaults:** Built-in dialogs, popovers, inputs, selects, and checkboxes render semantic native HTML elements styled by `@ilamy/calendar/styles.css`. The React `components` prop continues to work seamlessly with **shadcn/ui + Base UI**, **shadcn/ui + Radix**, or Material UI without version conflicts.
+- **Optional feature peers:** Install `@dnd-kit/core` and `@dnd-kit/modifiers` if you use React `editable` drag/resize (Vue, Svelte, Solid, Angular, and DOM use built-in zero-dependency pointer drag/resize). Install `rrule` if you use `@ilamy/calendar/plugins/recurrence`.
+- **Styling vs. React UI entry points:** StyleX lives at `@ilamy/calendar/styles/stylex` (framework-agnostic CSS styling) and Material UI lives at `@ilamy/calendar/react/mui` (React component integration).
+
+## 3. Remove `dayjs` and pass ISO strings or `Date`
 
 `dayjs` is no longer a peer dependency and `dayjs`, `Dayjs`, and `ManipulateType` are no longer exported.
 
@@ -51,7 +59,7 @@ import { IlamyCalendar } from '@ilamy/calendar/react'
 />
 ```
 
-## 3. Opt into editing (`editable`) and the current time line (`nowIndicator`)
+## 4. Opt into editing (`editable`) and the current time line (`nowIndicator`)
 
 Both now default to `false`, matching FullCalendar:
 
@@ -61,7 +69,7 @@ Both now default to `false`, matching FullCalendar:
 
 The deprecated `disableDragAndDrop` prop has been removed (omit `editable` or pass `editable={false}`).
 
-## 4. Add `yearPlugin()` and `icalPlugin()` if you use Year view or iCal export
+## 5. Add `yearPlugin()` and `icalPlugin()` if you use Year view or iCal export
 
 ```tsx
 import { IlamyCalendar } from '@ilamy/calendar/react'
@@ -74,7 +82,7 @@ const plugins = [yearPlugin(), icalPlugin()]
 
 `hideExportButton` has been removed — omit `icalPlugin()` or pass `icalPlugin({ showToolbarButton: false })`.
 
-## 5. Business hours now shade only by default
+## 6. Business hours now shade only by default
 
 `businessHours` visually shades non-business cells (`data-non-business="true"`) without blocking clicks, drags, or resizes. To enforce hard business-hours boundaries, pass `eventConstraint` and/or `selectConstraint`:
 
@@ -88,16 +96,16 @@ const plugins = [yearPlugin(), icalPlugin()]
 />
 ```
 
-## 6. Event time defaults (`displayEventTime` / `displayEventEnd`)
+## 7. Event time defaults (`displayEventTime` / `displayEventEnd`)
 
 - `displayEventTime` now defaults to `true` across all views.
 - `displayEventEnd` defaults to `false` in `month` view and `true` in time-grid (`week`/`day`) views.
 - Pass `displayEventTime={false}` to restore v3's title-only bars.
 
-## 7. Month cell clicks & selections report `allDay: true`
+## 8. Month cell clicks & selections report `allDay: true`
 
 Clicking a month cell (`onCellClick`) or dragging across month cells (`dragToCreatePlugin`) now reports `allDay: true` (matching FullCalendar's day grid). Dropping a timed event onto a month cell still preserves its time of day.
 
-## 8. Replace removed `IlamyResourceCalendar`
+## 9. Replace removed `IlamyResourceCalendar`
 
 Use `<IlamyCalendar resources={resources} ... />` from `@ilamy/calendar/react` directly.

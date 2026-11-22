@@ -10,8 +10,14 @@ The recurrence system in ilamy Calendar supports creating repeating events using
 
 **RFC 5545 rules:** The recurrence system uses the industry-standard RRULE format powered by rrule.js, and expands a series the way the RFC describes. Recurring events export to `.ics` as RRULEs; see the [export page](/docs/features/ical-export) for what an importer sees for a series in a configured `timezone`.
 
-:::caution[Recurrence is opt-in in v2]
-In v2 the core ships zero plugins. Recurring events are **not** expanded unless you register the recurrence plugin. Import it from the `@ilamy/calendar/plugins/recurrence` subpath and pass it via the `plugins` prop:
+:::caution[Recurrence is opt-in & requires `rrule`]
+In v2+ the core ships zero plugins, and `rrule` is an **optional peer dependency** (so apps that don't use recurrence don't bundle it). Install `rrule` alongside `@ilamy/calendar`:
+
+```bash
+npm install rrule   # or: bun add rrule
+```
+
+Recurring events are **not** expanded unless you register the recurrence plugin. Import it from the `@ilamy/calendar/plugins/recurrence` subpath and pass it via the `plugins` prop:
 
 ```tsx
 import { IlamyCalendar } from '@ilamy/calendar/react'

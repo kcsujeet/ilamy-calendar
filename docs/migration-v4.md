@@ -6,7 +6,7 @@ way in 3.3 and carries a `@deprecated` TSDoc tag, so you can migrate before
 upgrading. Nothing here prints a runtime warning.
 
 The plan behind this list is `docs/roadmap.md` (Release 4.0). All 4.0 design
-decisions (D2, D3, D7–D11) are settled and match FullCalendar's documented
+decisions (D2, D3, D5, D7–D12) are settled and match FullCalendar's documented
 behaviour.
 
 ## Removed in 4.0
@@ -40,6 +40,56 @@ become ISO strings or `Date`.
 
 Also in 4.0 (not a rename): the context API gains `timezone`, and several zones
 can be shown on one page.
+
+## Symmetric imports & CSS entry point
+
+In 4.0, `@ilamy/calendar` (root `.`) is the pure headless core (Temporal helpers, controller, layout, view-models, i18n, and shared types — zero React, zero CSS). Framework UI wrappers and styles move to explicit subpaths:
+
+```diff
+- import { IlamyCalendar, useIlamyCalendarContext } from '@ilamy/calendar'
++ import { IlamyCalendar, useIlamyCalendarContext } from '@ilamy/calendar/react'
++ import '@ilamy/calendar/styles.css'
+```
+
+If you used Tailwind v4's `@source` directive for `@ilamy/calendar/dist`, remove it — Tailwind is no longer required:
+
+```diff
+  @import 'tailwindcss';
+- @source "../node_modules/@ilamy/calendar/dist";
+```
+
+Sibling framework adapters share the same root core and stylesheet: `@ilamy/calendar/vue`, `@ilamy/calendar/svelte`, `@ilamy/calendar/solid`, `@ilamy/calendar/angular`, and `@ilamy/calendar/dom`.
+
+## Zero UI-library dependencies & custom `components` (#401)
+
+`@ilamy/calendar` no longer depends on `@radix-ui/*`, `class-variance-authority`, `clsx`, `tailwind-merge`, or `lucide-react`.
+
+- **Native HTML defaults:** By default, `@ilamy/calendar/react` renders accessible native HTML primitives (`<dialog>`, `<button>`, `<input>`, `<textarea>`, `<select>`, `<input type="checkbox">`, `<label>`) and inline SVG icons, styled directly by `@ilamy/calendar/styles.css` (including dialogs, popovers, selects, inputs, and checkboxes with zero Tailwind).
+- **Full `components` prop routing:** All React core UI and every React plugin (`recurrence`, `agenda`, `year`, `ical`, `drag-to-create`) route controls through `CalendarComponents`. Pass your own `components` (`Button`, `Dialog`, `Input`, `Textarea`, `Select`, `Checkbox`, `Label`, `Popover`) to integrate shadcn with Base UI (#401), shadcn with Radix, React Aria, Chakra, or MUI without shipping or colliding with Radix.
+
+## Optional peer dependencies
+
+`temporal-polyfill` is the only direct runtime `dependency` of `@ilamy/calendar`. Everything else is an optional `peerDependency` you install only for the capabilities you use:
+
+- **React UI:** `react`, `react-dom`
+- **React drag-and-drop & event resize:** `@dnd-kit/core`, `@dnd-kit/modifiers` (a read-only React calendar works without installing `@dnd-kit/*`)
+- **Recurrence:** `rrule` (used by `@ilamy/calendar/plugins/recurrence`, and lazy-loaded by `@ilamy/calendar/dom` only when an event carries `rrule`)
+- **Other framework adapters:** `vue`, `svelte`, `solid-js`, or `@angular/core`
+- **Optional styling / UI adapters:** `@stylexjs/stylex` (for `@ilamy/calendar/styles/stylex`), `@mui/material` (for `@ilamy/calendar/react/mui`)
+
+## Styling systems vs Component UI libraries
+
+v4 separates framework-agnostic **Styling Systems** from framework-specific **Component UI Libraries**:
+
+- **Styling Systems (framework-agnostic CSS libraries):**
+  - `@ilamy/calendar/styles.css` — combined `@layer ilamy.base, ilamy.theme` stylesheet (auto-bridges shadcn `--background`, `--primary`, `--border`, `.dark` CSS variables when present)
+  - `@ilamy/calendar/styles/base.css` — structural layout only (`@layer ilamy.base`)
+  - `@ilamy/calendar/styles/theme.css` — default visual theme layer only (`@layer ilamy.theme`)
+  - `@ilamy/calendar/styles/stylex` — framework-agnostic StyleX CSS-var bridge (replaces `@ilamy/calendar/themes/stylex`; zero React types or peer dependencies, usable across React, Vue, Svelte, Solid, Angular, and DOM)
+- **Component UI Libraries (React-specific):**
+  - Native HTML defaults (built into `@ilamy/calendar/react`, zero dependencies)
+  - `@ilamy/calendar/react/mui` — Material UI token bridge + MUI primitives (replaces `@ilamy/calendar/themes/mui`)
+  - Custom `components` prop overrides (Base UI, Radix, React Aria, etc.)
 
 ## Moved to plugins in 4.0
 
@@ -158,17 +208,27 @@ can be shown on one page.
 1. On the latest 3.x, search your code for the names in the first table and move
    each to its replacement. A `@deprecated` tag makes editors strike them
    through.
-2. Pass `nowIndicator`, `editable`, `displayEventTime` and `displayEventEnd`
+2. Update React imports from `@ilamy/calendar` to `@ilamy/calendar/react`, add
+   `import '@ilamy/calendar/styles.css'`, and remove any `@source` rule pointing
+   at `@ilamy/calendar/dist`.
+3. Install optional peer dependencies you use: `@dnd-kit/core` and
+   `@dnd-kit/modifiers` if using React drag/resize, and `rrule` if using
+   `@ilamy/calendar/plugins/recurrence` or recurring events in
+   `@ilamy/calendar/dom`.
+4. If migrating from an early v4 theme subpath, update `@ilamy/calendar/themes/stylex`
+   to `@ilamy/calendar/styles/stylex` and `@ilamy/calendar/themes/mui` to
+   `@ilamy/calendar/react/mui` (or pass custom `components` for Base UI / Radix).
+5. Pass `nowIndicator`, `editable`, `displayEventTime` and `displayEventEnd`
    explicitly if you want the 3.x defaults.
-3. If you use `BusinessHours`, add `daysOfWeek` wherever you rely on the
+6. If you use `BusinessHours`, add `daysOfWeek` wherever you rely on the
    seven-day default.
-4. If you use `businessHours` to stop people booking closed time, add
+7. If you use `businessHours` to stop people booking closed time, add
    `eventConstraint="businessHours"` and `selectConstraint="businessHours"`
    when you upgrade; without them 4.0 only shades the closed time. If you
    relied on month padding days refusing drops, refuse them in `isCellDisabled`.
-5. Wrap `dayjs`/`Dayjs` usage at your boundaries so dates cross them as ISO
+8. Wrap `dayjs`/`Dayjs` usage at your boundaries so dates cross them as ISO
    strings.
-6. Update imports for the year view (`@ilamy/calendar/plugins/year`) and iCal
+9. Update imports for the year view (`@ilamy/calendar/plugins/year`) and iCal
    export (`@ilamy/calendar/plugins/ical`).
-7. Do not rely on `onDateChange`/`currentRange` including hidden days or on
-   month cell clicks reporting `allDay: false`.
+10. Do not rely on `onDateChange`/`currentRange` including hidden days or on
+    month cell clicks reporting `allDay: false`.

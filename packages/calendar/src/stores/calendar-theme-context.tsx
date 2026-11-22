@@ -36,12 +36,15 @@ const extractPortalThemeStyle = (
 
 export interface CalendarThemeValue {
 	unstyled: boolean
+	/** True when `unstyled` is set with no theme `slotProps` or custom `components`. */
+	isBareUnstyled: boolean
 	slotProps: CalendarSlotProps
 	components: Required<CalendarComponents>
 }
 
 const DEFAULT_THEME: CalendarThemeValue = {
 	unstyled: false,
+	isBareUnstyled: false,
 	slotProps: {},
 	components: DEFAULT_CALENDAR_COMPONENTS,
 }
@@ -66,8 +69,13 @@ export const CalendarThemeProvider = ({
 		const baseComponents = unstyled
 			? UNSTYLED_CALENDAR_COMPONENTS
 			: DEFAULT_CALENDAR_COMPONENTS
+		const hasSlotTheme =
+			slotProps !== undefined && Object.keys(slotProps).length > 0
+		const hasCustomComponents =
+			components !== undefined && Object.keys(components).length > 0
 		return {
 			unstyled,
+			isBareUnstyled: unstyled && !hasSlotTheme && !hasCustomComponents,
 			slotProps: slotProps ?? {},
 			components: {
 				...baseComponents,

@@ -15,14 +15,23 @@ export function ViewSwitcher({ className }: ViewSwitcherProps) {
 		setView: ctx.setView,
 		t: ctx.t,
 	}))
-	const { unstyled } = useCalendarTheme()
+	const { unstyled, slotProps } = useCalendarTheme()
+	const hasThemedViewButtons = Boolean(
+		slotProps.viewButton || slotProps.viewButtonActive
+	)
+	let viewButtonStructuralClass: string | undefined
+	if (hasThemedViewButtons) {
+		viewButtonStructuralClass = 'h-full inline-flex items-center'
+	}
 	const inactiveSlot = useSlotProps('viewButton', {
+		structuralClassName: viewButtonStructuralClass,
 		defaultClassName:
-			'rounded-md px-3 text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground font-medium data-[state=on]:shadow-sm',
+			'h-full rounded-md px-3 text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground font-medium data-[state=on]:shadow-sm',
 	})
 	const activeSlot = useSlotProps('viewButtonActive', {
+		structuralClassName: viewButtonStructuralClass,
 		defaultClassName:
-			'rounded-md px-3 text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground font-medium data-[state=on]:shadow-sm',
+			'h-full rounded-md px-3 text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground font-medium data-[state=on]:shadow-sm',
 	})
 	const views = useHeaderViews()
 
@@ -30,7 +39,11 @@ export function ViewSwitcher({ className }: ViewSwitcherProps) {
 		return (
 			<div
 				aria-label="Calendar view"
-				className={cn('flex items-center gap-1', className)}
+				className={cn(
+					'flex items-center gap-0.5',
+					hasThemedViewButtons && 'bg-muted h-9 rounded-lg p-0.75',
+					className
+				)}
 				role="group"
 			>
 				{views.map((v) => {
@@ -57,7 +70,7 @@ export function ViewSwitcher({ className }: ViewSwitcherProps) {
 	return (
 		<ToggleGroup
 			aria-label="Calendar view"
-			className={cn('bg-muted gap-0 rounded-lg p-0.75', className)}
+			className={cn('bg-muted h-9 gap-0 rounded-lg p-0.75', className)}
 			onValueChange={(next) => next && setView(next)}
 			size="sm"
 			type="single"

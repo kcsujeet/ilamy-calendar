@@ -20,7 +20,7 @@ export const GridCellContent: React.FC<GridCellContentProps> = ({
 	children,
 }) => {
 	const { eventSpacing } = useCalendarCellContext()
-	const { unstyled } = useCalendarTheme()
+	const { isBareUnstyled } = useCalendarTheme()
 
 	return (
 		<div
@@ -43,7 +43,7 @@ export const GridCellContent: React.FC<GridCellContentProps> = ({
 						data-testid={keys.dayNumber(day)}
 						dayNumber={String(day.day)}
 						today={isToday(day)}
-						unstyled={unstyled}
+						unstyled={isBareUnstyled}
 					/>
 				</div>
 			)}

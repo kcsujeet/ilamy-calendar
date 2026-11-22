@@ -96,8 +96,11 @@ const MuiCalendarButton = ({
 	...rest
 }: CalendarButtonProps) => {
 	let buttonSx: SxProps<Theme> = { gap: 0.75, textTransform: 'none' }
+	if (size === 'default') {
+		buttonSx = { gap: 0.75, height: 36, py: 0, textTransform: 'none' }
+	}
 	if (size === 'icon') {
-		buttonSx = { minWidth: 36, px: 1 }
+		buttonSx = { height: '100%', minWidth: 34, px: 1 }
 	}
 	return (
 		<MuiButton

@@ -22,7 +22,7 @@ export interface HorizontalGridCellRenderers {
 	) => HTMLElement
 }
 
-const renderResourceLabel = (
+export const renderResourceLabel = (
 	resource: Resource,
 	runtime: DomRuntime
 ): HTMLElement => {
@@ -39,23 +39,18 @@ const renderResourceLabel = (
 		'resourceHeader',
 		'border-r border-b border-border bg-muted px-2.5 py-2 text-xs font-semibold text-foreground',
 		options,
-		'sticky left-0 z-20 flex items-center gap-2'
+		'sticky left-0 z-20 flex items-center justify-center'
 	)
+	if (resource.backgroundColor) {
+		cell.style.backgroundColor = resource.backgroundColor
+	}
+	if (resource.color) {
+		cell.style.color = resource.color
+	}
 	if (options.renderResource) {
 		const cleanup = options.renderResource(cell, { resource, view: state.view })
 		if (cleanup) runtime.registerCleanup(cleanup)
 		return cell
-	}
-	if (resource.backgroundColor || resource.color) {
-		cell.appendChild(
-			createEl('span', {
-				className: mergeClassNames(
-					options.unstyled,
-					'h-2.5 w-2.5 shrink-0 rounded-full'
-				),
-				style: { backgroundColor: resource.backgroundColor ?? resource.color },
-			})
-		)
 	}
 	cell.appendChild(
 		createEl('span', {

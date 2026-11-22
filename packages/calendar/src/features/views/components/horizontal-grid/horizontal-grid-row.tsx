@@ -122,8 +122,8 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 				{/* gap-px + bg-border draws the vertical separators between cells. */}
 				<div
 					className={cn(
-						'flex w-full min-w-0',
-						styledClass(unstyled, 'gap-px bg-border')
+						'flex w-full min-w-0 gap-px',
+						styledClass(unstyled, 'bg-border')
 					)}
 				>
 					{parsedColumns.map(({ col, zonedDay }, columnIndex) => {
@@ -223,7 +223,7 @@ const GroupedColumn = memo(
 
 		return (
 			<div className="flex relative w-full">
-				<div className={cn('flex w-full', !unstyled && 'gap-px bg-border')}>
+				<div className={cn('flex w-full gap-px', !unstyled && 'bg-border')}>
 					{days.map((day, dayIndex) => {
 						const cellLayout = columnLayouts.get(day)
 						return (

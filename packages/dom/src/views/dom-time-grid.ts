@@ -28,6 +28,7 @@ import type { DomCalendarEvent, DomRuntime } from '../dom-calendar.types'
 import { renderDomEventBar } from './dom-event-bar'
 import { buildMonthCell, renderEventOverlay } from './dom-month-view'
 import { renderResourceHorizontalGrid } from './dom-resource-horizontal-grid'
+import { renderResourceHorizontalHourlyGrid } from './dom-resource-horizontal-hourly-grid'
 import {
 	isAllDayOrMultiDay,
 	renderTimeGridStickyChrome,
@@ -350,6 +351,38 @@ const renderTimeColumn = (
 	return colEl
 }
 
+const renderHorizontalResourceTimeGrid = (
+	grid: HTMLElement,
+	mode: 'day' | 'week',
+	effectiveDays: ZonedDate[],
+	hours: ZonedDate[],
+	currentMonth: number,
+	runtime: DomRuntime
+): HTMLElement => {
+	const options = runtime.getOptions()
+	const visibleEvents = runtime.getVisibleEvents()
+	if (mode === 'day' || options.weekViewGranularity !== 'daily') {
+		return renderResourceHorizontalHourlyGrid(
+			grid,
+			effectiveDays,
+			hours,
+			visibleEvents,
+			runtime
+		)
+	}
+	return renderResourceHorizontalGrid(
+		grid,
+		effectiveDays,
+		visibleEvents,
+		currentMonth,
+		runtime,
+		{
+			buildCell: buildMonthCell,
+			renderOverlay: renderEventOverlay,
+		}
+	)
+}
+
 export const renderDomTimeGrid = (
 	runtime: DomRuntime,
 	mode: 'day' | 'week'
@@ -388,16 +421,13 @@ export const renderDomTimeGrid = (
 	applySlot(grid, 'grid', 'bg-background', options, 'flex-1 overflow-auto')
 
 	if (state.resources.length > 0 && options.orientation === 'horizontal') {
-		return renderResourceHorizontalGrid(
+		return renderHorizontalResourceTimeGrid(
 			grid,
+			mode,
 			effectiveDays,
-			runtime.getVisibleEvents(),
+			hours,
 			current.month,
-			runtime,
-			{
-				buildCell: buildMonthCell,
-				renderOverlay: renderEventOverlay,
-			}
+			runtime
 		)
 	}
 

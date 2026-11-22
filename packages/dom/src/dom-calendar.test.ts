@@ -726,4 +726,70 @@ describe('@ilamy/dom mountCalendar', () => {
 
 		cal.destroy()
 	})
+
+	it('respects weekViewGranularity (hourly vs daily) and resource colors in horizontal resource views', () => {
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: '2026-11-19T09:00:00Z',
+			initialView: 'week',
+			timezone: 'UTC',
+			orientation: 'horizontal',
+			weekViewGranularity: 'hourly',
+			resources: [
+				{
+					id: 'room-a',
+					title: 'Conference Room A',
+					backgroundColor: '#dbeafe',
+					color: '#1e40af',
+				},
+			],
+			events: [
+				{
+					id: 'hr-1',
+					title: 'Hourly Standup',
+					start: '2026-11-19T10:00:00Z',
+					end: '2026-11-19T11:00:00Z',
+					resourceId: 'room-a',
+				},
+			],
+		})
+
+		expect(
+			container.querySelector('[data-testid="dom-resource-hourly-grid"]')
+		).not.toBeNull()
+		expect(
+			container.querySelectorAll('[data-testid^="dom-resource-hour-slot-"]')
+				.length
+		).toBeGreaterThanOrEqual(24)
+		expect(container.textContent).toContain('9 AM')
+		expect(container.textContent).toContain('12 PM')
+		expect(container.textContent).toContain('5 PM')
+		expect(
+			container.querySelector('[data-testid="calendar-event-hr-1"]')
+				?.textContent
+		).toContain('Hourly Standup')
+
+		const resourceHeader = container.querySelector<HTMLElement>(
+			'[data-testid="resource-header-room-a"]'
+		)
+		expect(resourceHeader?.style.backgroundColor).toBe('#dbeafe')
+		expect(resourceHeader?.style.color).toBe('#1e40af')
+
+		cal.update({ weekViewGranularity: 'daily' })
+		expect(
+			container.querySelector('[data-testid="dom-resource-hourly-grid"]')
+		).toBeNull()
+		expect(
+			container.querySelectorAll('[data-testid^="day-cell-"]').length
+		).toBe(7)
+
+		container
+			.querySelector<HTMLButtonElement>('[data-testid="view-btn-day"]')
+			?.click()
+		expect(
+			container.querySelector('[data-testid="dom-resource-hourly-grid"]')
+		).not.toBeNull()
+
+		cal.destroy()
+	})
 })

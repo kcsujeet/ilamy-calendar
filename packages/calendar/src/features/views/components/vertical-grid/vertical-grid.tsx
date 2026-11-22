@@ -33,8 +33,8 @@ const VerticalGridBody: React.FC<{
 	return (
 		<div
 			className={cn(
-				'relative flex flex-1 min-w-full w-fit',
-				styledClass(unstyled, 'gap-px bg-border'),
+				'relative flex flex-1 min-w-full w-fit gap-px',
+				styledClass(unstyled, 'bg-border'),
 				className
 			)}
 			data-calendar-scroll-content="true"

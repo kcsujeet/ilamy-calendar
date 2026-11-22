@@ -187,8 +187,8 @@ const ColumnFrame: React.FC<{
 		>
 			<div
 				className={cn(
-					'w-full h-full relative grid',
-					styledClass(unstyled, 'gap-px bg-border')
+					'w-full h-full relative grid gap-px',
+					styledClass(unstyled, 'bg-border')
 				)}
 				ref={gridRef}
 				style={{

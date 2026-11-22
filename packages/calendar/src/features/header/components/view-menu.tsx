@@ -25,7 +25,7 @@ export function ViewMenu({ className }: ViewMenuProps) {
 		t: ctx.t,
 	}))
 	const { Button } = useCalendarComponents()
-	const viewButtonSlot = useSlotProps('viewButton')
+	const viewButtonSlot = useSlotProps('navButton')
 	const views = useHeaderViews()
 	const current = views.find((v) => v.name === view)
 	const currentLabel = current ? t(current.label ?? current.name) : ''

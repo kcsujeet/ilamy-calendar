@@ -35,54 +35,68 @@ const buildMuiSlotProps = (theme: Theme): CalendarSlotProps => {
 		header: {
 			style: {
 				backgroundColor: theme.palette.background.paper,
-				padding: '4px',
-				marginBottom: '4px',
 			},
 		},
 		grid: {
 			style: {
 				backgroundColor: theme.palette.background.paper,
 				border: `1px solid ${theme.palette.divider}`,
-				borderRadius,
+				overflow: 'hidden',
 			},
 		},
 		dayHeader: {
 			style: {
 				backgroundColor: theme.palette.background.default,
 				color: theme.palette.text.secondary,
+				borderRight: `1px solid ${theme.palette.divider}`,
+				borderBottom: `1px solid ${theme.palette.divider}`,
+				padding: '8px 0',
 				fontWeight: theme.typography.fontWeightMedium,
-				fontSize: theme.typography.caption.fontSize,
+				fontSize: theme.typography.body2.fontSize,
 			},
 		},
 		resourceHeader: {
 			style: {
 				backgroundColor: theme.palette.background.default,
 				color: theme.palette.text.primary,
-				borderColor: theme.palette.divider,
+				borderRight: `1px solid ${theme.palette.divider}`,
+				borderBottom: `1px solid ${theme.palette.divider}`,
+				padding: '8px 10px',
 				fontWeight: theme.typography.fontWeightMedium,
 			},
 		},
 		cell: {
 			style: {
 				backgroundColor: theme.palette.background.paper,
-				borderColor: theme.palette.divider,
+				borderRight: `1px solid ${theme.palette.divider}`,
+				borderBottom: `1px solid ${theme.palette.divider}`,
+				padding: '4px',
 			},
 		},
 		cellToday: {
 			style: {
-				backgroundColor: theme.palette.action.selected,
+				backgroundColor: theme.palette.background.paper,
+				borderRight: `1px solid ${theme.palette.divider}`,
+				borderBottom: `1px solid ${theme.palette.divider}`,
+				padding: '4px',
 			},
 		},
 		cellNonBusiness: {
 			style: {
 				backgroundColor: theme.palette.action.disabledBackground,
 				color: theme.palette.text.disabled,
+				borderRight: `1px solid ${theme.palette.divider}`,
+				borderBottom: `1px solid ${theme.palette.divider}`,
+				padding: '4px',
 			},
 		},
 		cellDisabled: {
 			style: {
 				backgroundColor: theme.palette.action.disabledBackground,
 				color: theme.palette.text.disabled,
+				borderRight: `1px solid ${theme.palette.divider}`,
+				borderBottom: `1px solid ${theme.palette.divider}`,
+				padding: '4px',
 			},
 		},
 		eventBar: {
@@ -113,13 +127,24 @@ const buildMuiSlotProps = (theme: Theme): CalendarSlotProps => {
 		},
 		viewButton: {
 			style: {
+				backgroundColor: 'transparent',
 				color: theme.palette.text.secondary,
+				borderRadius,
+				padding: '0 12px',
+				fontSize: theme.typography.body2.fontSize,
+				fontWeight: theme.typography.fontWeightMedium,
+				cursor: 'pointer',
 			},
 		},
 		viewButtonActive: {
 			style: {
 				backgroundColor: theme.palette.primary.main,
 				color: theme.palette.primary.contrastText,
+				borderRadius,
+				padding: '0 12px',
+				fontSize: theme.typography.body2.fontSize,
+				fontWeight: theme.typography.fontWeightMedium,
+				cursor: 'pointer',
 			},
 		},
 	}

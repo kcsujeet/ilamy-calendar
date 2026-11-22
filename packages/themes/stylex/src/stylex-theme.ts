@@ -6,6 +6,7 @@ import type {
 	SlotStyleProps,
 	StyleRecord,
 } from '@ilamy/calendar'
+import { stylexCalendarComponents } from './stylex-components'
 
 /**
  * Shape returned by `stylex.props(...)` from `@stylexjs/stylex`.
@@ -163,8 +164,6 @@ const buildDefaultStylexSlots = (
 	header: {
 		style: {
 			backgroundColor: 'var(--ilamy-bg)',
-			padding: '4px',
-			marginBottom: '4px',
 		},
 	},
 	toolbar: {
@@ -178,7 +177,8 @@ const buildDefaultStylexSlots = (
 			color: 'var(--ilamy-text)',
 			border: '1px solid var(--ilamy-border)',
 			borderRadius: '6px',
-			padding: '6px 12px',
+			height: '36px',
+			padding: '0 12px',
 			fontSize: '0.875rem',
 			fontWeight: 500,
 		},
@@ -187,7 +187,7 @@ const buildDefaultStylexSlots = (
 		style: {
 			backgroundColor: 'var(--ilamy-bg)',
 			border: '1px solid var(--ilamy-border)',
-			borderRadius: 'var(--ilamy-radius)',
+			overflow: 'hidden',
 		},
 	},
 	dayHeader: {
@@ -196,7 +196,7 @@ const buildDefaultStylexSlots = (
 			color: 'var(--ilamy-text-muted)',
 			borderRight: '1px solid var(--ilamy-border)',
 			borderBottom: '1px solid var(--ilamy-border)',
-			padding: '8px 6px',
+			padding: '8px 0',
 			fontWeight: 500,
 			fontSize: '0.875rem',
 			textAlign: 'center',
@@ -222,7 +222,7 @@ const buildDefaultStylexSlots = (
 	cellToday: {
 		style: {
 			...STYLEX_CELL_BORDER_STYLE,
-			backgroundColor: 'var(--ilamy-today-bg)',
+			backgroundColor: 'var(--ilamy-bg)',
 		},
 	},
 	cellNonBusiness: {
@@ -271,7 +271,7 @@ const buildDefaultStylexSlots = (
 			backgroundColor: 'transparent',
 			color: 'var(--ilamy-text-muted)',
 			borderRadius: '6px',
-			padding: '4px 12px',
+			padding: '0 12px',
 			fontSize: '0.875rem',
 			fontWeight: 500,
 		},
@@ -281,7 +281,7 @@ const buildDefaultStylexSlots = (
 			backgroundColor: 'var(--ilamy-primary)',
 			color: 'var(--ilamy-primary-fg)',
 			borderRadius: '6px',
-			padding: '4px 12px',
+			padding: '0 12px',
 			fontSize: '0.875rem',
 			fontWeight: 600,
 		},
@@ -336,7 +336,10 @@ export const createStylexCalendarTheme = (
 	return {
 		unstyled: true,
 		slotProps: mergedSlots,
-		components: options.components,
+		components: {
+			...stylexCalendarComponents,
+			...options.components,
+		},
 	}
 }
 

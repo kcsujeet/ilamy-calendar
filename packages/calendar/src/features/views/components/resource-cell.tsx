@@ -22,18 +22,21 @@ export const ResourceCell: React.FC<ResourceCellProps> = ({
 	const slot = useSlotProps('resourceHeader', {
 		structuralClassName: 'flex items-center justify-center p-2',
 		extraClassName: className,
-		style: {
-			color: resource.color,
-			backgroundColor: resource.backgroundColor,
-		},
 	})
+	const cellStyle: React.CSSProperties = {
+		...slot.style,
+		...(resource.color ? { color: resource.color } : {}),
+		...(resource.backgroundColor
+			? { backgroundColor: resource.backgroundColor }
+			: {}),
+	}
 
 	return (
 		<div
 			className={slot.className}
 			data-sticky-inset={stickyInset}
 			data-testid={dataTestId}
-			style={slot.style}
+			style={cellStyle}
 		>
 			{renderResource
 				? renderResource(resource)

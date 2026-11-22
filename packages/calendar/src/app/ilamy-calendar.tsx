@@ -84,7 +84,7 @@ const CalendarContent: React.FC<{ calendarRef?: Ref<IlamyCalendarApi> }> = ({
 		structuralClassName: 'flex flex-col w-full h-full',
 	})
 	const gridSlot = useSlotProps('grid', {
-		structuralClassName: 'h-full w-full',
+		structuralClassName: 'h-full w-full overflow-hidden',
 		defaultClassName: 'border',
 	})
 

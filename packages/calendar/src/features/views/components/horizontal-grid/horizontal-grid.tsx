@@ -94,8 +94,8 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 				>
 					<div
 						className={cn(
-							'relative w-full flex flex-col flex-1',
-							!unstyled && 'gap-px bg-border'
+							'relative w-full flex flex-col flex-1 gap-px',
+							!unstyled && 'bg-border'
 						)}
 						data-calendar-scroll-content="true"
 					>

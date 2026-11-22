@@ -2523,6 +2523,7 @@ describe('IlamyCalendar v4.0 theming & optional plugins (D5, D7)', () => {
 		expect(root.className).not.toContain('bg-background')
 
 		expect(screen.getByTestId('calendar-header')).toHaveClass('my-header')
+		expect(screen.getByTestId('calendar-body')).toHaveClass('overflow-hidden')
 		expect(screen.getByTestId('day-cell-2025-03-12')).toHaveClass('my-cell')
 
 		const monthHeader = screen.getByTestId('month-header')

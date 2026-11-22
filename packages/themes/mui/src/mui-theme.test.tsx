@@ -81,4 +81,21 @@ describe('@ilamy/theme-mui', () => {
 		const root = screen.getByTestId('ilamy-calendar')
 		expect(root.style.backgroundColor).not.toBe('')
 	})
+
+	test('keeps visual parity with Tailwind: no double header gap, square grid border, non-disabled today cell', () => {
+		const lightTheme = createTheme({ palette: { mode: 'light' } })
+		const adapter = createMuiCalendarTheme({ theme: lightTheme })
+		const slots = adapter.slotProps
+
+		expect(slots?.header?.style?.padding).toBeUndefined()
+		expect(slots?.header?.style?.marginBottom).toBeUndefined()
+		expect(slots?.grid?.style?.borderRadius).toBeUndefined()
+		expect(slots?.grid?.style?.overflow).toBe('hidden')
+		expect(slots?.dayHeader?.style?.fontSize).toBe(
+			lightTheme.typography.body2.fontSize
+		)
+		expect(slots?.cellToday?.style?.backgroundColor).toBe(
+			slots?.cell?.style?.backgroundColor
+		)
+	})
 })

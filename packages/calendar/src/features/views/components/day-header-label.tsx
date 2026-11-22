@@ -21,18 +21,18 @@ const FormattedDayHeader: React.FC<DayHeaderLabelProps> = ({
 	animated,
 }) => {
 	const { formatDayHeader } = useDateTimeFormatters()
-	const { unstyled } = useCalendarTheme()
+	const { isBareUnstyled } = useCalendarTheme()
 	const isTodayHeader = isToday(day)
 	const text = formatDayHeader(day)
 	const todayClassName =
-		!unstyled &&
+		!isBareUnstyled &&
 		isTodayHeader &&
 		'rounded-full bg-primary px-2 py-0.5 text-primary-foreground'
 	const textElement = (
 		<span
 			className={cn(
 				'inline-block max-w-full truncate align-middle text-center',
-				!unstyled && 'text-xs font-medium text-muted-foreground',
+				!isBareUnstyled && 'text-xs font-medium text-muted-foreground',
 				todayClassName
 			)}
 			title={text}
@@ -71,7 +71,7 @@ export const DayHeaderLabel: React.FC<DayHeaderLabelProps> = (props) => {
 			currentLocale: ctx.currentLocale,
 		})
 	)
-	const { unstyled } = useCalendarTheme()
+	const { isBareUnstyled } = useCalendarTheme()
 
 	if (hasDayHeaderFormat) {
 		return <FormattedDayHeader {...props} />
@@ -81,7 +81,7 @@ export const DayHeaderLabel: React.FC<DayHeaderLabelProps> = (props) => {
 	const weekday = formatDate(day, { weekday: 'short' }, currentLocale)
 	const today = isToday(day)
 
-	if (animated && !unstyled) {
+	if (animated && !isBareUnstyled) {
 		return (
 			<AnimatedDayLabel
 				className={className}
@@ -97,7 +97,7 @@ export const DayHeaderLabel: React.FC<DayHeaderLabelProps> = (props) => {
 			className={className}
 			dayNumber={dayNumber}
 			today={today}
-			unstyled={unstyled}
+			unstyled={isBareUnstyled}
 			weekday={weekday}
 		/>
 	)

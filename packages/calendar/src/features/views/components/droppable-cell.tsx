@@ -1,4 +1,5 @@
 import { useDroppable } from '@dnd-kit/core'
+import { isToday } from '@ilamy/core'
 import { cn } from '@ilamy/ui/lib/utils'
 import {
 	getCellMinutes,
@@ -270,14 +271,19 @@ type CellSlotStyle = { className?: string; style?: React.CSSProperties }
 const pickCellOverlay = (
 	cellDisabled: boolean,
 	shaded: boolean,
+	today: boolean,
 	disabledSlot: CellSlotStyle,
-	shadedSlot: CellSlotStyle
+	shadedSlot: CellSlotStyle,
+	todaySlot: CellSlotStyle
 ): CellSlotStyle | undefined => {
 	if (cellDisabled) {
 		return disabledSlot
 	}
 	if (shaded) {
 		return shadedSlot
+	}
+	if (today) {
+		return todaySlot
 	}
 	return undefined
 }
@@ -331,12 +337,15 @@ const CellFrame = ({
 	const disabledSlot = useSlotProps('cellDisabled', {
 		defaultClassName: disabledClass,
 	})
+	const todaySlot = useSlotProps('cellToday')
 
 	const activeOverlay = pickCellOverlay(
 		cellDisabled,
 		shaded,
+		isToday(range.start),
 		disabledSlot,
-		shadedSlot
+		shadedSlot,
+		todaySlot
 	)
 	const { className: mergedClassName, style: mergedStyle } =
 		mergeCellSlotStyles(cellSlot, activeOverlay)

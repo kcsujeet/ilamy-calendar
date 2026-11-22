@@ -159,8 +159,22 @@ const UnstyledButton = ({
 	variant: _variant,
 	size: _size,
 	type = 'button',
+	className,
 	...rest
-}: CalendarButtonProps) => <button type={type} {...rest} />
+}: CalendarButtonProps) => (
+	<button
+		className={
+			[
+				'inline-flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer',
+				className,
+			]
+				.filter(Boolean)
+				.join(' ') || undefined
+		}
+		type={type}
+		{...rest}
+	/>
+)
 
 const UnstyledInput = (props: CalendarInputProps) => <input {...props} />
 

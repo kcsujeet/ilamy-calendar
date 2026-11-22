@@ -96,4 +96,22 @@ describe('@ilamy/theme-stylex', () => {
 		expect(stylexCalendarTheme.unstyled).toBe(true)
 		expect(stylexCalendarDarkTheme.unstyled).toBe(true)
 	})
+
+	test('keeps visual parity with Tailwind: no double header gap, square grid border, non-tinted today cell, styled form primitives', () => {
+		const theme = createStylexCalendarTheme({ mode: 'light' })
+		const slots = theme.slotProps ?? {}
+		const headerStyle = slots.header?.style ?? {}
+		const gridStyle = slots.grid?.style ?? {}
+
+		expect(headerStyle.padding).toBeUndefined()
+		expect(headerStyle.marginBottom).toBeUndefined()
+		expect(gridStyle.borderRadius).toBeUndefined()
+		expect(gridStyle.overflow).toBe('hidden')
+		expect(slots.cellToday?.style?.backgroundColor).toBe(
+			slots.cell?.style?.backgroundColor
+		)
+		expect(Object.keys(theme.components ?? {})).toEqual(
+			expect.arrayContaining(['Button', 'Input', 'Textarea'])
+		)
+	})
 })

@@ -35,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 		t: ctx.t,
 	}))
 	const { Button } = useCalendarComponents()
-	const { unstyled } = useCalendarTheme()
+	const { isBareUnstyled, unstyled } = useCalendarTheme()
 	const headerSlot = useSlotProps('header', {
 		structuralClassName: '@container/base-header w-full',
 		extraClassName: headerClassName,
@@ -48,12 +48,30 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 	const navButtonSlot = useSlotProps('navButton', {
 		structuralClassName: 'h-full',
 	})
+	const actionButtonSlot = useSlotProps('navButton')
+	let primaryButtonExtraClass: string | undefined
+	if (!isBareUnstyled) {
+		primaryButtonExtraClass = 'h-9'
+	}
+	const primaryButtonSlot = useSlotProps('viewButtonActive', {
+		extraClassName: primaryButtonExtraClass,
+	})
 	let groupedArrowStyle: React.CSSProperties | undefined
 	if (navButtonSlot.style) {
 		groupedArrowStyle = {
 			...navButtonSlot.style,
 			border: 'none',
 			borderRadius: 0,
+			height: '100%',
+			padding: '0 10px',
+		}
+	}
+	let arrowGroupStyle: React.CSSProperties | undefined
+	if (unstyled && navButtonSlot.style?.border) {
+		arrowGroupStyle = {
+			border: navButtonSlot.style.border,
+			borderRadius: navButtonSlot.style.borderRadius,
+			backgroundColor: navButtonSlot.style.backgroundColor,
 		}
 	}
 
@@ -71,9 +89,10 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 				<div className="flex min-w-0 flex-wrap @xl/base-header:flex-nowrap items-center justify-center gap-2">
 					<div
 						className={cn(
-							'flex shrink-0 items-center',
-							!unstyled && 'bg-background h-9 overflow-hidden rounded-lg border'
+							'flex shrink-0 items-center overflow-hidden',
+							!isBareUnstyled && 'bg-background h-9 rounded-lg border'
 						)}
+						style={arrowGroupStyle}
 					>
 						<Button
 							aria-label={t('previous')}
@@ -99,8 +118,10 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 						</Button>
 					</div>
 					<Button
+						className={actionButtonSlot.className}
 						onClick={today}
 						size="default"
+						style={actionButtonSlot.style}
 						type="button"
 						variant="outline"
 					>
@@ -119,8 +140,10 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
 					<Button
 						aria-label={t('new')}
+						className={primaryButtonSlot.className}
 						onClick={() => openEventForm()}
 						size="default"
+						style={primaryButtonSlot.style}
 						type="button"
 					>
 						<Plus aria-hidden="true" className="size-4" />

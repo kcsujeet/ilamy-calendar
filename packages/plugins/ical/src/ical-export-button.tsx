@@ -1,4 +1,8 @@
-import { useCalendarComponents, useIlamyCalendarContext } from '@ilamy/calendar'
+import {
+	useCalendarComponents,
+	useIlamyCalendarContext,
+	useSlotProps,
+} from '@ilamy/calendar'
 import { dayKey, now, resolveZone } from '@ilamy/utils/temporal'
 import { Download } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -16,6 +20,7 @@ export const IcalExportButton = ({
 }: IcalExportButtonProps): ReactNode => {
 	const { rawEvents, collect, timezone, t } = useIlamyCalendarContext()
 	const { Button } = useCalendarComponents()
+	const buttonSlot = useSlotProps('navButton')
 
 	const handleExport = () => {
 		const todayDate = dayKey(now(resolveZone(timezone)))
@@ -29,8 +34,10 @@ export const IcalExportButton = ({
 	return (
 		<Button
 			aria-label={t('export')}
+			className={buttonSlot.className}
 			onClick={handleExport}
 			size="default"
+			style={buttonSlot.style}
 			type="button"
 			variant="outline"
 		>

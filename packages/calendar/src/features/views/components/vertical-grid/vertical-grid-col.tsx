@@ -174,7 +174,7 @@ const ColumnFrame: React.FC<{
 	gridRef: (element: HTMLElement | null) => void
 	children: React.ReactNode
 }> = ({ className, stickyInset, testId, rowCount, gridRef, children }) => {
-	const { unstyled } = useCalendarTheme()
+	const { unstyled, usesGridBorder } = useCalendarTheme()
 	return (
 		<div
 			className={cn(
@@ -188,7 +188,7 @@ const ColumnFrame: React.FC<{
 			<div
 				className={cn(
 					'w-full h-full relative grid gap-px',
-					styledClass(unstyled, 'bg-border')
+					usesGridBorder && 'bg-border'
 				)}
 				ref={gridRef}
 				style={{

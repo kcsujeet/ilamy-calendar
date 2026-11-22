@@ -792,4 +792,30 @@ describe('@ilamy/dom mountCalendar', () => {
 
 		cal.destroy()
 	})
+
+	it('keeps structural header spacing (p-1 mb-1) in unstyled/StyleX mode so header-to-grid gap matches Tailwind', () => {
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: '2026-11-19T09:00:00Z',
+			initialView: 'month',
+			timezone: 'UTC',
+			unstyled: true,
+			slotProps: {
+				header: { style: { backgroundColor: '#ffffff' } },
+				navButton: { style: { height: '36px', border: '1px solid #e2e8f0' } },
+			},
+			events: [],
+		})
+
+		const header = container.querySelector('header')
+		expect(header?.className).toContain('p-1')
+		expect(header?.className).toContain('mb-1')
+
+		const prevBtn = container.querySelector<HTMLButtonElement>(
+			'[data-testid="prev-period-btn"]'
+		)
+		expect(prevBtn?.style.height).toBe('100%')
+
+		cal.destroy()
+	})
 })

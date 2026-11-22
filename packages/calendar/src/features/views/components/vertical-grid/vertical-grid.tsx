@@ -6,7 +6,7 @@ import { useScrollToTime } from '@/features/views/hooks/use-scroll-to-time'
 import { useStickyInsets } from '@/features/views/hooks/use-sticky-insets'
 import { getScrollKey } from '@/features/views/utils/scroll-key.utils'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import { styledClass, useCalendarTheme } from '@/stores/calendar-theme-context'
+import { useCalendarTheme } from '@/stores/calendar-theme-context'
 import { keys } from '@/utils/keys.utils'
 import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
 import { VerticalGridHeaderContainer } from './vertical-grid-header-container'
@@ -29,12 +29,12 @@ const VerticalGridBody: React.FC<{
 	className?: string
 	children: React.ReactNode
 }> = ({ className, children }) => {
-	const { unstyled } = useCalendarTheme()
+	const { usesGridBorder } = useCalendarTheme()
 	return (
 		<div
 			className={cn(
 				'relative flex flex-1 min-w-full w-fit gap-px',
-				styledClass(unstyled, 'bg-border'),
+				usesGridBorder && 'bg-border',
 				className
 			)}
 			data-calendar-scroll-content="true"

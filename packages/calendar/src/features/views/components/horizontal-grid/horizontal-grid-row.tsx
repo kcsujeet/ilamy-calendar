@@ -76,7 +76,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 			timezone: c.timezone,
 			currentLocale: c.currentLocale,
 		}))
-	const { unstyled } = useCalendarTheme()
+	const { usesGridBorder } = useCalendarTheme()
 	const zone = resolveZone(timezone)
 
 	const isResourceCalendar = variant === 'resource'
@@ -123,7 +123,7 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 				<div
 					className={cn(
 						'flex w-full min-w-0 gap-px',
-						styledClass(unstyled, 'bg-border')
+						styledClass(!usesGridBorder, 'bg-border')
 					)}
 				>
 					{parsedColumns.map(({ col, zonedDay }, columnIndex) => {
@@ -213,7 +213,7 @@ const GroupedColumn = memo(
 					.filter((d): d is ZonedDate => Boolean(d)),
 			[col.days, timezone]
 		)
-		const { unstyled } = useCalendarTheme()
+		const { usesGridBorder } = useCalendarTheme()
 		const { positionedEvents, columnLayouts } = useProcessedWeekEvents({
 			days,
 			gridType,
@@ -223,7 +223,9 @@ const GroupedColumn = memo(
 
 		return (
 			<div className="flex relative w-full">
-				<div className={cn('flex w-full gap-px', !unstyled && 'bg-border')}>
+				<div
+					className={cn('flex w-full gap-px', usesGridBorder && 'bg-border')}
+				>
 					{days.map((day, dayIndex) => {
 						const cellLayout = columnLayouts.get(day)
 						return (

@@ -38,6 +38,8 @@ export interface CalendarThemeValue {
 	unstyled: boolean
 	/** True when `unstyled` is set with no theme `slotProps` or custom `components`. */
 	isBareUnstyled: boolean
+	/** True when grid separators (`bg-border`) should be drawn (Tailwind or themed `grid` border). */
+	usesGridBorder: boolean
 	slotProps: CalendarSlotProps
 	components: Required<CalendarComponents>
 }
@@ -45,6 +47,7 @@ export interface CalendarThemeValue {
 const DEFAULT_THEME: CalendarThemeValue = {
 	unstyled: false,
 	isBareUnstyled: false,
+	usesGridBorder: true,
 	slotProps: {},
 	components: DEFAULT_CALENDAR_COMPONENTS,
 }
@@ -76,6 +79,7 @@ export const CalendarThemeProvider = ({
 		return {
 			unstyled,
 			isBareUnstyled: unstyled && !hasSlotTheme && !hasCustomComponents,
+			usesGridBorder: !unstyled || Boolean(slotProps?.grid?.style?.border),
 			slotProps: slotProps ?? {},
 			components: {
 				...baseComponents,

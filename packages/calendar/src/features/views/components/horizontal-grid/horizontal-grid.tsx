@@ -34,7 +34,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 }) => {
 	const { currentDate, view, scrollTime, scrollToNow, scrollRequest } =
 		useSmartCalendarContext()
-	const { unstyled } = useCalendarTheme()
+	const { usesGridBorder } = useCalendarTheme()
 	const rootRef = useRef<HTMLDivElement | null>(null)
 	const viewportRef = useRef<HTMLDivElement | null>(null)
 
@@ -95,7 +95,7 @@ export const HorizontalGrid: React.FC<HorizontalGridProps> = ({
 					<div
 						className={cn(
 							'relative w-full flex flex-col flex-1 gap-px',
-							!unstyled && 'bg-border'
+							usesGridBorder && 'bg-border'
 						)}
 						data-calendar-scroll-content="true"
 					>

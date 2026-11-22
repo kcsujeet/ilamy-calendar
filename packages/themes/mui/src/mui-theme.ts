@@ -41,15 +41,12 @@ const buildMuiSlotProps = (theme: Theme): CalendarSlotProps => {
 			style: {
 				backgroundColor: theme.palette.background.paper,
 				border: `1px solid ${theme.palette.divider}`,
-				overflow: 'hidden',
 			},
 		},
 		dayHeader: {
 			style: {
 				backgroundColor: theme.palette.background.default,
 				color: theme.palette.text.secondary,
-				borderRight: `1px solid ${theme.palette.divider}`,
-				borderBottom: `1px solid ${theme.palette.divider}`,
 				padding: '8px 0',
 				fontWeight: theme.typography.fontWeightMedium,
 				fontSize: theme.typography.body2.fontSize,
@@ -59,8 +56,6 @@ const buildMuiSlotProps = (theme: Theme): CalendarSlotProps => {
 			style: {
 				backgroundColor: theme.palette.background.default,
 				color: theme.palette.text.primary,
-				borderRight: `1px solid ${theme.palette.divider}`,
-				borderBottom: `1px solid ${theme.palette.divider}`,
 				padding: '8px 10px',
 				fontWeight: theme.typography.fontWeightMedium,
 			},
@@ -68,16 +63,12 @@ const buildMuiSlotProps = (theme: Theme): CalendarSlotProps => {
 		cell: {
 			style: {
 				backgroundColor: theme.palette.background.paper,
-				borderRight: `1px solid ${theme.palette.divider}`,
-				borderBottom: `1px solid ${theme.palette.divider}`,
 				padding: '4px',
 			},
 		},
 		cellToday: {
 			style: {
 				backgroundColor: theme.palette.background.paper,
-				borderRight: `1px solid ${theme.palette.divider}`,
-				borderBottom: `1px solid ${theme.palette.divider}`,
 				padding: '4px',
 			},
 		},
@@ -85,8 +76,6 @@ const buildMuiSlotProps = (theme: Theme): CalendarSlotProps => {
 			style: {
 				backgroundColor: theme.palette.action.disabledBackground,
 				color: theme.palette.text.disabled,
-				borderRight: `1px solid ${theme.palette.divider}`,
-				borderBottom: `1px solid ${theme.palette.divider}`,
 				padding: '4px',
 			},
 		},
@@ -94,8 +83,6 @@ const buildMuiSlotProps = (theme: Theme): CalendarSlotProps => {
 			style: {
 				backgroundColor: theme.palette.action.disabledBackground,
 				color: theme.palette.text.disabled,
-				borderRight: `1px solid ${theme.palette.divider}`,
-				borderBottom: `1px solid ${theme.palette.divider}`,
 				padding: '4px',
 			},
 		},

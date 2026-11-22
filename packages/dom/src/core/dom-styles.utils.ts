@@ -41,6 +41,15 @@ export const applyInlineStyle = (
 	}
 }
 
+const GRID_BORDERED_SLOTS = new Set<CalendarSlotName>([
+	'dayHeader',
+	'resourceHeader',
+	'cell',
+	'cellToday',
+	'cellNonBusiness',
+	'cellDisabled',
+])
+
 export const applySlot = (
 	element: HTMLElement,
 	slotName: CalendarSlotName,
@@ -50,16 +59,38 @@ export const applySlot = (
 ): HTMLElement => {
 	element.dataset.slot = slotName
 	const slotEntry = options.slotProps?.[slotName]
+	let themeBorderClass = ''
+	if (
+		options.unstyled &&
+		options.slotProps?.grid?.style?.border &&
+		GRID_BORDERED_SLOTS.has(slotName)
+	) {
+		themeBorderClass = 'border-r last:border-r-0 border-b border-border'
+	}
 	const merged = mergeClassNames(
 		options.unstyled,
 		defaultClass,
 		slotEntry?.className,
-		structuralClass
+		themeBorderClass
+			? `${structuralClass} ${themeBorderClass}`.trim()
+			: structuralClass
 	)
 	if (merged) {
 		element.className = merged
 	}
 	applyInlineStyle(element, slotEntry?.style)
+	if (slotName === 'grid') {
+		// `@ilamy/dom` views apply the `grid` slot directly to the scroll container,
+		// so a theme's `overflow: hidden` must never disable scrolling.
+		if (element.style.overflow === 'hidden') {
+			element.style.removeProperty('overflow')
+		}
+		if (!options.unstyled || options.slotProps?.grid) {
+			element.style.scrollbarWidth = 'thin'
+			element.style.scrollbarColor =
+				'var(--border, rgba(128, 128, 128, 0.35)) transparent'
+		}
+	}
 	return element
 }
 

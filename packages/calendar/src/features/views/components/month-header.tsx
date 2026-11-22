@@ -22,7 +22,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 		currentLocale,
 		timezone,
 	} = useSmartCalendarContext()
-	const { unstyled } = useCalendarTheme()
+	const { usesGridBorder } = useCalendarTheme()
 	const dayHeaderSlot = useSlotProps('dayHeader', {
 		structuralClassName:
 			'py-2 text-center flex-1 min-w-0 flex items-center justify-center',
@@ -42,7 +42,7 @@ export const MonthHeader: React.FC<MonthHeaderProps> = ({ className }) => {
 		<div
 			className={cn(
 				'flex w-full',
-				!unstyled && 'gap-px bg-border border-b',
+				usesGridBorder && 'gap-px bg-border border-b',
 				stickyViewHeader && 'sticky top-0 z-20',
 				viewHeaderClassName,
 				className

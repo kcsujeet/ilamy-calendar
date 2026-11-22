@@ -137,9 +137,9 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 	applySlot(
 		headerEl,
 		'header',
-		'p-1 mb-1 bg-background',
+		'bg-background',
 		options,
-		'shrink-0 flex flex-wrap items-center justify-between gap-2'
+		'p-1 mb-1 shrink-0 flex flex-wrap items-center justify-between gap-2'
 	)
 
 	if (options.renderHeader) {
@@ -200,6 +200,7 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 	if (hasSlotTheme) {
 		prevBtn.style.border = 'none'
 		prevBtn.style.borderRadius = '0'
+		prevBtn.style.height = '100%'
 		prevBtn.style.padding = '0 10px'
 	}
 
@@ -222,6 +223,7 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 	if (hasSlotTheme) {
 		nextBtn.style.border = 'none'
 		nextBtn.style.borderRadius = '0'
+		nextBtn.style.height = '100%'
 		nextBtn.style.padding = '0 10px'
 	}
 

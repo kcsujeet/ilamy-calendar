@@ -46,23 +46,23 @@ describe('@ilamy/theme-stylex', () => {
 		})
 
 		expect(theme.unstyled).toBe(true)
-		const slots = theme.slotProps
-		const rootStyle = slots?.root?.style
-		expect(slots?.root?.className).toBe('sx-root-class')
-		expect(rootStyle).toMatchObject({
+		const s = (name: keyof NonNullable<typeof theme.slotProps>) =>
+			theme.slotProps?.[name]?.style ?? {}
+		expect(theme.slotProps?.root?.className).toBe('sx-root-class')
+		expect(s('root')).toMatchObject({
 			'--ilamy-bg': STYLEX_DARK_TOKENS.background,
 			'--ilamy-primary': '#a855f7',
 			'--background': STYLEX_DARK_TOKENS.background,
 			'--muted': STYLEX_DARK_TOKENS.surfaceMuted,
 			'--foreground': STYLEX_DARK_TOKENS.text,
 		})
-		expect(slots?.navButton?.style?.padding).toBeDefined()
-		expect(slots?.cell?.style?.borderBottom).toContain('solid')
-		expect(slots?.dayHeader?.style?.backgroundColor).toBe(
-			'var(--ilamy-surface)'
-		)
-		expect(slots?.eventBar?.className).toBe('sx-bar-class')
-		expect(slots?.eventBar?.style?.fontWeight).toBe(700)
+		expect(s('navButton').padding).toBeDefined()
+		expect(s('grid').border).toContain('solid')
+		expect(s('cell').borderRight).toBeUndefined()
+		expect(s('dayHeader').borderRight).toBeUndefined()
+		expect(s('dayHeader').backgroundColor).toBe('var(--ilamy-surface)')
+		expect(theme.slotProps?.eventBar?.className).toBe('sx-bar-class')
+		expect(s('eventBar').fontWeight).toBe(700)
 	})
 
 	test('renders IlamyCalendar unstyled with StyleX theme classes and tokens', () => {
@@ -106,7 +106,7 @@ describe('@ilamy/theme-stylex', () => {
 		expect(headerStyle.padding).toBeUndefined()
 		expect(headerStyle.marginBottom).toBeUndefined()
 		expect(gridStyle.borderRadius).toBeUndefined()
-		expect(gridStyle.overflow).toBe('hidden')
+		expect(gridStyle.overflow).toBeUndefined()
 		expect(slots.cellToday?.style?.backgroundColor).toBe(
 			slots.cell?.style?.backgroundColor
 		)

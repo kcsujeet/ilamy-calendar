@@ -45,6 +45,16 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 							: null,
 					gridRadius: bodyStyle?.borderRadius,
 					gridOverflow: bodyStyle?.overflow,
+					satHeaderBorderRight: (() => {
+						const el = document.querySelector(
+							'[data-testid="month-header"] > :last-child'
+						)
+						return el ? getComputedStyle(el).borderRightWidth : null
+					})(),
+					satCellBorderRight: (() => {
+						const el = document.querySelector('[data-testid^="day-cell-"]')
+						return el ? getComputedStyle(el).borderRightWidth : null
+					})(),
 				}
 			})
 
@@ -56,6 +66,14 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 			expect(metrics.switcherH, `${theme} ViewSwitcher height`).toBe(36)
 			expect(metrics.gridRadius, `${theme} grid border-radius`).toBe('0px')
 			expect(metrics.gridOverflow, `${theme} grid overflow`).toBe('hidden')
+			expect(
+				metrics.satHeaderBorderRight,
+				`${theme} no double right border on dayHeader`
+			).toBe('0px')
+			expect(
+				metrics.satCellBorderRight,
+				`${theme} no double right border on cell`
+			).toBe('0px')
 		}
 	})
 
@@ -131,5 +149,93 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 		// Toggle back to Hourly -> returns to hourly grid
 		await page.getByRole('button', { name: 'Hourly', exact: true }).click()
 		await page.waitForSelector('[data-testid="dom-resource-hourly-grid"]')
+	})
+
+	test('Vue, Svelte, Solid, and Angular preserve header-to-grid gap and 36px button heights in both Tailwind and StyleX', async ({
+		page,
+	}) => {
+		await page.goto('/')
+		await page.waitForSelector('[data-testid="calendar-header"]')
+
+		for (const fw of ['Vue', 'Svelte', 'Solid', 'Angular']) {
+			await page.getByRole('button', { name: new RegExp(`^${fw}\\b`) }).click()
+			await page.waitForSelector('[data-testid="ilamy-dom-calendar"]')
+
+			for (const theme of ['Tailwind', 'StyleX']) {
+				await page.getByRole('button', { name: theme, exact: true }).click()
+				await page.waitForSelector('[data-testid="ilamy-dom-calendar"] header')
+
+				const metrics = await page.evaluate(() => {
+					const root = document.querySelector(
+						'[data-testid="ilamy-dom-calendar"]'
+					)
+					const header = root?.querySelector('header')
+					const grid = root?.querySelector(
+						'[data-testid^="dom-"][data-testid$="-view"]'
+					)
+					const todayBtn = root?.querySelector('[data-testid="today-btn"]')
+					const newBtn = root?.querySelector('[data-testid="new-event-btn"]')
+					const group = header?.querySelector('[role="group"]')
+					const todayR = todayBtn?.getBoundingClientRect()
+					const gridR = grid?.getBoundingClientRect()
+					const gridStyle = grid ? getComputedStyle(grid) : null
+
+					const h = (el: Element | null | undefined) =>
+						el ? Math.round(el.getBoundingClientRect().height) : null
+
+					return {
+						btnToGridGap:
+							todayR && gridR ? Math.round(gridR.top - todayR.bottom) : null,
+						todayH: h(todayBtn),
+						newH: h(newBtn),
+						switcherH: h(group),
+						gridRadius: gridStyle?.borderRadius,
+						gridOverflowY: gridStyle?.overflowY,
+						canScrollY: grid ? grid.scrollHeight > grid.clientHeight : false,
+					}
+				})
+
+				expect(
+					metrics.btnToGridGap,
+					`${fw} ${theme} header-to-grid gap`
+				).toBeGreaterThanOrEqual(8)
+				expect(
+					metrics.btnToGridGap,
+					`${fw} ${theme} header-to-grid gap`
+				).toBeLessThanOrEqual(9)
+				expect(metrics.todayH, `${fw} ${theme} Today height`).toBe(36)
+				expect(metrics.newH, `${fw} ${theme} New height`).toBe(36)
+				expect(metrics.switcherH, `${fw} ${theme} ViewSwitcher height`).toBe(36)
+				expect(metrics.gridRadius, `${fw} ${theme} grid border-radius`).toBe(
+					'0px'
+				)
+				expect(
+					metrics.gridOverflowY,
+					`${fw} ${theme} grid must remain scrollable (not overflow: hidden)`
+				).toBe('auto')
+				expect(
+					metrics.canScrollY,
+					`${fw} ${theme} month grid must have scrollable overflow`
+				).toBe(true)
+
+				// Actually scroll with mouse wheel and verify scrollTop advances
+				const gridLoc = page
+					.locator(
+						'[data-testid="ilamy-dom-calendar"] [data-testid^="dom-"][data-testid$="-view"]'
+					)
+					.first()
+				const box = await gridLoc.boundingBox()
+				expect(box).not.toBeNull()
+				if (box) {
+					await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+					await page.mouse.wheel(0, 240)
+				}
+				await expect
+					.poll(() => gridLoc.evaluate((el) => el.scrollTop), {
+						message: `${fw} ${theme} wheel scroll must advance scrollTop`,
+					})
+					.toBeGreaterThan(0)
+			}
+		}
 	})
 })

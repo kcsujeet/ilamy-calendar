@@ -142,9 +142,7 @@ const buildTokenVars = (tokens: CalendarStylexTokens): StyleRecord => ({
 	'--ring': tokens.primary,
 })
 
-const STYLEX_CELL_BORDER_STYLE: StyleRecord = {
-	borderRight: '1px solid var(--ilamy-border)',
-	borderBottom: '1px solid var(--ilamy-border)',
+const STYLEX_CELL_BASE_STYLE: StyleRecord = {
 	padding: '4px',
 }
 
@@ -187,15 +185,12 @@ const buildDefaultStylexSlots = (
 		style: {
 			backgroundColor: 'var(--ilamy-bg)',
 			border: '1px solid var(--ilamy-border)',
-			overflow: 'hidden',
 		},
 	},
 	dayHeader: {
 		style: {
 			backgroundColor: 'var(--ilamy-surface)',
 			color: 'var(--ilamy-text-muted)',
-			borderRight: '1px solid var(--ilamy-border)',
-			borderBottom: '1px solid var(--ilamy-border)',
 			padding: '8px 0',
 			fontWeight: 500,
 			fontSize: '0.875rem',
@@ -206,8 +201,6 @@ const buildDefaultStylexSlots = (
 		style: {
 			backgroundColor: 'var(--ilamy-surface)',
 			color: 'var(--ilamy-text)',
-			borderRight: '1px solid var(--ilamy-border)',
-			borderBottom: '1px solid var(--ilamy-border)',
 			padding: '8px 10px',
 			fontWeight: 600,
 			fontSize: '0.875rem',
@@ -215,26 +208,26 @@ const buildDefaultStylexSlots = (
 	},
 	cell: {
 		style: {
-			...STYLEX_CELL_BORDER_STYLE,
+			...STYLEX_CELL_BASE_STYLE,
 			backgroundColor: 'var(--ilamy-bg)',
 		},
 	},
 	cellToday: {
 		style: {
-			...STYLEX_CELL_BORDER_STYLE,
+			...STYLEX_CELL_BASE_STYLE,
 			backgroundColor: 'var(--ilamy-bg)',
 		},
 	},
 	cellNonBusiness: {
 		style: {
-			...STYLEX_CELL_BORDER_STYLE,
+			...STYLEX_CELL_BASE_STYLE,
 			backgroundColor: 'var(--ilamy-surface-muted)',
 			color: 'var(--ilamy-text-muted)',
 		},
 	},
 	cellDisabled: {
 		style: {
-			...STYLEX_CELL_BORDER_STYLE,
+			...STYLEX_CELL_BASE_STYLE,
 			backgroundColor: 'var(--ilamy-surface-muted)',
 			color: 'var(--ilamy-text-muted)',
 			opacity: 0.55,

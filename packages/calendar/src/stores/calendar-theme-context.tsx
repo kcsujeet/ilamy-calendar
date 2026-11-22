@@ -94,6 +94,12 @@ export const CalendarThemeProvider = ({
 export const useCalendarTheme = (): CalendarThemeValue =>
 	useContext(CalendarThemeContext)
 
+/** Returns `className` only when `unstyled` is false. */
+export const styledClass = (
+	unstyled: boolean,
+	className: string
+): string | undefined => (unstyled ? undefined : className)
+
 /** Returns the active UI primitive set (default shadcn/Radix merged with overrides). */
 export const useCalendarComponents = (): Required<CalendarComponents> => {
 	const theme = useContext(CalendarThemeContext)

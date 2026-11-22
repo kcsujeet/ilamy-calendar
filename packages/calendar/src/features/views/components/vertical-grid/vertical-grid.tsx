@@ -6,7 +6,7 @@ import { useScrollToTime } from '@/features/views/hooks/use-scroll-to-time'
 import { useStickyInsets } from '@/features/views/hooks/use-sticky-insets'
 import { getScrollKey } from '@/features/views/utils/scroll-key.utils'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import { useCalendarTheme } from '@/stores/calendar-theme-context'
+import { styledClass, useCalendarTheme } from '@/stores/calendar-theme-context'
 import { keys } from '@/utils/keys.utils'
 import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
 import { VerticalGridHeaderContainer } from './vertical-grid-header-container'
@@ -23,6 +23,26 @@ interface VerticalGridProps {
 	 */
 	slotDurationMinutes?: number
 	style?: React.CSSProperties
+}
+
+const VerticalGridBody: React.FC<{
+	className?: string
+	children: React.ReactNode
+}> = ({ className, children }) => {
+	const { unstyled } = useCalendarTheme()
+	return (
+		<div
+			className={cn(
+				'relative flex flex-1 min-w-full w-fit',
+				styledClass(unstyled, 'gap-px bg-border'),
+				className
+			)}
+			data-calendar-scroll-content="true"
+			data-testid="vertical-grid-body"
+		>
+			{children}
+		</div>
+	)
 }
 
 export const VerticalGrid: React.FC<VerticalGridProps> = ({
@@ -46,7 +66,6 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 
 	const { currentDate, view, scrollTime, scrollToNow, scrollRequest } =
 		useSmartCalendarContext()
-	const { unstyled } = useCalendarTheme()
 	const rootRef = useRef<HTMLDivElement | null>(null)
 	const viewportRef = useRef<HTMLDivElement | null>(null)
 
@@ -128,15 +147,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 				{isResourceCalendar && header}
 				{/* Calendar area with scroll. gap-px + bg-border draws the vertical
 					    separators between columns through the gaps. */}
-				<div
-					className={cn(
-						'relative flex flex-1 min-w-full w-fit',
-						!unstyled && 'gap-px bg-border',
-						classes?.body
-					)}
-					data-calendar-scroll-content="true"
-					data-testid="vertical-grid-body"
-				>
+				<VerticalGridBody className={classes?.body}>
 					{columns.map((column, index) => (
 						<VerticalGridCol
 							// By position, not by `column.id`: the id carries the date, so
@@ -147,7 +158,7 @@ export const VerticalGrid: React.FC<VerticalGridProps> = ({
 							slotDurationMinutes={slotDurationMinutes}
 						/>
 					))}
-				</div>
+				</VerticalGridBody>
 				<ScrollBar className="z-30" /> {/* vertical scrollbar */}
 				<ScrollBar className="z-30" orientation="horizontal" />{' '}
 				{/* horizontal scrollbar */}

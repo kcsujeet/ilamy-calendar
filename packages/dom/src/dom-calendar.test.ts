@@ -635,4 +635,95 @@ describe('@ilamy/dom mountCalendar', () => {
 
 		cal.destroy()
 	})
+
+	it('applies translations to header buttons and updates them reactively', () => {
+		const container = document.createElement('div')
+		document.body.appendChild(container)
+		const cal = mountCalendar(container, {
+			initialDate: '2026-11-19T12:00:00Z',
+			timezone: 'UTC',
+			locale: 'fr',
+			enableIcalExport: true,
+			translations: {
+				today: "Aujourd'hui",
+				day: 'Jour',
+				week: 'Semaine',
+				month: 'Mois',
+				new: 'Nouveau',
+				export: 'Exporter',
+			},
+		})
+
+		expect(
+			container.querySelector('[data-testid="today-btn"]')?.textContent
+		).toBe("Aujourd'hui")
+		expect(
+			container.querySelector('[data-testid="view-btn-month"]')?.textContent
+		).toBe('Mois')
+		expect(
+			container.querySelector('[data-testid="new-event-btn"]')?.textContent
+		).toContain('Nouveau')
+		expect(
+			container.querySelector('[data-testid="export-ical-btn"]')?.textContent
+		).toContain('Exporter')
+
+		cal.update({
+			locale: 'ja',
+			translations: { today: '今日', month: '月' },
+		})
+		expect(
+			container.querySelector('[data-testid="today-btn"]')?.textContent
+		).toBe('今日')
+		expect(
+			container.querySelector('[data-testid="view-btn-month"]')?.textContent
+		).toBe('月')
+
+		cal.destroy()
+	})
+
+	it('creates and deletes a non-recurring event via dialog without opening the recurring scope modal', () => {
+		const container = document.createElement('div')
+		document.body.appendChild(container)
+		const cal = mountCalendar(container, {
+			initialDate: '2026-11-19T12:00:00Z',
+			initialView: 'day',
+			timezone: 'UTC',
+			events: [],
+		})
+
+		const newBtn = container.querySelector<HTMLButtonElement>(
+			'[data-testid="new-event-btn"]'
+		)
+		newBtn?.click()
+		const titleInput = container.querySelector<HTMLInputElement>(
+			'[data-testid="dom-event-dialog"] input[name="title"]'
+		)
+		expect(titleInput).not.toBeNull()
+		if (titleInput) titleInput.value = 'One-off DOM Event'
+		const form = container.querySelector<HTMLFormElement>(
+			'[data-testid="dom-event-dialog"] form'
+		)
+		form?.dispatchEvent(
+			new Event('submit', { bubbles: true, cancelable: true })
+		)
+
+		const bar = container.querySelector<HTMLElement>('[data-event-id]')
+		expect(bar?.dataset.eventId?.startsWith('evt-')).toBe(true)
+		expect(bar?.textContent).toContain('One-off DOM Event')
+		bar?.dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+		)
+		const deleteBtn = container.querySelector<HTMLButtonElement>(
+			'[data-testid="dom-event-delete-btn"]'
+		)
+		expect(deleteBtn).not.toBeNull()
+		deleteBtn?.click()
+
+		expect(
+			container.querySelector('[data-testid="dom-scope-dialog"]')
+		).toBeNull()
+		expect(container.querySelector('[data-event-id]')).toBeNull()
+
+		cal.destroy()
+	})
 })

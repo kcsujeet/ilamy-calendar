@@ -257,6 +257,7 @@ export function buildDomCalendarOptions(params: {
 		weekends: values.weekends,
 		timezone: values.timezone,
 		locale: values.locale,
+		translations: shared.translations as Partial<Record<string, string>>,
 		timeFormat: values.timeFormat,
 		dayMaxEvents: values.dayMaxEvents,
 		slotDuration: values.slotDuration,

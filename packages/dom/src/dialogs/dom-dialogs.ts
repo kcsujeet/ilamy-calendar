@@ -398,7 +398,7 @@ const buildFormEventPayload = (params: {
 	const trimmedDesc = params.description.trim()
 	const trimmedLocation = params.location.trim()
 	return {
-		id: params.existing?.id ?? `evt_${Date.now()}`,
+		id: params.existing?.id ?? `evt-${Date.now()}`,
 		title: params.title.trim() || 'Untitled Event',
 		start: params.range.start,
 		end: params.range.end,

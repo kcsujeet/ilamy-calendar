@@ -14,7 +14,7 @@ import { VerticalGridEventsLayer } from '@/features/views/components/vertical-gr
 import type { StickyInsetSide } from '@/features/views/hooks/use-sticky-insets'
 import { useDragPreviewEvent } from '@/hooks/use-drag-preview-event'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import { useCalendarTheme } from '@/stores/calendar-theme-context'
+import { styledClass, useCalendarTheme } from '@/stores/calendar-theme-context'
 import {
 	type DragPreviewState,
 	useDragPreview,
@@ -166,6 +166,41 @@ const useColumnGridData = (
 	return { entries, zonedDays, slots }
 }
 
+const ColumnFrame: React.FC<{
+	className?: string
+	stickyInset?: StickyInsetSide
+	testId: string
+	rowCount: number
+	gridRef: (element: HTMLElement | null) => void
+	children: React.ReactNode
+}> = ({ className, stickyInset, testId, rowCount, gridRef, children }) => {
+	const { unstyled } = useCalendarTheme()
+	return (
+		<div
+			className={cn(
+				'flex flex-col flex-1 items-center min-w-20 justify-center relative',
+				styledClass(unstyled, 'bg-background'),
+				className
+			)}
+			data-sticky-inset={stickyInset}
+			data-testid={testId}
+		>
+			<div
+				className={cn(
+					'w-full h-full relative grid',
+					styledClass(unstyled, 'gap-px bg-border')
+				)}
+				ref={gridRef}
+				style={{
+					gridTemplateRows: `repeat(${rowCount}, minmax(0, 1fr))`,
+				}}
+			>
+				{children}
+			</div>
+		</div>
+	)
+}
+
 const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	id,
 	days,
@@ -178,7 +213,6 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	noEvents,
 	slotDurationMinutes = 60,
 }) => {
-	const { unstyled } = useCalendarTheme()
 	const resourceId = resource?.id
 	const { entries, zonedDays, slots } = useColumnGridData(
 		days,
@@ -200,49 +234,36 @@ const NoMemoVerticalGridCol: React.FC<VerticalGridColProps> = ({
 	})
 
 	return (
-		<div
-			className={cn(
-				'flex flex-col flex-1 items-center min-w-20 justify-center relative',
-				!unstyled && 'bg-background',
-				className
-			)}
-			data-sticky-inset={stickyInset}
-			data-testid={dataTestId || keys.container.vertical.col(id)}
+		<ColumnFrame
+			className={className}
+			gridRef={setNodeRef}
+			rowCount={entries.length}
+			stickyInset={stickyInset}
+			testId={dataTestId || keys.container.vertical.col(id)}
 		>
-			<div
-				className={cn(
-					'w-full h-full relative grid',
-					!unstyled && 'gap-px bg-border'
-				)}
-				ref={setNodeRef}
-				style={{
-					gridTemplateRows: `repeat(${entries.length}, minmax(0, 1fr))`,
-				}}
-			>
-				<ColumnRows
-					dragPreview={columnDragPreview}
-					entries={entries}
-					gridType={gridType}
-					id={id}
-					renderCell={renderCell}
-					resourceId={resourceId}
-					slotDurationMinutes={slotDurationMinutes}
-					slots={slots}
-				/>
+			<ColumnRows
+				dragPreview={columnDragPreview}
+				entries={entries}
+				gridType={gridType}
+				id={id}
+				renderCell={renderCell}
+				resourceId={resourceId}
+				slotDurationMinutes={slotDurationMinutes}
+				slots={slots}
+			/>
 
-				{!noEvents && (
-					<div className="absolute inset-0 z-10 pointer-events-none">
-						<VerticalGridEventsLayer
-							data-testid={keys.container.eventsLayer('vertical', id)}
-							days={zonedDays}
-							gridType={gridType}
-							resource={resource}
-							resourceId={resourceId}
-						/>
-					</div>
-				)}
-			</div>
-		</div>
+			{!noEvents && (
+				<div className="absolute inset-0 z-10 pointer-events-none">
+					<VerticalGridEventsLayer
+						data-testid={keys.container.eventsLayer('vertical', id)}
+						days={zonedDays}
+						gridType={gridType}
+						resource={resource}
+						resourceId={resourceId}
+					/>
+				</div>
+			)}
+		</ColumnFrame>
 	)
 }
 

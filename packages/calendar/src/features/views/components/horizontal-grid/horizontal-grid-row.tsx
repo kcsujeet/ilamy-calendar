@@ -17,7 +17,7 @@ import { HorizontalGridEventsLayer } from '@/features/views/components/horizonta
 import { ResourceCell } from '@/features/views/components/resource-cell'
 import { useProcessedWeekEvents } from '@/features/views/hooks/use-processed-week-events'
 import { useSmartCalendarContext } from '@/hooks/use-smart-calendar-context'
-import { useCalendarTheme } from '@/stores/calendar-theme-context'
+import { styledClass, useCalendarTheme } from '@/stores/calendar-theme-context'
 import { keys } from '@/utils/keys.utils'
 
 interface HorizontalGridColumn extends HorizontalCellSpec {
@@ -121,7 +121,10 @@ const NoMemoHorizontalGridRow: React.FC<HorizontalGridRowProps> = ({
 			<div className="relative flex-1 flex min-w-0">
 				{/* gap-px + bg-border draws the vertical separators between cells. */}
 				<div
-					className={cn('flex w-full min-w-0', !unstyled && 'gap-px bg-border')}
+					className={cn(
+						'flex w-full min-w-0',
+						styledClass(unstyled, 'gap-px bg-border')
+					)}
 				>
 					{parsedColumns.map(({ col, zonedDay }, columnIndex) => {
 						const columnKey = keys.listKey('col', columnIndex)

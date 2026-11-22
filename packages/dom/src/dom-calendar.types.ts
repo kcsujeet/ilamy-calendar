@@ -100,6 +100,8 @@ export interface DomCalendarOptions {
 	weekends?: boolean
 	timezone?: string
 	locale?: string
+	translations?: Partial<Record<string, string>>
+	translator?: (key: string) => string
 	timeFormat?: TimeFormat
 	dayMaxEvents?: number
 	slotDuration?: SlotDuration

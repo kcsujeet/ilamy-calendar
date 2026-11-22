@@ -10,7 +10,7 @@ import {
 	SlotCell,
 } from '@/features/views/components/droppable-cell'
 import { useIsCellUnavailable } from '@/hooks/use-is-cell-unavailable'
-import { useCalendarTheme } from '@/stores/calendar-theme-context'
+import { styledClass, useCalendarTheme } from '@/stores/calendar-theme-context'
 import type { DragPreviewState } from '@/stores/drag-preview-context'
 import type { DropColumnData } from '@/utils/dnd.utils'
 import { keys } from '@/utils/keys.utils'
@@ -93,14 +93,25 @@ const GridCellTarget: React.FC<GridCellTargetProps> = ({
 	dropSlots,
 	slotIndex,
 	dragPreview = null,
+	className,
 	...cellProps
 }) => {
+	const { unstyled } = useCalendarTheme()
+	const resolvedClassName = cn(
+		'overflow-clip min-h-[60px] relative min-w-0',
+		styledClass(
+			unstyled,
+			'cursor-pointer p-1 bg-background not-in-data-dragging:hover:bg-accent'
+		),
+		className
+	)
 	if (dropSlots === undefined || slotIndex === undefined) {
-		return <DroppableCell {...cellProps} />
+		return <DroppableCell {...cellProps} className={resolvedClassName} />
 	}
 	return (
 		<SlotCell
 			{...cellProps}
+			className={resolvedClassName}
 			dragPreview={dragPreview}
 			slotIndex={slotIndex}
 			slots={dropSlots}
@@ -128,7 +139,6 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	...columnSlot
 }) => {
 	const allEventsDialogRef = useRef<AllEventDialogHandle>(null)
-	const { unstyled } = useCalendarTheme()
 	const isShaded = useIsCellUnavailable({
 		day,
 		gridType,
@@ -140,12 +150,7 @@ const NoMemoGridCell: React.FC<GridProps> = ({
 	const cellProps: DroppableCellProps = {
 		allDay,
 		axis,
-		className: cn(
-			'overflow-clip min-h-[60px] relative min-w-0',
-			!unstyled &&
-				'cursor-pointer p-1 bg-background not-in-data-dragging:hover:bg-accent',
-			className
-		),
+		className,
 		'data-testid': testId,
 		date: day,
 		shaded: isShaded,

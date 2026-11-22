@@ -14,6 +14,17 @@ import type {
 	DomCalendarOptions,
 } from '../dom-calendar.types'
 
+export const translateDom = (
+	options: Pick<DomCalendarOptions, 'translations' | 'translator'>,
+	key: string,
+	fallback: string
+): string => {
+	if (options.translator) {
+		return options.translator(key)
+	}
+	return options.translations?.[key] ?? fallback
+}
+
 export const applyInlineStyle = (
 	element: HTMLElement,
 	style: StyleRecord | undefined

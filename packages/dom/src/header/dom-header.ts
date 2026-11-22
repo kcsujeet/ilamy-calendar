@@ -11,7 +11,12 @@ import {
 	type ZonedDate,
 } from '@ilamy/core'
 import { createSvgIcon } from '../core/dom-icons.utils'
-import { applySlot, createEl, mergeClassNames } from '../core/dom-styles.utils'
+import {
+	applySlot,
+	createEl,
+	mergeClassNames,
+	translateDom,
+} from '../core/dom-styles.utils'
 import { openDomHeaderDatePicker } from '../dialogs/dom-date-picker'
 import type { DomCalendarOptions, DomRuntime } from '../dom-calendar.types'
 
@@ -223,7 +228,7 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 	arrowGroup.append(prevBtn, nextBtn)
 
 	const todayBtn = createEl('button', {
-		text: 'Today',
+		text: translateDom(options, 'today', 'Today'),
 		attrs: { type: 'button' },
 		data: { testid: 'today-btn' },
 		onClick: () => runtime.controller.today(),
@@ -298,7 +303,7 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 	for (const view of views) {
 		const isActive = state.view === view
 		const viewBtn = createEl('button', {
-			text: VIEW_LABELS[view] ?? view,
+			text: translateDom(options, view, VIEW_LABELS[view] ?? view),
 			attrs: {
 				type: 'button',
 				'aria-pressed': String(isActive),
@@ -326,6 +331,7 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 	toolbar.appendChild(viewGroup)
 
 	if (options.enableIcalExport) {
+		const exportLabel = translateDom(options, 'export', 'Export')
 		const exportBtn = createEl(
 			'button',
 			{
@@ -333,7 +339,7 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 				data: { testid: 'export-ical-btn' },
 				onClick: () => runtime.downloadIcal(),
 			},
-			[createSvgIcon('download', 'size-4 shrink-0'), 'Export']
+			[createSvgIcon('download', 'size-4 shrink-0'), exportLabel]
 		)
 		applySlot(
 			exportBtn,
@@ -346,14 +352,15 @@ export const renderDomHeader = (runtime: DomRuntime): HTMLElement => {
 	}
 
 	if (!options.disableCellClick) {
+		const newLabel = translateDom(options, 'new', 'New')
 		const newBtn = createEl(
 			'button',
 			{
-				attrs: { type: 'button', 'aria-label': 'New' },
+				attrs: { type: 'button', 'aria-label': newLabel },
 				data: { testid: 'new-event-btn' },
 				onClick: openNewEventForm,
 			},
-			[createSvgIcon('plus', 'size-4 shrink-0'), 'New']
+			[createSvgIcon('plus', 'size-4 shrink-0'), newLabel]
 		)
 		applySlot(
 			newBtn,

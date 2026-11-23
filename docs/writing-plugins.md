@@ -2,6 +2,8 @@
 
 Plugins let you extend the calendar with new event pipelines, custom UI, new views, and your own React state — all without touching the core library. This guide is written for a third-party developer who has `@ilamy/calendar` installed.
 
+> **v4 architecture note (Option A):** In v4 (planned in `docs/superpowers/plans/2026-11-22-v4-zero-ui-deps-and-collapsed-monorepo-plan.md`), `IlamyPlugin` becomes **framework-agnostic** (DOM slot callbacks + core data hooks) so a single plugin works identically across React, Vue, Svelte, Solid, Angular, and Vanilla DOM. The rest of this guide documents the current v3 React plugin contract until that milestone lands in code.
+
 ---
 
 ## What is a plugin?

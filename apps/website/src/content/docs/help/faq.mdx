@@ -26,7 +26,7 @@ Yes, ilamy Calendar is built with TypeScript and provides full type definitions.
 
 ### Which CSS framework does ilamy Calendar use?
 
-ilamy Calendar ships a standalone layered CSS contract (`@ilamy/calendar/styles.css`, using `@layer ilamy.base, ilamy.theme`) that works with **zero Tailwind installed** and automatically bridges shadcn/ui CSS variables (`--background`, `--foreground`, `--border`, `--primary`, `--muted`, `--radius`, `.dark`) when present. You can also import `@ilamy/calendar/styles/base.css` (structural layout only) or use `unstyled`, `slotProps`, `components`, MUI, or StyleX. See [Styling & Themes](/docs/customization/styling).
+ilamy Calendar ships a standalone layered CSS contract (`@ilamy/calendar/styles.css`, using `@layer ilamy.base, ilamy.theme`) that works with **zero Tailwind installed** and automatically bridges shadcn/ui CSS variables (`--background`, `--foreground`, `--border`, `--primary`, `--muted`, `--radius`, `.dark`) when present. You can also import `@ilamy/calendar/styles/base.css` (structural layout only), or use `unstyled`, `slotProps`, and framework-agnostic token mappers (`@ilamy/calendar/styles/mui`, `@ilamy/calendar/styles/stylex`), plus custom renderers (`renderEventForm`, `headerComponent`, `renderEvent`). See [Styling & Themes](/docs/customization/styling).
 
 ## Usage
 

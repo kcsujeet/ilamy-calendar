@@ -72,7 +72,7 @@ import { icalPlugin } from '@ilamy/calendar/plugins/ical';
 | `yearPlugin()` | `@ilamy/calendar/plugins/year` | 12-month year overview grid. See [Year View](/docs/plugins/year). |
 | `icalPlugin()` | `@ilamy/calendar/plugins/ical` | Header `.ics` export button + `exportToICalendar` / `downloadICalendar` with RFC 5545 `VTIMEZONE` & `TZID`. See [iCalendar Plugin](/docs/plugins/ical). |
 
-Valid package entry points are `@ilamy/calendar` (headless core), `@ilamy/calendar/react`, `@ilamy/calendar/vue`, `@ilamy/calendar/svelte`, `@ilamy/calendar/solid`, `@ilamy/calendar/angular`, `@ilamy/calendar/dom`, `@ilamy/calendar/styles.css`, `@ilamy/calendar/styles/base.css`, `@ilamy/calendar/testing`, `@ilamy/calendar/plugins/{recurrence,agenda,drag-to-create,year,ical}`, and `@ilamy/calendar/themes/{mui,stylex}`. Deep imports into package internals are blocked.
+Valid package entry points are `@ilamy/calendar` (headless core), `@ilamy/calendar/react`, `@ilamy/calendar/vue`, `@ilamy/calendar/svelte`, `@ilamy/calendar/solid`, `@ilamy/calendar/angular`, `@ilamy/calendar/dom`, `@ilamy/calendar/styles.css`, `@ilamy/calendar/styles/base.css`, `@ilamy/calendar/styles/theme.css`, `@ilamy/calendar/testing`, `@ilamy/calendar/plugins/{recurrence,agenda,drag-to-create,year,ical}`, and `@ilamy/calendar/styles/{stylex,mui}`. Deep imports into package internals are blocked.
 
 ## Props
 
@@ -139,9 +139,8 @@ Valid package entry points are `@ilamy/calendar` (headless core), `@ilamy/calend
 | `eventHeight` | `number` | `24` | Height (in pixels) of event bars in horizontal grid views (month, resource month, resource week horizontal). Increase to show multi-line content like title + time. Does not affect day/week views which scale with event duration. |
 | `businessHours` | `BusinessHours \| BusinessHours[]` | `undefined` | Shades non-business days and hours (and hides them when `hideNonBusinessHours` is set). Pair with `eventConstraint="businessHours"` and/or `selectConstraint="businessHours"` to enforce them. |
 | `renderEventForm` | `(props: EventFormProps) => ReactNode` | `undefined` | Custom function to render the event form for creating and editing events. When provided, replaces the default event form. |
-| `unstyled` | `boolean` | `false` | Strips built-in Tailwind visual utility classes while preserving layout geometry. See [Styling & Themes](/docs/customization/styling). |
+| `unstyled` | `boolean` | `false` | Disables the default `@layer ilamy.theme` visual styles while preserving structural layout geometry. See [Styling & Themes](/docs/customization/styling). |
 | `slotProps` | `CalendarSlotProps` | `undefined` | Per-slot `{ className, style }` overrides for every semantic calendar part. |
-| `components` | `CalendarComponents` | `undefined` | Swappable UI primitives (`Button`, `Input`, `Textarea`, `Label`, `Checkbox`, `Dialog`, `Select`, `Popover`). |
 | `classesOverride` | `CalendarClassesOverride` | `undefined` | Custom class names to override default styling for disabled cells. |
 | `translations` | `Translations` | - | Translations object for internationalization. If both translations and translator are provided, translator takes priority. |
 | `translator` | `TranslatorFunction` | - | Translator function for internationalization. Takes priority over translations object if both are provided. |

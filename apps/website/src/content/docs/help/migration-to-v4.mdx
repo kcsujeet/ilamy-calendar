@@ -25,15 +25,15 @@ Import `@ilamy/calendar/styles.css` once and remove any Tailwind `@source` direc
 - @source "../node_modules/@ilamy/calendar/dist";
 ```
 
-Everything else in the React API — `useIlamyCalendarContext`, `renderEvent`, `renderHeader` / `headerComponent`, `renderEventForm`, `renderResource`, `components`, `slotProps`, shadcn `--background`/`--primary`/`--border`/`.dark` tokens, and all plugins — stays the same.
+Everything else in the React API — `useIlamyCalendarContext`, `ref`, `renderEvent`, `renderHeader` / `headerComponent`, `renderEventForm`, `renderResource`, `onMoreEventsClick`, `slotProps`, shadcn/Base UI `--background`/`--primary`/`--border`/`.dark` tokens, and all plugins — stays the same (with custom React UIs mounted via React portals inside the shared DOM renderer).
 
-## 2. Zero UI-library dependencies & optional peers
+## 2. Single DOM renderer, zero UI-library dependencies & optional peers
 
-v4.0 removes all bundled UI-library dependencies (`@radix-ui/*`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`, and `tailwindcss`) — `temporal-polyfill` is the only required runtime dependency.
+v4.0 wraps **one shared DOM renderer and built-in zero-dependency pointer drag/resize engine** across React, Vue, Svelte, Solid, Angular, and Vanilla DOM, and removes all bundled UI-library and drag-and-drop dependencies (`@radix-ui/*`, `@dnd-kit/*`, `@mui/material`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`, and `tailwindcss`) — `temporal-polyfill` is the only required runtime dependency.
 
-- **Native HTML defaults:** Built-in dialogs, popovers, inputs, selects, and checkboxes render semantic native HTML elements styled by `@ilamy/calendar/styles.css`. The React `components` prop continues to work seamlessly with **shadcn/ui + Base UI**, **shadcn/ui + Radix**, or Material UI without version conflicts.
-- **Optional feature peers:** Install `@dnd-kit/core` and `@dnd-kit/modifiers` if you use React `editable` drag/resize (Vue, Svelte, Solid, Angular, and DOM use built-in zero-dependency pointer drag/resize). Install `rrule` if you use `@ilamy/calendar/plugins/recurrence`.
-- **Styling vs. React UI entry points:** StyleX lives at `@ilamy/calendar/styles/stylex` (framework-agnostic CSS styling) and Material UI lives at `@ilamy/calendar/react/mui` (React component integration).
+- **Native HTML defaults & custom renderers:** Built-in dialogs, popovers, inputs, selects, and checkboxes render semantic native HTML elements styled by `@ilamy/calendar/styles.css`. Instead of `components` (`CalendarComponents`), plug in your own **Base UI**, **Radix**, **React Aria**, or **MUI** forms and headers via `renderEventForm`, `headerComponent` / `renderHeader`, `renderEvent`, `renderResource`, and `onMoreEventsClick` while `--ilamy-*` token auto-bridging keeps styling synchronized automatically.
+- **Framework-agnostic plugins:** `@ilamy/calendar/plugins/{recurrence,agenda,year,ical,drag-to-create}` share one plugin contract and work identically across React, Vue, Svelte, Solid, Angular, and Vanilla DOM via `plugins`. Install `rrule` only if you use `@ilamy/calendar/plugins/recurrence`.
+- **Pure token-only styling integrations:** StyleX (`@ilamy/calendar/styles/stylex`) and Material UI tokens (`@ilamy/calendar/styles/mui`, exporting `createMuiCalendarTheme(theme)`) map your theme directly to `--ilamy-*` CSS tokens across any framework with zero `@mui/material` runtime components.
 
 ## 3. Remove `dayjs` and pass ISO strings or `Date`
 

@@ -99,7 +99,7 @@ Why region-level slots replace primitive-level slots:
 
 ## 5. Phases
 
-Each phase is one coherent change with unit and e2e tests written first (AGENTS.md: TDD, both layers), exercised in `apps/demo` with default settings, and a dev log entry. Docs for a phase land in that phase.
+Each phase ends with a full run of `2026-11-23-v4-qa-protocol.md` and its report. Each phase is one coherent change with unit and e2e tests written first (AGENTS.md: TDD, both layers), exercised in `apps/demo` with default settings, and a dev log entry. Docs for a phase land in that phase.
 
 **Phase 0 — Spike (gate for everything else).** Prove two pillars before refactoring:
 1. **Dual-JSX hygiene (`preact` `11.2.0` in `lib/renderer`, `/** @jsxImportSource react */` in `features/adapters/react`):** `bunup`, `bun check`, `check:dist-types`, and `bun test` all pass with zero `preact` types leaking into public `dist/*.d.ts`.
@@ -117,7 +117,7 @@ Deliver: findings, go/no-go, final `SlotName`/`SlotContextMap` shape. Stop and r
 
 **Phase 5 — Thin symmetric wrappers for all 5 frameworks & delete old React/`@dnd-kit`/Radix.** Point `vue`, `svelte`, `solid`, and `angular` adapters at `lib/renderer` + `lib/controller` + region `slots`. Rewrite `features/adapters/react` as a thin React 19 wrapper (`useSyncExternalStore` + Context for `useIlamyCalendarContext()` / `ref`, `ReactDOM.createPortal` for region `slots`). Delete old React UI, `@dnd-kit/*`, `@radix-ui/*`, `lucide-react`, `cva`, `clsx`, and `tailwind-merge` only after the full unit + E2E suite passes against the new React wrapper in `apps/demo`. Verify `packages/calendar/package.json` `dependencies` = `temporal-polyfill` + `preact` only.
 
-**Phase 6 — Runnable styling & component recipes (zero library-specific styling code).** Confirm `@mui/material` and `@stylexjs/stylex` are absent from `packages/calendar` peers and exports (`./themes/*`, `./styles/mui`, `./styles/stylex`, `./react/mui`). Add website recipes: MUI theme -> `--ilamy-*` variables, StyleX -> variables + `slotProps`, Tailwind -> `unstyled` + `slotProps.className`, and shadcn (Base UI, Radix) / MUI / bits-ui regions via `slots`. Each recipe is a runnable example covered by an E2E spec in at least two frameworks so it cannot rot.
+**Phase 6 — Runnable styling & component recipes (zero library-specific styling code), and the playground split into three axes.** The playground offers Framework, CSS (Unstyled, Plain CSS, Tailwind, StyleX) and Components (Native, plus the libraries available for that framework) as three independent controls; see the Playground section of the QA protocol. Confirm `@mui/material` and `@stylexjs/stylex` are absent from `packages/calendar` peers and exports (`./themes/*`, `./styles/mui`, `./styles/stylex`, `./react/mui`). Add website recipes: MUI theme -> `--ilamy-*` variables, StyleX -> variables + `slotProps`, Tailwind -> `unstyled` + `slotProps.className`, and shadcn (Base UI, Radix) / MUI / bits-ui regions via `slots`. Each recipe is a runnable example covered by an E2E spec in at least two frameworks so it cannot rot.
 
 **Phase 7 — Docs truth pass.** README, `packages/calendar/README.md`, website (`apps/website/src/content/docs/**`), `docs/migration-v4.md`, `docs/monorepo-architecture.md`, `docs/roadmap.md`, and `AGENTS.md` match the shipped tree. Every documented export resolves (`bun run build && bun run check:dist-types`, plus an import smoke test per subpath).
 

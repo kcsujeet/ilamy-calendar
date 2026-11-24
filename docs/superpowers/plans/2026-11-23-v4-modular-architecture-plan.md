@@ -14,7 +14,7 @@ Any combination of these three axes must work, each chosen independently:
 
 | Axis | Examples | How it plugs in |
 |---|---|---|
-| Framework | React, Vue, Svelte, Solid, Angular, Vanilla | Thin wrapper over the one DOM renderer (`lib/dom`) |
+| Framework | React, Vue, Svelte, Solid, Angular | Thin wrapper over the one DOM renderer (`lib/dom`, internal; no public plain-JS entry, see section 6) |
 | Component library | shadcn (Base UI / Radix / React Aria), MUI, bits-ui, reka-ui, shadcn-svelte, shadcn-vue | `slots` prop on every wrapper; the renderer passes controlled props, the wrapper mounts the user's component |
 | CSS library | plain CSS, Tailwind, StyleX, MUI theme | `--ilamy-*` tokens, `unstyled`, and `slotProps` (`className`/`style`) per semantic part. No library-specific code ships; docs recipes show the mapping. |
 
@@ -40,7 +40,7 @@ Checked against the tree, not the docs:
 
 1. **Docs describe unbuilt code as shipped.** README, website (`apps/website/src/content/docs/**`), `docs/migration-v4.md` and `AGENTS.md` name paths, exports and peer deps that do not exist. A website deploy would publish install steps that fail. Rule: docs land in the same commit as the code they describe. Until then, label target-state text "Planned (v4)".
 2. **The `components` prop (`CalendarComponents`) was removed from the docs**, and #401 is claimed solved by shadcn CSS-variable bridging. That is not a fix: #401 is about which primitive library ships (bundle weight), and CSS variables cannot swap a Radix dialog for a Base UI one. Bring it back as `slots` and make it work in every wrapper (Phase 3).
-3. **`rrule` is documented as "only for plugins/recurrence"** while the DOM core imports it statically (Phase 4).
+3. **`rrule` is documented as "only for plugins/recurrence"** while the DOM core imports it statically (Phase 2).
 4. **Plugins are documented as framework-agnostic** while the DOM renderer has no plugin contract (Phase 2).
 
 ## 3. Target layout
@@ -63,7 +63,7 @@ packages/calendar/src/
 styles/                 base.css (structure), theme.css (tokens)
 ```
 
-Dependencies: `dependencies` = `temporal-polyfill` only. Optional peers: framework runtimes, `rrule` (loaded via dynamic `import()` only when an event has `rrule` or the recurrence plugin is used). Removed: `@radix-ui/*`, `@dnd-kit/*`, `clsx`, `class-variance-authority`, `tailwind-merge`, `lucide-react`, `@mui/material` (from the published package; the playground may keep its own). Before adding or bumping anything, run `npm view <pkg> version` and use the latest (AGENTS.md hard rule).
+Dependencies: `dependencies` = `temporal-polyfill` only. Optional peers: framework runtimes, `rrule` (imported only by `features/plugins/recurrence`; `lib/dom` never imports it). Removed: `@radix-ui/*`, `@dnd-kit/*`, `clsx`, `class-variance-authority`, `tailwind-merge`, `lucide-react`, `@mui/material` (from the published package; the playground may keep its own). Before adding or bumping anything, run `npm view <pkg> version` and use the latest (AGENTS.md hard rule).
 
 ## 4. Component slot contract (the piece #401 needs)
 
@@ -91,17 +91,24 @@ type CalendarSlots = Partial<{ [K in SlotName]: SlotMount<SlotProps[K]> }>
 
 Each phase is one coherent change with unit and e2e tests written first (AGENTS.md: TDD, both layers), exercised in `apps/demo` with default settings, and a dev log entry. Docs for a phase land in that phase.
 
-**Phase 0 — Spike (gate for everything else).** Prove the slot contract with a Dialog and a Select from a real component library in React (shadcn on Base UI) and Svelte (bits-ui or shadcn-svelte). Check: focus trap, portal placement, outside-click/Escape, nested popover inside dialog, keyboard nav, SSR does not crash. Deliver: findings + a go/no-go and the final `SlotProps` shape. Stop and report to the owner before Phase 1.
+**Phase 0 — Spike (gate for everything else).** Prove the slot contract with a Dialog and a Select from a real component library in React (shadcn on Base UI) and Svelte (bits-ui or shadcn-svelte). Pass/fail checks, each recorded as an e2e spec:
+- Focus trap, portal placement, outside-click/Escape, keyboard nav; SSR import does not crash.
+- **Nested popover/select inside a swapped dialog:** clicking a date in the date picker or an option in the select must not count as an outside click and close the dialog (the picker may portal outside the dialog's DOM subtree or the library's context).
+- **Controlled input/textarea:** typing in the middle of existing text keeps the caret in place; `SlotMount.update` on every keystroke must not jump it to the end.
+- **Live changes inside an open dialog:** toggling "All day" shows/hides the time pickers without remounting the dialog or losing focus.
 
-**Phase 1 — Collapse packages, no behaviour change.** Move sources into `packages/calendar/src/` per section 3; delete the private packages; Biome boundaries on. All existing unit + e2e specs pass unchanged. `@ilamy/types` no longer imports `react`.
+Deliver: findings, a go/no-go, and the final `SlotProps` shape. **Fallback if primitive slots fail these checks:** region-level slots only (`header`, `event`, `resource`, `eventForm`, `moreEventsDialog`, `recurrenceScopeDialog`): the user renders the whole region in their library, so no lib/dom element sits inside a foreign dialog and #401 is still met (no Radix shipped). Stop and report to the owner before Phase 1.
 
-**Phase 2 — Plugin contract in the DOM renderer.** Define it in `types/`; move agenda, year, recurrence UI and ical out of `lib/dom` into `features/plugins/*` as framework-free plugins. Same e2e specs run against the DOM mount.
+**Phase 1 — Collapse packages, no behaviour change.** Move sources into `packages/calendar/src/` per section 3; delete the private packages; Biome boundaries on. All existing unit + e2e specs pass unchanged. Framework-free domain types go to `src/types/` (zero React); the legacy React plugin/component types that `packages/types/src/index.ts` holds today (it imports `react`) move to `features/adapters/react/types/` and stay there until Phases 2 and 6 delete their users.
 
-**Phase 3 — Component slots.** Implement section 4 in `lib/dom` and every wrapper. Native defaults keep current look. Specs: each slot swapped in React and Svelte at minimum.
+**Phase 2 — Plugin contract in the DOM renderer, and `rrule` out of the core.** Define the contract in `types/`; move agenda, year, recurrence UI and ical out of `lib/dom` into `features/plugins/*` as framework-free plugins. `rrule` is then imported only by `features/plugins/recurrence` (today `dom-repeat-section.ts`, `dom-events.utils.ts`, `dom-ical.utils.ts` and `dom-calendar.types.ts` import it statically). Tests: a Biome boundary or grep check that `lib/dom` has zero `rrule` imports; a bundle check that a calendar without the recurrence plugin does not include `rrule`. Same e2e specs run against the DOM mount.
 
-**Phase 4 — `rrule` on demand.** Replace static imports in `lib/dom` with dynamic `import()`. Test: a calendar with no recurring events does not load `rrule` (bundle check + unit test).
+**Phase 3 — Component slots and zero-Tailwind defaults.** Implement section 4 in `lib/dom` and every wrapper. Native defaults keep the current look. Specs: each slot swapped in React and Svelte at minimum.
+- **Remove Tailwind classes from `lib/dom`.** Verified 2026-11-23: 19 files in `packages/dom/src` build Tailwind utility strings, e.g. `dom-dialog-shell.ts:6` (`INPUT_CLASS`), `:38` (`open:flex … backdrop:bg-black/50`), `dom-popover.utils.ts:64`, `dom-header.ts:171`, `dom-time-grid-chrome.ts:26`. Without Tailwind in the user's app these render unstyled. Replace them with `data-ilamy-slot` attributes styled by `styles/base.css` and `styles/theme.css`. Spec: the calendar, dialog and popover render correctly in an app with no Tailwind.
 
-**Phase 5 — One drag engine.** Build `lib/interactions` from `dom-interactions.ts`; port drag-to-create onto it; delete `use-drag-gesture.ts`. Every drag/resize spec drives a real pointer (`page.mouse`, small steps) with the target checked by `document.elementFromPoint`, including the demo config (600px scroll, business hours, timezone, all plugins).
+**Phase 4 — One drag engine.** Build `lib/interactions` from `dom-interactions.ts`; port drag-to-create onto it; delete `use-drag-gesture.ts`. Every drag/resize spec drives a real pointer (`page.mouse`, small steps) with the target checked by `document.elementFromPoint`, including the demo config (600px scroll, business hours, timezone, all plugins).
+
+**Phase 5 — DOM renderer feature parity with the React adapter.** Verified 2026-11-23 by name search (`rg -c` over `packages/dom/src` vs `packages/adapters/react/src`, tests excluded): these React props/APIs have zero matches in the DOM renderer: `loading`, `lazyFetching`, `onEventsError`, `refetchEvents`, `refetchResources`, `resourcesSet`, `slotHeaderFormat`, `eventTimeFormat`, `dayHeaderFormat`, `titleFormat`, `allDaySlot`, `scrollTime`, `scrollToNow`, `eventResizableFromStart`, `onMoreEventsClick`, `scrollToTime`. (`revert` on change info already exists: `packages/dom/src/dom-mount.ts:195`, `:222`, `:246`.) A name search can miss a feature built under another name: first diff the full `IlamyCalendarProps` against `DomCalendarOptions` and list every gap, then implement each with unit + e2e coverage. Phase 6 does not start until the list is empty.
 
 **Phase 6 — React onto the DOM renderer.** Thin React wrapper (controller via `useSyncExternalStore`, slots via section 4). Delete the old React UI, `@dnd-kit`, Radix and friends only after the full e2e suite passes against the new wrapper in `apps/demo`. Public React API stays the same unless the owner approves a change.
 

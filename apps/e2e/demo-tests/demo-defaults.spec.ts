@@ -57,12 +57,19 @@ const openDemo = async (page: Page): Promise<void> => {
  * header shows the compact view menu (a button naming the current view), not
  * the segmented switcher.
  */
-const switchToWeekView = async (page: Page) => {
+const selectView = async (page: Page, view: 'week' | 'year') => {
 	const calendar = page.getByTestId('ilamy-calendar')
-	await calendar.getByRole('button', { name: 'Month', exact: true }).click()
-	await page.getByRole('menuitem', { name: 'Week' }).click()
+	const btn = calendar.getByTestId(`view-btn-${view}`)
+	if (await btn.isVisible()) {
+		await btn.click()
+	} else {
+		await calendar.getByTestId('view-menu-btn').click()
+		await page.getByTestId(`view-menu-item-${view}`).click()
+	}
 	await settleCalendarAnimations(page)
 }
+
+const switchToWeekView = (page: Page) => selectView(page, 'week')
 
 interface Box {
 	x: number
@@ -131,7 +138,7 @@ const dragWithPointer = async (
 }
 
 const timeSlot = (page: Page, startISO: string) =>
-	page.locator(`[data-testid^="vertical-cell-"][data-start^="${startISO}"]`)
+	page.locator(`[data-ilamy-part="time-slot"][data-start^="${startISO}"]`)
 
 const monthCell = (page: Page, date: string) =>
 	page.locator(`[data-testid^="day-cell-"][data-start^="${date}"]`)
@@ -166,7 +173,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 	}) => {
 		await openDemo(page)
 		await switchToWeekView(page)
-		const yoga = page.getByTestId(`vertical-event-${YOGA_ID}`)
+		const yoga = page.getByTestId(`calendar-event-${YOGA_ID}`)
 		const handle = endHandleOf(yoga)
 		const elevenSlot = timeSlot(page, '2026-10-25T11:00')
 		const noonSlot = timeSlot(page, '2026-10-25T12:00')
@@ -195,7 +202,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 		page,
 	}) => {
 		await openDemo(page)
-		const conference = page.getByTestId(`horizontal-event-${CONFERENCE_ID}`)
+		const conference = page.getByTestId(`calendar-event-${CONFERENCE_ID}`)
 		const handle = endHandleOf(conference)
 		const fridayCell = monthCell(page, '2026-10-09')
 		const saturdayCell = monthCell(page, '2026-10-10')
@@ -220,7 +227,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 	test('week view: a timed seed event moves by one slot', async ({ page }) => {
 		await openDemo(page)
 		await switchToWeekView(page)
-		const yoga = page.getByTestId(`vertical-event-${YOGA_ID}`)
+		const yoga = page.getByTestId(`calendar-event-${YOGA_ID}`)
 		const tenSlot = timeSlot(page, '2026-10-25T10:00')
 		const elevenSlot = timeSlot(page, '2026-10-25T11:00')
 		const noonSlot = timeSlot(page, '2026-10-25T12:00')
@@ -252,7 +259,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 	}) => {
 		await openDemo(page)
 		await switchToWeekView(page)
-		const yoga = page.getByTestId(`vertical-event-${YOGA_ID}`)
+		const yoga = page.getByTestId(`calendar-event-${YOGA_ID}`)
 		const handle = endHandleOf(yoga)
 
 		await expect(handle).toHaveCSS('opacity', '0')
@@ -280,7 +287,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 
 		// Enable constraint: Sunday resize is now refused
 		await page.getByLabel('Constrain drops/resizes to business hours').click()
-		const yoga = page.getByTestId(`vertical-event-${YOGA_ID}`)
+		const yoga = page.getByTestId(`calendar-event-${YOGA_ID}`)
 		await yoga.scrollIntoViewIfNeeded()
 		const handle = endHandleOf(yoga)
 		const elevenSlot = timeSlot(page, '2026-10-25T11:00')
@@ -309,8 +316,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 			calendar.getByRole('button', { name: /export/i })
 		).toBeVisible()
 
-		await calendar.getByRole('button', { name: 'Month', exact: true }).click()
-		await page.getByRole('menuitem', { name: 'Year' }).click()
+		await selectView(page, 'year')
 		await expect(calendar.getByTestId('calendar-title')).toHaveText('2026')
 	})
 
@@ -319,12 +325,15 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 	}) => {
 		await openDemo(page)
 
-		// Switch to Material UI theme — renders native MUI button primitives
+		// Switch to Material UI theme — maps MUI Theme palette/shape into --ilamy-* tokens
 		await page.getByTestId('theme-mui').click()
 		await expect(page.locator('[data-active-theme="mui"]')).toBeVisible()
-		await expect(
-			page.getByTestId('ilamy-calendar').locator('.MuiButton-root').first()
-		).toBeVisible()
+		const muiVars = await page.getByTestId('ilamy-calendar').evaluate((el) => ({
+			primary: el.style.getPropertyValue('--ilamy-primary'),
+			radius: el.style.getPropertyValue('--ilamy-radius'),
+		}))
+		expect(muiVars.primary).toBeTruthy()
+		expect(muiVars.radius).toBe('10px')
 
 		// Switch to StyleX theme — injects --ilamy-bg CSS custom property on calendar root
 		await page.getByTestId('theme-stylex').click()
@@ -400,7 +409,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 			await expect(
 				stage.locator(`[data-ilamy-framework="${fw.id}"]`)
 			).toBeVisible()
-			await expect(stage.getByTestId('ilamy-dom-calendar')).toBeVisible()
+			await expect(stage.getByTestId('ilamy-calendar')).toBeVisible()
 			await expect(page.getByTestId('theme-mui')).toBeDisabled()
 			await expect(page.locator('pre code')).toContainText(fw.importSpec)
 
@@ -408,7 +417,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 			await stage.getByTestId('view-btn-week').click()
 			await expect(stage.getByTestId('dom-week-view')).toBeVisible()
 			await stage.getByTestId('view-btn-agenda').click()
-			await expect(stage.getByTestId('dom-agenda-view')).toBeVisible()
+			await expect(stage.getByTestId('agenda-view')).toBeVisible()
 			await stage.getByTestId('view-btn-month').click()
 			await expect(stage.getByTestId('dom-month-view')).toBeVisible()
 		}
@@ -417,7 +426,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 		await page.getByTestId('theme-stylex').click()
 		const angularRoot = page
 			.getByTestId('framework-stage-angular')
-			.getByTestId('ilamy-dom-calendar')
+			.getByTestId('ilamy-calendar')
 		const hasStylexToken = await angularRoot.evaluate((el) =>
 			Boolean(el.style.getPropertyValue('--ilamy-bg'))
 		)
@@ -520,7 +529,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 
 		await page.getByTestId('theme-stylex').click()
 		const reactColoredOuterBg = await reactCalendar
-			.locator('[data-testid^="horizontal-event-"] [role="button"]')
+			.locator('[data-testid^="calendar-event-"] [role="button"]')
 			.first()
 			.evaluate((el) => getComputedStyle(el).backgroundColor)
 		expect(reactColoredOuterBg).toBe('rgba(0, 0, 0, 0)')
@@ -536,7 +545,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 		expect(timeAxisBorder).toBe('1px')
 		await page.getByTestId('theme-tailwind').click()
 		const stalePrimary = await page
-			.getByTestId('ilamy-dom-calendar')
+			.getByTestId('ilamy-calendar')
 			.evaluate((el) => el.style.getPropertyValue('--primary'))
 		expect(stalePrimary).toBe('')
 	})
@@ -578,7 +587,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 			await expect(monthGrid).toBeVisible()
 			await monthGrid.getByRole('button', { name: 'Dec' }).click()
 			await expect(titleBtn).toContainText('Dec')
-			let todayContainerSelector = '[data-testid="ilamy-dom-calendar"]'
+			let todayContainerSelector = '[data-testid="ilamy-calendar"]'
 			if (fw === 'react') {
 				todayContainerSelector = '[data-testid="calendar-header"]'
 			}
@@ -588,12 +597,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 				.click()
 
 			// Create Event Form includes interactive DatePicker, TimePicker, Location, and submits cleanly
-			let newBtn = page.getByTestId('new-event-btn')
-			if (fw === 'react') {
-				newBtn = page
-					.locator('[data-testid="calendar-header"] button[aria-label="New"]')
-					.first()
-			}
+			const newBtn = page.getByTestId('new-event-btn').first()
 			await newBtn.click()
 			await expect(page.locator('#start-date')).toBeVisible()
 			await expect(page.locator('#start-time')).toBeVisible()
@@ -629,7 +633,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 
 		// Vue DOM calendar wires dialog aria-labelledby and hides pointer resize handles
 		await page.getByTestId('framework-vue').click()
-		const domCalendar = page.getByTestId('ilamy-dom-calendar')
+		const domCalendar = page.getByTestId('ilamy-calendar')
 		await expect(domCalendar).toBeVisible()
 		await domCalendar.getByTestId('new-event-btn').click()
 		const domDialog = page.getByTestId('dom-event-dialog')
@@ -638,5 +642,56 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 		expect(labelledBy).toBeTruthy()
 		await expect(domDialog.locator(`#${labelledBy}`)).toHaveText('Create Event')
 		await page.keyboard.press('Escape')
+	})
+
+	test('default demo move and resize publish onEventsChange payloads in Event Log across React and Vue', async ({
+		page,
+	}) => {
+		await openDemo(page)
+
+		// Open Code & Events panel and switch to Callback Log tab so live payloads appear
+		await page.getByRole('button', { name: 'Code & Events' }).click()
+		await page.getByRole('tab', { name: /Callback Log/i }).click()
+
+		// 1. React default demo week view: move Morning Yoga (Sunday 10:00-12:00) down 1h
+		await switchToWeekView(page)
+		const yoga = page.getByTestId(`calendar-event-${YOGA_ID}`)
+		const elevenSlot = timeSlot(page, '2026-10-25T11:00')
+		const noonSlot = timeSlot(page, '2026-10-25T12:00')
+		const laneX = (await centreOf(yoga)).x
+		await dragWithPointer(
+			page,
+			{ target: yoga, at: { x: laneX, y: (await centreOf(elevenSlot)).y } },
+			{ target: noonSlot, at: { x: laneX, y: (await centreOf(noonSlot)).y } }
+		)
+		await expect(
+			page
+				.locator('pre')
+				.filter({ hasText: `"id":"${YOGA_ID}"` })
+				.first()
+		).toContainText('"action":"update"')
+
+		// 2. Switch to Vue in the same live demo (default settings: 600px scroll, timezone, plugins)
+		await page.getByTestId('framework-vue').click()
+		await page.getByTestId('view-btn-week').click()
+		const vueYoga = page.getByTestId(`calendar-event-${YOGA_ID}`).first()
+		await vueYoga.scrollIntoViewIfNeeded()
+		const vueHandle = endHandleOf(vueYoga)
+		const handlePoint = await centreOf(vueHandle)
+		const thirteenSlot = page
+			.locator('[data-cell="true"][data-start^="2026-10-25T13:00"]')
+			.first()
+		const thirteenBox = await boxOf(thirteenSlot)
+		await dragWithPointer(
+			page,
+			{ target: vueHandle, at: handlePoint },
+			{
+				target: thirteenSlot,
+				at: { x: handlePoint.x, y: thirteenBox.y + thirteenBox.height / 2 },
+			}
+		)
+		await expect(
+			page.locator('pre').filter({ hasText: '"endDelta"' }).first()
+		).toContainText('"action":"update"')
 	})
 })

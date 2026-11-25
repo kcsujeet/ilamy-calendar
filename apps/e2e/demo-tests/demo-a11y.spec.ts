@@ -32,7 +32,7 @@ test.describe('demo accessibility (axe-core WCAG 2.2 A+AA)', () => {
 	}) => {
 		await page.goto('/')
 		await page.getByTestId('framework-vue').click()
-		const domCalendar = page.getByTestId('ilamy-dom-calendar')
+		const domCalendar = page.getByTestId('ilamy-calendar')
 		await expect(domCalendar).toBeVisible()
 
 		for (const viewLabel of ['Month', 'Week', 'Day', 'Agenda', 'Year']) {
@@ -40,7 +40,7 @@ test.describe('demo accessibility (axe-core WCAG 2.2 A+AA)', () => {
 				.getByRole('button', { name: viewLabel, exact: true })
 				.click()
 			await expectNoAxeViolations(page, {
-				include: '[data-testid="ilamy-dom-calendar"]',
+				include: '[data-testid="ilamy-calendar"]',
 			})
 		}
 
@@ -57,9 +57,9 @@ test.describe('demo accessibility (axe-core WCAG 2.2 A+AA)', () => {
 		test(`${fw} adapter calendar has zero axe violations`, async ({ page }) => {
 			await page.goto('/')
 			await page.getByTestId(`framework-${fw}`).click()
-			await expect(page.getByTestId('ilamy-dom-calendar')).toBeVisible()
+			await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
 			await expectNoAxeViolations(page, {
-				include: '[data-testid="ilamy-dom-calendar"]',
+				include: '[data-testid="ilamy-calendar"]',
 			})
 		})
 	}

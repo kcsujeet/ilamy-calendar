@@ -1,1 +1,1 @@
-export * from '@ilamy/adapter-svelte'
+export * from '../features/adapters/svelte/index'

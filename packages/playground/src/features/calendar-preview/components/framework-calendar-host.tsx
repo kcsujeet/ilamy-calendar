@@ -1,4 +1,4 @@
-import type { DomCalendarOptions } from '@ilamy/calendar/dom'
+import type { DomCalendarOptions } from '@ilamy/calendar'
 import { useEffect, useRef } from 'react'
 import type { FrameworkId } from '../../../types/settings-form.types'
 

@@ -67,7 +67,7 @@ const waitForScrollEdge = async (
 		.poll(
 			() =>
 				page.evaluate((dir) => {
-					let sel = '[data-testid^="vertical-cell-"]'
+					let sel = '[data-ilamy-part="time-slot"]'
 					if (dir === 'right') {
 						sel = '[data-resource-id][data-start], [data-start][data-end]'
 					}
@@ -236,7 +236,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 						orientation: 'horizontal',
 						settings: { snapDuration: snap, scrollTime: '08:00' },
 					})
-					const bar = page.getByTestId('horizontal-event-res-1')
+					const bar = page.getByTestId('calendar-event-res-1')
 					const target = laneCell(page, 'r1', `2025-03-12T${hour}:00:00.000Z`)
 					await target.scrollIntoViewIfNeeded()
 					await dragExpectOracle(
@@ -259,7 +259,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 			orientation: 'horizontal',
 			settings: { snapDuration: 15, scrollTime: '08:00' },
 		})
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 		const row = await dragExpectOracle(
 			page,
 			'Room A booking',
@@ -279,7 +279,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 			orientation: 'horizontal',
 			settings: { snapDuration: 15, scrollTime: '08:00' },
 		})
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 		await bar.scrollIntoViewIfNeeded()
 		const from = await leftEdgeOf(bar)
 		const target = laneCell(page, 'r2', '2025-03-12T12:00:00.000Z')
@@ -301,7 +301,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 			orientation: 'horizontal',
 			settings: { snapDuration: 15, scrollTime: '08:00' },
 		})
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 		await bar.scrollIntoViewIfNeeded()
 		const from = await leftEdgeOf(bar)
 		await page.mouse.move(from.x, from.y)
@@ -329,7 +329,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 				orientation: 'horizontal',
 				settings: { snapDuration: 15, scrollTime: '08:00' },
 			})
-			const bar = page.getByTestId('horizontal-event-res-1')
+			const bar = page.getByTestId('calendar-event-res-1')
 			const from = await leftEdgeOf(bar)
 			await page.mouse.move(from.x, from.y)
 			await page.mouse.down()
@@ -361,7 +361,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 			orientation: 'horizontal',
 			settings: { snapDuration: 15, scrollTime: '08:00' },
 		})
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 		const to = await pointIn(
 			laneCell(page, 'r1', '2025-03-12T14:00:00.000Z'),
 			0.3,
@@ -387,7 +387,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 				eventResizableFromStart: 'true',
 			},
 		})
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 		const to = await pointIn(
 			laneCell(page, 'r1', '2025-03-12T08:00:00.000Z'),
 			0.55,
@@ -407,7 +407,7 @@ test.describe('persona 1: dispatcher (horizontal resource timeline)', () => {
 			orientation: 'horizontal',
 			settings: { snapDuration: 30, scrollTime: '08:00' },
 		})
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 		// 0.52 -> minute 31.2 -> bucket 11:30 -> end of that bucket 12:00
 		const to = await pointIn(
 			laneCell(page, 'r1', '2025-03-12T11:00:00.000Z'),
@@ -735,7 +735,7 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 			await page.mouse.down()
 			const scrollerTop = await page.evaluate(() => {
 				let el: HTMLElement | null = document.querySelector(
-					'[data-testid^="vertical-cell-"]'
+					'[data-ilamy-part="time-slot"]'
 				)
 				while (el && el.scrollHeight <= el.clientHeight + 1)
 					el = el.parentElement
@@ -772,7 +772,7 @@ test.describe('persona 2: office scheduler (vertical)', () => {
 			settings: { slot: 60, snapDuration: 15, scrollTime: '08:00' },
 		})
 		const grid = new TimeGrid(page)
-		const bars = page.locator('[data-testid^="vertical-event-standup"]')
+		const bars = page.locator('[data-testid^="calendar-event-standup"]')
 		const bar = bars.nth(2)
 		await dragPointer(
 			page,
@@ -877,7 +877,7 @@ test.describe('persona 3: mobile user (touch)', () => {
 				orientation: 'horizontal',
 				settings: { snapDuration: 15, scrollTime: '08:00' },
 			})
-			const bar = page.getByTestId('horizontal-event-res-1')
+			const bar = page.getByTestId('calendar-event-res-1')
 			const target = laneCell(page, 'r1', '2025-03-12T10:00:00.000Z')
 			await bar.evaluate((el) => {
 				let scroller: HTMLElement | null = el.parentElement
@@ -953,12 +953,14 @@ for (const browserZone of ['UTC', 'America/New_York']) {
 				settings,
 			})
 			const day = o.date.slice(0, 10)
-			const bar = page.getByTestId(`${o.orientation}-event-${o.label}`).first()
-			let cellTestId = `day-cell-${day}-${o.hh}-00`
-			if (o.orientation === 'vertical') {
-				cellTestId = `vertical-cell-${day}-${o.hh}-00-resource-r1`
-			}
-			const cell = page.getByTestId(cellTestId).first()
+			const bar = page.getByTestId(`calendar-event-${o.label}`).first()
+			const cell = (
+				o.orientation === 'vertical'
+					? page.locator(
+							`[data-ilamy-part="time-slot"][data-date="${day}"][data-hour="${o.hh}"][data-minute="0"][data-resource-id="r1"]`
+						)
+					: page.getByTestId(`dom-resource-hour-slot-r1-${day}-${Number(o.hh)}`)
+			).first()
 			if ((await cell.count()) === 0) return null
 			let from: Point
 			let to: Point
@@ -1194,7 +1196,7 @@ test.describe('persona 4: pointer on boundaries, eventAllow, upgrader, fallbacks
 			expect(
 				await page.locator('[data-snap-minutes], [data-time-axis]').count()
 			).toBe(0)
-			const bar = page.getByTestId('horizontal-event-res-1')
+			const bar = page.getByTestId('calendar-event-res-1')
 			await dragPointer(
 				page,
 				await leftEdgeOf(bar),
@@ -1290,7 +1292,7 @@ test.describe('persona 4: pointer on boundaries, eventAllow, upgrader, fallbacks
 			orientation: 'horizontal',
 			settings: { slot: 15, snapDuration: 30, scrollTime: '08:00' },
 		})
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 		await dragPointer(
 			page,
 			await leftEdgeOf(bar),

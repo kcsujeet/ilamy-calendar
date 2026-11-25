@@ -706,7 +706,7 @@ test.describe('drag and drop', () => {
 		await expect
 			.poll(() =>
 				bar.evaluate((el) => {
-					const dimmed = el.closest('.opacity-50')
+					const dimmed = el.closest('[data-drag-origin="true"]')
 					return dimmed === null ? 'not dimmed' : 'dimmed'
 				})
 			)
@@ -840,14 +840,13 @@ test.describe('edit permissions', () => {
 		const month = new MonthGrid(page)
 		// `bar` is the positioned wrapper; the element dnd-kit decorates is the
 		// one inside it that wears the cursor class.
-		const barOf = (eventId: string) =>
-			month.bar(eventId).locator('[class*="cursor-"]').first()
+		const barOf = (eventId: string) => month.bar(eventId).first()
 		const lockedBar = barOf('locked-1')
 		const freeBar = barOf('free-1')
 
 		const dragAttributesOn = (bar: typeof lockedBar) =>
 			bar.evaluate((element) => ({
-				describedBy: element.hasAttribute('aria-describedby'),
+				draggable: element.getAttribute('data-draggable'),
 				disabled: element.hasAttribute('aria-disabled'),
 				role: element.hasAttribute('role'),
 			}))
@@ -855,12 +854,12 @@ test.describe('edit permissions', () => {
 		// opens it with Enter or Space (WCAG 2.1.1; accessibility.spec.ts). The
 		// role used to be absent, which left the bar unreachable without a mouse.
 		expect(await dragAttributesOn(lockedBar)).toEqual({
-			describedBy: false,
+			draggable: 'false',
 			disabled: false,
 			role: true,
 		})
 		expect(await dragAttributesOn(freeBar)).toMatchObject({
-			describedBy: true,
+			draggable: 'true',
 			role: true,
 		})
 
@@ -1104,7 +1103,7 @@ test.describe('change info', () => {
 		const grid = new TimeGrid(page)
 		const skippedHourCell = page
 			.locator(
-				'[data-testid^="vertical-cell-"][data-start="2025-03-09T07:30:00.000Z"]'
+				'[data-ilamy-part="time-slot"][data-start="2025-03-09T07:30:00.000Z"]'
 			)
 			.first()
 		await expect(skippedHourCell).toBeAttached()
@@ -1343,7 +1342,7 @@ test.describe('resize', () => {
 			orientation: 'horizontal',
 		})
 		const grid = new TimeGrid(page)
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 
 		// Released over ANOTHER resource's 11:00 hour: the end follows the time,
 		// the booking stays with Room A.
@@ -1469,7 +1468,7 @@ test.describe('resize', () => {
 		})
 		const grid = new TimeGrid(page)
 		const occurrence = page
-			.locator('[data-testid^="vertical-event-standup"]')
+			.locator('[data-testid^="calendar-event-standup"]')
 			.nth(3)
 
 		// 09:00-09:15 on Wednesday the 12th, to 09:00-10:00.
@@ -1502,7 +1501,7 @@ test.describe('resize', () => {
 		})
 		const grid = new TimeGrid(page)
 		const handle = handleOf(
-			grid.allDayRow.getByTestId('horizontal-event-allday-1'),
+			grid.allDayRow.getByTestId('calendar-event-allday-1'),
 			'end'
 		)
 
@@ -1535,12 +1534,7 @@ test.describe('resize', () => {
 		})
 		const grid = new TimeGrid(page)
 		const wrapperBox = await grid.bars('short-1').first().boundingBox()
-		const visibleBox = await grid
-			.bars('short-1')
-			.first()
-			.locator('[class*="cursor-"]')
-			.first()
-			.boundingBox()
+		const visibleBox = await grid.bars('short-1').first().boundingBox()
 		const slotBox = await grid.slotAt('2025-03-12T09:00').boundingBox()
 		if (!wrapperBox || !visibleBox || !slotBox) {
 			throw new Error('the bar and its slot need a layout')
@@ -1792,7 +1786,7 @@ test.describe('a drop that crosses a boundary', () => {
 			const grid = new TimeGrid(page)
 			await settleAnimations(page)
 			const from = await at(
-				page.locator('[data-testid="horizontal-event-allday-1"]').first(),
+				page.locator('[data-testid="calendar-event-allday-1"]').first(),
 				grabbedAt,
 				0.5
 			)
@@ -1874,7 +1868,7 @@ const settleScroll = async (page: Page) => {
 	let still = 0
 	while (still < 4) {
 		const now = await page.evaluate(() => {
-			const cell = document.querySelector('[data-testid^="vertical-cell-"]')
+			const cell = document.querySelector('[data-ilamy-part="time-slot"]')
 			let scroller = cell?.parentElement ?? null
 			while (scroller && scroller.scrollHeight <= scroller.clientHeight + 1) {
 				scroller = scroller.parentElement
@@ -1978,7 +1972,7 @@ test.describe('the wheel turned while a drag is held', () => {
 				const cell = document
 					.elementsFromPoint(px, py)
 					.find((el) =>
-						(el.getAttribute('data-testid') ?? '').startsWith('vertical-cell-')
+						(el.getAttribute('data-testid') ?? '').startsWith('time-slot-')
 					)
 				return cell?.getAttribute('data-start') ?? null
 			},
@@ -2217,7 +2211,7 @@ test.describe('a drop on the all-day strip after the grid has scrolled', () => {
 					await turnWheel(page)
 				}
 				const bar = await getBox(
-					page.locator('[data-testid^="horizontal-event-A"]').first()
+					page.locator('[data-testid^="calendar-event-A"]').first()
 				)
 				const strip = await getBox(
 					page.locator('[data-all-day="true"]').first()
@@ -2234,9 +2228,7 @@ test.describe('a drop on the all-day strip after the grid has scrolled', () => {
 						document
 							.elementsFromPoint(px, py)
 							.find((el) =>
-								(el.getAttribute('data-testid') ?? '').startsWith(
-									'vertical-cell-'
-								)
+								(el.getAttribute('data-testid') ?? '').startsWith('time-slot-')
 							)
 							?.getAttribute('data-start') ?? null,
 					[to.x, to.y]

@@ -4,13 +4,13 @@ import type {
 	EventsChange,
 	IsoDateString,
 } from '@ilamy/calendar'
-import { Button } from '@ilamy/ui/components/button'
+import { Button } from '../components/ui/button'
 import {
 	Dialog,
 	DialogContent,
 	DialogTitle,
 	DialogTrigger,
-} from '@ilamy/ui/components/dialog'
+} from '../components/ui/dialog'
 import { SlidersHorizontal } from 'lucide-react'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'

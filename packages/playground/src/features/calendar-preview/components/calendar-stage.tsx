@@ -1,5 +1,9 @@
-import type { CalendarEvent, CalendarView, Resource } from '@ilamy/calendar'
-import type { DomCalendarOptions } from '@ilamy/calendar/dom'
+import type {
+	CalendarEvent,
+	CalendarView,
+	DomCalendarOptions,
+	Resource,
+} from '@ilamy/calendar'
 import { type CalendarThemeAdapter, IlamyCalendar } from '@ilamy/calendar/react'
 import { Globe2 } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -48,7 +52,6 @@ function mergeThemeAdapter(
 		...shared,
 		unstyled: Boolean(overrideAdapter.unstyled),
 		slotProps: overrideAdapter.slotProps,
-		components: overrideAdapter.components,
 	}
 }
 

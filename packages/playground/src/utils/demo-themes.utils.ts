@@ -1,11 +1,91 @@
 import type { CalendarSlotProps } from '@ilamy/calendar'
 import type { CalendarThemeAdapter } from '@ilamy/calendar/react'
-import {
-	createStylexCalendarTheme,
-	STYLEX_DARK_TOKENS,
-	STYLEX_LIGHT_TOKENS,
-} from '@ilamy/calendar/themes/stylex'
 import type { ThemeAccent, ThemePreset } from '../types/settings-form.types'
+
+interface StylexTokenSet {
+	background: string
+	surface: string
+	surfaceMuted: string
+	border: string
+	text: string
+	textMuted: string
+	primary: string
+	primaryForeground: string
+	todayBackground: string
+	danger: string
+	radius: string
+	fontFamily: string
+}
+
+const STYLEX_LIGHT_TOKENS: StylexTokenSet = {
+	background: '#ffffff',
+	surface: '#f8fafc',
+	surfaceMuted: '#f1f5f9',
+	border: '#e2e8f0',
+	text: '#0f172a',
+	textMuted: '#64748b',
+	primary: '#2563eb',
+	primaryForeground: '#ffffff',
+	todayBackground: '#eff6ff',
+	danger: '#ef4444',
+	radius: '8px',
+	fontFamily: 'system-ui, -apple-system, sans-serif',
+}
+
+const STYLEX_DARK_TOKENS: StylexTokenSet = {
+	background: '#0f172a',
+	surface: '#1e293b',
+	surfaceMuted: '#1e293b',
+	border: '#334155',
+	text: '#f8fafc',
+	textMuted: '#94a3b8',
+	primary: '#3b82f6',
+	primaryForeground: '#ffffff',
+	todayBackground: '#1e3a5f',
+	danger: '#f87171',
+	radius: '8px',
+	fontFamily: 'system-ui, -apple-system, sans-serif',
+}
+
+const buildStylexTokenVars = (
+	tokens: StylexTokenSet,
+	mode: 'light' | 'dark'
+): CalendarSlotProps => ({
+	root: {
+		style: {
+			'--ilamy-bg': tokens.background,
+			'--ilamy-fg': tokens.text,
+			'--ilamy-surface': tokens.surface,
+			'--ilamy-muted': tokens.surfaceMuted,
+			'--ilamy-muted-fg': tokens.textMuted,
+			'--ilamy-border': tokens.border,
+			'--ilamy-primary': tokens.primary,
+			'--ilamy-primary-fg': tokens.primaryForeground,
+			'--ilamy-danger': tokens.danger,
+			'--ilamy-radius': tokens.radius,
+			'--ilamy-font': tokens.fontFamily,
+			'--background': tokens.background,
+			'--foreground': tokens.text,
+			'--card': tokens.surface,
+			'--card-foreground': tokens.text,
+			'--popover': tokens.background,
+			'--popover-foreground': tokens.text,
+			'--primary': tokens.primary,
+			'--primary-foreground': tokens.primaryForeground,
+			'--secondary': tokens.surfaceMuted,
+			'--secondary-foreground': tokens.text,
+			'--muted': tokens.surfaceMuted,
+			'--muted-foreground': tokens.textMuted,
+			'--accent': tokens.surfaceMuted,
+			'--accent-foreground': tokens.text,
+			'--destructive': tokens.danger,
+			'--border': tokens.border,
+			'--input': tokens.border,
+			'--ring': tokens.primary,
+			colorScheme: mode,
+		},
+	},
+})
 
 export interface AccentPalette {
 	label: string
@@ -314,16 +394,20 @@ export function resolveDemoTheme(options: {
 	if (preset === 'stylex') {
 		const baseTokens =
 			mode === 'dark' ? STYLEX_DARK_TOKENS : STYLEX_LIGHT_TOKENS
+		const slotProps = buildStylexTokenVars(
+			{
+				...baseTokens,
+				primary: mode === 'dark' ? palette.primaryDark : palette.primary,
+				todayBackground:
+					mode === 'dark' ? palette.todayDark : palette.todayLight,
+			},
+			mode
+		)
 		return {
-			adapter: createStylexCalendarTheme({
-				mode,
-				tokens: {
-					...baseTokens,
-					primary: mode === 'dark' ? palette.primaryDark : palette.primary,
-					todayBackground:
-						mode === 'dark' ? palette.todayDark : palette.todayLight,
-				},
-			}),
+			adapter: {
+				unstyled: false,
+				slotProps,
+			},
 			label: `StyleX (${mode})`,
 		}
 	}

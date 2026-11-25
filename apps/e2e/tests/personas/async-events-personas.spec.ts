@@ -125,7 +125,7 @@ const range = (entry: { start: string; end: string }) =>
 	`${new Date(entry.start).toISOString()} > ${new Date(entry.end).toISOString()}`
 
 const view = (page: Page, name: 'Day' | 'Week' | 'Month' | 'Year') =>
-	page.getByRole('radio', { name, exact: true }).click()
+	page.getByTestId(`view-btn-${name.toLowerCase()}`).click()
 
 const centre = async (locator: Locator) => {
 	const box = await locator.boundingBox()

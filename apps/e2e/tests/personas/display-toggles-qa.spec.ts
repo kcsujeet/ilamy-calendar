@@ -732,10 +732,8 @@ const measure = (
 	hour: string
 ) =>
 	page.evaluate(
-		({ scrollTestId, axis, hour }) => {
-			const viewport = document.querySelector(
-				`[data-testid="${scrollTestId}"] [data-radix-scroll-area-viewport]`
-			)
+		({ axis, hour }) => {
+			const viewport = document.querySelector('[data-ilamy-slot="grid-scroll"]')
 			const first = viewport?.querySelector('[data-hour]')
 			const row = viewport?.querySelector(`[data-hour="${hour}"]`)
 			if (!viewport || !first || !row) {
@@ -750,7 +748,7 @@ const measure = (
 				extent: vertical ? b.height : b.width,
 			}
 		},
-		{ scrollTestId, axis, hour }
+		{ axis, hour }
 	)
 
 test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
@@ -806,9 +804,7 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 			'13'
 		)
 		const maxScroll = await page.evaluate(() => {
-			const v = document.querySelector(
-				'[data-testid="horizontal-grid-scroll"] [data-radix-scroll-area-viewport]'
-			)
+			const v = document.querySelector('[data-ilamy-slot="grid-scroll"]')
 			return v ? v.scrollWidth - v.clientWidth : 0
 		})
 		// 13:45 is past the end of what the 1280px viewport can scroll, so the
@@ -945,9 +941,7 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 			)
 			const ideal = rowStart + (m / 60) * extent
 			const maxScroll = await page.evaluate(() => {
-				const v = document.querySelector(
-					'[data-testid="vertical-grid-scroll"] [data-radix-scroll-area-viewport]'
-				)
+				const v = document.querySelector('[data-ilamy-slot="grid-scroll"]')
 				return v ? v.scrollHeight - v.clientHeight : 0
 			})
 			expect(
@@ -971,10 +965,7 @@ test.describe('persona 3: kiosk (nowIndicator=false, scrollTime=13:45)', () => {
 			},
 		})
 		const scrolled = await page.evaluate(
-			() =>
-				document.querySelector(
-					'[data-testid="vertical-grid-scroll"] [data-radix-scroll-area-viewport]'
-				)?.scrollTop
+			() => document.querySelector('[data-ilamy-slot="grid-scroll"]')?.scrollTop
 		)
 		expect(scrolled).toBe(0)
 		expect(errors).toEqual([])

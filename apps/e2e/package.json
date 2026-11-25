@@ -19,13 +19,22 @@
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "4.14.0",
+		"@base-ui/react": "1.9.0",
+		"@internationalized/date": "3.12.4",
 		"@playwright/test": "^1.63.0",
+		"@sveltejs/vite-plugin-svelte": "7.3.2",
 		"@tailwindcss/vite": "^4.3.0",
 		"@types/react": "^19.2.17",
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^6.0.2",
+		"@angular/core": "22.3.0",
+		"bits-ui": "2.22.0",
+		"rxjs": "7.8.2",
+		"solid-js": "2.0.3",
+		"svelte": "5.59.1",
 		"tailwindcss": "^4.3.0",
 		"tailwindcss-animate": "^1.0.7",
-		"vite": "^8.0.16"
+		"vite": "^8.0.16",
+		"vue": "3.5.45"
 	}
 }

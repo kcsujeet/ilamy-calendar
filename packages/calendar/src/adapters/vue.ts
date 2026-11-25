@@ -1,1 +1,1 @@
-export * from '@ilamy/adapter-vue'
+export * from '../features/adapters/vue/index'

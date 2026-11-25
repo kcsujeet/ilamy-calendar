@@ -141,15 +141,13 @@ test.describe('scrollTime minutes', () => {
 
 	const measureScroll = (
 		page: Page,
-		scrollTestId: string,
+		gridTestId: string,
 		axis: 'vertical' | 'horizontal',
 		hour = '08'
 	) =>
 		page.evaluate(
-			({ scrollTestId, axis, hour }) => {
-				const viewport = document.querySelector(
-					`[data-testid="${scrollTestId}"] [data-radix-scroll-area-viewport]`
-				)
+			({ gridTestId, axis, hour }) => {
+				const viewport = document.querySelector(`[data-testid="${gridTestId}"]`)
 				const first = viewport?.querySelector('[data-hour]')
 				const eight = viewport?.querySelector(`[data-hour="${hour}"]`)
 				if (!viewport || !first || !eight) {
@@ -168,7 +166,7 @@ test.describe('scrollTime minutes', () => {
 					rowMiddle: distance + extent / 2,
 				}
 			},
-			{ scrollTestId, axis, hour }
+			{ gridTestId, axis, hour }
 		)
 
 	test('week time grid lands halfway into the 8 AM row', async ({ page }) => {
@@ -180,7 +178,7 @@ test.describe('scrollTime minutes', () => {
 
 		const { scrolled, rowStart, rowMiddle } = await measureScroll(
 			page,
-			'vertical-grid-scroll',
+			'dom-week-view',
 			'vertical'
 		)
 
@@ -200,7 +198,7 @@ test.describe('scrollTime minutes', () => {
 
 		const { scrolled, rowStart, rowMiddle } = await measureScroll(
 			page,
-			'horizontal-grid-scroll',
+			'dom-resource-hourly-grid',
 			'horizontal'
 		)
 
@@ -221,7 +219,7 @@ test.describe('scrollTime minutes', () => {
 
 		const { scrolled, rowStart, rowMiddle } = await measureScroll(
 			page,
-			'vertical-grid-scroll',
+			'dom-week-view',
 			'vertical',
 			'14'
 		)
@@ -361,7 +359,7 @@ test.describe('weekNumbers in the daily resource week', () => {
 		await expect(page.getByTestId('week-number')).toHaveCount(0)
 		await expect(
 			page
-				.getByTestId('vertical-grid-header')
+				.locator('[data-ilamy-slot="grid-header"]')
 				.getByText('Week', { exact: true })
 		).toHaveCount(0)
 	})

@@ -80,10 +80,8 @@ const press = (page: Page, name: string) =>
 
 const title = (page: Page) => page.getByTestId('calendar-title')
 
-const viewport = (page: Page, kind: 'vertical' | 'horizontal') =>
-	page.locator(
-		`[data-testid="${kind}-grid-scroll"] [data-radix-scroll-area-viewport]`
-	)
+const viewport = (page: Page, _kind: 'vertical' | 'horizontal') =>
+	page.locator('[data-ilamy-slot="grid-scroll"]')
 
 const scrollOffset = (page: Page, kind: 'vertical' | 'horizontal') =>
 	viewport(page, kind).evaluate(
@@ -271,11 +269,13 @@ test.describe('persona 1: app builder, sidebar beside the calendar', () => {
 			if (view === 'year') {
 				await expect(page.getByTestId('year-view')).toBeVisible()
 			} else if (view === 'month') {
-				await expect(
-					page.getByTestId('horizontal-grid-container')
-				).toBeVisible()
+				await expect(page.getByTestId('dom-month-view')).toBeVisible()
 			} else {
-				await expect(page.getByTestId('vertical-grid-container')).toBeVisible()
+				await expect(
+					page.locator(
+						'[data-testid="dom-week-view"], [data-testid="dom-day-view"]'
+					)
+				).toBeVisible()
 			}
 			// header next / ref next / header prev round trip in the new view
 			const before = await title(page).innerText()
@@ -312,11 +312,11 @@ test.describe('persona 1: app builder, sidebar beside the calendar', () => {
 		page,
 	}) => {
 		const errors = await open(page, { scenario: 'basic', view: 'month' })
-		await page.getByRole('radio', { name: 'Week', exact: true }).click()
+		await page.getByTestId('view-btn-week').click()
 		await expect.poll(async () => (await refState(page)).view).toBe('week')
 		await call(page, 'setView', 'day')
 		await expect.poll(async () => (await refState(page)).view).toBe('day')
-		await page.getByRole('radio', { name: 'Month', exact: true }).click()
+		await page.getByTestId('view-btn-month').click()
 		await expect.poll(async () => (await refState(page)).view).toBe('month')
 		await press(page, 'week')
 		await expect.poll(async () => (await refState(page)).view).toBe('week')
@@ -361,9 +361,9 @@ test.describe('persona 1: app builder, sidebar beside the calendar', () => {
 			await call(page, 'setCurrentDate', `@${iso}`)
 			const dstTitle = await title(page).innerText()
 			expect(dstTitle).toContain(dayText)
-			const columns = page.locator('[data-testid^="vertical-col-day-col-"]')
+			const columns = page.locator('[data-time-column="true"]')
 			await expect(columns).toHaveCount(1)
-			const slot = page.locator('[data-testid^="vertical-cell-"]')
+			const slot = page.locator('[data-ilamy-part="time-slot"]')
 			const firstSlotStart = () => slot.first().getAttribute('data-start')
 			const dstStart = await firstSlotStart()
 			await press(page, 'next')
@@ -483,7 +483,7 @@ test.describe('persona 2: scheduling dashboard (scrollToTime)', () => {
 		const errors = await open(page, { scenario: 'basic', view: 'month' })
 		await call(page, 'scrollToTime', '15:00')
 		await call(page, 'setView', 'week')
-		await expect(page.getByTestId('vertical-grid-container')).toBeVisible()
+		await expect(page.getByTestId('dom-week-view')).toBeVisible()
 		await page.waitForTimeout(400)
 		const top = await scrollOffset(page, 'vertical')
 		const expected = await expectedOffset(page, 'vertical', '15:00')
@@ -831,8 +831,8 @@ test.describe('persona 4: upgrader, no ref', () => {
 		await expect(title(page)).not.toHaveText(startTitle)
 		await page.getByLabel('Previous').click()
 		await expect(title(page)).toHaveText(startTitle)
-		await page.getByRole('radio', { name: 'Month', exact: true }).click()
-		await expect(page.getByTestId('horizontal-grid-container')).toBeVisible()
+		await page.getByTestId('view-btn-month').click()
+		await expect(page.getByTestId('dom-month-view')).toBeVisible()
 		await page.getByRole('button', { name: 'Today', exact: true }).click()
 		expect(errors).toEqual([])
 		expect(warnings).toEqual([])

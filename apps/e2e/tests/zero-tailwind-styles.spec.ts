@@ -65,6 +65,9 @@ const buildFixtureHtml = (extraAttrs = '', extraStyle = '') => `<!doctype html>
 </body>
 </html>`
 
+const TAILWIND_UTILITY_RE =
+	/\b(?:flex|inline-flex|grid|hidden|block|relative|absolute|fixed|sticky|overflow-\S+|rounded(?:-\S+)?|border(?:-\S+)?|bg-\S+|text-\S+|p-\S+|px-\S+|py-\S+|m-\S+|gap-\S+|h-\S+|w-\S+)\b/
+
 test.describe('Zero-Tailwind standalone @ilamy/calendar/styles.css contract', () => {
 	test('renders exact header heights, 8px gap, 1px borders without double edges, and working wheel scroll', async ({
 		page,
@@ -105,7 +108,7 @@ test.describe('Zero-Tailwind standalone @ilamy/calendar/styles.css contract', ()
 		expect(metrics.switcherH).toBe(36)
 		expect(metrics.newH).toBe(36)
 		expect(metrics.btnToGridGap).toBe(8)
-		expect(metrics.gridOverflow).toBe('hidden')
+		expect(metrics.gridOverflow).toBe('clip')
 		expect(metrics.gridBorder).toBe('1px')
 		expect(metrics.lastHeaderBorderRight).toBe('0px')
 		expect(metrics.lastCellBorderRight).toBe('0px')
@@ -127,7 +130,6 @@ test.describe('Zero-Tailwind standalone @ilamy/calendar/styles.css contract', ()
 	test('inherits shadcn CSS variables, allows unlayered overrides without !important, and respects data-unstyled', async ({
 		page,
 	}) => {
-		// 1. Shadcn CSS variables + unlayered override win cleanly
 		await page.setContent(
 			buildFixtureHtml(
 				'',
@@ -149,7 +151,6 @@ test.describe('Zero-Tailwind standalone @ilamy/calendar/styles.css contract', ()
 		expect(themed.newBtnBg).toBe('rgb(124, 58, 237)')
 		expect(themed.todayBtnRadius).toBe('999px')
 
-		// 2. data-unstyled="true" disables @layer ilamy.theme chrome while keeping @layer ilamy.base layout
 		await page.setContent(buildFixtureHtml('data-unstyled="true"'))
 		const unstyled = await page.evaluate(() => ({
 			gridBorder: getComputedStyle(document.querySelector('#grid')!)
@@ -162,5 +163,163 @@ test.describe('Zero-Tailwind standalone @ilamy/calendar/styles.css contract', ()
 		expect(unstyled.gridBorder).toBe('0px')
 		expect(unstyled.gridDisplay).toBe('flex')
 		expect(unstyled.headerDisplay).toBe('flex')
+	})
+
+	test('real mounted @ilamy/calendar/dom renders all views, native dialogs, Escape order, 3-dot resize handles, and sticky occlusion with zero Tailwind CSS', async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 1280, height: 800 })
+		await page.goto('/zero-tailwind.html?editable=1&resizableFromStart=1')
+		await page.waitForSelector('[data-testid="ilamy-calendar"]')
+
+		// Confirm zero Tailwind stylesheet or utility classes anywhere in calendar DOM
+		for (const view of ['month', 'week', 'day', 'year', 'agenda'] as const) {
+			await page.getByTestId(`view-btn-${view}`).click()
+			const classLeak = await page.evaluate((reSource) => {
+				const re = new RegExp(reSource)
+				const root = document.querySelector('[data-ilamy-root]')
+				if (!root) return ['missing root']
+				const leaks: string[] = []
+				for (const el of Array.from(root.querySelectorAll('*'))) {
+					const cls = el.getAttribute('class')
+					if (cls && re.test(cls)) leaks.push(cls)
+				}
+				return leaks
+			}, TAILWIND_UTILITY_RE.source)
+			expect(classLeak, `${view} zero-Tailwind class check`).toEqual([])
+		}
+
+		// Switch back to month and inspect layout, gaps, opaque sticky header, and dialog flow
+		await page.getByTestId('view-btn-month').click()
+		const layout = await page.evaluate(() => {
+			const header = document.querySelector('[data-testid="calendar-header"]')!
+			const grid = document.querySelector('[data-testid="calendar-body"]')!
+			const todayBtn = document.querySelector('[data-testid="today-btn"]')!
+			const newBtn = document.querySelector('[data-testid="new-event-btn"]')!
+			const switcher = document.querySelector(
+				'[data-ilamy-slot="view-switcher"]'
+			)!
+			const scroll = document.querySelector('[data-ilamy-slot="grid-scroll"]')!
+			const gridStyle = getComputedStyle(grid)
+			return {
+				headerH: Math.round(header.getBoundingClientRect().height),
+				todayH: Math.round(todayBtn.getBoundingClientRect().height),
+				newH: Math.round(newBtn.getBoundingClientRect().height),
+				switcherH: Math.round(switcher.getBoundingClientRect().height),
+				btnGap: Math.round(
+					grid.getBoundingClientRect().top -
+						todayBtn.getBoundingClientRect().bottom
+				),
+				gridRadius: gridStyle.borderRadius,
+				gridOverflow: gridStyle.overflow,
+				scrollHeight: scroll.scrollHeight,
+				clientHeight: scroll.clientHeight,
+			}
+		})
+		expect(layout.headerH).toBe(44)
+		expect(layout.todayH).toBe(36)
+		expect(layout.newH).toBe(36)
+		expect(layout.switcherH).toBe(36)
+		expect(layout.btnGap).toBe(8)
+		expect(layout.gridRadius).toBe('0px')
+		expect(layout.gridOverflow).toBe('clip')
+
+		// Sticky header occlusion in horizontal resources view
+		await page.goto(
+			'/zero-tailwind.html?view=week&resources=1&granularity=daily&editable=1'
+		)
+		await page.waitForSelector('[data-ilamy-slot="grid-header"]')
+		const stickyHit = await page.evaluate(() => {
+			const scroll = document.querySelector('[data-ilamy-slot="grid-scroll"]')!
+			scroll.scrollTop = 140
+			const headerEl = document.querySelector(
+				'[data-ilamy-slot="grid-header"]'
+			)!
+			const rect = headerEl.getBoundingClientRect()
+			const hitLeft = document.elementFromPoint(rect.left + 20, rect.top + 10)
+			const hitRight = document.elementFromPoint(rect.left + 240, rect.top + 10)
+			return {
+				headerBgAlpha: getComputedStyle(headerEl).backgroundColor,
+				leftInsideHeader: Boolean(headerEl.contains(hitLeft)),
+				rightInsideHeader: Boolean(headerEl.contains(hitRight)),
+			}
+		})
+		expect(stickyHit.headerBgAlpha).not.toBe('rgba(0, 0, 0, 0)')
+		expect(stickyHit.leftInsideHeader).toBe(true)
+		expect(stickyHit.rightInsideHeader).toBe(true)
+
+		// Click cell -> native dialog -> open start-date popover -> Escape closes ONLY popover -> submit creates event
+		await page.goto('/zero-tailwind.html?view=month&editable=1')
+		await page.waitForSelector('[data-testid="day-cell-2026-11-20"]')
+		await page.getByTestId('day-cell-2026-11-20').click()
+		const dialog = page.getByTestId('dom-event-dialog')
+		await expect(dialog).toBeVisible()
+
+		await dialog.locator('#start-date').click()
+		await expect(page.locator('[data-ilamy-part="popover"]')).toBeVisible()
+		await page.keyboard.press('Escape')
+		await expect(page.locator('[data-ilamy-part="popover"]')).toHaveCount(0)
+		await expect(dialog).toBeVisible()
+
+		await dialog.locator('input[name="title"]').fill('Native Dialog Created')
+		await page.getByTestId('dom-event-save-btn').click()
+		await expect(dialog).toHaveCount(0)
+		await expect(page.getByText('Native Dialog Created')).toBeVisible()
+
+		const recorded = await page.evaluate(
+			() =>
+				(
+					window as unknown as {
+						__zeroTwChanges?: Array<{ action: string; title: string }>
+					}
+				).__zeroTwChanges
+		)
+		expect(recorded?.some((c) => c.title === 'Native Dialog Created')).toBe(
+			true
+		)
+
+		// Hover event edge reveals VS Code 3-dot resize handle with ew-resize cursor
+		const eventBar = page.getByTestId('calendar-event-ztw-1')
+		const handle = page.getByTestId('resize-handle-end-ztw-1')
+		await eventBar.hover()
+		await expect
+			.poll(async () =>
+				handle.evaluate((el) => Number.parseFloat(getComputedStyle(el).opacity))
+			)
+			.toBeGreaterThan(0)
+		const handleCursor = await handle.evaluate(
+			(el) => getComputedStyle(el).cursor
+		)
+		expect(handleCursor).toBe('ew-resize')
+
+		// Unstyled mode strips chrome on agenda/dialogs/cells while keeping grid structure
+		await page.goto('/zero-tailwind.html?view=agenda&unstyled=1')
+		await page.waitForSelector('[data-testid="agenda-view"]')
+		const unstyledCheck = await page.evaluate(() => {
+			const root = document.querySelector('[data-ilamy-root]')!
+			const dot = document.querySelector('[data-ilamy-part="agenda-dot"]')!
+			const grid = document.querySelector('[data-testid="calendar-body"]')!
+			return {
+				rootBg: getComputedStyle(root).backgroundColor,
+				gridBorder: getComputedStyle(grid).borderTopWidth,
+				dotBg: getComputedStyle(dot).backgroundColor,
+			}
+		})
+		expect(unstyledCheck.rootBg).toBe('rgba(0, 0, 0, 0)')
+		expect(unstyledCheck.gridBorder).toBe('0px')
+		expect(unstyledCheck.dotBg).toBe('rgba(0, 0, 0, 0)')
+
+		// Dark mode flips surface & foreground tokens cleanly
+		await page.goto('/zero-tailwind.html?view=month&dark=1')
+		await page.waitForSelector('[data-testid="dom-month-view"]')
+		const darkRoot = await page.evaluate(() => {
+			const root = document.querySelector('[data-ilamy-root]')!
+			return {
+				bg: getComputedStyle(root).backgroundColor,
+				color: getComputedStyle(root).color,
+			}
+		})
+		expect(darkRoot.bg).toBe('rgb(9, 9, 11)')
+		expect(darkRoot.color).toBe('rgb(250, 250, 250)')
 	})
 })

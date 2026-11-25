@@ -1,1 +1,1 @@
-export * from '@ilamy/adapter-angular'
+export * from '../features/adapters/angular/index'

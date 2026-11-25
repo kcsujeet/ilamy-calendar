@@ -79,19 +79,61 @@
 	},
 	"overrides": [
 		{
+			"includes": ["packages/calendar/src/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"paths": {
+									"@mui/material": "@ilamy/calendar does not depend on @mui/material; styling recipes live in docs/examples.",
+									"@stylexjs/stylex": "@ilamy/calendar does not depend on @stylexjs/stylex; styling recipes live in docs/examples.",
+									"@dnd-kit/core": "@ilamy/calendar uses its built-in pointer interaction engine, never @dnd-kit.",
+									"@dnd-kit/modifiers": "@ilamy/calendar uses its built-in pointer interaction engine, never @dnd-kit.",
+									"lucide-react": "@ilamy/calendar uses inline SVGs, never lucide-react.",
+									"class-variance-authority": "@ilamy/calendar uses CSS slot attributes, never CVA.",
+									"clsx": "@ilamy/calendar uses simple string concatenation, never clsx.",
+									"tailwind-merge": "@ilamy/calendar uses CSS slot attributes, never tailwind-merge.",
+									"dayjs": "Please use packages/calendar/src/utils/temporal instead."
+								},
+								"patterns": [
+									{
+										"group": [
+											"@mui/material/*",
+											"@dnd-kit/*",
+											"@radix-ui/*",
+											"@ilamy/core",
+											"@ilamy/dom",
+											"@ilamy/ui",
+											"@ilamy/ui/*",
+											"@ilamy/utils",
+											"@ilamy/utils/*",
+											"@ilamy/types",
+											"@ilamy/theme-*",
+											"@ilamy/adapter-*",
+											"@ilamy/calendar-*"
+										],
+										"message": "Do not import dropped UI/DnD/theme dependencies or deleted private packages inside @ilamy/calendar."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
 			"includes": [
-				"packages/adapters/react/src/components/**",
-				"packages/adapters/react/src/config/**",
-				"packages/adapters/react/src/hooks/**",
-				"packages/adapters/react/src/lib/**",
-				"packages/adapters/react/src/stores/**",
-				"packages/adapters/react/src/types/**",
-				"packages/adapters/react/src/utils/**",
-				"packages/playground/src/components/**",
-				"packages/playground/src/hooks/**",
-				"packages/playground/src/lib/**",
-				"packages/playground/src/types/**",
-				"packages/playground/src/utils/**",
+				"packages/calendar/src/index.ts",
+				"packages/calendar/src/types/**",
+				"packages/calendar/src/utils/**",
+				"packages/calendar/src/lib/**",
+				"!packages/calendar/src/lib/renderer/**",
+				"packages/calendar/src/features/adapters/vue/**",
+				"packages/calendar/src/features/adapters/svelte/**",
+				"packages/calendar/src/features/adapters/solid/**",
+				"packages/calendar/src/features/adapters/angular/**",
 				"!**/*.test.ts",
 				"!**/*.test.tsx"
 			],
@@ -102,25 +144,24 @@
 							"level": "error",
 							"options": {
 								"paths": {
-									"dayjs": "Please use '@/lib/configs/dayjs-config' instead to ensure timezone consistency."
+									"react": "Framework-free core and non-React adapters cannot import react.",
+									"react-dom": "Framework-free core and non-React adapters cannot import react-dom.",
+									"preact": "Preact must stay inside lib/renderer and never leak into headless core or adapters.",
+									"@dnd-kit/core": "Headless lib and non-React adapters cannot depend on @dnd-kit.",
+									"@dnd-kit/modifiers": "Headless lib and non-React adapters cannot depend on @dnd-kit.",
+									"@mui/material": "@ilamy/calendar does not depend on @mui/material.",
+									"@stylexjs/stylex": "@ilamy/calendar does not depend on @stylexjs/stylex."
 								},
 								"patterns": [
 									{
 										"group": [
-											"@/features/*",
-											"@/features/**",
-											"@/app/*",
-											"@/app/**",
-											"../features/*",
-											"../features/**",
-											"../../features/*",
-											"../../features/**",
-											"../app/*",
-											"../app/**",
-											"../../app/*",
-											"../../app/**"
+											"react/*",
+											"react-dom/*",
+											"preact/*",
+											"@dnd-kit/*",
+											"@radix-ui/*"
 										],
-										"message": "Shared code cannot import a feature or app layer (Bulletproof React: shared -> features -> app). Move this file into the feature, or move what it needs into a shared folder."
+										"message": "Preact, React, @dnd-kit, and @radix-ui cannot be imported in headless core or non-React adapters."
 									}
 								]
 							}
@@ -131,7 +172,7 @@
 		},
 		{
 			"includes": [
-				"packages/adapters/react/src/features/header/**",
+				"packages/calendar/src/lib/renderer/**",
 				"!**/*.test.ts",
 				"!**/*.test.tsx"
 			],
@@ -141,118 +182,27 @@
 						"noRestrictedImports": {
 							"level": "error",
 							"options": {
+								"paths": {
+									"react": "lib/renderer uses Preact, never React.",
+									"react-dom": "lib/renderer uses Preact, never React DOM.",
+									"@dnd-kit/core": "lib/renderer uses lib/interactions, never @dnd-kit.",
+									"@dnd-kit/modifiers": "lib/renderer uses lib/interactions, never @dnd-kit.",
+									"lucide-react": "lib/renderer uses inline SVGs, never lucide-react.",
+									"class-variance-authority": "lib/renderer uses CSS slot attributes, never CVA.",
+									"clsx": "lib/renderer uses simple string concatenation, never clsx.",
+									"tailwind-merge": "lib/renderer uses CSS slot attributes, never tailwind-merge.",
+									"@mui/material": "@ilamy/calendar does not depend on @mui/material.",
+									"@stylexjs/stylex": "@ilamy/calendar does not depend on @stylexjs/stylex."
+								},
 								"patterns": [
 									{
 										"group": [
-											"@/app/*",
-											"@/app/**",
-											"@/features/event-form/*",
-											"@/features/event-form/**",
-											"@/features/drag-and-drop/*",
-											"@/features/drag-and-drop/**",
-											"@/features/views/*",
-											"@/features/views/**"
+											"react/*",
+											"react-dom/*",
+											"@dnd-kit/*",
+											"@radix-ui/*"
 										],
-										"message": "Features cannot import app or sibling features (Bulletproof React: shared -> features -> app)."
-									}
-								]
-							}
-						}
-					}
-				}
-			}
-		},
-		{
-			"includes": [
-				"packages/adapters/react/src/features/event-form/**",
-				"!**/*.test.ts",
-				"!**/*.test.tsx"
-			],
-			"linter": {
-				"rules": {
-					"style": {
-						"noRestrictedImports": {
-							"level": "error",
-							"options": {
-								"patterns": [
-									{
-										"group": [
-											"@/app/*",
-											"@/app/**",
-											"@/features/header/*",
-											"@/features/header/**",
-											"@/features/drag-and-drop/*",
-											"@/features/drag-and-drop/**",
-											"@/features/views/*",
-											"@/features/views/**"
-										],
-										"message": "Features cannot import app or sibling features (Bulletproof React: shared -> features -> app)."
-									}
-								]
-							}
-						}
-					}
-				}
-			}
-		},
-		{
-			"includes": [
-				"packages/adapters/react/src/features/drag-and-drop/**",
-				"!**/*.test.ts",
-				"!**/*.test.tsx"
-			],
-			"linter": {
-				"rules": {
-					"style": {
-						"noRestrictedImports": {
-							"level": "error",
-							"options": {
-								"patterns": [
-									{
-										"group": [
-											"@/app/*",
-											"@/app/**",
-											"@/features/header/*",
-											"@/features/header/**",
-											"@/features/event-form/*",
-											"@/features/event-form/**",
-											"@/features/views/*",
-											"@/features/views/**"
-										],
-										"message": "Features cannot import app or sibling features (Bulletproof React: shared -> features -> app)."
-									}
-								]
-							}
-						}
-					}
-				}
-			}
-		},
-		{
-			"includes": [
-				"packages/adapters/react/src/features/views/**",
-				"!**/*.test.ts",
-				"!**/*.test.tsx"
-			],
-			"linter": {
-				"rules": {
-					"style": {
-						"noRestrictedImports": {
-							"level": "error",
-							"options": {
-								"patterns": [
-									{
-										"group": [
-											"@/app/*",
-											"@/app/**",
-											"@/features/header/*",
-											"@/features/header/**",
-											"@/features/event-form/*",
-											"@/features/event-form/**",
-											"@/features/drag-and-drop/*",
-											"@/features/drag-and-drop/**"
-										],
-										"message": "Features cannot import app or sibling features (Bulletproof React: shared -> features -> app)."
+										"message": "lib/renderer uses internal Preact + semantic native HTML only (zero React, @dnd-kit, or Radix)."
 									}
 								]
 							}
@@ -293,7 +243,7 @@
 			}
 		},
 		{
-			"includes": ["**/*.astro"],
+			"includes": ["**/*.astro", "**/*.svelte"],
 			"linter": {
 				"rules": {
 					"correctness": {
@@ -317,20 +267,6 @@
 					},
 					"suspicious": {
 						"noConsole": "off"
-					}
-				}
-			}
-		},
-		{
-			"includes": [
-				"**/src/lib/configs/dayjs-config.ts",
-				"packages/utils/src/dayjs.ts",
-				"packages/types/src/index.ts"
-			],
-			"linter": {
-				"rules": {
-					"style": {
-						"noRestrictedImports": "off"
 					}
 				}
 			}

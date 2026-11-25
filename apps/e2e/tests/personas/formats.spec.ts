@@ -160,7 +160,7 @@ test.describe('formats', () => {
 			settings: { dayHeaderFormat },
 		})
 		await expect(
-			page.getByTestId('resource-week-day-header').nth(3)
+			page.locator('[data-ilamy-part="res-h-day-group"]').nth(3)
 		).toContainText('Wednesday')
 	})
 

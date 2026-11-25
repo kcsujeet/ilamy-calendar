@@ -90,9 +90,7 @@ test.describe('persona 1: clinic receptionist (08-18, slot=15)', () => {
 		await expect(grid.hourLabels).toHaveCount(10)
 		await expect(grid.hourLabels.first()).toContainText('8 AM')
 		await expect(grid.hourLabels.last()).toContainText('5 PM')
-		await expect(page.locator('[data-testid^="vertical-cell-"]')).toHaveCount(
-			40
-		)
+		await expect(page.locator('[data-ilamy-part="time-slot"]')).toHaveCount(40)
 		await expect(grid.slotAt('2025-03-12T07:45')).toHaveCount(0)
 		await expect(grid.slotAt('2025-03-12T18:00')).toHaveCount(0)
 		await expect(grid.slotAt('2025-03-12T17:45')).toHaveCount(1)
@@ -330,7 +328,7 @@ const openResources = async (
 
 /** The left/right extent of the hour columns, from the header labels. */
 const columnsExtent = async (page: Page) => {
-	const labels = page.locator('[data-testid^="resource-day-time-label-"]')
+	const labels = page.locator('[data-ilamy-part="res-h-hour-cell"]')
 	const first = await labels.first().boundingBox()
 	const last = await labels.last().boundingBox()
 	if (!first || !last) throw new Error('no header labels')
@@ -346,7 +344,7 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 			page,
 		}) => {
 			await openResources(page, 'day', 'horizontal', window)
-			const labels = page.locator('[data-testid^="resource-day-time-label-"]')
+			const labels = page.locator('[data-ilamy-part="res-h-hour-cell"]')
 			await expect(labels).toHaveCount(count)
 			await expect(labels.first()).toContainText(first)
 			await expect(labels.last()).toContainText(last)
@@ -368,9 +366,9 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 	}) => {
 		await openResources(page, 'day', 'horizontal', NIGHT)
 		const bar = await page
-			.getByTestId('horizontal-event-long-res-2')
+			.getByTestId('calendar-event-long-res-2')
 			.boundingBox()
-		const labels = page.locator('[data-testid^="resource-day-time-label-"]')
+		const labels = page.locator('[data-ilamy-part="res-h-hour-cell"]')
 		const first = await labels.first().boundingBox()
 		if (!bar || !first) throw new Error('layout')
 		expect(Math.abs(bar.x - first.x)).toBeLessThan(SUBPIXEL + 2)
@@ -382,10 +380,10 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 	}) => {
 		await openResources(page, 'day', 'horizontal', SMALL_HOURS)
 		const bar = await page
-			.getByTestId('horizontal-event-long-res-2')
+			.getByTestId('calendar-event-long-res-2')
 			.boundingBox()
 		const extent = await columnsExtent(page)
-		const labels = page.locator('[data-testid^="resource-day-time-label-"]')
+		const labels = page.locator('[data-ilamy-part="res-h-hour-cell"]')
 		const first = await labels.first().boundingBox()
 		if (!bar || !first) throw new Error('layout')
 		expect(Math.abs(bar.x - (extent.left + 2 * first.width))).toBeLessThan(6)
@@ -411,10 +409,10 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 			}
 			const yoga = inWindow(10.45, 12.45) ? 1 : 0
 			const quick = inWindow(14, 14.1) ? 1 : 0
-			await expect(page.getByTestId('horizontal-event-long-res-3')).toHaveCount(
+			await expect(page.getByTestId('calendar-event-long-res-3')).toHaveCount(
 				yoga
 			)
-			await expect(page.getByTestId('horizontal-event-long-res-4')).toHaveCount(
+			await expect(page.getByTestId('calendar-event-long-res-4')).toHaveCount(
 				quick
 			)
 		})
@@ -424,17 +422,15 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 		page,
 	}) => {
 		await openResources(page, 'week', 'horizontal', NIGHT)
-		await expect(page.getByTestId('horizontal-event-long-res-3')).toHaveCount(0)
-		await expect(page.getByTestId('horizontal-event-long-res-4')).toHaveCount(0)
+		await expect(page.getByTestId('calendar-event-long-res-3')).toHaveCount(0)
+		await expect(page.getByTestId('calendar-event-long-res-4')).toHaveCount(0)
 	})
 
 	test('horizontal day 00-06: the grid has no horizontal overflow scroll', async ({
 		page,
 	}) => {
 		await openResources(page, 'day', 'horizontal', SMALL_HOURS)
-		const scroll = page.locator(
-			'[data-testid="horizontal-grid-scroll"] [data-radix-scroll-area-viewport]'
-		)
+		const scroll = page.locator('[data-ilamy-slot="grid-scroll"]')
 		const overflow = await scroll.evaluate(
 			(el) => el.scrollWidth - el.clientWidth
 		)
@@ -446,9 +442,9 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 	}) => {
 		for (const window of [NIGHT, SMALL_HOURS]) {
 			await openResources(page, 'day', 'vertical', window)
-			await expect(page.getByTestId('vertical-event-long-res-2')).toHaveCount(1)
-			await expect(page.getByTestId('vertical-event-long-res-3')).toHaveCount(0)
-			await expect(page.getByTestId('vertical-event-long-res-4')).toHaveCount(0)
+			await expect(page.getByTestId('calendar-event-long-res-2')).toHaveCount(1)
+			await expect(page.getByTestId('calendar-event-long-res-3')).toHaveCount(0)
+			await expect(page.getByTestId('calendar-event-long-res-4')).toHaveCount(0)
 		}
 	})
 
@@ -457,14 +453,12 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 	}) => {
 		await openResources(page, 'week', 'horizontal', NIGHT)
 		await settleAnimations(page)
-		const viewport = page.locator(
-			'[data-testid="horizontal-grid-scroll"] [data-radix-scroll-area-viewport]'
-		)
+		const viewport = page.locator('[data-ilamy-slot="grid-scroll"]')
 		const scrollable = await viewport.evaluate(
 			(el) => el.scrollWidth - el.clientWidth
 		)
 		expect(scrollable).toBeGreaterThan(100)
-		const label = page.getByTestId('horizontal-row-label-r2')
+		const label = page.getByTestId('resource-header-r2')
 		await expect(label).toBeVisible()
 		const before = await label.boundingBox()
 		await viewport.evaluate((el) => {
@@ -490,7 +484,7 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 		page,
 	}) => {
 		await openResources(page, 'week', 'horizontal', NIGHT)
-		const header = page.getByTestId('horizontal-grid-header')
+		const header = page.locator('[data-ilamy-slot="grid-header"]')
 		const before = await header.boundingBox()
 		await page.mouse.wheel(0, 300)
 		const after = await header.boundingBox()
@@ -501,9 +495,9 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 		page,
 	}) => {
 		await openResources(page, 'day', 'horizontal', NIGHT)
-		const bar = page.getByTestId('horizontal-event-long-res-2')
+		const bar = page.getByTestId('calendar-event-long-res-2')
 		const target = page.locator(
-			'[data-testid="horizontal-row-r1"] [data-start^="2025-03-12T23:00"]'
+			'[data-ilamy-part="res-h-row"][data-resource-id="r1"] [data-start^="2025-03-12T23:00"]'
 		)
 		await dragTo(page, bar, target)
 		const moved = await new TimeGrid(page).eventNamed('Long shift')
@@ -516,9 +510,9 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 		page,
 	}) => {
 		await openResources(page, 'day', 'horizontal', NIGHT)
-		const bar = page.getByTestId('horizontal-event-long-res-2')
+		const bar = page.getByTestId('calendar-event-long-res-2')
 		const target = page.locator(
-			'[data-testid="horizontal-row-r3"] [data-start^="2025-03-12T18:00"]'
+			'[data-ilamy-part="res-h-row"][data-resource-id="r3"] [data-start^="2025-03-12T18:00"]'
 		)
 		await dragTo(page, bar, target)
 		const moved = await new TimeGrid(page).eventNamed('Long shift')
@@ -541,7 +535,7 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 		const bar = grid.bars('long-res-2').first()
 		const target = page
 			.locator(
-				'[data-testid^="vertical-cell-2025-03-12-23-00"][data-testid$="resource-r3"]'
+				'[data-ilamy-part="time-slot"][data-date="2025-03-12"][data-hour="23"][data-minute="0"][data-resource-id="r3"]'
 			)
 			.first()
 		await dragTo(page, bar, target)
@@ -565,7 +559,7 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 		const bar = grid.bars('long-res-2').first()
 		const target = page
 			.locator(
-				'[data-testid^="vertical-cell-2025-03-12-00-00"][data-testid$="resource-r1"]'
+				'[data-ilamy-part="time-slot"][data-date="2025-03-12"][data-hour="00"][data-minute="0"][data-resource-id="r1"]'
 			)
 			.first()
 		await dragTo(page, bar, target)
@@ -585,7 +579,7 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 			hideNonBusinessHours: 'true',
 		}
 		await openResources(page, 'day', 'horizontal', settings)
-		const labels = page.locator('[data-testid^="resource-day-time-label-"]')
+		const labels = page.locator('[data-ilamy-part="res-h-hour-cell"]')
 		await expect(labels).toHaveCount(3)
 		await expect(labels.first()).toContainText('9 AM')
 		await expect(labels.last()).toContainText('11 AM')
@@ -625,9 +619,7 @@ test.describe('persona 2: night-shift dispatcher (resources)', () => {
 /* ---------------------------------------------------------------- persona 3 */
 
 const gridViewport = (page: Page) =>
-	page.locator(
-		'[data-testid="vertical-grid-scroll"] [data-radix-scroll-area-viewport]'
-	)
+	page.locator('[data-ilamy-slot="grid-scroll"]')
 
 const NEW_YORK = 'America/New_York'
 const SPRING_DAY = '2025-03-09T12:00:00.000Z'
@@ -741,7 +733,7 @@ test.describe('persona 3: edge-case hunter, DST (America/New_York)', () => {
 				await settleAnimations(page)
 				const bar = await new TimeGrid(page).bars(eventId).first().boundingBox()
 				const nineLabel = await page
-					.getByTestId('vertical-time-09')
+					.locator('[data-ilamy-part="time-axis-hour"][data-hour="09"]')
 					.boundingBox()
 				expect(Math.abs((bar?.y ?? -9) - (nineLabel?.y ?? 9))).toBeLessThan(
 					SUBPIXEL
@@ -762,7 +754,7 @@ test.describe('persona 3: edge-case hunter, DST (America/New_York)', () => {
 			settings: { slotMinTime: '01:00', slotMaxTime: '04:00' },
 		})
 		await expect(
-			page.locator('[data-testid^="resource-day-time-label-"]')
+			page.locator('[data-ilamy-part="res-h-hour-cell"]')
 		).toHaveCount(3)
 	})
 
@@ -775,7 +767,7 @@ test.describe('persona 3: edge-case hunter, DST (America/New_York)', () => {
 			{ slotMinTime: '01:00', slotMaxTime: '04:00' },
 			{ timezone: NEW_YORK, date: SPRING_DAY }
 		)
-		await page.locator('[data-testid^="vertical-cell-"]').last().click()
+		await page.locator('[data-ilamy-part="time-slot"]').last().click()
 		await expect(page.getByRole('dialog')).toBeVisible()
 		const start = await page.getByTestId('time-picker-start-time').textContent()
 		console.log('spring 3AM click:', start)
@@ -926,7 +918,7 @@ test.describe('persona 3: edge-case hunter, invalid values', () => {
 		await expect(new TimeGrid(page).hourLabels).toHaveCount(24)
 		await openResources(page, 'day', 'horizontal', { slotMaxTime: '25:00' })
 		await expect(
-			page.locator('[data-testid^="resource-day-time-label-"]')
+			page.locator('[data-ilamy-part="res-h-hour-cell"]')
 		).toHaveCount(24)
 	})
 
@@ -978,9 +970,9 @@ test.describe('persona 3: edge-case hunter, event edges (end exclusive)', () => 
 			{ slotMinTime: '11:00', slotMaxTime: '14:00' },
 			'resources'
 		)
-		await expect(page.getByTestId('horizontal-event-res-2')).toHaveCount(0)
-		await expect(page.getByTestId('horizontal-event-res-1')).toHaveCount(0)
-		await expect(page.getByTestId('horizontal-event-res-3')).toHaveCount(1)
+		await expect(page.getByTestId('calendar-event-res-2')).toHaveCount(0)
+		await expect(page.getByTestId('calendar-event-res-1')).toHaveCount(0)
+		await expect(page.getByTestId('calendar-event-res-3')).toHaveCount(1)
 		await openResources(
 			page,
 			'day',
@@ -988,8 +980,8 @@ test.describe('persona 3: edge-case hunter, event edges (end exclusive)', () => 
 			{ slotMinTime: '06:00', slotMaxTime: '11:00' },
 			'resources'
 		)
-		await expect(page.getByTestId('horizontal-event-res-3')).toHaveCount(0)
-		await expect(page.getByTestId('horizontal-event-res-2')).toHaveCount(1)
+		await expect(page.getByTestId('calendar-event-res-3')).toHaveCount(0)
+		await expect(page.getByTestId('calendar-event-res-2')).toHaveCount(1)
 	})
 
 	test('vertical resource day: same edge rules', async ({ page }) => {
@@ -1000,8 +992,8 @@ test.describe('persona 3: edge-case hunter, event edges (end exclusive)', () => 
 			{ slotMinTime: '11:00', slotMaxTime: '14:00' },
 			'resources'
 		)
-		await expect(page.getByTestId('vertical-event-res-2')).toHaveCount(0)
-		await expect(page.getByTestId('vertical-event-res-3')).toHaveCount(1)
+		await expect(page.getByTestId('calendar-event-res-2')).toHaveCount(0)
+		await expect(page.getByTestId('calendar-event-res-3')).toHaveCount(1)
 		await openResources(
 			page,
 			'day',
@@ -1009,8 +1001,8 @@ test.describe('persona 3: edge-case hunter, event edges (end exclusive)', () => 
 			{ slotMinTime: '06:00', slotMaxTime: '11:00' },
 			'resources'
 		)
-		await expect(page.getByTestId('vertical-event-res-3')).toHaveCount(0)
-		await expect(page.getByTestId('vertical-event-res-2')).toHaveCount(1)
+		await expect(page.getByTestId('calendar-event-res-3')).toHaveCount(0)
+		await expect(page.getByTestId('calendar-event-res-2')).toHaveCount(1)
 	})
 })
 
@@ -1037,7 +1029,9 @@ test.describe('persona 3: edge-case hunter, scrollTime and the now-line', () => 
 		const viewport = gridViewport(page)
 		await page.waitForTimeout(500)
 		const view = await viewport.boundingBox()
-		const label = await page.getByTestId('vertical-time-14').boundingBox()
+		const label = await page
+			.locator('[data-ilamy-part="time-axis-hour"][data-hour="14"]')
+			.boundingBox()
 		console.log('scrollTime 14:00 viewport.y/label.y', view?.y, label?.y)
 		expect(Math.abs((label?.y ?? 0) - (view?.y ?? 99))).toBeLessThan(40)
 	})
@@ -1060,8 +1054,12 @@ test.describe('persona 3: edge-case hunter, scrollTime and the now-line', () => 
 			slotMaxTime: '18:00',
 			nowIndicator: 'true',
 		})
-		const first = await page.getByTestId('vertical-time-08').boundingBox()
-		const last = await page.getByTestId('vertical-time-17').boundingBox()
+		const first = await page
+			.locator('[data-ilamy-part="time-axis-hour"][data-hour="08"]')
+			.boundingBox()
+		const last = await page
+			.locator('[data-ilamy-part="time-axis-hour"][data-hour="17"]')
+			.boundingBox()
 		const line = await page.getByTestId('current-time-indicator').boundingBox()
 		if (!first || !last || !line) throw new Error('layout')
 		const gridHeight = last.y + last.height - first.y

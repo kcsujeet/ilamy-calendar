@@ -296,7 +296,7 @@ test.describe('persona 1: office scheduler', () => {
 			})
 			const grid = new TimeGrid(page)
 			const occurrence = page
-				.locator('[data-testid^="vertical-event-standup"]')
+				.locator('[data-testid^="calendar-event-standup"]')
 				.nth(3)
 			// Wed 12th 09:00-09:15 -> 09:00-10:00.
 			await dragTo(
@@ -322,7 +322,7 @@ test.describe('persona 1: office scheduler', () => {
 				)
 			// Report what the consumer holds; assert the visible week.
 			const heights = await page
-				.locator('[data-testid^="vertical-event-standup"]')
+				.locator('[data-testid^="calendar-event-standup"]')
 				.evaluateAll((els) =>
 					els.map((el) => ({
 						id: el.getAttribute('data-testid'),
@@ -497,7 +497,7 @@ test.describe('persona 2: resource planner', () => {
 			orientation: 'horizontal',
 		})
 		const grid = new TimeGrid(page)
-		const bar = page.getByTestId('horizontal-event-res-2')
+		const bar = page.getByTestId('calendar-event-res-2')
 		const barBox = await bar.boundingBox()
 		const handleBox = await handleOf(bar, 'end').boundingBox()
 		if (!barBox || !handleBox) {
@@ -533,7 +533,7 @@ test.describe('persona 2: resource planner', () => {
 			settings: { eventResizableFromStart: 'true' },
 		})
 		const grid = new TimeGrid(page)
-		const bar = page.getByTestId('horizontal-event-res-3')
+		const bar = page.getByTestId('calendar-event-res-3')
 		await dragTo(
 			page,
 			handleOf(bar, 'start'),
@@ -557,7 +557,7 @@ test.describe('persona 2: resource planner', () => {
 			orientation: 'horizontal',
 		})
 		const grid = new TimeGrid(page)
-		const bar = page.getByTestId('horizontal-event-res-4')
+		const bar = page.getByTestId('calendar-event-res-4')
 		await bar.scrollIntoViewIfNeeded()
 		await page.waitForTimeout(300)
 		const box = await handleOf(bar, 'end').boundingBox()
@@ -638,7 +638,7 @@ test.describe('persona 2: resource planner', () => {
 			orientation: 'horizontal',
 		})
 		const grid = new TimeGrid(page)
-		const bar = page.getByTestId('horizontal-event-res-1')
+		const bar = page.getByTestId('calendar-event-res-1')
 		const handle = handleOf(bar, 'end')
 		const start = await centre(handle)
 		await page.mouse.move(start.x, start.y)
@@ -674,7 +674,7 @@ test.describe('persona 2: resource planner', () => {
 		})
 		const handles = await page.locator('[data-resize-handle="end"]').count()
 		console.log('long-resource month end handles', handles)
-		const bar = page.getByTestId('horizontal-event-long-res-1')
+		const bar = page.getByTestId('calendar-event-long-res-1')
 		const grid = new TimeGrid(page)
 		const handle = handleOf(bar, 'end')
 		if ((await handle.count()) === 0) {
@@ -850,7 +850,7 @@ test.describe('persona 3: month planner', () => {
 		const grid = new TimeGrid(page)
 		await dragTo(
 			page,
-			handleOf(grid.allDayRow.getByTestId('horizontal-event-allday-2'), 'end'),
+			handleOf(grid.allDayRow.getByTestId('calendar-event-allday-2'), 'end'),
 			grid.allDayRow
 				.locator('[data-all-day="true"][data-start^="2025-03-11"]')
 				.first()

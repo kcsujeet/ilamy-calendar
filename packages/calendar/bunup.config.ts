@@ -3,15 +3,12 @@ import { defineConfig } from 'bunup'
 export default defineConfig({
 	entry: [
 		'src/index.ts',
-		'src/dom.ts',
 		'src/testing/index.tsx',
 		'src/plugins/recurrence.ts',
 		'src/plugins/agenda.ts',
 		'src/plugins/drag-to-create.ts',
 		'src/plugins/year.ts',
 		'src/plugins/ical.ts',
-		'src/themes/mui.ts',
-		'src/themes/stylex.ts',
 		'src/adapters/react.ts',
 		'src/adapters/vue.ts',
 		'src/adapters/svelte.ts',
@@ -25,12 +22,14 @@ export default defineConfig({
 	minify: true,
 	clean: true,
 	sourcemap: 'none',
-	noExternal: [
-		/^@ilamy\/(core|dom|ui|utils|types|calendar-recurrence|calendar-agenda|calendar-drag-to-create|calendar-year|calendar-ical|theme-mui|theme-stylex|adapter-react|adapter-vue|adapter-svelte|adapter-solid|adapter-angular)/,
-	],
+	jsx: {
+		development: false,
+	},
 	external: [
 		'react',
 		'react-dom',
+		'preact',
+		/^preact\//,
 		'vue',
 		'svelte',
 		/^svelte\//,
@@ -40,11 +39,8 @@ export default defineConfig({
 		'rxjs',
 		'@ilamy/calendar',
 		'@ilamy/calendar/react',
-		'@ilamy/calendar/dom',
+		'rrule',
 		'temporal-polyfill',
 		/^temporal-polyfill\//,
-		'@mui/material',
-		/^@mui\/material\//,
-		'@stylexjs/stylex',
 	],
 })

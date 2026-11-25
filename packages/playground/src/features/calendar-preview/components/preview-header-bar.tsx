@@ -1,5 +1,5 @@
-import { CardHeader } from '@ilamy/ui/components/card'
-import { cn } from '@ilamy/ui/lib/utils'
+import { CardHeader } from '../../../components/ui/card'
+import { cn } from '../../../lib/utils'
 import { Blocks, Layers, Palette } from 'lucide-react'
 import {
 	FRAMEWORK_OPTIONS,

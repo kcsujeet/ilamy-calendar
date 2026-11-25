@@ -1,39 +1,13 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
+		"types": ["bun"],
 		"paths": {
-			"@/*": ["../adapters/react/src/*"],
 			"@ilamy/calendar": ["./src/index.ts"],
-			"@ilamy/calendar/react": ["../adapters/react/src/index.ts"],
-			"@ilamy/calendar/dom": ["../dom/src/index.ts"],
-			"@ilamy/core": ["../core/src/index.ts"],
-			"@ilamy/dom": ["../dom/src/index.ts"],
-			"@ilamy/adapter-react": ["../adapters/react/src/index.ts"],
-			"@ilamy/adapter-react/testing": [
-				"../adapters/react/src/testing/index.tsx"
-			],
-			"@ilamy/adapter-vue": ["../adapters/vue/src/index.ts"],
-			"@ilamy/adapter-svelte": ["../adapters/svelte/src/index.ts"],
-			"@ilamy/adapter-solid": ["../adapters/solid/src/index.ts"],
-			"@ilamy/adapter-angular": ["../adapters/angular/src/index.ts"],
-			"@ilamy/calendar-agenda": ["../plugins/agenda/src/index.ts"],
-			"@ilamy/calendar-drag-to-create": [
-				"../plugins/drag-to-create/src/index.ts"
-			],
-			"@ilamy/calendar-ical": ["../plugins/ical/src/index.ts"],
-			"@ilamy/calendar-recurrence": ["../plugins/recurrence/src/index.ts"],
-			"@ilamy/calendar-year": ["../plugins/year/src/index.ts"],
-			"@ilamy/theme-mui": ["../themes/mui/src/index.ts"],
-			"@ilamy/theme-stylex": ["../themes/stylex/src/index.ts"],
-			"@ilamy/types": ["../types/src/index.ts"],
-			"@ilamy/utils/helpers": ["../utils/src/helpers.ts"],
-			"@ilamy/utils/ical-format": ["../utils/src/ical-format.ts"],
-			"@ilamy/utils/temporal": ["../utils/src/temporal.ts"],
-			"@ilamy/ui/components/*": ["../ui/src/components/*"],
-			"@ilamy/ui/hooks/*": ["../ui/src/hooks/*"],
-			"@ilamy/ui/lib/utils": ["../ui/src/lib/utils.ts"]
+			"@ilamy/calendar/react": ["./src/adapters/react.ts"],
+			"@ilamy/calendar/testing": ["./src/testing/index.tsx"]
 		}
 	},
 	"include": ["**/*.ts", "**/*.tsx"],
-	"exclude": ["dist", "node_modules"]
+	"exclude": ["dist", "dist-*", "node_modules"]
 }

@@ -320,7 +320,7 @@ test.describe('persona 2: designer', () => {
 				orientation: 'horizontal',
 				settings: { dayHeaderFormat: format },
 			})
-			const cells = page.getByTestId('resource-week-day-header')
+			const cells = page.locator('[data-ilamy-part="res-h-day-group"]')
 			expect(await isClipped(cells.nth(3))).toEqual([])
 		})
 
@@ -341,10 +341,20 @@ test.describe('persona 2: designer', () => {
 	}
 
 	for (const width of [800, 1024]) {
-		for (const [view, orientation, scenario, testid] of [
-			['week', undefined, 'short-events', 'week-header-weekday-wednesday'],
-			['month', undefined, 'basic', 'month-header'],
-			['week', 'horizontal', 'resources', 'resource-week-day-header'],
+		for (const [view, orientation, scenario, selector] of [
+			[
+				'week',
+				undefined,
+				'short-events',
+				'[data-testid="week-header-weekday-wednesday"]',
+			],
+			['month', undefined, 'basic', '[data-testid="month-header"]'],
+			[
+				'week',
+				'horizontal',
+				'resources',
+				'[data-ilamy-part="res-h-day-group"]',
+			],
 		] as const) {
 			test(`${width}px ${view} ${orientation ?? ''} with a long dayHeaderFormat: header text is cut with an ellipsis or fits`, async ({
 				page,
@@ -357,7 +367,7 @@ test.describe('persona 2: designer', () => {
 					settings: { dayHeaderFormat: LONG, granularity: 'daily' },
 				})
 				await settleAnimations(page)
-				const header = page.getByTestId(testid).first()
+				const header = page.locator(selector).first()
 				expect(await isClipped(header)).toEqual([])
 			})
 		}
@@ -375,7 +385,7 @@ test.describe('persona 2: designer', () => {
 				settings: { dayHeaderFormat: LONG, granularity },
 			})
 			await settleAnimations(page)
-			const cells = page.getByTestId('resource-week-day-header')
+			const cells = page.locator('[data-ilamy-part="res-h-day-group"]')
 			const outside = await cells.evaluateAll((headerCells) =>
 				headerCells.flatMap((cell) => {
 					const cellBox = cell.getBoundingClientRect()
@@ -623,9 +633,7 @@ test.describe('persona 3: upgrader', () => {
 				settings: { displayEventTime: 'false' },
 			})
 			const bar = page
-				.locator(
-					'[data-testid^="vertical-event-"], [data-testid^="horizontal-event-"]'
-				)
+				.locator('[data-testid^="calendar-event-"]')
 				.filter({ hasText: title })
 				.first()
 			await expect(bar, `${scenario} ${view} ${orientation}`).toHaveText(title)
@@ -645,7 +653,7 @@ test.describe('persona 3: upgrader', () => {
 			orientation: 'horizontal',
 		})
 		await expect(
-			page.getByTestId('resource-week-day-header').nth(3)
+			page.locator('[data-ilamy-part="res-h-day-group"]').nth(3)
 		).toHaveText('Wed12')
 		await open(page, {
 			scenario: 'resources',
@@ -724,7 +732,7 @@ test.describe('persona 3: upgrader', () => {
 				displayEventTime: 'true',
 			},
 		})
-		const bar = page.getByTestId('vertical-event-short-2')
+		const bar = page.getByTestId('calendar-event-short-2')
 		await expect(bar).toContainText('Half hour')
 		await expect(bar).not.toContainText(/9:30/)
 	})

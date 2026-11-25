@@ -896,7 +896,7 @@ test.describe('persona 6: misc interplay', () => {
 				.first()
 				.evaluate((el) => {
 					const bar = el.closest(
-						'[data-testid^="horizontal-event-"]'
+						'[data-testid^="calendar-event-"]'
 					) as HTMLElement
 					return getComputedStyle(bar.firstElementChild ?? bar).cursor
 				})

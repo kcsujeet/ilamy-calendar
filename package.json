@@ -11,16 +11,13 @@
 	},
 	"workspaces": [
 		"packages/*",
-		"packages/plugins/*",
-		"packages/themes/*",
-		"packages/adapters/*",
 		"apps/*"
 	],
 	"scripts": {
 		"dev": "bun run --filter '@ilamy/demo' dev",
 		"dev:website": "bun run build:lib && bun run --filter '@ilamy/website' dev",
 		"deploy:website": "bun run build:lib && bun run --filter '@ilamy/website' deploy",
-		"build": "bun run --filter '@ilamy/utils' --if-present build && bun run --filter '@ilamy/core' --if-present build && bun run --filter '@ilamy/dom' --if-present build && bun run --filter '@ilamy/types' --filter '@ilamy/ui' --if-present build && bun run --filter '@ilamy/calendar' --if-present build && bun run --filter '@ilamy/calendar-recurrence' --filter '@ilamy/calendar-agenda' --filter '@ilamy/calendar-drag-to-create' --filter '@ilamy/calendar-year' --filter '@ilamy/calendar-ical' --filter '@ilamy/theme-mui' --filter '@ilamy/theme-stylex' --filter '@ilamy/adapter-react' --filter '@ilamy/adapter-vue' --filter '@ilamy/adapter-svelte' --filter '@ilamy/adapter-solid' --filter '@ilamy/adapter-angular' --if-present build && bun run --filter '@ilamy/demo' --if-present build && bun run --filter '@ilamy/website' --if-present build",
+		"build": "bun run --filter '@ilamy/calendar' build && bun run --filter '@ilamy/demo' --if-present build && bun run --filter '@ilamy/website' --if-present build",
 		"build:lib": "bun run --filter '@ilamy/calendar' build",
 		"test": "bun run --filter '*' --if-present test",
 		"e2e": "bun run --filter '@ilamy/e2e' e2e",

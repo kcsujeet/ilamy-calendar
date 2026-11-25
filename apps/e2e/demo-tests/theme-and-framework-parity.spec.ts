@@ -65,7 +65,7 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 			expect(metrics.newH, `${theme} New height`).toBe(36)
 			expect(metrics.switcherH, `${theme} ViewSwitcher height`).toBe(36)
 			expect(metrics.gridRadius, `${theme} grid border-radius`).toBe('0px')
-			expect(metrics.gridOverflow, `${theme} grid overflow`).toBe('hidden')
+			expect(metrics.gridOverflow, `${theme} grid overflow`).toBe('clip')
 			expect(
 				metrics.satHeaderBorderRight,
 				`${theme} no double right border on dayHeader`
@@ -90,7 +90,7 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 
 			const check = await page.evaluate(() => {
 				const firstRes = document.querySelector<HTMLElement>(
-					'[data-testid^="horizontal-row-label-"]'
+					'[data-testid^="resource-header-"]'
 				)
 				const cells = Array.from(
 					document.querySelectorAll<HTMLElement>('[data-testid^="day-cell-"]')
@@ -142,7 +142,7 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 			page.locator('[data-testid="dom-resource-hourly-grid"]')
 		).toHaveCount(0)
 		const dailyCells = await page
-			.locator('[data-testid="ilamy-dom-calendar"] [data-testid^="day-cell-"]')
+			.locator('[data-testid="ilamy-calendar"] [data-testid^="day-cell-"]')
 			.count()
 		expect(dailyCells).toBeGreaterThanOrEqual(7)
 
@@ -159,16 +159,14 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 
 		for (const fw of ['Vue', 'Svelte', 'Solid', 'Angular']) {
 			await page.getByRole('button', { name: new RegExp(`^${fw}\\b`) }).click()
-			await page.waitForSelector('[data-testid="ilamy-dom-calendar"]')
+			await page.waitForSelector('[data-testid="ilamy-calendar"]')
 
 			for (const theme of ['Tailwind', 'StyleX']) {
 				await page.getByRole('button', { name: theme, exact: true }).click()
-				await page.waitForSelector('[data-testid="ilamy-dom-calendar"] header')
+				await page.waitForSelector('[data-testid="ilamy-calendar"] header')
 
 				const metrics = await page.evaluate(() => {
-					const root = document.querySelector(
-						'[data-testid="ilamy-dom-calendar"]'
-					)
+					const root = document.querySelector('[data-testid="ilamy-calendar"]')
 					const header = root?.querySelector('header')
 					const grid = root?.querySelector(
 						'[data-testid^="dom-"][data-testid$="-view"]'
@@ -221,7 +219,7 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 				// Actually scroll with mouse wheel and verify scrollTop advances
 				const gridLoc = page
 					.locator(
-						'[data-testid="ilamy-dom-calendar"] [data-testid^="dom-"][data-testid$="-view"]'
+						'[data-testid="ilamy-calendar"] [data-testid^="dom-"][data-testid$="-view"]'
 					)
 					.first()
 				const box = await gridLoc.boundingBox()

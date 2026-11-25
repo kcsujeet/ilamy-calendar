@@ -3,84 +3,39 @@
 # Scopes the audit to the shipped library packages. Everything excluded here is
 # non-shipped code whose findings are false positives for published packages:
 #
-#   examples/**   Standalone consumer apps with their own package.json. They
-#                 legitimately depend on the published @ilamy/* packages, which
-#                 fallow can't resolve to the workspace, so it reports the deps
-#                 as unused.
-#   apps/**       Private playgrounds (e.g. apps/demo). Never published; untested
-#                 by design, so their branching inflates CRAP and clone scores
-#                 without being part of any shippable surface.
-#
-# Each package's bunup.config.ts is its build entry, executed by the bunup CLI —
-# nothing imports it, so dead-code analysis sees it as orphaned. Listing them as
-# `entry` (additive to the package.json/plugin roots fallow auto-detects) keeps
-# them counted as roots so their build-only deps stay "used". The shipped entry
-# points (each package's `exports`) are left to auto-detection via package.json.
+#   examples/**   Standalone consumer apps with their own package.json.
+#   apps/**       Private playgrounds & E2E harnesses. Never published.
 
 ignorePatterns = ["examples/**", "apps/**"]
-entry = ["packages/*/bunup.config.ts", "packages/plugins/*/bunup.config.ts", "packages/themes/*/bunup.config.ts", "packages/adapters/*/bunup.config.ts", "packages/calendar/styles/*.css"]
+entry = [
+	"packages/calendar/bunup.config.ts",
+	"packages/calendar/bunup.spike.config.ts",
+	"packages/calendar/scripts/*.ts*",
+	"packages/calendar/src/spike/types/slot.types.ts",
+	"packages/calendar/src/spike/features/adapters/react/spike-react-calendar.tsx",
+	"packages/calendar/src/spike/features/adapters/svelte/spike-svelte-calendar.ts",
+	"packages/calendar/styles/*.css",
+]
 
-# Dependency findings that are false positives of fallow's per-package static view
-# of this bundled, hoisted workspace:
-#
-#   - bun-plugin-tailwind is loaded by Bun at build time via bunfig.toml, not a
-#     static import, so dead-code analysis can't trace its use.
-#   - @radix-ui/*, class-variance-authority, clsx, and tailwind-merge are imported
-#     by @ilamy/ui, which is bundled into the published @ilamy/calendar (its
-#     third-party deps stay external). They are declared in calendar's dependencies
-#     so consumers install them, even though calendar's own source reaches them
-#     only through the bundled @ilamy/ui.
-#   - temporal-polyfill is imported by @ilamy/utils (bundled into @ilamy/calendar)
-#     and declared in calendar's dependencies so consumers install and dedupe it.
-#   - @emotion/react and @emotion/styled are MUI v9 peer dependencies required by
-#     @mui/material at test runtime in packages/themes/mui, not imported directly.
-#   - @tailwindcss/vite is the Vite plugin for apps/demo (an ignored playground),
-#     declared at the workspace root for hoisting, not a source import.
-#   - @testing-library/react and @testing-library/jest-dom are test-only
-#     dependencies declared once at the workspace root (hoisted linker) and used
-#     by package tests/preloads, intentionally not re-declared per package.
-#   - bunup (build CLI, used in each package's bunup.config.ts) and
-#     @happy-dom/global-registrator (test preload) are the same: root-hoisted
-#     build/test tooling, not re-declared per package.
+# Dependency findings that are false positives of fallow's static view of a
+# bundled, hoisted workspace:
 ignoreDependencies = [
 	"bun-plugin-tailwind",
 	"bunup",
 	"@happy-dom/global-registrator",
-	"@dnd-kit/core",
-	"@dnd-kit/modifiers",
-	"lucide-react",
-	"rrule",
-	"@radix-ui/react-checkbox",
-	"@radix-ui/react-dialog",
-	"@radix-ui/react-dropdown-menu",
-	"@radix-ui/react-label",
-	"@radix-ui/react-popover",
-	"@radix-ui/react-scroll-area",
-	"@radix-ui/react-select",
-	"@radix-ui/react-slot",
-	"@radix-ui/react-toggle-group",
-	"@radix-ui/react-tooltip",
-	"class-variance-authority",
-	"clsx",
-	"tailwind-merge",
-	"temporal-polyfill",
-	"@emotion/react",
-	"@emotion/styled",
 	"@tailwindcss/vite",
 	"@testing-library/react",
 	"@testing-library/jest-dom",
+	"@emotion/react",
+	"@emotion/styled",
+	"@angular/core",
+	"rxjs",
+	"svelte",
 ]
 
 [health]
-# Complexity / CRAP: skip the private playgrounds. `packages/playground` is the
-# shared demo UI (consumed by apps/demo + the website) — never published, and its
-# toggle-heavy branching inflates complexity without being shippable debt.
 ignore = ["apps/**", "packages/playground/**"]
 
 [duplicates]
-# Duplication: skip the private playgrounds and test files. Test setup (provider
-# wrappers, fixture literals, repeated render/query shapes) duplicates by nature
-# and isn't shippable debt; gating on it just punishes touching a test file.
 ignore = ["apps/**", "packages/playground/**", "**/*.test.ts", "**/*.test.tsx"]
-# Import preambles are structural (path-aliased module wiring), not copy-paste debt.
 ignoreImports = true

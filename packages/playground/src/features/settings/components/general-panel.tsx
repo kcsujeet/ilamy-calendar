@@ -1,5 +1,5 @@
 import type { Resource } from '@ilamy/calendar'
-import { cn } from '@ilamy/ui/lib/utils'
+import { cn } from '../../../lib/utils'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { FormButtonGroup } from '../../../components/form/form-button-group'
 import { FormSelect } from '../../../components/form/form-select'

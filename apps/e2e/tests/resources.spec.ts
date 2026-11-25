@@ -13,9 +13,11 @@ const lane = (resourceId: string, startISO: string) =>
 
 test.describe('horizontal row packing', () => {
 	const bar = (page: Page, id: string) =>
-		page.getByTestId(`horizontal-event-${id}`)
+		page.getByTestId(`calendar-event-${id}`)
 	const row = (page: Page, resourceId = 'r1') =>
-		page.getByTestId(`horizontal-row-${resourceId}`)
+		page.locator(
+			`[data-ilamy-part="res-h-row"][data-resource-id="${resourceId}"]`
+		)
 	const boundsOf = async (element: Locator) => {
 		const bounds = await element.boundingBox()
 		if (!bounds) throw new Error('Element has no geometry')
@@ -324,7 +326,9 @@ test.describe('horizontal row packing', () => {
 				settings,
 			})
 			await settleAnimations(page)
-			const row = page.getByTestId('horizontal-row-r1')
+			const row = page.locator(
+				'[data-ilamy-part="res-h-row"][data-resource-id="r1"]'
+			)
 			const lostCellId = isHourAxis
 				? 'day-cell-2025-03-12-09-00'
 				: 'day-cell-2025-03-11'
@@ -395,14 +399,16 @@ test.describe('horizontal row packing', () => {
 				settings,
 			})
 			await settleAnimations(page)
-			const row = page.getByTestId('horizontal-row-r1')
+			const row = page.locator(
+				'[data-ilamy-part="res-h-row"][data-resource-id="r1"]'
+			)
 			const cell = row.getByTestId('day-cell-2025-03-12')
 			const placeholders = cell
 				.getByTestId('grid-cell-content')
 				.locator(':scope > div.w-full.shrink-0')
 			await expect(placeholders).toHaveCount(3)
 			await expect(cell.getByRole('button', { name: /more/i })).toHaveCount(0)
-			const bar = row.getByTestId('horizontal-event-counts-C')
+			const bar = row.getByTestId('calendar-event-counts-C')
 			const barBox = await bar.boundingBox()
 			const cellBox = await cell.boundingBox()
 			if (!(barBox && cellBox)) throw new Error('Event and cell need geometry')
@@ -454,8 +460,8 @@ test.describe('horizontal row packing', () => {
 			})
 			await settleAnimations(page)
 
-			const first = page.getByTestId('horizontal-event-packing-a')
-			const second = page.getByTestId('horizontal-event-packing-b')
+			const first = page.getByTestId('calendar-event-packing-a')
+			const second = page.getByTestId('calendar-event-packing-b')
 			const firstBox = await first.boundingBox()
 			const secondBox = await second.boundingBox()
 			if (!(firstBox && secondBox)) {
@@ -688,9 +694,7 @@ test.describe('horizontal row packing', () => {
 		const initialOffset = await rowDifference(page, 'packing-a', 'packing-b')
 		expect(initialOffset).toBe(0)
 		const calendar = new CalendarPage(page)
-		await calendar.root
-			.getByRole('radio', { name: 'Month', exact: true })
-			.click()
+		await calendar.root.getByTestId('view-btn-month').click()
 		await settleAnimations(page)
 		const dayOffset = await rowDifference(page, 'packing-a', 'packing-b')
 		expect(dayOffset).toBe(25)
@@ -763,7 +767,7 @@ const topmostBarAtLeftEdge = async (page: Page, testId: string) => {
 		({ x, y }) =>
 			document
 				.elementFromPoint(x, y)
-				?.closest('[data-testid^="vertical-event-"]')
+				?.closest('[data-testid^="calendar-event-"]')
 				?.getAttribute('data-testid'),
 		{ x: box.x + 4, y: box.y + box.height / 2 }
 	)
@@ -794,11 +798,11 @@ test.describe('vertical resource grids with whole-day rows', () => {
 			await settleAnimations(page)
 			// "Single A" (Room 2, 09:00-10:00) and "Two days" (Room 2, 12 March
 			// 20:00 to 13 March 04:00) share Wednesday in the same room column.
-			expect(await topmostBarAtLeftEdge(page, 'vertical-event-q-single')).toBe(
-				'vertical-event-q-single'
+			expect(await topmostBarAtLeftEdge(page, 'calendar-event-q-single')).toBe(
+				'calendar-event-q-single'
 			)
-			expect(await topmostBarAtLeftEdge(page, 'vertical-event-q-span')).toBe(
-				'vertical-event-q-span'
+			expect(await topmostBarAtLeftEdge(page, 'calendar-event-q-span')).toBe(
+				'calendar-event-q-span'
 			)
 		})
 	}
@@ -867,7 +871,7 @@ test.describe('editing a cross-resource event', () => {
 		})
 		const calendar = new CalendarPage(page)
 		await settleAnimations(page)
-		await page.getByTestId('horizontal-event-q-multi').nth(1).click()
+		await page.getByTestId('calendar-event-q-multi').nth(1).click()
 		await page.getByLabel('Title').fill('Multi renamed')
 		await page.getByRole('button', { name: /update|save/i }).click()
 		await page.waitForTimeout(400)
@@ -891,7 +895,7 @@ test.describe('dropping onto a slot of a vertical resource week', () => {
 	/** The slot of a room whose range opens at this instant. */
 	const slotOf = (page: Page, resourceId: string, startISO: string) =>
 		page.locator(
-			`[data-testid^="vertical-cell-"][data-resource-id="${resourceId}"][data-start="${startISO}"]`
+			`[data-ilamy-part="time-slot"][data-resource-id="${resourceId}"][data-start="${startISO}"]`
 		)
 
 	const centerOf = async (target: ReturnType<typeof slotOf>) => {
@@ -943,7 +947,7 @@ test.describe('dropping onto a slot of a vertical resource week', () => {
 		const grid = new TimeGrid(page)
 		const target = slotOf(page, 'r2', '2025-03-12T11:15:00.000Z')
 
-		await dragBarTo(page, 'vertical-event-res-1', await centerOf(target))
+		await dragBarTo(page, 'calendar-event-res-1', await centerOf(target))
 		await releasePointer(page)
 
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
@@ -980,7 +984,7 @@ test.describe('dropping onto a slot of a vertical resource week', () => {
 			y: (above.y + above.height + below.y) / 2,
 		}
 
-		await dragBarTo(page, 'vertical-event-res-4', line)
+		await dragBarTo(page, 'calendar-event-res-4', line)
 		await releasePointer(page)
 
 		await expect.poll(async () => (await grid.eventChanges()).length).toBe(1)
@@ -997,7 +1001,7 @@ test.describe('dropping onto a slot of a vertical resource week', () => {
 		const grid = new TimeGrid(page)
 		const target = slotOf(page, 'r2', '2025-03-12T11:15:00.000Z')
 
-		await dragBarTo(page, 'vertical-event-res-1', await centerOf(target))
+		await dragBarTo(page, 'calendar-event-res-1', await centerOf(target))
 
 		await expect(target).toHaveAttribute('data-drop-target', 'true')
 		const tintedRooms = await grid.dropTargets.evaluateAll((cells) => [

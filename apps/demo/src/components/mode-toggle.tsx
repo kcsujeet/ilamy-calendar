@@ -1,4 +1,4 @@
-import { Button } from '@ilamy/ui/components/button'
+import { Button } from '@ilamy/playground'
 import { Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 

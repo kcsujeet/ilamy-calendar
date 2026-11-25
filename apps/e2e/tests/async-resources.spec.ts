@@ -56,9 +56,7 @@ for (const orientation of ['vertical', 'horizontal'] as const) {
 			await expect(axis.root).toBeVisible()
 			// A regular week would draw its own header and one column per day.
 			await expect(page.getByTestId('week-view-header')).toHaveCount(0)
-			await expect(
-				page.locator('[data-testid^="vertical-col-day-col-"]')
-			).toHaveCount(0)
+			await expect(page.locator('[data-time-column="true"]')).toHaveCount(0)
 			await expect(axis.resource('Room A')).toHaveCount(0)
 
 			await setSettings(page, { resourcesFetch: 'delayed' })

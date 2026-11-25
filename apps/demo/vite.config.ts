@@ -37,6 +37,15 @@ export default defineConfig(({ mode }) => {
 			__VUE_PROD_DEVTOOLS__: false,
 			__VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
 		},
+		optimizeDeps: {
+			include: [
+				'vue',
+				'solid-js',
+				'preact',
+				'preact/hooks',
+				'preact/jsx-runtime',
+			],
+		},
 		plugins: [react(), tailwindcss()],
 		resolve: {
 			tsconfigPaths: true,
@@ -47,46 +56,26 @@ export default defineConfig(({ mode }) => {
 				'@ilamy/calendar/styles/theme.css': pkg(
 					'calendar/dist/styles/theme.css'
 				),
-				'@ilamy/calendar/react': pkg('adapters/react/src/index.ts'),
-				'@ilamy/calendar/dom': pkg('dom/src/index.ts'),
-				'@ilamy/calendar/vue': pkg('adapters/vue/src'),
-				'@ilamy/calendar/svelte': pkg('adapters/svelte/src'),
-				'@ilamy/calendar/solid': pkg('adapters/solid/src'),
-				'@ilamy/calendar/angular': pkg('adapters/angular/src'),
-				'@ilamy/calendar/themes/mui': pkg('themes/mui/src'),
-				'@ilamy/calendar/themes/stylex': pkg('themes/stylex/src'),
-				'@ilamy/calendar/plugins/recurrence': pkg('plugins/recurrence/src'),
-				'@ilamy/calendar/plugins/agenda': pkg('plugins/agenda/src'),
+				'@ilamy/calendar/react': pkg('calendar/src/adapters/react.ts'),
+				'@ilamy/calendar/vue': pkg('calendar/src/adapters/vue.ts'),
+				'@ilamy/calendar/svelte': pkg('calendar/src/adapters/svelte.ts'),
+				'@ilamy/calendar/solid': pkg('calendar/src/adapters/solid.ts'),
+				'@ilamy/calendar/angular': pkg('calendar/src/adapters/angular.ts'),
+				'@ilamy/calendar/testing': pkg('calendar/src/testing/index.tsx'),
+				'@ilamy/calendar/plugins/recurrence': pkg(
+					'calendar/src/plugins/recurrence.ts'
+				),
+				'@ilamy/calendar/plugins/agenda': pkg('calendar/src/plugins/agenda.ts'),
 				'@ilamy/calendar/plugins/drag-to-create': pkg(
-					'plugins/drag-to-create/src'
+					'calendar/src/plugins/drag-to-create.ts'
 				),
-				'@ilamy/calendar/plugins/year': pkg('plugins/year/src'),
-				'@ilamy/calendar/plugins/ical': pkg('plugins/ical/src'),
-				'@ilamy/adapter-react/testing': pkg(
-					'adapters/react/src/testing/index.tsx'
-				),
-				'@ilamy/adapter-react': pkg('adapters/react/src'),
-				'@ilamy/adapter-vue': pkg('adapters/vue/src'),
-				'@ilamy/adapter-svelte': pkg('adapters/svelte/src'),
-				'@ilamy/adapter-solid': pkg('adapters/solid/src'),
-				'@ilamy/adapter-angular': pkg('adapters/angular/src'),
-				'@ilamy/calendar-agenda': pkg('plugins/agenda/src'),
-				'@ilamy/calendar-drag-to-create': pkg('plugins/drag-to-create/src'),
-				'@ilamy/calendar-ical': pkg('plugins/ical/src'),
-				'@ilamy/calendar-recurrence': pkg('plugins/recurrence/src'),
-				'@ilamy/calendar-year': pkg('plugins/year/src'),
-				'@ilamy/theme-mui': pkg('themes/mui/src'),
-				'@ilamy/theme-stylex': pkg('themes/stylex/src'),
-				'@ilamy/dom': pkg('dom/src'),
-				'@ilamy/core': pkg('core/src'),
+				'@ilamy/calendar/plugins/year': pkg('calendar/src/plugins/year.ts'),
+				'@ilamy/calendar/plugins/ical': pkg('calendar/src/plugins/ical.ts'),
 				'@ilamy/calendar': pkg('calendar/src/index.ts'),
-				'@ilamy/ui': pkg('ui/src'),
-				'@ilamy/utils': pkg('utils/src'),
-				'@ilamy/types': pkg('types/src'),
 			},
-			// Source packages all import the host's hoisted react; keep one copy so
-			// hooks don't see two React instances.
-			dedupe: ['react', 'react-dom'],
+			// Source packages all import the host's hoisted runtimes; keep one copy so
+			// hooks and reactive primitives don't see duplicate instances.
+			dedupe: ['react', 'react-dom', 'preact', 'svelte', 'vue', 'solid-js'],
 		},
 		server: {
 			port: 4100,

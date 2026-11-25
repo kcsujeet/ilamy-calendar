@@ -43,10 +43,10 @@ test.describe('v4.0 multi-zone isolation (4.0.1)', () => {
 		// 2025-03-12T09:30:00Z is 5:30 AM EDT (-04:00) in New York and 6:30 PM JST (+09:00) in Tokyo.
 		const nyBar = page
 			.getByTestId('zone-ny')
-			.getByTestId('vertical-event-basic-1')
+			.getByTestId('calendar-event-basic-1')
 		const tokyoBar = page
 			.getByTestId('zone-tokyo')
-			.getByTestId('vertical-event-basic-1')
+			.getByTestId('calendar-event-basic-1')
 
 		await expect(nyBar).toContainText(/5:30/)
 		await expect(nyBar).toContainText(/AM/)
@@ -193,14 +193,14 @@ test.describe('v4.0 optional plugins and theming primitives (D5, D7)', () => {
 		page,
 	}) => {
 		await gotoScenario(page, { scenario: 'basic', view: 'month' })
-		await expect(page.getByRole('radio', { name: 'Year' })).toHaveCount(0)
+		await expect(page.getByTestId('view-btn-year')).toHaveCount(0)
 
 		await gotoScenario(page, {
 			scenario: 'basic',
 			view: 'month',
 			plugins: ['year'],
 		})
-		await page.getByRole('radio', { name: 'Year' }).click()
+		await page.getByTestId('view-btn-year').click()
 		await expect(page.getByTestId('calendar-title')).toHaveText('2025')
 	})
 
@@ -222,7 +222,7 @@ test.describe('v4.0 optional plugins and theming primitives (D5, D7)', () => {
 		)
 	})
 
-	test('components prop swaps primitive Button and stays interactive', async ({
+	test('slots.header swaps header UI and stays interactive', async ({
 		page,
 	}) => {
 		await gotoScenario(page, {

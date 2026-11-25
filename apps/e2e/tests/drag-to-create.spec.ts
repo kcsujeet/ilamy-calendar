@@ -56,7 +56,7 @@ test.describe('drag-to-create in the time grid', () => {
 		await openWeek(page, { onSelect: 'log' })
 		// "Design review" is 14:00-15:30. Releasing in the middle of its bar must
 		// end the selection in the 14:00 slot (so at 15:00), not stop before it.
-		const bar = await page.getByTestId('vertical-event-basic-2').boundingBox()
+		const bar = await page.getByTestId('calendar-event-basic-2').boundingBox()
 		if (!bar) {
 			throw new Error('the Design review bar is not drawn')
 		}
@@ -73,7 +73,7 @@ test.describe('drag-to-create in the time grid', () => {
 		page,
 	}) => {
 		await openWeek(page)
-		const bar = await page.getByTestId('vertical-event-basic-2').boundingBox()
+		const bar = await page.getByTestId('calendar-event-basic-2').boundingBox()
 		if (!bar) {
 			throw new Error('the Design review bar is not drawn')
 		}

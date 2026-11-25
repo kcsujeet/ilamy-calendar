@@ -1,5 +1,5 @@
-import { Card, CardHeader, CardTitle } from '@ilamy/ui/components/card'
-import { cn } from '@ilamy/ui/lib/utils'
+import { Card, CardHeader, CardTitle } from '../../../components/ui/card'
+import { cn } from '../../../lib/utils'
 import { CalendarClock, Palette, Puzzle, SlidersHorizontal } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useId, useRef } from 'react'
 

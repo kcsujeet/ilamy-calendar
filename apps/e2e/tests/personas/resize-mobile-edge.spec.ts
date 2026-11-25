@@ -389,11 +389,13 @@ for (const machineZone of ['UTC', 'America/New_York']) {
 		 */
 		const rowAt = (page: Page, day: string, hour: string) =>
 			page
-				.locator(`[data-testid="vertical-cell-${day}-${hour}-00-resource-r1"]`)
+				.locator(
+					`[data-ilamy-part="time-slot"][data-date="${day}"][data-hour="${hour}"][data-minute="0"][data-resource-id="r1"]`
+				)
 				.first()
 
 		const bar = (page: Page, id: string) =>
-			page.getByTestId(`vertical-event-${id}`)
+			page.getByTestId(`calendar-event-${id}`)
 
 		test('spring: start edge dragged across the skipped hour starts at the 01:00 row', async ({
 			page,
@@ -785,9 +787,9 @@ test.describe('persona 3: edge-case hunter', () => {
 		// One snapshot, so nothing moves between the measurements.
 		const geometry = await page.evaluate(() => {
 			const wrap = document.querySelector(
-				'[data-testid="vertical-event-short-1"]'
+				'[data-testid="calendar-event-short-1"]'
 			) as HTMLElement
-			const visible = wrap.firstElementChild as HTMLElement
+			const visible = wrap
 			const rect = (el: Element) => {
 				const box = el.getBoundingClientRect()
 				return { top: box.top, bottom: box.bottom, height: box.height }
@@ -869,14 +871,14 @@ test.describe('persona 3: edge-case hunter', () => {
 		})
 		const geometry = await page.evaluate(() => {
 			const wrap = document.querySelector(
-				'[data-testid="vertical-event-basic-1"]'
+				'[data-testid="calendar-event-basic-1"]'
 			) as HTMLElement
 			const handle = wrap.querySelector(
 				'[data-resize-handle="end"]'
 			) as HTMLElement
 			// The slot the event ends in is the last one it covers: 09:30 (09:30-10:00).
 			const lastSlot = document.querySelector(
-				'[data-testid^="vertical-cell-"][data-start^="2025-03-12T09:30"]'
+				'[data-ilamy-part="time-slot"][data-start^="2025-03-12T09:30"]'
 			) as HTMLElement
 			const handleBox = handle.getBoundingClientRect()
 			const slotBox = lastSlot.getBoundingClientRect()

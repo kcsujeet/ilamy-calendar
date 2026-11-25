@@ -1,5 +1,5 @@
-import { Button } from '@ilamy/ui/components/button'
-import { cn } from '@ilamy/ui/lib/utils'
+import { Button } from '../components/ui/button'
+import { cn } from '../lib/utils'
 import {
 	Calendar,
 	Clock,

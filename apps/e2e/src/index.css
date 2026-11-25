@@ -13,9 +13,7 @@
 
 /* vite aliases @ilamy/* to source, so Tailwind must scan source to generate
    the utilities those components reference. */
-@source "../../../packages/adapters/react/src";
-@source "../../../packages/ui/src";
-@source "../../../packages/plugins";
+@source "../../../packages/calendar/src";
 
 @plugin "tailwindcss-animate";
 

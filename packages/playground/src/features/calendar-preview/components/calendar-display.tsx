@@ -2,11 +2,11 @@ import type {
 	CalendarEvent,
 	CalendarView,
 	DateRange,
+	DomCalendarOptions,
 	IsoDateString,
 	Resource,
 } from '@ilamy/calendar'
-import type { DomCalendarOptions } from '@ilamy/calendar/dom'
-import { Card, CardContent } from '@ilamy/ui/components/card'
+import { Card, CardContent } from '../../../components/ui/card'
 import { lazy, Suspense, useMemo } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { useResolvedColorMode } from '../../../hooks/use-resolved-color-mode'

@@ -1,1 +1,1 @@
-export * from '@ilamy/calendar-ical'
+export * from '../features/plugins/ical/index'

@@ -54,9 +54,7 @@ const pressAndMove = async (
 const snapshotBars = async (page: Page) => {
 	await settle(page)
 	return page
-		.locator(
-			'[data-testid^="vertical-event-"], [data-testid^="horizontal-event-"], [data-testid^="all-day-event-"]'
-		)
+		.locator('[data-testid^="calendar-event-"]')
 		.evaluateAll((bars) => {
 			let scrollTop = 0
 			let scrollLeft = 0
@@ -155,18 +153,14 @@ test.describe('persona 1: integrator, server rejects saves', () => {
 				const grid = new MonthGrid(page)
 				const before = await snapshotBars(page)
 				const rowsBefore = await grid.eventState()
-				const barSel =
-					orientation === 'vertical'
-						? '[data-testid="vertical-event-res-1"]'
-						: '[data-testid="horizontal-event-res-1"]'
-				const bar = page.locator(barSel).first()
+				const bar = page.locator('[data-testid="calendar-event-res-1"]').first()
 				await expect(bar).toBeVisible()
 				const isMonthVertical = view === 'month' && orientation === 'vertical'
 				let targetSel =
 					'[data-resource-id="r2"][data-start^="2025-03-12T10:00"]'
 				if (view === 'month') {
 					targetSel = isMonthVertical
-						? '[data-testid="vertical-cell-2025-03-12-00-00-resource-r2"]'
+						? '[data-resource-id="r2"][data-start="2025-03-12T00:00:00.000Z"]'
 						: '[data-resource-id="r2"][data-start="2025-03-11T00:00:00.000Z"]'
 				}
 				const target = page.locator(targetSel).first()
@@ -181,7 +175,11 @@ test.describe('persona 1: integrator, server rejects saves', () => {
 				expect(await grid.eventState()).toEqual(rowsBefore)
 
 				// second drag works again
-				await pressAndMove(page, page.locator(barSel).first(), target)
+				await pressAndMove(
+					page,
+					page.locator('[data-testid="calendar-event-res-1"]').first(),
+					target
+				)
 				await expect.poll(() => changeCount(grid)).toBe(2)
 				const second = (await grid.eventChanges())[1]
 				expect(second.delta).toEqual(change.delta)
@@ -204,14 +202,14 @@ test.describe('persona 1: integrator, server rejects saves', () => {
 		// Drag the first segment (Mar 5) to Mar 6.
 		await pressAndMove(
 			page,
-			page.locator('[data-testid^="horizontal-event-spanning-1"]').first(),
+			page.locator('[data-testid^="calendar-event-spanning-1"]').first(),
 			month.cellOn('2025-03-08')
 		)
 		await expect.poll(() => changeCount(month)).toBe(1)
 		await expect.poll(() => snapshotBars(page)).toEqual(before)
 		// drag the SECOND segment (row 2) one cell right
 		const second = page
-			.locator('[data-testid^="horizontal-event-spanning-1"]')
+			.locator('[data-testid^="calendar-event-spanning-1"]')
 			.nth(1)
 		await pressAndMove(page, second, month.cellOn('2025-03-13'))
 		await expect.poll(() => changeCount(month)).toBe(2)
@@ -228,7 +226,7 @@ test.describe('persona 1: integrator, server rejects saves', () => {
 		const before = await snapshotBars(page)
 		await pressAndMove(
 			page,
-			page.locator('[data-testid^="horizontal-event-timed-span-1"]').first(),
+			page.locator('[data-testid^="calendar-event-timed-span-1"]').first(),
 			month.cellOn('2025-03-19')
 		)
 		await expect.poll(() => changeCount(month)).toBe(1)
@@ -399,7 +397,7 @@ test.describe('persona 1 extras', () => {
 		const before = await snapshotBars(page)
 		await pressAndMove(
 			page,
-			page.locator('[data-testid^="horizontal-event-allday-2"]').first(),
+			page.locator('[data-testid^="calendar-event-allday-2"]').first(),
 			month.cellOn('2025-03-20')
 		)
 		await expect.poll(() => changeCount(month)).toBe(1)
@@ -429,7 +427,7 @@ test.describe('persona 2: recurring scopes then revert', () => {
 			const grid = new TimeGrid(page)
 			await expect(grid.event('Stand-up')).toHaveCount(5)
 			const before = await snapshotBars(page)
-			const bars = page.locator('[data-testid^="vertical-event-moved-series"]')
+			const bars = page.locator('[data-testid^="calendar-event-moved-series"]')
 			await pressAndMove(page, bars.nth(2), grid.slotAt('2025-03-12T15:00'))
 			await page.getByText(label, { exact: true }).click()
 			await expect.poll(() => changeCount(grid)).toBe(1)
@@ -458,7 +456,7 @@ test.describe('persona 2: recurring scopes then revert', () => {
 			await expect(grid.event('Stand-up')).toHaveCount(5)
 			const before = await snapshotBars(page)
 			await page
-				.locator('[data-testid^="vertical-event-moved-series"]')
+				.locator('[data-testid^="calendar-event-moved-series"]')
 				.nth(2)
 				.click()
 			await page.locator('input[name="title"]').fill('Team sync')
@@ -482,7 +480,7 @@ test.describe('persona 2: recurring scopes then revert', () => {
 			await expect(grid.event('Stand-up')).toHaveCount(5)
 			const before = await snapshotBars(page)
 			await page
-				.locator('[data-testid^="vertical-event-moved-series"]')
+				.locator('[data-testid^="calendar-event-moved-series"]')
 				.nth(2)
 				.click()
 			await page.getByRole('button', { name: 'Delete' }).click()
@@ -505,7 +503,7 @@ test.describe('persona 2: recurring scopes then revert', () => {
 		const before = await snapshotBars(page)
 		await pressAndMove(
 			page,
-			page.locator('[data-testid^="vertical-event-moved-friday"]').first(),
+			page.locator('[data-testid^="calendar-event-moved-friday"]').first(),
 			grid.slotAt('2025-03-14T13:00')
 		)
 		await page.getByText('This event', { exact: true }).click()
@@ -526,7 +524,7 @@ test.describe('persona 2: recurring scopes then revert', () => {
 		const before = await snapshotBars(page)
 		await pressAndMove(
 			page,
-			page.locator('[data-testid^="vertical-event-standup"]').nth(3),
+			page.locator('[data-testid^="calendar-event-standup"]').nth(3),
 			grid.slotAt('2025-03-12T10:00')
 		)
 		await page.getByText('This event', { exact: true }).click()
@@ -683,7 +681,7 @@ test.describe('persona 3: delta edge cases', () => {
 			page,
 			month,
 			'Conference fortnight',
-			page.locator('[data-testid^="horizontal-event-spanning-1"]').first(),
+			page.locator('[data-testid^="calendar-event-spanning-1"]').first(),
 			month.cellOn('2025-03-08')
 		)
 	})
@@ -697,7 +695,7 @@ test.describe('persona 3: delta edge cases', () => {
 			page,
 			month,
 			'Conference fortnight',
-			page.locator('[data-testid^="horizontal-event-spanning-1"]').nth(1),
+			page.locator('[data-testid^="calendar-event-spanning-1"]').nth(1),
 			month.cellOn('2025-03-04')
 		)
 	})
@@ -709,7 +707,7 @@ test.describe('persona 3: delta edge cases', () => {
 			page,
 			month,
 			'Field survey',
-			page.locator('[data-testid^="horizontal-event-timed-span-1"]').first(),
+			page.locator('[data-testid^="calendar-event-timed-span-1"]').first(),
 			month.cellOn('2025-03-19')
 		)
 	})
@@ -838,7 +836,7 @@ test.describe('persona 3: delta edge cases', () => {
 			const grid = new TimeGrid(page)
 			const target = page
 				.locator(
-					'[data-testid^="vertical-cell-"][data-start="2025-03-09T06:30:00.000Z"]'
+					'[data-ilamy-part="time-slot"][data-start="2025-03-09T06:30:00.000Z"]'
 				)
 				.first()
 			await expect(target).toBeAttached()
@@ -948,7 +946,7 @@ test.describe('persona 3: delta edge cases', () => {
 			const grid = new TimeGrid(page)
 			const target = page
 				.locator(
-					'[data-testid^="vertical-cell-"][data-start="2025-03-08T15:30:00.000Z"]'
+					'[data-ilamy-part="time-slot"][data-start="2025-03-08T15:30:00.000Z"]'
 				)
 				.first()
 			await expect(target).toBeAttached()
@@ -969,13 +967,13 @@ test.describe('persona 3: delta edge cases', () => {
 			const grid = new TimeGrid(page)
 			const target = page
 				.locator(
-					'[data-testid^="vertical-cell-"][data-start="2025-03-12T14:30:00.000Z"]'
+					'[data-ilamy-part="time-slot"][data-start="2025-03-12T14:30:00.000Z"]'
 				)
 				.first()
 			await expect(target).toBeAttached()
 			// the series' Saturday occurrence is the 3rd bar (Thu, Fri, Sat)
 			const sat = page
-				.locator('[data-testid^="vertical-event-dst-series"]')
+				.locator('[data-testid^="calendar-event-dst-series"]')
 				.nth(2)
 			const n = (await grid.eventChanges()).length
 			await pressAndMove(page, sat, target)
@@ -1000,7 +998,7 @@ test.describe('persona 3: delta edge cases', () => {
 		const before = (await grid.eventChanges()).length
 		await pressAndMove(
 			page,
-			page.locator('[data-testid^="vertical-event-moved-series"]').nth(2),
+			page.locator('[data-testid^="calendar-event-moved-series"]').nth(2),
 			grid.slotAt('2025-03-13T15:00')
 		)
 		await page.getByText('This event', { exact: true }).click()

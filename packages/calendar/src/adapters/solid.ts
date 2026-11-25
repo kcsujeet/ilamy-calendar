@@ -1,1 +1,1 @@
-export * from '@ilamy/adapter-solid'
+export * from '../features/adapters/solid/index'

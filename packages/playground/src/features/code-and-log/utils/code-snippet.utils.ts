@@ -17,16 +17,18 @@ const formatBusinessHoursLiteral = (values: PlaygroundSettings): string =>
 
 const buildStylexLines = (
 	values: PlaygroundSettings,
-	importIndent: string,
+	_importIndent: string,
 	declPrefix: string
 ): { importLine: string; declLine: string } => {
 	if (values.themePreset !== 'stylex') {
 		return { importLine: '', declLine: '' }
 	}
 	const mode = resolveStylexMode(values.themeMode)
+	const bg = mode === 'dark' ? '#0f172a' : '#ffffff'
+	const primary = mode === 'dark' ? '#3b82f6' : '#2563eb'
 	return {
-		importLine: `\n${importIndent}import { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'`,
-		declLine: `\n${declPrefix}stylexTheme = createStylexCalendarTheme({ mode: '${mode}' })`,
+		importLine: '',
+		declLine: `\n${declPrefix}stylexSlotProps = { root: { style: { '--ilamy-bg': '${bg}', '--ilamy-primary': '${primary}', colorScheme: '${mode}' } } }`,
 	}
 }
 
@@ -102,23 +104,24 @@ const THEME_SETUP_BUILDERS: Record<
 			return { imports: [], preamble: [], propLines: [] }
 		}
 		return {
-			imports: [
-				"import { useMuiCalendarTheme } from '@ilamy/calendar/themes/mui'",
+			imports: ["import { useTheme } from '@mui/material/styles'"],
+			preamble: [
+				'const muiTheme = useTheme()',
+				"const muiSlotProps = { root: { style: { '--ilamy-bg': muiTheme.palette.background.paper, '--ilamy-primary': muiTheme.palette.primary.main } } }",
 			],
-			preamble: ['const muiTheme = useMuiCalendarTheme()'],
-			propLines: ['{...muiTheme}'],
+			propLines: ['slotProps={muiSlotProps}'],
 		}
 	},
 	stylex: (values) => {
 		const mode = resolveStylexMode(values.themeMode)
+		const bg = mode === 'dark' ? '#0f172a' : '#ffffff'
+		const primary = mode === 'dark' ? '#3b82f6' : '#2563eb'
 		return {
-			imports: [
-				"import { createStylexCalendarTheme } from '@ilamy/calendar/themes/stylex'",
-			],
+			imports: [],
 			preamble: [
-				`const stylexTheme = createStylexCalendarTheme({ mode: '${mode}' })`,
+				`const stylexSlotProps = { root: { style: { '--ilamy-bg': '${bg}', '--ilamy-primary': '${primary}', colorScheme: '${mode}' } } }`,
 			],
-			propLines: ['{...stylexTheme}'],
+			propLines: ['slotProps={stylexSlotProps}'],
 		}
 	},
 	unstyled: (values) => ({
@@ -131,24 +134,25 @@ const THEME_SETUP_BUILDERS: Record<
 	}),
 }
 
-const buildDomOptionEntries = (values: PlaygroundSettings): string[] => {
+const buildDomOptionEntries = (
+	values: PlaygroundSettings,
+	pluginCalls: string[]
+): string[] => {
 	const isStylex = values.themePreset === 'stylex'
 	const isUnstyled = values.themePreset === 'unstyled'
-	const hasIcal = values.enableIcalPlugin && !values.hideExportButton
 	const bh = values.enableBusinessHours
 
 	return collectLines([
-		[isStylex, '...stylexTheme'],
+		[isStylex, 'slotProps: stylexSlotProps'],
 		[isUnstyled, 'unstyled: true'],
 		[isUnstyled && values.useCustomSlotProps, 'slotProps: customSlotProps'],
 		[true, 'events'],
 		[values.calendarType === 'resource', 'resources'],
+		[pluginCalls.length > 0, `plugins: [${pluginCalls.join(', ')}]`],
 		[values.initialView !== 'month', `initialView: '${values.initialView}'`],
 		[Boolean(values.timezone), `timezone: '${values.timezone}'`],
 		[!values.disableDragAndDrop, 'editable: true'],
 		[values.nowIndicator, 'nowIndicator: true'],
-		[values.enableDragToCreatePlugin, 'enableDragToCreate: true'],
-		[hasIcal, 'enableIcalExport: true'],
 		[bh, `businessHours: [${formatBusinessHoursLiteral(values)}]`],
 		[
 			bh && values.constrainEventsToBusinessHours,
@@ -270,24 +274,30 @@ ${props.map((line) => `      ${line}`).join('\n')}
 
 const generateVueSnippet = (values: PlaygroundSettings): string => {
 	const stylex = buildStylexLines(values, '', 'const ')
-	const hasIcal = values.enableIcalPlugin && !values.hideExportButton
+	const pluginMeta = buildPluginImportsAndList(values)
+	const pluginImportLines = pluginMeta.imports.join('\n')
 	const attrs = collectLines([
 		[true, ':events="events"'],
 		[values.calendarType === 'resource', ':resources="resources"'],
-		[values.themePreset === 'stylex', 'v-bind="stylexTheme"'],
+		[pluginMeta.calls.length > 0, ':plugins="plugins"'],
+		[values.themePreset === 'stylex', ':slot-props="stylexSlotProps"'],
 		[values.themePreset === 'unstyled', 'unstyled'],
 		[values.initialView !== 'month', `initial-view="${values.initialView}"`],
 		[Boolean(values.timezone), `timezone="${values.timezone}"`],
 		[!values.disableDragAndDrop, 'editable'],
 		[values.nowIndicator, 'now-indicator'],
-		[hasIcal, 'enable-ical-export'],
 		[true, '@events-change="handleEventsChange"'],
 	])
 
+	const pluginsDecl =
+		pluginMeta.calls.length > 0
+			? `\nconst plugins = [${pluginMeta.calls.join(', ')}]`
+			: ''
+
 	return `<script setup lang="ts">
 import '@ilamy/calendar/styles.css'
-import { IlamyCalendar } from '@ilamy/calendar/vue'${stylex.importLine}
-import { ref } from 'vue'${stylex.declLine}
+import { IlamyCalendar } from '@ilamy/calendar/vue'${pluginImportLines ? `\n${pluginImportLines}` : ''}${stylex.importLine}
+import { ref } from 'vue'${stylex.declLine}${pluginsDecl}
 
 const events = ref(initialEvents)
 const handleEventsChange = (change) => console.log(change)
@@ -302,13 +312,15 @@ const handleEventsChange = (change) => console.log(change)
 
 const generateSvelteSnippet = (values: PlaygroundSettings): string => {
 	const stylex = buildStylexLines(values, '  ', '  const ')
-	const opts = buildDomOptionEntries(values)
+	const pluginMeta = buildPluginImportsAndList(values)
+	const pluginImports = pluginMeta.imports.map((line) => `  ${line}`).join('\n')
+	const opts = buildDomOptionEntries(values, pluginMeta.calls)
 		.map((line) => `    ${line},`)
 		.join('\n')
 
 	return `<script lang="ts">
   import '@ilamy/calendar/styles.css'
-  import { ilamyCalendar } from '@ilamy/calendar/svelte'${stylex.importLine}${stylex.declLine}
+  import { ilamyCalendar } from '@ilamy/calendar/svelte'${pluginImports ? `\n${pluginImports}` : ''}${stylex.importLine}${stylex.declLine}
 
   let events = $state(initialEvents)
 </script>
@@ -324,11 +336,14 @@ ${opts}
 
 const generateSolidSnippet = (values: PlaygroundSettings): string => {
 	const stylex = buildStylexLines(values, '', '  const ')
+	const pluginMeta = buildPluginImportsAndList(values)
+	const pluginImportLines = pluginMeta.imports.join('\n')
 	const props = collectLines([
-		[values.themePreset === 'stylex', '{...stylexTheme}'],
+		[values.themePreset === 'stylex', 'slotProps={stylexSlotProps}'],
 		[values.themePreset === 'unstyled', 'unstyled'],
 		[true, 'events={events()}'],
 		[values.calendarType === 'resource', 'resources={resources}'],
+		[pluginMeta.calls.length > 0, `plugins={[${pluginMeta.calls.join(', ')}]}`],
 		[values.initialView !== 'month', `initialView="${values.initialView}"`],
 		[Boolean(values.timezone), `timezone="${values.timezone}"`],
 		[!values.disableDragAndDrop, 'editable'],
@@ -338,7 +353,7 @@ const generateSolidSnippet = (values: PlaygroundSettings): string => {
 
 	return `import '@ilamy/calendar/styles.css'
 import { createSignal } from 'solid-js'
-import { IlamyCalendar } from '@ilamy/calendar/solid'${stylex.importLine}
+import { IlamyCalendar } from '@ilamy/calendar/solid'${pluginImportLines ? `\n${pluginImportLines}` : ''}${stylex.importLine}
 
 export function CalendarDemo() {
   const [events] = createSignal(initialEvents)${stylex.declLine}
@@ -353,13 +368,18 @@ export function CalendarDemo() {
 
 const generateAngularSnippet = (values: PlaygroundSettings): string => {
 	const stylex = buildStylexLines(values, '', '  readonly ')
-	const opts = buildDomOptionEntries(values)
-		.map((line) => `      ${line.replace('stylexTheme', 'this.stylexTheme')},`)
+	const pluginMeta = buildPluginImportsAndList(values)
+	const pluginImportLines = pluginMeta.imports.join('\n')
+	const opts = buildDomOptionEntries(values, pluginMeta.calls)
+		.map(
+			(line) =>
+				`      ${line.replace('stylexSlotProps', 'this.stylexSlotProps')},`
+		)
 		.join('\n')
 
 	return `import '@ilamy/calendar/styles.css'
 import { Component, CUSTOM_ELEMENTS_SCHEMA, computed, signal } from '@angular/core'
-import { registerIlamyCalendarElement } from '@ilamy/calendar/angular'${stylex.importLine}
+import { registerIlamyCalendarElement } from '@ilamy/calendar/angular'${pluginImportLines ? `\n${pluginImportLines}` : ''}${stylex.importLine}
 
 registerIlamyCalendarElement()
 

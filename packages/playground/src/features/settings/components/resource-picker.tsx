@@ -1,5 +1,5 @@
 import type { Resource } from '@ilamy/calendar'
-import { Card } from '@ilamy/ui/components/card'
+import { Card } from '../../../components/ui/card'
 
 type ResourcePickerProps = {
 	resources: Resource[]

@@ -1,1 +1,1 @@
-export * from '@ilamy/adapter-react'
+export * from '../features/adapters/react/index'

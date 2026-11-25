@@ -1,1 +1,1 @@
-export * from '@ilamy/calendar-year'
+export * from '../features/plugins/year/index'

@@ -1,12 +1,12 @@
 import type { WeekDays } from '@ilamy/calendar'
-import { Checkbox } from '@ilamy/ui/components/checkbox'
+import { Checkbox } from '../../../components/ui/checkbox'
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@ilamy/ui/components/select'
+} from '../../../components/ui/select'
 import { useId } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
 import type { PlaygroundSettings } from '../../../types/settings-form.types'

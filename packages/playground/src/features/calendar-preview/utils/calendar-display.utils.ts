@@ -2,6 +2,7 @@ import type {
 	CalendarEvent,
 	CalendarSlotProps,
 	DateRange,
+	DomCalendarOptions,
 	EventsChange,
 	IsoDateString,
 	SlotDuration,
@@ -11,10 +12,8 @@ import type {
 	WeekDays,
 	WeekNumberCalculation,
 } from '@ilamy/calendar'
-import type { DomCalendarOptions } from '@ilamy/calendar/dom'
 import type {
 	CalendarClassesOverride,
-	CalendarComponents,
 	EventFormProps,
 	IlamyPlugin,
 	RenderCurrentTimeIndicatorProps,
@@ -88,7 +87,6 @@ export interface SharedCalendarProps {
 	translations: Translations
 	unstyled: boolean
 	slotProps: CalendarSlotProps | undefined
-	components: CalendarComponents | undefined
 	headerComponent: ReactNode
 	onCellClick: ((info: import('@ilamy/calendar').CellInfo) => void) | undefined
 	onMoreEventsClick:
@@ -123,7 +121,6 @@ export function resolveSharedCalendarProps(
 	themeAdapter: {
 		unstyled?: boolean
 		slotProps?: CalendarSlotProps
-		components?: CalendarComponents
 	},
 	onDateChange: (date: IsoDateString, range: DateRange) => void,
 	lifecycle: LifecycleHandlers
@@ -209,7 +206,6 @@ export function resolveSharedCalendarProps(
 		translations,
 		unstyled: Boolean(themeAdapter.unstyled),
 		slotProps: themeAdapter.slotProps,
-		components: themeAdapter.components,
 		onDateChange,
 		headerComponent,
 		classesOverride,
@@ -278,11 +274,7 @@ export function buildDomCalendarOptions(params: {
 		weekNumberCalculation: values.weekNumberCalculation,
 		orientation: values.orientation,
 		weekViewGranularity: values.weekViewGranularity,
-		enableDragToCreate: values.enableDragToCreatePlugin,
-		enableIcalExport: values.enableIcalPlugin && !values.hideExportButton,
-		enableYearView: values.enableYearPlugin,
-		enableAgendaView: values.enableAgendaPlugin,
-		agendaWindow: values.agendaWindow,
+		plugins: shared.plugins,
 		stickyViewHeader: values.stickyViewHeader,
 		disableCellClick: values.disableCellClick,
 		disableEventClick: values.disableEventClick,

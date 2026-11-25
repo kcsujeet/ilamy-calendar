@@ -139,9 +139,7 @@ test.describe('visible hours: now and scroll', () => {
 		page,
 	}) => {
 		await openDay(page, { ...WINDOW, scrollTime: '06:00', height: '400px' })
-		const viewport = page.locator(
-			'[data-testid="vertical-grid-scroll"] [data-radix-scroll-area-viewport]'
-		)
+		const viewport = page.locator('[data-ilamy-slot="grid-scroll"]')
 
 		await expect(viewport).toBeVisible()
 		expect(await viewport.evaluate((el) => el.scrollTop)).toBe(0)
@@ -158,7 +156,7 @@ test.describe('visible hours: resource hour timeline', () => {
 			orientation: 'horizontal',
 			settings: WINDOW,
 		})
-		const headers = page.locator('[data-testid^="resource-day-time-label-"]')
+		const headers = page.locator('[data-ilamy-part="res-h-hour-cell"]')
 
 		await new ResourceAxis(page).expectRendered()
 		await expect(headers).toHaveCount(10)

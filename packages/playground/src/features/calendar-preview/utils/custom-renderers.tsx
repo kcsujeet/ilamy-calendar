@@ -4,8 +4,8 @@ import {
 	type RenderCurrentTimeIndicatorProps,
 	useIlamyCalendarContext,
 } from '@ilamy/calendar/react'
-import { Button } from '@ilamy/ui/components/button'
-import { cn } from '@ilamy/ui/lib/utils'
+import { Button } from '../../../components/ui/button'
+import { cn } from '../../../lib/utils'
 import { useEffect, useState } from 'react'
 
 const formatTime = (iso: IsoDateString, locale?: string, timezone?: string) =>

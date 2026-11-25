@@ -17,7 +17,15 @@ import {
  * setting is a query parameter. Any combination is reachable by editing a URL,
  * which is what lets an agent explore states nobody thought to enumerate.
  */
+export type HarnessFramework = 'react' | 'vue' | 'svelte' | 'solid' | 'angular'
+export type HarnessCss = 'unstyled' | 'plain' | 'tailwind' | 'stylex'
+export type HarnessComponents =
+	'native' | 'base-ui' | 'mui' | 'bits-ui' | 'reka-ui'
+
 export interface UrlConfig {
+	framework?: HarnessFramework
+	css?: HarnessCss
+	components?: HarnessComponents
 	slotDuration?: SlotDuration
 	/** With `fetch` set: fetch only when the range leaves the last fetched one. */
 	lazyFetching?: boolean
@@ -119,6 +127,8 @@ export interface UrlConfig {
 	 * calendar, it adds or removes a resource the way a consumer's filter does.
 	 */
 	resourceCount?: number
+	/** Harness-only: mount region slot test fixtures (`custom`). */
+	slots?: 'custom'
 }
 
 /** The keys 3.3 added to `Translations`; a 3.2.1 app's object has none of them. */
@@ -275,6 +285,36 @@ const WEEK_DAYS: readonly WeekDays[] = [
 export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 	const config: UrlConfig = {}
 	const get = (key: string) => params.get(key)
+
+	const framework = get('framework')
+	if (framework !== null) {
+		config.framework = oneOf(
+			'framework',
+			framework,
+			['react', 'vue', 'svelte', 'solid', 'angular'] as const,
+			String
+		)
+	}
+
+	const css = get('css')
+	if (css !== null) {
+		config.css = oneOf(
+			'css',
+			css,
+			['unstyled', 'plain', 'tailwind', 'stylex'] as const,
+			String
+		)
+	}
+
+	const components = get('components')
+	if (components !== null) {
+		config.components = oneOf(
+			'components',
+			components,
+			['native', 'base-ui', 'mui', 'bits-ui', 'reka-ui'] as const,
+			String
+		)
+	}
 
 	const slot = get('slot')
 	if (slot !== null) {
@@ -609,6 +649,11 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 			['sticky-title', 'segment-flags'] as const,
 			String
 		)
+	}
+
+	const slots = get('slots')
+	if (slots !== null) {
+		config.slots = oneOf('slots', slots, ['custom'] as const, String)
 	}
 
 	return config

@@ -162,7 +162,7 @@ describe('lib/renderer Preact mountCalendar', () => {
 		).toBeNull()
 		expect(
 			container.querySelector('[data-testid="resize-handle-end-r1"]')
-		).not.toBeNull()
+		).toBeNull()
 
 		container
 			.querySelector<HTMLButtonElement>(
@@ -183,6 +183,9 @@ describe('lib/renderer Preact mountCalendar', () => {
 		})
 		expect(
 			container.querySelector('[data-testid="resize-handle-start-r1"]')
+		).not.toBeNull()
+		expect(
+			container.querySelector('[data-testid="resize-handle-end-r1"]')
 		).not.toBeNull()
 		expect(container.querySelector('[data-testid="all-day-row"]')).toBeNull()
 

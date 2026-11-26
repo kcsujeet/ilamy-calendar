@@ -284,31 +284,7 @@
 	}
 
 	@supports not (scrollbar-color: auto) {
-		:where([data-ilamy-part='time-grid-scroll-x']) {
-		display: flex;
-		flex-direction: column;
-		flex: 1 1 0%;
-		min-height: 0;
-		width: 100%;
-		overflow-x: auto;
-		overflow-y: hidden;
-	}
-
-	:where([data-ilamy-part='time-grid-scroll-frame']) {
-		display: flex;
-		flex-direction: column;
-		flex: 1 1 0%;
-		min-height: 0;
-		min-width: 100%;
-		width: max-content;
-	}
-
-	:where([data-ilamy-part='time-grid-scroll-frame']) > :where([data-ilamy-slot='grid-scroll']) {
-		overflow-x: visible;
-		overflow-y: auto;
-	}
-
-	:where([data-ilamy-slot='grid-scroll']) {
+		:where([data-ilamy-slot='grid-scroll']) {
 			scrollbar-width: auto;
 		}
 
@@ -580,7 +556,7 @@
 		cursor: pointer;
 	}
 
-	:where([data-ilamy-part='event-bar']) {
+	:where([data-ilamy-part='event-bar'], [data-ilamy-part='event-drag-preview']) {
 		position: relative;
 		width: 100%;
 		height: 100%;

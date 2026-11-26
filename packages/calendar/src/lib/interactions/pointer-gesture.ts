@@ -51,11 +51,12 @@ interface PendingGesture<T> {
 	payload: T
 	active: boolean
 	moved: boolean
+	dispatchedMove: boolean
 }
 
 const DEFAULT_LONG_PRESS_MS = 200
 const DEFAULT_TOUCH_CANCEL_SLOP_PX = 10
-const EDGE_SCROLL_PX = 40
+const EDGE_SCROLL_PX = 24
 const EDGE_SCROLL_SPEED_PX = 5
 
 const lockTextSelection = () => {
@@ -210,6 +211,7 @@ export function createPointerGesture<T>(
 			payload,
 			active: false,
 			moved: false,
+			dispatchedMove: event.pointerType !== 'touch',
 		}
 		gesture = pending
 		scrollContainer = findScrollContainer(event.target as Element)
@@ -258,6 +260,12 @@ export function createPointerGesture<T>(
 			gesture.moved = true
 		}
 		if (!gesture.active && !tryActivate(gesture, event)) return
+		if (!gesture.dispatchedMove) {
+			const dx = event.clientX - gesture.originX
+			const dy = event.clientY - gesture.originY
+			if (!exceedsThreshold(dx, dy, gesture.thresholdPx)) return
+			gesture.dispatchedMove = true
+		}
 		lastPoint = { clientX: event.clientX, clientY: event.clientY }
 		options.onMove(lastPoint, gesture.payload)
 		ensureAutoScroll()

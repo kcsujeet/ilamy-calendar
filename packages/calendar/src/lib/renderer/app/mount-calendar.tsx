@@ -266,6 +266,21 @@ export const mountCalendar = (
 		notifySnapshot()
 	}
 
+	const dispatchRowCallbacks = (res: PluginMutationResult) => {
+		for (const row of res.updated) options.onEventUpdate?.(row)
+		for (const row of res.added) options.onEventAdd?.(row)
+		for (const row of res.deleted) options.onEventDelete?.(row)
+	}
+
+	const createRevert = (prev: DomCalendarEvent[]): (() => void) => {
+		let reverted = false
+		return () => {
+			if (reverted) return
+			reverted = true
+			setStoredEvents(prev)
+		}
+	}
+
 	const commitAdd = (input: DomCalendarEventInput): DomCalendarEvent => {
 		const state = controller.getState()
 		const prev = [...storedEvents]
@@ -281,7 +296,7 @@ export const mountCalendar = (
 			added: [created],
 			updated: [],
 			deleted: [],
-			revert: () => setStoredEvents(prev),
+			revert: createRevert(prev),
 		}
 		options.onEventsChange?.(change)
 		return created
@@ -329,8 +344,8 @@ export const mountCalendar = (
 				? deltas.delta
 				: computeFallbackStartDelta(event, primary, state.timezone)
 
+		dispatchRowCallbacks(res)
 		setStoredEvents(res.events)
-		options.onEventUpdate?.(primary)
 		const change: EventsChange = {
 			action: 'update',
 			event: primary,
@@ -340,7 +355,7 @@ export const mountCalendar = (
 			deleted: res.deleted,
 			delta: resolvedDelta,
 			endDelta: deltas?.endDelta,
-			revert: () => setStoredEvents(prev),
+			revert: createRevert(prev),
 		}
 		options.onEventsChange?.(change)
 		return primary
@@ -374,8 +389,8 @@ export const mountCalendar = (
 			}
 		}
 
+		dispatchRowCallbacks(res)
 		setStoredEvents(res.events)
-		options.onEventDelete?.(event)
 		const change: EventsChange = {
 			action: 'delete',
 			event,
@@ -383,7 +398,7 @@ export const mountCalendar = (
 			added: res.added,
 			updated: res.updated,
 			deleted: res.deleted,
-			revert: () => setStoredEvents(prev),
+			revert: createRevert(prev),
 		}
 		options.onEventsChange?.(change)
 		return event

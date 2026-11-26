@@ -285,4 +285,69 @@ describe('attachCalendarInteractions', () => {
 
 		handle.destroy()
 	})
+
+	it('publishes signed deltas, zeroes unchanged resize edge delta, and suppresses no-op commits', () => {
+		const { root, bar, startHandle, endHandle } = buildGrid()
+		const moves: Array<{
+			delta?: { days: number; milliseconds: number }
+			endDelta?: { days: number; milliseconds: number }
+		}> = []
+		const resizes: Array<{
+			delta?: { days: number; milliseconds: number }
+			endDelta?: { days: number; milliseconds: number }
+		}> = []
+
+		const handle = attachCalendarInteractions({
+			root,
+			getState: () => ({
+				events: [ev],
+				resources: [],
+				timezone: 'UTC',
+				editable: true,
+				eventResizableFromStart: true,
+				slotDurationMinutes: 60,
+				snapDurationMinutes: 15,
+			}),
+			onMoveCommit: (_e, _p, info) => moves.push(info),
+			onResizeCommit: (_e, _p, info) => resizes.push(info),
+		})
+
+		// Move forward +90m: 09:00 -> 10:30
+		pt('pointerdown', bar, 50, 105)
+		pt('pointermove', window, 50, 195)
+		pt('pointerup', window, 50, 195)
+		expect(moves).toEqual([
+			{
+				delta: { days: 0, milliseconds: 5_400_000 },
+				endDelta: { days: 0, milliseconds: 5_400_000 },
+			},
+		])
+
+		// Move back to original position -> suppressed no-op
+		pt('pointerdown', bar, 50, 105)
+		pt('pointermove', window, 50, 130)
+		pt('pointermove', window, 50, 105)
+		pt('pointerup', window, 50, 105)
+		expect(moves).toHaveLength(1)
+
+		// End resize +30m -> delta is zero, endDelta is +1800000ms
+		pt('pointerdown', endHandle, 50, 156)
+		pt('pointermove', window, 50, 185)
+		pt('pointerup', window, 50, 185)
+		expect(resizes[0]).toEqual({
+			delta: { days: 0, milliseconds: 0 },
+			endDelta: { days: 0, milliseconds: 1_800_000 },
+		})
+
+		// Start resize shrink +30m -> delta is +1800000ms, endDelta is zero
+		pt('pointerdown', startHandle, 50, 101)
+		pt('pointermove', window, 50, 135)
+		pt('pointerup', window, 50, 135)
+		expect(resizes[1]).toEqual({
+			delta: { days: 0, milliseconds: 1_800_000 },
+			endDelta: { days: 0, milliseconds: 0 },
+		})
+
+		handle.destroy()
+	})
 })

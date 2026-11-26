@@ -131,6 +131,8 @@ export const DialogShell = ({
 			aria-labelledby={titleId}
 			data-ilamy-part="dialog"
 			data-testid={testId}
+			// biome-ignore lint/a11y/noRedundantRoles: consumer CSS/test selectors target [role="dialog"] from v3 Radix Dialog
+			role="dialog"
 			onCancel={(evt) => {
 				evt.preventDefault()
 				const state = escapeStateRef.current

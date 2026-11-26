@@ -136,7 +136,15 @@ export const readCell = (
 		return null
 	}
 	const snapMinutes = cell.dataset.snapMinutes
-	const axis = cell.dataset.timeAxis
+	const rawAxis = cell.dataset.timeAxis
+	const inferredAxis =
+		cell.dataset.ilamyPart === 'time-slot'
+			? 'vertical'
+			: cell.dataset.ilamyPart === 'res-h-hour-slot'
+				? 'horizontal'
+				: undefined
+	const axis =
+		rawAxis === 'vertical' || rawAxis === 'horizontal' ? rawAxis : inferredAxis
 	const isAllDay = cell.dataset.allDay === 'true'
 	return {
 		start,
@@ -145,7 +153,7 @@ export const readCell = (
 		allDay: isAllDay,
 		isAllDaySlot: isAllDay && cell.dataset.ilamyPart === 'all-day-cell',
 		snapMinutes: snapMinutes === undefined ? undefined : Number(snapMinutes),
-		axis: axis === 'vertical' || axis === 'horizontal' ? axis : undefined,
+		axis,
 		element: cell,
 	}
 }

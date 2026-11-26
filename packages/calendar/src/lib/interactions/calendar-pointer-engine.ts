@@ -33,6 +33,7 @@ import {
 	computeGrabOffset,
 	type DragSegment,
 	type GrabOffset,
+	getDragSegment,
 	getPressedResizeEdge,
 	isPlacementAllowed,
 	isSelectionAllowed,
@@ -89,7 +90,7 @@ export interface CalendarInteractionConfig {
 	onMoveCommit?: (
 		event: CalendarEvent,
 		placement: EventDropInfo,
-		info: { delta?: EventDelta }
+		info: { delta?: EventDelta; endDelta?: EventDelta }
 	) => void
 	onResizeCommit?: (
 		event: CalendarEvent,
@@ -385,6 +386,16 @@ export const attachCalendarInteractions = (
 		if (!(cellEl instanceof HTMLElement && snapped)) {
 			return
 		}
+		const inSameComponent = payload.event.allDay
+			? snapped.allDay
+			: !snapped.isAllDaySlot
+		if (!inSameComponent) {
+			lastDrop = null
+			lastAllowed = false
+			restoreCursor()
+			config.onPreviewChange?.(null)
+			return
+		}
 		const cell = snappedCellToPlacementCell(snapped, state)
 		const next = calculateResizePlacement(payload.event, cell, payload.edge, {
 			resizableFromStart: Boolean(state.eventResizableFromStart),
@@ -546,7 +557,7 @@ export const attachCalendarInteractions = (
 			state.timezone
 		)
 		if (payload.mode === 'move') {
-			config.onMoveCommit?.(payload.event, drop, { delta })
+			config.onMoveCommit?.(payload.event, drop, { delta, endDelta })
 			return
 		}
 		config.onResizeCommit?.(payload.event, drop, {

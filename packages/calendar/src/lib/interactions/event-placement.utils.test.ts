@@ -130,6 +130,27 @@ describe('calculateMovePlacement', () => {
 		expect(moved.allDay).toBe(true)
 	})
 
+	it('keeps a timed event timed at its clock when dropped on a Month cell (isAllDaySlot=false)', () => {
+		const timed = {
+			id: 't1',
+			title: 'Standup',
+			start: '2025-03-04T11:00:00Z',
+			end: '2025-03-04T12:00:00Z',
+		}
+		const moved = calculateMovePlacement(
+			timed,
+			{
+				date: utc('2025-03-06T00:00:00Z'),
+				allDay: true,
+				isAllDaySlot: false,
+			},
+			NO_GRAB_OFFSET
+		)
+		expect(toUtcIso(moved.start)).toBe('2025-03-06T11:00:00.000Z')
+		expect(toUtcIso(moved.end)).toBe('2025-03-06T12:00:00.000Z')
+		expect(moved.allDay).toBe(false)
+	})
+
 	it('updates single resourceId or swaps within resourceIds array', () => {
 		expect(
 			getResourceUpdates(

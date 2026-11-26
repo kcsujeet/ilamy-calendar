@@ -259,6 +259,29 @@ describe('buildTimeGridViewModel', () => {
 		expect(model.columns[7].label).toBe('Room B')
 		expect(model.columns[7].timedEvents.map((e) => e.id)).toEqual(['e2'])
 	})
+
+	it('keeps multi-day timed events in vertical timed columns rather than allDayEvents', () => {
+		const model = buildTimeGridViewModel({
+			mode: 'week',
+			currentDate: fromFields({ year: 2025, month: 3, day: 12 }, 'UTC'),
+			events: [
+				{
+					id: 'span-1',
+					title: 'Field survey',
+					start: '2025-03-10T09:00:00.000Z',
+					end: '2025-03-13T17:00:00.000Z',
+				},
+			],
+			firstDayOfWeek: 0,
+			timezone: 'UTC',
+			locale: 'en-US',
+		})
+
+		expect(model.columns[1].allDayEvents).toEqual([])
+		expect(model.columns[1].timedEvents.map((e) => e.id)).toEqual(['span-1'])
+		expect(model.columns[2].allDayEvents).toEqual([])
+		expect(model.columns[2].timedEvents.map((e) => e.id)).toEqual(['span-1'])
+	})
 })
 
 describe('buildResourceTimelineViewModel', () => {

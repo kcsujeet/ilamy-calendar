@@ -149,7 +149,7 @@ const splitColumnEvents = (
 			start.epochMilliseconds < dayEndMs && end.epochMilliseconds > dayStartMs
 		if (!overlapsDay) continue
 
-		if (isAllDayOrMultiDay(event, timezone)) {
+		if (event.allDay) {
 			allDayEvents.push(event)
 		} else {
 			timedEvents.push(event)

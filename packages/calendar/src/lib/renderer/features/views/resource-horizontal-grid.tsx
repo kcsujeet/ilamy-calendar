@@ -50,7 +50,7 @@ import {
 import { ResourceHeaderContent } from './resource-header-content'
 
 const HOUR_COL_WIDTH_PX = 80
-const RESOURCE_COL_WIDTH_PX = 160
+const RESOURCE_COL_WIDTH_PX = 96
 const DAILY_RESOURCE_WIDTH_PX = 176
 const ROW_MIN_HEIGHT_PX = 80
 
@@ -435,6 +435,7 @@ const ResourceHourSlotCell = ({
 		hour: slotStart.hour,
 		minute: 0,
 	})
+	const snapMinutes = formatSubCellSnapMinutes(options.snapDuration, 60)
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: cell click action paired with New button
 		<div
@@ -443,18 +444,19 @@ const ResourceHourSlotCell = ({
 			data-cell="true"
 			data-disabled={isDisabled ? 'true' : 'false'}
 			data-end={toUtcIso(slotEnd)}
+			data-ilamy-part="res-h-hour-slot"
 			data-ilamy-slot="cell"
 			data-last-col={slotIdx === totalSlots - 1 ? 'true' : undefined}
 			data-non-business={isNonBusiness ? 'true' : undefined}
 			data-resource-id={String(resource.id)}
-			data-snap-minutes={formatSubCellSnapMinutes(options.snapDuration, 60)}
+			data-snap-minutes={snapMinutes}
 			data-start={toUtcIso(slotStart)}
 			data-testid={rendererKeys.testId.resourceHourSlot(
 				resource.id,
 				dayKey(slotStart),
 				slotStart.hour
 			)}
-			data-time-axis="horizontal"
+			data-time-axis={snapMinutes !== undefined ? 'horizontal' : undefined}
 			onClick={() => {
 				if (isDisabled || !canCommitSelection(cellInfo, options, timezone)) {
 					return

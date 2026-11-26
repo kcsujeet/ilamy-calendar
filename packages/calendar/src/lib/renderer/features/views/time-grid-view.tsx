@@ -800,6 +800,10 @@ const TimeGridSlotCell = ({
 			actions,
 		})
 	const resourceId = col.resource ? String(col.resource.id) : undefined
+	const snapMinutes = formatSubCellSnapMinutes(
+		options.snapDuration,
+		slotMinutes
+	)
 
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: cell selection triggers create dialog
@@ -818,17 +822,14 @@ const TimeGridSlotCell = ({
 			data-minute={String(minute)}
 			data-non-business={isNonBusiness ? 'true' : undefined}
 			data-resource-id={resourceId}
-			data-snap-minutes={formatSubCellSnapMinutes(
-				options.snapDuration,
-				slotMinutes
-			)}
+			data-snap-minutes={snapMinutes}
 			data-start={dataStart}
 			data-testid={rendererKeys.testId.timeSlot(
 				dayKey(col.day),
 				hourNum,
 				minute
 			)}
-			data-time-axis="vertical"
+			data-time-axis={snapMinutes !== undefined ? 'vertical' : undefined}
 			onClick={() => {
 				if (!canCommitSelection(cellInfo, options, timezone)) return
 				options.onCellClick?.(cellInfo)
@@ -1058,7 +1059,10 @@ const buildVerticalGridViewModel = (
 		slotMaxTime: options.slotMaxTime,
 		nowIndicator: options.nowIndicator,
 	})
-	const colMinWidth = state.resources.length > 0 ? '128px' : '110px'
+	let colMinWidth = '0px'
+	if (state.resources.length > 0) {
+		colMinWidth = mode === 'week' ? '48px' : '80px'
+	}
 	const slotMinutes = options.slotDuration ?? 60
 	const slotsPerHour = Math.max(1, 60 / slotMinutes)
 	return {

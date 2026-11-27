@@ -65,15 +65,25 @@ export const LegacyRenderHost = <P,>({
 	pointerEventsNone = false,
 }: LegacyRenderHostProps<P>) => {
 	const hostRef = useRef<HTMLDivElement>(null)
+	const hadCleanupRef = useRef(false)
 
 	useLayoutEffect(() => {
 		const host = hostRef.current
 		if (!host) return
-		host.replaceChildren()
-		const cleanup = renderFn(host, context)
-		return () => {
-			if (typeof cleanup === 'function') cleanup()
+		// Imperative DOM callbacks manage raw children directly; managed cleanups
+		// (such as React portal bridges) unmount asynchronously via their own cleanup.
+		if (!hadCleanupRef.current) {
 			host.replaceChildren()
+		}
+		const cleanup = renderFn(host, context)
+		const hasCleanup = typeof cleanup === 'function'
+		hadCleanupRef.current = hasCleanup
+		return () => {
+			if (hasCleanup) {
+				cleanup()
+			} else {
+				host.replaceChildren()
+			}
 		}
 	}, [renderFn, context])
 

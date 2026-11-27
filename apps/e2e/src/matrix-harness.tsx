@@ -383,7 +383,7 @@ export const MATRIX_TAILWIND_SLOT_PROPS: CalendarSlotProps = {
 	allDayRow: { className: 'bg-background' },
 	eventBar: {
 		className:
-			"rounded-sm text-xs font-medium bg-primary text-primary-foreground [&[data-truncated-start='true']]:rounded-l-none [&[data-truncated-end='true']]:rounded-r-none [&>[data-ilamy-part='event-bar-content']]:p-0.5 [&>[data-ilamy-part='event-bar-content']]:px-1 [&>[data-ilamy-part='event-bar-content']]:border [&>[data-ilamy-part='event-bar-content']]:border-card [&>[data-ilamy-part='event-bar-content']]:rounded-inherit",
+			"rounded-sm text-xs font-medium [&:not([data-custom-color='true'])]:bg-primary [&:not([data-custom-color='true'])]:text-primary-foreground [&[data-truncated-start='true']]:rounded-l-none [&[data-truncated-end='true']]:rounded-r-none [&>[data-ilamy-part='event-bar-content']]:px-1.5 [&>[data-ilamy-part='event-bar-content']]:py-1 [&[data-compact='true']>[data-ilamy-part='event-bar-content']]:py-0 [&>[data-ilamy-part='event-bar-content']]:border [&>[data-ilamy-part='event-bar-content']]:border-card [&>[data-ilamy-part='event-bar-content']]:rounded-inherit",
 	},
 	nowIndicator: {
 		className:

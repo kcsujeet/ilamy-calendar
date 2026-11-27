@@ -131,38 +131,45 @@ const buildReactCssSetup = (values: PlaygroundSettings): ReactAxisSetup => {
 const buildReactComponentSetup = (
 	values: PlaygroundSettings
 ): ReactAxisSetup => {
-	if (values.componentLibrary === 'shadcn') {
+	const shadcnNote =
+		values.cssMode === 'tailwind' ? ' // shadcn/ui styling' : ''
+	if (values.componentLibrary === 'radix') {
 		return {
-			imports: ["import { ShadcnEventForm } from './shadcn-event-form'"],
+			imports: [
+				`import { RadixHeader, RadixEventForm, RadixMoreEventsDialog } from './radix-slots'${shadcnNote}`,
+			],
 			preamble: [],
-			propLines: ['slots={{ eventForm: ShadcnEventForm }}'],
+			propLines: [
+				'slots={{ header: RadixHeader, eventForm: RadixEventForm, moreEventsDialog: RadixMoreEventsDialog }}',
+			],
+		}
+	}
+	if (values.componentLibrary === 'base-ui') {
+		return {
+			imports: [
+				"import { Dialog } from '@base-ui/react/dialog'",
+				`import { BaseUiHeader, BaseUiEventForm, BaseUiMoreEventsDialog } from './base-ui-slots'${shadcnNote}`,
+			],
+			preamble: [],
+			propLines: [
+				'slots={{ header: BaseUiHeader, eventForm: BaseUiEventForm, moreEventsDialog: BaseUiMoreEventsDialog }}',
+			],
 		}
 	}
 	if (values.componentLibrary === 'mui') {
 		return {
 			imports: [
 				"import { useTheme } from '@mui/material/styles'",
-				"import { MuiEventForm } from './mui-event-form'",
+				"import { MuiHeader, MuiEventForm, MuiMoreEventsDialog } from './mui-slots'",
 			],
 			preamble: [
 				'const muiTheme = useTheme()',
-				...(values.cssMode === 'plain'
-					? [
-							"const muiSlotProps = { root: { style: { '--ilamy-bg': muiTheme.palette.background.paper, '--ilamy-primary': muiTheme.palette.primary.main } } }",
-						]
-					: []),
+				"const muiSlotProps = { root: { style: { '--ilamy-bg': muiTheme.palette.background.paper, '--ilamy-primary': muiTheme.palette.primary.main } } }",
 			],
-			propLines: collectLines([
-				[values.cssMode === 'plain', 'slotProps={muiSlotProps}'],
-				[true, 'slots={{ eventForm: MuiEventForm }}'],
-			]),
-		}
-	}
-	if (values.componentLibrary === 'custom-slot') {
-		return {
-			imports: ["import { CustomEventForm } from './custom-event-form'"],
-			preamble: [],
-			propLines: ['slots={{ eventForm: CustomEventForm }}'],
+			propLines: [
+				'slotProps={muiSlotProps}',
+				'slots={{ header: MuiHeader, eventForm: MuiEventForm, moreEventsDialog: MuiMoreEventsDialog }}',
+			],
 		}
 	}
 	return { imports: [], preamble: [], propLines: [] }
@@ -184,10 +191,6 @@ const buildDomOptionEntries = (
 			'slotProps: customSlotProps',
 		],
 		[isUnstyled, 'unstyled: true'],
-		[
-			values.componentLibrary === 'custom-slot',
-			'slots: { eventForm: customEventFormSlot }',
-		],
 		[true, 'events'],
 		[values.calendarType === 'resource', 'resources'],
 		[pluginCalls.length > 0, `plugins: [${pluginCalls.join(', ')}]`],
@@ -347,10 +350,6 @@ const generateVueSnippet = (values: PlaygroundSettings): string => {
 		pluginMeta.calls.length > 0
 			? `\nconst plugins = [${pluginMeta.calls.join(', ')}]`
 			: ''
-	const slotBody =
-		values.componentLibrary === 'custom-slot'
-			? `\n    <template #event-form="ctx">\n      <CustomEventForm :context="ctx" />\n    </template>\n  `
-			: ''
 
 	return `<script setup lang="ts">
 ${cssImportPath(values.cssMode)}
@@ -363,7 +362,8 @@ const handleEventsChange = (change) => console.log(change)
 
 <template>
   <IlamyCalendar
-    ${attrs.join('\n    ')}${slotBody ? `>${slotBody}</IlamyCalendar>` : '\n  />'}
+    ${attrs.join('\n    ')}
+  />
 </template>`
 }
 
@@ -407,10 +407,6 @@ const generateSolidSnippet = (values: PlaygroundSettings): string => {
 	const props = collectLines([
 		[Boolean(slotPropsProp), slotPropsProp],
 		[isUnstyled, 'unstyled'],
-		[
-			values.componentLibrary === 'custom-slot',
-			'slots={{ eventForm: CustomEventForm }}',
-		],
 		[true, 'events={events()}'],
 		[values.calendarType === 'resource', 'resources={resources}'],
 		[pluginMeta.calls.length > 0, `plugins={[${pluginMeta.calls.join(', ')}]}`],

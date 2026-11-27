@@ -47,7 +47,7 @@ const formatLogClock = (): string =>
 
 function MobileSettings({ children }: { children: ReactNode }) {
 	return (
-		<div className="sticky top-2 z-20 mb-3 lg:hidden">
+		<div className="sticky top-2 z-20 mb-3 xl:hidden">
 			<Dialog>
 				<DialogTrigger asChild>
 					<Button className="w-full shadow-md" size="default" variant="outline">
@@ -176,11 +176,12 @@ export function Playground() {
 					showInspector={showInspector}
 				/>
 
-				<div className="lg:grid lg:grid-cols-[20.5rem_minmax(0,1fr)] lg:gap-5 items-start">
+				<div className="xl:grid xl:grid-cols-[20.5rem_minmax(0,1fr)] xl:gap-5 items-start">
 					<MobileSettings>
 						<SettingsTabs
 							activeTab={activeTab}
 							className="border-0 shadow-none max-h-[85dvh]"
+							inDialog
 							onTabChange={setActiveTab}
 							panels={tabPanels}
 						/>
@@ -189,7 +190,7 @@ export function Playground() {
 					{/* Sticky self-scrolling inspector keeps the calendar in view at all times */}
 					<aside
 						aria-label="Calendar inspector"
-						className="hidden lg:block sticky top-4"
+						className="hidden xl:block sticky top-4"
 					>
 						<SettingsTabs
 							activeTab={activeTab}

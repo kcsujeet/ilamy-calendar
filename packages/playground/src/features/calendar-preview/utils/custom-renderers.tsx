@@ -49,7 +49,7 @@ function CustomEvent({
 	// Deliberately unlike the built-in bar (black, dashed, uppercase) so a glance
 	// shows whether a view draws through the custom renderer.
 	return (
-		<div className="w-full h-full overflow-clip rounded-full border-2 border-dashed border-yellow-400 bg-black px-2 text-yellow-300">
+		<div className="w-full h-full overflow-clip rounded-md border-2 border-dashed border-yellow-400 bg-black px-2 py-1 text-yellow-300">
 			<p
 				className={cn(
 					'font-mono font-bold uppercase tracking-wider truncate leading-tight',
@@ -116,7 +116,6 @@ export function createRenderResource(resourceEvents: CalendarEvent[]) {
 // (axis === 'vertical') and horizontal resource hour grids (axis === 'horizontal').
 export function renderCurrentTimeIndicator({
 	currentTime,
-	progress,
 	resource,
 	view,
 	axis,
@@ -129,33 +128,27 @@ export function renderCurrentTimeIndicator({
 
 	if (axis === 'horizontal') {
 		return (
-			<div
-				className="absolute top-0 bottom-0 z-50 pointer-events-none w-0.5 flex flex-col"
-				style={{ left: `${progress}%` }}
-			>
+			<div className="relative h-full w-0.5 pointer-events-none flex flex-col items-center">
 				{showBadge && (
 					<div className="absolute top-0 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] sm:text-xs px-1.5 py-0.5 rounded-b-md font-medium shadow-sm whitespace-nowrap z-10">
 						{badgeLabel}
 					</div>
 				)}
 				{/* Red line extends across the full row height */}
-				<div className="flex-1 bg-red-500" />
+				<div className="flex-1 w-0.5 bg-red-500" />
 			</div>
 		)
 	}
 
 	return (
-		<div
-			className="absolute left-0 right-0 z-50 pointer-events-none h-0.5 flex"
-			style={{ top: `${progress}%` }}
-		>
+		<div className="relative w-full h-0.5 pointer-events-none flex items-center">
 			{showBadge && (
 				<div className="absolute left-0 top-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] sm:text-xs px-1.5 py-0.5 rounded-r-md font-medium shadow-sm whitespace-nowrap z-10">
 					{badgeLabel}
 				</div>
 			)}
 			{/* Red line extends across all columns */}
-			<div className="flex-1 bg-red-500" />
+			<div className="flex-1 h-0.5 bg-red-500" />
 		</div>
 	)
 }
@@ -181,7 +174,11 @@ export function CustomCalendarHeader() {
 	const {
 		currentDate,
 		timezone,
+		view,
 		setView,
+		nextPeriod,
+		prevPeriod,
+		today,
 		getViews,
 		hasResourceAxis,
 		openEventForm,
@@ -190,7 +187,7 @@ export function CustomCalendarHeader() {
 	// The views the default header offers: resource calendars drop the ones
 	// that do not support resources (year, agenda).
 	const views = getViews().filter(
-		(view) => !hasResourceAxis || view.supportsResources
+		(v) => !hasResourceAxis || v.supportsResources
 	)
 	const formattedMonth = new Intl.DateTimeFormat(undefined, {
 		timeZone: timezone,
@@ -198,20 +195,35 @@ export function CustomCalendarHeader() {
 		year: 'numeric',
 	}).format(new Date(currentDate))
 	return (
-		<div className="text-center text-2xl font-semibold p-4 text-amber-500">
-			Current Date: {formattedMonth}
-			<div className="flex justify-center space-x-2">
-				{views.map((view) => (
-					<Button key={view.name} onClick={() => setView(view.name)} size="sm">
-						{t(view.label ?? view.name)}
+		<div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-3">
+			<div className="flex items-center gap-1.5">
+				<Button onClick={prevPeriod} size="sm" variant="outline">
+					‹
+				</Button>
+				<Button onClick={today} size="sm" variant="outline">
+					{t('today')}
+				</Button>
+				<Button onClick={nextPeriod} size="sm" variant="outline">
+					›
+				</Button>
+				<span className="ml-2 text-base font-semibold text-amber-500">
+					{formattedMonth}
+				</span>
+			</div>
+			<div className="flex flex-wrap items-center gap-1.5">
+				{views.map((item) => (
+					<Button
+						key={item.name}
+						onClick={() => setView(item.name)}
+						size="sm"
+						variant={view === item.name ? 'default' : 'outline'}
+					>
+						{t(item.label ?? item.name)}
 					</Button>
 				))}
 				<Button onClick={() => openEventForm()} size="sm" variant="outline">
 					{t('new')}
 				</Button>
-			</div>
-			<div className="text-sm mt-2">
-				Custom header using useIlamyCalendarContext hook
 			</div>
 		</div>
 	)
@@ -231,6 +243,18 @@ export function CustomEventForm({
 	useEffect(() => {
 		setTitle(selectedEvent?.title || '')
 	}, [selectedEvent])
+
+	useEffect(() => {
+		if (!open) return
+		const onKeyDown = (evt: KeyboardEvent) => {
+			if (evt.key === 'Escape') {
+				evt.stopPropagation()
+				onClose()
+			}
+		}
+		window.addEventListener('keydown', onKeyDown, true)
+		return () => window.removeEventListener('keydown', onKeyDown, true)
+	}, [open, onClose])
 
 	if (!open) {
 		return null
@@ -256,7 +280,11 @@ export function CustomEventForm({
 
 	return (
 		<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-			<div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg">
+			<div
+				aria-modal="true"
+				className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-lg"
+				role="dialog"
+			>
 				<h3 className="text-lg font-semibold mb-4 text-amber-500">
 					Custom Event Form
 				</h3>

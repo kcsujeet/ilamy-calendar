@@ -42,12 +42,22 @@ export const PopoverShell = ({
 		if (!open) return
 		const rect = anchorRef.current?.getBoundingClientRect()
 		if (rect) {
+			const effectiveWidth = Math.max(minWidth, 272)
 			const clampedLeft = Math.max(
 				8,
-				Math.min(rect.left, Math.max(8, window.innerWidth - minWidth - 16))
+				Math.min(
+					rect.left,
+					Math.max(8, window.innerWidth - effectiveWidth - 16)
+				)
 			)
+			const estimatedHeight = 320
+			const fitsBelow =
+				rect.bottom + 4 + estimatedHeight <= window.innerHeight - 8
+			const top = fitsBelow
+				? rect.bottom + 4
+				: Math.max(8, rect.top - estimatedHeight - 4)
 			setCoords({
-				top: Math.round(rect.bottom + 4),
+				top: Math.round(top),
 				left: Math.round(clampedLeft),
 			})
 		}

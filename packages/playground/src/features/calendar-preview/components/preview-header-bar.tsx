@@ -7,6 +7,7 @@ import {
 	type CssMode,
 	FRAMEWORK_OPTIONS,
 	type FrameworkId,
+	getComponentLibraryIncompatibility,
 } from '../../../types/settings-form.types'
 
 interface PreviewHeaderBarProps {
@@ -26,12 +27,6 @@ const BUTTON_INACTIVE =
 	'text-muted-foreground hover:text-foreground cursor-pointer'
 const BUTTON_DISABLED = 'opacity-40 cursor-not-allowed text-muted-foreground'
 
-const AxisLabel = ({ children }: { children: string }) => (
-	<span className="text-[11px] font-medium text-muted-foreground select-none px-1">
-		{children}
-	</span>
-)
-
 export function PreviewHeaderBar({
 	framework,
 	cssMode,
@@ -46,7 +41,6 @@ export function PreviewHeaderBar({
 			data-testid="playground-axes-bar"
 		>
 			<div className="flex flex-wrap items-center gap-1.5 min-w-0">
-				<AxisLabel>Framework</AxisLabel>
 				<fieldset className="inline-flex flex-wrap items-center rounded-lg bg-background p-0.5 border border-border/80 m-0 min-w-0">
 					<legend className="sr-only">Framework</legend>
 					{FRAMEWORK_OPTIONS.map((fw) => {
@@ -81,62 +75,61 @@ export function PreviewHeaderBar({
 			</div>
 
 			<div className="flex flex-wrap items-center gap-2 min-w-0">
-				<div className="flex flex-wrap items-center gap-1.5 min-w-0">
-					<AxisLabel>CSS</AxisLabel>
-					<fieldset className="inline-flex flex-wrap items-center rounded-lg bg-background p-0.5 border border-border/80 m-0 min-w-0">
-						<legend className="sr-only">CSS</legend>
-						{CSS_MODE_OPTIONS.map((option) => {
-							const isActive = cssMode === option.value
-							return (
-								<button
-									aria-pressed={isActive}
-									className={cn(
-										BUTTON_BASE,
-										isActive ? BUTTON_ACTIVE : BUTTON_INACTIVE
-									)}
-									data-testid={`css-${option.value}`}
-									key={option.value}
-									onClick={() => onSelectCss(option.value)}
-									title={option.description}
-									type="button"
-								>
-									{option.label}
-								</button>
-							)
-						})}
-					</fieldset>
-				</div>
+				<fieldset className="inline-flex flex-wrap items-center rounded-lg bg-background p-0.5 border border-border/80 m-0 min-w-0">
+					<legend className="sr-only">CSS</legend>
+					{CSS_MODE_OPTIONS.map((option) => {
+						const isActive = cssMode === option.value
+						return (
+							<button
+								aria-pressed={isActive}
+								className={cn(
+									BUTTON_BASE,
+									isActive ? BUTTON_ACTIVE : BUTTON_INACTIVE
+								)}
+								data-testid={`css-${option.value}`}
+								key={option.value}
+								onClick={() => onSelectCss(option.value)}
+								title={option.description}
+								type="button"
+							>
+								{option.label}
+							</button>
+						)
+					})}
+				</fieldset>
 
-				<div className="flex flex-wrap items-center gap-1.5 min-w-0">
-					<AxisLabel>Components</AxisLabel>
-					<fieldset className="inline-flex flex-wrap items-center rounded-lg bg-background p-0.5 border border-border/80 m-0 min-w-0">
-						<legend className="sr-only">Components</legend>
-						{COMPONENT_LIBRARY_OPTIONS.map((option) => {
-							const isSupported = option.supportedFrameworks.includes(framework)
-							const isActive = componentLibrary === option.value
-							let tone = BUTTON_INACTIVE
-							if (!isSupported) {
-								tone = BUTTON_DISABLED
-							} else if (isActive) {
-								tone = BUTTON_ACTIVE
-							}
-							return (
-								<button
-									aria-pressed={isActive}
-									className={cn(BUTTON_BASE, tone)}
-									data-testid={`components-${option.value}`}
-									disabled={!isSupported}
-									key={option.value}
-									onClick={() => onSelectComponentLibrary(option.value)}
-									title={isSupported ? undefined : option.disabledReason}
-									type="button"
-								>
-									{option.label}
-								</button>
-							)
-						})}
-					</fieldset>
-				</div>
+				<fieldset className="inline-flex flex-wrap items-center rounded-lg bg-background p-0.5 border border-border/80 m-0 min-w-0">
+					<legend className="sr-only">Components</legend>
+					{COMPONENT_LIBRARY_OPTIONS.map((option) => {
+						const incompatibility = getComponentLibraryIncompatibility(
+							option.value,
+							framework,
+							cssMode
+						)
+						const isSupported = incompatibility === null
+						const isActive = componentLibrary === option.value
+						let tone = BUTTON_INACTIVE
+						if (!isSupported) {
+							tone = BUTTON_DISABLED
+						} else if (isActive) {
+							tone = BUTTON_ACTIVE
+						}
+						return (
+							<button
+								aria-pressed={isActive}
+								className={cn(BUTTON_BASE, tone)}
+								data-testid={`components-${option.value}`}
+								disabled={!isSupported}
+								key={option.value}
+								onClick={() => onSelectComponentLibrary(option.value)}
+								title={incompatibility ?? option.description}
+								type="button"
+							>
+								{option.label}
+							</button>
+						)
+					})}
+				</fieldset>
 			</div>
 		</CardHeader>
 	)

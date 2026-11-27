@@ -54,41 +54,67 @@ export const CSS_MODE_OPTIONS: CssModeOption[] = [
 	},
 ]
 
-export type ComponentLibraryId = 'native' | 'shadcn' | 'mui' | 'custom-slot'
+export type ComponentLibraryId = 'native' | 'radix' | 'base-ui' | 'mui'
 
 export interface ComponentLibraryOption {
 	value: ComponentLibraryId
 	label: string
+	description: string
 	supportedFrameworks: readonly FrameworkId[]
-	disabledReason?: string
+	supportedCssModes: readonly CssMode[]
 }
 
 export const COMPONENT_LIBRARY_OPTIONS: ComponentLibraryOption[] = [
 	{
 		value: 'native',
-		label: 'Native',
+		label: 'Built-in',
+		description:
+			'Built-in zero-dependency calendar header, popovers, and dialogs',
 		supportedFrameworks: ['react', 'vue', 'svelte', 'solid', 'angular'],
+		supportedCssModes: ['unstyled', 'plain', 'tailwind', 'stylex'],
 	},
 	{
-		value: 'shadcn',
-		label: 'shadcn',
+		value: 'radix',
+		label: 'Radix UI',
+		description:
+			'Radix UI primitives (powers shadcn/ui when paired with Tailwind)',
 		supportedFrameworks: ['react'],
-		disabledReason:
-			'shadcn / Radix dialog slots require React; pick Native or Custom Slot',
+		supportedCssModes: ['unstyled', 'plain', 'tailwind', 'stylex'],
+	},
+	{
+		value: 'base-ui',
+		label: 'Base UI',
+		description:
+			'Base UI (@base-ui/react) primitives (powers shadcn/ui when paired with Tailwind)',
+		supportedFrameworks: ['react'],
+		supportedCssModes: ['unstyled', 'plain', 'tailwind', 'stylex'],
 	},
 	{
 		value: 'mui',
 		label: 'MUI',
+		description: 'Material UI components and ThemeProvider tokens',
 		supportedFrameworks: ['react'],
-		disabledReason:
-			'Material UI dialog slots require React; pick Native or Custom Slot',
-	},
-	{
-		value: 'custom-slot',
-		label: 'Custom Slot',
-		supportedFrameworks: ['react', 'vue', 'svelte', 'solid', 'angular'],
+		supportedCssModes: ['plain'],
 	},
 ]
+
+export function getComponentLibraryIncompatibility(
+	library: ComponentLibraryId,
+	framework: FrameworkId,
+	cssMode: CssMode
+): string | null {
+	const option = COMPONENT_LIBRARY_OPTIONS.find(
+		(item) => item.value === library
+	)
+	if (!option) return null
+	if (!option.supportedFrameworks.includes(framework)) {
+		return `${option.label} requires React`
+	}
+	if (!option.supportedCssModes.includes(cssMode)) {
+		return `${option.label} brings its own theme; switch CSS to Plain CSS`
+	}
+	return null
+}
 
 export type ThemeColorMode = 'auto' | 'light' | 'dark'
 export type ThemeAccent = 'indigo' | 'emerald' | 'rose' | 'amber'

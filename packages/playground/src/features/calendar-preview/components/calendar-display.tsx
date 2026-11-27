@@ -1,6 +1,5 @@
 import type {
 	CalendarEvent,
-	CalendarSlots,
 	CalendarView,
 	DateRange,
 	DomCalendarOptions,
@@ -20,6 +19,7 @@ import {
 	defaultSettings,
 	FRAMEWORK_OPTIONS,
 	type FrameworkId,
+	getComponentLibraryIncompatibility,
 	type PlaygroundSettings,
 } from '../../../types/settings-form.types'
 import {
@@ -34,13 +34,19 @@ import {
 	resolveSharedCalendarProps,
 } from '../utils/calendar-display.utils'
 import { createRenderResource } from '../utils/custom-renderers'
-import { CalendarStage } from './calendar-stage'
 import {
-	createFrameworkCustomSlots,
-	CustomReactEventFormSlot,
-} from './custom-event-form-slot'
+	BaseUiEventFormSlot,
+	BaseUiHeaderSlot,
+	BaseUiMoreEventsDialogSlot,
+} from './base-ui-slots'
+import { CalendarStage } from './calendar-stage'
 import { PreviewHeaderBar } from './preview-header-bar'
-import { ShadcnEventFormSlot } from './shadcn-event-form-slot'
+import { SlotPreviewOptionsContext } from './primitive-slot-chrome'
+import {
+	RadixEventFormSlot,
+	RadixHeaderSlot,
+	RadixMoreEventsDialogSlot,
+} from './radix-slots'
 
 const LazyMuiThemeWrapper = lazy(() =>
 	import('./mui-theme-wrapper').then((mod) => ({
@@ -48,45 +54,59 @@ const LazyMuiThemeWrapper = lazy(() =>
 	}))
 )
 
-const LazyMuiEventFormSlot = lazy(() =>
-	import('./mui-theme-wrapper').then((mod) => ({
-		default: mod.MuiEventFormSlot,
-	}))
-)
-
-function MuiEventFormSlotLazy(
-	props: Parameters<typeof ShadcnEventFormSlot>[0]
-) {
-	return (
-		<Suspense fallback={null}>
-			<LazyMuiEventFormSlot {...props} />
-		</Suspense>
-	)
-}
-
 type CalendarDisplayProps = LifecycleHandlers & {
 	customEvents: CalendarEvent[]
 	resourceEvents: CalendarEvent[]
 	activeResources: Resource[]
 }
 
-const resolveReactComponentSlots = (
-	library: ComponentLibraryId,
-	supported: boolean
-): ReactCalendarSlots | undefined => {
-	if (!supported || library === 'native') return undefined
-	if (library === 'shadcn') return { eventForm: ShadcnEventFormSlot }
-	if (library === 'mui') return { eventForm: MuiEventFormSlotLazy }
-	return { eventForm: CustomReactEventFormSlot }
+const resolveReactComponentSlots = (options: {
+	library: ComponentLibraryId
+	framework: FrameworkId
+	cssMode: CssMode
+	useCustomCalendarHeader: boolean
+	useCustomEventForm: boolean
+}): ReactCalendarSlots | undefined => {
+	const {
+		library,
+		framework,
+		cssMode,
+		useCustomCalendarHeader,
+		useCustomEventForm,
+	} = options
+	if (
+		library === 'native' ||
+		library === 'mui' ||
+		getComponentLibraryIncompatibility(library, framework, cssMode) !== null
+	) {
+		return undefined
+	}
+	if (library === 'radix') {
+		return {
+			...(useCustomCalendarHeader ? {} : { header: RadixHeaderSlot }),
+			...(useCustomEventForm ? {} : { eventForm: RadixEventFormSlot }),
+			moreEventsDialog: RadixMoreEventsDialogSlot,
+		}
+	}
+	return {
+		...(useCustomCalendarHeader ? {} : { header: BaseUiHeaderSlot }),
+		...(useCustomEventForm ? {} : { eventForm: BaseUiEventFormSlot }),
+		moreEventsDialog: BaseUiMoreEventsDialogSlot,
+	}
 }
 
-const resolveDomComponentSlots = (
+const getComponentDisplayLabel = (
 	library: ComponentLibraryId,
-	supported: boolean,
-	customSlots: CalendarSlots
-): CalendarSlots | undefined => {
-	if (!supported || library !== 'custom-slot') return undefined
-	return customSlots
+	label: string,
+	cssMode: CssMode
+) => {
+	if (
+		cssMode === 'tailwind' &&
+		(library === 'radix' || library === 'base-ui')
+	) {
+		return `${label} (shadcn/ui)`
+	}
+	return label
 }
 
 export function CalendarDisplay({
@@ -171,24 +191,29 @@ export function CalendarDisplay({
 			(item) => item.value === values.componentLibrary
 		) ?? COMPONENT_LIBRARY_OPTIONS[0]
 
-	const isComponentSupported = activeComponentMeta.supportedFrameworks.includes(
-		values.framework
-	)
+	const isComponentSupported =
+		getComponentLibraryIncompatibility(
+			values.componentLibrary,
+			values.framework,
+			values.cssMode
+		) === null
 
-	const domCustomSlots = useMemo(() => createFrameworkCustomSlots(), [])
 	const reactSlots = useMemo(
 		() =>
-			resolveReactComponentSlots(values.componentLibrary, isComponentSupported),
-		[values.componentLibrary, isComponentSupported]
-	)
-	const domSlots = useMemo(
-		() =>
-			resolveDomComponentSlots(
-				values.componentLibrary,
-				isComponentSupported,
-				domCustomSlots
-			),
-		[values.componentLibrary, isComponentSupported, domCustomSlots]
+			resolveReactComponentSlots({
+				library: values.componentLibrary,
+				framework: values.framework,
+				cssMode: values.cssMode,
+				useCustomCalendarHeader: values.useCustomCalendarHeader,
+				useCustomEventForm: values.useCustomEventForm,
+			}),
+		[
+			values.componentLibrary,
+			values.framework,
+			values.cssMode,
+			values.useCustomCalendarHeader,
+			values.useCustomEventForm,
+		]
 	)
 
 	const lifecycle = {
@@ -234,30 +259,54 @@ export function CalendarDisplay({
 			shared,
 			customEvents,
 			themeAdapter: resolvedCss.adapter,
-			domSlots,
+			domSlots: undefined,
 			onDateChange: handleDateChange,
 			onViewChange: handleViewChange,
 			lifecycle,
 			override,
 		})
 
-	const isReact = values.framework === 'react'
-	const useMuiComponents = isReact && values.componentLibrary === 'mui'
+	const useMuiComponents =
+		values.framework === 'react' &&
+		values.componentLibrary === 'mui' &&
+		isComponentSupported
 
 	const selectFramework = (framework: FrameworkId) => {
 		setValue('framework', framework)
+		if (
+			getComponentLibraryIncompatibility(
+				values.componentLibrary,
+				framework,
+				values.cssMode
+			) !== null
+		) {
+			setValue('componentLibrary', 'native')
+		}
 	}
 
 	const selectCss = (cssMode: CssMode) => {
 		setValue('cssMode', cssMode)
+		if (
+			getComponentLibraryIncompatibility(
+				values.componentLibrary,
+				values.framework,
+				cssMode
+			) !== null
+		) {
+			setValue('componentLibrary', 'native')
+		}
 	}
 
 	const selectComponentLibrary = (library: ComponentLibraryId) => {
-		const option = COMPONENT_LIBRARY_OPTIONS.find(
-			(item) => item.value === library
-		)
-		if (!option || !option.supportedFrameworks.includes(values.framework))
+		if (
+			getComponentLibraryIncompatibility(
+				library,
+				values.framework,
+				values.cssMode
+			) !== null
+		) {
 			return
+		}
 		setValue('componentLibrary', library)
 	}
 
@@ -294,8 +343,23 @@ export function CalendarDisplay({
 					applyThemeVars={values.cssMode === 'plain'}
 					mode={resolvedMode}
 				>
-					{(muiVarsAdapter) => (
-						<CalendarStage {...stageProps} overrideAdapter={muiVarsAdapter} />
+					{(muiVarsAdapter, muiSlots) => (
+						<CalendarStage
+							{...stageProps}
+							overrideAdapter={muiVarsAdapter}
+							shared={{
+								...stageProps.shared,
+								slots: {
+									...(values.useCustomCalendarHeader
+										? {}
+										: { header: muiSlots.header }),
+									...(values.useCustomEventForm
+										? {}
+										: { eventForm: muiSlots.eventForm }),
+									moreEventsDialog: muiSlots.moreEventsDialog,
+								},
+							}}
+						/>
 					)}
 				</LazyMuiThemeWrapper>
 			</Suspense>
@@ -307,9 +371,11 @@ export function CalendarDisplay({
 			? `${values.timezone} + ${values.secondaryTimezone}`
 			: values.timezone
 	const pluginUnit = plugins.length === 1 ? 'plugin' : 'plugins'
-	const effectiveComponentLabel = isComponentSupported
-		? activeComponentMeta.label
-		: `${activeComponentMeta.label} (unavailable on ${activeFrameworkMeta.label} -> Native)`
+	const effectiveComponentLabel = getComponentDisplayLabel(
+		values.componentLibrary,
+		activeComponentMeta.label,
+		values.cssMode
+	)
 
 	return (
 		<Card
@@ -327,19 +393,15 @@ export function CalendarDisplay({
 				onSelectFramework={selectFramework}
 			/>
 
-			{!isComponentSupported && (
-				<div
-					className="px-3 py-1.5 border-b bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs select-none"
-					data-testid="component-unavailable-notice"
-				>
-					{activeComponentMeta.label} components require React and are disabled
-					for {activeFrameworkMeta.label}. Preview falls back to Native regions
-					while preserving your Components selection.
-				</div>
-			)}
-
 			<CardContent className="p-2 sm:p-3 relative z-10">
-				{stageContent}
+				<SlotPreviewOptionsContext.Provider
+					value={{
+						cssMode: values.cssMode,
+						hideNewButton: values.disableCellClick,
+					}}
+				>
+					{stageContent}
+				</SlotPreviewOptionsContext.Provider>
 			</CardContent>
 
 			<div

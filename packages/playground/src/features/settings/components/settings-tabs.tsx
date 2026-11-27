@@ -23,6 +23,7 @@ interface SettingsTabsProps {
 	onTabChange: (tab: SettingsTabId) => void
 	panels: Record<SettingsTabId, ReactNode>
 	className?: string
+	inDialog?: boolean
 }
 
 const TAB_KEY_HANDLERS: Record<
@@ -46,6 +47,7 @@ export function SettingsTabs({
 	onTabChange,
 	panels,
 	className,
+	inDialog = false,
 }: SettingsTabsProps) {
 	const idPrefix = useId()
 	const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
@@ -73,7 +75,12 @@ export function SettingsTabs({
 			)}
 		>
 			<CardHeader className="p-0 border-b shrink-0">
-				<div className="px-4 pt-3 pb-1 flex items-center justify-between">
+				<div
+					className={cn(
+						'px-4 pt-3 pb-1 flex items-center justify-between',
+						inDialog && 'pr-11'
+					)}
+				>
 					<CardTitle className="text-sm font-semibold tracking-tight">
 						Inspector
 					</CardTitle>

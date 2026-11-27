@@ -328,4 +328,53 @@ console.log(renderToString(createElement(IlamyCalendar, { initialDate: '2025-03-
 			container.querySelector('[data-testid="tp-view"]')?.textContent
 		).toBe('day')
 	})
+
+	it('toggles renderHour on and off in day view without React portal removeChild errors', async () => {
+		container = document.createElement('div')
+		document.body.appendChild(container)
+		root = createRoot(container)
+		const renderHour = (iso: string) => (
+			<span data-testid={`custom-hr-${iso.slice(11, 13)}`}>
+				{iso.slice(11, 13)}h
+			</span>
+		)
+
+		await act(async () => {
+			root?.render(
+				<IlamyCalendar
+					initialDate="2025-03-12T09:00:00Z"
+					initialView="day"
+					timezone="UTC"
+				/>
+			)
+		})
+		expect(container.querySelector('[data-testid="custom-hr-09"]')).toBeNull()
+
+		await act(async () => {
+			root?.render(
+				<IlamyCalendar
+					initialDate="2025-03-12T09:00:00Z"
+					initialView="day"
+					renderHour={renderHour}
+					timezone="UTC"
+				/>
+			)
+			await new Promise((r) => setTimeout(r, 0))
+		})
+		expect(
+			container.querySelector('[data-testid="custom-hr-09"]')?.textContent
+		).toBe('09h')
+
+		await act(async () => {
+			root?.render(
+				<IlamyCalendar
+					initialDate="2025-03-12T09:00:00Z"
+					initialView="day"
+					timezone="UTC"
+				/>
+			)
+			await new Promise((r) => setTimeout(r, 0))
+		})
+		expect(container.querySelector('[data-testid="custom-hr-09"]')).toBeNull()
+	})
 })

@@ -59,6 +59,10 @@ export function ThemePanel() {
 	const calendarType = useWatch({ control, name: 'calendarType' })
 	const isResource = calendarType === 'resource'
 	const usesMuiVars = framework === 'react' && componentLibrary === 'mui'
+	const usesShadcnPairing =
+		framework === 'react' &&
+		cssMode === 'tailwind' &&
+		(componentLibrary === 'radix' || componentLibrary === 'base-ui')
 	const supportsPalette = cssMode === 'stylex' || usesMuiVars
 	const showColorMode =
 		cssMode === 'stylex' || cssMode === 'unstyled' || usesMuiVars
@@ -76,7 +80,11 @@ export function ThemePanel() {
 			{cssMode === 'tailwind' && (
 				<p className="text-xs text-muted-foreground leading-relaxed">
 					Running <code className="font-mono">unstyled</code> with Tailwind v4
-					utility classes in <code className="font-mono">slotProps</code>.
+					utility classes in <code className="font-mono">slotProps</code>
+					{usesShadcnPairing
+						? ` (shadcn/ui setup over ${componentLibrary === 'base-ui' ? 'Base UI' : 'Radix UI'} primitives)`
+						: ''}
+					.
 				</p>
 			)}
 

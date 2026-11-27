@@ -11,6 +11,7 @@
 		"type-check": "bun check --no-script"
 	},
 	"dependencies": {
+		"@base-ui/react": "1.9.0",
 		"@emotion/react": "11.14.0",
 		"@emotion/styled": "11.14.1",
 		"@ilamy/calendar": "workspace:*",

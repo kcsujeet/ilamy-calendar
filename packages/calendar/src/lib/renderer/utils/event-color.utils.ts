@@ -40,11 +40,11 @@ export interface ResolvedEventSurface {
 
 const applyFallbackBackground = (
 	fg: string | undefined,
-	unstyled: boolean,
+	_unstyled: boolean,
 	hasSlotBg: boolean,
 	style: StyleRecord
 ) => {
-	if (hasBgToken(fg) || unstyled || hasSlotBg || isTailwindToken(fg)) {
+	if (hasBgToken(fg) || hasSlotBg || isTailwindToken(fg)) {
 		return
 	}
 	style.backgroundColor = '#dbeafe'

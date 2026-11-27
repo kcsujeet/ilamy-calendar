@@ -78,8 +78,8 @@ export function PlaygroundToolbar({
 						</span>
 					</div>
 					<p className="text-sm text-muted-foreground mt-0.5">
-						Multi-framework calendar with Temporal timezones and bring-your-own
-						themes
+						Multi-framework calendar with Temporal timezones — works with
+						Tailwind, shadcn/ui (Radix &amp; Base UI), MUI, StyleX, or plain CSS
 					</p>
 				</div>
 

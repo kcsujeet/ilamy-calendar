@@ -445,9 +445,11 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 		)
 		expect(hasStylexToken).toBe(true)
 
-		// Switch back to React 19 and verify MUI re-enables
+		// Switch back to React 19: MUI stays disabled on StyleX and re-enables on Plain CSS
 		await page.getByTestId('framework-react').click()
 		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
+		await expect(page.getByTestId('components-mui')).toBeDisabled()
+		await page.getByTestId('css-plain').click()
 		await expect(page.getByTestId('components-mui')).toBeEnabled()
 
 		expect(consoleErrors).toEqual([])

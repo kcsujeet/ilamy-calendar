@@ -101,7 +101,8 @@ const tailwindSlotProps: CalendarSlotProps = {
       "bg-background p-1 [&:not(:last-child):not([data-last-col='true'])]:border-r [&:not(:last-child):not([data-last-col='true'])]:border-border",
   },
   eventBar: {
-    className: 'rounded-sm text-xs font-medium bg-primary text-primary-foreground',
+    className:
+      "rounded-sm text-xs font-medium [&:not([data-custom-color='true'])]:bg-primary [&:not([data-custom-color='true'])]:text-primary-foreground [&>[data-ilamy-part='event-bar-content']]:px-1.5 [&>[data-ilamy-part='event-bar-content']]:py-1 [&[data-compact='true']>[data-ilamy-part='event-bar-content']]:py-0",
   },
 }
 

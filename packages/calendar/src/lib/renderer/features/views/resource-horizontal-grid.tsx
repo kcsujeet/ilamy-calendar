@@ -56,7 +56,7 @@ import {
 import { ResourceHeaderContent } from './resource-header-content'
 
 const HOUR_COL_WIDTH_PX = 81
-const RESOURCE_COL_WIDTH_PX = 96
+const RESOURCE_COL_WIDTH_PX = 136
 const DAILY_RESOURCE_WIDTH_PX = 176
 const ROW_MIN_HEIGHT_PX = 60
 const HOURLY_BAR_HEIGHT_PX = 24

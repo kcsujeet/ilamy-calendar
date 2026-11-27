@@ -19,11 +19,18 @@ test.describe('demo accessibility (axe-core WCAG 2.2 A+AA)', () => {
 		await expectNoAxeViolations(page)
 	})
 
-	test('React Tailwind, StyleX, shadcn, and MUI axes have zero axe violations', async ({
+	test('React Tailwind, Radix UI, Base UI, StyleX, and MUI axes have zero axe violations', async ({
 		page,
 	}) => {
 		await openDemo(page)
 		await page.getByTestId('css-tailwind').click()
+		await page.getByTestId('components-radix').click()
+		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
+		await expectNoAxeViolations(page, {
+			include: '[data-testid="ilamy-calendar"]',
+		})
+
+		await page.getByTestId('components-base-ui').click()
 		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
 		await expectNoAxeViolations(page, {
 			include: '[data-testid="ilamy-calendar"]',

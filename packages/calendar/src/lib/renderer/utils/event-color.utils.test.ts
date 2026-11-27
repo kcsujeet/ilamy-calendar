@@ -63,4 +63,14 @@ describe('resolveEventBarSurface', () => {
 			hasCustomColor: true,
 		})
 	})
+
+	it('keeps a readable fallback fill for text-only CSS color events in unstyled mode', () => {
+		expect(
+			resolveEventBarSurface(mkEvent({ color: '#7c3aed' }), true, false)
+		).toEqual({
+			className: undefined,
+			style: { backgroundColor: '#dbeafe', color: '#7c3aed' },
+			hasCustomColor: true,
+		})
+	})
 })

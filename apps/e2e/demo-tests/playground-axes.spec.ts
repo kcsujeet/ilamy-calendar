@@ -8,65 +8,70 @@ const openDemo = async (page: Page) => {
 	await page.getByTestId('ilamy-calendar').waitFor()
 }
 
-test.describe('QA Protocol G1-G7: 3-Axis Playground & Component Library Slots', () => {
+test.describe('QA Protocol: 3-Axis Playground (Framework x CSS x Component Library)', () => {
 	test.use({ viewport: { width: 1440, height: 900 } })
 
-	test('G1 & G2: Framework, CSS, and Components are independent; unsupported component libraries disable loudly without silent swap', async ({
+	test('3 unlabeled axes enforce full compatibility and auto-reset unsupported pairings cleanly', async ({
 		page,
 	}) => {
 		await openDemo(page)
 
-		// G1: Verify MUI and shadcn are in Components axis, not CSS axis
 		const axesBar = page.getByTestId('playground-axes-bar')
 		await expect(axesBar.getByTestId('css-plain')).toBeVisible()
 		await expect(axesBar.getByTestId('css-unstyled')).toBeVisible()
 		await expect(axesBar.getByTestId('css-tailwind')).toBeVisible()
 		await expect(axesBar.getByTestId('css-stylex')).toBeVisible()
 		await expect(axesBar.getByTestId('components-native')).toBeVisible()
-		await expect(axesBar.getByTestId('components-shadcn')).toBeVisible()
+		await expect(axesBar.getByTestId('components-radix')).toBeVisible()
+		await expect(axesBar.getByTestId('components-base-ui')).toBeVisible()
 		await expect(axesBar.getByTestId('components-mui')).toBeVisible()
-		await expect(axesBar.getByTestId('components-custom-slot')).toBeVisible()
+		await expect(axesBar.getByText('Custom Slot')).toHaveCount(0)
 
-		// Select Tailwind CSS + MUI Components on React
-		await page.getByTestId('css-tailwind').click()
+		// Mui works on React + Plain CSS, then disables & resets to Built-in when switching CSS to Tailwind
 		await page.getByTestId('components-mui').click()
-		const rootCard = page.locator('[data-active-framework="react"]')
-		await expect(rootCard).toHaveAttribute('data-active-css', 'tailwind')
-		await expect(rootCard).toHaveAttribute('data-active-components', 'mui')
+		await expect(page.locator('[data-active-components="mui"]')).toBeVisible()
 
-		// G2: Switch to Vue -> MUI is disabled with explanatory title, CSS stays tailwind, and NO silent replacement occurs
-		await page.getByTestId('framework-vue').click()
-		await expect(page.locator('[data-active-framework="vue"]')).toHaveAttribute(
-			'data-active-css',
-			'tailwind'
-		)
-		await expect(page.locator('[data-active-framework="vue"]')).toHaveAttribute(
-			'data-active-components',
-			'mui'
-		)
+		await page.getByTestId('css-tailwind').click()
 		await expect(page.getByTestId('components-mui')).toBeDisabled()
-		await expect(page.getByTestId('components-shadcn')).toBeDisabled()
 		expect(
 			await page.getByTestId('components-mui').getAttribute('title')
-		).toContain('React')
-		await expect(page.getByTestId('component-unavailable-notice')).toBeVisible()
+		).toContain('Plain CSS')
+		await expect(
+			page.locator('[data-active-components="native"]')
+		).toBeVisible()
+		await expect(page.getByTestId('components-radix')).toBeEnabled()
+		await expect(page.getByTestId('components-base-ui')).toBeEnabled()
 
-		// Switching back to React restores MUI component dialog cleanly
+		// Switching to Vue disables Radix UI, Base UI, and MUI and resets to Built-in
+		await page.getByTestId('components-base-ui').click()
+		await expect(
+			page.locator('[data-active-components="base-ui"]')
+		).toBeVisible()
+		await page.getByTestId('framework-vue').click()
+		await expect(
+			page.locator('[data-active-components="native"]')
+		).toBeVisible()
+		for (const lib of ['radix', 'base-ui', 'mui'] as const) {
+			const btn = page.getByTestId(`components-${lib}`)
+			await expect(btn).toBeDisabled()
+			expect(await btn.getAttribute('title')).toContain('React')
+		}
+
+		// Switching back to React on Plain CSS re-enables all 3 component libraries
 		await page.getByTestId('framework-react').click()
+		await page.getByTestId('css-plain').click()
+		await expect(page.getByTestId('components-radix')).toBeEnabled()
+		await expect(page.getByTestId('components-base-ui')).toBeEnabled()
 		await expect(page.getByTestId('components-mui')).toBeEnabled()
-		await expect(page.getByTestId('component-unavailable-notice')).toHaveCount(
-			0
-		)
 	})
 
-	test('G3: Switching framework, CSS, and Components preserves view and resource granularity', async ({
+	test('G3: Switching framework and CSS preserves view and resource granularity', async ({
 		page,
 	}) => {
 		await openDemo(page)
 		await page.getByTestId('preset-resource').click()
 		await expect(page.getByTestId('dom-resource-hourly-grid')).toBeVisible()
 
-		// Cycle frameworks -> resource week hourly remains intact
 		for (const fw of ['vue', 'svelte', 'solid', 'angular', 'react'] as const) {
 			await page.getByTestId(`framework-${fw}`).click()
 			await expect(
@@ -75,7 +80,6 @@ test.describe('QA Protocol G1-G7: 3-Axis Playground & Component Library Slots', 
 			).toBeVisible()
 		}
 
-		// Cycle CSS options -> resource week hourly remains intact
 		for (const css of ['tailwind', 'stylex', 'unstyled', 'plain'] as const) {
 			await page.getByTestId(`css-${css}`).click()
 			await expect(
@@ -90,13 +94,11 @@ test.describe('QA Protocol G1-G7: 3-Axis Playground & Component Library Slots', 
 	}) => {
 		await openDemo(page)
 
-		// G4: Zero duplicate theme/framework/mode controls in sidebar
 		await page.getByTestId('settings-tab-theme').click()
 		await expect(page.getByText('Active Theme')).toHaveCount(0)
 		await page.getByTestId('settings-tab-general').click()
 		await expect(page.getByText('Calendar Mode')).toHaveCount(0)
 
-		// G5: Status strip is plain non-interactive text without pointer cursor
 		const stripMetrics = await page
 			.getByTestId('playground-status-strip')
 			.evaluate((el) => ({
@@ -106,7 +108,6 @@ test.describe('QA Protocol G1-G7: 3-Axis Playground & Component Library Slots', 
 		expect(stripMetrics.cursor).not.toBe('pointer')
 		expect(stripMetrics.buttons).toBe(0)
 
-		// G6: No horizontal or vertical scrollbar inside top axes bar or preset nav
 		const barOverflow = await page
 			.getByTestId('playground-axes-bar')
 			.evaluate((el) => ({
@@ -124,7 +125,7 @@ test.describe('QA Protocol G1-G7: 3-Axis Playground & Component Library Slots', 
 		expect(navOverflow).toEqual({ x: 0, y: 0 })
 	})
 
-	test('G7 & Component Slots: Code panel updates per axis and shadcn / MUI / Custom Slot dialogs create events', async ({
+	test('Component libraries visibly swap calendar header & dialogs for Radix UI, Base UI, and MUI', async ({
 		page,
 	}) => {
 		await openDemo(page)
@@ -138,47 +139,59 @@ test.describe('QA Protocol G1-G7: 3-Axis Playground & Component Library Slots', 
 		}
 		await expect(page.getByTestId('dom-week-view')).toBeVisible()
 
-		// 1. React + Tailwind + shadcn
+		// 1. React + Tailwind + Radix UI (shows shadcn/ui pairing cleanly)
 		await page.getByTestId('css-tailwind').click()
-		await page.getByTestId('components-shadcn').click()
-		await expect(page.locator('pre code')).toContainText(
-			'@ilamy/calendar/styles/base.css'
+		await page.getByTestId('components-radix').click()
+		await expect(
+			page.locator(
+				'[data-testid="calendar-header"] [data-component-library="radix"]'
+			)
+		).toBeVisible()
+		await expect(page.getByTestId('playground-status-strip')).toContainText(
+			'Radix UI (shadcn/ui)'
 		)
-		await expect(page.locator('pre code')).toContainText('tailwindSlotProps')
-		await expect(page.locator('pre code')).toContainText('ShadcnEventForm')
-
+		await expect(page.locator('pre code')).toContainText('RadixHeader')
 		await page.getByTestId('new-event-btn').click()
-		await expect(page.getByTestId('shadcn-event-form-dialog')).toBeVisible()
-		await page.getByTestId('shadcn-form-title').fill('Shadcn Demo Event')
-		await page.getByTestId('shadcn-form-save').click()
-		await expect(page.getByTestId('shadcn-event-form-dialog')).toHaveCount(0)
-		await expect(page.getByText('Shadcn Demo Event')).toBeVisible()
+		await expect(page.getByTestId('radix-event-form-dialog')).toBeVisible()
+		await page.getByTestId('radix-form-title').fill('Radix Demo Event')
+		await page.getByTestId('radix-form-save').click()
+		await expect(page.getByTestId('radix-event-form-dialog')).toHaveCount(0)
+		await expect(page.getByText('Radix Demo Event')).toBeVisible()
 
-		// 2. React + Plain CSS + MUI
+		// 2. React + Tailwind + Base UI (@base-ui/react)
+		await page.getByTestId('components-base-ui').click()
+		await expect(
+			page.locator(
+				'[data-testid="calendar-header"] [data-component-library="base-ui"]'
+			)
+		).toBeVisible()
+		await expect(page.getByTestId('playground-status-strip')).toContainText(
+			'Base UI (shadcn/ui)'
+		)
+		await expect(page.locator('pre code')).toContainText(
+			'@base-ui/react/dialog'
+		)
+		await page.getByTestId('new-event-btn').click()
+		await expect(page.getByTestId('base-ui-event-form-dialog')).toBeVisible()
+		await page.getByTestId('base-ui-form-title').fill('Base UI Demo Event')
+		await page.getByTestId('base-ui-form-save').click()
+		await expect(page.getByTestId('base-ui-event-form-dialog')).toHaveCount(0)
+		await expect(page.getByText('Base UI Demo Event')).toBeVisible()
+
+		// 3. React + Plain CSS + MUI
 		await page.getByTestId('css-plain').click()
 		await page.getByTestId('components-mui').click()
-		await expect(page.locator('pre code')).toContainText('MuiEventForm')
+		await expect(
+			page.locator(
+				'[data-testid="calendar-header"] [data-component-library="mui"]'
+			)
+		).toBeVisible()
+		await expect(page.locator('pre code')).toContainText('MuiHeader')
 		await page.getByTestId('new-event-btn').click()
 		await expect(page.getByTestId('mui-event-form-dialog')).toBeVisible()
 		await page.getByTestId('mui-form-title').fill('MUI Demo Event')
 		await page.getByTestId('mui-form-save').click()
 		await expect(page.getByTestId('mui-event-form-dialog')).toHaveCount(0)
 		await expect(page.getByText('MUI Demo Event')).toBeVisible()
-
-		// 3. Vue + Tailwind + Custom Slot
-		await page.getByTestId('framework-vue').click()
-		await page.getByTestId('css-tailwind').click()
-		await page.getByTestId('components-custom-slot').click()
-		await expect(page.locator('pre code')).toContainText('#event-form')
-		const vueStage = page.getByTestId('framework-stage-vue')
-		await expect(vueStage.getByTestId('dom-week-view')).toBeVisible()
-		await vueStage.getByTestId('new-event-btn').click()
-		await expect(page.getByTestId('custom-event-form-dialog')).toBeVisible()
-		await page
-			.getByTestId('custom-slot-form-title')
-			.fill('Vue Custom Slot Event')
-		await page.getByTestId('custom-slot-form-save').click()
-		await expect(page.getByTestId('custom-event-form-dialog')).toBeHidden()
-		await expect(page.getByText('Vue Custom Slot Event')).toBeVisible()
 	})
 })

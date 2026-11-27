@@ -21,10 +21,13 @@ export const DEMO_PRESETS: DemoPreset[] = [
 		patch: {
 			calendarType: 'regular',
 			initialView: 'month',
+			timezone: defaultSettings.timezone,
 			enableBusinessHours: false,
 			constrainEventsToBusinessHours: false,
 			constrainSelectToBusinessHours: false,
 			disableDragAndDrop: false,
+			disableCellClick: false,
+			disableEventClick: false,
 			nowIndicator: true,
 			enableRecurrencePlugin: true,
 			enableAgendaPlugin: true,
@@ -39,11 +42,14 @@ export const DEMO_PRESETS: DemoPreset[] = [
 		description: 'Rooms & equipment scheduler across resource lanes',
 		patch: {
 			calendarType: 'resource',
+			timezone: defaultSettings.timezone,
 			orientation: 'horizontal',
 			weekViewGranularity: 'hourly',
 			initialView: 'week',
 			enableBusinessHours: false,
 			disableDragAndDrop: false,
+			disableCellClick: false,
+			disableEventClick: false,
 		},
 	},
 	{
@@ -54,6 +60,7 @@ export const DEMO_PRESETS: DemoPreset[] = [
 		patch: {
 			calendarType: 'regular',
 			initialView: 'week',
+			timezone: defaultSettings.timezone,
 			enableBusinessHours: true,
 			businessHoursDays: [
 				'monday',
@@ -67,6 +74,8 @@ export const DEMO_PRESETS: DemoPreset[] = [
 			constrainEventsToBusinessHours: true,
 			constrainSelectToBusinessHours: true,
 			disableDragAndDrop: false,
+			disableCellClick: false,
+			disableEventClick: false,
 		},
 	},
 	{
@@ -81,6 +90,8 @@ export const DEMO_PRESETS: DemoPreset[] = [
 			secondaryTimezone: 'Asia/Tokyo',
 			enableBusinessHours: false,
 			disableDragAndDrop: false,
+			disableCellClick: false,
+			disableEventClick: false,
 		},
 	},
 	{
@@ -90,7 +101,10 @@ export const DEMO_PRESETS: DemoPreset[] = [
 		patch: {
 			calendarType: 'regular',
 			initialView: 'week',
+			timezone: defaultSettings.timezone,
 			disableDragAndDrop: true,
+			disableCellClick: true,
+			disableEventClick: true,
 			nowIndicator: false,
 			enableBusinessHours: false,
 		},

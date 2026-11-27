@@ -11,6 +11,8 @@ export const rendererKeys = {
 		resourceHeader: (resourceId: Id) => `resource-header-${resourceId}`,
 		resourceHourSlot: (resourceId: Id, dateKey: string, hour: number) =>
 			`dom-resource-hour-slot-${resourceId}-${dateKey}-${hour}`,
+		resourceWeekTimeLabel: (hourStr: string) =>
+			`resource-week-time-label-${hourStr}`,
 		eventBar: (eventId: Id, staticPill: boolean) =>
 			staticPill
 				? `all-events-dialog-event-${eventId}`
@@ -47,6 +49,7 @@ export const rendererKeys = {
 		allDayCell: (dateKey: string, resourceId: Id | undefined, idx: number) =>
 			`all-day-${dateKey}-${resourceId ?? idx}`,
 		hourMinute: (hour: number, minute: number) => `${hour}:${minute}`,
+		timeAxisHour: (hour: number, index: number) => `${hour}-${index}`,
 		resourceDay: (resourceId: Id, dateKey: string) =>
 			`${resourceId}-${dateKey}`,
 		hourlyBar: (id: Id, lane: number) => `${id}-${lane}`,

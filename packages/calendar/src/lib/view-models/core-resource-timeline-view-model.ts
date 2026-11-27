@@ -15,12 +15,13 @@ import {
 } from '../../utils/core-view-hours.utils'
 import {
 	add,
+	isSameDay,
 	now,
-	parseDate,
 	startOf,
 	withTime,
 	type ZonedDate,
 } from '../../utils/temporal'
+import { MS_PER_HOUR, wallClockMs } from '../layout/core-layout-columns.utils'
 import {
 	type HorizontalLayoutResult,
 	layoutHorizontal,
@@ -39,6 +40,7 @@ export interface ResourceTimelineRowViewModel {
 	resource: Resource
 	events: CalendarEvent[]
 	hourlyBars: HourlyTimelineBar[]
+	hourlyLayout: HorizontalLayoutResult | undefined
 	dailyLayout: HorizontalLayoutResult | undefined
 }
 
@@ -71,7 +73,6 @@ export interface BuildResourceTimelineViewModelInput {
 }
 
 const DEFAULT_DAY_MAX_EVENTS = 4
-const MIN_BAR_WIDTH_PERCENT = 1.5
 
 /** Resolves whether a resource timeline mode renders hourly slots or daily columns. */
 export const resolveTimelineGranularity = (
@@ -102,53 +103,6 @@ const resolveTimelineDays = (
 	return visible.length > 0 ? visible : [currentDate]
 }
 
-const buildHourlyBarsForResource = (
-	events: CalendarEvent[],
-	timezone: string,
-	rangeStartMs: number,
-	rangeEndMs: number
-): HourlyTimelineBar[] => {
-	const totalMs = Math.max(1, rangeEndMs - rangeStartMs)
-	const clampedItems: Array<{
-		event: CalendarEvent
-		startMs: number
-		endMs: number
-	}> = []
-
-	for (const event of events) {
-		const start = parseDate(event.start, timezone)
-		const end = parseDate(event.end, timezone)
-		if (!start || !end) continue
-		const startMs = Math.max(start.epochMilliseconds, rangeStartMs)
-		const endMs = Math.min(end.epochMilliseconds, rangeEndMs)
-		if (endMs <= startMs) continue
-		clampedItems.push({ event, startMs, endMs })
-	}
-
-	clampedItems.sort((a, b) => a.startMs - b.startMs)
-	const laneEndMs: number[] = []
-
-	return clampedItems.map(({ event, startMs, endMs }) => {
-		let lane = laneEndMs.findIndex((occupiedUntil) => occupiedUntil <= startMs)
-		if (lane === -1) {
-			lane = laneEndMs.length
-			laneEndMs.push(endMs)
-		} else {
-			laneEndMs[lane] = endMs
-		}
-
-		return {
-			event,
-			leftPercent: ((startMs - rangeStartMs) / totalMs) * 100,
-			widthPercent: Math.max(
-				((endMs - startMs) / totalMs) * 100,
-				MIN_BAR_WIDTH_PERCENT
-			),
-			lane,
-		}
-	})
-}
-
 const resolveRangeBounds = (
 	granularity: TimelineGranularity,
 	hourSlots: ZonedDate[],
@@ -173,15 +127,36 @@ const resolveRangeBounds = (
 }
 
 const computeTimelineNowPercent = (
-	rangeStartMs: number,
-	rangeEndMs: number,
+	granularity: TimelineGranularity,
+	hourSlots: ZonedDate[],
+	days: ZonedDate[],
 	timezone: string,
 	nowIndicator?: boolean
 ): number | null => {
-	if (!nowIndicator || rangeEndMs <= rangeStartMs) return null
-	const nowMs = now(timezone).epochMilliseconds
-	if (nowMs < rangeStartMs || nowMs > rangeEndMs) return null
-	return ((nowMs - rangeStartMs) / (rangeEndMs - rangeStartMs)) * 100
+	if (!nowIndicator) return null
+	const currentNow = now(timezone)
+	if (granularity === 'hourly') {
+		if (hourSlots.length === 0) return null
+		const nowClock = wallClockMs(currentNow)
+		const slotIdx = hourSlots.findIndex((slot) => {
+			const slotClock = wallClockMs(slot)
+			return nowClock >= slotClock && nowClock < slotClock + MS_PER_HOUR
+		})
+		const matchedSlot = slotIdx >= 0 ? hourSlots.at(slotIdx) : undefined
+		if (!matchedSlot) return null
+		const fraction = (nowClock - wallClockMs(matchedSlot)) / MS_PER_HOUR
+		return ((slotIdx + fraction) / hourSlots.length) * 100
+	}
+	if (days.length === 0) return null
+	const dayIdx = days.findIndex((day) => isSameDay(day, currentNow))
+	const matchedDay = dayIdx >= 0 ? days.at(dayIdx) : undefined
+	if (!matchedDay) return null
+	const dayStartMs = startOf(matchedDay, 'day').epochMilliseconds
+	const dayEndMs = add(startOf(matchedDay, 'day'), 1, 'day').epochMilliseconds
+	const fraction =
+		(currentNow.epochMilliseconds - dayStartMs) /
+		Math.max(1, dayEndMs - dayStartMs)
+	return ((dayIdx + fraction) / days.length) * 100
 }
 
 /** Builds a framework-agnostic view model for horizontal resource timelines. */
@@ -234,8 +209,9 @@ export const buildResourceTimelineViewModel = ({
 		days
 	)
 	const nowIndicatorPercent = computeTimelineNowPercent(
-		rangeStartMs,
-		rangeEndMs,
+		granularity,
+		hourSlots,
+		days,
 		timezone,
 		nowIndicator
 	)
@@ -243,15 +219,25 @@ export const buildResourceTimelineViewModel = ({
 	const rows = resources.map((resource): ResourceTimelineRowViewModel => {
 		const resEvents = getResourceEvents(events, resource.id)
 		if (granularity === 'hourly') {
+			const hourlyLayout = layoutHorizontal({
+				events: resEvents,
+				days: hourSlots,
+				dayMaxEvents,
+				gridType: 'hour',
+			})
+			const hourlyBars: HourlyTimelineBar[] = hourlyLayout.positionedEvents.map(
+				(pos) => ({
+					event: pos.event,
+					leftPercent: pos.left,
+					widthPercent: pos.width,
+					lane: pos.row,
+				})
+			)
 			return {
 				resource,
 				events: resEvents,
-				hourlyBars: buildHourlyBarsForResource(
-					resEvents,
-					timezone,
-					rangeStartMs,
-					rangeEndMs
-				),
+				hourlyBars,
+				hourlyLayout,
 				dailyLayout: undefined,
 			}
 		}
@@ -259,6 +245,7 @@ export const buildResourceTimelineViewModel = ({
 			resource,
 			events: resEvents,
 			hourlyBars: [],
+			hourlyLayout: undefined,
 			dailyLayout: layoutHorizontal({
 				events: resEvents,
 				days,

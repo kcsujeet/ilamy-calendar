@@ -1308,12 +1308,12 @@ test.describe('extra probes', () => {
 		const dialog = page.getByRole('dialog')
 		console.log('PICKER visible', await dialog.count())
 		const text = await page
-			.locator('[data-slot="popover-content"]')
+			.locator('[data-ilamy-part="popover"]')
 			.first()
 			.innerText()
 		console.log('PICKER', text.replace(/\n/g, ' ').slice(0, 400))
 		const sat = page
-			.locator('[data-slot="popover-content"] button[data-day]')
+			.locator('[data-ilamy-part="popover"] button[data-day-key]')
 			.filter({ hasText: /^15$/ })
 			.first()
 		console.log('SAT15 buttons', await sat.count())

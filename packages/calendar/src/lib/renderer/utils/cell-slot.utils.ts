@@ -5,7 +5,10 @@ import {
 	type CellInfo,
 	type HeadlessCalendarController,
 	isBusinessHour,
+	maxDate,
+	minDate,
 	parseDate,
+	toOffsetIso,
 	type ZonedDate,
 } from '../../../index'
 import type { DomCalendarOptions } from '../types/renderer.types'
@@ -100,4 +103,32 @@ export const resolveAnchorDate = (
 		parseDate(state.visibleRange.start, state.timezone) ??
 		null
 	)
+}
+
+/** Clamps an event's ISO start/end interval to optional `[rowStart, rowEnd]` bounds. */
+export const clipSegmentIsoRange = ({
+	eventStart,
+	eventEnd,
+	timezone,
+	rowStart,
+	rowEnd,
+}: {
+	eventStart: string
+	eventEnd: string
+	timezone: string
+	rowStart: ZonedDate | undefined
+	rowEnd: ZonedDate | undefined
+}): {
+	evStart: ZonedDate | undefined
+	evEnd: ZonedDate | undefined
+	segStart: string | undefined
+	segEnd: string | undefined
+} => {
+	const evStart = parseDate(eventStart, timezone)
+	const evEnd = parseDate(eventEnd, timezone)
+	const segStart =
+		evStart && rowStart ? toOffsetIso(maxDate(evStart, rowStart)) : undefined
+	const segEnd =
+		evEnd && rowEnd ? toOffsetIso(minDate(evEnd, rowEnd)) : undefined
+	return { evStart, evEnd, segStart, segEnd }
 }

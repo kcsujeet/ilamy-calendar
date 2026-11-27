@@ -14,9 +14,11 @@ import {
 	createPluginRuntime,
 	type DomCalendarOptions,
 	type IsoDateString,
+	isSameResourceList,
 	type MountedCalendar,
 	normalizeEvent,
 	type RenderCurrentTimeIndicatorProps,
+	type Resource,
 } from '../../../index'
 import { mountCalendar } from '../../../lib/renderer/index'
 import {
@@ -232,11 +234,23 @@ function createReactCalendarRuntime(
 	const registry = createPortalRegistry()
 	const slotCache: SlotMountCache = {}
 	const portalCounter = { current: 0 }
+	let lastReportedResources: Resource[] | undefined
+	const reportResourcesSet = (rows: Resource[]) => {
+		if (
+			lastReportedResources &&
+			isSameResourceList(lastReportedResources, rows)
+		) {
+			return
+		}
+		lastReportedResources = rows
+		latestPropsRef.current.resourcesSet?.(rows)
+	}
 	return {
 		controller: createReactController(domProps, latestPropsRef),
 		registry,
 		slotCache,
 		portalCounter,
+		reportResourcesSet,
 		hourBridge: createCallbackPortalBridge<IsoDateString>(
 			registry,
 			portalCounter,
@@ -331,6 +345,9 @@ export const IlamyCalendar = (props: IlamyCalendarProps): ReactNode => {
 	const nextDomOptions: DomCalendarOptions = {
 		...domProps,
 		controller: runtime.controller,
+		resourcesSet: domProps.resourcesSet
+			? runtime.reportResourcesSet
+			: undefined,
 		slots: resolvedSlots,
 		renderHour: renderHour ? runtime.hourBridge : undefined,
 		renderCurrentTimeIndicator: renderCurrentTimeIndicator

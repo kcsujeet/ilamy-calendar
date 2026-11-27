@@ -57,8 +57,14 @@ const openDemo = async (page: Page): Promise<void> => {
  * header shows the compact view menu (a button naming the current view), not
  * the segmented switcher.
  */
-const selectView = async (page: Page, view: 'week' | 'year') => {
-	const calendar = page.getByTestId('ilamy-calendar')
+const selectView = async (
+	page: Page,
+	view: 'month' | 'week' | 'agenda' | 'year',
+	scope?: Locator
+) => {
+	const calendar = scope
+		? scope.getByTestId('ilamy-calendar')
+		: page.getByTestId('ilamy-calendar')
 	const btn = calendar.getByTestId(`view-btn-${view}`)
 	if (await btn.isVisible()) {
 		await btn.click()
@@ -320,35 +326,42 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 		await expect(calendar.getByTestId('calendar-title')).toHaveText('2026')
 	})
 
-	test('design system switcher applies Material UI, StyleX, and Unstyled+slotProps live (D5)', async ({
+	test('design system axes apply MUI vars, StyleX, Tailwind, and Unstyled+slotProps live (D5)', async ({
 		page,
 	}) => {
 		await openDemo(page)
 
-		// Switch to Material UI theme — maps MUI Theme palette/shape into --ilamy-* tokens
-		await page.getByTestId('theme-mui').click()
-		await expect(page.locator('[data-active-theme="mui"]')).toBeVisible()
-		const muiVars = await page.getByTestId('ilamy-calendar').evaluate((el) => ({
-			primary: el.style.getPropertyValue('--ilamy-primary'),
-			radius: el.style.getPropertyValue('--ilamy-radius'),
-		}))
-		expect(muiVars.primary).toBeTruthy()
-		expect(muiVars.radius).toBe('10px')
+		// Switch Components to Material UI on Plain CSS — maps MUI Theme palette/shape into --ilamy-* tokens
+		await page.getByTestId('components-mui').click()
+		await expect(page.locator('[data-active-components="mui"]')).toBeVisible()
+		await expect
+			.poll(async () =>
+				page.getByTestId('ilamy-calendar').evaluate((el) => ({
+					primary: el.style.getPropertyValue('--ilamy-primary'),
+					radius: el.style.getPropertyValue('--ilamy-radius'),
+				}))
+			)
+			.toEqual({ primary: expect.any(String), radius: '10px' })
+		const muiPrimary = await page
+			.getByTestId('ilamy-calendar')
+			.evaluate((el) => el.style.getPropertyValue('--ilamy-primary'))
+		expect(muiPrimary).toBeTruthy()
+		await page.getByTestId('components-native').click()
 
-		// Switch to StyleX theme — injects --ilamy-bg CSS custom property on calendar root
-		await page.getByTestId('theme-stylex').click()
-		await expect(page.locator('[data-active-theme="stylex"]')).toBeVisible()
+		// Switch CSS to StyleX — injects --ilamy-bg CSS custom property on calendar root
+		await page.getByTestId('css-stylex').click()
+		await expect(page.locator('[data-active-css="stylex"]')).toBeVisible()
 		const hasStylexVar = await page
 			.getByTestId('ilamy-calendar')
 			.evaluate((el) => Boolean(el.style.getPropertyValue('--ilamy-bg')))
 		expect(hasStylexVar).toBe(true)
 
-		// Switch to Unstyled — strips default border class on calendar body
-		await page.getByTestId('theme-unstyled').click()
-		await expect(page.locator('[data-active-theme="unstyled"]')).toBeVisible()
+		// Switch CSS to Unstyled — strips default border on calendar body
+		await page.getByTestId('css-unstyled').click()
+		await expect(page.locator('[data-active-css="unstyled"]')).toBeVisible()
 		const hasDefaultBorder = await page
 			.getByTestId('calendar-body')
-			.evaluate((el) => el.classList.contains('border'))
+			.evaluate((el) => getComputedStyle(el).borderTopWidth !== '0px')
 		expect(hasDefaultBorder).toBe(false)
 
 		// Opt in to custom slotProps demo from the Theme tab
@@ -410,20 +423,20 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 				stage.locator(`[data-ilamy-framework="${fw.id}"]`)
 			).toBeVisible()
 			await expect(stage.getByTestId('ilamy-calendar')).toBeVisible()
-			await expect(page.getByTestId('theme-mui')).toBeDisabled()
+			await expect(page.getByTestId('components-mui')).toBeDisabled()
 			await expect(page.locator('pre code')).toContainText(fw.importSpec)
 
 			// Exercise view switching inside the mounted framework calendar
-			await stage.getByTestId('view-btn-week').click()
+			await selectView(page, 'week', stage)
 			await expect(stage.getByTestId('dom-week-view')).toBeVisible()
-			await stage.getByTestId('view-btn-agenda').click()
+			await selectView(page, 'agenda', stage)
 			await expect(stage.getByTestId('agenda-view')).toBeVisible()
-			await stage.getByTestId('view-btn-month').click()
+			await selectView(page, 'month', stage)
 			await expect(stage.getByTestId('dom-month-view')).toBeVisible()
 		}
 
 		// Verify StyleX theme applies cleanly to a non-React framework too (Angular 22)
-		await page.getByTestId('theme-stylex').click()
+		await page.getByTestId('css-stylex').click()
 		const angularRoot = page
 			.getByTestId('framework-stage-angular')
 			.getByTestId('ilamy-calendar')
@@ -435,7 +448,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 		// Switch back to React 19 and verify MUI re-enables
 		await page.getByTestId('framework-react').click()
 		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
-		await expect(page.getByTestId('theme-mui')).toBeEnabled()
+		await expect(page.getByTestId('components-mui')).toBeEnabled()
 
 		expect(consoleErrors).toEqual([])
 	})
@@ -453,6 +466,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 
 		// 2. Angular + Tailwind scrolled Month view keeps an opaque z-30 sticky header
 		await page.getByTestId('framework-angular').click()
+		await page.getByTestId('css-tailwind').click()
 		const monthView = page.getByTestId('dom-month-view')
 		await expect(monthView).toBeVisible()
 		const headerMetrics = await monthView.evaluate((view) => {
@@ -472,7 +486,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 
 		// 3. Vue + StyleX Dark: visible cell borders, distinct event colors, clickable +N more
 		await page.getByTestId('framework-vue').click()
-		await page.getByTestId('theme-stylex').click()
+		await page.getByTestId('css-stylex').click()
 		await page.getByTestId('settings-tab-theme').click()
 		await page.getByRole('button', { name: 'Dark', exact: true }).click()
 
@@ -507,18 +521,17 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 			.getByRole('button', { name: 'Close' })
 			.click()
 
-		// 4. React + MUI Dark: Dialog portals inherit dark CSS vars (legible Repeat label)
+		// 4. React + MUI Dark: MUI dialog & calendar vars work cleanly
 		await page.getByTestId('framework-react').click()
-		await page.getByTestId('theme-mui').click()
+		await page.getByTestId('css-plain').click()
+		await page.getByTestId('components-mui').click()
 		const reactCalendar = page.getByTestId('ilamy-calendar')
 		await reactCalendar.getByRole('button', { name: 'New' }).click()
-		const dialog = page.getByRole('dialog')
+		const dialog = page.getByTestId('mui-event-form-dialog')
 		await expect(dialog).toBeVisible()
-		const dialogFg = await dialog.evaluate((el) =>
-			getComputedStyle(el).getPropertyValue('--foreground').trim()
-		)
-		expect(dialogFg).not.toBe('')
 		await page.keyboard.press('Escape')
+		await expect(dialog).toHaveCount(0)
+		await page.getByTestId('components-native').click()
 
 		// 5. Preset tab bar has no vertical scrollbar, React+StyleX colored bars have no outer bg bleed,
 		//    and Svelte StyleX -> Tailwind clears stale inline root CSS variables
@@ -527,9 +540,9 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 			.evaluate((el) => el.scrollHeight - el.clientHeight)
 		expect(navVOverflow).toBe(0)
 
-		await page.getByTestId('theme-stylex').click()
+		await page.getByTestId('css-stylex').click()
 		const reactColoredOuterBg = await reactCalendar
-			.locator('[data-testid^="calendar-event-"] [role="button"]')
+			.locator('[data-ilamy-part="event-wrapper"]')
 			.first()
 			.evaluate((el) => getComputedStyle(el).backgroundColor)
 		expect(reactColoredOuterBg).toBe('rgba(0, 0, 0, 0)')
@@ -538,12 +551,12 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 		await expect(
 			page.locator('[data-truncated-end="true"]').first()
 		).toBeVisible()
-		await page.getByTestId('view-btn-week').click()
+		await selectView(page, 'week')
 		const timeAxisBorder = await page
 			.getByTestId('dom-time-axis')
 			.evaluate((el) => getComputedStyle(el).borderRightWidth)
 		expect(timeAxisBorder).toBe('1px')
-		await page.getByTestId('theme-tailwind').click()
+		await page.getByTestId('css-tailwind').click()
 		const stalePrimary = await page
 			.getByTestId('ilamy-calendar')
 			.evaluate((el) => el.style.getPropertyValue('--primary'))
@@ -673,7 +686,7 @@ test.describe('the demo with its default settings, on a Sunday', () => {
 
 		// 2. Switch to Vue in the same live demo (default settings: 600px scroll, timezone, plugins)
 		await page.getByTestId('framework-vue').click()
-		await page.getByTestId('view-btn-week').click()
+		await selectView(page, 'week')
 		const vueYoga = page.getByTestId(`calendar-event-${YOGA_ID}`).first()
 		await vueYoga.scrollIntoViewIfNeeded()
 		const vueHandle = endHandleOf(vueYoga)

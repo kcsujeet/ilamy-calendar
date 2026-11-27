@@ -59,12 +59,14 @@ export const ResourceHeaderContent = ({
 		)
 	}
 	return (
-		<span
+		<div
+			data-ilamy-part="col-header-label"
 			style={
 				truncate ? { overflow: 'hidden', textOverflow: 'ellipsis' } : undefined
 			}
+			title={resource.title}
 		>
 			{resource.title}
-		</span>
+		</div>
 	)
 }

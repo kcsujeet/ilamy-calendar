@@ -94,16 +94,14 @@ test.describe('Phase 0 Spike: region slots lifecycle & context across frameworks
 				await headerSearch.click()
 				await headerSearch.fill('hello')
 
-				// Real UI navigation button click keeps slot subtree & input value intact
+				// Real UI navigation button click keeps header slot subtree & input value intact
+				// (`Initial Event` in March is unmounted outside its month grid).
 				await page.getByTestId('header-next').click()
 				await expect(page.getByTestId('header-title')).toHaveText('April 2025')
 				await expect(page.getByTestId('header-context-date')).toContainText(
 					'2025-04-'
 				)
 				await expect(page.getByTestId('header-mount-count')).toHaveText(
-					variant.expectedInitialMounts
-				)
-				await expect(page.getByTestId('event-mount-count-1')).toHaveText(
 					variant.expectedInitialMounts
 				)
 				await expect(headerSearch).toHaveValue('hello')
@@ -118,9 +116,6 @@ test.describe('Phase 0 Spike: region slots lifecycle & context across frameworks
 					'2025-05-'
 				)
 				await expect(page.getByTestId('header-mount-count')).toHaveText(
-					variant.expectedInitialMounts
-				)
-				await expect(page.getByTestId('event-mount-count-1')).toHaveText(
 					variant.expectedInitialMounts
 				)
 				await expect(headerSearch).toHaveValue('hello')

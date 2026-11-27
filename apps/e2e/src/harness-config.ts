@@ -64,7 +64,7 @@ export interface UrlConfig {
 	/** Harness-only: render two calendars side-by-side in America/New_York and Asia/Tokyo. */
 	multiZone?: boolean
 	/** Harness-only: pass custom slotProps / components to verify v4.0 theming props. */
-	themeVariant?: 'slot-props' | 'custom-button'
+	themeVariant?: 'slot-props' | 'custom-button' | 'mui-vars'
 	/** Set from the `eventAllow` parameter, which names a predicate. */
 	eventAllow?: (dropInfo: EventDropInfo) => boolean
 	timeFormat?: TimeFormat
@@ -483,7 +483,7 @@ export const readUrlConfig = (params: URLSearchParams): UrlConfig => {
 		config.themeVariant = oneOf(
 			'themeVariant',
 			themeVariant,
-			['slot-props', 'custom-button'] as const,
+			['slot-props', 'custom-button', 'mui-vars'] as const,
 			String
 		)
 	}

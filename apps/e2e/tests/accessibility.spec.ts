@@ -66,7 +66,8 @@ test.describe('event bars', () => {
 		page,
 	}) => {
 		await openWeek(page)
-		const bar = page.getByTestId('calendar-event-basic-1').getByRole('button')
+		const bar = page.getByTestId('calendar-event-basic-1')
+		await expect(bar).toHaveRole('button')
 		const descriptionId = await bar.getAttribute('aria-describedby')
 
 		const description = await page.evaluate(

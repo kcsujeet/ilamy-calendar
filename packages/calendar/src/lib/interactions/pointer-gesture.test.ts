@@ -239,6 +239,51 @@ describe('createPointerGesture', () => {
 			up()
 			expect(dispatchClick().defaultPrevented).toBe(false)
 		})
+
+		it('auto-disarms trailing click suppression on next macrotask so external buttons still click when no trailing click fires', async () => {
+			const host = document.createElement('div')
+			const externalBtn = document.createElement('button')
+			document.body.append(host, externalBtn)
+			let externalClicks = 0
+			externalBtn.addEventListener('click', () => {
+				externalClicks += 1
+			})
+
+			const handle = createPointerGesture<string>({
+				target: host,
+				resolvePress: () => 'drag',
+				onMove: () => {},
+				onEnd: () => {},
+			})
+			activeHandles.push(handle)
+
+			// Trailing click immediately after pointerup IS suppressed
+			down({ clientX: 0 }, host)
+			move({ clientX: 20 })
+			up({ clientX: 20 })
+			expect(dispatchClick().defaultPrevented).toBe(true)
+
+			// Drag ending across lanes without a trailing click releases on next macrotask
+			down({ clientX: 0 }, host)
+			move({ clientX: 20 })
+			up({ clientX: 20 })
+			await delay(10)
+			externalBtn.click()
+			expect(externalClicks).toBe(1)
+
+			// Pressing Escape and holding pointer down across macrotasks keeps suppression until pointerup
+			down({ clientX: 0 }, host)
+			move({ clientX: 10 })
+			window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+			await delay(10)
+			up({ clientX: 10 })
+			expect(dispatchClick().defaultPrevented).toBe(true)
+
+			// A plain click on the next press is NOT suppressed
+			down({ clientX: 0 }, host)
+			up({ clientX: 0 })
+			expect(dispatchClick().defaultPrevented).toBe(false)
+		})
 	})
 
 	describe('touch (long-press & edge auto-scroll)', () => {

@@ -1,6 +1,8 @@
 import type {
 	CalendarEvent,
 	CalendarSlotProps,
+	CalendarSlots,
+	CalendarView,
 	DateRange,
 	DomCalendarOptions,
 	EventsChange,
@@ -16,6 +18,7 @@ import type {
 	CalendarClassesOverride,
 	EventFormProps,
 	IlamyPlugin,
+	ReactCalendarSlots,
 	RenderCurrentTimeIndicatorProps,
 } from '@ilamy/calendar/react'
 import type { ReactNode } from 'react'
@@ -87,11 +90,13 @@ export interface SharedCalendarProps {
 	translations: Translations
 	unstyled: boolean
 	slotProps: CalendarSlotProps | undefined
+	slots: ReactCalendarSlots | undefined
 	headerComponent: ReactNode
 	onCellClick: ((info: import('@ilamy/calendar').CellInfo) => void) | undefined
 	onMoreEventsClick:
 		((day: IsoDateString, events: CalendarEvent[]) => void) | undefined
 	onDateChange: (date: IsoDateString, range: DateRange) => void
+	onViewChange: (view: CalendarView) => void
 	onEventAdd: EventHandler | undefined
 	onEventUpdate: EventHandler | undefined
 	onEventDelete: EventHandler | undefined
@@ -122,7 +127,9 @@ export function resolveSharedCalendarProps(
 		unstyled?: boolean
 		slotProps?: CalendarSlotProps
 	},
+	slots: ReactCalendarSlots | undefined,
 	onDateChange: (date: IsoDateString, range: DateRange) => void,
+	onViewChange: (view: CalendarView) => void,
 	lifecycle: LifecycleHandlers
 ): SharedCalendarProps {
 	const lifecycleOn = values.useEventLifecycleCallbacks
@@ -206,7 +213,9 @@ export function resolveSharedCalendarProps(
 		translations,
 		unstyled: Boolean(themeAdapter.unstyled),
 		slotProps: themeAdapter.slotProps,
+		slots,
 		onDateChange,
+		onViewChange,
 		headerComponent,
 		classesOverride,
 		onCellClick: values.useCustomOnDateClick ? handleDateClick : undefined,
@@ -228,7 +237,9 @@ export function buildDomCalendarOptions(params: {
 	customEvents: CalendarEvent[]
 	themeAdapter:
 		{ unstyled?: boolean; slotProps?: CalendarSlotProps } | undefined
+	domSlots?: CalendarSlots
 	onDateChange: (date: IsoDateString, range: DateRange) => void
+	onViewChange: (view: CalendarView) => void
 	lifecycle: Pick<
 		LifecycleHandlers,
 		'onEventAdd' | 'onEventUpdate' | 'onEventDelete' | 'onEventsChange'
@@ -240,7 +251,9 @@ export function buildDomCalendarOptions(params: {
 		shared,
 		customEvents,
 		themeAdapter,
+		domSlots,
 		onDateChange,
+		onViewChange,
 		lifecycle,
 		override = {},
 	} = params
@@ -258,15 +271,21 @@ export function buildDomCalendarOptions(params: {
 		translations: shared.translations as Partial<Record<string, string>>,
 		timeFormat: values.timeFormat,
 		dayMaxEvents: values.dayMaxEvents,
+		eventHeight: values.eventHeight,
+		eventSpacing: values.eventSpacing,
 		slotDuration: values.slotDuration,
 		snapDuration: values.snapDuration === 0 ? undefined : values.snapDuration,
 		slotMinTime: values.slotMinTime,
 		slotMaxTime: values.slotMaxTime,
+		scrollTime: shared.scrollTime,
+		scrollToNow: values.scrollToNow,
+		allDaySlot: values.allDaySlot,
 		businessHours: shared.businessHours,
 		hideNonBusinessHours: values.hideNonBusinessHours,
 		eventConstraint: shared.eventConstraint,
 		selectConstraint: shared.selectConstraint,
 		editable: !values.disableDragAndDrop,
+		eventResizableFromStart: values.eventResizableFromStart,
 		nowIndicator: values.nowIndicator,
 		displayEventTime: values.showEventTimes,
 		displayEventEnd: values.showEventEnd,
@@ -280,7 +299,9 @@ export function buildDomCalendarOptions(params: {
 		disableEventClick: values.disableEventClick,
 		unstyled: Boolean(themeAdapter?.unstyled),
 		slotProps: themeAdapter?.slotProps,
+		slots: domSlots,
 		onDateChange,
+		onViewChange,
 		onEventAdd: lifecycleOn ? lifecycle.onEventAdd : undefined,
 		onEventUpdate: lifecycleOn ? lifecycle.onEventUpdate : undefined,
 		onEventDelete: lifecycleOn ? lifecycle.onEventDelete : undefined,

@@ -9,6 +9,7 @@ import {
 	diffDayAndTime,
 	type EventDelta,
 	type EventsChange,
+	isSameResourceList,
 	type MountedCalendarSnapshot,
 	normalizeEvent,
 	type OpenEventFormInput,
@@ -153,15 +154,76 @@ const resolvePrimaryUpdatedEvent = (
 	)
 }
 
-const computeFallbackStartDelta = (
-	before: DomCalendarEvent,
-	after: DomCalendarEvent,
+const computeFallbackDelta = (
+	beforeIso: string,
+	afterIso: string,
 	timezone: string
 ): EventDelta => {
-	const prevStart = parseDate(before.start, timezone)
-	const nextStart = parseDate(after.start, timezone)
-	if (!(prevStart && nextStart)) return { days: 0, milliseconds: 0 }
-	return diffDayAndTime(prevStart, nextStart)
+	const prev = parseDate(beforeIso, timezone)
+	const next = parseDate(afterIso, timezone)
+	if (!(prev && next)) return { days: 0, milliseconds: 0 }
+	return diffDayAndTime(prev, next)
+}
+
+const resolveDeltaPair = (
+	beforeIso: string,
+	afterIso: string | undefined,
+	fallback: EventDelta | undefined,
+	timezone: string
+): EventDelta | undefined => {
+	if (!afterIso) return fallback
+	const before = parseDate(beforeIso, timezone)
+	const after = parseDate(afterIso, timezone)
+	if (!(before && after)) return fallback
+	return diffDayAndTime(before, after)
+}
+
+export const resolveCommittedDeltas = ({
+	event,
+	primary,
+	appliedUpdates,
+	deltas,
+	timezone,
+}: {
+	event: DomCalendarEvent
+	primary: DomCalendarEvent
+	appliedUpdates: PluginMutationResult['appliedUpdates']
+	deltas:
+		| {
+				delta?: EventDelta
+				endDelta?: EventDelta
+		  }
+		| undefined
+	timezone: string
+}) => {
+	if (appliedUpdates) {
+		return {
+			delta: resolveDeltaPair(
+				event.start,
+				appliedUpdates.start,
+				deltas?.delta ??
+					computeFallbackDelta(event.start, primary.start, timezone),
+				timezone
+			),
+			endDelta: resolveDeltaPair(
+				event.end,
+				appliedUpdates.end,
+				deltas?.endDelta ??
+					computeFallbackDelta(event.end, primary.end, timezone),
+				timezone
+			),
+		}
+	}
+	return {
+		delta:
+			deltas !== undefined
+				? deltas.delta
+				: computeFallbackDelta(event.start, primary.start, timezone),
+		endDelta:
+			deltas !== undefined
+				? deltas.endDelta
+				: computeFallbackDelta(event.end, primary.end, timezone),
+	}
 }
 
 const CLOSED_EVENT_DIALOG: EventFormDialogState = { open: false, event: null }
@@ -195,7 +257,20 @@ export const mountCalendar = (
 	let refetchResourcesFn: () => void = () => undefined
 	let isUpdating = false
 	let destroyed = false
+	let lastReportedResources: Resource[] | undefined
 	const snapshotListeners = new Set<() => void>()
+
+	const reportResourcesIfChanged = (rows: Resource[] | undefined) => {
+		if (!rows) return
+		if (
+			lastReportedResources &&
+			isSameResourceList(lastReportedResources, rows)
+		) {
+			return
+		}
+		lastReportedResources = rows
+		options.resourcesSet?.(rows)
+	}
 
 	const initialEvents = Array.isArray(options.events)
 		? options.events.map((ev) =>
@@ -339,22 +414,25 @@ export const mountCalendar = (
 			updates,
 			state.timezone
 		)
-		const resolvedDelta =
-			deltas !== undefined
-				? deltas.delta
-				: computeFallbackStartDelta(event, primary, state.timezone)
+		const resolvedDeltas = resolveCommittedDeltas({
+			event,
+			primary,
+			appliedUpdates: res.appliedUpdates,
+			deltas,
+			timezone: state.timezone,
+		})
 
 		dispatchRowCallbacks(res)
 		setStoredEvents(res.events)
 		const change: EventsChange = {
 			action: 'update',
-			event: primary,
+			event: manager?.applyEdit ? event : primary,
 			scope,
 			added: res.added,
 			updated: res.updated,
 			deleted: res.deleted,
-			delta: resolvedDelta,
-			endDelta: deltas?.endDelta,
+			delta: resolvedDeltas.delta,
+			endDelta: resolvedDeltas.endDelta,
 			revert: createRevert(prev),
 		}
 		options.onEventsChange?.(change)
@@ -418,7 +496,6 @@ export const mountCalendar = (
 	}
 
 	const openEditDialog = (event: DomCalendarEvent) => {
-		moreDialog = CLOSED_MORE_DIALOG
 		eventDialog = { open: true, event }
 		renderTree()
 		notifySnapshot()
@@ -464,7 +541,7 @@ export const mountCalendar = (
 
 	const handleFetchedResources = (rows: Resource[]) => {
 		controller.setResources(rows)
-		options.resourcesSet?.(rows)
+		reportResourcesIfChanged(rows)
 	}
 
 	const renderTree = () => {
@@ -518,6 +595,9 @@ export const mountCalendar = (
 		notifySnapshot()
 	})
 	renderTree()
+	if (Array.isArray(options.resources)) {
+		reportResourcesIfChanged(options.resources)
+	}
 
 	return {
 		controller,
@@ -590,6 +670,9 @@ export const mountCalendar = (
 			}
 			renderTree()
 			notifySnapshot()
+			if ('resources' in nextOptions && Array.isArray(nextOptions.resources)) {
+				reportResourcesIfChanged(nextOptions.resources)
+			}
 		},
 		destroy: () => {
 			if (destroyed) return

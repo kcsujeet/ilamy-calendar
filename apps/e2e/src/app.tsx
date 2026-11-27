@@ -22,7 +22,9 @@ import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { ConfigError, readUrlConfig } from './harness-config'
 import {
+	MATRIX_MUI_VARS_SLOT_PROPS,
 	MATRIX_STYLEX_SLOT_PROPS,
+	MATRIX_TAILWIND_SLOT_PROPS,
 	MatrixFrameworkHarness,
 } from './matrix-harness'
 import type {
@@ -217,7 +219,7 @@ export const App = () => {
 	const {
 		framework,
 		css,
-		components: _components,
+		components,
 		height,
 		renderEventVariant,
 		resourceCount,
@@ -234,12 +236,34 @@ export const App = () => {
 		...scenario.config,
 		...urlConfig,
 	}
+	const activeFramework = framework ?? 'react'
+	const allowedComponents: Record<string, readonly string[]> = {
+		react: ['native', 'base-ui', 'mui'],
+		vue: ['native', 'reka-ui'],
+		svelte: ['native', 'bits-ui'],
+		solid: ['native'],
+		angular: ['native'],
+	}
+	if (components && !allowedComponents[activeFramework]?.includes(components)) {
+		return (
+			<Problem>
+				{`components: "${components}" is not supported for framework "${activeFramework}"`}
+			</Problem>
+		)
+	}
+	if (activeFramework === 'react' && components === 'base-ui') {
+		return <ReactBaseUiSpike />
+	}
+	if (activeFramework === 'svelte' && components === 'bits-ui') {
+		return <SvelteSpikeHost />
+	}
+
 	const resources = scenario.resources?.slice(0, resourceCount)
 
 	if (framework && framework !== 'react') {
 		return (
 			<MatrixFrameworkHarness
-				config={calendarConfig}
+				config={{ ...calendarConfig, themeVariant }}
 				css={css}
 				date={date}
 				framework={framework}
@@ -260,7 +284,7 @@ export const App = () => {
 	const { slots: _slotsMode, ...reactCalendarConfig } = calendarConfig
 	const resolvedConfig = {
 		...reactCalendarConfig,
-		...(css === 'unstyled' ? { unstyled: true } : {}),
+		...(css === 'unstyled' || css === 'tailwind' ? { unstyled: true } : {}),
 	}
 
 	if (multiZone) {
@@ -363,7 +387,7 @@ interface HarnessProps {
 	resources?: Resource[]
 	revertChanges?: boolean
 	scenario: Scenario
-	themeVariant?: 'slot-props' | 'custom-button'
+	themeVariant?: 'slot-props' | 'custom-button' | 'mui-vars'
 	timezone?: string
 	view: ViewName
 }
@@ -516,6 +540,8 @@ const Harness: React.FC<HarnessProps> = ({
 
 	return (
 		<div
+			data-css={css ?? 'plain'}
+			data-framework="react"
 			data-testid="harness"
 			style={{ height: height ?? '100vh', width: '100vw' }}
 		>
@@ -564,7 +590,9 @@ const Harness: React.FC<HarnessProps> = ({
 				}
 				slotProps={(() => {
 					if (themeVariant === 'slot-props') return CUSTOM_SLOT_PROPS
+					if (themeVariant === 'mui-vars') return MATRIX_MUI_VARS_SLOT_PROPS
 					if (css === 'stylex') return MATRIX_STYLEX_SLOT_PROPS
+					if (css === 'tailwind') return MATRIX_TAILWIND_SLOT_PROPS
 					return undefined
 				})()}
 				timezone={timezone}

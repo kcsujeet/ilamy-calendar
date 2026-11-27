@@ -99,6 +99,7 @@ export function createPointerGesture<T>(
 	let scrollContainer: HTMLElement | null = null
 	let lastPoint: PointerPoint | null = null
 	let autoScrollFrame: number | null = null
+	let clickSuppressTimer: ReturnType<typeof setTimeout> | null = null
 
 	const clearLongPress = () => {
 		if (longPressTimer !== null) {
@@ -120,18 +121,38 @@ export function createPointerGesture<T>(
 		}
 	}
 
-	const suppressClickOnce = (event: MouseEvent) => {
-		event.stopImmediatePropagation()
-		event.preventDefault()
-		window.removeEventListener('click', suppressClickOnce, { capture: true })
-	}
-
-	const armClickSuppression = () => {
-		window.addEventListener('click', suppressClickOnce, { capture: true })
+	const scheduleClickDisarm = () => {
+		clickSuppressTimer = setTimeout(disarmClickSuppression, 0)
 	}
 
 	const disarmClickSuppression = () => {
+		if (clickSuppressTimer !== null) {
+			clearTimeout(clickSuppressTimer)
+			clickSuppressTimer = null
+		}
+		window.removeEventListener('pointerup', scheduleClickDisarm, {
+			capture: true,
+		})
 		window.removeEventListener('click', suppressClickOnce, { capture: true })
+	}
+
+	const suppressClickOnce = (event: MouseEvent) => {
+		event.stopImmediatePropagation()
+		event.preventDefault()
+		disarmClickSuppression()
+	}
+
+	const armClickSuppression = (deferUntilPointerUp = false) => {
+		disarmClickSuppression()
+		window.addEventListener('click', suppressClickOnce, { capture: true })
+		if (deferUntilPointerUp) {
+			window.addEventListener('pointerup', scheduleClickDisarm, {
+				capture: true,
+				once: true,
+			})
+			return
+		}
+		scheduleClickDisarm()
 	}
 
 	const teardown = () => {
@@ -179,12 +200,9 @@ export function createPointerGesture<T>(
 
 	const cancel = () => {
 		const wasPending = gesture !== null
-		const wasActive = gesture?.active === true
 		teardown()
-		if (wasActive) {
-			armClickSuppression()
-		}
 		if (wasPending) {
+			armClickSuppression(true)
 			options.onCancel?.()
 		}
 	}
@@ -251,21 +269,35 @@ export function createPointerGesture<T>(
 		return true
 	}
 
+	const markMovedIfDelta = (
+		activeGesture: PendingGesture<T>,
+		event: PointerEvent
+	) => {
+		if (
+			event.clientX !== activeGesture.originX ||
+			event.clientY !== activeGesture.originY
+		) {
+			activeGesture.moved = true
+		}
+	}
+
+	const ensureThresholdDispatched = (
+		activeGesture: PendingGesture<T>,
+		event: PointerEvent
+	): boolean => {
+		if (activeGesture.dispatchedMove) return true
+		const dx = event.clientX - activeGesture.originX
+		const dy = event.clientY - activeGesture.originY
+		if (!exceedsThreshold(dx, dy, activeGesture.thresholdPx)) return false
+		activeGesture.dispatchedMove = true
+		return true
+	}
+
 	const onPointerMove = (event: PointerEvent) => {
 		if (!gesture || event.pointerId !== gesture.pointerId) return
-		if (
-			event.clientX !== gesture.originX ||
-			event.clientY !== gesture.originY
-		) {
-			gesture.moved = true
-		}
+		markMovedIfDelta(gesture, event)
 		if (!gesture.active && !tryActivate(gesture, event)) return
-		if (!gesture.dispatchedMove) {
-			const dx = event.clientX - gesture.originX
-			const dy = event.clientY - gesture.originY
-			if (!exceedsThreshold(dx, dy, gesture.thresholdPx)) return
-			gesture.dispatchedMove = true
-		}
+		if (!gesture || !ensureThresholdDispatched(gesture, event)) return
 		lastPoint = { clientX: event.clientX, clientY: event.clientY }
 		options.onMove(lastPoint, gesture.payload)
 		ensureAutoScroll()

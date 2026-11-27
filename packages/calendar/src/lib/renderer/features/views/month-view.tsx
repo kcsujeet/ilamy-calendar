@@ -58,7 +58,7 @@ export const MonthView = ({
 	const current = resolveAnchorDate(controller)
 	const dragPreviewEvent = resolveDragPreviewEvent(dragPreview, visibleEvents)
 
-	if (state.resources.length > 0) {
+	if (actions.ownerState.hasResourceAxis) {
 		if (options.orientation === 'vertical') {
 			return (
 				<TimeGridView
@@ -101,9 +101,7 @@ export const MonthView = ({
 		isCellDisabled: options.isCellDisabled,
 	})
 
-	const colTemplate = showWeekNumbers
-		? `36px repeat(${model.colCount}, minmax(0, 1fr))`
-		: `repeat(${model.colCount}, minmax(0, 1fr))`
+	const colTemplate = `repeat(${model.colCount}, minmax(0, 1fr))`
 	const firstWeekDays = model.weeks[0]?.days ?? []
 
 	return (
@@ -126,18 +124,6 @@ export const MonthView = ({
 				style={{ gridTemplateColumns: colTemplate }}
 				tabIndex={-1}
 			>
-				{showWeekNumbers && (
-					<div
-						className={dayHeaderSlot.className}
-						data-ilamy-part="week-num-header"
-						data-ilamy-slot="day-header"
-						role="columnheader"
-						style={dayHeaderSlot.style}
-						tabIndex={-1}
-					>
-						{actions.t('wk')}
-					</div>
-				)}
 				{model.weekdayHeaders.map((label, idx) => {
 					const headerDay = firstWeekDays[idx]?.date
 					const weekdayKey = headerDay
@@ -162,63 +148,50 @@ export const MonthView = ({
 				})}
 			</div>
 
-			{model.weeks.map((week, weekIdx) => {
-				const gridColumn = showWeekNumbers
-					? `2 / span ${model.colCount}`
-					: `1 / span ${model.colCount}`
-				return (
+			{model.weeks.map((week, weekIdx) => (
+				<div
+					data-ilamy-part="month-row"
+					key={rendererKeys.key.weekRow(weekIdx)}
+					role="row"
+					style={{ gridTemplateColumns: colTemplate }}
+					tabIndex={-1}
+				>
 					<div
-						data-ilamy-part="month-row"
-						key={rendererKeys.key.weekRow(weekIdx)}
-						role="row"
-						style={{ gridTemplateColumns: colTemplate }}
-						tabIndex={-1}
+						data-ilamy-grid-lines={!options.unstyled ? 'true' : undefined}
+						data-ilamy-part="grid-row-grid"
+						data-ilamy-slot="grid-row"
+						role="presentation"
+						style={{
+							gridColumn: `1 / span ${model.colCount}`,
+							gridTemplateColumns: colTemplate,
+						}}
 					>
-						{showWeekNumbers && (
-							<div
-								data-ilamy-part="week-num-cell"
-								data-testid="week-number"
-								role="rowheader"
-								tabIndex={-1}
-							>
-								{week.weekNumber !== undefined ? String(week.weekNumber) : ''}
-							</div>
-						)}
-						<div
-							data-ilamy-grid-lines={!options.unstyled ? 'true' : undefined}
-							data-ilamy-part="grid-row-grid"
-							data-ilamy-slot="grid-row"
-							role="presentation"
-							style={{
-								gridColumn,
-								gridTemplateColumns: `repeat(${model.colCount}, minmax(0, 1fr))`,
-							}}
-						>
-							{week.days.map((dayModel, dayIdx) => (
-								<MonthCell
-									actions={actions}
-									cellModel={dayModel}
-									controller={controller}
-									isLastCol={dayIdx === week.days.length - 1}
-									key={dayModel.key}
-									options={options}
-									role="gridcell"
-								/>
-							))}
-							<MonthEventsOverlay
+						{week.days.map((dayModel, dayIdx) => (
+							<MonthCell
 								actions={actions}
+								cellLayout={week.layout.columnLayouts.at(dayIdx)}
+								cellModel={dayModel}
 								controller={controller}
-								days={week.days.map((d) => d.date)}
-								dragPreviewEvent={dragPreviewEvent}
-								formatters={formatters}
-								layout={week.layout}
+								isLastCol={dayIdx === week.days.length - 1}
+								key={rendererKeys.key.weekRow(dayIdx)}
 								options={options}
 								role="gridcell"
+								weekNumber={dayIdx === 0 ? week.weekNumber : undefined}
 							/>
-						</div>
+						))}
+						<MonthEventsOverlay
+							actions={actions}
+							controller={controller}
+							days={week.days.map((d) => d.date)}
+							dragPreviewEvent={dragPreviewEvent}
+							formatters={formatters}
+							layout={week.layout}
+							options={options}
+							role="gridcell"
+						/>
 					</div>
-				)
-			})}
+				</div>
+			))}
 		</div>
 	)
 }

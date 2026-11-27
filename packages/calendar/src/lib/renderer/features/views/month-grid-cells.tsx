@@ -6,26 +6,26 @@ import {
 	formatDate,
 	getHorizontalBarStyle,
 	type HeadlessCalendarController,
+	type HorizontalCellLayout,
 	type HorizontalLayoutResult,
 	isBusinessDay,
 	isSameDay,
 	isToday,
 	layoutHorizontal,
 	type MonthCellViewModel,
-	maxDate,
-	minDate,
-	parseDate,
 	type Resource,
 	startOf,
 	toOffsetIso,
 	toUtcIso,
 	type ZonedDate,
 } from '../../../../index'
+import { MoreEventsButton } from '../../components/more-events-button'
 import type {
 	DomCalendarEvent,
 	DomCalendarOptions,
 	RendererActions,
 } from '../../types/renderer.types'
+import { clipSegmentIsoRange } from '../../utils/cell-slot.utils'
 import {
 	canCommitSelection,
 	resolveEffectiveBusinessHours,
@@ -38,17 +38,7 @@ import { EventBar } from './event-bar'
 const ROW_BAR_HEIGHT_PX = 24
 const ROW_BAR_GAP_PX = 1
 const MONTH_HEADER_OFFSET_PX = 28
-const DEFAULT_DAY_MAX_EVENTS = 4
-const MORE_LINK_RESERVE_PX = 24
-
-const computeMonthCellMinHeight = (
-	dayMaxEvents: number | undefined,
-	rowBarHeight: number,
-	rowBarGap: number
-): number =>
-	MONTH_HEADER_OFFSET_PX +
-	(dayMaxEvents ?? DEFAULT_DAY_MAX_EVENTS) * (rowBarHeight + rowBarGap) +
-	MORE_LINK_RESERVE_PX
+const MONTH_CELL_MIN_HEIGHT_PX = 60
 
 const resolveCellSlotName = (cellModel: MonthCellViewModel) => {
 	if (cellModel.isDisabled) return 'cellDisabled' as const
@@ -96,15 +86,13 @@ const resolveMonthCellSlotProps = (
 	]
 		.filter(Boolean)
 		.join(' ')
-	const rowBarHeight = options.eventHeight ?? ROW_BAR_HEIGHT_PX
-	const rowBarGap = options.eventSpacing ?? ROW_BAR_GAP_PX
 	return buildSlotProps(
 		options.slotProps,
 		resolveCellSlotName(cellModel),
 		ownerState,
 		cellExtraClass || undefined,
 		{
-			minHeight: `${computeMonthCellMinHeight(options.dayMaxEvents, rowBarHeight, rowBarGap)}px`,
+			minHeight: `${MONTH_CELL_MIN_HEIGHT_PX}px`,
 		}
 	)
 }
@@ -113,22 +101,135 @@ const isDayCellClickTarget = (
 	target: HTMLElement | null,
 	currentTarget: EventTarget | null
 ): boolean =>
-	target === currentTarget || target?.dataset.ilamyPart === 'cell-day-num'
+	target === currentTarget ||
+	target?.dataset.ilamyPart === 'cell-day-num' ||
+	target?.dataset.ilamyPart === 'cell-header' ||
+	target?.dataset.ilamyPart === 'week-num-inline' ||
+	target?.dataset.ilamyPart === 'grid-cell-content'
+
+export const HorizontalCellContent = ({
+	cellLayout,
+	rowBarHeight,
+	rowBarGap,
+	moreLink,
+}: {
+	cellLayout?: HorizontalCellLayout
+	rowBarHeight: number
+	rowBarGap: number
+	moreLink?: preact.JSX.Element | null
+}) => {
+	if (!cellLayout || (cellLayout.rowCount === 0 && !moreLink)) return null
+	return (
+		<div
+			data-ilamy-part="grid-cell-content"
+			data-testid="grid-cell-content"
+			style={{
+				display: 'flex',
+				flexDirection: 'column',
+				gap: `${rowBarGap}px`,
+				width: '100%',
+			}}
+		>
+			{Array.from({ length: cellLayout.rowCount }, (_, rowIdx) => (
+				<div
+					data-ilamy-part="cell-placeholder"
+					data-testid={cellLayout.events.at(rowIdx)?.title}
+					key={rendererKeys.key.weekdayCol('ph', rowIdx)}
+					style={{
+						width: '100%',
+						flexShrink: 0,
+						height: `${rowBarHeight}px`,
+						pointerEvents: 'none',
+					}}
+				/>
+			))}
+			{moreLink}
+		</div>
+	)
+}
+
+const MonthCellHeader = ({
+	weekNumber,
+	isTodayCell,
+	day,
+}: {
+	weekNumber?: number
+	isTodayCell: boolean
+	day: number
+}) => (
+	<div data-ilamy-part="cell-header">
+		{weekNumber !== undefined && (
+			<span data-ilamy-part="week-num-inline" data-testid="week-number">
+				{weekNumber}
+			</span>
+		)}
+		<span
+			data-ilamy-part="cell-day-num"
+			data-ilamy-today-badge={isTodayCell ? '' : undefined}
+			data-testid={isTodayCell ? 'day-number-today' : undefined}
+		>
+			{day}
+		</span>
+	</div>
+)
+
+const buildMonthCellAttrs = ({
+	cellModel,
+	dateKey,
+	cellStart,
+	cellEnd,
+	role,
+	isLastCol,
+}: {
+	cellModel: MonthCellViewModel
+	dateKey: string
+	cellStart: ZonedDate
+	cellEnd: ZonedDate
+	role?: 'gridcell'
+	isLastCol?: boolean
+}) => {
+	const { cellInfo, isToday: isTodayCell } = cellModel
+	const attr = (cond: boolean | undefined) => (cond ? 'true' : undefined)
+	return {
+		'aria-current': isTodayCell ? ('date' as const) : undefined,
+		'data-all-day': 'true',
+		'data-cell': 'true',
+		'data-date': dateKey,
+		'data-disabled': cellModel.isDisabled ? 'true' : 'false',
+		'data-end': toUtcIso(cellEnd),
+		'data-ilamy-slot': 'cell',
+		'data-last-col': attr(isLastCol),
+		'data-non-business': attr(cellModel.isNonBusiness),
+		'data-outside-month': attr(cellModel.isOutsideMonth),
+		'data-resource-id': cellInfo.resource
+			? String(cellInfo.resource.id)
+			: undefined,
+		'data-start': toUtcIso(cellStart),
+		'data-testid': rendererKeys.testId.dayCell(dateKey),
+		'data-today': attr(isTodayCell),
+		role,
+		tabIndex: role ? -1 : undefined,
+	}
+}
 
 export const MonthCell = ({
 	cellModel,
+	cellLayout,
 	controller,
 	options,
 	actions,
 	role,
 	isLastCol,
+	weekNumber,
 }: {
 	cellModel: MonthCellViewModel
+	cellLayout?: HorizontalCellLayout
 	controller: HeadlessCalendarController
 	options: DomCalendarOptions
 	actions: RendererActions
 	role?: 'gridcell'
 	isLastCol?: boolean
+	weekNumber?: number
 }) => {
 	const state = controller.getState()
 	const { cellInfo, date, key: dateKey, isToday: isTodayCell } = cellModel
@@ -138,6 +239,26 @@ export const MonthCell = ({
 		cellModel,
 		options,
 		actions.ownerState
+	)
+	const moreLink = (
+		<MoreEventsButton
+			actions={actions}
+			cellLayout={cellLayout}
+			dateIso={toOffsetIso(date)}
+			extraStyle={{ alignSelf: 'flex-start' }}
+			getTitle={() => {
+				const formatted = formatDate(
+					date,
+					{ month: 'long', day: 'numeric', year: 'numeric' },
+					state.locale
+				)
+				return cellInfo.resource
+					? `${cellInfo.resource.title} · ${formatted}`
+					: formatted
+			}}
+			options={options}
+			testId={rendererKeys.testId.moreEvents(dateKey)}
+		/>
 	)
 
 	const handleClick = (evt: MouseEvent) => {
@@ -153,35 +274,29 @@ export const MonthCell = ({
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents: keyboard creation via New button; grid navigation preserves cell semantics
 		<div
-			aria-current={isTodayCell ? 'date' : undefined}
+			{...buildMonthCellAttrs({
+				cellModel,
+				dateKey,
+				cellStart,
+				cellEnd,
+				role,
+				isLastCol,
+			})}
 			className={slotPropsResolved.className}
-			data-all-day="true"
-			data-cell="true"
-			data-date={dateKey}
-			data-disabled={cellModel.isDisabled ? 'true' : 'false'}
-			data-end={toUtcIso(cellEnd)}
-			data-ilamy-slot="cell"
-			data-last-col={isLastCol ? 'true' : undefined}
-			data-non-business={cellModel.isNonBusiness ? 'true' : undefined}
-			data-outside-month={cellModel.isOutsideMonth ? 'true' : undefined}
-			data-resource-id={
-				cellInfo.resource ? String(cellInfo.resource.id) : undefined
-			}
-			data-start={toUtcIso(cellStart)}
-			data-testid={rendererKeys.testId.dayCell(dateKey)}
-			data-today={isTodayCell ? 'true' : undefined}
 			onClick={handleClick}
-			role={role}
 			style={slotPropsResolved.style}
-			tabIndex={role ? -1 : undefined}
 		>
-			<span
-				data-ilamy-part="cell-day-num"
-				data-ilamy-today-badge={isTodayCell ? '' : undefined}
-				data-testid={isTodayCell ? 'day-number-today' : undefined}
-			>
-				{date.day}
-			</span>
+			<MonthCellHeader
+				day={date.day}
+				isTodayCell={isTodayCell}
+				weekNumber={weekNumber}
+			/>
+			<HorizontalCellContent
+				cellLayout={cellLayout}
+				moreLink={moreLink}
+				rowBarGap={options.eventSpacing ?? ROW_BAR_GAP_PX}
+				rowBarHeight={options.eventHeight ?? ROW_BAR_HEIGHT_PX}
+			/>
 		</div>
 	)
 }
@@ -215,13 +330,13 @@ const MonthOverlayEvent = ({
 		isStart: !pos.isTruncatedStart,
 		isEnd: !pos.isTruncatedEnd,
 	}
-	const zone = controller.getState().timezone
-	const evStart = parseDate(pos.event.start, zone)
-	const evEnd = parseDate(pos.event.end, zone)
-	const segStart =
-		evStart && rowStart ? toOffsetIso(maxDate(evStart, rowStart)) : undefined
-	const segEnd =
-		evEnd && rowEnd ? toOffsetIso(minDate(evEnd, rowEnd)) : undefined
+	const { evStart, evEnd, segStart, segEnd } = clipSegmentIsoRange({
+		eventStart: pos.event.start,
+		eventEnd: pos.event.end,
+		timezone: controller.getState().timezone,
+		rowStart,
+		rowEnd,
+	})
 	const isSingleDayTimed =
 		!pos.event.allDay &&
 		Boolean(
@@ -232,8 +347,6 @@ const MonthOverlayEvent = ({
 			data-ilamy-part="event-wrapper"
 			style={{
 				...barStyle,
-				paddingLeft: pos.isTruncatedStart ? '0px' : '2px',
-				paddingRight: pos.isTruncatedEnd ? '0px' : '2px',
 				...(isPreview ? { zIndex: 25, pointerEvents: 'none' } : undefined),
 			}}
 		>
@@ -276,8 +389,6 @@ export const MonthEventsOverlay = ({
 	dragPreviewEvent?: DomCalendarEvent | null
 	role?: 'gridcell'
 }) => {
-	const state = controller.getState()
-	const columnCount = Math.max(1, days.length)
 	const rowBarHeight = options.eventHeight ?? ROW_BAR_HEIGHT_PX
 	const rowBarGap = options.eventSpacing ?? ROW_BAR_GAP_PX
 	const previewForResource =
@@ -293,11 +404,6 @@ export const MonthEventsOverlay = ({
 				dayMaxEvents: 100,
 			}).positionedEvents
 		: []
-	const moreSlot = buildSlotProps(
-		options.slotProps,
-		'moreLink',
-		actions.ownerState
-	)
 
 	const rowFirstDay = days.at(0)
 	const rowLastDay = days.at(-1)
@@ -346,47 +452,6 @@ export const MonthEventsOverlay = ({
 					rowBarHeight={rowBarHeight}
 				/>
 			))}
-
-			{days.map((day, colIdx) => {
-				const colLayout = layout.columnLayouts.at(colIdx)
-				if (!colLayout || colLayout.hiddenCount <= 0) return null
-				const dayIso = toOffsetIso(day)
-				const dayEvents = colLayout.events as DomCalendarEvent[]
-				return (
-					<button
-						className={moreSlot.className}
-						data-ilamy-slot="more-link"
-						data-testid={rendererKeys.testId.moreEvents(dayKey(day))}
-						key={dayKey(day)}
-						onClick={(evt) => {
-							evt.stopPropagation()
-							if (options.onMoreEventsClick) {
-								options.onMoreEventsClick(dayIso, dayEvents)
-								return
-							}
-							const formatted = formatDate(
-								day,
-								{ month: 'long', day: 'numeric', year: 'numeric' },
-								state.locale
-							)
-							const title = resource
-								? `${resource.title} · ${formatted}`
-								: formatted
-							actions.openOverflowDialog(dayIso, title, dayEvents)
-						}}
-						style={{
-							...moreSlot.style,
-							position: 'absolute',
-							left: `${(colIdx / columnCount) * 100}%`,
-							width: `${100 / columnCount}%`,
-							bottom: '2px',
-						}}
-						type="button"
-					>
-						+{colLayout.hiddenCount} {actions.t('more')}
-					</button>
-				)
-			})}
 		</div>
 	)
 }

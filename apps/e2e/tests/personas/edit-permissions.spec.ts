@@ -363,7 +363,7 @@ test.describe('persona 2: office scheduler', () => {
 const resourceCell = (page: Page, resourceId: string, startPrefix: string) =>
 	page
 		.locator(
-			`.droppable-cell[data-resource-id="${resourceId}"][data-start^="${startPrefix}"]`
+			`[data-cell="true"][data-resource-id="${resourceId}"][data-start^="${startPrefix}"]`
 		)
 		.first()
 
@@ -504,10 +504,14 @@ test.describe('persona 4: edge-case hunter', () => {
 		const grid = new TimeGrid(page)
 		const bar = grid.event('Morning stand-up').first()
 		const satAllDay = page
-			.locator('.droppable-cell[data-all-day="true"][data-start^="2025-03-15"]')
+			.locator(
+				'[data-cell="true"][data-all-day="true"][data-start^="2025-03-15"]'
+			)
 			.first()
 		const friAllDay = page
-			.locator('.droppable-cell[data-all-day="true"][data-start^="2025-03-14"]')
+			.locator(
+				'[data-cell="true"][data-all-day="true"][data-start^="2025-03-14"]'
+			)
 			.first()
 
 		await pressAndMoveTo(page, bar, satAllDay)

@@ -1,12 +1,14 @@
 import type { CalendarEvent, TimeFormat } from '../types/calendar.types'
 import { getWeekDays, withoutHiddenDays } from './core-date-grid.utils'
 import {
+	endOf,
 	formatDate,
 	formatDateRange as formatTemporalRange,
 	isSameDay,
 	now,
 	parseDate,
 	resolveZone,
+	startOf,
 	withZone,
 	type ZonedDate,
 } from './temporal'
@@ -51,12 +53,6 @@ const SHORT_MONTH_DAY: Intl.DateTimeFormatOptions = {
 
 const FULL_DAY_TITLE: Intl.DateTimeFormatOptions = {
 	weekday: 'short',
-	month: 'short',
-	day: 'numeric',
-	year: 'numeric',
-}
-
-const SHORT_RANGE_TITLE: Intl.DateTimeFormatOptions = {
 	month: 'short',
 	day: 'numeric',
 	year: 'numeric',
@@ -199,14 +195,13 @@ const formatWeekHeaderTitle = (
 	params: TitleFormatParams
 ): string => {
 	const rawDays = getWeekDays(current, params.firstDayOfWeek)
-	const days = params.hasResources
-		? withoutHiddenDays(rawDays, params.hiddenDays)
-		: rawDays
+	const visibleDays = withoutHiddenDays(rawDays, params.hiddenDays)
+	const days = visibleDays.length > 0 ? visibleDays : rawDays
 	const first = days.at(0) ?? current
 	const last = days.at(-1) ?? current
 	return (
 		params.formatters.formatTitle(first, last) ??
-		formatTemporalRange(first, last, SHORT_RANGE_TITLE, params.locale)
+		params.formatters.formatDateRange(first, last)
 	)
 }
 
@@ -216,7 +211,11 @@ export const formatCalendarHeaderTitle = (
 	const current =
 		parseDate(params.currentDateIso, params.timezone) ?? now(params.timezone)
 	const handlers: Record<string, () => string> = {
-		year: () => formatDate(current, { year: 'numeric' }, params.locale),
+		year: () =>
+			params.formatters.formatTitle(
+				startOf(current, 'year'),
+				endOf(current, 'year')
+			) ?? formatDate(current, { year: 'numeric' }, params.locale),
 		day: () =>
 			params.formatters.formatTitle(current, current) ??
 			formatDate(current, FULL_DAY_TITLE, params.locale),
@@ -224,5 +223,10 @@ export const formatCalendarHeaderTitle = (
 	}
 	const formatter = handlers[params.view]
 	if (formatter) return formatter()
-	return formatDate(current, { month: 'short', year: 'numeric' }, params.locale)
+	return (
+		params.formatters.formatTitle(
+			startOf(current, 'month'),
+			endOf(current, 'month')
+		) ?? formatDate(current, { month: 'short', year: 'numeric' }, params.locale)
+	)
 }

@@ -41,9 +41,9 @@ become ISO strings or `Date`.
 Also in 4.0 (not a rename): the context API gains `timezone`, and several zones
 can be shown on one page.
 
-## Single DOM renderer, symmetric imports & CSS entry point
+## Single internal renderer, symmetric imports & CSS entry point
 
-In 4.0, `@ilamy/calendar` (root `.`) is the pure headless core (Temporal helpers, controller, layout, view-models, i18n, and shared types — zero framework runtime, zero DOM, zero CSS). A single shared DOM renderer (`@ilamy/calendar/dom`, backed by `packages/calendar/src/lib/dom/`) drives the calendar UI and is wrapped by **all five framework adapters** (`@ilamy/calendar/react`, `@ilamy/calendar/vue`, `@ilamy/calendar/svelte`, `@ilamy/calendar/solid`, `@ilamy/calendar/angular`) as well as Vanilla DOM:
+In 4.0, `@ilamy/calendar` (root `.`) is the pure headless core (Temporal helpers, controller, interactions, layout, view-models, i18n, and shared domain & slot contracts — zero framework runtime, zero UI, zero CSS). One internal Preact 11 renderer (`packages/calendar/src/lib/renderer/`, never exposed in `.d.ts` or headless core `.`) drives the calendar UI and is wrapped symmetrically by **all five framework adapters** (`@ilamy/calendar/react`, `@ilamy/calendar/vue`, `@ilamy/calendar/svelte`, `@ilamy/calendar/solid`, `@ilamy/calendar/angular`):
 
 ```diff
 - import { IlamyCalendar, useIlamyCalendarContext } from '@ilamy/calendar'
@@ -51,9 +51,9 @@ In 4.0, `@ilamy/calendar` (root `.`) is the pure headless core (Temporal helpers
 + import '@ilamy/calendar/styles.css'
 ```
 
-- **React wrapper (`@ilamy/calendar/react`):** Wraps the shared DOM engine and mounts custom rendering callbacks (`renderEvent`, `renderHeader` / `headerComponent`, `renderEventForm`, `renderResource`, `onMoreEventsClick`) via `ReactDOM.createPortal`, with `useSyncExternalStore` + Context powering `useIlamyCalendarContext()` and `ref`.
-- **Unified drag-and-drop & resize:** Built directly into `lib/dom`'s single zero-dependency pointer engine across every framework. `@dnd-kit/core` and `@dnd-kit/modifiers` are completely removed.
-- **Framework-agnostic plugins:** `@ilamy/calendar/plugins/{recurrence,agenda,year,ical,drag-to-create}` implement a single framework-agnostic DOM plugin contract (`IlamyPlugin`) and work identically across React, Vue, Svelte, Solid, Angular, and Vanilla DOM.
+- **React adapter (`@ilamy/calendar/react`):** Wraps the internal Preact renderer and mounts region `slots` and React render callbacks (`renderEvent`, `headerComponent`, `renderEventForm`, `renderResource`, `renderHour`, `renderCurrentTimeIndicator`, `onMoreEventsClick`) via `ReactDOM.createPortal`, with `useSyncExternalStore` + Context powering `useIlamyCalendarContext()` and `ref`.
+- **Unified drag-and-drop & resize:** Built into `lib/interactions/`'s single zero-dependency pointer engine across every framework. `@dnd-kit/core` and `@dnd-kit/modifiers` are completely removed.
+- **Framework-agnostic plugins:** `@ilamy/calendar/plugins/{recurrence,agenda,year,ical,drag-to-create}` implement a single framework-agnostic `CalendarPlugin` contract and work identically across React, Vue, Svelte, Solid, and Angular.
 
 If you used Tailwind v4's `@source` directive for `@ilamy/calendar/dist`, remove it — Tailwind is no longer required:
 
@@ -62,30 +62,29 @@ If you used Tailwind v4's `@source` directive for `@ilamy/calendar/dist`, remove
 - @source "../node_modules/@ilamy/calendar/dist";
 ```
 
-## Zero UI-library dependencies & custom rendering (#401)
+## Zero UI-library dependencies & region slots (#401)
 
-`@ilamy/calendar` removes all third-party UI and drag dependencies: `@radix-ui/*`, `@dnd-kit/core`, `@dnd-kit/modifiers`, `@mui/material`, `class-variance-authority` (`cva`), `clsx`, `tailwind-merge`, `lucide-react`, and primitive-level `components` / `CalendarComponents` overrides are all gone.
+`@ilamy/calendar` removes all third-party UI and drag dependencies: `@radix-ui/*`, `@dnd-kit/core`, `@dnd-kit/modifiers`, `@mui/material`, `@stylexjs/stylex`, `class-variance-authority` (`cva`), `clsx`, `tailwind-merge`, `lucide-react`, and unreleased `CalendarComponents` overrides are all gone.
 
-- **Single native DOM UI:** The shared `lib/dom` renderer renders accessible native HTML primitives (`<dialog>`, `<button>`, `<input>`, `<textarea>`, `<select>`, `<input type="checkbox">`, `<label>`) and inline SVG icons, styled directly by `@ilamy/calendar/styles.css` (with zero Tailwind required).
-- **Custom UI via portals/slots & CSS tokens:** To integrate shadcn with Base UI (#401), Radix, React Aria, MUI, Vuetify, or any other design system, combine `--ilamy-*` CSS token bridging (`@ilamy/calendar/styles.css` auto-bridges shadcn/Tailwind variables) with the calendar's custom rendering slots (`renderEventForm`, `renderHeader` / `headerComponent`, `renderEvent`, `renderResource`, `onMoreEventsClick`) instead of primitive-level `CalendarComponents`.
+- **Single native HTML defaults:** The internal renderer renders accessible native HTML primitives (`<dialog>`, `<button>`, `<input>`, `<textarea>`, `<select>`, `<input type="checkbox">`, `<label>`) and inline SVG icons, styled directly by `@ilamy/calendar/styles.css` (zero Tailwind required).
+- **Custom UI via region `slots` & CSS tokens:** Plug in **shadcn with Base UI (#401)**, **Radix**, **MUI**, **bits-ui**, **React Aria**, or your own components via region-level `slots` (`header`, `event`, `resource`, `eventForm`, `moreEventsDialog`, `recurrenceScopeDialog` — or React portal callbacks like `renderEventForm` and `headerComponent`), while `@ilamy/calendar/styles.css` auto-bridges shadcn/Tailwind variables or takes `--ilamy-*` / `slotProps` overrides.
 
-## Optional peer dependencies
+## Runtime dependencies & optional peers
 
-`temporal-polyfill` is the only direct runtime `dependency` of `@ilamy/calendar`. Everything else is an optional `peerDependency` installed only for what you use (zero `@dnd-kit/*` and zero `@mui/material` peers):
+`temporal-polyfill` and internal `preact` (`11.2.0`, never leaked into public `.d.ts` or headless core `.`) are the only runtime `dependencies` of `@ilamy/calendar`. Everything else is an optional `peerDependency` installed only for what you use (zero `@dnd-kit/*`, zero `@mui/material`, and zero `@stylexjs/stylex` peers):
 
 - **Framework runtimes:** `react` & `react-dom`, `vue`, `svelte`, `solid-js`, or `@angular/core`
 - **Recurrence:** `rrule` (only needed when using `@ilamy/calendar/plugins/recurrence`)
-- **Optional styling integrations:** `@stylexjs/stylex` (optional types for `@ilamy/calendar/styles/stylex`), `tailwindcss` (optional)
+- **Tailwind:** `tailwindcss` (optional; `@ilamy/calendar/styles.css` works standalone with zero Tailwind)
 
-## Pure token-only styling & theme mappers
+## Direct CSS & token styling
 
-v4 ships zero UI-component theme wrappers; every styling integration targets `--ilamy-*` CSS tokens and works across all five frameworks and Vanilla DOM:
+v4 ships zero UI-component or CSS-in-JS adapter subpaths (`@ilamy/calendar/styles/stylex`, `./styles/mui`, `./themes/*`, and `./react/mui` were never shipped in 3.x and are removed in 4.0); every styling integration uses standard CSS stylesheets and `slotProps` across all five frameworks:
 
 - `@ilamy/calendar/styles.css` — combined `@layer ilamy.base, ilamy.theme` stylesheet (auto-bridges shadcn `--background`, `--foreground`, `--primary`, `--muted`, `--border`, `--radius`, and `.dark` CSS variables when present — works with Base UI #401, Radix, React Aria, shadcn-vue, shadcn-svelte, and plain CSS)
 - `@ilamy/calendar/styles/base.css` — structural layout only (`@layer ilamy.base`)
 - `@ilamy/calendar/styles/theme.css` — default visual theme layer only (`@layer ilamy.theme`)
-- `@ilamy/calendar/styles/stylex` — framework-agnostic StyleX `--ilamy-*` token presets & `stylexSlot` / `createStylexSlotProps` (replaces `@ilamy/calendar/themes/stylex`)
-- `@ilamy/calendar/styles/mui` — pure framework-agnostic `createMuiCalendarTheme(theme)` mapper that translates a MUI `Theme` (palette, typography, shape) into `--ilamy-*` CSS tokens (replaces `@ilamy/calendar/themes/mui`, `@ilamy/calendar/react/mui`, `muiCalendarComponents`, and `useMuiCalendarTheme`; zero `@mui/material` runtime components)
+- **StyleX / MUI / Tailwind recipes:** Pass `--ilamy-*` CSS variables via `slotProps.root` or pass `unstyled` with Tailwind utility `slotProps.className` (see website Styling docs)
 
 ## Moved to plugins in 4.0
 
@@ -207,8 +206,8 @@ v4 ships zero UI-component theme wrappers; every styling integration targets `--
 2. Update React imports from `@ilamy/calendar` to `@ilamy/calendar/react`, add
    `import '@ilamy/calendar/styles.css'`, and remove any `@source` rule pointing
    at `@ilamy/calendar/dist`.
-3. Remove `@dnd-kit/core` and `@dnd-kit/modifiers` if you only had them for `@ilamy/calendar` (drag and resize now use `lib/dom`'s built-in pointer engine), and install `rrule` only if you use `@ilamy/calendar/plugins/recurrence`.
-4. Update any early v4 styling or UI overrides: move `@ilamy/calendar/themes/stylex` to `@ilamy/calendar/styles/stylex`, replace `@ilamy/calendar/themes/mui` / `@ilamy/calendar/react/mui` (`muiCalendarComponents`, `useMuiCalendarTheme`) with `createMuiCalendarTheme(theme)` from `@ilamy/calendar/styles/mui`, and replace primitive `components` / `CalendarComponents` overrides with CSS tokens (`@ilamy/calendar/styles.css`) plus custom rendering slots (`renderEventForm`, `renderHeader` / `headerComponent`, `renderEvent`, `renderResource`, `onMoreEventsClick`).
+3. Remove `@dnd-kit/core` and `@dnd-kit/modifiers` if you only had them for `@ilamy/calendar` (drag and resize now use `lib/interactions`'s built-in pointer engine), and install `rrule` only if you use `@ilamy/calendar/plugins/recurrence`.
+4. Style via CSS tokens (`@ilamy/calendar/styles.css`), `unstyled` + `slotProps`, and `--ilamy-*` variables, and integrate custom dialogs/headers/events/resources via region `slots` (`header`, `event`, `resource`, `eventForm`, `moreEventsDialog`, `recurrenceScopeDialog`) or React portal callbacks (`renderEventForm`, `headerComponent`, `renderEvent`, `renderResource`, `onMoreEventsClick`).
 5. Pass `nowIndicator`, `editable`, `displayEventTime` and `displayEventEnd`
    explicitly if you want the 3.x defaults.
 6. If you use `BusinessHours`, add `daysOfWeek` wherever you rely on the

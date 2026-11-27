@@ -48,6 +48,7 @@ import {
 	type CalendarFormatters,
 	createCalendarFormatters,
 } from '../utils/format.utils'
+import { useInvalidSlotPropsWarning } from '../utils/prop-warnings.utils'
 import type { ScrollRequest } from '../utils/scroll-to-time.utils'
 import { buildSlotProps } from '../utils/slot-props.utils'
 
@@ -115,6 +116,18 @@ const matchesPreviewCellBand = (
 	return true
 }
 
+const cellOverlapsPreview = (
+	cell: HTMLElement,
+	pStartMs: number,
+	pEndMs: number,
+	preview: InteractionPreview
+): boolean => {
+	if (!matchesPreviewCellBand(cell, preview)) return false
+	const cStartMs = Date.parse(cell.dataset.start ?? '')
+	const cEndMs = Date.parse(cell.dataset.end ?? '')
+	return cStartMs < pEndMs && cEndMs > pStartMs
+}
+
 const collectCoveredDropCells = (
 	root: HTMLElement,
 	preview: InteractionPreview
@@ -122,18 +135,14 @@ const collectCoveredDropCells = (
 	if (!(preview.start && preview.end)) return [preview.cellEl]
 	const pStartMs = preview.start.epochMilliseconds
 	const pEndMs = preview.end.epochMilliseconds
-	const matched: HTMLElement[] = []
-	const candidates = root.querySelectorAll<HTMLElement>(
-		'[data-cell="true"][data-start][data-end]'
+	const candidates = Array.from(
+		root.querySelectorAll<HTMLElement>(
+			'[data-cell="true"][data-start][data-end]'
+		)
 	)
-	for (const cell of candidates) {
-		if (!matchesPreviewCellBand(cell, preview)) continue
-		const cStartMs = Date.parse(cell.dataset.start ?? '')
-		const cEndMs = Date.parse(cell.dataset.end ?? '')
-		if (cStartMs < pEndMs && cEndMs > pStartMs) {
-			matched.push(cell)
-		}
-	}
+	const matched = candidates.filter((cell) =>
+		cellOverlapsPreview(cell, pStartMs, pEndMs, preview)
+	)
 	return matched.length > 0 ? matched : [preview.cellEl]
 }
 
@@ -181,6 +190,35 @@ const useLiveAnnouncement = (state: HeadlessCalendarState): string => {
 	return textRef.current
 }
 
+const useCombinedLoading = (loading?: (isLoading: boolean) => void) => {
+	const loadingRef = useRef(loading)
+	loadingRef.current = loading
+	const sourcesRef = useRef({ events: false, resources: false })
+	const wasLoadingRef = useRef(false)
+
+	return useMemo(
+		() => ({
+			events: (next: boolean) => {
+				sourcesRef.current.events = next
+				const any = sourcesRef.current.events || sourcesRef.current.resources
+				if (any !== wasLoadingRef.current) {
+					wasLoadingRef.current = any
+					loadingRef.current?.(any)
+				}
+			},
+			resources: (next: boolean) => {
+				sourcesRef.current.resources = next
+				const any = sourcesRef.current.events || sourcesRef.current.resources
+				if (any !== wasLoadingRef.current) {
+					wasLoadingRef.current = any
+					loadingRef.current?.(any)
+				}
+			},
+		}),
+		[]
+	)
+}
+
 const useCalendarFormattersAndActions = ({
 	state,
 	options,
@@ -190,7 +228,8 @@ const useCalendarFormattersAndActions = ({
 	options: DomCalendarOptions
 	props: CalendarAppProps
 }) => {
-	const hasResourceAxis = state.resources.length > 0
+	const hasResourceAxis =
+		typeof options.resources === 'function' || state.resources.length > 0
 	const orientation = options.orientation ?? 'horizontal'
 
 	const ownerState = useMemo<CalendarOwnerState>(
@@ -319,12 +358,14 @@ const useCalendarInteractionsBinding = ({
 			getState: () => {
 				const cur = latestRef.current
 				const calState = cur.controller.getState()
-				const scrollAxis =
-					calState.resources.length === 0
-						? 'both'
-						: cur.options.orientation === 'horizontal'
-							? 'x'
-							: 'y'
+				const hasResources =
+					typeof cur.options.resources === 'function' ||
+					calState.resources.length > 0
+				const scrollAxis = hasResources
+					? cur.options.orientation === 'horizontal'
+						? 'x'
+						: 'y'
+					: 'both'
 				return {
 					events: cur.visibleEvents,
 					resources: calState.resources,
@@ -423,6 +464,7 @@ const useCalendarRuntime = (
 	rootRef: RefObject<HTMLDivElement | null>
 ) => {
 	const { controller, options, pluginRuntime, storedEvents } = props
+	useInvalidSlotPropsWarning(options.slotMinTime, options.slotMaxTime)
 	const state = controller.getState()
 	const { ownerState, actions, formatters } = useCalendarFormattersAndActions({
 		state,
@@ -449,6 +491,8 @@ const useCalendarRuntime = (
 	const resourcesFetcher: ResourcesFetcher | undefined =
 		typeof options.resources === 'function' ? options.resources : undefined
 
+	const trackLoading = useCombinedLoading(options.loading)
+
 	const [dragPreview, setDragPreview] = useState<InteractionPreview | null>(
 		null
 	)
@@ -459,7 +503,7 @@ const useCalendarRuntime = (
 		visibleRange: state.visibleRange,
 		timezone: state.timezone,
 		lazyFetching: options.lazyFetching,
-		loading: options.loading,
+		loading: trackLoading.events,
 		onError: options.onEventsError,
 		onResult: props.onFetchedEvents,
 	})
@@ -472,6 +516,7 @@ const useCalendarRuntime = (
 		visibleRange: state.visibleRange,
 		timezone: state.timezone,
 		lazyFetching: options.lazyFetching,
+		loading: trackLoading.resources,
 		onError: options.onResourcesError,
 		onResult: props.onFetchedResources,
 	})

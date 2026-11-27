@@ -555,7 +555,7 @@ test.describe('a day the clocks change', () => {
 					timezone: 'America/New_York',
 					date: day.nineAM,
 				})
-				const bar = `[data-testid="${orientation}-event-${day.event}"]`
+				const bar = `[data-testid="calendar-event-${day.event}"]`
 				expect(await readHour(page, bar, orientation)).toBeCloseTo(9, 1)
 			})
 
@@ -746,7 +746,7 @@ test.describe('navigation', () => {
 			})
 			const calendar = new CalendarPage(page)
 			const titleBefore = await calendar.title.textContent()
-			const cells = page.locator('.droppable-cell')
+			const cells = page.locator('[data-cell="true"]')
 			const firstStartBefore = await cells.first().getAttribute('data-start')
 			await cells.evaluateAll((all) => {
 				for (const cell of all) {
@@ -764,7 +764,7 @@ test.describe('navigation', () => {
 				firstStartBefore ?? ''
 			)
 			await expect(
-				page.locator('.droppable-cell:not([data-probe])')
+				page.locator('[data-cell="true"]:not([data-probe])')
 			).toHaveCount(0)
 		})
 	}
@@ -800,7 +800,7 @@ test.describe('the week that spans two months', () => {
 	}) => {
 		await gotoScenario(page, { scenario: 'basic', view: 'month' })
 
-		const shaded = page.locator('[data-non-business="true"]')
+		const shaded = page.locator('[data-outside-month="true"]')
 
 		await expect(shaded.first()).toBeAttached()
 		await expect(page.locator('[data-disabled="true"]')).toHaveCount(0)
@@ -870,7 +870,7 @@ test.describe('a resource with id 0', () => {
 
 			// One event per resource: drawn twice means resource 0 drew both.
 			const bars = (eventId: string) =>
-				page.locator(`[data-testid="${orientation}-event-${eventId}"]`)
+				page.locator(`[data-testid="calendar-event-${eventId}"]`)
 			await expect(bars('zero-1')).toHaveCount(1)
 			await expect(bars('one-1')).toHaveCount(1)
 		})
@@ -1171,13 +1171,13 @@ test.describe('scrollToNow', () => {
 	// the cell holding it: an hour row, an hour column, or a whole day. The
 	// height keeps every target clear of the end of the grid, where the browser
 	// would clamp the scroll. `expectedOffset` is that cell's distance from the
-	// start of the time area at the pinned viewport: nine 61px hour rows or 81px
+	// start of the time area at the pinned viewport: nine 60px hour rows or 81px
 	// hour columns (eighty-one columns into the week), and eleven 81px day
-	// columns or 61px day rows into the month.
+	// columns or 60px day rows into the month.
 	const cases = [
 		{
 			name: 'week time grid',
-			expectedOffset: 549,
+			expectedOffset: 540,
 			scenario: 'basic',
 			view: 'week',
 			orientation: undefined,
@@ -1227,7 +1227,7 @@ test.describe('scrollToNow', () => {
 			// The one grid whose all-day row sits inside the scroll area: its
 			// all-day cells hold now too, and must not be taken for the target.
 			name: 'vertical resource day',
-			expectedOffset: 549,
+			expectedOffset: 540,
 			scenario: 'resources',
 			view: 'day',
 			orientation: 'vertical',
@@ -1239,7 +1239,7 @@ test.describe('scrollToNow', () => {
 		},
 		{
 			name: 'vertical resource month',
-			expectedOffset: 671,
+			expectedOffset: 660,
 			scenario: 'resources',
 			view: 'month',
 			orientation: 'vertical',

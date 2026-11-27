@@ -342,7 +342,7 @@ describe('buildResourceTimelineViewModel', () => {
 			const aliceBars = model.rows[0].hourlyBars
 			expect(aliceBars).toHaveLength(3)
 			expect(aliceBars[0].event.id).toBe('tiny')
-			expect(aliceBars[0].widthPercent).toBe(1.5)
+			expect(aliceBars[0].widthPercent).toBeCloseTo(4, 5)
 			expect(aliceBars[0].lane).toBe(0)
 			expect(aliceBars[1].event.id).toBe('overlap')
 			expect(aliceBars[1].lane).toBe(1)
@@ -353,6 +353,101 @@ describe('buildResourceTimelineViewModel', () => {
 		} finally {
 			setSystemTime()
 		}
+	})
+
+	it('maps discrete hourSlots across DST days, hiddenDays, and exclusive slotMaxTime bounds', () => {
+		const springEvents: CalendarEvent[] = [
+			{
+				id: 'dst-9am',
+				title: 'DST 9 AM',
+				start: '2025-03-09T13:00:00Z',
+				end: '2025-03-09T14:00:00Z',
+				resourceId: 'r1',
+			},
+		]
+		setSystemTime(new Date('2025-03-09T13:00:00.000Z'))
+		try {
+			const springModel = buildResourceTimelineViewModel({
+				mode: 'day',
+				currentDate: fromFields(
+					{ year: 2025, month: 3, day: 9 },
+					'America/New_York'
+				),
+				events: springEvents,
+				resources,
+				firstDayOfWeek: 0,
+				timezone: 'America/New_York',
+				nowIndicator: true,
+			})
+			expect(springModel.nowIndicatorPercent).toBeCloseTo(37.5, 5)
+			expect(springModel.rows[0].hourlyBars[0]?.leftPercent).toBeCloseTo(
+				37.5,
+				5
+			)
+
+			const boundAtMax = buildResourceTimelineViewModel({
+				mode: 'day',
+				currentDate: fromFields(
+					{ year: 2025, month: 3, day: 9 },
+					'America/New_York'
+				),
+				events: [],
+				resources,
+				firstDayOfWeek: 0,
+				timezone: 'America/New_York',
+				slotMinTime: '06:00',
+				slotMaxTime: '09:00',
+				nowIndicator: true,
+			})
+			expect(boundAtMax.nowIndicatorPercent).toBeNull()
+
+			const timeGridAtMax = buildTimeGridViewModel({
+				mode: 'day',
+				currentDate: fromFields(
+					{ year: 2025, month: 3, day: 9 },
+					'America/New_York'
+				),
+				events: [],
+				firstDayOfWeek: 0,
+				timezone: 'America/New_York',
+				locale: 'en-US',
+				slotMinTime: '06:00',
+				slotMaxTime: '09:00',
+				nowIndicator: true,
+			})
+			expect(timeGridAtMax.columns[0]?.nowIndicatorPercent).toBeNull()
+		} finally {
+			setSystemTime()
+		}
+
+		const hiddenModel = buildResourceTimelineViewModel({
+			mode: 'week',
+			currentDate: fromFields({ year: 2025, month: 3, day: 12 }, 'UTC'),
+			events: [
+				{
+					id: 'wed-only',
+					title: 'Wed Hidden',
+					start: '2025-03-12T10:00:00Z',
+					end: '2025-03-12T11:00:00Z',
+					resourceId: 'r1',
+				},
+				{
+					id: 'thu-2pm',
+					title: 'Thu 2 PM',
+					start: '2025-03-13T14:00:00Z',
+					end: '2025-03-13T15:00:00Z',
+					resourceId: 'r1',
+				},
+			],
+			resources,
+			firstDayOfWeek: 0,
+			timezone: 'UTC',
+			hiddenDays: new Set([3]),
+		})
+		const thuBar = hiddenModel.rows[0].hourlyBars
+		expect(thuBar).toHaveLength(1)
+		expect(thuBar[0].event.id).toBe('thu-2pm')
+		expect(thuBar[0].leftPercent).toBeCloseTo(((3 * 24 + 14) / 144) * 100, 5)
 	})
 
 	it('builds daily layout for month mode and week daily granularity', () => {

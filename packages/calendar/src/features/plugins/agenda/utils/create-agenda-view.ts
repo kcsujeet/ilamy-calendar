@@ -25,6 +25,11 @@ const LONG_DATE: Intl.DateTimeFormatOptions = {
 	year: 'numeric',
 }
 
+const MONTH_DAY: Intl.DateTimeFormatOptions = {
+	month: 'short',
+	day: 'numeric',
+}
+
 const COMPACT_DATE: Intl.DateTimeFormatOptions = {
 	month: 'short',
 	day: 'numeric',
@@ -44,16 +49,17 @@ const formatAgendaHeaderTitle = (
 		return formatDate(current, LONG_DATE, locale)
 	}
 	if (window === 'month') {
-		return formatDate(current, { month: 'short', year: 'numeric' }, locale)
+		return formatDate(current, { month: 'long', year: 'numeric' }, locale)
 	}
 	if (typeof window === 'number') {
 		const { start, end } = windowRange(current, window, firstDayOfWeek)
-		return formatDateRange(start, end, COMPACT_DATE, locale)
+		const opts = start.year === end.year ? MONTH_DAY : COMPACT_DATE
+		return formatDateRange(start, end, opts, locale)
 	}
 	const days = getWeekDays(current, firstDayOfWeek)
 	const start = days.at(0) ?? current
 	const end = days.at(-1) ?? current
-	return formatDateRange(start, end, COMPACT_DATE, locale)
+	return formatDateRange(start, end, MONTH_DAY, locale)
 }
 
 export const createAgendaView = ({

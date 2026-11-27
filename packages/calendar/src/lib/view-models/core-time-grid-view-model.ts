@@ -127,7 +127,7 @@ const computeNowIndicatorPercent = (
 	const offsetMinutes =
 		(currentNow.hour - firstHour.hour) * MINUTES_PER_HOUR + currentNow.minute
 	const totalMinutes = hours.length * MINUTES_PER_HOUR
-	if (offsetMinutes < 0 || offsetMinutes > totalMinutes) return null
+	if (offsetMinutes < 0 || offsetMinutes >= totalMinutes) return null
 	return (offsetMinutes / totalMinutes) * 100
 }
 

@@ -1,118 +1,143 @@
 import { CardHeader } from '../../../components/ui/card'
 import { cn } from '../../../lib/utils'
-import { Blocks, Layers, Palette } from 'lucide-react'
 import {
+	COMPONENT_LIBRARY_OPTIONS,
+	CSS_MODE_OPTIONS,
+	type ComponentLibraryId,
+	type CssMode,
 	FRAMEWORK_OPTIONS,
 	type FrameworkId,
-	type ThemePreset,
 } from '../../../types/settings-form.types'
-
-interface ThemeOption {
-	value: ThemePreset
-	label: string
-	reactOnly?: boolean
-}
-
-const THEME_ICONS: Record<ThemePreset, typeof Palette> = {
-	unstyled: Layers,
-	tailwind: Blocks,
-	mui: Palette,
-	stylex: Palette,
-}
-
-const THEME_OPTIONS: ThemeOption[] = [
-	{ value: 'unstyled', label: 'Unstyled' },
-	{ value: 'tailwind', label: 'Tailwind' },
-	{ value: 'mui', label: 'MUI', reactOnly: true },
-	{ value: 'stylex', label: 'StyleX' },
-]
 
 interface PreviewHeaderBarProps {
 	framework: FrameworkId
-	themePreset: ThemePreset
+	cssMode: CssMode
+	componentLibrary: ComponentLibraryId
 	onSelectFramework: (framework: FrameworkId) => void
-	onSelectTheme: (theme: ThemePreset) => void
+	onSelectCss: (cssMode: CssMode) => void
+	onSelectComponentLibrary: (library: ComponentLibraryId) => void
 }
+
+const BUTTON_BASE =
+	'inline-flex shrink-0 whitespace-nowrap items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors min-h-6'
+const BUTTON_ACTIVE =
+	'bg-primary text-primary-foreground shadow-xs cursor-pointer'
+const BUTTON_INACTIVE =
+	'text-muted-foreground hover:text-foreground cursor-pointer'
+const BUTTON_DISABLED = 'opacity-40 cursor-not-allowed text-muted-foreground'
+
+const AxisLabel = ({ children }: { children: string }) => (
+	<span className="text-[11px] font-medium text-muted-foreground select-none px-1">
+		{children}
+	</span>
+)
 
 export function PreviewHeaderBar({
 	framework,
-	themePreset,
+	cssMode,
+	componentLibrary,
 	onSelectFramework,
-	onSelectTheme,
+	onSelectCss,
+	onSelectComponentLibrary,
 }: PreviewHeaderBarProps) {
-	const isReact = framework === 'react'
-
 	return (
-		<CardHeader className="px-3 py-2 border-b flex flex-row flex-wrap items-center justify-between gap-2 bg-muted/30">
-			<fieldset className="inline-flex flex-nowrap overflow-x-auto max-w-full items-center rounded-lg bg-background p-0.5 border border-border/80 m-0 min-w-0">
-				<legend className="sr-only">Framework switcher</legend>
-				{FRAMEWORK_OPTIONS.map((fw) => {
-					const isActive = framework === fw.value
-					let buttonTone = 'text-muted-foreground hover:text-foreground'
-					let versionTone = 'text-muted-foreground'
-					if (isActive) {
-						buttonTone = 'bg-primary text-primary-foreground shadow-xs'
-						versionTone = 'text-primary-foreground/80'
-					}
-					return (
-						<button
-							aria-pressed={isActive}
-							className={cn(
-								'inline-flex shrink-0 whitespace-nowrap items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer',
-								buttonTone
-							)}
-							data-testid={`framework-${fw.value}`}
-							key={fw.value}
-							onClick={() => onSelectFramework(fw.value)}
-							type="button"
-						>
-							<span>{fw.label}</span>
-							<span className={cn('font-mono text-[10px]', versionTone)}>
-								{fw.version}
-							</span>
-						</button>
-					)
-				})}
-			</fieldset>
+		<CardHeader
+			className="px-3 py-2 border-b flex flex-row flex-wrap items-center justify-between gap-2 bg-muted/30"
+			data-testid="playground-axes-bar"
+		>
+			<div className="flex flex-wrap items-center gap-1.5 min-w-0">
+				<AxisLabel>Framework</AxisLabel>
+				<fieldset className="inline-flex flex-wrap items-center rounded-lg bg-background p-0.5 border border-border/80 m-0 min-w-0">
+					<legend className="sr-only">Framework</legend>
+					{FRAMEWORK_OPTIONS.map((fw) => {
+						const isActive = framework === fw.value
+						return (
+							<button
+								aria-pressed={isActive}
+								className={cn(
+									BUTTON_BASE,
+									isActive ? BUTTON_ACTIVE : BUTTON_INACTIVE
+								)}
+								data-testid={`framework-${fw.value}`}
+								key={fw.value}
+								onClick={() => onSelectFramework(fw.value)}
+								type="button"
+							>
+								<span>{fw.label}</span>
+								<span
+									className={cn(
+										'font-mono text-[10px]',
+										isActive
+											? 'text-primary-foreground/80'
+											: 'text-muted-foreground'
+									)}
+								>
+									{fw.version}
+								</span>
+							</button>
+						)
+					})}
+				</fieldset>
+			</div>
 
-			<fieldset className="inline-flex flex-nowrap overflow-x-auto max-w-full items-center rounded-lg bg-background p-0.5 border border-border/80 m-0 min-w-0">
-				<legend className="sr-only">Theme switcher</legend>
-				{THEME_OPTIONS.map((option) => {
-					const isActive = themePreset === option.value
-					const isDisabled = Boolean(option.reactOnly && !isReact)
-					const Icon = THEME_ICONS[option.value]
-					let cursorTone = 'cursor-pointer'
-					let activeTone = 'text-muted-foreground hover:text-foreground'
-					let disabledTitle: string | undefined
-					if (isDisabled) {
-						cursorTone = 'opacity-40 cursor-not-allowed text-muted-foreground'
-						activeTone = ''
-						disabledTitle =
-							'Material UI adapter is React-only; try Tailwind, StyleX, or Unstyled'
-					} else if (isActive) {
-						activeTone = 'bg-primary text-primary-foreground shadow-xs'
-					}
-					return (
-						<button
-							aria-pressed={isActive}
-							className={cn(
-								'inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all',
-								cursorTone,
-								activeTone
-							)}
-							data-testid={`theme-${option.value}`}
-							disabled={isDisabled}
-							key={option.value}
-							onClick={() => onSelectTheme(option.value)}
-							title={disabledTitle}
-							type="button"
-						>
-							<Icon aria-hidden="true" className="size-3.5 shrink-0" />
-							{option.label}
-						</button>
-					)
-				})}
-			</fieldset>
+			<div className="flex flex-wrap items-center gap-2 min-w-0">
+				<div className="flex flex-wrap items-center gap-1.5 min-w-0">
+					<AxisLabel>CSS</AxisLabel>
+					<fieldset className="inline-flex flex-wrap items-center rounded-lg bg-background p-0.5 border border-border/80 m-0 min-w-0">
+						<legend className="sr-only">CSS</legend>
+						{CSS_MODE_OPTIONS.map((option) => {
+							const isActive = cssMode === option.value
+							return (
+								<button
+									aria-pressed={isActive}
+									className={cn(
+										BUTTON_BASE,
+										isActive ? BUTTON_ACTIVE : BUTTON_INACTIVE
+									)}
+									data-testid={`css-${option.value}`}
+									key={option.value}
+									onClick={() => onSelectCss(option.value)}
+									title={option.description}
+									type="button"
+								>
+									{option.label}
+								</button>
+							)
+						})}
+					</fieldset>
+				</div>
+
+				<div className="flex flex-wrap items-center gap-1.5 min-w-0">
+					<AxisLabel>Components</AxisLabel>
+					<fieldset className="inline-flex flex-wrap items-center rounded-lg bg-background p-0.5 border border-border/80 m-0 min-w-0">
+						<legend className="sr-only">Components</legend>
+						{COMPONENT_LIBRARY_OPTIONS.map((option) => {
+							const isSupported = option.supportedFrameworks.includes(framework)
+							const isActive = componentLibrary === option.value
+							let tone = BUTTON_INACTIVE
+							if (!isSupported) {
+								tone = BUTTON_DISABLED
+							} else if (isActive) {
+								tone = BUTTON_ACTIVE
+							}
+							return (
+								<button
+									aria-pressed={isActive}
+									className={cn(BUTTON_BASE, tone)}
+									data-testid={`components-${option.value}`}
+									disabled={!isSupported}
+									key={option.value}
+									onClick={() => onSelectComponentLibrary(option.value)}
+									title={isSupported ? undefined : option.disabledReason}
+									type="button"
+								>
+									{option.label}
+								</button>
+							)
+						})}
+					</fieldset>
+				</div>
+			</div>
 		</CardHeader>
 	)
 }

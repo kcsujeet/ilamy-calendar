@@ -16,6 +16,9 @@ const TIME_PATTERN = /^(\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?$/
 const SECONDS_PER_HOUR = 3600
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 const HOUR_SELECTOR = '[data-hour]'
+const VERTICAL_HOUR_SELECTOR = '[data-ilamy-part="time-axis-hour"][data-hour]'
+const HORIZONTAL_HOUR_SELECTOR =
+	'[data-ilamy-part="res-h-hour-cell"][data-hour]'
 const TIMED_CELL_SELECTOR = '[data-start]:not([data-all-day="true"])'
 const ANY_CELL_SELECTOR = '[data-start]'
 
@@ -45,12 +48,13 @@ const readRowHour = (row: HTMLElement): number =>
 	Number.parseInt(row.getAttribute('data-hour') ?? '', 10)
 
 const firstDayRows = (rows: HTMLElement[]): HTMLElement[] => {
+	const firstDate = rows.at(0)?.dataset.date
 	const firstDayEnd = rows.findIndex((row, index) => {
+		if (index === 0) return false
+		if (firstDate) return row.dataset.date !== firstDate
 		const previousRow = rows.at(index - 1)
 		return (
-			index > 0 &&
-			previousRow !== undefined &&
-			readRowHour(row) <= readRowHour(previousRow)
+			previousRow !== undefined && readRowHour(row) < readRowHour(previousRow)
 		)
 	})
 	return firstDayEnd === -1 ? rows : rows.slice(0, firstDayEnd)
@@ -65,7 +69,7 @@ const findTargetRow = (
 	if (!firstRow || !lastRow) return null
 	if (targetHour <= readRowHour(firstRow)) return firstRow
 	if (targetHour >= readRowHour(lastRow)) return lastRow
-	return rows.find((row) => readRowHour(row) === targetHour) ?? null
+	return rows.find((row) => readRowHour(row) >= targetHour) ?? lastRow
 }
 
 const readCellInterval = (cell: HTMLElement): ZonedInterval | null => {
@@ -101,15 +105,27 @@ const findNowTarget = (viewport: HTMLElement): ScrollTarget | null => {
 	return { target, origin, fraction }
 }
 
+const queryHourRows = (
+	viewport: HTMLElement,
+	axis: ScrollToTimeAxis
+): HTMLElement[] => {
+	const axisSelector =
+		axis === 'horizontal' ? HORIZONTAL_HOUR_SELECTOR : VERTICAL_HOUR_SELECTOR
+	const scoped = Array.from(
+		viewport.querySelectorAll<HTMLElement>(axisSelector)
+	)
+	if (scoped.length > 0) return scoped
+	return Array.from(viewport.querySelectorAll<HTMLElement>(HOUR_SELECTOR))
+}
+
 const findScrollTimeTarget = (
 	viewport: HTMLElement,
-	scrollTime: string | undefined
+	scrollTime: string | undefined,
+	axis: ScrollToTimeAxis
 ): ScrollTarget | null => {
 	const parsed = scrollTime ? parseTimeToHourFraction(scrollTime) : null
 	if (parsed === null) return null
-	const rows = firstDayRows(
-		Array.from(viewport.querySelectorAll<HTMLElement>(HOUR_SELECTOR))
-	)
+	const rows = firstDayRows(queryHourRows(viewport, axis))
 	const origin = rows.at(0)
 	const target = findTargetRow(rows, parsed.hour)
 	if (!origin || !target) return null
@@ -142,7 +158,7 @@ const applyScrollToTime = (
 ): boolean => {
 	const scrollTarget =
 		(scrollToNow ? findNowTarget(viewport) : null) ??
-		findScrollTimeTarget(viewport, scrollTime)
+		findScrollTimeTarget(viewport, scrollTime, axis)
 	if (scrollTarget) {
 		const targetRect = scrollTarget.target.getBoundingClientRect()
 		const firstRect = scrollTarget.origin.getBoundingClientRect()

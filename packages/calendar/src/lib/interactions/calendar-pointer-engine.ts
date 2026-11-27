@@ -163,6 +163,31 @@ const resolvePlacementResourceId = (
 		? undefined
 		: (findResourceById(resources, rawId)?.id ?? rawId)
 
+const resolveDragAxis = (
+	barEl: HTMLElement,
+	event: CalendarEvent
+): TimeAxis => {
+	const axisAttr = barEl.dataset.dragAxis
+	if (axisAttr === 'horizontal' || axisAttr === 'vertical') return axisAttr
+	return event.allDay ? 'horizontal' : 'vertical'
+}
+
+const resolveDragSlotMinutes = (
+	axis: TimeAxis,
+	state: CalendarInteractionState
+): number => {
+	if (axis !== 'vertical') return MINUTES_PER_HOUR
+	return (
+		state.snapDurationMinutes ?? state.slotDurationMinutes ?? MINUTES_PER_HOUR
+	)
+}
+
+const resolveSegmentBound = (
+	iso: string | undefined,
+	fallback: ZonedDate,
+	timezone: string
+): ZonedDate => (iso ? parseDate(iso, timezone) : undefined) ?? fallback
+
 const buildGrabOffset = (
 	event: CalendarEvent,
 	barEl: HTMLElement,
@@ -172,37 +197,25 @@ const buildGrabOffset = (
 	const start = parseDate(event.start, state.timezone)
 	const end = parseDate(event.end, state.timezone)
 	if (!(start && end)) return NO_GRAB_OFFSET
-	const axisAttr = barEl.dataset.dragAxis
-	const axis: TimeAxis =
-		axisAttr === 'horizontal' || axisAttr === 'vertical'
-			? axisAttr
-			: event.allDay
-				? 'horizontal'
-				: 'vertical'
-	const segStart = barEl.dataset.segStart
-		? parseDate(barEl.dataset.segStart, state.timezone)
-		: start
-	const segEnd = barEl.dataset.segEnd
-		? parseDate(barEl.dataset.segEnd, state.timezone)
-		: end
+	const axis = resolveDragAxis(barEl, event)
+	const segStart = resolveSegmentBound(
+		barEl.dataset.segStart,
+		start,
+		state.timezone
+	)
+	const segEnd = resolveSegmentBound(barEl.dataset.segEnd, end, state.timezone)
 	const segment: DragSegment = getDragSegment(
 		event,
-		{ start: segStart ?? start, end: segEnd ?? end },
+		{ start: segStart, end: segEnd },
 		axis,
 		state.hiddenDays
 	) ?? { start, end, axis, hiddenDays: state.hiddenDays }
-	const slotMinutes =
-		axis === 'vertical'
-			? (state.snapDurationMinutes ??
-				state.slotDurationMinutes ??
-				MINUTES_PER_HOUR)
-			: MINUTES_PER_HOUR
 	return computeGrabOffset({
 		activeEvent: event,
 		initialRect: barEl.getBoundingClientRect(),
 		pointer: { x: press.clientX, y: press.clientY },
 		segment,
-		slotDurationMinutes: slotMinutes,
+		slotDurationMinutes: resolveDragSlotMinutes(axis, state),
 	})
 }
 
@@ -228,23 +241,22 @@ const computeEventDeltas = (
 	return { delta, endDelta }
 }
 
+const timestampsDiffer = (a: string, b: string, timezone: string): boolean => {
+	const left = parseDate(a, timezone)
+	const right = parseDate(b, timezone)
+	if (!(left && right)) return true
+	return left.epochMilliseconds !== right.epochMilliseconds
+}
+
 const isDropChanged = (
 	event: CalendarEvent,
 	drop: EventDropInfo,
 	timezone: string
-): boolean => {
-	const prevStart = parseDate(event.start, timezone)
-	const prevEnd = parseDate(event.end, timezone)
-	const nextStart = parseDate(drop.start, timezone)
-	const nextEnd = parseDate(drop.end, timezone)
-	if (!(prevStart && prevEnd && nextStart && nextEnd)) return true
-	return (
-		prevStart.epochMilliseconds !== nextStart.epochMilliseconds ||
-		prevEnd.epochMilliseconds !== nextEnd.epochMilliseconds ||
-		Boolean(drop.allDay) !== Boolean(event.allDay) ||
-		String(drop.resourceId ?? '') !== String(event.resourceId ?? '')
-	)
-}
+): boolean =>
+	timestampsDiffer(event.start, drop.start, timezone) ||
+	timestampsDiffer(event.end, drop.end, timezone) ||
+	Boolean(drop.allDay) !== Boolean(event.allDay) ||
+	String(drop.resourceId ?? '') !== String(event.resourceId ?? '')
 
 /**
  * Attaches a single unified pointer interaction engine (event move, resize, click,
@@ -376,6 +388,26 @@ export const attachCalendarInteractions = (
 		})
 	}
 
+	const clearResizePreview = () => {
+		lastDrop = null
+		lastAllowed = false
+		restoreCursor()
+		config.onPreviewChange?.(null)
+	}
+
+	const applyResizeCursor = (
+		allowed: boolean,
+		axis: TimeAxis | undefined
+	): 'ew-resize' | 'ns-resize' | 'not-allowed' => {
+		const resizeCursor = axis === 'horizontal' ? 'ew-resize' : 'ns-resize'
+		if (!allowed) {
+			setCursor('not-allowed')
+			return 'not-allowed'
+		}
+		restoreCursor()
+		return resizeCursor
+	}
+
 	const evaluateResize = (
 		payload: Extract<ActivePayload, { mode: 'resize' }>,
 		point: PointerPoint,
@@ -383,17 +415,12 @@ export const attachCalendarInteractions = (
 	) => {
 		const cellEl = cellElementAt(point)
 		const snapped = readSnappedAt(cellEl, point, state)
-		if (!(cellEl instanceof HTMLElement && snapped)) {
-			return
-		}
+		if (!(cellEl instanceof HTMLElement && snapped)) return
 		const inSameComponent = payload.event.allDay
 			? snapped.allDay
 			: !snapped.isAllDaySlot
 		if (!inSameComponent) {
-			lastDrop = null
-			lastAllowed = false
-			restoreCursor()
-			config.onPreviewChange?.(null)
+			clearResizePreview()
 			return
 		}
 		const cell = snappedCellToPlacementCell(snapped, state)
@@ -401,10 +428,7 @@ export const attachCalendarInteractions = (
 			resizableFromStart: Boolean(state.eventResizableFromStart),
 		})
 		if (!next) {
-			lastDrop = null
-			lastAllowed = false
-			restoreCursor()
-			config.onPreviewChange?.(null)
+			clearResizePreview()
 			return
 		}
 		const dropInfo: EventDropInfo = {
@@ -426,13 +450,7 @@ export const attachCalendarInteractions = (
 		)
 		lastDrop = dropInfo
 		lastAllowed = allowed
-		const resizeCursor = cell.axis === 'horizontal' ? 'ew-resize' : 'ns-resize'
-		const cursor = allowed ? resizeCursor : 'not-allowed'
-		if (allowed) {
-			restoreCursor()
-		} else {
-			setCursor('not-allowed')
-		}
+		const cursor = applyResizeCursor(allowed, cell.axis)
 		config.onPreviewChange?.({
 			mode: 'resize',
 			eventId: payload.event.id,
@@ -540,6 +558,15 @@ export const attachCalendarInteractions = (
 		}
 	}
 
+	const pickResizeDeltas = (
+		edge: 'start' | 'end',
+		delta?: EventDelta,
+		endDelta?: EventDelta
+	) => ({
+		delta: edge === 'start' ? (delta ?? ZERO_DELTA) : ZERO_DELTA,
+		endDelta: edge === 'end' ? (endDelta ?? ZERO_DELTA) : ZERO_DELTA,
+	})
+
 	const commitEventMutation = (
 		payload: Exclude<ActivePayload, { mode: 'select' }>,
 		drop: EventDropInfo,
@@ -560,10 +587,11 @@ export const attachCalendarInteractions = (
 			config.onMoveCommit?.(payload.event, drop, { delta, endDelta })
 			return
 		}
-		config.onResizeCommit?.(payload.event, drop, {
-			delta: payload.edge === 'start' ? (delta ?? ZERO_DELTA) : ZERO_DELTA,
-			endDelta: payload.edge === 'end' ? (endDelta ?? ZERO_DELTA) : ZERO_DELTA,
-		})
+		config.onResizeCommit?.(
+			payload.event,
+			drop,
+			pickResizeDeltas(payload.edge, delta, endDelta)
+		)
 	}
 
 	const gesture: PointerGestureHandle<ActivePayload> =

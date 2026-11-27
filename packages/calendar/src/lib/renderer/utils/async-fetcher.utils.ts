@@ -1,5 +1,5 @@
 /** @jsxImportSource preact */
-import { useEffect, useRef } from 'preact/hooks'
+import { useLayoutEffect, useRef } from 'preact/hooks'
 import { type DateRange, parseDate } from '../../../index'
 import {
 	abortFetchTracker,
@@ -68,7 +68,7 @@ export const useRangeFetcher = <Row>({
 	refetchRef.current = runFetch
 	const hasFetcher = Boolean(fetcher)
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		const tracker = trackerRef.current
 		if (!hasFetcher) {
 			resetFetchTracker(tracker, latestRef.current.loading)
@@ -90,7 +90,7 @@ export const useRangeFetcher = <Row>({
 		}
 	}, [hasFetcher, startMs, endMs, timezone, lazyFetching, followsRange])
 
-	useEffect(() => () => abortFetchTracker(trackerRef.current), [])
+	useLayoutEffect(() => () => abortFetchTracker(trackerRef.current), [])
 
 	return {
 		refetch: () => {

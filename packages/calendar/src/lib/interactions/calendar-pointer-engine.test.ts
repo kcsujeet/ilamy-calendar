@@ -350,4 +350,63 @@ describe('attachCalendarInteractions', () => {
 
 		handle.destroy()
 	})
+
+	it('does not throw when onStart cancels the gesture on a non-editable event drag', () => {
+		const root = document.createElement('div')
+		document.body.appendChild(root)
+		const bar = makeRectEl(
+			{
+				'data-event-id': 'locked-1',
+				'data-drag-axis': 'vertical',
+				'data-seg-start': '2025-03-12T09:00:00.000Z',
+				'data-seg-end': '2025-03-12T10:00:00.000Z',
+			},
+			{ top: 100, left: 0, width: 100, height: 60 }
+		)
+		root.appendChild(bar)
+		const event: CalendarEvent = {
+			id: 'locked-1',
+			title: 'Locked',
+			start: '2025-03-12T09:00:00.000Z',
+			end: '2025-03-12T10:00:00.000Z',
+		}
+		let committed = 0
+		const handle = attachCalendarInteractions({
+			root,
+			getState: () => ({
+				view: 'week',
+				timezone: 'UTC',
+				editable: false,
+				dragAndDrop: true,
+				events: [event],
+				resources: [],
+			}),
+			onMoveCommit: () => {
+				committed += 1
+			},
+		})
+		const dispatch = (
+			type: string,
+			target: EventTarget,
+			clientX: number,
+			clientY: number
+		) => {
+			target.dispatchEvent(
+				new PointerEvent(type, {
+					bubbles: true,
+					button: 0,
+					isPrimary: true,
+					pointerId: 1,
+					pointerType: 'mouse',
+					clientX,
+					clientY,
+				})
+			)
+		}
+		dispatch('pointerdown', bar, 50, 120)
+		expect(() => dispatch('pointermove', window, 50, 140)).not.toThrow()
+		dispatch('pointerup', window, 50, 140)
+		expect(committed).toBe(0)
+		handle.destroy()
+	})
 })

@@ -260,6 +260,7 @@ export {
 	getResourceEvents,
 	shareInDevBuild,
 } from './utils/core-resource-filter.utils'
+export { isSameResourceList } from './utils/resource-list.utils'
 export {
 	collectResourceBusinessHours,
 	type GetViewHoursOptions,

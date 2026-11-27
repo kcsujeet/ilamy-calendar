@@ -75,5 +75,27 @@ describe('lib/renderer format.utils', () => {
 			formatters: fmt,
 		})
 		expect(headerTitle).toBe('November 2026')
+
+		const rangeFmt = createCalendarFormatters({
+			view: 'month',
+			locale: 'en-US',
+			timezone: 'UTC',
+			titleFormat: { day: 'numeric', month: 'short', year: 'numeric' },
+		})
+		expect(
+			formatCalendarHeaderTitle({
+				currentDateIso: '2025-03-12T09:00:00+00:00',
+				visibleRange: {
+					start: '2025-02-23T00:00:00+00:00',
+					end: '2025-04-06T00:00:00+00:00',
+				},
+				view: 'month',
+				firstDayOfWeek: 0,
+				hiddenDays: undefined,
+				timezone: 'UTC',
+				locale: 'en-US',
+				formatters: rangeFmt,
+			})
+		).toContain('Mar')
 	})
 })

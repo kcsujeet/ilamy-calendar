@@ -50,8 +50,8 @@ function mergeThemeAdapter(
 	if (!overrideAdapter) return shared
 	return {
 		...shared,
-		unstyled: Boolean(overrideAdapter.unstyled),
-		slotProps: overrideAdapter.slotProps,
+		unstyled: Boolean(overrideAdapter.unstyled ?? shared.unstyled),
+		slotProps: overrideAdapter.slotProps ?? shared.slotProps,
 	}
 }
 

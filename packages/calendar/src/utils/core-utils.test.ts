@@ -31,6 +31,10 @@ import {
 	getViewHours,
 	parseSlotRange,
 } from './core-view-hours.utils'
+import {
+	createCalendarFormatters,
+	formatCalendarHeaderTitle,
+} from './date-time-formatters.utils'
 import { fromFields, getFields, toOffsetIso } from './temporal'
 
 describe('core-date-grid', () => {
@@ -257,5 +261,33 @@ describe('core-resource-filter', () => {
 		expect(getResourceEvents(events, 'r2').map((e) => e.id)).toEqual(['e2'])
 		expect(getResourceEvents(events, 'missing')).toEqual([])
 		expect(getResourceEvents(events, undefined)).toBe(events)
+	})
+
+	it('trims hidden days from week header titles regardless of resource axis', () => {
+		const formatters = createCalendarFormatters({
+			view: 'week',
+			locale: 'en-US',
+			timezone: 'UTC',
+		})
+		const hiddenWeekends = toHiddenDaysSet([], false)
+		const baseParams = {
+			currentDateIso: '2025-03-12T09:00:00Z',
+			visibleRange: {
+				start: '2025-03-10T00:00:00Z',
+				end: '2025-03-14T00:00:00Z',
+			},
+			view: 'week',
+			firstDayOfWeek: 0,
+			hiddenDays: hiddenWeekends,
+			timezone: 'UTC',
+			locale: 'en-US',
+			formatters,
+		}
+		expect(
+			formatCalendarHeaderTitle({ ...baseParams, hasResources: false })
+		).toBe('Mar 10 – 14')
+		expect(
+			formatCalendarHeaderTitle({ ...baseParams, hasResources: true })
+		).toBe('Mar 10 – 14')
 	})
 })

@@ -4,6 +4,27 @@ import type { DomCalendarEvent } from '../types/renderer.types'
 
 const TAILWIND_COLOR_RE = /^(bg|text)-/
 const BG_TOKEN_RE = /(?:^|\s)bg-/
+const TEXT_TOKEN_RE = /(?:^|\s)text-/
+const DARK_TW_BG_RE = /\bbg-(?:black|[a-z]+-(?:600|700|800|900|950))\b/
+const LIGHT_TW_BG_RE = /\bbg-(?:white|[a-z]+-(?:50|100|200|300))\b/
+
+const readableTailwindTextColor = (
+	bgClass: string
+): '#ffffff' | '#000000' | undefined => {
+	if (DARK_TW_BG_RE.test(bgClass)) return '#ffffff'
+	if (LIGHT_TW_BG_RE.test(bgClass)) return '#000000'
+	return undefined
+}
+
+const applyAutoTailwindText = (
+	bg: string,
+	fg: string | undefined,
+	style: StyleRecord
+) => {
+	if (fg || TEXT_TOKEN_RE.test(bg)) return
+	const autoColor = readableTailwindTextColor(bg)
+	if (autoColor) style.color = autoColor
+}
 
 const isTailwindToken = (value: string | undefined): boolean =>
 	Boolean(value && TAILWIND_COLOR_RE.test(value.trim()))
@@ -40,6 +61,7 @@ const applyExplicitBackground = (
 ): boolean => {
 	if (bg && isTailwindToken(bg)) {
 		classes.push(bg.trim())
+		applyAutoTailwindText(bg, fg, style)
 		return true
 	}
 	if (bg) {

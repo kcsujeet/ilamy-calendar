@@ -45,11 +45,29 @@ const COLOR_SWATCHES = [
 	{ bg: '#fee2e2', fg: '#991b1b', label: 'Red' },
 ]
 
+const formatTimeLabel = (
+	hour: number,
+	minute: number,
+	timeFormat: '12-hour' | '24-hour',
+	locale: string
+): string => {
+	const anchor = startOf(now('UTC'), 'day')
+	const dt = add(add(anchor, hour, 'hour'), minute, 'minute')
+	return formatDate(
+		dt,
+		{
+			hour: timeFormat === '24-hour' ? '2-digit' : 'numeric',
+			minute: '2-digit',
+			hour12: timeFormat !== '24-hour',
+		},
+		locale
+	)
+}
+
 const buildTimeOptions = (
 	timeFormat: '12-hour' | '24-hour',
 	locale: string
 ): Array<{ key: string; label: string; hour: number; minute: number }> => {
-	const anchor = startOf(now('UTC'), 'day')
 	const list: Array<{
 		key: string
 		label: string
@@ -58,19 +76,9 @@ const buildTimeOptions = (
 	}> = []
 	for (let hour = 0; hour < 24; hour += 1) {
 		for (const minute of [0, 15, 30, 45]) {
-			const dt = add(add(anchor, hour, 'hour'), minute, 'minute')
-			const label = formatDate(
-				dt,
-				{
-					hour: timeFormat === '24-hour' ? '2-digit' : 'numeric',
-					minute: '2-digit',
-					hour12: timeFormat !== '24-hour',
-				},
-				locale
-			)
 			list.push({
 				key: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
-				label,
+				label: formatTimeLabel(hour, minute, timeFormat, locale),
 				hour,
 				minute,
 			})
@@ -134,12 +142,80 @@ const DatePickerButton = ({
 	)
 }
 
+interface TimeOption {
+	key: string
+	label: string
+	hour: number
+	minute: number
+}
+
+const TimePickerPanel = ({
+	options,
+	currentKey,
+	t,
+	onSelect,
+}: {
+	options: TimeOption[]
+	currentKey: string
+	t: RendererActions['t']
+	onSelect: (hour: number, minute: number) => void
+}) => {
+	const [search, setSearch] = useState('')
+	const inputRef = useRef<HTMLInputElement>(null)
+
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			inputRef.current?.focus()
+		}, 0)
+		return () => clearTimeout(timer)
+	}, [])
+
+	const query = search.trim().toLowerCase()
+	const matching = query
+		? options.filter((opt) => opt.label.toLowerCase().includes(query))
+		: options
+
+	return (
+		<>
+			<div data-ilamy-part="time-picker-search">
+				<input
+					data-ilamy-slot="input"
+					onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
+					placeholder={t('searchTime')}
+					ref={inputRef}
+					type="text"
+					value={search}
+				/>
+			</div>
+			<div data-ilamy-part="time-picker-list">
+				{matching.length === 0 ? (
+					<div data-ilamy-part="time-picker-empty">{t('noTimeFound')}</div>
+				) : (
+					matching.map((opt) => (
+						<button
+							data-ilamy-part="picker-cell"
+							data-selected={opt.key === currentKey ? 'true' : undefined}
+							key={opt.key}
+							onClick={() => onSelect(opt.hour, opt.minute)}
+							style={{ textAlign: 'left' }}
+							type="button"
+						>
+							{opt.label}
+						</button>
+					))
+				)}
+			</div>
+		</>
+	)
+}
+
 const TimePickerButton = ({
 	id,
 	hour,
 	minute,
 	timeFormat,
 	locale,
+	t,
 	onChange,
 }: {
 	id: string
@@ -147,6 +223,7 @@ const TimePickerButton = ({
 	minute: number
 	timeFormat: '12-hour' | '24-hour'
 	locale: string
+	t: RendererActions['t']
 	onChange: (h: number, m: number) => void
 }) => {
 	const [open, setOpen] = useState(false)
@@ -158,16 +235,13 @@ const TimePickerButton = ({
 	)
 	const currentKey = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 	const currentLabel =
-		options.find((o) => o.key === currentKey)?.label ?? currentKey
-
-	const listboxId = `${id}-listbox`
+		options.find((o) => o.key === currentKey)?.label ??
+		formatTimeLabel(hour, minute, timeFormat, locale)
 
 	return (
 		<>
 			<button
-				aria-controls={open ? listboxId : undefined}
 				aria-expanded={open}
-				aria-haspopup="listbox"
 				data-ilamy-slot="input"
 				data-testid={rendererKeys.testId.timePicker(id)}
 				id={id}
@@ -181,29 +255,21 @@ const TimePickerButton = ({
 			</button>
 			<PopoverShell
 				anchorRef={btnRef}
-				minWidth={150}
+				minWidth={180}
 				onClose={close}
 				open={open}
 			>
-				<div data-ilamy-part="time-picker-list" id={listboxId} role="listbox">
-					{options.map((opt) => (
-						<button
-							aria-selected={opt.key === currentKey}
-							data-ilamy-part="picker-cell"
-							data-selected={opt.key === currentKey ? 'true' : undefined}
-							key={opt.key}
-							onClick={() => {
-								onChange(opt.hour, opt.minute)
-								setOpen(false)
-							}}
-							role="option"
-							style={{ textAlign: 'left' }}
-							type="button"
-						>
-							{opt.label}
-						</button>
-					))}
-				</div>
+				{open && (
+					<TimePickerPanel
+						currentKey={currentKey}
+						onSelect={(h, m) => {
+							onChange(h, m)
+							setOpen(false)
+						}}
+						options={options}
+						t={t}
+					/>
+				)}
 			</PopoverShell>
 		</>
 	)
@@ -278,6 +344,7 @@ const EventScheduleFields = ({
 						locale={locale}
 						minute={startTime.minute}
 						onChange={onChangeStartTime}
+						t={t}
 						timeFormat={timeFormat}
 					/>
 				</div>
@@ -291,6 +358,7 @@ const EventScheduleFields = ({
 						locale={locale}
 						minute={endTime.minute}
 						onChange={onChangeEndTime}
+						t={t}
 						timeFormat={timeFormat}
 					/>
 				</div>
@@ -447,6 +515,23 @@ const resolvePayloadColors = (
 	return { backgroundColor: bgColor, color: fgColor }
 }
 
+const trimOptional = (value: string): string | undefined =>
+	value.trim() || undefined
+
+const resolvePayloadResource = (
+	existing: DomCalendarEvent | null,
+	chosenResource: Resource | undefined,
+	resourceDirty: boolean
+) => {
+	const preserveCrossResource =
+		!resourceDirty &&
+		existing?.resourceId === undefined &&
+		Boolean(existing?.resourceIds?.length)
+	return preserveCrossResource
+		? { resourceIds: existing?.resourceIds }
+		: { resourceId: chosenResource?.id }
+}
+
 const buildSubmittedPayload = (params: {
 	existing: DomCalendarEvent | null
 	title: string
@@ -457,6 +542,7 @@ const buildSubmittedPayload = (params: {
 	bgColor: string
 	fgColor: string
 	chosenResource: Resource | undefined
+	resourceDirty: boolean
 	pluginFields: Partial<CalendarEvent>
 }): DomCalendarEventInput => {
 	const colors = resolvePayloadColors(
@@ -468,15 +554,19 @@ const buildSubmittedPayload = (params: {
 	return {
 		...params.pluginFields,
 		id: params.existing?.id ?? `evt-${Date.now()}`,
-		title: params.title.trim() || 'Untitled Event',
+		title: trimOptional(params.title) ?? 'Untitled Event',
 		start: params.range.start,
 		end: params.range.end,
 		allDay: params.range.allDay,
 		backgroundColor: colors.backgroundColor,
 		color: colors.color,
-		description: params.description.trim() || undefined,
-		location: params.location.trim() || undefined,
-		resourceId: params.chosenResource?.id,
+		description: trimOptional(params.description),
+		location: trimOptional(params.location),
+		...resolvePayloadResource(
+			params.existing,
+			params.chosenResource,
+			params.resourceDirty
+		),
 	}
 }
 
@@ -564,6 +654,76 @@ const EventResourceField = ({
 	)
 }
 
+const MS_PER_MINUTE = 60_000
+const FALLBACK_LENGTH_MINUTES = 60
+
+interface ScheduleFieldsState {
+	allDay: boolean
+	startDate: ZonedDate
+	endDate: ZonedDate
+	startTime: { hour: number; minute: number }
+	endTime: { hour: number; minute: number }
+}
+
+const wallMinutes = (
+	date: ZonedDate,
+	time: { hour: number; minute: number }
+): number =>
+	Date.UTC(date.year, date.month - 1, date.day, time.hour, time.minute) /
+	MS_PER_MINUTE
+
+const fromWallMinutes = (minutes: number, timezone: string) => {
+	const d = new Date(minutes * MS_PER_MINUTE)
+	return {
+		date: fromFields(
+			{
+				year: d.getUTCFullYear(),
+				month: d.getUTCMonth() + 1,
+				day: d.getUTCDate(),
+			},
+			timezone
+		),
+		time: { hour: d.getUTCHours(), minute: d.getUTCMinutes() },
+	}
+}
+
+const openedLengthMinutes = (
+	start: ZonedDate,
+	end: ZonedDate,
+	allDay: boolean
+): number => {
+	if (allDay) return FALLBACK_LENGTH_MINUTES
+	const diff =
+		wallMinutes(end, { hour: end.hour, minute: end.minute }) -
+		wallMinutes(start, { hour: start.hour, minute: start.minute })
+	return diff > 0 ? diff : FALLBACK_LENGTH_MINUTES
+}
+
+export const keepEndAfterStart = <T extends ScheduleFieldsState>(
+	schedule: T,
+	movedEdge: 'start' | 'end',
+	lengthMinutes: number,
+	timezone: string
+): T => {
+	if (schedule.allDay) {
+		if (!isBefore(schedule.endDate, schedule.startDate, 'day')) {
+			return schedule
+		}
+		return movedEdge === 'start'
+			? { ...schedule, endDate: schedule.startDate }
+			: { ...schedule, startDate: schedule.endDate }
+	}
+	const start = wallMinutes(schedule.startDate, schedule.startTime)
+	const end = wallMinutes(schedule.endDate, schedule.endTime)
+	if (end > start) return schedule
+	if (movedEdge === 'start') {
+		const movedEnd = fromWallMinutes(start + lengthMinutes, timezone)
+		return { ...schedule, endDate: movedEnd.date, endTime: movedEnd.time }
+	}
+	const movedStart = fromWallMinutes(end - lengthMinutes, timezone)
+	return { ...schedule, startDate: movedStart.date, startTime: movedStart.time }
+}
+
 const createDraftCore = (props: EventFormBodyProps, resourceId: string) => ({
 	allDay: props.initialAllDay,
 	startDate: props.initialStart,
@@ -575,6 +735,8 @@ const createDraftCore = (props: EventFormBodyProps, resourceId: string) => ({
 	endTime: { hour: props.initialEnd.hour, minute: props.initialEnd.minute },
 	resourceId,
 	colorChanged: false,
+	scheduleDirty: false,
+	resourceDirty: false,
 })
 
 const resolveDefaultResourceId = (
@@ -634,6 +796,15 @@ const NativeEventFormBody = (props: EventFormBodyProps) => {
 	} = props
 	const { t } = actions
 	const [draft, setDraft] = useState(() => createInitialDraft(props))
+	const openedLength = useMemo(
+		() =>
+			openedLengthMinutes(
+				props.initialStart,
+				props.initialEnd,
+				props.initialAllDay
+			),
+		[props.initialStart, props.initialEnd, props.initialAllDay]
+	)
 	const [pluginFields, setPluginFields] = useState<Partial<CalendarEvent>>(
 		() => (existing ? {} : { ...seedDraft })
 	)
@@ -649,16 +820,40 @@ const NativeEventFormBody = (props: EventFormBodyProps) => {
 		value: (typeof draft)[K]
 	) => setDraft((prev) => ({ ...prev, [key]: value }))
 
+	const patchSchedule = (
+		movedEdge: 'start' | 'end',
+		nextFields: Partial<ScheduleFieldsState>
+	) =>
+		setDraft((prev) =>
+			keepEndAfterStart(
+				{ ...prev, ...nextFields, scheduleDirty: true },
+				movedEdge,
+				openedLength,
+				timezone
+			)
+		)
+
+	const untouchedRange =
+		existing && !draft.scheduleDirty
+			? {
+					start: existing.start,
+					end: existing.end,
+					allDay: Boolean(existing.allDay),
+				}
+			: null
+
 	const handleSubmit = (evt: Event) => {
 		evt.preventDefault()
-		const range = computeSubmitRange({
-			allDay: draft.allDay,
-			startDate: draft.startDate,
-			endDate: draft.endDate,
-			startTime: draft.startTime,
-			endTime: draft.endTime,
-			timezone,
-		})
+		const range =
+			untouchedRange ??
+			computeSubmitRange({
+				allDay: draft.allDay,
+				startDate: draft.startDate,
+				endDate: draft.endDate,
+				startTime: draft.startTime,
+				endTime: draft.endTime,
+				timezone,
+			})
 		const chosenResource = resources.find(
 			(r) => String(r.id) === draft.resourceId
 		)
@@ -684,6 +879,7 @@ const NativeEventFormBody = (props: EventFormBodyProps) => {
 			bgColor: draft.bgColor,
 			fgColor: draft.fgColor,
 			chosenResource,
+			resourceDirty: draft.resourceDirty,
 			pluginFields,
 		})
 		commitFormSave({ existing, payload, actions, onRequestScope, onClose })
@@ -703,6 +899,7 @@ const NativeEventFormBody = (props: EventFormBodyProps) => {
 
 	const liveRange = useMemo(
 		() =>
+			untouchedRange ??
 			computeSubmitRange({
 				allDay: draft.allDay,
 				startDate: draft.startDate,
@@ -712,6 +909,7 @@ const NativeEventFormBody = (props: EventFormBodyProps) => {
 				timezone,
 			}),
 		[
+			untouchedRange,
 			draft.allDay,
 			draft.startDate,
 			draft.endDate,
@@ -801,7 +999,11 @@ const NativeEventFormBody = (props: EventFormBodyProps) => {
 							id="allDay"
 							name="allDay"
 							onChange={(e) =>
-								patch('allDay', (e.target as HTMLInputElement).checked)
+								setDraft((prev) => ({
+									...prev,
+									allDay: (e.target as HTMLInputElement).checked,
+									scheduleDirty: true,
+								}))
 							}
 							type="checkbox"
 						/>
@@ -815,28 +1017,16 @@ const NativeEventFormBody = (props: EventFormBodyProps) => {
 						firstDayOfWeek={firstDayOfWeek}
 						locale={locale}
 						onChangeEndDate={(picked) =>
-							setDraft((prev) => ({
-								...prev,
-								endDate: picked,
-								startDate: isBefore(picked, prev.startDate, 'day')
-									? picked
-									: prev.startDate,
-							}))
+							patchSchedule('end', { endDate: picked })
 						}
 						onChangeEndTime={(hour, minute) =>
-							patch('endTime', { hour, minute })
+							patchSchedule('end', { endTime: { hour, minute } })
 						}
 						onChangeStartDate={(picked) =>
-							setDraft((prev) => ({
-								...prev,
-								startDate: picked,
-								endDate: isBefore(prev.endDate, picked, 'day')
-									? picked
-									: prev.endDate,
-							}))
+							patchSchedule('start', { startDate: picked })
 						}
 						onChangeStartTime={(hour, minute) =>
-							patch('startTime', { hour, minute })
+							patchSchedule('start', { startTime: { hour, minute } })
 						}
 						startDate={draft.startDate}
 						startTime={draft.startTime}
@@ -875,7 +1065,13 @@ const NativeEventFormBody = (props: EventFormBodyProps) => {
 					</div>
 
 					<EventResourceField
-						onChange={(v) => patch('resourceId', v)}
+						onChange={(v) =>
+							setDraft((prev) => ({
+								...prev,
+								resourceId: v,
+								resourceDirty: true,
+							}))
+						}
 						resourceId={draft.resourceId}
 						resources={resources}
 						t={t}

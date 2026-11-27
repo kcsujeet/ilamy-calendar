@@ -8,28 +8,38 @@ type ConditionalLine = [include: boolean, line: string]
 const collectLines = (entries: ConditionalLine[]): string[] =>
 	entries.filter(([include]) => include).map(([, line]) => line)
 
-const resolveStylexMode = (
+const resolveMode = (
 	themeMode: PlaygroundSettings['themeMode']
 ): 'dark' | 'light' => (themeMode === 'dark' ? 'dark' : 'light')
 
 const formatBusinessHoursLiteral = (values: PlaygroundSettings): string =>
 	`{ daysOfWeek: ${JSON.stringify(values.businessHoursDays)}, startTime: ${values.businessHoursStart}, endTime: ${values.businessHoursEnd} }`
 
-const buildStylexLines = (
-	values: PlaygroundSettings,
-	_importIndent: string,
-	declPrefix: string
-): { importLine: string; declLine: string } => {
-	if (values.themePreset !== 'stylex') {
-		return { importLine: '', declLine: '' }
-	}
-	const mode = resolveStylexMode(values.themeMode)
+const STYLEX_SLOT_DECL = (mode: 'dark' | 'light') => {
 	const bg = mode === 'dark' ? '#0f172a' : '#ffffff'
 	const primary = mode === 'dark' ? '#3b82f6' : '#2563eb'
-	return {
-		importLine: '',
-		declLine: `\n${declPrefix}stylexSlotProps = { root: { style: { '--ilamy-bg': '${bg}', '--ilamy-primary': '${primary}', colorScheme: '${mode}' } } }`,
+	return `stylexSlotProps = { root: { style: { '--ilamy-bg': '${bg}', '--ilamy-primary': '${primary}', colorScheme: '${mode}' } } }`
+}
+
+const TAILWIND_SLOT_DECL =
+	"tailwindSlotProps = { root: { className: 'bg-background text-foreground' }, grid: { className: 'bg-background border border-border rounded-none' }, dayHeader: { className: 'py-2 text-sm font-medium' }, eventBar: { className: 'rounded-sm text-xs font-medium bg-primary text-primary-foreground' } }"
+
+const cssImportPath = (cssMode: PlaygroundSettings['cssMode']): string =>
+	cssMode === 'unstyled' || cssMode === 'tailwind'
+		? "import '@ilamy/calendar/styles/base.css'"
+		: "import '@ilamy/calendar/styles.css'"
+
+const buildCssDecl = (
+	values: PlaygroundSettings,
+	declPrefix: string
+): string => {
+	if (values.cssMode === 'stylex') {
+		return `\n${declPrefix}${STYLEX_SLOT_DECL(resolveMode(values.themeMode))}`
 	}
+	if (values.cssMode === 'tailwind') {
+		return `\n${declPrefix}${TAILWIND_SLOT_DECL}`
+	}
+	return ''
 }
 
 interface PluginSnippetSpec {
@@ -48,12 +58,10 @@ const PLUGIN_SNIPPET_SPECS: PluginSnippetSpec[] = [
 	{
 		enabled: (v) => v.enableAgendaPlugin,
 		importLine: "import { agendaPlugin } from '@ilamy/calendar/plugins/agenda'",
-		call: (v) => {
-			if (typeof v.agendaWindow === 'number') {
-				return `agendaPlugin({ window: ${v.agendaWindow} })`
-			}
-			return `agendaPlugin({ window: '${v.agendaWindow}' })`
-		},
+		call: (v) =>
+			typeof v.agendaWindow === 'number'
+				? `agendaPlugin({ window: ${v.agendaWindow} })`
+				: `agendaPlugin({ window: '${v.agendaWindow}' })`,
 	},
 	{
 		enabled: (v) => v.enableDragToCreatePlugin,
@@ -69,12 +77,10 @@ const PLUGIN_SNIPPET_SPECS: PluginSnippetSpec[] = [
 	{
 		enabled: (v) => v.enableIcalPlugin,
 		importLine: "import { icalPlugin } from '@ilamy/calendar/plugins/ical'",
-		call: (v) => {
-			if (v.hideExportButton) {
-				return 'icalPlugin({ showToolbarButton: false })'
-			}
-			return 'icalPlugin()'
-		},
+		call: (v) =>
+			v.hideExportButton
+				? 'icalPlugin({ showToolbarButton: false })'
+				: 'icalPlugin()',
 	},
 ]
 
@@ -88,64 +94,100 @@ const buildPluginImportsAndList = (
 	}
 }
 
-interface ThemeSetup {
+interface ReactAxisSetup {
 	imports: string[]
 	preamble: string[]
 	propLines: string[]
 }
 
-const THEME_SETUP_BUILDERS: Record<
-	PlaygroundSettings['themePreset'],
-	(values: PlaygroundSettings) => ThemeSetup
-> = {
-	tailwind: () => ({ imports: [], preamble: [], propLines: [] }),
-	mui: (values) => {
-		if (values.framework !== 'react') {
-			return { imports: [], preamble: [], propLines: [] }
-		}
-		return {
-			imports: ["import { useTheme } from '@mui/material/styles'"],
-			preamble: [
-				'const muiTheme = useTheme()',
-				"const muiSlotProps = { root: { style: { '--ilamy-bg': muiTheme.palette.background.paper, '--ilamy-primary': muiTheme.palette.primary.main } } }",
-			],
-			propLines: ['slotProps={muiSlotProps}'],
-		}
-	},
-	stylex: (values) => {
-		const mode = resolveStylexMode(values.themeMode)
-		const bg = mode === 'dark' ? '#0f172a' : '#ffffff'
-		const primary = mode === 'dark' ? '#3b82f6' : '#2563eb'
+const buildReactCssSetup = (values: PlaygroundSettings): ReactAxisSetup => {
+	if (values.cssMode === 'stylex') {
 		return {
 			imports: [],
-			preamble: [
-				`const stylexSlotProps = { root: { style: { '--ilamy-bg': '${bg}', '--ilamy-primary': '${primary}', colorScheme: '${mode}' } } }`,
-			],
+			preamble: [`const ${STYLEX_SLOT_DECL(resolveMode(values.themeMode))}`],
 			propLines: ['slotProps={stylexSlotProps}'],
 		}
-	},
-	unstyled: (values) => ({
-		imports: [],
-		preamble: [],
-		propLines: collectLines([
-			[true, 'unstyled'],
-			[values.useCustomSlotProps, 'slotProps={customSlotProps}'],
-		]),
-	}),
+	}
+	if (values.cssMode === 'tailwind') {
+		return {
+			imports: [],
+			preamble: [`const ${TAILWIND_SLOT_DECL}`],
+			propLines: ['unstyled', 'slotProps={tailwindSlotProps}'],
+		}
+	}
+	if (values.cssMode === 'unstyled') {
+		return {
+			imports: [],
+			preamble: [],
+			propLines: collectLines([
+				[true, 'unstyled'],
+				[values.useCustomSlotProps, 'slotProps={customSlotProps}'],
+			]),
+		}
+	}
+	return { imports: [], preamble: [], propLines: [] }
+}
+
+const buildReactComponentSetup = (
+	values: PlaygroundSettings
+): ReactAxisSetup => {
+	if (values.componentLibrary === 'shadcn') {
+		return {
+			imports: ["import { ShadcnEventForm } from './shadcn-event-form'"],
+			preamble: [],
+			propLines: ['slots={{ eventForm: ShadcnEventForm }}'],
+		}
+	}
+	if (values.componentLibrary === 'mui') {
+		return {
+			imports: [
+				"import { useTheme } from '@mui/material/styles'",
+				"import { MuiEventForm } from './mui-event-form'",
+			],
+			preamble: [
+				'const muiTheme = useTheme()',
+				...(values.cssMode === 'plain'
+					? [
+							"const muiSlotProps = { root: { style: { '--ilamy-bg': muiTheme.palette.background.paper, '--ilamy-primary': muiTheme.palette.primary.main } } }",
+						]
+					: []),
+			],
+			propLines: collectLines([
+				[values.cssMode === 'plain', 'slotProps={muiSlotProps}'],
+				[true, 'slots={{ eventForm: MuiEventForm }}'],
+			]),
+		}
+	}
+	if (values.componentLibrary === 'custom-slot') {
+		return {
+			imports: ["import { CustomEventForm } from './custom-event-form'"],
+			preamble: [],
+			propLines: ['slots={{ eventForm: CustomEventForm }}'],
+		}
+	}
+	return { imports: [], preamble: [], propLines: [] }
 }
 
 const buildDomOptionEntries = (
 	values: PlaygroundSettings,
 	pluginCalls: string[]
 ): string[] => {
-	const isStylex = values.themePreset === 'stylex'
-	const isUnstyled = values.themePreset === 'unstyled'
 	const bh = values.enableBusinessHours
+	const isUnstyled =
+		values.cssMode === 'unstyled' || values.cssMode === 'tailwind'
 
 	return collectLines([
-		[isStylex, 'slotProps: stylexSlotProps'],
+		[values.cssMode === 'stylex', 'slotProps: stylexSlotProps'],
+		[values.cssMode === 'tailwind', 'slotProps: tailwindSlotProps'],
+		[
+			values.cssMode === 'unstyled' && values.useCustomSlotProps,
+			'slotProps: customSlotProps',
+		],
 		[isUnstyled, 'unstyled: true'],
-		[isUnstyled && values.useCustomSlotProps, 'slotProps: customSlotProps'],
+		[
+			values.componentLibrary === 'custom-slot',
+			'slots: { eventForm: customEventFormSlot }',
+		],
 		[true, 'events'],
 		[values.calendarType === 'resource', 'resources'],
 		[pluginCalls.length > 0, `plugins: [${pluginCalls.join(', ')}]`],
@@ -167,14 +209,14 @@ const buildDomOptionEntries = (
 
 const buildReactPropLines = (
 	values: PlaygroundSettings,
-	themePropLines: string[],
+	axisProps: string[],
 	pluginCalls: string[]
 ): string[] => {
 	const isResource = values.calendarType === 'resource'
 	const bh = values.enableBusinessHours
 
 	return [
-		...themePropLines,
+		...axisProps,
 		...collectLines([
 			[true, 'events={events}'],
 			[isResource, 'resources={resources}'],
@@ -220,29 +262,32 @@ const buildReactPropLines = (
 const generateReactSnippet = (values: PlaygroundSettings): string => {
 	const { imports: pluginImports, calls: pluginCalls } =
 		buildPluginImportsAndList(values)
-	const theme = THEME_SETUP_BUILDERS[values.themePreset](values)
+	const cssSetup = buildReactCssSetup(values)
+	const compSetup = buildReactComponentSetup(values)
 	const imports = [
 		"import { IlamyCalendar } from '@ilamy/calendar/react'",
-		"import '@ilamy/calendar/styles.css'",
-		...theme.imports,
+		cssImportPath(values.cssMode),
+		...cssSetup.imports,
+		...compSetup.imports,
 		...pluginImports,
 	]
-	const props = buildReactPropLines(values, theme.propLines, pluginCalls)
-
-	let preambleBlock = ''
-	if (theme.preamble.length > 0) {
-		preambleBlock = `\n  ${theme.preamble.join('\n  ')}\n`
-	}
+	const props = buildReactPropLines(
+		values,
+		[...cssSetup.propLines, ...compSetup.propLines],
+		pluginCalls
+	)
+	const preamble = [...cssSetup.preamble, ...compSetup.preamble]
+	const preambleBlock =
+		preamble.length > 0 ? `\n  ${preamble.join('\n  ')}\n` : ''
 
 	if (values.calendarType === 'multi-zone') {
 		const primaryProps = props.map((line) => `      ${line}`).join('\n')
 		const secondaryProps = props
-			.map((line) => {
-				if (line.startsWith('timezone=')) {
-					return `timezone="${values.secondaryTimezone}"`
-				}
-				return line
-			})
+			.map((line) =>
+				line.startsWith('timezone=')
+					? `timezone="${values.secondaryTimezone}"`
+					: line
+			)
 			.map((line) => `      ${line}`)
 			.join('\n')
 		return `${imports.join('\n')}
@@ -273,15 +318,24 @@ ${props.map((line) => `      ${line}`).join('\n')}
 }
 
 const generateVueSnippet = (values: PlaygroundSettings): string => {
-	const stylex = buildStylexLines(values, '', 'const ')
+	const cssDecl = buildCssDecl(values, 'const ')
 	const pluginMeta = buildPluginImportsAndList(values)
 	const pluginImportLines = pluginMeta.imports.join('\n')
+	const isUnstyled =
+		values.cssMode === 'unstyled' || values.cssMode === 'tailwind'
+	const slotPropsAttr =
+		values.cssMode === 'stylex'
+			? ':slot-props="stylexSlotProps"'
+			: values.cssMode === 'tailwind'
+				? ':slot-props="tailwindSlotProps"'
+				: ''
+
 	const attrs = collectLines([
 		[true, ':events="events"'],
 		[values.calendarType === 'resource', ':resources="resources"'],
 		[pluginMeta.calls.length > 0, ':plugins="plugins"'],
-		[values.themePreset === 'stylex', ':slot-props="stylexSlotProps"'],
-		[values.themePreset === 'unstyled', 'unstyled'],
+		[Boolean(slotPropsAttr), slotPropsAttr],
+		[isUnstyled, 'unstyled'],
 		[values.initialView !== 'month', `initial-view="${values.initialView}"`],
 		[Boolean(values.timezone), `timezone="${values.timezone}"`],
 		[!values.disableDragAndDrop, 'editable'],
@@ -293,11 +347,15 @@ const generateVueSnippet = (values: PlaygroundSettings): string => {
 		pluginMeta.calls.length > 0
 			? `\nconst plugins = [${pluginMeta.calls.join(', ')}]`
 			: ''
+	const slotBody =
+		values.componentLibrary === 'custom-slot'
+			? `\n    <template #event-form="ctx">\n      <CustomEventForm :context="ctx" />\n    </template>\n  `
+			: ''
 
 	return `<script setup lang="ts">
-import '@ilamy/calendar/styles.css'
-import { IlamyCalendar } from '@ilamy/calendar/vue'${pluginImportLines ? `\n${pluginImportLines}` : ''}${stylex.importLine}
-import { ref } from 'vue'${stylex.declLine}${pluginsDecl}
+${cssImportPath(values.cssMode)}
+import { IlamyCalendar } from '@ilamy/calendar/vue'${pluginImportLines ? `\n${pluginImportLines}` : ''}
+import { ref } from 'vue'${cssDecl}${pluginsDecl}
 
 const events = ref(initialEvents)
 const handleEventsChange = (change) => console.log(change)
@@ -305,13 +363,12 @@ const handleEventsChange = (change) => console.log(change)
 
 <template>
   <IlamyCalendar
-    ${attrs.join('\n    ')}
-  />
+    ${attrs.join('\n    ')}${slotBody ? `>${slotBody}</IlamyCalendar>` : '\n  />'}
 </template>`
 }
 
 const generateSvelteSnippet = (values: PlaygroundSettings): string => {
-	const stylex = buildStylexLines(values, '  ', '  const ')
+	const cssDecl = buildCssDecl(values, '  const ')
 	const pluginMeta = buildPluginImportsAndList(values)
 	const pluginImports = pluginMeta.imports.map((line) => `  ${line}`).join('\n')
 	const opts = buildDomOptionEntries(values, pluginMeta.calls)
@@ -319,8 +376,8 @@ const generateSvelteSnippet = (values: PlaygroundSettings): string => {
 		.join('\n')
 
 	return `<script lang="ts">
-  import '@ilamy/calendar/styles.css'
-  import { ilamyCalendar } from '@ilamy/calendar/svelte'${pluginImports ? `\n${pluginImports}` : ''}${stylex.importLine}${stylex.declLine}
+  ${cssImportPath(values.cssMode)}
+  import { ilamyCalendar } from '@ilamy/calendar/svelte'${pluginImports ? `\n${pluginImports}` : ''}${cssDecl}
 
   let events = $state(initialEvents)
 </script>
@@ -335,12 +392,25 @@ ${opts}
 }
 
 const generateSolidSnippet = (values: PlaygroundSettings): string => {
-	const stylex = buildStylexLines(values, '', '  const ')
+	const cssDecl = buildCssDecl(values, '  const ')
 	const pluginMeta = buildPluginImportsAndList(values)
 	const pluginImportLines = pluginMeta.imports.join('\n')
+	const isUnstyled =
+		values.cssMode === 'unstyled' || values.cssMode === 'tailwind'
+	const slotPropsProp =
+		values.cssMode === 'stylex'
+			? 'slotProps={stylexSlotProps}'
+			: values.cssMode === 'tailwind'
+				? 'slotProps={tailwindSlotProps}'
+				: ''
+
 	const props = collectLines([
-		[values.themePreset === 'stylex', 'slotProps={stylexSlotProps}'],
-		[values.themePreset === 'unstyled', 'unstyled'],
+		[Boolean(slotPropsProp), slotPropsProp],
+		[isUnstyled, 'unstyled'],
+		[
+			values.componentLibrary === 'custom-slot',
+			'slots={{ eventForm: CustomEventForm }}',
+		],
 		[true, 'events={events()}'],
 		[values.calendarType === 'resource', 'resources={resources}'],
 		[pluginMeta.calls.length > 0, `plugins={[${pluginMeta.calls.join(', ')}]}`],
@@ -351,12 +421,12 @@ const generateSolidSnippet = (values: PlaygroundSettings): string => {
 		[true, 'onEventsChange={(change) => console.log(change)}'],
 	])
 
-	return `import '@ilamy/calendar/styles.css'
+	return `${cssImportPath(values.cssMode)}
 import { createSignal } from 'solid-js'
-import { IlamyCalendar } from '@ilamy/calendar/solid'${pluginImportLines ? `\n${pluginImportLines}` : ''}${stylex.importLine}
+import { IlamyCalendar } from '@ilamy/calendar/solid'${pluginImportLines ? `\n${pluginImportLines}` : ''}
 
 export function CalendarDemo() {
-  const [events] = createSignal(initialEvents)${stylex.declLine}
+  const [events] = createSignal(initialEvents)${cssDecl}
 
   return (
     <IlamyCalendar
@@ -367,19 +437,21 @@ export function CalendarDemo() {
 }
 
 const generateAngularSnippet = (values: PlaygroundSettings): string => {
-	const stylex = buildStylexLines(values, '', '  readonly ')
+	const cssDecl = buildCssDecl(values, '  readonly ')
 	const pluginMeta = buildPluginImportsAndList(values)
 	const pluginImportLines = pluginMeta.imports.join('\n')
 	const opts = buildDomOptionEntries(values, pluginMeta.calls)
 		.map(
 			(line) =>
-				`      ${line.replace('stylexSlotProps', 'this.stylexSlotProps')},`
+				`      ${line
+					.replace('stylexSlotProps', 'this.stylexSlotProps')
+					.replace('tailwindSlotProps', 'this.tailwindSlotProps')},`
 		)
 		.join('\n')
 
-	return `import '@ilamy/calendar/styles.css'
+	return `${cssImportPath(values.cssMode)}
 import { Component, CUSTOM_ELEMENTS_SCHEMA, computed, signal } from '@angular/core'
-import { registerIlamyCalendarElement } from '@ilamy/calendar/angular'${pluginImportLines ? `\n${pluginImportLines}` : ''}${stylex.importLine}
+import { registerIlamyCalendarElement } from '@ilamy/calendar/angular'${pluginImportLines ? `\n${pluginImportLines}` : ''}
 
 registerIlamyCalendarElement()
 
@@ -396,7 +468,7 @@ registerIlamyCalendarElement()
   \`,
 })
 export class CalendarDemoComponent {
-  readonly events = signal(initialEvents)${stylex.declLine}
+  readonly events = signal(initialEvents)${cssDecl}
   readonly calendarOptions = computed(() => {
     const events = this.events()
     return {
@@ -429,7 +501,7 @@ export const FRAMEWORK_CODE_TAB_LABELS: Record<FrameworkId, string> = {
 	angular: 'Live Angular',
 }
 
-/** Generates a clean, copyable snippet matching the active framework & playground settings. */
+/** Generates a clean, copyable snippet matching the active framework & 3-axis playground settings. */
 export function generateCodeSnippet(values: PlaygroundSettings): string {
 	return SNIPPET_GENERATORS[values.framework](values)
 }

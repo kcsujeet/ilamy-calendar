@@ -278,9 +278,11 @@ test.describe('Zero-Tailwind standalone @ilamy/calendar/styles.css contract', ()
 			true
 		)
 
-		// Hover event edge reveals VS Code 3-dot resize handle with ew-resize cursor
-		const eventBar = page.getByTestId('calendar-event-ztw-1')
-		const handle = page.getByTestId('resize-handle-end-ztw-1')
+		// Hover multi-day event end segment reveals VS Code 3-dot resize handle with ew-resize cursor
+		const handle = page.getByTestId('resize-handle-end-ztw-span')
+		const eventBar = page
+			.getByTestId('calendar-event-ztw-span')
+			.filter({ has: handle })
 		await eventBar.hover()
 		await expect
 			.poll(async () =>
@@ -321,5 +323,42 @@ test.describe('Zero-Tailwind standalone @ilamy/calendar/styles.css contract', ()
 		})
 		expect(darkRoot.bg).toBe('rgb(9, 9, 11)')
 		expect(darkRoot.color).toBe('rgb(250, 250, 250)')
+	})
+
+	test('C3: zero-Tailwind standalone @ilamy/calendar/styles.css renders cleanly across all 5 frameworks', async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 1280, height: 800 })
+		for (const fw of ['react', 'vue', 'svelte', 'solid', 'angular'] as const) {
+			await page.goto(`/zero-tailwind.html?framework=${fw}&view=month`)
+			await page.waitForSelector('[data-testid="dom-month-view"]')
+
+			const classLeak = await page.evaluate((reSource) => {
+				const re = new RegExp(reSource)
+				const root = document.querySelector('[data-ilamy-root]')!
+				const leaks: string[] = []
+				for (const el of Array.from(root.querySelectorAll('*'))) {
+					const cls = el.getAttribute('class')
+					if (cls && re.test(cls)) leaks.push(cls)
+				}
+				return leaks
+			}, TAILWIND_UTILITY_RE.source)
+			expect(classLeak, `${fw} zero-Tailwind class leaks`).toEqual([])
+
+			const metrics = await page.evaluate(() => {
+				const body = document.querySelector('[data-testid="calendar-body"]')!
+				const header = document.querySelector(
+					'[data-testid="calendar-header"]'
+				)!
+				return {
+					headerH: Math.round(header.getBoundingClientRect().height),
+					bodyBorderTop: getComputedStyle(body).borderTopWidth,
+				}
+			})
+			expect(metrics.headerH, `${fw} header height without Tailwind`).toBe(44)
+			expect(metrics.bodyBorderTop, `${fw} body border without Tailwind`).toBe(
+				'1px'
+			)
+		}
 	})
 })

@@ -106,8 +106,13 @@
 	}
 
 	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-slot='month-header']),
-	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-slot='grid-header']) {
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-slot='grid-header']:not(:has([data-ilamy-part='all-day-row']))),
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='all-day-row']) {
 		border-block-end: 1px solid var(--ilamy-border);
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-slot='month-header']),
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-slot='grid-header']) {
 		background-color: var(--ilamy-bg);
 	}
 
@@ -209,7 +214,7 @@
 		font-size: 0.75rem;
 	}
 
-	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='all-day-cell']:not(:last-child)) {
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='all-day-cell']:not(:last-child):not([data-last-col='true'])) {
 		border-inline-end: 1px solid var(--ilamy-border);
 	}
 
@@ -334,12 +339,21 @@
 		justify-content: center;
 		min-width: 1.5rem;
 		height: 1.5rem;
-		padding-inline: 0.25rem;
+		padding-inline: 0.375rem;
 		border-radius: 9999px;
 		background-color: var(--ilamy-primary);
 		color: var(--ilamy-primary-fg);
 		font-size: 0.75rem;
 		font-weight: 600;
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='col-header-label']) {
+		line-height: 1.5rem;
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='col-header-label'][data-ilamy-today-badge]) {
+		display: inline-block;
+		line-height: 1.5rem;
 	}
 
 	/* Event bars & separation borders */
@@ -350,26 +364,40 @@
 	}
 
 	:where([data-ilamy-root]:not([data-unstyled='true']) :is([data-ilamy-part='event-bar'], [data-ilamy-part='event-drag-preview'])) {
-		padding: 0.25rem 0.5rem;
+		padding: 0;
 		line-height: 1.25;
-		box-shadow: 0 0 0 1px var(--ilamy-surface);
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='event-bar-content']) {
+		padding: 0.125rem 0.25rem;
+		border: 1px solid var(--ilamy-surface);
+		border-radius: inherit;
 	}
 
 	:where([data-ilamy-root]:not([data-unstyled='true']) :is([data-ilamy-part='event-bar'], [data-ilamy-part='event-drag-preview'])[data-compact='true']) {
-		padding: 0 0.375rem;
 		line-height: 1.1;
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-slot='event-bar'][data-compact='true'] [data-ilamy-part='event-bar-content']) {
+		padding: 0 0.25rem;
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='event-bar-content'][data-has-start-stripe='true']) {
+		padding-inline-start: 0.5rem;
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='event-bar-content'][data-has-end-stripe='true']) {
+		padding-inline-end: 0.5rem;
 	}
 
 	:where([data-ilamy-root]:not([data-unstyled='true']) :is([data-ilamy-part='event-bar'], [data-ilamy-part='event-drag-preview'])[data-truncated-start='true']) {
 		border-start-start-radius: 0;
 		border-end-start-radius: 0;
-		padding-inline-start: 0.5rem;
 	}
 
 	:where([data-ilamy-root]:not([data-unstyled='true']) :is([data-ilamy-part='event-bar'], [data-ilamy-part='event-drag-preview'])[data-truncated-end='true']) {
 		border-start-end-radius: 0;
 		border-end-end-radius: 0;
-		padding-inline-end: 0.5rem;
 	}
 
 	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-slot='event-bar']:not([data-custom-color='true'])) {
@@ -412,6 +440,12 @@
 
 	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='now-line-bar']) {
 		height: 2px;
+		flex: 1 1 0%;
+		background-color: var(--ilamy-danger);
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='now-line-bar-v']) {
+		width: 2px;
 		flex: 1 1 0%;
 		background-color: var(--ilamy-danger);
 	}
@@ -710,7 +744,7 @@
 		color: var(--ilamy-muted-fg);
 	}
 
-	:where([data-ilamy-part='picker-title']) {
+	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='picker-title']) {
 		font-size: 0.875rem;
 		font-weight: 600;
 	}

@@ -47,7 +47,6 @@ export const MoreEventsDialog = ({
 			title: state.title,
 			events: state.events,
 			onEventClick: (evt) => {
-				onClose()
 				if (options.disableEventClick) return
 				const domEvt = evt as DomCalendarEvent
 				options.onEventClick?.(domEvt)
@@ -93,7 +92,6 @@ export const MoreEventsDialog = ({
 							event={event}
 							formatters={formatters}
 							onPillClick={() => {
-								onClose()
 								if (options.disableEventClick) return
 								options.onEventClick?.(event)
 								actions.openEditDialog(event)

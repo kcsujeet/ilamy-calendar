@@ -9,15 +9,17 @@ import {
 	filterEventsForResource,
 	formatDate,
 	getFields,
+	getHorizontalBarStyle,
 	getMonthDays,
 	getVerticalBarStyle,
+	getWeekDays,
 	getWeekNumber,
 	type HeadlessCalendarController,
+	type HorizontalPositionedEvent,
 	isBusinessDay,
 	isSameDay,
+	layoutHorizontal,
 	layoutVertical,
-	maxDate,
-	minDate,
 	now,
 	parseDate,
 	type Resource,
@@ -32,6 +34,7 @@ import {
 } from '../../../../index'
 import { formatSubCellSnapMinutes } from '../../../../utils/helpers'
 import type { InteractionPreview } from '../../../interactions/calendar-pointer-engine'
+import { MoreEventsButton } from '../../components/more-events-button'
 import { LegacyRenderHost } from '../../components/slot-host'
 import type {
 	DomCalendarEvent,
@@ -41,6 +44,7 @@ import type {
 } from '../../types/renderer.types'
 import {
 	buildTimedCellProps,
+	clipSegmentIsoRange,
 	resolveAnchorDate,
 	useMonthViewportSetup,
 } from '../../utils/cell-slot.utils'
@@ -58,10 +62,11 @@ import {
 import { buildSlotProps, joinClassNames } from '../../utils/slot-props.utils'
 import { useStickyInsets } from '../../utils/sticky-insets.utils'
 import { EventBar } from './event-bar'
+import { HorizontalCellContent } from './month-grid-cells'
 import { ResourceHeaderContent } from './resource-header-content'
 import { ResourceHorizontalGrid } from './resource-horizontal-grid'
 
-const HOUR_ROW_HEIGHT_PX = 56
+const HOUR_ROW_HEIGHT_PX = 60
 
 const NowLine = ({
 	percent,
@@ -70,6 +75,7 @@ const NowLine = ({
 	resource,
 	timezone,
 	view,
+	showDot = true,
 	options,
 	actions,
 }: {
@@ -79,6 +85,7 @@ const NowLine = ({
 	resource?: Resource
 	timezone: string
 	view: 'day' | 'week' | 'month'
+	showDot?: boolean
 	options: DomCalendarOptions
 	actions: RendererActions
 }) => {
@@ -88,7 +95,7 @@ const NowLine = ({
 		'nowIndicator',
 		actions.ownerState,
 		undefined,
-		{ left: '0', right: '0', top: `${percent}%` }
+		{ left: '0', right: '0', top: `${percent}%`, transform: 'translateY(-50%)' }
 	)
 	const customFn = options.renderCurrentTimeIndicator
 	if (customFn && hours.length > 0) {
@@ -135,13 +142,16 @@ const NowLine = ({
 			data-testid="current-time-indicator"
 			style={nowSlot.style}
 		>
-			<span data-ilamy-part="now-line-dot" data-testid="current-time-dot" />
+			{showDot && (
+				<span data-ilamy-part="now-line-dot" data-testid="current-time-dot" />
+			)}
 			<span data-ilamy-part="now-line-bar" />
 		</div>
 	)
 }
 
-const VerticalResourceMonthView = ({
+const VerticalResourceDayGrid = ({
+	mode,
 	controller,
 	options,
 	actions,
@@ -149,6 +159,7 @@ const VerticalResourceMonthView = ({
 	visibleEvents,
 	dragPreviewEvent,
 }: {
+	mode: 'month' | 'week'
 	controller: HeadlessCalendarController
 	options: DomCalendarOptions
 	actions: RendererActions
@@ -161,18 +172,36 @@ const VerticalResourceMonthView = ({
 			controller,
 			options,
 			actions.ownerState,
-			'v-res-month'
+			`v-res-${mode}`
 		)
 	const current = resolveAnchorDate(controller) ?? now(state.timezone)
-	const days = withoutHiddenDays(getMonthDays(current), state.hiddenDays)
-	const colTemplate = `84px repeat(${state.resources.length}, minmax(140px, 1fr))`
+	useScrollToTime({
+		viewportRef,
+		scrollToNow: options.scrollToNow,
+		enabled: Boolean(options.scrollToNow) && state.resources.length > 0,
+		scrollKey: `v-res-${mode}:${state.currentDate}`,
+		axis: 'vertical',
+	})
+	const testId = rendererKeys.testId.modeView(mode)
+	if (state.resources.length === 0) {
+		return (
+			<div
+				data-ilamy-slot="grid-scroll"
+				data-testid={testId}
+				ref={viewportRef}
+			/>
+		)
+	}
+	const rawDays =
+		mode === 'week'
+			? getWeekDays(current, state.firstDayOfWeek)
+			: getMonthDays(current)
+	const days = withoutHiddenDays(rawDays, state.hiddenDays)
+	const firstDay = days.at(0)
+	const colTemplate = `64px repeat(${state.resources.length}, minmax(80px, 1fr))`
 
 	return (
-		<div
-			data-ilamy-slot="grid-scroll"
-			data-testid="dom-month-view"
-			ref={viewportRef}
-		>
+		<div data-ilamy-slot="grid-scroll" data-testid={testId} ref={viewportRef}>
 			<div
 				className={joinClassNames(options.viewHeaderClassName)}
 				data-ilamy-slot="grid-header"
@@ -190,7 +219,16 @@ const VerticalResourceMonthView = ({
 						data-sticky-inset="left"
 						style={dayHeaderSlot.style}
 					>
-						{actions.t('resources')}
+						{mode === 'week' && options.weekNumbers !== false ? (
+							<WeekNumberCorner
+								day={firstDay}
+								locale={state.locale}
+								options={options}
+								weekLabel={actions.t('week')}
+							/>
+						) : (
+							actions.t('resources')
+						)}
 					</div>
 					{state.resources.map((resource) => (
 						<div
@@ -452,16 +490,27 @@ const JS_WEEKDAY_LONG = [
 	'saturday',
 ] as const
 
-const ColumnHeaderSublabel = ({ col }: { col: TimeGridColumnViewModel }) =>
-	col.sublabel ? (
-		<span
-			data-ilamy-today-badge={col.isToday ? '' : undefined}
-			data-testid={col.isToday ? 'day-number-today' : undefined}
-			style={{ marginTop: '0.125rem' }}
-		>
-			{col.sublabel}
-		</span>
-	) : null
+const HeaderDayLabel = ({
+	label,
+	isTodayCol,
+	useBadge,
+	marginTop,
+}: {
+	label: string
+	isTodayCol: boolean
+	useBadge: boolean
+	marginTop?: string
+}) => (
+	<span
+		data-ilamy-part="col-header-label"
+		data-ilamy-today-badge={isTodayCol && useBadge ? '' : undefined}
+		data-testid={isTodayCol && useBadge ? 'day-number-today' : undefined}
+		style={marginTop ? { marginTop } : undefined}
+		title={label}
+	>
+		{label}
+	</span>
+)
 
 const buildColumnHeaderDivProps = (
 	col: TimeGridColumnViewModel,
@@ -501,18 +550,259 @@ const TimeGridColumnHeader = ({
 	formatters: CalendarFormatters
 	dayHeaderSlot: ReturnType<typeof buildSlotProps>
 	resHeaderSlot: ReturnType<typeof buildSlotProps>
+}) => {
+	const hasCustomFormat = Boolean(options.dayHeaderFormat)
+	const formattedDay = formatters.formatDayHeader(col.day)
+	const sublabel = hasCustomFormat ? formattedDay : col.sublabel
+	return (
+		<div {...buildColumnHeaderDivProps(col, dayHeaderSlot, resHeaderSlot)}>
+			{col.resource ? (
+				<ResourceHeaderContent
+					controller={controller}
+					options={options}
+					resource={col.resource}
+					truncate
+				/>
+			) : (
+				<HeaderDayLabel
+					isTodayCol={col.isToday}
+					label={formattedDay}
+					useBadge={hasCustomFormat}
+				/>
+			)}
+			{(col.resource || !hasCustomFormat) && sublabel && (
+				<HeaderDayLabel
+					isTodayCol={col.isToday}
+					label={sublabel}
+					marginTop="0.125rem"
+					useBadge
+				/>
+			)}
+		</div>
+	)
+}
+
+const WeekNumberCorner = ({
+	day,
+	options,
+	locale,
+	weekLabel,
+}: {
+	day: ZonedDate | undefined
+	options: DomCalendarOptions
+	locale: string
+	weekLabel: string
+}) => {
+	if (!day) return null
+	const weekNum = getWeekNumber(
+		day,
+		options.weekNumberCalculation ?? 'local',
+		locale
+	)
+	return (
+		<>
+			<span>{weekLabel}</span>
+			<strong className="animate-in" data-testid="week-number" key={weekNum}>
+				{weekNum}
+			</strong>
+		</>
+	)
+}
+
+const ResourceWeekHeaderRows = ({
+	model,
+	colTemplate,
+	controller,
+	options,
+	actions,
+	formatters,
+	dayHeaderSlot,
+	resHeaderSlot,
+}: {
+	model: TimeGridViewModel
+	colTemplate: string
+	controller: HeadlessCalendarController
+	options: DomCalendarOptions
+	actions: RendererActions
+	formatters: CalendarFormatters
+	dayHeaderSlot: ReturnType<typeof buildSlotProps>
+	resHeaderSlot: ReturnType<typeof buildSlotProps>
+}) => {
+	const state = controller.getState()
+	const firstCol = model.columns.at(0)
+	const dayCount = Math.max(1, model.days.length)
+
+	return (
+		<>
+			<div
+				data-ilamy-part="time-grid-header-row"
+				style={{ gridTemplateColumns: colTemplate }}
+			>
+				<div
+					className={dayHeaderSlot.className}
+					data-ilamy-part="header-corner"
+					data-sticky="true"
+					data-sticky-inset="left"
+					style={{
+						...dayHeaderSlot.style,
+						borderBottom: '1px solid var(--ilamy-border)',
+					}}
+				>
+					{options.weekNumbers !== false && (
+						<WeekNumberCorner
+							day={firstCol?.day}
+							locale={state.locale}
+							options={options}
+							weekLabel={actions.t('week')}
+						/>
+					)}
+				</div>
+				{state.resources.map((resource, rIdx) => {
+					const startCol = 2 + rIdx * dayCount
+					return (
+						<div
+							className={resHeaderSlot.className}
+							data-ilamy-part="time-col-header"
+							data-ilamy-slot="resource-header"
+							data-resource-id={String(resource.id)}
+							data-testid={rendererKeys.testId.resourceHeader(resource.id)}
+							key={rendererKeys.key.slot('res-hdr', resource.id)}
+							style={{
+								...resHeaderSlot.style,
+								gridColumn: `${startCol} / span ${dayCount}`,
+								borderBottom: '1px solid var(--ilamy-border)',
+							}}
+						>
+							<ResourceHeaderContent
+								controller={controller}
+								options={options}
+								resource={resource}
+								truncate
+							/>
+						</div>
+					)
+				})}
+			</div>
+			<div
+				data-ilamy-part="time-grid-header-row"
+				style={{ gridTemplateColumns: colTemplate }}
+			>
+				<div
+					className={dayHeaderSlot.className}
+					data-ilamy-part="header-corner"
+					data-sticky="true"
+					data-sticky-inset="left"
+					style={dayHeaderSlot.style}
+				/>
+				{model.columns.map((col, colIdx) => {
+					const label = options.dayHeaderFormat
+						? formatters.formatDayHeader(col.day)
+						: col.sublabel
+					return (
+						<div
+							className={dayHeaderSlot.className}
+							data-date={dayKey(col.day)}
+							data-ilamy-part="time-col-header"
+							data-ilamy-slot="day-header"
+							data-resource-id={
+								col.resource ? String(col.resource.id) : undefined
+							}
+							data-today={col.isToday ? 'true' : undefined}
+							key={rendererKeys.key.timeHeader(
+								dayKey(col.day),
+								col.resource?.id,
+								colIdx
+							)}
+							style={dayHeaderSlot.style}
+						>
+							<HeaderDayLabel isTodayCol={col.isToday} label={label} useBadge />
+						</div>
+					)
+				})}
+			</div>
+		</>
+	)
+}
+
+const TimeGridSingleDayBanner = ({
+	firstCol,
+	dayHeaderSlot,
+	formatters,
+	options,
+	actions,
+	locale,
+}: {
+	firstCol: TimeGridColumnViewModel
+	dayHeaderSlot: ReturnType<typeof buildSlotProps>
+	formatters: CalendarFormatters
+	options: DomCalendarOptions
+	actions: RendererActions
+	locale: string
+}) => {
+	const label = options.dayHeaderFormat
+		? formatters.formatDayHeader(firstCol.day)
+		: formatDate(
+				firstCol.day,
+				{
+					weekday: 'long',
+					month: 'long',
+					day: 'numeric',
+					year: 'numeric',
+				},
+				locale
+			)
+	return (
+		<div
+			className={dayHeaderSlot.className}
+			data-ilamy-part="day-banner"
+			data-ilamy-slot="day-header"
+			data-testid="day-view-header"
+			style={dayHeaderSlot.style}
+		>
+			<span>{label}</span>
+			{firstCol.isToday && (
+				<span
+					data-ilamy-today-badge=""
+					data-testid="day-number-today"
+					style={{ marginInlineStart: '0.5rem' }}
+				>
+					{actions.t('today')}
+				</span>
+			)}
+		</div>
+	)
+}
+
+const TimeGridHeaderCorner = ({
+	mode,
+	firstCol,
+	dayHeaderSlot,
+	locale,
+	options,
+	weekLabel,
+}: {
+	mode: 'day' | 'week' | 'month'
+	firstCol: TimeGridColumnViewModel | undefined
+	dayHeaderSlot: ReturnType<typeof buildSlotProps>
+	locale: string
+	options: DomCalendarOptions
+	weekLabel: string
 }) => (
-	<div {...buildColumnHeaderDivProps(col, dayHeaderSlot, resHeaderSlot)}>
-		{col.resource ? (
-			<ResourceHeaderContent
-				controller={controller}
+	<div
+		className={dayHeaderSlot.className}
+		data-ilamy-part="header-corner"
+		data-sticky="true"
+		data-sticky-inset="left"
+		style={dayHeaderSlot.style}
+	>
+		{mode === 'week' && options.weekNumbers !== false && (
+			<WeekNumberCorner
+				day={firstCol?.day}
+				locale={locale}
 				options={options}
-				resource={col.resource}
+				weekLabel={weekLabel}
 			/>
-		) : (
-			<span>{formatters.formatDayHeader(col.day)}</span>
 		)}
-		<ColumnHeaderSublabel col={col} />
 	</div>
 )
 
@@ -548,69 +838,58 @@ const TimeGridHeaderRow = ({
 
 	if (mode === 'day' && state.resources.length === 0 && firstCol) {
 		return (
-			<div
-				className={dayHeaderSlot.className}
-				data-ilamy-part="day-banner"
-				data-ilamy-slot="day-header"
-				data-testid="day-view-header"
-				style={dayHeaderSlot.style}
-			>
-				<span>
-					{formatDate(
-						firstCol.day,
-						{ weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' },
-						state.locale
-					)}
-				</span>
-				{firstCol.isToday && (
-					<span
-						data-ilamy-today-badge=""
-						data-testid="day-number-today"
-						style={{ marginInlineStart: '0.5rem' }}
-					>
-						{actions.t('today')}
-					</span>
-				)}
-			</div>
+			<TimeGridSingleDayBanner
+				actions={actions}
+				dayHeaderSlot={dayHeaderSlot}
+				firstCol={firstCol}
+				formatters={formatters}
+				locale={state.locale}
+				options={options}
+			/>
 		)
 	}
+
+	if (mode === 'week' && state.resources.length > 0) {
+		return (
+			<ResourceWeekHeaderRows
+				actions={actions}
+				colTemplate={colTemplate}
+				controller={controller}
+				dayHeaderSlot={dayHeaderSlot}
+				formatters={formatters}
+				model={model}
+				options={options}
+				resHeaderSlot={resHeaderSlot}
+			/>
+		)
+	}
+
+	const headerTestId =
+		mode === 'week' && !actions.ownerState.hasResourceAxis
+			? 'week-view-header'
+			: undefined
 
 	return (
 		<div
 			data-ilamy-part="time-grid-header-row"
+			data-testid={headerTestId}
 			style={{ gridTemplateColumns: colTemplate }}
 		>
-			<div
-				className={dayHeaderSlot.className}
-				data-ilamy-part="header-corner"
-				data-sticky="true"
-				data-sticky-inset="left"
-				style={dayHeaderSlot.style}
-			>
-				{mode === 'week' && options.weekNumbers !== false && firstCol && (
-					<>
-						<span>{actions.t('week')}</span>
-						<strong data-testid="week-number">
-							{getWeekNumber(
-								firstCol.day,
-								options.weekNumberCalculation ?? 'local',
-								state.locale
-							)}
-						</strong>
-					</>
-				)}
-			</div>
+			<TimeGridHeaderCorner
+				dayHeaderSlot={dayHeaderSlot}
+				firstCol={firstCol}
+				locale={state.locale}
+				mode={mode}
+				options={options}
+				weekLabel={actions.t('week')}
+			/>
 			{model.columns.map((col, colIdx) => (
 				<TimeGridColumnHeader
 					col={col}
 					controller={controller}
 					dayHeaderSlot={dayHeaderSlot}
 					formatters={formatters}
-					key={rendererKeys.key.timeHeader(
-						dayKey(col.day),
-						col.resource?.id,
-						colIdx
-					)}
+					key={rendererKeys.key.weekdayCol('hdr', colIdx)}
 					options={options}
 					resHeaderSlot={resHeaderSlot}
 				/>
@@ -619,9 +898,152 @@ const TimeGridHeaderRow = ({
 	)
 }
 
+const ALL_DAY_BAR_HEIGHT_PX = 22
+const ALL_DAY_BAR_GAP_PX = 2
+const ALL_DAY_PADDING_PX = 4
+const DEFAULT_ALL_DAY_MAX_EVENTS = 4
+
+interface AllDayGroup {
+	resource?: Resource
+	startColIdx: number
+	days: ZonedDate[]
+	events: DomCalendarEvent[]
+}
+
+const appendUniqueEvents = (
+	target: DomCalendarEvent[],
+	incoming: DomCalendarEvent[]
+) => {
+	const seenIds = new Set(target.map((e) => e.id))
+	for (const evt of incoming) {
+		if (!seenIds.has(evt.id)) {
+			seenIds.add(evt.id)
+			target.push(evt)
+		}
+	}
+}
+
+const groupAllDayColumns = (
+	columns: TimeGridColumnViewModel[]
+): AllDayGroup[] => {
+	const groups: AllDayGroup[] = []
+	for (let idx = 0; idx < columns.length; idx++) {
+		const col = columns.at(idx)
+		if (!col) continue
+		const currentGroup = groups.at(-1)
+		const sameResource =
+			currentGroup &&
+			String(currentGroup.resource?.id ?? '__default__') ===
+				String(col.resource?.id ?? '__default__')
+		if (!sameResource) {
+			groups.push({
+				resource: col.resource,
+				startColIdx: idx,
+				days: [col.day],
+				events: [...(col.allDayEvents as DomCalendarEvent[])],
+			})
+			continue
+		}
+		currentGroup.days.push(col.day)
+		appendUniqueEvents(
+			currentGroup.events,
+			col.allDayEvents as DomCalendarEvent[]
+		)
+	}
+	return groups
+}
+
+const matchesResourcePreview = (
+	preview: DomCalendarEvent | null | undefined,
+	resource?: Resource
+): boolean => {
+	if (!preview?.allDay) return false
+	if (!resource) return true
+	if (preview.resourceIds) {
+		return preview.resourceIds.some((id) => String(id) === String(resource.id))
+	}
+	return String(preview.resourceId ?? '') === String(resource.id)
+}
+
+const renderAllDayOverlayBar = ({
+	pos,
+	groupDays,
+	rowBarHeight,
+	rowBarGap,
+	isPreview,
+	controller,
+	options,
+	actions,
+	formatters,
+	zone,
+}: {
+	pos: HorizontalPositionedEvent
+	groupDays: ZonedDate[]
+	rowBarHeight: number
+	rowBarGap: number
+	isPreview: boolean
+	controller: HeadlessCalendarController
+	options: DomCalendarOptions
+	actions: RendererActions
+	formatters: CalendarFormatters
+	zone: string
+}) => {
+	const rowTop = ALL_DAY_PADDING_PX + pos.row * (rowBarHeight + rowBarGap)
+	const barStyle = getHorizontalBarStyle(pos, rowTop, rowBarHeight)
+	const firstDay = groupDays.at(0)
+	const lastDay = groupDays.at(-1)
+	const rowStart = firstDay ? startOf(firstDay, 'day') : undefined
+	const rowEnd = lastDay ? startOf(add(lastDay, 1, 'day'), 'day') : undefined
+	const { segStart, segEnd } = clipSegmentIsoRange({
+		eventStart: pos.event.start,
+		eventEnd: pos.event.end,
+		timezone: zone,
+		rowStart,
+		rowEnd,
+	})
+	return (
+		<EventBar
+			actions={actions}
+			axis="horizontal"
+			compact
+			controller={controller}
+			dataLeft={pos.left}
+			dataWidth={pos.width}
+			event={pos.event as DomCalendarEvent}
+			formatters={formatters}
+			isPreview={isPreview}
+			key={
+				isPreview
+					? rendererKeys.key.previewEvent(pos.event.id, pos.left, pos.width)
+					: rendererKeys.key.monthEvent(
+							pos.event.id,
+							pos.left,
+							pos.width,
+							pos.row
+						)
+			}
+			options={options}
+			segEnd={segEnd}
+			segStart={segStart}
+			segment={{
+				isStart: !pos.isTruncatedStart,
+				isEnd: !pos.isTruncatedEnd,
+			}}
+			style={{
+				...barStyle,
+				position: 'absolute',
+				...(isPreview
+					? { zIndex: '25', pointerEvents: 'none' }
+					: { pointerEvents: 'auto' }),
+			}}
+		/>
+	)
+}
+
 const TimeGridAllDayRow = ({
 	columns,
 	colTemplate,
+	dragPreviewEvent,
 	controller,
 	options,
 	actions,
@@ -629,6 +1051,7 @@ const TimeGridAllDayRow = ({
 }: {
 	columns: TimeGridColumnViewModel[]
 	colTemplate: string
+	dragPreviewEvent?: DomCalendarEvent | null
 	controller: HeadlessCalendarController
 	options: DomCalendarOptions
 	actions: RendererActions
@@ -640,6 +1063,20 @@ const TimeGridAllDayRow = ({
 		'allDayRow',
 		actions.ownerState
 	)
+	const rowBarHeight = options.eventHeight ?? ALL_DAY_BAR_HEIGHT_PX
+	const rowBarGap = options.eventSpacing ?? ALL_DAY_BAR_GAP_PX
+	const dayMaxEvents = options.dayMaxEvents ?? DEFAULT_ALL_DAY_MAX_EVENTS
+	const groups = groupAllDayColumns(columns)
+	const layouts = groups.map((group) =>
+		layoutHorizontal({
+			events: group.events,
+			days: group.days,
+			dayMaxEvents,
+			gridType: 'day',
+		})
+	)
+	const colLayouts = layouts.flatMap((layout) => layout.columnLayouts)
+
 	return (
 		<div
 			className={allDaySlot.className}
@@ -648,18 +1085,33 @@ const TimeGridAllDayRow = ({
 			data-testid="all-day-row"
 			style={{ ...allDaySlot.style, gridTemplateColumns: colTemplate }}
 		>
-			<div data-ilamy-part="all-day-label" data-sticky-inset="left">
-				{actions.t('allDay')}
+			<div
+				data-ilamy-part="all-day-label"
+				data-sticky-inset="left"
+				style={{ gridRow: '1', gridColumn: '1' }}
+			>
+				<span>{actions.t('allDay')}</span>
 			</div>
 			{columns.map((col, idx) => {
 				const dayStart = startOf(col.day, 'day')
 				const dayEnd = add(dayStart, 1, 'day')
+				const dayIso = toOffsetIso(dayStart)
 				const cellInfo: CellInfo = {
-					start: toOffsetIso(dayStart),
+					start: dayIso,
 					end: toOffsetIso(dayEnd),
 					allDay: true,
 					resource: col.resource,
 				}
+				const cellLayout = colLayouts.at(idx)
+				const moreLink = (
+					<MoreEventsButton
+						actions={actions}
+						cellLayout={cellLayout}
+						dateIso={dayIso}
+						getTitle={() => formatters.formatDayHeader(col.day)}
+						options={options}
+					/>
+				)
 				return (
 					// biome-ignore lint/a11y/useKeyWithClickEvents: all-day cell creation paired with New button
 					<div
@@ -668,47 +1120,90 @@ const TimeGridAllDayRow = ({
 						data-date={dayKey(col.day)}
 						data-end={toUtcIso(dayEnd)}
 						data-ilamy-part="all-day-cell"
+						data-last-col={idx === columns.length - 1 ? 'true' : undefined}
 						data-resource-id={
 							col.resource ? String(col.resource.id) : undefined
 						}
 						data-start={toUtcIso(dayStart)}
-						key={rendererKeys.key.allDayCell(
-							dayKey(col.day),
-							col.resource?.id,
-							idx
-						)}
+						data-testid={rendererKeys.testId.dayCell(dayKey(col.day))}
+						key={rendererKeys.key.weekdayCol('all-day', idx)}
 						onClick={(evt) => {
-							if (evt.target !== evt.currentTarget) return
+							if (
+								evt.target !== evt.currentTarget &&
+								!(evt.target as HTMLElement)?.closest(
+									'[data-ilamy-part="grid-cell-content"]'
+								)
+							) {
+								return
+							}
 							if (!canCommitSelection(cellInfo, options, state.timezone)) return
 							options.onCellClick?.(cellInfo)
 							actions.openCreateDialog(cellInfo)
 						}}
+						style={{ gridRow: '1', gridColumn: String(idx + 2) }}
 					>
-						{col.allDayEvents.map((evt) => {
-							const evStart = parseDate(evt.start, state.timezone)
-							const evEnd = parseDate(evt.end, state.timezone)
-							return (
-								<div data-ilamy-part="all-day-item" key={evt.id}>
-									<EventBar
-										actions={actions}
-										axis="horizontal"
-										compact
-										controller={controller}
-										event={evt as DomCalendarEvent}
-										formatters={formatters}
-										options={options}
-										segEnd={toOffsetIso(dayEnd)}
-										segStart={toOffsetIso(dayStart)}
-										segment={{
-											isStart: evStart ? isSameDay(col.day, evStart) : true,
-											isEnd: evEnd
-												? isSameDay(col.day, add(evEnd, -1, 'millisecond'))
-												: true,
-										}}
-									/>
-								</div>
-							)
-						})}
+						<HorizontalCellContent
+							cellLayout={cellLayout}
+							moreLink={moreLink}
+							rowBarGap={rowBarGap}
+							rowBarHeight={rowBarHeight}
+						/>
+					</div>
+				)
+			})}
+			{groups.map((group, groupIdx) => {
+				const layout = layouts.at(groupIdx)
+				const previewPositions = matchesResourcePreview(
+					dragPreviewEvent,
+					group.resource
+				)
+					? layoutHorizontal({
+							events: dragPreviewEvent ? [dragPreviewEvent] : [],
+							days: group.days,
+							dayMaxEvents: 100,
+							gridType: 'day',
+						}).positionedEvents
+					: []
+				return (
+					<div
+						data-ilamy-part="all-day-events-overlay"
+						key={rendererKeys.key.weekdayCol('all-day-overlay', groupIdx)}
+						style={{
+							position: 'relative',
+							gridRow: '1',
+							gridColumn: `${group.startColIdx + 2} / span ${group.days.length}`,
+							pointerEvents: 'none',
+							zIndex: 10,
+						}}
+					>
+						{layout?.positionedEvents.map((pos) =>
+							renderAllDayOverlayBar({
+								pos,
+								groupDays: group.days,
+								rowBarHeight,
+								rowBarGap,
+								isPreview: false,
+								controller,
+								options,
+								actions,
+								formatters,
+								zone: state.timezone,
+							})
+						)}
+						{previewPositions.map((pos) =>
+							renderAllDayOverlayBar({
+								pos,
+								groupDays: group.days,
+								rowBarHeight,
+								rowBarGap,
+								isPreview: true,
+								controller,
+								options,
+								actions,
+								formatters,
+								zone: state.timezone,
+							})
+						)}
 					</div>
 				)
 			})}
@@ -850,6 +1345,7 @@ const TimeGridColumn = ({
 	slotHeightPx,
 	dragPreviewEvent,
 	mode,
+	showNowDot,
 	controller,
 	options,
 	actions,
@@ -864,6 +1360,7 @@ const TimeGridColumn = ({
 	slotHeightPx: number
 	dragPreviewEvent: DomCalendarEvent | null
 	mode: 'day' | 'week' | 'month'
+	showNowDot: boolean
 	controller: HeadlessCalendarController
 	options: DomCalendarOptions
 	actions: RendererActions
@@ -919,71 +1416,68 @@ const TimeGridColumn = ({
 				{col.positionedEvents.map((item) => {
 					const barHeightPx =
 						(item.height / 100) * hours.length * HOUR_ROW_HEIGHT_PX
-					const evStart = parseDate(item.event.start, state.timezone)
-					const evEnd = parseDate(item.event.end, state.timezone)
 					const colStart = startOf(col.day, 'day')
 					const colEnd = add(colStart, 1, 'day')
+					const { evStart, evEnd, segStart, segEnd } = clipSegmentIsoRange({
+						eventStart: item.event.start,
+						eventEnd: item.event.end,
+						timezone: state.timezone,
+						rowStart: colStart,
+						rowEnd: colEnd,
+					})
 					return (
-						<div
-							data-ilamy-part="event-wrapper"
+						<EventBar
+							actions={actions}
+							axis="vertical"
+							compact={barHeightPx <= 40}
+							controller={controller}
+							event={item.event as DomCalendarEvent}
+							formatters={formatters}
 							key={item.event.id}
+							options={options}
+							segEnd={segEnd}
+							segStart={segStart}
+							segment={{
+								isStart:
+									!item.isTruncatedStart &&
+									(!evStart || isSameDay(col.day, evStart)),
+								isEnd:
+									!item.isTruncatedEnd &&
+									(!evEnd || isSameDay(col.day, add(evEnd, -1, 'millisecond'))),
+							}}
 							style={{
 								...getVerticalBarStyle(item),
+								position: 'absolute',
+								pointerEvents: 'auto',
 								paddingInline: '1px',
 								zIndex:
 									item.zIndex !== undefined ? String(item.zIndex) : undefined,
 							}}
-						>
-							<EventBar
-								actions={actions}
-								axis="vertical"
-								compact={barHeightPx <= 40}
-								controller={controller}
-								event={item.event as DomCalendarEvent}
-								formatters={formatters}
-								options={options}
-								segEnd={evEnd ? toOffsetIso(minDate(evEnd, colEnd)) : undefined}
-								segStart={
-									evStart ? toOffsetIso(maxDate(evStart, colStart)) : undefined
-								}
-								segment={{
-									isStart:
-										!item.isTruncatedStart &&
-										(!evStart || isSameDay(col.day, evStart)),
-									isEnd:
-										!item.isTruncatedEnd &&
-										(!evEnd ||
-											isSameDay(col.day, add(evEnd, -1, 'millisecond'))),
-								}}
-							/>
-						</div>
+						/>
 					)
 				})}
 				{previewItems.map((item) => (
-					<div
-						data-ilamy-part="event-wrapper"
+					<EventBar
+						actions={actions}
+						axis="vertical"
+						controller={controller}
+						event={item.event as DomCalendarEvent}
+						formatters={formatters}
+						isPreview
 						key={rendererKeys.key.previewEvent(
 							item.event.id,
 							item.top,
 							item.height
 						)}
+						options={options}
 						style={{
 							...getVerticalBarStyle(item),
+							position: 'absolute',
 							padding: '1px',
 							zIndex: '25',
 							pointerEvents: 'none',
 						}}
-					>
-						<EventBar
-							actions={actions}
-							axis="vertical"
-							controller={controller}
-							event={item.event as DomCalendarEvent}
-							formatters={formatters}
-							isPreview
-							options={options}
-						/>
-					</div>
+					/>
 				))}
 			</div>
 
@@ -994,6 +1488,7 @@ const TimeGridColumn = ({
 				options={options}
 				percent={col.nowIndicatorPercent}
 				resource={col.resource}
+				showDot={showNowDot}
 				timezone={state.timezone}
 				view={mode}
 			/>
@@ -1003,10 +1498,14 @@ const TimeGridColumn = ({
 
 const TimeAxisColumn = ({
 	hours,
+	hasToday,
+	currentHour,
 	options,
 	formatters,
 }: {
 	hours: ZonedDate[]
+	hasToday: boolean
+	currentHour: number
 	options: DomCalendarOptions
 	formatters: CalendarFormatters
 }) => (
@@ -1015,18 +1514,21 @@ const TimeAxisColumn = ({
 		data-sticky-inset="left"
 		data-testid="dom-time-axis"
 	>
-		{hours.map((hour) => (
+		{hours.map((hour, index) => (
 			<div
+				aria-current={
+					hasToday && hour.hour === currentHour ? 'time' : undefined
+				}
 				data-hour={String(hour.hour).padStart(2, '0')}
 				data-ilamy-part="time-axis-hour"
-				key={hour.hour}
+				key={rendererKeys.key.timeAxisHour(hour.hour, index)}
 				style={{ height: `${HOUR_ROW_HEIGHT_PX}px` }}
 			>
 				{options.renderHour ? (
 					<LegacyRenderHost
 						context={toOffsetIso(hour)}
 						renderFn={options.renderHour}
-						slotKey={`hour-${hour.hour}`}
+						slotKey={`hour-${hour.hour}-${index}`}
 					/>
 				) : (
 					formatters.formatSlotHeader(hour)
@@ -1059,15 +1561,18 @@ const buildVerticalGridViewModel = (
 		slotMaxTime: options.slotMaxTime,
 		nowIndicator: options.nowIndicator,
 	})
-	let colMinWidth = '0px'
-	if (state.resources.length > 0) {
-		colMinWidth = mode === 'week' ? '48px' : '80px'
-	}
+	const colMinPx = state.resources.length > 0 ? 80 : 0
+	const colMinWidth = `${colMinPx}px`
+	const frameMinWidth =
+		colMinPx > 0
+			? `max(100%, ${64 + model.columns.length * colMinPx}px)`
+			: '100%'
 	const slotMinutes = options.slotDuration ?? 60
 	const slotsPerHour = Math.max(1, 60 / slotMinutes)
 	return {
 		model,
 		colTemplate: `64px repeat(${model.columns.length}, minmax(${colMinWidth}, 1fr))`,
+		frameMinWidth,
 		slotMinutes,
 		slotsPerHour,
 		slotHeightPx: HOUR_ROW_HEIGHT_PX / slotsPerHour,
@@ -1079,8 +1584,8 @@ const buildVerticalGridViewModel = (
 const VerticalTimeGrid = ({
 	mode,
 	current,
-	viewportRef,
 	dragPreviewEvent,
+	scrollRequest,
 	controller,
 	options,
 	actions,
@@ -1089,17 +1594,20 @@ const VerticalTimeGrid = ({
 }: {
 	mode: 'day' | 'week'
 	current: ZonedDate
-	viewportRef: { current: HTMLDivElement | null }
 	dragPreviewEvent: DomCalendarEvent | null
+	scrollRequest?: ScrollRequest
 	controller: HeadlessCalendarController
 	options: DomCalendarOptions
 	actions: RendererActions
 	formatters: CalendarFormatters
 	visibleEvents: DomCalendarEvent[]
 }) => {
+	const viewportRef = useRef<HTMLDivElement>(null)
+	const state = controller.getState()
 	const {
 		model,
 		colTemplate,
+		frameMinWidth,
 		slotMinutes,
 		slotsPerHour,
 		slotHeightPx,
@@ -1114,75 +1622,118 @@ const VerticalTimeGrid = ({
 	)
 	const isSticky = options.stickyViewHeader !== false
 	const showAllDayRow = options.allDaySlot !== false
+	const hasToday = model.columns.some((c) => c.isToday)
+	const firstTodayColIdx = model.columns.findIndex((c) => c.isToday)
+	const currentHour = now(state.timezone).hour
+
+	useStickyInsets(
+		viewportRef,
+		`time:${mode}:${state.currentDate}:${options.stickyViewHeader !== false}:${options.allDaySlot !== false}:${state.resources.length}`
+	)
+
+	useScrollToTime({
+		viewportRef,
+		scrollTime:
+			options.scrollTime ?? (options.scrollToNow ? undefined : '08:00'),
+		scrollToNow: options.scrollToNow,
+		scrollRequest,
+		enabled: !actions.ownerState.hasResourceAxis || state.resources.length > 0,
+		scrollKey: `${mode}:${state.currentDate}:${firstHourNum}-${lastHourNum}`,
+		axis: 'vertical',
+	})
+
+	const gridHeader = (
+		<div
+			className={joinClassNames(options.viewHeaderClassName)}
+			data-ilamy-slot="grid-header"
+			data-sticky={isSticky ? 'true' : undefined}
+			data-sticky-inset={isSticky ? 'top' : undefined}
+		>
+			<TimeGridHeaderRow
+				actions={actions}
+				colTemplate={colTemplate}
+				controller={controller}
+				formatters={formatters}
+				mode={mode}
+				model={model}
+				options={options}
+			/>
+			{showAllDayRow && (
+				<TimeGridAllDayRow
+					actions={actions}
+					colTemplate={colTemplate}
+					columns={model.columns}
+					controller={controller}
+					dragPreviewEvent={dragPreviewEvent}
+					formatters={formatters}
+					options={options}
+				/>
+			)}
+		</div>
+	)
+
+	const gridBody = (
+		<div
+			data-ilamy-part="time-grid-body"
+			style={{ gridTemplateColumns: colTemplate }}
+		>
+			<TimeAxisColumn
+				currentHour={currentHour}
+				formatters={formatters}
+				hasToday={hasToday}
+				hours={model.hours}
+				options={options}
+			/>
+
+			{model.columns.map((col, colIdx) => (
+				<TimeGridColumn
+					actions={actions}
+					col={col}
+					controller={controller}
+					dragPreviewEvent={dragPreviewEvent}
+					firstHourNum={firstHourNum}
+					formatters={formatters}
+					hours={model.hours}
+					key={rendererKeys.key.weekdayCol('col', colIdx)}
+					lastHourNum={lastHourNum}
+					mode={mode}
+					options={options}
+					showNowDot={colIdx === firstTodayColIdx}
+					slotHeightPx={slotHeightPx}
+					slotMinutes={slotMinutes}
+					slotsPerHour={slotsPerHour}
+				/>
+			))}
+		</div>
+	)
+
+	if (actions.ownerState.hasResourceAxis) {
+		return (
+			<div
+				data-ilamy-slot="grid-scroll"
+				data-testid={rendererKeys.testId.modeView(mode)}
+				ref={viewportRef}
+			>
+				<div
+					data-ilamy-part="time-grid-scroll-frame"
+					style={{ minWidth: frameMinWidth }}
+				>
+					{gridHeader}
+					{gridBody}
+				</div>
+			</div>
+		)
+	}
 
 	return (
-		<div
-			data-ilamy-part="time-grid-scroll-x"
-			data-testid={rendererKeys.testId.modeView(mode)}
-		>
-			<div data-ilamy-part="time-grid-scroll-frame">
-				<div
-					className={joinClassNames(options.viewHeaderClassName)}
-					data-ilamy-slot="grid-header"
-					data-sticky={isSticky ? 'true' : undefined}
-					data-sticky-inset={isSticky ? 'top' : undefined}
-				>
-					<TimeGridHeaderRow
-						actions={actions}
-						colTemplate={colTemplate}
-						controller={controller}
-						formatters={formatters}
-						mode={mode}
-						model={model}
-						options={options}
-					/>
-					{showAllDayRow && (
-						<TimeGridAllDayRow
-							actions={actions}
-							colTemplate={colTemplate}
-							columns={model.columns}
-							controller={controller}
-							formatters={formatters}
-							options={options}
-						/>
-					)}
-				</div>
-
-				<div data-ilamy-slot="grid-scroll" ref={viewportRef}>
-					<div
-						data-ilamy-part="time-grid-body"
-						style={{ gridTemplateColumns: colTemplate }}
-					>
-						<TimeAxisColumn
-							formatters={formatters}
-							hours={model.hours}
-							options={options}
-						/>
-
-						{model.columns.map((col, colIdx) => (
-							<TimeGridColumn
-								actions={actions}
-								col={col}
-								controller={controller}
-								dragPreviewEvent={dragPreviewEvent}
-								firstHourNum={firstHourNum}
-								formatters={formatters}
-								hours={model.hours}
-								key={rendererKeys.key.timeCol(
-									dayKey(col.day),
-									col.resource?.id,
-									colIdx
-								)}
-								lastHourNum={lastHourNum}
-								mode={mode}
-								options={options}
-								slotHeightPx={slotHeightPx}
-								slotMinutes={slotMinutes}
-								slotsPerHour={slotsPerHour}
-							/>
-						))}
-					</div>
-				</div>
+		<div data-ilamy-part="time-grid-regular-frame">
+			{gridHeader}
+			<div
+				data-ilamy-slot="grid-scroll"
+				data-testid={rendererKeys.testId.modeView(mode)}
+				ref={viewportRef}
+			>
+				{gridBody}
 			</div>
 		</div>
 	)
@@ -1209,39 +1760,28 @@ export const TimeGridView = ({
 	dragPreview,
 	scrollRequest,
 }: TimeGridViewProps) => {
-	const viewportRef = useRef<HTMLDivElement>(null)
 	const state = controller.getState()
 	const current =
 		parseDate(state.currentDate, state.timezone) ?? now(state.timezone)
 	const delegatesHorizontal =
 		mode !== 'month' &&
-		state.resources.length > 0 &&
+		actions.ownerState.hasResourceAxis &&
 		options.orientation !== 'vertical'
 	const dragPreviewEvent = resolveDragPreviewEvent(dragPreview, visibleEvents)
+	const isVerticalDailyResourceWeek =
+		mode === 'week' &&
+		actions.ownerState.hasResourceAxis &&
+		options.orientation === 'vertical' &&
+		options.weekViewGranularity === 'daily'
 
-	useStickyInsets(
-		viewportRef,
-		`time:${mode}:${state.currentDate}:${options.stickyViewHeader !== false}:${options.allDaySlot !== false}:${state.resources.length}`
-	)
-
-	useScrollToTime({
-		viewportRef,
-		scrollTime:
-			options.scrollTime ?? (options.scrollToNow ? undefined : '08:00'),
-		scrollToNow: options.scrollToNow,
-		scrollRequest,
-		enabled: mode !== 'month' && !delegatesHorizontal,
-		scrollKey: `${mode}:${state.currentDate}:${state.resources.length}`,
-		axis: 'vertical',
-	})
-
-	if (mode === 'month') {
+	if (mode === 'month' || isVerticalDailyResourceWeek) {
 		return (
-			<VerticalResourceMonthView
+			<VerticalResourceDayGrid
 				actions={actions}
 				controller={controller}
 				dragPreviewEvent={dragPreviewEvent}
 				formatters={formatters}
+				mode={mode === 'month' ? 'month' : 'week'}
 				options={options}
 				visibleEvents={visibleEvents}
 			/>
@@ -1263,6 +1803,15 @@ export const TimeGridView = ({
 		)
 	}
 
+	if (actions.ownerState.hasResourceAxis && state.resources.length === 0) {
+		return (
+			<div
+				data-ilamy-part="time-grid-scroll-x"
+				data-testid={rendererKeys.testId.modeView(mode)}
+			/>
+		)
+	}
+
 	return (
 		<VerticalTimeGrid
 			actions={actions}
@@ -1272,7 +1821,7 @@ export const TimeGridView = ({
 			formatters={formatters}
 			mode={mode}
 			options={options}
-			viewportRef={viewportRef}
+			scrollRequest={scrollRequest}
 			visibleEvents={visibleEvents}
 		/>
 	)

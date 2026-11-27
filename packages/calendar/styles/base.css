@@ -142,19 +142,34 @@
 	:where([data-ilamy-slot='toolbar']) {
 		width: 100%;
 		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
+		flex-direction: column;
+		align-items: stretch;
 		gap: 0.5rem;
 	}
 
-	:where([data-ilamy-slot='nav-group']),
-	:where([data-ilamy-slot='actions-group']) {
+	:where([data-ilamy-slot='nav-group']) {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 0.5rem;
 		min-width: 0;
+	}
+
+	:where([data-ilamy-slot='actions-group']) {
+		display: flex;
+		flex-wrap: nowrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-slot='nav-button'][data-part='title']) {
+		min-width: 0;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		justify-content: flex-start;
 	}
 
 	:where([data-ilamy-slot='arrow-group']) {
@@ -192,7 +207,16 @@
 		align-items: center;
 	}
 
-	@container ilamy-header (min-width: 45rem) {
+	@container ilamy-header (min-width: 52rem) {
+		:where([data-ilamy-slot='toolbar']) {
+			flex-direction: row;
+			flex-wrap: nowrap;
+			align-items: center;
+			justify-content: space-between;
+		}
+		:where([data-ilamy-slot='nav-group']) {
+			flex-wrap: nowrap;
+		}
 		:where([data-ilamy-slot='view-switcher']) {
 			display: inline-flex;
 		}
@@ -259,13 +283,20 @@
 		overflow-y: hidden;
 	}
 
-	:where([data-ilamy-part='time-grid-scroll-frame']) {
+	:where([data-ilamy-part='time-grid-regular-frame']) {
 		display: flex;
 		flex-direction: column;
 		flex: 1 1 0%;
 		min-height: 0;
+		width: 100%;
+	}
+
+	:where([data-ilamy-part='time-grid-scroll-frame']) {
+		display: flex;
+		flex-direction: column;
+		min-height: 100%;
 		min-width: 100%;
-		width: max-content;
+		width: 100%;
 	}
 
 	:where([data-ilamy-part='time-grid-scroll-frame']) > :where([data-ilamy-slot='grid-scroll']) {
@@ -325,7 +356,7 @@
 
 	:where([data-ilamy-slot='grid-header']) {
 		min-width: 100%;
-		width: max-content;
+		width: 100%;
 		flex-shrink: 0;
 	}
 
@@ -367,6 +398,7 @@
 		align-items: center;
 		justify-content: center;
 		min-width: 0;
+		overflow: hidden;
 	}
 
 	:where([data-ilamy-part='header-corner']) {
@@ -374,6 +406,21 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		min-width: 0;
+		overflow: hidden;
+	}
+
+	:where([data-ilamy-part='col-header-label']),
+	:where([data-ilamy-part='time-col-header'] > span),
+	:where([data-ilamy-part='res-h-day-group'] > span),
+	:where([data-ilamy-part='header-corner'] > span),
+	:where([data-ilamy-part='header-corner'] > strong),
+	:where([data-ilamy-slot='day-header'] > span) {
+		display: block;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	:where([data-ilamy-part='header-corner'][data-sticky='true']) {
@@ -420,6 +467,21 @@
 		flex-direction: column;
 	}
 
+	:where([data-ilamy-part='cell-header']) {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		min-width: 0;
+	}
+
+	:where([data-ilamy-part='week-num-inline']) {
+		pointer-events: none;
+		font-size: 0.625rem;
+		line-height: 1;
+		font-variant-numeric: tabular-nums;
+		color: var(--ilamy-muted-fg);
+	}
+
 	:where([data-ilamy-part='cell-day-num']) {
 		display: inline-flex;
 		align-items: center;
@@ -433,13 +495,13 @@
 	:where([data-ilamy-part='time-grid-header-row']) {
 		display: grid;
 		min-width: 100%;
-		width: max-content;
+		width: 100%;
 	}
 
 	:where([data-ilamy-part='time-grid-body']) {
 		display: grid;
 		min-width: 100%;
-		width: max-content;
+		width: 100%;
 		position: relative;
 	}
 
@@ -496,10 +558,17 @@
 	}
 
 	:where([data-ilamy-part='all-day-row']) {
+		position: relative;
 		display: grid;
 		min-width: 100%;
-		width: max-content;
+		width: 100%;
 		min-height: 2.25rem;
+	}
+
+	:where([data-ilamy-part='all-day-events-overlay']) {
+		overflow: clip;
+		pointer-events: none;
+		z-index: 10;
 	}
 
 	:where([data-ilamy-part='all-day-label']) {
@@ -517,11 +586,15 @@
 		flex-direction: column;
 		gap: 0.25rem;
 		padding: 0.25rem;
+		min-width: 0;
 		min-height: 2rem;
+		overflow: clip;
 	}
 
 	:where([data-ilamy-part='all-day-item']) {
 		height: 22px;
+		min-width: 0;
+		max-width: 100%;
 	}
 
 	/* Horizontal resource timeline */
@@ -543,16 +616,33 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.125rem;
+		min-width: 0;
+		overflow: clip;
+	}
+
+	:where([data-ilamy-part='res-h-day-group'][data-hourly='true']) {
+		flex-direction: row;
+		justify-content: flex-start;
+	}
+
+	:where([data-ilamy-part='res-h-day-label']) {
+		position: sticky;
+		inset-inline-start: 50%;
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		flex-shrink: 0;
+		gap: 0.125rem;
+		padding-inline: 8px;
+		white-space: nowrap;
 	}
 
 	/* Event bars, continuation stripes, and VS Code resize handles */
 	:where([data-ilamy-slot='event-bar']) {
-		display: flex;
-		align-items: center;
+		display: block;
 		min-width: 0;
 		overflow: clip;
-		white-space: nowrap;
-		text-overflow: ellipsis;
+		padding: 0;
 		cursor: pointer;
 	}
 
@@ -564,16 +654,17 @@
 		text-align: left;
 	}
 
-	:where([data-ilamy-slot='event-bar'][data-drag-axis='vertical']) {
-		flex-direction: column;
-		align-items: stretch;
-		gap: 0.125rem;
+	:where([data-ilamy-part='event-bar-content']) {
+		position: relative;
+		display: block;
+		width: 100%;
+		height: 100%;
+		overflow: clip;
+		box-sizing: border-box;
 	}
 
-	:where([data-ilamy-slot='event-bar'][data-compact='true']) {
-		flex-direction: row;
-		align-items: center;
-		gap: 0.25rem;
+	:where([data-ilamy-slot='event-bar'][data-compact='true'] [data-ilamy-part='event-bar-content']) {
+		white-space: nowrap;
 	}
 
 	:where([data-ilamy-slot='event-bar'][data-draggable='true']) {
@@ -584,17 +675,47 @@
 		cursor: grabbing;
 	}
 
-	:where([data-ilamy-part='event-time']) {
-		flex-shrink: 0;
+	:where([data-ilamy-part='event-label']) {
+		display: inline-block;
+		max-width: 100%;
+		vertical-align: top;
+	}
+
+	:where([data-ilamy-slot='event-bar'][data-drag-axis='horizontal'] [data-ilamy-part='event-label']) {
+		position: sticky;
+		inset-inline-start: calc(var(--ilamy-sticky-left, 0px) + 0.25rem);
+		display: inline-block;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		white-space: nowrap;
+		vertical-align: top;
+	}
+
+	:where([data-ilamy-slot='event-bar'][data-drag-axis='vertical'] [data-ilamy-part='event-label']) {
+		position: sticky;
+		top: calc(var(--ilamy-sticky-top, 0px) + 0.125rem);
+		display: block;
+		max-width: 100%;
+		white-space: normal;
+		overflow-wrap: break-word;
+	}
+
+	:where([data-ilamy-slot='event-bar'][data-compact='true'] [data-ilamy-part='event-label']) {
+		white-space: nowrap;
+	}
+
+	:where([data-ilamy-part='event-time']) {
+		max-width: 100%;
+	}
+
+	:where([data-ilamy-part='event-label'] > [data-ilamy-part='event-time']) {
+		margin-inline-end: 0.25rem;
 	}
 
 	:where([data-ilamy-part='event-title']),
 	:where([data-ilamy-part='agenda-title']) {
 		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	:where([data-ilamy-part='continuation-stripe']) {
@@ -703,7 +824,10 @@
 	}
 
 	:where([data-ilamy-slot='more-link']) {
+		position: relative;
+		z-index: 15;
 		display: inline-flex;
+		min-height: 1.5rem;
 		align-items: center;
 		cursor: pointer;
 		background: transparent;
@@ -930,6 +1054,33 @@
 		gap: 0.25rem;
 	}
 
+	:where([data-ilamy-part='mini-calendar']) table {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+
+	:where([data-ilamy-part='mini-calendar']) :where(th, td) {
+		padding: 1px;
+		text-align: center;
+	}
+
+	:where([data-ilamy-part='picker-cell']) {
+		width: 100%;
+	}
+
+	:where([data-ilamy-part='time-picker-search']) {
+		padding: 0.25rem;
+		border-bottom: 1px solid var(--ilamy-border);
+	}
+
+	:where([data-ilamy-part='time-picker-empty']) {
+		padding: 1rem 0.5rem;
+		text-align: center;
+		font-size: 0.875rem;
+		color: var(--ilamy-muted-fg);
+	}
+
 	:where([data-ilamy-part='time-picker-list']) {
 		display: flex;
 		flex-direction: column;
@@ -986,5 +1137,20 @@
 
 	:where([data-ilamy-part='repeat-count-input']) {
 		width: 4.5rem;
+	}
+
+	@keyframes ilamy-week-num-in {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	:where([data-ilamy-part='header-corner'] > .animate-in) {
+		animation: ilamy-week-num-in 300ms ease-out both;
 	}
 }

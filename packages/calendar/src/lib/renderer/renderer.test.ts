@@ -5,6 +5,9 @@ import { exportToICalendar, icalPlugin } from '../../features/plugins/ical'
 import { recurrencePlugin } from '../../features/plugins/recurrence'
 import { yearPlugin } from '../../features/plugins/year'
 import type { HeaderSlotContext, Resource } from '../../index'
+import { parseDate } from '../../index'
+import { resolveCommittedDeltas } from './app/mount-calendar'
+import { keepEndAfterStart } from './features/dialogs/event-form-dialog'
 import { mountCalendar } from './index'
 
 const createContainer = (): HTMLDivElement => {
@@ -803,12 +806,12 @@ describe('lib/renderer Preact mountCalendar', () => {
 		).toBe(true)
 		expect(
 			container
-				.querySelector('[data-testid="month-header"]')
+				.querySelector('[data-ilamy-slot="grid-header"]')
 				?.classList.contains('custom-view-header')
 		).toBe(true)
 		expect(
-			container.querySelectorAll('[data-testid="week-number"]').length
-		).toBe(6)
+			container.querySelector('[data-testid="resource-header-r1"]')
+		).not.toBeNull()
 		expect(
 			container
 				.querySelector('[data-testid="day-cell-2025-03-13"]')
@@ -830,6 +833,18 @@ describe('lib/renderer Preact mountCalendar', () => {
 		expect(changes.at(-1)?.delta).toEqual({ days: 0, milliseconds: 0 })
 		unsubSnap()
 
+		// Clear resources -> regular month view shows month-header & 6 week numbers; then switch to week
+		cal.update({ resources: undefined, initialView: 'month' })
+		await flushPreact()
+		expect(
+			container
+				.querySelector('[data-testid="month-header"]')
+				?.classList.contains('custom-view-header')
+		).toBe(true)
+		expect(
+			container.querySelectorAll('[data-testid="week-number"]').length
+		).toBe(6)
+
 		// Switch to week view and check week-number ('local' default = 11), sticky vars, and renderHour
 		cal.update({ resources: undefined, initialView: 'week' })
 		await flushPreact()
@@ -843,7 +858,7 @@ describe('lib/renderer Preact mountCalendar', () => {
 		expect(scrollVp?.style.getPropertyValue('--ilamy-sticky-left')).not.toBe('')
 		expect(scrollVp?.style.getPropertyValue('--ilamy-sticky-top')).not.toBe('')
 
-		// Form dialog time-picker & mini-calendar ARIA contracts
+		// Form dialog searchable time-picker & mini-calendar ARIA contracts
 		cal.openEventForm()
 		await flushPreact()
 		expect(cal.getSnapshot().isEventFormOpen).toBe(true)
@@ -852,13 +867,36 @@ describe('lib/renderer Preact mountCalendar', () => {
 		)
 		expect(startTimeBtn?.getAttribute('role')).toBe('combobox')
 		expect(startTimeBtn?.getAttribute('aria-controls')).toBeNull()
+		expect(startTimeBtn?.getAttribute('aria-expanded')).toBe('false')
 		startTimeBtn?.click()
 		await flushPreact()
-		const controlsId = startTimeBtn?.getAttribute('aria-controls')
-		expect(controlsId).toBeTruthy()
+		expect(startTimeBtn?.getAttribute('aria-expanded')).toBe('true')
+		const searchInput = container.querySelector<HTMLInputElement>(
+			'[data-ilamy-part="time-picker-search"] input'
+		)
+		expect(searchInput?.getAttribute('placeholder')).toBe('Search time...')
 		expect(
-			container.querySelector(`#${controlsId}`)?.getAttribute('role')
-		).toBe('listbox')
+			container.querySelectorAll('[data-ilamy-part="time-picker-list"] button')
+				.length
+		).toBe(96)
+		if (searchInput) {
+			searchInput.value = '4:00 PM'
+			searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+			await flushPreact()
+			const filtered = container.querySelectorAll(
+				'[data-ilamy-part="time-picker-list"] button'
+			)
+			expect(filtered.length).toBe(1)
+			expect(filtered[0]?.textContent).toBe('4:00 PM')
+
+			searchInput.value = 'zzz'
+			searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+			await flushPreact()
+			expect(
+				container.querySelector('[data-ilamy-part="time-picker-empty"]')
+					?.textContent
+			).toBe('N/A')
+		}
 
 		const startDateBtn = container.querySelector<HTMLButtonElement>(
 			'[data-testid="date-picker-start-date"]'
@@ -882,6 +920,477 @@ describe('lib/renderer Preact mountCalendar', () => {
 		cal.closeEventForm()
 		expect(cal.getSnapshot().isEventFormOpen).toBe(false)
 		expect(renderedNow.length).toBeGreaterThanOrEqual(0)
+		cal.destroy()
+	})
+
+	it('keeps end after start across edges/midnight and preserves untouched all-day ranges on edit', async () => {
+		const start = parseDate('2025-03-12T00:00:00Z', 'UTC')!
+		const sameDayMovedEnd = keepEndAfterStart(
+			{
+				allDay: false,
+				startDate: start,
+				endDate: start,
+				startTime: { hour: 9, minute: 0 },
+				endTime: { hour: 8, minute: 0 },
+			},
+			'end',
+			60,
+			'UTC'
+		)
+		expect(sameDayMovedEnd.startTime).toEqual({ hour: 7, minute: 0 })
+		expect(sameDayMovedEnd.endTime).toEqual({ hour: 8, minute: 0 })
+
+		const crossMidnight = keepEndAfterStart(
+			{
+				allDay: false,
+				startDate: start,
+				endDate: start,
+				startTime: { hour: 23, minute: 30 },
+				endTime: { hour: 10, minute: 0 },
+			},
+			'start',
+			60,
+			'UTC'
+		)
+		expect(crossMidnight.endDate.day).toBe(13)
+		expect(crossMidnight.endTime).toEqual({ hour: 0, minute: 30 })
+
+		const allDayPull = keepEndAfterStart(
+			{
+				allDay: true,
+				startDate: parseDate('2025-03-20T00:00:00Z', 'UTC')!,
+				endDate: start,
+				startTime: { hour: 0, minute: 0 },
+				endTime: { hour: 0, minute: 0 },
+			},
+			'start',
+			60,
+			'UTC'
+		)
+		expect(allDayPull.endDate.day).toBe(20)
+
+		const container = createContainer()
+		const updatedRows: Array<{ start: string; end: string; title: string }> = []
+		const cal = mountCalendar(container, {
+			initialDate: '2025-03-12T00:00:00Z',
+			initialView: 'month',
+			timezone: 'America/New_York',
+			events: [
+				{
+					id: 'holiday-1',
+					title: 'Public holiday',
+					start: '2025-03-12T00:00:00.000Z',
+					end: '2025-03-13T00:00:00.000Z',
+					allDay: true,
+				},
+			],
+			onEventUpdate: (ev) => {
+				updatedRows.push({ start: ev.start, end: ev.end, title: ev.title })
+			},
+		})
+		await flushPreact()
+		const before = cal.getSnapshot().rawEvents[0]!
+		cal.openEventForm({ id: 'holiday-1' })
+		await flushPreact()
+		const titleInput = container.querySelector<HTMLInputElement>(
+			'form input[name="title"]'
+		)
+		if (titleInput) {
+			titleInput.value = 'Retreat'
+			titleInput.dispatchEvent(new Event('input', { bubbles: true }))
+		}
+		await flushPreact()
+		container
+			.querySelector<HTMLButtonElement>('[data-testid="dom-event-save-btn"]')
+			?.click()
+		await flushPreact()
+		expect(updatedRows).toEqual([
+			{
+				title: 'Retreat',
+				start: before.start,
+				end: before.end,
+			},
+		])
+		cal.destroy()
+	})
+
+	it('derives delta and endDelta from appliedUpdates when recurrence all-scope overrides drag day shift', () => {
+		const targetEvent = {
+			id: 'W_2025-03-12',
+			title: 'Weekly',
+			start: '2025-03-12T09:00:00.000Z',
+			end: '2025-03-12T09:30:00.000Z',
+		}
+		const primary = {
+			id: 'W',
+			title: 'Weekly',
+			start: '2025-03-05T10:00:00.000Z',
+			end: '2025-03-05T10:30:00.000Z',
+		}
+		const result = resolveCommittedDeltas({
+			event: targetEvent,
+			primary,
+			appliedUpdates: {
+				start: '2025-03-12T10:00:00.000Z',
+				end: '2025-03-12T10:30:00.000Z',
+			},
+			deltas: {
+				delta: { days: 1, milliseconds: 3_600_000 },
+				endDelta: { days: 1, milliseconds: 3_600_000 },
+			},
+			timezone: 'UTC',
+		})
+		expect(result).toEqual({
+			delta: { days: 0, milliseconds: 3_600_000 },
+			endDelta: { days: 0, milliseconds: 3_600_000 },
+		})
+	})
+
+	it('deduplicates resourcesSet, shares combined loading, and preserves resource layout while pending', async () => {
+		const container = createContainer()
+		const reportedSets: string[][] = []
+		const loadingFlips: boolean[] = []
+		let resolveRes!: (rows: Resource[]) => void
+		let resolveEv!: (
+			rows: Array<{ id: string; title: string; start: string; end: string }>
+		) => void
+
+		const cal = mountCalendar(container, {
+			initialDate: '2025-03-12T00:00:00Z',
+			initialView: 'week',
+			timezone: 'UTC',
+			orientation: 'vertical',
+			loading: (next) => loadingFlips.push(next),
+			resourcesSet: (rows) => reportedSets.push(rows.map((r) => String(r.id))),
+			events: () =>
+				new Promise((resolve) => {
+					resolveEv = resolve
+				}),
+			resources: () =>
+				new Promise((resolve) => {
+					resolveRes = resolve
+				}),
+		})
+
+		expect(loadingFlips).toEqual([true])
+		expect(reportedSets).toEqual([])
+		expect(
+			container.querySelector('[data-testid="week-view-header"]')
+		).toBeNull()
+		expect(container.querySelector('[data-time-column="true"]')).toBeNull()
+
+		resolveRes([
+			{ id: 'r1', title: 'Room A' },
+			{ id: 'r2', title: 'Room B' },
+		])
+		await flushPreact()
+		expect(loadingFlips).toEqual([true])
+		expect(reportedSets).toEqual([['r1', 'r2']])
+		expect(
+			container.querySelectorAll('[data-testid="resource-header-r1"]').length
+		).toBe(1)
+
+		resolveEv([])
+		await flushPreact()
+		expect(loadingFlips).toEqual([true, false])
+
+		cal.update({
+			events: [],
+			resources: [
+				{ id: 'r1', title: 'Room A' },
+				{ id: 'r2', title: 'Room B' },
+			],
+		})
+		await flushPreact()
+		expect(reportedSets).toEqual([['r1', 'r2']])
+
+		cal.update({
+			resources: [{ id: 'r1', title: 'Room A' }],
+		})
+		await flushPreact()
+		expect(reportedSets).toEqual([['r1', 'r2'], ['r1']])
+		cal.destroy()
+	})
+
+	it('groups horizontal hourly resource week rows into per-day events-layer containers and wraps default bar content', async () => {
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: '2025-03-12T00:00:00Z',
+			initialView: 'week',
+			timezone: 'UTC',
+			orientation: 'horizontal',
+			weekViewGranularity: 'hourly',
+			resources: [{ id: 'r1', title: 'Room A' }],
+			events: [
+				{
+					id: 'short-w',
+					title: 'Quick check',
+					start: '2025-03-12T09:00:00.000Z',
+					end: '2025-03-12T09:01:00.000Z',
+					resourceId: 'r1',
+				},
+			],
+		})
+		await flushPreact()
+		const row = container.querySelector('[data-ilamy-part="res-h-row"]')
+		const layers =
+			row?.querySelectorAll('[data-ilamy-part="events-layer"]') ?? []
+		expect(layers.length).toBe(7)
+		const bar = container.querySelector(
+			'[data-testid="calendar-event-short-w"]'
+		)
+		expect(
+			bar?.querySelector('[data-ilamy-part="event-bar-content"]')
+		).not.toBeNull()
+		expect(bar?.querySelector('[data-ilamy-part="event-label"]')).not.toBeNull()
+		expect(Number(bar?.getAttribute('data-width'))).toBeCloseTo(
+			(0.4 / 24) * 100,
+			6
+		)
+		cal.destroy()
+	})
+
+	it('renders a multi-day all-day event spanning hidden days as a single overlay bar in week view', async () => {
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: '2025-03-12T00:00:00Z',
+			initialView: 'week',
+			timezone: 'UTC',
+			firstDayOfWeek: 'monday',
+			hiddenDays: ['thursday'],
+			events: [
+				{
+					id: 'all-day-span',
+					title: 'Midweek Offsite',
+					start: '2025-03-12T00:00:00.000Z',
+					end: '2025-03-15T00:00:00.000Z',
+					allDay: true,
+				},
+			],
+		})
+		await flushPreact()
+		const overlayBars = container.querySelectorAll(
+			'[data-ilamy-part="all-day-events-overlay"] [data-testid="calendar-event-all-day-span"]'
+		)
+		expect(overlayBars.length).toBe(1)
+		// 6 visible days in the week (Thursday hidden); Wednesday + Friday = 2 of 6 columns
+		expect(Number(overlayBars[0]?.getAttribute('data-width'))).toBeCloseTo(
+			(2 / 6) * 100,
+			5
+		)
+		cal.destroy()
+	})
+
+	it('renders vertical daily resource week as a multi-day daily grid and hourly resource headers with sticky day labels', async () => {
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: '2025-03-12T00:00:00Z',
+			initialView: 'week',
+			timezone: 'UTC',
+			orientation: 'vertical',
+			weekViewGranularity: 'daily',
+			resources: [
+				{ id: 'r1', title: 'Room A' },
+				{ id: 'r2', title: 'Room B' },
+			],
+			events: [
+				{
+					id: 'survey',
+					title: 'Site survey',
+					start: '2025-03-09T00:00:00.000Z',
+					end: '2025-03-13T00:00:00.000Z',
+					allDay: true,
+					resourceId: 'r1',
+				},
+			],
+		})
+		await flushPreact()
+		expect(
+			container.querySelector('[data-testid="dom-week-view"]')
+		).not.toBeNull()
+		expect(container.querySelector('[data-testid="all-day-row"]')).toBeNull()
+		expect(
+			container.querySelectorAll('[data-testid="calendar-event-survey"]').length
+		).toBe(1)
+
+		cal.update({
+			orientation: 'horizontal',
+			weekViewGranularity: 'hourly',
+		})
+		await flushPreact()
+		expect(
+			container.querySelectorAll('[data-ilamy-part="res-h-day-label"]').length
+		).toBe(7)
+		cal.destroy()
+	})
+
+	it('preserves resourceIds and leaves resourceId unset when renaming a cross-resource event without changing resource', async () => {
+		const container = createContainer()
+		const updates: Array<{
+			resourceId?: string | number
+			resourceIds?: Array<string | number>
+			title: string
+		}> = []
+		const cal = mountCalendar(container, {
+			initialDate: '2025-03-12T00:00:00Z',
+			initialView: 'month',
+			timezone: 'UTC',
+			resources: [
+				{ id: 'v1', title: 'R1' },
+				{ id: 'v3', title: 'R3' },
+				{ id: 'v28', title: 'R28' },
+			],
+			events: [
+				{
+					id: 'multi-1',
+					title: 'Multi',
+					start: '2025-03-12T09:00:00.000Z',
+					end: '2025-03-12T10:00:00.000Z',
+					resourceIds: ['v1', 'v3', 'v28'],
+				},
+			],
+			onEventUpdate: (ev) => {
+				updates.push({
+					title: ev.title,
+					resourceId: ev.resourceId,
+					resourceIds: ev.resourceIds,
+				})
+			},
+		})
+		await flushPreact()
+		cal.openEventForm({ id: 'multi-1' })
+		await flushPreact()
+		const titleInput = container.querySelector<HTMLInputElement>(
+			'form input[name="title"]'
+		)
+		if (titleInput) {
+			titleInput.value = 'Multi renamed'
+			titleInput.dispatchEvent(new Event('input', { bubbles: true }))
+		}
+		await flushPreact()
+		container
+			.querySelector<HTMLButtonElement>('[data-testid="dom-event-save-btn"]')
+			?.click()
+		await flushPreact()
+		expect(updates).toEqual([
+			{
+				title: 'Multi renamed',
+				resourceId: undefined,
+				resourceIds: ['v1', 'v3', 'v28'],
+			},
+		])
+		cal.destroy()
+	})
+
+	it('emits zero endDelta when resolveCommittedDeltas runs on appliedUpdates without pointer deltas and sizes month cells compactly', async () => {
+		const targetEvent = {
+			id: 'series_2025-03-12',
+			title: 'Stand-up',
+			start: '2025-03-12T09:00:00.000Z',
+			end: '2025-03-12T10:00:00.000Z',
+		}
+		const primary = {
+			id: 'series',
+			title: 'Team sync',
+			start: '2025-03-10T09:00:00.000Z',
+			end: '2025-03-10T10:00:00.000Z',
+		}
+		expect(
+			resolveCommittedDeltas({
+				event: targetEvent,
+				primary,
+				appliedUpdates: {
+					start: '2025-03-12T09:00:00.000Z',
+					end: '2025-03-12T10:00:00.000Z',
+				},
+				deltas: undefined,
+				timezone: 'UTC',
+			})
+		).toEqual({
+			delta: { days: 0, milliseconds: 0 },
+			endDelta: { days: 0, milliseconds: 0 },
+		})
+
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: '2025-03-12T00:00:00Z',
+			initialView: 'month',
+			timezone: 'UTC',
+			events: [],
+		})
+		await flushPreact()
+		const cell = container.querySelector<HTMLElement>(
+			'[data-testid="day-cell-2025-03-24"]'
+		)
+		expect(cell?.style.minHeight).toBe('60px')
+		cal.destroy()
+	})
+
+	it('clears both inline slot backgroundColor and color when event uses Tailwind color classes', async () => {
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: '2025-03-12T00:00:00Z',
+			initialView: 'month',
+			timezone: 'UTC',
+			slotProps: {
+				eventBar: {
+					style: {
+						backgroundColor: '#f1f5f9',
+						color: '#0f172a',
+					},
+				},
+			},
+			events: [
+				{
+					id: 'rose-class-event',
+					title: 'Urgent review',
+					start: '2025-03-12T09:00:00.000Z',
+					end: '2025-03-12T10:00:00.000Z',
+					backgroundColor: 'bg-rose-600',
+					color: 'text-white',
+				},
+			],
+		})
+		await flushPreact()
+		const bar = container.querySelector<HTMLElement>(
+			'[data-testid="calendar-event-rose-class-event"]'
+		)
+		expect(bar?.className).toContain('bg-rose-600')
+		expect(bar?.className).toContain('text-white')
+		expect(bar?.style.backgroundColor).toBe('')
+		expect(bar?.style.color).toBe('')
+		cal.destroy()
+	})
+
+	it('applies slotProps.navButton to new-event-btn and restricts viewButtonActive to active view tabs', async () => {
+		const container = createContainer()
+		const cal = mountCalendar(container, {
+			initialDate: '2025-03-12T00:00:00Z',
+			initialView: 'month',
+			timezone: 'UTC',
+			slotProps: {
+				navButton: { className: 'custom-nav-btn' },
+				viewButton: { className: 'custom-view-btn' },
+				viewButtonActive: { className: 'custom-active-view-btn' },
+			},
+		})
+		await flushPreact()
+
+		const newBtn = container.querySelector<HTMLElement>(
+			'[data-testid="new-event-btn"]'
+		)
+		const activeViewBtn = container.querySelector<HTMLElement>(
+			'[data-testid="view-btn-month"]'
+		)
+		const inactiveViewBtn = container.querySelector<HTMLElement>(
+			'[data-testid="view-btn-week"]'
+		)
+
+		expect(newBtn?.className).toContain('custom-nav-btn')
+		expect(newBtn?.className).not.toContain('custom-active-view-btn')
+		expect(activeViewBtn?.className).toContain('custom-active-view-btn')
+		expect(inactiveViewBtn?.className).toContain('custom-view-btn')
+		expect(inactiveViewBtn?.className).not.toContain('custom-active-view-btn')
 		cal.destroy()
 	})
 })

@@ -23,7 +23,73 @@ export const FRAMEWORK_OPTIONS: FrameworkOption[] = [
 	{ value: 'solid', label: 'Solid', version: '2' },
 	{ value: 'angular', label: 'Angular', version: '22' },
 ]
-export type ThemePreset = 'tailwind' | 'mui' | 'stylex' | 'unstyled'
+export type CssMode = 'unstyled' | 'plain' | 'tailwind' | 'stylex'
+
+export interface CssModeOption {
+	value: CssMode
+	label: string
+	description: string
+}
+
+export const CSS_MODE_OPTIONS: CssModeOption[] = [
+	{
+		value: 'unstyled',
+		label: 'Unstyled',
+		description: 'base.css structure only (unstyled)',
+	},
+	{
+		value: 'plain',
+		label: 'Plain CSS',
+		description: 'Built-in @ilamy/calendar/styles.css tokens',
+	},
+	{
+		value: 'tailwind',
+		label: 'Tailwind',
+		description: 'unstyled + Tailwind utility slotProps.className',
+	},
+	{
+		value: 'stylex',
+		label: 'StyleX',
+		description: 'StyleX tokens mapped into --ilamy-* variables',
+	},
+]
+
+export type ComponentLibraryId = 'native' | 'shadcn' | 'mui' | 'custom-slot'
+
+export interface ComponentLibraryOption {
+	value: ComponentLibraryId
+	label: string
+	supportedFrameworks: readonly FrameworkId[]
+	disabledReason?: string
+}
+
+export const COMPONENT_LIBRARY_OPTIONS: ComponentLibraryOption[] = [
+	{
+		value: 'native',
+		label: 'Native',
+		supportedFrameworks: ['react', 'vue', 'svelte', 'solid', 'angular'],
+	},
+	{
+		value: 'shadcn',
+		label: 'shadcn',
+		supportedFrameworks: ['react'],
+		disabledReason:
+			'shadcn / Radix dialog slots require React; pick Native or Custom Slot',
+	},
+	{
+		value: 'mui',
+		label: 'MUI',
+		supportedFrameworks: ['react'],
+		disabledReason:
+			'Material UI dialog slots require React; pick Native or Custom Slot',
+	},
+	{
+		value: 'custom-slot',
+		label: 'Custom Slot',
+		supportedFrameworks: ['react', 'vue', 'svelte', 'solid', 'angular'],
+	},
+]
+
 export type ThemeColorMode = 'auto' | 'light' | 'dark'
 export type ThemeAccent = 'indigo' | 'emerald' | 'rose' | 'amber'
 export type CalendarMode = 'regular' | 'resource' | 'multi-zone'
@@ -38,8 +104,9 @@ export interface PlaygroundSettings {
 	orientation: 'horizontal' | 'vertical'
 	weekViewGranularity: 'hourly' | 'daily'
 
-	// Design system & theme adapters (v4.0)
-	themePreset: ThemePreset
+	// Styling & component library axes (v4.0)
+	cssMode: CssMode
+	componentLibrary: ComponentLibraryId
 	themeMode: ThemeColorMode
 	themeAccent: ThemeAccent
 	useCustomSlotProps: boolean
@@ -120,7 +187,8 @@ export const defaultSettings: PlaygroundSettings = {
 	calendarType: 'regular',
 	orientation: 'horizontal',
 	weekViewGranularity: 'hourly',
-	themePreset: 'tailwind',
+	cssMode: 'plain',
+	componentLibrary: 'native',
 	themeMode: 'auto',
 	themeAccent: 'indigo',
 	useCustomSlotProps: false,

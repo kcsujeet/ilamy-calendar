@@ -1,6 +1,6 @@
 /** @jsxImportSource preact */
 import type { RefObject } from 'preact'
-import { useEffect, useRef } from 'preact/hooks'
+import { useLayoutEffect, useRef } from 'preact/hooks'
 import {
 	applyInitialScrollIfNeeded,
 	applyScrollRequestIfNew,
@@ -26,7 +26,7 @@ export const useScrollToTime = (opts: UseScrollToTimeOptions): void => {
 	const lastScrolledKeyRef = useRef<string | null>(null)
 	const lastRequestRef = useRef(opts.scrollRequest)
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		applyInitialScrollIfNeeded({
 			viewport: opts.viewportRef.current,
 			lastScrolledKeyRef,
@@ -45,7 +45,7 @@ export const useScrollToTime = (opts: UseScrollToTimeOptions): void => {
 		axis,
 	])
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		applyScrollRequestIfNew({
 			viewport: opts.viewportRef.current,
 			lastRequestRef,

@@ -52,23 +52,35 @@ const ACCENT_KEYS = Object.keys(THEME_ACCENTS) as ThemeAccent[]
 
 export function ThemePanel() {
 	const { control, setValue } = useFormContext<PlaygroundSettings>()
-	const themePreset = useWatch({ control, name: 'themePreset' })
+	const framework = useWatch({ control, name: 'framework' })
+	const cssMode = useWatch({ control, name: 'cssMode' })
+	const componentLibrary = useWatch({ control, name: 'componentLibrary' })
 	const themeAccent = useWatch({ control, name: 'themeAccent' })
 	const calendarType = useWatch({ control, name: 'calendarType' })
 	const isResource = calendarType === 'resource'
-	const supportsPalette = themePreset === 'mui' || themePreset === 'stylex'
+	const usesMuiVars = framework === 'react' && componentLibrary === 'mui'
+	const supportsPalette = cssMode === 'stylex' || usesMuiVars
+	const showColorMode =
+		cssMode === 'stylex' || cssMode === 'unstyled' || usesMuiVars
 
 	return (
 		<>
 			<SectionHeading>Theme Customization</SectionHeading>
-			{themePreset === 'tailwind' && (
+			{cssMode === 'plain' && !usesMuiVars && (
 				<p className="text-xs text-muted-foreground leading-relaxed">
-					Tailwind / Shadcn tokens are active. Switch themes in the preview bar
-					to customize MUI, StyleX, or Unstyled options.
+					Built-in <code className="font-mono">@ilamy/calendar/styles.css</code>{' '}
+					tokens automatically bridge page light/dark CSS variables.
 				</p>
 			)}
 
-			{themePreset !== 'tailwind' && (
+			{cssMode === 'tailwind' && (
+				<p className="text-xs text-muted-foreground leading-relaxed">
+					Running <code className="font-mono">unstyled</code> with Tailwind v4
+					utility classes in <code className="font-mono">slotProps</code>.
+				</p>
+			)}
+
+			{showColorMode && (
 				<FormButtonGroup
 					label="Color Mode"
 					name="themeMode"
@@ -111,7 +123,7 @@ export function ThemePanel() {
 				</div>
 			)}
 
-			{themePreset === 'unstyled' && (
+			{cssMode === 'unstyled' && (
 				<div className="rounded-lg border bg-muted/40 p-3 space-y-2">
 					<FormCheckbox
 						label="Apply custom slotProps theme"

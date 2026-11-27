@@ -109,10 +109,17 @@ export const cellElementAt = (
 	const containing = measured.filter((entry) =>
 		containsPoint(entry.rect, point)
 	)
-	if (containing.length > 0) {
-		return containing.at(-1)?.el ?? null
+	const chosen = containing.at(0)?.el ?? matches[0] ?? null
+	if (chosen) {
+		const prev = chosen.previousElementSibling
+		if (prev instanceof HTMLElement && prev.matches(selector)) {
+			const prevRect = prev.getBoundingClientRect()
+			if (hasMeasuredSize(prevRect) && containsPoint(prevRect, point)) {
+				return prev
+			}
+		}
 	}
-	return matches[0] ?? null
+	return chosen
 }
 
 /** Reads calendar metadata attributes from a cell (or its descendant). */

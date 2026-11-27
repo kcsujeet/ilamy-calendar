@@ -45,8 +45,29 @@ interface EventBarProps {
 	compact?: boolean
 	staticPill?: boolean
 	isPreview?: boolean
+	dataLeft?: number
+	dataWidth?: number
 	onPillClick?: () => void
 	style?: Record<string, string | number | undefined>
+}
+
+const SLOT_COLOR_KEYS = ['backgroundColor', 'color'] as const
+
+const clearOverriddenSlotColors = (
+	slotStyle: Record<string, string | number | undefined> | undefined,
+	surfaceStyle: Record<string, string | number | undefined> | undefined,
+	hasEventColor: boolean
+) => {
+	if (!hasEventColor || !slotStyle) return slotStyle
+	const next = { ...slotStyle }
+	let changed = false
+	for (const key of SLOT_COLOR_KEYS) {
+		if (next[key] && !surfaceStyle?.[key]) {
+			next[key] = undefined
+			changed = true
+		}
+	}
+	return changed ? next : slotStyle
 }
 
 const computeBarSlotProps = (
@@ -77,44 +98,68 @@ const computeBarSlotProps = (
 		surface.className,
 		mergeStyles(surface.style, extraStyle)
 	)
-	const shouldClearSlotBg =
-		Boolean(event.backgroundColor || event.color) &&
-		Boolean(barSlot.style?.backgroundColor) &&
-		!surface.style?.backgroundColor
-	const style = shouldClearSlotBg
-		? { ...barSlot.style, backgroundColor: undefined }
-		: barSlot.style
+	const style = clearOverriddenSlotColors(
+		barSlot.style,
+		surface.style,
+		Boolean(event.backgroundColor || event.color)
+	)
 	return { surface, className: joinClassNames(barSlot.className), style }
 }
 
+const ContinuationStripe = ({
+	show,
+	edge,
+}: {
+	show: boolean
+	edge: 'start' | 'end'
+}) =>
+	show ? <span data-edge={edge} data-ilamy-part="continuation-stripe" /> : null
+
 const DefaultEventBarLabel = ({
+	axis,
 	title,
 	timeLabel,
 	showStartStripe,
 	showEndStripe,
+	isPreview,
 }: {
+	axis: 'horizontal' | 'vertical'
 	title: string
 	timeLabel: string | undefined
 	showStartStripe: boolean
 	showEndStripe: boolean
-}) => (
-	<>
-		{showStartStripe && (
-			<span data-edge="start" data-ilamy-part="continuation-stripe" />
-		)}
-		{timeLabel && <span data-ilamy-part="event-time">{timeLabel}</span>}
-		<span data-ilamy-part="event-title">{title}</span>
-		{showEndStripe && (
-			<span data-edge="end" data-ilamy-part="continuation-stripe" />
-		)}
-	</>
-)
+	isPreview: boolean
+}) => {
+	const verticalPreviewTime =
+		isPreview && axis === 'vertical' ? timeLabel : undefined
+	const inlineTime = isPreview ? undefined : timeLabel
+	return (
+		<>
+			<ContinuationStripe edge="start" show={showStartStripe} />
+			<div
+				data-has-end-stripe={showEndStripe ? 'true' : undefined}
+				data-has-start-stripe={showStartStripe ? 'true' : undefined}
+				data-ilamy-part="event-bar-content"
+			>
+				{verticalPreviewTime && (
+					<div data-ilamy-part="event-time">{verticalPreviewTime}</div>
+				)}
+				<span data-ilamy-part="event-label">
+					{inlineTime && <span data-ilamy-part="event-time">{inlineTime}</span>}
+					{title}
+				</span>
+			</div>
+			<ContinuationStripe edge="end" show={showEndStripe} />
+		</>
+	)
+}
 
 const EventBarContent = ({
 	event,
 	axis,
 	timeLabel,
 	segment,
+	isPreview,
 	options,
 	slotContext,
 	legacyContext,
@@ -123,6 +168,7 @@ const EventBarContent = ({
 	axis: 'horizontal' | 'vertical'
 	timeLabel: string | undefined
 	segment: EventSegment
+	isPreview: boolean
 	options: DomCalendarOptions
 	slotContext: EventSlotContext
 	legacyContext: DomEventRenderContext
@@ -154,6 +200,8 @@ const EventBarContent = ({
 	const canShowStripes = axis === 'horizontal' && !options.unstyled
 	return (
 		<DefaultEventBarLabel
+			axis={axis}
+			isPreview={isPreview}
 			showEndStripe={canShowStripes && !segment.isEnd}
 			showStartStripe={canShowStripes && !segment.isStart}
 			timeLabel={timeLabel}
@@ -254,6 +302,34 @@ const resolveBarInteractionProps = (
 	}
 }
 
+const buildInteractiveAttrs = ({
+	event,
+	staticPill,
+	isPreview,
+	segStart,
+	segEnd,
+	options,
+}: {
+	event: DomCalendarEvent
+	staticPill: boolean
+	isPreview: boolean
+	segStart?: string
+	segEnd?: string
+	options: DomCalendarOptions
+}) => {
+	const interactive = !staticPill && !isPreview
+	return {
+		'data-draggable': String(interactive && canDragEvent(event, options)),
+		'data-event-id': interactive ? String(event.id) : undefined,
+		'data-ilamy-part': isPreview ? 'event-drag-preview' : 'event-bar',
+		'data-seg-end': interactive ? segEnd : undefined,
+		'data-seg-start': interactive ? segStart : undefined,
+		'data-testid': isPreview
+			? undefined
+			: rendererKeys.testId.eventBar(event.id, staticPill),
+	}
+}
+
 const buildEventBarDivProps = ({
 	event,
 	axis,
@@ -267,6 +343,8 @@ const buildEventBarDivProps = ({
 	className,
 	barStyle,
 	options,
+	dataLeft,
+	dataWidth,
 	openFromKeyboard,
 }: {
 	event: DomCalendarEvent
@@ -281,23 +359,31 @@ const buildEventBarDivProps = ({
 	className: string | undefined
 	barStyle: Record<string, string | number | undefined> | undefined
 	options: DomCalendarOptions
+	dataLeft?: number
+	dataWidth?: number
 	openFromKeyboard: () => void
 }) => {
-	const interactive = !staticPill && !isPreview
+	const strAttr = (value: number | undefined) =>
+		value === undefined ? undefined : String(value)
 	return {
 		className,
 		'data-compact': compact ? 'true' : undefined,
 		'data-custom-color': surface.hasCustomColor ? 'true' : undefined,
 		'data-drag-axis': axis,
-		'data-draggable': String(interactive && canDragEvent(event, options)),
-		'data-event-id': interactive ? String(event.id) : undefined,
-		'data-ilamy-part': isPreview ? 'event-drag-preview' : 'event-bar',
 		'data-ilamy-slot': 'event-bar',
-		'data-seg-end': interactive ? segEnd : undefined,
-		'data-seg-start': interactive ? segStart : undefined,
-		'data-testid': isPreview
-			? rendererKeys.testId.dragPreview(axis)
-			: rendererKeys.testId.eventBar(event.id, staticPill),
+		'data-left': strAttr(dataLeft),
+		'data-width': strAttr(dataWidth),
+		...buildInteractiveAttrs({
+			event,
+			staticPill,
+			isPreview,
+			segStart,
+			segEnd,
+			options,
+		}),
+		...(isPreview
+			? { 'data-testid': rendererKeys.testId.dragPreview(axis) }
+			: undefined),
 		...buildTruncationAttrs(axis, segmentValue),
 		...resolveBarInteractionProps(staticPill, isPreview, openFromKeyboard),
 		style: isPreview ? mergeStyles(barStyle, PREVIEW_BAR_STYLES) : barStyle,
@@ -315,6 +401,8 @@ const useEventBarProps = ({
 	compact = false,
 	staticPill = false,
 	isPreview = false,
+	dataLeft,
+	dataWidth,
 	style,
 	controller,
 	options,
@@ -390,6 +478,8 @@ const useEventBarProps = ({
 		className,
 		barStyle,
 		options,
+		dataLeft,
+		dataWidth,
 		openFromKeyboard,
 	})
 
@@ -415,6 +505,7 @@ export const EventBar = (props: EventBarProps) => {
 			<EventBarContent
 				axis={props.axis}
 				event={props.event}
+				isPreview={Boolean(props.isPreview)}
 				legacyContext={legacyContext}
 				options={props.options}
 				segment={segmentValue}

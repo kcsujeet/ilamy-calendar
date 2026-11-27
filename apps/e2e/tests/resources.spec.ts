@@ -140,10 +140,12 @@ test.describe('horizontal row packing', () => {
 				settings: { seed, dayMaxEvents: 2, eventHeight: 48, height: '200px' },
 			})
 			await settleAnimations(page)
-			const cell = row(page).getByTestId('day-cell-2025-03-12-10-00')
+			const cell = row(page).getByTestId(
+				'dom-resource-hour-slot-r1-2025-03-12-10'
+			)
 			const placeholders = cell
 				.getByTestId('grid-cell-content')
-				.locator(':scope > div.w-full.shrink-0')
+				.locator(':scope > [data-ilamy-part="cell-placeholder"]')
 			await expect(placeholders).toHaveCount(2)
 			await expectFitsRow(page, 'minimum-short')
 			const more = cell.getByRole('button', { name: '+1 more', exact: true })
@@ -330,10 +332,10 @@ test.describe('horizontal row packing', () => {
 				'[data-ilamy-part="res-h-row"][data-resource-id="r1"]'
 			)
 			const lostCellId = isHourAxis
-				? 'day-cell-2025-03-12-09-00'
+				? 'dom-resource-hour-slot-r1-2025-03-12-9'
 				: 'day-cell-2025-03-11'
 			const visibleCellId = isHourAxis
-				? 'day-cell-2025-03-12-10-00'
+				? 'dom-resource-hour-slot-r1-2025-03-12-10'
 				: 'day-cell-2025-03-12'
 			const lostCell = row.getByTestId(lostCellId)
 			const visibleCell = row.getByTestId(visibleCellId)
@@ -345,7 +347,7 @@ test.describe('horizontal row packing', () => {
 			).toHaveCount(0)
 			const placeholders = visibleCell
 				.getByTestId('grid-cell-content')
-				.locator(':scope > div.w-full.shrink-0')
+				.locator(':scope > [data-ilamy-part="cell-placeholder"]')
 			await expect(placeholders).toHaveCount(1)
 			const height = await placeholders
 				.first()
@@ -405,7 +407,7 @@ test.describe('horizontal row packing', () => {
 			const cell = row.getByTestId('day-cell-2025-03-12')
 			const placeholders = cell
 				.getByTestId('grid-cell-content')
-				.locator(':scope > div.w-full.shrink-0')
+				.locator(':scope > [data-ilamy-part="cell-placeholder"]')
 			await expect(placeholders).toHaveCount(3)
 			await expect(cell.getByRole('button', { name: /more/i })).toHaveCount(0)
 			const bar = row.getByTestId('calendar-event-counts-C')
@@ -550,9 +552,11 @@ test.describe('horizontal row packing', () => {
 			const offset = await rowDifference(page, 'packing-a', 'packing-b')
 			expect(offset).toBe(0)
 			const content = row(page)
-				.getByTestId('day-cell-2025-03-12-09-00')
+				.getByTestId('dom-resource-hour-slot-r1-2025-03-12-9')
 				.getByTestId('grid-cell-content')
-			const placeholders = content.locator(':scope > div.w-full.shrink-0')
+			const placeholders = content.locator(
+				':scope > [data-ilamy-part="cell-placeholder"]'
+			)
 			await expect(placeholders).toHaveCount(1)
 			const placeholder = await boundsOf(placeholders.first())
 			expect(placeholder.height).toBe(48)
@@ -852,9 +856,7 @@ test.describe('numeric resource ids', () => {
 			const row = await calendar.eventNamed('Dragged')
 			// Resource ids are `string | number`; the lane's own id is the number 0.
 			expect(row.resourceId).toBe(0)
-			await expect(
-				page.getByTestId(`${orientation}-event-${row.id}`)
-			).toHaveCount(1)
+			await expect(page.getByTestId(`calendar-event-${row.id}`)).toHaveCount(1)
 		})
 	}
 })

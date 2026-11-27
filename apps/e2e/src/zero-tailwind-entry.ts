@@ -1,5 +1,6 @@
 import '@ilamy/calendar/styles.css'
 import type {
+	CalendarEvent,
 	CalendarView,
 	DomCalendarEventInput,
 	EventsChange,
@@ -10,7 +11,6 @@ import { agendaPlugin } from '@ilamy/calendar/plugins/agenda'
 import { dragToCreatePlugin } from '@ilamy/calendar/plugins/drag-to-create'
 import { recurrencePlugin } from '@ilamy/calendar/plugins/recurrence'
 import { yearPlugin } from '@ilamy/calendar/plugins/year'
-import { mountIlamyCalendar } from '@ilamy/calendar/svelte'
 
 interface ZeroTwWindow extends Window {
 	__zeroTwChanges?: Array<{
@@ -26,6 +26,7 @@ interface ZeroTwWindow extends Window {
 const params = new URLSearchParams(window.location.search)
 const isFlag = (key: string) =>
 	params.get(key) === '1' || params.get(key) === 'true'
+const framework = params.get('framework') ?? 'svelte'
 
 if (isFlag('dark')) {
 	document.documentElement.classList.add('dark')
@@ -35,6 +36,7 @@ const host = document.querySelector<HTMLElement>('#calendar-host')
 if (!host) {
 	throw new Error('#calendar-host missing')
 }
+const rootHost: HTMLElement = host
 
 const resources: Resource[] | undefined = isFlag('resources')
 	? [
@@ -87,11 +89,11 @@ const seedEvents: DomCalendarEventInput[] = [
 const win = window as ZeroTwWindow
 win.__zeroTwChanges = []
 
-const cal = mountIlamyCalendar(host, {
+const commonOptions = {
 	initialDate: params.get('date') ?? '2026-11-19T09:00:00Z',
 	initialView: (params.get('view') as CalendarView | null) ?? 'month',
 	timezone: 'UTC',
-	events: seedEvents,
+	events: seedEvents as CalendarEvent[],
 	resources,
 	orientation:
 		(params.get('orientation') as 'horizontal' | 'vertical' | null) ??
@@ -117,6 +119,63 @@ const cal = mountIlamyCalendar(host, {
 			end: change.event.end,
 		})
 	},
-})
+}
 
-win.__zeroTwCal = cal
+const renderError = (msg: string) => {
+	const err = document.createElement('div')
+	err.dataset.testid = 'harness-error'
+	err.textContent = msg
+	rootHost.appendChild(err)
+}
+
+async function mountForFramework() {
+	if (framework === 'svelte') {
+		const { mountIlamyCalendar } = await import('@ilamy/calendar/svelte')
+		win.__zeroTwCal = mountIlamyCalendar(rootHost, commonOptions)
+		return
+	}
+	if (framework === 'react') {
+		const [{ createElement }, { createRoot }, { IlamyCalendar }] =
+			await Promise.all([
+				import('react'),
+				import('react-dom/client'),
+				import('@ilamy/calendar/react'),
+			])
+		createRoot(rootHost).render(createElement(IlamyCalendar, commonOptions))
+		return
+	}
+	if (framework === 'vue') {
+		const [{ createApp, h }, { IlamyCalendar }] = await Promise.all([
+			import('vue'),
+			import('@ilamy/calendar/vue'),
+		])
+		createApp({
+			setup: () => () => h(IlamyCalendar, { options: commonOptions }),
+		}).mount(rootHost)
+		return
+	}
+	if (framework === 'solid') {
+		const [{ createRoot }, { mountSolidCalendar }] = await Promise.all([
+			import('solid-js'),
+			import('@ilamy/calendar/solid'),
+		])
+		createRoot(() => {
+			mountSolidCalendar(rootHost, commonOptions)
+		})
+		return
+	}
+	if (framework === 'angular') {
+		const { registerIlamyCalendarElement } =
+			await import('@ilamy/calendar/angular')
+		registerIlamyCalendarElement()
+		const el = document.createElement('ilamy-calendar') as HTMLElement & {
+			options: typeof commonOptions
+		}
+		el.options = commonOptions
+		rootHost.appendChild(el)
+		return
+	}
+	renderError(`Unknown framework: ${framework}`)
+}
+
+void mountForFramework()

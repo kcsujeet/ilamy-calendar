@@ -1,6 +1,6 @@
 import type { CalendarSlotProps } from '@ilamy/calendar'
 import type { CalendarThemeAdapter } from '@ilamy/calendar/react'
-import type { ThemeAccent, ThemePreset } from '../types/settings-form.types'
+import type { CssMode, ThemeAccent } from '../types/settings-form.types'
 
 interface StylexTokenSet {
 	background: string
@@ -370,28 +370,120 @@ const CUSTOM_SLOT_PROPS_DARK: CalendarSlotProps = {
 	},
 }
 
+const TAILWIND_SLOT_PROPS: CalendarSlotProps = {
+	root: {
+		className: [
+			'bg-background text-foreground text-[14px] leading-[1.4]',
+			"[&_[data-ilamy-slot='arrow-group']]:bg-background [&_[data-ilamy-slot='arrow-group']]:border [&_[data-ilamy-slot='arrow-group']]:border-border [&_[data-ilamy-slot='arrow-group']]:rounded-md",
+			"[&_[data-ilamy-slot='arrow-group']>[data-ilamy-slot='nav-button']]:border-0 [&_[data-ilamy-slot='arrow-group']>[data-ilamy-slot='nav-button']]:rounded-none [&_[data-ilamy-slot='arrow-group']>[data-ilamy-slot='nav-button']]:px-2.5",
+			"[&_[data-ilamy-slot='view-switcher']]:bg-muted [&_[data-ilamy-slot='view-switcher']]:rounded-md [&_[data-ilamy-slot='view-switcher']]:p-[3px]",
+			"[&_[data-ilamy-slot='month-header']]:bg-background [&_[data-ilamy-slot='month-header']]:border-b [&_[data-ilamy-slot='month-header']]:border-border",
+			"[&_[data-ilamy-slot='grid-header']]:bg-background [&_[data-ilamy-slot='grid-header']:not(:has([data-ilamy-part='all-day-row']))]:border-b [&_[data-ilamy-slot='grid-header']:not(:has([data-ilamy-part='all-day-row']))]:border-border",
+			"[&_[data-ilamy-part='all-day-row']]:border-t [&_[data-ilamy-part='all-day-row']]:border-b [&_[data-ilamy-part='all-day-row']]:border-border [&_[data-ilamy-part='all-day-label']]:bg-background [&_[data-ilamy-part='all-day-label']]:text-muted-foreground [&_[data-ilamy-part='all-day-label']]:border-r [&_[data-ilamy-part='all-day-label']]:border-border [&_[data-ilamy-part='all-day-label']]:text-xs",
+			"[&_[data-ilamy-part='all-day-cell']:not(:last-child):not([data-last-col='true'])]:border-r [&_[data-ilamy-part='all-day-cell']:not(:last-child):not([data-last-col='true'])]:border-border",
+			"[&_[data-ilamy-part='col-header-label']]:leading-6 [&_[data-ilamy-today-badge]]:inline-flex [&_[data-ilamy-today-badge]]:items-center [&_[data-ilamy-today-badge]]:justify-center [&_[data-ilamy-today-badge]]:min-w-6 [&_[data-ilamy-today-badge]]:h-6 [&_[data-ilamy-today-badge]]:px-1.5 [&_[data-ilamy-today-badge]]:rounded-full [&_[data-ilamy-today-badge]]:bg-primary [&_[data-ilamy-today-badge]]:text-primary-foreground [&_[data-ilamy-today-badge]]:text-xs [&_[data-ilamy-today-badge]]:font-semibold",
+			"[&_[data-ilamy-part='cell-day-num']]:text-xs [&_[data-ilamy-part='cell-day-num']]:font-medium [&_[data-ilamy-part='cell-day-num']]:rounded-full",
+			"[&_[data-ilamy-part='header-corner']]:bg-background [&_[data-ilamy-part='header-corner']]:text-muted-foreground [&_[data-ilamy-part='header-corner']]:border-r [&_[data-ilamy-part='header-corner']]:border-border [&_[data-ilamy-part='header-corner']]:p-2 [&_[data-ilamy-part='header-corner']]:text-xs [&_[data-ilamy-part='header-corner']]:font-medium",
+			"[&_[data-ilamy-part='time-col-header']]:bg-background [&_[data-ilamy-part='time-col-header']]:px-1 [&_[data-ilamy-part='time-col-header']]:py-2 [&_[data-ilamy-part='time-col-header']]:text-xs [&_[data-ilamy-part='time-col-header']]:font-medium [&_[data-ilamy-part='time-col-header']]:text-muted-foreground [&_[data-ilamy-part='time-col-header']:not(:last-child)]:border-r [&_[data-ilamy-part='time-col-header']:not(:last-child)]:border-border",
+			"[&_[data-ilamy-part='day-banner']]:bg-background [&_[data-ilamy-part='day-banner']]:border-b [&_[data-ilamy-part='day-banner']]:border-border [&_[data-ilamy-part='day-banner']]:px-3 [&_[data-ilamy-part='day-banner']]:py-2.5 [&_[data-ilamy-part='day-banner']]:text-base [&_[data-ilamy-part='day-banner']]:font-semibold",
+			"[&_[data-ilamy-part='time-axis']]:bg-background [&_[data-ilamy-part='time-axis']]:border-r [&_[data-ilamy-part='time-axis']]:border-border",
+			"[&_[data-ilamy-part='time-axis-hour']]:text-muted-foreground [&_[data-ilamy-part='time-axis-hour']]:text-[11px] [&_[data-ilamy-part='time-axis-hour']]:border-b [&_[data-ilamy-part='time-axis-hour']]:border-border/60",
+			"[&_[data-ilamy-part='time-col']:not(:last-child)]:border-r [&_[data-ilamy-part='time-col']:not(:last-child)]:border-border",
+			"[&_[data-ilamy-part='res-h-day-group']]:bg-background [&_[data-ilamy-part='res-h-day-group']]:border-b [&_[data-ilamy-part='res-h-day-group']]:border-border [&_[data-ilamy-part='res-h-day-group']]:py-1.5 [&_[data-ilamy-part='res-h-day-group']]:text-xs [&_[data-ilamy-part='res-h-day-group']]:font-medium [&_[data-ilamy-part='res-h-day-group']:not(:last-child):not([data-last-col='true'])]:border-r [&_[data-ilamy-part='res-h-day-group']:not(:last-child):not([data-last-col='true'])]:border-border",
+			"[&_[data-ilamy-part='res-h-hour-cell']]:bg-background [&_[data-ilamy-part='res-h-hour-cell']]:text-muted-foreground [&_[data-ilamy-part='res-h-hour-cell']]:py-2 [&_[data-ilamy-part='res-h-hour-cell']]:text-xs [&_[data-ilamy-part='res-h-hour-cell']:not(:last-child):not([data-last-col='true'])]:border-r [&_[data-ilamy-part='res-h-hour-cell']:not(:last-child):not([data-last-col='true'])]:border-border",
+			"[&_[data-ilamy-part='view-menu-dropdown']]:bg-background [&_[data-ilamy-part='view-menu-dropdown']]:text-foreground [&_[data-ilamy-part='view-menu-dropdown']]:border [&_[data-ilamy-part='view-menu-dropdown']]:border-border [&_[data-ilamy-part='view-menu-dropdown']]:rounded-md [&_[data-ilamy-part='view-menu-dropdown']]:p-1 [&_[data-ilamy-part='view-menu-dropdown']]:shadow-lg",
+			"[&_[data-ilamy-part='view-menu-item']]:px-2.5 [&_[data-ilamy-part='view-menu-item']]:py-1.5 [&_[data-ilamy-part='view-menu-item']]:rounded-sm [&_[data-ilamy-part='view-menu-item']]:text-sm [&_[data-ilamy-part='view-menu-item']]:font-medium hover:[&_[data-ilamy-part='view-menu-item']]:bg-muted",
+			"[&_[data-ilamy-part='year-card']]:bg-card [&_[data-ilamy-part='year-card']]:border [&_[data-ilamy-part='year-card']]:border-border [&_[data-ilamy-part='year-card']]:rounded-lg [&_[data-ilamy-part='year-card']]:p-3",
+			"[&_[data-ilamy-part='agenda-day']]:border-b [&_[data-ilamy-part='agenda-day']]:border-border [&_[data-ilamy-part='agenda-day']]:px-2 [&_[data-ilamy-part='agenda-day']]:py-3",
+			"[&_[data-ilamy-part='dialog']]:bg-background [&_[data-ilamy-part='dialog']]:text-foreground [&_[data-ilamy-part='dialog']]:border [&_[data-ilamy-part='dialog']]:border-border [&_[data-ilamy-part='dialog']]:rounded-lg [&_[data-ilamy-part='dialog']]:p-5 [&_[data-ilamy-part='dialog']]:shadow-xl",
+			"[&_[data-ilamy-part='popover']]:bg-background [&_[data-ilamy-part='popover']]:text-foreground [&_[data-ilamy-part='popover']]:border [&_[data-ilamy-part='popover']]:border-border [&_[data-ilamy-part='popover']]:rounded-md [&_[data-ilamy-part='popover']]:p-2.5 [&_[data-ilamy-part='popover']]:shadow-lg",
+		].join(' '),
+	},
+	header: {
+		className: 'bg-background',
+	},
+	navButton: {
+		className:
+			'bg-background text-foreground border border-border rounded-md px-3 text-sm leading-5 font-medium hover:bg-muted data-[variant=primary]:bg-primary data-[variant=primary]:text-primary-foreground data-[variant=primary]:border-transparent',
+	},
+	viewButton: {
+		className:
+			'bg-transparent text-muted-foreground border-0 rounded-sm px-3 text-sm leading-5 font-medium',
+	},
+	viewButtonActive: {
+		className:
+			'bg-background text-foreground border-0 rounded-sm px-3 text-sm leading-5 font-medium shadow-xs',
+	},
+	grid: {
+		className: [
+			'bg-background border border-border rounded-none',
+			"[&_[data-ilamy-slot='grid-row']>[data-ilamy-slot='cell']]:p-1 [&_[data-ilamy-part='grid-row-grid']>[data-ilamy-slot='cell']]:p-1",
+			"[&_[data-ilamy-slot='grid-row']:not([data-ilamy-grid-lines='true'])>[data-ilamy-slot='cell']:not(:last-child):not([data-last-col='true'])]:border-r [&_[data-ilamy-slot='grid-row']:not([data-ilamy-grid-lines='true'])>[data-ilamy-slot='cell']:not(:last-child):not([data-last-col='true'])]:border-border",
+			"[&_[data-ilamy-part='grid-row-grid']:not([data-ilamy-grid-lines='true'])>[data-ilamy-slot='cell']:not(:last-child):not([data-last-col='true'])]:border-r [&_[data-ilamy-part='grid-row-grid']:not([data-ilamy-grid-lines='true'])>[data-ilamy-slot='cell']:not(:last-child):not([data-last-col='true'])]:border-border",
+			"[&_[data-ilamy-part='res-h-track']>[data-ilamy-slot='cell']:not(:last-child):not([data-last-col='true'])]:border-r [&_[data-ilamy-part='res-h-track']>[data-ilamy-slot='cell']:not(:last-child):not([data-last-col='true'])]:border-border",
+			"[&_[data-ilamy-slot='grid-row']:not(:last-child)>[data-ilamy-slot='cell']]:border-b [&_[data-ilamy-slot='grid-row']:not(:last-child)>[data-ilamy-slot='cell']]:border-border",
+			"[&_[data-ilamy-part='month-row']:not(:last-child)_[data-ilamy-slot='cell']]:border-b [&_[data-ilamy-part='month-row']:not(:last-child)_[data-ilamy-slot='cell']]:border-border",
+			"[&_[data-ilamy-part='res-h-row']:not(:last-child)_[data-ilamy-part='grid-row-grid']>[data-ilamy-slot='cell']]:border-b [&_[data-ilamy-part='res-h-row']:not(:last-child)_[data-ilamy-part='grid-row-grid']>[data-ilamy-slot='cell']]:border-border",
+			"[&_[data-ilamy-part='res-h-row']:not(:last-child)_[data-ilamy-part='res-h-track']>[data-ilamy-slot='cell']]:border-b [&_[data-ilamy-part='res-h-row']:not(:last-child)_[data-ilamy-part='res-h-track']>[data-ilamy-slot='cell']]:border-border",
+			"[&_[data-ilamy-part='time-col']>[data-ilamy-slot='cell']:not(:last-child):not([data-last-row='true'])]:border-b [&_[data-ilamy-part='time-col']>[data-ilamy-slot='cell']:not(:last-child):not([data-last-row='true'])]:border-border/35",
+			"[&_[data-ilamy-part='time-col']>[data-ilamy-slot='cell'][data-hour-end='true']:not(:last-child):not([data-last-row='true'])]:border-b [&_[data-ilamy-part='time-col']>[data-ilamy-slot='cell'][data-hour-end='true']:not(:last-child):not([data-last-row='true'])]:border-border/80",
+		].join(' '),
+	},
+	dayHeader: {
+		className:
+			"bg-background text-foreground py-2 text-sm leading-5 font-medium [&:not(:last-child):not([data-last-col='true'])]:border-r [&:not(:last-child):not([data-last-col='true'])]:border-border",
+	},
+	resourceHeader: {
+		className:
+			"bg-background text-foreground px-2.5 py-2 text-sm font-medium border-r border-border [&:not([data-ilamy-part='header-corner'])]:border-b [&:not([data-ilamy-part='header-corner'])]:border-border",
+	},
+	cell: {
+		className:
+			"bg-background [&[data-outside-month='true']]:bg-muted/35 [&[data-outside-month='true']]:text-muted-foreground [&[data-drop-target='valid']]:outline-2 [&[data-drop-target='valid']]:outline-primary [&[data-drop-target='valid']]:-outline-offset-2",
+	},
+	cellToday: {
+		className:
+			"bg-background [&[data-drop-target='valid']]:outline-2 [&[data-drop-target='valid']]:outline-primary [&[data-drop-target='valid']]:-outline-offset-2",
+	},
+	cellNonBusiness: {
+		className:
+			"bg-muted/55 text-muted-foreground [&[data-drop-target='valid']]:outline-2 [&[data-drop-target='valid']]:outline-primary [&[data-drop-target='valid']]:-outline-offset-2",
+	},
+	cellDisabled: {
+		className: 'bg-muted text-muted-foreground opacity-55 cursor-not-allowed',
+	},
+	allDayRow: {
+		className: 'bg-background',
+	},
+	eventBar: {
+		className:
+			"rounded-sm text-xs font-medium bg-primary text-primary-foreground [&[data-truncated-start='true']]:rounded-l-none [&[data-truncated-end='true']]:rounded-r-none [&>[data-ilamy-part='event-bar-content']]:p-0.5 [&>[data-ilamy-part='event-bar-content']]:px-1 [&>[data-ilamy-part='event-bar-content']]:border [&>[data-ilamy-part='event-bar-content']]:border-card [&>[data-ilamy-part='event-bar-content']]:rounded-inherit",
+	},
+	nowIndicator: {
+		className:
+			"text-destructive [&>[data-ilamy-part='now-line-dot']]:size-2 [&>[data-ilamy-part='now-line-dot']]:rounded-full [&>[data-ilamy-part='now-line-dot']]:bg-destructive [&>[data-ilamy-part='now-line-bar']]:h-0.5 [&>[data-ilamy-part='now-line-bar']]:flex-1 [&>[data-ilamy-part='now-line-bar']]:bg-destructive",
+	},
+	moreLink: {
+		className:
+			'text-muted-foreground text-xs font-medium px-1.5 py-0.5 hover:text-foreground hover:underline',
+	},
+}
+
 export interface ResolvedDemoTheme {
 	adapter: CalendarThemeAdapter | undefined
 	label: string
 }
 
-export function resolveDemoTheme(options: {
-	preset: ThemePreset
+export function resolveDemoCss(options: {
+	cssMode: CssMode
 	mode: 'light' | 'dark'
 	accent: ThemeAccent
 	useCustomSlotProps: boolean
 }): ResolvedDemoTheme {
-	const { preset, mode, accent, useCustomSlotProps } = options
+	const { cssMode, mode, accent, useCustomSlotProps } = options
 	const palette = THEME_ACCENTS[accent]
 
-	if (preset === 'mui') {
-		return {
-			adapter: undefined,
-			label: `Material UI (${mode})`,
-		}
-	}
-
-	if (preset === 'stylex') {
+	if (cssMode === 'stylex') {
 		const baseTokens =
 			mode === 'dark' ? STYLEX_DARK_TOKENS : STYLEX_LIGHT_TOKENS
 		const slotProps = buildStylexTokenVars(
@@ -412,7 +504,17 @@ export function resolveDemoTheme(options: {
 		}
 	}
 
-	if (preset === 'unstyled') {
+	if (cssMode === 'tailwind') {
+		return {
+			adapter: {
+				unstyled: true,
+				slotProps: TAILWIND_SLOT_PROPS,
+			},
+			label: 'Tailwind',
+		}
+	}
+
+	if (cssMode === 'unstyled') {
 		let modeSlotProps = CUSTOM_SLOT_PROPS_LIGHT
 		if (mode === 'dark') {
 			modeSlotProps = CUSTOM_SLOT_PROPS_DARK
@@ -423,12 +525,12 @@ export function resolveDemoTheme(options: {
 				unstyled: true,
 				slotProps,
 			},
-			label: useCustomSlotProps ? 'Unstyled + slotProps' : 'Bare Unstyled',
+			label: useCustomSlotProps ? 'Unstyled + slotProps' : 'Unstyled',
 		}
 	}
 
 	return {
 		adapter: undefined,
-		label: 'Tailwind / Shadcn',
+		label: 'Plain CSS',
 	}
 }

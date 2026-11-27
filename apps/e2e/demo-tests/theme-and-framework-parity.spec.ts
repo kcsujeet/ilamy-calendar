@@ -9,7 +9,12 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 		await page.goto('/')
 		await page.waitForSelector('[data-testid="calendar-header"]')
 
-		for (const theme of ['Tailwind', 'StyleX', 'MUI']) {
+		for (const theme of ['Plain CSS', 'Tailwind', 'StyleX', 'MUI']) {
+			if (theme === 'MUI') {
+				await page
+					.getByRole('button', { name: 'Plain CSS', exact: true })
+					.click()
+			}
 			await page.getByRole('button', { name: theme, exact: true }).click()
 			await page.waitForSelector('[data-testid="calendar-header"]')
 
@@ -52,7 +57,9 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 						return el ? getComputedStyle(el).borderRightWidth : null
 					})(),
 					satCellBorderRight: (() => {
-						const el = document.querySelector('[data-testid^="day-cell-"]')
+						const el = document.querySelector(
+							'[data-testid^="day-cell-"][data-last-col="true"]'
+						)
 						return el ? getComputedStyle(el).borderRightWidth : null
 					})(),
 				}
@@ -84,7 +91,12 @@ test.describe('Theme and cross-framework parity in the live demo', () => {
 		await page.getByRole('button', { name: 'Resources', exact: true }).click()
 		await page.waitForSelector('[data-testid="calendar-header"]')
 
-		for (const theme of ['Tailwind', 'StyleX', 'MUI']) {
+		for (const theme of ['Plain CSS', 'Tailwind', 'StyleX', 'MUI']) {
+			if (theme === 'MUI') {
+				await page
+					.getByRole('button', { name: 'Plain CSS', exact: true })
+					.click()
+			}
 			await page.getByRole('button', { name: theme, exact: true }).click()
 			await page.waitForSelector('[data-testid="calendar-body"]')
 

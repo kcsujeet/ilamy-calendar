@@ -115,12 +115,14 @@ export const CalendarHeader = ({
 	const activePluginView = actions.pluginRuntime.getView(state.view)
 
 	const title =
-		activePluginView?.headerTitle?.(state.currentDate, {
-			firstDayOfWeek: state.firstDayOfWeek,
-			timezone: state.timezone,
-			locale: state.locale,
-			hiddenDays: state.hiddenDays,
-		}) ??
+		(options.titleFormat
+			? undefined
+			: activePluginView?.headerTitle?.(state.currentDate, {
+					firstDayOfWeek: state.firstDayOfWeek,
+					timezone: state.timezone,
+					locale: state.locale,
+					hiddenDays: state.hiddenDays,
+				})) ??
 		formatCalendarHeaderTitle({
 			currentDateIso: state.currentDate,
 			visibleRange: state.visibleRange,
@@ -129,7 +131,7 @@ export const CalendarHeader = ({
 			hiddenDays: state.hiddenDays,
 			timezone: state.timezone,
 			locale: state.locale,
-			hasResources: state.resources.length > 0,
+			hasResources: actions.ownerState.hasResourceAxis,
 			formatters,
 		})
 
@@ -257,11 +259,6 @@ export const CalendarHeader = ({
 
 	const toolbarSlot = buildSlotProps(options.slotProps, 'toolbar', ownerState)
 	const navBtnSlot = buildSlotProps(options.slotProps, 'navButton', ownerState)
-	const primaryBtnSlot = buildSlotProps(
-		options.slotProps,
-		'viewButtonActive',
-		ownerState
-	)
 	const getViewLabel = (view: CalendarView) =>
 		t(view) !== view ? t(view) : (VIEW_LABELS[view] ?? view)
 
@@ -375,12 +372,12 @@ export const CalendarHeader = ({
 					{!options.disableCellClick && (
 						<button
 							aria-label={t('new')}
-							className={primaryBtnSlot.className ?? navBtnSlot.className}
+							className={navBtnSlot.className}
 							data-ilamy-slot="nav-button"
 							data-testid="new-event-btn"
 							data-variant="primary"
 							onClick={openNewEventForm}
-							style={primaryBtnSlot.style ?? navBtnSlot.style}
+							style={navBtnSlot.style}
 							type="button"
 						>
 							<PlusIcon size={16} />

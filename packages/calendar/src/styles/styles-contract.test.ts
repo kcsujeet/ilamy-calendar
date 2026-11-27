@@ -42,5 +42,28 @@ describe('Layered CSS contract (@ilamy/calendar/styles.css)', () => {
 		expect(themeCss).toContain(":not([data-unstyled='true'])")
 		expect(themeCss).toContain(':not(:last-child)')
 		expect(themeCss).toContain('[data-ilamy-today-badge]')
+		expect(themeCss).toMatch(
+			/\[data-ilamy-part=['"]col-header-label['"]\]\)\s*\{[^}]*line-height:\s*1\.5rem/
+		)
+
+		const selectorHeaders = themeCss
+			.split('\n')
+			.map((line) => line.trim())
+			.filter(
+				(line) =>
+					line.startsWith(':where(') &&
+					line.includes('[data-ilamy-') &&
+					!line.includes('[data-unstyled=')
+			)
+		expect(selectorHeaders).toEqual([])
+	})
+
+	it('enforces 24px minimum touch height on +N more buttons and CSS inline-time gap', () => {
+		expect(baseCss).toMatch(
+			/\[data-ilamy-slot=['"]more-link['"]\]\)\s*\{[^}]*min-height:\s*1\.5rem/
+		)
+		expect(baseCss).toMatch(
+			/\[data-ilamy-part=['"]event-label['"]\]\s*>\s*\[data-ilamy-part=['"]event-time['"]\]\)\s*\{[^}]*margin-inline-end:/
+		)
 	})
 })

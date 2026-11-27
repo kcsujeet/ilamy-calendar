@@ -1,26 +1,42 @@
-import { expect, test } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
 import { expectNoAxeViolations } from '../tests/support/axe'
+
+const PINNED_WEDNESDAY = '2026-11-04T10:00:00.000Z'
+
+const openDemo = async (page: Page) => {
+	const now = new Date(PINNED_WEDNESDAY)
+	await page.clock.install({ time: now })
+	await page.clock.setFixedTime(now)
+	await page.goto('/')
+}
 
 test.describe('demo accessibility (axe-core WCAG 2.2 A+AA)', () => {
 	test('demo shell and React Tailwind calendar have zero axe violations', async ({
 		page,
 	}) => {
-		await page.goto('/')
+		await openDemo(page)
 		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
 		await expectNoAxeViolations(page)
 	})
 
-	test('React StyleX and MUI themes have zero axe violations', async ({
+	test('React Tailwind, StyleX, shadcn, and MUI axes have zero axe violations', async ({
 		page,
 	}) => {
-		await page.goto('/')
-		await page.getByTestId('theme-stylex').click()
+		await openDemo(page)
+		await page.getByTestId('css-tailwind').click()
 		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
 		await expectNoAxeViolations(page, {
 			include: '[data-testid="ilamy-calendar"]',
 		})
 
-		await page.getByTestId('theme-mui').click()
+		await page.getByTestId('css-stylex').click()
+		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
+		await expectNoAxeViolations(page, {
+			include: '[data-testid="ilamy-calendar"]',
+		})
+
+		await page.getByTestId('css-plain').click()
+		await page.getByTestId('components-mui').click()
 		await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
 		await expectNoAxeViolations(page, {
 			include: '[data-testid="ilamy-calendar"]',
@@ -30,15 +46,19 @@ test.describe('demo accessibility (axe-core WCAG 2.2 A+AA)', () => {
 	test('Vue (@ilamy/dom) views and dialogs have zero axe violations', async ({
 		page,
 	}) => {
-		await page.goto('/')
+		await openDemo(page)
 		await page.getByTestId('framework-vue').click()
 		const domCalendar = page.getByTestId('ilamy-calendar')
 		await expect(domCalendar).toBeVisible()
 
-		for (const viewLabel of ['Month', 'Week', 'Day', 'Agenda', 'Year']) {
-			await domCalendar
-				.getByRole('button', { name: viewLabel, exact: true })
-				.click()
+		for (const view of ['month', 'week', 'day', 'agenda', 'year'] as const) {
+			const viewBtn = domCalendar.getByTestId(`view-btn-${view}`)
+			if (await viewBtn.isVisible()) {
+				await viewBtn.click()
+			} else {
+				await domCalendar.getByTestId('view-menu-btn').click()
+				await page.getByTestId(`view-menu-item-${view}`).click()
+			}
 			await expectNoAxeViolations(page, {
 				include: '[data-testid="ilamy-calendar"]',
 			})
@@ -55,7 +75,7 @@ test.describe('demo accessibility (axe-core WCAG 2.2 A+AA)', () => {
 
 	for (const fw of ['svelte', 'solid', 'angular'] as const) {
 		test(`${fw} adapter calendar has zero axe violations`, async ({ page }) => {
-			await page.goto('/')
+			await openDemo(page)
 			await page.getByTestId(`framework-${fw}`).click()
 			await expect(page.getByTestId('ilamy-calendar')).toBeVisible()
 			await expectNoAxeViolations(page, {

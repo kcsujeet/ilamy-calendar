@@ -145,7 +145,7 @@ describe('cellElementAt', () => {
 		document.elementsFromPoint = () => [cell15, cell00, document.body]
 		expect(cellElementAt({ clientX: 120, clientY: 187 })).toBe(cell00)
 
-		// At exact shared integer edge, earlier cell wins (taking last containing match)
+		// At exact shared integer edge between siblings, earlier cell wins via previousElementSibling tie-break
 		const upper = makeBoxCell(
 			{ 'data-start': '2025-03-13T01:00:00.000Z' },
 			{ top: 200, left: 100, width: 170, height: 30 }
@@ -154,8 +154,31 @@ describe('cellElementAt', () => {
 			{ 'data-start': '2025-03-13T01:30:00.000Z' },
 			{ top: 230, left: 100, width: 170, height: 30 }
 		)
+		const container = document.createElement('div')
+		container.append(upper, lower)
 		document.elementsFromPoint = () => [lower, upper]
 		expect(cellElementAt({ clientX: 120, clientY: 230 })).toBe(upper)
+
+		// Even when Blink half-open hit-testing returns only the lower sibling on an exact shared edge,
+		// the earlier touching sibling slot still wins.
+		document.elementsFromPoint = () => [lower]
+		expect(cellElementAt({ clientX: 120, clientY: 230 })).toBe(upper)
+
+		// Frontmost sticky layer (all-day strip in separate container) beats underlying scrolled time slot
+		const stickyStrip = document.createElement('div')
+		const scrolledBody = document.createElement('div')
+		const allDayCell = makeBoxCell(
+			{ 'data-start': '2025-03-13T00:00:00.000Z', 'data-all-day': 'true' },
+			{ top: 100, left: 100, width: 170, height: 36 }
+		)
+		const hiddenTimeSlot = makeBoxCell(
+			{ 'data-start': '2025-03-13T07:00:00.000Z', 'data-all-day': 'false' },
+			{ top: 90, left: 100, width: 170, height: 60 }
+		)
+		stickyStrip.appendChild(allDayCell)
+		scrolledBody.appendChild(hiddenTimeSlot)
+		document.elementsFromPoint = () => [allDayCell, hiddenTimeSlot]
+		expect(cellElementAt({ clientX: 150, clientY: 118 })).toBe(allDayCell)
 	})
 
 	it('respects custom selector when provided and returns null when none match', () => {

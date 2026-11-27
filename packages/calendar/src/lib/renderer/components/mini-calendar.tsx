@@ -10,6 +10,7 @@ import {
 	isSameDay,
 	startOf,
 	toOffsetIso,
+	withTime,
 	type ZonedDate,
 } from '../../../index'
 import { rendererKeys } from '../utils/keys.utils'
@@ -174,73 +175,68 @@ export const DayPickerGrid = ({
 					<ChevronRightIcon size={14} />
 				</button>
 			</div>
-			<div
-				data-ilamy-part="picker-grid-wrap"
-				ref={gridRef}
-				role="grid"
-				tabIndex={-1}
-			>
-				<div
-					data-cols="7"
-					data-ilamy-part="picker-grid"
-					role="row"
-					tabIndex={-1}
-				>
-					{weekLabels.map((lbl, idx) => (
-						<div
-							data-ilamy-part="year-weekday"
-							key={rendererKeys.key.weekdayCol(lbl, idx)}
-							role="columnheader"
-							tabIndex={-1}
-						>
-							{lbl}
-						</div>
-					))}
-				</div>
-				{weeks.map((week, rowIdx) => (
-					<div
-						data-cols="7"
-						data-ilamy-part="picker-grid"
-						key={dayKey(week[0])}
-						role="row"
-						tabIndex={-1}
-					>
-						{week.map((day, colIdx) => {
-							const isSelected = isSameDay(day, selected)
-							const inWeek = weekSet.has(toOffsetIso(day).slice(0, 10))
-							const isOutside = day.month !== cursorMonth.month
-							const key = dayKey(day)
-							return (
-								<div key={toOffsetIso(day)} role="gridcell" tabIndex={-1}>
-									<button
-										aria-label={formatDate(
-											day,
-											{
-												weekday: 'long',
-												month: 'long',
-												day: 'numeric',
-												year: 'numeric',
-											},
-											locale
-										)}
-										aria-pressed={isSelected}
-										data-day-key={key}
-										data-ilamy-part="picker-cell"
-										data-outside-month={isOutside ? 'true' : undefined}
-										data-selected={isSelected || inWeek ? 'true' : undefined}
-										onClick={() => onSelect(day)}
-										onKeyDown={(evt) =>
-											handleGridKeyDown(evt, rowIdx * 7 + colIdx)
-										}
-										type="button"
-									>
-										{day.day}
-									</button>
-								</div>
-							)
-						})}
-					</div>
-				))}
+			<div data-ilamy-part="picker-grid-wrap" ref={gridRef}>
+				{/* biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: WAI-ARIA datepicker grid pattern uses role="grid" on table */}
+				<table role="grid" tabIndex={-1}>
+					<thead>
+						<tr>
+							{weekLabels.map((lbl, idx) => (
+								<th
+									data-ilamy-part="year-weekday"
+									key={rendererKeys.key.weekdayCol(lbl, idx)}
+									scope="col"
+								>
+									{lbl}
+								</th>
+							))}
+						</tr>
+					</thead>
+					<tbody>
+						{weeks.map((week, rowIdx) => (
+							<tr key={dayKey(week[0])}>
+								{week.map((day, colIdx) => {
+									const isSelected = isSameDay(day, selected)
+									const inWeek = weekSet.has(toOffsetIso(day).slice(0, 10))
+									const isOutside = day.month !== cursorMonth.month
+									const key = dayKey(day)
+									return (
+										<td
+											data-outside={isOutside ? 'true' : 'false'}
+											key={toOffsetIso(day)}
+										>
+											<button
+												aria-label={formatDate(
+													day,
+													{
+														weekday: 'long',
+														month: 'long',
+														day: 'numeric',
+														year: 'numeric',
+													},
+													locale
+												)}
+												aria-pressed={isSelected}
+												data-day-key={key}
+												data-ilamy-part="picker-cell"
+												data-outside-month={isOutside ? 'true' : undefined}
+												data-selected={
+													isSelected || inWeek ? 'true' : undefined
+												}
+												onClick={() => onSelect(day)}
+												onKeyDown={(evt) =>
+													handleGridKeyDown(evt, rowIdx * 7 + colIdx)
+												}
+												type="button"
+											>
+												{day.day}
+											</button>
+										</td>
+									)
+								})}
+							</tr>
+						))}
+					</tbody>
+				</table>
 			</div>
 		</div>
 	)
@@ -296,7 +292,16 @@ export const MonthPickerGrid = ({
 								: undefined
 						}
 						key={m.month}
-						onClick={() => onSelect(m)}
+						onClick={() =>
+							onSelect(
+								withTime(m, {
+									hour: selected.hour,
+									minute: selected.minute,
+									second: selected.second,
+									millisecond: selected.millisecond,
+								})
+							)
+						}
 						type="button"
 					>
 						{formatDate(m, { month: 'short' }, locale)}
@@ -348,11 +353,7 @@ export const YearPickerGrid = ({
 						data-ilamy-part="picker-cell"
 						data-selected={yr === selected.year ? 'true' : undefined}
 						key={yr}
-						onClick={() =>
-							onSelect(
-								add(startOf(selected, 'year'), yr - selected.year, 'year')
-							)
-						}
+						onClick={() => onSelect(add(selected, yr - selected.year, 'year'))}
 						type="button"
 					>
 						{yr}

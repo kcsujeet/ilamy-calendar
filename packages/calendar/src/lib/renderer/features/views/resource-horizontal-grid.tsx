@@ -448,8 +448,39 @@ const HorizontalNowLine = ({
 	)
 }
 
+interface PrecomputedHourSlot {
+	slotStart: ZonedDate
+	slotIso: string
+	slotEndIso: string
+	startUtcIso: string
+	endUtcIso: string
+	dateKey: string
+	hour: number
+	snapMinutes: string | undefined
+}
+
+const buildPrecomputedHourSlots = (
+	hourSlots: ZonedDate[],
+	snapDuration: DomCalendarOptions['snapDuration']
+): PrecomputedHourSlot[] => {
+	const snapMinutes = formatSubCellSnapMinutes(snapDuration, 60)
+	return hourSlots.map((slotStart) => {
+		const slotEnd = add(slotStart, 1, 'hour')
+		return {
+			slotStart,
+			slotIso: toOffsetIso(slotStart),
+			slotEndIso: toOffsetIso(slotEnd),
+			startUtcIso: toUtcIso(slotStart),
+			endUtcIso: toUtcIso(slotEnd),
+			dateKey: dayKey(slotStart),
+			hour: slotStart.hour,
+			snapMinutes,
+		}
+	})
+}
+
 const ResourceHourSlotCell = ({
-	slotStart,
+	slot,
 	slotIdx,
 	totalSlots,
 	resource,
@@ -463,7 +494,7 @@ const ResourceHourSlotCell = ({
 	actions,
 	gridStyle,
 }: {
-	slotStart: ZonedDate
+	slot: PrecomputedHourSlot
 	slotIdx: number
 	totalSlots: number
 	resource: Resource
@@ -477,11 +508,19 @@ const ResourceHourSlotCell = ({
 	actions: RendererActions
 	gridStyle?: Record<string, string | number | undefined>
 }) => {
-	const slotEnd = add(slotStart, 1, 'hour')
-	const slotIso = toOffsetIso(slotStart)
+	const {
+		slotStart,
+		slotIso,
+		slotEndIso,
+		startUtcIso,
+		endUtcIso,
+		dateKey,
+		hour,
+		snapMinutes,
+	} = slot
 	const cellInfo: CellInfo = {
 		start: slotIso,
-		end: toOffsetIso(slotEnd),
+		end: slotEndIso,
 		allDay: false,
 		resource,
 	}
@@ -491,11 +530,10 @@ const ResourceHourSlotCell = ({
 		effHours,
 		cellInfo,
 		businessDate: slotStart,
-		hour: slotStart.hour,
+		hour,
 		minute: 0,
 		extraStyle: { padding: '3px 4px 4px', ...gridStyle },
 	})
-	const snapMinutes = formatSubCellSnapMinutes(options.snapDuration, 60)
 	const moreLink = (
 		<MoreEventsButton
 			actions={actions}
@@ -525,18 +563,18 @@ const ResourceHourSlotCell = ({
 			data-all-day="false"
 			data-cell="true"
 			data-disabled={isDisabled ? 'true' : 'false'}
-			data-end={toUtcIso(slotEnd)}
+			data-end={endUtcIso}
 			data-ilamy-part="res-h-hour-slot"
 			data-ilamy-slot="cell"
 			data-last-col={slotIdx === totalSlots - 1 ? 'true' : undefined}
 			data-non-business={isNonBusiness ? 'true' : undefined}
 			data-resource-id={String(resource.id)}
 			data-snap-minutes={snapMinutes}
-			data-start={toUtcIso(slotStart)}
+			data-start={startUtcIso}
 			data-testid={rendererKeys.testId.resourceHourSlot(
 				resource.id,
-				dayKey(slotStart),
-				slotStart.hour
+				dateKey,
+				hour
 			)}
 			data-time-axis={snapMinutes !== undefined ? 'horizontal' : undefined}
 			onClick={(evt) => {
@@ -574,6 +612,7 @@ const ResourceHourlyRow = ({
 	days,
 	hoursCount,
 	hourSlots,
+	precomputedHourSlots,
 	nowIndicatorPercent,
 	showNowDot,
 	colTemplate,
@@ -588,6 +627,7 @@ const ResourceHourlyRow = ({
 	days: ZonedDate[]
 	hoursCount: number
 	hourSlots: ZonedDate[]
+	precomputedHourSlots: PrecomputedHourSlot[]
 	nowIndicatorPercent: number | null
 	showNowDot: boolean
 	colTemplate: string
@@ -682,7 +722,7 @@ const ResourceHourlyRow = ({
 					gridTemplateColumns: `repeat(${hourSlots.length}, minmax(${HOUR_COL_WIDTH_PX}px, 1fr))`,
 				}}
 			>
-				{hourSlots.map((slotStart, slotIdx) => (
+				{precomputedHourSlots.map((slot, slotIdx) => (
 					<ResourceHourSlotCell
 						actions={actions}
 						cellLayout={columnLayouts.at(slotIdx)}
@@ -694,10 +734,10 @@ const ResourceHourlyRow = ({
 						resource={resource}
 						rowBarGap={barGap}
 						rowBarHeight={barHeight}
+						slot={slot}
 						slotIdx={slotIdx}
-						slotStart={slotStart}
 						timezone={state.timezone}
-						totalSlots={hourSlots.length}
+						totalSlots={precomputedHourSlots.length}
 					/>
 				))}
 
@@ -867,6 +907,10 @@ const renderHourlyTimelineView = ({
 }) => {
 	const totalCols = model.days.length * model.hours.length
 	const colTemplate = `${RESOURCE_COL_WIDTH_PX}px repeat(${totalCols}, minmax(${HOUR_COL_WIDTH_PX}px, 1fr))`
+	const precomputedHourSlots = buildPrecomputedHourSlots(
+		model.hourSlots,
+		options.snapDuration
+	)
 	return (
 		<div
 			data-ilamy-slot="grid-scroll"
@@ -896,6 +940,7 @@ const renderHourlyTimelineView = ({
 					mode={mode}
 					nowIndicatorPercent={model.nowIndicatorPercent}
 					options={options}
+					precomputedHourSlots={precomputedHourSlots}
 					rowModel={rowModel}
 					showNowDot={rowIdx === 0}
 				/>

@@ -110,7 +110,7 @@ jobs:
         working-directory: apps/e2e
 
       - name: Build E2E harness and demo
-        run: bun run --filter '@ilamy/e2e' --filter '@ilamy/demo' build
+        run: bun run --filter '@ilamy/calendar' build && bun run --filter '@ilamy/e2e' --filter '@ilamy/demo' build
 
       - name: E2E (shard ${{ matrix.shard }}/4)
         run: bunx playwright test --shard=${{ matrix.shard }}/4
@@ -176,7 +176,7 @@ jobs:
         working-directory: apps/e2e
 
       - name: Build E2E harness and demo
-        run: bun run --filter '@ilamy/e2e' --filter '@ilamy/demo' build
+        run: bun run --filter '@ilamy/calendar' build && bun run --filter '@ilamy/e2e' --filter '@ilamy/demo' build
 
       - name: Run accessibility & axe-core audits
         run: bun run e2e:a11y

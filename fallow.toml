@@ -6,14 +6,10 @@
 #   examples/**   Standalone consumer apps with their own package.json.
 #   apps/**       Private playgrounds & E2E harnesses. Never published.
 
-ignorePatterns = ["examples/**", "apps/**"]
+ignorePatterns = ["examples/**", "apps/**", "packages/playground/**"]
 entry = [
 	"packages/calendar/bunup.config.ts",
-	"packages/calendar/bunup.spike.config.ts",
 	"packages/calendar/scripts/*.ts*",
-	"packages/calendar/src/spike/types/slot.types.ts",
-	"packages/calendar/src/spike/features/adapters/react/spike-react-calendar.tsx",
-	"packages/calendar/src/spike/features/adapters/svelte/spike-svelte-calendar.ts",
 	"packages/calendar/styles/*.css",
 ]
 

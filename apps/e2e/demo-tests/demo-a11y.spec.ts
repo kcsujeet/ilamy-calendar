@@ -48,6 +48,23 @@ test.describe('demo accessibility (axe-core WCAG 2.2 A+AA)', () => {
 		await expectNoAxeViolations(page, {
 			include: '[data-testid="ilamy-calendar"]',
 		})
+
+		await page.getByTestId('css-tailwind').click()
+		await page.getByTestId('components-radix').click()
+		await page.getByTestId('calendar-title').click()
+		await expect(page.getByTestId('radix-date-picker-popover')).toBeVisible()
+		await expectNoAxeViolations(page, {
+			include: '[data-testid="radix-date-picker-popover"]',
+		})
+		await page.keyboard.press('Escape')
+
+		await page.getByTestId('components-base-ui').click()
+		await page.getByTestId('calendar-title').click()
+		await expect(page.getByTestId('base-ui-date-picker-popover')).toBeVisible()
+		await expectNoAxeViolations(page, {
+			include: '[data-testid="base-ui-date-picker-popover"]',
+		})
+		await page.keyboard.press('Escape')
 	})
 
 	test('Vue (@ilamy/dom) views and dialogs have zero axe violations', async ({

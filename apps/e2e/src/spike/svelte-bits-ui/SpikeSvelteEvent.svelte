@@ -14,7 +14,7 @@
 <button
 	data-testid={`spike-event-${String(event.id)}`}
 	onclick={() => onClick()}
-	style="display: inline-flex; align-items: center; gap: 8px; margin: 8px; padding: 8px 12px; border: 1px solid #10b981; border-radius: 4px;"
+	style="display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 2px 8px; border: 1px solid #10b981; border-radius: 4px;"
 	type="button"
 >
 	<span>{event.title}</span>

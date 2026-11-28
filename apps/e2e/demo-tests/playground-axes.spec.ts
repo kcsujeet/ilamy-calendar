@@ -125,7 +125,7 @@ test.describe('QA Protocol: 3-Axis Playground (Framework x CSS x Component Libra
 		expect(navOverflow).toEqual({ x: 0, y: 0 })
 	})
 
-	test('Component libraries visibly swap calendar header & dialogs for Radix UI, Base UI, and MUI', async ({
+	test('Component libraries visibly swap full-width header, interactive date picker, and event/scope dialogs for Radix UI, Base UI, and MUI', async ({
 		page,
 	}) => {
 		await openDemo(page)
@@ -139,6 +139,21 @@ test.describe('QA Protocol: 3-Axis Playground (Framework x CSS x Component Libra
 		}
 		await expect(page.getByTestId('dom-week-view')).toBeVisible()
 
+		const assertFullWidthHeader = async () => {
+			const align = await page.evaluate(() => {
+				const header = document.querySelector('[data-testid="calendar-header"]')
+				const newBtn = header?.querySelector(
+					'[data-testid="new-event-btn"]'
+				) as HTMLElement | null
+				if (!header || !newBtn) return null
+				const h = header.getBoundingClientRect()
+				const b = newBtn.getBoundingClientRect()
+				return { rightGap: Math.abs(h.right - b.right) }
+			})
+			expect(align).not.toBeNull()
+			expect(align?.rightGap ?? 999).toBeLessThanOrEqual(16)
+		}
+
 		// 1. React + Tailwind + Radix UI (shows shadcn/ui pairing cleanly)
 		await page.getByTestId('css-tailwind').click()
 		await page.getByTestId('components-radix').click()
@@ -147,16 +162,43 @@ test.describe('QA Protocol: 3-Axis Playground (Framework x CSS x Component Libra
 				'[data-testid="calendar-header"] [data-component-library="radix"]'
 			)
 		).toBeVisible()
+		await assertFullWidthHeader()
 		await expect(page.getByTestId('playground-status-strip')).toContainText(
 			'Radix UI (shadcn/ui)'
 		)
 		await expect(page.locator('pre code')).toContainText('RadixHeader')
+
+		// Date selector opens @radix-ui/react-popover and navigates week
+		const initialTitle = await page.getByTestId('calendar-title').innerText()
+		await page.getByTestId('calendar-title').click()
+		const radixPopover = page.getByTestId('radix-date-picker-popover')
+		await expect(radixPopover).toBeVisible()
+		await radixPopover
+			.getByRole('button', { name: 'Wednesday, October 14, 2026' })
+			.click()
+		await expect(radixPopover).toHaveCount(0)
+		await expect(page.getByTestId('calendar-title')).not.toHaveText(
+			initialTitle
+		)
+		await page.getByRole('button', { name: 'Today', exact: true }).click()
+
 		await page.getByTestId('new-event-btn').click()
 		await expect(page.getByTestId('radix-event-form-dialog')).toBeVisible()
 		await page.getByTestId('radix-form-title').fill('Radix Demo Event')
 		await page.getByTestId('radix-form-save').click()
 		await expect(page.getByTestId('radix-event-form-dialog')).toHaveCount(0)
 		await expect(page.getByText('Radix Demo Event')).toBeVisible()
+
+		await page.locator('[data-testid^="calendar-event-20"]').first().click()
+		await expect(page.getByTestId('radix-event-form-dialog')).toBeVisible()
+		await page.getByTestId('radix-form-save').click()
+		await expect(
+			page.getByTestId('radix-recurrence-scope-dialog')
+		).toBeVisible()
+		await page.keyboard.press('Escape')
+		await expect(page.getByTestId('radix-recurrence-scope-dialog')).toHaveCount(
+			0
+		)
 
 		// 2. React + Tailwind + Base UI (@base-ui/react)
 		await page.getByTestId('components-base-ui').click()
@@ -165,18 +207,43 @@ test.describe('QA Protocol: 3-Axis Playground (Framework x CSS x Component Libra
 				'[data-testid="calendar-header"] [data-component-library="base-ui"]'
 			)
 		).toBeVisible()
+		await assertFullWidthHeader()
 		await expect(page.getByTestId('playground-status-strip')).toContainText(
 			'Base UI (shadcn/ui)'
 		)
 		await expect(page.locator('pre code')).toContainText(
 			'@base-ui/react/dialog'
 		)
+
+		await page.getByTestId('calendar-title').click()
+		const baseUiPopover = page.getByTestId('base-ui-date-picker-popover')
+		await expect(baseUiPopover).toBeVisible()
+		await baseUiPopover
+			.getByRole('button', { name: 'Wednesday, October 14, 2026' })
+			.click()
+		await expect(baseUiPopover).toHaveCount(0)
+		await expect(page.getByTestId('calendar-title')).not.toHaveText(
+			initialTitle
+		)
+		await page.getByRole('button', { name: 'Today', exact: true }).click()
+
 		await page.getByTestId('new-event-btn').click()
 		await expect(page.getByTestId('base-ui-event-form-dialog')).toBeVisible()
 		await page.getByTestId('base-ui-form-title').fill('Base UI Demo Event')
 		await page.getByTestId('base-ui-form-save').click()
 		await expect(page.getByTestId('base-ui-event-form-dialog')).toHaveCount(0)
 		await expect(page.getByText('Base UI Demo Event')).toBeVisible()
+
+		await page.locator('[data-testid^="calendar-event-20"]').first().click()
+		await expect(page.getByTestId('base-ui-event-form-dialog')).toBeVisible()
+		await page.getByTestId('base-ui-form-save').click()
+		await expect(
+			page.getByTestId('base-ui-recurrence-scope-dialog')
+		).toBeVisible()
+		await page.keyboard.press('Escape')
+		await expect(
+			page.getByTestId('base-ui-recurrence-scope-dialog')
+		).toHaveCount(0)
 
 		// 3. React + Plain CSS + MUI
 		await page.getByTestId('css-plain').click()
@@ -186,12 +253,176 @@ test.describe('QA Protocol: 3-Axis Playground (Framework x CSS x Component Libra
 				'[data-testid="calendar-header"] [data-component-library="mui"]'
 			)
 		).toBeVisible()
+		await assertFullWidthHeader()
 		await expect(page.locator('pre code')).toContainText('MuiHeader')
+
+		await page.getByTestId('calendar-title').click()
+		const muiPopover = page.getByTestId('mui-date-picker-popover')
+		await expect(muiPopover).toBeVisible()
+		await muiPopover
+			.getByRole('button', { name: 'Wednesday, October 14, 2026' })
+			.click()
+		await expect(muiPopover).toHaveCount(0)
+		await expect(page.getByTestId('calendar-title')).not.toHaveText(
+			initialTitle
+		)
+		await page.getByRole('button', { name: 'Today', exact: true }).click()
+
 		await page.getByTestId('new-event-btn').click()
 		await expect(page.getByTestId('mui-event-form-dialog')).toBeVisible()
 		await page.getByTestId('mui-form-title').fill('MUI Demo Event')
 		await page.getByTestId('mui-form-save').click()
 		await expect(page.getByTestId('mui-event-form-dialog')).toHaveCount(0)
 		await expect(page.getByText('MUI Demo Event')).toBeVisible()
+
+		await page.locator('[data-testid^="calendar-event-20"]').first().click()
+		await expect(page.getByTestId('mui-event-form-dialog')).toBeVisible()
+		await page.getByTestId('mui-form-save').click()
+		await expect(page.getByTestId('mui-recurrence-scope-dialog')).toBeVisible()
+		await page.keyboard.press('Escape')
+		await expect(page.getByTestId('mui-recurrence-scope-dialog')).toHaveCount(0)
+
+		// 4. Built-in + Tailwind recurrence scope dialog has styled bordered cards
+		await page.getByTestId('components-native').click()
+		await page.getByTestId('css-tailwind').click()
+		await page.locator('[data-testid^="calendar-event-20"]').first().click()
+		await expect(page.getByTestId('dom-event-dialog')).toBeVisible()
+		await page.getByTestId('dom-event-save-btn').click()
+		const scopeBtn = page
+			.locator(
+				'[data-testid="recurrence-edit-dialog"] [data-ilamy-part="scope-option"]'
+			)
+			.first()
+		await expect(scopeBtn).toBeVisible()
+		const scopeStyles = await scopeBtn.evaluate((el) => {
+			const cs = getComputedStyle(el)
+			return {
+				textAlign: cs.textAlign,
+				borderTopWidth: cs.borderTopWidth,
+				paddingTop: cs.paddingTop,
+			}
+		})
+		expect(scopeStyles.textAlign).toBe('left')
+		expect(scopeStyles.borderTopWidth).not.toBe('0px')
+		expect(scopeStyles.paddingTop).not.toBe('0px')
+		await page.keyboard.press('Escape')
+	})
+
+	test('week view title picker highlights entire week row on hover across Plain CSS, Tailwind, and Base UI while day view highlights single day', async ({
+		page,
+	}) => {
+		await openDemo(page)
+
+		const assertPickerWeekAndDayHover = async (pickerRootSelector: string) => {
+			await page.getByRole('button', { name: 'Week', exact: true }).click()
+			await page.getByTestId('calendar-title').click()
+
+			const picker = page.locator(pickerRootSelector)
+			await expect(picker).toBeVisible()
+
+			const hoveredRow = picker
+				.locator('[data-week-hover="true"]:not([data-selected-week="true"])')
+				.nth(0)
+			const unhoveredRow = picker
+				.locator('[data-week-hover="true"]:not([data-selected-week="true"])')
+				.nth(1)
+			const selectedRow = picker.locator('[data-selected-week="true"]')
+
+			await expect(hoveredRow).toBeVisible()
+			await expect(unhoveredRow).toBeVisible()
+			await expect(selectedRow).toBeVisible()
+
+			// Move pointer onto the middle day of a non-selected week row
+			await hoveredRow.locator('button').nth(3).hover()
+
+			// All 7 cells of the hovered week row must share one non-transparent hover background
+			await expect
+				.poll(async () => {
+					const bgs = await hoveredRow
+						.locator('button')
+						.evaluateAll((btns) =>
+							btns.map((b) => getComputedStyle(b).backgroundColor)
+						)
+					return (
+						bgs.length === 7 &&
+						bgs[0] !== 'rgba(0, 0, 0, 0)' &&
+						bgs.every((bg) => bg === bgs[0])
+					)
+				})
+				.toBe(true)
+
+			const hoverBg = await hoveredRow
+				.locator('button')
+				.first()
+				.evaluate((b) => getComputedStyle(b).backgroundColor)
+
+			// An unhovered non-selected week stays transparent
+			await expect
+				.poll(() =>
+					unhoveredRow
+						.locator('button')
+						.first()
+						.evaluate((b) => getComputedStyle(b).backgroundColor)
+				)
+				.toBe('rgba(0, 0, 0, 0)')
+
+			// Selected week stays solid primary even when hovered
+			await selectedRow.locator('button').nth(2).hover()
+			await expect
+				.poll(async () => {
+					const bgs = await selectedRow
+						.locator('button')
+						.evaluateAll((btns) =>
+							btns.map((b) => getComputedStyle(b).backgroundColor)
+						)
+					return (
+						bgs.length === 7 &&
+						bgs[0] !== 'rgba(0, 0, 0, 0)' &&
+						bgs[0] !== hoverBg &&
+						bgs.every((bg) => bg === bgs[0])
+					)
+				})
+				.toBe(true)
+
+			await page.keyboard.press('Escape')
+			await expect(picker).toHaveCount(0)
+
+			// Switch to Day view: hovering highlights only the hovered day button
+			await page.getByRole('button', { name: 'Day', exact: true }).click()
+			await page.getByTestId('calendar-title').click()
+			await expect(picker).toBeVisible()
+
+			const dayTarget = picker.locator('button[aria-pressed="false"]').nth(10)
+			const daySibling = picker.locator('button[aria-pressed="false"]').nth(11)
+			await dayTarget.hover()
+
+			await expect
+				.poll(() =>
+					dayTarget.evaluate((b) => getComputedStyle(b).backgroundColor)
+				)
+				.not.toBe('rgba(0, 0, 0, 0)')
+			expect(
+				await daySibling.evaluate((b) => getComputedStyle(b).backgroundColor)
+			).toBe('rgba(0, 0, 0, 0)')
+
+			await page.keyboard.press('Escape')
+			await expect(picker).toHaveCount(0)
+		}
+
+		// 1. Built-in + Plain CSS
+		await page.getByTestId('css-plain').click()
+		await page.getByTestId('components-native').click()
+		await assertPickerWeekAndDayHover('[data-slot="calendar"]')
+
+		// 2. Built-in + Tailwind
+		await page.getByTestId('css-tailwind').click()
+		await page.getByTestId('components-native').click()
+		await assertPickerWeekAndDayHover('[data-slot="calendar"]')
+
+		// 3. Base UI (shared HeaderDatePickerGrid used by Radix UI, Base UI, MUI)
+		await page.getByTestId('components-base-ui').click()
+		await assertPickerWeekAndDayHover(
+			'[data-testid="base-ui-date-picker-popover"] [data-testid="header-date-picker-grid"]'
+		)
 	})
 })

@@ -120,8 +120,8 @@ const BaseUiEvent = ({ event, onClick }: EventSlotContext) => {
 				display: 'inline-flex',
 				alignItems: 'center',
 				gap: '8px',
-				margin: '8px',
-				padding: '8px 12px',
+				margin: '0',
+				padding: '2px 8px',
 				border: '1px solid #6366f1',
 				borderRadius: '4px',
 			}}
@@ -371,7 +371,10 @@ export const ReactBaseUiSpike = () => {
 
 	return (
 		<DemoThemeContext.Provider value={{ brand: themeBrand }}>
-			<div data-testid="react-base-ui-spike" style={{ padding: '16px' }}>
+			<div
+				data-testid="react-base-ui-spike"
+				style={{ padding: '16px', height: '600px' }}
+			>
 				<IlamyCalendar
 					events={events}
 					initialDate="2025-03-12T09:00:00.000Z"

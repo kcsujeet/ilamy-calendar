@@ -139,6 +139,11 @@
 		gap: 0.5rem;
 	}
 
+	:where([data-ilamy-slot='header'] > [data-ilamy-slot-host='header'] > *) {
+		flex: 1 1 100%;
+		min-width: 0;
+	}
+
 	:where([data-ilamy-slot='toolbar']) {
 		width: 100%;
 		display: flex;
@@ -1079,6 +1084,10 @@
 	:where([data-ilamy-part='mini-calendar']) :where(th, td) {
 		padding: 1px;
 		text-align: center;
+	}
+
+	:where([data-ilamy-part='mini-calendar'] tr[data-week-hover='true'] td) {
+		padding-inline: 0;
 	}
 
 	:where([data-ilamy-part='picker-cell']) {

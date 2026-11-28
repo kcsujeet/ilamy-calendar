@@ -4,7 +4,11 @@ import { agendaPlugin } from '../../features/plugins/agenda'
 import { exportToICalendar, icalPlugin } from '../../features/plugins/ical'
 import { recurrencePlugin } from '../../features/plugins/recurrence'
 import { yearPlugin } from '../../features/plugins/year'
-import type { HeaderSlotContext, Resource } from '../../index'
+import type {
+	EventFormSlotContext,
+	HeaderSlotContext,
+	Resource,
+} from '../../index'
 import { parseDate } from '../../index'
 import { resolveCommittedDeltas } from './app/mount-calendar'
 import { keepEndAfterStart } from './features/dialogs/event-form-dialog'
@@ -1391,6 +1395,148 @@ describe('lib/renderer Preact mountCalendar', () => {
 		expect(activeViewBtn?.className).toContain('custom-active-view-btn')
 		expect(inactiveViewBtn?.className).toContain('custom-view-btn')
 		expect(inactiveViewBtn?.className).not.toContain('custom-active-view-btn')
+		cal.destroy()
+	})
+
+	it('routes slots.eventForm onUpdate and onDelete on recurring events through slots.recurrenceScopeDialog', async () => {
+		const container = createContainer()
+		let latestFormCtx: EventFormSlotContext | null = null
+		const scopePrompts: Array<{ open: boolean; operation: string }> = []
+
+		const cal = mountCalendar(container, {
+			initialDate: '2025-03-12T00:00:00Z',
+			initialView: 'month',
+			timezone: 'UTC',
+			plugins: [recurrencePlugin()],
+			events: [
+				{
+					id: 'series-1',
+					title: 'Daily Standup',
+					start: '2025-03-10T09:00:00.000Z',
+					end: '2025-03-10T10:00:00.000Z',
+					rrule: {
+						freq: Frequency.DAILY,
+						interval: 1,
+						dtstart: new Date('2025-03-10T09:00:00.000Z'),
+					},
+				},
+			],
+			slots: {
+				eventForm: {
+					mount: (_host, props) => {
+						latestFormCtx = props
+						return {
+							update: (nextProps) => {
+								latestFormCtx = nextProps
+							},
+							destroy: () => {
+								latestFormCtx = null
+							},
+						}
+					},
+				},
+				recurrenceScopeDialog: {
+					mount: (_host, props) => {
+						if (props.open) {
+							scopePrompts.push({
+								open: props.open,
+								operation: props.operation,
+							})
+						}
+						return {
+							update: (nextProps) => {
+								if (nextProps.open) {
+									scopePrompts.push({
+										open: nextProps.open,
+										operation: nextProps.operation,
+									})
+								}
+							},
+							destroy: () => {},
+						}
+					},
+				},
+			},
+		})
+		await flushPreact()
+
+		const bar = container.querySelector<HTMLElement>(
+			'[data-testid^="calendar-event-"]'
+		)
+		bar?.dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+		)
+		await flushPreact()
+		const formCtx = latestFormCtx as EventFormSlotContext | null
+		expect(formCtx?.open).toBe(true)
+		const targetId = formCtx?.event?.id
+		expect(targetId).toBeTruthy()
+
+		if (targetId !== undefined) {
+			formCtx?.onUpdate(targetId, { title: 'Updated Standup' })
+			formCtx?.onClose()
+		}
+		await flushPreact()
+
+		expect(scopePrompts.some((p) => p.operation === 'edit')).toBe(true)
+		cal.destroy()
+	})
+
+	it('marks week rows with data-week-hover and data-selected-week only when highlightedWeek is active', async () => {
+		const container = document.createElement('div')
+		const cal = mountCalendar(container, {
+			initialView: 'week',
+			initialDate: '2025-03-12T12:00:00.000Z',
+			timezone: 'UTC',
+		})
+		await flushPreact()
+
+		container
+			.querySelector<HTMLButtonElement>('[data-testid="calendar-title"]')
+			?.click()
+		await flushPreact()
+
+		const weekRows = Array.from(
+			container.querySelectorAll<HTMLTableRowElement>(
+				'[data-slot="calendar"] tbody tr[data-ilamy-part="picker-week"]'
+			)
+		)
+		expect(weekRows).toHaveLength(6)
+		expect(
+			weekRows.every((row) => row.getAttribute('data-week-hover') === 'true')
+		).toBe(true)
+		const selectedWeekRows = weekRows.filter(
+			(row) => row.getAttribute('data-selected-week') === 'true'
+		)
+		expect(selectedWeekRows).toHaveLength(1)
+		expect(
+			selectedWeekRows[0]?.querySelector('button[data-day-key="2025-03-12"]')
+		).not.toBeNull()
+
+		document.dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+		)
+		cal.controller.setView('day')
+		await flushPreact()
+
+		container
+			.querySelector<HTMLButtonElement>('[data-testid="calendar-title"]')
+			?.click()
+		await flushPreact()
+
+		const dayRows = Array.from(
+			container.querySelectorAll<HTMLTableRowElement>(
+				'[data-slot="calendar"] tbody tr[data-ilamy-part="picker-week"]'
+			)
+		)
+		expect(dayRows).toHaveLength(6)
+		expect(
+			dayRows.every((row) => row.getAttribute('data-week-hover') === null)
+		).toBe(true)
+		expect(
+			dayRows.every((row) => row.getAttribute('data-selected-week') === null)
+		).toBe(true)
+
 		cal.destroy()
 	})
 })

@@ -136,11 +136,11 @@ const buildReactComponentSetup = (
 	if (values.componentLibrary === 'radix') {
 		return {
 			imports: [
-				`import { RadixHeader, RadixEventForm, RadixMoreEventsDialog } from './radix-slots'${shadcnNote}`,
+				`import { RadixHeader, RadixEventForm, RadixMoreEventsDialog, RadixRecurrenceScopeDialog } from './radix-slots'${shadcnNote}`,
 			],
 			preamble: [],
 			propLines: [
-				'slots={{ header: RadixHeader, eventForm: RadixEventForm, moreEventsDialog: RadixMoreEventsDialog }}',
+				'slots={{ header: RadixHeader, eventForm: RadixEventForm, moreEventsDialog: RadixMoreEventsDialog, recurrenceScopeDialog: RadixRecurrenceScopeDialog }}',
 			],
 		}
 	}
@@ -148,11 +148,12 @@ const buildReactComponentSetup = (
 		return {
 			imports: [
 				"import { Dialog } from '@base-ui/react/dialog'",
-				`import { BaseUiHeader, BaseUiEventForm, BaseUiMoreEventsDialog } from './base-ui-slots'${shadcnNote}`,
+				"import { Popover } from '@base-ui/react/popover'",
+				`import { BaseUiHeader, BaseUiEventForm, BaseUiMoreEventsDialog, BaseUiRecurrenceScopeDialog } from './base-ui-slots'${shadcnNote}`,
 			],
 			preamble: [],
 			propLines: [
-				'slots={{ header: BaseUiHeader, eventForm: BaseUiEventForm, moreEventsDialog: BaseUiMoreEventsDialog }}',
+				'slots={{ header: BaseUiHeader, eventForm: BaseUiEventForm, moreEventsDialog: BaseUiMoreEventsDialog, recurrenceScopeDialog: BaseUiRecurrenceScopeDialog }}',
 			],
 		}
 	}
@@ -160,7 +161,7 @@ const buildReactComponentSetup = (
 		return {
 			imports: [
 				"import { useTheme } from '@mui/material/styles'",
-				"import { MuiHeader, MuiEventForm, MuiMoreEventsDialog } from './mui-slots'",
+				"import { MuiHeader, MuiEventForm, MuiMoreEventsDialog, MuiRecurrenceScopeDialog } from './mui-slots'",
 			],
 			preamble: [
 				'const muiTheme = useTheme()',
@@ -168,7 +169,7 @@ const buildReactComponentSetup = (
 			],
 			propLines: [
 				'slotProps={muiSlotProps}',
-				'slots={{ header: MuiHeader, eventForm: MuiEventForm, moreEventsDialog: MuiMoreEventsDialog }}',
+				'slots={{ header: MuiHeader, eventForm: MuiEventForm, moreEventsDialog: MuiMoreEventsDialog, recurrenceScopeDialog: MuiRecurrenceScopeDialog }}',
 			],
 		}
 	}

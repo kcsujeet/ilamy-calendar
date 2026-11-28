@@ -1,15 +1,19 @@
 import { Dialog } from '@base-ui/react/dialog'
+import { Popover } from '@base-ui/react/popover'
 import type {
 	EventFormSlotContext,
 	HeaderSlotContext,
 	MoreEventsDialogSlotContext,
+	RecurrenceScopeDialogSlotContext,
 } from '@ilamy/calendar'
-import { XIcon } from 'lucide-react'
-import { type ReactNode, useContext } from 'react'
+import { ChevronDown, XIcon } from 'lucide-react'
+import { type ReactNode, useContext, useState } from 'react'
+import { HeaderDatePickerGrid } from './header-date-picker-grid'
 import {
 	MoreEventsListBody,
 	PrimitiveEventFormBody,
 	PrimitiveHeaderView,
+	RecurrenceScopeListBody,
 	SlotPreviewOptionsContext,
 } from './primitive-slot-chrome'
 
@@ -58,14 +62,49 @@ function BaseUiDialogShell({
 	)
 }
 
-/** Base UI styled calendar header slot. */
+/** Base UI styled calendar header slot with a `@base-ui/react/popover` date selector. */
 export function BaseUiHeaderSlot(props: HeaderSlotContext) {
 	const { cssMode, hideNewButton } = useContext(SlotPreviewOptionsContext)
+	const [open, setOpen] = useState(false)
+	const { currentDate, locale, selectDate, timezone, title, view } = props
+
 	return (
 		<PrimitiveHeaderView
 			{...props}
 			cssMode={cssMode}
 			hideNewButton={hideNewButton}
+			renderDatePicker={(triggerClassName) => (
+				<Popover.Root onOpenChange={setOpen} open={open}>
+					<Popover.Trigger
+						aria-expanded={open}
+						aria-haspopup="dialog"
+						className={triggerClassName}
+						data-testid="calendar-title"
+					>
+						<span>{title}</span>
+						<ChevronDown className="size-3.5 opacity-60" />
+					</Popover.Trigger>
+					<Popover.Portal>
+						<Popover.Positioner align="start" className="z-50" sideOffset={6}>
+							<Popover.Popup
+								className="rounded-xl border border-border bg-background p-3 text-foreground shadow-lg outline-hidden"
+								data-testid="base-ui-date-picker-popover"
+							>
+								<HeaderDatePickerGrid
+									currentDate={currentDate}
+									locale={locale}
+									onSelectDate={(iso) => {
+										selectDate(iso)
+										setOpen(false)
+									}}
+									timezone={timezone}
+									view={view}
+								/>
+							</Popover.Popup>
+						</Popover.Positioner>
+					</Popover.Portal>
+				</Popover.Root>
+			)}
 			variant="base-ui"
 		/>
 	)
@@ -122,6 +161,46 @@ export function BaseUiMoreEventsDialogSlot({
 				events={events}
 				onClose={onClose}
 				onEventClick={onEventClick}
+			/>
+		</BaseUiDialogShell>
+	)
+}
+
+/** `@base-ui/react/dialog` recurring scope prompt region slot. */
+export function BaseUiRecurrenceScopeDialogSlot({
+	open,
+	event,
+	operation,
+	onConfirm,
+	onCancel,
+	t,
+}: RecurrenceScopeDialogSlotContext) {
+	const { cssMode } = useContext(SlotPreviewOptionsContext)
+	const shadcnSuffix = cssMode === 'tailwind' ? ' (shadcn/ui)' : ''
+	const isEdit = operation === 'edit'
+	const titleText = t(isEdit ? 'editRecurringEvent' : 'deleteRecurringEvent')
+	const question = t(
+		isEdit ? 'editRecurringEventQuestion' : 'deleteRecurringEventQuestion'
+	)
+	return (
+		<BaseUiDialogShell
+			onClose={onCancel}
+			open={open}
+			subtitle={
+				<>
+					&ldquo;{event?.title}&rdquo; {question} ·{' '}
+					<code className="font-mono">@base-ui/react/dialog</code>
+					{shadcnSuffix}
+				</>
+			}
+			testId="base-ui-recurrence-scope-dialog"
+			title={titleText}
+		>
+			<RecurrenceScopeListBody
+				onCancel={onCancel}
+				onConfirm={onConfirm}
+				operation={operation}
+				t={t}
 			/>
 		</BaseUiDialogShell>
 	)

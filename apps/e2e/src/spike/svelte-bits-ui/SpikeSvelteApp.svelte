@@ -94,6 +94,6 @@
 </script>
 
 <div data-testid="svelte-bits-ui-spike" style="padding: 16px;">
-	<div bind:this={hostEl}></div>
+	<div bind:this={hostEl} style="height: 600px;"></div>
 	<div data-testid="spike-events" hidden>{JSON.stringify(events)}</div>
 </div>

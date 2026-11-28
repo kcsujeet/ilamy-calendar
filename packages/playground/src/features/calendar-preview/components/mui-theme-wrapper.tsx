@@ -4,6 +4,7 @@ import type {
 	EventFormSlotContext,
 	HeaderSlotContext,
 	MoreEventsDialogSlotContext,
+	RecurrenceScopeDialogSlotContext,
 } from '@ilamy/calendar'
 import type { CalendarThemeAdapter } from '@ilamy/calendar/react'
 import Box from '@mui/material/Box'
@@ -16,15 +17,17 @@ import DialogTitle from '@mui/material/DialogTitle'
 import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemText from '@mui/material/ListItemText'
-import TextField from '@mui/material/TextField'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
-import Typography from '@mui/material/Typography'
+import Popover from '@mui/material/Popover'
 import {
 	createTheme,
 	ThemeProvider as MuiThemeProvider,
 	type Theme,
 } from '@mui/material/styles'
+import TextField from '@mui/material/TextField'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
+import Typography from '@mui/material/Typography'
+import { ChevronDown } from 'lucide-react'
 import {
 	type FormEvent,
 	type ReactNode,
@@ -35,7 +38,11 @@ import {
 } from 'react'
 import type { ThemeAccent } from '../../../types/settings-form.types'
 import { THEME_ACCENTS } from '../../../utils/demo-themes.utils'
-import { SlotPreviewOptionsContext } from './primitive-slot-chrome'
+import { HeaderDatePickerGrid } from './header-date-picker-grid'
+import {
+	RECURRENCE_SCOPE_ITEMS,
+	SlotPreviewOptionsContext,
+} from './primitive-slot-chrome'
 
 /** Maps a MUI Theme object purely into `--ilamy-*` CSS variables (zero calendar dependency). */
 const buildMuiCssVars = (theme: Theme): Record<string, string> => {
@@ -199,27 +206,36 @@ interface MuiThemeWrapperProps {
 			header: typeof MuiHeaderSlot
 			eventForm: typeof MuiEventFormSlot
 			moreEventsDialog: typeof MuiMoreEventsDialogSlot
+			recurrenceScopeDialog: typeof MuiRecurrenceScopeDialogSlot
 		}
 	) => ReactNode
 }
 
-/** Material UI `slots.header` preserving calendar layout geometry. */
+/** Material UI `slots.header` with full width and interactive MUI `Popover` date selector. */
 export function MuiHeaderSlot({
+	currentDate,
+	locale,
+	timezone,
 	title,
 	view,
 	views,
 	nextPeriod,
 	prevPeriod,
+	selectDate,
 	today,
 	setView,
 	openEventForm,
 	t,
 }: HeaderSlotContext) {
 	const { hideNewButton } = useContext(SlotPreviewOptionsContext)
+	const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null)
+	const pickerOpen = Boolean(anchorEl)
+
 	return (
 		<Box
 			data-component-library="mui"
 			sx={{
+				width: '100%',
 				display: 'flex',
 				flexWrap: 'wrap',
 				alignItems: 'center',
@@ -252,20 +268,41 @@ export function MuiHeaderSlot({
 				>
 					{t('today')}
 				</Button>
-				<Typography sx={{ fontWeight: 600 }} variant="subtitle2">
-					{title}
-				</Typography>
-				<Typography
-					color="text.secondary"
-					sx={{
-						display: { xs: 'none', md: 'inline' },
-						fontFamily: 'monospace',
-						fontSize: 11,
-					}}
-					variant="caption"
+				<Button
+					aria-expanded={pickerOpen}
+					aria-haspopup="dialog"
+					data-testid="calendar-title"
+					endIcon={<ChevronDown size={14} />}
+					onClick={(evt) => setAnchorEl(evt.currentTarget)}
+					size="small"
+					sx={{ height: 36, textTransform: 'none', fontWeight: 600 }}
+					variant="outlined"
 				>
-					MUI
-				</Typography>
+					{title}
+				</Button>
+				<Popover
+					anchorEl={anchorEl}
+					anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+					onClose={() => setAnchorEl(null)}
+					open={pickerOpen}
+					slotProps={{
+						paper: {
+							'data-testid': 'mui-date-picker-popover',
+							sx: { mt: 0.75, p: 1.5 },
+						} as Record<string, unknown>,
+					}}
+				>
+					<HeaderDatePickerGrid
+						currentDate={currentDate}
+						locale={locale}
+						onSelectDate={(iso) => {
+							selectDate(iso)
+							setAnchorEl(null)
+						}}
+						timezone={timezone}
+						view={view}
+					/>
+				</Popover>
 			</Box>
 
 			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -359,6 +396,64 @@ export function MuiMoreEventsDialogSlot({
 	)
 }
 
+/** Material UI `Dialog` region slot for `slots.recurrenceScopeDialog` in React. */
+export function MuiRecurrenceScopeDialogSlot({
+	open,
+	event,
+	operation,
+	onConfirm,
+	onCancel,
+	t,
+}: RecurrenceScopeDialogSlotContext) {
+	const isEdit = operation === 'edit'
+	const titleText = t(isEdit ? 'editRecurringEvent' : 'deleteRecurringEvent')
+	const question = t(
+		isEdit ? 'editRecurringEventQuestion' : 'deleteRecurringEventQuestion'
+	)
+	return (
+		<Dialog
+			fullWidth
+			maxWidth="xs"
+			onClose={onCancel}
+			open={open}
+			slotProps={{
+				paper: { 'data-testid': 'mui-recurrence-scope-dialog' } as Record<
+					string,
+					unknown
+				>,
+			}}
+		>
+			<DialogTitle>{titleText}</DialogTitle>
+			<DialogContent dividers sx={{ pt: 1.5 }}>
+				<Typography color="text.secondary" sx={{ mb: 1.5 }} variant="caption">
+					&ldquo;{event?.title}&rdquo; {question}
+				</Typography>
+				<List
+					disablePadding
+					sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}
+				>
+					{RECURRENCE_SCOPE_ITEMS.map((item) => (
+						<ListItemButton
+							data-testid={`scope-option-${item.scope}`}
+							key={item.scope}
+							onClick={() => onConfirm(item.scope)}
+							sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}
+						>
+							<ListItemText
+								primary={t(item.titleKey)}
+								secondary={t(isEdit ? item.editKey : item.deleteKey)}
+							/>
+						</ListItemButton>
+					))}
+				</List>
+			</DialogContent>
+			<DialogActions>
+				<Button onClick={onCancel}>{t('cancel')}</Button>
+			</DialogActions>
+		</Dialog>
+	)
+}
+
 export function MuiThemeWrapper({
 	mode,
 	accent,
@@ -402,6 +497,7 @@ export function MuiThemeWrapper({
 			header: MuiHeaderSlot,
 			eventForm: MuiEventFormSlot,
 			moreEventsDialog: MuiMoreEventsDialogSlot,
+			recurrenceScopeDialog: MuiRecurrenceScopeDialogSlot,
 		}),
 		[]
 	)

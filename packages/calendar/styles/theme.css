@@ -742,6 +742,24 @@
 		color: var(--ilamy-muted-fg);
 	}
 
+	:where([data-ilamy-root]:not([data-unstyled='true']) tr[data-week-hover='true'] [data-ilamy-part='picker-cell']) {
+		border-radius: 0;
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) tr[data-week-hover='true'] td:first-child [data-ilamy-part='picker-cell']) {
+		border-start-start-radius: calc(var(--ilamy-radius) - 0.125rem);
+		border-end-start-radius: calc(var(--ilamy-radius) - 0.125rem);
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) tr[data-week-hover='true'] td:last-child [data-ilamy-part='picker-cell']) {
+		border-start-end-radius: calc(var(--ilamy-radius) - 0.125rem);
+		border-end-end-radius: calc(var(--ilamy-radius) - 0.125rem);
+	}
+
+	:where([data-ilamy-root]:not([data-unstyled='true']) tr[data-week-hover='true']:not([data-selected-week='true']):hover [data-ilamy-part='picker-cell']) {
+		background-color: var(--ilamy-muted);
+	}
+
 	:where([data-ilamy-root]:not([data-unstyled='true']) [data-ilamy-part='picker-cell'][data-selected='true']) {
 		background-color: var(--ilamy-primary);
 		color: var(--ilamy-primary-fg);

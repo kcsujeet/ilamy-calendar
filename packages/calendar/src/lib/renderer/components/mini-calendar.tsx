@@ -202,49 +202,59 @@ export const DayPickerGrid = ({
 						</tr>
 					</thead>
 					<tbody>
-						{weeks.map((week, rowIdx) => (
-							<tr key={dayKey(week[0])}>
-								{week.map((day, colIdx) => {
-									const isSelected = isSameDay(day, selected)
-									const inWeek = weekSet.has(toOffsetIso(day).slice(0, 10))
-									const isOutside = day.month !== cursorMonth.month
-									const key = dayKey(day)
-									return (
-										<td
-											data-outside={isOutside ? 'true' : 'false'}
-											key={toOffsetIso(day)}
-										>
-											<button
-												aria-label={formatDate(
-													day,
-													{
-														weekday: 'long',
-														month: 'long',
-														day: 'numeric',
-														year: 'numeric',
-													},
-													locale
-												)}
-												aria-pressed={isSelected}
-												data-day-key={key}
-												data-ilamy-part="picker-cell"
-												data-outside-month={isOutside ? 'true' : undefined}
-												data-selected={
-													isSelected || inWeek ? 'true' : undefined
-												}
-												onClick={() => onSelect(day)}
-												onKeyDown={(evt) =>
-													handleGridKeyDown(evt, rowIdx * 7 + colIdx)
-												}
-												type="button"
+						{weeks.map((week, rowIdx) => {
+							const isSelectedWeek =
+								highlightedWeek &&
+								week.some((day) => weekSet.has(toOffsetIso(day).slice(0, 10)))
+							return (
+								<tr
+									data-ilamy-part="picker-week"
+									data-selected-week={isSelectedWeek ? 'true' : undefined}
+									data-week-hover={highlightedWeek ? 'true' : undefined}
+									key={dayKey(week[0])}
+								>
+									{week.map((day, colIdx) => {
+										const isSelected = isSameDay(day, selected)
+										const inWeek = weekSet.has(toOffsetIso(day).slice(0, 10))
+										const isOutside = day.month !== cursorMonth.month
+										const key = dayKey(day)
+										return (
+											<td
+												data-outside={isOutside ? 'true' : 'false'}
+												key={toOffsetIso(day)}
 											>
-												{day.day}
-											</button>
-										</td>
-									)
-								})}
-							</tr>
-						))}
+												<button
+													aria-label={formatDate(
+														day,
+														{
+															weekday: 'long',
+															month: 'long',
+															day: 'numeric',
+															year: 'numeric',
+														},
+														locale
+													)}
+													aria-pressed={isSelected}
+													data-day-key={key}
+													data-ilamy-part="picker-cell"
+													data-outside-month={isOutside ? 'true' : undefined}
+													data-selected={
+														isSelected || inWeek ? 'true' : undefined
+													}
+													onClick={() => onSelect(day)}
+													onKeyDown={(evt) =>
+														handleGridKeyDown(evt, rowIdx * 7 + colIdx)
+													}
+													type="button"
+												>
+													{day.day}
+												</button>
+											</td>
+										)
+									})}
+								</tr>
+							)
+						})}
 					</tbody>
 				</table>
 			</div>

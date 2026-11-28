@@ -3,8 +3,16 @@ import type {
 	CalendarEventInput,
 	EventFormSlotContext,
 	HeaderSlotContext,
+	RecurrenceScope,
+	RecurrenceScopeDialogSlotContext,
 } from '@ilamy/calendar'
-import { createContext, type FormEvent, useEffect, useState } from 'react'
+import {
+	createContext,
+	type FormEvent,
+	type ReactNode,
+	useEffect,
+	useState,
+} from 'react'
 import type { CssMode } from '../../../types/settings-form.types'
 import { resolvePrimitiveHeaderStyles } from '../utils/primitive-slot-styles.utils'
 
@@ -20,6 +28,7 @@ interface PrimitiveHeaderViewProps extends HeaderSlotContext {
 	variant: 'radix' | 'base-ui'
 	cssMode: CssMode
 	hideNewButton: boolean
+	renderDatePicker: (triggerClassName: string) => ReactNode
 }
 
 /** Shared calendar header slot UI rendered inside Radix UI and Base UI slots. */
@@ -27,7 +36,6 @@ export function PrimitiveHeaderView({
 	variant,
 	cssMode,
 	hideNewButton,
-	title,
 	view,
 	views,
 	nextPeriod,
@@ -36,12 +44,9 @@ export function PrimitiveHeaderView({
 	setView,
 	openEventForm,
 	t,
+	renderDatePicker,
 }: PrimitiveHeaderViewProps) {
 	const styles = resolvePrimitiveHeaderStyles(cssMode, variant)
-	const badgeLabel = (() => {
-		const base = variant === 'base-ui' ? 'Base UI' : 'Radix UI'
-		return cssMode === 'tailwind' ? `shadcn/ui · ${base}` : base
-	})()
 
 	return (
 		<div className={styles.header} data-component-library={variant}>
@@ -67,13 +72,7 @@ export function PrimitiveHeaderView({
 				<button className={styles.todayBtn} onClick={today} type="button">
 					{t('today')}
 				</button>
-				<h2 className={styles.title}>{title}</h2>
-				<span
-					className="hidden md:inline-flex items-center rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-foreground select-none"
-					data-testid="primitive-header-badge"
-				>
-					{badgeLabel}
-				</span>
+				{renderDatePicker(styles.titleBtn)}
 			</div>
 
 			<div className="flex items-center gap-2">
@@ -249,6 +248,76 @@ export function MoreEventsListBody({
 					<span className="truncate font-medium">{ev.title}</span>
 				</button>
 			))}
+		</div>
+	)
+}
+
+export const RECURRENCE_SCOPE_ITEMS: ReadonlyArray<{
+	scope: RecurrenceScope
+	titleKey: 'thisEvent' | 'thisAndFollowingEvents' | 'allEvents'
+	editKey: 'onlyChangeThis' | 'changeThisAndFuture' | 'changeEntireSeries'
+	deleteKey: 'onlyDeleteThis' | 'deleteThisAndFuture' | 'deleteEntireSeries'
+}> = [
+	{
+		scope: 'this',
+		titleKey: 'thisEvent',
+		editKey: 'onlyChangeThis',
+		deleteKey: 'onlyDeleteThis',
+	},
+	{
+		scope: 'following',
+		titleKey: 'thisAndFollowingEvents',
+		editKey: 'changeThisAndFuture',
+		deleteKey: 'deleteThisAndFuture',
+	},
+	{
+		scope: 'all',
+		titleKey: 'allEvents',
+		editKey: 'changeEntireSeries',
+		deleteKey: 'deleteEntireSeries',
+	},
+]
+
+/** Shared scope picker body for Radix UI and Base UI `recurrenceScopeDialog` slots. */
+export function RecurrenceScopeListBody({
+	operation,
+	t,
+	onConfirm,
+	onCancel,
+}: Pick<
+	RecurrenceScopeDialogSlotContext,
+	'operation' | 't' | 'onConfirm' | 'onCancel'
+>) {
+	const isEdit = operation === 'edit'
+	return (
+		<div className="space-y-3">
+			<div className="flex flex-col gap-2">
+				{RECURRENCE_SCOPE_ITEMS.map((item) => (
+					<button
+						className="w-full rounded-lg border border-border bg-background p-3 text-left hover:bg-muted cursor-pointer transition-colors"
+						data-testid={`scope-option-${item.scope}`}
+						key={item.scope}
+						onClick={() => onConfirm(item.scope)}
+						type="button"
+					>
+						<div className="text-sm font-medium text-foreground">
+							{t(item.titleKey)}
+						</div>
+						<div className="mt-0.5 text-xs text-muted-foreground">
+							{t(isEdit ? item.editKey : item.deleteKey)}
+						</div>
+					</button>
+				))}
+			</div>
+			<div className="flex justify-end pt-1">
+				<button
+					className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted cursor-pointer"
+					onClick={onCancel}
+					type="button"
+				>
+					{t('cancel')}
+				</button>
+			</div>
 		</div>
 	)
 }

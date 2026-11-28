@@ -1232,16 +1232,32 @@ export const EventFormDialog = ({
 					existing ??
 					(calState.events.find((e) => e.id === id) as
 						DomCalendarEvent | undefined)
-				if (target) {
-					actions.commitUpdate(
-						target,
-						updates as Partial<DomCalendarEventInput>,
-						'this'
-					)
+				if (!target) return
+				const { id: _ignoredId, ...cleanUpdates } = updates
+				if (actions.pluginRuntime.getEventManager(target)) {
+					onRequestScope(target, 'edit', (scope) => {
+						actions.commitUpdate(
+							target,
+							cleanUpdates as Partial<DomCalendarEventInput>,
+							scope
+						)
+					})
+					return
 				}
+				actions.commitUpdate(
+					target,
+					cleanUpdates as Partial<DomCalendarEventInput>,
+					'this'
+				)
 			},
 			onDelete: existing
 				? () => {
+						if (actions.pluginRuntime.getEventManager(existing)) {
+							onRequestScope(existing, 'delete', (scope) => {
+								actions.commitDelete(existing, scope)
+							})
+							return
+						}
 						actions.commitDelete(existing, 'this')
 					}
 				: undefined,
@@ -1261,6 +1277,7 @@ export const EventFormDialog = ({
 			calState.events,
 			options.timeFormat,
 			actions,
+			onRequestScope,
 			onClose,
 		]
 	)

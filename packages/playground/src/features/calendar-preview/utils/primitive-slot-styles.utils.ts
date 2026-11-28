@@ -5,7 +5,7 @@ export interface HeaderSlotStyleTokens {
 	arrowGroup: string
 	arrowBtn: string
 	todayBtn: string
-	title: string
+	titleBtn: string
 	switcherGroup: string
 	viewBtn: string
 	viewBtnActive: string
@@ -22,13 +22,15 @@ export function resolvePrimitiveHeaderStyles(
 
 	if (cssMode === 'unstyled') {
 		return {
-			header: 'flex flex-wrap items-center justify-between gap-2 min-h-9',
+			header:
+				'w-full flex flex-wrap items-center justify-between gap-2 min-h-9',
 			arrowGroup:
 				'inline-flex items-center h-9 border border-current/25 rounded overflow-hidden',
 			arrowBtn: 'h-9 px-2.5 text-sm cursor-pointer hover:bg-current/10',
 			todayBtn:
 				'h-9 px-3 text-sm font-medium border border-current/25 rounded cursor-pointer hover:bg-current/10',
-			title: 'text-sm font-semibold px-1',
+			titleBtn:
+				'h-9 px-3 inline-flex items-center gap-1.5 text-sm font-semibold border border-current/25 rounded cursor-pointer hover:bg-current/10',
 			switcherGroup:
 				'inline-flex items-center h-9 p-0.5 border border-current/25 rounded',
 			viewBtn: 'h-8 px-2.5 text-sm cursor-pointer rounded',
@@ -42,12 +44,12 @@ export function resolvePrimitiveHeaderStyles(
 	if (cssMode === 'tailwind') {
 		return {
 			header:
-				'flex flex-wrap items-center justify-between gap-2 min-h-9 bg-background text-foreground',
+				'w-full flex flex-wrap items-center justify-between gap-2 min-h-9 bg-background text-foreground',
 			arrowGroup: `inline-flex items-center h-9 border border-border bg-background overflow-hidden ${groupRadius}`,
 			arrowBtn:
 				'h-9 px-2.5 text-sm font-medium text-foreground hover:bg-muted cursor-pointer transition-colors',
 			todayBtn: `h-9 px-3 text-sm font-medium border border-border bg-background text-foreground hover:bg-muted cursor-pointer transition-colors ${controlRadius}`,
-			title: 'text-sm font-semibold text-foreground px-1.5',
+			titleBtn: `h-9 px-3 inline-flex items-center gap-1.5 text-sm font-semibold border border-border bg-background text-foreground hover:bg-muted cursor-pointer transition-colors ${controlRadius}`,
 			switcherGroup: `inline-flex items-center h-9 p-0.5 bg-muted border border-border/70 ${groupRadius}`,
 			viewBtn: `h-8 px-2.5 text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors ${controlRadius}`,
 			viewBtnActive: `h-8 px-2.5 text-sm font-medium bg-background text-foreground shadow-xs cursor-pointer ${controlRadius}`,
@@ -58,12 +60,12 @@ export function resolvePrimitiveHeaderStyles(
 	// Plain CSS & StyleX honor --ilamy-* CSS variables set on the calendar root.
 	return {
 		header:
-			'flex flex-wrap items-center justify-between gap-2 min-h-9 text-[var(--ilamy-fg)]',
+			'w-full flex flex-wrap items-center justify-between gap-2 min-h-9 text-[var(--ilamy-fg)]',
 		arrowGroup: `inline-flex items-center h-9 border border-[var(--ilamy-border)] bg-[var(--ilamy-bg)] overflow-hidden ${groupRadius}`,
 		arrowBtn:
 			'h-9 px-2.5 text-sm font-medium text-[var(--ilamy-fg)] hover:bg-[var(--ilamy-muted)] cursor-pointer transition-colors',
 		todayBtn: `h-9 px-3 text-sm font-medium border border-[var(--ilamy-border)] bg-[var(--ilamy-bg)] text-[var(--ilamy-fg)] hover:bg-[var(--ilamy-muted)] cursor-pointer transition-colors ${controlRadius}`,
-		title: 'text-sm font-semibold text-[var(--ilamy-fg)] px-1.5',
+		titleBtn: `h-9 px-3 inline-flex items-center gap-1.5 text-sm font-semibold border border-[var(--ilamy-border)] bg-[var(--ilamy-bg)] text-[var(--ilamy-fg)] hover:bg-[var(--ilamy-muted)] cursor-pointer transition-colors ${controlRadius}`,
 		switcherGroup: `inline-flex items-center h-9 p-0.5 bg-[var(--ilamy-muted)] border border-[var(--ilamy-border)] ${groupRadius}`,
 		viewBtn: `h-8 px-2.5 text-sm font-medium text-[var(--ilamy-muted-fg)] hover:text-[var(--ilamy-fg)] cursor-pointer transition-colors ${controlRadius}`,
 		viewBtnActive: `h-8 px-2.5 text-sm font-medium bg-[var(--ilamy-bg)] text-[var(--ilamy-fg)] shadow-xs cursor-pointer ${controlRadius}`,

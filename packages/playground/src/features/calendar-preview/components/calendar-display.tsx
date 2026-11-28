@@ -38,6 +38,7 @@ import {
 	BaseUiEventFormSlot,
 	BaseUiHeaderSlot,
 	BaseUiMoreEventsDialogSlot,
+	BaseUiRecurrenceScopeDialogSlot,
 } from './base-ui-slots'
 import { CalendarStage } from './calendar-stage'
 import { PreviewHeaderBar } from './preview-header-bar'
@@ -46,6 +47,7 @@ import {
 	RadixEventFormSlot,
 	RadixHeaderSlot,
 	RadixMoreEventsDialogSlot,
+	RadixRecurrenceScopeDialogSlot,
 } from './radix-slots'
 
 const LazyMuiThemeWrapper = lazy(() =>
@@ -86,12 +88,14 @@ const resolveReactComponentSlots = (options: {
 			...(useCustomCalendarHeader ? {} : { header: RadixHeaderSlot }),
 			...(useCustomEventForm ? {} : { eventForm: RadixEventFormSlot }),
 			moreEventsDialog: RadixMoreEventsDialogSlot,
+			recurrenceScopeDialog: RadixRecurrenceScopeDialogSlot,
 		}
 	}
 	return {
 		...(useCustomCalendarHeader ? {} : { header: BaseUiHeaderSlot }),
 		...(useCustomEventForm ? {} : { eventForm: BaseUiEventFormSlot }),
 		moreEventsDialog: BaseUiMoreEventsDialogSlot,
+		recurrenceScopeDialog: BaseUiRecurrenceScopeDialogSlot,
 	}
 }
 
@@ -357,6 +361,7 @@ export function CalendarDisplay({
 										? {}
 										: { eventForm: muiSlots.eventForm }),
 									moreEventsDialog: muiSlots.moreEventsDialog,
+									recurrenceScopeDialog: muiSlots.recurrenceScopeDialog,
 								},
 							}}
 						/>
